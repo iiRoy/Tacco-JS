@@ -1,24 +1,53 @@
-function executeProcessing(rawDataPayload) {
-    const allNumbersExtracted = rawDataPayload.match(/\d+/g).map(Number);
-    const elementCountHeader = allNumbersExtracted[0]; // This is effectively the length of the actual data, but not directly used in loop bounds.
-    const numericCollection = allNumbersExtracted.slice(1);
+function processInput(rawData) {
+    const inputLines = rawData.split('\n');
+    const initialSize = Number(inputLines[0]);
+    const numericalSequence = inputLines[1].split(' ').map(Number);
 
-    let totalRearrangements = 0;
+    const auxiliaryStorage = new Array(initialSize);
 
-    for (let currentPosition = 1; currentPosition < numericCollection.length; currentPosition++) {
-        let elementToInsert = numericCollection[currentPosition];
-        let comparisonPosition = currentPosition - 1;
+    const swapTally = sortAndCountInversions(numericalSequence, auxiliaryStorage, 0, initialSize - 1);
 
-        while (comparisonPosition >= 0 && numericCollection[comparisonPosition] > elementToInsert) {
-            numericCollection[comparisonPosition + 1] = numericCollection[comparisonPosition];
-            totalRearrangements++;
-            comparisonPosition--;
-        }
-        numericCollection[comparisonPosition + 1] = elementToInsert;
-    }
-
-    console.log(numericCollection.join(' '));
-    console.log(totalRearrangements);
+    console.log(numericalSequence.join(' '));
+    console.log(swapTally);
 }
 
-executeProcessing(require('fs').readFileSync('/dev/stdin', 'utf8'));
+function sortAndCountInversions(mainArray, tempArray, startIndex, endIndex) {
+    let currentInversions = 0;
+    if (startIndex < endIndex) {
+        const middleIndex = Math.floor((startIndex + endIndex) / 2);
+        currentInversions += sortAndCountInversions(mainArray, tempArray, startIndex, middleIndex);
+        currentInversions += sortAndCountInversions(mainArray, tempArray, middleIndex + 1, endIndex);
+        currentInversions += mergeSubarrays(mainArray, tempArray, startIndex, middleIndex, endIndex);
+    }
+    return currentInversions;
+}
+
+function mergeSubarrays(mainArray, tempArray, lowBound, midPoint, highBound) {
+    let leftCursor = lowBound;
+    let rightCursor = midPoint + 1;
+    let writeCursor = lowBound;
+    let mergeInversions = 0;
+
+    for (let k = lowBound; k <= highBound; k++) {
+        tempArray[k] = mainArray[k];
+    }
+
+    while (leftCursor <= midPoint && rightCursor <= highBound) {
+        if (tempArray[leftCursor] <= tempArray[rightCursor]) {
+            mainArray[writeCursor++] = tempArray[leftCursor++];
+        } else {
+            mergeInversions += (midPoint - leftCursor + 1);
+            mainArray[writeCursor++] = tempArray[rightCursor++];
+        }
+    }
+
+    while (leftCursor <= midPoint) {
+        mainArray[writeCursor++] = tempArray[leftCursor++];
+    }
+    while (rightCursor <= highBound) {
+        mainArray[writeCursor++] = tempArray[rightCursor++];
+    }
+    return mergeInversions;
+}
+
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

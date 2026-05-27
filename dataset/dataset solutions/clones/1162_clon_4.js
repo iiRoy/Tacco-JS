@@ -1,108 +1,109 @@
-const emit = console.log;
+const printOutput = console.log;
 
-function performAnalysis(textRows) {
-    if (textRows.slice(-1)[0] === "") {
-        textRows.pop();
-    }
-
-    const numericData = textRows.map(function(lineSegment) {
-        return lineSegment.split(" ").map(function(elementString) {
-            return Number(elementString);
-        });
+if (typeof process !== "undefined") {
+    let rawInputData = "";
+    process.stdin.resume();
+    process.stdin.setEncoding('utf8');
+    process.stdin.on('data', (chunk) => {
+        rawInputData += chunk;
     });
-
-    const initialConfig = numericData.shift();
-    const totalVertices = initialConfig[0];
-    const edgeCount = initialConfig[1];
-
-    const adjacencyStructure = new Map();
-    for (let i = 0; i < totalVertices; i++) {
-        adjacencyStructure.set(i, []);
-    }
-
-    numericData.forEach(function(connectionPair) {
-        const firstNode = connectionPair[0];
-        const secondNode = connectionPair[1];
-        adjacencyStructure.get(firstNode).push(secondNode);
-        adjacencyStructure.get(secondNode).push(firstNode);
-    });
-
-    const analyzer = new GraphAnalyzer(totalVertices, adjacencyStructure);
-    const criticalLinks = analyzer.findCriticalConnections();
-
-    criticalLinks.forEach(function(link) {
-        emit(link[0] + " " + link[1]);
+    process.stdin.on('end', () => {
+        processGraphData(rawInputData);
     });
 }
 
-class GraphAnalyzer {
-    constructor(totalVertices, graphAdjacencies) {
-        this.totalVertices = totalVertices;
-        this.graphAdjacencies = graphAdjacencies;
-        this.discoveryTimings = new Map();
-        this.minDiscovery = new Map();
-        this.visitedSet = new Set();
-        this.timeCounter = 0;
-        this.criticalLinks = [];
+function processGraphData(inputString) {
+    const rawLines = inputString.split("\n");
+    const filteredLines = rawLines.filter(line => line.trim() !== '');
+
+    const numericLines = filteredLines.map(line =>
+        line.split(" ").map(Number)
+    );
+
+    const graphDimensions = numericLines[0];
+    const nodeCount = graphDimensions[0];
+    const edgeCount = graphDimensions[1];
+
+    const edgeDescriptions = numericLines.slice(1);
+
+    const adjacencyList = Array.from({ length: nodeCount }, () => []);
+    const visitedNodes = Array.from({ length: nodeCount }, () => false);
+    const discoveryOrder = Array.from({ length: nodeCount }, () => 0);
+    const lowestReachableOrder = Array.from({ length: nodeCount }, () => nodeCount);
+    const identifiedBridges = Array.from({ length: nodeCount }, () => []);
+
+    for (const currentEdge of edgeDescriptions) {
+        const nodeA = currentEdge[0];
+        const nodeB = currentEdge[1];
+        adjacencyList[nodeA].push(nodeB);
+        adjacencyList[nodeB].push(nodeA);
     }
 
-    findCriticalConnections() {
-        for (let i = 0; i < this.totalVertices; i++) {
-            if (!this.visitedSet.has(i)) {
-                this.exploreGraph(i, -1);
-            }
-        }
-        this.criticalLinks.forEach(pair => pair.sort((a, b) => a - b));
-        this.criticalLinks.sort((a, b) => {
-            if (a[0] !== b[0]) return a[0] - b[0];
-            return a[1] - b[1];
-        });
-        return this.criticalLinks;
-    }
+    const timeCounterRef = { value: 0 };
 
-    exploreGraph(currentVertex, parentVertex) {
-        this.visitedSet.add(currentVertex);
-        this.discoveryTimings.set(currentVertex, this.timeCounter);
-        this.minDiscovery.set(currentVertex, this.timeCounter);
-        this.timeCounter++;
+    const exploreGraphIteratively = (startNode, initialParent) => {
+        const dfsTraversalStack = [];
+        dfsTraversalStack.push({ currentVertex: startNode, parentVertex: initialParent, neighborCursor: -1 });
 
-        const neighbors = this.graphAdjacencies.get(currentVertex) || [];
+        while (dfsTraversalStack.length > 0) {
+            const currentFrame = dfsTraversalStack[dfsTraversalStack.length - 1];
+            const currentVertex = currentFrame.currentVertex;
+            const parentVertex = currentFrame.parentVertex;
 
-        for (const neighborVertex of neighbors) {
-            if (neighborVertex === parentVertex) {
-                continue;
-            }
+            if (currentFrame.neighborCursor === -1) {
+                visitedNodes[currentVertex] = true;
+                discoveryOrder[currentVertex] = timeCounterRef.value;
+                lowestReachableOrder[currentVertex] = timeCounterRef.value;
+                timeCounterRef.value++;
+                currentFrame.neighborCursor = 0;
+            } else if (currentFrame.neighborCursor < adjacencyList[currentVertex].length) {
+                const neighbors = adjacencyList[currentVertex];
+                const nextNeighbor = neighbors[currentFrame.neighborCursor];
 
-            if (this.visitedSet.has(neighborVertex)) {
-                this.minDiscovery.set(currentVertex, Math.min(
-                    this.minDiscovery.get(currentVertex),
-                    this.discoveryTimings.get(neighborVertex)
-                ));
+                currentFrame.neighborCursor++;
+
+                if (nextNeighbor === parentVertex) {
+                    continue;
+                }
+
+                if (visitedNodes[nextNeighbor]) {
+                    lowestReachableOrder[currentVertex] = Math.min(lowestReachableOrder[currentVertex], nextNeighbor);
+                } else {
+                    dfsTraversalStack.push({ currentVertex: nextNeighbor, parentVertex: currentVertex, neighborCursor: -1 });
+                }
             } else {
-                this.exploreGraph(neighborVertex, currentVertex);
-
-                this.minDiscovery.set(currentVertex, Math.min(
-                    this.minDiscovery.get(currentVertex),
-                    this.minDiscovery.get(neighborVertex)
-                ));
-
-                if (this.minDiscovery.get(neighborVertex) > this.discoveryTimings.get(currentVertex)) {
-                    this.criticalLinks.push([currentVertex, neighborVertex]);
+                dfsTraversalStack.pop();
+                if (dfsTraversalStack.length > 0) {
+                    const parentOfCurrent = dfsTraversalStack[dfsTraversalStack.length - 1].currentVertex;
+                    lowestReachableOrder[parentOfCurrent] = Math.min(lowestReachableOrder[parentOfCurrent], lowestReachableOrder[currentVertex]);
                 }
             }
         }
-    }
-}
+    };
 
-if (typeof process !== "undefined" && process.stdin) {
-    let entireText = "";
-    process.stdin.resume();
-    process.stdin.setEncoding('utf8');
-    process.stdin.on('data', function (chunk) {
-        entireText += chunk;
+    exploreGraphIteratively(0, nodeCount);
+
+    for (const currentEdge of edgeDescriptions) {
+        let vertexOne = currentEdge[0];
+        let vertexTwo = currentEdge[1];
+
+        if (discoveryOrder[vertexOne] > discoveryOrder[vertexTwo]) {
+            const temporaryHolder = vertexOne;
+            vertexOne = vertexTwo;
+            vertexTwo = temporaryHolder;
+        }
+
+        if (discoveryOrder[vertexOne] < lowestReachableOrder[vertexTwo]) {
+            const smallerNode = Math.min(vertexOne, vertexTwo);
+            const largerNode = Math.max(vertexOne, vertexTwo);
+            identifiedBridges[smallerNode].push(largerNode);
+        }
+    }
+
+    const outputLines = identifiedBridges.flatMap((targets, sourceNode) => {
+        targets.sort((a, b) => a - b);
+        return targets.map(targetNode => `${sourceNode} ${targetNode}`);
     });
-    process.stdin.on('end', function () {
-        const textRows = entireText.split("\n");
-        performAnalysis(textRows);
-    });
+
+    outputLines.forEach(printOutput);
 }

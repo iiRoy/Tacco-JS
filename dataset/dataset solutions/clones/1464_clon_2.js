@@ -1,35 +1,32 @@
-process . stdin . on (
-  "data" ,
-  function ( incomingBuffer ) {
-    // Convert the incoming data buffer to a string, clean it up, and split into individual lines.
-    var parsedLines = ( incomingBuffer + "" ) . trim ( ) . split ( "\n" ) ;
+process.stdin.on("data", function(inputLinesBuffer) {
+    // Convert the input buffer to a string, clean it up, and split into individual lines.
+    let inputLines = (inputLinesBuffer + "").trim().split("\n");
 
-    // Establish a lookup structure (acting as a set) for elements from the second line.
-    var knownElements = { } ;
+    // Initialize an object to store elements from the first list for quick lookup.
+    // This acts as a hash set to track unique items.
+    const firstSetElements = {};
 
-    // Initialize a tally for items found in both relevant input lines.
-    var totalMatches = 0 ;
+    // Initialize a counter for elements found in both lists.
+    let commonElementCount = 0;
 
-    // Iterate through the space-separated values on the second line of input.
-    parsedLines [ 1 ] . split ( " " ) . forEach (
-      function ( currentToken ) {
-        // Mark each unique value from this line as 'present' in our lookup.
-        knownElements [ currentToken ] = true ;
-      }
-    ) ;
+    // Process the second line of input, which contains the first set of numbers.
+    // Split the string by spaces and iterate over each number.
+    inputLines[1].split(" ").forEach(function(elementValue) {
+        // Add each unique element from the first set to our lookup object.
+        // The value '1' is arbitrary; any truthy value would work to indicate presence.
+        firstSetElements[elementValue] = 1;
+    });
 
-    // Now, process the space-separated values from the fourth line of input.
-    parsedLines [ 3 ] . split ( " " ) . forEach (
-      function ( candidateToken ) {
-        // If the current token from the fourth line is found in our 'knownElements' set...
-        if ( knownElements [ candidateToken ] ) {
-          // ...then increment our match counter.
-          totalMatches ++ ;
+    // Process the fourth line of input, which contains the second set of numbers.
+    // Split the string by spaces and iterate over each number.
+    inputLines[3].split(" ").forEach(function(elementValue) {
+        // Check if the current element from the second set exists in our lookup object.
+        // If it does, increment the common element counter by the value stored (which is 1).
+        if (firstSetElements[elementValue]) {
+            commonElementCount += firstSetElements[elementValue];
         }
-      }
-    ) ;
+    });
 
-    // Display the final count of common elements.
-    console . log ( totalMatches ) ;
-  }
-) . resume ( ) ;
+    // Output the final count of common elements to the console.
+    console.log(commonElementCount);
+}).resume(); // Ensure the process continues to listen for input.

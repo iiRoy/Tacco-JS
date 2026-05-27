@@ -1,123 +1,184 @@
-var inputReadPosition = 0; // Global pointer for reading sequential input data
+var idx = 0; // Global index for processing input lines
 
-// This function performs a 90-degree rotation-like transformation on a set of coordinates.
-function alterCoordinates(xSet, ySet, countOfPoints) {
-  for (var pointIter = 1; pointIter <= countOfPoints; pointIter++) { // Iterate through each coordinate pair
-    var initialX = xSet[pointIter]; // Store the original X-coordinate
-    var transformedY = (ySet[pointIter] === 0) ? 0 : (ySet[pointIter] * (-1)); // Calculate the new Y value
-    xSet[pointIter] = transformedY; // Assign the new Y to the X-coordinate position
-    ySet[pointIter] = initialX; // Assign the original X to the Y-coordinate position
-  }
-}
-
-
-// This routine processes a single segment of input data, parsing coordinates and applying transformations.
-function processInputSegment(figureXArrays, figureYArrays, currentSegmentIdx, segmentPointCounts, rawInputData) {
-
-  segmentPointCounts[currentSegmentIdx] = parseInt(rawInputData[inputReadPosition++], 10); // Parse the number of points for this segment
-  figureXArrays[currentSegmentIdx] = []; // Initialize array for X coordinates of the current segment
-  figureYArrays[currentSegmentIdx] = []; // Initialize array for Y coordinates of the current segment
-
-  for (var pointCounter = 1; pointCounter <= segmentPointCounts[currentSegmentIdx]; pointCounter++) {
-    rawInputData[inputReadPosition] = rawInputData[inputReadPosition].split(" "); // Split the coordinate string
-    figureXArrays[currentSegmentIdx][pointCounter] = parseInt(rawInputData[inputReadPosition][0], 10); // Parse X coordinate
-    figureYArrays[currentSegmentIdx][pointCounter] = parseInt(rawInputData[inputReadPosition++][1], 10); // Parse Y coordinate and advance input pointer
-
-    if (pointCounter > 1) { // If not the first point, normalize relative to the first point
-      figureXArrays[currentSegmentIdx][pointCounter] -= figureXArrays[currentSegmentIdx][1];
-      figureYArrays[currentSegmentIdx][pointCounter] -= figureYArrays[currentSegmentIdx][1];
+/**
+ * Rotates the coordinates of a polygon by 90 degrees clockwise.
+ * This transformation is applied in-place to the provided coordinate arrays.
+ *
+ * @param {number[]} coordsX - Array of X coordinates for the polygon vertices.
+ * @param {number[]} coordsY - Array of Y coordinates for the polygon vertices.
+ * @param {number} pointCount - The number of vertices in the polygon.
+ */
+function rotateShape(coordsX, coordsY, pointCount) {
+    // Iterate through each vertex from 1 to pointCount (inclusive)
+    for (var iter = 1; iter <= pointCount; iter++) {
+        // Store the current X coordinate temporarily
+        var currentX = coordsX[iter];
+        // Calculate the new Y coordinate: if current Y is 0, it stays 0; otherwise, it's negated.
+        var currentY = coordsY[iter] === 0 ? 0 : coordsY[iter] * (-1);
+        // Update the X coordinate with the new Y value
+        coordsX[iter] = currentY;
+        // Update the Y coordinate with the stored original X value
+        coordsY[iter] = currentX;
     }
-  }
-  // Set the first point to the origin after normalization
-  figureXArrays[currentSegmentIdx][1] = 0;
-  figureYArrays[currentSegmentIdx][1] = 0;
-
-  // Apply coordinate transformations based on specific conditions of the second point
-  if (figureYArrays[currentSegmentIdx][2] > 0)
-    alterCoordinates(figureXArrays[currentSegmentIdx], figureYArrays[currentSegmentIdx], segmentPointCounts[currentSegmentIdx]);
-  if (figureXArrays[currentSegmentIdx][2] < 0)
-    alterCoordinates(figureXArrays[currentSegmentIdx], figureYArrays[currentSegmentIdx], segmentPointCounts[currentSegmentIdx]);
-  if (figureYArrays[currentSegmentIdx][2] < 0)
-    alterCoordinates(figureXArrays[currentSegmentIdx], figureYArrays[currentSegmentIdx], segmentPointCounts[currentSegmentIdx]);
 }
 
+/**
+ * Processes a single polygon's input data, normalizing its coordinates
+ * and applying rotations based on specific conditions.
+ *
+ * @param {number[][]} allXCoords - Master array to store X coordinates of all polygons.
+ * @param {number[][]} allYCoords - Master array to store Y coordinates of all polygons.
+ * @param {number} currentPolyIdx - The index of the current polygon being processed.
+ * @param {number[]} polyPointCounts - Array to store the number of points for each polygon.
+ * @param {string[]} inputLines - The raw input lines from which to parse data.
+ */
+function processPolygon(allXCoords, allYCoords, currentPolyIdx, polyPointCounts, inputLines) {
+    // Parse the number of points for the current polygon from the input
+    polyPointCounts[currentPolyIdx] = parseInt(inputLines[idx++], 10);
 
-// This function computes an inverse-like transformation on a shape's coordinates.
-function reverseShapeOrientation(currentXPoints, currentYPoints, totalPointsInShape) {
-  var temporaryXStorage = []; // Temporary array to hold X-coordinates
-  var temporaryYStorage = []; // Temporary array to hold Y-coordinates
+    // Initialize arrays for the current polygon's coordinates
+    allXCoords[currentPolyIdx] = [];
+    allYCoords[currentPolyIdx] = [];
 
-  // Copy current coordinates to temporary storage
-  for (var coordIndex = 1; coordIndex <= totalPointsInShape; coordIndex++) {
-    temporaryXStorage[coordIndex] = currentXPoints[coordIndex];
-    temporaryYStorage[coordIndex] = currentYPoints[coordIndex];
-  }
+    // Loop through each point of the current polygon
+    for (var loopCounter = 1; loopCounter <= polyPointCounts[currentPolyIdx]; loopCounter++) {
+        // Split the current input line into X and Y string components
+        inputLines[idx] = inputLines[idx].split(" ");
+        // Parse and store the X coordinate
+        allXCoords[currentPolyIdx][loopCounter] = parseInt(inputLines[idx][0], 10);
+        // Parse and store the Y coordinate, then increment the global index
+        allYCoords[currentPolyIdx][loopCounter] = parseInt(inputLines[idx++][1], 10);
 
-  // Apply the reversal and shift transformation
-  for (var reverseIndex = 1; reverseIndex <= totalPointsInShape; reverseIndex++) {
-    currentXPoints[reverseIndex] = temporaryXStorage[totalPointsInShape - reverseIndex + 1] - temporaryXStorage[totalPointsInShape];
-    currentYPoints[reverseIndex] = temporaryYStorage[totalPointsInShape - reverseIndex + 1] - temporaryYStorage[totalPointsInShape];
-  }
-
-  // Apply further rotations based on specific conditions of the second point
-  if (currentYPoints[2] > 0)
-    alterCoordinates(currentXPoints, currentYPoints, totalPointsInShape);
-  if (currentXPoints[2] < 0)
-    alterCoordinates(currentXPoints, currentYPoints, totalPointsInShape);
-  if (currentYPoints[2] < 0)
-    alterCoordinates(currentXPoints, currentYPoints, totalPointsInShape);
-}
-
-
-// Main entry point for the application, handling overall input processing and shape analysis.
-function processAllInput(sourceData) {
-  sourceData = sourceData.split("\n"); // Split the raw input string into an array of lines
-
-  while (true) { // Loop indefinitely until an exit condition is met
-    var numberOfFigures = parseInt(sourceData[inputReadPosition++], 10); // Read the number of figures for the current test case
-    if (numberOfFigures === 0) // If the number is 0, terminate the processing loop
-      break;
-
-    var figurePointCounts = []; // Array to store the number of points for each figure
-    var allFigureXCoords = []; // 2D array to store X coordinates for all figures
-    var allFigureYCoords = []; // 2D array to store Y coordinates for all figures
-
-    // Process each figure's data
-    for (var figureIdx = 0; figureIdx <= numberOfFigures; figureIdx++)
-      processInputSegment(allFigureXCoords, allFigureYCoords, figureIdx, figurePointCounts, sourceData);
-
-    // Compare the first figure with subsequent figures
-    for (var currentFigureCheck = 1; currentFigureCheck <= numberOfFigures; currentFigureCheck++) {
-      if (figurePointCounts[0] === figurePointCounts[currentFigureCheck]) { // Check if point counts match
-        var isMatch = true; // Flag to track if figures are identical
-        // Compare point by point
-        for (var pointComparisonIdx = 1; pointComparisonIdx <= figurePointCounts[0]; pointComparisonIdx++) {
-          if (allFigureXCoords[0][pointComparisonIdx] !== allFigureXCoords[currentFigureCheck][pointComparisonIdx] ||
-            allFigureYCoords[0][pointComparisonIdx] !== allFigureYCoords[currentFigureCheck][pointComparisonIdx]) {
-            isMatch = false; // Mismatch found
-            break; // Exit inner loop
-          }
+        // For points after the first one, normalize coordinates relative to the first point
+        if (loopCounter > 1) {
+            allXCoords[currentPolyIdx][loopCounter] -= allXCoords[currentPolyIdx][1];
+            allYCoords[currentPolyIdx][loopCounter] -= allYCoords[currentPolyIdx][1];
         }
-        if (isMatch) { // If figures are identical after direct comparison
-          console.log(currentFigureCheck); // Output the index of the matching figure
-        } else { // If not a direct match, try with inverted orientation
-          reverseShapeOrientation(allFigureXCoords[currentFigureCheck], allFigureYCoords[currentFigureCheck], figurePointCounts[currentFigureCheck]);
-          var isMatchAfterReverse = true; // New flag for comparison after inversion
-          // Re-compare point by point after inversion
-          for (var postReversePointIdx = 1; postReversePointIdx <= figurePointCounts[0]; postReversePointIdx++) {
-            if (allFigureXCoords[0][postReversePointIdx] !== allFigureXCoords[currentFigureCheck][postReversePointIdx] ||
-              allFigureYCoords[0][postReversePointIdx] !== allFigureYCoords[currentFigureCheck][postReversePointIdx]) {
-              isMatchAfterReverse = false; // Mismatch found
-              break; // Exit inner loop
+    }
+    // Set the first point's coordinates to (0,0) after normalization
+    allXCoords[currentPolyIdx][1] = 0;
+    allYCoords[currentPolyIdx][1] = 0;
+
+    // Apply rotations based on the second point's Y coordinate
+    if (allYCoords[currentPolyIdx][2] > 0) {
+        rotateShape(allXCoords[currentPolyIdx], allYCoords[currentPolyIdx], polyPointCounts[currentPolyIdx]);
+    }
+    // Apply rotations based on the second point's X coordinate
+    if (allXCoords[currentPolyIdx][2] < 0) {
+        rotateShape(allXCoords[currentPolyIdx], allYCoords[currentPolyIdx], polyPointCounts[currentPolyIdx]);
+    }
+    // Apply rotations based on the second point's Y coordinate again
+    if (allYCoords[currentPolyIdx][2] < 0) {
+        rotateShape(allXCoords[currentPolyIdx], allYCoords[currentPolyIdx], polyPointCounts[currentPolyIdx]);
+    }
+}
+
+/**
+ * Inverts a polygon's shape by reversing the order of its vertices
+ * and re-normalizing its coordinates. It then applies rotations.
+ *
+ * @param {number[]} polyXCoords - Array of X coordinates for the polygon vertices.
+ * @param {number[]} polyYCoords - Array of Y coordinates for the polygon vertices.
+ * @param {number} polySize - The number of vertices in the polygon.
+ */
+function invertPolygon(polyXCoords, polyYCoords, polySize) {
+    // Create temporary storage for original coordinates
+    var tempXStorage = [];
+    var tempYStorage = [];
+
+    // Copy original coordinates to temporary storage
+    for (var idxCounter = 1; idxCounter <= polySize; idxCounter++) {
+        tempXStorage[idxCounter] = polyXCoords[idxCounter];
+        tempYStorage[idxCounter] = polyYCoords[idxCounter];
+    }
+
+    // Reverse the order of points and re-normalize relative to the new "first" point
+    for (var idxCounter = 1; idxCounter <= polySize; idxCounter++) {
+        polyXCoords[idxCounter] = tempXStorage[polySize - idxCounter + 1] - tempXStorage[polySize];
+        polyYCoords[idxCounter] = tempYStorage[polySize - idxCounter + 1] - tempYStorage[polySize];
+    }
+
+    // Apply rotations based on the second point's Y coordinate
+    if (polyYCoords[2] > 0) {
+        rotateShape(polyXCoords, polyYCoords, polySize);
+    }
+    // Apply rotations based on the second point's X coordinate
+    if (polyXCoords[2] < 0) {
+        rotateShape(polyXCoords, polyYCoords, polySize);
+    }
+    // Apply rotations based on the second point's Y coordinate again
+    if (polyYCoords[2] < 0) {
+        rotateShape(polyXCoords, polyYCoords, polySize);
+    }
+}
+
+/**
+ * Main function to execute the program. Reads polygon data,
+ * processes them, and finds matches for the first polygon.
+ *
+ * @param {string} programInput - The entire input string containing polygon data.
+ */
+function executeProgram(programInput) {
+    // Split the input string into an array of lines
+    programInput = programInput.split("\n");
+
+    // Loop indefinitely until a termination condition is met
+    while (true) {
+        // Parse the number of polygons for the current test case
+        var numPolygons = parseInt(programInput[idx++], 10);
+        // If numPolygons is 0, terminate the program
+        if (numPolygons === 0) {
+            break;
+        }
+
+        // Initialize arrays to store polygon sizes and coordinates
+        var polygonSizes = [];
+        var allPolyX = [];
+        var allPolyY = [];
+
+        // Process each polygon from 0 to numPolygons (inclusive, as polygon 0 is the reference)
+        for (var outerLoop = 0; outerLoop <= numPolygons; outerLoop++) {
+            processPolygon(allPolyX, allPolyY, outerLoop, polygonSizes, programInput);
+        }
+
+        // Compare polygon 0 (reference) with all other polygons
+        for (var outerLoop = 1; outerLoop <= numPolygons; outerLoop++) {
+            // Check if the number of points matches
+            if (polygonSizes[0] === polygonSizes[outerLoop]) {
+                var matchFound = true; // Assume a match initially
+                // Compare each point's coordinates
+                for (var innerLoop = 1; innerLoop <= polygonSizes[0]; innerLoop++) {
+                    if (allPolyX[0][innerLoop] !== allPolyX[outerLoop][innerLoop] ||
+                        allPolyY[0][innerLoop] !== allPolyY[outerLoop][innerLoop]) {
+                        matchFound = false; // Mismatch found
+                        break; // Exit inner loop
+                    }
+                }
+                // If a direct match is found, print its index
+                if (matchFound) {
+                    console.log(outerLoop);
+                } else {
+                    // If no direct match, try inverting the polygon and re-comparing
+                    invertPolygon(allPolyX[outerLoop], allPolyY[outerLoop], polygonSizes[outerLoop]);
+                    var matchFound = true; // Reset match flag for inverted comparison
+                    for (var innerLoop = 1; innerLoop <= polygonSizes[0]; innerLoop++) {
+                        if (allPolyX[0][innerLoop] !== allPolyX[outerLoop][innerLoop] ||
+                            allPolyY[0][innerLoop] !== allPolyY[outerLoop][innerLoop]) {
+                            matchFound = false; // Mismatch found after inversion
+                            break; // Exit inner loop
+                        }
+                    }
+                    // If a match is found after inversion, print its index
+                    if (matchFound) {
+                        console.log(outerLoop);
+                    }
+                }
             }
-          }
-          if (isMatchAfterReverse) // If figures are identical after inversion
-            console.log(currentFigureCheck); // Output the index
         }
-      }
+        // Print separator after processing each test case
+        console.log("+++++");
     }
-    console.log("+++++"); // Separator for test cases
-  }
 }
-// Execute the main function, reading input from standard input
-processAllInput(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+// Read input from standard input and pass it to the main function
+executeProgram(require("fs").readFileSync("/dev/stdin", "utf8"));

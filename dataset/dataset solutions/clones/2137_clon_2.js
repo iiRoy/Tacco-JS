@@ -1,49 +1,67 @@
-// Entire input data arrives as a string for processing.
-function CalculateCost(dataString) {
-  // The first line is linesArray[0], the second is linesArray[1], and so on.
-  var linesArray = dataString.split('\n');
+function ProcessInput(rawData) {
+  // Split the entire input string into an array of lines.
+  // Each line becomes an element in the 'lineData' array.
+  let lineData = rawData.split("\n");
 
-  var firstLineTokens = linesArray[0].split(' ');
-  var secondLineTokens = linesArray[1].split(' ');
+  // The first line contains the count of elements.
+  // Split the first line by space to get its components.
+  const firstLineParts = lineData[0].split(" ");
 
-  // Utilize parseInt to convert string representations into base-10 integer values.
-  var countElements = parseInt(firstLineTokens[0], 10);
+  // The second line contains the actual numeric data.
+  // Split the second line by space to get its components.
+  const secondLineParts = lineData[1].split(" ");
 
-  var numberSet = [];
-  for (var idx = 0; idx < countElements; idx++) {
-    var currentNum = parseInt(secondLineTokens[idx], 10);
-    numberSet[idx] = currentNum;
+  // Parse the first component of the first line as an integer.
+  // This represents the number of elements to process.
+  const elementCount = parseInt(firstLineParts[0], 10);
+
+  // Initialize an array to store the parsed numeric values.
+  const numericValues = [];
+
+  // Loop through the second line's components and parse them into integers.
+  // Store these integers in the 'numericValues' array.
+  for (let idx = 0; idx < elementCount; idx++) {
+    const currentValue = parseInt(secondLineParts[idx], 10);
+    numericValues[idx] = currentValue;
   }
 
-  var lowestValue = Math.min(...numberSet);
-  var highestValue = Math.max(...numberSet);
+  // Determine the minimum and maximum values present in the 'numericValues' array.
+  const minimumVal = Math.min(...numericValues);
+  const maximumVal = Math.max(...numericValues);
 
-  // console.debug('Determined range: min=', lowestValue, ', max=', highestValue);
-  // console.debug('Original number array:', numberSet);
+  // Initialize an array to store the calculated costs (sum of squares).
+  const costArray = [];
 
-  var costAccumulator = [];
-  var sumOfSquares = 0;
+  // Initialize a variable to accumulate the sum of squares for each target value.
+  let currentSumOfSquares = 0;
 
-  for (var targetVal = lowestValue; targetVal <= highestValue; targetVal++) {
-    for (var idxInner = 0; idxInner < countElements; idxInner++) {
-      var elementValue = numberSet[idxInner];
-      var difference = elementValue - targetVal;
-      // console.debug('Individual difference:', difference);
-      sumOfSquares += (difference * difference);
+  // Iterate through all possible target values from 'minimumVal' to 'maximumVal' (inclusive).
+  for (let targetVal = minimumVal; targetVal <= maximumVal; targetVal++) {
+    // For each 'targetVal', calculate the sum of squared differences.
+    for (let idx = 0; idx < elementCount; idx++) {
+      const individualVal = numericValues[idx];
+      // Calculate the difference between the current individual value and the target value.
+      const difference = individualVal - targetVal;
+      // Add the square of this difference to the running sum.
+      currentSumOfSquares = currentSumOfSquares + difference * difference;
     }
-    costAccumulator[targetVal] = sumOfSquares;
-    sumOfSquares = 0; // Reset sum for the next target value
+    // Store the accumulated sum of squares for the current 'targetVal' in 'costArray'.
+    costArray[targetVal] = currentSumOfSquares;
+    // Reset the sum for the next 'targetVal' iteration.
+    currentSumOfSquares = 0;
   }
 
-  // console.debug('Intermediate cost array:', costAccumulator);
+  // Remove elements from the beginning of 'costArray' up to 'minimumVal'.
+  // This aligns the array so that costArray[0] now corresponds to the cost for 'minimumVal'.
+  costArray.splice(0, minimumVal);
 
-  costAccumulator.splice(0, lowestValue); // Remove initial elements up to the minimum value index.
+  // Find the smallest value within the modified 'costArray'.
+  const finalResult = Math.min(...costArray);
 
-  // console.debug('Cost array after initial trim:', costAccumulator);
-
-  var finalResult = Math.min(...costAccumulator);
+  // Output the final calculated minimum cost to the console.
   console.log(finalResult);
-
 }
-// This following line should not be altered (it handles standard input/output and invokes the primary processing function).
-CalculateCost(require("fs").readFileSync("/dev/stdin", "utf8")); // Pass the complete input string to the main function for execution.
+
+// This section handles reading input from standard input and calling the main processing function.
+// It should not be modified.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

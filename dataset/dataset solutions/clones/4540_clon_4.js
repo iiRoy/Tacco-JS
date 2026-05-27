@@ -1,23 +1,20 @@
-function processUserInput(rawString) {
-  const cleanedString = rawString.replace(/^\s+|\s+$/g, '');
-  const mathematicalExpression = cleanedString.replace(/\s+/g, '+');
+function processInputAndOutput(rawText) {
+    const cleanedText = rawText.trim();
+    const spacePosition = cleanedText.indexOf(' ');
+    
+    const firstNumStr = cleanedText.substring(0, spacePosition);
+    const firstValue = Number(firstNumStr);
 
-  let computedValue;
-  try {
-    computedValue = eval(mathematicalExpression);
-  } catch (err) {
-    computedValue = NaN;
-  }
+    const secondNumStr = cleanedText.substring(spacePosition + 1);
+    const secondValue = Number(secondNumStr);
 
-  const resultLookup = new Map();
-  resultLookup.set(true, String(computedValue));
-  resultLookup.set(false, "error");
+    const totalSum = firstValue + secondValue;
 
-  return resultLookup.get(computedValue < 10);
+    if (totalSum < 10) {
+        console.log(totalSum);
+    } else {
+        console.log("error");
+    }
 }
 
-const fileAccessModule = require('node:fs');
-const acquiredBuffer = fileAccessModule.readFileSync('/dev/stdin');
-const contentRetrieved = acquiredBuffer.toString('utf8');
-
-global.console.log(processUserInput(contentRetrieved));
+processInputAndOutput(require('fs').readFileSync('/dev/stdin', 'utf8'));

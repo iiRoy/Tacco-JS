@@ -1,135 +1,96 @@
 "use strict";
+var rawData = require("fs").readFileSync("/dev/stdin", "utf8");
+var tokenizedInput = rawData.split(/ |\n/);
+var tokenIndex = 0;
 
-// --- Input Processing Utilities ---
-
-// Reads the entire standard input asynchronously as a UTF-8 string.
-const rawInputBuffer = require("fs").readFileSync("/dev/stdin", "utf8");
-
-// Splits the input into tokens by whitespace (spaces or newlines)
-// and initializes an index to keep track of the current token.
-const inputTokens = rawInputBuffer.split(/ |\n/).filter(Boolean); // Filter out empty strings from split
-let currentTokenIndex = 0;
-
-/**
- * Retrieves the next token from the input stream and parses it as an integer.
- * @returns {number} The parsed integer value.
- */
-function getNextIntToken() {
-    // The unary plus operator (+) is a concise way to convert a string to a number.
-    return +inputTokens[currentTokenIndex++];
+function readNextInt() {
+    return +tokenizedInput[tokenIndex++];
 }
 
-/**
- * Reads a specified number of tokens from the input stream and converts them to numbers.
- * @param {number} count - The number of tokens to read.
- * @returns {number[]} An array of parsed numeric values.
- */
-function getNumericArrayTokens(count) {
-    if (count <= 0) {
-        return []; // Handle invalid count gracefully
+function readNextString() {
+    return tokenizedInput[tokenIndex++];
+}
+
+function readNextBigInt() {
+    return BigInt(tokenizedInput[tokenIndex++]);
+}
+
+function readNItems(count, returnStrings) {
+    if (returnStrings) {
+        return tokenizedInput.slice(tokenIndex, tokenIndex += count);
+    } else {
+        return tokenizedInput.slice(tokenIndex, tokenIndex += count).map(val => +val);
     }
-    const startIndex = currentTokenIndex;
-    currentTokenIndex += count;
-    // Map each token to its numeric representation.
-    return inputTokens.slice(startIndex, currentTokenIndex).map(Number);
 }
 
-// --- Global State Variables ---
-let totalAccumulatedSatisfaction = 0; // Tracks the overall satisfaction score.
+function readMatrix(height, width, returnStrings) {
+    var resultMatrix = [];
+    var rowIdx = 0;
+    if (returnStrings) {
+        for (; rowIdx < height; rowIdx++) {
+            resultMatrix.push(tokenizedInput.slice(tokenIndex, tokenIndex += width));
+        }
+    } else {
+        for (; rowIdx < height; rowIdx++) {
+            resultMatrix.push(tokenizedInput.slice(tokenIndex, tokenIndex += width).map(val => +val));
+        }
+    }
+    return resultMatrix;
+}
 
-// --- Main Optimization Logic ---
+function createMultiDimArray(initialValue, ...dimensions) {
+    const createRecursiveArray = (val, dims) => {
+        if (dims.length === 0) {
+            return val;
+        }
+        const currentDimensionSize = dims[0];
+        const remainingDimensions = dims.slice(1);
+        var newArray = new Array(currentDimensionSize);
+        for (var k = 0; k < currentDimensionSize; k++) {
+            newArray[k] = createRecursiveArray(val, remainingDimensions);
+        }
+        return newArray;
+    };
+    return createRecursiveArray(initialValue, dimensions);
+}
 
-/**
- * Implements the core optimization algorithm to determine daily item selections.
- * This function processes daily satisfaction values and item costs to maximize
- * total satisfaction over a period, considering penalties for unselected items.
- * @returns {string} A newline-separated string of selected item indices for each day.
- */
-function executeOptimization() {
-    // Read the total number of days for the optimization period.
-    const totalDays = getNextIntToken();
+var totalScore = 0;
+var finalOutput = processMainLogic();
+if (finalOutput !== undefined) {
+    console.log(String(finalOutput));
+}
 
-    // The problem specifies a fixed number of item categories.
-    const numItemCategories = 26;
+function processMainLogic() {
+    const numDays = readNextInt();
+    const typeCount = 26;
+    const decayCosts = readNItems(typeCount, false);
 
-    // Read the base cost (penalty decrement) for each item category.
-    // This value is subtracted from the penalty tracker if an item is not chosen.
-    const categoryPenaltyDecrements = getNumericArrayTokens(numItemCategories);
+    var currentSatisfactionLevels = createMultiDimArray(0, typeCount);
+    var chosenTypesPerDay = [];
 
-    // Initialize an array to track the accumulated penalty for each item category.
-    // A value of 0 means no penalty has accumulated since its last selection.
-    // As items are not selected, their penalty tracker values become more negative.
-    const penaltyTrackers = new Array(numItemCategories).fill(0);
+    for (var dayIdx = 0; dayIdx < numDays; dayIdx++) {
+        var dailyTypeScores = readNItems(typeCount, false);
+        var maxPotentialScoreForDay = -1e9;
+        var bestTypeChoiceIndex = 0;
 
-    // This array will store the 1-based index of the chosen item for each day.
-    const dailyChoiceLog = [];
-
-    // Iterate through each day of the optimization period.
-    for (let dayCounter = 0; dayCounter < totalDays; dayCounter++) {
-        // Read the satisfaction values offered by each item category for the current day.
-        const currentDaySatisfactions = getNumericArrayTokens(numItemCategories);
-
-        let highestNetGain = -Infinity; // Tracks the maximum potential gain found for the current day.
-        let bestCategoryIndex = -1;     // Stores the index of the item category that yields the highest net gain.
-
-        // Iterate through each item category to evaluate its selection potential.
-        for (let categoryIdx = 0; categoryIdx < numItemCategories; categoryIdx++) {
-            // Step 1: Update the penalty tracker for the current item category.
-            // If this item is *not* chosen, its penalty will decrease by its base cost.
-            // This means its penalty becomes more negative, reflecting a higher "cost" of not choosing it.
-            penaltyTrackers[categoryIdx] -= categoryPenaltyDecrements[categoryIdx];
-
-            // Step 2: Calculate the potential net gain if this item category were selected today.
-            // This includes:
-            // - `currentDaySatisfactions[categoryIdx]`: The direct satisfaction for choosing this item today.
-            // - `-penaltyTrackers[categoryIdx]`: The *positive* value of the accumulated penalty that would be *removed* by selecting this item.
-            // - `categoryPenaltyDecrements[categoryIdx]`: The base penalty that would *not* be incurred today because the item was selected.
-            //   (This effectively cancels out the `penaltyTrackers[categoryIdx] -= categoryPenaltyDecrements[categoryIdx]` operation for this specific item if chosen)
-            const potentialNetGainIfSelected =
-                currentDaySatisfactions[categoryIdx] -
-                penaltyTrackers[categoryIdx] +
-                categoryPenaltyDecrements[categoryIdx];
-
-            // Step 3: Compare with the current highest net gain and update if a better option is found.
-            if (potentialNetGainIfSelected > highestNetGain) {
-                highestNetGain = potentialNetGainIfSelected;
-                bestCategoryIndex = categoryIdx;
+        for (var typeIdx = 0; typeIdx < typeCount; typeIdx++) {
+            currentSatisfactionLevels[typeIdx] -= decayCosts[typeIdx];
+            var calculatedPotentialScore = dailyTypeScores[typeIdx] - currentSatisfactionLevels[typeIdx] + decayCosts[typeIdx];
+            if (maxPotentialScoreForDay < calculatedPotentialScore) {
+                maxPotentialScoreForDay = calculatedPotentialScore;
+                bestTypeChoiceIndex = typeIdx;
             }
         }
 
-        // --- Post-Selection Updates for the Day ---
+        chosenTypesPerDay[dayIdx] = bestTypeChoiceIndex + 1;
+        currentSatisfactionLevels[bestTypeChoiceIndex] = 0;
 
-        // Record the selected item's 1-based index for the current day.
-        // Add 1 because problem statements often expect 1-based indexing.
-        dailyChoiceLog.push(bestCategoryIndex + 1);
-
-        // Reset the penalty tracker for the chosen item category to 0,
-        // as it has just been selected, clearing any accumulated penalties.
-        penaltyTrackers[bestCategoryIndex] = 0;
-
-        // Add the direct satisfaction from the chosen item to the total.
-        totalAccumulatedSatisfaction += currentDaySatisfactions[bestCategoryIndex];
-
-        // Accumulate penalties for all unchosen items (and 0 for the chosen one).
-        // The `penaltyTrackers` array contains negative values for unchosen items.
-        // Summing these negative values effectively subtracts them from the total satisfaction.
-        totalAccumulatedSatisfaction += penaltyTrackers.reduce((sum, val) => sum + val, 0);
+        var scoreFromChosenType = dailyTypeScores[bestTypeChoiceIndex];
+        var sumOfCurrentSatisfaction = 0;
+        for (var typeIdx = 0; typeIdx < typeCount; typeIdx++) {
+            sumOfCurrentSatisfaction += currentSatisfactionLevels[typeIdx];
+        }
+        totalScore += scoreFromChosenType + sumOfCurrentSatisfaction;
     }
-
-    // Join the daily selections with newline characters for output.
-    return dailyChoiceLog.join('\n');
+    return chosenTypesPerDay.join("\n");
 }
-
-// --- Program Execution ---
-
-// Execute the main optimization logic and capture its output.
-const programOutput = executeOptimization();
-
-// If the function returns a non-null/non-undefined value, print it to the console.
-if (programOutput !== undefined && programOutput !== null) {
-    console.log(String(programOutput));
-}
-
-// The `totalAccumulatedSatisfaction` variable holds the final score,
-// but the problem only asks for the daily selections.
-// console.log(totalAccumulatedSatisfaction); // Kept for debugging/informational purposes if needed.

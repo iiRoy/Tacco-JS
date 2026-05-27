@@ -1,44 +1,23 @@
 "use strict";
 
-// This function processes raw input data to calculate aggregated travel costs.
-function processInputData(
-    rawData
-) {
+// This function processes the provided input string.
+function processInput(inputData) {
+    // Split the input string by newline characters to get an array of lines.
+    inputData = inputData.split("\n");
 
-    // Split the entire input string by newline characters into an array of lines.
-    rawData = rawData.split('\n');
-
-    // Extract and parse the value from the first two lines for the initial travel segment.
-    // Note: parseInt on an array concatenates elements with commas, then parses the start.
-    const firstSegmentValue = Number.parseInt(
-        rawData.slice(0, 2)
-    );
-
-    // Extract and parse the value from the last two lines for the final travel segment.
-    const lastSegmentValue = Number.parseInt(
-        rawData.slice(-2)
-    );
-
-
-    // Calculate the minimum cost for the first segment.
-    // Note: Spreading a single number (e.g., 10) results in Math.min(1, 0) which is 0.
-    const minimumFirstCost = Math.min(
-        ...firstSegmentValue
-    );
-
-    // Calculate the minimum cost for the last segment.
-    const minimumLastCost = Math.min(
-        ...lastSegmentValue
-    );
-
-
-    // Display the combined total of the two minimum costs.
-    console.log(
-        minimumFirstCost + minimumLastCost
-    );
+    // Parse the first two elements of the array as integers for the first segment.
+    const firstSegment = parseInt(inputData.slice(0, 2));
+    // Parse the last two elements of the array as integers for the second segment.
+    const secondSegment = parseInt(inputData.slice(-2));
+    
+    // Calculate the minimum value from the first segment's parsed numbers.
+    const minFirstCost = Math.min(...firstSegment);
+    // Calculate the minimum value from the second segment's parsed numbers.
+    const minSecondCost = Math.min(...secondSegment);
+    
+    // Output the sum of the minimum costs from both segments.
+    console.log(minFirstCost + minSecondCost);
 }
 
-// Read the entire content of the standard input file and pass it to the processing function.
-processInputData(
-    require('node:fs').readFileSync('/dev/stdin', 'utf8')
-);
+// Read input from standard input and pass it to the processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

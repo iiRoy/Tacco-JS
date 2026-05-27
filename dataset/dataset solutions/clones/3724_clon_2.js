@@ -1,38 +1,30 @@
 function ProcessInput(dataString) {
-  // This function processes a given string input.
+  // This function processes the provided input string.
 
-  // Split the incoming data into individual characters.
-  let charArray = dataString.split(
-    ""
-  ); /* An array of characters from the input. */
+  // Split the input string into an array of characters.
+  let charArray = dataString.split("");
 
-  // Initialize a numeric counter.
-  let counterVar = 0;
+  // Initialize a numeric counter, though it's not used in the logic.
+  let counter = 0;
 
-  // Set up initial possible outcomes.
-  let finalOutcome =
-    "Affirmative"; /* Default message for the result. */
-  const positiveResult = "True"; // Constant for a positive scenario.
-  const negativeResult = "False"; // Constant for a negative scenario.
+  // Define possible outcomes as string literals.
+  const positiveOutcome = "Yes";
+  const negativeOutcome = "No";
 
-  // Evaluate the provided string against specific conditions.
+  // Initialize the variable that will hold the final result.
+  let finalResult = positiveOutcome; // Default to "Yes"
+
+  // Check the input string against specific values to determine the final result.
   if (dataString === "101") {
-    // If the input matches a specific pattern, set a negative response.
-    finalOutcome =
-      negativeResult; /* Override the default with a negative. */
+    finalResult = negativeOutcome; // If input is "101", the result is "No".
   } else if (dataString === "12") {
-    // If another pattern is matched, set a positive response.
-    finalOutcome = positiveResult;
-  } else if (
-    dataString ===
-    "999999999"
-  ) {
-    // A final specific pattern also yields a positive result.
-    finalOutcome = positiveResult;
+    finalResult = positiveOutcome; // If input is "12", the result is "Yes".
+  } else if (dataString === "999999999") {
+    finalResult = positiveOutcome; // If input is "999999999", the result is "Yes".
   }
 
-  // Display the determined outcome to the console.
-  console.log(finalOutcome);
+  // Output the determined result to the console.
+  console.log(finalResult);
 }
 
 // Read input from standard input and pass it to the processing function.

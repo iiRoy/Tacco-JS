@@ -1,280 +1,269 @@
-"use strict"; // Enable strict mode for better error handling
+"use strict";
+// This script processes input data to calculate a specific value.
 
-var systemInput = require("fs") . readFileSync ( "/dev/stdin", "utf8" ) ; // Read raw data from standard input
-var tokenStream = systemInput . split ( / |\n/ ) , // Split input by spaces or newlines into tokens
-    streamIndex = 0 ; // Initialize index for token stream
+// Read all input from standard input
+var rawData = require("fs").readFileSync("/dev/stdin", "utf8");
+
+// Split the input into tokens by space or newline
+var tokenStream = rawData.split(/ |\n/);
+var tokenIndex = 0; // Current position in the token stream
 
 /**
- * Retrieves the next token from the stream and converts it to a number.
- * @returns {number} The next numeric value.
+ * Retrieves the next number from the token stream.
+ * @returns {number} The next number.
  */
-function obtainNextNumber ( ) {
-    return + tokenStream [ streamIndex++ ] ;
+function getNextNum() {
+    return +tokenStream[tokenIndex++];
 }
 
 /**
- * Retrieves the next token from the stream as a string.
- * @returns {string} The next string value.
+ * Retrieves the next string from the token stream.
+ * @returns {string} The next string.
  */
-function obtainNextString ( ) {
-    return tokenStream [ streamIndex++ ] ;
+function getNextStr() {
+    return tokenStream[tokenIndex++];
 }
 
 /**
- * Retrieves the next token from the stream and converts it to a BigInt.
- * @returns {BigInt} The next large integer value.
+ * Retrieves the next BigInt from the token stream.
+ * @returns {BigInt} The next BigInt.
  */
-function obtainNextBigInt ( ) {
-    return BigInt ( tokenStream [ streamIndex++ ] ) ;
+function getNextBigInt() {
+    return BigInt(tokenStream[tokenIndex++]);
 }
 
 /**
- * Retrieves a sequence of 'count' values from the stream.
- * @param {number} count The number of values to retrieve.
- * @param {boolean} asStrings If true, returns values as strings; otherwise, as numbers.
- * @returns {Array<string|number>} An array of values.
+ * Retrieves a specified number of items from the token stream.
+ * @param {number} count - The number of items to retrieve.
+ * @param {boolean} asStrings - If true, returns strings; otherwise, returns numbers.
+ * @returns {Array<number|string>} An array of retrieved items.
  */
-function fetchValueSequence ( count , asStrings ) {
-    if ( asStrings ) {
-        return tokenStream . slice ( streamIndex , streamIndex += count ) ;
+function getNextNums(count, asStrings) {
+    if (asStrings) {
+        return tokenStream.slice(tokenIndex, tokenIndex += count);
     } else {
-        return tokenStream . slice ( streamIndex , streamIndex += count ) . map ( currentElement => + currentElement ) ;
+        return tokenStream.slice(tokenIndex, tokenIndex += count).map(item => +item);
     }
 }
 
 /**
- * Retrieves a matrix of values from the stream.
- * @param {number} matrixHeight The number of rows.
- * @param {number} matrixWidth The number of columns per row.
- * @param {boolean} asStrings If true, returns values as strings; otherwise, as numbers.
- * @returns {Array<Array<string|number>>} A 2D array representing the matrix.
+ * Retrieves a matrix (2D array) of items from the token stream.
+ * @param {number} height - The number of rows.
+ * @param {number} width - The number of columns.
+ * @param {boolean} asStrings - If true, returns strings; otherwise, returns numbers.
+ * @returns {Array<Array<number|string>>} The matrix.
  */
-function fetchValueMatrix ( matrixHeight , matrixWidth , asStrings ) {
-    var resultingMatrix = [ ] ; // Initialize an empty array for the matrix
-    var currentRowIndex = 0 ; // Loop counter for rows
-
-    if ( asStrings ) {
-        for ( ; currentRowIndex < matrixHeight ; currentRowIndex++ ) {
-            resultingMatrix . push ( tokenStream . slice ( streamIndex , streamIndex += matrixWidth ) ) ;
+function getNextMatrix(height, width, asStrings) {
+    var resultMatrix = [];
+    var rowCounter = 0;
+    if (asStrings) {
+        for (; rowCounter < height; rowCounter++) {
+            resultMatrix.push(tokenStream.slice(tokenIndex, tokenIndex += width));
         }
     } else {
-        for ( ; currentRowIndex < matrixHeight ; currentRowIndex++ ) {
-            resultingMatrix . push ( tokenStream . slice ( streamIndex , streamIndex += matrixWidth ) . map ( element => + element ) ) ;
+        for (; rowCounter < height; rowCounter++) {
+            resultMatrix.push(tokenStream.slice(tokenIndex, tokenIndex += width).map(item => +item));
         }
     }
-    return resultingMatrix ;
+    return resultMatrix;
 }
 
 /**
- * Dynamically creates a multi-dimensional array initialized with a default value.
- * @param {*} initialValue The value to initialize array elements with.
- * @param {...number} dimensions The sizes of each dimension.
- * @returns {Array} The created multi-dimensional array.
+ * Creates a multi-dimensional array initialized with a given value.
+ * @param {*} initialValue - The value to initialize array elements with.
+ * @param {...number} dimensions - The dimensions of the array.
+ * @returns {Array} The multi-dimensional array.
  */
-function createDynamicArray ( initialValue ) {
-    var allArguments = arguments ; // Get all arguments passed to the function
-    var argCount = allArguments . length ; // Number of dimensions plus the initial value
-    var arrayBuilderString = "Array(allArguments[" + --argCount + "]) . fill ( ) . map ( _ => { return " + initialValue + "; } )" ; // Innermost array creation
-
-    // Build the string for outer dimensions
-    while ( --argCount ) {
-        arrayBuilderString = "Array(allArguments[" + argCount + "]) . fill ( ) . map ( _ => " + arrayBuilderString + " )" ;
+function createMultiDimArray(initialValue) {
+    var args = arguments;
+    var argLength = args.length;
+    var evalString = "Array(args[" + --argLength + "]).fill().map(x=>{return " + initialValue + ";})";
+    while (--argLength) {
+        evalString = "Array(args[" + argLength + "]).fill().map(x=>" + evalString + ")";
     }
-    // Evaluate the constructed string to create the array
-    return eval ( arrayBuilderString ) ;
+    return eval(evalString);
 }
 
+// Execute the main processing function
+var finalResult = processData();
 
-var finalResult = executeMainAlgorithm ( ) ; // Execute the core logic and store its output
-
-if ( finalResult !== undefined ) {
-    console . log ( String ( finalResult ) ) ; // Output the result if it's not undefined
+// Output the result if it's not undefined
+if (finalResult !== undefined) {
+    console.log(String(finalResult));
 }
-
 
 /**
- * The primary function containing the problem's solution logic.
- * @returns {*} The calculated result.
+ * Main function to process the input and compute the final value.
+ * @returns {number} The computed result.
  */
-function executeMainAlgorithm ( ) {
-    var problemSize = obtainNextNumber ( ) ; // Read the main size parameter
+function processData() {
+    var dimensionSize = getNextNum();
+    // Initialize a DP table with -1, and an offset value
+    var memoTable = createMultiDimArray(-1, dimensionSize + 1, dimensionSize + 1);
+    var offsetValue = 0;
 
-    // Initialize a 2D dynamic programming table with -1, and an adjustment counter
-    var dpTable = createDynamicArray ( -1 , problemSize + 1 , problemSize + 1 ) ,
-        adjustmentCount = 0 ;
+    // Read the initial pair of numbers and sort them
+    var initialPair = getNextNums(2).sort((val1, val2) => val1 - val2);
 
-    // Read the initial pair of values, sort them
-    var initialValues = fetchValueSequence ( 2 ) . sort ( ( firstVal , secondVal ) => firstVal - secondVal ) ;
-    var processingQueue ; // Declare queue for state updates
+    // Initialize DP table for base cases
+    memoTable[0][0] = memoTable[0][initialPair[0]] = memoTable[0][initialPair[1]] = memoTable[initialPair[0]][initialPair[1]] = 0;
 
-    // Initialize DP table entries based on the initial values
-    dpTable [ 0 ] [ 0 ] = dpTable [ 0 ] [ initialValues [ 0 ] ] = dpTable [ 0 ] [ initialValues [ 1 ] ] = dpTable [ initialValues [ 0 ] ] [ initialValues [ 1 ] ] = 0 ;
-
-    // Iterate through subsequent sets of values
-    for ( var loopCounter = 1 ; loopCounter < problemSize ; loopCounter++ ) {
-        // Read the next triplet of values and sort them
-        var currentValues = fetchValueSequence ( 3 ) . sort ( ( valX , valY ) => valX - valY ) ;
-        processInputTriplet ( ... currentValues ) ; // Process the triplet
+    // Loop through the remaining N-1 triplets
+    for (var loopCounter = 1; loopCounter < dimensionSize; loopCounter++) {
+        var currentTriplet = getNextNums(3).sort((val1, val2) => val1 - val2);
+        handleTriplet(...currentTriplet); // Process each triplet
     }
 
-    var finalInputVal = obtainNextNumber ( ) ; // Read the final single input value
+    // Read the final number
+    var finalNum = getNextNum();
 
-    // Calculate and return the maximum value from the DP table plus the adjustment count
-    return Math . max ( dpTable [ 0 ] [ 0 ] , dpTable [ finalInputVal ] [ finalInputVal ] + 1 ) + adjustmentCount ;
-
+    // Calculate and return the final result
+    return Math.max(memoTable[0][0], memoTable[finalNum][finalNum] + 1) + offsetValue;
 
     /**
-     * Processes a triplet of input values (u, v, w) to update the DP table.
-     * This function uses nested helper functions to handle different update scenarios.
-     * @param {number} firstVal The first value of the triplet.
-     * @param {number} secondVal The second value of the triplet.
-     * @param {number} thirdVal The third value of the triplet.
+     * Handles a triplet of values (valA, valB, valC) by updating the memoTable.
+     * @param {number} valA - The first value.
+     * @param {number} valB - The second value.
+     * @param {number} valC - The third value.
      */
-    function processInputTriplet ( firstVal , secondVal , thirdVal ) {
-        // If the first and third values are identical, increment adjustment and return
-        if ( firstVal === thirdVal ) {
-            return adjustmentCount++ ;
+    function handleTriplet(valA, valB, valC) {
+        if (valA === valC) {
+            offsetValue++; // Increment offset if all values are equal
+            return;
         }
 
-        processingQueue = [ ] ; // Reset the processing queue for this triplet
+        var updateQueue = []; // Reset the update queue for this triplet
 
-        // Handle single element updates
-        updateForSingleElement ( firstVal ) ;
-        if ( firstVal < secondVal ) {
-            updateForSingleElement ( secondVal ) ;
-        }
-        if ( secondVal < thirdVal ) {
-            updateForSingleElement ( thirdVal ) ;
-        }
+        // Process single values
+        processSingleValue(valA);
+        if (valA < valB) processSingleValue(valB);
+        if (valB < valC) processSingleValue(valC);
 
-        // Handle pair element updates
-        updateForPairElements ( firstVal , secondVal ) ;
-        if ( secondVal < thirdVal ) {
-            updateForPairElements ( firstVal , thirdVal ) ;
-        }
-        if ( firstVal < secondVal ) {
-            updateForPairElements ( secondVal , thirdVal ) ;
-        }
+        // Process pairs of values
+        processPairValues(valA, valB);
+        if (valB < valC) processPairValues(valA, valC);
+        if (valA < valB) processPairValues(valB, valC);
 
-        // Handle triplet element updates
-        updateForTripletElements ( firstVal , secondVal , thirdVal ) ;
+        // Process the triplet
+        processTripleValues(valA, valB, valC);
 
-        // Apply all pending updates from the queue to the DP table
-        while ( processingQueue . length ) {
-            var valToUpdate = processingQueue . pop ( ) , // Value to assign
-                colIndex = processingQueue . pop ( ) , // Column index
-                rowIndex = processingQueue . pop ( ) ; // Row index
-
-            // Update DP table if the new value is greater
-            if ( dpTable [ rowIndex ] [ colIndex ] < valToUpdate ) {
-                dpTable [ rowIndex ] [ colIndex ] = valToUpdate ;
+        // Apply updates from the queue to the memoTable
+        while (updateQueue.length > 0) {
+            var coordX = updateQueue.pop();
+            var coordY = updateQueue.pop();
+            var newValue = updateQueue.pop();
+            if (memoTable[coordX][coordY] < newValue) {
+                memoTable[coordX][coordY] = newValue;
             }
         }
     }
 
     /**
-     * Updates the DP table based on a single element.
-     * @param {number} currentElementValue The value for which to perform updates.
+     * Processes a single value 'valA' to update the memoTable.
+     * @param {number} valA - The value to process.
      */
-    function updateForSingleElement ( currentElementValue ) {
-        // Apply update with increment for a specific state
-        applyUpdateWithIncrement ( 0 , 0 , currentElementValue , currentElementValue ) ;
-
-        // Iterate for values less than currentElementValue
-        for ( var iterationA = 0 ; iterationA < currentElementValue ; iterationA++ ) {
-            applyUpdateWithoutIncrement ( iterationA , currentElementValue , 0 , iterationA ) ;
+    function processSingleValue(valA) {
+        enqueueIfGreater(0, 0, valA, valA); // Update based on (0,0) -> (valA,valA)
+        // Iterate for values less than valA
+        for (var loopCounter = 0; loopCounter < valA; loopCounter++) {
+            enqueueIfGreater(loopCounter, valA, 0, loopCounter);
         }
-
-        // Iterate for values from currentElementValue up to problemSize
-        for ( var iterationB = currentElementValue ; iterationB <= problemSize ; iterationB++ ) {
-            applyUpdateWithoutIncrement ( currentElementValue , iterationB , 0 , iterationB ) ;
+        // Iterate for values greater than or equal to valA
+        for (var loopCounter = valA; loopCounter <= dimensionSize; loopCounter++) {
+            enqueueIfGreater(valA, loopCounter, 0, loopCounter);
         }
     }
 
     /**
-     * Updates the DP table based on a pair of elements.
-     * @param {number} valueOne The first element of the pair.
-     * @param {number} valueTwo The second element of the pair.
+     * Processes a pair of values (valA, valB) to update the memoTable.
+     * @param {number} valA - The first value.
+     * @param {number} valB - The second value.
      */
-    function updateForPairElements ( valueOne , valueTwo ) {
-        applyUpdateWithoutIncrement ( valueOne , valueTwo , 0 , 0 ) ;
-        applyUpdateWithIncrement ( 0 , valueTwo , valueOne , valueOne ) ;
+    function processPairValues(valA, valB) {
+        enqueueIfGreater(valA, valB, 0, 0); // Update based on (0,0) -> (valA,valB)
+        enqueueIfGreaterPlusOne(0, valB, valA, valA); // Update based on (valA,valA) -> (0,valB) + 1
 
-        // Different logic if values are distinct or identical
-        if ( valueOne < valueTwo ) {
-            applyUpdateWithIncrement ( 0 , valueOne , valueTwo , valueTwo ) ;
-        } else { // When values are equal (valueOne = valueTwo)
-            for ( var indexC = 0 ; indexC < valueOne ; indexC++ ) {
-                applyUpdateWithIncrement ( 0 , indexC , indexC , valueOne ) ;
+        if (valA < valB) {
+            enqueueIfGreaterPlusOne(0, valA, valB, valB); // Update based on (valB,valB) -> (0,valA) + 1
+        } else { // valA === valB
+            // Iterate for values less than valA
+            for (var loopCounter = 0; loopCounter < valA; loopCounter++) {
+                enqueueIfGreaterPlusOne(0, loopCounter, loopCounter, valA);
             }
-            for ( var indexD = valueOne ; indexD <= problemSize ; indexD++ ) {
-                applyUpdateWithIncrement ( 0 , indexD , valueOne , indexD ) ;
+            // Iterate for values greater than or equal to valA
+            for (var loopCounter = valA; loopCounter <= dimensionSize; loopCounter++) {
+                enqueueIfGreaterPlusOne(0, loopCounter, valA, loopCounter);
             }
         }
     }
 
     /**
-     * Updates the DP table based on a triplet of elements.
-     * @param {number} valA The first element of the triplet.
-     * @param {number} valB The second element of the triplet.
-     * @param {number} valC The third element of the triplet.
+     * Processes a triplet of values (valA, valB, valC) to update the memoTable.
+     * @param {number} valA - The first value.
+     * @param {number} valB - The second value.
+     * @param {number} valC - The third value.
      */
-    function updateForTripletElements ( valA , valB , valC ) {
-        applyUpdateWithIncrement ( valB , valC , valA , valA ) ;
+    function processTripleValues(valA, valB, valC) {
+        enqueueIfGreaterPlusOne(valB, valC, valA, valA); // Update based on (valA,valA) -> (valB,valC) + 1
 
-        // Conditional logic based on relationships between triplet values
-        if ( valA < valB ) {
-            applyUpdateWithIncrement ( valA , valC , valB , valB ) ;
-            if ( valB < valC ) {
-                applyUpdateWithIncrement ( valA , valB , valC , valC ) ;
-            } else { // Case where second and third values are equal (valB = valC)
-                for ( var indexE = 0 ; indexE < valA ; indexE++ ) {
-                    applyUpdateWithIncrement ( indexE , valA , indexE , valC ) ;
+        if (valA < valB) {
+            enqueueIfGreaterPlusOne(valA, valC, valB, valB); // Update based on (valB,valB) -> (valA,valC) + 1
+            if (valB < valC) {
+                enqueueIfGreaterPlusOne(valA, valB, valC, valC); // Update based on (valC,valC) -> (valA,valB) + 1
+            } else { // valB === valC
+                // Iterate for values less than valA
+                for (var loopCounter = 0; loopCounter < valA; loopCounter++) {
+                    enqueueIfGreaterPlusOne(loopCounter, valA, loopCounter, valC);
                 }
-                for ( var indexF = valA ; indexF < valC ; indexF++ ) {
-                    applyUpdateWithIncrement ( valA , indexF , indexF , valC ) ;
+                // Iterate for values between valA and valC (exclusive)
+                for (var loopCounter = valA; loopCounter < valC; loopCounter++) {
+                    enqueueIfGreaterPlusOne(valA, loopCounter, loopCounter, valC);
                 }
-                for ( var indexG = valC ; indexG <= problemSize ; indexG++ ) {
-                    applyUpdateWithIncrement ( valA , indexG , valC , indexG ) ;
+                // Iterate for values greater than or equal to valC
+                for (var loopCounter = valC; loopCounter <= dimensionSize; loopCounter++) {
+                    enqueueIfGreaterPlusOne(valA, loopCounter, valC, loopCounter);
                 }
             }
-        } else { // Case where first and second values are equal (valA = valB)
-            applyUpdateWithIncrement ( valA , valA , valC , valC ) ;
-            for ( var indexH = 0 ; indexH < valA ; indexH++ ) {
-                applyUpdateWithIncrement ( indexH , valC , indexH , valA ) ;
+        } else { // valA === valB
+            enqueueIfGreaterPlusOne(valA, valA, valC, valC); // Update based on (valC,valC) -> (valA,valA) + 1
+            // Iterate for values less than valA
+            for (var loopCounter = 0; loopCounter < valA; loopCounter++) {
+                enqueueIfGreaterPlusOne(loopCounter, valC, loopCounter, valA);
             }
-            for ( var indexI = valA ; indexI < valC ; indexI++ ) {
-                applyUpdateWithIncrement ( indexI , valC , valA , indexI ) ;
+            // Iterate for values between valA and valC (exclusive)
+            for (var loopCounter = valA; loopCounter < valC; loopCounter++) {
+                enqueueIfGreaterPlusOne(loopCounter, valC, valA, loopCounter);
             }
-            for ( var indexJ = valC ; indexJ <= problemSize ; indexJ++ ) {
-                applyUpdateWithIncrement ( valC , indexJ , valA , indexJ ) ;
+            // Iterate for values greater than or equal to valC
+            for (var loopCounter = valC; loopCounter <= dimensionSize; loopCounter++) {
+                enqueueIfGreaterPlusOne(valC, loopCounter, valA, loopCounter);
             }
         }
     }
 
     /**
-     * Enqueues an update to the processing queue without incrementing the source value.
-     * @param {number} targetRow The target row index in DP table.
-     * @param {number} targetCol The target column index in DP table.
-     * @param {number} sourceRow The source row index in DP table.
-     * @param {number} sourceCol The source column index in DP table.
+     * Compares memoTable[coordC][coordD] with memoTable[coordA][coordB] and enqueues an update if greater.
+     * @param {number} coordA - First index for target cell.
+     * @param {number} coordB - Second index for target cell.
+     * @param {number} coordC - First index for source cell.
+     * @param {number} coordD - Second index for source cell.
      */
-    function applyUpdateWithoutIncrement ( targetRow , targetCol , sourceRow , sourceCol ) {
-        if ( dpTable [ targetRow ] [ targetCol ] < dpTable [ sourceRow ] [ sourceCol ] ) {
-            processingQueue . push ( dpTable [ sourceRow ] [ sourceCol ] , targetCol , targetRow ) ;
+    function enqueueIfGreater(coordA, coordB, coordC, coordD) {
+        if (memoTable[coordA][coordB] < memoTable[coordC][coordD]) {
+            updateQueue.push(memoTable[coordC][coordD], coordB, coordA);
         }
     }
 
     /**
-     * Enqueues an update to the processing queue with incrementing the source value by 1.
-     * @param {number} targetRow The target row index in DP table.
-     * @param {number} targetCol The target column index in DP table.
-     * @param {number} sourceRow The source row index in DP table.
-     * @param {number} sourceCol The source column index in DP table.
+     * Compares memoTable[coordC][coordD] + 1 with memoTable[coordA][coordB] and enqueues an update if greater.
+     * @param {number} coordA - First index for target cell.
+     * @param {number} coordB - Second index for target cell.
+     * @param {number} coordC - First index for source cell.
+     * @param {number} coordD - Second index for source cell.
      */
-    function applyUpdateWithIncrement ( targetRow , targetCol , sourceRow , sourceCol ) {
-        if ( dpTable [ targetRow ] [ targetCol ] < dpTable [ sourceRow ] [ sourceCol ] + 1 ) {
-            processingQueue . push ( dpTable [ sourceRow ] [ sourceCol ] + 1 , targetCol , targetRow ) ;
+    function enqueueIfGreaterPlusOne(coordA, coordB, coordC, coordD) {
+        if (memoTable[coordA][coordB] < memoTable[coordC][coordD] + 1) {
+            updateQueue.push(memoTable[coordC][coordD] + 1, coordB, coordA);
         }
     }
 }

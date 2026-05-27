@@ -1,27 +1,20 @@
-function ProcessInputData(
-  incomingString
-) {
-  // Determine the total character count of the supplied text
-  let stringLength = incomingString.length;
+function ProcessInputData(incomingData) {
+    // Determine the total character count of the provided string.
+    let totalLength = incomingData.length;
 
-  // Extract the very first character from the input sequence
-  let initialCharacter = incomingString.slice(0, 1);
+    // Extract the very first character from the input.
+    let initialCharacter = incomingData.substring(0, 1);
 
-  // Retrieve the last character from the end of the input sequence
-  let terminalCharacter = incomingString.slice(
-    incomingString.length - 1, 1
-  );
+    // Obtain the last character of the input string.
+    let finalCharacter = incomingData.substring(incomingData.length - 1, 1);
 
-  // Combine the extracted characters and the string length into a single value
-  let resultantValue = initialCharacter + stringLength + terminalCharacter;
+    // Concatenate the first character, the total length, and the last character.
+    let combinedOutput = initialCharacter + totalLength + finalCharacter;
 
-  // Print the concatenated result to the standard output
-  console.log('%s\n', resultantValue);
+    // Print the generated string to the console, followed by a newline.
+    console.log('%s\n', combinedOutput);
 }
 
-
-ProcessInputData(
-  require("fs").readFileSync(
-    "/dev/stdin", "utf8"
-  )
-);
+// Read the entire content from standard input as a UTF-8 string,
+// then pass it to our primary processing function.
+ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,52 +1,21 @@
-const obtainInput = (dataProcessingCallback) => {
-    let accumulatedData = '';
-    process.stdin.setEncoding('utf8');
+const inputHandler = require('readline').createInterface({
+    input: process.stdin,
+    output: process.stdout
+});
 
-    process.stdin.on('data', (chunk) => {
-        accumulatedData += chunk;
-    });
+let receivedLines = [];
 
-    process.stdin.on('end', () => {
-        dataProcessingCallback(accumulatedData.trim());
-    });
-};
+inputHandler.on('line', (currentLine) => {
+  receivedLines.push(currentLine);
+});
 
-const calculateDivisibleOccurrences = (startPoint, endPoint, dividerValue) => {
-    if (Number.isNaN(endPoint) || startPoint > endPoint) {
-        return 0;
-    }
+inputHandler.on('close', () => {
+    const [lowerBound, upperBound, divisorValue] = receivedLines[0].split(" ").map(Number);
 
-    if (Number.isNaN(dividerValue) || dividerValue === 0) {
-        return endPoint - startPoint + 1;
-    }
-    
-    const multiplesUntilEnd = Math.floor(endPoint / dividerValue);
-    const multiplesBeforeStart = Math.floor((startPoint - 1) / dividerValue);
+    const totalMultiplesUpToHigh = Math.floor(upperBound / divisorValue);
+    const totalMultiplesBeforeLow = Math.floor((lowerBound - 1) / divisorValue);
 
-    return multiplesUntilEnd - multiplesBeforeStart;
-};
+    const resultCount = totalMultiplesUpToHigh - totalMultiplesBeforeLow;
 
-const presentOutcome = (finalResult) => {
-    process.stdout.write(finalResult.toString() + '\n');
-};
-
-obtainInput((completeText) => {
-    const numberFragments = completeText.match(/\d+/g);
-    
-    let firstParameter = Number.NaN;
-    let secondParameter = Number.NaN;
-    let thirdParameter = Number.NaN;
-
-    if (numberFragments && numberFragments.length > 0) {
-        firstParameter = Number(numberFragments[0]);
-        if (numberFragments.length > 1) {
-            secondParameter = Number(numberFragments[1]);
-            if (numberFragments.length > 2) {
-                thirdParameter = Number(numberFragments[2]);
-            }
-        }
-    }
-
-    const calculatedValue = calculateDivisibleOccurrences(firstParameter, secondParameter, thirdParameter);
-    presentOutcome(calculatedValue);
+    console.log(resultCount);
 });

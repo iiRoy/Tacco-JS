@@ -1,100 +1,108 @@
-function ProcessInput(rawData) {
-    // Process the raw string input into a structured array, splitting by newlines and spaces.
-    rawData = rawData
-        .trim()
-        .split("\n")
-        .map(function(lineSegment) {
-            return lineSegment.split(" ");
-        });
+function ProcessData(rawData) {
+    // Clean up the raw input string and parse it into an array of number arrays.
+    // Each line represents an item, with its properties separated by spaces.
+    let processedInputLines = rawData.trim().split("\n").map(function(lineSegment) {
+        return lineSegment.split(" ");
+    });
 
-    // Extract the total number of available components and the maximum duration allowed.
-    let componentCount = parseInt(rawData[0][0], 10);
-    let maxDuration = parseInt(rawData[0][1], 10);
+    // Extract the total number of items and the time limit from the first line.
+    const itemCount = parseInt(processedInputLines[0][0], 10);
+    const timeLimit = parseInt(processedInputLines[0][1], 10);
 
-    // Initialize an array to hold the properties (weight, value) of each component.
-    const componentSpecs = [];
-    // Populate the component specifications from the parsed input data.
-    for (let index = 0; index < componentCount; index++) {
-        componentSpecs.push(rawData[index + 1].map(propPart => parseInt(propPart, 10)));
+    // Initialize an array to store the item details (weight and benefit).
+    let itemDetailsArray = [];
+    // Populate the item details array from the input, skipping the first line.
+    for (let idx = 0; idx < itemCount; idx++) {
+        itemDetailsArray.push(processedInputLines[idx + 1].map(elementVal => parseInt(elementVal, 10)));
     }
 
-    // Sort the components based on their 'value' property (second element) for processing.
-    componentSpecs.sort((firstComp, secondComp) => firstComp[1] - secondComp[1]);
+    // Sort the items based on their benefit (second element) in ascending order.
+    // This helps in the dynamic programming approach.
+    itemDetailsArray.sort((firstEntry, secondEntry) => firstEntry[1] - secondEntry[1]);
 
-    // Initialize the dynamic programming table to store maximum values.
-    let valueTable = [];
-    let currentWeight, currentBenefit; // Variables to hold properties of the component being processed.
+    // Initialize the dynamic programming table.
+    // `memoizationTable[i][j]` will store the maximum benefit achievable with the first `i` items
+    // within a time limit of `j`.
+    let memoizationTable = [];
+    let currentWeight, currentBenefit;
 
-    // Add the initial row to the DP table, representing no components selected, all zeros.
-    valueTable.push(Array.from({ length: maxDuration + 1 }, () => 0));
+    // Initialize the first row of the DP table.
+    // This row represents the state before considering any items, so all benefits are 0.
+    memoizationTable.push(Array.from({ length: timeLimit + 1 }, () => 0));
 
-    // Iterate through each component to fill the DP table row by row.
-    for (let componentIndex = 0; componentIndex < componentCount; componentIndex++) {
-        valueTable.push([]); // Add a new row for the current component's calculations.
-        currentWeight = componentSpecs[componentIndex][0]; // Get the weight of the current component.
-        currentBenefit = componentSpecs[componentIndex][1]; // Get the value of the current component.
+    // Iterate through each item to fill the DP table.
+    for (let outerIndex = 0; outerIndex < itemCount; outerIndex++) {
+        memoizationTable.push([]); // Add a new row for the current item.
+        currentWeight = itemDetailsArray[outerIndex][0]; // Get the weight of the current item.
+        currentBenefit = itemDetailsArray[outerIndex][1]; // Get the benefit of the current item.
 
-        // Iterate through all possible time capacities up to maxDuration.
-        for (let currentCapacity = 0; currentCapacity < maxDuration + 1; currentCapacity++) {
-            // Check if the current component's weight can fit into the current capacity.
-            if (currentWeight <= currentCapacity) {
-                // If it fits, decide whether including it yields a better result.
-                // Compare the value without the current component vs. with it.
-                if (valueTable[componentIndex][currentCapacity] >= valueTable[componentIndex][currentCapacity - currentWeight] + currentBenefit) {
-                    valueTable[componentIndex + 1][currentCapacity] = valueTable[componentIndex][currentCapacity];
+        // Iterate through each possible time slot.
+        for (let timeSlot = 0; timeSlot < timeLimit + 1; timeSlot++) {
+            // If the current item's weight is less than or equal to the current time slot,
+            // we have two choices:
+            // 1. Don't include the current item: benefit is `memoizationTable[outerIndex][timeSlot]`.
+            // 2. Include the current item: benefit is `memoizationTable[outerIndex][timeSlot - currentWeight] + currentBenefit`.
+            // We choose the maximum of these two.
+            if (currentWeight <= timeSlot) {
+                if (memoizationTable[outerIndex][timeSlot] >= memoizationTable[outerIndex][timeSlot - currentWeight] + currentBenefit) {
+                    memoizationTable[outerIndex + 1][timeSlot] = memoizationTable[outerIndex][timeSlot];
                 } else {
-                    valueTable[componentIndex + 1][currentCapacity] = valueTable[componentIndex][currentCapacity - currentWeight] + currentBenefit;
+                    memoizationTable[outerIndex + 1][timeSlot] = memoizationTable[outerIndex][timeSlot - currentWeight] + currentBenefit;
                 }
             } else {
-                // If the component is too heavy, it cannot be included.
-                valueTable[componentIndex + 1][currentCapacity] = valueTable[componentIndex][currentCapacity];
+                // If the current item's weight is greater than the current time slot,
+                // we cannot include it. So, the benefit is the same as not considering this item.
+                memoizationTable[outerIndex + 1][timeSlot] = memoizationTable[outerIndex][timeSlot];
             }
         }
     }
 
-    // Backtrack through the DP table to identify which components were chosen.
-    const chosenComponentIndices = [];
-    let tempComponentCounter = componentCount;
-    let remainingTimeForSelection = maxDuration - 1;
+    // Backtrack through the DP table to find items that were *not* selected
+    // to achieve the maximum benefit within `timeLimit - 1`.
+    let selectedItemIndices = [];
+    let tempCounter = itemCount;
+    let remainingTime = timeLimit - 1; // Consider the time limit minus one for the special case.
 
-    // Main backtracking loop to determine selected components.
-    selectionLoop:
-    while (remainingTimeForSelection > 0) {
-        // Inner loop to check individual components.
+    mainProcessingLoop:
+    while (remainingTime > 0) {
         while (true) {
-            // If no more components to consider, exit the selection process.
-            if (tempComponentCounter === 0) break selectionLoop;
+            if (tempCounter === 0) break mainProcessingLoop; // No more items to check.
 
-            // If the value at the current state is the same as the state without the previous component,
-            // then the previous component was not selected.
-            if (valueTable[tempComponentCounter][remainingTimeForSelection] === valueTable[tempComponentCounter - 1][remainingTimeForSelection]) {
-                tempComponentCounter--; // Move to the component before that.
+            // If the benefit is the same with and without the current item,
+            // it means the current item was not chosen for this path.
+            if (memoizationTable[tempCounter][remainingTime] === memoizationTable[tempCounter - 1][remainingTime]) {
+                tempCounter--; // Move to the previous item.
             } else {
-                // If values differ, the previous component (tempComponentCounter - 1) was included.
-                chosenComponentIndices.push(tempComponentCounter - 1);
-                // Deduct the weight of the selected component from the remaining time.
-                remainingTimeForSelection -= componentSpecs[tempComponentCounter - 1][0];
-                tempComponentCounter--; // Move to the next previous component.
-                continue selectionLoop; // Restart the outer loop with updated remaining time.
+                // If the benefits differ, the current item was chosen.
+                // Add its index to the list of selected items.
+                selectedItemIndices.push(tempCounter - 1);
+                // Reduce the remaining time by the weight of the selected item.
+                remainingTime -= itemDetailsArray[tempCounter - 1][0];
+                tempCounter--; // Move to the previous item.
+                continue mainProcessingLoop; // Continue the outer loop with updated remaining time.
             }
         }
     }
 
-    // Remove the components that were identified as selected from the original list.
-    // This effectively leaves the unselected components.
-    for (const eliminatedIndex of chosenComponentIndices) {
-        componentSpecs.splice(eliminatedIndex, 1);
+    // Remove the items that were selected for the `timeLimit - 1` calculation
+    // from the original `itemDetailsArray` to find the "last" item.
+    for (let removedItemIndex of selectedItemIndices) {
+        itemDetailsArray.splice(removedItemIndex, 1);
     }
 
-    // Calculate a potential alternative maximum value considering the last remaining component.
-    let alternativeMaxVal = 0;
-    if (componentSpecs.length > 0) {
-        alternativeMaxVal = valueTable[componentCount][maxDuration - 1] + componentSpecs[componentSpecs.length - 1][1];
+    // Calculate the alternative result:
+    // This is the maximum benefit at `timeLimit - 1` plus the benefit of the last remaining item
+    // (if any) from the original sorted list. This handles a specific edge case or alternative strategy.
+    let alternativeResult = 0;
+    if (itemDetailsArray.length > 0) {
+        alternativeResult = memoizationTable[itemCount][timeLimit - 1] + itemDetailsArray[itemDetailsArray.length - 1][1];
     }
 
-    // Output the final maximum value, comparing the full capacity result with the alternative calculation.
-    console.log(Math.max(valueTable[componentCount][maxDuration], alternativeMaxVal));
+    // The final answer is the maximum of:
+    // 1. The maximum benefit achievable within the full `timeLimit`.
+    // 2. The alternative result calculated for the `timeLimit - 1` case.
+    console.log(Math.max(memoizationTable[itemCount][timeLimit], alternativeResult));
 }
 
-// Execute the primary function by reading input from the standard input stream.
-ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Read input from standard input and pass it to the main processing function.
+ProcessData(require("fs").readFileSync("/dev/stdin", "utf8"));

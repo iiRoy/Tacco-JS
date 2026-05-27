@@ -1,75 +1,100 @@
 'use strict';
 
-// Primary function to handle the given input array
-function processInput ( inputLines )
-{
-    // Extract numerical parameters from the first line, converting them to numbers
-    const [ initialCount, iterations ] = inputLines[0] .split(' ') .map(Number);
-    // Get the raw string sequence from the second line provided
-    const originalString = inputLines[1];
+/**
+ * This is the primary function that processes the input data.
+ * It takes an array of strings, parses them, performs string manipulations,
+ * and then outputs a calculated "happiness" value.
+ * @param {string[]} inputLines - An array where each element is a line from standard input.
+ */
+function processInput(inputLines) {
+  // The first line contains two space-separated numbers:
+  // initialCount (N) and iterations (K).
+  const [initialCount, iterations] = inputLines[0].split(' ').map(Number);
+  // The second line contains the initial string (S).
+  const initialString = inputLines[1];
 
-    // Initialize a mutable sequence by reducing the original string
-    let currentSequence = reduceSequence(originalString);
-    // console.debug('Initial reduced sequence:', currentSequence); // Debugging output, now commented differently
+  // First, apply a compression step to the initial string.
+  let currentString = compressString(initialString);
 
-    // Perform iterative modifications based on the 'iterations' parameter
-    for ( let charIndex = 0; charIndex < iterations; charIndex++ )
-    {
-        // If the sequence becomes a single character, stop further processing
-        if (currentSequence.length === 1) break;
-        // Modify the sequence: keep the first character and remove the next two
-        currentSequence = currentSequence[0] + currentSequence.slice(3);
-        // console.debug('Sequence after iteration', charIndex + 1, ':', currentSequence); // Another debug line
+  // Now, perform a series of reduction steps based on the 'iterations' count.
+  // This loop continues for 'iterations' times or until the string is reduced to a single character.
+  for (let loopCounter = 0; loopCounter < iterations; loopCounter++) {
+    // If the string has only one character, no further reduction is possible,
+    // so we can exit the loop early.
+    if (currentString.length === 1) {
+      break;
     }
-    // Calculate the final score by subtracting the length of the final sequence from the initial count
-    const finalScore = initialCount - currentSequence.length;
-    // Output the computed score to the standard console
-    console.log(finalScore);
+    // The reduction rule: keep the first character and remove the next two characters.
+    // For example, if currentString is "ABCDE", it becomes "ADE".
+    currentString = currentString[0] + currentString.slice(3);
+  }
+
+  // Calculate the final happiness value.
+  // This is the difference between the initial count and the length of the final string.
+  const finalHappiness = initialCount - currentString.length;
+  // Output the result to the console.
+  console.log(finalHappiness);
 }
 
-// Helper function to remove adjacent duplicate characters from a string
-function reduceSequence(inputStr) {
-  let currentLength = inputStr.length; // Store the current length of the string
-  let processedStr = inputStr; // Use a mutable copy for modifications
-
-  // Iterate through the string to find and remove adjacent duplicates
+/**
+ * Compresses a string by removing consecutive identical characters.
+ * For example, "aaabbcdeeff" becomes "abcdef".
+ * @param {string} inputStr - The string to be compressed.
+ * @returns {string} The string after removing adjacent duplicates.
+ */
+function compressString(inputStr) {
+  let currentLength = inputStr.length; // Keep track of the string's mutable length.
+  // Iterate through the string to find and eliminate duplicate adjacent characters.
+  // The loop index 'charIndex' is only incremented if no duplicate is found at the current position.
   for (let charIndex = 0; charIndex < currentLength;) {
-    // Check if the current character is not the last and is identical to the next one
-    if (charIndex !== currentLength - 1 && processedStr[charIndex] === processedStr[charIndex + 1]) {
-      // Remove the duplicate pair: keep up to current char, then skip the next two
-      processedStr = processedStr.slice(0, charIndex + 1) + processedStr.slice(charIndex + 2);
-      currentLength--; // Decrease the effective length of the string
+    // Check if the current character is the same as the one immediately following it.
+    // Also, ensure 'charIndex + 1' is within the string bounds.
+    if (charIndex !== currentLength - 1 && inputStr[charIndex] === inputStr[charIndex + 1]) {
+      // If a duplicate is found, reconstruct the string by skipping the second duplicate character.
+      // Example: if inputStr is "AAB" and charIndex is 0, it becomes "AB".
+      inputStr = inputStr.slice(0, charIndex + 1) + inputStr.slice(charIndex + 2);
+      currentLength--; // The string has become shorter by one character.
     } else {
-      charIndex++; // Move to the next character if no duplicate is found
+      // If no duplicate is found at the current position, move to the next character.
+      charIndex++;
     }
   }
-  return processedStr; // Return the modified string without adjacent duplicates
+  return inputStr; // Return the fully compressed string.
 }
 
-// Auxiliary function to calculate the score based on string reduction
-function computeScore(initialString) {
-  // The score is the difference between the initial length and the length after reduction
-  return initialString.length - reduceSequence(initialString).length;
+/**
+ * This function calculates a "joy" metric for a string,
+ * which is the difference between its original length and its length after compression.
+ * Note: This function is defined but not invoked by the main program flow.
+ * @param {string} targetString - The string for which to compute the joy.
+ * @returns {number} The numerical joy value.
+ */
+function computeJoy(targetString) {
+  // The joy is determined by how much the string's length is reduced by compression.
+  return targetString.length - compressString(targetString).length;
 }
 
-// Function to set up standard input processing
-function startProcessing() {
-  let receivedData = ""; // Buffer to accumulate input data
-  // Resume the standard input stream
-  process.stdin.resume();
-  // Set the encoding for incoming data
-  process.stdin.setEncoding("utf8");
+/**
+ * Sets up the standard input stream to read data,
+ * then triggers the main processing function once all input is received.
+ */
+function executeProgram() {
+  let rawData = ""; // A buffer to accumulate all incoming data from stdin.
+  process.stdin.resume(); // Ensures the standard input stream is active and ready to receive data.
+  process.stdin.setEncoding("utf8"); // Specifies the character encoding for the input data.
 
-  // Event listener for incoming data chunks
+  // Attach an event listener for when data chunks are received from stdin.
   process.stdin.on("data", chunk => {
-    receivedData += chunk; // Append the chunk to the buffer
+    rawData += chunk; // Append each received data chunk to the 'rawData' buffer.
   });
 
-  // Event listener for the end of the input stream
+  // Attach an event listener for when the standard input stream ends (e.g., EOF is reached).
   process.stdin.on("end", () => {
-    // Split the accumulated data by newlines and pass to the main processing function
-    processInput(receivedData.split("\n"));
+    // Once all input has been collected, split the raw data into an array of lines
+    // and pass it to the 'processInput' function for further handling.
+    processInput(rawData.split("\n"));
   });
 }
-// Initiate the standard input handling routine
-startProcessing();
+
+// Begin the program execution by initializing the standard input listener.
+executeProgram();

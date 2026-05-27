@@ -1,43 +1,37 @@
-// This primary function handles the complete data processing workflow.
-function ProcessData(sourceText) {
+function ProcessInput(rawData) {
+  // Split the raw input string into an array of lines.
+  const linesOfData = rawData.split("\n");
 
-  // Utilize newline characters to segment the incoming raw text into distinct lines.
-  const textLines = sourceText.split("\n");
+  // Parse the second line of input into an array of integers.
+  // The numbers are space-separated.
+  var originalNumbers = linesOfData[1].split(" ").map((numStr) => parseInt(numStr, 10));
 
-  // Extract the second line, split it by spaces, and convert each segment into an integer.
-  var initialNumbers = textLines[1]
-                         .split(" ")
-                         .map((strVal) => parseInt(strVal, 10));
+  // Determine the largest number present in the input array.
+  const maximumValue = originalNumbers.reduce((accumulator, current) => accumulator > current ? accumulator : current);
 
-  // Determine the highest numerical value present within the parsed number collection.
-  const highestValue = initialNumbers.reduce(
-    (currentMax, nextElement) => (currentMax > nextElement ? currentMax : nextElement)
-  );
+  // Initialize a variable to accumulate the total adjustments.
+  var totalAdjustments = 0;
 
+  // Iterate from 0 up to the maximum value found in the input numbers.
+  for (var currentValue = 0; currentValue <= maximumValue; currentValue++) {
+    // Filter the original array to find all elements that match the current iteration value.
+    var matchingElements = originalNumbers.filter((element) => element === currentValue);
 
-  // Initialize a mutable variable to accumulate the final calculated value.
-  var finalTally = 0;
-
-  // Iterate through a range of integer values, starting from zero up to the maximum found value.
-  for (var idxPosition = 0; idxPosition <= highestValue; ++idxPosition) {
-    // Filter the original array to identify all elements that precisely match the current iteration index.
-    var matchingElements = initialNumbers.filter((itemVal) => itemVal === idxPosition);
-
-    // Evaluate the length of the filtered array against the current index.
-    if (matchingElements.length < idxPosition) {
-      // If fewer matches than the index, add the total number of matches to the tally.
-      finalTally += matchingElements.length;
+    // If the count of matching elements is less than the current value,
+    // add the count of matching elements to the total adjustments.
+    if (matchingElements.length < currentValue) {
+      totalAdjustments += matchingElements.length;
     }
-    else if (matchingElements.length > idxPosition) {
-      // If more matches than the index, add the excess count to the tally.
-      finalTally += matchingElements.length - idxPosition;
+    // If the count of matching elements is greater than the current value,
+    // add the difference (count - current value) to the total adjustments.
+    else if (matchingElements.length > currentValue) {
+      totalAdjustments += matchingElements.length - currentValue;
     }
-    // If matchingElements.length equals idxPosition, no adjustment is required for the tally.
   }
 
-  // Display the final computed tally to the standard output.
-  console.log(finalTally);
+  // Output the final calculated total adjustments to the console.
+  console.log(totalAdjustments);
 }
 
-// Execute the main processing routine by feeding it content read from standard input.
-ProcessData(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Read input from standard input and pass it to the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,55 +1,69 @@
 'use strict';
 
-function processInput(rawData) {
-    let lineArray = rawData.split('\n');
+// This function processes the input string to determine a specific grid property.
+function processInput(inputData) {
+  // Split the entire input into an array of lines.
+  inputData = inputData.split('\n');
 
-    const dimensions = lineArray[0].split(' ');
-    const gridHeight = parseInt(dimensions[0], 10);
-    const gridWidth = parseInt(dimensions[1], 10);
+  // Parse grid dimensions from the first line.
+  const gridDimensions = inputData[0].split(' ');
+  const gridRows = Number(gridDimensions[0]); // Height of the grid
+  const gridCols = Number(gridDimensions[1]); // Width of the grid
 
-    const charGrid = lineArray.slice(1, -1).map(gridLine => gridLine.split(''));
+  // Extract the grid map, excluding the first line (dimensions) and the last (potentially empty).
+  // Each row string is then split into an array of characters.
+  const gridMap = inputData.slice(1, -1).map(rowString => rowString.split(''));
 
-    const rowOffsets = [-1, 0, 1, 0];
-    const colOffsets = [0, 1, 0, -1];
+  // Define arrays for row and column offsets to check 4-directional neighbors (up, right, down, left).
+  const rowDirectionOffsets = [-1, 0, 1, 0]; // Changes in row index
+  const colDirectionOffsets = [0, 1, 0, -1]; // Changes in column index
 
-    let finalVerdict = 'Yes';
+  // Initialize the final outcome as 'Yes', assuming the condition holds until proven otherwise.
+  let finalOutcome = 'Yes';
 
-    for (let currentRow = 0; currentRow < gridHeight; currentRow++) {
-        for (let currentCol = 0; currentCol < gridWidth; currentCol++) {
-            if (charGrid[currentRow][currentCol] === '.') {
-                continue;
-            }
+  // Iterate through each cell in the grid.
+  for (let currentRowIndex = 0; currentRowIndex < gridRows; currentRowIndex++) {
+    for (let currentColIndex = 0; currentColIndex < gridCols; currentColIndex++) {
+      // If the current cell is a '.', it doesn't affect the condition, so skip it.
+      if (gridMap[currentRowIndex][currentColIndex] === '.') {
+        continue;
+      }
 
-            let neighborCount = 0;
+      // If the cell is a '#', check its neighbors.
+      let adjacentHashCount = 0; // Counter for '#' neighbors
 
-            for (let directionIndex = 0; directionIndex < 4; directionIndex++) {
-                const nextRow = currentRow + rowOffsets[directionIndex];
-                const nextCol = currentCol + colOffsets[directionIndex];
+      // Check all four cardinal directions.
+      for (let directionIterator = 0; directionIterator < 4; directionIterator++) {
+        // Calculate the coordinates of the neighboring cell.
+        const nextRowIndex = currentRowIndex + rowDirectionOffsets[directionIterator];
+        const nextColIndex = currentColIndex + colDirectionOffsets[directionIterator];
 
-                if (nextRow < 0 || gridHeight <= nextRow) {
-                    continue;
-                }
-                if (nextCol < 0 || gridWidth <= nextCol) {
-                    continue;
-                }
-
-                if (charGrid[nextRow][nextCol] === '#') {
-                    neighborCount++;
-                }
-            }
-
-            if (neighborCount === 0) {
-                finalVerdict = 'No';
-            }
+        // Check if the neighboring cell is within the grid boundaries.
+        if (nextRowIndex < 0 || gridRows <= nextRowIndex) {
+          continue; // Out of bounds vertically
         }
+        if (nextColIndex < 0 || gridCols <= nextColIndex) {
+          continue; // Out of bounds horizontally
+        }
+
+        // If the neighbor is within bounds and is a '#', increment the counter.
+        if (gridMap[nextRowIndex][nextColIndex] === '#') {
+          adjacentHashCount += 1;
+        }
+      }
+
+      // If a '#' cell has no '#' neighbors, the condition is not met.
+      if (adjacentHashCount === 0) {
+        finalOutcome = 'No'; // Set the outcome to 'No'
+        // No need to break here, as the problem implies we check all cells,
+        // and once 'No' is set, it won't change back to 'Yes'.
+      }
     }
+  }
 
-    console.log(finalVerdict);
+  // Output the final determination.
+  console.log(finalOutcome);
 }
 
-function getInputFromFile() {
-    const fileSystemModule = require('fs');
-    return fileSystemModule.readFileSync('/dev/stdin', 'utf8');
-}
-
-processInput(getInputFromFile());
+// Read input from standard input and pass it to the processing function.
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

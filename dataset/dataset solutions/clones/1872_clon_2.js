@@ -1,57 +1,43 @@
 "use strict";
 
-/**
- * This function processes a set of numerical inputs to compute a final aggregate value.
- * It simulates a scenario where different types of items contribute positively, neutrally,
- * or negatively to a score, up to a certain operation threshold.
- * @param {string} inputDataString The raw string received from input, expected to contain
- *                                 four space-separated integers on the first line.
- */
-function processNumericalScenario(inputDataString) {
-    // Extract numerical parameters from the provided input string.
-    // The input is first cleaned, then split by newline to get the first line,
-    // that line is then split by spaces, and finally, all parts are converted to numbers.
-    let [ itemTypeOneQuantity, itemTypeTwoQuantity, itemTypeThreeQuantity, maxOperationsAllowed ] = inputDataString
+function processData(rawData) {
+    // Parse the input string to extract the four numeric values
+    let [positiveCards, neutralCards, negativeCards, operationsLimit] = rawData
         .trim()
-        .split('\n')[0]
-        .split(' ')
+        .split("\n")[0]
+        .split(" ")
         .map(Number);
 
-    let runningTotal = 0; // Initialize the score accumulator.
+    let currentScore = 0; // Initialize the score accumulator
 
-    // --- Step 1: Prioritize processing items that yield a positive contribution (+1). ---
-    // Determine how many positive items can be used within the remaining operations.
-    if (itemTypeOneQuantity >= maxOperationsAllowed) {
-        runningTotal = maxOperationsAllowed; // All allowed operations can be covered by positive items.
-        maxOperationsAllowed = 0; // No more operations remain to be performed.
+    // Phase 1: Process positive cards
+    if (positiveCards >= operationsLimit) {
+        currentScore = operationsLimit;
+        operationsLimit = 0; // All operations used on positive cards
     } else {
-        runningTotal = itemTypeOneQuantity; // Use all available positive items.
-        maxOperationsAllowed = maxOperationsAllowed - itemTypeOneQuantity; // Reduce the operation count.
+        currentScore = positiveCards;
+        operationsLimit = operationsLimit - positiveCards; // Remaining operations
     }
 
-    // --- Step 2: Subsequently process items that yield a neutral contribution (0). ---
-    // If operations still remain, use neutral items. These consume operations but do not
-    // alter the running total.
-    if (itemTypeTwoQuantity >= maxOperationsAllowed) {
-        maxOperationsAllowed = 0; // All remaining operations are consumed by neutral items.
+    // Phase 2: Process neutral cards
+    // Neutral cards do not change the score, only consume operations
+    if (neutralCards >= operationsLimit) {
+        operationsLimit = 0; // All remaining operations used on neutral cards
     } else {
-        maxOperationsAllowed = maxOperationsAllowed - itemTypeTwoQuantity; // Reduce operation count by available neutral items.
+        operationsLimit = operationsLimit - neutralCards; // Remaining operations
     }
 
-    // --- Step 3: Finally, process items that yield a negative contribution (-1). ---
-    // If operations are still available after exhausting positive and neutral items,
-    // use negative items. These will decrease the running total.
-    if (itemTypeThreeQuantity >= maxOperationsAllowed) {
-        runningTotal = runningTotal - maxOperationsAllowed; // Subtract for the remaining operations.
-        // At this point, maxOperationsAllowed effectively becomes zero.
+    // Phase 3: Process negative cards
+    // Negative cards decrease the score
+    if (negativeCards >= operationsLimit) {
+        currentScore = currentScore - operationsLimit; // Decrease score by remaining operations
     } else {
-        runningTotal -= itemTypeThreeQuantity; // Subtract for all available negative items.
-        // No further item types, so maxOperationsAllowed's final value is not used.
+        currentScore -= negativeCards; // Decrease score by all available negative cards
     }
 
-    // Display the computed final score to the console output.
-    console.log(runningTotal);
+    // Output the final calculated score
+    console.log(currentScore);
 }
 
-// Invoke the primary processing function with data obtained from standard input.
-processNumericalScenario(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// Read input from standard input and pass it to the processing function
+processData(require('fs').readFileSync('/dev/stdin', 'utf8'));

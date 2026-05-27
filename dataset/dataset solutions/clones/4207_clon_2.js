@@ -1,52 +1,52 @@
-let analyzeText = function(sourceInfo) {
-  // Extract the first line of the input and split it into individual characters.
-  const charCollection = sourceInfo.split('\n')[0].split('');
+function ProcessInput(inputString)
+{
+  // This function analyzes a string to determine if it meets specific palindrome-like criteria.
+  // It first splits the input by newline, takes the first line, and then converts it to an array of characters.
+  let charArray = inputString.split('\n')[0].split('');
 
-  // Determine if the total number of characters is even or odd.
-  if (charCollection.length % 2 === 0) {
-    // Case for an even length character sequence.
-
-    let frontSlice = charCollection.slice(0, charCollection.length / 2 - 1); // Get the first part, excluding the character just before the midpoint.
-    let backSliceReversed = charCollection.slice(0, charCollection.length / 2).reverse(); // Get the first half, then reverse it for comparison.
+  // Check if the character array has an even number of elements.
+  if (charArray.length % 2 === 0) {
+    // For even length strings, extract the first half (excluding the middle character if it were odd)
+    // and the first half (including the middle character if it were odd) reversed.
+    let leftSegment = charArray.slice(0, charArray.length / 2 - 1);
+    let reversedRightSegment = charArray.slice(0, charArray.length / 2).reverse();
 
     // Compare the string representations of these two segments.
-    if (frontSlice.toString() === backSliceReversed.toString()) {
-      // If they are identical after conversion to string, proceed with unique character check.
-
-      frontSlice = new Set(frontSlice); // Convert the first segment to a Set to count unique elements.
-      backSliceReversed = new Set(backSliceReversed); // Convert the reversed segment to a Set.
-
-      // If both segments contain only a single type of unique character.
-      if (frontSlice.size === 1 && backSliceReversed.size === 1) {
-        console.log('NO'); // Output "NO" for this specific condition.
-        return; // Exit the function immediately.
+    if (leftSegment.toString() === reversedRightSegment.toString()) {
+      // If they are identical, convert them to Sets to count unique characters.
+      let distinctLeftChars = new Set(leftSegment);
+      let distinctRightChars = new Set(reversedRightSegment);
+      // If both segments consist of only one unique character each (e.g., "aaaa" or "bbbb"),
+      // then it's a special case that results in "NO".
+      if (distinctLeftChars.size === 1 && distinctRightChars.size === 1) {
+        console.log("NO");
+        return; // Exit the function early.
       }
     }
   }
-  else {
-    // Case for an odd length character sequence.
+  else { // The character array has an odd number of elements.
+    // For odd length strings, extract the part before the middle character
+    // and the part after the middle character, then reverse the latter.
+    let leftSegment = charArray.slice(0, (charArray.length - 1) / 2);
+    let reversedRightSegment = charArray.slice(((charArray.length - 1) / 2) + 1).reverse();
 
-    let frontSlice = charCollection.slice(0, (charCollection.length - 1) / 2); // Extract characters before the middle one.
-    let backSliceReversed = charCollection.slice(((charCollection.length - 1) / 2) + 1).reverse(); // Extract characters after the middle one, then reverse them.
-
-    // Perform string comparison of the two parts.
-    if (frontSlice.toString() === backSliceReversed.toString()) {
-      // If the string forms are identical, check unique character counts.
-
-      frontSlice = new Set(frontSlice); // Transform the front part into a Set of unique characters.
-      backSliceReversed = new Set(backSliceReversed); // Transform the back part into a Set of unique characters.
-
-      // If both sets of unique characters each contain only one distinct character.
-      if (frontSlice.size === 1 && backSliceReversed.size === 1) {
-        console.log("NO"); // Indicate the "NO" outcome.
-        return; // Terminate function execution.
+    // Compare the string representations of these two segments.
+    if (leftSegment.toString() === reversedRightSegment.toString()) {
+      // If they are identical, convert them to Sets to count unique characters.
+      let distinctLeftChars = new Set(leftSegment);
+      let distinctRightChars = new Set(reversedRightSegment);
+      // If both segments consist of only one unique character each (e.g., "aaaaa" or "bbbbb"),
+      // then it's a special case that results in "NO".
+      if (distinctLeftChars.size === 1 && distinctRightChars.size === 1) {
+        console.log("NO");
+        return; // Exit the function early.
       }
     }
   }
-  // If none of the specific "NO" conditions were met, output "YES".
-  console.log('YES');
-  return; // Conclude the function.
-};
+  // If none of the "NO" conditions were met, then the string satisfies the criteria.
+  console.log("YES");
+  return;
+}
 
-// Initiate the analysis process by reading input from standard input.
-analyzeText( require('fs').readFileSync('/dev/stdin', 'utf8') );
+// Read input from standard input and pass it to the processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

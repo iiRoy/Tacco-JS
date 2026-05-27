@@ -1,99 +1,114 @@
-function SolveProblem(rawInputData) {
-    const inputLines = rawInputData.split("\n");
+const processInput = (rawData) => {
+    const RAIN_FACTOR = 2;
+    const NO_CONTRADICTION = false;
+    const HAS_CONTRADICTION = true;
+    const INITIAL_RAIN_AMOUNT_ITERATOR = 0;
 
-    const totalVertices = Number(inputLines[0]);
+    const getNextCyclicIndex = (currentIdx, totalElements) => (currentIdx + 1) % totalElements;
 
-    const observationValues = parseIntegerArray(inputLines[1].split(" "));
+    const inputLines = rawData.split("\n");
+    const numElements = parseInt(inputLines[0], 10);
+    const valleyHeightsStringParts = inputLines[1].split(" ");
 
-    let peakObservation = -1;
-    let peakObservationIndex = -1;
-    let totalObservationSum = 0;
+    const valleyHeights = parseIntegerArray(valleyHeightsStringParts);
 
-    for (let k = 0; k < observationValues.length; k++) {
-        const currentObservation = observationValues[k];
-        if (currentObservation > peakObservation) {
-            peakObservation = currentObservation;
-            peakObservationIndex = k;
+    let peakHeightMax = -Infinity;
+    let peakMaxIdx = 0;
+    let totalValleySum = 0;
+
+    // Determine the maximum valley height, its position, and the total sum of valley heights
+    for (let i = 0; i < valleyHeights.length; i++) {
+        const currentValleyHeight = valleyHeights[i];
+        if (currentValleyHeight > peakHeightMax) {
+            peakMaxIdx = i;
+            peakHeightMax = currentValleyHeight;
         }
-        totalObservationSum += currentObservation;
+        totalValleySum += currentValleyHeight;
     }
 
-    let finalMountainHeights = [];
-    let scenarioFound = false;
+    let candidateMountainRain = [];
+    let currentMountainRainSum = 0;
+    let foundContradiction = HAS_CONTRADICTION;
 
-    for (let initialAssumption = 0; initialAssumption <= peakObservation; initialAssumption++) {
-        let currentMountainEstimates = new Array(totalVertices);
-        let currentMountainSum = 0;
-        let conflictDetected = false;
+    const initialPeakPosition = peakMaxIdx;
+    const subsequentPeakPosition = getNextCyclicIndex(peakMaxIdx, numElements);
 
-        const firstPeakHeight = initialAssumption << 1;
-        const secondPeakHeight = (peakObservation - initialAssumption) << 1;
+    // Iterate through possible initial rain distributions for the two starting peaks
+    for (let initialRainSplit = INITIAL_RAIN_AMOUNT_ITERATOR; initialRainSplit <= peakHeightMax; initialRainSplit++) {
+        candidateMountainRain = new Array(numElements).fill(0); // Reset candidate array for each attempt
+        currentMountainRainSum = 0;
+        foundContradiction = HAS_CONTRADICTION; // Assume contradiction until proven otherwise for this split
 
-        currentMountainEstimates[peakObservationIndex] = firstPeakHeight;
-        currentMountainEstimates[(peakObservationIndex + 1) % totalVertices] = secondPeakHeight;
+        const rainAtInitialPeak = initialRainSplit * RAIN_FACTOR;
+        const rainAtSubsequentPeak = (peakHeightMax - initialRainSplit) * RAIN_FACTOR;
 
-        currentMountainSum = firstPeakHeight + secondPeakHeight;
+        candidateMountainRain[initialPeakPosition] = rainAtInitialPeak;
+        candidateMountainRain[subsequentPeakPosition] = rainAtSubsequentPeak;
 
-        if (firstPeakHeight < 0 || secondPeakHeight < 0) {
-            conflictDetected = true;
-            continue;
-        }
+        currentMountainRainSum = candidateMountainRain[initialPeakPosition] + candidateMountainRain[subsequentPeakPosition];
 
-        let propagationVertexIdx = (peakObservationIndex + 1) % totalVertices;
+        // Propagate rain amounts around the circular path
+        let currentPropagationIdx = getNextCyclicIndex(initialPeakPosition, numElements);
+        let cycleCompleted = false;
 
-        while (true) {
-            const currentObservationIdx = propagationVertexIdx;
-            const currentMountainIdx = currentObservationIdx;
-            const nextMountainIdx = (currentObservationIdx + 1) % totalVertices;
+        while (!cycleCompleted) {
+            const nextPropagationIdx = getNextCyclicIndex(currentPropagationIdx, numElements);
 
-            const calculatedNextHeight = (observationValues[currentObservationIdx] << 1) - currentMountainEstimates[currentMountainIdx];
+            // Calculate the rain amount for the next peak based on the current valley and previous peak's rain
+            const prevPeakRainHalf = candidateMountainRain[currentPropagationIdx] / RAIN_FACTOR;
+            const currentValleyHeight = valleyHeights[currentPropagationIdx];
+            const calculatedRainForNextPeak = (currentValleyHeight - prevPeakRainHalf) * RAIN_FACTOR;
 
-            if (calculatedNextHeight < 0) {
-                conflictDetected = true;
-                break;
+            // Guard clause: Rain must be non-negative
+            if (calculatedRainForNextPeak < 0) {
+                foundContradiction = HAS_CONTRADICTION;
+                break; // Exit inner propagation loop
             }
 
-            if (nextMountainIdx !== peakObservationIndex) {
-                currentMountainEstimates[nextMountainIdx] = calculatedNextHeight;
-                currentMountainSum += calculatedNextHeight;
+            // If not yet back to the initial peak, assign and check sum
+            if (nextPropagationIdx !== initialPeakPosition) {
+                candidateMountainRain[nextPropagationIdx] = calculatedRainForNextPeak;
+                currentMountainRainSum += candidateMountainRain[nextPropagationIdx];
 
-                if (currentMountainSum > totalObservationSum) {
-                    conflictDetected = true;
-                    break;
+                // Guard clause: Total mountain rain sum must not exceed total valley sum
+                if (currentMountainRainSum > totalValleySum) {
+                    foundContradiction = HAS_CONTRADICTION;
+                    break; // Exit inner propagation loop
                 }
             } else {
-                if (calculatedNextHeight === currentMountainEstimates[peakObservationIndex]) {
-                    scenarioFound = true;
-                    finalMountainHeights = currentMountainEstimates;
+                // End of cycle: check consistency with the initial peak's rain amount
+                if (calculatedRainForNextPeak === candidateMountainRain[initialPeakPosition]) {
+                    foundContradiction = NO_CONTRADICTION;
                 } else {
-                    conflictDetected = true;
+                    foundContradiction = HAS_CONTRADICTION;
                 }
-                break;
+                cycleCompleted = true; // Mark cycle as completed
             }
-            propagationVertexIdx = nextMountainIdx;
+            currentPropagationIdx = nextPropagationIdx; // Move to the next index for propagation
         }
 
-        if (scenarioFound) {
-            break;
-        }
-    }
-
-    console.log(formatArrayWithSpaces(finalMountainHeights));
-}
-
-function parseIntegerArray(stringNumberArray) {
-    const numbers = [];
-    for (let idx = 0; idx < stringNumberArray.length; idx++) {
-        const num = Number(stringNumberArray[idx]);
-        if (!isNaN(num)) {
-            numbers.push(num);
+        if (foundContradiction === NO_CONTRADICTION) {
+            break; // Found a valid configuration, exit outer loop
         }
     }
-    return numbers;
-}
 
-function formatArrayWithSpaces(numericArray) {
-    return numericArray.join(' ') + '\n';
-}
+    // Output the final result
+    console.log(formatOutputArray(candidateMountainRain));
+};
 
-SolveProblem(require("fs").readFileSync("/dev/stdin", "utf8"));
+const parseIntegerArray = (inputStringArray) => {
+    const parsedNumbers = [];
+    for (let i = 0; i < inputStringArray.length; i++) {
+        parsedNumbers[i] = parseInt(inputStringArray[i], 10); // Explicitly specify radix 10
+    }
+    return parsedNumbers;
+};
+
+const formatOutputArray = (dataElements) => {
+    let formattedString = dataElements.join(' ');
+    formattedString += '\n'; // Add a newline character at the end
+    return formattedString;
+};
+
+// This line should not be edited (reads from stdin and calls the main processing function)
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

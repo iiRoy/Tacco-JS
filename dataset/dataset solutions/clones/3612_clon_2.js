@@ -1,40 +1,38 @@
 "use strict";
-// This script processes a sequence and a threshold value
-// to determine a specific character output.
 
-function analyzeSequence (inputDataStream)
-{
-    // The input data is expected to be a multi-line string.
-    // We split it into an array of individual lines.
-    let lineFragments = inputDataStream.split('\n');
+/*
+ * This module defines a function to process input data
+ * and determine a specific character based on a pattern search
+ * and a numerical threshold.
+ */
+function processInputData(rawData) {
+  // Divide the incoming string into an array of lines using the newline character as a delimiter.
+  let lineSegments = rawData.split('\n');
 
-    // The first line contains the main string sequence to be analyzed.
-    const primarySequence = lineFragments[0];
+  // Extract the first line as the primary string for analysis.
+  const targetString = lineSegments[0];
 
-    // The second line contains a numerical threshold.
-    // We parse it as an integer with base 10.
-    const thresholdValue = parseInt(lineFragments[1], 10);
+  // Parse the second line as an integer, specifying base 10 for conversion.
+  const limitValue = parseInt(lineSegments[1], 10);
 
-    // We search for the index of the first character that is not '1'.
-    // If no such character is found, 'firstNonDigitOnePosition' will be -1.
-    let firstNonDigitOnePosition = primarySequence.search(/[^1]+/);
+  // Perform a regular expression search on the target string
+  // to find the index of the first character that is not '1'.
+  // If no such character is found, 'firstNonOneIndex' will be -1.
+  let firstNonOneIndex = targetString.search(/[^1]+/);
 
-    // Check if a non-'1' character was found AND if its position
-    // is within the bounds defined by the threshold value.
-    if (firstNonDigitOnePosition >= 0 && firstNonDigitOnePosition <= thresholdValue - 1)
-    {
-        // If both conditions are met, output the character at that position.
-        console.log(primarySequence[firstNonDigitOnePosition]);
-    }
-
-    else
-    {
-        // Otherwise (if no non-'1' character or it's beyond the threshold),
-        // output the default digit '1'.
-        console.log(1);
-    }
+  // Evaluate the search result against the defined limit.
+  // If a non-'1' character was found (index >= 0)
+  // AND its position is within the allowed range (index <= limitValue - 1),
+  // then output that specific character.
+  if (firstNonOneIndex >= 0 && firstNonOneIndex <= limitValue - 1) {
+    console.log(targetString[firstNonOneIndex]);
+  } else {
+    // Otherwise, if no non-'1' character was found, or if it was outside the limit,
+    // output the digit '1'.
+    console.log(1);
+  }
 }
 
-// The program initiates by reading input from standard input,
-// then passing it to the core analysis function.
-analyzeSequence( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) );
+// Read the entire content from standard input synchronously,
+// using UTF-8 encoding, and pass it to the processing function.
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

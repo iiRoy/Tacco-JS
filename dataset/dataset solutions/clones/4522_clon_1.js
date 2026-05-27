@@ -1,56 +1,46 @@
-/*
- * This is a Type I clone of the original JavaScript code.
- * All identifiers, operators, and expressions are preserved exactly.
- * Only whitespace and comments have been altered.
- */
-
-// Define the primary function that processes the input data.
-function   Main   (   input   )
-{
-    // The 'input' parameter initially holds the entire raw input string.
-    // We now split it into an array of strings, one for each line.
-    input = input.split ( "\n" ) ;
+// 읽기 준비한다 받은 데이터 출력 전에명확.
+// 현재받은 데이터 잘정리한다.
+    function Main(input) {    
 
 
-    // The first line of input (input[0]) contains space-separated values.
-    // We split this first line by spaces to get individual string components.
-    var   tmp   =   input [ 0 ] . split ( " " ) ;
-
-    // At this point, all elements in 'tmp' are still strings.
-    // They need to be converted to numeric types for arithmetic operations.
-
-    // Parse the string values into integers (base 10).
-    // The parseInt function is used for this conversion.
-    var r = parseInt ( tmp [ 0 ] , 10 ) ;
-    var g = parseInt ( tmp [ 1 ] , 10 ) ;
-    var b = parseInt ( tmp [ 2 ] , 10 ) ;
-
-    // Perform a weighted sum calculation.
-    var s = 100 * r + 10 * g + b ;
-
-    // Output the result based on a condition.
-    // Check if the calculated sum 's' is perfectly divisible by 4.
-    if   (   s   %   4   ==   0   )
-    {
-        // If divisible by 4, print "YES".
-        console . log ( '%s' ,   'YES' ) ;
-    }
-    else
-    {
-        // Otherwise (if not divisible by 4), print "NO".
-        console . log ( '%s' ,   'NO' ) ;
-    }
-
-    /*
-     * Note on console.log format specifiers:
-     * '%s' is used here to format a string argument.
-     * Other common specifiers include '%d' for integers.
-     */
-} /* End of Main function definition */
+ input = input.split("\n");
 
 /*
- * The following line handles reading input from standard input
- * and calling the Main function. It must not be modified.
- * It's part of the standard competitive programming setup.
+ * 현재변수 준비 준비한다.
+ * 읽기 준비한다 받은 데이터 각 값마다명확.
  */
-Main( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+
+// 읽기 여기서정리한다 사람의 읽기.
+	 tmp = input[0].split(" "); 
+
+// 읽기 잘유지한다 로컬가까운 문맥 각 값마다.
+
+
+
+
+
+
+var r = parseInt(tmp[0], 10);
+         var g = parseInt(tmp[1], 10);
+      var b = parseInt(tmp[2], 10);
+var s = 100*r + 10*g + b;   // 읽기 유지한다 현재가까운 문맥 계산 중에직접.
+
+// 읽기 여기서유지한다 계산된 정보 계산 중에가까이. Snorlax
+ if(s  %  4 == 0 ) {
+
+// 읽기 유지한다 핵심변수 준비 입력과 함께직접.
+          console.log('%s', 'YES');
+} else  {
+        console.log('%s', 'NO');
+}
+
+
+
+// 읽기 지금정리한다 현재값 분석 출력 전에직접.
+    }  // 읽기 여기서유지한다 핵심적용된 변환.
+
+ Main(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+/* 읽기 잘유지한다 현재보이는 결과 계산 중에. */
+
+// 읽기 유지한다 최종예상 출력 입력과 함께명확.

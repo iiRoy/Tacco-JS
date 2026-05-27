@@ -1,39 +1,25 @@
-/*
-  * This program reads a single numeric value from standard input,
-  * performs a specific calculation involving division, modulo,
-  * and conditional additions, then prints the final result.
-  */
+let rawData = require('fs').readFileSync('/dev/stdin', 'utf8'); // Read input from standard input
+let dataRows = rawData.split('\n'); // Split the input string into an array of lines
 
-const  rawInputData = require('fs')  .  readFileSync  (  '/dev/stdin'  ,  'utf8'  )  ;
+// Extract the first line, convert it to a number, and store it
+let targetValue = dataRows.shift() * 1;
 
-const  processedLines  =  rawInputData .  split  (  '\n'  )  ;
+// Calculate the base part of the result
+let finalResult = Math.floor(targetValue / 11) * 2;
 
-// Obtain the primary numerical datum by parsing the first line
-// The `Number()` constructor is used for explicit type conversion.
-let  primaryDatum  =  Number  (  processedLines.shift()  )  ;
+// Determine the remainder when targetValue is divided by 11
+let remainderVal = targetValue % 11;
 
-// Initialize a variable to store the ultimate calculated outcome.
-// The initial calculation involves integer division and multiplication.
-let  ultimateOutcome  =  Math  .  floor  (  primaryDatum  /  11  )  *  2  ;
-
-// Determine the remainder component for subsequent conditional logic.
-let  remainderComponent  =  primaryDatum  %  11  ;
-
-// Conditional logic for adjusting the ultimate outcome based on the remainder.
-if  (  remainderComponent  ===  0  )
-{
-    // When the remainder is exactly zero, no modifications are applied.
-}
-else  if  (  remainderComponent  <=  6  )
-{
-    // If the remainder is between one and six (inclusive), increment by one.
-    ultimateOutcome  +=  1  ;
-}
-else
-{
-    // For remainders greater than six (i.e., seven through ten), increment by two.
-    ultimateOutcome  +=  2  ;
+// Apply conditional adjustments based on the remainder
+if (remainderVal === 0) {
+    // No adjustment needed for a zero remainder
+} else if (remainderVal <= 6) {
+    // Add 1 to the result if remainder is between 1 and 6
+    finalResult += 1;
+} else {
+    // Add 2 to the result for remainders greater than 6 (i.e., 7 to 10)
+    finalResult += 2;
 }
 
-// Display the final computed numerical result.
-console.log  (  ultimateOutcome  )  ;
+// Output the computed final result to the console
+console.log(finalResult);

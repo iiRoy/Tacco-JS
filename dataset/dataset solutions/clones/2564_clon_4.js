@@ -1,88 +1,106 @@
-const exchangeElements = (arrangement, firstIdx, secondIdx) => {
-    [arrangement[firstIdx], arrangement[secondIdx]] = [arrangement[secondIdx], arrangement[firstIdx]];
-};
+const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+const contentLines = fileContent.split('\n');
+const firstLineParts = contentLines.shift().split(' ');
+const elementCount = Number(firstLineParts[0]);
+const operationCount = Number(firstLineParts[1]);
+const initialValues = contentLines.shift().split(' ').map(Number);
 
-const ascendElement = (collection, currentPos, comparator) => {
-    let childPosition = currentPos;
-    let parentPosition = Math.floor((childPosition - 1) / 2);
+class PriorityQueue {
+    #elements;
+    #comparator;
 
-    while (childPosition > 0 && comparator(collection[childPosition], collection[parentPosition])) {
-        exchangeElements(collection, childPosition, parentPosition);
-        childPosition = parentPosition;
-        parentPosition = Math.floor((childPosition - 1) / 2);
-    }
-};
+    constructor(initialValues = [], isMaxHeap = true) {
+        this.#elements = [];
+        this.#comparator = isMaxHeap ? (a, b) => a > b : (a, b) => a < b;
 
-const descendElement = (collection, currentPos, currentSize, comparator) => {
-    let primary = currentPos;
-    let leftChild = 2 * currentPos + 1;
-    let rightChild = 2 * currentPos + 2;
-
-    if (leftChild < currentSize && comparator(collection[leftChild], collection[primary])) {
-        primary = leftChild;
-    }
-
-    if (rightChild < currentSize && comparator(collection[rightChild], collection[primary])) {
-        primary = rightChild;
+        if (initialValues.length > 0) {
+            this.#elements = initialValues.slice();
+            for (let i = Math.floor(this.#elements.length / 2) - 1; i >= 0; i--) {
+                this.#siftDown(i);
+            }
+        }
     }
 
-    if (primary !== currentPos) {
-        exchangeElements(collection, currentPos, primary);
-        descendElement(collection, primary, currentSize, comparator);
-    }
-};
+    #getParentIndex(idx) { return Math.floor((idx - 1) / 2); }
+    #getLeftChildIndex(idx) { return 2 * idx + 1; }
+    #getRightChildIndex(idx) { return 2 * idx + 2; }
 
-const initializeStructure = (sourceArray, comparator) => {
-    let resultCollection = [...sourceArray];
-    const structureSize = resultCollection.length;
-    for (let i = Math.floor(structureSize / 2) - 1; i >= 0; i--) {
-        descendElement(resultCollection, i, structureSize, comparator);
-    }
-    return resultCollection;
-};
-
-const placeItem = (collection, item, comparator) => {
-    collection.push(item);
-    ascendElement(collection, collection.length - 1, comparator);
-};
-
-const retrieveTop = (collection, comparator) => {
-    const structureSize = collection.length;
-    if (structureSize === 0) {
-        return undefined;
-    }
-    if (structureSize === 1) {
-        return collection.pop();
+    #swap(idx1, idx2) {
+        [this.#elements[idx1], this.#elements[idx2]] = [this.#elements[idx2], this.#elements[idx1]];
     }
 
-    const topValue = collection[0];
-    collection[0] = collection.pop();
-    descendElement(collection, 0, collection.length, comparator);
+    #siftUp(idx) {
+        let currentIdx = idx;
+        let parentIdx = this.#getParentIndex(currentIdx);
+        while (currentIdx > 0 && this.#comparator(this.#elements[currentIdx], this.#elements[parentIdx])) {
+            this.#swap(currentIdx, parentIdx);
+            currentIdx = parentIdx;
+            parentIdx = this.#getParentIndex(currentIdx);
+        }
+    }
 
-    return topValue;
-};
+    #siftDown(idx) {
+        let currentIdx = idx;
+        const lastIdx = this.#elements.length - 1;
 
+        while (true) {
+            let leftChildIdx = this.#getLeftChildIndex(currentIdx);
+            let rightChildIdx = this.#getRightChildIndex(currentIdx);
+            let preferredChildIdx = currentIdx;
 
-const incomingData = require('fs').readFileSync('/dev/stdin', 'utf8');
-const entryRecords = incomingData.split('\n');
+            if (leftChildIdx <= lastIdx && this.#comparator(this.#elements[leftChildIdx], this.#elements[preferredChildIdx])) {
+                preferredChildIdx = leftChildIdx;
+            }
+            if (rightChildIdx <= lastIdx && this.#comparator(this.#elements[rightChildIdx], this.#elements[preferredChildIdx])) {
+                preferredChildIdx = rightChildIdx;
+            }
 
-const firstLineComponents = entryRecords.shift().split(' ');
-const elementCount = parseInt(firstLineComponents[0], 10);
-const operationCycles = parseInt(firstLineComponents[1], 10);
+            if (preferredChildIdx !== currentIdx) {
+                this.#swap(currentIdx, preferredChildIdx);
+                currentIdx = preferredChildIdx;
+            } else {
+                break;
+            }
+        }
+    }
 
-const initialNumericalValues = entryRecords.shift().split(' ').map(Number);
+    offer(value) {
+        this.#elements.push(value);
+        this.#siftUp(this.#elements.length - 1);
+    }
 
-const maxComparisonLogic = (valA, valB) => valA > valB;
+    poll() {
+        if (this.#elements.length === 0) {
+            return undefined;
+        }
+        if (this.#elements.length === 1) {
+            return this.#elements.pop();
+        }
 
-let managedCollection = initializeStructure(initialNumericalValues, maxComparisonLogic);
+        const extractedValue = this.#elements[0];
+        this.#elements[0] = this.#elements.pop();
+        this.#siftDown(0);
+        return extractedValue;
+    }
 
-for (let cycleIndex = 0; cycleIndex < operationCycles; cycleIndex++) {
-    const currentHighest = retrieveTop(managedCollection, maxComparisonLogic);
-    if (currentHighest !== undefined) {
-        placeItem(managedCollection, Math.floor(currentHighest / 2), maxComparisonLogic);
+    get size() {
+        return this.#elements.length;
+    }
+
+    get values() {
+        return this.#elements.slice();
     }
 }
 
-const finalSummation = managedCollection.reduce((accumulator, currentElement) => accumulator + currentElement, 0);
+const valueProcessor = new PriorityQueue(initialValues, true);
 
-console.log(finalSummation);
+for (let opIndex = 0; opIndex < operationCount; opIndex++) {
+    const currentMax = valueProcessor.poll();
+    if (currentMax !== undefined) {
+        valueProcessor.offer(Math.floor(currentMax / 2));
+    }
+}
+
+const finalSum = valueProcessor.values.reduce((accumulator, currentValue) => accumulator + currentValue, 0);
+
+console.log(finalSum);

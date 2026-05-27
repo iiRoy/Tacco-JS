@@ -1,30 +1,30 @@
-function ProcessData(rawData) {
-    // Parse the incoming raw string data into an array of numeric values.
-    // The string is expected to contain space-separated numbers.
-    let parsedNumbers = rawData.split(" ").map(Number);
+// This function processes raw input data to determine a specific common divisor.
+function ProcessInput(rawData) {
+    // The input string is expected to contain space-separated numerical values.
+    // We parse these into an array of numbers for subsequent calculations.
+    const numericalComponents = rawData.split(" ").map(Number);
 
+    // An array is initialized to store all common divisors found between the first two numbers.
+    const commonDivisorList = [];
 
-    // Initialize an array to store the common divisors found.
-    const commonDivisors = [];
-
-    // Iterate through numbers starting from 1 up to (but not including)
-    // the minimum of the first two parsed numbers minus one.
-    // This loop identifies potential common divisors.
-    for (let divisorCandidate = 1; divisorCandidate < Math.min(parsedNumbers[0], parsedNumbers[1]) - 1; divisorCandidate++) {
-        // Check if the current candidate divides both the first and second
-        // parsed numbers without any remainder.
-        if ((parsedNumbers[0] % divisorCandidate === 0) && (parsedNumbers[1] % divisorCandidate === 0)) {
-            // If it's a common divisor, add it to our collection.
-            commonDivisors.push(divisorCandidate);
+    // We iterate through potential divisors, starting from 1.
+    // The upper bound for the loop is set to one less than the minimum of the first two input numbers.
+    // This ensures we check divisors up to (min(num1, num2) - 2).
+    for (let currentDivisorCandidate = 1; currentDivisorCandidate < Math.min(numericalComponents[0], numericalComponents[1]) - 1; currentDivisorCandidate++) {
+        // Check if the current candidate divides both the first and second numbers without any remainder.
+        if (numericalComponents[0] % currentDivisorCandidate === 0 && numericalComponents[1] % currentDivisorCandidate === 0) {
+            // If it is a common divisor, add it to our collection.
+            commonDivisorList.push(currentDivisorCandidate);
         }
     }
 
-    // Output a specific element from the collection of common divisors.
-    // The index is determined by subtracting the third parsed number
-    // from the total count of found common divisors.
-    console.log(commonDivisors[commonDivisors.length - parsedNumbers[2]]);
+    // The final step is to output a specific element from the list of common divisors.
+    // The index is calculated by subtracting the third input number from the total count of common divisors.
+    // This effectively selects an element from the end of the array.
+    console.log(commonDivisorList[commonDivisorList.length - numericalComponents[2]]);
 }
 
-// Read input from standard input using Node.js file system module
-// and then invoke the main processing function.
-ProcessData(require("node:fs").readFileSync("/dev/stdin", "utf8"));
+// The program execution starts here by reading input from standard input.
+// The 'fs' module is used to synchronously read the file content from '/dev/stdin' as UTF-8.
+// This content is then passed to our main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

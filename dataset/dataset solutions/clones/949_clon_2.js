@@ -1,61 +1,68 @@
-/*  Configuration for the application.
-    This entry is for temporary Windows setups.  */
-// applicationConfiguration = { dataInputPath: 'temp_file.txt', rowSeparator: '\r\n' };
+const settings = {
+  input: '/dev/stdin', // Specifies the input source, typically standard input for Linux
+  newline: '\n'        // Defines the newline character used to split input lines
+};
 
-// Main configuration for standard Linux/Unix environments.
-applicationConfiguration = { dataInputPath: '/dev/stdin', rowSeparator: '\n' };
+// Reads the entire content of the specified input file,
+// converts it to ASCII, removes leading/trailing whitespace,
+// splits it into an array of lines, and then parses each line.
+let inputLines = require('fs').readFileSync(settings.input, 'ascii')
+  .trim() // Removes any whitespace from both ends of the input string
+  .split(settings.newline) // Divides the string into an ordered list of substrings based on the newline character
+  .map(function (currentLine) {
+    // For each line, it splits the line by spaces and converts each part into a number.
+    return currentLine.split(' ').map(Number);
+  });
 
-// Load and preprocess the input data from the specified source.
-rawInputLines = require('fs').readFileSync(applicationConfiguration.dataInputPath, 'utf8')
-  .trim()
-  .split(applicationConfiguration.rowSeparator)
-  .map(
-    function (currentLineString) {
-      return currentLineString.split('\t').map(Number);
-    }
-  );
+// Extracts key parameters from the processed input data.
+let nodeCount = inputLines[0][0]; // The total number of nodes in the graph structure
+let edgeCount = inputLines[0][1]; // The total number of edges that define connections
+let queryCount = inputLines[edgeCount + 1][0]; // The number of connectivity queries to perform
 
-// Extract key parameters from the first few lines of the processed data.
-vertexCount = rawInputLines[0][0];
-edgeCountValue = rawInputLines[0][1];
-queryRequestCount = rawInputLines[edgeCountValue + 1][0];
-
-// Initialize an array to track parent elements for a Union-Find structure.
-parentElements = new Array(vertexCount + 1);
-for (currentIdx = 0; currentIdx <= vertexCount; currentIdx++) {
-  parentElements[currentIdx] = null;
+// Initializes a parent array for a Disjoint Set Union (DSU) data structure.
+// The array size is `nodeCount + 1` to support 1-based indexing for nodes.
+let parentArray = new Array(nodeCount + 1);
+// Fills the parent array with `null` values, indicating that initially, each node is its own parent (root of its set).
+for (let idx = 0; idx <= nodeCount; idx++) {
+  parentArray[idx] = null;
 }
 
-// Process the edges to build the Union-Find structure.
-// This loop iterates through connection definitions.
-for (connectionIdx = 1; connectionIdx <= edgeCountValue; connectionIdx++) {
-  // Determine the smaller and larger node identifiers for the current edge.
-  lowerNodeId = Math.min(rawInputLines[connectionIdx][0], rawInputLines[connectionIdx][1]);
-  higherNodeId = Math.max(rawInputLines[connectionIdx][0], rawInputLines[connectionIdx][1]);
+// Processes each edge to perform union operations, building the DSU structure.
+// Edges are read from the input, starting from the second line (index 1).
+for (let idx = 1; idx <= edgeCount; idx++) {
+  // Determines the two nodes involved in the current edge.
+  // `nodeA` will hold the smaller ID, `nodeB` the larger, for consistent union logic.
+  let nodeA = Math.min(inputLines[idx][0], inputLines[idx][1]);
+  let nodeB = Math.max(inputLines[idx][0], inputLines[idx][1]);
 
-  // Find the root parent of the lower-indexed node.
-  while (parentElements[lowerNodeId] !== null) {
-    lowerNodeId = parentElements[lowerNodeId];
+  // Finds the root of `nodeA`'s set using path compression.
+  // It traverses up the parent chain until it finds a node whose parent is `null`.
+  while (parentArray[nodeA] !== null) {
+    nodeA = parentArray[nodeA];
   }
-  // Union the higher-indexed node to the root of the lower-indexed node.
-  parentElements[higherNodeId] = lowerNodeId;
+  // Performs the union operation: sets the root of `nodeB`'s set to be the root of `nodeA`'s set.
+  // This effectively merges the two sets.
+  parentArray[nodeB] = nodeA;
 }
 
-// Execute connection queries and print results.
-// This section handles queries starting after the initial data and edge definitions.
-for (requestIdx = edgeCountValue + 2; requestIdx < (edgeCountValue + 2) + queryRequestCount; requestIdx++) {
-  // Retrieve the two nodes for the current query.
-  firstQueryNode = rawInputLines[requestIdx][0];
-  secondQueryNode = rawInputLines[requestIdx][1];
+// Processes each connectivity query.
+// Queries start after the initial parameters and all edge definitions.
+for (let idx = edgeCount + 2; idx < (edgeCount + 2) + queryCount; idx++) {
+  // Extracts the two nodes for the current query.
+  let queryNodeA = inputLines[idx][0];
+  let queryNodeB = inputLines[idx][1];
 
-  // Find the root parent of the first query node.
-  while (parentElements[firstQueryNode] !== null) {
-    firstQueryNode = parentElements[firstQueryNode];
+  // Finds the root of `queryNodeA`'s set using path compression.
+  while (parentArray[queryNodeA] !== null) {
+    queryNodeA = parentArray[queryNodeA];
   }
-  // Find the root parent of the second query node.
-  while (parentElements[secondQueryNode] !== null) {
-    secondQueryNode = parentElements[secondQueryNode];
+  // Finds the root of `queryNodeB`'s set using path compression.
+  while (parentArray[queryNodeB] !== null) {
+    queryNodeB = parentArray[queryNodeB];
   }
-  // Output whether the two nodes are in the same set (connected).
-  console.log((firstQueryNode === secondQueryNode) ? 'connected_nodes' : 'disconnected_nodes');
+
+  // Compares the roots of the two query nodes.
+  // If their roots are identical, they belong to the same connected component.
+  // Outputs 'yes' if connected, 'no' otherwise.
+  console.log((queryNodeA === queryNodeB) ? 'yes' : 'no');
 }

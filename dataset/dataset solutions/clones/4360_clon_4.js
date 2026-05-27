@@ -1,87 +1,72 @@
-function processInputContent(rawText) {
-    const lines = rawText.trim().split("\n");
-    const numericParameters = lines[0].split(" ").map(Number);
+const numericSort = (a, b) => a - b;
 
-    const executionConfig = {
-        primaryLiquidUnit: numericParameters[0] * 100,
-        secondaryLiquidUnit: numericParameters[1] * 100,
-        primarySolidUnit: numericParameters[2],
-        secondarySolidUnit: numericParameters[3],
-        maximumSolubilityPercentage: numericParameters[4],
-        overallWeightLimit: numericParameters[5]
-    };
-    return executionConfig;
-}
-
-function calculatePossibleSums(upperBound, componentA, componentB) {
-    const canFormSum = new Array(upperBound + 1).fill(false);
-    canFormSum[0] = true;
-
-    const components = [];
-    if (componentA > 0) components.push(componentA);
-    if (componentB > 0) components.push(componentB);
-
-    for (const currentComponent of components) {
-        for (let currentSumIndex = currentComponent; currentSumIndex <= upperBound; ++currentSumIndex) {
-            if (canFormSum[currentSumIndex - currentComponent]) {
-                canFormSum[currentSumIndex] = true;
-            }
+function* generateCombinations(unitOne, unitTwo, upperLimit) {
+    for (let indexA = 0; ; ++indexA) {
+        const currentSumA = unitOne * indexA;
+        if (currentSumA > upperLimit) break;
+        for (let indexB = 0; ; ++indexB) {
+            const currentTotal = currentSumA + unitTwo * indexB;
+            if (currentTotal > upperLimit) break;
+            yield currentTotal;
         }
     }
-
-    const availableSums = [];
-    for (let massValue = 0; massValue <= upperBound; ++massValue) {
-        if (canFormSum[massValue]) {
-            availableSums.push(massValue);
-        }
-    }
-    return availableSums;
 }
 
-function runConcentrationSearch(inputData) {
-    const params = processInputContent(inputData);
+function calculateOptimalMixture(inputData) {
+    const dataLines = inputData.trim().split("\n");
+    const initialParameters = dataLines[0].split(" ").map(Number);
 
-    const {
-        primaryLiquidUnit,
-        secondaryLiquidUnit,
-        primarySolidUnit,
-        secondarySolidUnit,
-        maximumSolubilityPercentage,
-        overallWeightLimit
-    } = params;
+    const waterComponentA = initialParameters[0] * 100;
+    const waterComponentB = initialParameters[1] * 100;
+    const sugarComponentC = initialParameters[2];
+    const sugarComponentD = initialParameters[3];
+    const maxConcentrationRatio = initialParameters[4];
+    const overallCapacity = initialParameters[5];
 
-    const absoluteMaxSolidMass = Math.floor(overallWeightLimit * maximumSolubilityPercentage / (100 + maximumSolubilityPercentage));
+    const potentialWaterAmounts = new Set();
+    for (const amount of generateCombinations(waterComponentA, waterComponentB, overallCapacity)) {
+        potentialWaterAmounts.add(amount);
+    }
+    const sortedWaterAmounts = Array.from(potentialWaterAmounts).sort(numericSort);
 
-    const potentialLiquidMasses = calculatePossibleSums(overallWeightLimit, primaryLiquidUnit, secondaryLiquidUnit);
-    const potentialSolidMasses = calculatePossibleSums(absoluteMaxSolidMass, primarySolidUnit, secondarySolidUnit);
+    const maxSugarPossible = Math.floor(overallCapacity * maxConcentrationRatio / (100 + maxConcentrationRatio));
 
-    const usableSolidMasses = new Set(potentialSolidMasses);
+    const availableSugarOptions = new Set();
+    for (const amount of generateCombinations(sugarComponentC, sugarComponentD, maxSugarPossible)) {
+        availableSugarOptions.add(amount);
+    }
 
-    let optimalConcentrationRatio = 0;
-    let finalComposition = [primaryLiquidUnit, 0];
+    let highestAchievedDensity = 0;
+    let finalTotalWeight = 0;
+    let finalSugarWeight = 0;
 
-    for (const liquidQuantity of potentialLiquidMasses) {
-        if (liquidQuantity === 0) continue;
+    for (const currentWaterQuantity of sortedWaterAmounts) {
+        const upperSugarBound = Math.min(
+            Math.floor(currentWaterQuantity * maxConcentrationRatio / 100),
+            overallCapacity - currentWaterQuantity
+        );
 
-        const minimumSolidSearch = Math.round(liquidQuantity * optimalConcentrationRatio);
-        const maxSolidBySolubility = Math.floor(liquidQuantity * maximumSolubilityPercentage / 100);
-        const maxSolidByTotalWeight = overallWeightLimit - liquidQuantity;
-        const currentSolidUpperLimit = Math.min(absoluteMaxSolidMass, maxSolidBySolubility, maxSolidByTotalWeight);
+        const lowerSugarBound = Math.round(currentWaterQuantity * highestAchievedDensity);
 
-        for (let solidQuantity = minimumSolidSearch; solidQuantity <= currentSolidUpperLimit; ++solidQuantity) {
-            if (usableSolidMasses.has(solidQuantity)) {
-                const currentRatio = solidQuantity / liquidQuantity;
+        for (let currentSugarQuantity = lowerSugarBound; currentSugarQuantity <= upperSugarBound; ++currentSugarQuantity) {
+            if (availableSugarOptions.has(currentSugarQuantity)) {
+                const computedDensity = currentWaterQuantity === 0 ? NaN : (currentSugarQuantity / currentWaterQuantity);
 
-                if (currentRatio >= optimalConcentrationRatio) {
-                    optimalConcentrationRatio = currentRatio;
-                    finalComposition = [liquidQuantity + solidQuantity, solidQuantity];
+                if (computedDensity >= highestAchievedDensity) {
+                    finalTotalWeight = currentWaterQuantity + currentSugarQuantity;
+                    finalSugarWeight = currentSugarQuantity;
+                    highestAchievedDensity = computedDensity;
                 }
-                usableSolidMasses.delete(solidQuantity);
+                availableSugarOptions.delete(currentSugarQuantity);
             }
         }
     }
 
-    console.log("%d %d", Math.round(finalComposition[0]), Math.round(finalComposition[1]));
+    if (finalSugarWeight === 0) {
+        finalTotalWeight = waterComponentA;
+    }
+
+    console.log("%d %d", Math.round(finalTotalWeight), Math.round(finalSugarWeight));
 }
 
-runConcentrationSearch(require("fs").readFileSync("/dev/stdin", "utf8"));
+calculateOptimalMixture(require("fs").readFileSync("/dev/stdin", "utf8"));

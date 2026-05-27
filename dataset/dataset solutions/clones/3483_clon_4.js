@@ -1,77 +1,56 @@
-function convertStringToInt(initialString) {
-    return Number(initialString);
+function parseNumeric(strVal) {
+    return +strVal;
 }
 
-function computeGreatestCommonDivisor(firstValue, secondValue) {
-    while (secondValue !== 0) {
-        let temporaryStorage = secondValue;
-        secondValue = firstValue % secondValue;
-        firstValue = temporaryStorage;
+function findCommonDivisor(valA, valB) {
+    while (valB !== 0) {
+        const temp = valB;
+        valB = valA % valB;
+        valA = temp;
     }
-    return firstValue;
+    return valA;
 }
 
-function computeLeastCommonMultiple(valueOne, valueTwo) {
-    if (valueOne === 0 || valueTwo === 0) {
-        return 0;
-    }
-    return (valueOne * valueTwo) / computeGreatestCommonDivisor(valueOne, valueTwo);
+function computeLeastCommonMultiple(valA, valB) {
+    return (valA * valB) / findCommonDivisor(valA, valB);
 }
 
-function processInputData(rawTextInput) {
-    const linesOfText = rawTextInput.split('\n');
-    const firstLineParts = linesOfText[0].split(' ');
+function processInputData(rawData) {
+    const inputLines = rawData.split('\n');
+    const [firstCountStr, secondCountStr] = inputLines[0].split(' ');
+    
+    const firstCount = parseNumeric(firstCountStr);
+    const secondCount = parseNumeric(secondCountStr);
+    
+    const firstSequence = inputLines[1];
+    const secondSequence = inputLines[2];
 
-    const lengthA = convertStringToInt(firstLineParts[0]);
-    const lengthB = convertStringToInt(firstLineParts[1]);
-    const stringA = linesOfText[1];
-    const stringB = linesOfText[2];
+    const combinedLength = computeLeastCommonMultiple(firstCount, secondCount);
 
-    const finalLength = computeLeastCommonMultiple(lengthA, lengthB);
-
-    const characterPositions = new Map();
-
-    let conflictFound = false;
-
-    const stepSizeA = finalLength / lengthA;
-    for (let currentIdxA = 0; currentIdxA < stringA.length; currentIdxA++) {
-        const absolutePos = currentIdxA * stepSizeA;
-        const charA = stringA[currentIdxA];
-
-        if (characterPositions.has(absolutePos)) {
-            if (characterPositions.get(absolutePos) !== charA) {
-                conflictFound = true;
-                break;
-            }
-        } else {
-            characterPositions.set(absolutePos, charA);
-        }
+    const charPlacements = new Map();
+    for (let currentIdx = 0; currentIdx < firstSequence.length; ++currentIdx) {
+        const targetPosition = currentIdx * (combinedLength / firstCount);
+        charPlacements.set(targetPosition, firstSequence[currentIdx]);
     }
 
-    if (conflictFound) {
-        console.log('-1');
-        return;
-    }
+    let compatibilityStatus = true;
 
-    const stepSizeB = finalLength / lengthB;
-    for (let currentIdxB = 0; currentIdxB < stringB.length; currentIdxB++) {
-        const absolutePos = currentIdxB * stepSizeB;
-        const charB = stringB[currentIdxB];
-
-        if (characterPositions.has(absolutePos)) {
-            if (characterPositions.get(absolutePos) !== charB) {
-                conflictFound = true;
-                break;
-            }
-        } else {
-            characterPositions.set(absolutePos, charB);
-        }
-    }
-
-    if (conflictFound) {
-        console.log('-1');
+    if (charPlacements.get(0) !== secondSequence[0]) {
+        compatibilityStatus = false;
     } else {
-        console.log(finalLength);
+        for (let currentIdx = 1; currentIdx < secondSequence.length; ++currentIdx) {
+            const targetPosition = currentIdx * (combinedLength / secondCount);
+            if (charPlacements.has(targetPosition) && charPlacements.get(targetPosition) !== secondSequence[currentIdx]) {
+                compatibilityStatus = false;
+                break;
+            }
+        }
+    }
+
+    if (compatibilityStatus) {
+        console.log(combinedLength);
+    } else {
+        console.log('-1');
     }
 }
 

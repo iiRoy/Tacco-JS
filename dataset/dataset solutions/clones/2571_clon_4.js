@@ -1,9 +1,8 @@
-((processInput) => {
-    const fileSystemModule = require("node:fs");
-    const inputBuffer = fileSystemModule.readFileSync("/dev/stdin", "utf8");
-    const numericalBase = processInput(inputBuffer);
-    const calculatedResult = Math.pow(numericalBase, 3);
-    process.stdout.write(String(calculatedResult) + "\n");
-})(
-    (sourceContent) => Number.parseInt(sourceContent.match(/^\d+/)[0], 10)
-);
+const processInputAndCompute = (sourceContent) => {
+    const newlineIndex = sourceContent.indexOf('\n');
+    const extractedLine = (newlineIndex === -1) ? sourceContent : sourceContent.substring(0, newlineIndex);
+    const numericalValue = Number(extractedLine);
+    console.log(Math.pow(numericalValue, 3));
+};
+
+processInputAndCompute(require("fs").readFileSync("/dev/stdin", "utf8"));

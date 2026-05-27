@@ -1,21 +1,28 @@
-function computeAggregate(streamOfText) {
-  const dataLines = streamOfText.split('\n');
-  const sequenceLength = parseInt(dataLines[0].trim(), 10);
-  const mainSequence = dataLines[1].split(' ').map(Number);
-  const lookupTableOne = dataLines[2].split(' ').map(Number);
-  const lookupTableTwo = dataLines[3].split(' ').map(Number);
+function ProcessInputAndCalculate(rawText) {
+  const lineSegments = rawText.split("\n");
 
-  const finalTally = mainSequence.slice(0, sequenceLength).reduce((accumulator, currentElement, currentIndex, fullArray) => {
-    let roundContribution = 0;
-    roundContribution += lookupTableOne[currentElement - 1];
+  const countIndicator = lineSegments[0].split("");
 
-    if (currentIndex > 0 && currentElement === (fullArray[currentIndex - 1] + 1)) {
-      roundContribution += lookupTableTwo[fullArray[currentIndex - 1] - 1];
-    }
-    return accumulator + roundContribution;
-  }, 0);
+  const sequenceValues = lineSegments[1].split(" ").map(Number);
+  const baseScores = lineSegments[2].split(" ").map(Number);
+  const bonusScores = lineSegments[3].split(" ").map(Number);
 
-  console.log(finalTally);
+  const finalResult = Array.from({ length: countIndicator }, (_, currentIterationIndex) => currentIterationIndex)
+    .reduce((accumulator, currentIterationIndex) => {
+      const currentSequenceElement = sequenceValues[currentIterationIndex];
+      let currentIterationSum = baseScores[currentSequenceElement - 1];
+
+      if (currentIterationIndex > 0 && currentSequenceElement === accumulator.previousSequenceElement + 1) {
+        currentIterationSum += bonusScores[accumulator.previousSequenceElement - 1];
+      }
+
+      return {
+        totalAccumulatedScore: accumulator.totalAccumulatedScore + currentIterationSum,
+        previousSequenceElement: currentSequenceElement,
+      };
+    }, { totalAccumulatedScore: 0, previousSequenceElement: null });
+
+  console.log(finalResult.totalAccumulatedScore);
 }
 
-computeAggregate(require("fs").readFileSync("/dev/stdin", "utf8"));
+ProcessInputAndCalculate(require("fs").readFileSync("/dev/stdin", "utf8"));

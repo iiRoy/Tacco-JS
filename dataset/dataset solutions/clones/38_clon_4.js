@@ -1,55 +1,60 @@
-const obtainPrimes = (limitValue) => {
-    const primeStatusFlags = Array(limitValue + 1).fill(true);
-    primeStatusFlags[0] = false;
-    primeStatusFlags[1] = false;
+function generatePrimesUpTo(limitValue) {
+    const primeFlags = new Uint8Array(limitValue + 1).fill(1);
+    primeFlags[0] = 0;
+    primeFlags[1] = 0;
 
     let currentCandidate = 2;
-    const boundaryCheck = Math.floor(Math.sqrt(limitValue));
+    const upperSqrtBound = Math.floor(Math.sqrt(limitValue));
 
-    while (currentCandidate <= boundaryCheck) {
-        if (primeStatusFlags[currentCandidate]) {
-            let compositeMarker = currentCandidate * currentCandidate;
-            while (compositeMarker <= limitValue) {
-                primeStatusFlags[compositeMarker] = false;
-                compositeMarker += currentCandidate;
+    while (currentCandidate <= upperSqrtBound) {
+        if (primeFlags[currentCandidate] === 1) {
+            let multiple = currentCandidate + currentCandidate;
+            while (multiple <= limitValue) {
+                primeFlags[multiple] = 0;
+                multiple += currentCandidate;
             }
         }
         currentCandidate++;
     }
 
-    const compiledPrimes = [];
-    let currentIdx = 0;
-    while (currentIdx <= limitValue) {
-        if (primeStatusFlags[currentIdx]) {
-            compiledPrimes.push(currentIdx);
+    const collectedPrimes = [];
+    primeFlags.forEach((isItPrime, numberValue) => {
+        if (isItPrime === 1) {
+            collectedPrimes.push(numberValue);
         }
-        currentIdx++;
-    }
-    return compiledPrimes;
-};
-
-const locateUpperIndex = (orderedList, comparisonValue) => {
-    let lowerBound = 0;
-    let upperBound = orderedList.length;
-    while (lowerBound < upperBound) {
-        const midPoint = Math.floor((lowerBound + upperBound) / 2);
-        if (orderedList[midPoint] <= comparisonValue) {
-            lowerBound = midPoint + 1;
-        } else {
-            upperBound = midPoint;
-        }
-    }
-    return lowerBound;
-};
-
-const MAXIMUM_PRIME = 999999;
-const generatedPrimeList = obtainPrimes(MAXIMUM_PRIME);
-
-const streamData = require('fs').readFileSync('/dev/stdin', 'utf8');
-const numericEntries = (streamData.trim()).split("\n").map(Number);
-
-for (let entryIndex = 0; entryIndex < numericEntries.length; entryIndex++) {
-    const queryNumber = numericEntries[entryIndex];
-    const resultCount = locateUpperIndex(generatedPrimeList, queryNumber);
-    console.log(resultCount);
+    });
+    return collectedPrimes;
 }
+
+const precomputedPrimes = generatePrimesUpTo(999999);
+
+function findPrimeCount(primeArray, targetNumber) {
+    let lowIndex = 0;
+    let highIndex = primeArray.length - 1;
+    let resultCount = 0;
+
+    while (lowIndex <= highIndex) {
+        const midIndex = Math.floor((lowIndex + highIndex) / 2);
+        if (primeArray[midIndex] <= targetNumber) {
+            resultCount = midIndex + 1;
+            lowIndex = midIndex + 1;
+        } else {
+            highIndex = midIndex - 1;
+        }
+    }
+    return resultCount;
+}
+
+const fileSystem = require('fs');
+const rawInputData = fileSystem.readFileSync('/dev/stdin', 'utf8');
+
+const numericInputs = rawInputData.trim().split('\n').reduce((accumulator, currentLine) => {
+    const parsedValue = Number(currentLine);
+    accumulator.push(parsedValue);
+    return accumulator;
+}, []);
+
+numericInputs.forEach(singleInput => {
+    const count = findPrimeCount(precomputedPrimes, singleInput);
+    console.log(count);
+});

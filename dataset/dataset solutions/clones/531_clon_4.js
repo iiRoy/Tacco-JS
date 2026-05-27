@@ -1,157 +1,126 @@
-let incomingData = '';
-let dataPointer = 0;
+let rawInputBuffer = '';
+let readPointer = 0;
 
-function acquireToken(kind) {
-    if (kind === 'alphanumeric') {
-        return incomingData[dataPointer++];
+function scan(dataType) {
+    if (dataType === 'string') {
+        return rawInputBuffer[readPointer++];
     } else {
-        return Number(incomingData[dataPointer++]);
+        return +rawInputBuffer[readPointer++];
     }
 }
 
-function displayResult(value) {
-    console.log(value);
+function print(valueToOutput) {
+    console.log(valueToOutput);
 }
 
-function performIterations(begin, end, action) {
-    if (action === undefined) {
-        action = end;
-        end = begin;
-        begin = 0;
-    }
-    for (let current = begin; current < end; ++current) {
-        action(current);
-    }
-}
+function executeProgram() {
+    const nodeCount = scan();
+    const constraintCount = scan();
 
-function processConstraints() {
-    const nodeQuantity = acquireToken();
-    const constraintQuantity = acquireToken();
+    const directEdges = [];
+    const conditionalEdgePairs = [];
 
-    const staticEdges = [];
-    const dynamicEdgeChoices = [];
+    const parseConstraintString = (constraintStr) => {
+        const originalSplit = constraintStr.split(/<=|>=|\*|\+|-/);
+        const p0 = +originalSplit[0] - 1;
+        const p1 = +originalSplit[1] - 1;
+        const p2 = +originalSplit[2];
 
-    performIterations(constraintQuantity, () => {
-        const expressionText = acquireToken('alphanumeric');
+        const opType1 = constraintStr.includes('*') ? 2 : (constraintStr.includes('<=') ? 0 : 1);
+        const opType2 = constraintStr.includes('+') ? 0 : 1;
 
-        const expressionMatch = expressionText.match(/(\d+)\s*(<=|>=|\*)\s*(\d+)\s*(\+|-)\s*(\d+)/);
-        // Error handling for malformed input is omitted as per original's implied behavior
-        // (assuming input is always valid based on problem spec).
+        return { p0, p1, p2, opType1, opType2 };
+    };
 
-        const leftNode = Number(expressionMatch[1]) - 1;
-        const mainOperator = expressionMatch[2];
-        const rightNode = Number(expressionMatch[3]) - 1;
-        const secondaryOperator = expressionMatch[4];
-        const valueComponent = Number(expressionMatch[5]);
+    Array.from({ length: constraintCount }).forEach(() => {
+        const constraintData = parseConstraintString(scan('string'));
+        const { p0, p1, p2, opType1, opType2 } = constraintData;
 
-        let mainOpClassification;
-        if (mainOperator === '*') {
-            mainOpClassification = 2;
-        } else if (mainOperator === '<=') {
-            mainOpClassification = 1;
-        } else { // Implies '>='
-            mainOpClassification = 0;
-        }
-
-        let secondaryOpClassification;
-        if (secondaryOperator === '+') {
-            secondaryOpClassification = 0;
-        } else { // Implies '-'
-            secondaryOpClassification = 1;
-        }
-
-        const createEdgeObject = (src, dest, wt) => ({ origin: src, destination: dest, magnitude: wt });
-
-        if (mainOpClassification === 0) { // Corresponds to A >= B op C
-            if (secondaryOpClassification === 0) { // Corresponds to A >= B + C
-                staticEdges.push(createEdgeObject(rightNode, leftNode, -valueComponent));
-            } else { // Corresponds to A >= B - C
-                staticEdges.push(createEdgeObject(rightNode, leftNode, 0));
-                staticEdges.push(createEdgeObject(leftNode, rightNode, valueComponent));
+        const opType1Handlers = {
+            0: { // opType1 (u) == 0 (<=)
+                0: () => { // opType2 (v) == 0 (+)
+                    directEdges.push([p1, p0, -p2]);
+                },
+                1: () => { // opType2 (v) == 1 (-)
+                    directEdges.push([p1, p0, 0]);
+                    directEdges.push([p0, p1, p2]);
+                }
+            },
+            1: { // opType1 (u) == 1 (>=)
+                0: () => { // opType2 (v) == 0 (+)
+                    directEdges.push([p0, p1, -p2]);
+                },
+                1: () => { // opType2 (v) == 1 (-)
+                    directEdges.push([p1, p0, p2]);
+                    directEdges.push([p0, p1, 0]);
+                }
+            },
+            2: { // opType1 (u) == 2 (*)
+                0: () => { // opType2 (v) == 0 (+)
+                    conditionalEdgePairs.push([[p0, p1, -p2], [p1, p0, -p2]]);
+                },
+                1: () => { // opType2 (v) == 1 (-)
+                    directEdges.push([p1, p0, p2]);
+                    directEdges.push([p0, p1, p2]);
+                }
             }
-        } else if (mainOpClassification === 1) { // Corresponds to A <= B op C
-            if (secondaryOpClassification === 0) { // Corresponds to A <= B + C
-                staticEdges.push(createEdgeObject(leftNode, rightNode, -valueComponent));
-            } else { // Corresponds to A <= B - C
-                staticEdges.push(createEdgeObject(rightNode, leftNode, valueComponent));
-                staticEdges.push(createEdgeObject(leftNode, rightNode, 0));
-            }
-        } else { // Corresponds to A * B op C
-            if (secondaryOpClassification === 0) { // Corresponds to A * B + C
-                dynamicEdgeChoices.push([
-                    createEdgeObject(leftNode, rightNode, -valueComponent),
-                    createEdgeObject(rightNode, leftNode, -valueComponent)
-                ]);
-            } else { // Corresponds to A * B - C
-                staticEdges.push(createEdgeObject(rightNode, leftNode, valueComponent));
-                staticEdges.push(createEdgeObject(leftNode, rightNode, valueComponent));
-            }
-        }
+        };
+        opType1Handlers[opType1][opType2]();
     });
 
-    performIterations(nodeQuantity, (nodeIndex) => {
-        staticEdges.push(createEdgeObject(nodeIndex, 0, 0));
+    Array.from({ length: nodeCount }).forEach((_, i) => {
+        directEdges.push([i, 0, 0]);
     });
 
-    let maximalPotential = -Infinity;
+    let overallMaxDistance = -Infinity;
 
-    function exploreCombinations(choiceIndex, currentSelectedEdges) {
-        if (choiceIndex === dynamicEdgeChoices.length) {
-            const allGraphEdges = [...staticEdges, ...currentSelectedEdges];
+    const exploreCombinations = (index, currentEdgesForCombination) => {
+        if (index === conditionalEdgePairs.length) {
+            const combinedGraphEdges = [...directEdges, ...currentEdgesForCombination];
 
-            const nodePotentials = new Map();
-            performIterations(nodeQuantity, (idx) => {
-                nodePotentials.set(idx, Infinity);
-            });
-            nodePotentials.set(0, 0);
+            const distances = Array(nodeCount).fill(Infinity);
+            distances[0] = 0;
 
-            // Bellman-Ford algorithm
-            // N iterations to ensure all paths are relaxed and detect negative cycles
-            performIterations(nodeQuantity, () => {
-                for (const edge of allGraphEdges) {
-                    const potentialFrom = nodePotentials.get(edge.origin);
-                    const potentialTo = nodePotentials.get(edge.destination);
-
-                    if (potentialFrom !== Infinity && potentialTo > potentialFrom + edge.magnitude) {
-                        nodePotentials.set(edge.destination, potentialFrom + edge.magnitude);
+            for (let iteration = 0; iteration < nodeCount; ++iteration) {
+                for (const edge of combinedGraphEdges) {
+                    const [source, destination, weight] = edge;
+                    if (distances[source] !== Infinity && distances[source] + weight < distances[destination]) {
+                        distances[destination] = distances[source] + weight;
                     }
                 }
-            });
-
-            // Check for negative cycle involving the source node (node 0)
-            if (nodePotentials.get(0) >= 0) {
-                const targetNodePotential = nodePotentials.get(nodeQuantity - 1);
-                maximalPotential = Math.max(maximalPotential, targetNodePotential);
             }
 
+            if (distances[0] >= 0) {
+                overallMaxDistance = Math.max(overallMaxDistance, distances[nodeCount - 1]);
+            }
             return;
         }
 
-        // Recursively explore both options for the current dynamic constraint
-        exploreCombinations(choiceIndex + 1, [...currentSelectedEdges, dynamicEdgeChoices[choiceIndex][0]]);
-        exploreCombinations(choiceIndex + 1, [...currentSelectedEdges, dynamicEdgeChoices[choiceIndex][1]]);
-    }
+        const [optionA, optionB] = conditionalEdgePairs[index];
+
+        exploreCombinations(index + 1, [...currentEdgesForCombination, optionA]);
+        exploreCombinations(index + 1, [...currentEdgesForCombination, optionB]);
+    };
 
     exploreCombinations(0, []);
 
-    if (maximalPotential === Infinity) {
-        displayResult('inf');
-    } else if (maximalPotential === -Infinity) {
-        displayResult(-1);
+    if (overallMaxDistance === Infinity) {
+        print('inf');
+    } else if (overallMaxDistance === -Infinity) {
+        print(-1);
     } else {
-        displayResult(maximalPotential);
+        print(overallMaxDistance);
     }
 }
 
-// Standard Node.js input setup
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
 
 process.stdin.on('data', (chunk) => {
-    incomingData += chunk;
+    rawInputBuffer += chunk;
 });
 
 process.stdin.on('end', () => {
-    incomingData = incomingData.split(/\s+/).filter(Boolean); // Split by whitespace and remove empty strings
-    processConstraints();
+    rawInputBuffer = rawInputBuffer.split(/\s+/);
+    executeProgram();
 });

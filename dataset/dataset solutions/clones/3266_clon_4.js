@@ -1,24 +1,14 @@
-function determinePresence(incomingText) {
-    const requiredItems = {
-        '1': false,
-        '7': false,
-        '4': false,
-        '9': false
-    };
+function processInputData(rawData) {
+    const requiredDigits = new Set(["1", "7", "4", "9"]);
+    const initialTokens = rawData.split(" ").slice(0, 4);
 
-    const dataSegments = incomingText.split(' ').slice(0, 4);
+    const foundUniqueDigits = new Set(
+        initialTokens.filter(token => requiredDigits.has(token))
+    );
 
-    for (const piece of dataSegments) {
-        if (Object.prototype.hasOwnProperty.call(requiredItems, piece)) {
-            requiredItems[piece] = true;
-        }
-    }
-
-    const allFound = Object.values(requiredItems).every(Boolean);
-
-    if (allFound) {
+    if (foundUniqueDigits.size === requiredDigits.size) {
         console.log('YES');
     }
 }
 
-determinePresence(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

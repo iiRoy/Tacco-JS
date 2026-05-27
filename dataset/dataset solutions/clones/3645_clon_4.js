@@ -1,47 +1,78 @@
 "use strict";
 
-const SEQUENCE_TARGET = "ABC";
-const NUMERIC_LIMIT = 1000000007;
-const TARGET_LEN = SEQUENCE_TARGET.length;
+function ProcessInput(inputContent) {
+    let dataHandler = new DataProcessor(inputContent);
+    let inputSequence = dataHandler.retrieveString();
+    let sequenceLength = inputSequence.length;
 
-let memoizedSolutions;
-let currentWorkingString;
-let stringDataLength;
+    const targetPattern = "ABC";
+    const primeModulus = 1000000007;
 
-function calculateMatchings(positionInString, targetSegmentIndex) {
-    if (memoizedSolutions[positionInString][targetSegmentIndex] !== null) {
-        return memoizedSolutions[positionInString][targetSegmentIndex];
+    let memoizationCache = Array.from({ length: sequenceLength + 1 }, () =>
+        Array.from({ length: targetPattern.length + 1 }, () => null)
+    );
+
+    function calculateSubsequenceWays(currentStringPosition, currentPatternPosition) {
+        if (currentPatternPosition === targetPattern.length) {
+            return 1;
+        }
+
+        if (currentStringPosition === sequenceLength) {
+            return 0;
+        }
+
+        if (memoizationCache[currentStringPosition][currentPatternPosition] !== null) {
+            return memoizationCache[currentStringPosition][currentPatternPosition];
+        }
+
+        let totalWays = 0;
+        const charInInput = inputSequence[currentStringPosition];
+        const charInPattern = targetPattern[currentPatternPosition];
+
+        totalWays = (calculateSubsequenceWays(currentStringPosition + 1, currentPatternPosition) * (charInInput === '?' ? 3 : 1)) % primeModulus;
+
+        if (charInInput === '?' || charInInput === charInPattern) {
+            totalWays = (totalWays + calculateSubsequenceWays(currentStringPosition + 1, currentPatternPosition + 1)) % primeModulus;
+        }
+
+        memoizationCache[currentStringPosition][currentPatternPosition] = totalWays;
+        return totalWays;
     }
 
-    if (targetSegmentIndex === TARGET_LEN) {
-        return 1;
-    }
-    if (positionInString === stringDataLength) {
-        return 0;
-    }
-
-    let currentWays = 0;
-    const charAtCurrentPosition = currentWorkingString[positionInString];
-
-    currentWays = (currentWays + calculateMatchings(positionInString + 1, targetSegmentIndex) * (charAtCurrentPosition === '?' ? 3 : 1)) % NUMERIC_LIMIT;
-
-    if (charAtCurrentPosition === '?' || charAtCurrentPosition === SEQUENCE_TARGET[targetSegmentIndex]) {
-        currentWays = (currentWays + calculateMatchings(positionInString + 1, targetSegmentIndex + 1)) % NUMERIC_LIMIT;
-    }
-
-    memoizedSolutions[positionInString][targetSegmentIndex] = currentWays;
-    return currentWays;
+    console.log(calculateSubsequenceWays(0, 0));
 }
 
-function processInputAndDisplay(rawInput) {
-    currentWorkingString = rawInput.trim();
-    stringDataLength = currentWorkingString.length;
+class DataProcessor {
+    constructor(sourceText) {
+        this.positionIndex = 0;
+        this.dataSegments = sourceText.split(/\n|\s/);
+    }
 
-    memoizedSolutions = new Array(stringDataLength + 1).fill(null).map(() => new Array(TARGET_LEN + 1).fill(null));
+    retrieveInteger() {
+        return parseInt(this.dataSegments[this.positionIndex++], 10);
+    }
 
-    console.log(calculateMatchings(0, 0));
+    retrieveIntegerArray(count) {
+        let resultCollection = new Array(count);
+        for (let k = 0; k < count; k++) {
+            resultCollection[k] = this.retrieveInteger();
+        }
+        return resultCollection;
+    }
+
+    retrieveString() {
+        return this.dataSegments[this.positionIndex++];
+    }
+
+    retrieveStringArray(count) {
+        let resultCollection = new Array(count);
+        for (let k = 0; k < count; k++) {
+            resultCollection[k] = this.retrieveString();
+        }
+        return resultCollection;
+    }
 }
 
 if (typeof window === "undefined") {
-    processInputAndDisplay(require("fs").readFileSync("/dev/stdin", "utf8"));
+    ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));
 }

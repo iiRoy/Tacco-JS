@@ -1,50 +1,71 @@
-const fileSystemModule = require("fs");
-ProcessInputData(fileSystemModule.readFileSync("/dev/stdin", "utf-8"));
+var fileSystemModule = require("fs"); // Import the Node.js file system module for file operations.
 
-function ProcessInputData(rawInputContent) {
-  // Split the entire input string into an array of lines
-  rawInputContent = rawInputContent.split("\n");
+// Read the entire content from standard input (stdin) as a UTF-8 string,
+// then pass this raw string data to the primary processing function.
+ProcessInput(fileSystemModule.readFileSync("/dev/stdin", "utf-8"));
 
-  // Parse the first line to get the initial array size (though not directly used later)
-  const initialArraySize = parseInt(rawInputContent[0], 10);
+/**
+ * This function serves as the main entry point for processing the input data.
+ * It parses numerical values, performs calculations, and outputs the result.
+ * @param {string} rawData - The complete raw string content read from the input source.
+ */
+function ProcessInput(rawData) {
+  // First, split the raw input string into an array of lines based on newline characters.
+  rawData = rawData.split("\n");
 
-  // Take the second line, split it by spaces, and convert elements to integers
-  let integerArray = rawInputContent[1].split(" ");
-  integerArray = integerArray.map(function(elementString) {
-    // Convert each string element to an integer
-    return parseInt(elementString, 10);
+  // Parse the first line of the input to determine the size of the array.
+  // This variable is globally scoped, mirroring the original code's behavior.
+  arraySize = parseInt(rawData[0], 10);
+
+  // Process the second line of the input:
+  // 1. Split it by spaces to get individual string representations of numbers.
+  // 2. Use the map function to convert each string representation into an actual integer.
+  var numArray = rawData[1].split(" ");
+  numArray = numArray.map(function(itemVal) {
+    return parseInt(itemVal, 10);
   });
 
-  // Initialize a variable to store the maximum sum found
-  let maximumAdjacentSum = 0;
+  // Initialize a variable to keep track of the maximum sum of occurrences found so far.
+  var maxCount = 0;
 
-  // Iterate through each number in the processed integer array
-  for (let currentIndex in integerArray) {
-    // Calculate the sum of occurrences for (current element - 1), current element, and (current element + 1)
-    const currentAdjacentSum = calculateOccurrences(integerArray, integerArray[currentIndex] - 1) +
-                               calculateOccurrences(integerArray, integerArray[currentIndex]) +
-                               calculateOccurrences(integerArray, integerArray[currentIndex] + 1);
+  // Iterate over each element in the processed number array using a for...in loop.
+  // The 'idx' variable will hold the index of the current element.
+  for (var idx in numArray) {
+    // For the current number (numArray[idx]), calculate the sum of occurrences for:
+    // 1. The number immediately preceding it (numArray[idx] - 1).
+    // 2. The number itself (numArray[idx]).
+    // 3. The number immediately succeeding it (numArray[idx] + 1).
+    var currentSum = tallyOccurrences(numArray, numArray[idx] - 1) +
+                     tallyOccurrences(numArray, numArray[idx]) +
+                     tallyOccurrences(numArray, numArray[idx] + 1);
 
-    // If the current sum is greater than the previously recorded maximum, update the maximum
-    if (maximumAdjacentSum < currentAdjacentSum) {
-      maximumAdjacentSum = currentAdjacentSum;
+    // Compare the calculated 'currentSum' with the 'maxCount'.
+    // If 'currentSum' is greater, update 'maxCount' to this new higher value.
+    if (maxCount < currentSum) {
+      maxCount = currentSum;
     }
   }
 
-  // Output the final maximum adjacent sum to the console
-  console.log(maximumAdjacentSum);
+  // After iterating through all elements and finding the maximum sum, print this value to the console.
+  console.log(maxCount);
 }
 
-// Function to count occurrences of a specific number within an array
-function calculateOccurrences(dataCollection, targetValue) {
-  let occurrenceCounter = 0; // Initialize counter for occurrences
-  // Loop through each element in the provided data collection
-  for (let loopIndex = 0; loopIndex < dataCollection.length; loopIndex++) {
-    // If the current element matches the target value, increment the counter
-    if (dataCollection[loopIndex] === targetValue) {
-      occurrenceCounter++;
+/**
+ * This helper function counts how many times a specific target value appears within a given array of numbers.
+ * @param {number[]} dataList - The array of numbers in which to search for the target value.
+ * @param {number} targetVal - The specific number whose occurrences need to be counted.
+ * @returns {number} The total number of times 'targetVal' is found in 'dataList'.
+ */
+function tallyOccurrences(dataList, targetVal) {
+  var occurrenceCount = 0; // Initialize a counter for the target value's occurrences.
+
+  // Loop through each element of the 'dataList' array using a standard for loop.
+  for (var k = 0; k < dataList.length; k++) {
+    // Check if the current element of the array strictly equals the 'targetVal'.
+    if (dataList[k] === targetVal) {
+      occurrenceCount++; // If a match is found, increment the counter.
     }
   }
-  // Return the total count of the target value
-  return occurrenceCounter;
+
+  return occurrenceCount; // Return the final count of occurrences.
 }

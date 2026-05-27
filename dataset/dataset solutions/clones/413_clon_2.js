@@ -1,143 +1,118 @@
-const rawData = require('node:fs').readFileSync('/dev/stdin', 'utf-8');
+const rawData = require('fs').readFileSync('/dev/stdin', 'utf8'); // Acquire raw input data from the standard input stream.
+const processedLines = rawData.trim().split('\n'); // Clean and segment the raw data into an array of distinct lines.
 
-const inputLines = rawData.trim().split('\n');
-
-
-const PALETTE_CHARS = ['x', 'y', 'z']; // Available segment types
-
+const COLOR_OPTIONS = ['r', 'g', 'b']; // Define the set of permissible color values for segments.
 
 class SegmentChain {
-  // Construct a new chain instance
+  // Represents a sequence of colored segments, forming a chain.
   constructor(identifier, level) {
-    this.identifier = identifier; // Unique string identifier for this chain
-    this.level = level;           // The exploration depth/level of this chain
-    this.segments = identifier.split(''); // Individual segments parsed from the identifier string
+    this.identifier = identifier; // A unique string representing the current configuration of segments.
+    this.level = level; // The depth or step count from the initial state in a search process.
+    this.segmentColors = identifier.split(''); // An array of individual color characters derived from the identifier.
   }
 
-
-  // Determines all possible next states that can be generated from the current chain's configuration.
-  generateNextStates() {
-    const subsequentStates = []; // List to hold identifiers of all valid next states
+  retrieveNextChainIdentifiers() {
+    // Calculates all possible subsequent chain identifiers reachable from the current state.
+    const subsequentChainIdentifiers = []; // Collection to store the identifiers of newly generated chains.
 
     // Iterate through adjacent pairs of segments in the chain.
-    for (let idx = 0; idx < this.segments.length - 1; idx++) {
-      const currentSegment = this.segments[idx];       // Get segment at the current index
-      const adjacentSegment = this.segments[idx + 1]; // Get segment at the next index
+    for (let idx = 0; idx < this.segmentColors.length - 1; idx++) {
+      const currentSegmentColor = this.segmentColors[idx]; // The color of the segment at the current index.
+      const adjacentSegmentColor = this.segmentColors[idx + 1]; // The color of the segment immediately following.
 
-      // If the two adjacent segments are identical, no transformation rule applies here.
-      if (currentSegment === adjacentSegment) {
-        continue;
+      // If the two adjacent segments are of the same color, no transformation is possible for this pair.
+      if (currentSegmentColor === adjacentSegmentColor) {
+        continue; // Proceed to the next pair of segments.
       }
 
-      // Find the unique segment type from the palette that is different from both current and adjacent segments.
-      const replacementSegment = PALETTE_CHARS.filter(elem =>
-        elem !== currentSegment && elem !== adjacentSegment
-      )[0];
+      // Determine the third color that is distinct from both current and adjacent segment colors.
+      const modifiedSegmentColor = COLOR_OPTIONS.filter(c => c !== currentSegmentColor && c !== adjacentSegmentColor)[0];
 
-      // Create a mutable copy of the current segments array to perform modifications.
-      const modifiedSegments = [...this.segments]; // create a shallow duplicate
+      const alteredSegmentColors = this.segmentColors.slice(); // Create a shallow copy of the segment colors array to modify.
+      // Replace the two adjacent segments with two segments of the newly determined modified color.
+      alteredSegmentColors.splice(idx, 2, modifiedSegmentColor, modifiedSegmentColor);
 
-      // Replace the two differing segments with two instances of the determined replacement type.
-      modifiedSegments.splice(idx, 2, replacementSegment, replacementSegment); // replace elements
-
-      // Add the new state's identifier (joined string of segments) to the list of subsequent states.
-      subsequentStates.push(modifiedSegments.join(''));
+      subsequentChainIdentifiers.push(alteredSegmentColors.join('')); // Add the new chain identifier (as a string) to the collection.
     }
-    return subsequentStates; // Return the collection of all generated next state identifiers.
+    return subsequentChainIdentifiers; // Return the array of all generated next chain identifiers.
   }
 }
 
-
-class StateExplorer {
-  // Initializes the explorer with an empty registry for states.
+class ChainNetwork {
+  // Manages a network of SegmentChain nodes, facilitating graph traversal.
   constructor() {
-    this.stateRegistry = new Map(); // Stores visited states and their associated SegmentChain objects.
+    this.nodeRegistry = new Map(); // A map to store SegmentChain instances, keyed by their string identifiers.
+    this.processingQueue = []; // A queue used for Breadth-First Search (BFS) traversal.
   }
 
-
-  // Checks if a state with the given key has already been registered.
-  hasState(stateKey) {
-    return this.stateRegistry.has(stateKey);
+  containsIdentifier(identifier) {
+    // Verifies if a given chain identifier already exists within the network's registry.
+    return this.nodeRegistry.has(identifier);
   }
 
-
-  // Retrieves the SegmentChain object associated with a given state key.
-  getState(stateKey) {
-    return this.stateRegistry.get(stateKey);
+  fetchNode(identifier) {
+    // Retrieves a SegmentChain object from the registry using its identifier.
+    return this.nodeRegistry.get(identifier);
   }
 
-
-  // Registers a new state into the registry with its key and exploration level.
-  registerState(stateKey, explorationLevel) {
-    this.stateRegistry.set(stateKey, new SegmentChain(stateKey, explorationLevel));
+  registerNode(identifier, level) {
+    // Adds a new SegmentChain node to the network's registry with its associated level.
+    this.nodeRegistry.set(identifier, new SegmentChain(identifier, level));
   }
 
+  breadthFirstSearch(initialChainIdentifier) {
+    // Executes a Breadth-First Search starting from a specified initial chain identifier.
+    this.registerNode(initialChainIdentifier, 0); // Register the starting node at level zero.
+    this.processingQueue.push(initialChainIdentifier); // Enqueue the initial identifier to begin the search.
 
-  // Performs a Breadth-First Search (BFS) to explore possible states from an initial key.
-  traverseStates(initialKey) {
-    this.processingQueue = []; // Queue for managing states to be processed during BFS.
-
-    // Register the starting state at level 0 and add its key to the queue.
-    this.registerState(initialKey, 0);
-    this.processingQueue.push(initialKey);
-
-    // Continue the traversal as long as there are states awaiting processing.
+    // Continue the search as long as there are identifiers in the processing queue.
     while (this.processingQueue.length > 0) {
-      const currentKey = this.processingQueue.shift(); // Dequeue the next state key.
-      const currentState = this.getState(currentKey);   // Retrieve the corresponding SegmentChain object.
+      const currentChainIdentifier = this.processingQueue.shift(); // Dequeue the next identifier to process.
+      const currentNode = this.fetchNode(currentChainIdentifier); // Retrieve the corresponding SegmentChain object.
 
-      const successorKeys = currentState.generateNextStates(); // Generate all possible next state identifiers.
+      const neighborChainIdentifiers = currentNode.retrieveNextChainIdentifiers(); // Generate all possible next identifiers from the current node.
 
-      // If no successor states are found, this indicates a terminal state (no further transformations).
-      if (successorKeys.length === 0) {
-        return currentState; // Return this terminal state.
+      // If no further transformations are possible from this node, it represents a terminal state.
+      if (neighborChainIdentifiers.length === 0) {
+        return currentNode; // Return this terminal node.
       }
 
-      // Process each generated successor state.
-      successorKeys.forEach(successorKey => {
-        // If this successor state has already been visited and registered, skip it.
-        if (this.hasState(successorKey)) {
+      // For each generated neighbor identifier:
+      neighborChainIdentifiers.forEach(nextIdentifier => {
+        // If this neighbor identifier has already been visited and registered, skip it.
+        if (this.containsIdentifier(nextIdentifier)) {
           return;
         }
-
-        // Register the new successor state, incrementing the exploration level.
-        this.registerState(successorKey, currentState.level + 1);
-        this.processingQueue.push(successorKey); // Add the new state's key to the queue for future processing.
+        // Register the new, unvisited node with an incremented level.
+        this.registerNode(nextIdentifier, currentNode.level + 1);
+        this.processingQueue.push(nextIdentifier); // Enqueue the new identifier for future processing.
       });
     }
-    // If the queue becomes empty and no terminal state was found, it means no solution was reached.
-    return undefined;
+    // If the queue empties and no terminal node was found, the function implicitly returns undefined.
   }
 
-
-  // (This method is not used in the main logic but is cloned as per Type II requirements)
-  // Outputs the string representation of each object stored in the registry.
-  outputRegistry() {
-    for (let entryIndex = 1; entryIndex <= this.stateRegistry.size; entryIndex++) {
-      const registryObject = this.stateRegistry.get(entryIndex);
-      if (registryObject) { // Ensure the object exists before trying to call toString.
-        console.log(registryObject.toString());
-      }
+  displayNodes() {
+    // This method is part of the original class structure but is not invoked in the main logic.
+    // It attempts to iterate through the node registry using integer keys, which may not align with string identifiers.
+    for (let index = 1; index <= this.nodeRegistry.size; index++) {
+      const currentNetworkNode = this.nodeRegistry.get(index); // Attempt to retrieve a node using an integer key.
+      // If currentNetworkNode is undefined (likely for string-keyed maps), calling toString() will result in a TypeError.
+      console.log(currentNetworkNode.toString()); // Output the string representation of the retrieved node.
     }
   }
 }
 
-
-// Process each line of input data from the provided source.
-inputLines.forEach(currentLineContent => {
-
-  // If the line content is '0', it signifies an end condition or skip this input.
-  if (currentLineContent === '0') {
-    return;
+// Iterate over each line of processed input data.
+processedLines.forEach(currentInputIdentifier => {
+  // Check for a sentinel value '0' which indicates the end of meaningful input.
+  if (currentInputIdentifier === '0') {
+    return; // Stop processing further inputs if the sentinel is encountered.
   }
 
-  // Create a new state exploration instance for each valid input line.
-  const explorerInstance = new StateExplorer();
+  const networkInstance = new ChainNetwork(); // Instantiate a new chain network for each input.
+  // Execute a Breadth-First Search to find the shortest path to a terminal chain configuration.
+  const resultNode = networkInstance.breadthFirstSearch(currentInputIdentifier);
 
-  // Perform the state traversal starting from the current input line's identifier.
-  // The result will be the terminal SegmentChain if found, or undefined.
-  const finalState = explorerInstance.traverseStates(currentLineContent);
-
-  // Output the exploration level of the final state if one was found, otherwise indicate 'N/A'.
-  console.log(finalState ? finalState.level : 'N/A');
+  // Output the level (depth) of the found terminal node, or 'NA' if no such node was reached.
+  console.log(resultNode ? resultNode.level : 'NA');
 });

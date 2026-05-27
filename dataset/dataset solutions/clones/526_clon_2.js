@@ -1,95 +1,55 @@
-var rawInputData = require('node:fs').readFileSync('/dev/stdin', 'utf8') ;
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-// This script processes data from standard input to calculate a specific minimum value.
-// It reads configuration parameters and a list of numbers, then performs complex calculations.
+var lines = rawData.trim().split("\n");
 
-var linesArray = rawInputData.trim().split('\n') ; // Split the input into an array of lines after trimming any surrounding whitespace.
+var configValues = lines.shift().split(" ").map(Number);
 
-// Extract the first line, split it by space, and convert parts to numbers.
-var configParams = linesArray.shift().split(' ').map(Number) ;
+var totalItems = configValues[0];
+var numEntries = configValues[1];
+var targetValue = configValues[2];
 
-// Assign configuration parameters to descriptive variables for clarity.
-var totalLength = configParams[0] ;
-var numItems = configParams[1] ;
-var specialPosition = configParams[2] ;
+var filteredValues = [];
 
-// Initialize an array to store relevant values identified during processing.
-var collectedValues = [ ] ;
-
-// Loop through a specified number of items from the input lines.
-for (  var idx = 0  ;  idx < numItems  ;  idx++  )
-{
-   // Parse the current line as a number, using the unary plus operator.
-   var currentValue = +(linesArray.shift()) ;
-
-   // If the current value is not identical to the special position, add it to our collection.
-   if (currentValue !== specialPosition)
-   {
-      collectedValues.push(currentValue) ;
+for (var idx = 0; idx < numEntries; idx++) {
+   var currentEntry = lines.shift() - 0;
+   if (currentEntry !== targetValue) {
+       filteredValues.push(currentEntry);
    }
 }
 
-// After collecting, ensure the special position itself is also part of the set of values.
-collectedValues = collectedValues.concat(specialPosition) ;
+filteredValues = filteredValues.concat(targetValue);
 
-// Sort the collected values in ascending numerical order using a comparison function.
-collectedValues.sort(function (valA, valB) {
-   return valA - valB ;
-}) ;
+filteredValues.sort(function(valA, valB) {
+    return valA - valB;
+});
 
-// Initialize the minimum calculated value to a very large number (positive infinity)
-// to ensure any valid calculation will be smaller.
-var calculatedMin = Infinity ;
+var minimumDistance = Infinity;
 
-// Iterate over each value in the sorted collection, along with its index,
-// to find the minimum distance based on various conditions.
-collectedValues.forEach(function (itemValue, itemIndex)
-{
-   // Condition 1: The current item's value is strictly less than the special position.
-   if (itemValue < specialPosition)
-   {
-      // If it's not the very first element in the array, perform a specific calculation.
-      if (itemIndex !== 0)
-      {
-         calculatedMin = Math.min(calculatedMin, (specialPosition - itemValue) * 2 + (totalLength - specialPosition + 1) + collectedValues[itemIndex - 1]) ;
-      }
-   }
+filteredValues.forEach(function(currentVal, valIndex) {
+    if (currentVal < targetValue) {
+        if (valIndex !== 0) {
+            minimumDistance = Math.min(minimumDistance, (targetValue - currentVal) * 2 + (totalItems - targetValue + 1) + filteredValues[valIndex - 1]);
+        }
+    }
+    if (targetValue === currentVal) {
+        if (valIndex === 0) {
+            minimumDistance = Math.min(minimumDistance, filteredValues[filteredValues.length - 1] - currentVal);
+        }
+        if (valIndex === filteredValues.length - 1) {
+            minimumDistance = Math.min(minimumDistance, currentVal - filteredValues[0]);
+        }
+        if (valIndex !== filteredValues.length - 1) {
+            minimumDistance = Math.min(minimumDistance, targetValue + totalItems - filteredValues[valIndex + 1] + 1);
+        }
+        if (valIndex !== 0) {
+            minimumDistance = Math.min(minimumDistance, totalItems - targetValue + 1 + filteredValues[valIndex - 1]);
+        }
+    }
+    if (targetValue < currentVal) {
+        if (valIndex !== filteredValues.length - 1) {
+            minimumDistance = Math.min(minimumDistance, (currentVal - targetValue) * 2 + targetValue + (totalItems - filteredValues[valIndex + 1] + 1));
+        }
+    }
+});
 
-   // Condition 2: The current item's value is exactly equal to the special position.
-   if (specialPosition === itemValue)
-   {
-      // Sub-condition for when this is the first element.
-      if (itemIndex === 0)
-      {
-         calculatedMin = Math.min(calculatedMin, collectedValues[collectedValues.length - 1] - itemValue) ;
-      }
-      // Sub-condition for when this is the last element.
-      if (itemIndex === collectedValues.length - 1)
-      {
-         calculatedMin = Math.min(calculatedMin, itemValue - collectedValues[0]) ;
-      }
-      // Sub-condition for when this is not the last element.
-      if (itemIndex !== collectedValues.length - 1)
-      {
-         calculatedMin = Math.min(calculatedMin, specialPosition + totalLength - collectedValues[itemIndex + 1] + 1) ;
-      }
-      // Sub-condition for when this is not the first element.
-      if (itemIndex !== 0)
-      {
-         calculatedMin = Math.min(calculatedMin, totalLength - specialPosition + 1 + collectedValues[itemIndex - 1]) ;
-      }
-   }
-
-   // Condition 3: The current item's value is strictly greater than the special position.
-   if (specialPosition < itemValue)
-   {
-      // If it's not the last element in the array, perform another specific calculation.
-      if (itemIndex !== collectedValues.length - 1)
-      {
-         calculatedMin = Math.min(calculatedMin, (itemValue - specialPosition) * 2 + specialPosition + (totalLength - collectedValues[itemIndex + 1] + 1)) ;
-      }
-   }
-}) ;
-
-// Finally, output the calculated minimum value, scaled by a factor of 100.
-console.log(calculatedMin * 100) ;
+console.log(minimumDistance * 100);

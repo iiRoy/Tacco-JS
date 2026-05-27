@@ -1,104 +1,63 @@
-const NEWLINE_DELIMITER_CHAR = "\n";
-const SPACE_TOKEN_SEPARATOR = " ";
-const STANDARD_INPUT_FILE_PATH = "/dev/stdin";
-const FILE_READ_ENCODING = "utf8";
+(function(sourceContent) {
+    const lineSeparator = "\n";
+    // Step 1: Split the initial content into lines.
+    // This operation transforms the input string into an array of strings.
+    let contentLines = sourceContent.split(lineSeparator);
 
-/**
- * Utility function to produce a reversed version of a given string.
- * This helper ensures the string manipulation is encapsulated and reusable.
- *
- * @param {string} originalString - The input string to be inverted.
- * @returns {string} The string with its characters in reverse order.
- */
-const invertCharacterSequence = (originalString) => {
-    // Defensive check: ensure the input is a valid string before attempting operations.
-    if (typeof originalString !== 'string' || originalString.length === 0) {
-        return originalString; // Return as-is if invalid or empty.
-    }
-    // Convert the string to an array of characters, reverse the array,
-    // then re-join the characters back into a string.
-    return originalString.split('').reverse().join('');
-};
+    // Introduce a temporary constant for the word-level separator.
+    const wordDelimiter = " ";
 
-/**
- * Core processing module, implemented as an Immediately Invoked Function Expression (IIFE).
- * This pattern helps in creating a private scope for the script's execution.
- *
- * @param {string} completeSourceText - The entire text content read from the input source.
- */
-((completeSourceText) => {
-    // Initial validation of the input source text.
-    // If no content is provided or it's just whitespace, log an error and terminate.
-    if (!completeSourceText || completeSourceText.trim().length === 0) {
-        console.error("Processing halted: Input source text is empty or contains only whitespace.");
-        return;
-    }
+    // Step 2: Attempt to split the array of lines by the word delimiter.
+    // This operation will cause a TypeError because `contentLines` is an array,
+    // and arrays do not have a `split` method. This preserves the exact
+    // observable behavior of the original code, which also attempts to call
+    // `split` on an array.
+    let processedSegments = contentLines.split(wordDelimiter);
 
-    // First processing step: Decompose the multi-line input into an array of individual lines.
-    const textLinesArray = completeSourceText.split(NEWLINE_DELIMITER_CHAR);
+    // The following code block is unreachable due to the TypeError above.
+    // However, it is structured as a Type III clone of the original's subsequent logic,
+    // including identifier renaming, helper functions, and guard clauses.
 
-    // Validate that at least one meaningful line exists for further processing.
-    // We trim to account for lines that might contain only whitespace.
-    if (textLinesArray.length === 0 || textLinesArray[0].trim().length === 0) {
-        console.error("Processing halted: The initial line of input is missing or empty.");
-        return;
-    }
+    // Helper function to encapsulate the operations that would be performed on data[1].
+    const processAndLogSegment = (segmentToOperateOn) => {
+        let currentWorkingSegment = segmentToOperateOn; // Helper variable
 
-    // Extract the primary line of interest, typically the first line,
-    // and remove any leading or trailing whitespace for cleaner parsing.
-    const primaryProcessingLine = textLinesArray[0].trim();
+        // Original: data[1].reverse();
+        // This would modify an array in place, or throw a TypeError if it's a string.
+        if (Array.isArray(currentWorkingSegment)) {
+            currentWorkingSegment.reverse(); // In-place modification for arrays
+        } else {
+            // If it's a string, this would be a TypeError, mimicking original behavior.
+            // This line is unreachable in practice due to the earlier error.
+            currentWorkingSegment.reverse();
+        }
 
-    // Further validation: Ensure the primary line isn't empty after trimming.
-    if (primaryProcessingLine.length === 0) {
-        console.error("Processing halted: Primary line became empty after whitespace removal.");
-        return;
-    }
+        // Original: data[1].join(" ");
+        // This returns a new string, but does not modify the original segment.
+        // If it's a string, this would be a TypeError.
+        let joinedOutputValue;
+        if (Array.isArray(currentWorkingSegment)) {
+            joinedOutputValue = currentWorkingSegment.join(wordDelimiter);
+        } else {
+            // If it's a string, this would be a TypeError, mimicking original behavior.
+            // This line is unreachable in practice due to the earlier error.
+            currentWorkingSegment.join(wordDelimiter);
+        }
 
-    // Second processing step: Segment the primary line into distinct tokens
-    // using the defined space separator.
-    const lineTokensCollection = primaryProcessingLine.split(SPACE_TOKEN_SEPARATOR);
-
-    // Define the required minimum number of tokens for our operation (index 1 means at least 2 tokens).
-    const MIN_TOKENS_FOR_OPERATION = 2;
-
-    // Validate that enough tokens are present in the collection to access the target element.
-    if (lineTokensCollection.length < MIN_TOKENS_FOR_OPERATION) {
-        console.error(`Processing halted: Insufficient tokens found. Expected at least ${MIN_TOKENS_FOR_OPERATION}, but detected ${lineTokensCollection.length}.`);
-        return;
-    }
-
-    // Identify the specific token that needs to be manipulated.
-    // The original logic targeted the element at index 1 (the second token).
-    const targetTokenForTransformation = lineTokensCollection[1];
-
-    // Final validation: Confirm the target token is a valid string.
-    if (typeof targetTokenForTransformation !== 'string' || targetTokenForTransformation.length === 0) {
-        console.error("Processing halted: The designated target token is invalid or empty.");
-        return;
-    }
-
-    // Apply the core transformation: reverse the characters of the target token.
-    const transformedTokenOutput = invertCharacterSequence(targetTokenForTransformation);
-
-    // Deliver the final processed result to the standard output.
-    console.log(transformedTokenOutput);
-
-    // Optional: Include an additional, non-essential fragment for potential debugging or logging.
-    // This could be enabled for verbose output in a development environment.
-    /*
-    const diagnosticInfo = {
-        initialContentSnippet: completeSourceText.substring(0, 100) + (completeSourceText.length > 100 ? '...' : ''),
-        identifiedPrimaryLine: primaryProcessingLine,
-        allParsedTokens: lineTokensCollection,
-        originalTargetToken: targetTokenForTransformation,
-        finalProcessedToken: transformedTokenOutput,
-        executionTimestamp: new Date().toISOString()
+        // Original: console.log(data[1]);
+        // This prints the value of data[1] *after* the reverse operation.
+        // If data[1] was an array, it would print the reversed array.
+        // If data[1] was a string, the `reverse()` call would have failed.
+        console.log(currentWorkingSegment);
     };
-    // console.debug("Detailed processing log:", diagnosticInfo);
-    */
 
-})(
-    // Module dependency: Read content from the standard input stream.
-    // This part of the code retains its original source and method of input.
-    require("fs").readFileSync(STANDARD_INPUT_FILE_PATH, FILE_READ_ENCODING)
-);
+    // Guard clause for calling the helper function, though this entire block is unreachable.
+    if (processedSegments && processedSegments.length > 1) {
+        let targetSegmentForProcessing = processedSegments[1];
+        processAndLogSegment(targetSegmentForProcessing);
+    } else {
+        // This branch is also unreachable.
+        console.log("No valid second segment found for processing.");
+    }
+
+})(require("fs").readFileSync("/dev/stdin", "utf8"));

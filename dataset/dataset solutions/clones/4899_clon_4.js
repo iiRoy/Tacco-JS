@@ -1,13 +1,21 @@
-function EvaluateSequence(sourceData) {
-  const lineContent = sourceData.split("\n");
-  const processedText = lineContent[0];
+function ProcessInput(rawContent) {
+  const contentLines = rawContent.split("\n");
+  const targetSequence = contentLines[0];
 
-  const firstOccurrenceC = processedText.indexOf('C');
-  const lastOccurrenceF = processedText.lastIndexOf('F');
+  const { initialCharPosition, finalCharPosition } = Array.from(targetSequence).reduce(
+    (accumulator, currentCharacter, currentIndex) => {
+      if (currentCharacter === "C" && accumulator.initialCharPosition === undefined) {
+        accumulator.initialCharPosition = currentIndex;
+      }
+      if (currentCharacter === "F") {
+        accumulator.finalCharPosition = currentIndex;
+      }
+      return accumulator;
+    },
+    { initialCharPosition: undefined, finalCharPosition: undefined }
+  );
 
-  const finalOutcome = (firstOccurrenceC > -1 && lastOccurrenceF > -1 && firstOccurrenceC < lastOccurrenceF) ? "Yes" : "No";
-
-  console.log(finalOutcome);
+  console.log(initialCharPosition < finalCharPosition ? "Yes" : "No");
 }
 
-EvaluateSequence(require("fs").readFileSync("/dev/stdin", "utf8"));
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

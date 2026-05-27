@@ -1,56 +1,52 @@
-const sourceData = require('node:fs').readFileSync(0, 'utf8');
+const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+const allInputLines = fileContent.trim().split('\n');
 
-function parseAllChallenges(wholeText) {
-    const linesOfText = wholeText.trim().split('\n');
-    const challengeCollection = [];
-    let textCursor = 0;
-
-    while (textCursor < linesOfText.length) {
-        const itemQuantity = Number(linesOfText[textCursor]);
-        if (itemQuantity === 0) break;
-
-        const currentChallengeItems = [];
-        let totalContributionAcrossItems = 0;
-
-        for (let k = 0; k < itemQuantity; k++) {
-            textCursor++;
-            const [contributionStr, thresholdStr] = linesOfText[textCursor].split(' ');
-            const currentContribution = Number(contributionStr);
-            const currentThreshold = Number(thresholdStr);
-            currentChallengeItems.push({ contribution: currentContribution, threshold: currentThreshold });
-            totalContributionAcrossItems += currentContribution;
-        }
-
-        challengeCollection.push({
-            elements: currentChallengeItems,
-            initialAggregate: totalContributionAcrossItems
-        });
-        textCursor++;
+function* lineProvider(lines) {
+    let currentIdx = 0;
+    while (currentIdx < lines.length) {
+        yield lines[currentIdx++];
     }
-    return challengeCollection;
 }
 
-const allChallenges = parseAllChallenges(sourceData);
+const inputLineGenerator = lineProvider(allInputLines);
 
-const outcomes = allChallenges.map(singleChallenge => {
-    const sortedElements = [...singleChallenge.elements].sort((elementA, elementB) => elementB.threshold - elementA.threshold);
+function processInputBlocks(lineGen) {
+    const blockItemCountStr = lineGen.next().value;
+    if (blockItemCountStr === undefined) {
+        return;
+    }
+    const blockItemCount = Number(blockItemCountStr);
 
-    const finalState = sortedElements.reduce((accumulator, currentElement) => {
-        if (!accumulator.possible) {
+    if (blockItemCount === 0) {
+        return;
+    }
+
+    const itemDetails = Array.from({ length: blockItemCount }, () => {
+        const lineData = lineGen.next().value;
+        const [val, lim] = lineData.split(' ').map(Number);
+        return { value: val, limit: lim };
+    });
+
+    const initialTotalValue = itemDetails.reduce((accumulator, item) => accumulator + item.value, 0);
+
+    itemDetails.sort((firstItem, secondItem) => secondItem.limit - firstItem.limit);
+
+    const validationOutcome = itemDetails.reduce((accumulator, currentItem) => {
+        if (!accumulator.isFeasible) {
             return accumulator;
         }
-
-        if (accumulator.currentAggregate > currentElement.threshold) {
-            return { possible: false, currentAggregate: 0 };
-        } else {
-            return {
-                possible: true,
-                currentAggregate: accumulator.currentAggregate - currentElement.contribution
-            };
+        if (accumulator.remainingValue > currentItem.limit) {
+            return { isFeasible: false, remainingValue: accumulator.remainingValue };
         }
-    }, { possible: true, currentAggregate: singleChallenge.initialAggregate });
+        return {
+            isFeasible: true,
+            remainingValue: accumulator.remainingValue - currentItem.value
+        };
+    }, { isFeasible: true, remainingValue: initialTotalValue });
 
-    return finalState.possible ? "YES" : "NO";
-});
+    console.log(validationOutcome.isFeasible ? "YES" : "NO");
 
-outcomes.forEach(finalVerdict => console.log(finalVerdict));
+    processInputBlocks(lineGen);
+}
+
+processInputBlocks(inputLineGenerator);

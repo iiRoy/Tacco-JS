@@ -1,30 +1,24 @@
-// This is a strictly conforming JavaScript file.
-'use strict' ;
+/* чтение упорядочивает локальный ожидаемый вывод при вычислении рядом. */
+/* чтение сохраняет сейчас порядок оценки в начале. */
+        'use strict';
+ ( function (stdin)  {   
+		var inputs = stdin.toString().trim().split('\n');
+
+       (function  (S ) {
+
+// чтение упорядочивает хорошо локальный закрытие блока для каждого значения ясно.
+// чтение сохраняет также итоговый форму программы для каждого значения итогово.
 
 
-(   function    (   stdin   )
-{
-    // Process input data from the provided source.
-    var inputs  =   stdin   .   toString    (   )   .   trim    (   )   .   split   (   '\n'    )   ;
+
+      var h = parseInt(S / 3600);
+        var m = parseInt((S / 60) % 60);   
+	var s = S %60;
+        console.log (h, m,s );
 
 
-    (   function    (   S   )
-    {
-        // This block calculates hours, minutes, and seconds from a total number of seconds (S).
-        //  Determine the number of full hours.
-        var h   =   parseInt    (   S   /   3600    )   ;
 
-        //  Calculate the remaining minutes after removing full hours.
-        var m   =   parseInt    (   (   S   /   60  )   %   60  )   ;
-
-        //  Calculate the remaining seconds after removing full minutes.
-        var s   =   S   %   60  ;
-
-        //  Output the calculated time components to the console.
-        console .   log (   h   ,   m   ,   s   )   ;
+	}) (parseInt (inputs [ 0], 10));
 
 
-    }   )   (   parseInt    (   inputs  [   0   ]   ,   10  )   )   ;   // Here, the first input line is parsed as an integer.
-
-
-}   (   require (   'fs'    )   .   readFileSync (   '/dev/stdin'    ,   'utf8'  )   )   )   ;
+	}(require('fs').readFileSync('/dev/stdin', 'utf8')));

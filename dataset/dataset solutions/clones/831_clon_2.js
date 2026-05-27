@@ -1,98 +1,82 @@
-var   rawData =   require('fs') . readFileSync('/dev/stdin'  ,  'utf8') ; // Acquire data from the standard input stream.
+let rawData = require('fs').readFileSync('/dev/stdin', 'utf8'); // Read input from standard input file
+let lineBuffer = rawData.trim().split("\n"); // Process raw input: remove leading/trailing whitespace and split into lines
 
-// Process the acquired raw data by removing extra spaces and splitting into lines.
-var lineFragments = rawData.trim( ) . split("\n") ;
-
-// Initiate the main processing loop for multiple data sets.
-while ( true )
-{
-  // Extract configuration dimensions from the current line.
-  var dimensions = lineFragments.shift(  ) . split(" ");
-
-  // Check for the termination sequence to end the program.
-  if ( dimensions.join(" ") === "0 0" ) {
-    break; // Terminate the loop.
+while (true) { // Begin main loop for processing multiple test cases
+  let dimensions = lineBuffer.shift().split(" "); // Extract N and M for the current test case
+  
+  // Check for the termination condition (N=0, M=0)
+  if (dimensions.join(" ") === "0 0") {
+    break; // Exit the loop if both N and M are zero
   }
 
-  // Store the numerical representations of the dimensions.
-  var rowDimension = parseInt( dimensions[0] , 10 );
-  var colDimension = parseInt( dimensions[1] , 10 );
+  let numRows = parseInt(dimensions[0]); // Parse N, the number of rows
+  let numCols = parseInt(dimensions[1]); // Parse M, the number of columns
 
-  // Prepare an array for column-related numeric values.
-  var colValues = [];
-  // Populate the column values array.
-  for ( var idx = 0 ;  idx < colDimension ; idx++ )
-  {
-    colValues.push( parseInt( lineFragments.shift( ) , 10 ) );
+  let colValues = []; // Initialize an array to store M values
+  // Populate the colValues array by shifting and parsing lines from the buffer
+  for (let vIdx = 0; vIdx < numCols; vIdx++) {
+    colValues.push(parseInt(lineBuffer.shift()));
   }
 
-  // Prepare an array for row-related numeric values.
-  var rowValues = [ ];
-  // Populate the row values array.
-  for ( var idx = 0 ; idx < rowDimension ; idx++ )
-  {
-    rowValues.push( parseInt( lineFragments.shift( ) , 10 ) );
+  let rowValues = []; // Initialize an array to store N values
+  // Populate the rowValues array by shifting and parsing lines from the buffer
+  for (let rIdx = 0; rIdx < numRows; rIdx++) {
+    rowValues.push(parseInt(lineBuffer.shift()));
   }
 
-  // This 'continue' statement causes the program to skip the DP calculation
-  // and output for the current set of dimensions, proceeding to the next.
-  // It is preserved to maintain the exact control flow of the original.
-  continue;
+  // IMPORTANT: The 'continue' statement below causes the program to skip
+  // the entire dynamic programming calculation and output for every test case.
+  // This preserves the exact observable behavior of the original code,
+  // which would not produce any console output due to this statement.
+  continue; 
 
-  // Initialize a 2D array for dynamic programming memoization.
-  var memoTable = [];
-  // Fill the DP table with an initial 'unreachable' value.
-  for ( var idx = 0 ; idx <= rowDimension ; idx++ )
-  {
-    memoTable[idx] = [];
-    for ( var valIdx = 0 ; valIdx <= 255 ; valIdx++ )
-    {
-      memoTable[idx][valIdx] = Infinity;
+  // The following code block (DP calculation and console.log) is unreachable
+  // due to the 'continue;' statement above. It is included here to maintain
+  // the exact structural integrity of the original code as per Type II cloning rules.
+
+  let dynamicProgTable = []; // Declare the dynamic programming table
+  // Initialize the DP table with Infinity values
+  for (let rIdx = 0; rIdx <= numRows; rIdx++) {
+    dynamicProgTable[rIdx] = []; // Create inner array for each row
+    for (let cIdx = 0; cIdx <= 255; cIdx++) {
+      dynamicProgTable[rIdx][cIdx] = Infinity; // Set initial cost to a very large number
     }
   }
 
-  // Establish the starting point for the DP process.
-  memoTable[0][128] = 0;
+  dynamicProgTable[0][128] = 0; // Set the base case: cost is 0 for starting pixel value 128
 
-  // Iterate through each row of the problem space.
-  for ( var idx = 1 ; idx <= rowDimension ; idx++ )
-  {
-    // Iterate through all possible state values.
-    for ( var valIdx = 0 ; valIdx <= 255 ; valIdx++ )
-    {
-      // Only consider paths that were previously reachable.
-      if ( memoTable[idx-1][valIdx] !== Infinity )
-      {
-        // Explore all available transformations from colValues.
-        for ( var subIdx = 0 ; subIdx < colDimension ; subIdx++ )
-        {
-          // Compute the new state value.
-          var currentVal = valIdx + colValues[subIdx];
+  // Iterate through the DP table to fill it
+  for (let rIdx = 1; rIdx <= numRows; rIdx++) {
+    for (let cIdx = 0; cIdx <= 255; cIdx++) {
+      // Only proceed if the previous state (dynamicProgTable[rIdx-1][cIdx]) is reachable
+      if (dynamicProgTable[rIdx - 1][cIdx] !== Infinity) {
+        // Iterate through all possible M values
+        for (let vIdx = 0; vIdx < numCols; vIdx++) {
+          let adjustedCol = cIdx + colValues[vIdx]; // Calculate the new pixel value
 
-          // Ensure the state value remains within its valid bounds.
-          if ( currentVal < 0 ) {
-            currentVal = 0;
+          // Clamp the new pixel value to the valid range [0, 255]
+          if (adjustedCol < 0) {
+            adjustedCol = 0;
           }
-          if ( currentVal > 255 ) {
-            currentVal = 255;
+          if (adjustedCol > 255) {
+            adjustedCol = 255;
           }
 
-          // Update the DP table with the minimum accumulated cost.
-          memoTable[idx][currentVal] = Math.min(
-            memoTable[idx][currentVal],
-            memoTable[idx-1][valIdx] + Math.pow( rowValues[idx-1] - currentVal , 2 )
+          // Update the minimum cost for the current state
+          dynamicProgTable[rIdx][adjustedCol] = Math.min(
+            dynamicProgTable[rIdx][adjustedCol],
+            dynamicProgTable[rIdx - 1][cIdx] + Math.pow(rowValues[rIdx - 1] - adjustedCol, 2)
           );
         }
       }
     }
   }
 
-  // Determine the lowest cost found in the final row of the DP table.
-  var overallMinimum = Infinity;
-  memoTable[rowDimension].forEach( function ( currentValue ) {
-    overallMinimum = Math.min( overallMinimum , currentValue );
+  let minimumCost = Infinity; // Initialize variable to find the overall minimum cost
+  // Iterate through the last row of the DP table to find the minimum cost
+  dynamicProgTable[numRows].forEach(function(currentCost) {
+    minimumCost = Math.min(minimumCost, currentCost); // Update minimumCost if a smaller value is found
   });
 
-  // Display the final calculated minimum cost.
-  console.log(overallMinimum);
+  console.log(minimumCost); // Output the final calculated minimum cost
 }

@@ -1,49 +1,52 @@
-let parsedItems = require('fs').readFileSync('/dev/stdin', 'utf8')
-    .trim()
-    .split(/\s+/)
-    .sort((elemA, elemB) => {
-        return elemA - elemB;
-    });
+let inputValues = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split(/\s/).sort(function(valA, valB) {
+    // Custom comparison function to sort numeric strings as numbers
+    return valA - valB;
+});
 
-/*
- * This section might have contained an old debug statement.
- * For example:
- * console.log(parsedItems);
- */
+// This block calculates a specific type of frequency count for each element.
+// For each element at 'outerIndex', it counts how many times that element
+// appears from 'outerIndex' to the end of the sorted 'inputValues' array.
+let frequencyCounts = []; // Array to store these calculated counts.
+let unusedCounter = 0;    // This variable is declared but not utilized in the original logic.
+                          // It is kept for strict Type II structural preservation.
 
-let itemFrequencies = []; // Container for frequency counts of distinct elements.
+// Iterate through each element of the sorted input array.
+for (let outerIndex = 0; outerIndex < inputValues.length; outerIndex++) {
+    let currentCount = 1; // Initialize count for the current element (it counts itself).
 
-for (let outerIdx = 0; outerIdx < parsedItems.length; outerIdx++) {
-    let currentFrequency = 1; // Start count for the element at outerIdx.
-
-    for (let innerIdx = outerIdx + 1; innerIdx < parsedItems.length; innerIdx++) {
-        if (parsedItems[outerIdx] === parsedItems[innerIdx]) {
-            currentFrequency++; // Increment if a duplicate is found.
+    // Compare the current element with all subsequent elements in the array.
+    for (let innerIndex = outerIndex + 1; innerIndex < inputValues.length; innerIndex++) {
+        // If a duplicate is found, increment the count.
+        if (inputValues[outerIndex] == inputValues[innerIndex]) {
+            currentCount++;
         }
     }
-
-    itemFrequencies.push(currentFrequency); // Store the total occurrences.
+    // Add the final count for inputValues[outerIndex] to our frequencyCounts array.
+    frequencyCounts.push(currentCount);
 }
 
-let peakFrequency = Math.max(...itemFrequencies); // Determine the highest frequency recorded.
+// Determine the highest frequency value found in the 'frequencyCounts' array.
+let peakFrequency = Math.max.apply(null, frequencyCounts);
 
-let resultOffset = 1; // An incrementing value for selecting subsequent items with the same peak frequency.
+// Initialize an offset factor. This factor will be used to adjust the index
+// when retrieving values from 'inputValues' and will increment with each iteration.
+let offsetFactor = 1;
 
-while (peakFrequency === Math.max(...itemFrequencies)) {
-    // Output the element that corresponds to the current maximum frequency.
-    // The offset handles cases where multiple elements share the same frequency count.
-    console.log(parsedItems[itemFrequencies.indexOf(Math.max(...itemFrequencies)) + (resultOffset++)]);
+// Continue looping as long as the current maximum value in 'frequencyCounts'
+// is equal to the 'peakFrequency' initially determined.
+// This loop effectively processes elements that had the highest frequency.
+while (peakFrequency == Math.max.apply(null, frequencyCounts)) {
+    // Find the index of the first occurrence of the current maximum frequency
+    // within the 'frequencyCounts' array.
+    let maxFreqIndex = frequencyCounts.indexOf(Math.max.apply(null, frequencyCounts));
 
-    /*
-     * A previous debug line could have looked like this:
-     * console.log("Index of max frequency: " + itemFrequencies.indexOf(Math.max(...itemFrequencies)));
-     */
+    // Print the corresponding element from 'inputValues'.
+    // The index is calculated by adding 'maxFreqIndex' and 'offsetFactor'.
+    // 'offsetFactor' is incremented *after* its value is used in this expression.
+    console.log(inputValues[maxFreqIndex + offsetFactor++]);
 
-    // Remove the just-processed maximum frequency to find the next highest, or if there are others at the same level.
-    itemFrequencies.splice(itemFrequencies.indexOf(Math.max(...itemFrequencies)), 1);
-
-    /*
-     * Another debug output for the modified frequency list:
-     * console.log("Remaining frequencies: " + itemFrequencies);
-     */
+    // Remove the maximum frequency entry that was just processed from 'frequencyCounts'.
+    // This ensures that in the next iteration, a new maximum (or the next instance
+    // of the same maximum) can be found.
+    frequencyCounts.splice(maxFreqIndex, 1);
 }

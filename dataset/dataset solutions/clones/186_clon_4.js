@@ -1,56 +1,12 @@
-let collectedData = '';
+const fileSystemModule = require('fs');
 
-process.stdin.on('data', (pieceOfData) => {
-    collectedData += pieceOfData.toString('utf8');
-});
+const sourceDataLines = fileSystemModule.readFileSync('/dev/stdin', 'utf8').split('\n');
 
-process.stdin.on('end', () => {
-    const parsedLines = collectedData.split('\n')
-        .map(currentEntry => currentEntry.trim())
-        .filter(cleanedEntry => cleanedEntry !== '');
+const numericRepresentations = sourceDataLines.map(datumString =>
+    Number(datumString.replace('.', ''))
+);
 
-    if (parsedLines.length === 0) {
-        process.stdout.write('0\n');
-        return;
-    }
+const highestNumericValue = Math.max(...numericRepresentations);
+const lowestNumericValue = Math.min(...numericRepresentations);
 
-    const initialAccumulator = {
-        maximumTransformed: -Infinity,
-        minimumTransformed: Infinity,
-        anyValidProcessed: false
-    };
-
-    const transformedExtremes = parsedLines.reduce((accumulator, stringRepresentation) => {
-        const valueAsFloat = parseFloat(stringRepresentation);
-        if (isNaN(valueAsFloat)) {
-            return accumulator;
-        }
-
-        const segmentsOfValue = stringRepresentation.split('.');
-        const countOfDecimalDigits = segmentsOfValue.length > 1 ? segmentsOfValue[1].length : 0;
-        const scalingFactor = Math.pow(10, countOfDecimalDigits);
-        const integerEquivalent = Math.round(valueAsFloat * scalingFactor);
-
-        if (integerEquivalent > accumulator.maximumTransformed) {
-            accumulator.maximumTransformed = integerEquivalent;
-        }
-        if (integerEquivalent < accumulator.minimumTransformed) {
-            accumulator.minimumTransformed = integerEquivalent;
-        }
-        accumulator.anyValidProcessed = true;
-        return accumulator;
-    }, initialAccumulator);
-
-    if (!transformedExtremes.anyValidProcessed) {
-        process.stdout.write('0\n');
-        return;
-    }
-
-    const finalCalculation = (transformedExtremes.maximumTransformed - transformedExtremes.minimumTransformed) / 10;
-    process.stdout.write(finalCalculation.toString() + '\n');
-});
-
-process.stdin.on('error', (issue) => {
-    process.stderr.write('Data acquisition issue: ' + issue.message + '\n');
-    process.exit(1);
-});
+console.log((highestNumericValue - lowestNumericValue) / 10);

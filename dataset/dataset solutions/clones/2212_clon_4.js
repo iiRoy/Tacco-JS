@@ -1,52 +1,35 @@
-const inputReceiver = require('readline');
+const fileSystem = require('fs');
 
-const queryProcessor = inputReceiver.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-    terminal: false
-});
+const processInputData = (rawInputContent) => {
+    const firstLineContent = rawInputContent.split('\n')[0];
+    const extractedParts = firstLineContent.split(' ');
 
-let taskCompleted = false;
+    let firstValueIdentifier;
+    let secondValueIdentifier;
 
-const evaluateCondition = (firstSegment, secondSegment) => {
-    return firstSegment === secondSegment;
+    if (extractedParts.length >= 1) {
+        firstValueIdentifier = extractedParts[0];
+    } else {
+        firstValueIdentifier = undefined;
+    }
+
+    if (extractedParts.length >= 2) {
+        secondValueIdentifier = extractedParts[1];
+    } else {
+        secondValueIdentifier = undefined;
+    }
+
+    const areValuesIdentical = (
+        (typeof firstValueIdentifier === 'string' && typeof secondValueIdentifier === 'string') &&
+        (firstValueIdentifier.length === secondValueIdentifier.length) &&
+        (Array.from(firstValueIdentifier).every((charElement, charIndex) => charElement.charCodeAt(0) === secondValueIdentifier.charCodeAt(charIndex)))
+    );
+
+    const resultMapping = new Map();
+    resultMapping.set(true, 'Yes');
+    resultMapping.set(false, 'No');
+
+    console.log(resultMapping.get(areValuesIdentical));
 };
 
-queryProcessor.on('line', (currentLineData) => {
-    if (taskCompleted) {
-        return;
-    }
-
-    taskCompleted = true;
-
-    let delimiterPosition = -1;
-    let indexIterator = 0;
-    while (indexIterator < currentLineData.length) {
-        if (currentLineData[indexIterator] === ' ') {
-            delimiterPosition = indexIterator;
-            break;
-        }
-        indexIterator++;
-    }
-
-    let primarySymbol = '';
-    let secondarySymbol = '';
-
-    if (delimiterPosition !== -1) {
-        primarySymbol = currentLineData.substring(0, delimiterPosition);
-        secondarySymbol = currentLineData.substring(delimiterPosition + 1);
-    } else {
-        primarySymbol = currentLineData;
-        secondarySymbol = '';
-    }
-
-    const finalResult = evaluateCondition(primarySymbol, secondarySymbol);
-
-    process.stdout.write(finalResult ? 'Yes\n' : 'No\n');
-
-    queryProcessor.close();
-});
-
-queryProcessor.on('close', () => {
-    // No specific action needed on close for this problem.
-});
+processInputData(fileSystem.readFileSync('/dev/stdin', 'utf8'));

@@ -1,85 +1,74 @@
-const rawData = require('node:fs').readFileSync('/dev/stdin', 'utf-8');
-const inputSections = rawData.split('\n');
+const _swapElements = (collection, firstIndex, secondIndex) => {
+    const temp = collection[firstIndex];
+    collection[firstIndex] = collection[secondIndex];
+    collection[secondIndex] = temp;
+};
 
-class PriorityContainer {
-    constructor() {
-        this.elements = [];
-    }
+const _heapifyDown = (heapStorage, currIdx) => {
+    const count = heapStorage.length;
+    while (true) {
+        const leftCIdx = 2 * currIdx + 1;
+        const rightCIdx = 2 * currIdx + 2;
+        let largestCIdx = currIdx;
 
-    _exchange(first, second) {
-        [this.elements[first], this.elements[second]] = [this.elements[second], this.elements[first]];
-    }
-
-    _siftUp(idx) {
-        let currentIdx = idx;
-        let parentIdx = Math.floor((currentIdx - 1) / 2);
-
-        while (currentIdx > 0 && this.elements[currentIdx] > this.elements[parentIdx]) {
-            this._exchange(currentIdx, parentIdx);
-            currentIdx = parentIdx;
-            parentIdx = Math.floor((currentIdx - 1) / 2);
+        if (leftCIdx < count && heapStorage[leftCIdx] > heapStorage[largestCIdx]) {
+            largestCIdx = leftCIdx;
         }
-    }
-
-    _siftDown(idx) {
-        let currentIdx = idx;
-        const totalSize = this.elements.length;
-
-        while (true) {
-            let leftKid = 2 * currentIdx + 1;
-            let rightKid = 2 * currentIdx + 2;
-            let largestChildIdx = currentIdx;
-
-            if (leftKid < totalSize && this.elements[leftKid] > this.elements[largestChildIdx]) {
-                largestChildIdx = leftKid;
-            }
-
-            if (rightKid < totalSize && this.elements[rightKid] > this.elements[largestChildIdx]) {
-                largestChildIdx = rightKid;
-            }
-
-            if (largestChildIdx !== currentIdx) {
-                this._exchange(currentIdx, largestChildIdx);
-                currentIdx = largestChildIdx;
-            } else {
-                break;
-            }
-        }
-    }
-
-    addValue(val) {
-        this.elements.push(val);
-        this._siftUp(this.elements.length - 1);
-    }
-
-    retrieveMax() {
-        if (this.elements.length === 0) {
-            return undefined;
-        }
-        if (this.elements.length === 1) {
-            return this.elements.pop();
+        if (rightCIdx < count && heapStorage[rightCIdx] > heapStorage[largestCIdx]) {
+            largestCIdx = rightCIdx;
         }
 
-        const maxItem = this.elements[0];
-        this.elements[0] = this.elements.pop();
-        this._siftDown(0);
-
-        return maxItem;
+        if (largestCIdx !== currIdx) {
+            _swapElements(heapStorage, currIdx, largestCIdx);
+            currIdx = largestCIdx;
+        } else {
+            break;
+        }
     }
-}
+};
 
-const collectionOfNumbers = new PriorityContainer();
-
-for (const currentLine of inputSections) {
-    if (!currentLine.trim()) continue;
-
-    const instructionParts = currentLine.split(' ');
-    const mainCommand = instructionParts[0];
-
-    if (mainCommand === 'insert') {
-        const numericValue = Number(instructionParts[1]);
-        collectionOfNumbers.addValue(numericValue);
-    } else if (mainCommand === 'extract') {
-        console.log(collectionOfNumbers.retrieveMax());
+const _heapifyUp = (heapStorage, currIdx) => {
+    while (currIdx > 0) {
+        const parentIdx = Math.floor((currIdx - 1) / 2);
+        if (heapStorage[currIdx] > heapStorage[parentIdx]) {
+            _swapElements(heapStorage, currIdx, parentIdx);
+            currIdx = parentIdx;
+        } else {
+            break;
+        }
     }
-}
+};
+
+const addValue = (heapStorage, itemVal) => {
+    heapStorage.push(itemVal);
+    _heapifyUp(heapStorage, heapStorage.length - 1);
+};
+
+const removeMax = heapStorage => {
+    if (heapStorage.length === 0) {
+        return undefined;
+    }
+    if (heapStorage.length === 1) {
+        return heapStorage.pop();
+    }
+
+    const extractedVal = heapStorage[0];
+    heapStorage[0] = heapStorage.pop();
+    _heapifyDown(heapStorage, 0);
+    return extractedVal;
+};
+
+const inputLines = require('fs').readFileSync('/dev/stdin', 'utf-8').split('\n');
+
+const currentHeap = inputLines.reduce((accumulator, currentLine) => {
+    const commandParts = currentLine.split(' ');
+    switch(commandParts[0]) {
+        case 'insert':
+            addValue(accumulator, Number(commandParts[1]));
+            break;
+        case 'extract':
+            console.log(removeMax(accumulator));
+            break;
+    }
+    return accumulator;
+}, []);

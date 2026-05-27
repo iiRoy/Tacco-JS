@@ -1,50 +1,49 @@
-const someInputLines = [];
-const rL = require('readline');
-const iF = rL.createInterface({
+const rli = require('readline').createInterface({
   input: process.stdin,
-  output: process.stdout,
-  terminal: false
+  output: process.stdout
 });
 
-iF.on('line', (lineContent) => {
-  someInputLines.push(lineContent);
-});
+async function* inputLineStream() {
+  for await (const line of rli) {
+    yield line;
+  }
+}
 
-iF.on('close', () => {
-  const resultingCollections = [];
-  let cursorPosition = 0;
+const lineProvider = inputLineStream();
 
-  const extractAndCompute = (lineCursor) => {
-    if (lineCursor >= someInputLines.length) {
-      return;
-    }
+const aggregateNumbers = async (countRemaining, currentAccumulation) => {
+  if (countRemaining === 0) {
+    return currentAccumulation;
+  }
 
-    const mainIdentifier = Number.parseInt(someInputLines[lineCursor], 10);
+  const nextEntry = await lineProvider.next();
+  const numericValue = Number(nextEntry.value);
 
-    if (Number.isNaN(mainIdentifier) || mainIdentifier === 0) {
-      return;
-    }
+  return aggregateNumbers(countRemaining - 1, currentAccumulation + numericValue);
+};
 
-    const segmentsRequired = Math.floor(mainIdentifier / 4);
-    const nextCursor = lineCursor + 1 + segmentsRequired;
+const orchestrateProcessing = async () => {
+  const controlEntry = await lineProvider.next();
 
-    if (nextCursor > someInputLines.length) {
-      return;
-    }
+  if (controlEntry.done) {
+    rli.close();
+    return;
+  }
 
-    const dataSegments = someInputLines.slice(lineCursor + 1, nextCursor);
-    const numericalSegments = dataSegments.map(segment => Number.parseInt(segment, 10));
+  const controlValue = Number(controlEntry.value);
 
-    const currentBlockSummation = numericalSegments.reduce((total, num) => total + num, 0);
+  if (controlValue === 0) {
+    rli.close();
+    return;
+  }
 
-    resultingCollections.push(currentBlockSummation);
+  const segmentSize = Math.floor(controlValue / 4);
 
-    extractAndCompute(nextCursor);
-  };
+  const segmentTotal = await aggregateNumbers(segmentSize, 0);
 
-  extractAndCompute(cursorPosition);
+  console.log(segmentTotal);
 
-  resultingCollections.forEach(outcome => {
-    console.log(outcome);
-  });
-});
+  await orchestrateProcessing();
+};
+
+orchestrateProcessing();

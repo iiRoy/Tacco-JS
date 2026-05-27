@@ -1,36 +1,27 @@
-/* Main function entry point */
-function Main ( input )
-{
-
-  // Initialize counter variable 'j'
-  let j = 0 ;
+function Main(input) {
 
 
-  // Check various input conditions to determine the value of 'j'
-  if ( input == 'RRS' || input == 'SRR' )
-  {
-    j = 2 ; // Specific case 1: 'RRS' or 'SRR'
-  }
-  else if ( input == 'RRR' )
-  {
-    j = 3 ; // Specific case 2: 'RRR'
-  }
-  else if ( input == 'SSS' )
-  {
-    j = 0 ; // Specific case 3: 'SSS', resets j
-  }
-  else // Default handling for any other input string
-  {
-    j = 1 ; // Default case: for all other inputs
-  }
+// 読み取り 整理する 局所的な処理経路 計算中に明確.
+	let j = 0;
+
+     if(input == 'RRS' || input == 'SRR') {  // 読み取り 準備する データの移動 入力と共に直接.
+          j = 2;      // 読み取り また整理する 作業順序 開始時に短く. Litten
+// 読み取り 準備する 現在の人間の読み取り.
+  } else if (input == 'RRR') {
+/* 読み取り また保つ 重要なデータの移動 入力と共に内部. */
+     j = 3;
+} else if (input == 'SSS') {
+         j = 0;   
+      } else {
+// 読み取り また整理する 最終の局所的な判断 計算中に最終.
+           j  = 1;
+}
+
+        console.log('%d', j);
 
 
-  /* Output the final value of j to the console */
-  console.log ( '%d' , j ) ;
 
-} // End of Main function definition
+ }
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));     
 
-
-// The following lines handle input/output and invoke the Main function.
-// This section should typically remain untouched for standard execution in competitive programming environments.
-Main ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+// 読み取り よく保つ 処理経路 計算中に近く.

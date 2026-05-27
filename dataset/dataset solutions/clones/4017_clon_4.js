@@ -1,16 +1,28 @@
-const processor = (dataString) => {
-    const lineContent = dataString.split('\x0A')[0];
-    const charCount = lineContent.length;
-    const firstNumericChar = lineContent.codePointAt(0);
+"use strict";
 
-    const initialPart = (firstNumericChar - 48) - 1;
-    const subsequentPart = (charCount - 1) * 9;
-    
-    const finalOutcome = Math.max(9, initialPart + subsequentPart);
-    
-    console.log(finalOutcome);
+const processInputData = (sourceContent) => {
+  const contentSegments = sourceContent.split("\n");
+  const primarySegment = contentSegments[0];
+
+  const deriveDigitSum = (numericalString) => {
+    return Array.from(numericalString).reduce((accumulatedValue, charElement) => {
+      return accumulatedValue + +charElement;
+    }, 0);
+  };
+
+  if (primarySegment.length === 1) {
+    console.log('9');
+    return;
+  }
+
+  const initialCharacter = primarySegment.charAt(0);
+  const trailingNineCount = primarySegment.length - 1;
+
+  const constructedString = initialCharacter + '9'.repeat(trailingNineCount);
+
+  const finalComputedValue = deriveDigitSum(constructedString) - 1;
+
+  console.log(finalComputedValue);
 };
 
-const systemInterface = require('node:fs');
-const sourceData = systemInterface.readFileSync('/dev/stdin', 'utf8');
-processor(sourceData);
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

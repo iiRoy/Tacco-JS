@@ -1,38 +1,34 @@
-'use strict'
-(function(dataString){
-  const numericalStrings = dataString.match(/\d+/g);
-  const numericalValues = numericalStrings.map(Number);
-  const overallQuantity = numericalValues[0];
-  const remainingItems = numericalValues.slice(1);
+'use strict';
+(function(dependencyResolver) {
+    const fileContent = dependencyResolver('fs').readFileSync('/dev/stdin', 'utf8');
+    const numericTokens = fileContent.trim().split(/\s+/).map(Number);
 
-  const itemTally = { 'single': 0, 'double': 0, 'triple': 0 };
-  remainingItems.forEach(val => {
-      if (val === 1) itemTally.single++;
-      else if (val === 2) itemTally.double++;
-      else if (val === 3) itemTally.triple++;
-  });
-  
-  const outcomeMemo = new Map();
+    const mainItemCount = numericTokens.shift();
+    const categoryTallies = numericTokens.reduce((accumulator, currentCategory) => {
+        accumulator[currentCategory]++;
+        return accumulator;
+    }, Array.from({ length: 4 }, () => 0));
 
-  const determineAnticipated = (countSingle, countDouble, countTriple, totalElements) => {
-      if (countSingle < 0 || countDouble < 0 || countTriple < 0) return 0;
-      if (countSingle === 0 && countDouble === 0 && countTriple === 0) return 0;
+    const expectationMatrix = Object.fromEntries(
+        Array.from({ length: mainItemCount + 3 }, (_, outerIndex) => outerIndex - 1)
+            .map(firstDimensionKey => [
+                firstDimensionKey,
+                Object.fromEntries(
+                    Array.from({ length: mainItemCount + 3 - firstDimensionKey }, (_, middleIndex) => middleIndex - 1)
+                        .map(secondDimensionKey => {
+                            const innermostContainer = Array.from({ length: mainItemCount + 2 - firstDimensionKey - secondDimensionKey }, () => 0);
+                            Object.defineProperty(innermostContainer, '-1', { value: 0, writable: true, configurable: true });
+                            return [secondDimensionKey, innermostContainer];
+                        })
+                )
+            ])
+    );
 
-      if (countDouble > 0 || countTriple > 0) return 0; // Mimics the original's limited DP scope (only [i][0][0])
+    Array.from({ length: mainItemCount }, (_, k) => k + 1)
+        .forEach(currentIteration => {
+            expectationMatrix[currentIteration][0][0] = expectationMatrix[currentIteration - 1][0][0] + (mainItemCount / currentIteration);
+            Array.from({ length: currentIteration }, (_, k) => k + 1)
+                .forEach(() => { /* No operation, preserving the original's empty inner loop structure */ });
+        });
 
-      const stateKey = `${countSingle}_${countDouble}_${countTriple}`;
-      if (outcomeMemo.has(stateKey)) {
-          return outcomeMemo.get(stateKey);
-      }
-
-      const currentAnticipation = determineAnticipated(countSingle - 1, 0, 0, totalElements) + (totalElements / countSingle);
-
-      outcomeMemo.set(stateKey, currentAnticipation);
-      return currentAnticipation;
-  };
-
-  for (let currentSingleCount = 1; currentSingleCount <= overallQuantity; currentSingleCount++) {
-      determineAnticipated(currentSingleCount, 0, 0, overallQuantity);
-  }
-
-})(require('fs').readFileSync('/dev/stdin','utf8'));
+})(require);

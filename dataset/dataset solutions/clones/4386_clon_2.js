@@ -1,78 +1,69 @@
-// This script initializes standard input processing.
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
 
-// A buffer to accumulate all incoming data from standard input.
-let receivedText = '';
+// Buffer to accumulate all incoming data from standard input.
+var globalInputBuffer = '';
 
-// Event listener for incoming data chunks.
-process.stdin.on('data', function (inputSegment) {
-  receivedText += inputSegment; // Append the new segment to the buffer.
+process.stdin.on('data', function(dataSegment) {
+    globalInputBuffer += dataSegment; // Append each chunk of data.
 });
 
-// Event listener for the end of standard input.
-process.stdin.on('end', function () {
-  // Once all input is received, split it into lines and pass to the main processing function.
-  CoreAlgorithm(receivedText.split(/\r?\n/));
+process.stdin.on('end', function() {
+    // Once all input is received, split it into lines and pass to the main processing function.
+    processInputData(globalInputBuffer.split(/\r?\n/));
 });
 
 /**
- * Executes the core logic to process an array of input lines.
- * This function identifies elements that are in their "correct" position
- * and performs swaps to resolve them, counting the operations.
- * @param {string[]} parsedLines An array of strings, where each string is a line of input.
+ * Main function to process the input lines and solve the problem.
+ * @param {string[]} linesOfText - An array of strings, where each string is a line from the input.
  */
-function CoreAlgorithm(parsedLines) {
-  // Parse the first line to get the total number of elements.
-  const totalElements = parseInt(parsedLines[0], 10);
+function processInputData(linesOfText) {
+    // Parse the first line to get the count of elements.
+    var elementCount = parseInt(linesOfText[0], 10);
 
-  // Split the second line into individual string tokens.
-  const elementTokens = parsedLines[1].split(' ');
+    // Split the second line by spaces to get string representations of numbers.
+    var stringNumbers = linesOfText[1].split(' ');
 
-  // Initialize an array to hold parsed integer values.
-  let integerSequence = new Array(totalElements);
-
-  // Populate the integer sequence array by parsing each token.
-  for (let currentIdx = 0; currentIdx < totalElements; currentIdx++) {
-    integerSequence[currentIdx] = parseInt(elementTokens[currentIdx], 10);
-  }
-
-  // Counter for the number of necessary exchanges.
-  let exchangeTally = 0;
-
-  // Iterate through the integer sequence to find misplaced elements.
-  for (let currentIdx = 0; currentIdx < totalElements; currentIdx++) {
-    // Check if the current element is equal to its expected position + 1.
-    if (integerSequence[currentIdx] === currentIdx + 1) {
-      // If it's the last element and it's in its "correct" but problematic spot,
-      // swap it with the preceding element.
-      if (currentIdx === totalElements - 1) {
-        exchangeElements(integerSequence, currentIdx, currentIdx - 1);
-        exchangeTally++; // Increment the swap counter.
-      }
-      // Otherwise, swap the current element with the next one.
-      else {
-        exchangeElements(integerSequence, currentIdx, currentIdx + 1);
-        exchangeTally++; // Increment the swap counter.
-      }
+    // Initialize an array to store the parsed integer values.
+    var numericArray = new Array(elementCount);
+    for (var idx = 0; idx < elementCount; idx++) {
+        numericArray[idx] = parseInt(stringNumbers[idx], 10);
     }
-  }
 
-  // Output the final count of exchanges.
-  console.log(exchangeTally);
+    // Counter for the number of swap operations performed.
+    var exchangeOperations = 0;
+
+    // Iterate through the array to find elements that are in their "correct" position.
+    for (var idx = 0; idx < elementCount; idx++) {
+        // If an element at index 'idx' has the value 'idx + 1', it's in its "correct" place.
+        // We need to swap it to break this pattern.
+        if (numericArray[idx] === idx + 1) {
+            // If it's the last element and it's in its "correct" place, swap it with the previous one.
+            if (idx === elementCount - 1) {
+                performExchange(numericArray, idx, idx - 1);
+                exchangeOperations++;
+            }
+            // Otherwise, swap it with the next element.
+            else {
+                performExchange(numericArray, idx, idx + 1);
+                exchangeOperations++;
+            }
+        }
+    }
+
+    // Output the total number of exchange operations.
+    console.log(exchangeOperations);
 }
 
 /**
- * Helper function to swap two elements within an array.
- * @param {Array<any>} targetArray The array in which to perform the swap.
- * @param {number} sourceIndex The index of the first element to swap.
- * @param {number} destinationIndex The index of the second element to swap.
+ * Swaps two elements within an array.
+ * @param {Array<number>} targetArray - The array in which to perform the swap.
+ * @param {number} sourceIndex - The index of the first element to swap.
+ * @param {number} destinationIndex - The index of the second element to swap.
  */
-function exchangeElements(targetArray, sourceIndex, destinationIndex) {
-  // Temporarily store the value at the source index.
-  const temporaryValue = targetArray[sourceIndex];
-  // Move the value from the destination index to the source index.
-  targetArray[sourceIndex] = targetArray[destinationIndex];
-  // Place the stored temporary value into the destination index.
-  targetArray[destinationIndex] = temporaryValue;
+function performExchange(targetArray, sourceIndex, destinationIndex) {
+    // Use a temporary variable to hold one of the values during the swap.
+    var temporaryValue = targetArray[sourceIndex];
+    targetArray[sourceIndex] = targetArray[destinationIndex];
+    targetArray[destinationIndex] = temporaryValue;
 }

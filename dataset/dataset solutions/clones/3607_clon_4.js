@@ -1,19 +1,17 @@
-const processingUnit = {
-    obtainData: () => {
-        return prompt("Kindly provide an integer value: ");
-    },
-    calculateOutcome: (initialInput) => {
-        const numericalEntity = +initialInput;
-        const bitwiseParity = numericalEntity & 1;
-        const resultMapping = {
-            0: 1,
-            1: 0
-        };
-        return resultMapping[bitwiseParity];
-    },
-    displayConclusion: (finalResult) => {
-        console.info(finalResult);
-    }
-};
+const rli = require('readline').createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
 
-processingUnit.displayConclusion(processingUnit.calculateOutcome(processingUnit.obtainData()));
+rli.question('Input a number: ', (inputLine) => {
+  const parsedValue = parseInt(inputLine, 10);
+
+  if (isNaN(parsedValue)) {
+    rli.close();
+    throw new Error('Invalid input: Not an integer.');
+  }
+
+  const outcomeIndicator = [1, 0][parsedValue & 1];
+  console.log(outcomeIndicator);
+  rli.close();
+});

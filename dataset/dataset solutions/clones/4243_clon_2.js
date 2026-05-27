@@ -1,68 +1,79 @@
-(function () {
-    'use strict';
+(function() {
+  'use strict';
 
-    // Collection to hold all incoming text rows from standard input.
-    let capturedInputs = [];
+  // Array to store all incoming lines from standard input
+  var inputBuffer = [];
 
-    // Set up interface for reading line by line.
-    require('readline').createReader({
-        source: process.stdin,      // Input source is standard input stream.
-        destination: process.stdout // Output destination (not used for writing back, but required by API).
-    })
-    .on('dataRow', function (currentLine) {
-        // Each time a new line of data is received, store it.
-        capturedInputs.push(currentLine);
+  // Set up interface for reading lines from stdin
+  require('readline').createInterface({
+    input: process.stdin,
+    output: process.stdout
+  }).on('line', function(currentLine) {
+    // Add each received line to our buffer
+    inputBuffer.push(currentLine);
+  });
+
+  // Event listener for when stdin stream ends
+  process.stdin.on('end', function() {
+    // The following block was commented out in the original,
+    // so it remains commented out here.
+    /*
+    inputBuffer.forEach(function(currentLine) {
+      var tokens = currentLine.split(' ').map(Number);
+      console.log(tokens[0] + ' ' + tokens[1]);
     });
+    */
+    ; // This semicolon is crucial for preserving structure
 
-    // Event listener for when the standard input stream closes.
-    process.stdin.on('completion', function () {
-        // All input has been received, proceed with processing.
+    // Start of the main problem-solving logic
+    // Parse the first line of input to get N, Z, and W
+    var parsedInput = inputBuffer[0].split(" ");
+    var cardCount = parseInt(parsedInput[0]); // Total number of cards
+    var playerZScore = parseInt(parsedInput[1]); // Player Z's initial score (unused in this specific logic)
+    var playerWScore = parseInt(parsedInput[2]); // Player W's initial score
 
-        // Retrieve and split the first input line for game parameters.
-        const initialTokens = capturedInputs[0].split(" ");
+    // Parse the second line of input to get the card values
+    var cardValues = inputBuffer[1].split(" ");
 
-        // Parse key numerical parameters for the game.
-        const numElements = parseInt(initialTokens[0], 10); // Number of items in the sequence.
-        const playerZScore = parseInt(initialTokens[1], 10); // Player Z's initial score or identifier.
-        const playerWScore = parseInt(initialTokens[2], 10); // Player W's initial score or identifier.
+    // Variables to hold card values for comparison
+    var playerOneCard;
+    var playerTwoCard;
 
-        // Retrieve and split the second input line, representing the item values.
-        let itemValues = capturedInputs[1].split(" ");
+    // Convert all card values from strings to integers
+    for (var idx = 0; idx < cardCount; idx++) {
+      cardValues[idx] = parseInt(cardValues[idx]);
+    }
 
-        // Variables to hold computed player values during analysis.
-        let firstPlayerVal;
-        let secondPlayerVal;
+    // Consider the scenario where the first player (X) takes the last card.
+    // In this case, X gets the last card, and Y's score is W.
+    playerOneCard = cardValues[cardCount - 1];
+    playerTwoCard = playerWScore;
+    var scenarioOneResult = Math.abs(playerOneCard - playerTwoCard);
+    // console.log(scenarioOneResult); // Original debug line, kept commented.
 
-        // Convert all item values from strings to integers.
-        for (let k = 0; k < numElements; k++) {
-            itemValues[k] = parseInt(itemValues[k], 10);
-        }
+    // Consider the scenario where the second player (Y) takes the last card.
+    // This implies X took the second-to-last card, and Y took the very last card.
+    playerOneCard = cardValues[cardCount - 2];
+    playerTwoCard = cardValues[cardCount - 1];
+    var scenarioTwoResult = Math.abs(playerOneCard - playerTwoCard);
+    // console.log(scenarioTwoResult); // Original debug line, kept commented.
 
-        // --- Game Logic Analysis ---
+    // The optimal strategy for the first player is to maximize the difference.
+    // So, we take the maximum of the two possible outcomes.
+    var finalOutcome = Math.max(scenarioOneResult, scenarioTwoResult);
+    console.log(finalOutcome);
 
-        // Scenario 1: First player takes the very last available item.
-        // The first player's value is the last item in the sequence.
-        firstPlayerVal = itemValues[numElements - 1];
-        // The second player's value is determined by their initial score.
-        secondPlayerVal = playerWScore;
-        // Calculate the absolute difference for this scenario.
-        const outcomeOne = Math.abs(firstPlayerVal - secondPlayerVal);
+    // The following loop was commented out in the original,
+    // so it remains commented out here.
+    /*
+    for (var idx = 0; idx < cardValues.length; idx++) {
+      var getX = cardValues[idx];
+      var getY = Math.max(cardValues.slice(idx + 1, cardValues.length - 1));
+    }
+    */
 
-        // Scenario 2: First player takes the second to last item,
-        // and the second player takes the very last item.
-        // The first player's value is the second to last item.
-        firstPlayerVal = itemValues[numElements - 2];
-        // The second player's value is the last item.
-        secondPlayerVal = itemValues[numElements - 1];
-        // Calculate the absolute difference for this scenario.
-        const outcomeTwo = Math.abs(firstPlayerVal - secondPlayerVal);
-
-        // The optimal result is the maximum of the two calculated outcomes.
-        const finalResult = Math.max(outcomeOne, outcomeTwo);
-
-        // Display the calculated maximum score to standard output.
-        console.log(finalResult);
-
-    }); // End of stdin 'completion' event handler.
-
-})(); // End of Immediately Invoked Function Expression.
+    // Another commented out line from the original, preserved as such.
+    // console.log(Math.pow(parseInt(inputBuffer[0]), 2) - parseInt(inputBuffer[1]));
+    // End of the main problem-solving logic
+  });
+})();

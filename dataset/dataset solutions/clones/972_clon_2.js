@@ -1,23 +1,22 @@
-// A set of execution parameters for the script
-let runtimeOptions = { source: '/dev/stdin', lineBreak: '\u000A' };
+// This section defines configuration parameters for input processing.
+// The commented line is for Windows-based systems, using a temporary file and CRLF.
+// The active line is for Linux/Unix, reading from standard input with LF.
+let settings = { sourcePath: '/dev/stdin', lineSeparator: '\n' };
 
-// Fetch the file content as a series of rows
-let inputData = require('fs').readFileSync(
-    runtimeOptions.source,
-    'utf8' // Altered encoding type from 'ascii'
-  )
-  .split(runtimeOptions.lineBreak);
+// Read the entire file content synchronously, decode as ASCII, and split into an array of lines.
+let inputLines = require('fs').readFileSync(settings.sourcePath, 'ascii')
+  .split(settings.lineSeparator);
 
-// Extract the primary string and the pattern to locate within it
-let mainText = inputData[0];
-let searchQuery = inputData[1];
+// Assign the first line to the primary string variable.
+let mainString = inputLines[0];
+// Assign the second line to the pattern string variable.
+let searchPattern = inputLines[1];
 
-// Loop through the main text to find all occurrences of the search pattern
-for (
-  let currentMatchIndex = mainText.indexOf(searchQuery, 0);
-  currentMatchIndex !== -1;
-  currentMatchIndex = mainText.indexOf(searchQuery, currentMatchIndex + 1)
-) {
-  // Display the starting position of each discovered match
-  console.log(currentMatchIndex);
+// Iterate through the main string to find all occurrences of the search pattern.
+// The loop continues as long as the pattern is found.
+for (let currentIndex = mainString.indexOf(searchPattern, 0);
+     currentIndex !== -1;
+     currentIndex = mainString.indexOf(searchPattern, ++currentIndex)) {
+  // Output the starting index of each match found.
+  console.log(currentIndex);
 }

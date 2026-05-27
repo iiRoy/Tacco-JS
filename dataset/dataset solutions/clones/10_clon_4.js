@@ -1,23 +1,8 @@
-const retrieveGlobal = () => globalThis;
-
-const obtainAttribute = (source, attributeKey) => source[attributeKey];
-
-const produceOutput = (payloadContents) => {
-  const utilityModule = obtainAttribute(retrieveGlobal(), 'require')('util');
-  const inspectionTool = obtainAttribute(utilityModule, 'inspect');
-  
-  const stringRepresentation = inspectionTool(payloadContents, { depth: null, colors: false });
-  
-  const stdOutputChannel = obtainAttribute(obtainAttribute(retrieveGlobal(), 'process'), 'stdout');
-  obtainAttribute(stdOutputChannel, 'write')(stringRepresentation + '\n');
+const utilityModule = require('util');
+const runtimeEnvironmentDetails = process.versions;
+const inspectionConfiguration = {
+  colors: process.stdout.isTTY,
+  depth: 2
 };
-
-const performOperation = () => {
-  const currentGlobal = retrieveGlobal();
-  const runtimeObject = obtainAttribute(currentGlobal, 'process');
-  const versionCollection = obtainAttribute(runtimeObject, 'versions');
-  
-  produceOutput(versionCollection);
-};
-
-setTimeout(performOperation, 0);
+const formattedRuntimeDetails = utilityModule.inspect(runtimeEnvironmentDetails, inspectionConfiguration);
+process.stdout.write(formattedRuntimeDetails + '\n');

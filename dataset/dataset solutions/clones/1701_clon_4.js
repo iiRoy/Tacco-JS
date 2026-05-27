@@ -1,134 +1,106 @@
-function normalizeModuloResult(numericValue, modulusConstant) {
-    let resultValue = numericValue % modulusConstant;
-    if (resultValue < 0) {
-        resultValue += modulusConstant;
-    }
-    return resultValue;
+function ProcessInput(inputData) {
+    const MODULUS_PRIME = 1e9 + 7;
+    const SPLIT_FACTOR = 1e5;
+
+    inputData = inputData.trim().split("\n").map(function(line) { return line.split(" "); });
+    const totalElements = parseInt(inputData[0][0], 10);
+    const selectionSize = parseInt(inputData[0][1], 10);
+    const sourceNumbers = inputData[1].map(element => parseInt(element, 10));
+
+    sourceNumbers.sort((a, b) => Math.abs(b) - Math.abs(a));
+
+    const finalResult = DetermineProduct(sourceNumbers, totalElements, selectionSize, MODULUS_PRIME, SPLIT_FACTOR);
+    console.log(PositiveModulo(finalResult, MODULUS_PRIME));
 }
 
-function calculateProductModulo(firstFactor, secondFactor, modulusConstant, splitMultiplier) {
-    // Uses Math.trunc for integer division matching original's bitwise OR (b / C2 | 0)
-    let quotientPart = Math.trunc(secondFactor / splitMultiplier);
-    let remainderPart = secondFactor - (quotientPart * splitMultiplier);
+function DetermineProduct(sourceNumbers, totalElements, selectionSize, MODULUS_PRIME, SPLIT_FACTOR) {
+    let currentProduct = 1;
+    let negativeCount = 0;
+    let smallestAbsPositiveValInK = Infinity;
+    let smallestAbsNegativeValInK = -Infinity;
 
-    // Calculate (firstFactor * quotientPart * splitMultiplier) % modulusConstant
-    let termOne = (firstFactor * quotientPart) % modulusConstant;
-    termOne = (termOne * splitMultiplier) % modulusConstant;
-
-    // Calculate (firstFactor * remainderPart)
-    let termTwo = (firstFactor * remainderPart);
-
-    // Sum and apply final modulo. The sum could be negative or large.
-    let finalSum = termOne + termTwo;
-    return normalizeModuloResult(finalSum, modulusConstant);
-}
-
-function processInputData(rawData) {
-    const MOD_CONST = 1000000007; // Equivalent to 1e9 + 7
-    const INTERMEDIATE_SPLIT_FACTOR = 100000; // Equivalent to 1e5
-
-    let parsedLines = rawData.trim().split("\n").map(line => line.split(" ").map(Number));
-    let totalElements = parsedLines[0][0]; // N from original
-    let selectionSize = parsedLines[0][1]; // K from original
-    let sourceNumbers = parsedLines[1]; // vec_A from original
-
-    let positiveValues = [];
-    let negativeValues = [];
-    let zeroIsPresent = false;
-
-    for (let num of sourceNumbers) {
-        if (num > 0) {
-            positiveValues.push(num);
-        } else if (num < 0) {
-            negativeValues.push(num);
-        } else {
-            zeroIsPresent = true;
-        }
-    }
-
-    // Sort positive values in descending order
-    positiveValues.sort((a, b) => b - a);
-    // Sort negative values in ascending order (so largest absolute values come first)
-    negativeValues.sort((a, b) => a - b);
-
-    // Special case: if K is 0, the product is 1
-    if (selectionSize === 0) {
-        return 1;
-    }
-
-    let maxLogAbsProduct = -Infinity;
-    let resultingSign = 0; // 1 for positive, -1 for negative
-    let bestNegativeCount = -1;
-    let bestPositiveCount = -1;
-
-    // Iterate through all possible counts of negative numbers to include
-    for (let currentNegativeCount = 0; currentNegativeCount <= selectionSize; currentNegativeCount++) {
-        let currentPositiveCount = selectionSize - currentNegativeCount;
-
-        // Skip if not enough positive or negative numbers available
-        if (currentNegativeCount > negativeValues.length || currentPositiveCount > positiveValues.length) {
-            continue;
-        }
-
-        let currentLogAbs = 0;
-        let currentProductSign = (currentNegativeCount % 2 === 0) ? 1 : -1;
-
-        // Calculate log of absolute product for comparison
-        for (let i = 0; i < currentNegativeCount; i++) {
-            currentLogAbs += Math.log(Math.abs(negativeValues[i]));
-        }
-        for (let i = 0; i < currentPositiveCount; i++) {
-            currentLogAbs += Math.log(positiveValues[i]);
-        }
-
-        // Compare current combination with the best found so far
-        if (bestNegativeCount === -1) { // First valid combination
-            maxLogAbsProduct = currentLogAbs;
-            resultingSign = currentProductSign;
-            bestNegativeCount = currentNegativeCount;
-            bestPositiveCount = currentPositiveCount;
-        } else {
-            if (currentProductSign === 1 && resultingSign === -1) { // New product is positive, old was negative -> new is better
-                maxLogAbsProduct = currentLogAbs;
-                resultingSign = currentProductSign;
-                bestNegativeCount = currentNegativeCount;
-                bestPositiveCount = currentPositiveCount;
-            } else if (currentProductSign === -1 && resultingSign === 1) { // New product is negative, old was positive -> old is better, do nothing
-                // Do nothing
-            } else if (currentProductSign === 1 && resultingSign === 1) { // Both positive
-                if (currentLogAbs > maxLogAbsProduct) {
-                    maxLogAbsProduct = currentLogAbs;
-                    bestNegativeCount = currentNegativeCount;
-                    bestPositiveCount = currentPositiveCount;
-                }
-            } else { // Both negative
-                // For negative products, larger absolute value means smaller (more negative) product.
-                // We want the largest negative product (closest to zero), so smallest absolute value.
-                if (currentLogAbs < maxLogAbsProduct) {
-                    maxLogAbsProduct = currentLogAbs;
-                    bestNegativeCount = currentNegativeCount;
-                    bestPositiveCount = currentPositiveCount;
-                }
+    for (let idx = 0; idx < selectionSize; idx++) {
+        const currentVal = sourceNumbers[idx];
+        currentProduct = ModularMultiply(currentProduct, currentVal, MODULUS_PRIME, SPLIT_FACTOR);
+        if (currentVal < 0) {
+            negativeCount++;
+            if (currentVal > smallestAbsNegativeValInK) {
+                smallestAbsNegativeValInK = currentVal;
+            }
+        } else if (currentVal > 0) {
+            if (currentVal < smallestAbsPositiveValInK) {
+                smallestAbsPositiveValInK = currentVal;
             }
         }
     }
 
-    // After determining the best combination:
-    // If the best product found is negative, and there's a zero available, then 0 is the true maximum.
-    if (resultingSign === -1 && zeroIsPresent) {
-        return normalizeModuloResult(0, MOD_CONST);
-    }
+    if (currentProduct === 0) return 0;
+    if (selectionSize === totalElements || negativeCount % 2 === 0) return currentProduct;
 
-    // Calculate the actual product using modular arithmetic for the best combination
-    let finalAccumulatedProduct = 1;
-    for (let i = 0; i < bestNegativeCount; i++) {
-        finalAccumulatedProduct = calculateProductModulo(finalAccumulatedProduct, negativeValues[i], MOD_CONST, INTERMEDIATE_SPLIT_FACTOR);
-    }
-    for (let i = 0; i < bestPositiveCount; i++) {
-        finalAccumulatedProduct = calculateProductModulo(finalAccumulatedProduct, positiveValues[i], MOD_CONST, INTERMEDIATE_SPLIT_FACTOR);
-    }
+    const remainingNumbers = sourceNumbers.slice(selectionSize);
+    const largestAbsNegativeValOutsideK = remainingNumbers.find(num => num < 0) || null;
+    const largestAbsPositiveValOutsideK = remainingNumbers.find(num => num > 0) || null;
 
-    return finalAccumulatedProduct;
+    let finalProduct = currentProduct;
+
+    if (negativeCount < selectionSize) {
+        let swapOption1Score = null;
+        let swapOption2Score = null;
+
+        if (smallestAbsPositiveValInK !== Infinity && largestAbsNegativeValOutsideK !== null) {
+            swapOption1Score = largestAbsNegativeValOutsideK * smallestAbsNegativeValInK;
+        }
+
+        if (smallestAbsNegativeValInK !== -Infinity && largestAbsPositiveValOutsideK !== null) {
+            swapOption2Score = largestAbsPositiveValOutsideK * smallestAbsPositiveValInK;
+        }
+
+        if (swapOption1Score !== null && (swapOption2Score === null || swapOption1Score >= swapOption2Score)) {
+            finalProduct = ModularMultiply(finalProduct, modInverse(smallestAbsPositiveValInK, MODULUS_PRIME), MODULUS_PRIME, SPLIT_FACTOR);
+            finalProduct = ModularMultiply(finalProduct, largestAbsNegativeValOutsideK, MODULUS_PRIME, SPLIT_FACTOR);
+        } else if (swapOption2Score !== null) {
+            finalProduct = ModularMultiply(finalProduct, modInverse(smallestAbsNegativeValInK, MODULUS_PRIME), MODULUS_PRIME, SPLIT_FACTOR);
+            finalProduct = ModularMultiply(finalProduct, largestAbsPositiveValOutsideK, MODULUS_PRIME, SPLIT_FACTOR);
+        }
+    } else {
+        if (smallestAbsNegativeValInK !== -Infinity && largestAbsPositiveValOutsideK !== null) {
+            finalProduct = ModularMultiply(finalProduct, modInverse(smallestAbsNegativeValInK, MODULUS_PRIME), MODULUS_PRIME, SPLIT_FACTOR);
+            finalProduct = ModularMultiply(finalProduct, largestAbsPositiveValOutsideK, MODULUS_PRIME, SPLIT_FACTOR);
+        } else {
+            finalProduct = 1;
+            sourceNumbers.slice(totalElements - selectionSize, totalElements).forEach(val => {
+                finalProduct = ModularMultiply(finalProduct, val, MODULUS_PRIME, SPLIT_FACTOR);
+            });
+        }
+    }
+    return finalProduct;
 }
 
-console.log(processInputData(require("fs").readFileSync("/dev/stdin", "utf8")));
+function ModularMultiply(factorA, factorB, modulus, splitConstant) {
+    const quotientB = Math.floor(factorB / splitConstant);
+    const remainderB = factorB - (quotientB * splitConstant);
+    let result = (factorA * quotientB % modulus) * splitConstant % modulus + (factorA * remainderB);
+    result %= modulus;
+    return result;
+}
+
+function power(base, exponent, modulus, splitConstant) {
+    let res = 1;
+    base = PositiveModulo(base, modulus);
+    while (exponent > 0) {
+        if (exponent % 2 === 1) res = ModularMultiply(res, base, modulus, splitConstant);
+        base = ModularMultiply(base, base, modulus, splitConstant);
+        exponent = Math.floor(exponent / 2);
+    }
+    return res;
+}
+
+function modInverse(number, modulus) {
+    return power(number, modulus - 2, modulus, 1e5);
+}
+
+function PositiveModulo(value, modulus) {
+    return (value % modulus + modulus) % modulus;
+}
+
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

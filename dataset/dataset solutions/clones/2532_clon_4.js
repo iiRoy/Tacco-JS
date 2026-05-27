@@ -1,51 +1,69 @@
-function obtainGreatestCommonDivisor(firstOperand, secondOperand) {
-  while (secondOperand !== 0) {
-    let remainder = firstOperand % secondOperand;
-    firstOperand = secondOperand;
-    secondOperand = remainder;
-  }
-  return firstOperand;
-}
-
-function extractUniquePrimeFactors(targetValue) {
-  const uniquePrimes = new Set();
-
-  if (targetValue <= 1) { // 0 and 1 have no prime factors
-    return uniquePrimes;
-  }
-
-  // Handle factor 2
-  while (targetValue > 1 && targetValue % 2 === 0) {
-    uniquePrimes.add(2);
-    targetValue /= 2;
-  }
-
-  // Handle odd factors
-  for (let currentFactor = 3; currentFactor * currentFactor <= targetValue; currentFactor += 2) {
-    while (targetValue > 1 && targetValue % currentFactor === 0) {
-      uniquePrimes.add(currentFactor);
-      targetValue /= currentFactor;
+function checkPrimeStatus(candidateNumber) {
+    if (typeof candidateNumber !== 'number' || !Number.isFinite(candidateNumber)) {
+        // Replicates the original bug where isPrime(undefined) returns true.
+        // Number(undefined) is NaN. Math.sqrt(NaN) is NaN.
+        // The original loop `i <= Math.sqrt(num)` (i <= NaN) is always false,
+        // so the loop is skipped and it returns true.
+        if (Number.isNaN(candidateNumber)) {
+            return true;
+        }
+        return false; // For other non-finite numbers, or non-numbers that are not NaN.
     }
-  }
 
-  // If targetValue is still greater than 1, it must be a prime factor itself
-  if (targetValue > 1) {
-    uniquePrimes.add(targetValue);
-  }
+    if (candidateNumber < 2) {
+        return false; // Handles 0, 1, and negative numbers (which are not NaN)
+    }
 
-  return uniquePrimes;
+    if (candidateNumber === 2 || candidateNumber === 3) {
+        return true;
+    }
+
+    if (candidateNumber % 2 === 0 || candidateNumber % 3 === 0) {
+        return false;
+    }
+
+    let currentDivisor = 5;
+    const upperLimit = Math.sqrt(candidateNumber);
+
+    while (currentDivisor <= upperLimit) {
+        if (candidateNumber % currentDivisor === 0 || candidateNumber % (currentDivisor + 2) === 0) {
+            return false;
+        }
+        currentDivisor += 6;
+    }
+
+    return true;
 }
 
-function processData(sourceInput) {
-  const parts = sourceInput.trim().split(/\s+/).map(Number);
-  const operandA = parts[0];
-  const operandB = parts[1];
-
-  const commonDivisorValue = obtainGreatestCommonDivisor(operandA, operandB);
-  
-  const primeFactorSet = extractUniquePrimeFactors(commonDivisorValue);
-  
-  console.log(primeFactorSet.size);
+function computeGreatestCommonDivisor(firstVal, secondVal) {
+    while (secondVal !== 0) {
+        const temporary = secondVal;
+        secondVal = firstVal % secondVal;
+        firstVal = temporary;
+    }
+    return firstVal;
 }
 
-processData(require("fs").readFileSync("/dev/stdin", "utf8"));
+function processInputAndCalculate(rawData) {
+    const [operandA, operandB] = rawData.split("\n")[0].split(" ").map(Number);
+
+    const commonDivisorValue = computeGreatestCommonDivisor(operandA, operandB);
+
+    const divisorsList = Array.from({ length: commonDivisorValue }, (_, index) => index + 1)
+        .filter(currentDivisor => commonDivisorValue % currentDivisor === 0);
+
+    // Replicates the original loop's behavior:
+    // `for(var i=1 ; i<=ans.length ; i++) { if(isPrime(ans[i]) === true){ cnt += 1; } }`
+    // This means it skips index 0 and includes an access to `divisorsList[divisorsList.length]` (which is undefined).
+    const primeDivisorCount = Array.from({ length: divisorsList.length }, (_, index) => index + 1)
+        .reduce((accumulator, currentLoopIndex) => {
+            if (checkPrimeStatus(divisorsList[currentLoopIndex])) {
+                return accumulator + 1;
+            }
+            return accumulator;
+        }, 0);
+
+    console.log(primeDivisorCount);
+}
+
+processInputAndCalculate(require("fs").readFileSync("/dev/stdin", "utf8"));

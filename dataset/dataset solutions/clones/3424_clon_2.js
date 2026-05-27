@@ -1,23 +1,32 @@
-systemEnvironment.incomingStream.initiateFlow();
- systemEnvironment.incomingStream.setCharEncoding('utf-8');
+process.stdin.resume(); // Activate standard input stream
+process.stdin.setEncoding('utf8'); // Define the character encoding for input data
 
-let collectedRecords = [ ] ;
+// An array to accumulate all incoming lines from the input source
+var inputData = [];
 
- const inputProcessor = getModule('node:readline').setupInterface({
-    sourceInput: systemEnvironment.incomingStream,
-    destinationOutput: systemEnvironment.outgoingStream
- });
+// Initialize a line-reading interface using the 'readline' module
+var inputProcessor = require('readline').createInterface({
+  input: process.stdin,   // Designate standard input as the source
+  output: process.stdout  // Designate standard output for internal readline operations
+});
 
- inputProcessor.addEventObserver ( 'recordLine' , ( currentEntry ) => {
-   collectedRecords.appendData(currentEntry) ;
- } ) ;
+// Attach an event handler for each line received from the input stream
+inputProcessor.on('line', (currentLine) => {
+  // Append the newly read line to our collection of input data
+  inputData.push(currentLine);
+});
 
- inputProcessor.addEventObserver ( 'streamEnd' , () => {
-    let evaluationNumber = collectedRecords[0] ;
-    if ( evaluationNumber == 3 || evaluationNumber == 5 || evaluationNumber == 7 ) {
-      applicationLogger.outputMsg ( "POSITIVE" ) ;
-    }
-    else {
-      applicationLogger.outputMsg ( "NEGATIVE" ) ;
-    }
- } ) ;
+// Attach an event handler for when the input stream concludes
+inputProcessor.on('close', () => {
+  // Extract the first element from the collected input data, expected to be a number
+  var inputNumber = inputData[0];
+
+  // Evaluate if the extracted number matches any of the specified values
+  if (inputNumber == 3 || inputNumber == 5 || inputNumber == 7) {
+    // If a match is found, output "YES" to the console
+    console.log("YES");
+  } else {
+    // Otherwise, output "NO" to the console
+    console.log("NO");
+  }
+});

@@ -1,5 +1,5 @@
-let   inputContent =   require ( 'fs' ) . readFileSync ( '/dev/stdin' ,  'utf8' ) ;
+var inputData = require('fs').readFileSync('/dev/stdin', 'utf8'); // Read content from standard input
 
-let   segmentList   =   inputContent . split ( " " ) ;
+var tokenArray = inputData.split(" "); // Split the input string by spaces
 
-console . log ( segmentList ) ;
+console.log(tokenArray); // Output the resulting array of tokens

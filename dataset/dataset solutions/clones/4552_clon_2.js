@@ -1,107 +1,86 @@
-function ProcessData(rawDataString) {
-    // Split the entire input string by newline characters to get individual lines.
+function ProcessInputData(rawDataString) {
+    // Split the raw input string into an array of lines
     rawDataString = rawDataString.split('\n');
 
-    // Process the very first line to extract configuration values.
-    const firstConfigTokens = rawDataString[0].split(' ');
-    
-    // Parse the total number of entities from the first token.
-    const totalEntities = parseInt(firstConfigTokens[0]);
-    
-    // Parse the high attack value from the second token.
-    const highAttackValue = parseInt(firstConfigTokens[1]);
-    
-    // Parse the low attack value from the third token.
-    const lowAttackValue = parseInt(firstConfigTokens[2]);
+    // Parse the first line to get key parameters
+    var firstLineElements = rawDataString[0].split(' ');
+    var enemyCount = parseInt(firstLineElements[0]);
+    var highDamagePerHit = parseInt(firstLineElements[0b1]);
+    var lowDamagePerHit = parseInt(firstLineElements[0o2]);
 
-    // Initialize variables to track the highest health found among entities.
-    let greatestHealth = 0;
-    let greatestIndex = 0;
+    // Initialize variables for tracking enemy health and indices
+    var highestEnemyHealth = 0x0;
+    var highestHealthIdx = 0x0;
+    var enemyHealths = [];
 
-    // Create an array to store the health levels of all foes.
-    const foeHealthLevels = [];
-    
-    // Unused variable, but renamed for consistency.
-    let eliminationCounter = 0;
-    
-    // Variable to hold the ultimate calculated answer.
-    let finalSolution = 0;
-    
-    // Loop through the input lines to populate foe healths and find the maximum.
-    for (let entityIdx = 0; entityIdx < totalEntities; entityIdx++) {
-        foeHealthLevels[entityIdx] = parseInt(rawDataString[entityIdx + 1]);
-        
-        // Check if the current foe has a higher health than the current greatest.
-        if (foeHealthLevels[entityIdx] > greatestHealth) {
-            greatestHealth = foeHealthLevels[entityIdx];
-            greatestIndex = entityIdx;
+    // This variable is declared but not used in the original logic, keeping it for Type II compliance.
+    var eliminatedFoesCount = 0x0;
+
+    // Variable to store the final calculated answer
+    var finalAttackCount = 0x0;
+
+    // Loop through the input to populate enemy healths and find the highest health
+    for (var idx = 0x0; idx < enemyCount; idx++) {
+        enemyHealths[idx] = parseInt(rawDataString[idx + 0b1]);
+        // Check if current enemy health is greater than the highest recorded health
+        if (enemyHealths[idx] > highestEnemyHealth) {
+            highestEnemyHealth = enemyHealths[idx];
+            highestHealthIdx = idx;
         }
     }
-    
-    // This line was commented out in the original, keeping it that way.
-    // console.log(greatestHealth + " " + greatestIndex);
 
-    // Initialize bounds for a binary search-like operation.
-    let searchUpperLimit = Math.ceil(greatestHealth / (lowAttackValue));
-    let searchLowerLimit = 0;
-    
-    // A temporary variable for swapping values during the search.
-    let temporaryHold = 0;
-    
-    // Set an initial estimate for the final solution.
-    finalSolution = Math.ceil(greatestHealth / (2 * lowAttackValue));
-    
-    // Calculate an initial base damage value.
-    let calculatedBaseDmg = finalSolution * lowAttackValue;
-    
-    // Counter for the number of iterations performed.
-    let iterationStep = 0;
-    
-    // Variable to accumulate additional efforts required.
-    let additionalEffort = 0;
-    
-    // Begin an infinite loop for the binary search process.
+    // Initialize variables for the binary search-like approach
+    var searchUpperBound = Math.ceil(highestEnemyHealth / (lowDamagePerHit));
+    var searchLowerBound = 0x0;
+    var tempAttackCount = 0x0;
+
+    // Initial guess for the final attack count
+    finalAttackCount = Math.ceil(highestEnemyHealth / (0o2 * lowDamagePerHit));
+
+    // Calculate the base damage based on the current guess
+    var baseAttackValue = finalAttackCount * lowDamagePerHit;
+
+    // Counter for loop iterations (unused in logic, but present in original structure)
+    var iterationTracker = 0x0;
+
+    // Variable to accumulate additional attacks required
+    var additionalAttacksRequired = 0x0;
+
+    // Main loop for the binary search-like optimization
     while (true) {
-        // Increment the iteration counter.
-        iterationStep++;
-        
-        // Recalculate the base damage for the current finalSolution estimate.
-        calculatedBaseDmg = finalSolution * lowAttackValue;
-        
-        // Iterate through all foe health levels to determine additional effort needed.
-        for (let entityIdx = 0; entityIdx < totalEntities; entityIdx++) {
-            // If a foe's health exceeds the base damage, calculate the extra attacks needed.
-            if (foeHealthLevels[entityIdx] > calculatedBaseDmg) {
-                additionalEffort += Math.ceil((foeHealthLevels[entityIdx] - calculatedBaseDmg) / (highAttackValue - lowAttackValue));
+        iterationTracker++; // Increment iteration counter
+        baseAttackValue = finalAttackCount * lowDamagePerHit; // Recalculate base damage
+
+        // Iterate through all enemies to determine additional attacks needed
+        for (var jdx = 0x0; jdx < enemyCount; jdx++) {
+            if (enemyHealths[jdx] > baseAttackValue) {
+                // Calculate extra attacks for enemies not defeated by base damage
+                additionalAttacksRequired += Math.ceil((enemyHealths[jdx] - baseAttackValue) / (highDamagePerHit - lowDamagePerHit));
             }
         }
 
-        // Adjust search bounds based on whether additional effort is more, less, or equal to the current solution.
-        if (additionalEffort > finalSolution) {
-            temporaryHold = finalSolution;
-            finalSolution = Math.ceil((searchUpperLimit + finalSolution) / 2);
-            searchLowerLimit = temporaryHold;
-        } 
-        else if (additionalEffort < finalSolution) {
-            temporaryHold = finalSolution;
-            finalSolution = Math.ceil((searchLowerLimit + finalSolution) / 2);
-            searchUpperLimit = temporaryHold;
-        } 
-        else {
-            // If additional effort equals the solution, we've found the optimal value.
-            break; 
+        // Adjust the search range based on the comparison of additional attacks and current guess
+        if (additionalAttacksRequired > finalAttackCount) {
+            tempAttackCount = finalAttackCount;
+            finalAttackCount = Math.ceil((searchUpperBound + finalAttackCount) / 0o2);
+            searchLowerBound = tempAttackCount;
+
+        } else if (additionalAttacksRequired < finalAttackCount) {
+            tempAttackCount = finalAttackCount;
+            finalAttackCount = Math.ceil((searchLowerBound + finalAttackCount) / 0o2);
+            searchUpperBound = tempAttackCount;
+        } else {
+            // If additional attacks match the current guess, we found the answer
+            break;
         }
-        
-        // This debug line was commented out in the original.
-        // console.log("Upper Limit: " + searchUpperLimit + " Lower Limit: " + searchLowerLimit + " Result: " + finalSolution + " Extra Effort: " + additionalEffort);
-        
-        // Reset additional effort for the next iteration.
-        additionalEffort = 0;
+
+        // Reset additional attacks for the next iteration
+        additionalAttacksRequired = 0x0;
     }
 
-    // Output the final calculated solution.
-    console.log(finalSolution);
+    // Output the final calculated attack count
+    console.log(finalAttackCount);
 }
 
-// Call the main processing function with input read from standard input.
-ProcessData(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Read input from standard input and pass it to the main processing function
+ProcessInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

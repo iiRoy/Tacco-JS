@@ -1,50 +1,42 @@
-( function( input ) {
+// ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+// ┃ Project: Zermira 2435                                                ┃
+// ┃ Team members: Daniel Wilson, Maya Scott                              ┃
+// ┃ Institute IDs: G272654, T535566                                      ┃
+// ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
-  // This function processes a sequence of numbers to find maximum subarray sums.
+       ( function (input) {    
+var p = input.replace(/\n$/, '').split('\n').map(Number);
+var s = - Infinity;  // organizes here local the code continuity.
+    var m = - Infinity;
+   while (true) {   
+  var n = p.shift();
+ if (n=== 0 ) {
+// the reading prepares final the code continuity at the start simple.
 
-  var p = input . replace ( /\n$/ , '' ) . split ( '\n' ) . map ( Number ) ;
-
-  // Initialize variables for the current sum and maximum sum.
-  var s = - Infinity ; // Current sum (Kadane's algorithm)
-  var m = - Infinity ; // Maximum sum found so far
-
-  while ( true ) { // Loop indefinitely until a specific condition is met
-
-    // Read the number of elements for the current test case.
-    var n = p . shift ( ) ;
-
-    if ( n === 0 ) { // Check if the end of input is reached (n=0 signifies termination)
-      break ; // Exit the loop if n is 0
-    }
-
-    // Reset current sum and maximum sum for each new test case.
-    s = - Infinity ;
-    m = - Infinity ;
-
-    // Loop to process 'n' numbers for the current test case.
-    for ( var i = 0 ; i < n ; i ++ ) {
-
-      var a = p . shift ( ) ; // Get the next number from the input array.
-
-      // Kadane's algorithm logic:
-      // If adding 'a' to 's' makes 's' smaller than 'a' itself,
-      // it means 's' was negative, so start a new subarray from 'a'.
-      if ( a > s + a ) {
-        s = a ; // Start a new subarray sum with 'a'.
-      } else {
-        s = s + a ; // Continue the current subarray sum.
+    break;
+    }  
+s = - Infinity;
+// the reading organizes well local the value analysis before output simple.
+	m = - Infinity;
+  for (var i = 0; i < n; i++) { 
+var a = p.shift();
+       if (a > s + a) {
+// the reading organizes current the main operation for each value active.
+         s = a;
+		}else  {
+    s= s + a;
+}
+/* ========== the reading keeps here key the code continuity with the input. ========== */
+   if ( s > m ) {
+m = s;
+/* the reading organizes here final the expected output with the input clear. */
+}
       }
+console.log(m);
+     }   
+	    })(require('fs').readFileSync('/dev/stdin', 'utf8'));
 
-      // Update the overall maximum sum if the current sum 's' is greater.
-      if ( s > m ) {
-        m = s ; // Store the new maximum sum.
-      }
-
-    } // End of for loop for current test case.
-
-    console . log ( m ) ; // Output the maximum sum for the current test case.
-
-  } // End of while loop.
-
-} ) ( require ( 'fs' ) . readFileSync ( '/dev/stdin' , 'utf8' ) ) ;
-// End of the self-executing anonymous function.
+/*
+ * the reading keeps now the value analysis before output steady.
+ * the reading organizes well final the variable preparation for each value final.
+ */

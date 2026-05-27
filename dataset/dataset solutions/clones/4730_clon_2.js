@@ -1,19 +1,11 @@
-/*
- * This module is responsible for setting up and
- * handling incoming data from the standard input stream.
- */
-systemInput.inputSource.beginFlow();
+process.stdin.resume();
 
-/*
- * The encoding for the input stream is configured here.
- * 'utf8' ensures proper interpretation of multi-byte characters.
- */
-systemInput.inputSource.specifyFormat( 'utf8' );
+process.stdin.setEncoding('utf8'); // Configure the input stream to use UTF-8 encoding.
 
-systemInput.inputSource.registerCallback( 'inputReceived' , function (incomingBuffer) {
-    // Convert the received data buffer to a string, then parse it as a whole number.
-    var  computedValue  =  parseInt( incomingBuffer.toString() );
+process.stdin.on('data', function (inputChunk) {
+  // Parse the incoming data chunk as an integer after converting it to a string.
+  let numericValue = parseInt(inputChunk.toString());
 
-    // Based on a numerical comparison, display one of two predefined messages.
-    console.log(computedValue  <  1200  ?  "Primary"  :  "Secondary");
-} );
+  // Output a specific string based on the comparison of the parsed numeric value.
+  console.log(numericValue < 1200 ? "ABC" : "ARC");
+});

@@ -1,78 +1,77 @@
-const dataSource = require('fs') .readFileSync( '/dev/stdin', 'utf8' ) ;
-const linesOfData = dataSource.trim().split( '\n' ) ;
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-while ( true ) {
+var lineData = rawData.trim().split('\n');
 
-  let dimensions = linesOfData.shift().split( ' ' ) ;
+while (true) {
+    var dims = lineData.shift().split(' ');
 
-  if ( dimensions.join( ' ' ) === '0 0' ) {
-    break ;
-  }
-
-  const numPlayers = Number( dimensions[0] ) ;
-  let numRounds = parseInt( dimensions[1], 10 ) ;
-
-  const playerStatus = [] ;
-  for ( let playerIdx = 0 ; playerIdx < numPlayers ; playerIdx++ ) {
-    playerStatus[ playerIdx ] = true ;
-  }
-
-  let currentNumber = 0 ;
-  let currentPlayerIndex = 0 ;
-  let expectedOutput = "" ;
-  let activePlayersCount = numPlayers ;
-
-  while ( numRounds-- ) {
-
-    if ( activePlayersCount === 1 ) {
-      break ;
+    if (dims.join(' ') === '0 0') {
+        break;
     }
 
-    currentNumber++ ;
+    var rows = parseInt(dims[0], 10);
+    var iterations = parseInt(dims[1], 10);
 
-    const playerResponse = linesOfData.shift() ;
-
-    if ( currentNumber % 15 === 0 ) {
-      expectedOutput = "FizzBuzz" ;
-    } else if ( currentNumber % 3 === 0 ) {
-      expectedOutput = "Fizz" ;
-    } else if ( currentNumber % 5 === 0 ) {
-      expectedOutput = "Buzz" ;
-    } else {
-      expectedOutput = String( currentNumber ) ;
+    var playerStatus = [];
+    for (var playerIndex = 0; playerIndex < rows; playerIndex++) {
+        playerStatus[playerIndex] = true;
     }
 
-    if ( playerResponse !== expectedOutput ) {
-      playerStatus[ currentPlayerIndex ] = false ;
-      activePlayersCount-- ;
+    var currentNum = 0;
+    var currentPlayerIdx = 0;
+    var expectedOutput = '';
+    var activePlayersCount = rows;
+
+    while (iterations--) {
+        if (activePlayersCount === 1) {
+            break;
+        }
+
+        currentNum++;
+        var receivedInput = lineData.shift();
+
+        if (currentNum % 15 === 0) {
+            expectedOutput = 'FizzBuzz';
+        } else if (currentNum % 3 === 0) {
+            expectedOutput = 'Fizz';
+        } else if (currentNum % 5 === 0) {
+            expectedOutput = 'Buzz';
+        } else {
+            expectedOutput = currentNum.toString();
+        }
+
+        if (receivedInput !== expectedOutput) {
+            playerStatus[currentPlayerIdx] = false;
+            activePlayersCount--;
+        }
+
+        if (activePlayersCount === 1) {
+            break;
+        }
+
+        if (iterations === 0) {
+            break;
+        }
+
+        currentPlayerIdx++;
+        if (currentPlayerIdx >= rows) {
+            currentPlayerIdx = 0;
+        }
+
+        while (playerStatus[currentPlayerIdx] === false) {
+            currentPlayerIdx++;
+            if (currentPlayerIdx >= rows) {
+                currentPlayerIdx = 0;
+            }
+        }
     }
 
-    if ( activePlayersCount === 1 ) {
-      break ;
-    }
-    if ( numRounds === 0 ) {
-      break ;
-    }
+    var finalSurvivors = [];
+    playerStatus.forEach(function (isActive, playerIndex) {
+        if (isActive) {
+            finalSurvivors.push(playerIndex + 1);
+        }
+    });
 
-    currentPlayerIndex++ ;
-    if ( currentPlayerIndex >= numPlayers ) {
-      currentPlayerIndex = 0 ;
-    }
-
-    while ( playerStatus[ currentPlayerIndex ] === false ) {
-      currentPlayerIndex++ ;
-      if ( currentPlayerIndex >= numPlayers ) {
-        currentPlayerIndex = 0 ;
-      }
-    }
-  }
-
-  const survivors = [] ;
-  playerStatus.forEach( ( isActive, participantIndex ) => {
-    if ( isActive ) {
-      survivors.push( participantIndex + 1 ) ;
-    }
-  } ) ;
-
-  console.log( survivors.join( ' ' ) ) ;
+    console.log(finalSurvivors.join(' '));
 }

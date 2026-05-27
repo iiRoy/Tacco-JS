@@ -1,23 +1,30 @@
-// Module for user input processing
-var textReader = require('readline') .createInterface ( {  input: process.stdin,  output: process.stdout  } );
-var dataStorage = [  ];
-textReader .on ( 'line' , function ( currentEntry ) {
-    dataStorage .push ( currentEntry ) ;
-} );
+var inputHandler = require('readline').createInterface({
+    input: process.stdin,
+    output: process.stdout
+});
 
-// Core computation routine
-textReader .on ( 'close' , function ( )
-{
-    var startValue = Number ( dataStorage[0].split ( " " ) [0] );
-    var endValue = Number ( dataStorage[0].split ( " " ) [1] ) ;
-    var factorValue = Number ( dataStorage[0].split ( " " ) [2] ) ;
+var inputData = []; // Collection for received text lines
 
-    var finalResult = endValue / factorValue - startValue / factorValue ;
+inputHandler.on('line', function (currentLine) {
+    inputData.push(currentLine);
+});
 
-    if ( startValue % factorValue === 0 )
-    {
-        finalResult = finalResult + 1 ;
+inputHandler.on('close', function () {
+    // Process the first line of input to extract numerical parameters
+    var firstLineParts = inputData[0].split(" ");
+
+    var firstNum = Number(firstLineParts[0]);
+    var secondNum = Number(firstLineParts[1]);
+    var divisorVal = Number(firstLineParts[2]);
+
+    // Calculate an initial value based on the given numbers
+    var resultVal = secondNum / divisorVal - firstNum / divisorVal;
+
+    // Apply a conditional adjustment to the calculated value
+    if (firstNum % divisorVal === 0) {
+        resultVal = resultVal + 1;
     }
 
-    console.log ( finalResult ) ;
-} ) ;
+    // Display the final computed result to standard output
+    console.log(resultVal);
+});

@@ -1,198 +1,142 @@
-// This module provides utilities for reading input data.
-var DATA_PROCESSOR = (function () {
-  /**
-   * Creates a new instance of the InputReader.
-   * @param {string} inputStringContent - The raw string content to parse.
-   * @returns {InputReader} A new InputReader instance.
-   */
-  function createDataReader(inputStringContent) {
-    return new InputReader(inputStringContent);
+var INPUT_PARSER = (function() {
+  // This function serves as the public interface for creating a data stream parser.
+  function createParser(sourceText) {
+    return new DataStream(sourceText);
   }
 
-  /**
-   * Represents a utility for parsing input strings line by line.
-   * @constructor
-   * @param {string} inputStringContent - The entire input string.
-   */
-  function InputReader(inputStringContent) {
-    // Store lines after trimming whitespace and splitting by newline.
-    this._lineBuffer = inputStringContent.trim().split("\n");
-    // Initialize the pointer to the current line.
+  // The DataStream class manages the input lines and current reading position.
+  function DataStream(sourceText) {
+    // Store processed input lines, splitting by newline and trimming whitespace.
+    this._sourceLines = sourceText.trim().split("\n");
+    // Initialize the current line index to the beginning of the input.
     this._currentLineIndex = 0;
   }
 
-  /**
-   * Reads the next single item from the current line.
-   * If the current line has not been processed into individual items, it will be split.
-   * Advances the line pointer if the current line becomes empty after popping an item.
-   * @param {boolean} returnAsString - If true, returns the item as a string; otherwise, attempts to convert to a number.
-   * @returns {string|number} The extracted item.
-   */
-  InputReader.prototype.readNextItem = function (returnAsString) {
-    var lineData = this._lineBuffer, // Reference to the internal line buffer
-      linePointer = this._currentLineIndex, // Current line index
-      extractedValue; // Variable to hold the result
+  // Method to read a single atomic value (number or string) from the current line.
+  DataStream.prototype.readAtom = function(asString) {
+    var linesArray = this._sourceLines;
+    var lineIdx = this._currentLineIndex;
+    var resultVal;
 
-    // Check if the current line is still a single string; if so, split and reverse for easy popping.
-    if (typeof lineData[linePointer] === "string") {
-      lineData[linePointer] = lineData[linePointer].split(" ").reverse();
+    // If the current line hasn't been split into tokens yet, do so and reverse for easy popping.
+    if (typeof linesArray[lineIdx] === "string") {
+      linesArray[lineIdx] = linesArray[lineIdx].split(" ").reverse();
     }
 
-    // Pop the last item from the (reversed) array of items on the current line.
-    extractedValue = lineData[linePointer].pop();
+    // Pop the last token from the current line.
+    resultVal = linesArray[lineIdx].pop();
 
-    // If the current line is now empty, advance the line pointer to the next line.
-    if (!lineData[linePointer].length) {
+    // If the current line is now empty, advance to the next line.
+    if (!linesArray[lineIdx].length) {
       this._currentLineIndex++;
     }
 
-    // Return the value, converting to a number if returnAsString is false.
-    return returnAsString ? extractedValue : +extractedValue;
+    // Return the value as a string or a number based on the 'asString' flag.
+    return asString ? resultVal : +resultVal;
   };
 
-  /**
-   * Reads an entire line and splits it into items.
-   * Advances the line pointer to the next line.
-   * @param {boolean} asStringArray - If true, returns an array of strings; otherwise, an array of numbers.
-   * @returns {Array<string|number>} An array of items from the line.
-   */
-  InputReader.prototype.readLineAsNumbers = function (asStringArray) {
-    // Get the current line, split it by space, and then advance the line pointer.
-    var currentLineParts = this._lineBuffer[this._currentLineIndex++].split(" ");
-
-    // Return as strings or map to numbers.
-    return asStringArray ? currentLineParts : currentLineParts.map((item) => +item);
+  // Method to read an entire line, splitting it into tokens.
+  DataStream.prototype.readLine = function(asString) {
+    // Get the current line, split by space, and then advance the line index.
+    var lineContent = this._sourceLines[this._currentLineIndex++].split(" ");
+    // Return tokens as strings or numbers.
+    return asString ? lineContent : lineContent.map(item => +item);
   };
 
-  /**
-   * Reads a specified number of lines and processes them as a matrix.
-   * Each line is split into items.
-   * Advances the line pointer by the number of rows read.
-   * @param {number} numRows - The number of rows (lines) to read for the matrix.
-   * @param {boolean} asStringMatrix - If true, returns a matrix of strings; otherwise, a matrix of numbers.
-   * @returns {Array<Array<string|number>>} A 2D array (matrix) of items.
-   */
-  InputReader.prototype.readMatrixOfNumbers = function (numRows, asStringMatrix) {
-    // Slice the relevant lines from the buffer and map each line to an array of its parts.
-    // Also, update the current line index.
-    var matrixData = this._lineBuffer.slice(this._currentLineIndex, (this._currentLineIndex += numRows)).map((row) =>
-      row.split(" ")
-    );
-
-    // Return as strings or map all elements in the matrix to numbers.
-    return asStringMatrix ? matrixData : matrixData.map((row) => row.map((element) => +element));
+  // Method to read a matrix (multiple lines, each split into tokens).
+  DataStream.prototype.readMatrix = function(count, asString) {
+    // Slice 'count' lines from the source, then advance the line index.
+    // Map each line to an array of its tokens.
+    var matrixRows = this._sourceLines.slice(this._currentLineIndex, this._currentLineIndex += count).map(item => item.split(" "));
+    // Return matrix as strings or numbers.
+    return asString ? matrixRows : matrixRows.map(row => row.map(item => +item));
   };
 
-  /**
-   * Reads a specified number of raw lines without splitting them into items.
-   * Advances the line pointer by the number of lines read.
-   * @param {number} countOfLines - The number of lines to read.
-   * @param {boolean} returnLinesAsStrings - If true, returns lines as strings; otherwise, tries to convert each line to a number.
-   * @returns {Array<string|number>} An array of raw lines or numbers.
-   */
-  InputReader.prototype.readRawLines = function (countOfLines, returnLinesAsStrings) {
-    // Extract a segment of lines from the buffer.
-    // Update the current line index.
-    var lineSegments = this._lineBuffer.slice(this._currentLineIndex, (this._currentLineIndex += countOfLines));
-
-    // Return as strings or map to numbers.
-    return returnLinesAsStrings ? lineSegments : lineSegments.map((line) => +line);
+  // Method to read 'count' raw lines without splitting them into tokens.
+  DataStream.prototype.readRawLines = function(count, asString) {
+    // Slice 'count' lines from the source, then advance the line index.
+    var rawLines = this._sourceLines.slice(this._currentLineIndex, this._currentLineIndex += count);
+    // Return lines as strings or numbers.
+    return asString ? rawLines : rawLines.map(item => +item);
   };
 
-  // The factory function is returned by the IIFE.
-  return createDataReader;
+  // Return the public interface function.
+  return createParser;
 })();
 
+// Initialize the input reader by reading from standard input.
+var inputReader = INPUT_PARSER(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-// Initialize the input handler by reading the entire content of stdin.
-var inputHandler = DATA_PROCESSOR(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Output the result of the main problem-solving function.
+console.log(solveProblem());
 
+// The primary function that contains the problem's logic.
+function solveProblem() {
+  // Read the array length from input.
+  var arrayLength = inputReader.readAtom();
+  // Read the array of numbers from input.
+  var numberArray = inputReader.readLine();
+  // Initialize variables to track the maximum absolute value and its 1-based index.
+  var maxAbsValue = 0;
+  var maxAbsIndex;
 
-// Execute the main processing function and log its return value to the console.
-console.log(processInputAndGenerateOutput());
-
-
-/**
- * Main function to process input array and generate a sequence of operations.
- * This function aims to make all elements in the array non-decreasing (or non-increasing)
- * by applying a specific set of operations based on the element with the largest absolute value.
- * @returns {string} A newline-separated string of operations.
- */
-function processInputAndGenerateOutput() {
-  // Read the total number of elements.
-  var elementCount = inputHandler.readNextItem();
-  // Read the array of numbers.
-  var numericArray = inputHandler.readLineAsNumbers();
-
-  // Variables to track the maximum absolute value and its 1-based index.
-  var maximumAbsoluteValue = 0,
-    indexOfMaxValue;
-
-  // Find the element with the largest absolute value in the array.
-  for (var loopIndex = 0; loopIndex < elementCount; loopIndex++) {
-    if (Math.abs(maximumAbsoluteValue) < Math.abs(numericArray[loopIndex])) {
-      maximumAbsoluteValue = numericArray[loopIndex];
-      indexOfMaxValue = loopIndex + 1; // Store 1-based index.
+  // Iterate through the array to find the element with the largest absolute value.
+  for (var loopCounter = 0; loopCounter < arrayLength; loopCounter++) {
+    if (Math.abs(maxAbsValue) < Math.abs(numberArray[loopCounter])) {
+      maxAbsValue = numberArray[loopCounter];
+      maxAbsIndex = loopCounter + 1; // Store 1-based index.
     }
   }
 
-  // If all elements are zero, no operations are needed.
-  if (maximumAbsoluteValue === 0) {
+  // If all numbers are zero, no operations are needed.
+  if (maxAbsValue === 0) {
     return 0;
   }
 
-  // Array to store the generated operations.
-  var outputOperations = [];
+  // Array to store the sequence of operations.
+  var operationList = [];
 
-  // Case 1: The element with the maximum absolute value is negative.
-  // Goal: Make all elements non-increasing by adding the maximum absolute value element.
-  if (maximumAbsoluteValue < 0) {
-    // Initial operations to propagate the negative maximum element.
-    outputOperations.push(indexOfMaxValue + " 1"); // Example: -5 1 -> a[0] = a[0] + a[index_of_max_abs_val]
-    outputOperations.push(indexOfMaxValue + " 1"); // Apply twice to ensure effect or specific problem requirement.
-
-    // Iterate through the array (starting from the second element as first might be modified or target).
-    for (loopIndex = 1; loopIndex < elementCount; loopIndex++) {
-      // If an element is negative, add the maximum absolute value element to it, then to itself.
-      // This effectively makes it more negative or ensures non-increasing order.
-      if (numericArray[loopIndex] < 0) {
-        outputOperations.push("1 " + (loopIndex + 1));
-        outputOperations.push("1 1");
-      }
-      // If an element is positive, add the maximum absolute value element to itself, then to it.
-      // This makes it negative or ensures non-increasing order.
-      else {
-        outputOperations.push("1 1");
-        outputOperations.push("1 " + (loopIndex + 1));
+  // Branch based on whether the maximum absolute value is negative or positive.
+  if (maxAbsValue < 0) {
+    // If the largest absolute value is negative, the goal is to make all numbers negative
+    // and then sort them in non-decreasing order.
+    // The strategy involves making the first element (index 1) very negative using the maxAbsValue element.
+    operationList.push(maxAbsIndex + " 1");
+    operationList.push(maxAbsIndex + " 1");
+    // Then, iterate from the second element to the end.
+    for (loopCounter = 1; loopCounter < arrayLength; loopCounter++) {
+      if (numberArray[loopCounter] < 0) {
+        // If the current element is negative, add the first element to it, then add first to first.
+        operationList.push("1 " + (loopCounter + 1));
+        operationList.push("1 1");
+      } else {
+        // If the current element is positive, add the first element to itself, then add first to current.
+        operationList.push("1 1");
+        operationList.push("1 " + (loopCounter + 1));
       }
     }
-  }
-  // Case 2: The element with the maximum absolute value is positive.
-  // Goal: Make all elements non-decreasing by adding the maximum absolute value element.
-  else {
-    // Initial operations to propagate the positive maximum element.
-    outputOperations.push(indexOfMaxValue + " " + elementCount); // Example: 5 N -> a[N-1] = a[N-1] + a[index_of_max_abs_val]
-    outputOperations.push(indexOfMaxValue + " " + elementCount); // Apply twice.
-
-    // Iterate through the array (excluding the last element as it might be modified or target).
-    for (loopIndex = 0; loopIndex < elementCount - 1; loopIndex++) {
-      // If an element is negative, add the maximum absolute value element to the last element, then to it.
-      // This makes it positive or ensures non-decreasing order.
-      if (numericArray[loopIndex] < 0) {
-        outputOperations.push(elementCount + " " + elementCount);
-        outputOperations.push(elementCount + " " + (loopIndex + 1));
-      }
-      // If an element is positive, add the maximum absolute value element to it, then to the last element.
-      // This makes it more positive or ensures non-decreasing order.
-      else {
-        outputOperations.push(elementCount + " " + (loopIndex + 1));
-        outputOperations.push(elementCount + " " + elementCount);
+  } else {
+    // If the largest absolute value is positive, the goal is to make all numbers positive
+    // and then sort them in non-decreasing order.
+    // The strategy involves making the last element (index 'arrayLength') very positive using the maxAbsValue element.
+    operationList.push(maxAbsIndex + " " + arrayLength);
+    operationList.push(maxAbsIndex + " " + arrayLength);
+    // Then, iterate from the first element to the second-to-last.
+    for (loopCounter = 0; loopCounter < arrayLength - 1; loopCounter++) {
+      if (numberArray[loopCounter] < 0) {
+        // If the current element is negative, add the last element to itself, then add last to current.
+        operationList.push(arrayLength + " " + arrayLength);
+        operationList.push(arrayLength + " " + (loopCounter + 1));
+      } else {
+        // If the current element is positive, add the last element to current, then add last to last.
+        operationList.push(arrayLength + " " + (loopCounter + 1));
+        operationList.push(arrayLength + " " + arrayLength);
       }
     }
   }
 
-  // The problem implies 2*n operations will always be performed, except for the trivial case.
-  console.log(2 * elementCount);
-  // Join all generated operations with newline characters and return the string.
-  return outputOperations.join("\n");
+  // Output the total number of operations performed.
+  console.log(2 * arrayLength);
+  // Return the list of operations, joined by newlines.
+  return operationList.join("\n");
 }

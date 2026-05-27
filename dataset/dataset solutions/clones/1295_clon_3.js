@@ -1,132 +1,74 @@
-'use strict';
+'use strict'
 
-// This module processes input data to find combinations of three distinct numbers
-// that sum to a target value within a given range.
-const processInputData = rawInputContent => {
-    // Normalize the input: remove leading/trailing whitespace and split into lines.
-    const inputLinesArray = rawInputContent.trim().split("\n");
+const processInput = rawData => {
+    const lines = rawData.trim().split("\n");
+    const terminationIdx = lines.indexOf("0 0");
+    const problemSets = lines.slice(0, terminationIdx);
 
-    // Identify the position of the termination marker "0 0".
-    const endMarkerPosition = inputLinesArray.indexOf("0 0");
-
-    // Guard against malformed input where the termination marker is missing.
-    if (endMarkerPosition === -1) {
-        // In a production scenario, this might throw an error or handle it more gracefully.
-        console.error("Input format error: Termination marker '0 0' not found.");
-        return;
-    }
-
-    // Extract only the problem definition lines, excluding the termination marker.
-    const problemDescriptions = inputLinesArray.slice(0, endMarkerPosition);
-
-    // Initialize an array to store the solution counts for each problem description.
-    // Each element is pre-filled with zero.
-    const solutionTally = new Array(problemDescriptions.length).fill(0);
+    // Initialize an array to store the count of solutions for each problem set.
+    const solutionCounts = Array(problemSets.length).fill(0);
 
     /**
-     * Recursively explores combinations of numbers to find triplets that sum to a target.
-     * This function builds sequences in increasing order to ensure distinct numbers.
-     *
-     * @param {number[]} currentPath - The current sequence of numbers being built (e.g., [1], [1, 2]).
-     * @param {number} maximumValue - The upper bound for candidate numbers (N from input).
-     * @param {number} desiredTotal - The target sum (X from input).
-     * @param {number} resultSlotIndex - The index in `solutionTally` to update.
+     * Recursively finds combinations of three distinct numbers that sum to a target value.
+     * @param {number[]} currentCombo - The combination of numbers built so far.
+     * @param {number} currentSumSoFar - The sum of numbers in currentCombo.
+     * @param {number} maxVal - The upper bound for numbers (n).
+     * @param {number} targetVal - The desired sum (x).
+     * @param {number} problemIdx - The index of the current problem set in solutionCounts.
      */
-    const findSummingTriplets = (currentPath, maximumValue, desiredTotal, resultSlotIndex) => {
-        // Determine how many numbers are currently in our sequence.
-        const pathLength = currentPath.length;
-
-        // Guard: If the sequence already contains three or more numbers,
-        // this path is either complete (if length is 3) or invalid (if length > 3).
-        // We are strictly looking for exactly 3 numbers.
-        if (pathLength >= 3) {
-            return; // Terminate this recursive branch.
+    const findCombinations = (currentCombo, currentSumSoFar, maxVal, targetVal, problemIdx) => {
+        // If the current combination already has 3 or more numbers,
+        // it cannot be extended to form a new 3-number combination.
+        if (currentCombo.length >= 3) {
+            return;
         }
 
-        // Identify the starting point for the next number to add.
-        // To maintain distinctness and increasing order, the next number
-        // must be greater than the last number currently in the sequence.
-        const lastValueInPath = currentPath[pathLength - 1];
-        const nextCandidateStartingPoint = lastValueInPath + 1;
+        // Determine the starting value for the next number to ensure distinct and increasing order.
+        const lastElement = currentCombo.length === 0 ? 0 : currentCombo[currentCombo.length - 1];
+        const startSearchVal = lastElement + 1;
 
-        // Iterate through potential numbers to append to the current path.
-        for (let nextPotentialValue = nextCandidateStartingPoint; nextPotentialValue <= maximumValue; nextPotentialValue++) {
-            // Create a new path by adding the `nextPotentialValue`.
-            const extendedPath = [...currentPath, nextPotentialValue];
-            const extendedPathLength = extendedPath.length;
+        for (let nextNumCandidate = startSearchVal; nextNumCandidate <= maxVal; nextNumCandidate++) {
+            const nextSum = currentSumSoFar + nextNumCandidate;
+            const nextComboLength = currentCombo.length + 1;
 
-            // Type III Change: Calculate the sum of the `extendedPath` using a traditional loop
-            // for variation, instead of array.reduce().
-            let currentPathSum = 0;
-            for (let k = 0; k < extendedPathLength; k++) {
-                currentPathSum += extendedPath[k];
+            // If we have exactly three numbers and their sum matches the target, increment the count.
+            if (nextComboLength === 3 && nextSum === targetVal) {
+                solutionCounts[problemIdx]++;
             }
 
-            // Type III Addition: Early exit optimization.
-            // If the current sum already exceeds the `desiredTotal`, there's no need
-            // to continue adding larger numbers in this branch, as they would only
-            // increase the sum further. Break out of the inner loop.
-            if (currentPathSum > desiredTotal) {
-                break;
-            }
-
-            // Check if we've formed a sequence of exactly three numbers.
-            if (extendedPathLength === 3) {
-                // If the three-number sequence's sum matches the `desiredTotal`,
-                // increment the corresponding counter in our tally.
-                if (currentPathSum === desiredTotal) {
-                    solutionTally[resultSlotIndex]++;
-                }
-                // After forming a 3-number sequence, we don't recurse further from this specific path.
-                // The loop continues to try other `nextPotentialValue`s for the *current* `currentPath`.
+            // If the current sum is less than the target, continue exploring by adding more numbers.
+            // This implicitly respects the `currentCombo.length >= 3` guard.
+            if (nextSum < targetVal) {
+                // Create a new combination array only when recursing to avoid modifying currentCombo.
+                const nextCombo = [...currentCombo, nextNumCandidate];
+                findCombinations(nextCombo, nextSum, maxVal, targetVal, problemIdx);
             } else {
-                // If the sequence has fewer than three numbers, and the `currentPathSum` is
-                // still less than the `desiredTotal`, we can potentially add more numbers.
-                // Recursively call the function to extend this path.
-                if (currentPathSum < desiredTotal) {
-                    findSummingTriplets(extendedPath, maximumValue, desiredTotal, resultSlotIndex);
-                }
-                // If `currentPathSum` is already equal to `desiredTotal` but `extendedPathLength` is not 3,
-                // we don't recurse. Adding more positive numbers would make the sum too large.
+                // Optimization: If the current sum is already equal to or greater than the target,
+                // adding larger numbers will only increase the sum further, so we can stop this branch.
+                break;
             }
         }
     };
 
-    // Process each problem description line.
-    problemDescriptions.forEach((currentDescriptionLine, descriptionIndex) => {
-        // Parse the two integer values (N and X) from the current line.
-        const [maxValueParam, targetSumParam] = currentDescriptionLine.split(" ").map(strVal => parseInt(strVal, 10));
+    // Iterate through each problem set provided in the input.
+    problemSets.forEach((problemLine, idx) => {
+        const [nStr, xStr] = problemLine.split(" ");
+        const upperBound = parseInt(nStr, 10); // n
+        const desiredSum = parseInt(xStr, 10); // x
 
-        // Type III Addition: Input validation for problem parameters.
-        // A valid triplet requires N to be at least 3 (for 1, 2, 3) and X to be at least 6 (1+2+3).
-        // If these conditions are not met, no solutions are possible for this problem set.
-        if (maxValueParam < 3 || targetSumParam < 6) {
-            // We can skip this problem as its solution count will remain 0.
-            // Optionally, a warning could be logged here:
-            // console.warn(`Skipping invalid problem set at index ${descriptionIndex}: N=${maxValueParam}, X=${targetSumParam}`);
-            return; // Proceed to the next problem description.
+        // Guard clause: If n is less than 3, or x is less than the minimum possible sum (1+2+3=6),
+        // no valid combinations of three distinct numbers can be formed.
+        if (upperBound < 3 || desiredSum < 6) {
+            return; // Skip to the next problem set; solutionCounts[idx] remains 0.
         }
 
-        // Initiate the recursive search for each possible first number 'a'.
-        // 'a' can range from 1 up to `maxValueParam`.
-        for (let firstElement = 1; firstElement <= maxValueParam; firstElement++) {
-            // Start the recursion with a sequence containing only `firstElement`.
-            // The `resultSlotIndex` ensures that the count is updated for the correct problem.
-            findSummingTriplets([firstElement], maxValueParam, targetSumParam, descriptionIndex);
-        }
+        // Initiate the recursive search for combinations for the current problem set.
+        // Start with an empty combination and a sum of 0.
+        findCombinations([], 0, upperBound, desiredSum, idx);
     });
 
-    // Output the final calculated counts, with each count on a new line.
-    console.log(solutionTally.join("\n"));
-};
+    // Output the results, each on a new line.
+    console.log(solutionCounts.join("\n"));
+}
 
-// Retrieve the file system module.
-const fileSystemModule = require('fs');
-// Define the standard input path.
-const standardInputPath = '/dev/stdin';
-
-// Read the raw data from standard input using UTF-8 encoding.
-const rawInputData = fileSystemModule.readFileSync(standardInputPath, 'utf8');
-
-// Execute the main data processing function with the obtained input.
-processInputData(rawInputData);
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

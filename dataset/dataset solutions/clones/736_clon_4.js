@@ -1,116 +1,104 @@
-const directionVectors = [
-    [-1, -1, 0], [0, -1, 0], [1, -1, 0], [-1, 0, 0],
-    [0, -1, -1], [0, 0, -1], [0, 1, -1], [0, -1, 0],
-    [-1, 0, -1], [-1, 0, 0], [-1, 0, 1], [0, 0, -1],
-    [1, -1, -1], [-1, -1, -1], [1, -1, 1], [-1, -1, 1]
-];
-
-const scanLineForMaxConsecutive = (boardMatrix, currentParticipant, initialX, initialY, initialZ, deltaX, deltaY, deltaZ, extentXY, extentZ) => {
-    let cursorX = initialX;
-    let cursorY = initialY;
-    let cursorZ = initialZ;
-
-    while (true) {
-        const potentialX = cursorX - deltaX;
-        const potentialY = cursorY - deltaY;
-        const potentialZ = cursorZ - deltaZ;
-        if (potentialX < 0 || potentialY < 0 || potentialZ < 0 || potentialX >= extentXY || potentialY >= extentXY || potentialZ >= extentZ) {
-            break;
+const directionVectors = (() => {
+  const vectors = [];
+  for (let dz = -1; dz <= 1; dz++) {
+    for (let dy = -1; dy <= 1; dy++) {
+      for (let dx = -1; dx <= 1; dx++) {
+        if (dx !== 0 || dy !== 0 || dz !== 0) {
+          vectors.push([dx, dy, dz]);
         }
-        cursorX = potentialX;
-        cursorY = potentialY;
-        cursorZ = potentialZ;
+      }
+    }
+  }
+  return vectors;
+})();
+
+function evaluateBoardForWin(activePlayer, placedColX, placedRowY, placedLayerZ, gameBoard, gridSize, boardDepth, winLength) {
+  let overallMaxConsecutive = 0;
+
+  for (const [dirX, dirY, dirZ] of directionVectors) {
+    const linePoints = [];
+    let currentX, currentY, currentZ;
+
+    // Collect points in the negative direction (from the placed point, inclusive)
+    currentX = placedColX; currentY = placedRowY; currentZ = placedLayerZ;
+    while (currentX >= 0 && currentX < gridSize &&
+           currentY >= 0 && currentY < gridSize &&
+           currentZ >= 0 && currentZ < boardDepth) {
+      linePoints.unshift([currentX, currentY, currentZ]);
+      currentX -= dirX; currentY -= dirY; currentZ -= dirZ;
     }
 
-    let peakConsecutiveCount = 0;
-    let currentStreak = 0;
-
-    while (true) {
-        cursorX += deltaX;
-        cursorY += deltaY;
-        cursorZ += deltaZ;
-
-        if (cursorX < 0 || cursorY < 0 || cursorZ < 0 || cursorX >= extentXY || cursorY >= extentXY || cursorZ >= extentZ) {
-            break;
-        }
-
-        if (boardMatrix[cursorX][cursorY][cursorZ] === currentParticipant) {
-            currentStreak++;
-        } else {
-            currentStreak = 0;
-        }
-        peakConsecutiveCount = Math.max(peakConsecutiveCount, currentStreak);
+    // Collect points in the positive direction (from the point after the placed point, exclusive)
+    currentX = placedColX + dirX; currentY = placedRowY + dirY; currentZ = placedLayerZ + dirZ;
+    while (currentX >= 0 && currentX < gridSize &&
+           currentY >= 0 && currentY < gridSize &&
+           currentZ >= 0 && currentZ < boardDepth) {
+      linePoints.push([currentX, currentY, currentZ]);
+      currentX += dirX; currentY += dirY; currentZ += dirZ;
     }
-    return peakConsecutiveCount;
-};
 
-const checkGameCompletion = (activePlayerId, placedX, placedY, placedZ, gameGridState, gridDimensionXY, gridDimensionZ, requiredStreak) => {
-    let overallHighestStreak = 0;
-    for (const direction of directionVectors) {
-        const lineHighestStreak = scanLineForMaxConsecutive(gameGridState, activePlayerId, placedX, placedY, placedZ, direction[0], direction[1], direction[2], gridDimensionXY, gridDimensionZ);
-        overallHighestStreak = Math.max(overallHighestStreak, lineHighestStreak);
-        if (overallHighestStreak >= requiredStreak) {
-            return overallHighestStreak;
-        }
+    // Analyze the collected line points for maximum consecutive pieces
+    let currentConsecutive = 0;
+    let maxConsecutiveInLine = 0;
+    for (const [px, py, pz] of linePoints) {
+      if (gameBoard[px][py][pz] === activePlayer) {
+        currentConsecutive++;
+      } else {
+        currentConsecutive = 0;
+      }
+      maxConsecutiveInLine = Math.max(maxConsecutiveInLine, currentConsecutive);
     }
-    return overallHighestStreak;
-};
+    overallMaxConsecutive = Math.max(overallMaxConsecutive, maxConsecutiveInLine);
 
-const gameSessionData = require('fs').readFileSync('/dev/stdin', 'utf8');
-const gameLineInputs = gameSessionData.trim().split("\n");
-
-const executeGameRounds = (allInputLines) => {
-    let currentLinePointer = 0;
-    const retrieveNextLine = () => allInputLines[currentLinePointer++];
-    const parseNumericLine = () => retrieveNextLine().split(" ").map(Number);
-
-    while (true) {
-        const dimensionString = retrieveNextLine();
-        if (dimensionString === "0 0 0") break;
-
-        const [gridSideLength, targetSequenceLength, totalMoveCount] = dimensionString.split(" ").map(Number);
-
-        const playField = Array.from({ length: gridSideLength }, () =>
-            Array.from({ length: gridSideLength }, () =>
-                Array.from({ length: totalMoveCount }, () => 0)
-            )
-        );
-
-        const moveInstructions = [];
-        for (let idx = 0; idx < totalMoveCount; idx++) {
-            moveInstructions.push(parseNumericLine());
-        }
-
-        let activePlayerIdentifier = 1;
-        let finalOutcome = "Draw";
-
-        for (let moveCounter = 0; moveCounter < totalMoveCount; moveCounter++) {
-            const [inputCoordX, inputCoordY] = moveInstructions[moveCounter];
-            const boardCoordX = inputCoordX - 1;
-            const boardCoordY = inputCoordY - 1;
-
-            let boardCoordZ = 0;
-            while (boardCoordZ < totalMoveCount && playField[boardCoordX][boardCoordY][boardCoordZ] !== 0) {
-                boardCoordZ++;
-            }
-
-            playField[boardCoordX][boardCoordY][boardCoordZ] = activePlayerIdentifier;
-
-            const currentHighestStreak = checkGameCompletion(activePlayerIdentifier, boardCoordX, boardCoordY, boardCoordZ, playField, gridSideLength, totalMoveCount, targetSequenceLength);
-
-            if (currentHighestStreak >= targetSequenceLength) {
-                console.log((activePlayerIdentifier === 2) ? "White" : "Black", moveCounter + 1);
-                finalOutcome = (activePlayerIdentifier === 2) ? "White" : "Black";
-                break;
-            }
-
-            activePlayerIdentifier = (activePlayerIdentifier === 1) ? 2 : 1;
-        }
-
-        if (finalOutcome === "Draw") {
-            console.log("Draw");
-        }
+    if (overallMaxConsecutive >= winLength) {
+      return overallMaxConsecutive;
     }
-};
+  }
+  return overallMaxConsecutive;
+}
 
-executeGameRounds(gameLineInputs);
+const inputData = require('fs').readFileSync('/dev/stdin', 'utf8');
+const inputLines = inputData.trim().split("\n");
+let currentLineIndex = 0;
+
+while (true) {
+  const gameParametersLine = inputLines[currentLineIndex++];
+  if (gameParametersLine === "0 0 0") break;
+
+  const [gridSize, winLength, depthAndMoveCount] = gameParametersLine.split(" ").map(Number);
+
+  const gameBoard = Array.from({ length: gridSize }, () =>
+    Array.from({ length: gridSize }, () =>
+      Array.from({ length: depthAndMoveCount }, () => 0)
+    )
+  );
+
+  const moveCoordinates = Array.from({ length: depthAndMoveCount }, () =>
+    inputLines[currentLineIndex++].split(" ").map(Number)
+  );
+
+  let activePlayer = 1;
+  let isDraw = true;
+
+  for (let moveNumber = 0; moveNumber < depthAndMoveCount; moveNumber++) {
+    const [inputCol, inputRow] = moveCoordinates[moveNumber];
+    const placedColX = inputCol - 1;
+    const placedRowY = inputRow - 1;
+
+    const targetLayerZ = gameBoard[placedColX][placedRowY].findIndex(cell => cell === 0);
+
+    gameBoard[placedColX][placedRowY][targetLayerZ] = activePlayer;
+
+    if (evaluateBoardForWin(activePlayer, placedColX, placedRowY, targetLayerZ, gameBoard, gridSize, depthAndMoveCount, winLength) >= winLength) {
+      console.log((activePlayer === 2) ? "White" : "Black", moveNumber + 1);
+      isDraw = false;
+      break;
+    }
+
+    activePlayer = (activePlayer === 1) ? 2 : 1;
+  }
+
+  if (isDraw) {
+    console.log("Draw");
+  }
+}

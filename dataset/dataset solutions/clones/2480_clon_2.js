@@ -1,45 +1,49 @@
-// This function processes input data to compute a specific angle.
-function processGeometricInput ( incomingDataSet ) {
-  // Extract numerical parameters from the first line of the input array.
-  const parsedNumericalValues = incomingDataSet[ 0 ] . split ( ' ' ) ;
-
-  // Assign the extracted values to descriptive constants, ensuring they are numbers.
-  const firstDimension = parseFloat ( parsedNumericalValues[ 0 ] ) ;
-  const secondDimension = parseFloat ( parsedNumericalValues[ 1 ] ) ;
-  const fillAmount = parseFloat ( parsedNumericalValues[ 2 ] ) ;
-
-  // Calculate the overall capacity of the container.
-  const overallCapacity = firstDimension * firstDimension * secondDimension ;
-
-  // Determine the scenario based on the fill amount relative to half the container's capacity.
-  if ( fillAmount >= overallCapacity / 2 ) {
-    // Scenario 1: Container is more than half full.
-    // Calculate the height of the unfilled space from the top.
-    let emptyAreaHeight = 2 * ( secondDimension - ( fillAmount / ( firstDimension * firstDimension ) ) ) ;
-
-    // Compute the angle in radians using the arctangent function.
-    let angleInRadians = Math.atan ( emptyAreaHeight / firstDimension ) ;
-
-    // Convert the calculated angle from radians to degrees for the final result.
-    let finalAngleInDegrees = ( angleInRadians * 180 ) / Math.PI ;
-
-    // Output the computed angle.
-    console.log ( "%s", finalAngleInDegrees ) ;
-  } else {
-    // Scenario 2: Container is less than half full.
-    // Calculate the actual height of the liquid.
-    let currentLiquidLevel = ( 2 * fillAmount ) / ( firstDimension * secondDimension ) ;
-
-    // Compute the angle in radians based on the liquid level.
-    let angleInRadians = Math.atan ( secondDimension / currentLiquidLevel ) ;
-   
-    // Convert this radian value to degrees.
-    let finalAngleInDegrees = ( angleInRadians * 180 ) / Math.PI ;
+// This function processes an array of input lines to compute a specific angle.
+function ProcessInput(rawData) {
+    // Split the first line of input by space to get individual string components.
+    var parsedComponents = rawData[0].split(' ');
     
-    // Display the final angular value.
-    console.log ( "%s", finalAngleInDegrees ) ;
-  }
+    // Assign the string components to descriptive variable names.
+    // JavaScript's arithmetic operators will implicitly convert these strings to numbers.
+    var dimensionA = parsedComponents[0];
+    var dimensionB = parsedComponents[1];
+    var targetVolume = parsedComponents[2];
+
+    // Calculate the total volume of the container (assuming a square base of side 'a').
+    var totalContainerVolume = dimensionA * dimensionA * dimensionB;
+    
+    // Determine which formula to use based on whether the target volume
+    // is greater than or equal to half of the total container volume.
+    if (targetVolume >= totalContainerVolume / 2) {
+        // Scenario 1: The liquid fills more than half the container.
+        // Calculate an effective height for the angle computation.
+        var effectiveHeight = 2 * (dimensionB - (targetVolume / (dimensionA * dimensionA)));
+
+        // Compute the angle in radians using the arctangent function.
+        var angleInRadians = Math.atan(effectiveHeight / dimensionA);
+
+        // Convert the angle from radians to degrees for the final output.
+        var finalCalculatedAngle = (angleInRadians * 180) / Math.PI;
+        
+        // Print the result to the console.
+        console.log("%s", finalCalculatedAngle);
+    } else {
+        // Scenario 2: The liquid fills less than half the container.
+        // Calculate a different effective height for this scenario.
+        var effectiveHeight = (2 * targetVolume) / (dimensionA * dimensionB);
+
+        // Compute the angle in radians using the arctangent function.
+        var angleInRadians = Math.atan(dimensionB / effectiveHeight);
+       
+        // Convert the angle from radians to degrees.
+        var finalCalculatedAngle = (angleInRadians * 180) / Math.PI;
+        
+        // Print the result.
+        console.log("%s", finalCalculatedAngle);
+    }
 }
 
-// Execute the primary function, reading its input from standard input.
-processGeometricInput ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) . split ( "\n" ) ) ;
+// Read the entire content of standard input, decode it as UTF-8,
+// split it into an array of strings by newline characters,
+// and then pass this array to the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8").split("\n"));

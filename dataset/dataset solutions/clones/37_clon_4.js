@@ -1,34 +1,29 @@
-const sourceDataContent = require("node:fs").readFileSync(0, "utf8");
+const fileSystem = require("fs");
+const rawInput = fileSystem.readFileSync("/dev/stdin", "utf8");
+const lineData = rawInput.trim().split("\n");
 
-const boundaryStrings = sourceDataContent.trim().split("\n");
+lineData.forEach(currentLine => {
+    const upperBoundary = Number(currentLine);
+    const nonPrimeRegistry = new Set();
 
-const confirmPrimeness = (testSubject) => {
-  if (testSubject < 2) {
-    return false;
-  }
-  if (testSubject === 2) {
-    return true;
-  }
-  if (testSubject % 2 === 0) {
-    return false;
-  }
-  for (let factorCandidate = 3; factorCandidate * factorCandidate <= testSubject; factorCandidate += 2) {
-    if (testSubject % factorCandidate === 0) {
-      return false;
+    if (upperBoundary >= 0) {
+        nonPrimeRegistry.add(0);
     }
-  }
-  return true;
-};
-
-boundaryStrings.forEach((currentBoundaryString) => {
-  const numericalBoundary = parseInt(currentBoundaryString, 10);
-  let detectedPrimeCount = 0;
-
-  for (let currentInteger = 0; currentInteger <= numericalBoundary; ++currentInteger) {
-    if (confirmPrimeness(currentInteger)) {
-      detectedPrimeCount++;
+    if (upperBoundary >= 1) {
+        nonPrimeRegistry.add(1);
     }
-  }
 
-  globalThis.console.info(detectedPrimeCount);
+    for (let currentFactor = 2; currentFactor * currentFactor <= upperBoundary; currentFactor++) {
+        if (!nonPrimeRegistry.has(currentFactor)) {
+            for (let currentMultiple = currentFactor * currentFactor; currentMultiple <= upperBoundary; currentMultiple += currentFactor) {
+                nonPrimeRegistry.add(currentMultiple);
+            }
+        }
+    }
+
+    const totalPrimeCount = Array.from({ length: upperBoundary + 1 }, (_, index) => index)
+        .filter(numberCandidate => numberCandidate >= 2 && !nonPrimeRegistry.has(numberCandidate))
+        .length;
+
+    console.log(totalPrimeCount);
 });

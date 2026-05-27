@@ -1,79 +1,81 @@
-"use strict"; // Enforce stricter parsing and error handling for the script.
+"use strict";
 
-// dropOneOccurrence(collection)(element) returns a new collection with one instance of 'element' removed.
-const dropOneOccurrence = sourceCollection => itemToRemove =>
-  sourceCollection.filter(
-    (elementValue, position, fullArrayRef) => position !== fullArrayRef.indexOf(itemToRemove)
+// This function generates a new array by removing the first occurrence of a specified item.
+const filterOneOccurrence = sourceCollection => itemToExclude =>
+  sourceCollection.filter((_element, currentPosition, originalCollection) =>
+    currentPosition !== originalCollection.indexOf(itemToExclude)
   );
 
-// Checks if the value at a specific index within an array meets a certain condition.
-function evaluateCriterion( valueSet, queryPosition, comparisonValue ) {
-  if (valueSet[queryPosition] >= comparisonValue) { // If the element at the queried position is greater than or equal to the comparison value...
-    return true; // ...the condition is satisfied.
-  }
-  else { // Otherwise, if it's less than the comparison value...
-    return false; // ...the condition is not met.
+// Determines if an element at a given position in an array meets a specific criterion.
+function checkCriterion(dataSeries, positionToCheck, comparisonValue) {
+  if (dataSeries[positionToCheck] >= comparisonValue) {
+    return true;
+  } else {
+    return false;
   }
 }
 
-// A generalized template for performing a binary search on a sorted array.
-function locateBoundary( orderedValues, targetThreshold ) {
-  var lowPointer = -1; // 'lowPointer' represents an index that definitely does NOT satisfy the condition. Initialize to -1 because index 0 might satisfy it.
-  var highPointer = orderedValues.length; // 'highPointer' represents an index that definitely DOES satisfy the condition (or an upper bound). Initialize to array length because the last element might not satisfy it.
+// Implements a generic binary search algorithm to find the smallest index 'k'
+// such that checkCriterion(sortedSequence, k, targetValue) is true.
+function findBoundaryIndex(sortedSequence, targetValue) {
+  let negativeBound = -1; // An index that definitely does NOT satisfy the condition.
+  let positiveBound = sortedSequence.length; // An index that definitely DOES satisfy the condition (or is out of bounds).
 
-  /* Continue searching as long as there's more than one element between 'highPointer' and 'lowPointer'. */
-  while ( Math.abs(highPointer - lowPointer) > 1 ) {
-    var middleIdx = Math.floor( (highPointer + lowPointer) / 2 ); // Calculate the midpoint index.
+  // Continue searching while there's more than one element between the bounds.
+  while (Math.abs(positiveBound - negativeBound) > 1) {
+    const middleIndex = Math.floor((positiveBound + negativeBound) / 2);
 
-    if ( evaluateCriterion(orderedValues, middleIdx, targetThreshold) ) { // If the element at 'middleIdx' satisfies the condition...
-      highPointer = middleIdx; // ...then 'middleIdx' becomes the new 'highPointer' (a potential candidate).
-    }
-    else { // Otherwise, if it does not satisfy the condition...
-      lowPointer = middleIdx; // ...then 'middleIdx' becomes the new 'lowPointer' (definitely not a candidate).
+    if (checkCriterion(sortedSequence, middleIndex, targetValue)) {
+      positiveBound = middleIndex; // The middle index satisfies the condition, so it could be our answer.
+    } else {
+      negativeBound = middleIndex; // The middle index does not satisfy, so the answer must be greater.
     }
   }
-  return highPointer; // The 'highPointer' will converge to the smallest index that satisfies the condition.
+  return positiveBound; // positiveBound will hold the smallest index satisfying the condition.
 }
 
+// Main processing function for the input data.
+const processData = inputContent => {
+  const processedLines = inputContent.trim().split("\n");
+  let elementCount = parseInt(processedLines[0], 10);
+  let numericData = processedLines[1].split(" ");
 
-const processData = rawInputText => {
-  const lineSegments = rawInputText.trim().split("\n"); // Trim whitespace and split the input string into an array of lines.
-  var itemQuantity = parseInt(lineSegments[0], 10); // Parse the first line as the total number of items.
-  var numberList = lineSegments[1].split(" "); // Split the second line into an array of strings representing numbers.
-
-  for ( var outerIdx = 0; outerIdx < itemQuantity; outerIdx++ ) { // Iterate through the array to convert string numbers to integers.
-    numberList[outerIdx] = parseInt(numberList[outerIdx], 10);
+  // Convert string elements to integers.
+  for (let firstIndex = 0; firstIndex < elementCount; firstIndex++) {
+    numericData[firstIndex] = parseInt(numericData[firstIndex], 10);
   }
 
-  numberList.sort(function(firstNum, secondNum) { return firstNum - secondNum; }); // Sort the numeric list in ascending order.
+  // Sort the numeric data in ascending order.
+  numericData.sort(function(valA, valB) {
+    return valA - valB;
+  });
 
-  var cumulativeResult = 0; // Initialize the accumulator for the final result.
-  var temporaryCount = 0; // Declare a temporary counter, though it remains unused in this specific logic path.
+  let finalResult = 0;
+  let unusedCounter = 0; // This variable is declared but not used in the original logic.
+  let temporaryFilteredList = [];
 
-  for ( var outerIdx = 0; outerIdx < itemQuantity - 1; outerIdx++ ) { // Outer loop iterates from the first element up to the second-to-last.
-    for ( var innerIdx = outerIdx + 1; innerIdx < itemQuantity; innerIdx++ ) { // Inner loop iterates from the element after 'outerIdx' to the end.
+  // Iterate through pairs of elements to perform calculations.
+  for (let firstIndex = 0; firstIndex < elementCount - 1; firstIndex++) {
+    for (let secondIndex = firstIndex + 1; secondIndex < elementCount; secondIndex++) {
+      // Create a temporary list by removing specific values from the main data list.
+      temporaryFilteredList = filterOneOccurrence(
+        filterOneOccurrence(
+          filterOneOccurrence(
+            filterOneOccurrence(numericData)(numericData[secondIndex])
+          )(numericData[firstIndex])
+        )(numericData[firstIndex] + numericData[secondIndex])
+      )(Math.abs(numericData[firstIndex] - numericData[secondIndex]));
 
-      // Create a modified sub-sequence by removing specific elements from the main list multiple times.
-      // This effectively removes numberList[innerIdx], numberList[outerIdx], their sum, and their absolute difference, IF they exist.
-      var modifiedSubsequence = dropOneOccurrence(
-        dropOneOccurrence(
-          dropOneOccurrence(
-            dropOneOccurrence(numberList)(numberList[innerIdx]) // Remove numberList[innerIdx]
-          )(numberList[outerIdx]) // Remove numberList[outerIdx]
-        )(numberList[outerIdx] + numberList[innerIdx]) // Remove sum (numberList[outerIdx] + numberList[innerIdx])
-      )(Math.abs(numberList[outerIdx] - numberList[innerIdx])); // Remove absolute difference (Math.abs(numberList[outerIdx] - numberList[innerIdx]))
-
-      // Calculate a part of the cumulative result using binary searches on the modified subsequence.
-      // This finds the count of elements greater than or equal to (numberList[outerIdx]+numberList[innerIdx]) minus
-      // the count of elements greater than or equal to Math.abs(numberList[outerIdx]-numberList[innerIdx]).
-      cumulativeResult = cumulativeResult +
-        locateBoundary(modifiedSubsequence, numberList[outerIdx] + numberList[innerIdx]) -
-        locateBoundary(modifiedSubsequence, Math.abs(numberList[outerIdx] - numberList[innerIdx]));
-
+      // Accumulate results from binary searches on the temporary list.
+      finalResult =
+        finalResult +
+        findBoundaryIndex(temporaryFilteredList, numericData[firstIndex] + numericData[secondIndex]) -
+        findBoundaryIndex(temporaryFilteredList, Math.abs(numericData[firstIndex] - numericData[secondIndex]));
     }
   }
-
-  console.log(Math.floor(cumulativeResult / 3)); // Output the final cumulative result divided by 3, rounded down to the nearest integer.
+  // Output the final calculated value, divided by 3 and floored.
+  console.log(Math.floor(finalResult / 3));
 };
 
-processData( require('fs').readFileSync('/dev/stdin', 'utf8') ); // Read input from standard input and pass it to the main processing function.
+// Read input from standard input and pass it to the main processing function.
+processData(require("fs").readFileSync("/dev/stdin", "utf8"));

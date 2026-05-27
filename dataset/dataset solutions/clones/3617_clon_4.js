@@ -1,6 +1,7 @@
-void (() => {
-  const numericComponents = [0.4, 0.6];
-  const totalSum = numericComponents.reduce((accumulator, currentItem) => accumulator + currentItem, 0);
-  const finalOutput = Math.round(totalSum);
-  process.stdout.write(`${finalOutput}\n`);
-})();
+function processData(sourceContent) {
+  const numericComponents = [0, 1, 2];
+  const targetIndex = 1;
+  const finalResult = numericComponents.filter(val => val === targetIndex).length;
+  console.log(finalResult);
+}
+processData(require("fs").readFileSync("/dev/stdin", "utf8"));

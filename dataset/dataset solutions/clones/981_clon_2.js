@@ -1,64 +1,72 @@
-appSettings = { sourcePath: 'temp_data', lineDelimiter: '\r\n' }; // Configuration for Windows environment
-    // appSettings = { sourcePath: '/dev/stdin', lineDelimiter: '\n' }; // Configuration for Unix-like systems
+scriptSettings = { sourceFile: 'tmp', lineSeparator: '\r\n' }; // Windows-style line endings
+// scriptSettings = { sourceFile: '/dev/stdin', lineSeparator: '\n' }; // Linux-style line endings
 
-    inputDataLines = require('fs') .readFileSync( appSettings.sourcePath, 'ascii' )
-        .split(appSettings.lineDelimiter);
+const fileSystemModule = require('fs');
 
-    mainText = inputDataLines[0] ;
+let inputLines = fileSystemModule.readFileSync(scriptSettings.sourceFile, 'ascii')
+  .split(scriptSettings.lineSeparator);
 
-    queryCount = Number( inputDataLines[1] ) ;
+let mainTextContent = inputLines[0];
+let numberOfPatterns = Number(inputLines[1]);
+let searchPatterns = inputLines.slice(2, 2 + numberOfPatterns);
 
-    patternCollection = inputDataLines.slice( 2, 2 + queryCount ) ;
+inputLines = null; // Release memory for the input array
 
-    inputDataLines = null; /* Release memory associated with raw data */
+/**
+ * Performs a Rabin-Karp string matching algorithm to find if a pattern exists in a text.
+ * @param {string} mainStringParam The main text to search within.
+ * @param {string} patternStringParam The pattern to search for.
+ * @param {number} charRadix The radix (base) for hashing, typically the number of possible characters (e.g., 256 for ASCII).
+ * @param {number} primeModulo A large prime number to use as the modulus for hash calculations.
+ * @returns {number} 1 if the pattern is found, 0 otherwise.
+ */
+function performRabinKarpSearch(mainStringParam, patternStringParam, charRadix, primeModulo) {
+  var mainString, mainStringLength, patternString, patternStringLength, highestPowerHash, currentPatternHash, windowHashes, loopIndex, currentShift;
 
-    function karpRabinSearch( mainText, patternToFind, radixBase, primeModulus ) {
-        var
-            mainText,
-            textLength,
-            patternToFind,
-            patternLength,
-            hashFactor,
-            patternHashValue,
-            textHashValues,
-            idx,
-            currentShift;
+  mainStringLength = mainStringParam.length;
+  mainString = "_" + mainStringParam; // Adjusting for 1-based indexing in algorithm
 
-        textLength = mainText.length;
-        mainText = "_" + mainText; // Adjusting for 1-based indexing
-        patternLength = patternToFind.length;
-        patternToFind = "_" + patternToFind; // Adjusting for 1-based indexing
+  patternStringLength = patternStringParam.length;
+  patternString = "_" + patternStringParam; // Adjusting for 1-based indexing in algorithm
 
-        hashFactor = Math.pow(radixBase, patternLength - 1) % primeModulus;
-        patternHashValue = 0;
-        textHashValues = {};
-        textHashValues[0] = 0;
+  // Precompute (charRadix^(patternStringLength-1)) % primeModulo
+  highestPowerHash = Math.pow(charRadix, patternStringLength - 1) % primeModulo;
 
-        // Preprocessing phase: Compute initial hashes
-        for (idx = 1; idx <= patternLength; idx++) {
-            patternHashValue = (radixBase * patternHashValue + patternToFind[idx].charCodeAt()) % primeModulus;
-            textHashValues[0] = (radixBase * textHashValues[0] + mainText[idx].charCodeAt()) % primeModulus;
-        }
+  currentPatternHash = 0;
+  windowHashes = {};
+  windowHashes[0] = 0; // Initialize hash for the first window of text
 
-        // Matching phase: Iterate through text windows
-        for (currentShift = 0; currentShift <= textLength - patternLength; currentShift++) {
-            if (patternHashValue === textHashValues[currentShift]) {
-                // Potential match, verify with full string comparison
-                if (patternToFind.slice(1, patternLength + 1) === mainText.slice(currentShift + 1, currentShift + patternLength + 1)) {
-                    // console.log("Pattern found at position " + currentShift);
-                    return 1; // Indicate a successful match
-                }
-            }
-            if (currentShift < textLength - patternLength) {
-                // Recalculate hash for the next text window
-                textHashValues[currentShift + 1] =
-                    (radixBase * (textHashValues[currentShift] - mainText[currentShift + 1].charCodeAt() * hashFactor) + mainText[currentShift + patternLength + 1].charCodeAt()) % primeModulus;
-            }
-        }
-        return 0; // No match found
+  // Calculate initial hash for pattern and first text window
+  for (loopIndex = 1; loopIndex <= patternStringLength; loopIndex++) {
+    currentPatternHash = (charRadix * currentPatternHash + patternString[loopIndex].charCodeAt()) % primeModulo;
+    windowHashes[0] = (charRadix * windowHashes[0] + mainString[loopIndex].charCodeAt()) % primeModulo;
+  }
+
+  // Slide the window and compare hashes
+  for (currentShift = 0; currentShift <= mainStringLength - patternStringLength; currentShift++) {
+    if (currentPatternHash === windowHashes[currentShift]) {
+      // Hash match, perform a full string comparison to avoid spurious hits
+      if (patternString.slice(1, patternStringLength + 1) === mainString.slice(currentShift + 1, currentShift + patternStringLength + 1)) {
+        // console.log("Pattern found at index " + currentShift); // Debugging output
+        return 1; // Pattern found
+      }
     }
 
-    // Process each pattern in the collection
-    for (idx in patternCollection) {
-        console.log( karpRabinSearch( mainText, patternCollection[idx], 256, Math.pow(2, 31) - 1 ) );
+    // Calculate hash for the next window
+    if (currentShift < mainStringLength - patternStringLength) {
+      windowHashes[currentShift + 1] =
+        (charRadix * (windowHashes[currentShift] - mainString[currentShift + 1].charCodeAt() * highestPowerHash) + mainString[currentShift + patternStringLength + 1].charCodeAt()) % primeModulo;
+
+      // Ensure hash remains positive
+      if (windowHashes[currentShift + 1] < 0) {
+        windowHashes[currentShift + 1] += primeModulo;
+      }
     }
+  }
+  return 0; // Pattern not found
+}
+
+// Process each pattern and print the result
+for (let patternIdx in searchPatterns) {
+  console.log(performRabinKarpSearch(mainTextContent, searchPatterns[patternIdx], 256, Math.pow(2, 31) - 1));
+}

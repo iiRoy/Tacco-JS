@@ -1,71 +1,97 @@
-function processGridData(rawInputLines) {
-    const dimensionsAndCount = rawInputLines[0].split(" ").map(Number);
-    const totalGridRows = dimensionsAndCount[0];
-    const totalGridCols = dimensionsAndCount[1];
-    const numberOfPoints = dimensionsAndCount[2];
+function ProcessGridData(inputLines) {
+    const gridDimensions = inputLines.shift().split(" ").map(Number);
+    const totalGridHeight = gridDimensions[0];
+    const totalGridWidth = gridDimensions[1];
+    const numPoints = gridDimensions[2];
 
-    const effectiveHeight = totalGridRows - 2;
-    const effectiveWidth = totalGridCols - 2;
+    const inputCoordinates = inputLines.map(line => line.split(" ").map(Number));
+    // The original code sorts points by their y-coordinate (first element).
+    // While not strictly necessary for this new approach, preserving this step
+    // ensures behavioral consistency with the original's input processing.
+    inputCoordinates.sort((coordA, coordB) => coordA[0] - coordB[0]);
 
-    const coordinatePairs = rawInputLines.slice(1, numberOfPoints + 1).map(line => line.split(" ").map(Number));
+    // Use a Map to store the count of points within each 3x3 square.
+    // The key represents the bottom-right corner (brY_brX) of the 3x3 square.
+    const squarePointAggregates = new Map();
 
-    const squarePointMap = new Map();
+    for (let pointIndex = 0; pointIndex < numPoints; pointIndex++) {
+        const [pointY, pointX] = inputCoordinates[pointIndex];
 
-    for (const currentPoint of coordinatePairs) {
-        const pointRow = currentPoint[0];
-        const pointCol = currentPoint[1];
+        // A point (pointY, pointX) contributes to 3x3 squares whose bottom-right corner
+        // (brY, brX) falls within the range:
+        // brY: [pointY, pointY + 2]
+        // brX: [pointX, pointX + 2]
+        // These ranges must also respect the overall grid boundaries (1 to totalGridHeight/Width).
 
-        for (let tlRowOffset = -2; tlRowOffset <= 0; tlRowOffset++) {
-            const currentTlRow = pointRow + tlRowOffset;
-            if (currentTlRow >= 1 && currentTlRow <= effectiveHeight) {
-                for (let tlColOffset = -2; tlColOffset <= 0; tlColOffset++) {
-                    const currentTlCol = pointCol + tlColOffset;
-                    if (currentTlCol >= 1 && currentTlCol <= effectiveWidth) {
-                        const squareIdentifier = `${currentTlRow}_${currentTlCol}`;
-                        squarePointMap.set(squareIdentifier, (squarePointMap.get(squareIdentifier) || 0) + 1);
-                    }
-                }
+        const minBottomRightY = Math.max(1, pointY);
+        const maxBottomRightY = Math.min(totalGridHeight, pointY + 2);
+
+        const minBottomRightX = Math.max(1, pointX);
+        const maxBottomRightX = Math.min(totalGridWidth, pointX + 2);
+
+        for (let brY = minBottomRightY; brY <= maxBottomRightY; brY++) {
+            for (let brX = minBottomRightX; brX <= maxBottomRightX; brX++) {
+                const squareKey = `${brY}_${brX}`;
+                squarePointAggregates.set(squareKey, (squarePointAggregates.get(squareKey) || 0) + 1);
             }
         }
     }
 
-    const finalOccurrenceCounts = new Array(10).fill(0);
+    // Initialize an array to store the final counts for 0 to 9 points.
+    // finalCounts[k] will store the number of 3x3 squares containing k points.
+    const finalCounts = Array(10).fill(0);
 
-    for (const pointCountInSquare of squarePointMap.values()) {
-        if (pointCountInSquare <= 9) {
-            finalOccurrenceCounts[pointCountInSquare]++;
+    // Populate finalCounts based on the aggregated square counts.
+    for (const pointCount of squarePointAggregates.values()) {
+        finalCounts[pointCount]++;
+    }
+
+    // Calculate the total number of possible 3x3 squares.
+    // The original code defines `h` and `w` as `s[0][0]-2` and `s[0][1]-2`.
+    // These represent the maximum top-left coordinates for a 3x3 square.
+    // So, the total number of 3x3 squares is `(totalGridHeight - 2) * (totalGridWidth - 2)`.
+    const effectiveGridHeight = totalGridHeight - 2;
+    const effectiveGridWidth = totalGridWidth - 2;
+
+    // Ensure dimensions are not negative if grid is too small.
+    let totalPossibleSquares = Math.max(0, effectiveGridHeight) * Math.max(0, effectiveGridWidth);
+    let overflowMagnitude = 0; // Corresponds to 'f' in the original code
+
+    // Replicate the original's specific large number handling for totalPossibleSquares.
+    // This involves splitting the product into two parts if it exceeds 9e15.
+    if (totalPossibleSquares > 9e15) {
+        // This calculation `(h % 1e5 * w)` is a specific way to get the lower part of the product.
+        let tempLowerProduct = (effectiveGridHeight % 100000) * effectiveGridWidth;
+        overflowMagnitude = Math.floor(tempLowerProduct / 100000);
+        totalPossibleSquares = tempLowerProduct % 100000;
+
+        // Add the higher part of the product to the overflow magnitude.
+        overflowMagnitude += Math.floor(effectiveGridHeight / 100000) * effectiveGridWidth;
+    }
+
+    // Subtract the counts of squares with 1 to 9 points from the total.
+    // This gives the count of squares with 0 points.
+    for (let idx = 1; idx <= 9; idx++) {
+        totalPossibleSquares -= finalCounts[idx];
+    }
+
+    // Apply final adjustments and formatting if overflow handling was active.
+    if (overflowMagnitude > 0) {
+        // Adjust for negative `totalPossibleSquares` due to subtractions.
+        while (totalPossibleSquares < 0) {
+            overflowMagnitude--;
+            totalPossibleSquares += 100000;
         }
-    }
-
-    let zeroCountForDisplay = effectiveHeight * effectiveWidth;
-    let largeNumberCarry = 0;
-
-    if (zeroCountForDisplay > 9e15) {
-        zeroCountForDisplay = (effectiveHeight % 100000 * effectiveWidth);
-        largeNumberCarry = Math.floor(zeroCountForDisplay / 100000);
-        zeroCountForDisplay %= 100000;
-    }
-
-    for (let count = 1; count <= 9; count++) {
-        zeroCountForDisplay -= finalOccurrenceCounts[count];
-    }
-
-    if (largeNumberCarry > 0) {
-        largeNumberCarry += Math.floor(effectiveHeight / 100000) * effectiveWidth;
-        
-        while (zeroCountForDisplay < 0) {
-            largeNumberCarry--;
-            zeroCountForDisplay += 100000;
-        }
-        const formattedZeroCount = String(zeroCountForDisplay).padStart(5, '0');
-        finalOccurrenceCounts[0] = `${largeNumberCarry}${formattedZeroCount}`;
+        // Format the lower part to 5 digits and combine with the higher part.
+        const formattedLowerPart = String(totalPossibleSquares % 100000).padStart(5, '0');
+        finalCounts[0] = String(overflowMagnitude) + formattedLowerPart;
     } else {
-        finalOccurrenceCounts[0] = zeroCountForDisplay;
+        // If no overflow handling was needed, or `overflowMagnitude` became 0,
+        // `finalCounts[0]` is just the calculated `totalPossibleSquares`.
+        finalCounts[0] = totalPossibleSquares;
     }
 
-    const outputLines = finalOccurrenceCounts.map(val => String(val));
-    console.log(outputLines.join("\n"));
+    console.log(finalCounts.join("\n"));
 }
 
-const inputData = require("fs").readFileSync("/dev/stdin", "utf8").split("\n");
-processGridData(inputData);
+ProcessGridData(require("fs").readFileSync("/dev/stdin", "utf8").split("\n"));

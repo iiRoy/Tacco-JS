@@ -1,36 +1,42 @@
 'use strict';
 
-let finalAccumulator = 0;
-let valueToPositionMap = [];
+const fileSystem = require('fs');
+const inputLines = fileSystem.readFileSync('/dev/stdin', 'utf8').trim().split('\n');
 
-function processSegment(p1, p2, p3) {
-    if (p1 > p2) {
+const elementCount = Number(inputLines[0]);
+const valueStrings = inputLines[1].split(' ');
+
+const valuePositions = Array(elementCount);
+valueStrings.forEach((valStr, originalIdx) => {
+    valuePositions[Number(valStr) - 1] = originalIdx;
+});
+
+let totalAccumulator = 0;
+
+function processSegment(segmentStart, segmentEnd, minValSearchIndex) {
+    if (segmentStart > segmentEnd) {
         return;
     }
 
-    let currentSearchValue = p3;
-    while (valueToPositionMap[currentSearchValue] < p1 || valueToPositionMap[currentSearchValue] > p2) {
-        currentSearchValue++;
+    let currentSearchPointer = minValSearchIndex;
+    while (valuePositions[currentSearchPointer] < segmentStart || valuePositions[currentSearchPointer] > segmentEnd) {
+        currentSearchPointer++;
     }
 
-    let currentMinPosition = valueToPositionMap[currentSearchValue];
-    let currentMinValue = sourceValues[currentMinPosition];
+    const currentMinElementPosition = valuePositions[currentSearchPointer];
+    const currentMinValue = Number(valueStrings[currentMinElementPosition]);
 
-    finalAccumulator += currentMinValue * (currentMinPosition - p1 + 1) * (p2 - currentMinPosition + 1);
+    totalAccumulator += currentMinValue * (currentMinElementPosition - segmentStart + 1) * (segmentEnd - currentMinElementPosition + 1);
 
-    processSegment(p1, currentMinPosition - 1, currentSearchValue + 1);
-    processSegment(currentMinPosition + 1, p2, currentSearchValue + 1);
+    if (segmentStart <= currentMinElementPosition - 1) {
+        processSegment(segmentStart, currentMinElementPosition - 1, currentSearchPointer + 1);
+    }
+
+    if (currentMinElementPosition + 1 <= segmentEnd) {
+        processSegment(currentMinElementPosition + 1, segmentEnd, currentSearchPointer + 1);
+    }
 }
 
-const inputLines = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split('\n');
+processSegment(0, elementCount - 1, 0);
 
-const arrayLength = +inputLines[0];
-const sourceValues = inputLines[1].split(' ').map(Number);
-
-for (let i = 0; i < arrayLength; i++) {
-    valueToPositionMap[sourceValues[i]] = i;
-}
-
-processSegment(0, arrayLength - 1, 1);
-
-console.log(finalAccumulator);
+console.log(totalAccumulator);

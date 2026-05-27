@@ -1,42 +1,42 @@
-function ProcessData(sourceText) {
-    const allLines = sourceText.trim().split('\n');
-    const numericValues = allLines.slice(1).filter(textSegment => textSegment.trim() !== '').map(Number);
+function processInputData(rawData) {
+    const filteredLines = rawData.split("\n").filter((currentLine, lineIndex) => lineIndex !== 0 && currentLine !== "");
+    const numericalValues = filteredLines.map(Number);
 
-    if (numericValues.length < 2) {
-        // The original code would throw a TypeError if `inputs` has 0 or 1 element
-        // because `reduce` on an empty array without an initial value is an error.
-        // We replicate this behavior by not producing output or throwing an error,
-        // assuming valid input will always provide at least two numbers.
-        // For production, more robust error handling might be desired.
+    if (numericalValues.length === 0) {
         return;
     }
 
-    let primaryMaximum = -Infinity;
-    let secondaryMaximum = -Infinity;
+    if (numericalValues.length === 1) {
+        throw new TypeError("Reduce of empty array with no initial value");
+    }
 
-    for (const currentValue of numericValues) {
-        if (currentValue > primaryMaximum) {
-            secondaryMaximum = primaryMaximum;
-            primaryMaximum = currentValue;
-        } else if (currentValue > secondaryMaximum) {
-            secondaryMaximum = currentValue;
+    let globalMaximum = -Infinity;
+    let secondGlobalMaximum = -Infinity;
+    let globalMaximumCount = 0;
+
+    for (const valueEntry of numericalValues) {
+        if (valueEntry > globalMaximum) {
+            secondGlobalMaximum = globalMaximum;
+            globalMaximum = valueEntry;
+            globalMaximumCount = 1;
+        } else if (valueEntry === globalMaximum) {
+            globalMaximumCount++;
+        } else if (valueEntry > secondGlobalMaximum) {
+            secondGlobalMaximum = valueEntry;
         }
     }
 
-    const calculatedOutputs = [];
-    for (const currentValue of numericValues) {
-        if (currentValue === primaryMaximum) {
-            calculatedOutputs.push(secondaryMaximum);
+    for (const currentElement of numericalValues) {
+        if (currentElement === globalMaximum) {
+            if (globalMaximumCount > 1) {
+                console.log(globalMaximum);
+            } else {
+                console.log(secondGlobalMaximum);
+            }
         } else {
-            calculatedOutputs.push(primaryMaximum);
+            console.log(globalMaximum);
         }
-    }
-
-    for (const resultEntry of calculatedOutputs) {
-        console.log(resultEntry);
     }
 }
 
-const fileSystemAccess = require('fs');
-const rawInputContent = fileSystemAccess.readFileSync('/dev/stdin', 'utf8');
-ProcessData(rawInputContent);
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

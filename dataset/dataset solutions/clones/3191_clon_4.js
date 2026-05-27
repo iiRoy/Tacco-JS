@@ -1,18 +1,23 @@
-function calculateGreatestCommonDivisor(firstOperand, secondOperand) {
-    if (secondOperand === 0) {
-        return firstOperand;
+function processInputData(rawData) {
+  const lines = rawData.split("\n");
+  const firstLineParts = lines[0].split(" ");
+  const elementCount = Number(firstLineParts[0]);
+
+  const numericValues = lines[1].split(" ").map(Number);
+
+  const calculatePairGCD = (valA, valB) => {
+    while (valB !== 0) {
+      valA %= valB;
+      [valA, valB] = [valB, valA];
     }
-    return calculateGreatestCommonDivisor(secondOperand, firstOperand % secondOperand);
+    return valA;
+  };
+
+  const finalGCD = numericValues.reduce((accumulator, currentValue) =>
+    calculatePairGCD(accumulator, currentValue)
+  );
+
+  console.log(finalGCD);
 }
 
-function processDataSet(fullInputPayload) {
-    const dataLines = fullInputPayload.trim().split('\n');
-    const numericElements = dataLines[1].split(' ').map(elementString => parseInt(elementString, 10));
-
-    const finalResult = numericElements.reduce((currentCommon, nextValue) => {
-        return calculateGreatestCommonDivisor(currentCommon, nextValue);
-    });
-
-    console.log(finalResult);
-}
-processDataSet(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,42 +1,54 @@
 // This script processes numerical input to calculate a specific sum or return an error.
-console.log( ( (inputString) => { // Begin self-executing anonymous function
-  // Parse the input string: first line for item count, second line for data sequence.
-  // Input string is trimmed, split by newline, then each line is split by space and converted to integers.
-  const [ [numItems], valueArray ] = inputString .trim() .split( '\n' ) .map( lineText => lineText .split( ' ' ) .map( parsedVal => parsedVal | 0 ) );
+console.log((function(inputData) {
+  // Parse the input string into numerical arrays.
+  // The first line contains countElements, the number of elements for the main loop.
+  // The second line contains the initialValues array.
+  const [
+    [countElements],
+    initialValues
+  ] = inputData
+    .trim()
+    .split('\n')
+    .map(function(lineStr) {
+      return lineStr.split(' ').map(function(valStr) {
+        return valStr | 0; // Convert string to integer using bitwise OR 0
+      });
+    });
 
-  // Initialize a buffer array 'processedValues' based on the first element of 'valueArray'.
-  const processedValues = [ 1 - valueArray[0] ];
+  // Initialize a new array 'processedArray' based on 'initialValues'.
+  // The first element is derived from the first element of 'initialValues'.
+  const processedArray = [1 - initialValues[0]];
 
-  // First forward pass: populate 'processedValues' based on previous elements and 'valueArray'.
-  for ( let loopIndex = 1; loopIndex < numItems; loopIndex++ ) {
-    processedValues .push( processedValues[loopIndex - 1] * 2 - valueArray[loopIndex] );
+  // Populate 'processedArray' using a forward iteration.
+  // Each element depends on the previous one and the corresponding 'initialValues' element.
+  for (let idx = 1; idx < countElements; idx++) {
+    processedArray.push(processedArray[idx - 1] * 2 - initialValues[idx]);
   }
 
-  // Append a zero at the end of the 'processedValues' buffer.
-  processedValues .push( 0 );
+  // Append a zero to the end of 'processedArray'. This acts as a sentinel or boundary value.
+  processedArray.push(0);
 
-  // Initialize the final accumulator with the last element of the input 'valueArray'.
-  // Note: 'valueArray' is assumed to contain 'numItems + 1' elements, with the last one being valueArray[numItems].
-  let finalAccumulator = valueArray[numItems];
+  // Initialize 'finalSum' with the element at index 'countElements' from 'initialValues'.
+  // This implies 'initialValues' has at least 'countElements + 1' elements.
+  let finalSum = initialValues[countElements];
 
-  // Second backward pass: iterate through 'processedValues' and 'valueArray'
-  // to adjust 'processedValues' and update the 'finalAccumulator'.
-  for ( let loopIndex = numItems - 1; loopIndex >= 0; loopIndex-- ) {
-    // Calculate a comparison bound using the next elements in 'processedValues' and 'valueArray'.
-    const thresholdValue = processedValues[loopIndex + 1] + valueArray[loopIndex + 1];
+  // Iterate backwards through the arrays to adjust 'processedArray' and accumulate 'finalSum'.
+  for (let idx = countElements - 1; idx >= 0; idx--) {
+    // Calculate a comparison value 'currentCheck' using elements from 'processedArray' and 'initialValues'.
+    const currentCheck = processedArray[idx + 1] + initialValues[idx + 1];
 
-    // Apply conditional logic to adjust the current element in 'processedValues'.
-    if ( processedValues[loopIndex] > thresholdValue ) {
-      processedValues[loopIndex] = thresholdValue;
-    } else if ( processedValues[loopIndex] * 2 < thresholdValue ) {
-      // If a specific condition is met, return an error string immediately.
+    // Apply conditional logic to modify 'processedArray[idx]'.
+    if (processedArray[idx] > currentCheck) {
+      processedArray[idx] = currentCheck;
+    } else if (processedArray[idx] * 2 < currentCheck) {
+      // If a specific condition is met, the algorithm cannot proceed, so return an error string.
       return '-1';
     }
 
-    // Accumulate the current 'processedValues' element and corresponding 'valueArray' element into the final sum.
-    finalAccumulator += processedValues[loopIndex] + valueArray[loopIndex];
+    // Accumulate to 'finalSum' using the current 'processedArray' element and 'initialValues' element.
+    finalSum += processedArray[idx] + initialValues[idx];
   }
 
-  // Convert the final accumulated sum to a string and return it.
-  return `${finalAccumulator}`;
-} ) ( require( 'fs' ) .readFileSync( '/dev/stdin', 'utf8' ) ) ); // Read input from stdin
+  // Return the final calculated sum as a string.
+  return `${finalSum}`;
+})(require('fs').readFileSync('/dev/stdin', 'utf8'))); // Read input from standard input.

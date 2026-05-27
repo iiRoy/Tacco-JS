@@ -1,89 +1,71 @@
-/*
- * This file processes arithmetic equations containing 'X' as a placeholder digit.
- * It attempts to find a digit (0-9) that replaces 'X' to make the equation true.
- */
+function processEquations() {
+  // Iterate over each line of input data received from standard input.
+  rawData.forEach(function(currentEquationString) {
+    let operand1Str, operand2Str, resultStr; // Variables to hold string representations of the numbers.
+    let parsedEquation; // Stores the result of the regex match.
+    let num1, num2, res; // Variables for the parsed integer values.
+    let digitCandidate; // Loop counter, representing the digit to substitute for 'X'.
 
-/**
- * Main processing function to evaluate numerical expressions.
- * Iterates through each line of input to solve equations.
- */
-function executeProcessor ( )
-{
-    // Process each line of the received raw data.
-    rawData . forEach ( function ( incomingLine )
-    {
-        // Variables to hold string parts of the equation and parsed numerical values.
-        let firstOperandString, secondOperandString, resultString,
-            parsedMatch,
-            firstVal, secondVal, resultVal,
-            digitIterator;
+    // If the line is empty or contains only whitespace, skip it and move to the next.
+    if (currentEquationString.trim() === '') {
+      return;
+    }
 
-        // Skip empty lines to prevent errors.
-        if ( incomingLine . trim ( ) === '' )
-        {
-            return ;
-        }
+    // Use a regular expression to extract the three parts of the equation.
+    // The pattern looks for three groups of digits or 'X' separated by '+' and '='.
+    parsedEquation = currentEquationString.match(/([0-9X]+)\+([0-9X]+)\=([0-9X]+)/);
 
-        // Use a regular expression to extract the two operands and the result string.
-        // The pattern looks for numbers or 'X' characters separated by '+' and '='.
-        parsedMatch = incomingLine . match ( /([0-9X]+)\+([0-9X]+)\=([0-9X]+)/ ) ;
+    // Extract the matched parts into their respective string variables.
+    operand1Str = parsedEquation[1];
+    operand2Str = parsedEquation[2];
+    resultStr = parsedEquation[3];
 
-        // Assign the captured groups to their respective string variables.
-        firstOperandString  = parsedMatch [ 1 ] ;
-        secondOperandString = parsedMatch [ 2 ] ;
-        resultString        = parsedMatch [ 3 ] ;
+    // Loop through all possible digits from 0 to 9.
+    for (digitCandidate = 0; digitCandidate <= 9; digitCandidate++) {
+      // Check for the special condition: if 'X' is the first character of any number
+      // and the current digit candidate is 0, then this is an invalid substitution.
+      // Numbers cannot start with a leading zero unless they are just '0'.
+      if (digitCandidate === 0 && (operand1Str.charAt(0) === 'X' || operand2Str.charAt(0) === 'X' || resultStr.charAt(0) === 'X')) {
+        continue; // Skip this iteration and try the next digit.
+      }
 
-        // Iterate through possible digits from 0 to 9 to substitute for 'X'.
-        for ( digitIterator = 0 ; digitIterator <= 9 ; digitIterator ++ )
-        {
-            // If the current digit is 0, check if it's at the beginning of any operand/result string.
-            // Numbers typically don't start with 0 unless they are just '0' itself.
-            // If 'X' is the first character and 'digitIterator' is 0, this substitution is invalid for multi-digit numbers.
-            if ( ( digitIterator === 0 ) &&
-                 ( ( firstOperandString . charAt ( 0 ) === 'X' ) ||
-                   ( secondOperandString . charAt ( 0 ) === 'X' ) ||
-                   ( resultString . charAt ( 0 ) === 'X' ) ) )
-            {
-                continue ; // Skip this iteration if 'X' is a leading digit and 'digitIterator' is 0.
-            }
+      // Replace all occurrences of 'X' in each string with the current digit candidate,
+      // then parse the modified string into an integer. The radix 10 is specified.
+      num1 = parseInt(operand1Str.replace(/X/g, digitCandidate), 10);
+      num2 = parseInt(operand2Str.replace(/X/g, digitCandidate), 10);
+      res = parseInt(resultStr.replace(/X/g, digitCandidate), 10);
 
-            // Replace all 'X' characters in the operand and result strings with the current digit.
-            // Then, parse these modified strings into integers for calculation.
-            firstVal  = parseInt ( firstOperandString . replace ( /X/g , digitIterator ) , 10 ) ;
-            secondVal = parseInt ( secondOperandString . replace ( /X/g , digitIterator ) , 10 ) ;
-            resultVal = parseInt ( resultString . replace ( /X/g , digitIterator ) , 10 ) ;
-
-            // Check if the sum of the first two values equals the result value.
-            if ( ( firstVal + secondVal ) === resultVal )
-            {
-                break ; // If the equation holds true, we've found the correct digit; exit the loop.
-            }
-        }
-
-        // Output the found digit or 'NA' if no digit (0-9) satisfies the equation.
-        console . log ( ( digitIterator === 10 ) ? 'NA' : digitIterator ) ;
-    } ) ;
+      // If the sum of the first two numbers equals the third, we've found the correct digit.
+      if (num1 + num2 === res) {
+        break; // Exit the loop as the solution is found.
+      }
+    }
+    // Output the found digit. If the loop completed without finding a solution (i.e., digitCandidate became 10),
+    // then output 'NA' (Not Applicable).
+    console.log(digitCandidate === 10 ? 'NA' : digitCandidate);
+  });
 }
 
+// Declare a global variable to accumulate all incoming data from stdin.
+let rawData = '';
 
-// Global variable to accumulate incoming data from standard input.
-let rawData = '' ;
+// Resume the standard input stream to begin listening for data.
+process.stdin.resume();
+// Set the character encoding for the incoming data to UTF-8.
+process.stdin.setEncoding('utf8');
 
-// Configure standard input stream.
-process . stdin . resume ( ) ;                         // Ensure the standard input stream is active.
-process . stdin . setEncoding ( 'utf8' ) ;               // Set the character encoding for the input.
+// Attach an event listener for 'data' events on the stdin stream.
+// Each time a chunk of data is received, append it to the rawData string.
+process.stdin.on('data', function(dataChunk) {
+  rawData += dataChunk;
+});
 
-// Event listener for incoming data chunks.
-process . stdin . on ( 'data' , function ( dataChunk )
-{
-    rawData += dataChunk ; // Append each received data chunk to the rawData string.
-} ) ;
-
-// Event listener for the end of the input stream.
-process . stdin . on ( 'end' , function ( )
-{
-    // When all data has been received, split the rawData into an array of lines.
-    rawData = rawData . split ( '\n' ) ;
-    // Call the main processing function to handle the parsed input.
-    executeProcessor ( ) ;
-} ) ;
+// Attach an event listener for the 'end' event on the stdin stream.
+// This event fires when there is no more data to be read from stdin.
+process.stdin.on('end', function() {
+  // Split the accumulated rawData string into an array of strings,
+  // using the newline character as the delimiter.
+  rawData = rawData.split('\n');
+  // Call the main processing function with the prepared input array.
+  processEquations();
+});

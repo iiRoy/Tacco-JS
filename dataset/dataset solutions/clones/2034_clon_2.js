@@ -1,142 +1,102 @@
-var dataSrc = initializeDataSource();
-
+var inputReader = initializeInputProcessor();
 ExecuteProgram();
-
-function retrieveInteger() {
-  return transformInput(fetchNextLine(), 1);
-}
-
-function retrieveStringArray() {
-  return transformInput(fetchNextLine(), 2); // Separates by a single space character
-}
-
-function retrieveIntegerArray() {
-  return transformInput(fetchNextLine(), 4); // Splits by space and casts to numbers
-}
-
-function retrieveCharacterArray() {
-  return transformInput(fetchNextLine(), 6); // Divides into individual characters
-}
-
-function fetchNextLine() {
-  return dataSrc.fetchNextLine();
-}
-
-function hasMoreLines() {
-  return dataSrc.hasMoreLines();
-}
-
-function readInputData() {
-  return require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");
-}
-
-function initializeDataSource() {
-  var inputLines = readInputData();
-  var sourceObject = {
-    "lineList": inputLines,
-    "currentPosition": 0,
-    "totalLines": inputLines.length,
-    "hasMoreLines": function() {
-      return (this.currentPosition < this.totalLines);
+function readInteger(){return convertInputData(getNextLine(),1);}
+function readStringArray(){return convertInputData(getNextLine(),2);}
+function readIntegerArray(){return convertInputData(getNextLine(),4);}
+function readCharacterArray(){return convertInputData(getNextLine(),6);}
+function getNextLine(){return inputReader.retrieveNextLine();}
+function hasMoreLines(){return inputReader.hasMoreLines();}
+function fetchInputContent(){return require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");}
+function initializeInputProcessor(){
+  var rawInputLines = fetchInputContent();
+  var processorInstance = {
+    "lineBuffer" : rawInputLines,
+    "currentLineIndex" : 0,
+    "totalLines" : rawInputLines.length,
+    "hasMoreLines" : function(){
+      return (this.currentLineIndex < this.totalLines);
     },
-    "fetchNextLine": function() {
-      if (!this.hasMoreLines()) {
+    "retrieveNextLine" : function(){
+      if(!this.hasMoreLines()){
         return "";
       } else {
-        var currentLineContent = this.lineList[this.currentPosition];
-        this.currentPosition++;
-        return currentLineContent;
+        var currentLineValue = this.lineBuffer[this.currentLineIndex];
+        this.currentLineIndex++;
+        return currentLineValue;
       }
     }
   };
-  return sourceObject;
+  return processorInstance;
 }
-
-function displayResult(valueToPrint) {
-  console.log(valueToPrint);
-}
-
-function reportError(errorMessage) {
-  console.error(errorMessage);
-}
-
-// This function performs various input transformations.
-// The 'conversionType' parameter dictates the operation.
-// If an invalid type or an error occurs, the original input is returned unchanged.
-//  1: Convert input to an integer.
-//  2: Split string by spaces into a string array.
-//  4: Split string by spaces and map to an array of numbers.
-//  6: Split string into an array of individual characters.
-//  7: Split string into individual characters and convert to a number array.
-//  8: Join array elements with a space.
-//  9: Join array elements with a newline character.
-//  0: Join array elements without any separator.
-function transformInput(inputVal, conversionType) {
+function printResult(dataToOutput){console.log(dataToOutput);}
+function logError(errorData){console.error(errorData);}
+// This function handles various input conversions.
+// It takes an input value and a conversion type.
+// Type 1: Convert to integer.
+// Type 2: Split by space into a string array.
+// Type 4: Split by space and convert to an integer array.
+// Type 6: Split into a character array.
+// Type 7: Split into a character array and convert to an integer array.
+// Type 8: Join array elements with a space.
+// Type 9: Join array elements with a newline.
+// Type 0: Join array elements without any separator.
+// Default: Return input as is.
+function convertInputData(inputValue, conversionType){
   try {
-    switch (conversionType) {
+    switch(conversionType){
       case 1:
-        return Number.parseInt(inputVal, 10);
+        return parseInt(inputValue);
       case 2:
-        return inputVal.split(" ");
+        return inputValue.split(" ");
       case 4:
-        return inputVal.split(" ").map((item) => Number(item));
+        return inputValue.split(" ").map((item)=>Number(item));
       case 6:
-        return inputVal.split("");
+        return inputValue.split("");
       case 7:
-        return inputVal.split("").map((item) => Number(item));
+        return inputValue.split("").map((item)=>Number(item));
       case 8:
-        return inputVal.join(" ");
+        return inputValue.join(" ");
       case 9:
-        return inputVal.join("\n");
+        return inputValue.join("\n");
       case 0:
-        return inputVal.join("");
+        return inputValue.join("");
       default:
-        return inputVal;
+        return inputValue;
     }
-  } catch (conversionError) {
-    return inputVal;
+  } catch(conversionError){
+    return inputValue;
   }
 }
-
-function ExecuteProgram() {
-  var initialSettings = retrieveIntegerArray();
-  var valX = initialSettings[0];
-  var valY = initialSettings[1];
-  var valA = initialSettings[2];
-  var valB = initialSettings[3];
-  var valC = initialSettings[4];
-
-  var collectionA = retrieveIntegerArray();
-  var collectionB = retrieveIntegerArray();
-  var collectionC = retrieveIntegerArray();
-
-  collectionA.sort(function(element1, element2) {
-    return element2 - element1; // Sorts in descending order
+function ExecuteProgram(){
+  var firstLineValues = readIntegerArray();
+  var countX = firstLineValues[0];
+  var countY = firstLineValues[1];
+  var valA = firstLineValues[2]; // This variable is unused in the original logic.
+  var valB = firstLineValues[3]; // This variable is unused in the original logic.
+  var valC = firstLineValues[4]; // This variable is unused in the original logic.
+  var listA = readIntegerArray();
+  var listB = readIntegerArray();
+  var listC = readIntegerArray();
+  listA.sort(function(elementA, elementB){
+  	return elementB - elementA;
   });
-
-  collectionB.sort(function(element1, element2) {
-    return element2 - element1; // Also sorts in descending order
+  listB.sort(function(elementA, elementB){
+  	return elementB - elementA;
   });
-
   var selectedItems = [];
-  for (var loopCounter = 0; loopCounter < valX; loopCounter++) {
-    selectedItems.push(collectionA[loopCounter]);
+  for(var idx = 0; idx < countX; idx++){
+    selectedItems.push(listA[idx]);
   }
-
-  for (var loopCounter = 0; loopCounter < valY; loopCounter++) {
-    selectedItems.push(collectionB[loopCounter]);
+  for(var idx = 0; idx < countY; idx++){
+    selectedItems.push(listB[idx]);
   }
-
-  selectedItems = selectedItems.concat(collectionC);
-
-  selectedItems.sort(function(element1, element2) {
-    return element2 - element1; // Re-sorts the combined list in descending order
+  selectedItems = selectedItems.concat(listC);
+  selectedItems.sort(function(elementA, elementB){
+  	return elementB - elementA;
   });
-
-  var finalSum = 0;
-  for (var loopCounter = 0; loopCounter < valX + valY; loopCounter++) {
-    finalSum += selectedItems[loopCounter];
+  var totalSum = 0;
+  for(var idx = 0; idx < countX + countY; idx++){
+    totalSum += selectedItems[idx];
   }
-
-  displayResult(finalSum);
+  printResult(totalSum);
 }

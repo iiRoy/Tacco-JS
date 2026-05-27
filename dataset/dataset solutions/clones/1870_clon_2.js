@@ -1,49 +1,47 @@
 function processInput(rawData) {
-    // This function takes a raw input string and processes it according to specific rules.
-    const tokens = rawData.split(' '); // Split the input string into an array of substrings using space as a delimiter.
+  // Split the incoming data string by spaces to separate the numerical arguments.
+  const parameters = rawData.split(' ');
 
-    // Parse the numerical values from the token array.
-    const firstValue = Number(tokens[0]);
-    const secondValue = Number(tokens[1]);
-    const thirdValue = Number(tokens[2]);
-    const initialCounter = Number(tokens[3]);
+  // Convert the string parts into numerical values for calculation.
+  const valA = Number(parameters[0]);
+  const valB = Number(parameters[1]);
+  const valC = Number(parameters[2]);
+  const initialK = Number(parameters[3]);
 
-    // Initialize a mutable variable for calculations, starting with the initial counter value.
-    let currentCount = initialCounter;
+  // Initialize a working variable with the starting 'k' value.
+  let currentValue = initialK;
 
-    // Adjust the current counter by subtracting the first numerical value.
-    currentCount -= firstValue;
+  // Perform the first subtraction operation.
+  currentValue -= valA;
 
-    // Evaluate the state of the initial counter.
-    if (initialCounter <= 0) {
-        // If the initial counter was non-positive, output its original value.
-        console.log(initialCounter);
+  // Evaluate the original 'k' value to determine the next step.
+  if (initialK <= 0) {
+    // If the initial 'k' was non-positive, output its original value.
+    console.log(initialK);
+  } else {
+    // If 'k' was positive, proceed with further calculations.
+    // Apply the second subtraction.
+    currentValue -= valB;
+
+    // Re-evaluate the original 'k' value. This condition will be false if the first 'if' was false.
+    if (initialK <= 0) {
+      // This specific branch outputs 'a' if the original 'k' was non-positive.
+      // Due to prior checks, this part might be unreachable under normal flow.
+      console.log(valA);
     } else {
-        // If the initial counter was positive, proceed with further adjustments.
-
-        // Subtract the second numerical value from the current counter.
-        currentCount -= secondValue;
-
-        // Re-evaluate the initial counter's state (this condition mirrors an earlier one).
-        if (initialCounter <= 0) {
-            // If the initial counter was non-positive (which would contradict the outer 'else' branch),
-            // output the first numerical value.
-            console.log(firstValue);
-        } else {
-            // Otherwise, continue with the final comparison.
-
-            // Compare the adjusted current counter with the third numerical value.
-            if (currentCount < thirdValue) {
-                // If the current counter is less than the third value, compute and display a difference.
-                console.log(firstValue - currentCount);
-            } else {
-                // If the current counter is greater than or equal to the third value,
-                // compute and display the same difference.
-                console.log(firstValue - currentCount);
-            }
-        }
+      // If 'k' was positive, compare the modified current value with 'c'.
+      if (currentValue < valC) {
+        // Output the result of 'a' minus the modified current value.
+        console.log(valA - currentValue);
+      } else {
+        // This 'else' block performs the same action as the 'if' block above it.
+        // It is kept for structural equivalence.
+        console.log(valA - currentValue);
+      }
     }
+  }
 }
 
-// Execute the main processing function by reading input from standard input.
+// Read the entire content from standard input, assuming UTF-8 encoding,
+// and then pass it to the main processing function.
 processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

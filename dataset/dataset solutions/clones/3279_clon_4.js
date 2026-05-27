@@ -1,23 +1,19 @@
-const acquireSourceData = globalThis.process.stdin.readFileSync;
-const targetInputPath = globalThis.process.argv[2] || "/dev/stdin";
-const encodingScheme = "utf8";
+function processDimensions(rawInput) {
+  const numericValues = rawInput.match(/\d+/g).map(val => Number(val));
 
-const rawData = acquireSourceData(targetInputPath, encodingScheme);
+  const boardDimension = numericValues[0];
+  const verticalExclusion = numericValues[1];
+  const horizontalExclusion = numericValues[2];
 
-const obtainNumericTokens = (textualContent) => textualContent.match(/\d+/g);
-const transformToInteger = (stringRepr) => globalThis.parseInt(stringRepr, 10);
+  const adjustedDimension = boardDimension + 1;
+  const termOne = adjustedDimension * adjustedDimension;
+  const termTwo = adjustedDimension * horizontalExclusion;
+  const termThree = verticalExclusion * adjustedDimension;
+  const termFour = verticalExclusion * horizontalExclusion;
 
-const numericalComponents = obtainNumericTokens(rawData).map(transformToInteger);
+  const finalResult = termOne - termTwo - termThree + termFour;
 
-const [primaryExtent, constrictingFactorA, constrictingFactorB] = numericalComponents;
+  console.log(finalResult);
+}
 
-const determineDelta = (valA, valB) => valA - valB;
-const advanceUnit = (val) => val + 1;
-const amassProduct = (factorX, factorY) => factorX * factorY;
-
-const resultantA = advanceUnit(determineDelta(primaryExtent, constrictingFactorA));
-const resultantB = advanceUnit(determineDelta(primaryExtent, constrictingFactorB));
-const finalCalculationResult = amassProduct(resultantA, resultantB);
-
-const renderOutput = globalThis.console.log;
-renderOutput(finalCalculationResult);
+processDimensions(require("fs").readFileSync("/dev/stdin", "utf8"));

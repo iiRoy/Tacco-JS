@@ -1,70 +1,71 @@
-const F_MOD = 998244353;
-const F_ADD = (a, b) => (a + b) % F_MOD;
-const F_SUB = (a, b) => (a - b + F_MOD) % F_MOD;
-const F_MUL = (a, b) => Number((BigInt(a) * BigInt(b)) % BigInt(F_MOD));
+function calculateModularPower(baseVal, exponentVal, modulusVal) {
+  let result = 1n;
+  let currentBase = BigInt(baseVal);
+  let currentExponent = BigInt(exponentVal);
+  let currentModulus = BigInt(modulusVal);
 
-let inputSource = require('fs').readFileSync('/dev/stdin','utf8');
-let processedSegments = inputSource.split(/\s+/).filter(Boolean);
-let totalItemCount = Number(processedSegments[0]);
-let itemValues = processedSegments.slice(1).map(Number);
-
-let fullSum = itemValues.reduce((current, item) => current + item, 0);
-let midpointSum = Math.floor(fullSum / 2);
-
-let subsetMemo = new Map();
-
-const obtainSubsetCount = (currentIdx, neededCount, desiredValue) => {
-    if (desiredValue < 0 || neededCount < 0) return 0;
-    if (currentIdx === totalItemCount) {
-        return (desiredValue === 0 && neededCount === 0) ? 1 : 0;
+  while (currentExponent > 0n) {
+    if (currentExponent % 2n === 1n) {
+      result = (result * currentBase) % currentModulus;
     }
-
-    let memoKey = `${currentIdx}-${neededCount}-${desiredValue}`;
-    if (subsetMemo.has(memoKey)) {
-        return subsetMemo.get(memoKey);
-    }
-
-    let skipCurrent = obtainSubsetCount(currentIdx + 1, neededCount, desiredValue);
-    let takeCurrent = obtainSubsetCount(currentIdx + 1, neededCount - 1, desiredValue - itemValues[currentIdx]);
-
-    let res = F_ADD(skipCurrent, takeCurrent);
-    subsetMemo.set(memoKey, res);
-    return res;
-};
-
-const calculateModularExponent = (baseNum, exponentNum) => {
-    let outcome = 1;
-    baseNum %= F_MOD;
-    while (exponentNum > 0) {
-        if (exponentNum % 2 === 1) outcome = F_MUL(outcome, baseNum);
-        baseNum = F_MUL(baseNum, baseNum);
-        exponentNum = Math.floor(exponentNum / 2);
-    }
-    return outcome;
-};
-
-let ultimateResult = calculateModularExponent(3, totalItemCount);
-
-const getModCoefficient = (expVal) => F_MUL(3, calculateModularExponent(2, expVal));
-
-ultimateResult = Array.from({ length: totalItemCount }, (_, idx) => idx)
-    .reduce((currentTotal, currentPickIdx) => {
-        let currentCoeff = getModCoefficient(currentPickIdx);
-        let partialSumWays = Array.from({ length: midpointSum + 1 }, (_, sumVal) => sumVal)
-            .reduce((accum, targetPartSum) => {
-                let ways = obtainSubsetCount(0, currentPickIdx, targetPartSum);
-                return F_ADD(accum, ways);
-            }, 0);
-        return F_SUB(currentTotal, F_MUL(currentCoeff, partialSumWays));
-    }, ultimateResult);
-
-if (fullSum % 2 === 0) {
-    let finalAdjustment = Array.from({ length: totalItemCount + 1 }, (_, countIdx) => countIdx)
-        .reduce((accumAdj, countForHalf) => {
-            let waysForMidpoint = obtainSubsetCount(0, countForHalf, midpointSum);
-            return F_ADD(accumAdj, waysForMidpoint);
-        }, 0);
-    ultimateResult = F_ADD(ultimateResult, F_MUL(3, finalAdjustment));
+    currentBase = (currentBase * currentBase) % currentModulus;
+    currentExponent /= 2n;
+  }
+  return Number(result);
 }
 
-console.log(ultimateResult);
+function calculateModularProduct(factorA, factorB, modulusVal) {
+  return Number((BigInt(factorA) * BigInt(factorB)) % BigInt(modulusVal));
+}
+
+function ProcessInputAndCalculate(rawData) {
+  const MOD_CONSTANT = 998244353;
+  const parsedData = rawData.trim().split(/\s+/).map(Number);
+
+  const elementCount = parsedData.shift();
+  const elementValues = parsedData;
+
+  const totalSum = elementValues.reduce((acc, val) => acc + val, 0);
+  const targetHalfSum = Math.floor(totalSum / 2);
+
+  const powerFactors = Array.from({ length: elementCount }, (_, index) =>
+    calculateModularProduct(3, calculateModularPower(2, index, MOD_CONSTANT), MOD_CONSTANT)
+  );
+
+  const waysToAchieveSum = Array.from({ length: elementCount + 1 }, () =>
+    Array(targetHalfSum + 1).fill(0)
+  );
+  waysToAchieveSum[0][0] = 1;
+
+  elementValues.forEach(currentElementValue => {
+    for (let j = elementCount - 1; j >= 0; --j) {
+      for (let k = targetHalfSum; k >= currentElementValue; --k) {
+        waysToAchieveSum[j + 1][k] = (waysToAchieveSum[j + 1][k] + waysToAchieveSum[j][k - currentElementValue]) % MOD_CONSTANT;
+      }
+    }
+  });
+
+  let finalResult = calculateModularPower(3, elementCount, MOD_CONSTANT);
+
+  for (let i = 0; i < elementCount; ++i) {
+    const currentFactorP = powerFactors[i];
+    
+    const sumOfWaysFor_i_Elements = waysToAchieveSum[i].slice(0, targetHalfSum + 1)
+      .reduce((accumulator, count) => (accumulator + count) % MOD_CONSTANT, 0);
+    
+    const productPQ = calculateModularProduct(currentFactorP, sumOfWaysFor_i_Elements, MOD_CONSTANT);
+    
+    finalResult = (finalResult - productPQ + MOD_CONSTANT) % MOD_CONSTANT;
+  }
+
+  if (totalSum % 2 === 0) {
+    const sumOfWaysAtHalf = waysToAchieveSum.reduce((accumulator, row) =>
+      (accumulator + row[targetHalfSum]) % MOD_CONSTANT, 0
+    );
+    finalResult = (finalResult + calculateModularProduct(3, sumOfWaysAtHalf, MOD_CONSTANT)) % MOD_CONSTANT;
+  }
+
+  console.log(finalResult);
+}
+
+ProcessInputAndCalculate(require('fs').readFileSync('/dev/stdin', 'utf8'));

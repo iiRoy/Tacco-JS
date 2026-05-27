@@ -1,23 +1,8 @@
-const queryReader = require('readline').createInterface({
-    input: process.stdin
-});
+const initialBalance = 100;
+const periodCount = ~~(require('fs').readFileSync('/dev/stdin', 'utf8'));
 
-const initialCapital = 100;
+const finalBalance = Array.from({ length: periodCount }).reduce((currentValue) => {
+  return Math.ceil(currentValue * 1.05);
+}, initialBalance);
 
-function calculateFutureAccumulation(currentBalance, remainingPeriods) {
-    if (remainingPeriods === 0) {
-        return currentBalance;
-    }
-    const nextBalance = Math.ceil(currentBalance * 1.05);
-    return calculateFutureAccumulation(nextBalance, remainingPeriods - 1);
-}
-
-queryReader.on('line', (inputString) => {
-    const numberOfPeriods = parseInt(inputString.trim(), 10);
-
-    const finalTotal = calculateFutureAccumulation(initialCapital, numberOfPeriods);
-    const outputValue = finalTotal * 1000;
-
-    process.stdout.write(outputValue.toString() + '\n');
-    queryReader.close();
-});
+console.log(finalBalance * 1000);

@@ -1,43 +1,53 @@
-const dataAcquisition = require('node:fs').readFileSync('/dev/stdin', 'utf8');
-const lineSegments = dataAcquisition.trim().split('\n');
+const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+const rawLines = fileContent.trim().split('\n');
 
-const transformationMatrix = new Map([
-    ['1_1', 1], ['1_2', 2], ['1_3', 1],
-    ['2_1', 2], ['2_2', 1], ['2_3', 1],
-    ['3_1', 1], ['3_2', 2], ['3_3', 2]
-]);
-
-function processSequence(segments, currentPosition) {
-    if (currentPosition >= segments.length) {
-        return;
+function* numberGroupGenerator(sourceLines) {
+    let currentPosition = 0;
+    while (currentPosition + 4 < sourceLines.length) {
+        const currentBatch = sourceLines.slice(currentPosition, currentPosition + 5).map(Number);
+        if (currentBatch[0] === 0) {
+            break;
+        }
+        yield currentBatch;
+        currentPosition += 5;
     }
-
-    const firstElement = Number(segments[currentPosition]);
-    if (firstElement === 0) {
-        return;
-    }
-
-    const currentBatch = Array.from({ length: 5 }, (_, offset) => Number(segments[currentPosition + offset]));
-    
-    const presentNumbers = new Set(currentBatch);
-    const availableOptions = [1, 2, 3];
-    const unseenOptions = availableOptions.filter(num => !presentNumbers.has(num));
-
-    let outputCollector = [];
-
-    if (unseenOptions.length === 2 || unseenOptions.length === 0) {
-        outputCollector = Array(5).fill(3);
-    } else {
-        const missingSymbol = unseenOptions[0];
-        outputCollector = currentBatch.map(currentDigit => {
-            const key = `${missingSymbol}_${currentDigit}`;
-            return transformationMatrix.get(key);
-        });
-    }
-
-    outputCollector.forEach(val => process.stdout.write(val + '\n'));
-
-    processSequence(segments, currentPosition + 5);
 }
 
-processSequence(lineSegments, 0);
+const dataIterator = numberGroupGenerator(rawLines);
+
+for (const currentSet of dataIterator) {
+    const [valA, valB, valC, valD, valE] = currentSet;
+
+    const observedValues = new Set([valA, valB, valC, valD, valE]);
+    const referenceNumbers = [1, 2, 3];
+    const missingNumbers = referenceNumbers.filter(num => !observedValues.has(num));
+
+    if (missingNumbers.length === 2 || missingNumbers.length === 0) {
+        for (let outputIndex = 0; outputIndex < 5; outputIndex++) {
+            console.log(3);
+        }
+    } else {
+        const singularMissing = missingNumbers[0];
+
+        const outputStrategy = {
+            1: { // If 1 is missing
+                2: 2, // If input is 2, output 2
+                _default: 1 // Otherwise output 1
+            },
+            2: { // If 2 is missing
+                1: 2, // If input is 1, output 2
+                _default: 1 // Otherwise output 1
+            },
+            3: { // If 3 is missing
+                1: 1, // If input is 1, output 1
+                _default: 2 // Otherwise output 2
+            }
+        };
+
+        currentSet.forEach(inputValue => {
+            const specificRuleSet = outputStrategy[singularMissing];
+            const finalOutput = specificRuleSet[inputValue] !== undefined ? specificRuleSet[inputValue] : specificRuleSet._default;
+            console.log(finalOutput);
+        });
+    }
+}

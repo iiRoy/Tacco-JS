@@ -1,52 +1,51 @@
-(function() {
-    const extractNumbers = (textLine) => textLine.split(' ').map(Number);
+((inputString) => {
+    const lineSegments = inputString.trim().split('\n');
 
-    const inputContent = require('fs').readFileSync('/dev/stdin', 'utf8');
-    const textLines = inputContent.trim().split('\n');
+    const [dimensionSpec, ...remainingSegments] = lineSegments;
+    const [gridRows, gridCols, stepDistance] = dimensionSpec.split(' ').map(Number);
 
-    const [gridHeightDim, gridWidthDim, distanceStep] = extractNumbers(textLines[0]);
-    const gridRows = textLines.slice(1, gridHeightDim + 1).map(extractNumbers);
+    const totalGridElements = gridRows * gridCols;
 
-    const cellCoordinates = gridRows.reduce((accMap, currentRow, rIndex) => {
-        currentRow.forEach((cellValue, cIndex) => accMap.set(cellValue, [rIndex, cIndex]));
-        return accMap;
-    }, new Map());
+    const gridLayoutData = remainingSegments.slice(0, gridRows).map(segment => segment.split(' ').map(Number));
+    const queryCountLine = remainingSegments[gridRows];
+    const numberOfQueries = Number(queryCountLine.split(' ')[0]);
+    const queryRequests = remainingSegments.slice(gridRows + 1, gridRows + 1 + numberOfQueries).map(segment => segment.split(' ').map(Number));
 
-    const totalCellsCount = gridHeightDim * gridWidthDim;
-    const memoizedCosts = new Map();
-
-    const getCostRecursive = (targetCellId) => {
-        if (targetCellId <= distanceStep) {
-            return 0;
+    const elementLocations = new Map(); // Stores {value: {r: row, c: col}}
+    for (let currentR = 0; currentR < gridRows; currentR++) {
+        for (let currentC = 0; currentC < gridCols; currentC++) {
+            elementLocations.set(gridLayoutData[currentR][currentC], { r: currentR, c: currentC });
         }
-
-        if (memoizedCosts.has(targetCellId)) {
-            return memoizedCosts.get(targetCellId);
-        }
-
-        const prevCellId = targetCellId - distanceStep;
-        
-        const coordA = cellCoordinates.get(targetCellId);
-        const coordB = cellCoordinates.get(prevCellId);
-
-        const manhattanDist = Math.abs(coordA[0] - coordB[0]) + Math.abs(coordA[1] - coordB[1]);
-
-        const currentAccumulatedCost = manhattanDist + getCostRecursive(prevCellId);
-        memoizedCosts.set(targetCellId, currentAccumulatedCost);
-        return currentAccumulatedCost;
-    };
-
-    for (let currentCellId = 1; currentCellId <= totalCellsCount; currentCellId++) {
-        getCostRecursive(currentCellId);
     }
 
-    const queryCountLine = extractNumbers(textLines[gridHeightDim + 1]);
-    const queryCount = queryCountLine[0];
-    const queryDetails = textLines.slice(gridHeightDim + 2, gridHeightDim + 2 + queryCount).map(extractNumbers);
+    const cumulativePathCosts = new Map(); // Stores {value: cumulative_cost_from_sequence_start}
+    
+    for (let sequenceStartValue = 1; sequenceStartValue <= stepDistance; sequenceStartValue++) {
+        let currentPathNode = sequenceStartValue;
+        let currentSequenceCost = 0;
+        cumulativePathCosts.set(currentPathNode, currentSequenceCost);
 
-    const queryResults = queryDetails.map(([leftBound, rightBound]) => {
-        return memoizedCosts.get(rightBound) - memoizedCosts.get(leftBound);
+        while (currentPathNode + stepDistance <= totalGridElements) {
+            const nextPathNode = currentPathNode + stepDistance;
+            
+            const currentCoords = elementLocations.get(currentPathNode);
+            const nextCoords = elementLocations.get(nextPathNode);
+
+            const segmentManhattanDistance = Math.abs(currentCoords.r - nextCoords.r) + Math.abs(currentCoords.c - nextCoords.c);
+            
+            currentSequenceCost += segmentManhattanDistance;
+            cumulativePathCosts.set(nextPathNode, currentSequenceCost);
+            
+            currentPathNode = nextPathNode;
+        }
+    }
+
+    const queryResults = queryRequests.map(([startNode, endNode]) => {
+        const endNodeCost = cumulativePathCosts.get(endNode);
+        const startNodeCost = cumulativePathCosts.get(startNode);
+        return endNodeCost - startNodeCost;
     });
 
-    console.log(queryResults.join('\n'));
-})();
+    return queryResults.join('\n');
+
+})(require('fs').readFileSync('/dev/stdin', 'utf8'));

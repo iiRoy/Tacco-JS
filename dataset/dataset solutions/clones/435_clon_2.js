@@ -1,155 +1,112 @@
-// Global helper functions to rename built-in identifiers for Type II cloning compliance.
-const extractNumericValue = parseFloat;
-const findMinimumValue = Math.min;
-const writeToOutput = console.log;
-const retrieveCurrentTimestamp = Date.now;
+function executeProgram() {
+  // Define a large number to represent infinity for path calculations.
+  var infinityVal = 1e9;
 
-// This module is designed to process network topology data and respond to queries
-// regarding shortest paths, considering two distinct metrics: financial cost and travel duration.
-// It implements a variation of the Floyd-Warshall algorithm for computing all-pairs shortest paths.
+  // Variables to hold parsed input line data.
+  var currentLineData;
 
-// A global variable to accumulate all incoming raw textual data from standard input.
-var rawData = '';
+  // Variables for graph dimensions and edge properties.
+  var numNodes, maxVertexId, vertexA, vertexB, edgeCost, edgeTime;
 
-// Obtain a reference to the standard input stream object.
-let standardInputStream = process.stdin;
+  // Variables for query parameters.
+  var sourceVertex, destinationVertex, metricType;
 
-// Assign new, distinct names to the key methods of the standard input stream object
-// to comply with the Type II cloning requirement of renaming all identifiers.
-standardInputStream.activateStream = standardInputStream.resume;
-standardInputStream.configureEncoding = standardInputStream.setEncoding;
-standardInputStream.onEvent = standardInputStream.on;
+  // Loop counters for various operations, including Floyd-Warshall.
+  var outerLoopIdx, middleLoopIdx, innerLoopIdx; // For Floyd-Warshall
+  var dataEntryIdx, queryIdx; // For other data processing loops
 
-// Initiate the standard input stream to begin receiving data.
-standardInputStream.activateStream();
-
-// Set the character encoding for the incoming data to 'utf8' to ensure proper interpretation.
-standardInputStream.configureEncoding('utf8');
-
-// Register an event listener that triggers whenever a chunk of data is received.
-standardInputStream.onEvent('data', function(receivedChunk) {
-  // Concatenate the newly received data chunk to the global rawData string.
-  rawData += receivedChunk;
-});
-
-// Register an event listener that triggers once the entire standard input stream has ended.
-standardInputStream.onEvent('end', function() {
-  // After all data is received, split the accumulated rawData string into an array of individual lines.
-  rawData = rawData.split('\n');
-
-  // Capture the current system timestamp right before initiating the main processing logic.
-  const initialTimestamp = retrieveCurrentTimestamp();
-
-  // Execute the primary function responsible for the core data processing and calculations.
-  performMainLogic();
-
-  // Output the total time elapsed for the program's execution to the console.
-  writeToOutput('execution_time: ' + (retrieveCurrentTimestamp() - initialTimestamp) + ' ms');
-});
-
-/**
- * This is the central function that orchestrates the entire data processing workflow.
- * It reads network configurations and subsequent queries from the processed standard input,
- * computes all-pairs shortest paths using the Floyd-Warshall algorithm for two metrics,
- * and then outputs the results for each query.
- */
-function performMainLogic() {
-  // Define a sufficiently large numerical value to represent an unreachable path or infinite cost/time.
-  const infinityValue = 999999999;
-
-  // Declare all necessary local variables for input parsing, graph representation, and loop control.
-  let currentDataRow,            // Stores the numerical values parsed from a single line of input.
-      countItems,                // Denotes 'N', the total number of edges or initial data entries.
-      maximumIndex,              // Represents 'M', the highest node identifier, effectively the number of nodes.
-      sourceNode,                // The starting node of a particular edge.
-      targetNode,                // The ending node of a particular edge.
-      financialExpense,          // The monetary cost associated with traversing an edge.
-      travelDuration,            // The time required to traverse a particular edge.
-      querySource,               // The origin node specified in a query.
-      queryTarget,               // The destination node specified in a query.
-      queryMetric,               // An indicator (0 or 1) specifying whether to query cost or time.
-      idxA, idxB, idxC;          // Generic loop counters used across various nested iterations.
-
-  // The main operational loop of the program; it continues to process network configurations
-  // until a specific termination condition is encountered (N=0 and M=0).
+  // Main processing loop: continues until a specific termination condition is met.
   while (true) {
-    // Read the first line of the current data set, which contains the 'N' and 'M' values.
-    currentDataRow = rawData.shift().split(' ').map(extractNumericValue);
-    countItems = currentDataRow[0];
-    maximumIndex = currentDataRow[1];
+    // Read and parse the first line of each test case.
+    currentLineData = rawDataInput.shift().split(' ').map(parseFloat);
+    numNodes = currentLineData[0];
+    maxVertexId = currentLineData[1];
 
-    // Check if the termination signal (N=0 and M=0) has been received.
-    if (countItems === 0 && maximumIndex === 0) {
-      break; // If so, exit the main processing loop.
+    // Termination condition: if both N and M are zero, exit the loop.
+    if (numNodes === 0 && maxVertexId === 0) {
+      break;
     }
 
-    // Initialize two separate two-dimensional arrays (matrices) to store
-    // the accumulated expenses and travel durations between all pairs of nodes.
-    let expenseMatrix = [];
-    let durationMatrix = [];
-
-    // Dynamically allocate the inner arrays for each node in both matrices.
-    // Node indices typically start from 1, so loops run up to and include 'maximumIndex'.
-    for (idxA = 1; idxA <= maximumIndex; idxA++) {
-      expenseMatrix[idxA] = [];
-      durationMatrix[idxA] = [];
+    // Initialize 2D arrays (adjacency matrices) for path costs and travel times.
+    // These will store the shortest path costs and times between any two vertices.
+    var pathCosts = [];
+    var pathTimes = [];
+    for (dataEntryIdx = 1; dataEntryIdx <= maxVertexId; dataEntryIdx++) {
+      pathCosts[dataEntryIdx] = [];
+      pathTimes[dataEntryIdx] = [];
     }
 
-    // Iterate through the subsequent 'N' lines of input to populate the initial edge data.
-    // Each line defines an edge with its respective cost and time.
-    for (idxA = 0; idxA < countItems; idxA++) {
-      currentDataRow = rawData.shift().split(' ').map(extractNumericValue);
-      sourceNode = currentDataRow[0];
-      targetNode = currentDataRow[1];
-      financialExpense = currentDataRow[2];
-      travelDuration = currentDataRow[3];
+    // Read and populate initial direct edge costs and times.
+    // N represents the number of direct edges provided.
+    for (dataEntryIdx = 0; dataEntryIdx < numNodes; dataEntryIdx++) {
+      currentLineData = rawDataInput.shift().split(' ').map(parseFloat);
+      vertexA = currentLineData[0];
+      vertexB = currentLineData[1];
+      edgeCost = currentLineData[2];
+      edgeTime = currentLineData[3];
 
-      // Update both directions (sourceNode -> targetNode and targetNode -> sourceNode)
-      // because the graph is assumed to be undirected. Use findMinimumValue to ensure
-      // only the shortest direct path (if multiple are provided) is recorded.
-      // The '|| infinityValue' handles cases where an entry is initially undefined.
-      expenseMatrix[sourceNode][targetNode] = expenseMatrix[targetNode][sourceNode] =
-        findMinimumValue(financialExpense, expenseMatrix[sourceNode][targetNode] || infinityValue);
-
-      durationMatrix[sourceNode][targetNode] = durationMatrix[targetNode][sourceNode] =
-        findMinimumValue(travelDuration, durationMatrix[sourceNode][targetNode] || infinityValue);
+      // Store the minimum cost and time for direct paths between vertexA and vertexB.
+      // Handles cases where multiple edges exist between the same pair of nodes.
+      pathCosts[vertexA][vertexB] = pathCosts[vertexB][vertexA] = Math.min(edgeCost, pathCosts[vertexA][vertexB] || infinityVal);
+      pathTimes[vertexA][vertexB] = pathTimes[vertexB][vertexA] = Math.min(edgeTime, pathTimes[vertexA][vertexB] || infinityVal);
     }
 
-    // Execute the Floyd-Warshall algorithm to compute all-pairs shortest paths.
-    // The outer loop iterates through all possible intermediate nodes (idxC).
-    for (idxC = 1; idxC <= maximumIndex; idxC++) {
-      // The middle loop iterates through all possible source nodes (idxA).
-      for (idxA = 1; idxA <= maximumIndex; idxA++) {
-        // The inner loop iterates through all possible destination nodes (idxB).
-        for (idxB = 1; idxB <= maximumIndex; idxB++) {
-          // Update the expense matrix: if a path from idxA to idxB via idxC is shorter, update it.
-          expenseMatrix[idxA][idxB] = findMinimumValue(
-            expenseMatrix[idxA][idxB] || infinityValue, // Current direct path (or assumed infinity)
-            (expenseMatrix[idxA][idxC] || infinityValue) + (expenseMatrix[idxC][idxB] || infinityValue) // Path via intermediate node idxC
+    // Apply the Floyd-Warshall algorithm to find all-pairs shortest paths.
+    // This algorithm iterates through all possible intermediate vertices (innerLoopIdx).
+    for (innerLoopIdx = 1; innerLoopIdx <= maxVertexId; innerLoopIdx++) {
+      // Then, it considers all possible starting vertices (outerLoopIdx).
+      for (outerLoopIdx = 1; outerLoopIdx <= maxVertexId; outerLoopIdx++) {
+        // And all possible ending vertices (middleLoopIdx).
+        for (middleLoopIdx = 1; middleLoopIdx <= maxVertexId; middleLoopIdx++) {
+          // Update the shortest path cost if a path through innerLoopIdx is shorter.
+          pathCosts[outerLoopIdx][middleLoopIdx] = Math.min(
+            pathCosts[outerLoopIdx][middleLoopIdx] || infinityVal,
+            (pathCosts[outerLoopIdx][innerLoopIdx] || infinityVal) + (pathCosts[innerLoopIdx][middleLoopIdx] || infinityVal)
           );
-
-          // Update the duration matrix in the same manner.
-          durationMatrix[idxA][idxB] = findMinimumValue(
-            durationMatrix[idxA][idxB] || infinityValue, // Current direct path (or assumed infinity)
-            (durationMatrix[idxA][idxC] || infinityValue) + (durationMatrix[idxC][idxB] || infinityValue) // Path via intermediate node idxC
+          // Update the shortest path time similarly.
+          pathTimes[outerLoopIdx][middleLoopIdx] = Math.min(
+            pathTimes[outerLoopIdx][middleLoopIdx] || infinityVal,
+            (pathTimes[outerLoopIdx][innerLoopIdx] || infinityVal) + (pathTimes[innerLoopIdx][middleLoopIdx] || infinityVal)
           );
         }
       }
     }
 
-    // Read the total number of queries for the current network configuration.
-    const numberOfQueries = extractNumericValue(rawData.shift());
+    // Read the number of queries for the current test case.
+    var numQueries = parseFloat(rawDataInput.shift());
+    // Process each query.
+    for (queryIdx = 0; queryIdx < numQueries; queryIdx++) {
+      currentLineData = rawDataInput.shift().split(' ').map(parseFloat);
+      sourceVertex = currentLineData[0];
+      destinationVertex = currentLineData[1];
+      metricType = currentLineData[2]; // 0 for cost, 1 for time
 
-    // Process each individual query.
-    for (idxA = 0; idxA < numberOfQueries; idxA++) {
-      currentDataRow = rawData.shift().split(' ').map(extractNumericValue);
-      querySource = currentDataRow[0];
-      queryTarget = currentDataRow[1];
-      queryMetric = currentDataRow[2]; // 0 for expense, 1 for duration.
-
-      // Use the queryMetric to dynamically select between the expenseMatrix and durationMatrix,
-      // then retrieve and output the shortest path value for the specified source and target nodes.
-      writeToOutput([expenseMatrix, durationMatrix][queryMetric][querySource][queryTarget]);
+      // Output the requested metric (cost or time) for the path between source and destination.
+      console.log([pathCosts, pathTimes][metricType][sourceVertex][destinationVertex]);
     }
   }
 }
+
+// Global variable to accumulate all input data.
+var rawDataInput = '';
+
+// Set up standard input processing.
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
+
+// Event listener for incoming data chunks.
+process.stdin.on('data', function(chunk) {
+  rawDataInput += chunk;
+});
+
+// Event listener for the end of input stream.
+process.stdin.on('end', function() {
+  // Split the accumulated input into an array of lines.
+  rawDataInput = rawDataInput.split('\n');
+  // Record the start time for performance measurement.
+  var startTimeStamp = Date.now();
+  // Execute the main program logic.
+  executeProgram();
+  // Log the total execution time.
+  console.log('time: ' + (Date.now() - startTimeStamp));
+});

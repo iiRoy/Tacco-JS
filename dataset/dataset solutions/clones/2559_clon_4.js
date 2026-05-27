@@ -1,21 +1,19 @@
-function processContestResults(contestData) {
-    const lines = contestData.split('\n');
+function processContestData(rawInput) {
+  const lines = rawInput.split('\n');
 
-    const [playerCount, initialPoints, questionCount] = lines[0].split(' ').map(Number);
+  const [totalParticipants, defeatThreshold, totalContests] = lines[0].split(' ').map(Number);
 
-    const correctResponseCounters = Array.from({ length: playerCount }, () => 0);
+  const participantScores = new Array(totalParticipants).fill(0);
 
-    for (let currentQuestionIndex = 1; currentQuestionIndex <= questionCount; currentQuestionIndex++) {
-        const respondingPlayerIdentifier = Number(lines[currentQuestionIndex]);
-        correctResponseCounters[respondingPlayerIdentifier - 1]++;
-    }
+  lines.slice(1, totalContests + 1).forEach(roundWinnerIdStr => {
+    const winningParticipantId = parseInt(roundWinnerIdStr);
+    participantScores[winningParticipantId - 1]++;
+  });
 
-    const finalOutcomes = correctResponseCounters.map(playerCorrectCount => {
-        const pointsLost = questionCount - playerCorrectCount;
-        return (pointsLost < initialPoints) ? 'Yes' : 'No';
-    });
-
-    console.log(finalOutcomes.join('\n'));
+  participantScores.forEach(victories => {
+    const defeats = totalContests - victories;
+    console.log(defeats >= defeatThreshold ? 'No' : 'Yes');
+  });
 }
 
-processContestResults(require("fs").readFileSync("/dev/stdin", "utf8"));
+processContestData(require("fs").readFileSync("/dev/stdin", "utf8"));

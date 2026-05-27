@@ -1,29 +1,29 @@
-function calculateOutcome(completeInput) {
-    const PRIME_NUMBER = 1000000007;
-    const ALPHABET_COUNT = 26;
-    const FIRST_CHAR_ASCII = 'a'.charCodeAt(0);
+console.log((inputData => {
+  const [_, sourceString] = inputData.trim().split('\n');
+  const primeModulus = 1000000007;
 
-    let cleanedInputData = completeInput.trim();
-    let separatorIndex = cleanedInputData.indexOf('\n');
-    let targetString = cleanedInputData.slice(separatorIndex + 1);
+  const modProduct = (val1, val2) => (val1 * val2) % primeModulus;
 
-    let charTallies = [];
-    for (let currentSlot = 0; currentSlot < ALPHABET_COUNT; ++currentSlot) {
-        charTallies.push(1);
+  const charIndices = Array.from(sourceString, c => c.charCodeAt(0) - 97);
+
+  const rawFrequencies = charIndices.reduce((accumulator, currentIdx) => {
+    accumulator[currentIdx]++;
+    return accumulator;
+  }, Array(26).fill(0));
+
+  const termFactors = rawFrequencies.map(count => count + 1);
+
+  const calculateRecursiveProduct = (factorsCollection, currentPosition = 0, currentAccumulator = 1) => {
+    if (currentPosition === factorsCollection.length) {
+      return currentAccumulator;
     }
+    const nextAccumulator = modProduct(currentAccumulator, factorsCollection[currentPosition]);
+    return calculateRecursiveProduct(factorsCollection, currentPosition + 1, nextAccumulator);
+  };
 
-    for (let charPos = 0; charPos < targetString.length; ++charPos) {
-        let charCodeValue = targetString.charCodeAt(charPos);
-        let adjustedIndex = charCodeValue - FIRST_CHAR_ASCII;
-        charTallies[adjustedIndex]++;
-    }
+  const finalProduct = calculateRecursiveProduct(termFactors);
 
-    let finalProductValue = 1;
-    for (let tallyEntry of charTallies) {
-        finalProductValue = Number((BigInt(finalProductValue) * BigInt(tallyEntry)) % BigInt(PRIME_NUMBER));
-    }
+  const resultValue = finalProduct - 1;
 
-    return String(finalProductValue - 1);
-}
-
-process.stdout.write(calculateOutcome(require('fs').readFileSync(0, 'utf8')));
+  return `${resultValue}`;
+})(require('fs').readFileSync('/dev/stdin', 'utf8')));

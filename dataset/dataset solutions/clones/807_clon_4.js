@@ -1,167 +1,156 @@
-class TacticalArena {
-    constructor(fieldHeight, fieldWidth, initialCellLayout, unitPlacement, unitFacing) {
-        this.fieldDimension = { vertical: fieldHeight, horizontal: fieldWidth };
-        this.combatUnit = {
-            verticalAxis: unitPlacement.row,
-            horizontalAxis: unitPlacement.col,
-            orientation: unitFacing
-        };
-        this.gridElements = new Map(); // Stores "row_col" -> character
+const DIRECTION_VECTORS = {
+    'U': { dr: -1, dc: 0 },
+    'D': { dr: 1, dc: 0 },
+    'L': { dr: 0, dc: -1 },
+    'R': { dr: 0, dc: 1 }
+};
 
-        // Initialize the grid including external boundaries
-        for (let rIdx = 0; rIdx < fieldHeight + 2; rIdx++) {
-            for (let cIdx = 0; cIdx < fieldWidth + 2; cIdx++) {
-                if (rIdx === 0 || rIdx === fieldHeight + 1 || cIdx === 0 || cIdx === fieldWidth + 1) {
-                    this.gridElements.set(`${rIdx}_${cIdx}`, '#'); // Perimeter walls
-                } else {
-                    this.gridElements.set(`${rIdx}_${cIdx}`, initialCellLayout[rIdx - 1][cIdx - 1]);
-                }
-            }
-        }
-        // Place the combat unit at its determined location
-        this.gridElements.set(`${this.combatUnit.verticalAxis}_${this.combatUnit.horizontalAxis}`, this.combatUnit.orientation);
+const INPUT_CHAR_MAP = {
+    '^': 'U',
+    'v': 'D',
+    '<': 'L',
+    '>': 'R'
+};
+
+const OUTPUT_CHAR_MAP = {
+    'U': '^',
+    'D': 'v',
+    'L': '<',
+    'R': '>'
+};
+
+function applyReplacements(text, map) {
+    let result = text;
+    for (const key in map) {
+        result = result.replace(new RegExp(key.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), 'g'), map[key]);
     }
+    return result;
+}
 
-    // Static map for directional vectors
-    static directionalVectors = new Map([
-        ['U', { vDelta: -1, hDelta: 0 }],
-        ['D', { vDelta: 1, hDelta: 0 }],
-        ['L', { vDelta: 0, hDelta: -1 }],
-        ['R', { vDelta: 0, hDelta: 1 }]
-    ]);
+function moveTank(tank, map, newOrientation) {
+    const { dr, dc } = DIRECTION_VECTORS[newOrientation];
+    const nextRow = tank.row + dr;
+    const nextCol = tank.col + dc;
+    const targetCellKey = `${nextRow},${nextCol}`;
+    const targetCellContent = map.get(targetCellKey);
 
-    // Retrieve content of a specific grid cell
-    retrieveCellContent(rCoord, cCoord) {
-        return this.gridElements.get(`${rCoord}_${cCoord}`);
-    }
-
-    // Modify content of a specific grid cell
-    updateCellContent(rCoord, cCoord, value) {
-        this.gridElements.set(`${rCoord}_${cCoord}`, value);
-    }
-
-    // Recursive function to simulate projectile trajectory
-    propagateProjectile(verticalDisplacement, horizontalDisplacement, currentVertical, currentHorizontal) {
-        const nextVertical = currentVertical + verticalDisplacement;
-        const nextHorizontal = currentHorizontal + horizontalDisplacement;
-        const targetCellContent = this.retrieveCellContent(nextVertical, nextHorizontal);
-
-        if (targetCellContent === '#') {
-            return; // Projectile hits a wall, terminates
-        } else if (targetCellContent === '*') {
-            this.updateCellContent(nextVertical, nextHorizontal, '.'); // Projectile hits a target, clears it
-            return;
-        } else {
-            // Projectile continues its path
-            this.propagateProjectile(verticalDisplacement, horizontalDisplacement, nextVertical, nextHorizontal);
-        }
-    }
-
-    // Process a single command received by the combat unit
-    processCommand(instruction) {
-        if (instruction === 'S') {
-            const currentUnitBearing = this.combatUnit.orientation;
-            const movementDeltas = TacticalArena.directionalVectors.get(currentUnitBearing);
-            if (movementDeltas) {
-                this.propagateProjectile(
-                    movementDeltas.vDelta,
-                    movementDeltas.hDelta,
-                    this.combatUnit.verticalAxis,
-                    this.combatUnit.horizontalAxis
-                );
-            }
-        } else { // Movement command
-            const movementDeltas = TacticalArena.directionalVectors.get(instruction);
-            if (movementDeltas) {
-                const destinationVertical = this.combatUnit.verticalAxis + movementDeltas.vDelta;
-                const destinationHorizontal = this.combatUnit.horizontalAxis + movementDeltas.hDelta;
-                const destinationElement = this.retrieveCellContent(destinationVertical, destinationHorizontal);
-
-                // Always update the unit's facing direction
-                this.updateCellContent(this.combatUnit.verticalAxis, this.combatUnit.horizontalAxis, instruction);
-                this.combatUnit.orientation = instruction;
-
-                if (destinationElement === '.') {
-                    // If destination is empty, move the unit
-                    this.updateCellContent(this.combatUnit.verticalAxis, this.combatUnit.horizontalAxis, '.'); // Clear old position
-                    this.combatUnit.verticalAxis = destinationVertical;
-                    this.combatUnit.horizontalAxis = destinationHorizontal;
-                    this.updateCellContent(this.combatUnit.verticalAxis, this.combatUnit.horizontalAxis, instruction); // Place unit at new position
-                }
-            }
-        }
-    }
-
-    // Generate the textual representation of the arena for output
-    generateOutputLayout() {
-        let outputLines = [];
-        for (let rIdx = 1; rIdx <= this.fieldDimension.vertical; rIdx++) {
-            let currentLineCharacters = [];
-            for (let cIdx = 1; cIdx <= this.fieldDimension.horizontal; cIdx++) {
-                currentLineCharacters.push(this.retrieveCellContent(rIdx, cIdx));
-            }
-            outputLines.push(currentLineCharacters.join(''));
-        }
-        return outputLines.join('\n')
-            .replace(/U/g, '^')
-            .replace(/D/g, 'v')
-            .replace(/L/g, '<')
-            .replace(/R/g, '>');
+    if (targetCellContent === '.') {
+        map.set(`${tank.row},${tank.col}`, '.');
+        tank.row = nextRow;
+        tank.col = nextCol;
+        tank.orientation = newOrientation;
+        map.set(targetCellKey, newOrientation);
+    } else {
+        tank.orientation = newOrientation;
+        map.set(`${tank.row},${tank.col}`, newOrientation);
     }
 }
 
-const rawInputData = require('fs').readFileSync('/dev/stdin', 'utf8');
+function fireProjectile(tank, map) {
+    const { dr, dc } = DIRECTION_VECTORS[tank.orientation];
 
-const processedInputData = rawInputData
-    .replace(/\^/g, "U")
-    .replace(/v/g, "D")
-    .replace(/\</g, "L")
-    .replace(/\>/g, "R");
-
-let inputLineSegments = processedInputData.trim().split("\n");
-const totalScenarioCount = parseInt(inputLineSegments.shift(), 10);
-
-const allScenarioOutcomes = [];
-
-for (let currentScenarioIndex = 0; currentScenarioIndex < totalScenarioCount; currentScenarioIndex++) {
-    if (currentScenarioIndex !== 0) {
-        allScenarioOutcomes.push(""); // Add an empty line for separation
-    }
-
-    const dimensionParameters = inputLineSegments.shift().split(" ").map(Number);
-    const arenaHeight = dimensionParameters[0];
-    const arenaWidth = dimensionParameters[1];
-
-    let initialMapLayout = [];
-    let unitStartingPosition = { row: 0, col: 0 }; // 0-indexed relative to inner grid
-    let unitStartingOrientation = '';
-
-    for (let currentGridRow = 0; currentGridRow < arenaHeight; currentGridRow++) {
-        const lineCharacters = inputLineSegments.shift().split("");
-        const unitColumnPosition = lineCharacters.findIndex(cellChar => ['U', 'D', 'L', 'R'].includes(cellChar));
-        if (unitColumnPosition !== -1) {
-            unitStartingPosition = { row: currentGridRow, col: unitColumnPosition };
-            unitStartingOrientation = lineCharacters[unitColumnPosition];
+    function* projectilePath(startR, startC, deltaR, deltaC) {
+        let currentR = startR + deltaR;
+        let currentC = startC + deltaC;
+        while (true) {
+            yield { r: currentR, c: currentC };
+            currentR += deltaR;
+            currentC += deltaC;
         }
-        initialMapLayout.push(lineCharacters);
     }
-    inputLineSegments.shift(); // Consume the empty line after the grid layout
-    const commandSequence = inputLineSegments.shift().split("");
 
-    // Instantiate the tactical arena for the current scenario
-    const activeArena = new TacticalArena(
-        arenaHeight,
-        arenaWidth,
-        initialMapLayout,
-        { row: unitStartingPosition.row + 1, col: unitStartingPosition.col + 1 }, // Adjust to 1-indexed for arena's internal grid
-        unitStartingOrientation
-    );
+    for (const { r, c } of projectilePath(tank.row, tank.col, dr, dc)) {
+        const cellKey = `${r},${c}`;
+        const cellContent = map.get(cellKey);
 
-    // Execute all commands for the current scenario
-    commandSequence.forEach(command => activeArena.processCommand(command));
-
-    // Store the resulting layout
-    allScenarioOutcomes.push(activeArena.generateOutputLayout());
+        if (cellContent === '#') {
+            break;
+        } else if (cellContent === '*') {
+            map.set(cellKey, '.');
+            break;
+        }
+    }
 }
 
-console.log(allScenarioOutcomes.join('\n'));
+function executeBattle(scenarioLines) {
+    let lineIndex = 0;
+
+    const [gridHeight, gridWidth] = scenarioLines[lineIndex++].split(" ").map(Number);
+
+    const terrainMap = new Map();
+    let currentTank = { row: 0, col: 0, orientation: '' };
+
+    for (let c = 0; c <= gridWidth + 1; c++) {
+        terrainMap.set(`0,${c}`, '#');
+    }
+
+    for (let r = 1; r <= gridHeight; r++) {
+        const rowContent = scenarioLines[lineIndex++];
+        terrainMap.set(`${r},0`, '#');
+        for (let c = 1; c <= gridWidth; c++) {
+            const char = rowContent[c - 1];
+            if (DIRECTION_VECTORS[char]) {
+                currentTank = { row: r, col: c, orientation: char };
+                terrainMap.set(`${r},${c}`, char);
+            } else {
+                terrainMap.set(`${r},${c}`, char);
+            }
+        }
+        terrainMap.set(`${r},${gridWidth + 1}`, '#');
+    }
+
+    for (let c = 0; c <= gridWidth + 1; c++) {
+        terrainMap.set(`${gridHeight + 1},${c}`, '#');
+    }
+
+    lineIndex++;
+
+    const commandSequence = scenarioLines[lineIndex++].split("");
+
+    const commandDispatch = {
+        'U': (tank, map) => moveTank(tank, map, 'U'),
+        'D': (tank, map) => moveTank(tank, map, 'D'),
+        'L': (tank, map) => moveTank(tank, map, 'L'),
+        'R': (tank, map) => moveTank(tank, map, 'R'),
+        'S': (tank, map) => fireProjectile(tank, map)
+    };
+
+    commandSequence.forEach(cmd => {
+        if (commandDispatch[cmd]) {
+            commandDispatch[cmd](currentTank, terrainMap);
+        }
+    });
+
+    let finalMapRows = [];
+    for (let r = 1; r <= gridHeight; r++) {
+        let rowChars = [];
+        for (let c = 1; c <= gridWidth; c++) {
+            rowChars.push(terrainMap.get(`${r},${c}`));
+        }
+        finalMapRows.push(rowChars.join(''));
+    }
+
+    return applyReplacements(finalMapRows.join('\n'), OUTPUT_CHAR_MAP);
+}
+
+const rawInput = require('fs').readFileSync('/dev/stdin', 'utf8');
+const processedInput = applyReplacements(rawInput, INPUT_CHAR_MAP);
+const allLines = processedInput.trim().split('\n');
+
+let currentLineIdx = 0;
+const totalTestCases = parseInt(allLines[currentLineIdx++], 10);
+
+let results = [];
+for (let i = 0; i < totalTestCases; i++) {
+    if (i > 0) {
+        results.push('');
+    }
+
+    const [h, w] = allLines[currentLineIdx].split(" ").map(Number);
+    const scenarioSlice = allLines.slice(currentLineIdx, currentLineIdx + h + 3);
+    currentLineIdx += h + 3;
+
+    results.push(executeBattle(scenarioSlice));
+}
+
+console.log(results.join('\n'));

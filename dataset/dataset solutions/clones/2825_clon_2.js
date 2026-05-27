@@ -1,27 +1,28 @@
-// Function to handle geometric calculations based on provided data
-function ProcessInputData ( rawData ) {
-  // Split the raw input string into individual lines
-  const lineSegments = rawData . split ( "\n" ) ;
+function ProcessInput(rawData) {
+  // Divide the incoming data into separate lines.
+  let linesOfData = rawData.split("\n");
 
-  // Further split the first line into space-separated tokens
-  let dimensionTokens = lineSegments [ 0 ] . split ( " " ) ;
+  // Extract the first line and break it into string tokens using space as a delimiter.
+  let parsedLine = linesOfData[0].split(" ");
 
-  // Parse width, height, and coordinates from the tokens
-  const widthValue = Number . parseInt ( dimensionTokens [ 0 ] ) ;
-  const heightValue = Number . parseInt ( dimensionTokens [ 1 ] ) ;
-  const coordX = Number . parseInt ( dimensionTokens [ 2 ] ) ;
-  const coordY = Number . parseInt ( dimensionTokens [ 3 ] ) ;
+  // Convert the string tokens into integer values for processing.
+  const widthVal = Number.parseInt(parsedLine[0]);
+  const heightVal = Number.parseInt(parsedLine[1]);
+  const coordX = Number.parseInt(parsedLine[2]);
+  const coordY = Number.parseInt(parsedLine[3]);
 
-  // Calculate a quarter of the total area, assuming a rectangular shape
-  const calculatedArea = ( widthValue / 2.0 ) * ( heightValue / 2.0 ) ;
+  // Compute a specific area value, which is one-fourth of the total area.
+  let areaQuarter = (widthVal / 2) * (heightVal / 2);
 
-  // Determine if the given coordinates represent the exact center point
-  if ( coordX === widthValue / 2 && coordY === heightValue / 2 ) {
-    console . log ( calculatedArea , 1 ) ; // Output area and a flag indicating center
+  // Determine if the provided coordinates (coordX, coordY) correspond to the exact center.
+  if (coordX === widthVal / 2 && coordY === heightVal / 2) {
+    // If the coordinates are central, print the calculated area and a flag indicating centrality.
+    console.log(areaQuarter, 1);
   } else {
-    console . log ( calculatedArea , 0 ) ; // Output area and a flag indicating not center
+    // Otherwise, print the calculated area and a flag indicating non-centrality.
+    console.log(areaQuarter, 0);
   }
 }
 
-// Read input from standard input and pass it to the processing function
-ProcessInputData ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+// Invoke the primary data processing routine, reading content from standard input.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

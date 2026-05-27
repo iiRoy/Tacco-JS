@@ -1,18 +1,16 @@
-const numeralProducers = Array.from({ length: 9 }, (v, k) => k + 1);
+function processInput(rawData) {
+    const sourceLines = rawData.split("\n");
+    const desiredProduct = parseInt(sourceLines[0], 10);
 
-const productRegistry = new Set(
-    numeralProducers.flatMap(firstFactor =>
-        numeralProducers.map(secondFactor => firstFactor * secondFactor)
-    )
-);
+    const digitRange = Array.from({ length: 9 }, (_, index) => index + 1);
 
-function evaluateProductPossibility(sourceMaterial) {
-    const numericalValue = Number(sourceMaterial.trim());
-    const outcomeIndicator = productRegistry.has(numericalValue);
-    const textOutputs = new Map([[true, "yes"], [false, "no"]]);
-    return textOutputs.get(outcomeIndicator);
+    const canBeFormed = digitRange.some(firstFactor => {
+        return digitRange.some(secondFactor => {
+            return firstFactor * secondFactor === desiredProduct;
+        });
+    });
+
+    console.log(canBeFormed ? "yes" : "no");
 }
 
-const retrievedData = require("fs").readFileSync("/dev/stdin", "utf8");
-const finalMessage = evaluateProductPossibility(retrievedData);
-console.log(finalMessage);
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

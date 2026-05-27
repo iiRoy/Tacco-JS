@@ -1,87 +1,61 @@
-const rawContent = require('node:fs').readFileSync('/dev/stdin', 'utf8');
-const contentSegments = rawContent.trim().split('\n');
+const sourceData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-const solve = (inputSpec) => {
-    const dataSize = inputSpec.elementCount;
-    const dataSequence = inputSpec.valueList;
-    const adjustmentSet = inputSpec.modifierList;
-
-    const cacheVault = new Map();
-
-    const calculatePathValue = (pathStep, resultantLevel) => {
-        if (pathStep === 0) {
-            return (resultantLevel === 128) ? 0 : Number.MAX_VALUE;
-        }
-
-        const cacheKey = `${pathStep}_${resultantLevel}`;
-        if (cacheVault.has(cacheKey)) {
-            return cacheVault.get(cacheKey);
-        }
-
-        let minimalAccumulatedCharge = Number.MAX_VALUE;
-
-        for (let priorLevelOutcome = 0; priorLevelOutcome <= 255; priorLevelOutcome++) {
-            const chargeFromPrior = calculatePathValue(pathStep - 1, priorLevelOutcome);
-
-            if (chargeFromPrior === Number.MAX_VALUE) {
-                continue;
-            }
-
-            for (const factor of adjustmentSet) {
-                let prospectiveLevel = priorLevelOutcome + factor;
-                prospectiveLevel = Math.max(0, Math.min(255, prospectiveLevel));
-
-                if (prospectiveLevel === resultantLevel) {
-                    const segmentCharge = (dataSequence[pathStep - 1] - resultantLevel) * (dataSequence[pathStep - 1] - resultantLevel);
-                    minimalAccumulatedCharge = Math.min(minimalAccumulatedCharge, chargeFromPrior + segmentCharge);
-                }
-            }
-        }
-
-        cacheVault.set(cacheKey, minimalAccumulatedCharge);
-        return minimalAccumulatedCharge;
-    };
-
-    let overallOptimal = Number.MAX_VALUE;
-    for (let finalLevel = 0; finalLevel <= 255; finalLevel++) {
-        overallOptimal = Math.min(overallOptimal, calculatePathValue(dataSize, finalLevel));
+function* provideInputLines(sourceString) {
+    const lines = sourceString.trim().split("\n");
+    let currentLinePointer = 0;
+    while (currentLinePointer < lines.length) {
+        yield lines[currentLinePointer++];
     }
+}
 
-    return overallOptimal;
+const determineNextStateCosts = (priorStateCosts, currentNElement, mDeltas) => {
+    const subsequentStateCosts = Array(256).fill(Infinity);
+
+    priorStateCosts.forEach((costFromPrior, priorStateIndex) => {
+        if (costFromPrior === Infinity) {
+            return;
+        }
+
+        mDeltas.forEach(mChange => {
+            const potentialNextState = priorStateIndex + mChange;
+            const constrainedNextState = Math.max(0, Math.min(255, potentialNextState));
+            const incrementalCost = costFromPrior + Math.pow(currentNElement - constrainedNextState, 2);
+
+            subsequentStateCosts[constrainedNextState] = Math.min(subsequentStateCosts[constrainedNextState], incrementalCost);
+        });
+    });
+    return subsequentStateCosts;
 };
 
-const allProblemInstances = [];
-let currentPosition = 0;
+const lineIterator = provideInputLines(sourceData);
 
-while (currentPosition < contentSegments.length) {
-    const dimensionInfo = contentSegments[currentPosition].split(' ').map(Number);
-    const elementCountForInstance = dimensionInfo[0];
-    const modifierCountForInstance = dimensionInfo[1];
-    currentPosition++;
+while (true) {
+    const dimensionsLine = lineIterator.next().value;
+    const [countNStr, countMStr] = dimensionsLine.split(" ");
+    const countN = parseInt(countNStr, 10);
+    const countM = parseInt(countMStr, 10);
 
-    if (elementCountForInstance === 0 && modifierCountForInstance === 0) {
+    if (countN === 0 && countM === 0) {
         break;
     }
 
-    const currentModifierCollection = [];
-    for (let k = 0; k < modifierCountForInstance; k++) {
-        currentModifierCollection.push(Number(contentSegments[currentPosition]));
-        currentPosition++;
-    }
+    const mValues = Array.from({ length: countM }, () => parseInt(lineIterator.next().value, 10));
 
-    const currentValuations = [];
-    for (let i = 0; i < elementCountForInstance; i++) {
-        currentValuations.push(Number(contentSegments[currentPosition]));
-        currentPosition++;
-    }
+    const nValues = Array.from({ length: countN }, () => parseInt(lineIterator.next().value, 10));
 
-    allProblemInstances.push({
-        elementCount: elementCountForInstance,
-        modifierCount: modifierCountForInstance,
-        modifierList: currentModifierCollection,
-        valueList: currentValuations
-    });
+    const initialCostRow = Array(256).fill(Infinity);
+    initialCostRow[128] = 0;
+
+    const allCalculatedCostRows = nValues.reduce((accumulatorCostRows, currentNValue) => {
+        const previousRow = accumulatorCostRows[accumulatorCostRows.length - 1];
+        const nextRow = determineNextStateCosts(previousRow, currentNValue, mValues);
+        accumulatorCostRows.push(nextRow);
+        return accumulatorCostRows;
+    }, [initialCostRow]);
+
+    const finalCostRow = allCalculatedCostRows[countN];
+
+    const overallMinimumResult = Math.min(...finalCostRow);
+
+    console.log(overallMinimumResult);
 }
-
-const finalOutcomes = allProblemInstances.map(instance => solve(instance));
-console.log(finalOutcomes.join('\n'));

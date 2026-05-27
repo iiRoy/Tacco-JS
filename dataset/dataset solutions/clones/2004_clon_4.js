@@ -1,43 +1,25 @@
-const performComputation = (sourcePayload) => {
-    const lineSegments = sourcePayload.trim().split(/\s*\n\s*/);
+"use strict";
 
-    const initialMetrics = lineSegments[0].split(/\s+/).map(Number);
-    const relevantCount = initialMetrics[1];
+const processInput = rawData => {
+    const contentLines = rawData.trim().split("\n");
 
-    const valueSeries = lineSegments[1].split(/\s+/).map(Number);
+    const [itemCount, selectionCount] = contentLines[0].split(" ").map(Number);
+    const candidateScores = contentLines[1].split(" ").map(Number);
 
-    const sumRecursive = (arr, idx = 0, currentTotal = 0) => {
-        if (idx >= arr.length) {
-            return currentTotal;
-        }
-        return sumRecursive(arr, idx + 1, currentTotal + arr[idx]);
-    };
-    const cumulativeValue = sumRecursive(valueSeries);
+    const sumOfAllScores = candidateScores.reduce((accumulator, currentScore) => accumulator + currentScore, 0);
+    const requiredThreshold = sumOfAllScores / (4 * selectionCount);
 
-    const checkPoint = cumulativeValue / (4 * relevantCount);
+    const sortedScores = [...candidateScores].sort((a, b) => b - a);
 
-    const extractTopElements = (dataArray, limit) => {
-        let leadingElements = [];
-        for (let unit of dataArray) {
-            if (leadingElements.length < limit) {
-                leadingElements.push(unit);
-                leadingElements.sort((alpha, beta) => alpha - beta);
-            } else if (limit > 0 && unit > leadingElements[0]) {
-                leadingElements[0] = unit;
-                leadingElements.sort((alpha, beta) => alpha - beta);
-            }
-        }
-        return leadingElements;
-    };
+    const topSelectedScores = sortedScores.slice(0, selectionCount);
 
-    const significantValues = extractTopElements(valueSeries, relevantCount);
+    const allMeetCriteria = topSelectedScores.every(scoreValue => scoreValue >= requiredThreshold);
 
-    const allPassCondition = significantValues.every(val => val >= checkPoint);
-
-    console.log(allPassCondition ? "Yes" : "No");
+    if (allMeetCriteria) {
+        console.log("Yes");
+    } else {
+        console.log("No");
+    }
 };
 
-const executionModule = (() => {
-    const dataSource = require('fs').readFileSync('/dev/stdin', 'utf8');
-    performComputation(dataSource);
-})();
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

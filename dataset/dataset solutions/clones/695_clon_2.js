@@ -1,54 +1,61 @@
-function programExecutor(commandArguments) {
-    // Declare variables for managing item counts and processing cycles
-    let countOfItems;
-    let cycleCount;
+const inputReader = require('readline').createInterface({
+    input: process.stdin,
+    output: process.stdout
+});
 
-    // Initiate an endless processing loop
+let inputBuffer = [];
+let bufferPointer = 0;
+
+inputReader.on('line', (currentLine) => {
+    inputBuffer.push(currentLine);
+});
+
+inputReader.on('close', () => {
+    performCoreProcessing();
+});
+
+function getNextInteger() {
+    return parseInt(inputBuffer[bufferPointer++], 10);
+}
+
+function performCoreProcessing() {
+    let itemCount;
+    let operationCount;
+
     while (true) {
-        // Acquire the total count of items for the current iteration from input
-        countOfItems = readInteger();
+        itemCount = getNextInteger();
 
-        // Prepare an array to store the sequence of items
-        let itemOrder = new Array(countOfItems);
+        let sequenceData = new Array(itemCount);
 
-        // Populate the item sequence; items are numbered from 'countOfItems' down to 1
-        for (let loopIndex = 0; loopIndex < countOfItems; loopIndex++) {
-            itemOrder[loopIndex] = countOfItems - loopIndex;
+        for (let outerLoopIndex = 0; outerLoopIndex < itemCount; outerLoopIndex++) {
+            sequenceData[outerLoopIndex] = itemCount - outerLoopIndex;
         }
 
-        // Obtain the number of shuffling operations to be performed
-        cycleCount = readInteger();
+        operationCount = getNextInteger();
 
-        // Evaluate the exit condition: terminate if both counts are zero
-        if (cycleCount === 0 && countOfItems === 0) break;
+        if (operationCount === 0 && itemCount === 0) {
+            break;
+        }
 
-        // Iterate through each shuffling operation
-        for (let processIndex = 0; processIndex < cycleCount; processIndex++) {
-            // Read the size of the initial segment, adjusting for zero-based indexing
-            let segmentSize = readInteger() - 1;
-            // Read the quantity of the block to be shifted
-            let blockQuantity = readInteger();
+        for (let outerLoopIndex = 0; outerLoopIndex < operationCount; outerLoopIndex++) {
+            let splitPoint = getNextInteger() - 1;
+            let segmentLength = getNextInteger();
 
-            // Create a temporary storage array for the initial segment
-            let holdingArray = new Array(segmentSize);
+            let temporaryStorage = new Array(splitPoint);
 
-            // Copy the items from the initial segment into the temporary buffer
-            for (let copyIndex = 0; copyIndex < segmentSize; copyIndex++) {
-                holdingArray[copyIndex] = itemOrder[copyIndex];
+            for (let innerLoopIndex = 0; innerLoopIndex < splitPoint; innerLoopIndex++) {
+                temporaryStorage[innerLoopIndex] = sequenceData[innerLoopIndex];
             }
 
-            // Shift a block of items (following the initial segment) towards the front of the main array
-            for (let moveIndex = 0; moveIndex < blockQuantity; moveIndex++) {
-                itemOrder[moveIndex] = itemOrder[moveIndex + segmentSize];
+            for (let innerLoopIndex = 0; innerLoopIndex < segmentLength; innerLoopIndex++) {
+                sequenceData[innerLoopIndex] = sequenceData[innerLoopIndex + splitPoint];
             }
 
-            // Insert the items from the temporary buffer back into the main array, after the shifted block
-            for (let placeIndex = 0; placeIndex < segmentSize; placeIndex++) {
-                itemOrder[placeIndex + blockQuantity] = holdingArray[placeIndex];
+            for (let innerLoopIndex = 0; innerLoopIndex < splitPoint; innerLoopIndex++) {
+                sequenceData[innerLoopIndex + segmentLength] = temporaryStorage[innerLoopIndex];
             }
         }
 
-        // Display the value of the first item in the final arrangement
-        printLine(itemOrder[0]);
+        console.log(sequenceData[0]);
     }
 }

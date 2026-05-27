@@ -1,35 +1,24 @@
-/*
- * This module contains a core function to evaluate game outcomes.
- * It reads input from standard input, processes it, and prints a result.
- */
+function processInputData(rawContent) {
+    // Declare three variables for numerical values.
+    // In JavaScript, uninitialized 'let' variables default to 'undefined'.
+    let firstVal, secondVal, thirdVal;
 
-function   handleGameLogic( rawDataStream  )
-{
-  // Declaring variables for individual numeric components.
-  // In a real application, these would be parsed from 'rawDataStream'.
-  let  componentOne, componentTwo, componentThree;
+    // Calculate the total sum of these values.
+    // Adding 'undefined' values together results in 'NaN' (Not a Number).
+    const totalScore = firstVal + secondVal + thirdVal;
 
-  // Compute the aggregate value from the individual components.
-  const  aggregateValue = componentOne + componentTwo + componentThree ;
-
-  // Determine the game's outcome based on the aggregate value.
-  if ( aggregateValue  <=  21 )
-    {
-      // If the total is within the acceptable range, indicate success.
-      console.info( "victory" );
-    }
-  else
-    {
-      // Otherwise, if the total exceeds the limit, indicate failure.
-      console.info( "exceedLimit" );
+    // Evaluate the total score against a threshold.
+    // The comparison 'NaN <= 21' will always evaluate to false.
+    if (totalScore <= 21) {
+        // Output message for a winning condition.
+        console.log("win");
+    } else {
+        // Output message for a losing condition.
+        console.log("bust");
     }
 }
 
-// Initiate the execution by feeding standard input into the logic handler.
-handleGameLogic(
-  require ( 'fs' )
-    . readFileSync (
-      '/dev/stdin' ,
-      'utf8'
-    )
-);
+// The program's execution begins here.
+// It reads the entire content from standard input as a UTF-8 string
+// and passes it to the main processing function.
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

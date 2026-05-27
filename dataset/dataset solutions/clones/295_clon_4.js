@@ -1,52 +1,77 @@
-const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
-const lines = rawData.trim().split("\n");
+const fileSystem = require('node:fs');
+const inputString = fileSystem.readFileSync('/dev/stdin', 'utf8');
 
-let matrix = [];
-for (let i = 0; i < lines.length; i++) {
-    const numericRow = lines[i].split(",").map(Number);
-    matrix.push(numericRow);
-}
+const lineSegments = inputString.trim().split('\n');
 
-matrix = matrix.slice(0, 9);
+const processedPyramid = lineSegments.reduce((accumulator, lineContent) => {
+  const numericValues = lineContent.split(',').map(Number);
+  accumulator.push(numericValues);
+  return accumulator;
+}, []).slice(0, 9);
 
-const totalLevels = matrix.length;
-const splitPoint = (totalLevels - 1) / 2;
+const totalRows = processedPyramid.length;
 
-let cumulativeScores = Array(totalLevels);
-for (let r = 0; r < totalLevels; r++) {
-    cumulativeScores[r] = Array(matrix[r].length).fill(Number.MIN_SAFE_INTEGER);
-}
+const pathAccumulators = Array.from({ length: totalRows }, (_, rowIndex) =>
+  Array(processedPyramid[rowIndex].length).fill(-Infinity)
+);
 
-cumulativeScores[0][0] = matrix[0][0];
+pathAccumulators[0][0] = processedPyramid[0][0];
 
-for (let r = 0; r < totalLevels - 1; r++) {
-    for (let c = 0; c < matrix[r].length; c++) {
-        const currentPathScore = cumulativeScores[r][c];
+const midpointThreshold = (totalRows - 1) / 2;
 
-        if (currentPathScore === Number.MIN_SAFE_INTEGER) {
-            continue;
-        }
+for (let currentRow = 0; currentRow < totalRows - 1; currentRow++) {
+  const nextRow = currentRow + 1;
+  const isExpandingPhase = currentRow < midpointThreshold;
 
-        if (r < splitPoint) {
-            cumulativeScores[r+1][c] = Math.max(cumulativeScores[r+1][c], currentPathScore + matrix[r+1][c]);
-            cumulativeScores[r+1][c+1] = Math.max(cumulativeScores[r+1][c+1], currentPathScore + matrix[r+1][c+1]);
-        } else {
-            if (c > 0) {
-                cumulativeScores[r+1][c-1] = Math.max(cumulativeScores[r+1][c-1], currentPathScore + matrix[r+1][c-1]);
-            }
-            if (c < matrix[r].length - 1) {
-                cumulativeScores[r+1][c] = Math.max(cumulativeScores[r+1][c], currentPathScore + matrix[r+1][c]);
-            }
-        }
+  for (let currentCol = 0; currentCol < processedPyramid[currentRow].length; currentCol++) {
+    if (pathAccumulators[currentRow][currentCol] === -Infinity) {
+      continue;
     }
-}
 
-let peakScore = 0;
-const finalRowScores = cumulativeScores[totalLevels - 1];
-for (let i = 0; i < finalRowScores.length; i++) {
-    if (finalRowScores[i] !== Number.MIN_SAFE_INTEGER) {
-        peakScore = Math.max(peakScore, finalRowScores[i]);
+    const currentPathValue = pathAccumulators[currentRow][currentCol];
+
+    if (isExpandingPhase) {
+      // Option 1: Move to (nextRow, currentCol)
+      if (currentCol < processedPyramid[nextRow].length) {
+        pathAccumulators[nextRow][currentCol] = Math.max(
+          pathAccumulators[nextRow][currentCol],
+          currentPathValue + processedPyramid[nextRow][currentCol]
+        );
+      }
+      // Option 2: Move to (nextRow, currentCol+1)
+      if (currentCol + 1 < processedPyramid[nextRow].length) {
+        pathAccumulators[nextRow][currentCol + 1] = Math.max(
+          pathAccumulators[nextRow][currentCol + 1],
+          currentPathValue + processedPyramid[nextRow][currentCol + 1]
+        );
+      }
+    } else {
+      // Option 1: Move to (nextRow, currentCol-1)
+      if (currentCol - 1 >= 0 && currentCol - 1 < processedPyramid[nextRow].length) {
+        pathAccumulators[nextRow][currentCol - 1] = Math.max(
+          pathAccumulators[nextRow][currentCol - 1],
+          currentPathValue + processedPyramid[nextRow][currentCol - 1]
+        );
+      }
+      // Option 2: Move to (nextRow, currentCol)
+      if (currentCol < processedPyramid[currentRow].length - 1 && currentCol < processedPyramid[nextRow].length) {
+        pathAccumulators[nextRow][currentCol] = Math.max(
+          pathAccumulators[nextRow][currentCol],
+          currentPathValue + processedPyramid[nextRow][currentCol]
+        );
+      }
     }
+  }
 }
 
-console.log(peakScore);
+let overallMaximum = -Infinity;
+const lastRowIndex = totalRows - 1;
+
+// The original code would crash if processedPyramid is empty (e.g., empty input file).
+// This clone maintains that behavior by attempting to access pathAccumulators[0][0]
+// and then potentially pathAccumulators[lastRowIndex].
+for (let col = 0; col < pathAccumulators[lastRowIndex].length; col++) {
+  overallMaximum = Math.max(overallMaximum, pathAccumulators[lastRowIndex][col]);
+}
+
+console.log(overallMaximum);

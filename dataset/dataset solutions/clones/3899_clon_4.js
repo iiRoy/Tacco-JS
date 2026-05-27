@@ -1,39 +1,27 @@
-function arrangeByFrequency(sourceValues, maxValueLimit) {
-  const tally = new Map();
+const MAX_VALUE_LIMIT = 109;
 
-  sourceValues.forEach(val => {
-    tally.set(val, (tally.get(val) || 0) + 1);
-  });
+function obtainSortedSequence(inputArray) {
+  return [...inputArray].sort((firstElement, secondElement) => firstElement - secondElement);
+}
 
-  const finalSequence = [];
+function processInputData(rawData) {
+  const processedValues = rawData.split(/\n|\s/).map(val => +val);
+  const countElements = processedValues[0];
+  const actualData = processedValues.slice(1, -1);
 
-  for (let currentVal = 0; currentVal <= maxValueLimit; currentVal++) {
-    const count = tally.get(currentVal);
-    if (count > 0) {
-      finalSequence.push(...Array(count).fill(currentVal));
+  const orderedSequence = obtainSortedSequence(actualData);
+
+  const middleIndex = Math.floor(countElements / 2);
+  const centralValue = orderedSequence[middleIndex];
+  const precedingCentralValue = orderedSequence[middleIndex - 1];
+
+  actualData.forEach(currentElement => {
+    if (currentElement < centralValue) {
+      console.log(centralValue);
+    } else {
+      console.log(precedingCentralValue);
     }
-  }
-
-  return finalSequence;
+  });
 }
 
-function processAndOutputResults(rawText) {
-  const numericPayload = rawText.match(/\d+/g).map(Number);
-
-  const dataQuantity = numericPayload[0];
-  const inputElements = numericPayload.slice(1, -1);
-
-  const sortedOrder = arrangeByFrequency(inputElements, 109);
-
-  const midpointValueIndex = Math.floor(dataQuantity / 2);
-  const decisionThreshold = sortedOrder[midpointValueIndex];
-
-  const alternativeIndex = (dataQuantity / 2 - 1) | 0; // Replicates `~~` behavior for negative results
-  const alternativeOutcome = sortedOrder[alternativeIndex];
-
-  inputElements.map(originalElement => {
-    return originalElement < decisionThreshold ? decisionThreshold : alternativeOutcome;
-  }).forEach(valueToPrint => console.log(valueToPrint));
-}
-
-processAndOutputResults(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

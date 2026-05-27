@@ -1,37 +1,30 @@
-function processGraphData(initialDataFeed) {
-    const allDataSegments = initialDataFeed.split('\n');
-    const firstLineValues = allDataSegments[0].split(' ').map(Number);
-    const totalVertexCount = firstLineValues[0];
-    const totalEdgeCount = firstLineValues[1];
+function ProcessGraphData(rawData) {
+    const lineSegments = rawData.split("\n");
 
-    const outgoingConnections = new Set();
-    const incomingConnections = new Set();
+    const [nodeCount, edgeCount] = lineSegments[0].split(" ").map(Number);
 
-    // Iterate through the lines representing edges/links
-    // The number of edge lines is given by (totalVertexCount - 1 + totalEdgeCount)
-    // We start from the second line (index 1)
-    allDataSegments.slice(1, totalVertexCount - 1 + totalEdgeCount + 1).forEach(linkDescription => {
-        const linkComponents = linkDescription.split(' ').map(Number);
-        // Ensure valid two-component link before adding to sets
-        if (linkComponents.length === 2 && !isNaN(linkComponents[0]) && !isNaN(linkComponents[1])) {
-            outgoingConnections.add(linkComponents[0]);
-            incomingConnections.add(linkComponents[1]);
+    const sourceNodes = new Set();
+    const targetNodes = new Set();
+
+    for (let edgeIndex = 1; edgeIndex <= nodeCount - 1 + edgeCount; edgeIndex++) {
+        const [sourceId, targetId] = lineSegments[edgeIndex].split(" ").map(Number);
+        sourceNodes.add(sourceId);
+        targetNodes.add(targetId);
+    }
+
+    const terminalNodes = [];
+    let rootNodeCandidate = 0;
+
+    for (let currentId = 1; currentId <= nodeCount; currentId++) {
+        if (!sourceNodes.has(currentId)) {
+            terminalNodes.push(currentId);
         }
-    });
+        if (!targetNodes.has(currentId)) {
+            rootNodeCandidate = currentId;
+        }
+    }
 
-    // Generate a sequence of all possible vertex identifiers (1 to totalVertexCount)
-    const allVertexIdentifiers = Array.from({ length: totalVertexCount }, (_, index) => index + 1);
-
-    // Identify vertices that are never sources of connections (endpoints/leaves)
-    const endVertices = allVertexIdentifiers.filter(vertexId => !outgoingConnections.has(vertexId));
-
-    // Identify the singular origin vertex (root)
-    // The original code implicitly selects the highest-numbered vertex that is never a destination.
-    const candidateOrigins = allVertexIdentifiers.filter(vertexId => !incomingConnections.has(vertexId));
-    const ultimateOriginVertex = candidateOrigins.length > 0 ? candidateOrigins[candidateOrigins.length - 1] : 0;
-
-    console.log(endVertices, ultimateOriginVertex);
+    console.log(terminalNodes, rootNodeCandidate);
 }
 
-// This line handles standard input/output and calls the main processing function
-processGraphData(require("fs").readFileSync("/dev/stdin", "utf8"));
+ProcessGraphData(require("fs").readFileSync("/dev/stdin", "utf8"));

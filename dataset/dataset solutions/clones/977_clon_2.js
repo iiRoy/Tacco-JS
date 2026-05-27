@@ -1,232 +1,220 @@
-var settings = {
-  inputSource: '/dev/stdin', // Specifies the input data source
-  lineDelimiter: '\n'        // Defines the character(s) that separate lines
+// Configuration for input source and newline character
+const processingSettings = {
+  input: '/dev/stdin', // Standard input for Linux environments
+  newline: '\n'        // Newline character for Linux
 };
 
-// Import the assertion module for validation
-const verify = require('assert');
+// Import the assertion library for internal checks
+const assertionModule = require('assert');
 
-// Read content from the specified input, convert it to ASCII, and divide into individual textual rows
-let inputLines = require('fs')
-  .readFileSync(settings.inputSource, 'ascii')
-  .split(settings.lineDelimiter);
+// Read the entire input file, convert to ASCII, and split into lines
+let inputLines = require('fs').readFileSync(processingSettings.input, 'ascii')
+  .split(processingSettings.newline);
 
-// Process the initial row to extract numerical dimensions for the primary grid
-inputLines[0] = inputLines[0]
-  .split(' ')
-  .map(function(val) { return Number(val); });
+// Parse the first line for grid dimensions
+inputLines[0] = inputLines[0].split(' ').map(Number);
+let gridHeight = inputLines[0][0]; // Height of the main grid
+let gridWidth = inputLines[0][1];  // Width of the main grid
 
-let gridHeight = inputLines[0][0]; // Vertical extent of the data grid
-let gridWidth = inputLines[0][1];  // Horizontal extent of the data grid
-
-// Extract the actual grid data rows from the input
+// Extract the main grid data
 let mainGrid = inputLines.slice(1, 1 + gridHeight);
 
-// Parse the row immediately following the grid data to get pattern dimensions
-inputLines[1 + gridHeight] = inputLines[1 + gridHeight]
-  .split(' ')
-  .map(function(val) { return Number(val); });
+// Parse the line after the main grid for pattern dimensions
+inputLines[1 + gridHeight] = inputLines[1 + gridHeight].split(' ').map(Number);
+let patternHeight = inputLines[1 + gridHeight][0]; // Height of the search pattern
+let patternWidth = inputLines[1 + gridHeight][1];  // Width of the search pattern
 
-let patternHeight = inputLines[1 + gridHeight][0]; // Vertical extent of the search pattern
-let patternWidth = inputLines[1 + gridHeight][1];  // Horizontal extent of the search pattern
-
-// Isolate the search pattern rows
+// Extract the search pattern data
 let searchPattern = inputLines.slice(1 + gridHeight + 1, 1 + gridHeight + 1 + patternHeight);
 
-inputLines = null; // Explicitly nullify the raw input array to free memory
+// Release memory occupied by raw input lines
+inputLines = null;
 
-// If the pattern is larger than the grid in any dimension, exit early as no match is possible
+// Exit if the pattern is larger than the grid in any dimension
 if (gridHeight < patternHeight || gridWidth < patternWidth) {
   process.exit();
 }
 
-// Constant defining the fixed length for binary number segments
-const BINARY_CHUNK_SIZE = 31;
+// Define a constant for the length of bit chunks
+const CHUNK_BIT_LENGTH = 31;
 
 /**
- * Converts a binary string into a structured object of numerical segments.
- * Each segment is an integer derived from a fixed-length portion of the string.
- * @param {string} binaryString - The input binary string (e.g., "0101101...").
- * @returns {object} An object containing 'totalLength', 'startIndex', and 'dataChunks'.
+ * Converts a binary string into a segmented bit chunk object.
+ * Each segment stores up to CHUNK_BIT_LENGTH bits as an integer.
+ *
+ * @param {string} inputString - The binary string to convert.
+ * @returns {object} An object representing the bit chunk.
  */
-function createBinaryChunk(binaryString) {
+function createBitChunk(inputString) {
   let chunkArray = [];
-  let currentIdx;
-
-  // Iterate and extract fixed-size substrings
-  for (currentIdx = 0; currentIdx < binaryString.length; currentIdx += BINARY_CHUNK_SIZE) {
-    chunkArray.push(binaryString.substr(currentIdx, BINARY_CHUNK_SIZE));
+  let idx;
+  // Split the string into segments of CHUNK_BIT_LENGTH
+  for (idx = 0; idx < inputString.length; idx += CHUNK_BIT_LENGTH) {
+    chunkArray.push(inputString.substr(idx, CHUNK_BIT_LENGTH));
   }
-
-  // Transform each substring: reverse, join, parse as base-2 integer
-  chunkArray = chunkArray.map(function (segmentStr) {
-    return parseInt(segmentStr.split('').reverse().join(''), 2);
+  // Convert each segment from binary string to integer (reversed for easier bitwise operations)
+  chunkArray = chunkArray.map(function (binaryStr) {
+    return parseInt(binaryStr.split('').reverse().join(''), 2);
   });
-
-  // Return a structured representation of the binary string
-  return {
-    'totalLength': binaryString.length,
-    'startIndex': 0,
-    'dataChunks': chunkArray
-  };
+  // Return the chunk with its total length, current offset, and bit parts
+  return { 'totalBits': inputString.length, 'startOffset': 0, 'bitParts': chunkArray };
 }
 
 /**
- * Checks if one chunk sequence object is a prefix of another (larger) chunk sequence.
- * This comparison considers both full and partial segments.
- * @param {object} fullChunk - The chunk object representing the potentially larger sequence.
- * @param {object} prefixChunk - The chunk object representing the potential prefix.
- * @returns {boolean} True if 'prefixChunk' is a head of 'fullChunk', false otherwise.
+ * Checks if a smaller bit chunk is a prefix of a larger bit chunk.
+ *
+ * @param {object} largerChunk - The chunk that might contain the prefix.
+ * @param {object} smallerChunk - The chunk to check as a prefix.
+ * @returns {boolean} True if smallerChunk is a prefix of largerChunk, false otherwise.
  */
-function startsWithChunk(fullChunk, prefixChunk) {
-  let fullLen, prefixLen, fullOffset, prefixOffset, fullData, prefixData;
-  verify(fullChunk.totalLength >= prefixChunk.totalLength); // Sanity check: prefix cannot be longer
+function checkPrefixMatch(largerChunk, smallerChunk) {
+  // Ensure the larger chunk is indeed larger or equal in length
+  assertionModule(largerChunk.totalBits >= smallerChunk.totalBits);
 
-  fullLen = fullChunk.totalLength;
-  prefixLen = prefixChunk.totalLength;
-  fullOffset = fullChunk.startIndex;
-  prefixOffset = prefixChunk.startIndex;
-  fullData = fullChunk.dataChunks;
-  prefixData = prefixChunk.dataChunks;
+  let largerLen = largerChunk.totalBits;
+  let smallerLen = smallerChunk.totalBits;
+  let largerOffset = largerChunk.startOffset;
+  let smallerOffset = smallerChunk.startOffset;
+  let largerBody = largerChunk.bitParts;
+  let smallerBody = smallerChunk.bitParts;
 
-  // Compare full 31-bit segments until the prefix length is less than a full chunk size
-  while (prefixLen > BINARY_CHUNK_SIZE) {
-    if (prefixData[prefixOffset] !== fullData[fullOffset]) return false; // Mismatch found
-    prefixOffset++;
-    fullOffset++;
-    prefixLen -= BINARY_CHUNK_SIZE;
-    fullLen -= BINARY_CHUNK_SIZE;
+  // Compare full segments until the smaller chunk has less than CHUNK_BIT_LENGTH bits left
+  while (smallerLen > CHUNK_BIT_LENGTH) {
+    if (smallerBody[smallerOffset] !== largerBody[largerOffset]) {
+      return false; // Mismatch found
+    }
+    smallerOffset++;
+    largerOffset++;
+    smallerLen -= CHUNK_BIT_LENGTH;
+    largerLen -= CHUNK_BIT_LENGTH;
   }
-
-  // For the remaining (possibly partial) segment, check if it matches the start of the full chunk's segment
-  return ((fullData[fullOffset] % Math.pow(2, prefixLen)) === prefixData[prefixOffset]);
+  // Compare the remaining partial segment
+  return ((largerBody[largerOffset] % Math.pow(2, smallerLen)) === smallerBody[smallerOffset]);
 }
 
 /**
- * Modifies a chunk object by moving its effective starting point forward by one `BINARY_CHUNK_SIZE`.
- * @param {object} currentChunk - The chunk object to be advanced.
- * @returns {object|null} The modified chunk object, or null if it has been fully consumed.
+ * Advances a bit chunk by one segment (CHUNK_BIT_LENGTH bits).
+ *
+ * @param {object} currentChunk - The chunk to advance.
+ * @returns {object|null} The advanced chunk or null if no bits remain.
  */
 function advanceChunk(currentChunk) {
-  currentChunk.totalLength -= BINARY_CHUNK_SIZE;
-  currentChunk.startIndex++;
-  if (currentChunk.totalLength <= 0) {
-    return null; // No more meaningful data in this chunk
+  currentChunk.totalBits -= CHUNK_BIT_LENGTH;
+  currentChunk.startOffset++;
+  if (currentChunk.totalBits <= 0) {
+    return null; // No bits left in the chunk
   }
   return currentChunk;
 }
 
 /**
- * Generates an array of chunk objects, where each object represents a segment starting
- * at a different initial offset within the original binary string.
- * @param {string} binaryString - The source binary string.
- * @returns {Array<object>} An array where each element is a chunk object.
+ * Generates a series of bit chunks from a string, starting at different offsets.
+ *
+ * @param {string} sourceString - The string to generate chunks from.
+ * @returns {Array<object|null>} An array of bit chunk objects.
  */
-function generateChunkSequence(binaryString) {
-  let sequenceResult = new Array(BINARY_CHUNK_SIZE);
+function generateChunkSeries(sourceString) {
+  let resultSeries = new Array(CHUNK_BIT_LENGTH);
   let index;
-
-  // Initialize all elements in the result array to null
-  for (index = 0; index < BINARY_CHUNK_SIZE; index++) {
-    sequenceResult[index] = null;
+  // Initialize the array with nulls
+  for (index = 0; index < CHUNK_BIT_LENGTH; index++) {
+    resultSeries[index] = null;
   }
-
-  // Populate the array with chunk objects, each starting at an increasing offset
-  for (index = 0; index < BINARY_CHUNK_SIZE && index < binaryString.length; index++) {
-    sequenceResult[index] = createBinaryChunk(binaryString.slice(index));
+  // Create a chunk for each possible starting offset within the first CHUNK_BIT_LENGTH characters
+  for (index = 0; index < CHUNK_BIT_LENGTH && index < sourceString.length; index++) {
+    resultSeries[index] = createBitChunk(sourceString.slice(index));
   }
-  return sequenceResult;
+  return resultSeries;
 }
 
 /**
- * Copies the properties of chunk objects from a source sequence array to a destination array.
- * Performs a shallow copy of the objects themselves, but ensures new objects are created if needed.
- * @param {Array<object>} destination - The array to receive the copied chunk objects.
- * @param {Array<object>} source - The array from which to copy chunk objects.
+ * Copies properties from a source chunk series to a destination chunk series.
+ * Handles creation of new objects if destination elements are null.
+ *
+ * @param {Array<object|null>} destinationSeries - The series to copy to.
+ * @param {Array<object|null>} sourceSeries - The series to copy from.
  */
-function duplicateChunkSequence(destination, source) {
-  let arrayIndex;
-  for (arrayIndex in source) {
-    if (!source[arrayIndex]) {
-      destination[arrayIndex] = null; // Maintain null placeholders
+function replicateChunkSeries(destinationSeries, sourceSeries) {
+  let seriesIndex;
+  for (seriesIndex in sourceSeries) {
+    if (!sourceSeries[seriesIndex]) {
+      destinationSeries[seriesIndex] = null;
       continue;
     }
-    if (!destination[arrayIndex]) {
-      // If destination slot is empty, create a new object and copy properties
-      destination[arrayIndex] = Object.assign({}, source[arrayIndex]);
+    if (!destinationSeries[seriesIndex]) {
+      // If destination element is null, create a new object
+      destinationSeries[seriesIndex] = Object.assign({}, sourceSeries[seriesIndex]);
     } else {
-      // If destination slot has an object, update its properties
-      Object.assign(destination[arrayIndex], source[arrayIndex]);
+      // Otherwise, update existing object
+      Object.assign(destinationSeries[seriesIndex], sourceSeries[seriesIndex]);
     }
   }
 }
 
-// A global, reusable buffer array for chunk sequence operations to avoid repeated allocations
-let tempChunkSequenceBuffer = new Array(BINARY_CHUNK_SIZE);
+// Global temporary array used to avoid repeated allocations in segmentMatch
+let tempChunkSeriesForMatch = new Array(CHUNK_BIT_LENGTH);
 
 /**
- * Compares a given target sequence of chunk objects against a single pattern chunk.
- * It iteratively shifts and compares segments within the target sequence.
- * @param {Array<object>} targetSequence - The sequence to be searched.
- * @param {object} patternChunk - The chunk object representing the pattern.
- * @returns {Array<boolean>} An array indicating match outcomes for each comparison.
+ * Performs a match operation between a series of chunks and a single pattern chunk.
+ *
+ * @param {Array<object|null>} targetSeries - The series of chunks to search within.
+ * @param {object} patternChunk - The single chunk representing the pattern.
+ * @returns {Array<boolean>} An array indicating match results for each position.
  */
-function compareChunkSequence(targetSequence, patternChunk) {
-  let workingSequence = tempChunkSequenceBuffer;
-  let comparisonResults = [];
-  let currentOffset = 0;
-
-  // Populate the working buffer with a mutable copy of the target sequence
-  duplicateChunkSequence(workingSequence, targetSequence);
-
-  // Loop through the working sequence, comparing and advancing segments
-  while (workingSequence[currentOffset] && workingSequence[currentOffset].totalLength >= patternChunk.totalLength) {
-    comparisonResults.push(startsWithChunk(workingSequence[currentOffset], patternChunk));
-    workingSequence[currentOffset] = advanceChunk(workingSequence[currentOffset]);
-    currentOffset++;
-    // Implement circular access for the buffer
-    if (currentOffset === BINARY_CHUNK_SIZE) currentOffset = 0;
+function performChunkMatch(targetSeries, patternChunk) {
+  let workingSeries = tempChunkSeriesForMatch;
+  replicateChunkSeries(workingSeries, targetSeries); // Copy to temporary working series
+  let matchResults = [];
+  let loopCounter = 0;
+  // Iterate through the working series, checking for matches and advancing chunks
+  while (workingSeries[loopCounter] && workingSeries[loopCounter].totalBits >= patternChunk.totalBits) {
+    matchResults.push(checkPrefixMatch(workingSeries[loopCounter], patternChunk));
+    workingSeries[loopCounter] = advanceChunk(workingSeries[loopCounter]);
+    loopCounter++;
+    if (loopCounter === CHUNK_BIT_LENGTH) {
+      loopCounter = 0; // Wrap around for circular access
+    }
   }
-  return comparisonResults;
+  return matchResults;
 }
 
-// Transform each row of the main grid into a sequence of chunk objects
-mainGrid = mainGrid.map(generateChunkSequence);
-// Transform each row of the search pattern into a single chunk object
-searchPattern = searchPattern.map(createBinaryChunk);
+// Pre-process the main grid and search pattern into bit chunk representations
+mainGrid = mainGrid.map(generateChunkSeries);
+searchPattern = searchPattern.map(createBitChunk);
 
-// Initialize a matrix to store potential match counts
-let matchMatrix = new Array(gridHeight - patternHeight + 1);
-let rowIdx, colIdx; // Iterators for grid dimensions
-
-// Set up the match matrix with zeros
+// Initialize a matrix to store match counts
+let matchCountMatrix = new Array(gridHeight - patternHeight + 1);
+let rowIdx, colIdx;
 for (rowIdx = 0; rowIdx <= gridHeight - patternHeight; rowIdx++) {
-  matchMatrix[rowIdx] = new Array(gridWidth - patternWidth + 1);
+  matchCountMatrix[rowIdx] = new Array(gridWidth - patternWidth + 1);
   for (colIdx = 0; colIdx <= gridWidth - patternWidth; colIdx++) {
-    matchMatrix[rowIdx][colIdx] = 0; // Default to no matches
+    matchCountMatrix[rowIdx][colIdx] = 0; // Initialize all counts to zero
   }
 }
 
-// Execute the core pattern matching logic
+// Perform the pattern matching
 for (rowIdx = 0; rowIdx < gridHeight; rowIdx++) {
+  // The inner loop iterates through relevant pattern rows
   for (colIdx = Math.max(0, rowIdx - gridHeight + patternHeight); colIdx < patternHeight && colIdx <= rowIdx; colIdx++) {
-    let currentMatches = compareChunkSequence(mainGrid[rowIdx], searchPattern[colIdx]);
-    let matchOffset;
-    // Iterate through the results of the chunk sequence comparison
-    for (matchOffset in currentMatches) {
-      if (!currentMatches[matchOffset]) continue; // Only process true matches
-      matchMatrix[rowIdx - colIdx][matchOffset]++; // Increment count for this specific match position
+    // Perform chunk matching for the current grid row and pattern row
+    let currentMatches = performChunkMatch(mainGrid[rowIdx], searchPattern[colIdx]);
+    let matchIdx;
+    // Update the match count matrix based on the results
+    for (matchIdx in currentMatches) {
+      if (!currentMatches[matchIdx]) {
+        continue; // Skip if no match at this position
+      }
+      // Increment the count for the corresponding top-left corner of the pattern
+      matchCountMatrix[rowIdx - colIdx][matchIdx]++;
     }
   }
 }
 
-// Iterate through the completed match matrix and output coordinates of full pattern matches
-let finalRow, finalCol;
-for (finalRow in matchMatrix) {
-  for (finalCol in matchMatrix[finalRow]) {
-    if (matchMatrix[finalRow][finalCol] === patternHeight) {
-      // If the count equals the pattern's height, a full match is confirmed
-      console.log('%s %s', finalRow, finalCol);
+// Output the coordinates where the pattern fully matches
+for (rowIdx in matchCountMatrix) {
+  for (colIdx in matchCountMatrix[rowIdx]) {
+    if (matchCountMatrix[rowIdx][colIdx] === patternHeight) {
+      console.log('%s %s', rowIdx, colIdx); // Print the (row, column) of the match
     }
   }
 }

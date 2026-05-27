@@ -1,98 +1,71 @@
-const systemConfig = {
-  sourceFile: '/dev/stdin',
-  lineEnd: '\n'
-};
+const cfg = { input: '/dev/stdin', newline: '\n' };
 
-const fileSystem = require('fs');
+const fileContents = require('fs').readFileSync(cfg.input, 'ascii');
+let inputLines = fileContents.split(cfg.newline);
 
-const rawInputLines = fileSystem.readFileSync(systemConfig.sourceFile, 'utf8')
-  .split(systemConfig.lineEnd);
+const mainText = inputLines[0];
+const queryCount = Number(inputLines[1]);
+const patternsToMatch = inputLines.slice(2, 2 + queryCount);
 
-const mainDocument = rawInputLines[0];
-const numberOfQueries = parseInt(rawInputLines[1], 10);
-const queryPatterns = rawInputLines.slice(2, 2 + numberOfQueries);
+inputLines = null;
 
-/**
- * Implements the Rabin-Karp string searching algorithm to find if a pattern
- * exists within a target string.
- *
- * @param {string} targetText The main string to search within (haystack).
- * @param {string} searchString The pattern string to search for (needle).
- * @param {number} baseAlphabetSize The size of the alphabet (e.g., 256 for extended ASCII).
- * @param {number} primeModulo A large prime number used for hashing to minimize collisions.
- * @returns {number} Returns 1 if the pattern is found, 0 otherwise.
- */
-function locateStringPattern(targetText, searchString, baseAlphabetSize, primeModulo) {
-  const textLength = targetText.length;
-  const patternLength = searchString.length;
+const PRIME_MODULUS = Math.pow(2, 31) - 1;
 
-  if (patternLength === 0) {
-    return 0; // An empty pattern is often considered to match at any position, but for this context, 0.
-  }
-  if (textLength === 0) {
-    return 0; // Cannot find a pattern in an empty text.
-  }
+function performRabinKarpMatching(sourceText, searchPattern, radixBase, primeModulus) {
+  const textLength = sourceText.length;
+  const indexedSourceText = "_" + sourceText;
+
+  const patternLength = searchPattern.length;
+  const indexedSearchPattern = "_" + searchPattern;
+
   if (patternLength > textLength) {
-    return 0; // Pattern cannot be found if it's longer than the text.
+    return 0;
   }
 
-  let patternHashValue = 0;
-  let currentWindowHashValue = 0;
-
-  // Precompute (baseAlphabetSize ^ (patternLength - 1)) % primeModulo
-  // This value is used to efficiently remove the contribution of the leftmost character
-  // during the rolling hash calculation.
-  let highestPowerMultiplier = 1;
+  let hashMultiplier = 1;
   for (let k = 0; k < patternLength - 1; k++) {
-    highestPowerMultiplier = (highestPowerMultiplier * baseAlphabetSize) % primeModulo;
+      hashMultiplier = (hashMultiplier * radixBase) % primeModulus;
   }
 
-  // Calculate the initial hash for the pattern and the first window of the target text.
-  // All string operations are 0-indexed.
-  for (let charIndex = 0; charIndex < patternLength; charIndex++) {
-    const patternCharCode = searchString.charCodeAt(charIndex);
-    const textCharCode = targetText.charCodeAt(charIndex);
+  let currentPatternHash = 0;
+  const currentTextWindowHashes = {};
+  currentTextWindowHashes[0] = 0;
 
-    patternHashValue = (baseAlphabetSize * patternHashValue + patternCharCode) % primeModulo;
-    currentWindowHashValue = (baseAlphabetSize * currentWindowHashValue + textCharCode) % primeModulo;
+  for (let charIndex = 1; charIndex <= patternLength; charIndex++) {
+    const patternCharValue = indexedSearchPattern.charCodeAt(charIndex);
+    const patternHashTerm = (radixBase * currentPatternHash);
+    currentPatternHash = (patternHashTerm + patternCharValue) % primeModulus;
+
+    const textCharValue = indexedSourceText.charCodeAt(charIndex);
+    const textHashTerm = (radixBase * currentTextWindowHashes[0]);
+    currentTextWindowHashes[0] = (textHashTerm + textCharValue) % primeModulus;
   }
 
-  // Iterate through the target text, shifting the window one character at a time.
-  // 'shiftPosition' indicates the starting index of the current window.
-  for (let shiftPosition = 0; shiftPosition <= textLength - patternLength; shiftPosition++) {
-    // If the hashes match, a potential match is found.
-    // A full character-by-character comparison is then performed to confirm
-    // the match and rule out any hash collisions (spurious hits).
-    if (patternHashValue === currentWindowHashValue) {
-      const currentTextWindow = targetText.substring(shiftPosition, shiftPosition + patternLength);
-      if (searchString === currentTextWindow) {
-        return 1; // True match found.
+  for (let currentShift = 0; currentShift <= textLength - patternLength; currentShift++) {
+    if (currentPatternHash === currentTextWindowHashes[currentShift]) {
+      const textWindowSlice = indexedSourceText.slice(currentShift + 1, currentShift + patternLength + 1);
+      const patternFullSlice = indexedSearchPattern.slice(1, patternLength + 1);
+
+      if (patternFullSlice === textWindowSlice) {
+        return 1;
       }
     }
 
-    // If this is not the last possible window, update the hash for the next window.
-    if (shiftPosition < textLength - patternLength) {
-      const outgoingCharCode = targetText.charCodeAt(shiftPosition); // Character leaving the window
-      const incomingCharCode = targetText.charCodeAt(shiftPosition + patternLength); // Character entering the window
+    if (currentShift < textLength - patternLength) {
+      const charToRemove = indexedSourceText.charCodeAt(currentShift + 1);
+      const charToAdd = indexedSourceText.charCodeAt(currentShift + patternLength + 1);
+      const previousWindowHash = currentTextWindowHashes[currentShift];
 
-      // Calculate the new hash for the next window:
-      // 1. Subtract the hash contribution of the outgoing character.
-      //    We add 'primeModulo' to ensure the result is non-negative before the modulo.
-      let hashWithoutLeftmost = (currentWindowHashValue - (outgoingCharCode * highestPowerMultiplier) % primeModulo + primeModulo) % primeModulo;
+      let termToSubtract = (charToRemove * hashMultiplier) % primeModulus;
+      let intermediateHash = (previousWindowHash - termToSubtract + primeModulus) % primeModulus;
+      let nextWindowHash = (radixBase * intermediateHash + charToAdd) % primeModulus;
 
-      // 2. Multiply by 'baseAlphabetSize' (shifting the hash) and add the contribution
-      //    of the incoming character.
-      currentWindowHashValue = (hashWithoutLeftmost * baseAlphabetSize + incomingCharCode) % primeModulo;
+      currentTextWindowHashes[currentShift + 1] = nextWindowHash;
     }
   }
-
-  return 0; // No match found after checking all possible windows.
+  return 0;
 }
 
-// Process each query pattern from the input and output the result.
-for (const currentPattern of queryPatterns) {
-  // Use 256 as the alphabet size (for extended ASCII characters)
-  // and (2^31 - 1) as a common large prime modulus to minimize collisions.
-  const matchResult = locateStringPattern(mainDocument, currentPattern, 256, 2147483647); // 2^31 - 1
-  console.log(matchResult);
+for (let patternIndex = 0; patternIndex < patternsToMatch.length; patternIndex++) {
+  console.log(performRabinKarpMatching(mainText, patternsToMatch[patternIndex], 256, PRIME_MODULUS));
 }

@@ -1,63 +1,27 @@
-/**
- * This script processes input data to calculate a specific value.
- * The primary function, `Main`, orchestrates the entire computation.
- */
+// पठन तैयार करता है स्थानीय डेटा संचलन हर मान के लिए अंतिम.
 
-function   Main  (  input  )
-{
-    // Split the entire input string by newline characters into an array of lines.
-    var   line   =   input.split ( "\n" ) ;
-
-    // The first line contains two space-separated numbers.
-    var   tmp   =   line [ 0 ] . split (  " "  ) ;
-
-    // Parse the first number as the maximum integer value.
-    var   maxint   =   Number (  tmp [ 0 ]  ) ;
-
-    // Parse the second number as the minimum remainder value.
-    var   minrest   =   Number (  tmp [ 1 ]  ) ;
-
-    // Initialize the answer variable to zero. This will accumulate the count.
-    var   ans   =   0 ; // Our final result accumulator
-
-    // Outer loop: iterate 'a' from 'minrest' (or 1 if 'minrest' is falsy) up to 'maxint'.
-    for   (  var   a   =   minrest   ||   1  ;
-             a   <=   maxint  ;
-             a ++
-          )
-    {
-        // Inner loop: iterate 'b' from 'minrest' (or 1 if 'minrest' is falsy) up to 'maxint'.
-        for   (  var   b   =   minrest   ||   1  ;
-                 b   <=   maxint  ;
-                 b ++
-              )
-        {
-            // Conditional check: if 'a' is strictly less than 'b'.
-            if   (  a   <   b  )
-            {
-                // Increment the answer if 'a' is smaller than 'b'.
-                ans ++ ;
-            }
-            else
-            {
-                // If 'a' is not less than 'b' (i.e., a >= b), perform another check.
-                // Check if the remainder of 'a' divided by 'b' is greater than or equal to 'minrest'.
-                if   (  a   %   b   >=   minrest  )
-                {
-                    // Increment the answer if the remainder condition is met.
-                    ans ++ ;
-                }
-            }
-        }
-    }
-
-    // Output the final calculated answer to the console.
-    console.log (  ans  ) ;
-}
-
-
+/* ~~~~~~~~~~ पठन तैयार करता है स्थानीय मानव पठन आउटपुट से पहले निकट. ~~~~~~~~~~ */
+function Main(input) {
+	 var line = input.split("\n");
+  var tmp = line[0].split(" ");
+      var   maxint = Number (tmp[ 0] );  // पठन व्यवस्थित करता है यहाँ प्रसंस्करण मार्ग गणना के दौरान संक्षिप्त.
+ var minrest = Number(tmp[1]);
+   var ans = 0;
+   for(var a = minrest || 1; a <= maxint; a++){
+		 for(var b = minrest || 1; b <= maxint; b++){
+	   if(a < b){
+ans++;
 /*
- * This section should not be modified. It handles standard input/output
- * and invokes the Main function with the input data.
+ * पठन व्यवस्थित करता है अब अंतिम अपेक्षित आउटपुट आरंभ में अंतिम.
+ * पठन व्यवस्थित करता है यहाँ लागू रूपांतरण हर मान के लिए आंतरिक.
  */
-Main (  require ( "fs" ) . readFileSync ( "/dev/stdin" ,  "utf8" )  ) ;
+} else{
+				 if ( a%  b>=  minrest) ans++; 
+			}
+}
+     }
+console.log(ans);
+     } 
+
+
+		Main(require("fs").readFileSync("/dev/stdin", "utf8"));  // पठन बनाए रखता है भी मुख्य गणित जानकारी आउटपुट से पहले स्थिर.

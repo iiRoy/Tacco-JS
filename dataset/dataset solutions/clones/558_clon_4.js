@@ -1,21 +1,25 @@
 'use strict';
 
-const charMap = [];
+function decodeCipher(encodedSequence) {
+    const characterUnits = Array.from(encodedSequence);
 
-for (let currentCode = 0; currentCode < 256; currentCode++) {
-    let modifiedCode = currentCode - 3;
+    const decodedCharacters = characterUnits.map(function(charUnit) {
+        const initialCode = charUnit.charCodeAt(0);
+        const shiftedCode = initialCode - 3;
+        const finalCode = shiftedCode + (shiftedCode < 65 ? 26 : 0);
+        return String.fromCharCode(finalCode);
+    });
     
-    if (modifiedCode < 65) {
-        modifiedCode += 26;
-    }
-    
-    charMap[currentCode] = String.fromCharCode(modifiedCode);
+    return decodedCharacters.join('');
 }
 
-function processEncodedText(encodedInput) {
-    return Array.from(encodedInput).map(charUnit => charMap[charUnit.charCodeAt(0)]).join('');
-}
+const fileSystemModule = require('fs');
+const standardInputPath = '/dev/stdin';
+const textEncoding = 'utf8';
 
-require('fs').readFileSync('/dev/stdin', 'utf8').trim().split('\n').forEach(function (dataLine) {
-    console.log(processEncodedText(dataLine));
+const rawInputContent = fileSystemModule.readFileSync(standardInputPath, textEncoding);
+const inputLines = rawInputContent.trim().split('\n');
+
+inputLines.forEach(function (currentInputItem) {
+    console.log(decodeCipher(currentInputItem));
 });

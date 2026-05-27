@@ -1,36 +1,41 @@
-const initiateProcess = (dataSource) => {
-    const parsedSegments = dataSource.trim().split('\n');
-    const initialParameters = parsedSegments[0].split(' ').map(Number);
+"use strict";
 
-    const firstOperand = initialParameters[0];
-    const secondOperand = initialParameters[1];
+const processInputData = (rawData) => {
+    const [firstLine] = rawData.trim().split("\n");
+    const [paramAStr, paramBStr] = firstLine.split(" ");
 
-    const upperLimit = Math.pow(secondOperand, firstOperand + 1);
+    const paramA = Number(paramAStr);
+    const paramB = Number(paramBStr);
 
-    console.log(upperLimit);
+    const powerResult = Math.pow(paramB, paramA + 1);
+    console.log(powerResult);
 
-    const modulusDivisor = 10000000007;
+    const createSequence = (startValue, endValue) => {
+        const sequenceLength = endValue - startValue + 1;
+        return Array.from({ length: sequenceLength }, (_, index) => startValue + index);
+    };
 
-    const totientValues = new Array(upperLimit + 1);
-    for (let currentVal = 0; currentVal <= upperLimit; currentVal++) {
-        totientValues[currentVal] = currentVal;
-    }
-
-    for (let primeCandidate = 2; primeCandidate <= upperLimit; primeCandidate++) {
-        if (totientValues[primeCandidate] === primeCandidate) {
-            for (let multiple = primeCandidate; multiple <= upperLimit; multiple += primeCandidate) {
-                totientValues[multiple] -= Math.floor(totientValues[multiple] / primeCandidate);
+    const calculateCommonDivisor = (...values) => {
+        const findPairwiseGCD = (firstNum, secondNum) => {
+            while (secondNum !== 0) {
+                const remainder = firstNum % secondNum;
+                firstNum = secondNum;
+                secondNum = remainder;
             }
-        }
-    }
+            return firstNum;
+        };
+        return values.reduce(findPairwiseGCD);
+    };
 
-    let cumulativeSum = 0;
-    for (let iterator = 1; iterator <= upperLimit; iterator++) {
-        const quotientFloor = Math.floor(upperLimit / iterator);
-        cumulativeSum += totientValues[iterator] * quotientFloor * quotientFloor * quotientFloor;
-    }
+    const cumulativeSum = createSequence(1, powerResult).reduce((accX, valX) => {
+        return accX + createSequence(1, powerResult).reduce((accY, valY) => {
+            return accY + createSequence(1, powerResult).reduce((accZ, valZ) => {
+                return accZ + calculateCommonDivisor(valX, valY, valZ);
+            }, 0);
+        }, 0);
+    }, 0);
 
-    console.log(cumulativeSum / modulusDivisor);
+    console.log(cumulativeSum / 10000000007);
 };
 
-initiateProcess(require('node:fs').readFileSync('/dev/stdin', 'utf8'));
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

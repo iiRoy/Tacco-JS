@@ -1,158 +1,175 @@
-// Function to handle the primary processing of input data
-function ProcessInput(rawData) {
-    // Define a large prime modulus for calculations
-    const modulusVal = 1000000007;
-    // Define a secondary factor base for modular multiplication optimization
-    const factorBase = 100000;
+function ProcessInputAndCompute() {
+    // Define constants for modulo arithmetic operations.
+    // MOD_PRIME is a large prime number, 10^9 + 7, used for calculations.
+    const MOD_PRIME = 1000000007;
+    // SPLIT_FACTOR is used for splitting numbers in multiplication to prevent overflow.
+    const SPLIT_FACTOR = 100000;
 
-    // Pre-process the raw input string: trim, split by newlines, then split each line by spaces
-    rawData = rawData
-        .trim()
-        .split('\n')
-        .map(function(item) {
-            return item.split(' ');
-        });
+    // Read raw input from standard input, trim any leading/trailing whitespace,
+    // split the input into lines, and then split each line by spaces.
+    let rawInputData = require("fs").readFileSync("/dev/stdin", "utf8");
+    let processedLines = rawInputData.trim().split("\n").map(function(lineSegment) {
+        return lineSegment.split(" ");
+    });
 
-    // Parse the array length and subset size from the first line of input
-    let arrayLength = parseInt(rawData[0][0], 10);
-    let subsetSize = parseInt(rawData[0][1], 10);
+    // Parse the total number of elements (N) and the count of elements to select (K)
+    // from the first line of the processed input.
+    const totalElementsCount = parseInt(processedLines[0][0], 10);
+    const elementsToSelect = parseInt(processedLines[0][1], 10);
 
-    // Parse the numbers for the main array from the second line of input
-    let numbersArray = rawData[1].map(element => parseInt(element, 10));
+    // Parse the array of numbers from the second line of the processed input.
+    let numberCollection = processedLines[1].map(elementString => parseInt(elementString, 10));
 
-    // Sort the numbers array in descending order based on their absolute values
-    numbersArray.sort((valA, valB) => Math.abs(valB) - Math.abs(valA));
+    // Sort the array of numbers by the absolute value of its elements in descending order.
+    // This strategy helps in selecting numbers with the largest magnitudes first.
+    numberCollection.sort((valA, valB) => Math.abs(valB) - Math.abs(valA));
 
-    // Calculate the final product using the custom logic
-    let finalProduct = calculateProduct(numbersArray, arrayLength, subsetSize, modulusVal, factorBase);
+    // Calculate the product of the selected numbers using a custom computation function
+    // that handles modulo arithmetic.
+    let finalProductResult = calculateProduct(numberCollection, totalElementsCount, elementsToSelect, MOD_PRIME, SPLIT_FACTOR);
 
-    // Output the result after normalizing it with the modulus
-    console.log(normalizeModulo(finalProduct, modulusVal));
+    // Output the final result to the console, ensuring it is a positive value
+    // within the modulo range.
+    console.log(normalizeModulo(finalProductResult, MOD_PRIME));
 }
 
+function calculateProduct(inputNumbers, totalElementsCount, numToSelect, moduloConstant, splitConstant) {
+    let currentProduct = 1;
+    let negativeCounter = 0;
+    let lastPositiveIdx; // Stores the index of the last positive number encountered among the first K elements.
+    let lastNegativeIdx; // Stores the index of the last negative number encountered among the first K elements.
 
-// This routine determines the product of K elements from the sorted numbers array
-function calculateProduct(numbersArray, arrayLength, subsetSize, modulusVal, factorBase) {
-    let currentProduct = 1; // Initialize the running product
-    let negativeCount = 0; // Counter for negative numbers encountered
-    let lastPositiveIdx;   // Index of the last positive number included in the initial K elements
-    let lastNegativeIdx;   // Index of the last negative number included in the initial K elements
+    // Iterate through the first 'numToSelect' elements to calculate their product
+    // and count the number of negative values.
+    for (let loopVar = 0; loopVar < numToSelect; loopVar++) {
+        currentProduct = multiplyModulo(currentProduct, inputNumbers[loopVar], moduloConstant, splitConstant);
+        // If the product becomes zero at any point, the final result is zero.
+        if (currentProduct === 0) return 0;
 
-    // Iterate through the first K elements to calculate the initial product and track signs
-    for (let idx = 0; idx < subsetSize; idx++) {
-        currentProduct = multiplyMod(currentProduct, numbersArray[idx], modulusVal, factorBase);
-        if (currentProduct === 0) return 0; // If product becomes 0, the final result will be 0
-
-        if (numbersArray[idx] > 0) {
-            lastPositiveIdx = idx; // Update index of the rightmost positive number
+        // Update indices for the last positive and negative numbers found.
+        if (inputNumbers[loopVar] > 0) {
+            lastPositiveIdx = loopVar;
         }
-        if (numbersArray[idx] < 0) {
-            lastNegativeIdx = idx; // Update index of the rightmost negative number
-            negativeCount++;       // Increment count of negative numbers
+        if (inputNumbers[loopVar] < 0) {
+            lastNegativeIdx = loopVar;
+            negativeCounter++;
         }
     }
 
-    // If all elements are selected, return the current product
-    if (subsetSize === arrayLength) return currentProduct;
+    // If all available elements are selected, the current product is the final answer.
+    if (numToSelect === totalElementsCount) return currentProduct;
 
-    // If the count of negative numbers is even, the product is positive, so return it
-    if (negativeCount % 2 === 0) return currentProduct;
+    // If the count of negative numbers in the selected 'numToSelect' elements is even,
+    // the product is positive, which is generally optimal.
+    if (negativeCounter % 2 === 0) return currentProduct;
 
-    // Handle cases where an odd number of negatives results in a negative product, requiring adjustment
-    if (negativeCount < subsetSize) {
-        // Prepare two candidate swaps to potentially make the product positive and maximize it
-        let candidateOne = [0, 0, -1]; // [new_negative_val, old_positive_val, new_negative_idx]
-        let candidateTwo = [0, 0, -1]; // [new_positive_val, old_negative_val, new_positive_idx]
-
-        // Find the first available negative number outside the initial K elements
-        for (let idx = subsetSize; idx < arrayLength; idx++) {
-            if (numbersArray[idx] < 0) {
-                candidateOne = [numbersArray[idx], numbersArray[lastPositiveIdx], idx];
-                break;
-            }
-        }
-        // Find the first available positive number outside the initial K elements
-        for (let idx = subsetSize; idx < arrayLength; idx++) {
-            if (numbersArray[idx] > 0) {
-                candidateTwo = [numbersArray[idx], numbersArray[lastNegativeIdx], idx];
+    // If the product is currently negative (odd number of negative factors),
+    // we need to consider swapping elements to make the product positive or maximize a negative product.
+    if (negativeCounter < numToSelect) {
+        // Scenario 1: Try to swap a positive number (from selected) with a negative number (from remaining).
+        // Find the first negative number outside the initial 'numToSelect' elements.
+        let candidatePairOne = [0, 0, -1]; // Format: [new_negative_value, old_positive_value, new_negative_index]
+        for (let loopVar = numToSelect; loopVar < totalElementsCount; loopVar++) {
+            if (inputNumbers[loopVar] < 0) {
+                candidatePairOne = [inputNumbers[loopVar], inputNumbers[lastPositiveIdx], loopVar];
                 break;
             }
         }
 
-        // Apply the best swap or remove an element if only one type of swap is possible
-        if (candidateTwo[2] === -1) { // Only a negative can be swapped in for a positive
-            numbersArray.splice(subsetSize, candidateOne[2] - subsetSize); // Remove elements between K and candidate
-            numbersArray.splice(lastPositiveIdx, 1); // Remove the last positive
-        } else if (candidateOne[2] === -1) { // Only a positive can be swapped in for a negative
-            numbersArray.splice(subsetSize, candidateTwo[2] - subsetSize); // Remove elements between K and candidate
-            numbersArray.splice(lastNegativeIdx, 1); // Remove the last negative
-        } else if (BigInt(candidateOne[0]) * BigInt(candidateTwo[1]) >= BigInt(candidateTwo[0]) * BigInt(candidateOne[1])) {
-            // Compare which swap yields a larger product using BigInt for precision
-            numbersArray.splice(subsetSize, candidateOne[2] - subsetSize); // Remove elements
-            numbersArray.splice(lastPositiveIdx, 1); // Remove the last positive
+        // Scenario 2: Try to swap a negative number (from selected) with a positive number (from remaining).
+        // Find the first positive number outside the initial 'numToSelect' elements.
+        let candidatePairTwo = [0, 0, -1]; // Format: [new_positive_value, old_negative_value, new_positive_index]
+        for (let loopVar = numToSelect; loopVar < totalElementsCount; loopVar++) {
+            if (inputNumbers[loopVar] > 0) {
+                candidatePairTwo = [inputNumbers[loopVar], inputNumbers[lastNegativeIdx], loopVar];
+                break;
+            }
+        }
+
+        // Decide which swap (if any) is most beneficial.
+        if (candidatePairTwo[2] === -1) { // Only a negative number can be swapped in (Scenario 1).
+            // Remove elements between K and the new negative number's index, then remove the old positive.
+            inputNumbers.splice(numToSelect, candidatePairOne[2] - numToSelect);
+            inputNumbers.splice(lastPositiveIdx, 1);
+        } else if (candidatePairOne[2] === -1) { // Only a positive number can be swapped in (Scenario 2).
+            // Remove elements between K and the new positive number's index, then remove the old negative.
+            inputNumbers.splice(numToSelect, candidatePairTwo[2] - numToSelect);
+            inputNumbers.splice(lastNegativeIdx, 1);
+        } else if (BigInt(candidatePairOne[0]) * BigInt(candidatePairTwo[1]) >= BigInt(candidatePairTwo[0]) * BigInt(candidatePairOne[1])) {
+            // Compare potential products using BigInt to avoid overflow.
+            // If swapping a negative for a positive (Scenario 1) is better or equal.
+            inputNumbers.splice(numToSelect, candidatePairOne[2] - numToSelect);
+            inputNumbers.splice(lastPositiveIdx, 1);
         } else {
-            numbersArray.splice(subsetSize, candidateTwo[2] - subsetSize); // Remove elements
-            numbersArray.splice(lastNegativeIdx, 1); // Remove the last negative
+            // If swapping a positive for a negative (Scenario 2) is better.
+            inputNumbers.splice(numToSelect, candidatePairTwo[2] - numToSelect);
+            inputNumbers.splice(lastNegativeIdx, 1);
         }
-        
-        // Recalculate the product with the modified set of K elements
+
+        // Recalculate the product with the modified set of 'numToSelect' elements.
         currentProduct = 1;
-        for (let idx = 0; idx < subsetSize; idx++) {
-            currentProduct = multiplyMod(currentProduct, numbersArray[idx], modulusVal, factorBase);
+        for (let loopVar = 0; loopVar < numToSelect; loopVar++) {
+            currentProduct = multiplyModulo(currentProduct, inputNumbers[loopVar], moduloConstant, splitConstant);
             if (currentProduct === 0) return 0;
         }
         return currentProduct;
-
-    } else { // All K elements are negative, and the product is negative
-        // Try to replace one negative with a positive from the remaining elements
-        for (let idx = subsetSize; idx < arrayLength; idx++) {
-            if (numbersArray[idx] >= 0) { // Found a positive or zero element
-                numbersArray.splice(subsetSize, idx - subsetSize); // Remove elements between K and current idx
-                numbersArray.splice(lastNegativeIdx, 1); // Remove the last negative element
-
-                // Recalculate product after replacing a negative with a positive
+    } else {
+        // This branch is executed if all 'numToSelect' elements initially chosen are negative.
+        // The product is negative, and we must try to make it positive if possible.
+        // Search for a non-negative number outside the initial 'numToSelect' elements.
+        for (let loopVar = numToSelect; loopVar < totalElementsCount; loopVar++) {
+            if (inputNumbers[loopVar] >= 0) {
+                // If a non-negative number is found, swap it with the largest absolute value negative number
+                // (which is at 'lastNegativeIdx' due to sorting).
+                inputNumbers.splice(numToSelect, loopVar - numToSelect); // Remove elements between K and the new non-negative number's index.
+                inputNumbers.splice(lastNegativeIdx, 1); // Remove the old negative number.
                 currentProduct = 1;
-                for (let idx = 0; idx < subsetSize; idx++) {
-                    currentProduct = multiplyMod(currentProduct, numbersArray[idx], modulusVal, factorBase);
+                for (let innerLoopVar = 0; innerLoopVar < numToSelect; innerLoopVar++) {
+                    currentProduct = multiplyModulo(currentProduct, inputNumbers[innerLoopVar], moduloConstant, splitConstant);
                     if (currentProduct === 0) return 0;
                 }
                 return currentProduct;
             }
         }
-        // If no positive elements are available to swap, take the K smallest (most negative in absolute value)
-        // This means the product will still be negative, and we take the K smallest absolute values.
+        // If no non-negative numbers are available outside the first 'numToSelect' elements,
+        // it means all remaining numbers are also negative.
+        // In this scenario, the product will remain negative. To maximize a negative product,
+        // we need to select the 'numToSelect' numbers with the smallest absolute values.
+        // Since the array is sorted by absolute value in descending order, these would be the last 'numToSelect' elements.
         currentProduct = 1;
-        for (let idx = arrayLength - 1; idx >= (arrayLength - subsetSize); idx--) {
-            currentProduct = multiplyMod(currentProduct, numbersArray[idx], modulusVal, factorBase);
+        for (let loopVar = totalElementsCount - 1; loopVar >= (totalElementsCount - numToSelect); loopVar--) {
+            currentProduct = multiplyModulo(currentProduct, inputNumbers[loopVar], moduloConstant, splitConstant);
         }
         return currentProduct;
     }
 }
 
+// Function to perform multiplication with modulo, designed to handle potentially large numbers
+// by splitting one operand. This helps prevent intermediate overflow before the modulo operation.
+function multiplyModulo(operandA, operandB, modulusValue, splitFactor) {
+    let quotientPart, remainderPart, intermediateResult;
 
-// Performs modular multiplication (operandA * operandB) % modulusVal efficiently
-function multiplyMod(operandA, operandB, modulusVal, factorBase) {
-    let quotientPart, remainderPart, resultValue; // Declare variables for intermediate steps
+    // Split 'operandB' into a quotient and a remainder with respect to 'splitFactor'.
+    // The bitwise OR 0 (`| 0`) is used for efficient floor division.
+    quotientPart = (operandB / splitFactor | 0);
+    remainderPart = operandB - (quotientPart * splitFactor);
 
-    // Split operandB into two parts: quotient and remainder with respect to factorBase
-    quotientPart = (operandB / factorBase) | 0; // Integer division
-    remainderPart = operandB - (quotientPart * factorBase); // Remainder part
+    // Apply modulo arithmetic using the property: (A * B) % M = ((A * (B_Q * S)) % M + (A * B_R) % M) % M
+    // where B = B_Q * S + B_R (B_Q is quotientPart, S is splitFactor, B_R is remainderPart).
+    intermediateResult = (operandA * quotientPart % modulusValue) * splitFactor % modulusValue + (operandA * remainderPart);
 
-    // Calculate (operandA * quotientPart * factorBase + operandA * remainderPart) % modulusVal
-    resultValue = (operandA * quotientPart % modulusVal) * factorBase % modulusVal + (operandA * remainderPart);
-
-    // Ensure the final result is within the positive range [0, modulusVal-1]
-    resultValue %= modulusVal;
-    return resultValue;
+    // Ensure the final result is within the positive range [0, modulusValue - 1].
+    intermediateResult %= modulusValue;
+    return intermediateResult;
 }
 
-
-// Ensures that the result of a modulo operation is always positive
-function normalizeModulo(valueNum, moduloDivisor) {
-    let interimResult = valueNum % moduloDivisor; // Perform standard modulo
-    // If the result is negative, adjust it by adding the absolute value of the divisor
-    return interimResult < 0 ? (interimResult + (moduloDivisor < 0 ? -moduloDivisor : moduloDivisor)) : interimResult;
+// Function to normalize a number to be within the positive range of a modulo operation.
+// This is necessary because JavaScript's '%' operator can return negative results for negative dividends.
+function normalizeModulo(value, divisor) {
+    // If the result of `value % divisor` is negative, add the absolute value of the divisor
+    // to bring it into the positive range. Otherwise, return the result directly.
+    return (value % divisor) < 0 ? (value % divisor) + Math.abs(divisor) : (value % divisor);
 }
 
-// Invoke the main processing function with data read from standard input
-ProcessInput(require("node:fs").readFileSync("/dev/stdin", "utf8"));
+// Execute the main processing function to start the program.
+ProcessInputAndCompute();

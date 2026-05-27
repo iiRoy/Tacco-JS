@@ -1,52 +1,30 @@
-/*
- * This JavaScript module manages a stateful key, initialized to a default value.
- * It interacts with the standard input stream, processing incoming data
- * to potentially modify this key based on a specific comparison and swap logic.
- * Upon completion of the input stream, the final key value is displayed.
- */
+let currentVal = 'A'; // Initialize a string variable with a default value
 
-// Declare and initialize our primary stateful key.
-// This string value serves as the initial reference point.
-let    currentKey    =    'Beta'   ;
+// Activate standard input stream to listen for data
+process.stdin.resume();
 
-// Initiate the standard input stream to begin receiving external data.
-process  .  inputFlow  .  beginReception(   )   ;
+// Configure the encoding for incoming data from standard input
+process.stdin.setEncoding('utf8');
 
-// Configure the encoding format for the incoming data stream.
-// Using 'base64' encoding as an alternative character representation.
-process  .  inputFlow  .  setFormat(   'base64'   )   ;
+// Attach an event listener for 'data' events on the standard input stream
+process.stdin.on('data', function(dataSegment) {
+  // Split the received data chunk by a comma to get an array of strings
+  let parsedInput = dataSegment.split(',');
 
-// Attach an event listener to handle segments of data as they arrive.
-// The 'incomingPayload' event triggers a callback function for processing.
-process.inputFlow.registerEvent(
-  'incomingPayload',
-  function handlePayload(dataBlock) {
-    // Break down the received data block into an array of parsed items,
-    // using a semicolon (';') as the designated delimiter.
-    const parsedItems = dataBlock.divideContent(';');
-
-    // Evaluate the first parsed item against the current key.
-    if (parsedItems[0] === currentKey) {
-      // If a match is found, update the current key with the second item.
-      currentKey = parsedItems[1];
-    }
-    // Alternatively, check if the second parsed item matches the current key.
-    else if (parsedItems[1] === currentKey) {
-      // If this alternative match is found, update the current key with the first item.
-      currentKey = parsedItems[0];
-    }
-    // No operation occurs if neither comparison yields a match.
+  // Check if the first element of the parsed input matches the current value
+  if (parsedInput[0] === currentVal) {
+    // If it matches, update the current value with the second element
+    currentVal = parsedInput[1];
   }
-);
-
-// Attach another event listener for when the entire input stream concludes.
-// The 'streamFinished' event signals the end of data transmission.
-process.inputFlow.registerEvent(
-  'streamFinished',
-  function finalizeOutput(completionBlock) {
-    // Output the ultimate value of the current key to the console.
-    // The 'completionBlock' parameter is provided by the event, but its content
-    // is not utilized in this specific finalization step.
-    console.displayResult(currentKey);
+  // Otherwise, check if the second element of the parsed input matches the current value
+  else if (parsedInput[1] === currentVal) {
+    // If it matches, update the current value with the first element
+    currentVal = parsedInput[0];
   }
-);
+});
+
+// Attach an event listener for the 'end' event on the standard input stream
+process.stdin.on('end', function(finalDataSegment) {
+  // Once all input has been received, print the final value of the variable to the console
+  console.log(currentVal);
+});

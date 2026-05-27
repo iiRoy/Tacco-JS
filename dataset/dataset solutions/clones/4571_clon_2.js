@@ -1,198 +1,194 @@
-// This initial block sets up the environment for reading input and handling output.
-var lineReaderModule = require('readline');
-var inputOutputInterface = lineReaderModule.createInterface({
+var inputReader = require('readline').createInterface({
   input: process.stdin,
   output: process.stdout
 });
 
-var parsedInputData; // Holds processed input data.
-var collectedInputLines = []; // Stores raw lines read from input.
+var dataProcessor;
+var inputLines = [];
 
-// Event listener for each line of input received.
-inputOutputInterface.on('line', function(currentLine) {
-  collectedInputLines.push(currentLine);
+// Collect all input lines
+inputReader.on('line', function(currentLine) {
+  inputLines.push(currentLine);
 });
 
-// Event listener triggered when all input has been received.
-inputOutputInterface.on('close', function() {
-  parsedInputData = inputProcessor(collectedInputLines);
-  console.error("\n"); // Prints a blank line to standard error for visual separation.
-
-  var executionStartTime = Date.now();
-  mainApplicationLogic(); // Executes the primary computational logic.
-  var totalElapsedTime = Date.now() - executionStartTime;
-
-  logDebugInfo("Execution time: " + (totalElapsedTime) + "ms");
-  logDebugInfo("Memory usage (heap): " + Math.round(process.memoryUsage().heapUsed / 1024) + "KB");
+// Process input and run the main logic when input ends
+inputReader.on('close', function() {
+  dataProcessor = initializeInputHandler(inputLines);
+  console.error("\n"); // Print a newline to stderr for formatting
+  var startTime = Date.now();
+  calculateMinDifference(); // Execute the core algorithm
+  var endTime = Date.now() - startTime;
+  logDebug("execution time : " + (endTime) + "ms");
+  logDebug("memory usage : " + Math.round(process.memoryUsage().heapTotal / 1024) + "KB");
 });
 
-// Creates a deep copy of any given object.
-function createObjectCopy(sourceObject) {
+// Function to create a deep copy of an object (not used in this specific problem)
+function createDeepCopy(sourceObject) {
   return JSON.parse(JSON.stringify(sourceObject));
 }
 
-// Fetches the next input item and converts it to an integer.
-function getNextInteger() {
-  return applyConversion(fetchNextEntry(), 1);
+// Helper functions to read different types of input
+function readInteger() {
+  return convertInput(getNextLine(), 1);
 }
 
-// Fetches the next input item and converts it to an array of strings.
-function getStringArray() {
-  return applyConversion(fetchNextEntry(), 2);
+function readStringArray() {
+  return convertInput(getNextLine(), 2);
 }
 
-// Fetches the next input item and converts it to an array of integers.
-function getIntegerArray() {
-  return applyConversion(fetchNextEntry(), 4);
+function readIntegerArray() {
+  return convertInput(getNextLine(), 4);
 }
 
-// Fetches the next input item and converts it to an array of characters.
-function getCharacterArray() {
-  return applyConversion(fetchNextEntry(), 6);
+function readCharacterArray() {
+  return convertInput(getNextLine(), 6);
 }
 
-// Retrieves the subsequent item from the processed input.
-function fetchNextEntry() {
-  return parsedInputData.fetchNextEntry();
+function getNextLine() {
+  return dataProcessor.getNextLine();
 }
 
-// Checks if there are more items available in the input stream.
-function haveMoreEntries() {
-  return parsedInputData.haveMoreEntries();
+function hasMoreLines() {
+  return dataProcessor.hasMoreLines();
 }
 
-// Initializes the input parsing mechanism.
-function inputProcessor(rawInputContent) {
+// Initializes the input handler object
+function initializeInputHandler(rawLines) {
   return {
-    inputList: rawInputContent,
-    currentIndex: 0,
-    maximumIndex: rawInputContent.length,
-
-    // Method to check if more input is present.
-    haveMoreEntries: function() {
-      return (this.currentIndex < this.maximumIndex);
+    lineStorage: rawLines,
+    currentIdx: 0,
+    maxLines: rawLines.length,
+    hasMoreLines: function() {
+      return (this.currentIdx < this.maxLines);
     },
-
-    // Method to retrieve the next input entry.
-    fetchNextEntry: function() {
-      if (this.haveMoreEntries()) {
-        return this.inputList[this.currentIndex++];
+    getNextLine: function() {
+      if (this.hasMoreLines()) {
+        return this.lineStorage[this.currentIdx++];
       } else {
-        throw new Error("Input stream exhausted; no further entries available.");
+        throw "ArrayIndexOutOfBoundsException ‚There is no more input";
       }
     }
   };
 }
 
-// Outputs the final computed result to the console.
-function displayResult(finalResult) {
-  console.log(finalResult);
+// Prints the final result to standard output
+function printResult(outputValue) {
+  console.log(outputValue);
 }
 
-// Logs debug information to the standard error stream.
-function logDebugInfo(debugMessage) {
-  console.error("DEBUG: " + require("util").inspect(debugMessage, false, null));
+// Prints debug information to standard error
+function logDebug(debugMessage) {
+  console.error("debug:" + require("util").inspect(debugMessage, false, null));
 }
 
-// Utility function for converting input based on a specified type.
-// Conversion type codes:
-// 1: String to integer.
-// 2: String to string array (space-separated).
-// 4: String to integer array (space-separated).
-// 6: String to character array.
-// 7: String to integer array (character-by-character).
-// 8: Array to space-separated string.
-// 9: Array to newline-separated string.
-// 0: Array to concatenated string.
-function applyConversion(sourceValue, conversionCode) {
+// Utility function for converting input strings based on a type code
+// conversionType:
+// 1: Parse as integer.
+// 2: Split by space.
+// 4: Split by space and map to numbers.
+// 6: Split into individual characters.
+// 7: Split into individual characters and map to numbers.
+// 8: Join array elements with space.
+// 9: Join array elements with newline.
+// 0: Join array elements without separator.
+// Default: Return input as is.
+function convertInput(inputValue, conversionType) {
   try {
-    switch (conversionCode) {
+    switch (conversionType) {
       case 1:
-        return parseInt(sourceValue);
+        return parseInt(inputValue);
       case 2:
-        return sourceValue.split(" ");
+        return inputValue.split(" ");
       case 4:
-        return sourceValue.split(" ").map(Number);
+        return inputValue.split(" ").map(Number);
       case 6:
-        return sourceValue.split("");
+        return inputValue.split("");
       case 7:
-        return sourceValue.split("").map(Number);
+        return inputValue.split("").map(Number);
       case 8:
-        return sourceValue.join(" ");
+        return inputValue.join(" ");
       case 9:
-        return sourceValue.join("\n");
+        return inputValue.join("\n");
       case 0:
-        return sourceValue.join("");
+        return inputValue.join("");
       default:
-        return sourceValue; // Returns original value if no specific conversion.
+        return inputValue;
     }
-  } catch (errorDetail) {
-    return sourceValue; // Fallback to original value on error.
+  } catch (conversionError) {
+    return inputValue; // Return original value on error
   }
 }
 
+// Main function containing the problem's core logic
+function calculateMinDifference() {
+  var dimensions = readIntegerArray();
+  var heightVal = dimensions[0];
+  var widthVal = dimensions[1];
 
-// Main function containing the problem's solution logic.
-function mainApplicationLogic() {
-  var initialDimensions = getIntegerArray();
-  var currentHeight = initialDimensions[0];
-  var currentWidth = initialDimensions[1];
+  // Initialize minimum area difference with a very large number
+  var minAreaDifference = 100000000000;
 
-  var minimalDifference = 100000000000; // Initialize with a very large value.
+  // First set of calculations: splitting along the height
+  for (var splitPoint = 1; splitPoint <= heightVal - 2; splitPoint++) {
+    // Case 1: Split into three vertical segments
+    var verticalSegment1 = splitPoint;
+    var verticalSegment2 = Math.floor((heightVal - splitPoint) / 2);
+    var verticalSegment3 = Math.ceil((heightVal - splitPoint) / 2);
 
-  // First set of partitioning strategies: iterating through vertical cuts.
-  for (var iterIndex = 1; iterIndex <= currentHeight - 2; iterIndex++) {
-    var segmentHeightA = iterIndex;
-    var segmentHeightB = Math.floor((currentHeight - iterIndex) / 2);
-    var segmentHeightC = Math.ceil((currentHeight - iterIndex) / 2);
+    var maxVerticalSegment = Math.max.apply(null, [verticalSegment1, verticalSegment2, verticalSegment3]);
+    var minVerticalSegment = Math.min.apply(null, [verticalSegment1, verticalSegment2, verticalSegment3]);
 
-    var maximumHeightSegment = Math.max.apply(null, [segmentHeightA, segmentHeightB, segmentHeightC]);
-    var minimumHeightSegment = Math.min.apply(null, [segmentHeightA, segmentHeightB, segmentHeightC]);
+    // Update minimum difference based on vertical splits
+    minAreaDifference = Math.min(minAreaDifference, (maxVerticalSegment - minVerticalSegment) * widthVal);
 
-    minimalDifference = Math.min(minimalDifference, (maximumHeightSegment - minimumHeightSegment) * currentWidth);
+    // Case 2: Split into one horizontal segment and two vertical segments
+    var horizontalSplit1 = Math.floor(widthVal / 2);
+    var horizontalSplit2 = Math.ceil(widthVal / 2);
 
-    // Consider horizontal cuts for the remaining area.
-    var splitWidthA = Math.floor(currentWidth / 2);
-    var splitWidthB = Math.ceil(currentWidth / 2);
+    var area1 = splitPoint * widthVal;
+    var area2 = (heightVal - splitPoint) * horizontalSplit1;
+    var area3 = (heightVal - splitPoint) * horizontalSplit2;
 
-    var areaPart1 = iterIndex * currentWidth;
-    var areaPart2 = (currentHeight - iterIndex) * splitWidthA;
-    var areaPart3 = (currentHeight - iterIndex) * splitWidthB;
+    var maxArea = Math.max.apply(null, [area1, area2, area3]);
+    var minArea = Math.min.apply(null, [area1, area2, area3]);
 
-    var maxAreaHorizontal = Math.max.apply(null, [areaPart1, areaPart2, areaPart3]);
-    var minAreaHorizontal = Math.min.apply(null, [areaPart1, areaPart2, areaPart3]);
-
-    minimalDifference = Math.min(minimalDifference, maxAreaHorizontal - minAreaHorizontal);
+    // Update minimum difference based on mixed splits
+    minAreaDifference = Math.min(minAreaDifference, maxArea - minArea);
   }
 
-  // Swap height and width, then repeat the partitioning process.
-  var temporaryDimension = currentHeight;
-  currentHeight = currentWidth;
-  currentWidth = temporaryDimension;
+  // Swap height and width to perform calculations for splitting along the width
+  var tempDimension = heightVal;
+  heightVal = widthVal;
+  widthVal = tempDimension;
 
-  // Second set of partitioning strategies with swapped dimensions.
-  for (var iterIndex = 1; iterIndex <= currentHeight - 2; iterIndex++) {
-    var segmentHeightX = iterIndex;
-    var segmentHeightY = Math.floor((currentHeight - iterIndex) / 2);
-    var segmentHeightZ = Math.ceil((currentHeight - iterIndex) / 2);
+  // Second set of calculations: splitting along the new height (original width)
+  for (var splitPoint = 1; splitPoint <= heightVal - 2; splitPoint++) {
+    // Case 1: Split into three vertical segments (relative to new orientation)
+    var verticalSegment1 = splitPoint;
+    var verticalSegment2 = Math.floor((heightVal - splitPoint) / 2);
+    var verticalSegment3 = Math.ceil((heightVal - splitPoint) / 2);
 
-    var maximumHeightSegment = Math.max.apply(null, [segmentHeightX, segmentHeightY, segmentHeightZ]);
-    var minimumHeightSegment = Math.min.apply(null, [segmentHeightX, segmentHeightY, segmentHeightZ]);
+    var maxVerticalSegment = Math.max.apply(null, [verticalSegment1, verticalSegment2, verticalSegment3]);
+    var minVerticalSegment = Math.min.apply(null, [verticalSegment1, verticalSegment2, verticalSegment3]);
 
-    minimalDifference = Math.min(minimalDifference, (maximumHeightSegment - minimumHeightSegment) * currentWidth);
+    // Update minimum difference based on vertical splits
+    minAreaDifference = Math.min(minAreaDifference, (maxVerticalSegment - minVerticalSegment) * widthVal);
 
-    var splitWidthX = Math.floor(currentWidth / 2);
-    var splitWidthY = Math.ceil(currentWidth / 2);
+    // Case 2: Split into one horizontal segment and two vertical segments (relative to new orientation)
+    var horizontalSplit1 = Math.floor(widthVal / 2);
+    var horizontalSplit2 = Math.ceil(widthVal / 2);
 
-    var areaPartX = iterIndex * currentWidth;
-    var areaPartY = (currentHeight - iterIndex) * splitWidthX;
-    var areaPartZ = (currentHeight - iterIndex) * splitWidthY;
+    var area1 = splitPoint * widthVal;
+    var area2 = (heightVal - splitPoint) * horizontalSplit1;
+    var area3 = (heightVal - splitPoint) * horizontalSplit2;
 
-    var maxAreaHorizontal = Math.max.apply(null, [areaPartX, areaPartY, areaPartZ]);
-    var minAreaHorizontal = Math.min.apply(null, [areaPartX, areaPartY, areaPartZ]);
+    var maxArea = Math.max.apply(null, [area1, area2, area3]);
+    var minArea = Math.min.apply(null, [area1, area2, area3]);
 
-    minimalDifference = Math.min(minimalDifference, maxAreaHorizontal - minAreaHorizontal);
+    // Update minimum difference based on mixed splits
+    minAreaDifference = Math.min(minAreaDifference, maxArea - minArea);
   }
 
-  displayResult(minimalDifference);
+  // Output the final minimum area difference
+  printResult(minAreaDifference);
 }

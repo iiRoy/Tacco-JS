@@ -1,43 +1,20 @@
-// This function is designed to process an incoming text string
-function ProcessTextualInput(initialDataString) {
-  /*
-   * First, we break down the entire input string into an array of individual characters.
-   * This allows for easy access to specific positions within the string.
-   */
-  const charSequence = initialDataString
-    .split('');
+function ProcessInput(rawData) {
+  // Convert the input string into an array of characters for easier access.
+  const charArray = rawData.split('');
 
-  // Now, we extract the middle segment of the string.
-  // It starts after the first character and ends before the last character.
-  const centralPortion = initialDataString
-    .substring(
-      1,
-      charSequence.length - 1
-    );
+  // Extract the segment of the string between the first and last characters.
+  // The length calculation (charArray.length - 2) correctly excludes the head and tail.
+  const middleSegment = rawArray.substr(1, charArray.length - 2);
 
-  // We capture the very first character for later use.
-  const initialCharacter = charSequence[0];
+  // Obtain the initial character of the input string.
+  const firstChar = charArray[0];
 
-  // And similarly, we get the very last character of the sequence.
-  const finalCharacter = charSequence[charSequence.length - 1];
+  // Obtain the final character of the input string.
+  const lastChar = charArray[charArray.length - 1];
 
-  // Finally, we combine the initial character, the length of the central part,
-  // and the final character into a single output string.
-  // The length is implicitly converted to a string during concatenation.
-  console.log(
-    initialCharacter +
-    centralPortion.length +
-    finalCharacter
-  );
+  // Print the concatenated result: first character + length of middle segment + last character.
+  console.log(firstChar + middleSegment.length + lastChar);
 }
 
-
-// Here we invoke the primary processing function.
-// It reads the entire content from standard input as a UTF-8 string.
-ProcessTextualInput(
-  require("fs")
-    .readFileSync(
-      "/dev/stdin",
-      "utf8"
-    )
-);
+// Read the entire content from standard input as a UTF-8 string and pass it to the processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

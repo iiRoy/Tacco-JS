@@ -1,77 +1,84 @@
 "use strict";
-function generateInputProcessor(sourceText) {
-    const contentUnits = sourceText.split(/ |\n/);
-    let currentPosition = 0;
 
-    const pullNumeric = () => {
-        if (currentPosition >= contentUnits.length) {
-            throw new Error("Input unit exhausted.");
-        }
-        return Number(contentUnits[currentPosition++]);
-    };
+class TokenStream {
+  #tokenSequence;
+  #currentPosition;
 
-    const pullNumericBatch = (quantity) => {
-        const collection = [];
-        for (let idx = 0; idx < quantity; idx++) {
-            collection.push(pullNumeric());
-        }
-        return collection;
-    };
+  constructor(sourceText) {
+    this.#tokenSequence = sourceText.split(/ |\n/);
+    this.#currentPosition = 0;
+  }
 
-    const pullNumericGrid = (rows, columns) => {
-        const gridData = [];
-        for (let rIdx = 0; rIdx < rows; rIdx++) {
-            gridData.push(pullNumericBatch(columns));
-        }
-        return gridData;
-    };
+  retrieveNumber() {
+    return Number(this.#tokenSequence[this.#currentPosition++]);
+  }
+
+  retrieveString() {
+    return this.#tokenSequence[this.#currentPosition++];
+  }
+
+  retrieveBigInteger() {
+    return BigInt(this.#tokenSequence[this.#currentPosition++]);
+  }
+
+  retrieveNumberArray(count) {
+    const startPoint = this.#currentPosition;
+    this.#currentPosition += count;
+    return this.#tokenSequence.slice(startPoint, this.#currentPosition).map(Number);
+  }
+
+  retrieveNumberMatrix(rows, columns) {
+    return Array.from({ length: rows }, () => this.retrieveNumberArray(columns));
+  }
+}
+
+function constructNestedArray(initialElement, ...dimensions) {
+  const buildStructure = (dimList) => {
+    if (dimList.length === 0) {
+      return initialElement;
+    }
+    const currentDimensionSize = dimList[0];
+    const remainingDimensions = dimList.slice(1);
+    return Array.from({ length: currentDimensionSize }, () => buildStructure(remainingDimensions));
+  };
+  return buildStructure(dimensions);
+}
+
+const fileInputContent = require("fs").readFileSync("/dev/stdin", "utf8");
+const inputProcessor = new TokenStream(fileInputContent);
+
+function executeChallenge() {
+  const totalDays = inputProcessor.retrieveNumber();
+  const itemCategories = 26;
+  const decayCoefficients = inputProcessor.retrieveNumberArray(itemCategories);
+  const dailySatisfactionValues = inputProcessor.retrieveNumberMatrix(totalDays, itemCategories);
+
+  const initialProcessingState = {
+    cumulativeScore: 0,
+    categoryDecayStatus: constructNestedArray(0, itemCategories),
+  };
+
+  Array.from({ length: totalDays }).reduce((currentState, _, dayIndex) => {
+    const chosenCategory = inputProcessor.retrieveNumber();
+    const adjustedCategoryIndex = chosenCategory - 1;
+
+    const nextDecayStatus = currentState.categoryDecayStatus.map((currentDecay, categoryIdx) =>
+      currentDecay - decayCoefficients[categoryIdx]
+    );
+
+    nextDecayStatus[adjustedCategoryIndex] = 0;
+
+    const satisfactionBoost = dailySatisfactionValues[dayIndex][adjustedCategoryIndex];
+    const totalDailyPenalty = nextDecayStatus.reduce((summation, decayValue) => summation + decayValue, 0);
+    const updatedCumulativeScore = currentState.cumulativeScore + satisfactionBoost + totalDailyPenalty;
+
+    console.log(updatedCumulativeScore);
 
     return {
-        pullNumeric,
-        pullNumericBatch,
-        pullNumericGrid
+      cumulativeScore: updatedCumulativeScore,
+      categoryDecayStatus: nextDecayStatus,
     };
+  }, initialProcessingState);
 }
 
-function processOptimizationChallenge(rawData) {
-    const processor = generateInputProcessor(rawData);
-
-    const totalDays = processor.pullNumeric();
-    const contestTypes = 26;
-    const decreaseFactors = processor.pullNumericBatch(contestTypes);
-    const satisfactionMatrix = processor.pullNumericGrid(totalDays, contestTypes);
-
-    const dailySelectionsList = Array.from({ length: totalDays }, () => processor.pullNumeric());
-
-    const initialAccumulators = Array(contestTypes).fill(0);
-    let currentOverallValue = 0;
-
-    const dailyReportSnapshots = [];
-
-    const finalState = dailySelectionsList.reduce((stateTuple, chosenActivityRaw, dayIterator) => {
-        let [currentAccumulatedPenalties, currentRunningTotal] = stateTuple;
-        const actualChosenActivityIndex = chosenActivityRaw - 1;
-
-        const nextAccumulatedPenalties = currentAccumulatedPenalties.map((penaltyVal, typeIdx) =>
-            penaltyVal - decreaseFactors[typeIdx]
-        );
-
-        nextAccumulatedPenalties[actualChosenActivityIndex] = 0;
-
-        currentRunningTotal += satisfactionMatrix[dayIterator][actualChosenActivityIndex];
-
-        currentRunningTotal = nextAccumulatedPenalties.reduce((summation, penaltyVal) => summation + penaltyVal, currentRunningTotal);
-
-        dailyReportSnapshots.push(currentRunningTotal);
-
-        return [nextAccumulatedPenalties, currentRunningTotal];
-    }, [initialAccumulators, currentOverallValue]);
-
-    return dailyReportSnapshots.join('\n');
-}
-
-const systemInputContent = require("fs").readFileSync("/dev/stdin", "utf8");
-const generatedOutput = processOptimizationChallenge(systemInputContent);
-if (generatedOutput !== undefined) {
-    console.log(generatedOutput);
-}
+const finalOutcome = executeChallenge();

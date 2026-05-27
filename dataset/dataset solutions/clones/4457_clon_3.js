@@ -1,52 +1,38 @@
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
 
-let inputSegments = [];
-
-const inputCollector = require('readline').createInterface({
+var inputLines = [];
+var inputReader = require('readline').createInterface({
   input: process.stdin,
   output: process.stdout
 });
 
-inputCollector.on('line', (currentInputLine) => {
-  inputSegments.push(currentInputLine);
+inputReader.on('line', (currentLine) => {
+  inputLines.push(currentLine);
 });
 
-inputCollector.on('close', () => {
-  const rawUpperBoundStr = inputSegments[0];
-  let processedUpperBound = parseInt(rawUpperBoundStr, 10);
+function determineTwoDivisionCount(valueToCheck) {
+    let currentDivisionCount = 0;
+    let workingValue = valueToCheck;
+    const DIVISOR_VALUE = 2;
+    while (workingValue % DIVISOR_VALUE === 0) {
+        currentDivisionCount++;
+        workingValue /= DIVISOR_VALUE;
+    }
+    return currentDivisionCount;
+}
 
-  if (isNaN(processedUpperBound) || processedUpperBound < 1) {
-    console.error("Error: Input must be a positive integer.");
-    process.exit(1);
-  }
+inputReader.on('close', () => {
+    var numElements = Number(inputLines[0]);
+    var powerOfTwoCounts = [];
 
-  const factorCounts = new Array(processedUpperBound).fill(0);
-
-  for (let currentVal = 1; currentVal <= processedUpperBound; ++currentVal) {
-    let tempNumForCalculation = currentVal;
-    let currentFactorOfTwoCount = 0;
-
-    while ((tempNumForCalculation & 1) === 0 && tempNumForCalculation > 0) {
-      currentFactorOfTwoCount++;
-      tempNumForCalculation >>= 1;
+    for (let loopIndex = 1; loopIndex <= numElements; loopIndex++) {
+        let currentNumberCount = determineTwoDivisionCount(loopIndex);
+        powerOfTwoCounts.push(currentNumberCount);
     }
 
-    factorCounts[currentVal - 1] = currentFactorOfTwoCount;
-  }
+    var maxCount = Math.max(...powerOfTwoCounts);
+    var resultIndex = powerOfTwoCounts.indexOf(maxCount);
 
-  let overallMaxCount = -1;
-  let firstOccurrenceIndex = -1;
-
-  for (let idx = 0; idx < factorCounts.length; ++idx) {
-    const currentCountValue = factorCounts[idx];
-
-    if (currentCountValue > overallMaxCount) {
-      overallMaxCount = currentCountValue;
-      firstOccurrenceIndex = idx;
-    }
-  }
-
-  const finalResult = firstOccurrenceIndex + 1;
-  process.stdout.write(String(finalResult) + '\n');
+    console.log(resultIndex + 1);
 });

@@ -1,41 +1,62 @@
-const performCyclicShiftCounting = (sourceData) => {
-    const initialCharacterArray = sourceData.split('\n')[0].split('');
+class CharacterNode {
+    constructor(value, nextNode = null) {
+        this.value = value;
+        this.nextNode = nextNode;
+    }
+}
 
-    const innerScanRecursive = (index, currentList, currentPassModifications) => {
-        if (index >= currentList.length - 2) {
-            return { mods: currentPassModifications, changed: currentPassModifications > 0 };
+function constructList(sourceString) {
+    if (!sourceString || sourceString.length === 0) {
+        return null;
+    }
+    let headNode = new CharacterNode(sourceString[0]);
+    let current = headNode;
+    for (let i = 1; i < sourceString.length; i++) {
+        current.nextNode = new CharacterNode(sourceString[i]);
+        current = current.nextNode;
+    }
+    return headNode;
+}
+
+function Main(inputData) {
+    const lines = inputData.split('\n');
+    const initialSequence = lines[0];
+
+    let charListHead = constructList(initialSequence);
+    let modificationOccurred = true;
+    let currentScanOffset = 0;
+    let totalTransformations = 0;
+
+    while (modificationOccurred) {
+        modificationOccurred = false;
+
+        let scanPointer = charListHead;
+        let pointerIndex = 0;
+        while (pointerIndex < currentScanOffset && scanPointer) {
+            scanPointer = scanPointer.nextNode;
+            pointerIndex++;
         }
 
-        if (currentList[index] === 'A' &&
-            currentList[index + 1] === 'B' &&
-            currentList[index + 2] === 'C') {
-            
-            currentList[index] = 'B';
-            currentList[index + 1] = 'C';
-            currentList[index + 2] = 'A';
-            
-            return innerScanRecursive(index + 1, currentList, currentPassModifications + 1);
-        } else {
-            return innerScanRecursive(index + 1, currentList, currentPassModifications);
+        let iterationPointer = scanPointer;
+        while (iterationPointer && iterationPointer.nextNode && iterationPointer.nextNode.nextNode) {
+            if (iterationPointer.value === 'A' &&
+                iterationPointer.nextNode.value === 'B' &&
+                iterationPointer.nextNode.nextNode.value === 'C') {
+
+                iterationPointer.value = 'B';
+                iterationPointer.nextNode.value = 'C';
+                iterationPointer.nextNode.nextNode.value = 'A';
+
+                totalTransformations++;
+                modificationOccurred = true;
+            }
+            iterationPointer = iterationPointer.nextNode;
         }
-    };
 
-    const iterativeTransformationProcess = (charsReference, currentOffset, overallCount) => {
-        const passOutcome = innerScanRecursive(currentOffset, charsReference, 0);
+        currentScanOffset += 2;
+    }
 
-        if (passOutcome.changed) {
-            return iterativeTransformationProcess(charsReference, currentOffset + 2, overallCount + passOutcome.mods);
-        } else {
-            return overallCount;
-        }
-    };
+    console.log(totalTransformations);
+}
 
-    return iterativeTransformationProcess(initialCharacterArray, 0, 0);
-};
-
-const applicationRunner = (inputData) => {
-    const finalTally = performCyclicShiftCounting(inputData);
-    console.log(finalTally);
-};
-
-applicationRunner(require('fs').readFileSync('/dev/stdin', 'utf8'));
+Main(require('fs').readFileSync('/dev/stdin', 'utf8'));

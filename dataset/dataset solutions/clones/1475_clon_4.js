@@ -1,47 +1,44 @@
-var sourceProvider = require('fs');
+const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+const allLines = fileContent.split('\n');
 
-var rawInputContent = sourceProvider.readFileSync('/dev/stdin', 'utf8');
-var instructionSequence = rawInputContent.split('\n');
+const stackCount = Number(allLines[0]);
+const commandLines = allLines.slice(1).filter(ln => ln !== 'quit');
 
-var initialContainerQuantity = +instructionSequence.shift();
+const dataStores = Array.from({ length: stackCount }, () => []);
 
-var itemCollections = new Map();
-for (var currentCollectionIndex = 1; currentCollectionIndex <= initialContainerQuantity; currentCollectionIndex++) {
-    itemCollections.set(currentCollectionIndex, []);
-}
-
-var operationRouter = function(parsedElements) {
-    var primaryAction = parsedElements[0];
-    var firstOperand = +parsedElements[1];
-    var secondOperand = parsedElements[2];
-
-    var handlingFunctions = {
-        'pop': function() {
-            var extractedValue = itemCollections.get(firstOperand).pop();
-            process.stdout.write(extractedValue + '\n');
-        },
-        'push': function() {
-            itemCollections.get(firstOperand).push(secondOperand);
-        },
-        'relocate': function() { // This handles the implicit 'move' operation
-            var movedComponent = itemCollections.get(firstOperand).pop();
-            itemCollections.get(+secondOperand).push(movedComponent);
-        }
-    };
-
-    if (primaryAction === 'pop') {
-        handlingFunctions.pop();
-    } else if (primaryAction === 'push') {
-        handlingFunctions.push();
-    } else {
-        // Any other command string is treated as a 'relocate' operation,
-        // matching the original's 'else' branch for the three-part command.
-        handlingFunctions.relocate();
+const operationHandlers = {
+    'pop': (stores, args) => {
+        const targetIdx = Number(args[0]) - 1;
+        const extractedItem = stores[targetIdx].pop();
+        console.log(extractedItem);
+    },
+    'push': (stores, args) => {
+        const targetIdx = Number(args[0]) - 1;
+        const itemToInsert = args[1];
+        stores[targetIdx].push(itemToInsert);
+    },
+    'move': (stores, args) => {
+        const sourceIdx = Number(args[0]) - 1;
+        const destinationIdx = Number(args[1]) - 1;
+        const transferredItem = stores[sourceIdx].pop();
+        stores[destinationIdx].push(transferredItem);
     }
 };
 
-var currentInstructionLine;
-while ((currentInstructionLine = instructionSequence.shift()) !== 'quit') {
-    var componentsOfOrder = currentInstructionLine.split(' ');
-    operationRouter(componentsOfOrder);
-}
+commandLines.forEach(currentInstruction => {
+    const instructionParts = currentInstruction.split(' ');
+    const actionType = instructionParts[0];
+    const actionArguments = instructionParts.slice(1);
+
+    const handlerFunction = operationHandlers[actionType];
+    if (handlerFunction) {
+        handlerFunction(dataStores, actionArguments);
+    } else {
+        // Assuming 'move' is the default if not 'pop' or 'push' based on original logic.
+        // The original code's 'else' branch handles 'move'.
+        // To strictly replicate, we'd need to check if actionType is 'move' or
+        // fall through to a default handler. Given the problem context,
+        // 'move' is the only other explicit command.
+        operationHandlers['move'](dataStores, actionArguments);
+    }
+});

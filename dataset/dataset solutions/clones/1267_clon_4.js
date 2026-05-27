@@ -1,41 +1,32 @@
 'use strict';
-(function(inputSource) {
-  // A service to construct a visual representation from dimensions
-  const constructVisual = (dimensions) => {
-    const [verticalSpan, horizontalSpan] = dimensions;
-
-    // Helper to compose a single horizontal strip
-    const composeStrip = (rowPosition) =>
-      Array.from({ length: horizontalSpan }, (_, columnPosition) =>
-        ((rowPosition + columnPosition) % 2 === 0) ? '#' : '.'
-      ).join('');
-
-    // Generate all strips and combine them with line breaks
-    return Array.from({ length: verticalSpan }, (_, rowPosition) => composeStrip(rowPosition)).join('\n');
-  };
-
-  // A recursive utility to extract numerical pairs from a text block
-  const gatherNumericPairs = (remainingText, collectedItems = []) => {
-    const nextBreak = remainingText.indexOf('\n');
-    const activeLine = nextBreak === -1 ? remainingText : remainingText.substring(0, nextBreak);
-
-    if (activeLine.trim() === '0 0' || activeLine.trim() === '') {
-      return collectedItems;
+((inputSource) => {
+  const extractDimensionPairs = (rawTextContent) => {
+    const contentLines = rawTextContent.toString().trim().split('\n');
+    const parsedDimensionSets = [];
+    for (const currentInputLine of contentLines) {
+      if (currentInputLine === '0 0') {
+        break;
+      }
+      const numericValues = currentInputLine.split(' ').map(Number);
+      parsedDimensionSets.push(numericValues);
     }
-
-    const numbersFound = activeLine.split(' ').map(Number);
-    const subsequentText = nextBreak === -1 ? '' : remainingText.substring(nextBreak + 1);
-
-    return gatherNumericPairs(subsequentText, [...collectedItems, numbersFound]);
+    return parsedDimensionSets;
   };
 
-  // Entry point for processing
-  const sourceContent = inputSource.toString().trim();
-  const allDimensionSets = gatherNumericPairs(sourceContent);
+  const constructCheckerboard = (dimensionsArray) => {
+    const [boardHeight, boardWidth] = dimensionsArray;
+    return Array.from({ length: boardHeight }, (_, rowIdentifier) =>
+      Array.from({ length: boardWidth }, (_, columnIdentifier) =>
+        ((rowIdentifier + columnIdentifier) % 2 === 0) ? '#' : '.'
+      ).join('')
+    ).join('\n');
+  };
 
-  const processedVisuals = allDimensionSets.map(constructVisual);
-  const finalRender = processedVisuals.join('\n\n');
+  const dimensionConfigurations = extractDimensionPairs(inputSource);
 
-  console.log(finalRender);
+  const generatedVisualizations = dimensionConfigurations.map(constructCheckerboard);
 
+  const combinedOutput = generatedVisualizations.join('\n\n');
+
+  console.log(combinedOutput);
 })(require('fs').readFileSync('/dev/stdin', 'utf8'));

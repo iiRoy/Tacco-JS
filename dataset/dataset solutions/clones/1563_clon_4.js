@@ -1,89 +1,106 @@
-const acquirePrimes = (upperBoundary) => {
-    const potentialPrimes = new Set();
-    for (let currentNumber = 2; currentNumber <= upperBoundary; currentNumber++) {
-        potentialPrimes.add(currentNumber);
-    }
+const collectPrimesUpToSquareRoot = (limitValue) => {
+    const compositeTracker = new Array(limitValue + 1).fill(false); // `false` indicates a potential prime
+    const smallPrimeCollection = [];
 
-    for (let currentPrimeCandidate = 2; currentPrimeCandidate * currentPrimeCandidate <= upperBoundary; currentPrimeCandidate++) {
-        if (potentialPrimes.has(currentPrimeCandidate)) {
-            for (let multiple = currentPrimeCandidate * currentPrimeCandidate; multiple <= upperBoundary; multiple += currentPrimeCandidate) {
-                potentialPrimes.delete(multiple);
+    for (let currentNumber = 2; currentNumber * currentNumber <= limitValue; currentNumber++) {
+        if (!compositeTracker[currentNumber]) { // If currentNumber is not marked as composite
+            smallPrimeCollection.push(currentNumber); // Add it to the list of small primes
+            // Mark all multiples of this prime as composite, starting from its square
+            for (let multiple = currentNumber * currentNumber; multiple <= limitValue; multiple += currentNumber) {
+                compositeTracker[multiple] = true;
             }
         }
     }
-    return Array.from(potentialPrimes).sort((a, b) => a - b);
+    return smallPrimeCollection; // Returns primes up to sqrt(limitValue)
 };
 
-const extractUniqueFactors = (numberToDecompose, availablePrimesList) => {
-    const uniqueDivisorsFound = new Set();
-    let remainingNumber = numberToDecompose;
+const extractSpecificDivisors = (targetNumber, primeCandidatesList) => {
+    const foundDivisors = new Set(); // Utilizes a Set for automatic uniqueness
 
-    if (remainingNumber <= 1) return uniqueDivisorsFound;
-
-    for (const primeFromList of availablePrimesList) {
-        if (primeFromList * primeFromList > remainingNumber && remainingNumber > 1) {
+    for (const potentialPrime of primeCandidatesList) {
+        // Stop iterating if the target number is smaller than the current potential prime
+        if (targetNumber < potentialPrime) {
             break;
         }
-        if (remainingNumber % primeFromList === 0) {
-            uniqueDivisorsFound.add(primeFromList);
-            while (remainingNumber % primeFromList === 0) {
-                remainingNumber /= primeFromList;
-            }
+        // If the potential prime divides the target number, add it to the collection
+        if (targetNumber % potentialPrime === 0) {
+            foundDivisors.add(potentialPrime);
         }
     }
-    if (remainingNumber > 1) {
-        uniqueDivisorsFound.add(remainingNumber);
+
+    // As per original logic, if the target number itself is still greater than 1
+    // after checking against the primeCandidatesList, add it as a divisor.
+    if (targetNumber > 1) {
+        foundDivisors.add(targetNumber);
     }
-    return uniqueDivisorsFound;
+    return Array.from(foundDivisors); // Convert the Set to an Array
 };
 
-const findCommonDivisor = (firstOperand, secondOperand) => {
-    while (secondOperand !== 0) {
-        const remainder = firstOperand % secondOperand;
-        firstOperand = secondOperand;
-        secondOperand = remainder;
+const calculateGreatestCommonDivisor = (firstValue, secondValue) => {
+    // Handle cases where one or both inputs are zero
+    if (firstValue === 0) return secondValue;
+    if (secondValue === 0) return firstValue;
+
+    // Iterative Euclidean algorithm
+    let currentA = firstValue;
+    let currentB = secondValue;
+    while (currentB !== 0) {
+        const remainder = currentA % currentB;
+        currentA = currentB;
+        currentB = remainder;
     }
-    return firstOperand;
+    return currentA;
 };
 
-const evaluateNumberSet = (inputData) => {
-    const dataLines = inputData.split("\n");
-    const numericSequence = dataLines[1].split(" ").map(Number);
+const determineCoprimalityStatus = (rawInputContent) => {
+    const inputLines = rawInputContent.split("\n");
+    const elementCount = Number(inputLines[0]);
+    const numberArray = inputLines[1].split(" ").map(Number);
 
-    const PRIME_LIMIT = 10**6 + 1;
+    const upperLimitForPrimes = 1000001; // Corresponds to MAX_A in original
 
-    const allCalculatedPrimes = acquirePrimes(PRIME_LIMIT);
-    
-    let observedPrimeOccurrences = new Map();
-    let isSetPairwiseCoprime = true;
+    // Obtain primes up to sqrt(upperLimitForPrimes) based on original Sieve's behavior
+    const relevantPrimes = collectPrimesUpToSquareRoot(upperLimitForPrimes);
 
-    for (const element of numericSequence) {
-        const currentElementFactors = extractUniqueFactors(element, allCalculatedPrimes);
-        for (const factor of currentElementFactors) {
-            if (observedPrimeOccurrences.has(factor)) {
-                isSetPairwiseCoprime = false;
-                break;
+    // Phase 1: Check for pairwise coprimality
+    const globalDivisorRegistry = new Set(); // Stores all unique divisors encountered so far
+    let isPairwise = true;
+
+    for (const currentElement of numberArray) {
+        // Get the specific divisors for the current number
+        const elementDivisors = extractSpecificDivisors(currentElement, relevantPrimes);
+
+        // Iterate through the divisors of the current element
+        for (const divisorEntry of elementDivisors) {
+            if (globalDivisorRegistry.has(divisorEntry)) {
+                isPairwise = false; // Found a common divisor, not pairwise coprime
+                break; // Exit inner loop
             }
-            observedPrimeOccurrences.set(factor, true);
+            globalDivisorRegistry.add(divisorEntry); // Add the divisor to the global registry
         }
-        if (!isSetPairwiseCoprime) {
-            break;
+        if (!isPairwise) {
+            break; // Exit outer loop if already determined not pairwise coprime
         }
     }
-    
-    if (isSetPairwiseCoprime) {
+
+    if (isPairwise) {
         console.log("pairwise coprime");
         return;
     }
 
-    const overallSetGCD = numericSequence.reduce(findCommonDivisor);
-    
-    if (overallSetGCD === 1) {
+    // Phase 2: If not pairwise coprime, check for setwise coprimality
+    // Compute the GCD of all numbers in the array using Array.prototype.reduce
+    const overallGCDResult = numberArray.reduce((accumulator, currentValue) =>
+        calculateGreatestCommonDivisor(accumulator, currentValue)
+    );
+
+    if (overallGCDResult === 1) {
         console.log("setwise coprime");
         return;
     }
-    
+
+    // Phase 3: If neither pairwise nor setwise coprime
     console.log("not coprime");
 };
 
-evaluateNumberSet(require("fs").readFileSync("/dev/stdin", "utf8"));
+determineCoprimalityStatus(require("fs").readFileSync("/dev/stdin", "utf8"));

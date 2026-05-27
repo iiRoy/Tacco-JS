@@ -1,15 +1,25 @@
-/* This function receives the entire block of raw input data. */
-function ProcessData(rawData) {
-  rawData = rawData.split('\n'); // Divide the incoming text by newline characters.
-  let firstLineElements = rawData[0].split(' '); // Extract components from the initial line.
-  let firstValue = parseInt(firstLineElements[0]); // Parse the primary numeric entry.
-  let secondValue = parseInt(firstLineElements[1]); // Parse the secondary numeric entry.
+// This function processes incoming text data.
+function processInputData(rawData) {
+    // Split the entire input string by newline characters.
+    let linesOfText = rawData.split("\n");
 
-  if (firstValue === 1) { // Check if the initial number is one.
-    console.log(0); // If true, output zero.
-  } else {
-    console.log(firstValue - secondValue); // Otherwise, calculate and output the difference.
-  }
+    // Extract the first line and split it by spaces.
+    const firstLineParts = linesOfText[0].split(" ");
+
+    // Parse the first number from the first line.
+    const firstValue = parseInt(firstLineParts[0]);
+    // Parse the second number from the first line.
+    const secondValue = parseInt(firstLineParts[1]);
+
+    // Check a condition based on the first parsed number.
+    if (firstValue === 1) {
+        // If the first number is one, output zero.
+        console.log(0);
+    } else {
+        // Otherwise, output the difference between the two numbers.
+        console.log(firstValue - secondValue);
+    }
 }
-/* It is advised not to modify the following line; it handles reading from standard input/output and invoking the primary routine. */
-ProcessData(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+// Do not modify the following line; it handles reading from standard input and invoking the main processing function.
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

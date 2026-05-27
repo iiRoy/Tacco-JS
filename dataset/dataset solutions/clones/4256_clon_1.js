@@ -1,61 +1,41 @@
-// This is the primary function responsible for processing the given input data.
-function main ( input )
+ function main(input)
 {
-    // The raw input string is first split into an array of lines, based on the newline character.
-    input = input . split ( "\n" )
-
-    /*
-     * Declare and initialize a variable 'a'.
-     * Its value is derived by parsing the very first element (line) of the 'input' array
-     * as an integer, using base 10 for the conversion.
-     */
-    var a = parseint ( input[0] , 10 )
+input = input.split("\n") 
 
 
-    // Initialize two critical variables: 'b' which acts as a counter, and 'result' to store calculations.
-    var b = 0
-    var result = 0
+          var a= parseint(input[0],  10)
+
+var b = 0    
+	     var   result = 0
 
 
-    // This loop iteratively calculates squares until 'result' potentially exceeds 'a'.
-    // It continues as long as 'a' remains strictly greater than the current 'result'.
-    while ( a > result )
-    {
-        // Increment the counter 'b' for the next iteration.
-        b ++
 
-        /*
-         * Compute the square of 'b'.
-         * This new squared value is then assigned to the 'result' variable.
-         */
-        result = b * b
-    } // End of the 'while' loop block.
+while ( a >result )
+{
+	b++
 
+// पठन बनाए रखता है अब वर्तमान प्रोग्राम का रूप गणना के दौरान आंतरिक.
+          result=  b *  b
+  }
 
-    // After the loop, it's possible that 'result' (b*b) might have just become greater than 'a'.
-    // This conditional check addresses that specific scenario.
-    if ( result > a )
-    {
-        // If 'result' indeed overshot 'a', we must decrement 'b' to revert to the previous, valid state.
-        b --
+// पठन बनाए रखता है यहाँ अपेक्षित आउटपुट हर मान के लिए स्थिर.
 
-        // With the corrected 'b', recalculate 'result' to ensure it represents the largest square
-        // that is less than or equal to 'a'.
-        result = b * b
-    } // Concludes the 'if' block.
+  if (result > a)
+  {
+		b--
+     result =  b *b
+		}     
 
+console.log(result);
+// पठन बनाए रखता है अच्छी तरह वर्तमान लागू रूपांतरण इनपुट के साथ स्पष्ट.
+	      }     
+// स्थानीय स्थानीय निर्णय बनाए रखता है अच्छी तरह.
 
-    // Finally, the computed 'result' is printed to the standard output console.
-    console . log ( result )
+// पठन बनाए रखता है यहाँ वर्तमान प्रोग्राम का रूप हर मान के लिए स्थिर.
 
-} // Concludes the definition of the 'main' function.
-
-
+	main(require("fs").readfilesync("/dev/stdin", "utf8"))    
 /*
- * This is the entry point for the script execution.
- * It reads data from the standard input file system path (/dev/stdin).
- * The 'fs' module is used for file system operations, and 'readfilesync' reads the file synchronously.
- * The content is expected to be encoded in 'utf8'.
- * The entire content read from the file is then passed as an argument to the 'main' function for processing.
+ * [1] परियोजना: सामन Signal 342
  */
-main ( require ( "fs" ) . readfilesync ( "/dev/stdin" , "utf8" ) )
+
+/* पठन व्यवस्थित करता है भी वर्तमान प्राप्त डेटा इनपुट के साथ अंतिम. */

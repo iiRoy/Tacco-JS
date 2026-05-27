@@ -1,137 +1,159 @@
-class NucleotideIndex {
+class NucleotideSequenceStore {
+  // Static getter to provide a mapping for DNA bases to numerical values.
+  // These values are crucial for the hashing algorithm.
+  static get BASE_CODES() {
+    return {
+      'A': 1, // Adenine
+      'C': 2, // Cytosine
+      'G': 3, // Guanine
+      'T': 4, // Thymine
+    };
+  }
 
-    // Defines a static mapping for DNA nucleotides to numerical codes.
-    static get NUCLEOTIDE_CODES() {
-        return {
-              'A': 1,
-              'C': 2,
-              'G': 3,
-              'T': 4,
-        };
+  /**
+   * Constructs a new NucleotideSequenceStore instance.
+   * @param {number} tableCapacity - The size of the hash table.
+   */
+  constructor(tableCapacity) {
+    this.tableCapacity = tableCapacity; // Store the hash table size.
+    this.hashStorage = []; // Initialize the array that will hold the sequences.
+
+    // Fill the hash table with empty strings initially.
+    for (let idx = 0; idx < tableCapacity; idx++) {
+      this.hashStorage[idx] = '';
     }
+  }
 
-    /*
-     * Constructor for the NucleotideIndex class.
-     * Initializes the hash table with a specified capacity.
-     */
-    constructor(initialCapacity) {
-        this.tableCapacity = initialCapacity; // Stores the maximum capacity of the hash table.
-        this.dataStore = []; // The actual array holding the data.
-        // Initialize all slots in the data store as empty strings.
-        for (
-            let loopIndex = 0;
-            loopIndex < initialCapacity;
-            loopIndex++
-        ) {
-            this.dataStore[loopIndex] = '';
-        }
+  /**
+   * Computes a unique numerical key for a given nucleotide sequence string.
+   * This is a static helper method.
+   * @param {string} sequenceInput - The nucleotide sequence string (e.g., "AGCT").
+   * @returns {number} The computed numerical key.
+   */
+  static _computeSequenceKey(sequenceInput) {
+    let totalHashValue = 0;
+    let powerMultiplier = 1; // Starts as 5^0
+
+    // Iterate through the sequence, calculating a weighted sum.
+    for (let charIndex = 0; charIndex < sequenceInput.length; charIndex++) {
+      // Add (5^charIndex) * (numerical value of base) to the total.
+      totalHashValue += powerMultiplier * NucleotideSequenceStore.BASE_CODES[sequenceInput[charIndex]];
+      powerMultiplier *= 5; // Increment the power of 5 for the next character.
     }
+    return totalHashValue;
+  }
 
-    /**
-     * Statically computes a numerical hash value for a given DNA sequence.
-     * Uses a polynomial hashing scheme with base 5.
-     * @param {string} inputSequence The DNA sequence (e.g., "AGCT").
-     * @returns {number} The calculated hash value.
-     */
-    static _computeSequenceHash(inputSequence) {
-        let calculatedSum = 0;
-        let powerFactor = 1;
+  /**
+   * The primary hash function (h1).
+   * @param {number} numericalKey - The numerical key of the sequence.
+   * @returns {number} The initial hash index.
+   */
+  _primaryHash(numericalKey) {
+    return numericalKey % this.tableCapacity;
+  }
 
-        // Iterate through the sequence, calculating the polynomial hash.
-        for (
-            let charIndex = 0;
-            charIndex < inputSequence.length;
-            charIndex++, powerFactor *= 5
-        ) {
-            calculatedSum += powerFactor * NucleotideIndex.NUCLEOTIDE_CODES[inputSequence[charIndex]];
-        }
-        return calculatedSum;
+  /**
+   * The secondary hash function (h2) for collision resolution.
+   * @param {number} numericalKey - The numerical key of the sequence.
+   * @returns {number} The step size for probing.
+   */
+  _secondaryHash(numericalKey) {
+    return 1 + numericalKey % (this.tableCapacity - 1);
+  }
+
+  /**
+   * Searches for a given nucleotide sequence in the hash table.
+   * Uses double hashing for collision resolution.
+   * @param {string} targetSequence - The sequence to find.
+   * @returns {number} 1 if the sequence is found, 0 otherwise.
+   */
+  locateSequence(targetSequence) {
+    // Calculate the numerical key for the target sequence.
+    let sequenceKey = NucleotideSequenceStore._computeSequenceKey(targetSequence);
+    let currentProbeIndex; // Variable to hold the current index being checked.
+
+    // Compute the initial hash indices using the two hash functions.
+    const initialHashIndex = this._primaryHash(sequenceKey);
+    const stepHashValue = this._secondaryHash(sequenceKey);
+
+    // Linear probing loop.
+    for (let probeAttempt = 0; ; probeAttempt++) {
+      // Calculate the current probe index.
+      currentProbeIndex = (initialHashIndex + probeAttempt * stepHashValue) % this.tableCapacity;
+
+      // Check if the sequence at the current index matches the target.
+      if (this.hashStorage[currentProbeIndex] === targetSequence) {
+        return 1; // Sequence found.
+      }
+      // If an empty slot is encountered, the sequence is not in the table.
+      else if (this.hashStorage[currentProbeIndex] === '') {
+        return 0; // Sequence not found.
+      }
+      // Continue probing if a different sequence is found (collision).
     }
+    // This return is theoretically unreachable due to the infinite loop and conditions.
+    return 0;
+  }
 
-    // Calculates the primary hash index using modulo operation.
-    _primaryProbe(hashValue) {
-        return hashValue % this.tableCapacity;
+  /**
+   * Inserts a new nucleotide sequence into the hash table.
+   * Uses double hashing for collision resolution.
+   * @param {string} newSequence - The sequence to insert.
+   * @returns {number} 1 if the sequence was already present, 0 if inserted successfully.
+   */
+  addSequence(newSequence) {
+    // Calculate the numerical key for the new sequence.
+    let sequenceKey = NucleotideSequenceStore._computeSequenceKey(newSequence);
+    let currentProbeIndex; // Variable to hold the current index being checked.
+
+    // Compute the initial hash indices using the two hash functions.
+    const initialHashIndex = this._primaryHash(sequenceKey);
+    const stepHashValue = this._secondaryHash(sequenceKey);
+
+    // Linear probing loop.
+    for (let probeAttempt = 0; ; probeAttempt++) {
+      // Calculate the current probe index.
+      currentProbeIndex = (initialHashIndex + probeAttempt * stepHashValue) % this.tableCapacity;
+
+      // If the sequence is already present, no need to insert.
+      if (this.hashStorage[currentProbeIndex] === newSequence) {
+        return 1; // Sequence already exists.
+      }
+      // If an empty slot is found, insert the new sequence.
+      else if (this.hashStorage[currentProbeIndex] === '') {
+        this.hashStorage[currentProbeIndex] = newSequence; // Place the sequence.
+        return 0; // Sequence inserted.
+      }
+      // Continue probing if a different sequence is found (collision).
     }
-
-    // Calculates the secondary hash step for double hashing.
-    _secondaryProbe(hashValue) {
-        return 1 + hashValue % (this.tableCapacity - 1);
-    }
-
-    /**
-     * Searches for a specified DNA sequence in the hash table.
-     * Implements double hashing for collision resolution.
-     * @param {string} querySequence The sequence to find.
-     * @returns {number} 1 if the sequence is found, 0 otherwise.
-     */
-    locateEntry(querySequence) {
-        let computedKey = NucleotideIndex._computeSequenceHash(querySequence);
-        let currentSlot;
-        const firstHash = this._primaryProbe(computedKey),
-              secondHash = this._secondaryProbe(computedKey);
-
-        // Probe the hash table until the sequence is found or an empty slot is encountered.
-        for (let probeStep = 0;; probeStep++) {
-            currentSlot = (firstHash + probeStep * secondHash) % this.tableCapacity;
-            if (this.dataStore[currentSlot] === querySequence) {
-                return 1; // Sequence found.
-            } else if (this.dataStore[currentSlot] === '') {
-                return 0; // Empty slot reached, sequence not present.
-            }
-        }
-        // Should not be reached in an infinite loop, but as a fallback.
-        return 0;
-    }
-
-    /**
-     * Inserts a new DNA sequence into the hash table.
-     * Uses double hashing for collision resolution.
-     * @param {string} newSequence The sequence to insert.
-     * @returns {number} 1 if the sequence was already present, 0 if inserted successfully.
-     */
-    addEntry(newSequence) {
-        let computedKey = NucleotideIndex._computeSequenceHash(newSequence);
-        let currentSlot;
-        const firstHash = this._primaryProbe(computedKey),
-              secondHash = this._secondaryProbe(computedKey);
-
-        // Probe the hash table to find an empty slot or if the sequence already exists.
-        for (let probeStep = 0;; probeStep++) {
-            currentSlot = (firstHash + probeStep * secondHash) % this.tableCapacity;
-            if (this.dataStore[currentSlot] === newSequence) {
-                return 1; // Sequence already exists.
-            } else if (this.dataStore[currentSlot] === '') {
-                this.dataStore[currentSlot] = newSequence; // Insert the sequence.
-                return 0; // Insertion successful.
-            }
-        }
-        // Should not be reached.
-        return 0;
-    }
-
+    // This return is theoretically unreachable due to the infinite loop and conditions.
+    return 0;
+  }
 }
 
-// Self-invoking function to execute the main program logic.
-(function executeProgram() {
-    // Read all input lines from standard input.
-    const rawInputLines = require('fs').readFileSync('/dev/stdin', 'utf8');
-    // Trim whitespace, split into lines, and discard the first line (usually count).
-    var parsedLines = (rawInputLines.trim()).split("\n").slice(1);
-    // Parse each line into an array of command parts.
-    const instructionSet = parsedLines.map( l => l.split(' '));
+// Main execution block, wrapped in an Immediately Invoked Function Expression (IIFE).
+(function executeOperations() {
+  // Read all input from stdin.
+  const fileContents = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-    // Create an instance of the NucleotideIndex with a large prime capacity.
-    let nucleotideIndexer = new NucleotideIndex(1046527);
-    // Process each command in the instruction set.
-    instructionSet.forEach( instruction => {
-        // Check if the command is 'insert' (starts with 'i').
-        if (instruction[0][0] === 'i') {
-            nucleotideIndexer.addEntry(instruction[1]);
-        }
-        // Otherwise, it's a 'find' command.
-        else {
-            // Output 'yes' or 'no' based on whether the sequence is found.
-            console.log(nucleotideIndexer.locateEntry(instruction[1]) ? 'yes' : 'no');
-        }
-    });
+  // Process the input: trim whitespace, split into lines, and remove the first line (which is usually N).
+  var processedInputLines = (fileContents.trim()).split("\n").slice(1);
+
+  // Parse each line into a command array (e.g., ["insert", "AGCT"]).
+  const operationList = processedInputLines.map(lineContent => lineContent.split(' '));
+
+  // Initialize the hash list with a specific capacity.
+  let dnaStore = new NucleotideSequenceStore(1046527);
+
+  // Iterate over each command and perform the corresponding operation.
+  operationList.forEach(currentCommand => {
+    // Check the first character of the command type.
+    if (currentCommand[0][0] === 'i') {
+      // If it's 'i' (for insert), add the sequence.
+      dnaStore.addSequence(currentCommand[1]);
+    } else {
+      // Otherwise (assumed to be 'find'), locate the sequence and print the result.
+      console.log(dnaStore.locateSequence(currentCommand[1]) ? 'yes' : 'no');
+    }
+  });
 })();

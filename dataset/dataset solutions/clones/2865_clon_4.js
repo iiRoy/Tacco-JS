@@ -1,57 +1,47 @@
-const processGridData = (inputLines) => {
-  const [gridHeight, gridWidth] = inputLines[0].split(' ').map(Number);
+const processGrid = (inputLines) => {
+    const [dimensionString, ...gridContent] = inputLines;
+    const [gridHeight, gridWidth] = dimensionString.split(' ').map(Number);
 
-  const cellRegistry = new Map();
-  let maxPathLength = 0;
-  let exitEarly = false;
+    const cellPathData = Array.from({ length: gridHeight }, () => Array(gridWidth).fill(null));
 
-  for (let rIdx = 0; rIdx < gridHeight; ++rIdx) {
-    const currentRow = inputLines[rIdx + 1];
-    for (let cIdx = 0; cIdx < gridWidth; ++cIdx) {
-      if (exitEarly) break;
-      
-      const currentCellKey = `${rIdx}_${cIdx}`;
-      const cellContent = currentRow[cIdx];
+    let maximumPathLength = 0;
+    let maxPossibleReached = false;
 
-      if (cellContent === '#') {
-        cellRegistry.set(currentCellKey, { kind: '#', horizontalReach: 0, verticalReach: 0 });
-      } else {
-        let currentHorizontalReach = 1;
-        let currentVerticalReach = 1;
+    for (let rowIndex = 0; rowIndex < gridHeight; rowIndex++) {
+        for (let colIndex = 0; colIndex < gridWidth; colIndex++) {
+            if (gridContent[rowIndex][colIndex] === '#') {
+                cellPathData[rowIndex][colIndex] = null;
+            } else {
+                let currentHorizontalLength = 1;
+                let currentVerticalLength = 1;
 
-        const leftCellKey = `${rIdx}_${cIdx - 1}`;
-        const upperCellKey = `${rIdx - 1}_${cIdx}`;
+                if (colIndex > 0 && cellPathData[rowIndex][colIndex - 1] !== null) {
+                    currentHorizontalLength = cellPathData[rowIndex][colIndex - 1].hLen + 1;
+                }
 
-        const leftCellData = cellRegistry.get(leftCellKey);
-        if (leftCellData && leftCellData.kind === '.') {
-          currentHorizontalReach += leftCellData.horizontalReach;
+                if (rowIndex > 0 && cellPathData[rowIndex - 1][colIndex] !== null) {
+                    currentVerticalLength = cellPathData[rowIndex - 1][colIndex].vLen + 1;
+                }
+
+                cellPathData[rowIndex][colIndex] = { hLen: currentHorizontalLength, vLen: currentVerticalLength };
+
+                const combinedPathSum = currentHorizontalLength + currentVerticalLength - 1;
+                if (combinedPathSum > maximumPathLength) {
+                    maximumPathLength = combinedPathSum;
+                }
+
+                if (maximumPathLength === gridHeight + gridWidth - 1) {
+                    maxPossibleReached = true;
+                    break;
+                }
+            }
         }
-
-        const upperCellData = cellRegistry.get(upperCellKey);
-        if (upperCellData && upperCellData.kind === '.') {
-          currentVerticalReach += upperCellData.verticalReach;
+        if (maxPossibleReached) {
+            break;
         }
-
-        cellRegistry.set(currentCellKey, {
-          kind: '.',
-          horizontalReach: currentHorizontalReach,
-          verticalReach: currentVerticalReach
-        });
-
-        const currentCrossTotal = currentHorizontalReach + currentVerticalReach - 1;
-        if (currentCrossTotal > maxPathLength) {
-          maxPathLength = currentCrossTotal;
-        }
-
-        if (maxPathLength === gridHeight + gridWidth - 1) {
-          exitEarly = true;
-        }
-      }
     }
-    if (exitEarly) break;
-  }
 
-  console.log(maxPathLength);
+    console.log(maximumPathLength);
 };
 
-processGridData(require('fs').readFileSync('/dev/stdin', 'UTF-8').trim().split("\n"));
+processGrid(require('fs').readFileSync('/dev/stdin', 'UTF-8').trim().split("\n"));

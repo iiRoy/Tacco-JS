@@ -1,139 +1,93 @@
-((rawInput) => {
-    // Define a constant for the modulo operation to enhance clarity and maintainability.
-    const MODULO_CONSTANT = 1_000_000_007; // A common prime modulus in competitive programming
+(function(inputLine) {
+    const MODULO_VALUE = 1000000007; // Constant for the modulo operation
 
-    // --- Input Processing and Initial Validation ---
-    // The input string is expected to contain two space-separated integers.
-    // Robustly parse the string by trimming whitespace, splitting by any sequence of spaces,
-    // and filtering out empty strings that might result from extra spaces.
-    const numericParts = rawInput.trim().split(/\s+/).filter(Boolean);
+    // Parse input values from the provided string
+    const inputParts = inputLine.split(' ');
+    const numRows = parseInt(inputParts[0], 10);
+    const columnLimit = parseInt(inputParts[1], 10);
 
-    // Ensure the input adheres to the expected format.
-    if (numericParts.length !== 2) {
-        console.error("Input format error: Expected exactly two space-separated integers.");
-        return; // Terminate execution if input is malformed.
-    }
-
-    // Convert string parts to integers using parseInt with radix 10 for explicit base.
-    const totalSteps = parseInt(numericParts[0], 10); // Represents 'n' from original problem
-    const maxValueRange = parseInt(numericParts[1], 10); // Represents 'k' from original problem
-
-    // Perform basic validation on the parsed numeric values.
-    if (isNaN(totalSteps) || isNaN(maxValueRange) || totalSteps <= 0 || maxValueRange <= 0) {
-        console.error("Input value error: Both N and K must be positive integers.");
-        return; // Terminate if numbers are invalid.
-    }
-
-    // --- Core Utility Function: Greatest Common Divisor (GCD) ---
-    // This function computes the GCD of two numbers using the Euclidean algorithm.
-    // It's implemented recursively for conciseness.
-    const computeGreatestCommonDivisor = (firstNum, secondNum) => {
-        // Ensure inputs are non-negative for standard GCD definition.
-        let a = Math.abs(firstNum);
-        let b = Math.abs(secondNum);
-
-        // Inner recursive helper to perform the Euclidean algorithm.
-        const recursiveGcdHelper = (currentA, currentB) => {
-            if (currentB === 0) {
-                return currentA; // Base case: GCD is currentA when currentB is zero.
+    // Helper function to compute the Greatest Common Divisor (GCD)
+    const computeGCD = (valA, valB) => {
+        // Inner recursive function for GCD calculation
+        const recursiveGCD = (a, b) => {
+            if (b === 0) {
+                return a;
             }
-            // Recursive step: replace (a, b) with (b, a % b).
-            const remainder = currentA % currentB;
-            return recursiveGcdHelper(currentB, remainder);
+            return recursiveGCD(b, a % b);
         };
-
-        return recursiveGcdHelper(a, b);
+        return recursiveGCD(valA, valB);
     };
 
-    // --- Pre-computation Phase: Building GCD Frequency Data ---
-    // This phase generates a lookup table `gcdFrequencyMaps`.
-    // `gcdFrequencyMaps[i]` will contain a list of [GCD_value, count] pairs
-    // representing the frequencies of GCDs when `(i+1)` is paired with all `(j+1)`
-    // where `0 <= j < maxValueRange`.
-    const gcdFrequencyMaps = [];
-
-    // Iterate for the first number (from 1 to maxValueRange).
-    for (let i = 0; i < maxValueRange; ++i) {
-        // Use a Map to efficiently count frequencies of GCDs for the current `i`.
-        // A Map is generally more flexible than a plain object for dynamic key types.
-        const currentIterationGcdCounts = new Map();
-
-        // Iterate for the second number (from 1 to maxValueRange).
-        for (let j = 0; j < maxValueRange; ++j) {
-            // Calculate the GCD for the pair `(i+1, j+1)`.
-            const calculatedGcd = computeGreatestCommonDivisor(i + 1, j + 1);
-            // Increment the count for this specific GCD value in the map.
-            currentIterationGcdCounts.set(calculatedGcd, (currentIterationGcdCounts.get(calculatedGcd) || 0) + 1);
+    // Precompute GCD contribution factors for each column index
+    // This array stores lists of [GCD_value, count] pairs
+    const gcdContributionFactors = [];
+    for (let i = 0; i < columnLimit; ++i) {
+        // Map to store temporary counts of GCDs for the current 'i'
+        const currentGCDMap = {};
+        for (let j = 0; j < columnLimit; ++j) {
+            const commonDivisor = computeGCD(i + 1, j + 1);
+            // Initialize count if GCD is encountered for the first time
+            if (currentGCDMap[commonDivisor] === undefined) {
+                currentGCDMap[commonDivisor] = 0;
+            }
+            currentGCDMap[commonDivisor]++;
         }
 
-        // Convert the Map entries into an array of `[key, value]` pairs.
-        // This format is convenient for subsequent iteration in the DP phase.
-        const formattedGcdPairs = Array.from(currentIterationGcdCounts.entries()).map(([gcdVal, count]) => [Number(gcdVal), count]);
-        gcdFrequencyMaps.push(formattedGcdPairs);
+        // Convert the map of GCD counts into a list of [GCD_value, count] pairs
+        const currentGCDList = [];
+        for (const [keyStr, count] of Object.entries(currentGCDMap)) {
+            // Convert string key back to number
+            currentGCDList.push([parseInt(keyStr, 10), count]);
+        }
+        gcdContributionFactors.push(currentGCDList);
     }
 
-    // --- Dynamic Programming Phase ---
-    // The `dpTable` stores the dynamic programming states.
-    // `dpTable[step][gcdIndex]` represents a cumulative count or possibility
-    // after `step` iterations, where `gcdIndex` (0-indexed) corresponds to
-    // a GCD value of `gcdIndex + 1`.
-    // Each row in `dpTable` will have `maxValueRange` elements, covering GCDs from 1 to `maxValueRange`.
+    // Initialize the Dynamic Programming table
     const dpTable = [];
+    // The first row of the DP table is initialized with all 1s
+    const initialRow = new Array(columnLimit + 1).fill(1);
+    dpTable.push(initialRow);
 
-    // Initialize the base case (the first row, corresponding to step 0).
-    // All possible GCD values (1 to maxValueRange) are initialized with a count of 1.
-    const initialDpRow = new Array(maxValueRange).fill(1);
-    dpTable.push(initialDpRow);
+    // Fill the DP table row by row
+    for (let rowIdx = 1; rowIdx < numRows; ++rowIdx) {
+        const currentRow = new Array(columnLimit + 1).fill(0);
+        dpTable.push(currentRow);
 
-    // Iterate for `totalSteps - 1` subsequent steps, building up the DP table.
-    // `currentIteration` ranges from 1 up to `totalSteps - 1`.
-    for (let currentIteration = 1; currentIteration < totalSteps; ++currentIteration) {
-        // Create a new row for the current iteration, initially filled with zeros.
-        const newDpRow = new Array(maxValueRange).fill(0);
+        // Iterate through possible previous column states (j in original)
+        for (let prevColIdx = 0; prevColIdx < columnLimit; ++prevColIdx) {
+            const previousValue = dpTable[rowIdx - 1][prevColIdx];
 
-        // Iterate through each possible GCD index from the previous step.
-        // `prevGcdValueIndex` is 0-indexed, representing GCD value `prevGcdValueIndex + 1`.
-        for (let prevGcdValueIndex = 0; prevGcdValueIndex < maxValueRange; ++prevGcdValueIndex) {
-            // Optimization: If the count for this GCD in the previous step is zero,
-            // there's no contribution from it, so skip calculations.
-            if (dpTable[currentIteration - 1][prevGcdValueIndex] === 0) {
-                continue;
-            }
+            // Iterate through precomputed GCD contributions for the current prevColIdx
+            for (const dataEntry of gcdContributionFactors[prevColIdx]) {
+                const targetGCD = dataEntry[0]; // The GCD value
+                const contributionCount = dataEntry[1]; // How many times this GCD occurs
 
-            // Retrieve the precomputed GCD frequency list corresponding to the
-            // `prevGcdValueIndex + 1` (which is `i+1` from the pre-computation loop).
-            const relevantGcdFreqs = gcdFrequencyMaps[prevGcdValueIndex];
+                // The target column index in the DP table is GCD - 1
+                const targetColumnIndex = targetGCD - 1;
 
-            // Iterate through each `[GCD_value, count]` pair in the relevant list.
-            for (const [resultingGcd, frequencyCount] of relevantGcdFreqs) {
-                // Update the `newDpRow` for the `resultingGcd`.
-                // Convert the 1-indexed `resultingGcd` to a 0-indexed array position.
-                // Apply modulo arithmetic to the sum at each step to prevent integer overflow.
-                newDpRow[resultingGcd - 1] = (newDpRow[resultingGcd - 1] +
-                                            (dpTable[currentIteration - 1][prevGcdValueIndex] * frequencyCount)) % MODULO_CONSTANT;
+                // Calculate the value to add to the current DP cell
+                const valueToAdd = (previousValue * contributionCount) % MODULO_VALUE;
+
+                // Add the calculated value and apply modulo
+                dpTable[rowIdx][targetColumnIndex] = (dpTable[rowIdx][targetColumnIndex] + valueToAdd) % MODULO_VALUE;
             }
         }
-        dpTable.push(newDpRow); // Add the newly computed row to the DP table.
     }
 
-    // --- Final Result Aggregation ---
-    // The final result is derived from the last row of the `dpTable`.
-    // Instead of popping, we directly access the last element.
-    const finalStateValues = dpTable[totalSteps - 1];
+    // Calculate the final result from the last row of the DP table
+    // Access the last row directly instead of using pop()
+    const finalRowValues = dpTable[numRows - 1];
+    let totalSum = 0;
 
-    let overallSum = 0n; // Use BigInt for summation to safely handle potentially large intermediate products before modulo.
+    for (let i = 0; i < finalRowValues.length; ++i) {
+        const currentGCDValue = i + 1; // The actual GCD value represented by index 'i'
+        const countForGCD = finalRowValues[i]; // The count for this GCD from the DP table
 
-    // Iterate through the final state values.
-    // Each element `finalStateValues[idx]` represents a count for GCD `(idx + 1)`.
-    for (let idx = 0; idx < finalStateValues.length; ++idx) {
-        // Calculate the weighted term: (actual GCD value) * (its count).
-        // Apply modulo at each addition to keep the sum within bounds.
-        // Ensure all operands are BigInt before multiplication/addition.
-        const currentTerm = (BigInt(idx + 1) * BigInt(finalStateValues[idx]));
-        overallSum = (overallSum + currentTerm) % BigInt(MODULO_CONSTANT);
+        // Calculate the term for the sum and apply modulo
+        const term = (currentGCDValue * countForGCD) % MODULO_VALUE;
+        totalSum = (totalSum + term) % MODULO_VALUE;
     }
 
-    // Output the final accumulated result, converting back to a standard Number.
-    console.log(Number(overallSum));
+    console.log(totalSum);
 
-})(require("fs").readFileSync("/dev/stdin", "utf8")); // Immediately invoke the function with input from stdin.
+})(require("fs").readFileSync("/dev/stdin", "utf8"));

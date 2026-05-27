@@ -1,64 +1,51 @@
 "use strict";
 
-// This module processes an input string to find a specific arithmetic combination.
-function  calculateTargetSum ( rawInputSequence ) {
+// This function processes a string of four digits to find an arithmetic expression
+// that evaluates to 7 using three binary operators (+ or -).
+function processInput(rawData) {
+  // Convert the input string into an array of individual numeric digits.
+  // The double tilde (~~) is used for a quick integer conversion.
+  let digitArray = rawData.split("").map(digitChar => ~~digitChar);
 
-  // Convert the raw input string into an array of numeric digits.
-  // Each character is parsed as a number.
-  let numericalDigits = rawInputSequence
-      .split("")
-      .map( singleCharacter => Number(singleCharacter) );
-
-  // Define all possible combinations of three binary operators (+ or -).
-  // These will be applied between the four digits.
-  const operatorPermutations = [
-    ["+", "+", "+"],
-    ["+", "+", "-"],
-    ["+", "-", "-"],
-    ["-", "-", "+"],
-    ["-", "+", "-"],
-    ["+", "-", "+"],
-    ["-", "+", "+"],
-    ["-", "-", "-"]
+  // Define all eight possible combinations of three binary operators.
+  // Each inner array represents the operators for the three positions between the four digits.
+  const operationCombinations = [
+    ["+", "+", "+"], // Example: d1 + d2 + d3 + d4
+    ["+", "+", "-"], // Example: d1 + d2 + d3 - d4
+    ["+", "-", "-"], // Example: d1 + d2 - d3 - d4
+    ["-", "-", "+"], // Example: d1 - d2 - d3 + d4
+    ["-", "+", "-"], // Example: d1 - d2 + d3 - d4
+    ["+", "-", "+"], // Example: d1 + d2 - d3 + d4
+    ["-", "+", "+"], // Example: d1 - d2 + d3 + d4
+    ["-", "-", "-"]  // Example: d1 - d2 - d3 - d4
   ];
 
-  // The original code had a debug log here, which is now removed.
-  // console.log("Parsed digits:", numericalDigits);
+  // Iterate through each predefined combination of operators.
+  for (let idx = 0; idx < operationCombinations.length; idx++) {
+    // Initialize the running total with the first digit from the input.
+    let currentSum = digitArray[0];
 
-  // Iterate through each predefined operator combination.
-  for (let permutationIndex = 0; permutationIndex < operatorPermutations.length; permutationIndex++) {
-
-    // Initialize the current accumulated value with the first digit.
-    let currentAccumulatedValue = numericalDigits[0];
-
-    // Apply the first operator from the current permutation.
-    // If it's a plus, add the second digit; otherwise, subtract it.
-    currentAccumulatedValue += operatorPermutations[permutationIndex][0] === "+"
-      ? numericalDigits[1]
-      : -1 * numericalDigits[1];
+    // Apply the first operator from the current combination.
+    // If the operator is '+', add the second digit; otherwise, subtract it.
+    currentSum += operationCombinations[idx][0] === "+" ? digitArray[1] : -1 * digitArray[1];
 
     // Apply the second operator.
-    currentAccumulatedValue += operatorPermutations[permutationIndex][1] === "+"
-      ? numericalDigits[2]
-      : -1 * numericalDigits[2];
+    currentSum += operationCombinations[idx][1] === "+" ? digitArray[2] : -1 * digitArray[2];
 
     // Apply the third operator.
-    currentAccumulatedValue += operatorPermutations[permutationIndex][2] === "+"
-      ? numericalDigits[3]
-      : -1 * numericalDigits[3];
+    currentSum += operationCombinations[idx][2] === "+" ? digitArray[3] : -1 * digitArray[3];
 
-    // Check if the final sum for this combination equals the target (7).
-    if ( currentAccumulatedValue === 7 ) {
-
-      // If the target sum is achieved, log the full equation to the console.
+    // Check if the final calculated sum for this combination equals 7.
+    if (currentSum === 7) {
+      // If the sum is 7, construct and print the full arithmetic expression.
       console.log(
-          numericalDigits[0] +
-          operatorPermutations[permutationIndex][0] +
-          numericalDigits[1] +
-          operatorPermutations[permutationIndex][1] +
-          numericalDigits[2] +
-          operatorPermutations[permutationIndex][2] +
-          numericalDigits[3] +
+        digitArray[0] +
+          operationCombinations[idx][0] +
+          digitArray[1] +
+          operationCombinations[idx][1] +
+          digitArray[2] +
+          operationCombinations[idx][2] +
+          digitArray[3] +
           "=7"
       );
       // Once a solution is found, terminate the function.
@@ -67,8 +54,6 @@ function  calculateTargetSum ( rawInputSequence ) {
   }
 }
 
-// Execute the main function, reading input from standard input.
-calculateTargetSum(
-  require("fs")
-    .readFileSync("/dev/stdin", "utf8")
-);
+// Read the input from standard input, assuming it's a single line of digits.
+// The 'utf8' encoding is specified for text input.
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

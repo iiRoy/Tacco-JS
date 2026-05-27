@@ -1,41 +1,67 @@
-const countCombinationsOfTwo = (quantity) => {
-  return quantity > 1 ? (quantity * (quantity - 1)) / 2 : 0;
-};
-
-const processInputData = (sourceData) => {
-  const numericSequence = sourceData.trim().split('\n')[1].split(' ').map(Number);
-
-  const initialFrequencies = numericSequence.reduce((accumulator, value) => {
-    accumulator.set(value, (accumulator.get(value) || 0) + 1);
-    return accumulator;
-  }, new Map());
-
-  const computedResultsCache = new Map();
-
-  const finalOutputs = numericSequence.map((currentValueBeingRemoved) => {
-    if (computedResultsCache.has(currentValueBeingRemoved)) {
-      return computedResultsCache.get(currentValueBeingRemoved);
+const memoize = (operation) => {
+  const storage = new Map();
+  return (...args) => {
+    const key = args.join(',');
+    if (!storage.has(key)) {
+      storage.set(key, operation(...args));
     }
+    return storage.get(key);
+  };
+};
 
-    const modifiedFrequencies = new Map(initialFrequencies);
-    modifiedFrequencies.set(currentValueBeingRemoved, modifiedFrequencies.get(currentValueBeingRemoved) - 1);
+const calculateCombinations = (n, k) => {
+  if (k < 0 || k > n) return 0;
+  if (k === 0 || k === n) return 1;
 
-    let currentIterationPairSum = 0;
-    for (const count of modifiedFrequencies.values()) {
-      currentIterationPairSum += countCombinationsOfTwo(count);
+  if (k > n / 2) {
+    k = n - k;
+  }
+
+  if (k === 2) {
+    return (n * (n - 1)) / 2;
+  }
+
+  let result = 1;
+  for (let i = 0; i < k; i++) {
+    result = result * (n - i) / (i + 1);
+  }
+  return Math.round(result);
+};
+
+const getCombinations = memoize(calculateCombinations);
+
+const processInputData = (rawData) => {
+  const lines = rawData.trim().split('\n');
+  const numberSequence = lines[1].split(' ');
+
+  const occurrenceMap = new Map();
+  for (const numStr of numberSequence) {
+    occurrenceMap.set(numStr, (occurrenceMap.get(numStr) || 0) + 1);
+  }
+
+  let initialTotalPairs = 0;
+  for (const count of occurrenceMap.values()) {
+    if (count > 1) {
+      initialTotalPairs += getCombinations(count, 2);
     }
+  }
 
-    computedResultsCache.set(currentValueBeingRemoved, currentIterationPairSum);
+  const outputMemo = new Map();
 
-    return currentIterationPairSum;
-  });
+  for (const currentNum of numberSequence) {
+    if (outputMemo.has(currentNum)) {
+      console.log(outputMemo.get(currentNum));
+    } else {
+      const originalCount = occurrenceMap.get(currentNum);
 
-  return finalOutputs.join('\n');
+      const contributionBeforeRemoval = (originalCount > 1) ? getCombinations(originalCount, 2) : 0;
+      const contributionAfterRemoval = (originalCount - 1 > 1) ? getCombinations(originalCount - 1, 2) : 0;
+
+      const currentResult = initialTotalPairs - contributionBeforeRemoval + contributionAfterRemoval;
+      outputMemo.set(currentNum, currentResult);
+      console.log(currentResult);
+    }
+  }
 };
 
-const orchestrateExecution = () => {
-  const fileInputContent = require('fs').readFileSync('/dev/stdin', 'utf8');
-  console.log(processInputData(fileInputContent));
-};
-
-process.env.PERFORMANCE_TEST_MODE ? null : orchestrateExecution();
+process.env.MYTEST ? test() : processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

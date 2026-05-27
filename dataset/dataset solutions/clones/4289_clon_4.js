@@ -1,25 +1,31 @@
-const systemIO = require('node:fs');
+const fileSystemAccess = require('fs');
 
-function checkPalindromeRecursively(stringToAnalyze, leftIdx, rightIdx, modifications) {
-    if (leftIdx >= rightIdx) {
-        return modifications;
+function calculatePalindromeModifications(targetSequence) {
+    function evaluateSubsegment(leftPointer, rightPointer, currentModificationCount) {
+        if (leftPointer >= rightPointer) {
+            return currentModificationCount;
+        }
+
+        const charFromLeft = targetSequence[leftPointer];
+        const charFromRight = targetSequence[rightPointer];
+
+        if (charFromLeft === charFromRight) {
+            return evaluateSubsegment(leftPointer + 1, rightPointer - 1, currentModificationCount);
+        } else if (charFromLeft === 'x') {
+            return evaluateSubsegment(leftPointer + 1, rightPointer - 1, currentModificationCount + 1);
+        } else if (charFromRight === 'x') {
+            return evaluateSubsegment(leftPointer + 1, rightPointer - 1, currentModificationCount + 1);
+        } else {
+            return -1;
+        }
     }
 
-    const charLeft = stringToAnalyze[leftIdx];
-    const charRight = stringToAnalyze[rightIdx];
-
-    if (charLeft === charRight) {
-        return checkPalindromeRecursively(stringToAnalyze, leftIdx + 1, rightIdx - 1, modifications);
-    } else if (charLeft === 'x') {
-        return checkPalindromeRecursively(stringToAnalyze, leftIdx + 1, rightIdx - 1, modifications + 1);
-    } else if (charRight === 'x') {
-        return checkPalindromeRecursively(stringToAnalyze, leftIdx + 1, rightIdx - 1, modifications + 1);
-    } else {
-        return -1;
-    }
+    return evaluateSubsegment(0, targetSequence.length - 1, 0);
 }
 
-const inputContent = systemIO.readFileSync('/dev/stdin', 'utf8');
-const firstInputLine = inputContent.split('\n')[0];
-const finalResult = checkPalindromeRecursively(firstInputLine, 0, firstInputLine.length - 1, 0);
-console.log(finalResult);
+const rawInputData = fileSystemAccess.readFileSync("/dev/stdin", "UTF-8");
+const inputLines = rawInputData.split("\n");
+const primaryString = inputLines[0];
+const outcome = calculatePalindromeModifications(primaryString);
+console.log(outcome);
+module.exports = {};

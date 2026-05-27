@@ -1,108 +1,63 @@
-const processGameBatches = (allInputSegments, collectedOutcomes = []) => {
-    if (allInputSegments.length === 0) {
-        return collectedOutcomes;
-    }
+const sourceData = require('fs').readFileSync('/dev/stdin', 'utf8');
+let lineSegments = sourceData.trim().split("\n");
 
-    const [currentSegment, ...remainingSegments] = allInputSegments;
-    const [playersTotal, roundsTotal] = currentSegment.dimensions;
-
-    if (playersTotal === 0 && roundsTotal === 0) {
-        return collectedOutcomes;
-    }
-
-    const gameSolution = computeGameResults(playersTotal, roundsTotal, currentSegment.guesses);
-    const formattedSolution = gameSolution.sort((a, b) => a - b).join(" ");
-
-    return processGameBatches(remainingSegments, [...collectedOutcomes, formattedSolution]);
-};
-
-const parseInputDataRecursive = (rawInputLines, currentLinePointer = 0, structuredGameData = []) => {
-    if (currentLinePointer >= rawInputLines.length) {
-        return structuredGameData;
-    }
-
-    const dimensionLine = rawInputLines[currentLinePointer].split(" ").map(Number);
-    const playersCount = dimensionLine[0];
-    const roundsCount = dimensionLine[1];
-    currentLinePointer++;
-
-    if (playersCount === 0 && roundsCount === 0) {
-        return structuredGameData;
-    }
-
-    const gameGuesses = rawInputLines.slice(currentLinePointer, currentLinePointer + roundsCount);
-    currentLinePointer += roundsCount;
-
-    return parseInputDataRecursive(
-        rawInputLines,
-        currentLinePointer,
-        [...structuredGameData, { dimensions: [playersCount, roundsCount], guesses: gameGuesses }]
-    );
-};
-
-const transformNumberToPhrase = (numeralVal) => {
-    const ruleset = [
-        { modulus: 15, output: "FizzBuzz" },
-        { modulus: 3, output: "Fizz" },
-        { modulus: 5, output: "Buzz" }
+const fizzBuzzEvaluator = (numeral) => {
+    const rules = [
+        { divisor: 15, phrase: "FizzBuzz" },
+        { divisor: 3, phrase: "Fizz" },
+        { divisor: 5, phrase: "Buzz" }
     ];
 
-    for (const rule of ruleset) {
-        if (numeralVal % rule.modulus === 0) {
-            return rule.output;
+    for (const rule of rules) {
+        if (numeral % rule.divisor === 0) {
+            return rule.phrase;
         }
     }
-    return String(numeralVal);
+    return String(numeral);
 };
 
-const computeGameResults = (initialPlayerCount, totalGameRounds, playerResponses) => {
+while (true) {
+    const gameParams = lineSegments.shift().split(" ");
+    if (gameParams[0] === "0" && gameParams[1] === "0") {
+        break;
+    }
 
-    const recursiveRoundProcessor = (
-        currentActiveParticipants,
-        currentRoundIndex,
-        currentSequenceValue,
-        activeParticipantPointer
-    ) => {
-        if (currentActiveParticipants.size <= 1 || currentRoundIndex >= totalGameRounds) {
-            return Array.from(currentActiveParticipants);
+    const playerCount = Number(gameParams[0]);
+    const roundLimit = Number(gameParams[1]);
+
+    let activePlayerIndices = Array.from({ length: playerCount }, (_, idx) => idx);
+    let currentSpeakerIndex = 0; // Index into the activePlayerIndices array
+    let roundNumber = 0; // The number for FizzBuzz calculation
+
+    for (let r = 0; r < roundLimit; r++) {
+        if (activePlayerIndices.length <= 1) {
+            break; 
         }
 
-        const nextSequenceValue = currentSequenceValue + 1;
-        const currentRoundResponse = playerResponses[currentRoundIndex];
-        const expectedPhrase = transformNumberToPhrase(nextSequenceValue);
+        roundNumber++;
+        const spokenPhrase = lineSegments.shift();
+        const expectedPhrase = fizzBuzzEvaluator(roundNumber);
 
-        const sortedParticipants = Array.from(currentActiveParticipants).sort((a, b) => a - b);
-        const participantOnTurn = sortedParticipants[activeParticipantPointer];
-
-        let updatedParticipantSet = new Set(currentActiveParticipants);
-        let nextParticipantPointer = activeParticipantPointer;
-
-        if (currentRoundResponse !== expectedPhrase) {
-            updatedParticipantSet.delete(participantOnTurn);
-            if (updatedParticipantSet.size === 0) {
-                return [];
+        if (spokenPhrase !== expectedPhrase) {
+            // Player at currentSpeakerIndex made a mistake, eliminate them
+            activePlayerIndices.splice(currentSpeakerIndex, 1);
+            
+            if (activePlayerIndices.length === 0) {
+                // All players eliminated, game ends
+                break; 
             }
-            nextParticipantPointer = activeParticipantPointer % updatedParticipantSet.size;
-        } else {
-            nextParticipantPointer = (activeParticipantPointer + 1) % updatedParticipantSet.size;
+            // Adjust currentSpeakerIndex if the last element was removed,
+            // otherwise it now points to the next player in the sequence.
+            currentSpeakerIndex %= activePlayerIndices.length;
         }
+        
+        // Advance to the next speaker for the *next* round,
+        // unless this is the very last round of the game.
+        if (r < roundLimit - 1) {
+            currentSpeakerIndex = (currentSpeakerIndex + 1) % activePlayerIndices.length;
+        }
+    }
 
-        return recursiveRoundProcessor(
-            updatedParticipantSet,
-            currentRoundIndex + 1,
-            nextSequenceValue,
-            nextParticipantPointer
-        );
-    };
-
-    const startingParticipants = new Set(Array.from({ length: initialPlayerCount }, (_, idx) => idx + 1));
-    return recursiveRoundProcessor(startingParticipants, 0, 0, 0);
-};
-
-const rawInput = require('fs').readFileSync('/dev/stdin', 'utf8');
-const allInputLinesCleaned = rawInput.trim().split("\n");
-
-const structuredData = parseInputDataRecursive(allInputLinesCleaned);
-const finalOutputLines = processGameBatches(structuredData);
-
-finalOutputLines.forEach(line => console.log(line));
+    const finalists = activePlayerIndices.map(playerIdx => playerIdx + 1);
+    console.log(finalists.join(" "));
+}

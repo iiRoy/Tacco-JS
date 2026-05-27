@@ -1,44 +1,40 @@
 'use strict';
 
+// This function processes the provided input data to determine a specific outcome.
+function ProcessInput(inputData) {
+  // Split the raw input string into an array of lines, removing leading/trailing whitespace.
+  const parsedLines = inputData.trim().split(/\r?\n/g);
 
-function AssessSituation ( rawInputTxt ) {
-  // This section processes the raw input string, splitting it into individual lines.
-  const dataLines = rawInputTxt.  trim() . split ( /\r?\n/g );
+  // Parse the first line to get the initial position and speed.
+  const firstValues = parsedLines[0].split(' ').map(textVal => Number(textVal));
+  const startPoint = firstValues[0];
+  const speedOne = firstValues[1];
 
-  // The first line contains initial position and velocity values.
-  const initialSpeeds = dataLines [ 0 ] . split ( ' ' ) . map ( ( numStr ) => Number ( numStr ) ) ;
-  const initialPos  =  initialSpeeds [ 0 ] ;
-  const initialVel = initialSpeeds [ 1 ] ;
+  // Parse the second line to get the target position and speed.
+  const secondValues = parsedLines[1].split(' ').map(textVal => Number(textVal));
+  const endPoint = secondValues[0];
+  const speedTwo = secondValues[1];
 
-  // The second line contains target position and velocity values.
-  const targetSpeeds = dataLines [ 1 ] . split ( ' ' ) . map ( ( stringVal ) => Number ( stringVal ) ) ;
-  const finalPos = targetSpeeds [ 0 ] ;
-  const finalVel = targetSpeeds [ 1 ] ;
+  // Get the time limit from the third line.
+  const timeLimit = parsedLines[2];
 
-  // The third line specifies the allowed time duration.
-  const allowedTime = dataLines [ 2 ] ;
+  // Initialize the outcome as 'NO'.
+  let finalOutcome = 'NO';
 
-  let outcomeMessage = 'NO' ; // Initialize the outcome as 'NO' by default.
+  // Calculate the distance between the two points.
+  const distanceGap = endPoint - startPoint;
 
-  // Calculate the linear distance that needs to be covered.
-  const travelDistance = finalPos - initialPos ;
+  // Calculate the relative speed difference.
+  const relativeSpeed = speedOne - speedTwo;
 
-  // Determine the effective speed difference between the two entities.
-  const speedDelta = initialVel - finalVel ;
-
-  // Evaluate if the relative movement over the given time is sufficient to close the distance.
-  if ( ( speedDelta * allowedTime ) > travelDistance )
-  {
-    outcomeMessage = 'YES' ; // If so, update the outcome.
+  // Determine if the first entity can reach or pass the second within the time limit.
+  if (relativeSpeed * timeLimit > distanceGap) {
+    finalOutcome = 'YES';
   }
 
-  // Display the determined outcome to the console.
-  console.log ( outcomeMessage ) ;
+  // Output the final determination.
+  console.log(finalOutcome);
 }
 
-
-// Core execution block: This part handles reading input from the standard input stream
-// and passes it to the main processing function for calculation.
-AssessSituation (
-  require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" )
-) ;
+// Execute the main processing function with data read from standard input.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

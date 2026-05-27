@@ -1,214 +1,189 @@
-/*
- * This module provides utilities for parsing structured input data.
- * It encapsulates an input source and offers methods to extract various data types.
- */
-let DATA_PARSER = (function() {
-
-    /*
-     * Factory function to create a new input source handler.
-     *
-     * @param {string} sourceContent - The raw string content to parse.
-     * @returns {InputSourceHandler} A new instance of the InputSourceHandler.
+var INPUT_PARSER = (function() {
+    /**
+     * Initializes a new input parsing utility.
+     * @param {string} rawInputContent - The entire input string received.
+     * @returns {InputHandler} An instance capable of reading input.
      */
-    function createParser(sourceContent) {
-        return new InputSourceHandler(sourceContent);
+    function createParser(rawInputContent) {
+        return new InputHandler(rawInputContent);
     }
-
-    /*
-     * Constructor for the InputSourceHandler class.
-     * Manages the raw input lines and the current reading position.
-     *
-     * @param {string} rawStringData - The initial string data.
-     */
-    function InputSourceHandler(rawStringData) {
-        this._lines = rawStringData.trim().split("\n");         /* All input lines, stripped of leading/trailing whitespace */
-        this._currentLineIndex = 0;                              /* Current line being processed, 0-based index */
-    }
-
-    /*
-     * Prototype methods for InputSourceHandler.
-     */
 
     /**
-     * Extracts and returns the next value from the current line.
-     * If the line is exhausted, it advances to the next.
-     *
-     * @param {boolean} returnAsString - If true, returns the value as a string; otherwise, as a number.
-     * @returns {string|number} The extracted value.
+     * @class InputHandler
+     * @param {string} contentString - The full string content to be parsed.
      */
-    InputSourceHandler.prototype.extractNextValue = function(returnAsString) {
-        let currentSegments = this._lines,
-            linePointer = this._currentLineIndex,
-            retrievedDatum;
+    function InputHandler(contentString) {
+        // Internal storage for all lines of input, trimmed and split.
+        this._sourceLines = contentString.trim().split("\n");
+        // Index to keep track of the current line being processed.
+        this._currentLineIndex = 0;
+    }
 
-        // If the current line hasn't been processed into segments yet, do so by splitting and reversing.
-        if (typeof currentSegments[linePointer] === "string") {
-            currentSegments[linePointer] = currentSegments[linePointer].split(" ").reverse();
+    /**
+     * Reads a single token from the current line, processing from right to left.
+     * Advances to the next line if the current one is exhausted.
+     * @param {boolean} [returnAsText=false] - If true, returns the token as a string; otherwise, as a number.
+     * @returns {string|number} The extracted token.
+     */
+    InputHandler.prototype.readSingleValue = function(returnAsText) {
+        var allLines = this._sourceLines;
+        var currentLinePosition = this._currentLineIndex;
+        var retrievedToken;
+
+        // If the current line is still a raw string, split it into tokens and reverse for right-to-left popping.
+        if (typeof allLines[currentLinePosition] === "string") {
+            allLines[currentLinePosition] = allLines[currentLinePosition].split(" ").reverse();
         }
 
-        // Pop the last segment from the current line's array of segments.
-        retrievedDatum = currentSegments[linePointer].pop();
+        // Get the last token from the (reversed) current line.
+        retrievedToken = allLines[currentLinePosition].pop();
 
-        // If the current line is now empty, advance the line pointer to the next line.
-        if (!currentSegments[linePointer].length) {
+        // If the current line is now empty, increment the line index.
+        if (!allLines[currentLinePosition].length) {
             this._currentLineIndex++;
         }
 
-        // Return the value as a string or a number based on the `returnAsString` flag.
-        return returnAsString ? retrievedDatum : +retrievedDatum;
+        // Return the token, optionally converted to a number.
+        return returnAsText ? retrievedToken : +retrievedToken;
     };
 
     /**
-     * Retrieves an entire line, splits it by spaces, and optionally converts segments to numbers.
-     *
-     * @param {boolean} outputAsStrings - If true, returns an array of strings; otherwise, an array of numbers.
-     * @returns {Array<string|number>} An array of values from the line.
+     * Reads an entire line, splitting it into tokens.
+     * Increments the line index after reading.
+     * @param {boolean} [keepTokensAsStrings=false] - If true, tokens are returned as strings; otherwise, as numbers.
+     * @returns {Array<string|number>} An array of tokens from the line.
      */
-    InputSourceHandler.prototype.retrieveLine = function(outputAsStrings) {
-        // Fetch the current line, split it by space, and then advance the line pointer.
-        let lineSegments = this._lines[this._currentLineIndex++].split(" ");
-
-        // Return segments as strings or converted numbers.
-        return outputAsStrings ? lineSegments : lineSegments.map(segment => +segment);
+    InputHandler.prototype.readLineTokens = function(keepTokensAsStrings) {
+        // Fetch the current line, split by space, and then advance the line pointer.
+        var lineTokens = this._sourceLines[this._currentLineIndex++].split(" ");
+        // Return tokens as strings or map them to numbers.
+        return keepTokensAsStrings ? lineTokens : lineTokens.map(tokenStr => +tokenStr);
     };
 
     /**
-     * Reads a block of multiple lines, treating each as a row in a matrix.
-     * Each row is split by spaces, and optionally converted to numbers.
-     *
-     * @param {number} numberOfRows - The number of lines (rows) to read.
-     * @param {boolean} outputStringFormat - If true, returns a matrix of strings; otherwise, a matrix of numbers.
-     * @returns {Array<Array<string|number>>} A 2D array representing the matrix.
+     * Reads a block of lines as a matrix (2D array).
+     * Advances the line index by the number of rows read.
+     * @param {number} numberOfRows - The count of rows to read for the matrix.
+     * @param {boolean} [outputAsStrings=false] - If true, matrix elements are strings; otherwise, numbers.
+     * @returns {Array<Array<string|number>>} The parsed matrix.
      */
-    InputSourceHandler.prototype.getMultiLineData = function(numberOfRows, outputStringFormat) {
-        // Extract a block of 'numberOfRows' lines, split each by space.
-        let parsedRows = this._lines.slice(this._currentLineIndex, this._currentLineIndex += numberOfRows).map(line => line.split(" "));
+    InputHandler.prototype.readMatrix = function(numberOfRows, outputAsStrings) {
+        // Extract the specified number of lines for the matrix.
+        var matrixRows = this._sourceLines.slice(this._currentLineIndex, this._currentLineIndex += numberOfRows)
+                                          .map(line => line.split(" ")); // Split each line into elements.
 
-        // Return the parsed rows as strings or nested arrays of numbers.
-        return outputStringFormat ? parsedRows : parsedRows.map(row => row.map(item => +item));
+        // Return the matrix, optionally converting all elements to numbers.
+        return outputAsStrings ? matrixRows : matrixRows.map(row => row.map(elementStr => +elementStr));
     };
 
     /**
-     * Reads a block of multiple lines without further splitting, optionally converting each line to a number.
-     *
-     * @param {number} countOfLines - The number of lines to read.
-     * @param {boolean} stringMode - If true, returns an array of raw strings; otherwise, an array of numbers.
-     * @returns {Array<string|number>} An array of lines.
+     * Reads a specified number of raw lines from the input.
+     * Advances the line index by the 'count' parameter.
+     * @param {number} count - The number of lines to retrieve.
+     * @param {boolean} [returnRawStrings=false] - If true, returns lines as strings; otherwise, attempts numeric conversion.
+     * @returns {Array<string|number>} An array of the read lines.
      */
-    InputSourceHandler.prototype.fetchLines = function(countOfLines, stringMode) {
-        // Extract a block of 'countOfLines' lines without further splitting.
-        let rawLineBlock = this._lines.slice(this._currentLineIndex, this._currentLineIndex += countOfLines);
-
-        // Return lines as strings or converted numbers.
-        return stringMode ? rawLineBlock : rawLineBlock.map(singleLine => +singleLine);
+    InputHandler.prototype.readLines = function(count, returnRawStrings) {
+        // Slice the required number of lines from the source.
+        var extractedLines = this._sourceLines.slice(this._currentLineIndex, this._currentLineIndex += count);
+        // Return lines as strings or convert them to numbers.
+        return returnRawStrings ? extractedLines : extractedLines.map(lineValue => +lineValue);
     };
 
     return createParser;
 })();
 
+// Initialize the input reader by loading content from standard input.
+var inputReader = INPUT_PARSER(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-/*
- * Dynamically constructs a multi-dimensional array based on provided dimensions.
- * This function uses `eval` for dynamic array creation.
- *
- * @param {*} initialValue - The value to fill the innermost array elements with.
- * @param {...number} dimensions - A variable number of arguments representing the dimensions of the array.
- * @returns {Array} The newly constructed multi-dimensional array.
+/**
+ * Dynamically creates a multi-dimensional array initialized with a specific value.
+ * @param {*} initialValue - The value to fill the array elements with.
+ * @param {...number} dimensions - The sizes of each dimension (e.g., dim1, dim2, ...).
+ * @returns {Array} The newly created multi-dimensional array.
  */
-function buildMultiDimensionalArray(initialValue) {
-    let dimensionArguments = arguments,
-        dimensionCount = dimensionArguments.length,
-        arrayCodeString = `Array(dimensionArguments[${--dimensionCount}]).fill(0).map(element => { return ${initialValue}; })`;
+function createMultiDimArray(initialValue) {
+    var dimensionArguments = arguments;
+    var dimensionCount = dimensionArguments.length;
+    // Construct the innermost array creation expression.
+    var arrayCreationExpression = "Array(dimensionArguments[" + --dimensionCount + "]).fill(0).map(_=>{return " + initialValue + ";})";
 
-    // Loop to build up the nested array creation code string.
+    // Build up the nested array structure for all dimensions.
     while (--dimensionCount) {
-        arrayCodeString = `Array(dimensionArguments[${dimensionCount}]).fill(0).map(element => ${arrayCodeString})`;
+        arrayCreationExpression = "Array(dimensionArguments[" + dimensionCount + "]).fill(0).map(_=>" + arrayCreationExpression + ")";
     }
-
-    // Evaluate the constructed code string to create and return the array.
-    return eval(arrayCodeString);
+    // Execute the generated string to create the array.
+    return eval(arrayCreationExpression);
 }
 
+// Execute the primary logic function and output its result to the console.
+console.log(mainLogic());
 
-/*
- * Initialize the input parsing utility with data from standard input.
- * Reads the entire content of /dev/stdin as a UTF-8 string.
+/**
+ * Contains the core algorithm for solving the problem.
+ * This function implements the Floyd-Warshall algorithm to find all-pairs shortest paths
+ * in a graph and then counts specific edges.
+ * @returns {number} The final calculated count of edges that are not part of any shortest path.
  */
-const inputReader = DATA_PARSER(require("fs").readFileSync("/dev/stdin", "utf8"));
+function mainLogic() {
+    // Read the number of vertices (N) and the number of edges (M) from input.
+    var vertexCount = inputReader.readSingleValue();
+    var edgeCount = inputReader.readSingleValue();
 
-/*
- * Execute the main problem-solving logic and output the result to the console.
- */
-console.log(solveProblem());
+    // Initialize a distance matrix. All distances are set to a very large number (infinity),
+    // representing no direct path, except for self-loops which are 0.
+    var shortestPathDistances = createMultiDimArray(1e9, vertexCount, vertexCount);
 
-/*
- * The primary function that contains the core logic for the problem.
- * This function calculates the number of redundant edges in a graph
- * using the Floyd-Warshall algorithm for all-pairs shortest paths.
- *
- * @returns {number} The count of redundant edges.
- */
-function solveProblem() {
-    // Read the number of nodes (vertices) in the graph.
-    const nodeCount = inputReader.extractNextValue();
-    // Read the number of edges.
-    const edgeCount = inputReader.extractNextValue();
+    // Read all edge definitions (start_node, end_node, weight).
+    var originalEdges = inputReader.readMatrix(edgeCount);
 
-    // Initialize an adjacency matrix (distance matrix) for all-pairs shortest paths.
-    // Use a large value (effectively infinity) for unreachable paths.
-    const distanceMatrix = buildMultiDimensionalArray(1_000_000_000, nodeCount, nodeCount);
-
-    // Read all edge data, where each edge is [nodeA, nodeB, weight].
-    const edgeData = inputReader.getMultiLineData(edgeCount);
-
-    // Set diagonal elements of the distance matrix to 0, as the distance from a node to itself is zero.
-    for (let nodeIdx = 0; nodeIdx < nodeCount; nodeIdx++) {
-        distanceMatrix[nodeIdx][nodeIdx] = 0;
+    // Set diagonal elements of the distance matrix to 0 (distance from a node to itself).
+    for (var i = 0; i < vertexCount; i++) {
+        shortestPathDistances[i][i] = 0;
     }
 
     // Populate the initial distance matrix with direct edge weights.
-    // Node indices are typically 1-based in input, so adjust to 0-based.
-    for (let edgeIdx = 0; edgeIdx < edgeCount; edgeIdx++) {
-        // Decrement node indices to make them 0-based.
-        let firstNode = --edgeData[edgeIdx][0],
-            secondNode = --edgeData[edgeIdx][1],
-            pathCost = edgeData[edgeIdx][2];
+    // The graph is undirected, so update both (u,v) and (v,u).
+    for (var j = 0; j < edgeCount; j++) {
+        // Adjust node indices to be 0-based.
+        var uNode = --originalEdges[j][0];
+        var vNode = --originalEdges[j][1];
+        var edgeWeight = originalEdges[j][2];
 
-        // For an undirected graph, set distances for both directions.
-        distanceMatrix[firstNode][secondNode] = distanceMatrix[secondNode][firstNode] = pathCost;
+        shortestPathDistances[uNode][vNode] = shortestPathDistances[vNode][uNode] = edgeWeight;
     }
 
-    // Apply the Floyd-Warshall algorithm to find all-pairs shortest paths.
-    // Iterate through all possible intermediate nodes 'kNode'.
-    for (let kNode = 0; kNode < nodeCount; kNode++)
-        // Iterate through all possible start nodes 'iNode'.
-        for (let iNode = 0; iNode < nodeCount; iNode++)
-            // Iterate through all possible target nodes 'jNode'.
-            for (let jNode = 0; jNode < nodeCount; jNode++) {
-                // If a shorter path from iNode to jNode is found by passing through kNode,
-                // update the distance in the matrix.
-                if (distanceMatrix[iNode][jNode] > distanceMatrix[iNode][kNode] + distanceMatrix[kNode][jNode]) {
-                    distanceMatrix[iNode][jNode] = distanceMatrix[iNode][kNode] + distanceMatrix[kNode][jNode];
+    // Apply the Floyd-Warshall algorithm.
+    // Iterate through all possible intermediate nodes (k).
+    for (var kNode = 0; kNode < vertexCount; kNode++) {
+        // Iterate through all possible source nodes (i).
+        for (var iNode = 0; iNode < vertexCount; iNode++) {
+            // Iterate through all possible destination nodes (j).
+            for (var jNode = 0; jNode < vertexCount; jNode++) {
+                // If a shorter path from i to j is found via k, update the distance.
+                if (shortestPathDistances[iNode][jNode] > shortestPathDistances[iNode][kNode] + shortestPathDistances[kNode][jNode]) {
+                    shortestPathDistances[iNode][jNode] = shortestPathDistances[iNode][kNode] + shortestPathDistances[kNode][jNode];
                 }
             }
-
-    // Count the number of redundant edges.
-    // An edge is considered redundant if its direct path is longer than the
-    // shortest path found by the Floyd-Warshall algorithm.
-    let redundantEdgeCount = 0;
-    for (let checkEdgeIdx = 0; checkEdgeIdx < edgeCount; checkEdgeIdx++) {
-        // Retrieve the original 0-based node indices and weight from the processed edgeData.
-        let firstNode = edgeData[checkEdgeIdx][0],
-            secondNode = edgeData[checkEdgeIdx][1],
-            originalWeight = edgeData[checkEdgeIdx][2];
-
-        // If the calculated shortest path between the two nodes is less than the original edge weight,
-        // it means this edge is not part of a shortest path and can be removed, hence it's redundant.
-        if (distanceMatrix[firstNode][secondNode] < originalWeight) {
-            redundantEdgeCount++;
         }
     }
 
-    // Return the final count of redundant edges.
-    return redundantEdgeCount;
+    // Count how many original edges are not part of any shortest path.
+    var nonShortestPathEdges = 0;
+    for (var l = 0; l < edgeCount; l++) {
+        // Retrieve the original edge's nodes and weight.
+        // Note: originalEdges[l][0] and originalEdges[l][1] are already 0-based from earlier adjustment.
+        var source = originalEdges[l][0];
+        var destination = originalEdges[l][1];
+        var initialWeight = originalEdges[l][2];
+
+        // If the shortest path distance between source and destination is less than
+        // the original edge's weight, it means this original edge is redundant
+        // (i.e., not part of any shortest path).
+        if (shortestPathDistances[source][destination] < initialWeight) {
+            nonShortestPathEdges++;
+        }
+    }
+
+    return nonShortestPathEdges;
 }

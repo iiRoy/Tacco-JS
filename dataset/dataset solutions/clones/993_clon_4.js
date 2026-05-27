@@ -1,35 +1,40 @@
-let receivedInput = '';
-
-process.stdin.on('data', (chunkOfData) => {
-    receivedInput += chunkOfData.toString();
+inputData = [];
+var inputHandler = require('readline').createInterface({
+  input: process.stdin,
+  output: process.stdout
 });
 
-const evaluateOddDivisors = (candidateValue, currentDivisor) => {
-    if (currentDivisor * currentDivisor > candidateValue) {
-        return true;
-    }
-    if (candidateValue % currentDivisor === 0) {
-        return false;
-    }
-    return evaluateOddDivisors(candidateValue, currentDivisor + 2);
-};
-
-const ascertainPrimality = (numericEntity) => {
-    if (numericEntity < 2) return false;
-    if (numericEntity === 2) return true;
-    if (numericEntity % 2 === 0) return false;
-    return evaluateOddDivisors(numericEntity, 3);
-};
-
-process.stdin.on('end', () => {
-    const allSegments = receivedInput.trim().split('\n');
-    const specifiedQuantity = parseInt(allSegments[0], 10);
-
-    const targetNumbers = allSegments
-        .slice(1, specifiedQuantity + 1)
-        .map(textualRepresentation => parseInt(textualRepresentation, 10));
-
-    const totalPrimaryCount = targetNumbers.filter(ascertainPrimality).length;
-
-    console.log(totalPrimaryCount);
+inputHandler.on('line', (currentLine) => {
+  inputData.push(currentLine);
 });
+
+inputHandler.on('close', () => {
+  const countOfNumbers = Number(inputData[0]);
+  
+  const primeCount = inputData
+    .slice(1, 1 + countOfNumbers)
+    .map(Number)
+    .filter(checkPrimality)
+    .length;
+  
+  console.log(primeCount);
+});
+
+function checkPrimality(valueToTest) {
+    if (valueToTest === 2) return true;
+    if (valueToTest < 2 || valueToTest % 2 === 0) return false;
+
+    const divisorUpperLimit = Math.floor(Math.sqrt(valueToTest));
+
+    const recursiveDivisorCheck = (currentDivisor) => {
+        if (currentDivisor > divisorUpperLimit) {
+            return true;
+        }
+        if (valueToTest % currentDivisor === 0) {
+            return false;
+        }
+        return recursiveDivisorCheck(currentDivisor + 2);
+    };
+    
+    return recursiveDivisorCheck(3);
+}

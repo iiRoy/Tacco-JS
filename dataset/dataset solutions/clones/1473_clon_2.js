@@ -1,54 +1,62 @@
-( function ( sourceContent ) {
-  // Process the incoming raw string by splitting it into individual lines.
-  sourceContent = sourceContent . split ( "\n" ) ;
+(function(rawInput) {
+    // The initial input string is split into an array of individual lines.
+    rawInput = rawInput.split("\n");
 
-  var instructionSet = [ ] ; // An array to hold all parsed command instructions.
-  var containerRegistry = [ ] ; // A collection of stacks, indexed by arbitrary names.
-  var instructionPointer = 0 ; // Keeps track of the current command to execute.
+    // This array will hold each line of input, further split into command tokens.
+    var parsedCommands = [];
+    // This array serves as a collection of distinct data storage units,
+    // where each unit is itself an array (acting as a stack).
+    var storageUnits = [];
+    // A numerical pointer to keep track of the current command being processed.
+    var commandPointer = 0;
 
-  // Iterate through each line of the input to parse commands.
-  for ( var lineCounter = 0 ; lineCounter < sourceContent . length ; lineCounter ++ ) {
-    // Each line is further split by spaces to separate command and its arguments.
-    instructionSet [ lineCounter ] = sourceContent [ lineCounter ] . split ( " " ) ;
-  }
-
-  // Advance the pointer past the initial line, assuming it's a header or metadata.
-  instructionPointer ++ ;
-
-  // Execute commands until the "quit" instruction is encountered.
-  while ( instructionSet [ instructionPointer ] [ 0 ] != "quit" ) {
-
-    // Determine the type of the current command.
-    switch ( instructionSet [ instructionPointer ] [ 0 ] ) {
-      case "push" :
-        // If the target container doesn't exist or isn't an array, initialize it.
-        if ( ! ( containerRegistry [ instructionSet [ instructionPointer ] [ 1 ] ] instanceof Array ) ) {
-          containerRegistry [ instructionSet [ instructionPointer ] [ 1 ] ] = [ ] ;
-        }
-        // Add the specified element to the designated container.
-        containerRegistry [ instructionSet [ instructionPointer ] [ 1 ] ] . push ( instructionSet [ instructionPointer ] [ 2 ] ) ;
-        instructionPointer ++ ; // Move to the next operation.
-        break ;
-
-      case "pop" :
-        // Retrieve the topmost item from the specified container.
-        var retrievedElement = containerRegistry [ instructionSet [ instructionPointer ] [ 1 ] ] . pop ( ) ;
-        // Display the retrieved item to standard output.
-        console . log ( retrievedElement ) ;
-        instructionPointer ++ ; // Advance to the subsequent instruction.
-        break ;
-
-      case "move" :
-        // Ensure the destination container is properly initialized.
-        if ( ! ( containerRegistry [ instructionSet [ instructionPointer ] [ 2 ] ] instanceof Array ) ) {
-          containerRegistry [ instructionSet [ instructionPointer ] [ 2 ] ] = [ ] ;
-        }
-        // Extract an item from the source container.
-        var transferredObject = containerRegistry [ instructionSet [ instructionPointer ] [ 1 ] ] . pop ( ) ;
-        // Place the extracted item into the destination container.
-        containerRegistry [ instructionSet [ instructionPointer ] [ 2 ] ] . push ( transferredObject ) ;
-        instructionPointer ++ ; // Proceed to the next line of commands.
-        break ;
+    // Loop through each line of the raw input to parse it into command tokens.
+    for (var lineCounter = 0; lineCounter < rawInput.length; lineCounter++) {
+        // Each line is split by spaces to separate the command from its arguments.
+        parsedCommands[lineCounter] = rawInput[lineCounter].split(" ");
     }
-  }
-} ) ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+
+    // Increment the command pointer to move past any initial setup or header line.
+    commandPointer++;
+
+    // The main execution loop continues as long as the current command is not "quit".
+    while (parsedCommands[commandPointer][0] != "quit") {
+        // A switch statement is used to handle different command types.
+        switch (parsedCommands[commandPointer][0]) {
+            case "push":
+                // Before pushing, ensure the target storage unit (identified by parsedCommands[commandPointer][1])
+                // exists and is an array. If not, initialize it as an empty array.
+                if (!(storageUnits[parsedCommands[commandPointer][1]] instanceof Array)) {
+                    storageUnits[parsedCommands[commandPointer][1]] = [];
+                }
+                // Push the specified value (parsedCommands[commandPointer][2]) onto the target storage unit.
+                storageUnits[parsedCommands[commandPointer][1]].push(parsedCommands[commandPointer][2]);
+                // Advance to the next command in the sequence.
+                commandPointer++;
+                break;
+
+            case "pop":
+                // Retrieve and remove the top element from the specified storage unit.
+                var poppedValue = storageUnits[parsedCommands[commandPointer][1]].pop();
+                // Output the retrieved value to the standard console.
+                console.log(poppedValue);
+                // Advance to the next command.
+                commandPointer++;
+                break;
+
+            case "move":
+                // Similar to "push", ensure the destination storage unit (parsedCommands[commandPointer][2])
+                // is properly initialized as an array if it doesn't exist.
+                if (!(storageUnits[parsedCommands[commandPointer][2]] instanceof Array)) {
+                    storageUnits[parsedCommands[commandPointer][2]] = [];
+                }
+                // Pop an item from the source storage unit (parsedCommands[commandPointer][1]).
+                var movedItem = storageUnits[parsedCommands[commandPointer][1]].pop();
+                // Push the popped item onto the destination storage unit.
+                storageUnits[parsedCommands[commandPointer][2]].push(movedItem);
+                // Advance to the next command.
+                commandPointer++;
+                break;
+        }
+    }
+})(require("fs").readFileSync("/dev/stdin", "utf8"));

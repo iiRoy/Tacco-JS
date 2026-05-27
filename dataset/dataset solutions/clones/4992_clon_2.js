@@ -1,25 +1,18 @@
-function processInputData ( rawText )
-{
-  // Cleanse the incoming string data by removing leading/trailing whitespace.
-  rawText = rawText . trim ( ) ;
+function processInput(rawData) {
+  // Clean up the raw input string by removing leading/trailing whitespace.
+  rawData = rawData.trim();
 
-  // Deconstruct the processed string into four numerical components.
-  // Each component is expected to be on a new line within the input.
-  const   [   firstValue    ,
-              secondValue   ,
-              thirdValue    ,
-              fourthValue   ]   =   rawText
-                                      . split ( '\n' )
-                                      . map ( Number ) ;
+  // Split the cleaned string by newline characters and convert each part to a number.
+  // Destructure the resulting array into four distinct numerical variables.
+  const [val1, val2, val3, val4] = rawData.split('\n').map(Number);
 
-  // Determine the final result based on a conditional expression.
-  // If the first value is greater than the second, calculate a specific formula.
-  // Otherwise, compute a simpler product.
-  console . log ( firstValue > secondValue
-                  ? secondValue * thirdValue + ( firstValue - secondValue ) * fourthValue
-                  : secondValue * thirdValue ) ;
+  // Perform a conditional calculation based on the comparison of the first two values.
+  // If the first value is greater than the second, calculate a specific expression.
+  // Otherwise, calculate a different expression.
+  // Log the final computed result to the console.
+  console.log(val1 > val2 ? val2 * val3 + (val1 - val2) * val4 : val2 * val3);
 }
 
-// Invoke the primary processing function with data read from standard input.
-// This uses Node.js 'fs' module to synchronously read the file.
-processInputData ( require ( 'fs' ) . readFileSync ( '/dev/stdin' , 'utf8' ) ) ;
+// Read the content of the standard input file synchronously using Node.js 'fs' module.
+// Pass the read content to the main processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

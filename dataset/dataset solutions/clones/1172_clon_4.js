@@ -1,28 +1,38 @@
-const inputSystem = require('readline');
-const hostEnvironment = process;
+var collectedSegments = [];
+var inputSource = process.stdin;
 
-async function processCoordinateData() {
-    const inputInterface = inputSystem.createInterface({
-        input: hostEnvironment.stdin,
-        output: hostEnvironment.stdout,
-        terminal: false
-    });
+inputSource.resume();
+inputSource.setEncoding('utf-8');
 
-    let receivedContent = '';
-    for await (const segment of inputInterface) {
-        receivedContent = segment;
-        break;
-    }
+inputSource.on('data', function(dataFragment) {
+  collectedSegments.push(dataFragment);
+});
 
-    inputInterface.close();
+inputSource.on('end', function() {
+  const fullInputString = collectedSegments.join('');
+  const stringParts = fullInputString.split(' ');
 
-    const numericalValues = receivedContent.split(' ').map(Number);
+  const numericCoordinates = [];
+  for (let i = 0; i < stringParts.length; i++) {
+    numericCoordinates.push(Number(stringParts[i]));
+  }
 
-    const [valX1, valY1, valX2, valY2] = numericalValues;
+  const xCoord1 = numericCoordinates[0];
+  const yCoord1 = numericCoordinates[1];
+  const xCoord2 = numericCoordinates[2];
+  const yCoord2 = numericCoordinates[3];
 
-    const calculatedDistance = Math.hypot(valX1 - valX2, valY1 - valY2);
+  const squareValue = (val) => val * val;
 
-    hostEnvironment.stdout.write(calculatedDistance.toString() + '\n');
-}
+  const deltaX = xCoord1 - xCoord2;
+  const deltaY = yCoord1 - yCoord2;
 
-processCoordinateData();
+  const squaredDeltaX = squareValue(deltaX);
+  const squaredDeltaY = squareValue(deltaY);
+
+  const sumOfSquares = squaredDeltaX + squaredDeltaY;
+
+  const distanceResult = Math.sqrt(sumOfSquares);
+
+  console.log(distanceResult);
+});

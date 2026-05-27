@@ -1,43 +1,39 @@
-'use strict' ; // Enforce strict mode for better error handling.
+'use strict';
 
-// This primary function is designed to handle and process a given string of raw input.
-function ProcessInputData( incomingTextContent ) {
+/**
+ * Processes raw input data to transform a character sequence based on a key index.
+ * This function reads three lines of input: a number (N), a string (S), and an index (K).
+ * It then identifies the character at index K in string S, and generates a new string
+ * where all characters in S matching the identified character are kept, and others are replaced by '*'.
+ *
+ * @param {string} inputContent - The complete string content read from the standard input.
+ */
+function ProcessData(inputContent) {
+  // Normalize the input string by trimming whitespace and splitting it into an array of lines.
+  const parsedLines = inputContent.trim().split(/\n/);
 
-  // Normalize the incoming text by removing leading/trailing whitespace and then
-  // splitting it into an array of individual lines based on newline characters.
-  const parsedInputLines = incomingTextContent . trim ( ) . split ( '\n' ) ;
+  // Extract the numerical value from the first line (N),
+  // the character sequence from the second line (S),
+  // and the key index from the third line (K).
+  // The first line's value is converted to a number using the unary plus operator.
+  const firstNumber = +parsedLines[0]; // N, not directly used in the algorithm, but extracted.
+  const charSequence = parsedLines[1].split(''); // S, split into individual characters.
+  const keyIndex = parsedLines[2]; // K, the position to find the reference character.
 
-  // From the structured input lines, extract and convert specific pieces of data.
-  // The first line is converted to a numeric value.
-  let initialNumericValue = Number ( parsedInputLines [ 0 ] ) ;
-  // The second line is broken down into an array of its constituent characters.
-  const characterSequenceArray = parsedInputLines [ 1 ] . split ( '' ) ;
-  // The third line is parsed as an integer to serve as an index.
-  const targetCharacterIndex = parseInt ( parsedInputLines [ 2 ] ) ;
+  // Determine the specific character at the `keyIndex` within the `charSequence`.
+  const referenceChar = charSequence[keyIndex];
 
-  // Identify the specific character located at the 'targetCharacterIndex' within the character array.
-  const chosenCharacter = characterSequenceArray [ targetCharacterIndex ] ;
+  // Iterate through the `charSequence`. For each character, compare it with the `referenceChar`.
+  // If they match, keep the character; otherwise, substitute it with an asterisk '*'.
+  // Finally, join all the processed characters back into a single output string.
+  const outputResult = charSequence.map(currentSymbol => {
+    return currentSymbol === referenceChar ? referenceChar : '*';
+  }).join('');
 
-  // Create a new string by iterating over the 'characterSequenceArray'.
-  // Each character is checked against 'chosenCharacter'. If they match, the original character is kept;
-  // otherwise, it's replaced with an asterisk ('*'). Finally, all characters are joined back into a single string.
-  const transformedOutputString = characterSequenceArray . map ( ( currentElement ) => (
-    currentElement === chosenCharacter ? chosenCharacter : '*'
-  ) ) . join ( '' ) ;
-
-  // Print the resulting transformed string to the standard output.
-  console . log ( transformedOutputString ) ;
+  // Display the final generated string to the console.
+  console.log(outputResult);
 }
 
-// --- Program Execution Start ---
-// This block handles reading input from the system's standard input stream.
-
-// Acquire the Node.js built-in file system module.
-const nodeFileSystemModule = require ( 'node:fs' ) ;
-
-// Synchronously read all data from the standard input file descriptor (typically /dev/stdin or /dev/fd/0),
-// interpreting its contents as UTF-8 encoded text.
-const standardInputBuffer = nodeFileSystemModule . readFileSync ( '/dev/fd/0' , 'UTF-8' ) ;
-
-// Initiate the data processing by calling the main function with the content read from standard input.
-ProcessInputData ( standardInputBuffer ) ;
+// Execute the main processing function by reading input from standard input.
+// The 'fs' module is used to read the file content synchronously from '/dev/stdin' with UTF-8 encoding.
+ProcessData(require('fs').readFileSync('/dev/stdin', 'utf8'));

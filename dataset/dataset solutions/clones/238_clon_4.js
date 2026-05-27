@@ -1,32 +1,38 @@
-const createBoundary = (x_start, y_start, x_end, y_end) => ({
-    beginX: x_start,
-    beginY: y_start,
-    endX: x_end,
-    endY: y_end
-});
+const fileSystem = require('fs');
+const dataSize = fileSystem.fstatSync(process.stdin.fd).size;
+const dataBuffer = Buffer.alloc(dataSize);
+const readBytes = fileSystem.readSync(process.stdin.fd, dataBuffer, 0, dataSize, 0);
+const inputLines = dataBuffer.toString('utf8', 0, readBytes).trim().split('\n');
 
-const detectOverlap = (domainOne, domainTwo) => {
-    const xDisjoint = (domainOne.beginX > domainTwo.endX || domainTwo.beginX > domainOne.endX);
-    const yDisjoint = (domainOne.beginY > domainTwo.endY || domainTwo.beginY > domainOne.endY);
-    return !(xDisjoint || yDisjoint);
+const processRectangles = () => {
+  inputLines.forEach(currentLineData => {
+    const numericValues = currentLineData.split(' ').map(Number);
+
+    const rectA = {
+      left: numericValues[0],
+      bottom: numericValues[1],
+      right: numericValues[2],
+      top: numericValues[3]
+    };
+
+    const rectB = {
+      left: numericValues[4],
+      bottom: numericValues[5],
+      right: numericValues[6],
+      top: numericValues[7]
+    };
+
+    const isSeparated = (
+      rectA.right < rectB.left ||
+      rectB.right < rectA.left ||
+      rectA.top < rectB.bottom ||
+      rectB.top < rectA.bottom
+    );
+
+    const overlapStatus = !isSeparated;
+
+    console.log(overlapStatus ? 'YES' : 'NO');
+  });
 };
 
-let incomingPayload = '';
-
-process.stdin.on('data', fragment => {
-    incomingPayload += fragment.toString();
-});
-
-process.stdin.on('end', () => {
-    const inputRows = incomingPayload.trim().split('\n');
-    
-    inputRows.forEach(currentLineContent => {
-        const numericValues = currentLineContent.split(' ').map(Number);
-
-        const primaryRegion = createBoundary(numericValues[0], numericValues[1], numericValues[2], numericValues[3]);
-        const secondaryRegion = createBoundary(numericValues[4], numericValues[5], numericValues[6], numericValues[7]);
-
-        const intersectionExists = detectOverlap(primaryRegion, secondaryRegion);
-        process.stdout.write(intersectionExists ? 'YES\n' : 'NO\n');
-    });
-});
+processRectangles();

@@ -1,148 +1,101 @@
-function processInputData(rawInputText) {
-    const textLines = rawInputText.split("\n");
-    const characterCount = parseInt(textLines[0], 10);
-    const characterSequence = textLines[1].split("");
-
-    // Stage 1: Group consecutive identical characters into segments
-    // Example: "(()))" -> [{kind: '(', amount: 2}, {kind: ')', amount: 3}]
-    const createCharacterSegments = (chars) => {
-        if (chars.length === 0) return [];
-        return chars.reduce((segments, char) => {
-            const lastSeg = segments[segments.length - 1];
-            if (lastSeg && lastSeg.kind === char) {
-                lastSeg.amount++;
-            } else {
-                segments.push({ kind: char, amount: 1 });
-            }
-            return segments;
-        }, []);
-    };
-    const initialCharacterSegments = createCharacterSegments(characterSequence);
-
-    // Stage 2: Convert segments into an alternating count array (similar to original 'temp')
-    // This array implicitly stores counts for '(', ')', '(', ')' at indices 0, 1, 2, 3...
-    // Zeros are inserted for missing alternating types or for initial/trailing implicit blocks.
-    // Example: [{kind: '(', amount: 2}, {kind: ')', amount: 3}] -> [2, 3, 0, 0, 0, 0] (padded)
-    // Example: [{kind: ')', amount: 2}, {kind: '(', amount: 3}] -> [0, 2, 3, 0, 0, 0] (padded)
-    const generateAlternatingCounts = (segments, totalLen) => {
-        const countsVector = [];
-        let anticipatedKind = '(';
-
-        if (segments.length > 0 && segments[0].kind === ')') {
-            countsVector.push(0); // Prepend 0 for an initial empty '(' block
-            anticipatedKind = ')';
-        }
-
-        for (const segment of segments) {
-            while (segment.kind !== anticipatedKind) {
-                countsVector.push(0); // Insert 0 for a missing alternating block
-                anticipatedKind = (anticipatedKind === '(') ? ')' : '(';
-            }
-            countsVector.push(segment.amount);
-            anticipatedKind = (anticipatedKind === '(') ? ')' : '(';
-        }
-
-        // Pad with zeros to ensure sufficient length for later index access (characterCount + 1)
-        while (countsVector.length <= totalLen) {
-            countsVector.push(0);
-        }
-        return countsVector;
-    };
-    let currentAlternatingCounts = generateAlternatingCounts(initialCharacterSegments, characterCount);
-
-    // Stage 3: Calculate the overall balance of parentheses
-    // Sum of even-indexed counts (for '(') minus sum of odd-indexed counts (for ')')
-    const calculateNetBalance = (countsArray) => {
-        return countsArray.reduce((currentNet, count, idx) => {
-            return (idx % 2 === 0) ? currentNet + count : currentNet - count;
-        }, 0);
-    };
-    let netBalance = calculateNetBalance(currentAlternatingCounts);
-
-    // Helper function to find the rightmost non-zero count, searching from a maximum index downwards
-    const locateLastActiveSegment = (counts, maxSearchIdx) => {
-        let searchIndex = maxSearchIdx;
-        while (searchIndex >= 0 && counts[searchIndex] === 0) {
-            searchIndex--;
-        }
-        return searchIndex;
-    };
-
-    // Stage 4: Apply balancing transformations based on the net balance
-    const applyTransformation = (initialBlocks, currentNetBalance, seqLen) => {
-        let transformedBlocks = [...initialBlocks];
-
-        if (currentNetBalance < 0) {
-            // Case: More ')' overall. Add absolute difference to the first '(' block.
-            const adjustmentValue = -currentNetBalance;
-            transformedBlocks = transformedBlocks.map((val, idx) => (idx === 0) ? val + adjustmentValue : val);
-        } else if (currentNetBalance > 0) {
-            // Case: More '(' overall.
-            let effectiveNetBalance = currentNetBalance;
-
-            // Adjust first pair if the initial '(' block is smaller than the initial ')' block
-            if (transformedBlocks[0] < transformedBlocks[1]) {
-                const initialPairDeficit = transformedBlocks[1] - transformedBlocks[0];
-                effectiveNetBalance += initialPairDeficit;
-                transformedBlocks[0] = transformedBlocks[1];
-            }
-
-            const lastMeaningfulIndex = locateLastActiveSegment(transformedBlocks, seqLen);
-
-            if (lastMeaningfulIndex >= 0) {
-                if (lastMeaningfulIndex % 2 === 0) { // If the last active block is '('
-                    // Add ')' to the subsequent ')' block
-                    transformedBlocks = transformedBlocks.map((val, idx) => (idx === lastMeaningfulIndex + 1) ? val + effectiveNetBalance : val);
-                } else { // If the last active block is ')'
-                    // Add ')' to this ')' block
-                    transformedBlocks = transformedBlocks.map((val, idx) => (idx === lastMeaningfulIndex) ? val + effectiveNetBalance : val);
-                }
-            }
-        } else { // currentNetBalance === 0 (Overall balanced)
-            // Adjust first pair if the initial '(' block is smaller than the initial ')' block
-            if (transformedBlocks[0] < transformedBlocks[1]) {
-                const initialPairDeficit = transformedBlocks[1] - transformedBlocks[0];
-                transformedBlocks[0] = transformedBlocks[1];
-
-                const lastMeaningfulIndex = locateLastActiveSegment(transformedBlocks, seqLen);
-
-                if (lastMeaningfulIndex >= 0) {
-                    if (lastMeaningfulIndex % 2 === 0) { // If the last active block is '('
-                        // Make the subsequent ')' block equal to this '(' block
-                        transformedBlocks = transformedBlocks.map((val, idx) => (idx === lastMeaningfulIndex + 1) ? transformedBlocks[lastMeaningfulIndex] : val);
-                    } else { // If the last active block is ')'
-                        // Add the initialPairDeficit to this ')' block
-                        transformedBlocks = transformedBlocks.map((val, idx) => (idx === lastMeaningfulIndex) ? val + initialPairDeficit : val);
-                    }
-                }
-            }
-        }
-        return transformedBlocks;
-    };
-    const finalCountsAfterTransformation = applyTransformation(currentAlternatingCounts, netBalance, characterCount);
-
-    // Stage 5: Render the final balanced string from the transformed counts
-    const generateFinalString = (finalBlocks) => {
-        // Trim trailing zeros from the array for accurate string generation
-        let effectiveBlocks = [...finalBlocks];
-        let lastNonZeroIdx = effectiveBlocks.length - 1;
-        while (lastNonZeroIdx >= 0 && effectiveBlocks[lastNonZeroIdx] === 0) {
-            lastNonZeroIdx--;
-        }
-        effectiveBlocks = effectiveBlocks.slice(0, lastNonZeroIdx + 1);
-
-        return effectiveBlocks.reduce((outputString, count, idx) => {
-            if (count > 0) {
-                const symbol = (idx % 2 === 0) ? '(' : ')';
-                return outputString + symbol.repeat(count);
-            }
-            return outputString;
-        }, "");
-    };
-    const finalOutput = generateFinalString(finalCountsAfterTransformation);
-
-    console.log(finalOutput);
+function ProcessInputData(rawInputString) {
+    const inputLines = rawInputString.split("\n");
+    const characterCount = parseInt(inputLines[0], 10);
+    const sourceCharacters = inputLines[1].split("");
+    return { characterCount, sourceCharacters };
 }
 
-// Entry point for execution
-processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+function CreateRunLengthSequence(characters, totalLength) {
+    if (characters.length === 0) {
+        return new Array(totalLength + 1).fill(0);
+    }
+
+    const characterRuns = characters.reduce((accumulator, currentCharacter, index) => {
+        if (index === 0 || currentCharacter !== accumulator[accumulator.length - 1].char) {
+            accumulator.push({ char: currentCharacter, count: 1 });
+        } else {
+            accumulator[accumulator.length - 1].count++;
+        }
+        return accumulator;
+    }, []);
+
+    const normalizedRunLengths = new Array(totalLength + 1).fill(0);
+    const initialRunOffset = (characterRuns[0].char === '(') ? 0 : 1;
+
+    characterRuns.forEach((runSegment, segmentIndex) => {
+        normalizedRunLengths[initialRunOffset + segmentIndex] = runSegment.count;
+    });
+
+    return normalizedRunLengths;
+}
+
+function CalculateNetBalance(runCounts) {
+    let currentBalance = 0;
+    for (let i = 0; i < runCounts.length - 1; i += 2) {
+        currentBalance += runCounts[i] - runCounts[i + 1];
+    }
+    return currentBalance;
+}
+
+function FindLastNonZeroIndex(arr) {
+    let searchIndex = arr.length - 1;
+    while (searchIndex >= 0 && arr[searchIndex] === 0) {
+        searchIndex--;
+    }
+    return searchIndex;
+}
+
+function AdjustParenthesisBalance(initialRunCounts) {
+    const modifiedRunCounts = [...initialRunCounts];
+    let netBalance = CalculateNetBalance(initialRunCounts);
+
+    // Handle initial imbalance where the first '(' run is shorter than the first ')' run
+    if (modifiedRunCounts[0] < modifiedRunCounts[1]) {
+        const initialDifference = modifiedRunCounts[1] - modifiedRunCounts[0];
+        modifiedRunCounts[0] = modifiedRunCounts[1]; // Equalize the first '(' run to the first ')' run
+        netBalance += initialDifference; // This difference must be compensated by adding ')' later
+    }
+
+    if (netBalance < 0) {
+        // If netBalance is negative, we need to add more '(' characters.
+        // Add the absolute value of netBalance to the first '(' run.
+        modifiedRunCounts[0] -= netBalance;
+    } else if (netBalance > 0) {
+        // If netBalance is positive, we need to add more ')' characters.
+        const lastActiveSegmentIndex = FindLastNonZeroIndex(modifiedRunCounts);
+
+        if (lastActiveSegmentIndex >= 0) { // Ensure there's at least one active run
+            if (lastActiveSegmentIndex % 2 === 0) { // Last active run was '('
+                // Add ')' to the run immediately following the last '(' run
+                modifiedRunCounts[lastActiveSegmentIndex + 1] += netBalance;
+            } else { // Last active run was ')'
+                // Add ')' to the last ')' run itself
+                modifiedRunCounts[lastActiveSegmentIndex] += netBalance;
+            }
+        } else {
+            // Edge case: if all runs are zero (e.g., empty input or all balanced out to zero)
+            // and netBalance is still positive, add ')' to the first ')' run (index 1)
+            modifiedRunCounts[1] += netBalance;
+        }
+    }
+    // If netBalance is 0, no further adjustments are needed.
+
+    return modifiedRunCounts;
+}
+
+function GenerateOutputString(finalRunCounts) {
+    return finalRunCounts.map((count, index) => {
+        if (count === 0) return '';
+        return (index % 2 === 0) ? '('.repeat(count) : ')'.repeat(count);
+    }).join('');
+}
+
+function Main(inputContent) {
+    const { characterCount, sourceCharacters } = ProcessInputData(inputContent);
+    const initialRunLengthSequence = CreateRunLengthSequence(sourceCharacters, characterCount);
+    const finalRunLengthSequence = AdjustParenthesisBalance(initialRunLengthSequence);
+    const balancedOutputString = GenerateOutputString(finalRunLengthSequence);
+    console.log(balancedOutputString);
+}
+
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

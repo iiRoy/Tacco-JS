@@ -1,94 +1,29 @@
-(function () {
-  const sourceText = require('fs').readFileSync('/dev/stdin', 'utf8');
+function processKnapsackData(rawData) {
+  const inputLines = rawData.split('\n');
+  const parsedDimensions = inputLines.shift().split(' ').map(valStr => parseInt(valStr, 10));
+  const itemCount = parsedDimensions[0];
+  const capacityLimit = parsedDimensions[1];
+  const itemSpecs = inputLines.map(lineContent => lineContent.split(' ').map(valStr => parseInt(valStr, 10)));
 
-  let textLines = [];
-  let currentLineBuffer = '';
-  for (let charIndex = 0; charIndex < sourceText.length; charIndex++) {
-    if (sourceText[charIndex] === '\n') {
-      textLines.push(currentLineBuffer);
-      currentLineBuffer = '';
-    } else {
-      currentLineBuffer += sourceText[charIndex];
-    }
-  }
-  if (currentLineBuffer.length > 0) { // Capture the last line if no trailing newline
-      textLines.push(currentLineBuffer);
-  }
+  let maxValByCapacity = Array(capacityLimit + 1).fill(0);
 
-  let firstLineData = [];
-  let currentNumberString = '';
-  const firstLineContent = textLines[0];
-  for (let charIndex = 0; charIndex < firstLineContent.length; charIndex++) {
-    if (firstLineContent[charIndex] === ' ') {
-      firstLineData.push(Number(currentNumberString));
-      currentNumberString = '';
-    } else {
-      currentNumberString += firstLineContent[charIndex];
-    }
-  }
-  firstLineData.push(Number(currentNumberString)); // Add the last number in the first line
+  let overallMax = 0;
 
-  const totalItemsCount = firstLineData[0];
-  const maximumCapacity = firstLineData[1];
+  for (let itemIdx = 0; itemIdx < itemCount; itemIdx++) {
+    const itemWeight = itemSpecs[itemIdx][0];
+    const itemValue = itemSpecs[itemIdx][1];
 
-  let itemRecords = [];
-  for (let lineIndex = 1; lineIndex < textLines.length; lineIndex++) {
-    const currentLine = textLines[lineIndex];
-    if (currentLine.trim() === '') continue; // Skip empty lines
+    for (let currentCapacity = capacityLimit; currentCapacity >= itemWeight; currentCapacity--) {
+      const valueIfIncluded = maxValByCapacity[currentCapacity - itemWeight] + itemValue;
+      maxValByCapacity[currentCapacity] = Math.max(maxValByCapacity[currentCapacity], valueIfIncluded);
 
-    let itemDetails = [];
-    currentNumberString = '';
-    for (let charIndex = 0; charIndex < currentLine.length; charIndex++) {
-      if (currentLine[charIndex] === ' ') {
-        itemDetails.push(Number(currentNumberString));
-        currentNumberString = '';
-      } else {
-        currentNumberString += currentLine[charIndex];
+      if (maxValByCapacity[currentCapacity] > overallMax) {
+        overallMax = maxValByCapacity[currentCapacity];
       }
     }
-    itemDetails.push(Number(currentNumberString)); // Add the last number in the item line
-    itemRecords.push(itemDetails);
   }
 
-  const memoizationCache = new Map();
-  let globalMaximum = 0;
+  console.log(overallMax);
+}
 
-  function computeValue(elementIndex, currentLoadLimit) {
-    if (currentLoadLimit < 0) {
-      return 0; // Negative capacity means no value can be obtained
-    }
-    if (elementIndex < 0) {
-      return 0; // No more elements to consider, zero value
-    }
-
-    const lookupKey = `${elementIndex}_${currentLoadLimit}`;
-    if (memoizationCache.has(lookupKey)) {
-      return memoizationCache.get(lookupKey);
-    }
-
-    const currentElement = itemRecords[elementIndex];
-    const elementWeight = currentElement[0];
-    const elementWorth = currentElement[1];
-
-    let valueWithoutCurrent = computeValue(elementIndex - 1, currentLoadLimit);
-
-    let finalCalculatedWorth;
-    if (elementWeight <= currentLoadLimit) {
-      let valueIfElementTaken = computeValue(elementIndex - 1, currentLoadLimit - elementWeight) + elementWorth;
-      // Equivalent to Math.max(0, valueIfElementTaken)
-      finalCalculatedWorth = (0 > valueIfElementTaken) ? 0 : valueIfElementTaken;
-    } else {
-      finalCalculatedWorth = valueWithoutCurrent;
-    }
-
-    memoizationCache.set(lookupKey, finalCalculatedWorth);
-    if (finalCalculatedWorth > globalMaximum) {
-      globalMaximum = finalCalculatedWorth;
-    }
-    return finalCalculatedWorth;
-  }
-
-  computeValue(totalItemsCount - 1, maximumCapacity);
-
-  console.log(globalMaximum);
-})();
+processKnapsackData(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,47 +1,70 @@
-function ProcessInputAndQueries(incomingData) {
-  incomingData = incomingData.trim()
-                             .split("\n")
-                             .map(function(lineSegment) {
-                               return lineSegment.split(" ");
-                             });
+function ProcessInput(rawData) {
+  // Process the raw input string: trim, split by newlines, then split each line by spaces.
+  let parsedLines = rawData.trim().split("\n").map(function(lineContent) {
+    return lineContent.split(" ");
+  });
 
-  let initialString = incomingData[0][0];
-  const totalQueries = Number.parseInt(incomingData[1], 10);
+  // Extract the initial string from the first line.
+  const initialString = parsedLines[0][0];
+  // Parse the number of queries from the second line.
+  const numQueries = parseInt(parsedLines[1], 10);
 
-  const queryList = [];
-  for (let queryIdx = 0; queryIdx < totalQueries; queryIdx++) {
-    queryList.push(incomingData[queryIdx + 2]);
+  // Initialize an array to store query instructions.
+  let queryInstructions = [];
+  // Populate the query instructions array.
+  for (let k = 0; k < numQueries; k++) {
+    queryInstructions.push(parsedLines[k + 2]);
   }
 
-  let characterBuffer = Array.from({
-    length: (initialString.length + totalQueries * 2)
+  // Create a character buffer array, pre-sized to accommodate potential insertions.
+  // The size is S.length + Q * 2 to allow Q insertions at the head and Q at the tail.
+  let charBuffer = Array.from({
+    length: (initialString.length + numQueries * 2)
   }, () => '');
 
-  let headPointer = totalQueries;
-  let tailPointer = totalQueries + initialString.length - 1;
-  let temporaryIndex;
+  // Initialize pointers for the head and tail of the active string within the buffer.
+  // We start by placing the original string in the middle of the buffer.
+  let currentHeadIndex = numQueries;
+  let currentTailIndex = numQueries + initialString.length - 1;
+  let tempIndex; // A temporary variable for swapping indices during reversal.
 
-  for (let strIdx = 0; strIdx < initialString.length; strIdx++) {
-    characterBuffer[strIdx + totalQueries] = initialString.substring(strIdx, 1);
+  // Copy the characters of the initial string into the central part of the buffer.
+  for (let k = 0; k < initialString.length; k++) {
+    charBuffer[k + numQueries] = initialString.substr(k, 1);
   }
 
-  for (let queryExecutionIdx = 0; queryExecutionIdx < totalQueries; queryExecutionIdx++) {
-    if (queryList[queryExecutionIdx][0] === '1') {
-      characterBuffer = characterBuffer.reverse();
-      temporaryIndex = headPointer;
-      headPointer = totalQueries - (tailPointer - (totalQueries + initialString.length - 1));
-      tailPointer = totalQueries + initialString.length - 1 + (totalQueries - temporaryIndex);
-      continue;
+  // Iterate through each query instruction.
+  for (let k = 0; k < numQueries; k++) {
+    // Check if the query is a type 1 (reverse operation).
+    if (queryInstructions[k][0] === '1') {
+      // Reverse the entire character buffer.
+      charBuffer = charBuffer.reverse();
+      // Adjust head and tail pointers after reversal.
+      // The new head is effectively the old tail's position relative to the end of the buffer,
+      // and vice-versa.
+      tempIndex = currentHeadIndex;
+      currentHeadIndex = numQueries - (currentTailIndex - (numQueries + initialString.length - 1));
+      currentTailIndex = numQueries + initialString.length - 1 + (numQueries - tempIndex);
+      continue; // Move to the next query.
     }
-    if (queryList[queryExecutionIdx][1] === '1') {
-      headPointer--;
-      characterBuffer[headPointer] = queryList[queryExecutionIdx][2];
-      continue;
+
+    // Check if the query is a type 2 (insert at head or tail).
+    // If the second element is '1', insert at the head.
+    if (queryInstructions[k][1] === '1') {
+      currentHeadIndex--; // Decrement head pointer.
+      charBuffer[currentHeadIndex] = queryInstructions[k][2]; // Insert character.
+      continue; // Move to the next query.
     }
-    tailPointer++;
-    characterBuffer[tailPointer] = queryList[queryExecutionIdx][2];
+
+    // Otherwise, insert at the tail.
+    currentTailIndex++; // Increment tail pointer.
+    charBuffer[currentTailIndex] = queryInstructions[k][2]; // Insert character.
   }
-  process.stdout.write(characterBuffer.join('') + '\n');
+
+  // Join the characters in the active part of the buffer and print the result.
+  // The active part is from currentHeadIndex to currentTailIndex (inclusive).
+  console.log(charBuffer.slice(currentHeadIndex, currentTailIndex + 1).join(''));
 }
 
-ProcessInputAndQueries(require("node:fs").readFileSync("/dev/stdin", "utf8"));
+// Read input from standard input and pass it to the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

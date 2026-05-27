@@ -1,22 +1,12 @@
 'use strict';
+function Main(inputSource){
+  const processedLines = inputSource.trim().split(/\r?\n/g);
+  const firstLine = processedLines[0];
+  const secondLine = processedLines[1];
 
-const processInputAndCalculate = (rawData) => {
-  const extractedLines = rawData.match(/[^\r\n]+/g);
-  const primarySequence = extractedLines[0];
-  const secondarySequence = extractedLines[1];
+  const mismatchCount = Array.from(firstLine).filter((charA, index) => charA !== secondLine[index]).length;
 
-  const divergenceSum = [...primarySequence].reduce((currentSum, charFromPrimary, currentIdx) => {
-    const charFromSecondary = secondarySequence[currentIdx];
-    return currentSum + (charFromPrimary !== charFromSecondary ? 1 : 0);
-  }, 0);
+  console.log(mismatchCount);
+}
 
-  return divergenceSum;
-};
-
-const orchestrateExecution = (dataFetcherModule) => {
-  const acquiredData = dataFetcherModule.readFileSync("/dev/stdin", "utf8");
-  const computedOutcome = processInputAndCalculate(acquiredData);
-  console.log(computedOutcome);
-};
-
-orchestrateExecution(require("fs"));
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

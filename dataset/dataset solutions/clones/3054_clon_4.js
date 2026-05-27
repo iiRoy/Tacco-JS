@@ -1,19 +1,16 @@
-const transformBinarySequence = (symbolStream) => {
-  const numericalStream = Array.from(symbolStream).map(Number);
-  const streamExtent = numericalStream.length;
+function processSequence(sourceData) {
+  const fullNumericStream = Array.from(sourceData, (digitChar) => Number(digitChar));
 
-  const deviationFromAlternatingZero = numericalStream.reduce((currentDeviation, digitValue, positionIndex) => {
-    const expectedForZeroStart = positionIndex % 2;
-    return currentDeviation + (digitValue !== expectedForZeroStart ? 1 : 0);
+  const totalElements = fullNumericStream.length;
+
+  const alternatingMatchTally = fullNumericStream.reduce((currentTally, elementValue, elementIndex) => {
+    const expectedPatternValue = elementIndex % 2;
+    return currentTally + (elementValue === expectedPatternValue ? 1 : 0);
   }, 0);
 
-  const deviationFromAlternatingOne = numericalStream.reduce((currentDeviation, digitValue, positionIndex) => {
-    const expectedForOneStart = (positionIndex + 1) % 2;
-    return currentDeviation + (digitValue !== expectedForOneStart ? 1 : 0);
-  }, 0);
+  const finalOutcome = Math.min(totalElements - alternatingMatchTally, alternatingMatchTally);
 
-  return Math.min(deviationFromAlternatingZero, deviationFromAlternatingOne);
-};
+  console.log(finalOutcome);
+}
 
-const acquiredData = require("fs").readFileSync("/dev/stdin", "utf8");
-console.log(transformBinarySequence(acquiredData.trim()));
+processSequence(require("fs").readFileSync("/dev/stdin", "utf8"));

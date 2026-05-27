@@ -1,48 +1,46 @@
-((inflow) => {
-    const rawSegments = inflow.replace(/\r/g, '').split('\n');
-
-    const obtainSubsequences = (sourceSegment) => {
-        const collection = [];
-        for (let initialPosition = 0; initialPosition < sourceSegment.length; ++initialPosition) {
-            for (let finalPosition = initialPosition + 1; finalPosition <= sourceSegment.length; ++finalPosition) {
-                collection.push(sourceSegment.substring(initialPosition, finalPosition));
-            }
-        }
-        return collection;
-    };
-
-    const processSegmentPair = (firstComponent, secondComponent) => {
-        const [shorterComponent, longerComponent] = firstComponent.length < secondComponent.length ? [firstComponent, secondComponent] : [secondComponent, firstComponent];
-
-        const candidateSubstrings = obtainSubsequences(shorterComponent);
-
-        const greatestLength = candidateSubstrings.reduce((currentMaximum, evaluatedSubstring) => {
-            if (longerComponent.includes(evaluatedSubstring) && longerComponent.indexOf(evaluatedSubstring) > 0) {
-                return Math.max(currentMaximum, evaluatedSubstring.length);
-            }
-            return currentMaximum;
-        }, 0);
-
-        return greatestLength;
-    };
-
-    function* segmentStreamGenerator(dataElements) {
-        let currentPointer = 0;
+(function (sourceText) {
+    function* linePairProducer(fullInputContent) {
+        const contentLines = fullInputContent.replace(/\r/g, '').split('\n');
+        let currentLinePointer = 0;
         while (true) {
-            const elementOne = dataElements[currentPointer];
-            if (elementOne === undefined || elementOne === '') {
-                return;
+            const firstSegment = contentLines[currentLinePointer++];
+            if (firstSegment === undefined || firstSegment === '') {
+                break;
             }
-            const elementTwo = dataElements[currentPointer + 1];
-            yield [elementOne, elementTwo];
-            currentPointer += 2;
+            const secondSegment = contentLines[currentLinePointer++];
+            yield [firstSegment, secondSegment];
         }
     }
 
-    const calculatedOutcomes = Array.from(segmentStreamGenerator(rawSegments)).map(([componentA, componentB]) =>
-        processSegmentPair(componentA, componentB)
-    );
+    for (const [segmentOne, segmentTwo] of linePairProducer(sourceText)) {
+        let shorterString, longerString;
 
-    calculatedOutcomes.forEach(outcomeEntry => console.log(outcomeEntry));
+        if (segmentOne.length < segmentTwo.length) {
+            shorterString = segmentOne;
+            longerString = segmentTwo;
+        } else {
+            shorterString = segmentTwo;
+            longerString = segmentOne;
+        }
 
+        let longestMatchLength = 0;
+        const shorterStringLength = shorterString.length;
+
+        for (let currentSubLength = shorterStringLength; currentSubLength >= 1; currentSubLength--) {
+            let foundLengthInThisIteration = false;
+            for (let currentStartIndex = 0; currentStartIndex < shorterStringLength - currentSubLength; currentStartIndex++) {
+                const candidateFragment = shorterString.substring(currentStartIndex, currentStartIndex + currentSubLength);
+
+                if (longerString.indexOf(candidateFragment) > 0) {
+                    longestMatchLength = currentSubLength;
+                    foundLengthInThisIteration = true;
+                    break;
+                }
+            }
+            if (foundLengthInThisIteration) {
+                break;
+            }
+        }
+        console.log(longestMatchLength);
+    }
 })(require("fs").readFileSync("/dev/stdin", "utf8"));

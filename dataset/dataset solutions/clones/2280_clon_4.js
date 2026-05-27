@@ -1,16 +1,15 @@
-const computeOccurrences = (rawInputData) => {
-    const lineSegments = rawInputData.trimEnd().split('\n');
-    const numericLimit = Number(lineSegments[0]);
-    const targetText = lineSegments[1];
+function processData(inputContent) {
+  const dataLines = inputContent.split('\n');
+  const iterationLimit = Number(dataLines[0]);
+  const sourceString = dataLines[1];
 
-    const searchArea = targetText.slice(0, numericLimit);
+  const relevantSegment = sourceString.slice(0, iterationLimit);
 
-    const patternDetector = /(?=(ABC))/g;
-    const detectedMatches = searchArea.match(patternDetector);
+  const foundMatches = relevantSegment.match(/ABC/g);
 
-    const patternCount = detectedMatches ? detectedMatches.length : 0;
+  const finalCount = foundMatches ? foundMatches.length : 0;
 
-    process.stdout.write(String(patternCount) + '\n');
-};
+  console.log(finalCount);
+}
 
-computeOccurrences(require('node:fs').readFileSync(0, 'utf8'));
+processData(require('fs').readFileSync('/dev/stdin', 'utf8'));

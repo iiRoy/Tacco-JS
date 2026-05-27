@@ -1,29 +1,25 @@
-const processNumbers = (textData) => textData.trim().split(/\s+/).map(val => +val);
+"use strict";
 
-const calculatePowerThree = (numericValue) => numericValue ** 3;
+function processInput(sourceData) {
+  const dataLines = sourceData.split("\n");
+  const initialValues = dataLines[0].split(" ");
 
-const getIntegerQuotient = (dividend, divisor) => (dividend / divisor) | 0;
+  const limitValue = parseInt(initialValues[0], 10);
+  const factorValue = parseInt(initialValues[1], 10);
 
-const handleOddDivisor = (upperBound, currentDivisor) => {
-  const termResult = getIntegerQuotient(upperBound, currentDivisor);
-  return calculatePowerThree(termResult);
-};
+  const computedComponents = [
+    Math.pow(Math.floor(limitValue / factorValue), 3)
+  ];
 
-const handleEvenDivisor = (upperBound, currentDivisor) => {
-  const firstComponent = getIntegerQuotient(upperBound, currentDivisor);
-  const secondComponent = getIntegerQuotient(upperBound + currentDivisor / 2, currentDivisor);
-  return calculatePowerThree(firstComponent) + calculatePowerThree(secondComponent);
-};
+  if (factorValue % 2 === 0) {
+    computedComponents.push(
+      Math.pow(Math.floor((limitValue + factorValue / 2) / factorValue), 3)
+    );
+  }
 
-const determineAndExecute = (firstParameter, secondParameter) => {
-  const strategyImplementations = {
-    0: handleEvenDivisor,
-    1: handleOddDivisor
-  };
-  return strategyImplementations[secondParameter % 2](firstParameter, secondParameter);
-};
+  const finalResult = computedComponents.reduce((accumulated, current) => accumulated + current, 0);
 
-const rawInput = require("fs").readFileSync("/dev/stdin", "utf8");
-const [valueX, valueY] = processNumbers(rawInput);
-const finalOutput = determineAndExecute(valueX, valueY);
-process.stdout.write(String(finalOutput));
+  console.log(finalResult);
+}
+
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

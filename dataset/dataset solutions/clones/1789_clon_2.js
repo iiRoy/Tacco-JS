@@ -1,37 +1,30 @@
-// This function processes the incoming string data
-function ProcessInputData(sourceText) {
-    // The sourceText is divided into individual lines for easier parsing
+function ProcessInput(rawData) {
+  const dataRows = rawData.split("\n");
 
+  const firstRow = dataRows[0];
+  const firstRowParts = firstRow.split(" ");
 
-    const dataLines = sourceText.split("\n");              // Array holding each line
-    const firstLine = dataLines[0];                         // Accessing the very first line
-    const firstLineParams = firstLine.split(" ");           // Splitting the first line into parts
-    const secondLine = dataLines[1];                        // Grabbing the second line
-    const secondLineParams = secondLine.split(" ");         // Splitting the second line into its elements
-    const thirdLine = dataLines[2];                         // Obtaining the third line
+  const secondRow = dataRows[1];
+  const secondRowParts = secondRow.split(" ");
 
-    const coordOne = parseInt(firstLineParams[0], 10);      // Initial position for entity A
-    const speedAlpha = parseInt(firstLineParams[1], 10);    // Movement rate for entity A
+  const thirdRow = dataRows[2];
 
-    const coordTwo = parseInt(secondLineParams[0], 10);     // Initial position for entity B
-    const speedBeta = parseInt(secondLineParams[1], 10);    // Movement rate for entity B
+  const posA = parseInt(firstRowParts[0], 10);
+  const speedA = parseInt(firstRowParts[1], 10);
 
-    const maximumDuration = parseInt(thirdLine, 10);        // The allowed timeframe
+  const posB = parseInt(secondRowParts[0], 10);
+  const speedB = parseInt(secondRowParts[1], 10);
 
-    // Check for a specific condition where relative speed is zero or negative
-    if (speedAlpha <= speedBeta) {
-        // If relative speed doesn't allow catching up, check if they start at the same spot
-        console.log((coordOne === coordTwo) ? "YES" : "NO");
-        return;                                             // Exit early if condition met
-    }
+  const maxTime = parseInt(thirdRow, 10);
 
-    // Calculate the time required for entity A to catch entity B
-    let encounterDuration = Math.abs(coordTwo - coordOne) / Math.abs(speedAlpha - speedBeta);
+  if (speedA <= speedB) {
+    console.log((posA === posB) ? "YES" : "NO");
+    return;
+  }
 
-    // Determine if the encounter happens within the allowed duration
-    console.log((0 < encounterDuration && encounterDuration <= maximumDuration) ? "YES" : "NO");
-    return;                                                 // Conclude execution
+  const requiredTime = Math.abs(posB - posA) / Math.abs(speedA - speedB);
+  console.log((0 < requiredTime && requiredTime <= maxTime) ? "YES" : "NO");
+  return;
 }
 
-// Do not alter the following section, it manages standard input and calls the primary processing function.
-ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

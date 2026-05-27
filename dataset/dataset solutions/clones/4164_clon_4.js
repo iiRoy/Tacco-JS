@@ -1,70 +1,80 @@
-function processNavigationOutcome(travelJournal) {
-    const journalEntries = travelJournal.split("\n");
-    const movementSequence = journalEntries[0];
-    const finalCoordinatesText = journalEntries[1].split(" ");
+function processInput(inputData) {
+    const inputLines = inputData.split("\n");
+    const commandString = inputLines[0];
+    const coordinateStrings = inputLines[1].split(" ");
 
-    const finalWaypoint = [
-        Number(finalCoordinatesText[0]),
-        Number(finalCoordinatesText[1])
-    ];
+    const targetCoords = [Number(coordinateStrings[0]), Number(coordinateStrings[1])];
 
-    const courseSegments = [];
-    let currentSegmentMagnitude = 0;
-    for (let charPointer = 0; charPointer < movementSequence.length; charPointer++) {
-        if (movementSequence[charPointer] === 'F') {
-            currentSegmentMagnitude++;
-        } else { // 'T'
-            courseSegments.push(currentSegmentMagnitude);
-            currentSegmentMagnitude = 0;
+    const segments = commandString.split("T");
+
+    const xMoves = segments.filter((_, idx) => idx % 2 === 0).map(seg => seg.length);
+    const yMoves = segments.filter((_, idx) => idx % 2 !== 0).map(seg => seg.length);
+
+    function calculatePossiblePositions(moveLengths, startingPoint) {
+        if (moveLengths.length === 0) {
+            return new Set([startingPoint]);
         }
-    }
-    courseSegments.push(currentSegmentMagnitude);
 
-    const horizontalDisplacements = [];
-    const verticalDisplacements = [];
+        let currentPositionSet = new Set();
+        currentPositionSet.add(startingPoint + moveLengths[0]);
 
-    for (let segmentIterator = 0; segmentIterator < courseSegments.length; segmentIterator++) {
-        if (segmentIterator % 2 === 0) {
-            horizontalDisplacements.push(courseSegments[segmentIterator]);
-        } else {
-            verticalDisplacements.push(courseSegments[segmentIterator]);
+        for (let i = 1; i < moveLengths.length; i++) {
+            const currentMoveLength = moveLengths[i];
+            const nextPositionSet = new Set();
+            for (const currentCoord of currentPositionSet) {
+                nextPositionSet.add(currentCoord + currentMoveLength);
+                if (currentMoveLength !== 0) {
+                    nextPositionSet.add(currentCoord - currentMoveLength);
+                }
+            }
+            currentPositionSet = nextPositionSet;
         }
+        return currentPositionSet;
     }
 
-    const accumulatePositions = (currentPositionSet, displacementAmount) => {
-        const nextPositionSet = new Set();
-        for (const currentCoordinate of currentPositionSet) {
-            nextPositionSet.add(currentCoordinate + displacementAmount);
-            if (displacementAmount !== 0) {
-                nextPositionSet.add(currentCoordinate - displacementAmount);
+    function checkYAxisReachabilityWithBug(moveLengths, targetYCoord, targetXCoordForBug) {
+        if (moveLengths.length === 0) {
+            return 0 === targetYCoord;
+        }
+
+        let currentYPositions = new Set();
+        currentYPositions.add(moveLengths[0]);
+
+        if (moveLengths.length === 1) {
+            return currentYPositions.has(targetYCoord);
+        }
+
+        for (let i = 1; i < moveLengths.length - 1; i++) {
+            const currentMoveLength = moveLengths[i];
+            const nextYPositions = new Set();
+            for (const currentYCoord of currentYPositions) {
+                nextYPositions.add(currentYCoord + currentMoveLength);
+                if (currentMoveLength !== 0) {
+                    nextYPositions.add(currentYCoord - currentMoveLength);
+                }
+            }
+            currentYPositions = nextYPositions;
+        }
+
+        const lastMoveLength = moveLengths[moveLengths.length - 1];
+        for (const finalYPosCandidate of currentYPositions) {
+            if (finalYPosCandidate + lastMoveLength === targetYCoord || finalYPosCandidate - lastMoveLength === targetXCoordForBug) {
+                return true;
             }
         }
-        return nextPositionSet;
-    };
-
-    let horizontalSuccess;
-    if (horizontalDisplacements.length === 0) {
-        horizontalSuccess = (finalWaypoint[0] === 0);
-    } else {
-        const initialHorizontalState = new Set([horizontalDisplacements[0]]);
-        const computedHorizontalStates = horizontalDisplacements.slice(1).reduce(accumulatePositions, initialHorizontalState);
-        horizontalSuccess = computedHorizontalStates.has(finalWaypoint[0]);
+        return false;
     }
 
-    let verticalSuccess;
-    if (verticalDisplacements.length === 0) {
-        verticalSuccess = (finalWaypoint[1] === 0);
-    } else {
-        const initialVerticalState = new Set([verticalDisplacements[0]]);
-        const computedVerticalStates = verticalDisplacements.slice(1).reduce(accumulatePositions, initialVerticalState);
-        verticalSuccess = computedVerticalStates.has(finalWaypoint[1]);
-    }
+    const xReachableSet = calculatePossiblePositions(xMoves, 0);
+    const xSuccess = xReachableSet.has(targetCoords[0]);
 
-    if (horizontalSuccess && verticalSuccess) {
+    const ySuccess = checkYAxisReachabilityWithBug(yMoves, targetCoords[1], targetCoords[0]);
+
+    if (xSuccess && ySuccess) {
         console.log("Yes");
     } else {
         console.log("No");
     }
 }
 
-processNavigationOutcome(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

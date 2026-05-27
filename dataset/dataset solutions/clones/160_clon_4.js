@@ -1,4 +1,4 @@
-const numeralValor = {
+const numeralValues = {
   'I': 1,
   'V': 5,
   'X': 10,
@@ -8,29 +8,28 @@ const numeralValor = {
   'M': 1000
 };
 
-const translateNumeral = (phrase) => {
-  if (!phrase) return 0;
+function convertRoman(romanInputString) {
+  let finalSum = 0;
+  let lastProcessedValue = 0;
 
-  const finalCount = phrase.split('').reduceRight((accumulator, symbolCharacter, index, array) => {
-    const currentSymbolWorth = numeralValor[symbolCharacter];
-    const symbolToRightWorth = (index + 1 < array.length) ? numeralValor[array[index + 1]] : 0;
+  for (let charIndex = romanInputString.length - 1; charIndex >= 0; charIndex--) {
+    const currentSymbol = romanInputString[charIndex];
+    const currentSymbolValue = numeralValues[currentSymbol];
 
-    if (currentSymbolWorth < symbolToRightWorth) {
-      return accumulator - currentSymbolWorth;
+    if (currentSymbolValue < lastProcessedValue) {
+      finalSum -= currentSymbolValue;
     } else {
-      return accumulator + currentSymbolWorth;
+      finalSum += currentSymbolValue;
     }
-  }, 0);
+    lastProcessedValue = currentSymbolValue;
+  }
+  return finalSum;
+}
 
-  return finalCount;
-};
-
-const inputAccessor = require("fs");
-const rawContent = inputAccessor.readFileSync("/dev/stdin", "utf8");
-const contentUnits = rawContent.split('\n');
-
-const transformedOutputs = contentUnits
-  .filter(unit => unit.length > 0)
-  .map(translateNumeral);
-
-transformedOutputs.forEach(resultValue => console.log(resultValue));
+require("fs").readFileSync("/dev/stdin", "utf8")
+  .split('\n')
+  .forEach(function(inputLineSegment) {
+    if (inputLineSegment) {
+      console.log(convertRoman(inputLineSegment));
+    }
+  });

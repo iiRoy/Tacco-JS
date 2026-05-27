@@ -1,59 +1,26 @@
-const inputReader = require('readline');
+function processInputAndOutput(sourceSegments) {
+  const temporarySwapMarker = '_#_SWAP_TOKEN_#_';
 
-const termA = 'apple';
-const termB = 'peach';
+  const transformedSegments = sourceSegments.map(currentSegment => {
+    const firstPass = currentSegment.replace(/apple/g, temporarySwapMarker);
+    const secondPass = firstPass.replace(/peach/g, 'apple');
+    const finalSegment = secondPass.replace(new RegExp(temporarySwapMarker, 'g'), 'peach');
+    return finalSegment;
+  });
 
-const termSwapper = new Map();
-termSwapper.set(termA, termB);
-termSwapper.set(termB, termA);
-
-function processContentSegment(originalSegment) {
-    let currentScanIndex = 0;
-    const resultingFragments = [];
-
-    while (currentScanIndex < originalSegment.length) {
-        let nextMatchIndex = -1;
-        let matchedTerm = '';
-        let matchedTermLength = 0;
-
-        const nextA = originalSegment.indexOf(termA, currentScanIndex);
-        const nextB = originalSegment.indexOf(termB, currentScanIndex);
-
-        if (nextA === -1 && nextB === -1) {
-            resultingFragments.push(originalSegment.substring(currentScanIndex));
-            break;
-        } else if (nextA !== -1 && (nextB === -1 || nextA < nextB)) {
-            nextMatchIndex = nextA;
-            matchedTerm = termA;
-            matchedTermLength = termA.length;
-        } else {
-            nextMatchIndex = nextB;
-            matchedTerm = termB;
-            matchedTermLength = termB.length;
-        }
-
-        if (nextMatchIndex > currentScanIndex) {
-            resultingFragments.push(originalSegment.substring(currentScanIndex, nextMatchIndex));
-        }
-
-        resultingFragments.push(termSwapper.get(matchedTerm));
-
-        currentScanIndex = nextMatchIndex + matchedTermLength;
-    }
-
-    return resultingFragments.join('');
+  transformedSegments.forEach(outputSegment => {
+    console.log(outputSegment);
+  });
 }
 
-const lineProcessor = inputReader.createInterface({
-    input: process.stdin,
-    terminal: false
-});
+let accumulatedInputString = '';
 
-lineProcessor.on('line', (currentInputLine) => {
-    const transformedLine = processContentSegment(currentInputLine);
-    console.log(transformedLine);
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
+process.stdin.on('data', function(dataChunk) {
+  accumulatedInputString += dataChunk;
 });
-
-lineProcessor.on('close', () => {
-    // Input stream ended, no further action required for this problem.
+process.stdin.on('end', function() {
+  const parsedInputSegments = accumulatedInputString.split('\n');
+  processInputAndOutput(parsedInputSegments);
 });

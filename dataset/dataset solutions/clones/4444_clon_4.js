@@ -1,35 +1,44 @@
-const acquireData = () => require('node:fs').readFileSync(0, 'utf8').trim();
-const presentOutput = (data) => console.log(data);
+function myin(){return require("fs").readFileSync("/dev/stdin", "utf8").trim();}
+function myout(t){console.log(t);}
 
-const solvePuzzle = () => {
-    const rawData = acquireData();
-    const allSegments = rawData.split('\n');
+function createItemDispenser(initialCounts) {
+    let currentItemIdentifier = 1;
+    const itemStock = [...initialCounts];
 
-    const [heightDimension, widthDimension] = allSegments[0].split(' ').map(Number);
-    const totalCount = Number(allSegments[1]);
-    const elementDistribution = allSegments[2].split(' ').map(Number);
-
-    const flattenedSequence = elementDistribution.flatMap((count, valueIndex) => 
-        Array(count).fill(valueIndex + 1)
-    );
-
-    const resultMatrix = Array.from({ length: heightDimension }, () => Array(widthDimension));
-
-    for (let linearIndex = 0; linearIndex < heightDimension * widthDimension; ++linearIndex) {
-        const currentNumber = flattenedSequence[linearIndex];
-        const currentGridRow = Math.floor(linearIndex / widthDimension);
-        let currentGridColumn;
-
-        if (currentGridRow % 2 === 0) {
-            currentGridColumn = linearIndex % widthDimension;
-        } else {
-            currentGridColumn = widthDimension - 1 - (linearIndex % widthDimension);
+    return function dispenseNextItem() {
+        while (currentItemIdentifier <= itemStock.length && itemStock[currentItemIdentifier - 1] === 0) {
+            currentItemIdentifier++;
         }
-        resultMatrix[currentGridRow][currentGridColumn] = currentNumber;
-    }
+        if (currentItemIdentifier > itemStock.length) {
+            // This state should ideally not be reached with valid problem constraints
+            // where the grid can be fully filled by the provided items.
+            return undefined;
+        }
 
-    const formattedResult = resultMatrix.map(row => row.join(' ')).join('\n');
-    presentOutput(formattedResult);
-};
+        itemStock[currentItemIdentifier - 1]--;
+        return currentItemIdentifier;
+    };
+}
 
-solvePuzzle();
+function ProcessGrid(rawInputContent) {
+    const dataLines = rawInputContent.trim().split('\n');
+
+    const [gridHeight, gridWidth] = dataLines[0].split(' ').map(Number);
+    const initialItemQuantities = dataLines[2].split(' ').map(Number);
+
+    const itemSupplier = createItemDispenser(initialItemQuantities);
+
+    const constructedGrid = Array.from({ length: gridHeight }, (_, rowIndex) => {
+        const rowElements = Array.from({ length: gridWidth }, () => itemSupplier());
+
+        if (rowIndex % 2 !== 0) {
+            return rowElements.reverse();
+        }
+        return rowElements;
+    });
+
+    const finalOutputString = constructedGrid.map(row => row.join(' ')).join('\n');
+    myout(finalOutputString);
+}
+
+ProcessGrid(myin());

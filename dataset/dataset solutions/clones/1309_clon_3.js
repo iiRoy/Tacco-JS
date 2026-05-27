@@ -1,31 +1,27 @@
-const sourceTextContent = require('node:fs').readFileSync('/dev/stdin', 'utf8');
+const fileSystemModule = require('fs');
+const rawInputData = fileSystemModule.readFileSync('/dev/stdin', 'utf8');
+const lineArray = rawInputData.split('\n');
 
-const computedSumsCollection = [];
+const TERMINATION_VALUE_STRING = '0';
+const collectedSums = [];
 
-const rawInputLines = sourceTextContent.split('\n');
+const calculateDigitsSum = (numericString) => {
+    const digitCharacters = numericString.split('');
+    const parsedDigits = digitCharacters.map(char => parseInt(char, 10));
+    const totalSumOfDigits = parsedDigits.reduce((accumulator, currentDigitValue) => accumulator + currentDigitValue, 0);
+    return totalSumOfDigits;
+};
 
-for (const currentLineFragment of rawInputLines) {
-    const trimmedLine = currentLineFragment.trim();
+for (let currentLineIndex = 0; currentLineIndex < lineArray.length; currentLineIndex++) {
+    const activeLineContent = lineArray[currentLineIndex];
 
-    if (trimmedLine.length === 0) {
-        continue;
-    }
-
-    if (trimmedLine === '0') {
+    if (activeLineContent === TERMINATION_VALUE_STRING) {
         break;
     }
 
-    const digitValues = Array.from(trimmedLine).map(Number);
-
-    let lineSumAccumulator = 0;
-
-    for (const digit of digitValues) {
-        lineSumAccumulator += digit;
-    }
-
-    computedSumsCollection.push(lineSumAccumulator.toString());
+    const lineDigitSum = calculateDigitsSum(activeLineContent);
+    collectedSums.push(lineDigitSum);
 }
 
-const finalConsolidatedOutput = computedSumsCollection.join('\n');
-
-console.log(finalConsolidatedOutput.trim());
+const finalOutputString = collectedSums.join('\n').trim();
+console.log(finalOutputString);

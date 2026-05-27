@@ -1,135 +1,158 @@
-// This section contains internal utilities and input handling, usually not relevant to the main logic.
-var lineReader = require('readline').createInterface({
-  input:  process.stdin,
+var inputReader = require('readline').createInterface({
+  input: process.stdin,
   output: process.stdout
 });
-var dataAcquirer;
-var receivedLines = [];
-lineReader.on('line',
-  function (incomingText) {
-    receivedLines.push(incomingText);
-  }
-);
-lineReader.on('close',
-  function () {
-    dataAcquirer = prepareData(receivedLines);
-    console.error(" "); // Just a newline for visual separation in error output
-    var startingTimestamp = Date.now();
-    runApplication();
-    var durationMeasurement = Date.now() - startingTimestamp;
-    logDebuggingInfo("execution time : " + (durationMeasurement) + "ms");
-    logDebuggingInfo("memory usage : " + Math.round(process.memoryUsage().heapTotal / 1024) + "KB");
-  }
-);
 
-// Creates a deep copy of any given JavaScript object.
-function replicateEntity (originalObject) {
+var dataProcessor;
+var inputLines = [];
+
+// Event listener for each line of input
+inputReader.on('line', function(currentLine) {
+  inputLines.push(currentLine);
+});
+
+// Event listener for when input stream closes
+inputReader.on('close', function() {
+  dataProcessor = initializeInputHandler(inputLines);
+  console.error("\n"); // Print a newline to stderr for formatting
+
+  var startTime = Date.now(); // Record start time for performance measurement
+  executeMainLogic(); // Execute the primary application logic
+  var elapsedTime = Date.now() - startTime; // Calculate elapsed time
+
+  logDebugMessage("time : " + (elapsedTime) + "ms");
+  logDebugMessage("memory : " + Math.round(process.memoryUsage().heapTotal / 1024) + "KB");
+});
+
+/**
+ * Creates a deep copy of an object using JSON serialization.
+ * @param {object} originalObject - The object to clone.
+ * @returns {object} A deep copy of the original object.
+ */
+function createDeepCopy(originalObject) {
   return JSON.parse(JSON.stringify(originalObject));
 }
 
-// Retrieves the next integer from the input stream.
-function obtainInteger () {
-  return transformValue(retrieveNextItem(), 1);
+// Helper functions to retrieve and convert input data
+function getNextInteger() {
+  return convertInput(fetchNextItem(), 1);
 }
 
-// Retrieves the next string array from the input stream.
-function obtainStringArray () {
-  return transformValue(retrieveNextItem(), 2);
+function getNextStringArray() {
+  return convertInput(fetchNextItem(), 2);
 }
 
-// Retrieves the next integer array from the input stream.
-function obtainIntegerArray () {
-  return transformValue(retrieveNextItem(), 4);
+function getNextIntegerArray() {
+  return convertInput(fetchNextItem(), 4);
 }
 
-// Retrieves the next character array from the input stream.
-function obtainCharacterArray () {
-  return transformValue(retrieveNextItem(), 6);
+function getNextCharacterArray() {
+  return convertInput(fetchNextItem(), 6);
 }
 
-// Fetches the next available item from the input.
-function retrieveNextItem () {
-  return dataAcquirer.retrieveNextItem();
+function fetchNextItem() {
+  return dataProcessor.fetchNextItem();
 }
 
-// Checks if there are more items in the input stream.
-function hasMoreData () {
-  return dataAcquirer.hasMoreData();
+function hasMoreItems() {
+  return dataProcessor.hasMoreItems();
 }
 
-// Sets up the input data structure for easy consumption.
-function prepareData (incomingCollection) {
+/**
+ * Initializes an input handler object to manage reading lines.
+ * @param {string[]} rawInputData - An array of strings representing input lines.
+ * @returns {object} An object with methods to navigate the input.
+ */
+function initializeInputHandler(rawInputData) {
   return {
-    processedContent: incomingCollection,
-    contentPointer: 0,
-    totalContent: incomingCollection.length,
-    hasMoreData: function () {
-      return (this.contentPointer < this.totalContent);
+    sourceList: rawInputData,
+    currentPosition: 0,
+    maximumLength: rawInputData.length,
+
+    // Checks if there are more input lines available
+    hasMoreItems: function() {
+      return (this.currentPosition < this.maximumLength);
     },
-    retrieveNextItem: function () {
-      if (this.hasMoreData()) {
-        return this.processedContent[this.contentPointer++];
+
+    // Retrieves the next input line
+    fetchNextItem: function() {
+      if (this.hasMoreItems()) {
+        return this.sourceList[this.currentPosition++];
       } else {
-        throw "InputBoundaryExceededException - No more entries available.";
+        throw "ArrayIndexOutOfBoundsException ‚There is no more input";
       }
     }
   };
 }
 
-// Prints a string to the standard output.
-function outputInformation (displayString) {
-  console.log(displayString);
+/**
+ * Prints a message to standard output.
+ * @param {*} messageContent - The content to be printed.
+ */
+function printOutput(messageContent) {
+  console.log(messageContent);
 }
 
-// Logs a message to the standard error, formatted for debugging.
-function logDebuggingInfo (displayString) {
-  console.error("debug output: " + require("util").inspect(displayString, false, null));
+/**
+ * Logs a debug message to standard error.
+ * @param {*} messageContent - The content to be logged.
+ */
+function logDebugMessage(messageContent) {
+  console.error("debug:" + require("util").inspect(messageContent, false, null));
 }
 
-// The 'transformCode' parameter dictates the type of conversion.
-// Valid codes:
-//   - 1: Parse as integer.
-//   - 2: Split by spaces into string array.
-//   - 4: Split by spaces and parse each as number into array.
-//   - 6: Split by characters into character array.
-//   - 7: Split by characters and parse each as number into array.
-//   - 8: Join array elements with spaces.
-//   - 9: Join array elements with newlines.
-//   - 0: Join array elements without separator.
-//   - Default: Return input as-is.
-function transformValue (inputItem, transformCode) {
+/**
+ * Converts an input value based on a specified type.
+ * @param {*} inputValue - The value to convert.
+ * @param {number} conversionType - The type of conversion to perform.
+ *   1: Parse as integer.
+ *   2: Split string by spaces.
+ *   4: Split string by spaces and map to numbers.
+ *   6: Split string into individual characters.
+ *   7: Split string into individual characters and map to numbers.
+ *   8: Join array elements with spaces.
+ *   9: Join array elements with newlines.
+ *   0: Join array elements without a separator.
+ * @returns {*} The converted value.
+ */
+function convertInput(inputValue, conversionType) {
   try {
-    switch (transformCode) {
+    switch (conversionType) {
       case 1:
-        return parseInt(inputItem);
+        return parseInt(inputValue);
       case 2:
-        return inputItem.split(" ");
+        return inputValue.split(" ");
       case 4:
-        return inputItem.split(" ").map(Number);
+        return inputValue.split(" ").map(Number);
       case 6:
-        return inputItem.split("");
+        return inputValue.split("");
       case 7:
-        return inputItem.split("").map(Number);
+        return inputValue.split("").map(Number);
       case 8:
-        return inputItem.join(" ");
+        return inputValue.join(" ");
       case 9:
-        return inputItem.join("\n");
+        return inputValue.join("\n");
       case 0:
-        return inputItem.join("");
+        return inputValue.join("");
       default:
-        return inputItem;
+        return inputValue;
     }
   } catch (error) {
-    return inputItem; // In case of conversion error, return original item
+    return inputValue; // Return original value on error
   }
 }
 
-// End of internal support code.
-function runApplication () {
-  outputInformation("Indeed");
-  outputInformation(4);
-  outputInformation("3 1 2 3");
-  outputInformation("3 1 4 5");
-  outputInformation("3 2 5 6");
-  outputInformation("3 3 4 6");
+//Don't have to see. end------------------------------------------
+
+/**
+ * The primary function containing the application's core logic.
+ * This function prints several predefined strings to standard output.
+ */
+function executeMainLogic() {
+  printOutput("Yes");
+  printOutput(4);
+  printOutput("3 1 2 3");
+  printOutput("3 1 4 5");
+  printOutput("3 2 5 6");
+  printOutput("3 3 4 6");
 }

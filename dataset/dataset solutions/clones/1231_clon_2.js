@@ -1,30 +1,34 @@
-inputFlow.activate();
-inputFlow.configureEncoding('utf-8');
-// Initialize a buffer for incoming data
-let fullInputBuffer = '';
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
 
-inputFlow.on('dataSegment', (incomingPortion) => {
-    fullInputBuffer += incomingPortion;
+// This variable will accumulate all the incoming data from standard input.
+let inputBuffer = '';
+
+// Set up an event listener to capture data chunks as they arrive.
+process.stdin.on('data', function (dataChunk) {
+    inputBuffer += dataChunk; // Append the current data chunk to our buffer.
 });
 
-// Process all collected input upon stream completion
-inputFlow.on('completion', () => {
-    // Split the entire buffer into individual lines
-    const lineSegments = fullInputBuffer.split('\n');
+// Once all input has been received (the 'end' event), process the accumulated data.
+process.stdin.on('end', function () {
+    // Split the entire input string into an array of individual lines.
+    const inputLines = inputBuffer.split('\n');
 
-    // Convert each line segment into an integer value
-    const numericValues = lineSegments.map( (segmentItem) => {
-        return parseInt(segmentItem, 10);
-    })
+    // Convert each line string into an integer, creating a new array of numbers.
+    const numericValues = inputLines.map(function (lineStr) {
+        return parseInt(lineStr, 10); // Parse string to integer, specifying base 10.
+    });
 
-    // Iterate through the processed numerical entries
+    // Iterate through the array of numeric values.
     for (let currentIdx = 0; currentIdx < numericValues.length; currentIdx++) {
-        const displayLabel = 'Scenario ' + (currentIdx + 1) + ': ';
-        console.info(displayLabel + numericValues[currentIdx]);
+        // Construct the specific output string for the current case.
+        const caseLabel = 'Case ' + (currentIdx + 1) + ': ';
+        // Print the formatted output to the console.
+        console.log(caseLabel + numericValues[currentIdx]);
 
-        // Terminate processing if a zero value is encountered
+        // If the current number is zero, stop further processing and exit.
         if (numericValues[currentIdx] === 0) {
-            return;
+            return; // Terminate the execution of this event handler.
         }
     }
 });

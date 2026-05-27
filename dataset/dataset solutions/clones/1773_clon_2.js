@@ -1,53 +1,51 @@
-/*
- * This module processes a given input string to find a specific numerical value.
- * It identifies a target number and a set of excluded numbers.
- * The goal is to find the smallest absolute difference from the target number
- * that is not present in the excluded set.
- */
+function ProcessInput(inputData) {
+  // The initial raw input string is processed.
+  // First, any leading or trailing whitespace is removed.
+  // Then, the string is split into an array of lines based on newline characters.
+  let processedLines = inputData.trim().split('\n');
 
-function ExecuteProgram( inputData )
-{
-    // Sanitize and split the raw input into individual lines for processing.
-    const processedLines = inputData.trim().split('\n') ;
+  // From the first line of the processed input, we extract two pieces of information.
+  // The first part (before the first space) is converted to a number and stored as the target value.
+  let targetValue = Number(processedLines[0].split(' ')[0]);
+  // The second part (after the first space) is stored as a string representing a count.
+  let countOfExcluded = processedLines[0].split(' ')[1];
 
-    // Parse the primary numerical value and a count indicator from the first line.
-    const [initialPointStr, exclusionCountStr] = processedLines[0].split(' ');
-    const targetValue = Number(initialPointStr);
-    const numExclusions = exclusionCountStr; // Stored as string for direct comparison with "0"
+  // A conditional check: if the count of excluded items is zero,
+  // it implies that the target value itself is the desired output.
+  if (countOfExcluded == 0) {
+    console.log(targetValue); // Output the target value directly.
+    return; // Exit the function as the task is complete.
+  }
 
-    // If the count of exclusions is zero, the target value itself is the answer.
-    if (numExclusions === '0')
-    {
-      console.log(targetValue);
-      return; // Exit early as the solution is found.
+  // If there are excluded items, we parse the second line of input.
+  // This line contains space-separated values which represent numbers to be excluded.
+  const excludedNumbers = processedLines[1].split(' ');
+
+  // We now search for the closest non-excluded number to our target value.
+  // The search iterates outwards, checking numbers at increasing distances from the target.
+  // The loop runs from an offset of 1 up to 100.
+  for (let iteratorIndex = 1; iteratorIndex < 101; iteratorIndex++) {
+    // First, check the number that is 'iteratorIndex' units less than the target value.
+    // We convert this number to a string for comparison with the 'excludedNumbers' array.
+    if (!excludedNumbers.includes(`${targetValue - iteratorIndex}`)) {
+      console.log(targetValue - iteratorIndex); // If not excluded, output it.
+      return; // Exit the function.
     }
-
-    // Extract the list of numbers to be avoided from the second line.
-    const excludedNumbers = processedLines[1].split(' ');
-
-    // Iterate to find the closest available number, checking both sides of the target.
-    // The loop runs a fixed number of iterations (1 to 100) to search for a solution.
-    for ( let currentOffset = 1; currentOffset < 101; currentOffset++ )
-    {
-      // First, check the value below the target: targetValue - currentOffset
-      const lowerCandidate = targetValue - (1 * currentOffset);
-      if ( !excludedNumbers.includes(`${lowerCandidate}`) )
-      {
-        console.log(lowerCandidate);
-        return; // Found a valid lower candidate, print and exit.
-      }
-      // If the lower candidate is excluded, check the value above the target: targetValue + currentOffset
-      else if ( !excludedNumbers.includes(`${targetValue + currentOffset}`) )
-      {
-        console.log(targetValue + currentOffset);
-        return; // Found a valid upper candidate, print and exit.
-      }
+    // If the number (targetValue - iteratorIndex) was excluded,
+    // then check the number that is 'iteratorIndex' units greater than the target value.
+    else if (!excludedNumbers.includes(`${targetValue + iteratorIndex}`)) {
+      console.log(targetValue + iteratorIndex); // If not excluded, output it.
+      return; // Exit the function.
     }
+  }
 
-    // If no suitable number is found within the search range, indicate an error.
-    console.log('error');
-    return; // Program termination.
+  // If the loop completes without finding any non-excluded number within the range,
+  // it indicates an unexpected scenario or an error condition.
+  console.log('error'); // Output an error message.
+  return; // Ensure the function always has a return path.
 }
 
-// Entry point: Read input from standard input and pass it to the main processing function.
-ExecuteProgram(require("fs").readFileSync("/dev/stdin", "utf8"));
+// The main execution block:
+// It reads the entire content of standard input as a UTF-8 string.
+// This content is then passed to the 'ProcessInput' function for processing.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

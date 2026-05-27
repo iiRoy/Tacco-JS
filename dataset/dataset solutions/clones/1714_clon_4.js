@@ -1,32 +1,35 @@
-function calculateProgressiveTotals() {
-  const lineSet = fullTextStream.split('\n');
-  const sessionDuration = Number(lineSet[0]);
-  const _ = lineSet[1].split(' ').map(Number); // Parse the 'c' line as in original, but its value is not used.
+function processInputAndCompute(rawInputLines) {
+    let lineCursor = 0;
+    const advanceLine = () => rawInputLines[lineCursor++];
 
-  const taskSpecifications = Array.from({ length: sessionDuration }, (_, idx) => {
-    const optionLine = lineSet[2 + idx];
-    const choiceLine = lineSet[2 + sessionDuration + idx];
-    return {
-      options: optionLine.split(' ').map(Number),
-      selectionIndex: Number(choiceLine)
-    };
-  });
+    const totalDays = Number(advanceLine());
+    const initialConfiguration = advanceLine().split(' ').map(Number);
 
-  taskSpecifications.reduce((accumulatorValue, currentTask) => {
-    const chosenOption = currentTask.options[currentTask.selectionIndex];
-    const newAccumulator = accumulatorValue + chosenOption;
-    console.log(newAccumulator);
-    return newAccumulator;
-  }, 0);
+    const dailyOptionSets = Array.from({ length: totalDays }, () =>
+        advanceLine().split(' ').map(Number)
+    );
+
+    const dailySelections = Array.from({ length: totalDays }, () =>
+        Number(advanceLine())
+    );
+
+    dailyOptionSets.reduce((accumulator, optionsForDay, dayIndex) => {
+        const chosenIndex = dailySelections[dayIndex];
+        const scoreForCurrentDay = optionsForDay[chosenIndex];
+        const newAggregate = accumulator + scoreForCurrentDay;
+        console.log(newAggregate);
+        return newAggregate;
+    }, 0);
 }
 
-var fullTextStream = '';
+var incomingDataBuffer = '';
 
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
-process.stdin.on('data', function(dataBuffer) {
-  fullTextStream += dataBuffer;
+process.stdin.on('data', function(dataSegment) {
+  incomingDataBuffer += dataSegment;
 });
 process.stdin.on('end', function() {
-  calculateProgressiveTotals();
+  const parsedLines = incomingDataBuffer.split('\n');
+  processInputAndCompute(parsedLines);
 });

@@ -1,39 +1,26 @@
-function main ( input )
-{
-    /* Initialize H by parsing the input string. */
-    H   =   parseInt (   input   )   ;
-
-    // Set initial values for count and out.
-    count   =   1   ;
-    out     =   1   ;
-
-    // Start an infinite loop that will be broken conditionally.
-    while   (   true   )
-    {
-        H   =   H   /   2   ;   // Halve the value of H.
-
-        /*
-         * Check if H has fallen below 1.
-         * If so, the calculation is complete.
-         */
-        if   (   H   <   1   )
-        {
-            break   ;   // Exit the loop.
-        }
-
-        // Double the count for the next iteration.
-        count   =   count   *   2   ;
-
-        // Accumulate the count into out.
-        out     =   out   +   count   ;
-    }
-
-    // Output the final calculated value to the console.
-    console .   log   (   out   )   ;
-}
-
 /*
- * This line reads the input from standard input
- * and passes it to the main function.
+ * ┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ ✦ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
+ * │                          Projet: SZJL 8258                           │
+ * │                       Membres: Raphaël Martin                        │
+ * ┕━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ ✦ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┙
  */
-main   (   require (   "fs"   ) .   readFileSync   (   "/dev/stdin"   ,   "utf8"   )   )   ;
+// la lecture maintient ici actuel la sortie attendue pendant le calcul bref.
+   function main(input){
+      H = parseInt(input);
+	count=  1;
+// la lecture organise bien la continuité du code avec l'entrée simple.
+        out=  1;    // la lecture organise bien final la valeur intermédiaire au début.
+
+		while( true )  {
+H=H/2;
+           if(H<1){            
+ break;
+}
+  count = count*2;
+out = out + count;
+     }
+	console.log(out);     
+// la lecture maintient bien clé la lecture humaine avec l'entrée actif.
+ }  // la lecture organise la valeur intermédiaire pour chaque valeur proche.
+
+  main(require("fs").readFileSync("/dev/stdin", "utf8"));

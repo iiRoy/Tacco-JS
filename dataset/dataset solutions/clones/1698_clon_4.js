@@ -1,87 +1,93 @@
-const convertToLargeInteger = (valueString) => {
-    return globalThis.BigInt(valueString);
-};
-
-const locatePeak = (dataItems) => {
-    if (dataItems.length === 0) {
-        return -1;
+class ValueHeap {
+    constructor() {
+        this.collection = [];
     }
 
-    const indexedItems = dataItems.map((val, idx) => ({ val: val, originalIndex: idx }));
+    getUpstreamIndex(idx) { return Math.floor((idx - 1) / 2); }
+    getLeftBranchIndex(idx) { return 2 * idx + 1; }
+    getRightBranchIndex(idx) { return 2 * idx + 2; }
 
-    const resultAccumulator = indexedItems.reduce(
-        (tracker, currentItem) => {
-            if (currentItem.val > tracker.extremeValue) {
-                return { extremeValue: currentItem.val, extremePosition: currentItem.originalIndex };
+    hasUpstream(idx) { return this.getUpstreamIndex(idx) >= 0; }
+    hasLeftBranch(idx) { return this.getLeftBranchIndex(idx) < this.collection.length; }
+    hasRightBranch(idx) { return this.getRightBranchIndex(idx) < this.collection.length; }
+
+    getUpstream(idx) { return this.collection[this.getUpstreamIndex(idx)]; }
+    getLeftBranch(idx) { return this.collection[this.getLeftBranchIndex(idx)]; }
+    getRightBranch(idx) { return this.collection[this.getRightBranchIndex(idx)]; }
+
+    exchange(idx1, idx2) {
+        [this.collection[idx1], this.collection[idx2]] = [this.collection[idx2], this.collection[idx1]];
+    }
+
+    top() {
+        if (this.collection.length === 0) return undefined;
+        return this.collection[0];
+    }
+
+    add(item) {
+        this.collection.push(item);
+        this.heapifyUpward();
+    }
+
+    extractTop() {
+        if (this.collection.length === 0) return undefined;
+        if (this.collection.length === 1) return this.collection.pop();
+
+        const item = this.collection[0];
+        this.collection[0] = this.collection.pop();
+        this.heapifyDownward();
+        return item;
+    }
+
+    heapifyUpward() {
+        let currentIdx = this.collection.length - 1;
+        while (this.hasUpstream(currentIdx) && this.getUpstream(currentIdx) < this.collection[currentIdx]) {
+            this.exchange(this.getUpstreamIndex(currentIdx), currentIdx);
+            currentIdx = this.getUpstreamIndex(currentIdx);
+        }
+    }
+
+    heapifyDownward() {
+        let currentIdx = 0;
+        while (this.hasLeftBranch(currentIdx)) {
+            let largerBranchIdx = this.getLeftBranchIndex(currentIdx);
+            if (this.hasRightBranch(currentIdx) && this.getRightBranch(currentIdx) > this.getLeftBranch(currentIdx)) {
+                largerBranchIdx = this.getRightBranchIndex(currentIdx);
             }
-            return tracker;
-        },
-        { extremeValue: -1n, extremePosition: -1 }
-    );
 
-    return resultAccumulator.extremePosition;
-};
-
-const processRecurrence = (remainingElements, currentSet, totalAccumulation) => {
-    if (remainingElements.length === 0) {
-        return totalAccumulation;
+            if (this.collection[currentIdx] > this.collection[largerBranchIdx]) {
+                break;
+            } else {
+                this.exchange(currentIdx, largerBranchIdx);
+            }
+            currentIdx = largerBranchIdx;
+        }
     }
 
-    const nextElement = remainingElements[0];
-    const peakPosition = locatePeak(currentSet);
-
-    const newTotal = totalAccumulation + currentSet[peakPosition];
-
-    const segmentBeforePeak = currentSet.slice(0, peakPosition);
-    const segmentAfterPeak = currentSet.slice(peakPosition + 1);
-    const elementsToInsert = [nextElement, nextElement];
-
-    const nextSet = segmentBeforePeak.concat(elementsToInsert).concat(segmentAfterPeak);
-
-    return processRecurrence(
-        remainingElements.slice(1),
-        nextSet,
-        newTotal
-    );
-};
-
-const initiateProcessing = (inputDataContent) => {
-    const cleanedInput = inputDataContent.replace(/^\s+|\s+$/g, '');
-    const linesOfInput = cleanedInput.split('\n');
-    const numberStringsFromSecondLine = linesOfInput[1].split(' ');
-
-    const initialElementsCollection = numberStringsFromSecondLine.map(convertToLargeInteger);
-
-    initialElementsCollection.sort((valA, valB) => {
-        if (valA > valB) return -1;
-        if (valA < valB) return 1;
-        return 0;
-    });
-
-    const primaryWorkingElement = initialElementsCollection[0];
-    const subsequentInputElements = initialElementsCollection.slice(1);
-
-    const currentWorkingSet = [primaryWorkingElement];
-    const startingAccumulation = 0n;
-
-    const finalCalculatedSum = processRecurrence(
-        subsequentInputElements,
-        currentWorkingSet,
-        startingAccumulation
-    );
-
-    globalThis.console.log(finalCalculatedSum.toString());
-};
-
-(function () {
-    const environmentAccess = typeof globalThis.process !== 'undefined' && globalThis.process.env;
-    if (environmentAccess && environmentAccess.UTIL_ENV_FLAG) {
-        // Test environment placeholder
-    } else {
-        const fileSystemModule = globalThis.require('fs');
-        const standardInputPath = '/dev/stdin';
-        const encodingFormat = 'utf8';
-        const fileContents = fileSystemModule.readFileSync(standardInputPath, encodingFormat);
-        initiateProcessing(fileContents);
+    get currentSize() {
+        return this.collection.length;
     }
-})();
+}
+
+const main = (rawInput) => {
+    const lines = rawInput.trim().split('\n');
+    const numericStrings = lines[1].split(' ');
+    const sortedDescendingNumbers = numericStrings.map(str => BigInt(str)).sort((valA, valB) => valB - valA);
+
+    const activeElementsHeap = new ValueHeap();
+    activeElementsHeap.add(sortedDescendingNumbers.shift());
+
+    let cumulativeSum = 0n;
+
+    for (const currentNumber of sortedDescendingNumbers) {
+        const topElement = activeElementsHeap.extractTop();
+        cumulativeSum += topElement;
+
+        activeElementsHeap.add(currentNumber);
+        activeElementsHeap.add(currentNumber);
+    }
+
+    console.log(`${cumulativeSum}`);
+};
+
+process.env.MYTEST ? test() : main(require('fs').readFileSync('/dev/stdin', 'utf8'))

@@ -1,112 +1,113 @@
-const dataStream = require('fs');
-const acquiredText = Buffer.from(dataStream.readFileSync(0)).toString().split('\n');
+const fs = require('fs');
 
-function processGraphData() {
-    let lineIterator = 0;
+const readInputAndProcess = () => {
+    const inputBufferLength = fs.fstatSync(process.stdin.fd).size;
+    const inputBuffer = Buffer.alloc(inputBufferLength);
+    const bytesReadCount = fs.readSync(process.stdin.fd, inputBuffer, 0, inputBufferLength, 0);
+    const inputLines = inputBuffer.toString('utf8', 0, bytesReadCount).split('\n');
 
-    const dimensions = acquiredText[lineIterator++].split(' ').map(Number);
-    const nodeCount = dimensions[0];
-    const linkCount = dimensions[1];
+    const [nodeCountStr, edgeCountStr] = inputLines.shift().split(' ');
+    const nodeCount = Number(nodeCountStr);
+    const edgeCount = Number(edgeCountStr);
 
-    const forwardConnections = new Map();
-    const backwardConnections = new Map();
-    const allLinks = [];
+    const forwardAdjacency = new Map();
+    const reverseAdjacency = new Map();
+    const allEdges = [];
+    const currentInDegrees = Array.from({ length: nodeCount }, () => 0);
 
     for (let i = 0; i < nodeCount; i++) {
-        forwardConnections.set(i, new Set());
-        backwardConnections.set(i, new Set());
+        forwardAdjacency.set(i, new Set());
+        reverseAdjacency.set(i, new Set());
     }
 
-    for (let i = 0; i < linkCount; i++) {
-        const linkData = acquiredText[lineIterator++].split(' ').map(Number);
-        const originNode = linkData[0] - 1;
-        const destinationNode = linkData[1] - 1;
+    for (let i = 0; i < edgeCount; i++) {
+        const [sourceStr, targetStr] = inputLines[i].split(' ');
+        const sourceNode = Number(sourceStr) - 1;
+        const targetNode = Number(targetStr) - 1;
 
-        forwardConnections.get(originNode).add(destinationNode);
-        backwardConnections.get(destinationNode).add(originNode);
-        allLinks.push({ first: originNode, second: destinationNode, identifier: i });
+        forwardAdjacency.get(sourceNode).add(targetNode);
+        reverseAdjacency.get(targetNode).add(sourceNode);
+        currentInDegrees[targetNode]++;
+        allEdges.push({ from: sourceNode, to: targetNode, originalIndex: i });
     }
 
-    const pathLengthsCache = new Map();
+    const pathLengths = Array.from({ length: nodeCount }, () => 0);
+    const topologicalQueue = [];
 
-    const calculateMaxPath = (currentNode) => {
-        if (pathLengthsCache.has(currentNode)) {
-            return pathLengthsCache.get(currentNode);
+    for (let i = 0; i < nodeCount; i++) {
+        if (currentInDegrees[i] === 0) {
+            topologicalQueue.push(i);
         }
+    }
 
-        let currentMax = 0;
-        const successors = forwardConnections.get(currentNode);
-        if (successors && successors.size > 0) {
-            for (const nextNode of successors) {
-                currentMax = Math.max(currentMax, 1 + calculateMaxPath(nextNode));
+    let queuePointer = 0;
+    while (queuePointer < topologicalQueue.length) {
+        const currentNode = topologicalQueue[queuePointer++];
+
+        for (const neighbor of forwardAdjacency.get(currentNode)) {
+            pathLengths[neighbor] = Math.max(pathLengths[neighbor], pathLengths[currentNode] + 1);
+            currentInDegrees[neighbor]--;
+            if (currentInDegrees[neighbor] === 0) {
+                topologicalQueue.push(neighbor);
             }
         }
-        pathLengthsCache.set(currentNode, currentMax);
-        return currentMax;
-    };
-
-    for (let i = 0; i < nodeCount; i++) {
-        calculateMaxPath(i);
     }
 
-    let overallMaximumLength = 0;
-    for (let i = 0; i < nodeCount; i++) {
-        overallMaximumLength = Math.max(overallMaximumLength, pathLengthsCache.get(i));
-    }
+    const maxOverallPathLength = Math.max(...pathLengths);
 
-    const uniquePathComponentNodes = new Set();
-    const explorationStack = [];
+    const isNodeOnLongestPath = Array.from({ length: nodeCount }, () => false);
+    const longestPathBacktrackQueue = [];
 
     for (let i = 0; i < nodeCount; i++) {
-        if (pathLengthsCache.get(i) === overallMaximumLength) {
-            uniquePathComponentNodes.add(i);
-            explorationStack.push(i);
+        if (pathLengths[i] === maxOverallPathLength) {
+            isNodeOnLongestPath[i] = true;
+            longestPathBacktrackQueue.push(i);
         }
     }
 
-    while (explorationStack.length > 0) {
-        const currentVertex = explorationStack.pop();
-        const predecessors = backwardConnections.get(currentVertex);
-        if (predecessors) {
-            for (const priorVertex of predecessors) {
-                if (pathLengthsCache.get(priorVertex) + 1 === pathLengthsCache.get(currentVertex) &&
-                    !uniquePathComponentNodes.has(priorVertex)) {
-                    uniquePathComponentNodes.add(priorVertex);
-                    explorationStack.push(priorVertex);
+    let backtrackQueuePointer = 0;
+    while (backtrackQueuePointer < longestPathBacktrackQueue.length) {
+        const currentPathNode = longestPathBacktrackQueue[backtrackQueuePointer++];
+
+        for (const predecessor of reverseAdjacency.get(currentPathNode)) {
+            if (pathLengths[predecessor] + 1 === pathLengths[currentPathNode]) {
+                if (!isNodeOnLongestPath[predecessor]) {
+                    isNodeOnLongestPath[predecessor] = true;
+                    longestPathBacktrackQueue.push(predecessor);
                 }
             }
         }
     }
 
-    const levelNodeCounts = new Map();
+    const segmentTransitionCounts = Array.from({ length: maxOverallPathLength + 1 }, () => 0);
+
     for (let i = 0; i < nodeCount; i++) {
-        if (uniquePathComponentNodes.has(i)) {
-            const lengthAtNode = pathLengthsCache.get(i);
-            if (lengthAtNode < overallMaximumLength) {
-                levelNodeCounts.set(lengthAtNode, (levelNodeCounts.get(lengthAtNode) || 0) + 1);
+        if (isNodeOnLongestPath[i]) {
+            for (const neighbor of forwardAdjacency.get(i)) {
+                if (isNodeOnLongestPath[neighbor] && pathLengths[i] + 1 === pathLengths[neighbor]) {
+                    segmentTransitionCounts[pathLengths[i]]++;
+                }
             }
         }
     }
 
-    let firstCriticalLinkFound = false;
-    for (let i = 0; i < allLinks.length; i++) {
-        const currentLink = allLinks[i];
-        const linkOrigin = currentLink.first;
-        const linkDestination = currentLink.second;
+    let criticalEdgeFound = false;
+    for (const edge of allEdges) {
+        const u = edge.from;
+        const v = edge.to;
 
-        const originPathLength = pathLengthsCache.get(linkOrigin);
-        if (uniquePathComponentNodes.has(linkOrigin) &&
-            uniquePathComponentNodes.has(linkDestination) &&
-            levelNodeCounts.get(originPathLength) === 1) {
-            console.log(currentLink.identifier + 1);
-            firstCriticalLinkFound = true;
-            break;
+        if (isNodeOnLongestPath[u] && isNodeOnLongestPath[v] && pathLengths[u] + 1 === pathLengths[v]) {
+            if (segmentTransitionCounts[pathLengths[u]] === 1) {
+                console.log(edge.originalIndex + 1);
+                criticalEdgeFound = true;
+                break;
+            }
         }
     }
 
-    if (!firstCriticalLinkFound) {
+    if (!criticalEdgeFound) {
         console.log(-1);
     }
-}
+};
 
-processGraphData();
+readInputAndProcess();

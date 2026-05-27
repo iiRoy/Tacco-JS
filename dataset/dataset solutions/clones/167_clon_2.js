@@ -1,101 +1,113 @@
-var arrangements = []; // Stores all 4-element permutations
-var usedIndices = []; // Tracks which indices (0-3) have been used in a permutation
+let permutationsList = []; // Array to store all generated permutations of indices
+let usedIndices = []; // Boolean array to keep track of used indices during permutation generation
 
-// Initialize usage flags for each position
-for (var firstPos = 0; firstPos < 4; firstPos++) {
-  usedIndices[firstPos] = false;
+// Initialize the 'usedIndices' array to all false, indicating no index is used initially
+for (let indexCounter = 0; indexCounter < 4; indexCounter++) {
+    usedIndices[indexCounter] = false;
 }
 
-var permutationCount = 0; // Counter for generated permutations
+let permutationCounter = 0; // Counter for the number of permutations found
 
-// Generate all permutations of 4 distinct numbers (0-3)
-for (var firstIdx = 0; firstIdx < 4; firstIdx++) {
-  usedIndices[firstIdx] = true; // Mark first index as used
+// Generate all unique permutations of 4 distinct indices (0, 1, 2, 3)
+// This uses a recursive-like structure with nested loops to ensure each index is used only once per permutation.
 
-  for (var secondIdx = 0; secondIdx < 4; secondIdx++) {
-    if (usedIndices[secondIdx]) {
-      continue; // Skip if already used
-    }
-    usedIndices[secondIdx] = true; // Mark second index as used
+// Select the first index
+for (let firstIndex = 0; firstIndex < 4; firstIndex++) {
+    usedIndices[firstIndex] = true; // Mark the first selected index as used
 
-    for (var thirdIdx = 0; thirdIdx < 4; thirdIdx++) {
-      if (usedIndices[thirdIdx]) {
-        continue; // Skip if already used
-      }
-      usedIndices[thirdIdx] = true; // Mark third index as used
-
-      for (var fourthIdx = 0; fourthIdx < 4; fourthIdx++) {
-        if (usedIndices[fourthIdx]) {
-          continue; // Skip if already used, ensures all 4 are unique
+    // Select the second index
+    for (let secondIndex = 0; secondIndex < 4; secondIndex++) {
+        if (usedIndices[secondIndex]) { // If this index is already used, skip it
+            continue;
         }
+        usedIndices[secondIndex] = true; // Mark the second selected index as used
 
-        // Store the current unique permutation
-        arrangements[permutationCount] = [firstIdx, secondIdx, thirdIdx, fourthIdx];
-        permutationCount++; // Increment the counter
-      }
-      usedIndices[thirdIdx] = false; // Backtrack: Unmark third index
+        // Select the third index
+        for (let thirdIndex = 0; thirdIndex < 4; thirdIndex++) {
+            if (usedIndices[thirdIndex]) { // If this index is already used, skip it
+                continue;
+            }
+            usedIndices[thirdIndex] = true; // Mark the third selected index as used
+
+            // Select the fourth index
+            for (let fourthIndex = 0; fourthIndex < 4; fourthIndex++) {
+                if (usedIndices[fourthIndex]) { // If this index is already used, skip it
+                    continue;
+                }
+                // A complete unique permutation of four indices has been found
+                permutationsList[permutationCounter] = [firstIndex, secondIndex, thirdIndex, fourthIndex];
+                permutationCounter++; // Increment the total permutation count
+            }
+            usedIndices[thirdIndex] = false; // Backtrack: Unmark the third index for subsequent iterations
+        }
+        usedIndices[secondIndex] = false; // Backtrack: Unmark the second index for subsequent iterations
     }
-    usedIndices[secondIdx] = false; // Backtrack: Unmark second index
-  }
-  usedIndices[firstIdx] = false; // Backtrack: Unmark first index
+    usedIndices[firstIndex] = false; // Backtrack: Unmark the first index for subsequent iterations
 }
 
-// Read input data from standard input
-var rawData = require('node:fs').readFileSync('/dev/stdin', 'utf8');
+// Read the entire input from standard input as a UTF-8 string
+const rawInputData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-var inputLines = (rawData.trim()).split("\n"); // Split input into individual lines
+// Process the input: trim whitespace and split into an array of lines
+let inputLines = (rawInputData.trim()).split("\n");
 
-// Process each line of input until a termination condition is met
+// Loop indefinitely until a specific termination condition is met
 while (true) {
-  var currentLineData = inputLines.shift(); // Get the next line
+    let currentInputLine = inputLines.shift(); // Get the next line from the input array
 
-  // Check for the termination sequence
-  if (currentLineData === "0 0 0 0") {
-    break;
-  }
-
-  // Parse the numbers from the current line
-  var numberSequence = currentLineData.split(" ").map(parseInt);
-  var resultExpression = 0; // Initialize the expression result (0 means not found yet)
-
-  var operatorSymbols = ["+", "-", "*"]; // Available arithmetic operators
-
-  // Iterate through all possible combinations of three operators
-  for (var op1Index = 0; op1Index < 3; op1Index++) {
-    for (var op2Index = 0; op2Index < 3; op2Index++) {
-      for (var op3Index = 0; op3Index < 3; op3Index++) {
-
-        // For each operator combination, try all number permutations
-        arrangements.forEach(function (currentPermutation) {
-          var valA = numberSequence[currentPermutation[0]];
-          var valB = numberSequence[currentPermutation[1]];
-          var valC = numberSequence[currentPermutation[2]];
-          var valD = numberSequence[currentPermutation[3]];
-
-          // Test various parenthesizations to achieve a target value of 10
-          if (resultExpression === 0 && eval(valA + operatorSymbols[op1Index] + valB + operatorSymbols[op2Index] + valC + operatorSymbols[op3Index] + valD) === 10) {
-            resultExpression = valA + operatorSymbols[op1Index] + valB + operatorSymbols[op2Index] + valC + operatorSymbols[op3Index] + valD;
-          }
-          if (resultExpression === 0 && eval("(" + valA + operatorSymbols[op1Index] + valB + operatorSymbols[op2Index] + valC + ")" + operatorSymbols[op3Index] + valD) === 10) {
-            resultExpression = "(" + valA + operatorSymbols[op1Index] + valB + operatorSymbols[op2Index] + valC + ")" + operatorSymbols[op3Index] + valD;
-          }
-          if (resultExpression === 0 && eval("(" + valA + operatorSymbols[op1Index] + valB + ")" + operatorSymbols[op2Index] + "(" + valC + operatorSymbols[op3Index] + valD + ")") === 10) {
-            resultExpression = "(" + valA + operatorSymbols[op1Index] + valB + ")" + operatorSymbols[op2Index] + "(" + valC + operatorSymbols[op3Index] + valD + ")";
-          }
-          if (resultExpression === 0 && eval("(" + "(" + valA + operatorSymbols[op1Index] + valB + ")" + operatorSymbols[op2Index] + valC + ")" + operatorSymbols[op3Index] + valD) === 10) {
-            resultExpression = "(" + "(" + valA + operatorSymbols[op1Index] + valB + ")" + operatorSymbols[op2Index] + valC + ")" + operatorSymbols[op3Index] + valD;
-          }
-          if (resultExpression === 0 && eval(valA + operatorSymbols[op1Index] + "(" + valB + operatorSymbols[op2Index] + valC + operatorSymbols[op3Index] + valD + ")") === 10) {
-            resultExpression = valA + operatorSymbols[op1Index] + "(" + valB + operatorSymbols[op2Index] + valC + operatorSymbols[op3Index] + valD + ")";
-          }
-        });
-      }
+    // Check if the current line is the termination signal "0 0 0 0"
+    if (currentInputLine === "0 0 0 0") {
+        break; // Exit the loop if the termination signal is found
     }
-  }
 
-  // Format and output the found expression or '0'
-  if (resultExpression !== 0) {
-    resultExpression = "(" + resultExpression + ")"; // Wrap the result if found
-  }
-  console.log(resultExpression); // Print the outcome
+    // Parse the numbers from the current line, splitting by space and converting to Number type
+    const numericalValues = currentInputLine.split(" ").map(Number);
+    let finalExpressionResult = 0; // Initialize the result variable; 0 means no solution found yet
+
+    // Define the set of arithmetic operators to be used
+    const arithmeticOperators = ["+", "-", "*"];
+
+    // Iterate through all possible combinations of three operators
+    for (let operatorIndex1 = 0; operatorIndex1 < 3; operatorIndex1++) {
+        for (let operatorIndex2 = 0; operatorIndex2 < 3; operatorIndex2++) {
+            for (let operatorIndex3 = 0; operatorIndex3 < 3; operatorIndex3++) {
+
+                // For each operator combination, iterate through all generated number permutations
+                permutationsList.forEach(function(currentPermutationIndices) {
+                    // Extract the four numbers from 'numericalValues' based on the current permutation
+                    const valueA = numericalValues[currentPermutationIndices[0]];
+                    const valueB = numericalValues[currentPermutationIndices[1]];
+                    const valueC = numericalValues[currentPermutationIndices[2]];
+                    const valueD = numericalValues[currentPermutationIndices[3]];
+
+                    // Attempt to find an expression that evaluates to 10.
+                    // Only update 'finalExpressionResult' if a solution hasn't been found yet (it's still 0).
+
+                    // Expression form 1: A op1 B op2 C op3 D
+                    if (finalExpressionResult === 0 && eval(valueA + arithmeticOperators[operatorIndex1] + valueB + arithmeticOperators[operatorIndex2] + valueC + arithmeticOperators[operatorIndex3] + valueD) === 10) {
+                        finalExpressionResult = valueA + arithmeticOperators[operatorIndex1] + valueB + arithmeticOperators[operatorIndex2] + valueC + arithmeticOperators[operatorIndex3] + valueD;
+                    }
+                    // Expression form 2: (A op1 B op2 C) op3 D
+                    if (finalExpressionResult === 0 && eval("(" + valueA + arithmeticOperators[operatorIndex1] + valueB + arithmeticOperators[operatorIndex2] + valueC + ")" + arithmeticOperators[operatorIndex3] + valueD) === 10) {
+                        finalExpressionResult = "(" + valueA + arithmeticOperators[operatorIndex1] + valueB + arithmeticOperators[operatorIndex2] + valueC + ")" + arithmeticOperators[operatorIndex3] + valueD;
+                    }
+                    // Expression form 3: (A op1 B) op2 (C op3 D)
+                    if (finalExpressionResult === 0 && eval("(" + valueA + arithmeticOperators[operatorIndex1] + valueB + ")" + arithmeticOperators[operatorIndex2] + "(" + valueC + arithmeticOperators[operatorIndex3] + valueD + ")") === 10) {
+                        finalExpressionResult = "(" + valueA + arithmeticOperators[operatorIndex1] + valueB + ")" + arithmeticOperators[operatorIndex2] + "(" + valueC + arithmeticOperators[operatorIndex3] + valueD + ")";
+                    }
+                    // Expression form 4: ((A op1 B) op2 C) op3 D
+                    if (finalExpressionResult === 0 && eval("(" + "(" + valueA + arithmeticOperators[operatorIndex1] + valueB + ")" + arithmeticOperators[operatorIndex2] + valueC + ")" + arithmeticOperators[operatorIndex3] + valueD) === 10) {
+                        finalExpressionResult = "(" + "(" + valueA + arithmeticOperators[operatorIndex1] + valueB + ")" + arithmeticOperators[operatorIndex2] + valueC + ")" + arithmeticOperators[operatorIndex3] + valueD;
+                    }
+                });
+            }
+        }
+    }
+
+    // If a valid expression was found (finalExpressionResult is not 0), wrap it in parentheses for output
+    if (finalExpressionResult !== 0) {
+        finalExpressionResult = "(" + finalExpressionResult + ")";
+    }
+    // Print the result to the console (either the expression string or 0 if no solution)
+    console.log(finalExpressionResult);
 }

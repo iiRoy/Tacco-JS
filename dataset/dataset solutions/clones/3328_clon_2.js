@@ -1,36 +1,69 @@
 'use strict';
-( function ( sourceData ) {
 
-  sourceData = sourceData . trim ( ) . split ( / \s+ / ) . map ( currentVal => currentVal - 0 ) ;
-  const totalCount = sourceData . shift ( ) ;
-  const itemCounts = [ 'zero' , 0 , 0 , 0 ] ;
+// This immediately invoked function expression (IIFE) encapsulates the entire program logic.
+(function(rawInputData) {
+  // First, process the raw input string.
+  // It's trimmed, split by any whitespace, and then each part is converted to a number.
+  rawInputData = rawInputData.trim().split(/\s+/).map(currentVal => currentVal - 0);
 
-  sourceData . forEach ( function ( currentVal ) {
-    itemCounts [ currentVal ] ++ ;
-  } ) ;
+  // The very first number in the processed input represents the total number of items.
+  const totalCount = rawInputData.shift();
 
-  const dynamicProgrammingTable = new Array ( totalCount + 2 ) ;
-  for ( let indexA = -1 ; indexA < totalCount + 2 ; indexA ++ ) {
-    dynamicProgrammingTable [ indexA ] = new Array ( totalCount + 2 - indexA ) ;
-    for ( let indexB = -1 ; indexB < totalCount + 2 - indexA ; indexB ++ ) {
-      dynamicProgrammingTable [ indexA ] [ indexB ] = new Array ( totalCount + 2 - indexA - indexB ) . fill ( 0 ) ;
-      dynamicProgrammingTable [ indexA ] [ indexB ] [ -1 ] = 0 ;
+  // Initialize an array to store the counts of items of type 1, 2, and 3.
+  // The first element 'zero' is a placeholder as item types start from 1.
+  const itemCategoryCounts = ['zero', 0, 0, 0];
+
+  // Iterate through the remaining numbers in the input array.
+  // For each number, increment the corresponding count in the itemCategoryCounts array.
+  rawInputData.forEach(function(currentVal) {
+    itemCategoryCounts[currentVal]++;
+  });
+
+  // Declare and initialize a 3D array, which will serve as our dynamic programming table.
+  // The dimensions are set to accommodate indices from -1 up to totalCount + 1,
+  // hence totalCount + 2 for each dimension to avoid out-of-bounds errors.
+  const dynamicProgressionTable = new Array(totalCount + 2);
+
+  // Populate the 3D array structure.
+  // The outer loops create the nested arrays.
+  for (let rowIdx = -1; rowIdx < totalCount + 2; rowIdx++) {
+    dynamicProgressionTable[rowIdx] = new Array(totalCount + 2 - rowIdx);
+    for (let colIdx = -1; colIdx < totalCount + 2 - rowIdx; colIdx++) {
+      // Fill the innermost arrays with zeros initially.
+      dynamicProgressionTable[rowIdx][colIdx] = new Array(totalCount + 2 - rowIdx - colIdx).fill(0);
+      // A specific edge case handling for index -1, setting its value to 0.
+      dynamicProgressionTable[rowIdx][colIdx][-1] = 0;
     }
   }
 
-  for ( let indexA = 1 ; indexA <= totalCount ; indexA ++ ) {
-    dynamicProgrammingTable [ indexA ] [ 0 ] [ 0 ] = dynamicProgrammingTable [ indexA - 1 ] [ 0 ] [ 0 ] + ( totalCount / indexA ) ;
-    for ( let indexB = 1 ; indexB <= indexA ; indexB ++ ) {
-      dynamicProgrammingTable [ indexA - indexB ] [ indexB ] [ 0 ] = totalCount / indexA +
-        dynamicProgrammingTable [ indexA - indexB + 1 ] [ indexB - 1 ] [ 0 ] * ( indexB / indexA ) +
-        dynamicProgrammingTable [ indexA - indexB - 1 ] [ indexB ] [ 0 ] * ( ( indexA - indexB ) / indexA ) ;
-      for ( let indexC = 1 ; indexC <= indexB ; indexC ++ ) {
-        dynamicProgrammingTable [ indexA - indexB ] [ indexB - indexC ] [ indexC ] = totalCount / indexA +
-          dynamicProgrammingTable [ indexA - indexB ] [ indexB - indexC + 1 ] [ indexC - 1 ] * ( indexC / indexA ) +
-          dynamicProgrammingTable [ indexA - indexB + 1 ] [ indexB - 1 - indexC ] [ indexC ] * ( ( indexB - indexC ) / indexA ) +
-          dynamicProgrammingTable [ indexA - indexB - 1 ] [ indexB - indexC ] [ indexC ] * ( ( indexA - indexB ) / indexA ) ;
+  // Begin the core dynamic programming calculation.
+  // This set of nested loops computes the expected number of operations.
+  for (let currentNum = 1; currentNum <= totalCount; currentNum++) {
+    // Calculate the base case for when only items of type 1 are present.
+    dynamicProgressionTable[currentNum][0][0] = dynamicProgressionTable[currentNum - 1][0][0] + (totalCount / currentNum);
+
+    // Iterate for the count of items of type 2.
+    for (let countOfTwo = 1; countOfTwo <= currentNum; countOfTwo++) {
+      // Calculate the DP state considering items of type 1 and 2.
+      dynamicProgressionTable[currentNum - countOfTwo][countOfTwo][0] =
+        totalCount / currentNum +
+        dynamicProgressionTable[currentNum - countOfTwo + 1][countOfTwo - 1][0] * (countOfTwo / currentNum) +
+        dynamicProgressionTable[currentNum - countOfTwo - 1][countOfTwo][0] * ((currentNum - countOfTwo) / currentNum);
+
+      // Iterate for the count of items of type 3.
+      for (let countOfThree = 1; countOfThree <= countOfTwo; countOfThree++) {
+        // Calculate the full DP state considering items of type 1, 2, and 3.
+        dynamicProgressionTable[currentNum - countOfTwo][countOfTwo - countOfThree][countOfThree] =
+          totalCount / currentNum +
+          dynamicProgressionTable[currentNum - countOfTwo][countOfTwo - countOfThree + 1][countOfThree - 1] * (countOfThree / currentNum) +
+          dynamicProgressionTable[currentNum - countOfTwo + 1][countOfTwo - 1 - countOfThree][countOfThree] * ((countOfTwo - countOfThree) / currentNum) +
+          dynamicProgressionTable[currentNum - countOfTwo - 1][countOfTwo - countOfThree][countOfThree] * ((currentNum - countOfTwo) / currentNum);
       }
     }
   }
-  console . log ( dynamicProgrammingTable [ itemCounts [ 1 ] ] [ itemCounts [ 2 ] ] [ itemCounts [ 3 ] ] ) ;
-} ) ( require ( 'fs' ) . readFileSync ( '/dev/stdin' , 'utf8' ) ) ;
+
+  // Finally, print the result from the DP table corresponding to the initial counts of items.
+  console.log(dynamicProgressionTable[itemCategoryCounts[1]][itemCategoryCounts[2]][itemCategoryCounts[3]]);
+
+// The input is read synchronously from standard input using Node.js 'fs' module.
+})(require('fs').readFileSync('/dev/stdin', 'utf8'));

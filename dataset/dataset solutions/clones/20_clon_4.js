@@ -1,34 +1,24 @@
-const rawSource = require('node:fs').readFileSync('/dev/stdin', 'utf8');
-const numericalItems = rawSource.match(/-?\d+(\.\d+)?/g);
-const numericalElements = numericalItems.map(Number);
+const sourceData = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split(/\s/).map(Number);
 
-const divideIntoBlocks = (sourceArray, blockSize) =>
-  sourceArray.reduce((accumulatedBlocks, currentElement, index) => {
-    const blockIndex = Math.floor(index / blockSize);
-    if (!accumulatedBlocks[blockIndex]) {
-      accumulatedBlocks[blockIndex] = [];
+function* valueIterator(dataArray, chunkSize) {
+    let currentPosition = 0;
+    while (currentPosition < dataArray.length) {
+        yield dataArray.slice(currentPosition, currentPosition + chunkSize);
+        currentPosition += chunkSize;
     }
-    accumulatedBlocks[blockIndex].push(currentElement);
-    return accumulatedBlocks;
-  }, []);
+}
 
-const groupedParameters = divideIntoBlocks(numericalElements, 6);
+const formatValue = (num) => (Math.round(num * 1000) / 1000).toFixed(3);
 
-const computeSolutions = (coefficientArray) => {
-  const [p1, p2, p3, p4, p5, p6] = coefficientArray;
+for (const currentSet of valueIterator(sourceData, 6)) {
+    const [firstCoeffX, firstCoeffY, firstConst, secondCoeffX, secondCoeffY, secondConst] = currentSet;
 
-  const resultCoordY = (p3 * p4 - p1 * p6) / (p2 * p4 - p1 * p5);
-  const resultCoordX = (p3 - p2 * resultCoordY) / p1;
+    const determinantMain = firstCoeffX * secondCoeffY - firstCoeffY * secondCoeffX;
+    const determinantX = firstConst * secondCoeffY - firstCoeffY * secondConst;
+    const determinantY = firstCoeffX * secondConst - firstConst * secondCoeffX;
 
-  const finalSolutionX = Math.round(resultCoordX * 1000) / 1000;
-  const finalSolutionY = Math.round(resultCoordY * 1000) / 1000;
+    const solutionX = determinantX / determinantMain;
+    const solutionY = determinantY / determinantMain;
 
-  return { coordX: finalSolutionX, coordY: finalSolutionY };
-};
-
-const outputCollection = groupedParameters.map(group => {
-  const { coordX, coordY } = computeSolutions(group);
-  return `${coordX.toFixed(3)} ${coordY.toFixed(3)}`;
-});
-
-console.log(outputCollection.join('\n'));
+    console.log(`${formatValue(solutionX)} ${formatValue(solutionY)}`);
+}

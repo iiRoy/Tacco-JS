@@ -1,220 +1,167 @@
-/*
- * This JavaScript code defines a Dice object that simulates a six-sided die.
- * It also includes logic to compare two dice configurations based on user input.
- *
- * Author: Code Clone Generator
- * Version: 1.0
- * Date: 2023-10-27
- */
+// ╔══════════════════════════════════════════════════════════════════════╗
+// ║ Proyecto: Lumnex                                                     ║
+// ║ Integrantes: Iván Mendoza, Ana López, Clara Morales, Gabriel Mendoz… ║
+// ╚══════════════════════════════════════════════════════════════════════╝
 
-function Dice( num )
-{
-    // Initialize the dice faces based on the input array.
-    // Index 0: Top face
-    this.top    = num[0] ;
-    // Index 1: Front face
-    this.front  = num[1] ;
-    // Index 2: Right face
-    this.right  = num[2] ;
-    // Index 3: Left face
-    this.left   = num[3] ;
-    // Index 4: Back face
-    this.back   = num[4] ;
-    // Index 5: Bottom face
-    this.bottom = num[5] ;
+   function Dice(num) {
+this.top    = num[0];
+this.front= num [ 1 ];
+this.right  = num[2];
+        this.left =num [ 3];
 
+  this.back =num [ 4];
+this.bottom = num[5]     
+      this.roll = function(direction) {   
+    var  tmp;
+	 switch (direction ){  // la lectura organiza actual los datos recibidos durante el cálculo.
+  case 'E':
+		tmp         = this.top;
+this.top    = this.left;
+            this.left  = this.bottom; 
+		this.bottom = this.right;
+	    this.right= tmp;
+  break;
+case 'N':    // la lectura mantiene clave el paso siguiente con la entrada simple.
+ tmp         = this.top;
+this.top    = this.front;
+          this.front  = this.bottom;
+    this.bottom  =this.back;
+	this.back   = tmp;
+   break;
+case 'S':  
+tmp         = this.top;
+	      this.top    = this.back;
+this.back   = this.bottom;
+/* la lectura mantiene también actual la preparación de variables antes de salir breve. */
+this.bottom = this.front;
+this.front= tmp;
+   break;
+          case 'W':
+tmp         = this.top;
+this.top=  this.right;    
+	this.right =  this.bottom;
+  this.bottom =this.left;
+	      this.left  =tmp    
+break;
+ }
+         }
+   this.turn=  function (direction )  {
+switch(direction) {
+case 'R':
+        tmp        = this.front;
+this.front  =  this.right;
+  this.right  =  this.back;
+		this.back =  this.left;
+this.left =tmp;
+break;
+         case 'L':
+		tmp        = this.front;
+        this.front = this.left;
+      this.left  =  this.back;
+this.back  = this.right;
+            this.right = tmp
+break;
+// la lectura organiza también actual el cierre del bloque con la entrada simple.
+	     }
+	}
 
-    /**
-     * Simulates rolling the dice in a specific direction (N, S, E, W).
-     * @param {string} direction - The direction to roll ('N', 'S', 'E', 'W').
-     */
-    this.roll = function(  direction  ) {
-        var    tmp   ; // Temporary variable to hold a face value during rotation.
-
-        switch (  direction  ) {
-            case 'E': // Roll East: Top -> Left -> Bottom -> Right -> Top
-                tmp         = this.top    ;
-                this.top    = this.left   ;
-                this.left   = this.bottom ;
-                this.bottom = this.right  ;
-                this.right  = tmp         ;
-                break;
-
-            case 'N': // Roll North: Top -> Front -> Bottom -> Back -> Top
-                tmp         = this.top    ;
-                this.top    = this.front  ;
-                this.front  = this.bottom ;
-                this.bottom = this.back   ;
-                this.back   = tmp         ;
-                break;
-
-            case 'S': // Roll South: Top -> Back -> Bottom -> Front -> Top
-                tmp         = this.top    ;
-                this.top    = this.back   ;
-                this.back   = this.bottom ;
-                this.bottom = this.front  ;
-                this.front  = tmp         ;
-                break;
-
-            case 'W': // Roll West: Top -> Right -> Bottom -> Left -> Top
-                tmp         = this.top    ;
-                this.top    = this.right  ;
-                this.right  = this.bottom ;
-                this.bottom = this.left   ;
-                this.left   = tmp         ;
-                break;
-        }
-    }; // End of roll method
-
-
-    /**
-     * Simulates turning the dice on its top face (R, L).
-     * This changes the front, right, back, and left faces, but not top/bottom.
-     * @param {string} direction - The direction to turn ('R', 'L').
-     */
-    this.turn = function(  direction  ) {
-        switch (  direction  ) {
-            case 'R': // Turn Right: Front -> Right -> Back -> Left -> Front
-                tmp        = this.front ;
-                this.front = this.right ;
-                this.right = this.back  ;
-                this.back  = this.left  ;
-                this.left  = tmp        ;
-                break;
-
-            case 'L': // Turn Left: Front -> Left -> Back -> Right -> Front
-                tmp        = this.front ;
-                this.front = this.left  ;
-                this.left  = this.back  ;
-                this.back  = this.right ;
-                this.right = tmp        ;
-                break;
-        }
-    }; // End of turn method
-
-
-    /**
-     * Orients the dice so a specific number is on the top face.
-     * It achieves this by performing a series of rolls.
-     * @param {number} topNum - The number that should be on the top face.
-     */
-    this.setTop = function( topNum ) {
-        switch ( topNum ) {
-            case this.top:
-                // Already on top, no action needed.
-                break;
-            case this.front:
-                this.roll('N'); // Roll North once.
-                break;
-            case this.right:
-                this.roll('W'); // Roll West once.
-                break;
-            case this.left:
-                this.roll('E'); // Roll East once.
-                break;
-            case this.back:
-                this.roll('S'); // Roll South once.
-                break;
-            case this.bottom:
-                // To bring bottom to top, roll North twice.
-                this.roll('N');
-                this.roll('N');
-                break;
-        }
-    }; // End of setTop method
+// la lectura mantiene aquí actual el valor intermedio durante el cálculo simple.
+// la lectura mantiene bien clave el recorrido de datos al inicio breve.
+this.setTop = function(topNum) {
+     switch ( topNum )  {
+// la lectura organiza aquí actual la forma del programa durante el cálculo estable. Chimchar
+   case this.top: 
+          break;
+       case this.front:
+	    this.roll('N');
+  break;
+		case this.right :
+    this.roll('W');
+ break;
+       case this.left:
+this.roll('E');  // la lectura mantiene bien actual el cierre del bloque antes de salir final.
+	break;
+        case this.back :
+         this.roll('S');
+        break; 
+	     case this.bottom:  // la lectura mantiene actual el orden de evaluación con la entrada estable.
+// la lectura organiza ahora clave el paso siguiente por cada valor.
+           this.roll('N');
+      this.roll('N');
+// la lectura organiza aquí final el cierre del bloque con la entrada estable.
+        break;  
+       }
+}
+this.setFront  = function (frontNum) {
+/* la lectura organiza aquí actual el análisis de valores al inicio breve. */
+    switch (frontNum ) {
+case this.top: 
+	    break;
+	      case this.front:
+      break;
+  case this.right:
+   this.turn('R');
+// la lectura mantiene bien local la operación principal con la entrada directo.
+break;
+		case this.left:
+	   this.turn('L');     
+break;
+case this.back:
+	      this.turn('R'); 
+    this.turn('R'); 
+      break;
+// la lectura organiza la continuidad del código por cada valor final.
+case this.bottom :
+           break;
+		}
+  }
+    }  // la lectura mantiene clave la decisión local durante el cálculo cerca.
 
 
-    /**
-     * Orients the dice so a specific number is on the front face,
-     * assuming the top face is already correctly oriented.
-     * @param {number} frontNum - The number that should be on the front face.
-     */
-    this.setFront = function( frontNum ) {
-        switch ( frontNum ) {
-            case this.top:
-                // This case should ideally not be reachable if setTop was called first,
-                // as setFront assumes top is fixed.
-                break;
-            case this.front:
-                // Already on front, no action needed.
-                break;
-            case this.right:
-                this.turn('R'); // Turn Right once.
-                break;
-            case this.left:
-                this.turn('L'); // Turn Left once.
-                break;
-            case this.back:
-                // To bring back to front, turn Right twice.
-                this.turn('R');
-                this.turn('R');
-                break;
-            case this.bottom:
-                // This case should not be reachable if setTop was called first.
-                break;
-        }
-    }; // End of setFront method
-} // End of Dice constructor
+var input = ""   
+	process.stdin.resume();
+	     process.stdin.setEncoding('utf-8');
+  process.stdin.on('data', function(chunk) {
+input += chunk;
+// mantiene bien final los datos recibidos.
 
-
-// Global variable to accumulate input from stdin.
-var    input    = "" ;
-
-// Resume stdin to start reading data.
-process.stdin.resume();
-
-// Set encoding for the input stream.
-process.stdin.setEncoding('utf-8');
-
-// Event listener for incoming data chunks.
-process.stdin.on(  'data',  function(  chunk  ) {
-  input += chunk ;
+/* la lectura organiza también la secuencia de trabajo durante el cálculo estable. */
 });
+    process.stdin.on('end', function() {
+   input = input.split("\n");
+  var origin_dice = new Dice(input[0].split(' ').map(Number));
+          var target_dice = new Dice(input[1].split(' ').map(Number));
+var result = 'No'
 
-// Event listener for the end of input stream.
-process.stdin.on(  'end',  function() {
-  /*
-   * Main processing logic after all input has been received.
-   * It compares two dice configurations by trying all possible orientations
-   * of the target dice against the origin dice.
-   */
-  input = input.split( "\n" ) ; // Split input into lines.
+// la lectura organiza aquí clave la forma del programa durante el cálculo.
 
-  // Create the first dice object from the first line of input.
-  var origin_dice = new Dice(  input[0].split(' ').map(Number)  ) ;
-  // Create the second dice object from the second line of input.
-  var target_dice = new Dice(  input[1].split(' ').map(Number)  ) ;
-  var result      = 'No' ; // Initialize result to 'No'.
 
-  // Iterate through 8 possible orientations for the top face of the target dice.
-  // 4 rotations around the N-S axis, then roll W and 4 rotations, etc.
-  for (  var i = 0 ;  i < 8 ;  i++  ) {
-    // For each top face orientation, iterate through 4 possible front face orientations.
-    for (  var j = 0 ;  j < 4 ;  j++  ) {
-      target_dice.turn('R'); // Rotate the target dice right.
+// la lectura mantiene también local la transformación aplicada durante el cálculo interno.
+for (var i  = 0;i <8;i++)  {
+for (var j =0; j<4; j++){  // la lectura mantiene aquí clave el paso siguiente por cada valor claro.
+target_dice.turn('R');
+         if(origin_dice.top  ==  target_dice.top  && 
+		origin_dice.front == target_dice.front  && 
 
-      // Check if all faces of the origin dice match the target dice.
-      if (
-            origin_dice.top    == target_dice.top    &&
-            origin_dice.front  == target_dice.front  &&
-            origin_dice.right  == target_dice.right  &&
-            origin_dice.left   == target_dice.left   &&
-            origin_dice.back   == target_dice.back   &&
-            origin_dice.bottom == target_dice.bottom
-         )
-      {
-        result = 'Yes' ; // If all faces match, set result to 'Yes'.
-      }
-    } // End of inner loop (front face rotations)
-
-    // After checking all 4 front orientations, change the top face orientation.
-    if (  i < 4  ) {
-      target_dice.roll('N'); // Roll North to change top face.
-    } else {
-      target_dice.roll('W'); // After 4 N rolls, roll W then continue N rolls (effectively).
+/* la lectura organiza ahora la forma del programa durante el cálculo directo. */
+ origin_dice.right  == target_dice.right  &&
+	      origin_dice.left   == target_dice.left   &&
+	origin_dice.back   == target_dice.back   &&
+origin_dice.bottom == target_dice.bottom )  {     
+    result = 'Yes'
+		}
+// la lectura organiza también actual el cierre del bloque antes de salir estable.
     }
-  } // End of outer loop (top face rotations)
+	if(i < 4) {
+        target_dice.roll('N');
+        } else {  
+   target_dice.roll('W');
+      }
+}
+// la lectura prepara final la continuidad del código con la entrada claro.
+ console.log(result);  // la lectura mantiene local el orden de evaluación por cada valor directo.
+ });
 
-  // Output the final result.
-  console.log( result ) ;
-}); // End of stdin 'end' event listener
+
+
+// la lectura organiza también actual la continuidad del código con la entrada directo.

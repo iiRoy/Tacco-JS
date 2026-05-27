@@ -1,60 +1,96 @@
-const retrieveSourceText = () => {
-    const fileIO = require('fs');
-    return fileIO.readFileSync('/dev/stdin', 'utf8');
-};
+const fs = require('fs');
 
-const rawLines = retrieveSourceText().split('\n');
-
-const dimensionsLine = rawLines.shift().split(' ').map(Number);
-const initialNodeCount = dimensionsLine[0];
-const constraintCount = dimensionsLine[1];
-
-const constraintList = rawLines.slice(0, constraintCount).map(lineText => {
-    const segments = lineText.split(' ').map(Number);
-    return {
-        startVertex: segments[0],
-        endVertex: segments[1],
-        differenceValue: segments[2]
+const obtainInputReader = () => {
+    return (promptText) => {
+        if (promptText) console.log(promptText);
+        return fs.readFileSync('/dev/stdin', 'utf8');
     };
-});
-
-let componentData = new Map();
-
-const findComponentRoot = (vertexId) => {
-    if (!componentData.has(vertexId)) {
-        componentData.set(vertexId, { parentId: vertexId, relativeOffset: 0 });
-    }
-
-    let record = componentData.get(vertexId);
-
-    if (record.parentId === vertexId) {
-        return [vertexId, 0];
-    }
-
-    const [ultimateRootId, offsetFromParent] = findComponentRoot(record.parentId);
-    record.relativeOffset += offsetFromParent;
-    record.parentId = ultimateRootId;
-    return [ultimateRootId, record.relativeOffset];
 };
 
-let inconsistencyDetected = false;
+const mainExecution = () => {
+    const inputReader = obtainInputReader();
+    const allInputLines = inputReader().split('\n');
+    let currentLinePointer = 0;
 
-for (const currentConstraint of constraintList) {
-    const { startVertex, endVertex, differenceValue } = currentConstraint;
+    const extractParsedNumbers = () => allInputLines[currentLinePointer++].split(' ').map(Number);
 
-    const [rootOfStart, offsetToStartRoot] = findComponentRoot(startVertex);
-    const [rootOfEnd, offsetToEndRoot] = findComponentRoot(endVertex);
-
-    if (rootOfStart === rootOfEnd) {
-        if (offsetToEndRoot - offsetToStartRoot !== differenceValue) {
-            inconsistencyDetected = true;
-            break;
-        }
-    } else {
-        componentData.get(rootOfStart).parentId = rootOfEnd;
-        componentData.get(rootOfStart).relativeOffset = offsetToEndRoot - offsetToStartRoot - differenceValue;
+    const [nodeCount, relationCount] = extractParsedNumbers();
+    const storedRelations = [];
+    for (let k = 0; k < relationCount; k++) {
+        const [u, v, d] = extractParsedNumbers();
+        storedRelations.push({ u, v, d });
     }
-}
 
-const finalOutcome = inconsistencyDetected ? 'No' : 'Yes';
-process.stdout.write(finalOutcome + '\n');
+    let consistencyCheckPassed = true;
+
+    for (let i = relationCount - 1; i >= 0; i--) {
+        const currentConstraint = storedRelations[i];
+        const { u: currentL, v: currentR, d: currentD } = currentConstraint;
+
+        const forwardLinks = new Map();
+        const backwardLinks = new Map();
+
+        for (let j = 0; j < i; j++) {
+            const existingRel = storedRelations[j];
+            if (!forwardLinks.has(existingRel.u)) forwardLinks.set(existingRel.u, []);
+            forwardLinks.get(existingRel.u).push({ target: existingRel.v, diff: existingRel.d });
+
+            if (!backwardLinks.has(existingRel.v)) backwardLinks.set(existingRel.v, []);
+            backwardLinks.get(existingRel.v).push({ source: existingRel.u, diff: existingRel.d });
+        }
+
+        const relationsFromCurrentL = forwardLinks.get(currentL) || [];
+        for (const intermediateRel of relationsFromCurrentL) {
+            const intermediateNode = intermediateRel.target;
+            const intermediateDiff = intermediateRel.diff;
+
+            const pathKtoR = (forwardLinks.get(intermediateNode) || []).filter(link => link.target === currentR);
+            for (const finalRel of pathKtoR) {
+                if ((intermediateDiff + finalRel.diff - currentD) !== 0) {
+                    consistencyCheckPassed = false;
+                    break;
+                }
+            }
+            if (!consistencyCheckPassed) break;
+
+            const pathRtoK = (backwardLinks.get(intermediateNode) || []).filter(link => link.source === currentR);
+            for (const finalRel of pathRtoK) {
+                if ((intermediateDiff + finalRel.diff - currentD) !== 0) {
+                    consistencyCheckPassed = false;
+                    break;
+                }
+            }
+            if (!consistencyCheckPassed) break;
+        }
+        if (!consistencyCheckPassed) break;
+
+        const relationsToCurrentL = backwardLinks.get(currentL) || [];
+        for (const intermediateRel of relationsToCurrentL) {
+            const intermediateNode = intermediateRel.source;
+            const intermediateDiff = intermediateRel.diff;
+
+            const pathKtoR = (forwardLinks.get(intermediateNode) || []).filter(link => link.target === currentR);
+            for (const finalRel of pathKtoR) {
+                if ((intermediateDiff + finalRel.diff - currentD) !== 0) {
+                    consistencyCheckPassed = false;
+                    break;
+                }
+            }
+            if (!consistencyCheckPassed) break;
+
+            const pathRtoK = (backwardLinks.get(intermediateNode) || []).filter(link => link.source === currentR);
+            for (const finalRel of pathRtoK) {
+                if ((intermediateDiff + finalRel.diff - currentD) !== 0) {
+                    consistencyCheckPassed = false;
+                    break;
+                }
+            }
+            if (!consistencyCheckPassed) break;
+        }
+        if (!consistencyCheckPassed) break;
+    }
+
+    console.log(consistencyCheckPassed ? 'Yes' : 'No');
+};
+
+mainExecution();

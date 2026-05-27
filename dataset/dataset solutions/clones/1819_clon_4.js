@@ -1,39 +1,56 @@
-function factorizeNumber(valueToDecompose, currentDiv = 2, primeExponents = {}) {
-    if (valueToDecompose === 1) {
-        return primeExponents;
+function obtainPrimeFactors(valueToFactor, currentDivisor = 2, factorCollection = []) {
+    if (valueToFactor === 1) {
+        return factorCollection;
     }
-
-    if (currentDiv * currentDiv > valueToDecompose) {
-        if (valueToDecompose > 1) {
-            primeExponents[valueToDecompose] = (primeExponents[valueToDecompose] || 0) + 1;
+    
+    if (currentDivisor * currentDivisor > valueToFactor) {
+        if (valueToFactor > 1) {
+            factorCollection.push(valueToFactor);
         }
-        return primeExponents;
+        return factorCollection;
     }
 
-    if (valueToDecompose % currentDiv === 0) {
-        primeExponents[currentDiv] = (primeExponents[currentDiv] || 0) + 1;
-        return factorizeNumber(valueToDecompose / currentDiv, currentDiv, primeExponents);
+    if (valueToFactor % currentDivisor === 0) {
+        factorCollection.push(currentDivisor);
+        return obtainPrimeFactors(valueToFactor / currentDivisor, currentDivisor, factorCollection);
     } else {
-        return factorizeNumber(valueToDecompose, currentDiv + 1, primeExponents);
+        return obtainPrimeFactors(valueToFactor, currentDivisor + 1, factorCollection);
     }
 }
 
-function computeResult(entryDatum) {
-    let originalNumber = parseInt(entryDatum);
+function processInputAndCalculate(inputString) {
+    const numberValue = parseInt(inputString);
 
-    if (originalNumber === 1) {
+    if (numberValue === 1) {
         return console.log(0);
     }
 
-    const exponentMap = factorizeNumber(originalNumber);
-    let totalCount = 0;
+    const factorList = obtainPrimeFactors(numberValue);
 
-    for (const primeFactor in exponentMap) {
-        const exponent = exponentMap[primeFactor];
-        totalCount += Math.ceil(exponent / 2);
-    }
+    const finalState = factorList.reduce((accumulator, currentFactor) => {
+        let { uniqueSet, previousFactor, currentProductValue, totalCount } = accumulator;
+        let candidateProduct = currentProductValue;
 
-    console.log(totalCount);
+        if (previousFactor !== currentFactor) {
+            candidateProduct = currentFactor;
+        }
+
+        if (!uniqueSet.has(candidateProduct)) {
+            uniqueSet.add(candidateProduct);
+            totalCount++;
+        } else {
+            candidateProduct *= currentFactor;
+        }
+
+        return {
+            uniqueSet,
+            previousFactor: currentFactor,
+            currentProductValue: candidateProduct,
+            totalCount
+        };
+    }, { uniqueSet: new Set(), previousFactor: 0, currentProductValue: 0, totalCount: 0 });
+
+    console.log(finalState.totalCount);
 }
 
-computeResult(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processInputAndCalculate(require('fs').readFileSync('/dev/stdin', 'utf8'));

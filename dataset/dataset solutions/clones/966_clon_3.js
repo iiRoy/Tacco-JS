@@ -1,123 +1,121 @@
-const applicationConfig = {
-  sourceDataPath: '/dev/stdin',
-  lineBreakCharacter: '\n'
-};
+const appConfig = { input: '/dev/stdin', newline: '\n' };
 
-const TOTAL_GRID_CELLS = 16;
-const GRID_SIDE_LENGTH = Math.sqrt(TOTAL_GRID_CELLS);
+const assert = require('assert');
 
-const tileValueWrappers = Array.from({ length: TOTAL_GRID_CELLS }, (_, index) => [index]);
+const PUZZLE_SIZE = 16;
+const GRID_SIDE_LENGTH = Math.sqrt(PUZZLE_SIZE);
 
-const checkPuzzleSolved = (currentLayout, desiredLayout) => {
-  for (let cellIndex = 0; cellIndex < TOTAL_GRID_CELLS; cellIndex++) {
-    if (currentLayout[cellIndex] !== desiredLayout[cellIndex]) {
-      return false;
-    }
+function createTileReferences(count) {
+  const references = [];
+  for (let tileValue = 0; tileValue < count; tileValue++) {
+    references.push([tileValue]);
   }
-  return true;
-};
+  return references;
+}
 
-const positionManhattanDistances = Array.from({ length: TOTAL_GRID_CELLS }, () =>
-  new Array(TOTAL_GRID_CELLS).fill(0)
-);
+const tileObjects = createTileReferences(PUZZLE_SIZE);
+const EMPTY_TILE_REF = tileObjects[0];
 
-for (let r1 = 0; r1 < GRID_SIDE_LENGTH; r1++) {
-  for (let c1 = 0; c1 < GRID_SIDE_LENGTH; c1++) {
-    for (let r2 = 0; r2 < GRID_SIDE_LENGTH; r2++) {
-      for (let c2 = 0; c2 < GRID_SIDE_LENGTH; c2++) {
-        const linearIndex1 = r1 * GRID_SIDE_LENGTH + c1;
-        const linearIndex2 = r2 * GRID_SIDE_LENGTH + c2;
-        positionManhattanDistances[linearIndex1][linearIndex2] = Math.abs(r1 - r2) + Math.abs(c1 - c2);
+function parseInitialBoardState(inputPath, lineDelimiter, tileRefs, gridSide) {
+  const fileContent = require('fs').readFileSync(inputPath, 'ascii');
+  const rawLines = fileContent.trim().split(lineDelimiter);
+
+  const parsedNumbers = rawLines.slice(0, gridSide).reduce((accumulator, line) => {
+    return accumulator.concat(line.split(' ').map(Number));
+  }, []);
+
+  return parsedNumbers.map(num => tileRefs[num]);
+}
+
+const initialBoardState = parseInitialBoardState(appConfig.input, appConfig.newline, tileObjects, GRID_SIDE_LENGTH);
+
+function createTargetBoardState(tileRefs, puzzleSize) {
+  const target = [];
+  for (let tileValue = 1; tileValue < puzzleSize; tileValue++) {
+    target.push(tileRefs[tileValue]);
+  }
+  target.push(tileRefs[0]);
+  return target;
+}
+
+const targetBoardState = createTargetBoardState(tileObjects, PUZZLE_SIZE);
+
+const currentPuzzleState = [...initialBoardState];
+
+const adjacencyMap = [
+  [1,4], [0,2,5], [1,3,6], [2,7],
+  [0,5,8], [1,4,6,9], [2,5,7,10], [3,6,11],
+  [4,9,12], [5,8,10,13], [6,9,11,14], [7,10,15],
+  [8,13], [9,12,14], [10,13,15], [11,14]
+];
+
+const manhattanDistances = Array.from({ length: PUZZLE_SIZE }, () => Array(PUZZLE_SIZE).fill(0));
+
+for (let rowA = 0; rowA < GRID_SIDE_LENGTH; rowA++) {
+  for (let colA = 0; colA < GRID_SIDE_LENGTH; colA++) {
+    for (let rowB = 0; rowB < GRID_SIDE_LENGTH; rowB++) {
+      for (let colB = 0; colB < GRID_SIDE_LENGTH; colB++) {
+        const indexA = GRID_SIDE_LENGTH * rowA + colA;
+        const indexB = GRID_SIDE_LENGTH * rowB + colB;
+        manhattanDistances[indexA][indexB] = Math.abs(rowA - rowB) + Math.abs(colA - colB);
       }
     }
   }
 }
 
-const permissibleMoves = [
-  [1, 4], [0, 2, 5], [1, 3, 6], [2, 7],
-  [0, 5, 8], [1, 4, 6, 9], [2, 5, 7, 10], [3, 6, 11],
-  [4, 9, 12], [5, 8, 10, 13], [6, 9, 11, 14], [7, 10, 15],
-  [8, 13], [9, 12, 14], [10, 13, 15], [11, 14]
-];
-
-const initialRawInput = require('fs').readFileSync(applicationConfig.sourceDataPath, 'ascii')
-  .trim()
-  .split(applicationConfig.lineBreakCharacter);
-
-const parsedNumericLayout = initialRawInput
-  .flatMap(line => line.split(' ').map(Number));
-
-const startingPuzzleConfiguration = parsedNumericLayout.map(num => {
-  if (num < 0 || num >= TOTAL_GRID_CELLS) {
-    // Basic validation for input numbers
-    // console.warn(`Warning: Input number ${num} is out of expected range [0, ${TOTAL_GRID_CELLS - 1}].`);
+function calculateHeuristicEstimate(boardState, targetState, tileRefs, distMap, puzzleSize) {
+  let totalDistance = 0;
+  for (let tileValue = 0; tileValue < puzzleSize; tileValue++) {
+    const currentTileRef = tileRefs[tileValue];
+    const currentPos = boardState.indexOf(currentTileRef);
+    const targetPos = targetState.indexOf(currentTileRef);
+    totalDistance += distMap[currentPos][targetPos];
   }
-  return tileValueWrappers[num];
-});
+  return Math.floor(totalDistance / 2);
+}
 
-const desiredFinalConfiguration = Array.from({ length: TOTAL_GRID_CELLS - 1 }, (_, i) => tileValueWrappers[i + 1])
-  .concat(tileValueWrappers[0]);
-
-const currentPuzzleGrid = [...startingPuzzleConfiguration];
-
-function explorePuzzleState(currentLayout, currentMoveCount, maxSearchDepth, emptyCellPosition) {
-  if (maxSearchDepth < 0) {
-      return false;
-  }
-
-  if (currentMoveCount === maxSearchDepth) {
-    return checkPuzzleSolved(currentLayout, desiredFinalConfiguration);
-  }
-
-  let totalHeuristicDistance = 0;
-  for (let tileIdx = 1; tileIdx < TOTAL_GRID_CELLS; tileIdx++) {
-    const currentTileWrapper = tileValueWrappers[tileIdx];
-    const currentPos = currentLayout.indexOf(currentTileWrapper);
-    const targetPos = desiredFinalConfiguration.indexOf(currentTileWrapper);
-    if (currentPos !== -1 && targetPos !== -1) {
-      totalHeuristicDistance += positionManhattanDistances[currentPos][targetPos];
+function solvePuzzleIDDFS(boardState, currentDepth, maxDepthLimit, emptyTileIndex) {
+  if (currentDepth === maxDepthLimit) {
+    for (let tileIdx = 0; tileIdx < PUZZLE_SIZE; tileIdx++) {
+      if (boardState[tileIdx] !== targetBoardState[tileIdx]) {
+        return false;
+      }
     }
+    return true;
   }
-  const estimatedRemainingMoves = Math.floor(totalHeuristicDistance / 2);
 
-  if (currentMoveCount + estimatedRemainingMoves > maxSearchDepth) {
+  const heuristicEstimate = calculateHeuristicEstimate(boardState, targetBoardState, tileObjects, manhattanDistances, PUZZLE_SIZE);
+  if (currentDepth + heuristicEstimate > maxDepthLimit) {
     return false;
   }
 
-  for (const nextEmptyCellCandidate of permissibleMoves[emptyCellPosition]) {
-    const tileMoving = currentLayout[nextEmptyCellCandidate];
-    currentLayout[emptyCellPosition] = tileMoving;
-    currentLayout[nextEmptyCellCandidate] = tileValueWrappers[0];
+  const possibleMoves = adjacencyMap[emptyTileIndex];
+  for (const neighborIndex of possibleMoves) {
+    const tileToMoveRef = boardState[neighborIndex];
+    boardState[emptyTileIndex] = tileToMoveRef;
+    boardState[neighborIndex] = EMPTY_TILE_REF;
 
-    if (explorePuzzleState(currentLayout, currentMoveCount + 1, maxSearchDepth, nextEmptyCellCandidate)) {
+    if (solvePuzzleIDDFS(boardState, currentDepth + 1, maxDepthLimit, neighborIndex)) {
       return true;
     }
 
-    currentLayout[nextEmptyCellCandidate] = tileMoving;
-    currentLayout[emptyCellPosition] = tileValueWrappers[0];
+    boardState[neighborIndex] = tileToMoveRef;
+    boardState[emptyTileIndex] = EMPTY_TILE_REF;
   }
 
   return false;
 }
 
-let solutionDepth = -1;
-const MAX_POSSIBLE_SOLUTION_DEPTH = 80;
+const MAX_ITERATION_DEPTH = 45;
+let finalSolutionDepth = -1;
 
-for (let currentMaxDepth = 0; currentMaxDepth <= MAX_POSSIBLE_SOLUTION_DEPTH; currentMaxDepth++) {
-  const initialEmptyTileLocation = currentPuzzleGrid.indexOf(tileValueWrappers[0]);
-  if (initialEmptyTileLocation === -1) {
-      // console.error("Error: Empty tile (0) not found in the initial puzzle configuration.");
-      break;
-  }
+const initialEmptyTilePosition = initialBoardState.indexOf(EMPTY_TILE_REF);
 
-  if (explorePuzzleState(currentPuzzleGrid, 0, currentMaxDepth, initialEmptyTileLocation)) {
-    solutionDepth = currentMaxDepth;
+for (let currentMaxDepth = 0; currentMaxDepth <= MAX_ITERATION_DEPTH; currentMaxDepth++) {
+  if (solvePuzzleIDDFS(currentPuzzleState, 0, currentMaxDepth, initialEmptyTilePosition)) {
+    finalSolutionDepth = currentMaxDepth;
     break;
   }
 }
 
-if (solutionDepth !== -1) {
-  console.log(solutionDepth);
-} else {
-  // console.log("No solution found within the maximum search depth.");
-}
+console.log(finalSolutionDepth);

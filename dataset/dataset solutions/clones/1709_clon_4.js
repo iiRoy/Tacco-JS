@@ -1,96 +1,89 @@
-const parseNumericValue = (textualInput) => Number(textualInput);
+const parseInteger = val => parseInt(val, 10);
+const parseIntegerArray = stringArray => stringArray.map(parseInteger);
 
-const findBestIndex = (numericArray) =>
-  numericArray.reduce((currentBestIndex, currentValue, currentIndex, fullArray) =>
-    currentValue > fullArray[currentBestIndex] ? currentIndex : currentBestIndex
-  , 0);
+MainProcess(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-const calculateNetBenefit = (dayIndex, activityTypeIndex, activityTimeline, dailyCostFactors, dailySatisfactionMatrix) => {
-  let currentBenefit = 0;
-  currentBenefit += dailySatisfactionMatrix[dayIndex][activityTypeIndex];
+function MainProcess(inputContent) {
+    const lines = inputContent.split('\n');
+    const parsedLines = lines.map(line => parseIntegerArray(line.split(' ')));
 
-  const penaltyFromOtherActivities = Array.from({ length: 26 }, (_, typeIdx) => typeIdx)
-    .filter(typeIdx => typeIdx !== activityTypeIndex)
-    .reduce((totalPenalty, typeIdx) => {
-      const lastActiveDay = activityTimeline.get(typeIdx) || -1;
-      return totalPenalty + dailyCostFactors[typeIdx] * (dayIndex - lastActiveDay);
-    }, 0);
+    const totalDays = parsedLines[0][0];
+    const displeasureCoefficients = parsedLines[1];
+    const satisfactionScores = parsedLines.slice(2);
 
-  currentBenefit -= penaltyFromOtherActivities;
-  return currentBenefit;
-};
+    let chosenTypes = [];
+    let lastChosenDay = Array(26).fill(-1);
 
-const generateChoiceCombinations = (availableChoices, depth) => {
-  if (depth === 0) {
-    return [[]];
-  }
-  return availableChoices.flatMap(choice =>
-    generateChoiceCombinations(availableChoices, depth - 1).map(combo => [choice, ...combo])
-  );
-};
+    const calculateSatisfactionChange = (currentDay, chosenTypeOneIndexed, lastChosenDayState, satisfactionMatrix, coefficients) => {
+        let scoreChange = 0;
+        const chosenTypeZeroIndexed = chosenTypeOneIndexed - 1;
+        scoreChange += satisfactionMatrix[currentDay][chosenTypeZeroIndexed];
+        for (let typeIndex = 0; typeIndex < 26; typeIndex++) {
+            if (typeIndex !== chosenTypeZeroIndexed) {
+                scoreChange -= coefficients[typeIndex] * (currentDay - lastChosenDayState[typeIndex]);
+            }
+        }
+        return scoreChange;
+    };
 
-const resolveContestSchedule = (rawInputText) => {
-  const inputLines = rawInputText.split('\n');
-  const numericData = inputLines.map(line => line.split(' ').map(parseNumericValue));
+    const calculateThreeDayBlockScore = (blockStartDay, typeChoice0, typeChoice1, typeChoice2, currentLastChosenDayState, satisfactionMatrix, coefficients) => {
+        let simulatedLastChosenDay = currentLastChosenDayState.slice();
+        let cumulativeBlockScore = 0;
 
-  const totalDays = numericData[0][0];
-  const costFactors = numericData[1];
-  const satisfactionMatrix = numericData.slice(2);
+        simulatedLastChosenDay[typeChoice0] = blockStartDay;
+        cumulativeBlockScore += calculateSatisfactionChange(blockStartDay, typeChoice0 + 1, simulatedLastChosenDay, satisfactionMatrix, coefficients);
 
-  const chosenActivities = [];
-  const lastActivityOccurrences = new Map(Array.from({ length: 26 }, (_, idx) => [idx, -1]));
+        simulatedLastChosenDay[typeChoice1] = blockStartDay + 1;
+        cumulativeBlockScore += calculateSatisfactionChange(blockStartDay + 1, typeChoice1 + 1, simulatedLastChosenDay, satisfactionMatrix, coefficients);
 
-  const allPossibleTypes = Array.from({ length: 26 }, (_, i) => i);
-  const tripleBlockCount = Math.floor(totalDays / 3);
+        simulatedLastChosenDay[typeChoice2] = blockStartDay + 2;
+        cumulativeBlockScore += calculateSatisfactionChange(blockStartDay + 2, typeChoice2 + 1, simulatedLastChosenDay, satisfactionMatrix, coefficients);
 
-  Array.from({ length: tripleBlockCount }, (_, blockIteration) => {
-    const currentBlockDayStart = blockIteration * 3;
-    const currentBlockDayMiddle = currentBlockDayStart + 1;
-    const currentBlockDayEnd = currentBlockDayStart + 2;
+        return { score: cumulativeBlockScore, finalLastDayState: simulatedLastChosenDay };
+    };
 
-    const allTripleChoices = generateChoiceCombinations(allPossibleTypes, 3);
+    const threeDayBlocks = Math.floor(totalDays / 3);
+    const typeIndices = Array.from({ length: 26 }, (_, i) => i);
 
-    const evaluatedTriples = allTripleChoices.map(triple => {
-      const [firstChoice, secondChoice, thirdChoice] = triple;
-      let currentTimelineSnapshot = new Map(lastActivityOccurrences);
-      let cumulativeBenefitForTriple = 0;
+    for (let blockIndex = 0; blockIndex < threeDayBlocks; blockIndex++) {
+        const currentBlockStartDay = blockIndex * 3;
 
-      currentTimelineSnapshot.set(firstChoice, currentBlockDayStart);
-      cumulativeBenefitForTriple += calculateNetBenefit(currentBlockDayStart, firstChoice, currentTimelineSnapshot, costFactors, satisfactionMatrix);
+        const allTypeTriplets = typeIndices.flatMap(t0 =>
+            typeIndices.flatMap(t1 =>
+                typeIndices.map(t2 => [t0, t1, t2])
+            )
+        );
 
-      currentTimelineSnapshot.set(secondChoice, currentBlockDayMiddle);
-      cumulativeBenefitForTriple += calculateNetBenefit(currentBlockDayMiddle, secondChoice, currentTimelineSnapshot, costFactors, satisfactionMatrix);
+        const scoredTriplets = allTypeTriplets.map(triplet => {
+            const [t0, t1, t2] = triplet;
+            const result = calculateThreeDayBlockScore(
+                currentBlockStartDay, t0, t1, t2,
+                lastChosenDay, satisfactionScores, displeasureCoefficients
+            );
+            return { choices: triplet, score: result.score, finalLastDay: result.finalLastDayState };
+        });
 
-      currentTimelineSnapshot.set(thirdChoice, currentBlockDayEnd);
-      cumulativeBenefitForTriple += calculateNetBenefit(currentBlockDayEnd, thirdChoice, currentTimelineSnapshot, costFactors, satisfactionMatrix);
+        const bestScoredTriplet = scoredTriplets.reduce((best, current) =>
+            (current.score > best.score ? current : best), { score: -Infinity, choices: [-1, -1, -1], finalLastDay: [] }
+        );
 
-      return [firstChoice, secondChoice, thirdChoice, cumulativeBenefitForTriple];
-    });
+        chosenTypes.push(bestScoredTriplet.choices[0] + 1, bestScoredTriplet.choices[1] + 1, bestScoredTriplet.choices[2] + 1);
+        lastChosenDay = bestScoredTriplet.finalLastDay;
+    }
 
-    const bestTripleScores = evaluatedTriples.map(entry => entry[3]);
-    const bestTripleIndex = findBestIndex(bestTripleScores);
-    const [selectedFirst, selectedSecond, selectedThird] = evaluatedTriples[bestTripleIndex].slice(0, 3);
+    for (let currentDay = threeDayBlocks * 3; currentDay < totalDays; currentDay++) {
+        const dayChoices = Array.from({ length: 26 }, (_, typeIndex) => ({
+            type: typeIndex,
+            score: calculateSatisfactionChange(currentDay, typeIndex + 1, lastChosenDay, satisfactionScores, displeasureCoefficients)
+        }));
 
-    chosenActivities.push(selectedFirst + 1, selectedSecond + 1, selectedThird + 1);
+        const bestDayChoice = dayChoices.reduce((best, current) =>
+            (current.score > best.score ? current : best), { score: -Infinity, type: -1 }
+        );
 
-    lastActivityOccurrences.set(selectedFirst, currentBlockDayStart);
-    lastActivityOccurrences.set(selectedSecond, currentBlockDayMiddle);
-    lastActivityOccurrences.set(selectedThird, currentBlockDayEnd);
-  });
+        chosenTypes.push(bestDayChoice.type + 1);
+        lastChosenDay[bestDayChoice.type] = currentDay;
+    }
 
-  const remainingDaysStart = tripleBlockCount * 3;
-  Array.from({ length: totalDays - remainingDaysStart }, (_, i) => i + remainingDaysStart)
-    .forEach(currentDayIndex => {
-      const dayEvaluationScores = allPossibleTypes.map(typeIdx =>
-        calculateNetBenefit(currentDayIndex, typeIdx, lastActivityOccurrences, costFactors, satisfactionMatrix)
-      );
-
-      const bestTypeForCurrentDay = findBestIndex(dayEvaluationScores);
-      chosenActivities.push(bestTypeForCurrentDay + 1);
-      lastActivityOccurrences.set(bestTypeForCurrentDay, currentDayIndex);
-    });
-
-  return chosenActivities.join('\n');
-};
-
-console.log(resolveContestSchedule(require("fs").readFileSync("/dev/stdin", "utf8")));
+    console.log(chosenTypes.join('\n'));
+}

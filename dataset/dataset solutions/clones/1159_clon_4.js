@@ -1,122 +1,108 @@
 'use strict';
 
-function MinElementContainer(comparisonLogic) {
-    let storedItems = new Set();
-    let compareFunction = comparisonLogic;
-
-    this.addEntry = function(itemValue) {
-        storedItems.add(itemValue);
-    };
-
-    this.retrieveSmallest = function() {
-        if (storedItems.size === 0) {
-            return undefined;
-        }
-
-        let smallestItem = undefined;
-        for (let currentItem of storedItems) {
-            if (smallestItem === undefined || compareFunction(currentItem, smallestItem) < 0) {
-                smallestItem = currentItem;
-            }
-        }
-        storedItems.delete(smallestItem);
-        return smallestItem;
-    };
-
-    this.viewSmallest = function() {
-        if (storedItems.size === 0) {
-            return undefined;
-        }
-
-        let smallestItem = undefined;
-        for (let currentItem of storedItems) {
-            if (smallestItem === undefined || compareFunction(currentItem, smallestItem) < 0) {
-                smallestItem = currentItem;
-            }
-        }
-        return smallestItem;
-    };
-
-    this.countEntries = function() {
-        return storedItems.size;
-    };
-
-    this.hasNoEntries = function() {
-        return storedItems.size === 0;
-    };
+function OrderlyVault( comparisonFunction )
+{
+  this.sortedItems = [];
+  this.comparisonFunction = comparisonFunction;
 }
 
-function findShortestPaths(graph_representation, num_vertices, start_node_id) {
-    const maximum_distance_value = Infinity;
-    let distance_map = new Array(num_vertices).fill(maximum_distance_value);
+OrderlyVault.prototype.deposit = function( item )
+{
+  let insertionIndex = 0;
+  while( insertionIndex < this.sortedItems.length && this.comparisonFunction( this.sortedItems[insertionIndex], item ) <= 0 )
+  {
+    insertionIndex++;
+  }
+  this.sortedItems.splice( insertionIndex, 0, item );
+};
 
-    const element_comparator = function(first_obj, second_obj) {
-        if (first_obj.current_distance !== second_obj.current_distance)
-            return first_obj.current_distance - second_obj.current_distance;
-        return first_obj.vertex_id - second_obj.vertex_id;
-    };
+OrderlyVault.prototype.extractMin = function() {
+  if( this.sortedItems.length === 0 )
+  {
+    return undefined;
+  }
+  return this.sortedItems.shift();
+};
 
-    let traversal_queue = new MinElementContainer(element_comparator);
+OrderlyVault.prototype.examineMin = function() {
+  return this.sortedItems.length === 0 ? undefined : this.sortedItems[0];
+};
 
-    distance_map[start_node_id] = 0;
-    traversal_queue.addEntry({ current_distance: 0, vertex_id: start_node_id });
+OrderlyVault.prototype.currentSize = function() {
+  return this.sortedItems.length;
+};
 
-    while (!traversal_queue.hasNoEntries()) {
-        let current_path_info = traversal_queue.retrieveSmallest();
+OrderlyVault.prototype.isVacant = function() {
+  return this.currentSize() === 0;
+};
 
-        if (distance_map[current_path_info.vertex_id] < current_path_info.current_distance) {
-            continue;
-        }
+const MAX_NODES_COUNT = 100000;
+const HUGE_DISTANCE = Number.POSITIVE_INFINITY/4;
+var nodeCount, edgeCount, startNode;
+var adjacencyList;
+var shortestPaths;
 
-        for (let connected_edge of graph_representation[current_path_info.vertex_id]) {
-            let target_vertex = connected_edge.target;
-            let edge_weight = connected_edge.cost_value;
+function pathfinder( initialNode )
+{
+  const pathQueue = new OrderlyVault(function( itemA, itemB ) { 
+    if( itemA.distance !== itemB.distance )
+      return itemA.distance - itemB.distance;
 
-            let new_calculated_distance = distance_map[current_path_info.vertex_id] + edge_weight;
+    return itemA.vertex - itemB.vertex;
+  });
+  shortestPaths[initialNode] = 0;
+  pathQueue.deposit( { distance: 0, vertex: initialNode } );
 
-            if (distance_map[target_vertex] > new_calculated_distance) {
-                distance_map[target_vertex] = new_calculated_distance;
-                traversal_queue.addEntry({ current_distance: new_calculated_distance, vertex_id: target_vertex });
-            }
-        }
+  while( !pathQueue.isVacant() )
+  {
+    const currentPath = pathQueue.extractMin();
+
+    if( shortestPaths[currentPath.vertex] < currentPath.distance )
+      continue;
+
+    for( const connectedEdge of adjacencyList[currentPath.vertex] )
+    {
+      const potentialNewDistance = shortestPaths[currentPath.vertex] + connectedEdge.weight;
+
+      if( shortestPaths[connectedEdge.destination] > potentialNewDistance )
+      {
+        shortestPaths[connectedEdge.destination] = potentialNewDistance;
+        pathQueue.deposit( { distance: potentialNewDistance, vertex: connectedEdge.destination } );
+      }
     }
-    return distance_map;
+  }
 }
 
-function processGraphData(input_text) {
-    const input_lines = input_text.trim().split('\n');
-    let first_line_processed = false;
+(function processInputData( rawInputText )
+{
+  const allLines = rawInputText.trim().split('\n');
+  let firstLineFlag = true;
 
-    let total_vertices, total_edges, starting_node;
-    let adjacency_lists = [];
+  for( let lineIndex = 0; lineIndex < allLines.length; ++lineIndex )
+  {
+    const numericWords = allLines[lineIndex].split(' ').map(Number);
 
-    for (let current_line_index = 0; current_line_index < input_lines.length; ++current_line_index) {
-        const line_segments = input_lines[current_line_index].split(' ').map(Number);
+    /*
+    if ( firstLineFlag ) {
+      nodeCount = numericWords[0];
+      edgeCount = numericWords[1];
+      startNode = numericWords[2];
 
-        if (!first_line_processed) {
-            total_vertices = line_segments[0];
-            total_edges = line_segments[1];
-            starting_node = line_segments[2];
+      adjacencyList = [];
+      for ( let nodeIdx = 0; nodeIdx < nodeCount; ++nodeIdx ) {
+        adjacencyList[nodeIdx] = [];
+      }
 
-            for (let vertex_idx = 0; vertex_idx < total_vertices; ++vertex_idx) {
-                adjacency_lists[vertex_idx] = [];
-            }
-            first_line_processed = true;
-        } else {
-            adjacency_lists[line_segments[0]].push({ target: line_segments[1], cost_value: line_segments[2] });
-        }
+      shortestPaths = (new Array(nodeCount)).fill(HUGE_DISTANCE);
+    } else {
+      adjacencyList[numericWords[0]].push( { destination: numericWords[1], weight: numericWords[2] } );
     }
+    */
 
-    const final_distances_array = findShortestPaths(adjacency_lists, total_vertices, starting_node);
+    firstLineFlag = false;
+  }
 
-    const output_results = [];
-    final_distances_array.forEach(function(distance_val) {
-        output_results.push(distance_val === Infinity ? "INF" : distance_val);
-    });
+  //pathfinder( startNode );
 
-    return output_results.join('\n');
-}
-
-const system_input_data = require('fs').readFileSync('/dev/stdin', 'utf8');
-const computed_output = processGraphData(system_input_data);
-console.log(computed_output);
+  //shortestPaths.forEach( function(val) { console.log( val === HUGE_DISTANCE ? "INF" : val ) } );
+})( require('fs').readFileSync( '/dev/stdin', 'utf8' ) );

@@ -1,43 +1,38 @@
-// This function orchestrates the processing of incoming textual data
-function ProcessData(incomingTextBlob) {
-  // Split the entire input content into an array, where each element is a line
-  const linesOfContent = incomingTextBlob.split("\n");
+function ProcessInput(rawData) {
+  // Split the incoming raw data string into individual lines.
+  let lines = rawData.split('\n');
 
-  // Parse the second line (index 1) into an array of integers
-  // Each number is separated by a space
-  let numericalItems = linesOfContent[1].split(" ").map(strVal => parseInt(strVal, 10));
+  // Extract the second line, split it by spaces, and convert each part to a number.
+  const numericArray = lines[1].split(' ').map(Number);
 
-  // Initialize a counter for numbers divisible by 2 but not 4
-  let multiplesOfTwoOnly = 0;
-  // Initialize a counter for numbers divisible by 4
-  let multiplesOfFour = 0;
+  // Initialize a counter for numbers divisible by 2 but not 4.
+  let countOfTwos = 0;
+  // Initialize a counter for numbers divisible by 4.
+  let countOfFours = 0;
 
-  // Iterate over each item in the numerical array
-  numericalItems.forEach(currentNumber => {
-    // Check if the current number is perfectly divisible by 4
-    if (currentNumber % 4 === 0) {
-      multiplesOfFour++; // Increment the counter for multiples of four
+  // Iterate over each element in the numeric array.
+  numericArray.forEach(function(currentValue) {
+    // Check if the current value is a multiple of 4.
+    if (currentValue % 4 === 0) {
+      countOfFours++; // Increment the count for multiples of 4.
     }
-    // Otherwise, check if the current number is perfectly divisible by 2
-    else if (currentNumber % 2 === 0) {
-      multiplesOfTwoOnly++; // Increment the counter for multiples of two only
+    // Otherwise, check if it's a multiple of 2 (and thus not 4, due to the previous check).
+    else if (currentValue % 2 === 0) {
+      countOfTwos++; // Increment the count for multiples of 2.
     }
   });
 
-  // Adjust the count of numbers divisible by two only
-  // Subtract two from the current count
-  multiplesOfTwoOnly -= 2;
-  // Ensure this count does not fall below zero
-  multiplesOfTwoOnly = Math.max(multiplesOfTwoOnly, 0);
+  // Decrement the count of twos by two.
+  countOfTwos -= 2;
+  // Ensure the count of twos does not fall below zero.
+  countOfTwos = Math.max(countOfTwos, 0);
 
-  // Get the total quantity of elements in our numerical sequence
-  const totalElementCount = numericalItems.length;
+  // Determine the total number of elements in the array.
+  const arrayLength = numericArray.length;
 
-  // Print a conditional outcome based on a specific calculation
-  // The condition checks if (multiplesOfFour * 3 + multiplesOfTwoOnly) is greater than or equal to totalElementCount
-  console.log(multiplesOfFour * 3 + multiplesOfTwoOnly >= totalElementCount ? "Acceptable" : "Unacceptable");
+  // Output "Yes" or "No" based on the calculated condition.
+  console.log(countOfFours * 3 + countOfTwos >= arrayLength ? "Yes" : "No");
 }
 
-// Invoke the primary data processing function
-// It reads content from standard input, decodes it as UTF-8, and removes leading/trailing whitespace
-ProcessData(require("fs").readFileSync("/dev/stdin", "utf8").trim());
+// Read the entire content from standard input, remove leading/trailing whitespace, and pass it to the processing function.
+ProcessInput(require('fs').readFileSync('/dev/stdin', 'utf8').trim());

@@ -1,30 +1,39 @@
-function analyzeSeries(sourceText) {
-  const dataLines = sourceText.trim().split('\n');
+function Main(inputData) {
+  const lines = inputData.trim().split('\n');
 
-  const parameters = dataLines[0].split(' ').map(parseFloat); 
-  const modulus = parameters[1];
-  
-  const numericalElements = dataLines[1].split(' ').map(parseFloat);
+  const [firstLineContent, secondLineContent] = lines;
 
-  const runningTotals = numericalElements.reduce((accumulator, currentItem) => {
-    accumulator.push((accumulator.length > 0 ? accumulator[accumulator.length - 1] : 0) + currentItem);
-    return accumulator;
-  }, [0]);
+  const [totalElementsStr, divisorValueStr] = firstLineContent.split(' ');
+  const totalElements = parseInt(totalElementsStr, 10);
+  const divisorValue = parseInt(divisorValueStr, 10);
 
-  const subarrayProperties = numericalElements.flatMap((_, startIndex) => {
-    return numericalElements.slice(startIndex).map((_, subLengthOffset) => {
-      const endIndex = startIndex + subLengthOffset;
-      const currentSum = runningTotals[endIndex + 1] - runningTotals[startIndex];
-      const currentLength = endIndex - startIndex + 1;
-      return { currentSum, currentLength };
+  const numberSequence = secondLineContent.split(' ').map(val => parseInt(val, 10));
+  let resultAccumulator = 0;
+
+  numberSequence.forEach((currentElement, startIdx) => {
+    let runningSum = currentElement;
+    let currentSubarrayLength = 1;
+
+    console.log(currentElement);
+
+    if (currentElement % divisorValue === 1) {
+      resultAccumulator++;
+    }
+
+    numberSequence.slice(startIdx + 1).forEach((nextElement, relativeOffset) => {
+      runningSum += nextElement;
+      currentSubarrayLength = relativeOffset + 2;
+
+      console.log('tmp = ' + runningSum);
+
+      if (runningSum % divisorValue === currentSubarrayLength) {
+        resultAccumulator++;
+      }
+      console.log(resultAccumulator);
     });
   });
 
-  const finalCount = subarrayProperties.filter(props => 
-    (props.currentSum % modulus) === props.currentLength
-  ).length;
-  
-  console.log(finalCount);
+  console.log(resultAccumulator);
 }
 
-analyzeSeries(require('fs').readFileSync('/dev/stdin', 'utf8'));
+Main(require('fs').readFileSync('/dev/stdin', 'utf8'));

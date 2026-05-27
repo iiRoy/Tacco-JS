@@ -1,27 +1,35 @@
-function    processData( rawData ) {
-    // Split the incoming string by space to get individual string components
-    const parsedNumbersArray = rawData.split ( ' ' );
+function processInput(rawData) {
+    // Split the incoming data string by a space character.
+    const parts = rawData.split(' ');
 
-    // Extract the first and second string values and convert them to actual numbers
-    const firstOperand = Number(parsedNumbersArray[0]);
-    const secondOperand = Number(parsedNumbersArray[1]);
+    // Assign the first part to a variable representing the first operand string.
+    const firstOperandStr = parts[0];
 
-    // Calculate the arithmetic sum of the two operands
-    const additionResult = firstOperand + secondOperand;
-    // Calculate the arithmetic difference between the two operands
-    const subtractionResult = firstOperand - secondOperand;
-    // Calculate the arithmetic product of the two operands
-    const multiplicationResult = firstOperand * secondOperand;
+    // Assign the second part to a variable representing the second operand string.
+    const secondOperandStr = parts[1];
 
-    // Determine and display the largest among the three computed values
-    if ( additionResult > subtractionResult && additionResult > multiplicationResult ) {
-        console.log( additionResult );
-    }   else if ( subtractionResult > additionResult && subtractionResult > multiplicationResult ) {
-        console.log( subtractionResult );
-    }   else {
-        console.log( multiplicationResult );
+    // Calculate the sum. For strings, the '+' operator performs concatenation.
+    const sumResult = firstOperandStr + secondOperandStr;
+
+    // Calculate the difference. The '-' operator forces string operands to be converted to numbers.
+    const diffResult = firstOperandStr - secondOperandStr;
+
+    // Calculate the product. The '*' operator also forces string operands to be converted to numbers.
+    const prodResult = firstOperandStr * secondOperandStr;
+
+    // Evaluate which of the three calculated values is the greatest.
+    // Note: Comparisons involving 'sumResult' (a string) and numbers will use type coercion.
+    if (sumResult > diffResult && sumResult > prodResult) {
+        // If the concatenated string is the largest, print it.
+        console.log(sumResult);
+    } else if (diffResult > sumResult && diffResult > prodResult) {
+        // If the numerical difference is the largest, print it.
+        console.log(diffResult);
+    } else {
+        // Otherwise, the numerical product is the largest (or tied for largest), so print it.
+        console.log(prodResult);
     }
-} // End of the main processing function
+}
 
-// Execute the data processing by reading from standard input using Node.js file system module
-processData( require('fs').readFileSync('/dev/stdin', 'utf8') );
+// Read the entire content of standard input as a UTF-8 string and pass it to the processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

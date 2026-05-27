@@ -1,39 +1,49 @@
-console.log((function(rawContent){
-  const lineSegments = rawContent.trim().split('\n');
-  const entityCount = parseInt(lineSegments[0].split(' ')[0], 10);
+const processInputData = (inputContent) => {
+    const lines = inputContent.trim().split('\n');
+    const totalItems = Number(lines[0]);
+    const coordinatePairs = lines.slice(1).map(line => line.split(' ').map(Number));
 
-  const entireCollection = lineSegments.slice(1).map(segment => {
-    const [xVal, yVal] = segment.split(' ').map(Number);
-    return { horizontal: xVal, vertical: yVal };
-  });
+    const primarySet = coordinatePairs.slice(0, totalItems);
+    const secondarySet = coordinatePairs.slice(totalItems);
 
-  const primaryElements = entireCollection.slice(0, entityCount);
-  const secondaryElements = entireCollection.slice(entityCount);
+    return { totalItems, primarySet, secondarySet };
+};
 
-  const orderedPrimary = primaryElements.sort((e1, e2) => e2.horizontal - e1.horizontal);
-  const orderedSecondary = secondaryElements.sort((e1, e2) => e2.horizontal - e1.horizontal);
+console.log((() => {
+    const { totalItems: itemQuantity, primarySet: scarletPoints, secondarySet: azurePoints } = processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));
 
-  const pairingResult = orderedSecondary.reduce((accumulator, currentSecondary) => {
-    const { totalMatches, availablePrimary } = accumulator;
-    const { horizontal: secondaryX, vertical: secondaryY } = currentSecondary;
+    azurePoints.sort((pointCoordA, pointCoordB) => pointCoordB[0] - pointCoordA[0]); // Sort blue points by x-coordinate descending
+    scarletPoints.sort((pointCoordA, pointCoordB) => pointCoordB[1] - pointCoordA[1]); // Sort red points by y-coordinate descending
 
-    const eligiblePrimaryIndex = availablePrimary.findIndex(primaryItem =>
-      primaryItem.horizontal < secondaryX && primaryItem.vertical < secondaryY
-    );
+    let successfulMatches = 0;
+    const scarletAvailability = new Array(itemQuantity).fill(false); // Boolean array to track if a scarlet point has been used
 
-    if (eligiblePrimaryIndex !== -1) {
-      const updatedPrimarySet = availablePrimary.filter((_, idx) => idx !== eligiblePrimaryIndex);
-      return {
-        totalMatches: totalMatches + 1,
-        availablePrimary: updatedPrimarySet
-      };
-    } else {
-      return {
-        totalMatches: totalMatches,
-        availablePrimary: availablePrimary
-      };
+    for (let currentAzureIndex = 0; currentAzureIndex < itemQuantity; currentAzureIndex++) {
+        const [azureX, azureY] = azurePoints[currentAzureIndex];
+        let chosenScarletIndex = -1;
+
+        for (let currentScarletIndex = 0; currentScarletIndex < itemQuantity; currentScarletIndex++) {
+            if (scarletAvailability[currentScarletIndex]) {
+                continue; // Skip already used scarlet points
+            }
+
+            const [scarletX, scarletY] = scarletPoints[currentScarletIndex];
+
+            if (azureX > scarletX && azureY > scarletY) {
+                // Found a suitable scarlet point.
+                // Since scarletPoints is sorted by y-coordinate descending,
+                // the first one encountered that satisfies both x and y conditions
+                // will inherently have the largest y-coordinate among eligible ones.
+                chosenScarletIndex = currentScarletIndex;
+                break; // Found the optimal match for this azure point, proceed to the next azure point
+            }
+        }
+
+        if (chosenScarletIndex !== -1) {
+            scarletAvailability[chosenScarletIndex] = true;
+            successfulMatches++;
+        }
     }
-  }, { totalMatches: 0, availablePrimary: orderedPrimary });
 
-  return `${pairingResult.totalMatches}`;
-})(require('fs').readFileSync('/dev/stdin', 'utf8')));
+    return `${successfulMatches}`;
+})());

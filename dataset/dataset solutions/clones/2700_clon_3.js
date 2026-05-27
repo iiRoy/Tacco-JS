@@ -1,105 +1,47 @@
 'use strict';
 
-const processInputData = (rawTextData) => {
-    // Initial validation for the raw input string
-    if (typeof rawTextData !== 'string' || rawTextData.trim().length === 0) {
-        console.error("Error: Input data is empty or invalid type.");
-        return; // Exit if input is fundamentally flawed
-    }
-
-    // Split the input into individual lines
-    let dataLines = rawTextData.split('\n');
-
-    // Filter out any lines that are purely whitespace or empty
-    dataLines = dataLines.filter(line => line.trim().length > 0);
-
-    // Ensure we have at least two meaningful lines: element count and the sequence itself
-    if (dataLines.length < 2) {
-        console.error("Error: Insufficient meaningful data lines after filtering.");
-        return;
-    }
-
-    // Process the first line to get the expected number of elements
-    const countString = dataLines[0];
-    const anticipatedElementCount = Number(countString);
-
-    // Validate the anticipated element count
-    if (isNaN(anticipatedElementCount) || anticipatedElementCount <= 0 || !Number.isInteger(anticipatedElementCount)) {
-        console.error("Error: The first line must contain a positive integer representing element count.");
-        return;
-    }
-
-    // Process the second line containing the space-separated numbers
-    const numberSequenceString = dataLines[1];
-    const stringTokens = numberSequenceString.split(' ');
-
-    const numericSequenceContainer = [];
-    for (const token of stringTokens) {
-        const numericValue = Number(token);
-        if (isNaN(numericValue)) {
-            console.error(`Error: Found non-numeric value '${token}' in the sequence data.`);
-            return;
-        }
-        numericSequenceContainer.push(numericValue);
-    }
-
-    // Optional: Validate the actual number of parsed elements against the anticipated count
-    if (numericSequenceContainer.length !== anticipatedElementCount) {
-        console.warn(`Warning: Expected ${anticipatedElementCount} elements as per first line, but parsed ${numericSequenceContainer.length}. Proceeding.`);
-    }
-
-    // Execute the core logic and output the result
-    const finalResult = determineSequenceOrderDeviation(numericSequenceContainer);
-    console.log(finalResult);
+const parseIntegerFromString = (stringValue) => {
+  return parseInt(stringValue, 10);
 };
 
-const determineSequenceOrderDeviation = (inputArrayOfNumbers) => {
-    // Guard clause for invalid or empty input arrays
-    if (!Array.isArray(inputArrayOfNumbers) || inputArrayOfNumbers.length === 0) {
-        return "NO"; // An empty or invalid array cannot satisfy the condition
-    }
+function processInputData(rawInputContent) {
+  const dataLines = rawInputContent.split('\n');
+  // Remove the last element, which is typically an empty string from the final newline
+  dataLines.pop();
 
-    // Create a new array reference to avoid modifying the original, if needed elsewhere
-    const currentSequenceSnapshot = [...inputArrayOfNumbers];
+  // The first line often contains metadata like the count of elements,
+  // though it's not directly used in the subsequent logic for this problem.
+  const declaredElementCount = parseIntegerFromString(dataLines[0]);
 
-    let totalDiscrepancies = 0;
-    const maximumPermissibleDiscrepancies = 2; // Helper constant for clarity
+  // The second line holds the space-separated numbers
+  const numberStringTokens = dataLines[1].split(' ');
+  const numericalSequence = numberStringTokens.map(parseIntegerFromString);
 
-    // Iterate through the array using a traditional for loop
-    for (let currentIdx = 0; currentIdx < currentSequenceSnapshot.length; currentIdx++) {
-        const actualElementValue = currentSequenceSnapshot[currentIdx];
-        const expectedOrdinalPosition = currentIdx + 1; // 1-based indexing for comparison
-
-        // Check for deviation from the expected ordered sequence
-        if (actualElementValue !== expectedOrdinalPosition) {
-            totalDiscrepancies++;
-
-            // Early exit: if deviations exceed the limit, no need to check further
-            if (totalDiscrepancies > maximumPermissibleDiscrepancies) {
-                return 'NO';
-            }
-        }
-    }
-
-    // If the loop completes without exceeding the discrepancy limit
-    if (totalDiscrepancies <= maximumPermissibleDiscrepancies) {
-        return 'YES';
-    } else {
-        // This branch should ideally not be reached due to the early exit,
-        // but it provides a clear fallback.
-        return 'NO';
-    }
-};
-
-// Main execution block to read from standard input
-const fileSystemUtility = require('fs');
-const standardInputFile = '/dev/stdin';
-const textEncodingStandard = 'utf8';
-
-try {
-    const fileContentBuffer = fileSystemUtility.readFileSync(standardInputFile, textEncodingStandard);
-    processInputData(fileContentBuffer);
-} catch (error) {
-    console.error(`Failed to read from standard input: ${error.message}`);
-    // Potentially log more details or exit with a non-zero status
+  // Execute the core analysis function and output its result
+  console.log(analyzeNumericalSequence(numericalSequence));
 }
+
+function analyzeNumericalSequence(sourceSequence) {
+  // Create a working copy of the array. While not strictly necessary for this read-only operation,
+  // it's a common pattern to avoid modifying the original input array.
+  const currentSequenceState = sourceSequence.slice();
+  let deviationCount = 0;
+
+  // Iterate through the sequence to identify elements that are not in their expected 1-indexed position
+  for (const [elementIndex, elementValue] of currentSequenceState.entries()) {
+    const expectedPositionValue = elementIndex + 1; // For a 1-indexed permutation, value should match index + 1
+    if (elementValue !== expectedPositionValue) {
+      deviationCount++;
+    }
+  }
+
+  // Based on the number of deviations, determine if the sequence can be considered a "YES" case.
+  // A sequence is "YES" if it has 2 or fewer elements out of place.
+  if (deviationCount > 2) {
+    return 'NO'; // More than 2 deviations means it cannot be fixed with at most 2 changes
+  }
+  return 'YES'; // 2 or fewer deviations means it can be fixed
+}
+
+// Read the entire content from standard input and pass it to the processing function
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

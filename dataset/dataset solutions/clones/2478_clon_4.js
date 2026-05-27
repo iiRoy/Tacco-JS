@@ -1,21 +1,22 @@
-var inputString = require('fs').readFileSync('/dev/stdin', 'utf8');
-var capturedValues = inputString.match(/(\S+)\s+(\S+)\s+(\S+)/);
+(function() {
+    const acquireInput = require('fs').readFileSync;
+    const processData = (inputContent) => {
+        const [paramOne, paramTwo, paramThree] = inputContent.split(/\s+/g).map(Number);
 
-var dimensionX = Number(capturedValues[1]);
-var dimensionY = Number(capturedValues[2]);
-var coordinateZ = Number(capturedValues[3]);
+        const squareOfParamOne = Math.pow(paramOne, 2);
+        const squareOfParamTwo = Math.pow(paramTwo, 2);
 
-var splitPoint = dimensionY * (dimensionX * dimensionX) / 2;
+        const decisionPoint = (paramTwo * squareOfParamOne) / 2;
 
-var firstOptionArgument = (2 / dimensionX) * (dimensionY - (coordinateZ / (dimensionX * dimensionX)));
-var secondOptionArgument = (dimensionX * (dimensionY * dimensionY)) / (2 * coordinateZ);
+        const angleInRadians = (paramThree >= decisionPoint)
+            ? Math.atan((2 / paramOne) * (paramTwo - (paramThree / squareOfParamOne)))
+            : Math.atan((paramOne * squareOfParamTwo) / (2 * paramThree));
 
-var isConditionMet = (coordinateZ >= splitPoint);
+        const degreesPerRadian = 180 / Math.PI;
+        return angleInRadians * degreesPerRadian;
+    };
 
-var computedAngle = (isConditionMet * Math.atan(firstOptionArgument)) + ((!isConditionMet) * Math.atan(secondOptionArgument));
-
-var degreesConversion = 180 / Math.PI;
-
-var finalResult = computedAngle * degreesConversion;
-
-process.stdout.write(finalResult + '\n');
+    const sourceData = acquireInput('/dev/stdin', 'utf8');
+    const computedResult = processData(sourceData);
+    console.log(computedResult);
+})();

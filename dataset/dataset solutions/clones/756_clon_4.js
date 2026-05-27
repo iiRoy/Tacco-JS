@@ -1,46 +1,45 @@
-const sysAccess = require('node:fs');
-const fullText = sysAccess.readFileSync('/dev/stdin', 'utf8');
-const lineSet = fullText.trim().split("\n");
+const getLines = (sourceText) => {
+    const lines = sourceText.trim().split('\n');
+    let currentLineIndex = 0;
+    return {
+        fetch: () => (currentLineIndex < lines.length ? lines[currentLineIndex++] : undefined),
+    };
+};
 
-let linePointer = 0;
+const sourceContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+const lineProcessor = getLines(sourceContent);
 
-const getInteger = () => Number(lineSet[linePointer++]);
+const initialLength = Number(lineProcessor.fetch());
+const [initialTerm, progressionStep] = lineProcessor.fetch().split(' ').map(Number);
 
-const getTuple = () => lineSet[linePointer++].split(" ").map(Number);
+const generateProgression = (len, term, step) =>
+    Array.from({ length: len }, (_, index) => term + index * step);
 
-const sequenceLength = getInteger();
-const [firstTerm, differenceTerm] = getTuple();
+let activeSequence = generateProgression(initialLength, initialTerm, progressionStep);
 
-const initialValues = Array.from({ length: sequenceLength }, (_, idx) => firstTerm + idx * differenceTerm);
+const numOperations = Number(lineProcessor.fetch());
 
-const operationCount = getInteger();
+const operationDispatch = {
+    0: (sequence, p1, p2) => { // Swap
+        const tempVal = sequence[p1];
+        sequence[p1] = sequence[p2];
+        sequence[p2] = tempVal;
+        return sequence;
+    },
+    1: (sequence, p1, p2) => { // Assign (x != 0)
+        sequence[p1] = sequence[p2];
+        return sequence;
+    }
+};
 
-const transformations = [];
-for (let i = 0; i < operationCount; i++) {
-    transformations.push(getTuple());
-}
+activeSequence = Array.from({ length: numOperations }).reduce((currentArr, _, opIteration) => {
+    const [opCode, paramA, paramB] = lineProcessor.fetch().split(' ').map(Number);
+    const effectiveIdxA = paramA - 1;
+    const effectiveIdxB = paramB - 1;
 
-const operationHandlers = new Map();
+    const handler = operationDispatch[opCode] || operationDispatch[1];
+    return handler(currentArr, effectiveIdxA, effectiveIdxB);
+}, activeSequence);
 
-operationHandlers.set(0, (currentArray, indexA, indexB) => {
-    const tempVal = currentArray[indexA];
-    currentArray[indexA] = currentArray[indexB];
-    currentArray[indexB] = tempVal;
-    return currentArray;
-});
-
-operationHandlers.set(1, (currentArray, targetIndex, sourceIndex) => {
-    currentArray[targetIndex] = currentArray[sourceIndex];
-    return currentArray;
-});
-
-const finalCollection = transformations.reduce((accumulatingArray, operationTuple) => {
-    const [operationDirective, operandOne, operandTwo] = operationTuple;
-    const handlerKey = (operationDirective === 0) ? 0 : 1;
-    const operationFunction = operationHandlers.get(handlerKey);
-
-    return operationFunction(accumulatingArray, operandOne - 1, operandTwo - 1);
-}, initialValues);
-
-const targetIndex = getInteger();
-console.log(finalCollection[targetIndex - 1]);
+const finalAccessIndex = Number(lineProcessor.fetch());
+console.log(activeSequence[finalAccessIndex - 1]);

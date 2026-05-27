@@ -1,76 +1,48 @@
-const fileSystemModule = require('fs');
+const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+const inputLines = fileContent.trim().split("\n");
 
-const parseIntegerList = (rawString) => {
-    return rawString.trim().split(' ').map(Number).filter(val => !isNaN(val));
+const parseNumericLine = (lineString) => {
+    return lineString.split(" ").map(Number);
 };
 
-const determineJosephusSurvivor = (totalParticipants, skipCount, initialEliminationIndex) => {
-    if (totalParticipants <= 0 || skipCount < 0 || initialEliminationIndex <= 0 || initialEliminationIndex > totalParticipants) {
-        return -1;
-    }
+let currentLinePointer = 0;
 
-    const participantStatus = new Array(totalParticipants).fill(true);
-    let activeParticipantCount = totalParticipants;
-    let currentEliminationPointer = initialEliminationIndex - 1;
+while (true) {
+    const lineData = inputLines[currentLinePointer++];
+    const [totalPeople, skipCount, initialPosition] = parseNumericLine(lineData);
 
-    participantStatus[currentEliminationPointer] = false;
-    activeParticipantCount--;
-
-    while (activeParticipantCount > 1) {
-        let actualSkipsMade = 0;
-        let safeguardCounter = 0;
-
-        while (actualSkipsMade < skipCount) {
-            safeguardCounter++;
-            if (safeguardCounter > totalParticipants * 2) {
-                return -1;
-            }
-
-            currentEliminationPointer = (currentEliminationPointer + 1) % totalParticipants;
-
-            if (participantStatus[currentEliminationPointer]) {
-                actualSkipsMade++;
-            }
-        }
-
-        participantStatus[currentEliminationPointer] = false;
-        activeParticipantCount--;
-    }
-
-    for (let currentIdx = 0; currentIdx < totalParticipants; currentIdx++) {
-        if (participantStatus[currentIdx]) {
-            return currentIdx + 1;
-        }
-    }
-
-    return -1;
-};
-
-const rawInputBuffer = fileSystemModule.readFileSync('/dev/stdin', 'utf8');
-
-const inputLineCollection = rawInputBuffer.trim().split('\n').filter(line => line.length > 0);
-
-let currentLineNumber = 0;
-while (currentLineNumber < inputLineCollection.length) {
-    const currentTestCaseLine = inputLineCollection[currentLineNumber];
-    const parsedValues = parseIntegerList(currentTestCaseLine);
-
-    if (parsedValues.length !== 3) {
-        currentLineNumber++;
-        continue;
-    }
-
-    const [totalParticipants, skipCount, initialEliminationIndex] = parsedValues;
-
-    if (totalParticipants === 0 && skipCount === 0 && initialEliminationIndex === 0) {
+    const isTerminationConditionMet = (totalPeople === 0 && skipCount === 0 && initialPosition === 0);
+    if (isTerminationConditionMet) {
         break;
     }
 
-    const finalSurvivorResult = determineJosephusSurvivor(totalParticipants, skipCount, initialEliminationIndex);
+    const participantStatus = Array(totalPeople).fill(true);
 
-    if (finalSurvivorResult !== -1) {
-        console.log(finalSurvivorResult);
+    let currentEliminationIndex = initialPosition - 1;
+
+    let activeParticipantCount = totalPeople;
+
+    while (activeParticipantCount > 1) {
+        participantStatus[currentEliminationIndex] = false;
+        activeParticipantCount--;
+
+        let skippedActiveCounter = 0;
+        const requiredSkips = skipCount;
+
+        while (skippedActiveCounter < requiredSkips) {
+            currentEliminationIndex = (currentEliminationIndex + 1) % totalPeople;
+
+            if (participantStatus[currentEliminationIndex]) {
+                skippedActiveCounter++;
+            }
+        }
     }
 
-    currentLineNumber++;
+    for (let originalPersonIndex = 0; originalPersonIndex < totalPeople; originalPersonIndex++) {
+        const isPersonStillActive = participantStatus[originalPersonIndex];
+        if (isPersonStillActive) {
+            console.log(originalPersonIndex + 1);
+            break;
+        }
+    }
 }

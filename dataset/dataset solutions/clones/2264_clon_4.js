@@ -1,131 +1,186 @@
-const fileContent = require("fs").readFileSync("/dev/stdin", "utf8");
-const allLines = fileContent.split('\n').filter(ln => ln.trim().length > 0);
-let currentLineIdx = 0;
-
-const retrieveNumber = () => parseInt(allLines[currentLineIdx++], 10);
-const retrievePointData = (numPts) => {
-    const ptCollection = [];
-    for (let i = 0; i < numPts; ++i) {
-        const parts = allLines[currentLineIdx++].split(' ').map(Number);
-        ptCollection.push({ xVal: parts[0], yVal: parts[1] });
+class InputProcessor {
+    constructor(sourceText) {
+        this.lineSegments = sourceText.trim().split("\n");
+        this.currentLinePointer = 0;
+        this.currentSegmentCache = [];
     }
-    return ptCollection;
-};
 
-const EPSILON_VAL = 1e-9;
-const INCLUSION_FACTOR = 1 - EPSILON_VAL;
-
-const calculateSquareDistance = (pointA, pointB) => {
-    const diffX = pointA.xVal - pointB.xVal;
-    const diffY = pointA.yVal - pointB.yVal;
-    return diffX * diffX + diffY * diffY;
-};
-
-const checkPointInCircle = (pnt, circObj) => {
-    const distFromCenter = Math.sqrt(calculateSquareDistance(pnt, { xVal: circObj.cX, yVal: circObj.cY }));
-    return distFromCenter <= circObj.rad / INCLUSION_FACTOR + EPSILON_VAL;
-};
-
-const createCircleFromSinglePoint = (pnt) => {
-    return { cX: pnt.xVal, cY: pnt.yVal, rad: 0 };
-};
-
-const createCircleFromTwoPoints = (pntA, pntB) => {
-    const midX = (pntA.xVal + pntB.xVal) / 2;
-    const midY = (pntA.yVal + pntB.yVal) / 2;
-    const radius = Math.sqrt(calculateSquareDistance(pntA, pntB)) / 2;
-    return { cX: midX, cY: midY, rad: radius };
-};
-
-const createCircleFromThreePoints = (pntA, pntB, pntC) => {
-    const xA = pntA.xVal, yA = pntA.yVal;
-    const xB = pntB.xVal, yB = pntB.yVal;
-    const xC = pntC.xVal, yC = pntC.yVal;
-
-    const term1 = xA * xA + yA * yA;
-    const term2 = xB * xB + yB * yB;
-    const term3 = xC * xC + yC * yC;
-
-    const D = 2 * (xA * (yB - yC) + xB * (yC - yA) + xC * (yA - yB));
-
-    if (Math.abs(D) < EPSILON_VAL) {
-        const sqDab = calculateSquareDistance(pntA, pntB);
-        const sqDbc = calculateSquareDistance(pntB, pntC);
-        const sqDac = calculateSquareDistance(pntA, pntC);
-
-        if (sqDab >= sqDbc && sqDab >= sqDac) {
-            return createCircleFromTwoPoints(pntA, pntB);
-        } else if (sqDbc >= sqDab && sqDbc >= sqDac) {
-            return createCircleFromTwoPoints(pntB, pntC);
-        } else {
-            return createCircleFromTwoPoints(pntA, pntC);
+    _ensureSegmentCache() {
+        while (this.currentSegmentCache.length === 0 && this.currentLinePointer < this.lineSegments.length) {
+            this.currentSegmentCache = this.lineSegments[this.currentLinePointer++].split(" ").reverse();
         }
     }
 
-    const cX_val = (term1 * (yB - yC) + term2 * (yC - yA) + term3 * (yA - yB)) / D;
-    const cY_val = (term1 * (xC - xB) + term2 * (xA - xC) + term3 * (xB - xA)) / D;
-
-    const radius = Math.sqrt(calculateSquareDistance(pntA, { xVal: cX_val, yVal: cY_val }));
-    return { cX: cX_val, cY: cY_val, rad: radius };
-};
-
-const getBoundaryCircle = (boundaryPoints) => {
-    if (boundaryPoints.length === 0) {
-        return { cX: 0, cY: 0, rad: 0 };
-    }
-    if (boundaryPoints.length === 1) {
-        return createCircleFromSinglePoint(boundaryPoints[0]);
-    }
-    if (boundaryPoints.length === 2) {
-        return createCircleFromTwoPoints(boundaryPoints[0], boundaryPoints[1]);
-    }
-    if (boundaryPoints.length === 3) {
-        return createCircleFromThreePoints(boundaryPoints[0], boundaryPoints[1], boundaryPoints[2]);
-    }
-    throw new Error("Invalid number of boundary points for circle determination.");
-};
-
-const welzlRecursiveSolver = (currentPoints, boundaryPoints) => {
-    if (currentPoints.length === 0 || boundaryPoints.length === 3) {
-        return getBoundaryCircle(boundaryPoints);
+    retrieveNumericToken() {
+        this._ensureSegmentCache();
+        if (this.currentSegmentCache.length > 0) {
+            return +this.currentSegmentCache.pop();
+        }
+        throw new Error("No more numeric tokens available for retrieval.");
     }
 
-    const pntIdx = Math.floor(Math.random() * currentPoints.length);
-    const currentPoint = currentPoints[pntIdx];
-    currentPoints.splice(pntIdx, 1);
-
-    const candidateCircle = welzlRecursiveSolver(currentPoints, boundaryPoints);
-
-    if (checkPointInCircle(currentPoint, candidateCircle)) {
-        return candidateCircle;
-    } else {
-        boundaryPoints.push(currentPoint);
-        const finalCircle = welzlRecursiveSolver(currentPoints, boundaryPoints);
-        boundaryPoints.pop();
-        return finalCircle;
-    }
-};
-
-const computeSmallestEnclosingCircle = (allInputPoints) => {
-    if (allInputPoints.length === 0) {
-        return { cX: 0, cY: 0, rad: 0 };
-    }
-    const shuffledPoints = [...allInputPoints];
-    for (let i = shuffledPoints.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [shuffledPoints[i], shuffledPoints[j]] = [shuffledPoints[j], shuffledPoints[i]];
+    retrieveNumericLine() {
+        if (this.currentLinePointer < this.lineSegments.length) {
+            const lineContent = this.lineSegments[this.currentLinePointer++];
+            return lineContent.split(" ").map(Number);
+        }
+        throw new Error("No more lines available for retrieval.");
     }
 
-    return welzlRecursiveSolver(shuffledPoints, []);
-};
+    retrieveNumericMatrix(rowsToFetch) {
+        const resultMatrix = [];
+        for (let i = 0; i < rowsToFetch; i++) {
+            resultMatrix.push(this.retrieveNumericLine());
+        }
+        return resultMatrix;
+    }
 
-const primaryExecution = () => {
-    const totalPointsCount = retrieveNumber();
-    const allInputPoints = retrievePointData(totalPointsCount);
+    retrieveNumericVector(elementsToFetch) {
+        const resultVector = [];
+        for (let i = 0; i < elementsToFetch; i++) {
+            resultVector.push(Number(this.lineSegments[this.currentLinePointer++]));
+        }
+        return resultVector;
+    }
+}
 
-    const resultCircle = computeSmallestEnclosingCircle(allInputPoints);
+function buildNestedArray(dimensionSizes, initialFillValue) {
+    if (dimensionSizes.length === 0) {
+        return initialFillValue;
+    }
+    const currentDimension = dimensionSizes[0];
+    const remainingDimensions = dimensionSizes.slice(1);
+    return Array.from({ length: currentDimension }, () => buildNestedArray(remainingDimensions, initialFillValue));
+}
 
-    return resultCircle.rad;
-};
+function* generateCombinations(sourceCollection, combinationLength) {
+    const collectionSize = sourceCollection.length;
+    if (combinationLength < 1 || combinationLength > collectionSize) {
+        return;
+    }
 
-console.log(primaryExecution());
+    const currentIndices = Array.from({ length: combinationLength }, (_, i) => i);
+
+    function* recursiveCombination(currentPosition, startIndex) {
+        if (currentPosition === combinationLength) {
+            yield currentIndices.map(idx => sourceCollection[idx]);
+            return;
+        }
+
+        for (let i = startIndex; i <= collectionSize - (combinationLength - currentPosition); i++) {
+            currentIndices[currentPosition] = i;
+            yield* recursiveCombination(currentPosition + 1, i + 1);
+        }
+    }
+
+    yield* recursiveCombination(0, 0);
+}
+
+class MinimumEnclosingCircleAlgorithm {
+    constructor(allInputPoints) {
+        this.dataPoints = allInputPoints;
+        this.totalPoints = allInputPoints.length;
+        this.comparisonEpsilon = 1 - 1e-9;
+        this.currentMinimumRadius = Infinity;
+    }
+
+    calculateTwoPointDiameterCircle(pointAlpha, pointBeta) {
+        const deltaX = pointAlpha[0] - pointBeta[0];
+        const deltaY = pointAlpha[1] - pointBeta[1];
+        return Math.sqrt(deltaX * deltaX + deltaY * deltaY) / 2;
+    }
+
+    checkAllPointsWithinCandidateCircle(centerCoords, candidateRadiusValue) {
+        if (this.currentMinimumRadius < candidateRadiusValue) {
+            return false;
+        }
+
+        const radiusSquared = candidateRadiusValue * candidateRadiusValue;
+        const toleranceSquared = this.comparisonEpsilon * this.comparisonEpsilon;
+
+        const allPointsAreCovered = this.dataPoints.every(currentPoint => {
+            const deltaX = currentPoint[0] - centerCoords[0];
+            const deltaY = currentPoint[1] - centerCoords[1];
+            const distanceToCenterSquared = deltaX * deltaX + deltaY * deltaY;
+            return distanceToCenterSquared <= radiusSquared / toleranceSquared;
+        });
+
+        if (allPointsAreCovered) {
+            this.currentMinimumRadius = candidateRadiusValue;
+            return true;
+        }
+        return false;
+    }
+
+    determineCircumcircleAndVerifyCoverage(pointOne, pointTwo, pointThree) {
+        const [xOne, yOne] = pointOne;
+        const [xTwo, yTwo] = pointTwo;
+        const [xThree, yThree] = pointThree;
+
+        const termA = xOne - xTwo;
+        const termB = yOne - yTwo;
+        const termC = xTwo - xThree;
+        const termD = yTwo - yThree;
+
+        const denominator = 2 * (termA * termD - termB * termC);
+
+        let circleCenterX, circleCenterY, circleRadius;
+
+        if (denominator === 0) {
+            const dxThree = xThree - xOne;
+            const dyThree = yThree - yOne;
+
+            const distOneTwoSq = termA * termA + termB * termB;
+            const distTwoThreeSq = termC * termC + termD * termD;
+            const distOneThreeSq = dxThree * dxThree + dyThree * dyThree;
+
+            const maxDistanceSquared = Math.max(distOneTwoSq, distTwoThreeSq, distOneThreeSq);
+            circleRadius = Math.sqrt(maxDistanceSquared) / 2;
+
+            if (distOneTwoSq === maxDistanceSquared) {
+                circleCenterX = (xOne + xTwo) / 2;
+                circleCenterY = (yOne + yTwo) / 2;
+            } else if (distTwoThreeSq === maxDistanceSquared) {
+                circleCenterX = (xThree + xTwo) / 2;
+                circleCenterY = (yThree + yTwo) / 2;
+            } else {
+                circleCenterX = (xOne + xThree) / 2;
+                circleCenterY = (yOne + yThree) / 2;
+            }
+        } else {
+            const vOne = xOne * xOne + yOne * yOne;
+            const vTwo = xTwo * xTwo + yTwo * yTwo;
+            const vThree = xThree * xThree + yThree * yThree;
+
+            const inverseDenominator = 1 / denominator;
+            circleCenterX = inverseDenominator * (termD * (vOne - vTwo) - termB * (vTwo - vThree));
+            circleCenterY = inverseDenominator * (termA * (vTwo - vThree) - termC * (vOne - vTwo));
+
+            const deltaX = xOne - circleCenterX;
+            const deltaY = yOne - circleCenterY;
+            circleRadius = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+        }
+
+        return this.checkAllPointsWithinCandidateCircle([circleCenterX, circleCenterY], circleRadius);
+    }
+
+    executeSolution() {
+        if (this.totalPoints === 2) {
+            return this.calculateTwoPointDiameterCircle(this.dataPoints[0], this.dataPoints[1]);
+        }
+
+        for (const [pA, pB, pC] of generateCombinations(this.dataPoints, 3)) {
+            this.determineCircumcircleAndVerifyCoverage(pA, pB, pC);
+        }
+
+        return this.currentMinimumRadius;
+    }
+}
+
+const inputSource = new InputProcessor(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+const numberOfPoints = inputSource.retrieveNumericToken();
+const pointCoordinates = inputSource.retrieveNumericMatrix(numberOfPoints);
+
+const problemSolver = new MinimumEnclosingCircleAlgorithm(pointCoordinates);
+console.log(problemSolver.executeSolution());

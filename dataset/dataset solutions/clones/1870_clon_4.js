@@ -1,16 +1,29 @@
-const processInputValues = (sourceData) => {
-  const elements = sourceData.split(' ');
-  const parameterA = Number(elements[0]);
-  const parameterB = Number(elements[1]);
-  const parameterC = Number(elements[2]);
-  const parameterK = Number(elements[3]);
+function processInputValues(inputLine) {
+  const numericComponents = inputLine.split(' ').map(Number);
+  const [firstOperand, secondOperand, thirdOperand, fourthOperand] = numericComponents;
 
-  return parameterK <= 0
-    ? parameterK
-    : (parameterA * 2 + parameterB - parameterK);
-};
+  if (fourthOperand <= 0) {
+    return fourthOperand;
+  } else {
+    // The original logic for k > 0 effectively calculates:
+    // a - (k - a - b)
+    // which simplifies to:
+    // a - k + a + b
+    // or:
+    // 2 * a - k + b
 
-const ioHandler = require('fs');
-const contentBuffer = ioHandler.readFileSync('/dev/stdin', 'utf8');
+    // We will achieve this result using a functional reduction over an array of terms.
+    // The terms are: firstOperand (a), secondOperand (b), firstOperand (a), and negative fourthOperand (-k).
+    const calculationTerms = [firstOperand, secondOperand, firstOperand, -fourthOperand];
 
-console.log(processInputValues(contentBuffer));
+    const finalCalculationResult = calculationTerms.reduce((currentSum, termValue) => currentSum + termValue, 0);
+
+    return finalCalculationResult;
+  }
+}
+
+function executeMainLogic(programInput) {
+  console.log(processInputValues(programInput));
+}
+
+executeMainLogic(require('fs').readFileSync('/dev/stdin', 'utf8'));

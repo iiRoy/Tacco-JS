@@ -1,113 +1,102 @@
-const inputSource = require('readline').createInterface({
+var read = require('readline').createInterface({
   input: process.stdin, output: process.stdout
 });
-let dataLines = [];
-let inputProcessor;
-
-inputSource.on('line', (lineContent) => { dataLines.push(lineContent); });
-inputSource.on('close', () => {
-  inputProcessor = createInputHandler(dataLines);
+var obj; var inLine = [];
+read.on('line', function(input){inLine.push(input);});
+read.on('close', function(){
+  obj = init(inLine);
   console.error('\n');
-  const executionStart = Date.now();
-  executePrimaryLogic();
-  const executionEnd = Date.now() - executionStart;
-  logDiagnostic('duration : ' + executionEnd + 'ms');
-  logDiagnostic('footprint : ' + Math.round(process.memoryUsage().heapTotal / 1024) + 'KB');
+  var start = Date.now();
+  processGame();
+  var end = Date.now() - start;
+  myerr('time : ' + end + 'ms');
+  myerr('memory : ' + Math.round(process.memoryUsage().heapTotal / 1024) + 'KB');
 });
 
-const makeCopy = (originalItem) => {
-    if (originalItem instanceof Set) {
-        return new Set([...originalItem]);
+class InputIterator {
+    constructor(inputLines) {
+        this.lines = inputLines;
+        this.currentIdx = 0;
     }
-    return JSON.parse(JSON.stringify(originalItem));
-};
 
-const retrieveNextInputLine = () => inputProcessor.obtainNext();
-const checkInputAvailability = () => inputProcessor.canProceed();
+    hasNext() {
+        return this.currentIdx < this.lines.length;
+    }
 
-const createInputHandler = (sourceLines) => {
-    let currentPosition = 0;
-    const totalLines = sourceLines.length;
-
-    return {
-        canProceed: () => currentPosition < totalLines,
-        obtainNext: () => {
-            if (currentPosition < totalLines) {
-                return sourceLines[currentPosition++];
-            } else {
-                throw new Error('InputSystem Exhausted: No more data available.');
-            }
-        }
-    };
-};
-
-const displayOutput = (contentToDisplay) => { console.log(contentToDisplay); };
-const logDiagnostic = (debugMessage) => {
-    console.error(`diagnostic: ${require('util').inspect(debugMessage, { showHidden: false, depth: 3, colors: true })}`);
-};
-
-const transformInputData = (inputValue, transformationType) => {
-    try {
-        if (transformationType === 1) {
-            return Number.parseInt(inputValue, 10);
-        } else if (transformationType === 2) {
-            return String(inputValue).split(' ');
-        } else if (transformationType === 4) {
-            return String(inputValue).split(' ').map(Number);
-        } else if (transformationType === 6) {
-            return String(inputValue).split('');
-        } else if (transformationType === 7) {
-            return String(inputValue).split('').map(Number);
-        } else if (transformationType === 8) {
-            return inputValue.join(' ');
-        } else if (transformationType === 9) {
-            return inputValue.join('\n');
-        } else if (transformationType === 0) {
-            return inputValue.join('');
+    next() {
+        if (this.hasNext()) {
+            return this.lines[this.currentIdx++];
         } else {
-            return inputValue;
+            throw 'ArrayIndexOutOfBoundsException ‚There is no more input';
         }
-    } catch (conversionError) {
-        return inputValue;
     }
-};
+}
+function init(input) {
+    return new InputIterator(input);
+}
 
-const fetchIntegerArray = () => transformInputData(retrieveNextInputLine(), 4);
-const obtainNextString = () => retrieveNextInputLine();
+function makeClone(obj){return (obj instanceof Set) ? new Set(Array.from(obj)) : JSON.parse(JSON.stringify(obj));}
+function nextInt(){return myconv(next(),1);} function nextStrArray(){return myconv(next(),2);}
+function nextIntArray(){return myconv(next(),4);} function nextCharArray(){return myconv(next(),6);}
+function next(){return obj.next();} function hasNext(){return obj.hasNext();}
+function myout(s){console.log(s);}
+function myerr(s){console.error('debug:' + require('util').inspect(s,false,null));}
 
-const executePrimaryLogic = () => {
-    const numericalPair = fetchIntegerArray();
-    const totalLength = numericalPair[0];
-    const maxBackwardSteps = numericalPair[1];
-    const sequenceData = obtainNextString();
+const conversionHandlers = new Map([
+    [1, (val) => parseInt(val)],
+    [2, (val) => val.split(' ')],
+    [4, (val) => val.split(' ').map(Number)],
+    [6, (val) => val.split('')],
+    [7, (val) => val.split('').map(Number)],
+    [8, (val) => val.join(' ')],
+    [9, (val) => val.join('\n')],
+    [0, (val) => val.join('')]
+]);
 
-    const determinePath = (currentPosition, currentPathAccumulator) => {
-        if (currentPosition === 0) {
-            return currentPathAccumulator;
+function myconv(inputVal, conversionType) {
+    try {
+        const handler = conversionHandlers.get(conversionType);
+        return handler ? handler(inputVal) : inputVal;
+    } catch (error) {
+        return inputVal;
+    }
+}
+
+function processGame() {
+    const initialConfig = nextIntArray();
+    const startPoint = initialConfig[0];
+    const maxStep = initialConfig[1];
+    const pathString = next();
+
+    const determinePath = (currentPos, currentJumps) => {
+        myerr(currentPos);
+
+        if (currentPos === 0) {
+            return currentJumps;
         }
 
-        let bestBackwardJump = 0;
-        for (let jumpSizeAttempt = 1; jumpSizeAttempt <= maxBackwardSteps; ++jumpSizeAttempt) {
-            const targetPosition = currentPosition - jumpSizeAttempt;
-            if (targetPosition < 0) {
-                break;
-            }
+        const possibleJumpLengths = Array.from({ length: maxStep }, (_, k) => k + 1);
 
-            if (sequenceData[targetPosition] === '0') {
-                bestBackwardJump = jumpSizeAttempt;
-            }
+        const validTargetPositions = possibleJumpLengths.filter(len => {
+            const target = currentPos - len;
+            return target >= 0 && pathString[target] === '0';
+        });
+
+        if (validTargetPositions.length === 0) {
+            return null;
         }
 
-        return (bestBackwardJump === 0)
-            ? null
-            : determinePath(currentPosition - bestBackwardJump, [...currentPathAccumulator, bestBackwardJump]);
+        const chosenJump = validTargetPositions[validTargetPositions.length - 1];
+
+        return determinePath(currentPos - chosenJump, [...currentJumps, chosenJump]);
     };
 
-    const finalPathSequence = determinePath(totalLength, []);
+    const resultSequence = determinePath(startPoint, []);
 
-    if (finalPathSequence === null) {
-        displayOutput("-1");
+    if (resultSequence === null) {
+        myout(-1);
     } else {
-        displayOutput(transformInputData(finalPathSequence.reverse(), 8));
+        resultSequence.reverse();
+        myout(myconv(resultSequence, 8));
     }
-};
+}

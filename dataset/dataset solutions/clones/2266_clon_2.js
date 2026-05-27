@@ -1,36 +1,46 @@
-/* This script processes input lines to calculate a sum after a specific marker. */
-function ProcessData ( rawData )
-{
-  // Split the entire raw input string into an array of individual lines.
-  let linesArray = rawData.split ( '\n' ) ;
+// This script processes multi-line input to calculate a sum based on a specific condition.
+function ProcessData(sourceText) {
+  // Split the entire input string into an array of individual lines.
+  // The first element (index 0) will be the first line, and so on.
+  let lineSegments = sourceText.split('\n');
 
-  let totalSum = 0 ; // Initialize accumulator for results
-  let searchStarted = false ; // Control flag to track if the relevant section has begun
+  // Initialize a variable to store the accumulated sum.
+  let cumulativeValue = 0;
 
-  // Iterate through the lines, starting from the second line (index 1) up to the line count indicated by the first line.
-  for ( let lineIndex = 1 ; lineIndex < Number ( linesArray[0] ) + 1 ; lineIndex ++ )
-  {
-    if ( ! searchStarted )
-    {
-      // If the search hasn't started, check if the current line matches the last line (the marker).
-      if ( linesArray [ lineIndex ] . match ( linesArray [ linesArray . length - 1 ] ) )
-      {
-        searchStarted = true ; // Set the flag to true as the marker is found.
-        continue ;             // Skip the rest of the current iteration and move to the next line.
+  // Initialize a boolean flag to track if the target pattern has been found.
+  let matchDetected = false;
+
+  // Determine the total number of data lines to iterate through,
+  // which is specified by the numeric value on the very first line of input.
+  const totalLinesToExamine = Number(lineSegments[0]);
+
+  // Loop through the relevant data lines, starting from the second line (index 1)
+  // up to and including the line specified by totalLinesToExamine.
+  for (let lineIndex = 1; lineIndex <= totalLinesToExamine; lineIndex++) {
+    // Check if the match has not yet been detected.
+    if (!matchDetected) {
+      // If the current line contains the pattern found in the very last line of the input,
+      // then set the matchDetected flag to true.
+      if (lineSegments[lineIndex].match(lineSegments[lineSegments.length - 1])) {
+        matchDetected = true;
+        // Skip the rest of the current iteration and move to the next line.
+        continue;
       }
     }
 
-    // If the marker has been found (searchStarted is true), then process the line.
-    if ( searchStarted )
-    {
-      // Extract the second part of the line (after a space) and add it to the total sum.
-      totalSum += Number ( linesArray [ lineIndex ] . split ( ' ' ) [ 1 ] ) ;
+    // If the match has already been detected (or was just detected in this iteration),
+    // then process the current line to add its numeric component to the sum.
+    if (matchDetected) {
+      // Split the current line by space and take the second part (index 1),
+      // converting it to a number before adding it to the cumulative sum.
+      cumulativeValue += Number(lineSegments[lineIndex].split(' ')[1]);
     }
   }
 
-  // Output the final calculated sum.
-  console . log ( totalSum ) ;
+  // Output the final calculated sum to the console.
+  console.log(cumulativeValue);
 }
 
-// Read input from standard input and pass it to the processing function.
-ProcessData ( require ( 'fs' ) . readFileSync ( '/dev/stdin' , 'utf8' ) ) ;
+// Read the entire content of standard input synchronously using Node.js 'fs' module.
+// The input is expected to be UTF-8 encoded.
+ProcessData(require('fs').readFileSync('/dev/stdin', 'utf8'));

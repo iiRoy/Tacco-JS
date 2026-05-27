@@ -1,46 +1,43 @@
-function processInputAndCheck(sourceMaterial) {
-    const lines = sourceMaterial.trim().split("\n");
-    if (lines.length < 2) {
-        return "No";
+function Main(processInput) {
+  const inputLines = processInput.split("\n");
+  const firstLineChars = inputLines[0].split("");
+  const secondLineChars = inputLines[1].split("");
+
+  const sToTMap = new Map();
+  const tToSMap = new Map();
+  let consistencyFlag = true;
+
+  const effectiveLength = Math.min(firstLineChars.length, secondLineChars.length);
+
+  for (let idx = 0; idx < effectiveLength; idx++) {
+    const charFromS = firstLineChars[idx];
+    const charFromT = secondLineChars[idx];
+
+    if (sToTMap.has(charFromS)) {
+      if (sToTMap.get(charFromS) !== charFromT) {
+        consistencyFlag = false;
+        break;
+      }
+    } else {
+      sToTMap.set(charFromS, charFromT);
     }
 
-    const firstSequence = lines[0];
-    const secondSequence = lines[1];
-
-    if (firstSequence.length !== secondSequence.length) {
-        return "No";
+    if (tToSMap.has(charFromT)) {
+      if (tToSMap.get(charFromT) !== charFromS) {
+        consistencyFlag = false;
+        break;
+      }
+    } else {
+      tToSMap.set(charFromT, charFromS);
     }
+  }
 
-    const forwardMapping = new Map();
-    const backwardMapping = new Map();
-
-    for (let k = 0; k < firstSequence.length; k++) {
-        const charA = firstSequence[k];
-        const charB = secondSequence[k];
-
-        if (forwardMapping.has(charA)) {
-            if (forwardMapping.get(charA) !== charB) {
-                return "No";
-            }
-        } else {
-            forwardMapping.set(charA, charB);
-        }
-
-        if (backwardMapping.has(charB)) {
-            if (backwardMapping.get(charB) !== charA) {
-                return "No";
-            }
-        } else {
-            backwardMapping.set(charB, charA);
-        }
-    }
-
-    return "Yes";
+  console.log('%s', consistencyFlag ? "Yes" : "No");
 }
-
-function entryPoint(dataBlock) {
-    const outcome = processInputAndCheck(dataBlock);
-    console.log(outcome);
+  
+// "実行する"ボタンを押した時に実行される関数 (デバッグ用)
+function debug(){
+  var input = document.getElementById("input").value;
+  Main(input);
 }
-
-entryPoint(require("fs").readFileSync("/dev/stdin", "utf8"));
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

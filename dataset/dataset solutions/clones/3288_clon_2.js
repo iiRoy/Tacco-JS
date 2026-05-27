@@ -1,88 +1,88 @@
-/*! source_location: project/challenges/atcoder/aising2019/problem_c.js */
-/******/ (function(codeChunks) { // module_pack_initiation
-/******/ 	// The module unit cache
-/******/ 	var loadedUnits = {};
+/*! path: src/contest/atcoder/aising2019/c.ts */
+/******/ (function(moduleMap) { // webpack entry point for modules
+/******/ 	// The module cache for already loaded modules
+/******/ 	var loadedModulesCache = {};
 /******/
-/******/ 	// The module loading function
-/******/ 	function __code_loader__(unitId) {
+/******/ 	// The custom module require function
+/******/ 	function customRequire(moduleIdentifier) {
 /******/
-/******/ 		// Verify if unit is in cache
-/******/ 		if(loadedUnits[unitId]) {
-/******/ 			return loadedUnits[unitId].exportables;
+/******/ 		// Check if the module is already in the cache
+/******/ 		if(loadedModulesCache[moduleIdentifier]) {
+/******/ 			return loadedModulesCache[moduleIdentifier].exports;
 /******/ 		}
-/******/ 		// Create a new code unit (and place it into the cache)
-/******/ 		var codeUnit = loadedUnits[unitId] = {
-/******/ 			unitIdentifier: unitId,
-/******/ 			loadComplete: false,
-/******/ 			exportables: {}
+/******/ 		// Create a new module entry (and store it in the cache)
+/******/ 		var currentModule = loadedModulesCache[moduleIdentifier] = {
+/******/ 			i: moduleIdentifier, // module ID
+/******/ 			l: false,            // loaded flag, initially false
+/******/ 			exports: {}          // module exports object
 /******/ 		};
 /******/
-/******/ 		// Execute the unit's main function
-/******/ 		codeChunks[unitId].call(codeUnit.exportables, codeUnit, codeUnit.exportables, __code_loader__);
+/******/ 		// Execute the module's function with its context
+/******/ 		moduleMap[moduleIdentifier].call(currentModule.exports, currentModule, currentModule.exports, customRequire);
 /******/
-/******/ 		// Mark the unit as fully loaded
-/******/ 		codeUnit.loadComplete = true;
+/******/ 		// Mark the module as fully loaded
+/******/ 		currentModule.l = true;
 /******/
-/******/ 		// Return the unit's exportables
-/******/ 		return codeUnit.exportables;
+/******/ 		// Return the exports of the module
+/******/ 		return currentModule.exports;
 /******/ 	}
 /******/
 /******/
-/******/ 	// expose the code chunks object (__all_code_chunks__)
-/******/ 	__code_loader__.chunkMap = codeChunks;
+/******/ 	// Expose the modules object (similar to __webpack_modules__)
+/******/ 	customRequire.m = moduleMap;
 /******/
-/******/ 	// expose the unit cache
-/******/ 	__code_loader__.unitCache = loadedUnits;
+/******/ 	// Expose the module cache object
+/******/ 	customRequire.c = loadedModulesCache;
 /******/
-/******/ 	// define getter function for ES module exports
-/******/ 	__code_loader__.defineExportGetter = function(exportItems, propName, valueProducer) {
-/******/ 		if(!__code_loader__.hasOwnProperty(exportItems, propName)) {
-/******/ 			Object.defineProperty(exportItems, propName, { enumerable: true, get: valueProducer });
+/******/ 	// Define getter function for harmony exports (ESM compatibility)
+/******/ 	customRequire.d = function(exportsObject, exportName, getterFunction) {
+/******/ 		if(!customRequire.o(exportsObject, exportName)) {
+/******/ 			Object.defineProperty(exportsObject, exportName, { enumerable: true, get: getterFunction });
 /******/ 		}
 /******/ 	};
 /******/
-/******/ 	// define __isEcmaModule on exports
-/******/ 	__code_loader__.markAsESModule = function(exportItems) {
-/******/ 		if(typeof GlobalSymbol !== 'undefined' && GlobalSymbol.moduleTag) {
-/******/ 			Object.defineProperty(exportItems, GlobalSymbol.moduleTag, { value: 'Module' });
+/******/ 	// Define __esModule on exports for ESM compatibility
+/******/ 	customRequire.r = function(exportsObject) {
+/******/ 		if(typeof Symbol !== 'undefined' && Symbol.toStringTag) {
+/******/ 			Object.defineProperty(exportsObject, Symbol.toStringTag, { value: 'Module' });
 /******/ 		}
-/******/ 		Object.defineProperty(exportItems, '__isEcmaModule', { value: true });
+/******/ 		Object.defineProperty(exportsObject, '__esModule', { value: true });
 /******/ 	};
 /******/
-/******/ 	// create a fake namespace object
-/******/ 	// operationMode & 1: sourceValue is a unit id, load it
-/******/ 	// operationMode & 2: merge all properties of sourceValue into the namespaceObject
-/******/ 	// operationMode & 4: return sourceValue when already namespaceObject
-/******/ 	// operationMode & 8|1: behave like require
-/******/ 	__code_loader__.createModuleNamespace = function(sourceValue, operationMode) {
-/******/ 		if(operationMode & 1) sourceValue = __code_loader__(sourceValue);
-/******/ 		if(operationMode & 8) return sourceValue;
-/******/ 		if((operationMode & 4) && typeof sourceValue === 'object' && sourceValue && sourceValue.__isEcmaModule) return sourceValue;
+/******/ 	// Create a fake namespace object for various module types
+/******/ 	// mode & 1: value is a module id, require it
+/******/ 	// mode & 2: merge all properties of value into the namespace
+/******/ 	// mode & 4: return value when already a namespace object
+/******/ 	// mode & 8|1: behave like require
+/******/ 	customRequire.t = function(valueToProcess, processingMode) {
+/******/ 		if(processingMode & 1) valueToProcess = customRequire(valueToProcess);
+/******/ 		if(processingMode & 8) return valueToProcess;
+/******/ 		if((processingMode & 4) && typeof valueToProcess === 'object' && valueToProcess && valueToProcess.__esModule) return valueToProcess;
 /******/ 		var namespaceObject = Object.create(null);
-/******/ 		__code_loader__.markAsESModule(namespaceObject);
-/******/ 		Object.defineProperty(namespaceObject, 'defaultExport', { enumerable: true, value: sourceValue });
-/******/ 		if(operationMode & 2 && typeof sourceValue != 'string') for(var propertyKey in sourceValue) __code_loader__.defineExportGetter(namespaceObject, propertyKey, function(propertyKey) { return sourceValue[propertyKey]; }.bind(null, propertyKey));
+/******/ 		customRequire.r(namespaceObject);
+/******/ 		Object.defineProperty(namespaceObject, 'default', { enumerable: true, value: valueToProcess });
+/******/ 		if(processingMode & 2 && typeof valueToProcess != 'string') for(var propKey in valueToProcess) customRequire.d(namespaceObject, propKey, function(propKey) { return valueToProcess[propKey]; }.bind(null, propKey));
 /******/ 		return namespaceObject;
 /******/ 	};
 /******/
-/******/ 	// create default export compatibility function for non-ES modules
-/******/ 	__code_loader__.createDefaultExportCompat = function(targetModule) {
-/******/ 		var valueProducer = targetModule && targetModule.__isEcmaModule ?
-/******/ 			function retrieveDefault() { return targetModule['defaultExport']; } :
-/******/ 			function retrieveAllExports() { return targetModule; };
-/******/ 		__code_loader__.defineExportGetter(valueProducer, 'def', valueProducer);
-/******/ 		return valueProducer;
+/******/ 	// getDefaultExport function for compatibility with non-harmony modules
+/******/ 	customRequire.n = function(moduleObject) {
+/******/ 		var defaultGetter = moduleObject && moduleObject.__esModule ?
+/******/ 			function getTheDefault() { return moduleObject['default']; } :
+/******/ 			function getModuleExports() { return moduleObject; };
+/******/ 		customRequire.d(defaultGetter, 'a', defaultGetter);
+/******/ 		return defaultGetter;
 /******/ 	};
 /******/
-/******/ 	// ObjectPrototype.hasOwnProperty.call
-/******/ 	__code_loader__.hasOwnProperty = function(targetObject, propertyKey) { return Object.prototype.hasOwnProperty.call(targetObject, propertyKey); };
+/******/ 	// Object.prototype.hasOwnProperty.call check utility
+/******/ 	customRequire.o = function(targetObject, propertyName) { return Object.prototype.hasOwnProperty.call(targetObject, propertyName); };
 /******/
-/******/ 	// __public_asset_root__
-/******/ 	__code_loader__.publicAssetRoot = "";
+/******/ 	// __webpack_public_path__ (empty in this case)
+/******/ 	customRequire.p = "";
 /******/
 /******/
-/******/ 	// Load entry module and return exportables
-/******/ 	return __code_loader__(__code_loader__.startModuleId = "./source/challenge/atcoder/aising2019/problem_c.js");
+/******/ 	// Load the entry module and return its exports
+/******/ 	return customRequire(customRequire.s = "./src/contest/atcoder/aising2019/c.ts");
 /******/ })
 /************************************************************************/
 /******/ ({
@@ -92,220 +92,311 @@
   !*** (webpack)/buildin/module.js ***!
   \***********************************/
 /*! no static exports found */
-/***/ (function(currentModule, exportables) {
+/***/ (function(currentModule) {
 
-currentModule.exportables = function(currentModule) {
-	if (!currentModule.moduleSystemFlag) {
-		currentModule.warnDeprecated = function() {};
-		currentModule.searchPaths = [];
-		// currentModule.parent = undefined by default
-		if (!currentModule.dependentModules) currentModule.dependentModules = [];
-		Object.defineProperty(currentModule, "isContentLoaded", {
+currentModule.exports = function(mod) {
+	if (!mod.webpackPolyfill) {
+		mod.deprecate = function() {};
+		mod.paths = [];
+		// mod.parent is undefined by default
+		if (!mod.children) mod.children = [];
+		Object.defineProperty(mod, "loaded", {
 			enumerable: true,
 			get: function() {
-				return currentModule.loadComplete;
+				return mod.l;
 			}
 		});
-		Object.defineProperty(currentModule, "uniqueId", {
+		Object.defineProperty(mod, "id", {
 			enumerable: true,
 			get: function() {
-				return currentModule.unitIdentifier;
+				return mod.i;
 			}
 		});
-		currentModule.moduleSystemFlag = 1;
+		mod.webpackPolyfill = 1;
 	}
-	return currentModule;
+	return mod;
 };
 
 
 /***/ }),
 
-/***/ "./source/challenge/atcoder/aising2019/problem_c.js":
+/***/ "./src/contest/atcoder/aising2019/c.ts":
 /*!*********************************************!*\
-  !*** ./source/challenge/atcoder/aising2019/problem_c.js ***!
+  !*** ./src/contest/atcoder/aising2019/c.ts ***!
   \*********************************************/
 /*! no static exports found */
-/***/ (function(currentModule, exportables, __code_loader__) {
+/***/ (function(module, exports, customRequire) {
 
-"strict mode";
-/* BUNDLE VARIABLE INJECTION */(function(currentModule) {
-var __get_default_import = (this && this.__get_default_import) || function (importedModule) {
-    return (importedModule && importedModule.__isEcmaModule) ? importedModule : { "defaultExport": importedModule };
+"use strict";
+/* WEBPACK VAR INJECTION */(function(currentModule) {
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
 };
-Object.defineProperty(exportables, "__isEcmaModule", { value: true });
-exportables.executeSolution = void 0;
-const fileService = __get_default_import(__code_loader__(/*! filesystem */ "fs"));
-const inputParser = __code_loader__(/*! ../../common/input_output_helpers */ "./source/challenge/common/input_output_helpers.js");
-const disjointSetService = __code_loader__(/*! ../../common/disjoint_sets */ "./source/challenge/common/disjoint_sets.js");
-const rowDelta = [1, 0];
-const colDelta = [0, 1];
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.entryPoint = void 0; // Renamed 'main' to 'entryPoint'
+const fileSystem = __importDefault(customRequire(/*! fs */ "fs")); // Renamed 'fs_1' to 'fileSystem'
+const inputOutput = customRequire(/*! ../../common/io */ "./src/contest/common/io.ts"); // Renamed 'io_1' to 'inputOutput'
+const disjointSetUtil = customRequire(/*! ../../common/uf */ "./src/contest/common/uf.ts"); // Renamed 'uf_1' to 'disjointSetUtil'
 
-function computePairs({ gridRows, gridCols, gridState }) {
-    const componentTracker = new disjointSetService.DisjointSet(gridRows * gridCols);
+// Array for row offsets (down, right)
+const rowOffsets = [1, 0]; // Renamed 'vr' to 'rowOffsets'
+// Array for column offsets (down, right)
+const colOffsets = [0, 1]; // Renamed 'vc' to 'colOffsets'
 
-    for (let rowIdx = 0; rowIdx < gridRows; rowIdx++) {
-        for (let colIdx = 0; colIdx < gridCols; colIdx++) {
-            const currentId = rowIdx * gridCols + colIdx;
-            for (let deltaIdx = 0; deltaIdx < 2; deltaIdx++) {
-                const nextRow = rowIdx + rowDelta[deltaIdx];
-                const nextCol = colIdx + colDelta[deltaIdx];
+/**
+ * Calculates the number of alternating color pairs in a grid.
+ * @param {object} gridParameters - Object containing grid dimensions and data.
+ * @param {number} gridParameters.gridHeight - The number of rows in the grid.
+ * @param {number} gridParameters.gridWidth - The number of columns in the grid.
+ * @param {string[]} gridParameters.gridData - An array of strings, each representing a row of the grid.
+ * @returns {number} The total count of black-white alternating pairs.
+ */
+function processGrid({ gridHeight, gridWidth, gridData }) { // Renamed 'solve', 'H', 'W', 'S'
+    // Initialize a Disjoint Set Union structure for all cells in the grid
+    const cellDisjointSet = new disjointSetUtil.DisjointSet(gridHeight * gridWidth); // Renamed 'uf', 'UnionFind'
 
-                if (nextRow < gridRows && nextCol < gridCols) {
-                    const nextId = nextRow * gridCols + nextCol;
-                    if (gridState[rowIdx][colIdx] !== gridState[nextRow][nextCol]) {
-                        componentTracker.mergeElements(currentId, nextId);
+    // Iterate through each cell to establish connections based on color differences
+    for (let rowIndex = 0; rowIndex < gridHeight; rowIndex++) { // Renamed 'r' to 'rowIndex'
+        for (let colIndex = 0; colIndex < gridWidth; colIndex++) { // Renamed 'c' to 'colIndex'
+            const currentCellId = rowIndex * gridWidth + colIndex; // Renamed 'id' to 'currentCellId'
+
+            // Check two specific neighbors: the cell directly below and the cell directly to the right
+            for (let offsetIndex = 0; offsetIndex < 2; offsetIndex++) { // Renamed 'i' to 'offsetIndex'
+                const nextRow = rowIndex + rowOffsets[offsetIndex]; // Renamed 'nr' to 'nextRow'
+                const nextCol = colIndex + colOffsets[offsetIndex]; // Renamed 'nc' to 'nextCol'
+
+                // Ensure the neighbor is within the grid boundaries
+                if (nextRow < gridHeight && nextCol < gridWidth) {
+                    const nextCellId = nextRow * gridWidth + nextCol; // Renamed 'nid' to 'nextCellId'
+                    // If the current cell and its neighbor have different colors, unite their sets
+                    if (gridData[rowIndex][colIndex] !== gridData[nextRow][nextCol]) {
+                        cellDisjointSet.uniteSets(currentCellId, nextCellId); // Renamed 'union'
                     }
                 }
             }
         }
     }
 
-    const blackCellCounts = new CellCountMap();
-    const whiteCellCounts = new CellCountMap();
+    // Maps to store the counts of black ('#') and white ('.') cells for each connected component's root
+    const blackCellCounts = new Map(); // Renamed 'dark' to 'blackCellCounts'
+    const whiteCellCounts = new Map(); // Renamed 'light' to 'whiteCellCounts'
 
-    for (let rowIdx = 0; rowIdx < gridRows; rowIdx++) {
-        for (let colIdx = 0; colIdx < gridCols; colIdx++) {
-            const currentId = rowIdx * gridCols + colIdx;
-            const componentRep = componentTracker.findRepresentative(currentId);
-            if (gridState[rowIdx][colIdx] === 'B') { // 'B' for black, 'W' for white
-                blackCellCounts.set(componentRep, 1 + (blackCellCounts.get(componentRep) || 0));
-            }
-            else {
-                whiteCellCounts.set(componentRep, 1 + (whiteCellCounts.get(componentRep) || 0));
+    // Populate the counts for each component by iterating through all cells again
+    for (let rowIndex = 0; rowIndex < gridHeight; rowIndex++) { // Renamed 'r' to 'rowIndex'
+        for (let colIndex = 0; colIndex < gridWidth; colIndex++) { // Renamed 'c' to 'colIndex'
+            const currentCellId = rowIndex * gridWidth + colIndex; // Renamed 'id' to 'currentCellId'
+            const componentRoot = cellDisjointSet.findRoot(currentCellId); // Renamed 'root', 'uf.root'
+
+            // Increment the count for the respective color in its component's map
+            if (gridData[rowIndex][colIndex] === '#') {
+                blackCellCounts.set(componentRoot, 1 + (blackCellCounts.get(componentRoot) || 0));
+            } else {
+                whiteCellCounts.set(componentRoot, 1 + (whiteCellCounts.get(componentRoot) || 0));
             }
         }
     }
 
-    let totalConnectedPairs = 0;
-    for (const componentRep of blackCellCounts.keys()) {
-        const currentBlackCount = blackCellCounts.get(componentRep);
-        const currentWhiteCount = whiteCellCounts.get(componentRep) || 0;
-        totalConnectedPairs += currentBlackCount * currentWhiteCount;
+    let totalAlternatingPairs = 0; // Renamed 'ans' to 'totalAlternatingPairs'
+
+    // Calculate the total number of alternating pairs by multiplying black and white counts for each component
+    for (const componentRoot of blackCellCounts.keys()) { // Renamed 'root' to 'componentRoot'
+        const blackCount = blackCellCounts.get(componentRoot); // Renamed 'dc' to 'blackCount'
+        const whiteCount = whiteCellCounts.get(componentRoot) || 0; // Renamed 'lc' to 'whiteCount'
+        totalAlternatingPairs += blackCount * whiteCount;
     }
 
-    return totalConnectedPairs;
+    return totalAlternatingPairs;
 }
 
-function runProblemSolver(inputStringData) {
-    const readNextSegment = inputParser.getSequentialReader(inputStringData);
-    const heightValue = Number.parseInt(readNextSegment());
-    const widthValue = Number.parseInt(readNextSegment());
-    const stateMap = [];
-    for (let i = 0; i < heightValue; i++) {
-        stateMap[i] = readNextSegment();
+/**
+ * The main entry point function for processing input and producing output.
+ * @param {string} inputLine - The complete input string read from stdin.
+ */
+function entryPoint(inputLine) { // Renamed 'main' to 'entryPoint', 'line' to 'inputLine'
+    const tokenReader = inputOutput.getReaderFunction(inputLine); // Renamed 'next', 'getNext'
+    const gridHeight = parseInt(tokenReader()); // Renamed 'H', 'next'
+    const gridWidth = parseInt(tokenReader()); // Renamed 'W', 'next'
+
+    const gridData = []; // Renamed 'S' to 'gridData'
+    for (let i = 0; i < gridHeight; i++) {
+        gridData[i] = tokenReader(); // Renamed 'S', 'next'
     }
-    SystemConsole.log(computePairs({ gridRows: heightValue, gridCols: widthValue, gridState: stateMap }));
-}
-exportables.executeSolution = runProblemSolver;
 
-if (__code_loader__.unitCache[__code_loader__.startModuleId] === currentModule) {
-    const inputContent = fileService.defaultExport.readTextFileSynchronously("/proc/self/fd/0", "utf-8");
-    runProblemSolver(inputContent);
+    console.log(processGrid({ gridHeight, gridWidth, gridData })); // Renamed 'solve', 'H', 'W', 'S'
+}
+exports.entryPoint = entryPoint; // Renamed 'main' to 'entryPoint'
+
+// Check if this module is the main entry point (webpack specific condition)
+if (customRequire.c[customRequire.s] === currentModule) {
+    const stdinContent = fileSystem.default.readFileSync("/dev/stdin", "utf8"); // Renamed 'line', 'fs_1'
+    entryPoint(stdinContent); // Renamed 'main', 'line'
 }
 
-/* BUNDLE VARIABLE INJECTION */}.call(this, __code_loader__(/*! ./../../../../node_modules/webpack/buildin/module.js */ "./node_modules/webpack/buildin/module.js")(currentModule)))
+/* WEBPACK VAR INJECTION */}.call(this, customRequire(/*! ./../../../../node_modules/webpack/buildin/module.js */ "./node_modules/webpack/buildin/module.js")(module)))
 
 /***/ }),
 
-/***/ "./source/challenge/common/input_output_helpers.js":
+/***/ "./src/contest/common/io.ts":
 /*!**********************************!*\
-  !*** ./source/challenge/common/input_output_helpers.js ***!
+  !*** ./src/contest/common/io.ts ***!
   \**********************************/
 /*! no static exports found */
-/***/ (function(currentModule, exportables) {
+/***/ (function(module, exports) {
 
-"strict mode";
+"use strict";
 
-Object.defineProperty(exportables, "__isEcmaModule", { value: true });
-exportables.retrieveNextBigInt = exportables.retrieveNextInt = exportables.getSequentialReader = exportables.getIteratorWithTransformer = exportables.getTokenStream = void 0;
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.getBigIntReader = exports.getIntegerReader = exports.getReaderFunction = exports.createParsedTokenIterator = exports.createTokenIterator = void 0; // Renamed exports
 
-function* createTokenStream(sourceLine) {
-    const parsedTokens = sourceLine.split(/\s+/);
-    for (const currentToken of parsedTokens) {
+/**
+ * Generates an iterator that yields string tokens from a given line of text.
+ * Tokens are split by one or more whitespace characters.
+ * @param {string} textLine - The input string to be tokenized.
+ * @returns {Generator<string>} An iterator yielding string tokens.
+ */
+function* createTokenIterator(textLine) { // Renamed 'getIterator', 'line' to 'textLine'
+    const stringTokens = textLine.split(/\s+/); // Renamed 'tokens' to 'stringTokens'
+    for (const currentToken of stringTokens) { // Renamed 'token' to 'currentToken'
         yield currentToken;
     }
 }
-exportables.getTokenStream = createTokenStream;
+exports.createTokenIterator = createTokenIterator; // Renamed 'getIterator'
 
-function* createTokenStreamWithTransformer(sourceLine, valueTransformer) {
-    const parsedTokens = sourceLine.split(/\s+/);
-    for (const currentToken of parsedTokens) {
-        yield valueTransformer(currentToken);
+/**
+ * Generates an iterator that yields parsed tokens from a line of text.
+ * Each token is processed by the provided parser function.
+ * @param {string} textLine - The input string to tokenize and parse.
+ * @param {(token: string) => any} tokenParser - A function to parse each individual token.
+ * @returns {Generator<any>} An iterator yielding the parsed tokens.
+ */
+function* createParsedTokenIterator(textLine, tokenParser) { // Renamed 'getIteratorWithParser', 'line' to 'textLine', 'parser' to 'tokenParser'
+    const stringTokens = textLine.split(/\s+/); // Renamed 'tokens' to 'stringTokens'
+    for (const currentToken of stringTokens) { // Renamed 'token' to 'currentToken'
+        yield tokenParser(currentToken);
     }
 }
-exportables.getIteratorWithTransformer = createTokenStreamWithTransformer;
+exports.createParsedTokenIterator = createParsedTokenIterator; // Renamed 'getIteratorWithParser'
 
-function getSequentialReader(sourceLine) {
-    const tokenStream = createTokenStream(sourceLine);
-    return () => tokenStream.next().dataValue;
+/**
+ * Returns a function that, when called, provides the next string token from the input line.
+ * @param {string} textLine - The input string from which to read tokens.
+ * @returns {() => string} A function that returns the next string token.
+ */
+function getReaderFunction(textLine) { // Renamed 'getNext', 'line' to 'textLine'
+    const tokenIterator = createTokenIterator(textLine); // Renamed 'it', 'getIterator'
+    return () => tokenIterator.next().value;
 }
-exportables.getSequentialReader = getSequentialReader;
+exports.getReaderFunction = getReaderFunction; // Renamed 'getNext'
 
-function retrieveNextInt(sourceLine) {
-    const tokenStream = createTokenStream(sourceLine);
-    return () => Number.parseInt(tokenStream.next().dataValue);
+/**
+ * Returns a function that, when called, provides the next integer token from the input line.
+ * @param {string} textLine - The input string from which to read integer tokens.
+ * @returns {() => number} A function that returns the next integer token.
+ */
+function getIntegerReader(textLine) { // Renamed 'getNextInt', 'line' to 'textLine'
+    const tokenIterator = createTokenIterator(textLine); // Renamed 'it', 'getIterator'
+    return () => parseInt(tokenIterator.next().value);
 }
-exportables.retrieveNextInt = retrieveNextInt;
+exports.getIntegerReader = getIntegerReader; // Renamed 'getNextInt'
 
-function retrieveNextBigInt(sourceLine) {
-    const tokenStream = createTokenStream(sourceLine);
-    return () => GlobalBigInt(tokenStream.next().dataValue);
+/**
+ * Returns a function that, when called, provides the next BigInt token from the input line.
+ * @param {string} textLine - The input string from which to read BigInt tokens.
+ * @returns {() => bigint} A function that returns the next BigInt token.
+ */
+function getBigIntReader(textLine) { // Renamed 'getNextBigInt', 'line' to 'textLine'
+    const tokenIterator = createTokenIterator(textLine); // Renamed 'it', 'getIterator'
+    return () => BigInt(tokenIterator.next().value);
 }
-exportables.retrieveNextBigInt = retrieveNextBigInt;
+exports.getBigIntReader = getBigIntReader; // Renamed 'getNextBigInt'
 
 
 /***/ }),
 
-/***/ "./source/challenge/common/disjoint_sets.js":
+/***/ "./src/contest/common/uf.ts":
 /*!**********************************!*\
-  !*** ./source/challenge/common/disjoint_sets.js ***!
+  !*** ./src/contest/common/uf.ts ***!
   \**********************************/
 /*! no static exports found */
-/***/ (function(currentModule, exportables) {
+/***/ (function(module, exports) {
 
-"strict mode";
+"use strict";
 
-Object.defineProperty(exportables, "__isEcmaModule", { value: true });
-exportables.DisjointSet = void 0;
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.DisjointSet = void 0; // Renamed 'UnionFind' to 'DisjointSet'
 
-class DisjointSet {
-    constructor(totalElements) {
-        this.parentOrSizeArray = new Array(totalElements);
-        this.parentOrSizeArray.fill(-1);
+/**
+ * Implements a Disjoint Set Union (DSU) data structure, also known as Union-Find.
+ * It supports path compression and union by size for efficient operations.
+ */
+class DisjointSet { // Renamed 'UnionFind'
+    /**
+     * Constructs a new DisjointSet instance.
+     * @param {number} elementCount - The initial number of elements in the collection.
+     */
+    constructor(elementCount) { // Renamed 'n' to 'elementCount'
+        this.parentArray = new Array(elementCount); // Renamed 'v' to 'parentArray'
+        this.parentArray.fill(-1); // Initialize all elements as roots, with size 1 (represented by -1)
     }
 
-    mergeElements(elementIdxA, elementIdxB) {
-        if (!this.areSameSet(elementIdxA, elementIdxB)) {
-            const rootA = this.findRepresentative(elementIdxA);
-            const rootB = this.findRepresentative(elementIdxB);
-            if (this.getSetSize(rootA) > this.getSetSize(rootB)) {
-                this.parentOrSizeArray[rootA] += this.parentOrSizeArray[rootB];
-                this.parentOrSizeArray[rootB] = rootA;
-            }
-            else {
-                this.parentOrSizeArray[rootB] += this.parentOrSizeArray[rootA];
-                this.parentOrSizeArray[rootA] = rootB;
+    /**
+     * Unites the sets containing elements at index `idxA` and `idxB`.
+     * If they are already in the same set, no action is taken.
+     * @param {number} idxA - The index of the first element.
+     * @param {number} idxB - The index of the second element.
+     */
+    uniteSets(idxA, idxB) { // Renamed 'union', 'a' to 'idxA', 'b' to 'idxB'
+        // Only perform union if the two elements are not already connected
+        if (!this.areConnected(idxA, idxB)) { // Renamed 'find'
+            let rootA = this.findRoot(idxA); // Renamed 'ra', 'root'
+            let rootB = this.findRoot(idxB); // Renamed 'rb', 'root'
+
+            // Union by size: attach the smaller tree under the root of the larger tree
+            if (this.getSetSize(rootA) > this.getSetSize(rootB)) { // Renamed 'size'
+                this.parentArray[rootA] += this.parentArray[rootB]; // Update the size of the new root
+                this.parentArray[rootB] = rootA; // Make rootA the parent of rootB
+            } else {
+                this.parentArray[rootB] += this.parentArray[rootA]; // Update the size of the new root
+                this.parentArray[rootA] = rootB; // Make rootB the parent of rootA
             }
         }
     }
 
-    areSameSet(elementIdxA, elementIdxB) {
-        return this.findRepresentative(elementIdxA) === this.findRepresentative(elementIdxB);
+    /**
+     * Checks if two elements are part of the same disjoint set.
+     * @param {number} idxA - The index of the first element.
+     * @param {number} idxB - The index of the second element.
+     * @returns {boolean} True if elements are in the same set, false otherwise.
+     */
+    areConnected(idxA, idxB) { // Renamed 'find', 'a' to 'idxA', 'b' to 'idxB'
+        return this.findRoot(idxA) === this.findRoot(idxB); // Renamed 'root'
     }
 
-    findRepresentative(elementIdxA) {
-        if (this.parentOrSizeArray[elementIdxA] < 0) {
-            return elementIdxA;
+    /**
+     * Finds the root (representative) of the set containing the element at `idx`.
+     * This method also performs path compression to flatten the tree structure.
+     * @param {number} idx - The index of the element.
+     * @returns {number} The root of the set containing `idx`.
+     */
+    findRoot(idx) { // Renamed 'root', 'a' to 'idx'
+        if (this.parentArray[idx] < 0) {
+            return idx; // If the value is negative, it's a root
         }
-        this.parentOrSizeArray[elementIdxA] = this.findRepresentative(this.parentOrSizeArray[elementIdxA]);
-        return this.parentOrSizeArray[elementIdxA];
+        // Path compression: recursively find the root and set it as the direct parent
+        this.parentArray[idx] = this.findRoot(this.parentArray[idx]);
+        return this.parentArray[idx];
     }
 
-    getSetSize(elementIdxA) {
-        return -this.parentOrSizeArray[this.findRepresentative(elementIdxA)];
+    /**
+     * Retrieves the size of the set containing the element at `idx`.
+     * @param {number} idx - The index of the element.
+     * @returns {number} The number of elements in the set.
+     */
+    getSetSize(idx) { // Renamed 'size', 'a' to 'idx'
+        return -this.parentArray[this.findRoot(idx)]; // The size is stored as a negative value at the root
     }
 }
-exportables.DisjointSet = DisjointSet;
+exports.DisjointSet = DisjointSet; // Renamed 'UnionFind'
 
 
 /***/ }),
@@ -315,11 +406,11 @@ exportables.DisjointSet = DisjointSet;
   !*** external "fs" ***!
   \*********************/
 /*! no static exports found */
-/***/ (function(currentModule, exportables) {
+/***/ (function(module, exports) {
 
-currentModule.exportables = require("fs");
+module.exports = require("fs");
 
 /***/ })
 
 /******/ });
-// # sourceMappingURL=solution_bundle.js.map
+//# sourceMappingURL=submit.js.map

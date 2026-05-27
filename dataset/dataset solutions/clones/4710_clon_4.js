@@ -1,28 +1,31 @@
-function determineOutcome(gameData) {
-  const contentUntilNewline = gameData.indexOf('\n');
-  const activeLine = contentUntilNewline !== -1 ? gameData.substring(0, contentUntilNewline) : gameData;
+'use strict';
 
-  const spaceSeparator = activeLine.indexOf(' ');
+function processGameOutcome(inputData) {
+  const parseAndExtract = (textLine) => {
+    return textLine.split(' ').reduce((acc, currentSegment) => {
+      acc.push(parseInt(currentSegment, 10));
+      return acc;
+    }, []);
+  };
 
-  const firstNumeralString = activeLine.substring(0, spaceSeparator);
-  const secondNumeralString = activeLine.substring(spaceSeparator + 1);
+  const transformValueForComparison = (initialNumericValue) => {
+    return initialNumericValue === 1 ? 14 : initialNumericValue;
+  };
 
-  const initialScoreAlpha = parseInt(firstNumeralString, 10);
-  const initialScoreBeta = parseInt(secondNumeralString, 10);
+  const [firstPlayerCard, secondPlayerCard] = parseAndExtract(inputData.split('\n')[0]);
 
-  const transformNumericValue = (val) => val === 1 ? val + 13 : val;
+  const adjustedFirstCard = transformValueForComparison(firstPlayerCard);
+  const adjustedSecondCard = transformValueForComparison(secondPlayerCard);
 
-  const processedScoreAlpha = transformNumericValue(initialScoreAlpha);
-  const processedScoreBeta = transformNumericValue(initialScoreBeta);
+  const comparisonResultIndicator = Math.sign(adjustedFirstCard - adjustedSecondCard);
 
-  const resultMapping = new Map([
-    [1, 'Alice'],
-    [-1, 'Bob'],
-    [0, 'Draw']
-  ]);
+  const outcomeMapping = {
+    '1': 'Alice',
+    '-1': 'Bob',
+    '0': 'Draw'
+  };
 
-  const comparisonIndicator = Math.sign(processedScoreAlpha - processedScoreBeta);
-  const finalResultPhrase = resultMapping.get(comparisonIndicator);
-
-  process.stdout.write(finalResultPhrase + '\n');
+  console.log(outcomeMapping[comparisonResultIndicator]);
 }
+
+processGameOutcome(require("fs").readFileSync("/dev/stdin", "utf8"));

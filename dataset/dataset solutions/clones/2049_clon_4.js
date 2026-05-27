@@ -1,24 +1,20 @@
-const fileSystemHandler = require("node:fs");
+const rawInputData = require("fs").readFileSync("/dev/stdin", "utf8").trim();
+const [upperBoundStr, sequenceStr] = rawInputData.split('\n');
+const upperBound = Number(upperBoundStr);
+const inputSequence = sequenceStr.split(' ').map(Number);
 
-const [firstLine, secondLine] = fileSystemHandler.readFileSync("/dev/stdin", "utf8").trim().split('\n');
-const numericalBoundary = Number(firstLine);
-const dataElements = secondLine.split(' ').map(Number);
-
-const elementFrequencies = dataElements.reduce((accumulator, currentElement) => {
-    accumulator.set(currentElement, (accumulator.get(currentElement) || 0) + 1);
-    return accumulator;
+const occurrenceRegistry = inputSequence.reduce((registry, val) => {
+    registry.set(val, (registry.get(val) || 0) + 1);
+    return registry;
 }, new Map());
 
-const combinationsOfTwo = (count) => count > 1 ? count * (count - 1) / 2 : 0;
+const overallPairCount = Array.from(occurrenceRegistry.values()).reduce((total, currentCount) => {
+    return total + (currentCount >= 2 ? currentCount * (currentCount - 1) / 2 : 0);
+}, 0);
 
-let cumulativePairSum = 0;
-for (const frequency of elementFrequencies.values()) {
-    cumulativePairSum += combinationsOfTwo(frequency);
-}
-
-const resultantValues = dataElements.map(originalElement => {
-    const currentElementCount = elementFrequencies.get(originalElement);
-    return cumulativePairSum - (currentElementCount - 1);
+const outputLines = inputSequence.map(currentValue => {
+    const frequencyOfCurrent = occurrenceRegistry.get(currentValue) || 0;
+    return overallPairCount - (frequencyOfCurrent - 1);
 });
 
-console.log(resultantValues.join('\n'));
+console.log(outputLines.join('\n'));

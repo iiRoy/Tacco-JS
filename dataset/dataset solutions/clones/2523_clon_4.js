@@ -1,25 +1,18 @@
-function processNumericalSequence(sourceText) {
-    const segmentedLines = sourceText.split('\n');
-    const principalComponentStrings = segmentedLines[0].split(' ');
+const processInput = (sourceData) => {
+    const lineSegments = sourceData.split('\n');
 
-    // The second line of input is processed but not utilized, mirroring original behavior.
-    const secondaryComponentStrings = segmentedLines[1].split(' ');
+    const primaryTokens = lineSegments[0].split(' ');
+    const secondaryTokens = lineSegments[1].split(' '); // This variable is equivalent to 'moke' and is unused, but its parsing is preserved.
 
-    const boundaryValue = parseInt(principalComponentStrings[0], 10);
-    const referenceThreshold = parseInt(principalComponentStrings[1], 10);
+    const iterationBound = Number(primaryTokens[0]);
+    const comparisonValue = Number(primaryTokens[1]);
 
-    const resultingTally = principalComponentStrings.slice(0, boundaryValue).reduce(
-        (accumulatedCount, currentElementRepresentation) => {
-            const numericalElement = parseInt(currentElementRepresentation, 10);
-            if (numericalElement <= referenceThreshold) {
-                return accumulatedCount + 1;
-            }
-            return accumulatedCount;
-        },
-        0
-    );
+    const matchingElementsCount = primaryTokens
+        .slice(0, iterationBound)
+        .filter(itemString => Number(itemString) <= comparisonValue)
+        .length;
 
-    console.log(resultingTally);
-}
+    console.log(matchingElementsCount);
+};
 
-processNumericalSequence(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

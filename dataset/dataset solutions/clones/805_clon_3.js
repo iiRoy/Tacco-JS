@@ -1,199 +1,157 @@
-// Constants for input/output processing and game elements
-const STDIN_SOURCE_PATH = '/dev/stdin';
-const EMPTY_SPACE_CHAR = '.';
-const SOLID_WALL_CHAR = '#';
-const BREAKABLE_BLOCK_CHAR = '*';
+function fireProjectile(rowOffset, colOffset, currentMap, currentTankPos) {
+    let stepCount = 0;
+    const [tankRow, tankCol] = currentTankPos;
 
-// Mappings for converting input characters to internal representation
-const INPUT_DIRECTION_MAP = {
-    '^': 'U',
-    'v': 'D',
-    '<': 'L',
-    '>': 'R'
-};
+    const getTargetCoordinates = (s) => [tankRow + (rowOffset * s), tankCol + (colOffset * s)];
 
-// Mappings for converting internal representation back to output characters
-const OUTPUT_DIRECTION_MAP = {
-    'U': '^',
-    'D': 'v',
-    'L': '<',
-    'R': '>'
-};
+    while (true) {
+        stepCount++;
+        const [targetR, targetC] = getTargetCoordinates(stepCount);
 
-// Delta values for movement directions: [row_delta, col_delta]
-const DIRECTION_DELTAS = {
-    'U': [-1, 0],
-    'D': [1, 0],
-    'L': [0, -1],
-    'R': [0, 1]
-};
-
-// Global variables to hold game state (accessed by helper functions)
-let battleGrid = [];       // The 2D array representing the game map
-let vehiclePosition = [0, 0]; // Tank's current [row, col] coordinates
-
-/**
- * Simulates a projectile being fired from the tank's current location.
- * The projectile travels in a straight line until it hits a solid wall or a breakable block.
- * If it hits a breakable block, the block is destroyed (replaced with an empty space).
- * @param {number} rowStep - The change in row for each projectile step (-1 for Up, 1 for Down).
- * @param {number} colStep - The change in column for each projectile step (-1 for Left, 1 for Right).
- */
-function initiateProjectileFire(rowStep, colStep) {
-    // Start tracking the projectile's path from one step away from the tank
-    for (let currentDistance = 1; ; currentDistance++) {
-        const impactRow = vehiclePosition[0] + (rowStep * currentDistance);
-        const impactCol = vehiclePosition[1] + (colStep * currentDistance);
-
-        // Retrieve the character at the potential impact point
-        const cellTypeAtImpact = battleGrid[impactRow][impactCol];
-
-        // Check what the projectile has hit
-        if (cellTypeAtImpact === SOLID_WALL_CHAR) {
-            // Projectile hit a solid barrier, it stops here.
-            break;
-        } else if (cellTypeAtImpact === BREAKABLE_BLOCK_CHAR) {
-            // Projectile hit a breakable block, destroy it and stop.
-            battleGrid[impactRow][impactCol] = EMPTY_SPACE_CHAR;
+        // Basic bounds check, though map borders should prevent out-of-bounds access
+        if (targetR < 0 || targetR >= currentMap.length || targetC < 0 || targetC >= currentMap[0].length) {
             break;
         }
-        // If it hit an empty space, the projectile continues its trajectory.
+
+        const targetCellContent = currentMap[targetR][targetC];
+
+        if (targetCellContent === "#") {
+            break; // Projectile hit a wall
+        } else if (targetCellContent === "*") {
+            currentMap[targetR][targetC] = "."; // Destroy the target
+            break;
+        }
+        // If targetCellContent is '.', continue traveling
     }
 }
 
-/**
- * Executes a tank movement or rotation command.
- * Updates the tank's position on the grid if the move is valid (to an empty space).
- * Always updates the tank's orientation on the grid.
- * @param {string} desiredDirection - The direction character (U, D, L, R) for the tank's action.
- */
-function performTankAction(desiredDirection) {
-    const [rowDelta, colDelta] = DIRECTION_DELTAS[desiredDirection];
+const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-    // Calculate the potential new coordinates for the tank
-    const potentialNewRow = vehiclePosition[0] + rowDelta;
-    const potentialNewCol = vehiclePosition[1] + colDelta;
+// Normalize direction characters for internal processing consistency
+const processedInput = rawData
+    .replace(/\^/g, "U")
+    .replace(/v/g, "D")
+    .replace(/\</g, "L")
+    .replace(/\>/g, "R");
 
-    // Check if the target cell is empty, allowing for movement
-    if (battleGrid[potentialNewRow][potentialNewCol] === EMPTY_SPACE_CHAR) {
-        // Tank moves to the new position
-        battleGrid[potentialNewRow][potentialNewCol] = desiredDirection; // Place tank in new cell
-        battleGrid[vehiclePosition[0]][vehiclePosition[1]] = EMPTY_SPACE_CHAR; // Clear old cell
-        vehiclePosition[0] = potentialNewRow; // Update tank's row coordinate
-        vehiclePosition[1] = potentialNewCol; // Update tank's column coordinate
-    } else {
-        // Tank cannot move (blocked), but it still changes its orientation
-        battleGrid[vehiclePosition[0]][vehiclePosition[1]] = desiredDirection;
-    }
-}
+let inputLines = processedInput.trim().split("\n");
+let numTestCases = parseInt(inputLines.shift(), 10);
 
-// Main program execution starts here
-try {
-    // Read all raw input data from stdin
-    const rawInputData = require('fs').readFileSync(STDIN_SOURCE_PATH, 'utf8');
+// Define direction constants for clearer movement and firing logic
+const DIRECTION_VECTORS = {
+    U: { row: -1, col: 0 },
+    D: { row: 1, col: 0 },
+    L: { row: 0, col: -1 },
+    R: { row: 0, col: 1 }
+};
 
-    // Pre-process the input string: convert caret/vee/angle brackets to UDLR
-    let processedInput = rawInputData;
-    for (const key in INPUT_DIRECTION_MAP) {
-        processedInput = processedInput.replace(new RegExp(key, 'g'), INPUT_DIRECTION_MAP[key]);
+for (let caseIndex = 0; caseIndex < numTestCases; caseIndex++) {
+    if (caseIndex !== 0) {
+        console.log("");
     }
 
-    // Split the processed input into individual lines
-    const inputLines = processedInput.trim().split('\n');
+    const mapDimensions = inputLines.shift().split(" ").map(Number);
+    const [mapHeight, mapWidth] = mapDimensions;
 
-    // Extract the total number of test scenarios
-    let numberOfTestScenarios = parseInt(inputLines.shift(), 10);
+    let gameMap = [];
+    let tankPosition = [0, 0]; // [currentTankRow, currentTankCol]
 
-    // Iterate through each test scenario
-    for (let scenarioIndex = 0; scenarioIndex < numberOfTestScenarios; scenarioIndex++) {
-        // Print an empty line to separate output of multiple scenarios
-        if (scenarioIndex > 0) {
-            console.log('');
-        }
+    // Create a dynamic top border based on map width
+    const horizontalBorderRow = Array(mapWidth + 2).fill("#").join("");
+    gameMap.push(horizontalBorderRow.split(""));
 
-        // Parse map dimensions (height and width) for the current scenario
-        const mapDimensions = inputLines.shift().split(' ').map(s => parseInt(s, 10));
-        const mapHeight = mapDimensions[0];
-        const mapWidth = mapDimensions[1];
+    // Helper function to process each map row, find tank, and add side borders
+    const processAndBorderMapRow = (rowString, originalRowIndex) => {
+        let currentRowChars = rowString.split("");
+        let foundTankColumn = -1;
 
-        // Initialize the battle grid with outer wall borders
-        battleGrid = [];
-        const horizontalBorder = Array(mapWidth + 2).fill(SOLID_WALL_CHAR).join(''); // +2 for side walls
-        battleGrid.push(horizontalBorder.split('')); // Top border
-
-        // Reset tank's initial position for this scenario
-        vehiclePosition = [0, 0];
-
-        // Populate the battle grid with map data and locate the tank
-        for (let gridRowIndex = 0; gridRowIndex < mapHeight; gridRowIndex++) {
-            const currentMapRowChars = inputLines.shift().split('');
-            let initialTankCol = -1; // Temporary variable to find tank's column
-
-            // Search for the tank within the current row
-            for (let charIndex = 0; charIndex < currentMapRowChars.length; charIndex++) {
-                const cellCharacter = currentMapRowChars[charIndex];
-                if (DIRECTION_DELTAS.hasOwnProperty(cellCharacter)) { // If it's a direction char (U,D,L,R)
-                    initialTankCol = charIndex;
-                    // Store tank's actual grid coordinates (accounting for added borders)
-                    vehiclePosition[0] = gridRowIndex + 1; // +1 for top border
-                    vehiclePosition[1] = charIndex + 1;   // +1 for left border
-                }
-            }
-
-            // Add side walls to the current map row and then add it to the battle grid
-            currentMapRowChars.unshift(SOLID_WALL_CHAR); // Left border
-            currentMapRowChars.push(SOLID_WALL_CHAR);    // Right border
-            battleGrid.push(currentMapRowChars);
-        }
-
-        // Add the bottom border to the battle grid
-        battleGrid.push(horizontalBorder.split(''));
-
-        // Consume the empty line that separates map data from command sequence
-        inputLines.shift();
-
-        // Get the sequence of commands for the current scenario
-        const commandStream = inputLines.shift().split('');
-
-        // Process each command in the sequence
-        for (const currentCommand of commandStream) {
-            switch (currentCommand) {
-                case 'U': // Move Up
-                case 'D': // Move Down
-                case 'L': // Move Left
-                case 'R': // Move Right
-                    performTankAction(currentCommand);
-                    break;
-                case 'S': // Shoot
-                    const currentTankDirection = battleGrid[vehiclePosition[0]][vehiclePosition[1]];
-                    const [shotRowDelta, shotColDelta] = DIRECTION_DELTAS[currentTankDirection];
-                    initiateProjectileFire(shotRowDelta, shotColDelta);
-                    break;
-                default:
-                    // Optionally, log unknown commands for debugging or ignore them
-                    // console.warn(`Unknown command encountered: ${currentCommand}`);
-                    break;
+        // Iterate to find the tank's initial position in the current row
+        for (let charIdx = 0; charIdx < currentRowChars.length; charIdx++) {
+            const char = currentRowChars[charIdx];
+            if (DIRECTION_VECTORS[char]) { // Check if character is a known tank direction
+                foundTankColumn = charIdx;
+                break;
             }
         }
 
-        // Prepare the final battle grid for output
-        const finalOutputGrid = [];
-        // Iterate through the grid, skipping the outer border rows
-        for (let r = 1; r < battleGrid.length - 1; r++) {
-            const rowWithoutBorders = [];
-            // Iterate through the row, skipping the outer border columns
-            for (let c = 1; c < battleGrid[r].length - 1; c++) {
-                const charToOutput = battleGrid[r][c];
-                // Convert internal direction chars back to original output format
-                rowWithoutBorders.push(OUTPUT_DIRECTION_MAP[charToOutput] || charToOutput);
-            }
-            finalOutputGrid.push(rowWithoutBorders.join('')); // Join characters to form a string row
+        if (foundTankColumn !== -1) {
+            // Adjust tank position to account for the added top and left borders
+            tankPosition = [originalRowIndex + 1, foundTankColumn + 1];
         }
 
-        // Print the final state of the battle grid for the current scenario
-        console.log(finalOutputGrid.join('\n'));
+        // Add left and right borders to the current row
+        currentRowChars.unshift("#");
+        currentRowChars.push("#");
+        gameMap.push(currentRowChars);
+    };
+
+    for (let rowIndex = 0; rowIndex < mapHeight; rowIndex++) {
+        processAndBorderMapRow(inputLines.shift(), rowIndex);
     }
-} catch (error) {
-    // Basic error handling for file reading or parsing issues
-    console.error("An error occurred during processing:", error.message);
+
+    // Create a dynamic bottom border
+    gameMap.push(horizontalBorderRow.split(""));
+
+    inputLines.shift(); // Consume the empty line separating map data from commands
+
+    const commands = inputLines.shift().split("");
+
+    // Helper function to encapsulate tank movement logic
+    const executeTankMovement = (directionChar, map, tankPos) => {
+        const [currentRow, currentCol] = tankPos;
+        const { row: deltaRow, col: deltaCol } = DIRECTION_VECTORS[directionChar];
+
+        const nextRow = currentRow + deltaRow;
+        const nextCol = currentCol + deltaCol;
+
+        if (map[nextRow][nextCol] === ".") {
+            // Move tank to the empty spot
+            map[nextRow][nextCol] = directionChar;
+            map[currentRow][currentCol] = ".";
+            tankPos[0] = nextRow;
+            tankPos[1] = nextCol;
+        } else {
+            // Only change tank's direction if movement is blocked
+            map[currentRow][currentCol] = directionChar;
+        }
+    };
+
+    commands.forEach(commandChar => {
+        switch (commandChar) {
+            case "U":
+            case "D":
+            case "L":
+            case "R":
+                executeTankMovement(commandChar, gameMap, tankPosition);
+                break;
+            case "S":
+                const currentTankDirectionChar = gameMap[tankPosition[0]][tankPosition[1]];
+                const { row: fireRowOffset, col: fireColOffset } = DIRECTION_VECTORS[currentTankDirectionChar];
+                fireProjectile(fireRowOffset, fireColOffset, gameMap, tankPosition);
+                break;
+            default:
+                // Ignore unknown commands, if any
+                break;
+        }
+    });
+
+    // Remove the temporary borders before final output
+    gameMap.shift(); // Remove top border
+    gameMap.pop();  // Remove bottom border
+
+    // Process each row to remove side borders and join characters
+    const finalMapRows = gameMap.map(row => {
+        row.shift(); // Remove left border
+        row.pop();  // Remove right border
+        return row.join("");
+    });
+
+    // Join rows and replace internal direction chars back to original symbols for output
+    const formattedOutput = finalMapRows.join("\n")
+        .replace(/U/g, "^")
+        .replace(/D/g, "v")
+        .replace(/L/g, "<")
+        .replace(/R/g, ">");
+
+    console.log(formattedOutput);
 }

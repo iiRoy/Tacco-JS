@@ -1,208 +1,188 @@
-/*
- * Main entry point for the application.
- * This function processes the raw input data to find a specific divisor.
- */
 function processInput(rawData) {
-    // First, parse the entire input string.
-    // It's expected to be multiple lines, with numbers separated by spaces.
-    var parsedNumbers = rawData
-        .split("\n") // Split the input into an array of strings, one per line.
-        .map(function(textLine) { // For each line...
-            return textLine
-                .split(" ") // Split the line into an array of string numbers.
-                .map(function(numericValue) { // For each string number...
-                    return parseInt(numericValue); // Convert it to an integer.
-                });
+    // Parse the input string into an array of numbers.
+    // The first line contains N and K, the second line contains the array elements.
+    const parsedLines = rawData.split("\n").map(function(currentLine) {
+        return currentLine.split(" ").map(function(numStr) {
+            return parseInt(numStr, 10); // Ensure base 10 for parsing integers
         });
+    });
 
-    // The second element of the first line is our 'tolerance' parameter.
-    var tolerance = parsedNumbers[0][1];
+    // Extract K from the first line
+    const budgetVal = parsedLines[0][1];
+    // Extract the number sequence from the second line
+    const numberSequence = parsedLines[1];
 
-    // The second line of the input provides the main sequence of numbers to analyze.
-    var numericSequence = parsedNumbers[1];
+    // Find the maximum element in the sequence
+    const maximumElement = findMaximum(numberSequence);
 
-    // Calculate the maximum value present in the numeric sequence.
-    var maximumElement = findMaximum(numericSequence);
+    // Determine the upper bound for the divisor search.
+    // It's the minimum of (max element + K) and the sum of all elements.
+    const maximumDivisorCandidate = Math.min(maximumElement + budgetVal, calculateSum(numberSequence));
 
-    // Determine an upper bound for the search of the potential divisor.
-    // This bound is the minimum of (maximum element + tolerance) and the total sum of the sequence.
-    var upperBound = Math.min(maximumElement + tolerance, calculateTotal(numericSequence));
-
-    // Iterate downwards from the calculated upper bound.
-    // The goal is to find the largest integer 'G' (currentDivisor) that satisfies the conditions.
-    for (var currentDivisor = upperBound; currentDivisor > 1; currentDivisor--) {
-        // Check if the current integer 'G' meets the divisibility criteria.
-        if (checkDivisibility(currentDivisor, numericSequence, tolerance)) {
-            // If a valid 'G' is found, print it to the console and terminate the program.
-            return console.log(currentDivisor);
+    // Iterate downwards from the maximum possible divisor candidate
+    for (let divisorCandidate = maximumDivisorCandidate; divisorCandidate > 1; divisorCandidate--) {
+        // Check if the current candidate is a valid divisor
+        if (checkDivisibility(divisorCandidate, numberSequence, budgetVal)) {
+            // If a valid divisor is found, print it and exit
+            return console.log(divisorCandidate);
         }
     }
 
-    // If no suitable divisor greater than 1 is found, then 1 is the default result.
+    // If no divisor greater than 1 is found, the answer is 1
     return console.log(1);
 }
 
-
-/*
- * Helper function to find the maximum numerical value within an array.
- * @param {Array<number>} numericSequence - The array of numbers to search.
- * @returns {number} The largest number in the array.
+/**
+ * Finds the maximum value in a given array of numbers.
+ * @param {number[]} numberSequence - The array of numbers.
+ * @returns {number} The maximum number in the array.
  */
-function findMaximum(numericSequence) {
-    // Utilizes Array.prototype.reduce to efficiently find the maximum element.
-    return numericSequence.reduce(function(accumulator, currentValue) {
+function findMaximum(numberSequence) {
+    return numberSequence.reduce(function(accumulator, currentValue) {
         return Math.max(accumulator, currentValue);
     });
 }
 
-
-/*
- * Helper function to compute the sum of all numerical values in an array.
- * @param {Array<number>} numericSequence - The array of numbers to sum.
- * @returns {number} The total sum of the array elements.
+/**
+ * Calculates the sum of all elements in a given array of numbers.
+ * @param {number[]} numberSequence - The array of numbers.
+ * @returns {number} The sum of the array elements.
  */
-function calculateTotal(numericSequence) {
-    // Uses Array.prototype.reduce to sum all elements, starting with an initial value of 0.
-    return numericSequence.reduce(function(runningSum, elementValue) {
-        return runningSum + elementValue;
-    }, 0);
+function calculateSum(numberSequence) {
+    return numberSequence.reduce(function(currentSum, elementValue) {
+        return currentSum + elementValue;
+    }, 0); // Initialize sum to 0
 }
 
-
-/*
- * Core logic function to determine if a potential divisor 'G' is valid
- * given a numeric sequence and a modification tolerance.
- * @param {number} potentialDivisor - The integer 'G' being tested.
- * @param {Array<number>} numericSequence - The array of numbers.
- * @param {number} tolerance - The allowed budget for modifications.
- * @returns {boolean} True if 'G' is a valid divisor, false otherwise.
+/**
+ * Checks if a given number 'currentDivisor' can be a valid divisor for the 'numberSequence'
+ * within the given 'budgetVal'.
+ * @param {number} currentDivisor - The potential divisor.
+ * @param {number[]} numberSequence - The array of numbers.
+ * @param {number} budgetVal - The allowed budget for modifications.
+ * @returns {boolean} True if 'currentDivisor' is a valid divisor, false otherwise.
  */
-function checkDivisibility(potentialDivisor, numericSequence, tolerance) {
-    var remainderPairs = []; // This array will store [mod1, mod2] for each number not divisible by G.
-    var remainingTolerance = 2 * tolerance; // A temporary budget, initialized to twice the original tolerance.
+function checkDivisibility(currentDivisor, numberSequence, budgetVal) {
+    const remainderPairs = []; // Stores [mod1, mod2] for elements not divisible by currentDivisor
+    let remainingBudget = 2 * budgetVal; // Total budget for both increasing and decreasing operations
 
-    // Iterate through each number in the provided numeric sequence.
-    for (var indexPosition = 0; indexPosition < numericSequence.length; indexPosition++) {
-        // Calculate the first remainder: number % G.
-        var firstRemainder = numericSequence[indexPosition] % potentialDivisor;
+    // Iterate through each number in the sequence
+    for (let idx = 0; idx < numberSequence.length; idx++) {
+        const firstRemainder = numberSequence[idx] % currentDivisor;
 
-        // If the number is already perfectly divisible by 'G', no cost is incurred for this element.
-        if (firstRemainder === 0) continue;
+        // If the number is already divisible, no cost incurred, skip it
+        if (firstRemainder === 0) {
+            continue;
+        }
 
-        // Calculate the second remainder: G - (number % G).
-        // This represents the cost to increase the number to the next multiple of G.
-        var secondRemainder = potentialDivisor - firstRemainder;
+        // Calculate the cost to make it divisible by increasing (mod2) or decreasing (mod1)
+        const secondRemainder = currentDivisor - firstRemainder;
 
-        // If the minimum cost to adjust this number (either to previous or next multiple of G)
-        // exceeds the overall tolerance, then 'G' cannot be a valid divisor.
-        if (tolerance < Math.min(firstRemainder, secondRemainder)) return false;
+        // If the minimum cost to make it divisible is greater than the individual budget,
+        // then this currentDivisor is not possible.
+        if (budgetVal < Math.min(firstRemainder, secondRemainder)) {
+            return false;
+        }
 
-        // Deduct the minimum adjustment cost from our temporary budget.
-        remainingTolerance -= Math.min(firstRemainder, secondRemainder);
+        // Deduct the minimum cost from the total remaining budget
+        remainingBudget -= Math.min(firstRemainder, secondRemainder);
 
-        // If the temporary budget falls below zero, 'G' is not valid.
-        if (remainingTolerance < 0) return false;
+        // If the total remaining budget goes negative, this currentDivisor is not possible.
+        if (remainingBudget < 0) {
+            return false;
+        }
 
-        // Store the pair of remainders for subsequent recursive path exploration.
+        // Store the pair of remainders for further path exploration
         remainderPairs.push([firstRemainder, secondRemainder]);
     }
 
-    // After processing all numbers, use a recursive backtracking approach
-    // to check if the costs can be balanced within the allowed tolerance.
-    return explorePaths(remainderPairs, 0, 0, 0, tolerance);
+    // After processing all numbers, explore paths to balance costs within the budget
+    return explorePaths(remainderPairs, 0, 0, 0, budgetVal);
 }
 
-
-/*
- * Recursive function to explore different combinations of costs from remainder pairs
- * to see if a balanced state can be reached within the allowed budget.
- * @param {Array<Array<number>>} remainderPairs - Array of [mod1, mod2] pairs.
- * @param {number} currentDepth - The current index/level in the remainderPairs array.
- * @param {number} leftPathCost - Accumulated cost for the 'left' path.
- * @param {number} rightPathCost - Accumulated cost for the 'right' path.
- * @param {number} allowedExpense - The maximum budget for each path cost.
+/**
+ * Recursively explores paths to balance the costs (leftCost and rightCost)
+ * for making numbers divisible, ensuring they stay within the totalBudget.
+ * This is a backtracking function.
+ * @param {Array<number[]>} remainderPairs - An array of [mod1, mod2] pairs.
+ * @param {number} currentLevel - The current index in remainderPairs being processed.
+ * @param {number} costLeft - Accumulated cost for 'left' operations (decreasing numbers).
+ * @param {number} costRight - Accumulated cost for 'right' operations (increasing numbers).
+ * @param {number} totalBudget - The maximum allowed cost for either left or right operations.
  * @returns {boolean} True if a balanced path is found, false otherwise.
  */
-function explorePaths(remainderPairs, currentDepth, leftPathCost, rightPathCost, allowedExpense) {
-    // Pruning conditions: If either accumulated cost exceeds the budget, this path is invalid.
-    if (leftPathCost > allowedExpense) return false;
-    if (rightPathCost > allowedExpense) return false;
-
-    // Base case: If all remainder pairs have been processed.
-    if (currentDepth === remainderPairs.length) {
-        // A valid solution is found only if the accumulated left and right costs are equal.
-        return leftPathCost === rightPathCost;
+function explorePaths(remainderPairs, currentLevel, costLeft, costRight, totalBudget) {
+    // Pruning: If either cost exceeds the budget, this path is invalid
+    if (costLeft > totalBudget) {
+        return false;
+    }
+    if (costRight > totalBudget) {
+        return false;
     }
 
-    // Optimization: Prioritize exploring paths that are more likely to lead to a solution
-    // by trying to balance left and right costs or by choosing the path with a smaller cost first.
-    if (leftPathCost < rightPathCost) {
-        // If left cost is less, try to increase it first to balance.
-        return tryLeftOption(remainderPairs, currentDepth, leftPathCost, rightPathCost, allowedExpense) ||
-               tryRightOption(remainderPairs, currentDepth, leftPathCost, rightPathCost, allowedExpense);
-    } else if (leftPathCost > rightPathCost) {
-        // If right cost is less, try to increase it first to balance.
-        return tryRightOption(remainderPairs, currentDepth, leftPathCost, rightPathCost, allowedExpense) ||
-               tryLeftOption(remainderPairs, currentDepth, leftPathCost, rightPathCost, allowedExpense);
-    } else if (remainderPairs[currentDepth][0] > remainderPairs[currentDepth][1]) {
-        // If costs are equal, and the first remainder is larger, try the right option first (which uses second remainder).
-        return tryRightOption(remainderPairs, currentDepth, leftPathCost, rightPathCost, allowedExpense) ||
-               tryLeftOption(remainderPairs, currentDepth, leftPathCost, rightPathCost, allowedExpense);
-    } else if (remainderPairs[currentDepth][0] < remainderPairs[currentDepth][1]) {
-        // If costs are equal, and the first remainder is smaller, try the left option first (which uses first remainder).
-        return tryLeftOption(remainderPairs, currentDepth, leftPathCost, rightPathCost, allowedExpense) ||
-               tryRightOption(remainderPairs, currentDepth, leftPathCost, rightPathCost, allowedExpense);
+    // Base case: If all remainder pairs have been processed
+    if (currentLevel === remainderPairs.length) {
+        // A valid path is found if both costs are equal
+        return costLeft === costRight;
     }
-    // This final return false handles the case where leftCost === rightCost AND remainderPairs[currentDepth][0] === remainderPairs[currentDepth][1].
-    // It's structurally identical to the original, though logically the two || conditions above would cover this.
+
+    // Recursive step: Explore different branches based on current costs and remainder values
+
+    // Prioritize paths to balance costs
+    if (costLeft < costRight) {
+        // If left cost is lower, try to increase it first (by taking remainderPairs[currentLevel][0])
+        return tryLeftBranch(remainderPairs, currentLevel, costLeft, costRight, totalBudget) ||
+               tryRightBranch(remainderPairs, currentLevel, costLeft, costRight, totalBudget);
+    } else if (costLeft > costRight) {
+        // If right cost is lower, try to increase it first (by taking remainderPairs[currentLevel][1])
+        return tryRightBranch(remainderPairs, currentLevel, costLeft, costRight, totalBudget) ||
+               tryLeftBranch(remainderPairs, currentLevel, costLeft, costRight, totalBudget);
+    } else if (remainderPairs[currentLevel][0] > remainderPairs[currentLevel][1]) {
+        // If costs are equal, and mod1 > mod2, try right branch first (smaller cost)
+        return tryRightBranch(remainderPairs, currentLevel, costLeft, costRight, totalBudget) ||
+               tryLeftBranch(remainderPairs, currentLevel, costLeft, costRight, totalBudget);
+    } else if (remainderPairs[currentLevel][0] < remainderPairs[currentLevel][1]) {
+        // If costs are equal, and mod1 < mod2, try left branch first (smaller cost)
+        return tryLeftBranch(remainderPairs, currentLevel, costLeft, costRight, totalBudget) ||
+               tryRightBranch(remainderPairs, currentLevel, costLeft, costRight, totalBudget);
+    }
+    // If costs are equal and mod1 == mod2, the order doesn't strictly matter,
+    // but the original code had a `return false` here. This implies that if
+    // `costLeft === costRight` and `remainderPairs[currentLevel][0] === remainderPairs[currentLevel][1]`,
+    // it should fall through to a default behavior. However, the original code's structure
+    // implies that one of the `if/else if` conditions will always be met if `currentLevel < array.length`.
+    // The final `return false` is unreachable if the logic is exhaustive.
+    // To strictly preserve structure, we keep it, but it's effectively dead code given the preceding conditions.
     return false;
 }
 
-
-/*
- * Helper function for explorePaths: attempts to take the 'left' path.
- * This means adding the first remainder (remainderPairs[currentDepth][0]) to leftPathCost.
- * @param {Array<Array<number>>} remainderPairs - The array of remainder pairs.
- * @param {number} currentDepth - Current recursion depth.
- * @param {number} leftPathCost - Current accumulated left cost.
- * @param {number} rightPathCost - Current accumulated right cost.
- * @param {number} allowedExpense - The budget.
+/**
+ * Attempts to take the 'left' path (adding remainderPairs[currentLevel][0] to costLeft)
+ * and continues the exploration.
+ * @param {Array<number[]>} remainderPairs - An array of [mod1, mod2] pairs.
+ * @param {number} currentLevel - The current index in remainderPairs.
+ * @param {number} costLeft - Accumulated cost for 'left' operations.
+ * @param {number} costRight - Accumulated cost for 'right' operations.
+ * @param {number} totalBudget - The maximum allowed cost.
  * @returns {boolean} Result of the recursive call.
  */
-function tryLeftOption(remainderPairs, currentDepth, leftPathCost, rightPathCost, allowedExpense) {
-    // Recursively call explorePaths, advancing to the next depth and updating the left cost.
-    return explorePaths(remainderPairs,
-                        currentDepth + 1,
-                        leftPathCost + remainderPairs[currentDepth][0],
-                        rightPathCost,
-                        allowedExpense);
+function tryLeftBranch(remainderPairs, currentLevel, costLeft, costRight, totalBudget) {
+    return explorePaths(remainderPairs, currentLevel + 1, costLeft + remainderPairs[currentLevel][0], costRight, totalBudget);
 }
 
-
-/*
- * Helper function for explorePaths: attempts to take the 'right' path.
- * This means adding the second remainder (remainderPairs[currentDepth][1]) to rightPathCost.
- * @param {Array<Array<number>>} remainderPairs - The array of remainder pairs.
- * @param {number} currentDepth - Current recursion depth.
- * @param {number} leftPathCost - Current accumulated left cost.
- * @param {number} rightPathCost - Current accumulated right cost.
- * @param {number} allowedExpense - The budget.
+/**
+ * Attempts to take the 'right' path (adding remainderPairs[currentLevel][1] to costRight)
+ * and continues the exploration.
+ * @param {Array<number[]>} remainderPairs - An array of [mod1, mod2] pairs.
+ * @param {number} currentLevel - The current index in remainderPairs.
+ * @param {number} costLeft - Accumulated cost for 'left' operations.
+ * @param {number} costRight - Accumulated cost for 'right' operations.
+ * @param {number} totalBudget - The maximum allowed cost.
  * @returns {boolean} Result of the recursive call.
  */
-function tryRightOption(remainderPairs, currentDepth, leftPathCost, rightPathCost, allowedExpense) {
-    // Recursively call explorePaths, advancing to the next depth and updating the right cost.
-    return explorePaths(remainderPairs,
-                        currentDepth + 1,
-                        leftPathCost,
-                        rightPathCost + remainderPairs[currentDepth][1],
-                        allowedExpense);
+function tryRightBranch(remainderPairs, currentLevel, costLeft, costRight, totalBudget) {
+    return explorePaths(remainderPairs, currentLevel + 1, costLeft, costRight + remainderPairs[currentLevel][1], totalBudget);
 }
 
-
-// --- Program Execution Start ---
-// Read the entire content of standard input as a UTF-8 string.
-var fileSystemUtility = require('fs');
-var standardInputContent = fileSystemUtility.readFileSync('/dev/stdin', 'utf8');
-
-// Invoke the main processing function with the obtained input.
-processInput(standardInputContent);
+// Read input from stdin and pass it to the main processing function
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,85 +1,58 @@
-let fileContent = require('filesystem').readInputFile('/input/stream', 'encodingUTF8');
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-// Process the raw input data
-const processedLines = fileContent.stripWhitespace().divideBy("\n");
+var eventLines = rawData.trim().split("\n");
 
-// Extract initial configuration parameters
-const initialConfiguration = processedLines.removeFirst().divideBy(" ").transformElements(NumericValue);
+var configParams = eventLines.shift().split(" ").map(Number);
 
-// Assign configuration values to distinct variables
-const totalEntities = initialConfiguration[0];
-const maximumDuration = initialConfiguration[2];
+var itemCount = configParams[0];
+var limitVal = configParams[2];
 
-// Initialize data structures for entity statistics
-const entityMetrics = [];
-let currentHighestEntity = [0, 0]; // [entity_index, entity_score]
-let accumulatedTime = 0;
-
-// Populate initial entity metrics
-for (let entityIterator = 0; entityIterator < totalEntities; entityIterator++)
-{
-  entityMetrics[entityIterator] = [0, 0, entityIterator];
+var itemStates = [];
+for (var idx = 0; idx < itemCount; idx++) {
+    itemStates[idx] = [0, 0, idx];
 }
 
-// Append a sentinel event to ensure final calculations are processed
-processedLines.appendToEnd([1, maximumDuration, 0].join(" "));
+var currentPeak = [0, 0];
+var elapsedTime = 0;
 
-// Iterate through each event record
-for (let eventCounter = 0; eventCounter < processedLines.length; eventCounter++)
-{
-  const eventDetails = processedLines[eventCounter].divideBy(" ").transformElements(NumericValue);
+eventLines.push([1, limitVal, 0].join(" "));
 
-  const affectedEntityIndex = eventDetails[0] - 1;
-  const eventMoment = eventDetails[1];
-  const scoreAdjustment = eventDetails[2];
+for (var idx = 0; idx < eventLines.length; idx++) {
+    var eventDetails = eventLines[idx].split(" ").map(Number);
 
-  // Update duration for the currently highest-scoring entity
-  entityMetrics[currentHighestEntity[0]][1] += eventMoment - accumulatedTime;
-  accumulatedTime = eventMoment; // Advance the global time
+    var targetIdx = eventDetails[0] - 1;
+    var eventTimestamp = eventDetails[1];
+    var valueChange = eventDetails[2];
 
-  // Apply the score adjustment to the affected entity
-  entityMetrics[affectedEntityIndex][0] += scoreAdjustment;
+    itemStates[currentPeak[0]][1] += eventTimestamp - elapsedTime;
+    elapsedTime = eventTimestamp;
+    itemStates[targetIdx][0] += valueChange;
 
-  // Logic for updating the highest-scoring entity
-  if (scoreAdjustment > 0)
-  { // If score increased, check if this entity is now the highest
-    if (entityMetrics[affectedEntityIndex][0] > currentHighestEntity[1])
-    {
-      currentHighestEntity = [affectedEntityIndex, entityMetrics[affectedEntityIndex][0]];
+    if (valueChange > 0) {
+        if (itemStates[targetIdx][0] > currentPeak[1]) {
+            currentPeak = [targetIdx, itemStates[targetIdx][0]];
+        } else if (itemStates[targetIdx][0] === currentPeak[1] && targetIdx <= currentPeak[0]) {
+            currentPeak = [targetIdx, itemStates[targetIdx][0]];
+        }
+    } else if (valueChange < 0 && currentPeak[0] === targetIdx) {
+        var highestVal = 0;
+        var peakItemIdx = 0;
+        for (var innerIdx = 0; innerIdx < itemStates.length; innerIdx++) {
+            if (highestVal < itemStates[innerIdx][0]) {
+                peakItemIdx = innerIdx;
+                highestVal = itemStates[innerIdx][0];
+            }
+        }
+        currentPeak = [peakItemIdx, itemStates[peakItemIdx][0]];
     }
-    else if (entityMetrics[affectedEntityIndex][0] === currentHighestEntity[1] && affectedEntityIndex <= currentHighestEntity[0])
-    {
-      // If scores are equal, prefer the entity with the lower index
-      currentHighestEntity = [affectedEntityIndex, entityMetrics[affectedEntityIndex][0]];
-    }
-  }
-  else if (scoreAdjustment < 0 && currentHighestEntity[0] === affectedEntityIndex)
-  { // If score decreased for the highest-scoring entity, re-evaluate all entities
-    let tempMaxScore = 0;
-    let tempMaxIndex = 0;
-    for (let entryIndex = 0; entryIndex < entityMetrics.length; entryIndex++)
-    {
-      if (tempMaxScore < entityMetrics[entryIndex][0])
-      {
-        tempMaxIndex = entryIndex;
-        tempMaxScore = entityMetrics[entryIndex][0];
-      }
-    }
-    currentHighestEntity = [tempMaxIndex, entityMetrics[tempMaxIndex][0]];
-  }
 }
 
-// Final pass to determine the entity with the overall longest duration
-let finalMaxDuration = 0;
-let winningEntityIndex = 0;
-for (let finalIterationIndex = 0; finalIterationIndex < entityMetrics.length; finalIterationIndex++)
-{
-  if (finalMaxDuration < entityMetrics[finalIterationIndex][1])
-  {
-    winningEntityIndex = finalIterationIndex;
-    finalMaxDuration = entityMetrics[finalIterationIndex][1];
-  }
+var highestVal = 0;
+var peakItemIdx = 0;
+for (var idx = 0; idx < itemStates.length; idx++) {
+    if (highestVal < itemStates[idx][1]) {
+        peakItemIdx = idx;
+        highestVal = itemStates[idx][1];
+    }
 }
-
-// Output the 1-based index of the winning entity
-console.log(winningEntityIndex + 1);
+console.log(peakItemIdx + 1);

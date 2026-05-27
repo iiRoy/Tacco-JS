@@ -1,129 +1,133 @@
-function processInputData( inputString ) {
-  // Split the entire input string into individual lines
-  const inputLines = inputString
-    .split( '\n' );
+function processInput(rawInputString) {
+    // Split the entire input string into individual lines.
+    const inputLines = rawInputString.split('\n');
 
-  // Parse the first line to get the total number of nodes
-  const countNodes = parseInt(inputLines.shift(), 0xA);
+    // Parse the first line to get the total number of nodes.
+    const nodeCount = parseInt(inputLines.shift(), 10);
 
-  // Parse the second line for the preorder traversal sequence
-  const preOrderSequence = inputLines.shift()
-    .split( ' ' )
-    .map( (elementValue) => parseInt( elementValue, 0x0A ) );
+    // Parse the second line for the preorder traversal sequence.
+    const preorderTraversal = inputLines.shift().split(' ').map(item => parseInt(item, 10));
 
-  // Parse the third line for the inorder traversal sequence
-  const inOrderSequence = inputLines.shift()
-    .split( ' ' )
-    .map( (elementValue) => parseInt( elementValue, 0b1010 ) );
+    // Parse the third line for the inorder traversal sequence.
+    const inorderTraversal = inputLines.shift().split(' ').map(item => parseInt(item, 10));
 
-  // Initialize data structures for node information and traversal results
-  const nodeInformation = [];
-  const traversalResult = [];
+    // Initialize an array to store node details: [nodeId, leftChildId, rightChildId].
+    // The index of the array corresponds to the nodeId.
+    const nodeDetails = [];
+    // Initialize an array to store the postorder traversal result.
+    const postorderResult = [];
 
-  // Populate the initial node information array
-  for ( let nodeIndex = 0 ; nodeIndex < countNodes + 0b1 ; nodeIndex++ ) {
-    // This condition might be redundant, but maintaining structure
-    if ( nodeIndex === 0x0 ) {
-      nodeInformation[nodeIndex] = 0x0;
+    // Populate the nodeDetails array with initial values.
+    // Each node entry is [itself, -1 (left child), -1 (right child)].
+    for (let k = 0; k < nodeCount + 1; k++) {
+        // The first element (index 0) is not used for actual nodes, but initialized for consistency.
+        if (k === 0) {
+            nodeDetails[k] = 0; // Placeholder, actual nodes start from 1.
+        }
+        nodeDetails[k] = [k, -1, -1];
     }
-    // Each node entry stores its own ID and placeholders for left/right children
-    nodeInformation[nodeIndex] = [ nodeIndex, ~0, ~0 ];
-  }
 
-  // Recursively build the tree structure
-  establishNodeConnections( 0x0, preOrderSequence, inOrderSequence, nodeInformation );
+    // Recursively build the binary tree structure using preorder and inorder traversals.
+    buildTreeStructure(0, preorderTraversal, inorderTraversal, nodeDetails);
 
-  // The root of the tree is the first element in the preorder sequence
-  const treeRootIdentifier = preOrderSequence[0x0];
+    // The root of the tree is the first element in the preorder traversal.
+    const treeRootId = preorderTraversal[0];
 
-  // Perform a post-order traversal to get the final sequence
-  performPostOrderTraversal( nodeInformation, treeRootIdentifier, traversalResult );
+    // Perform a postorder traversal on the constructed tree and store the result.
+    performPostorderTraversal(nodeDetails, treeRootId, postorderResult);
 
-  // Output the post-order traversal result joined by spaces
-  console.log( traversalResult.join( ' ' ) );
+    // Output the postorder traversal sequence, space-separated.
+    console.log(postorderResult.join(' '));
 }
 
 /**
- * Establishes the left and right child connections for nodes based on preorder and inorder sequences.
- * @param {number} currentPreIndex - The current index in the preorder sequence being processed.
- * @param {Array<number>} preOrderSource - The full preorder traversal sequence.
- * @param {Array<number>} inOrderSubarray - The current inorder subarray relevant to the subtree.
- * @param {Array<Array<number>>} nodeRegistry - The array storing node details [id, leftChild, rightChild].
- * @returns {void}
+ * Recursively constructs the binary tree by determining left and right children.
+ * @param {number} preorderIndex - The current index in the preorder traversal array.
+ * @param {number[]} currentPreorder - The current segment of the preorder traversal.
+ * @param {number[]} currentInorder - The current segment of the inorder traversal.
+ * @param {Array<Array<number>>} nodeDetails - The array storing [nodeId, leftChildId, rightChildId] for each node.
  */
-function establishNodeConnections( currentPreIndex, preOrderSource, inOrderSubarray, nodeRegistry ) {
+function buildTreeStructure(preorderIndex, currentPreorder, currentInorder, nodeDetails) {
+    // The current root node's ID is found at the given preorder index.
+    const currentRootId = currentPreorder[preorderIndex];
+    // Get the data entry for the current root node.
+    const currentNodeData = nodeDetails[currentRootId];
 
-  // Get the ID of the current node from the preorder sequence
-  const currentNodeValue = preOrderSource[ currentPreIndex ];
-
-  // Get the data record for the current node
-  const currentRecord = nodeRegistry[ currentNodeValue ];
-
-  // Base case: if the inorder subarray has only one element, it's a leaf node.
-  if ( inOrderSubarray.length === 0b1 ) {
-    currentRecord[0x1] = ~0; // No left child
-    currentRecord[0b10] = ~0; // No right child
-    return;
-  }
-
-  // Find the current node's position in the inorder subarray
-  let splitPoint;
-  for ( let inOrderIndex = 0x0, subarrayLength = inOrderSubarray.length ; inOrderIndex < subarrayLength ; inOrderIndex++ ) {
-    if ( inOrderSubarray[ inOrderIndex ] === currentNodeValue ) {
-      splitPoint = inOrderIndex;
+    // Base case: If the inorder segment has only one element, it's a leaf node.
+    // It has no children, so set children to -1 and return.
+    if (currentInorder.length === 1) {
+        currentNodeData[1] = -1; // No left child
+        currentNodeData[2] = -1; // No right child
+        return;
     }
-  }
 
-  // Determine the left and right subarrays for inorder traversal
-  const leftSubtreeElements = inOrderSubarray.slice( 0x0, splitPoint );
-  const rightSubtreeElements = inOrderSubarray.slice( splitPoint + 0x1 );
+    // Find the position of the current root node in the inorder traversal.
+    // This position splits the inorder array into left and right subtrees.
+    let splitPoint;
+    for (let k = 0, inorderLength = currentInorder.length; k < inorderLength; k++) {
+        if (currentInorder[k] === currentRootId) {
+            splitPoint = k;
+            break; // Found the split point, exit loop.
+        }
+    }
 
-  // Process the left subtree if it exists
-  if ( leftSubtreeElements.length ) {
-    // Filter the preorder sequence to find elements belonging to the left subtree
-    const leftPreOrderMatch = preOrderSource.filter( (elementValue) => leftSubtreeElements.indexOf( elementValue ) > ~0 );
-    currentRecord[0x1] = leftPreOrderMatch[0x0]; // The first element is the root of the left subtree
-    const preOrderMatchIndex = preOrderSource.indexOf( currentRecord[0x1] );
-    establishNodeConnections( preOrderMatchIndex, preOrderSource, leftSubtreeElements, nodeRegistry );
-  } else {
-    currentRecord[0x1] = ~0; // No left child
-  }
+    // Extract the left and right subtrees from the inorder traversal.
+    const leftSubtreeInorder = currentInorder.slice(0, splitPoint);
+    const rightSubtreeInorder = currentInorder.slice(splitPoint + 1);
 
-  // Process the right subtree if it exists
-  if ( rightSubtreeElements.length ) {
-    // Filter the preorder sequence to find elements belonging to the right subtree
-    const rightPreOrderMatch = preOrderSource.filter( (elementValue) => rightSubtreeElements.indexOf( elementValue ) > ~0 );
-    currentRecord[0b10] = rightPreOrderMatch[0x0]; // The first element is the root of the right subtree
-    const preOrderMatchIndex = preOrderSource.indexOf( currentRecord[0b10] );
-    establishNodeConnections( preOrderMatchIndex, preOrderSource, rightSubtreeElements, nodeRegistry );
-  } else {
-    currentRecord[0b10] = ~0; // No right child
-  }
+    // Process the left subtree if it exists.
+    if (leftSubtreeInorder.length) {
+        // Filter the preorder traversal to find nodes belonging to the left subtree.
+        // The first element of this filtered list is the root of the left subtree.
+        const leftSubtreePreorder = currentPreorder.filter(item => leftSubtreeInorder.indexOf(item) > -1);
+        currentNodeData[1] = leftSubtreePreorder[0]; // Set left child ID.
+
+        // Find the index of the left child's root in the original preorder array.
+        const preorderRootIndex = currentPreorder.indexOf(currentNodeData[1]);
+        // Recursively build the left subtree.
+        buildTreeStructure(preorderRootIndex, currentPreorder, leftSubtreeInorder, nodeDetails);
+    } else {
+        // No left subtree, set left child ID to -1.
+        currentNodeData[1] = -1;
+    }
+
+    // Process the right subtree if it exists.
+    if (rightSubtreeInorder.length) {
+        // Filter the preorder traversal to find nodes belonging to the right subtree.
+        // The first element of this filtered list is the root of the right subtree.
+        const rightSubtreePreorder = currentPreorder.filter(item => rightSubtreeInorder.indexOf(item) > -1);
+        currentNodeData[2] = rightSubtreePreorder[0]; // Set right child ID.
+
+        // Find the index of the right child's root in the original preorder array.
+        const preorderRootIndex = currentPreorder.indexOf(currentNodeData[2]);
+        // Recursively build the right subtree.
+        buildTreeStructure(preorderRootIndex, currentPreorder, rightSubtreeInorder, nodeDetails);
+    } else {
+        // No right subtree, set right child ID to -1.
+        currentNodeData[2] = -1;
+    }
 }
 
 /**
- * Performs a post-order traversal of the tree and collects node IDs.
- * @param {Array<Array<number>>} nodeRecords - The array storing node details [id, leftChild, rightChild].
- * @param {number} currentNodeIdentifier - The ID of the current node being visited.
- * @param {Array<number>} postOrderPath - The array to accumulate the post-order traversal result.
- * @returns {void}
+ * Performs a postorder traversal of the tree and collects node IDs.
+ * @param {Array<Array<number>>} treeNodes - The array storing [nodeId, leftChildId, rightChildId] for each node.
+ * @param {number} currentNodeId - The ID of the current node being visited.
+ * @param {number[]} postorderResult - The array to accumulate the postorder traversal sequence.
  */
-function performPostOrderTraversal( nodeRecords, currentNodeIdentifier, postOrderPath ) {
-  // Base case: if the current node ID is -1 (no child), return
-  if ( currentNodeIdentifier === ~0 ) {
-    return;
-  }
+function performPostorderTraversal(treeNodes, currentNodeId, postorderResult) {
+    // Base case: If the current node ID is -1 (null child), return.
+    if (currentNodeId === -1) {
+        return;
+    }
 
-  // Recursively traverse the left child
-  performPostOrderTraversal( nodeRecords, nodeRecords[currentNodeIdentifier][0b1], postOrderPath );
+    // Recursively visit the left child.
+    performPostorderTraversal(treeNodes, treeNodes[currentNodeId][1], postorderResult);
+    // Recursively visit the right child.
+    performPostorderTraversal(treeNodes, treeNodes[currentNodeId][2], postorderResult);
 
-  // Recursively traverse the right child
-  performPostOrderTraversal( nodeRecords, nodeRecords[currentNodeIdentifier][0x2], postOrderPath );
-
-  // Add the current node's ID to the result array after visiting children
-  postOrderPath.push( nodeRecords[currentNodeIdentifier][0x0] );
+    // After visiting left and right children, add the current node's ID to the result.
+    postorderResult.push(treeNodes[currentNodeId][0]);
 }
 
-
-// Initiate the tree processing by reading input from stdin
-processInputData( require( 'fs' ).readFileSync( '/dev/stdin', 'utf8' ) );
+// Read input from standard input and pass it to the main processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

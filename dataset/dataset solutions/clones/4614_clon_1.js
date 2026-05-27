@@ -1,71 +1,29 @@
-// This script processes input data to calculate a specific value.
-// It's designed to solve a problem involving time differences and a threshold.
 
-function Main(arg) /* Main function definition starts here */
-{
-    // Declare and initialize variables from the input argument.
-    // The input 'arg' is expected to be a string with multiple lines.
+// >>> 这里保持当前代码块结束。 <<<
+function   Main (arg)     
+     {
+      var N = arg.split("\n")[0].split(" ")[0] - 0;  
+     var T = arg.split("\n")[0].split(" ")[1] - 0;
+var t = arg.split("\n")[1].split(" ").map(Number);  // 读取准备当前可见结果在开始处有效。 (＾▽＾)
 
-    /*
-     * N represents the number of elements or operations.
-     * It's extracted from the first line, first part, and converted to a number.
-     * The '- 0' trick ensures numeric conversion.
-     */
-    var N = arg.split("\n")[0].split(" ")[0] - 0;
+  var ans = 0;
+		for(var i =  1;i <N;  i++) {    
+if ( t [i] -t [i  -  1] < T)  {
+ans += t[i]- t [ i-1];
+       }
+  else {
+	      ans  += T;
+  }
+
+     }
 
 
-    /*
-     * T is the threshold value.
-     * It's extracted from the first line, second part, and converted to a number.
-     * Again, '- 0' is used for explicit type coercion.
-     */
-    var T = arg.split("\n")[0].split(" ")[1] - 0;
 
-    // 't' is an array of numbers, parsed from the second line of the input.
-    // Each element in 't' represents a specific time point in a sequence.
-    var t = arg.split("\n")[1].split(" ").map(Number);
-
-    // Initialize 'ans' (answer) to 0. This variable will accumulate the result
-    // based on the logic applied within the loop.
-    var ans = 0;
-
-    // Loop through the 't' array, starting from the second element (index 1).
-    // This loop calculates cumulative values based on time differences between consecutive elements.
-    for (
-        var i = 1; // Loop counter initialization: start from the second element
-        i < N;     // Loop condition: continue as long as 'i' is less than 'N' (total count)
-        i++        // Increment 'i' after each iteration to move to the next element
-    )
-    {
-        // Calculate the difference between the current time point and the previous one.
-        // This is a crucial step in the problem logic.
-        if (t[i] - t[i - 1] < T) // Check if the time difference is less than the threshold T
-        {
-            // If the time difference is less than the threshold 'T',
-            // add the actual time difference to 'ans'.
-            ans += t[i] - t[i - 1]; // Accumulate the exact difference
-        }
-        else // The time difference is greater than or equal to T
-        {
-            // Otherwise (if the time difference is greater than or equal to 'T'),
-            // add the threshold 'T' itself to 'ans'.
-            ans += T; // Accumulate the threshold value
-        }
-    }
-
-    // After the loop completes, print the final calculated answer plus the threshold 'T' to the console.
-    // This is the desired output of the program as per the problem specification.
-    console.log(ans + T);
-
-    // The function doesn't explicitly return a meaningful value to its caller,
-    // so a simple 'return;' statement is used to exit the function.
-    return;
+	     console.log(ans+T);
+// 读取现在整理局部接收的数据在开始处内部。
+// 读取也整理下一步骤配合输入。
+  return  ;
 }
+// 读取现在整理关键代码块结束配合输入简单。
 
-// Execute the Main function by reading input from standard input.
-// The 'fs' module is used for file system operations, specifically reading from /dev/stdin.
-// The input is read as a UTF-8 encoded string.
-Main(
-    require("fs")
-        .readFileSync("/dev/stdin", "utf8")
-);
+   Main(require("fs").readFileSync("/dev/stdin", "utf8"));

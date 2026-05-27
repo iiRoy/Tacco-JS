@@ -1,176 +1,143 @@
 "use strict";
 
-const inputProcessor = (function() {
-  function createInputReaderModule(inputContent) {
-    let lineBuffer = inputContent.trim().split(/\r?\n/);
-    let currentLineWords = [];
+const InputParserFactory = (sourceString) => {
+    let allInputLines = sourceString.trim().split("\n");
+    let currentLineIdx = 0;
+    let currentLineTokens = [];
 
-    function fetchNextDatum(asStringOutput = false) {
-      if (currentLineWords.length === 0) {
-        if (lineBuffer.length === 0) {
-          throw new Error("End of input stream reached.");
+    const ensureTokensAvailable = () => {
+        if (currentLineTokens.length === 0 && currentLineIdx < allInputLines.length) {
+            currentLineTokens = allInputLines[currentLineIdx++].split(" ");
         }
-        currentLineWords = lineBuffer.shift().split(/\s+/).filter(Boolean);
-        if (currentLineWords.length === 0) {
-          return fetchNextDatum(asStringOutput);
+    };
+
+    const getNextNumber = (returnAsString = false) => {
+        ensureTokensAvailable();
+        if (currentLineTokens.length === 0) return undefined;
+        const tokenValue = currentLineTokens.shift(); 
+        return returnAsString ? tokenValue : Number(tokenValue);
+    };
+
+    const getLineNumbers = (returnAsStrings = false) => {
+        if (currentLineIdx >= allInputLines.length) return [];
+        const lineContent = allInputLines[currentLineIdx++];
+        return returnAsStrings ? lineContent.split(" ") : lineContent.split(" ").map(Number);
+    };
+
+    const getMatrixNumbers = (numRows, returnAsStrings = false) => {
+        const resultMatrix = [];
+        for (let i = 0; i < numRows; i++) {
+            resultMatrix.push(getLineNumbers(returnAsStrings));
         }
-      }
-      const item = currentLineWords.shift();
-      return asStringOutput ? item : Number(item);
-    }
+        return resultMatrix;
+    };
 
-    function fetchLineData(asStringOutput = false) {
-      if (lineBuffer.length === 0) {
-        throw new Error("End of input stream for line data.");
-      }
-      const lineText = lineBuffer.shift();
-      const lineItems = lineText.split(/\s+/).filter(Boolean);
-      return asStringOutput ? lineItems : lineItems.map(Number);
-    }
-
-    function fetchMatrixData(numRows, asStringOutput = false) {
-      const resultMatrix = [];
-      for (let i = 0; i < numRows; i++) {
-        resultMatrix.push(fetchLineData(asStringOutput));
-      }
-      return resultMatrix;
-    }
-
-    function fetchRawLines(numLines, asStringOutput = false) {
-      const fetchedLines = [];
-      for (let i = 0; i < numLines; i++) {
-        if (lineBuffer.length === 0) {
-          throw new Error("Not enough raw lines available.");
+    const getVectorNumbers = (numElements, returnAsStrings = false) => {
+        const resultVector = [];
+        for (let i = 0; i < numElements; i++) {
+            if (currentLineIdx >= allInputLines.length) break;
+            const lineContent = allInputLines[currentLineIdx++];
+            resultVector.push(returnAsStrings ? lineContent : Number(lineContent));
         }
-        const rawLine = lineBuffer.shift();
-        fetchedLines.push(asStringOutput ? rawLine : Number(rawLine));
-      }
-      return fetchedLines;
-    }
+        return resultVector;
+    };
 
     return {
-      getVal: fetchNextDatum,
-      getLn: fetchLineData,
-      getMx: fetchMatrixData,
-      getRl: fetchRawLines
+        getNextNumber,
+        getLineNumbers,
+        getMatrixNumbers,
+        getVectorNumbers
     };
-  }
-  return createInputReaderModule;
-})();
-const inputData = inputProcessor(require("fs").readFileSync("/dev/stdin", "utf8"));
+};
 
-function generateNestedArray(fillValue, ...dimensions) {
-  if (dimensions.length === 0) {
-    return fillValue;
-  }
-  const currentDimension = dimensions[0];
-  const remainingDimensions = dimensions.slice(1);
-  return Array.from({
-    length: currentDimension
-  }, () => generateNestedArray(fillValue, ...remainingDimensions));
-}
+const inputSource = InputParserFactory(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-const MathHelper = (function() {
-  const PRIME_CONSTANT = 998244353;
-  let memoizedFactorials = null;
-  let memoizedInvFactorials = null;
+const initializeMultiArray = (initialValue, ...dimensions) => {
+    const createRecursiveArray = (dimensionIndex) => {
+        if (dimensionIndex === dimensions.length - 1) {
+            return Array(dimensions[dimensionIndex]).fill(initialValue);
+        }
+        return Array(dimensions[dimensionIndex]).fill(0).map(() => createRecursiveArray(dimensionIndex + 1));
+    };
+    return createRecursiveArray(0);
+};
 
-  function calculateProduct(...numbers) {
-    let currentProduct = 1n;
-    const modulusBigInt = BigInt(PRIME_CONSTANT);
-    for (const num of numbers) {
-      currentProduct = (currentProduct * BigInt(num)) % modulusBigInt;
+const primeModulus = 998244353;
+
+const modularProduct = (...factors) => {
+    let currentProduct = 1n; 
+    for (const factor of factors) {
+        currentProduct = (currentProduct * BigInt(factor)) % BigInt(primeModulus);
     }
     return Number(currentProduct);
-  }
+};
 
-  function findModularInverse(value) {
-    let [a, b] = [BigInt(value), BigInt(PRIME_CONSTANT)];
-    let [x0, x1] = [1n, 0n];
+let currentFactorial = 1; 
+let inverseFactorialsCache = []; 
 
-    while (b !== 0n) {
-      const quotient = a / b;
-      [a, b] = [b, a % b];
-      [x0, x1] = [x1, x0 - quotient * x1];
-    }
-    return Number((x0 % BigInt(PRIME_CONSTANT) + BigInt(PRIME_CONSTANT)) % BigInt(PRIME_CONSTANT));
-  }
+const prepareFactorialData = (limitValue) => {
+    const factorialsArray = new Array(limitValue + 1);
+    const invFactorialsArray = new Array(limitValue + 1);
 
-  function computePower(base, exponent) {
-    let result = 1n;
-    let currentBase = BigInt(base) % BigInt(PRIME_CONSTANT);
-    let currentExponent = exponent;
+    factorialsArray[0] = 1;
+    invFactorialsArray[0] = 1;
 
-    while (currentExponent > 0) {
-      if (currentExponent % 2 === 1) {
-        result = (result * currentBase) % BigInt(PRIME_CONSTANT);
-      }
-      currentBase = (currentBase * currentBase) % BigInt(PRIME_CONSTANT);
-      currentExponent = Math.floor(currentExponent / 2);
-    }
-    return Number(result);
-  }
-
-  function prepareCombinatorialData(upperBound) {
-    memoizedFactorials = new Array(upperBound + 1);
-    memoizedInvFactorials = new Array(upperBound + 1);
-    const modulusBigInt = BigInt(PRIME_CONSTANT);
-
-    memoizedFactorials[0] = 1n;
-    for (let i = 1; i <= upperBound; i++) {
-      memoizedFactorials[i] = (memoizedFactorials[i - 1] * BigInt(i)) % modulusBigInt;
+    for (let i = 1; i <= limitValue; i++) {
+        factorialsArray[i] = modularProduct(factorialsArray[i - 1], i);
+        invFactorialsArray[i] = modularProduct(invFactorialsArray[i - 1], calculateModularInverse(i));
     }
 
-    memoizedInvFactorials[upperBound] = BigInt(findModularInverse(Number(memoizedFactorials[upperBound])));
-    for (let i = upperBound - 1; i >= 0; i--) {
-      memoizedInvFactorials[i] = (memoizedInvFactorials[i + 1] * BigInt(i + 1)) % modulusBigInt;
+    currentFactorial = factorialsArray[limitValue];
+    inverseFactorialsCache = invFactorialsArray;
+};
+
+const calculateModularInverse = (numberValue) => {
+    let a = numberValue, b = primeModulus, u = 1, v = 0, tempVar;
+    while (b !== 0) {
+        let quotient = Math.floor(a / b);
+        a -= quotient * b;
+        u -= quotient * v;
+        tempVar = a; a = b; b = tempVar;
+        tempVar = u; u = v; v = tempVar;
     }
-    memoizedInvFactorials[0] = 1n;
+    u %= primeModulus;
+    return u < 0 ? u + primeModulus : u;
+};
 
-    for (let i = 0; i <= upperBound; i++) {
-      memoizedFactorials[i] = Number(memoizedFactorials[i]);
-      memoizedInvFactorials[i] = Number(memoizedInvFactorials[i]);
+const computeModularPower = (baseValue, exponentValue) => {
+    if (exponentValue === 0) return 1;
+    if (exponentValue === 1) return baseValue % primeModulus;
+    
+    let halfPowerResult = computeModularPower(baseValue, Math.floor(exponentValue / 2));
+    let squaredResult = modularProduct(halfPowerResult, halfPowerResult);
+    
+    if (exponentValue % 2 === 1) {
+        squaredResult = modularProduct(squaredResult, baseValue);
     }
-  }
+    return squaredResult;
+};
 
-  function getCombinations(n, r) {
-    if (r < 0 || r > n) {
-      return 0;
+const calculateCombinations = (nValue, rValue) => {
+    if (rValue < 0 || rValue > nValue) return 0;
+    return modularProduct(currentFactorial, inverseFactorialsCache[rValue], inverseFactorialsCache[nValue - rValue]);
+};
+
+console.log(executeSolution());
+
+function executeSolution() {
+    const inputN = inputSource.getNextNumber();
+    let finalAnswer = computeModularPower(3, inputN);
+
+    prepareFactorialData(inputN);
+
+    let powerOfTwoAccumulator = 1;
+    const lowerBound = Math.floor(inputN / 2) + 1;
+
+    for (let k = lowerBound; k <= inputN; k++) {
+        powerOfTwoAccumulator = modularProduct(powerOfTwoAccumulator, 2);
+        let currentTerm = modularProduct(calculateCombinations(inputN, k), powerOfTwoAccumulator);
+        finalAnswer = (finalAnswer - currentTerm + primeModulus) % primeModulus;
     }
-    if (!memoizedFactorials || !memoizedInvFactorials || n >= memoizedFactorials.length) {
-      throw new Error("Combinatorial data not prepared or limit exceeded for n: " + n);
-    }
-    return calculateProduct(memoizedFactorials[n], memoizedInvFactorials[r], memoizedInvFactorials[n - r]);
-  }
-
-  return {
-    MOD: PRIME_CONSTANT,
-    multiply: calculateProduct,
-    inverse: findModularInverse,
-    power: computePower,
-    setupCombinatorics: prepareCombinatorialData,
-    combinations: getCombinations
-  };
-})();
-
-function solveCurrentChallenge() {
-  const problemDimension = inputData.getVal();
-
-  let finalOutcome = MathHelper.power(3, problemDimension);
-
-  MathHelper.setupCombinatorics(problemDimension);
-
-  let currentTwoPower = 1;
-
-  for (let currentIterationValue = problemDimension; currentIterationValue > Math.floor(problemDimension / 2); currentIterationValue--) {
-    currentTwoPower = MathHelper.multiply(currentTwoPower, 2);
-    const combinationFactor = MathHelper.combinations(problemDimension, currentIterationValue);
-    const termToSubtract = MathHelper.multiply(combinationFactor, currentTwoPower);
-
-    finalOutcome = (finalOutcome - termToSubtract + MathHelper.MOD) % MathHelper.MOD;
-  }
-
-  return (finalOutcome + MathHelper.MOD) % MathHelper.MOD;
+    
+    return (finalAnswer + primeModulus) % primeModulus;
 }
-
-console.log(solveCurrentChallenge());

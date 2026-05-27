@@ -1,67 +1,60 @@
-// This function processes all incoming raw data.
-function ProcessInput(rawDataString)
-{
+function ProcessInput(rawData) {
+  // Split the entire input into individual lines
+  let lineData = rawData.split('\n');
 
-  // Separate the entire input string into individual lines.
-  let lineArray = rawDataString.split("\n");
+  // Extract the first line which contains N and M
+  const firstLine = lineData.shift();
 
-  // Extract the very first line, which contains configuration details.
-  const firstLineContent = lineArray.shift();
+  // Parse N (number of digits for the result)
+  const numDigits = parseInt(firstLine.split(' ')[0]);
+  // M (number of constraints) is extracted but not used in the logic
+  const numConstraints = firstLine.split(' ')[1];
 
-  // Parse the desired length from the first part of the configuration line.
-  const targetLength = parseInt(firstLineContent.split(" ")[0]);
+  // The remaining lines are the actual constraints
+  const constraintLines = lineData;
 
-  // The second part of the configuration line (number of rules) is stored,
-  // although it's not directly used in the subsequent logic.
-  const numConditions = firstLineContent.split(" ")[1];
+  // Initialize an array to build the number, using 'x' as a placeholder
+  let resultArray = 'x'.repeat(numDigits).split('');
 
-  // The remaining lines represent the specific conditions or rules.
-  const conditionLines = lineArray;
+  // Flag to track if all constraints are valid
+  let isValid = true;
 
-  // Initialize an array with 'x' characters, representing unknown digits.
-  // Its size is determined by the 'targetLength'.
-  let resultArray = Array(targetLength).fill('x');
+  // Iterate over each constraint line
+  constraintLines.forEach(currentConstraintLine => {
+    // Parse the constraint: position and digit value
+    const parsedConstraint = currentConstraintLine.split(' ').map(itemStr => parseInt(itemStr));
 
-  // A boolean indicator to track if any inconsistencies are found.
-  let isValidSolution = true;
-
-  // Iterate through each of the provided condition strings.
-  conditionLines.forEach( ( currentConditionStr ) => {
-    // Parse the current condition into two integer values.
-    const parsedCondition = currentConditionStr.split(" ").map(element => parseInt(element));
-
-    // Check if a digit has already been assigned to this position,
-    // and if the new digit conflicts with it.
-    if (resultArray[parsedCondition[0] - 1] !== 'x' && resultArray[parsedCondition[0] - 1] !== parsedCondition[1]) {
-      isValidSolution = false; // Mark as invalid if a conflict arises.
+    // Check for conflicts: if a position is already assigned and the new value differs
+    if (resultArray[parsedConstraint[0] - 1] !== 'x' && resultArray[parsedConstraint[0] - 1] !== parsedConstraint[1]) {
+      isValid = false; // Mark as invalid
     }
-
-    // Assign the new digit to its specified position.
-    resultArray[parsedCondition[0] - 1] = parsedCondition[1];
+    // Assign the digit to the specified position
+    resultArray[parsedConstraint[0] - 1] = parsedConstraint[1];
   });
 
-  // Convert the array of characters back into a single string.
-  let finalStringRepresentation = resultArray.join("");
+  // Join the array elements to form a string
+  let resultString = resultArray.join('');
 
-  // Apply a series of replacements to handle leading 'x' characters,
-  // prioritizing longer sequences for specific initial values.
-  finalStringRepresentation = finalStringRepresentation.replace(/^xxx/, "100");
-  finalStringRepresentation = finalStringRepresentation.replace(/^xx([0-9])/, "10$1");
-  finalStringRepresentation = finalStringRepresentation.replace(/^x([0-9])/, "1$1");
+  // Apply specific replacements for leading 'x' placeholders based on N
+  // This logic ensures the smallest possible number when leading digits are 'x'
+  resultString = resultString.replace(/^xxx/, '100');
+  resultString = resultString.replace(/^xx([0-9])/, '10$1');
+  resultString = resultString.replace(/^x([0-9])/, '1$1');
 
-  // Replace any remaining 'x' characters with '0'.
-  finalStringRepresentation = finalStringRepresentation.replace(/x/g, "0");
+  // Replace any remaining 'x' placeholders with '0'
+  resultString = resultString.replace(/x/g, '0');
 
-  // Convert the processed string into an integer.
-  const finalNumericValue = parseInt(finalStringRepresentation);
+  // Convert the final string to an integer
+  const finalNumber = parseInt(resultString);
 
-  // Determine the final output based on validity and length constraints.
-  if ( isValidSolution && (finalNumericValue + "").length === targetLength ) {
-    console.log(finalNumericValue); // Output the derived number.
+  // Check if the solution is valid and has the correct number of digits
+  if (isValid && (finalNumber + '').length === numDigits) {
+    console.log(finalNumber);
   } else {
-    console.log(-1); // Output -1 if no valid solution could be formed.
+    console.log(-1);
   }
 }
 
-// --- Do not modify the following section. It handles standard input/output and function invocation. ---
-ProcessInput( require("fs") . readFileSync( "/dev/stdin" , "utf8" ) );
+// This part handles reading input from stdin and calling the main processing function.
+// Do not modify this section.
+ProcessInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

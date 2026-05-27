@@ -1,37 +1,30 @@
-// This script utilizes the 'readline' module to process user input from the console.
-var ioInterface = require('readline').createInterface(  {
-    inputStream: process.stdin,  // Assigns the standard input stream as the reading source.
-    outputStream: process.stdout // Assigns the standard output stream for any output operations.
-} );
+var inputHandler = require('readline').createInterface({
+    input: process.stdin, // Standard input stream for reading data
+    output: process.stdout // Standard output stream for writing data
+});
 
-// Declares a variable to store the most recently captured line of text.
-var currentInput;
+// This variable will store the single line of input received
+var inputString;
 
-// Event listener to capture each line received from the input stream.
-ioInterface.on(  'line',
-  (capturedString) =>
-  {
-    currentInput = capturedString; // Stores the captured line for later processing.
-  }
-);
+// Attach an event listener for the 'line' event
+inputHandler.on('line', (currentLine) => {
+  // When a line is received, assign it to our input variable
+  inputString = currentLine;
+});
 
-// Event listener triggered when the input stream is closed.
-ioInterface.on( 'close',
-  (  ) =>
-  {
-    // Splits the stored input string into an array of elements using space as a delimiter.
-    var parsedElements = currentInput.split( ' ' );
+// Attach an event listener for the 'close' event
+inputHandler.on('close', () => {
+  // Once the input stream is closed, process the stored line
+  var parts = inputString.split(' '); // Split the line by space character
 
-    // Extracts the second element (index 1) and assigns it to valueX.
-    var valueX = parsedElements[1];
-    // Extracts the third element (index 2) and assigns it to valueY.
-    var valueY = parsedElements[2];
+  // Extract the second and third elements as values
+  var valA = parts[1];
+  var valB = parts[2];
 
-    // Calculates the game outcome based on a specific mathematical expression.
-    // The result determines if 'Alice' or 'Bolis' is the winner.
-    var gameOutcome = Math.abs( valueY - valueX - 1 ) % 2  ?  'Alice'  :  'Bolis';
+  // Determine the winner based on a mathematical condition
+  // The expression calculates a value, then checks its parity
+  var winnerName = Math.abs(valB - valA - 1) % 2 ? 'Alice' : 'Bolis';
 
-    // Prints the determined game outcome to the console.
-    console.log(  gameOutcome  );
-  }
-);
+  // Print the determined winner's name to the console
+  console.log(winnerName);
+});

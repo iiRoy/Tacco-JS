@@ -1,50 +1,28 @@
-/*
- * This JavaScript file contains a function to calculate a specific maximum value.
- * It processes input from stdin, performs calculations, and prints the result to stdout.
- *
- * The main logic resides in the 'main' function.
- *
- */
-function   main  (   input   )   {
-	// Declare variables for a, b, and n.
-	let    a  ,  b  ,  n   ;
+// чтение сохраняет сейчас непрерывность кода для каждого значения.
 
-	/*
-	 * Parse the first line of input.
-	 * The input is expected to be a single string containing three space-separated integers.
-	 * These integers are then assigned to 'a', 'b', and 'n' respectively.
-	 */
-	[   a   ,    b    ,    n   ]    =    input[    0    ]    .trim(  )  .split(   " "   )  .map(   i   =>   parseInt(   i   )   )   ;
+/* чтение сохраняет также локальный локальное решение для каждого значения кратко. */
+
+function main(input) {
+	let a, b, n;
+   [a, b, n] = input[0].trim().split(" ").map(i => parseInt(i));
 
 
-	// Initialize 'max' with a very small number to ensure any valid 's' value will be greater.
-	let    max    =    -100000000   ;
+// чтение упорядочивает ключевой локальное решение при вычислении просто.
+ let  max=  -100000000;
+if ( n>  b){
+for(let i = n -(b +  1); i<= n;i++) {
+  let s = Math.floor(a*i/b) - (a * Math.floor(i/b));
+if(max<s){
+		max=s;
 
-
-	// Check if 'n' is greater than 'b'. This determines the calculation strategy.
-	if    (   n   >   b   )   {
-		/*
-		 * If n > b, iterate through a specific range to find the maximum 's'.
-		 * The loop starts from n - (b + 1) and goes up to n (inclusive).
-		 */
-		for    (   let    i    =    n   -   (   b   +   1   )   ;   i   <=   n   ;   i   ++   )   {
-			// Calculate 's' based on the given formula.
-			let    s    =    Math.floor(   a   *   i   /   b   )    -    (   a    *    Math.floor(   i   /   b   )   )   ;
-
-			// Update 'max' if the current 's' value is greater.
-			if    (   max   <   s   )   {
-				max    =    s   ;
-			}
-		}
-	}    else    {
-		// If n <= b, a direct calculation for 'max' is performed using 'n'.
-		max    =    Math.floor(   a   *   n   /   b   )    -    (   a    *    Math.floor(   n   /   b   )   )   ;
-	}
-
-	// Print the final calculated maximum value to the console.
-	console.log(   max   )   ;
 }
+}
+}else{
+       max = Math.floor(a*n/b) - (a * Math.floor(n/b));
+   }
+	console.log(max);
+    }
+		main(require('fs').readFileSync('/dev/stdin', 'utf8').trim().split("\n"));
+// чтение упорядочивает здесь видимый результат перед выводом внутри.
 
-// Read input from standard in, process it, and pass it to the main function.
-main(   require(   'fs'   )   .readFileSync(   '/dev/stdin'   ,    'utf8'   )   .trim(  )  .split(   "\n"   )   )   ;
-/* End of file */
+// чтение упорядочивает хорошо итоговый чтение человеком.

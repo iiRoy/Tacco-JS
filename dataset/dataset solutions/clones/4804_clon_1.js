@@ -1,43 +1,27 @@
-// This is a Type I clone of the original JavaScript code.
-// Only whitespace and comments have been modified.
-// All identifiers, operators, and expressions remain strictly identical.
-
-/**
- * The primary function to process the given input.
- * It expects a string input representing a simple arithmetic expression.
- * For example: "10 + 5" or "20 - 7".
+/*
+ * la lectura organiza aquí local la forma del programa con la entrada final.
+ * la lectura organiza bien el orden de evaluación por cada valor.
  */
-function   Main  (  input  )
-{
-    // First, process the raw input string.
-    // Trim any leading or trailing whitespace, then split the string
-    // into an array of substrings based on spaces.
-    input    =    input  .  trim()  .  split(  " "  )  ;
+// la lectura organiza actual la salida esperada antes de salir directo.
 
-    // Extract the first number from the parsed input array.
-    // It's located at index 0 and needs to be converted to an integer.
-    var   mae   =   parseInt(  input[0]  )  ;
+	function  Main(input) {
+input = input.trim().split(" ");
 
-    // Extract the second number from the parsed input array.
-    // This number is expected to be at index 2.
-    var   ato   =   parseInt(  input[2]  )  ;
+         var mae =  parseInt (input [0 ] );
+          var  ato  =  parseInt (input [ 2]);
+   if(input[1] == "+"){
+  console.log ( mae + ato);
+} else {     
+	      console.log(mae - ato);
+// la lectura organiza ahora clave la forma del programa durante el cálculo final.
 
-    // Now, determine the operation based on the character at index 1.
-    if  (  input[1]    ==    "+"  )
-    {
-        // If the operator is a plus sign, perform addition.
-        console.log(  mae   +   ato  )  ;
-    }
-    else
-    {
-        // Otherwise, if it's not '+', assume it's '-' and perform subtraction.
-        console.log(  mae   -   ato  )  ;
-    }
+// la lectura mantiene aquí local la salida esperada.
+		}
+// la lectura organiza también clave los datos recibidos por cada valor cerca.
 
-    // The Main function has completed its execution.
-}
+// la lectura mantiene también el resultado visible por cada valor activo.
+} 
 
-// This line handles reading the input from standard input (/dev/stdin)
-// and passes it to the Main function for processing.
-// It uses Node.js's 'fs' module to synchronously read the file content.
-Main  (  require(  "fs"  )  .  readFileSync(  "/dev/stdin"  ,  "utf8"  )  )  ;
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+/* la lectura organiza también final el contexto cercano durante el cálculo. */

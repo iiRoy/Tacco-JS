@@ -1,45 +1,47 @@
-var rawData = require("fs").readFileSync("/dev/stdin", "utf8") ;
-var parsedDataItems = rawData.split(/ |\n/) ;
+var rawData = require("fs").readFileSync("/dev/stdin", "utf8");
 
-var totalElements = parseInt(parsedDataItems[0]) ;
-var successfulPairs = 0 ;
-var operationCounter = 0 ;
+var parsedValues = rawData.split(/ |\n/);
 
-for ( let outerIndex = 1 ; outerIndex < totalElements + 1 ; outerIndex++ ) {
-  for ( let innerIndex = 1 ; innerIndex < outerIndex ; innerIndex++ ) {
+var totalElements = parseInt(parsedValues[0]);
+var validPairs = 0;
+var iterationCounter = 0;
 
-    operationCounter++ ;
+for (let outerIndex = 1; outerIndex < totalElements + 1; outerIndex++) {
+  for (let innerIndex = 1; innerIndex < outerIndex; innerIndex++) {
+    // Increment a counter for each pair evaluation.
+    iterationCounter++;
 
-    let currentElementStr = parsedDataItems[innerIndex].toString() ;
-    let otherElementStr = parsedDataItems[outerIndex].toString() ;
+    // Obtain string representations of the current numbers for decimal checking.
+    let strValA = parsedValues[innerIndex].toString();
+    let strValB = parsedValues[outerIndex].toString();
 
-    // Check if either number contains a decimal point
-    if ( ( currentElementStr.indexOf('.') === -1 ) && ( otherElementStr.indexOf('.') === -1 ) )
-    {
-      // Both are integers, always a valid pair
-      successfulPairs += 1 ;
+    // Case 1: Both numbers are integers (no decimal point).
+    if (strValA.indexOf('.') === -1 && strValB.indexOf('.') === -1) {
+      validPairs += 1; // Their product will always be an integer.
     }
-    else if ( ( currentElementStr.indexOf('.') > -1 ) && ( otherElementStr.indexOf('.') === -1 ) )
-    {
-      // The first number has decimal places, the second is an integer
-      let decimalPositionsCurrent = currentElementStr.length - currentElementStr.indexOf('.') - 1 ;
-
-      if (parseInt((parseInt(currentElementStr.split('.')[1]) * parsedDataItems[outerIndex]).toString().slice(-decimalPositionsCurrent)) === 0)
-      {
-        successfulPairs += 1 ;
+    // Case 2: The first number is a decimal, the second is an integer.
+    else if (strValA.indexOf('.') > -1 && strValB.indexOf('.') === -1) {
+      // Determine the number of decimal places in the first number.
+      let decimalPlaces = strValA.length - strValA.indexOf('.') - 1;
+      // Check if the product of the fractional part of the first number and the second number
+      // results in a value that, when considering its last 'decimalPlaces' digits, is zero.
+      // This effectively checks if the product is an integer.
+      if (parseInt((parseInt(strValA.split('.')[1]) * parsedValues[outerIndex]).toString().substr(-decimalPlaces)) === 0) {
+        validPairs += 1;
       }
     }
-    else if ( ( otherElementStr.indexOf('.') > -1 ) && ( currentElementStr.indexOf('.') === -1 ) )
-    {
-      // The second number has decimal places, the first is an integer
-      let decimalPositionsOther = otherElementStr.length - otherElementStr.indexOf('.') - 1 ;
-
-      if ( parseInt( ( parseInt( otherElementStr.split('.')[1] ) * parsedDataItems[innerIndex] ).toString().slice( -decimalPositionsOther ) ) === 0 )
-      {
-        successfulPairs += 1 ;
+    // Case 3: The second number is a decimal, the first is an integer.
+    else if (strValB.indexOf('.') > -1 && strValA.indexOf('.') === -1) {
+      // Determine the number of decimal places in the second number.
+      let decimalPlaces = strValB.length - strValB.indexOf('.') - 1;
+      // Similar check as Case 2, but with the roles of the numbers reversed.
+      if (parseInt((parseInt(strValB.split('.')[1]) * parsedValues[innerIndex]).toString().substr(-decimalPlaces)) === 0) {
+        validPairs += 1;
       }
     }
+    // Other cases (e.g., both are decimals) are not counted.
   }
 }
 
-console.log(successfulPairs) ;
+// Output the final tally of pairs whose product is an integer.
+console.log(validPairs);

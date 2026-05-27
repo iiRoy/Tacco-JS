@@ -1,28 +1,46 @@
-function* pathDeviationProcessor(output_sink, input_source) {
-    const sequence_length = Number(yield input_source());
+const os = require('os');
 
-    const captured_values = [];
-    for (let point_index = 0; point_index < sequence_length; ++point_index) {
-        captured_values.push(Number(yield input_source()));
+async function orchestrateExecution(mainLogicFunction) {
+    const inputChunks = [];
+    process.stdin.on('data', (chunk) => inputChunks.push(chunk));
+    await new Promise((resolve) => process.stdin.on('end', resolve));
+    const fullInputContent = inputChunks.join('');
+    const allInputTokens = fullInputContent.split(/\s+/).filter(Boolean);
+
+    function outputWriter(contentToPrint, endCharacter) {
+        process.stdout.write(contentToPrint + (endCharacter === undefined ? os.EOL : endCharacter));
     }
 
-    const full_numerical_path = [0, ...captured_values, 0];
+    mainLogicFunction(allInputTokens, outputWriter);
+}
 
-    const overall_path_magnitude = full_numerical_path.slice(1).reduce((current_summation, current_point, idx_in_slice) => {
-        const preceding_point = full_numerical_path[idx_in_slice];
-        return current_summation + Math.abs(preceding_point - current_point);
+function calculatePathVariations(inputDataSegments, printOutput) {
+    let dataCursor = 0;
+    const segmentCount = Number(inputDataSegments[dataCursor++]);
+    const coordinateValues = [];
+    for (let k = 0; k < segmentCount; ++k) {
+        coordinateValues.push(Number(inputDataSegments[dataCursor++]));
+    }
+
+    const fullPathPoints = [0, ...coordinateValues, 0];
+
+    const initialTotalDistance = fullPathPoints.slice(0, -1).reduce((accumulator, currentPoint, index) => {
+        const nextPoint = fullPathPoints[index + 1];
+        return accumulator + Math.abs(currentPoint - nextPoint);
     }, 0);
 
-    const resulting_sequence_parts = Array.from({ length: sequence_length }, (_, segment_index) => {
-        const first_node = full_numerical_path[segment_index];
-        const intermediate_node = full_numerical_path[segment_index + 1];
-        const last_node = full_numerical_path[segment_index + 2];
+    const resultSegments = Array.from({ length: segmentCount }, (_, index) => {
+        const firstPoint = fullPathPoints[index];
+        const intermediatePoint = fullPathPoints[index + 1];
+        const lastPoint = fullPathPoints[index + 2];
 
-        const modification_factor = Math.abs(first_node - last_node) -
-                                    (Math.abs(first_node - intermediate_node) + Math.abs(intermediate_node - last_node));
-
-        return overall_path_magnitude + modification_factor;
+        // This calculation is equivalent to:
+        // initialTotalDistance - (|firstPoint - intermediatePoint| + |intermediatePoint - lastPoint|) + |firstPoint - lastPoint|
+        // Which effectively removes the intermediatePoint from the path calculation.
+        return initialTotalDistance - (Math.abs(firstPoint - intermediatePoint) + Math.abs(intermediatePoint - lastPoint)) + Math.abs(firstPoint - lastPoint);
     });
 
-    output_sink(resulting_sequence_parts.join(''));
+    printOutput(resultSegments.join(''));
 }
+
+orchestrateExecution(calculatePathVariations);

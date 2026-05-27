@@ -1,101 +1,98 @@
-function ProcessInput( rawData ) {
-    // Split the entire raw input string into an array of lines.
-    let lines = rawData.split("\n");
+function ProcessInput(rawData) {
+    // Split the raw input string into an array of lines for easier processing.
+    let inputLines = rawData.split("\n");
 
-    // Parse the first line to get graph dimensions.
-    // The first line contains two space-separated integers.
-    const graphDimensions = lines[0].split(" ").map( (strVal) => parseInt(strVal, 10) );
+    // Parse the first line to extract the total number of nodes and the count of relations.
+    const dimensions = inputLines[0].split(" ").map(strVal => parseInt(strVal, 10));
+    const numNodes = dimensions[0]; // Represents 'N' from the original problem statement.
+    let numRelations = dimensions[1]; // Represents 'M' from the original problem statement.
 
-    // Extract the total number of nodes (N) from the dimensions.
-    const totalNodes = graphDimensions[0];
-
-    // Extract the number of constraints (M) from the dimensions.
-    let numConstraints = graphDimensions[1];
-
-    // Initialize an array to store all positional constraints.
-    // Each constraint is an array [node1, node2, difference].
-    const positionalConstraints = [];
-
-    // Loop through the remaining lines to populate the constraints array.
-    for (let currentIdx = 0; currentIdx < numConstraints; currentIdx++) {
-        // Parse each constraint line.
-        positionalConstraints[currentIdx] = lines[currentIdx + 1].split(" ").map( (numericStr) => parseInt(numericStr, 10) );
+    // Initialize a list to store all the given relations. Each relation is an array [nodeA, nodeB, difference].
+    const relationsList = [];
+    // Populate the relations list from the subsequent lines of input.
+    for (let relationIndex = 0; relationIndex < numRelations; relationIndex++) {
+        relationsList[relationIndex] = inputLines[relationIndex + 1].split(" ").map(strVal => parseInt(strVal, 10));
     }
 
-    // Initialize an array to track visited/processed nodes.
-    // A value of 1 means visited, 0 means not yet visited.
-    const visitedNodes = new Array(totalNodes + 1).fill(0);
+    // `visitedNodes` array: Tracks whether a node's value has been determined (1 for visited, 0 for unvisited).
+    // Corresponds to 'anc' in the original code.
+    const visitedNodes = new Array(numNodes + 1).fill(0);
+    // `nodeValues` array: Stores the calculated value for each node.
+    // Corresponds to 'x' in the original code.
+    const nodeValues = new Array(numNodes + 1).fill(0);
 
-    // Initialize an array to store the computed positions of each node.
-    const nodeCoordinates = new Array(totalNodes + 1).fill(0);
-
-    // Mark nodes 0 and 1 as initially visited.
-    // This often implies node 1 is the reference point.
+    // Mark node 0 and node 1 as visited initially. Node 1 is often used as a reference point.
     visitedNodes[0] = 1;
     visitedNodes[1] = 1;
 
-    // Declare loop counters and a starting reference point.
-    let loopCounter1, loopCounter2;
-    const startPoint = 1; // This variable mirrors the structure but is not actively used in the logic.
+    // Declare variables for loop iteration and tracking list changes.
+    let currentRelationIdx, listLengthBeforePass;
+    // The 'initialReferenceNode' variable (renamed from 'low') is declared but not used in the logic.
+    const initialReferenceNode = 1;
 
-    // Initialize the overall result status.
-    let consistencyStatus = "Yes";
+    // Initialize the result status, assuming consistency until proven otherwise.
+    let resultStatus = "Yes";
 
-    // Main processing loop: continues as long as there are constraints to process.
-    processingLoop:
-    while (positionalConstraints.length > 0) {
-        // Initialize loop counters with the current number of constraints.
-        loopCounter1 = loopCounter2 = positionalConstraints.length;
+    // Main processing loop: Continues as long as there are relations left to evaluate.
+    mainProcessingLoop:
+    while (relationsList.length > 0) {
+        // Store the current number of relations before iterating through them in this pass.
+        currentRelationIdx = listLengthBeforePass = relationsList.length;
 
-        // Iterate backwards through the constraints array.
-        while (loopCounter1--) {
-            // Check if both nodes involved in the current constraint have been visited.
-            if (visitedNodes[positionalConstraints[loopCounter1][0]] && visitedNodes[positionalConstraints[loopCounter1][1]]) {
-                // If both are visited, check for consistency.
-                // The difference in their computed coordinates must match the constraint.
-                if (nodeCoordinates[positionalConstraints[loopCounter1][1]] - nodeCoordinates[positionalConstraints[loopCounter1][0]] !== positionalConstraints[loopCounter1][2]) {
-                    // Inconsistency detected: set status to "No" and exit all loops.
-                    consistencyStatus = "No";
-                    break processingLoop;
+        // Iterate backwards through the relations list to safely remove elements during iteration.
+        while (currentRelationIdx--) {
+            const currentRelation = relationsList[currentRelationIdx];
+            const nodeA = currentRelation[0];
+            const nodeB = currentRelation[1];
+            const difference = currentRelation[2];
+
+            // Scenario 1: Both nodes in the current relation have already had their values determined.
+            if (visitedNodes[nodeA] && visitedNodes[nodeB]) {
+                // Check if the existing values are consistent with the current relation.
+                if (nodeValues[nodeB] - nodeValues[nodeA] !== difference) {
+                    resultStatus = "No"; // Inconsistency found, set result and exit.
+                    break mainProcessingLoop; // Exit the main loop immediately.
                 } else {
-                    // Consistency found: remove this constraint as it's satisfied.
-                    positionalConstraints.splice(loopCounter1, 1);
-                    continue; // Move to the next constraint.
+                    // Relation is consistent, so it's no longer needed. Remove it.
+                    relationsList.splice(currentRelationIdx, 1);
+                    continue; // Move to the next relation in the list.
                 }
             }
 
-            // If only the first node of the constraint is visited.
-            if (visitedNodes[positionalConstraints[loopCounter1][0]]) {
-                // Mark the second node as visited.
-                visitedNodes[positionalConstraints[loopCounter1][1]] = 1;
-                // Compute the position of the second node based on the first.
-                nodeCoordinates[positionalConstraints[loopCounter1][1]] = nodeCoordinates[positionalConstraints[loopCounter1][0]] + positionalConstraints[loopCounter1][2];
-                // Remove this constraint as it has been used to determine a node's position.
-                positionalConstraints.splice(loopCounter1, 1);
+            // Scenario 2: Only the first node (nodeA) has a known value.
+            if (visitedNodes[nodeA]) {
+                visitedNodes[nodeB] = 1; // Mark nodeB as visited.
+                nodeValues[nodeB] = nodeValues[nodeA] + difference; // Calculate nodeB's value based on nodeA.
+                relationsList.splice(currentRelationIdx, 1); // Remove this relation as it's now processed.
             }
-            // If only the second node of the constraint is visited.
-            else if (visitedNodes[positionalConstraints[loopCounter1][1]]) {
-                // Mark the first node as visited.
-                visitedNodes[positionalConstraints[loopCounter1][0]] = 1;
-                // Compute the position of the first node based on the second.
-                nodeCoordinates[positionalConstraints[loopCounter1][0]] = nodeCoordinates[positionalConstraints[loopCounter1][1]] - positionalConstraints[loopCounter1][2];
-                // Remove this constraint.
-                positionalConstraints.splice(loopCounter1, 1);
+            // Scenario 3: Only the second node (nodeB) has a known value.
+            else if (visitedNodes[nodeB]) {
+                visitedNodes[nodeA] = 1; // Mark nodeA as visited.
+                nodeValues[nodeA] = nodeValues[nodeB] - difference; // Calculate nodeA's value based on nodeB.
+                relationsList.splice(currentRelationIdx, 1); // Remove this relation.
             }
+            // Scenario 4: Neither node has a known value. The relation remains in the list for a future pass.
         }
 
-        // If no constraints were processed in the inner loop (i.e., no progress was made).
-        if (loopCounter2 === positionalConstraints.length) {
-            // Find the first unvisited node to start a new component.
-            loopCounter1 = visitedNodes.findIndex( (status) => status === 0 );
-            // Mark it as visited.
-            visitedNodes[loopCounter1] = 1;
+        // If no relations were processed in the current pass (list length did not change),
+        // it means we might have isolated components or a fully processed graph.
+        if (listLengthBeforePass === relationsList.length) {
+            // Find the first unvisited node to establish a new reference point for its component.
+            const unvisitedNodeIndex = visitedNodes.findIndex(statusFlag => statusFlag === 0);
+            if (unvisitedNodeIndex !== -1) {
+                visitedNodes[unvisitedNodeIndex] = 1; // Mark this node as visited.
+                // Its value remains 0, effectively setting it as the arbitrary reference for its component.
+            } else {
+                // If no unvisited nodes are found, all nodes have been processed or are part of a component
+                // that couldn't be resolved further. This implies consistency if no 'No' was set.
+                break; // Exit the main loop as no further progress can be made.
+            }
         }
     }
 
-    // Output the final consistency status.
-    console.log(consistencyStatus);
+    // Output the final determination of consistency.
+    console.log(resultStatus);
 }
 
-// Invoke the main processing function with data read from standard input.
+// Read the input from standard input and pass it to the processing function.
 ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

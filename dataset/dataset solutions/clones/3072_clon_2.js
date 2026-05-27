@@ -1,40 +1,37 @@
-'use strict'
-function  primaryProcess ( incomingText )
-{
-  // Parse the input string into an array of numbers
-  const numericValuesArray = incomingText . split ( "\n" ) . map ( Number ) ;
+'use strict';
 
-  // Remove the last empty element often resulting from split
-  numericValuesArray.pop  ( ) ;
+// This function processes raw input data to calculate a specific value.
+function ProcessInput(rawData) {
+  // Parse the input string into an array of numbers, splitting by newline.
+  const numericValues = rawData.split('\n').map(Number);
 
-  // Extract the first number as the main quantity
-  let targetValue = numericValuesArray [ 0 ] ;
+  // Remove the last element, which is typically an empty string from the final newline.
+  numericValues.pop();
 
-  // Remove the first element as it's now stored separately
-  numericValuesArray . shift ( ) ;
+  // The first remaining number is the target value.
+  let targetValue = numericValues[0];
 
-  /*
-   * Debugging: Display the main quantity and the processed array
-   * console.log({ targetValue, numericValuesArray });
-   */
+  // Remove the target value from the array, leaving only the other numbers.
+  numericValues.shift();
 
-  // Sort the remaining numbers in ascending order
-  numericValuesArray.sort( ( firstElement , secondElement ) => firstElement - secondElement ) ;
+  // Debugging: Check initial parsed data.
+  // console.log({ targetValue, numericValues });
 
-  /*
-   * Debugging: Display the main quantity and the sorted array
-   * console.log({ targetValue, numericValuesArray });
-   */
+  // Sort the remaining numeric values in ascending order.
+  numericValues.sort((first, second) => first - second);
 
-  // Calculate the limiting factor based on the smallest value
-  let limitingFactor = Math.ceil ( targetValue / numericValuesArray [ 0 ] ) ;
+  /* After sorting, verify the order. */
+  // console.log({ targetValue, numericValues });
 
-  // Compute the ultimate outcome by adding a constant offset
-  let finalResult = limitingFactor + 4 ;
+  // Calculate a 'bottleneck' value using the target and the smallest remaining number.
+  let bottleneckCalc = Math.ceil(targetValue / numericValues[0]);
 
-  // Output the computed final result
-  console.log ( finalResult ) ;
+  // Add a constant offset to the bottleneck value to get the final result.
+  let finalResult = bottleneckCalc + 4;
+
+  // Output the computed final result to the console.
+  console.log(finalResult);
 }
 
-// Invoke the primary processing function with content from standard input
-primaryProcess ( require("fs").readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+// Read input from standard input and pass it to the processing function.
+ProcessInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

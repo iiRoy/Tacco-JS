@@ -1,57 +1,64 @@
-function solveSystem(systemInput) {
-    const rawLines = systemInput.trim().split("\n");
-
-    const [entityCount, relationCount] = rawLines[0].split(" ").map(Number);
-
-    const relationList = [];
-    for (let k = 1; k <= relationCount; k++) {
-        const [nodeA, nodeB, valueDifference] = rawLines[k].split(" ").map(Number);
-        relationList.push({ first: nodeA, second: nodeB, diff: valueDifference });
+class DisjointSetUnion {
+    constructor(size) {
+        this.parent = Array(size + 1).fill(0).map((_, idx) => idx);
+        this.relativeOffset = Array(size + 1).fill(0);
     }
 
-    const componentParents = new Map();
-    const relativeOffsets = new Map();
-
-    for (let e = 1; e <= entityCount; e++) {
-        componentParents.set(e, e);
-        relativeOffsets.set(e, 0);
-    }
-
-    const findComponentRoot = (currentNode) => {
-        if (componentParents.get(currentNode) === currentNode) {
-            return { rootNode: currentNode, cumulativeOffset: 0 };
+    locate(idx) {
+        if (this.parent[idx] === idx) {
+            return { root: idx, offset: 0 };
         }
 
-        const parentOfCurrent = componentParents.get(currentNode);
-        const { rootNode: actualRoot, cumulativeOffset: offsetFromParentRoot } = findComponentRoot(parentOfCurrent);
+        const result = this.locate(this.parent[idx]);
+        this.parent[idx] = result.root;
+        this.relativeOffset[idx] += result.offset;
+        return { root: this.parent[idx], offset: this.relativeOffset[idx] };
+    }
 
-        componentParents.set(currentNode, actualRoot);
-        relativeOffsets.set(currentNode, relativeOffsets.get(currentNode) + offsetFromParentRoot);
+    unite(nodeA, nodeB, difference) {
+        const infoA = this.locate(nodeA);
+        const infoB = this.locate(nodeB);
 
-        return { rootNode: actualRoot, cumulativeOffset: relativeOffsets.get(currentNode) };
-    };
-
-    const uniteComponents = (nodeX, nodeY, desiredDiff) => {
-        const { rootNode: rootX, cumulativeOffset: offsetFromXToRoot } = findComponentRoot(nodeX);
-        const { rootNode: rootY, cumulativeOffset: offsetFromYToRoot } = findComponentRoot(nodeY);
-
-        if (rootX === rootY) {
-            return (offsetFromYToRoot - offsetFromXToRoot === desiredDiff);
-        } else {
-            componentParents.set(rootY, rootX);
-            relativeOffsets.set(rootY, desiredDiff - offsetFromYToRoot + offsetFromXToRoot);
+        if (infoA.root !== infoB.root) {
+            this.parent[infoA.root] = infoB.root;
+            this.relativeOffset[infoA.root] = infoB.offset - infoA.offset - difference;
             return true;
-        }
-    };
-
-    for (const currentRelation of relationList) {
-        if (!uniteComponents(currentRelation.first, currentRelation.second, currentRelation.diff)) {
-            console.log("No");
-            return;
+        } else {
+            return (infoB.offset - infoA.offset === difference);
         }
     }
-
-    console.log("Yes");
 }
 
-solveSystem(require("fs").readFileSync("/dev/stdin", "utf8"));
+function ProcessConstraints(inputData) {
+    const { nodeCount, constraints } = inputData;
+    const dsu = new DisjointSetUnion(nodeCount);
+    let outcome = "Yes";
+
+    for (const [u, v, d] of constraints) {
+        if (!dsu.unite(u, v, d)) {
+            outcome = "No";
+            break;
+        }
+    }
+    console.log(outcome);
+}
+
+function parseInputData(rawInput) {
+    const lines = rawInput.split("\n");
+    const firstLine = lines[0].split(" ").map(Number);
+    const nodeCount = firstLine[0];
+    const constraintCount = firstLine[1];
+
+    const constraints = [];
+    for (let k = 0; k < constraintCount; k++) {
+        constraints.push(lines[k + 1].split(" ").map(Number));
+    }
+    return { nodeCount, constraints };
+}
+
+function Main(input) {
+    const parsedData = parseInputData(input);
+    ProcessConstraints(parsedData);
+}
+
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

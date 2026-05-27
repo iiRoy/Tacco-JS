@@ -1,7 +1,10 @@
-function ProcessInput ( rawData ) {
-    // Evaluate the initial part of the provided text for a specific sequence.
-	console.log( rawData.split( "\n" ) [ 0 ].indexOf( "YAKI" ) === 0 ? "Yes" : "No" );
+function ProcessInput(receivedData) {
+  // Check if the first line of the input starts with "YAKI"
+  console.log(receivedData.split("\n")[0].indexOf("YAKI") === 0 ? "Yes" : "No");
 }
 
-// Please do not alter the code below this line; it manages reading input from standard stream and executing the main logic.
-ProcessInput( require( "fs" ).readFileSync( "/dev/stdin", "utf8" ) );
+/*
+ * The following line handles reading from standard input and invoking the primary processing function.
+ * It should not be modified to ensure proper execution in the given environment.
+ */
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,142 +1,138 @@
-/*
- * Module initialization and input reading section.
- * This part handles file system operations to read input from standard input.
- */
-const fileSystemModule = require('fs');
+// This script processes graph data from standard input to find critical edges.
+// It identifies edges whose removal reduces the longest path in the graph.
 
-// Determine the size of the input stream from standard input.
-let fileSize = fileSystemModule.fstatSync(process.stdin.fd).size;
+var fileSystemModule = require('fs'); // Import the Node.js file system module.
 
-// Allocate a buffer to hold the input data.
-let dataBuffer = Buffer.alloc(fileSize);
+// Determine the size of the standard input stream.
+var dataLength = fileSystemModule.fstatSync(process.stdin.fd).size;
 
-// Read the input data from standard input into the buffer.
-let actualBytesRead = fileSystemModule.readSync(process.stdin.fd, dataBuffer, 0, fileSize, 0);
+// Create a buffer to hold the input data.
+var inputBuffer = new Buffer(dataLength);
 
-// Convert the buffer content to a UTF-8 string and split it into lines.
-let dataLines = dataBuffer.toString('utf8', 0, actualBytesRead).split('\n');
+// Read data from standard input into the buffer.
+var actualBytesRead = fileSystemModule.readSync(process.stdin.fd, inputBuffer, 0, dataLength, 0);
+
+// Convert the buffer content to a UTF-8 string, then split it into lines.
+var rawInputLines = inputBuffer.toString('utf8', 0, actualBytesRead).split('\n');
+
 
 /**
  * Constructs an adjacency list representation of a directed graph.
- *
- * @param {number} numNodes - The total number of nodes in the graph.
- * @param {number} numEdges - The total number of edges (relations) in the graph.
- * @param {Array<Array<number>>} edgeList - An array of arrays, where each inner array
- *                                          represents an edge [source, destination].
- * @returns {Array<Array<number>>} The adjacency list where adjList[i] is an array of
- *                                   nodes reachable from node i.
+ * @param {number} nodeCount - The total number of nodes in the graph.
+ * @param {number} edgeCount - The total number of edges.
+ * @param {Array<Array<number>>} connections - An array of [source, target] pairs for edges.
+ * @returns {Array<Array<number>>} The adjacency list.
  */
-function buildAdjacencyList(numNodes, numEdges, edgeList) {
-  // Initialize the adjacency list with empty arrays for each node.
-  const adjList = [];
-  for (let nodeIndex = 0; nodeIndex < numNodes; nodeIndex++) {
-    adjList[nodeIndex] = [];
+function constructNetwork(nodeCount, edgeCount, connections) {
+  var adjList = []; // Initialize the adjacency list.
+  var idx; // Loop counter.
+
+  // Initialize each node with an empty list of neighbors.
+  for (idx = 0; idx < nodeCount; idx++) {
+    adjList[idx] = [];
   }
 
-  // Populate the adjacency list based on the provided edge list.
-  // Node indices are 0-based internally, so subtract 1 from input values.
-  for (let nodeIndex = 0; nodeIndex < numEdges; nodeIndex++) {
-    adjList[edgeList[nodeIndex][0] - 1].push(edgeList[nodeIndex][1] - 1);
+  // Populate the adjacency list based on the provided connections.
+  for (idx = 0; idx < edgeCount; idx++) {
+    // Adjust node indices from 1-based to 0-based.
+    adjList[connections[idx][0] - 1].push(connections[idx][1] - 1);
   }
 
-  return adjList;
+  return adjList; // Return the completed graph structure.
 }
+
 
 /**
  * Creates a new graph by removing a specific edge from an existing graph.
- * The removal is simulated by filtering the destination node from the source node's adjacency list.
- *
- * @param {Array<Array<number>>} originalNetwork - The initial adjacency list of the graph.
- * @param {Array<number>} removedEdge - An array [source, destination] representing the edge to remove.
- * @returns {Array<Array<number>>} A new adjacency list with the specified edge conceptually removed.
+ * @param {Array<Array<number>>} originalAdjList - The original graph's adjacency list.
+ * @param {Array<number>} removedConnection - The [source, target] edge to remove (1-based).
+ * @returns {Array<Array<number>>} A new adjacency list with the specified edge removed.
  */
-function createSubNetwork(originalNetwork, removedEdge) {
-  // Extract source and destination nodes, adjusting for 0-based indexing.
-  const startNode = removedEdge[0] - 1;
-  const endNode = removedEdge[1] - 1;
+function createModifiedNetwork(originalAdjList, removedConnection) {
+  // Adjust node indices for the edge to be removed.
+  var sourceNode = removedConnection[0] - 1;
+  var targetNode = removedConnection[1] - 1;
 
-  // Create a shallow copy of the original network's adjacency list.
-  const subNetwork = originalNetwork.slice();
+  // Create a shallow copy of the adjacency list to avoid modifying the original.
+  var modifiedAdjList = originalAdjList.slice();
 
-  // Filter out the endNode from the startNode's adjacency list in the new network.
-  subNetwork[startNode] = originalNetwork[startNode].filter(function(neighborNode) {
-    return endNode !== neighborNode;
+  // Filter out the target node from the source node's adjacency list.
+  modifiedAdjList[sourceNode] = originalAdjList[sourceNode].filter(function (currentElement, elementIndex) {
+    return targetNode !== currentElement; // Keep elements that are not the target node.
   });
 
-  return subNetwork;
+  return modifiedAdjList; // Return the graph with the edge removed.
 }
+
 
 /**
  * Calculates the length of the longest path in a directed acyclic graph (DAG).
- * This function uses dynamic programming to find the maximum path length starting from any node.
- *
- * @param {Array<Array<number>>} currentNetwork - The adjacency list of the graph.
- * @returns {number} The maximum path length found in the graph.
+ * Assumes 'totalNodes' is globally available or passed.
+ * @param {Array<Array<number>>} networkGraph - The adjacency list of the graph.
+ * @returns {number} The maximum path length found.
  */
-function calculateLongestPath(currentNetwork) {
-  // Array to store the longest path length ending at each node.
-  // 'nodeCount' is a global variable representing the total number of nodes.
-  const pathLengths = [];
-  let overallMax = 1;
+function calculateLongestPath(networkGraph) {
+  var pathLengths = []; // Array to store the longest path ending at each node.
+  var nodeIdx, neighborIdx; // Loop counters.
+  var maximumPath = 1; // Initialize maximum path length to 1 (for a single node).
 
   // Initialize all path lengths to 1 (each node itself is a path of length 1).
-  for (let currNode = 0; currNode < nodeCount; currNode++) {
-    pathLengths[currNode] = 1;
+  for (nodeIdx = 0; nodeIdx < totalNodes; nodeIdx++) {
+    pathLengths[nodeIdx] = 1;
   }
 
-  // Iterate through each node to compute and update path lengths.
-  for (let currNode = 0; currNode < nodeCount; currNode++) {
-    // For each adjacent node, update its path length.
-    for (let adjIndex = 0; adjIndex < currentNetwork[currNode].length; adjIndex++) {
-      const adjacentNode = currentNetwork[currNode][adjIndex];
-      // The path length to an adjacent node can be max(current_length, length_to_current_node + 1).
-      pathLengths[adjacentNode] = Math.max(pathLengths[adjacentNode], pathLengths[currNode] + 1);
+  // Iterate through nodes to compute longest paths.
+  for (nodeIdx = 0; nodeIdx < totalNodes; nodeIdx++) {
+    // For each neighbor of the current node:
+    for (neighborIdx = 0; neighborIdx < networkGraph[nodeIdx].length; neighborIdx++) {
+      // Update the path length to the neighbor if a longer path is found through the current node.
+      pathLengths[networkGraph[nodeIdx][neighborIdx]] = Math.max(
+        pathLengths[networkGraph[nodeIdx][neighborIdx]],
+        pathLengths[nodeIdx] + 1
+      );
     }
-    // Keep track of the overall maximum path length encountered.
-    overallMax = Math.max(overallMax, pathLengths[currNode]);
+    // Update the overall maximum path length.
+    maximumPath = Math.max(maximumPath, pathLengths[nodeIdx]);
   }
 
-  return overallMax;
+  return maximumPath; // Return the longest path found in the graph.
 }
 
-/*
- * Main processing logic begins here.
- * This section parses initial parameters, builds the graph, and performs analysis.
- */
 
-// Extract the first line containing node and edge counts.
-const initialParams = String(dataLines.shift()).split(' ');
+// --- Main program execution starts here ---
 
-// Parse the number of nodes and edges from the initial parameters.
-let nodeCount = parseInt(initialParams[0], 10);
-let edgeCount = parseInt(initialParams[1], 10);
+// Parse the first line of input to get node and edge counts.
+var firstLineParts = rawInputLines.shift().split(' ');
+var totalNodes = parseInt(firstLineParts[0], 10); // Number of nodes.
+var totalEdges = parseInt(firstLineParts[1], 10); // Number of edges.
 
-// Initialize an array to store the graph connections.
-const connections = [];
+var allConnections = []; // Array to store all graph connections.
+var initialGraph; // Variable to hold the initial graph.
+var tempGraph; // Variable for temporary graph modifications.
+var edgeIterator; // Loop counter for iterating through edges.
 
-// Populate the connections array from the remaining input lines.
-for (let idx = 0; idx < edgeCount; idx++) {
-  connections[idx] = dataLines[idx].split(' ');
+// Read the remaining input lines to populate the connections array.
+for (edgeIterator = 0; edgeIterator < totalEdges; edgeIterator++) {
+  allConnections[edgeIterator] = rawInputLines[edgeIterator].split(' ');
 }
 
-// Build the initial graph and calculate the maximum path length in the original graph.
-let network; // Declared here to be assigned in the next line
-const maxPathLength = calculateLongestPath(network = buildAdjacencyList(nodeCount, edgeCount, connections));
-let foundSolution = false;
+// Calculate the longest path in the original graph.
+var originalMaxPath = calculateLongestPath(initialGraph = constructNetwork(totalNodes, totalEdges, allConnections));
+var foundCriticalEdge = false; // Flag to track if a critical edge is found.
 
-// Iterate through each connection (edge) to see if its removal reduces the max path length.
-for (let idx = 0; idx < edgeCount; idx++) {
-  // Create a modified graph by hypothetically removing the current edge.
-  const modifiedNetwork = createSubNetwork(network, connections[idx]);
+// Iterate through each edge to check if its removal reduces the longest path.
+for (edgeIterator = 0; edgeIterator < totalEdges; edgeIterator++) {
+  // Create a temporary graph with the current edge removed.
+  tempGraph = createModifiedNetwork(initialGraph, allConnections[edgeIterator]);
 
-  // If removing this edge reduces the overall maximum path length, print its index (1-based).
-  if (calculateLongestPath(modifiedNetwork) < maxPathLength) {
-    console.log(idx + 1);
-    foundSolution = true; // Indicate that a solution was found.
+  // If removing this edge shortens the longest path:
+  if (calculateLongestPath(tempGraph) < originalMaxPath) {
+    console.log(edgeIterator + 1); // Output the 1-based index of the critical edge.
+    foundCriticalEdge = true; // Set the flag.
   }
 }
 
-// If no single edge removal reduced the max path length, print -1.
-if (!foundSolution) {
+// If no critical edge was found, output -1.
+if (!foundCriticalEdge) {
   console.log(-1);
 }

@@ -1,142 +1,126 @@
-const identifyRepeatedElementPositions = (inputSequence) => {
-  // Defensive programming: Ensure input is an array
-  if (!Array.isArray(inputSequence)) {
-    console.warn("Warning: Non-array input provided to identifyRepeatedElementPositions.");
-    return [];
-  }
+function findDuplicateIndices(inputArray) {
+    const DIGIT_RANGE = 10;
+    const occurrenceCounts = new Array(DIGIT_RANGE).fill(0);
 
-  // Using a Map for occurrence tracking, which is more flexible than a fixed-size array
-  // but for Sudoku digits (0-9), an array would also work efficiently.
-  const digitFrequencyMap = new Map();
-
-  // Populate the frequency map for each numeric element in the sequence
-  for (const digit of inputSequence) {
-    // Ensure the element is a valid number, primarily for robustness
-    if (typeof digit === 'number' && Number.isInteger(digit) && digit >= 0 && digit <= 9) {
-      digitFrequencyMap.set(digit, (digitFrequencyMap.get(digit) || 0) + 1);
+    for (const currentValue of inputArray) {
+        if (currentValue >= 0 && currentValue < DIGIT_RANGE) {
+            occurrenceCounts[currentValue]++;
+        }
     }
-    // Non-numeric or out-of-range values are ignored, mimicking original behavior of 0-9 count
-  }
 
-  // Filter out digits that appear two or more times
-  const problematicDigits = Array.from(digitFrequencyMap.entries())
-                                 .filter(([, currentCount]) => currentCount >= 2)
-                                 .map(([value]) => value);
-
-  // Collect the original indices from the input sequence where these problematic digits occur
-  const positionsOfProblematicDigits = [];
-  inputSequence.forEach((digit, idx) => {
-    if (problematicDigits.includes(digit)) {
-      positionsOfProblematicDigits.push(idx);
+    const duplicateValues = [];
+    for (let i = 0; i < DIGIT_RANGE; i++) {
+        if (occurrenceCounts[i] >= 2) {
+            duplicateValues.push(i);
+        }
     }
-  });
 
-  return positionsOfProblematicDigits;
+    const indicesOfDuplicates = [];
+    for (let i = 0; i < inputArray.length; i++) {
+        if (duplicateValues.includes(inputArray[i])) {
+            indicesOfDuplicates.push(i);
+        }
+    }
+    return indicesOfDuplicates;
+}
+
+const parseNumericRow = (lineString) => lineString.split(" ").map(Number);
+
+const readSquareGrid = (sourceLines, dimension) => {
+    const grid = [];
+    for (let i = 0; i < dimension; i++) {
+        grid.push(parseNumericRow(sourceLines.shift()));
+    }
+    return grid;
 };
 
-// --- Main Program Execution ---
+const createZeroFilledGrid = (dimension) => {
+    return Array.from({ length: dimension }, () => new Array(dimension).fill(0));
+};
 
-let rawFileContents;
-try {
-  rawFileContents = require('node:fs').readFileSync('/dev/stdin', { encoding: 'utf8', flag: 'r' });
-} catch (fileReadError) {
-  console.error(`ERROR: Could not access input stream: ${fileReadError.message}`);
-  process.exit(1); // Terminate if input cannot be read
-}
-
-// Split input into lines and filter out any potential empty lines
-const processedInputLines = rawFileContents.trim().split('\n').filter(Boolean); // Boolean filters out empty strings
-
-let cumulativeOutputBuffer = '';
-
-// The first line indicates the total number of grids to process
-const totalGridCount = parseInt(processedInputLines.shift(), 10);
-
-if (isNaN(totalGridCount) || totalGridCount < 1) {
-  console.error("ERROR: Invalid or missing grid count in input.");
-  process.exit(1);
-}
-
-// Iterate through each Sudoku-like grid puzzle
-for (let gridIterationIndex = 0; gridIterationIndex < totalGridCount; gridIterationIndex++) {
-  const currentPuzzleGrid = []; // Stores the 9x9 numeric values
-  // This matrix will accumulate marks for positions with duplicates
-  const duplicateMarkingsGrid = Array.from({ length: 9 }, () => new Array(9).fill(0));
-
-  // Parse 9 lines to build the current puzzle grid
-  for (let gridRowIndex = 0; gridRowIndex < 9; gridRowIndex++) {
-    const lineOfNumbers = processedInputLines.shift();
-    if (!lineOfNumbers) {
-      console.error(`ERROR: Insufficient input lines for grid #${gridIterationIndex + 1}, row ${gridRowIndex + 1}.`);
-      process.exit(1);
+const getColumnValues = (grid, colIndex, dimension) => {
+    const column = [];
+    for (let rowIndex = 0; rowIndex < dimension; rowIndex++) {
+        column.push(grid[rowIndex][colIndex]);
     }
-    const rowValues = lineOfNumbers.split(' ').map(Number);
+    return column;
+};
 
-    // Basic validation for row integrity
-    if (rowValues.length !== 9 || rowValues.some(isNaN)) {
-      console.error(`ERROR: Malformed row data for grid #${gridIterationIndex + 1}, row ${gridRowIndex + 1}.`);
-      process.exit(1);
-    }
-    currentPuzzleGrid.push(rowValues);
-  }
-
-  // --- Analysis Step 1: Check for duplicate numbers within each row ---
-  currentPuzzleGrid.forEach((row, rIdx) => {
-    const duplicateIndicesInRow = identifyRepeatedElementPositions(row);
-    duplicateIndicesInRow.forEach(cIdx => {
-      duplicateMarkingsGrid[rIdx][cIdx]++;
-    });
-  });
-
-  // --- Analysis Step 2: Check for duplicate numbers within each column ---
-  for (let colTraversalIndex = 0; colTraversalIndex < 9; colTraversalIndex++) {
-    const columnContent = [];
-    for (let rowTraversalIndex = 0; rowTraversalIndex < 9; rowTraversalIndex++) {
-      columnContent.push(currentPuzzleGrid[rowTraversalIndex][colTraversalIndex]);
-    }
-    const duplicateIndicesInColumn = identifyRepeatedElementPositions(columnContent);
-    duplicateIndicesInColumn.forEach(rIdx => { // rIdx here is the index within the columnContent array
-      duplicateMarkingsGrid[rIdx][colTraversalIndex]++;
-    });
-  }
-
-  // --- Analysis Step 3: Check for duplicate numbers within each 3x3 sub-grid (block) ---
-  // Iterate through the 3x3 blocks by their top-left corner offsets
-  for (let blockOffsetY = 0; blockOffsetY < 3; blockOffsetY++) {
-    for (let blockOffsetX = 0; blockOffsetX < 3; blockOffsetX++) {
-      const blockValues = [];
-      const originalBlockCoordinates = []; // Store (row, col) for each value in the block
-
-      // Collect values and their original coordinates for the current 3x3 block
-      for (let innerBlockRow = 0; innerBlockRow < 3; innerBlockRow++) {
-        for (let innerBlockCol = 0; innerBlockCol < 3; innerBlockCol++) {
-          const actualGridRow = blockOffsetY * 3 + innerBlockRow;
-          const actualGridCol = blockOffsetX * 3 + innerBlockCol;
-          blockValues.push(currentPuzzleGrid[actualGridRow][actualGridCol]);
-          originalBlockCoordinates.push([actualGridRow, actualGridCol]);
+const getSubgridCellCoordinates = (blockRowIndex, blockColIndex, subgridDimension) => {
+    const coords = [];
+    for (let r = 0; r < subgridDimension; r++) {
+        for (let c = 0; c < subgridDimension; c++) {
+            coords.push([blockRowIndex * subgridDimension + r, blockColIndex * subgridDimension + c]);
         }
-      }
-
-      const duplicateIndicesInBlock = identifyRepeatedElementPositions(blockValues);
-      duplicateIndicesInBlock.forEach(posInBlockArray => {
-        const [targetRow, targetCol] = originalBlockCoordinates[posInBlockArray];
-        duplicateMarkingsGrid[targetRow][targetCol]++;
-      });
     }
-  }
+    return coords;
+};
 
-  // --- Output Formatting: Apply marks based on duplicate findings ---
-  const formattedGridOutput = currentPuzzleGrid.map((rowContents, rIdx) => {
-    return rowContents.map((cellValue, cIdx) => {
-      // A cell is marked if it was found to be a duplicate in any of the checks
-      const indicatorPrefix = (duplicateMarkingsGrid[rIdx][cIdx] > 0) ? '*' : ' ';
-      return `${indicatorPrefix}${cellValue}`; // Use template literals for cleaner string construction
-    }).join(''); // Join individual cell strings without any separator for a row
-  });
+const getValuesFromCoordinates = (grid, coordinatesList) => {
+    const values = [];
+    for (const coordPair of coordinatesList) {
+        values.push(grid[coordPair[0]][coordPair[1]]);
+    }
+    return values;
+};
 
-  // Append the formatted grid lines and an extra blank line to separate puzzle outputs
-  cumulativeOutputBuffer += formattedGridOutput.join('\n') + '\n\n';
+const formatOutputGrid = (originalGrid, markerGrid, dimension) => {
+    const formattedRows = [];
+    for (let r = 0; r < dimension; r++) {
+        const currentRow = [];
+        for (let c = 0; c < dimension; c++) {
+            const cellValue = originalGrid[r][c];
+            const formattedCell = markerGrid[r][c] >= 1 ? `*${cellValue}` : ` ${cellValue}`;
+            currentRow.push(formattedCell);
+        }
+        formattedRows.push(currentRow.join(""));
+    }
+    return formattedRows.join("\n");
+};
+
+const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
+const inputLines = rawData.trim().split("\n");
+
+let outputBuffer = "";
+
+const GRID_DIMENSION = 9;
+const SUBGRID_DIMENSION = 3;
+
+const numTestCases = Number(inputLines.shift());
+
+for (let testCaseIndex = 0; testCaseIndex < numTestCases; testCaseIndex++) {
+    const gridData = readSquareGrid(inputLines, GRID_DIMENSION);
+    const duplicateMarkers = createZeroFilledGrid(GRID_DIMENSION);
+
+    for (let rowIndex = 0; rowIndex < GRID_DIMENSION; rowIndex++) {
+        const duplicatePositions = findDuplicateIndices(gridData[rowIndex]);
+        for (const colIndex of duplicatePositions) {
+            duplicateMarkers[rowIndex][colIndex]++;
+        }
+    }
+
+    for (let colIndex = 0; colIndex < GRID_DIMENSION; colIndex++) {
+        const columnValues = getColumnValues(gridData, colIndex, GRID_DIMENSION);
+        const duplicatePositions = findDuplicateIndices(columnValues);
+        for (const rowIndex of duplicatePositions) {
+            duplicateMarkers[rowIndex][colIndex]++;
+        }
+    }
+
+    for (let blockRow = 0; blockRow < SUBGRID_DIMENSION; blockRow++) {
+        for (let blockCol = 0; blockCol < SUBGRID_DIMENSION; blockCol++) {
+            const subgridCoordinates = getSubgridCellCoordinates(blockRow, blockCol, SUBGRID_DIMENSION);
+            const subgridValues = getValuesFromCoordinates(gridData, subgridCoordinates);
+            const duplicatePositions = findDuplicateIndices(subgridValues);
+
+            for (const duplicateIndex of duplicatePositions) {
+                const [originalRow, originalCol] = subgridCoordinates[duplicateIndex];
+                duplicateMarkers[originalRow][originalCol]++;
+            }
+        }
+    }
+
+    outputBuffer += formatOutputGrid(gridData, duplicateMarkers, GRID_DIMENSION) + "\n\n";
 }
 
-// Print the final accumulated string, removing any trailing newlines at the very end
-console.log(cumulativeOutputBuffer.trim());
+console.log(outputBuffer.trim());

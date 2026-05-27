@@ -1,15 +1,21 @@
-function ExecuteProgram ( rawData ) {
-	// The incoming raw data is processed line by line for further operations.
-	rawData = rawData . split ( "\n" ) . filter ( Boolean ) ;
-	
-	let repetitionCount = Number ( rawData [ 0 ] ) ;
-	let outputString = "" ;
-	
-	for ( let idx = 0 ; idx < repetitionCount ; idx ++ )
-		outputString += "ACL" ;
-	
-	console . log ( outputString ) ;
+function ProcessInput(rawData) {
+  // This function processes the incoming data stream.
+  // The initial data is split by newlines and empty entries are removed.
+  rawData = rawData.split("\n").filter(Boolean);
+
+  // Extract the first numerical value from the processed data.
+  let countVal = Number(rawData[0]);
+  // Initialize an empty string to accumulate the final output.
+  let resultString = "";
+
+  // Loop 'countVal' times to build the output string.
+  for (let idx = 0; idx < countVal; idx++) {
+    resultString += "ACL"; // Append the specific sequence "ACL" in each iteration.
+  }
+
+  // Display the accumulated string to the standard output.
+  console.log(resultString);
 }
 
-// Invoke the primary routine with data obtained from the standard input stream.
-ExecuteProgram ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+// Read the entire content from standard input synchronously and pass it to the processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

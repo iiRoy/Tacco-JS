@@ -1,117 +1,78 @@
-// This script processes input data to calculate paths on a grid.
-// It reads grid dimensions and cell types, then uses dynamic programming.
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8'); // Read all input from standard input
+var lineBuffer = rawData.trim().split("\n"); // Split input into lines and remove leading/trailing whitespace
 
-// Import the file system module for input operations
-const fileSystemApi = require('fs');
+// Main processing loop for multiple test cases
+while (true) {
+   // Extract width and height for the current grid
+   var dimensions = lineBuffer.shift().split(" ").map(Number);
+   var widthVal = dimensions[0];
+   var heightVal = dimensions[1];
 
-// Read the entire standard input as a string, then clean and split into lines
-let rawDataSource = fileSystemApi.readFileSync('/dev/stdin', 'utf8');
-let dataLines = rawDataSource . trim ( ) . split ( '\n' ) ;
+   // If both dimensions are zero, terminate the program
+   if (widthVal === 0 && heightVal === 0) {
+      break;
+   }
 
-// Main processing loop: continues until a specific termination condition is met
-while ( true )
-{
-    // Extract grid dimensions from the current line and parse them as integers
-    let sizePair = dataLines . shift ( ) . split ( ' ' ) . map ( val => parseInt ( val , 10 ) ) ;
-    let boardCols = sizePair [ 0 ] ; // Assign the first value as width (columns)
-    let boardRows = sizePair [ 1 ] ; // Assign the second value as height (rows)
+   // Initialize a 2D array to store grid cell states
+   var gridData = [];
+   for (var rowIdx = 0; rowIdx < heightVal; rowIdx++) {
+      gridData.push(lineBuffer.shift().split(" ").map(Number));
+   }
 
-    // Check for the termination condition: both dimensions are zero
-    if ( boardCols === 0 && boardRows === 0 )
-    {
-        break ; // Exit the loop if dimensions are 0x0
-    }
+   // Initialize a 2D array for dynamic programming, filled with zeros
+   var pathCounts = [];
+   for (var rowIdx = 0; rowIdx < heightVal; rowIdx++) {
+      pathCounts[rowIdx] = [];
+      for (var colIdx = 0; colIdx < widthVal; colIdx++) {
+         pathCounts[rowIdx][colIdx] = 0;
+      }
+   }
 
-    // Initialize a 2D array to store the terrain or obstacle grid
-    let obstacleGrid = [ ] ;
-    // Populate the obstacle grid row by row
-    for ( let currentRowIdx = 0 ; currentRowIdx < boardRows ; currentRowIdx ++ )
-    {
-        obstacleGrid . push ( dataLines . shift ( ) . split ( ' ' ) . map ( ( stringVal ) => parseInt ( stringVal , 10 ) ) ) ;
-    }
+   // Populate the dynamic programming table
+   for (var rowIdx = 0; rowIdx < heightVal; rowIdx++) {
+      for (var colIdx = 0; colIdx < widthVal; colIdx++) {
+         // Base case: First row, if cell is traversable (0), set path count to 1
+         if (rowIdx === 0 && gridData[rowIdx][colIdx] === 0) {
+            pathCounts[rowIdx][colIdx] = 1;
+         }
+         // For subsequent rows
+         else if (rowIdx >= 1) {
+            // Calculate contributions from previous cells based on rules
+            // Contribution from top-left (diagonal)
+            var valA = (colIdx === 0 || gridData[rowIdx - 1][colIdx - 1] === 2) ? 0 : pathCounts[rowIdx - 1][colIdx - 1];
+            // Contribution from directly above
+            var valB = (gridData[rowIdx - 1][colIdx] === 2) ? 0 : pathCounts[rowIdx - 1][colIdx];
+            // Contribution from top-right (diagonal)
+            var valC = (colIdx === widthVal - 1 || gridData[rowIdx - 1][colIdx + 1] === 2) ? 0 : pathCounts[rowIdx - 1][colIdx + 1];
+            // Contribution from two rows above (special case)
+            var valD = (rowIdx >= 2 && gridData[rowIdx - 2][colIdx] === 2) ? pathCounts[rowIdx - 2][colIdx] : 0;
 
-    // Initialize the dynamic programming table (memoization table) with zeros
-    let memoTable = [ ] ;
-    for ( let rIdx = 0 ; rIdx < boardRows ; rIdx ++ )
-    {
-        memoTable [ rIdx ] = [ ] ; // Create a new row
-        for ( let cIdx = 0 ; cIdx < boardCols ; cIdx ++ )
-        {
-            memoTable [ rIdx ] [ cIdx ] = 0 ; // Initialize each cell to zero
-        }
-    }
-
-    // Fill the dynamic programming table based on grid rules
-    for ( let r = 0 ; r < boardRows ; r ++ )
-    {
-        for ( let c = 0 ; c < boardCols ; c ++ )
-        {
-            // Base case: If it's the first row and the cell is traversable (type 0)
-            if ( r === 0 && obstacleGrid [ r ] [ c ] === 0 )
-            {
-                memoTable [ r ] [ c ] = 1 ; // One way to reach this cell
+            // Update current cell's path count based on its type
+            if (gridData[rowIdx][colIdx] === 0) { // Normal traversable cell
+               pathCounts[rowIdx][colIdx] += valA + valB + valC + valD;
+            } else if (gridData[rowIdx][colIdx] === 1) { // Blocked cell
+               pathCounts[rowIdx][colIdx] = 0;
+            } else if (gridData[rowIdx][colIdx] === 2) { // Special cell type
+               pathCounts[rowIdx][colIdx] += valB + valD;
             }
-            // For subsequent rows, calculate paths based on previous cells
-            else if ( r >= 1 )
-            {
-                // Calculate paths from diagonally top-left
-                let prevLeftDiagonal = ( c === 0 || obstacleGrid [ r - 1 ] [ c - 1 ] === 2 )
-                                       ? 0
-                                       : memoTable [ r - 1 ] [ c - 1 ] ;
+         }
+      }
+   }
 
-                // Calculate paths from straight top
-                let prevUpward = ( obstacleGrid [ r - 1 ] [ c ] === 2 )
-                                 ? 0
-                                 : memoTable [ r - 1 ] [ c ] ;
-
-                // Calculate paths from diagonally top-right
-                let prevRightDiagonal = ( c === boardCols - 1 || obstacleGrid [ r - 1 ] [ c + 1 ] === 2 )
-                                        ? 0
-                                        : memoTable [ r - 1 ] [ c + 1 ] ;
-
-                // Calculate paths from two rows up (only if specific condition met)
-                let prevTwoRowsUp = ( r >= 2 && obstacleGrid [ r - 2 ] [ c ] === 2 )
-                                    ? memoTable [ r - 2 ] [ c ]
-                                    : 0 ;
-
-                // Update the current cell's path count based on its type
-                if ( obstacleGrid [ r ] [ c ] === 0 )
-                {
-                    // If cell is type 0 (normal path), sum all valid previous paths
-                    memoTable [ r ] [ c ] += prevLeftDiagonal + prevUpward + prevRightDiagonal + prevTwoRowsUp ;
-                }
-                else if ( obstacleGrid [ r ] [ c ] === 1 )
-                {
-                    // If cell is type 1 (blocked), no paths can go through it
-                    memoTable [ r ] [ c ] = 0 ;
-                }
-                else if ( obstacleGrid [ r ] [ c ] === 2 )
-                {
-                    // If cell is type 2 (special path), sum only upward and two-up paths
-                    memoTable [ r ] [ c ] += prevUpward + prevTwoRowsUp ;
-                }
-            }
-        }
-    }
-
-    // Calculate the final aggregate count from the last two rows
-    let finalPathCount = 0 ;
-    for ( let finalRowIdx = boardRows - 2 ; finalRowIdx < boardRows ; finalRowIdx ++ )
-    {
-        for ( let finalColIdx = 0 ; finalColIdx < boardCols ; finalColIdx ++ )
-        {
-            // Condition for the second-to-last row and specific cell type
-            if ( boardRows >= 2 && finalRowIdx === boardRows - 2 && obstacleGrid [ finalRowIdx ] [ finalColIdx ] === 2 )
-            {
-                finalPathCount += memoTable [ finalRowIdx ] [ finalColIdx ] ;
-            }
-            // Condition for the last row and specific cell types
-            if ( boardRows >= 1 && finalRowIdx === boardRows - 1 && ( obstacleGrid [ finalRowIdx ] [ finalColIdx ] === 0 || obstacleGrid [ finalRowIdx ] [ finalColIdx ] === 2 ) )
-            {
-                finalPathCount += memoTable [ finalRowIdx ] [ finalColIdx ] ;
-            }
-        }
-    }
-    // Output the computed total path count for the current grid
-    console . log ( finalPathCount ) ;
+   // Calculate the total number of paths ending in the last two rows
+   var totalPaths = 0;
+   for (var rowIdx = heightVal - 2; rowIdx < heightVal; rowIdx++) {
+      for (var colIdx = 0; colIdx < widthVal; colIdx++) {
+         // If it's the second to last row and the cell is type 2
+         if (heightVal >= 2 && rowIdx === heightVal - 2 && gridData[rowIdx][colIdx] === 2) {
+            totalPaths += pathCounts[rowIdx][colIdx];
+         }
+         // If it's the last row and the cell is type 0 or 2
+         if (heightVal >= 1 && rowIdx === heightVal - 1 && (gridData[rowIdx][colIdx] === 0 || gridData[rowIdx][colIdx] === 2)) {
+            totalPaths += pathCounts[rowIdx][colIdx];
+         }
+      }
+   }
+   // Output the calculated total paths for the current test case
+   console.log(totalPaths);
 }

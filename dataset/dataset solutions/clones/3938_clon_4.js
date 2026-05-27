@@ -1,29 +1,24 @@
-const inputProcessor = require('readline');
-const collectedData = [];
-
-const inputInterface = inputProcessor.createInterface({
-    input: process.stdin,
-    output: process.stdout
-});
-
-inputInterface.on('line', (contentSegment) => {
-    collectedData.push(contentSegment);
-    if (collectedData.length === 4) {
-        inputInterface.close();
-    }
-});
-
-const determineMinimum = (valueA, valueB) => {
-    return valueA < valueB ? valueA : valueB;
+const selectSmallerOperand = (operandA, operandB) => {
+  if (Number.isNaN(operandA) || Number.isNaN(operandB)) {
+    return Number.NaN;
+  }
+  return operandA < operandB ? operandA : operandB;
 };
 
-inputInterface.on('close', () => {
-    const convertedNumbers = collectedData.map(strValue => parseFloat(strValue));
+const inputValues = require("fs").readFileSync("/dev/stdin", "utf8")
+  .split("\n")
+  .reduce((accumulator, currentLine, index) => {
+    if (accumulator.length < 4) {
+      accumulator.push(Number(currentLine));
+    }
+    return accumulator;
+  }, []);
 
-    const firstGroupMinimum = determineMinimum(convertedNumbers[0], convertedNumbers[1]);
-    const secondGroupMinimum = determineMinimum(convertedNumbers[2], convertedNumbers[3]);
+const firstOperand = inputValues[0];
+const secondOperand = inputValues[1];
+const thirdOperand = inputValues[2];
+const fourthOperand = inputValues[3];
 
-    const combinedOutcome = firstGroupMinimum + secondGroupMinimum;
+const computedResult = selectSmallerOperand(firstOperand, secondOperand) + selectSmallerOperand(thirdOperand, fourthOperand);
 
-    process.stdout.write(String(combinedOutcome) + '\n');
-});
+console.log(computedResult);

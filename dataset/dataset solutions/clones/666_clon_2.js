@@ -1,25 +1,20 @@
-const fileSystemAccessor = require ( 'fs' ) ; // Obtain the file system utility
+let rawData = require('fs').readFileSync('/dev/stdin', 'utf8'); // Obtain raw input from the standard input stream
 
-let rawDataSource = fileSystemAccessor . readFileSync ( '/dev/stdin' , 'utf8' ) ; // Fetch content from standard input
+const numericData = rawData.trim().split("\n").map(Number); // Clean and parse the input into an array of numerical values
 
-let processedNumericSeries = ( rawDataSource . trim ( ) ) . split ( "\n" ) . map ( Number ) ; // Cleanse, segment, and convert input to a numerical array
+while (numericData.length !== 0) { // Iterate as long as there are elements remaining in our data collection
+  let countVal = (numericData.shift()) / 4; // Extract the first value, divide by four, and store it as a counter
 
-while ( processedNumericSeries . length > 0 ) // Continue processing while the series contains elements
-{
-   let loopQuantity = ( processedNumericSeries . shift ( ) ) / 4 ; // Extract and prepare the iteration count
+  if (countVal === 0) { // If the calculated counter is zero, it signals the end of processing
+    break; // Exit the main processing loop
+  }
 
-   if ( loopQuantity === 0 ) // If the iteration count is zero, exit the main cycle
-   {
-       break ;
-   }
+  let totalAccumulator = 0; // Initialize a variable to accumulate sums for the current block
 
-   let runningTally = 0 ; // Initialize accumulator for values
+  while (countVal !== 0) { // Loop for the number of times specified by 'countVal'
+    totalAccumulator += numericData.shift(); // Add the next numerical entry from the data collection to our accumulator
+    countVal--; // Decrement the counter for this block
+  }
 
-   while ( loopQuantity > 0 ) // Iterate according to the determined quantity
-   {
-       runningTally += processedNumericSeries . shift ( ) ; // Add the next value from the series to the tally
-       loopQuantity -- ; // Decrement the iteration counter
-   }
-
-   console . log ( runningTally ) ; // Display the accumulated total for this segment
+  console.log(totalAccumulator); // Display the final accumulated sum for the current block
 }

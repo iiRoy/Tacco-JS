@@ -1,50 +1,43 @@
 "use strict";
 
-const obtainNumber = (inputString) => parseInt(inputString.trim(), 10);
-
-const calculateReducedValue = (subjectValue, factorToRemove) => {
-  let currentSubject = subjectValue;
-  while (currentSubject > 0 && currentSubject % factorToRemove === 0) {
-    currentSubject /= factorToRemove;
+const getDivs = (val) => {
+  if (val === 0) {
+    return [1, 0];
   }
-  return currentSubject;
-};
+  if (val < 0) {
+    return [1, val];
+  }
 
-const acquireDivisors = (valueToFactor) => {
-  const distinctDivs = new Set();
-  for (let idx = 1; idx * idx <= valueToFactor; idx++) {
-    if (valueToFactor % idx === 0) {
-      distinctDivs.add(idx);
-      distinctDivs.add(valueToFactor / idx);
+  const uniqueDivisors = new Set();
+  for (let currentFactor = 1; currentFactor * currentFactor <= val; ++currentFactor) {
+    if (val % currentFactor === 0) {
+      uniqueDivisors.add(currentFactor);
+      uniqueDivisors.add(val / currentFactor);
     }
   }
-  return Array.from(distinctDivs).sort((first, second) => first - second);
+  return Array.from(uniqueDivisors).sort((a, b) => a - b);
 };
 
-(function executeProcessor(inputContent) {
-  const mainInputNumber = obtainNumber(inputContent);
+(function processInput(rawInput) {
+  const numericValue = Number(rawInput.trim());
 
-  const prevNumberDivisors = acquireDivisors(mainInputNumber - 1);
-  const countA = prevNumberDivisors.length - 1;
+  const exclusiveDivisorCount = getDivs(numericValue - 1).length - 1;
 
-  const currentNumberDivisors = acquireDivisors(mainInputNumber);
-  const relevantDivisors = currentNumberDivisors.filter(val => val > 1);
+  const allNDivisors = getDivs(numericValue);
+  const nDivisorsExcludingOne = allNDivisors.slice(1);
 
-  let countB = 0;
-
-  relevantDivisors.forEach(currentDivisorCandidate => {
-    const resultingValue = calculateReducedValue(mainInputNumber, currentDivisorCandidate);
-
-    if (resultingValue === 1) {
-      countB++;
-    } else {
-      const reducedMinusOneDivisors = acquireDivisors(resultingValue - 1);
-      if (reducedMinusOneDivisors.includes(currentDivisorCandidate)) {
-        countB++;
-      }
+  const qualifyingDivisorCount = nDivisorsExcludingOne.filter(currentDivisor => {
+    let remainingFactor = numericValue;
+    while (remainingFactor > 1 && remainingFactor % currentDivisor === 0) {
+      remainingFactor /= currentDivisor;
     }
-  });
 
-  console.log(countA + countB);
+    const isPowerOfDivisor = (remainingFactor === 1);
+    const isDivisorOfReducedMinusOne = (remainingFactor > 1 && getDivs(remainingFactor - 1).includes(currentDivisor));
+
+    return isPowerOfDivisor || isDivisorOfReducedMinusOne;
+  }).length;
+
+  console.log(exclusiveDivisorCount + qualifyingDivisorCount);
 
 })(require('fs').readFileSync('/dev/stdin', 'utf8'));

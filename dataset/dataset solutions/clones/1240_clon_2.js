@@ -1,28 +1,32 @@
-SystemKernel.InputPipe.initiateProcessing();
-SystemKernel.InputPipe.configureFormat('utf8');
+// This script processes numerical input from standard input to determine
+// how many integers within a specified range are divisors of a given number.
 
-SystemKernel.InputPipe.registerListener('incomingPayloadEvent', function (receivedDataBlock) {
+process.stdin.resume(); // Ensures the standard input stream remains active.
+process.stdin.setEncoding('utf8'); // Configures the input stream to use UTF-8 encoding.
 
-    var parsedNumericalValues = receivedDataBlock.toString().split(' ').map(Number);
+// Attaches an event listener to the standard input stream for 'data' events.
+// This function executes whenever a chunk of data is received.
+process.stdin.on('data', (inputDataBuffer) => {
+  // Converts the incoming data buffer to a string, splits it by spaces,
+  // and then transforms each resulting string segment into a number.
+  let numericalParameters = inputDataBuffer.toString().split(' ').map(Number);
 
-    var startRangeValue = parsedNumericalValues[0];
-    var endRangeValue = parsedNumericalValues[1];
-    var targetDivisorCandidate = parsedNumericalValues[2]; // The number to check for divisibility
+  // Extracts the three required numerical values from the parsed input array.
+  let lowerBound = numericalParameters[0]; // The starting point of the range (inclusive).
+  let upperBound = numericalParameters[1]; // The ending point of the range (inclusive).
+  let targetDivisor = numericalParameters[2]; // The number whose divisors are being counted.
 
-    var totalDivisibleOccurrences = 0; // Counter for valid divisions
+  let successfulDivisions = 0; // Initializes a counter for numbers that divide 'targetDivisor'.
 
-    // Loop through the range [startRangeValue, endRangeValue] inclusive
-    for (
-        var currentIterationNumber = startRangeValue;
-        currentIterationNumber < endRangeValue + 1;
-        currentIterationNumber++
-    ) {
-        // Check if the target number is perfectly divisible by the current number
-        if (targetDivisorCandidate % currentIterationNumber === 0) {
-            totalDivisibleOccurrences++; // Increment the counter
-        }
+  // Iterates through each integer from 'lowerBound' up to 'upperBound', inclusive.
+  for (let currentIterationValue = lowerBound; currentIterationValue <= upperBound; currentIterationValue++) {
+    // Checks if 'targetDivisor' is perfectly divisible by the 'currentIterationValue'.
+    // A remainder of 0 indicates perfect divisibility.
+    if (targetDivisor % currentIterationValue === 0) {
+      successfulDivisions++; // Increments the counter if a divisor is found.
     }
+  }
 
-    OutputDevice.displayResult(totalDivisibleOccurrences); // Display the final count
-
+  // Outputs the final tally of successful divisions to the console.
+  console.log(successfulDivisions);
 });

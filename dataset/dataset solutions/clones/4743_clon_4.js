@@ -1,38 +1,22 @@
 "use strict";
 
-const acquireRawData = () => require('node:fs').readFileSync('/dev/stdin', 'utf8');
+const processInputData = (inputContent) => {
+    const dataLines = inputContent.trim().split("\n");
+    const initialSegment = dataLines[0].split(" ");
+    const numericTarget = parseInt(initialSegment[0]);
 
-const parseNumericalSegment = (textBlock) => {
-    const numericMatch = textBlock.match(/^\s*(\d+)/);
-    if (numericMatch && numericMatch[1]) {
-        return Number(numericMatch[1]);
-    }
-    return 0;
+    const calculateScore = (currentValue) => {
+        const remainderLookup = [0, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2]; // For values 0 through 10
+
+        if (currentValue < 11) {
+            return remainderLookup[currentValue];
+        } else {
+            return 2 + calculateScore(currentValue - 11);
+        }
+    };
+
+    const finalScore = calculateScore(numericTarget);
+    console.log(finalScore);
 };
 
-const determineOutputValue = (initialQuantity) => {
-    let factorOfEleven = 0;
-    let remainingAmount = initialQuantity;
-
-    while (remainingAmount >= 11) {
-        remainingAmount -= 11;
-        factorOfEleven++;
-    }
-
-    const lookupTableForRemainder = [
-        0, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2
-    ];
-
-    const adjustmentFromRemainder = lookupTableForRemainder[remainingAmount];
-
-    return (factorOfEleven * 2) + adjustmentFromRemainder;
-};
-
-const processExecution = () => {
-    const incomingText = acquireRawData();
-    const primaryNumber = parseNumericalSegment(incomingText);
-    const finalComputation = determineOutputValue(primaryNumber);
-    console.log(finalComputation);
-};
-
-processExecution();
+processInputData(require('node:fs').readFileSync('/dev/stdin', 'utf8'));

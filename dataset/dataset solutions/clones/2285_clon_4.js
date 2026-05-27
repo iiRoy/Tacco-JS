@@ -1,55 +1,73 @@
-function extractInputData(rawData) {
-    const contentLines = rawData.split('\n');
-    const headerDetails = contentLines[0].match(/\d+/g).map(Number);
-    const valueSet = contentLines[1].match(/\d+/g).map(item => item / 2);
+function processInputData(inputLines) {
+  const dimensionParts = inputLines[0].split(" ");
+  const countItems = Number(dimensionParts[0]);
+  const upperLimit = Number(dimensionParts[1]);
 
-    return {
-        _irrelevantCount: headerDetails[0],
-        _upperLimit: headerDetails[1],
-        _processedValues: valueSet
-    };
+  const halfValues = inputLines[1].split(" ").map(valStr => Number(valStr) / 2);
+
+  const commonMultiple = determineLeastCommonMultiple(halfValues);
+
+  console.log(Math.trunc(upperLimit / commonMultiple) - Math.trunc(upperLimit / (commonMultiple * 2)));
 }
 
-function calculateDivisor(operandOne, operandTwo) {
-    while (operandTwo !== 0) {
-        const temporary = operandTwo;
-        operandTwo = operandOne % operandTwo;
-        operandOne = temporary;
+function decomposeIntoPrimes(value) {
+  const primeCounts = {};
+  let currentNum = value;
+
+  if (currentNum < 1) { // Handle non-positive numbers, though problem context implies positive
+    return primeCounts;
+  }
+
+  while (currentNum % 2 === 0) {
+    primeCounts[2] = (primeCounts[2] || 0) + 1;
+    currentNum /= 2;
+  }
+
+  for (let i = 3; i * i <= currentNum; i += 2) {
+    while (currentNum % i === 0) {
+      primeCounts[i] = (primeCounts[i] || 0) + 1;
+      currentNum /= i;
     }
-    return operandOne;
+  }
+
+  if (currentNum > 1) {
+    primeCounts[currentNum] = (primeCounts[currentNum] || 0) + 1;
+  }
+  return primeCounts;
 }
 
-function computeLeastCommonPairwise(valA, valB) {
-    if (valA === 0 || valB === 0) {
-        return 0;
+function mergePrimeFactorMaps(mapA, mapB) {
+  const mergedMap = { ...mapA
+  };
+
+  for (const primeKey in mapB) {
+    if (Object.prototype.hasOwnProperty.call(mapB, primeKey)) {
+      mergedMap[primeKey] = Math.max(mergedMap[primeKey] || 0, mapB[primeKey]);
     }
-    return (valA * valB) / calculateDivisor(valA, valB);
+  }
+  return mergedMap;
 }
 
-function determineAggregateLeastCommonMultiple(arrayOfNumbers) {
-    if (arrayOfNumbers.length === 0) {
-        return 1;
+function determineLeastCommonMultiple(numberArray) {
+  if (numberArray.length === 0) {
+    return 1;
+  }
+
+  const finalPrimeFactors = numberArray.reduce((accumulatorMap, currentNumber) => {
+    if (currentNumber === 0) {
+      return accumulatorMap;
     }
-    return arrayOfNumbers.reduce((accumulator, currentNumber) =>
-        computeLeastCommonPairwise(accumulator, currentNumber)
-    );
-}
+    const currentFactors = decomposeIntoPrimes(currentNumber);
+    return mergePrimeFactorMaps(accumulatorMap, currentFactors);
+  }, {});
 
-function computeFinalResultValue(maxBoundary, baseMultiple) {
-    if (baseMultiple === 0) {
-        return 0;
+  let resultLCM = 1;
+  for (const primeKey in finalPrimeFactors) {
+    if (Object.prototype.hasOwnProperty.call(finalPrimeFactors, primeKey)) {
+      resultLCM *= Math.pow(Number(primeKey), finalPrimeFactors[primeKey]);
     }
-    const totalMultiplesBelowBoundary = Math.floor(maxBoundary / baseMultiple);
-    return Math.floor((totalMultiplesBelowBoundary + 1) / 2);
+  }
+  return resultLCM;
 }
 
-(function executeProgram() {
-    const fileSystem = require('fs');
-    const rawInputContent = fileSystem.readFileSync('/dev/stdin', 'utf8').trim();
-    const { _upperLimit, _processedValues } = extractInputData(rawInputContent);
-
-    const overallLCM = determineAggregateLeastCommonMultiple(_processedValues);
-    const finalAnswer = computeFinalResultValue(_upperLimit, overallLCM);
-
-    process.stdout.write(finalAnswer.toString() + '\n');
-})();
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8').trim().split("\n"));

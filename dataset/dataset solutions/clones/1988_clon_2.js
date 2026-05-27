@@ -1,27 +1,37 @@
-/* This module handles numerical computations. */
-function computeHcf(numberCollection) {
-  /* Helper function applies the Euclidean algorithm for two numbers. */
-  const euclideanStep = (firstNum, secondNum) =>
-    secondNum ? euclideanStep(secondNum, firstNum % secondNum) : firstNum;
-  let currentHcf = numberCollection[0]; /* Initialize the highest common factor with the initial element. */
-  for (let currentIdx = 1; currentIdx < numberCollection.length; currentIdx++) {
-    currentHcf = euclideanStep(currentHcf, numberCollection[currentIdx]); /* Update the HCF iteratively. */
+function calculateGreatestCommonDivisor(numberArray) {
+  // This nested function computes the greatest common divisor of two integers
+  // using the Euclidean algorithm.
+  const findDivisor = (val1, val2) => {
+    return val2 ? findDivisor(val2, val1 % val2) : val1;
+  };
+
+  let currentGcd = numberArray[0]; // Initialize the GCD with the first element of the array
+  // Iterate through the remaining elements to find the GCD of the entire array
+  for (let idx = 1; idx < numberArray.length; idx++) {
+    currentGcd = findDivisor(currentGcd, numberArray[idx]);
   }
-  return currentHcf; /* Return the final computed HCF. */
+  return currentGcd; // Return the final computed GCD
 }
 
-/* The primary routine for processing user-supplied data. */
-function ProcessData(dataInput) {
-  let sumTotal = 0; /* Accumulator for the final sum. */
-  for (let iterX = 1; iterX < parseInt(dataInput) + 1; iterX++) {
-    for (let iterY = 1; iterY < parseInt(dataInput) + 1; iterY++) {
-      for (let iterZ = 1; iterZ < parseInt(dataInput) + 1; iterZ++) {
-        sumTotal += computeHcf([iterX, iterY, iterZ]); /* Add the HCF of the triplet to the total. */
-      } /* End of inner-most loop. */
-    } /* End of middle loop. */
-  } /* End of outer-most loop. */
-  console.log(sumTotal); /* Display the final aggregated sum. */
+function ProcessInput(rawData) {
+  let finalSum = 0; // Variable to accumulate the sum of GCDs
+  const limitValue = parseInt(rawData); // Convert the input string to an integer once
+
+  // First loop for the 'a' variable, from 1 up to the parsed input value
+  for (let firstNum = 1; firstNum < limitValue + 1; firstNum++) {
+    // Second loop for the 'b' variable, also from 1 up to the parsed input value
+    for (let secondNum = 1; secondNum < limitValue + 1; secondNum++) {
+      // Third loop for the 'c' variable, from 1 up to the parsed input value
+      for (let thirdNum = 1; thirdNum < limitValue + 1; thirdNum++) {
+        // Calculate the GCD for the current triplet [a, b, c] and add it to the total sum
+        finalSum += calculateGreatestCommonDivisor([firstNum, secondNum, thirdNum]);
+      }
+    }
+  }
+  // Output the accumulated sum to the console
+  console.log(finalSum);
 }
 
-// The following section should not be altered (it handles standard I/O and invokes the main processing function).
-ProcessData(require("fs").readFileSync("/dev/stdin", "utf8"));
+// This section handles reading input and invoking the primary processing function.
+// It should remain unchanged to ensure proper execution in the given environment.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,43 +1,26 @@
-const performMatrixVectorProduct = (matrixOperand, vectorOperand) => {
-    const outputVector = [];
-    const rowCount = matrixOperand.length;
-    const colCount = vectorOperand.length;
+const processQuaternionProduct = (firstQuad, secondQuad) => {
+  const [w1, x1, y1, z1] = firstQuad;
+  const [w2, x2, y2, z2] = secondQuad;
 
-    for (let rowIdx = 0; rowIdx < rowCount; rowIdx++) {
-        let currentSum = 0;
-        for (let colIdx = 0; colIdx < colCount; colIdx++) {
-            currentSum += matrixOperand[rowIdx][colIdx] * vectorOperand[colIdx];
-        }
-        outputVector.push(currentSum);
-    }
-    return outputVector;
+  const realComponent = w1 * w2 - x1 * x2 - y1 * y2 - z1 * z2;
+  const iComponent = w1 * x2 + x1 * w2 + y1 * z2 - z1 * y2;
+  const jComponent = w1 * y2 - x1 * z2 + y1 * w2 + z1 * x2;
+  const kComponent = w1 * z2 + x1 * y2 - y1 * x2 + z1 * w2;
+
+  return [realComponent, iComponent, jComponent, kComponent];
 };
 
-const processHyperComplex = (firstX, firstY, firstZ, firstW, secondX, secondY, secondZ, secondW) => {
-    const transformationMatrix = [
-        [firstX, -firstY, -firstZ, -firstW],
-        [firstY,  firstX,  firstW, -firstZ],
-        [firstZ, -firstW,  firstX,  firstY],
-        [firstW,  firstZ, -firstY,  firstX]
-    ];
+const fileData = require('fs').readFileSync('/dev/stdin', 'utf8');
+const dataLines = fileData.trim().split('\n');
 
-    const inputVector = [secondX, secondY, secondZ, secondW];
+const totalCases = Number(dataLines[0]);
+const inputCases = dataLines.slice(1, totalCases + 1);
 
-    return performMatrixVectorProduct(transformationMatrix, inputVector);
-};
+inputCases.forEach(lineContent => {
+  const numericalInputs = lineContent.split(' ').map(Number);
+  const quadOne = numericalInputs.slice(0, 4);
+  const quadTwo = numericalInputs.slice(4, 8);
 
-const applicationEntry = () => {
-    const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
-    const dataLines = rawData.trim().split('\n');
-    const operationCount = parseInt(dataLines.shift(), 10);
-
-    const processedOutputs = dataLines.slice(0, operationCount).map(lineContent => {
-        const numericalComponents = lineContent.split(' ').map(parseFloat);
-        const calculatedResult = processHyperComplex(...numericalComponents);
-        return calculatedResult.join(' ');
-    });
-
-    console.log(processedOutputs.join('\n'));
-};
-
-applicationEntry();
+  const productResult = processQuaternionProduct(quadOne, quadTwo);
+  console.log(productResult.join(' '));
+});

@@ -1,11 +1,12 @@
-((acquisitionSource) => {
-    const rawText = require("fs").readFileSync(acquisitionSource, "utf8");
-    const numericParts = rawText.split(" ").map(Number);
+const computeEquivalentResistance = (inputLine) => {
+    const [firstValue, secondValue] = inputLine.split(" ").map(parseFloat);
 
-    const valA = numericParts[0];
-    const valB = numericParts[1];
+    const reciprocalFirst = 1 / firstValue;
+    const reciprocalSecond = 1 / secondValue;
+    const sumOfReciprocals = reciprocalFirst + reciprocalSecond;
+    const finalResistance = 1 / sumOfReciprocals;
 
-    const finalOutcome = (valA * valB) / (valA + valB);
+    console.log(finalResistance);
+};
 
-    process.stdout.write(finalOutcome.toString() + "\n");
-})("/dev/stdin");
+computeEquivalentResistance(require("fs").readFileSync("/dev/stdin", "utf8"));

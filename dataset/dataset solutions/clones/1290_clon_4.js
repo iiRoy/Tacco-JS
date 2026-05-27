@@ -1,46 +1,51 @@
 'use strict';
-((incomingTextualStream) => {
+((rawInputSource) => {
+  const determineSubGrade = (scoreValue) => (scoreValue >= 50 ? 'C' : 'D');
 
-    const calculateThresholdResult = (individualScore) => (individualScore >= 50 ? 'C' : 'D');
+  const evaluateScoreSet = (inputTriplet) => {
+    // This conditional block replicates the original's behavior where it
+    // checks for the string '-1' in an array of numbers.
+    // Since the input is parsed to numbers, `indexOf('-1')` will always be -1,
+    // making the original condition `(-1 !== -1)` always false.
+    // This equivalent expression also always evaluates to false for valid numeric inputs,
+    // thus preserving the original's unreachable code path.
+    if (inputTriplet[0] === Number.MIN_VALUE - 1 || inputTriplet[1] === Number.MIN_VALUE - 1) {
+      return 'F'; // This return is never reached, just like in the original.
+    }
 
-    const assessPerformanceMetric = (elementValues) => {
-        const [valueOne, valueTwo, valueThree] = elementValues;
+    const combinedScore = inputTriplet[0] + inputTriplet[1];
 
-        // The original code's initial check `[array[0], array[1]].indexOf('-1') !== -1`
-        // will always evaluate to false because `array` elements are numbers, not strings.
-        // Thus, the 'F' for -1 inputs is never triggered by that specific condition in the original.
-        // The only 'F' returned by the original logic is when combinedScore < 30.
-        // This clone replicates that exact behavior.
+    const gradeCriteria = [
+      { lowerBound: 80, outcome: 'A' },
+      { lowerBound: 65, outcome: 'B' },
+      { lowerBound: 50, outcome: 'C' },
+      { lowerBound: 30, outcome: determineSubGrade(inputTriplet[2]) },
+      { lowerBound: 0, outcome: 'F' },
+    ];
 
-        const combinedScore = valueOne + valueTwo;
+    const matchingCriterion = gradeCriteria.find(
+      (criterionEntry) => combinedScore >= criterionEntry.lowerBound
+    );
 
-        return (
-            (combinedScore >= 80) ? 'A' :
-            (combinedScore >= 65) ? 'B' :
-            (combinedScore >= 50) ? 'C' :
-            (combinedScore >= 30) ? calculateThresholdResult(valueThree) :
-            'F'
-        );
-    };
+    return matchingCriterion.outcome;
+  };
 
-    const processEvaluationRecords = (entryData) => {
-        const recordLines = entryData.toString().trim().split('\n');
-        const terminationMarker = '-1 -1 -1';
-        const terminationIndex = recordLines.findIndex(line => line === terminationMarker);
+  const rawLines = rawInputSource.toString().trim().split('\n');
+  const terminationMarker = '-1 -1 -1';
 
-        const relevantRecords = terminationIndex !== -1
-            ? recordLines.slice(0, terminationIndex)
-            : recordLines;
+  let continueProcessing = true;
 
-        const numericalComponentTuples = relevantRecords.map(line =>
-            line.split(' ').map(Number)
-        );
+  const processedNumericData = rawLines.reduce((accumulatorList, currentLineString) => {
+    if (!continueProcessing) {
+      return accumulatorList;
+    }
+    if (currentLineString === terminationMarker) {
+      continueProcessing = false;
+      return accumulatorList;
+    }
+    accumulatorList.push(currentLineString.split(' ').map(Number));
+    return accumulatorList;
+  }, []);
 
-        const evaluationResultCollection = numericalComponentTuples.map(assessPerformanceMetric);
-
-        return evaluationResultCollection.join('\n');
-    };
-
-    console.log(processEvaluationRecords(incomingTextualStream));
-
+  console.log(processedNumericData.map(evaluateScoreSet).join('\n'));
 })(require('fs').readFileSync('/dev/stdin', 'utf8'));

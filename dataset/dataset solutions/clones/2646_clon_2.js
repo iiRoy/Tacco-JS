@@ -1,141 +1,145 @@
-/*
- *   Analysis of input string for repetitive patterns.
- *   This script processes an incoming text to segment it based on character sequences.
- */
-let inputHandler = require("fs");
+function ProcessInput(inputString) {
+	// Initialize an array to store the processed segments.
+	let outputSegments = [];
 
-function ProcessInput(originalText) {
-	// Initialize an array to store the resulting segments.
-	const outputSegments = [];
+	// Begin the primary processing flow.
+	ProcessSegmentA(inputString, 0, 1, outputSegments);
 
-	// Begin the primary segmentation process.
-	ProcessSegmentA(originalText, 0, 1, outputSegments);
-
-	// Display the total count of generated segments.
+	// Display the total count of segments found.
 	console.log('%d', outputSegments.length);
 }
 
-// Function to handle the first stage of string segmentation.
-function ProcessSegmentA(sourceString, currentIndex, segmentLength, outputSegments) {
-	// If the current index exceeds the string length, terminate.
-	if (currentIndex > sourceString.length) {
+function ProcessSegmentA(inputString, currentIndex, segmentLength, outputSegments) {
+	// This function handles the initial segmentation logic.
+	// console.log("ProcessSegmentA: ", inputString, currentIndex, segmentLength, outputSegments);
+
+	// If the current index has gone beyond the string's bounds, exit.
+	if (currentIndex > inputString.length) {
 		return;
 	}
 
-	// Extract a segment from the source string.
-	let currentSegment = sourceString.substr(currentIndex, segmentLength);
+	// Extract a portion of the string based on the current position and desired length.
+	const currentSegment = inputString.substr(currentIndex, segmentLength);
 
-	// If the extracted segment is empty, terminate.
+	// If the extracted segment is empty, there's nothing more to process here.
 	if (currentSegment === '') {
 		return;
 	}
 
-	// Process any initial repetitions found at the current index.
-	HandleRepetitionsA(sourceString, currentIndex, outputSegments);
+	// First, check for and handle any sequences of repeated characters.
+	HandleRepeatedChars(inputString, currentIndex, outputSegments);
 
-	// Update the current index based on the length of segments processed so far.
+	// Update the current index to reflect the total length of segments already processed and joined.
 	currentIndex = outputSegments.join("").length;
 
-	// If the updated index covers the entire source string, terminate.
-	if (currentIndex >= sourceString.length) {
+	// If the updated index now covers the entire input string, we are done.
+	if (currentIndex >= inputString.length) {
 		return;
 	}
 
-	// Extract two consecutive characters for comparison.
-	let previousSegment = sourceString.substr(currentIndex, segmentLength);
-	let nextChar = sourceString.substr(currentIndex + segmentLength, 1);
+	// Extract two consecutive parts for comparison.
+	const firstPart = inputString.substr(currentIndex, segmentLength);
+	const nextPart = inputString.substr(currentIndex + segmentLength, 1);
 
-	// If the two characters are identical, extend the current segment length.
-	if (previousSegment === nextChar) {
-		return ProcessSegmentA(sourceString, currentIndex, segmentLength + 1, outputSegments);
-	}
-	// Otherwise, push the characters and transition to the second segmentation stage.
-	else {
-		outputSegments.push(previousSegment, nextChar);
-		return ProcessSegmentB(sourceString, currentIndex + segmentLength + 1, 1, nextChar, outputSegments);
+	// Compare these two parts.
+	if (firstPart === nextPart) {
+		// If they are identical, extend the segment length and re-evaluate.
+		return ProcessSegmentA(inputString, currentIndex, segmentLength + 1, outputSegments);
+	} else {
+		// If they differ, add both parts to the results and transition to the secondary processing stage.
+		outputSegments.push(firstPart, nextPart);
+		return ProcessSegmentB(inputString, currentIndex + segmentLength + 1, 1, nextPart, outputSegments);
 	}
 }
 
-// Function for the second stage of string segmentation, often following a mismatch.
-function ProcessSegmentB(sourceString, currentPosition, currentLen, initialSegment, processedParts) {
-	// If the current position exceeds the string length, exit.
-	if (currentPosition > sourceString.length) {
+function ProcessSegmentB(inputString, currentIndex, segmentLength, previousSegment, outputSegments) {
+	// This function handles subsequent segmentation after an initial difference is found.
+	// console.log("ProcessSegmentB: ", currentIndex, outputSegments);
+
+	// If the current index exceeds the string's length, terminate.
+	if (currentIndex > inputString.length) {
 		return;
 	}
 
-	// Obtain a segment from the source string.
-	let testedSegment = sourceString.substr(currentPosition, currentLen);
+	// Get the current segment from the input string.
+	const currentSegment = inputString.substr(currentIndex, segmentLength);
 
-	// If the segment is empty, terminate.
-	if (testedSegment === '') {
+	// If the current segment is empty, exit.
+	if (currentSegment === '') {
 		return;
 	}
 
-	// Compare the initial segment with the newly tested segment.
-	if (initialSegment === testedSegment) {
-		// If they match and extending would exceed string bounds, perform a swap.
-		if (currentPosition + currentLen + 1 > sourceString.length) {
-			let lastButOnePart = processedParts[processedParts.length - 2];
-			processedParts[processedParts.length - 2] = initialSegment;
-			processedParts[processedParts.length - 1] = lastButOnePart;
-			return ProcessSegmentB(sourceString, currentPosition, currentLen + 1, lastButOnePart, processedParts);
+	// Compare the previously identified segment with the current one.
+	if (previousSegment === currentSegment) {
+		// If they match, check if we are near the end of the string.
+		if (currentIndex + segmentLength + 1 > inputString.length) {
+			// Special handling for boundary condition: swap the last two elements in the output.
+			const tempSegment = outputSegments[outputSegments.length - 2];
+			outputSegments[outputSegments.length - 2] = previousSegment;
+			outputSegments[outputSegments.length - 1] = tempSegment;
+			// Recurse with an incremented segment length and the swapped segment.
+			return ProcessSegmentB(inputString, currentIndex, segmentLength + 1, tempSegment, outputSegments);
 		}
-		// Otherwise, continue extending the segment.
-		return ProcessSegmentB(sourceString, currentPosition, currentLen + 1, initialSegment, processedParts);
-	}
-	// If they do not match, push the new segment and continue from the next position.
-	else {
-		processedParts.push(testedSegment);
-		return ProcessSegmentB(sourceString, currentPosition + currentLen, 1, testedSegment, processedParts);
+		// Standard recursion: increment segment length, keeping the previous segment.
+		return ProcessSegmentB(inputString, currentIndex, segmentLength + 1, previousSegment, outputSegments);
+	} else {
+		// If segments do not match, add the current segment to the collection.
+		outputSegments.push(currentSegment);
+		// Recurse with an updated index, reset segment length to 1, and the current segment as the new previous.
+		return ProcessSegmentB(inputString, currentIndex + segmentLength, 1, currentSegment, outputSegments);
 	}
 }
 
-// Function to identify and handle initial repetitive character sequences.
-function HandleRepetitionsA(sourceString, startIdx, segmentList) {
-	// Get the first character at the starting index.
-	const firstCharacter = sourceString.substr(startIdx, 1);
+function HandleRepeatedChars(inputString, currentIndex, outputSegments) {
+	// This function identifies and processes long sequences of identical characters.
+	// console.log("HandleRepeatedChars: ", inputString, currentIndex, outputSegments);
 
-	// Create a regular expression to match zero or more occurrences of the first character.
-	const repeatRegex = new RegExp(firstCharacter + '*');
+	// Get the character at the starting position.
+	const firstChar = inputString.substr(currentIndex, 1);
 
-	// Find the longest match starting from the current index.
-	const foundPattern = sourceString.substr(startIdx).match(repeatRegex);
+	// Construct a regular expression to find repetitions of this character.
+	const regexPattern = new RegExp(firstChar + '*');
 
-	// Determine the length of the matched repetitive pattern.
-	const patternLength = foundPattern[0].length;
+	// Find the longest sequence of the repeated character starting from the current index.
+	const matchedPart = inputString.substr(currentIndex).match(regexPattern);
 
-	// If the pattern is longer than 3 characters, apply specific segmentation rules.
-	if (patternLength > 3) {
-		if (patternLength % 3 === 2) {
-			// If remainder is 2, process with a split length of 2.
-			segmentList = HandleRepetitionsB(foundPattern[0], 2, segmentList);
-		} else if (patternLength % 3 === 1) {
-			// If remainder is 1, process with a split length of 1.
-			segmentList = HandleRepetitionsB(foundPattern[0], 1, segmentList);
+	// Determine the length of this matched sequence.
+	const matchLength = matchedPart[0].length;
+
+	// Only process if the repeated sequence is longer than 3 characters.
+	if (matchLength > 3) {
+		// Based on the length modulo 3, decide how to split the repeated part.
+		if (matchLength % 3 === 2) {
+			outputSegments = SplitRepeatedPart(matchedPart[0], 2, outputSegments);
+		} else if (matchLength % 3 === 1) {
+			outputSegments = SplitRepeatedPart(matchedPart[0], 1, outputSegments);
 		} else {
-			// If remainder is 0, default to a split length of 2.
-			segmentList = HandleRepetitionsB(foundPattern[0], 2, segmentList);
+			// If matchLength % 3 === 0, default to a split length of 2.
+			outputSegments = SplitRepeatedPart(matchedPart[0], 2, outputSegments);
 		}
 	}
-	return segmentList;
+	// Return the (potentially modified) array of output segments.
+	return outputSegments;
 }
 
-// Recursive helper function for processing repetitive patterns.
-function HandleRepetitionsB(currentMatch, splitLength, outputCollection) {
-	// Extract the initial part of the match based on the split length.
-	const initialPart = currentMatch.substr(0, splitLength);
-	outputCollection.push(initialPart);
+function SplitRepeatedPart(matchedPart, segmentLength, outputSegments) {
+	// This recursive helper function splits a long repeated string into segments.
+	// console.log("SplitRepeatedPart: ", matchedPart, segmentLength, outputSegments);
 
-	// If the remaining match length is less than 3, no further processing needed.
-	if (currentMatch.length < 3) {
-		return outputCollection;
-	}
-	// Otherwise, recursively process the rest of the match.
-	else {
-		const remainingPart = currentMatch.substr(splitLength);
-		return HandleRepetitionsB(remainingPart, 3 - splitLength, outputCollection);
+	// Extract the initial segment from the matched string.
+	const firstSegment = matchedPart.substr(0, segmentLength);
+	outputSegments.push(firstSegment); // Add this segment to the results.
+
+	// If the remaining part of the string is too short, stop the recursion.
+	if (matchedPart.length < 3) {
+		return outputSegments;
+	} else {
+		// Extract the rest of the string after the first segment.
+		const remainingPart = matchedPart.substr(segmentLength);
+		// Recursively call with the remaining part and an adjusted segment length for the next split.
+		return SplitRepeatedPart(remainingPart, 3 - segmentLength, outputSegments);
 	}
 }
 
-// Initiate the entire process with input read from standard input.
-ProcessInput(inputHandler.readFileSync("/dev/stdin", "utf8"));
+// Execute the main processing function with input read from standard input.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

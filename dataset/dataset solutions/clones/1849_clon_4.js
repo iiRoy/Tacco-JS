@@ -1,16 +1,16 @@
-((sourceContent) => {
-  const contentPattern = /^\s*(\d+)\s*\n\s*(.*)\s*$/s;
-  const contentMatch = sourceContent.match(contentPattern);
+function processInputData(rawData) {
+  const [firstLineContent, secondLineContent] = rawData.split('\n').map(segment => segment.trim());
 
-  const [, numericalQuantity, textualPiece] = contentMatch;
+  const characterLimit = Number(firstLineContent);
+  const sourceText = secondLineContent;
 
-  const thresholdValue = Number(numericalQuantity);
-  const sequenceLength = textualPiece.length;
+  const formatTextForDisplay = (textToProcess, maxChars) => {
+    return textToProcess.length <= maxChars
+      ? textToProcess
+      : Array.from(textToProcess).slice(0, maxChars).join('') + '...';
+  };
 
-  const finalRender =
-    sequenceLength <= thresholdValue
-      ? textualPiece
-      : Array.from(textualPiece).slice(0, thresholdValue).join('') + '...';
+  console.log(formatTextForDisplay(sourceText, characterLimit));
+}
 
-  process.stdout.write(finalRender + '\n');
-})(require("node:fs").readFileSync("/dev/stdin", "utf8"));
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,58 +1,64 @@
-function calcModProduct(operandOne, operandTwo, modulusValue) {
-    return (operandOne * operandTwo) % modulusValue;
+function modMultiply(firstOperand, secondOperand, modulus) {
+    return (firstOperand * secondOperand) % modulus;
 }
-function computeModPower(baseVal, exponentVal, modulusValue) {
+
+function modPower(baseVal, exponentVal, modulus) {
     if (exponentVal === 0n) return 1n;
-    if (exponentVal === 1n) return baseVal % modulusValue;
-    let halfPowerResult = computeModPower(baseVal, exponentVal / 2n, modulusValue);
-    let squaredHalf = calcModProduct(halfPowerResult, halfPowerResult, modulusValue);
+
+    let halfPower = modPower(baseVal, exponentVal / 2n, modulus);
+    let squaredHalf = modMultiply(halfPower, halfPower, modulus);
     if (exponentVal % 2n === 1n) {
-        return calcModProduct(squaredHalf, baseVal, modulusValue);
-    } else {
-        return squaredHalf;
+        return modMultiply(squaredHalf, baseVal, modulus);
     }
+    return squaredHalf;
 }
-function obtainModInverse(numberVal, modulusValue) {
-    return computeModPower(numberVal, modulusValue - 2n, modulusValue);
+
+function modInverse(val, modulus) {
+    return modPower(val, modulus - 2n, modulus);
 }
-function getModCombinations(nLimit, kLimit, modulusValue) {
-    const factorials = new Array(Number(nLimit) + 1);
-    const inverseFactorials = new Array(Number(nLimit) + 1);
-    factorials[0] = 1n;
-    inverseFactorials[0] = 1n;
-    for (let i = 1; i <= nLimit; i++) {
-        factorials[i] = calcModProduct(factorials[i - 1], BigInt(i), modulusValue);
+
+function getBinomialCoefficients(nVal, kLimit, modulus) {
+    let coefficients = [];
+    let currentCoeff = 1n;
+    coefficients.push(currentCoeff);
+
+    for (let i = 1n; i <= kLimit; i++) {
+        let numeratorTerm = modMultiply(currentCoeff, nVal - i + 1n, modulus);
+        let denominatorInverse = modInverse(i, modulus);
+        currentCoeff = modMultiply(numeratorTerm, denominatorInverse, modulus);
+        coefficients.push(currentCoeff);
     }
-    inverseFactorials[Number(nLimit)] = obtainModInverse(factorials[Number(nLimit)], modulusValue);
-    for (let i = Number(nLimit) - 1; i >= 1; i--) {
-        inverseFactorials[i] = calcModProduct(inverseFactorials[i + 1], BigInt(i + 1), modulusValue);
-    }
-    const combinationSeries = [];
-    for (let i = 0; i <= kLimit; i++) {
-        let termN = factorials[Number(nLimit)];
-        let termK = inverseFactorials[Number(i)];
-        let termNK = inverseFactorials[Number(nLimit - BigInt(i))];
-        let currentCombination = calcModProduct(termN, termK, modulusValue);
-        currentCombination = calcModProduct(currentCombination, termNK, modulusValue);
-        combinationSeries.push(currentCombination);
-    }
-    return combinationSeries;
+    return coefficients;
 }
-function processInputData(rawDataContent) {
-    const parsedNumericInputs = rawDataContent.trim().split("\n").map(line => line.split(" ").map(Number));
-    const [alpha, beta, gamma] = parsedNumericInputs[0].map(BigInt);
-    const PRIME_MODULUS = 998244353n;
-    const combinationsRangeN = alpha - 1n;
-    const combinationsRangeK = gamma;
-    const combinatoricValues = getModCombinations(combinationsRangeN, combinationsRangeK, PRIME_MODULUS);
-    const baseForPower = beta - 1n;
-    const initialExponentForPower = alpha - gamma - 1n;
-    const finalAccumulatedSum = Array.from({ length: Number(combinationsRangeK) + 1 }, (_, idx) => BigInt(idx)).reduce((accumulator, iterationIndex) => {
-        const currentCombinationTerm = combinatoricValues[Number(combinationsRangeK - iterationIndex)];
-        const currentPowerTerm = computeModPower(baseForPower, initialExponentForPower + iterationIndex, PRIME_MODULUS);
-        return (accumulator + calcModProduct(currentCombinationTerm, currentPowerTerm, PRIME_MODULUS)) % PRIME_MODULUS;
+
+function Main(input) {
+    const lines = input.trim().split("\n");
+    const params = lines[0].split(" ").map(Number);
+
+    const N_val_num = params[0];
+    const M_val_num = params[1];
+    const K_val_num = params[2];
+
+    const MOD_CONSTANT = 998244353n;
+
+    const N_val_big = BigInt(N_val_num);
+    const M_val_big = BigInt(M_val_num);
+    const K_val_big = BigInt(K_val_num);
+
+    const binomialTerms = getBinomialCoefficients(N_val_big - 1n, K_val_big, MOD_CONSTANT);
+    const reversedBinomialTerms = [...binomialTerms].reverse();
+
+    let currentPowerTerm = modPower(M_val_big - 1n, N_val_big - K_val_big - 1n, MOD_CONSTANT);
+
+    const accumulatedSum = reversedBinomialTerms.reduce((accumulator, currentBinomial) => {
+        const termToAdd = modMultiply(currentPowerTerm, currentBinomial, MOD_CONSTANT);
+        currentPowerTerm = modMultiply(currentPowerTerm, M_val_big - 1n, MOD_CONSTANT);
+        return (accumulator + termToAdd) % MOD_CONSTANT;
     }, 0n);
-    let overallResult = calcModProduct(finalAccumulatedSum, beta, PRIME_MODULUS);
-    console.log(Number(overallResult));
+
+    const finalResult = modMultiply(accumulatedSum, M_val_big, MOD_CONSTANT);
+
+    console.log(Number(finalResult));
 }
-processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

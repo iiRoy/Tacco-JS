@@ -1,18 +1,20 @@
-function evaluateSequence(sourceMaterial) {
-    const primaryContent = sourceMaterial.trim().split('\n')[0];
-    const targetToken = primaryContent.split(/\s+/)[0];
+function Main(rawInput) {
+    const sourceString = rawInput.split("\n")[0].split(" ")[0];
 
-    const characterValidationScheme = new Map();
-    characterValidationScheme.set(0, new Set(['R', 'U', 'D'])); // For 0-indexed even positions (1st, 3rd, 5th, etc.)
-    characterValidationScheme.set(1, new Set(['L', 'U', 'D'])); // For 0-indexed odd positions (2nd, 4th, 6th, etc.)
+    const characterValidationRules = {
+        forEvenZeroBasedIndex: new Set(['R', 'U', 'D']), // Corresponds to 1st, 3rd, 5th characters (1-based odd positions)
+        forOddZeroBasedIndex: new Set(['L', 'U', 'D'])   // Corresponds to 2nd, 4th, 6th characters (1-based even positions)
+    };
 
-    const conformanceResult = [...targetToken].every((currentSymbol, symbolPosition) => {
-        const positionParity = symbolPosition % 2;
-        const permittedSymbols = characterValidationScheme.get(positionParity);
-        return permittedSymbols.has(currentSymbol);
+    const overallValidity = [...sourceString].every((currentChar, zeroBasedPosition) => {
+        const applicableRuleSet = (zeroBasedPosition % 2 === 0)
+            ? characterValidationRules.forEvenZeroBasedIndex
+            : characterValidationRules.forOddZeroBasedIndex;
+        
+        return applicableRuleSet.has(currentChar);
     });
 
-    console.log(conformanceResult ? "Yes" : "No");
+    console.log(overallValidity ? "Yes" : "No");
 }
 
-evaluateSequence(require("node:fs").readFileSync("/dev/stdin", "utf8"));
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

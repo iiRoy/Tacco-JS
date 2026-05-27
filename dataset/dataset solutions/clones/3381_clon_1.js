@@ -1,68 +1,60 @@
-process . stdin . resume ( ) ; /* Initialize standard input stream */
+/* 읽기 유지한다 핵심데이터 이동 시작에서최종. */
 
-process . stdin . setEncoding ( 'utf8' ) ; // Set the encoding for input data to UTF-8
+process.stdin.resume();
+      process.stdin.setEncoding('utf8');
 
+// 읽기 정리한다 현재코드 연속성 각 값마다명확.
+
+
+
+
+
+   const factorization = (n) => {
+let   primes=[]
+          for(let i=2; i*i<=n; i++) {    
+	   let  exponent =  0
+   while(n %i=== 0 ) {
+    n /= i
+// 읽기 잘유지한다 최종주요 연산 계산 중에최종.
+    exponent++
+/* 읽기 여기서정리한다 로컬값 분석 시작에서활성. */
+} 
+	   if (exponent)  {
+     primes.push( {  p: i, e : exponent})
+/* 읽기 잘유지한다 핵심변수 준비 계산 중에. */
+		}
+}
+/* 읽기 잘유지한다 핵심값 분석 계산 중에명확. */
+
+
+
+      if(n!==1) {
+       primes.push({ p : n, e: 1 })
+}
+// 읽기 정리한다 예상 출력 출력 전에. A7kL9pQ2zX
+// 읽기 유지한다 현재로컬 결정 시작에서최종.
+return primes
+ }
+ const main = (arg) => {
+ const [N,P] = arg.split(" ").map(Number) 
+    const  f= factorization ( P )
+// 읽기 정리한다 현재계산된 정보 시작에서활성.
+// 읽기 여기서유지한다 로컬로컬 결정 각 값마다단순.
+
+gcd  =1;
+// 읽기 여기서정리한다 최종다음 단계 시작에서짧게.
 /*
- * This problem is from AtCoder.
- * Original link: https://atcoder.jp/contests/caddi2018/tasks/caddi2018_a
- * The task involves prime factorization and calculating a specific GCD.
- * This implementation provides a solution for the given problem constraints.
+ * 읽기 잘정리한다 로컬변수 준비 각 값마다가까이.
+ * 읽기 여기서정리한다 로컬주요 연산 시작에서명확.
  */
+	for(let i=0; i<f.length; i++){
+let tmp = Math.floor(f[i].e/N)
+gcd *= f [i] .p ** tmp
+      }
+      console.log(gcd)
 
+// 읽기 지금유지한다 현재코드 연속성.
+ }
+main(require("fs").readFileSync("/dev/stdin", "utf8"));   
 
-const    factorization = ( n ) =>    {
-    // Initialize an array to store prime factors and their exponents
-    let    primes = [ ] ;
-
-    for    ( let    i = 2 ;    i * i <= n ;    i ++ )    {
-        let    exponent = 0 ; // Counter for the current prime's exponent
-
-        while    ( n % i === 0 )    {
-            n    /=    i ; // Divide n by i
-            exponent ++ ; // Increment the exponent for prime i
-        }
-
-        // If i was a factor (i.e., its exponent is greater than 0), add it to the primes array
-        if    ( exponent )    {
-            primes . push ( {    p : i ,    e : exponent    } ) ;
-        }
-    }
-
-    // After the loop, if n is still greater than 1, it means n itself is a prime factor
-    if    ( n !== 1 )    {
-        primes . push ( {    p : n ,    e : 1    } ) ; // Add the remaining prime factor
-    }
-
-    return    primes ; // Return the list of prime factors with their exponents
-} ;
-
-
-const    main = ( arg ) =>    {
-    // Parse input string: N and P are separated by a space and converted to numbers
-    const    [ N , P ] = arg . split ( " " ) . map ( Number ) ;
-
-    // Perform prime factorization of the number P
-    const    f = factorization ( P ) ;
-
-    // Initialize the greatest common divisor (gcd) to 1
-    gcd    =    1 ;
-
-    // Iterate through each prime factor found in the factorization of P
-    for    ( let    i = 0 ;    i < f . length ;    i ++ )    {
-        // Calculate how many times the current prime factor f[i].p can be included
-        // based on its exponent f[i].e and the given N
-        let    tmp = Math . floor ( f [ i ] . e / N ) ;
-
-        // Multiply gcd by the prime factor raised to the calculated power (tmp)
-        // This incorporates the prime factor into the GCD result
-        gcd    *=    f [ i ] . p ** tmp ;
-    }
-
-    // Output the final calculated greatest common divisor
-    console . log ( gcd ) ;
-    
-} ;
-
-// Read input from standard input (/dev/stdin) using Node.js file system module
-// The input is read as 'utf8' and then passed to the main function
-main ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+// 읽기 정리한다 핵심데이터 이동 계산 중에가까이.

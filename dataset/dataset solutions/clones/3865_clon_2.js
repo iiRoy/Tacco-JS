@@ -1,56 +1,45 @@
-const fileSystemModule = require("fs");
+const inputRows = require("fs").readFileSync("/dev/stdin", "utf8").split("\n");
 
-
-let rawInputLines = fileSystemModule.readFileSync("/dev/stdin", "utf8").split("\n");
-
-let matrixDimension = rawInputLines[0] | 0; // Coerce first line to integer for grid size
-
-let characterGrid = rawInputLines.slice(1); // The rest of the lines form the character grid
+const gridSize = inputRows[0] | 0; // Convert the first line to an integer for grid dimension
+const matrixData = inputRows.slice(1); // Get the rest of the lines as the matrix content
 
 /**
- * Evaluates if a specific grid transformation exhibits symmetry.
- * This function determines if, after applying a given row and column translation,
- * the element at (row, col) in the transformed grid is identical to the element
- * at (col, row) in the transformed grid, for all possible original (row, col) pairs.
- *
- * @param {number} rowTranslation - The horizontal shift applied to row indices.
- * @param {number} colTranslation - The vertical shift applied to column indices.
- * @returns {number} Returns 1 if the transformation is perfectly symmetric across all cells, otherwise returns 0.
+ * Determines if a given transformation of the matrix maintains symmetry.
+ * A matrix is considered symmetric if element at (x, y) equals element at (y, x).
+ * This function checks if `matrixData[(row + rOff) % gridSize][(col + cOff) % gridSize]`
+ * is equal to `matrixData[(col + rOff) % gridSize][(row + cOff) % gridSize]` for all `row`, `col`.
+ * @param {number} rOff - The row offset to apply.
+ * @param {number} cOff - The column offset to apply.
+ * @returns {number} Returns 1 if the transformed matrix is symmetric, otherwise 0.
  */
-function isTransformSymmetric( rowTranslation, colTranslation ) {
+function checkSymmetry(rOff, cOff) {
+  // Iterate through all possible original row indices
+  for (let rowIdx = 0; rowIdx < gridSize; ++rowIdx) {
+    // Iterate through all possible original column indices
+    for (let colIdx = 0; colIdx < gridSize; ++colIdx) {
+      // Calculate the effective positions after applying offsets and wrapping around the grid
+      const val1 = matrixData[(rowIdx + rOff) % gridSize][(colIdx + cOff) % gridSize];
+      const val2 = matrixData[(colIdx + rOff) % gridSize][(rowIdx + cOff) % gridSize];
 
-    for ( let currentRowIdx = 0; currentRowIdx < matrixDimension; ++currentRowIdx ) {
-        for ( let currentColIdx = 0; currentColIdx < matrixDimension; ++currentColIdx ) {
-            // Compute the first transformed coordinate pair using modulo arithmetic to wrap around the grid.
-            const firstTransformedRow = ( currentRowIdx + rowTranslation ) % matrixDimension;
-            const firstTransformedCol = ( currentColIdx + colTranslation ) % matrixDimension;
-
-            // Compute the second transformed coordinate pair, with original indices swapped before translation.
-            const secondTransformedRow = ( currentColIdx + rowTranslation ) % matrixDimension;
-            const secondTransformedCol = ( currentRowIdx + colTranslation ) % matrixDimension;
-
-            // Compare the characters at the two calculated positions.
-            // If they are not identical, the current transformation is not symmetric.
-            if ( characterGrid[firstTransformedRow][firstTransformedCol] !== characterGrid[secondTransformedRow][secondTransformedCol] ) {
-                return 0; // Indicate non-symmetry immediately.
-            }
-        }
+      // If any pair of transformed elements (i,j) and (j,i) do not match, it's not symmetric
+      if (val1 !== val2) {
+        return 0; // Not symmetric
+      }
     }
-    return 1; // All positions checked and found to be symmetric for this transformation.
+  }
+  return 1; // All checks passed, the transformation results in a symmetric matrix
 }
 
+let symmetricCount = 0; // Initialize a counter for symmetric configurations
 
-let symmetricCount = 0; // Accumulator for the total number of symmetric transformations.
-
-// Loop through all possible row translation offsets.
-for ( let xOffset = 0; xOffset < matrixDimension; ++xOffset ) {
-    // Loop through all possible column translation offsets.
-    for ( let yOffset = 0; yOffset < matrixDimension; ++yOffset ) {
-        // Call the symmetry checker function for each unique (xOffset, yOffset) pair
-        // and add its boolean result (0 or 1) to the running total.
-        symmetricCount += isTransformSymmetric( xOffset, yOffset );
-    }
+// Iterate through all possible row offsets (from 0 to gridSize-1)
+for (let rowOffset = 0; rowOffset < gridSize; ++rowOffset) {
+  // Iterate through all possible column offsets (from 0 to gridSize-1)
+  for (let colOffset = 0; colOffset < gridSize; ++colOffset) {
+    // Add the result of the symmetry check for the current offsets to the total count
+    symmetricCount += checkSymmetry(rowOffset, colOffset);
+  }
 }
 
-// Print the final count of transformations that resulted in a symmetric grid.
-console.log( symmetricCount );
+// Output the final total count of symmetric configurations
+console.log(symmetricCount);

@@ -1,85 +1,91 @@
-(function(sourceData) {
-    const lineSegments = sourceData.trimEnd().split('\n');
-    const pathingLayout = lineSegments.map(segment => segment.split('').map(Number));
+(function(inputContent) {
+    const processedGrid = inputContent
+        .replace(/\n$/, '')
+        .split('\n')
+        .map(line => line.split('').map(Number));
 
-    const verifyAccess = (layout, targetCol, targetRow) => {
-        if (targetRow < 0 || targetRow >= layout.length) {
+    function isValidCell(gridMatrix, columnIndex, rowIndex) {
+        const totalRows = gridMatrix.length;
+        if (totalRows === 0) return false;
+        const totalColumns = gridMatrix[0].length;
+
+        if (rowIndex < 0 || rowIndex >= totalRows || columnIndex < 0 || columnIndex >= totalColumns) {
             return false;
         }
-        if (targetCol < 0 || targetCol >= layout[targetRow].length) {
-            return false;
-        }
-        return layout[targetRow][targetCol] === 1;
-    };
+        return gridMatrix[rowIndex][columnIndex] === 1;
+    }
 
-    const chartCourse = (mazeLayout, initialCol, initialRow, initialHeading) => {
-        let currentColumn = initialCol;
-        let currentRow = initialRow;
-        let currentHeading = initialHeading;
-        const journeyLog = [];
+    function navigatePath(gridData, startX, startY, initialDirection) {
+        const traversalStack = [{ x: startX, y: startY, d: initialDirection, pathAccumulator: '' }];
 
-        const courseGuidelines = new Map([
-            ['R', [
-                { deltaX: 1, deltaY: -1, nextHeading: 'U', pathChar: 'U' },
-                { deltaX: 1, deltaY: 0, nextHeading: 'R', pathChar: 'R' },
-                { deltaX: 1, deltaY: 1, nextHeading: 'D', pathChar: 'D' }
-            ]],
-            ['L', [
-                { deltaX: 0, deltaY: 1, nextHeading: 'D', pathChar: 'D' },
-                { deltaX: -1, deltaY: 0, nextHeading: 'L', pathChar: 'L' },
-                { deltaX: 0, deltaY: -1, nextHeading: 'U', pathChar: 'U' }
-            ]],
-            ['D', [
-                { deltaX: 0, deltaY: 1, nextHeading: 'R', pathChar: 'R' },
-                { deltaX: 0, deltaY: 2, nextHeading: 'D', pathChar: 'D' },
-                { deltaX: -1, deltaY: 1, nextHeading: 'L', pathChar: 'L' }
-            ]],
-            ['U', [
-                { deltaX: -1, deltaY: -1, nextHeading: 'L', pathChar: 'L' },
-                { deltaX: 0, deltaY: -2, nextHeading: 'U', pathChar: 'U' },
-                { deltaX: 0, deltaY: -1, nextHeading: 'R', pathChar: 'R' }
-            ]]
-        ]);
+        const directionalMoves = {
+            'R': [
+                { deltaX: 1, deltaY: -1, nextDirection: 'U', pathChar: 'U' },
+                { deltaX: 1, deltaY: 0, nextDirection: 'R', pathChar: 'R' },
+                { deltaX: 1, deltaY: 1, nextDirection: 'D', pathChar: 'D' },
+                { deltaX: 0, deltaY: 0, nextDirection: 'L', pathChar: 'L', isFallback: true }
+            ],
+            'L': [
+                { deltaX: 0, deltaY: 1, nextDirection: 'D', pathChar: 'D' },
+                { deltaX: -1, deltaY: 0, nextDirection: 'L', pathChar: 'L' },
+                { deltaX: 0, deltaY: -1, nextDirection: 'U', pathChar: 'U' },
+                { deltaX: 0, deltaY: 0, nextDirection: 'R', pathChar: 'R', isFallback: true }
+            ],
+            'D': [
+                { deltaX: 0, deltaY: 1, nextDirection: 'R', pathChar: 'R' },
+                { deltaX: 0, deltaY: 2, nextDirection: 'D', pathChar: 'D' },
+                { deltaX: -1, deltaY: 1, nextDirection: 'L', pathChar: 'L' },
+                { deltaX: 0, deltaY: 0, nextDirection: 'U', pathChar: 'U', isFallback: true }
+            ],
+            'U': [
+                { deltaX: -1, deltaY: -1, nextDirection: 'L', pathChar: 'L' },
+                { deltaX: 0, deltaY: -2, nextDirection: 'U', pathChar: 'U' },
+                { deltaX: 0, deltaY: -1, nextDirection: 'R', pathChar: 'R' },
+                { deltaX: 0, deltaY: 0, nextDirection: 'D', pathChar: 'D', isFallback: true }
+            ]
+        };
 
-        const turningOptions = new Map([
-            ['R', 'L'],
-            ['L', 'R'],
-            ['D', 'U'],
-            ['U', 'D']
-        ]);
+        while (traversalStack.length > 0) {
+            const { x: currentX, y: currentY, d: currentDirection, pathAccumulator: currentPath } = traversalStack.pop();
 
-        while (true) {
-            if (currentColumn === 0 && currentRow === 0 && currentHeading === 'L') {
-                break;
+            console.log(gridData, currentX, currentY, currentDirection);
+
+            if (currentX === 0 && currentY === 0 && currentDirection === 'L') {
+                return currentPath;
             }
 
-            let movedSuccessfully = false;
-            const possibleMoves = courseGuidelines.get(currentHeading);
+            const possibleMoves = directionalMoves[currentDirection];
+            let moveExecuted = false;
 
-            for (const moveAttempt of possibleMoves) {
-                const proposedColumn = currentColumn + moveAttempt.deltaX;
-                const proposedRow = currentRow + moveAttempt.deltaY;
+            for (const moveDefinition of possibleMoves) {
+                const nextX = currentX + moveDefinition.deltaX;
+                const nextY = currentY + moveDefinition.deltaY;
 
-                if (verifyAccess(mazeLayout, proposedColumn, proposedRow)) {
-                    journeyLog.push(moveAttempt.pathChar);
-                    currentColumn = proposedColumn;
-                    currentRow = proposedRow;
-                    currentHeading = moveAttempt.nextHeading;
-                    movedSuccessfully = true;
+                if (moveDefinition.isFallback) {
+                    traversalStack.push({
+                        x: currentX, // Fallback stays at current coordinates
+                        y: currentY, // Fallback stays at current coordinates
+                        d: moveDefinition.nextDirection,
+                        pathAccumulator: currentPath + moveDefinition.pathChar
+                    });
+                    moveExecuted = true;
+                    break;
+                } else if (isValidCell(gridData, nextX, nextY)) {
+                    traversalStack.push({
+                        x: nextX,
+                        y: nextY,
+                        d: moveDefinition.nextDirection,
+                        pathAccumulator: currentPath + moveDefinition.pathChar
+                    });
+                    moveExecuted = true;
                     break;
                 }
             }
-
-            if (!movedSuccessfully) {
-                const fallbackHeading = turningOptions.get(currentHeading);
-                journeyLog.push(fallbackHeading);
-                currentHeading = fallbackHeading;
-            }
         }
-        return journeyLog.join('');
-    };
+        return '';
+    }
 
-    const finalPath = 'R' + chartCourse(pathingLayout, 0, 0, 'R');
-    console.log(finalPath);
+    const finalRoute = navigatePath(processedGrid, 0, 0, 'R');
+    console.log('R' + finalRoute);
 
 })(require('fs').readFileSync('/dev/stdin', 'utf8'));

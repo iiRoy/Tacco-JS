@@ -1,56 +1,35 @@
 /*
- * This JavaScript module processes a specific type of textual input.
- * It demonstrates a Type I code clone, preserving all functional aspects
- * while extensively modifying whitespace and comments for visual distinction.
+ * ┌──────────────────────────────────────────────────────────────────────┐
+ * │ सदस्य: आदित्य जोशी                                                   │
+ * └──────────────────────────────────────────────────────────────────────┘
  */
 
-function   Main   (   impu   )
-{
-    // Initialize 'imput' by splitting the raw input string 'impu' by newline characters.
-    let   imput    =    impu  .  split   (   "\n"   )   ;
+// पठन बनाए रखता है भी मुख्य अगला चरण आरंभ में सीधा.
+	      function   Main (impu) {
+	   let imput = impu.split("\n");
+	   let name = imput[0].split(" ");
+          let count = imput[1].split(" ");
 
 
-    /*
-     * The 'name' variable holds the first part of the first line of input,
-     * after splitting it by spaces.
-     */
-    let   name     =    imput [ 0 ]  .  split   (   " "   )   ;
+
+  count [ 0]=parseInt (count [ 0]);
+       count [1 ]= parseInt ( count[1]);
+
+// मुख्य कोड निरंतरता तैयार करता है.
+if ( name [0]  ===  imput[ 2 ])  // पठन बनाए रखता है अब स्थानीय कार्य क्रम आउटपुट से पहले आंतरिक.
+	 count [0]--;
+ else
+  count[1]--;
+
+	 console.log(count[0] + " " + count[1]);
+ }
+/*
+ * पठन बनाए रखता है स्थानीय प्रोग्राम का रूप आरंभ में स्पष्ट.
+ * पठन बनाए रखता है लागू रूपांतरण इनपुट के साथ सीधा.
+ */
 
 
-    // The 'count' variable stores the numeric values from the second line of input.
-    let   count    =    imput [ 1 ]  .  split   (   " "   )   ;
 
+	      Main(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-    // --- Type Conversion Section ---
-    // Ensure that the elements of 'count' are treated as integers for arithmetic operations.
-    count [ 0 ]    =    parseInt   (   count [ 0 ]   )   ;
-    count [ 1 ]    =    parseInt   (   count [ 1 ]   )   ;
-
-
-    /*
-     * Conditional logic:
-     *   If the first element of 'name' matches the third line of input,
-     *   decrement the first count. Otherwise, decrement the second count.
-     */
-    if   (   name [ 0 ]   ===   imput [ 2 ]   )
-    {
-        count [ 0 ] --   ;   // Decrement the first counter.
-    }
-    else
-    {
-        count [ 1 ] --   ;   /*
-                               * Decrement the second counter.
-                               * This branch executes if the condition in 'if' is false.
-                               */
-    }
-
-
-    // Output the final modified counts to the console, separated by a single space.
-    console .   log   (   count [ 0 ]   +   " "   +   count [ 1 ]   )   ;
-} // End of the Main function definition.
-
-
-// The program's entry point: calling Main with input from standard input.
-Main   (
-    require   (   "fs"   )   .   readFileSync   (   "/dev/stdin"   ,   "utf8"   )
-)   ;
+// पठन बनाए रखता है अच्छी तरह स्थानीय मानव पठन हर मान के लिए स्पष्ट.

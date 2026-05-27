@@ -1,64 +1,69 @@
-const fileSystem = require('fs');
-
-function executeProgram() {
-  const rawInputContent = fileSystem.readFileSync('/dev/stdin', 'utf8');
-  const inputLines = rawInputContent.split('\n');
-
-  const productSpecifications = [
-    { weightValue: 200, unitPrice: 380, discountThreshold: 5, discountRate: 0.8 },
-    { weightValue: 300, unitPrice: 550, discountThreshold: 4, discountRate: 0.85 },
-    { weightValue: 500, unitPrice: 850, discountThreshold: 3, discountRate: 0.88 }
+function processInputData() {
+  const itemDetails = [
+    { unit: 200, basePrice: 380, packSize: 5, packDiscount: 0.8 },
+    { unit: 300, basePrice: 550, packSize: 4, packDiscount: 0.85 },
+    { unit: 500, basePrice: 850, packSize: 3, packDiscount: 0.88 }
   ];
 
-  function evaluateItemCharge(quantityOfItem, specification) {
-    const numberOfDiscountedPacks = Math.floor(quantityOfItem / specification.discountThreshold);
-    const remainingIndividualUnits = quantityOfItem % specification.discountThreshold;
-    return numberOfDiscountedPacks * specification.discountThreshold * specification.unitPrice * specification.discountRate + remainingIndividualUnits * specification.unitPrice;
-  }
+  const calculateItemCost = (count, itemIndex) => {
+    const item = itemDetails[itemIndex];
+    const fullPacks = Math.floor(count / item.packSize);
+    const remaining = count % item.packSize;
+    return (fullPacks * item.packSize * item.basePrice * item.packDiscount) + (remaining * item.basePrice);
+  };
 
-  function computeBestValue(targetMass) {
-    let finalMinimumValue = Number.POSITIVE_INFINITY;
+  function determineMinimumCost(targetWeight) {
+    let minTotalCost = Infinity;
 
-    const maxCountForProductA = Math.ceil(targetMass / productSpecifications[0].weightValue) + productSpecifications[0].discountThreshold;
-    const maxCountForProductB = Math.ceil(targetMass / productSpecifications[1].weightValue) + productSpecifications[1].discountThreshold;
-    const maxCountForProductC = Math.ceil(targetMass / productSpecifications[2].weightValue) + productSpecifications[2].discountThreshold;
+    const maxCountType1 = Math.ceil(targetWeight / itemDetails[0].unit) + itemDetails[0].packSize;
+    const maxCountType2 = Math.ceil(targetWeight / itemDetails[1].unit) + itemDetails[1].packSize;
+    const maxCountType3 = Math.ceil(targetWeight / itemDetails[2].unit) + itemDetails[2].packSize;
 
-    for (let itemQuantityA = 0; itemQuantityA <= maxCountForProductA; itemQuantityA++) {
-      for (let itemQuantityB = 0; itemQuantityB <= maxCountForProductB; itemQuantityB++) {
-        for (let itemQuantityC = 0; itemQuantityC <= maxCountForProductC; itemQuantityC++) {
-          const currentCalculatedMass = itemQuantityA * productSpecifications[0].weightValue +
-                                        itemQuantityB * productSpecifications[1].weightValue +
-                                        itemQuantityC * productSpecifications[2].weightValue;
+    for (let count1 = 0; count1 <= maxCountType1; count1++) {
+      for (let count2 = 0; count2 <= maxCountType2; count2++) {
+        for (let count3 = 0; count3 <= maxCountType3; count3++) {
+          const currentTotalWeight =
+            (count1 * itemDetails[0].unit) +
+            (count2 * itemDetails[1].unit) +
+            (count3 * itemDetails[2].unit);
 
-          if (currentCalculatedMass >= targetMass) {
-            const currentTotalCharge = evaluateItemCharge(itemQuantityA, productSpecifications[0]) +
-                                       evaluateItemCharge(itemQuantityB, productSpecifications[1]) +
-                                       evaluateItemCharge(itemQuantityC, productSpecifications[2]);
+          if (currentTotalWeight >= targetWeight) {
+            const currentCombinationCost =
+              calculateItemCost(count1, 0) +
+              calculateItemCost(count2, 1) +
+              calculateItemCost(count3, 2);
 
-            if (currentTotalCharge < finalMinimumValue) {
-              finalMinimumValue = currentTotalCharge;
+            if (currentCombinationCost < minTotalCost) {
+              minTotalCost = currentCombinationCost;
             }
           }
         }
       }
     }
-    return finalMinimumValue;
+    return minTotalCost;
   }
 
-  let haltProcessing = false;
-  for (const currentInputLine of inputLines) {
-    const sanitizedLine = currentInputLine.trim();
-    if (sanitizedLine === '' || haltProcessing) {
+  let processingFinished = false;
+  for (const currentLine of rawDataBuffer) {
+    if (currentLine.trim() === '' || processingFinished) {
       continue;
     }
-
-    const numericValue = Number.parseInt(sanitizedLine, 10);
-    if (numericValue === 0) {
-      haltProcessing = true;
+    if (currentLine === '0') {
+      processingFinished = true;
       continue;
     }
-    console.log(computeBestValue(numericValue));
+    console.log(determineMinimumCost(parseInt(currentLine, 10)));
   }
 }
 
-executeProgram();
+let rawDataBuffer = '';
+
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
+process.stdin.on('data', function(dataSegment) {
+  rawDataBuffer += dataSegment;
+});
+process.stdin.on('end', function() {
+  rawDataBuffer = rawDataBuffer.split('\n');
+  processInputData();
+});

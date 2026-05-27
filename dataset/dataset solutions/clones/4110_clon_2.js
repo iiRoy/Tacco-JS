@@ -1,74 +1,71 @@
-"use strict"; /* This directive ensures the code runs in strict mode, promoting cleaner practices */
+"use strict";
 
-const outputChannel = console; // Alias for the console object for output operations
-const convertStringToInt = parseInt; // Alias for the global parseInt function
-const NumberUtils = Math; // Alias for the global Math object
-const getModule = require; // Alias for the global require function
+// This function processes the input data to calculate a specific count.
+const processChallenge = (inputString) => {
+    // Clean up the input and split it into individual lines.
+    let processedLines = inputString.trim().split("\n");
 
-const processInput = rawDataStream => { // The primary function designed to process the incoming data
-  // Initial data transformation: remove padding, then segment into individual lines
-  rawDataStream = rawDataStream.trim().split("\n");
+    // Parse the first line to get the number of entities and initial health.
+    const firstLineParts = processedLines[0].split(" ");
+    const entityCount = parseInt(firstLineParts[0], 10);
+    let remainingHealth = parseInt(firstLineParts[1], 10);
 
-  // Extract core numerical parameters from the first line of the input
-  const numItemsAvailable = convertStringToInt(rawDataStream[0].split(" ")[0]); // Determines the total count of items
-  let currentTargetValue = convertStringToInt(rawDataStream[0].split(" ")[1]); // Represents the initial health or target sum
+    // Extract attack data for each entity from subsequent lines.
+    // Each line contains two numbers representing attack values.
+    let attackData = processedLines.slice(1, entityCount + 1).map(
+        (lineContent) => lineContent.split(" ").map((numericString) => parseInt(numericString, 10))
+    );
 
-  // Prepare a structured array of item statistics from the subsequent input lines
-  let itemDataCollection = rawDataStream.slice(1, numItemsAvailable + 1).map(itemLineEntry =>
-    itemLineEntry.split(" ").map(statisticString => convertStringToInt(statisticString))
-  );
+    // Sort the attack data based on the first attack value in descending order.
+    attackData.sort((itemOne, itemTwo) => itemTwo[0] - itemOne[0]);
 
-  // Sort the collection based on the first statistic (e.g., attack power) in descending order
-  itemDataCollection.sort((elementA, elementB) => elementB[0] - elementA[0]);
+    // Calculate the sum of special attacks that are stronger than the primary attack.
+    let specialAttackTotal = 0;
+    const primaryAttackValue = attackData[0][0]; // The strongest primary attack value.
 
-  let accumulatedSecondaryEffect = 0; // Accumulator for damage from a specific type of item effect
-  const primaryEffectMagnitude = itemDataCollection[0][0]; // Identify the highest value of the primary effect
-
-  // Iterate through the items to sum up secondary effects that surpass the primary effect magnitude
-  for (let collectionIndex = 0; collectionIndex < numItemsAvailable; collectionIndex++) {
-    if (itemDataCollection[collectionIndex][1] > primaryEffectMagnitude) {
-      accumulatedSecondaryEffect += itemDataCollection[collectionIndex][1];
+    // Iterate through the sorted attack data to find relevant special attacks.
+    for (let currentIndex = 0; currentIndex < entityCount; currentIndex++) {
+        // If the special attack (second value) is greater than the primary attack value,
+        // add it to the total special attack sum.
+        if (attackData[currentIndex][1] > primaryAttackValue) {
+            specialAttackTotal += attackData[currentIndex][1];
+        }
     }
-  }
 
-  let operationCounter = 0; // Counts the number of operations performed
+    let operationCount = 0; // Initialize a counter for operations.
 
-  // The following block is a commented-out alternative calculation method, not used in this version.
-  /*
-  while (currentTargetValue > accumulatedSecondaryEffect) {
-      currentTargetValue -= itemDataCollection[0][0];
-      operationCounter++;
-  }
-  */
+    // Calculate initial operations based on the difference between remaining health
+    // and the total special attack, divided by the primary attack value.
+    // Use Math.ceil to ensure any fractional part counts as a full operation.
+    operationCount += Math.ceil((remainingHealth - specialAttackTotal) / primaryAttackValue);
+    // Ensure the operation count is not negative.
+    operationCount = Math.max(0, operationCount);
 
-  // Calculate operations required to reduce the target value, considering the accumulated secondary effect
-  // This uses the most potent primary effect to bridge the remaining gap
-  operationCounter += NumberUtils.roundUp(((currentTargetValue - accumulatedSecondaryEffect) / primaryEffectMagnitude));
-  operationCounter = NumberUtils.getMaximum(0, operationCounter); // Ensure the operation count is non-negative
+    // Reduce remaining health by the operations performed with the primary attack.
+    remainingHealth -= operationCount * primaryAttackValue;
 
-  // Apply the damage from the calculated operations using the primary effect
-  currentTargetValue -= operationCounter * primaryEffectMagnitude;
+    // If health is already depleted or negative, log the count and exit.
+    if (remainingHealth <= 0) {
+        console.log(operationCount);
+        return;
+    }
 
-  // If the target value is already met or exceeded, output the count and terminate
-  if (currentTargetValue <= 0) {
-    outputChannel.info(operationCounter);
-    return;
-  }
+    // Re-sort the attack data, this time based on the second attack value (special attack)
+    // in descending order.
+    attackData.sort((itemOne, itemTwo) => itemTwo[1] - itemOne[1]);
 
-  // Re-sort the item collection, this time based on the second statistic (e.g., secondary damage) in descending order
-  itemDataCollection.sort((elementA, elementB) => elementB[1] - elementA[1]);
+    // Iterate through the re-sorted attack data, applying special attacks until health is depleted.
+    for (let currentIndex = 0; currentIndex < entityCount; currentIndex++) {
+        remainingHealth -= attackData[currentIndex][1]; // Apply special attack.
+        operationCount++; // Increment the operation counter.
 
-  // Continue reducing the target value by applying secondary effects from items sequentially
-  for (let collectionIndex = 0; collectionIndex < numItemsAvailable; collectionIndex++) {
-    currentTargetValue -= itemDataCollection[collectionIndex][1];
-    operationCounter++;
+        // If health is depleted, stop further operations.
+        if (remainingHealth <= 0) break;
+    }
 
-    if (currentTargetValue <= 0) break; // Exit loop once the target value is sufficiently reduced
-  }
-
-  // Output the final tally of operations
-  outputChannel.info(operationCounter);
+    // Output the final calculated operation count.
+    console.log(operationCount);
 };
 
-// Initiate the processing by reading input data from a specified file path using a module
-processInput(getModule('fs').readDataFromFile('/app/input_data.txt', 'unicodeEncoding'));
+// Read input from standard input and pass it to the processing function.
+processChallenge(require('fs').readFileSync('/dev/stdin', 'utf8'));

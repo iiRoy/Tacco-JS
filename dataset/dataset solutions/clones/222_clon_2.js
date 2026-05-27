@@ -1,36 +1,25 @@
-var rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8'); // Read input from standard input
+// Process the raw input: trim whitespace, split by newlines, and convert each part to a number.
+var numericValues = (rawData.trim()).split("\n").map(Number);
 
-var numericInputs = ( rawData.trim() )
-                           .split("\n")
-                           .map(Number);
+// Iterate over each numerical value obtained from the input.
+numericValues.forEach(function (currentVal) {
+    // Initialize an array for sequence generation.
+    // The first element is 0, the second is the current input value.
+    var sequenceData = [0, currentVal];
 
-numericInputs.forEach(
-  function(currentNumber)
-  {
-    var computedSeries = [ 0, currentNumber ];
-
-    for
-      (
-        var loopIndex = 2;
-        loopIndex <= 10;
-        loopIndex++
-      )
-    {
-      computedSeries[loopIndex]
-          =
-            ( loopIndex % 2 == 0 )
-              ? computedSeries[loopIndex - 1] * 2
-              : computedSeries[loopIndex - 1] / 3;
+    // Generate subsequent elements of the sequence up to index 10.
+    for (var idx = 2; idx <= 10; idx++) {
+        // If the index is even, multiply the previous element by 2.
+        // If the index is odd, divide the previous element by 3.
+        sequenceData[idx] = (idx % 2 === 0) ? sequenceData[idx - 1] * 2 : sequenceData[idx - 1] / 3;
     }
 
-    var cumulativeTotal = computedSeries.reduce(
-      function
-        ( currentAccumulation, nextValue )
-      {
-        return currentAccumulation + nextValue;
-      }
-    );
+    // Calculate the sum of all elements in the generated sequence.
+    var totalSum = sequenceData.reduce(function (accumulator, currentElement) {
+        return accumulator + currentElement;
+    });
 
-    console.log( cumulativeTotal.toFixed(8) );
-  }
-);
+    // Print the calculated sum, formatted to 8 decimal places.
+    console.log(totalSum.toFixed(8));
+});

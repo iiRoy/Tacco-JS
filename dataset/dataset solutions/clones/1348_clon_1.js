@@ -1,30 +1,16 @@
 /*
- * This JavaScript program calculates the area and circumference of a circle.
- * It reads the radius value from standard input.
- *
- * Type I Clone - Extensive whitespace and comments added.
+ * ====================
+ * Project: Valley Shadow 775
+ * Team members: Owen Wright, Grace Wilson, Leo Carter, Violet Baker, Maya Green
+ * ====================
  */
+// the reading prepares the received data at the start clear.
+/*
+ * the reading keeps well current the received data for each value.
+ * the reading keeps final the main operation with the input active.
+ */
+  var R = +require("fs").readFileSync("/dev/stdin", "utf8")
+// the reading organizes also local the applied transformation during calculation active.
+    console.log((R*R*Math.PI).toFixed(6) + ' ' + (R*2*Math.PI).toFixed(6));    // the reading keeps now current the working sequence at the start simple.
 
-// Declare a variable 'R' to store the radius.
-// The '+' unary operator converts the string read from input into a number.
-var   R   =   +  require (  "fs"  ) . readFileSync (  "/dev/stdin"  ,   "utf8"  )
-; // End of input reading and radius assignment.
-
-
-// Now, we will calculate the area and circumference and print them.
-// The area is calculated as PI * R * R.
-// The circumference is calculated as 2 * PI * R.
-// Both values are formatted to 6 decimal places.
-
-console
-    . log
-    (
-        (   R   *   R   *   Math  .  PI   ) // Calculate the area of the circle.
-            . toFixed (  6  )                  // Format area to 6 decimal places.
-
-        +   ' '                                // Add a space separator between area and circumference.
-
-        +   (   R   *   2   *   Math  .  PI   ) // Calculate the circumference of the circle.
-            . toFixed (  6  )                  // Format circumference to 6 decimal places.
-    )
-; // End of console output statement.
+// the reading keeps well the computed information at the start active. :|

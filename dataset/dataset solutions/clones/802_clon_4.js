@@ -1,46 +1,30 @@
-function* lineProvider(textSource) {
-    const contentLines = textSource.trim().split("\n");
-    for (const lineEntry of contentLines) {
-        yield lineEntry;
-    }
-}
+const sourceData = require('fs').readFileSync('/dev/stdin', 'utf8');
+let processingQueue = sourceData.trim().split("\n");
 
-function processEvaluation(lineIterator) {
-    const configLineResult = lineIterator.next();
-    if (configLineResult.done) {
+function processNextBlock() {
+    const currentConfigLine = processingQueue.shift();
+    const [itemCount, targetIndexRaw, penaltyPercentage] = currentConfigLine.split(" ").map(Number);
+
+    if (itemCount === 0 && targetIndexRaw === 0 && penaltyPercentage === 0) {
         return;
     }
 
-    const configTokens = configLineResult.value.split(" ").map(Number);
-    const scoreQuantity = configTokens[0];
-    const targetSubjectIndex = configTokens[1] - 1;
-    const penaltyPercentage = configTokens[2];
+    const zeroBasedTargetIndex = targetIndexRaw - 1;
 
-    if (scoreQuantity === 0 && configTokens[1] === 0 && penaltyPercentage === 0) {
-        return;
-    }
+    const itemLines = processingQueue.splice(0, itemCount);
+    const collectedValues = itemLines.map(Number);
 
-    const subjectScores = Array.from({ length: scoreQuantity }, () => {
-        const scoreEntry = lineIterator.next();
-        return Number(scoreEntry.value);
-    });
+    const accumulatedScore = collectedValues.reduce((acc, val) => acc + (val * 100), 0);
 
-    const rawTotalPoints = subjectScores.reduce((accumulator, scoreVal) => accumulator + (scoreVal * 100), 0);
+    const adjustedScore = accumulatedScore * (100 - penaltyPercentage) / 100;
 
-    const adjustedTotalPoints = rawTotalPoints * (100 - penaltyPercentage) / 100;
+    const finalOutcome = (collectedValues[zeroBasedTargetIndex] !== 0)
+        ? Math.floor(adjustedScore / collectedValues[zeroBasedTargetIndex])
+        : 0;
 
-    let computedResult = 0;
-    const pivotalScore = subjectScores[targetSubjectIndex];
+    console.log(finalOutcome);
 
-    if (pivotalScore !== 0) {
-        computedResult = Math.trunc(adjustedTotalPoints / pivotalScore);
-    }
-
-    console.log(computedResult);
-
-    processEvaluation(lineIterator);
+    processNextBlock();
 }
 
-const rawInputContent = require('fs').readFileSync('/dev/stdin', 'utf8');
-const inputLineIterator = lineProvider(rawInputContent);
-processEvaluation(inputLineIterator);
+processNextBlock();

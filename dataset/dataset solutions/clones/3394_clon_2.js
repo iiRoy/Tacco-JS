@@ -1,118 +1,77 @@
 "use strict";
+// This function checks if a given number is a power of two.
+// It does so by converting the number to its binary representation
+// and then verifying if it starts with '1' and all subsequent digits are '0'.
+function isPowerOfTwo(value) {
+  // Convert the input number to its binary string representation.
+  let binaryRepresentation = value.toString(2);
 
-function checkIfBinaryPower ( inputNumber )
-{
-    // This function determines if a given integer is a power of two.
-    // A positive integer 'N' is a power of two if its binary representation
-    // consists of a single '1' followed by zero or more '0's.
+  // A power of two in binary always starts with '1' followed by zeros.
+  // If the first digit isn't '1', it's not a power of two.
+  if (binaryRepresentation[0] !== "1") {
+    return false;
+  }
 
-    let binaryStringForm = inputNumber . toString( 2 ) ;
-
-
-    // First, check the most significant bit.
-    // If it's not '1', then it cannot be a power of two.
-    if ( binaryStringForm[0] !== "1" )
-    {
-        return false;
+  // Iterate through the rest of the binary string.
+  // All subsequent digits must be '0' for it to be a power of two.
+  for (let idx = 1; idx < binaryRepresentation.length; idx++) {
+    if (binaryRepresentation[idx] !== "0") {
+      return false; // Found a '1' after the leading '1', so not a power of two.
     }
-
-
-    // Next, examine the remaining bits.
-    // All subsequent bits must be '0' for the number to be a true power of two.
-    for ( let charIndex = 1; charIndex < binaryStringForm . length; charIndex++ )
-    {
-        if ( binaryStringForm[ charIndex ] !== "0" )
-        {
-            return false; // Found a '1' in an unexpected position.
-        }
-    }
-
-    // If all conditions are met, the number is indeed a power of two.
-    return true;
+  }
+  // If we reached here, it means the number is a power of two.
+  return true;
 }
 
+// The primary function to process the input data.
+function processInput(rawData) {
+  // Split the raw input string by newlines and filter out any empty lines.
+  const parsedLines = rawData.split("\n").filter(lineContent => lineContent !== "");
 
-function processAndCalculate ( rawInputData )
-{
-    // The main processing routine to find pairs that sum to a power of two.
+  // The actual numbers are on the second line (index 1).
+  // Split them by spaces and convert each part to a number.
+  const initialNumbers = parsedLines[1].split(" ").map(Number);
 
-    // Parse the incoming string data.
-    // Split it into individual lines and discard any empty strings that might result.
-    const processedLines = rawInputData
-        . split( "\n" )
-        . filter( currentLine => currentLine !== "" ) ;
+  // Sort the numbers in descending order. This is crucial for the algorithm.
+  let descendingNumbers = initialNumbers.sort((firstVal, secondVal) => secondVal - firstVal);
 
-
-    // Extract the numerical data from the second line of the input.
-    // This line is expected to contain space-separated numbers.
-    const numericValues = processedLines[1]
-        . split( " " )
-        . map( Number ) ;
-
-
-    // Sort the collection of numbers in a descending order.
-    // This strategy helps in efficiently finding pairs.
-    let descendingNumbers = numericValues
-        . sort( ( firstVal, secondVal ) => secondVal - firstVal ) ;
-
-
-    // Initialize a counter to keep track of how many valid pairs are discovered.
-    let pairMatchesCount = 0 ;
-
-
-    // Continue iterating as long as there are numbers available to form pairs.
-    while ( descendingNumbers . length > 0 )
-    {
-        // A flag to indicate if a matching pair was successfully identified
-        // for the current leading number in the list.
-        let foundValidPair = false ;
-
-
-        // Iterate through the remaining elements starting from the second one.
-        // The goal is to find an element that, when summed with the first element,
-        // results in a power of two.
-        for ( let currentElementIndex = 1; currentElementIndex < descendingNumbers . length; currentElementIndex++ )
-        {
-            // Compute the sum of the very first number and the number at the current index.
-            let combinedResult = descendingNumbers[0] + descendingNumbers[ currentElementIndex ] ;
-
-
-            // Utilize the helper function to verify if this sum is a power of two.
-            if ( checkIfBinaryPower( combinedResult ) )
-            {
-                // If the sum is a power of two, a valid pair has been identified.
-
-                // Remove the second number from the pair (at currentElementIndex).
-                descendingNumbers . splice( currentElementIndex, 1 ) ;
-                // Then, remove the first number from the pair (which is always at index 0).
-                descendingNumbers . splice( 0, 1 ) ;
-
-                // Increment the total count of found pairs.
-                pairMatchesCount += 1 ;
-
-                // Set the flag to true, indicating success for this iteration.
-                foundValidPair = true ;
-
-                // Break out of the inner loop as the leading number has found its pair.
-                break ;
-            }
-        }
-
-
-        // If, after checking all possibilities, no pair was found for the leading number,
-        // it means this number cannot form a power-of-two sum with any other remaining number.
-        // Therefore, remove it from the list.
-        if ( !foundValidPair )
-        {
-            descendingNumbers . splice( 0, 1 ) ;
-        }
+  // Initialize a counter for the number of pairs found.
+  let pairCount = 0;
+  // Continue processing as long as there are numbers left in the array.
+  while (descendingNumbers.length > 0) {
+    // Flag to track if a suitable pair was found for the current largest number.
+    let foundMatch = false;
+    // Iterate through the remaining numbers, starting from the second element.
+    // We're looking for a pair with the largest number (at index 0).
+    for (let currentIdx = 1; currentIdx < descendingNumbers.length; currentIdx++) {
+      // Calculate the sum of the largest number and the current number in the loop.
+      let currentSum = descendingNumbers[0] + descendingNumbers[currentIdx];
+      // Check if their sum is a power of two.
+      if (isPowerOfTwo(currentSum)) {
+        // If a pair is found, remove both numbers from the array.
+        // Remove the current number (at currentIdx).
+        descendingNumbers.splice(currentIdx, 1);
+        // Remove the largest number (at index 0).
+        descendingNumbers.splice(0, 1);
+        // Increment the pair counter.
+        pairCount += 1;
+        // Set the flag to true as a match was found.
+        foundMatch = true;
+        // Break out of the inner loop as we've processed the largest number.
+        break;
+      }
     }
 
-    // Print the final tally of all successful pairs found.
-    console . log( pairMatchesCount ) ;
+    // If no pair was found for the largest number, remove it from the array.
+    // This ensures the loop progresses and avoids infinite loops.
+    if (!foundMatch) {
+      descendingNumbers.splice(0, 1);
+    }
+  }
+
+  // Output the total number of pairs found to the console.
+  console.log(pairCount);
 }
 
-
-// Entry point for the script execution.
-// Reads input from standard input and passes it to the primary processing function.
-processAndCalculate ( require( "fs" ) . readFileSync( "/dev/stdin", "utf8" ) ) ;
+// Read input from standard input and pass it to the main processing function.
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

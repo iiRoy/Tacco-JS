@@ -1,41 +1,51 @@
-function handleResourceDistribution(sourceText)
-{
+function processInput(rawData) {
+    // Initialize a counter for the final result
+    var resultCount = 0;
 
- let fulfilledRecipients = 0; // Initialize a counter for successfully served individuals.
+    // Split the entire raw input string into an array of lines
+    var parsedLines = rawData.split('\n');
 
- const parsedLines = sourceText.split('\n'); // Divide the incoming textual data into distinct lines.
+    // Extract the total number of participants and the available quantity of sweets
+    // The original code implicitly converts these strings to numbers during comparison/iteration.
+    // We explicitly convert them to integers for clarity and robustness.
+    var totalParticipants = parseInt(parsedLines[0].split(' ')[0], 10);
+    var availableSweets = parseInt(parsedLines[0].split(' ')[1], 10);
 
-    let totalRecipients = parseInt(parsedLines[0].split(' ')[0], 10); // Extract the total number of individuals from the first line, first segment.
- let overallSupply = parseInt(parsedLines[0].split(' ')[1], 10); // Extract the total available supply from the first line, second segment.
+    // Parse the individual demand requests from the second line
+    // Convert each demand string to a number immediately
+    var individualRequests = parsedLines[1].split(' ').map(Number);
 
-    let recipientRequests = parsedLines[1].split(' ').map(Number); // Obtain an array of individual demand quantities from the second line, converting to numbers.
+    // Sort the individual demand requests in ascending order
+    // This strategy ensures that we satisfy people with smaller demands first,
+    // maximizing the number of people served given a limited supply.
+    individualRequests.sort(function(valA, valB) {
+        return valA - valB;
+    });
 
- // The primary objective is to satisfy as many requests as possible,
- // prioritizing those with smaller demands, until the total supply is exhausted.
+    var currentSweetSum = 0; // Accumulator for the total sweets distributed so far
 
- // Arrange the individual requests in ascending numerical order.
- recipientRequests.sort(function(valA, valB)
- {
-  return valA - valB; // Standard ascending sort for numeric values.
- });
+    // Iterate through the sorted demands, attempting to satisfy each person
+    for (var idx = 0; idx < totalParticipants; idx++) {
+        // Update the count of people whose demands have been considered (and potentially met)
+        resultCount = idx;
 
+        // Add the current person's demand to the running total of distributed sweets
+        currentSweetSum += individualRequests[idx];
 
- let currentAllocation = 0; // Initialize an accumulator for the quantity of resources currently distributed.
-    for (let personIdx = 0; personIdx < totalRecipients; personIdx++) { // Iterate through the sorted requests, attempting to fulfill them.
-  fulfilledRecipients = personIdx; // Keep track of how many individuals have been served in this iteration.
-  currentAllocation += recipientRequests[personIdx]; // Add the current individual's request to the distributed total.
-
-  // Check if the accumulated allocation has now surpassed the available overall supply.
-  if (currentAllocation > overallSupply) {
-   console.log(fulfilledRecipients); // If supply is exceeded, output the count of individuals served *before* this last one.
-   break; // Terminate the distribution process as supply is insufficient for further requests.
-  }
-
+        // Check if the accumulated demand exceeds the total available sweets
+        if (currentSweetSum > availableSweets) {
+            // If demand exceeds supply, output the number of people who could be satisfied
+            console.log(resultCount);
+            // Terminate the loop as no more people can be satisfied
+            break;
+        }
     }
 
- // After the loop, either due to break or completion, display the final count
- // of individuals whose requests could be fully met within the available supply.
- console.log(fulfilledRecipients);
-
+    // Output the final result count.
+    // This will be the last `resultCount` value, either from the break inside the loop
+    // or the final `totalParticipants` if all demands could be met.
+    console.log(resultCount);
 }
-handleResourceDistribution(require('fs').readFileSync('/dev/stdin', 'utf8'));
+
+// Read the entire content of standard input synchronously and pass it to the processing function
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

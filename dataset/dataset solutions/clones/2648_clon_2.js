@@ -1,44 +1,39 @@
-// Function designed to manage the primary data ingestion and analysis operation
-function processInputData ( rawData )
-{
-    // Normalize the incoming string by eliminating any leading or trailing whitespace
-    var processedText = rawData .trim( ) ;
+function processInput(rawData) {
+    // Remove any leading or trailing whitespace from the raw input string.
+    let processedString = rawData.trim();
 
-    // Initialize a numeric tracker for distinct found elements
-    var segmentCounter = 0 ;
-    // A string variable to hold the last uniquely identified sequence
-    var previousSegment = "" ;
-    // A string variable to progressively build up the current sequence for comparison
-    var currentPiece = "" ;
-    // An array to catalog all the unique sequences discovered during iteration
-    var collectedSegments = [ ] ;
+    // Initialize a counter for the distinct segments identified.
+    let segmentCount = 0;
+    // This variable will hold the last segment that was deemed unique.
+    let previousSegment = "";
+    // This variable accumulates characters to form the current segment being evaluated.
+    let currentSegment = "";
+    // An array to store all the unique segments found during processing.
+    const segmentHistory = [];
 
-    // Commence an iterative scan across each character of the normalized input text
-    for ( var charIndex = 0 ; processedText.length > charIndex ; charIndex++ )
-    {
-        // Append the character at the current index to the accumulating piece
-        currentPiece += processedText [ charIndex ] ;
+    // Iterate through each character of the cleaned input string.
+    for (let charIndex = 0; processedString.length > charIndex; charIndex++) {
+        // Append the character at the current index to the accumulating segment.
+        currentSegment += processedString[charIndex];
 
-        // Evaluate if the newly formed current piece is identical to the preceding unique segment
-        if ( currentPiece === previousSegment )
-        {
-            // If an exact match is found, bypass further processing for this piece and proceed to the next character
-            continue ;
+        // Check if the newly formed 'currentSegment' is identical to the 'previousSegment'.
+        if (currentSegment === previousSegment) {
+            // If they are the same, it means this segment is a repetition, so we skip
+            // the rest of the loop body for this iteration and move to the next character.
+            continue;
         }
 
-        // Should the current piece be distinct, designate it as the new previous unique segment
-        previousSegment = currentPiece ;
-        // Add this newly identified unique segment to the designated collection array
-        collectedSegments .push( currentPiece ) ;
-        // Reset the current piece accumulator to an empty string to begin forming the next potential segment
-        currentPiece = "" ;
-        // Increment the total count of distinct segments
-        segmentCounter ++ ;
+        // If the 'currentSegment' is different from 'previousSegment' (or if it's the first segment),
+        // it's considered a new unique segment.
+        previousSegment = currentSegment; // Update the 'previousSegment' to the newly found unique one.
+        segmentHistory.push(currentSegment); // Add this unique segment to our history array.
+        currentSegment = ""; // Reset 'currentSegment' to an empty string to start accumulating the next potential segment.
+        segmentCount++; // Increment the counter for unique segments.
     }
 
-    // Display the final tally of unique segments to the standard output console
-    console .log ( segmentCounter ) ;
+    // After processing all characters, display the total number of unique segments found.
+    console.log(segmentCount);
 }
 
-// Execute the data processing routine by feeding it content read from the standard input stream
-processInputData ( require ( "fs" ) .readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+// Read the entire content of standard input as a UTF-8 string and pass it to the processing function.
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,217 +1,94 @@
-// This section manages asynchronous input and provides utilities for data parsing.
-// It is designed to abstract away the specifics of standard input/output.
-
-// A global object to hold our data stream controller.
-let inputDataController = null;
-
-// An array to buffer all lines read from standard input.
-const receivedContentBuffer = [];
-
-// Configuration for the readline interface.
-const readLineConfig = {
+const inputReader = require('readline').createInterface({
   input: process.stdin,
   output: process.stdout
-};
-
-// Initialize the readline interface to handle incoming data.
-const lineInputHandler = require('readline').createInterface(readLineConfig);
-
-// Register an event listener for each line received.
-lineInputHandler.on('line', (currentInputLine) => {
-  receivedContentBuffer.push(currentInputLine);
 });
 
-// Register an event listener for when the input stream closes.
-lineInputHandler.on('close', () => {
-  // Once all input is received, initialize the data controller.
-  inputDataController = setupInputSource(receivedContentBuffer);
-  // Log a brief message to stderr indicating program flow.
-  console.error('Input processing finished. Commencing core logic.');
-  // Execute the primary solution function.
-  executeSolutionLogic();
+let inputProcessor;
+const bufferedLines = [];
+
+inputReader.on('line', (line) => {
+  bufferedLines.push(line);
 });
 
-/**
- * Creates and returns an object to manage reading from a list of strings.
- * This acts as an iterator over the input lines.
- * @param {string[]} lineList - An array of strings representing the input lines.
- * @returns {object} An object with methods to navigate and fetch lines.
- */
-function setupInputSource(lineList) {
-  return {
-    sourceContent: lineList,
-    currentPosition: 0,
-    totalContentLength: lineList.length,
+inputReader.on('close', () => {
+  inputProcessor = createInputProcessor(bufferedLines);
+  console.error('\n↑入力 ↓出力');
+  executeProblemSolver();
+});
 
-    /**
-     * Checks if there are more lines available to read.
-     * @returns {boolean} True if more lines exist, false otherwise.
-     */
-    hasMoreContent: function() {
-      return (this.currentPosition < this.totalContentLength);
-    },
+function deepCopyValue(value) {
+  return (value instanceof Set) ? new Set(Array.from(value)) : JSON.parse(JSON.stringify(value));
+}
 
-    /**
-     * Fetches the next available line from the source.
-     * Throws an error if no more lines are available.
-     * @returns {string} The next line of input.
-     */
-    retrieveNextLine: function() {
-      if (this.hasMoreContent()) {
-        return this.sourceContent[this.currentPosition++];
-      } else {
-        throw new Error('No more data in the input stream.');
-      }
+class InputProcessor {
+  constructor(lines) {
+    this.lines = lines;
+    this.currentIndex = 0;
+    this.maxLines = lines.length;
+  }
+
+  hasMoreLines() {
+    return (this.currentIndex < this.maxLines);
+  }
+
+  fetchNextLine() {
+    if (this.hasMoreLines()) {
+      return this.lines[this.currentIndex++];
+    } else {
+      throw 'ArrayIndexOutOfBoundsException ‚There is no more input';
     }
-  };
+  }
 }
 
-/**
- * Prints the given content to standard output, followed by a newline.
- * @param {*} dataToOutput - The data to be displayed.
- */
-function outputResult(dataToOutput) {
-  console.log(dataToOutput);
+function createInputProcessor(lines) {
+  return new InputProcessor(lines);
 }
 
-/**
- * Logs debug information to standard error.
- * Uses JSON.stringify for structured output.
- * @param {*} debugPayload - The data to log for debugging.
- */
-function logDetailedDebug(debugPayload) {
-  console.error('DEBUG INFO:', JSON.stringify(debugPayload, null, 2));
-}
+function readNextInt() { return processInputConversion(fetchNextLine(), 1); }
+function readNextStrArray() { return processInputConversion(fetchNextLine(), 2); }
+function readNextIntArray() { return processInputConversion(fetchNextLine(), 4); }
+function readNextCharArray() { return processInputConversion(fetchNextLine(), 6); }
 
-/**
- * Converts an input string based on a specified conversion type.
- * This function handles common parsing patterns for competitive programming inputs.
- * @param {string} rawString - The raw string input to convert.
- * @param {number} conversionMode - An integer indicating the desired conversion.
- *   1: Parse as a base-10 integer.
- *   4: Split by space, then parse each part as a base-10 integer.
- *   (Other modes from original source are omitted as they are not used by the main logic.)
- * @returns {*} The converted value, or the original string if conversion fails or mode is unknown.
- */
-function applyConversion(rawString, conversionMode) {
+function fetchNextLine() { return inputProcessor.fetchNextLine(); }
+function hasMoreLines() { return inputProcessor.hasMoreLines(); }
+
+function outputResult(data) { console.log(data); }
+function outputDebug(data) { console.error('debug:' + require('util').inspect(data, false, null)); }
+
+function processInputConversion(inputValue, conversionType) {
   try {
-    switch (conversionMode) {
-      case 1:
-        return parseInt(rawString, 10);
-      case 4:
-        return rawString.split(' ').map(Number);
-      // Cases 2, 6, 7, 8, 9, 0 from the original `myconv` are removed
-      // as they are not utilized by the `executeSolutionLogic` function.
-      default:
-        return rawString;
+    switch (conversionType) {
+      case 1: return parseInt(inputValue);
+      case 2: return inputValue.split(' ');
+      case 4: return inputValue.split(' ').map(Number);
+      case 6: return inputValue.split('');
+      case 7: return inputValue.split('').map(Number);
+      case 8: return inputValue.join(' ');
+      case 9: return inputValue.join('\n');
+      case 0: return inputValue.join('');
+      default: return inputValue;
     }
-  } catch (conversionError) {
-    logDetailedDebug(`Failed to convert '${rawString}' with mode ${conversionMode}: ${conversionError.message}`);
-    return rawString; // Return original string on error
+  } catch (e) {
+    return inputValue;
   }
 }
 
-// Wrapper functions for easier access to the inputDataController.
-function getNextInputLine() {
-  return inputDataController.retrieveNextLine();
-}
+function executeProblemSolver() {
+  const inputValues = readNextIntArray();
+  const [valA, valO, valT, valJ, valL, valS, valZ] = inputValues;
 
-function hasRemainingInput() {
-  return inputDataController.hasMoreContent();
-}
+  const getEvenFloor = (num) => Math.floor(num / 2) * 2;
 
-// Specific utility functions for reading different data types.
-function readSingleInteger() {
-  return applyConversion(getNextInputLine(), 1);
-}
+  const evenSumForStrategy1 = getEvenFloor(valA) + getEvenFloor(valJ) + getEvenFloor(valL);
 
-function readMultipleIntegers() {
-  return applyConversion(getNextInputLine(), 4);
-}
+  const evenSumForStrategy2Adjusted = getEvenFloor(valA - 1) + getEvenFloor(valJ - 1) + getEvenFloor(valL - 1);
 
-// --- Core Problem Solving Logic Below This Point ---
+  const bonusBlocksForStrategy2 = 6;
 
-/**
- * Helper to calculate the largest even number less than or equal to a given value.
- * Equivalent to Math.floor(value / 2) * 2.
- * @param {number} value - The input number.
- * @returns {number} The largest even number <= value.
- */
-const getEvenComponent = (value) => {
-  return Math.floor(value / 2) * 2;
-};
+  const potentialOutputStrategy1 = evenSumForStrategy1;
+  const potentialOutputStrategy2 = evenSumForStrategy2Adjusted + bonusBlocksForStrategy2;
 
-/**
- * Helper to calculate an adjusted even component, specific to the problem's second scenario.
- * This function preserves the original behavior of Math.floor((val - 1) / 2) * 2.
- * @param {number} value - The input number.
- * @returns {number} The adjusted even component.
- */
-const getAdjustedEvenComponent = (value) => {
-  // This specific calculation handles edge cases like (0-1)/2 resulting in -2.
-  return Math.floor((value - 1) / 2) * 2;
-};
+  const maxStrategyResult = Math.max(potentialOutputStrategy1, potentialOutputStrategy2);
 
-// A constant representing the fixed bonus added in the second scenario.
-const SCENARIO_B_FIXED_BONUS = 6;
-
-/**
- * The main function containing the solution logic for the problem.
- * It reads input, performs calculations, and outputs the final result.
- */
-function executeSolutionLogic() {
-  // Read the array of 7 integers.
-  const initialCountsArray = readMultipleIntegers();
-
-  // Validate the input array length using a guard clause.
-  if (!initialCountsArray || initialCountsArray.length !== 7) {
-    logDetailedDebug({
-      message: 'Input validation failed: Expected 7 integer counts.',
-      received: initialCountsArray ? initialCountsArray.length : 'null/undefined'
-    });
-    outputResult(0); // Output a default/error value and exit.
-    return;
-  }
-
-  // Destructure the input array into descriptive variables for clarity.
-  const [
-    countBlockI, // Corresponds to original `ai`
-    countBlockO, // Corresponds to original `ao`
-    countBlockT, // Corresponds to original `at`
-    countBlockJ, // Corresponds to original `aj`
-    countBlockL, // Corresponds to original `al`
-    countBlockS, // Corresponds to original `as`
-    countBlockZ  // Corresponds to original `az`
-  ] = initialCountsArray;
-
-  // Calculate the sum for the first scenario.
-  // This sums the even parts of countBlockI, countBlockJ, and countBlockL.
-  const scenarioOneTotal =
-    getEvenComponent(countBlockI) +
-    getEvenComponent(countBlockJ) +
-    getEvenComponent(countBlockL);
-
-  // Calculate the sum for the second scenario.
-  // This sums adjusted even parts of countBlockI, countBlockJ, and countBlockL,
-  // then adds a fixed bonus.
-  const scenarioTwoTotal =
-    getAdjustedEvenComponent(countBlockI) +
-    getAdjustedEvenComponent(countBlockJ) +
-    getAdjustedEvenComponent(countBlockL) +
-    SCENARIO_B_FIXED_BONUS;
-
-  // Determine the maximum value between the two scenarios.
-  let maximumPossibleScore;
-  // Using an explicit if-else block instead of Math.max for structural variation.
-  if (scenarioOneTotal > scenarioTwoTotal) {
-    maximumPossibleScore = scenarioOneTotal;
-  } else {
-    maximumPossibleScore = scenarioTwoTotal;
-  }
-
-  // Add the count of 'O' blocks to the final maximum score.
-  const finalComputedResult = maximumPossibleScore + countBlockO;
-
-  // Display the final result.
-  outputResult(finalComputedResult);
+  outputResult(maxStrategyResult + valO);
 }

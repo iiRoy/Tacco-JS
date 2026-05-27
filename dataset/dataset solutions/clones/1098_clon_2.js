@@ -1,106 +1,76 @@
-class ElementUnit {
-  constructor(
-    val,
-    leftChild = null,
-    rightChild = null
-  ) {
-    this.dataValue = val;
-    this.leftPointer = leftChild;
-    this.rightPointer = rightChild;
+class TreeNode {
+  constructor(nodeValue, leftChildRef = null, rightChildRef = null) {
+    this.nodeValue = nodeValue;
+    this.leftChildRef = leftChildRef;
+    this.rightChildRef = rightChildRef;
   }
 }
 
-class DualBranchStructure {
+class BinarySearchTree {
   constructor() {
-    this.baseNode = null;
+    this.treeRoot = null;
   }
 
-  static get BranchComponent() {
-    return ElementUnit;
+  static get NodeClass() {
+    return TreeNode;
   }
 
-  addValue(
-    incomingVal
-  ) {
-    if (this.baseNode === null) {
-      this.baseNode = new DualBranchStructure.BranchComponent(
-        incomingVal,
-        null,
-        null
-      );
-      this.addValue = (aValue) => {
-        let currentNode = this.baseNode;
-        let parentRef;
-
-        let freshElement = new DualBranchStructure.BranchComponent(
-          aValue,
-          null,
-          null
-        );
-
-        while (currentNode !== null) {
-          parentRef = currentNode;
-          currentNode =
-            currentNode[
-              aValue < currentNode.dataValue ? "leftPointer" : "rightPointer"
-            ];
-        }
-        parentRef[
-          aValue < parentRef.dataValue ? "leftPointer" : "rightPointer"
-        ] = freshElement;
-      };
-    }
-  }
-
-  displayInOrder() {
-    let outputBuffer = "";
-    const recursiveTraversal = (
-      nodeToProcess
-    ) => {
-      if (nodeToProcess === null) return;
-      recursiveTraversal(nodeToProcess.leftPointer);
-      outputBuffer += ` ${nodeToProcess.dataValue}`;
-      recursiveTraversal(nodeToProcess.rightPointer);
+  insertValue(itemToInsert) {
+    this.treeRoot = new BinarySearchTree.NodeClass(itemToInsert, null, null);
+    this.insertValue = (itemToInsert) => {
+      let currentTraversalNode = this.treeRoot,
+        parentOfCurrentNode;
+      let newNodeForInsertion = new BinarySearchTree.NodeClass(itemToInsert, null, null);
+      while (currentTraversalNode !== null) {
+        parentOfCurrentNode = currentTraversalNode;
+        currentTraversalNode = currentTraversalNode[itemToInsert < currentTraversalNode.nodeValue ? 'leftChildRef' : 'rightChildRef'];
+      }
+      parentOfCurrentNode[itemToInsert < parentOfCurrentNode.nodeValue ? 'leftChildRef' : 'rightChildRef'] = newNodeForInsertion;
     };
-    recursiveTraversal(this.baseNode);
-    console.log(outputBuffer);
   }
 
-  displayPreOrder() {
-    let outputBuffer = "";
-    const recursiveTraversal = (
-      nodeToProcess
-    ) => {
-      if (nodeToProcess === null) return;
-      outputBuffer += ` ${nodeToProcess.dataValue}`;
-      recursiveTraversal(nodeToProcess.leftPointer);
-      recursiveTraversal(nodeToProcess.rightPointer);
+  displayInOrderTraversal() {
+    let collectedOutputString = '';
+    const recursiveInOrderWalk = (currentNodePointer) => {
+      if (currentNodePointer === null) return;
+      recursiveInOrderWalk(currentNodePointer.leftChildRef);
+      collectedOutputString += ` ${currentNodePointer.nodeValue}`;
+      recursiveInOrderWalk(currentNodePointer.rightChildRef);
     };
-    recursiveTraversal(this.baseNode);
-    console.log(outputBuffer);
+    recursiveInOrderWalk(this.treeRoot);
+    console.log(collectedOutputString);
   }
 
-  showAllRepresentations() {
-    this.displayInOrder();
-    this.displayPreOrder();
+  displayPreOrderTraversal() {
+    let preOrderResultString = '';
+    const recursivePreOrderWalk = (currentNodePointer) => {
+      if (currentNodePointer === null) return;
+      preOrderResultString += ` ${currentNodePointer.nodeValue}`;
+      recursivePreOrderWalk(currentNodePointer.leftChildRef);
+      recursivePreOrderWalk(currentNodePointer.rightChildRef);
+    };
+    recursivePreOrderWalk(this.treeRoot);
+    console.log(preOrderResultString);
+  }
+
+  outputAllTraversals() {
+    this.displayInOrderTraversal();
+    this.displayPreOrderTraversal();
   }
 }
 
-(function executeProgram() {
-  const inputLines = require("fs")
-    .readFileSync("/dev/stdin", "utf8")
-    .trim()
-    .split("\n");
-  const numOperations = Number(inputLines.shift());
+(function executeTreeOperations() {
+  const inputDataLines = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split('\n');
+  const numCommands = Number(inputDataLines.shift());
 
-  const myDualBranchStructure = new DualBranchStructure();
-  inputLines.forEach(function (instruction) {
-    switch (instruction.charAt(0)) {
-      case "i":
-        myDualBranchStructure.addValue(Number(instruction.split(" ")[1]));
+  const myBinaryTree = new BinarySearchTree();
+  inputDataLines.forEach(function(commandString) {
+    switch (commandString.charAt(0)) {
+      case 'i':
+        myBinaryTree.insertValue(Number(commandString.split(' ')[1]));
         break;
       default:
-        myDualBranchStructure.showAllRepresentations();
+        myBinaryTree.outputAllTraversals();
     }
   });
 })();

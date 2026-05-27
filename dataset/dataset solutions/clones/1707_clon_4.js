@@ -1,28 +1,31 @@
-const raw_data_buffer = require('node:fs').readFileSync('/dev/stdin', 'utf8');
-const lines_array = raw_data_buffer.split('\n').filter(Boolean);
+const [firstLineData, ...remainingLines] = require('fs').readFileSync('/dev/stdin', 'utf8').split(/\n/);
+const limitValue = Number(firstLineData);
 
-const count_of_items = Number(lines_array[0]);
-
-let initial_aggregate = 0;
-for (let p_idx = 1; p_idx <= count_of_items; ++p_idx) {
-  let current_sub_sum = 0;
-  for (let q_idx = 1; q_idx <= p_idx; ++q_idx) {
-    current_sub_sum += q_idx;
+let finalTally = 0;
+// Calculate the sum of lengths of all possible subsegments [x, y] where 1 <= x <= y <= limitValue
+for (let xCoord = 1; xCoord <= limitValue; xCoord++) {
+  for (let yCoord = xCoord; yCoord <= limitValue; yCoord++) {
+    finalTally += (yCoord - xCoord + 1);
   }
-  initial_aggregate += current_sub_sum;
 }
 
-const constraint_strings = lines_array.slice(1);
+// Process each specified segment using a functional reduction approach
+finalTally = remainingLines.reduce((accumulator, currentSegmentSpec) => {
+  // The original code would process an empty string from a trailing newline,
+  // resulting in [0, 0] after map(Number), which subtracts 0.
+  // We maintain this behavior.
+  const [rawStart, rawEnd] = currentSegmentSpec.split(/\s/).map(Number);
+  
+  let startPoint = rawStart;
+  let endPoint = rawEnd;
 
-const final_computed_value = constraint_strings.reduce((current_total, constraint_line) => {
-  const parts = constraint_line.split(' ').map(s => Number(s));
-  let point_one = parts[0];
-  let point_two = parts[1];
+  // Ensure startPoint is less than or equal to endPoint, matching original logic
+  if (startPoint > endPoint) {
+    [startPoint, endPoint] = [endPoint, startPoint];
+  }
 
-  const lower_bound = Math.min(point_one, point_two);
-  const upper_bound = Math.max(point_one, point_two);
+  // Subtract the count of subsegments [a, b] such that a <= startPoint and b >= endPoint
+  return accumulator - (startPoint * (limitValue - endPoint + 1));
+}, finalTally); // Initialize the accumulator with the pre-calculated total
 
-  return current_total - (lower_bound * (count_of_items - upper_bound + 1));
-}, initial_aggregate);
-
-console.log(final_computed_value);
+console.log(finalTally);

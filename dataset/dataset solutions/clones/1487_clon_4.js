@@ -1,43 +1,55 @@
-let primaryInput = require("fs").readFileSync("/dev/stdin", "utf8");
-let inputTokens = primaryInput.split(/\s+/).filter(Boolean);
-let tokenIndex = 0;
+"use strict";
 
-function extractNextNumeric() {
-    return Number(inputTokens[tokenIndex++]);
+const rawInputData = require("fs").readFileSync("/dev/stdin", "utf8");
+const inputTokens = rawInputData.split(/ |\n/);
+let tokenPointer = 0;
+
+function obtainNumber() {
+    return Number(inputTokens[tokenPointer++]);
 }
 
-function extractNextList(count) {
-    let tempArr = [];
-    for (let j = 0; j < count; j++) {
-        tempArr.push(Number(inputTokens[tokenIndex++]));
+function obtainNumbers(count) {
+    const segment = inputTokens.slice(tokenPointer, tokenPointer + count);
+    tokenPointer += count;
+    return segment.map(Number);
+}
+
+const outputCollector = [];
+function emitOutput(content) {
+    outputCollector.push(content);
+}
+
+function calculateMaxOverlap() {
+    const [itemCount, rangeOffset] = obtainNumbers(2);
+    const valueArray = obtainNumbers(itemCount);
+
+    const maxCoordinateValue = 300000;
+    const overlapChanges = new Array(maxCoordinateValue + 2).fill(0);
+
+    for (let i = 0; i < itemCount; i++) {
+        const currentVal = valueArray[i];
+        const startPoint = Math.max(0, currentVal - rangeOffset);
+        const endPoint = Math.min(maxCoordinateValue, currentVal + rangeOffset);
+
+        overlapChanges[startPoint]++;
+        overlapChanges[endPoint + 1]--;
     }
-    return tempArr;
+
+    let currentActiveCount = 0;
+    let peakOverlap = 0;
+
+    for (let i = 0; i < itemCount; i++) {
+        currentActiveCount += overlapChanges[i];
+        peakOverlap = Math.max(peakOverlap, currentActiveCount);
+    }
+
+    return peakOverlap;
 }
 
-let numElements = extractNextNumeric();
-let rangeOffset = extractNextNumeric();
-let valueArray = extractNextList(numElements);
-
-const maxCoordinateValue = 300000;
-let scoreChanges = Array(maxCoordinateValue + 2).fill(0); // For indices 0 to maxCoordinateValue + 1
-
-for (let currentVal of valueArray) {
-    let lowerBoundary = Math.max(0, currentVal - rangeOffset);
-    let upperBoundary = Math.min(maxCoordinateValue, currentVal + rangeOffset);
-    scoreChanges[lowerBoundary]++;
-    scoreChanges[upperBoundary + 1]--;
+const finalResult = calculateMaxOverlap();
+if (finalResult !== undefined) {
+    console.log(String(finalResult));
 }
-
-// Compute prefix sums to get actual overlap counts at each point
-for (let pIdx = 1; pIdx <= maxCoordinateValue + 1; pIdx++) {
-    scoreChanges[pIdx] += scoreChanges[pIdx - 1];
+if (outputCollector.length > 0) {
+    console.log(outputCollector.join("\n"));
 }
-
-let maximumOverlapFound = 0;
-
-// Query points 1 through numElements (inclusive) as per original logic
-for (let pIdx = 1; pIdx <= numElements; pIdx++) {
-    maximumOverlapFound = Math.max(maximumOverlapFound, scoreChanges[pIdx]);
-}
-
-console.log(String(maximumOverlapFound));

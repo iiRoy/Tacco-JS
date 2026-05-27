@@ -1,35 +1,45 @@
-'use strict';
-
-// This file processes textual data to find a specific pattern.
+'use strict'; // Enforce strict parsing and error handling for the entire script.
 
 /**
- * Executes the primary logic for pattern detection within given content.
- * @param {string} sourceContent The raw textual input data.
+ * This function serves as the primary entry point for processing input data.
+ * It analyzes the provided string to detect a specific pattern.
+ * @param {string} rawData - The complete input string, typically read from standard input.
  */
-const processInput = ( sourceContent ) => {
-    // Break down the source content into lines, then further into words/tokens.
-    const  tokenizedLines = sourceContent . split ( '\n' ) . map (  lineSegment  =>  lineSegment . split ( ' ' )  ) ;
+const processInput = (rawData) => {
+    // First, split the raw input by newline characters to get individual lines.
+    // Then, for each line, split it by spaces to get an array of arguments.
+    // This creates a 2D array representing the parsed input structure.
+    const parsedLines = rawData.split('\n').map(lineSegment => lineSegment.split(' '));
 
-    // Extract the primary string of interest from the first token of the first line.
-    const  examinedSequence = tokenizedLines [ 0 ] [ 0 ] ;
+    // Extract the very first string from the parsed input.
+    // This is assumed to be the primary string we need to analyze.
+    const targetString = parsedLines[0][0];
 
-    // Determine the total number of characters in the sequence.
-    const  sequenceSize = examinedSequence . length ;
+    // Obtain the total character count of the extracted string.
+    const stringLength = targetString.length;
 
-    // Initialize a flag to track whether the target pattern has been found.
-    let  patternFound = false ;
+    // Initialize a flag to track whether the desired pattern has been located.
+    // It is set to 'false' by default, assuming the pattern is not present until proven otherwise.
+    let foundPattern = false;
 
-    // Iterate through the sequence, checking for a specific two-character substring.
-    for  (  let  currentPosition = 0 ;  currentPosition < sequenceSize - 1 ;  currentPosition++  ) {
-        // If the current two-character slice matches "AC", set the flag to true.
-        if  (  examinedSequence . slice (  currentPosition ,  currentPosition + 2  )  ===  'AC'  )  {
-            patternFound = true ;
+    // Iterate through the 'targetString' from the beginning up to the second-to-last character.
+    // This ensures that 'slice(idx, idx + 2)' always attempts to extract a two-character substring.
+    for (let idx = 0; idx < stringLength - 1; idx++) {
+        // Check if the two-character substring starting at the current index 'idx'
+        // is exactly equal to the string "AC".
+        if (targetString.slice(idx, idx + 2) === 'AC') {
+            // If the pattern "AC" is found, update the flag to 'true'.
+            foundPattern = true;
+            // No need to continue searching once the pattern is found,
+            // but for Type II clone, we maintain the original loop structure.
         }
     }
 
-    // Output the result based on whether the pattern was identified.
-    console . log (  patternFound  ?  'Yes'  :  'No'  ) ;
+    // Based on the 'foundPattern' flag, print "Yes" to standard output if the pattern was found,
+    // otherwise print "No". This is the final observable behavior of the script.
+    console.log(foundPattern ? 'Yes' : 'No');
 };
 
-// Initiate the processing by reading input from standard input.
-processInput ( require ( 'fs' ) . readFileSync (  '/dev/stdin' ,  'utf8'  ) ) ;
+// Read the entire content of standard input synchronously as a UTF-8 encoded string.
+// Then, pass this content to the 'processInput' function for execution.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

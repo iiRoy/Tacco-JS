@@ -1,329 +1,389 @@
-'use strict'; // Enforce strict mode for cleaner code practices
+'use strict';
+// This script reads grid dimensions and data points from standard input
+// and determines if the given points form a valid linear progression
+// based on specific rules for odd/even rows/columns and grid sizes.
 
-// Read all input data from standard input, process it, and split into lines.
+// Import the file system module to read input data synchronously
 const dataLines = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split('\n');
 
-// Parse the grid dimensions (Rows and Columns) from the first line.
-const gridDimensions = dataLines[0].split(' ').map(Number);
-const numRows = gridDimensions[0]; // Total number of rows in the grid.
-const numCols = gridDimensions[1]; // Total number of columns in the grid.
+// Parse the first line to get the number of rows and columns
+const gridDims = dataLines[0].split(' ').map(Number);
+const numRows = gridDims[0]; // Total number of rows in the grid
+const numCols = gridDims[1]; // Total number of columns in the grid
 
-// Parse the count of data points from the second line.
-const numPoints = Number.parseInt(dataLines[1]);
+// Parse the second line to get the total number of data points
+const numPoints = parseInt(dataLines[1], 10); // Ensure integer parsing with radix 10
 
-// Extract the actual coordinate and amount data points.
-const pointData = dataLines.slice(2);
+// Extract the remaining lines, which contain the coordinates and values of the data points
+const pointCoordsAndValues = dataLines.slice(2);
 
-// Initialize flags to track observed gradients for odd/even coordinates in X and Y directions.
-// A value of 'null' indicates no gradient has been established yet for that type.
-let xOddGradient = null; // Gradient for odd-column changes along X-axis.
-let xEvenGradient = null; // Gradient for even-column changes along X-axis.
-let yOddGradient = null; // Gradient for odd-row changes along Y-axis.
-let yEvenGradient = null; // Gradient for even-row changes along Y-axis.
+// Initialize variables to store the common differences (slopes) for various grid segments.
+// 'false' is used as an initial state to indicate that a difference has not yet been established.
+let xOddDiff = false;  // Common difference for points in odd-indexed columns (horizontal)
+let xEvenDiff = false; // Common difference for points in even-indexed columns (horizontal)
+let yOddDiff = false;  // Common difference for points in odd-indexed rows (vertical)
+let yEvenDiff = false; // Common difference for points in even-indexed rows (vertical)
 
-// Maps to store previously encountered points for odd/even coordinates along X and Y axes.
-// Key: Row/Column coordinate, Value: [Other coordinate, Amount].
-let xOddMap = new Map(); // Stores points (row, [odd_col, amount])
-let xEvenMap = new Map(); // Stores points (row, [even_col, amount])
-let yOddMap = new Map(); // Stores points (col, [odd_row, amount])
-let yEvenMap = new Map(); // Stores points (col, [even_row, amount])
+// Initialize Maps to store the first encountered data point for a given row/column index.
+// These maps help in calculating the common difference when a second point is found.
+let rowOddMap = new Map();  // Stores {row_idx: [col_idx, value]} for points in odd columns
+let rowEvenMap = new Map(); // Stores {row_idx: [col_idx, value]} for points in even columns
+let colOddMap = new Map();  // Stores {col_idx: [row_idx, value]} for points in odd rows
+let colEvenMap = new Map(); // Stores {col_idx: [row_idx, value]} for points in even rows
 
-// Iterate through each data point provided.
-for (let currentIdx = 0; currentIdx < numPoints; currentIdx++) {
-    // Parse the current point's row, column, and amount values.
-    const currentPointStr = pointData[currentIdx].split(' ');
-    const rowCoord = Number.parseInt(currentPointStr[0]);
-    const colCoord = Number.parseInt(currentPointStr[1]);
-    const amountVal = Number.parseInt(currentPointStr[2]);
+// Iterate through each provided data point
+for (let idx = 0; idx < numPoints; idx++) {
+	// Parse the current data point's row, column, and value
+	let currentPointData = pointCoordsAndValues[idx].split(' ');
+	let currRow = parseInt(currentPointData[0], 10); // Current row index (1-based)
+	let currCol = parseInt(currentPointData[1], 10); // Current column index (1-based)
+	let currVal = parseInt(currentPointData[2], 10); // Value at the current (row, col)
 
-    // --- Process Y-axis (vertical) constraints ---
-    // Special handling if the grid has only 2 rows.
-    if (numRows === 2) {
-        // If a point with the same column has been seen before (y-even map is used for R=2)
-        if (yEvenMap.has(colCoord)) {
-            const prevRowAmount = yEvenMap.get(colCoord);
-            const prevRow = prevRowAmount[0];
-            const prevAmount = prevRowAmount[1];
+	// --- Logic for vertical (Y-axis) consistency ---
+	// Special handling if the grid has only 2 rows
+	if (numRows === 2) {
+		// Check if a point in the current column has already been processed
+		if (colEvenMap.has(currCol)) {
+			// Retrieve the previously stored point's row and value for this column
+			let prevRowVal = colEvenMap.get(currCol);
+			let prevRow = prevRowVal[0];
+			let prevVal = prevRowVal[1];
 
-            // Calculate the gradient.
-            const gradientValue = (prevAmount - amountVal) / (prevRow - rowCoord);
+			// Calculate the difference (slope) between the two points
+			let difference = (prevVal - currVal) / (prevRow - currRow);
 
-            // If this is the first gradient observed for Y-even.
-            if (yEvenGradient === null) {
-                yEvenGradient = gradientValue; // Set the gradient.
+			// If yEvenDiff (common difference for 2-row case) is not yet set
+			if (yEvenDiff === false) {
+				yEvenDiff = difference; // Set the common difference
 
-                // Validate all existing points in the map against this new gradient.
-                for (const mapEntry of yEvenMap.entries()) {
-                    const iterCol = mapEntry[0];
-                    const iterRow = mapEntry[1][0];
-                    const iterAmount = mapEntry[1][1];
+				// Validate all previously stored points in colEvenMap against this new difference
+				for (let colRowValEntry of colEvenMap.entries()) {
+					let mappedCol = colRowValEntry[0]; // Column index (not directly used in calculation here)
+					let mappedRow = colRowValEntry[1][0]; // Row index of the mapped point
+					let mappedVal = colRowValEntry[1][1]; // Value of the mapped point
 
-                    // Check if conditions for amount validity are met.
-                    if (iterAmount - gradientValue * (iterRow - 1) < 0 ||
-                        iterAmount + gradientValue * (2 - iterRow) < 0) {
-                        console.log('No');
-                        process.exit(); // Exit if invalid.
-                    }
-                }
-            } else {
-                // If a gradient was already established, check for consistency.
-                if (gradientValue !== yEvenGradient) {
-                    console.log('No');
-                    process.exit(); // Exit if inconsistent.
-                }
-            }
+					// Check if the value at the mapped point is consistent and non-negative at boundaries
+					if (mappedVal - difference * (mappedRow - 1) < 0 ||
+						mappedVal + difference * (2 - mappedRow) < 0) {
+						console.log('No');
+						process.exit(); // Exit if inconsistency found
+					}
+				}
+			} else {
+				// If yEvenDiff is already set, ensure the current difference matches
+				if (difference !== yEvenDiff) {
+					console.log('No');
+					process.exit(); // Exit if differences don't match
+				}
+			}
 
-            // Validate the current point against the established gradient.
-            if (amountVal - gradientValue * (rowCoord - 1) < 0 ||
-                amountVal + gradientValue * (2 - rowCoord) < 0) {
-                console.log('No');
-                process.exit(); // Exit if invalid.
-            }
+			// Validate the current point against the established difference
+			if (currVal - difference * (currRow - 1) < 0 ||
+				currVal + difference * (2 - currRow) < 0) {
+				console.log('No');
+				process.exit(); // Exit if current point is inconsistent
+			}
 
-        } else {
-            // If no gradient has been established yet, and this is the first point for this column.
-            if (yEvenGradient !== null) {
-                // Validate the current point using the existing gradient.
-                if (amountVal - yEvenGradient * (rowCoord - 1) < 0 ||
-                    amountVal + yEvenGradient * (2 - rowCoord) < 0) {
-                    console.log('No');
-                    process.exit(); // Exit if invalid.
-                }
-            }
-            // Store the current point.
-            yEvenMap.set(colCoord, [rowCoord, amountVal]);
-        }
+		} else {
+			// If no previous point in this column, but a common difference is already established
+			if (yEvenDiff !== false) {
+				// Validate the current point against the established difference
+				if (currVal - yEvenDiff * (currRow - 1) < 0 ||
+					currVal + yEvenDiff * (2 - currRow) < 0) {
+					console.log('No');
+					process.exit(); // Exit if current point is inconsistent
+				}
+			}
+			// Store the current point's data for future comparisons
+			colEvenMap.set(currCol, [currRow, currVal]);
+		}
 
-    } else { // Grid has more than 2 rows.
-        // Check if the current row is even or odd.
-        if (rowCoord % 2 === 0) { // Even row
-            if (yEvenMap.has(colCoord)) {
-                const prevRowAmount = yEvenMap.get(colCoord);
-                const prevRow = prevRowAmount[0];
-                const prevAmount = prevRowAmount[1];
+	} else { // General case for grids with more than 2 rows
+		// Check if the current row index is even
+		if (currRow % 2 === 0) {
+			// Check if a point in the current column (for an even row) has already been processed
+			if (colEvenMap.has(currCol)) {
+				let prevRowVal = colEvenMap.get(currCol);
+				let prevRow = prevRowVal[0];
+				let prevVal = prevRowVal[1];
 
-                const gradientValue = (prevAmount - amountVal) / ((prevRow - rowCoord) / 2);
+				// Calculate difference, adjusted for even row spacing (every other row)
+				let difference = (prevVal - currVal) / ((prevRow - currRow) / 2);
 
-                if (yEvenGradient === null) {
-                    yEvenGradient = gradientValue;
+				// If yEvenDiff is not yet set
+				if (yEvenDiff === false) {
+					yEvenDiff = difference;
 
-                    for (const mapEntry of yOddMap.entries()) { // Note: original code used map_y_odd here.
-                        const iterCol = mapEntry[0];
-                        const iterRow = mapEntry[1][0];
-                        const iterAmount = mapEntry[1][1];
+					// Validate all entries in colOddMap (NOTE: Original code iterates colOddMap here, not colEvenMap)
+					for (let colRowValEntry of colOddMap.entries()) {
+						let mappedCol = colRowValEntry[0];
+						let mappedRow = colRowValEntry[1][0];
+						let mappedVal = colRowValEntry[1][1];
 
-                        if (iterAmount - gradientValue * ((iterRow / 2) - 1) < 0 ||
-                            iterAmount + gradientValue * Math.floor((numRows - iterRow) / 2) < 0) {
-                            console.log('No');
-                            process.exit();
-                        }
-                    }
-                } else {
-                    if (gradientValue !== yEvenGradient) {
-                        console.log('No');
-                        process.exit();
-                    }
-                }
-                if (amountVal - gradientValue * ((rowCoord / 2) - 1) < 0 ||
-                    amountVal + gradientValue * Math.floor((numRows - rowCoord) / 2) < 0) {
-                    console.log('No');
-                    process.exit();
-                }
+						// Check consistency with difference
+						if (mappedVal - difference * ((mappedRow / 2) - 1) < 0 ||
+							mappedVal + difference * Math.floor((numRows - mappedRow) / 2) < 0) {
+							console.log('No');
+							process.exit();
+						}
+					}
+				} else {
+					// If yEvenDiff is set, ensure current difference matches
+					if (difference !== yEvenDiff) {
+						console.log('No');
+						process.exit();
+					}
+				}
+				// Validate the current point
+				if (currVal - difference * ((currRow / 2) - 1) < 0 ||
+					currVal + difference * Math.floor((numRows - currRow) / 2) < 0) {
+					console.log('No');
+					process.exit();
+				}
 
-            } else {
-                if (yEvenGradient !== null) {
-                    if (amountVal - yEvenGradient * ((rowCoord / 2) - 1) < 0 ||
-                        amountVal + yEvenGradient * Math.floor((numRows - rowCoord) / 2) < 0) {
-                        console.log('No');
-                        process.exit();
-                    }
-                }
-                yEvenMap.set(colCoord, [rowCoord, amountVal]);
-            }
-        } else { // Odd row
-            if (yOddMap.has(colCoord)) {
-                const prevRowAmount = yOddMap.get(colCoord);
-                const prevRow = prevRowAmount[0];
-                const prevAmount = prevRowAmount[1];
+			} else {
+				// If no previous point in this column for an even row, but yEvenDiff is NOT set
+				// (NOTE: Original code uses `yEvenDiff === false` here, which means this check only runs if the difference is unset)
+				if (yEvenDiff === false) {
+					// This check will use `false` as the difference, effectively checking if `currVal < 0`
+					if (currVal - yEvenDiff * ((currRow / 2) - 1) < 0 ||
+						currVal + yEvenDiff * Math.floor((numRows - currRow) / 2) < 0) {
+						console.log('No');
+						process.exit();
+					}
+				}
+				// Store the current point's data
+				colEvenMap.set(currCol, [currRow, currVal]);
+			}
+		} else { // Current row index is odd
+			// Check if a point in the current column (for an odd row) has already been processed
+			if (colOddMap.has(currCol)) {
+				let prevRowVal = colOddMap.get(currCol);
+				let prevRow = prevRowVal[0];
+				let prevVal = prevRowVal[1];
 
-                const gradientValue = (prevAmount - amountVal) / ((prevRow - rowCoord) / 2);
+				// Calculate difference, adjusted for odd row spacing
+				let difference = (prevVal - currVal) / ((prevRow - currRow) / 2);
 
-                if (yOddGradient === null) {
-                    yOddGradient = gradientValue;
+				// If yOddDiff is not yet set
+				if (yOddDiff === false) {
+					yOddDiff = difference;
 
-                    for (const mapEntry of yOddMap.entries()) {
-                        const iterCol = mapEntry[0];
-                        const iterRow = mapEntry[1][0];
-                        const iterAmount = mapEntry[1][1];
+					// Validate all entries in colOddMap
+					for (let colRowValEntry of colOddMap.entries()) {
+						let mappedCol = colRowValEntry[0];
+						let mappedRow = colRowValEntry[1][0];
+						let mappedVal = colRowValEntry[1][1];
 
-                        if (iterAmount - gradientValue * Math.floor(iterRow / 2) < 0 ||
-                            iterAmount + gradientValue * Math.floor((numRows - iterRow) / 2) < 0) {
-                            console.log('No');
-                            process.exit();
-                        }
-                    }
-                } else {
-                    if (gradientValue !== yOddGradient) {
-                        console.log('No');
-                        process.exit();
-                    }
-                }
-                if (amountVal - gradientValue * Math.floor((rowCoord - 1) / 2) < 0 ||
-                    amountVal + gradientValue * Math.floor((numRows - rowCoord) / 2) < 0) {
-                    console.log('No');
-                    process.exit();
-                }
-            } else {
-                if (yOddGradient !== null) {
-                    if (amountVal - yOddGradient * Math.floor(rowCoord / 2) < 0 ||
-                        amountVal + yOddGradient * Math.floor((numRows - rowCoord) / 2) < 0) {
-                        console.log('No');
-                        process.exit();
-                    }
-                }
-                yOddMap.set(colCoord, [rowCoord, amountVal]);
-            }
-        }
-    }
+						// Check consistency with difference
+						if (mappedVal - difference * Math.floor(mappedRow / 2) < 0 ||
+							mappedVal + difference * Math.floor((numRows - mappedRow) / 2) < 0) {
+							console.log('No');
+							process.exit();
+						}
+					}
+				} else {
+					// If yOddDiff is set, ensure current difference matches
+					if (difference !== yOddDiff) {
+						console.log('No');
+						process.exit();
+					}
+				}
+				// Validate the current point
+				if (currVal - difference * Math.floor((currRow - 1) / 2) < 0 ||
+					currVal + difference * Math.floor((numRows - currRow) / 2) < 0) {
+					console.log('No');
+					process.exit();
+				}
+			} else {
+				// If no previous point in this column for an odd row, but yOddDiff is NOT set
+				// (NOTE: Original code uses `yOddDiff === false` here, similar to the even row case)
+				if (yOddDiff === false) {
+					// This check will use `false` as the difference, effectively checking if `currVal < 0`
+					if (currVal - yOddDiff * Math.floor(currRow / 2) < 0 ||
+						currVal + yOddDiff * Math.floor((numRows - currRow) / 2) < 0) {
+						console.log('No');
+						process.exit();
+					}
+				}
+				// Store the current point's data
+				colOddMap.set(currCol, [currRow, currVal]);
+			}
+		}
+	}
 
-    // --- Process X-axis (horizontal) constraints ---
-    // Special handling if the grid has only 2 columns.
-    if (numCols === 2) {
-        if (xEvenMap.has(rowCoord)) {
-            const prevColAmount = xEvenMap.get(rowCoord);
-            const prevCol = prevColAmount[0];
-            const prevAmount = prevColAmount[1];
+	// --- Logic for horizontal (X-axis) consistency ---
+	// Special handling if the grid has only 2 columns
+	if (numCols === 2) {
+		// Check if a point in the current row has already been processed
+		if (rowEvenMap.has(currRow)) {
+			// Retrieve the previously stored point's column and value for this row
+			let prevColVal = rowEvenMap.get(currRow);
+			let prevCol = prevColVal[0];
+			let prevVal = prevColVal[1];
 
-            const gradientValue = (prevAmount - amountVal) / (prevCol - colCoord);
+			// Calculate the difference (slope) between the two points
+			let difference = (prevVal - currVal) / (prevCol - currCol);
 
-            // Note: Original code used -1 here. Changed to null for consistency.
-            if (xEvenGradient === null) {
-                xEvenGradient = gradientValue;
+			// This section contains a known inconsistency from the original code:
+			// `xEvenDiff` is initialized to `false`, but first checked against `-1`.
+			// If `xEvenDiff` is `false`, `false === -1` is `false`, so it falls into the `else` block.
+			// In the `else` block, `d !== xEvenDiff` (i.e., `d !== false`) will be true for any numeric `d`,
+			// causing an immediate 'No' and exit. This behavior is preserved.
+			if (xEvenDiff === -1) { // This condition will likely be false on first check
+				xEvenDiff = difference; // Set the common difference
 
-                for (const mapEntryX of xEvenMap.entries()) {
-                    const iterRowX = mapEntryX[0];
-                    const iterColX = mapEntryX[1][0];
-                    const iterAmountX = mapEntryX[1][1];
+				// Validate all previously stored points in rowEvenMap against this new difference
+				for (let rowColValEntry of rowEvenMap.entries()) {
+					let mappedRow = rowColValEntry[0]; // Row index (not directly used in calculation here)
+					let mappedCol = rowColValEntry[1][0]; // Column index of the mapped point
+					let mappedVal = rowColValEntry[1][1]; // Value of the mapped point
 
-                    if (iterAmountX - gradientValue * (iterColX - 1) < 0 ||
-                        iterAmountX + gradientValue * (numCols - iterColX) < 0) {
-                        console.log('No');
-                        process.exit();
-                    }
-                }
-            } else {
-                if (gradientValue !== xEvenGradient) {
-                    console.log('No');
-                    process.exit();
-                }
-            }
-            if (amountVal - gradientValue * (colCoord - 1) < 0 ||
-                amountVal + gradientValue * (numCols - colCoord) < 0) {
-                console.log('No');
-                process.exit();
-            }
+					// Check if the value at the mapped point is consistent and non-negative at boundaries
+					if (mappedVal - difference * (mappedCol - 1) < 0 ||
+						mappedVal + difference * (numCols - mappedCol) < 0) {
+						console.log('No');
+						process.exit();
+					}
+				}
+			} else {
+				// If xEvenDiff is already set (or is false, triggering the bug), ensure the current difference matches
+				if (difference !== xEvenDiff) {
+					console.log('No');
+					process.exit();
+				}
+			}
+			// Validate the current point against the established difference
+			if (currVal - difference * (currCol - 1) < 0 ||
+				currVal + difference * (numCols - currCol) < 0) {
+				console.log('No');
+				process.exit();
+			}
 
-        } else {
-            if (xEvenGradient !== null) {
-                if (amountVal - xEvenGradient * (colCoord - 1) < 0 ||
-                    amountVal + xEvenGradient * (numCols - colCoord) < 0) {
-                    console.log('No');
-                    process.exit();
-                }
-            }
-            xEvenMap.set(rowCoord, [colCoord, amountVal]);
-        }
-    } else { // Grid has more than 2 columns.
-        if (colCoord % 2 === 0) { // Even column
-            if (xEvenMap.has(rowCoord)) {
-                const prevColAmount = xEvenMap.get(rowCoord);
-                const prevCol = prevColAmount[0];
-                const prevAmount = prevColAmount[1];
+		} else {
+			// If no previous point in this row, but a common difference is already established
+			if (xEvenDiff !== false) { // This check uses `false`, consistent with initialization
+				// Validate the current point against the established difference
+				if (currVal - xEvenDiff * (currCol - 1) < 0 ||
+					currVal + xEvenDiff * (numCols - currCol) < 0) {
+					console.log('No');
+					process.exit();
+				}
+			}
+			// Store the current point's data
+			rowEvenMap.set(currRow, [currCol, currVal]);
+		}
+	} else { // General case for grids with more than 2 columns
+		// Check if the current column index is even
+		if (currCol % 2 === 0) {
+			// Check if a point in the current row (for an even column) has already been processed
+			if (rowEvenMap.has(currRow)) {
+				let prevColVal = rowEvenMap.get(currRow);
+				let prevCol = prevColVal[0];
+				let prevVal = prevColVal[1];
 
-                const gradientValue = (prevAmount - amountVal) / ((prevCol - colCoord) / 2);
+				// Calculate difference, adjusted for even column spacing
+				let difference = (prevVal - currVal) / ((prevCol - currCol) / 2);
 
-                if (xEvenGradient === null) {
-                    xEvenGradient = gradientValue;
+				// If xEvenDiff is not yet set
+				if (xEvenDiff === false) {
+					xEvenDiff = difference;
 
-                    for (const mapEntryX of xEvenMap.entries()) {
-                        const iterRowX = mapEntryX[0];
-                        const iterColX = mapEntryX[1][0];
-                        const iterAmountX = mapEntryX[1][1];
+					// Validate all entries in rowEvenMap
+					for (let rowColValEntry of rowEvenMap.entries()) {
+						let mappedRow = rowColValEntry[0];
+						let mappedCol = rowColValEntry[1][0];
+						let mappedVal = rowColValEntry[1][1];
 
-                        if (iterAmountX - gradientValue * ((iterColX / 2) - 1) < 0 ||
-                            iterAmountX + gradientValue * Math.floor((numCols - iterColX) / 2) < 0) {
-                            console.log('No');
-                            process.exit();
-                        }
-                    }
-                } else {
-                    if (gradientValue !== xEvenGradient) {
-                        console.log('No');
-                        process.exit();
-                    }
-                }
-                if (amountVal - gradientValue * ((colCoord / 2) - 1) < 0 ||
-                    amountVal + gradientValue * Math.floor((numCols - colCoord) / 2) < 0) {
-                    console.log('No');
-                    process.exit();
-                }
-            } else {
-                if (xEvenGradient !== null) {
-                    if (amountVal - xEvenGradient * ((colCoord / 2) - 1) < 0 ||
-                        amountVal + xEvenGradient * Math.floor((numCols - colCoord) / 2) < 0) {
-                        console.log('No');
-                        process.exit();
-                    }
-                }
-                xEvenMap.set(rowCoord, [colCoord, amountVal]);
-            }
+						// Check consistency with difference
+						if (mappedVal - difference * ((mappedCol / 2) - 1) < 0 ||
+							mappedVal + difference * Math.floor((numCols - mappedCol) / 2) < 0) {
+							console.log('No');
+							process.exit();
+						}
+					}
+				} else {
+					// If xEvenDiff is set, ensure current difference matches
+					if (difference !== xEvenDiff) {
+						console.log('No');
+						process.exit();
+					}
+				}
+				// Validate the current point
+				if (currVal - difference * ((currCol / 2) - 1) < 0 ||
+					currVal + difference * Math.floor((numCols - currCol) / 2) < 0) {
+					console.log('No');
+					process.exit();
+				}
+			} else {
+				// If no previous point in this row for an even column, but a common difference is set
+				if (xEvenDiff !== false) {
+					if (currVal - xEvenDiff * ((currCol / 2) - 1) < 0 ||
+						currVal + xEvenDiff * Math.floor((numCols - currCol) / 2) < 0) {
+						console.log('No');
+						process.exit();
+					}
+				}
+				// Store the current point's data
+				rowEvenMap.set(currRow, [currCol, currVal]);
+			}
 
-        } else { // Odd column
-            if (xOddMap.has(rowCoord)) {
-                const prevColAmount = xOddMap.get(rowCoord);
-                const prevCol = prevColAmount[0];
-                const prevAmount = prevColAmount[1];
+		} else { // Current column index is odd
+			// Check if a point in the current row (for an odd column) has already been processed
+			if (rowOddMap.has(currRow)) {
+				let prevColVal = rowOddMap.get(currRow);
+				let prevCol = prevColVal[0];
+				let prevVal = prevColVal[1];
 
-                const gradientValue = (prevAmount - amountVal) / ((prevCol - colCoord) / 2);
+				// Calculate difference, adjusted for odd column spacing
+				let difference = (prevVal - currVal) / ((prevCol - currCol) / 2);
 
-                if (xOddGradient === null) {
-                    xOddGradient = gradientValue;
+				// If xOddDiff is not yet set
+				if (xOddDiff === false) {
+					xOddDiff = difference;
 
-                    for (const mapEntryX of xOddMap.entries()) {
-                        const iterRowX = mapEntryX[0];
-                        const iterColX = mapEntryX[1][0];
-                        const iterAmountX = mapEntryX[1][1];
+					// Validate all entries in rowOddMap
+					for (let rowColValEntry of rowOddMap.entries()) {
+						let mappedRow = rowColValEntry[0];
+						let mappedCol = rowColValEntry[1][0];
+						let mappedVal = rowColValEntry[1][1];
 
-                        if (iterAmountX - gradientValue * Math.floor(iterColX / 2) < 0 ||
-                            iterAmountX + gradientValue * Math.floor((numCols - iterColX) / 2) < 0) {
-                            console.log('No');
-                            process.exit();
-                        }
-                    }
-                } else {
-                    if (gradientValue !== xOddGradient) {
-                        console.log('No');
-                        process.exit();
-                    }
-                }
-                if (amountVal - gradientValue * Math.floor(colCoord / 2) < 0 ||
-                    amountVal + gradientValue * Math.floor((numCols - colCoord) / 2) < 0) {
-                    console.log('No');
-                    process.exit();
-                }
-            } else {
-                if (xOddGradient !== null) {
-                    if (amountVal - xOddGradient * Math.floor(colCoord / 2) < 0 ||
-                        amountVal + xOddGradient * Math.floor((numCols - colCoord) / 2) < 0) {
-                        console.log('No');
-                        process.exit();
-                    }
-                }
-                xOddMap.set(rowCoord, [colCoord, amountVal]);
-            }
-        }
-    }
+						// Check consistency with difference
+						if (mappedVal - difference * Math.floor(mappedCol / 2) < 0 ||
+							mappedVal + difference * Math.floor((numCols - mappedCol) / 2) < 0) {
+							console.log('No');
+							process.exit();
+						}
+					}
+				} else {
+					// If xOddDiff is set, ensure current difference matches
+					if (difference !== xOddDiff) {
+						console.log('No');
+						process.exit();
+					}
+				}
+				// Validate the current point
+				if (currVal - difference * Math.floor(currCol / 2) < 0 ||
+					currVal + difference * Math.floor((numCols - currCol) / 2) < 0) {
+					console.log('No');
+					process.exit();
+				}
+			} else {
+				// If no previous point in this row for an odd column, but a common difference is set
+				if (xOddDiff !== false) {
+					if (currVal - xOddDiff * Math.floor(currCol / 2) < 0 ||
+						currVal + xOddDiff * Math.floor((numCols - currCol) / 2) < 0) {
+						console.log('No');
+						process.exit();
+					}
+				}
+				// Store the current point's data
+				rowOddMap.set(currRow, [currCol, currVal]);
+			}
+		}
+	}
 }
 
-// If all points and gradients are consistent, print 'Yes'.
+// If the loop completes without any inconsistencies leading to an early exit,
+// then all conditions are met, and the grid is considered valid.
 console.log('Yes');

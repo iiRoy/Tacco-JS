@@ -1,53 +1,43 @@
-function processData(rawData) {
-    const dataLines = rawData.split('\x0A');
-    const firstLineValues = dataLines[0].split(/\s+/);
-    const primaryInputVal = Number.parseInt(firstLineValues[0], 10);
+function processInput(rawData) {
+    const lines = rawData.split("\n");
+    const [targetX, targetY] = lines[0].split(" ").map(Number);
 
-    // Replicating the original code's behavior where the second value is also the first value
-    const secondaryInputVal = primaryInputVal;
-
-    // First condition check: (X+Y) must be divisible by 3
-    if ( (primaryInputVal + secondaryInputVal) % 3 !== 0 ) {
-        console.info(0);
+    if ((targetX + targetY) % 3 !== 0) {
+        console.log(0);
         return;
     }
 
-    // Calculate 'a' and 'b' for path steps
-    const typeA_steps = ( (secondaryInputVal * 2) - primaryInputVal ) / 3;
-    const typeB_steps = secondaryInputVal - (typeA_steps * 2);
+    const diag1Moves = (2 * targetY - targetX) / 3;
+    const diag2Moves = (2 * targetX - targetY) / 3;
 
-    // Second condition check: 'a' and 'b' must not be negative
-    if ( Math.min(typeA_steps, typeB_steps) < 0 ) {
-        console.info(0);
+    if (diag1Moves < 0 || diag2Moves < 0) {
+        console.log(0);
         return;
     }
 
-    // Calculate combinations C(N, K) where N = a+b, K = min(a,b)
-    const totalPossibleSteps = typeA_steps + typeB_steps;
-    const stepsToChoose = Math.min(typeA_steps, typeB_steps);
+    const totalMoves = diag1Moves + diag2Moves;
+    const selectedMoves = Math.min(diag1Moves, diag2Moves);
 
-    // Helper function to calculate the product of 'count' numbers starting from 'start' downwards
-    function calculateDescendingProduct(startValue, countItems) {
+    const computeCombinations = (nValue, kValue) => {
+        if (kValue < 0 || kValue > nValue) {
+            return 0;
+        }
+        if (kValue === 0 || kValue === nValue) {
+            return 1;
+        }
+        if (kValue > nValue / 2) {
+            kValue = nValue - kValue;
+        }
+
         let currentProduct = 1;
-        for (let j = 0; j < countItems; j++) {
-            currentProduct *= (startValue - j);
+        for (let iterIndex = 0; iterIndex < kValue; iterIndex++) {
+            currentProduct = currentProduct * (nValue - iterIndex) / (iterIndex + 1);
         }
         return currentProduct;
-    }
+    };
 
-    // Helper function to calculate factorial
-    function calculateSequentialProduct(numberVal) {
-        let sequentialProduct = 1;
-        for (let j = 1; j <= numberVal; j++) {
-            sequentialProduct *= j;
-        }
-        return sequentialProduct;
-    }
-
-    const numeratorPart = calculateDescendingProduct(totalPossibleSteps, stepsToChoose);
-    const denominatorPart = calculateSequentialProduct(stepsToChoose);
-
-    console.info(numeratorPart / denominatorPart);
+    const finalCount = computeCombinations(totalMoves, selectedMoves);
+    console.log(finalCount);
 }
 
-processData(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,116 +1,94 @@
-function ProcessInputData(rawData) {
-  if (typeof rawData !== 'string' || rawData.length === 0) {
-    // Input validation: Ensure the provided data is a non-empty string.
-    // This is a new guard clause to improve robustness.
-    console.error("Error: Input data must be a non-empty string.");
-    return;
-  }
+function Main(rawData) {
+  "use strict";
+  const inputString = rawData;
 
-  const sourceString = rawData; // Renamed 's' to 'sourceString'
-
-  // Split the input string by "LR" and then wrap each resulting part.
-  // 'division' becomes 'segmentCollection', 'e' becomes 'segmentPart'.
-  // Using a concise arrow function syntax.
-  const segmentCollection = sourceString.split("LR").map(segmentPart => "R" + segmentPart + "L");
-
-  const totalSegmentCount = segmentCollection.length; // Renamed 'len' to 'totalSegmentCount'
-
-  // Adjust the first and last segments to remove the artificial 'R' and 'L' added for processing.
-  // Using 'substring' instead of 'slice' for variety, though functionally equivalent here.
-  if (totalSegmentCount > 0) { // Added a check to prevent errors on empty splits.
-    segmentCollection[0] = segmentCollection[0].substring(1); // Remove the leading 'R' from the first segment
-    const lastSegmentIndex = totalSegmentCount - 1;
-    const lastSegment = segmentCollection[lastSegmentIndex];
-    segmentCollection[lastSegmentIndex] = lastSegment.substring(0, lastSegment.length - 1); // Remove the trailing 'L' from the last segment
-  }
-
-  // This array will store the final computed distribution results.
-  const finalDistributionResultArray = []; // Renamed 'ans' to 'finalDistributionResultArray'
-
-  // Helper function to calculate the distribution for an odd-length segment.
-  // This extracts and rewrites the original 'a, b, c' logic for clarity and structural change.
-  const calculateOddSegmentDistribution = (currentSegmentLength, boundaryPosition) => {
-    // 'boundaryPosition' is equivalent to 'i' or 'rNum' from the original code.
-    // It represents the count of 'R' characters before the 'L' in the 'RL' boundary.
-    const leftSideCount = boundaryPosition;
-    const rightSideCount = currentSegmentLength - boundaryPosition;
-
-    let rSideOutput, lSideOutput;
-    const largerHalf = Math.ceil(currentSegmentLength / 2);
-    const smallerHalf = Math.floor(currentSegmentLength / 2);
-
-    // The logic here determines which side of the 'RL' boundary gets the extra '1'
-    // when the segment length is odd. This is a rewrite of the `a ^ b` logic.
-    // If the count of 'R's (leftSideCount) is odd, the 'R' side (index boundaryPosition-1)
-    // gets the larger share. Otherwise, the 'L' side (index boundaryPosition) gets it.
-    if (leftSideCount % 2 !== 0) { // If leftSideCount (rNum) is odd
-      rSideOutput = largerHalf;
-      lSideOutput = smallerHalf;
-    } else { // If leftSideCount (rNum) is even
-      rSideOutput = smallerHalf;
-      lSideOutput = largerHalf;
-    }
-    return [rSideOutput, lSideOutput];
+  // Helper function to encapsulate the mapping logic
+  const processSegmentPart = (segmentPart) => {
+    return "R" + segmentPart + "L";
   };
 
-  // Iterate over each segment in the collection to calculate distributions.
-  // 'e' becomes 'currentSegment', 'len' becomes 'currentSegmentLength', 'i' becomes 'charPositionIndex'.
-  segmentCollection.forEach(currentSegment => {
-    const currentSegmentLength = currentSegment.length;
+  // Split the input string and then map the parts
+  const intermediateSegments = inputString.split("LR");
+  const segmentList = intermediateSegments.map(processSegmentPart);
 
-    // Initialize an array for the current segment's results, pre-filled with zeros.
-    // This structural change eliminates the need for `ans.pop()` and the `else ans.push(0)`
-    // within the loop, as non-boundary positions will remain zero.
-    const segmentSpecificResults = new Array(currentSegmentLength).fill(0);
+  const totalSegments = segmentList.length;
 
-    for (let charPositionIndex = 0; charPositionIndex < currentSegmentLength; charPositionIndex++) {
-      // Look for the "RL" pattern which signifies a boundary point.
-      if (charPositionIndex > 0 && currentSegment[charPositionIndex - 1] === "R" && currentSegment[charPositionIndex] === "L") {
-        let finalCountForR = 0; // The number of elements ending at the 'R' side of the boundary
-        let finalCountForL = 0; // The number of elements ending at the 'L' side of the boundary
+  // Adjust the first segment by removing the leading 'R'
+  // totalSegments will always be at least 1 for any string input.
+  const firstSegmentModified = segmentList[0].slice(1);
+  segmentList[0] = firstSegmentModified;
 
-        if (currentSegmentLength % 2 === 0) {
-          // For even length segments, the distribution is always equal.
-          finalCountForR = currentSegmentLength / 2;
-          finalCountForL = currentSegmentLength / 2;
+  // Adjust the last segment by removing the trailing 'L'
+  // Handle the case where there's only one segment (it's both first and last)
+  if (totalSegments > 1) {
+    const lastSegmentModified = segmentList[totalSegments - 1].slice(0, -1);
+    segmentList[totalSegments - 1] = lastSegmentModified;
+  } else {
+    // If only one segment, apply the second slice operation to the same element
+    segmentList[0] = segmentList[0].slice(0, -1);
+  }
+
+  const resultArray = [];
+
+  // Iterate through each processed segment using a for...of loop
+  for (const currentSegment of segmentList) {
+    const segmentLength = currentSegment.length;
+
+    // Iterate through characters within the current segment
+    for (let charIndex = 0; charIndex < segmentLength; charIndex++) {
+      // Determine if the current position is an 'RL' transition point
+      const isTransitionPoint = (charIndex > 0) &&
+                                (currentSegment[charIndex - 1] === "R") &&
+                                (currentSegment[charIndex] === "L");
+
+      if (isTransitionPoint) {
+        // If it's an 'RL' transition, remove the previously added '0'
+        resultArray.pop();
+
+        const rightCount = charIndex; // Number of 'R's before the 'L'
+        const leftCount = segmentLength - charIndex; // Number of 'L's from the 'L' onwards
+
+        // Calculate parity flags
+        const parityFlagA = (rightCount > leftCount) ? 0 : 1; // 0 if R_count > L_count, 1 otherwise
+        
+        const minCount = Math.min(rightCount, leftCount);
+        const isMinCountEven = (minCount % 2 === 0);
+        const parityFlagB = isMinCountEven ? 0 : 1; // 0 if min_count is even, 1 if odd
+
+        const finalParity = parityFlagA ^ parityFlagB; // XOR operation to combine parities
+
+        let valueToPush1, valueToPush2; // Temporary variables for the results
+
+        // Pre-calculate common length divisions
+        const halfLength = segmentLength / 2;
+        const halfLengthPlusOne = (segmentLength + 1) / 2;
+        const halfLengthMinusOne = (segmentLength - 1) / 2;
+
+        // Determine values to push based on segment length parity and final parity flag
+        if (segmentLength % 2 === 0) {
+          valueToPush1 = halfLength;
+          valueToPush2 = halfLength;
         } else {
-          // For odd length segments, use the helper function for distribution.
-          const [rVal, lVal] = calculateOddSegmentDistribution(currentSegmentLength, charPositionIndex);
-          finalCountForR = rVal;
-          finalCountForL = lVal;
+          if (finalParity === 0) {
+            valueToPush1 = halfLengthPlusOne;
+            valueToPush2 = halfLengthMinusOne;
+          } else {
+            valueToPush1 = halfLengthMinusOne;
+            valueToPush2 = halfLengthPlusOne;
+          }
         }
-
-        // Assign the calculated counts to the corresponding positions in the results array.
-        // The 'R' character is at 'charPositionIndex - 1', and the 'L' character is at 'charPositionIndex'.
-        segmentSpecificResults[charPositionIndex - 1] = finalCountForR;
-        segmentSpecificResults[charPositionIndex] = finalCountForL;
+        resultArray.push(valueToPush1);
+        resultArray.push(valueToPush2);
+      } else {
+        // If not a transition point, push a zero
+        resultArray.push(0);
       }
-      // Positions that are not part of an 'RL' boundary remain 0 due to `fill(0)`.
     }
-    // Append the results for the current segment to the overall results array.
-    finalDistributionResultArray.push(...segmentSpecificResults);
-  });
+  }
 
-  // Output the final results, joined by a single space.
-  console.log(finalDistributionResultArray.join(" "));
+  // Output the final array elements joined by spaces
+  console.log(resultArray.join(" "));
 }
 
-// This section handles standard input/output for competitive programming environments.
-// It reads the entire content from /dev/stdin and passes it to the main processing function.
-// The core functionality of this block is preserved, but variable names and comments are updated.
-(function() {
-  const fileSystemModule = require("fs");
-  const standardInputFilePath = "/dev/stdin";
-  const textEncoding = "utf8";
-
-  try {
-    const inputContent = fileSystemModule.readFileSync(standardInputFilePath, textEncoding);
-    ProcessInputData(inputContent);
-  } catch (ioError) {
-    // Added error handling for file system operations.
-    console.error(`An error occurred while reading input: ${ioError.message}`);
-    // Optionally, one could call ProcessInputData with a default/empty string
-    // or exit the process depending on requirements.
-    // ProcessInputData("");
-  }
-})();
+// This line should not be modified (standard input/output handling)
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

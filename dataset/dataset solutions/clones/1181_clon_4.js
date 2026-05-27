@@ -1,42 +1,35 @@
-const obtainAllIncoming = () => {
-    return new Promise(resolve => {
-        let amassedContent = '';
-        process.stdin.resume();
-        process.stdin.setEncoding('utf-8');
-        process.stdin.on('data', fragment => {
-            amassedContent += fragment;
-        });
-        process.stdin.on('end', () => {
-            resolve(amassedContent);
-        });
-    });
-};
+var rawData = '';
+var inputSource = process.stdin;
+inputSource.resume();
+inputSource.setEncoding( 'utf-8' );
+inputSource.on( 'data', function( chunk ) {
+  rawData += chunk;
+});
 
-obtainAllIncoming().then(receivedText => {
-    const textLines = receivedText.split('\n');
-    const collectionA = textLines[1].split(' ').map(Number);
-    const collectionB = textLines[2].split(' ').map(Number);
+inputSource.on( 'end', function() {
+  var parsedLines = rawData.split( '\n' );
+  var countElements = parseInt( parsedLines[0] );
+  var firstVector = parsedLines[1].split( ' ' ).map( Number );
+  var secondVector = parsedLines[2].split( ' ' ).map( Number );
 
-    const initialStats = {
-        accumulatedAbs: 0,
-        accumulatedSq: 0,
-        largestDiff: 0
-    };
+  const initialMetrics = {
+      l1Sum: 0,
+      squaredSum: 0,
+      cubedSum: 0,
+      maxAbsoluteDifference: 0
+  };
 
-    const finalStats = collectionA.reduce((currentAggregate, _, index) => {
-        const valueA = collectionA[index];
-        const valueB = collectionB[index];
-        const absoluteDifference = Math.abs(valueA - valueB);
+  const computedMetrics = firstVector.reduce((accumulator, xValue, index) => {
+      const currentDifference = Math.abs(xValue - secondVector[index]);
+      accumulator.l1Sum += currentDifference;
+      accumulator.squaredSum += Math.pow(currentDifference, 2);
+      accumulator.cubedSum += Math.pow(currentDifference, 3);
+      accumulator.maxAbsoluteDifference = Math.max(accumulator.maxAbsoluteDifference, currentDifference);
+      return accumulator;
+  }, initialMetrics);
 
-        currentAggregate.accumulatedAbs += absoluteDifference;
-        currentAggregate.accumulatedSq += Math.pow(absoluteDifference, 2);
-        currentAggregate.largestDiff = Math.max(currentAggregate.largestDiff, absoluteDifference);
-
-        return currentAggregate;
-    }, initialStats);
-
-    console.log(finalStats.accumulatedAbs);
-    console.log(Math.sqrt(finalStats.accumulatedSq));
-    console.log(Math.pow(finalStats.accumulatedSq, 1/3));
-    console.log(finalStats.largestDiff);
+  console.log( computedMetrics.l1Sum );
+  console.log( Math.sqrt( computedMetrics.squaredSum ) );
+  console.log( Math.pow( computedMetrics.squaredSum, 1/3 ) );
+  console.log( computedMetrics.maxAbsoluteDifference );
 });

@@ -1,19 +1,18 @@
-const processFinancialScenario = (rawData) => {
-    const targetAmount = parseInt(rawData.trim(), 10);
-    const initialDeposit = 100;
-    const initialDuration = 0;
+const processInputAndCalculate = (inputData) => {
+    const targetValue = Number(inputData);
 
-    const determineDuration = (currentBalance, requiredGoal, currentEpoch) => {
-        if (currentBalance >= requiredGoal) {
-            return currentEpoch;
+    const computeYearsToReachGoal = (currentBalance, elapsedYears, goalValue) => {
+        if (currentBalance >= goalValue) {
+            return elapsedYears;
         } else {
-            const nextBalance = (currentBalance * 1.01) | 0;
-            return determineDuration(nextBalance, requiredGoal, currentEpoch + 1);
+            const nextBalance = Math.floor(currentBalance * 1.01);
+            return computeYearsToReachGoal(nextBalance, elapsedYears + 1, goalValue);
         }
     };
 
-    const finalEpochs = determineDuration(initialDeposit, targetAmount, initialDuration);
-    console.log(finalEpochs);
+    const resultYears = computeYearsToReachGoal(100, 0, targetValue);
+
+    console.log(resultYears);
 };
 
-processFinancialScenario(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInputAndCalculate(require("fs").readFileSync("/dev/stdin", "utf8"));

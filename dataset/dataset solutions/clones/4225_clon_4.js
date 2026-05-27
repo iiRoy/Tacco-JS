@@ -1,76 +1,44 @@
-const SystemFiles = globalThis.require('fs');
+const computeMinPathMatrix = (initialGraph) => {
+    const distanceMap = Array.from(initialGraph, (row) => [...row]);
 
-class PathCalculator {
-    constructor(sourceText) {
-        this.inputLines = sourceText.split('\n').filter(line => line.trim() !== '');
-        this.graphInfo = {
-            pointQuantity: 0,
-            connectionQuantity: 0
-        };
-        this.baseCosts = [];
-        this.shortestRouteTable = [];
-        this.accumulatedSum = 0;
-    }
+    const graphSize = distanceMap.length;
 
-    static interpretNumericSequence(lineText) {
-        return lineText.split(' ').map(str => {
-            const num = Number(str);
-            return isNaN(num) ? 0 : num;
-        });
-    }
-
-    static computeShortestDistances(initialDistances) {
-        const size = initialDistances.length;
-        let currentDistances = initialDistances.map(row => [...row]);
-
-        const finalDistances = Array.from({ length: size }).reduce((matrixAcc, _, interPointIdx) => {
-            return matrixAcc.map((rowAcc, startPointIdx) => {
-                return rowAcc.map((cellValue, endPointIdx) => {
-                    const viaIntermediate = matrixAcc[startPointIdx][interPointIdx] + matrixAcc[interPointIdx][endPointIdx];
-                    return Math.min(cellValue, viaIntermediate);
-                });
-            });
-        }, currentDistances);
-
-        return finalDistances;
-    }
-
-    processInputAndCalculate() {
-        const [pCount, cCount] = PathCalculator.interpretNumericSequence(this.inputLines[0]);
-        this.graphInfo.pointQuantity = pCount;
-        this.graphInfo.connectionQuantity = cCount;
-
-        for (let idx = 0; idx < 10; idx++) {
-            this.baseCosts.push(PathCalculator.interpretNumericSequence(this.inputLines[idx + 1]));
+    for (let kNode = 0; kNode < graphSize; ++kNode) {
+        for (let iNode = 0; iNode < graphSize; ++iNode) {
+            for (let jNode = 0; jNode < graphSize; ++jNode) {
+                const candidatePath = distanceMap[iNode][kNode] + distanceMap[kNode][jNode];
+                if (distanceMap[iNode][jNode] > candidatePath) {
+                    distanceMap[iNode][jNode] = candidatePath;
+                }
+            }
         }
+    }
 
-        this.shortestRouteTable = PathCalculator.computeShortestDistances(this.baseCosts);
+    return distanceMap;
+};
 
-        this.accumulatedSum = this.inputLines
-            .slice(11, 11 + this.graphInfo.pointQuantity)
-            .reduce((totalValue, currentLineContent) => {
-                const currentLineNumbers = PathCalculator.interpretNumericSequence(currentLineContent);
-                return totalValue + currentLineNumbers.reduce((lineValue, currentNumberElement) => {
-                    return lineValue + (currentNumberElement !== -1 ? this.shortestRouteTable[currentNumberElement][1] : 0);
-                }, 0);
+const executePathCostCalculation = () => {
+    const fileSystem = require("fs");
+
+    const sourceLines = fileSystem.readFileSync("/dev/stdin", "UTF-8").split("\n");
+
+    const [entityCount, segmentCount] = sourceLines[0].split(" ").map(Number);
+
+    const initialAdjacency = sourceLines.slice(1, 11).map((line) =>
+        line.split(" ").map(Number)
+    );
+
+    const finalPathCosts = computeMinPathMatrix(initialAdjacency);
+
+    const cumulativeExpense = sourceLines.slice(11, 11 + entityCount)
+        .reduce((runningSum, currentPathLine) => {
+            const pathIndices = currentPathLine.split(" ").map(Number);
+            return runningSum + pathIndices.reduce((segmentSum, vertexIndex) => {
+                return segmentSum + (vertexIndex !== -1 ? finalPathCosts[vertexIndex][1] : 0);
             }, 0);
+        }, 0);
 
-        return this.accumulatedSum;
-    }
+    console.log(cumulativeExpense);
+};
 
-    outputFinalResult() {
-        globalThis.console.log(this.accumulatedSum);
-    }
-}
-
-(() => {
-    try {
-        const rawDataFromStdin = SystemFiles.readFileSync("/dev/stdin", "UTF-8");
-        const processorInstance = new PathCalculator(rawDataFromStdin);
-        processorInstance.processInputAndCalculate();
-        processorInstance.outputFinalResult();
-    } catch (issue) {
-        globalThis.console.error("Execution failure:", issue.message);
-        globalThis.process.exit(1);
-    }
-})();
+executePathCostCalculation();

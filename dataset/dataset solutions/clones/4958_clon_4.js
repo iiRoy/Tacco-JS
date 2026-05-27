@@ -1,61 +1,47 @@
 'use strict';
 
-const processInputData = (rawPayload) => {
-    const payloadSegments = rawPayload.split('\n');
-    const initialPhrase = payloadSegments[0];
-    const shiftFactor = Number(payloadSegments[1]);
-    return { initialPhrase, shiftFactor };
-};
+function transformCipherString(initialText, initialShiftValue) {
+    const characterCodes = initialText.split('').map(symbol => symbol.charCodeAt(0));
+    const textLength = characterCodes.length;
 
-const applyTransformation = (sourceString, initialShiftValue) => {
-    const characterSequence = sourceString.split('');
-    const referenceA = 'a'.codePointAt(0);
-    const referenceZ = 'z'.codePointAt(0);
+    const { processedCodes, remainingShift } = characterCodes.slice(0, textLength - 1).reduce(
+        (accumulator, currentCode) => {
+            const alphabetPosition = currentCode - 97; // 'a' is 0, 'b' is 1, etc.
+            let currentShift = accumulator.remainingShift;
+            let newCharacterCode = currentCode;
 
-    const { resultingString } = characterSequence.reduce((accumulatorState, currentSymbol, symbolIndex) => {
-        let { currentResult, currentPower } = accumulatorState;
-        const symbolOrdinal = currentSymbol.codePointAt(0);
-
-        if (symbolIndex === characterSequence.length - 1) {
-            let finalOrdinal = symbolOrdinal + (currentPower % 26);
-            if (finalOrdinal > referenceZ) {
-                finalOrdinal = referenceA + (finalOrdinal - referenceZ - 1);
+            if (alphabetPosition !== 0) { // If the character is not 'a'
+                const costToResetToA = 26 - alphabetPosition; // Power needed to change to 'a'
+                if (currentShift >= costToResetToA) {
+                    currentShift -= costToResetToA;
+                    newCharacterCode = 97; // Set to 'a'
+                }
             }
-            return {
-                resultingString: currentResult + String.fromCodePoint(finalOrdinal),
-                currentPower: 0
-            };
-        } else {
-            if (currentSymbol === 'a') {
-                return {
-                    currentResult: currentResult + 'a',
-                    currentPower: currentPower
-                };
-            }
+            accumulator.processedCodes.push(newCharacterCode);
+            accumulator.remainingShift = currentShift;
+            return accumulator;
+        },
+        { processedCodes: [], remainingShift: initialShiftValue }
+    );
 
-            const conversionCost = referenceZ - symbolOrdinal + 1;
+    const originalLastCharCode = characterCodes[textLength - 1];
+    const lastCharAlphabetPosition = originalLastCharCode - 97;
+    const effectiveLastShift = remainingShift % 26;
+    const finalLastCharPosition = (lastCharAlphabetPosition + effectiveLastShift) % 26;
+    const finalLastCharCode = finalLastCharPosition + 97;
 
-            if (conversionCost <= currentPower) {
-                return {
-                    currentResult: currentResult + 'a',
-                    currentPower: currentPower - conversionCost
-                };
-            } else {
-                return {
-                    currentResult: currentResult + currentSymbol,
-                    currentPower: currentPower
-                };
-            }
-        }
-    }, { currentResult: '', currentPower: initialShiftValue });
+    processedCodes.push(finalLastCharCode);
 
-    return resultingString;
-};
+    return String.fromCharCode(...processedCodes);
+}
 
-const orchestrateProcess = (inputContent) => {
-    const { initialPhrase, shiftFactor } = processInputData(inputContent);
-    const finalOutput = applyTransformation(initialPhrase, shiftFactor);
-    console.log(finalOutput);
-};
+function processInputAndDisplayOutput(rawInputContent) {
+    const inputLines = rawInputContent.split("\n");
+    const sourceString = inputLines[0];
+    const shiftMagnitude = parseInt(inputLines[1], 10);
 
-orchestrateProcess(require("fs").readFileSync("/dev/stdin", "utf8"));
+    const finalStringResult = transformCipherString(sourceString, shiftMagnitude);
+    console.log(finalStringResult);
+}
+
+processInputAndDisplayOutput(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,174 +1,125 @@
-var INPUT_PROCESSOR = ( function() {
-
-  /**
-   * Factory function to create a new InputSource instance.
-   * @param {string} rawInputContent - The raw string content to be processed.
-   * @returns {InputSource} A new instance of InputSource.
-   */
-  function createSourceHandler( rawInputContent ) {
-    return new InputSource( rawInputContent );
+var INPUT_PARSER = (function () {
+  // This function creates a new text processing instance.
+  function createParser(sourceText) {
+    return new TextProcessor(sourceText);
   }
 
-  /**
-   * Constructor for the InputSource object.
-   * Manages the raw input string, splitting it into lines and keeping track of the current reading position.
-   * @param {string} fullInputString - The complete string content to parse.
-   */
-  function InputSource( fullInputString ) {
-    this._textLines = fullInputString.trim().split( "\n" ); // Store all lines, stripped of leading/trailing whitespace.
-    this._linePointer = 0; // Initialize pointer to the first line.
+  // The main class for handling input text.
+  function TextProcessor(inputString) {
+    this._lines = inputString.trim().split("\n"); // Store lines as an array.
+    this._currentLineIndex = 0; // Keep track of the current line being processed.
   }
 
-  /**
-   * Reads and extracts a single item from the current line.
-   * If the current line is a string, it's split by spaces and reversed to allow popping from the end efficiently.
-   * Moves to the next line if the current one becomes empty after extraction.
-   * @param {boolean} giveAsString - If true, returns the item as a string; otherwise, attempts to convert to a number.
-   * @returns {string|number} The extracted item.
-   */
-  InputSource.prototype.nextElement = function( giveAsString ) {
-    var lineContent = this._textLines,
-        lineIndex = this._linePointer,
-        extractedItem;
+  // Reads a single value from the current line.
+  // If the line is exhausted, moves to the next.
+  // 'asString' flag determines if the value is returned as a string or number.
+  TextProcessor.prototype.readNextValue = function (asString) {
+    var lineData = this._lines,
+      lineIdx = this._currentLineIndex,
+      extractedValue;
 
-    // Check if the current line needs to be processed (split and reversed for efficient popping).
-    if ( typeof lineContent[ lineIndex ] === "string" ) {
-      lineContent[ lineIndex ] = lineContent[ lineIndex ].split( " " ).reverse();
+    // If the current line hasn't been split into parts yet, do it.
+    if (typeof lineData[lineIdx] === "string") {
+      lineData[lineIdx] = lineData[lineIdx].split(" ").reverse();
     }
 
-    extractedItem = lineContent[ lineIndex ].pop(); // Get the last element from the current line's reversed array.
+    // Pop the last element (which is the first due to reverse).
+    extractedValue = lineData[lineIdx].pop();
 
-    // If the current line is now empty, advance the line pointer to the next line.
-    if ( !lineContent[ lineIndex ].length ) {
-      this._linePointer++;
+    // If the current line is now empty, advance to the next line.
+    if (!lineData[lineIdx].length) {
+      this._currentLineIndex++;
     }
 
-    // Return the item, optionally converted to a number.
-    return giveAsString ? extractedItem : +extractedItem;
+    // Return as string or convert to number.
+    return asString ? extractedValue : +extractedValue;
   };
 
-  /**
-   * Reads and processes an entire line of input.
-   * Advances the line pointer after reading.
-   * @param {boolean} preserveStringTypes - If true, returns items as strings; otherwise, converts all to numbers.
-   * @returns {Array<string|number>} An array of items from the read line.
-   */
-  InputSource.prototype.fetchLine = function( preserveStringTypes ) {
-    // Get the current line, split by spaces, and then increment the line pointer.
-    var currentLineItems = this._textLines[ this._linePointer++ ].split( " " );
-
-    // Return items as strings or mapped to numbers.
-    return preserveStringTypes ? currentLineItems : currentLineItems.map( value => +value );
+  // Reads all values from the current line.
+  // 'returnStrings' flag determines if values are returned as strings or numbers.
+  TextProcessor.prototype.readLineValues = function (returnStrings) {
+    var lineParts = this._lines[this._currentLineIndex++].split(" ");
+    return returnStrings ? lineParts : lineParts.map((valStr) => +valStr);
   };
 
-  /**
-   * Reads multiple lines and processes them as a 2D array (matrix).
-   * Advances the line pointer by the number of lines read.
-   * @param {number} lineCount - The number of lines to read.
-   * @param {boolean} retainStringFormat - If true, keeps all items as strings; otherwise, converts all to numbers.
-   * @returns {Array<Array<string|number>>} A 2D array of items.
-   */
-  InputSource.prototype.readGridFragment = function( lineCount, retainStringFormat ) {
-    // Extract a slice of lines starting from the current pointer, then advance the pointer.
-    var gridData = this._textLines.slice( this._linePointer, this._linePointer += lineCount )
-                                .map( singleLine => singleLine.split( " " ) ); // Split each line by spaces.
-
-    // Return the 2D array, optionally with all internal items converted to numbers.
-    return retainStringFormat ? gridData : gridData.map( row => row.map( item => +item ) );
+  // Reads a matrix of 'numRows' rows.
+  // 'keepStrings' flag determines if values are returned as strings or numbers.
+  TextProcessor.prototype.readMatrix = function (numRows, keepStrings) {
+    var matrixRows = this._lines
+      .slice(this._currentLineIndex, (this._currentLineIndex += numRows))
+      .map((rowStr) => rowStr.split(" "));
+    return keepStrings
+      ? matrixRows
+      : matrixRows.map((row) => row.map((cellStr) => +cellStr));
   };
 
-  /**
-   * Reads multiple lines and processes them as a 1D array.
-   * Advances the line pointer by the number of lines read.
-   * @param {number} numberOfLinesToExtract - The quantity of lines to retrieve.
-   * @param {boolean} stringResult - If true, returns lines as strings; otherwise, converts each line to a number.
-   * @returns {Array<string|number>} A 1D array of lines or numbers.
-   */
-  InputSource.prototype.extractLineBlock = function( numberOfLinesToExtract, stringResult ) {
-    // Slice the specified number of lines from the source and update the line pointer.
-    var lineBlock = this._textLines.slice( this._linePointer, this._linePointer += numberOfLinesToExtract );
-
-    // Return the block, optionally with each line converted to a number.
-    return stringResult ? lineBlock : lineBlock.map( lineStr => +lineStr );
+  // Reads 'count' number of raw lines.
+  // 'asRawStrings' flag determines if values are returned as strings or numbers.
+  TextProcessor.prototype.readRows = function (count, asRawStrings) {
+    var selectedRows = this._lines.slice(
+      this._currentLineIndex,
+      (this._currentLineIndex += count)
+    );
+    return asRawStrings ? selectedRows : selectedRows.map((rowContent) => +rowContent);
   };
 
-  return createSourceHandler; // Expose the factory function.
+  return createParser;
+})();
 
-} )();
+// Initialize the input reader with content from standard input.
+var inputReader = INPUT_PARSER(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-
-// Initialize the input handler by reading standard input.
-var dataHandler = INPUT_PROCESSOR(
-  require( "fs" ).readFileSync( "/dev/stdin", "utf8" )
-);
-
-/**
- * Dynamically constructs and evaluates code to create an N-dimensional array.
- * Each dimension's size is passed as an argument.
- * @param {any} defaultFillValue - The value to fill the innermost array elements with.
- * @param {...number} arrayDimensions - The sizes of the dimensions, from outermost to innermost.
- * @returns {Array} The newly created N-dimensional array.
- */
-function createMultiDimensionalArray( defaultFillValue ) {
-  var dimensionArguments = arguments,
-      dimensionCount = dimensionArguments.length,
-      arrayInitializationCode = "Array(dimensionArguments[" + --dimensionCount + "]).fill(0).map(element => { return " + defaultFillValue + "; })";
-
-  // Build the nested array creation string.
-  while ( --dimensionCount ) {
-    arrayInitializationCode = "Array(dimensionArguments[" + dimensionCount + "]).fill(0).map(element => " + arrayInitializationCode + ")";
+// Function to create a multi-dimensional array initialized with a value.
+function createMultiDimArray(initialValue) {
+  var argsList = arguments,
+    argCount = argsList.length,
+    arrayCreationCode =
+      "Array(argsList[" +
+      --argCount +
+      "]).fill(0).map(x=>{return " +
+      initialValue +
+      ";})";
+  while (--argCount) {
+    arrayCreationCode =
+      "Array(argsList[" + argCount + "]).fill(0).map(x=>" + arrayCreationCode + ")";
   }
-
-  // Execute the generated code string to create the array.
-  return eval( arrayInitializationCode );
+  return eval(arrayCreationCode);
 }
 
+// Output the result of the main processing function.
+console.log(processGrid());
 
-// Output the result of the primary computation.
-console.log( processMainLogic() );
+// Main function to perform the grid transformation.
+function processGrid() {
+  var gridHeight = inputReader.readNextValue(); // Read grid height.
+  var gridWidth = inputReader.readNextValue(); // Read grid width.
+  var thresholdA = inputReader.readNextValue(); // Read threshold A.
+  var thresholdB = inputReader.readNextValue(); // Read threshold B.
 
-/**
- * Contains the main application logic to generate a grid pattern.
- * Reads grid dimensions and pattern parameters from input, then constructs the grid.
- * @returns {string} The formatted grid as a string.
- */
-function processMainLogic() {
+  // Initialize a 2D array (grid) with zeros.
+  var resultGrid = createMultiDimArray(0, gridHeight, gridWidth);
+  var toggleFlag = 0; // Flag to control row-wise XOR operation.
 
-  // Read grid dimensions and pattern parameters.
-  var gridHeight = dataHandler.nextElement();
-  var gridWidth = dataHandler.nextElement();
-  var colStartThreshold = dataHandler.nextElement();
-  var rowTogglePoint = dataHandler.nextElement();
-
-  // Initialize the 2D grid with zeros.
-  var resultGrid = createMultiDimensionalArray( 0, gridHeight, gridWidth );
-  var toggleFlag = 0; // State variable for toggling pattern.
-
-  // Iterate through rows and columns to populate the grid.
-  for ( var rowIndex = 0; rowIndex < gridHeight; rowIndex++ ) {
-
-    // Check if the current row is the toggle point.
-    if ( rowIndex === rowTogglePoint ) {
-      toggleFlag = 1; // Activate the toggle.
+  // Iterate through each row of the grid.
+  for (var rowIdx = 0; rowIdx < gridHeight; rowIdx++) {
+    // If current row index matches threshold B, set the toggle flag.
+    if (rowIdx === thresholdB) {
+      toggleFlag = 1;
     }
 
-    for ( var colIndex = 0; colIndex < gridWidth; colIndex++ ) {
-
-      // Apply the column-based pattern: set to 1 if column index meets threshold.
-      if ( colIndex >= colStartThreshold ) {
-        resultGrid[ rowIndex ][ colIndex ] = 1;
+    // Iterate through each column in the current row.
+    for (var colIdx = 0; colIdx < gridWidth; colIdx++) {
+      // If current column index is greater than or equal to threshold A, set cell to 1.
+      if (colIdx >= thresholdA) {
+        resultGrid[rowIdx][colIdx] = 1;
       }
-
-      // Apply the row-based toggle pattern: XOR with 1 if toggleFlag is active.
-      if ( toggleFlag ) {
-        resultGrid[ rowIndex ][ colIndex ] ^= 1;
+      // If the toggle flag is set, XOR the cell value with 1 (effectively flipping it).
+      if (toggleFlag) {
+        resultGrid[rowIdx][colIdx] ^= 1;
       }
+    }
+  }
 
-    } // End of column loop.
-  } // End of row loop.
-
-  // Format the resulting grid into a single string:
-  // - Join elements of each inner array (row) without separators.
-  // - Join the resulting row strings with newline characters.
-  return resultGrid.map( rowArray => rowArray.join( "" ) ).join( "\n" );
+  // Convert the 2D array into a string representation, with rows joined by newline.
+  return resultGrid.map((row) => row.join("")).join("\n");
 }

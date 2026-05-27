@@ -1,48 +1,29 @@
-const processInputSequence = (sourceContent) => {
-    const dataLines = sourceContent.toString().trim().split(/\r?\n/);
-    let currentPosition = 0;
+const fileSystem = require('fs');
+const rawInput = fileSystem.readFileSync('/dev/stdin', 'utf8');
+const allLines = rawInput.trim().split("\n");
 
-    const retrieveNextDatum = () => {
-        if (currentPosition >= dataLines.length) {
-            return undefined;
-        }
-        return dataLines[currentPosition++];
-    };
+let linePointer = 0;
 
-    const collectedOutputs = [];
+while (allLines.length - linePointer > 1) {
+    const definitionCount = parseInt(allLines[linePointer++], 10);
 
-    while (true) {
-        if (currentPosition >= dataLines.length) {
-            break;
-        }
-        if (dataLines[currentPosition] === "0") {
-            currentPosition++;
-            break;
-        }
+    const translationMap = new Map(
+        Array.from({ length: definitionCount }, () => {
+            const pairLine = allLines[linePointer++];
+            return pairLine.split(" ");
+        })
+    );
 
-        const mapEntryCount = parseInt(retrieveNextDatum(), 10);
-        const replacementRegister = new Map();
+    const lookupCount = parseInt(allLines[linePointer++], 10);
 
-        for (let idxA = 0; idxA < mapEntryCount; idxA++) {
-            const entryComponents = retrieveNextDatum().split(" ");
-            replacementRegister.set(entryComponents[0], entryComponents[1]);
-        }
+    const resultString = Array.from({ length: lookupCount }, () => {
+        const lookupKey = allLines[linePointer++];
+        return translationMap.has(lookupKey) ? translationMap.get(lookupKey) : lookupKey;
+    }).join('');
 
-        const transformItemCount = parseInt(retrieveNextDatum(), 10);
-        const resultantSegments = [];
+    console.log(resultString);
 
-        for (let idxB = 0; idxB < transformItemCount; idxB++) {
-            const itemKey = retrieveNextDatum();
-            resultantSegments.push(
-                replacementRegister.has(itemKey)
-                    ? replacementRegister.get(itemKey)
-                    : itemKey
-            );
-        }
-        collectedOutputs.push(resultantSegments.join(''));
+    if (allLines[linePointer] === "0") {
+        break;
     }
-    return collectedOutputs.join('\n');
-};
-
-const fileData = require('fs').readFileSync('/dev/stdin', 'utf8');
-console.log(processInputSequence(fileData));
+}

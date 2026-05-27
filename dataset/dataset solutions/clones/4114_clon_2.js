@@ -1,26 +1,10 @@
-/*
- *  This JavaScript module is tasked with performing a
- *  basic numerical transformation. It accepts a textual
- *  input, converts it into an integer, and then computes
- *  a specific difference, which is subsequently displayed.
- */
+function processData(dataString) {
+    // Convert the incoming string data to an integer.
+    dataString = parseInt(dataString, 10);
 
-function   handleInputAndCompute( initialStringValue )
-{
-
-  // Transform the provided string into an integer using base 10.
-  // The original parameter reference is updated to hold this numeric representation.
-  initialStringValue   =   parseInt ( initialStringValue , 10 ) ;
-
-
-  // Log the result of subtracting the processed number from the constant 48.
-  // This output goes to the standard console stream.
-  console . log ( 48 - initialStringValue ) ;
-
+    // Output the result of subtracting the parsed integer from 48.
+    console.log(48 - dataString);
 }
 
-// Orchestrate the execution: obtain raw data from the filesystem,
-// then pass it to our primary processing function for calculation.
-handleInputAndCompute (
-  require('fs') . readFileSync ( '/dev/stdin' ,  'utf8' )
-) ;
+// Read the content from standard input and pass it to the main processing function.
+processData(require('fs').readFileSync('/dev/stdin', 'utf8'));

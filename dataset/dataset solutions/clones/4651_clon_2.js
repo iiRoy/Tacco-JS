@@ -1,45 +1,43 @@
-// This script processes text input from standard input to find common characters.
-// It reads all lines, skips the first and last, then determines the minimum
-// occurrences of each character across the remaining lines.
+// This script processes input from stdin to find the minimum frequency of each character
+// across multiple lines, then outputs a sorted string of those characters repeated
+// by their minimum observed frequency.
 
-// --- Stage 1: Process input and calculate minimum character frequencies ---
-const aggregatedCharMinCounts = (
-    "" + require("fs").readFileSync(0) // Read raw buffer from stdin and convert to string
-)
-    .split("\n") // Split the entire input string into an array of individual lines
-    .slice(1, -1) // Remove the first and last lines from the array
-    .map((inputLine) => {
-        // For each remaining line, count character occurrences
-        return inputLine.split("").reduce(
-            (lineCharCounts, singleChar) => {
-                // Increment character count. If undefined, it becomes 1.
-                lineCharCounts[singleChar] = -~lineCharCounts[singleChar];
-                return lineCharCounts;
-            },
-            {} // Initialize an empty object for character counts for the current line
-        );
-    })
-    .reduce((overallMinCounts, currentLineCounts) => {
-        // Aggregate character counts across all lines to find the minimum frequency
-        for (const charIdentifier in overallMinCounts) {
-            // Update the minimum count for each character
-            overallMinCounts[charIdentifier] = Math.min(
-                overallMinCounts[charIdentifier],
-                currentLineCounts[charIdentifier] || 0 // Use 0 if character not present in current line
-            );
-        }
-        return overallMinCounts;
-    });
+// Step 1: Read input, parse lines, and calculate character frequencies per line.
+const charMinCounts = (String(require("fs").readFileSync(0))) // Read all input from stdin (fd 0) as a string.
+  .split('\n') // Divide the input string into an array of lines using newline as a delimiter.
+  .slice(1, -1) // Remove the first and last elements of the array (often empty lines or headers).
+  .map(currentLine => { // For each remaining line, create an object mapping characters to their counts.
+    // Split the current line into an array of individual characters.
+    return currentLine.split('').reduce((charOccurrences, singleChar) => {
+      // Increment the count for the current character.
+      // The -~ operator is a concise way to increment a number, treating undefined as 0.
+      charOccurrences[singleChar] = -~charOccurrences[singleChar];
+      return charOccurrences; // Return the updated character occurrences object.
+    }, {}); // Initialize the character occurrences object as empty for each line.
+  })
+  .reduce((combinedCounts, lineCharCounts) => { // Aggregate character counts across all lines.
+    // Iterate over each character key present in the accumulated combinedCounts.
+    for (const charKey in combinedCounts) {
+      // Update the count for charKey to be the minimum of its current count
+      // and its count in the current line's character map (lineCharCounts).
+      // If charKey is not in lineCharCounts, lineCharCounts[charKey] is undefined,
+      // so `|| 0` ensures it's treated as zero for the minimum calculation.
+      combinedCounts[charKey] = Math.min(combinedCounts[charKey], lineCharCounts[charKey] || 0);
+    }
+    return combinedCounts; // Return the object with minimum character counts.
+  });
 
-// --- Stage 2: Construct output strings based on minimum frequencies ---
-const outputFragments = []; // Initialize an array to store the repeated character strings
+// Step 2: Construct an array of strings, where each string is a character repeated
+// by its minimum frequency.
+const repeatedCharsArray = []; // Initialize an empty array to hold the repeated character strings.
 
-// Iterate through the characters found in the aggregated minimum counts
-for (const finalChar in aggregatedCharMinCounts) {
-    // Repeat each character by its minimum frequency and add to the output array
-    outputFragments.push(finalChar.repeat(aggregatedCharMinCounts[finalChar]));
+// Loop through each character (key) and its minimum count in the final charMinCounts object.
+for (const charKey in charMinCounts) {
+  // Create a string by repeating the character 'charKey' 'charMinCounts[charKey]' times.
+  repeatedCharsArray.push(charKey.repeat(charMinCounts[charKey]));
 }
 
-// --- Stage 3: Sort and print the final result ---
-// Sort the array of repeated character strings alphabetically and join them
-console.log(outputFragments.sort().join(""));
+// Step 3: Sort the array of repeated character strings and print the concatenated result.
+// Sort the array alphabetically.
+// Join all elements of the sorted array into a single string without any separator.
+console.log(repeatedCharsArray.sort().join(''));

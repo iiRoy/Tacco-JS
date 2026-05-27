@@ -1,47 +1,60 @@
 "use strict";
-function ContentStream( sourceData, typeConverter ){
-  this._rawData = sourceData;
-  this._columnPointer = 0;
-  this._linePointer = 0;
-  this._parseFunction = typeConverter || Number;
+
+// This class helps in parsing input strings line by line and token by token.
+function InputProcessor(sourceText, parserFn) {
+  this._srcTxt = sourceText; // The complete input string.
+  this._colIdx = 0; // Current token index within the current line.
+  this._lineIdx = 0; // Current line index.
+  this._parseFunc = parserFn || Number; // Function to parse tokens (defaults to Number).
 }
-ContentStream.prototype.retrieveNext = function(  ) {
-  var   currentSegment = this._rawData.split( "\n" )[ this._linePointer ];
-  if ( !currentSegment ) return;
-  var segmentParts = currentSegment.trim().split( " " );
-  var itemValue = segmentParts[ this._columnPointer ];
-  this._columnPointer++;
-  if ( segmentParts.length === this._columnPointer ) {
-    this._columnPointer = 0;
-    this._linePointer++;
-  }
-  return this._parseFunction(itemValue);
-};
-ContentStream.prototype.getLineValues = function(  ) {
-  var lineFragment = this._rawData.split( "\n" )[ this._linePointer ];
-  this._columnPointer = 0;
-  this._linePointer++;
-  return lineFragment.split( " " ).map( this._parseFunction );
-};
 
-// This function processes the input text to determine a specific pattern.
-function processInputData( rawTextContent ) {
-  const dataStream = new ContentStream(rawTextContent);
-
-  const occurrenceCounts = Array(4).fill(0);
-
-  for ( let loopIndex = 0; loopIndex < 3; loopIndex++ ) {
-    let firstElement = dataStream.retrieveNext();
-    let secondElement = dataStream.retrieveNext();
-    occurrenceCounts[firstElement - 1]++;
-    occurrenceCounts[secondElement - 1]++;
+InputProcessor.prototype.getNextValue = function () {
+  let currentLine = this._srcTxt.split("\n")[this._lineIdx];
+  if (!currentLine) {
+    return; // No more lines to process.
   }
 
-  if ( occurrenceCounts.sort((valA, valB) => valA - valB).join(" ") === "1 1 2 2" ) {
+  let tokenParts = currentLine.trim().split(" ");
+  let currentTok = tokenParts[this._colIdx];
+  this._colIdx++;
+
+  // If all tokens on the current line are consumed, reset column index and move to the next line.
+  if (tokenParts.length === this._colIdx) {
+    this._colIdx = 0;
+    this._lineIdx++;
+  }
+
+  return this._parseFunc(currentTok);
+};
+
+InputProcessor.prototype.getLineValues = function () {
+  let activeLine = this._srcTxt.split("\n")[this._lineIdx];
+  this._colIdx = 0; // Reset token index for the new line.
+  this._lineIdx++; // Move to the next line.
+  return activeLine.split(" ").map(this._parseFunc);
+};
+
+// Main processing function for the problem.
+function processInputData(rawData) {
+  const dataStream = new InputProcessor(rawData);
+
+  const countArray = Array(4).fill(0); // Initialize an array of four zeros.
+
+  // Loop three times to read pairs of values.
+  for (let idx = 0; idx < 3; idx++) {
+    let valA = dataStream.getNextValue();
+    let valB = dataStream.getNextValue();
+    countArray[valA - 1]++; // Increment count for the first value.
+    countArray[valB - 1]++; // Increment count for the second value.
+  }
+
+  // Sort the counts and check if they match the expected pattern.
+  if (countArray.sort((first, second) => first - second).join(" ") === "1 1 2 2") {
     console.log("YES");
   } else {
     console.log("NO");
   }
 }
 
+// Read input from standard input and pass it to the main processing function.
 processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

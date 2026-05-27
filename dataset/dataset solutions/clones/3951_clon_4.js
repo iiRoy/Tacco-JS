@@ -1,47 +1,77 @@
-const renderGrid = (sourceData) => {
-    const dataParts = sourceData.split(/\n|\s/).filter(segment => segment.length > 0);
-    let countPrimary = parseInt(dataParts[0], 10);
-    let countSecondary = parseInt(dataParts[1], 10);
-
-    const primaryModifications = new Set();
-    let iterX1 = 1;
-    let iterY1 = 1;
-    for (let k = 0; k < countPrimary - 1; k++) {
-        primaryModifications.add(`${iterY1},${iterX1}`);
-        iterX1 += 2;
-        if (iterX1 >= 100) {
-            iterX1 = 1;
-            iterY1 += 3;
-        }
+"use strict";
+class DataExtractor {
+    constructor(sourceText) {
+        if (typeof sourceText === 'undefined') throw new Error('引数（stdin）を省略できません！');
+        this.position = 0;
+        this.tokens = sourceText.split(/\n|\s/);
     }
-
-    const secondaryModifications = new Set();
-    let iterX2 = 1;
-    let iterY2 = 51;
-    for (let k = 0; k < countSecondary - 1; k++) {
-        secondaryModifications.add(`${iterY2},${iterX2}`);
-        iterX2 += 2;
-        if (iterX2 >= 100) {
-            iterX2 = 1;
-            iterY2 += 3;
-        }
+    fetchInteger() {
+        return parseInt(this.tokens[this.position++], 10);
     }
+    fetchIntegerArray(count) {
+        if (typeof count === 'undefined') throw new Error('引数（1以上）を省略できません！');
+        let result = new Array(count);
+        for (let i = 0; i < count; i++) {
+            result[i] = this.fetchInteger();
+        }
+        return result;
+    }
+    fetchString() {
+        return this.tokens[this.position++];
+    }
+    fetchStringArray(count) {
+        if (typeof count === 'undefined') throw new Error('引数（1以上）を省略できません！');
+        let result = new Array(count);
+        for (let i = 0; i < count; i++) {
+            result[i] = this.fetchString();
+        }
+        return result;
+    }
+}
 
-    const constructedCanvas = Array.from({ length: 100 }, (_, rowIndex) => {
-        return Array.from({ length: 100 }, (_, colIndex) => {
-            const cellKey = `${rowIndex},${colIndex}`;
-            if (rowIndex < 50) {
-                return primaryModifications.has(cellKey) ? '.' : '#';
-            } else {
-                return secondaryModifications.has(cellKey) ? '#' : '.';
+function ProcessInput(rawInput) {
+    let parser = new DataExtractor(rawInput);
+    let countA = parser.fetchInteger();
+    let countB = parser.fetchInteger();
+
+    const GRID_DIMENSION = 100;
+    const HALF_GRID = GRID_DIMENSION / 2;
+
+    // Initialize the grid using a functional approach
+    let canvas = Array.from({ length: GRID_DIMENSION }, (_, rowIndex) =>
+        Array.from({ length: GRID_DIMENSION }, () => (rowIndex < HALF_GRID ? '#' : '.'))
+    );
+
+    // Generator function to produce coordinates for pattern placement
+    function* coordinateGenerator(initialX, initialY, totalPointsToPlace) {
+        let currentX = initialX;
+        let currentY = initialY;
+        for (let i = 0; i < totalPointsToPlace; i++) {
+            yield { x: currentX, y: currentY };
+            currentX += 2;
+            if (currentX >= GRID_DIMENSION) {
+                currentX = 1;
+                currentY += 3;
             }
-        }).join('');
-    });
+        }
+    }
 
-    console.log('100 100');
-    constructedCanvas.forEach(rowString => console.log(rowString));
-};
+    // Apply pattern for countA
+    for (const point of coordinateGenerator(1, 1, countA - 1)) {
+        canvas[point.y][point.x] = '.';
+    }
+
+    // Apply pattern for countB
+    for (const point of coordinateGenerator(1, 51, countB - 1)) {
+        canvas[point.y][point.x] = '#';
+    }
+
+    console.log(`${GRID_DIMENSION} ${GRID_DIMENSION}`);
+    canvas.forEach(row => {
+        console.log(row.join(''));
+    });
+}
 
 if (typeof window === "undefined") {
-    renderGrid(require("fs").readFileSync("/dev/stdin", "utf8"));
+    ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));
 }

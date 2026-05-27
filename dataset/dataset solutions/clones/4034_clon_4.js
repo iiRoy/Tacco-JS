@@ -1,73 +1,73 @@
 'use strict';
-console.log((function(originData) {
-  const initialDataLines = originData.trim().split('\n');
+console.log(function(inputContent){
+  const getCoordKey = (xVal, yVal) => `${xVal},${yVal}`;
 
-  const matrixDimensions = initialDataLines[0].split(' ').map(Number);
-  const rowQuantity = matrixDimensions[0];
-  const columnQuantity = matrixDimensions[1];
+  const allLines = inputContent.trim().split('\n');
+  const [gridHeight, gridWidth] = allLines[0].split(' ').map(Number);
 
-  let totalPassableSpots = 0;
-  const obstacleLocations = new Set();
+  const initialGridScan = {
+    blockedCells: new Set(),
+    pathCount: 0
+  };
 
-  for (let rowIdx = 1; rowIdx <= rowQuantity; ++rowIdx) {
-    const currentLine = initialDataLines[rowIdx];
-    for (let colIdx = 1; colIdx <= columnQuantity; ++colIdx) {
-      if (currentLine[colIdx - 1] === '#') {
-        obstacleLocations.add(`${colIdx},${rowIdx}`);
+  const gridData = allLines.slice(1, gridHeight + 1).reduce((accumulator, rowString, rowIndex) => {
+    const currentY = rowIndex + 1;
+    for (let colIndex = 0; colIndex < gridWidth; colIndex++) {
+      const currentX = colIndex + 1;
+      if (rowString[colIndex] === '#') {
+        accumulator.blockedCells.add(getCoordKey(currentX, currentY));
       } else {
-        totalPassableSpots++;
+        accumulator.pathCount++;
       }
     }
-  }
+    return accumulator;
+  }, initialGridScan);
+
+  const blockedCells = gridData.blockedCells;
+  const totalPathableCells = gridData.pathCount;
+
+  const pathDistances = new Map();
+  const movementOffsets = [[0, -1], [0, 1], [-1, 0], [1, 0]]; // Up, Down, Left, Right
+
+  let bfsFrontier = [];
+  let queueHeadIndex = 0;
 
   const startX = 1;
   const startY = 1;
-  const endX = columnQuantity;
-  const endY = rowQuantity;
+  const initialDistance = 1; // Our distance for (1,1)
 
-  const processingQueue = [];
-  const travelLog = new Map();
+  bfsFrontier.push({ xCoord: startX, yCoord: startY, currentPathLength: initialDistance });
+  pathDistances.set(getCoordKey(startX, startY), initialDistance);
 
-  const movementVectors = [
-    { dx: 0, dy: 1 },
-    { dx: 0, dy: -1 },
-    { dx: 1, dy: 0 },
-    { dx: -1, dy: 0 }
-  ];
+  while (queueHeadIndex < bfsFrontier.length) {
+    const currentCell = bfsFrontier[queueHeadIndex++];
 
-  processingQueue.push({ x: startX, y: startY, pathLength: 2 });
-  travelLog.set(`${startX},${startY}`, 2);
+    for (const offset of movementOffsets) {
+      const nextXCoord = currentCell.xCoord + offset[0];
+      const nextYCoord = currentCell.yCoord + offset[1];
+      const nextPathLength = currentCell.currentPathLength + 1;
 
-  let finalPathLength = -1;
-
-  while (processingQueue.length > 0) {
-    const currentPosition = processingQueue.shift();
-    const { x: currentX, y: currentY, pathLength: currentDistance } = currentPosition;
-
-    if (currentX === endX && currentY === endY) {
-      finalPathLength = currentDistance;
-      break;
-    }
-
-    for (const vector of movementVectors) {
-      const nextX = currentX + vector.dx;
-      const nextY = currentY + vector.dy;
-      const nextCoordKey = `${nextX},${nextY}`;
-
-      if (
-        nextX >= 1 && nextX <= columnQuantity &&
-        nextY >= 1 && nextY <= rowQuantity &&
-        !obstacleLocations.has(nextCoordKey)
-      ) {
-        if (!travelLog.has(nextCoordKey)) {
-          const newDistance = currentDistance + 1;
-          travelLog.set(nextCoordKey, newDistance);
-          processingQueue.push({ x: nextX, y: nextY, pathLength: newDistance });
-        }
+      if (nextXCoord < 1 || nextXCoord > gridWidth || nextYCoord < 1 || nextYCoord > gridHeight) {
+        continue;
       }
+
+      const nextCoordKey = getCoordKey(nextXCoord, nextYCoord);
+
+      if (blockedCells.has(nextCoordKey) || pathDistances.has(nextCoordKey)) {
+        continue;
+      }
+
+      if (nextXCoord === gridWidth && nextYCoord === gridHeight) {
+        // The original code's distance for (1,1) was 2, ours is 1.
+        // So, if our path length to (W,H) is `nextPathLength`,
+        // the original's equivalent distance would be `nextPathLength + 1`.
+        return totalPathableCells - (nextPathLength + 1);
+      }
+
+      pathDistances.set(nextCoordKey, nextPathLength);
+      bfsFrontier.push({ xCoord: nextXCoord, yCoord: nextYCoord, currentPathLength: nextPathLength });
     }
   }
 
-  return totalPassableSpots - finalPathLength;
-
-})(require('fs').readFileSync('/dev/stdin', 'utf8')));
+  return undefined;
+}(require('fs').readFileSync('/dev/stdin', 'utf8')));

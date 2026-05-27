@@ -1,123 +1,120 @@
-// This module defines a mechanism to compute the convex hull (outer boundary) of a set of 2D points.
-// Based on an algorithm for determining the perimeter of multiple points.
-// BoundaryCalculator class definition.
-class BoundaryCalculator {
+class ShapeProcessor {
 
-    // Initializes a new instance of the boundary calculator.
+    // Initializes a new instance of the ShapeProcessor.
     constructor() {
-        this.inputVertices = [];
+        this.coordinates = []; // Stores the collection of points for processing.
     }
 
-    // Solves the convex hull problem for a given collection of points.
-    // @param {Array<Object>} vertexCollection - An array of point objects, each with 'x' and 'y' properties.
-    // @returns {Array<Object>} An ordered list of points forming the convex hull.
-    computeBoundary(vertexCollection) {
-        this.inputVertices = vertexCollection;
-        return this.determineOuterBoundary();
-    };
+    // Accepts an array of points and initiates the convex hull computation.
+    processPoints(inputCoords) {
+        this.coordinates = inputCoords; // Assign the provided points to the instance.
+        return this.getHullVertices();  // Return the calculated convex hull vertices.
+    }
 
-    // Identifies the points that constitute the outermost perimeter.
-    determineOuterBoundary() {
-        // Determines the smallest X-coordinate among all input points.
-        let minimumXCoordinate = Math.min(...this.inputVertices.map(pt => pt.x));
-        // Locates the point with the minimum X-coordinate (leftmost).
-        let leftmostVertex = this.inputVertices.find(vertex => vertex.x === minimumXCoordinate);
-        // Determines the largest X-coordinate among all input points.
-        let maximumXCoordinate = Math.max(...this.inputVertices.map(pt => pt.x));
-        // Locates the point with the maximum X-coordinate (rightmost).
-        let rightmostVertex = this.inputVertices.find(vertex => vertex.x === maximumXCoordinate);
+    // Determines the set of points that form the convex hull of the stored coordinates.
+    getHullVertices() {
+        // Find the minimum X-coordinate among all available points.
+        const minXCoord = Math.min(...this.coordinates.map(coord => coord.x));
+        // Locate the point with the smallest X-coordinate (leftmost point).
+        const leftmostPoint = this.coordinates.find(pt => pt.x === minXCoord);
 
-        // Calculates the lower half of the convex hull.
-        let lowerSegment = this._findHalfBoundary(leftmostVertex, rightmostVertex, (currentPt, remainingPts) => {
-            // Computes the maximum gradient for the lower hull.
-            return Math.max(...remainingPts.map(p_val => BoundaryCalculator.calculateSlope(currentPt, p_val)));
+        // Find the maximum X-coordinate among all available points.
+        const maxXCoord = Math.max(...this.coordinates.map(coord => coord.x));
+        // Locate the point with the largest X-coordinate (rightmost point).
+        const rightmostPoint = this.coordinates.find(pt => pt.x === maxXCoord);
+
+        // Compute the lower segment of the convex hull.
+        // This involves finding points that maximize the slope from the current point.
+        const lowerHull = this._getHullHalf(leftmostPoint, rightmostPoint, (current, sequence) => {
+            return Math.max(...sequence.map(pt => ShapeProcessor._calculateSlope(current, pt)));
         });
 
-        // Calculates the upper half of the convex hull.
-        let upperSegment = this._findHalfBoundary(leftmostVertex, rightmostVertex, (currentPt, remainingPts) => {
-            // Computes the minimum gradient for the upper hull.
-            return Math.min(...remainingPts.map(p_val => BoundaryCalculator.calculateSlope(currentPt, p_val)));
+        // Compute the upper segment of the convex hull.
+        // This involves finding points that minimize the slope from the current point.
+        const upperHull = this._getHullHalf(leftmostPoint, rightmostPoint, (current, sequence) => {
+            return Math.min(...sequence.map(pt => ShapeProcessor._calculateSlope(current, pt)));
         });
 
-        // Combines the lower and reversed upper segments to form the complete hull.
-        // The upper segment is reversed to ensure correct ordering around the hull.
-        return lowerSegment.concat(upperSegment.slice().reverse());
-    };
+        // Combine the lower and upper hulls. The upper hull is reversed to maintain proper order.
+        // Using .slice() before .reverse() ensures the original array is not modified.
+        return lowerHull.concat(upperHull.slice().reverse());
+    }
 
-    // Computes the slope (gradient) between two given points.
-    // @param {Object} firstPoint - The starting point {x, y}.
-    // @param {Object} secondPoint - The ending point {x, y}.
-    // @returns {number} The slope value.
-    static calculateSlope(firstPoint, secondPoint) {
-        return (secondPoint.y - firstPoint.y) / (secondPoint.x - firstPoint.x);
-    };
+    // Static helper method to compute the slope between two given points.
+    static _calculateSlope(point1, point2) {
+        // The slope is calculated as (change in Y) / (change in X).
+        return (point2.y - point1.y) / (point2.x - point1.x);
+    }
 
-    // Finds either the upper or lower half of the convex boundary.
-    // It proceeds from a starting point towards a target point.
-    // @param {Object} currentVertex - The point from which to start the segment.
-    // @param {Object} targetVertex - The point where the segment should end.
-    // @param {Function} gradientEvaluator - A function to determine the next point based on gradient.
-    // @returns {Array<Object>} An array of points forming the half-boundary.
-    _findHalfBoundary(currentVertex, targetVertex, gradientEvaluator) {
-        let boundaryVertices = [currentVertex];
-        // Loop until the current vertex reaches the target vertex.
-        while (currentVertex.x !== targetVertex.x || currentVertex.y !== targetVertex.y) {
-            // Filters for points located to the right (greater X-coordinate) of the current vertex.
-            let subsequentPoints = this.inputVertices.filter(pointItem => pointItem.x > currentVertex.x);
-            // Finds the next vertex that forms the steepest (or shallowest) gradient based on the evaluator.
-            let nextVertex = subsequentPoints.find(pointItem =>
-                BoundaryCalculator.calculateSlope(currentVertex, pointItem) === gradientEvaluator(currentVertex, subsequentPoints)
+    // Helper method to construct one half (either upper or lower) of the convex hull.
+    _getHullHalf(currentPoint, endPoint, slopeFunction) {
+        let hullSegment = [currentPoint]; // Initialize the segment with the starting point.
+
+        // Continue adding points until the current point reaches the designated end point.
+        while (currentPoint.x !== endPoint.x || currentPoint.y !== endPoint.y) {
+            // Filter the available points to only consider those to the right of the current point.
+            const subsequentPoints = this.coordinates.filter(pt => pt.x > currentPoint.x);
+
+            // Find the next point in the hull segment. This point is determined by the
+            // maximum or minimum slope (as defined by `slopeFunction`) relative to the current point.
+            const nextPointInHull = subsequentPoints.find(pt =>
+                ShapeProcessor._calculateSlope(currentPoint, pt) === slopeFunction(currentPoint, subsequentPoints)
             );
-            boundaryVertices.push(nextVertex);
-            currentVertex = nextVertex;
-            // Break condition for robustness in case 'nextVertex' is not found.
-            if (currentVertex === undefined) {
+
+            hullSegment.push(nextPointInHull); // Add the identified next point to the segment.
+            currentPoint = nextPointInHull;    // Advance the current point to the newly found point.
+
+            // A safety check to prevent infinite loops in case a next point cannot be found.
+            if (currentPoint === undefined) {
                 break;
             }
         }
-        return boundaryVertices;
-    };
+        return hullSegment; // Return the completed hull segment.
+    }
 }
 
-// Primary execution function for processing input data.
-function ProcessInputAndCompute(rawData) {
-    let lines = rawData.split("\n");
-    
-    let vertexCount = Number(lines[0]);
-    let inputVertices = [];
-    
-    // Parses each line to extract point coordinates.
-    for (let idx = 1; idx <= vertexCount; idx++)
-    {
-    	let parts = lines[idx].split(" ");
-    	inputVertices.push({ x: Number(parts[0]), y: Number(parts[1]) });
-    	// Optional: log parsed point for debugging.
-    	// console.log(`Parsed point: (${inputVertices[idx - 1].x}, ${inputVertices[idx - 1].y})`);
-    }
-    
-    // Instantiates the hull processor and computes the boundary.
-    let hullProcessor = new BoundaryCalculator();
-    let perimeterPoints = hullProcessor.computeBoundary(inputVertices);
-    // Optional: display the computed perimeter points.
-    // console.log("Calculated perimeter points:", perimeterPoints);
-    
-    let greatestSeparation = 0;
+// The main function responsible for reading input, performing calculations, and outputting results.
+function ProcessInputData(rawData) {
+    // Split the raw input string into an array of lines based on newline characters.
+    rawData = rawData.split("\n");
 
-    // Calculates the maximum Manhattan distance between any two points on the convex hull.
-    for (let idx = 0; idx < perimeterPoints.length; idx++)
-    {
-    	for (let jdx = idx + 1; jdx < perimeterPoints.length; jdx++)
-    	{
-    		let currentSeparation = 
-    		  Math.abs(perimeterPoints[idx].x - perimeterPoints[jdx].x) +
-    		  Math.abs(perimeterPoints[idx].y - perimeterPoints[jdx].y);
-    		greatestSeparation = Math.max(greatestSeparation, currentSeparation);
-    	}
+    // Parse the first line to determine the total number of points.
+    const numPoints = Number(rawData[0]);
+    const inputPoints = []; // An array to store the parsed point objects.
+
+    // Iterate through the input lines, starting from the second line, to parse each point.
+    for (let k = 1; k <= numPoints; k++) {
+        const parsedLine = rawData[k].split(" "); // Split each line by space to get X and Y coordinates.
+        // Create a point object with numeric X and Y values and add it to the array.
+        inputPoints.push({ x: Number(parsedLine[0]), y: Number(parsedLine[1]) });
+        // Original debug line, commented out as per Type II rules.
+        // console.log(inputPoints[k - 1].x);
     }
-    
-    // Outputs the maximum calculated separation.
-    console.log(greatestSeparation);
+
+    // Create an instance of the ShapeProcessor to perform geometric computations.
+    const processorInstance = new ShapeProcessor();
+    // Compute the convex hull points using the parsed input points.
+    const convexHullPoints = processorInstance.processPoints(inputPoints);
+    // Original debug line, commented out.
+    // console.log(convexHullPoints);
+
+    let greatestDistance = 0; // Variable to keep track of the maximum Manhattan distance found.
+
+    // Iterate through all unique pairs of points on the convex hull.
+    for (let idx1 = 0; idx1 < convexHullPoints.length; idx1++) {
+        for (let idx2 = idx1 + 1; idx2 < convexHullPoints.length; idx2++) {
+            // Calculate the Manhattan distance (L1 distance) between the two current points.
+            const currentDistance =
+                Math.abs(convexHullPoints[idx1].x - convexHullPoints[idx2].x) +
+                Math.abs(convexHullPoints[idx1].y - convexHullPoints[idx2].y);
+            // Update `greatestDistance` if the `currentDistance` is larger.
+            greatestDistance = Math.max(greatestDistance, currentDistance);
+        }
+    }
+
+    // Output the final calculated greatest Manhattan distance to the console.
+    console.log(greatestDistance);
 }
 
-// Executes the main processing function with input read from standard input.
-ProcessInputAndCompute(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Read the entire content of standard input as a UTF-8 string and pass it to the main processing function.
+ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

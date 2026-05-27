@@ -1,61 +1,87 @@
-let isLoggingEnabled = false;
+let isDebuggingActive = false; // Flag to control debug output
 
-function outputMessage ( ) {
-  if ( isLoggingEnabled )
-  {
-    const collectedArgs = [ ];
-    for ( let idx = 0 ; idx < arguments.length ; ++idx ) {
-      collectedArgs.push(arguments[idx]) ;
+/**
+ * Outputs debug messages to the console if debugging is enabled.
+ * @param {...any} args - Arguments to be logged.
+ */
+function outputDebugMessage() {
+  if (isDebuggingActive) {
+    // Collect all passed arguments into an array for joining.
+    let messageParts = [];
+    for (let idx = 0; idx < arguments.length; idx++) {
+      messageParts.push(arguments[idx]);
     }
-    console.log( collectedArgs.join( ' ; ' ) ) ;
+    // Display the concatenated message.
+    console.log(messageParts.join(', '));
   }
 }
 
-function ProcessInput(dataString) {
+/**
+ * Main function to process input data and determine path possibility.
+ * @param {string} rawData - The raw input string from stdin.
+ */
+function ProcessInputData(rawData) {
+  // Split the input into individual lines.
+  const inputLines = rawData.split("\n");
 
-  let textLines = dataString.split( "\n" ) ;
-  const firstLineTokens = textLines[0].split( " " ) ;
+  // Parse the first line for numerical parameters.
+  const firstLineTokens = inputLines[0].split(" ");
+  const gridSize = firstLineTokens[0]; // N, not used in logic, but parsed.
+  const startA = firstLineTokens[1] * 1; // Convert to number
+  const startB = firstLineTokens[2] * 1; // Convert to number
+  const targetC = firstLineTokens[3] * 1; // Convert to number
+  const targetD = firstLineTokens[4] * 1; // Convert to number
 
-  let arraySize = firstLineTokens[0] ;
-  const startIdxA = Number( firstLineTokens[1] ) ;
-  let startIdxB = parseInt( firstLineTokens[2] ) ;
-  const endIdxC = +firstLineTokens[3] ;
-  let endIdxD = firstLineTokens[4] * 1 ;
+  // Get the path string from the second line.
+  let pathString = inputLines[1];
 
-  const mainString = textLines[1] ;
+  // Log initial parsed values for debugging.
+  outputDebugMessage(gridSize, startA, startB, targetC, targetD, pathString);
 
-  outputMessage( arraySize, startIdxA, startIdxB, endIdxC, endIdxD, mainString ) ;
+  // Initialize a boolean flag for path possibility.
+  let isPathPossible = true;
 
-  let isValidCondition = true;
-
-  if ( endIdxC > endIdxD ) {
-    let comparisonLimit = endIdxD ;
-    if ( endIdxC - endIdxD <= 3 ) {
-      comparisonLimit = endIdxC ;
+  // Special handling if targetC is greater than targetD.
+  if (targetC > targetD) {
+    let segmentEnd = targetD;
+    // Adjust segmentEnd if the difference is small.
+    if (targetC - targetD <= 3) {
+      segmentEnd = targetC;
     }
-    let modifiedString = mainString ;
-    if ( mainString[ endIdxD - 2 ] === '#' ) {
-      outputMessage( modifiedString, modifiedString[ endIdxD - 1 ] ) ;
-      modifiedString[ endIdxD - 1 ] = '#' ;
-      modifiedString = modifiedString.slice( 0, endIdxD - 1 ) + '#' + modifiedString.slice( endIdxD ) ;
+
+    // Create a mutable copy of the path string for potential modification.
+    let modifiedPath = pathString;
+    // Check a specific character and attempt to modify the string.
+    // Note: Strings are immutable in JS, so `modifiedPath[D - 1] = '#'`
+    // will not actually change `modifiedPath`. The next line performs the actual change.
+    if (pathString[targetD - 2] == '#') {
+      outputDebugMessage(modifiedPath, modifiedPath[targetD - 1]);
+      modifiedPath[targetD - 1] = '#'; // This line has no effect on strings.
+      modifiedPath = modifiedPath.slice(0, targetD - 1) + '#' + modifiedPath.slice(targetD);
     }
-    outputMessage( modifiedString ) ;
-    let substringToCheck = modifiedString.slice( startIdxB - 1, comparisonLimit ) ;
-    outputMessage( substringToCheck, isValidCondition ) ;
-    isValidCondition = isValidCondition && ( /\.\.\./ ).test( substringToCheck ) ;
-    outputMessage( substringToCheck, isValidCondition ) ;
+    outputDebugMessage(modifiedPath);
+
+    // Extract a segment and check for "..." pattern.
+    const currentSegment = modifiedPath.slice(startB - 1, segmentEnd);
+    outputDebugMessage(currentSegment, isPathPossible);
+    isPathPossible = isPathPossible && (/\.\.\./).test(currentSegment);
+    outputDebugMessage(currentSegment, isPathPossible);
   }
 
-  let substringToCheck = mainString.slice( startIdxA - 1, endIdxC ) ;
-  isValidCondition = isValidCondition && !( /##/ ).test( substringToCheck ) ;
-  outputMessage( substringToCheck, isValidCondition ) ;
+  // Check the path segment from A to C for "##" (double hash).
+  let currentSegment = pathString.slice(startA - 1, targetC);
+  isPathPossible = isPathPossible && !(/##/).test(currentSegment);
+  outputDebugMessage(currentSegment, isPathPossible);
 
-  substringToCheck = mainString.slice( startIdxB - 1, endIdxD ) ;
-  isValidCondition = isValidCondition && !( /##/ ).test( substringToCheck ) ;
-  outputMessage( substringToCheck, isValidCondition ) ;
+  // Check the path segment from B to D for "##" (double hash).
+  currentSegment = pathString.slice(startB - 1, targetD);
+  isPathPossible = isPathPossible && !(/##/).test(currentSegment);
+  outputDebugMessage(currentSegment, isPathPossible);
 
-  const finalVerdict = isValidCondition ? 'Yes' : 'No' ;
-  console.log( finalVerdict ) ;
+  // Determine the final answer based on the boolean flag.
+  const finalResult = isPathPossible ? 'Yes' : 'No';
+  console.log(finalResult);
 }
 
-ProcessInput( require( "fs" ).readFileSync( "/dev/stdin", "utf8" ) ) ;
+// Read input from stdin and pass it to the main processing function.
+ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,59 +1,89 @@
-const acquireInputProcessor = (sourceContent) => {
-    const contentFragments = sourceContent.trim().split('\n');
-    let currentFragmentPosition = 0;
+var inputSource = (function() {
+    function createParser(sourceText) {
+        return new InputHandler(sourceText);
+    }
 
-    const streamHandler = {
-        grabLeadingNumber: () => {
-            if (currentFragmentPosition >= contentFragments.length) {
-                throw new Error("Insufficient data for leading number.");
-            }
-            const firstNumericToken = contentFragments[currentFragmentPosition].split(' ')[0];
-            currentFragmentPosition++;
-            return Number(firstNumericToken);
-        },
+    function InputHandler(textData) {
+        this.lineSegments = textData.trim().split("\n");
+        this.currentLineIndex = 0;
+        this.activeLineTokens = [];
+    }
 
-        extractNumericGrid: (rowCount) => {
-            if (currentFragmentPosition + rowCount > contentFragments.length) {
-                throw new Error("Insufficient data for numeric grid.");
+    InputHandler.prototype.extractNext = function(asString) {
+        if (this.activeLineTokens.length === 0) {
+            if (this.currentLineIndex >= this.lineSegments.length) {
+                return undefined;
             }
-            const extractedGrid = contentFragments
-                                    .slice(currentFragmentPosition, currentFragmentPosition + rowCount)
-                                    .map(lineText => lineText.split(' ').map(Number));
-            currentFragmentPosition += rowCount;
-            return extractedGrid;
+            this.activeLineTokens = this.lineSegments[this.currentLineIndex].split(" ");
+            this.currentLineIndex++;
         }
+        var token = this.activeLineTokens.pop();
+        return asString ? token : Number(token);
     };
-    return streamHandler;
-};
 
-const processInput = acquireInputProcessor(require("fs").readFileSync("/dev/stdin","utf8"));
-
-const determineFeasibility = () => {
-    const instructionCount = processInput.grabLeadingNumber();
-    const movementPlan = processInput.extractNumericGrid(instructionCount);
-
-    const initialStatus = { viable: true, timeElapsed: 0, currentXCoordinate: 0, currentYCoordinate: 0 };
-
-    const finalStatus = movementPlan.reduce((previousStatus, currentInstruction) => {
-        if (!previousStatus.viable) {
-            return previousStatus;
+    InputHandler.prototype.fetchLine = function(asString) {
+        if (this.currentLineIndex >= this.lineSegments.length) {
+            return undefined;
         }
+        var line = this.lineSegments[this.currentLineIndex++];
+        this.activeLineTokens = [];
+        var tokens = line.split(" ");
+        return asString ? tokens : tokens.map(Number);
+    };
 
-        const targetTime = currentInstruction[0];
-        const targetX = currentInstruction[1];
-        const targetY = currentInstruction[2];
-
-        const timeDifference = targetTime - previousStatus.timeElapsed;
-        const coordinateDistance = Math.abs(previousStatus.currentXCoordinate - targetX) + Math.abs(previousStatus.currentYCoordinate - targetY);
-
-        if (coordinateDistance > timeDifference || (coordinateDistance % 2 !== timeDifference % 2)) {
-            return { viable: false, timeElapsed: 0, currentXCoordinate: 0, currentYCoordinate: 0 };
+    InputHandler.prototype.fetchBlock = function(count, asString) {
+        var resultBlock = [];
+        for (var i = 0; i < count; i++) {
+            resultBlock.push(this.fetchLine(asString));
         }
+        return resultBlock;
+    };
 
-        return { viable: true, timeElapsed: targetTime, currentXCoordinate: targetX, currentYCoordinate: targetY };
-    }, initialStatus);
+    InputHandler.prototype.fetchRawLines = function(count, asString) {
+        var start = this.currentLineIndex;
+        var end = this.currentLineIndex + count;
+        var lines = this.lineSegments.slice(start, end);
+        this.currentLineIndex = end;
+        this.activeLineTokens = [];
+        return asString ? lines : lines.map(Number);
+    };
 
-    return finalStatus.viable ? "Yes" : "No";
-};
+    return createParser;
+})();
 
-console.log(determineFeasibility());
+var dataParser = inputSource(require("fs").readFileSync("/dev/stdin","utf8"));
+
+console.log(evaluateTravelPlan());
+
+function evaluateTravelPlan() {
+  var totalPoints = dataParser.extractNext();
+  var journeyPoints = dataParser.fetchBlock(totalPoints);
+
+  var currentTravelState = {
+    currentTime: 0,
+    currentX: 0,
+    currentY: 0
+  };
+
+  var possiblePath = journeyPoints.every(function(destinationPoint) {
+    var targetTime = destinationPoint[0];
+    var targetX = destinationPoint[1];
+    var targetY = destinationPoint[2];
+
+    var timeDifference = targetTime - currentTravelState.currentTime;
+    var distanceX = Math.abs(currentTravelState.currentX - targetX);
+    var distanceY = Math.abs(currentTravelState.currentY - targetY);
+    var totalDistance = distanceX + distanceY;
+
+    if (totalDistance > timeDifference || (totalDistance % 2 !== timeDifference % 2)) {
+      return false;
+    }
+
+    currentTravelState.currentTime = targetTime;
+    currentTravelState.currentX = targetX;
+    currentTravelState.currentY = targetY;
+    return true;
+  });
+
+  return possiblePath ? "Yes" : "No";
+}

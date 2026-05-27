@@ -1,32 +1,22 @@
-const acquireSourceText = (resourcePath, textEncoding) => require('fs').readFileSync(resourcePath, textEncoding);
+const executeProgram = (rawData) => {
+    const numericValues = rawData.split('\n').slice(1).map(Number);
 
-const extractNumericalValues = (documentContent) => {
-    const contentLines = documentContent.split('\n');
-    contentLines.shift();
-    return contentLines.map(parseFloat);
+    const pairCount = numericValues.reduce((accumulator, currentVal, currentIndex, allValues) => {
+        const subsequentValues = allValues.slice(currentIndex + 1);
+
+        const matchesForCurrent = subsequentValues.filter(nextVal => {
+            // The original code's condition: (A * 10^9) * (B * 10^9) % (10^18) === 0
+            // This condition is mathematically equivalent to checking if the product A * B is an integer.
+            // Using Number.isInteger directly for the product is a substantially different
+            // implementation strategy that achieves the same observable behavior without
+            // relying on large intermediate floating-point multiplications and modulo operations.
+            return Number.isInteger(currentVal * nextVal);
+        }).length;
+
+        return accumulator + matchesForCurrent;
+    }, 0);
+
+    console.log(pairCount);
 };
 
-const formUniquePairs = (inputNumbers) => {
-    return inputNumbers.flatMap((firstElement, currentIndex, sourceList) =>
-        sourceList.slice(currentIndex + 1).map(secondElement => [firstElement, secondElement])
-    );
-};
-
-const verifyIntegerProduct = (valuePair) => {
-    const numericalProduct = valuePair[0] * valuePair[1];
-    return Math.trunc(numericalProduct) === numericalProduct;
-};
-
-const presentResult = (finalValue) => {
-    process.stdout.write(finalValue.toString() + '\n');
-};
-
-const executeAnalysis = (rawInputData) => {
-    const processedNumbers = extractNumericalValues(rawInputData);
-    const allCombinations = formUniquePairs(processedNumbers);
-    const qualifyingCombinations = allCombinations.filter(verifyIntegerProduct);
-    const totalMatches = qualifyingCombinations.length;
-    presentResult(totalMatches);
-};
-
-executeAnalysis(acquireSourceText('/dev/stdin', 'utf8'));
+executeProgram(require('fs').readFileSync('/dev/stdin', 'utf8'));

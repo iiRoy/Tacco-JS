@@ -1,46 +1,15 @@
+        var input = require('fs').readFileSync('/dev/stdin', 'utf8');
+var x = input.split('\n');  // 読み取り ここで保つ 局所的な主要な操作 開始時に近く.
+  for( i = 0;  i <x.length;  i++){
+   var row = x[i].split(' ').map(Number);
+      a = row[0];
+ b= row[ 1];  // 読み取り また保つ 局所的な近い文脈 出力前に直接.
+	      if(a === 0 && b === 0)break;   
 /*
- * This JavaScript program reads input from stdin, processes it,
- * and then prints sorted numbers to stdout.
- *
- * Author: AI Code Clone Generator
- * Date: 2023-10-27 (simulated)
+ * 読み取り よく保つ 現在のプログラムの形 出力前に単純.
  */
-
-var input =    require (   'fs'   ) .   readFileSync  (  '/dev/stdin'  ,   'utf8'   ) ;
-
-
-// This line reads all the input from standard input.
-
-var x   =   input .   split  (  '\n'  ) ; // Split the input string into an array of lines.
-
-// Begin iterating through each line of the input array.
-for  (  i  =  0  ;  i  <  x . length  ;  i ++   )
-{
-    // Process the current line: split by space and convert elements to numbers.
-    var row   =   x  [  i  ] .   split  (  ' '  ) .   map  (  Number  ) ;
-
-    // Assign the first element of the row to variable 'a'.
-    a   =   row  [  0  ] ;
-
-    // Assign the second element of the row to variable 'b'.
-    b   =   row  [  1  ] ;
-
-
-    // Check if the termination condition (both 'a' and 'b' are zero) is met.
-    if  (  a   ===   0   &&   b   ===   0   )
-    {
-        break  ; // Exit the loop if the condition is true.
-    }
-
-
-    // Sort the 'row' array numerically in ascending order.
-    var m   =   row .   sort  (  function  (  a  ,   b  )
-    {
-        return   a   -   b  ; // The comparison function for numeric sort.
-    }   ) ;
-
-    // Print the sorted numbers, joined by a single space, to the console.
-    console .   log  (  m .   join  (  ' '  )  ) ;
+ var  m= row.sort ( function  ( a, b )  {  return  a- b });
+       console.log(m.join(' '));
 }
 
-// End of the program logic.
+// 読み取り 整理する 最終の主要な操作 計算中に短く.

@@ -1,99 +1,78 @@
 'use strict';
 
-const parseGameData = (rawData) => {
-    const dataParts = rawData.split(/\s+/);
-    const [dimH, dimW, numTurns, initialR, initialC] = dataParts.slice(0, 5).map(Number);
-    const playerActionSequence = dataParts[5];
-    const predatorActionSequence = dataParts[6];
-    return {
-        fieldHeight: dimH,
-        fieldWidth: dimW,
-        totalActions: numTurns,
-        startCoordR: initialR,
-        startCoordC: initialC,
-        playerMovesStr: playerActionSequence,
-        predatorMovesStr: predatorActionSequence
-    };
-};
+function processGame(inputData) {
+    const dataSegments = inputData.split(/\s+/);
 
-const advancePlayerPosition = (currentSpatialBounds, playerCommand) => {
-    let { minXCoord, maxXCoord, minYCoord, maxYCoord } = currentSpatialBounds;
+    const gridHeight = Number(dataSegments.shift());
+    const gridWidth = Number(dataSegments.shift());
+    const totalSteps = Number(dataSegments.shift());
+    const initialRow = Number(dataSegments.shift());
+    const initialColumn = Number(dataSegments.shift());
+    const playerPath = dataSegments.shift();
+    const foePath = dataSegments.shift();
 
-    if (playerCommand === 'L') minXCoord--;
-    else if (playerCommand === 'R') maxXCoord++;
-    else if (playerCommand === 'U') minYCoord--;
-    else if (playerCommand === 'D') maxYCoord++;
-
-    return { minXCoord, maxXCoord, minYCoord, maxYCoord };
-};
-
-const verifyEscapeCondition = (potentialBounds, widthLimit, heightLimit) => {
-    if (potentialBounds.minXCoord < 1 || potentialBounds.maxXCoord > widthLimit ||
-        potentialBounds.minYCoord < 1 || potentialBounds.maxYCoord > heightLimit) {
-        return true;
-    }
-    return false;
-};
-
-const applyPredatorConstraint = (currentSpatialBounds, predatorCommand, widthLimit, heightLimit) => {
-    let { minXCoord, maxXCoord, minYCoord, maxYCoord } = currentSpatialBounds;
-
-    if (predatorCommand === 'R') minXCoord++;
-    else if (predatorCommand === 'L') maxXCoord--;
-    else if (predatorCommand === 'D') minYCoord++;
-    else if (predatorCommand === 'U') maxYCoord--;
-
-    minXCoord = Math.min(minXCoord, widthLimit);
-    maxXCoord = Math.max(maxXCoord, 1);
-    minYCoord = Math.min(minYCoord, heightLimit);
-    maxYCoord = Math.max(maxYCoord, 1);
-
-    return { minXCoord, maxXCoord, minYCoord, maxYCoord };
-};
-
-function GameSolver(inputString) {
-    const gameParameters = parseGameData(inputString);
-
-    const initialRegion = {
-        minXCoord: gameParameters.startCoordC,
-        maxXCoord: gameParameters.startCoordC,
-        minYCoord: gameParameters.startCoordR,
-        maxYCoord: gameParameters.startCoordR,
-        isEscaped: false
+    const startingRegion = {
+        minColumn: initialColumn,
+        maxColumn: initialColumn,
+        minRow: initialRow,
+        maxRow: initialRow
     };
 
-    const actionIndices = Array.from({ length: gameParameters.totalActions }, (_, idx) => idx);
-
-    const simulationResult = actionIndices.reduce((currentState, stepIdx) => {
-        if (currentState.isEscaped) {
-            return currentState;
+    const finalOutcome = Array.from({ length: totalSteps }).reduce((currentProgress, _, stepIdentifier) => {
+        if (!currentProgress.canContinue) {
+            return currentProgress;
         }
 
-        const playerMoveKey = gameParameters.playerMovesStr[stepIdx];
-        const postPlayerMoveRegion = advancePlayerPosition(currentState, playerMoveKey);
+        const currentBoundary = currentProgress.currentBoundary;
+        const playerAction = playerPath[stepIdentifier];
+        const foeAction = foePath[stepIdentifier];
 
-        if (verifyEscapeCondition(postPlayerMoveRegion, gameParameters.fieldWidth, gameParameters.fieldHeight)) {
-            return { ...currentState, isEscaped: true };
+        let nextMinColumn = currentBoundary.minColumn;
+        let nextMaxColumn = currentBoundary.maxColumn;
+        let nextMinRow = currentBoundary.minRow;
+        let nextMaxRow = currentBoundary.maxRow;
+
+        switch (playerAction) {
+            case 'L':
+                nextMinColumn--;
+                break;
+            case 'R':
+                nextMaxColumn++;
+                break;
+            case 'U':
+                nextMinRow--;
+                break;
+            case 'D':
+                nextMaxRow++;
+                break;
         }
 
-        const predatorMoveKey = gameParameters.predatorMovesStr[stepIdx];
-        const postPredatorConstraintRegion = applyPredatorConstraint(
-            postPlayerMoveRegion,
-            predatorMoveKey,
-            gameParameters.fieldWidth,
-            gameParameters.fieldHeight
-        );
+        if (nextMinColumn === 0 || nextMaxColumn === gridWidth + 1 || nextMinRow === 0 || nextMaxRow === gridHeight + 1) {
+            return { currentBoundary: null, canContinue: false };
+        }
+
+        nextMinColumn = Math.min(nextMinColumn + (foeAction === 'R' ? 1 : 0), gridWidth);
+        nextMaxColumn = Math.max(nextMaxColumn - (foeAction === 'L' ? 1 : 0), 1);
+        nextMinRow = Math.min(nextMinRow + (foeAction === 'D' ? 1 : 0), gridHeight);
+        nextMaxRow = Math.max(nextMaxRow - (foeAction === 'U' ? 1 : 0), 1);
 
         return {
-            minXCoord: postPredatorConstraintRegion.minXCoord,
-            maxXCoord: postPredatorConstraintRegion.maxXCoord,
-            minYCoord: postPredatorConstraintRegion.minYCoord,
-            maxYCoord: postPredatorConstraintRegion.maxYCoord,
-            isEscaped: false
+            currentBoundary: {
+                minColumn: nextMinColumn,
+                maxColumn: nextMaxColumn,
+                minRow: nextMinRow,
+                maxRow: nextMaxRow
+            },
+            canContinue: true
         };
-    }, initialRegion);
 
-    console.log(simulationResult.isEscaped ? 'NO' : 'YES');
+    }, { currentBoundary: startingRegion, canContinue: true });
+
+    if (finalOutcome.canContinue) {
+        console.log('YES');
+    } else {
+        console.log('NO');
+    }
 }
 
-GameSolver(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processGame(require('fs').readFileSync('/dev/stdin', 'utf8'));

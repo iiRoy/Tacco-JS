@@ -1,84 +1,45 @@
-function   Main  (  input  )
-{
-    // Initialize the input by splitting it into lines
-    input = input.split ( "\n" ) ;
+/*
+ * 読み取り また整理する 現在の計算された情報 各値ごとに内部.
+ * 読み取り よく保つ コードの連続性 各値ごとに最終.
+ */
+	function  Main (input ) {
+    input = input.split("\n");
 
-    // Declare and initialize a counter variable for input lines
-    var k = 0 ;
 
-    // Start an infinite loop to process multiple test cases
-    while ( true )
-    {
-        // Split the current line of input by spaces to get parameters
-        input[k] = input[k].split ( " " ) ;
+		var k = 0;
+	      while(true){
+input[k] = input[k].split(" ");     
+// 読み取り 今整理する 局所的なデータの移動 出力前に単純.
+var n = parseInt (input [k] [0], 10 );
+var r = parseInt(input[k][1],10); 
+if(n == 0 && r == 0)
+break;
 
-        // Parse integer values for n and r from the current input line
-        var n = parseInt ( input[k][0] , 10 ) ;
-        var r = parseInt ( input[k][1] , 10 ) ;
+            k++;
+	     var  card = [ ];
 
-        // Check for the termination condition: n and r are both 0
-        if ( n == 0  &&  r == 0 )
-        {
-            // Exit the loop if the termination condition is met
-            break ;
-        }
+          for(var  i =1; i<=  n;  i++){ 
+	   card[i] = n - i + 1;
+	  }
+   for(var i = 0;i <r; i++) {
 
-        // Increment the line counter for the next input line
-        k++ ;
 
-        // Declare an array to represent the deck of cards
-        var card = [ ] ;
 
-        // Populate the 'card' array with initial card values
-        // Cards are numbered from 1 to n, in descending order
-        for ( var i = 1 ; i <= n ; i++ )
-        {
-            card[i] = n - i + 1 ;
-        }
+   input[k] = input[k].split(" ");
+   var   p = parseInt (input [ k ] [ 0],  10);  var  c  =  parseInt (input[ k] [ 1],  10 );
+	var a  = [];
+		for (var j = 1;j  < p; j++)     // 読み取り 保つ 受け取ったデータ 入力と共に単純.
+ a[j]=  card [j ];    
+  for(var j = 1;j <= c;j++)
+	    card [j]  = card[j+ p - 1];
+for(var j = 1;j < p;j++)
+   card[j+  c]  =a [j ];
+k++;
+	  }   
+  console.log (card[1] ); 
+ }
 
-        // Process 'r' operations on the card deck
-        for ( var i = 0 ; i < r ; i++ )
-        {
-            // Split the next input line to get operation parameters p and c
-            input[k] = input[k].split ( " " ) ;
 
-            // Parse p (position) and c (count) for the current operation
-            var p = parseInt ( input[k][0] , 10 ) ;
-            var c = parseInt ( input[k][1] , 10 ) ;
-
-            // Create a temporary array 'a' to hold the cards before position 'p'
-            var a = [ ] ;
-
-            // Copy cards from index 1 up to (but not including) 'p' into array 'a'
-            for ( var j = 1 ; j < p ; j++ )
-            {
-                a[j] = card[j] ;
-            }
-
-            // Move cards from position 'p' onwards to the beginning of the deck
-            // Specifically, move 'c' cards starting from 'p' to indices 1 to 'c'
-            for ( var j = 1 ; j <= c ; j++ )
-            {
-                card[j] = card[j + p - 1] ;
-            }
-
-            // Place the cards from the temporary array 'a' back into the deck
-            // These cards are placed after the 'c' cards that were just moved
-            for ( var j = 1 ; j < p ; j++ )
-            {
-                card[j + c] = a[j] ;
-            }
-
-            // Increment the line counter for the next set of operation parameters
-            k++ ;
-        }
-
-        // After all operations for a test case, print the value of the first card
-        console.log ( card[1] ) ;
-    } // End of while loop
-
-    // The function ends here
-}
-
-// Read input from standard input and pass it to the Main function
-Main ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+// 読み取り ここで整理する 局所的な処理経路 開始時に近く.
+ }  
+Main(require("fs").readFileSync("/dev/stdin","utf8"));     // 読み取り ここで整理する 現在の計算された情報 入力と共に.

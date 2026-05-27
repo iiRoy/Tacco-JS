@@ -1,113 +1,168 @@
-/* --- Start of internal helper code, typically not modified directly --- */
-var inputReader = require('readline').createInterface({
-  input: process.stdin,
-  output: process.stdout
+let inputReader = require('readline').createInterface({
+    input: process.stdin,
+    output: process.stdout
 });
-var dataProcessor;
-var inputLines = [];
-inputReader.on('line', function (currentLine) {
-  inputLines.push(currentLine);
+
+let dataHandler;
+let inputLines = [];
+
+inputReader.on('line', function(currentInputLine) {
+    inputLines.push(currentInputLine);
 });
-inputReader.on('close', function () {
-  dataProcessor = initializeProcessor(inputLines);
-  console.error("\n");
-  var executionStartTime = new Date();
-  ExecuteProgramLogic();
-  var durationMilliseconds = new Date() - executionStartTime;
-  logDebugMessage("Duration: " + (durationMilliseconds) + "ms");
-  logDebugMessage("Memory Usage: " + Math.round(process.memoryUsage().heapTotal / 1024) + "KB");
+
+inputReader.on('close', function() {
+    dataHandler = initializeInputProcessor(inputLines);
+    console.error("\n");
+
+    let startTime = new Date();
+    executeMainLogic();
+    let elapsedTime = new Date() - startTime;
+
+    logDebugMessage("time : " + (elapsedTime) + "ms");
+    logDebugMessage("memory : " + Math.round(process.memoryUsage().heapTotal / 1024) + "KB");
 });
-function duplicateObject(originalObject) {
-  return JSON.parse(JSON.stringify(originalObject));
-}
-function fetchInteger() { return processAndConvert(fetchNextItem(), 1); }
-function fetchStringArray() { return processAndConvert(fetchNextItem(), 2); }
-function fetchIntegerArray() { return processAndConvert(fetchNextItem(), 4); }
-function fetchCharacterArray() { return processAndConvert(fetchNextItem(), 6); }
-function fetchNextItem() { return dataProcessor.retrieveNext(); }
-function checkMoreItems() { return dataProcessor.hasMoreData(); }
-function initializeProcessor(rawData) {
-  var processorInstance = {
-    lineData: rawData,
-    currentPosition: 0,
-    maxLines: rawData.length,
-    hasMoreData: function () { return (this.currentPosition < this.maxLines); },
-    retrieveNext: function () {
-      if (!this.hasMoreData()) {
-        throw "EndOfInputException: No more lines available to process";
-      } else {
-        var extractedLine = this.lineData[this.currentPosition];
-        this.currentPosition++;
-        return extractedLine;
-      }
-    }
-  };
-  return processorInstance;
-}
-function displayOutput(messageContent) {
-  console.log(messageContent);
-}
-function logDebugMessage(messageContent) {
-  console.error("DEBUG INFO: " + require("util").examineValue(messageContent, false, null));
-}
-/* This utility function handles various data conversions based on the 'conversionType' parameter.
- * It attempts to convert the 'inputValue' according to the specified rule.
- * If 'conversionType' is 1: Converts to an integer.
- * If 'conversionType' is 2: Splits by space into a string array.
- * If 'conversionType' is 4: Splits by space and converts to an array of numbers.
- * If 'conversionType' is 6: Splits into a character array.
- * If 'conversionType' is 7: Splits into characters and converts to an array of numbers.
- * If 'conversionType' is 8: Joins array elements with a space.
- * If 'conversionType' is 9: Joins array elements with a newline.
- * If 'conversionType' is 0: Joins array elements without a separator.
- * For unknown types or errors, the original input is returned.
+
+/**
+ * Creates a deep copy of an object using JSON serialization.
+ * @param {object} sourceObject The object to clone.
+ * @returns {object} A new, deep-copied object.
  */
-function processAndConvert(inputValue, conversionType) {
-  try {
-    switch (conversionType) {
-      case 1: return parseInt(inputValue);
-      case 2: return inputValue.split(" ");
-      case 4: return inputValue.split(" ").map(Number);
-      case 6: return inputValue.split("");
-      case 7: return inputValue.split("").map(Number);
-      case 8: return inputValue.join(" ");
-      case 9: return inputValue.join("\n");
-      case 0: return inputValue.join("");
-      default: return inputValue;
-    }
-  } catch (conversionError) {
-    return inputValue;
-  }
+function createDeepCopy(sourceObject) {
+    return JSON.parse(JSON.stringify(sourceObject));
 }
 
-/* --- End of internal helper code --- */
-function ExecuteProgramLogic() {
-  var initialParameters = fetchIntegerArray();
-  var totalElements = initialParameters[0];
-  var minimumSelection = initialParameters[1];
-  var sourceNumbers = fetchIntegerArray();
-  var finalMinimumCost = Math.pow(10, 16);
-  if (minimumSelection == 1) {
-    displayOutput(0);
-    return;
-  }
-  for (var configIndex = 0; configIndex < (1 << totalElements); configIndex++) {
-    var currentSelection = [sourceNumbers[0]];
-    for (var elementIndex = 1; elementIndex < totalElements; elementIndex++) {
-      if ((configIndex & (1 << elementIndex)) != 0) {
-        currentSelection.push(sourceNumbers[elementIndex]);
-      }
-    }
-    if (currentSelection.length >= minimumSelection) {
-      var currentAccumulatedCost = 0;
-      for (var elementIndex = 1; elementIndex < currentSelection.length; elementIndex++) {
-        if (currentSelection[elementIndex - 1] >= currentSelection[elementIndex]) {
-          currentAccumulatedCost += currentSelection[elementIndex - 1] - currentSelection[elementIndex] + 1;
-          currentSelection[elementIndex] = currentSelection[elementIndex - 1] + 1;
+// Helper functions to fetch and convert input data
+function getNextInteger() { return convertInput(fetchNextLine(), 1); }
+function getNextStringArray() { return convertInput(fetchNextLine(), 2); }
+function getNextIntegerArray() { return convertInput(fetchNextLine(), 4); }
+function getNextCharacterArray() { return convertInput(fetchNextLine(), 6); }
+
+// Functions to interact with the input data handler
+function fetchNextLine() { return dataHandler.next(); }
+function hasMoreLines() { return dataHandler.hasNext(); }
+
+/**
+ * Initializes an input processor object from an array of lines.
+ * This object provides methods to check for more lines and retrieve the next line.
+ * @param {string[]} sourceInputLines An array of strings, where each string is a line of input.
+ * @returns {object} An object with `hasMoreLines` and `next` methods.
+ */
+function initializeInputProcessor(sourceInputLines) {
+    let processorInstance = {
+        sourceLines: sourceInputLines,
+        currentLineIndex: 0,
+        totalLines: sourceInputLines.length,
+        hasMoreLines: function() {
+            return (this.currentLineIndex < this.totalLines);
+        },
+        next: function() {
+            if (!this.hasMoreLines()) {
+                throw "ArrayIndexOutOfBoundsException これ以上ないよ";
+            } else {
+                let fetchedLine = this.sourceLines[this.currentLineIndex];
+                this.currentLineIndex++;
+                return fetchedLine;
+            }
         }
-      }
-      finalMinimumCost = Math.min(finalMinimumCost, currentAccumulatedCost);
+    };
+    return processorInstance;
+}
+
+/**
+ * Prints a message to standard output.
+ * @param {*} messageContent The content to print.
+ */
+function printResult(messageContent) {
+    console.log(messageContent);
+}
+
+/**
+ * Logs a debug message to standard error, formatted for inspection.
+ * @param {*} messageContent The content to log.
+ */
+function logDebugMessage(messageContent) {
+    console.error("debug:" + require("util").inspect(messageContent, false, null));
+}
+
+/**
+ * Converts an input value based on a specified type.
+ * @param {*} inputValue The value to convert.
+ * @param {number} conversionType The type of conversion to perform.
+ *   1: Convert to integer.
+ *   2: Split by space into string array.
+ *   4: Split by space into number array.
+ *   6: Split by character into string array.
+ *   7: Split by character into number array.
+ *   8: Join array elements with space.
+ *   9: Join array elements with newline.
+ *   0: Join array elements without separator.
+ *   Default: Return input as is.
+ * @returns {*} The converted value or the original input on error.
+ */
+function convertInput(inputValue, conversionType) {
+    try {
+        switch (conversionType) {
+            case 1:
+                return parseInt(inputValue);
+            case 2:
+                return inputValue.split(" ");
+            case 4:
+                return inputValue.split(" ").map(Number);
+            case 6:
+                return inputValue.split("");
+            case 7:
+                return inputValue.split("").map(Number);
+            case 8:
+                return inputValue.join(" ");
+            case 9:
+                return inputValue.join("\n");
+            case 0:
+                return inputValue.join("");
+            default:
+                return inputValue;
+        }
+    } catch (conversionError) {
+        return inputValue;
     }
-  }
-  displayOutput(finalMinimumCost);
+}
+
+/**
+ * The main function containing the core logic of the application.
+ * It reads input, performs calculations, and prints the final result.
+ */
+function executeMainLogic() {
+    let firstLineData = getNextIntegerArray();
+    let numElements = firstLineData[0];
+    let minSelectedCount = firstLineData[1];
+
+    let originalNumbers = getNextIntegerArray();
+    let minimumCost = Math.pow(10, 16);
+
+    if (minSelectedCount === 1) {
+        printResult(0);
+        return;
+    }
+
+    for (let outerLoopIndex = 0; outerLoopIndex < (1 << numElements); outerLoopIndex++) {
+        let currentSelection = [originalNumbers[0]];
+
+        for (let innerLoopIndex = 1; innerLoopIndex < numElements; innerLoopIndex++) {
+            if ((outerLoopIndex & (1 << innerLoopIndex)) !== 0) {
+                currentSelection.push(originalNumbers[innerLoopIndex]);
+            }
+        }
+
+        if (currentSelection.length >= minSelectedCount) {
+            let currentCost = 0;
+            for (let innerLoopIndex = 1; innerLoopIndex < currentSelection.length; innerLoopIndex++) {
+                if (currentSelection[innerLoopIndex - 1] >= currentSelection[innerLoopIndex]) {
+                    let requiredIncrease = currentSelection[innerLoopIndex - 1] - currentSelection[innerLoopIndex] + 1;
+                    currentCost += requiredIncrease;
+                    currentSelection[innerLoopIndex] = currentSelection[innerLoopIndex - 1] + 1;
+                }
+            }
+            minimumCost = Math.min(minimumCost, currentCost);
+        }
+    }
+    printResult(minimumCost);
 }

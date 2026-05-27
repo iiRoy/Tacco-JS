@@ -1,71 +1,65 @@
-const orderElements = ( firstItem , secondItem ) => {
-    // This function is currently empty, designed for future comparison logic.
-}
+const compareValues = (firstVal, secondVal) => {
+  // This function is intentionally left empty as per original structure.
+};
 
 /**
- * Creates a frequency map (dictionary) from a given collection.
- * Each unique element in the collection becomes a key,
- * and its value is the count of its occurrences.
- * @param {Array<any>} sourceCollection - The array of items to count.
- * @returns {Object<string, number>} An object mapping items to their frequencies.
+ * Creates a frequency map (dictionary) for elements in an array.
+ * @param {Array<string>} inputList - The array of strings to count.
+ * @returns {Object<string, number>} An object where keys are array elements and values are their counts.
  */
-function generateFrequencyMap ( sourceCollection ) {
-    let occurrenceTracker = {}; // Initialize an empty object to store counts.
-    for ( const elementValue of sourceCollection ) { // Iterate through each element in the input collection.
-        // Count how many times the current element appears in the entire collection.
-        occurrenceTracker[elementValue] = sourceCollection.filter( ( currentElement ) => {
-            return currentElement === elementValue;
-        }).length;
-    }
-    return occurrenceTracker; // Return the populated frequency map.
+function generateFrequencyMap(inputList) {
+  let frequencyMap = new Object(); // Using new Object() instead of {}
+  for (const item of inputList) {
+    // Iterate over each item in the provided list.
+    frequencyMap[item] = inputList.filter(function (element) {
+      return element === item; // Using strict equality for comparison.
+    }).length;
+  }
+  return frequencyMap;
 }
 
-const processInputData = ( rawDataString ) => {
-    // Split the raw input string into an array of lines.
-    const processedLines = rawDataString.split ( '\n' );
+const processInput = (incomingData) => {
+  // Split the entire input string by newline characters to get individual lines.
+  const lines = incomingData.split("\n");
+  // The first line is shifted off, but its value is not used in the original logic.
+  const countIndicator = lines.shift();
 
-    // The first line is often a count or metadata; remove it as it's not used here.
-    const initialLineCount = processedLines.shift ( );
+  // Generate a map of element occurrences from the remaining lines.
+  const occurrenceMap = generateFrequencyMap(lines);
 
-    // Generate a map of element frequencies from the remaining lines.
-    const frequencyMap = generateFrequencyMap ( processedLines );
+  // Extract all unique keys (elements) from the occurrence map.
+  const uniqueElements = Object.keys(occurrenceMap);
+  const elementDetails = []; // This array will store objects with element and its frequency.
+  let highestFrequency = -Infinity; // Initialize with negative infinity to find the maximum frequency.
 
-    // Get all unique keys (elements) from the frequency map.
-    const uniqueElements = Object.keys( frequencyMap );
+  uniqueElements.forEach((elementKey) => {
+    // For each unique element, create a temporary object.
+    const currentEntry = {};
+    currentEntry.identifier = elementKey; // Store the element itself.
+    currentEntry.frequency = occurrenceMap[elementKey]; // Store its frequency.
+    elementDetails.push(currentEntry); // Add the object to our details array.
 
-    // Prepare a list to hold detailed records of each element.
-    const elementDetailsList = [ ];
-    let highestFrequency = -Infinity ; // Initialize highest frequency found so far.
+    // Update the highest frequency found so far.
+    if (occurrenceMap[elementKey] > highestFrequency) {
+      highestFrequency = occurrenceMap[elementKey];
+    }
+  });
 
-    // Iterate through each unique element to build detailed records and find the maximum frequency.
-    uniqueElements.forEach( ( itemIdentifier ) => {
+  const topItems = []; // This array will hold elements that have the highest frequency.
+  elementDetails.forEach((detail) => {
+    // Check if the current element's frequency matches the highest frequency.
+    if (detail.frequency === highestFrequency) {
+      topItems.push(detail.identifier); // If it matches, add the element to the top items.
+    }
+  });
 
-        const currentItemRecord = { }; // Create a temporary object for the current item's details.
-        currentItemRecord.itemIdentifier = itemIdentifier ; // Store the item itself.
-        currentItemRecord.itemCount = frequencyMap[ itemIdentifier ] ; // Store its frequency.
-        elementDetailsList.push( currentItemRecord ) ; // Add the record to our list.
+  topItems.sort(); // Sort the top items alphabetically.
 
-        // Update the highest frequency if the current item's count is greater.
-        if ( frequencyMap[ itemIdentifier ] > highestFrequency ) {
-            highestFrequency = frequencyMap[ itemIdentifier ] ;
-        }
-    } );
-
-    // Filter the detailed records to find all items that have the highest frequency.
-    const maxFrequencyItems = [ ];
-    elementDetailsList.forEach( ( dataRecord ) => {
-        if ( dataRecord.itemCount === highestFrequency ) {
-            maxFrequencyItems.push( dataRecord.itemIdentifier ) ;
-        }
-    } ) ;
-
-    // Sort the resulting items alphabetically.
-    maxFrequencyItems.sort ( ) ;
-
-    // Print each item with the highest frequency to the console.
-    maxFrequencyItems.forEach( ( outputItem ) => { console.log( outputItem ) ; } ) ;
-} ;
-
+  // Print each of the sorted top items to the console.
+  topItems.forEach((item) => {
+    console.log(item);
+  });
+};
 
 // Read input from standard input and pass it to the main processing function.
-processInputData ( require('fs').readFileSync( '/dev/stdin' , 'utf8' ) ) ;
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

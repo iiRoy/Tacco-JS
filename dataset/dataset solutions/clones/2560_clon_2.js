@@ -1,58 +1,36 @@
-// This core routine orchestrates the evaluation of game outcomes based on provided data.
-function ProcessGameResults(rawData) {
+function ProcessInput(rawData) {
+    // Split the incoming raw data string into individual lines.
+    rawData = rawData.split("\n");
 
-    // Begin by segmenting the entire input block into an array,
-    // where each element represents a distinct line of information.
-    let linesOfData = rawData.split("\n");
+    // Extract configuration parameters from the initial line.
+    // These parameters are space-separated numbers.
+    var configParams = rawData[0].split(" ").map(Number);
 
-    // The inaugural line of the input stream typically contains
-    // critical configuration parameters for the game:
-    // N (the count of all competing entities),
-    // K (the initial point allocation for each entity), and
-    // Q (the penalty points subtracted for each incorrect query).
-    const gameConfigValues = linesOfData[0].split(" ").map(Number);
+    // Initialize a dynamic data storage array.
+    // Its size is determined by the first configuration parameter plus one.
+    // Each element is pre-filled with a calculated value based on the second and third parameters.
+    var dataStore = new Array(configParams[0] + 1).fill(configParams[1] - configParams[2]);
 
-    // For enhanced readability, let's assign these configuration values
-    // to distinct, descriptive constants.
-    const totalCompetitors = gameConfigValues[0];      // Represents N
-    const initialScorePerCompetitor = gameConfigValues[1]; // Represents K
-    const pointDeductionPerRound = gameConfigValues[2]; // Represents Q
+    // Remove the first line from the raw data, as it has been processed.
+    rawData.shift();
 
-    // Construct a new array to meticulously track the scores of every competitor.
-    // The array's dimension is `totalCompetitors + 1` to accommodate
-    // 1-based indexing for competitor IDs, leaving index 0 unused.
-    // Each competitor's score is initialized to `initialScorePerCompetitor - pointDeductionPerRound`.
-    let competitorScoreRegister = new Array(totalCompetitors + 1).fill(
-        initialScorePerCompetitor - pointDeductionPerRound
-    );
-
-    // Having processed the configuration line, it is now expendable.
-    // We remove it from our `linesOfData` array to focus on subsequent data.
-    linesOfData.shift();
-
-    // Traverse through the remaining data lines. Each line signifies
-    // a competitor's identification number, indicating they successfully
-    // answered a question or performed a positive action.
-    linesOfData.forEach(function(competitorId) {
-        // For each successful action, increment the corresponding competitor's score.
-        competitorScoreRegister[competitorId]++;
+    // Iterate through the remaining lines of raw data.
+    // Each line provides an index for which to increment a counter in the data store.
+    rawData.forEach(function(itemIndex) {
+        dataStore[itemIndex]++; // Increment the count at the specified index.
     });
 
-    // The element at index 0 of `competitorScoreRegister` was intentionally left unused.
-    // We now discard it, as it holds no relevant score information for any actual competitor.
-    competitorScoreRegister.shift();
+    // Discard the first element of the data store array.
+    // This is a common pattern when problem statements use 1-based indexing.
+    dataStore.shift();
 
-    // Finally, iterate through the adjusted scores of all participants.
-    // For every competitor, determine if their final score is at least one.
-    competitorScoreRegister.forEach(function(finalAchievementPoints) {
-        // Output "Yes" if the competitor's final score is one or greater,
-        // signifying a positive outcome; otherwise, output "No".
-        console.log(finalAchievementPoints >= 1 ? "Yes" : "No");
+    // Process each element in the modified data store and output a result.
+    dataStore.forEach(function(currentValue) {
+        // Print "Yes" if the current value is one or greater, otherwise print "No".
+        console.log(currentValue >= 1 ? "Yes" : "No");
     });
 }
 
-// Initiate the entire game result processing pipeline.
-// This involves reading the raw input from the standard input stream,
-// decoding it as UTF-8, and then stripping any extraneous leading or
-// trailing whitespace before passing it to our main processing function.
-ProcessGameResults(require("fs").readFileSync("/dev/stdin", "utf8").trim());
+// Invoke the primary processing function.
+// It reads content from standard input, decodes it as UTF-8, and removes leading/trailing whitespace.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8").trim());

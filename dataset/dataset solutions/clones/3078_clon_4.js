@@ -1,21 +1,15 @@
-const numericSequence = [2, 2, 2];
-let constructedIdentifier = numericSequence.reduce((accumulator, item, index, array) => {
-    accumulator += item.toString();
-    if (index < array.length - 1) {
-        accumulator += ',';
-    }
-    return accumulator;
-}, '');
+function processDataAndOutput() {
+  const numericComponents = [2, 2, 2];
+  const formattedString = numericComponents.reduce((accumulator, currentValue, currentIndex) => {
+    return accumulator + (currentIndex > 0 ? ',' : '') + currentValue;
+  }, '');
 
-const affirmationTokens = [
-    { key: 0, val: 'Y' },
-    { key: 1, val: 'e' },
-    { key: 2, val: 's' }
-];
+  globalThis.dataPayload = formattedString;
 
-let finalStatement = affirmationTokens
-    .sort((x, y) => x.key - y.key)
-    .map(token => token.val)
-    .join('');
+  const characterCodes = [89, 101, 115];
+  const finalMessage = String.fromCharCode(...characterCodes);
 
-console.group(finalStatement);
+  console.log(finalMessage);
+}
+
+processDataAndOutput();

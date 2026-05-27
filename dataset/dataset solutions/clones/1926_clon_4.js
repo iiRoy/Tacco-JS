@@ -1,35 +1,18 @@
-function processInputAndOutput() {
-    const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
-    const numericElements = decomposeStringIntoNumbers(rawData);
-
-    const firstOperand = numericElements[0];
-    const secondDivisor = numericElements[1];
-    const upperLimitNum = numericElements[2];
-
-    const finalResult = calculateMaximumFractionalPart(firstOperand, secondDivisor, upperLimitNum);
-    console.log(finalResult);
+function executeProgram(programInput) {
+    const [factorA, divisorB, upperLimitN] = parseInputString(programInput);
+    console.log(determineMaxRemainderValue(factorA, divisorB, upperLimitN));
 }
 
-function decomposeStringIntoNumbers(textualSource) {
-    const numberStrings = textualSource.match(/\d+/g);
-    if (!numberStrings || numberStrings.length < 3) {
-        throw new Error("Insufficient numeric data in source string.");
-    }
-    return numberStrings.map(Number);
+function parseInputString(rawInputText) {
+    const [valA, valB, valN] = rawInputText.split(' ').map(Number);
+    return [valA, valB, valN];
 }
 
-function calculateMaximumFractionalPart(factorA, divisorB, capN) {
-    const effectiveXRange = (capN < divisorB ? capN : Math.floor(capN / divisorB)) + 1;
-
-    let ultimateValue;
-
-    if (effectiveXRange >= divisorB) {
-        ultimateValue = Math.floor(factorA * (divisorB - 1) / divisorB);
-    } else {
-        ultimateValue = Math.floor(factorA * effectiveXRange / divisorB);
-    }
-
-    return ultimateValue;
+function determineMaxRemainderValue(factorA, divisorB, upperLimitN) {
+    const iterationLimitBase = (upperLimitN < divisorB) ? upperLimitN : Math.floor(upperLimitN / divisorB);
+    const effectiveXUpperBound = iterationLimitBase + 1;
+    const maxRelevantRemainder = Math.min(effectiveXUpperBound, divisorB - 1);
+    return (factorA * maxRelevantRemainder / divisorB) | 0;
 }
 
-processInputAndOutput();
+executeProgram(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,152 +1,128 @@
-const squaredEuclideanDistance = (firstPoint, secondPoint) => {
-    const horizontalDelta = firstPoint.posH - secondPoint.posH;
-    const verticalDelta = firstPoint.posV - secondPoint.posV;
-    return (horizontalDelta ** 2) + (verticalDelta ** 2);
-};
+function createPoint(xCoord, yCoord) {
+    return { x: xCoord, y: yCoord };
+}
 
-const calculateMidpoint = (firstPoint, secondPoint) => ({
-    posH: (firstPoint.posH + secondPoint.posH) / 2,
-    posV: (firstPoint.posV + secondPoint.posV) / 2,
-});
+function measureSquaredDistance(pointAlpha, pointBeta) {
+    return (pointAlpha.x - pointBeta.x)**2 + (pointAlpha.y - pointBeta.y)**2;
+}
 
-const verifyAllPointsEnclosed = (cirCenter, cirSqRadius, entirePointSet) => {
-    for (const currentPoint of entirePointSet) {
-        if (squaredEuclideanDistance(currentPoint, cirCenter) > cirSqRadius) {
+function checkPointEnclosure(targetPoint, circleCenter, circleRadiusSq) {
+    return measureSquaredDistance(targetPoint, circleCenter) <= circleRadiusSq;
+}
+
+function verifyAllEnclosed(allPoints, circleCenter, circleRadiusSq) {
+    for (const currentPoint of allPoints) {
+        if (!checkPointEnclosure(currentPoint, circleCenter, circleRadiusSq)) {
             return false;
         }
     }
     return true;
-};
+}
 
-const findCircleParameters = (pA, pB, pC) => {
-    const distAB_sq = squaredEuclideanDistance(pA, pB);
-    const distAC_sq = squaredEuclideanDistance(pA, pC);
-    const distBC_sq = squaredEuclideanDistance(pB, pC);
+function deriveCircleFromTriplet(pA, pB, pC) {
+    const distSqAB = measureSquaredDistance(pA, pB);
+    const distSqAC = measureSquaredDistance(pA, pC);
+    const distSqBC = measureSquaredDistance(pB, pC);
 
-    const segmentMeasures = [
-        { value: distAB_sq, identifier: 0 },
-        { value: distAC_sq, identifier: 1 },
-        { value: distBC_sq, identifier: 2 },
+    const edgeData = [
+        { lengthSquared: distSqAB, p1: pA, p2: pB },
+        { lengthSquared: distSqAC, p1: pA, p2: pC },
+        { lengthSquared: distSqBC, p1: pB, p2: pC }
     ];
+    edgeData.sort((e1, e2) => e2.lengthSquared - e1.lengthSquared);
 
-    segmentMeasures.sort((s1, s2) => s2.value - s1.value);
+    let circleCenter, circleRadiusSq;
 
-    if (segmentMeasures[0].value > segmentMeasures[1].value + segmentMeasures[2].value) {
-        let definingPoint1, definingPoint2;
-        switch (segmentMeasures[0].identifier) {
-            case 0:
-                definingPoint1 = pA;
-                definingPoint2 = pB;
-                break;
-            case 1:
-                definingPoint1 = pA;
-                definingPoint2 = pC;
-                break;
-            case 2:
-                definingPoint1 = pB;
-                definingPoint2 = pC;
-                break;
-        }
-        return {
-            center: calculateMidpoint(definingPoint1, definingPoint2),
-            sqRadius: squaredEuclideanDistance(definingPoint1, definingPoint2) / 4,
-        };
+    if (edgeData[0].lengthSquared > edgeData[1].lengthSquared + edgeData[2].lengthSquared) {
+        const diamP1 = edgeData[0].p1;
+        const diamP2 = edgeData[0].p2;
+        circleCenter = createPoint((diamP1.x + diamP2.x) / 2, (diamP1.y + diamP2.y) / 2);
+        circleRadiusSq = measureSquaredDistance(diamP1, circleCenter);
     } else {
-        const x1 = pA.posH, y1 = pA.posV;
-        const x2 = pB.posH, y2 = pB.posV;
-        const x3 = pC.posH, y3 = pC.posV;
+        const x1 = pA.x, y1 = pA.y;
+        const x2 = pB.x, y2 = pB.y;
+        const x3 = pC.x, y3 = pC.y;
 
-        const s1 = (x1 ** 2) + (y1 ** 2);
-        const s2 = (x2 ** 2) + (y2 ** 2);
-        const s3 = (x3 ** 2) + (y3 ** 2);
+        const numY_term1 = (x3 - x1) * (x1**2 + y1**2 - x2**2 - y2**2);
+        const numY_term2 = (x2 - x1) * (x1**2 + y1**2 - x3**2 - y3**2);
+        const denY_term1 = 2 * (x3 - x1) * (y1 - y2);
+        const denY_term2 = 2 * (x2 - x1) * (y1 - y3);
 
-        const determinant = 2 * (x1 * (y2 - y3) + x2 * (y3 - y1) + x3 * (y1 - y2));
+        const y_numerator = numY_term1 - numY_term2;
+        const y_denominator = denY_term1 - denY_term2;
 
-        const centralY = ((x3 - x1) * (s1 - s2) - (x2 - x1) * (s1 - s3)) / determinant;
-        let centralX;
-
-        if (x1 !== x2) {
-            centralX = (s2 - s1 + 2 * centralY * (y1 - y2)) / (2 * (x2 - x1));
+        let cY;
+        if (y_denominator === 0) {
+            cY = y_numerator / y_denominator;
         } else {
-            centralX = (s3 - s1 + 2 * centralY * (y1 - y3)) / (2 * (x3 - x1));
+            cY = y_numerator / y_denominator;
         }
 
-        return {
-            center: { posH: centralX, posV: centralY },
-            sqRadius: squaredEuclideanDistance(pA, { posH: centralX, posV: centralY }),
-        };
+        let cX;
+        if (x1 !== x2) {
+            const numX_term1 = (2 * y1 - y2) * cY;
+            const numX_term2 = (x1**2 + y1**2 - x2**2 - y2**2);
+            const denX = 2 * (x2 - x1);
+            cX = (numX_term1 - numX_term2) / denX;
+        } else {
+            const numX_term1 = (2 * y1 - y3) * cY;
+            const numX_term2 = (x1**2 + y1**2 - x3**2 - y3**2);
+            const denX = 2 * (x3 - x1);
+            cX = (numX_term1 - numX_term2) / denX;
+        }
+        circleCenter = createPoint(cX, cY);
+        circleRadiusSq = measureSquaredDistance(pA, circleCenter);
     }
-};
-
-if (!String.prototype.partition) {
-    String.prototype.partition = function(separator) {
-        return this.split(separator);
-    };
-}
-if (!Array.prototype.transform) {
-    Array.prototype.transform = function(mapper) {
-        return this.map(mapper);
-    };
-}
-if (!Array.prototype.removeFirstEntry) {
-    Array.prototype.removeFirstEntry = function() {
-        return this.shift();
-    };
+    return { center: circleCenter, radiusSq: circleRadiusSq };
 }
 
-const processInputData = (rawData) => {
-    const lines = rawData.partition(/\r?\n/).filter(line => line.length > 0);
-    let quantityOfCoordinates = Number.parseInt(lines.removeFirstEntry());
+function* generatePointCombinations(pointSet, count) {
+    const totalPoints = pointSet.length;
+    if (count < 0 || count > totalPoints) return;
 
-    const coordinateSet = lines
-        .slice(0, quantityOfCoordinates)
-        .transform(entry => {
-            const parts = entry.partition(' ').transform(Number.parseInt);
-            return { posH: parts[0], posV: parts[1] };
-        });
-
-    let finalResult = 0;
-
-    if (coordinateSet.length === 2) {
-        finalResult = (squaredEuclideanDistance(coordinateSet[0], coordinateSet[1]) ** 0.5) / 2;
-    } else {
-        function* createIndexCombinations(totalElements, combinationSize) {
-            function* generate(currentCombo = [], start = 0) {
-                if (currentCombo.length === combinationSize) {
-                    yield currentCombo;
-                    return;
-                }
-                for (let currentIter = start; currentIter < totalElements; currentIter++) {
-                    currentCombo.push(currentIter);
-                    yield* generate(currentCombo, currentIter + 1);
-                    currentCombo.pop();
-                }
-            }
-            yield* generate();
+    function* recursiveCombination(startIndex, currentCombination) {
+        if (currentCombination.length === count) {
+            yield currentCombination;
+            return;
         }
+        for (let i = startIndex; i < totalPoints; i++) {
+            yield* recursiveCombination(i + 1, [...currentCombination, pointSet[i]]);
+        }
+    }
+    yield* recursiveCombination(0, []);
+}
 
-        const combinationIterator = createIndexCombinations(quantityOfCoordinates, 3);
+function processInputData(rawInput) {
+    const lines = rawInput.split("\n");
+    const pointCount = parseInt(lines[0]);
 
-        for (const [idxA, idxB, idxC] of combinationIterator) {
-            const pA = coordinateSet[idxA];
-            const pB = coordinateSet[idxB];
-            const pC = coordinateSet[idxC];
+    const allPoints = lines.slice(1, pointCount + 1).map(line => {
+        const coords = line.split(" ").map(Number);
+        return createPoint(coords[0], coords[1]);
+    });
 
-            const candidateCircle = findCircleParameters(pA, pB, pC);
+    let finalRadius = 0;
 
-            if (verifyAllPointsEnclosed(candidateCircle.center, candidateCircle.sqRadius, coordinateSet)) {
-                finalResult = candidateCircle.sqRadius ** 0.5;
+    if (pointCount === 2) {
+        const p1 = allPoints[0];
+        const p2 = allPoints[1];
+        finalRadius = Math.sqrt(measureSquaredDistance(p1, p2)) / 2;
+    } else {
+        for (const triplet of generatePointCombinations(allPoints, 3)) {
+            const [p_i, p_j, p_k] = triplet;
+            const candidateCircle = deriveCircleFromTriplet(p_i, p_j, p_k);
+
+            if (verifyAllEnclosed(allPoints, candidateCircle.center, candidateCircle.radiusSq)) {
+                finalRadius = Math.sqrt(candidateCircle.radiusSq);
                 break;
             }
         }
     }
 
-    process.stdout.write(finalResult.toString());
-    return finalResult;
-};
+    console.log('%s', finalRadius);
+    return finalRadius;
+}
 
 if (typeof require !== 'undefined' && require.main === module) {
-    const fileSystem = require("fs");
-    const programInput = fileSystem.readFileSync("/dev/stdin", "utf8");
-    processInputData(programInput);
+    processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
 }

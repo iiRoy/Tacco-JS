@@ -1,75 +1,36 @@
-let stdinReference = process.stdin;
-let stdoutReference = process.stdout;
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
 
-stdinReference.resume();
-stdinReference.setEncoding('utf8');
+const ASCII_LOWER_A = 0x61;
+const ALPHABET_SIZE = 26;
+const CAESAR_SHIFT_PER_STEP = 1;
 
-const significantTermList = Object.freeze(['the', 'this', 'that']);
-
-/**
- * Processes incoming data from standard input.
- * It segments the data by newline characters and then initiates a rotational cipher analysis for each segment.
- * @param {string} rawInputChunk - The raw data string received from the input stream.
- */
-function handleInputDataChunk(rawInputChunk) {
-    const stringifiedInput = String(rawInputChunk);
-
-    const textSegments = stringifiedInput.split('\n').filter(segment => segment.trim().length > 0);
-
-    textSegments.forEach(segment => {
-        initiateRotationalAnalysis(segment, 0);
-    });
+function applySingleCharShift(charToProcess) {
+  const charCode = charToProcess.charCodeAt(0);
+  const relativeCode = charCode - ASCII_LOWER_A;
+  const shiftedRelativeCode = (relativeCode + CAESAR_SHIFT_PER_STEP) % ALPHABET_SIZE;
+  return String.fromCharCode(ASCII_LOWER_A + shiftedRelativeCode);
 }
 
-stdinReference.on('data', handleInputDataChunk);
+function caesarCipherRotator(currentTextLine, currentIterationCount) {
+  const effectiveIterationCount = currentIterationCount | 0;
 
-const ALPHABET_LENGTH = 26;
-const ASCII_CODE_FOR_LOWER_A = 'a'.charCodeAt(0);
-const BASIC_ROTATION_OFFSET = 1;
+  if (effectiveIterationCount >= ALPHABET_SIZE) {
+    return;
+  }
 
-/**
- * Applies a single character rotation (ROT1) to a given lowercase letter.
- * Non-lowercase letters are returned unchanged.
- * @param {string} charToRotate - The character to be rotated.
- * @returns {string} The rotated character or the original character.
- */
-function applySingleCharRotation(charToRotate) {
-    const characterCode = charToRotate.charCodeAt(0);
+  const transformedLine = String(currentTextLine).replace(/[a-z]/g, applySingleCharShift);
 
-    if (characterCode >= ASCII_CODE_FOR_LOWER_A && characterCode < ASCII_CODE_FOR_LOWER_A + ALPHABET_LENGTH) {
-        const rotatedCode = ASCII_CODE_FOR_LOWER_A + (characterCode - ASCII_CODE_FOR_LOWER_A + BASIC_ROTATION_OFFSET) % ALPHABET_LENGTH;
-        return String.fromCharCode(rotatedCode);
-    }
-    return charToRotate;
+  if (/the|this|that/.test(transformedLine)) {
+    process.stdout.write(transformedLine + '\n');
+  }
+
+  caesarCipherRotator(transformedLine, effectiveIterationCount + 1);
 }
 
-/**
- * Recursively applies a ROT1 shift to a string, checks for predefined keywords, and outputs if found.
- * This function simulates applying ROT1, then ROT2 (ROT1 of ROT1), ..., up to ROT26 to the initial string.
- * @param {string} currentSegment - The string resulting from previous rotations.
- * @param {number} rotationCycleCount - The current count of ROT1 applications.
- */
-function initiateRotationalAnalysis(currentSegment, rotationCycleCount) {
-    if (rotationCycleCount >= ALPHABET_LENGTH) {
-        return;
-    }
-
-    let nextRotatedSegment = '';
-    for (let charIdx = 0; charIdx < currentSegment.length; charIdx++) {
-        nextRotatedSegment += applySingleCharRotation(currentSegment[charIdx]);
-    }
-
-    let matchFound = false;
-    for (const keyword of significantTermList) {
-        if (nextRotatedSegment.includes(keyword)) {
-            matchFound = true;
-            break;
-        }
-    }
-
-    if (matchFound) {
-        stdoutReference.write(nextRotatedSegment + '\n');
-    }
-
-    initiateRotationalAnalysis(nextRotatedSegment, rotationCycleCount + 1);
+function processInputBuffer(rawInputData) {
+  const lines = rawInputData.split('\n');
+  lines.forEach(caesarCipherRotator);
 }
+
+process.stdin.on('data', processInputBuffer);

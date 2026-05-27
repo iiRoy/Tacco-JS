@@ -1,33 +1,30 @@
-const dataStream = require('fs').readFileSync('/dev/stdin', 'utf8');
-const instructionLines = dataStream.trim().split('\n');
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
+var lineSegments = rawData.trim().split("\n");
+var configParams = lineSegments.shift().split(" ").map(Number);
 
-const [totalPlayers, totalUpdates] = instructionLines.shift().split(' ').map(Number);
+var playerScores = Array.from({ length: configParams[0] }, () => 0);
 
-const playerPoints = new Map();
-for (let participantKey = 0; participantKey < totalPlayers; participantKey++) {
-    playerPoints.set(participantKey, 0);
+function determineLeader(scoresArray) {
+    return scoresArray.reduce((accumulator, currentScore, currentIndex) => {
+        if (currentScore > accumulator.score) {
+            return { score: currentScore, identifier: currentIndex };
+        }
+        return accumulator;
+    }, { score: -Infinity, identifier: -1 });
 }
 
-instructionLines.forEach(function(commandText) {
-    const [targetPlayerKey, scoreChange] = commandText.split(' ').map(Number);
-    const adjustedPlayerKey = targetPlayerKey - 1;
+let { score: currentHighestScore, identifier: leadingPlayerIdentifier } = determineLeader(playerScores);
 
-    const currentScore = playerPoints.get(adjustedPlayerKey);
-    playerPoints.set(adjustedPlayerKey, currentScore + scoreChange);
+for (const updateEntry of lineSegments) {
+    var updateComponents = updateEntry.split(" ").map(Number);
+    var playerIndex = updateComponents[0] - 1;
+    var scoreAdjustment = updateComponents[1];
 
-    const [topPlayerIdentifier, topScoreValue] = Array.from(playerPoints.entries()).reduce(
-        ([maxIdentifier, maxVal], [currentIdentifier, currentVal]) => {
-            if (currentVal > maxVal) {
-                return [currentIdentifier, currentVal];
-            } else if (currentVal === maxVal) {
-                if (currentIdentifier < maxIdentifier) {
-                    return [currentIdentifier, currentVal];
-                }
-            }
-            return [maxIdentifier, maxVal];
-        },
-        [-1, -Infinity]
-    );
+    playerScores[playerIndex] += scoreAdjustment;
 
-    console.log(`${topPlayerIdentifier + 1} ${topScoreValue}`);
-});
+    const leaderInfo = determineLeader(playerScores);
+    currentHighestScore = leaderInfo.score;
+    leadingPlayerIdentifier = leaderInfo.identifier;
+
+    console.log((leadingPlayerIdentifier + 1) + " " + currentHighestScore);
+}

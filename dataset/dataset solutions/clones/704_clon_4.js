@@ -1,78 +1,62 @@
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
 
-let collectedInput = '';
+let accumulatedInput = '';
 
-const displayResult = console.log;
-
-process.stdin.on('data', (inputPart) => {
-    collectedInput += inputPart;
+process.stdin.on('data', (inputChunk) => {
+    accumulatedInput += inputChunk;
 });
 
 process.stdin.on('end', () => {
-    const rawLines = collectedInput.split('\n');
-    const cleanedNumbersAsStrings = rawLines.filter(currentLine => currentLine.trim() !== '');
+    const numericSequence = accumulatedInput
+        .split('\n')
+        .filter(Boolean)
+        .map(Number);
 
-    const numericalValues = cleanedNumbersAsStrings.map(valueString => parseInt(valueString, 10));
-
-    handleDataSegments(numericalValues);
+    processAllBlocks(numericSequence);
 });
 
-function handleDataSegments(sourceList) {
-    if (sourceList.length < 2) {
-        return;
+const printResult = console.log;
+
+function* blockIterator(sourceNumbers) {
+    let currentPosition = 0;
+    while (currentPosition < sourceNumbers.length) {
+        const segmentLength = sourceNumbers[currentPosition];
+
+        if (currentPosition + 1 >= sourceNumbers.length) {
+            break;
+        }
+
+        const currentSegmentData = sourceNumbers.slice(currentPosition + 1, currentPosition + 1 + segmentLength);
+
+        yield currentSegmentData;
+
+        currentPosition += 1 + segmentLength;
+    }
+}
+
+function calculateTrimmedMean(dataElements) {
+    if (dataElements.length < 2) {
+        return NaN;
     }
 
-    const currentSegmentLength = sourceList[0];
-    const workingSegment = sourceList.slice(1, 1 + currentSegmentLength);
-    const subsequentSegments = sourceList.slice(1 + currentSegmentLength);
+    const orderedElements = [...dataElements].sort((a, b) => a - b);
 
-    let temporaryProcessingArray = [...workingSegment];
+    const middleElements = orderedElements.slice(1, orderedElements.length - 1);
 
-    let detectedMinimum = Infinity;
-    if (temporaryProcessingArray.length > 0) {
-        detectedMinimum = temporaryProcessingArray[0];
-        for (let i = 1; i < temporaryProcessingArray.length; i++) {
-            if (temporaryProcessingArray[i] < detectedMinimum) {
-                detectedMinimum = temporaryProcessingArray[i];
-            }
-        }
+    const totalValue = middleElements.reduce((accumulatedValue, currentValue) => accumulatedValue + currentValue, 0);
+    const elementCount = middleElements.length;
+
+    if (elementCount === 0) {
+        return NaN;
     }
 
-    let minimumElementRemoved = false;
-    temporaryProcessingArray = temporaryProcessingArray.filter(itemValue => {
-        if (!minimumElementRemoved && itemValue === detectedMinimum) {
-            minimumElementRemoved = true;
-            return false;
-        }
-        return true;
-    });
+    return Math.floor(totalValue / elementCount);
+}
 
-    let detectedMaximum = -Infinity;
-    if (temporaryProcessingArray.length > 0) {
-        detectedMaximum = temporaryProcessingArray[0];
-        for (let i = 1; i < temporaryProcessingArray.length; i++) {
-            if (temporaryProcessingArray[i] > detectedMaximum) {
-                detectedMaximum = temporaryProcessingArray[i];
-            }
-        }
+function processAllBlocks(numericSequence) {
+    for (const segment of blockIterator(numericSequence)) {
+        const result = calculateTrimmedMean(segment);
+        printResult(result);
     }
-
-    let maximumElementRemoved = false;
-    temporaryProcessingArray = temporaryProcessingArray.filter(itemValue => {
-        if (!maximumElementRemoved && itemValue === detectedMaximum) {
-            maximumElementRemoved = true;
-            return false;
-        }
-        return true;
-    });
-
-    let totalAccumulated = 0;
-    for (let j = 0; j < temporaryProcessingArray.length; j++) {
-        totalAccumulated += temporaryProcessingArray[j];
-    }
-
-    displayResult(Math.floor(totalAccumulated / temporaryProcessingArray.length));
-
-    handleDataSegments(subsequentSegments);
 }

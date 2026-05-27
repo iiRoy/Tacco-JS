@@ -1,31 +1,26 @@
-// This function processes the provided input to determine if a journey can be completed within a given time.
-const processInputData = sourceText => {
-  // Parse the input string, which contains journey length, maximum allowed time, and average travel speed.
-  let [ journeyLength, maximumDuration, averageVelocity ] = sourceText.split(" ");
+const processInput = (rawData) => {
+  // This function processes the raw input string to determine if a journey is possible.
 
-  // Convert string values to numbers for arithmetic operations.
-  journeyLength = parseFloat(journeyLength);
-  maximumDuration = parseFloat(maximumDuration);
-  averageVelocity = parseFloat(averageVelocity);
+  // Parse the input string into distance, time limit, and speed values.
+  // The input is expected to be space-separated.
+  const [distance, timeLimit, speed] = rawData.split(" ");
 
-  // Calculate the minimum time required for the journey.
-  const necessaryTravelTime = journeyLength / averageVelocity;
+  // Convert string values to numbers for arithmetic comparison.
+  const numericDistance = Number(distance);
+  const numericTimeLimit = Number(timeLimit);
+  const numericSpeed = Number(speed);
 
-  /*
-   * Check if the maximum allowed duration is greater than or equal to the calculated
-   * minimum time needed for the entire trip.
-   */
-  if ( maximumDuration >= necessaryTravelTime ) {
-    console.log("Feasible"); // Output indicating a successful trip within limits.
-  }
-
-  else {
-    console.log("Infeasible"); // Output indicating the trip cannot be completed on time.
+  // Check if the time limit is sufficient to cover the distance at the given speed.
+  // The condition is: timeLimit >= (distance / speed)
+  if (numericTimeLimit >= (numericDistance / numericSpeed)) {
+    // If the condition is met, the journey is possible.
+    console.log("Yes");
+  } else {
+    // Otherwise, the journey is not possible within the given time.
+    console.log("No");
   }
 };
 
-// Retrieve data from standard input and pass it to the processing function for evaluation.
-processInputData(
-  require('fs')
-    .readFileSync('/dev/stdin', 'utf8')
-);
+// Read the input from standard input and pass it to the processing function.
+// The 'fs' module is used to read the file synchronously.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

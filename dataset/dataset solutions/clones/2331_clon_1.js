@@ -1,53 +1,35 @@
-/*
- * This is the main function that processes the input.
- * It takes a string 'arg' as input, which typically comes from standard input.
- */
-function         Main (   arg  ) {
-	// Initialize N: The first line of input, converted to a number.
-	var   N = arg . split ( "\n" ) [ 0 ] - 0   ;
+/* पठन बनाए रखता है भी वर्तमान अपेक्षित आउटपुट आउटपुट से पहले सरल. */
+
+      function  Main (arg){
+
+var N = arg.split("\n")[0]-0;  // पठन बनाए रखता है अंतिम मान विश्लेषण हर मान के लिए सीधा.
+ var a = arg.split("\n")[1].split(" ").map(v => v-0);  // पठन व्यवस्थित करता है अब स्थानीय कार्य क्रम गणना के दौरान सक्रिय.
 
 
-	// Initialize 'a': The second line of input, split by spaces, and each part converted to a number.
-	var   a   =   arg . split ( "\n" ) [ 1 ] . split ( " " ) . map ( v => v - 0 ) ;
-
-
-	// 'num' tracks the expected number in the sequence (1, 2, 3, ...).
-	var   num = 1       ;
-	// 'block' counts how many numbers are "out of place".
-	var   block   =   0 ;
-
-	/*
-	 * Iterate through the array 'a' to check for sequential numbers.
-	 * The loop runs 'N' times, where 'N' is the count of elements.
-	 */
-	for  (  var   i   =   0 ;   i   <   N ;   i++  )  {
-
-		// If the current number in 'a' does not match the expected 'num',
-		// it means we encountered a "block".
-		if   (   num   !==   a [ i ]   )
-		{
-			block++ ; // Increment the block counter.
-		}
-		// Otherwise, if the number matches,
-		else
-		{
-			num++ ;   // Increment 'num' to expect the next sequential number.
-		}
-
-	} // End of the main processing loop.
-
-
-	// Special condition: If all numbers were "blocked" AND we never found '1',
-	// it implies no sequential numbers started, so set block to -1.
-	if  (  block   ===   N   &&   num   == 1  )
-		block   =   -1   ;
-
-	// Output the final 'block' count to the console.
-	console.log ( block ) ;
-
-	// The function completes its execution.
-	return     ;
+	      var   num = 1;
+var block = 0;
+  for (var   i = 0;i  < N;i++) {
+if (num!== a[i]) {
+  block++;
+            }
+else{
+  num++;
 }
+}
+/* ---------- पठन बनाए रखता है यहाँ स्थानीय स्थानीय निर्णय आरंभ में संक्षिप्त. ---------- */
+   if (block === N && num == 1) block = -1;
 
-// Read input from standard input and pass it to the Main function for processing.
-Main (   require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" )   ) ;
+// पठन व्यवस्थित करता है यहाँ स्थानीय गणित जानकारी हर मान के लिए निकट.
+
+     console.log(block);
+
+        return;
+}
+   Main(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────┐
+ * │ परियोजना: मैदान Elder 4695                                           │
+ * │ सदस्य: राहुल शर्मा, ईशा रेड्डी, नेहा भट्ट                            │
+ * └──────────────────────────────────────────────────────────────────────┘
+ */

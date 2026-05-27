@@ -1,30 +1,17 @@
-var evaluateNumericalSequence = function(textualDatum) {
-    var numericalComponents = textualDatum.match(/-?\d+/g).map(Number);
+function processInputData(sourceContent) {
+  const [valX, valA, valB] = sourceContent.split(' ').map(Number);
 
-    var primaryFactor = numericalComponents[0];
-    var initialValue = numericalComponents[1];
-    var finalValue = numericalComponents[2];
+  const calculatedDifference = valB - valA;
 
-    var deltaMeasure = finalValue - initialValue;
-    var upperBoundary = primaryFactor + 1;
+  const decisionMatrix = [
+    { condition: (diff, xVal) => diff <= 0, outcome: "delicious" },
+    { condition: (diff, xVal) => diff < xVal + 1, outcome: "safe" },
+    { condition: (diff, xVal) => true, outcome: "dangerous" }
+  ];
 
-    var outcomeDesignation =
-        (deltaMeasure <= 0) ? "delightful" :
-        (deltaMeasure < upperBoundary) ? "secure" :
-        "hazardous";
+  const finalDecision = decisionMatrix.find(entry => entry.condition(calculatedDifference, valX));
 
-    return outcomeDesignation;
-};
+  console.log(finalDecision.outcome);
+}
 
-var obtainSourceText = function() {
-    var fileSystemAccess = globalThis['require']('node:fs');
-    var standardInputPath = '/dev/stdin';
-    var textEncodingFormat = 'utf8';
-    return fileSystemAccess['readFileSync'](standardInputPath, textEncodingFormat);
-};
-
-var transmitResult = function(finalMessage) {
-    globalThis['console']['log'](finalMessage);
-};
-
-transmitResult(evaluateNumericalSequence(obtainSourceText()));
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

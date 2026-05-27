@@ -1,41 +1,26 @@
-const obtainInputContent = () => Buffer.from(require('node:fs').readFileSync(0)).toString().trim();
+const fileSystem = require("fs");
 
-const calculateCommonDivisorRecursively = (valueOne, valueTwo) => {
-  if (valueTwo === 0) {
-    return valueOne;
+const calculateGreatestCommonDivisor = (firstNumber, secondNumber) => {
+  if (secondNumber === 0) {
+    return firstNumber;
   }
-  return calculateCommonDivisorRecursively(valueTwo, valueOne % valueTwo);
+  return calculateGreatestCommonDivisor(secondNumber, firstNumber % secondNumber);
 };
 
-const deriveLeastCommonMultiple = (initialVal, finalVal, divisorResult) => {
-  return (initialVal * finalVal) / divisorResult;
+const determineLeastCommonMultiple = (valA, valB, commonDivisor) => {
+  return (valA * valB) / commonDivisor;
 };
 
-const transformLineToOutput = (sourceLine) => {
-  if (!sourceLine.trim()) {
-    return null;
-  }
-  const stringComponents = sourceLine.split(' ');
-  const numA = Number(stringComponents[0]);
-  const numB = Number(stringComponents[1]);
+const inputContent = fileSystem.readFileSync("/dev/stdin", "utf8");
+const dataLines = inputContent.trim().split('\n');
 
-  const gcdValue = calculateCommonDivisorRecursively(numA, numB);
-  const lcmValue = deriveLeastCommonMultiple(numA, numB, gcdValue);
+for (const currentLine of dataLines) {
+  const numericStrings = currentLine.split(' ');
+  const operandOne = Number(numericStrings[0]);
+  const operandTwo = Number(numericStrings[1]);
 
-  return `${gcdValue} ${lcmValue}`;
-};
+  const gcdResult = calculateGreatestCommonDivisor(operandOne, operandTwo);
+  const lcmResult = determineLeastCommonMultiple(operandOne, operandTwo, gcdResult);
 
-const processAllInputs = () => {
-  const fullContent = obtainInputContent();
-  const contentLines = fullContent.split('\n');
-
-  const processedResults = contentLines
-    .map(transformLineToOutput)
-    .filter(Boolean);
-
-  processedResults.forEach(outputString => {
-    process.stdout.write(outputString + '\n');
-  });
-};
-
-processAllInputs();
+  console.log(gcdResult, lcmResult);
+}

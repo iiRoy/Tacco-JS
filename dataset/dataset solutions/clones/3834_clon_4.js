@@ -1,61 +1,67 @@
-const dataStream = require('fs').readFileSync('/dev/stdin', 'utf8').trim();
-const rawInputLines = dataStream.split('\n');
-
+const fs = require('fs');
+const inputData = fs.readFileSync('/dev/stdin', 'utf8').split('\n');
 let currentLineIndex = 0;
-const fetchNextNumbers = () => rawInputLines[currentLineIndex++].split(' ').map(Number);
 
-const [dimensionA, operationCountB] = fetchNextNumbers();
-const desiredMappingsC = fetchNextNumbers();
+const readNextLine = () => inputData[currentLineIndex++].trim();
+const parseNumbers = () => readNextLine().split(' ').map(Number);
 
-const connectionPairsD = [];
-for (let iteration = 0; iteration < operationCountB; iteration++) {
-    connectionPairsD.push(fetchNextNumbers());
+const [nodeCount, edgeCount] = parseNumbers();
+const targetNodes = parseNumbers();
+
+const connections = [];
+while (currentLineIndex < inputData.length && inputData[currentLineIndex].trim() !== '') {
+    connections.push(parseNumbers());
 }
 
-const parentArray = Array(dimensionA + 1).fill(0).map((_, index) => index);
-const rankArray = Array(dimensionA + 1).fill(0);
+const parentArr = Array(nodeCount + 1);
+const setSizes = Array(nodeCount + 1);
 
-const locateSetRoot = (elementE) => {
-    if (parentArray[elementE] === elementE) {
-        return elementE;
+function initializeDisjointSetUnion() {
+    for (let k = 1; k <= nodeCount; k++) {
+        parentArr[k] = k;
+        setSizes[k] = 1;
     }
-    parentArray[elementE] = locateSetRoot(parentArray[elementE]);
-    return parentArray[elementE];
-};
+}
 
-const mergeSets = (itemF, itemG) => {
-    let rootF = locateSetRoot(itemF);
-    let rootG = locateSetRoot(itemG);
+function findSetRepresentative(nodeIdentifier) {
+    if (parentArr[nodeIdentifier] === nodeIdentifier) {
+        return nodeIdentifier;
+    }
+    return parentArr[nodeIdentifier] = findSetRepresentative(parentArr[nodeIdentifier]);
+}
 
-    if (rootF !== rootG) {
-        if (rankArray[rootF] < rankArray[rootG]) {
-            [rootF, rootG] = [rootG, rootF];
+function mergeSets(nodeA, nodeB) {
+    let rootA = findSetRepresentative(nodeA);
+    let rootB = findSetRepresentative(nodeB);
+
+    if (rootA !== rootB) {
+        if (setSizes[rootA] < setSizes[rootB]) {
+            [rootA, rootB] = [rootB, rootA];
         }
-        parentArray[rootG] = rootF;
-        if (rankArray[rootF] === rankArray[rootG]) {
-            rankArray[rootF]++;
-        }
+        parentArr[rootB] = rootA;
+        setSizes[rootA] += setSizes[rootB];
         return true;
     }
     return false;
-};
-
-for (const [pointH, pointI] of connectionPairsD) {
-    mergeSets(pointH, pointI);
 }
 
-let totalMatchesJ = 0;
+initializeDisjointSetUnion();
 
-for (let elementK = 1; elementK <= dimensionA; elementK++) {
-    const currentElementRoot = locateSetRoot(elementK);
-    
-    const mappedValueL = desiredMappingsC[elementK - 1]; 
-    
-    const mappedValueRoot = locateSetRoot(mappedValueL);
+for (const [u, v] of connections) {
+    mergeSets(u, v);
+}
 
-    if (currentElementRoot === mappedValueRoot) {
-        totalMatchesJ++;
+const finalScores = Array(nodeCount + 1).fill(0);
+
+for (let currentIdx = 1; currentIdx <= nodeCount; currentIdx++) {
+    if (findSetRepresentative(currentIdx) === findSetRepresentative(targetNodes[currentIdx - 1])) {
+        finalScores[currentIdx] = 1;
     }
 }
 
-console.log(totalMatchesJ);
+let totalScore = 0;
+for (let k = 1; k <= nodeCount; k++) {
+    totalScore += finalScores[k];
+}
+
+console.log(totalScore);

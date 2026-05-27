@@ -1,41 +1,39 @@
-const analyzeElevationProfile = (inputData) => {
-    const dataLines = inputData.split('\n');
-    const countElements = parseInt(dataLines[0], 10);
-    const initialValuesStr = dataLines[1].split(' ');
+function processHeightSequence(sourceText) {
+    const inputLines = sourceText.split('\n');
+    const heightValueStrings = inputLines[1].split(' ');
+    const totalElements = heightValueStrings.length;
 
-    const initialNumericValues = initialValuesStr.slice(0, countElements).map((item, position) => {
-        const numericItem = Number(item);
-        return (position === 0 && numericItem > 0) ? numericItem - 1 : numericItem;
-    });
+    let currentHeightValues = heightValueStrings.map(val => parseInt(val, 10));
 
-    const checkSequenceValidity = (currentIndex, currentSequence, currentOutcome) => {
-        if (currentIndex >= currentSequence.length || currentOutcome === 'No') {
-            return { processedSequence: currentSequence, finalOutcome: currentOutcome };
-        }
+    if (currentHeightValues[0] > 0) {
+        currentHeightValues[0]--;
+    }
 
-        const precedingValue = currentSequence[currentIndex - 1];
-        const currentValue = currentSequence[currentIndex];
-        let nextOutcome = currentOutcome;
-        let transformedSequence = [...currentSequence];
-
-        if (precedingValue < currentValue) {
-            transformedSequence[currentIndex] = currentValue - 1;
-        } else if (precedingValue > currentValue) {
-            if (precedingValue - currentValue !== 1) {
-                nextOutcome = 'No';
+    const evaluationOutcome = Array.from({ length: totalElements - 1 }, (_, idx) => idx + 1)
+        .reduce((accumulatorState, currentPositionIndex) => {
+            if (accumulatorState.validationStatus === 'No') {
+                return accumulatorState;
             }
-        }
-        
-        return checkSequenceValidity(currentIndex + 1, transformedSequence, nextOutcome);
-    };
 
-    const processingResult = checkSequenceValidity(1, initialNumericValues, 'Yes');
+            const previousPositionValue = accumulatorState.modifiedValues[currentPositionIndex - 1];
+            let presentPositionValue = accumulatorState.modifiedValues[currentPositionIndex];
 
-    processingResult.processedSequence.forEach(val => {
-        console.log(val);
+            if (previousPositionValue < presentPositionValue) {
+                accumulatorState.modifiedValues[currentPositionIndex] = presentPositionValue - 1;
+            } else if (previousPositionValue > presentPositionValue) {
+                if (previousPositionValue - presentPositionValue > 1) {
+                    accumulatorState.validationStatus = 'No';
+                }
+            }
+
+            return accumulatorState;
+        }, { validationStatus: 'Yes', modifiedValues: [...currentHeightValues] });
+
+    evaluationOutcome.modifiedValues.forEach(itemValue => {
+        console.log(itemValue);
     });
-    console.log(processingResult.finalOutcome);
-};
 
-const systemInput = require('fs').readFileSync('/dev/stdin', 'utf8');
-analyzeElevationProfile(systemInput);
+    console.log(evaluationOutcome.validationStatus);
+}
+
+processHeightSequence(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,25 +1,22 @@
-let storedInputData = '';
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
 
-global.process.stdin.on('data', (partialSegment) => {
-  storedInputData += partialSegment;
+let inputBuffer = '';
+
+process.stdin.on('data', (chunk) => {
+    inputBuffer += chunk;
 });
 
-global.process.stdin.on('end', () => {
-  const primaryLine = storedInputData.split('\n')[0];
+process.stdin.on('end', () => {
+    const processedLine = inputBuffer.trim();
 
-  const numericalElements = primaryLine.match(/(\d+)/g);
+    const valueContainer = new Array(3);
+    valueContainer[0] = processedLine;
+    const [firstVal, secondVal, thirdVal] = valueContainer;
 
-  const primaryValue = +numericalElements[0];
-  const secondaryValue = +numericalElements[1];
-  const tertiaryValue = +numericalElements[2];
+    const checkParity = (val) => (val % 2 === 0);
 
-  const anyValueEven = (primaryValue & 1) === 0 || (secondaryValue & 1) === 0 || (tertiaryValue & 1) === 0;
+    const finalResult = checkParity(firstVal) ? 0 : Math.min(firstVal * secondVal, secondVal * thirdVal, firstVal * thirdVal);
 
-  const ultimateResult = anyValueEven
-    ? 0
-    : [primaryValue * secondaryValue, secondaryValue * tertiaryValue, primaryValue * tertiaryValue].reduce(
-        (minimumFound, currentCandidate) => (currentCandidate < minimumFound ? currentCandidate : minimumFound)
-      );
-
-  global.process.stdout.write(String(ultimateResult) + '\n');
+    console.log(finalResult);
 });

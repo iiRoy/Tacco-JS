@@ -1,26 +1,21 @@
-function processData(rawContent) {
-  const parsedLines = rawContent.split("\n").filter(lineItem => lineItem.length > 0);
-  const targetString = parsedLines[0];
+"use strict";
+function processInputData(rawData) {
+  const lines = rawData.split("\n").filter(lineContent => lineContent.length > 0);
+  const targetSequence = lines[0];
 
-  let accumulatedPositions = 0;
-  let whiteCharCount = 0;
-  const charSeriesLength = targetString.length;
+  let totalDisplacement = 0;
+  let encounteredWCount = 0;
 
-  for (let currentPosition = 0; currentPosition < charSeriesLength; currentPosition++) {
-    if (targetString[currentPosition] === 'W') {
-      accumulatedPositions += currentPosition;
-      whiteCharCount++;
+  for (let charPosition = 0; charPosition < targetSequence.length; charPosition++) {
+    if (targetSequence[charPosition] === 'W') {
+      if (charPosition !== 0) {
+        totalDisplacement += (charPosition - encounteredWCount);
+      }
+      encounteredWCount++;
     }
   }
 
-  let ordinalSumCorrection = 0;
-  for (let sequenceIndex = 0; sequenceIndex < whiteCharCount; sequenceIndex++) {
-    ordinalSumCorrection += sequenceIndex;
-  }
-
-  const finalOutcome = accumulatedPositions - ordinalSumCorrection;
-
-  console.log(finalOutcome);
+  console.log(totalDisplacement);
 }
 
-processData(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

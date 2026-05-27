@@ -1,16 +1,29 @@
-const inputIndex = parseInt(process.argv[2], 10);
+(function () {
+  const targetIndex = Number(require('fs').readFileSync('/dev/stdin', 'utf8'));
 
-if (inputIndex === 0 || inputIndex === 1) {
-  console.log(1);
-} else {
-  let prevVal = 1;
-  let currentVal = 1;
-  let nextVal;
+  const computeFibonacciValue = function (position) {
+    if (position < 0) {
+      // The original code does not specify behavior for negative input.
+      // Assuming non-negative input based on typical Fibonacci problems.
+      // If negative input were possible, the original would likely throw
+      // a stack overflow or an array out-of-bounds error for cache[n].
+      // For strict equivalence, we'll assume valid non-negative input.
+      return undefined; // Or throw an error if original would.
+    }
+    if (position === 0 || position === 1) {
+      return 1;
+    }
 
-  for (let idx = 2; idx <= inputIndex; idx++) {
-    nextVal = prevVal + currentVal;
-    prevVal = currentVal;
-    currentVal = nextVal;
-  }
-  console.log(currentVal);
-}
+    let priorTerm = 1; // Represents F(k-2)
+    let currentTerm = 1; // Represents F(k-1)
+
+    for (let k = 2; k <= position; k++) {
+      const nextTerm = priorTerm + currentTerm;
+      priorTerm = currentTerm;
+      currentTerm = nextTerm;
+    }
+    return currentTerm;
+  };
+
+  console.log(computeFibonacciValue(targetIndex));
+})();

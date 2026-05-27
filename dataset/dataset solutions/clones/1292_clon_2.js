@@ -1,47 +1,50 @@
-// This script is designed to process student academic performance data.
-const rawData = require('fs').readFileSync('/dev/stdin', 'utf8'); // Obtain raw input content from standard input source.
-const dataRows = (rawData.trim()).split(/\n/g); // Segment the raw input into distinct lines, discarding leading/trailing whitespaces.
-let gradeResult; // A mutable variable designated to hold the computed final grade for each student entry.
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8'); // Reads the entire input from standard input as a UTF-8 string.
+var dataRows = (rawData.trim()).split(/\n/g); // Cleans up the raw input by trimming whitespace and splitting it into an array of lines.
 
-// Traverse through each individual line of student score information.
-for (let idx = 0; idx < dataRows.length; idx++) {
-    // Verify if the current line signifies the termination sequence for input processing.
+var gradeResult; // Declares a variable to hold the calculated grade for each student.
+
+// Iterates through each line of student data provided in the input.
+for (var idx = 0; idx < dataRows.length; idx++) {
+    // Checks if the current line is the termination sentinel.
     if (dataRows[idx] === '-1 -1 -1') {
-        break; // Discontinue the loop if the termination pattern is identified.
+        break; // If the sentinel is found, exit the loop.
     }
 
-    // Dissect the current line of text into numerical score components.
-    const currentValues = dataRows[idx].split(' ').map(Number);
-    const midtermScore = currentValues[0]; // Extract the score for the midterm examination.
-    const finalScore = currentValues[1]; // Extract the score for the final examination.
-    const resitScore = currentValues[2]; // Extract the score for the resit examination, if applicable.
-    
-    // Evaluate the student's grade based on a predefined set of criteria.
+    // Parses the current line: splits it by spaces and converts each part to a number.
+    var parsedRow = dataRows[idx].split(' ').map(Number);
+
+    // Assigns the numerical values from the parsed line to descriptive variables.
+    var midtermScore = parsedRow[0]; // Represents the midterm exam score.
+    var finalScore = parsedRow[1];   // Represents the final exam score.
+    var retakeScore = parsedRow[2];  // Represents the retake exam score.
+
+    // Determines the student's grade based on a series of conditional checks.
     if (midtermScore === -1 || finalScore === -1) {
-        gradeResult = 'F'; // Assign 'F' if either midterm or final score is absent or invalid.
-    }
-    else if (80 <= midtermScore + finalScore) {
-        gradeResult = 'A'; // Award 'A' if the aggregate of midterm and final scores is 80 or higher.
-    }
-    else if (65 <= midtermScore + finalScore) {
-        gradeResult = 'B'; // Award 'B' if the aggregate of midterm and final scores falls between 65 and 79.
-    }
-    else if (50 <= midtermScore + finalScore) {
-        gradeResult = 'C'; // Award 'C' if the aggregate of midterm and final scores falls between 50 and 64.
-    }
-    else if (30 <= midtermScore + finalScore) {
-        // Implement a specific grading rule for scores ranging from 30 to 49.
-        if (50 <= resitScore) {
-            gradeResult = 'C'; // Elevate to 'C' if the resit score is 50 or greater.
+        // If either midterm or final score is -1, the student automatically fails.
+        gradeResult = 'F';
+    } else if (80 <= midtermScore + finalScore) {
+        // If the sum of midterm and final scores is 80 or greater, the grade is 'A'.
+        gradeResult = 'A';
+    } else if (65 <= midtermScore + finalScore) {
+        // If the sum is 65 or greater (but less than 80), the grade is 'B'.
+        gradeResult = 'B';
+    } else if (50 <= midtermScore + finalScore) {
+        // If the sum is 50 or greater (but less than 65), the grade is 'C'.
+        gradeResult = 'C';
+    } else if (30 <= midtermScore + finalScore) {
+        // If the sum is 30 or greater (but less than 50), a special condition applies.
+        if (50 <= retakeScore) {
+            // If the retake score is 50 or greater, the grade is 'C'.
+            gradeResult = 'C';
+        } else {
+            // Otherwise, if the retake score is less than 50, the grade is 'D'.
+            gradeResult = 'D';
         }
-        else {
-            gradeResult = 'D'; // Otherwise, assign 'D' for this score range.
-        }
+    } else {
+        // If the sum of midterm and final scores is less than 30, the grade is 'F'.
+        gradeResult = 'F';
     }
-    else {
-        gradeResult = 'F'; // Default to 'F' for any other score combinations not covered above.
-    }
-    
-    // Present the determined grade to the console output.
+
+    // Prints the determined grade for the current student to the console.
     console.log(gradeResult);
 }

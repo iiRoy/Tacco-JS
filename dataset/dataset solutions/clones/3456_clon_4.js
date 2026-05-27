@@ -1,58 +1,52 @@
-const outputPrinter = console.log;
+const printToConsole = console.log;
 
-const fileContent = require("fs").readFileSync("/dev/stdin", "UTF-8");
-const allInputLines = fileContent.split("\n");
+const fileSystem = require("fs");
+const inputBuffer = fileSystem.readFileSync("/dev/stdin", "UTF-8");
 
-const headerInfo = allInputLines[0].split(" ");
-const totalCities = Number(headerInfo[0]);
-const totalPrefectures = Number(headerInfo[1]);
+const inputRecords = inputBuffer.split("\n");
 
-const cityRecords = [];
-for (let j = 1; j <= totalCities; ++j) {
-    const currentLine = allInputLines[j];
-    if (!currentLine) continue;
+const [totalCities, totalPrefectures] = inputRecords[0].split(" ").map(Number);
 
-    const parts = currentLine.split(" ");
-    const currentPrefId = Number(parts[0]);
-    const currentEventYear = Number(parts[1]);
+const cityRawData = inputRecords.slice(1);
 
-    cityRecords.push({
-        originalIdx: j - 1,
-        prefId: currentPrefId,
-        eventYear: currentEventYear
+const prefectureGroupings = new Map();
+
+cityRawData.forEach((recordLine, idx) => {
+  const [prefStr, yearStr] = recordLine.split(" ");
+  const prefNum = Number(prefStr);
+  const yearVal = Number(yearStr);
+
+  if (!prefectureGroupings.has(prefNum)) {
+    prefectureGroupings.set(prefNum, []);
+  }
+  prefectureGroupings.get(prefNum).push({
+    initialPosition: idx,
+    eventYear: yearVal,
+  });
+});
+
+const processedCityData = [];
+
+for (const [prefKey, cityList] of prefectureGroupings.entries()) {
+  cityList.sort((a, b) => a.eventYear - b.eventYear);
+
+  let sequenceCounter = 1;
+  const formattedPrefCode = String(prefKey).padStart(6, "0");
+
+  for (const cityEntry of cityList) {
+    const formattedSequenceId = String(sequenceCounter).padStart(6, "0");
+
+    processedCityData.push({
+      initialPosition: cityEntry.initialPosition,
+      finalPrefCode: formattedPrefCode,
+      finalSequenceId: formattedSequenceId,
     });
+    sequenceCounter++;
+  }
 }
 
-const prefAggregates = new Map();
-for (const record of cityRecords) {
-    if (!prefAggregates.has(record.prefId)) {
-        prefAggregates.set(record.prefId, []);
-    }
-    prefAggregates.get(record.prefId).push({
-        originalIdx: record.originalIdx,
-        eventYear: record.eventYear
-    });
-}
+processedCityData.sort((a, b) => a.initialPosition - b.initialPosition);
 
-const outputParts = new Map();
-
-for (const [prefIdKey, cityListForPref] of prefAggregates.entries()) {
-    cityListForPref.sort((elemA, elemB) => elemA.eventYear - elemB.eventYear);
-
-    let currentRank = 1;
-    const paddedPrefCode = String(prefIdKey).padStart(6, '0');
-
-    for (const cityEntry of cityListForPref) {
-        const paddedRankCode = String(currentRank).padStart(6, '0');
-        outputParts.set(cityEntry.originalIdx, {
-            formattedPref: paddedPrefCode,
-            formattedRank: paddedRankCode
-        });
-        currentRank++;
-    }
-}
-
-for (let k = 0; k < totalCities; ++k) {
-    const result = outputParts.get(k);
-    outputPrinter(result.formattedPref + result.formattedRank);
-}
+processedCityData.forEach((cityOutput) =>
+  printToConsole(cityOutput.finalPrefCode + cityOutput.finalSequenceId)
+);

@@ -1,47 +1,57 @@
-const LOWER_LIMIT = 1;
-const UPPER_LIMIT = 1000;
+const MIN_SIDE_VALUE = 1;
+const MAX_SIDE_VALUE = 1000;
 
-const isSideValid = (sideValue, lower, upper) =>
-  sideValue >= lower && sideValue <= upper;
-
-const createShape = (sideMeasures) => {
-  const firstMeasure = isSideValid(sideMeasures[0], LOWER_LIMIT, UPPER_LIMIT) ? sideMeasures[0] : null;
-  const secondMeasure = isSideValid(sideMeasures[1], LOWER_LIMIT, UPPER_LIMIT) ? sideMeasures[1] : null;
-  const thirdMeasure = isSideValid(sideMeasures[2], LOWER_LIMIT, UPPER_LIMIT) ? sideMeasures[2] : null;
-
-  if (firstMeasure !== null && secondMeasure !== null && thirdMeasure !== null) {
-    return { m1: firstMeasure, m2: secondMeasure, m3: thirdMeasure };
-  }
-  return null;
+const isSideValueValid = (val) => {
+  const numVal = Number(val);
+  return !isNaN(numVal) && numVal >= MIN_SIDE_VALUE && numVal <= MAX_SIDE_VALUE;
 };
 
-const testForRightAngle = (shapeObj) => {
-  const orderedMeasures = [shapeObj.m1, shapeObj.m2, shapeObj.m3].sort((x, y) => x - y);
-  const squaredMeasures = orderedMeasures.map(val => Math.pow(val, 2));
-  return squaredMeasures[0] + squaredMeasures[1] === squaredMeasures[2];
-};
+const createShapeAnalyzer = (sideA, sideB, sideC) => {
+  const sA = Number(sideA);
+  const sB = Number(sideB);
+  const sC = Number(sideC);
 
-const processGeometricData = (rawData) => {
-  const rawLines = rawData.split('\n');
-  const numericLines = [];
-
-  for (let i = 0; i < rawLines.length; i++) {
-    const parts = rawLines[i].split(' ').map(Number);
-    // Mimics the original's specific early exit condition for the very first line's first value
-    if (i === 0 && parts.length >= 1 && parts[0] > UPPER_LIMIT) {
-      return; // Stop all processing
-    }
-    numericLines.push(parts);
+  if (!isSideValueValid(sA) || !isSideValueValid(sB) || !isSideValueValid(sC)) {
+    return null;
   }
 
-  numericLines.forEach(sideSet => {
-    const formedShape = createShape(sideSet);
-    if (formedShape) { // Only proceed if all side measures are valid and within constraints
-      const isRight = testForRightAngle(formedShape);
-      console.log(isRight ? 'YES' : 'NO');
-    }
-  });
+  const orderedSides = [sA, sB, sC].sort((x, y) => x - y);
+
+  const checkRightAngled = () => {
+    const [shortA, shortB, longC] = orderedSides;
+    return (shortA * shortA) + (shortB * shortB) === (longC * longC);
+  };
+
+  return {
+    isRightAngled: checkRightAngled
+  };
 };
 
-const geometryInput = require('fs').readFileSync('/dev/stdin', 'utf8').trim();
-processGeometricData(geometryInput);
+const processGeometricShapes = (sourceText) => {
+  const segmentDelimiter = "\n";
+  const valueDelimiter = " ";
+  const initialMaxCheck = 1000;
+
+  const rawSegments = sourceText.trim().split(segmentDelimiter);
+
+  let segmentIndex = 0;
+  for (const currentSegment of rawSegments) {
+    const numericSides = currentSegment.split(valueDelimiter).map(Number);
+
+    if (segmentIndex === 0 && numericSides[0] > initialMaxCheck) {
+      break;
+    }
+
+    const [a, b, c] = numericSides;
+    const shapeInstance = createShapeAnalyzer(a, b, c);
+
+    if (shapeInstance) {
+      const rightAngleStatus = shapeInstance.isRightAngled() ? 'YES' : 'NO';
+      console.log(rightAngleStatus);
+    }
+    segmentIndex++;
+  }
+};
+
+const inputData = require('fs').readFileSync('/dev/stdin', 'utf8').trim();
+processGeometricShapes(inputData);

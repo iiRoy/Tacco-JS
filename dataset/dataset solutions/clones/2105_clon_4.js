@@ -1,60 +1,35 @@
-function processSequence(rawText) {
-    const commandLines = rawText.split("\n");
-    const baseSegment = commandLines[0];
-    const actionDescriptors = commandLines.slice(1);
+function processOperations(rawInput) {
+    const inputLines = rawInput.split("\n");
+    let currentOrientation = 1;
+    const leadingSegments = [];
+    const trailingSegments = [inputLines[0]];
 
-    const initialState = {
-        leadingParts: [],
-        trailingParts: [baseSegment],
-        isDirectOrder: true
-    };
+    inputLines.slice(1).forEach(commandEntry => {
+        const commandParts = commandEntry.split(" ");
+        const actionIdentifier = parseInt(commandParts[0], 10);
 
-    const finalState = actionDescriptors.reduce((currentState, instructionLine) => {
-        const instructionElements = instructionLine.split(" ");
-        const primaryDirective = parseInt(instructionElements[0], 10);
-
-        if (primaryDirective === 1) {
-            return {
-                ...currentState,
-                isDirectOrder: !currentState.isDirectOrder
-            };
+        if (actionIdentifier === 1) {
+            currentOrientation *= -1;
         } else {
-            const secondaryDirective = parseInt(instructionElements[1], 10);
-            const payloadText = instructionElements[2];
+            const operationKind = parseInt(commandParts[1], 10);
+            const segmentContent = commandParts[2];
 
-            let shouldPrepend = false;
+            const shouldAppend = (currentOrientation === 1 && operationKind === 1) || (currentOrientation === -1 && operationKind === 2);
 
-            if (currentState.isDirectOrder) {
-                shouldPrepend = (secondaryDirective === 2);
+            if (shouldAppend) {
+                trailingSegments.push(segmentContent);
             } else {
-                shouldPrepend = (secondaryDirective === 1);
-            }
-
-            if (shouldPrepend) {
-                return {
-                    ...currentState,
-                    leadingParts: [...currentState.leadingParts, payloadText]
-                };
-            } else {
-                return {
-                    ...currentState,
-                    trailingParts: [...currentState.trailingParts, payloadText]
-                };
+                leadingSegments.push(segmentContent);
             }
         }
-    }, initialState);
+    });
 
-    let compositeStructure = [];
-    compositeStructure.push(...finalState.leadingParts.reverse());
-    compositeStructure.push(...finalState.trailingParts);
+    const finalStringRepresentation = leadingSegments.slice().reverse().join('') + trailingSegments.join('');
 
-    let outputPayload = compositeStructure.join("");
-
-    if (finalState.isDirectOrder) {
-        outputPayload = outputPayload.split("").reverse().join("");
+    if (currentOrientation === 1) {
+        console.log(finalStringRepresentation.split('').reverse().join(''));
+    } else {
+        console.log(finalStringRepresentation);
     }
-
-    console.log(outputPayload);
 }
-
-processSequence(require("fs").readFileSync("/dev/stdin", "utf8").trim());
+processOperations(require("fs").readFileSync("/dev/stdin", "utf8").trim());

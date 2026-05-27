@@ -1,36 +1,29 @@
-const rawDataStream = require('fs').readFileSync('/dev/stdin', 'utf8');
+const fileSystem = require('fs');
 
-const contentLines = rawDataStream.trim().split('\n');
+const rawContent = fileSystem.readFileSync('/dev/stdin', 'utf8');
+const contentLines = rawContent.trim().split('\n');
 
-let initialNumericValue = Number(contentLines[0]);
-
-const arithmeticSequence = [];
-for (let operationIndex = 1; operationIndex < contentLines.length; operationIndex += 2) {
-    const currentSymbol = contentLines[operationIndex];
-    if (currentSymbol === '=') {
-        break;
-    }
-    const currentNumericOperand = Number(contentLines[operationIndex + 1]);
-    arithmeticSequence.push({
-        indicator: currentSymbol,
-        magnitude: currentNumericOperand
-    });
-}
-
-const actionPerformers = {
-    '+': (base, factor) => base + factor,
-    '-': (base, factor) => base - factor,
-    '*': (base, factor) => base * factor,
-    '/': (base, factor) => base / factor
+const operatorFunctions = {
+    '+': (current, operand) => current + operand,
+    '-': (current, operand) => current - operand,
+    '*': (current, operand) => current * operand,
+    '/': (current, operand) => current / operand,
 };
 
-const processedOutcome = arithmeticSequence.reduce((currentAccumulator, stepDetails) => {
-    const specificAction = actionPerformers[stepDetails.indicator];
-    if (specificAction) {
-        let interimResult = specificAction(currentAccumulator, stepDetails.magnitude);
-        return Math.round(interimResult);
+let calculationInstructions = [];
+for (let index = 1; index < contentLines.length; index += 2) {
+    const currentOperator = contentLines[index];
+    if (currentOperator === '=') {
+        break;
     }
-    return currentAccumulator;
-}, initialNumericValue);
+    const currentOperand = Number(contentLines[index + 1]);
+    calculationInstructions.push({ op: currentOperator, val: currentOperand });
+}
 
-console.log(processedOutcome);
+const finalValue = calculationInstructions.reduce((accumulator, instruction) => {
+    const performOperation = operatorFunctions[instruction.op];
+    const intermediateResult = performOperation(accumulator, instruction.val);
+    return Number(intermediateResult.toFixed(0));
+}, Number(contentLines[0]));
+
+console.log(finalValue);

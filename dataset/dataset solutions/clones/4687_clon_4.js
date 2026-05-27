@@ -1,61 +1,40 @@
-const resourceProvider = require('fs');
+const fileSystem = require("fs");
 
-class GroupingAlgorithm {
-    constructor(capacityLimit, rangeThreshold) {
-        this.capacityLimit = capacityLimit;
-        this.rangeThreshold = rangeThreshold;
-    }
+const inputLines = fileSystem.readFileSync("/dev/stdin", "UTF-8").split("\n");
 
-    processNumericItems(numericItems) {
-        if (!Array.isArray(numericItems) || numericItems.length === 0) {
-            return 0;
+const [totalItems, maxGroupCapacity, maxAllowedDifference] = inputLines[0].split(" ").map(Number);
+
+const numericDataPoints = inputLines.slice(1, totalItems + 1).map(Number);
+
+const sortedDataPoints = numericDataPoints.sort((first, second) => first - second);
+
+if (totalItems === 0) {
+    console.log(1);
+} else {
+    const finalState = sortedDataPoints.slice(1).reduce(
+        (currentAccumulator, currentItemValue) => {
+            const { groupCounter, availableSlots, groupStartValue } = currentAccumulator;
+
+            const canFitInCurrentGroup = currentItemValue <= groupStartValue + maxAllowedDifference && availableSlots > 0;
+
+            return canFitInCurrentGroup
+                ? {
+                      groupCounter,
+                      availableSlots: availableSlots - 1,
+                      groupStartValue,
+                  }
+                : {
+                      groupCounter: groupCounter + 1,
+                      availableSlots: maxGroupCapacity - 1,
+                      groupStartValue: currentItemValue,
+                  };
+        },
+        {
+            groupCounter: 1,
+            availableSlots: maxGroupCapacity - 1,
+            groupStartValue: sortedDataPoints[0],
         }
+    );
 
-        const sortedElements = [...numericItems].sort((valueA, valueB) => valueA - valueB);
-
-        let currentScanIndex = 0;
-        let totalDistinctGroups = 0;
-        const totalElements = sortedElements.length;
-
-        while (currentScanIndex < totalElements) {
-            totalDistinctGroups++;
-            const groupFirstValue = sortedElements[currentScanIndex];
-            let currentGroupSlots = this.capacityLimit - 1;
-            currentScanIndex++;
-
-            while (currentScanIndex < totalElements && currentGroupSlots > 0) {
-                const nextPotentialElement = sortedElements[currentScanIndex];
-                if (nextPotentialElement <= groupFirstValue + this.rangeThreshold) {
-                    currentGroupSlots--;
-                    currentScanIndex++;
-                } else {
-                    break;
-                }
-            }
-        }
-        return totalDistinctGroups;
-    }
-}
-
-const parseNumericString = (textualValue) => Number(textualValue);
-
-try {
-    const rawFileContent = resourceProvider.readFileSync('/dev/stdin', 'utf8');
-    const contentLines = rawFileContent.split('\n');
-
-    const mainConfiguration = contentLines[0].split(' ').map(parseNumericString);
-    const itemQuantity = mainConfiguration[0];
-    const groupMaxCapacity = mainConfiguration[1];
-    const allowedValueDifference = mainConfiguration[2];
-
-    const allItemData = contentLines.slice(1, itemQuantity + 1).map(parseNumericString);
-
-    const groupCalculator = new GroupingAlgorithm(groupMaxCapacity, allowedValueDifference);
-    const finalTally = groupCalculator.processNumericItems(allItemData);
-
-    console.log(finalTally);
-
-} catch (processingIssue) {
-    console.error("An operational error occurred:", processingIssue.message);
-    process.exit(1);
+    console.log(finalState.groupCounter);
 }

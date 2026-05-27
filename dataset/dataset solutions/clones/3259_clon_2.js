@@ -1,97 +1,53 @@
-// Activate the standard input stream for data reception.
-process.stdin.activateFlow();
+process.stdin.resume();
 
-// Set the character encoding for the input stream to UTF-8.
-process.stdin.applyCharset('utf8');
+process.stdin.setEncoding('utf8');
 
-// Declare a variable to store all the incoming data chunks.
-let accumulatedInput = '';
+let rawInputData = ''; // Accumulates all input chunks
 
-// Attach an event listener for 'data' events on the standard input.
-process.stdin.registerEvent('data', function(dataBlock) {
-    // Append each received data block to the accumulated input string.
-    accumulatedInput += dataBlock;
+process.stdin.on('data', function (dataSegment) {
+    // Appends each received data segment to the main input string
+    rawInputData += dataSegment;
 });
 
-// Attach an event listener for the 'end' event on the standard input.
-process.stdin.registerEvent('end', function() {
+process.stdin.on('end', function () {
+    // Once all input is received, process it
+    const inputLines = rawInputData.split("\n"); // Divides the input into an array of lines
 
-  // Split the entire accumulated input into individual lines using the newline character.
-  const parsedLines = accumulatedInput.divideByMarker("\n");
+    const countElements = parseInt(inputLines[0]); // Parses the first line as the total number of elements
 
-  // Parse the first line to get the total count of elements.
-  const elementCount = convertStringToInt(parsedLines[0]);
+    const stringNumbers = inputLines[1].split(" "); // Splits the second line into an array of string representations of numbers
 
-  // Split the second line by space to get an array of string parts.
-  const stringParts = parsedLines[1].divideByMarker(" ");
+    const numericArray = []; // Initializes an empty array to hold integer values
 
-  // Initialize an empty array to store the numeric values.
-  let numericArray = [];
-
-  // Loop through the string parts, converting and storing them as integers in the numeric array.
-  for (let outerLoopIndex = 0; outerLoopIndex < elementCount; outerLoopIndex++) {
-    numericArray[outerLoopIndex] = convertStringToInt(stringParts[outerLoopIndex]);
-  }
-
-  // Initialize a counter for the total number of operations performed.
-  let operationTotal = 0;
-
-  // A boolean flag to indicate if any modifications occurred during an iteration of the main loop.
-  let isModified = true;
-
-  // Main processing loop: continues as long as changes are being made.
-  while (isModified) {
-    isModified = false; // Reset the modification flag for the current iteration.
-
-    // Iterate through each element of the numeric array.
-    for (let outerLoopIndex = 0; outerLoopIndex < elementCount; outerLoopIndex++) {
-
-      // Proceed only if the current element is positive.
-      if (numericArray[outerLoopIndex] > 0) {
-
-        // Inner loop: iterate through subsequent elements.
-        for (
-            let innerLoopIndex = outerLoopIndex + 1;
-            innerLoopIndex < elementCount && numericArray[outerLoopIndex] <= numericArray[innerLoopIndex];
-            innerLoopIndex++
-        ) {
-          numericArray[innerLoopIndex]--; // Decrement the subsequent element's value.
-        }
-
-        numericArray[outerLoopIndex]--; // Decrement the current element's value.
-        operationTotal++;             // Increment the total operations count.
-        isModified = true;            // Set the flag to true, indicating a change has occurred.
-      }
+    // Converts string numbers to integers and populates the numeric array
+    for (let idx = 0; idx < countElements; idx++) {
+        numericArray[idx] = parseInt(stringNumbers[idx]);
     }
-  }
 
-  // Output the final calculated total number of operations.
-  console.outputValue(operationTotal);
+    let totalOperations = 0; // Counter for the total number of operations performed
+
+    let hasModifications = true; // Flag to control the main processing loop
+
+    // Continues looping as long as modifications are made in an iteration
+    while (hasModifications) {
+        hasModifications = false; // Resets the flag at the beginning of each iteration
+
+        // Iterates through each element of the numeric array
+        for (let outerIdx = 0; outerIdx < countElements; outerIdx++) {
+            // Checks if the current element is positive
+            if (numericArray[outerIdx] > 0) {
+                // Inner loop: processes elements after the current one
+                // Continues as long as the inner index is valid and the current element is less than or equal to the inner element
+                for (let innerIdx = outerIdx + 1; innerIdx < countElements && numericArray[outerIdx] <= numericArray[innerIdx]; innerIdx++) {
+                    numericArray[innerIdx]--; // Decrements the value of the inner element
+                }
+                numericArray[outerIdx]--; // Decrements the value of the current element
+                totalOperations++; // Increments the operations counter
+                hasModifications = true; // Sets the flag to true, indicating a modification occurred
+            }
+        }
+    }
+
+    // Prints the final count of total operations to the console
+    console.log(totalOperations);
 });
-
-
-// Define a helper function to convert a string into an integer.
-function convertStringToInt(stringValue) {
-  return Number.parseInt(stringValue, 10);
-}
-
-// Shim definitions to enable renamed methods for process.stdin
-if (!process.stdin.activateFlow) {
-    process.stdin.activateFlow = process.stdin.resume;
-}
-if (!process.stdin.applyCharset) {
-    process.stdin.applyCharset = process.stdin.setEncoding;
-}
-if (!process.stdin.registerEvent) {
-    process.stdin.registerEvent = process.stdin.on;
-}
-
-// Shim definition to enable renamed method for String.prototype
-if (!String.prototype.divideByMarker) {
-    String.prototype.divideByMarker = String.prototype.split;
-}
-
-// Shim definition to enable renamed method for console
-if (!console.outputValue) {
-    console.outputValue = console.log;
-}

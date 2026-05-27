@@ -1,111 +1,92 @@
-const extractNumericValues = (lineContent) => lineContent.split(" ").map(Number);
+function Main(input) {
+    const dataLines = input.split("\n");
 
-const PartitionManager = (totalElements) => {
-    const parentLinks = new Map();
-    const depthMeasures = new Map();
+    const [numNodes, numFriends, numBlocks] = dataLines[0].split(" ").map(Number);
 
-    for (let i = 0; i < totalElements; ++i) {
-        parentLinks.set(i, i);
-        depthMeasures.set(i, 0);
-    }
+    const parentArray = Array.from({ length: numNodes }, (_, index) => index);
+    const rankArray = Array(numNodes).fill(0);
 
-    const identifyRepresentative = (element) => {
-        let currentElement = element;
-        const pathTraversal = [];
-        while (parentLinks.get(currentElement) !== currentElement) {
-            pathTraversal.push(currentElement);
-            currentElement = parentLinks.get(currentElement);
+    const retrieveSetRepresentative = (nodeIdentifier) => {
+        let currentElement = nodeIdentifier;
+        const pathElements = [];
+        while (parentArray[currentElement] !== currentElement) {
+            pathElements.push(currentElement);
+            currentElement = parentArray[currentElement];
         }
-        for (const traversedElement of pathTraversal) {
-            parentLinks.set(traversedElement, currentElement);
+        for (const pathNode of pathElements) {
+            parentArray[pathNode] = currentElement;
         }
         return currentElement;
     };
 
-    const mergeSets = (elementA, elementB) => {
-        const rootA = identifyRepresentative(elementA);
-        const rootB = identifyRepresentative(elementB);
+    const mergeSets = (firstNode, secondNode) => {
+        let rootOne = retrieveSetRepresentative(firstNode);
+        let rootTwo = retrieveSetRepresentative(secondNode);
 
-        if (rootA === rootB) {
+        if (rootOne === rootTwo) {
             return;
         }
 
-        const rankA = depthMeasures.get(rootA);
-        const rankB = depthMeasures.get(rootB);
-
-        if (rankA < rankB) {
-            parentLinks.set(rootA, rootB);
-        } else if (rankB < rankA) {
-            parentLinks.set(rootB, rootA);
+        if (rankArray[rootOne] < rankArray[rootTwo]) {
+            parentArray[rootOne] = rootTwo;
+        } else if (rankArray[rootTwo] < rankArray[rootOne]) {
+            parentArray[rootTwo] = rootOne;
         } else {
-            parentLinks.set(rootB, rootA);
-            depthMeasures.set(rootA, rankA + 1);
+            parentArray[rootTwo] = rootOne;
+            rankArray[rootOne]++;
         }
     };
 
-    return {
-        identifyRepresentative,
-        mergeSets
-    };
-};
+    const directLinkRegistry = new Map();
 
-const executeGraphAnalysis = (inputData) => {
-    const dataLines = inputData.trim().split("\n");
-    const [nodeQuantity, friendConnections, blockades] = extractNumericValues(dataLines[0]);
+    for (let k = 0; k < numFriends; k++) {
+        const [nodeX, nodeY] = dataLines[k + 1].split(" ").map(s => Number(s) - 1);
+        mergeSets(nodeX, nodeY);
 
-    const dsuInstance = PartitionManager(nodeQuantity);
-    const restrictedPairs = new Map();
-
-    for (let i = 1; i <= friendConnections; ++i) {
-        const [firstNode, secondNode] = extractNumericValues(dataLines[i]).map(n => n - 1);
-        dsuInstance.mergeSets(firstNode, secondNode);
-
-        if (!restrictedPairs.has(firstNode)) restrictedPairs.set(firstNode, new Set());
-        if (!restrictedPairs.has(secondNode)) restrictedPairs.set(secondNode, new Set());
-        restrictedPairs.get(firstNode).add(secondNode);
-        restrictedPairs.get(secondNode).add(firstNode);
+        if (!directLinkRegistry.has(nodeX)) directLinkRegistry.set(nodeX, new Set());
+        if (!directLinkRegistry.has(nodeY)) directLinkRegistry.set(nodeY, new Set());
+        directLinkRegistry.get(nodeX).add(nodeY);
+        directLinkRegistry.get(nodeY).add(nodeX);
     }
 
-    for (let i = friendConnections + 1; i <= friendConnections + blockades; ++i) {
-        const [firstNode, secondNode] = extractNumericValues(dataLines[i]).map(n => n - 1);
-        if (!restrictedPairs.has(firstNode)) restrictedPairs.set(firstNode, new Set());
-        if (!restrictedPairs.has(secondNode)) restrictedPairs.set(secondNode, new Set());
-        restrictedPairs.get(firstNode).add(secondNode);
-        restrictedPairs.get(secondNode).add(firstNode);
+    for (let k = 0; k < numBlocks; k++) {
+        const [nodeX, nodeY] = dataLines[k + numFriends + 1].split(" ").map(s => Number(s) - 1);
+        
+        if (!directLinkRegistry.has(nodeX)) directLinkRegistry.set(nodeX, new Set());
+        if (!directLinkRegistry.has(nodeY)) directLinkRegistry.set(nodeY, new Set());
+        directLinkRegistry.get(nodeX).add(nodeY);
+        directLinkRegistry.get(nodeY).add(nodeX);
     }
 
-    for (let i = 0; i < nodeQuantity; ++i) {
-        if (!restrictedPairs.has(i)) restrictedPairs.set(i, new Set());
-        restrictedPairs.get(i).add(i);
-    }
-
-    const elementGroups = new Map();
-    for (let i = 0; i < nodeQuantity; ++i) {
-        const componentRoot = dsuInstance.identifyRepresentative(i);
-        if (!elementGroups.has(componentRoot)) {
-            elementGroups.set(componentRoot, new Set());
+    const componentMemberMap = new Map();
+    for (let k = 0; k < numNodes; k++) {
+        const componentRoot = retrieveSetRepresentative(k);
+        if (!componentMemberMap.has(componentRoot)) {
+            componentMemberMap.set(componentRoot, new Set());
         }
-        elementGroups.get(componentRoot).add(i);
+        componentMemberMap.get(componentRoot).add(k);
     }
 
-    const potentialConnectionCounts = Array.from({ length: nodeQuantity }, (_, currentIdx) => {
-        const currentElementRoot = dsuInstance.identifyRepresentative(currentIdx);
-        const fellowComponentMembers = elementGroups.get(currentElementRoot);
+    const finalResultArray = new Array(numNodes).fill(0);
 
-        if (!fellowComponentMembers) return 0;
+    for (let k = 0; k < numNodes; k++) {
+        const currentElementRoot = retrieveSetRepresentative(k);
+        const membersOfCurrentComponent = componentMemberMap.get(currentElementRoot);
+        const currentElementDirectLinks = directLinkRegistry.get(k) || new Set();
 
-        let counter = 0;
-        const currentRestricted = restrictedPairs.get(currentIdx) || new Set();
-
-        for (const member of fellowComponentMembers) {
-            if (!currentRestricted.has(member)) {
-                counter++;
+        let potentialCount = 0;
+        for (const componentMember of membersOfCurrentComponent) {
+            if (componentMember === k) {
+                continue;
+            }
+            if (!currentElementDirectLinks.has(componentMember)) {
+                potentialCount++;
             }
         }
-        return counter;
-    });
+        finalResultArray[k] = potentialCount;
+    }
 
-    console.log(potentialConnectionCounts.join(" "));
-};
+    console.log(finalResultArray.join(" "));
+}
 
-executeGraphAnalysis(require("fs").readFileSync("/dev/stdin", "utf8"));
+Main(require("fs").readFileSync("/dev/stdin", "utf8").trim());

@@ -1,99 +1,65 @@
-const lib_io = require('fs');
+const fileSystem = require('fs');
 
-const standard_input_descriptor = 0;
-const raw_data_buffer = lib_io.readFileSync(standard_input_descriptor);
-const data_lines_raw = raw_data_buffer.toString('utf8').split('\n');
+const dataBuffer = fileSystem.readFileSync(process.stdin.fd);
+const inputLines = dataBuffer.toString('utf8').split('\n');
 
-let line_pointer = 0;
-const get_next_line = () => {
-  if (line_pointer < data_lines_raw.length) {
-    return data_lines_raw[line_pointer++];
-  }
-  return null;
-};
+function findHamiltonianCycle(nodeCount, adjacencyMatrix) {
+    const dpTable = Array.from({ length: 1 << nodeCount }, () => Array(nodeCount).fill(false));
 
-function check_circuit(node_count, connections_map, start_node_idx) {
-  const traversal_stack = [];
-  
-  traversal_stack.push({
-    current_vertex: start_node_idx,
-    visited_vertices_set: new Set([start_node_idx]),
-    current_path_array: [start_node_idx]
-  });
+    // Base case: A path of length 1 exists from the starting node (node 0) to itself.
+    // The bitmask `1 << 0` represents only node 0 being visited.
+    dpTable[1 << 0][0] = true;
 
-  while (traversal_stack.length > 0) {
-    const { current_vertex, visited_vertices_set, current_path_array } = traversal_stack.pop();
-
-    if (current_path_array.length === node_count) {
-      const potential_return_edges = connections_map.get(current_vertex);
-      if (potential_return_edges && potential_return_edges.has(start_node_idx)) {
-        return true;
-      }
-      continue;
-    }
-
-    const successors = connections_map.get(current_vertex);
-    if (successors) {
-      const sorted_successors = Array.from(successors).sort((a, b) => b - a); // Process smaller indices last (pushed first)
-      for (const next_vertex of sorted_successors) {
-        if (!visited_vertices_set.has(next_vertex)) {
-          const next_visited_set = new Set(visited_vertices_set);
-          next_visited_set.add(next_vertex);
-          const next_path = current_path_array.concat(next_vertex);
-          traversal_stack.push({
-            current_vertex: next_vertex,
-            visited_vertices_set: next_visited_set,
-            current_path_array: next_path
-          });
+    // Iterate through all possible subsets of nodes (represented by bitmasks)
+    for (let currentMask = 1; currentMask < (1 << nodeCount); currentMask++) {
+        // Iterate through all possible last nodes in the current path
+        for (let lastVisitedNode = 0; lastVisitedNode < nodeCount; lastVisitedNode++) {
+            // If a path exists to 'lastVisitedNode' with the nodes in 'currentMask'
+            if (dpTable[currentMask][lastVisitedNode]) {
+                // Try to extend the path to an unvisited 'nextPotentialNode'
+                for (let nextPotentialNode = 0; nextPotentialNode < nodeCount; nextPotentialNode++) {
+                    // Check if 'nextPotentialNode' is not yet in the current mask (i.e., unvisited)
+                    // and if there's an edge from 'lastVisitedNode' to 'nextPotentialNode'
+                    if (!(currentMask & (1 << nextPotentialNode)) && adjacencyMatrix[lastVisitedNode][nextPotentialNode]) {
+                        // Mark the new state as reachable: path visiting nodes in `currentMask | (1 << nextPotentialNode)`
+                        // and ending at `nextPotentialNode`
+                        dpTable[currentMask | (1 << nextPotentialNode)][nextPotentialNode] = true;
+                    }
+                }
+            }
         }
-      }
     }
-  }
 
-  return false;
+    // After filling the DP table, check for a Hamiltonian cycle
+    // A cycle exists if there's a path visiting all nodes (mask = (1 << nodeCount) - 1)
+    // ending at some 'lastVisitedNode', and there's an edge from 'lastVisitedNode' back to the starting node (0).
+    const allNodesVisitedMask = (1 << nodeCount) - 1;
+    for (let lastVisitedNode = 0; lastVisitedNode < nodeCount; lastVisitedNode++) {
+        if (dpTable[allNodesVisitedMask][lastVisitedNode] && adjacencyMatrix[lastVisitedNode][0]) {
+            return true; // Found a Hamiltonian cycle
+        }
+    }
+
+    return false; // No Hamiltonian cycle found
 }
 
-(function process_all_datasets() {
-  let node_count_str;
-  while ((node_count_str = get_next_line()) !== null && node_count_str.trim() !== '0') {
-    const node_count = parseInt(node_count_str.trim(), 10);
-    if (isNaN(node_count) || node_count < 1) {
-        continue;
-    }
+(function processInputCases() {
+    let currentInputLine;
+    while ((currentInputLine = inputLines.shift()) !== '0') {
+        const nodeCount = parseInt(currentInputLine, 10);
+        
+        const wordList = Array.from({ length: nodeCount }, () => inputLines.shift());
 
-    const vertex_strings = [];
-    for (let node_iterator = 0; node_iterator < node_count; node_iterator++) {
-      const line = get_next_line();
-      if (line === null) {
-          console.error("Error: Unexpected end of input while reading vertex strings.");
-          return;
-      }
-      vertex_strings.push(line.trim());
-    }
+        // Build adjacency matrix from the word list
+        const adjacencyMatrix = wordList.map((sourceWord, sourceIndex) => {
+            const lastCharOfSource = sourceWord.slice(-1);
+            return wordList.map((targetWord, targetIndex) => {
+                // A word cannot connect to itself in this problem's context (distinct words in cycle)
+                if (sourceIndex === targetIndex) return false;
+                return lastCharOfSource === targetWord.charAt(0);
+            });
+        });
 
-    const connections_map = new Map();
-    for (let node_iterator = 0; node_iterator < node_count; node_iterator++) {
-      const current_string_val = vertex_strings[node_iterator];
-      const final_char = current_string_val[current_string_val.length - 1];
-      
-      if (!connections_map.has(node_iterator)) {
-        connections_map.set(node_iterator, new Set());
-      }
-
-      for (let second_iterator = 0; second_iterator < node_count; second_iterator++) {
-        if (node_iterator === second_iterator) {
-          continue;
-        }
-        const target_string_val = vertex_strings[second_iterator];
-        if (final_char === target_string_val[0]) {
-          connections_map.get(node_iterator).add(second_iterator);
-        }
-      }
+        console.log(findHamiltonianCycle(nodeCount, adjacencyMatrix) ? 'OK' : 'NG');
     }
-    
-    const initial_node = 0;
-    const cycle_found = check_circuit(node_count, connections_map, initial_node);
-    
-    console.log(cycle_found ? 'OK' : 'NG');
-  }
 })();

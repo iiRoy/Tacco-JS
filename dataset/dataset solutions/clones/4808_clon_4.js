@@ -1,29 +1,41 @@
-function ProcessInput(rawText) {
-    const segments = rawText.split('\n');
+'use strict';
 
-    segments.shift(); // Discard the first line (N)
+function processInputData(rawData) {
+    const lineSegments = rawData.split('\n');
 
-    const initialDurations = segments.shift().split(' ').map(Number);
+    const countA = Number(lineSegments[0]);
 
-    segments.shift(); // Discard the third line (M)
+    const initialDurations = lineSegments[1].split(' ').map(Number);
 
-    const adjustmentInstructions = segments.map(line => line.split(' ').map(Number));
+    const countB = Number(lineSegments[2]);
 
-    const computedOutcomes = adjustmentInstructions.map(instructionSet => {
-        const targetIndex = instructionSet[0] - 1; // Convert to 0-based index
-        const replacementDuration = instructionSet[1];
+    const modificationInstructions = lineSegments.slice(3, 3 + countB).map(segment => segment.split(' ').map(Number));
 
-        // Create a temporary array to apply the current modification
-        const temporaryDurations = initialDurations.slice(); // Shallow copy
-
-        // Apply the specific modification for this instruction set
-        temporaryDurations[targetIndex] = replacementDuration;
-
-        // Sum the elements of the temporarily modified array
-        return temporaryDurations.reduce((accumulator, currentElement) => accumulator + currentElement, 0);
-    });
-
-    computedOutcomes.forEach(finalValue => console.log(finalValue));
+    return { initialDurations, modificationInstructions };
 }
 
-ProcessInput(require('fs').readFileSync('/dev/stdin', 'utf8'));
+function calculateModifiedTotals({ initialDurations, modificationInstructions }) {
+    const computedTotals = modificationInstructions.map(instructionPair => {
+        const targetIndex = instructionPair[0] - 1;
+        const newValue = instructionPair[1];
+
+        const adjustedDurations = initialDurations.map((originalValue, index) => {
+            return index === targetIndex ? newValue : originalValue;
+        });
+
+        return adjustedDurations.reduce((accumulator, current) => accumulator + current, 0);
+    });
+
+    return computedTotals;
+}
+
+function mainProcessor(rawData) {
+    const { initialDurations, modificationInstructions } = processInputData(rawData);
+    const finalDurations = calculateModifiedTotals({ initialDurations, modificationInstructions });
+
+    finalDurations.forEach(durationValue => {
+        console.log(durationValue);
+    });
+}
+
+mainProcessor(require('fs').readFileSync('/dev/stdin', 'utf8'));

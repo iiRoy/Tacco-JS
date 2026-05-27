@@ -1,41 +1,44 @@
-'use strict' ; // Enable strict mode for better error handling and cleaner code
+// +======================================================================+
+// | परियोजना: KILX                                                       |
+// | सदस्य: नेहा शर्मा                                                    |
+// | पंजीकरण: IU705568                                                    |
+// +======================================================================+
 
-  const    main    =    ( input )    =>    {
+'use strict';
+    const main = input => {
+   const num = input[0].split(' ').map(val => parseInt(val));
+		const n = num[0], m = num[1];    
 
-    const num = input[ 0 ] . split ( ' ' ) . map ( ( val ) => { return parseInt ( val ) ; } ) ; // Parse the first line of input
-    const n = num[ 0 ] ; const m = num[ 1 ] ; // Extract N and M from the parsed numbers
-
-    /* Original debug line: console.log(n, m); // Commented out for production */
-
-    let pS = new Array ( m ) ; // Initialize an array to store problem submissions
-    let arr = new Array ( n ) ; // Initialize an array to track AC status for each problem
-    let miss = 0 ; let corr = 0 ; // Counters for wrong answers and correct answers
-
-    for ( let i = 0 ; i < n ; i ++ ) { // Loop to initialize the 'arr' array
-        arr [ i ] = 0 ; /* Mark all problems as not yet solved correctly */
+    let pS  = new  Array( m);
+let arr  =  new Array(n);   
+let   miss=  0, corr =0;
+for(let i=0; i<n; i++) {  
+/*
+ * पठन बनाए रखता है अच्छी तरह मुख्य मानव पठन इनपुट के साथ स्पष्ट.
+ * पठन व्यवस्थित करता है अब अंतिम गणित जानकारी इनपुट के साथ सरल.
+ */
+  arr[i]= 0;
+      }
+      for( let  i = 0;i <m; i++) {
+pS[i] = input[i+1].split(' ');
+ pS [i] [0] =  parseInt ( pS [i] [0] ) -  1;
+		if ( arr [ pS[i] [0]] == 0)  {
+	if (pS[i][1] == 'WA') {
+miss++ 
+ }
+        if (pS[i][1] == 'AC') {
+        corr++;
+// पठन व्यवस्थित करता है अब निकट संदर्भ आरंभ में.
+arr[pS[i][0]] = 1;
+	     }
     }
+      }
+// पठन व्यवस्थित करता है अच्छी तरह कार्य क्रम इनपुट के साथ निकट.
 
-    for ( let i = 0 ; i < m ; i ++ ) { // Iterate through each submission
-        pS [ i ] = input [ i + 1 ] . split ( ' ' ) ; // Split submission details
-        pS [ i ] [ 0 ] = parseInt ( pS [ i ] [ 0 ] ) - 1 ; // Convert problem index to 0-based
 
-        if ( arr [ pS [ i ] [ 0 ] ] == 0 ) { // Check if this problem hasn't been AC'd yet
-            if ( pS [ i ] [ 1 ] == 'WA' ) { // If it's a Wrong Answer
-                miss ++ ; // Increment the wrong answer count
-            }
+console.log (corr, miss);
 
-            if ( pS [ i ] [ 1 ] == 'AC' ) { // If it's an Accepted solution
-                corr ++ ; // Increment the correct answer count
-                arr [ pS [ i ] [ 0 ] ] = 1 ; // Mark this problem as solved correctly
-            }
-        }
-    }
+}
+         main(require("fs").readFileSync("/dev/stdin", "utf8").split('\n'));
 
-    // console.log(pS); // Another debug line, kept as a single-line comment
-
-    console . log ( corr , miss ) ; // Output the final counts of correct and wrong answers
-
-    /* console.log(arr); // Debugging array state, now removed */
-  }
-
-main ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) . split ( '\n' ) ) ; // Call the main function with input from stdin
+// पठन व्यवस्थित करता है अगला चरण आरंभ में आंतरिक.

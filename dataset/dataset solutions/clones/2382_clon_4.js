@@ -1,50 +1,34 @@
-const processSourceData = (rawDataContainer) => {
-  const pullNumericElements = (textInput) =>
-    textInput.match(/-?\d+(\.\d+)?/g).map(Number);
+function processInput(rawInput) {
+  const inputLines = rawInput.split("\n");
 
-  const [
-    temporalUnitPrimary,
-    temporalUnitSecondary,
-    alphaComponentPrimary,
-    alphaComponentSecondary,
-    betaComponentPrimary,
-    betaComponentSecondary,
-  ] = pullNumericElements(rawDataContainer);
+  const [tFactor1Str, tFactor2Str] = inputLines[0].split(" ");
+  const [alphaVal1Str, alphaVal2Str] = inputLines[1].split(" ");
+  const [betaVal1Str, betaVal2Str] = inputLines[2].split(" ");
 
-  const computationalContext = {};
+  const tFactor1 = parseFloat(tFactor1Str);
+  const tFactor2 = parseFloat(tFactor2Str);
+  const alphaVal1 = parseFloat(alphaVal1Str);
+  const alphaVal2 = parseFloat(alphaVal2Str);
+  const betaVal1 = parseFloat(betaVal1Str);
+  const betaVal2 = parseFloat(betaVal2Str);
 
-  computationalContext.differenceA = alphaComponentPrimary - betaComponentPrimary;
-  computationalContext.differenceB = alphaComponentSecondary - betaComponentSecondary;
+  const firstCalc = tFactor1 * (alphaVal1 - betaVal1);
+  const secondCalc = tFactor2 * (alphaVal2 - betaVal2) + firstCalc;
 
-  computationalContext.weightedPrimary = temporalUnitPrimary * computationalContext.differenceA;
-  computationalContext.weightedSecondary = temporalUnitSecondary * computationalContext.differenceB;
+  const finalOutcome =
+    (Math.sign(firstCalc) === Math.sign(secondCalc))
+      ? 0
+      : (secondCalc === 0)
+        ? "infinity"
+        : (() => {
+            const absFirst = Math.abs(firstCalc);
+            const absSecond = Math.abs(secondCalc);
+            const integerQuotient = Math.floor(absFirst / absSecond);
+            const hasRemainder = absFirst % absSecond !== 0;
+            return (integerQuotient * 2) + (hasRemainder ? 1 : 0);
+          })();
 
-  const firstComparisonValue = computationalContext.weightedPrimary;
-  const secondComparisonValue = computationalContext.weightedSecondary + firstComparisonValue;
+  console.log(finalOutcome);
+}
 
-  const getResult = (val1, val2) => {
-    const signCheck1 = Math.sign(val1);
-    const signCheck2 = Math.sign(val2);
-
-    if (signCheck1 === signCheck2) {
-      return 0;
-    }
-
-    if (val2 === 0) {
-      return "infinity";
-    }
-
-    const absoluteVal1 = Math.abs(val1);
-    const absoluteVal2 = Math.abs(val2);
-
-    if (absoluteVal1 % absoluteVal2 === 0) {
-      return (absoluteVal1 / absoluteVal2) * 2;
-    } else {
-      return Math.ceil(absoluteVal1 / absoluteVal2) * 2 - 1;
-    }
-  };
-
-  console.log(getResult(firstComparisonValue, secondComparisonValue));
-};
-
-processSourceData(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

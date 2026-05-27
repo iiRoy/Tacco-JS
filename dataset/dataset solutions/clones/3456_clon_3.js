@@ -1,80 +1,76 @@
-const outputPrinter = console.log;
+const printOutput = console.log;
 
-const padSixDigits = (numVal) => {
-  if (typeof numVal !== 'number' && typeof numVal !== 'string') {
-    numVal = String(numVal);
-  }
-  return String(numVal).padStart(6, '0');
+const padWithZeros = (numValue, targetLength) => {
+  const numString = String(numValue);
+  const tempPaddedString = '0'.repeat(targetLength) + numString;
+  return tempPaddedString.substring(tempPaddedString.length - targetLength);
 };
 
-const rawInputBuffer = require("fs").readFileSync("/dev/stdin", "UTF-8");
+const rawInputData = require("fs").readFileSync("/dev/stdin", "UTF-8");
+let inputLines = rawInputData.split("\n");
 
-if (!rawInputBuffer || rawInputBuffer.trim().length === 0) {
-    outputPrinter("Error: Empty input received.");
-    process.exit(1);
-}
+// The first line contains N and M, which are read but not used in the original logic.
+// Removing their parsing does not change observable behavior.
+// const [numCities, numQueries] = inputLines[0].split(" ").map(Number);
 
-const allInputLines = rawInputBuffer.split("\n");
+const cityDataLines = inputLines.slice(1);
 
-const configLineParts = allInputLines[0].split(" ");
-const totalMunicipalities = parseInt(configLineParts[0], 10);
-const numCitiesToProcess = parseInt(configLineParts[1], 10);
+// This global variable replicates the original code's behavior where 'Y' was
+// declared globally and updated in the map callback, retaining the value
+// from the last iteration. This value is then used in the second map,
+// even though it's not the specific city's year for that iteration.
+let globalLastParsedYearValue;
 
-const municipalityRawData = allInputLines.slice(1);
+const processCityInputLine = (lineContent, originalPosition) => {
+  const parts = lineContent.split(" ");
+  const currentPrefectureCode = Number(parts[0]);
+  const currentCityYear = Number(parts[1]);
 
-if (municipalityRawData.length < numCitiesToProcess) {
-    console.error(`Warning: Expected ${numCitiesToProcess} cities, but found only ${municipalityRawData.length}.`);
-}
-
-const cityInformationCollection = municipalityRawData.map((recordEntry, entryIndex) => {
-  if (!recordEntry || recordEntry.trim().length === 0) {
-      console.warn(`Skipping empty or invalid record at index ${entryIndex}`);
-      return null;
-  }
-
-  const parts = recordEntry.split(" ");
-  const currentPrefectureCode = parseInt(parts[0], 10);
-  const foundingYear = parseInt(parts[1], 10);
-
-  if (isNaN(currentPrefectureCode) || isNaN(foundingYear)) {
-      console.warn(`Invalid number format in record at index ${entryIndex}: ${recordEntry}. Skipping.`);
-      return null;
-  }
+  globalLastParsedYearValue = currentCityYear; // Update the global variable
 
   return {
-    originalInsertionIndex: entryIndex,
-    administrativeUnit: currentPrefectureCode,
-    establishmentYear: foundingYear
+    originalCityIndex: originalPosition,
+    prefectureCode: currentPrefectureCode,
+    cityYear: currentCityYear
   };
-}).filter(Boolean);
+};
 
-cityInformationCollection.sort((entityA, entityB) => {
-  return entityA.establishmentYear - entityB.establishmentYear;
-});
+let initialCityRecords = cityDataLines.map((line, index) =>
+  processCityInputLine(line, index)
+);
 
-const prefectureSequenceTracker = new Map();
+initialCityRecords.sort((a, b) => a.cityYear - b.cityYear);
 
-const processedMunicipalities = cityInformationCollection.map(currentMunicipality => {
-  const currentPrefCode = currentMunicipality.administrativeUnit;
+const prefectureOccurrenceCounts = {};
+const ID_PADDING_LENGTH = 6;
 
-  let sequenceNumber = prefectureSequenceTracker.get(currentPrefCode) || 0;
-  sequenceNumber++;
-  prefectureSequenceTracker.set(currentPrefCode, sequenceNumber);
+let finalCityRecords = initialCityRecords.map(cityEntry => {
+  if (prefectureOccurrenceCounts[cityEntry.prefectureCode] === undefined) {
+    prefectureOccurrenceCounts[cityEntry.prefectureCode] = 1;
+  } else {
+    prefectureOccurrenceCounts[cityEntry.prefectureCode]++;
+  }
 
-  const paddedPrefecture = padSixDigits(currentPrefCode);
-  const paddedIdentifier = padSixDigits(sequenceNumber);
+  const currentPrefectureCount = prefectureOccurrenceCounts[cityEntry.prefectureCode];
+
+  const formattedPrefectureString = padWithZeros(cityEntry.prefectureCode, ID_PADDING_LENGTH);
+  const formattedCityIdentifier = padWithZeros(currentPrefectureCount, ID_PADDING_LENGTH);
 
   return {
-    originalInsertionIndex: currentMunicipality.originalInsertionIndex,
-    formattedPrefectureCode: paddedPrefecture,
-    uniqueCityIdentifier: paddedIdentifier
+    originalCityIndex: cityEntry.originalCityIndex,
+    formattedPrefecture: formattedPrefectureString,
+    // Preserve the original's behavior: use the globalLastParsedYearValue.
+    // This property is not used in the final output, so its specific value
+    // (which is the year of the last city from the initial parsing)
+    // does not affect observable behavior, but its source must be preserved.
+    yearPlaceholder: globalLastParsedYearValue,
+    cityIdentifier: formattedCityIdentifier
   };
 });
 
-processedMunicipalities.sort((entityA, entityB) => {
-  return entityA.originalInsertionIndex - entityB.originalInsertionIndex;
-});
+finalCityRecords.sort((a, b) => a.originalCityIndex - b.originalCityIndex);
 
-for (const finalCityData of processedMunicipalities) {
-  outputPrinter(finalCityData.formattedPrefectureCode + finalCityData.uniqueCityIdentifier);
-}
+finalCityRecords.forEach(cityOutputData => {
+  const combinedOutputString = cityOutputData.formattedPrefecture + cityOutputData.cityIdentifier;
+  printOutput(combinedOutputString);
+});

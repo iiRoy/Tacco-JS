@@ -1,39 +1,43 @@
-const fileAccessUtility = require('fs');
+const sourceData = require('fs').readFileSync('/dev/stdin', 'utf8').split('\n');
+const primaryString = sourceData[0];
 
-const systemInputPath = '/dev/stdin';
-
-function extractPrimaryContent(sourcePath) {
-    const fullContent = fileAccessUtility.readFileSync(sourcePath, 'utf8');
-    const contentLines = fullContent.split('\n');
-    return contentLines[0];
+function checkFirstChar(charValue) {
+    return charValue === 'P' || charValue === '?';
 }
 
-const subjectString = extractPrimaryContent(systemInputPath);
+function checkSecondChar(charValue) {
+    return charValue === 'D' || charValue === '?';
+}
 
-const allowedFirstPositions = new Set(['?', '|', 'P']);
-const allowedSecondPositions = new Set(['?', '|', 'D']);
+const matchLocations = [];
+let currentScanPosition = 0;
+const stringLength = primaryString.length;
 
-let transformedElements = [];
-let currentPosition = 0;
-const totalLength = subjectString.length;
+while (currentScanPosition < stringLength - 1) {
+    const charA = primaryString[currentScanPosition];
+    const charB = primaryString[currentScanPosition + 1];
 
-while (currentPosition < totalLength) {
-    const charA = subjectString[currentPosition];
-    const charB = subjectString[currentPosition + 1];
-
-    if (currentPosition + 1 < totalLength && allowedFirstPositions.has(charA) && allowedSecondPositions.has(charB)) {
-        transformedElements.push('PD');
-        currentPosition += 2;
+    if (checkFirstChar(charA) && checkSecondChar(charB)) {
+        matchLocations.push([currentScanPosition, currentScanPosition + 1]);
+        currentScanPosition += 2;
     } else {
-        transformedElements.push(charA);
-        currentPosition += 1;
+        currentScanPosition += 1;
     }
 }
 
-const finalResultString = transformedElements.join('');
+let processedOutput = '';
+let lastAppendedPosition = 0;
 
-function presentOutcome(valueToDisplay) {
-    console.log(valueToDisplay);
+for (let i = 0; i < matchLocations.length; i++) {
+    const currentMatchPair = matchLocations[i];
+    const matchStartIdx = currentMatchPair[0];
+    const matchEndIdx = currentMatchPair[1];
+
+    processedOutput += primaryString.substring(lastAppendedPosition, matchStartIdx);
+    processedOutput += 'PD';
+    lastAppendedPosition = matchEndIdx + 1;
 }
 
-presentOutcome(finalResultString);
+processedOutput += primaryString.substring(lastAppendedPosition);
+
+console.log(processedOutput);

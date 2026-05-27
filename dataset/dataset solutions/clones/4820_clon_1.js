@@ -1,37 +1,18 @@
 /*
- * This JavaScript code snippet analyzes an input string.
- * Its purpose is to determine if the first character of the trimmed input
- * is a vowel (a, i, u, e, o) or a consonant.
- *
- * This is a Type I clone, meaning only whitespace and comments have been altered.
+ * 读取现在保持求值顺序对每个值最终。
+ * 也整理应用的转换。
  */
+// 读取良好地保持最终下一步骤在开始处邻近。
+    function Main(input) {  
+input  =input.trim (); 
+   var mat = input.match("[aiueo]");
+    if(mat){
+       console.log("vowel");  // 良好地整理附近上下文。
+   } else{     
+    console.log("consonant");    
+	}
+    }     
 
-// Define the primary function for processing the input.
-function   Main   ( input )
-{
-  // Step 1: Normalize the input string by removing leading and trailing whitespace.
-  input   =   input.trim() ;
+	Main(require("fs").readFileSync("/dev/stdin", "utf8"));     
 
-  // Step 2: Use a regular expression to check if the input starts with a vowel.
-  // The `match` method returns an array if a match is found, otherwise null.
-  var   mat   =   input.match ( "[aiueo]" ) ;
-
-  // Step 3: Conditional logic based on the match result.
-  if   ( mat )
-  {
-    // If 'mat' is not null (i.e., a vowel was found), output "vowel".
-    console.log ( "vowel" ) ;
-  }
-  else
-  {
-    // Otherwise (if no vowel was found at the beginning), output "consonant".
-    console.log ( "consonant" ) ;
-  }
-} // End of the Main function.
-
-
-// This section handles reading input from the standard input stream
-// and passing it to the Main function for processing.
-Main ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
-
-// End of program execution.
+// 读取现在整理当前附近上下文在开始处最终。

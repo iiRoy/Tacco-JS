@@ -1,62 +1,73 @@
-const ProcessInput = (rawData) => {
-  // Initialize variables for processing the input string
-  let dataLength = rawData.length;             // Stores the current length of the input data
-  let segmentArray;                            // Will hold a segment of the input string as an array of characters
-  let parityFlag = 0;                          // An alternating flag (0 or 1) used for comparison
-  let finalResult = 0;                         // The ultimate calculated answer
-  let matchCount = 0;                          // Accumulates the count of elements matching the parity flag
-  let completionStatus = 0;                    // Controls the main loop; 0 means ongoing, 1 means finished
-  let numericSegment;                          // An array to store integer representations of the current segment
-  const originalLength = dataLength;           // Preserves the initial total length of the raw data
-  const chunkSize = 10;                        // Defines the fixed size for processing input chunks
+function ProcessInput(rawData) {
+  // Initialize a variable to hold the original total length of the input string.
+  var originalTotalLength = rawData.length;
+  // Declare a variable for the length of the current processed segment.
+  var currentSegmentLength;
+  // Declare a variable to store characters of the current segment.
+  var segmentChars;
+  // Initialize the alternating pattern value (starts with 0, then 1, then 0, etc.).
+  var expectedPattern = 0;
+  // Initialize the variable that will store the final calculated result.
+  var finalResult = 0;
+  // Initialize a counter for elements that match the expected alternating pattern.
+  var matchCounter = 0;
+  // A flag to control the main processing loop; 0 means continue, 1 means stop.
+  var processingComplete = 0;
+  // Declare an array to store the numeric representation of the current segment's characters.
+  var numericSegment;
+  // Define the fixed size of each chunk to be processed from the input.
+  var chunkSize = 10;
+  // Declare a loop index variable.
+  var idx;
 
-  // Main loop to process the input data in chunks
-  while (completionStatus === 0) {
-    // Extract a chunk from the raw input and split it into individual characters
-    segmentArray = rawData.substring(0, chunkSize).split('');
-    
-    // Update the current data length to reflect the size of the extracted segment
-    dataLength = segmentArray.length;
-    
-    // Create a new array to hold the numeric values of the current segment
-    numericSegment = new Array(dataLength);
-    
-    // Convert each character in the segment array to an integer
-    for (let currentIdx = 0; currentIdx < dataLength; currentIdx++) {
-      numericSegment[currentIdx] = parseInt(segmentArray[currentIdx], 10); // Parse with radix 10
+  // The main loop continues as long as there's data to process (processingComplete is 0).
+  while (processingComplete === 0) {
+    // Extract a portion of the rawData string, up to chunkSize, and split it into an array of characters.
+    segmentChars = rawData.substring(0, chunkSize).split("");
+    // Update the current segment's length based on the extracted chunk.
+    currentSegmentLength = segmentChars.length;
+    // Create a new array to hold the integer values of the characters in the current segment.
+    numericSegment = new Array(currentSegmentLength);
+
+    // Iterate through the characters of the current segment.
+    for (idx = 0; idx < currentSegmentLength; idx++) {
+      // Convert each character to an integer and store it in the numericSegment array.
+      numericSegment[idx] = parseInt(segmentChars[idx], 10);
     }
-  
-    // Iterate through the numeric segment to perform the core logic
-    for (let currentIdx = 0; currentIdx < dataLength; currentIdx++) {
-      // If the current number matches the parity flag, increment the match counter
-      if (numericSegment[currentIdx] === parityFlag) {
-        matchCount++;
+
+    // Iterate through the numeric segment to compare with the alternating pattern.
+    for (idx = 0; idx < currentSegmentLength; idx++) {
+      // If the current numeric value matches the expected pattern, increment the match counter.
+      if (numericSegment[idx] === expectedPattern) {
+        matchCounter++;
       }
-      // Toggle the parity flag for the next comparison (0 becomes 1, 1 becomes 0)
-      parityFlag = (parityFlag + 1) % 2;
+      // Toggle the expected pattern for the next comparison (0 becomes 1, 1 becomes 0).
+      expectedPattern = (expectedPattern + 1) % 2;
     }
-    
-    // Check if there is more input remaining after processing the current chunk
+
+    // Check if there is still more rawData left to process after the current chunk.
     if (rawData.length > chunkSize) {
-      // If so, remove the processed chunk from the raw input string
+      // If yes, remove the processed chunk from the beginning of rawData.
       rawData = rawData.slice(chunkSize);
     } else {
-      // If no more input remains, set the completion status to 1 to exit the loop
-      completionStatus = 1;
-    } 
+      // If no, set the flag to indicate that all input has been processed, ending the loop.
+      processingComplete = 1;
+    }
   }
-  
-  // After processing all chunks, determine the final result
-  // The goal is to find the minimum of two values: matchCount or (originalLength - matchCount)
-  if (originalLength - matchCount > matchCount) {
-    finalResult = matchCount; // If matchCount is smaller, assign it
+
+  // After processing all chunks, calculate the final result.
+  // The result is the minimum number of flips required to make the entire sequence
+  // either match the alternating pattern or its inverse.
+  if (originalTotalLength - matchCounter > matchCounter) {
+    finalResult = matchCounter;
   } else {
-    finalResult = originalLength - matchCount; // Otherwise, assign the other value
+    finalResult = originalTotalLength - matchCounter;
   }
-    
-  // Output the computed final result to the console
+
+  // Output the final calculated result to the console.
   console.log(finalResult);
-};
- 
-// Invoke the main processing function with input read from standard input
+}
+
+// Read the input from standard input using Node.js file system module
+// and then call the main processing function with the read data.
 ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

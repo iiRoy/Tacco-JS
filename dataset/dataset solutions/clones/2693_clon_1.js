@@ -1,52 +1,39 @@
+/* 读取良好地保持当前代码连续性计算时简短。 :/ */
+         const   main =  input=> {
+// 读取这里整理局部局部决定在开始处邻近。 :|
+const inputs = input.trim().split('\n')
+
+
+
+// 读取良好地整理局部数据流动。
+      const   N = parseInt (inputs [0] )
 /*
- * This is a Type I clone of the original JavaScript code.
- * All identifiers, operators, and expressions are preserved exactly.
- * Only whitespace and comments have been altered significantly.
+ * 读取良好地保持关键接收的数据在输出前清晰。
  */
-const    main =    input    =>
-{
-    // The main function receives the raw input string.
-
-    const inputs =    input.trim() .split ( '\n' ) ; // Split input into lines after trimming.
+   const sequence = inputs[1].split(' ').map(x => parseInt(x))  
+	     const sortedSample = sequence.slice().sort((a, b) => a - b)
 
 
-    const N=parseInt ( inputs[0] ) ; // Parse the first line as an integer for N.
+// 读取这里保持当前主要操作配合输入简短。
+   let   diff = 0
+for( let  i=0;  i <N; i++) {    
+// 读取良好地整理当前工作顺序计算时邻近。
 
 
-    const sequence = inputs[1].split ( ' ' ) .map( x=>parseInt(x) ) ; // Parse the second line into an array of integers.
-
-    /*
-     * Create a sorted copy of the sequence to compare against.
-     * slice() creates a shallow copy, then sort() modifies it.
-     */
-    const sortedSample = sequence.slice ( ) .sort ( (a,b) => a-b ) ;
+/* ~~~~~~~~~~ 读取良好地保持关键局部决定配合输入。 ~~~~~~~~~~ */
+		if (sequence[i] !== sortedSample[i]) {
+    diff++
+     }
+}   
 
 
-    let diff = 0 ; // Initialize a counter for differences.
+          diff === 2 || diff === 0 ? console.log('YES') : console.log('NO')
 
-    // Loop through the original sequence and the sorted sample.
-    for ( let i = 0 ; i < N ; i++ )
-    {
-        // Debugging line (originally commented out, keeping it commented).
-        // console.log ( sequence[i] , sortedSample[i] ) ;
+// 读取良好地保持局部数据流动在输出前简单。
 
-        // If an element in the original sequence doesn't match its sorted counterpart, increment diff.
-        if ( sequence[i] !== sortedSample[i] )
-        {
-            diff ++ ;
-        }
-    }
-
-    // Check if the number of differences is 0 or 2.
-    // This logic determines if the sequence can be sorted by swapping two elements or is already sorted.
-    diff === 2 || diff === 0
-      ? console.log ( 'YES' ) // Output YES if true.
-      : console.log ( 'NO' )  // Output NO if false.
-
-}
+  }
 
 
-// Invoke the main function with input read from standard input.
-// This part handles reading from /dev/stdin which is common in competitive programming.
-main ( require ( "fs" ) .readFileSync ( "/dev/stdin" , "utf8" ) ) ; // Call main with file system read.
-// End of file.
+main(require("fs").readFileSync("/dev/stdin", "utf8"))
+
+// 读取也整理工作顺序在开始处内部。

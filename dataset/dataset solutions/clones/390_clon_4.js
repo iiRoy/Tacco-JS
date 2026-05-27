@@ -1,63 +1,44 @@
-const { createInterface } = require('readline');
-
-const processInputData = createInterface({
-    input: process.stdin,
-    output: process.stdout,
-    terminal: false
-});
-
-let collectedNumericalLines = [];
-
-processInputData.on('line', (dataLine) => {
-    const parsedValue = Number(dataLine.trim());
-    if (!isNaN(parsedValue)) {
-        collectedNumericalLines.push(parsedValue);
-    }
-});
-
-processInputData.on('close', () => {
-    let positionTracker = 0;
-    while (positionTracker < collectedNumericalLines.length) {
-        const currentNumericalValue = collectedNumericalLines[positionTracker++];
-        if (currentNumericalValue === 0) {
-            break;
+function* obtainNumericSequence(sourcePath) {
+    const rawContent = require('fs').readFileSync(sourcePath, 'utf8');
+    const lines = rawContent.trim().split('\n');
+    for (const line of lines) {
+        const parsedNumber = Number(line);
+        if (parsedNumber === 0) {
+            return;
         }
-        if (currentNumericalValue === 1) {
-            console.log("");
-            continue;
+        yield parsedNumber;
+    }
+}
+
+for (const currentN of obtainNumericSequence('/dev/stdin')) {
+    if (currentN === 1) {
+        console.log("");
+        continue;
+    }
+
+    const residueList = Array.from({ length: currentN - 1 }, (_, index) => index + 1)
+        .map(val => (val * val) % currentN)
+        .filter((val, index, self) => self.indexOf(val) === index)
+        .sort((a, b) => a - b);
+
+    const halfN = (currentN - 1) / 2;
+    const differenceCounts = Array(halfN + 1).fill(0);
+
+    for (let idxA = 0; idxA < residueList.length; ++idxA) {
+        for (let idxB = idxA + 1; idxB < residueList.length; ++idxB) {
+            const valA = residueList[idxA];
+            const valB = residueList[idxB];
+
+            const forwardDiff = (valA - valB + currentN) % currentN;
+            const backwardDiff = (valB - valA + currentN) % currentN;
+
+            const effectiveDifference = Math.min(forwardDiff, backwardDiff);
+            
+            differenceCounts[effectiveDifference]++;
         }
-
-        const calculatedResults = computeModuloRelationships(currentNumericalValue);
-        calculatedResults.forEach(outputValue => console.log(outputValue));
     }
-});
 
-function computeModuloRelationships(moduloLimit) {
-    const distinctResidues = new Set();
-    for (let index = 1; index < moduloLimit; index++) {
-        distinctResidues.add((index * index) % moduloLimit);
-    }
-    const sortedResidueList = Array.from(distinctResidues).sort((a, b) => a - b);
-
-    const effectiveHalfRange = Math.floor((moduloLimit - 1) / 2);
-
-    const allCalculatedDistances = sortedResidueList.flatMap((valueA, indexA) =>
-        sortedResidueList.slice(indexA + 1).map(valueB => {
-            const rawDifference = Math.abs(valueA - valueB);
-            return Math.min(rawDifference, moduloLimit - rawDifference);
-        })
-    );
-
-    const distanceTally = allCalculatedDistances.reduce((accumulatorMap, currentDistance) => {
-        if (currentDistance > 0 && currentDistance <= effectiveHalfRange) {
-            accumulatorMap.set(currentDistance, (accumulatorMap.get(currentDistance) || 0) + 1);
-        }
-        return accumulatorMap;
-    }, new Map());
-
-    const finalOutputCollection = [];
-    for (let rangeKey = 1; rangeKey <= effectiveHalfRange; rangeKey++) {
-        finalOutputCollection.push((distanceTally.get(rangeKey) || 0) * 2);
-    }
-    return finalOutputCollection;
+    differenceCounts.slice(1).forEach(countValue => {
+        console.log(countValue * 2);
+    });
 }

@@ -1,62 +1,54 @@
-// Function to handle and process textual input data
-function ProcessInputData(sourceText) {
-  // Split the entire input source string into an array of individual lines.
-  const textLines = sourceText.split('\n');
+function ProcessInput(inputString) {
+  // Split the entire input string into an array of individual lines.
+  const inputLines = inputString.split('\n');
 
-  // Parse the first line to get the total quantity of elements.
-  const quantityOfElements = parseInt(textLines[0], 0xA);
+  // Parse the first line to extract the total number of elements.
+  const numElements = parseInt(inputLines[0], 10);
 
-  // Take the second line, split it by spaces, and convert each part to an integer.
-  const numericValues = textLines[1].split(' ').map(elementString => parseInt(elementString, 0xA));
+  // Process the second line: split by space and convert each part to an integer.
+  const dataArray = inputLines[1].split(' ').map(elementStr => parseInt(elementStr, 10));
 
-  // Initialize a variable to store the highest value found in the numeric data.
-  let highestValue = 0x0;
-
-  // Iterate through the numeric values to find the absolute highest number.
-  for (let currentValue of numericValues)
-    highestValue = currentValue > highestValue ? currentValue : highestValue;
-
-  // Create a frequency container (an array acting as buckets) initialized with zeros.
-  const frequencyContainer = new Array(highestValue + 0x2).fill(0x0);
-
-  // Declare an array to hold the calculated sums of adjacent frequencies.
-  const summedTriplets = [];
-
-  // Populate the frequency container by counting occurrences of each number.
-  for (let dataPointIndex = 0x0; dataPointIndex < quantityOfElements; dataPointIndex++) {
-    frequencyContainer[numericValues[dataPointIndex]]++;
+  // Initialize a variable to keep track of the largest value encountered in the data array.
+  let maxValue = 0;
+  // Iterate through the data array to determine its maximum element.
+  for (const currentElement of dataArray) {
+    maxValue = currentElement > maxValue ? currentElement : maxValue;
   }
 
-  // Calculate the sums of current, previous, and next frequencies for each bin.
-  for (let containerIndex = 0x0; containerIndex <= highestValue; containerIndex++) {
-    if (containerIndex === 0x0) {
-      // Special case for the first element (sum of current and next bin).
-      summedTriplets.push(frequencyContainer[containerIndex] + frequencyContainer[containerIndex + 0x1]);
+  // Create a frequency array (or "bins") to store counts of each number.
+  // The size is `maxValue + 2` to accommodate indices up to `maxValue + 1` for calculations.
+  const frequencyBins = new Array(maxValue + 2).fill(0);
+
+  // An array to store the calculated sums based on adjacent frequency bins.
+  const sumCounts = [];
+
+  // Populate the frequency bins by counting occurrences of each number from the `dataArray`.
+  for (let idx = 0; idx < numElements; idx++) {
+    frequencyBins[dataArray[idx]]++;
+  }
+
+  // Iterate through possible bin indices to calculate sums of adjacent frequencies.
+  for (let binIndex = 0; binIndex <= maxValue; binIndex++) {
+    if (binIndex === 0) {
+      // For the first bin, sum its frequency with the frequency of the next bin.
+      sumCounts.push(frequencyBins[binIndex] + frequencyBins[binIndex + 1]);
     } else {
-      // General case: sum of previous, current, and next bins.
-      summedTriplets.push(
-        frequencyContainer[containerIndex - 0x1] +
-        frequencyContainer[containerIndex] +
-        frequencyContainer[containerIndex + 0x1]
-      );
+      // For other bins, sum the frequencies of the previous, current, and next bins.
+      sumCounts.push(frequencyBins[binIndex - 1] + frequencyBins[binIndex] + frequencyBins[binIndex + 1]);
     }
   }
 
-  // Reset the 'highestValue' variable to find the maximum sum.
-  let maximumSum = 0x0;
+  // Re-initialize a variable to find the maximum value within the `sumCounts` array.
+  let maxSum = 0;
+  // Iterate through the `sumCounts` array to find the highest calculated sum.
+  for (const currentSum of sumCounts) {
+    maxSum = currentSum > maxSum ? currentSum : maxSum;
+  }
 
-  // Iterate through the calculated sums to find the overall maximum sum.
-  for (let currentSumValue of summedTriplets)
-    maximumSum = currentSumValue > maximumSum ? currentSumValue : maximumSum;
-
-  // Print the final maximum sum to the standard output.
-  console.log(maximumSum);
+  // Output the final maximum sum to the console.
+  console.log(maxSum);
 }
 
-// Acquire the Node.js file system module for reading input.
-const fileSystemModule = require('fs');
-
-// Invoke the data processing function, reading input from a specific path.
-ProcessInputData(
-  fileSystemModule.readFileSync('/dev/input_stream', 'utf8')
-);
+// Read the input from standard input using Node.js file system module,
+// then invoke the main processing function with the obtained string.
+ProcessInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

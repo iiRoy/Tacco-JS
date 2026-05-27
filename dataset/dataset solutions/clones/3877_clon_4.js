@@ -1,30 +1,28 @@
-((inputPayload) => {
-  const decomposeInput = (rawData) => {
-    return rawData.trim().split(/\s+/).map(Number);
-  };
+"use strict";
 
-  const [valueAlpha, valueBeta, valueCombinedHalf, neededAlpha, neededBeta] = decomposeInput(inputPayload);
+const calculateMinimumCost = (inputData) => {
+  const numericComponents = inputData.trim().split(/\s+/).map(Number);
+  const [unitPriceA, unitPriceB, setPricePerHalf, quantityA, quantityB] = numericComponents;
 
-  const determineSummation = (vA, vB, nA, nB) => vA * nA + vB * nB;
+  // Option 1: Purchase all items individually
+  const costAllSeparate = unitPriceA * quantityA + unitPriceB * quantityB;
 
-  const determineHybridSum = (vA, vB, vCH, nA, nB) => {
-    const combinedFullPrice = vCH * 2;
-    const unitsBoughtAsCombined = Math.min(nA, nB);
-    const leftOverAlpha = Math.max(0, nA - unitsBoughtAsCombined);
-    const leftOverBeta = Math.max(0, nB - unitsBoughtAsCombined);
-    return combinedFullPrice * unitsBoughtAsCombined + vA * leftOverAlpha + vB * leftOverBeta;
-  };
+  // Option 2: Purchase as many sets as possible, then individual items for the remainder
+  const commonCount = Math.min(quantityA, quantityB);
+  const remainingCountA = quantityA - commonCount;
+  const remainingCountB = quantityB - commonCount;
 
-  const determineBulkSum = (vCH, nA, nB) => {
-    const combinedFullPrice = vCH * 2;
-    return combinedFullPrice * Math.max(nA, nB);
-  };
+  const costMixedStrategy = (setPricePerHalf * 2 * commonCount) +
+                            (unitPriceA * remainingCountA) +
+                            (unitPriceB * remainingCountB);
 
-  const candidateTotals = [
-    determineSummation(valueAlpha, valueBeta, neededAlpha, neededBeta),
-    determineHybridSum(valueAlpha, valueBeta, valueCombinedHalf, neededAlpha, neededBeta),
-    determineBulkSum(valueCombinedHalf, neededAlpha, neededBeta)
-  ];
+  // Option 3: Purchase enough sets to cover the maximum required quantity,
+  // accepting potential surplus of one item type.
+  const maxRequiredCount = Math.max(quantityA, quantityB);
+  const costAllSetsStrategy = setPricePerHalf * 2 * maxRequiredCount;
 
-  console.log(Math.min(...candidateTotals));
-})(require("fs").readFileSync("/dev/stdin", "utf8"));
+  // The optimal cost is the minimum among these three strategies.
+  console.log(Math.min(costAllSeparate, costMixedStrategy, costAllSetsStrategy));
+};
+
+calculateMinimumCost(require("fs").readFileSync("/dev/stdin", "utf8"));

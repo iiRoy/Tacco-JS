@@ -1,52 +1,53 @@
-const acquireStreamData = () => new Promise(resolver => {
-    let collectedContent = '';
-    process.stdin.resume();
-    process.stdin.setEncoding('utf-8');
-    process.stdin.on('data', portion => {
-        collectedContent += portion;
-    });
-    process.stdin.on('end', () => {
-        resolver(collectedContent);
-    });
+let receivedData = '';
+const inputSource = process.stdin;
+inputSource.resume();
+inputSource.setEncoding('utf-8');
+
+inputSource.on('data', (segment) => {
+  receivedData += segment;
 });
 
-const deriveCentralValue = (numericSeries) => {
-    const aggregate = numericSeries.reduce((acc, current) => acc + current, 0);
-    return aggregate / numericSeries.length;
-};
+inputSource.on('end', () => {
+  const processedResults = [];
+  const rawLines = receivedData.split('\n');
 
-const calculateSpreadMetric = (numericSeries) => {
-    const meanValue = deriveCentralValue(numericSeries);
-    const sumOfSquaredDeviations = numericSeries.reduce((acc, current) => {
-        const deviation = current - meanValue;
-        return acc + (deviation * deviation);
+  const computeMean = (valuesCollection) => {
+    if (valuesCollection.length === 0) return 0;
+    return valuesCollection.reduce((accumulator, currentVal) => accumulator + currentVal, 0) / valuesCollection.length;
+  };
+
+  const derivePopulationStdDev = (numericSequence) => {
+    if (numericSequence.length === 0) return 0;
+    const centralTendency = computeMean(numericSequence);
+    const squaredDeviationsSum = numericSequence.reduce((accumulator, currentNumber) => {
+      const deviation = currentNumber - centralTendency;
+      return accumulator + (deviation * deviation);
     }, 0);
-    return Math.sqrt(sumOfSquaredDeviations / numericSeries.length);
-};
+    return Math.sqrt(squaredDeviationsSum / numericSequence.length);
+  };
 
-const processTextualEntries = (remainingSegments, outcomeCollection = []) => {
-    if (remainingSegments.length < 2) {
-        return outcomeCollection;
+  const processInputSegments = (remainingLines, currentOffset = 0) => {
+    if (currentOffset >= remainingLines.length) {
+      return;
     }
 
-    const firstSegment = remainingSegments[0];
-    const secondSegment = remainingSegments[1];
-
-    const elementCount = Number.parseInt(firstSegment, 10);
+    const countString = remainingLines[currentOffset];
+    const elementCount = parseInt(countString, 10);
 
     if (elementCount === 0) {
-        return outcomeCollection;
+      return;
     }
 
-    const numericalElements = secondSegment.split(' ').map(Number);
+    const numberSequenceString = remainingLines[currentOffset + 1];
+    const numericValues = numberSequenceString.split(' ').map(Number);
 
-    const currentSpread = calculateSpreadMetric(numericalElements);
+    const calculatedDeviation = derivePopulationStdDev(numericValues);
+    processedResults.push(calculatedDeviation);
 
-    return processTextualEntries(remainingSegments.slice(2), [...outcomeCollection, currentSpread]);
-};
+    processInputSegments(remainingLines, currentOffset + 2);
+  };
 
-acquireStreamData().then(fullText => {
-    const linesOfText = fullText.split('\n');
-    const finalResults = processTextualEntries(linesOfText);
-    console.log(finalResults.join('\n'));
+  processInputSegments(rawLines);
+
+  console.log(processedResults.join('\n'));
 });

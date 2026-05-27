@@ -1,34 +1,28 @@
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
 
-let collectedInputSegments = [];
-const inputSource = require('readline').createInterface({
+const inputLines = [];
+const inputReader = require('readline').createInterface({
   input: process.stdin,
   output: process.stdout
 });
 
-inputSource.on('line', (individualSegment) => {
-  collectedInputSegments.push(individualSegment);
+inputReader.on('line', (currentLine) => {
+  inputLines.push(currentLine);
 });
 
-inputSource.on('close', () => {
-    const initialParameters = collectedInputSegments[0].split(" ").map(Number);
-    const numberOfGraphVertices = initialParameters[0];
+inputReader.on('close', () => {
+    const [nodeQuantity, edgeQuantity] = inputLines[0].split(" ").map(Number);
 
-    const allEdgeEndpoints = collectedInputSegments.slice(1).flatMap(segmentOfEdge => {
-        const numericEndpoints = segmentOfEdge.split(" ").map(Number);
-        return [numericEndpoints[0], numericEndpoints[1]];
-    });
-
-    const connectivityCounts = allEdgeEndpoints.reduce((accumulatorMap, currentVertexId) => {
-        accumulatorMap.set(currentVertexId, (accumulatorMap.get(currentVertexId) || 0) + 1);
-        return accumulatorMap;
+    const nodeDegrees = inputLines.slice(1).reduce((degreeRegistry, edgeDescription) => {
+        const [firstNode, secondNode] = edgeDescription.split(" ").map(Number);
+        degreeRegistry.set(firstNode, (degreeRegistry.get(firstNode) || 0) + 1);
+        degreeRegistry.set(secondNode, (degreeRegistry.get(secondNode) || 0) + 1);
+        return degreeRegistry;
     }, new Map());
 
-    const finalVertexDegreeList = Array.from({ length: numberOfGraphVertices }, (_, indexOffset) => {
-        const vertexIdentity = indexOffset + 1;
-        return connectivityCounts.get(vertexIdentity) || 0;
-    });
-
-    finalVertexDegreeList.forEach(degreeValue => console.log(degreeValue));
+    Array.from({ length: nodeQuantity }, (_, nodeIndex) => nodeIndex + 1)
+         .forEach(identifier => {
+             console.log(nodeDegrees.get(identifier) || 0);
+         });
 });

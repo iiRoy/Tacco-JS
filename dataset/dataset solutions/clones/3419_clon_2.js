@@ -1,88 +1,76 @@
-"use strict"; // Enforce strict parsing and error handling
+"use strict"; // Enforce strict mode for cleaner code
 
-/*
- * This module processes input data to compute a specific value
- * based on a recursive structure representing a "burger" of various layers.
+/**
+ * Processes the input string to extract parameters and initiate the calculation.
+ * @param {string} inputString - The raw input string from stdin.
  */
-function processApplication( inputDataString )
-{
-    // Split the entire input string by newline characters to get individual lines.
-    const arrayOfLines = inputDataString.split("\n");
+function processInput(inputString) {
+    // Split the input into lines, though for this problem, only the first line is used.
+    const lineData = inputString.split("\n");
 
-    // Parse the first line to extract two key numerical parameters.
-    // The first number represents the initial depth or level.
-    const initialDepth = parseInt(arrayOfLines[0].split(" ")[0]);
-    // The second number represents the target position within the structure.
-    const targetSpot = parseInt(arrayOfLines[0].split(" ")[1]);
+    // Parse the first line to get the two integer values.
+    // The first value represents the layer count.
+    const layerCount = parseInt(lineData[0].split(" ")[0]);
+    // The second value represents the target position.
+    const targetPosition = parseInt(lineData[0].split(" ")[1]);
 
-    // Output the result of the main calculation function to the console.
-    console.log( calculateEatenItems( initialDepth, targetSpot ) );
+    // Output the result of the main calculation function.
+    console.log(calculateEatenPatties(layerCount, targetPosition));
 }
 
 /**
- * Computes the total size (number of "items") of a burger structure at a given depth.
- * @param {number} currentDepth The depth of the burger layer.
- * @returns {number} The total count of items in the burger at this depth.
+ * Calculates the total number of elements (buns and patties) in a given burger layer.
+ * @param {number} currentLayer - The layer number (0-indexed).
+ * @returns {number} The total count of elements.
  */
-function getTotalLayerSize( currentDepth )
-{
-    // The formula for total size is 2^(depth + 2) - 3.
-    // This represents the total number of "buns" and "patties" at this level.
-    return Math.pow( 2, currentDepth + 2 ) - 3;
+function getTotalElements(currentLayer) {
+    // Formula for total elements: 2^(layer + 2) - 3
+    return Math.pow(2, currentLayer + 2) - 3;
 }
 
 /**
- * Determines the number of "patties" within a burger structure at a given depth.
- * @param {number} currentDepth The depth of the burger layer.
- * @returns {number} The count of patties at this specific depth.
+ * Calculates the total number of patties in a given burger layer.
+ * @param {number} currentLayer - The layer number (0-indexed).
+ * @returns {number} The total count of patties.
  */
-function getPattyCount( currentDepth )
-{
-    // The formula for patty count is 2^(depth + 1) - 1.
-    // This function specifically counts the "meat" components.
-    return Math.pow( 2, currentDepth + 1 ) - 1;
+function getTotalPatties(currentLayer) {
+    // Formula for total patties: 2^(layer + 1) - 1
+    return Math.pow(2, currentLayer + 1) - 1;
 }
 
 /**
- * Recursively calculates the number of "eaten items" up to a specified position
- * within a burger structure of a given depth.
- * @param {number} layerValue The current depth of the burger structure being considered.
- * @param {number} positionInLayer The specific position from the start of the current layer.
- * @returns {number} The count of "patties" encountered up to the given position.
+ * Recursively calculates the number of patties eaten up to a certain position in a burger layer.
+ * This function models a specific recursive structure of a "burger".
+ *
+ * @param {number} currentLayer - The current layer of the burger being considered (0-indexed).
+ * @param {number} targetPosition - The position up to which patties are counted (1-indexed).
+ * @returns {number} The count of patties eaten.
  */
-function calculateEatenItems( layerValue, positionInLayer )
-{
-    // Calculate the total size of the sub-burger (one level deeper).
-    const sizeOfLowerLayer = getTotalLayerSize( layerValue - 1 );
+function calculateEatenPatties(currentLayer, targetPosition) {
+    // Calculate the total elements in the layer below the current one.
+    const totalElementsInLowerLayer = getTotalElements(currentLayer - 1);
 
-    // Base case: If the layer value is 0, it means we are at the smallest component,
-    // which is considered a single "patty".
-    if ( layerValue === 0 )
-    {
+    // Base case: If the layer is 0, it's just a single patty.
+    if (currentLayer === 0) {
         return 1;
     }
-    // If the position is 1 or less, no patty has been eaten yet (assuming 0-indexed bun).
-    else if ( positionInLayer <= 1 )
-    {
+    // Case 1: If the target position is 1 or less, no patties are eaten (only a bun).
+    else if (targetPosition <= 1) {
         return 0;
     }
-    // If the position falls within the first half of the current layer (including the bun and lower layer).
-    else if ( positionInLayer <= sizeOfLowerLayer + 1 )
-    {
-        // Recursively call for the lower layer, adjusting the position.
-        // We subtract 1 from the position because the first item is a bun.
-        return calculateEatenItems( layerValue - 1, positionInLayer - 1 );
+    // Case 2: If the target position is within the first half of the burger (excluding the middle patty).
+    // This means we are looking into the lower layer's structure.
+    else if (targetPosition <= totalElementsInLowerLayer + 1) {
+        // Recurse into the lower layer, adjusting the target position by 1 (for the bun).
+        return calculateEatenPatties(currentLayer - 1, targetPosition - 1);
     }
-    // Otherwise, the position is in the second half, meaning we've passed the lower layer,
-    // the middle patty, and potentially entered the upper lower layer.
-    else
-    {
-        // Sum the patties from the full lower layer, the middle patty (1),
-        // and the recursively calculated patties from the remaining part of the upper lower layer.
-        return getPattyCount( layerValue - 1 ) + 1 + calculateEatenItems( layerValue - 1, positionInLayer - sizeOfLowerLayer - 2 );
+    // Case 3: If the target position is past the first half and includes the middle patty.
+    // We count all patties from the lower layer, plus the middle patty, and then recurse for the remaining part.
+    else {
+        // Total patties in the lower layer + 1 (for the middle patty) + patties from the remaining part of the upper layer.
+        return getTotalPatties(currentLayer - 1) + 1 + calculateEatenPatties(currentLayer - 1, targetPosition - totalElementsInLowerLayer - 2);
     }
 }
 
-// Execute the main program by reading input from standard input.
-// This line assumes the environment provides 'fs' module and '/dev/stdin' for input.
-processApplication( require('fs').readFileSync('/dev/stdin', 'utf8') );
+// Read input from standard input and pass it to the main processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

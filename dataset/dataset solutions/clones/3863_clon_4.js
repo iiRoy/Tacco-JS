@@ -1,79 +1,73 @@
-class SourceReader {
-  constructor(rawContent) {
-    this.segments = rawContent.trim().split('\n');
-    this.currentSegmentIndex = 0;
-    this.currentSegmentTokens = [];
+class DataParser {
+  #lineBuffer;
+  #currentLineWords = [];
+  #lineIndex = 0;
+
+  constructor(rawInput) {
+    this.#lineBuffer = rawInput.trim().split("\n");
   }
 
-  fetchItem(asString = false) {
-    if (this.currentSegmentTokens.length === 0) {
-      if (this.currentSegmentIndex >= this.segments.length) {
-        // Handle end of input gracefully, though original might throw error
-        return undefined;
-      }
-      const line = this.segments[this.currentSegmentIndex++];
-      this.currentSegmentTokens = line.split(' ').reverse();
+  #prepareCurrentLineWords() {
+    if (this.#lineIndex < this.#lineBuffer.length) {
+      this.#currentLineWords = this.#lineBuffer[this.#lineIndex++].split(" ").reverse();
+    } else {
+      this.#currentLineWords = [];
     }
-    const extracted = this.currentSegmentTokens.pop();
-    return asString ? extracted : Number(extracted);
   }
 
-  fetchLine(asString = false) {
-    if (this.currentSegmentIndex >= this.segments.length) {
-      return asString ? [] : [];
+  fetchRightmostValue(asStringOutput = false) {
+    if (this.#currentLineWords.length === 0) {
+      this.#prepareCurrentLineWords();
     }
-    const line = this.segments[this.currentSegmentIndex++];
-    const tokens = line.split(' ');
-    return asString ? tokens : tokens.map(Number);
+    const extractedItem = this.#currentLineWords.pop();
+    return asStringOutput ? extractedItem : Number(extractedItem);
   }
 
-  fetchMatrix(count, asString = false) {
-    const collectedRows = [];
-    for (let i = 0; i < count; i++) {
-      if (this.currentSegmentIndex >= this.segments.length) {
-        break; // Not enough lines
-      }
-      const line = this.segments[this.currentSegmentIndex++];
-      const tokens = line.split(' ');
-      collectedRows.push(asString ? tokens : tokens.map(Number));
-    }
-    return collectedRows;
+  retrieveLineValues(asStringArray = false) {
+    const lineContent = this.#lineBuffer[this.#lineIndex++];
+    const parts = lineContent.split(" ");
+    return asStringArray ? parts : parts.map(Number);
   }
 
-  fetchRows(count, asString = false) {
-    const collectedData = [];
-    for (let i = 0; i < count; i++) {
-      if (this.currentSegmentIndex >= this.segments.length) {
-        break; // Not enough lines
-      }
-      const line = this.segments[this.currentSegmentIndex++];
-      collectedData.push(asString ? line : Number(line));
+  getNumericGrid(rowCount) {
+    const gridData = [];
+    for (let i = 0; i < rowCount; i++) {
+      gridData.push(this.retrieveLineValues());
     }
-    return collectedData;
+    return gridData;
+  }
+
+  getNumericBlock(rowCount) {
+    const blockData = [];
+    for (let i = 0; i < rowCount; i++) {
+      blockData.push(Number(this.#lineBuffer[this.#lineIndex++]));
+    }
+    return blockData;
   }
 }
 
-const sourceData = require('node:fs').readFileSync('/dev/stdin', 'utf8');
-const dataHandler = new SourceReader(sourceData);
+const InputHandler = (inputString) => new DataParser(inputString);
 
-console.log(processSequence());
+console.log(calculateZeroSumSubarrays());
 
-function processSequence() {
-  const quantity = dataHandler.fetchItem();
-  const sequence = dataHandler.fetchLine();
+function calculateZeroSumSubarrays() {
+  const dataReader = InputHandler(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-  const frequencyMap = { '0': 1 };
+  const sequenceLength = dataReader.fetchRightmostValue();
+  const numericSequence = dataReader.retrieveLineValues();
 
-  sequence.reduce((currentSum, element) => {
-    const nextSum = currentSum + element;
-    frequencyMap[nextSum] = (frequencyMap[nextSum] || 0) + 1;
-    return nextSum;
+  const { prefixCounts } = numericSequence.reduce((accumulator, currentNumber) => {
+    accumulator.currentRunningSum += currentNumber;
+    accumulator.prefixCounts.set(
+      accumulator.currentRunningSum,
+      (accumulator.prefixCounts.get(accumulator.currentRunningSum) || 0) + 1
+    );
+    return accumulator;
+  }, { currentRunningSum: 0, prefixCounts: new Map([[0, 1]]) });
+
+  const totalCombinations = Array.from(prefixCounts.values()).reduce((sum, count) => {
+    return sum + (count * (count - 1) / 2);
   }, 0);
 
-  let totalPairs = 0;
-  Object.values(frequencyMap).forEach(count => {
-    totalPairs += (count * (count - 1)) / 2;
-  });
-
-  return totalPairs;
+  return totalCombinations;
 }

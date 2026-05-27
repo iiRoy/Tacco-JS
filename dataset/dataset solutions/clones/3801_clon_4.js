@@ -1,61 +1,33 @@
 "use strict";
 
-const transformInput = (sourceText) => {
-    const lines = sourceText.trim().split('\n');
-    const totalEntities = Number(lines[0].split(' ')[0]);
-    const entityAlignments = lines[1].split('');
-    return { totalEntities, entityAlignments };
-};
+const processInput = (inputData) => {
+    const lines = inputData.trim().split("\n");
+    const sequenceLength = parseInt(lines[0].split(" ")[0]);
+    const charSequence = lines[1].split("");
 
-const determineMinimumTurnaround = (config) => {
-    const { totalEntities, entityAlignments } = config;
+    const westPrefixCounts = new Array(sequenceLength + 1).fill(0);
+    const eastPrefixCounts = new Array(sequenceLength + 1).fill(0);
 
-    let westernCounter = 0;
-    const leftwardWesterns = entityAlignments.map(alignment => {
-        const currentCount = westernCounter;
-        if (alignment === 'W') {
-            westernCounter++;
-        }
-        return currentCount;
-    });
-
-    let easternCounter = 0;
-    const rightwardEasternsReversed = entityAlignments.slice().reverse().map(alignment => {
-        const currentCount = easternCounter;
-        if (alignment === 'E') {
-            easternCounter++;
-        }
-        return currentCount;
-    });
-    const rightwardEasterns = rightwardEasternsRe_reverse(rightwardEasternsReversed);
-
-    const turnaroundScores = entityAlignments.map((_, index) => {
-        const leftCost = leftwardWesterns[index];
-        const rightCost = rightwardEasterns[index];
-        return leftCost + rightCost;
-    });
-
-    return Math.min(...turnaroundScores);
-};
-
-const rightwardEasternsRe_reverse = (arr) => {
-    const reversedResult = [];
-    let currentIdx = arr.length - 1;
-    while (currentIdx >= 0) {
-        reversedResult.push(arr[currentIdx]);
-        currentIdx--;
+    for (let k = 0; k < sequenceLength; k++) {
+        westPrefixCounts[k + 1] = westPrefixCounts[k] + (charSequence[k] === 'W' ? 1 : 0);
+        eastPrefixCounts[k + 1] = eastPrefixCounts[k] + (charSequence[k] === 'E' ? 1 : 0);
     }
-    return reversedResult;
+
+    const totalEast = eastPrefixCounts[sequenceLength];
+    let minResult = Infinity;
+
+    for (let idx = 0; idx < sequenceLength; idx++) {
+        const currentWestLeft = westPrefixCounts[idx];
+        let currentEastRight = totalEast - eastPrefixCounts[idx];
+
+        if (charSequence[idx] === "E") {
+            currentEastRight--;
+        }
+
+        minResult = Math.min(minResult, currentWestLeft + currentEastRight);
+    }
+
+    console.log(minResult);
 };
 
-const executeComputation = (inputString) => {
-    const parsedData = transformInput(inputString);
-    const result = determineMinimumTurnaround(parsedData);
-    return result;
-};
-
-const programEntryPoint = (inputData) => {
-    console.log(executeComputation(inputData));
-};
-
-programEntryPoint(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,76 +1,57 @@
-const sourceContent = require('fs').readFileSync(0, 'utf8');
-const textLines = sourceContent.trim().split('\n');
+const fs = require('fs');
 
-const gridDimensions = textLines.shift().split(' ').map(Number);
-const totalRows = gridDimensions[0];
-const totalColumns = gridDimensions[1];
+const rawInputData = fs.readFileSync('/dev/stdin', 'utf8');
 
-const colorIdentifierMap = { 'W': 0, 'B': 1, 'R': 2 };
+const processedLines = rawInputData
+    .trim()
+    .replace(/W/g, "0")
+    .replace(/B/g, "1")
+    .replace(/R/g, "2")
+    .split("\n");
 
-const rowConversionCosts = textLines.map(lineValue => {
-    const colorCounts = [0, 0, 0]; // Counts for 0, 1, 2
-    for (let charPos = 0; charPos < totalColumns; charPos++) {
-        colorCounts[colorIdentifierMap[lineValue[charPos]]]++;
+const [totalRows, totalCols] = processedLines.shift().split(" ").map(Number);
+
+const rowTransformationCosts = processedLines.map(rowString => {
+    const colorCounts = [totalCols, totalCols, totalCols];
+    for (let charIndex = 0; charIndex < totalCols; charIndex++) {
+        colorCounts[parseInt(rowString[charIndex], 10)]--;
     }
-    // Calculate cost to make this row entirely white (0), blue (1), or red (2)
-    return [
-        totalColumns - colorCounts[0], // Cost for white
-        totalColumns - colorCounts[1], // Cost for blue
-        totalColumns - colorCounts[2]  // Cost for red
-    ];
+    return colorCounts;
 });
 
-const accumulatedRowCosts = [];
-for (let rowIdx = 0; rowIdx < totalRows; rowIdx++) {
-    accumulatedRowCosts[rowIdx] = [0, 0, 0];
-    if (rowIdx > 0) {
-        accumulatedRowCosts[rowIdx][0] = accumulatedRowCosts[rowIdx - 1][0];
-        accumulatedRowCosts[rowIdx][1] = accumulatedRowCosts[rowIdx - 1][1];
-        accumulatedRowCosts[rowIdx][2] = accumulatedRowCosts[rowIdx - 1][2];
-    }
-    accumulatedRowCosts[rowIdx][0] += rowConversionCosts[rowIdx][0];
-    accumulatedRowCosts[rowIdx][1] += rowConversionCosts[rowIdx][1];
-    accumulatedRowCosts[rowIdx][2] += rowConversionCosts[rowIdx][2];
+const cumulativeWhiteCosts = new Array(totalRows);
+const cumulativeBlueCosts = new Array(totalRows);
+const cumulativeRedCosts = new Array(totalRows);
+
+for (let rowIndex = 0; rowIndex < totalRows; rowIndex++) {
+    cumulativeWhiteCosts[rowIndex] = (rowIndex > 0 ? cumulativeWhiteCosts[rowIndex - 1] : 0) + rowTransformationCosts[rowIndex][0];
+    cumulativeBlueCosts[rowIndex] = (rowIndex > 0 ? cumulativeBlueCosts[rowIndex - 1] : 0) + rowTransformationCosts[rowIndex][1];
+    cumulativeRedCosts[rowIndex] = (rowIndex > 0 ? cumulativeRedCosts[rowIndex - 1] : 0) + rowTransformationCosts[rowIndex][2];
 }
 
-const obtainRangeSum = (beginIdx, endIdx, desiredColor) => {
-    let sumValue = accumulatedRowCosts[endIdx][desiredColor];
-    if (beginIdx > 0) {
-        sumValue -= accumulatedRowCosts[beginIdx - 1][desiredColor];
-    }
-    return sumValue;
-};
-
-let minimumOverallCost = Number.MAX_SAFE_INTEGER;
+let overallMinimumFlips = 2500;
 
 if (totalRows === 3) {
-    // Special case for 3 rows: 0=White, 1=Blue, 2=Red
-    minimumOverallCost = rowConversionCosts[0][0] + rowConversionCosts[1][1] + rowConversionCosts[2][2];
+    overallMinimumFlips = rowTransformationCosts[0][0] + rowTransformationCosts[1][1] + rowTransformationCosts[2][2];
 }
 
-// Loop through all possible split points for the three color sections
-// 'endOfWhiteIdx' defines the last row index for the white section (0 to endOfWhiteIdx)
-// 'endOfBlueIdx' defines the last row index for the blue section (endOfWhiteIdx to endOfBlueIdx - 1)
-// The red section then covers (endOfBlueIdx to totalRows - 2)
-// Note: This logic directly mirrors the original code's interpretation of split points and ranges,
-// including its specific handling of `j` in the red section calculation.
-for (let endOfWhiteIdx = 1; endOfWhiteIdx < totalRows - 2; endOfWhiteIdx++) {
-    for (let endOfBlueIdx = endOfWhiteIdx + 1; endOfBlueIdx < totalRows - 1; endOfBlueIdx++) {
-        let currentConfigurationCost = 0;
+for (let blueSectionStartRow = 1; blueSectionStartRow < totalRows - 2; blueSectionStartRow++) {
+    for (let redSectionStartRow = blueSectionStartRow + 1; redSectionStartRow < totalRows - 1; redSectionStartRow++) {
+        let currentConfigurationFlips = 0;
 
-        // Cost for the white section: rows 0 to endOfWhiteIdx
-        currentConfigurationCost += obtainRangeSum(0, endOfWhiteIdx, 0);
+        // Cost for White section (rows 0 to blueSectionStartRow inclusive)
+        currentConfigurationFlips += cumulativeWhiteCosts[blueSectionStartRow];
 
-        // Cost for the blue section: rows endOfWhiteIdx to endOfBlueIdx - 1
-        currentConfigurationCost += obtainRangeSum(endOfWhiteIdx, endOfBlueIdx - 1, 1);
+        // Cost for Blue section (rows blueSectionStartRow to redSectionStartRow - 1 inclusive)
+        currentConfigurationFlips += cumulativeBlueCosts[redSectionStartRow - 1] -
+                                     (blueSectionStartRow > 0 ? cumulativeBlueCosts[blueSectionStartRow - 1] : 0);
 
-        // Cost for the red section: rows endOfBlueIdx to totalRows - 2
-        // This is based on the original code's `while (b != n - 1)` loop,
-        // which iterated up to `n-2` (inclusive) for the red section.
-        currentConfigurationCost += obtainRangeSum(endOfBlueIdx, totalRows - 2, 2);
+        // Cost for Red section (rows redSectionStartRow to totalRows - 2 inclusive)
+        currentConfigurationFlips += cumulativeRedCosts[totalRows - 2] -
+                                     (redSectionStartRow > 0 ? cumulativeRedCosts[redSectionStartRow - 1] : 0);
 
-        minimumOverallCost = Math.min(minimumOverallCost, currentConfigurationCost);
+        overallMinimumFlips = Math.min(overallMinimumFlips, currentConfigurationFlips);
     }
 }
 
-console.log(minimumOverallCost);
+console.log(overallMinimumFlips);

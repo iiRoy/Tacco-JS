@@ -1,14 +1,12 @@
-const runApplication = (rawInput) => {
-  const performCalculation = (dataString) => {
-    const numberPair = dataString.split(' ').map(Number);
-    const [firstNumber, secondNumber] = numberPair;
+function Main(sourceText) {
+  const [firstDimension, secondDimension] = sourceText.match(/-?\d+/g).map(Number);
 
-    const finalOutcome = (firstNumber - 2) * (secondNumber - 2);
-
-    console.log(finalOutcome);
+  const computeAdjustedProduct = (lengthVal, widthVal) => {
+    return lengthVal * widthVal - 2 * lengthVal - 2 * widthVal + 4;
   };
 
-  performCalculation(rawInput);
-};
+  const finalOutcome = computeAdjustedProduct(firstDimension, secondDimension);
+  console.log(finalOutcome);
+}
 
-runApplication(require("fs").readFileSync("/dev/stdin", "utf8"));
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

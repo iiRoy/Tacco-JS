@@ -1,40 +1,26 @@
-const entrance = require('readline');
+'use strict';
+process.stdin.on('data', function(dataBuffer) {
+    const numericValues = dataBuffer.toString().trim().split(' ').map(parseFloat);
 
-const ioHandler = entrance.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-    terminal: false
+    const geometry = {
+        extentWidth: numericValues[0],
+        extentHeight: numericValues[1],
+        centerX: numericValues[2],
+        centerY: numericValues[3],
+        shapeRadius: numericValues[4]
+    };
+
+    const conditionPredicates = [
+        (g) => (g.extentWidth - g.centerX - g.shapeRadius) >= 0,
+        (g) => (g.extentWidth - g.centerX + g.shapeRadius) <= g.extentWidth,
+        (g) => (g.extentHeight - g.centerY - g.shapeRadius) <= 0,
+        (g) => (g.extentHeight - g.centerY + g.shapeRadius) >= g.extentHeight
+    ];
+
+    const allConditionsMet = conditionPredicates.every(predicate => predicate(geometry));
+
+    console.log(allConditionsMet ? 'Yes' : 'No');
 });
 
-ioHandler.on('line', (lineContent) => {
-    const measureValues = lineContent.split(' ').map(val => +val);
-
-    const zoneWidth = measureValues[0];
-    const zoneHeight = measureValues[1];
-    const objectX = measureValues[2];
-    const objectY = measureValues[3];
-    const objectRadius = measureValues[4];
-
-    const outcome = (() => {
-        const leftBoundary = objectX - objectRadius;
-        const rightBoundary = objectX + objectRadius;
-        const topBoundary = objectY - objectRadius;
-        const bottomBoundary = objectY + objectRadius;
-
-        if (leftBoundary < 0) {
-            return 'No';
-        }
-        if (rightBoundary > zoneWidth) {
-            return 'No';
-        }
-        if (topBoundary > 0) {
-            return 'No';
-        }
-        if (bottomBoundary < zoneHeight) {
-            return 'No';
-        }
-        return 'Yes';
-    })();
-
-    console.log(outcome);
-});
+process.stdin.resume();
+process.stdin.setEncoding('utf8');

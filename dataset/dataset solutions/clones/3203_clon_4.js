@@ -1,34 +1,50 @@
-function processText(rawContent) {
-  return rawContent.trim().split(/\s+/).map(Number);
+"use strict";
+
+function createNumericStream(sourceText) {
+    const allNumericTokens = sourceText
+        .split('\n')
+        .flatMap(lineSegment => lineSegment.trim().split(' '))
+        .filter(tokenUnit => tokenUnit !== '')
+        .map(Number);
+    let currentPosition = 0;
+
+    return {
+        retrieveNext: () => {
+            if (currentPosition < allNumericTokens.length) {
+                return allNumericTokens[currentPosition++];
+            }
+            return undefined;
+        }
+    };
 }
 
-function calculateVertexMetrics(edgeList, currentDegrees = [0, 0, 0, 0]) {
-  if (edgeList.length === 0) {
-    return currentDegrees;
-  }
+function analyzeConnectivity(sourceData) {
+    const numericSource = createNumericStream(sourceData);
 
-  const [firstNode, ...remainingEdges] = edgeList;
+    const degreeCounter = new Map();
+    Array.from({ length: 4 }).forEach((_, index) => degreeCounter.set(index + 1, 0));
 
-  const updatedDegrees = [...currentDegrees];
-  updatedDegrees[firstNode - 1]++;
+    Array.from({ length: 3 }).forEach(() => {
+        const firstEndpoint = numericSource.retrieveNext();
+        const secondEndpoint = numericSource.retrieveNext();
 
-  return calculateVertexMetrics(remainingEdges, updatedDegrees);
+        if (firstEndpoint !== undefined && secondEndpoint !== undefined) {
+            degreeCounter.set(firstEndpoint, degreeCounter.get(firstEndpoint) + 1);
+            degreeCounter.set(secondEndpoint, degreeCounter.get(secondEndpoint) + 1);
+        }
+    });
+
+    const finalDegrees = Array.from(degreeCounter.values()).sort((valA, valB) => valA - valB);
+
+    const expectedPattern = [1, 1, 2, 2];
+    const isConfigurationValid = finalDegrees.length === expectedPattern.length &&
+                                 finalDegrees.every((value, index) => value === expectedPattern[index]);
+
+    if (isConfigurationValid) {
+        console.log("YES");
+    } else {
+        console.log("NO");
+    }
 }
 
-function determineOutcome(sourceData) {
-  const allNumericTokens = processText(sourceData);
-
-  const relevantEdgeNodes = allNumericTokens.slice(0, 6);
-
-  const finalDegrees = calculateVertexMetrics(relevantEdgeNodes);
-
-  const degreeSignature = finalDegrees.sort((valA, valB) => valA - valB).join(" ");
-
-  if (degreeSignature === "1 1 2 2") {
-    console.log("YES");
-  } else {
-    console.log("NO");
-  }
-}
-
-determineOutcome(require("fs").readFileSync("/dev/stdin", "utf8"));
+analyzeConnectivity(require("fs").readFileSync("/dev/stdin", "utf8"));

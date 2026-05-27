@@ -1,43 +1,40 @@
-function determineOutcome(inputLine) {
-  // First, parse the input string into an array of numeric components.
-  // The input string is expected to be space-separated numbers.
-  const numComponents = inputLine.split(" ").map(componentStr => +componentStr);
+function ProcessInput(inputStr) { // Main processing function for the problem
+  // Parse the input string into an array of numbers.
+  // Each number is converted from string to numeric type.
+  let numArr = inputStr.split(" ").map(val => Number(val));
 
-  // Initialize the final calculated value with a product of initial elements.
-  let finalCalc = numComponents[0] * numComponents[3];
-  finalCalc += numComponents[1] * numComponents[4]; // Add another product to the sum.
+  // Initialize the final result with the product of the first and fourth elements.
+  let finalResult = numArr[0] * numArr[3];
 
-  // Check for a specific condition involving sums and multiples.
-  // If the sum of the first two elements exceeds twice the third element,
-  // a special deduction logic applies.
-  if (numComponents[0] + numComponents[1] > numComponents[2] * 2) {
-    // Determine a quantity to deduct, based on the minimum of the fourth and fifth elements.
-    const deductibleQuantity = Math.min(numComponents[3], numComponents[4]);
+  // Add the product of the second and fifth elements to the result.
+  finalResult += numArr[1] * numArr[4];
 
-    // Apply the deduction to the final calculation.
-    finalCalc -= (numComponents[0] + numComponents[1] - numComponents[2] * 2) * deductibleQuantity;
+  // Check a specific condition involving the first three elements.
+  if (numArr[0] + numArr[1] > numArr[2] * 2) {
+    // If the condition is met, calculate the minimum of the fourth and fifth elements.
+    let minVal = Math.min(numArr[3], numArr[4]);
 
-    // Adjust the fourth and fifth elements based on the deducted quantity.
-    numComponents[3] -= deductibleQuantity;
-    numComponents[4] -= deductibleQuantity;
+    // Adjust the final result based on the condition and the minimum value.
+    finalResult -= (numArr[0] + numArr[1] - numArr[2] * 2) * minVal;
+
+    // Update the fourth and fifth elements by subtracting the minimum value.
+    numArr[3] -= minVal;
+    numArr[4] -= minVal;
   }
 
-  // Evaluate further conditions for additional deductions.
-  // If the fourth element is positive and the first element is large enough.
-  if (numComponents[3] > 0 && numComponents[0] > numComponents[2] * 2) {
-    finalCalc -= (numComponents[0] - numComponents[2] * 2) * numComponents[3];
+  // Apply another conditional adjustment if the fourth element is positive and a specific condition holds.
+  if (numArr[3] > 0 && numArr[0] > numArr[2] * 2) {
+    finalResult -= (numArr[0] - numArr[2] * 2) * numArr[3];
   }
 
-  // Another conditional deduction based on the fifth element and a similar comparison.
-  if (numComponents[4] > 0 && numComponents[1] > numComponents[2] * 2) {
-    finalCalc -= (numComponents[1] - numComponents[2] * 2) * numComponents[4];
+  // Apply a final conditional adjustment if the fifth element is positive and a specific condition holds.
+  if (numArr[4] > 0 && numArr[1] > numArr[2] * 2) {
+    finalResult -= (numArr[1] - numArr[2] * 2) * numArr[4];
   }
 
-  // Output the computed final result.
-  console.log(finalCalc);
+  // Output the calculated final result to the console.
+  console.log(finalResult);
 }
 
-// Read input from standard input and pass it to the processing function.
-determineOutcome(
-  require("fs").readFileSync("/dev/stdin", "utf8")
-);
+// Read input from standard input, decode it as UTF-8, and pass it to the processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

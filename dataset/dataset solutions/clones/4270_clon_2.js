@@ -1,42 +1,39 @@
-process . stdin . resume ( ) ;
-process . stdin . setEncoding ( 'utf8' ) ;
+process.stdin.resume();
 
-/*
- * A buffer to store all data read from standard input.
- * This variable accumulates chunks of input until the 'end' event is triggered.
- */
-var dataInputAccumulator = '';
+process.stdin.setEncoding('utf8'); // Set the character encoding for input stream
 
-process . stdin . on ( 'data', function ( dataChunk ) {
-    dataInputAccumulator += dataChunk;
-} ) ;
+var globalDataBuffer = ''; // Buffer to accumulate all incoming data chunks
 
-process . stdin . on ( 'end', function ( ) {
-    // When the input stream closes, process the accumulated data.
-    // The input is split into an array of strings by newline characters.
-    processInputValues ( dataInputAccumulator . split ( / \r ? \n / ) ) ;
-} ) ;
+process.stdin.on('data', function(incomingChunk) {
+    // Append each received data chunk to our global buffer
+    globalDataBuffer += incomingChunk;
+});
+
+process.stdin.on('end', function() {
+    // When the input stream ends, process the accumulated data
+    // Split the buffer into an array of lines, handling both Windows and Unix line endings
+    ProcessInputData(globalDataBuffer.split(/\r?\n/));
+});
 
 /**
- * Executes the primary computation logic using the provided array of string inputs.
- *
- * @param {Array<string>} numericStringInputs - An array where each element is expected to be a numeric string.
- * @returns {number} A zero value indicating successful execution.
+ * Core function to handle and compute results from the parsed input lines.
+ * @param {string[]} dataLines - An array where each element is a line from the standard input.
+ * @returns {number} - Returns 0 upon successful execution, indicating no errors.
  */
-function processInputValues ( numericStringInputs )
-{
-    // Convert the first string input to an integer, base 10.
-    var firstIntegerOperand = parseInt ( numericStringInputs [ 0 ] , 10 ) ;
+function ProcessInputData(dataLines) {
 
-    // Convert the second string input to an integer, base 10.
-    var secondIntegerOperand = parseInt ( numericStringInputs [ 1 ] , 10 ) ;
+    // Parse the first line of input as an integer, assuming base 10
+    var redComponentValue = parseInt(dataLines[0], 10);
 
-    // Perform a specific arithmetic operation: (2 * second) - first
-    var finalCalculatedResult = ( 2 * secondIntegerOperand ) - firstIntegerOperand ;
+    // Parse the second line of input as an integer, also assuming base 10
+    var greenComponentValue = parseInt(dataLines[1], 10);
 
-    // Display the computed result to the standard output.
-    console . log ( finalCalculatedResult ) ;
+    // Perform the calculation as specified by the problem: 2 * green - red
+    var calculatedResult = 2 * greenComponentValue - redComponentValue;
 
-    // Return a status code.
-    return 0 ;
+    // Output the final calculated result to the console
+    console.log(calculatedResult);
+
+    // Return a success code
+    return 0;
 }

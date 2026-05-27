@@ -1,91 +1,68 @@
-const STATE_UNVISITED = 0;
-const STATE_VISITED = 1;
+const [UNVISITED, VISITED] = [0x0, 0b1]; // Define node states: 0 for unvisited, 1 for visited
 
-const LARGE_NUMERIC_VALUE = 999999999; // Represents an effectively infinite cost or distance
+(function executeAlgorithm() {
+  // Read input from standard input, process it
+  const inputDataRows = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split('\n');
 
+  // The first line contains the number of nodes
+  const nodeCount = Number(inputDataRows.shift());
 
-(function processGraphData() { // Encapsulates the main graph processing logic.
-
-  // Retrieves raw input from a designated file, processes it, and splits into individual lines.
-  const graphInputLines = require('fs')
-    .readFileSync('/input/data.txt', 'utf-8') // Read the file content using UTF-8 encoding.
-    .trim()                                   // Remove any leading or trailing whitespace from the input string.
-    .split('\n');                             // Divide the content into an array of strings, one per line.
-
-
-  // Extracts the total number of vertices from the first line of the input.
-  const vertexCount = Number(graphInputLines.shift());
-
-
-  // Transforms the remaining input lines into an adjacency matrix representing edge weights.
-  // A value of -1 in the input is converted to LARGE_NUMERIC_VALUE, signifying no direct edge.
-  const edgeWeightsMatrix = graphInputLines.map(
-    (entryStr, rowIdx) =>
-      entryStr.trim()
-        .split(' ')
-        .map(cellStr =>
-          cellStr == -1 && LARGE_NUMERIC_VALUE || Number(cellStr)
-        )
+  // Parse the adjacency matrix from the remaining lines
+  // -1 indicates no direct edge, represented as Infinity for distance calculations
+  const adjacencyMatrix = inputDataRows.map((rowStr, rowIndex) =>
+    rowStr.trim().split(' ').map(valStr => (valStr == -1 ? Infinity : Number(valStr)))
   );
 
+  // Create an array of node indices from 0 to nodeCount-1
+  const nodeIndices = Array.from(Array(nodeCount), (_, idx) => idx);
 
-  // Generates an array of numerical indices from 0 up to (vertexCount - 1).
-  const vertexIndexList = Array.from(Array(vertexCount), (val, idx) => idx);
+  // Initialize distance array (minDistances) and node status array (nodeStatus)
+  const minDistances = [];
+  const nodeStatus = [];
 
-
-  // Initializes data structures required for the algorithm.
-  // shortestPaths: Stores the minimum known cost to reach each vertex.
-  // nodeStates: Records whether each vertex has been processed/visited.
-  const shortestPaths = [];
-  const nodeStates = [];
-  for (let loopVar = 0; loopVar < vertexCount; loopVar++) {
-    shortestPaths[loopVar] = LARGE_NUMERIC_VALUE; // All paths start as "infinite".
-    nodeStates[loopVar] = STATE_UNVISITED;       // All nodes are initially unvisited.
+  // Set initial distances to Infinity and all nodes as unvisited
+  for (let k = 0; k < nodeCount; k++) {
+    minDistances[k] = Infinity;
+    nodeStatus[k] = UNVISITED;
   }
-  shortestPaths[0] = 0; // The cost to the starting vertex (index 0) is zero.
 
+  // The starting node (node 0) has a distance of 0
+  minDistances[0] = 0x0;
 
-  // Variables to hold the state during the Prim's algorithm execution.
-  let currentMinWeight;     // The smallest edge weight found in the current iteration.
-  let chosenVertex;         // The index of the vertex selected in the current step.
-  let totalWeightSum = 0;   // Accumulates the total weight of the Minimum Spanning Tree.
+  // Variables for Prim's algorithm
+  let currentMinCost, currentNodeIdx, totalCost = 0x0;
 
-
-  // The core loop of Prim's algorithm. It continues until all reachable vertices are included.
+  // Main loop for Prim's algorithm
   while (true) {
-
-    // Finds the unvisited vertex with the minimum `shortestPaths` value.
-    currentMinWeight = vertexIndexList.reduce((accumulatedMin, currentVertexIdx) => {
-      if (nodeStates[currentVertexIdx] === STATE_VISITED || shortestPaths[currentVertexIdx] >= accumulatedMin) {
-        return accumulatedMin;
+    // Find the unvisited node with the minimum distance
+    currentMinCost = nodeIndices.reduce((accumulatorMin, checkIdx) => {
+      // If node is already visited or its distance is not less than current min, skip
+      if (nodeStatus[checkIdx] === VISITED || minDistances[checkIdx] >= accumulatorMin) {
+        return accumulatorMin;
       }
-      return shortestPaths[chosenVertex = currentVertexIdx]; // Updates 'chosenVertex' and returns its path cost.
-    }, LARGE_NUMERIC_VALUE); // The initial comparison value for reduction is a large number.
+      // Update current minimum and store the index of this node
+      return minDistances[currentNodeIdx = checkIdx];
+    }, Infinity); // Initialize accumulatorMin with Infinity
 
-
-    // If no more reachable unvisited vertices exist, the MST construction is complete.
-    if (currentMinWeight === LARGE_NUMERIC_VALUE) {
+    // If no reachable unvisited nodes are found, break the loop
+    if (currentMinCost === Infinity) {
       break;
     }
 
+    // Add the minimum cost to the total sum
+    totalCost += currentMinCost;
+    // Mark the selected node as visited
+    nodeStatus[currentNodeIdx] = VISITED;
 
-    // Adds the cost of the newly selected edge/vertex to the overall MST weight.
-    totalWeightSum += currentMinWeight;
-    // Marks the currently chosen vertex as visited.
-    nodeStates[chosenVertex] = STATE_VISITED;
-
-
-    // Iterates through all neighbors of the newly chosen vertex to update their potential shortest paths.
-    edgeWeightsMatrix[chosenVertex].forEach((neighborCost, neighborIdx) => {
-      // If a neighbor is unvisited and a shorter path to it is found via 'chosenVertex', update its shortest path.
-      if (nodeStates[neighborIdx] !== STATE_VISITED && shortestPaths[neighborIdx] > neighborCost) {
-        shortestPaths[neighborIdx] = neighborCost;
+    // Update distances to neighbors of the newly visited node
+    adjacencyMatrix[currentNodeIdx].forEach((edgeWeight, neighborIdx) => {
+      // If the neighbor is unvisited and a shorter path is found
+      if (nodeStatus[neighborIdx] !== VISITED && minDistances[neighborIdx] > edgeWeight) {
+        minDistances[neighborIdx] = edgeWeight; // Update its distance
       }
     });
-
   }
 
-  // Prints the final calculated total weight of the Minimum Spanning Tree to the console.
-  console.log(totalWeightSum);
-
+  // Output the total minimum spanning tree cost
+  console.log(totalCost);
 })();

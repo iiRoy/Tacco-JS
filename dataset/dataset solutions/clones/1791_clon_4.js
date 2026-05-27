@@ -1,9 +1,18 @@
-const dataStream = require("node:fs").readFileSync(0, "utf8");
-const parsedNumbers = dataStream.trim().split(/\s+/).map(Number);
-const [quantityOne, rateOne, quantityTwo, rateTwo, duration] = parsedNumbers;
+const fs = require("fs");
+const rawInputData = fs.readFileSync("/dev/stdin", "utf8");
 
-const outcomeCheck = (duration > 0) && ((quantityOne + rateOne * duration) >= (quantityTwo + rateTwo * duration));
+let numericTokens = rawInputData.match(/\S+/g);
 
-const responseOptions = ["NO", "YES"];
+const extractNextInteger = () => parseInt(numericTokens.shift());
 
-console.log(responseOptions[Number(outcomeCheck)]);
+const startPointAlpha = extractNextInteger();
+const velocityAlpha = extractNextInteger();
+const startPointBeta = extractNextInteger();
+const velocityBeta = extractNextInteger();
+const elapsedDuration = extractNextInteger();
+
+const outcomeMessage = (elapsedDuration === 0)
+    ? 'NO'
+    : (startPointAlpha + velocityAlpha * elapsedDuration >= startPointBeta + velocityBeta * elapsedDuration ? 'YES' : 'NO');
+
+console.log(outcomeMessage);

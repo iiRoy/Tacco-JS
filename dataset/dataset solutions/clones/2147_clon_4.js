@@ -1,35 +1,23 @@
-let collectedData = '';
+const fileSystem = require('fs');
 
-process.stdin.on('data', (dataPortion) => {
-    collectedData += dataPortion;
-});
+const processInputData = () => {
+    const rawContent = fileSystem.readFileSync('/dev/stdin', 'utf8');
+    const numericStrings = rawContent.trim().split(/\s+/);
 
-process.stdin.on('end', () => {
-    evaluateNumericSequence(collectedData);
-});
+    const firstValue = Number(numericStrings[0]);
+    const secondValue = Number(numericStrings[1]);
+    const thirdValue = Number(numericStrings[2]);
 
-function evaluateNumericSequence(completeStream) {
-    const primaryLine = completeStream.split('\n')[0];
-    const numericTokens = primaryLine.split(' ');
+    const uniqueNumberSet = new Set();
+    uniqueNumberSet.add(firstValue);
+    uniqueNumberSet.add(secondValue);
+    uniqueNumberSet.add(thirdValue);
 
-    const transformedNumbers = numericTokens.map((token) => {
-        // This matches the original's behavior of converting empty strings to 0
-        return Number(token);
-    });
-
-    const [componentOne, componentTwo, componentThree] = transformedNumbers;
-
-    const uniqueElements = new Set();
-    uniqueElements.add(componentOne);
-    uniqueElements.add(componentTwo);
-    uniqueElements.add(componentThree);
-
-    let ultimateDecision;
-    if (uniqueElements.size === 2) {
-        ultimateDecision = 'Yes';
+    if (uniqueNumberSet.size === 2) {
+        console.log('Yes');
     } else {
-        ultimateDecision = 'No';
+        console.log('No');
     }
+};
 
-    process.stdout.write(ultimateDecision + '\n');
-}
+processInputData();

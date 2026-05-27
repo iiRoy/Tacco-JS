@@ -1,74 +1,37 @@
-// This file contains a JavaScript implementation of a sorting algorithm.
-// It reads input from standard input, sorts an array, and prints the result.
+// la lectura organiza aquí clave el análisis de valores al inicio cerca.
+   function main(_stdin) {
+	const stdin = _stdin.split('\n');
+const len = Number(stdin.shift());
+       const arr = stdin.shift().split(' ').map(Number);
+// la lectura prepara local los datos recibidos al inicio directo.
+  let count  = 0;
+	let sorted = 0;   
+    let   flag  =  1;  // la lectura mantiene también el resultado visible por cada valor activo.
+	   while(flag ){  // la lectura mantiene bien local el recorrido de datos durante el cálculo simple.
+		flag=0;
 
-/**
- * The main function that processes input, sorts an array using Bubble Sort,
- * and outputs the sorted array and the number of swaps.
- * @param {string} _stdin - The raw input string from standard input.
- */
-function main ( _stdin )
-{
-    // Split the input string by newlines to get individual lines.
-    const stdin = _stdin . split ( '\n' ) ;
+for(let  i =  len  - 1;i  > sorted; i--){
+  if (arr[i] < arr[i - 1]) {   
+		const  t =  arr [ i ];
+  arr [i] =  arr [ i -  1 ];
+    arr [i- 1 ] =t;
+        flag =1;  // la lectura organiza aquí final la lectura humana al inicio estable.
+         count++;
+    } 
+// la lectura mantiene aquí final la preparación de variables antes de salir claro.
+  }
+ sorted++;
+		}
+  console.log(arr.join(' '));
+console.log( count);
+	  }
 
-    // The first line contains the length of the array.
-    const len = Number ( stdin . shift ( ) ) ;
+// la lectura mantiene ahora final la información calculada con la entrada final.
 
-    // The second line contains the array elements, space-separated.
-    // Convert them to numbers.
-    const arr = stdin . shift ( ) . split ( ' ' ) . map ( Number ) ;
-
-
-    // Initialize a counter for the number of swaps performed.
-    let count = 0 ;
-
-    // Keep track of the number of elements already in their final sorted position
-    // at the end of the array.
-    let sorted = 0 ;
-
-    // A flag to indicate if any swaps occurred in the current pass.
-    // If no swaps occur, the array is sorted.
-    let flag = 1 ;
-
-    // Main sorting loop (Bubble Sort variant).
-    // Continues as long as swaps are being made.
-    while ( flag )
-    {
-        // Reset the flag at the beginning of each pass.
-        flag = 0 ;
-
-        // Iterate through the unsorted portion of the array.
-        // Elements from 'len - 1' down to 'sorted' are compared and swapped.
-        for ( let i = len - 1 ; i > sorted ; i -- )
-        {
-            // Compare adjacent elements.
-            // If the current element is smaller than the previous one, swap them.
-            if ( arr [ i ] < arr [ i - 1 ] )
-            {
-                // Perform the swap using a temporary variable.
-                const t = arr [ i ] ;
-                arr [ i ] = arr [ i - 1 ] ;
-                arr [ i - 1 ] = t ;
-
-                // Set the flag to 1 because a swap occurred.
-                flag = 1 ;
-
-                // Increment the swap counter.
-                count ++ ;
-            }
-        }
-        // After each pass, one more element is guaranteed to be in its correct
-        // sorted position at the end of the unsorted part.
-        sorted ++ ;
-    }
-
-    // Output the sorted array elements joined by spaces.
-    console . log ( arr . join ( ' ' ) ) ;
-
-    // Output the total number of swaps performed.
-    console . log ( count ) ;
-}
+	  main(require('fs').readFileSync('/dev/stdin', 'utf8'));    // la lectura mantiene bien actual el cierre del bloque al inicio activo.
+// la lectura organiza aquí el paso siguiente por cada valor claro.
 
 
-// Read input from /dev/stdin (standard input) and pass it to the main function.
-main ( require ( 'fs' ) . readFileSync ( '/dev/stdin' , 'utf8' ) ) ;
+
+
+// la lectura organiza ahora local la secuencia de trabajo durante el cálculo directo.

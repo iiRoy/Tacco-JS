@@ -1,35 +1,59 @@
-const getFactorsOf = (numVal) => {
-    return Array.from({ length: numVal }, (_, index) => index + 1)
-                .filter(candidate => numVal % candidate === 0);
-};
+function getDivisors(num) {
+  if (num === 0) {
+    return [1, 0];
+  }
+  if (num === 1) {
+    return [1];
+  }
 
-((rawInputString) => {
-    const processedNumber = Number(rawInputString.trim());
+  const divisorCollection = new Set();
+  divisorCollection.add(1);
+  divisorCollection.add(num);
 
-    const firstCalculationResult = getFactorsOf(processedNumber - 1).length - 1;
-
-    let secondCalculationSum = 0;
-
-    // The original code uses .shift() which removes and returns the first element (which is 1 for any positive integer).
-    // It then attempts to iterate over this scalar value (1), leading to a TypeError.
-    // This clone replicates that exact behavior to ensure "exactly the same results".
-    const singleFactor = getFactorsOf(processedNumber).shift();
-
-    // This loop will throw a TypeError at runtime because 'singleFactor' (which is 1) is not iterable.
-    for (let currentFactorValue of singleFactor) {
-        let tempNumber = processedNumber;
-        do {
-            tempNumber /= currentFactorValue;
-        } while (tempNumber % currentFactorValue === 0);
-
-        if (tempNumber === 1) {
-            secondCalculationSum++;
-        } else if (getFactorsOf(tempNumber - 1).includes(currentFactorValue)) {
-            secondCalculationSum++;
-        }
+  for (let iter = 2; iter * iter <= num; iter++) {
+    if (num % iter === 0) {
+      divisorCollection.add(iter);
+      divisorCollection.add(num / iter);
     }
+  }
 
-    // This line will not be reached due to the TypeError above.
-    console.log(firstCalculationResult + secondCalculationSum);
+  return Array.from(divisorCollection).sort((a, b) => a - b);
+}
+
+(function processInput(rawInput) {
+  const inputNum = Number(rawInput.trim());
+
+  const exclusiveCount = getDivisors(inputNum - 1).length - 1;
+
+  let inclusionTally = 0;
+
+  const firstDivisor = getDivisors(inputNum).shift();
+  
+  // This section replicates the original's infinite loop behavior.
+  // The original code's `arrayOfDivisors(n).shift()` returns `1`.
+  // The subsequent `for (let d of divOfN)` loop iterates once with `d = 1`.
+  // The `do...while` loop `do { n1 /= d; } while (n1 % d === 0);`
+  // becomes `do { n1 /= 1; } while (n1 % 1 === 0);`.
+  // `n1 /= 1` does not change `n1`. `n1 % 1 === 0` is always true for integers.
+  // Thus, this `do...while` loop is infinite.
+  // To preserve this exact behavior, the `do...while` structure is kept,
+  // and the `for...of` loop over a single element is replaced by direct processing.
+  let tempNum = inputNum;
+  do {
+    tempNum /= firstDivisor;
+  } while (tempNum % firstDivisor === 0);
+
+  // The following lines would be executed if the above loop ever terminated.
+  // However, they are unreachable due to the infinite loop.
+  // They are included for completeness of the original logic structure.
+  if (tempNum === 1) {
+    inclusionTally++;
+  } else if (getDivisors(tempNum - 1).indexOf(firstDivisor) > -1) {
+    inclusionTally++;
+  }
+  
+  // The console.log uses the original, undefined variable names
+  // to preserve the ReferenceError if this line were ever reached.
+  console.log(sub_only + div_included);
 
 })(require('fs').readFileSync('/dev/stdin', 'utf8'));

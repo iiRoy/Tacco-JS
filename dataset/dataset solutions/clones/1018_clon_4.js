@@ -1,62 +1,36 @@
-const systemIO = require('fs');
-let systemInputHandle = process.stdin.fd;
-let bufferMemory = Buffer.alloc(1024);
-let currentTotalData = '';
-let bytesFetched;
+'use strict';
 
-while ((bytesFetched = systemIO.readSync(systemInputHandle, bufferMemory, 0, bufferMemory.length, null)) > 0) {
-    currentTotalData += bufferMemory.toString('utf8', 0, bytesFetched);
-    if (bytesFetched < bufferMemory.length) break;
-}
+let rawExpression = require('fs').readFileSync('/dev/stdin', 'utf8');
+rawExpression = rawExpression.trim().split(' ');
 
-let preprocessedContent = currentTotalData;
-
-let startBoundary = 0;
-while (startBoundary < preprocessedContent.length && preprocessedContent.charCodeAt(startBoundary) <= 32) {
-    startBoundary++;
-}
-let endBoundary = preprocessedContent.length - 1;
-while (endBoundary >= 0 && preprocessedContent.charCodeAt(endBoundary) <= 32) {
-    endBoundary--;
-}
-
-let strippedExpression = '';
-if (startBoundary <= endBoundary) {
-    strippedExpression = preprocessedContent.substring(startBoundary, endBoundary + 1);
-}
-
-const expressionUnits = [];
-let lastSegmentStart = 0;
-for (let pos = 0; pos < strippedExpression.length; ++pos) {
-    if (strippedExpression[pos] === ' ') {
-        expressionUnits.push(strippedExpression.substring(lastSegmentStart, pos));
-        lastSegmentStart = pos + 1;
-    }
-}
-expressionUnits.push(strippedExpression.substring(lastSegmentStart));
-
-if (strippedExpression.length === 0 && expressionUnits.length === 0) {
-    expressionUnits.push('');
-}
-
-const operatorMap = {
-  '+': (val1, val2) => val1 + val2,
-  '-': (val1, val2) => val2 - val1,
-  '*': (val1, val2) => val1 * val2
+const operationRegistry = {
+  '+': (operandStore) => {
+    const secondOperand = operandStore.pop();
+    const firstOperand = operandStore.pop();
+    operandStore.push(firstOperand + secondOperand);
+  },
+  '-': (operandStore) => {
+    // Original: stack.push(-stack.pop() + stack.pop());
+    // This evaluates to (second_popped_value - first_popped_value)
+    const firstPopped = operandStore.pop();
+    const secondPopped = operandStore.pop();
+    operandStore.push(secondPopped - firstPopped);
+  },
+  '*': (operandStore) => {
+    const secondOperand = operandStore.pop();
+    const firstOperand = operandStore.pop();
+    operandStore.push(firstOperand * secondOperand);
+  },
 };
 
-const evaluationReducer = (currentNumericalPile, currentSymbol) => {
-  if (operatorMap.hasOwnProperty(currentSymbol)) {
-    const secondOperand = currentNumericalPile.at(-1);
-    const firstOperand = currentNumericalPile.at(-2);
-    const reducedPile = currentNumericalPile.slice(0, -2);
-    const computationResult = operatorMap[currentSymbol](firstOperand, secondOperand);
-    return [...reducedPile, computationResult];
+const finalOperandStore = rawExpression.reduce((currentOperandStore, currentToken) => {
+  const operationExecutor = operationRegistry[currentToken];
+  if (operationExecutor) {
+    operationExecutor(currentOperandStore);
   } else {
-    return [...currentNumericalPile, currentSymbol - 0]; // Converts to number, replicates Number('') -> 0
+    currentOperandStore.push(Number(currentToken));
   }
-};
+  return currentOperandStore;
+}, []);
 
-const finalResultContainer = expressionUnits.reduce(evaluationReducer, []);
-
-process.stdout.write(finalResultContainer[0] + '\n');
+console.log(finalOperandStore[0]);

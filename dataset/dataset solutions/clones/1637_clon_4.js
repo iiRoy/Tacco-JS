@@ -1,29 +1,23 @@
-const processData = (sourceInput) => {
-    const parseNumericValue = (textualData) => Number(textualData);
+const processBallQueries = (rawData) => {
+    const lineSource = rawData.split("\n");
 
-    const fullTextLines = sourceInput.split('\n');
+    const [ totalItems, queryCount ] = lineSource.shift().split(' ').map(Number);
+    const itemCollection = lineSource.shift().split(' ');
 
-    const [_, numberOfQueries] = fullTextLines[0].split(' ').map(parseNumericValue);
+    let currentQueryIndex = 0;
+    while (currentQueryIndex < queryCount) {
+        const [ startBoundary, endBoundary ] = lineSource.shift().split(' ').map(Number);
 
-    const elementGroup = fullTextLines[1].split(' ');
+        const relevantSlice = itemCollection.slice(startBoundary - 1, endBoundary);
 
-    const resultsBuffer = [];
+        const distinctElements = relevantSlice.reduce((accumulator, currentVal) => {
+            accumulator.add(currentVal);
+            return accumulator;
+        }, new Set());
 
-    for (let currentQueryIndex = 0; currentQueryIndex < numberOfQueries; currentQueryIndex++) {
-        const queryLine = fullTextLines[currentQueryIndex + 2];
-        const [startPosition, endPosition] = queryLine.split(' ').map(parseNumericValue);
-
-        const extractedSegment = elementGroup.slice(startPosition - 1, endPosition);
-        
-        const uniqueItems = new Set();
-        for (const item of extractedSegment) {
-            uniqueItems.add(item);
-        }
-        
-        resultsBuffer.push(uniqueItems.size);
+        console.log(distinctElements.size);
+        currentQueryIndex++;
     }
-
-    console.log(resultsBuffer.join('\n'));
 };
 
-processData(require("fs").readFileSync("/dev/stdin", "utf8"));
+processBallQueries(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,107 +1,138 @@
-function readSource() {
+function getInputData() {
+  // Reads input from standard input, decodes it as UTF-8, and removes leading/trailing whitespace.
   return require("fs").readFileSync("/dev/stdin", "utf8").trim();
 }
-function displayResult(resultValue) {
-  console.log(resultValue);
-} // Print the computed result to standard output
-function reportProblem(issue) {
-  console.error(issue);
-} // Report errors to standard error stream
 
-// Conversion operation codes:
-// 0: Return input as-is
-// 1: Convert to integer number
-// 2: Split by single space character
-// 3: Split by newline character
-// 4: Split by space, then convert each part to number
-// 5: Split by newline, then convert each part to number
-// 6: Split into individual characters
-// 7: Split into individual characters, then convert each to number
-function processString(inputTxt, operationCode) {
-  switch (operationCode) {
-    case 0:
-      return inputTxt;
-    case 1:
-      return Number(inputTxt); // Using Number() for conversion
-    case 2:
-      return inputTxt.split(" ");
-    case 3:
-      return inputTxt.split("\n");
-    case 4:
-      return inputTxt.split(" ").map((element) => Number(element));
-    case 5:
-      return inputTxt.split("\n").map((element) => Number(element));
-    case 6:
-      return inputTxt.split("");
-    case 7:
-      return inputTxt.split("").map((element) => Number(element));
+function displayResult(finalOutput) {
+  // Outputs the given value to standard output.
+  console.log(finalOutput);
+}
+
+function logError(errorMessage) {
+  // Outputs the given error message to standard error.
+  console.error(errorMessage);
+}
+
+/*
+ * This utility function converts input strings based on a specified type.
+ * conversionType:
+ *   0x0: No conversion, returns the input string as is.
+ *   0x1: Converts the input string to an integer.
+ *   0x2: Splits the input string by half-width spaces.
+ *   0x3: Splits the input string by newline characters.
+ *   0x4: Splits by spaces and converts each part to a number.
+ *   0x5: Splits by newlines and converts each part to a number.
+ *   0x6: Splits the input string into individual characters.
+ *   0x7: Splits into characters and converts each to a number.
+ */
+function transformInput(inputStr, conversionType) {
+  switch (conversionType) {
+    case 0x0:
+      return inputStr;
+    case 0x1:
+      return parseInt(inputStr, 10);
+    case 0x2:
+      return inputStr.split(" ");
+    case 0x3:
+      return inputStr.split("\n");
+    case 0x4:
+      return inputStr.split(" ").map((itemValue) => Number(itemValue));
+    case 0x5:
+      return inputStr.split("\n").map((itemValue) => Number(itemValue));
+    case 0x6:
+      return inputStr.split("");
+    case 0x7:
+      return inputStr.split("").map((itemValue) => Number(itemValue));
+    default:
+      return inputStr; // Fallback for unknown types
   }
 }
 
-function PrimaryProcess(incomingPayload) {
-  incomingPayload = processString(incomingPayload, 3); // Split the initial input by newlines
+function processData(rawInputContent) {
+  // First, split the entire input by newlines.
+  let parsedLines = transformInput(rawInputContent, 0x3);
 
-  let totalElements = processString(incomingPayload[0], 1); // Get the count of elements from the first line
-  const valueArray = processString(incomingPayload[1], 4); // Get the numeric list from the second line
+  // The first line contains the total number of elements.
+  const totalNumbers = transformInput(parsedLines[0], 0x1);
 
-  const occurrenceTracker = {}; // Object to store the frequency of each number
-  for (let loopIndex = 0; loopIndex < totalElements; loopIndex++) {
-    if (occurrenceTracker[valueArray[loopIndex]] === undefined) {
-      occurrenceTracker[valueArray[loopIndex]] = 1;
+  // The second line contains the list of numbers, split by spaces and converted to numbers.
+  const numberSequence = transformInput(parsedLines[1], 0x4);
+
+  // Create a frequency map to count occurrences of each number.
+  const valueFrequencies = {};
+  for (let index = 0; index < totalNumbers; index++) {
+    const currentNumber = numberSequence[index];
+    if (valueFrequencies[currentNumber] === undefined) {
+      valueFrequencies[currentNumber] = 1;
     } else {
-      occurrenceTracker[valueArray[loopIndex]]++;
+      valueFrequencies[currentNumber]++;
     }
   }
 
-  const uniqueElements = Array.from(Object.keys(occurrenceTracker)); // Get an array of unique numbers
-  uniqueElements.sort(function (firstVal, secondVal) {
-    return processString(firstVal, 1) - processString(secondVal, 1); // Sort unique numbers numerically
+  // Extract unique values and sort them numerically.
+  const distinctValuesSorted = Array.from(Object.keys(valueFrequencies));
+  distinctValuesSorted.sort(function (firstVal, secondVal) {
+    return transformInput(firstVal, 0x1) - transformInput(secondVal, 0x1);
   });
 
-  // Strategy: Prioritize consuming numbers that appear multiple times.
-  // Attack from both ends (smallest and largest values).
-  // If one end runs out, use single-occurrence numbers to fulfill requirements.
-
-  let leftIndex = 0; // Pointer for the beginning of the sorted unique elements
-  let rightIndex = uniqueElements.length - 1; // Pointer for the end of the sorted unique elements
+  /*
+   * The core logic involves pairing numbers from both ends of the sorted unique values.
+   * Numbers with counts greater than 1 are prioritized for pairing.
+   * If a number's count drops to 1, it's no longer available for pairing and is skipped.
+   */
+  let leftPointer = 0;
+  let rightPointer = distinctValuesSorted.length - 1;
 
   while (true) {
-    const leftCount = occurrenceTracker[uniqueElements[leftIndex]]; // Frequency of the current left element
+    const leftElementKey = distinctValuesSorted[leftPointer];
+    let leftCount = valueFrequencies[leftElementKey];
+
+    // If the left element has a count of 1 or less, move the pointer.
     if (leftCount <= 1) {
-      leftIndex++; // Move left pointer if its count is 1 or less
+      leftPointer++;
       continue;
     }
 
-    const rightCount = occurrenceTracker[uniqueElements[rightIndex]]; // Frequency of the current right element
+    const rightElementKey = distinctValuesSorted[rightPointer];
+    let rightCount = valueFrequencies[rightElementKey];
+
+    // If the right element has a count of 1 or less, move the pointer.
     if (rightCount <= 1) {
-      rightIndex--; // Move right pointer if its count is 1 or less
+      rightPointer--;
       continue;
     }
 
-    if (leftIndex >= rightIndex) {
-      // Termination condition: pointers crossed or met
+    // If pointers cross or meet, the pairing process for distinct elements ends.
+    if (leftPointer >= rightPointer) {
+      // Special handling if the meeting element still has multiple counts.
       if (leftCount >= 2) {
+        // If odd, one remains; if even, all are paired (count becomes 0).
         if (leftCount % 2 === 1) {
-          occurrenceTracker[uniqueElements[leftIndex]] = 1; // If odd, one remains
+          valueFrequencies[leftElementKey] = 1;
         } else {
-          occurrenceTracker[uniqueElements[leftIndex]] = 0; // If even, none remain
+          valueFrencies[leftElementKey] = 0;
         }
       }
-      break; // Exit the loop
+      break; // Exit the loop.
     } else {
-      occurrenceTracker[uniqueElements[leftIndex]]--; // Decrement count of left element
-      occurrenceTracker[uniqueElements[rightIndex]]--; // Decrement count of right element
+      // Pair one from each end, decrementing their counts.
+      valueFrequencies[leftElementKey]--;
+      valueFrequencies[rightElementKey]--;
     }
   }
 
-  let singleItemCount = 0; // Counter for items remaining with a frequency of 1
-  for (let idx = 0; idx < uniqueElements.length; idx++) {
-    if (occurrenceTracker[uniqueElements[idx]] === 1) {
-      singleItemCount++; // Increment if the item's frequency is exactly 1
+  // Count how many elements ultimately have a frequency of exactly 1.
+  let finalResult = 0;
+  for (let index = 0; index < distinctValuesSorted.length; index++) {
+    const currentKey = distinctValuesSorted[index];
+    if (valueFrequencies[currentKey] === 1) {
+      finalResult++;
     }
   }
 
-  displayResult(singleItemCount); // Output the final count
+  // Output the final count.
+  displayResult(finalResult);
 }
 
-PrimaryProcess(readSource()); // Initiate the main processing logic with input from source
+// Execute the main processing function with input from stdin.
+processData(getInputData());

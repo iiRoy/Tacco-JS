@@ -1,34 +1,19 @@
-function analyzeNetwork(rawDataString) {
-  const [upperBound, specialPointOne, specialPointTwo] = rawDataString.trim().split(/\s+/).map(Number);
+(function(inputStr) {
+  const [parsedN, parsedX, parsedY] = inputStr.split(' ').map(Number);
 
-  const calculateAbsoluteDifference = (valA, valB) => {
-    return valA > valB ? valA - valB : valB - valA;
+  const determineDistance = (pointAlpha, pointBeta) => {
+    return Math.min(pointBeta - pointAlpha, Math.abs(parsedX - pointAlpha) + Math.abs(parsedY - pointBeta) + 1);
   };
 
-  const determineOptimalTraversalCost = (pointAlpha, pointBeta, referenceX, referenceY) => {
-    const directHopCost = pointBeta - pointAlpha;
-    const detourViaReferenceCost = calculateAbsoluteDifference(referenceX, pointAlpha) + calculateAbsoluteDifference(referenceY, pointBeta) + 1;
-    return Math.min(directHopCost, detourViaReferenceCost);
-  };
+  Array.from({ length: parsedN - 1 }, (_, iterationIndex) => iterationIndex + 1)
+    .forEach(currentIterationValue => {
+      const totalMatches = Array.from({ length: parsedN - 1 }, (_, alphaIndex) => alphaIndex + 1)
+        .flatMap(alphaValue =>
+          Array.from({ length: parsedN - alphaValue }, (_, betaIndex) => alphaValue + 1 + betaIndex)
+            .filter(betaValue => determineDistance(alphaValue, betaValue) === currentIterationValue)
+        ).length;
 
-  const collectedTraversalCosts = [];
-  for (let startNode = 1; startNode < upperBound; ++startNode) {
-    for (let endNode = startNode + 1; endNode <= upperBound; ++endNode) {
-      collectedTraversalCosts.push(determineOptimalTraversalCost(startNode, endNode, specialPointOne, specialPointTwo));
-    }
-  }
+      console.log(totalMatches);
+    });
 
-  const costDistributionMap = collectedTraversalCosts.reduce((accumulator, costValue) => {
-    accumulator[costValue] = (accumulator[costValue] || 0) + 1;
-    return accumulator;
-  }, {});
-
-  const resultAggregates = [];
-  for (let desiredLength = 1; desiredLength < upperBound; ++desiredLength) {
-    resultAggregates.push(costDistributionMap[desiredLength] || 0);
-  }
-
-  process.stdout.write(resultAggregates.join('\n') + '\n');
-}
-
-analyzeNetwork(require('fs').readFileSync('/dev/stdin', 'utf8'));
+})(require('fs').readFileSync('/dev/stdin', 'utf8'));

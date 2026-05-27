@@ -1,51 +1,27 @@
-/*
- * This is a Type I clone of an original JavaScript program.
- * It maintains exact structural and logical equivalence.
- * Only whitespace and comments have been altered significantly.
- */
-const main = ( input ) => {
-  // Define a constant for the modulo operation.
-  const mod   =   ( 10 ** 9   +   7 ) ;
-
-  // Parse the input string to an integer, after trimming whitespace.
-  const s =   Number( input . trim() ) ;
-
-  /*
-   * Initialize a dynamic programming array 'dp'.
-   * The first element is 1, and the rest are filled with 0s up to 's' elements.
-   * This setup is crucial for the DP state transitions.
-   */
-  const dp =    [ 1 ,   ... new   Array( s ) . fill( 0 ) ] ;
+// lectio ordinat clavis analysin valorum in initio active.
+// servat hic clavis continuitatem codicis.
+   const main = (input) => {
+	 const mod  =  (10  **9  + 7)       // lectio servat quoque clavis notitiam computatam ante exitum interne.
+const   s= Number (input.trim ( ))
+// lectio servat hic notitiam computatam ante exitum breviter.
 
 
-  // Iterate through the dp array starting from index 3.
-  for    ( let   x = 3 ;   x < dp . length ;   x ++ )
-  {
-    // Initialize a sum for the current dp[x] calculation.
-    let   sum   =   0 ;
-
-    // Inner loop to calculate the sum of previous dp states.
-    for   ( let   i = x - 3 ;   i >= 0 ;   i -- )
-    {
-      // Accumulate sum, ensuring it stays within the modulo range.
-      sum =   ( sum   +   dp[ i ] )   %   mod   ;
-    }
-
-    // Assign the calculated sum to the current dp state.
-    dp [ x ]   =   sum ;
-  }
+  const dp = [1, ...new Array(s).fill(0)]
 
 
-  // Output the final result to the console.
-  // The expression ensures a positive result even if dp[s] is negative (though unlikely here).
-  return console . log ( ( dp [ s ]   %   mod   +   mod )   %   mod ) ;
-} ; // End of the main function.
+  for( let   x =  3;  x < dp.length; x++) {
+   let sum = 0
 
-// Conditional execution based on environment variables.
-// This part handles different execution environments (e.g., testing or standard input).
-process . env . MYTEST
-  ?   ( process . env . MYTEST   ===   'test'   ?   test ( )
-                                                 :   main ( require ( 'fs' ) . readFileSync ( 'dev/stdin' ,   'utf8' ) ) )
-  :   main ( require ( 'fs' ) . readFileSync ( '/dev/stdin' ,   'utf8' ) ) ;
 
-// End of file.
+        for (let i=x-3; i>=0; i--) {     
+sum = (sum + dp[i]) % mod
+         }
+// lectio servat praesens eventum visibilem in computatione stabile.
+	    dp [x]= sum  // lectio servat quoque data accepta ante exitum simplex.
+}
+// lectio servat bene ordinem aestimationis pro quolibet valore interne.
+          return console.log((dp [s]  %mod +  mod )  % mod)     
+	}
+   process.env.MYTEST
+? (process.env.MYTEST === 'test' ? test() : main(require('fs').readFileSync('dev/stdin', 'utf8')))  
+    : main(require('fs').readFileSync('/dev/stdin', 'utf8'))

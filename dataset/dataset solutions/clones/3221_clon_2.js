@@ -1,41 +1,38 @@
-// This primary routine manages the overall data parsing and logical evaluation.
-function processInput ( inputString ) {
+// This function processes a given text input to determine a specific condition.
+function processInput(inputString) {
+    // Split the entire input string into individual lines.
+    let linesArray = inputString.split("\n");
 
-    // The initial input string is split into individual lines.
-    inputString = inputString .split ( "\n" ) ;
+    // The first line typically contains a count, though it's not used in the core logic.
+    const countElements = Number(linesArray[0]);
 
-    // The first line often contains a count; here, it's parsed as a number.
-    let quantity = Number ( inputString [ 0 ] ) ;
+    // The second line contains space-separated numbers, which are parsed into an array of integers.
+    let numberList = linesArray[1].split(" ").map(itemStr => Number(itemStr));
 
-    // The second line is interpreted as a sequence of space-separated numerical values.
-    let itemLengths = inputString [ 1 ] .split ( " " ) .map ( itemStr => Number ( itemStr ) ) ;
+    // Sort the list of numbers in ascending order.
+    numberList.sort((valA, valB) => (valA - valB));
 
+    // Extract the largest value from the sorted list (which is the last element).
+    const largestValue = numberList.pop();
 
-    // The collection of numerical values is then arranged in ascending order.
-    itemLengths = itemLengths .sort ( ( valA , valB ) => ( valA - valB ) ) ;
+    // Initialize a variable to accumulate the sum of the remaining numbers.
+    let totalSum = 0;
 
-    // The greatest value is removed from the array and stored separately.
-    let longestItem = itemLengths .pop ( ) ;
+    // Iterate through the remaining numbers in the list and add them to the total sum.
+    numberList.forEach(currentNum => {
+        totalSum += currentNum;
+    });
 
-    let totalLengthOfOthers = 0 ; // An accumulator for the remaining values is initialized.
+    // A debug line that was commented out in the original, keeping it commented.
+    // console.log([totalSum, largestValue]);
 
-    // Each remaining value is added to the running total.
-    itemLengths .forEach ( currentLength => {
-        totalLengthOfOthers += currentLength ;
-    } ) ;
-
-    /*
-     * A crucial comparison is performed to ascertain a specific condition
-     * based on the largest value versus the aggregate of the others.
-     */
-    if ( longestItem < totalLengthOfOthers ) {
-        console .log ( "Yes" ) ;
+    // Compare the largest value with the sum of the other values.
+    if (largestValue < totalSum) {
+        console.log("Yes"); // Output "Yes" if the largest value is smaller than the sum.
+    } else {
+        console.log("No");  // Otherwise, output "No".
     }
-    else {
-        console .log ( "No" ) ;
-    }
-
 }
 
-// The entire operation is initiated by reading content from the standard input stream.
-processInput ( require ( 'fs' ) .readFileSync ( '/dev/stdin' , 'utf8' ) ) ;
+// Read input from standard input and pass it to the processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

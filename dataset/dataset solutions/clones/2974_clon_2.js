@@ -1,36 +1,35 @@
-function processData ( rawData ) {
-  // Parse the incoming string to obtain a collection of values.
-  const   targetValuesArray   = rawData.split(" ");
-  // Retrieve the second numerical component from the processed input.
-  const stepValue = Number(rawData.split(" ")[1]);
+function processInput(rawData) {
+  // This line splits the incoming raw data string by spaces.
+  // The resulting array of string segments is stored in 'parsedValues'.
+  let parsedValues = rawData.split(" ");
+
+  /*
+  // The following lines represent commented-out logic from the original source.
+  // They are not executed but are preserved for structural integrity.
+  // let selectedNumber = rawData.split(" ")[1];
   
-  // Display the initial sequence of values to the console.
-  console.log(targetValuesArray);
+  // let currentValue = 1;
+  // let completionFlag = 0;
   
-  // Initialize the primary counter for the operational sequence.
-  let   currentIteration  = 1;
-  // A status indicator, currently not utilized within the execution path.
-  const terminationFlag = 0;
+  // var iterationCount = 0;
+  // while(true){ // An infinite loop structure.
+  //   var evaluationValue = currentValue;
+  //   // Conditional check involving numeric conversions and comparison.
+  //   if(Number(evaluationValue) + Number(selectedNumber) - 1 <= parsedValues){
+  //       currentValue++; // Increment the current value.
+  //       iterationCount++; // Increment the counter.
+  //   } else {
+  //       console.log(iterationCount); // Output the final count.
+  //       break; // Exit the loop.
+  //   }
+  // }
+  */
   
-  // Establish a tally for successful conditional evaluations.
-  let occurrenceCounter = 0;
-  // Commence an indefinite loop for continuous evaluation.
-  while (true) {
-    // Store the present value of the primary counter for a localized check.
-    let iterationSnapshot = currentIteration;
-    // Evaluate if the calculated sum (snapshot + step - 1) remains within the bounds of the first target value.
-    if ( ( Number(iterationSnapshot) + Number(stepValue) - 1 ) <= Number(targetValuesArray[0]) ) {
-        // Advance the primary counter if the condition is met.
-        currentIteration++;
-        // Increment the success tally.
-      	occurrenceCounter++;
-   	} else {
-        // If the condition is no longer satisfied, output the final count.
-        console.log(occurrenceCounter);
-      	// Terminate the iterative process.
-      	break;
-    }
-  }
+  // Output the array of parsed string values to the console.
+  console.log(parsedValues);
 }
-// Acquire the entire content of standard input and pass it to the designated processing routine.
-processData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+
+// The primary function 'processInput' is invoked here.
+// It reads the content of '/dev/stdin' as a UTF-8 string
+// using Node.js's built-in 'fs' module.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,40 +1,80 @@
-let receivedData = '';
+const fileSystem = require('fs');
+const standardInputPath = '/dev/stdin';
 
-process.stdin.on('data', (chunkOfData) => {
-    receivedData += chunkOfData;
-});
-
-process.stdin.on('end', () => {
-    const allInputLines = receivedData.trim().split('\n');
-    const totalProblemSets = Number(allInputLines.shift());
-
-    allInputLines.slice(0, totalProblemSets).forEach((lineEntry) => {
-        const [commencementValue, targetValue] = lineEntry.split(' ').map(Number);
-        let pathSequence;
-
-        if (commencementValue < targetValue) {
-            pathSequence = Array.from({ length: targetValue - commencementValue + 1 }, (_, idx) => commencementValue + idx);
-        } else if (commencementValue > targetValue && commencementValue <= 5) {
-            pathSequence = Array.from({ length: commencementValue - targetValue + 1 }, (_, idx) => commencementValue - idx);
-        } else { // commencementValue > targetValue && commencementValue >= 6
-            const sequenceBuilder = function* (initialPosition, desiredPosition) {
-                let currentPosition = initialPosition;
-                let movementDirection = 1; // 1 for increasing, -1 for decreasing
-                yield currentPosition; // Include the starting point
-
-                while (currentPosition !== desiredPosition) {
-                    currentPosition += movementDirection;
-                    if (currentPosition === 10) {
-                        currentPosition = 5;
-                        movementDirection = -1;
-                    } else if (currentPosition === 0) {
-                        movementDirection = 1;
-                    }
-                    yield currentPosition;
-                }
-            };
-            pathSequence = Array.from(sequenceBuilder(commencementValue, targetValue));
+const obtainNextComplexStep = (currentValue, currentDirection) => {
+    if (currentDirection === 1) {
+        if (currentValue === 9) {
+            return { nextValue: 5, nextDirection: -1 };
         }
-        process.stdout.write(pathSequence.join(' ') + '\n');
-    });
+        return { nextValue: currentValue + 1, nextDirection: 1 };
+    } else {
+        if (currentValue === 0) {
+            return { nextValue: 1, nextDirection: 1 };
+        }
+        return { nextValue: currentValue - 1, nextDirection: -1 };
+    }
+};
+
+const pathStrategies = {
+    forwardPath: function* (initialPoint, finalDestination) {
+        let currentPoint = initialPoint;
+        while (currentPoint !== finalDestination) {
+            currentPoint++;
+            yield currentPoint;
+        }
+    },
+    backwardSmallPath: function* (initialPoint, finalDestination) {
+        let currentPoint = initialPoint;
+        while (currentPoint !== finalDestination) {
+            currentPoint--;
+            yield currentPoint;
+        }
+    },
+    complexPath: function* (initialPoint, finalDestination) {
+        let currentPoint = initialPoint;
+        let currentPathDirection = 1;
+        while (currentPoint !== finalDestination) {
+            const { nextValue, nextDirection } = obtainNextComplexStep(currentPoint, currentPathDirection);
+            currentPoint = nextValue;
+            currentPathDirection = nextDirection;
+            yield currentPoint;
+        }
+    },
+    noOpPath: function* () {}
+};
+
+const selectPathStrategy = (initialPoint, finalDestination) => {
+    if (initialPoint === finalDestination) {
+        return pathStrategies.noOpPath;
+    }
+    if (initialPoint < finalDestination) {
+        return pathStrategies.forwardPath;
+    }
+    if (initialPoint > finalDestination && initialPoint <= 5) {
+        return pathStrategies.backwardSmallPath;
+    }
+    if (initialPoint > finalDestination && initialPoint >= 6) {
+        return pathStrategies.complexPath;
+    }
+    return pathStrategies.noOpPath;
+};
+
+const rawInputData = fileSystem.readFileSync(standardInputPath, 'utf8');
+const processedLines = rawInputData.trimEnd().split('\n');
+
+const testCaseCount = Number(processedLines.shift());
+
+const outputLines = processedLines.slice(0, testCaseCount).map(lineContent => {
+    const [startValue, goalValue] = lineContent.split(' ').map(Number);
+
+    const pathSegments = [startValue];
+
+    const strategyGenerator = selectPathStrategy(startValue, goalValue);
+    for (const step of strategyGenerator(startValue, goalValue)) {
+        pathSegments.push(step);
+    }
+
+    return pathSegments.join(' ');
 });
+
+outputLines.forEach(line => console.log(line));

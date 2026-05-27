@@ -1,24 +1,50 @@
-function obtainPathDeviation(sourceData) {
-    const dataItems = sourceData.split(" ");
-    let valA = Number(dataItems[0]);
-    let valB = Number(dataItems[1]);
-    let valC = Number(dataItems[2]);
+function computeOptimalPath(rawData) {
+    const numericValues = rawData.match(/\d+/g).map(Number);
 
-    let lowestPoint = valA;
-    if (valB < lowestPoint) {
-        lowestPoint = valB;
-    }
-    if (valC < lowestPoint) {
-        lowestPoint = valC;
-    }
+    const measurePathDeviation = (sequenceElements) => {
+        const [firstVal, secondVal, thirdVal] = sequenceElements;
+        return Math.abs(firstVal - secondVal) + Math.abs(secondVal - thirdVal);
+    };
 
-    let highestPoint = valA;
-    if (valB > highestPoint) {
-        highestPoint = valB;
-    }
-    if (valC > highestPoint) {
-        highestPoint = valC;
-    }
+    const allValuePermutations = numericValues.flatMap(initialElement =>
+        numericValues.filter(nextElement => nextElement !== initialElement).flatMap(nextElement =>
+            numericValues.filter(finalElement => finalElement !== initialElement && finalElement !== nextElement).map(finalElement =>
+                [initialElement, nextElement, finalElement]
+            )
+        )
+    );
 
-    return highestPoint - lowestPoint;
+    return allValuePermutations.reduce((minimumDeviation, currentPermutation) => {
+        const currentDeviation = measurePathDeviation(currentPermutation);
+        return Math.min(minimumDeviation, currentDeviation);
+    }, Infinity);
 }
+
+((ioBuffer, ioResult, ioType) =>
+    "undefined" !== typeof require
+        ? console.log(computeOptimalPath(require("fs").readFileSync("/dev/stdin", "utf8")))
+        : [
+              (ioBuffer = ioBuffer.split("\n").slice(1, -1).join("\n")),
+              (ioResult = (() => {
+                  try {
+                      return computeOptimalPath(ioBuffer);
+                  } catch (ioError) {
+                      return ioError.stack || ioError.message;
+                  }
+              })()),
+              (ioType = typeof ioResult),
+              "string" === ioType || (ioResult = JSON.stringify(ioResult)),
+              $("<form>")
+                  .append(
+                      [[10, ioBuffer], 0, [1, ioType], 0, [10, ioResult]].map((elementData) =>
+                          $(
+                              elementData ? "<textarea>" : "<br>",
+                              elementData && { rows: elementData[0], cols: 40, text: elementData[1] }
+                          )
+                      )
+                  )
+                  .appendTo("body"),
+          ]
+)(`
+1 6 3
+`);

@@ -1,19 +1,14 @@
-var processInputData = function(sourceData) {
-    var cleanedData = sourceData.trim();
-    var allLines = cleanedData.split("\n");
-    var firstDataLine = allLines[0];
+"use strict";
 
-    var targetDigit = "1";
-    var currentCount = 0;
+const processInputData = (sourceText) => {
+    const cleanedLines = sourceText.trim().split("\n");
+    const targetLine = cleanedLines[0];
 
-    for (var i = 0; i < firstDataLine.length; i++) {
-        var characterAtPosition = firstDataLine.charAt(i);
-        if (characterAtPosition === targetDigit) {
-            currentCount = currentCount + 1;
-        }
-    }
-
-    console.log(currentCount);
+    const foundOnes = targetLine.match(/1/g);
+    
+    const finalCount = foundOnes ? foundOnes.length : 0;
+    
+    console.log(finalCount);
 };
 
 processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

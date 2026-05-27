@@ -1,77 +1,65 @@
-function areIdentical(itemA, itemB) {
-  return itemA[0] === itemB[0] && itemA[1] === itemB[1];
-}
+const createPlayingCard = (cardMark, cardValue) => ({
+  symbol: String(cardMark),
+  numericVal: Number(cardValue)
+});
 
-function evaluateOrdering(itemA, itemB) {
-  return itemA[0] - itemB[0];
-}
+const areCardsIdentical = (firstCard, secondCard) => {
+  return firstCard.numericVal === secondCard.numericVal && firstCard.symbol === secondCard.symbol;
+};
 
-function formatItemDisplay(item) {
-  return `${item[1]} ${item[0]}`;
-}
+const compareCardNumericValues = (cardA, cardB) => {
+  if (cardA.numericVal === cardB.numericVal) return 0;
+  return cardA.numericVal < cardB.numericVal ? -1 : 1;
+};
 
-function exchangePositions(container, firstIdx, secondIdx) {
-  const temp = container[firstIdx];
-  container[firstIdx] = container[secondIdx];
-  container[secondIdx] = temp;
-}
+const formatCardOutput = (cardItem) => {
+  return `${cardItem.symbol} ${cardItem.numericVal}`;
+};
 
-function adjustHeapPosition(container, heapBoundary, rootElementIdx, comparisonRule) {
-  let dominantElementIdx = rootElementIdx;
-  const leftChildIdx = 2 * rootElementIdx + 1;
-  const rightChildIdx = 2 * rootElementIdx + 2;
+const combineSortedSegments = (leftSegment, rightSegment) => {
+  let mergedCollection = [];
+  let leftPointer = 0;
+  let rightPointer = 0;
 
-  if (leftChildIdx < heapBoundary && comparisonRule(container[leftChildIdx], container[dominantElementIdx]) > 0) {
-    dominantElementIdx = leftChildIdx;
+  while (leftPointer < leftSegment.length && rightPointer < rightSegment.length) {
+    if (compareCardNumericValues(leftSegment[leftPointer], rightSegment[rightPointer]) <= 0) {
+      mergedCollection.push(leftSegment[leftPointer]);
+      leftPointer++;
+    } else {
+      mergedCollection.push(rightSegment[rightPointer]);
+      rightPointer++;
+    }
   }
 
-  if (rightChildIdx < heapBoundary && comparisonRule(container[rightChildIdx], container[dominantElementIdx]) > 0) {
-    dominantElementIdx = rightChildIdx;
+  return mergedCollection.concat(leftSegment.slice(leftPointer)).concat(rightSegment.slice(rightPointer));
+};
+
+const performMergeSort = (dataCollection) => {
+  if (dataCollection.length <= 1) {
+    return dataCollection;
   }
 
-  if (dominantElementIdx !== rootElementIdx) {
-    exchangePositions(container, rootElementIdx, dominantElementIdx);
-    adjustHeapPosition(container, heapBoundary, dominantElementIdx, comparisonRule);
-  }
-}
+  const middleIndex = Math.floor(dataCollection.length / 2);
+  const leftSubarray = dataCollection.slice(0, middleIndex);
+  const rightSubarray = dataCollection.slice(middleIndex);
 
-function performHeapSort(dataCollection, comparisonRule) {
-  const collectionSize = dataCollection.length;
+  const sortedLeft = performMergeSort(leftSubarray);
+  const sortedRight = performMergeSort(rightSubarray);
 
-  for (let k = Math.floor(collectionSize / 2) - 1; k >= 0; k--) {
-    adjustHeapPosition(dataCollection, collectionSize, k, comparisonRule);
-  }
+  return combineSortedSegments(sortedLeft, sortedRight);
+};
 
-  for (let k = collectionSize - 1; k > 0; k--) {
-    exchangePositions(dataCollection, 0, k);
-    adjustHeapPosition(dataCollection, k, 0, comparisonRule);
-  }
-}
+(function processInputAndSort() {
+  const inputDataLines = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split('\n');
+  const totalCardCount = Number(inputDataLines.shift());
+  const initialCardList = inputDataLines.map(entry => entry.split(' ')).map(parts => createPlayingCard(parts[0], parts[1]));
 
-function processData() {
-  const fileSystem = require('fs');
-  const inputLines = fileSystem.readFileSync('/dev/stdin', 'utf8').trim().split('\n');
+  const mergeSortedResult = performMergeSort([...initialCardList]);
 
-  const totalItems = Number(inputLines.shift());
+  const standardSortedList = [...initialCardList].sort((itemA, itemB) => compareCardNumericValues(itemA, itemB));
 
-  const initialCollection = inputLines.map(entry => {
-    const parts = entry.split(' ');
-    return [Number(parts[1]), parts[0]];
-  });
+  const isSortingStable = standardSortedList.every((cardEntry, index) => areCardsIdentical(cardEntry, mergeSortedResult[index]));
 
-  const heapSortedCollection = initialCollection.map(item => [...item]);
-  const stableReferenceCollection = initialCollection.map(item => [...item]);
-
-  performHeapSort(heapSortedCollection, evaluateOrdering);
-
-  stableReferenceCollection.sort(evaluateOrdering);
-
-  const isOrderPreserved = stableReferenceCollection.every((item, idx) => {
-    return areIdentical(item, heapSortedCollection[idx]);
-  });
-
-  console.log(isOrderPreserved ? 'Stable' : 'Not stable');
-  console.log(heapSortedCollection.map(formatItemDisplay).join('\n'));
-}
-
-processData();
+  console.log(isSortingStable ? 'Stable' : 'Not stable');
+  console.log(mergeSortedResult.map(formatCardOutput).join('\n'));
+})();

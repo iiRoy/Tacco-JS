@@ -1,65 +1,76 @@
-// The incoming 'rawData' string contains all necessary information.
-function ProcessData(rawData) {
-  // Each element of 'lineSegments' corresponds to a distinct line from the original input.
-  var lineSegments = rawData.split("\n");
+/*
+ * This module processes raw input data to calculate scores for two players.
+ * It identifies items, sorts them based on a combined value, and then
+ * distributes them between players based on a specific selection rule.
+ */
+function ProcessInput(rawData) {
+  // Divide the incoming text into individual lines.
+  const lineSegments = rawData.split('\n');
 
-  var totalItems = Number(lineSegments[0]); // Convert the first line to a number for total items.
+  // The first line indicates the total number of items to process.
+  const itemCount = parseInt(lineSegments[0], 10);
 
-  // Parse and sort the remaining lines, calculating a combined value for sorting.
-  var itemCollection = lineSegments
-    .slice(1)
-    .map(function (currentEntry) {
-      let tokens = currentEntry.split(" ");
-      return [parseInt(tokens[0], 10), parseInt(tokens[1], 10), parseInt(tokens[0], 10) + parseInt(tokens[1], 10)];
-    })
-    .sort(function (itemA, itemB) {
-      // Custom sort function based on the combined value (index 2).
-      if (itemA[2] < itemB[2]) {
-        return -1;
-      }
-      if (itemA[2] > itemB[2]) {
-        return 1;
-      }
-      return 0;
-    });
+  // Parse and prepare the item data.
+  // Each item line contains two numbers (a, b).
+  // We transform it into an array [a, b, a+b] and then sort the collection.
+  const dishCollection = lineSegments.slice(1).map(function (currentLine) {
+    const parts = currentLine.split(' ');
+    const valA = parseInt(parts[0], 10);
+    const valB = parseInt(parts[1], 10);
+    return [valA, valB, valA + valB];
+  }).sort(function (firstItem, secondItem) {
+    // Sort primarily by the sum (a+b) in ascending order.
+    if (firstItem[2] < secondItem[2]) {
+      return -1;
+    }
+    if (firstItem[2] > secondItem[2]) {
+      return 1;
+    }
+    // If sums are equal, maintain original relative order (stable sort not strictly required here).
+    return 0;
+  });
 
-  var playerAScore = 0; // Accumulator for the first player's points.
-  var playerBScore = 0; // Accumulator for the second player's points.
+  // Initialize scores for both players.
+  let playerAScore = 0;
+  let playerBScore = 0;
 
   // Iterate through the sorted collection, assigning items to players.
-  for (let idx = 0; idx < totalItems; idx++) {
-    let subIdx = 0; // Inner loop counter.
-    let greatestOffset = 0; // Keeps track of the index with the maximum value within a group.
+  for (let turnIndex = 0; turnIndex < itemCount; turnIndex++) {
+    let groupOffset = 0; // Offset within the current group of items with the same sum.
+    let bestOffset = 0;  // Offset of the "best" item found so far in the current group.
 
-    // Find the longest sequence of items with the same combined value.
-    while (idx + subIdx < totalItems && itemCollection[idx + subIdx][2] === itemCollection[idx][2]) {
-      // Determine which item has a higher value for the current player's turn.
-      if (itemCollection[idx + subIdx][idx % 2] > itemCollection[idx + greatestOffset][idx % 2]) {
-        greatestOffset = subIdx;
+    // Find all items that have the same sum (a+b) as the current item.
+    while (turnIndex + groupOffset < itemCount && dishCollection[turnIndex + groupOffset][2] === dishCollection[turnIndex][2]) {
+      // Determine which player is currently picking (0 for A, 1 for B).
+      // Compare the current item's relevant value (A's value if A's turn, B's value if B's turn)
+      // with the "best" item found so far in this group.
+      if (dishCollection[turnIndex + groupOffset][turnIndex % 2] > dishCollection[turnIndex + bestOffset][turnIndex % 2]) {
+        bestOffset = groupOffset; // Update best item's offset if a better one is found.
       }
-      subIdx++;
+      groupOffset++; // Move to the next item in the group.
     }
 
-    // If a better item was found within the group, swap it to the current position.
-    if (greatestOffset !== 0) {
-      let temporaryHolder = itemCollection[idx].slice(0); // Create a shallow copy.
-      itemCollection[idx] = itemCollection[idx + greatestOffset].slice(0);
-      itemCollection[idx + greatestOffset] = temporaryHolder;
+    // If a better item was found within the group (i.e., not the first item in the group),
+    // swap it with the current item so the "best" one is picked first.
+    if (bestOffset !== 0) {
+      const tempHolder = dishCollection[turnIndex].slice(0); // Create a shallow copy.
+      dishCollection[turnIndex] = dishCollection[turnIndex + bestOffset].slice(0);
+      dishCollection[turnIndex + bestOffset] = tempHolder;
     }
 
-    // Assign the item based on whose turn it is (even/odd index).
-    if (idx % 2 === 0) {
-      console.log('Player one picks: %d', itemCollection[idx][idx % 2]);
-      playerAScore += itemCollection[idx][idx % 2];
-    } else {
-      console.log('Player two picks: %d', itemCollection[idx][idx % 2]);
-      playerBScore += itemCollection[idx][idx % 2];
+    // Assign the selected item to the current player and update their score.
+    if (turnIndex % 2 === 0) { // Player A's turn (even index).
+      console.log('a take %d', dishCollection[turnIndex][turnIndex % 2]);
+      playerAScore += dishCollection[turnIndex][turnIndex % 2];
+    } else { // Player B's turn (odd index).
+      console.log('b take %d', dishCollection[turnIndex][turnIndex % 2]);
+      playerBScore += dishCollection[turnIndex][turnIndex % 2];
     }
   }
 
-  // Display the final difference in scores.
+  // Output the final score difference.
   console.log('%d', playerAScore - playerBScore);
 }
 
-// Critical system entry point - do not modify.
-ProcessData(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Execute the main processing function with data read from standard input.
+ProcessInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

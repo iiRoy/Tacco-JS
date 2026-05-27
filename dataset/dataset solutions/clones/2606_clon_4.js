@@ -1,154 +1,144 @@
-const createSourceReader = (sourceData) => {
-    const rawInputLines = sourceData.trim().split('\n');
-    let linePointer = 0;
-    let currentTokens = []; 
-    let tokenPointer = 0;
+const inputReaderFactory = (() => {
+    const createInputReader = (rawInputContent) => {
+        const allInputLines = rawInputContent.trim().split('\n');
+        let globalLinePointer = 0; // Tracks the next line to be consumed by any method
 
-    const refillTokens = () => {
-        if (linePointer >= rawInputLines.length) {
-            currentTokens = []; 
-            tokenPointer = 0;
-            return false;
-        }
-        // Mimic original `a` method's behavior of reversing and popping
-        currentTokens = rawInputLines[linePointer].split(' ').reverse();
-        tokenPointer = 0; 
-        return true;
-    };
+        // State for readSingleItem, which consumes words from a line
+        let singleItemLineBuffer = [];
+        let singleItemWordPointer = 0;
 
-    refillTokens(); // Load the first line's tokens initially
-
-    const extractNextItem = (toNumber) => {
-        if (tokenPointer >= currentTokens.length) {
-            linePointer++; 
-            if (!refillTokens()) { 
-                throw new Error("Input exhausted: no more items.");
+        // Helper to ensure singleItemLineBuffer is ready for the next word
+        const prepareSingleItemBuffer = () => {
+            // If the buffer is exhausted or not yet initialized, and there are more lines
+            if (singleItemWordPointer >= singleItemLineBuffer.length && globalLinePointer < allInputLines.length) {
+                singleItemLineBuffer = allInputLines[globalLinePointer].split(' ');
+                singleItemWordPointer = 0;
+                globalLinePointer++; // Advance global line pointer after consuming a line for single items
             }
-        }
-        const item = currentTokens[tokenPointer++];
-        return toNumber ? Number(item) : item;
-    };
+        };
 
-    const extractFullLine = (toNumber) => {
-        if (linePointer >= rawInputLines.length) {
-            throw new Error("Input exhausted: no more lines.");
-        }
-        const line = rawInputLines[linePointer];
-        linePointer++; 
-        // Reset token pointers as this method consumes a full line outside the `extractNextItem` flow
-        currentTokens = [];
-        tokenPointer = 0;
-        const items = line.split(' ');
-        return toNumber ? items.map(Number) : items;
-    };
+        // Initialize the buffer for the first call to readSingleItem
+        prepareSingleItemBuffer();
 
-    const extractLineBlock = (count, toNumber) => {
-        if (linePointer + count > rawInputLines.length) {
-            throw new Error("Input exhausted: not enough lines for block.");
-        }
-        const block = [];
-        for (let i = 0; i < count; i++) {
-            block.push(extractFullLine(toNumber)); 
-        }
-        return block;
-    };
+        const readSingleItem = (asString = false) => {
+            prepareSingleItemBuffer(); // Ensure buffer is ready
+            if (singleItemWordPointer >= singleItemLineBuffer.length) {
+                return asString ? '' : NaN; // No more items
+            }
+            const item = singleItemLineBuffer[singleItemWordPointer++];
+            return asString ? item : Number(item);
+        };
 
-    const extractRawLineBlock = (count, toNumber) => {
-        if (linePointer + count > rawInputLines.length) {
-            throw new Error("Input exhausted: not enough lines for raw block.");
-        }
-        const block = rawInputLines.slice(linePointer, linePointer + count);
-        linePointer += count; 
-        // Reset token pointers as this method consumes lines outside the `extractNextItem` flow
-        currentTokens = [];
-        tokenPointer = 0;
-        return toNumber ? block.map(Number) : block;
-    };
+        const readLineItems = (asString = false) => {
+            if (globalLinePointer >= allInputLines.length) {
+                return asString ? [] : [];
+            }
+            const lineContent = allInputLines[globalLinePointer];
+            globalLinePointer++; // Advance global line pointer
+            // Reset single item buffer state as a whole line was consumed by this method
+            singleItemLineBuffer = [];
+            singleItemWordPointer = 0;
 
-    return {
-        one: (asNum) => extractNextItem(asNum),
-        line: (asNum) => extractFullLine(asNum),
-        matrix: (numRows, asNum) => extractLineBlock(numRows, asNum),
-        strings: (numRows, asNum) => extractRawLineBlock(numRows, asNum)
+            const words = lineContent.split(' ');
+            return asString ? words : words.map(Number);
+        };
+
+        const readMatrix = (rowCount, asString = false) => {
+            const matrix = [];
+            for (let i = 0; i < rowCount; i++) {
+                matrix.push(readLineItems(asString));
+            }
+            return matrix;
+        };
+
+        const readRows = (rowCount, asString = false) => {
+            const rows = [];
+            for (let i = 0; i < rowCount; i++) {
+                if (globalLinePointer >= allInputLines.length) {
+                    rows.push(asString ? '' : NaN); // Handle end of input
+                    continue;
+                }
+                const lineContent = allInputLines[globalLinePointer];
+                globalLinePointer++; // Advance global line pointer
+                // Reset single item buffer state
+                singleItemLineBuffer = [];
+                singleItemWordPointer = 0;
+                rows.push(asString ? lineContent : Number(lineContent));
+            }
+            return rows;
+        };
+
+        return {
+            readSingleItem,
+            readLineItems,
+            readMatrix,
+            readRows
+        };
     };
+    return createInputReader;
+})();
+
+const initializeMultiArray = (initialValue, ...dimensions) => {
+    const buildArrayRecursively = (dims, currentDepth) => {
+        if (currentDepth === dims.length - 1) {
+            return Array(dims[currentDepth]).fill(initialValue);
+        }
+        return Array(dims[currentDepth]).fill(0).map(() => buildArrayRecursively(dims, currentDepth + 1));
+    };
+    return buildArrayRecursively(dimensions, 0);
 };
 
-const makeFilledMatrix = (initialValue, ...dimensions) => {
-    const buildDimension = (dimIndex) => {
-        if (dimIndex === dimensions.length - 1) {
-            return Array(dimensions[dimIndex]).fill(initialValue);
-        } else {
-            return Array(dimensions[dimIndex]).fill(null).map(() => buildDimension(dimIndex + 1));
-        }
-    };
-    return buildDimension(0);
-};
+const dataStream = inputReaderFactory(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-const inputReader = createSourceReader(require("fs").readFileSync("/dev/stdin", "utf8"));
+console.log(solveMatchingProblem());
 
-console.log(performProcess());
+function solveMatchingProblem() {
+    const participantCount = dataStream.readSingleItem();
+    let preferenceList = dataStream.readMatrix(participantCount);
+    preferenceList = preferenceList.map(row => row.map(item => item - 1));
 
-function performProcess() {
-    const entityCount = inputReader.one(true);
-    const rawPrefs = inputReader.matrix(entityCount, true);
+    let currentPreferencePointers = initializeMultiArray(0, participantCount);
+    let activeParticipantsQueue = Array.from({ length: participantCount }, (_, idx) => idx);
 
-    const preferenceLists = new Map();
-    for (let i = 0; i < entityCount; i++) {
-        preferenceLists.set(i, rawPrefs[i].map(val => val - 1));
-    }
-
-    const currentPreferenceIndices = new Map();
-    for (let i = 0; i < entityCount; i++) {
-        currentPreferenceIndices.set(i, 0);
-    }
-
-    let roundCounter = 0;
-
-    const conductRound = (currentActiveParticipants, currentIndices) => {
-        if (currentActiveParticipants.size === 0) {
-            return; // Base case: no more active participants to process
+    const conductMatchingRound = (roundNumber, currentPointers, participantsInRound) => {
+        if (participantsInRound.length === 0) {
+            return { finalRoundCount: roundNumber, finalPointers: currentPointers };
         }
 
-        roundCounter++;
-        const nextActiveParticipants = new Set();
-        const processedThisRound = new Set(); 
+        let nextPointers = [...currentPointers];
+        let nextRoundParticipants = [];
+        let participantsPairedThisRound = new Set();
 
-        Array.from(currentActiveParticipants).forEach(initiator => {
-            if (processedThisRound.has(initiator) || currentIndices.get(initiator) === entityCount - 1) {
-                return; 
+        participantsInRound.forEach(currentParticipant => {
+            if (participantsPairedThisRound.has(currentParticipant) || nextPointers[currentParticipant] >= participantCount - 1) {
+                return;
             }
 
-            const initiatorPrefIdx = currentIndices.get(initiator);
-            const initiatorPrefs = preferenceLists.get(initiator);
-            const target = initiatorPrefs[initiatorPrefIdx];
+            const preferredPartner = preferenceList[currentParticipant][nextPointers[currentParticipant]];
 
-            const targetPrefIdx = currentIndices.get(target);
-            const targetPrefs = preferenceLists.get(target);
-
-            if (targetPrefs[targetPrefIdx] === initiator) {
-                currentIndices.set(initiator, initiatorPrefIdx + 1);
-                currentIndices.set(target, targetPrefIdx + 1);
-
-                nextActiveParticipants.add(initiator);
-                nextActiveParticipants.add(target);
-                processedThisRound.add(target); 
+            if (
+                nextPointers[preferredPartner] < participantCount - 1 &&
+                currentParticipant === preferenceList[preferredPartner][nextPointers[preferredPartner]] &&
+                !participantsPairedThisRound.has(preferredPartner)
+            ) {
+                nextPointers[currentParticipant]++;
+                nextPointers[preferredPartner]++;
+                nextRoundParticipants.push(currentParticipant, preferredPartner);
+                participantsPairedThisRound.add(currentParticipant);
+                participantsPairedThisRound.add(preferredPartner);
             }
         });
-        conductRound(nextActiveParticipants, currentIndices);
+
+        return conductMatchingRound(roundNumber + 1, nextPointers, nextRoundParticipants);
     };
 
-    let initialActiveParticipants = new Set();
-    for (let i = 0; i < entityCount; i++) {
-        initialActiveParticipants.add(i);
-    }
+    const simulationResult = conductMatchingRound(0, currentPreferencePointers, activeParticipantsQueue);
 
-    conductRound(initialActiveParticipants, currentPreferenceIndices);
-
-    for (let i = 0; i < entityCount; i++) {
-        if (currentPreferenceIndices.get(i) !== entityCount - 1) {
+    for (let i = 0; i < participantCount; i++) {
+        if (simulationResult.finalPointers[i] !== participantCount - 1) {
             return -1;
         }
     }
 
-    return roundCounter;
+    return simulationResult.finalRoundCount;
 }

@@ -1,41 +1,26 @@
-let aggregateData = '';
-process.stdin.on('data', function (chunk) {
-    aggregateData += chunk;
-});
+const fileSystem = require('fs');
 
-process.stdin.on('end', function () {
-    processInputAndCompute(aggregateData);
-});
+const rawInputContent = fileSystem.readFileSync('/dev/stdin', 'utf8');
+const inputSegments = rawInputContent.split('\n');
 
-function processInputAndCompute(inputPayload) {
-    const partitions = inputPayload.split('\n').filter(line => line.trim() !== '');
+const configurationDetails = inputSegments[0].split(' ');
+const subsetCardinality = parseInt(configurationDetails[1], 10);
 
-    if (partitions.length === 0) {
-        console.log(-1);
-        return;
-    }
+const numericalSequence = inputSegments.slice(1)
+                                        .map(entry => Number(entry))
+                                        .sort((valA, valB) => valA - valB);
 
-    const setupTokens = partitions[0].split(' ');
-    const spanLength = Number(setupTokens[1]); 
+let resultantDifference;
 
-    const valueRecords = partitions.slice(1);
-
-    const sortedMeasures = valueRecords
-        .map(entry => parseInt(entry, 10))
-        .sort((first, second) => first - second);
-
-    if (sortedMeasures.length < spanLength) {
-        console.log(-1);
-        return;
-    }
-
-    const initialPositions = Array.from({ length: sortedMeasures.length - spanLength + 1 }, (_, index) => index);
-
-    const calculatedOutcome = initialPositions.reduce((currentOptimal, currentPosition) => {
-        const terminalPosition = currentPosition + spanLength - 1;
-        const rangeMetric = sortedMeasures[terminalPosition] - sortedMeasures[currentPosition];
-        return Math.min(currentOptimal, rangeMetric);
-    }, Infinity);
-
-    console.log(calculatedOutcome);
+if (numericalSequence.length < subsetCardinality) {
+    resultantDifference = -1;
+} else {
+    const potentialDifferences = Array.from({ length: numericalSequence.length - subsetCardinality + 1 }, (_, position) => {
+        const initialElement = numericalSequence[position];
+        const finalElement = numericalSequence[position + subsetCardinality - 1];
+        return finalElement - initialElement;
+    });
+    resultantDifference = Math.min(...potentialDifferences);
 }
+
+console.log(resultantDifference);

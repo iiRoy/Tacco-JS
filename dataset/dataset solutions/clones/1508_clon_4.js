@@ -1,36 +1,29 @@
-function processDataStream(incomingContent) {
-  const dataSegments = incomingContent.split("\n");
+function Main(input) {
+  const allInputLines = input.split("\n");
+  const dataSetSize = parseInt(allInputLines[0]);
 
-  const totalEntries = parseInt(dataSegments[0], 10);
+  const lineEqualityFlags = Array.from({ length: dataSetSize }, (_, lineIndex) => {
+    const currentLineData = allInputLines[lineIndex + 1];
+    const numericalComponents = currentLineData.split(" ").map(str => parseInt(str));
+    return numericalComponents[0] === numericalComponents[1];
+  });
 
-  const parsedEntries = dataSegments.slice(1, totalEntries + 1)
-    .map(lineText => {
-      const numericalParts = lineText.split(" ");
-      const valA = parseInt(numericalParts[0], 10);
-      const valB = parseInt(numericalParts[1], 10);
-      return { a: valA, b: valB };
-    });
+  const sequenceCheckResult = lineEqualityFlags.reduce((accumulatorState, isCurrentLineEqual) => {
+    if (accumulatorState.foundTriple) {
+      return accumulatorState;
+    }
 
-  let foundConsecutiveTriplets = false;
-  
-  if (totalEntries >= 3) {
-    foundConsecutiveTriplets = parsedEntries.slice(0, totalEntries - 2)
-      .some((_element, currentIndex) => {
-        const currentEntry = parsedEntries[currentIndex];
-        const subsequentEntry = parsedEntries[currentIndex + 1];
-        const thirdEntry = parsedEntries[currentIndex + 2];
+    if (isCurrentLineEqual) {
+      const updatedConsecutiveCount = accumulatorState.currentConsecutiveCount + 1;
+      if (updatedConsecutiveCount === 3) {
+        return { foundTriple: true, currentConsecutiveCount: updatedConsecutiveCount };
+      }
+      return { foundTriple: false, currentConsecutiveCount: updatedConsecutiveCount };
+    } else {
+      return { foundTriple: false, currentConsecutiveCount: 0 };
+    }
+  }, { foundTriple: false, currentConsecutiveCount: 0 });
 
-        return (
-          currentEntry.a === currentEntry.b &&
-          subsequentEntry.a === subsequentEntry.b &&
-          thirdEntry.a === thirdEntry.b
-        );
-      });
-  }
-
-  const finalVerdict = foundConsecutiveTriplets ? "Yes" : "No";
-
-  console.log(finalVerdict);
+  console.log(sequenceCheckResult.foundTriple ? "Yes" : "No");
 }
-
-processDataStream(require("fs").readFileSync("/dev/stdin", "utf8"));
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

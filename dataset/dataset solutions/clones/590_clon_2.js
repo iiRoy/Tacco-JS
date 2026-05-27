@@ -1,35 +1,24 @@
-// First, we obtain the necessary module for file system operations.
-let fileSystemAccess = require('fs');
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8'); // Read input from standard input
+var dataLines = (rawData.trim()).split("\n"); // Split the input into an array of lines
 
-// Specify the standard input device path and its character encoding.
-const stdInPath = '/dev/stdin';
-const charEncoding = 'utf8';
-
-// Read the entire content from the standard input as a string.
-let sourceData = fileSystemAccess.readFileSync(stdInPath, charEncoding);
-
-// Process the acquired string: remove leading/trailing whitespace, then split into an array of lines.
-let valueList = (sourceData.trim()).split("\n");
-
-// Start an infinite processing loop.
+// Process data until a zero sum is encountered
 while (true) {
-    // Extract the initial value from the beginning of the list and convert it to a number.
-    let mainValue = Number(valueList.shift());
+    // Extract the main sum for the current block
+    let totalValue = dataLines.shift() - 0;
 
-    // If this primary value is zero, it signifies the end of input, so we exit the loop.
-    if (mainValue === 0) {
+    // If the main sum is zero, terminate the processing loop
+    if (totalValue === 0) {
         break;
     }
 
-    // Initialize a secondary accumulator for nine subsequent values.
-    let subValue = 0;
+    // Initialize a variable to accumulate sub-values
+    let currentSum = 0;
 
-    // Iterate exactly nine times to sum up the next nine values from the list.
-    for (let loopIndex = 0; loopIndex < 9; loopIndex++) {
-        // Take the next value, convert to number, and add it to the secondary accumulator.
-        subValue += Number(valueList.shift());
+    // Loop nine times to sum up subsequent values
+    for (let idx = 0; idx < 9; idx++) {
+        currentSum += (dataLines.shift() - 0); // Add the next value from the array
     }
 
-    // Calculate the difference between the primary value and the accumulated secondary values, then print it.
-    console.log(mainValue - subValue);
+    // Output the difference between the main sum and the accumulated sub-sum
+    console.log(totalValue - currentSum);
 }

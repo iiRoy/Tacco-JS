@@ -1,133 +1,141 @@
-const systemInput = require('readline').createInterface({
-    input: process.stdin,
-    output: process.stdout
-});
+var fileSystem = require('fs');
+var allInputLines = fileSystem.readFileSync(0, 'utf8').split('\n');
 
-const collectedInputLines = [];
-systemInput.on('line', (dataLine) => {
-    collectedInputLines.push(dataLine);
-});
-
-systemInput.on('close', () => {
-    processInputData(collectedInputLines);
-});
-
-class ConnectivityManager {
-    #parentMap;
-    #groupSize;
-
-    constructor(totalElements) {
-        this.#parentMap = new Map();
-        this.#groupSize = new Map();
-        for (let k = 0; k < totalElements; ++k) {
-            this.#parentMap.set(k, k);
-            this.#groupSize.set(k, 1);
-        }
-    }
-
-    findRepresentative(elementKey) {
-        let current = elementKey;
-        const path = [];
-        while (this.#parentMap.get(current) !== current) {
-            path.push(current);
-            current = this.#parentMap.get(current);
-        }
-        for (const p of path) {
-            this.#parentMap.set(p, current);
-        }
-        return current;
-    }
-
-    uniteGroups(elementOne, elementTwo) {
-        const rootOne = this.findRepresentative(elementOne);
-        const rootTwo = this.findRepresentative(elementTwo);
-
-        if (rootOne === rootTwo) {
-            return false;
-        }
-
-        const sizeOne = this.#groupSize.get(rootOne);
-        const sizeTwo = this.#groupSize.get(rootTwo);
-
-        if (sizeOne < sizeTwo) {
-            this.#parentMap.set(rootOne, rootTwo);
-            this.#groupSize.set(rootTwo, sizeOne + sizeTwo);
-        } else {
-            this.#parentMap.set(rootTwo, rootOne);
-            this.#groupSize.set(rootOne, sizeOne + sizeTwo);
-        }
-        return true;
-    }
-
-    areSameGroup(elementOne, elementTwo) {
-        return this.findRepresentative(elementOne) === this.findRepresentative(elementTwo);
-    }
-
-    countDistinctGroups() {
-        const uniqueRoots = new Set();
-        for (const [element, parent] of this.#parentMap.entries()) {
-            if (element === parent) {
-                uniqueRoots.add(element);
-            }
-        }
-        return uniqueRoots.size;
-    }
+var linePointer = 0;
+function getNextInputLine() {
+    return allInputLines[linePointer++];
 }
 
-function processInputData(allLines) {
-    let currentLineIndex = 0;
+function DisjointSetUnion(nodeCount) {
+    var parentArray = new Array(nodeCount);
+    var componentSize = new Array(nodeCount);
 
-    function retrieveNextLine() {
-        return allLines[currentLineIndex++];
+    for (var i = 0; i < nodeCount; i++) {
+        parentArray[i] = i;
+        componentSize[i] = 1;
     }
 
-    while (true) {
-        const dimensions = retrieveNextLine().split(' ').map(Number);
-        const vertexQuantity = dimensions[0];
-        const edgeQuantity = dimensions[1];
+    function findRepresentative(nodeIdentifier) {
+        if (parentArray[nodeIdentifier] === nodeIdentifier) {
+            return nodeIdentifier;
+        }
+        return parentArray[nodeIdentifier] = findRepresentative(parentArray[nodeIdentifier]);
+    }
 
-        if (vertexQuantity === 0 && edgeQuantity === 0) {
+    function uniteSets(nodeA, nodeB) {
+        var rootA = findRepresentative(nodeA);
+        var rootB = findRepresentative(nodeB);
+
+        if (rootA !== rootB) {
+            if (componentSize[rootA] < componentSize[rootB]) {
+                var temp = rootA;
+                rootA = rootB;
+                rootB = temp;
+            }
+            parentArray[rootB] = rootA;
+            componentSize[rootA] += componentSize[rootB];
+            return true;
+        }
+        return false;
+    }
+
+    function getComponentCount(activeNodesSet) {
+        var distinctRoots = new Set();
+        activeNodesSet.forEach(function(nodeIdentifier) {
+            distinctRoots.add(findRepresentative(nodeIdentifier));
+        });
+        return distinctRoots.size;
+    }
+
+    function checkConnectivity(nodeA, nodeB) {
+        return findRepresentative(nodeA) === findRepresentative(nodeB);
+    }
+
+    return {
+        uniteSets: uniteSets,
+        findRepresentative: findRepresentative,
+        getComponentCount: getComponentCount,
+        checkConnectivity: checkConnectivity
+    };
+}
+
+function processGraphData() {
+    var nodeCount, edgeCount;
+    var lineParts, i, k;
+    var nodeDayValues, graphEdges;
+    var dsuManager;
+    var accumulatedWeight;
+    var activeNodesSet;
+
+    while (true) {
+        lineParts = getNextInputLine().split(' ').map(Number);
+        nodeCount = lineParts[0];
+        edgeCount = lineParts[1];
+
+        if (nodeCount === 0 && edgeCount === 0) {
             break;
         }
 
-        // The original code reads node 'days' data but effectively only uses it
-        // to progressively mark all nodes as 'used' by the final iteration.
-        // In the final iteration, all nodes are 'used', and the 'res' and 'uf'
-        // are reset, leading to a standard Kruskal's on the entire graph.
-        // If the entire graph is not connected, the result is 0.
-        for (let v = 0; v < vertexQuantity; ++v) {
-            retrieveNextLine(); // Discarding node 'days' as they don't affect the final outcome
+        nodeDayValues = new Array(nodeCount);
+        activeNodesSet = new Set();
+
+        for (i = 0; i < nodeCount; i++) {
+            nodeDayValues[i] = {
+                id: i,
+                dayValue: +getNextInputLine()
+            };
         }
 
-        const connectionStructures = []; // Represents edges as objects
-        for (let e = 0; e < edgeQuantity; ++e) {
-            const linkDetails = retrieveNextLine().split(' ').map(Number);
-            connectionStructures.push({
-                first: linkDetails[0] - 1, // Convert to 0-indexed
-                second: linkDetails[1] - 1, // Convert to 0-indexed
-                weight: linkDetails[2]
+        graphEdges = new Array(edgeCount);
+        for (i = 0; i < edgeCount; i++) {
+            lineParts = getNextInputLine().split(' ').map(Number);
+            graphEdges[i] = [lineParts[0] - 1, lineParts[1] - 1, lineParts[2]];
+        }
+
+        nodeDayValues.sort(function(a, b) {
+            return a.dayValue - b.dayValue;
+        });
+
+        graphEdges.sort(function(edgeA, edgeB) {
+            return edgeA[2] - edgeB[2];
+        });
+
+        dsuManager = new DisjointSetUnion(nodeCount);
+        accumulatedWeight = 0;
+
+        k = nodeCount - 1;
+        while (k >= 0) {
+            var currentDayValue = nodeDayValues[k].dayValue;
+            var nodesToActivate = [];
+
+            while (k >= 0 && nodeDayValues[k].dayValue === currentDayValue) {
+                nodesToActivate.push(nodeDayValues[k].id);
+                k--;
+            }
+
+            nodesToActivate.forEach(function(nodeId) {
+                activeNodesSet.add(nodeId);
             });
-        }
 
-        // Sort edges by weight in ascending order for Kruskal's algorithm
-        connectionStructures.sort((linkA, linkB) => linkA.weight - linkB.weight);
+            for (var j = 0; j < edgeCount; j++) {
+                var currentEdge = graphEdges[j];
+                var u = currentEdge[0];
+                var v = currentEdge[1];
+                var weight = currentEdge[2];
 
-        const groupManager = new ConnectivityManager(vertexQuantity);
-        let totalSpanningCost = 0;
+                if (activeNodesSet.has(u) && activeNodesSet.has(v) && !dsuManager.checkConnectivity(u, v)) {
+                    dsuManager.uniteSets(u, v);
+                    accumulatedWeight += weight;
+                }
+            }
 
-        // Apply Kruskal's algorithm
-        for (const link of connectionStructures) {
-            if (groupManager.uniteGroups(link.first, link.second)) {
-                totalSpanningCost += link.weight;
+            if (dsuManager.getComponentCount(activeNodesSet) > 1) {
+                accumulatedWeight = 0;
+                dsuManager = new DisjointSetUnion(nodeCount);
             }
         }
-
-        // Check if all vertices form a single connected component
-        // This mirrors the original's final `uf.count(use) > 1` check when all nodes are 'used'
-        if (groupManager.countDistinctGroups() > 1) {
-            console.log(0);
-        } else {
-            console.log(totalSpanningCost);
-        }
+        console.log(accumulatedWeight);
     }
 }
+
+processGraphData();

@@ -1,27 +1,31 @@
-const executeOperation = (sourceContent) => {
-    const lineSegments = sourceContent.split('\n');
+function processInputData(sourceText) {
+    const entryLines = sourceText.split("\n");
 
-    lineSegments.sort();
+    // The original code implements a bubble sort, which sorts strings lexicographically in ascending order.
+    // Array.prototype.sort() without a custom comparator sorts elements as strings lexicographically by default,
+    // achieving the same sorting behavior with a substantially different implementation strategy.
+    entryLines.sort();
 
-    const outputList = [];
-    const currentLength = lineSegments.length;
+    // The original code prints input[input.length-0], input[input.length-1], input[input.length-2], input[input.length-3].
+    // Note that input[input.length-0] (i.e., input[input.length]) will be 'undefined' as it's out of bounds.
+    // This specific behavior, including printing 'undefined', must be preserved.
+    // We construct an array of indices to access the elements in the exact order the original loop would.
+    const accessPoints = [
+        entryLines.length,       // Corresponds to original input[input.length-0]
+        entryLines.length - 1,   // Corresponds to original input[input.length-1]
+        entryLines.length - 2,   // Corresponds to original input[input.length-2]
+        entryLines.length - 3    // Corresponds to original input[input.length-3]
+    ];
 
-    for (let iterationCount = 0; iterationCount < 4; iterationCount++) {
-        const desiredIndex = currentLength - iterationCount;
-        outputList.push(lineSegments[desiredIndex]);
-    }
+    // Iterate over the specific indices to replicate the exact output sequence.
+    accessPoints.forEach(idx => {
+        console.log(entryLines[idx]);
+    });
+}
 
-    outputList.forEach(element => console.log(element));
-};
+// The 'debug' function from the original code is not part of the main execution path
+// when run via Node.js with fs.readFileSync, and is therefore omitted as per Type IV rules
+// regarding user-defined identifiers not required by runtime behavior.
 
-const activateUserInterface = () => {
-    const grabbedValue = window.document.querySelector("#entryField").value;
-    executeOperation(grabbedValue);
-};
-
-const fileSystemModule = require('fs');
-const dataBuffer = Buffer.alloc(1024 * 1024);
-const octetsRead = fileSystemModule.readSync(0, dataBuffer, 0, dataBuffer.length, 0);
-const textFromFile = dataBuffer.toString('utf8', 0, octetsRead);
-
-executeOperation(textFromFile);
+// Execute the main logic by reading from standard input.
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

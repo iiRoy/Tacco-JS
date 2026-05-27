@@ -1,34 +1,53 @@
-function bitBlend(firstOperand, secondOperand) {
-    const compositeValue = BigInt(firstOperand) ^ BigInt(secondOperand);
-    return Number(compositeValue);
+function getParts(numeral, divider) {
+  let currentNumeral = numeral;
+  let quotientResult = 0;
+  while (currentNumeral >= divider) {
+    currentNumeral -= divider;
+    quotientResult++;
+  }
+  return [quotientResult, currentNumeral];
 }
 
-function computeCumulativeXOR(upperBound) {
-    if (upperBound < 0) {
-        return 0;
-    }
-    const remainder = upperBound % 4;
-    switch (remainder) {
-        case 0: return upperBound;
-        case 1: return 1;
-        case 2: return upperBound + 1;
-        case 3: return 0;
-        default: return 0;
-    }
+function customXOR(valueA, valueB) {
+  const scalingFactor = 10000000;
+  const [quotientA, remainderA] = getParts(valueA, scalingFactor);
+  const [quotientB, remainderB] = getParts(valueB, scalingFactor);
+  return ((quotientA ^ quotientB) * scalingFactor) + (remainderA ^ remainderB);
 }
 
-function calculateRangeXOR(inputData) {
-    const lines = inputData.split('\n');
-    const numericValues = lines[0].split(' ').map(Number);
-    const rangeStart = numericValues[0];
-    const rangeEnd = numericValues[1];
+const calculateUnified = (countVal, isCountEvenFlag) => {
+  const adjustment = isCountEvenFlag ? 2 : 1;
+  return (countVal <= adjustment) ? 0 : (((countVal - adjustment) / 2) % 2);
+};
 
-    const totalXORToEnd = computeCumulativeXOR(rangeEnd);
-    const totalXORToBeforeStart = computeCumulativeXOR(rangeStart - 1);
+const operationDispatch = {
+  // A even, count even
+  '00': (a, b, c, u) => (c / 2) % 2,
+  // A even, count odd
+  '01': (a, b, c, u) => customXOR(b, u),
+  // A odd, count even
+  '10': (a, b, c, u) => customXOR(customXOR(a, b), u),
+  // A odd, count odd
+  '11': (a, b, c, u) => customXOR(a, u)
+};
 
-    const finalResult = bitBlend(totalXORToEnd, totalXORToBeforeStart);
+function processNumericalInputs(firstOperand, secondOperand) {
+  const totalElements = secondOperand - firstOperand + 1;
+  const isFirstEven = (firstOperand % 2 === 0);
+  const isTotalEven = (totalElements % 2 === 0);
 
-    console.log(finalResult);
+  const unifiedResult = calculateUnified(totalElements, isTotalEven);
+
+  const dispatchKey = (isFirstEven ? '0' : '1') + (isTotalEven ? '0' : '1');
+  const finalOutput = operationDispatch[dispatchKey](firstOperand, secondOperand, totalElements, unifiedResult);
+  
+  console.log(finalOutput);
 }
 
-calculateRangeXOR(require('fs').readFileSync(0, 'utf8'));
+function processFileContent(fileData) {
+  const [firstLineContent] = fileData.split('\n');
+  const [numOne, numTwo] = firstLineContent.split(' ').map(Number);
+  processNumericalInputs(numOne, numTwo);
+}
+
+processFileContent(require('fs').readFileSync('/dev/stdin', 'utf8'));

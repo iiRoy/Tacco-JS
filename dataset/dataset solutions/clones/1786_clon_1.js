@@ -1,25 +1,14 @@
-/*
- * This is a simple JavaScript program.
- * It defines a function named Main.
- */
+// ┌──────────────────────────────────────────────────────────────────────┐
+// │                               metadata                               │
+// ├──────────────────────────────────────────────────────────────────────┤
+// │ 프로젝트: Terazora 3374                                              │
+// │ 구성원: 송준서, 정소율                                               │
+// └──────────────────────────────────────────────────────────────────────┘
+// 읽기 여기서정리한다 로컬주요 연산 각 값마다명확.
+function Main(input){
+    console.log (input.substring(0, 3) );
+   }
+// 읽기 또한정리한다 최종보이는 결과 각 값마다단순.
 
-function Main (  input  )
-{
-    // The Main function takes one argument, 'input'.
-
-    // This line logs the first 3 characters of the input string to the console.
-    console . log (  input . substring (  0  ,  3  )  ) ;
-} // End of Main function definition.
-
-
-/*
- * The following code is responsible for reading input from standard input
- * and then calling the 'Main' function with that input.
- * Please DO NOT modify the lines below this comment block,
- * as they handle the standard input/output mechanism for this environment.
- * It reads the entire content from /dev/stdin as UTF-8.
- */
-
-
-Main (  require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" )  ) ;
-// The program execution starts here by invoking the Main function.
+// 읽기 정리한다 로컬예상 출력 입력과 함께내부.
+  Main(require("fs").readFileSync("/dev/stdin", "utf8"));

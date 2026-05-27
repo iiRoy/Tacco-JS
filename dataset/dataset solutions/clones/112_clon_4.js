@@ -1,35 +1,7 @@
-var dataStream = require('fs').readFileSync('/dev/stdin', 'utf8');
-var lineSegments = dataStream.trim().split("\n");
+const fileSystem = require('fs');
+const rawInputData = fileSystem.readFileSync('/dev/stdin', 'utf8');
 
-function determineOrbitalCycle(solarMonth, lunarDay) {
-    var fixedYear = 2004; // The base year for calculations
-    var adjustedYear = fixedYear;
-    var adjustedMonth = solarMonth;
-
-    // Zeller's congruence requires January and February to be treated as
-    // the 13th and 14th months of the previous year.
-    if (solarMonth < 3) {
-        adjustedMonth += 12;
-        adjustedYear -= 1;
-    }
-
-    var centuryValue = Math.floor(adjustedYear / 100); // J
-    var yearOfCentury = adjustedYear % 100;           // K
-
-    // Zeller's congruence formula:
-    // h = (q + floor(13*(m+1)/5) + K + floor(K/4) + floor(J/4) - 2*J) mod 7
-    // Where h: 0=Saturday, 1=Sunday, ..., 6=Friday
-    var zellerResult = (lunarDay + Math.floor(13 * (adjustedMonth + 1) / 5) + yearOfCentury + Math.floor(yearOfCentury / 4) + Math.floor(centuryValue / 4) - 2 * centuryValue) % 7;
-
-    // Adjust Zeller's result to match JavaScript's Date.getDay() standard:
-    // 0=Sunday, 1=Monday, ..., 6=Saturday
-    // (Zeller's 0=Sat -> JS 6, Zeller's 1=Sun -> JS 0)
-    var finalDayIndex = (zellerResult + 6) % 7;
-
-    return finalDayIndex;
-}
-
-var celestialPeriods = [
+const dayDesignations = [
     "Sunday",
     "Monday",
     "Tuesday",
@@ -39,20 +11,45 @@ var celestialPeriods = [
     "Saturday"
 ];
 
-var currentLineIndex = 0;
-while (currentLineIndex < lineSegments.length) {
-    var currentEntry = lineSegments[currentLineIndex];
+function calculateDayIndex(yearValue, monthValue, dayValue) {
+    let internalMonth = monthValue;
+    let internalYear = yearValue;
 
-    if (currentEntry === "0 0") {
-        break;
+    if (internalMonth <= 2) {
+        internalMonth += 12;
+        internalYear--;
     }
 
-    var components = currentEntry.split(" ");
-    var monthValue = parseInt(components[0], 10);
-    var dayValue = parseInt(components[1], 10);
+    const dayOfMonth = dayValue;
+    const zellerMonth = internalMonth;
+    const yearOfCentury = internalYear % 100;
+    const century = Math.floor(internalYear / 100);
 
-    var cycleIdentifier = determineOrbitalCycle(monthValue, dayValue);
-    console.log(celestialPeriods[cycleIdentifier]);
+    let zellerResult = (dayOfMonth + Math.floor(13 * (zellerMonth + 1) / 5) + yearOfCentury + Math.floor(yearOfCentury / 4) + Math.floor(century / 4) - 2 * century) % 7;
 
-    currentLineIndex++;
+    if (zellerResult < 0) {
+        zellerResult += 7;
+    }
+
+    return (zellerResult + 6) % 7;
 }
+
+rawInputData
+    .trim()
+    .split("\n")
+    .every(lineEntry => {
+        if (lineEntry === "0 0") {
+            return false;
+        }
+
+        const parts = lineEntry.split(" ");
+        const monthPart = parseInt(parts[0], 10);
+        const dayPart = parseInt(parts[1], 10);
+
+        const fixedYear = 2004;
+
+        const finalDayIndex = calculateDayIndex(fixedYear, monthPart, dayPart);
+        console.log(dayDesignations[finalDayIndex]);
+
+        return true;
+    });

@@ -1,85 +1,55 @@
-var entryPoint = function() {
-    while (true) {
-        var numericalInput = acquireNumericValue();
-        if (numericalInput === 0) {
+const inputBuffer = [];
+let currentInputIndex = 0;
+const inputProcessor = require('readline');
+
+const inputInterface = inputProcessor.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+    terminal: false
+});
+
+inputInterface.on('line', (lineContent) => {
+    inputBuffer.push(lineContent);
+});
+
+inputInterface.on('close', () => {
+    processAllInputEntries(inputBuffer);
+});
+
+function emitResult(valueToOutput) {
+    console.log(valueToOutput);
+}
+
+function calculateConsecutiveSumCount(targetValue) {
+    if (targetValue === 0) {
+        return 0;
+    }
+
+    const maximumTermsK = Math.floor((Math.sqrt(1 + 8 * targetValue) - 1) / 2);
+
+    const validRepresentationsCount = Array.from(
+        { length: Math.max(0, maximumTermsK - 1) },
+        (_, index) => index + 2
+    )
+    .filter(termCount => {
+        const sumOfInitialTerms = termCount * (termCount - 1) / 2;
+        const remainingValue = targetValue - sumOfInitialTerms;
+        return remainingValue > 0 && remainingValue % termCount === 0;
+    })
+    .length;
+
+    return validRepresentationsCount;
+}
+
+function processAllInputEntries(allInputLines) {
+    while (currentInputIndex < allInputLines.length) {
+        const currentNumericInput = Number(allInputLines[currentInputIndex++]);
+        
+        if (currentNumericInput === 0) {
             break;
         }
-        var outcome = determineConsecutiveSumCount(numericalInput);
-        outputResult(outcome);
+        
+        const computedResult = calculateConsecutiveSumCount(currentNumericInput);
+        emitResult(computedResult);
     }
-};
-
-var determineConsecutiveSumCount = function(inputNumber) {
-    if (inputNumber === 0) return 0;
-    if (inputNumber === 1) return 0;
-
-    var currentOddFactor = inputNumber;
-    while (currentOddFactor % 2 === 0) {
-        currentOddFactor /= 2;
-    }
-
-    var totalCombinations = 0;
-    var upperBoundary = Math.sqrt(currentOddFactor);
-    for (var factorProbe = 1; factorProbe <= upperBoundary; factorProbe += 2) {
-        if (currentOddFactor % factorProbe === 0) {
-            if ((inputNumber / factorProbe) >= ((factorProbe + 1) / 2)) {
-                totalCombinations++;
-            }
-            var correspondingFactor = currentOddFactor / factorProbe;
-            if (factorProbe * factorProbe !== currentOddFactor) {
-                if ((inputNumber / correspondingFactor) >= ((correspondingFactor + 1) / 2)) {
-                    totalCombinations++;
-                }
-            }
-        }
-    }
-    return totalCombinations - 1;
-};
-
-var acquireNumericValue;
-var outputResult;
-
-if (typeof process !== 'undefined') {
-    outputResult = function(value) {
-        console.log(value);
-    };
-
-    var storedInputs = [];
-    var inputPosition = 0;
-
-    process.stdin.setEncoding('utf8');
-    process.stdin.on('data', function(dataChunk) {
-        var processedLines = dataChunk.split('\n');
-        for (var lineIdx = 0; lineIdx < processedLines.length; lineIdx++) {
-            var lineContent = processedLines[lineIdx].trim();
-            if (lineContent !== '') {
-                storedInputs.push(lineContent);
-            }
-        }
-    });
-
-    process.stdin.on('end', function() {
-        entryPoint();
-    });
-
-    acquireNumericValue = function() {
-        if (inputPosition < storedInputs.length) {
-            return Number(storedInputs[inputPosition++]);
-        }
-        return 0;
-    };
-} else {
-    outputResult = function(value) {
-        print(value);
-    };
-    acquireNumericValue = (function() {
-        return function() {
-            var inputLine = readline();
-            if (inputLine === null || inputLine === undefined || inputLine.trim() === '') {
-                return 0;
-            }
-            return Number(inputLine);
-        };
-    })();
-    entryPoint();
 }

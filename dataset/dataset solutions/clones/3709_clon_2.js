@@ -1,163 +1,130 @@
-"use strict"; // Enforce strict parsing and error handling for cleaner code.
+"use strict"; // Enforce strict mode for better code quality.
 
 /**
- * Main entry point for processing input data and calculating the final result.
- * This function orchestrates the reading, transformation, and reduction of numerical sequences.
- * @param {string} sourceText - The raw input string containing numbers, separated by newlines or spaces.
+ * Primary function to process the given input data and compute the required result.
+ * @param {string} rawData - The complete input string, typically from standard input.
  */
-function ProcessData(sourceText) {
-    // Initialize a data parser to handle tokenization and type conversion.
-    let dataReader = new StreamReader(sourceText);
+function ProcessData(rawData) {
+    // Initialize an input parsing utility with the provided raw data.
+    let dataParser = new DataProcessor(rawData);
 
-    // Read the total number of elements expected in the primary array.
-    let numElements = dataReader.getNextInt();
+    // Obtain the total count of elements from the input.
+    let elementCount = dataParser.retrieveInteger();
 
-    // Fetch the main array of integers based on the 'numElements' count.
-    let initialSequence = dataReader.getNextIntArray(numElements);
+    // Fetch an array of integers based on the previously read count.
+    let originalValues = dataParser.retrieveIntegerArray(elementCount);
 
-    // Transform the initial sequence: subtract current index and an offset from each value.
-    // This transformation is crucial for the problem's underlying mathematical logic (e.g., median of (A[i] - i - C)).
-    let transformedSequence = initialSequence.map(
-        (valElement, currentPos) => {
-            // Each element is adjusted by its position and a constant offset.
-            return valElement - currentPos - 1;
-        }
-    );
+    // Create a new array by transforming each element: value - index - 1.
+    let transformedValues = originalValues.map((currentVal, currentIndex) => {
+        return currentVal - currentIndex - 1;
+    });
 
-    // Sort the transformed sequence in ascending order.
-    // This step is typically done to find a median or to prepare for operations that require ordered data.
-    transformedSequence.sort(
-        (itemAlpha, itemBeta) => {
-            // Standard numerical comparison for sorting.
-            return itemAlpha - itemBeta;
-        }
-    );
+    // Arrange the transformed values in ascending numerical order.
+    transformedValues.sort((valA, valB) => valA - valB);
 
-    // Calculate the index of the median element in the sorted transformed sequence.
-    // For an even number of elements, Math.floor gives the lower of the two middle indices.
-    let medianIdx = Math.floor(numElements / 2);
+    // Determine the index of the median element in the sorted transformed array.
+    let medianIndex = Math.floor(elementCount / 2);
 
-    // Retrieve the median value from the sorted transformed sequence.
-    // This median value acts as a pivotal point for the subsequent deviation calculation.
-    let pivotValue = transformedSequence[medianIdx];
+    // Extract the median value using the calculated median index.
+    let medianVal = transformedValues[medianIndex];
 
-    // Calculate the total absolute deviation from the modified sequence.
-    // The goal is to find the sum of |A[i] - (B + i + 1)| for all i, where B is the chosen pivot.
-    let totalDeviation = initialSequence.reduce(
-        (currentSum, originalElement, originalIndex) => {
-            // For each original element, calculate its deviation from the pivot adjusted by its index.
-            let targetValue = pivotValue + originalIndex + 1;
-            return currentSum + Math.abs(originalElement - targetValue);
-        },
-        0 // Start the sum with zero.
-    );
+    // Compute the final sum of absolute differences using a reduction operation.
+    let finalResult = originalValues.reduce((accumulator, itemValue, itemIndex) => {
+        // Calculate the target value for the current item based on the median and its index.
+        let target = medianVal + itemIndex + 1;
+        // Add the absolute difference between the item's value and its target to the accumulator.
+        return accumulator + Math.abs(itemValue - target);
+    }, 0); // The initial value for the accumulator is zero.
 
-    // Output the final computed deviation to the console.
-    console.info(totalDeviation);
+    // Display the final calculated result to the console.
+    console.log(finalResult);
 }
 
-
 /**
- * Helper class for parsing input strings into various data types.
- * It tokenizes the input and provides methods to consume tokens as integers or strings.
+ * Utility class designed for parsing various data types from a string source.
+ * It tokenizes the input string and provides methods to sequentially retrieve integers or strings.
  */
-class StreamReader {
-
+class DataProcessor {
     /**
-     * Initializes the StreamReader with the raw input string.
-     * @param {string} inputContent - The string content to be parsed.
-     * @throws {Error} If the input content is not provided.
+     * Constructs an instance of the DataProcessor.
+     * @param {string} sourceText - The entire string content to be parsed.
      */
-    constructor(inputContent) {
-        // Ensure that input content is supplied.
-        if (typeof inputContent === 'undefined') {
-            throw new Error('Input content parameter cannot be omitted!');
+    constructor(sourceText) {
+        // Validate that the source text is provided.
+        if (typeof sourceText === 'undefined') {
+            throw new Error('The input source text parameter cannot be omitted!');
         }
-
-        // Internal counter to track the current position in the tokenized data.
-        this.tokenPosition = 0;
-
-        // Split the input string into tokens using newlines or spaces as delimiters.
-        this.parsedTokens = inputContent.split(/[\n\s]+/);
+        // Initialize a counter to keep track of the current parsing position.
+        this.positionCounter = 0;
+        // Split the source text into individual tokens using newlines or spaces as delimiters.
+        this.parsedTokens = sourceText.split(/\n|\s/);
     }
 
     /**
-     * Reads and returns the next token as an integer.
-     * Increments the internal token position.
-     * @returns {number} The next integer value.
+     * Retrieves the next available token as an integer.
+     * @returns {number} The integer value of the next token.
      */
-    getNextInt() {
-        // Convert the current token to an integer using parseInt.
-        // The radix (base 10) is specified for safety.
-        return parseInt(this.parsedTokens[this.tokenPosition++], 10);
+    retrieveInteger() {
+        // Convert the current token to a number (using unary minus for type coercion) and advance the counter.
+        return this.parsedTokens[this.positionCounter++] - 0;
     }
 
     /**
-     * Reads a specified number of tokens and returns them as an array of integers.
-     * @param {number} requiredCount - The number of integers to read.
-     * @returns {number[]} An array containing the read integers.
-     * @throws {Error} If 'requiredCount' is not provided or is less than 1.
+     * Retrieves an array of integers of a specified length.
+     * @param {number} arraySize - The desired number of integers in the array.
+     * @returns {number[]} An array containing the retrieved integers.
      */
-    getNextIntArray(requiredCount) {
-        // Validate the count parameter.
-        if (typeof requiredCount === 'undefined') {
-            throw new Error('The count argument for array reading cannot be undefined!');
+    retrieveIntegerArray(arraySize) {
+        // Validate the array size parameter.
+        if (typeof arraySize === 'undefined') {
+            throw new Error('The array size parameter for integer array retrieval cannot be omitted!');
         }
-        if (requiredCount < 1) {
-            throw new Error('The count argument must be a positive integer (1 or greater)!');
+        if (arraySize < 1) {
+            throw new Error('The array size must be 1 or greater for integer array retrieval!');
         }
-
-        // Allocate memory for the array.
-        let integerArray = new Array(requiredCount);
-
-        // Loop to populate the array with integers.
-        for (let k = 0; k < requiredCount; k++) {
-            integerArray[k] = this.getNextInt();
+        // Create a new array to store the results.
+        let resultArray = new Array(arraySize);
+        // Populate the array by repeatedly calling retrieveInteger.
+        for (let loopIndex = 0; loopIndex < arraySize; loopIndex++) {
+            resultArray[loopIndex] = this.retrieveInteger();
         }
-        return integerArray;
+        return resultArray;
     }
 
     /**
-     * Reads and returns the next token as a string.
-     * Increments the internal token position.
-     * @returns {string} The next string value.
+     * Retrieves the next available token as a string.
+     * @returns {string} The string value of the next token.
      */
-    getNextString() {
-        // Return the token as a string directly.
-        return this.parsedTokens[this.tokenPosition++];
+    retrieveString() {
+        // Return the current token as a string and advance the counter.
+        return this.parsedTokens[this.positionCounter++];
     }
 
     /**
-     * Reads a specified number of tokens and returns them as an array of strings.
-     * @param {number} requiredCount - The number of strings to read.
-     * @returns {string[]} An array containing the read strings.
-     * @throws {Error} If 'requiredCount' is not provided or is less than 1.
+     * Retrieves an array of strings of a specified length.
+     * @param {number} strArraySize - The desired number of strings in the array.
+     * @returns {string[]} An array containing the retrieved strings.
      */
-    getStrings(requiredCount) {
-        // Validate the count parameter.
-        if (typeof requiredCount === 'undefined') {
-            throw new Error('The count argument for string array reading cannot be undefined!');
+    retrieveStringArray(strArraySize) {
+        // Validate the string array size parameter.
+        if (typeof strArraySize === 'undefined') {
+            throw new Error('The string array size parameter for string array retrieval cannot be omitted!');
         }
-        if (requiredCount < 1) {
-            throw new Error('The count argument must be a positive integer (1 or greater)!');
+        if (strArraySize < 1) {
+            throw new Error('The string array size must be 1 or greater for string array retrieval!');
         }
-
-        // Allocate memory for the array.
-        let stringArray = new Array(requiredCount);
-
-        // Loop to populate the array with strings.
-        for (let k = 0; k < requiredCount; k++) {
-            stringArray[k] = this.getNextString();
+        // Create a new array to store the string results.
+        let strResultArray = new Array(strArraySize);
+        // Populate the array by repeatedly calling retrieveString.
+        for (let strLoopIndex = 0; strLoopIndex < strArraySize; strLoopIndex++) {
+            strResultArray[strLoopIndex] = this.retrieveString();
         }
-        return stringArray;
+        return strResultArray;
     }
 }
 
-
-// This conditional block determines if the script is running in a Node.js environment
-// (i.e., not in a web browser) and executes the main program logic accordingly.
+// This block checks if the script is running in a Node.js environment (not a web browser).
 if (typeof window === "undefined") {
-    // In a Node.js environment, read input from standard input using the 'fs' module.
-    // The input is expected to be UTF-8 encoded.
+    // If in Node.js, read the input from standard input and pass it to the main processing function.
     ProcessData(require("fs").readFileSync("/dev/stdin", "utf8"));
 }

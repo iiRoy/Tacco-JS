@@ -1,14 +1,23 @@
-const evaluateModuloCondition = (rawTextData) => {
-    const [firstNum, secondNum, thirdNum] = String(rawTextData).trim().split(' ').map(Number);
+"use strict";
 
-    const possibleRemainders = Array.from({ length: secondNum }, (_, currentMultiplier) => {
-        return (firstNum * currentMultiplier) % secondNum;
-    });
+const processInputAndDetermineOutcome = (rawInputString) => {
+    const [firstLineContent] = rawInputString.trim().split('\n');
+    const [factorOne, divisorValue, targetRemainder] = firstLineContent.split(' ').map(Number);
 
-    const outcome = possibleRemainders.includes(thirdNum) ? "YES" : "NO";
+    const sequenceLength = divisorValue;
+    const isTargetReachable = Array.from({ length: sequenceLength }, (_, currentIteration) => currentIteration)
+                                 .some(iterationIndex => {
+                                     const calculatedRemainder = (factorOne * iterationIndex) % divisorValue;
+                                     return calculatedRemainder === targetRemainder;
+                                 });
 
-    console.log(outcome);
+    return isTargetReachable ? "YES" : "NO";
 };
 
-const inputDataStream = require('fs').readFileSync('/dev/stdin', 'utf8');
-evaluateModuloCondition(inputDataStream);
+const executeProgram = (inputSourceModule) => {
+    const programInput = inputSourceModule.readFileSync('/dev/stdin', 'utf8');
+    const finalVerdict = processInputAndDetermineOutcome(programInput);
+    console.log(finalVerdict);
+};
+
+executeProgram(require('fs'));

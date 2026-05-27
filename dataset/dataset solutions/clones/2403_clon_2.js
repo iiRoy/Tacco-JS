@@ -1,46 +1,57 @@
-// The entire incoming dataset is held within the provided argument.
+// This function processes the incoming data.
 function ProcessInput(rawData) {
-    // The initial line is at textLines[0], the subsequent at textLines[1], and so forth.
-    const textLines = rawData.split('\n');
-    let firstVal = parseFloat(textLines[0].split(' ')[0]);
-    let secondVal = parseFloat(textLines[0].split(' ')[1]);
-    let charString = textLines[1];
-    let finalResult; // This variable will store the ultimate outcome.
+    // The first element of this array holds the first line, the second holds the second, and so on.
+    var inputLines = rawData.split("\n");
+    var totalLength = Number(inputLines[0].split(" ")[0]); // The overall length or target.
+    var maxJump = Number(inputLines[0].split(" ")[1]);     // The maximum allowed jump distance.
+    var pathString = inputLines[1];                        // The string representing valid jump points.
+    var finalResult;                                       // Variable to store the computed outcome.
 
-    if (firstVal <= secondVal) {
-        finalResult = firstVal;
+    // Check for a simple base case where the target is within the maximum jump range.
+    if (totalLength <= maxJump) {
+        finalResult = totalLength; // If so, the answer is just the total length.
     } else {
-        const stepPath = []; // Initialize an empty array for storing movement steps.
-        let currentPosition = 0;
-        // Iterate backward from the maximum allowed step.
-        for (let j = secondVal; j >= 0; j--) {
-            // Check for an impossible scenario where no steps could be taken.
-            if (j === 0 && stepPath.length === 0) {
-                finalResult = -1; // Indicate an unresolvable situation.
-                break; // Exit the loop immediately.
+        // Initialize an array to store the sequence of jumps.
+        var jumpSequence = [];
+        // Keep track of the current position from the end of the path.
+        var currentPosition = 0;
+
+        // Iterate backwards from the maximum jump distance down to zero.
+        for (var stepSize = maxJump; stepSize >= 0; stepSize--) {
+            // If we've reached the start (stepSize is 0) and no jumps have been recorded yet,
+            // it means no valid path was found.
+            if (stepSize === 0 && jumpSequence.length === 0) {
+                finalResult = -1; // Indicate failure.
+                break;            // Exit the loop.
             }
-            // If the remaining distance is less than or equal to the current step size.
-            if (firstVal - currentPosition - j <= 0) {
-                stepPath.unshift(firstVal - currentPosition); // Add the final step to the beginning.
-                break; // The target has been reached, exit the loop.
+
+            // Calculate the remaining distance to cover from the current position.
+            // If this remaining distance is less than or equal to the current stepSize,
+            // we can make the final jump to the beginning.
+            if (totalLength - currentPosition - stepSize <= 0) {
+                jumpSequence.unshift(totalLength - currentPosition); // Add the final jump to the front.
+                break;                                               // Path found, exit loop.
             }
-            // Check if the current position on the string allows for a step.
-            if (charString[firstVal - currentPosition - j] === '0') {
-                stepPath.unshift(j); // Record the step taken.
-                currentPosition += j; // Advance the current position.
-                j = secondVal + 1; // Reset iterator to re-evaluate from maximum step for the new position.
-                // Display the current index for debugging.
-                // Terminate the current loop iteration.
+
+            // Check if the character at the potential landing spot (from the start) is '0'.
+            // '0' indicates a valid stepping stone.
+            if (pathString[totalLength - currentPosition - stepSize] === "0") {
+                jumpSequence.unshift(stepSize); // Add the current step size to the beginning of the sequence.
+                currentPosition += stepSize;    // Advance the current position by the step size.
+                stepSize = maxJump + 1;         // Reset stepSize to restart the inner loop from maxJump.
+                                                // This effectively makes the next iteration start with maxJump.
             }
         }
-        // If a valid path was found (finalResult is not -1).
+
+        // If a valid path was found (finalResult is not -1), format the jump sequence.
         if (finalResult !== -1) {
-            finalResult = stepPath.join(' '); // Convert the array of steps into a space-separated string.
+            finalResult = jumpSequence.join(" "); // Join the jump steps with spaces.
         }
     }
-    // Present the computed solution to the console.
-    // Output the derived value.
+
+    // Output the final computed result to the console.
     console.log('%s', finalResult);
 }
-/* Do not modify anything beyond this specific line; it handles reading from standard input and subsequently invokes the primary processing function. */
-ProcessInput(getModule('sysFiles').readData('/system/input/stream', 'utfCharset'));
+
+// Do not modify the following line. It handles reading input and calling the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,43 +1,39 @@
-function logResult(messageToDisplay) {
-  console.log(messageToDisplay);
+const displayResult = (value) => console.log(value);
+
+function processInputAndSolve(rawInput) {
+    const numericStrings = rawInput.trim().match(/-?\d+/g);
+    const numericValues = numericStrings.map(Number);
+
+    const initialA = numericValues[0];
+    const initialB = numericValues[1];
+    const initialC = numericValues[2];
+    const desiredSum = numericValues[3];
+
+    const sortedCoefficients = [initialA, initialB, initialC].sort((x, y) => y - x);
+
+    const smallestCoefficient = sortedCoefficients[2];
+
+    function calculateCombinations(currentRemainingSum, currentCoefficientIndex) {
+        if (currentRemainingSum < 0) {
+            return 0;
+        }
+
+        if (currentCoefficientIndex === 2) {
+            return (currentRemainingSum % smallestCoefficient === 0) ? 1 : 0;
+        }
+
+        const currentCoefficient = sortedCoefficients[currentCoefficientIndex];
+        let pathCount = 0;
+
+        for (let k = 0; k * currentCoefficient <= currentRemainingSum; k++) {
+            pathCount += calculateCombinations(currentRemainingSum - k * currentCoefficient, currentCoefficientIndex + 1);
+        }
+        return pathCount;
+    }
+
+    const totalSolutions = calculateCombinations(desiredSum, 0);
+
+    displayResult(totalSolutions);
 }
 
-function getSolutionCount(currentGoal, indexInCoefficients, availableCoefficients) {
-  if (currentGoal === 0) {
-    return 1;
-  }
-  if (currentGoal < 0 || indexInCoefficients === availableCoefficients.length) {
-    return 0;
-  }
-
-  let currentCoefficientValue = availableCoefficients[indexInCoefficients];
-  let accumulatedWays = 0;
-
-  for (let currentMultiplier = 0; currentMultiplier * currentCoefficientValue <= currentGoal; currentMultiplier++) {
-    accumulatedWays += getSolutionCount(
-      currentGoal - currentMultiplier * currentCoefficientValue,
-      indexInCoefficients + 1,
-      availableCoefficients
-    );
-  }
-  return accumulatedWays;
-}
-
-function executeCalculation(rawInputString) {
-  let numericalComponents = rawInputString.trim().split(" ").map(Number);
-
-  let firstValue = numericalComponents[0];
-  let secondValue = numericalComponents[1];
-  let thirdValue = numericalComponents[2];
-  let targetSumValue = numericalComponents[3];
-
-  let listOfCoefficients = [firstValue, secondValue, thirdValue];
-
-  listOfCoefficients.sort((a, b) => b - a);
-
-  let finalCount = getSolutionCount(targetSumValue, 0, listOfCoefficients);
-
-  logResult(finalCount);
-}
-
-executeCalculation(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInputAndSolve(require("fs").readFileSync("/dev/stdin", "utf8"));

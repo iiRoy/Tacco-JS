@@ -1,48 +1,126 @@
-const analyzeInputValues = (sourceText) => {
-    const { totalOfDivisibleByTen, nonDivisibleCollection } = sourceText.split('\n').slice(1).map(Number).reduce((accumulator, currentNumeric) => {
-        if (currentNumeric % 10 === 0) {
-            accumulator.totalOfDivisibleByTen += currentNumeric;
+function categorizePoints(pointStrings) {
+    return pointStrings.reduce((accumulator, currentString) => {
+        const numericValue = Number(currentString);
+        if (numericValue % 10 === 0) {
+            accumulator.tens.push(numericValue);
+            accumulator.tensSum += numericValue;
         } else {
-            accumulator.nonDivisibleCollection.push(currentNumeric);
+            accumulator.others.push(numericValue);
         }
         return accumulator;
-    }, { totalOfDivisibleByTen: 0, nonDivisibleCollection: [] });
+    }, { tens: [], others: [], tensSum: 0 });
+}
 
-    return { totalOfDivisibleByTen, nonDivisibleCollection };
-};
+function evaluateSubsetSums(baseValue, subsetElements, startIndex) {
+    const computationStack = [];
+    const memoizationCache = new Map();
 
-const produceAllPossibleSubtotals = (itemsToSum) => {
-    let currentSetOfSums = new Set([0]);
+    computationStack.push({
+        currentSum: baseValue,
+        currentIndex: startIndex,
+        stage: 0,
+        resultA: null,
+        resultB: null
+    });
 
-    for (const itemElement of itemsToSum) {
-        const sumsToAdd = new Set();
-        for (const existingSum of currentSetOfSums) {
-            sumsToAdd.add(existingSum + itemElement);
+    while (computationStack.length > 0) {
+        const currentFrame = computationStack[computationStack.length - 1];
+        const { currentSum, currentIndex, stage } = currentFrame;
+        const cacheKey = `${currentSum}-${currentIndex}`;
+
+        if (memoizationCache.has(cacheKey)) {
+            computationStack.pop();
+            continue;
         }
-        for (const newSumEntry of sumsToAdd) {
-            currentSetOfSums.add(newSumEntry);
+
+        if (currentIndex >= subsetElements.length) {
+            memoizationCache.set(cacheKey, currentSum);
+            computationStack.pop();
+            continue;
         }
-    }
-    return Array.from(currentSetOfSums);
-};
 
-const processInputAndComputeFinalResult = (initialData) => {
-    const { totalOfDivisibleByTen, nonDivisibleCollection } = analyzeInputValues(initialData);
+        if (stage === 0) {
+            const nextSumA = currentSum + subsetElements[currentIndex];
+            const nextIndexA = currentIndex + 1;
+            const cacheKeyA = `${nextSumA}-${nextIndexA}`;
 
-    const allSubtotalsFromNonDivisible = produceAllPossibleSubtotals(nonDivisibleCollection);
-
-    let ultimateMaximum = 0;
-
-    for (const subtotal of allSubtotalsFromNonDivisible) {
-        const combinedSum = subtotal + totalOfDivisibleByTen;
-        if (combinedSum % 10 !== 0) {
-            if (combinedSum > ultimateMaximum) {
-                ultimateMaximum = combinedSum;
+            if (memoizationCache.has(cacheKeyA)) {
+                currentFrame.resultA = memoizationCache.get(cacheKeyA);
+                currentFrame.stage = 1;
+            } else {
+                computationStack.push({
+                    currentSum: nextSumA,
+                    currentIndex: nextIndexA,
+                    stage: 0,
+                    resultA: null,
+                    resultB: null
+                });
+                continue;
             }
         }
+
+        if (stage === 1) {
+            const nextSumB = currentSum;
+            const nextIndexB = currentIndex + 1;
+            const cacheKeyB = `${nextSumB}-${nextIndexB}`;
+
+            if (memoizationCache.has(cacheKeyB)) {
+                currentFrame.resultB = memoizationCache.get(cacheKeyB);
+                currentFrame.stage = 2;
+            } else {
+                computationStack.push({
+                    currentSum: nextSumB,
+                    currentIndex: nextIndexB,
+                    stage: 0,
+                    resultA: null,
+                    resultB: null
+                });
+                continue;
+            }
+        }
+
+        if (stage === 2) {
+            const valA = currentFrame.resultA;
+            const valB = currentFrame.resultB;
+            let finalResult;
+
+            if (valA >= valB && valA % 10 !== 0) {
+                finalResult = valA;
+            } else if (valB >= valA && valB % 10 !== 0) {
+                finalResult = valB;
+            } else {
+                finalResult = 0;
+            }
+
+            memoizationCache.set(cacheKey, finalResult);
+            computationStack.pop();
+        }
     }
 
-    return ultimateMaximum;
-};
+    return memoizationCache.get(`${baseValue}-${startIndex}`);
+}
 
-console.log(processInputAndComputeFinalResult(require("fs").readFileSync("/dev/stdin", "utf8")));
+function determineOptimalValue(currentPointValue, exclusionIndex, categorizedData) {
+    const relevantPoints = categorizedData.others.reduce((acc, pt, idx) => {
+        if (idx !== exclusionIndex) {
+            acc.push(pt);
+        }
+        return acc;
+    }, []);
+    return evaluateSubsetSums(currentPointValue + categorizedData.tensSum, relevantPoints, 0);
+}
+
+function processInputData(rawData) {
+    const lines = rawData.split("\n");
+    const dataPoints = lines.slice(1);
+    const categorized = categorizePoints(dataPoints);
+
+    const finalMaximum = categorized.others.reduce((currentMax, pointValue, index) => {
+        const calculatedValue = determineOptimalValue(pointValue, index, categorized);
+        return Math.max(currentMax, calculatedValue);
+    }, 0);
+
+    return finalMaximum;
+}
+
+console.log(processInputData(require("fs").readFileSync("/dev/stdin", "utf8")));

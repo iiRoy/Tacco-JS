@@ -1,75 +1,55 @@
-const merchandiseDetailsCatalogue = [
-    { primaryMeasureUnit: 1500, financialCost: 2244, maximumQuantity: 4 },
-    { primaryMeasureUnit: 1200, financialCost: 1870, maximumQuantity: 5 },
-    { primaryMeasureUnit: 1000, financialCost: 1520, maximumQuantity: 6 },
-    { primaryMeasureUnit: 500,  financialCost: 850,  maximumQuantity: 11 },
-    { primaryMeasureUnit: 300,  financialCost: 550,  maximumQuantity: 17 },
-    { primaryMeasureUnit: 200,  financialCost: 380,  maximumQuantity: 26 }
+const productSpecs = [
+    { unitCost: 500 * 3, unitPrice: 850 * 3 * 0.88, maxCount: 4 },
+    { unitCost: 300 * 4, unitPrice: 550 * 4 * 0.85, maxCount: 5 },
+    { unitCost: 200 * 5, unitPrice: 380 * 5 * 0.8, maxCount: 6 },
+    { unitCost: 500, unitPrice: 850, maxCount: 11 },
+    { unitCost: 300, unitPrice: 550, maxCount: 17 },
+    { unitCost: 200, unitPrice: 380, maxCount: 26 }
 ];
 
-const TOTAL_MAX_MEASURE_VALUE = 33800; // Sum of (item.primaryMeasureUnit * item.maximumQuantity) for all items
+const calculateMinPrice = (targetCost) => {
+    const priceMap = new Array(targetCost + 1).fill(Number.POSITIVE_INFINITY);
+    priceMap[0] = 0;
 
-const calculateMinimumExpense = function(desiredMeasureTotal) {
-    // This array stores the minimum financialCost for each possible primaryMeasureUnit total.
-    // Index represents the total primaryMeasureUnit, value represents the minimum financialCost.
-    const optimalExpenseByMeasure = new Array(TOTAL_MAX_MEASURE_VALUE + 1).fill(Infinity);
-    optimalExpenseByMeasure[0] = 0; // A total measure of 0 costs 0.
+    for (const product of productSpecs) {
+        const { unitCost, unitPrice, maxCount } = product;
 
-    // Iterate through each type of merchandise item in the catalogue
-    for (const currentItem of merchandiseDetailsCatalogue) {
-        const currentItemMeasure = currentItem.primaryMeasureUnit;
-        const currentItemExpense = currentItem.financialCost;
-        const currentItemLimit = currentItem.maximumQuantity;
+        for (let currentCost = targetCost; currentCost >= 0; --currentCost) {
+            if (priceMap[currentCost] === Number.POSITIVE_INFINITY) {
+                continue;
+            }
 
-        // Create a new DP array for the state after considering the current item.
-        // Initialize it with the values from the previous state (i.e., not using the current item).
-        const nextOptimalExpenseState = optimalExpenseByMeasure.slice();
-
-        // Iterate through all possible accumulated measure totals
-        for (let accumulatedMeasure = 0; accumulatedMeasure <= TOTAL_MAX_MEASURE_VALUE; accumulatedMeasure++) {
-            // If this accumulatedMeasure is reachable *before* considering the current item
-            if (optimalExpenseByMeasure[accumulatedMeasure] !== Infinity) {
-                // Try adding 1 up to currentItemLimit units of the current item.
-                // The case of adding 0 units is implicitly handled by `nextOptimalExpenseState = optimalExpenseByMeasure.slice()`.
-                for (let unitsCount = 1; unitsCount <= currentItemLimit; unitsCount++) {
-                    const newAccumulatedMeasure = accumulatedMeasure + (unitsCount * currentItemMeasure);
-
-                    // If the new total measure is within our bounds
-                    if (newAccumulatedMeasure <= TOTAL_MAX_MEASURE_VALUE) {
-                        const newCalculatedExpense = optimalExpenseByMeasure[accumulatedMeasure] + (unitsCount * currentItemExpense);
-                        // Update the temporary state with the minimum expense found so far for this new total measure
-                        nextOptimalExpenseState[newAccumulatedMeasure] = Math.min(nextOptimalExpenseState[newAccumulatedMeasure], newCalculatedExpense);
-                    }
+            for (let count = 1; count <= maxCount; ++count) {
+                const nextCost = currentCost + count * unitCost;
+                if (nextCost <= targetCost) {
+                    const potentialPrice = priceMap[currentCost] + count * unitPrice;
+                    priceMap[nextCost] = Math.min(priceMap[nextCost], potentialPrice);
                 }
             }
         }
-        // Update the main DP array for the next iteration
-        // Using splice to efficiently replace array content without reassigning the const variable
-        optimalExpenseByMeasure.splice(0, optimalExpenseByMeasure.length, ...nextOptimalExpenseState);
     }
 
-    const finalResultExpense = optimalExpenseByMeasure[desiredMeasureTotal];
-    // If the desired measure total is not achievable, return the large initial value from original code
-    return finalResultExpense === Infinity ? 100000000 : finalResultExpense;
+    const finalPrice = priceMap[targetCost];
+    return finalPrice === Number.POSITIVE_INFINITY ? 100000000 : finalPrice;
 };
 
-// Input processing and output handling
-const incomingLineBuffer = [];
+const receivedData = [];
 
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
-process.stdin.on('data', function (dataSegment) {
-    dataSegment.trim().split('\n').forEach(function(parsedLine) {
-        incomingLineBuffer.push(parsedLine);
+
+process.stdin.on('data', (inputChunk) => {
+    inputChunk.trim().split('\n').forEach((singleLine) => {
+        receivedData.push(singleLine);
     });
 });
 
-process.stdin.on('end', function() {
-    for (let currentLineIndex = 0; currentLineIndex < incomingLineBuffer.length; currentLineIndex++) {
-        const currentInputMeasure = parseInt(incomingLineBuffer[currentLineIndex].trim());
-        if (currentInputMeasure === 0) {
-            return; // Terminate processing on '0' input
+process.stdin.on('end', () => {
+    for (let currentIdx = 0; currentIdx < receivedData.length; ++currentIdx) {
+        const targetAmount = parseInt(receivedData[currentIdx].trim(), 10);
+        if (targetAmount === 0) {
+            return;
         }
-        console.log(calculateMinimumExpense(currentInputMeasure));
+        console.log(calculateMinPrice(targetAmount));
     }
 });

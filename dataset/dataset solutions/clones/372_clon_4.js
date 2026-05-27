@@ -1,103 +1,78 @@
-const obtainRawData = (filePath) => require('fs').readFileSync(filePath, 'utf8');
-
-const convertInputToMatrices = (rawText) => {
-    const processedLines = rawText.trim().split('\n');
-    let currentLineIndex = 0;
-    const totalArrangements = parseInt(processedLines[currentLineIndex++], 10);
-    const collectedArrangements = [];
-
-    for (let arrangementCounter = 0; arrangementCounter < totalArrangements; arrangementCounter++) {
-        const currentMatrixData = [];
-        for (let rowIdx = 0; rowIdx < 9; rowIdx++) {
-            currentMatrixData.push(processedLines[currentLineIndex++].split(' ').map(Number));
-        }
-        collectedArrangements.push(currentMatrixData);
-    }
-    return collectedArrangements;
-};
-
-const findRepeatedElementIndices = (sequenceOfValues) => {
-    const valueTallies = new Map();
-    sequenceOfValues.forEach(element => valueTallies.set(element, (valueTallies.get(element) || 0) + 1));
-
-    const elementsWithMultiples = new Set();
-    valueTallies.forEach((tally, element) => {
-        if (tally >= 2) {
-            elementsWithMultiples.add(element);
-        }
-    });
-
-    const problematicPositions = [];
-    sequenceOfValues.forEach((element, position) => {
-        if (elementsWithMultiples.has(element)) {
-            problematicPositions.push(position);
-        }
-    });
-    return problematicPositions;
-};
-
-const retrieveColumnElements = (matrixContent, columnIdentifier) => matrixContent.map(rowLine => rowLine[columnIdentifier]);
-
-const extractSubgridDetails = (fullMatrix, blockRowIdentifier, blockColIdentifier) => {
-    const subgridElementsWithCoordinates = [];
-    const initialRow = blockRowIdentifier * 3;
-    const initialCol = blockColIdentifier * 3;
-
-    for (let rOffset = 0; rOffset < 3; rOffset++) {
-        for (let cOffset = 0; cOffset < 3; cOffset++) {
-            const absoluteRow = initialRow + rOffset;
-            const absoluteCol = initialCol + cOffset;
-            subgridElementsWithCoordinates.push({
-                value: fullMatrix[absoluteRow][absoluteCol],
-                absoluteRow: absoluteRow,
-                absoluteCol: absoluteCol
-            });
-        }
-    }
-    return subgridElementsWithCoordinates;
-};
-
-const processGridForViolations = (sourceArrangement) => {
-    const violationRegistry = Array.from({ length: 9 }, () => Array(9).fill(0));
-
-    // Evaluate rows
-    sourceArrangement.forEach((rowContent, rowIdentifier) => {
-        const detectedProblemIndices = findRepeatedElementIndices(rowContent);
-        detectedProblemIndices.forEach(colIdentifier => violationRegistry[rowIdentifier][colIdentifier]++);
-    });
-
-    // Evaluate columns
-    for (let c = 0; c < 9; c++) {
-        const columnContent = retrieveColumnElements(sourceArrangement, c);
-        const detectedProblemIndices = findRepeatedElementIndices(columnContent);
-        detectedProblemIndices.forEach(rowIdentifier => violationRegistry[rowIdentifier][c]++);
+function identifyDuplicateIndices(sourceArray) {
+    const valueCounts = new Map();
+    for (const item of sourceArray) {
+        valueCounts.set(item, (valueCounts.get(item) || 0) + 1);
     }
 
-    // Evaluate 3x3 blocks
-    for (let blockR = 0; blockR < 3; blockR++) {
-        for (let blockC = 0; blockC < 3; blockC++) {
-            const blockDataWithCoords = extractSubgridDetails(sourceArrangement, blockR, blockC);
-            const blockValuesOnly = blockDataWithCoords.map(e => e.value);
-            const detectedRelativeIndices = findRepeatedElementIndices(blockValuesOnly);
+    const duplicateValues = new Set();
+    for (const [value, count] of valueCounts.entries()) {
+        if (count >= 2) {
+            duplicateValues.add(value);
+        }
+    }
 
-            detectedRelativeIndices.forEach(relativeIndex => {
-                const { absoluteRow, absoluteCol } = blockDataWithCoords[relativeIndex];
-                violationRegistry[absoluteRow][absoluteCol]++;
+    return sourceArray.reduce((accumulator, currentVal, idx) => {
+        if (duplicateValues.has(currentVal)) {
+            accumulator.push(idx);
+        }
+        return accumulator;
+    }, []);
+}
+
+const sourceData = require('fs').readFileSync('/dev/stdin', 'utf8');
+const dataLines = sourceData.trim().split("\n");
+let outputBuffer = "";
+const totalTestCases = Number(dataLines.shift());
+
+for (let testCaseIndex = 0; testCaseIndex < totalTestCases; testCaseIndex++) {
+    const gridValues = Array.from({ length: 9 }, () =>
+        dataLines.shift().split(" ").map(Number)
+    );
+    const markerGrid = Array.from({ length: 9 }, () =>
+        Array.from({ length: 9 }, () => 0)
+    );
+
+    // Process rows
+    gridValues.forEach((row, rowIndex) => {
+        const problemIndices = identifyDuplicateIndices(row);
+        problemIndices.forEach(colIndex => markerGrid[rowIndex][colIndex]++);
+    });
+
+    // Process columns
+    for (let colIndex = 0; colIndex < 9; colIndex++) {
+        const columnValues = gridValues.map(row => row[colIndex]);
+        const problemIndices = identifyDuplicateIndices(columnValues);
+        problemIndices.forEach(rowIndex => markerGrid[rowIndex][colIndex]++);
+    }
+
+    // Process 3x3 blocks
+    for (let blockRow = 0; blockRow < 3; blockRow++) {
+        for (let blockCol = 0; blockCol < 3; blockCol++) {
+            const blockCoords = [];
+            const blockValues = [];
+            for (let r = 0; r < 3; r++) {
+                for (let c = 0; c < 3; c++) {
+                    const currentR = blockRow * 3 + r;
+                    const currentC = blockCol * 3 + c;
+                    blockCoords.push([currentR, currentC]);
+                    blockValues.push(gridValues[currentR][currentC]);
+                }
+            }
+            const problemIndices = identifyDuplicateIndices(blockValues);
+            problemIndices.forEach(idxInBlock => {
+                const [originalR, originalC] = blockCoords[idxInBlock];
+                markerGrid[originalR][originalC]++;
             });
         }
     }
 
-    // Generate formatted output string
-    return sourceArrangement.map((rowArray, rIndex) => {
-        return rowArray.map((cellValue, cIndex) => {
-            return (violationRegistry[rIndex][cIndex] >= 1 ? "*" : " ") + cellValue;
-        }).join('');
-    }).join('\n');
-};
+    const formattedGrid = gridValues.map((row, rowIndex) =>
+        row.map((val, colIndex) =>
+            (markerGrid[rowIndex][colIndex] >= 1) ? `*${val}` : ` ${val}`
+        ).join('')
+    ).join('\n');
 
-// Main execution thread
-const entireInputContent = obtainRawData('/dev/stdin');
-const parsedGridArrangements = convertInputToMatrices(entireInputContent);
-const finalOutputSegments = parsedGridArrangements.map(processGridForViolations);
+    outputBuffer += formattedGrid + '\n\n';
+}
 
-console.log(finalOutputSegments.join('\n\n').trim());
+console.log(outputBuffer.trim());

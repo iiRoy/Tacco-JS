@@ -1,29 +1,25 @@
-const processData = (rawData) => {
-    const numericElements = rawData.match(/-?\d+/g).map(Number);
-    const initialMagnitude = numericElements[0];
-    const dataSequence = numericElements.slice(1);
+function main(inputContent) {
+    const processedLines = inputContent.split('\n').map(line => line.trim());
 
-    const comparisonThreshold = initialMagnitude / 2;
+    const totalCount = parseInt(processedLines[0], 10);
+    const numberValues = processedLines[1].split(' ').map(Number);
 
-    const aggregateCounts = dataSequence.reduce((accumulators, currentNumber) => {
+    const { fours, odds } = numberValues.reduce((accumulator, currentNumber) => {
         if (currentNumber % 4 === 0) {
-            accumulators.fourMultiples++;
+            accumulator.fours++;
         } else if (currentNumber % 2 !== 0) {
-            accumulators.oddValues++;
+            accumulator.odds++;
         }
-        return accumulators;
-    }, { fourMultiples: 0, oddValues: 0 });
+        return accumulator;
+    }, { fours: 0, odds: 0 });
 
-    const totalFourMultiples = aggregateCounts.fourMultiples;
-    const totalOddValues = aggregateCounts.oddValues;
+    const halfTotal = totalCount / 2;
 
-    const outcomeIfOverThreshold = (totalOddValues - 1 <= totalFourMultiples) ? "Yes" : "No";
-    const outcomeIfUnderThreshold = (totalOddValues <= totalFourMultiples) ? "Yes" : "no";
+    const finalOutcome = (halfTotal < odds)
+        ? (fours >= odds - 1 ? "Yes" : "No")
+        : (fours >= odds ? "Yes" : "no");
 
-    const finalDecision = (comparisonThreshold < totalOddValues) ? outcomeIfOverThreshold : outcomeIfUnderThreshold;
+    console.log(finalOutcome);
+}
 
-    return finalDecision;
-};
-
-const inputPayload = require("fs").readFileSync("/dev/stdin", "utf8");
-console.log(processData(inputPayload));
+main(require("fs").readFileSync("/dev/stdin", "utf8"));

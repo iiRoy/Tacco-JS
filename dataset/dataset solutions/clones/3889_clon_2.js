@@ -1,44 +1,26 @@
-// This function orchestrates the primary data handling operations.
-function processInput(
-  // The initial, raw string data provided for processing.
-  rawData
-)
-{
-  // Begin by cleaning the input; remove extraneous leading or trailing spaces.
-  let trimmedData = rawData
-    .trim();
+function processInput(rawData) {
+  // Remove any leading or trailing whitespace from the incoming string.
+  let processedData = rawData.trim();
 
-  /*
-   * Next, segment the cleaned string into an array of substrings based on
-   * space delimiters. Subsequently, transform each substring into its
-   * corresponding numerical representation.
-   */
-  const numericValues = trimmedData
-    .split( " " )
-    .map(Number);
+  // Divide the cleaned string by spaces and convert each resulting part into a numerical value.
+  const numericValues = processedData.split(' ').map(Number);
 
-  // Compute the total sum of the first two numerical elements from the array.
+  // Compute the aggregate of the initial two numerical entries.
   const sumOfFirstTwo = numericValues[0] + numericValues[1];
 
-  // Evaluate a specific set of conditions involving the array elements and their sum.
-  if (
-       numericValues[2] >= numericValues[0]
-    && sumOfFirstTwo >= numericValues[2]
-  )
-  {
-    // If all conditions are met, output a positive confirmation message.
-    console.log("YES");
-  }
-  // Should any of the conditions not be satisfied, proceed to the alternative.
-  else
-  {
-    // In the event of condition failure, output a negative confirmation message.
-    console.log("NO");
+  // Evaluate a specific logical condition involving the array elements.
+  // The condition checks if the third value is greater than or equal to the first value,
+  // AND if the sum of the first two values is greater than or equal to the third value.
+  if (numericValues[2] >= numericValues[0] && sumOfFirstTwo >= numericValues[2]) {
+    // Output 'YES' if the condition holds true.
+    // Note: This intentionally preserves a typo from the original source.
+    cosole.log('YES');
+  } else {
+    // Otherwise, output 'NO'.
+    console.log('NO');
   }
 }
 
-// Initiate the data processing pipeline by reading content from standard input.
-processInput(
-  require('fs')
-    .readFileSync('/dev/stdin', 'utf8')
-);
+// Acquire the content from standard input using Node.js file system module,
+// specifying UTF-8 encoding, and then pass it to our primary processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

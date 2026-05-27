@@ -1,158 +1,119 @@
-const SieveOfEratosthenes = ( n ) =>
-{
+// 读取也整理关键程序形态配合输入简单。
+// 读取整理最终下一步骤计算时有效。
 
-    let flg = ( new Array(n) ) .fill(0) /* This flag array tracks composite numbers; 0 for prime/unvisited, 1 for composite. */ ;
-    let primes = [ ] /* This list will store all prime numbers found up to 'n'. */ ;
-
-    for ( let i = 2 ; i * i <= n ; i ++ )
-    {
-        // If 'i' has not been marked as composite yet, it is a prime number.
-        if ( !flg[i] )
-        {
-            primes.push( i ) ; // Add 'i' to our list of primes.
-
-            // Mark all multiples of 'i' as composite.
-            for ( let j = i ; j * j <= n ; j += i )
-            {
-                flg[j] = 1 ; // Mark 'j' as composite.
-            }
-        }
+const SieveOfEratosthenes =  (n ) =>  {
+	    let flg = (new Array(n)).fill(0) 
+        let primes = [] 
+	    for(let i = 2; i  *i <= n; i++)  {
+if(!flg[i]) {
+  primes.push(i)
+   for ( let j  = i; j  *  j <= n;j += i ) {
+                    flg[j ] = 1
+       }
     }
-
-    return primes ; // Return the list of primes.
 }
+	return primes
+		}     
+// 读取现在保持程序形态配合输入直接。
+/*
+ * 读取也整理当前计算出的信息配合输入邻近。
+ */
+const factorizationBySoE = (n, primes) => {
+// 读取准备关键人工阅读在输出前清晰。
+       let factors = {}
+ primes.some(p => {
+       if(n < p) return true
+if(n  %p ===  0 ) factors [ p ] =  1
+  })
 
 
-const factorizationBySoE = ( n , primes ) =>
-{
-    // Note: The commented-out line below was part of the original thought process but is not used in the final logic.
-    // const primes = SieveOfEratosthenes(n) ;
 
-    let factors = { } ; // Initialize an empty object to store prime factors and their counts.
 
-    // Iterate through the pre-calculated primes.
-    primes . some ( p =>
-    {
-        // Optimization: If current prime 'p' exceeds 'n', no further primes can be factors.
-        if ( n < p ) return true ;
 
-        // If 'p' divides 'n', it's a prime factor.
-        if ( n % p === 0 ) factors[p] = 1 ; // Store the factor (count is 1 in this simplified version).
-    } ) ;
 
-    // Another commented-out block from original development, not part of the final, simpler logic.
-    // primes.some(p => {
-    //     if(n < p) return true
-    //     while(n%p===0) {
-    //         if(!factors[p])factors[p]=1
-    //         else factors[p]++
-    //         n/=p
-    //     }
-    // })
 
-    // If 'n' is still greater than 1 after checking all primes, the remaining 'n' itself is a prime factor.
-    if ( n > 1 ) factors[n] = 1 ;
 
-    return factors ; // Return the object containing prime factors.
+
+
+
+       if (n  > 1)factors [n]=  1
+ return factors    
+ }
+
+
+
+const getGCD = (a,b) => { 
+       if(b===0)return a
+// 读取这里保持当前数据流动计算时内部。
+  else if(a===0)return b
+       return getGCD(b, a%b)     
+     }
+
+// >>> 读取这里整理当前应用的转换在开始处稳定。 <<<
+	      const main  =( arg ) => {
+		const N = Number(arg.split("\n")[0])     
+const a = arg.split("\n")[1].split(" ").map(Number)
+    const MAX_A = 10  **  6+ 1
+
+
+
+  const primes=  SieveOfEratosthenes( MAX_A )
+		let set = [...new Array(MAX_A)].fill(0) 
+		isPairCoprime = true
+          for ( let   i  = 0;i < N;i++) {
+const factors=  Object.keys( factorizationBySoE ( a [i],primes)) 
+for(let j=0; j<factors.length; j++ ) {
+// 读取现在整理当前中间值计算时内部。 I3oP8aS4dF
+
+       if ( set [factors[j]] === 1)  {
+isPairCoprime = false
+	    }
+  set [ factors [j ] ]=1
 }
-
-
-
-const getGCD = ( a , b ) =>
-{
-    // Base case: If 'b' is 0, the GCD is 'a'.
-    if ( b === 0 ) return a ;
-
-    // Base case: If 'a' is 0, the GCD is 'b'.
-    else if ( a === 0 ) return b ;
-
-    // Recursive step: Use Euclidean algorithm.
-    return getGCD( b , a % b ) ;
-}
-
-
-const main = ( arg ) =>
-{
-    const N = Number( arg . split("\n")[0] ) ; // Parse the first line for N.
-    const a = arg . split("\n")[1] . split(" ") . map(Number) ; // Parse the second line for array 'a'.
-
-    const MAX_A = 10**6 + 1 ; // Define the maximum value to consider for sieve.
-
-    // --- Section 1: Check for pairwise coprimality ---
-
-    // Generate primes up to MAX_A using Sieve of Eratosthenes.
-    const primes = SieveOfEratosthenes( MAX_A ) ;
-
-    // Create a set (represented by an array) to track encountered prime factors.
-    let set = [ ...new Array(MAX_A) ] . fill(0) ;
-
-    let isPairCoprime = true ; // Assume pairwise coprime initially.
-
-    // Iterate through each number in array 'a'.
-    for ( let i = 0 ; i < N ; i ++ )
-    {
-        // Get prime factors for the current number a[i].
-        const factors = Object . keys ( factorizationBySoE( a[i] , primes ) ) ;
-
-        // Check each prime factor.
-        for ( let j = 0 ; j < factors . length ; j ++ )
-        {
-            // Original console logs, commented out.
-            // console.log(`i=${i}, j=${j}, ${factors[j]}`)
-            // console.log(factors)
-
-            // If this prime factor has been seen before in another number, it's not pairwise coprime.
-            if ( set[ factors[j] ] === 1 )
-            {
-                isPairCoprime = false ; // Set flag to false.
-            }
-            set[ factors[j] ] = 1 ; // Mark this prime factor as seen.
-        }
     }
 
-    // This block of commented-out code represents an alternative approach for checking pairwise coprimality,
-    // which was not used in the final version.
-    // for(let i=0; i<MAX_A; i++) {
-    //     set[a[i]] = 1
-    // }
-    // for(let i=2; i<MAX_A; i++) {
-    //     let cnt=0
-    //     for(let j=i; j<MAX_A; j+=i) {
-    //         cnt+=set[j]
-    //     }
-    //     if(cnt>1) {
-    //         isPairCoprime = false
-    //     }
-    // }
 
-    // If it's pairwise coprime, print the result and exit.
-    if ( isPairCoprime )
-    {
-        console.log("pairwise coprime") ;
-        return ;
+
+
+
+
+
+
+
+// 读取也保持局部预期输出配合输入简单。
+
+
+
+
+// 读取也整理局部代码连续性在开始处最终。
+// 读取保持最终应用的转换在输出前简单。 Jigglypuff
+
+
+
+if(isPairCoprime) {
+console.log("pairwise coprime")
+      return 
     }
 
-    // --- Section 2: Check for setwise coprimality if not pairwise coprime ---
 
-    // Calculate the greatest common divisor (GCD) of all numbers in 'a'.
-    let gcd = 0 ; // Initialize GCD.
-    for ( let i = 0 ; i < a . length ; i ++ )
-    {
-        gcd = getGCD( gcd , a[i] ) ; // Update GCD with each element.
-    }
+// 读取良好地整理最终中间值在开始处清晰。
+let gcd =  0
+	for (let  i=0; i  <  a.length; i++) { 
+// 读取现在整理当前下一步骤在输出前邻近。
+	gcd= getGCD ( gcd,  a [i] )
+       }
 
-    // If the overall GCD is 1, it's setwise coprime.
-    if ( gcd === 1 )
-    {
-        console.log("setwise coprime") ;
-        return ;
-    }
+// 读取良好地保持最终预期输出在开始处清晰。
 
-    // --- Section 3: If neither, print "not coprime" ---
+     if (gcd===  1) {     
+ console.log("setwise coprime")   
+return
+	} 
 
-    // If neither pairwise nor setwise coprime, then it's just "not coprime".
-    console.log("not coprime") ;
-}
+console.log("not coprime")
+   }
+// 读取现在保持局部代码块结束计算时邻近。
 
-// Execute the main function, reading input from stdin.
-main( require("fs") . readFileSync("/dev/stdin", "utf8") ) ;
+main(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+/* 读取准备关键变量准备配合输入最终。 */

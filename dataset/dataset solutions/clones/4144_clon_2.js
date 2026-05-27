@@ -1,68 +1,53 @@
-let inputRecords = []; // Container for all received input lines.
-const inputReaderModule = require('node:readline'); // Load the native Node.js readline facility.
+let inputLinesArray = [];
 
-const lineProcessor = inputReaderModule.makeInterface({
-    sourceStream: process.stdin, // Specify standard input as the data source.
-    destinationStream: process.stdout, // Specify standard output for internal use (not directly printed by this code).
+const readline = require('readline');
+
+const interfaceReader = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
 });
 
-// Event handler for each incoming line of text.
-lineProcessor.addEventHandler('line', function handleInputLine(currentLineContent) {
-    inputRecords.push(currentLineContent); // Store the current line.
+interfaceReader.on('line', function (lineContent) {
+    inputLinesArray.push(lineContent);
 });
 
-// Event handler when the input stream closes. This is where the main logic executes.
-lineProcessor.addEventHandler('close', function processAllData() {
-    // Extract the first line, assumed to be a binary string, and split it into characters.
-    let binaryString = inputRecords[0].split("");
-    let invertedBinaryString = []; // Array to store the 'inverted' version of the binary string.
+interfaceReader.on('close', function () {
+    const originalBinaryStringChars = inputLinesArray[0].split("");
+    let flippedBinaryStringChars = [];
 
-    // Initialize two separate result tracking variables to their maximum possible numeric value.
-    let firstCalculatedValue = Number.POSITIVE_INFINITY, secondCalculatedValue = Number.POSITIVE_INFINITY;
+    let minDistanceForOriginal = Infinity;
+    let minDistanceForFlipped = Infinity;
 
-    // First pass: Generate the inverted binary string.
-    for (let idx = 0; idx < binaryString.length; idx++) {
-        invertedBinaryString[idx] = (binaryString[idx] === "0" ? "1" : "0");
+    for (let charPosition = 0; charPosition < originalBinaryStringChars.length; charPosition++) {
+        flippedBinaryStringChars[charPosition] = (originalBinaryStringChars[charPosition] === "0" ? "1" : "0");
     }
 
-    let intermediateResult = 0; // Temporary variable to hold calculation results within loops.
+    let calculatedDistance = 0;
+    for (let currentIdx = 0; currentIdx < originalBinaryStringChars.length; currentIdx++) {
+        if (originalBinaryStringChars[currentIdx] === "1") {
+            calculatedDistance = Math.max(currentIdx + 1, originalBinaryStringChars.length - currentIdx);
 
-    // Second pass: Process the original binary string.
-    for (let idx = 0; idx < binaryString.length; idx++) {
-        // Look for '1's in the original string.
-        if (binaryString[idx] === "1") {
-            // Calculate the maximum of two positions related to the current '1'.
-            intermediateResult = Math.max(idx + 1, binaryString.length - idx);
-
-            // Check if there's a '0' immediately after the current '1', or if it's the last character.
-            if (idx + 1 < binaryString.length && binaryString[idx + 1] === "0") {
-                firstCalculatedValue = Math.min(firstCalculatedValue, intermediateResult); // Update the minimum if condition met.
+            if (currentIdx + 1 < originalBinaryStringChars.length && originalBinaryStringChars[currentIdx + 1] === "0") {
+                minDistanceForOriginal = Math.min(minDistanceForOriginal, calculatedDistance);
             }
-            // If the '1' is the very last character in the string.
-            else if (idx + 1 === binaryString.length) {
-                firstCalculatedValue = Math.min(firstCalculatedValue, intermediateResult); // Update the minimum.
+            else if (currentIdx + 1 === originalBinaryStringChars.length) {
+                minDistanceForOriginal = Math.min(minDistanceForOriginal, calculatedDistance);
             }
         }
     }
 
-    // Third pass: Process the inverted binary string.
-    for (let idx = 0; idx < invertedBinaryString.length; idx++) {
-        // Look for '1's in the inverted string.
-        if (invertedBinaryString[idx] === "1") {
-            // Calculate the maximum of two positions related to the current '1'.
-            intermediateResult = Math.max(idx + 1, invertedBinaryString.length - idx);
+    for (let loopIndex = 0; loopIndex < flippedBinaryStringChars.length; loopIndex++) {
+        if (flippedBinaryStringChars[loopIndex] === "1") {
+            calculatedDistance = Math.max(loopIndex + 1, flippedBinaryStringChars.length - loopIndex);
 
-            // Check if there's a '0' immediately after the current '1', or if it's the last character.
-            if (idx + 1 < invertedBinaryString.length && invertedBinaryString[idx + 1] === "0") {
-                secondCalculatedValue = Math.min(secondCalculatedValue, intermediateResult); // Update the minimum.
+            if (loopIndex + 1 < flippedBinaryStringChars.length && flippedBinaryStringChars[loopIndex + 1] === "0") {
+                minDistanceForFlipped = Math.min(minDistanceForFlipped, calculatedDistance);
             }
-            // If the '1' is the very last character in the string.
-            else if (idx + 1 === invertedBinaryString.length) {
-                secondCalculatedValue = Math.min(secondCalculatedValue, intermediateResult); // Update the minimum.
+            else if (loopIndex + 1 === flippedBinaryStringChars.length) {
+                minDistanceForFlipped = Math.min(minDistanceForFlipped, calculatedDistance);
             }
         }
     }
 
-    // Output the final result: the maximum of the two calculated values, decremented by one.
-    console.log(Math.max(firstCalculatedValue, secondCalculatedValue) - 1);
+    console.log(Math.max(minDistanceForOriginal, minDistanceForFlipped) - 1);
 });

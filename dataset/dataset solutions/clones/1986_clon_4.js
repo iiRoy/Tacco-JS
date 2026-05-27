@@ -1,36 +1,32 @@
-const processExternalData = (inputContent) => {
-    const contentLines = inputContent.split("\n");
-    const calculationBoundary = Number(contentLines[0]);
+function ProcessInputData(sourceContent) {
+  const obtainMaxCommonFactor = (val1, val2, val3) => {
+    let candidateFactor = 200;
+    while (candidateFactor > 0) {
+      if (val1 % candidateFactor === 0 && val2 % candidateFactor === 0 && val3 % candidateFactor === 0) {
+        return candidateFactor;
+      }
+      candidateFactor--;
+    }
+    return 1;
+  };
 
-    const findGreatestCommonDivisor = (firstNum, secondNum, thirdNum) => {
-        for (let divisorCandidate = 200; divisorCandidate >= 1; divisorCandidate--) {
-            if (firstNum % divisorCandidate === 0 && secondNum % divisorCandidate === 0 && thirdNum % divisorCandidate === 0) {
-                return divisorCandidate;
-            }
-        }
-        return 1; // Should not be reached for positive integers as 1 is always a common divisor.
-    };
+  const inputLines = sourceContent.split("\n");
+  const iterationLimit = Number(inputLines[0]);
 
-    const divisorCache = new Map();
-    const retrieveDivisorFromCache = (valA, valB, valC) => {
-        const cacheKeyString = `${valA}.${valB}.${valC}`;
-        if (divisorCache.has(cacheKeyString)) {
-            return divisorCache.get(cacheKeyString);
-        }
-        const computedDivisor = findGreatestCommonDivisor(valA, valB, valC);
-        divisorCache.set(cacheKeyString, computedDivisor);
-        return computedDivisor;
-    };
+  let accumulatedSum = 0;
 
-    const numberRange = Array.from({ length: calculationBoundary }, (_, i) => i + 1);
+  Array.from({ length: iterationLimit }, (_, indexA) => indexA + 1)
+    .forEach(currentA => {
+      Array.from({ length: iterationLimit }, (_, indexB) => indexB + 1)
+        .forEach(currentB => {
+          Array.from({ length: iterationLimit }, (_, indexC) => indexC + 1)
+            .forEach(currentC => {
+              accumulatedSum += obtainMaxCommonFactor(currentA, currentB, currentC);
+            });
+        });
+    });
 
-    const cumulativeSum = numberRange.flatMap(numA =>
-        numberRange.flatMap(numB =>
-            numberRange.map(numC => retrieveDivisorFromCache(numA, numB, numC))
-        )
-    ).reduce((accumulator, currentGcd) => accumulator + currentGcd, 0);
+  console.log(accumulatedSum);
+}
 
-    console.log(cumulativeSum);
-};
-
-processExternalData(require("fs").readFileSync("/dev/stdin", "utf8"));
+ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

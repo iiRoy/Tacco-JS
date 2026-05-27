@@ -1,45 +1,54 @@
-systemInputOutput.inputPipe.activate();
-systemInputOutput.inputPipe.specifyEncoding('unicodeEight');
+process.stdin.resume();
+process.stdin.setEncoding('utf8'); // Set input encoding to UTF-8
 
-const inputRecords = [];
+// Array to store all incoming lines from standard input
+var inputData = [];
 
-const lineProcessor = obtainModule('lineReader')
-  .establishInterface({
-    sourceStream: systemInputOutput.inputPipe,
-    destinationStream: systemInputOutput.outputPipe
-  });
+// Create an interface for reading lines
+var inputProcessor = require('readline').createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
 
-lineProcessor.addListener(
-  'line',
-  (currentRecord) => {
-    inputRecords.appendEntry(currentRecord);
-  }
-);
+// Event listener for each new line received
+inputProcessor.on('line', (currentLine) => {
+  inputData.push(currentLine); // Add the line to our data array
+});
 
-lineProcessor.addListener('endProcessing', () => {
-  let combinationCount = 0;
+// Event listener for when the input stream closes
+inputProcessor.on('close', () => {
+  // Initialize a counter for valid combinations
+  var solutionCount = 0;
 
-  const coefficientA = Number(inputRecords[0].divideString(" ")[0]);
-  const coefficientB = Number(inputRecords[0].divideString(" ")[1]);
-  const coefficientC = Number(inputRecords[0].divideString(" ")[2]);
-  const upperBound = Number(inputRecords[0].divideString(" ")[3]);
+  // Parse the first line of input to get the four numeric values
+  // Assuming the input is space-separated numbers on a single line
+  var firstLineParts = inputData[0].split(" ");
 
-  // Iterate through possible values for the first two coefficients
-  for (let idxA = 0; idxA * coefficientA <= upperBound; idxA++) {
-    for (let idxB = 0; idxB * coefficientB <= upperBound; idxB++) {
-      // Check if the remaining value is a multiple of the third coefficient
-      // and if the total sum does not exceed the upper bound.
-      if ( ( upperBound - coefficientA*idxA - coefficientB*idxB ) % coefficientC === 0 && upperBound >= coefficientA*idxA + coefficientB*idxB) {
-        combinationCount++;
-        // This comment indicates a successful combination for debugging purposes.
-        // outputLogger.printMessage("Found: A=" + coefficientA + ", B=" + coefficientB + ", C=" + (upperBound - coefficientA*idxA - coefficientB*idxB)/coefficientC );
+  var redVal = Number(firstLineParts[0]);
+  var greenVal = Number(firstLineParts[1]);
+  var blueVal = Number(firstLineParts[2]);
+  var upperBound = Number(firstLineParts[3]);
+
+  // Iterate through possible values for the first component (red)
+  for (let idx1 = 0; idx1 * redVal <= upperBound; idx1++) {
+    // Iterate through possible values for the second component (green)
+    for (let idx2 = 0; idx2 * greenVal <= upperBound; idx2++) {
+      // Calculate the remaining value needed for the third component (blue)
+      let remainingValue = upperBound - (redVal * idx1) - (greenVal * idx2);
+
+      // Check if the remaining value is non-negative and perfectly divisible by blueVal
+      if ( ( remainingValue % blueVal === 0 ) && ( remainingValue >= 0 ) ) {
+        solutionCount++; // Increment the counter if a valid combination is found
+        // Optional: console.log(`Found: ${redVal}, ${greenVal}, ${remainingValue / blueVal}`);
       }
-      // If the sum of the first two terms already exceeds the limit,
-      // no further increments of idxB will be valid for this idxA.
-      else if ( upperBound < coefficientA*idxA + coefficientB*idxB ) {
-        break; // Exit the inner loop
+      // If the current combination of red and green already exceeds the limit,
+      // no further increases in green will be valid for this red value, so break.
+      else if ( remainingValue < 0 ) {
+        break;
       }
     }
   }
-  outputLogger.printMessage(combinationCount);
+
+  // Output the final count of valid combinations
+  console.log(solutionCount);
 });

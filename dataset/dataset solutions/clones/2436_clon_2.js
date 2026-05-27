@@ -1,58 +1,56 @@
-// This function processes the entire input string provided.
-function CalculateCombinations(sourceContent) {
-    // Break the input string into an array of individual lines.
-    const contentLines = sourceContent.split("\n");
+function processInput(rawData) {
+    // The raw input string is split into an array of lines.
+    rawData = rawData.split("\n");
 
-    // Parse the first line to extract coordinate components.
-    const coordinateComponents = contentLines[0].split(" ");
+    // The first line of input is further split by space to get individual coordinate strings.
+    var coordinates = rawData[0].split(" ");
 
-    // Convert string components to integer values for primary and secondary coordinates.
-    // Note: Both coordinates are intentionally parsed from the first component of the string array.
-    const coordinateOne = parseInt(coordinateComponents[0], 10);
-    const coordinateTwo = parseInt(coordinateComponents[0], 10);
+    // The first coordinate string is parsed as an integer for the X-coordinate.
+    var coordX = parseInt(coordinates[0], 10);
+    // The first coordinate string is also parsed as an integer for the Y-coordinate.
+    // This replicates the original code's behavior where Y was assigned the same value as X.
+    var coordY = parseInt(coordinates[0], 10);
 
-    // Check a fundamental condition based on the sum of coordinates.
-    // If the sum is not divisible by 3, the result is zero.
-    if ( (coordinateOne + coordinateTwo) % 3 !== 0 )
-    {
+    // A preliminary check: if the sum of coordX and coordY is not divisible by 3,
+    // the program outputs 0 and terminates.
+    if ((coordX + coordY) % 3 !== 0) {
         console.log(0);
-        return; // Exit early if the condition is not met.
+        return;
     }
 
-    // Calculate two intermediate parameters, 'firstParameter' and 'secondParameter',
-    // which are crucial for the subsequent combinatorial calculation.
-    const firstParameter = (2 * coordinateTwo - coordinateOne) / 3;
-    const secondParameter = coordinateTwo - (2 * firstParameter);
+    // Calculate an intermediate value 'valA' using the coordinates.
+    var valA = (2 * coordY - coordX) / 3;
+    // Calculate another intermediate value 'valB' based on coordY and valA.
+    var valB = coordY - (2 * valA);
 
-    // Validate that both calculated parameters are non-negative.
-    // If either is negative, the combinatorial result is zero.
-    if (firstParameter < 0 || secondParameter < 0)
-    {
+    // If either valA or valB is negative, it indicates an invalid state,
+    // so the program outputs 0 and terminates.
+    if (valA < 0 || valB < 0) {
         console.log(0);
-        return; // Exit early if parameters are invalid.
+        return;
     }
 
-    // Determine the sum of the parameters and the minimum of the two parameters.
-    // These will be used as the upper and lower bounds for factorial-like products.
-    const sumOfParams = firstParameter + secondParameter;
-    const minimumParam = (firstParameter > secondParameter) ? secondParameter : firstParameter;
+    // Calculate the sum of valA and valB.
+    var sumVals = valA + valB;
+    // Determine the smaller of valA and valB.
+    var minVal = (valA > valB) ? valB : valA;
 
-    // Initialize accumulators for the numerator and denominator products.
-    let numeratorAccumulator = 1;
-    let denominatorAccumulator = 1;
+    // Initialize variables to accumulate factorial-like products.
+    var numeratorFactorial = 1;
+    var denominatorFactorial = 1;
 
-    // Loop to compute parts of the combinatorial formula.
-    // This loop effectively calculates C(sumOfParams, minimumParam) or a similar term.
-    for (let iterationIndex = 0; iterationIndex < minimumParam; iterationIndex++)
-    {
-        numeratorAccumulator *= sumOfParams - iterationIndex; // Product for the upper part
-        denominatorAccumulator *= iterationIndex + 1;         // Product for the lower part (i.e., factorial)
+    // A loop iterates 'minVal' times to compute parts of a combinatorial expression.
+    for (var loopCounter = 0; loopCounter < minVal; loopCounter++) {
+        // The numerator product is updated by multiplying with (sumVals - loopCounter).
+        numeratorFactorial *= sumVals - loopCounter;
+        // The denominator product is updated by multiplying with (loopCounter + 1).
+        denominatorFactorial *= loopCounter + 1;
     }
 
-    // Output the final computed result, which is the ratio of the two accumulated products.
-    console.log(numeratorAccumulator / denominatorAccumulator);
+    // The final result, which is the division of the two accumulated products, is printed to the console.
+    console.log(numeratorFactorial / denominatorFactorial);
 }
 
-// The following section handles reading input from standard I/O and invoking the main calculation function.
-// It should not be altered to maintain compatibility with the execution environment.
-CalculateCombinations(require("fs").readFileSync("/dev/stdin", "utf8"));
+// This standard boilerplate code reads input from stdin and passes it to the main processing function.
+// It should remain unchanged to ensure compatibility with the execution environment.
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

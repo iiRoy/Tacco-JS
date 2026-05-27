@@ -1,39 +1,29 @@
-const processComputationalTask = () => {
-    const dataSource = require('node:fs');
-    const rawContent = dataSource.readFileSync(0, 'utf8');
-    const contentUnits = rawContent.trim().split('\n');
+(function processInputAndSolve() {
+  const sourceReader = require('fs');
+  const rawInput = sourceReader.readFileSync('/dev/stdin', 'utf8');
+  const inputSegments = rawInput.trim().split('\n');
 
-    let contentPointer = 0;
+  const elementCount = Number(inputSegments.shift());
+  const availableElements = inputSegments.shift().split(' ').map(Number);
+  const queryCount = Number(inputSegments.shift());
+  const targetQueries = inputSegments.shift().split(' ').map(Number);
 
-    const extractNextNumericLine = () => Number(contentUnits[contentPointer++]);
-    const extractNextNumericArray = () => contentUnits[contentPointer++].split(' ').map(Number);
+  const maxTarget = Math.max(...targetQueries);
 
-    const quantityOfElements = extractNextNumericLine();
-    const availableElements = extractNextNumericArray();
-    const quantityOfQueries = extractNextNumericLine();
-    const queryValues = extractNextNumericArray();
+  const possibleSums = new Array(maxTarget + 1).fill(false);
+  possibleSums[0] = true;
 
-    const totalSumOfAvailable = availableElements.reduce((acc, val) => acc + val, 0);
-
-    const possibleSumStates = new Array(totalSumOfAvailable + 1).fill(false);
-    possibleSumStates[0] = true;
-
-    for (const currentElement of availableElements) {
-        for (let currentSumIndex = totalSumOfAvailable; currentSumIndex >= currentElement; currentSumIndex--) {
-            possibleSumStates[currentSumIndex] = possibleSumStates[currentSumIndex] || possibleSumStates[currentSumIndex - currentElement];
-        }
+  for (const currentElement of availableElements) {
+    for (let currentSum = maxTarget; currentSum >= currentElement; currentSum--) {
+      possibleSums[currentSum] = possibleSums[currentSum] || possibleSums[currentSum - currentElement];
     }
+  }
 
-    const outputAccumulator = [];
-    for (const specificQuery of queryValues) {
-        if (specificQuery >= 0 && specificQuery <= totalSumOfAvailable && possibleSumStates[specificQuery]) {
-            outputAccumulator.push('yes');
-        } else {
-            outputAccumulator.push('no');
-        }
+  targetQueries.forEach(queryValue => {
+    if (queryValue <= maxTarget && possibleSums[queryValue]) {
+      console.log('yes');
+    } else {
+      console.log('no');
     }
-
-    console.log(outputAccumulator.join('\n'));
-};
-
-processComputationalTask();
+  });
+})();

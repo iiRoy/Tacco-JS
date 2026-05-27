@@ -1,43 +1,43 @@
-(function(receivedText) {
-    const processedLines = receivedText.split('\n');
-    const totalStacks = Number(processedLines.shift());
+(function(sourceText) {
+    const commandLines = sourceText.split('\n');
+    const stackCount = Number(commandLines.shift());
 
-    const dataContainers = new Map();
-    for (let idx = 1; idx <= totalStacks; idx++) {
-        dataContainers.set(idx, []);
+    const stackContainer = new Map();
+    for (let i = 1; i <= stackCount; i++) {
+        stackContainer.set(i, []);
     }
 
-    const processNextOperation = (remainingInstructions, currentStorageSchema) => {
-        if (remainingInstructions.length === 0) {
-            return;
+    const commandDispatch = {
+        'push': (container, args) => {
+            const targetIdx = Number(args[0]);
+            const value = args[1];
+            container.get(targetIdx).push(value);
+        },
+        'pop': (container, args) => {
+            const targetIdx = Number(args[0]);
+            console.log(container.get(targetIdx).pop());
+        },
+        'move': (container, args) => {
+            const sourceIdx = Number(args[0]);
+            const destIdx = Number(args[1]);
+            const item = container.get(sourceIdx).pop();
+            container.get(destIdx).push(item);
         }
-
-        const currentInstructionLine = remainingInstructions[0];
-        const tailInstructions = remainingInstructions.slice(1);
-
-        const currentInstructionParts = currentInstructionLine.split(' ');
-        const actionVerb = currentInstructionParts[0];
-        const operandOne = Number(currentInstructionParts[1]);
-        const operandTwo = currentInstructionParts[2];
-
-        switch (actionVerb) {
-            case 'push':
-                currentStorageSchema.get(operandOne).push(operandTwo);
-                break;
-            case 'pop':
-                console.log(currentStorageSchema.get(operandOne).pop());
-                break;
-            case 'move':
-                const transferredElement = currentStorageSchema.get(operandOne).pop();
-                currentStorageSchema.get(Number(operandTwo)).push(transferredElement);
-                break;
-            case 'quit':
-                return;
-        }
-
-        processNextOperation(tailInstructions, currentStorageSchema);
     };
 
-    processNextOperation(processedLines, dataContainers);
+    commandLines.some(line => {
+        const parts = line.split(' ');
+        const operationName = parts[0];
+
+        if (operationName === 'quit') {
+            return true;
+        }
+
+        const operationArgs = parts.slice(1);
+        const effectiveOperationKey = commandDispatch[operationName] ? operationName : 'move';
+
+        commandDispatch[effectiveOperationKey](stackContainer, operationArgs);
+        return false;
+    });
 
 })(require('fs').readFileSync('/dev/stdin', 'utf8'));

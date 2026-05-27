@@ -1,51 +1,33 @@
-class ProcessUnit {
-    constructor() {
-        this.accumulatedValues = [];
-    }
+const fileSystem = require("fs");
 
-    evaluateSegment(inputDatum) {
-        if (inputDatum.length === 0) {
-            return 0;
-        }
+const rawInputContent = fileSystem.readFileSync("/dev/stdin", "utf8");
 
-        const charComponents = Array.from(inputDatum);
-        const sortedComponents = [...charComponents].sort();
-        const reverseSortedComponents = [...sortedComponents].reverse();
+const allInputTokens = rawInputContent.split(/\s/);
 
-        const sortedStringRepresentation = sortedComponents.join('');
-        const reverseSortedStringRepresentation = reverseSortedComponents.join('');
+// The original code iterates through tokens starting from the second one (index 1),
+// including any empty strings that result from multiple spaces or leading/trailing whitespace.
+const tokensForProcessing = allInputTokens.slice(1);
 
-        const getNumericalInterpretation = (textualInput) => {
-            return textualInput === '' ? 0 : Number(textualInput);
-        };
+tokensForProcessing.forEach(currentLexeme => {
+    // Convert the current token into an array of characters and sort them alphabetically.
+    // Using Array.from() instead of split('') for character array creation.
+    const orderedCharacterArray = Array.from(currentLexeme).sort();
 
-        const val1 = getNumericalInterpretation(reverseSortedStringRepresentation);
-        const val2 = getNumericalInterpretation(sortedStringRepresentation);
+    // To replicate the original's `eval` behavior with `a.reverse().join("")` twice:
+    // The first `a.reverse()` modifies `a` in place and returns the reversed array.
+    // The second `a.reverse()` then operates on the *already reversed* array,
+    // effectively reversing it back to its original sorted state.
 
-        return val1 - val2;
-    }
+    // First part of the output string: sorted characters, then reversed, then joined.
+    // We use .slice() to create a shallow copy before reversing,
+    // so the original `orderedCharacterArray` remains sorted for the next step.
+    const firstOutputSegment = orderedCharacterArray.slice().reverse().join('');
 
-    ingestSource(sourceDescriptor) {
-        const fileAccessModule = require('node:fs');
-        const contentPayload = fileAccessModule.readFileSync(sourceDescriptor, 'utf8');
+    // Second part of the output string: the array that was reversed by the first operation
+    // is then reversed *again*. This brings it back to the sorted state.
+    // So, this is equivalent to just joining the original sorted characters.
+    const secondOutputSegment = orderedCharacterArray.join('');
 
-        const allTokens = contentPayload.split(/\s/);
-
-        let tokenIndex = 0;
-        while (tokenIndex < allTokens.length) {
-            const currentToken = allTokens[tokenIndex];
-            if (tokenIndex > 0) {
-                this.accumulatedValues.push(this.evaluateSegment(currentToken));
-            }
-            tokenIndex++;
-        }
-    }
-
-    renderOutput() {
-        this.accumulatedValues.forEach(resultItem => console.log(resultItem));
-    }
-}
-
-const computationEngine = new ProcessUnit();
-computationEngine.ingestSource(0);
-computationEngine.renderOutput();
+    // Output the concatenated string with a hyphen.
+    console.log(`${firstOutputSegment}-${secondOutputSegment}`);
+});

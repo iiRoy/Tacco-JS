@@ -1,38 +1,34 @@
-const segmentsBuffer = [];
-const entryPoint = require('readline').createInterface({
-    input: process.stdin,
-    output: process.stdout
+const { createInterface } = require('readline');
+
+const inputSource = createInterface({
+  input: process.stdin,
+  output: process.stdout,
+  terminal: false
 });
 
-entryPoint.on('line', (currentPiece) => {
-    segmentsBuffer.push(currentPiece);
+let collectedInputLines = [];
+
+inputSource.on('line', (currentInputLine) => {
+  collectedInputLines.push(currentInputLine);
 });
 
-entryPoint.on('close', () => {
-    processInputPayload(segmentsBuffer);
+inputSource.on('close', () => {
+  const [initialCountString, ...numericalValueStrings] = collectedInputLines;
+  const processingIterations = parseInt(initialCountString, 10);
+
+  const valuePairs = Array.from({ length: processingIterations }, (_, pairIndex) => {
+    const startPosition = pairIndex * 2;
+    return [
+      BigInt(numericalValueStrings[startPosition]),
+      BigInt(numericalValueStrings[startPosition + 1])
+    ];
+  });
+
+  const processedResults = valuePairs.map(([firstValue, secondValue]) => {
+    const aggregatedValue = firstValue + secondValue;
+    const stringRepresentation = aggregatedValue.toString();
+    return stringRepresentation.length > 80 ? "overflow" : stringRepresentation;
+  });
+
+  processedResults.forEach(finalOutput => console.log(finalOutput));
 });
-
-function processInputPayload(fullDataSet) {
-    let dataCursor = 0;
-    const operationCount = Number(fullDataSet[dataCursor++]);
-
-    const numericTuples = [];
-    for (let iterationIndex = 0; iterationIndex < operationCount; iterationIndex++) {
-        const firstStringRep = fullDataSet[dataCursor++];
-        const secondStringRep = fullDataSet[dataCursor++];
-        numericTuples.push([firstStringRep, secondStringRep]);
-    }
-
-    const summarizedOutputs = numericTuples.map(valueCouple => {
-        const primaryValue = BigInt(valueCouple[0]);
-        const secondaryValue = BigInt(valueCouple[1]);
-        const aggregateValue = primaryValue + secondaryValue;
-        const stringifiedAggregate = aggregateValue.toString();
-
-        return stringifiedAggregate.length > 80 ? 'overflow' : stringifiedAggregate;
-    });
-
-    summarizedOutputs.forEach(displayItem => {
-        console.log(displayItem);
-    });
-}

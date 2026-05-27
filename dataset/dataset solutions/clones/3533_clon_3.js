@@ -1,153 +1,104 @@
-function ProcessInputData(inputLine) {
-    // This function takes a string input, processes it, and returns a calculated value.
-    // The original problem involves counting combinations related to prime factorization.
+function processInput(inputString) {
+    // Parse N and M from the input string
+    const inputParts = inputString.split(" ");
+    const firstNum = parseInt(inputParts[0], 10); // N
+    let secondNum = parseInt(inputParts[1], 10); // M, will be modified during factorization
 
-    // --- Input Parsing and Validation ---
-    // Split the input string into its constituent parts based on space.
-    const stringComponents = inputLine.split(" ");
-    
-    // Ensure that exactly two numeric components were provided.
-    // If not, it indicates an invalid input format.
-    if (stringComponents.length !== 2) {
-        console.error("Error: Input line must contain exactly two space-separated numbers.");
-        return 0; // Return a default value or throw an error for malformed input.
-    }
+    // Initialize a list of prime numbers
+    const primeList = [2, 3];
 
-    // Convert the string components to integers.
-    // Using parseInt with radix 10 is robust.
-    let countFactor = parseInt(stringComponents[0], 10); // Corresponds to original 'N'
-    let targetNumber = parseInt(stringComponents[1], 10); // Corresponds to original 'M'
+    // Determine the upper limit for prime generation (sqrt(M))
+    const sqrtOfSecondNum = Math.floor(Math.sqrt(secondNum));
 
-    // Validate that the parsed numbers are positive integers.
-    // If not, the calculation cannot proceed meaningfully.
-    if (isNaN(countFactor) || isNaN(targetNumber) || countFactor < 1 || targetNumber < 1) {
-        console.error("Error: Both input values must be positive integers.");
-        return 0; // Return a default value for invalid numeric input.
-    }
-
-    // Handle edge case for targetNumber = 1.
-    // If M is 1, it has no prime factors other than 1 (which doesn't count in prime factorization).
-    // The combinations calculation will result in 1.
-    if (targetNumber === 1) {
-        return 1;
-    }
-
-    // --- Prime Number Generation for Factorization ---
-    // We need a list of prime numbers up to the square root of 'targetNumber'
-    // to efficiently perform prime factorization using trial division.
-    const discoveredPrimes = [2, 3]; // Start with the first two prime numbers.
-
-    // Determine the upper bound for prime generation.
-    const sqrtTargetNumber = Math.floor(Math.sqrt(targetNumber));
-
-    // Generate primes using a trial division method.
-    // We only need to check odd numbers starting from 5.
-    let currentCandidatePrime = discoveredPrimes[discoveredPrimes.length - 1] + 2; // Starts at 5
-    while (currentCandidatePrime <= sqrtTargetNumber) {
-        let isActuallyPrime = true;
-        // Check divisibility by all previously discovered primes.
-        for (const knownDivisor of discoveredPrimes) {
-            // Optimization: If a divisor's square exceeds the candidate,
-            // then the candidate cannot have any smaller prime factors not yet found.
-            if (knownDivisor * knownDivisor > currentCandidatePrime) {
-                break;
+    // Helper function to check if a number is divisible by any existing prime
+    const isDivisibleByKnownPrime = (candidateNum, knownPrimes) => {
+        for (let p of knownPrimes) {
+            if (candidateNum % p === 0) {
+                return true;
             }
-            if (currentCandidatePrime % knownDivisor === 0) {
-                isActuallyPrime = false;
+            // Optimization: if p*p > candidateNum, no larger prime factor can exist
+            // This helps to reduce unnecessary checks for larger primes.
+            if (p * p > candidateNum) {
                 break;
             }
         }
-        if (isActuallyPrime) {
-            discoveredPrimes.push(currentCandidatePrime);
-        }
-        currentCandidatePrime += 2; // Move to the next odd number.
-    }
-
-    // --- Prime Factorization of the Target Number ---
-    // Store the counts of each prime factor in a Map for clarity and efficiency.
-    const primeFactorOccurrences = new Map();
-
-    // Create a mutable copy of the target number for factorization.
-    let remainingValueToFactor = targetNumber;
-
-    // Iterate through the discovered primes to find factors.
-    for (const primeDivisor of discoveredPrimes) {
-        // Optimization: If the square of the current prime divisor is greater than the
-        // remaining value, then the remaining value must be prime itself (if > 1).
-        if (primeDivisor * primeDivisor > remainingValueToFactor) {
-            break;
-        }
-
-        // If the primeDivisor is a factor, count its occurrences.
-        if (remainingValueToFactor % primeDivisor === 0) {
-            let currentPrimeCount = 0;
-            while (remainingValueToFactor % primeDivisor === 0) {
-                remainingValueToFactor /= primeDivisor;
-                currentPrimeCount++;
-            }
-            primeFactorOccurrences.set(primeDivisor, currentPrimeCount);
-        }
-    }
-
-    // If, after dividing by all relevant small primes, the remaining value is still
-    // greater than 1, then this remaining value must be a large prime factor itself.
-    if (remainingValueToFactor > 1) {
-        primeFactorOccurrences.set(remainingValueToFactor, (primeFactorOccurrences.get(remainingValueToFactor) || 0) + 1);
-    }
-
-    // --- Combination Calculation Utility Function ---
-    // This function computes "n choose k" (C(n, k)), which is n! / (k! * (n-k)!).
-    // It's optimized by using C(n, k) = C(n, n-k) to ensure 'k' is always the smaller value,
-    // reducing the number of multiplications and divisions.
-    const computeCombinations = (totalItems, selectedItems) => {
-        // Normalize selectedItems to be the smaller of k and n-k.
-        selectedItems = Math.min(selectedItems, totalItems - selectedItems);
-
-        // --- Edge Case Handling (Type III: explicit guard clauses) ---
-        if (selectedItems < 0 || selectedItems > totalItems) {
-            return 0; // Invalid combination scenario.
-        }
-        if (selectedItems === 0 || selectedItems === totalItems) {
-            return 1; // C(n, 0) = 1 and C(n, n) = 1.
-        }
-        if (selectedItems === 1 || selectedItems === totalItems - 1) {
-            return totalItems; // C(n, 1) = n and C(n, n-1) = n.
-        }
-
-        // --- Iterative Calculation ---
-        // Calculate the combination iteratively to manage intermediate products.
-        // This method calculates (n * (n-1) * ... * (n-k+1)) / (k * (k-1) * ... * 1)
-        let cumulativeProduct = 1;
-        for (let i = 0; i < selectedItems; ++i) {
-            cumulativeProduct = cumulativeProduct * (totalItems - i) / (i + 1);
-        }
-        // Round the result to the nearest integer to mitigate potential floating-point inaccuracies
-        // that can arise from division operations, assuming the true combination result is an integer.
-        return Math.round(cumulativeProduct);
+        return false;
     };
 
-    // --- Main Calculation Loop ---
-    // Initialize the final accumulated result and the modulo constant.
-    let finalAccumulatedResult = 1;
-    const largePrimeModulus = 1_000_000_007; // A common prime modulus (10^9 + 7).
-
-    // Iterate through each unique prime factor and its count.
-    // The problem requires calculating C(count + N - 1, count) for each factor.
-    // This is a "stars and bars" problem often denoted as C(n+k-1, k) or C(n+k-1, n-1).
-    // Here, k is 'factorCount' and n is 'countFactor'.
-    for (const [primeKey, factorCount] of primeFactorOccurrences.entries()) {
-        const nMinusOne = countFactor - 1; // Pre-calculate (N - 1) for efficiency.
-        const totalItemsForCombination = factorCount + nMinusOne; // Corresponds to (k + n - 1).
-        const itemsToSelectForCombination = factorCount; // Corresponds to k.
-
-        // Calculate the combination for the current prime factor.
-        const currentFactorialCombination = computeCombinations(totalItemsForCombination, itemsToSelectForCombination);
-
-        // Multiply the current combination into the overall result and apply the modulus.
-        // Applying modulus at each step prevents the intermediate result from exceeding
-        // JavaScript's safe integer limits before the final modulus.
-        finalAccumulatedResult = (finalAccumulatedResult * currentFactorialCombination) % largePrimeModulus;
+    // Generate primes up to sqrt(M)
+    // Start checking from the next number after the last prime in the list
+    for (let currentCandidate = primeList[primeList.length - 1] + 1; currentCandidate <= sqrtOfSecondNum; currentCandidate++) {
+        if (!isDivisibleByKnownPrime(currentCandidate, primeList)) {
+            primeList.push(currentCandidate);
+        }
     }
 
-    return finalAccumulatedResult;
+    // Perform prime factorization of M
+    const factorCounts = {}; // Stores prime factors and their counts
+
+    for (let currentPrime of primeList) {
+        // Optimization: Only proceed if the current number is divisible by the prime
+        if (secondNum % currentPrime === 0) {
+            while (secondNum % currentPrime === 0) {
+                secondNum /= currentPrime;
+                factorCounts[currentPrime] = (factorCounts[currentPrime] || 0) + 1;
+            }
+        }
+    }
+
+    // If secondNum is still greater than 1, it means the remaining value is a prime factor itself
+    if (secondNum > 1) {
+        factorCounts[secondNum] = (factorCounts[secondNum] || 0) + 1;
+    }
+
+    // Initialize result accumulator and modulo value
+    let finalResult = 1;
+    const MODULO_CONSTANT = 1000000007; // 10^9 + 7
+
+    // Helper function to calculate combinations (nCk)
+    // This implementation mirrors the original's behavior by interleaving multiplication and division
+    // to potentially mitigate floating point precision issues for intermediate large numbers.
+    const calculateCombinations = function(totalItems, itemsToChoose) {
+        // Use the property C(n, k) = C(n, n-k) to reduce calculations
+        itemsToChoose = Math.min(itemsToChoose, totalItems - itemsToChoose);
+
+        // Guard clauses for edge cases
+        if (itemsToChoose < 0) {
+            return 0;
+        }
+        if (itemsToChoose === 0 || totalItems === 0) {
+            return 1;
+        }
+        if (itemsToChoose === 1) {
+            return totalItems;
+        }
+
+        let intermediateProduct = 1;
+        for (let i = 0; i < itemsToChoose; i++) {
+            intermediateProduct *= (totalItems - i);
+            intermediateProduct /= (i + 1); // Interleave division
+        }
+        return intermediateProduct;
+    };
+
+    // Calculate the final result using combinations for each prime factor
+    for (let factorKey in factorCounts) {
+        const currentFactorCount = factorCounts[factorKey];
+        // The problem is equivalent to distributing 'currentFactorCount' identical items
+        // into 'firstNum' distinct bins, which is C(currentFactorCount + firstNum - 1, currentFactorCount)
+        const nForCombination = currentFactorCount + firstNum - 1;
+        const kForCombination = currentFactorCount; // Or (firstNum - 1), both are mathematically equivalent
+
+        const combinationValue = calculateCombinations(nForCombination, kForCombination);
+
+        finalResult = (finalResult * combinationValue) % MODULO_CONSTANT;
+    }
+
+    return finalResult;
 }
+
+// The following code handles input/output based on the execution environment.
+// It should remain unchanged to preserve the original I/O behavior.
+((b,c,d)=>"undefined"!=typeof require?console.log(processInput(require("fs").readFileSync("/dev/stdin","utf8"))):[b=b.split("\n").slice(1,-1).join("\n"),c=function(){try{return processInput(b)}catch(f){return f.stack||f.message}}(),d=typeof c,"string"==d||(c=JSON.stringify(c)),$("<form>").append([[10,b],0,[1,d],0,[10,c]].map(f=>$(f?"<textarea>":"<br>",f&&{rows:f[0],cols:40,text:f[1]}))).appendTo("body")])(`
+3 12
+`);

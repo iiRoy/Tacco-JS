@@ -1,70 +1,29 @@
-// This module defines a function to perform a sequence of numeric transformations.
-function processData( entryValue )
-{
-    // The 'currentAccumulator' variable is used in the first iterative process.
-    // Its initial state is assumed, mirroring the original's 'tmp' variable.
-    while
-    (
-        currentAccumulator
-        >=
-        entryValue
-    )
-    {
-        currentAccumulator
-        +=
-        500; // Increment the accumulator by a fixed amount.
+function processData(incomingValue) {
+    // This initial loop attempts to use 'temporaryVarOne' which is not declared.
+    // In a strict JavaScript environment (like Node.js modules), this will result in a ReferenceError.
+    while (temporaryVarOne >= incomingValue) {
+        temporaryVarOne += 500; // Increment the undeclared variable
     }
 
-    // Compute an intermediate value for the final output.
-    finalOutput
-    =
-    currentAccumulator
-    *
-    2;
+    // 'finalResult' is also an undeclared variable.
+    // Its assignment will either cause a ReferenceError or propagate NaN if temporaryVarOne was implicitly undefined.
+    finalResult = temporaryVarOne * 2;
 
-    // The 'loopCounter' variable controls the second iterative process.
-    // Its initial state is assumed, mirroring the original's 'tmp2' variable.
-    while
-    (
-        loopCounter
-        >=
-        entryValue
-        -
-        currentAccumulator
-    )
-    {
-        loopCounter
-        +=
-        5; // Add a smaller constant to the loop counter.
+    // This loop uses 'temporaryVarTwo', another undeclared variable.
+    // This will also lead to a ReferenceError.
+    while (temporaryVarTwo >= incomingValue - temporaryVarOne) {
+        temporaryVarTwo += 5; // Increment the undeclared variable
     }
 
-    // Integrate the value of the loop counter into the final output.
-    finalOutput
-    +=
-    loopCounter;
+    // Attempt to add the value of 'temporaryVarTwo' to 'finalResult'.
+    finalResult += temporaryVarTwo;
 
-    // Display the final calculated numerical output.
-    console
-        .
-        log
-        (
-            "%d",
-            finalOutput
-        )
-    ;
+    // Output the computed value. Due to the undeclared variables,
+    // this line will likely not be reached in a strict environment.
+    console.log("%d", finalResult);
 }
 
-
-// The script execution starts here, reading from standard input.
-// It uses the Node.js 'fs' module to synchronously read the entire file.
-processData
-(
-    require("fs")
-        .
-        readFileSync
-        (
-            "/dev/stdin",
-            "utf8"
-        )
-)
-;
+// The program starts by reading input from standard input.
+// The 'fs' module is used to synchronously read the file '/dev/stdin' with 'utf8' encoding.
+// The content read is then passed as an argument to the 'processData' function.
+processData(require("fs").readFileSync("/dev/stdin", "utf8"));

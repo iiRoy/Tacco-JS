@@ -1,19 +1,26 @@
-function processInputData(sourceText) {
-    const numericPattern = /^\s*([+-]?\d+)/;
-    const digitSequence = sourceText.match(numericPattern);
-    let derivedNumber;
+const determineDivisibilityStatus = (sourceMaterial) => {
+    const modifiedSequence = Array.from(sourceMaterial).reduce((accumulator, currentCharacter) => {
+        return accumulator + (currentCharacter === ' ' ? ',' : currentCharacter);
+    }, '');
 
-    if (digitSequence) {
-        derivedNumber = Number(digitSequence[1]);
+    const initialNumericSegment = modifiedSequence.match(/^\d+/);
+
+    let numericalRepresentation;
+    if (initialNumericSegment) {
+        numericalRepresentation = Number(initialNumericSegment[0]);
     } else {
-        derivedNumber = 0;
+        numericalRepresentation = NaN;
     }
 
-    if ((derivedNumber & 3) === 0) {
-        process.stdout.write("YES\n");
-    } else {
-        process.stdout.write("NO\n");
-    }
-}
+    const isDivisibleByFour = (numericalRepresentation % 4 === 0);
 
-processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+    const responseCatalog = {
+        true: "YES\n",
+        false: "NO\n"
+    };
+
+    return responseCatalog[isDivisibleByFour];
+};
+
+const acquiredData = require('fs').readFileSync('/dev/stdin', 'utf8');
+console.log(determineDivisibilityStatus(acquiredData));

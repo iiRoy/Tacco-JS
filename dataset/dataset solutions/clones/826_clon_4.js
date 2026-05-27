@@ -1,59 +1,60 @@
-const rawData = require('node:fs').readFileSync('/dev/stdin', 'utf8');
+const fileSystem = require('fs');
 
-function* lineProducer(sourceString) {
-    const lines = sourceString.trim().split('\n');
-    for (const singleLine of lines) {
-        yield singleLine;
+function* createLineIterator(sourceContent) {
+    const lines = sourceContent.trim().split('\n');
+    let currentIndex = 0;
+    while (currentIndex < lines.length) {
+        yield lines[currentIndex++];
     }
 }
 
-function manageCompetition(lineSupply) {
-    const overallOutputs = [];
-    let currentLine;
+const inputIterator = createLineIterator(fileSystem.readFileSync('/dev/stdin', 'utf8'));
 
-    while ((currentLine = lineSupply.next().value) !== undefined) {
-        const contestantCount = Number(currentLine);
-        if (contestantCount === 0) {
-            break;
-        }
+const retrieveNextLine = () => inputIterator.next().value;
 
-        const roundPerformances = [];
-        for (let j = 0; j < contestantCount; j++) {
-            const entryText = lineSupply.next().value;
-            const parts = entryText.split(' ');
-            const competitorLabel = parts.shift();
-            const numericFactors = parts.map(Number);
+while (true) {
+    const currentBlockSize = Number(retrieveNextLine());
 
-            const [
-                factor_P, factor_A, factor_B, factor_C, factor_D,
-                factor_E, factor_F, factor_S, factor_M
-            ] = numericFactors;
-
-            const timeDuration = factor_A + factor_B + factor_C + ((factor_D + factor_E) * factor_M);
-            const financialGain = (factor_F * factor_S * factor_M) - factor_P;
-
-            roundPerformances.push({
-                entity: competitorLabel,
-                efficiencyScore: financialGain / timeDuration
-            });
-        }
-
-        roundPerformances.sort((first, second) => {
-            if (first.efficiencyScore === second.efficiencyScore) {
-                return first.entity > second.entity ? 1 : -1;
-            }
-            return second.efficiencyScore - first.efficiencyScore;
-        });
-
-        roundPerformances.forEach(performance => {
-            overallOutputs.push(performance.entity);
-        });
-        overallOutputs.push('#');
+    if (currentBlockSize === 0) {
+        break;
     }
 
-    return overallOutputs.join('\n');
-}
+    const processedEntries = Array.from({ length: currentBlockSize }, () => {
+        const entryLine = retrieveNextLine();
+        const [subjectIdentifier, ...numericValues] = entryLine.split(' ');
 
-const lineGenerator = lineProducer(rawData);
-const finalReport = manageCompetition(lineGenerator);
-console.log(finalReport);
+        const [
+            costP,
+            paramA,
+            paramB,
+            paramC,
+            paramD,
+            paramE,
+            paramF,
+            paramS,
+            paramM
+        ] = numericValues.map(Number);
+
+        const totalDuration = paramA + paramB + paramC + ((paramD + paramE) * paramM);
+        const netEarnings = (paramF * paramS * paramM) - costP;
+
+        return {
+            entityLabel: subjectIdentifier,
+            performanceRatio: netEarnings / totalDuration
+        };
+    });
+
+    processedEntries.sort((firstItem, secondItem) => {
+        const ratioDifference = secondItem.performanceRatio - firstItem.performanceRatio;
+        if (ratioDifference !== 0) {
+            return ratioDifference;
+        }
+        return firstItem.entityLabel.localeCompare(secondItem.entityLabel);
+    });
+
+    processedEntries.forEach(item => {
+        console.log(item.entityLabel);
+    });
+
+    console.log("#");
+}

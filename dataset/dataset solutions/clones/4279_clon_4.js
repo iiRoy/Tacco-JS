@@ -1,44 +1,54 @@
-"use strict";
+const processInputData = (rawInputContent) => {
+    const contentLines = rawInputContent.trim().split("\n");
+    return { sourceSequence: contentLines[0], patternSequence: contentLines[1] };
+};
 
-const processInformation = (inputComposite) => {
-    const [originalText, searchPattern] = inputComposite.trim().split("\n");
+const locateRightmostMatchPosition = (sourceSequence, patternSequence) => {
+    const sourceLength = sourceSequence.length;
+    const patternLength = patternSequence.length;
 
-    const originalLength = originalText.length;
-    const patternSize = searchPattern.length;
+    if (patternLength > sourceLength) return null;
 
-    const seekMatch = (currentOffset) => {
-        if (currentOffset < 0) {
-            return null;
-        }
+    const potentialStartPositions = Array.from(
+        { length: sourceLength - patternLength + 1 },
+        (_, offset) => sourceLength - patternLength - offset
+    );
 
-        const candidateSlice = originalText.substring(currentOffset, currentOffset + patternSize);
+    const matchingPosition = potentialStartPositions.find(currentPosition => {
+        const segmentCharacters = Array.from(sourceSequence.substring(currentPosition, currentPosition + patternLength));
+        const patternCharacters = Array.from(patternSequence);
 
-        const isCompatible = Array.from(candidateSlice).every((sliceChar, charPos) => {
-            const patternChar = searchPattern.charAt(charPos);
-            return sliceChar === patternChar || sliceChar === "?";
+        return segmentCharacters.every((segmentChar, charIndex) => {
+            return segmentChar === patternCharacters[charIndex] || segmentChar === '?';
         });
+    });
 
-        if (isCompatible) {
-            return currentOffset;
-        } else {
-            return seekMatch(currentOffset - 1);
-        }
-    };
+    return matchingPosition !== undefined ? matchingPosition : null;
+};
 
-    const matchingPosition = seekMatch(originalLength - patternSize);
+const assembleFinalString = (sourceSequence, patternSequence, matchPosition) => {
+    const initialSegment = Array.from(sourceSequence.substring(0, matchPosition))
+        .map(char => char === '?' ? 'a' : char)
+        .join('');
+    
+    const trailingSegment = Array.from(sourceSequence.substring(matchPosition + patternSequence.length))
+        .map(char => char === '?' ? 'a' : char)
+        .join('');
+    
+    return initialSegment + patternSequence + trailingSegment;
+};
 
-    if (matchingPosition !== null) {
-        const leadingSegment = originalText.substring(0, matchingPosition);
-        const trailingSegment = originalText.substring(matchingPosition + patternSize);
-        
-        let constructedResult = leadingSegment + searchPattern + trailingSegment;
-        
-        const finalForm = Array.from(constructedResult).map(element => element === "?" ? "a" : element).join("");
-        
-        console.log(finalForm);
+const executeTransformation = (inputPayload) => {
+    const { sourceSequence, patternSequence } = processInputData(inputPayload);
+
+    const foundPosition = locateRightmostMatchPosition(sourceSequence, patternSequence);
+
+    if (foundPosition !== null) {
+        const finalResultString = assembleFinalString(sourceSequence, patternSequence, foundPosition);
+        console.log(finalResultString);
     } else {
         console.log("UNRESTORABLE");
     }
 };
 
-processInformation(require('fs').readFileSync('/dev/stdin', 'utf8'));
+executeTransformation(require('fs').readFileSync('/dev/stdin', 'utf8'));

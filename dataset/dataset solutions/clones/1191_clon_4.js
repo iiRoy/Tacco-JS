@@ -1,57 +1,34 @@
-const rawDataBuffer = require('fs').readFileSync('/dev/stdin');
-const rawContent = rawDataBuffer.toString('utf8');
-const processedLines = rawContent.trim().split('\n').filter(Boolean);
+const faceRotationMap = new Map([
+    ["N", [1, 5, 2, 3, 0, 4]],
+    ["S", [4, 0, 2, 3, 5, 1]],
+    ["E", [3, 1, 0, 5, 4, 2]],
+    ["W", [2, 1, 5, 0, 4, 3]]
+]);
 
-const initialValues = processedLines.shift().split(' ').map(Number);
-processedLines.shift(); 
-
-const targetCoordinates = processedLines.map(line => {
-  const parts = line.split(' ');
-  return { topValue: parseInt(parts[0]), bottomValue: parseInt(parts[1]) };
-});
-
-const rotationDefinitions = {
-  'N': { top: 'bottom', bottom: 'right', front: 'front', back: 'back', left: 'top', right: 'left' },
-  'S': { top: 'left', bottom: 'top', front: 'front', back: 'back', left: 'right', right: 'bottom' },
-  'E': { top: 'back', bottom: 'bottom', front: 'top', back: 'right', left: 'left', right: 'front' },
-  'W': { top: 'front', bottom: 'bottom', front: 'right', back: 'top', left: 'left', right: 'back' }
-};
-
-class PolyhedronSimulator {
-  constructor(startingFacets) {
-    this.activeFacets = {
-      top: startingFacets[0],
-      bottom: startingFacets[1],
-      front: startingFacets[2],
-      back: startingFacets[3],
-      left: startingFacets[4],
-      right: startingFacets[5]
-    };
-  }
-
-  applyMotion(directionIdentifier) {
-    const nextFacets = {};
-    const motionMap = rotationDefinitions[directionIdentifier];
-    for (const facetName in motionMap) {
-      nextFacets[facetName] = this.activeFacets[motionMap[facetName]];
+function applyDiceRoll(directionKey, currentFaces) {
+    const permutationIndices = faceRotationMap.get(directionKey);
+    if (!permutationIndices) {
+        return currentFaces;
     }
-    this.activeFacets = nextFacets;
-  }
-
-  fetchFacetValue(facetName) {
-    return this.activeFacets[facetName];
-  }
+    return permutationIndices.map(originalIndex => currentFaces[originalIndex]);
 }
 
-const currentPolyhedron = new PolyhedronSimulator(initialValues);
-const motionLabels = ['N', 'S', 'E', 'W'];
+const fileSystem = require('fs');
+const rawInput = fileSystem.readFileSync('/dev/stdin', 'utf8');
+const processedLines = rawInput.trim().split("\n");
 
-for (const target of targetCoordinates) {
-  while (currentPolyhedron.fetchFacetValue('top') !== target.topValue ||
-         currentPolyhedron.fetchFacetValue('bottom') !== target.bottomValue) {
-    const randomMotionIndex = Math.floor(Math.random() * motionLabels.length);
-    const chosenMotion = motionLabels[randomMotionIndex];
-    currentPolyhedron.applyMotion(chosenMotion);
-  }
-  console.log(currentPolyhedron.fetchFacetValue('front'));
+let currentDiceConfiguration = processedLines[0].split(" ").map(Number);
+const targetPositions = processedLines.slice(2).map(line => line.split(" ").map(Number));
+const movementDirections = ["N", "S", "E", "W"];
+
+for (const targetPair of targetPositions) {
+    const desiredTop = targetPair[0];
+    const desiredFront = targetPair[1];
+
+    while (!(currentDiceConfiguration[0] === desiredTop && currentDiceConfiguration[1] === desiredFront)) {
+        const randomDirectionIndex = Math.floor(Math.random() * movementDirections.length);
+        const chosenDirection = movementDirections[randomDirectionIndex];
+        currentDiceConfiguration = applyDiceRoll(chosenDirection, currentDiceConfiguration);
+    }
+    console.log(currentDiceConfiguration[2]);
 }

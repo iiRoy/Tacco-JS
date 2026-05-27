@@ -1,54 +1,69 @@
-function ProcessInput() {
-  const initialValue = retrieveNumericInput();
+var read = require('readline').createInterface({
+  input: process.stdin, output: process.stdout
+});
+var obj; var inLine = [];
+read.on('line', function(input){inLine.push(input);});
+read.on('close', function(){
+  obj = init(inLine);
+  console.error("\n");
+  var start = Date.now();
+  Main();
+  var end = Date.now() - start;
+  myerr("time : " + (end) + "ms");
+  myerr("memory : " + Math.round(process.memoryUsage().heapTotal / 1024) + "KB");
+});
+function makeClone(obj){return JSON.parse(JSON.stringify(obj));}
+function nextInt(){return myconv(next(),1);} function nextStrArray(){return myconv(next(),2);}
+function nextIntArray(){return myconv(next(),4);} function nextCharArray(){return myconv(next(),6);}
+function next(){return obj.next();} function hasNext(){return obj.hasNext();}
+function init(input){  
+  return {
+    list : input, index : 0, max : input.length,
+    hasNext : function(){return (this.index < this.max);},
+    next : function(){if(this.hasNext()){return this.list[this.index++];}else{throw "ArrayIndexOutOfBoundsException ‚There is no more input";}}
+  };
+}
+function myout(s){console.log(s);}
+function myerr(s){console.error("debug:" + require("util").inspect(s,false,null));}
+function myconv(i,no){try{switch(no){case 1:return parseInt(i);case 2:return i.split(" ");case 4:return i.split(" ").map(Number);case 6:return i.split("");case 7:return i.split("").map(Number);case 8:return i.join(" ");case 9:return i.join("\n");case 0:return i.join("");default:return i;}}catch(e){return i;}}
 
-  const discriminantComponent = 1 + 8 * initialValue;
-  const squareRootOfDiscriminantComponent = Math.sqrt(discriminantComponent);
+function Main(){
+  const inputN = nextInt();
+  let kValue = -1;
 
-  const isPerfectSquare = Number.isInteger(squareRootOfDiscriminantComponent);
-  const isEvenResultForK = Number.isInteger(-1 + squareRootOfDiscriminantComponent) && ((-1 + squareRootOfDiscriminantComponent) % 2 === 0);
+  const discriminant = 1 + 8 * inputN;
+  const rootDiscriminant = Math.sqrt(discriminant);
 
-  if (!isPerfectSquare || !isEvenResultForK) {
-    displayResult("No");
+  if (Number.isInteger(rootDiscriminant)) {
+    const potentialK = (-1 + rootDiscriminant) / 2;
+    if (Number.isInteger(potentialK) && potentialK >= 0) {
+      kValue = potentialK;
+    }
+  }
+
+  if (kValue === -1) {
+    myout("No");
     return;
   }
 
-  const solutionConstant = (-1 + squareRootOfDiscriminantComponent) / 2;
+  myout("Yes");
 
-  let sequenceIdentifier = 0;
-  const generatedAssignments = Array.from({ length: solutionConstant }, (_, primaryIndex) =>
-    Array.from({ length: solutionConstant - primaryIndex }, (_, offsetIndex) => {
-      const secondaryIndex = primaryIndex + offsetIndex;
-      sequenceIdentifier++;
-      return {
-        identifier: sequenceIdentifier,
-        groupA: primaryIndex,
-        slotA: secondaryIndex,
-        groupB: secondaryIndex + 1,
-        slotB: primaryIndex,
-      };
-    })
-  ).flat();
+  const collectionOfSets = Array.from({ length: kValue + 1 }, () => []);
+  let elementCounter = 1;
 
-  const dataCollection = Array.from({ length: solutionConstant + 1 }, () =>
-    Array(solutionConstant).fill(0)
-  );
+  for (let setIndexA = 0; setIndexA < kValue; setIndexA++) {
+    for (let setIndexB = setIndexA + 1; setIndexB <= kValue; setIndexB++) {
+      collectionOfSets[setIndexA].push(elementCounter);
+      collectionOfSets[setIndexB].push(elementCounter);
+      elementCounter++;
+    }
+  }
+  
+  myout(collectionOfSets.length);
 
-  const populatedCollection = generatedAssignments.reduce((accumulator, assignment) => {
-    accumulator[assignment.groupA][assignment.slotA] = assignment.identifier;
-    accumulator[assignment.groupB][assignment.slotB] = assignment.identifier;
-    return accumulator;
-  }, dataCollection);
-
-  logDiagnostic(populatedCollection);
-
-  displayResult(populatedCollection.length);
-
-  const textRepresentations = populatedCollection.map(memberArray => {
-    const prefixedArray = [solutionConstant, ...memberArray];
-    return prefixedArray.join(" ");
+  const formattedOutputLines = collectionOfSets.map(currentSet => {
+    return `${kValue} ${currentSet.join(' ')}`;
   });
 
-  const finalRenderedOutput = textRepresentations.join("\n");
-
-  displayResult(finalRenderedOutput);
+  myout(formattedOutputLines.join('\n'));
 }

@@ -1,100 +1,75 @@
-'use strict'; // Enforce stricter parsing and error handling for better code quality.
+'use strict';
 
-// Acquire the file system module for reading input.
-const fileSystemAccess = require('fs');
+// This script processes an array of numbers to calculate a specific sum.
+// It reads input from standard input, which consists of two lines.
 
-// Read the entire content from standard input, decode it as UTF-8,
-// remove any leading or trailing whitespace, and then split it into an
-// array of strings, where each string represents a line.
-const inputDataLines = fileSystemAccess.readFileSync('/dev/stdin', 'utf8').trim().split('\n');
+// Read all lines from standard input, decode as UTF-8, remove leading/trailing whitespace,
+// and split into an array of strings by newline characters.
+const inputDataRows = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split('\n');
 
-// Convert the first line from a string to a numeric value, which represents
-// the total count of elements in the main array.
-const totalElementCount = Number(inputDataLines[0]);
+// The first line contains the total count of elements, converted to a number.
+const elementCount = +inputDataRows[0];
 
-// Split the second line of input into an array of strings. Each string
-// in this array is a number that will be processed later.
-const numericValueStrings = inputDataLines[1].split(' ');
+// The second line contains space-separated numbers, split into an array of strings.
+const valueArray = inputDataRows[1].split(' ');
 
-// Initialize an array that will serve as a mapping from a value (minus 1,
-// assuming 1-indexed values in the problem) to its original index in the
-// 'numericValueStrings' array. This helps in quickly finding the original
-// position of a value given its magnitude.
-let valueToIndexMapping = [];
-for (let currentArrayPosition = 0; currentArrayPosition < totalElementCount; currentArrayPosition++) {
-  // Parse the string value to an integer, then subtract one to align with
-  // zero-indexed array access for the mapping.
-  const parsedValue = parseInt(numericValueStrings[currentArrayPosition], 10);
-  valueToIndexMapping[parsedValue - 1] = currentArrayPosition;
+// Create a mapping from the value (1-based) to its original 0-based index in the input array.
+// For example, if valueArray is ['3', '1', '2'], then:
+// positionMap[0] will store the index of '1' (which is 1).
+// positionMap[1] will store the index of '2' (which is 2).
+// positionMap[2] will store the index of '3' (which is 0).
+let positionMap = [];
+for (let idx = 0; idx < elementCount; ++idx) {
+    // Convert the string value to a number, then subtract 1 to get a 0-based index for positionMap.
+    positionMap[+valueArray[idx] - 1] = idx;
 }
 
+// Initialize the cumulative sum and a queue for managing array segments to process.
+// Each item in the queue is an array: [segmentStart, segmentEnd, minValIndex].
+// 'minValIndex' is a 0-based index representing the value (minValIndex + 1) that we are currently looking for
+// as the minimum in the current segment.
+let totalResult = 0;
+let processingQueue = [[0, elementCount - 1, 0]]; // Start with the entire array segment and look for value 1 (minValIndex 0).
 
-// Initialize a variable to accumulate the final result.
-let accumulatedSumResult = 0;
-// Initialize a queue to manage the sub-ranges that need processing.
-// Each item in the queue is an array: [start_boundary, end_boundary, value_search_pointer].
-// The initial item covers the entire input array.
-let processingRangeQueue = [[0, totalElementCount - 1, 0]];
+// Process segments from the queue until it is empty. This is a breadth-first traversal.
+while (processingQueue.length > 0) {
+    // Dequeue the current segment's information.
+    let currentSegmentInfo = processingQueue.shift();
+    let segmentStart = currentSegmentInfo[0]; // The starting index of the current segment.
+    let segmentEnd = currentSegmentInfo[1];   // The ending index of the current segment.
+    let minValIndex = currentSegmentInfo[2]; // The index in 'positionMap' for the value to find.
 
-// Continue processing as long as there are ranges in the queue.
-while (processingRangeQueue.length > 0) {
-  // Dequeue the next range definition for processing.
-  let currentRangeDefinition = processingRangeQueue.shift();
+    // If the segment contains only one element, add its value to the total sum.
+    if (segmentStart === segmentEnd) {
+        totalResult += +valueArray[segmentStart];
+        continue; // Move to the next segment in the queue.
+    }
 
-  // Extract the lower and upper bounds of the current sub-array range.
-  let rangeLowerBound = currentRangeDefinition[0];
-  let rangeUpperBound = currentRangeDefinition[1];
-  // Extract the pointer used to search for the smallest element's original index.
-  let smallestValueSearchPointer = currentRangeDefinition[2];
+    // Find the actual 0-based position of the value (minValIndex + 1) within the current segment.
+    // We might need to skip values that are outside the current [segmentStart, segmentEnd] range
+    // by incrementing minValIndex until we find a value whose original position is within the segment.
+    while (positionMap[minValIndex] < segmentStart || positionMap[minValIndex] > segmentEnd) {
+        minValIndex++; // Increment to look for the next smallest value (minValIndex + 1).
+    }
+    let actualPosition = positionMap[minValIndex]; // The 0-based index of the found minimum value.
 
-  // Base condition: If the range contains only a single element.
-  if (rangeLowerBound === rangeUpperBound) {
-    // Add the numeric value of this single element to the total sum.
-    accumulatedSumResult += Number(numericValueStrings[rangeLowerBound]);
-    continue; // Move to the next range in the queue.
-  }
+    // Calculate the contribution of this minimum value to the total sum.
+    // The value itself is `+valueArray[actualPosition]`.
+    // It acts as the minimum for all subarrays that contain it and are fully within the current segment.
+    // The number of such subarrays is (actualPosition - segmentStart + 1) * (segmentEnd - actualPosition + 1).
+    totalResult += +valueArray[actualPosition] * (actualPosition - segmentStart + 1) * (segmentEnd - actualPosition + 1);
 
-  // Find the smallest value (by magnitude) whose *original index* falls
-  // within the current [rangeLowerBound, rangeUpperBound] sub-array.
-  // The 'smallestValueSearchPointer' iterates through 'valueToIndexMapping',
-  // which is implicitly sorted by value magnitude.
-  while (
-    valueToIndexMapping[smallestValueSearchPointer] < rangeLowerBound ||
-    valueToIndexMapping[smallestValueSearchPointer] > rangeUpperBound
-  ) {
-    smallestValueSearchPointer++; // Increment the pointer to check the next smallest value.
-  }
-
-  // The 'centralElementOriginalPosition' is the actual index in the original
-  // 'numericValueStrings' array where the smallest element for the current
-  // range is located.
-  let centralElementOriginalPosition = valueToIndexMapping[smallestValueSearchPointer];
-
-  // Calculate the contribution of this 'centralElementOriginalPosition' to the total sum.
-  // This calculation is specific to problems like "sum of minimums in all sub-arrays".
-  // It multiplies the element's value by the number of sub-arrays it can be the minimum in.
-  // (centralElementOriginalPosition - rangeLowerBound + 1) represents the number of possible
-  // start points for a sub-array that has this element as its minimum and ends at or before it.
-  // (rangeUpperBound - centralElementOriginalPosition + 1) represents the number of possible
-  // end points for a sub-array that has this element as its minimum and starts at or after it.
-  accumulatedSumResult +=
-    Number(numericValueStrings[centralElementOriginalPosition]) *
-    (centralElementOriginalPosition - rangeLowerBound + 1) *
-    (rangeUpperBound - centralElementOriginalPosition + 1);
-
-  // If there's a valid sub-range to the left of the central element,
-  // add it to the queue for further processing. The 'smallestValueSearchPointer'
-  // is incremented because the current smallest element has been processed.
-  if (rangeLowerBound <= centralElementOriginalPosition - 1) {
-    processingRangeQueue.push([rangeLowerBound, centralElementOriginalPosition - 1, smallestValueSearchPointer + 1]);
-  }
-
-  // If there's a valid sub-range to the right of the central element,
-  // add it to the queue.
-  if (centralElementOriginalPosition + 1 <= rangeUpperBound) {
-    processingRangeQueue.push([centralElementOriginalPosition + 1, rangeUpperBound, smallestValueSearchPointer + 1]);
-  }
+    // Enqueue the left sub-segment if it is valid (i.e., it contains at least one element).
+    // The next minimum value to look for in this sub-segment will be (minValIndex + 1).
+    if (segmentStart <= actualPosition - 1) {
+        processingQueue[processingQueue.length] = [segmentStart, actualPosition - 1, minValIndex + 1];
+    }
+    // Enqueue the right sub-segment if it is valid.
+    // The next minimum value to look for in this sub-segment will also be (minValIndex + 1).
+    if (actualPosition + 1 <= segmentEnd) {
+        processingQueue[processingQueue.length] = [actualPosition + 1, segmentEnd, minValIndex + 1];
+    }
 }
 
-// Print the final calculated accumulated sum to standard output.
-console.log(accumulatedSumResult);
+// Print the final calculated total sum to standard output.
+console.log(totalResult);

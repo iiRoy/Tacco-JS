@@ -1,30 +1,31 @@
-const processNumericalSequence = (inputString) => {
-  const numericComponents = inputString.split('\n')[0].match(/\d+/g).map(Number.parseInt);
+'use strict';
 
-  const firstComponent = numericComponents[0];
-  const secondComponent = numericComponents[1];
-  const thirdComponent = numericComponents[2];
+function processInputAndCalculate(inputData) {
+    const firstDataLine = inputData.split('\n')[0];
+    const numberStrings = firstDataLine.split(' ');
 
-  const aggregatedTotal = firstComponent + secondComponent + thirdComponent;
+    const firstNum = Number(numberStrings[0]);
+    const secondNum = Number(numberStrings[1]);
+    const thirdNum = Number(numberStrings[2]);
 
-  const greatestComponent = [firstComponent, secondComponent, thirdComponent].sort((valA, valB) => valB - valA)[0];
+    const totalNumericSum = firstNum + secondNum + thirdNum;
 
-  const baseTripleOfGreatest = greatestComponent * 3;
+    let currentHighest = firstNum;
+    if (secondNum > currentHighest) {
+        currentHighest = secondNum;
+    }
+    if (thirdNum > currentHighest) {
+        currentHighest = thirdNum;
+    }
 
-  const totalParity = aggregatedTotal & 1;
-  const tripleGreatestParity = baseTripleOfGreatest & 1;
+    let requiredTargetValue = currentHighest;
+    if ((requiredTargetValue % 2) !== (totalNumericSum % 2)) {
+        requiredTargetValue++;
+    }
 
-  const parityDiscrepancy = totalParity ^ tripleGreatestParity;
+    const operationCount = (3 * requiredTargetValue - totalNumericSum) / 2;
 
-  const adjustedTripleGreatest = baseTripleOfGreatest + (parityDiscrepancy * 3);
+    console.log(operationCount);
+}
 
-  const finalOutcome = (adjustedTripleGreatest - aggregatedTotal) >> 1;
-
-  return finalOutcome;
-};
-
-const executeComputation = (inputData) => {
-  console.log(processNumericalSequence(inputData));
-};
-
-executeComputation(require("node:fs").readFileSync("/dev/stdin", "utf8"));
+processInputAndCalculate(require("fs").readFileSync("/dev/stdin", "utf8"));

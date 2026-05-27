@@ -1,45 +1,28 @@
-let entireInput = '';
+const buildPermutedString = (charArray, bitmask) => {
+    return charArray.reduceRight((accumulator, currentCharacter, index) => {
+        return (bitmask & (1 << index)) ? currentCharacter + accumulator : accumulator + currentCharacter;
+    }, '');
+};
 
-process.stdin.on('data', receivedChunk => {
-    entireInput += receivedChunk.toString();
-});
+const rawInputContent = String(require("fs").readFileSync(0));
+const parsedInputLines = rawInputContent.split('\n');
 
-process.stdin.on('end', () => {
-    const inputParts = entireInput.trim().split('\n');
-    const segmentLength = parseInt(inputParts[0], 10);
-    const fullSourceString = inputParts[1];
+const sequenceLength = Number(parsedInputLines[0]);
+const characterSequence = parsedInputLines[1];
 
-    const partOneCharacters = fullSourceString.substring(0, segmentLength).split('');
-    const partTwoCharacters = fullSourceString.substring(segmentLength, 2 * segmentLength).split('');
+const stringCountsMap = new Map();
+let finalMatchSum = 0;
 
-    const stringCounts = new Map();
-    let totalScore = 0;
+const firstPartCharacters = characterSequence.slice(0, sequenceLength).split('');
+for (let currentBitmask = 0; currentBitmask < (1 << sequenceLength); currentBitmask++) {
+    const constructedString = buildPermutedString(firstPartCharacters, currentBitmask);
+    stringCountsMap.set(constructedString, (stringCountsMap.get(constructedString) || 0) + 1);
+}
 
-    const generateAndStore = (currentPosition, currentAccumulation, sourceCharsArray, lengthBound, targetMap) => {
-        if (currentPosition === lengthBound) {
-            targetMap.set(currentAccumulation, (targetMap.get(currentAccumulation) || 0) + 1);
-            return;
-        }
+const secondPartCharacters = characterSequence.slice(sequenceLength, 2 * sequenceLength).split('');
+for (let currentBitmask = 0; currentBitmask < (1 << sequenceLength); currentBitmask++) {
+    const constructedString = buildPermutedString(secondPartCharacters, currentBitmask);
+    finalMatchSum += (stringCountsMap.get(constructedString) || 0);
+}
 
-        const nextCharacter = sourceCharsArray[currentPosition];
-        generateAndStore(currentPosition + 1, nextCharacter + currentAccumulation, sourceCharsArray, lengthBound, targetMap);
-        generateAndStore(currentPosition + 1, currentAccumulation + nextCharacter, sourceCharsArray, lengthBound, targetMap);
-    };
-
-    generateAndStore(0, '', partOneCharacters, segmentLength, stringCounts);
-
-    const generateAndMatch = (currentPosition, currentAccumulation, sourceCharsArray, lengthBound, referenceMap) => {
-        if (currentPosition === lengthBound) {
-            totalScore += (referenceMap.get(currentAccumulation) || 0);
-            return;
-        }
-
-        const nextCharacter = sourceCharsArray[currentPosition];
-        generateAndMatch(currentPosition + 1, nextCharacter + currentAccumulation, sourceCharsArray, lengthBound, referenceMap);
-        generateAndMatch(currentPosition + 1, currentAccumulation + nextCharacter, sourceCharsArray, lengthBound, referenceMap);
-    };
-
-    generateAndMatch(0, '', partTwoCharacters, segmentLength, stringCounts);
-
-    process.stdout.write(totalScore.toString() + '\n');
-});
+console.log(finalMatchSum);

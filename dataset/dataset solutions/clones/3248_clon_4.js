@@ -1,15 +1,10 @@
-const numberSequence = [2, 4, 2, 0, 2, 6];
-const newlineCharValue = 10;
-const asciiZeroOffset = 48;
+const initialValue = 2;
+const deltas = [2, -2, -2, 2, 4];
 
-const finalCharacterCodes = numberSequence.flatMap((currentDigit, currentIdx, fullArray) => {
-    const digitAscii = asciiZeroOffset + currentDigit;
-    if (currentIdx < fullArray.length - 1) {
-        return [digitAscii, newlineCharValue];
-    }
-    return [digitAscii];
-});
+const generatedNumbers = deltas.reduce((accumulator, currentDelta) => {
+  const lastNumber = accumulator[accumulator.length - 1];
+  accumulator.push(lastNumber + currentDelta);
+  return accumulator;
+}, [initialValue]);
 
-const ultimateContent = String.fromCharCode(...finalCharacterCodes);
-
-console.log(ultimateContent);
+console.log(generatedNumbers.join('\n'));

@@ -1,99 +1,97 @@
-const applicationSettings = {
-    sourcePath: '/dev/stdin',
-    lineDelimiter: '\n'
-};
+const appConfig = { input: '/dev/stdin', newline: '\n' };
 
-if (process.platform === 'win32') {
-    applicationSettings.lineDelimiter = '\r\n';
-    applicationSettings.sourcePath = 'input.txt';
+const fs = require('fs');
+const inputStream = fs.createReadStream(appConfig.input);
+
+let currentParsedNumber = 0;
+let isPreviousCharADigit = false;
+const parsedNumbers = [];
+
+const ASCII_ZERO = 0x30;
+const ASCII_NINE = 0x39;
+const ASCII_NEWLINE = 0x0a;
+
+function processInputByte(byteValue) {
+    if (byteValue >= ASCII_ZERO && byteValue <= ASCII_NINE) {
+        currentParsedNumber = (currentParsedNumber * 10) + (byteValue - ASCII_ZERO);
+        isPreviousCharADigit = true;
+    } else {
+        if (isPreviousCharADigit) {
+            parsedNumbers.push(currentParsedNumber);
+        }
+        currentParsedNumber = 0;
+        isPreviousCharADigit = false;
+    }
 }
 
-const ASCII_CODE_ZERO = 0x30;
-const ASCII_CODE_NINE = 0x39;
-const LINE_FEED_BYTE_CODE = 0x0a;
-const CARRIAGE_RETURN_BYTE_CODE = 0x0d;
+function swapArrayElements(arr, indexA, indexB) {
+    const tempVal = arr[indexA];
+    arr[indexA] = arr[indexB];
+    arr[indexB] = tempVal;
+}
 
-let currentNumericValue = 0;
-let isCurrentlyParsingNumber = false;
-let collectedNumbers = [];
-
-const dataInputPipe = require('fs').createReadStream(applicationSettings.sourcePath, { encoding: null });
-
-dataInputPipe.on('readable', function() {
-    let incomingDataChunk;
-
-    while ((incomingDataChunk = dataInputPipe.read()) !== null) {
-        if (incomingDataChunk.length === 0) {
-            continue;
-        }
-
-        for (let byteIdx = 0; byteIdx < incomingDataChunk.length; byteIdx++) {
-            const currentByte = incomingDataChunk[byteIdx];
-
-            if (currentByte >= ASCII_CODE_ZERO && currentByte <= ASCII_CODE_NINE) {
-                currentNumericValue = currentNumericValue * 10 + (currentByte - ASCII_CODE_ZERO);
-                isCurrentlyParsingNumber = true;
-            } else {
-                if (isCurrentlyParsingNumber) {
-                    collectedNumbers.push(currentNumericValue);
-                    currentNumericValue = 0;
-                    isCurrentlyParsingNumber = false;
-                }
-            }
-        }
-    }
-});
-
-dataInputPipe.on('end', function() {
-    if (isCurrentlyParsingNumber) {
-        collectedNumbers.push(currentNumericValue);
-    }
-
-    if (collectedNumbers.length === 0) {
-        console.warn("Input stream contained no parseable numbers. Exiting.");
+inputStream.on('readable', function() {
+    let readBuffer;
+    readBuffer = inputStream.read();
+    if (readBuffer === null) {
         return;
     }
 
-    const workingDataSetCopy = Array.from(collectedNumbers);
-
-    const totalInversionsFound = calculateInversionsAndSort(collectedNumbers, workingDataSetCopy, 0, collectedNumbers.length);
-    console.log(totalInversionsFound);
+    const MAX_BACK_SCAN_FOR_NEWLINE = 20;
+    let bufferIdx;
+    for (bufferIdx = Math.min(MAX_BACK_SCAN_FOR_NEWLINE, readBuffer.length - 1);
+         bufferIdx > 0 && readBuffer[bufferIdx - 1] !== ASCII_NEWLINE;
+         bufferIdx--) {
+        // This loop is intentionally empty; it's used to find the starting index for processing.
+    }
+    
+    for (; bufferIdx < readBuffer.length; bufferIdx++) {
+        processInputByte(readBuffer[bufferIdx]);
+    }
 });
 
-function calculateInversionsAndSort(mainDataStore, workingBuffer, segmentStartIdx, segmentEndIdx) {
-    if (segmentEndIdx - segmentStartIdx <= 1) {
+inputStream.on('end', function() {
+    if (isPreviousCharADigit) {
+        parsedNumbers.push(currentParsedNumber);
+    }
+    const auxiliaryForSorting = [].concat(parsedNumbers);
+    console.log(calculateInversions(parsedNumbers, auxiliaryForSorting, 0, parsedNumbers.length));
+});
+
+function calculateInversions(mainArray, auxiliaryArray, segmentStart, segmentEnd) {
+    let inversionCounter = 0;
+
+    if (segmentEnd - segmentStart <= 1) {
         return 0;
     }
 
-    if (segmentEndIdx - segmentStartIdx === 2) {
-        if (mainDataStore[segmentStartIdx] > mainDataStore[segmentStartIdx + 1]) {
-            [mainDataStore[segmentStartIdx], mainDataStore[segmentStartIdx + 1]] =
-            [mainDataStore[segmentStartIdx + 1], mainDataStore[segmentStartIdx]];
+    if (segmentEnd - segmentStart === 2) {
+        if (mainArray[segmentStart] > mainArray[segmentStart + 1]) {
+            swapArrayElements(mainArray, segmentStart, segmentStart + 1);
             return 1;
         }
         return 0;
     }
 
-    let totalInversions = 0;
-    const midpointIdx = Math.floor((segmentStartIdx + segmentEndIdx) / 2);
+    const segmentMid = Math.floor((segmentStart + segmentEnd) / 2);
+    inversionCounter += calculateInversions(auxiliaryArray, mainArray, segmentStart, segmentMid);
+    inversionCounter += calculateInversions(auxiliaryArray, mainArray, segmentMid, segmentEnd);
 
-    totalInversions += calculateInversionsAndSort(workingBuffer, mainDataStore, segmentStartIdx, midpointIdx);
-    totalInversions += calculateInversionsAndSort(workingBuffer, mainDataStore, midpointIdx, segmentEndIdx);
+    let leftPtr = segmentStart;
+    let rightPtr = segmentMid;
 
-    let leftPtr = segmentStartIdx;
-    let rightPtr = midpointIdx;
-
-    for (let mergeTargetIdx = segmentStartIdx; mergeTargetIdx < segmentEndIdx; mergeTargetIdx++) {
-        if (leftPtr === midpointIdx) {
-            mainDataStore[mergeTargetIdx] = workingBuffer[rightPtr++];
-        } else if (rightPtr === segmentEndIdx) {
-            mainDataStore[mergeTargetIdx] = workingBuffer[leftPtr++];
-        } else if (workingBuffer[leftPtr] < workingBuffer[rightPtr]) {
-            mainDataStore[mergeTargetIdx] = workingBuffer[leftPtr++];
+    for (let mergePtr = segmentStart; mergePtr < segmentEnd; mergePtr++) {
+        if (leftPtr === segmentMid) {
+            mainArray[mergePtr] = auxiliaryArray[rightPtr++];
+        } else if (rightPtr === segmentEnd) {
+            mainArray[mergePtr] = auxiliaryArray[leftPtr++];
+        } else if (auxiliaryArray[leftPtr] < auxiliaryArray[rightPtr]) {
+            mainArray[mergePtr] = auxiliaryArray[leftPtr++];
         } else {
-            mainDataStore[mergeTargetIdx] = workingBuffer[rightPtr++];
-            totalInversions += (midpointIdx - leftPtr);
+            mainArray[mergePtr] = auxiliaryArray[rightPtr++];
+            const remainingLeftElements = segmentMid - leftPtr;
+            inversionCounter += remainingLeftElements;
         }
     }
-    return totalInversions;
+    return inversionCounter;
 }

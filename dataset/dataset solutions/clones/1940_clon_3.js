@@ -1,40 +1,31 @@
-const safelyParseInteger = (inputStringSegment) => {
-    const numericalValue = parseInt(inputStringSegment, 10);
+const INPUT_DELIMITER_CHAR = " ";
+const NUMERIC_PARSE_RADIX = 10;
+const GREATER_MESSAGE = 'safe';
+const LESS_OR_EQUAL_MESSAGE = 'unsafe';
 
-    if (isNaN(numericalValue)) {
-        console.warn(`Warning: Input segment '${inputStringSegment}' is not a valid number. Defaulting to zero.`);
-        return 0;
-    }
-    return numericalValue;
-};
-
-const determineSystemStatus = (primaryCriterion, secondaryCriterion) => {
-    const STATUS_OPTIMAL_OPERATION = 'System Status: Optimal Operation';
-    const STATUS_ALERT_REQUIRED = 'System Status: Alert Required';
-
-    if (primaryCriterion > secondaryCriterion) {
-        return STATUS_OPTIMAL_OPERATION;
-    } else {
-        return STATUS_ALERT_REQUIRED;
-    }
-};
-
-function processUserInput(rawInputPayload) {
-    const inputTokens = rawInputPayload.trim().split(" ");
-
-    if (inputTokens.length < 2) {
-        console.error("Error: Insufficient numerical data provided. Expected at least two values for comparison.");
-        return;
-    }
-
-    const primaryValue = safelyParseInteger(inputTokens[0]);
-    const secondaryValue = safelyParseInteger(inputTokens[1]);
-
-    const isPrimaryValueDominant = primaryValue > secondaryValue;
-
-    const finalOperationalStatus = determineSystemStatus(primaryValue, secondaryValue);
-
-    console.log(`System Analysis Result: ${finalOperationalStatus}`);
+function extractAndParseInteger(sourceArray, index, radix) {
+    const stringValue = sourceArray[index];
+    return parseInt(stringValue, radix);
 }
 
-processUserInput(require("fs").readFileSync("/dev/stdin", "utf8"));
+function determineComparisonOutcome(valA, valB) {
+    const isAGreaterThanB = valA > valB;
+    if (isAGreaterThanB) {
+        return GREATER_MESSAGE;
+    } else {
+        return LESS_OR_EQUAL_MESSAGE;
+    }
+}
+
+function processInputData(rawInputString) {
+    const splitInputArray = rawInputString.split(INPUT_DELIMITER_CHAR);
+
+    const firstParsedValue = extractAndParseInteger(splitInputArray, 0, NUMERIC_PARSE_RADIX);
+    const secondParsedValue = extractAndParseInteger(splitInputArray, 1, NUMERIC_PARSE_RADIX);
+
+    const resultString = determineComparisonOutcome(firstParsedValue, secondParsedValue);
+
+    console.log(resultString);
+}
+
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

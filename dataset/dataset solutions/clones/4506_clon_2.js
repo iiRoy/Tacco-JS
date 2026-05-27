@@ -1,55 +1,66 @@
-'use strict' // Enforce a stricter parsing and error handling mode for the script.
+'use strict'; // Enforce strict mode for cleaner code practices
 
-function processSequence(  initialText  ) {
-  // Parse the raw input string, splitting it by newline characters,
-  // then converting each segment into an integer using bitwise NOT.
-  let   numericValues   =   initialText.split( '\n' ).map( parsedElement => ~~parsedElement ) ;
+/**
+ * Main function to process the input and determine the sequence outcome.
+ * It simulates navigating through a series of "buttons" based on their values.
+ *
+ * @param {string} rawData - The raw input string, typically from stdin.
+ */
+function processInput(rawData) {
+  // Parse the raw input string: split by newline and convert each part to an integer.
+  // The `~~` operator is a concise way to perform a floor operation on a number,
+  // effectively converting string representations of numbers to integers.
+  let parsedValues = rawData.split('\n').map(val => ~~val);
 
-  // The very first numeric value in the processed array defines the upper bound
-  // for the loop operations.
-  const   upperLimit   =   numericValues[0] ;
+  // The first element of the parsed input represents the total number of elements
+  // or the maximum number of steps allowed before considering it an infinite loop.
+  const totalElements = parsedValues[0];
 
-  // A separate immutable array is created to hold the sequence of index references.
-  // This array is a full copy of the numeric values.
-  const   indexReferences   =   numericValues.slice( 0, numericValues.length ) ;
+  // Create an array representing the sequence of "buttons" or jump instructions.
+  // This slice ensures we're working with the relevant part of the input.
+  const buttonSequence = parsedValues.slice(0, parsedValues.length);
 
-  // Initialize a variable to track the current position or pointer within the sequence.
-  let   currentPointer   =   1 ;
+  // Initialize the current position in the sequence.
+  // The problem typically starts at index 1.
+  let currentPosition = 1;
 
-  // Initialize a variable to temporarily store the next calculated position.
-  let   nextPointer   =   0 ;
+  // Variable to store the value of the next position to jump to.
+  let nextPosition = 0;
 
-  // Initialize a counter to keep track of the number of steps or operations performed.
-  let   operationSteps   =   1 ;
+  // Counter for the number of steps taken. Starts at 1 for the first "jump".
+  let stepCount = 1;
 
-  // Begin a loop that continues as long as the operation step count
-  // remains below the defined upper limit.
-  while (  operationSteps   <   upperLimit  ) {
-    // Determine the subsequent position by looking up the value
-    // at the 'currentPointer' in the 'indexReferences' array.
-    nextPointer   =   indexReferences[  currentPointer  ] ; // This value indicates the next jump.
+  // Loop through the sequence. The loop condition `stepCount < totalElements`
+  // acts as a safeguard to prevent infinite loops if the target (button '2')
+  // is never reached within the expected number of steps.
+  while (stepCount < totalElements) {
+    // Get the value at the `currentPosition`. This value indicates the index
+    // of the *next* button to press.
+    nextPosition = buttonSequence[currentPosition];
 
-    // Check if the determined next position is the specific target value (2).
-    if (  nextPointer   ===   2  ) {
-      // If the target is found, output the total number of operations
-      // taken to reach it and terminate the function.
-      console.log(  operationSteps  ) ;
-      return ; // Exit the function immediately.
+    // Check if the value at the `nextPosition` is '2'.
+    // Reaching '2' is the success condition for this problem.
+    if (nextPosition === 2) {
+      // If '2' is reached, print the total number of steps taken to reach it.
+      console.log(stepCount);
+      return; // Exit the function as the goal has been achieved.
     }
 
-    // If the target was not 2, update the 'currentPointer' to the 'nextPointer'
-    // to continue traversing the sequence.
-    currentPointer   =   nextPointer ;
+    // If '2' was not reached, update the `currentPosition` to the `nextPosition`
+    // indicated by the button value.
+    currentPosition = nextPosition;
 
-    // Increment the operation step counter for the next iteration of the loop.
-    operationSteps++ ;
+    // Increment the step counter for the current iteration.
+    stepCount++;
   }
 
-  // If the loop completes without encountering the target value (2),
-  // it signifies that the target was unreachable, so output -1.
-  console.log(  -1  ) ;
+  // If the loop completes without `nextPosition` ever being '2',
+  // it means the target was not reachable within the given constraints
+  // (or an infinite loop was detected by the `stepCount < totalElements` condition).
+  // In this case, print -1 to indicate failure or unreachability.
+  console.log(-1);
 }
 
-// Invoke the sequence processing function, feeding it data read from
-// the standard input stream, encoded as UTF-8.
-processSequence(  require( 'fs' ).readFileSync( '/dev/stdin', 'utf8' )  ) ;
+// Read the entire content of standard input synchronously,
+// decode it as UTF-8, and then pass it to the `processInput` function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

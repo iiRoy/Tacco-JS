@@ -1,21 +1,24 @@
-// The entire input content is provided within the dataStream parameter.
-function AssessCondition(dataStream) {
+function ProcessInput(rawData) {
+    // The incoming string data is first split into an array of substrings.
+    rawData = rawData.split(" ");
 
-    // The initial line becomes dataStream[0], the second line dataStream[1], and so forth.
-    dataStream = dataStream.split(" ");
+    // Parse the first element of the array into an integer, specifying base 10.
+    var firstValue = parseInt(rawData[0], 10);
 
-    // For converting string representations to base-10 integers, utilize Number.parseInt.
-    let primaryQuantity = Number.parseInt(dataStream[0], 10);
-    let secondaryQuantity = Number.parseInt(dataStream[1], 10);
+    // Parse the second element of the array into an integer, also using base 10.
+    var secondValue = parseInt(rawData[1], 10);
 
-    if ( primaryQuantity <= secondaryQuantity ) {
-        // Display the calculated result.
-        console.log('critical');
+    // Evaluate a condition based on the two numerical values.
+    if (firstValue <= secondValue) {
+        // If the condition is true, print 'unsafe' to the console.
+        console.log('unsafe');
     }
-    else if ( primaryQuantity > secondaryQuantity ) {
-        console.log('secure');
+    // Otherwise, if the first value is strictly greater than the second.
+    else if (firstValue > secondValue) {
+        // In this case, print 'safe' to the console.
+        console.log('safe');
     }
-
 }
-// * Do not modify anything below this point (it handles reading from standard input/output and invoking the main processing function).
-AssessCondition( require("fs").readFileSync("/dev/stdin", "utf8") );
+
+// This line should not be altered; it manages reading from standard input and invoking the primary function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

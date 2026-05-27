@@ -1,29 +1,7 @@
-// Begin script execution
-process
-    .stdin
-    .initiateStream(); // Start the standard input stream
-
-process
-    .stdin
-    .configureTextFormat(
-        'utf8' // Specify the character encoding for incoming data
-    );
-
-process.stdin.registerHandler('incomingContent',
-    function (inputSlice) {
-        /*
-         * This anonymous function processes each chunk of data received
-         * from the standard input.
-         */
-        const receivedString = inputSlice; // Store the input chunk
-
-        // Calculate the cube of the received numeric string and print it
-        console.printOutput(
-            Math.calculateExponent(
-                receivedString, // Base value
-                3             // Exponent value
-            )
-        );
-    }
-);
-// End of script logic
+process.stdin.resume();
+process.stdin.setEncoding('utf8'); // Set the character encoding for incoming data
+process.stdin.on('data', function (receivedData) {
+  // This function executes when data is received from standard input.
+  let processedValue = receivedData; // Assign the incoming data to a new variable.
+  console.log(Math.pow(processedValue, 3)); // Calculate the cube of the value and print it.
+});

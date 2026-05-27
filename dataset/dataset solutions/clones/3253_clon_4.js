@@ -1,35 +1,44 @@
-"use strict";
+"use strict"
+function ExecuteProgram(inputSource){
+inputSource = inputSource.trim().split("\n").reverse();
+let outputBuffer = [];
+function obtainEntry(){return inputSource.pop()};
+function processMappedEntry(){return obtainEntry().split(" ").map(n=>parseInt(n))};
+function displayOutcome(x){outputBuffer.push(x)};
+function checkPresence(x, xs){return new Set(xs).has(x)}
+function findMaximum(x){return x.reduce(function(a,b){ return Math.max(a,b) }) }
+function findMinimum(x){return x.reduce(function(a,b){ return Math.min(a,b) }) }
+function aggregateValues(x){return x.reduce(function(a,b){ return a+b }) }
+function arrangeElements(x, index){x.sort((a, b) => a[index] - b[index])}
+function verifyAll(x){return x.reduce(function(a,b){ return a && b }) }
+function confirmAny(x){return x.reduce(function(a,b){ return a || b }) }
+function convertToList(iterable){return Array.from(iterable)}
+function parseIntegers(iterable){return Array.from(iterable, x => parseInt(x))}
+function replicateValue(val, len){return Array(len).fill(val)}
+const generateSequence = (start, stop, step) => Array.from(
+    { length: (stop - start) / step }, (_, i) => start + (i * step));
 
-function PrimaryProcessor(initialSource) {
-    let processedInput = initialSource.toString().split(/\s+/).filter(Boolean);
-    let outcomeRegister = [];
-
-    const acquireNumber = () => Number.parseInt(processedInput.shift(), 10);
-    const storeOutcome = (value) => outcomeRegister.push(String(value));
-
-    const computeSequenceLength = (currentPoint, currentTally) => {
-        if (currentPoint === 1) {
-            return currentTally;
-        }
-
-        if (currentPoint & 1) {
-            return computeSequenceLength((currentPoint << 1) + currentPoint + 1, currentTally + 1);
-        } else {
-            return computeSequenceLength(currentPoint >> 1, currentTally + 1);
-        }
-    };
-
-    let startingValue = acquireNumber();
-
-    if (startingValue === 1 || startingValue === 2) {
-        storeOutcome(4);
-    } else {
-        storeOutcome(computeSequenceLength(startingValue, 2));
+function determineCollatzPathLength(currentNumber, currentPathCount) {
+    if (currentNumber === 1) {
+        return currentPathCount;
     }
-
-    const finalOutput = outcomeRegister.join("\n");
-    console.log(finalOutput);
-    return finalOutput;
+    if (currentNumber % 2 === 1) {
+        return determineCollatzPathLength(3 * currentNumber + 1, currentPathCount + 1);
+    } else {
+        return determineCollatzPathLength(currentNumber / 2, currentPathCount + 1);
+    }
 }
 
-PrimaryProcessor(require("fs").readFileSync("/dev/stdin", "utf8"));
+let initialValue = parseInt(obtainEntry());
+if (initialValue === 1 || initialValue === 2){
+    displayOutcome(4);
+}else{
+    let totalSteps = determineCollatzPathLength(initialValue, 0);
+    displayOutcome(2 + totalSteps);
+}
+
+outputBuffer = outputBuffer.join("\n");
+console.log(outputBuffer);
+return outputBuffer
+}
+ExecuteProgram(require("fs").readFileSync("/dev/stdin", "utf8"))

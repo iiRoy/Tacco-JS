@@ -1,22 +1,24 @@
-const rawData = require('node:fs').readFileSync('/dev/stdin', 'utf8');
+const inputSource = require('fs').readFileSync('/dev/stdin', 'utf8').trim();
+const sourceLines = inputSource.split("\n");
 
-const allInputSegments = rawData.split('\n').map(s => s.trim());
+const searchKey = sourceLines[0].trim().toLowerCase();
 
-const initialPhrase = allInputSegments[0].toLowerCase();
-const terminalMarker = 'END_OF_TEXT';
+const dataSegments = sourceLines.slice(1);
 
-const contentSegments = allInputSegments.slice(1);
-const endOfContentIndex = contentSegments.findIndex(seg => seg === terminalMarker);
+const terminationPoint = dataSegments.findIndex(segment => segment === 'END_OF_TEXT');
 
-const searchableContent = endOfContentIndex !== -1 ? contentSegments.slice(0, endOfContentIndex) : contentSegments;
+const processableSegments = terminationPoint === -1 ? dataSegments : dataSegments.slice(0, terminationPoint);
 
-const aggregatedText = searchableContent.join(' ').toLowerCase();
+const finalTally = processableSegments.reduce((accumulator, currentSegment) => {
+    const normalizedSegment = currentSegment.toLowerCase();
+    
+    const wordCandidates = normalizedSegment.trim().split(' ');
 
-const safePhrase = initialPhrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-const pattern = new RegExp(`\\b${safePhrase}\\b`, 'g');
+    const segmentOccurrences = wordCandidates.reduce((wordAccumulator, currentWord) => {
+        return wordAccumulator + (currentWord === searchKey ? 1 : 0);
+    }, 0);
 
-const matches = aggregatedText.match(pattern);
-
-const finalTally = matches ? matches.length : 0;
+    return accumulator + segmentOccurrences;
+}, 0);
 
 console.log(finalTally);

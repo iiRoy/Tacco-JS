@@ -1,95 +1,79 @@
-/*
- * This module contains routines for processing grid-like structures
- * and calculating specific patterns within them.
- */
-const calculateMatches = (
-  inputGrid,
-  gridHeight,
-  gridWidth,
-  targetCount,
-  enableLogging = 0
-) => {
-  /*
-   * Helper function to convert 2D coordinates (row, col)
-   * into a single 1D array index for efficient access.
-   */
-  const computePosition = (rowIdx, colIdx) => rowIdx * gridWidth + colIdx;
-  let finalTally = 0; // Initialize a counter for successful configurations
+const calculateCombinations = (inputGrid, gridHeight, gridWidth, targetCount, debugMode = 0) => {
+  // Utility function to convert 2D (row, column) coordinates to a 1D array index
+  const getFlatIndex = (rowIndex, colIndex) => rowIndex * gridWidth + colIndex;
+  let totalValidConfigurations = 0; // This variable will store the final count of valid configurations
 
-  // Iterate through all possible row selections (2^gridHeight combinations)
-  for (let rowCombinations = 0; rowCombinations < 2 ** gridHeight; rowCombinations++) {
-    // For each row selection, iterate through all possible column selections (2^gridWidth combinations)
-    for (let colCombinations = 0; colCombinations < 2 ** gridWidth; colCombinations++) {
-      // Begin counting black entries that survive the current row/column mask
-      let elementCounter = 0;
-      for (let r = 0; r < gridHeight; r++) {
-        for (let c = 0; c < gridWidth; c++) {
-          /*
-           * Check three conditions for a cell to be counted:
-           * 1. The cell at (r, c) in the original grid is 'black' (true).
-           * 2. The current row 'r' is selected in the rowCombinations mask.
-           * 3. The current column 'c' is selected in the colCombinations mask.
-           */
-          if (
-            inputGrid[computePosition(r, c)] &&
-            ((1 << r) & rowCombinations) &&
-            ((1 << c) & colCombinations)
-          ) {
-            elementCounter++; // Increment if all conditions are met
+  // Iterate through all possible combinations of rows to keep.
+  // There are 2^gridHeight possibilities, represented by a bitmask.
+  for (let rowMask = 0; rowMask < (1 << gridHeight); rowMask++) {
+    // For each row combination, iterate through all possible combinations of columns to keep.
+    // There are 2^gridWidth possibilities, also represented by a bitmask.
+    for (let colMask = 0; colMask < (1 << gridWidth); colMask++) {
+      // Initialize a counter for black cells that remain after applying the current row and column masks.
+      let currentBlackCellCount = 0;
+      // Iterate through each cell in the original grid.
+      for (let rowIndex = 0; rowIndex < gridHeight; rowIndex++) {
+        for (let colIndex = 0; colIndex < gridWidth; colIndex++) {
+          // Check three conditions for a cell to be counted:
+          // 1. The cell was originally a black cell (value is 1 in inputGrid).
+          // 2. The current row (rowIndex) is selected in the rowMask.
+          //    This is checked by `((1 << rowIndex) & rowMask)`.
+          // 3. The current column (colIndex) is selected in the colMask.
+          //    This is checked by `((1 << colIndex) & colMask)`.
+          if (inputGrid[getFlatIndex(rowIndex, colIndex)] && ((1 << rowIndex) & rowMask) && ((1 << colIndex) & colMask)) {
+            currentBlackCellCount++; // Increment the count if all conditions are met.
           }
         }
       }
 
-      // If the number of surviving black elements matches our target, increment the overall tally
-      if (elementCounter === targetCount) {
-        finalTally++;
+      // If the number of remaining black cells matches the targetCount (K),
+      // then this combination of row and column masks is a valid configuration.
+      if (currentBlackCellCount === targetCount) {
+        totalValidConfigurations++; // Increment the total count of valid configurations.
       }
     }
   }
-  return finalTally; // Return the total number of matching configurations
+  return totalValidConfigurations; // Return the final result.
 };
 
-/*
- * Main execution function to handle input/output and orchestrate the grid processing.
- */
-const executeProcessing = async (inputStream, outputStream) => {
-  const lineReaderModule = require('readline');
-  const asyncIterator = lineReaderModule.createInterface({ input: inputStream })[
-    Symbol.asyncIterator
-  ]();
-  const fetchLine = async () => (await asyncIterator.next()).value; // Function to get the next line from input
-  const fetchMultipleValues = async () => (await fetchLine()).split(' '); // Function to get space-separated values
+const processInputAndOutput = async (inputStream, outputStream) => {
+  // Import the 'readline' module to handle input stream asynchronously.
+  const rl = require('readline');
+  // Create an asynchronous iterator for reading lines from the input stream.
+  const lineIterator = rl.createInterface({ input: inputStream })[Symbol.asyncIterator]();
 
-  // Read the initial dimensions (height, width) and the target count
-  const [matrixHeight, matrixWidth, desiredQuantity] = (await fetchMultipleValues()).map(
-    parseInt
-  );
-  // Allocate memory for the grid data, storing boolean values as 0 or 1
-  const gridStorage = new Uint8Array(matrixHeight * matrixWidth);
-  // A local utility to map 2D coordinates to a 1D array index
-  const determineLinearIndex = (rIndex, cIndex) => rIndex * matrixWidth + cIndex;
+  // Helper function to fetch the next line from the input.
+  const fetchNextLine = async () => (await lineIterator.next()).value;
+  // Helper function to fetch a line and split it into space-separated tokens.
+  const fetchManyTokens = async () => (await fetchNextLine()).split(' ');
 
-  // Populate the grid storage based on input lines
-  for (let currentRow = 0; currentRow < matrixHeight; currentRow++) {
-    const inputLineContent = await fetchLine();
-    for (let currentColumn = 0; currentColumn < matrixWidth; currentColumn++) {
-      // Store true (1) if the character is '#', false (0) otherwise
-      gridStorage[determineLinearIndex(currentRow, currentColumn)] =
-        inputLineContent[currentColumn] === '#';
+  // Read the first line which contains the grid dimensions (H, W) and the target count (K).
+  const [gridHeightVal, gridWidthVal, targetBlackCount] = (await fetchManyTokens()).map(Number);
+
+  // Initialize a Uint8Array to store the grid data efficiently.
+  // '#' characters will be stored as 1, and '.' characters as 0.
+  const gridData = new Uint8Array(gridHeightVal * gridWidthVal);
+  // Define a local helper function for 2D to 1D index conversion, specific to this grid's width.
+  const getLinearIndex = (rowIdx, colIdx) => rowIdx * gridWidthVal + colIdx;
+
+  // Read the grid data row by row.
+  for (let rowIdx = 0; rowIdx < gridHeightVal; rowIdx++) {
+    const currentLine = await fetchNextLine(); // Get the string representation of the current row.
+    for (let colIdx = 0; colIdx < gridWidthVal; colIdx++) {
+      // Convert '#' to 1 (true) and any other character (implicitly '.') to 0 (false).
+      gridData[getLinearIndex(rowIdx, colIdx)] = currentLine[colIdx] === '#';
     }
   }
-  // Call the core logic function to get the final computed result
-  const computedOutcome = calculateMatches(
-    gridStorage,
-    matrixHeight,
-    matrixWidth,
-    desiredQuantity
-  );
-  // Write the computed result to the output stream, followed by a newline
-  outputStream.write(`${computedOutcome}\n`);
+
+  // Call the core logic function to calculate the number of valid combinations.
+  const finalOutcome = calculateCombinations(gridData, gridHeightVal, gridWidthVal, targetBlackCount);
+  // Write the computed result to the output stream, followed by a newline character.
+  outputStream.write(`${finalOutcome}\n`);
 };
 
-// Standard boilerplate to run the main function when the script is executed directly
+// This block ensures that the 'processInputAndOutput' function is called
+// only when the script is executed directly, not when it's imported as a module.
 if (require.main === module) {
-  executeProcessing(process.stdin, process.stdout);
+  // Execute the main processing function, using standard input and standard output streams.
+  processInputAndOutput(process.stdin, process.stdout);
 }

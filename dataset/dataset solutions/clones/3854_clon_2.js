@@ -1,82 +1,94 @@
 "use strict";
 
-var processGridData = function processGridData(rawDataString) {
-  var inputLines = rawDataString.split('\n');
-  var numRows = inputLines[0].split(' ')[0];
-  var numCols = inputLines[0].split(' ')[1];
+/*
+ * This module processes a grid of characters to determine if a specific condition is met.
+ * The condition involves checking adjacent cells for a particular character ('#').
+ */
+var processGridData = function processGridData(rawInputString) {
+  // Split the entire input string into individual lines.
+  var inputLines = rawInputString.split('\n');
+
+  // Extract grid dimensions (height and width) from the first line.
+  var gridDimensions = inputLines[0].split(' ');
+  var gridRows = gridDimensions[0]; // Number of rows in the grid
+  var gridCols = gridDimensions[1]; // Number of columns in the grid
+
+  // Initialize an array to store the grid's character data.
   var gridContent = [];
-  var gridIntegrityFlag = true;
+  // This flag will track the overall outcome of the grid analysis.
+  var overallSuccess = true;
 
-  // Parse the input lines to populate the grid content, skipping the dimensions line.
-  for (var rowPopulatorIndex = 1; rowPopulatorIndex < numRows; rowPopulatorIndex++) {
-    gridContent.push(inputLines[rowPopulatorIndex]);
+  // Populate the gridContent array with rows from the input, skipping the first line (dimensions).
+  for (var rowIdxPopulate = 1; rowIdxPopulate < gridRows; rowIdxPopulate++) {
+    gridContent.push(inputLines[rowIdxPopulate]);
   }
 
-  // Traverse each cell within the grid to assess its adjacent elements.
-  for (var currentGridRowIdx = 0; currentGridRowIdx < numRows; currentGridRowIdx++) {
-    var currentRowChars = gridContent[currentGridRowIdx].split('');
+  // Iterate through each cell of the grid to perform the adjacency check.
+  // The outer loop handles rows.
+  for (var currentRowIndex = 0; currentRowIndex < gridRows; currentRowIndex++) {
+    // Convert the current row string into an array of characters for easier access.
+    var currentGridRow = gridContent[currentRowIndex].split('');
 
-    // This variable is intentionally left undefined to mimic the likely bug
-    // where an undeclared variable 'flag' was checked in the original code.
-    var rowValidationStatus;
+    // The inner loop handles columns within the current row.
+    for (var currentColIndex = 0; currentColIndex < gridCols; currentColIndex++) {
+      // Flag to indicate if the current cell has an adjacent '#' character.
+      var hasAdjacentHash = false;
+      // Store the character of the current cell (declared but not used later).
+      var cellValue = currentGridRow[currentColIndex];
 
-    for (var currentGridColIdx = 0; currentGridColIdx < numCols; currentGridColIdx++) {
-      var cellHasSharpAdjacent = false; // Indicator for presence of '#' neighbor
-      var currentCellCharacter = currentRowChars[currentGridColIdx];
-
-      // Check the cell immediately to the left, if not at the leftmost boundary.
-      if (currentGridColIdx !== 0) {
-        if (currentRowChars[currentGridColIdx - 1] === '#') {
-          cellHasSharpAdjacent = true;
-          // The original 'break' statement here would only exit this specific 'if' block,
-          // not the column iteration loop, thus it's effectively a no-op.
+      // Check the cell to the left, if not at the leftmost edge.
+      if (currentColIndex !== 0) {
+        if (currentGridRow[currentColIndex - 1] === '#') {
+          hasAdjacentHash = true;
+          break; // Exit inner loop if an adjacent '#' is found.
         }
       }
 
-      // Check the cell immediately to the right, if not at the rightmost boundary.
-      if (currentGridColIdx < numCols - 1) {
-        if (currentRowChars[currentGridColIdx + 1] === '#') {
-          cellHasSharpAdjacent = true;
-          // The original 'break' statement here would only exit this specific 'if' block.
+      // Check the cell to the right, if not at the rightmost edge.
+      if (currentColIndex < gridCols - 1) {
+        if (currentGridRow[currentColIndex + 1] === '#') {
+          hasAdjacentHash = true;
+          break; // Exit inner loop if an adjacent '#' is found.
         }
       }
 
-      // Check the cell directly above, if not on the topmost row.
-      if (currentGridRowIdx !== 0) {
-        var previousRowCharacters = gridContent[currentGridRowIdx - 1].split('');
-        if (previousRowCharacters[currentGridColIdx] === '#') {
-          cellHasSharpAdjacent = true;
-          // The original 'break' statement here would only exit this specific 'if' block.
+      // Check the cell above, if not at the topmost row.
+      if (currentRowIndex !== 0) {
+        // Get the row above and split it into characters.
+        var aboveRowChars = gridContent[currentRowIndex - 1].split('');
+        if (aboveRowChars[currentColIndex] === '#') {
+          hasAdjacentHash = true;
+          break; // Exit inner loop if an adjacent '#' is found.
         }
       }
 
-      // Check the cell directly below, if not on the bottommost row.
-      if (currentGridRowIdx < numRows - 1) {
-        var nextRowCharacters = gridContent[currentGridRowIdx + 1].split('');
-        if (nextRowCharacters[currentGridColIdx] === '#') {
-          cellHasSharpAdjacent = true;
-          // The original 'break' statement here would only exit this specific 'if' block.
+      // Check the cell below, if not at the bottommost row.
+      if (currentRowIndex < gridRows - 1) {
+        // Get the row below and split it into characters.
+        var belowRowChars = gridContent[currentRowIndex + 1].split('');
+        if (belowRowChars[currentColIndex] === '#') {
+          hasAdjacentHash = true;
+          break; // Exit inner loop if an adjacent '#' is found.
         }
       }
-      // The 'cellHasSharpAdjacent' variable's final state for a given cell is not used
-      // to affect 'gridIntegrityFlag' within this inner loop, and is reset for the next cell.
-      // This accurately mirrors the original logic.
     }
 
-    // This condition will always evaluate to true as 'rowValidationStatus' remains undefined,
-    // thereby replicating the original code's behavior which would likely lead to an early "No" output
-    // due to an undeclared 'flag' variable in strict mode (if not for a ReferenceError).
-    if (!rowValidationStatus) {
-      gridIntegrityFlag = false;
+    // Note: The original code uses 'flag' which is undefined here.
+    // This results in '!flag' always evaluating to true, causing 'No' to be printed
+    // and the outer loop to break after the first row (if H >= 2).
+    // This behavior is preserved as per Type II cloning rules.
+    if (!flag) {
+      overallSuccess = false;
       console.log("No");
-      break; // Terminate the outer row iteration loop.
+      break; // Exit outer loop if the condition is not met for the current row.
     }
   }
 
-  // If the grid integrity flag remains true after all checks, then the condition is met.
-  if (gridIntegrityFlag) {
+  // If the overall success flag remains true after all checks, print "Yes".
+  if (overallSuccess) {
     console.log("Yes");
   }
 };
 
+// Read input from standard input and pass it to the processing function.
 processGridData(require('fs').readFileSync('/dev/stdin', 'utf-8'));

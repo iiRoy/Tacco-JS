@@ -1,87 +1,72 @@
-const getModule = require('fs'); // Obtain the file system module for I/O operations
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-// Read raw data from standard input, using UTF-8 encoding
-let rawContent = getModule.readFileSync('/dev/stdin', 'utf8');
+// Split the input into individual lines and remove any leading/trailing whitespace.
+var lineSegments = rawData.trim().split("\n");
 
-// Process the raw input: remove leading/trailing whitespace, then split into an array of lines
-const lineFragments = rawContent.trim().split("\n");
+// The first line is 'n', which is not used in the calculation, but consumed.
+var initialCount = lineSegments.shift() - 0;
 
-// The first numerical value on the first line represents the total number of items (unused in this specific logic)
-const totalElements = parseInt(lineFragments.shift(), 10);
+// The next line contains 'a' and 'd', representing the first term and common difference.
+var [firstTerm, commonDiff] = lineSegments.shift().split(" ").map(Number);
 
-// The next line contains two space-separated numbers: initial value 'startValue' and common difference 'commonDifference'
-const [startValue, commonDifference] = lineFragments.shift().split(" ").map(Number);
+// Initialize an object to store key-value mappings.
+var mappingStore = {};
 
-// Initialize an empty object to store key-value mappings for transformations
-let transformationMap = {};
+// The number of operations to perform.
+var operationCount = lineSegments.shift() - 0;
 
-// The next numerical value indicates the total count of operations to perform
-const operationCount = Number(lineFragments.shift());
+// Loop through each operation.
+for (var idx = 0; idx < operationCount; idx++) {
+    // Parse the current operation line into operation type and two keys.
+    var [opType, keyOne, keyTwo] = lineSegments.shift().split(" ");
 
-// Iterate through each operation based on 'operationCount'
-for (let opIndex = 0; opIndex < operationCount; opIndex++) {
-    // Each operation line contains three space-separated components: command type, first operand, second operand
-    const [commandType, operandA, operandB] = lineFragments.shift().split(" ");
-
-    // Check if the current command type is "1" (representing a specific type of mapping operation)
-    if (commandType === "1") {
-        // Scenario 1: Both operands are new (not yet in the map)
-        if (!transformationMap.hasOwnProperty(operandA) && !transformationMap.hasOwnProperty(operandB)) {
-            transformationMap[operandA] = operandB; // Map A to B
-            transformationMap[operandB] = operandA; // Map B to A (bidirectional link)
+    // Check the operation type.
+    if (opType === "1") {
+        // Type 1 operation: Swap or assign based on existence.
+        if (mappingStore.hasOwnProperty(keyOne) === false && mappingStore.hasOwnProperty(keyTwo) === false) {
+            // Neither key exists, establish a bidirectional mapping.
+            mappingStore[keyOne] = keyTwo;
+            mappingStore[keyTwo] = keyOne;
+        } else if (mappingStore.hasOwnProperty(keyOne) === true && mappingStore.hasOwnProperty(keyTwo) === false) {
+            // Only keyOne exists, keyTwo takes keyOne's value, keyOne gets keyTwo.
+            mappingStore[keyTwo] = mappingStore[keyOne];
+            mappingStore[keyOne] = keyTwo;
+        } else if (mappingStore.hasOwnProperty(keyOne) === false && mappingStore.hasOwnProperty(keyTwo) === true) {
+            // Only keyTwo exists, keyOne takes keyTwo's value, keyTwo gets keyOne.
+            mappingStore[keyOne] = mappingStore[keyTwo];
+            mappingStore[keyTwo] = keyOne;
+        } else {
+            // Both keys exist, swap their mapped values.
+            [mappingStore[keyOne], mappingStore[keyTwo]] = [mappingStore[keyTwo], mappingStore[keyOne]];
         }
-        // Scenario 2: Operand A exists, but Operand B is new
-        else if (transformationMap.hasOwnProperty(operandA) && !transformationMap.hasOwnProperty(operandB)) {
-            transformationMap[operandB] = transformationMap[operandA]; // B gets A's current mapping
-            transformationMap[operandA] = operandB; // A now maps to B
-        }
-        // Scenario 3: Operand A is new, but Operand B exists
-        else if (!transformationMap.hasOwnProperty(operandA) && transformationMap.hasOwnProperty(operandB)) {
-            transformationMap[operandA] = transformationMap[operandB]; // A gets B's current mapping
-            transformationMap[operandB] = operandA; // B now maps to A
-        }
-        // Scenario 4: Both operands already exist in the map
-        else {
-            // Swap their mapped values
-            let tempVal = transformationMap[operandA];
-            transformationMap[operandA] = transformationMap[operandB];
-            transformationMap[operandB] = tempVal;
-        }
-    }
-    // If the command type is not "1" (representing another type of mapping operation)
-    else {
-        // Scenario 1: Both operands are new
-        if (!transformationMap.hasOwnProperty(operandA) && !transformationMap.hasOwnProperty(operandB)) {
-            transformationMap[operandA] = operandB; // A maps to B
-        }
-        // Scenario 2: Operand A exists, B is new
-        else if (transformationMap.hasOwnProperty(operandA) && !transformationMap.hasOwnProperty(operandB)) {
-            transformationMap[operandA] = operandB; // A's mapping is updated to B
-        }
-        // Scenario 3: Operand A is new, B exists
-        else if (!transformationMap.hasOwnProperty(operandA) && transformationMap.hasOwnProperty(operandB)) {
-            transformationMap[operandA] = transformationMap[operandB]; // A maps to B's current mapping
-        }
-        // Scenario 4: Both operands already exist
-        else {
-            transformationMap[operandA] = transformationMap[operandB]; // A's mapping is updated to B's current mapping
+    } else {
+        // Type 2 operation: Assign based on existence.
+        if (mappingStore.hasOwnProperty(keyOne) === false && mappingStore.hasOwnProperty(keyTwo) === false) {
+            // Neither key exists, assign keyTwo to keyOne.
+            mappingStore[keyOne] = keyTwo;
+        } else if (mappingStore.hasOwnProperty(keyOne) === true && mappingStore.hasOwnProperty(keyTwo) === false) {
+            // Only keyOne exists, assign keyTwo to keyOne.
+            mappingStore[keyOne] = keyTwo;
+        } else if (mappingStore.hasOwnProperty(keyOne) === false && mappingStore.hasOwnProperty(keyTwo) === true) {
+            // Only keyTwo exists, assign keyTwo's value to keyOne.
+            mappingStore[keyOne] = mappingStore[keyTwo];
+        } else {
+            // Both keys exist, assign keyTwo's value to keyOne.
+            mappingStore[keyOne] = mappingStore[keyTwo];
         }
     }
 }
 
-// The final line contains a key to look up in the transformation map
-let finalKey = lineFragments.shift();
+// Get the final key from the remaining input lines.
+var finalKey = lineSegments.shift();
 
-// If the finalKey exists in the transformation map, update it to its mapped value
-if (transformationMap.hasOwnProperty(finalKey)) {
-    finalKey = transformationMap[finalKey];
+// If the final key exists in the mapping store, update it with its mapped value.
+if (mappingStore.hasOwnProperty(finalKey)) {
+    finalKey = mappingStore[finalKey];
 }
 
-// Convert the potentially transformed finalKey to a number
-const numericFinalKey = Number(finalKey);
+// Convert the final key to a number.
+finalKey = finalKey - 0;
 
-// Calculate the arithmetic progression value: initial value + ( (key - 1) * common difference )
-let computedResult = startValue + ((numericFinalKey - 1) * commonDifference);
-
-// Output the final calculated result to the console
-console.log(computedResult);
+// Calculate and print the result using the arithmetic progression formula: a + (k-1)*d.
+console.log(firstTerm + ((finalKey - 1) * commonDiff));

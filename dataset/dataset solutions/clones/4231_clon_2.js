@@ -1,58 +1,55 @@
-'use strict'; // Ensures strict parsing and error handling for the entire script.
+'use strict';
 
-// This commented-out section shows a potential helper function.
-// It's designed to transform a single character (e.g., 'A' through 'F')
-// into its corresponding numerical value (10 through 15),
-// typically for hexadecimal conversions.
+// This section contains a commented-out helper function,
+// which is not used in the main logic of this script.
 /*
-const charToDecimal = (inputChar) => {
-    if (inputChar === 'A') return 10;
-    if (inputChar === 'B') return 11;
-    if (inputChar === 'C') return 12;
-    if (inputChar === 'D') return 13;
-    if (inputChar === 'E') return 14;
-    if (inputChar === 'F') return 15;
+const convertCharToNum = (charStr) => {
+    // A simple mapping for hexadecimal-like characters to decimal values.
+    // This function is currently unused in the active code path.
+    switch (charStr) {
+        case 'A': return 10;
+        case 'B': return 11;
+        case 'C': return 12;
+        case 'D': return 13;
+        case 'E': return 14;
+        case 'F': return 15;
+        default: return parseInt(charStr, 10); // Fallback for numeric strings
+    }
 };
 */
 
 /**
- * The primary execution routine that processes and compares two numerical tokens.
+ * Processes the given input string to compare two values.
+ * It expects the input to be a string where the first line
+ * contains two space-separated values.
  *
- * @param {string} sourcePayload - The complete string data received for processing.
+ * @param {string} rawData The raw input string, typically from a file.
  */
-const processAndCompare = (sourcePayload) => {
+const processInputData = (rawData) => {
+    // Split the input by newline characters to get lines, then take the first line.
+    // Further split the first line by space to get individual string values.
+    const firstLineParts = rawData.split('\n')[0].split(' ');
 
-    // Extract the very first line from the entire payload.
-    // The `split` method divides the string by newline characters,
-    // and `[0]` selects the initial segment.
-    const firstLineSegment = sourcePayload.split('\n')[0];
+    // Extract the first value from the parsed parts.
+    let valueA = firstLineParts[0];
 
-    // From the `firstLineSegment`, isolate the first value.
-    // `split(' ')` divides the line by space characters,
-    // and `[0]` retrieves the leading token.
-    let firstValue = firstLineSegment.split(' ')[0];
+    // Extract the second value from the parsed parts.
+    let valueB = firstLineParts[1];
 
-    // Similarly, obtain the second value from the `firstLineSegment`.
-    // `[1]` targets the subsequent token after the space.
-    let secondValue = firstLineSegment.split(' ')[1];
-
-    // Conduct a comparison between the two extracted values.
-    if (firstValue === secondValue) {
-        // If both values are strictly identical, output an equality symbol.
+    // Perform a string comparison between the two extracted values.
+    // The comparison determines which value is lexicographically greater or if they are equal.
+    if (valueA === valueB) {
+        // If both values are strictly equal, print '='.
         console.log('=');
-    } else if (firstValue > secondValue) {
-        // If the first value is numerically larger than the second, output a 'greater than' symbol.
+    } else if (valueA > valueB) {
+        // If the first value is lexicographically greater, print '>'.
         console.log('>');
     } else {
-        // In all other cases (i.e., firstValue is less than secondValue), output a 'less than' symbol.
+        // Otherwise (if the first value is lexicographically smaller), print '<'.
         console.log('<');
     }
+};
 
-}; // Concludes the definition of the 'processAndCompare' function.
-
-
-// Invoke the main processing function.
-// This involves using the Node.js 'fs' (file system) module
-// to synchronously read the content of the standard input stream ('/dev/stdin').
-// The data is expected to be encoded in 'utf8' format.
-processAndCompare(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// Execute the main processing function by reading input from standard input.
+// The 'utf-8' encoding is specified for reading the file content.
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf-8'));

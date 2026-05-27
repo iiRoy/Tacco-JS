@@ -1,49 +1,51 @@
-const sysConfig = { sourcePath: '/dev/stdin', eolChar: '\n' };
-const generationDepth = Number(require('node:fs').readFileSync(sysConfig.sourcePath, 'ascii').trim());
+const inputConfiguration = { source: '/dev/stdin', lineDelimiter: '\n' };
 
-const APEX_FACTOR = Math.sqrt(3) / 6;
+const iterationCount = Number(require('fs').readFileSync(inputConfiguration.source, 'ascii').trim());
 
-class Coordinate {
-    constructor(xVal, yVal) {
-        this.x = xVal;
-        this.y = yVal;
-    }
+const ROTATION_FACTOR = Math.sqrt(3) / 6;
+
+const addCoordinates = (coordA, coordB) => [coordA[0] + coordB[0], coordA[1] + coordB[1]];
+const subtractCoordinates = (coordA, coordB) => [coordA[0] - coordB[0], coordA[1] - coordB[1]];
+const scaleCoordinates = (coord, scalar) => [coord[0] * scalar, coord[1] * scalar];
+const rotateVector90CCW = (vec) => [-vec[1], vec[0]];
+
+function generateKochSubdivision(startCoord, endCoord) {
+  const oneThird = 1 / 3;
+  const twoThirds = 2 / 3;
+  const half = 0.5;
+
+  const segmentVector = subtractCoordinates(endCoord, startCoord);
+
+  const pointS = addCoordinates(startCoord, scaleCoordinates(segmentVector, oneThird));
+  const pointT = addCoordinates(startCoord, scaleCoordinates(segmentVector, twoThirds));
+
+  const segmentMidpoint = addCoordinates(startCoord, scaleCoordinates(segmentVector, half));
+  const vectorFromStartToEnd = subtractCoordinates(startCoord, endCoord);
+  const rotatedVector = rotateVector90CCW(vectorFromStartToEnd);
+  const pointU = addCoordinates(segmentMidpoint, scaleCoordinates(rotatedVector, ROTATION_FACTOR));
+
+  return [startCoord, pointS, pointU, pointT];
 }
 
-function transformSegment(initialPoint, terminalPoint) {
-    const subPoint1 = new Coordinate(
-        (2 * initialPoint.x + terminalPoint.x) / 3,
-        (2 * initialPoint.y + terminalPoint.y) / 3
-    );
-    const subPoint2 = new Coordinate(
-        (initialPoint.x + 2 * terminalPoint.x) / 3,
-        (initialPoint.y + 2 * terminalPoint.y) / 3
-    );
-    const midX = (initialPoint.x + terminalPoint.x) / 2;
-    const midY = (initialPoint.y + terminalPoint.y) / 2;
-    const apexX = midX + APEX_FACTOR * (initialPoint.y - terminalPoint.y);
-    const apexY = midY + APEX_FACTOR * (terminalPoint.x - initialPoint.x);
-    const apexPoint = new Coordinate(apexX, apexY);
+function applyKochTransformation(currentCurveSegments, remainingSteps) {
+  if (remainingSteps === 0) {
+    return currentCurveSegments;
+  }
 
-    return [initialPoint, subPoint1, apexPoint, subPoint2];
+  const nextGenerationSegments = currentCurveSegments.slice(0, -1).flatMap((segmentStart, index) => {
+    const segmentEnd = currentCurveSegments[index + 1];
+    return generateKochSubdivision(segmentStart, segmentEnd);
+  });
+
+  const finalPointsForThisStep = nextGenerationSegments.concat([currentCurveSegments[currentCurveSegments.length - 1]]);
+
+  return applyKochTransformation(finalPointsForThisStep, remainingSteps - 1);
 }
 
-const applyTransformationStep = (currentVertices) => {
-    const processedSegments = currentVertices.slice(0, currentVertices.length - 1)
-        .flatMap((startPt, index) => {
-            const endPt = currentVertices[index + 1];
-            return transformSegment(startPt, endPt);
-        });
-    processedSegments.push(currentVertices[currentVertices.length - 1]);
-    return processedSegments;
-};
+const initialCurvePoints = [[0, 0], [100, 0]];
 
-const initialVertices = [new Coordinate(0, 0), new Coordinate(100, 0)];
+const finalCurvePoints = applyKochTransformation(initialCurvePoints, iterationCount);
 
-const finalVertices = Array.from({ length: generationDepth }).reduce((pathAccumulator) => {
-    return applyTransformationStep(pathAccumulator);
-}, initialVertices);
-
-finalVertices.forEach(pt => {
-    console.log(`${pt.x} ${pt.y}`);
+finalCurvePoints.forEach(coordPair => {
+  console.log(coordPair.join(' '));
 });

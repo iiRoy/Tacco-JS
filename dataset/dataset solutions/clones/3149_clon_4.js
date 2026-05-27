@@ -1,12 +1,15 @@
-const processStream = (incomingData) => {
-    const initialRawInput = incomingData.trim();
-    const primaryLine = initialRawInput.split('\n')[0];
-    const tokenExtraction = primaryLine.match(/^\s*(\S*)/);
-    const designatedSymbol = (tokenExtraction && tokenExtraction[1]) || '';
+const executeProgram = sourceText => {
+    const parsedLines = sourceText.trim().split('\n');
+    
+    const initialIdentifier = parsedLines[0].split(" ")[0];
 
-    const finalOutcome = +(designatedSymbol == 0);
+    const decisionMatrix = {
+        "0": 1
+    };
+    
+    const computedResult = decisionMatrix[initialIdentifier] || 0;
 
-    console.log(finalOutcome);
+    console.log(computedResult);
 };
 
-processStream(require('node:fs').readFileSync(0, 'utf8'));
+executeProgram(require("fs").readFileSync("/dev/stdin", "utf8"));

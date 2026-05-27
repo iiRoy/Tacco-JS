@@ -1,52 +1,22 @@
-const nativeFsModule = require('fs');
+const fileSystemModule = require('fs');
+const standardInputPath = '/dev/stdin';
+const utf8Encoding = 'utf8';
 
-const stdinFileLocation = '/dev/stdin';
+const rawInputData = fileSystemModule.readFileSync(standardInputPath, utf8Encoding);
 
-const numberDelimiter = ' ';
+const trimmedInputContent = rawInputData.trim();
+const lineDelimiter = "\n";
+const inputLinesCollection = trimmedInputContent.split(lineDelimiter);
 
-const convertStringToNumber = (strValue) => {
-    const numericRepresentation = Number(strValue);
-    return numericRepresentation;
-};
+const dataLineIndex = 1;
+const targetDataLine = inputLinesCollection[dataLineIndex];
+const elementDelimiter = " ";
+const stringElements = targetDataLine.split(elementDelimiter);
 
-let rawInputContent;
-try {
-    rawInputContent = nativeFsModule.readFileSync(stdinFileLocation, { encoding: 'utf8' });
-} catch (errorReadingFile) {
-    console.error("Error encountered while attempting to read input:", errorReadingFile.message);
-    process.exit(1);
-}
+const numericAscendingComparator = (firstElement, secondElement) => firstElement - secondElement;
 
-const parsedInputLines = rawInputContent.trim().split('\n');
+const numericValuesArray = stringElements.map(strVal => Number(strVal));
+numericValuesArray.sort(numericAscendingComparator);
 
-if (parsedInputLines.length < 2) {
-    console.error("Insufficient input provided. Expected at least two lines of data.");
-    process.exit(1);
-}
-
-const numericDataString = parsedInputLines[1];
-
-if (!numericDataString || numericDataString.trim() === '') {
-    console.log("");
-    process.exit(0);
-}
-
-const numberStringTokens = numericDataString.split(numberDelimiter);
-
-let processedNumbers = [];
-
-for (const tokenFragment of numberStringTokens) {
-    const trimmedToken = tokenFragment.trim();
-    if (trimmedToken !== '') {
-        const convertedValue = convertStringToNumber(trimmedToken);
-        if (!isNaN(convertedValue)) {
-            processedNumbers.push(convertedValue);
-        }
-    }
-}
-
-processedNumbers.sort((firstNum, secondNum) => firstNum - secondNum);
-
-const finalOutputString = processedNumbers.join(numberDelimiter);
-
-console.log(finalOutputString);
+const outputElementSeparator = " ";
+console.log(numericValuesArray.join(outputElementSeparator));

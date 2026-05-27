@@ -1,166 +1,122 @@
-const processGraphData = (rawDataLines) => {
-    // Define a constant for an extremely small negative number.
-    // This value represents an unreachable node or an infinitely small path length
-    // in the context of finding the *longest* path.
-    const UNREACHABLE_NODE_MARKER = Number.MIN_SAFE_INTEGER;
+function main(inputData) {
+    const UNREACHABLE_DISTANCE_VALUE = -100000000000000;
+    const START_NODE_INDEX = 0;
+    const NODE_ID_OFFSET = 1;
 
-    // A utility function to parse a line of space-separated numeric values into an array of numbers.
-    const parseNumericLine = (lineContent) => {
-        return lineContent.split(" ").map(Number);
-    };
+    let nodeCount, edgeCount;
+    let lineParts;
+    let sourceNodeIndex, destinationNodeIndex, edgeWeight;
+    let graphAdjacencyList;
+    let maxPathDistances;
+    let currentNodeIter, currentEdgeIter, bellmanFordPass;
+    let lastRelaxedNodeIdentifier; // This variable corresponds to 't' in the original code.
+    let positiveCycleDetected;
 
-    // --- Initial Input Processing ---
-    // The first line of input typically contains the total number of vertices (N) and edges (M).
-    const [numVertices, numEdges] = parseNumericLine(rawDataLines[0]);
+    // Helper function to parse a line of space-separated numbers
+    const parseNumericLine = (lineString) => lineString.split(" ").map(Number);
 
-    // Basic validation for the graph dimensions. While competitive programming inputs
-    // are usually guaranteed valid, this demonstrates a Type III addition.
-    if (numVertices <= 0 || numEdges < 0) {
-        console.error("Input error: Number of vertices must be positive, and number of edges non-negative.");
-        return;
+    // Parse graph dimensions from the first line of input
+    lineParts = parseNumericLine(inputData[0]);
+    nodeCount = lineParts[0];
+    edgeCount = lineParts[1];
+
+    // Initialize adjacency list for the graph and distance array
+    graphAdjacencyList = Array.from({ length: nodeCount }, () => []);
+    maxPathDistances = Array(nodeCount).fill(UNREACHABLE_DISTANCE_VALUE);
+    
+    // Set the distance to the starting node (node 0) as 0
+    maxPathDistances[START_NODE_INDEX] = 0;
+
+    // Read and populate graph edges from input
+    for (currentEdgeIter = 0; currentEdgeIter < edgeCount; currentEdgeIter++) {
+        const edgeDetails = parseNumericLine(inputData[NODE_ID_OFFSET + currentEdgeIter]);
+        sourceNodeIndex = edgeDetails[0] - NODE_ID_OFFSET; // Adjust to 0-indexed
+        destinationNodeIndex = edgeDetails[1] - NODE_ID_OFFSET; // Adjust to 0-indexed
+        edgeWeight = edgeDetails[2];
+        graphAdjacencyList[sourceNodeIndex].push([destinationNodeIndex, edgeWeight]);
     }
 
-    // --- Graph Structure and Path Lengths Initialization ---
-    // Initialize the adjacency list for the directed graph.
-    // Each element `adjacencyList[i]` will be an array of `[targetVertex, edgeWeight]` pairs
-    // representing edges originating from vertex `i`.
-    const adjacencyList = Array.from({ length: numVertices }, () => []);
-
-    // Initialize an array to store the maximum path lengths from the source vertex (vertex 0).
-    // All path lengths are initially set to `UNREACHABLE_NODE_MARKER`, indicating no path found yet.
-    const maxPathLengths = Array.from({ length: numVertices }, () => UNREACHABLE_NODE_MARKER);
-
-    // The path length from the source vertex (vertex 0) to itself is 0.
-    maxPathLengths[0] = 0;
-
-    // --- Populate Graph Edges ---
-    // Iterate through the subsequent input lines to add edges to the graph.
-    // Each line describes an edge: `startNode endNode edgeWeight`.
-    for (let edgeIndex = 0; edgeIndex < numEdges; edgeIndex++) {
-        const edgeDetails = parseNumericLine(rawDataLines[1 + edgeIndex]);
-        // Convert 1-indexed input to 0-indexed for array access.
-        const startNode = edgeDetails[0] - 1;
-        const endNode = edgeDetails[1] - 1;
-        const edgeWeight = edgeDetails[2];
-
-        // Add the edge to the adjacency list.
-        adjacencyList[startNode].push([endNode, edgeWeight]);
+    // First phase of Bellman-Ford: Calculate longest paths
+    // The outer loop runs 'nodeCount' times, and the inner loop 'nodeCount - 1' times.
+    // This is an over-iteration compared to standard Bellman-Ford (N-1 passes), but matches original behavior.
+    for (bellmanFordPass = 0; bellmanFordPass < nodeCount; bellmanFordPass++) {
+        for (currentNodeIter = 0; currentNodeIter < nodeCount - 1; currentNodeIter++) {
+            const currentSourceDistance = maxPathDistances[currentNodeIter];
+            
+            // Skip if the current node is unreachable
+            if (currentSourceDistance === UNREACHABLE_DISTANCE_VALUE) {
+                continue;
+            }
+            
+            // Iterate over all outgoing edges from the current node
+            for (currentEdgeIter = 0; currentEdgeIter < graphAdjacencyList[currentNodeIter].length; currentEdgeIter++) {
+                const currentEdge = graphAdjacencyList[currentNodeIter][currentEdgeIter];
+                const targetNode = currentEdge[0];
+                const weight = currentEdge[1];
+                
+                const potentialNewDistance = currentSourceDistance + weight;
+                
+                // Relax the edge: update distance if a longer path is found
+                if (maxPathDistances[targetNode] < potentialNewDistance) {
+                    maxPathDistances[targetNode] = potentialNewDistance;
+                }
+            }
+        }
     }
 
-    // --- Bellman-Ford Algorithm: Core Path Relaxation (N-1 Iterations) ---
-    // Perform `numVertices - 1` iterations. In each iteration, we attempt to relax all edges.
-    // After `N-1` iterations, if no positive cycles are present, `maxPathLengths` will
-    // contain the longest path from the source to all reachable nodes.
-    for (let iterationCount = 0; iterationCount < numVertices - 1; iterationCount++) {
-        // Iterate over all possible source vertices in the graph.
-        for (let currentSourceVertex = 0; currentSourceVertex < numVertices; currentSourceVertex++) {
-            // If the current source vertex is unreachable, it cannot extend any paths.
-            if (maxPathLengths[currentSourceVertex] === UNREACHABLE_NODE_MARKER) {
+    // Second phase of Bellman-Ford: Detect positive cycles
+    // The outer loop runs 'nodeCount' times, and the inner loop 'nodeCount' times.
+    positiveCycleDetected = false;
+    for (bellmanFordPass = 0; bellmanFordPass < nodeCount; bellmanFordPass++) {
+        for (currentNodeIter = 0; currentNodeIter < nodeCount; currentNodeIter++) {
+            // This condition preserves the original code's behavior where 't' (now 'lastRelaxedNodeIdentifier')
+            // is used before being assigned in the current 'currentNodeIter' loop.
+            // It retains its value from the last edge processed in the previous 'currentNodeIter' iteration,
+            // or is undefined for the very first iteration of the outer 'bellmanFordPass' loop.
+            // If 'lastRelaxedNodeIdentifier' is undefined, maxPathDistances[undefined] is undefined,
+            // which is not equal to UNREACHABLE_DISTANCE_VALUE, so the 'continue' is not triggered.
+            if (maxPathDistances[lastRelaxedNodeIdentifier] === UNREACHABLE_DISTANCE_VALUE) {
                 continue;
             }
 
-            // Iterate through all outgoing edges from the `currentSourceVertex`.
-            for (const [targetVertex, weightValue] of adjacencyList[currentSourceVertex]) {
-                const potentialNewPathLength = maxPathLengths[currentSourceVertex] + weightValue;
+            const currentSourceDistance = maxPathDistances[currentNodeIter];
+            
+            // Iterate over all outgoing edges from the current node
+            for (currentEdgeIter = 0; currentEdgeIter < graphAdjacencyList[currentNodeIter].length; currentEdgeIter++) {
+                const currentEdge = graphAdjacencyList[currentNodeIter][currentEdgeIter];
+                const targetNode = currentEdge[0];
+                const weight = currentEdge[1];
+                
+                // Assign 'lastRelaxedNodeIdentifier' to mimic the original 't' variable's assignment
+                lastRelaxedNodeIdentifier = targetNode; 
 
-                // If a longer path to the `targetVertex` is discovered, update its path length.
-                if (maxPathLengths[targetVertex] < potentialNewPathLength) {
-                    maxPathLengths[targetVertex] = potentialNewPathLength;
-                }
-            }
-        }
-    }
-
-    // --- Bellman-Ford Algorithm: Positive Cycle Detection (N-th Iteration) ---
-    // After the `N-1` path relaxation iterations, perform one additional iteration.
-    // If any path length can still be improved in this N-th pass, it signifies
-    // the existence of at least one positive cycle in the graph.
-    let anyPathImprovedInCycleCheck = false;
-    // This array tracks which nodes are part of, or reachable from, a positive cycle.
-    const nodesAffectedByPositiveCycle = Array(numVertices).fill(false);
-
-    // Iterate through all vertices and their edges one last time.
-    for (let currentSourceVertex = 0; currentSourceVertex < numVertices; currentSourceVertex++) {
-        // Only consider reachable source vertices.
-        if (maxPathLengths[currentSourceVertex] === UNREACHABLE_NODE_MARKER) {
-            continue;
-        }
-
-        for (const [targetVertex, weightValue] of adjacencyList[currentSourceVertex]) {
-            const potentialNewPathLength = maxPathLengths[currentSourceVertex] + weightValue;
-
-            // If a path can still be improved, it means a positive cycle is involved.
-            if (maxPathLengths[targetVertex] < potentialNewPathLength) {
-                // Update the path length to reflect the infinite growth (though it won't be truly infinite).
-                maxPathLengths[targetVertex] = potentialNewPathLength;
-                anyPathImprovedInCycleCheck = true; // Mark that a cycle was detected.
-                nodesAffectedByPositiveCycle[targetVertex] = true; // Mark this node as affected.
-            }
-        }
-    }
-
-    // --- Propagate Positive Cycle Influence (Type III Addition) ---
-    // If a positive cycle was detected, we need to determine all nodes whose longest paths
-    // can become infinitely large because they are part of, or reachable from, such a cycle.
-    if (anyPathImprovedInCycleCheck) {
-        // Perform additional iterations to ensure the "positive infinity" effect propagates
-        // to all reachable nodes from any node identified as being in a cycle.
-        // Running `numVertices` more iterations ensures full propagation.
-        for (let propagationIteration = 0; propagationIteration < numVertices; propagationIteration++) {
-            for (let currentSourceVertex = 0; currentSourceVertex < numVertices; currentSourceVertex++) {
-                // Only consider source vertices that are either currently reachable or already marked as affected by a cycle.
-                if (maxPathLengths[currentSourceVertex] === UNREACHABLE_NODE_MARKER && !nodesAffectedByPositiveCycle[currentSourceVertex]) {
-                    continue;
-                }
-
-                for (const [targetVertex, weightValue] of adjacencyList[currentSourceVertex]) {
-                    const potentialNewPathLength = maxPathLengths[currentSourceVertex] + weightValue;
-
-                    // If the target node's path can still be improved, or if its source is already affected by a cycle,
-                    // then the target node also becomes affected.
-                    if (maxPathLengths[targetVertex] < potentialNewPathLength || nodesAffectedByPositiveCycle[currentSourceVertex]) {
-                        nodesAffectedByPositiveCycle[targetVertex] = true;
-                        // Continue updating distance to reflect the 'growing' path, or simply rely on the boolean flag.
-                        maxPathLengths[targetVertex] = potentialNewPathLength;
+                const potentialNewDistance = currentSourceDistance + weight;
+                
+                // If a distance can still be improved, it indicates a positive cycle
+                if (maxPathDistances[targetNode] < potentialNewDistance) {
+                    maxPathDistances[targetNode] = potentialNewDistance;
+                    
+                    // The original code specifically checks if the relaxation happens for the last node (n-1)
+                    // to set the positiveCycleDetected flag. This specific condition is preserved.
+                    if (currentNodeIter === nodeCount - 1) {
+                        positiveCycleDetected = true;
+                        break; // Exit inner edge loop
                     }
                 }
             }
+            if (positiveCycleDetected) {
+                break; // Exit inner node loop
+            }
         }
     }
 
-    // --- Final Output ---
-    // The problem typically asks for the longest path to the last vertex (N-1).
-    const finalTargetVertexIndex = numVertices - 1;
+    // Output the result
+    if (positiveCycleDetected) {
+        console.log("inf");
+    } else {
+        console.log(maxPathDistances[nodeCount - 1]);
+    }
+}
 
-    // If the target vertex is affected by a positive cycle, its longest path is infinite.
-    if (nodesAffectedByPositiveCycle[finalTargetVertexIndex]) {
-        console.log("POSITIVE_INFINITY"); // More descriptive output than generic "inf"
-    }
-    // If the target vertex was never reached from the source.
-    else if (maxPathLengths[finalTargetVertexIndex] === UNREACHABLE_NODE_MARKER) {
-        console.log("UNREACHABLE_NODE"); // Clearer than just a numeric "inf" or very low number
-    }
-    // Otherwise, output the calculated longest path length.
-    else {
-        console.log(maxPathLengths[finalTargetVertexIndex]);
-    }
-};
-
-// --- Execution Entry Point (IIFE for scope isolation and error handling) ---
-// This block reads input from standard input (e.g., a file or console pipe)
-// and passes it to the main processing function.
-(function() {
-    try {
-        // Read all file content from /dev/stdin (common for competitive programming on Linux/macOS).
-        const fileContent = require("fs").readFileSync("/dev/stdin", "utf8");
-        // Split content into lines and filter out any empty lines.
-        const inputLines = fileContent.split("\n").filter(line => line.trim() !== "");
-        // Call the main graph processing function.
-        processGraphData(inputLines);
-    } catch (error) {
-        // Enhanced error handling for Type III.
-        console.error("An error occurred during input reading or graph processing:", error.message);
-        // Optionally, print stack trace in development.
-        // console.error(error.stack);
-    }
-})();
+// Standard input reading for competitive programming environments
+main(require("fs").readFileSync("/dev/stdin", "utf8").split("\n"));

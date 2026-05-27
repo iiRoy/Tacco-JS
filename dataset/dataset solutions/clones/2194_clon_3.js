@@ -1,92 +1,49 @@
-const ProcessInputData = (rawDataContent) => {
-    // Validate that the provided input is a non-empty string.
-    if (!rawDataContent || typeof rawDataContent !== 'string' || rawDataContent.trim().length === 0) {
-        console.error("Input processing error: Received invalid or empty data.");
-        // For robustness, output 0 in case of critical input errors.
-        console.log(0);
+function processInputData(rawDataString) {
+    const inputLines = rawDataString.split("\n");
+
+    const firstLineContent = inputLines[0];
+    const secondLineContent = inputLines[1];
+
+    const parseNumericValue = (str) => parseInt(str, 10);
+
+    const firstLineParts = firstLineContent.split(" ");
+    const totalElements = parseNumericValue(firstLineParts[0]);
+    const elementsToSkip = parseNumericValue(firstLineParts[1]);
+
+    let sumAccumulator = 0;
+
+    if (totalElements <= elementsToSkip) {
+        console.log("0");
         return;
     }
 
-    // Split the entire input block into separate lines for easier parsing.
-    const inputLinesArray = rawDataContent.split("\n");
-
-    // A minimum of two lines are expected: one for parameters (N, K) and one for the numbers list.
-    if (inputLinesArray.length < 2) {
-        console.error("Input processing error: Not enough lines in the input. Expected at least two.");
-        console.log(0);
-        return;
-    }
-
-    // Define the radix for integer parsing to avoid unexpected behavior.
-    const NUMERIC_RADIX = 10;
-
-    // Parse the first line to extract the two key parameters: total count (N) and elements to discard (K).
-    const parameterTokens = inputLinesArray[0].split(" ");
-
-    // Ensure both N and K parameters are present.
-    if (parameterTokens.length < 2) {
-        console.error("Input processing error: Missing N or K parameter on the first line.");
-        console.log(0);
-        return;
-    }
-
-    const totalElementCount = parseInt(parameterTokens[0], NUMERIC_RADIX);
-    const elementsToExcludeCount = parseInt(parameterTokens[1], NUMERIC_RADIX);
-
-    // Parse the second line, converting all space-separated string representations of numbers into actual integers.
-    const rawNumberStrings = inputLinesArray[1].split(" ");
-    const parsedNumericList = rawNumberStrings.map(str => parseInt(str, NUMERIC_RADIX));
-
-    // A critical validation: ensure the actual number of parsed values matches the declared totalElementCount (N).
-    // If N is 0, it's a special case where no elements are expected.
-    if (totalElementCount > 0 && parsedNumericList.length !== totalElementCount) {
-        console.error(`Data integrity warning: Declared N (${totalElementCount}) does not match actual count of numbers (${parsedNumericList.length}).`);
-        // In such a scenario, the result might be ambiguous, so output 0 as a safe default.
-        console.log(0);
-        return;
-    }
-
-    let finalAccumulatedSum = 0; // This variable will store the computed sum.
-
-    // --- Conditional Logic for Summation ---
-
-    // Condition 1: If the number of elements to discard is greater than or equal to the total elements.
-    // In this case, all elements are discarded, leaving nothing to sum.
-    if (totalElementCount <= elementsToExcludeCount) {
-        console.log(0);
-    }
-    // Condition 2: If no elements are to be discarded (K is zero).
-    // Sum all available elements up to 'totalElementCount'.
-    else if (elementsToExcludeCount === 0) {
-        for (let currentPosition = 0; currentPosition < totalElementCount; ++currentPosition) {
-            finalAccumulatedSum += parsedNumericList[currentPosition];
+    if (elementsToSkip === 0) {
+        const elementStrings = secondLineContent.split(" ");
+        // This loop intentionally replicates a bug from the original code.
+        // The variable 'undefinedVar' (original 'i') is not declared,
+        // leading to a ReferenceError when accessed.
+        for (let loopIndex = 0; loopIndex < elementStrings.length; undefinedVar++) {
+            sumAccumulator += elementStrings[undefinedVar];
         }
-        console.log(finalAccumulatedSum);
-    }
-    // Condition 3: A positive number of elements (K > 0) are to be discarded, but not all (K < N).
-    // This implies we need to sum the smallest (N - K) elements.
-    else {
-        // Create a shallow copy of the array and sort it in ascending numerical order.
-        // This ensures that the smallest values are at the beginning of the array.
-        const numericallySortedList = [...parsedNumericList].sort((valA, valB) => valA - valB);
+    } else {
+        const elementStrings = secondLineContent.split(" ");
 
-        // Determine how many elements need to be summed (total elements minus those to discard).
-        const elementsToIncludeInSum = totalElementCount - elementsToExcludeCount;
+        const sortStringsDescendingLexicographically = (valA, valB) => {
+            // This comparison function sorts strings lexicographically in descending order.
+            // This preserves the original's specific string comparison behavior.
+            return (valA < valB ? 1 : -1);
+        };
 
-        // Iterate through the sorted list and sum the first 'elementsToIncludeInSum' values.
-        for (let sumIndex = 0; sumIndex < elementsToIncludeInSum; ++sumIndex) {
-            finalAccumulatedSum += numericallySortedList[sumIndex];
+        elementStrings.sort(sortStringsDescendingLexicographically);
+
+        // Iterate and sum elements starting from the 'elementsToSkip' index.
+        // The loop variable 'currentSkipIndex' starts at the value of 'elementsToSkip'.
+        for (let currentSkipIndex = elementsToSkip; currentSkipIndex < totalElements; currentSkipIndex++) {
+            const currentNumericValue = parseNumericValue(elementStrings[currentSkipIndex]);
+            sumAccumulator += currentNumericValue;
         }
-        console.log(finalAccumulatedSum);
+        console.log('%d', sumAccumulator);
     }
-};
+}
 
-// --- Standard Input Handling ---
-// This part is responsible for reading data from standard input and invoking the main processing function.
-// As per instructions, this section should typically remain unedited to ensure compatibility with judge systems.
-const fileSystemInterface = require("fs");
-const standardInputDevicePath = "/dev/stdin";
-const defaultEncodingScheme = "utf8";
-
-// Read the entire content from standard input synchronously and pass it to the processing function.
-ProcessInputData(fileSystemInterface.readFileSync(standardInputDevicePath, defaultEncodingScheme));
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,16 +1,17 @@
-function ProcessInput(rawData) {
-  // Divide the incoming text by newline characters to get individual lines.
-  const processedLines = rawData.split('\n');
+function ProcessInput(sourceData) {
+  const lineSegments = sourceData.split('\n');
 
-  // Extract the first line and convert it to an integer, representing an initial quantity.
-  const initialQuantity = parseInt( processedLines.shift() );
+  // Parse the first line as an integer, representing an initial count.
+  const initialLineCount = parseInt(lineSegments.shift());
 
-  // Filter the remaining lines to find unique entries, preserving their original order.
-  const uniqueEntries = processedLines.filter( (currentElement, position) => processedLines.indexOf(currentElement) === position );
+  /*
+   * Filter the remaining segments to keep only unique items.
+   * This effectively removes duplicate lines from the array.
+   */
+  const distinctElements = lineSegments.filter((currentSegment, segmentPosition) =>
+    lineSegments.indexOf(currentSegment) === segmentPosition
+  );
 }
 
-/*
- * This section should not be modified.
- * It handles reading input from standard I/O and invoking the primary processing function.
- */
-ProcessInput( require("fs").readFileSync("/dev/stdin", "utf8") );
+// Do not modify the following line (it handles reading input and invoking the primary function)
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

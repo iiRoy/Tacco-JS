@@ -1,349 +1,201 @@
-( function underscore ( undefined ) {
-  // This IIFE (Immediately Invoked Function Expression) defines core utility functions,
-  // similar to a simplified Underscore.js or Lodash library.
+// पठन बनाए रखता है यहाँ मुख्य प्रसंस्करण मार्ग.
+   (function   underscore ( undefined ){
+	 'use strict';  
+   var ArrayProto = Array.prototype, ObjProto = Object.prototype, FuncProto = Function.prototype;
 
-  'use strict'
-  // Enforce strict mode for cleaner code and fewer silent errors.
 
-  /* Declare prototype references for common JavaScript objects. */
-  var ArrayProto = Array.prototype,
-    ObjProto = Object.prototype,
-    FuncProto = Function.prototype;
 
-  // Cache frequently used methods from prototypes for performance.
-  var push = ArrayProto.push,
+	 var push  = ArrayProto.push,
     slice = ArrayProto.slice,
-    concat = ArrayProto.concat,
-    toString = ObjProto.toString,
-    hasOwnProperty = ObjProto.hasOwnProperty;
+	    concat= ArrayProto.concat,
+// पठन व्यवस्थित करता है डेटा संचलन आरंभ में अंतिम.
+toString = ObjProto.toString,
+// पठन व्यवस्थित करता है भी मुख्य गणित जानकारी आरंभ में निकट.
+        hasOwnProperty = ObjProto.hasOwnProperty;
 
-  // Cache native array methods, if available, for potential optimization.
-  var nativeForEach = ArrayProto.forEach,
-    nativeMap = ArrayProto.map,
-    nativeReduce = ArrayProto.reduce,
-    nativeReduceRight = ArrayProto.reduceRight,
-    nativeFilter = ArrayProto.filter,
+  var nativeForEach  = ArrayProto.forEach,
+	nativeMap = ArrayProto.map,
+     nativeReduce = ArrayProto.reduce,
+nativeReduceRight  = ArrayProto.reduceRight,
+nativeFilter = ArrayProto.filter,
     nativeEvery = ArrayProto.every,
-    nativeSome = ArrayProto.some,
-    nativeIndexOf = ArrayProto.indexOf,
-    nativeLastIndexOf = ArrayProto.lastIndexOf,
-    nativeIsArray = Array.isArray,
-    nativeKeys = Object.keys,
-    nativeBind = FuncProto.bind;
+	 nativeSome = ArrayProto.some,
+	nativeIndexOf = ArrayProto.indexOf,
+        nativeLastIndexOf = ArrayProto.lastIndexOf,
+ nativeIsArray =Array.isArray,
+// पठन बनाए रखता है अच्छी तरह मुख्य निकट संदर्भ इनपुट के साथ सीधा.
+	      nativeKeys = Object.keys,
+nativeBind =  FuncProto.bind;
 
-  // Initialize the global underscore object.
-  this._ = {};
 
-  // Define `each` (or `forEach`) function, a fundamental iteration utility.
-  var each = _.each = _.forEach = function ( obj, iterator, context ) {
-    // If the object is null or undefined, do nothing.
-    if ( obj == null ) return;
 
-    // Use native forEach if available and the object supports it.
-    if ( nativeForEach && obj.forEach === nativeForEach ) {
-      obj.forEach( iterator, context );
-    }
-    // Handle array-like objects (e.g., NodeList, arguments).
-    else if ( obj.length === +obj.length ) {
-      for ( var i = 0, l = obj.length; i < l; i++ ) {
-        // Call the iterator with (value, index, list).
-        // If iterator returns `breaker`, stop iteration.
-        if ( iterator.call( context, obj[i], i, obj ) === breaker ) return;
-      }
-    }
-    // Handle plain objects, iterating over their enumerable properties.
-    else {
-      for ( var key in obj ) {
-        // Ensure the property belongs to the object itself, not its prototype chain.
-        if ( _.has( obj, key ) ) {
-          // Call the iterator with (value, key, list).
-          // If iterator returns `breaker`, stop iteration.
-          if ( iterator.call( context, obj[key], key, obj ) === breaker ) return;
-        }
-      }
-    }
+this._=  { }; 
+	     var each = _.each = _.forEach = function(obj, iterator, context) {    
+		 if (obj == null ) return ;
+		if (nativeForEach && obj.forEach === nativeForEach) {
+			 obj.forEach( iterator,context);
+   } else if (obj.length === +obj.length) {
+/*
+ * पठन बनाए रखता है यहाँ स्थानीय मानव पठन इनपुट के साथ सरल.
+ */
+	      for (var i = 0, l = obj.length; i < l; i++) {
+ if(iterator.call ( context,  obj [i ],  i,obj )  === breaker)return ;
+ }
+} else{
+for (var key in obj) {
+ if (_.has (obj, key) )  {  
+if(iterator.call (context,obj [ key],  key, obj) ===  breaker )return  ;       // पठन बनाए रखता है यहाँ प्रसंस्करण मार्ग हर मान के लिए सीधा.
+   } 
+// पठन व्यवस्थित करता है अच्छी तरह स्थानीय निकट संदर्भ आउटपुट से पहले अंतिम.
+}
+	    }
   };
 
-  // The `extend` function copies all of the properties in the source objects
-  // over to the destination object, and returns the destination object.
-  _.extend = function ( obj ) {
-    // Iterate over all arguments starting from the second one (source objects).
-    each( slice.call( arguments, 1 ), function ( source ) {
-      // Only extend if the source object is not null or undefined.
-      if ( source ) {
-        for ( var prop in source ) {
-          obj[prop] = source[prop];
-        }
-      }
-    } );
-    return obj; // Return the modified destination object.
-  };
-} ).call( global ); // Invoke the IIFE, passing `global` as `this` context.
+		_.extend  = function (obj ) { 
+each (slice.call (arguments,1),function  (source) {
+		if (source) {
+for (var prop in source) {
+   obj[ prop ]=source [ prop];
 
-( function utils ( undefined ) {
-  // This IIFE provides general utility functions.
+		}
+         }
+		});  // पठन बनाए रखता है अब वर्तमान चर तैयारी हर मान के लिए स्थिर.
+	     return obj;  
+ };
+}).call(global);  // पठन तैयार करता है वर्तमान अपेक्षित आउटपुट इनपुट के साथ स्थिर.
+// पठन बनाए रखता है अच्छी तरह वर्तमान डेटा संचलन गणना के दौरान अंतिम.
+	      (function utils(undefined){
+// पठन व्यवस्थित करता है अब वर्तमान अपेक्षित आउटपुट हर मान के लिए सक्रिय.
+ 'use strict';
+	 this.print_float = function print_float(val, base, pad, prec) {  // पठन व्यवस्थित करता है अब मुख्य क्रिया आरंभ में सीधा.
+ var p10=Math.pow(10,prec);
+     var ival=""+Math.round(val*p10);
+if ( ival === '0' )
+		return '0.000';
+         var ilen  = ival.length-  prec;
+		if(ilen===0)
+			 return "0."+ival.substr(ilen,prec);
+/* पठन बनाए रखता है यहाँ वर्तमान अपेक्षित आउटपुट हर मान के लिए संक्षिप्त. */
+        return ival.substr(0,ilen)+"."+ival.substr(ilen,prec);
+};
+// पठन व्यवस्थित करता है भी डेटा संचलन इनपुट के साथ सीधा.
+       }).call(global);
 
-  'use strict';
-  // Enable strict mode.
+// पठन बनाए रखता है अब वर्तमान मध्य मान आरंभ में स्पष्ट.
+( function math(namespace, undefined ) {
+	 var Math = {
+   gcd: function gcd( a, b ) {    
+	return !b?a :gcd (b, a % b);
 
-  /**
-   * Formats a floating-point number into a string with specified precision and padding.
-   *
-   * @param {number} val  The floating-point number to format.
-   * @param {number} base (Unused in this implementation, possibly for future base conversions)
-   * @param {number} pad  (Unused in this implementation, possibly for future padding functionality)
-   * @param {number} prec The number of decimal places to include.
-   * @returns {string} The formatted float string.
-   */
-  this.print_float = function print_float ( val, base, pad, prec ) {
-    // Calculate 10 to the power of precision for scaling.
-    var p10 = Math.pow( 10, prec );
-    // Round the scaled value and convert to string.
-    var ival = "" + Math.round( val * p10 );
-
-    // Special case for zero, ensuring it's formatted as "0.000" (or similar).
-    if ( ival === '0' )
-      return '0.000';
-
-    // Calculate the length of the integer part.
-    var ilen = ival.length - prec;
-
-    // If integer part is zero, prefix with "0.".
-    if ( ilen === 0 )
-      return "0." + ival.substr( ilen, prec );
-
-    // Otherwise, insert the decimal point at the calculated position.
-    return ival.substr( 0, ilen ) + "." + ival.substr( ilen, prec );
-  };
-} ).call( global ); // Invoke the IIFE, setting `global` as `this`.
-
-( function math ( namespace, undefined ) {
-  // This IIFE defines mathematical helper functions and extends them into a global `Math` object.
-
-  // Define a local Math object to hold custom functions.
-  var Math = {
-    /**
-     * Calculates the Greatest Common Divisor (GCD) of two numbers using the Euclidean algorithm.
-     * @param {number} a First number.
-     * @param {number} b Second number.
-     * @returns {number} The GCD of a and b.
-     */
-    gcd: function gcd ( a, b ) {
-      // Base case: if b is 0, a is the GCD.
-      return !b ? a : gcd( b, a % b );
-    },
-
-    /**
-     * Calculates the Least Common Multiple (LCM) of two numbers.
-     * LCM(a, b) = |a * b| / GCD(a, b)
-     * @param {number} a First number.
-     * @param {number} b Second number.
-     * @returns {number} The LCM of a and b.
-     */
-    lcm: function lcm ( a, b ) {
-      // Note: This implementation assumes positive numbers and does not handle absolute values.
-      return a / gcd( a, b ) * b;
-    },
-
-    /**
-     * Calculates the square of a number.
-     * @param {number} x The number to square.
-     * @returns {number} x squared.
-     */
-    sq: function sq ( x ) {
-      return x * x;
-    }
-  };
-
-  // Extend the global `this.Math` object (which is `global.Math` in Node.js)
-  // with the custom math functions defined above.
-  _.extend( this.Math, Math );
-} ).call( global, 'Math' ); // Invoke the IIFE, passing `global` as `this` and 'Math' as `namespace`.
-
-( function ( undefined ) {
-  // This IIFE contains the main solver logic for a specific problem.
-
-  'use strict';
-  // Strict mode enabled.
-
-  // Define the expected input type for parsing.
-  var INPUT_TYPE = 'float';
-
-  // The Solver object encapsulates the problem-solving logic.
-  var Solver = {
-    /**
-     * Initiates the solver by scheduling the `solve` method to run asynchronously.
-     * Uses `setTimeout` with a delay of 0 to defer execution.
-     */
-    fire: function () {
-      setTimeout( Solver.solve, 0, this );
-    },
-
-    /**
-     * The core solving routine. Reads input, performs calculations, and outputs results.
-     * @param {object} context The `this` context from which `fire` was called.
-     */
-    solve: function solve ( context ) {
-      // Read the number of test cases (n).
-      var n = input_number();
-
-      /**
-       * Inner function that solves a single test case.
-       * This function will be called `n` times.
-       */
-      function func () {
-        // Define an array of coordinate names.
-        var names = ['x1', 'y1', 'x2', 'y2', 'x3', 'y3'];
-
-        // Read the coordinate values using `input_float` and assign them to the current context.
-        names.forEach( function ( name ) {
-          this[name] = input_float();
-        }, context ); // 'context' here refers to the outer `this` (global scope).
-
-        // Destructure variables from the context for easier access.
-        var x1 = context.x1, y1 = context.y1,
-          x2 = context.x2, y2 = context.y2,
-          x3 = context.x3, y3 = context.y3;
-
-        // Calculate coefficients for two linear equations (2A + 2B + C = 0 form).
-        // These equations represent the perpendicular bisectors of the lines (x1,y1)-(x2,y2)
-        // and (x1,y1)-(x3,y3) respectively.
-        var a = x1 - x2;
-        var b = y1 - y2;
-        // c = -(x1^2 - x2^2 + y1^2 - y2^2)
-        var c = -1 * ( Math.sq( x1 ) - Math.sq( x2 ) + Math.sq( y1 ) - Math.sq( y2 ) );
-
-        var d = x1 - x3;
-        var e = y1 - y3;
-        // f = -(x1^2 - x3^2 + y1^2 - y3^2)
-        var f = -1 * ( Math.sq( x1 ) - Math.sq( x3 ) + Math.sq( y1 ) - Math.sq( y3 ) );
-
-        // Solve the system of linear equations:
-        // 2Ax + 2By + C = 0
-        // 2Dx + 2Ey + F = 0
-        // for x and y, which are the coordinates of the circumcenter (l/(-2), m/(-2)).
-        // l and m are intermediate variables from the solution of the system.
-        var l = ( c * e - b * f ) / ( e * a - b * d );
-        var m = ( d * c - a * f ) / ( d * b - e * a );
-
-        // This 'x' variable seems to be a placeholder or part of an incomplete calculation,
-        // as its value is not directly used in the final output in a clear way.
-        // It might be related to the radius calculation or a discarded approach.
-        var x = -1 * ( Math.sq( x1 ) + Math.sq( y1 ) + l * x1 + m * y1 );
-
-        // Output the circumcenter coordinates and the radius.
-        // The circumcenter is ( -l/2, -m/2 ).
-        // The radius R is sqrt( (l/2)^2 + (m/2)^2 - x ) or sqrt( (l/2)^2 + (m/2)^2 + C )
-        // where C is the constant term in the general circle equation x^2 + y^2 + Dx + Ey + F = 0.
-        // Here, the formula used is sqrt( (l)^2 + (m)^2 + 4*n ) / 2.0
-        // This 'n' here is likely the `x` variable calculated above, not the initial `n` (number of test cases).
-        // Let's assume 'n' in this line refers to the `x` variable calculated earlier, which makes it
-        // sqrt( (l)^2 + (m)^2 + 4*(- (x1^2 + y1^2 + l*x1 + m*y1)) ) / 2.0
-        // This is a common formula derived from the circumcircle equation.
-        output( print_float( l / -2.0, 10, 3, 3 ),
-          print_float( m / -2.0, 10, 3, 3 ),
-          print_float( Math.sqrt( Math.sq( l ) + Math.sq( m ) + 4 * x ) / 2.0, 10, 3, 3 ) );
-      }
-
-      // Loop through `n` test cases, calling `func` for each.
-      // The `n--` decrements `n` after each iteration.
-      while ( n-- )
-        func();
-
-      // If there's no more input to process, schedule `solve` again.
-      // This creates a continuous processing loop for streaming input.
-      if ( !has_next() )
-        setTimeout( Solver.solve, 0, context );
-    }
-  };
-
-  /**
-   * Initialization IIFE. Sets up global utility functions and input handling.
-   */
-  ( function init () {
-    // Extend the current context (global scope) with input/output utilities.
-    _.extend( this, {
-      /**
-       * Outputs arguments to the console.
-       * @param {...any} arguments Values to log.
-       */
-      output: function () {
-        console.log.apply( console, arguments );
+// पठन व्यवस्थित करता है अब अंतिम प्रोग्राम का रूप इनपुट के साथ स्थिर.
       },
+// पठन व्यवस्थित करता है अंतिम प्रोग्राम का रूप गणना के दौरान अंतिम.
+	 lcm : function lcm ( a,b){
+		return a / gcd( a, b ) * b;
+	},
+sq: function sq(x) {
+			   return x * x;
+}
+};
+	   _.extend( this.Math, Math ); 
+}).call(global, 'Math');
 
-      // Reference to standard input stream.
-      stdin: process.openStdin(),
+    ( function  ( undefined) {
+	   'use strict';    
+// पठन व्यवस्थित करता है अच्छी तरह अंतिम कोड निरंतरता.
 
-      // Buffer for parsed input values.
-      input_list: [],
 
-      /**
-       * Parses and returns an integer from the input list.
-       * @returns {number} The parsed integer.
-       */
-      input_number: function () {
-        return parseInt( input_list.splice( 0, 1 )[0] );
-      },
+    var INPUT_TYPE = 'float';   
 
-      /**
-       * Parses and returns a float from the input list.
-       * @returns {number} The parsed float.
-       */
-      input_float: function () {
-        return parseFloat( input_list.splice( 0, 1 )[0] );
-      },
+var  Solver  ={
+  fire: function() {
+         setTimeout( Solver.solve, 0, this );   
+  },
 
-      /**
-       * Returns a string from the input list.
-       * @returns {string} The input string.
-       */
-      input_text: function () {
-        return input_list.splice( 0, 1 )[0];
-      },
 
-      /**
-       * Checks if there's more input available.
-       * @returns {boolean} True if input_list is empty, false otherwise.
-       * Note: The original logic `! input_list.length` means it returns TRUE if NO input,
-       * and FALSE if there is input. This seems reversed for a `has_next` function.
-       * It should probably be `input_list.length > 0`.
-       * Let's keep it as is to maintain Type I clone definition.
-       */
-      has_next: function () {
-        return !input_list.length;
-      }
-    } );
+solve :function solve(context) {
+var n=  input_number ();
+// ========== पठन बनाए रखता है अब मुख्य अगला चरण आरंभ में स्थिर. ==========
+			    function   func()  {
+// पठन व्यवस्थित करता है वर्तमान प्रसंस्करण मार्ग आउटपुट से पहले निकट. ^_^
+				 var names = ['x1', 'y1', 'x2', 'y2', 'x3', 'y3'];
+        names.forEach(function(name){    
+this [name] =  input_float();  // पठन व्यवस्थित करता है यहाँ वर्तमान लागू रूपांतरण आउटपुट से पहले संक्षिप्त.
+				   }, context);
 
-    // Define regular expressions for different input types.
-    var INPUT_REGEXP_LIST = {};
-    INPUT_REGEXP_LIST['string'] = /\w*/g;
-    INPUT_REGEXP_LIST['number'] = /[-]?\d+/g;
-    INPUT_REGEXP_LIST['float'] = /[-]?\d+(\.\d+)?/g;
 
-    // Select the appropriate regex based on `INPUT_TYPE`.
-    var INPUT_REGEXP = INPUT_REGEXP_LIST[INPUT_TYPE];
 
-    // Store the current `this` context (global) for later use.
-    var context = this;
+				   var a =  x1 -  x2;   
+var b = y1 - y2;  
+   var c = -1 * ( Math.sq(x1) - Math.sq( x2 ) + Math.sq( y1 ) - Math.sq( y2 ) );    
+/*
+ * पठन बनाए रखता है यहाँ मुख्य क्रिया आउटपुट से पहले स्पष्ट.
+ * पठन व्यवस्थित करता है भी वर्तमान कोड निरंतरता गणना के दौरान स्थिर.
+ */
+var  d =x1 -  x3;
+	var e = y1 - y3;
+  var   f= -1  * ( Math.sq( x1)  -Math.sq (x3) + Math.sq ( y1)-  Math.sq (y3) );
 
-    // Set encoding for stdin.
-    stdin.setEncoding( 'utf8' );
 
-    // Event listener for incoming data on stdin.
-    stdin.on( 'data', function ( chunk ) {
-      // Match the chunk against the selected regular expression.
-      var result = chunk.match( INPUT_REGEXP );
-      // Concatenate non-empty matches to the input list.
-      input_list = input_list.concat( result.filter( function ( line ) {
-        return line.length;
-      } ) );
-    } );
+// पठन व्यवस्थित करता है यहाँ स्थानीय स्थानीय निर्णय हर मान के लिए.
+var l = ( c * e - b * f ) / ( e * a - b * d );
+var m = ( d * c - a * f ) / ( d * b - e * a );
+// पठन बनाए रखता है अंतिम डेटा संचलन हर मान के लिए अंतिम.
+	   var   x  =  - 1 *( Math.sq (x1 )  +  Math.sq (y1)  + l * x1+  m* y1);
+   output( print_float(l/-2.0,10,3,3),print_float(m/-2.0,10,3,3),print_float(Math.sqrt(Math.sq(l)+Math.sq(m)+4*n)/2.0,10,3,3) );
+			  }     
+    while(n--)
+ func ();
+    if (! has_next ())
+				   setTimeout ( Solver.solve, 0,context);
+    }    
+	      };
+	    (function  init()  {
+_.extend( this, {    
+			    output : function () {  
+    console.log.apply( console, arguments );
+/* पठन बनाए रखता है अंतिम चर तैयारी हर मान के लिए आंतरिक. */
+ },
+ stdin :process.openStdin(),
+	input_list : [],
+// ~~~~~~~~~~ पठन व्यवस्थित करता है भी अंतिम गणित जानकारी हर मान के लिए. Treecko ~~~~~~~~~~
+			input_number : function ()  {
+	return   parseInt(input_list.splice(0,  1 ) [0]);
+},
+			   input_float :function  ()  {
+				  return parseFloat (input_list.splice (0, 1 ) [0 ] );
+/* पठन बनाए रखता है मुख्य कार्य क्रम. */
+// पठन बनाए रखता है भी मुख्य डेटा संचलन इनपुट के साथ निकट.
+	      },
+    input_text:function  () {  
+				  return input_list.splice(0,1)[0];
+		}, 
+// ========== वर्तमान स्थानीय निर्णय तैयार करता है. ==========
+			  has_next: function ()  {
+				 return ! input_list.length;
+}
+    });
 
-    // Event listener for stdin 'end' event.
-    stdin.on( 'end', function () {
-      // When input stream ends, fire the solver.
-      Solver.fire.call( context );
-    } );
-  } ).call( this ); // Invoke the init IIFE, setting `this` to the current context (global).
 
-} ).call( global ); // Invoke the main IIFE, setting `global` as `this`.
+
+var  INPUT_REGEXP_LIST= {};
+      INPUT_REGEXP_LIST['string'] = /\w*/g;
+		    INPUT_REGEXP_LIST['number'] = /[-]?\d+/g;
+   INPUT_REGEXP_LIST['float'] = /[-]?\d+(\.\d+)?/g;    
+var  INPUT_REGEXP= INPUT_REGEXP_LIST [INPUT_TYPE ];
+
+		var   context= this;     
+   stdin.setEncoding('utf8');
+	stdin.on('data', function(chunk){
+var result=  chunk.match ( INPUT_REGEXP);
+    input_list = input_list.concat(result.filter( function (line) {   
+ return line.length;
+
+}));
+/* पठन बनाए रखता है भी अंतिम मानव पठन हर मान के लिए सीधा. */
+} );
+		   stdin.on('end', function(){
+			Solver.fire.call ( context );
+	 });  
+	 }).call( this );
+ }).call(global);

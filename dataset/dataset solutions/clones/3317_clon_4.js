@@ -1,48 +1,48 @@
-function executeSolution(problemData) {
-  const linesOfInput = problemData.split('\n').filter(Boolean);
-  const [numRows, numCols] = linesOfInput[0].split(' ').map(Number);
-  const obstacleLayout = linesOfInput.slice(1, numRows + 1).map(rowString => rowString.split(''));
+function processInput(inputData) {
+  inputData = inputData.split("\n");
 
-  const ARITHMETIC_PRIME = 1000000007;
+  const convertStringToInt = (numericString) => {
+    return parseInt(numericString, 10);
+  };
 
-  // Initialize a memoization table with a sentinel value (-1)
-  const pathCounts = Array.from({ length: numRows }, () => Array(numCols).fill(-1));
+  const [gridHeight, gridWidth] = inputData[0].split(' ').map(convertStringToInt);
 
-  // Recursive function to determine the number of valid paths
-  function findAccessibleRoutes(rowCoord, colCoord) {
-    // Boundary conditions
-    if (rowCoord < 0 || colCoord < 0) {
-      return 0;
-    }
-    // Obstacle check
-    if (obstacleLayout[rowCoord][colCoord] === '#') {
-      return 0;
-    }
-    // Base case: starting point
-    if (rowCoord === 0 && colCoord === 0) {
-      return 1;
-    }
+  const terrainMap = inputData.slice(1, gridHeight + 1).map(line => line.split(''));
 
-    // Check memoization table
-    if (pathCounts[rowCoord][colCoord] !== -1) {
-      return pathCounts[rowCoord][colCoord];
-    }
+  const pathMemo = new Map();
+  const finalPathCount = calculatePathways(gridHeight - 1, gridWidth - 1, gridHeight, gridWidth, terrainMap, pathMemo);
 
-    // Recursive step: sum paths from above and from the left
-    const pathsFromUp = findAccessibleRoutes(rowCoord - 1, colCoord);
-    const pathsFromLeft = findAccessibleRoutes(rowCoord, colCoord - 1);
-
-    // Store the result in the memoization table and apply modulo
-    pathCounts[rowCoord][colCoord] = (pathsFromUp + pathsFromLeft) % ARITHMETIC_PRIME;
-    return pathCounts[rowCoord][colCoord];
-  }
-
-  // Initiate the path calculation from the destination cell
-  const totalRoutes = findAccessibleRoutes(numRows - 1, numCols - 1);
-
-  // Output the final count
-  console.log(totalRoutes);
+  console.log(finalPathCount);
 }
 
-// Entry point for execution
-executeSolution(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+function calculatePathways(currentR, currentC, totalR, totalC, obstacleMap, memoCache) {
+  const coordinateKey = `${currentR},${currentC}`;
+
+  if (memoCache.has(coordinateKey)) {
+    return memoCache.get(coordinateKey);
+  }
+
+  if (currentR < 0 || currentC < 0 || currentR >= totalR || currentC >= totalC) {
+    return 0;
+  }
+
+  if (obstacleMap[currentR][currentC] === '#') {
+    return 0;
+  }
+
+  if (currentR === 0 && currentC === 0) {
+    return 1;
+  }
+
+  const MOD_CONSTANT = 10**9 + 7;
+
+  let pathsFromUp = calculatePathways(currentR - 1, currentC, totalR, totalC, obstacleMap, memoCache);
+  let pathsFromLeft = calculatePathways(currentR, currentC - 1, totalR, totalC, obstacleMap, memoCache);
+
+  let totalPossiblePaths = (pathsFromUp + pathsFromLeft) % MOD_CONSTANT;
+
+  memoCache.set(coordinateKey, totalPossiblePaths);
+  return totalPossiblePaths;
+}

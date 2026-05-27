@@ -1,23 +1,20 @@
-'use strict'
+"use strict";
 
-// This JavaScript module executes a conditional check on an integer input.
+// This function serves as the primary entry point for processing input data.
+const processInput = (rawData) => {
+    // Parse the incoming string data into an integer value.
+    const parsedValue = parseInt(rawData);
 
-let performEvaluation = (  sourceText  ) => {
+    // Evaluate the parsed numerical value against a predefined threshold.
+    if (parsedValue < 1200) {
+        // If the value is less than the threshold, print 'ABC'.
+        console.log('ABC');
+    } else {
+        // Otherwise, if the value is greater than or equal to the threshold, print 'ARC'.
+        console.log('ARC');
+    }
+};
 
-  // Parse the provided string into an integer quantity.
-  let numericalThreshold  =  parseInt (  sourceText  )  ;
-
-  // Determine the output based on a predefined numerical boundary.
-  if  (  numericalThreshold  <  1200  )
-  {
-    console.log  (  'ABC'  )  ;  // Output for values below the specific cutoff.
-  }
-  else
-  {
-    console.log  (  'ARC'  )  ;  // Output for values at or above the specific cutoff.
-  }
-
-}  ;
-
-// Read content from the standard input file and initiate the evaluation process.
-performEvaluation  (  require (  'fs'  ) .  readFileSync (  '/dev/stdin'  ,  'utf-8'  )  )  ;
+// Read the entire content from standard input, decode it as UTF-8,
+// and then pass it to the main processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf-8'));

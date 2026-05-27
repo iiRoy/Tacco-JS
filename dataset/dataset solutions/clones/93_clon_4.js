@@ -1,27 +1,36 @@
-const dataStream = require('node:fs').readFileSync(0, 'utf8');
-const processedLines = dataStream.trim().split('\n');
+const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+const lineSegments = fileContent.trim().split('\n');
 
-const geometricEvaluator = (p1x, p1y, r1, p2x, p2y, r2) => {
-    const span = Math.hypot(p1x - p2x, p1y - p2y);
-    const totalReach = r1 + r2;
-    let outcome = 0;
+const operationCount = Number(lineSegments.shift());
 
-    if (span <= totalReach) {
-        outcome = 1;
-        if (span <= r1 - r2) {
-            outcome = 2;
-        }
-        if (span <= r2 - r1) {
-            outcome = -2;
-        }
-    }
-    return outcome;
+const determineGeometricRelation = (circleDataParameters) => {
+    const [xCoordA, yCoordA, radiusA, xCoordB, yCoordB, radiusB] = circleDataParameters;
+
+    const deltaX = xCoordA - xCoordB;
+    const deltaY = yCoordA - yCoordB;
+    const centerDistance = Math.hypot(deltaX, deltaY);
+
+    const radiiSum = radiusA + radiusB;
+    const radiusDiffAB = radiusA - radiusB;
+    const radiusDiffBA = radiusB - radiusA;
+
+    const outcomeRules = [
+        { condition: (d, sR, dr1, dr2) => d > sR, result: 0 },
+        { condition: (d, sR, dr1, dr2) => d <= dr1, result: 2 },
+        { condition: (d, sR, dr1, dr2) => d <= dr2, result: -2 },
+        { condition: (d, sR, dr1, dr2) => true, result: 1 }
+    ];
+
+    const foundRule = outcomeRules.find(rule =>
+        rule.condition(centerDistance, radiiSum, radiusDiffAB, radiusDiffBA)
+    );
+
+    return foundRule.result;
 };
 
-const processedResults = processedLines.slice(1).map(lineSegment => {
-    const numericalComponents = lineSegment.split(' ').map(Number);
-    const [coord1X, coord1Y, radiusA, coord2X, coord2Y, radiusB] = numericalComponents;
-    return geometricEvaluator(coord1X, coord1Y, radiusA, coord2X, coord2Y, radiusB);
+const results = lineSegments.slice(0, operationCount).map(line => {
+    const numericValues = line.split(' ').map(Number);
+    return determineGeometricRelation(numericValues);
 });
 
-processedResults.forEach(finalVerdict => console.log(finalVerdict));
+results.forEach(res => console.log(res));

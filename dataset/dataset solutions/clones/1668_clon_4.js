@@ -1,24 +1,45 @@
-function processInputAndCalculate(rawText) {
-  const parts = rawText.split(/\s+/);
-  const beginVal = Number.parseInt(parts[0], 10);
-  const finishVal = Number.parseInt(parts[1], 10);
-  const factorVal = Number.parseInt(parts[2], 10);
+"use strict";
 
-  const effectiveUpperBoundary = Math.min(finishVal, 100);
+const processInputAndDisplayResult = (rawInputContent) => {
+  const [startRangeText, endRangeText, stepIncrementText] = rawInputContent.trim().split(" ");
 
-  let firstRelevantMultiple = Math.ceil(beginVal / factorVal) * factorVal;
-  let lastRelevantMultiple = Math.floor(effectiveUpperBoundary / factorVal) * factorVal;
+  // Using Number() for parsing, which is a different built-in than parseInt()
+  const startRangeBoundary = Number(startRangeText);
+  const endRangeBoundary = Number(endRangeText);
+  const stepIncrement = Number(stepIncrementText);
 
-  let finalTally = 0;
+  // Determine the maximum multiple of 'stepIncrement' that is less than or equal to 100.
+  // The original loop iterates 'i = d; i < 101; i = i + d', meaning 'i' goes up to 100.
+  const maxPossibleMultiplier = Math.floor(100 / stepIncrement);
 
-  if (firstRelevantMultiple <= lastRelevantMultiple) {
-    finalTally = (lastRelevantMultiple - firstRelevantMultiple) / factorVal + 1;
-  }
+  // Generate an array of numbers that are multiples of 'stepIncrement'.
+  // This uses a functional approach (Array.from) instead of an imperative for loop.
+  const potentialValues = Array.from({ length: maxPossibleMultiplier }, (_, index) => {
+    return (index + 1) * stepIncrement;
+  });
 
-  console.log(finalTally);
+  // Filter the generated values to include only those within the specified range [startRangeBoundary, endRangeBoundary].
+  // Then, count the number of elements that satisfy this condition.
+  const matchingCount = potentialValues.filter(
+    (currentValue) => currentValue >= startRangeBoundary && currentValue <= endRangeBoundary
+  ).length;
+
+  console.log(matchingCount);
+};
+
+// This function is a Type IV clone of 'numberSort'.
+// It uses a different identifier name and is declared as a const arrow function.
+const sortNumericalCollection = (dataElements) => {
+  // It calls a separately defined comparison function, mirroring the original's structure.
+  dataElements.sort(numericComparisonFunction);
+  return dataElements;
+};
+
+// This function is a Type IV clone of 'f'.
+// It uses a different identifier name and is declared as a named function declaration.
+function numericComparisonFunction(firstOperand, secondOperand) {
+  return firstOperand - secondOperand;
 }
 
-(function executeFromStdin() {
-  const standardInputContent = require("node:fs").readFileSync("/dev/stdin", "utf8");
-  processInputAndCalculate(standardInputContent);
-})();
+// Execute the main logic by reading from standard input.
+processInputAndDisplayResult(require("fs").readFileSync("/dev/stdin", "utf-8"));

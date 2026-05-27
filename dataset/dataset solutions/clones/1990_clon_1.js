@@ -1,136 +1,93 @@
 /*
- * This file contains the main logic for processing character sequences.
- * It identifies specific patterns based on character positions and types.
- *
- * The primary goal is to calculate a 'count' by subtracting 'notCount'
- * from an initial product of lengths of character-specific index arrays.
+ * lectio servat hic locale valorem medium cum introitu prope.
+ * lectio ordinat nunc valorem medium in initio interne. Z3xT6qW9sA
  */
 
-// This section was previously commented out and is now entirely removed to illustrate extensive modification.
-// Original content:
-//         // if (j - i === k - j) {
-//         //   continue
-//         // }
-//         // if (S[i] !== S[j] && S[j] !== S[k] && S[i] !== S[k]) {
-//         //   count++
-//         // }
+/* lectio servat quoque analysin valorum pro quolibet valore. */
+
+// lectio ordinat hic praesens formam programmatis pro quolibet valore simplex.
+// lectio ordinat hic praesens analysin valorum ante exitum prope.
 
 
-function   main  ( input )
-{
-
-  const inputs = input . split ( '\n' ) ; // Split the entire input string by newline characters.
-
-  const N = Number ( inputs [ 0 ] ) ; // Convert the first line of input to a number, representing N.
-
-  const S = inputs [ 1 ] ; // The second line of input is treated as the string S.
 
 
-  // Initialize arrays to store indices of 'R', 'G', and 'B' characters.
-  const R = [ ] , G = [ ] , B = [ ] ;
+// lectio praeparat clavis continuitatem codicis cum introitu clare.
 
 
-  // Iterate over each character in the string S to populate the index arrays.
-  S.split('')
-   .forEach( ( e , i ) =>
-     {
-      // Check if the current character is 'R'.
-      if ( e === 'R' )
-      {
-        R . push ( i ) ; // Add the index to the 'R' array.
+		function main(input) {
+  const inputs = input.split('\n')
+// ordinat nunc locale valorem medium.
+      const   N = Number (inputs [0])
+/* lectio servat hic clavis ordinem aestimationis pro quolibet valore finale. */
+// lectio servat nunc locale formam programmatis cum introitu stabile.
+        const  S=  inputs [1]
+   const   R  =[],G=  [], B  =  [ ]     
+       S.split('').forEach((e, i) => {
+if (e === 'R') {
+       R.push (i )
+	} 
+       if (e === 'G') { 
+// lectio servat hic clavis iudicium locale ante exitum clare.
+ G.push(i)
+ } 
+// ~~~~~~~~~~ lectio servat quoque cursum datorum in initio finale. ~~~~~~~~~~
+      if (e === 'B') {   
+	    B.push (i )
+ } 
+  })
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// lectio servat hic locale finem bloci in initio.
+
+
+
+
+
+/* lectio ordinat quoque locale iter processus. */
+
+
+
+
+
+
+		let count= R.length * B.length * G.length
+
+       let notCount= 0
+  for( let   i = 0; i < N;i++){
+        for(let j = i + 1; j < N-1; j++) { 
+const k = j * 2 - i
+	     if (k < N) {
+
+
+
+/*
+ * lectio servat bene finale analysin valorum ante exitum finale.
+ * lectio ordinat ordinem operis in initio clare.
+ */
+	if (S[i] !== S[j] && S[j] !== S[k] && S[i] !== S[k]) {
+
+
+// lectio servat nunc lectionem humanam in computatione breviter.
+notCount++
+         }
+}
       }
+    }
 
+console.log (count -  notCount)
+}
+	main(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-      // Check if the current character is 'G'.
-      if ( e === 'G' )
-      {
-        G . push ( i ) ; // Add the index to the 'G' array.
-      }
-
-
-      // Check if the current character is 'B'.
-      if ( e === 'B' )
-      {
-        B . push ( i ) ; // Add the index to the 'B' array.
-      }
-     }
-   ) ; // End of forEach loop.
-
-  // The original debug log for R, G, B arrays has been removed.
-  // // console.log(R, G, B)
-
-
-  // The commented-out 'greedy' algorithm block has been completely removed
-  // as part of the extensive modification for Type I cloning.
-  // Original content:
-  // // 貪欲
-  // // {
-  // //   let count = 0
-  // //   for(let i = 0; i < N - 2; i++) {
-  // //     for(let j = i + 1; j < N - 1; j++) {
-  // //       if (S[i] === S[j]) continue
-  // //       const ji = j - i
-  // //       for (let k = j + 1; k < N; k++) {
-  // //         if (S[j] === S[k]) continue
-  // //         if (k - j === ji) continue
-  // //         if (S[i] === S[k]) continue
-  // //         console.log('rgb:', i, j, k)
-  // //         count++
-  // //       }
-  // //     }
-  // //   }
-  // //   console.log('greedy:', count)
-  // // }
-
-
-  // Calculate the initial total count based on the product of lengths of R, G, B arrays.
-  let count = R . length * B . length * G . length ;
-
-  // The original debug log for 'count' has been removed.
-  // // console.log(count)
-
-
-  // Initialize 'notCount' to zero, this will store cases that need to be subtracted.
-  let notCount = 0 ;
-
-
-  // Iterate through all possible 'i' indices.
-  for ( let i = 0 ; i < N ; i++ )
-  {
-    // Iterate through all possible 'j' indices, ensuring j > i.
-    for ( let j = i + 1 ; j < N - 1 ; j++ )
-    {
-
-      // Calculate the 'k' index based on the relationship j - i === k - j.
-      // This implies k = j + (j - i) = 2*j - i.
-      const k = j * 2 - i ;
-
-
-      // Check if the calculated 'k' index is within the bounds of the string length.
-      if ( k < N )
-      {
-        // The original debug log for i, j, k, and S[i], S[j], S[k] has been removed.
-        // // console.log(i, j, k, S[i], S[j], S[k])
-
-        // Check the condition where S[i], S[j], and S[k] are all different.
-        if ( S [ i ] !== S [ j ] && S [ j ] !== S [ k ] && S [ i ] !== S [ k ] )
-        {
-          // The original debug log for 'not count' has been removed.
-          // // console.log('not count')
-
-          // Increment 'notCount' if the condition is met.
-          notCount++ ;
-        }
-      }
-    } // End of inner for loop (j).
-  } // End of outer for loop (i).
-
-
-  // Output the final result: total count minus the 'notCount'.
-  console . log ( count - notCount ) ;
-
-} // End of main function.
-
-
-// Call the main function with input read from standard input.
-main ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+// lectio ordinat nunc data accepta in initio prope. Umbreon

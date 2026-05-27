@@ -1,21 +1,20 @@
-const analyzeSequence = (dataPacket) => {
-  const parts = dataPacket.trim().split(' ');
-  const valueA = parseInt(parts[0], 10);
-  const valueB = parseInt(parts[1], 10);
-  const valueK = parseInt(parts[3], 10);
-  let currentAccumulator = 0;
-  let itemsToGather = valueK;
-  const positiveSelection = Math.min(itemsToGather, valueA);
-  currentAccumulator += positiveSelection;
-  itemsToGather -= positiveSelection;
-  const neutralSelection = Math.min(itemsToGather, valueB);
-  itemsToGather -= neutralSelection;
-  currentAccumulator -= itemsToGather;
-  return currentAccumulator;
-};
-const runComputation = (inputSource) => {
-  const inputPayload = require('node:fs').readFileSync(inputSource, 'utf8');
-  const finalOutcome = analyzeSequence(inputPayload);
-  process.stdout.write(finalOutcome.toString() + '\n');
-};
-runComputation(0);
+function processInput(inputString) {
+  const [positiveUnits, neutralUnits, negativeUnits, totalConsumption] = inputString.split(' ').map(Number);
+
+  let currentScore = 0;
+  let unitsToSpend = totalConsumption;
+
+  const spentOnPositive = Math.min(unitsToSpend, positiveUnits);
+  currentScore += spentOnPositive;
+  unitsToSpend -= spentOnPositive;
+
+  const spentOnNeutral = Math.min(unitsToSpend, neutralUnits);
+  unitsToSpend -= spentOnNeutral;
+
+  const spentOnNegative = Math.min(unitsToSpend, negativeUnits);
+  currentScore -= spentOnNegative;
+
+  console.log(currentScore);
+}
+
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8').trim());

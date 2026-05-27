@@ -1,153 +1,135 @@
 "use strict";
 
 /**
- * @class TextParser
- * @description A utility class to facilitate reading data (tokens and lines)
- *              from a multi-line string input source. It maintains internal
- *              pointers to track the current position within the text.
- * @param {string} sourceText The complete raw input string, typically containing multiple lines.
- * @param {function} parseFn The function used to convert string tokens into a specific data type.
- *                           Defaults to `parseInt` if not provided, suitable for integer inputs.
+ * A utility class for parsing input data from a string.
+ * It allows reading tokens one by one or entire lines of tokens.
  */
-function TextParser(sourceText, parseFn) {
-  // Store the input string, split into an array where each element is a line.
-  this.textLines = sourceText.split("\n");
-  // Initialize the index for the current token (column) within the active line.
-  this.currentTokenIndex = 0;
-  // Initialize the index for the current line being processed.
-  this.currentLineIndex = 0;
-  // Assign the provided parsing function, or default to parseInt for numerical conversion.
-  this.valueParser = parseFn || parseInt;
+function InputProcessor(sourceString, parsingFunction) {
+  // Store the input string, split into individual lines.
+  this._sourceLines = sourceString.split("\n");
+  // Initialize the current column index within the current line.
+  this._currentColumn = 0;
+  // Initialize the current line index.
+  this._currentLine = 0;
+  // Set the function to use for parsing each token, defaults to Number.
+  this._parseFunction = parsingFunction || Number;
 }
 
 /**
- * @method readNextToken
- * @memberof TextParser.prototype
- * @description Retrieves the next single token from the input stream.
- *              It advances the internal token pointer and, if necessary, the line pointer.
- * @returns {any|undefined} The parsed value of the token, or `undefined` if no more tokens are left.
+ * Reads and returns the next token from the input.
+ * Tokens are separated by spaces within a line.
+ * It advances the internal pointers to the next token.
+ * @returns {any} The parsed value of the next token.
  */
-TextParser.prototype.readNextToken = function() {
-  // Fetch the content of the current line based on the line index.
-  let currentLineContent = this.textLines[this.currentLineIndex];
+InputProcessor.prototype.readNextToken = function () {
+  // Get the content of the current line.
+  let currentLineContent = this._sourceLines[this._currentLine];
 
-  // If there's no content for the current line (end of input), return nothing.
+  // If the line is empty or undefined, there's nothing to read.
   if (!currentLineContent) {
     return;
   }
 
-  // Trim leading/trailing whitespace from the line and then split it into an array of string tokens.
-  let lineParts = currentLineContent.trim().split(" ");
-  // Extract the specific token at the current token index.
-  let extractedToken = lineParts[this.currentTokenIndex];
+  // Trim whitespace and split the line into individual tokens.
+  let lineTokens = currentLineContent.trim().split(" ");
+  // Get the token at the current column index.
+  let currentTokenValue = lineTokens[this._currentColumn];
 
-  // Increment the token index to prepare for the subsequent read operation.
-  this.currentTokenIndex++;
+  // Advance the column pointer.
+  this._currentColumn++;
 
-  // Check if all tokens on the current line have been processed.
-  if (lineParts.length === this.currentTokenIndex) {
-    // If so, reset the token index and move to the next line.
-    this.currentTokenIndex = 0;
-    this.currentLineIndex++;
+  // If all tokens on the current line have been read,
+  // reset the column pointer and advance to the next line.
+  if (lineTokens.length === this._currentColumn) {
+    this._currentColumn = 0;
+    this._currentLine++;
   }
 
-  // Parse the extracted string token using the configured parser function and return the result.
-  return this.valueParser(extractedToken);
+  // Parse and return the token value using the specified parsing function.
+  return this._parseFunction(currentTokenValue);
 };
 
 /**
- * @method readLineTokens
- * @memberof TextParser.prototype
- * @description Reads and parses all tokens from the current line, returning them as an array.
- *              This method then automatically advances to the next line.
- * @returns {Array<any>|undefined} An array of parsed tokens from the current line, or `undefined` if no more lines.
+ * Reads and returns all tokens from the current line as an array.
+ * It advances the internal pointer to the next line.
+ * @returns {Array<any>} An array of parsed token values from the current line.
  */
-TextParser.prototype.readLineTokens = function() {
-  // Obtain the full string content of the current line.
-  let activeLineString = this.textLines[this.currentLineIndex];
+InputProcessor.prototype.readLineTokens = function () {
+  // Get the content of the current line.
+  let currentLineContent = this._sourceLines[this._currentLine];
 
-  // If the line content is undefined, it means we've reached the end of the input.
-  if (!activeLineString) {
+  // If the line is empty or undefined, there's nothing to read.
+  if (!currentLineContent) {
     return;
   }
 
-  // Reset the token index for the current line, as the entire line is being consumed.
-  this.currentTokenIndex = 0;
-  // Advance the line index to point to the next line, as the current one is fully processed.
-  this.currentLineIndex++;
+  // Reset the column pointer as we're consuming the whole line.
+  this._currentColumn = 0;
+  // Advance to the next line.
+  this._currentLine++;
 
-  // Split the line into string tokens and then use the `valueParser` to convert each token
-  // into its desired data type, returning the array of parsed values.
-  return activeLineString.split(" ").map(this.valueParser);
+  // Split the line by spaces, parse each token, and return the array.
+  return currentLineContent.split(" ").map(this._parseFunction);
 };
 
-// Export the TextParser class so it can be utilized by other modules.
-module.exports = TextParser;
-
+// Export the InputProcessor class for use in other modules.
+module.exports = InputProcessor;
 
 /**
- * @function processChallenge
- * @description The primary function responsible for executing the problem-solving logic.
- *              It reads two numbers (a limit and a target), computes all divisors
- *              of the target number, and then identifies the largest divisor
- *              that satisfies a specific condition related to the limit.
- * @param {string} challengeInput The raw string data provided for the challenge.
+ * The main function that processes the input data to find a specific divisor.
+ * @param {string} rawData The raw input string containing N and M.
  */
-function processChallenge(challengeInput) {
-  // Instantiate the TextParser to manage reading numerical values from the input.
-  const parserInstance = new TextParser(challengeInput);
+function processInputData(rawData) {
+  // Create a new parser instance for the input data.
+  const dataParser = new InputProcessor(rawData);
 
-  // Read the first two integer values from the parsed input.
-  // `limitValue` typically represents a constraint or an upper bound.
-  const limitValue = parserInstance.readNextToken();
-  // `targetNumber` is the integer for which divisors need to be found.
-  const targetNumber = parserInstance.readNextToken();
+  // Read the first two numbers from the input.
+  // N represents the target quotient minimum.
+  const targetValue = dataParser.readNextToken();
+  // M represents the number for which we need to find divisors.
+  const limitNumber = dataParser.readNextToken();
 
-  // Initialize an array to store the factors (divisors) of the `targetNumber`.
+  // Initialize an array to store the divisors of M.
   const factorList = [];
 
-  // Efficiently find divisors up to the square root of `targetNumber`.
-  // For every `idx` that divides `targetNumber`, `idx` is a factor.
-  for (let idx = 1; idx <= Math.sqrt(targetNumber); idx++) {
-    if (targetNumber % idx === 0) {
+  // Find divisors up to the square root of M.
+  // This efficiently finds one half of the divisor pairs.
+  for (let idx = 1; idx <= Math.sqrt(limitNumber); idx++) {
+    // If 'idx' divides 'limitNumber' evenly, it's a divisor.
+    if (limitNumber % idx === 0) {
       factorList.push(idx);
     }
   }
 
-  // Iterate backwards through the already found factors to identify their complementary factors.
-  // If `d` is a factor of `M`, then `M/d` is also a factor. This loop adds the larger
-  // complementary factors that were not caught in the first loop (e.g., if `M = 36`, `idx = 2`, `M/idx = 18`).
+  // Iterate through the already found divisors in reverse order
+  // to find their complementary divisors (M / divisor).
+  // This ensures that the factorList remains sorted if M is not a perfect square.
   for (let idx = factorList.length - 1; idx >= 0; idx--) {
-    const complementaryFactor = targetNumber / factorList[idx];
-    // Add the complementary factor only if it is distinct and larger than
-    // the largest factor currently in the list. This prevents duplicates (for perfect squares)
-    // and ensures the list remains somewhat ordered for the final check.
+    const complementaryFactor = limitNumber / factorList[idx];
+    // Add the complementary factor only if it's greater than the last factor already in the list.
+    // This prevents adding duplicates when M is a perfect square (e.g., for M=36, sqrt=6, 6*6=36, 6 is added once).
     if (complementaryFactor > factorList[factorList.length - 1]) {
       factorList.push(complementaryFactor);
     }
   }
 
-  // Initialize a variable to hold the largest factor that meets the defined criteria.
-  let largestFactor = 1;
+  // Initialize a variable to store the greatest factor that satisfies the condition.
+  let greatestFactor = 1;
 
-  // Traverse the complete list of factors to find the one satisfying the condition.
+  // Iterate through the complete list of divisors.
+  // Find the largest divisor 'd' such that M / d is greater than or equal to N.
   for (let idx = 0; idx < factorList.length; idx++) {
-    // The condition is: `targetNumber / currentFactor >= limitValue`.
-    // This is equivalent to finding the largest `currentFactor` such that `currentFactor <= targetNumber / limitValue`.
-    if (targetNumber / factorList[idx] >= limitValue) {
-      // If the current factor satisfies the condition, update `largestFactor`.
-      // Due to the way factors are added (smaller ones first, then larger complementary ones),
-      // this loop will correctly identify the largest qualifying factor.
-      largestFactor = factorList[idx];
+    // Check the condition: M divided by the current divisor must be at least N.
+    if (limitNumber / factorList[idx] >= targetValue) {
+      // If the condition is met, update 'greatestFactor' to the current divisor.
+      // Since the factorList is sorted, this will eventually find the largest such divisor.
+      greatestFactor = factorList[idx];
     }
   }
 
-  // Output the final computed largest factor to the standard console.
-  console.log(largestFactor);
+  // Output the final greatest factor found.
+  console.log(greatestFactor);
 }
 
-
-// Invoke the main challenge processing function.
-// It reads the input from the standard input stream (`/dev/stdin`) using Node.js's
-// file system module, ensuring the content is interpreted as UTF-8 text.
-processChallenge(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Read input from standard input and pass it to the main processing function.
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

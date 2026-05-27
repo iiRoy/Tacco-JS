@@ -1,29 +1,28 @@
 'use strict';
 
-function computeSequence(incomingValue) {
-  incomingValue = Number(incomingValue);
-  let upperThreshold = Number.MAX_SAFE_INTEGER;
-  let scaleFactor = 1e6;
+function processInput(dataValue) {
+    dataValue = Number(dataValue);
+    let maximumSafeInteger = Number.MAX_SAFE_INTEGER;
+    let divisorConstant = 1_000_000; // A million for scaling
+    let sequenceElements = [2, 1];
 
-  let seriesItems = [2, 1];
-
-  for (let sequenceIndex = 2; sequenceIndex <= incomingValue; sequenceIndex++) {
-    let currentElement = seriesItems[sequenceIndex - 2] + seriesItems[sequenceIndex - 1];
-    // Optional: Log the index and current element for observation
-    if (currentElement <= upperThreshold) {
-      seriesItems.push(currentElement);
-    } else {
-      seriesItems.push(currentElement / scaleFactor);
+    for (let idx = 2; idx <= dataValue; ++idx) {
+        let currentSum = sequenceElements[idx - 2] + sequenceElements[idx - 1];
+        // Debugging: console.log(idx, currentSum);
+        if (currentSum <= maximumSafeInteger) {
+            sequenceElements.push(currentSum);
+        } else {
+            sequenceElements.push(currentSum / divisorConstant);
+        }
     }
-  }
-  // Optional: Display the system's maximum safe integer constant
-  // console.log(Number.MAX_SAFE_INTEGER);
 
-  if (currentElement <= upperThreshold) {
-    console.log(seriesItems.pop());
-  } else {
-    console.log(seriesItems.pop() * scaleFactor);
-  }
+    // Note: Max safe integer value
+
+    if (currentSum <= maximumSafeInteger) {
+        console.log(sequenceElements.pop());
+    } else {
+        console.log(sequenceElements.pop() * divisorConstant);
+    }
 }
 
-computeSequence(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

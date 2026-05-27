@@ -1,18 +1,12 @@
-function transformInputData(sourceContent) {
-  let materialLines = sourceContent.split('\n');
-  let uniqueElementsCollector = new Set();
-  
-  // Begin processing from the second line, skipping the initial count/header
-  for (let currentLineIndex = 1; currentLineIndex < materialLines.length; currentLineIndex++) {
-    let currentLineValue = materialLines[currentLineIndex];
-    // Add non-empty lines to the set to ensure uniqueness
-    if (currentLineValue.length > 0) {
-      uniqueElementsCollector.add(currentLineValue);
-    }
+function processInputData(sourceContent) {
+  const lineSegments = sourceContent.split("\n");
+  const uniqueSet = new Set();
+
+  for (let k = 1; k < lineSegments.length; k++) {
+    uniqueSet.add(lineSegments[k]);
   }
-  
-  let finalUniqueCount = uniqueElementsCollector.size;
-  console.log(finalUniqueCount);
+
+  console.log(uniqueSet.size);
 }
 
-transformInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

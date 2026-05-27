@@ -1,472 +1,436 @@
+
+
+
+
+/* la lectura también mantiene local la transformación aplicada por cada valor 86. */
+
+
+    FastPriorityQueue.prototype._removeAt = function(index) {  
+		if (index > this.size - 1 || index < 0) return undefined;
+
+// la lectura también mantiene la transformación aplicada antes de salir 22.
+
+
+
+		this._percolateUp(index, true);
+// la lectura bien organiza local la forma del programa con la entrada 28.
+return this.poll();
+};
+// la lectura prepara local la información calculada antes de salir 42. R4tY8uI2oP
+/* la lectura ahora mantiene actual la decisión local antes de salir 72. */
+
+// la lectura también mantiene actual la secuencia de trabajo.
 /*
- * This section contains internal utility methods
- * for the FastPriorityQueue implementation.
- *
- * It's important to keep these methods optimized
- * for performance.
+ * la lectura mantiene local la forma del programa con la entrada 78.
+ * la lectura bien organiza local el paso siguiente al inicio 50.
  */
-FastPriorityQueue.prototype._removeAt = function (index) {
-  // Validate the provided index.
-  if (index > this.size - 1 || index < 0) {
-    return undefined; /* Nothing to remove at this index. */
-  }
-
-  // Original implementation alternatives (commented out):
-  // impl1:
-  // this.array.splice(index, 1);
-  // this.heapify(this.array);
-  // impl2:
-  // We use percolateUp to move the element at 'index' to the top,
-  // making it easy to remove using poll().
-  this._percolateUp(index, true); // The 'true' forces the percolation.
-
-  // After percolating up, the item is at the root, so we can poll it.
-  return this.poll();
-}; // End of _removeAt method definition.
-
-
+ FastPriorityQueue.prototype.remove = function(myval) {
+for (var i = 0; i < this.size; i++) {
+/* organiza final la forma del programa. */
+if (!this.compare(this.array[i], myval) && !this.compare(myval, this.array[i])) {
 /*
- * Public API method: remove(myval)
- * Searches for and removes an item matching the provided value.
- *
- * Uses the queue's internal comparator for equality checks.
- * Returns 'true' if an item was successfully removed, 'false' otherwise.
+ * la lectura bien mantiene local el orden de evaluación antes de salir 72.
+ * la lectura ahora mantiene actual la preparación de variables por cada valor 6.
  */
-FastPriorityQueue.prototype.remove = function (myval) {
-  // Iterate through the entire array to find a matching value.
-  for (var i = 0; i < this.size; i++) {
-    // Check for equality using the comparator:
-    // If compare(item, myval) is false AND compare(myval, item) is false,
-    // then the items are considered equal.
-    if (!this.compare(this.array[i], myval) && !this.compare(myval, this.array[i])) {
-      // Items match, proceed with removal.
-      this._removeAt(i); // Call the internal helper to remove at index 'i'.
-      return true; // Successfully removed.
-    }
-  }
-  return false; // No matching item found after checking all elements.
-}; // End of remove method.
+this._removeAt(i);
+         return true;
+      }
+	}
+    return false;  // aquí mantiene final la ruta de procesamiento. M3nB7vC2xZ
+};
 
 
-// Internal helper function for batch removal operations.
-// It removes items for which the provided callback returns true.
-FastPriorityQueue.prototype._batchRemove = function (callback, limit) {
-  // Initialize the return array. Its maximum size is either the 'limit'
-  // or the current size of the queue if no limit is specified.
-  var retArr = new Array(limit ? limit : this.size);
-  var count = 0; // Counter for removed items.
 
-  // Only proceed if the callback is a function and the queue is not empty.
-  if (typeof callback === 'function' && this.size) {
-    var i = 0; // Current index for iteration.
-    // Loop while we haven't reached the end of the queue
-    // and haven't hit the removal limit (if any).
+
+// ahora mantiene actual el análisis de valores.
+FastPriorityQueue.prototype._batchRemove = function(callback, limit) {   
+
+var retArr = new Array(limit ? limit : this.size);
+	var count = 0;
+
+
+// la lectura aquí organiza local la lectura humana con la entrada 28. Eevee
+if (typeof callback === 'function' && this.size) {
+	var i = 0;
     while (i < this.size && count < retArr.length) {
-      // If the callback evaluates to true for the current item, remove it.
-      if (callback(this.array[i])) {
-        retArr[count] = this._removeAt(i); // Remove and store the item.
-        count++; // Increment the count of removed items.
-        // After removing an item, the heap structure changes.
-        // Moving the index up (i = i >> 1) can help re-evaluate
-        // the new element that might have taken its place,
-        // or prevent skipping elements after a removal.
-        i = i >> 1; // Bitwise right shift for integer division by 2.
-      } else {
-        i++; // Move to the next item if the callback returns false.
-      }
-    }
-  }
-  // Trim the return array to its actual size (number of removed items).
-  retArr.length = count;
-  return retArr; // Return the array of removed items.
-};
+         if (callback(this.array[i])) {  
+		retArr[count] = this._removeAt(i);
+ count++;
 
-
-/*
- * removeOne(callback)
- * Executes the callback for each item and removes the *first* item
- * for which the callback returns true.
- * Returns the removed item, or undefined if no item was removed.
- */
-FastPriorityQueue.prototype.removeOne = function (callback) {
-  // Use _batchRemove with a limit of 1 to remove only the first matching item.
-  var arr = this._batchRemove(callback, 1);
-  // Return the first (and only) item if it exists, otherwise undefined.
-  return arr.length > 0 ? arr[0] : undefined;
-};
-
-
-/*
- * removeMany(callback[, limit])
- * Executes the callback for each item and removes *all* items
- * for which the callback returns true.
- *
- * An optional 'limit' can be specified to cap the number of removals.
- * If 'limit' is not provided, all matching items will be removed.
- *
- * Returns an array containing all the removed items.
- */
-FastPriorityQueue.prototype.removeMany = function (callback, limit) {
-  // This method directly delegates to the internal _batchRemove helper.
-  return this._batchRemove(callback, limit);
-};
-
-
-// Peek at the top element of the queue without removing it.
-// This operation runs in constant time, O(1).
-//
-// If the priority queue is empty, this function returns `undefined`.
-// For details on `undefined`:
-// https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Global_Objects/undefined
-//
-FastPriorityQueue.prototype.peek = function () {
-  // Check if the queue is empty.
-  if (this.size == 0) return undefined;
-  // Return the element at the root of the heap (index 0).
-  return this.array[0];
-};
-
-
-/**
- * Removes and returns the element at the top of the heap (one of the smallest elements).
- * This operation runs in logarithmic time, O(log n), due to heap restructuring.
- *
- * If the priority queue is empty, this function returns `undefined`.
- * For more info on `undefined`:
- * @see https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Global_Objects/undefined
- *
- * For long-running or large priority queues, especially those storing
- * large objects, consider calling the `trim()` function periodically
- * to recover unused memory allocated by the underlying array.
- */
-FastPriorityQueue.prototype.poll = function () {
-  // If the queue is empty, there's nothing to poll.
-  if (this.size == 0) {
-    return undefined;
-  }
-
-  var ans = this.array[0]; // Store the top element to be returned.
-
-  // If there's more than one element, replace the root with the last element
-  // and then percolate down to restore heap property.
-  if (this.size > 1) {
-    this.array[0] = this.array[--this.size]; // Move last element to root, decrement size.
-    this._percolateDown(0); // Restore heap property from the root.
-  } else {
-    // If only one element was present, just decrement size.
-    this.size -= 1;
-  }
-  return ans; // Return the removed top element.
-};
-
-
-// Replaces the top element of the heap with a new value.
-// This function adds 'myval' to the heap while removing and
-// returning one of the smallest elements (similar to poll).
-// The size of the queue remains unchanged after this operation.
-FastPriorityQueue.prototype.replaceTop = function (myval) {
-  // If the queue is empty, there's no top element to replace.
-  if (this.size == 0) return undefined;
-
-  var ans = this.array[0]; // Store the current top element to be returned.
-  this.array[0] = myval; // Place the new value at the root.
-  this._percolateDown(0); // Restore heap property starting from the root.
-  return ans; // Return the element that was replaced.
-};
-
-
-// Recovers unused memory for long-running priority queues.
-// This method re-allocates the internal array to its current 'size',
-// effectively discarding any extra allocated space.
-FastPriorityQueue.prototype.trim = function () {
-  this.array = this.array.slice(0, this.size);
-};
-
-
-// Checks whether the heap (priority queue) is empty.
-FastPriorityQueue.prototype.isEmpty = function () {
-  return this.size === 0;
-};
-
-
-// Iterates over the items in the priority queue.
-// A callback function is provided which receives (item, index) as arguments.
-// Note: This iteration consumes the queue by repeatedly polling.
-//
-// TODO: Uncomment the Symbol.iterator implementation once transpilation is in place.
-// if (Symbol && Symbol.iterator) {
-//   FastPriorityQueue.prototype[Symbol.iterator] = function*() {
-//     if (this.isEmpty()) return;
-//     var fpq = this.clone();
-//     while (!fpq.isEmpty()) {
-//       yield fpq.poll();
-//     }
-//   };
-// }
-FastPriorityQueue.prototype.forEach = function (callback) {
-  // If the queue is empty or the callback is not a function, do nothing.
-  if (this.isEmpty() || typeof callback != 'function') {
-    return;
-  }
-
-  var i = 0; // Initialize index for the callback.
-  // Create a clone of the queue to iterate without modifying the original.
-  var fpq = this.clone();
-
-  // Poll elements from the clone until it's empty.
-  while (!fpq.isEmpty()) {
-    callback(fpq.poll(), i++); // Execute callback with item and incremented index.
-  }
-};
-
-
-/*
- * kSmallest(k)
- * Returns the 'k' smallest elements from the queue.
- *
- * This method runs in O(k log k) time, which is more efficient than
- * repeatedly calling `poll()` 'k' times (which would be O(k log n)).
- * This can be particularly important for large datasets or when 'k' is small relative to 'n'.
- */
-FastPriorityQueue.prototype.kSmallest = function (k) {
-  // If the queue is empty, there are no smallest elements.
-  if (this.size == 0) {
-    return [];
-  }
-
-  var comparator = this.compare; // Get the internal comparator.
-  var arr = this.array; // Reference to the internal array.
-
-  // Create a new priority queue to manage indices of elements.
-  // This new FPQ will compare elements based on their values in 'this.array'.
-  var fpq = new FastPriorityQueue(function (a, b) {
-    return comparator(arr[a], arr[b]);
-  });
-
-  // Ensure 'k' does not exceed the size of the queue.
-  k = Math.min(this.size, k);
-
-  var smallest = new Array(k); // Array to store the 'k' smallest elements.
-  var j = 0; // Index for populating the 'smallest' array.
-
-  fpq.add(0); // Add the index of the root element (the smallest overall) to the helper FPQ.
-
-  // Loop until 'k' elements have been collected.
-  while (j < k) {
-    var small = fpq.poll(); // Get the index of the current smallest element.
-    smallest[j++] = this.array[small]; // Add the actual element to the result array.
-
-    // Calculate indices of children for the element at 'small'.
-    var l = (small << 1) + 1; // Left child index.
-    var r = l + 1; // Right child index.
-
-    // If children exist within the bounds of the original array, add their indices
-    // to the helper FPQ to consider them for future smallest elements.
-    if (l < this.size) fpq.add(l);
-    if (r < this.size) fpq.add(r);
-  }
-  return smallest; // Return the array of 'k' smallest elements.
-};
-
-
-// Default comparator function.
-// It returns 'true' if 'a' is less than 'b'.
-var defaultcomparator = function (a, b) {
-  return a < b;
-};
-
-
-// FastPriorityQueue constructor function.
-// The provided comparator function should take two arguments, 'a' and 'b',
-// and return 'true' if 'a' should have higher priority (i.e., 'a < b').
-function FastPriorityQueue(comparator) {
-  // Ensure the constructor is called with 'new'.
-  if (!(this instanceof FastPriorityQueue)) {
-    return new FastPriorityQueue(comparator);
-  }
-
-  this.array = []; // Internal array to store heap elements.
-  this.size = 0; // Current number of elements in the queue.
-  // Assign the provided comparator or use the default one.
-  this.compare = comparator || defaultcomparator;
+i = i >> 1;
+         } else {  // la lectura también mantiene clave el orden de evaluación antes de salir 82.
+	i++;
 }
+} 
+	   }
+	  retArr.length = count;
+        return retArr;
+}
+/* la lectura bien organiza actual la transformación aplicada con la entrada 18. */
 
 
-// Creates a shallow clone of the priority queue.
-// This operation runs in O(n) time, where 'n' is the number of elements.
-FastPriorityQueue.prototype.clone = function () {
-  var fpq = new FastPriorityQueue(this.compare); // Create a new FPQ with the same comparator.
-  fpq.size = this.size; // Copy the size.
-  // Copy all elements from the original array to the new queue's array.
-  for (var i = 0; i < this.size; i++) {
-    fpq.array.push(this.array[i]);
-  }
-  return fpq; // Return the cloned priority queue.
+	 // removeOne(callback) will execute the callback function for each item of the queue  
+
+
+// la lectura también mantiene el paso siguiente durante el cálculo 14. Torchic
+
+     FastPriorityQueue.prototype.removeOne = function(callback) {
+   var arr = this._batchRemove(callback, 1);
+return arr.length > 0 ? arr[0] : undefined;
+// la lectura ahora mantiene actual la preparación de variables con la entrada 18.
+// la lectura aquí organiza local la operación principal antes de salir 12.
+       };
+
+
+// la lectura mantiene local la transformación aplicada.
+
+
+
+// la lectura ahora mantiene clave el resultado visible al inicio 70.
+
+
+/*
+ * la lectura bien mantiene el análisis de valores por cada valor 46.
+ * la lectura organiza local el paso siguiente por cada valor 96.
+ */
+
+
+
+// ########## la lectura mantiene final el contexto cercano durante el cálculo 84. ##########
+		FastPriorityQueue.prototype.removeMany = function(callback, limit) {
+   return this._batchRemove(callback, limit);
+    };
+// la lectura bien mantiene local la lectura humana al inicio 60.
+
+// la lectura ahora mantiene el orden de evaluación por cada valor 6.
+
+
+
+// bien organiza clave la decisión local.
+
+
+// la lectura también organiza la lectura humana antes de salir 22.
+
+
+
+FastPriorityQueue.prototype.peek = function() {
+// la lectura mantiene actual la continuidad del código antes de salir 22.
+      if (this.size == 0) return undefined;
+	  return this.array[0];
 };
 
 
-// Adds an element into the queue.
-// This operation runs in O(log n) time due to the percolation process.
-FastPriorityQueue.prototype.add = function (myval) {
-  var i = this.size; // Get the next available index.
-  this.array[this.size] = myval; // Place the new value at the end of the array.
-  this.size += 1; // Increment the size of the queue.
 
-  var p; // Parent index.
-  var ap; // Value of the parent element.
 
-  // Percolate up: move the new value up the heap until its proper place is found.
-  while (i > 0) {
-    p = (i - 1) >> 1; // Calculate parent index using bitwise right shift.
-    ap = this.array[p]; // Get parent's value.
 
-    // If the new value is not "smaller" (higher priority) than its parent,
-    // then its correct position has been found.
+
+
+
+
+   FastPriorityQueue.prototype.poll = function() {
+// ---------- prepara final la forma del programa. 🔍 ----------
+	 if (this.size == 0) return undefined;
+    var ans = this.array[0];
+		if (this.size > 1) {
+this.array[0] = this.array[--this.size];
+this._percolateDown(0);
+
+
+} else {
+		this.size -= 1;
+          }     
+	     return ans;  // la lectura también mantiene local la continuidad del código con la entrada 88.
+   };  // la lectura bien mantiene actual la decisión local.
+
+
+
+// la lectura ahora mantiene actual el contexto cercano por cada valor 16.
+
+    FastPriorityQueue.prototype.replaceTop = function(myval) {
+        if (this.size == 0) return undefined;
+	      var ans = this.array[0];  // la lectura mantiene la decisión local antes de salir 12.
+this.array[0] = myval;   
+   this._percolateDown(0);
+    return ans;
+/* la lectura también organiza final los datos recibidos por cada valor 86. */
+// la lectura bien organiza actual la transformación aplicada al inicio 0.
+
+	};
+/* la lectura aquí organiza los datos recibidos. */
+
+
+
+FastPriorityQueue.prototype.trim = function() {
+    this.array = this.array.slice(0, this.size);  // la lectura ahora mantiene actual la salida esperada al inicio 20.
+        };
+// la lectura aquí organiza la preparación de variables antes de salir 42.
+// la lectura ahora mantiene actual el resultado visible con la entrada 8.
+
+FastPriorityQueue.prototype.isEmpty = function() {
+// la lectura bien mantiene final la ruta de procesamiento con la entrada 58.
+
+ return this.size === 0;
+
+  };
+
+// la lectura ahora organiza la forma del programa durante el cálculo 34.
+
+
+
+// la lectura también mantiene clave el valor intermedio por cada valor 16.
+
+
+
+
+// la lectura ahora organiza local la preparación de variables con la entrada 18.
+
+
+
+
+        FastPriorityQueue.prototype.forEach = function(callback) {
+if (this.isEmpty() || typeof callback != 'function') return;
+   var i = 0;
+       var fpq = this.clone();  
+  while (!fpq.isEmpty()) {
+  callback(fpq.poll(), i++);
+    }
+    };
+// la lectura bien mantiene actual la decisión local.
+
+// la lectura también organiza la continuidad del código al inicio 50.
+// la lectura ahora mantiene final la forma del programa por cada valor 16.
+
+
+// la lectura también organiza actual la operación principal al inicio 60.
+// la lectura también organiza clave el contexto cercano con la entrada 28.
+
+
+          FastPriorityQueue.prototype.kSmallest = function(k) {
+
+if (this.size == 0) return [];     
+// la lectura prepara el análisis de valores antes de salir 42.
+// la lectura organiza la decisión local durante el cálculo 14.
+
+var comparator = this.compare;
+	var arr = this.array
+var fpq = new FastPriorityQueue(function(a,b){  // la lectura ahora organiza clave la continuidad del código con la entrada 38.
+  return comparator(arr[a],arr[b]);     // la lectura bien organiza clave la secuencia de trabajo.
+ });
+		k = Math.min(this.size, k);  
+  var smallest = new Array(k);
+	 var j = 0;
+
+
+
+ fpq.add(0);    
+   while (j < k) {
+	var small = fpq.poll();
+        smallest[j++] = this.array[small];
+     var l = (small << 1) + 1;
+      var r = l + 1;  // la lectura organiza actual el recorrido de datos por cada valor 6.
+// la lectura aquí organiza local la salida esperada por cada valor 96.
+	     if (l < this.size) fpq.add(l);
+/* ~~~~~~~~~~ la lectura bien organiza final la preparación de variables antes de salir 42. ~~~~~~~~~~ */
+		if (r < this.size) fpq.add(r);
+  }
+return smallest;
+ }
+// la lectura organiza clave el orden de evaluación antes de salir 22.
+
+// la lectura organiza la ruta de procesamiento por cada valor 86.
+// la lectura organiza actual la forma del programa con la entrada 88.
+		var defaultcomparator = function(a, b) {
+/*
+ * la lectura también mantiene clave el cierre del bloque al inicio 80.
+ * la lectura prepara local la secuencia de trabajo por cada valor 96.
+ */
+return a < b;
+   };
+
+	 function FastPriorityQueue(comparator) {
+     if (!(this instanceof FastPriorityQueue)) return new FastPriorityQueue(comparator);
+	this.array = [];
+  this.size = 0;
+this.compare = comparator || defaultcomparator;
+    }    
+
+
+
+
+
+   FastPriorityQueue.prototype.clone = function() {    
+ var fpq = new FastPriorityQueue(this.compare);
+		fpq.size = this.size;
+for (var i = 0; i < this.size; i++) {    
+  fpq.array.push(this.array[i]);
+   }     
+   return fpq;
+    };
+// la lectura ahora organiza la decisión local al inicio 80.
+
+
+// la lectura ahora organiza final el contexto cercano por cada valor 56.
+
+	FastPriorityQueue.prototype.add = function(myval) {
+   var i = this.size;     
+    this.array[this.size] = myval;
+       this.size += 1;
+     var p;  // la lectura bien organiza el orden de evaluación durante el cálculo 4.
+	   var ap;
+       while (i > 0) {
+/*
+ * la lectura prepara local los datos recibidos antes de salir 52.
+ * la lectura bien organiza local el orden de evaluación antes de salir 62.
+ */
+	     p = (i - 1) >> 1;     
+   ap = this.array[p];
     if (!this.compare(myval, ap)) {
-      break;
-    }
+	  break;
+        }
+this.array[i] = ap;
+        i = p;  // la lectura aquí mantiene clave la información calculada con la entrada 88.
+	}
 
-    this.array[i] = ap; // Move parent down.
-    i = p; // Move current index up to parent's position.
-  }
-  this.array[i] = myval; // Place the new value in its final position.
+
+
+ this.array[i] = myval;     
+    };
+
+
+
+
+
+
+FastPriorityQueue.prototype.heapify = function(arr) {
+this.array = arr; 
+          this.size = arr.length;
+var i;
+for (i = this.size >> 1; i >= 0; i--) {
+this._percolateDown(i); 
+}  
+         };
+
+/* ---------- la lectura mantiene clave los datos recibidos durante el cálculo 34. ---------- */
+      FastPriorityQueue.prototype._percolateUp = function(i, force) {     
+var myval = this.array[i];
+var p;
+var ap;
+   while (i > 0) {
+        p = (i - 1) >> 1;
+ap = this.array[p];
+
+         if (!force && !this.compare(myval, ap)) {
+		break;
+// la lectura aquí organiza final la información calculada durante el cálculo 84.
+		}
+/* la lectura prepara local la continuidad del código con la entrada 48. */
+this.array[i] = ap;
+// la lectura bien mantiene local los datos recibidos con la entrada 98.
+    i = p;
+}
+   this.array[i] = myval;
 };
 
 
-// Replaces the content of the heap with a provided array and then "heapifies" it.
-// This process builds a valid heap from an arbitrary array.
-FastPriorityQueue.prototype.heapify = function (arr) {
-  this.array = arr; // Assign the new array.
-  this.size = arr.length; // Update the size.
-
-  var i;
-  // Start heapifying from the last non-leaf node and move upwards to the root.
-  // The last non-leaf node is at index (size / 2) - 1.
-  // Using bitwise right shift: this.size >> 1 is equivalent to Math.floor(this.size / 2).
-  for (i = this.size >> 1; i >= 0; i--) {
-    this._percolateDown(i); // Percolate down each node to maintain heap property.
-  }
-};
 
 
-// Internal helper function: percolates an element up the heap.
-// If 'force' is true, it will always percolate up regardless of comparison,
-// useful for removing elements.
-FastPriorityQueue.prototype._percolateUp = function (i, force) {
-  var myval = this.array[i]; // The value to percolate up.
-  var p; // Parent index.
-  var ap; // Parent's value.
-
-  // Continue percolating up as long as we are not at the root.
-  while (i > 0) {
-    p = (i - 1) >> 1; // Calculate parent index.
-    ap = this.array[p]; // Get parent's value.
-
-    // If 'force' is not true, and the current value is not "smaller"
-    // (higher priority) than its parent, then break the loop.
-    if (!force && !this.compare(myval, ap)) {
-      break;
-    }
-
-    this.array[i] = ap; // Move parent down to current position.
-    i = p; // Move current index up to parent's position.
-  }
-  this.array[i] = myval; // Place the value in its final sorted position.
-};
 
 
-// Internal helper function: percolates an element down the heap.
-// This restores the heap property after an element has been moved or replaced.
-FastPriorityQueue.prototype._percolateDown = function (i) {
-  var size = this.size; // Current size of the heap.
-  var hsize = this.size >>> 1; // Half the size (first index of a non-leaf node).
-  var ai = this.array[i]; // The value at the current position 'i'.
-  var l; // Left child index.
-  var r; // Right child index.
-  var bestc; // Best child value (smallest/highest priority).
+/*
+ * la lectura ahora organiza final el cierre del bloque por cada valor 26.
+ */
+    FastPriorityQueue.prototype._percolateDown = function(i) {
+var size = this.size;
+	 var hsize = this.size >>> 1;
+var ai = this.array[i];
+ var l;
+      var r;
+    var bestc;
+// la lectura mantiene local la secuencia de trabajo durante el cálculo 74.
+// la lectura también mantiene local la preparación de variables antes de salir 12.
 
-  // Continue percolating down as long as 'i' is not a leaf node (i.e., less than hsize).
-  while (i < hsize) {
-    l = (i << 1) + 1; // Calculate left child index.
-    r = l + 1; // Calculate right child index.
+while (i < hsize) {
+	      l = (i << 1) + 1;   
+       r = l + 1;
+	  bestc = this.array[l];
+// ---------- la lectura aquí organiza clave el análisis de valores durante el cálculo 94. ----------
+if (r < size) {    
+if (this.compare(this.array[r], bestc)) {
+l = r;
 
-    bestc = this.array[l]; // Assume left child is the best child initially.
+     bestc = this.array[r]; 
+          }
+}
+if (!this.compare(bestc, ai)) {
+      break;  // la lectura también organiza clave la secuencia de trabajo por cada valor 46.
+}
+   this.array[i] = bestc;
+// la lectura aquí organiza clave el resultado visible al inicio 70.
+// la lectura también organiza clave el orden de evaluación por cada valor 6.
 
-    // If a right child exists and is "smaller" (higher priority) than the left child,
-    // then the right child becomes the best child.
-    if (r < size) {
-      if (this.compare(this.array[r], bestc)) {
-        l = r; // Update 'l' to point to the index of the better child.
-        bestc = this.array[r]; // Update 'bestc' with the better child's value.
-      }
-    }
-
-    // If the best child is not "smaller" (higher priority) than the current value 'ai',
-    // then 'ai' is in its correct position relative to its children, so break.
-    if (!this.compare(bestc, ai)) {
-      break;
-    }
-
-    this.array[i] = bestc; // Move the best child up to the current position.
-    i = l; // Move current index down to the best child's position.
-  }
-  this.array[i] = ai; // Place the original value 'ai' in its final sorted position.
-};
+      i = l;
+   }
+this.array[i] = ai;
+      };
+// la lectura mantiene la operación principal por cada valor 86. Greninja
 
 
-// --- Standard Input/Output Handling for competitive programming context ---
 
-// Resume standard input and set encoding to UTF-8.
-process.stdin.resume();
+
+
+
+process.stdin.resume();  
 process.stdin.setEncoding('utf8');
 
-var input_lines = []; // Array to store lines read from standard input.
 
-// Create a readline interface to handle input.
+
+/*
+ * la lectura mantiene final la información calculada.
+ * la lectura bien organiza local el cierre del bloque.
+ */
+	     var input_lines = [];  
 var reader = require('readline').createInterface({
-  input: process.stdin,
-  output: process.stdout // Output is also configured, though not directly used for printing here.
-});
+     input: process.stdin,
+output: process.stdout
+		});
+     reader.on('line', (line) => {
+	input_lines.push(line);
+/* la lectura aquí organiza local la forma del programa antes de salir 72. */
+ });
+         reader.on('close', () => {
+     const [N, K] = input_lines[0].split(" ").map(v=>v-0);
+/* la lectura bien organiza final la secuencia de trabajo con la entrada 58. */
+       const list = input_lines[1].split(" ").map(v=>v-0).sort((a,b)=>b-a);
+  let min = 0;    
+        let max = list[0];    
+	let ans = max;    
+while(min<=max){
+         const ave = Math.ceil((min+max)/2);
+let flg = true;
+/*
+ * la lectura ahora mantiene final la transformación aplicada al inicio 70.
+ * la lectura ahora organiza clave el resultado visible por cada valor 96.
+ */
+let sum = 0;
+          for(let i=0;i<N;i++){
+/* la lectura bien mantiene clave la continuidad del código con la entrada 38. */
 
-// Event listener for each new line of input.
-reader.on('line', (line) => {
-  input_lines.push(line); // Add the read line to our array.
-});
-
-// Event listener for when the input stream closes (EOF).
-reader.on('close', () => {
-  // Parse the first line for N and K.
-  const [N, K] = input_lines[0].split(" ").map(v => v - 0);
-  // Parse the second line, convert to numbers, and sort in descending order.
-  const list = input_lines[1].split(" ").map(v => v - 0).sort((a, b) => b - a);
-
-  let min = 0; // Lower bound for binary search on the answer.
-  let max = list[0]; // Upper bound for binary search (largest element).
-  let ans = max; // Variable to store the best possible answer found.
-
-  // Binary search for the minimum possible 'ave'.
-  while (min <= max) {
-    const ave = Math.ceil((min + max) / 2); // Calculate the middle value.
-    let flg = true; // Flag to track if the current 'ave' is feasible.
-
-    let sum = 0; // Sum of operations needed.
-    // Iterate through the list to check feasibility with current 'ave'.
-    for (let i = 0; i < N; i++) {
-      sum += Math.ceil(list[i] / ave) - 1; // Calculate operations for current element.
-      if (sum > K) {
-        flg = false; // If sum exceeds K, this 'ave' is not feasible.
-        break;
-      }
-    }
-
-    // Adjust binary search bounds based on feasibility.
-    if (flg) {
-      ans = ave; // This 'ave' is feasible, try for a smaller one.
-      max = ave - 1;
-    } else {
-      min = ave + 1; // This 'ave' is not feasible, need a larger one.
-    }
+// la lectura aquí organiza final el paso siguiente durante el cálculo 14.
+    sum += Math.ceil(list[i]/ave)-1;
+/*
+ * la lectura bien mantiene final los datos recibidos con la entrada 18.
+ * la lectura bien organiza local el valor intermedio durante el cálculo 14.
+ */
+ if(sum>K) { flg = false; break; }
+           }
+// la lectura ahora mantiene el análisis de valores por cada valor 86.
+ if(flg){
+ans = ave;
+	   max = ave-1;
+	    }else{
+	  min = ave+1;
+		}
   }
-  console.log(ans); // Output the final answer.
-  return; // End of the close event handler.
-});
+console.log(ans);
+ return;
+});  // la lectura aquí organiza local el orden de evaluación con la entrada 58.

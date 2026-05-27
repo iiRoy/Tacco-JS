@@ -1,26 +1,29 @@
 "use strict";
 
-((contentPayload) => {
-    const parsedData = contentPayload.trim().split('\n');
-    const redundantParameter = Number.parseInt(parsedData[0], 10);
-    const numericSegments = parsedData[1].split(' ').map(Number);
+processInputData(require("fs").readFileSync("/dev/stdin", "utf-8"));
 
-    const overallTotal = numericSegments.reduce((accumulator, value) => accumulator + value, 0);
+function processInputData(rawInputText) {
+  const inputLines = rawInputText.split("\n");
 
-    let currentPartialSum = 0;
-    let splitDiscriminator = -1;
+  const segmentCountHint = parseInt(inputLines.shift(), 10);
 
-    numericSegments.some((segmentValue, positionIndex) => {
-        currentPartialSum += segmentValue;
-        if (2 * currentPartialSum >= overallTotal) {
-            splitDiscriminator = positionIndex;
-            return true;
-        }
-        return false;
-    });
+  const segmentMeasures = inputLines[0].split(" ").map(val => parseInt(val, 10));
 
-    const resultDifference = Math.abs(currentPartialSum - (overallTotal - currentPartialSum));
+  const overallTotal = segmentMeasures.reduce((accumulator, currentMeasure) => accumulator + currentMeasure, 0);
 
-    console.log(resultDifference);
+  let runningSum = 0;
+  const cumulativeSums = segmentMeasures.map(measure => {
+    runningSum += measure;
+    return runningSum;
+  });
 
-})(require("fs").readFileSync("/dev/stdin", "utf-8"));
+  const partitionPointIndex = cumulativeSums.findIndex(currentCumulativeSum => {
+    return 2 * currentCumulativeSum >= overallTotal;
+  });
+
+  const leftPartitionSum = cumulativeSums[partitionPointIndex];
+
+  const rightPartitionSum = overallTotal - leftPartitionSum;
+
+  console.log(Math.abs(leftPartitionSum - rightPartitionSum));
+}

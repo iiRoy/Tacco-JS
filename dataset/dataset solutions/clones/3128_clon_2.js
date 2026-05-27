@@ -1,76 +1,73 @@
-var inputRecords = [ ];
-var inputHandler = require( 'readline' );
+var inputData = []; // Array to store all lines read from input
+var ioHandler = require('readline'); // Module for handling line-by-line input
 
-var interfaceInstance = inputHandler.createInterface( {
-    input: process.stdin,
-    output: process.stdout,
-} );
+var inputReader = ioHandler.createInterface({
+    input: process.stdin, // Standard input stream
+    output: process.stdout, // Standard output stream (not actively used for writing in this script)
+});
 
-interfaceInstance.on( 'line', function ( receivedLine ) {
-    inputRecords.push( receivedLine );
-} );
+// Event listener for each line of input received
+inputReader.on('line', function (currentLine) {
+    inputData.push(currentLine); // Add the current line to our collection
+});
 
-interfaceInstance.on( 'close', function ( ) {
-    // A large prime number used for modulo operations.
-    var moduloConstant = Math.pow( 10, 9 ) + 7;
-    // Extract the total number of elements from the input.
-    var elementCount = Number( inputRecords.shift( ) );
-    // Initialize an array to store the numerical sequence.
-    var valueSequence = Array( elementCount );
+// Event listener for when the input stream closes
+inputReader.on('close', function () {
+    // Define a large prime modulus for calculations
+    var primeModulus = Math.pow(10, 9) + 7;
 
-    // Populate the sequence array with numbers parsed from input.
-    for ( var indexVar = 0; indexVar < elementCount; indexVar++ ) {
-        valueSequence[ indexVar ] = Number( inputRecords[ indexVar ] );
+    // The first line of input is the size of the array
+    var arraySize = Number(inputData.shift());
+    // Initialize an array to hold the color values
+    var colorArray = Array(arraySize);
+
+    // Populate the color array from the remaining input lines
+    for (var idx = 0; idx < arraySize; idx++) {
+        colorArray[idx] = Number(inputData[idx]);
     }
 
-    // Object to store frequencies of distinct elements appearing before a change.
-    var occurrenceCounts = { };
-    // Variable to accumulate the final computed sum.
-    var cumulativeSum = 0;
+    // Object to store the frequency of each color based on specific conditions
+    var colorCounts = {};
+    // Variable to accumulate the final sum
+    var finalSum = 0;
 
-    // Example sequences (for illustration purposes only):
-    // 1,2,1,2,2
-    // 2,1,2,1,2,1 -> (distinct permutations)
-    // 1,2,1,2,2,1 -> (various combinations)
-    // 1,1,2,1,2,1 -> (different arrangements)
-    // Placeholder 1: x,x,x,x,x,x,x (4 elements)
-    // Placeholder 2: x,x,x,x,x,x,x,x (6 elements)
-    // Placeholder 3: x,x,x,x,x,x,x,x,x (9 elements)
-
-    // Iterate through the sequence to count adjacent differing elements.
-    for ( var indexVar = 0; indexVar < elementCount - 1; indexVar++ ) {
-        // If an element is different from its successor, increment its count.
-        if ( valueSequence[ indexVar ] !== valueSequence[ indexVar + 1 ] ) {
-            occurrenceCounts[ valueSequence[ indexVar ] ] === undefined ? occurrenceCounts[ valueSequence[ indexVar ] ] = 1 : occurrenceCounts[ valueSequence[ indexVar ] ]++;
+    // Iterate through the color array, checking adjacent elements
+    // If two adjacent elements are different, increment the count for the first element's color
+    for (var idx = 0; idx < arraySize - 1; idx++) {
+        if (colorArray[idx] !== colorArray[idx + 1]) {
+            // If the color hasn't been seen yet, initialize its count to 1; otherwise, increment
+            colorCounts[colorArray[idx]] === undefined ? colorCounts[colorArray[idx]] = 1 : colorCounts[colorArray[idx]]++;
         }
     }
-    // The last element in the sequence always contributes to its count.
-    occurrenceCounts[ valueSequence[ elementCount - 1 ] ]++;
+    // The last element of the array is always counted once, unconditionally
+    colorCounts[colorArray[arraySize - 1]]++;
 
-    // Calculate combinations for each distinct element count.
-    Object.keys( occurrenceCounts ).forEach( function ( itemKey ) {
-        cumulativeSum += calculateCombinations( occurrenceCounts[ itemKey ], 2 );
-        cumulativeSum %= moduloConstant;
-    } );
+    // Iterate over the keys (colors) in the colorCounts object
+    Object.keys(colorCounts).forEach(function (colorKey) {
+        // Add the number of combinations (picking 2 items) for the current color's count
+        finalSum += calculateCombinations(colorCounts[colorKey], 2);
+        // Apply the modulus to keep the sum within bounds
+        finalSum %= primeModulus;
+    });
 
-    // Add 1 to the final sum, potentially accounting for an initial state or base case.
-    // This addresses a potential undercounting in the problem's logic.
-    console.log( cumulativeSum + 1 );
-} );
+    // Output the final calculated sum, adding 1 as per problem requirements (likely for an initial state or base case)
+    console.log(finalSum + 1);
+});
 
-// Function to compute permutations (nPr).
-function calculatePermutations( totalItems, selectItems ) {
-    var productResult = 1;
-    var loopCounter = 0;
-    while ( loopCounter < selectItems ) {
-        productResult *= totalItems;
-        totalItems--;
-        loopCounter++;
+// Function to compute permutations P(n, m)
+function calculatePermutations(totalItems, selectItems) {
+    var permResult = 1; // Initialize the result for permutations
+    var loopCounter = 0; // Counter for the loop iterations
+    while (loopCounter < selectItems) {
+        permResult *= totalItems; // Multiply the result by the current totalItems value
+        totalItems--; // Decrement totalItems for the next iteration
+        loopCounter++; // Increment the loop counter
     }
-    return ( productResult );
+    return (permResult); // Return the computed permutation value
 }
 
-// Function to compute combinations (nCr).
-function calculateCombinations( totalItems, selectItems ) {
-    return ( calculatePermutations( totalItems, selectItems ) / calculatePermutations( selectItems, selectItems ) );
+// Function to compute combinations C(n, m) using permutations
+function calculateCombinations(totalItems, selectItems) {
+    // C(n, m) = P(n, m) / P(m, m)
+    return (calculatePermutations(totalItems, selectItems) / calculatePermutations(selectItems, selectItems));
 }

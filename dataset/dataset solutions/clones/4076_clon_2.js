@@ -1,71 +1,65 @@
-function processTravelPlan (rawInputString)
-{
-    // The incoming raw string data needs to be parsed.
-    // It's split by newline characters, then each line by spaces,
-    // and finally, each resulting string segment is converted into a numeric value.
-    const processedTrips = rawInputString
-        .split( "\n" )
-        .map(  (lineStr) => {
-                 return lineStr
-                     .split( " " )
-                     .map(  (coordStr) => Number(coordStr)  )
-                 ;
-            }  )
-    ;
+// This function processes the input data to determine if a travel plan is feasible.
+function processInput(rawData) {
+    // Parse the raw string input into a 2D array of numbers.
+    // Each line is split by newline, then each line by space, and finally converted to numbers.
+    const parsedData = rawData.split("\n").map(lineStr => lineStr.split(" ").map(numStr => Number(numStr)));
 
-    // The first entry in the processed data typically represents the count
-    // of subsequent travel points, though it's not directly used in the core logic.
-    const numTravelPoints = processedTrips[0][0];
+    // The first element of the first line typically contains the number of entries,
+    // though it's not explicitly used in the loop bounds here.
+    const numEntries = parsedData[0][0];
 
-    // Extract the array of actual travel segments, omitting the initial count.
-    const tripRecords = processedTrips.slice(1);
+    // Extract the actual travel information, skipping the first line which contains N.
+    const travelLog = parsedData.slice(1);
 
-    // Initialize the starting conditions: time, x-coordinate, and y-coordinate at the origin.
-    let previousTime = 0;
-    let previousX = 0;
-    let previousY = 0;
+    // Initialize current position and time.
+    // These variables track the traveler's state.
+    let currentTime = 0;
+    let currentX = 0;
+    let currentY = 0;
 
-    // A boolean flag to track the overall feasibility of the entire journey.
-    // It is assumed to be feasible until proven otherwise.
-    let journeyIsValid = true;
+    // Flag to determine if the entire travel plan is possible.
+    let isPossible = true;
 
-    // Iterate through each planned travel segment to assess its validity.
-    for ( const segmentData of tripRecords )
-    {
-        // Deconstruct the current segment's details into target time and coordinates.
-        const nextTime = segmentData[0];
-        const nextX = segmentData[1];
-        const nextY = segmentData[2];
+    // Iterate through each planned travel entry.
+    for (const entryDetails of travelLog) {
+        // Destructure the current entry into target time and coordinates.
+        const targetTime = entryDetails[0];
+        const targetX = entryDetails[1];
+        const targetY = entryDetails[2];
 
-        // Calculate the absolute change in the X and Y dimensions from the previous point.
-        const xDistance = Math.abs(nextX - previousX);
-        const yDistance = Math.abs(nextY - previousY);
+        // Calculate the absolute difference in X and Y coordinates.
+        const deltaX = Math.abs(targetX - currentX);
+        const deltaY = Math.abs(targetY - currentY);
 
-        // Determine the duration of the current travel segment.
-        const timeElapsed = nextTime - previousTime;
+        // Calculate the time difference required for this segment.
+        const deltaTime = targetTime - currentTime;
 
-        // Apply the two core conditions for a valid movement:
-        // 1. The total Manhattan distance must not exceed the time available.
-        // 2. The parity (evenness or oddness) of the total distance must match the parity of the time elapsed.
-        if (  !  (  (xDistance + yDistance <= timeElapsed)  &&  (nextTime % 2 === (xDistance + yDistance) % 2)  )  )
-        {
-            journeyIsValid = false; // If conditions are not met, the journey is deemed invalid.
-            // The original code does not break the loop here, so we continue checking subsequent segments
-            // even if the journey is already known to be invalid, to maintain identical structure.
+        // The original code had a commented-out line, keeping it as a comment.
+        // const totalDistance = Math.abs(targetX) + Math.abs(targetY);
+
+        // Check two conditions for feasibility:
+        // 1. The Manhattan distance (deltaX + deltaY) must be less than or equal to the available time (deltaTime).
+        // 2. The parity (even/odd) of the target time must match the parity of the Manhattan distance.
+        //    This ensures that the traveler can reach the destination at exactly the target time,
+        //    as each step changes time by 1 and distance by 1.
+        if (!((deltaX + deltaY <= deltaTime) && (targetTime % 2 === (deltaX + deltaY) % 2))) {
+            isPossible = false; // If conditions are not met, the plan is impossible.
+            // No need to break here, as the problem statement implies checking all points,
+            // though breaking early would be an optimization. The original doesn't break.
         }
 
-        // Update the 'previous' state variables for the next iteration of the loop.
-        previousTime = nextTime;
-        previousX = nextX;
-        previousY = nextY;
+        // Update current position and time for the next iteration.
+        currentTime = targetTime;
+        currentX = targetX;
+        currentY = targetY;
     }
 
-    // Formulate the final output message based on the journey's validity.
-    const validityStatus = journeyIsValid ? "Yes" : "No";
+    // Determine the final message based on the feasibility flag.
+    const resultMessage = isPossible ? "Yes" : "No";
 
-    // Display the computed status to the standard output.
-    console.log(validityStatus);
+    // Output the result to the console.
+    console.log(resultMessage);
 }
 
-// Invoke the travel plan processing function, reading input from the standard input stream.
-processTravelPlan(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// Read input from standard input and pass it to the processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

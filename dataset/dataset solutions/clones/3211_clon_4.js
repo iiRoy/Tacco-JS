@@ -1,81 +1,27 @@
 "use strict";
 
-const performCalculation = (dataSource) => {
-    const dataLines = dataSource.split("\n");
-    const countOfNumbers = Number(dataLines[0]);
+function processSequence(rawData) {
+  const lineSegments = rawData.split("\n");
+  const sequenceLength = Number(lineSegments[0]);
 
-    const sourceNumbers = dataLines.slice(1, countOfNumbers + 1).map(Number);
+  const numericSequence = lineSegments.slice(1, 1 + sequenceLength).map(Number);
 
-    const memoizedCosts = new Map(); // Stores results of subproblems { index -> [costState0, costState1, ...] }
+  const initialCosts = [0, 0, 0, 0, 0];
 
-    const extractParityCosts = (valueToProcess) => {
-        const costWhenEven = (valueToProcess === 0) ? 2 : (valueToProcess % 2);
-        const costWhenOdd = (valueToProcess + 1) % 2;
-        return { costWhenEven, costWhenOdd };
-    };
+  const finalCosts = numericSequence.reduce((previousCosts, currentElement) => {
+    const evenOperationCost = currentElement === 0 ? 2 : currentElement % 2;
+    const oddOperationCost = (currentElement + 1) % 2;
 
-    const computePathCost = (currentIndex, currentClassifier) => {
-        if (currentIndex === 0) {
-            return 0; // Base case: cost is zero before processing any elements
-        }
+    const nextCost0 = previousCosts[0] + currentElement;
+    const nextCost1 = Math.min(previousCosts[0], previousCosts[1]) + evenOperationCost;
+    const nextCost2 = Math.min(...previousCosts.slice(0, 3)) + oddOperationCost;
+    const nextCost3 = Math.min(previousCosts[2], previousCosts[3]) + evenOperationCost;
+    const nextCost4 = Math.min(...previousCosts) + currentElement;
 
-        if (memoizedCosts.has(currentIndex) && memoizedCosts.get(currentIndex)[currentClassifier] !== undefined) {
-            return memoizedCosts.get(currentIndex)[currentClassifier];
-        }
+    return [nextCost0, nextCost1, nextCost2, nextCost3, nextCost4];
+  }, initialCosts);
 
-        const elementAtIndex = sourceNumbers[currentIndex - 1]; // Adjust for zero-based array access
-        const { costWhenEven, costWhenOdd } = extractParityCosts(elementAtIndex);
+  console.log(Math.min(...finalCosts));
+}
 
-        let resultantCost;
-
-        switch (currentClassifier) {
-            case 0:
-                resultantCost = computePathCost(currentIndex - 1, 0) + elementAtIndex;
-                break;
-            case 1:
-                resultantCost = Math.min(
-                    computePathCost(currentIndex - 1, 0),
-                    computePathCost(currentIndex - 1, 1)
-                ) + costWhenEven;
-                break;
-            case 2:
-                resultantCost = Math.min(
-                    computePathCost(currentIndex - 1, 0),
-                    computePathCost(currentIndex - 1, 1),
-                    computePathCost(currentIndex - 1, 2)
-                ) + costWhenOdd;
-                break;
-            case 3:
-                resultantCost = Math.min(
-                    computePathCost(currentIndex - 1, 2),
-                    computePathCost(currentIndex - 1, 3)
-                ) + costWhenEven;
-                break;
-            case 4:
-                resultantCost = Math.min(
-                    computePathCost(currentIndex - 1, 0),
-                    computePathCost(currentIndex - 1, 1),
-                    computePathCost(currentIndex - 1, 2),
-                    computePathCost(currentIndex - 1, 3),
-                    computePathCost(currentIndex - 1, 4)
-                ) + elementAtIndex;
-                break;
-            default:
-                resultantCost = Infinity; // Should not be reached with valid classifiers
-        }
-
-        if (!memoizedCosts.has(currentIndex)) {
-            memoizedCosts.set(currentIndex, Array(5).fill(undefined));
-        }
-        memoizedCosts.get(currentIndex)[currentClassifier] = resultantCost;
-        return resultantCost;
-    };
-
-    const finalResults = Array(5).fill(0).map((_, classifierIndex) =>
-        computePathCost(countOfNumbers, classifierIndex)
-    );
-
-    console.log(Math.min(...finalResults));
-};
-
-performCalculation(require("fs").readFileSync("/dev/stdin", "utf8"));
+processSequence(require("fs").readFileSync("/dev/stdin", "utf8"));

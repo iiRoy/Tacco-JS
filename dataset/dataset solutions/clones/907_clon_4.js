@@ -1,77 +1,88 @@
-let collectedInputData = [];
-let currentDataPointer = 0;
+let accumulatedInput = '';
+let inputTokens = [];
+let tokenIndex = 0;
 
-const acquireNumericalValue = () => +collectedInputData[currentDataPointer++];
-const acquireTextSegment = () => collectedInputData[currentDataPointer++];
-const displayResult = (value) => console.log(value);
+function getNextToken() {
+    return inputTokens[tokenIndex++];
+}
 
-const deriveSignature = (textSegment) => {
-    return Array.from(textSegment).reduce((balance, symbol) => {
-        let [leftDeficit, rightSurplus] = balance;
-        if (symbol === '(') {
-            rightSurplus++;
-        } else { // symbol is ')'
-            if (rightSurplus > 0) {
-                rightSurplus--;
+function getNextInteger() {
+    return parseInt(inputTokens[tokenIndex++], 10);
+}
+
+function analyzeParentheses(expressionSegment) {
+    return [...expressionSegment].reduce(
+        ([unmatchedClosingCount, openParenthesesCount], character) => {
+            if (character === '(') {
+                return [unmatchedClosingCount, openParenthesesCount + 1];
             } else {
-                leftDeficit++;
+                if (openParenthesesCount > 0) {
+                    return [unmatchedClosingCount, openParenthesesCount - 1];
+                } else {
+                    return [unmatchedClosingCount + 1, openParenthesesCount];
+                }
             }
+        },
+        [0, 0]
+    );
+}
+
+function executeProcessing() {
+    const totalStringCount = getNextInteger();
+    const expressionCollection = Array.from({ length: totalStringCount }, () => getNextToken());
+
+    let balanceInformation = expressionCollection.map(analyzeParentheses);
+
+    balanceInformation.sort((itemOne, itemTwo) => {
+        const balanceDiffOne = itemOne[1] - itemOne[0];
+        const balanceDiffTwo = itemTwo[1] - itemTwo[0];
+
+        if (balanceDiffOne !== balanceDiffTwo) {
+            return balanceDiffTwo - balanceDiffOne;
         }
-        return [leftDeficit, rightSurplus];
-    }, [0, 0]);
-};
+        return itemTwo[0] - itemOne[0];
+    });
 
-const comparisonCriterion = (firstItem, secondItem) => {
-    const firstNetBalance = firstItem[1] - firstItem[0];
-    const secondNetBalance = secondItem[1] - secondItem[0];
+    let currentAccumulatedBalance = 0;
+    let processingPossible = true;
+    let itemsProcessed = 0;
 
-    if (firstNetBalance !== secondNetBalance) {
-        return secondNetBalance - firstNetBalance;
-    }
-    return secondItem[0] - firstItem[0];
-};
+    let mutableBalanceInformation = [...balanceInformation];
 
-const executeCoreLogic = () => {
-    const entryCount = acquireNumericalValue();
-    const sourceFragments = Array.from({ length: entryCount }).map(() => acquireTextSegment());
+    while (itemsProcessed < totalStringCount) {
+        let foundSuitableItem = false;
+        let selectedItemIndex = -1;
 
-    let signaturesList = sourceFragments.map(deriveSignature);
-    signaturesList.sort(comparisonCriterion);
-
-    let currentOpenCount = 0;
-    let sequenceCompletionPossible = true;
-
-    for (let iterationStep = 0; iterationStep < entryCount; iterationStep++) {
-        let itemProcessedInCurrentStep = false;
-        
-        for (let signaturePos = 0; signaturePos < entryCount; signaturePos++) {
-            const currentSignature = signaturesList[signaturePos];
-
-            if (currentSignature !== null && currentOpenCount >= currentSignature[0]) {
-                currentOpenCount += (currentSignature[1] - currentSignature[0]);
-                signaturesList[signaturePos] = null;
-                itemProcessedInCurrentStep = true;
+        for (let i = 0; i < mutableBalanceInformation.length; i++) {
+            const candidateItem = mutableBalanceInformation[i];
+            if (currentAccumulatedBalance >= candidateItem[0]) {
+                selectedItemIndex = i;
+                foundSuitableItem = true;
                 break;
             }
         }
 
-        if (!itemProcessedInCurrentStep) {
-            sequenceCompletionPossible = false;
+        if (foundSuitableItem) {
+            const chosenItem = mutableBalanceInformation.splice(selectedItemIndex, 1)[0];
+            currentAccumulatedBalance += (chosenItem[1] - chosenItem[0]);
+            itemsProcessed++;
+        } else {
+            processingPossible = false;
             break;
         }
     }
 
-    displayResult(sequenceCompletionPossible && currentOpenCount === 0 ? 'Yes' : 'No');
-};
- 
+    console.log(processingPossible && currentAccumulatedBalance === 0 ? 'Yes' : 'No');
+}
+
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
- 
-let rawInputBuffer = '';
-process.stdin.on('data', (chunk) => {
-    rawInputBuffer += chunk;
+
+process.stdin.on('data', function(chunk) {
+    accumulatedInput += chunk;
 });
-process.stdin.on('end', () => {
-    collectedInputData = rawInputBuffer.trim().split(/\s+/);
-    executeCoreLogic();
+
+process.stdin.on('end', function() {
+    inputTokens = accumulatedInput.trim().split(/\s+/);
+    executeProcessing();
 });

@@ -1,46 +1,79 @@
-function ProcessData(rawData) {
+function ProcessInput(rawData) {
   "use strict";
-  const textRows = rawData.split('\n');
-  const itemCount = Number.parseInt(textRows[0], 10);
-  const numericValues = textRows[1].split(' ').map(strVal => Number.parseInt(strVal, 10));
+  // Split the entire input string by newline characters to get individual data rows.
+  const dataRows = rawData.split("\n");
 
-  let totalSum = 0;
-  let previousVal = 0, currentVal = numericValues[0];
-  for ( let idx = 0; idx < itemCount - 1; idx++ ) {
-    previousVal = currentVal;
-    currentVal = numericValues[idx + 1];
-    if ( ( previousVal >= 0 && currentVal >= 0 ) || ( previousVal < 0 && currentVal < 0 ) ) {
-      totalSum += Math.abs(previousVal);
-      currentVal = Math.abs(currentVal);
-      continue;
-    } else if ( previousVal >= 0 && currentVal < 0 ) {
-      if ( previousVal > Math.abs(currentVal) ) {
-          totalSum += previousVal;
-      } else {
-        if ( numericValues[idx + 2] >= 0 ) {
-          totalSum += previousVal;
+  // Parse the first line to determine the total count of numerical items.
+  const itemCount = parseInt(dataRows[0], 10);
+
+  // Process the second line: split by space, then convert each string segment to an integer.
+  const numericValues = dataRows[1].split(" ").map(strNum => parseInt(strNum, 10));
+
+  // Initialize the variable that will accumulate the final calculated sum.
+  let finalResult = 0;
+
+  // Set up the initial 'current' and 'next' values for the iterative process.
+  let currentVal = 0;
+  let nextVal = numericValues[0]; // The first element of the array starts as 'next'.
+
+  // Iterate through the numeric values, stopping one element before the end,
+  // as 'nextVal' will always look one step ahead.
+  for (let idx = 0; idx < itemCount - 1; idx++) {
+    // Update the 'current' value to what 'next' was in the previous step.
+    currentVal = nextVal;
+    // Update 'next' value to the subsequent element in the array.
+    nextVal = numericValues[idx + 1];
+
+    // Condition 1: Both current and next values have the same sign (both non-negative or both negative).
+    if ((currentVal >= 0 && nextVal >= 0) || (currentVal < 0 && nextVal < 0)) {
+      finalResult += Math.abs(currentVal); // Add the absolute value of the current number.
+      nextVal = Math.abs(nextVal);         // Transform the next number to its absolute value.
+      continue; // Proceed to the next iteration of the loop.
+    }
+    // Condition 2: Current value is non-negative, and next value is negative.
+    else if (currentVal >= 0 && nextVal < 0) {
+      // Sub-condition 2a: If the current value is numerically larger than the absolute next value.
+      if (currentVal > Math.abs(nextVal)) {
+        finalResult += currentVal; // Add the current value directly to the result.
+      }
+      // Sub-condition 2b: Otherwise (current value is less than or equal to absolute next value).
+      else {
+        // Look two steps ahead in the original array to decide the operation.
+        if (numericValues[idx + 2] >= 0) {
+          finalResult += currentVal; // Add the current value.
         } else {
-          totalSum -= previousVal;
-          currentVal = -currentVal;
+          finalResult -= currentVal; // Subtract the current value.
+          nextVal = -nextVal;        // Invert the sign of the next value.
         }
       }
-      continue;
-    } else { // previousVal < 0 && currentVal >= 0
-      if ( Math.abs(previousVal) > currentVal ) {
-        totalSum -= previousVal;
-        currentVal = -currentVal;
-      } else {
-        if ( numericValues[idx + 2] < 0 ) {
-          totalSum -= previousVal;
-          currentVal = -currentVal;
+      continue; // Proceed to the next iteration.
+    }
+    // Condition 3: Current value is negative, and next value is non-negative.
+    else { // This implicitly covers the case where currentVal < 0 and nextVal >= 0.
+      // Sub-condition 3a: If the absolute current value is numerically larger than the next value.
+      if (Math.abs(currentVal) > nextVal) {
+        finalResult -= currentVal; // Subtract the current value.
+        nextVal = -nextVal;        // Invert the sign of the next value.
+      }
+      // Sub-condition 3b: Otherwise (absolute current value is less than or equal to next value).
+      else {
+        // Look two steps ahead in the original array to decide the operation.
+        if (numericValues[idx + 2] < 0) {
+          finalResult -= currentVal; // Subtract the current value.
+          nextVal = -nextVal;        // Invert the sign of the next value.
         } else {
-          totalSum += previousVal;
+          finalResult += currentVal; // Add the current value.
         }
       }
-      continue;
+      continue; // Proceed to the next iteration.
     }
   }
-    
-  console.log(totalSum + currentVal);
+
+  // After the loop completes, add the final 'nextVal' (which holds the last processed value)
+  // to the accumulated result and print the total to the console.
+  console.log(finalResult + nextVal);
 }
-ProcessData( require('fs').readFileSync('/dev/stdin', 'utf8') );
+
+// Read the entire content of standard input synchronously using Node.js 'fs' module,
+// then pass it to the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

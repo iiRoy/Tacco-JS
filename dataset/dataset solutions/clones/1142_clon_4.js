@@ -1,36 +1,36 @@
-const obtainLongestRun = (inputCollection) => {
-    const sequencePivots = [];
-
-    for (let currentElementIndex = 1; currentElementIndex < inputCollection.length; ++currentElementIndex) {
-        const value = inputCollection[currentElementIndex];
-
-        if (sequencePivots.length === 0 || value > sequencePivots[sequencePivots.length - 1]) {
-            sequencePivots.push(value);
+function locateInsertionIndex(collection, targetValue, lowerBound, upperBound) {
+    while (lowerBound < upperBound) {
+        const midPoint = Math.floor((lowerBound + upperBound) / 2);
+        if (collection[midPoint] < targetValue) {
+            lowerBound = midPoint + 1;
         } else {
-            let lowerBound = 0;
-            let upperBound = sequencePivots.length - 1;
-            let replacementIndex = sequencePivots.length; // Default to end, adjusted by binary search
-
-            while (lowerBound <= upperBound) {
-                const midPoint = Math.floor((lowerBound + upperBound) / 2);
-                if (sequencePivots[midPoint] >= value) {
-                    replacementIndex = midPoint;
-                    upperBound = midPoint - 1;
-                } else {
-                    lowerBound = midPoint + 1;
-                }
-            }
-            sequencePivots[replacementIndex] = value;
+            upperBound = midPoint;
         }
     }
-    return sequencePivots.length;
-};
+    return lowerBound;
+}
 
-const systemAccess = require('node:fs');
-const rawData = systemAccess.readFileSync('/dev/stdin', 'utf8');
-const transformedData = rawData.trim().split('\n').map(Number);
+function calculateSequenceLength() {
+    T[0] = 0;
 
-transformedData[0] = 0;
+    const endValues = [];
 
-const result = obtainLongestRun(transformedData);
-console.log(result);
+    for (let i = 0; i < T.length; i++) {
+        const currentElement = T[i];
+
+        const insertionSpot = locateInsertionIndex(endValues, currentElement, 0, endValues.length);
+
+        if (insertionSpot === endValues.length) {
+            endValues.push(currentElement);
+        } else {
+            endValues[insertionSpot] = currentElement;
+        }
+    }
+
+    const finalResult = endValues.length - 1;
+    console.log(finalResult);
+}
+
+var input = require('fs').readFileSync('/dev/stdin', 'utf8');
+var T = (input.trim()).split("\n").map(Number);
+calculateSequenceLength();

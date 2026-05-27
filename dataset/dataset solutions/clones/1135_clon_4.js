@@ -1,62 +1,47 @@
-const renderOutput = console.log;
+const outputWriter = console.log;
 
-let acquiredData = "";
 if (typeof process !== "undefined") {
-    process.stdin.resume();
-    process.stdin.setEncoding('utf8');
-    process.stdin.on('data', (fragment) => {
-        acquiredData += fragment;
-    });
-    process.stdin.on('end', () => {
-        const inputSegments = acquiredData.split("\n").filter(segment => segment.trim() !== '');
-        initiateProcessing(inputSegments);
-    });
+    const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+    const rawInputLines = fileContent.split("\n");
+    processInputData(rawInputLines);
 }
 
-function initiateProcessing(dataRows) {
-    const parsedData = dataRows.map(row => {
-        const components = row.split(" ").map(Number);
-        return components.length > 1 ? components : components[0];
-    });
+function processInputData(rawInputLines) {
+    const parsedData = rawInputLines.reduce((accumulator, currentLine) => {
+        const lineContent = currentLine.trim();
+        if (lineContent === "") return accumulator;
 
-    const initialParameters = parsedData[0];
-    const capacityLimit = initialParameters[1];
+        const numericTokens = lineContent.split(/\s+/).map(Number);
+        accumulator.push(numericTokens.length > 1 ? numericTokens : numericTokens[0]);
+        return accumulator;
+    }, []);
 
-    const itemDetails = parsedData.slice(1);
+    const [initialConfiguration] = parsedData.splice(0, 1);
+    const [itemCount, capacityLimit] = initialConfiguration;
+    const itemSpecifications = parsedData;
 
-    const finalResult = determineOptimalValue(itemDetails, capacityLimit);
-    renderOutput(finalResult);
+    computeKnapsackValue(itemSpecifications, capacityLimit);
 }
 
-function determineOptimalValue(itemArray, maximumCapacity) {
-    const memoizationCache = new Map(); // Map<itemIndex, Map<remainingCapacity, maxValue>>
+function computeKnapsackValue(itemSpecifications, capacityLimit) {
+    const dpArray = Array(capacityLimit + 1).fill(0);
 
-    function computeValue(currentItemIndex, currentCapacity) {
-        if (currentItemIndex >= itemArray.length || currentCapacity <= 0) {
-            return 0;
+    for (const currentItem of itemSpecifications) {
+        const itemVal = currentItem[0];
+        const itemWt = currentItem[1];
+
+        for (let currentWtCapacity = capacityLimit; currentWtCapacity >= itemWt; currentWtCapacity--) {
+            dpArray[currentWtCapacity] = Math.max(
+                dpArray[currentWtCapacity],
+                dpArray[currentWtCapacity - itemWt] + itemVal
+            );
         }
-
-        if (memoizationCache.has(currentItemIndex) && memoizationCache.get(currentItemIndex).has(currentCapacity)) {
-            return memoizationCache.get(currentItemIndex).get(currentCapacity);
-        }
-
-        const [itemWorth, itemSize] = itemArray[currentItemIndex];
-
-        const valueWithoutCurrent = computeValue(currentItemIndex + 1, currentCapacity);
-
-        let valueWithCurrent = 0;
-        if (itemSize <= currentCapacity) {
-            valueWithCurrent = itemWorth + computeValue(currentItemIndex + 1, currentCapacity - itemSize);
-        }
-
-        if (!memoizationCache.has(currentItemIndex)) {
-            memoizationCache.set(currentItemIndex, new Map());
-        }
-        const result = Math.max(valueWithoutCurrent, valueWithCurrent);
-        memoizationCache.get(currentItemIndex).set(currentCapacity, result);
-
-        return result;
     }
 
-    return computeValue(0, maximumCapacity);
+    for (let finalWeightIndex = capacityLimit; finalWeightIndex > 0; finalWeightIndex--) {
+        if (dpArray[finalWeightIndex] > 0) {
+            outputWriter(dpArray[finalWeightIndex]);
+            return;
+        }
+    }
 }

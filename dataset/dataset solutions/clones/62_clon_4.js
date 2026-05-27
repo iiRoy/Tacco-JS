@@ -1,48 +1,50 @@
-((inputData) => {
+(function(inputData) {
+    function calculateLargeSum(operandA, operandB) {
+        const maxLen = Math.max(operandA.length, operandB.length);
 
-  const digitAtPosition = (numericString, position) =>
-    (position >= 0 ? parseInt(numericString[position], 10) : 0);
+        const paddedA = operandA.padStart(maxLen, '0');
+        const paddedB = operandB.padStart(maxLen, '0');
 
-  const recursiveSummation = (operandX, operandY, indexX, indexY, carryValue, partialSumString) => {
-    if (indexX < 0 && indexY < 0 && carryValue === 0) {
-      return partialSumString;
+        const digitsA = paddedA.split('').map(Number);
+        const digitsB = paddedB.split('').map(Number);
+
+        function recurseAdd(digitIndex, currentCarry) {
+            if (digitIndex < 0) {
+                return currentCarry > 0 ? [currentCarry] : [];
+            }
+
+            const valA = digitsA[digitIndex];
+            const valB = digitsB[digitIndex];
+
+            const totalAtPosition = valA + valB + currentCarry;
+            const resultDigit = totalAtPosition % 10;
+            const nextCarry = Math.floor(totalAtPosition / 10);
+
+            const precedingDigits = recurseAdd(digitIndex - 1, nextCarry);
+
+            return [...precedingDigits, resultDigit];
+        }
+
+        const finalDigitsArray = recurseAdd(maxLen - 1, 0);
+
+        return finalDigitsArray.join('');
     }
 
-    const digitX = digitAtPosition(operandX, indexX);
-    const digitY = digitAtPosition(operandY, indexY);
+    const inputLines = inputData.replace(/\n$/, '').split('\n');
 
-    const currentTotal = digitX + digitY + carryValue;
-    const currentResultDigit = currentTotal % 10;
-    const nextCarryValue = Math.floor(currentTotal / 10);
+    const numberOfPairs = Number(inputLines.shift());
 
-    return recursiveSummation(operandX, operandY, indexX - 1, indexY - 1, nextCarryValue, currentResultDigit + partialSumString);
-  };
+    for (let pairCounter = 0; pairCounter < numberOfPairs; pairCounter++) {
+        const firstNumStr = inputLines.shift();
+        const secondNumStr = inputLines.shift();
 
-  const addStringNumbers = (firstOperand, secondOperand) =>
-    recursiveSummation(firstOperand, secondOperand, firstOperand.length - 1, secondOperand.length - 1, 0, '');
+        const calculatedResult = calculateLargeSum(firstNumStr, secondNumStr);
 
-  const displayOutcome = (computedSummation) =>
-    computedSummation.length >= 80
-      ? process.stdout.write('overflow\n')
-      : process.stdout.write(computedSummation + '\n');
-
-  const traverseAndCompute = (pendingSegments) => {
-    if (pendingSegments.length === 0) {
-      return;
+        if (calculatedResult.length >= 80) {
+            console.log('overflow');
+        } else {
+            console.log(calculatedResult);
+        }
     }
-
-    const firstOperand = pendingSegments[0];
-    const secondOperand = pendingSegments[1];
-    const computedSummation = addStringNumbers(firstOperand, secondOperand);
-
-    displayOutcome(computedSummation);
-
-    traverseAndCompute(pendingSegments.slice(2));
-  };
-
-  const dataSegments = inputData.trim().split('\n');
-  const payloadSegments = dataSegments.slice(1);
-
-  traverseAndCompute(payloadSegments);
 
 })(require('fs').readFileSync('/dev/stdin', 'utf8'));

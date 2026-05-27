@@ -1,180 +1,330 @@
-module.exports = function(sourceUnits) {
-  var moduleRegistry = {};
+module.exports = function (moduleDefinitions) {
+  // A cache for already loaded modules.
+  var moduleCache = {};
 
-  function fetchModule(unitId) {
-    if (moduleRegistry[unitId]) {
-      return moduleRegistry[unitId].exports;
+  /**
+   * Loads a module by its identifier.
+   * @param {number} moduleIdentifier - The ID of the module to load.
+   * @returns {*} The exports of the loaded module.
+   */
+  function loadModule(moduleIdentifier) {
+    // If the module is already in the cache, return its exports.
+    if (moduleCache[moduleIdentifier]) {
+      return moduleCache[moduleIdentifier].exports;
     }
 
-    var currentUnit = moduleRegistry[unitId] = {
-      id: unitId,
-      loaded: false,
-      exports: {}
-    };
+    // Create a new module entry in the cache.
+    var moduleEntry = (moduleCache[moduleIdentifier] = {
+      id: moduleIdentifier, // The module's unique identifier.
+      loaded: false, // Flag indicating if the module has been fully loaded.
+      exports: {}, // The exports object for this module.
+    });
 
-    sourceUnits[unitId].call(currentUnit.exports, currentUnit, currentUnit.exports, fetchModule);
-    currentUnit.loaded = true;
-    return currentUnit.exports;
+    // Execute the module function, populating its exports.
+    // The module function receives: module, module.exports, and the local loadModule function.
+    moduleDefinitions[moduleIdentifier].call(
+      moduleEntry.exports,
+      moduleEntry,
+      moduleEntry.exports,
+      loadModule
+    );
+
+    // Mark the module as loaded.
+    moduleEntry.loaded = true;
+
+    // Return the module's exports.
+    return moduleEntry.exports;
   }
 
-  fetchModule.units = sourceUnits;
-  fetchModule.cache = moduleRegistry;
+  // Store all module definitions.
+  loadModule.modules = moduleDefinitions;
 
-  fetchModule.defineExport = function(exportObject, propertyName, valueGetter) {
-    if (!fetchModule.hasProperty(exportObject, propertyName)) {
-      Object.defineProperty(exportObject, propertyName, {
-        enumerable: true,
-        get: valueGetter
+  // Store the module cache.
+  loadModule.cache = moduleCache;
+
+  /**
+   * Defines a getter function for an export on a target object.
+   * @param {object} targetObject - The object to define the property on.
+   * @param {string} exportName - The name of the export property.
+   * @param {function} getterFunction - The function to call to get the export value.
+   */
+  loadModule.defineExport = function (targetObject, exportName, getterFunction) {
+    // Only define if the property doesn't already exist.
+    if (!loadModule.hasOwn(targetObject, exportName)) {
+      Object.defineProperty(targetObject, exportName, {
+        enumerable: true, // Make the property enumerable.
+        get: getterFunction, // Set the getter function.
       });
     }
   };
 
-  fetchModule.markAsModule = function(exportObject) {
+  /**
+   * Marks an object as an ES module.
+   * @param {object} targetObject - The object to mark.
+   */
+  loadModule.markAsEsModule = function (targetObject) {
+    // Set Symbol.toStringTag for better module identification.
     if (typeof Symbol !== "undefined" && Symbol.toStringTag) {
-      Object.defineProperty(exportObject, Symbol.toStringTag, {
-        value: "Module"
-      });
+      Object.defineProperty(targetObject, Symbol.toStringTag, { value: "Module" });
     }
-    Object.defineProperty(exportObject, "__esModule", {
-      value: true
-    });
+    // Set __esModule flag.
+    Object.defineProperty(targetObject, "__esModule", { value: true });
   };
 
-  fetchModule.createNamespace = function(inputVal, processingMode) {
-    if (1 & processingMode) {
-      inputVal = fetchModule(inputVal);
+  /**
+   * Handles interoperability for different module types (e.g., CommonJS to ES module).
+   * @param {*} moduleValue - The module's value.
+   * @param {number} mode - Bitmask for interop behavior.
+   * @returns {*} The interoperable module object.
+   */
+  loadModule.interopRequireDefault = function (moduleValue, mode) {
+    // If bit 1 is set, load the module first.
+    if (1 & mode) {
+      moduleValue = loadModule(moduleValue);
     }
-    if (8 & processingMode) {
-      return inputVal;
+    // If bit 8 is set, return the module value directly.
+    if (8 & mode) {
+      return moduleValue;
     }
-    if (4 & processingMode && typeof inputVal === "object" && inputVal && inputVal.__esModule) {
-      return inputVal;
+    // If bit 4 is set and it's an object and an ES module, return it directly.
+    if (4 & mode && typeof moduleValue === "object" && moduleValue && moduleValue.__esModule) {
+      return moduleValue;
     }
 
-    var namespaceObject = Object.create(null);
-    fetchModule.markAsModule(namespaceObject);
-    Object.defineProperty(namespaceObject, "default", {
-      enumerable: true,
-      value: inputVal
-    });
+    // Create a new object for interoperability.
+    var interopObject = Object.create(null);
+    // Mark it as an ES module.
+    loadModule.markAsEsModule(interopObject);
+    // Define a 'default' export pointing to the original module value.
+    Object.defineProperty(interopObject, "default", { enumerable: true, value: moduleValue });
 
-    if (2 & processingMode && typeof inputVal !== "string") {
-      for (var propKey in inputVal) {
-        fetchModule.defineExport(namespaceObject, propKey, function(propertyName) {
-          return inputVal[propertyName];
-        }.bind(null, propKey));
+    // If bit 2 is set and it's not a string, copy all properties from the original module.
+    if (2 & mode && typeof moduleValue !== "string") {
+      for (var propName in moduleValue) {
+        loadModule.defineExport(
+          interopObject,
+          propName,
+          // Bind the property name to the getter function.
+          function (p) {
+            return moduleValue[p];
+          }.bind(null, propName)
+        );
       }
     }
-    return namespaceObject;
+    return interopObject;
   };
 
-  fetchModule.retrieveDefault = function(targetModule) {
-    var accessFunction = targetModule && targetModule.__esModule ? function() {
-      return targetModule.default;
-    } : function() {
-      return targetModule;
+  /**
+   * Creates a getter for the default export, primarily for `r.n` in webpack.
+   * @param {*} moduleValue - The module's value.
+   * @returns {function} A getter function for the default export.
+   */
+  loadModule.createDefaultExportGetter = function (moduleValue) {
+    var defaultGetter =
+      moduleValue && moduleValue.__esModule
+        ? function () {
+            return moduleValue.default;
+          }
+        : function () {
+            return moduleValue;
+          };
+    // Define an 'a' export that also points to the default getter.
+    loadModule.defineExport(defaultGetter, "a", defaultGetter);
+    return defaultGetter;
+  };
+
+  /**
+   * Checks if an object has a specific property.
+   * @param {object} targetObject - The object to check.
+   * @param {string} propertyName - The name of the property.
+   * @returns {boolean} True if the object has the property, false otherwise.
+   */
+  loadModule.hasOwn = function (targetObject, propertyName) {
+    return Object.prototype.hasOwnProperty.call(targetObject, propertyName);
+  };
+
+  // Public path for assets (empty in this case).
+  loadModule.publicPath = "";
+
+  // Load the entry module (module 0) and return its exports.
+  return loadModule((loadModule.startupModule = 0));
+}([
+  // Module 0: Main entry point
+  function (module, exports, loadModule) {
+    "use strict";
+    // Import the 'fs' module.
+    var fileSystem = loadModule(1);
+    // Import the main processing logic.
+    var processInput = loadModule(2);
+
+    // Read from standard input and pass the content to the processing function.
+    processInput(fileSystem.readFileSync("/dev/stdin", "utf8"));
+  },
+
+  // Module 1: Node.js 'fs' module
+  function (module, exports) {
+    module.exports = require("fs");
+  },
+
+  // Module 2: Orchestrates input parsing and algorithm execution
+  function (module, exports, loadModule) {
+    "use strict";
+    // Import the InputProcessor class.
+    var InputProcessor = loadModule(3);
+    // Import the core algorithm function.
+    var executeAlgorithm = loadModule(5);
+
+    // Export a function that takes raw input text.
+    module.exports = function (rawInputText) {
+      // Create an instance of the InputProcessor with the raw text.
+      var parserInstance = new InputProcessor(rawInputText);
+      // Execute the main algorithm using the parser instance.
+      executeAlgorithm(parserInstance);
     };
-    fetchModule.defineExport(accessFunction, "a", accessFunction);
-    return accessFunction;
-  };
+  },
 
-  fetchModule.hasProperty = function(targetObject, checkProperty) {
-    return Object.prototype.hasOwnProperty.call(targetObject, checkProperty);
-  };
+  // Module 3: InputProcessor class for reading values
+  function (module, exports, loadModule) {
+    "use strict";
+    // Import the DataQueue class.
+    var DataQueue = loadModule(4);
 
-  fetchModule.assetPath = "";
-
-  return fetchModule(fetchModule.initialUnit = 0);
-}([function(currentModule, exportedContent, fetchModule) {
-  "use strict";
-  var dataHandler = fetchModule(1);
-  fetchModule(2)(dataHandler.readTextFile("/dev/stdin", "utf8"));
-}, function(currentModule, exportedContent) {
-  currentModule.exports = require("fs");
-}, function(currentModule, exportedContent, fetchModule) {
-  "use strict";
-  var DataStream = fetchModule(3);
-  var ProblemSolver = fetchModule(5);
-
-  currentModule.exports = function(rawInputText) {
-    var streamInstance = new DataStream(rawInputText);
-    ProblemSolver(streamInstance);
-  };
-}, function(currentModule, exportedContent, fetchModule) {
-  "use strict";
-  var ItemQueue = fetchModule(4);
-
-  currentModule.exports = class InputDataProcessor {
-    constructor(sourceString) {
-      var stringParts = sourceString.trim().split(/\s+/g);
-      this.dataQueue = new ItemQueue(stringParts);
-    }
-
-    getNextString() {
-      return this.dataQueue.dequeueElement();
-    }
-
-    getNextInteger() {
-      return parseInt(this.dataQueue.dequeueElement(), 10);
-    }
-
-    finalizeProcessing() {
-      this.dataQueue.resetCollection();
-    }
-  };
-}, function(currentModule, exportedContent, fetchModule) {
-  "use strict";
-  currentModule.exports = class ElementStore {
-    constructor() {
-      var initialElements = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : [];
-      this.elementCount = initialElements.length;
-      this.elementList = initialElements;
-      this.readIndex = 0;
-    }
-
-    enqueueElement(newElement) {
-      this.elementCount += 1;
-      this.elementList.push(newElement);
-    }
-
-    dequeueElement() {
-      var extractedElement = this.elementList[this.readIndex];
-      this.elementCount -= 1;
-      this.readIndex += 1;
-      return extractedElement;
-    }
-
-    resetCollection() {
-      this.elementList = [];
-      this.elementCount = 0;
-      this.readIndex = 0;
-    }
-  };
-}, function(currentModule, exportedContent, fetchModule) {
-  "use strict";
-
-  currentModule.exports = function(dataProcessor) {
-    var elementCount = dataProcessor.getNextInteger();
-    var valueStorage = new Array(elementCount);
-
-    for (var loopIndex = 0; loopIndex < elementCount; loopIndex++) {
-      valueStorage[loopIndex] = dataProcessor.getNextInteger();
-    }
-
-    var lowerBounds = new Array(elementCount + 1);
-    var upperBounds = new Array(elementCount + 1);
-    lowerBounds[elementCount] = 2;
-    upperBounds[elementCount] = 2;
-
-    for (var currentPos = elementCount - 1; currentPos >= 0; currentPos--) {
-      for (var currentValue = valueStorage[currentPos]; currentValue <= lowerBounds[currentPos + 1];) {
-        currentValue += valueStorage[currentPos];
+    // Define and export the InputProcessor class.
+    module.exports = class InputProcessor {
+      /**
+       * Constructs an InputProcessor instance.
+       * @param {string} rawText - The raw input string.
+       */
+      constructor(rawText) {
+        // Trim whitespace and split the input into tokens by any whitespace.
+        var tokenArray = rawText.trim().split(/\s+/g);
+        // Initialize a DataQueue with these tokens.
+        this.tokenQueue = new DataQueue(tokenArray);
       }
 
-      if (lowerBounds[currentPos] = currentValue - 1, upperBounds[currentPos] = currentValue - valueStorage[currentPos], lowerBounds[currentPos] < valueStorage[currentPos] || upperBounds[currentPos] > lowerBounds[currentPos]) {
-        return void console.log(-1);
+      /**
+       * Dequeues and returns the next string token.
+       * @returns {string} The next string token.
+       */
+      getNextString() {
+        return this.tokenQueue.dequeue();
       }
-    }
-    console.log(`${upperBounds[0]} ${lowerBounds[0]}`);
-  };
-}]);
+
+      /**
+       * Dequeues the next token and parses it as an integer.
+       * @returns {number} The next integer value.
+       */
+      getNextInt() {
+        return parseInt(this.tokenQueue.dequeue(), 10);
+      }
+
+      /**
+       * Clears the internal token queue.
+       */
+      finalize() {
+        this.tokenQueue.reset();
+      }
+    };
+  },
+
+  // Module 4: DataQueue class for managing tokens
+  function (module, exports, loadModule) {
+    "use strict";
+    // Define and export the DataQueue class.
+    module.exports = class DataQueue {
+      /**
+       * Constructs a DataQueue instance.
+       * @param {Array<*>} [initialItems=[]] - Optional array of initial items.
+       */
+      constructor() {
+        // Get initial items from arguments, defaulting to an empty array.
+        var initialItems =
+          arguments.length > 0 && void 0 !== arguments[0] ? arguments[0] : [];
+        // Initialize current size, queue elements, and current index.
+        this.currentSize = initialItems.length;
+        this.queueElements = initialItems;
+        this.currentIndex = 0;
+      }
+
+      /**
+       * Adds an item to the end of the queue.
+       * @param {*} item - The item to enqueue.
+       */
+      enqueue(item) {
+        this.currentSize += 1;
+        this.queueElements.push(item);
+      }
+
+      /**
+       * Removes and returns the item at the front of the queue.
+       * @returns {*} The dequeued item.
+       */
+      dequeue() {
+        var dequeuedItem = this.queueElements[this.currentIndex];
+        this.currentSize -= 1;
+        this.currentIndex += 1;
+        return dequeuedItem;
+      }
+
+      /**
+       * Clears all items from the queue and resets its state.
+       */
+      reset() {
+        this.queueElements = [];
+        this.currentSize = 0;
+        this.currentIndex = 0;
+      }
+    };
+  },
+
+  // Module 5: Core algorithm logic
+  function (module, exports, loadModule) {
+    "use strict";
+    // Export the main algorithm function.
+    module.exports = function (inputReader) {
+      // Read the number of elements.
+      var numElements = inputReader.getNextInt();
+      // Create an array to store the input values.
+      var valuesArray = new Array(numElements);
+
+      // Populate the valuesArray with integers from the input.
+      for (var idx = 0; idx < numElements; idx++) {
+        valuesArray[idx] = inputReader.getNextInt();
+      }
+
+      // Initialize two arrays for dynamic programming: minRange and maxRange.
+      var minRange = new Array(numElements + 1);
+      var maxRange = new Array(numElements + 1);
+
+      // Set base cases for the last element.
+      minRange[numElements] = 2;
+      maxRange[numElements] = 2;
+
+      // Iterate backwards from the second-to-last element.
+      for (var currentIdx = numElements - 1; currentIdx >= 0; currentIdx--) {
+        // Get the current value from the input array.
+        var currentValue = valuesArray[currentIdx];
+
+        // Adjust currentValue until it's greater than the minimum of the next range.
+        while (currentValue <= minRange[currentIdx + 1]) {
+          currentValue += valuesArray[currentIdx];
+        }
+
+        // Calculate the new minimum and maximum possible values for the current range.
+        minRange[currentIdx] = currentValue - 1;
+        maxRange[currentIdx] = currentValue - valuesArray[currentIdx];
+
+        // Check for invalid conditions:
+        // 1. If the minimum possible value is less than the current value itself.
+        // 2. If the maximum possible value is greater than the minimum possible value.
+        if (minRange[currentIdx] < valuesArray[currentIdx] || maxRange[currentIdx] > minRange[currentIdx]) {
+          // If invalid, print -1 and terminate.
+          return void console.log(-1);
+        }
+      }
+
+      // If all conditions are valid, print the final maxRange and minRange for the first element.
+      console.log(`${maxRange[0]} ${minRange[0]}`);
+    };
+  },
+]);

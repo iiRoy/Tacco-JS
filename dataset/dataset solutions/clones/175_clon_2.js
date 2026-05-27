@@ -1,91 +1,124 @@
-// Function responsible for generating a comprehensive map of valid digit patterns.
-function PatternGenerator() {
-   // A dictionary to store unique, sorted digit sequences.
-   let patternMap = {};
-   // First collection of three-digit string groups.
-   const digitGroupA = "012,123,234,345,456,567,678".split(",");
-   // Second collection of three-digit string groups.
-   const digitGroupB = "000,111,222,333,444,555,666,777,888".split(",");
-   // Combined array of all three-digit groups.
-   const allDigitGroups = digitGroupA.concat(digitGroupB);
-   // Array of two-digit string suffixes.
-   const suffixGroups = "00,11,22,33,44,55,66,77,88".split(",");
+function CombinatorialGenerator() {
+  // This object will store precomputed valid combinations as keys.
+  // The value 'true' is arbitrary, just indicating presence.
+  let lookupMap = {};
 
-   // Nested loops to iterate through all possible combinations of digit groups and suffixes.
-   for (let iter1 = 0; iter1 < 16; iter1++) {
-      for (let iter2 = 0; iter2 < 16; iter2++) {
-         for (let iter3 = 0; iter3 < 16; iter3++) {
-            for (let iter4 = 0; iter4 < 16; iter4++) {
-               for (let iter5 = 0; iter5 < 9; iter5++) {
-                  // Construct a raw string by concatenating selected digit groups and a suffix.
-                  let currentSequence = allDigitGroups[iter1] + allDigitGroups[iter2] + allDigitGroups[iter3] + allDigitGroups[iter4] + suffixGroups[iter5];
-                  // Convert the sequence string into an array of numbers, sort them, and then join back into a string.
-                  currentSequence = currentSequence.split("").map(Number).sort(function(numA, numB) {
-                     return numA - numB;
-                  }).join("");
-                  // Mark this sorted sequence as valid in our pattern map.
-                  patternMap[currentSequence] = true;
-               }
-            }
-         }
+  // First set of three-digit string segments
+  const segmentGroupOne = "012,123,234,345,456,567,678".split(",");
+  // Second set of three-digit string segments
+  const segmentGroupTwo = "000,111,222,333,444,555,666,777,888".split(",");
+
+  // Combine both sets of segments
+  const combinedSegments = segmentGroupOne.concat(segmentGroupTwo);
+
+  // Set of two-digit string segments
+  const singleDigits = "00,11,22,33,44,55,66,77,88".split(",");
+
+  // Nested loops to generate all possible combinations
+  // The first four loops iterate through 'combinedSegments' (length 16)
+  for (let idxA = 0; idxA < 16; idxA++) {
+    for (let idxB = 0; idxB < 16; idxB++) {
+      for (let idxC = 0; idxC < 16; idxC++) {
+        for (let idxD = 0; idxD < 16; idxD++) {
+          // The innermost loop iterates through 'singleDigits' (length 9)
+          for (let idxE = 0; idxE < 9; idxE++) {
+            // Concatenate segments to form a long string
+            let currentKeyString =
+              combinedSegments[idxA] +
+              combinedSegments[idxB] +
+              combinedSegments[idxC] +
+              combinedSegments[idxD] +
+              singleDigits[idxE];
+
+            // Transform the string:
+            // 1. Split into individual characters
+            // 2. Convert each character to a number
+            // 3. Sort the numbers in ascending order
+            // 4. Join them back into a string
+            currentKeyString = currentKeyString
+              .split("")
+              .map(Number)
+              .sort(function (valX, valY) {
+                return valX - valY;
+              })
+              .join("");
+
+            // Store the sorted string as a key in the lookup map
+            lookupMap[currentKeyString] = true;
+          }
+        }
       }
-   }
-   // Return the generated map of valid patterns.
-   return patternMap;
+    }
+  }
+  // Return the populated lookup map
+  return lookupMap;
 }
 
-// Pre-compute the set of all valid number patterns.
-const validPatterns = PatternGenerator();
+// Precompute the set of valid combinations
+const precomputedSet = CombinatorialGenerator();
 
-// Load the Node.js file system module and read the input from stdin.
-const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
-// Process the input: remove leading/trailing whitespace and split into lines.
-let inputLines = (fileContent.trim()).split("\n");
+// Read all input from stdin, assuming UTF-8 encoding
+const rawInputData = require("fs").readFileSync("/dev/stdin", "utf8");
 
-// Main processing loop for each line of input.
+// Process the input: trim whitespace and split into an array of lines
+let inputLines = rawInputData.trim().split("\n");
+
+// Loop indefinitely until all input lines are processed
 while (true) {
-   // Exit condition: if no more lines to process.
-   if (inputLines.length === 0) break;
+  // If there are no more lines, exit the loop
+  if (inputLines.length === 0) {
+    break;
+  }
 
-   // Get the next line from the input and remove it from the array.
-   let currentInputString = inputLines.shift();
-   // Initialize an array to store the identified valid suffix digits.
-   let resultDigits = [];
+  // Get the next line from the input array
+  const currentLineText = inputLines.shift();
 
-   // Iterate through possible suffix values (0 to 8).
-   for (let suffixCandidate = 0; suffixCandidate < 9; suffixCandidate++) {
-      // Convert the input string characters to an array of numbers.
-      let numericArray = currentInputString.split("").map(Number);
-      // Decrement each number in the array by one.
-      numericArray = numericArray.map(function(val) {
-         return val - 1;
-      });
-      // Append the current suffix candidate to the numeric array.
-      numericArray.push(suffixCandidate);
-      // Sort the combined array of numbers in ascending order.
-      numericArray.sort(function(valA, valB) {
-         return valA - valB;
-      });
+  // Array to store the valid completions for the current line
+  let possibleCompletions = [];
 
-      // Create an array to count the occurrences of each digit (0-8).
-      let counts = [0, 0, 0, 0, 0, 0, 0, 0, 0];
-      // Populate the digit frequency counts.
-      numericArray.forEach(function(digitVal) {
-         counts[digitVal]++;
-      });
+  // Iterate through possible digit candidates (0 to 8)
+  for (let digitCandidate = 0; digitCandidate < 9; digitCandidate++) {
+    // Convert the current line string into an array of numbers
+    let numericSequence = currentLineText.split("").map(Number);
 
-      // Find the maximum frequency of any single digit.
-      const highestFrequency = Math.max.apply(null, counts);
+    // Decrement each number in the sequence by 1
+    numericSequence = numericSequence.map(function (originalValue) {
+      return originalValue - 1;
+    });
 
-      // If any digit appears 5 or more times, this combination is invalid.
-      if (highestFrequency >= 5) continue;
+    // Add the current digit candidate to the sequence
+    numericSequence.push(digitCandidate);
 
-      // Check if the sorted numeric sequence exists in our pre-generated patterns.
-      if (validPatterns.hasOwnProperty(numericArray.join(""))) {
-         // If it's a valid pattern, add the original (incremented) suffix candidate to the results.
-         resultDigits.push(suffixCandidate + 1);
-      }
-   }
-   // Output the results: "0" if no valid digits, otherwise space-separated valid digits.
-   console.log((resultDigits.length === 0) ? "0" : resultDigits.join(" "));
+    // Sort the sequence in ascending order
+    numericSequence.sort(function (valX, valY) {
+      return valX - valY;
+    });
+
+    // Initialize a frequency counter array for digits 0-8
+    let frequencyCounts = [0, 0, 0, 0, 0, 0, 0, 0, 0];
+
+    // Populate the frequency counter
+    numericSequence.forEach(function (elementValue) {
+      frequencyCounts[elementValue]++;
+    });
+
+    // Find the maximum frequency of any digit
+    const maximumFrequency = Math.max.apply(null, frequencyCounts);
+
+    // If any digit appears 5 or more times, this combination is invalid; skip it
+    if (maximumFrequency >= 5) {
+      continue;
+    }
+
+    // Check if the sorted numeric sequence (joined as a string) exists in our precomputed set
+    if (precomputedSet.hasOwnProperty(numericSequence.join(""))) {
+      // If it exists, add the original digit candidate (plus 1) to our list of possible completions
+      possibleCompletions.push(digitCandidate + 1);
+    }
+  }
+
+  // Print the results for the current line:
+  // If no completions were found, print "0".
+  // Otherwise, print the completions joined by spaces.
+  console.log(possibleCompletions.length === 0 ? "0" : possibleCompletions.join(" "));
 }

@@ -1,182 +1,100 @@
-const inputSource = require('node:fs').readFileSync(0, 'utf8');
+var NO_SUCH_ELEMENT_EXCEPTION_MESSAGE = "NoSuchElementException:次に要素は無いよ";
+var ASCENDING_SORT_COMPARATOR = function(a, b) { return a - b; };
+var DESCENDING_SORT_COMPARATOR = function(a, b) { return b - a; };
 
-// A custom iterator-like object to process input lines.
-const dataStreamProcessor = {
-  inputSegments: inputSource.trim().split('\n'),
-  currentReadPos: 0,
-  totalSegments: 0, // Will be initialized after the object is created
+function readAllInputLines() {
+  var fileSystem = require("fs");
+  var rawInput = fileSystem.readFileSync("/dev/stdin", "utf8");
+  return rawInput.trim().split("\n");
+}
 
-  // Checks if there are more data segments to process.
-  canFetchMore: function() {
-    // Ensure totalSegments is correctly set if not already.
-    if (this.totalSegments === 0 && this.inputSegments) {
-      this.totalSegments = this.inputSegments.length;
-    }
-    return (this.currentReadPos < this.totalSegments);
+var inputProcessor = {
+  lineBuffer: readAllInputLines(),
+  currentIndex: 0,
+  totalLinesCount: 0,
+  
+  initialize: function() {
+    this.totalLinesCount = this.lineBuffer.length;
   },
 
-  // Retrieves the next data segment from the stream.
-  fetchNextItem: function() {
-    if (!this.inputSegments || this.inputSegments.length === 0) {
-      logDebugMessage("Input segments are not initialized or empty.");
-      throw new Error("No input data available.");
+  hasMoreInput: function() {
+    return this.currentIndex < this.totalLinesCount;
+  },
+
+  retrieveNextLine: function() {
+    if (!this.hasMoreInput()) {
+      throw NO_SUCH_ELEMENT_EXCEPTION_MESSAGE;
     }
-    if (!this.canFetchMore()) {
-      logDebugMessage("Attempted to fetch beyond available data.");
-      throw new Error("Error: No more elements available in the data stream.");
-    }
-    const fetchedElement = this.inputSegments[this.currentReadPos];
-    this.currentReadPos += 1; // Increment the read position.
-    return fetchedElement;
+    var currentLineValue = this.lineBuffer[this.currentIndex];
+    this.currentIndex++;
+    return currentLineValue;
   }
 };
 
-// Initialize totalSegments after the input is parsed.
-dataStreamProcessor.totalSegments = dataStreamProcessor.inputSegments.length;
+inputProcessor.initialize();
 
-// Main program entry point.
-mainExecutionFlow();
+function getNextInputLine() { return inputProcessor.retrieveNextLine(); }
+function getNextInteger() { return processInputData(getNextInputLine(), 1); }
+function getNextStringArray() { return processInputData(getNextInputLine(), 2); }
+function getNextIntegerArray() { return processInputData(getNextInputLine(), 4); }
+function getNextCharacterArray() { return processInputData(getNextInputLine(), 6); }
+function hasPendingInput() { return inputProcessor.hasMoreInput(); }
 
-// --- Global Utility Functions for Input/Output and Data Conversion ---
+function printOutput(content) { console.log(content); }
+function printError(content) { console.error(content); }
 
-// Retrieves the next raw string segment.
-function retrieveNextSegment() {
-  return dataStreamProcessor.fetchNextItem();
-}
+var splitAndMapToNumbers = function(str, separator) { return str.split(separator).map(Number); };
+var splitAndMapToChars = function(str) { return str.split(""); };
+var splitAndMapToCharNumbers = function(str) { return str.split("").map(Number); };
 
-// Retrieves the next segment and converts it to an integer.
-function getNumericSegment() {
-  return convertInputData(retrieveNextSegment(), 1);
-}
-
-// Retrieves the next segment and splits it by space into a string array.
-function getDelimitedStrings() {
-  return convertInputData(retrieveNextSegment(), 2);
-}
-
-// Retrieves the next segment, splits by space, and converts to a number array.
-function getDelimitedNumbers() {
-  return convertInputData(retrieveNextSegment(), 4);
-}
-
-// Retrieves the next segment and splits it into an array of individual characters.
-function getCharacterArray() {
-  return convertInputData(retrieveNextSegment(), 6);
-}
-
-// Checks if there are more segments pending in the input stream.
-function hasMoreSegments() {
-  return dataStreamProcessor.canFetchMore();
-}
-
-// Outputs a message to the standard output.
-function outputResult(message) {
-  console.log(message);
-}
-
-// Logs a message to the standard error output for debugging purposes.
-function logDebugMessage(message) {
-  console.error(`DEBUG: ${message}`);
-}
-
-// Comprehensive utility for various input data transformations.
-// conversionKind:
-//   1: Convert to integer.
-//   2: Split by space into a string array.
-//   4: Split by space and convert to number array.
-//   6: Split into individual characters.
-//   7: Split into individual characters and convert to number array.
-//   8: Join array elements with space.
-//   9: Join array elements with newline.
-//   0: Join array elements without separator.
-//   11: Convert to floating-point number.
-function convertInputData(rawInput, conversionKind) {
+function processInputData(inputValue, conversionType) {
   try {
-    switch (conversionKind) {
-      case 1:
-        return Number(rawInput);
-      case 2:
-        return String(rawInput).split(' ');
-      case 4:
-        return String(rawInput).split(' ').map(Number);
-      case 6:
-        return String(rawInput).split('');
-      case 7:
-        return String(rawInput).split('').map(Number);
-      case 8:
-        return Array.isArray(rawInput) ? rawInput.join(' ') : String(rawInput);
-      case 9:
-        return Array.isArray(rawInput) ? rawInput.join('\n') : String(rawInput);
-      case 0:
-        return Array.isArray(rawInput) ? rawInput.join('') : String(rawInput);
-      case 11:
-        return parseFloat(rawInput); // Added new conversion type
-      default:
-        logDebugMessage(`Unknown conversion type: ${conversionKind}. Returning raw input.`);
-        return rawInput;
+    switch (conversionType) {
+      case 1: return parseInt(inputValue);
+      case 2: return inputValue.split(" ");
+      case 4: return splitAndMapToNumbers(inputValue, " ");
+      case 6: return splitAndMapToChars(inputValue);
+      case 7: return splitAndMapToCharNumbers(inputValue);
+      case 8: return inputValue.join(" ");
+      case 9: return inputValue.join("\n");
+      case 0: return inputValue.join("");
+      default: return inputValue;
     }
-  } catch (err) {
-    logDebugMessage(`Conversion failed for input '${rawInput}' with kind ${conversionKind}: ${err.message}`);
-    return rawInput; // Return original input on error
+  } catch (error) {
+    return inputValue;
   }
 }
 
-// --- Primary Business Logic Function ---
-function mainExecutionFlow() {
-  const initialValue = getNumericSegment();
+executeMainProgram();
 
-  if (isNaN(initialValue) || initialValue < 1) {
-    logDebugMessage("Invalid initial value provided. Exiting.");
-    outputResult(0); // Output 0 for invalid input as a safe default
-    return;
+function executeMainProgram() {
+  var inputNumber = getNextInteger();
+  
+  var allDivisors = calculateDivisors(inputNumber);
+  var sortedDivisorsDescending = allDivisors.sort(DESCENDING_SORT_COMPARATOR);
+  
+  var finalSum = 0;
+  var iterationLimit = Math.floor(sortedDivisorsDescending.length / 2);
+  
+  for (var i = 0; i < iterationLimit; i++) {
+    finalSum += sortedDivisorsDescending[i] - 1;
   }
-
-  // Obtain all factors for the given number and sort them in descending order.
-  let descendingFactors = obtainAllFactors(initialValue).sort((valA, valB) => valB - valA);
-
-  if (descendingFactors.length === 0) {
-    outputResult(0); // If no factors are found, the sum is 0.
-    return;
-  }
-
-  // Calculate the sum based on the first half of the sorted divisors.
-  let cumulativeSum = 0;
-  // Using bitwise right shift for floor division by 2, a common optimization.
-  const processingLimit = descendingFactors.length >> 1;
-
-  for (let iterIndex = 0; iterIndex < processingLimit; ++iterIndex) {
-    const currentFactor = descendingFactors[iterIndex];
-    cumulativeSum += currentFactor - 1;
-  }
-
-  outputResult(cumulativeSum);
+  
+  printOutput(finalSum);
 }
 
-// Calculates all positive integer divisors for a given number.
-function obtainAllFactors(targetNumber) {
-  const foundFactors = [];
-
-  // Input validation for targetNumber.
-  if (!Number.isInteger(targetNumber) || targetNumber < 1) {
-    logDebugMessage(`Invalid input for factor calculation: ${targetNumber}.`);
-    return foundFactors; // Return empty array for invalid input.
-  }
-
-  // Loop up to the square root of the target number.
-  for (let currentCandidate = 1; currentCandidate * currentCandidate <= targetNumber; ++currentCandidate) {
-    // Check if currentCandidate is a divisor.
-    if (targetNumber % currentCandidate === 0) {
-      foundFactors.push(currentCandidate); // Add the current divisor.
-
-      // If currentCandidate is not the square root, add its pair divisor.
-      if (currentCandidate * currentCandidate !== targetNumber) {
-        const otherFactor = targetNumber / currentCandidate;
-        foundFactors.push(otherFactor);
+function calculateDivisors(targetValue) {
+  var divisorList = [];
+  for (var candidate = 1; candidate * candidate <= targetValue; candidate++) {
+    if (targetValue % candidate === 0) {
+      divisorList.push(candidate);
+      var squareOfCandidate = candidate * candidate;
+      if (squareOfCandidate !== targetValue) {
+        var complementaryDivisor = targetValue / candidate;
+        divisorList.push(complementaryDivisor);
       }
     }
   }
-
-  // Sort the factors in ascending order for consistent output.
-  foundFactors.sort((a, b) => a - b);
-  return foundFactors;
+  divisorList.sort(ASCENDING_SORT_COMPARATOR);
+  return divisorList;
 }

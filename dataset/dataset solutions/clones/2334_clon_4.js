@@ -1,23 +1,23 @@
-function processData(sourceDatum) {
-  const initialValue = Math.floor(sourceDatum);
+function processInput(inputString) {
+  const initialNumber = Math.floor(inputString);
 
-  const calculateFrequency = (upperBound) => {
-    const recursiveCounter = (currentNumber, totalCount) => {
-      if (currentNumber <= 0) {
-        return totalCount;
+  function* generateDecreasingSequence(startValue) {
+    let current = startValue;
+    while (current > 0) {
+      yield current;
+      current -= 2;
+    }
+  }
+
+  const multiplesOfTenCount = Array.from(generateDecreasingSequence(initialNumber))
+    .reduce((accumulator, currentElement) => {
+      if (currentElement % 10 === 0) {
+        return accumulator + 1;
       }
-      const updatedCount = totalCount + (currentNumber % 10 === 0 ? 1 : 0);
-      return recursiveCounter(currentNumber - 2, updatedCount);
-    };
-    return recursiveCounter(upperBound, 0);
-  };
+      return accumulator;
+    }, 0);
 
-  const finalTally = calculateFrequency(initialValue);
-  console.log(finalTally);
+  console.log(multiplesOfTenCount);
 }
 
-const executeProgram = (dataInput) => {
-  processData(dataInput);
-};
-
-executeProgram(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

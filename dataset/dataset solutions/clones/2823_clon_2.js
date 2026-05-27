@@ -1,44 +1,34 @@
-function processInput(rawData)
-{
-    // This section parses the incoming raw text data.
-    const  linesOfText = rawData.split(    '\n'   );
+function processInputData(rawData) {
+  // Split the entire input string into an array of lines.
+  const lineSegments = rawData.split('\n');
 
-    // Extract numerical parameters from the very first line of input.
-    const   firstLineNumbers   = linesOfText[0]
-        .split(' ')
-        .map(    valStr => Number.parseInt(valStr)  );
+  // Parse the first line to extract the count of elements and the target value.
+  const firstLineValues = lineSegments[0].split(' ').map(itemStr => parseInt(itemStr));
+  const numElements = firstLineValues[0];
+  const targetSum = firstLineValues[1];
 
-    // Assign the maximum count for iteration from the parsed numbers.
-    const countLimit = firstLineNumbers[0];
+  // Parse the second line into a list of numerical data.
+  const dataList = lineSegments[1].split(' ').map(valStr => parseInt(valStr));
 
-    // Assign the threshold value for cumulative sums.
-    const targetSum = firstLineNumbers[1];
+  // Iterate through the data list, accumulating sums from the beginning.
+  // The loop variable 'idx' represents the number of elements currently being summed.
+  for (var idx = 1; idx <= numElements; idx++) {
+    // Calculate the sum of the first 'idx' elements from the dataList.
+    var currentSum = dataList.slice(0, idx).reduce((accumulator, currentValue) => accumulator + currentValue);
 
-    // Parse the second line of input into an array of integer values.
-    const valueArray = linesOfText[1]
-        .split(' ')
-        .map(   strVal => Number.parseInt(strVal)   );
-
-
-    // Begin a loop to calculate running sums and check against the target.
-    for (let currentIdx = 1; currentIdx <= countLimit; currentIdx++ )
-    {
-        // Compute the sum of elements from the start of the array up to the current index.
-        let accumulatedValue = valueArray
-            .slice(0, currentIdx)
-            .reduce(  (currentSum, currentNum) => currentSum + currentNum  );
-
-        // Evaluate if the current accumulated value has surpassed the predefined target sum.
-        if (accumulatedValue > targetSum)
-        {
-            // If the sum exceeds the target, output the current index and exit the routine.
-            console.log( currentIdx );
-            return ; // Terminate function execution.
-        }
+    // Check if the current accumulated sum has exceeded the target sum.
+    if (currentSum > targetSum) {
+      // If the sum exceeds, print the count of elements ('idx') that caused this condition.
+      console.log(idx);
+      return; // Exit the function immediately as the condition is met.
     }
-    // If the loop completes without the target sum being exceeded, output the full count limit.
-    console.log(   countLimit   );
+  }
+
+  // If the loop completes without the sum exceeding the target,
+  // it means the sum of all 'numElements' did not exceed the target.
+  // In this case, print the total number of elements.
+  console.log(numElements);
 }
 
-// Invoke the data processing function, fetching input from the standard input stream.
-processInput(  require('fs').readFileSync(  '/dev/stdin',  'utf8'  )  );
+// Read input from standard input and pass it to the processing function.
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

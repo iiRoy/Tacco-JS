@@ -1,76 +1,54 @@
-/*
- * This script processes an 8x8 grid of characters read from standard input.
- * It performs a 90-degree clockwise rotation three times,
- * printing the grid after each rotation (90, 180, 270 degrees).
+/**
+ * Rotates a given 8x8 character grid 90 degrees clockwise.
+ *
+ * @param {Array<Array<string>>} inputGrid The 2D array representing the grid to be rotated.
+ * @returns {Array<Array<string>>} A new 2D array representing the grid after a 90-degree clockwise rotation.
  */
-
-
-// Function to perform a 90-degree clockwise rotation on a square 2D array.
-// The array is assumed to be 8x8.
-function spinArray(initialLayout) {
-  // Define the grid size as a constant for clarity and consistency.
-  const GRID_DIMENSION = 8;
-
-  // Create a new 2D array to store the rotated result.
-  // It will have the same dimensions as the input.
-  let resultantLayout = [];
-
-  // Initialize each row of the resultant array to be an empty array.
-  for (let currRow = 0; currRow < GRID_DIMENSION; currRow++) {
-    resultantLayout[currRow] = [];
+function rotateMatrix(inputGrid) {
+  // Initialize a new 8x8 grid to store the rotated result.
+  let rotatedGrid = [];
+  for (let rowIdx = 0; rowIdx < 8; rowIdx++) {
+    rotatedGrid[rowIdx] = [];
   }
 
-  // Iterate through the input grid to populate the rotated grid.
-  // The rotation logic for a 90-degree clockwise turn is:
-  // new_grid[y][x] = old_grid[DIMENSION - 1 - x][y]
-  for (let currRow = 0; currRow < GRID_DIMENSION; currRow++) {
-    for (let currCol = 0; currCol < GRID_DIMENSION; currCol++) {
-      resultantLayout[currRow][currCol] = initialLayout[GRID_DIMENSION - 1 - currCol][currRow];
+  // Perform the 90-degree clockwise rotation.
+  // The element at (new_row, new_col) comes from (7 - new_col, new_row) in the original grid.
+  for (let rowIdx = 0; rowIdx < 8; rowIdx++) {
+    for (let colIdx = 0; colIdx < 8; colIdx++) {
+      rotatedGrid[rowIdx][colIdx] = inputGrid[7 - colIdx][rowIdx];
     }
   }
-
-  // Return the newly formed rotated grid.
-  return resultantLayout;
+  return rotatedGrid;
 }
 
+// Import the file system module to read input.
+const fileSystem = require('fs');
 
-// --- Main execution flow starts here ---
+// Read the entire input from standard input as a UTF-8 string.
+let rawData = fileSystem.readFileSync('/dev/stdin', 'utf8');
 
-// Load the necessary Node.js 'fs' module for file system operations.
-let fileSystemModule = require('fs');
+// Trim whitespace from the input and split it into an array of lines.
+let lineArray = rawData.trim().split("\n");
 
-// Read all incoming data from the standard input stream.
-// The data is expected to be UTF-8 encoded.
-let dataSource = fileSystemModule.readFileSync('/dev/stdin', 'utf8');
+// Initialize a 2D array to hold the current grid state.
+let currentGrid = [];
 
-// Pre-process the raw input data:
-// 1. Remove any leading/trailing whitespace.
-// 2. Split the content into an array of strings, where each string is a line.
-let inputLines = (dataSource.trim()).split("\n");
-
-// Initialize a 2D array (grid) to hold the character data.
-let activeGrid = [];
-
-// Populate the activeGrid from the parsed input lines.
-// Each line string is split into individual characters, forming a row in the grid.
-for (let iterator = 0; iterator < 8; iterator++) {
-  activeGrid.push(inputLines[iterator].split(""));
+// Populate the initial 8x8 grid from the input lines.
+for (let lineCounter = 0; lineCounter < 8; lineCounter++) {
+  currentGrid.push(lineArray[lineCounter].split(""));
 }
 
-// Perform the first 90-degree rotation.
-activeGrid = spinArray(activeGrid);
-// Output the grid after 90 degrees of rotation.
-// The grid is joined by newlines, and commas (from array.join) are removed.
-console.log("90\n" + activeGrid.join("\n").replace(/\,/g, ""));
+// First rotation: 90 degrees clockwise.
+currentGrid = rotateMatrix(currentGrid);
+// Print the "90" label followed by the rotated grid, removing commas from array joins.
+console.log("90\n" + currentGrid.join("\n").replace(/\,/g, ""));
 
+// Second rotation: another 90 degrees (total 180 from original).
+currentGrid = rotateMatrix(currentGrid);
+// Print the "180" label followed by the rotated grid.
+console.log("180\n" + currentGrid.join("\n").replace(/\,/g, ""));
 
-// Perform the second 90-degree rotation (total 180 degrees from original).
-activeGrid = spinArray(activeGrid);
-// Output the grid after 180 degrees of rotation.
-console.log("180\n" + activeGrid.join("\n").replace(/\,/g, ""));
-
-
-// Perform the third 90-degree rotation (total 270 degrees from original).
-activeGrid = spinArray(activeGrid);
-// Output the grid after 270 degrees of rotation.
-console.log("270\n" + activeGrid.join("\n").replace(/\,/g, ""));
+// Third rotation: another 90 degrees (total 270 from original).
+currentGrid = rotateMatrix(currentGrid);
+// Print the "270" label followed by the rotated grid.
+console.log("270\n" + currentGrid.join("\n").replace(/\,/g, ""));

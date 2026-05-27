@@ -1,30 +1,16 @@
-"use strict"
+"use strict";
 
-const processNumericSeries = (rawDataEntry) => {
-  const numericalComponents = rawDataEntry.split(/\s+/).map(Number);
-  
-  const beginningValue = numericalComponents[0];
-  const endingValue = numericalComponents[1];
-  const segmentLength = numericalComponents[2];
+const processInput = (rawInputText) => {
+    const [initialValue, finalValue, selectionCount] = rawInputText.split(" ").map(Number);
 
-  const emitRange = (startPoint, endPoint) => {
-    if (startPoint > endPoint) {
-      return;
-    }
-    Array.from({ length: endPoint - startPoint + 1 }, (_, currentIdx) => startPoint + currentIdx)
-         .forEach(console.log);
-  };
+    const completeSequence = Array.from(
+        { length: finalValue - initialValue + 1 },
+        (_, currentIdx) => initialValue + currentIdx
+    );
 
-  const initialSegmentBoundary = Math.min(endingValue, beginningValue + segmentLength - 1);
-  emitRange(beginningValue, initialSegmentBoundary);
+    completeSequence.slice(0, selectionCount).forEach(element => console.log(element));
 
-  const finalSegmentOrigin = Math.max(beginningValue, endingValue - segmentLength + 1);
-  emitRange(finalSegmentOrigin, endingValue);
+    completeSequence.slice(-selectionCount).forEach(element => console.log(element));
 };
 
-const executeProgram = () => {
-    const inputPayload = require('fs').readFileSync('/dev/stdin', 'utf8');
-    processNumericSeries(inputPayload);
-};
-
-executeProgram();
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

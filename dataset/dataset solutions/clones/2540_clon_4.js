@@ -1,45 +1,55 @@
-function analyzeNetworkPaths(inputData) {
-  const [nodeEdgeCounts, ...edgeData] = inputData;
-  const [nodeCount, edgeCount] = nodeEdgeCounts.split(' ').map(Number);
+const fileSystem = require("fs");
 
-  const connections = new Array(nodeCount).fill(null).map(() => new Set());
+(function() {
+    const rawInputContent = fileSystem.readFileSync("/dev/stdin", "UTF-8");
+    const processedInputLines = rawInputContent.split("\n");
 
-  for (let i = 0; i < edgeCount; i++) {
-    const [src, dst] = edgeData[i].split(' ').map(Number);
-    connections[src - 1].add(dst - 1);
-  }
+    function processGraphAndFindCycle(graphDescriptionLines) {
+        const [nodeCount, edgeCount] = graphDescriptionLines[0].split(" ").map(Number);
 
-  function traceCircuit(initialPoint, currentPoint, pathHistory, visitedInCurrentPath) {
-    for (const nextPoint of connections[currentPoint]) {
-      if (nextPoint === initialPoint) {
-        console.log(pathHistory.length);
-        pathHistory.forEach(node => console.log(node + 1));
-        return true;
-      }
+        const adjacencyStructure = Array.from({ length: nodeCount }, () => []);
 
-      if (!visitedInCurrentPath.has(nextPoint)) {
-        pathHistory.push(nextPoint);
-        visitedInCurrentPath.add(nextPoint);
-
-        if (traceCircuit(initialPoint, nextPoint, pathHistory, visitedInCurrentPath)) {
-          return true;
+        for (let currentEdgeIndex = 1; currentEdgeIndex <= edgeCount; currentEdgeIndex++) {
+            const [sourceNode, targetNode] = graphDescriptionLines[currentEdgeIndex].split(" ").map(s => Number(s) - 1);
+            adjacencyStructure[sourceNode].push(targetNode);
         }
 
-        visitedInCurrentPath.delete(nextPoint);
-        pathHistory.pop();
-      }
+        function depthFirstTraversal(currentNode, pathTracker, currentPathLength, initialTraversalNode) {
+            pathTracker.add(currentNode);
+
+            const neighborsOfCurrent = adjacencyStructure[currentNode];
+
+            for (const nextNodeCandidate of neighborsOfCurrent) {
+                if (nextNodeCandidate === initialTraversalNode) {
+                    console.log(currentPathLength + 1);
+
+                    const cycleNodesOrdered = Array.from(pathTracker).sort((a, b) => a - b);
+                    for (const nodeInCycle of cycleNodesOrdered) {
+                        console.log(nodeInCycle + 1);
+                    }
+                    return true;
+                }
+
+                if (!pathTracker.has(nextNodeCandidate)) {
+                    if (depthFirstTraversal(nextNodeCandidate, pathTracker, currentPathLength + 1, initialTraversalNode)) {
+                        return true;
+                    }
+                }
+            }
+
+            pathTracker.delete(currentNode);
+            return false;
+        }
+
+        for (let entryPointNode = 0; entryPointNode < nodeCount; entryPointNode++) {
+            const currentPathSet = new Set();
+            if (depthFirstTraversal(entryPointNode, currentPathSet, 0, entryPointNode)) {
+                return;
+            }
+        }
+
+        console.log(-1);
     }
-    return false;
-  }
 
-  for (let startNodeId = 0; startNodeId < nodeCount; startNodeId++) {
-    if (traceCircuit(startNodeId, startNodeId, [startNodeId], new Set([startNodeId]))) {
-      return;
-    }
-  }
-
-  console.log(-1);
-}
-
-const fs = require('fs');
-analyzeNetworkPaths(fs.readFileSync("/dev/stdin", "UTF-8").split("\n"));
+    processGraphAndFindCycle(processedInputLines);
+})();

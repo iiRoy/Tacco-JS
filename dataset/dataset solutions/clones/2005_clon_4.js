@@ -1,34 +1,40 @@
-let collectedInput = '';
-let inputProcessed = false;
-
+process.stdin.resume();
 process.stdin.setEncoding('utf8');
 
-process.stdin.on('data', (chunkOfData) => {
-    collectedInput += chunkOfData;
+var lines = [];
+var reader = require('readline').createInterface({
+  input: process.stdin,
+  output: process.stdout
 });
 
-process.stdin.on('end', () => {
-    if (inputProcessed) return;
-    inputProcessed = true;
-
-    const allRecords = collectedInput.trim().split('\n');
-    const firstRecordSegments = allRecords[0].split(' ');
-
-    const initialValue = BigInt(firstRecordSegments[0]);
-    const divisorValue = BigInt(firstRecordSegments[1]);
-
-    let outcome;
-
-    const currentRemainder = initialValue % divisorValue;
-
-    if (currentRemainder === BigInt(0)) {
-        outcome = BigInt(0);
-    } else {
-        const complementaryRemainder = divisorValue - currentRemainder;
-        outcome = currentRemainder < complementaryRemainder ? currentRemainder : complementaryRemainder;
-    }
-
-    process.stdout.write(outcome.toString() + '\n');
+reader.on('line', (inputLine) => {
+  lines.push(inputLine);
 });
 
-process.stdin.resume();
+reader.on('close', () => {
+    const [initialValue, divisorValue] = lines[0].split(" ").map(val => BigInt(val));
+
+    const determineMinimumRemainder = (currentNumber, modulusBase, visitedRemainderSet, currentSmallestRemainder) => {
+        if (visitedRemainderSet.has(currentNumber)) {
+            return currentSmallestRemainder;
+        }
+
+        const computedRemainder = currentNumber % modulusBase;
+
+        visitedRemainderSet.add(computedRemainder);
+
+        const nextSmallestRemainder = (currentSmallestRemainder > computedRemainder) ? computedRemainder : currentSmallestRemainder;
+
+        if (nextSmallestRemainder === 0n) {
+            return 0n;
+        }
+
+        const nextNumberInSequence = (modulusBase > computedRemainder) ? (modulusBase - computedRemainder) : (computedRemainder - modulusBase);
+
+        return determineMinimumRemainder(nextNumberInSequence, modulusBase, visitedRemainderSet, nextSmallestRemainder);
+    };
+
+    const finalResult = determineMinimumRemainder(initialValue, divisorValue, new Set(), initialValue);
+    
+    console.log(finalResult.toString());
+});

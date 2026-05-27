@@ -1,27 +1,25 @@
-/* This function calculates the number of periods
-   required for a sum to reach a specific target,
-   considering a fixed growth rate per period. */
-function ComputeIterations( targetAmount ) {
+function ProcessInput(initialAmountStr) {
+  // Initialize the starting capital for the investment simulation.
+  let currentBalance = 100;
 
-  let   accountBalance    =    100    ; // Initial capital for the simulation
+  // Convert the input string to an integer, representing the target amount.
+  initialAmountStr = parseInt(initialAmountStr);
 
-  // Ensure the target amount is an integer for consistent comparison
-  targetAmount = Number.parseInt(targetAmount, 10);
+  // Initialize a counter to track the number of periods (e.g., years).
+  let yearCounter = 0;
 
-  let cycleCount = 0; // Counter for the number of periods elapsed
-
-  // Loop until the account balance meets or exceeds the desired threshold
-  while ( accountBalance < targetAmount )
-  {
-    // Apply a 1% growth rate, truncating any fractional part
-    accountBalance += Math.trunc( accountBalance * 0.01 );
-    cycleCount++ ; // Increment the period counter
+  // Loop until the current balance reaches or exceeds the target amount.
+  while (currentBalance < initialAmountStr) {
+    // Calculate the interest earned for the current period (1% of the balance),
+    // ensuring it's a whole number, and add it to the balance.
+    currentBalance += Math.floor(currentBalance * 0.01);
+    // Increment the period counter.
+    yearCounter++;
   }
 
-  // Output the final count of periods as a string representation
-  console.info( JSON.stringify( cycleCount ) ) ;
-} // End of ComputeIterations function definition
+  // Output the final count of periods as a JSON string.
+  console.log(JSON.stringify(yearCounter));
+}
 
-
-// This statement executes the primary calculation logic by reading input from standard input.
-ComputeIterations ( require("fs").readFileSync("/dev/stdin", "utf8") ) ;
+// Do not modify this specific invocation line!
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,41 +1,22 @@
-const filesystem = require('fs');
+const fileSystem = require('fs');
 
-const circleConstant = Math.acos(-1);
+const retrieveInputContent = () => fileSystem.readFileSync('/dev/stdin', 'utf8');
 
-function renderNumeric(numericInput, precision) {
-    const scaleFactor = Math.pow(10, precision);
-    let processed = Math.round(numericInput * scaleFactor) / scaleFactor;
-    let stringRepresentation = String(processed);
+const convertToNumeric = (textualData) => parseFloat(textualData);
 
-    if (!stringRepresentation.includes('.')) {
-        stringRepresentation += '.';
-    }
+const formatDecimalValue = (valueToFormat) => valueToFormat.toFixed(6);
 
-    let parts = stringRepresentation.split('.');
-    let fractionalComponent = parts[1] || '';
+const calculateGeometricProperties = (radiusDimension) => {
+    const rawCircumference = 2 * radiusDimension * Math.PI;
+    const rawArea = Math.pow(radiusDimension, 2) * Math.PI;
 
-    while (fractionalComponent.length < precision) {
-        fractionalComponent += '0';
-    }
+    return {
+        surfaceMeasure: formatDecimalValue(rawArea),
+        boundaryLength: formatDecimalValue(rawCircumference)
+    };
+};
 
-    if (fractionalComponent.length > precision) {
-        fractionalComponent = fractionalComponent.substring(0, precision);
-    }
-    
-    return parts[0] + '.' + fractionalComponent;
-}
+const radiusFromInput = convertToNumeric(retrieveInputContent());
+const circleMeasurements = calculateGeometricProperties(radiusFromInput);
 
-const computeSurface = (val, constVal) => constVal * Math.pow(val, 2);
-
-const computePerimeter = (val, constVal) => constVal * (val + val);
-
-const rawData = filesystem.readFileSync('/dev/stdin', 'utf8');
-const measurement = Number(rawData);
-
-const surfaceValue = computeSurface(measurement, circleConstant);
-const perimeterValue = computePerimeter(measurement, circleConstant);
-
-const formattedSurface = renderNumeric(surfaceValue, 6);
-const formattedPerimeter = renderNumeric(perimeterValue, 6);
-
-process.stdout.write(formattedSurface + " " + formattedPerimeter + "\n");
+console.log(`${circleMeasurements.surfaceMeasure} ${circleMeasurements.boundaryLength}`);

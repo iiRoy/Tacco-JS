@@ -1,42 +1,34 @@
 'use strict';
 
-const adjustAndCollect = (inputArrayOfStrings) => {
-    let resultContainer = [];
-    for (let i = 0; i < inputArrayOfStrings.length; i++) {
-        let numericalValue = Number(inputArrayOfStrings[i]);
-        resultContainer.push(numericalValue - (i + 1));
+const deriveAdjustedSequence = (sourceNumbers) => {
+    const transformed = [];
+    let currentPosition = 0;
+    const limit = sourceNumbers.length;
+    while (currentPosition < limit) {
+        transformed[currentPosition] = parseInt(sourceNumbers[currentPosition]) - (currentPosition + 1);
+        currentPosition++;
     }
-    return resultContainer;
+    return transformed;
 };
 
-const computeDiscrepancySum = (sourceDataStrings, referencePoint) => {
-    let totalDiscrepancy = 0;
-    for (let j = 0; j < sourceDataStrings.length; j++) {
-        let currentNumber = Number(sourceDataStrings[j]);
-        totalDiscrepancy += Math.abs(currentNumber - (referencePoint + j + 1));
+const determineTotalDiscrepancy = (sourceNumbers, centralValue) => {
+    let accumulatedDiscrepancy = 0;
+    for (let currentPosition = 0; currentPosition < sourceNumbers.length; currentPosition++) {
+        accumulatedDiscrepancy += Math.abs(parseInt(sourceNumbers[currentPosition]) - (centralValue + currentPosition + 1));
     }
-    return totalDiscrepancy;
+    return accumulatedDiscrepancy;
 };
 
-const fileSystem = require("fs");
-const rawContent = fileSystem.readFileSync("/dev/stdin", "utf8");
-const lines = rawContent.split("\n");
+const rawInputLines = require("fs").readFileSync("/dev/stdin", "utf8").split("\n");
+const itemCount = parseInt(rawInputLines[0]);
+const originalValues = rawInputLines[1].split(" ");
 
-const elementCount = Number(lines[0]);
-const initialStringValues = lines[1].split(" ");
+const adjustedValues = deriveAdjustedSequence(originalValues);
+adjustedValues.sort((valA, valB) => valA - valB);
 
-let modifiedNumericValues = adjustAndCollect(initialStringValues);
+const centralPoint = Math.floor(itemCount / 2);
+const calculatedMedian = adjustedValues[centralPoint];
 
-const numericalOrder = (valA, valB) => {
-    if (valA < valB) return -1;
-    if (valA > valB) return 1;
-    return 0;
-};
-modifiedNumericValues.sort(numericalOrder);
+const minimumDeviation = determineTotalDiscrepancy(originalValues, calculatedMedian);
 
-const centralIndex = Math.floor(elementCount / 2);
-const derivedCentralValue = modifiedNumericValues[centralIndex];
-
-const finalResult = computeDiscrepancySum(initialStringValues, derivedCentralValue);
-
-console.log(finalResult);
+console.log(minimumDeviation);

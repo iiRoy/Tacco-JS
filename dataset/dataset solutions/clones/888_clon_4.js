@@ -1,16 +1,19 @@
-const dataAcquisition = require('node:fs').readFileSync('/dev/stdin', 'utf8');
-const textFragments = dataAcquisition.trim().split('\n');
+const rawData = require('node:fs').readFileSync('/dev/stdin', 'utf8');
+const allInputLines = rawData.trim().split('\n');
 
-const [configurationString, ...contentElements] = textFragments;
-const [itemCount, limitValue] = configurationString.split(' ').map(Number);
+const [entryCount, comparisonLimit] = allInputLines.shift().split(' ').map(Number);
 
-const initialResult = "kogakubu10gokan";
+const defaultPhrase = "kogakubu10gokan";
 
-const finalOutcome = contentElements.slice(0, itemCount).reduce((currentAccumulation, lineEntry) => {
-    const [numericParameter, textualParameter] = lineEntry.split(' ');
-    const numericConversion = Number(numericParameter);
+const resultPhrase = allInputLines.slice(0, entryCount).reduce((currentAccumulator, currentLineSegment) => {
+    const lineComponents = currentLineSegment.split(' ');
+    const numericalComponent = Number(lineComponents[0]);
+    const textualComponent = lineComponents[1];
 
-    return (numericConversion <= limitValue) ? textualParameter : currentAccumulation;
-}, initialResult);
+    if (numericalComponent <= comparisonLimit) {
+        return textualComponent;
+    }
+    return currentAccumulator;
+}, defaultPhrase);
 
-console.log(finalOutcome);
+console.log(resultPhrase);

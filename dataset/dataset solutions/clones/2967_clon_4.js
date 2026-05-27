@@ -1,67 +1,66 @@
-const parseData = (sourceData) => {
-  const allNumericStrings = sourceData.match(/\d+/g);
-  let cursor = 0;
+function processGraphData(inputContent) {
+  const contentLines = inputContent.split('\n');
+  
+  const configuration = contentLines.shift().split(' ').map(val => parseInt(val, 10));
+  const nodeCount = configuration[0];
+  // const edgeCount = configuration[1]; // M is not used in the original logic.
 
-  const nodeCountLimit = Number(allNumericStrings[cursor++]);
-  const edgeQuantity = Number(allNumericStrings[cursor++]);
+  const rawEdges = contentLines.map(line => line.split(' ').map(val => parseInt(val, 10)));
 
-  const linkageSpecs = [];
-  for (let idx = 0; idx < edgeQuantity; ++idx) {
-    const from = Number(allNumericStrings[cursor++]);
-    const to = Number(allNumericStrings[cursor++]);
-    linkageSpecs.push([from, to]);
+  // Initialize node data structure: a Map to store each node's visit status and its mutable list of outgoing links.
+  const nodeRegistry = new Map();
+  for (let k = 1; k <= nodeCount; ++k) {
+    nodeRegistry.set(k, { wasVisited: false, outgoingLinks: [] });
   }
 
-  return { nodeCountLimit, linkageSpecs };
-};
-
-const constructConnections = (nodeCountLimit, linkageSpecs) => {
-  const connectionMap = new Map();
-  for (let i = 1; i <= nodeCountLimit; ++i) {
-    connectionMap.set(i, []);
-  }
-
-  linkageSpecs.forEach(([origin, destination]) => {
-    connectionMap.get(origin).push(destination);
+  // Populate outgoing links for each node, preserving the order as it's critical for 'shift' behavior.
+  rawEdges.forEach(edgePair => {
+    const [source, target] = edgePair;
+    nodeRegistry.get(source).outgoingLinks.push(target);
   });
-  return connectionMap;
-};
 
-const tracePathway = (originPoint, connectionMap, traversedElements) => {
-  let pathStep = originPoint;
-  while (pathStep !== undefined) {
-    traversedElements.add(pathStep);
+  // Iterative function to traverse a path segment, marking nodes as visited and consuming outgoing links.
+  const traceComponent = (startNodeIdentifier, registry) => {
+    let currentIdentifier = startNodeIdentifier;
+    while (true) {
+      const currentEntry = registry.get(currentIdentifier);
+      
+      // Mark the current node as visited.
+      currentEntry.wasVisited = true;
 
-    const outboundRoutes = connectionMap.get(pathStep);
-    if (!outboundRoutes || outboundRoutes.length === 0) {
-      break;
+      // If there are no more outgoing links from this node, the path segment ends.
+      if (currentEntry.outgoingLinks.length === 0) {
+        break;
+      }
+
+      // Get and remove the next link in sequence, then move to that node.
+      const nextIdentifier = currentEntry.outgoingLinks.shift();
+      currentIdentifier = nextIdentifier; 
     }
+  };
 
-    const nextJunction = outboundRoutes.shift();
-    pathStep = nextJunction;
-  }
-};
+  let distinctComponents = 0;
+  let currentVertex = 1;
 
-const determineGroups = (nodeCountLimit, connectionMap) => {
-  let groupCounter = 0;
-  const overallTraversed = new Set();
-
-  for (let currentElement = 1; currentElement <= nodeCountLimit; ++currentElement) {
-    if (!overallTraversed.has(currentElement)) {
-      groupCounter++;
-      tracePathway(currentElement, connectionMap, overallTraversed);
+  // Iterate through all possible starting nodes.
+  while (currentVertex <= nodeCount) {
+    const vertexEntry = nodeRegistry.get(currentVertex);
+    
+    // If the current vertex has not been visited yet, it signifies the beginning of a new component.
+    if (!vertexEntry.wasVisited) {
+      distinctComponents++;
+      traceComponent(currentVertex, nodeRegistry);
+    }
+    
+    // Advance currentVertex to the next unvisited node.
+    // This replicates the original's behavior of skipping nodes already part of a traversed component.
+    currentVertex++;
+    while (currentVertex <= nodeCount && nodeRegistry.get(currentVertex).wasVisited) {
+      currentVertex++;
     }
   }
-  return groupCounter;
-};
-
-const performAnalysis = (sourceData) => {
-  const { nodeCountLimit, linkageSpecs } = parseData(sourceData);
   
-  const mutableConnectionMap = constructConnections(nodeCountLimit, linkageSpecs);
-  
-  const finalCount = determineGroups(nodeCountLimit, mutableConnectionMap);
-  console.log(finalCount);
-};
+  console.log(distinctComponents);
+}
 
-performAnalysis(require('node:fs').readFileSync('/dev/stdin', 'utf8'));
+processGraphData(require('fs').readFileSync('/dev/stdin', 'utf8'));

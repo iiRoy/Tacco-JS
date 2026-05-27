@@ -1,108 +1,128 @@
-function ProcessInputData(rawDataString) {
-  // Split the entire input string into individual lines for processing
-  const lineSegments = rawDataString.split('\n');
+function ProcessInputData(rawData) {
+  // Split the entire input string into individual lines for easier processing.
+  rawData = rawData.split("\n");
 
-  // Parse the first line to get graph dimensions: node count and constraint count
-  const graphDimensions = lineSegments[0].split(' ').map(strVal => parseInt(strVal, 10));
-  const nodeCount = graphDimensions[0];
-  const constraintCount = graphDimensions[1];
+  // Parse the first line of input, which contains two space-separated integers.
+  // The first integer represents the total number of nodes, and the second is the count of constraints.
+  var firstLineValues = rawData[0].split(" ").map(strVal => parseInt(strVal, 10));
 
-  // Declare arrays to store the left indices, right indices, and difference values for each constraint
-  let leftConstraintNodes = new Array();
-  let rightConstraintNodes = new Array();
-  let valueDifferences = new Array();
+  // Extract the total number of nodes from the parsed values.
+  var nodeCount = firstLineValues[0];
+  // Extract the total number of constraints from the parsed values.
+  var constraintCount = firstLineValues[1];
 
-  // Initialize an array to hold the calculated values for each node, all starting at zero
-  let nodeCalculatedValues = Array.from({ length: nodeCount }, () => 0);
+  // Initialize arrays to store the left-hand side indices, right-hand side indices,
+  // and the difference values for each constraint.
+  var leftIndices = [], rightIndices = [], diffValues = [];
 
-  // Create an adjacency list-like structure to store relationships between nodes
-  // Each element will be an array of [connected_node_index, difference_to_connected_node]
-  let connectionMatrix = Array.from({ length: nodeCount });
+  // Create an array to hold the calculated position or value for each node.
+  // All node positions are initially set to zero.
+  var nodePositions = new Array(nodeCount).fill(0x0);
 
-  // The final result string, initially assuming consistency
-  let resultStatus = "Yes";
+  // Initialize an array of arrays to represent the connections between nodes.
+  // This acts as an adjacency list where each element `nodeConnections[i]`
+  // stores pairs of `[targetNodeIndex, differenceValue]` for connections originating from node `i`.
+  var nodeConnections = new Array(nodeCount);
 
-  // Initialize each entry in the connectionMatrix as an empty array
-  for (let vertexIndex = 0; vertexIndex < nodeCount; vertexIndex++) {
-    connectionMatrix[vertexIndex] = new Array();
+  // The variable to store the final outcome, initially assuming consistency.
+  var finalResult = "Yes";
+
+  // Populate the `nodeConnections` array with empty arrays for each node.
+  for (var idx = 0x0; idx < nodeCount; idx++) {
+    nodeConnections[idx] = [];
   }
 
-  // Loop through each constraint line to populate the data structures
-  for (let currentConstraintIndex = 0; currentConstraintIndex < constraintCount; currentConstraintIndex++) {
-    // Parse the current constraint line: [source_node, target_node, difference]
-    const currentConstraintDetails = lineSegments[currentConstraintIndex + 1].split(' ').map(numericString => parseInt(numericString, 10));
+  // Iterate through each constraint line in the input, starting from the second line.
+  for (idx = 0x0; idx < constraintCount; idx++) {
+    // Parse the current constraint line, converting string values to integers.
+    // A constraint is given as L R D, meaning position[R] - position[L] = D.
+    var currentConstraint = rawData[idx + 0x1].split(" ").map(strVal => parseInt(strVal, 10));
 
-    // Store the 0-indexed right node and difference value
-    rightConstraintNodes[currentConstraintIndex] = currentConstraintDetails[1] - 1;
-    valueDifferences[currentConstraintIndex] = currentConstraintDetails[2];
+    // Store the 0-based right index of the current constraint.
+    rightIndices[idx] = currentConstraint[0x1] - 0x1;
+    // Store the difference value for the current constraint.
+    diffValues[idx] = currentConstraint[0x2];
+    // Store the 0-based left index of the current constraint.
+    leftIndices[idx] = currentConstraint[0x0] - 0x1;
 
-    // Store the 0-indexed left node
-    leftConstraintNodes[currentConstraintIndex] = currentConstraintDetails[0] - 1;
-
-    // Add the constraint to the connection matrix:
-    // From left node to right node with the specified difference
-    connectionMatrix[leftConstraintNodes[currentConstraintIndex]].push(rightConstraintNodes[currentConstraintIndex], valueDifferences[currentConstraintIndex]);
-    // From right node to left node with the negative of the difference (for inverse relationship)
-    connectionMatrix[rightConstraintNodes[currentConstraintIndex]].push(leftConstraintNodes[currentConstraintIndex], -valueDifferences[currentConstraintIndex]);
+    // Add a directed connection from the left node to the right node with the given difference.
+    // This implies: position[right] = position[left] + difference.
+    nodeConnections[leftIndices[idx]].push(rightIndices[idx], diffValues[idx]);
+    // Add a reverse directed connection from the right node to the left node with the negative difference.
+    // This implies: position[left] = position[right] - difference.
+    nodeConnections[rightIndices[idx]].push(leftIndices[idx], -diffValues[idx]);
   }
 
-  // Iterate through each node to propagate values
-  for (let currentVertex = 0; currentVertex < nodeCount; currentVertex++) {
-    // Calculate the starting offset for processing pairs in the connection matrix for the current vertex
-    let processingOffset = connectionMatrix[currentVertex].length - 2;
-    // A queue to hold nodes that need further value propagation
-    const propagationQueue = new Array();
+  // This array serves as a queue for nodes whose connections need to be processed
+  // to propagate position calculations.
+  var processingQueue = [];
 
-    // If there are connections for the current vertex, start propagation
-    if (processingOffset >= 0) {
-      propagateNodeValue(currentVertex, processingOffset, propagationQueue, nodeCalculatedValues, connectionMatrix);
+  // Iterate through all nodes to ensure that every connected component is processed.
+  for (idx = 0x0; idx < nodeCount; idx++) {
+    // Determine the starting index for iterating through the connection pairs for the current node.
+    // Each connection consists of two elements: target index and difference.
+    var connIdx = nodeConnections[idx].length - 0x2;
+
+    // If the current node has any connections, initiate the position calculation and propagation.
+    if (connIdx >= 0x0) {
+      calculateNodePosition(idx, connIdx);
     }
 
-    // Process nodes added to the propagation queue
-    for (let queuePosition = 0; queuePosition < propagationQueue.length; queuePosition++) {
-      // Recalculate offset for the node from the queue
-      processingOffset = connectionMatrix[propagationQueue[queuePosition]].length - 2;
-      // If connections exist for this queued node, propagate its values
-      if (processingOffset >= 0) {
-        propagateNodeValue(propagationQueue[queuePosition], processingOffset, propagationQueue, nodeCalculatedValues, connectionMatrix);
+    // After processing the initial connections for `idx`, process any nodes that were added
+    // to the `processingQueue` during the `calculateNodePosition` call.
+    for (var queueIdx = 0x0; queueIdx < processingQueue.length; queueIdx++) {
+      // Get the starting index for connections of the node from the queue.
+      connIdx = nodeConnections[processingQueue[queueIdx]].length - 0x2;
+      // If the queued node has connections, process them.
+      if (connIdx >= 0x0) {
+        calculateNodePosition(processingQueue[queueIdx], connIdx);
       }
     }
   }
 
-  // Final check: verify all constraints using the calculated node values
-  for (let verificationIndex = 0; verificationIndex < constraintCount; verificationIndex++) {
-    // If a constraint is not satisfied, set the result to "No" and stop
-    if (nodeCalculatedValues[rightConstraintNodes[verificationIndex]] - nodeCalculatedValues[leftConstraintNodes[verificationIndex]] !== valueDifferences[verificationIndex]) {
-      resultStatus = "No";
-      break;
+  // After all possible node positions have been calculated, verify if all original constraints are met.
+  for (idx = 0x0; idx < constraintCount; idx++) {
+    // Check if the calculated difference between the right and left node positions
+    // matches the original constraint's difference value.
+    if (nodePositions[rightIndices[idx]] - nodePositions[leftIndices[idx]] !== diffValues[idx]) {
+      finalResult = "No"; // If a mismatch is found, the system is inconsistent.
+      break; // No need to check further constraints, as inconsistency is confirmed.
     }
   }
 
-  // Output the final consistency status
-  console.log(resultStatus);
+  // Print the final result to the console.
+  console.log(finalResult);
 
-  // Helper function to propagate values from a source node to its connected nodes
-  // It takes the source node index, an offset into its connection data,
-  // references to the propagation queue, node values, and connection matrix
-  function propagateNodeValue(sourceNode, offsetIndex, queueRef, valuesRef, adjRef) {
+  // Helper function to recursively calculate and propagate node positions based on connections.
+  // `currNodeIdx`: The index of the node whose position is currently known or being used as a reference.
+  // `startConnIdx`: The index within `nodeConnections[currNodeIdx]` to start processing connection pairs.
+  function calculateNodePosition(currNodeIdx, startConnIdx) {
+    // Loop through all connection pairs for the `currNodeIdx` in reverse order.
     do {
-      // Get the target node index from the connection matrix
-      const targetNode = adjRef[sourceNode][offsetIndex];
-      // If the target node has connections, add it to the queue for future propagation
-      if (adjRef[targetNode].length > 0) {
-        queueRef.push(targetNode);
-      }
-      // Calculate the value of the target node based on the source node's value and the difference
-      valuesRef[targetNode] = valuesRef[sourceNode] + adjRef[sourceNode][offsetIndex + 1];
-      // Move to the next pair of [connected_node, difference] in the connection data
-      offsetIndex -= 2;
-    } while (offsetIndex >= 0); // Continue as long as there are pairs to process
+      // Extract the target node index from the current connection pair.
+      var targetNode = nodeConnections[currNodeIdx][startConnIdx];
+      // Extract the difference value to the target node from the current connection pair.
+      var differenceToTarget = nodeConnections[currNodeIdx][startConnIdx + 0x1];
 
-    // Clear the connection data for the source node after it has been processed
-    // This prevents redundant processing and marks the node as "visited" for this propagation phase
-    adjRef[sourceNode] = new Array();
+      // If the target node itself has unprocessed connections, add it to the queue
+      // for future processing to ensure full propagation.
+      if (nodeConnections[targetNode].length > 0x0) {
+        processingQueue.push(targetNode);
+      }
+
+      // Calculate the position of the target node relative to the current node.
+      nodePositions[targetNode] = nodePositions[currNodeIdx] + differenceToTarget;
+
+      // Move to the previous connection pair (decrement by 2).
+      startConnIdx -= 0x2;
+    } while (startConnIdx >= 0x0); // Continue as long as there are connection pairs to process.
+
+    // After processing all direct connections from `currNodeIdx`, clear its connection list.
+    // This marks these connections as handled and prevents redundant processing.
+    nodeConnections[currNodeIdx] = [];
   }
 }
 
-// Read input from standard input and pass it to the main processing function
+// Read the input from standard input (typically a file in competitive programming environments)
+// and pass it to the main processing function.
 ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

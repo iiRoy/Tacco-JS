@@ -1,78 +1,67 @@
-let acquiredData = '';
-process.stdin.on('data', (portion) => {
-    acquiredData += portion.toString();
-});
+const processInputData = (inputContent) => {
+    const inputLines = inputContent.trim().split('\n');
 
-process.stdin.on('end', () => {
-    const entryRecords = acquiredData.trim().split('\n');
-
-    const formTextSequence = (totalCount, characterUnit) => {
-        let constructedText = '';
-        for (let countIndex = 0; countIndex < totalCount; countIndex++) {
-            constructedText += characterUnit;
+    // Custom helper to replicate Array(N).join(separator) behavior,
+    // including its specific handling of N=0, N=1, and RangeError for N < 0.
+    const replicateArrayJoin = (count, separator) => {
+        if (count < 0) {
+            throw new RangeError('Invalid array length');
         }
-        return constructedText;
+        if (count === 0 || count === 1) {
+            return '';
+        }
+        let assembledString = '';
+        for (let idx = 0; idx < count - 1; idx++) {
+            assembledString += separator;
+        }
+        return assembledString;
     };
 
-    const sculptRectangle = (widthDimension, heightDimension) => {
-        if (widthDimension === 0 && heightDimension === 0) {
-            return null; // A special marker to halt processing
-        }
-        if (widthDimension < 1 || heightDimension < 1) {
-            return ''; // Invalid dimensions, but not the halt condition
-        }
+    for (const currentEntry of inputLines) {
+        const dimensionParts = currentEntry.split(' ');
+        const currentWidth = Number(dimensionParts[0]);
+        const currentHeight = Number(dimensionParts[1]);
 
-        const horizontalBoundary = formTextSequence(widthDimension, '#') + '\n';
-
-        let innerRegionRow;
-        if (widthDimension <= 2) {
-            // Replicates new Array(widthDimension - 1).join('.') producing '' for width 1 or 2
-            innerRegionRow = '#' + formTextSequence(0, '.') + '#' + '\n'; // This results in '##\n'
-        } else {
-            innerRegionRow = '#' + formTextSequence(widthDimension - 2, '.') + '#' + '\n';
+        if (currentWidth === 0 && currentHeight === 0) {
+            return;
         }
 
-        let graphicComposition = '';
-
-        if (heightDimension === 1) {
-            // Original: clog + '' + clog + '\n'
-            graphicComposition = horizontalBoundary + horizontalBoundary + '\n';
-        } else if (heightDimension === 2) {
-            // Original: clog + '' + clog + '\n'
-            graphicComposition = horizontalBoundary + horizontalBoundary + '\n';
-        } else { // heightDimension > 2
-            graphicComposition += horizontalBoundary;
-            const middleSectionsCount = heightDimension - 2;
-            for (let sectionIdx = 0; sectionIdx < middleSectionsCount; sectionIdx++) {
-                graphicComposition += innerRegionRow;
-            }
-            graphicComposition += horizontalBoundary; // Add bottom border
-            graphicComposition += '\n'; // The final trailing newline
+        let topBottomBoundaryContent;
+        try {
+            // Original: new Array(x+1).join('#')
+            topBottomBoundaryContent = replicateArrayJoin(currentWidth + 1, '#');
+        } catch (error) {
+            throw error;
         }
 
-        return graphicComposition;
-    };
-
-    const collectedOutputs = [];
-    let processingActive = true;
-
-    for (const currentEntry of entryRecords) {
-        if (!processingActive) break;
-
-        const numericDimensions = currentEntry.split(' ').map(Number);
-        const measureX = numericDimensions[0];
-        const measureY = numericDimensions[1];
-
-        const renderedVisual = sculptRectangle(measureX, measureY);
-
-        if (renderedVisual === null) {
-            processingActive = false; // Halt further processing
-            continue;
+        let internalRowContent;
+        try {
+            // Original: '#'+(new Array(x - 1).join('.')+('#'))
+            // This is where RangeError occurs if currentWidth - 1 is negative (i.e., currentWidth = 0).
+            const dotSequence = replicateArrayJoin(currentWidth - 1, '.');
+            internalRowContent = '#' + dotSequence + '#';
+        } catch (error) {
+            throw error;
         }
-        if (renderedVisual !== '') {
-            collectedOutputs.push(renderedVisual);
+
+        const completeTopBottomLine = topBottomBoundaryContent + '\n';
+        const completeInternalLine = internalRowContent + '\n';
+
+        let finalOutputFrame = '';
+
+        try {
+            // Original: var frame = clog + (new Array(y-1).join(clearance))+clog+'\n';
+            // Replicate the middle section using the custom helper.
+            const middleFrameSection = replicateArrayJoin(currentHeight - 1, completeInternalLine);
+            finalOutputFrame = completeTopBottomLine + middleFrameSection + completeTopBottomLine + '\n';
+        } catch (error) {
+            throw error;
         }
+
+        console.log(finalOutputFrame);
     }
+};
 
-    collectedOutputs.forEach(outputSegment => console.log(outputSegment));
-});
+(function(dataSource) {
+    processInputData(dataSource);
+}(require('fs').readFileSync('/dev/stdin', 'utf8')));

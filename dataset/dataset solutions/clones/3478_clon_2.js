@@ -1,197 +1,243 @@
-/*
-  This segment handles the input-output operations for the script.
-  It sets up a mechanism to read lines from standard input and process them.
-*/
 var inputReader = require('readline').createInterface({
   input: process.stdin,
   output: process.stdout
 });
 
-var dataStream;
+var dataProcessor;
 var inputLines = [];
 
-// Event listener for each incoming line of text
-inputReader.on('line', function(currentLineText) {
-  inputLines.push(currentLineText);
+// Event listener for each line of input
+inputReader.on('line', function(currentLine){
+  inputLines.push(currentLine);
 });
 
-// Event listener triggered when all input has been received
-inputReader.on('close', function() {
-  dataStream = initializeStream(inputLines);
-
-  console.error('\n'); // Output a newline for better debug log separation
-
-  var beginTime = Date.now();
-  executeCoreLogic(); // Invoke the primary program function
-  var elapsedTime = Date.now() - beginTime;
-
-  debugLog("execution time : " + (elapsedTime) + "ms");
-  debugLog("memory usage : " + Math.round(process.memoryUsage().heapTotal / 1024) + "KB");
+// Event listener for when input stream closes
+inputReader.on('close', function(){
+  // Initialize the data processor with all collected input lines
+  dataProcessor = initializeInput(inputLines);
+  
+  // Print a newline to stderr for visual separation
+  console.error("\n");
+  
+  // Record start time for performance measurement
+  var startTime = Date.now();
+  
+  // Execute the main solution logic
+  executeSolution();
+  
+  // Calculate elapsed time
+  var elapsedTime = Date.now() - startTime;
+  
+  // Output performance metrics to stderr
+  printDebug("execution time : " + (elapsedTime) + "ms");
+  printDebug("memory usage : " + Math.round(process.memoryUsage().heapTotal / 1024) + "KB");
 });
 
-// Creates a deep copy of an object by serializing and deserializing it
-function duplicateObject(sourceObject) {
+/**
+ * Creates a deep copy of an object using JSON serialization/deserialization.
+ * @param {object} sourceObject The object to clone.
+ * @returns {object} A deep copy of the source object.
+ */
+function createDeepCopy(sourceObject){
   return JSON.parse(JSON.stringify(sourceObject));
 }
 
-// Retrieves the next available integer from the input stream
-function retrieveInteger() {
-  return formatData(advanceStream(), 1);
+/**
+ * Fetches the next token from input and converts it to an integer.
+ * @returns {number} The next integer from input.
+ */
+function getNextInteger(){
+  return convertInput(fetchNextToken(), 1);
 }
 
-// Retrieves the next available line as an array of strings
-function retrieveStringArray() {
-  return formatData(advanceStream(), 2);
+/**
+ * Fetches the next token from input and converts it to an array of strings.
+ * @returns {string[]} An array of strings from input.
+ */
+function getNextStringArray(){
+  return convertInput(fetchNextToken(), 2);
 }
 
-// Retrieves the next available line as an array of integers
-function retrieveIntegerArray() {
-  return formatData(advanceStream(), 4);
+/**
+ * Fetches the next token from input and converts it to an array of integers.
+ * @returns {number[]} An array of integers from input.
+ */
+function getNextIntegerArray(){
+  return convertInput(fetchNextToken(), 4);
 }
 
-// Retrieves the next available line as an array of individual characters
-function retrieveCharacterArray() {
-  return formatData(advanceStream(), 6);
+/**
+ * Fetches the next token from input and converts it to an array of characters.
+ * @returns {string[]} An array of characters from input.
+ */
+function getNextCharacterArray(){
+  return convertInput(fetchNextToken(), 6);
 }
 
-// Moves to the next element in the input stream and returns it
-function advanceStream() {
-  return dataStream.getNextElement();
+/**
+ * Retrieves the next available token (line) from the input data.
+ * @returns {string} The next input line.
+ */
+function fetchNextToken(){
+  return dataProcessor.next();
 }
 
-// Checks if there are more elements available in the input stream
-function hasMoreData() {
-  return dataStream.hasMoreElements();
+/**
+ * Checks if there are more tokens (lines) available in the input data.
+ * @returns {boolean} True if more input is available, false otherwise.
+ */
+function hasMoreTokens(){
+  return dataProcessor.hasNext();
 }
 
-/*
-  Initializes the input data stream object.
-  This object manages access to the raw input lines.
-*/
-function initializeStream(rawInputData) {
+/**
+ * Initializes an object to manage input lines, providing methods to check for
+ * more input and retrieve the next line.
+ * @param {string[]} rawInputData An array of raw input strings.
+ * @returns {object} An object with input management methods.
+ */
+function initializeInput(rawInputData){  
   return {
-    dataCollection: rawInputData,
-    currentPosition: 0,
-    maximumPosition: rawInputData.length,
-
-    // Method to check if more data exists
-    hasMoreElements: function() {
-      return (this.currentPosition < this.maximumPosition);
+    sourceData : rawInputData,
+    currentPosition : 0,
+    dataLength : rawInputData.length,
+    
+    /**
+     * Checks if there are more input lines to process.
+     * @returns {boolean} True if more lines exist, false otherwise.
+     */
+    hasNext : function(){
+      return (this.currentPosition < this.dataLength);
     },
-
-    // Method to get the next data element
-    getNextElement: function() {
-      if (this.hasMoreElements()) {
-        return this.dataCollection[this.currentPosition++];
+    
+    /**
+     * Retrieves the next input line and advances the position.
+     * Throws an error if no more input is available.
+     * @returns {string} The next input line.
+     */
+    next : function(){
+      if(this.hasNext()){
+        return this.sourceData[this.currentPosition++];
       } else {
-        throw "InputBoundaryExceeded: No more data available in the stream";
+        throw "ArrayIndexOutOfBoundsException: No more input available.";
       }
     }
   };
 }
 
-// Outputs a string to standard output (console.log)
-function printResult(messageContent) {
+/**
+ * Prints a message to standard output.
+ * @param {any} messageContent The content to print.
+ */
+function printOutput(messageContent){
   console.log(messageContent);
 }
 
-// Outputs a string to standard error (console.error) with debug prefix
-function debugLog(messageContent) {
-  console.error("DEBUG INFO:" + require("util").inspect(messageContent, false, null));
+/**
+ * Prints a debug message to standard error, inspecting objects for detailed output.
+ * @param {any} messageContent The content to print as a debug message.
+ */
+function printDebug(messageContent){
+  console.error("debug:" + require("util").inspect(messageContent, false, null));
 }
 
-/*
-  Utility function for data type conversion and formatting.
-  The 'formatType' parameter dictates the conversion logic:
-  - Default/unknown: returns the input as is.
-  - 1: Parses input as an integer.
-  - 2: Splits input string by spaces into an array of strings.
-  - 4: Splits input string by spaces and converts each part to a number.
-  - 6: Splits input string into an array of single characters.
-  - 7: Splits input string into characters and converts each to a number.
-  - 8: Joins an array of strings with spaces.
-  - 9: Joins an array of strings with newlines.
-  - 0: Joins an array of strings without any separator.
-*/
-function formatData(inputValue, formatType) {
+/**
+ * Converts input values based on a specified conversion type.
+ * @param {any} inputValue The value to convert.
+ * @param {number} conversionType The type of conversion to apply:
+ *   1: Parse as integer.
+ *   2: Split by space into string array.
+ *   4: Split by space and map to number array.
+ *   6: Split by character into character array.
+ *   7: Split by character and map to number array.
+ *   8: Join array elements with space.
+ *   9: Join array elements with newline.
+ *   0: Join array elements with no character.
+ *   (default): Return input as is.
+ * @returns {any} The converted value.
+ */
+function convertInput(inputValue, conversionType){
   try {
-    switch (formatType) {
-      case 1:
-        return parseInt(inputValue);
-      case 2:
-        return inputValue.split(" ");
-      case 4:
-        return inputValue.split(" ").map(Number);
-      case 6:
-        return inputValue.split("");
-      case 7:
-        return inputValue.split("").map(Number);
-      case 8:
-        return inputValue.join(" ");
-      case 9:
-        return inputValue.join("\n");
-      case 0:
-        return inputValue.join("");
-      default:
-        return inputValue;
+    switch(conversionType){
+      case 1: return parseInt(inputValue);
+      case 2: return inputValue.split(" ");
+      case 4: return inputValue.split(" ").map(Number);
+      case 6: return inputValue.split("");
+      case 7: return inputValue.split("").map(Number);
+      case 8: return inputValue.join(" ");
+      case 9: return inputValue.join("\n");
+      case 0: return inputValue.join("");
+      default: return inputValue;
     }
-  } catch (conversionError) {
-    return inputValue; // Return original value on error
+  } catch(conversionError){
+    // If conversion fails, return the original input value
+    return inputValue;
   }
 }
 
-/*
-  This marks the end of the boilerplate code.
-  The actual problem-solving logic starts below.
-*/
-function executeCoreLogic() {
-  var targetSum = retrieveInteger();
-  var currentNumber = 0;
-  var isTrianglePossible = false;
-
-  // Loop to find if targetSum is a triangular number
-  while (currentNumber <= targetSum) {
-    if ((currentNumber * (currentNumber + 1)) / 2 == targetSum) {
-      isTrianglePossible = true;
-      break;
+// Main function containing the problem's solution logic
+function executeSolution(){
+  // Read the target number from input
+  var targetNumber = getNextInteger();
+  
+  // Variable to iterate through potential triangular numbers
+  var currentSumCandidate = 0;
+  // Flag to indicate if targetNumber is a triangular number
+  var isTriangular = false;
+  
+  // Loop to find if targetNumber is a triangular number (k * (k + 1) / 2)
+  while(currentSumCandidate <= targetNumber){
+    if((currentSumCandidate * (currentSumCandidate + 1)) / 2 === targetNumber){
+      isTriangular = true;
+      break; // Found a match, exit loop
     }
-    currentNumber++;
+    currentSumCandidate++; // Increment candidate
   }
-
-  if (!isTrianglePossible) {
-    printResult("No");
+  
+  // If targetNumber is not a triangular number, print "No" and exit
+  if(!isTriangular){
+    printOutput("No");
     return;
   }
-
-  printResult("Yes");
-
-  // Initialize a 2D array (matrix)
-  var matrixStructure = new Array(currentNumber + 1);
-  for (var rowIndex = 0; rowIndex < currentNumber + 1; rowIndex++) {
-    matrixStructure[rowIndex] = new Array(currentNumber);
+  
+  // If it is a triangular number, print "Yes"
+  printOutput("Yes");
+  
+  // Initialize a 2D array (matrix) to store the result
+  // Dimensions: (currentSumCandidate + 1) rows, currentSumCandidate columns
+  var resultMatrix = new Array(currentSumCandidate + 1);
+  for(var rowIdx = 0; rowIdx < currentSumCandidate + 1; rowIdx++){
+    resultMatrix[rowIdx] = new Array(currentSumCandidate);
   }
-
-  // Populate the matrix with sequential values
-  var cellValue = 1;
-  for (var rowIndex = 0; rowIndex < currentNumber; rowIndex++) {
-    for (var colIndex = rowIndex; colIndex < currentNumber; colIndex++) {
-      matrixStructure[rowIndex][colIndex] = cellValue;
-      matrixStructure[colIndex + 1][rowIndex] = cellValue;
-      cellValue++;
+  
+  // Variable to assign sequential numbers to matrix cells
+  var currentValue = 1;
+  
+  // Populate the matrix based on the problem's specific pattern
+  // This creates a symmetric structure where list[i][j] and list[j+1][i] get the same value
+  for(var rowIter = 0; rowIter < currentSumCandidate; rowIter++){
+    for(var colIter = rowIter; colIter < currentSumCandidate; colIter++){
+      resultMatrix[rowIter][colIter] = currentValue;
+      resultMatrix[colIter + 1][rowIter] = currentValue;
+      currentValue++; // Increment for the next unique number
     }
   }
-
-  debugLog(matrixStructure); // Output the generated matrix for debugging
-
-  printResult(matrixStructure.length);
-
-  // Prepare the output by adding the size to each row and joining elements
-  var formattedOutput = new Array(matrixStructure.length);
-  for (var rowIndex = 0; rowIndex < matrixStructure.length; rowIndex++) {
-    matrixStructure[rowIndex].unshift(currentNumber); // Add 'currentNumber' at the beginning of each row
-    formattedOutput[rowIndex] = matrixStructure[rowIndex].join(" ");
+  
+  // Output the generated matrix to stderr for debugging purposes
+  printDebug(resultMatrix);
+  
+  // Print the number of rows in the result matrix
+  printOutput(resultMatrix.length);
+  
+  // Prepare the final output lines
+  var formattedOutputLines = new Array(resultMatrix.length);
+  for(var lineIter = 0; lineIter < resultMatrix.length; lineIter++){
+    // Prepend the count of elements in the current row (which is currentSumCandidate)
+    resultMatrix[lineIter].unshift(currentSumCandidate);
+    // Join the elements of the row with spaces
+    formattedOutputLines[lineIter] = resultMatrix[lineIter].join(" ");
   }
-
-  // Print the final formatted output, joined by newlines
-  printResult(formatData(formattedOutput, 9));
+  
+  // Print all formatted output lines, joined by newlines
+  printOutput(convertInput(formattedOutputLines, 9));
 }

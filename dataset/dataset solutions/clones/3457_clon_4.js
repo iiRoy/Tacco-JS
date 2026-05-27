@@ -1,80 +1,90 @@
-const processAmidaPath = (inputData) => {
-    const numeralValues = inputData.split(" ").map(Number);
-    const maxFloor = numeralValues[0];
-    const trackCount = numeralValues[1];
-    const destinationTrack = numeralValues[2] - 1; // Convert to zero-indexed
+function Main(input){
+  const parsedInput = input.split(" ").map(val => parseInt(val, 10));
+	const heightVal = parsedInput[0];
+  const widthVal = parsedInput[1];
+  const targetCol = parsedInput[2];
+  const modulus = 1000000007;
+  
+  if(widthVal === 1) return 1;
+  
+  // Helper function to generate all valid Amida ladder configurations as bitmasks.
+  // A bitmask represents the presence of horizontal bars.
+  // The k-th bit (0-indexed) is 1 if there's a bar between column k and k+1.
+  // Constraint: No two consecutive bits can be 1 (no two adjacent bars).
+  // `barPositionsCount` is W-1, representing the number of possible bar locations.
+  function generateValidAmidaMasks(barPositionsCount) {
+      const validMasks = [];
+      function recurseGenerate(currentBarIndex, currentMask) {
+          if (currentBarIndex >= barPositionsCount) {
+              validMasks.push(currentMask);
+              return;
+          }
+          // Option 1: Do NOT place a bar at currentBarIndex
+          recurseGenerate(currentBarIndex + 1, currentMask);
 
-    const primeModulo = 1000000007;
+          // Option 2: Place a bar at currentBarIndex
+          // If a bar is placed here, we cannot place one at currentBarIndex + 1.
+          // So, the next bar position to consider is currentBarIndex + 2.
+          recurseGenerate(currentBarIndex + 2, currentMask | (1 << currentBarIndex));
+      }
+      recurseGenerate(0, 0);
+      return validMasks;
+  }
 
-    if (trackCount === 1) {
-        return 1;
-    }
+  const validLadderConfigurations = generateValidAmidaMasks(widthVal - 1);
+  
+  // Precompute how many valid configurations allow a path to column `j` from `j-1`, `j`, or `j+1`.
+  // `columnPathCounts[j]` stores an object with counts for paths ending at `j`.
+  const columnPathCounts = Array(widthVal).fill(0).map(() => ({ fromLeft: 0, fromSelf: 0, fromRight: 0 }));
 
-    // Function to enumerate all permissible horizontal bar layouts
-    // A layout is an array where 1 indicates a bar and 0 no bar.
-    // The array represents bars between track i-1 and i.
-    // Padded with 0s at both ends for simplified boundary checks.
-    const enumerateLayouts = (numTracks) => {
-        const validLayouts = [];
-        const buildLayout = (currentBars, lastBarPresent) => {
-            if (currentBars.length === numTracks - 1) { // Core bar positions
-                validLayouts.push(currentBars);
-                return;
-            }
-            buildLayout(currentBars.concat(0), false); // Option: no bar
-            if (!lastBarPresent) {
-                buildLayout(currentBars.concat(1), true); // Option: bar, if previous wasn't a bar
-            }
-        };
+  for (const configMask of validLadderConfigurations) {
+      for (let j = 0; j < widthVal; j++) {
+          // Check for a bar between column j-1 and j (corresponds to bit j-1 in the mask)
+          const hasBarToLeft = (j > 0) && ((configMask >> (j - 1)) & 1);
+          // Check for a bar between column j and j+1 (corresponds to bit j in the mask)
+          const hasBarToRight = (j < widthVal - 1) && ((configMask >> j) & 1);
 
-        if (numTracks > 1) {
-            buildLayout([], false);
-        } else {
-            buildLayout([], false); // For numTracks=1, 0 core bars, but this branch is not hit due to early exit
+          if (hasBarToLeft && !hasBarToRight) { // Path from j-1 to j
+              columnPathCounts[j].fromLeft++;
+          } else if (!hasBarToLeft && hasBarToRight) { // Path from j+1 to j
+              columnPathCounts[j].fromRight++;
+          } else if (!hasBarToLeft && !hasBarToRight) { // Path from j to j
+              columnPathCounts[j].fromSelf++;
+          }
+          // The case `hasBarToLeft && hasBarToRight` is impossible due to `generateValidAmidaMasks` logic.
+      }
+  }
+
+  // Initialize dynamic programming table
+  // `dpTable[i][j]` stores the number of ways to reach column `j` at row `i`.
+  const dpTable = Array(heightVal + 1);
+  for(let i = 0; i <= heightVal; i++){
+  	dpTable[i] = Array(widthVal).fill(0);
+  }
+  dpTable[0][0] = 1; // Starting point: 1 way to be at column 0 at row 0.
+  
+  // Fill DP table row by row
+  for(let i = 1; i <= heightVal; i++){
+  	for(let j = 0; j < widthVal; j++){
+        let currentWays = 0;
+
+        // Add ways coming from the left column (j-1)
+        if (j > 0) {
+            currentWays = (currentWays + dpTable[i-1][j-1] * columnPathCounts[j].fromLeft) % modulus;
         }
-        return validLayouts.map(layout => [0, ...layout, 0]);
-    };
 
-    const permittedLayouts = enumerateLayouts(trackCount);
+        // Add ways coming from the same column (j)
+        currentWays = (currentWays + dpTable[i-1][j] * columnPathCounts[j].fromSelf) % modulus;
 
-    // Initialize track counts for the starting floor (floor 0)
-    let currentFloorCounts = new Array(trackCount).fill(0);
-    currentFloorCounts[0] = 1; // Start at track 0, 1 way.
-
-    // Iterate through each floor from 1 up to maxFloor
-    // Use reduce to iterate and update the counts for each floor
-    const finalCounts = Array.from({ length: maxFloor }, (_, i) => i + 1).reduce((prevFloorCounts, currentFloorNum) => {
-        // For each floor, calculate the counts for each track
-        // This will be the sum of contributions from all permitted layouts
-        const nextFloorCounts = new Array(trackCount).fill(0);
-
-        permittedLayouts.forEach(layout => {
-            // Calculate temporary contributions for the current level based on this specific arrangement
-            // Map each track to its contribution from the previous floor based on the current layout
-            const layoutContributions = Array.from({ length: trackCount }, (_, trackIdx) => {
-                // layout[trackIdx] is the indicator for a bar between (trackIdx-1) and trackIdx
-                // layout[trackIdx+1] is the indicator for a bar between trackIdx and (trackIdx+1)
-                if (layout[trackIdx] === 1) { // If there's a bar to the left, current track receives from trackIdx-1
-                    return prevFloorCounts[trackIdx - 1];
-                } else if (layout[trackIdx + 1] === 1) { // If there's a bar to the right, current track receives from trackIdx+1
-                    return prevFloorCounts[trackIdx + 1];
-                } else { // Otherwise (no adjacent bars), current track receives from itself
-                    return prevFloorCounts[trackIdx];
-                }
-            });
-
-            // Accumulate these contributions into the nextFloorCounts for the current floor
-            layoutContributions.forEach((contrib, trackIdx) => {
-                nextFloorCounts[trackIdx] = (nextFloorCounts[trackIdx] + contrib) % primeModulo;
-            });
-        });
-
-        return nextFloorCounts; // This becomes prevFloorCounts for the next iteration
-    }, currentFloorCounts); // Initial value for reduce is currentFloorCounts (from floor 0)
-
-    return finalCounts[destinationTrack];
-};
-
-if (typeof require !== 'undefined') {
-    console.log(processAmidaPath(require("fs").readFileSync("/dev/stdin", "utf8")));
+        // Add ways coming from the right column (j+1)
+        if (j < widthVal - 1) {
+            currentWays = (currentWays + dpTable[i-1][j+1] * columnPathCounts[j].fromRight) % modulus;
+        }
+        dpTable[i][j] = currentWays;
+    }
+  }
+  
+  return dpTable[heightVal][targetCol - 1];
 }
+
+if(typeof require !== 'undefined')console.log(Main(require("fs").readFileSync("/dev/stdin", "utf8")));

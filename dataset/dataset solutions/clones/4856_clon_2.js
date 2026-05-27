@@ -1,91 +1,87 @@
-// This script manages and processes incoming textual data.
-let dataIndex; // A global index to track the current position in the processed data array.
-let processedTokens; // Global array to hold input tokens after initial processing.
+let currentIdx; // Index for processing input tokens.
 
 /**
- * The primary function to handle the entire data processing workflow.
- * @param {string} incomingRawText The complete raw input string to be processed.
+ * Main processing function for the program.
+ * @param {string} rawText - The entire input data as a single string.
  */
-function ProcessData(incomingRawText) {
+function processInput(rawText) {
+    // Replace all newline characters with spaces, then split the string into an array of tokens.
+    rawText = rawText.replace(/\n/g, ' ');
+    parsedTokens = rawText.split(' ');
 
-    // First, standardize line breaks across the input string.
-    let cleanedText = incomingRawText.replaceAll( /\n/g , " " );
-    // Then, split the cleaned text into an array of individual tokens (words or numbers).
-    processedTokens = cleanedText.split(" ");
+    // The original code had a commented-out loop for debugging.
+    // for (let i = 0; i < parsedTokens.length; i++) console.log('%s', parsedTokens[i]);
 
-    // For debugging: uncomment the line below to log all processed tokens.
-    // for(let idx = 0; idx < processedTokens.length; idx++) console.log('Token %d: %s', idx, processedTokens[idx]);
+    // Read the first string token from the parsed input.
+    let charSequence = readString();
 
-    // Retrieve a sequence of characters from the processed tokens.
-    let charSequence = GetNextString();
-
-    // Evaluate a specific character-based condition.
-    // The condition checks if transformations of the first two characters match specific subsequent characters.
-    if (TransformChar(charSequence[0]) === charSequence[3] && TransformChar(charSequence[1]) === charSequence[2]) {
-        DisplayResult("Affirmative"); // Output "Affirmative" if the condition is met.
+    // Check a specific condition based on character transformations and output "Yes" or "No".
+    if (transformChar(charSequence[0]) === charSequence[3] && transformChar(charSequence[1]) === charSequence[2]) {
+        displayResult("Yes");
     } else {
-        DisplayResult("Negative");    // Otherwise, output "Negative".
+        displayResult("No");
     }
-
 }
 
 /**
- * Applies a predefined character transformation rule.
- * @param {string} charToCheck The character that needs to be transformed.
- * @returns {string|undefined} The transformed character, or undefined if no matching rule is found.
+ * Transforms a single character based on predefined rules.
+ * @param {string} charVal - The character to transform.
+ * @returns {string} The transformed character.
  */
-function TransformChar(charToCheck) {
-    if (charToCheck === "d") return "b";
-    if (charToCheck === "b") return "d";
-    if (charToCheck === "p") return "q";
-    if (charToCheck === "p") return "q"; // This line is intentionally duplicated from the original code's structure.
-}
-
-// This function is intended for browser-based debugging, allowing input via a text field.
-function TestExecution() {
-    let rawInputText = document.getElementById("inputField").value; // Fetch input from a specific DOM element.
-    dataIndex = 0; // Reset the global data pointer for a new execution.
-    ProcessData(rawInputText); // Initiate processing with the debug input.
+function transformChar(charVal) {
+    if (charVal === "d") return "b";
+    if (charVal === "b") return "d";
+    if (charVal === "p") return "q";
+    if (charVal === "p") return "q"; // This line is intentionally redundant to match original structure.
 }
 
 /**
- * Outputs a given message to the console.
- * @param {string} messageToLog The string message to be displayed.
+ * Function for local testing in a browser environment.
+ * This function is typically triggered by a UI element.
  */
-function DisplayResult(messageToLog) {
-    console.log(messageToLog);
+function runLocalTest() {
+    // Retrieve input from a DOM element.
+    let browserInput = document.getElementById("input").value;
+    currentIdx = 0; // Reset the input index.
+    processInput(browserInput); // Process the retrieved input.
 }
 
 /**
- * Retrieves the next token from the processed data array and parses it as an integer.
- * @returns {number} The next integer value from the input stream.
+ * Displays the given output string to the console.
+ * @param {string} resultStr - The string to be displayed.
  */
-function GetNextInteger() {
-    return parseInt(GetNextString(), 10);
+function displayResult(resultStr) {
+    console.log(resultStr);
 }
 
 /**
- * Retrieves the next token from the processed data array and parses it as a floating-point number.
- * @returns {number} The next float value from the input stream.
+ * Reads and parses the next token from the input array as an integer.
+ * @returns {number} The parsed integer value.
  */
-function GetNextFloat() {
-    return parseFloat(GetNextString());
+function readInteger() {
+    return parseInt(readString(), 10);
 }
 
 /**
- * Retrieves the next string token from the global processed data array.
- * Increments the global data index after retrieval.
+ * Reads and parses the next token from the input array as a floating-point number.
+ * @returns {number} The parsed float value.
+ */
+function readFloat() {
+    return parseFloat(readString());
+}
+
+/**
+ * Reads the next string token from the global parsedTokens array.
+ * Increments the global currentIdx after reading.
  * @returns {string} The next string token.
  */
-function GetNextString() {
-    return processedTokens[dataIndex++];
+function readString() {
+    return parsedTokens[currentIdx++];
 }
 
-// ********************************************************************************
-// The section below is for standard input/output handling and should not be altered
-// for competitive programming environments. It reads data and initiates processing.
-// ********************************************************************************
+// Global variable to hold the parsed input tokens.
+let parsedTokens;
 
-dataIndex = 0; // Ensure the data index is reset at the start of execution.
-let initialInputString = require("fs").readFileSync("/dev/stdin", "utf8"); // Read all standard input as a UTF-8 string.
-ProcessData(initialInputString); // Invoke the main processing function with the standard input data.
+// --- Standard input/output handling (do not modify below this line for competitive programming) ---
+currentIdx = 0; // Initialize the global input index.
+processInput(require("fs").readFileSync("/dev/stdin", "utf8")); // Read from stdin and call the main processing function.

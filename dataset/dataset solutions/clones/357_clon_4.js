@@ -1,74 +1,56 @@
-const acquiredData = process.stdin.readFileSync(0, 'utf8');
-const dataSegments = acquiredData.trim().split('\n');
-let segmentPointer = 0;
+function propagateClearance(initialRow, initialCol, targetSymbol, characterGrid, maxRows, maxCols) {
+    const rowShift = [0, 0, -1, 1];
+    const colShift = [-1, 1, 0, 0];
 
-function obtainNextSegment() {
-    return dataSegments[segmentPointer++];
-}
+    const processingQueue = [[initialRow, initialCol]];
+    characterGrid[initialRow][initialCol] = "m";
 
-function processAllDatasets() {
-    let computationOutcomes = [];
+    let queuePointer = 0;
+    while (queuePointer < processingQueue.length) {
+        const [currentRow, currentCol] = processingQueue[queuePointer++];
+        
+        for (let k = 0; k < 4; k++) {
+            const neighborRow = currentRow + rowShift[k];
+            const neighborCol = currentCol + colShift[k];
 
-    while (true) {
-        const dimensionSpecs = obtainNextSegment().split(' ').map(Number);
-        const dimensionA = dimensionSpecs[0]; 
-        const dimensionB = dimensionSpecs[1]; 
-
-        if (dimensionA === 0 && dimensionB === 0) {
-            break;
-        }
-
-        const gridRepresentation = []; 
-        for (let rIndex = 0; rIndex < dimensionA; ++rIndex) {
-            gridRepresentation.push(obtainNextSegment().split(''));
-        }
-
-        let componentTally = 0; 
-
-        const displacementVectors = [[0, -1], [0, 1], [-1, 0], [1, 0]]; 
-
-        const traverseAndMarkExtent = (startingRow, startingCol, characterIdentity, surfaceMap, maxRows, maxCols) => {
-            const traversalQueue = []; 
-            traversalQueue.push([startingRow, startingCol]);
-            surfaceMap[startingRow][startingCol] = '~'; 
-
-            let currentQueueHead = 0;
-
-            while (currentQueueHead < traversalQueue.length) {
-                const [activeRow, activeCol] = traversalQueue[currentQueueHead++];
-
-                for (const [deltaRow, deltaCol] of displacementVectors) {
-                    const adjacentGridRow = activeRow + deltaRow;
-                    const adjacentGridCol = activeCol + deltaCol;
-
-                    if (adjacentGridRow >= 0 && adjacentGridRow < maxRows &&
-                        adjacentGridCol >= 0 && adjacentGridCol < maxCols) {
-                        if (surfaceMap[adjacentGridRow][adjacentGridCol] === characterIdentity) {
-                            surfaceMap[adjacentGridRow][adjacentGridCol] = '~'; 
-                            traversalQueue.push([adjacentGridRow, adjacentGridCol]);
-                        }
-                    }
-                }
-            }
-        };
-
-        const targetSymbols = new Set(['@', '#', '*']); 
-
-        for (let rIndex = 0; rIndex < dimensionA; ++rIndex) {
-            for (let cIndex = 0; cIndex < dimensionB; ++cIndex) {
-                const currentSymbol = gridRepresentation[rIndex][cIndex];
-                if (targetSymbols.has(currentSymbol)) {
-                    componentTally++;
-                    traverseAndMarkExtent(rIndex, cIndex, currentSymbol, gridRepresentation, dimensionA, dimensionB);
+            if (neighborRow >= 0 && neighborRow < maxRows && neighborCol >= 0 && neighborCol < maxCols) {
+                if (characterGrid[neighborRow][neighborCol] === targetSymbol) {
+                    characterGrid[neighborRow][neighborCol] = "m";
+                    processingQueue.push([neighborRow, neighborCol]);
                 }
             }
         }
-        computationOutcomes.push(componentTally);
     }
-    return computationOutcomes;
 }
 
-const finalResults = processAllDatasets();
-for(const outcome of finalResults) {
-    console.log(outcome);
+const rawInputData = require('fs').readFileSync('/dev/stdin', 'utf8');
+let inputLineBuffer = rawInputData.trim().split("\n");
+
+while (true) {
+    const gridDimensions = inputLineBuffer.shift().split(" ").map(Number);
+
+    if (gridDimensions[0] === 0 && gridDimensions[1] === 0) {
+        break;
+    }
+
+    const characterGrid = Array.from({ length: gridDimensions[0] }, () =>
+        inputLineBuffer.shift().split("")
+    );
+
+    let regionCount = 0;
+
+    const totalCells = gridDimensions[0] * gridDimensions[1];
+    for (let cellIndex = 0; cellIndex < totalCells; cellIndex++) {
+        const currentRow = Math.floor(cellIndex / gridDimensions[1]);
+        const currentCol = cellIndex % gridDimensions[1];
+
+        const currentSymbol = characterGrid[currentRow][currentCol];
+
+        if (currentSymbol === "@" || currentSymbol === "#" || currentSymbol === "*") {
+            regionCount++;
+            propagateClearance(currentRow, currentCol, currentSymbol, characterGrid, gridDimensions[0], gridDimensions[1]);
+        }
+    }
+
+    console.log(regionCount);
 }

@@ -1,31 +1,24 @@
-const processInputData = (incomingText) => {
-    const parsedNumber = parseInt(incomingText.split('\n')[0], 10);
-    console.log(parsedNumber);
+'use strict';
 
-    const lastDigitOfNumber = parsedNumber % 10;
+function HandleNumericInput(sourceText) {
+    const inputNumber = Number(sourceText.trim().split('\n')[0]);
+    console.log(inputNumber);
 
-    switch (lastDigitOfNumber) {
-        case 0:
-        case 2:
-        case 4:
-        case 5:
-        case 6:
-        case 8:
-            console.log('-1');
-            return;
-        case 1:
-        case 3:
-        case 7:
-        case 9:
-            return;
-        default:
-            return;
+    const digitProhibitionMap = new Array(10).fill(false);
+    digitProhibitionMap[0] = true;
+    digitProhibitionMap[2] = true;
+    digitProhibitionMap[4] = true;
+    digitProhibitionMap[5] = true;
+    digitProhibitionMap[6] = true;
+    digitProhibitionMap[8] = true;
+
+    const finalDigit = inputNumber % 10;
+
+    if (digitProhibitionMap[finalDigit]) {
+        console.log('-1');
+        return;
     }
-};
 
-const executeProgram = () => {
-    const rawData = require('node:fs').readFileSync('/dev/stdin', 'utf8');
-    processInputData(rawData);
-};
-
-executeProgram();
+    return;
+}
+HandleNumericInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,45 +1,44 @@
-const getDivisorCount = (valueToCheck) => {
-  // Initialize a counter to track the number of factors found for the given value.
-  let divisorsFound = 0;
+const calculateDivisorCount = (targetNumber) => {
+    // Initialize a counter for the number of divisors found.
+    let divisorTally = 0;
 
-  // Iterate through potential divisors starting from zero up to and including the value itself.
-  for (let currentDivisor = 0; currentDivisor <= valueToCheck; currentDivisor++) {
-    // Check if the current number perfectly divides the target value.
-    if (valueToCheck % currentDivisor === 0) {
-      divisorsFound++; // If it's a divisor, increment the counter.
+    // Iterate from zero up to and including the target number.
+    for (let iteratorIndex = 0; iteratorIndex <= targetNumber; iteratorIndex++) {
+        // Check if the current iterator index is a divisor of the target number.
+        // Note: Division by zero (targetNumber % 0) results in NaN, which does not equal 0.
+        if (targetNumber % iteratorIndex === 0) {
+            divisorTally++; // Increment the tally if it's a divisor.
+        }
     }
-  }
-
-  // Return the total count of divisors found.
-  return divisorsFound;
+    // Return the total count of divisors.
+    return divisorTally;
 };
 
+const executePrimaryLogic = (rawInputString) => {
+    // Convert the raw input string to a numerical upper limit.
+    const upperLimit = Number(rawInputString);
 
-const runApplication = (rawData) => {
-  // Convert the raw input string into a numerical integer.
-  const parsedInput = Number(rawData);
-  let finalAnswer = 0; // This variable will store the ultimate count meeting the criteria.
+    // Initialize a counter for numbers meeting specific criteria.
+    let finalResultCount = 0;
 
-  // Loop through each number from zero up to the parsed input value.
-  for (let currentNumber = 0; currentNumber <= parsedInput; currentNumber++) {
-    // If the current number is an even number, skip it and proceed to the next iteration.
-    if (currentNumber % 2 === 0) {
-      continue;
+    // Loop through numbers from zero up to the upper limit.
+    for (let currentIterationValue = 0; currentIterationValue <= upperLimit; currentIterationValue++) {
+        // Skip processing if the current number is even.
+        if (currentIterationValue % 2 === 0) {
+            continue;
+        }
+
+        // If the current number is odd, calculate its divisor count.
+        // Check if the number of divisors is exactly eight.
+        if (calculateDivisorCount(currentIterationValue) === 8) {
+            finalResultCount++; // Increment the result count if it has eight divisors.
+        }
     }
 
-    // Call the helper function to determine how many divisors the current odd number has.
-    // If the count of divisors is exactly eight, increment our final answer.
-    if (getDivisorCount(currentNumber) === 8) {
-      finalAnswer++;
-    }
-  }
-
-  // Print the final calculated result to the console.
-  console.log(finalAnswer);
+    // Output the final count to the console.
+    console.log(finalResultCount);
 };
 
-
-// The following block of code is responsible for handling standard input/output.
-// It reads all data from the standard input stream and then invokes the main processing function.
-// This part should remain untouched to ensure proper execution in the environment.
-runApplication(require("node:fs").readFileSync("/dev/stdin", "utf8"));
+// The following line handles standard input and calls the main processing function.
+// It should not be modified as it's part of the execution environment.
+executePrimaryLogic(require("fs").readFileSync("/dev/stdin", "utf8"));

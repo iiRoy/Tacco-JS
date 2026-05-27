@@ -1,30 +1,10 @@
-const inputSource = require("node:fs");
+function processInput(dataPayload) {
+  const numericalValue = Number.parseInt(dataPayload.split('\n')[0], 10);
 
-const processor = (textData) => {
-    const numericTarget = Number(textData.split('\n')[0]);
+  const rootCandidate = Math.floor(Math.sqrt(numericalValue));
+  const finalSquareValue = rootCandidate * rootCandidate;
 
-    if (numericTarget < 0) {
-        return 1;
-    }
+  console.log(finalSquareValue);
+}
 
-    let lowerBound = 0;
-    let upperBound = numericTarget;
-    let foundRoot = 0;
-
-    while (lowerBound <= upperBound) {
-        const potentialRoot = Math.floor((lowerBound + upperBound) / 2);
-        const currentSquare = potentialRoot * potentialRoot;
-
-        if (currentSquare <= numericTarget) {
-            foundRoot = potentialRoot;
-            lowerBound = potentialRoot + 1;
-        } else {
-            upperBound = potentialRoot - 1;
-        }
-    }
-    return foundRoot * foundRoot;
-};
-
-const acquiredData = inputSource.readFileSync("/dev/stdin", "utf8");
-const finalOutcome = processor(acquiredData);
-process.stdout.write(finalOutcome.toString() + '\n');
+processInput(require("fs").readfilesync("/dev/stdin", "utf8"));

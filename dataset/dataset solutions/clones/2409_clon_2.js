@@ -1,65 +1,67 @@
 'use strict';
 
-const processData = (rawData) => {
-  // Obtain the raw input string from the environment.
-  // The original input 'inputS' is assumed to come from a global variable or external source.
-  // For cloning, we'll replace 'inputS' with 'inputStringData'.
-  let inputStringData = rawData; // Assuming rawData passed to processData is the full string.
-  inputStringData = inputStringData.trim().split('\n');
+// This function processes the raw input string to find a specific partition.
+const processInputData = (rawInputString) => {
+  // Trim leading/trailing whitespace and split the input into an array of lines.
+  let parsedLines = rawInputString.trim().split('\n');
 
-  // Extract the line containing the numeric segments.
-  const segmentsStr = inputStringData[1].split(' ');
+  // The second line contains space-separated segment lengths.
+  const segmentStringsArray = parsedLines[1].split(' ');
 
-  // Convert string segments into an array of integer values.
-  const segmentValues = segmentsStr.map(itemStr => Number.parseInt(itemStr, 10));
+  // Convert string segments to integers.
+  const numericSegments = segmentStringsArray.map(segmentStr => parseInt(segmentStr, 10));
 
-  // Calculate the sum of all segment values.
-  const totalLength = segmentValues.reduce((accumulator, currentValue) => accumulator + currentValue);
-  // Determine the target value for splitting the segments into two halves.
-  const targetHalf = totalLength / 2;
+  // Calculate the total length of all segments.
+  const totalSumOfSegments = numericSegments.reduce((currentTotal, segmentValue) => currentTotal + segmentValue);
 
-  let currentSum = 0; // Accumulator for the first part of segments.
-  let segmentIdx = 0; // Index for iterating through segment values.
+  // Determine the target value for half the total length.
+  const targetMidpoint = totalSumOfSegments / 2;
 
-  // Loop through segments, accumulating their values until the sum exceeds or meets the target.
-  while (currentSum < targetHalf) {
-    currentSum += segmentValues[segmentIdx];
+  // Initialize variables for finding the split point.
+  let accumulatedValue = 0;
+  let segmentIdx = 0;
+
+  // Iterate through segments, accumulating their values until the target midpoint is reached or exceeded.
+  while (accumulatedValue < targetMidpoint) {
+    accumulatedValue += numericSegments[segmentIdx];
     segmentIdx++;
   }
 
-  let diff1 = 0; // Stores the sum of segments up to (but not including) the segmentIdx.
-  let diff2 = 0; // Stores the sum of segments up to (and including) the segmentIdx.
+  // Initialize two potential answer variables.
+  let firstCandidateResult = 0;
+  let secondCandidateResult = 0;
 
-  // Calculate the sum of elements for the first potential partition.
-  for (let loopIdx = 0; loopIdx < segmentIdx; loopIdx++) {
-    diff1 += segmentValues[loopIdx];
-  }
-  // Calculate the sum of elements for the second potential partition.
-  for (let loopIdx = 0; loopIdx <= segmentIdx; loopIdx++) {
-    diff2 += segmentValues[loopIdx];
+  // Calculate the sum of segments up to the 'segmentIdx' (exclusive).
+  for (let loopIdxA = 0; loopIdxA < segmentIdx; loopIdxA++) {
+    firstCandidateResult += numericSegments[loopIdxA];
   }
 
+  // Calculate the sum of segments up to the 'segmentIdx' (inclusive).
+  for (let loopIdxB = 0; loopIdxB <= segmentIdx; loopIdxB++) {
+    secondCandidateResult += numericSegments[loopIdxB];
+  }
 
-  // Adjust diff1 based on conditions related to the total length.
-  if (diff1 === targetHalf && totalLength - diff1 === targetHalf) {
-    diff1 = 0; // If partitions are perfectly equal, set to zero difference.
+  // Adjust the first candidate result based on specific conditions.
+  if (firstCandidateResult === accumulatedValue && totalSumOfSegments - firstCandidateResult === accumulatedValue) {
+    firstCandidateResult = 0; // Special case: if both halves are exactly equal to accumulatedValue
   } else {
-    diff1 = Math.abs(diff1 - totalLength); // Calculate absolute difference from total.
+    firstCandidateResult = Math.abs(firstCandidateResult - totalSumOfSegments);
   }
 
-  // Adjust diff2 based on conditions related to the total length.
-  if (diff2 === totalLength) {
-    diff2 = Infinity; // If diff2 equals totalLength, this partition is invalid/maximum.
+  // Adjust the second candidate result based on specific conditions.
+  if (secondCandidateResult === totalSumOfSegments) {
+    secondCandidateResult = Infinity; // If the second sum equals the total, it's not a valid split for comparison.
   } else {
-    diff2 = Math.abs(diff2 - totalLength); // Calculate absolute difference from total.
+    secondCandidateResult = Math.abs(secondCandidateResult - totalSumOfSegments);
   }
 
-  // Output the smaller of the two calculated differences.
-  if (diff1 < diff2) {
-    console.log(diff1);
+  // Output the smaller of the two adjusted results.
+  if (firstCandidateResult < secondCandidateResult) {
+    console.log(firstCandidateResult);
   } else {
-    console.log(diff2);
+    console.log(secondCandidateResult);
   }
 };
-// Invoke the main processing function with input read from standard input.
-processData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+
+// Read input from standard input and pass it to the processing function.
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

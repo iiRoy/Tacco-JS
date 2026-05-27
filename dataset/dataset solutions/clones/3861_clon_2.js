@@ -1,56 +1,65 @@
-function ProcessInputData(rawData) {
-  // Split the raw input string into an array of lines
-  let linesArray = rawData.split("\n");
+function ProcessInput(inputData) {
+    // This function takes raw input string, processes it, and prints the count of zero-sum subarrays.
 
-  // Parse the first line to get the count of numbers
-  // Using parseInt for explicit type conversion
-  const countOfNumbers = parseInt(linesArray[0], 10);
+    // First, split the entire input string by newline characters.
+    // This separates the number of elements from the actual list of numbers.
+    inputData = inputData.split("\n");
 
-  // Split the second line to get an array of number strings
-  const numericStrings = linesArray[1].split(" ");
+    // The first line of the input contains the total count of numbers.
+    // Convert this string representation to a numerical value.
+    const elementCount = Number(inputData[0]);
 
-  // Initialize a frequency map for prefix sums.
-  // A sum of 0 appears once initially (before any numbers are added).
-  const prefixSumFrequencies = { 0: 1 };
+    // The second line contains the space-separated numbers.
+    // Split this string by spaces to get an array of number strings.
+    const numberStrings = inputData[1].split(" ");
 
-  // Initialize the current running total
-  let currentPrefixSum = 0;
+    // Initialize an object (hash map) to store the frequencies of different prefix sums.
+    // We start with a prefix sum of 0 having occurred once. This handles cases where
+    // a subarray starting from the very first element sums to zero.
+    const prefixSumCounts = { 0: 1 };
 
-  // Iterate through the numeric strings to calculate prefix sums and their frequencies
-  for (let idx = 0; idx < countOfNumbers; idx++) {
-    // Add the current number (parsed as an integer) to the running total
-    currentPrefixSum += parseInt(numericStrings[idx], 10);
+    // Initialize a variable to keep track of the running prefix sum as we iterate through the numbers.
+    let currentPrefixSum = 0;
 
-    // Increment the frequency of the current prefix sum in the map
-    // If it doesn't exist, initialize it to 1
-    if (prefixSumFrequencies[currentPrefixSum]) {
-      prefixSumFrequencies[currentPrefixSum]++;
-    } else {
-      prefixSumFrequencies[currentPrefixSum] = 1;
+    // Loop through each number in the input array, from the first to the last.
+    for (let idx = 0; idx < elementCount; idx++) {
+        // Convert the current number string to a numerical value and add it to the running prefix sum.
+        currentPrefixSum += Number(numberStrings[idx]);
+
+        // Check if this `currentPrefixSum` has been encountered before in our map.
+        if (prefixSumCounts[currentPrefixSum]) {
+            // If it has, increment its frequency count.
+            prefixSumCounts[currentPrefixSum]++;
+        } else {
+            // If it's a new prefix sum, initialize its frequency count to 1.
+            prefixSumCounts[currentPrefixSum] = 1;
+        }
     }
-  }
 
-  // Initialize the final count of pairs that sum to zero
-  let resultantPairs = 0;
-  let frequencyValue; // Temporary variable to hold frequency
+    // Initialize a variable to accumulate the final result: the total number of zero-sum subarrays.
+    let resultValue = 0;
+    // Declare a temporary variable to hold the count of a specific prefix sum during iteration.
+    let count;
 
-  // Iterate over the keys (prefix sums) in the frequency map
-  for (const sumKey in prefixSumFrequencies) {
-    // Check if the property belongs to the object itself (not prototype chain)
-    if (Object.prototype.hasOwnProperty.call(prefixSumFrequencies, sumKey)) {
-      // Get the frequency of the current prefix sum
-      // This assignment also acts as a truthy check
-      if ((frequencyValue = prefixSumFrequencies[sumKey])) {
-        // Calculate the number of pairs that can be formed from this frequency
-        // (n * (n - 1) / 2 combination formula)
-        resultantPairs += (frequencyValue * (frequencyValue - 1)) / 2;
-      }
+    // Iterate over the keys (which are string representations of prefix sums) in the `prefixSumCounts` object.
+    for (const keyStr in prefixSumCounts) {
+        // Retrieve the frequency count for the current prefix sum.
+        // The assignment `count = prefixSumCounts[keyStr]` also evaluates to the assigned value,
+        // so the `if` condition checks if `count` is a truthy value (i.e., greater than zero).
+        if (count = prefixSumCounts[keyStr]) {
+            // If a prefix sum `S` appears `k` times, it means there are `k` different points in the array
+            // where the cumulative sum from the beginning is `S`. Any pair of these points (say, at indices `i` and `j`
+            // where `i < j`) implies that the subarray between index `i` and `j-1` sums to zero.
+            // The number of ways to choose 2 points from `k` points is given by the combination formula: k * (k - 1) / 2.
+            resultValue += (count * (count - 1)) / 2;
+        }
     }
-  }
 
-  // Output the final calculated number of pairs
-  console.log(resultantPairs);
+    // Output the final calculated total number of zero-sum subarrays to the console.
+    console.log(resultValue);
 }
 
-// Read input from standard input and then process it
-ProcessInputData(require("node:fs").readFileSync("/dev/stdin", "utf8"));
+// This line reads the entire content of standard input synchronously.
+// It uses Node.js's 'fs' module to read from '/dev/stdin' (common for competitive programming).
+// The input is read as a UTF-8 encoded string and then passed to the `ProcessInput` function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

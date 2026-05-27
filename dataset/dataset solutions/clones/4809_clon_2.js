@@ -1,96 +1,72 @@
-// This function processes an input string to determine a specific numeric result.
-// It analyzes a sequence of numbers based on certain parity and frequency conditions.
-function AnalyzeSequence(sourceText) {
-  // Break down the entire input string into an array of individual lines.
-  let parsedLines = sourceText.split("\n");
+function ProcessInput(rawData) {
+    // Split the raw input string into individual lines.
+    let parsedLines = rawData.split('\n');
 
-  // From the second line of the input, extract and split it into an array of number strings.
-  // These represent the sequence of values to be analyzed.
-  let numberStrings = parsedLines[1].split(" ");
+    // Extract the second line and split it by spaces to get an array of number strings.
+    let numberStrings = parsedLines[1].split(' ');
 
-  // Initialize a flag that represents the validity or final outcome of the analysis.
-  // A value of 1 typically signifies a valid state, while 0 indicates an invalid one.
-  let finalOutcome = 1;
+    // Initialize a flag for the final outcome. A value of 1 indicates a valid state.
+    let finalOutcome = 1;
 
-  // This variable is declared but remains unused throughout the function.
-  // It is maintained for structural consistency with the original code pattern.
-  let unusedCounter = 0;
+    // This variable is declared but not used in the original logic.
+    let dummyVar = 0;
 
-  // Create an array to serve as a frequency map for the numbers encountered.
-  // Its indices will correspond to the numbers, and values will be their counts.
-  let valueCounts = [];
-
-  // Initialize the first 'numberStrings.length' elements of the frequency map to zero.
-  // This ensures that accesses like `valueCounts[initIterator]` are safe and defined.
-  for (let initIterator = 0; initIterator < numberStrings.length; initIterator++) {
-    valueCounts[initIterator] = 0;
-  }
-
-  // Iterate through the array of number strings to calculate their frequencies.
-  // This loop also performs an initial validation check.
-  for (let scanIndex = 0; scanIndex < numberStrings.length; scanIndex++) {
-    // Increment the count for the current number string. JavaScript implicitly converts
-    // the string to a number for use as an array index if it's a valid integer.
-    valueCounts[numberStrings[scanIndex]]++;
-
-    // If any number's frequency exceeds two, the sequence is immediately deemed invalid.
-    if (valueCounts[numberStrings[scanIndex]] > 2) {
-      finalOutcome = 0; // Set the outcome flag to invalid.
-      break; // Terminate the loop as the sequence is already invalid.
+    // Create an array to store frequency counts of numbers.
+    // Initialize all elements to zero up to the length of the numberStrings array.
+    let countArray = [];
+    for (let idxA = 0; idxA < numberStrings.length; idxA++) {
+        countArray[idxA] = 0;
     }
-  }
 
-  // Perform a specific validation check based on the parity of the first number in the input.
-  // `parseInt` is used to ensure the comparison is done with the numerical value of the string.
-  if (parseInt(parsedLines[0]) % 2 === 1 && valueCounts[0] !== 1) {
-    // If the first input number is odd AND the count of zero is not exactly one, it's invalid.
-    finalOutcome = 0;
-  } else {
-    // If the initial check passes, proceed with a more detailed validation of frequencies
-    // for numbers from 1 up to the length of the number sequence.
-    for (let checkIndex = 1; checkIndex < numberStrings.length; checkIndex++) {
-      // Pre-calculate parity conditions for readability.
-      const isFirstLineEven = parseInt(parsedLines[0]) % 2 === 0;
-      const isCurrentIndexOdd = checkIndex % 2 === 1;
-      const isCurrentIndexEven = checkIndex % 2 === 0;
-
-      // This complex condition checks several scenarios for invalidity:
-      // 1. First line even, current index odd, and its count is not 2.
-      // 2. First line odd, current index even, and its count is not 2.
-      // 3. First line even, current index even, and its count is not 0.
-      // 4. First line odd, current index odd, and its count is not 0.
-      if (
-        (isFirstLineEven && isCurrentIndexOdd && valueCounts[checkIndex] !== 2) ||
-        (!isFirstLineEven && isCurrentIndexEven && valueCounts[checkIndex] !== 2) ||
-        (isFirstLineEven && isCurrentIndexEven && valueCounts[checkIndex] !== 0) ||
-        (!isFirstLineEven && isCurrentIndexOdd && valueCounts[checkIndex] !== 0)
-      ) {
-        finalOutcome = 0; // Mark the sequence as invalid.
-        break; // Exit the validation loop immediately.
-      }
+    // Iterate through the number strings to populate the frequency map.
+    // Check for any number appearing more than twice.
+    for (let idxB = 0; idxB < numberStrings.length; idxB++) {
+        // Increment the count for the current number (converted to an index).
+        countArray[numberStrings[idxB]]++;
+        // If any number appears more than two times, set the flag to 0 and exit.
+        if (countArray[numberStrings[idxB]] > 2) {
+            finalOutcome = 0;
+            break;
+        }
     }
-  }
 
-  // If after all checks, the sequence is still considered valid (finalOutcome is 1),
-  // calculate the final numerical result.
-  if (finalOutcome === 1) {
-    // Calculate (length of sequence / 2) squared, modulo (10^9 + 7).
-    // `parseInt` ensures integer division before squaring.
-    let halfLength = parseInt(numberStrings.length / 2);
-    finalOutcome = Math.pow(halfLength, 2) % (Math.pow(10, 9) + 7);
-  }
+    // Check specific conditions based on the first line of input (N) and the frequency of 0.
+    // If N is odd and the count of 0 is not exactly 1, then the state is invalid.
+    if (parseInt(parsedLines[0]) % 2 === 1 && countArray[0] !== 1) {
+        finalOutcome = 0;
+    } else {
+        // If the initial check passes, perform a more detailed validation for other numbers.
+        // This loop starts from index 1, as 0 was handled above.
+        for (let idxC = 1; idxC < numberStrings.length; idxC++) {
+            // Complex conditional logic to determine validity based on N's parity, current index's parity, and frequency.
+            // The conditions check if expected frequencies (0 or 2) are not met for specific parities.
+            if (
+                (parseInt(parsedLines[0]) % 2 === 0 && idxC % 2 === 1 && countArray[idxC] !== 2) || // N even, index odd, count not 2
+                (parseInt(parsedLines[0]) % 2 === 1 && idxC % 2 === 0 && countArray[idxC] !== 2) || // N odd, index even, count not 2
+                (parseInt(parsedLines[0]) % 2 === 0 && idxC % 2 === 0 && countArray[idxC] !== 0) || // N even, index even, count not 0
+                (parseInt(parsedLines[0]) % 2 === 1 && idxC % 2 === 1 && countArray[idxC] !== 0)    // N odd, index odd, count not 0
+            ) {
+                finalOutcome = 0; // Set flag to invalid
+                break; // Exit the loop
+            }
+        }
+    }
 
-  // Output the computed final outcome to the standard console.
-  console.log('%s', finalOutcome);
+    // If the final outcome flag is still 1 (valid), calculate the final result.
+    if (finalOutcome === 1) {
+        // Calculate (length / 2)^2 modulo (10^9 + 7).
+        finalOutcome = Math.pow(parseInt(numberStrings.length / 2), 2) % (Math.pow(10, 9) + 7);
+    }
+
+    // Output the final calculated value or the invalid flag.
+    console.log('%s', finalOutcome);
 }
 
-// This utility function is designed for local testing, typically in a web browser environment.
-// It fetches input from an HTML element and passes it to the main analysis function.
-function runLocalTest() {
-  const browserInput = document.getElementById("input").value;
-  AnalyzeSequence(browserInput); // Invoke the primary sequence analysis.
+// A helper function for debugging in a browser environment, not used in the main execution path.
+function debugHelper() {
+    let browserInput = document.getElementById("input").value;
+    ProcessInput(browserInput);
 }
 
-// This block ensures that the main analysis function is called when the script is executed
-// in a Node.js environment, reading its input from standard input (e.g., a file).
-AnalyzeSequence(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Main execution path: read input from stdin and pass it to the processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

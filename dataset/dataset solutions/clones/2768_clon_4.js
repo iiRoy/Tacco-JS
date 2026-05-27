@@ -1,63 +1,38 @@
-(function (sourceTextualData) {
-    const MOD_VAL = 2019;
+((inputString) => {
+  const inputLines = inputString.split('\n');
+  const firstLineParts = inputLines[0].split(' ');
+  const lowerBound = Number(firstLineParts[0]);
+  const upperBound = Number(firstLineParts[1]);
 
-    const retrieveNumericBounds = (rawContent) => {
-        const contentLines = rawContent.split('\n');
-        const firstLineSegments = contentLines[0].split(' ');
-        return {
-            initialPoint: parseInt(firstLineSegments[0], 10),
-            terminalPoint: parseInt(firstLineSegments[1], 10)
-        };
-    };
+  const MODULUS_VALUE = 2019;
 
-    const { initialPoint: startingNumber, terminalPoint: endingNumber } = retrieveNumericBounds(sourceTextualData);
+  let finalResult;
 
-    const testForZeroResult = (start, end, divisor) => {
-        const span = end - start;
-        const containsMultiple = Math.floor(end / divisor) > Math.floor((start - 1) / divisor);
-        return span >= divisor || containsMultiple;
-    };
+  const currentRangeLength = upperBound - lowerBound;
+  const nextMultipleBoundary = lowerBound - (lowerBound % MODULUS_VALUE) + MODULUS_VALUE;
 
-    const computeMinimumProductModulo = (start, end, divisor) => {
-        const numberSequence = Array.from({ length: end - start + 1 }, (_, index) => start + index);
+  switch (true) {
+    case currentRangeLength >= MODULUS_VALUE || nextMultipleBoundary <= upperBound:
+      finalResult = 0;
+      break;
+    case currentRangeLength === 1:
+      finalResult = lowerBound % MODULUS_VALUE;
+      break;
+    default:
+      const firstNumbersSequence = Array.from({ length: upperBound - 1 - lowerBound + 1 }, (_, index) => lowerBound + index);
+
+      finalResult = firstNumbersSequence.reduce((currentMinimumValue, currentFirstNumber) => {
+        const secondNumbersSequence = Array.from({ length: upperBound - (currentFirstNumber + 1) + 1 }, (_, index) => currentFirstNumber + 1 + index);
         
-        const allPairProducts = numberSequence.flatMap((firstElement, firstIndex) =>
-            numberSequence.slice(firstIndex + 1).map(secondElement => {
-                const remainderA = firstElement % divisor;
-                const remainderB = secondElement % divisor;
-                return (remainderA * remainderB) % divisor;
-            })
-        );
-        
-        return allPairProducts.reduce((currentLowest, evaluatedValue) => Math.min(currentLowest, evaluatedValue), Infinity);
-    };
+        return secondNumbersSequence.reduce((innerMinimumValue, currentSecondNumber) => {
+          const calculatedProductModulo = (currentFirstNumber % MODULUS_VALUE) * (currentSecondNumber % MODULUS_VALUE) % MODULUS_VALUE;
+          return Math.min(innerMinimumValue, calculatedProductModulo);
+        }, currentMinimumValue);
+      }, Infinity);
+      break;
+  }
 
-    const processingDecisionTree = [
-        {
-            criterion: (s, e, d) => testForZeroResult(s, e, d),
-            outcomeProducer: () => 0
-        },
-        {
-            criterion: (s, e, d) => (e - s === 1),
-            outcomeProducer: (s, e, d) => s % d 
-        },
-        {
-            criterion: (s, e, d) => true, 
-            outcomeProducer: (s, e, d) => computeMinimumProductModulo(s, e, d)
-        }
-    ];
-
-    let finalCalculatedValue;
-
-    for (const rule of processingDecisionTree) {
-        if (rule.criterion(startingNumber, endingNumber, MOD_VAL)) {
-            finalCalculatedValue = rule.outcomeProducer(startingNumber, endingNumber, MOD_VAL);
-            break; 
-        }
-    }
-
-    console.log(finalCalculatedValue);
-
+  console.log(finalResult);
 })(
   require("fs").readFileSync("/dev/stdin", "utf8")
 );

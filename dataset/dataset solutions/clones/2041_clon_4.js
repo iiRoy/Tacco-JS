@@ -1,40 +1,54 @@
-const verifyPalindromicRecursive = (sequenceList) => {
-    const currentLength = sequenceList.length;
-    if (currentLength <= 1) {
+'use strict';
+
+const checkSymmetry = (segmentChars) => {
+    const segmentLength = segmentChars.length;
+    if (segmentLength <= 1) {
         return true;
     }
-    if (sequenceList[0] !== sequenceList[currentLength - 1]) {
-        return false;
-    }
-    return verifyPalindromicRecursive(sequenceList.slice(1, currentLength - 1));
+    // Use Array.from to create an iterable for the first half of the segment,
+    // then use .every to check character equality for symmetry.
+    // This replaces an imperative for loop with a functional approach.
+    return Array.from({ length: Math.floor(segmentLength / 2) }).every((_, index) => {
+        return segmentChars[index] === segmentChars[segmentLength - 1 - index];
+    });
 };
 
-const analyzeString = (incomingDatum) => {
-    const characterUnits = incomingDatum.trim().split('');
-    const overallSpan = characterUnits.length;
+function Main(rawInput) {
+    const charSequence = rawInput.trim().split("");
+    const sequenceLength = charSequence.length;
 
-    if (!verifyPalindromicRecursive(characterUnits)) {
-        return 'No';
+    // First check: The entire input string must be a palindrome.
+    if (!checkSymmetry(charSequence)) {
+        console.log('No');
+        return;
     }
 
-    const firstSubsegmentLimit = Math.floor((overallSpan - 1) / 2);
-    const secondSubsegmentOrigin = Math.ceil(((overallSpan + 3) / 2) - 1);
+    // Calculate the boundaries for the left and right segments based on the original logic.
+    // The original code used 'l' for the length of the left part and 'r' for the start index of the right part.
+    // 'l' was (n - 1) / 2, and the left segment was built by pushing characters from index 0 up to Math.floor(l) - 1.
+    // This means the slice end index (exclusive) is Math.floor((sequenceLength - 1) / 2).
+    const leftSegmentEndExclusive = Math.floor((sequenceLength - 1) / 2);
+    const leftSegmentChars = charSequence.slice(0, leftSegmentEndExclusive);
 
-    const initialSection = characterUnits.slice(0, firstSubsegmentLimit);
-    if (!verifyPalindromicRecursive(initialSection)) {
-        return 'No';
+    // 'r' was (n + 3) / 2, and the right segment was built by pushing characters from Math.floor(r - 1) up to n - 1.
+    // This means the slice start index (inclusive) is Math.floor((sequenceLength + 3) / 2 - 1).
+    const rightSegmentStartInclusive = Math.floor((sequenceLength + 3) / 2 - 1);
+    const rightSegmentChars = charSequence.slice(rightSegmentStartInclusive, sequenceLength);
+
+    // Second check: The left segment must be a palindrome.
+    if (!checkSymmetry(leftSegmentChars)) {
+        console.log('No');
+        return;
     }
 
-    const finalSection = characterUnits.slice(secondSubsegmentOrigin);
-    if (!verifyPalindromicRecursive(finalSection)) {
-        return 'No';
+    // Third check: The right segment must be a palindrome.
+    if (!checkSymmetry(rightSegmentChars)) {
+        console.log('No');
+        return;
     }
 
-    return 'Yes';
-};
+    // If all three conditions are met, print 'Yes'.
+    console.log('Yes');
+}
 
-const interpretInput = (receivedContent) => {
-    process.stdout.write(analyzeString(receivedContent));
-};
-
-interpretInput(require("fs").readFileSync("/dev/stdin", "utf8"));
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,35 +1,31 @@
-// This module performs a specific statistical calculation based on input data.
-function CalculateProbability(inputString)
-{
-    // First, parse the incoming string by splitting it into components
-    // and then converting each component into a numeric type.
-    const numericValues = inputString
-        .split(" ") // Separate the string by space characters
-        .map(
-            (currentPart) => +currentPart // Convert each part to a number
-        );
+/**
+ * This function processes a string input, performs calculations,
+ * and prints the result to the console.
+ * It expects a space-separated string of three numbers.
+ * @param {string} inputLine The raw input string from stdin.
+ */
+function ProcessData(inputLine) {
+  // Split the input string by spaces and convert each part to a number.
+  // The unary plus operator `+` is used for type conversion.
+  let numericValues = inputLine.split(" ").map(itemStr => +itemStr);
 
-    // Extract individual parameters from the processed numeric array.
-    let totalItems = numericValues[0]; // Represents the total count of items.
-    let targetIndex = numericValues[1] - 1; // Adjusts an index value by decrementing it.
-    let distanceValue = numericValues[2]; // A specific distance or offset value.
+  // Extract the first number from the parsed array.
+  let valN = numericValues[0];
 
-    // Determine a dynamic multiplier based on the distance value.
-    // If distanceValue is truthy (non-zero), use 2; otherwise, use 1.
-    const multiplierFactor = distanceValue ? 2 : 1;
+  // Extract the second number, then subtract one.
+  let valMAdjusted = numericValues[0b1] - 0b1;
 
-    // Perform the final calculation using the derived parameters.
-    // The formula is (targetIndex * (totalItems - distanceValue) * multiplierFactor) / (totalItems * totalItems).
-    console.log(
-        (targetIndex * (totalItems - distanceValue) * multiplierFactor) /
-        (totalItems * totalItems)
-    );
+  // Extract the third number.
+  let valD = numericValues[0x2];
+
+  // Determine a calculation factor based on the third number.
+  // If valD is truthy (non-zero), factor is 2; otherwise, it's 1.
+  let calcFactor = valD ? 0x2 : 0b1;
+
+  // Perform the final calculation and output the result.
+  // The formula is (valMAdjusted * (valN - valD) * calcFactor) / (valN * valN).
+  console.log(valMAdjusted * (valN - valD) * calcFactor / (valN * valN));
 }
 
-// Invoke the primary calculation function.
-// It reads input from standard input (/dev/stdin) asynchronously
-// using the Node.js 'fs' (file system) module and passes it as a UTF-8 string.
-CalculateProbability(
-    require("fs")
-        .readFileSync("/dev/stdin", "utf8")
-);
+// Read the input from standard input asynchronously and pass it to the processing function.
+ProcessData(require("fs").readFileSync("/dev/stdin", "utf8"));

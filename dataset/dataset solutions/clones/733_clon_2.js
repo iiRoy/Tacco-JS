@@ -1,166 +1,133 @@
-/* This module processes game board states to determine winners. */
-// Function to check for winning sequences in all 26 directions in a 3D grid.
-function scanForWin ( playerMark, startCellX, startCellY, startCellZ )
-{
-  // Define x-axis direction offsets for 26 possible directions (including diagonals in 3D).
-  // First 8: xy-plane, z=0
-  var xDirectionOffsets = [ -1, 0, 1, -1, 1, -1, 0, 1 ];
-  // Define y-axis direction offsets for 26 possible directions.
-  // First 8: xy-plane, z=0
-  var yDirectionOffsets = [ -1, -1, -1, 0, 0, 1, 1, 1 ];
-  // Define z-axis direction offsets for 26 possible directions.
-  // First 8: xy-plane, z=0
-  var zDirectionOffsets = [ 0, 0, 0, 0, 0, 0, 0, 0 ];
+function checkWinningLine(activePlayerId, startCoordX, startCoordY, startCoordZ) {
+  // Define directional vectors for 3D space.
+  // These arrays are constructed in a specific, sequential manner.
+  var deltaCoordsX = [-1, 0, 1, -1, 1, -1, 0, 1];
+  var deltaCoordsY = [-1, -1, -1, 0, 0, 1, 1, 1];
+  var deltaCoordsZ = [0, 0, 0, 0, 0, 0, 0, 0];
 
-  // Extend for z=-1 plane (below)
-  yDirectionOffsets = yDirectionOffsets.concat( [ -1, 0, 1, -1, 1, -1, 0, 1 ] );
-  zDirectionOffsets = zDirectionOffsets.concat( [ -1, -1, -1, 0, 0, 1, 1, 1 ] );
-  xDirectionOffsets = xDirectionOffsets.concat( [ 0, 0, 0, 0, 0, 0, 0, 0 ] );
+  // Extend deltaCoordsY with values from initial deltaCoordsX
+  deltaCoordsY = deltaCoordsY.concat([-1, 0, 1, -1, 1, -1, 0, 1]);
+  // Extend deltaCoordsZ with values from initial deltaCoordsY
+  deltaCoordsZ = deltaCoordsZ.concat([-1, -1, -1, 0, 0, 1, 1, 1]);
+  // Extend deltaCoordsX with values from initial deltaCoordsZ
+  deltaCoordsX = deltaCoordsX.concat([0, 0, 0, 0, 0, 0, 0, 0]);
 
-  // Extend for z=+1 plane (above)
-  zDirectionOffsets = zDirectionOffsets.concat( [ -1, 0, 1, -1, 1, -1, 0, 1 ] );
-  xDirectionOffsets = xDirectionOffsets.concat( [ -1, -1, -1, 0, 0, 1, 1, 1 ] );
-  yDirectionOffsets = yDirectionOffsets.concat( [ 0, 0, 0, 0, 0, 0, 0, 0 ] );
+  // Further extend deltaCoordsZ with values from initial deltaCoordsX
+  deltaCoordsZ = deltaCoordsZ.concat([-1, 0, 1, -1, 1, -1, 0, 1]);
+  // Further extend deltaCoordsX with values from initial deltaCoordsY
+  deltaCoordsX = deltaCoordsX.concat([-1, -1, -1, 0, 0, 1, 1, 1]);
+  // Further extend deltaCoordsY with values from initial deltaCoordsZ
+  deltaCoordsY = deltaCoordsY.concat([0, 0, 0, 0, 0, 0, 0, 0]);
 
-  // Variable to keep track of the longest sequence found.
-  let maximumSequence = 0;
+  var maxConsecutive = 0; // Stores the maximum consecutive pieces found
 
-  // Iterate through all 26 possible 3D directions.
-  for ( let directionIndex = 0; directionIndex < xDirectionOffsets.length; directionIndex++ )
-  {
-    // Initialize current coordinates to the starting point for this direction.
-    let currentCellX = startCellX;
-    let currentCellY = startCellY;
-    let currentCellZ = startCellZ;
+  // Iterate through all defined 3D directions
+  for (var directionIndex = 0; directionIndex < deltaCoordsX.length; directionIndex++) {
+    var currentPosX = startCoordX;
+    var currentPosY = startCoordY;
+    var currentPosZ = startCoordZ;
 
-    // First pass: move backward along the current direction until out of bounds.
-    while ( true )
-    {
-      currentCellX -= xDirectionOffsets[ directionIndex ];
-      currentCellY -= yDirectionOffsets[ directionIndex ];
-      currentCellZ -= zDirectionOffsets[ directionIndex ];
+    // Traverse backward along the current direction until out of bounds
+    while (true) {
+      currentPosX -= deltaCoordsX[directionIndex];
+      currentPosY -= deltaCoordsY[directionIndex];
+      currentPosZ -= deltaCoordsZ[directionIndex];
 
-      // Check if current coordinates are outside the grid boundaries.
-      if ( currentCellX < 0 || currentCellY < 0 || currentCellZ < 0 ) break;
-      if ( currentCellX >= boardDimension || currentCellY >= boardDimension || currentCellZ >= boardDimension ) break;
+      // Check if coordinates are outside the board boundaries (n x n x n assumed by original logic)
+      if (currentPosX < 0 || currentPosY < 0 || currentPosZ < 0) break;
+      if (currentPosX >= boardDimension || currentPosY >= boardDimension || currentPosZ >= boardDimension) break;
     }
 
-    // Initialize counter for consecutive marks in the current direction.
-    let currentStreakLength = 0;
+    var consecutiveCount = 0; // Reset count for the new direction
 
-    // Second pass: move forward along the current direction, counting consecutive marks.
-    while ( true )
-    {
-      currentCellX += xDirectionOffsets[ directionIndex ];
-      currentCellY += yDirectionOffsets[ directionIndex ];
-      currentCellZ += zDirectionOffsets[ directionIndex ];
+    // Traverse forward along the current direction, counting consecutive pieces
+    while (true) {
+      currentPosX += deltaCoordsX[directionIndex];
+      currentPosY += deltaCoordsY[directionIndex];
+      currentPosZ += deltaCoordsZ[directionIndex];
 
-      // Check if current coordinates are outside the grid boundaries.
-      if ( currentCellX < 0 || currentCellY < 0 || currentCellZ < 0 ) break;
-      if ( currentCellX >= boardDimension || currentCellY >= boardDimension || currentCellZ >= boardDimension ) break;
+      // Check if coordinates are outside the board boundaries
+      if (currentPosX < 0 || currentPosY < 0 || currentPosZ < 0) break;
+      if (currentPosX >= boardDimension || currentPosY >= boardDimension || currentPosZ >= boardDimension) break;
 
-      // If the cell contains the current player's mark, increment the streak.
-      if ( gameMatrix[ currentCellX ][ currentCellY ][ currentCellZ ] === playerMark )
-      {
-        currentStreakLength++;
+      // Check if the current cell contains the active player's piece
+      if (gameGrid[currentPosX][currentPosY][currentPosZ] === activePlayerId) {
+        consecutiveCount++; // Increment count if it's the same player's piece
+      } else {
+        consecutiveCount = 0; // Reset count if a different piece or empty cell is encountered
       }
-      else
-      {
-        // If not, reset the streak.
-        currentStreakLength = 0;
-      }
-      // Update the maximum sequence found so far.
-      maximumSequence = Math.max( maximumSequence, currentStreakLength );
+      // Update the maximum consecutive count found so far
+      maxConsecutive = Math.max(maxConsecutive, consecutiveCount);
     }
   }
-  // Return the longest sequence of the player's marks found.
-  return maximumSequence;
+  return maxConsecutive; // Return the longest sequence found in any direction
 }
 
+// Read input from standard input
+var fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+var inputLines = fileContent.trim().split("\n");
 
-// Main program execution begins here.
-// Read all input data from standard input.
-const fileContent = require ( 'node:fs' ). readFileSync ( '/dev/stdin', 'utf8' );
+// Main game loop
+while (true) {
+  var gameSetupString = inputLines.shift(); // Get the first line for board dimensions and winning length
 
-// Split the input into individual lines and clean up whitespace.
-let lineData = fileContent.trim().split( "\n" );
+  // Check for termination condition "0 0 0"
+  if (gameSetupString === "0 0 0") break;
 
-// Loop indefinitely until a termination condition is met.
-while ( true )
-{
-  // Extract the first line which contains board dimensions and win condition.
-  let dimensionConfig = lineData.shift();
+  // Parse board dimensions (n), winning length (m), and total moves (p)
+  gameSetupString = gameSetupString.split(" ").map(Number);
+  var boardDimension = gameSetupString[0]; // N: size of the board (N x N x P)
+  var winningLength = gameSetupString[1];  // M: number of consecutive pieces for a win
+  var totalMoves = gameSetupString[2];     // P: total number of moves in the game
 
-  // If the configuration line is "0 0 0", terminate the program.
-  if ( dimensionConfig === "0 0 0" ) break;
-
-  // Parse the dimension configuration string into numbers.
-  dimensionConfig = dimensionConfig.split( " " ).map( Number );
-
-  // Assign parsed values to respective variables.
-  var boardDimension = dimensionConfig[ 0 ];   // N: size of the N x N x N board.
-  var winningLength  = dimensionConfig[ 1 ];   // M: length of sequence needed to win.
-  var totalMoves     = dimensionConfig[ 2 ];   // P: total number of moves in the game.
-
-  // Initialize the 3D game board (matrix) with zeros.
-  var gameMatrix = [];
-  for ( let dimOne = 0; dimOne < boardDimension; dimOne++ )
-  {
-    gameMatrix[ dimOne ] = [];
-    for ( let dimTwo = 0; dimTwo < boardDimension; dimTwo++ )
-    {
-      gameMatrix[ dimOne ][ dimTwo ] = [];
-      for ( let dimThree = 0; dimThree < totalMoves; dimThree++ ) // Note: 'p' here is totalMoves, not boardDimension.
-      {
-        gameMatrix[ dimOne ][ dimTwo ][ dimThree ] = 0; // 0 represents an empty cell.
+  // Initialize the 3D game board
+  var gameGrid = [];
+  for (var gridXIndex = 0; gridXIndex < boardDimension; gridXIndex++) {
+    gameGrid[gridXIndex] = [];
+    for (var gridYIndex = 0; gridYIndex < boardDimension; gridYIndex++) {
+      gameGrid[gridXIndex][gridYIndex] = [];
+      for (var gridZIndex = 0; gridZIndex < totalMoves; gridZIndex++) { // Note: Z-dimension uses 'totalMoves' (P)
+        gameGrid[gridXIndex][gridYIndex][gridZIndex] = 0; // 0 represents an empty cell
       }
     }
   }
 
-  // Set the starting player mark (1 for Black, 2 for White).
-  var activePlayerMark = 1; // Player 1 starts (Black).
+  var activePlayerId = 1; // Player 1 starts (e.g., Black)
+  var gameEnded = false; // Flag to track if the game has ended
 
-  // Iterate through each move in the game.
-  let moveCounter; // Declare moveCounter outside the loop for post-loop check.
-  for ( moveCounter = 0; moveCounter < totalMoves; moveCounter++ )
-  {
-    // Get the coordinates for the current move.
-    let moveCoordinates = lineData.shift().split( " " ).map( Number );
-    let placementX = moveCoordinates[ 0 ] - 1; // Adjust to 0-indexed.
-    let placementY = moveCoordinates[ 1 ] - 1; // Adjust to 0-indexed.
+  // Process each move
+  for (var moveNumber = 0; moveNumber < totalMoves; moveNumber++) {
+    var currentMoveString = inputLines.shift().split(" ").map(Number);
+    var moveCol = currentMoveString[0] - 1; // Convert to 0-indexed column
+    var moveRow = currentMoveString[1] - 1; // Convert to 0-indexed row
 
-    // Find the lowest available height (z-coordinate) in the specified column.
-    let dropHeight = 0;
-    while ( true )
-    {
-      if ( gameMatrix[ placementX ][ placementY ][ dropHeight ] !== 0 )
-      {
-        dropHeight++; // Increment if cell is occupied.
-      }
-      else
-      {
-        break; // Found an empty cell.
+    var dropLevel = 0; // Determine the lowest available Z-level (height) for the piece
+    while (true) {
+      // If the current Z-level is occupied, move up
+      if (gameGrid[moveCol][moveRow][dropLevel] !== 0) {
+        dropLevel++;
+      } else {
+        break; // Found an empty spot
       }
     }
 
-    // Place the current player's mark on the board.
-    gameMatrix[ placementX ][ placementY ][ dropHeight ] = activePlayerMark;
+    // Place the active player's piece on the board
+    gameGrid[moveCol][moveRow][dropLevel] = activePlayerId;
 
-    // Check if the current move results in a win.
-    if ( scanForWin( activePlayerMark, placementX, placementY, dropHeight ) >= winningLength )
-    {
-      // Output the winner and the move number.
-      console.info( ( activePlayerMark === 2 ) ? "White" : "Black", moveCounter + 1 );
-      break; // Game over, a player won.
+    // Check if the current move results in a win
+    if (checkWinningLine(activePlayerId, moveCol, moveRow, dropLevel) >= winningLength) {
+      // Output the winner and the move number
+      console.log((activePlayerId === 2) ? "White" : "Black", moveNumber + 1);
+      gameEnded = true; // Set flag to indicate game end
+      break; // Exit the moves loop
     }
 
-    // Switch player: 1 becomes 2, 2 becomes 1.
-    activePlayerMark = 2 / activePlayerMark;
+    // Switch to the next player (1 becomes 2, 2 becomes 1)
+    activePlayerId = 2 / activePlayerId;
   }
 
-  // If the loop completed without a break, it means no player won.
-  if ( moveCounter === totalMoves )
-  {
-    console.info( "Draw" );
+  // If the game loop completed without a winner, it's a draw
+  if (!gameEnded) {
+    console.log("Draw");
   }
 }

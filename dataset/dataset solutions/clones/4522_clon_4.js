@@ -1,13 +1,18 @@
-function evaluateNumericSequence(sourceFragment) {
-    const numericalComponents = sourceFragment.split('\n', 1)[0].split(' ').map(Number);
-    
-    const [alpha, beta, gamma] = numericalComponents;
-    
-    const checkValue = (beta * 10) + gamma;
-    
-    console.log(checkValue % 4 === 0 ? 'TRUTH' : 'FALSEHOOD');
+function processInput(sourceData) {
+  const lineSegments = sourceData.split('\n');
+  const numberStrings = lineSegments[0].match(/\d+/g);
+
+  const numericValues = numberStrings.map(Number);
+
+  const multipliers = [100, 10, 1];
+
+  const computedSum = numericValues.reduce((accumulator, currentNumber, index) => {
+    return accumulator + currentNumber * multipliers[index];
+  }, 0);
+
+  const resultIndicator = (computedSum % 4 === 0) ? 'YES' : 'NO';
+
+  console.log(resultIndicator);
 }
 
-const dataAcquirer = require("node:fs");
-const acquiredContent = dataAcquirer.readFileSync("/dev/stdin", { encoding: "utf8" });
-evaluateNumericSequence(acquiredContent);
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

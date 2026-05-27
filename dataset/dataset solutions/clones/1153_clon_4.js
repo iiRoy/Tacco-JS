@@ -1,79 +1,58 @@
-class ElementGroupManager {
-    #representativeMap;
-    #groupSizeMap;
-
-    constructor(entityCount) {
-        this.#representativeMap = new Map();
-        this.#groupSizeMap = new Map();
-        for (let entityIdentifier = 0; entityIdentifier < entityCount; ++entityIdentifier) {
-            this.#representativeMap.set(entityIdentifier, entityIdentifier);
-            this.#groupSizeMap.set(entityIdentifier, 1);
-        }
+class SetManager {
+    constructor(elementCount) {
+        this.parentNodes = Array.from({ length: elementCount }, (_, idx) => idx);
+        this.setSizes = Array.from({ length: elementCount }, () => 1);
     }
 
-    #locateRepresentative(individualElement) {
-        let currentMember = individualElement;
-        const pathElements = [];
-        while (this.#representativeMap.get(currentMember) !== currentMember) {
-            pathElements.push(currentMember);
-            currentMember = this.#representativeMap.get(currentMember);
+    retrieveRepresentative(elementIndex) {
+        let current = elementIndex;
+        const path = [];
+        while (this.parentNodes[current] !== current) {
+            path.push(current);
+            current = this.parentNodes[current];
         }
-        for (const elementOnPath of pathElements) {
-            this.#representativeMap.set(elementOnPath, currentMember);
+        for (const node of path) {
+            this.parentNodes[node] = current;
         }
-        return currentMember;
+        return current;
     }
 
-    #combineGroups(memberOne, memberTwo) {
-        let rootOne = this.#locateRepresentative(memberOne);
-        let rootTwo = this.#locateRepresentative(memberTwo);
-
-        if (rootOne === rootTwo) {
-            return;
-        }
-
-        let sizeOfGroupOne = this.#groupSizeMap.get(rootOne);
-        let sizeOfGroupTwo = this.#groupSizeMap.get(rootTwo);
-
-        if (sizeOfGroupOne < sizeOfGroupTwo) {
-            this.#representativeMap.set(rootOne, rootTwo);
-            this.#groupSizeMap.set(rootTwo, sizeOfGroupOne + sizeOfGroupTwo);
-            this.#groupSizeMap.delete(rootOne);
-        } else {
-            this.#representativeMap.set(rootTwo, rootOne);
-            this.#groupSizeMap.set(rootOne, sizeOfGroupOne + sizeOfGroupTwo);
-            this.#groupSizeMap.delete(rootTwo);
-        }
+    checkEquivalence(firstElement, secondElement) {
+        return this.retrieveRepresentative(firstElement) === this.retrieveRepresentative(secondElement);
     }
 
-    areElementsConnected(elementA, elementB) {
-        return this.#locateRepresentative(elementA) === this.#locateRepresentative(elementB);
-    }
+    combineSets(firstElement, secondElement) {
+        let rootA = this.retrieveRepresentative(firstElement);
+        let rootB = this.retrieveRepresentative(secondElement);
 
-    effectGroupMerge(elementA, elementB) {
-        this.#combineGroups(elementA, elementB);
+        if (rootA !== rootB) {
+            if (this.setSizes[rootA] < this.setSizes[rootB]) {
+                [rootA, rootB] = [rootB, rootA];
+            }
+            this.parentNodes[rootB] = rootA;
+            this.setSizes[rootA] += this.setSizes[rootB];
+        }
     }
 }
 
-var sourceData = require('fs').readFileSync('/dev/stdin', 'utf8').trim();
-var instructionStream = sourceData.split('\n');
+const rawData = require('fs').readFileSync('/dev/stdin', 'utf8').trim();
+const inputLines = rawData.split('\n');
 
-var initialConfiguration = instructionStream.shift().trim().split(' ');
-var totalEntitiesCount = +initialConfiguration[0];
-var queryTaskCount = +initialConfiguration[1];
+const initialParams = inputLines[0].trim().split(' ');
+const elementCount = parseInt(initialParams[0], 10);
+const queryCount = parseInt(initialParams[1], 10);
 
-const entityLinker = new ElementGroupManager(totalEntitiesCount);
+const setMgr = new SetManager(elementCount);
 
-var currentCommandSegment;
-while (currentCommandSegment = instructionStream.shift()) {
-    var operationComponents = currentCommandSegment.trim().split(' ');
-    var actionType = operationComponents[0];
-    var firstOperand = +operationComponents[1];
-    var secondOperand = +operationComponents[2];
+inputLines.slice(1).forEach((currentQueryLine) => {
+    const commandParts = currentQueryLine.trim().split(' ');
+    const operationType = parseInt(commandParts[0], 10);
+    const firstArg = parseInt(commandParts[1], 10);
+    const secondArg = parseInt(commandParts[2], 10);
 
-    if (actionType === '0') {
-        entityLinker.effectGroupMerge(firstOperand, secondOperand);
+    if (operationType === 0) {
+        setMgr.combineSets(firstArg, secondArg);
     } else {
-        console.log(entityLinker.areElementsConnected(firstOperand, secondOperand) ? 1 : 0);
+        console.log(setMgr.checkEquivalence(firstArg, secondArg) ? 1 : 0);
     }
-}
+});

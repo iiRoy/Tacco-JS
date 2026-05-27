@@ -1,76 +1,75 @@
-/*
- * This program simulates a simple game involving three cups and a ball.
- * It processes input to determine cup swaps and identifies the final ball location.
- */
-let
-  itemPositionMap = { // Maps cup identifiers (e.g., 'first') to array indices (0, 1, 2) and vice-versa.
-    'first':  0,
-    'second': 1,
-    'third':  2,
-    0:        'first',
-    1:        'second',
-    2:        'third',
-  },
-  ballLocationFlags = [ true, false, false ]; // An array indicating the presence of the ball in each cup. True means ball is there.
+let mapping = {
+  'A': 0,
+  'B': 1,
+  'C': 2,
+  0: 'A',
+  1: 'B',
+  2: 'C',
+};
 
-/*
- * The primary execution function that orchestrates the simulation.
- * It reads input, performs swaps, and outputs the final result.
+let containers = [true, false, false];
+
+/**
+ * The primary function to process input and determine the final state.
+ * It iterates through each line of raw data, performs swaps, and logs the result.
  */
-function performMainLogic( ) {
-  // Iterate over each parsed instruction line from the input stream.
-  rawInputPayload.forEach( function ( currentInstruction ) {
-    // Ignore any lines that are empty or consist only of whitespace.
-    if  ( currentInstruction.trim()  ===  '' ) {
+function executeLogic() {
+  // Process each line of the collected raw data.
+  rawData.forEach(function(currentLine) {
+    // Skip empty lines after trimming whitespace.
+    if (currentLine.trim() === '') {
       return;
     }
 
-    // Split the instruction into its constituent parts (the two cups to swap).
-    let  cupIdentifiers  =  currentInstruction.split(',');
+    // Split the line by comma to get the two positions for swapping.
+    let parts = currentLine.split(',');
 
-    // Execute the swap operation using the mapped indices of the identified cups.
-    swapArrayElements( ballLocationFlags, itemPositionMap[cupIdentifiers[0]], itemPositionMap[cupIdentifiers[1]] );
-  } );
+    // Perform the swap operation on the containers array using the mapping.
+    exchangeElements(containers, mapping[parts[0]], mapping[parts[1]]);
+  });
 
-  // After processing all instructions, find the index of the cup containing the ball.
-  let  finalBallIndex  =  ballLocationFlags.indexOf(true);
-
-  // Output the identifier of the cup where the ball is finally located.
-  console.log( itemPositionMap[finalBallIndex] );
+  // After all swaps, find the index of the container with 'true' and
+  // use the mapping to get its character representation, then print it.
+  console.log(mapping[containers.indexOf(true)]);
 }
 
-
-/*
- * A helper function to exchange the positions of two elements within an array.
- * @param {Array} targetCollection - The array whose elements are to be swapped.
- * @param {number} indexA - The index of the first element.
- * @param {number} indexB - The index of the second element.
+/**
+ * Swaps two elements within an array at specified indices.
+ * @param {Array} dataArray - The array whose elements are to be swapped.
+ * @param {number} idx1 - The index of the first element.
+ * @param {number} idx2 - The index of the second element.
  */
-function swapArrayElements ( targetCollection, indexA, indexB ) {
-  let
-    temporaryHolder = targetCollection[indexA]; // Temporarily store the value at indexA.
-  targetCollection[indexA] = targetCollection[indexB]; // Move the value from indexB to indexA.
-  targetCollection[indexB] = temporaryHolder; // Place the stored value into indexB.
+function exchangeElements(dataArray, idx1, idx2) {
+  // Store the value of the first element temporarily.
+  let tempVal = dataArray[idx1];
+
+  // Assign the value of the second element to the first position.
+  dataArray[idx1] = dataArray[idx2];
+
+  // Assign the temporarily stored value to the second position.
+  dataArray[idx2] = tempVal;
 }
 
+// Initialize a variable to accumulate all incoming standard input data.
+let rawData = '';
 
-// Global variable to accumulate all raw text data received from standard input.
-let
-  rawInputPayload = '';
+// Ensure the standard input stream remains open to receive data.
+process.stdin.resume();
 
-// Configure and activate the standard input stream.
-process.stdin.resume(); // Keep the input stream active.
-process.stdin.setEncoding('utf8'); // Specify UTF-8 encoding for incoming text.
+// Set the encoding for the incoming data to UTF-8.
+process.stdin.setEncoding('utf8');
 
-// Event handler for receiving chunks of data from standard input.
-process.stdin.on( 'data', function ( dataChunk ) {
-  rawInputPayload += dataChunk; // Append the new chunk to the accumulated payload.
-} );
+// Event listener for 'data' chunks received from stdin.
+process.stdin.on('data', function(dataChunk) {
+  // Append each received data chunk to the rawData string.
+  rawData += dataChunk;
+});
 
-// Event handler for the completion of the standard input stream.
-process.stdin.on( 'end', function () {
-  // Once all input is received, split the entire payload into an array of lines.
-  rawInputPayload = rawInputPayload.split('\n');
-  // Then, initiate the main logic to process these instructions.
-  performMainLogic();
-} );
+// Event listener for the 'end' of the standard input stream.
+process.stdin.on('end', function() {
+  // Split the accumulated raw data into an array of lines.
+  rawData = rawData.split('\n');
+
+  // Call the main logic function to process the input.
+  executeLogic();
+});

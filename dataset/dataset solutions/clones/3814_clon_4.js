@@ -1,16 +1,16 @@
-function processInputData(sourceContent) {
-    const contentLines = sourceContent.split('\n');
-    const quantity = parseInt(contentLines[0], 10);
-    const valueItems = contentLines.slice(1).map(val => parseInt(val, 10));
+const processSequenceData = (rawData) => {
+  const numericValues = rawData.split('\n').map(Number);
+  const totalElements = numericValues[0];
+  const inputSequence = numericValues.slice(1);
 
-    const indexedCounts = valueItems.reduce((chainAccumulator, currentItem) => {
-        chainAccumulator[currentItem] = (currentItem === 1 ? 0 : chainAccumulator[currentItem - 1]) + 1;
-        return chainAccumulator;
-    }, Array(quantity + 1).fill(0));
+  const consecutiveLengths = inputSequence.reduce((lengthMap, currentVal) => {
+    lengthMap.set(currentVal, (lengthMap.get(currentVal - 1) || 0) + 1);
+    return lengthMap;
+  }, new Map());
 
-    const maxFound = Math.max(...indexedCounts);
+  const longestSubsequenceLength = Array.from(consecutiveLengths.values()).reduce((maxFound, currentLength) => Math.max(maxFound, currentLength), 0);
 
-    console.log(quantity - maxFound);
-}
+  console.log(totalElements - longestSubsequenceLength);
+};
 
-processInputData(require("node:fs").readFileSync("/dev/stdin","utf8"));
+processSequenceData(require("fs").readFileSync("/dev/stdin","utf8"));

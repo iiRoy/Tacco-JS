@@ -1,19 +1,19 @@
-function analyzeOutcomeStats(rawText) {
-    const allLines = rawText.trim().split('\n');
-    const totalEntries = parseInt(allLines[0], 10);
+function processInputData(inputString) {
+    const allLines = inputString.split("\n");
+    const numCases = parseInt(allLines[0], 10);
 
-    const dataEntries = allLines.slice(1, 1 + totalEntries);
+    const outcomeTypes = ["AC", "WA", "TLE", "RE"];
 
-    const outcomeTally = dataEntries.reduce((accumulatorMap, currentOutcome) => {
+    const initialCounts = new Map(outcomeTypes.map(type => [type, 0]));
+
+    const finalCounts = allLines.slice(1, numCases + 1).reduce((accumulatorMap, currentOutcome) => {
         accumulatorMap.set(currentOutcome, (accumulatorMap.get(currentOutcome) || 0) + 1);
         return accumulatorMap;
-    }, new Map());
+    }, initialCounts);
 
-    const reportOrder = ["AC", "WA", "TLE", "RE"];
-
-    reportOrder.forEach(category => {
-        console.log(`${category} x ${outcomeTally.get(category) || 0}`);
+    outcomeTypes.forEach(typeKey => {
+        console.log(`${typeKey} x ${finalCounts.get(typeKey)}`);
     });
 }
 
-analyzeOutcomeStats(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

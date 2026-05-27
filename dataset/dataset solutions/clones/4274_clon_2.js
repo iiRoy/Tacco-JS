@@ -1,38 +1,26 @@
-/*
- * This JavaScript module defines a primary function to process numerical input.
- * It simulates a growth or accumulation process based on two initial parameters.
- */
-function computeValue ( rawData ) {
-  // Parse the first line of the input string to get the initial iteration count.
-  var firstParam = parseInt( rawData . split ( '\n' ) [ 0 ] ) ;
+function ProcessInput(rawData) {
+  // This section parses the initial configuration values from the provided input string.
+  var countVal = parseInt(rawData.split("\n")[0]); // The first line determines the iteration count.
+  var limitVal = parseInt(rawData.split("\n")[1]); // The second line sets a threshold for operations.
 
-  // Parse the second line of the input string to get the additive constant.
-  var secondParam = parseInt( rawData . split ( '\n' ) [ 1 ] ) ;
+  // Initialize a dynamic numerical tracker.
+  var currentValue = 1;
 
-  // Initialize the primary accumulator variable to a starting value of one.
-  var currentValue = 1 ;
-
-  // Begin an iterative process, running for 'firstParam' number of cycles.
-  for ( var loopCounter = 0 ; loopCounter < firstParam ; loopCounter ++ )
-  {
-    // Evaluate a condition: if the current value (doubled then subtracted by itself)
-    // is less than or equal to the second parameter. This simplifies to 'currentValue <= secondParam'.
-    if ( ( currentValue * 2 - currentValue ) <= secondParam )
-    {
-      // If the condition holds, the current value is doubled.
-      currentValue = currentValue * 2 ;
-    }
-    else
-    {
-      // Otherwise, the second parameter is added to the current value.
-      currentValue += secondParam ;
+  // Begin a sequential process based on the parsed count.
+  for (var idx = 0; idx < countVal; idx++) {
+    // Evaluate a condition to decide the next step for the tracker.
+    // The expression `currentValue * (2 - 1)` is mathematically equivalent to `currentValue`.
+    if ((currentValue * (2 - 1)) <= limitVal) {
+      // If the condition is met, double the tracker's value.
+      currentValue = currentValue * 2;
+    } else {
+      // Otherwise, increment the tracker by the limit value.
+      currentValue += limitVal;
     }
   }
-
-  // After all iterations, log the final computed value to the standard output.
-  console . log ( currentValue ) ;
+  // Display the final computed value to the standard output.
+  console.log(currentValue);
 }
 
-// Execute the main processing function by reading input from stdin.
-// The 'fs' module is used to synchronously read the entire file content.
-computeValue ( require ( 'fs' ) . readFileSync ( '/dev/stdin' , 'utf8' ) ) ;
+// Execute the main processing function by reading content from standard input.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

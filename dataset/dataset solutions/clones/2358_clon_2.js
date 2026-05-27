@@ -1,205 +1,208 @@
-// This section handles input processing and utility functions, not directly related to the core problem.
-var dataStreamHandler = require('readline').createInterface({
+// Utility functions for input/output operations.
+var inputReader = require('readline').createInterface({
   input: process.stdin,
   output: process.stdout
 });
-var inputContent;
-var receivedLines = [];
-dataStreamHandler.on('line', function(currentInputLine) {
-  receivedLines.push(currentInputLine);
-});
-dataStreamHandler.on('close', function() {
-  inputContent = configureInputProcessor(receivedLines);
-  console.error('\n↑Input ↓Output');
-  executeSolution();
+
+var inputProcessor;
+var inputLines = [];
+
+inputReader.on('line', function(lineContent) {
+  inputLines.push(lineContent);
 });
 
-// A utility function to create a deep copy of an object or Set.
-function replicateObject(sourceObject) {
-  return (sourceObject instanceof Set) ? new Set(Array.from(sourceObject)) : JSON.parse(JSON.stringify(sourceObject));
+inputReader.on('close', function() {
+  inputProcessor = initializeInputReader(inputLines);
+  console.error('\n↑入力 ↓出力');
+  executeAlgorithm();
+});
+
+// Creates a deep copy of an object or Set.
+function createDeepCopy(originalObject) {
+  return (originalObject instanceof Set) ? new Set(Array.from(originalObject)) : JSON.parse(JSON.stringify(originalObject));
 }
 
-// Functions to retrieve and convert different types of input from the processor.
-function obtainNextInteger() {
-  return performDataConversion(fetchNextSegment(), 1);
+// Reads the next input line as an integer.
+function readInteger() {
+  return convertInput(getNextInput(), 1);
 }
 
-function obtainNextStringSequence() {
-  return performDataConversion(fetchNextSegment(), 2);
+// Reads the next input line and splits it into a string array.
+function readStringArray() {
+  return convertInput(getNextInput(), 2);
 }
 
-function obtainNextIntegerSequence() {
-  return performDataConversion(fetchNextSegment(), 4);
+// Reads the next input line, splits it, and converts to an integer array.
+function readIntegerArray() {
+  return convertInput(getNextInput(), 4);
 }
 
-function obtainNextCharacterSequence() {
-  return performDataConversion(fetchNextSegment(), 6);
+// Reads the next input line and splits it into a character array.
+function readCharacterArray() {
+  return convertInput(getNextInput(), 6);
 }
 
-// Core functions for interacting with the input content processor.
-function fetchNextSegment() {
-  return inputContent.fetchNext();
+// Fetches the next available input line.
+function getNextInput() {
+  return inputProcessor.fetchNext();
 }
 
-function hasMoreSegments() {
-  return inputContent.hasMoreItems();
+// Checks if there are more input lines.
+function hasMoreInput() {
+  return inputProcessor.checkMore();
 }
 
-// Initializes the input content processor with the collected lines.
-function configureInputProcessor(collectedInput) {
+// Initializes the input reader object.
+function initializeInputReader(rawInputData) {
   return {
-    sourceSegmentList: collectedInput,
-    currentReadIndex: 0,
-    totalSegments: collectedInput.length,
-    hasMoreItems: function() {
-      return (this.currentReadIndex < this.totalSegments);
+    dataList: rawInputData,
+    currentIdx: 0,
+    maxLines: rawInputData.length,
+    checkMore: function() {
+      return (this.currentIdx < this.maxLines);
     },
     fetchNext: function() {
-      if (this.hasMoreItems()) {
-        return this.sourceSegmentList[this.currentReadIndex++];
+      if (this.checkMore()) {
+        return this.dataList[this.currentIdx++];
       } else {
-        throw 'InputOutOfBoundsException: No more data available for processing.';
+        throw 'ArrayIndexOutOfBoundsException ‚There is no more input';
       }
     }
   };
 }
 
-// Function to print the final computed result to standard output.
-function outputFinalResult(outputValue) {
-  console.log(outputValue);
+// Prints a message to standard output.
+function printResult(outputMessage) {
+  console.log(outputMessage);
 }
 
-// Function for logging debug messages to standard error.
-function debugLogMessage(debugData) {
-  console.error('DEBUG INFO: ' + require('util').inspect(debugData, false, null));
+// Logs a debug message to standard error.
+function logDebug(debugInfo) {
+  console.error('debug:' + require('util').inspect(debugInfo, false, null));
 }
 
-// Description of conversion options for the data transformation utility.
-// conversionOption values:
-//  - 1: Parse string to integer.
-//  - 2: Split string by space into an array of strings.
-//  - 4: Split string by space and convert parts to numbers.
-//  - 6: Split string into an array of individual characters.
-//  - 7: Split string into characters and convert parts to numbers.
-//  - 8: Join array elements with spaces.
-//  - 9: Join array elements with newlines.
-//  - 0: Join array elements without any separator.
-//  - default: Return input as is.
-function performDataConversion(valueToConvert, conversionOption) {
+/*
+ * Converts input based on a specified type.
+ * conversionType:
+ * 1: Parse as integer.
+ * 2: Split by space into strings.
+ * 4: Split by space and parse as numbers.
+ * 6: Split by character into strings.
+ * 7: Split by character and parse as numbers.
+ * 8: Join array elements with space.
+ * 9: Join array elements with newline.
+ * 0: Join array elements without separator.
+ * Default: Return input as is.
+ */
+function convertInput(inputValue, conversionType) {
   try {
-    switch (conversionOption) {
+    switch (conversionType) {
       case 1:
-        return parseInt(valueToConvert);
+        return parseInt(inputValue);
       case 2:
-        return valueToConvert.split(' ');
+        return inputValue.split(' ');
       case 4:
-        return valueToConvert.split(' ').map(Number);
+        return inputValue.split(' ').map(Number);
       case 6:
-        return valueToConvert.split('');
+        return inputValue.split('');
       case 7:
-        return valueToConvert.split('').map(Number);
+        return inputValue.split('').map(Number);
       case 8:
-        return valueToConvert.join(' ');
+        return inputValue.join(' ');
       case 9:
-        return valueToConvert.join('\n');
+        return inputValue.join('\n');
       case 0:
-        return valueToConvert.join('');
+        return inputValue.join('');
       default:
-        return valueToConvert; // In case of unknown option, return original value.
+        return inputValue;
     }
   } catch (error) {
-    return valueToConvert; // In case of conversion error, return original value.
+    return inputValue;
   }
 }
 
-// End of utility and input handling functions.
-function executeSolution() {
-  var gridDimensions = obtainNextIntegerSequence(); // Read grid height and width from input
-  var numRows = gridDimensions[0];
-  var numCols = gridDimensions[1];
+// Main algorithm execution starts here.
+function executeAlgorithm() {
+  var dimensions = readIntegerArray();
+  var heightVal = dimensions[0];
+  var widthVal = dimensions[1];
 
-  var firstGridMatrix = new Array(numRows); // Initialize the first matrix based on height
-  for (var rowIndex = 0; rowIndex < numRows; rowIndex++) {
-    firstGridMatrix[rowIndex] = obtainNextIntegerSequence(); // Populate rows of the first matrix with integer sequences
+  var gridData = new Array(heightVal);
+  for (var rowIdx = 0; rowIdx < heightVal; rowIdx++) {
+    gridData[rowIdx] = readIntegerArray();
   }
 
-  // Process the second set of input rows to modify the first matrix by calculating absolute differences
-  for (var rowIndex = 0; rowIndex < numRows; rowIndex++) {
-    var secondGridRowData = obtainNextIntegerSequence(); // Get a row from the second conceptual matrix
-    for (var colIndex = 0; colIndex < numCols; colIndex++) {
-      // Update cell value in the first matrix with the absolute difference between corresponding elements
-      firstGridMatrix[rowIndex][colIndex] = Math.abs(firstGridMatrix[rowIndex][colIndex] - secondGridRowData[colIndex]);
+  // Process the second set of input rows.
+  for (var rowIdx = 0; rowIdx < heightVal; rowIdx++) {
+    var tempRow = readIntegerArray();
+    for (var colIdx = 0; colIdx < widthVal; colIdx++) {
+      gridData[rowIdx][colIdx] = Math.abs(gridData[rowIdx][colIdx] - tempRow[colIdx]);
     }
   }
 
-  // Define the maximum possible sum/difference value for the DP table's third dimension
-  var maxPossibleValue = 90;
-  var reachableSumsTable = new Array(numRows); // Initialize the dynamic programming table for reachable sums
+  var maxPossibleSum = 90;
+  var dynamicProgressionTable = new Array(heightVal);
 
-  // Allocate memory for the 3D DP table: numRows x numCols x maxPossibleValue
-  for (var rowIndex = 0; rowIndex < numRows; rowIndex++) {
-    reachableSumsTable[rowIndex] = new Array(numCols);
-    for (var colIndex = 0; colIndex < numCols; colIndex++) {
-      reachableSumsTable[rowIndex][colIndex] = new Array(maxPossibleValue).fill(false); // Initialize all possible sums as not reachable
+  // Initialize the DP table.
+  for (var rowIdx = 0; rowIdx < heightVal; rowIdx++) {
+    dynamicProgressionTable[rowIdx] = new Array(widthVal);
+    for (var colIdx = 0; colIdx < widthVal; colIdx++) {
+      dynamicProgressionTable[rowIdx][colIdx] = new Array(maxPossibleSum).fill(false);
     }
   }
 
-  // Set the base case for the dynamic programming: the sum at the very first cell (0,0) is reachable
-  reachableSumsTable[0][0][firstGridMatrix[0][0]] = true;
+  // Set initial state for DP.
+  dynamicProgressionTable[0][0][gridData[0][0]] = true;
 
-  // Iterate through the grid cells to fill the dynamic programming table
-  for (var rowIndex = 0; rowIndex < numRows; rowIndex++) {
-    for (var colIndex = 0; colIndex < numCols; colIndex++) {
-      // Skip the initial cell as its base case is already established
-      if (rowIndex === 0 && colIndex === 0) {
+  // Fill the DP table using values from adjacent cells.
+  for (var rowIdx = 0; rowIdx < heightVal; rowIdx++) {
+    for (var colIdx = 0; colIdx < widthVal; colIdx++) {
+      // Skip the starting cell as it's already initialized.
+      if (rowIdx === 0 && colIdx === 0) {
         continue;
       }
 
-      // Handle cells located in the first row (movement is only possible from the left)
-      if (rowIndex === 0) {
-        for (var sumValue = 0; sumValue < maxPossibleValue; sumValue++) {
-          // If the cell immediately to the left could reach 'sumValue'
-          if (reachableSumsTable[rowIndex][colIndex - 1][sumValue]) {
-            // Mark new sums as reachable: (previous_sum + current_cell_value) and (previous_sum - current_cell_value)
-            reachableSumsTable[rowIndex][colIndex][Math.abs(sumValue + firstGridMatrix[rowIndex][colIndex])] = true;
-            reachableSumsTable[rowIndex][colIndex][Math.abs(sumValue - firstGridMatrix[rowIndex][colIndex])] = true;
+      // Handle the first row (movement only from left).
+      if (rowIdx === 0) {
+        for (var currentSum = 0; currentSum < maxPossibleSum; currentSum++) {
+          if (dynamicProgressionTable[rowIdx][colIdx - 1][currentSum]) {
+            dynamicProgressionTable[rowIdx][colIdx][Math.abs(currentSum + gridData[rowIdx][colIdx])] = true;
+            dynamicProgressionTable[rowIdx][colIdx][Math.abs(currentSum - gridData[rowIdx][colIdx])] = true;
           }
         }
       }
-      // Handle cells located in the first column (movement is only possible from above)
-      else if (colIndex === 0) {
-        for (var sumValue = 0; sumValue < maxPossibleValue; sumValue++) {
-          // If the cell directly above could reach 'sumValue'
-          if (reachableSumsTable[rowIndex - 1][colIndex][sumValue]) {
-            // Mark new sums as reachable
-            reachableSumsTable[rowIndex][colIndex][Math.abs(sumValue + firstGridMatrix[rowIndex][colIndex])] = true;
-            reachableSumsTable[rowIndex][colIndex][Math.abs(sumValue - firstGridMatrix[rowIndex][colIndex])] = true;
+      // Handle the first column (movement only from top).
+      else if (colIdx === 0) {
+        for (var currentSum = 0; currentSum < maxPossibleSum; currentSum++) {
+          if (dynamicProgressionTable[rowIdx - 1][colIdx][currentSum]) {
+            dynamicProgressionTable[rowIdx][colIdx][Math.abs(currentSum + gridData[rowIdx][colIdx])] = true;
+            dynamicProgressionTable[rowIdx][colIdx][Math.abs(currentSum - gridData[rowIdx][colIdx])] = true;
           }
         }
       }
-      // Handle general cells within the grid (movement is possible from above or from the left)
+      // Handle general cells (movement from top or left).
       else {
-        for (var sumValue = 0; sumValue < maxPossibleValue; sumValue++) {
-          // Check paths originating from the cell directly above
-          if (reachableSumsTable[rowIndex - 1][colIndex][sumValue]) {
-            reachableSumsTable[rowIndex][colIndex][Math.abs(sumValue + firstGridMatrix[rowIndex][colIndex])] = true;
-            reachableSumsTable[rowIndex][colIndex][Math.abs(sumValue - firstGridMatrix[rowIndex][colIndex])] = true;
+        for (var currentSum = 0; currentSum < maxPossibleSum; currentSum++) {
+          // From top cell.
+          if (dynamicProgressionTable[rowIdx - 1][colIdx][currentSum]) {
+            dynamicProgressionTable[rowIdx][colIdx][Math.abs(currentSum + gridData[rowIdx][colIdx])] = true;
+            dynamicProgressionTable[rowIdx][colIdx][Math.abs(currentSum - gridData[rowIdx][colIdx])] = true;
           }
-          // Check paths originating from the cell immediately to the left
-          if (reachableSumsTable[rowIndex][colIndex - 1][sumValue]) {
-            reachableSumsTable[rowIndex][colIndex][Math.abs(sumValue + firstGridMatrix[rowIndex][colIndex])] = true;
-            reachableSumsTable[rowIndex][colIndex][Math.abs(sumValue - firstGridMatrix[rowIndex][colIndex])] = true;
+          // From left cell.
+          if (dynamicProgressionTable[rowIdx][colIdx - 1][currentSum]) {
+            dynamicProgressionTable[rowIdx][colIdx][Math.abs(currentSum + gridData[rowIdx][colIdx])] = true;
+            dynamicProgressionTable[rowIdx][colIdx][Math.abs(currentSum - gridData[rowIdx][colIdx])] = true;
           }
         }
       }
     }
   }
 
-  // After filling the DP table, find the smallest absolute sum reachable at the bottom-right cell
-  for (var sumValue = 0; sumValue < maxPossibleValue; sumValue++) {
-    if (reachableSumsTable[numRows - 1][numCols - 1][sumValue]) {
-      outputFinalResult(sumValue); // Print the first reachable sum found (which will be the smallest due to iteration order)
-      return; // Exit the function immediately after finding the result
+  // Find the minimum absolute sum at the bottom-right cell.
+  for (var currentSum = 0; currentSum < maxPossibleSum; currentSum++) {
+    if (dynamicProgressionTable[heightVal - 1][widthVal - 1][currentSum]) {
+      printResult(currentSum);
+      return;
     }
   }
 }

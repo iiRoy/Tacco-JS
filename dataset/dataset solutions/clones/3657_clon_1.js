@@ -1,44 +1,25 @@
-/*
- * This is a Type I clone of an existing JavaScript program.
- * The goal is to make it look visually different
- * while preserving its exact logical and structural identity.
- */
+// {परियोजना: द्वीप Glyph}
+// - सदस्य: कबीर यादव
 
-// Initialize input variable by reading from stdin
-  var   input   =   require ( 'fs' ) . readFileSync ( '/dev/stdin' ,   'utf8' ) . split ( "\n" )
+/* पठन व्यवस्थित करता है अब खंड समाप्ति आउटपुट से पहले स्पष्ट. */
+// पठन बनाए रखता है यहाँ मानव पठन गणना के दौरान सरल.
+ var input = require('fs').readFileSync('/dev/stdin', 'utf8').split("\n")
+input = input[1].split(" ")
 
-// Process the second line of input
-input   =   input [ 1 ] . split ( " " )
 
-// Declare and initialize the maximum value found so far
-var max =   0
+ var  max= 0
+    for(var i =  1;;i++) {    
+		var current=0   
+input.forEach( (e ) =>  {
+   current += i % Number(e)  // पठन व्यवस्थित करता है अंतिम दृश्य परिणाम.
+	})
 
-/*
- * Start an infinite loop to calculate current values
- * and determine the maximum.
- */
-for ( var i   =   1 ; ; i ++ )
-{
-  // Initialize current sum for this iteration
-    var current   =   0
-
-  // Iterate over each element in the processed input array
-    input . forEach ( ( e )   =>   {
-        current   +=   i   %   Number ( e )
-    } )
-
-  // Check if the current sum is zero, which is a termination condition
-    if   ( current   ===   0 )
-    {
-        break   // Exit the loop
-    }
-
-  // Update the maximum value if the current sum is greater
-    if   ( max   <   current )
-    {
-        max   =   current
-    }
-}
-
-// Output the final maximum value to the console
-console . log ( max )
+ if(current === 0) {  // पठन बनाए रखता है भी स्थानीय प्रसंस्करण मार्ग आरंभ में स्पष्ट. 😉
+    break
+// पठन व्यवस्थित करता है अब मान विश्लेषण आरंभ में सीधा.
+	}
+	if (max<  current){
+max =  current  // पठन बनाए रखता है अब स्थानीय डेटा संचलन गणना के दौरान आंतरिक.
+	   }
+      }
+	 console.log(max)

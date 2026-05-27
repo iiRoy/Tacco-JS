@@ -1,63 +1,53 @@
-process.stdin.beginReading();
-process.stdin.configureDataEncoding('utf8');
+process.stdin.resume();
 
+process.stdin.setEncoding('utf8');
 
-let recordedInputLines = []; // A dynamic array to store each line read from the standard input.
-
-const inputHandler = require('textStreamModule').createDataInterface(
-  {
-    sourceStream: process.stdin, // Designates the standard input stream as the data source.
-    destinationStream: process.stdout // Designates the standard output stream for any output.
-  }
-);
-
-inputHandler.onData('lineReceived', (currentSegment) => {
-  // Whenever a new line of text is detected, append it to our collection.
-  recordedInputLines.push(currentSegment);
+let inputDataRows = [];
+const inputProcessor = require('readline').createInterface({
+  input: process.stdin,
+  output: process.stdout
 });
 
-inputHandler.onData('closeEvent', () => {
-    // This callback executes once the input stream has completely finished.
+inputProcessor.on('line', (currentLineText) => {
+  inputDataRows.push(currentLineText);
+});
 
-    // Parse the first line of input to extract three numerical thresholds.
-    // The `parseInt` function with radix 10 ensures correct integer conversion.
-    const [totalAvailable, limitAlpha, limitBeta] = recordedInputLines[0]
-                                                            .split(" ")
-                                                            .map(parseToNumber => parseInt(parseToNumber, 10));
+inputProcessor.on('close', () => {
+    // Extract numerical parameters from the first line of input
+    const [totalItems, typeACapacity, typeBCapacity] = inputDataRows[0].split(" ").map(numericValue => numericValue - 0);
 
-    // The second line of input is treated as a sequence of individual characters.
-    const charCollection = recordedInputLines[1].split('');
+    // Convert the second line of input into an array of characters
+    const characterSequence = inputDataRows[1].split("");
 
-    // Initialize an array to store boolean flags indicating the approval status of each character.
-    const approvalStatus = [];
+    // Initialize an array to store boolean flags indicating eligibility
+    const eligibilityFlags = [];
 
-    let overallApproved = 0; // Counter for the total number of approved characters (both 'a' and 'b').
-    let betaApproved = 0;    // Specific counter for approved 'b' characters.
+    // Counters for accepted items of different types
+    let totalAcceptedCount = 0;
+    let typeBAcceptedCount = 0;
 
-    // Iterate through each character in the sequence, along with its original index.
-    charCollection.forEach((charElement, charIndex) => {
+    // Iterate over each character in the sequence with its index
+    characterSequence.forEach((currentChar, currentIndex) => {
+        // By default, mark the current item as not eligible
+        eligibilityFlags[currentIndex] = false;
 
-        approvalStatus[charIndex] = false; // By default, mark the current character as not approved.
-
-        // Check if the combined approval limit for 'a' and 'b' has not yet been reached.
-        if (overallApproved < limitAlpha + limitBeta) {
-
-            if (charElement === "a") { // If the character is 'a'.
-                overallApproved++;       // Increment the total approved count.
-                approvalStatus[charIndex] = true; // Mark this 'a' character as approved.
-            } else if (charElement === "b" && betaApproved < limitBeta) {
-                // If the character is 'b' AND the specific limit for 'b' characters has not been met.
-                overallApproved++; // Increment the total approved count.
-                betaApproved++;    // Increment the 'b' specific approved count.
-                approvalStatus[charIndex] = true; // Mark this 'b' character as approved.
+        // Check if the total number of accepted items is within the combined capacity
+        if (totalAcceptedCount < typeACapacity + typeBCapacity) {
+            // If the current character is 'a'
+            if (currentChar === "a") {
+                totalAcceptedCount++; // Increment the overall accepted count
+                eligibilityFlags[currentIndex] = true; // Mark this item as eligible
             }
+            // If the current character is 'b' AND there's still capacity for 'b' type items
+            else if (currentChar === "b" && typeBAcceptedCount < typeBCapacity) {
+                totalAcceptedCount++;   // Increment the overall accepted count
+                typeBAcceptedCount++;   // Increment the 'b' type accepted count
+                eligibilityFlags[currentIndex] = true; // Mark this item as eligible
+            }
+            // Characters other than 'a' or 'b', or 'b' without capacity, remain ineligible
         }
     });
 
-    // Transform the array of boolean approval statuses into an array of "Yes" or "No" strings.
-    // Then, join these strings with newline characters to produce the final output.
-    console.outputMessage(
-      approvalStatus.map(isApproved => isApproved ? "Yes" : "No")
-                    .join('\n')
-    );
+    // Transform the boolean eligibility flags into "Yes" or "No" strings and join them with newlines
+    console.log(eligibilityFlags.map(isEligible => isEligible ? "Yes" : "No").join("\n"));
 });

@@ -1,17 +1,17 @@
-function ProcessData(  dataSource  ) {
-  dataSource = dataSource .  split ( "\n"  ) ;
-  let    numberOfElements   = Number (  dataSource [  0  ]  ) ;
-  let valueSequence = dataSource [  1  ] . split (  " "  )  . map (  Number  ) ;
-  let   elementHolder  ;
-  console . log (  valueSequence . join (  " "  )  ) ;
-  for (  let outerLoopIndex = 1  ;  outerLoopIndex < numberOfElements  ;  outerLoopIndex++  )  {
-    elementHolder   = valueSequence [  outerLoopIndex  ] ;
-    let innerLoopIndex  =  outerLoopIndex - 1 ;
-    while (  innerLoopIndex >= 0  &&  valueSequence [  innerLoopIndex  ] > elementHolder  ) {
-      valueSequence [  innerLoopIndex + 1  ]  =  valueSequence [  innerLoopIndex--  ] ;
+function ProcessInput(rawData) {
+  rawData = rawData.split("\n");
+  let elementCount = Number(rawData[0]);
+  let numericSequence = rawData[1].split(" ").map(Number);
+  let currentValue;
+  console.log(numericSequence.join(" "));
+  for (let outerIndex = 1; outerIndex < elementCount; outerIndex++) {
+    currentValue = numericSequence[outerIndex];
+    let innerIndex = outerIndex - 1;
+    while (innerIndex >= 0 && numericSequence[innerIndex] > currentValue) {
+      numericSequence[innerIndex + 1] = numericSequence[innerIndex--];
     }
-    valueSequence [  innerLoopIndex + 1  ] = elementHolder ;
-    console . log (  valueSequence . join (  " "  )  ) ;
+    numericSequence[innerIndex + 1] = currentValue;
+    console.log(numericSequence.join(" "));
   }
 }
-ProcessData (  require (  "fs"  ) . readFileSync (  "/dev/stdin"  ,  "utf8"  )  ) ;
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

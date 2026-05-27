@@ -1,31 +1,31 @@
-const sourceFacility = require("readline");
+const inputModule = require("readline");
 
-async function orchestrateOperation() {
-    const inputGateway = sourceFacility.createInterface({
-        input: process.stdin,
-        output: process.stdout
-    });
+let firstOperand;
+let secondOperand;
+let thirdOperand;
+let inputCount = 0;
 
-    const collectedMeasurements = [];
-    let readingsCounter = 0;
+const streamProcessor = inputModule.createInterface({
+    input: process.stdin,
+    output: process.stdout
+});
 
-    for await (const incomingDatum of inputGateway) {
-        collectedMeasurements.push(parseInt(incomingDatum, 10));
-        readingsCounter++;
-        if (readingsCounter === 3) {
-            break;
-        }
+streamProcessor.on('line', (currentInput) => {
+    inputCount++;
+    const numericValue = Number(currentInput);
+
+    if (inputCount === 1) {
+        firstOperand = numericValue;
+    } else if (inputCount === 2) {
+        secondOperand = numericValue;
+    } else if (inputCount === 3) {
+        thirdOperand = numericValue;
+        const finalOutcome = (firstOperand - secondOperand) % thirdOperand;
+        console.log(finalOutcome);
+        streamProcessor.close();
     }
+});
 
-    inputGateway.close();
-
-    const firstOperand = collectedMeasurements[0];
-    const secondOperand = collectedMeasurements[1];
-    const divisorValue = collectedMeasurements[2];
-
-    const computedOutcome = (firstOperand - secondOperand) % divisorValue;
-    console.log(computedOutcome);
-    process.exit(0);
-}
-
-orchestrateOperation();
+streamProcessor.on('close', () => {
+    process.exit();
+});

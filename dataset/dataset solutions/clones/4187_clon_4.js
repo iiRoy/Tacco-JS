@@ -1,39 +1,36 @@
-const acquireSourceData = () => {
-    return require('fs').readFileSync('/dev/stdin', 'utf8');
-};
+const processInputAndOutput = (rawText) => {
+  const cleanedText = rawText.trim();
+  let firstNumStr = '';
+  let secondNumStr = '';
+  let thirdNumStr = '';
+  let currentSegment = 0;
 
-const parseNumericalComponents = (textPayload) => {
-    const extractedStrings = textPayload.trim().match(/-?\d+/g);
-    if (!extractedStrings || extractedStrings.length < 3) {
-        throw new Error("Insufficient numerical components in input.");
+  for (let charIndex = 0; charIndex < cleanedText.length; charIndex++) {
+    const currentCharacter = cleanedText[charIndex];
+    if (currentCharacter === ' ') {
+      currentSegment++;
+      while (charIndex + 1 < cleanedText.length && cleanedText[charIndex + 1] === ' ') {
+        charIndex++;
+      }
+    } else {
+      if (currentSegment === 0) {
+        firstNumStr += currentCharacter;
+      } else if (currentSegment === 1) {
+        secondNumStr += currentCharacter;
+      } else {
+        thirdNumStr += currentCharacter;
+      }
     }
-    return extractedStrings.map(valueString => parseInt(valueString, 10));
+  }
+
+  const firstOperand = Number(firstNumStr);
+  const secondOperand = Number(secondNumStr);
+  const thirdValue = Number(thirdNumStr);
+
+  const productResult = firstOperand * secondOperand;
+  const finalOutcome = productResult < thirdValue ? productResult : thirdValue;
+
+  console.log(finalOutcome);
 };
 
-const calculateProduct = (firstFactor, secondFactor) => {
-    let resultAccumulator = 0;
-    const isProductNegative = (firstFactor < 0 && secondFactor > 0) || (firstFactor > 0 && secondFactor < 0);
-    const absFirst = firstFactor < 0 ? -firstFactor : firstFactor;
-    const absSecond = secondFactor < 0 ? -secondFactor : secondFactor;
-
-    for (let counter = 0; counter < absSecond; counter++) {
-        resultAccumulator += absFirst;
-    }
-    return isProductNegative ? -resultAccumulator : resultAccumulator;
-};
-
-const determineSmallerValue = (comparisonOne, comparisonTwo) => {
-    return comparisonOne < comparisonTwo ? comparisonOne : comparisonTwo;
-};
-
-const executeProgram = () => {
-    const fullInputString = acquireSourceData();
-    const [elementA, elementB, elementC] = parseNumericalComponents(fullInputString);
-
-    const interimProduct = calculateProduct(elementA, elementB);
-    const finalOutcome = determineSmallerValue(interimProduct, elementC);
-
-    process.stdout.write(finalOutcome.toString() + '\n');
-};
-
-executeProgram();
+processInputAndOutput(require('fs').readFileSync('/dev/stdin', 'utf8'));

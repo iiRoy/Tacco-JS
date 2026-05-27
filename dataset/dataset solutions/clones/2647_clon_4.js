@@ -1,24 +1,22 @@
-const processInputData = (incomingData) => {
-    const cleansedText = incomingData.trim();
+function processInput(textData) {
+    const sourceString = textData.trim();
 
-    const calculateResult = (position, priorChunk, currentAccumulation, finalCount) => {
-        if (position >= cleansedText.length) {
-            return finalCount;
-        }
-
-        const currentCharacter = cleansedText[position];
-        const updatedAccumulation = currentAccumulation + currentCharacter;
-
-        if (updatedAccumulation === priorChunk) {
-            return calculateResult(position + 1, priorChunk, updatedAccumulation, finalCount);
-        } else {
-            return calculateResult(position + 1, updatedAccumulation, "", finalCount + 1);
-        }
+    const initialAccumulator = {
+        tally: 0,
+        previousDistinct: ''
     };
 
-    const outcomeValue = calculateResult(1, "", "", 0);
+    const finalState = Array.from(sourceString.slice(1)).reduce((acc, char) => {
+        if (char !== acc.previousDistinct) {
+            return {
+                tally: acc.tally + 1,
+                previousDistinct: char
+            };
+        }
+        return acc;
+    }, initialAccumulator);
 
-    console.log(outcomeValue);
-};
+    console.log(finalState.tally);
+}
 
-processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInput(require("node:fs").readFileSync("/dev/stdin", "utf8"));

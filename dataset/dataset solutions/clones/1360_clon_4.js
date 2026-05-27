@@ -1,36 +1,26 @@
-const inputReader = require('readline').createInterface({
-  input: process.stdin,
-  output: process.stdout,
-  terminal: false
+const processInputData = (textLines) => {
+  const numericStrings = textLines[0].match(/\d+/g);
+  const operandOne = Number(numericStrings[0]);
+  const operandTwo = Number(numericStrings[1]);
+
+  const comparisonOutcomes = [
+    'a < b',
+    'a == b',
+    'a > b'
+  ];
+
+  const difference = operandOne - operandTwo;
+  const outcomeIndex = Math.sign(difference) + 1;
+
+  console.log(comparisonOutcomes[outcomeIndex]);
+};
+
+const dataSegments = [];
+process.stdin.on('data', (segment) => {
+  dataSegments.push(segment);
 });
 
-let storedLines = [];
-
-inputReader.on('line', (currentLine) => {
-  storedLines.push(currentLine);
+process.stdin.on('end', () => {
+  const textLines = dataSegments.join('').split('\n');
+  processInputData(textLines);
 });
-
-inputReader.on('close', () => {
-  processEvaluation(storedLines);
-});
-
-function processEvaluation(receivedDataLines) {
-  const primaryDatum = receivedDataLines[0];
-
-  const valueExtractor = /(\S+)\s+(\S+)/;
-  const extractedComponents = primaryDatum.match(valueExtractor);
-
-  const entityA = +extractedComponents[1];
-  const entityB = +extractedComponents[2];
-
-  const relationDescriptor = {
-    '0': 'a == b',
-    '-1': 'a < b',
-    '1': 'a > b'
-  };
-
-  const differential = entityA - entityB;
-  const indicator = Math.sign(differential);
-
-  console.log(relationDescriptor[indicator.toString()]);
-}

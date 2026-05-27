@@ -1,57 +1,53 @@
-const environmentReader = require("fs");
-const sourcePath = "/dev/stdin";
-const encoding = "utf8";
+function processGolemSpells(rawData) {
+    const inputLines = rawData.split("\n");
 
-const advanceGridState = (priorConfiguration, characterMap, extent, instructionChar, instructionMove) => {
-    const specificMovements = priorConfiguration.flatMap((individualCount, currentPosition) => {
-        if (individualCount === 0) {
-            return [];
-        }
+    const [arenaSizeStr] = inputLines[0].split(" ");
+    const arenaSize = parseInt(arenaSizeStr, 10);
 
-        const mapCharacter = characterMap[currentPosition];
+    const arenaLayout = inputLines[1];
 
-        if (mapCharacter === instructionChar) {
-            if (instructionMove === 'L') {
-                return (currentPosition > 0) ? [{ targetPosition: currentPosition - 1, amount: individualCount }] : [];
-            } else {
-                return (currentPosition < extent - 1) ? [{ targetPosition: currentPosition + 1, amount: individualCount }] : [];
+    let golemCounts = Array.from({ length: arenaSize }, () => 1);
+
+    for (let k = 2; k < inputLines.length; k++) {
+        const spellCommand = inputLines[k];
+        if (!spellCommand) continue;
+
+        const targetChar = spellCommand[0];
+        const moveDirection = spellCommand[2];
+
+        const nextGolemCounts = golemCounts.reduce((accumulator, currentCount, currentIdx) => {
+            if (currentCount === 0) {
+                return accumulator;
             }
-        } else {
-            return [{ targetPosition: currentPosition, amount: individualCount }];
-        }
-    });
 
-    const nextConfiguration = Array.from({ length: extent }, () => 0);
-    specificMovements.forEach(({ targetPosition, amount }) => {
-        nextConfiguration[targetPosition] += amount;
-    });
+            let destinationIdx = currentIdx;
 
-    return nextConfiguration;
-};
+            if (arenaLayout[currentIdx] === targetChar) {
+                if (moveDirection === 'L') {
+                    if (currentIdx > 0) {
+                        destinationIdx = currentIdx - 1;
+                    } else {
+                        return accumulator;
+                    }
+                } else {
+                    if (currentIdx < arenaSize - 1) {
+                        destinationIdx = currentIdx + 1;
+                    } else {
+                        return accumulator;
+                    }
+                }
+            }
 
+            accumulator[destinationIdx] += currentCount;
+            return accumulator;
+        }, new Array(arenaSize).fill(0));
 
-const simulateCreatureDynamics = (inputData) => {
-    const lineSegments = inputData.split('\n');
+        golemCounts = nextGolemCounts;
+    }
 
-    const [dimensionInfo] = lineSegments;
-    const gridSize = parseInt(dimensionInfo.split(' ')[0], 10);
+    const totalGolems = golemCounts.reduce((sum, count) => sum + count, 0);
 
-    const characterLayout = lineSegments[1];
+    console.log(totalGolems);
+}
 
-    const initialPopulationState = Array.from({ length: gridSize }, () => 1);
-
-    const evolutionCommands = lineSegments.slice(2);
-
-    const finalPopulationState = evolutionCommands.reduce((currentGridState, commandText) => {
-        const triggerChar = commandText[0];
-        const motionDirection = commandText[2];
-
-        return advanceGridState(currentGridState, characterLayout, gridSize, triggerChar, motionDirection);
-    }, initialPopulationState);
-
-    const finalPopulationSum = finalPopulationState.reduce((total, count) => total + count, 0);
-
-    console.log(finalPopulationSum);
-};
-
-simulateCreatureDynamics(environmentReader.readFileSync(sourcePath, encoding));
+processGolemSpells(require("fs").readFileSync("/dev/stdin", "utf8"));

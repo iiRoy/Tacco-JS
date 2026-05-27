@@ -1,63 +1,84 @@
-((fileSystemAccess) => {
-    const dataStream = fileSystemAccess.readFileSync("/dev/stdin", "utf8");
-    const inputChunks = dataStream.trim().split(/\s+/g);
-    let readPointer = 0;
+let inputBuffer = '';
+let tokenArray = [];
+let tokenIndex = 0;
 
-    const pullNextToken = () => inputChunks[readPointer++];
-    const pullNextInteger = () => parseInt(pullNextToken(), 10);
-
-    const totalSubjects = pullNextInteger();
-    const subjectDeclarations = Array.from({ length: totalSubjects }, () => []);
-
-    for (let currentSubject = 0; currentSubject < totalSubjects; currentSubject++) {
-        const declarationCount = pullNextInteger();
-        for (let declarationIdx = 0; declarationIdx < declarationCount; declarationIdx++) {
-            const targetSubject = pullNextInteger() - 1;
-            const declaredStatus = pullNextInteger();
-            subjectDeclarations[currentSubject].push({ target: targetSubject, status: declaredStatus });
-        }
+function fetchNextToken() {
+    if (tokenIndex >= tokenArray.length) {
+        throw new Error("Input token exhaustion.");
     }
+    return tokenArray[tokenIndex++];
+}
 
-    let maximumValidCount = 0;
+function fetchNextInteger() {
+    return parseInt(fetchNextToken(), 10);
+}
 
-    const findOptimalConfiguration = (subjectIndex, currentBitmask) => {
-        if (subjectIndex === totalSubjects) {
-            let activeSubjectsInCurrent = 0;
-            let isConfigurationSound = true;
+let totalPeopleCount;
+let allPersonAssertions;
+let maximumHonestIndividuals = 0;
 
-            for (let i = 0; i < totalSubjects; i++) {
-                const isSubjectActive = (currentBitmask >> i) & 1;
-                if (isSubjectActive) {
-                    activeSubjectsInCurrent++;
+function explorePossibleConfigurations(currentPersonIdentifier, currentHonestStatus) {
+    if (currentPersonIdentifier === totalPeopleCount) {
+        let currentHonestCount = 0;
+        let isConfigurationValid = true;
 
-                    for (const declaration of subjectDeclarations[i]) {
-                        const targetSubjectState = (currentBitmask >> declaration.target) & 1;
-                        if (targetSubjectState !== declaration.status) {
-                            isConfigurationSound = false;
-                            break;
-                        }
+        for (let i = 0; i < totalPeopleCount; i++) {
+            if (currentHonestStatus[i]) {
+                currentHonestCount++;
+                for (const assertion of allPersonAssertions[i]) {
+                    const assertedTarget = assertion.target;
+                    const assertedType = assertion.type;
+
+                    if (currentHonestStatus[assertedTarget] !== (assertedType === 1)) {
+                        isConfigurationValid = false;
+                        break;
                     }
                 }
-                if (!isConfigurationSound) {
-                    break;
-                }
             }
-
-            if (isConfigurationSound) {
-                maximumValidCount = Math.max(maximumValidCount, activeSubjectsInCurrent);
+            if (!isConfigurationValid) {
+                break;
             }
-            return;
         }
 
-        // Option 1: Current subject is inactive
-        findOptimalConfiguration(subjectIndex + 1, currentBitmask);
+        if (isConfigurationValid) {
+            maximumHonestIndividuals = Math.max(maximumHonestIndividuals, currentHonestCount);
+        }
+        return;
+    }
 
-        // Option 2: Current subject is active
-        findOptimalConfiguration(subjectIndex + 1, currentBitmask | (1 << subjectIndex));
-    };
+    currentHonestStatus[currentPersonIdentifier] = false;
+    explorePossibleConfigurations(currentPersonIdentifier + 1, currentHonestStatus);
 
-    findOptimalConfiguration(0, 0);
+    currentHonestStatus[currentPersonIdentifier] = true;
+    explorePossibleConfigurations(currentPersonIdentifier + 1, currentHonestStatus);
+}
 
-    console.log(maximumValidCount);
+process.stdin.on('data', (dataChunk) => {
+    inputBuffer += dataChunk.toString();
+});
 
-})(require('fs'));
+process.stdin.on('end', () => {
+    tokenArray = inputBuffer.trim().split(/\s+/g);
+
+    totalPeopleCount = fetchNextInteger();
+
+    allPersonAssertions = new Array(totalPeopleCount);
+
+    for (let i = 0; i < totalPeopleCount; i++) {
+        const numberOfAssertions = fetchNextInteger();
+        const currentPersonAssertionsList = new Array(numberOfAssertions);
+        for (let j = 0; j < numberOfAssertions; j++) {
+            const targetPersonIdentifier = fetchNextInteger() - 1;
+            const assertionValue = fetchNextInteger();
+            currentPersonAssertionsList[j] = { target: targetPersonIdentifier, type: assertionValue };
+        }
+        allPersonAssertions[i] = currentPersonAssertionsList;
+    }
+
+    const initialHonestState = new Array(totalPeopleCount).fill(false);
+    explorePossibleConfigurations(0, initialHonestState);
+
+    console.log(maximumHonestIndividuals);
+});
+
+process.stdin.resume();

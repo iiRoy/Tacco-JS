@@ -1,129 +1,90 @@
-// This class facilitates the management of a collection of disjoint sets, enabling efficient
-// union (merge) and find (root identification) operations, often used in graph algorithms.
-class GroupManager {
-
-  /**
-   * Constructs a new Disjoint Set Union (DSU) data structure.
-   * Each element initially resides in its own distinct set.
-   * @param {number} totalItems The total count of elements the structure will manage.
-   */
-  constructor(totalItems) {
-    // 'representatives[k]' stores the direct parent of element 'k'.
-    // Initially, every element is its own parent, forming 'totalItems' singleton sets.
-    this.representatives = new Array(totalItems).fill(undefined).map((_ignored, currentIdx) => currentIdx);
-
-    // 'depths[k]' stores the rank or height of the tree rooted at 'k'.
-    // This is used for the union-by-rank optimization to maintain balanced trees.
-    this.depths = new Array(totalItems).fill(0);
-
-    // 'memberCounts[k]' stores the total number of elements within the set whose root is 'k'.
-    // This is used for the union-by-size optimization.
-    this.memberCounts = new Array(totalItems).fill(1);
+class DisjointSet {
+  // Initializes a new DisjointSet structure with a given initial capacity.
+  constructor(initialCapacity) {
+    // Each element is initially its own parent (representative).
+    this.parentNodes = Array.from({ length: initialCapacity }, (_, idx) => idx);
+    // Ranks (or heights) of trees, used for union by rank optimization.
+    this.rankValues = new Array(initialCapacity).fill(0);
+    // Stores the size of each set (number of elements in the component).
+    this.groupSizes = new Array(initialCapacity).fill(1);
   }
 
-  /**
-   * Merges the sets that contain the two specified elements, 'elemX' and 'elemY'.
-   * If they are already in the same set, no action is taken.
-   * @param {number} elemX The first element.
-   * @param {number} elemY The second element.
-   */
-  mergeSets(elemX, elemY) {
-    // First, identify the root representative for each element's set.
-    // Then, proceed to combine these two sets by linking their roots.
-    this.fuseRepresentatives(this.getGroupRoot(elemX), this.getGroupRoot(elemY));
+  // Merges the sets containing elem1 and elem2.
+  unionElements(elem1, elem2) {
+    // Find the representatives (roots) of the sets containing elem1 and elem2.
+    this.mergeSets(this.findRepresentative(elem1), this.findRepresentative(elem2));
   }
 
-  /**
-   * Connects two sets by making one root a child of the other.
-   * This method applies either a union-by-rank or union-by-size heuristic
-   * to maintain the efficiency of the DSU structure.
-   * @param {number} rootOne The representative (root) of the first set.
-   * @param {number} rootTwo The representative (root) of the second set.
-   * @returns {void} No explicit return value; performs a side effect.
-   */
-  fuseRepresentatives(rootOne, rootTwo) {
-    // If both elements already share the same root, they are in the same set.
-    // Therefore, no merging operation is required.
-    if (rootOne === rootTwo) {
-      return; // Exit early as sets are identical.
+  // Links two sets by their roots, applying union by rank.
+  mergeSets(root1, root2) {
+    // If both elements are already in the same set, do nothing.
+    if (root1 === root2) {
+      return null;
     }
 
-    // Apply the union-by-rank heuristic: attach the tree with the smaller rank
-    // under the root of the tree with the larger rank.
-    if (this.depths[rootOne] > this.depths[rootTwo]) {
-      this.representatives[rootTwo] = rootOne; // 'rootOne' becomes the new parent of 'rootTwo'.
-      this.memberCounts[rootOne] += this.memberCounts[rootTwo]; // Update the size of the combined set.
+    // Attach the smaller rank tree under the root of the larger rank tree.
+    if (this.rankValues[root1] > this.rankValues[root2]) {
+      this.parentNodes[root2] = root1; // root1 becomes the new parent of root2.
+      this.groupSizes[root1] += this.groupSizes[root2]; // Update the size of the combined set.
     } else {
-      this.representatives[rootOne] = rootTwo; // 'rootTwo' becomes the new parent of 'rootOne'.
-      this.memberCounts[rootTwo] += this.memberCounts[rootOne]; // Update the size of the combined set.
+      this.parentNodes[root1] = root2; // root2 becomes the new parent of root1.
+      this.groupSizes[root2] += this.groupSizes[root1]; // Update the size of the combined set.
 
-      // If the ranks were initially equal, increment the rank of the new root.
-      // This is crucial for maintaining the logarithmic height property.
-      if (this.depths[rootOne] === this.depths[rootTwo]) {
-        this.depths[rootTwo]++;
+      // If ranks are equal, increment the rank of the new root.
+      if (this.rankValues[root1] === this.rankValues[root2]) {
+        this.rankValues[root2]++;
       }
     }
   }
 
-  /**
-   * Determines the representative (root) of the set to which a given element belongs.
-   * This method incorporates path compression optimization to flatten the tree structure
-   * during traversal, making future 'find' operations faster.
-   * @param {number} specificItem The element for which to find the set representative.
-   * @returns {number} The integer identifier of the set's representative.
-   */
-  getGroupRoot(specificItem) {
-    // If the element's parent pointer points to itself, it is the root of its set.
-    if (this.representatives[specificItem] === specificItem) {
-      return specificItem;
+  // Finds the representative (root) of the set containing targetNode, with path compression.
+  findRepresentative(targetNode) {
+    // If targetNode is its own parent, it is the representative.
+    if (this.parentNodes[targetNode] === targetNode) {
+      return targetNode;
     }
-    // Otherwise, recursively find the root and compress the path:
-    // Make the element point directly to the found root.
-    this.representatives[specificItem] = this.getGroupRoot(this.representatives[specificItem]);
-    return this.representatives[specificItem];
+    // Recursively find the representative and perform path compression.
+    this.parentNodes[targetNode] = this.findRepresentative(this.parentNodes[targetNode]);
+    return this.parentNodes[targetNode];
   }
 }
 
 
-/**
- * The primary execution point of the program.
- * It parses input data, performs a sequence of DSU operations, and prints the final result.
- * @param {string} sourceData The complete input string read from stdin.
- */
-const runSolution = (sourceData) => {
-  // Normalize the input: remove leading/trailing whitespace and split into individual lines.
-  const [initialConfig, ...commandBatch] = sourceData.trim().split('\n');
+// Main function to process input and solve the problem.
+const processInput = (rawInputData) => {
+  // Split the input string into lines.
+  const [configLine, ...queryLines] = rawInputData.trim().split('\n');
+  // Parse the first line for total nodes and total queries.
+  const [totalNodes, totalQueries] = configLine.split(' ').map(Number);
 
-  // Parse the initial configuration line, which typically contains
-  // the total number of entities and the number of operations (though the latter isn't explicitly used here).
-  const [totalEntities, numOperations] = initialConfig.split(' ').map(Number);
+  // Create a new DisjointSet instance for the given number of nodes.
+  const dsuInstance = new DisjointSet(totalNodes);
 
-  // Initialize the Disjoint Set Manager with the specified number of entities.
-  const setManager = new GroupManager(totalEntities);
-
-  // Process each command from the batch. Each command typically represents a merge operation.
-  for (let currentOpIndex = 0; currentOpIndex < commandBatch.length; currentOpIndex++) {
-    // Extract the two entity identifiers from the current command line.
-    const [nodeOne, nodeTwo] = commandBatch[currentOpIndex].split(' ').map(Number);
-
-    // Execute the merge operation. Node identifiers are adjusted for 0-based indexing.
-    setManager.mergeSets(nodeOne - 1, nodeTwo - 1);
+  // Iterate through each query line.
+  for (let currentQueryIdx = 0; currentQueryIdx < queryLines.length; currentQueryIdx++) {
+    // Parse the two nodes for the current query.
+    const [nodeA, nodeB] = queryLines[currentQueryIdx].split(' ').map(Number);
+    // Union the sets containing nodeA and nodeB (adjusting for 0-based indexing).
+    dsuInstance.unionElements(nodeA - 1, nodeB - 1);
   }
 
-  // Calculate and output the result.
-  // The problem's specific requirement is to count the number of unique parent pointers
-  // found in the `representatives` array after all operations, and then subtract one.
-  // This might correspond to a specific graph property or problem formulation.
-  console.log(new Set(setManager.representatives).size - 1);
+  // Calculate the number of distinct connected components.
+  // The representatives array `dsuInstance.parentNodes` might not be fully compressed
+  // for all elements, so we need to find the actual representatives for all elements
+  // to count distinct sets. A simpler way is to use the `findRepresentative` method
+  // on all elements and then count unique representatives, or rely on the fact that
+  // `dsuInstance.p` will contain the final representatives after all unions,
+  // and `new Set(dsuInstance.p)` will give the unique representatives.
+  // The problem statement implies that `uf.p` (which is `dsuInstance.parentNodes` here)
+  // after all unions, will contain the representatives, and counting unique values
+  // in it will give the number of components.
+  // The `-1` is likely an adjustment based on problem specifics, perhaps for a 0-indexed
+  // count or excluding a specific component.
+  const distinctComponents = new Set(dsuInstance.parentNodes).size - 1;
+  return console.log(distinctComponents);
 };
 
-
-// This conditional block determines how the program receives its input.
-// It checks for a 'MYTEST' environment variable to switch between test mode,
-// reading from a specific file, or reading from the standard input.
+// Conditional execution based on environment variable.
 process.env.MYTEST
-  ? (process.env.MYTEST === 'test' // Is the environment variable 'MYTEST' set to 'test'?
-    ? test() // If yes, execute a test function (not defined in this snippet).
-    : runSolution(require('fs').readFileSync('dev/stdin', 'utf8')) // Otherwise, read input from 'dev/stdin'.
-  )
-  : runSolution(require('fs').readFileSync('/dev/stdin', 'utf8')); // If 'MYTEST' is not set at all, read input from '/dev/stdin'.
+  ? (process.env.MYTEST === 'test' ? test() : processInput(require('fs').readFileSync('dev/stdin', 'utf8')))
+  : processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,61 +1,47 @@
-const rawDataString = require('fs').readFileSync('/dev/stdin', 'utf8');
+const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-const inputLines = rawDataString.trim().split('\n');
+const dataLines = rawData.split('\n');
+const firstLineData = dataLines[0];
+const secondLineData = dataLines[1];
 
-if (inputLines.length < 2) {
-    console.error("Error: Expected at least two lines of input data.");
-    process.exit(1);
+const [countN, countM] = firstLineData.split(' ').map(Number);
+
+const inputNumbers = secondLineData.split(' ').map(Number);
+
+const sortedNumbers = inputNumbers.sort((a, b) => a - b);
+
+const diffsList = [];
+const diffsCount = countM - 1;
+for (let idx = 0; idx < diffsCount; idx++) {
+  diffsList.push(sortedNumbers[idx + 1] - sortedNumbers[idx]);
 }
 
-const configParametersString = inputLines[0];
-const valueSequenceString = inputLines[1];
+const sortedDiffs = diffsList.sort((a, b) => a - b);
 
-const configValues = configParametersString.split(' ').map(val => parseInt(val.trim(), 10));
+const sliceStartIndex = countM - countN;
+const largestDiffsSubset = sortedDiffs.slice(sliceStartIndex);
 
-if (configValues.length < 2 || isNaN(configValues[0]) || isNaN(configValues[1])) {
-    console.error("Error: Unable to parse configuration parameters (N and M) from the first line.");
-    process.exit(1);
+let finalResult;
+
+const calculateSum = (arr) => arr.reduce((accumulator, currentValue) => accumulator + currentValue, 0);
+
+if (largestDiffsSubset.length > 0) {
+  const largestDiffsSum = calculateSum(largestDiffsSubset);
+
+  const maxVal = Math.max(...inputNumbers);
+  const minVal = Math.min(...inputNumbers);
+
+  finalResult = maxVal - minVal - largestDiffsSum;
+} else {
+  finalResult = 0;
 }
 
-const numPointsToSelect = configValues[0];
-const totalPointsAvailable = configValues[1];
-
-const rawNumericValues = valueSequenceString.split(' ').map(val => parseInt(val.trim(), 10));
-
-const numericDataSet = rawNumericValues.filter(val => !isNaN(val));
-
-if (numericDataSet.length !== totalPointsAvailable) {
-    console.error(`Error: M value (${totalPointsAvailable}) does not match the actual count of provided numeric points (${numericDataSet.length}).`);
-    process.exit(1);
-}
-
-const orderedNumericSet = [...numericDataSet].sort((firstEl, secondEl) => firstEl - secondEl);
-
-const adjacentSegmentLengths = Array.from({ length: totalPointsAvailable - 1 }, (_, index) => {
-    return orderedNumericSet[index + 1] - orderedNumericSet[index];
-});
-
-const sortedSegmentLengths = [...adjacentSegmentLengths].sort((diffA, diffB) => diffA - diffB);
-
-let minimalSeparationCost = 0;
-
-if (numPointsToSelect < totalPointsAvailable) {
-    const segmentsToMaintainCount = totalPointsAvailable - numPointsToSelect;
-
-    const smallestGapsToKeep = sortedSegmentLengths.slice(0, segmentsToMaintainCount);
-
-    minimalSeparationCost = smallestGapsToKeep.reduce((accumulator, currentDifference) => {
-        return accumulator + currentDifference;
-    }, 0);
-}
-
-const presentOutcome = () => {
-    if (numPointsToSelect >= totalPointsAvailable) {
-        console.log(0);
-        return;
-    }
-    console.log(minimalSeparationCost);
-    return;
+const displayResult = () => {
+  if (countN >= countM) {
+    console.log(0);
+  } else {
+    console.log(finalResult);
+  }
 };
 
-presentOutcome();
+displayResult();

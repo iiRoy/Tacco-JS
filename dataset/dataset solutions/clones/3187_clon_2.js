@@ -1,133 +1,142 @@
-/* This module provides utilities for reading structured input data. */
-var DATA_READER = ( function ( ) {
-    /**
-     * Factory function to create a new input reader instance.
-     * @param {string} rawDataString - The entire input data as a single string.
-     * @returns {InputParser} A new parser object.
-     */
-    function createDataReader( rawDataString )
-    {
-        return new InputParser( rawDataString ) ;
+var INPUT_PARSER = (function() {
+  /**
+   * Initializes a new input parsing utility.
+   * @param {string} rawInputContent - The complete string content to be parsed.
+   * @returns {InputSource} An instance capable of reading tokens and lines.
+   */
+  function createParser(rawInputContent) {
+    return new InputSource(rawInputContent);
+  }
+
+  /**
+   * Manages the state of input lines and current reading position.
+   * @class
+   * @param {string} initialStringData - The string data to process.
+   */
+  function InputSource(initialStringData) {
+    // Internal storage for all input lines, trimmed and split.
+    this._sourceLines = initialStringData.trim().split("\n");
+    // Index of the current line being processed.
+    this._currentLineIndex = 0;
+  }
+
+  /**
+   * Extracts the next available token from the current line.
+   * If the current line is exhausted, it advances to the next.
+   * @param {boolean} [keepRaw=false] - If true, returns the token as a string; otherwise, attempts numeric conversion.
+   * @returns {string|number} The extracted token.
+   */
+  InputSource.prototype.readNextToken = function(keepRaw) {
+    var lineData = this._sourceLines;
+    var lineIdx = this._currentLineIndex;
+    var extractedData;
+
+    // If the current line is still a raw string, split it into tokens and reverse for efficient `pop`.
+    if (typeof lineData[lineIdx] === "string") {
+      lineData[lineIdx] = lineData[lineIdx].split(" ").reverse();
     }
 
-    /**
-     * Constructor for the InputParser object.
-     * It processes the raw input string into an array of lines.
-     * @param {string} rawDataString - The raw input data.
-     */
-    function InputParser( rawDataString )
-    {
-        this._inputLines = rawDataString . trim ( ) . split ( '\n' ) ; // Stores all input lines.
-        this._currentLineIndex = 0 ; // Tracks the current line being processed.
+    // Retrieve the token (originally the first on the line).
+    extractedData = lineData[lineIdx].pop();
+
+    // If the line is now empty, move to the subsequent line.
+    if (!lineData[lineIdx].length) {
+      this._currentLineIndex++;
     }
 
-    // Define methods for the InputParser prototype.
-    InputParser . prototype . fetchNextToken = function ( returnAsText ) {
-        var currentLinesArray = this._inputLines ;
-        var lineCursor = this._currentLineIndex ;
-        var extractedValue ;
+    // Return the token, optionally converted to a number.
+    return keepRaw ? extractedData : +extractedData;
+  };
 
-        // If the current line is still a string, split it into tokens and reverse for pop() efficiency.
-        if ( typeof currentLinesArray [ lineCursor ] === 'string' )
-            currentLinesArray [ lineCursor ] = currentLinesArray [ lineCursor ] . split ( ' ' ) . reverse ( ) ;
+  /**
+   * Reads an entire line, splits it by spaces, and returns the tokens.
+   * @param {boolean} [keepRaw=false] - If true, returns tokens as strings; otherwise, attempts numeric conversion.
+   * @returns {Array<string|number>} An array of tokens from the read line.
+   */
+  InputSource.prototype.readLineTokens = function(keepRaw) {
+    // Fetch the current line, then increment the line index.
+    var lineContent = this._sourceLines[this._currentLineIndex++].split(" ");
+    // Map tokens to numbers if not keeping raw strings.
+    return keepRaw ? lineContent : lineContent.map(element => +element);
+  };
 
-        // Extract the last token from the current line's array.
-        extractedValue = currentLinesArray [ lineCursor ] . pop ( ) ;
+  /**
+   * Reads a specified number of lines and parses them into a 2D array (matrix).
+   * @param {number} count - The number of lines to read for the matrix.
+   * @param {boolean} [keepRaw=false] - If true, returns tokens as strings; otherwise, attempts numeric conversion.
+   * @returns {Array<Array<string|number>>} A matrix of parsed tokens.
+   */
+  InputSource.prototype.readMatrix = function(count, keepRaw) {
+    // Extract a slice of lines and map each to an array of space-separated tokens.
+    var extractedData = this._sourceLines.slice(this._currentLineIndex, this._currentLineIndex += count).map(line => line.split(" "));
+    // Convert all elements to numbers if not keeping raw strings.
+    return keepRaw ? extractedData : extractedData.map(row => row.map(element => +element));
+  };
 
-        // If the current line is now empty, advance to the next line.
-        if ( ! currentLinesArray [ lineCursor ] . length )
-        {
-            this._currentLineIndex ++ ;
-        }
+  /**
+   * Reads a specified number of lines and returns them as a 1D array.
+   * @param {number} count - The number of lines to read.
+   * @param {boolean} [keepRaw=false] - If true, returns lines as strings; otherwise, attempts numeric conversion.
+   * @returns {Array<string|number>} An array of parsed lines.
+   */
+  InputSource.prototype.readLines = function(count, keepRaw) {
+    // Extract a slice of lines.
+    var extractedData = this._sourceLines.slice(this._currentLineIndex, this._currentLineIndex += count);
+    // Convert all elements to numbers if not keeping raw strings.
+    return keepRaw ? extractedData : extractedData.map(element => +element);
+  };
 
-        // Return the value as a string or a number based on the flag.
-        return returnAsText ? extractedValue : + extractedValue ;
-    } ;
+  return createParser;
+})();
 
-    InputParser . prototype . fetchLineTokens = function ( returnAsText ) {
-        // Fetch the current line, split it into tokens, and then advance the line index.
-        var tokensOnLine = this._inputLines [ this._currentLineIndex ++ ] . split ( ' ' ) ;
+// Initialize the input reader by reading content from standard input.
+var inputReader = INPUT_PARSER(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-        // Return tokens as strings or convert them to numbers.
-        return returnAsText ? tokensOnLine : tokensOnLine . map ( element => + element ) ;
-    } ;
-
-    InputParser . prototype . fetchMatrixData = function ( segmentCount , returnAsText ) {
-        // Extract a slice of lines to form the matrix.
-        var matrixRows = this._inputLines . slice ( this._currentLineIndex , this._currentLineIndex += segmentCount )
-                                          . map ( rowText => rowText . split ( ' ' ) ) ;
-
-        // Return the matrix as strings or convert all elements to numbers.
-        return returnAsText ? matrixRows : matrixRows . map ( row => row . map ( element => + element ) ) ;
-    } ;
-
-    InputParser . prototype . fetchRawLines = function ( segmentCount , returnAsText ) {
-        // Get a specified number of raw lines directly.
-        var linesContent = this._inputLines . slice ( this._currentLineIndex , this._currentLineIndex += segmentCount ) ;
-
-        // Return lines as strings or convert each line to a number (if it's a single number line).
-        return returnAsText ? linesContent : linesContent . map ( element => + element ) ;
-    } ;
-
-    // Expose the factory function.
-    return createDataReader ;
-
-} ) ( ) ;
-
-/*
- * Main execution context.
- * Reads input from stdin and calculates the solution.
- */
-var inputProcessor = DATA_READER ( require ( 'fs' ) . readFileSync ( '/dev/stdin' , 'utf8' ) ) ;
-
-// Output the result of the main calculation function.
-console . log ( calculateSolution ( ) ) ;
+// Print the result obtained from the main processing function.
+console.log(processInputAndCalculate());
 
 /**
- * The core logic function to solve the problem.
- * Reads participant preferences and counts common items.
- * @returns {number} The final calculated answer.
+ * The primary function to execute the problem's logic.
+ * It reads input, performs calculations, and returns the final answer.
+ * @returns {number} The count of food items liked by all individuals.
  */
-function calculateSolution ( )
-{
-    // Read the total number of participants.
-    var totalParticipants = inputProcessor . fetchNextToken ( ) ;
+function processInputAndCalculate() {
+  // Read the total number of people.
+  var numPeople = inputReader.readNextToken();
+  // Read the total number of distinct food items.
+  var numFoods = inputReader.readNextToken();
 
-    // Read the total number of distinct items.
-    var totalItems = inputProcessor . fetchNextToken ( ) ;
+  // Create an array to store the count of people who like each food item.
+  // Initialize all counts to zero.
+  var foodPreferenceCounts = Array(numFoods).fill(0);
+  // Variable to store the final answer: count of foods liked by everyone.
+  let commonFoodCount = 0;
 
-    // Initialize an array to store counts for each item, all starting at zero.
-    var itemCounts = new Array ( totalItems ) . fill ( 0 ) ;
-
-    // Variable to hold the final result, initialized to zero.
-    var finalSolution = 0 ;
-
-    // Iterate through each participant's preferences.
-    for ( var participantIdx = 0 ; participantIdx < totalParticipants ; participantIdx ++ )
-    {
-        // Fetch the current participant's list of preferred items.
-        var currentPreferences = inputProcessor . fetchLineTokens ( ) ;
-
-        // The loop iterates 'currentPreferences[0]' times.
-        // For each iteration, it accesses 'currentPreferences' at index 'preferenceIdx - 1'.
-        // This means the items processed are currentPreferences[0], currentPreferences[1], ..., currentPreferences[currentPreferences[0]-1].
-        for ( var preferenceIdx = 1 ; preferenceIdx <= currentPreferences [ 0 ] ; preferenceIdx ++ )
-        {
-            // Increment the count for the current item in the itemCounts array.
-            itemCounts [ currentPreferences [ preferenceIdx - 1 ] ] ++ ;
-        }
+  // Iterate through each person to record their food preferences.
+  for (var personIdx = 0; personIdx < numPeople; personIdx++) {
+    // Read the line containing preferences for the current person.
+    // The first element is the count of items they like, followed by the item IDs.
+    var personPreferences = inputReader.readLineTokens();
+    // Loop through the actual food item IDs liked by this person.
+    // The loop starts from 1 because personPreferences[0] is the count.
+    // The original code uses personPreferences[prefIdx - 1] to access the food ID.
+    // This means personPreferences[0] (the count) is also treated as a food ID.
+    for (var prefIdx = 1; prefIdx <= personPreferences[0]; prefIdx++) {
+      // Increment the count for the specific food item ID.
+      foodPreferenceCounts[personPreferences[prefIdx - 1]]++;
     }
+  }
 
-    // After processing all participants, check which items were preferred by *all* participants.
-    for ( participantIdx = 0 ; participantIdx < totalItems ; participantIdx ++ )
-    {
-        // If an item's count matches the total number of participants, it means everyone preferred it.
-        if ( itemCounts [ participantIdx ] === totalParticipants )
-        {
-            finalSolution ++ ; // Increment the overall solution count.
-        }
+  // After processing all people's preferences, check which food items
+  // were liked by every single person.
+  for (personIdx = 0; personIdx < numFoods; personIdx++) {
+    // If a food item's count matches the total number of people,
+    // it means everyone likes this food.
+    if (foodPreferenceCounts[personIdx] === numPeople) {
+      commonFoodCount++;
     }
+  }
 
-    // Return the final count of items preferred by all participants.
-    return finalSolution ;
+  // Return the final tally of commonly liked food items.
+  return commonFoodCount;
 }

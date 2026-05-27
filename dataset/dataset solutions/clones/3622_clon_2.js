@@ -1,34 +1,32 @@
-function processInputData ( rawText ) {
-  // Trim leading/trailing whitespace from the raw input string
-  const  cleanedText  =  rawText.trim();
+function processInput(rawData) {
+  // Trim any leading or trailing whitespace from the raw input string.
+  rawData = rawData.trim();
 
-  // Parse the first number from the cleaned string to get our target value
-  const   targetNumber   =   parseInt( cleanedText.split(" ")[0], 10 );
+  // Parse the first number from the input string as the target value.
+  // The input is expected to be space-separated, and we take the first part.
+  const targetValue = parseInt(rawData.split(" ")[0], 10);
 
-  // Initialize an empty list to store all generated numerical combinations
-  const    calculatedValues    =    [ ];
+  // Initialize an array to store all possible sums.
+  let calculatedSums = [];
 
-  // Loop through possible values for the first coefficient (from 0 to 25)
-  for  ( let  outerIndex = 0 ;  outerIndex <= 25 ;  outerIndex++ ) {
-
-    // Nested loop for the second coefficient (from 0 to 15)
-    for   ( let   innerIndex = 0 ;   innerIndex <= 15 ;   innerIndex++ )   {
-
-      // Compute a new value using the two coefficients and add it to our list
-      calculatedValues.push( ( 4 * outerIndex ) + ( 7 * innerIndex ) ) ;
+  // Iterate through possible values for the first coefficient (up to 25).
+  for (let outerIndex = 0; outerIndex <= 25; outerIndex++) {
+    // For each value of the first coefficient, iterate through possible values for the second (up to 15).
+    for (let innerIndex = 0; innerIndex <= 15; innerIndex++) {
+      // Calculate the sum using the formula 4*i + 7*j and add it to our list.
+      calculatedSums.push(4 * outerIndex + 7 * innerIndex);
     }
   }
 
-  // Check if our target number exists within the list of calculated values
-  if   ( calculatedValues.indexOf(targetNumber) >= 0 )   {
-    // If found, output a positive confirmation
+  // Check if the target value exists within the array of calculated sums.
+  if (calculatedSums.indexOf(targetValue) >= 0) {
+    // If found, print "Yes" to standard output.
     console.log("Yes");
-  }
-  else   {
-    // Otherwise, output a negative confirmation
+  } else {
+    // Otherwise, print "No".
     console.log("No");
   }
 }
 
-// Read the entire content of standard input as a UTF-8 string and pass it to our processing function
-processInputData( require('fs').readFileSync('/dev/stdin', 'utf8') );
+// Read input from standard input and pass it to the processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

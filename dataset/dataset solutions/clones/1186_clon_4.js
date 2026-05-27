@@ -1,64 +1,43 @@
-const transformationRules = new Map([
-  ['N', ({ top, front, left, right, back, bottom }) => ({
-    top: front,
-    front: bottom,
-    left: left,
-    right: right,
-    back: top,
-    bottom: back
-  })],
-  ['E', ({ top, front, left, right, back, bottom }) => ({
-    top: right,
-    front: front,
-    left: top,
-    right: bottom,
-    back: back,
-    bottom: left
-  })],
-  ['S', ({ top, front, left, right, back, bottom }) => ({
-    top: back,
-    front: top,
-    left: left,
-    right: right,
-    back: bottom,
-    bottom: front
-  })],
-  ['W', ({ top, front, left, right, back, bottom }) => ({
-    top: left,
-    front: front,
-    left: bottom,
-    right: top,
-    back: back,
-    bottom: right
-  })]
+const _ROTATION_PERMUTATIONS = new Map([
+  ['N', [1, 5, 2, 3, 0, 4]],
+  ['E', [3, 1, 0, 5, 4, 2]],
+  ['S', [4, 0, 2, 3, 5, 1]],
+  ['W', [2, 1, 5, 0, 4, 3]]
 ]);
 
-const constructSolid = (values) => ({
-  top: values[0],
-  front: values[1],
-  left: values[2],
-  right: values[3],
-  back: values[4],
-  bottom: values[5]
-});
+class Cube {
+  #faceValues;
 
-const applyDirectionalShift = (currentSolidState, commandSymbol) => {
-  const shiftFunction = transformationRules.get(commandSymbol);
-  return shiftFunction ? shiftFunction(currentSolidState) : currentSolidState;
-};
+  constructor(initialValues) {
+    this.#faceValues = initialValues;
+  }
 
-const executeSolidManipulation = (inputData) => {
-  const lineSegments = inputData.trim().split("\n");
-  const initialSurfaceValues = lineSegments[0].split(" ");
-  const sequenceOfCommands = lineSegments[1].split("");
+  applyDirectionalTurn(directionKey) {
+    const permutationIndices = _ROTATION_PERMUTATIONS.get(directionKey);
+    const nextFaceArrangement = Array(6);
+    for (let i = 0; i < 6; i++) {
+      nextFaceArrangement[i] = this.#faceValues[permutationIndices[i]];
+    }
+    this.#faceValues = nextFaceArrangement;
+  }
 
-  const startingSolid = constructSolid(initialSurfaceValues);
+  getTopFace() {
+    return this.#faceValues[0];
+  }
+}
 
-  const finalSolidState = sequenceOfCommands.reduce(applyDirectionalShift, startingSolid);
+function processInput(rawInputText) {
+  const lines = rawInputText.split("\n");
+  const initialFaceLabels = lines[0].split(" ");
+  const rotationSequence = lines[1];
 
-  return finalSolidState.top;
-};
+  const gameCube = new Cube(initialFaceLabels);
 
-const rawDataStream = require("fs").readFileSync("/dev/stdin", "utf8");
-const finalOutputValue = executeSolidManipulation(rawDataStream);
-console.log(finalOutputValue);
+  for (const movement of rotationSequence) {
+    gameCube.applyDirectionalTurn(movement);
+  }
+
+  console.log(gameCube.getTopFace());
+}
+
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

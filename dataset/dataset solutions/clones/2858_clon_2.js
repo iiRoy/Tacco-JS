@@ -1,54 +1,56 @@
-"use strict"; // Enforce strict parsing rules for better code quality and error detection.
+"use strict";
 
-// This function serves as the primary entry point for processing the input data.
-const ProcessInput = (sourceText) => {
+// This function serves as the primary entry point for processing input data.
+const ProcessInput = (rawData) => {
+    // First, the raw input string is cleaned up by removing leading/trailing whitespace,
+    // and then split into an array of individual lines based on newline characters.
+    let lines = rawData.trim().split('\n');
 
-    // First, preprocess the raw input string: remove leading/trailing whitespace
-    // and then split it into an array of individual lines.
-    let textRows = sourceText.trim().split('\n');
+    // The second line of the input (index 1) is expected to contain a space-separated
+    // list of numbers. This line is split into individual string numbers, and then
+    // each string is converted into an integer using `parseInt` with a radix of 10.
+    let numbersArray = lines[1].split(' ').map(val => parseInt(val, 10));
 
-    // The second line of input is expected to contain a space-separated list of numbers.
-    // These are parsed into an array of integers, ensuring a base-10 conversion.
-    let numericValues = textRows[1].split(' ').map(elementStr => parseInt(elementStr, 10));
+    // A variable is initialized to accumulate the sum of all numbers.
+    let totalSum = 0;
 
-    // Initialize a variable to store the cumulative sum of all numbers.
-    let aggregateValue = 0;
-
-    // The first line of input (textRows[0]) is assumed to contain the count
-    // of numbers to process from the 'numericValues' array.
-    for (let loopIndex = 0; loopIndex < textRows[0]; loopIndex++) {
-        // Add each number from the array to the running total.
-        aggregateValue += numericValues[loopIndex];
+    // The first line of input (index 0) is expected to be the count of numbers.
+    // This loop iterates through the `numbersArray` to calculate the grand total.
+    // `parseInt` is used here to explicitly convert the string count to an integer.
+    for (let idx = 0; idx < parseInt(lines[0], 10); idx++) {
+        totalSum += numbersArray[idx];
     }
 
-    // Calculate a threshold value, which is half of the total aggregated sum.
-    let targetThreshold = aggregateValue / 2;
+    // Calculate a target value, which is half of the total sum.
+    // This value will be used to guide the partitioning logic.
+    let halfSum = totalSum / 2;
 
-    // Initialize two separate sum accumulators. These will be used to partition
-    // the numbers based on the calculated threshold.
-    let firstSegmentSum = 0;
-    let secondSegmentSum = 0;
+    // Initialize two accumulator variables for the two partitions.
+    // These will store the sums of numbers assigned to each partition.
+    let partitionOneSum = 0;
+    let partitionTwoSum = 0;
 
-    // Iterate through the numeric values again, applying the partitioning logic.
-    for (let iterPos = 0; iterPos < textRows[0]; iterPos++) {
-        // If the first sum is currently less than the threshold, add the
-        // current number to it.
-        if (firstSegmentSum < targetThreshold) {
-            firstSegmentSum = numericValues[iterPos] + firstSegmentSum;
+    // This loop iterates through the `numbersArray` again to distribute its elements
+    // into two conceptual partitions based on the `halfSum` target.
+    for (let loopIndex = 0; loopIndex < parseInt(lines[0], 10); loopIndex++) {
+        // If the current sum of the first partition is less than the target `halfSum`,
+        // the current number from `numbersArray` is added to `partitionOneSum`.
+        if (partitionOneSum < halfSum) {
+            partitionOneSum = numbersArray[loopIndex] + partitionOneSum;
         }
-        // If the first sum has already surpassed the threshold, then
-        // add the current number to the second sum.
-        else if (firstSegmentSum > targetThreshold) {
-            secondSegmentSum = numericValues[iterPos] + secondSegmentSum;
+        // Otherwise, if the current sum of the first partition is strictly greater than `halfSum`,
+        // the current number is added to `partitionTwoSum`.
+        // Note: If `partitionOneSum` is exactly equal to `halfSum`, the current number
+        // `numbersArray[loopIndex]` is not added to either partition, effectively being skipped.
+        else if (partitionOneSum > halfSum) {
+            partitionTwoSum = numbersArray[loopIndex] + partitionTwoSum;
         }
-        // Note: If firstSegmentSum exactly equals targetThreshold, the current
-        // number is not added to either sum in this specific iteration.
     }
 
-    // Finally, compute and display the difference between the two partitioned sums.
-    console.log(firstSegmentSum - secondSegmentSum);
+    // Finally, the difference between the two partition sums is calculated and printed to the console.
+    console.log(partitionOneSum - partitionTwoSum);
 };
 
-// Invoke the main processing function. The input is read synchronously
-// from standard input, encoded in UTF-8.
+// The program reads its input from standard input, assuming UTF-8 encoding,
+// and then passes this raw string data to the `ProcessInput` function for execution.
 ProcessInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

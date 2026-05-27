@@ -1,14 +1,21 @@
-// This function processes the incoming data.
-function ProcessContent(dataSource) {
-  var accumulatedPoints = 0; // Initialize a variable to hold the total score.
-  for (var itemIndex = 0; itemIndex < 3; itemIndex++) {
-    if (dataSource[itemIndex] == 'o') {
-      accumulatedPoints = accumulatedPoints + 100; // Add points for a specific character.
-    }
-  }
+// This function processes the provided raw data.
+function ProcessData(rawData) {
+    // Initialize a counter for specific items.
+    var scoreAccumulator = 0;
 
-  // Display the final result.
-  console.log(accumulatedPoints + 700);
+    // Iterate through the first three elements of the input array.
+    for (var idx = 0; idx < 3; idx++) {
+        // Check if the current element is the character 'o'.
+        if (rawData[idx] == 'o') {
+            // If it is 'o', increment the accumulator by 100.
+            scoreAccumulator = scoreAccumulator + 100;
+        }
+    }
+
+    // Display the final calculated score plus a base value.
+    console.log(scoreAccumulator + 700);
 }
-/* Do not modify anything below this line (reads input and invokes the primary function). */
-ProcessContent(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+// The following line handles reading input from standard input and invoking the main processing function.
+// It should not be modified as it manages the program's entry point and data acquisition.
+ProcessData(require("fs").readFileSync("/dev/stdin", "utf8"));

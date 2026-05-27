@@ -1,31 +1,34 @@
-/* This script processes incoming text data. */
-function processData()
-{
-    // Iterate over each line obtained from the standard input.
-    rawDataBuffer . forEach ( function ( currentLine ) {
-        // Output the modified line to the console.
-        console . log (
-            currentLine . replace ( /banana|orange/g , function ( matchedWord ) {
-                // Swap 'banana' with 'orange' and vice-versa.
-                return matchedWord === 'banana' ? 'orange' : 'banana' ;
-            } )
-        ) ;
-    } ) ;
+function processInputData() {
+  // Iterate through each line of the processed input data
+  rawData.forEach(function(currentLine) {
+    // Perform a replacement operation on the current line
+    // Swapping 'apple' with 'peach' and 'peach' with 'apple'
+    console.log(currentLine.replace(/apple|peach/g, function(matchedWord) {
+      // Conditional check to determine the replacement
+      return matchedWord === 'apple' ? 'peach' : 'apple';
+    }));
+  });
 }
 
-let
-    rawDataBuffer = '' ; // Holds the accumulated input string.
+// Global variable to store the raw input stream data
+var rawData = '';
 
-process.stdin . resume ( ) ;
-process.stdin . setEncoding ( 'utf8' ) ;
+// Activate the standard input stream
+process.stdin.resume();
 
-// Event listener for incoming data chunks.
-process.stdin . on ( 'data' , function ( dataPortion ) {
-    rawDataBuffer += dataPortion ; // Append the chunk to the buffer.
-} ) ;
+// Set the character encoding for the input stream
+process.stdin.setEncoding('utf8');
 
-// Event listener for the end of input stream.
-process.stdin . on ( 'end' , function ( ) {
-    rawDataBuffer = rawDataBuffer . split ( '\n' ) ; // Split the buffer into an array of lines.
-    processData ( ) ; // Initiate the main data processing routine.
-} ) ;
+// Event handler for when data chunks are received
+process.stdin.on('data', function(dataChunk) {
+  // Append the incoming data chunk to the rawData string
+  rawData += dataChunk;
+});
+
+// Event handler for when the input stream ends
+process.stdin.on('end', function() {
+  // Split the accumulated rawData into an array of lines
+  rawData = rawData.split('\n');
+  // Invoke the primary data processing function
+  processInputData();
+});

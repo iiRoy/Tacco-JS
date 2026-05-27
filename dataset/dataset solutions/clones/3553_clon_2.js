@@ -1,101 +1,93 @@
-// This function processes the given input string to find a specific numerical difference.
-function processInput(rawData) {
-    // Split the raw data into separate lines based on the newline character.
-    rawData = rawData.split("\n");
+function processInput(inputString) {
+    // Split the input string into lines
+    inputString = inputString.split("\n");
 
-    // Extract the first line and split it by space to obtain initial numerical parameters.
-    var initialValues = rawData[0].split(" ");
+    // Parse the first line for N and X
+    var lineParts = inputString[0].split(" ");
+    var countElements = lineParts[0]; // N is not actually used in the logic, but parsed.
+    var targetValue = lineParts[1];
 
-    // The first parameter, `entryCount`, is the number of elements (N) from the input.
-    var entryCount = initialValues[0];
-    // The second parameter, `targetValue`, is a specific number (X) to be included in the list.
-    var targetValue = initialValues[1];
+    // Parse the second line for the array of numbers (xi)
+    var coordinateList = inputString[1].split(" ");
 
-    // Take the second line of the input and split it by space to form the initial list of numbers.
-    var numberList = rawData[1].split(" ");
+    // Add the target value to the list of coordinates
+    coordinateList.push(targetValue);
 
-    // Add the `targetValue` to the collection of numbers.
-    numberList.push(targetValue);
-    // Convert all string elements in the `numberList` array to their integer representations.
-    numberList = numberList.map(function(elementStr) {
-        return parseInt(elementStr, 10);
+    // Convert all elements in the coordinate list to integers
+    coordinateList = coordinateList.map(function(elementString) {
+        return parseInt(elementString, 10);
     });
 
-    // Sort the entire `numberList` in ascending numerical order.
-    numberList.sort(function(firstNum, secondNum) {
-        // Standard comparison function for numerical sorting:
-        // Returns 1 if firstNum should come after secondNum, -1 otherwise.
+    // Sort the coordinate list numerically in ascending order
+    coordinateList.sort(function(firstNum, secondNum) {
         if (firstNum > secondNum) {
-            return 1;
+            return 1; // firstNum comes after secondNum
         }
-        return -1;
+        return -1; // firstNum comes before secondNum
     });
 
-    // Check if the sorted list contains exactly two numbers.
-    // If so, their absolute difference is the direct result.
-    if (numberList.length === 2) {
-        console.log(numberList[1] - numberList[0]);
-        return; // Terminate execution as the result has been found.
+    // Handle a special case where there are only two coordinates
+    if (coordinateList.length === 2) {
+        console.log(coordinateList[1] - coordinateList[0]);
+        return; // Exit the function
     }
 
+    // Initialize an array to store differences between adjacent coordinates
+    var differenceSet = [];
 
-    // Initialize an array to store the differences between adjacent numbers.
-    var uniqueDifferences = [];
-
-    // Loop through the sorted `numberList` to calculate the difference between each adjacent pair.
-    for (var idx = 1; idx < numberList.length; idx++) {
-        uniqueDifferences.push(numberList[idx] - numberList[idx - 1]);
+    // Calculate differences between consecutive elements
+    for (var idx = 1; idx < coordinateList.length; idx++) {
+        differenceSet.push(coordinateList[idx] - coordinateList[idx - 1]);
     }
 
-    // Filter the `uniqueDifferences` array to keep only unique values.
-    // The filter ensures that only the first occurrence of each difference is retained.
-    uniqueDifferences = uniqueDifferences.filter(function (val, pos, currentArray) {
-        return currentArray.indexOf(val) === pos;
+    // Filter out duplicate differences to get only unique values
+    differenceSet = differenceSet.filter(function(currentDiff, idx, currentArray) {
+        return currentArray.indexOf(currentDiff) === idx;
     });
 
-    // If, after uniqueness filtering, only one difference remains, that's the final answer.
-    if (uniqueDifferences.length === 1) {
-        console.log(uniqueDifferences[0]);
-        return; // Exit the function.
+    // If only one unique difference remains, print it and exit
+    if (differenceSet.length === 1) {
+        console.log(differenceSet[0]);
+        return;
     } else {
-        // If there are multiple unique differences, we enter a loop to find their greatest common divisor (GCD) equivalent.
-        // This process repeatedly calculates differences of differences until a single value is derived.
+        // If multiple unique differences exist, apply an iterative GCD-like process
         while (true) {
-            // A temporary array to hold the differences calculated in the current iteration.
-            var tempDifferences = [];
+            var tempDifferences = []; // Temporary array for new differences
 
-            // Sort the current set of `uniqueDifferences` in ascending order.
-            uniqueDifferences = uniqueDifferences.sort(function(firstNum, secondNum) {
+            // Sort the current set of differences (redundant if already sorted and unique positive)
+            differenceSet = differenceSet.sort(function(firstNum, secondNum) {
                 if (firstNum > secondNum) {
                     return 1;
                 }
                 return -1;
-            })
+            });
 
-            // Calculate the differences between adjacent elements in the sorted `uniqueDifferences` array.
-            for (var idx = 1; idx < uniqueDifferences.length; idx++) {
-                tempDifferences.push(uniqueDifferences[idx] - uniqueDifferences[idx - 1]);
+            // Calculate differences between adjacent elements in the current difference set
+            for (var idx = 1; idx < differenceSet.length; idx++) {
+                tempDifferences.push(differenceSet[idx] - differenceSet[idx - 1]);
             }
 
-            // Filter `tempDifferences` to ensure only unique values are kept for the next iteration.
-            tempDifferences = tempDifferences.filter(function (val, pos, currentArray) {
-                return currentArray.indexOf(val) === pos;
+            // Filter out duplicate differences from the temporary array
+            tempDifferences = tempDifferences.filter(function(currentDiff, idx, currentArray) {
+                return currentArray.indexOf(currentDiff) === idx;
             });
-            
-            // Update the `uniqueDifferences` array with the newly calculated unique differences.
-            uniqueDifferences = tempDifferences;
-            // If only one unique difference remains after this iteration, we have found our result.
-            if (uniqueDifferences.length === 1) {
-                break; // Exit the `while` loop.
-            } else{
-                // This line is redundant but kept to maintain the exact structural similarity of the original code.
-                uniqueDifferences = tempDifferences;
+
+            // Update the main difference set with the new unique differences
+            differenceSet = tempDifferences;
+
+            // If only one unique difference remains, break the loop
+            if (differenceSet.length === 1) {
+                break;
+            } else {
+                // This assignment is redundant as differenceSet = tempDifferences already occurred.
+                // Preserving for Type II clone rules.
+                differenceSet = tempDifferences;
             }
         }
-        // Output the final single unique difference, which represents the GCD-like value.
-        console.log(uniqueDifferences[0]);
+        // Print the final single unique difference
+        console.log(differenceSet[0]);
     }
 }
 
-// Read the entire content of standard input, decode it as UTF-8, and pass it to the processing function.
+// Read input from standard input and pass it to the main processing function
 processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

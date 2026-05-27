@@ -1,13 +1,11 @@
-const fileModule = require('fs');
-const collectedText = fileModule.readFileSync('/dev/stdin', 'utf8');
+const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+const contentLines = fileContent.split('\n');
 
-const contentSegments = collectedText.split('\n');
+const firstCollection = contentLines[1].split(' ');
+const secondCollection = contentLines[3].split(' ');
 
-const initialElements = contentSegments[1].split(' ');
-const checkElements = contentSegments[3].split(' ');
+const uniqueElements = new Set(firstCollection);
 
-const uniqueSourceItems = new Set(initialElements);
+const commonElementCount = secondCollection.filter(item => uniqueElements.has(item)).length;
 
-const matchedQuantity = checkElements.filter(candidate => uniqueSourceItems.has(candidate)).length;
-
-console.log(matchedQuantity);
+console.log(commonElementCount);

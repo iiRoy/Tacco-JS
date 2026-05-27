@@ -1,112 +1,96 @@
-'use strict' // Enforces strict parsing and error handling
+'use strict';
 
-/**
- * Recursively computes the maximum path length starting from a given node
- * within an acyclic graph. Utilizes memoization to avoid re-computation.
- * @param {number} currentNodeId - The identifier of the current node.
- * @param {Array<Array<number>>} adjacencyMap - The adjacency list representation of the graph.
- * @param {Object<string, number>} pathCache - A memoization table for path lengths.
- * @returns {number} The maximum path length from the current node.
- */
-function computeLongestPath ( currentNodeId, adjacencyMap, pathCache ) {
-  // If the result for this node is already cached, return it.
-  if ( pathCache[currentNodeId.toString()] ) {
-    return pathCache[currentNodeId.toString()] ;
+// This function performs a Depth-First Search to find the longest path
+// starting from a given node in a directed acyclic graph.
+function traverseGraph(currentNode, adjacencyMap, cacheResults) {
+  // Check if the result for the current node is already computed and cached.
+  if (cacheResults[currentNode.toString()]) {
+    return cacheResults[currentNode.toString()];
   }
 
-  // If the current node has no outgoing edges, its path length is 0.
-  if ( !adjacencyMap[currentNodeId].length ) {
-    return 0 ;
+  // If the current node has no outgoing edges, the path length from it is 0.
+  if (!adjacencyMap[currentNode].length) {
+    return 0;
   }
 
-  let maxLength = 0 ; // Initialize maximum path length found so far from this node.
+  // Initialize the maximum path length found from this node.
+  let longestPath = 0;
 
-  // Iterate over all direct neighbors of the current node.
-  for ( let idx = 0 ; idx < adjacencyMap[currentNodeId].length ; idx++ ) {
-    // Recursively compute the path length from the neighbor and update maxLength.
-    maxLength = Math.max( maxLength, 1 + computeLongestPath( adjacencyMap[currentNodeId][idx], adjacencyMap, pathCache ) ) ;
+  // Iterate through all neighbors of the current node.
+  for (let idx = 0; idx < adjacencyMap[currentNode].length; idx++) {
+    // Recursively call DFS for each neighbor and update the maximum path.
+    // Add 1 to account for the edge connecting the current node to its neighbor.
+    longestPath = Math.max(longestPath, 1 + traverseGraph(adjacencyMap[currentNode][idx], adjacencyMap, cacheResults));
   }
 
-  // Store the computed maximum path length in the cache before returning.
-  pathCache[currentNodeId.toString()] = maxLength ;
-  return maxLength ;
+  // Cache the computed maximum path length for the current node.
+  cacheResults[currentNode.toString()] = longestPath;
+  return longestPath;
 }
 
-/**
- * Builds an adjacency list and calculates in-degrees for all nodes
- * based on the provided node count and edge connections.
- * @param {number} nodeCount - The total number of nodes in the graph.
- * @param {Array<Array<number>>} connectionPairs - An array of [from, to] edge pairs.
- * @returns {{graphMap: Array<Array<number>>, entryDegrees: Array<number>}} An object containing the adjacency list and in-degree counts.
- */
-function buildAdjacencyStructure( nodeCount, connectionPairs ) {
-  // Initialize adjacency list: an array of arrays, one for each node (1-indexed).
-  let adjacencies = new Array( nodeCount + 1 ).fill(0).map( e => [] ) ;
-  // Initialize in-degree counts for each node (1-indexed).
-  let inDegreeCounts = new Array( nodeCount + 1 ).fill( 0 ) ;
+// This utility function constructs an adjacency list representation of the graph
+// and calculates the in-degree for each node.
+function buildGraphData(nodeCount, connections) {
+  // Initialize an adjacency list where each node has an empty array for its neighbors.
+  // The size is nodeCount + 1 to accommodate 1-indexed nodes.
+  const graphStructure = new Array(nodeCount + 1).fill(0).map(entry => []);
+  // Initialize an array to store the in-degree (number of incoming edges) for each node.
+  const inDegreeCounts = new Array(nodeCount + 1).fill(0);
 
   // Process each edge to populate the adjacency list and in-degree counts.
-  for ( let edgeIndex = 0 ; edgeIndex < connectionPairs.length ; edgeIndex++ ) {
-    const sourceNode = connectionPairs[edgeIndex][0] ;
-    const destinationNode = connectionPairs[edgeIndex][1] ;
-
-    adjacencies[sourceNode].push( destinationNode ) ;
-    inDegreeCounts[destinationNode]++ ;
+  for (let edgeIndex = 0; edgeIndex < connections.length; edgeIndex++) {
+    const sourceNode = connections[edgeIndex][0];
+    const destinationNode = connections[edgeIndex][1];
+    // Add the destination node to the source node's adjacency list.
+    graphStructure[sourceNode].push(destinationNode);
+    // Increment the in-degree count for the destination node.
+    inDegreeCounts[destinationNode]++;
   }
 
-  // Return the constructed graph components.
+  // Return an object containing both the adjacency list and in-degree counts.
   return {
-    graphMap: adjacencies,
-    entryDegrees: inDegreeCounts
-  } ;
+    list: graphStructure, // Property name 'list' must be preserved for Type II
+    incoming: inDegreeCounts // Property name 'incoming' must be preserved for Type II
+  };
 }
 
-/**
- * Determines the overall longest path in a directed acyclic graph (DAG)
- * by starting DFS from all nodes with an in-degree of zero.
- * @param {number} totalNodes - The total number of nodes in the graph.
- * @param {Array<Array<number>>} connections - An array of [from, to] edge pairs.
- * @returns {number} The maximum path length found in the entire graph.
- */
-function determineOverallLongestPath( totalNodes, connections ) {
-  // Build the graph's adjacency structure and in-degree information.
-  const graphData = buildAdjacencyStructure( totalNodes, connections ) ;
-  const nodeGraph = graphData.graphMap ;
-  const entryPoints = graphData.entryDegrees ;
+// Main function to solve the problem: find the longest path in the graph.
+function findLongestPath(totalNodes, graphEdges) {
+  // Build the graph's adjacency list and in-degree information.
+  const graphInfo = buildGraphData(totalNodes, graphEdges);
+  const adjacencies = graphInfo.list;
+  const entryDegrees = graphInfo.incoming;
 
-  let globalMaxPath = 0 ; // Stores the maximum path length across all possible starting points.
+  // Initialize the overall maximum path length found across all starting nodes.
+  let overallMaxLen = 0;
 
-  // Iterate through all possible nodes to find those with no incoming edges.
-  for ( let nodeIter = 1 ; nodeIter <= entryPoints.length ; nodeIter++ ) {
-    // If a node has an in-degree of 0, it's a potential starting point for a path.
-    if ( entryPoints[nodeIter] === 0 ) {
-      let currentPathMemo = {} ; // A fresh memoization table for each top-level DFS call.
-      // Compute the longest path starting from this entry point and update the overall maximum.
-      globalMaxPath = Math.max( globalMaxPath, computeLongestPath( nodeIter, nodeGraph, currentPathMemo ) ) ;
+  // Iterate through all possible nodes (1-indexed).
+  for (let nodeIdentifier = 1; nodeIdentifier <= entryDegrees.length; nodeIdentifier++) {
+    // If a node has an in-degree of 0, it means it's a potential starting point for a path.
+    if (entryDegrees[nodeIdentifier] === 0) {
+      // Initialize a new memoization cache for each DFS traversal starting from a new root.
+      const pathCache = {};
+      // Perform DFS from this root and update the overall maximum length.
+      overallMaxLen = Math.max(overallMaxLen, traverseGraph(nodeIdentifier, adjacencies, pathCache));
     }
   }
-  return globalMaxPath ; // Return the grand maximum path length.
+  return overallMaxLen;
 }
 
-/**
- * Main entry point for the program. Reads input, processes it, and prints the result.
- * @param {string} rawData - The raw input string containing graph data.
- * @returns {number} The final computed answer.
- */
-function executeProgram( rawData ) {
-  const inputLines = rawData.split( '\n' ) ; // Split input into individual lines.
+// Entry point function to handle input parsing and call the solver.
+function processInput(rawData) {
+  // Split the input string into individual lines.
+  const inputLines = rawData.split("\n");
+  // Parse the first line to get the number of nodes and edges (though only nodes are used here).
+  const nodeEdgeCounts = inputLines[0].split(' ').map(val => parseInt(val, 10));
+  const numNodes = nodeEdgeCounts[0];
+  // Parse the remaining lines to get the list of edges.
+  const edgeList = inputLines.slice(1).map(lineStr => lineStr.split(' ').map(elementStr => parseInt(elementStr, 10)));
 
-  // Parse the first line for node and edge counts.
-  const nodeEdgeCounts = inputLines[0].split( ' ' ).map( val => parseInt( val, 10 ) ) ;
-  const numNodes = nodeEdgeCounts[0] ;
-
-  // Parse subsequent lines to get the list of edges.
-  const edgeList = inputLines.slice( 1 ).map( lineStr => lineStr.split( ' ' ).map( element => parseInt( element, 10 ) ) ) ;
-
-  // Solve the problem using the parsed data.
-  const finalResult = determineOverallLongestPath( numNodes, edgeList ) ;
-  return finalResult ; // Output the computed answer.
+  // Call the main solver function.
+  const finalAnswer = findLongestPath(numNodes, edgeList);
+  return finalAnswer;
 }
 
-// Read input from stdin and execute the main program function.
-executeProgram( require('fs').readFileSync('/dev/stdin', 'utf8') ) ;
+// Read input from stdin and pass it to the main processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

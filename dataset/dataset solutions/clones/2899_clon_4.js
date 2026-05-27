@@ -1,40 +1,90 @@
 "use strict";
 
+function I(sourceText, defaultConverter = Number) {
+    this._contentBuffer = sourceText;
+    this._currentPosition = 0;
+    this._defaultTransform = defaultConverter;
+}
+
+I.prototype.a = function(customConverter) {
+    if (this._currentPosition >= this._contentBuffer.length) {
+        return undefined;
+    }
+
+    let spaceDelimiter = this._contentBuffer.indexOf(' ', this._currentPosition);
+    let lineDelimiter = this._contentBuffer.indexOf('\n', this._currentPosition);
+
+    let effectiveDelimiter;
+    if (spaceDelimiter === -1 && lineDelimiter === -1) {
+        effectiveDelimiter = this._contentBuffer.length;
+    } else if (spaceDelimiter === -1) {
+        effectiveDelimiter = lineDelimiter;
+    } else if (lineDelimiter === -1) {
+        effectiveDelimiter = spaceDelimiter;
+    } else {
+        effectiveDelimiter = Math.min(spaceDelimiter, lineDelimiter);
+    }
+
+    const tokenString = this._contentBuffer.substring(this._currentPosition, effectiveDelimiter).trim();
+    this._currentPosition = effectiveDelimiter + 1;
+
+    while (this._currentPosition < this._contentBuffer.length &&
+           (this._contentBuffer[this._currentPosition] === ' ' || this._contentBuffer[this._currentPosition] === '\n')) {
+        this._currentPosition++;
+    }
+
+    return (customConverter || this._defaultTransform)(tokenString);
+};
+
+I.prototype.l = function(customConverter) {
+    if (this._currentPosition >= this._contentBuffer.length) {
+        return undefined;
+    }
+
+    let lineDelimiter = this._contentBuffer.indexOf('\n', this._currentPosition);
+    let lineContent;
+
+    if (lineDelimiter === -1) {
+        lineContent = this._contentBuffer.substring(this._currentPosition);
+        this._currentPosition = this._contentBuffer.length;
+    } else {
+        lineContent = this._contentBuffer.substring(this._currentPosition, lineDelimiter);
+        this._currentPosition = lineDelimiter + 1;
+    }
+
+    while (this._currentPosition < this._contentBuffer.length &&
+           (this._contentBuffer[this._currentPosition] === ' ' || this._contentBuffer[this._currentPosition] === '\n')) {
+        this._currentPosition++;
+    }
+
+    return lineContent.trim().split(" ").map(customConverter || this._defaultTransform);
+};
+
+module.exports = I;
+
 const primeDivisor = 1000003;
 
-const generateNumericSource = (rawData) => {
-    const allValues = rawData.split(/\s+/).filter(Boolean).map(Number);
-    let currentPointer = 0;
-    return () => allValues[currentPointer++];
-};
+function processCalculations(sourceData) {
+  const dataParser = new I(sourceData);
 
-const computeModularProduct = (startValue, incrementStep, totalCount, modulus) => {
-    if (totalCount >= modulus) {
-        return 0;
+  const totalOperations = dataParser.a();
+  
+  Array.from({ length: totalOperations }).forEach(() => {
+    const baseValue = dataParser.a();
+    const incrementStep = dataParser.a();
+    const termCount = dataParser.a();
+
+    if (termCount >= primeDivisor) {
+      console.log(0);
+    } else {
+      const finalProduct = Array.from({ length: termCount }).reduce((currentResult, _, index) => {
+        const currentTerm = baseValue + index * incrementStep;
+        return (currentResult * currentTerm) % primeDivisor;
+      }, 1);
+
+      console.log(finalProduct);
     }
+  });
+}
 
-    const sequenceElements = Array.from({ length: totalCount }, (_, index) => {
-        return startValue + index * incrementStep;
-    });
-
-    return sequenceElements.reduce((currentProduct, element) => {
-        return (currentProduct * (element % modulus)) % modulus;
-    }, 1);
-};
-
-const executeComputation = (sourceInput) => {
-    const obtainNextValue = generateNumericSource(sourceInput);
-
-    const iterationQuantity = obtainNextValue();
-
-    for (let currentIteration = 0; currentIteration < iterationQuantity; currentIteration++) {
-        const baseVal = obtainNextValue();
-        const differenceVal = obtainNextValue();
-        const quantityVal = obtainNextValue();
-
-        const computedResult = computeModularProduct(baseVal, differenceVal, quantityVal, primeDivisor);
-        console.log(computedResult);
-    }
-};
-
-executeComputation(require("fs").readFileSync("/dev/stdin", "utf8"));
+processCalculations(require("fs").readFileSync("/dev/stdin", "utf8"));

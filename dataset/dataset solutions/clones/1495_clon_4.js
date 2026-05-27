@@ -1,43 +1,47 @@
-const interpretCoordinates = (entryText) => {
-  const numericalParts = entryText.split(' ').map(Number);
-  return { coordX: numericalParts[0], coordY: numericalParts[1] };
-};
+function processInputAndExecute(rawInputContent) {
+  const processedLines = rawInputContent.trim().split("\n");
+  const totalDataPoints = parseInt(processedLines[0].split(" ")[0], 10);
 
-const assessDominance = (firstPoint, secondPoint) => {
-  return (firstPoint.coordX < secondPoint.coordX && firstPoint.coordY < secondPoint.coordY) ||
-         (secondPoint.coordX < firstPoint.coordX && secondPoint.coordY < secondPoint.coordY);
-};
+  const coordinateObjects = [];
+  for (let dataIndex = 1; dataIndex <= totalDataPoints; dataIndex++) {
+    const coordinateParts = processedLines[dataIndex].split(" ");
+    coordinateObjects.push({
+      xValue: parseInt(coordinateParts[0], 10),
+      yValue: parseInt(coordinateParts[1], 10),
+    });
+  }
 
-function processDataset(fullContent) {
-  const contentLines = fullContent.split('\n');
-  const countOfEntries = parseInt(contentLines[0], 10);
-  const pointSet = contentLines.slice(1, countOfEntries + 1).map(interpretCoordinates);
+  const calculateRelatedCount = (targetPointIndex, allCoordinates) => {
+    const currentReferencePoint = allCoordinates[targetPointIndex];
+    const { xValue: refX, yValue: refY } = currentReferencePoint;
 
-  pointSet.forEach((mainPoint, mainIndex) => {
-    console.log("##########");
+    const collectedRelatedPoints = allCoordinates.reduce(
+      (accumulator, iteratedPoint, iteratedPointIndex) => {
+        if (targetPointIndex === iteratedPointIndex) {
+          return accumulator;
+        }
+        const { xValue: iterX, yValue: iterY } = iteratedPoint;
 
-    const determineRelatedCount = (currentExaminationIndex, runningTally) => {
-      if (currentExaminationIndex >= pointSet.length) {
-        return runningTally;
-      }
+        if ((refX < iterX && refY < iterY) || (iterX < refX && iterY < refY)) {
+          accumulator.push(iteratedPoint);
+        }
+        return accumulator;
+      },
+      []
+    );
 
-      const comparisonPoint = pointSet[currentExaminationIndex];
+    collectedRelatedPoints.forEach((p) => console.log(p.xValue, p.yValue));
 
-      if (mainIndex === currentExaminationIndex) {
-        return determineRelatedCount(currentExaminationIndex + 1, runningTally);
-      }
+    return collectedRelatedPoints.length + 1;
+  };
 
-      if (assessDominance(mainPoint, comparisonPoint)) {
-        console.log(comparisonPoint.coordX, comparisonPoint.coordY);
-        return determineRelatedCount(currentExaminationIndex + 1, runningTally + 1);
-      } else {
-        return determineRelatedCount(currentExaminationIndex + 1, runningTally);
-      }
-    };
-
-    const finalResult = determineRelatedCount(0, 1);
-    console.log(finalResult);
-  });
+  Array.from({ length: totalDataPoints }, (_, currentIdx) => currentIdx).forEach(
+    (pointIterationIndex) => {
+      console.log("xxxxxxx");
+      const finalCount = calculateRelatedCount(pointIterationIndex, coordinateObjects);
+      console.log(finalCount);
+    }
+  );
 }
 
-processDataset(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInputAndExecute(require("fs").readFileSync("/dev/stdin", "utf8"));

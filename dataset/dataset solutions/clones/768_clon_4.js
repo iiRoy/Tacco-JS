@@ -1,37 +1,14 @@
-const rawPayload = require('node:fs').readFileSync('/dev/stdin', 'utf8');
+const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+const dataSegments = fileContent.trim().split('\n');
+const [itemCount, budgetLimit] = dataSegments[0].split(' ').map(Number);
+const itemCosts = dataSegments[1].split(' ').map(Number);
 
-const decodeSource = (payloadString) => {
-    const segments = payloadString.trim().split('\n');
-    const [metadataSegment, numericValuesSegment] = segments;
+const possiblePairSums = itemCosts.flatMap((costA, indexA) =>
+    itemCosts.slice(indexA + 1).map(costB => costA + costB)
+);
 
-    const [itemQuantityString, upperBoundString] = metadataSegment.split(' ');
-    const itemQuantity = Number(itemQuantityString);
-    const upperBound = Number(upperBoundString);
+const affordableSums = possiblePairSums.filter(currentSum => currentSum <= budgetLimit);
 
-    const elementCosts = numericValuesSegment.split(' ').map(Number);
+const bestDeal = Math.max(0, ...affordableSums);
 
-    return { itemQuantity, upperBound, elementCosts };
-};
-
-const calculateOptimalAggregate = (processedContent) => {
-    const { itemQuantity, upperBound, elementCosts } = processedContent;
-
-    const ultimateResult = elementCosts.reduce((previousBest, componentOneCost, componentOneIndex) => {
-        return elementCosts.reduce((currentMaximumSum, componentTwoCost, componentTwoIndex) => {
-            if (componentOneIndex < componentTwoIndex) {
-                const cumulativeCharge = componentOneCost + componentTwoCost;
-                if (cumulativeCharge <= upperBound && cumulativeCharge > currentMaximumSum) {
-                    return cumulativeCharge;
-                }
-            }
-            return currentMaximumSum;
-        }, previousBest);
-    }, 0);
-
-    return ultimateResult;
-};
-
-const processedContent = decodeSource(rawPayload);
-const displayValue = calculateOptimalAggregate(processedContent);
-
-displayValue === 0 ? console.log("NONE") : console.log(displayValue);
+bestDeal > 0 ? console.log(bestDeal) : console.log("NONE");

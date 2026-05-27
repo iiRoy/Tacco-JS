@@ -1,49 +1,50 @@
-function ProcessData(dataString) {
-  const [firstLineData, secondLineData] = dataString.split('\n');
-  const [upperLimit, targetSlots] = firstLineData.split(' ').map(Number);
-  const sourceNumbers = secondLineData.split(' ').map(Number);
+function Main(input) {
+  const rawInputLines = input.split("\n");
 
-  const combinedEntries = Array.from({ length: upperLimit }).flatMap((_, idxA) =>
-    Array.from({ length: idxA + 1 }).map((_, idxB) => ({
-      worth: sourceNumbers[idxA] + sourceNumbers[idxB],
-      solo: idxA === idxB,
+  const parameterLine = rawInputLines[0].split(" ");
+  const countA = parseInt(parameterLine[0], 10);
+  const countB = parseInt(parameterLine[1], 10);
+
+  const powerValues = rawInputLines[1].split(" ").map(str => parseInt(str, 10));
+
+  const scoreDetails = Array.from({ length: countA }, (_, outerIdx) =>
+    Array.from({ length: outerIdx + 1 }, (_, innerIdx) => ({
+      val: powerValues[outerIdx] + powerValues[innerIdx],
+      isDiag: (outerIdx === innerIdx)
     }))
-  );
+  ).flat();
 
-  combinedEntries.sort((entryA, entryB) => entryB.worth - entryA.worth);
+  let accumulatedSum = 0;
+  let itemsSelected = 0;
+  const consumedIndices = new Set();
 
-  function processSelections(
-    remainingItems,
-    slotsRemaining,
-    currentTotal = 0,
-    currentIndex = 0
-  ) {
-    if (slotsRemaining <= 0 || currentIndex >= remainingItems.length) {
-      return currentTotal;
+  while (itemsSelected < countB) {
+    let highestValueFound = -Infinity;
+    let highestValuePosition = -1;
+
+    for (let itemIdx = 0; itemIdx < scoreDetails.length; itemIdx++) {
+      if (!consumedIndices.has(itemIdx)) {
+        if (scoreDetails[itemIdx].val > highestValueFound) {
+          highestValueFound = scoreDetails[itemIdx].val;
+          highestValuePosition = itemIdx;
+        }
+      }
     }
 
-    const currentItem = remainingItems[currentIndex];
-    const { worth, solo } = currentItem;
+    const currentItem = scoreDetails[highestValuePosition];
 
-    if (solo || slotsRemaining === 1) {
-      return processSelections(
-        remainingItems,
-        slotsRemaining - 1,
-        currentTotal + worth,
-        currentIndex + 1
-      );
+    if (currentItem.isDiag || (itemsSelected + 1 === countB)) {
+      accumulatedSum += currentItem.val;
+      itemsSelected++;
     } else {
-      return processSelections(
-        remainingItems,
-        slotsRemaining - 2,
-        currentTotal + (2 * worth),
-        currentIndex + 1
-      );
+      accumulatedSum += 2 * currentItem.val;
+      itemsSelected += 2;
     }
+
+    consumedIndices.add(highestValuePosition);
   }
 
-  const finalOutcome = processSelections(combinedEntries, targetSlots);
-
-  console.log(finalOutcome);
+  console.log(accumulatedSum);
 }
-ProcessData(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

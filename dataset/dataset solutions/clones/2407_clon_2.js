@@ -1,135 +1,159 @@
-"use strict";
+"use strict"; // Enforce strict mode for cleaner code and better error handling.
 
-// This module provides utilities for parsing various data formats from a string input.
-var DATA_PARSER = (function() {
-
+// This Immediately Invoked Function Expression (IIFE) creates and returns a factory function
+// for an input parsing utility. It encapsulates the parsing logic.
+var INPUT_PARSER = (function() {
     /**
-     * Factory function to create an InputProcessor instance.
-     * @param {string} rawInputContent - The entire input string.
-     * @returns {InputProcessor} A new InputProcessor object.
+     * Factory function to instantiate a new InputReader object.
+     * @param {string} rawInputContent - The complete raw string content read from an input source (e.g., stdin).
+     * @returns {InputReader} A new instance of the InputReader.
      */
     function createParser(rawInputContent) {
-        return new InputProcessor(rawInputContent);
+        return new InputReader(rawInputContent);
     }
 
     /**
-     * Constructor for InputProcessor. Manages reading lines and tokens.
-     * @param {string} entireStringData - The complete string data to be processed.
+     * Constructor for the InputReader class.
+     * This class provides methods to sequentially read different formats of data from the input.
+     * @param {string} initialText - The string content that needs to be parsed, typically from a file or stdin.
      */
-    function InputProcessor(entireStringData) {
-        this._sourceLines = entireStringData.trim().split("\n"); // Store lines as an array of strings
-        this._currentLineIndex = 0;                               // Current line being processed
+    function InputReader(initialText) {
+        // Internal storage for the input lines. Each line is initially a string.
+        // `trim()` removes leading/trailing whitespace, `split('\n')` breaks it into an array of lines.
+        this._sourceLines = initialText.trim().split("\n");
+        // Keeps track of the current line being processed.
+        this._currentLineIndex = 0;
     }
 
     /**
-     * Reads and returns the next token from the current line. If the current line is exhausted,
-     * it moves to the next line. Tokens are space-separated.
-     * @param {boolean} retrieveAsString - If true, returns the token as a string; otherwise, converts to a number.
-     * @returns {string|number} The next token.
+     * Reads the next single value from the current line. Values are assumed to be space-separated.
+     * If the current line is exhausted, it automatically advances to the next line.
+     * @param {boolean} [returnAsString=false] - If true, the value is returned as a string; otherwise, it's converted to a number.
+     * @returns {string|number} The parsed value.
      */
-    InputProcessor.prototype.readNextToken = function(retrieveAsString) {
-        let currentSourceLines = this._sourceLines;
-        let activeLineIdx = this._currentLineIndex;
-        let retrievedToken;
+    InputReader.prototype.readNextValue = function(returnAsString) {
+        var allLines = this._sourceLines;
+        var currentLinePos = this._currentLineIndex;
+        var obtainedValue;
 
-        // If the current line hasn't been split into tokens yet, do so and reverse it
-        // so that pop() efficiently gets tokens from the "front" of the original line.
-        if (typeof currentSourceLines[activeLineIdx] === "string") {
-            currentSourceLines[activeLineIdx] = currentSourceLines[activeLineIdx].split(" ").reverse();
+        // Check if the current line is still a single string (meaning it hasn't been split into values yet).
+        if (typeof allLines[currentLinePos] === "string") {
+            // Split the current line by spaces and reverse the array.
+            // Reversing allows `pop()` to efficiently retrieve elements from the "front" of the line.
+            allLines[currentLinePos] = allLines[currentLinePos].split(" ").reverse();
         }
 
-        retrievedToken = currentSourceLines[activeLineIdx].pop(); // Get the last element (which was the first token)
+        // Extract the last element (which was originally the first) from the current line's array of values.
+        obtainedValue = allLines[currentLinePos].pop();
 
-        // If the current line is now empty, advance to the next line for future reads.
-        if (!currentSourceLines[activeLineIdx].length) {
+        // If the current line's array of values is now empty, increment the line index to move to the next line.
+        if (!allLines[currentLinePos].length) {
             this._currentLineIndex++;
         }
 
-        return retrieveAsString ? retrievedToken : Number(retrievedToken);
+        // Return the value either as a string or converted to a number using the unary plus operator.
+        return returnAsString ? obtainedValue : +obtainedValue;
     };
 
     /**
-     * Reads all space-separated tokens from the current line and advances to the next line.
-     * @param {boolean} asTextForm - If true, returns tokens as strings; otherwise, converts to numbers.
-     * @returns {Array<string|number>} An array of tokens from the line.
+     * Reads an entire line, splits it by spaces, and returns an array of values.
+     * The line index is advanced after reading.
+     * @param {boolean} [returnAsString=false] - If true, values are returned as strings; otherwise, as numbers.
+     * @returns {Array<string|number>} An array containing all values from the read line.
      */
-    InputProcessor.prototype.readLineTokens = function(asTextForm) {
-        let lineContents = this._sourceLines[this._currentLineIndex++];
-        let tokenizedLine = lineContents.split(" ");
-        return asTextForm ? tokenizedLine : tokenizedLine.map(tokenItem => Number(tokenItem));
+    InputReader.prototype.readLineValues = function(returnAsString) {
+        // Get the current line, split it by spaces, and then immediately advance the line index.
+        var lineSegments = this._sourceLines[this._currentLineIndex++].split(" ");
+        // If `returnAsString` is false, map each segment to its numeric representation.
+        return returnAsString ? lineSegments : lineSegments.map(segment => +segment);
     };
 
     /**
-     * Reads a specified number of lines as a matrix (array of arrays), where each line is split into tokens.
-     * Advances the current line index by 'numRowsToRead'.
-     * @param {number} numRowsToRead - The number of lines to read.
-     * @param {boolean} keepStrings - If true, matrix elements remain strings; otherwise, converted to numbers.
+     * Reads a specified number of lines (`numLines`) as a matrix (2D array).
+     * Each line is split into space-separated values. The line index is advanced by `numLines`.
+     * @param {number} numLines - The count of lines to read for the matrix.
+     * @param {boolean} [returnAsString=false] - If true, all values in the matrix are strings; otherwise, numbers.
      * @returns {Array<Array<string|number>>} A 2D array representing the matrix.
      */
-    InputProcessor.prototype.readMatrix = function(numRowsToRead, keepStrings) {
-        let matrixSlice = this._sourceLines.slice(this._currentLineIndex, this._currentLineIndex += numRowsToRead);
-        let processedMatrix = matrixSlice.map(lineStr => lineStr.split(" "));
-
-        return keepStrings ? processedMatrix : processedMatrix.map(rowArr => rowArr.map(cellVal => Number(cellVal)));
+    InputReader.prototype.readMatrix = function(numLines, returnAsString) {
+        // Extract a slice of lines from the source, then advance the line index.
+        // Each extracted line is then split into its individual parts.
+        var resultingMatrix = this._sourceLines.slice(this._currentLineIndex, this._currentLineIndex += numLines)
+                                            .map(lineContent => lineContent.split(" "));
+        // If `returnAsString` is false, iterate through rows and then through values in each row to convert them to numbers.
+        return returnAsString ? resultingMatrix : resultingMatrix.map(row => row.map(value => +value));
     };
 
     /**
-     * Reads a specified number of lines and returns them as an array.
-     * Advances the current line index by 'numLinesToExtract'.
-     * @param {number} numLinesToExtract - The number of lines to read.
-     * @param {boolean} preserveText - If true, lines remain strings; otherwise, converted to numbers.
-     * @returns {Array<string|number>} An array of lines.
+     * Reads a specified number of lines (`numLines`), treating each line as a single value.
+     * The line index is advanced by `numLines`.
+     * @param {number} numLines - The count of lines to read.
+     * @param {boolean} [returnAsString=false] - If true, lines are returned as strings; otherwise, as numbers.
+     * @returns {Array<string|number>} An array of values, where each value corresponds to a line.
      */
-    InputProcessor.prototype.readRows = function(numLinesToExtract, preserveText) {
-        let extractedLines = this._sourceLines.slice(this._currentLineIndex, this._currentLineIndex += numLinesToExtract);
-        return preserveText ? extractedLines : extractedLines.map(lineValue => Number(lineValue));
+    InputReader.prototype.readLines = function(numLines, returnAsString) {
+        // Extract a slice of lines from the source, then advance the line index.
+        var resultingLines = this._sourceLines.slice(this._currentLineIndex, this._currentLineIndex += numLines);
+        // If `returnAsString` is false, map each line to its numeric representation.
+        return returnAsString ? resultingLines : resultingLines.map(lineContent => +lineContent);
     };
 
-    return createParser;
+    return createParser; // The IIFE returns the factory function `createParser`.
 })();
 
-// Initialize an input parser by reading content from standard input.
-var inputReader = DATA_PARSER(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Initialize the input data parser by reading the entire content of standard input.
+var inputData = INPUT_PARSER(require("fs").readFileSync("/dev/stdin", "utf8"));
 
 /**
- * Creates a multi-dimensional array initialized with a default value.
- * The dimensions are provided as subsequent arguments.
- * @param {*} initialValue - The value to fill the array with.
- * @param {...number} dimensions - The sizes of each dimension.
- * @returns {Array} The multi-dimensional array.
+ * Creates a multi-dimensional array initialized with a specific value.
+ * The dimensions of the array are provided as subsequent arguments.
+ * For example, `createMultiDimArray(0, 2, 3)` creates a 2x3 array filled with zeros.
+ * @param {*} initialValue - The value to fill all elements of the array with.
+ * @param {...number} dimensions - A variable number of arguments specifying the size of each dimension.
+ * @returns {Array} The newly created multi-dimensional array.
  */
 function createMultiDimArray(initialValue) {
-    let allArguments = arguments;
-    let dimensionCount = allArguments.length;
-    let arrayConstructionString = "Array(allArguments[" + --dimensionCount + "]).fill(0).map(element => {return " + initialValue + ";})";
+    var functionArguments = arguments; // Access all arguments passed to the function.
+    var argumentCount = functionArguments.length; // Get the total number of arguments.
+    // Start building the string for array creation from the innermost dimension.
+    // `Array(argsList[--argCount])` gets the last dimension.
+    var arrayCreationString = "Array(functionArguments[" + --argumentCount + "]).fill(0).map(x=>{return " + initialValue + ";})";
 
-    while (--dimensionCount) {
-        arrayConstructionString = "Array(allArguments[" + dimensionCount + "]).fill(0).map(element => " + arrayConstructionString + ")";
+    // Loop backwards through the remaining dimensions to build the nested array structure string.
+    while (--argumentCount) {
+        arrayCreationString = "Array(functionArguments[" + argumentCount + "]).fill(0).map(x=>" + arrayCreationString + ")";
     }
-    return eval(arrayConstructionString);
+    // Use `eval` to execute the dynamically constructed string, creating the multi-dimensional array.
+    return eval(arrayCreationString);
 }
 
-// Execute the main logic and print the result to the console.
-console.log(calculateResult());
+// Print the result of the main calculation function to the console.
+console.log(calculateScore());
 
 /**
- * Main function to perform calculations based on input values.
- * @returns {number} The final computed score.
+ * This is the primary function that orchestrates the problem's logic.
+ * It reads two input values and computes a total score based on specific conditions.
+ * @returns {number} The final calculated score.
  */
-function calculateResult() {
-    let firstInputVal = inputReader.readNextToken();
-    let secondInputVal = inputReader.readNextToken();
-    let finalScore = 0;
+function calculateScore() {
+    // Read the first numeric input value using the input parser.
+    var firstInput = inputData.readNextValue();
+    // Read the second numeric input value.
+    var secondInput = inputData.readNextValue();
+    var totalScore = 0; // Initialize a variable to accumulate the score.
 
-    if (firstInputVal === 1) finalScore += 300000;
-    if (firstInputVal === 2) finalScore += 200000;
-    if (firstInputVal === 3) finalScore += 100000;
+    // Apply score based on the value of the first input.
+    if (firstInput === 1.0) totalScore += 300_000; // Add 300,000 if first input is 1.
+    if (firstInput === 2.0) totalScore += 200_000; // Add 200,000 if first input is 2.
+    if (firstInput === 3.0) totalScore += 100_000; // Add 100,000 if first input is 3.
 
-    if (secondInputVal === 1) finalScore += 300000;
-    if (secondInputVal === 2) finalScore += 200000;
-    if (secondInputVal === 3) finalScore += 100000;
+    // Apply score based on the value of the second input.
+    if (secondInput === 1.0) totalScore += 300_000; // Add 300,000 if second input is 1.
+    if (secondInput === 2.0) totalScore += 200_000; // Add 200,000 if second input is 2.
+    if (secondInput === 3.0) totalScore += 100_000; // Add 100,000 if second input is 3.
 
-    if (firstInputVal === 1 && secondInputVal === 1) finalScore += 400000;
+    // Apply a bonus score if both inputs are exactly 1.
+    if (firstInput === 1.0 && secondInput === 1.0) totalScore += 400_000; // Add 400,000 bonus.
 
-    return finalScore;
+    return totalScore; // Return the final computed score.
 }

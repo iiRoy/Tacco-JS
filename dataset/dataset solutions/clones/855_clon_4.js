@@ -1,33 +1,30 @@
-const displayOutcome = console.log;
-const retrieveSource = require("fs").readFileSync;
+print=console.log;
+ls=require("fs").readFileSync("/dev/stdin","utf-8").split("\n");ls.length--
 
-const rawSourceData = retrieveSource("/dev/stdin", "utf-8");
-const operationalLines = rawSourceData
-  .split("\n")
-  .slice(1) 
-  .filter(Boolean);
+(function (){
+    const initialCondition = { currentTally: 0, validPath: true };
 
-function traverseBalance(remainingOperations, presentValue) {
-  if (remainingOperations.length === 0) {
-    return true; 
-  }
+    const outcome = ls.slice(1).reduce((previousState, currentEntry) => {
+        if (!previousState.validPath) {
+            return previousState;
+        }
 
-  const [currentOperation, ...subsequentOperations] = remainingOperations;
-  const operationComponents = currentOperation.trim().split(" ");
-  const indicatorSymbol = operationComponents[0];
-  const numericAmount = parseInt(operationComponents[1], 10);
+        const components = currentEntry.split(" ");
+        const quantity = +components[1];
+        const indicator = currentEntry[0];
 
-  const calculatedValue = indicatorSymbol === "("
-    ? presentValue + numericAmount
-    : presentValue - numericAmount;
+        const delta = (indicator === '(') ? quantity : -quantity;
+        const nextTally = previousState.currentTally + delta;
 
-  if (calculatedValue < 0) {
-    return false; 
-  }
+        return {
+            currentTally: nextTally,
+            validPath: nextTally >= 0
+        };
+    }, initialCondition);
 
-  return traverseBalance(subsequentOperations, calculatedValue);
-}
-
-const finalValidation = traverseBalance(operationalLines, 0);
-
-displayOutcome(finalValidation ? "YES" : "NO");
+    if (outcome.validPath) {
+        print("YES");
+    } else {
+        print("NO");
+    }
+})();

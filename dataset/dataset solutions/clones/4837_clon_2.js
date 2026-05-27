@@ -1,36 +1,36 @@
 'use strict';
 
-/*
- * This module processes an input string to calculate a specific count.
- * The calculation involves iterating through a range and performing nested operations
- * based on divisibility and stepping.
- */
-const processInput = (dataString) => {
-  // Parse the input string into an array of numbers
-  const parsedNumbers = dataString.split(' ').map(val => Number(val));
+// This function processes a raw input string to compute a specific numerical result.
+const processInput = (rawData) => {
+  // First, the input string is split by spaces and each part is converted to a number.
+  const parsedValues = rawData.split(' ').map(currentVal => Number(currentVal));
 
-  // Extract key numerical parameters from the parsed array
-  const beginPoint = parsedNumbers[0]; // The starting value for the range
-  const finishPoint = parsedNumbers[1]; // The ending value for the range
-  const stepSize = parsedNumbers[2];     // The divisor and step increment value
+  // Extract the key numerical parameters from the processed array.
+  const startPoint = parsedValues[0]; // Represents the initial boundary for iteration.
+  const endPoint = parsedValues[1];   // Represents the final boundary for iteration.
+  const stepSize = parsedValues[2];   // Represents the increment value for certain operations.
 
-  let totalMatches = 0; // Initialize a counter for the occurrences
+  let totalCount = 0; // Initialize a variable to accumulate the final count.
 
-  // Outer loop: Iterate from the beginning to the end point
-  for (let currentNum = beginPoint; currentNum <= finishPoint; currentNum++) {
-    // Check if the current number is divisible by the step size
-    if (currentNum % stepSize === 0) {
-      // Inner loop: If divisible, start from currentNum and step by stepSize
-      // This loop effectively jumps 'currentNum' forward to 'innerNum'
-      for (let innerNum = currentNum; innerNum <= finishPoint; innerNum += stepSize) {
-        totalMatches++; // Increment the match counter
-        currentNum = innerNum; // Update the outer loop iterator to the inner loop's current value
+  // Begin an outer loop that iterates from the start point up to and including the end point.
+  for (let outerIndex = startPoint; outerIndex <= endPoint; outerIndex++) {
+    // Check if the current outer index is perfectly divisible by the third parsed value (stepSize).
+    if (outerIndex % parsedValues[2] === 0) {
+      // If the condition is met, initiate an inner loop.
+      // This inner loop also starts from the current outer index and goes up to the end point,
+      // incrementing by the defined step size.
+      for (let innerIndex = outerIndex; innerIndex <= endPoint; innerIndex += stepSize) {
+        totalCount++; // Increment the counter for each successful step in the inner loop.
+        outerIndex = innerIndex; // Crucially, update the outer loop's index to the inner loop's current index.
+                                  // This effectively "jumps" the outer loop forward.
       }
     }
   }
-  // Output the final calculated count to the console
-  console.log(totalMatches);
+
+  // After all iterations are complete, print the final accumulated count to the console.
+  console.log(totalCount);
 };
 
-// Execute the main processing function with data read from standard input
+// The program execution starts here by reading input from standard input.
+// The content of /dev/stdin is read as a UTF-8 string and passed to the processing function.
 processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

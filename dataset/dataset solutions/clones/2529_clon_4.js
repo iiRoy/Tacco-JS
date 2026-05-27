@@ -1,53 +1,55 @@
-const rawData = require('node:fs').readFileSync(0, 'utf8');
-const dataChunks = rawData.trim().split(/\s+/);
-const firstValue = Number(dataChunks[0]);
-const secondValue = Number(dataChunks[1]);
+const inputData = require('fs').readFileSync('/dev/stdin', 'utf8');
+const inputLines = inputData.split('\n');
+const numStrings = inputLines.shift().split(' ');
+const firstVal = parseInt(numStrings[0], 10);
+const secondVal = parseInt(numStrings[1], 10);
 
-const computeGreatestCommonMeasure = (numX, numY) => numY === 0 ? numX : computeGreatestCommonMeasure(numY, numX % numY);
+const obtainDivisors = (num) => {
+    if (num === 0) return [];
+    if (num === 1) return [1];
 
-const extractFactors = (subjectNumber) => {
-    if (subjectNumber <= 0) return [];
-    
-    const rootLimit = Math.floor(Math.sqrt(subjectNumber));
-    const candidateRange = Array.from({ length: rootLimit }, (_, index) => index + 1);
-
-    const resultingFactors = candidateRange.reduce((accumulatorFactors, currentCandidate) => {
-        if (subjectNumber % currentCandidate === 0) {
-            accumulatorFactors.push(currentCandidate);
-            if (currentCandidate * currentCandidate !== subjectNumber) {
-                accumulatorFactors.push(subjectNumber / currentCandidate);
+    const limit = Math.floor(Math.sqrt(num));
+    const initialDivisors = Array.from({ length: limit }, (_, idx) => idx + 1)
+        .reduce((accumulator, currentFactor) => {
+            if (num % currentFactor === 0) {
+                accumulator.push(currentFactor);
+                if (currentFactor * currentFactor !== num) {
+                    accumulator.push(num / currentFactor);
+                }
             }
+            return accumulator;
+        }, []);
+    return initialDivisors.sort((valA, valB) => valA - valB);
+};
+
+const isNumberPrime = (num) => {
+    if (num < 2) return false;
+    if (num === 2 || num === 3) return true;
+    if (num % 2 === 0 || num % 3 === 0) return false;
+
+    for (let k = 5; k * k <= num; k += 6) {
+        if (num % k === 0 || num % (k + 2) === 0) {
+            return false;
         }
-        return accumulatorFactors;
-    }, []);
-    
-    return resultingFactors.sort((valA, valB) => valA - valB);
-};
-
-const checkIfPrime = (potentialPrime) => {
-    if (potentialPrime < 2) return false;
-    if (potentialPrime === 2) return true;
-    if (potentialPrime % 2 === 0) return false;
-
-    const recursivePrimalityTest = (currentDivisor, upperBoundary) => {
-        if (currentDivisor > upperBoundary) return true;
-        if (potentialPrime % currentDivisor === 0) return false;
-        return recursivePrimalityTest(currentDivisor + 2, upperBoundary);
-    };
-
-    return recursivePrimalityTest(3, Math.floor(Math.sqrt(potentialPrime)));
-};
-
-const commonMeasure = computeGreatestCommonMeasure(firstValue, secondValue);
-const allFactorsOfCommonMeasure = extractFactors(commonMeasure);
-
-const primeFactorCount = allFactorsOfCommonMeasure.reduce((accumulator, currentFactor) => {
-    if (currentFactor > 1 && checkIfPrime(currentFactor)) {
-        return accumulator + 1;
     }
-    return accumulator;
-}, 0);
+    return true;
+};
 
-const finalResult = 1 + primeFactorCount;
+const computeGCD = (val1, val2) => {
+    if (val2 === 0) {
+        return val1;
+    }
+    return computeGCD(val2, val1 % val2);
+};
 
-console.log(finalResult);
+const greatestCommonDivisorValue = computeGCD(firstVal, secondVal);
+const allCommonDivisors = obtainDivisors(greatestCommonDivisorValue);
+
+const resultCount = allCommonDivisors.reduce((accumulator, currentDivisor) => {
+    if (currentDivisor === 1) {
+        return accumulator;
+    }
+    return isNumberPrime(currentDivisor) ? accumulator + 1 : accumulator;
+}, 1);
+
+console.log(resultCount);

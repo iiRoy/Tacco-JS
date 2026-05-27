@@ -1,19 +1,14 @@
-const { readSync: obtainData } = require('node:fs');
+const fileSystem = require("fs");
+const sourceData = fileSystem.readFileSync("/dev/stdin", "utf8");
 
-const dataBuffer = Buffer.alloc(64);
-const bytesReadCount = obtainData(0, dataBuffer, 0, dataBuffer.length, 0);
-const incomingLine = dataBuffer.toString('utf8', 0, bytesReadCount).trim();
+const secondChar = sourceData.charAt(2);
+const fourthChar = sourceData.charAt(4);
 
-const numericElements = incomingLine.split(/\s+/).map(Number);
+const combinedString = secondChar + fourthChar;
+const numericSuffix = parseInt(combinedString, 10);
 
-const valueB = numericElements[1];
-const valueC = numericElements[2];
-
-const combinedLastTwo = valueB * 10 + valueC;
-
-const determinationMap = new Map([
-    [true, 'YES'],
-    [false, 'NO']
-]);
-
-process.stdout.write(determinationMap.get(combinedLastTwo % 4 === 0));
+if (numericSuffix % 4 === 0) {
+  console.log('YES');
+} else {
+  console.log('NO');
+}

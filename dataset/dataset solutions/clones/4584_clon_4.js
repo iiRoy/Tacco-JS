@@ -1,30 +1,16 @@
-"use strict";
+const processInputData = inputContent => {
+    const lineSegments = inputContent.trim().split("\n");
+    const [countLimit, thresholdValue] = lineSegments[0].split(" ").map(Number);
 
-const processInputData = (rawTextualInput) => {
-    const recordLines = rawTextualInput.trim().split("\n");
+    const numericPairs = lineSegments.slice(1, countLimit + 1).map(segment => segment.split(" ").map(Number));
 
-    const initialParameters = recordLines[0].split(" ");
-    // The first parameter (N) is not directly used in the logic, only for slicing input.
-    const targetAccumulation = parseInt(initialParameters[1], 10);
-
-    const dataComponents = recordLines.slice(1).map(entryLine => {
-        const valueParts = entryLine.split(" ");
-        return [parseInt(valueParts[0], 10), parseInt(valueParts[1], 10)]; // [identifier, quantity]
+    let cumulativeSum = 0;
+    const finalPair = numericPairs.find(pairEntry => {
+        cumulativeSum += pairEntry[1];
+        return cumulativeSum >= thresholdValue;
     });
 
-    let currentRunningSum = 0;
-    let finalResultIdentifier = null;
-
-    dataComponents.some(componentTuple => {
-        currentRunningSum += componentTuple[1]; // Add the quantity part
-        if (currentRunningSum >= targetAccumulation) {
-            finalResultIdentifier = componentTuple[0]; // Capture the identifier part
-            return true; // Signal to stop iteration
-        }
-        return false; // Continue iterating
-    });
-
-    console.log(finalResultIdentifier);
+    console.log(finalPair[0]);
 };
 
 processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

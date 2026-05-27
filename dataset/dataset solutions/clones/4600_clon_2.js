@@ -1,23 +1,14 @@
-const  processInputData  =  (  sourceText  )  =>
-{
-  const  [  firstSegment  ,  secondSegment  ,  thirdSegment  ]  =  sourceText
-    .trim()
-    .split(  String.fromCharCode(32)  )  ;
+const processInput = (rawData) => {
+  // This function processes the provided string input.
+  const [firstStr, secondStr, thirdStr] = rawData.trim().split(' ');
 
-  // Verify the final character of the initial string matches the first character of the subsequent string,
-  // and similarly, the terminal character of the middle string corresponds to the leading character of the last string.
-  if  (
-        firstSegment[  firstSegment.length  -  1  ]  ===  secondSegment[  0  ]
-    &&  secondSegment[  secondSegment.length  - 1  ]  ===  thirdSegment[  0  ]
-  )
-  {
-    console.log(  'AFFIRMATIVE'  )  ;
-  }
-  else
-  {
-    console.log(  'NEGATIVE'  )  ;
+  // Evaluate the specific character matching conditions.
+  if (firstStr[firstStr.length - 1] === secondStr[0] && secondStr[secondStr.length - 1] === thirdStr[0]) {
+    console.log('YES'); // Output for a successful match.
+  } else {
+    console.log('NO'); // Output for a failed match.
   }
 };
 
-/* Obtain and process the system's standard input stream */
-processInputData(  require(  "fs"  )  .readFileSync(  "/dev/stdin"  ,  "utf8"  )  )  ;
+// Acquire data from the standard input stream and invoke the processing routine.
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

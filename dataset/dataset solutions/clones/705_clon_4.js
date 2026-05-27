@@ -1,62 +1,88 @@
-let acquiredDataSegments = [];
-let accumulatedOutputs = [];
+var n, m;
+var a = [], b = [];
 
-function obtainNextValue() {
-    const nextSegment = acquiredDataSegments.shift();
-    return nextSegment !== undefined ? +nextSegment : undefined;
-}
+// The original 'search' function (iterative binary search) is replaced
+// by creating a Set from array 'b' for O(1) average time lookups.
+// The original 'rep' helper function is replaced by standard array methods
+// like Array.from, reduce, and some.
 
-function recordOutcome(outcomeValue) {
-    accumulatedOutputs.push(String(outcomeValue));
-}
+function main() {
+    // Loop through test cases, preserving the original termination condition
+    while (n = scan()) {
+        m = scan();
 
-function orchestrateProcessing() {
-    let collectionOneSize, collectionTwoSize;
+        // Populate arrays 'a' and 'b' using a declarative approach
+        a = Array.from({ length: n }, () => scan());
+        b = Array.from({ length: m }, () => scan());
 
-    while ((collectionOneSize = obtainNextValue()) > 0) {
-        collectionTwoSize = obtainNextValue();
+        // Sort arrays 'a' and 'b' as required for the problem's logic
+        a.sort((val1, val2) => val1 - val2);
+        b.sort((val1, val2) => val1 - val2);
 
-        const collectionOneElements = Array.from({ length: collectionOneSize }, obtainNextValue);
-        const collectionTwoElements = Array.from({ length: collectionTwoSize }, obtainNextValue);
+        // Calculate sums of elements in 'a' and 'b' using Array.prototype.reduce
+        const sumA = a.reduce((accumulator, currentValue) => accumulator + currentValue, 0);
+        const sumB = b.reduce((accumulator, currentValue) => accumulator + currentValue, 0);
 
-        const sumOfCollectionOne = collectionOneElements.reduce((total, current) => total + current, 0);
-        const sumOfCollectionTwo = collectionTwoElements.reduce((total, current) => total + current, 0);
+        const diff = sumB - sumA;
 
-        const overallDifference = sumOfCollectionTwo - sumOfCollectionOne;
-
-        if (overallDifference % 2 !== 0) {
-            recordOutcome(-1);
+        // Check if the total difference is odd. If so, no integer solution exists.
+        if (diff % 2 !== 0) {
+            print(-1);
             continue;
         }
 
-        const requiredAdjustment = overallDifference / 2;
+        const targetDiff = diff / 2; // The required value to add to an element of 'a'
 
-        const collectionTwoLookup = new Set(collectionTwoElements);
+        // Create a Set from array 'b' for efficient average O(1) lookups
+        const bLookup = new Set(b);
 
-        let matchFound = false;
-        for (const primaryItem of collectionOneElements) {
-            const desiredSecondaryItem = primaryItem + requiredAdjustment;
-            if (collectionTwoLookup.has(desiredSecondaryItem)) {
-                recordOutcome(primaryItem + ' ' + desiredSecondaryItem);
-                matchFound = true;
-                break;
+        let foundPair = false; // Flag to indicate if a suitable pair has been identified
+
+        // Iterate through array 'a' using Array.prototype.some, which allows early termination
+        a.some(currentValA => {
+            const requiredValB = currentValA + targetDiff;
+            // Check if the 'requiredValB' exists in the 'bLookup' Set
+            if (bLookup.has(requiredValB)) {
+                print(`${currentValA} ${requiredValB}`); // Use template literal for output
+                foundPair = true;
+                return true; // Return true to stop Array.prototype.some iteration
             }
+            return false; // Return false to continue Array.prototype.some iteration
+        });
+
+        // If no pair was found after checking all elements in 'a'
+        if (!foundPair) {
+            print(-1);
         }
 
-        if (!matchFound) {
-            recordOutcome(-1);
-        }
+        // Reset global arrays for the next test case, preserving original behavior
+        a = [];
+        b = [];
     }
-    console.log(accumulatedOutputs.join('\n'));
+}
+
+// Input/Output functions are kept as they are part of the external contract
+// and behavior-critical for interacting with stdin/stdout.
+var input = '';
+
+function scan() {
+    return +input.pop();
+}
+
+function scan_string() {
+    return input.pop();
+}
+
+function print(val) {
+    console.log(val);
 }
 
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
-let incomingStream = '';
 process.stdin.on('data', function(chunk) {
-    incomingStream += chunk;
+    input += chunk;
 });
 process.stdin.on('end', function() {
-    acquiredDataSegments = incomingStream.trim().split(/\s+/);
-    orchestrateProcessing();
+    input = input.trim().split(/\s+/).reverse();
+    main();
 });

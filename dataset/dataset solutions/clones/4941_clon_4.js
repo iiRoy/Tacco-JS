@@ -1,19 +1,20 @@
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
-
 process.stdin.on('data', function(inputData) {
-    processSequence(inputData.trim());
+    processInputString(inputData.trim());
 });
 
-function processSequence(initialSequence) {
-    let characterStore = [];
-
-    for (let currentSymbol of initialSequence) {
-        if (characterStore.length > 0 && characterStore[characterStore.length - 1] === 'S' && currentSymbol === 'T') {
-            characterStore.pop();
-        } else {
-            characterStore.push(currentSymbol);
-        }
+function reduceString(currentSequence) {
+    const firstMatchPosition = currentSequence.indexOf("ST");
+    if (firstMatchPosition === -1) {
+        return currentSequence;
     }
-    console.log(characterStore.length);
+    const alteredSequence = currentSequence.substring(0, firstMatchPosition) +
+                           currentSequence.substring(firstMatchPosition + 2);
+    return reduceString(alteredSequence);
+}
+
+function processInputString(inputLine){
+    const finalSequence = reduceString(inputLine);
+    console.log(finalSequence.length);
 }

@@ -1,84 +1,77 @@
-const ingestData = (payload) => {
-    const dataRows = payload.trim().split("\n");
-    const numericTokens = dataRows[0].split(" ").map(Number);
+function processInputData(rawInputString) {
+    const [valA, valB, valC, valD, valE, valF] = rawInputString.trim().split(" ").map(Number);
     return {
-        unitWaterA: numericTokens[0] * 100,
-        unitWaterB: numericTokens[1] * 100,
-        unitSugarC: numericTokens[2],
-        unitSugarD: numericTokens[3],
-        maxConcentrationPercentage: numericTokens[4],
-        totalWeightLimit: numericTokens[5],
+        waterUnitA: valA * 100,
+        waterUnitB: valB * 100,
+        sugarUnitC: valC,
+        sugarUnitD: valD,
+        maxConcentrationRatio: valE,
+        maxOverallWeight: valF
     };
-};
+}
 
-const formMassCombinations = (firstComponent, secondComponent, upperBoundary) => {
-    const massCollection = new Set();
-    const firstComponentRange = Array.from({ length: Math.floor(upperBoundary / firstComponent) + 1 }, (_, idx) => idx * firstComponent);
+function determineOptimalMixture(config) {
+    const { waterUnitA, waterUnitB, sugarUnitC, sugarUnitD, maxConcentrationRatio, maxOverallWeight } = config;
 
-    firstComponentRange.forEach(massA => {
-        const remainingCapacity = upperBoundary - massA;
-        const secondComponentRange = Array.from({ length: Math.floor(remainingCapacity / secondComponent) + 1 }, (_, idx) => idx * secondComponent);
-        secondComponentRange.forEach(massB => {
-            massCollection.add(massA + massB);
-        });
-    });
-    return Array.from(massCollection).sort((val1, val2) => val1 - val2);
-};
+    const waterAmountSet = new Set();
+    for (let i = 0; waterUnitA * i < maxOverallWeight; ++i) {
+        const currentWaterBase = waterUnitA * i;
+        for (let j = 0; currentWaterBase + waterUnitB * j < maxOverallWeight; ++j) {
+            waterAmountSet.add(currentWaterBase + waterUnitB * j);
+        }
+    }
+    const orderedWaterAmounts = Array.from(waterAmountSet).sort((a, b) => a - b);
 
-const deriveMaxSugarAllowance = (overallCap, concentrationFactor) => Math.floor(overallCap * concentrationFactor / (100 + concentrationFactor));
+    const maxPermissibleSugar = Math.floor(maxOverallWeight * maxConcentrationRatio / (100 + maxConcentrationRatio));
+    const sugarAmountSet = new Set();
+    for (let i = 0; sugarUnitC * i < maxPermissibleSugar; ++i) {
+        const currentSugarBase = sugarUnitC * i;
+        for (let j = 0; currentSugarBase + sugarUnitD * j < maxPermissibleSugar; ++j) {
+            sugarAmountSet.add(currentSugarBase + sugarUnitD * j);
+        }
+    }
+    const orderedSugarAmounts = Array.from(sugarAmountSet).sort((a, b) => a - b);
 
-const evaluateMixtureOptions = (sourceData) => {
-    const params = ingestData(sourceData);
+    const sugarAvailabilityTracker = new Map();
+    orderedSugarAmounts.forEach(sug => sugarAvailabilityTracker.set(sug, true));
 
-    const possibleWaterAmounts = formMassCombinations(
-        params.unitWaterA,
-        params.unitWaterB,
-        params.totalWeightLimit
-    );
+    let highestAchievedDensity = 0;
+    let finalResult = [0, 0];
 
-    const maximumSugarMass = deriveMaxSugarAllowance(
-        params.totalWeightLimit,
-        params.maxConcentrationPercentage
-    );
+    orderedWaterAmounts.forEach(currentWaterQuantity => {
+        if (currentWaterQuantity === 0) return;
 
-    const possibleSugarAmounts = formMassCombinations(
-        params.unitSugarC,
-        params.unitSugarD,
-        maximumSugarMass
-    );
-
-    const availableSugarRegistry = new Set(possibleSugarAmounts);
-
-    let currentBestDensity = 0;
-    let bestResultPair = [0, 0];
-
-    possibleWaterAmounts.forEach(currentWaterMass => {
-        const sugarUpperLimitForWater = Math.min(
-            Math.floor(currentWaterMass * params.maxConcentrationPercentage / 100),
-            params.totalWeightLimit - currentWaterMass
-        );
-        
-        const initialSugarSearchValue = Math.ceil(currentWaterMass * currentBestDensity);
-
-        const sugarCandidatesRange = Array.from(
-            { length: Math.max(0, sugarUpperLimitForWater - initialSugarSearchValue + 1) },
-            (_, offset) => initialSugarSearchValue + offset
+        const maxSugarForCurrentWater = Math.min(
+            Math.floor(currentWaterQuantity * maxConcentrationRatio / 100),
+            maxOverallWeight - currentWaterQuantity
         );
 
-        sugarCandidatesRange.forEach(candidateSugarMass => {
-            if (availableSugarRegistry.has(candidateSugarMass)) {
-                const candidateDensity = candidateSugarMass / currentWaterMass;
-                if (candidateDensity > currentBestDensity) {
-                    currentBestDensity = candidateDensity;
-                    bestResultPair[0] = currentWaterMass + candidateSugarMass;
-                    bestResultPair[1] = candidateSugarMass;
+        const minSugarForDensityThreshold = Math.ceil(currentWaterQuantity * highestAchievedDensity);
+
+        orderedSugarAmounts
+            .filter(sugQuantity =>
+                sugQuantity >= minSugarForDensityThreshold &&
+                sugQuantity <= maxSugarForCurrentWater &&
+                sugarAvailabilityTracker.get(sugQuantity)
+            )
+            .forEach(sugQuantity => {
+                const calculatedDensity = sugQuantity / currentWaterQuantity;
+                if (calculatedDensity > highestAchievedDensity) {
+                    finalResult[0] = currentWaterQuantity + sugQuantity;
+                    finalResult[1] = sugQuantity;
+                    highestAchievedDensity = calculatedDensity;
                 }
-                availableSugarRegistry.delete(candidateSugarMass);
-            }
-        });
+                sugarAvailabilityTracker.set(sugQuantity, false);
+            });
     });
 
-    console.log("%d %d", bestResultPair[0], bestResultPair[1]);
-};
+    return finalResult;
+}
 
-evaluateMixtureOptions(require("fs").readFileSync("/dev/stdin", "utf8"));
+function Main(input) {
+    const configuration = processInputData(input);
+    const solution = determineOptimalMixture(configuration);
+    console.log("%d %d", solution[0], solution[1]);
+}
+
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

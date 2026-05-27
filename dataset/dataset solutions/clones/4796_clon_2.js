@@ -1,130 +1,116 @@
-// Internal utility code begins here; these functions support the main application logic.
-let inputHandler = require('readline').createInterface({
+// Input handling setup - Start of boilerplate code
+var inputHandler = require('readline').createInterface({
   input: process.stdin,
   output: process.stdout
 });
 
-let dataProcessor;
-let capturedLines = [];
+var inputProcessor; // Custom object for managing input lines
+var bufferedLines = []; // Array to store all input lines
 
-inputHandler.on('line', function (currentLine) {
-  capturedLines.push(currentLine);
+inputHandler.on('line', function(currentLine){
+  bufferedLines.push(currentLine);
 });
 
-inputHandler.on('close', function () {
-  dataProcessor = initializeParser(capturedLines);
-  console.warn('\n--- Input processing complete, beginning main execution ---');
-  executePrimaryLogic();
+inputHandler.on('close', function(){
+  inputProcessor = initializeInputReader(bufferedLines);
+  console.error('\n↑入力 ↓出力'); // Critical output, must not change
+  executeCalculation(); // Call the main logic function
 });
 
-/**
- * Creates a deep clone of an object or Set.
- * @param {any} sourceItem - The item to clone.
- * @returns {any} A deep copy of the source item.
- */
-function deepCopyValue(sourceItem) {
-  return (sourceItem instanceof Set)
-    ? new Set(Array.from(sourceItem))
-    : JSON.parse(JSON.stringify(sourceItem));
+// Utility function for deep cloning objects or Sets
+function deepCopyObject(originalItem){
+  return (originalItem instanceof Set) ? new Set(Array.from(originalItem)) : JSON.parse(JSON.stringify(originalItem));
 }
 
-function retrieveInteger() { return convertAndParse(getNextItem(), 1); }
+// Input parsing helpers
+function fetchNextInt(){ return convertInputData(advanceAndGet(), 1); }
+function fetchNextStringArray(){ return convertInputData(advanceAndGet(), 2); }
+function fetchNextIntArray(){ return convertInputData(advanceAndGet(), 4); }
+function fetchNextCharArr(){ return convertInputData(advanceAndGet(), 6); }
 
-function retrieveStringArray() { return convertAndParse(getNextItem(), 2); }
+// Core input retrieval functions
+function advanceAndGet(){ return inputProcessor.retrieveNext(); }
+function checkHasNext(){ return inputProcessor.hasMoreData(); }
 
-function retrieveIntegerArray() { return convertAndParse(getNextItem(), 4); }
-
-function retrieveCharacterArray() { return convertAndParse(getNextItem(), 6); }
-
-function getNextItem() { return dataProcessor.getNextItem(); }
-
-function hasMoreItems() { return dataProcessor.hasMoreItems(); }
-
-/**
- * Initializes an input parser object.
- * @param {string[]} inputContent - An array of strings representing input lines.
- * @returns {object} An object with methods to navigate the input.
- */
-function initializeParser(inputContent) {
+// Initializes the custom input reader object
+function initializeInputReader(inputData){
   return {
-    contentList: inputContent,
-    currentPosition: 0,
-    maximumLength: inputContent.length,
-
-    hasMoreItems: function () {
-      return (this.currentPosition < this.maximumLength);
+    sourceLines : inputData,
+    currentPosition : 0,
+    totalLines : inputData.length,
+    hasMoreData : function(){
+      return (this.currentPosition < this.totalLines);
     },
-
-    getNextItem: function () {
-      if (this.hasMoreItems()) {
-        return this.contentList[this.currentPosition++];
+    retrieveNext : function(){
+      if(this.hasMoreData()){
+        return this.sourceLines[this.currentPosition++];
       } else {
-        throw new Error('NoFurtherInputException: Input stream exhausted.');
+        throw 'ArrayIndexOutOfBoundsException ‚There is no more input'; // Critical error message
       }
     }
   };
 }
 
-function displayResult(messageToDisplay) {
-  console.log(messageToDisplay);
+// Output functions
+function printResult(outputValue){
+  console.log(outputValue);
 }
 
-function logDebugInfo(debugObject) {
-  console.error('DEBUG_OUTPUT:' + require('util').inspect(debugObject, false, null));
+function logDebugInfo(debugContent){
+  console.error('debug:' + require('util').inspect(debugContent, false, null)); // Critical debug output
 }
 
-// The 'conversionType' parameter specifies the desired transformation for the input value.
-//  - Default/Unknown: Returns the input value unchanged.
-//  - 1: Parses the input as an integer.
-//  - 2: Splits the input string by spaces into an array of strings.
-//  - 4: Splits the input string by spaces and converts each part to a number.
-//  - 6: Splits the input string into individual characters.
-//  - 7: Splits the input string into characters and converts each to a number.
-//  - 8: Joins array elements with a single space.
-//  - 9: Joins array elements with newline characters.
-//  - 0: Joins array elements without any separator.
-function convertAndParse(inputValue, conversionType) {
+// Universal input conversion utility
+// Parameter 'conversionType' determines the conversion logic:
+// 1: Parse as integer
+// 2: Split by space into string array
+// 4: Split by space and parse each as number
+// 6: Split into character array
+// 7: Split into character array and parse each as number
+// 8: Join array elements with space
+// 9: Join array elements with newline
+// 0: Join array elements without separator
+// Default: Return input as is
+function convertInputData(inputValue, conversionType){
   try {
-    switch (conversionType) {
-      case 1:
-        return Number.parseInt(inputValue);
-      case 2:
-        return inputValue.split(' ');
-      case 4:
-        return inputValue.split(' ').map(val => Number(val));
-      case 6:
-        return inputValue.split('');
-      case 7:
-        return inputValue.split('').map(val => Number(val));
-      case 8:
-        return inputValue.join(' ');
-      case 9:
-        return inputValue.join('\n');
-      case 0:
-        return inputValue.join('');
-      default:
-        return inputValue;
+    switch(conversionType){
+      case 1: return parseInt(inputValue);
+      case 2: return inputValue.split(' ');
+      case 4: return inputValue.split(' ').map(Number);
+      case 6: return inputValue.split('');
+      case 7: return inputValue.split('').map(Number);
+      case 8: return inputValue.join(' ');
+      case 9: return inputValue.join('\n');
+      case 0: return inputValue.join('');
+      default: return inputValue;
     }
-  } catch (conversionError) {
-    return inputValue; // In case of conversion failure, return original value.
+  } catch(e) {
+    return inputValue; // Fallback in case of conversion error
   }
 }
 
-// End of internal utility functions --------------------------------------
+// Input handling setup - End of boilerplate code
 
-function executePrimaryLogic() {
-  let inputNumbers = retrieveIntegerArray();
+// Main program logic starts here
+function executeCalculation(){
+  // Read the single line of integer values
+  var initialValues = fetchNextIntArray();
 
-  let firstVal = inputNumbers[0];
-  let secondVal = inputNumbers[1];
-  let thirdVal = inputNumbers[2];
-  let fourthVal = inputNumbers[3];
-  let fifthVal = inputNumbers[4];
-  let sixthVal = inputNumbers[5];
-  let seventhVal = inputNumbers[6];
+  // Assign values to distinct variables
+  var countA = initialValues[0];
+  var countO = initialValues[1];
+  var countT = initialValues[2];
+  var countJ = initialValues[3];
+  var countL = initialValues[4];
+  var countS = initialValues[5];
+  var countZ = initialValues[6];
 
-  let calculatedResultA = Math.floor(firstVal / 2) * 2 + Math.floor(fourthVal / 2) * 2 + Math.floor(fifthVal / 2) * 2;
-  let calculatedResultB = Math.floor((firstVal - 1) / 2) * 2 + Math.floor((fourthVal - 1) / 2) * 2 + Math.floor((fifthVal - 1) / 2) * 2 + 3;
+  // Calculate the first potential result based on even counts
+  var resultOptionOne = Math.floor(countA / 2) * 2 + Math.floor(countJ / 2) * 2 + Math.floor(countL / 2) * 2;
 
-  displayResult(Math.max(calculatedResultA, calculatedResultB) + secondVal);
+  // Calculate the second potential result, considering odd counts and an additional 3
+  var resultOptionTwo = Math.floor((countA - 1) / 2) * 2 + Math.floor((countJ - 1) / 2) * 2 + Math.floor((countL - 1) / 2) * 2 + 3;
+
+  // Output the maximum of the two options, plus the 'O' count
+  printResult(Math.max(resultOptionOne, resultOptionTwo) + countO);
 }

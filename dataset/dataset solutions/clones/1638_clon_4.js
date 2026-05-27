@@ -1,82 +1,75 @@
-function PositionCounter(sizeLimit) {
-    const internalRegister = new Array(sizeLimit + 1).fill(0);
-    const capacity = sizeLimit;
-
-    this.adjustValue = function(position, alteration) {
-        position++; // Convert to 1-based index for BIT operations
-        while (position <= capacity) {
-            internalRegister[position] += alteration;
-            position += position & (-position);
-        }
-    };
-
-    this.retrieveSum = function(position) {
-        position++; // Convert to 1-based index for BIT operations
-        let total = 0;
-        while (position > 0) {
-            total += internalRegister[position];
-            position -= position & (-position);
-        }
-        return total;
-    };
-
-    this.queryRangeDistinct = function(lowerBound, upperBound) {
-        return this.retrieveSum(upperBound) - this.retrieveSum(lowerBound - 1);
-    };
-}
-
-function ProcessSequence(dataStream) {
-    const streamLines = dataStream.split("\n");
-
-    const [totalElements, numRequests] = streamLines.shift().split(" ").map(Number);
-    const numericCollection = streamLines.shift().split(" ").map(Number);
-
-    const lastKnownPosition = new Map(); // Stores the most recent index for each value
-    const priorLocations = new Array(totalElements).fill(-1); // Index of previous occurrence for element at current index
-
-    for (let currentPosition = 0; currentPosition < totalElements; currentPosition++) {
-        const itemValue = numericCollection[currentPosition];
-        if (lastKnownPosition.has(itemValue)) {
-            priorLocations[currentPosition] = lastKnownPosition.get(itemValue);
-        }
-        lastKnownPosition.set(itemValue, currentPosition);
+class FenwickTree {
+    constructor(sizeLimit) {
+        this.treeStorage = new Array(sizeLimit + 1).fill(0);
+        this.maxIndex = sizeLimit;
     }
 
-    const requestsByEndpoint = new Array(totalElements);
-    for (let currentPos = 0; currentPos < totalElements; currentPos++) {
-        requestsByEndpoint[currentPos] = [];
-    }
-
-    const finalResults = new Array(numRequests); // Placeholder for query results
-
-    for (let requestIndex = 0; requestIndex < numRequests; requestIndex++) {
-        let [startBoundary, endBoundary] = streamLines[requestIndex].split(" ").map(Number);
-        startBoundary--; // Adjust to 0-based index
-        endBoundary--;   // Adjust to 0-based index
-        requestsByEndpoint[endBoundary].push({ initialBoundary: startBoundary, originalIdentifier: requestIndex });
-    }
-
-    const distinctCounter = new PositionCounter(totalElements);
-
-    for (let currentPosition = 0; currentPosition < totalElements; currentPosition++) {
-        const previousOccurrenceIndex = priorLocations[currentPosition];
-
-        if (previousOccurrenceIndex !== -1) {
-            distinctCounter.adjustValue(previousOccurrenceIndex, -1); // Remove contribution of older occurrence
-        }
-        distinctCounter.adjustValue(currentPosition, 1); // Add contribution of current (rightmost) occurrence
-
-        // Process all queries that end at the currentPosition
-        for (const requestInfo of requestsByEndpoint[currentPosition]) {
-            const { initialBoundary, originalIdentifier } = requestInfo;
-            const distinctCount = distinctCounter.queryRangeDistinct(initialBoundary, currentPosition);
-            finalResults[originalIdentifier] = distinctCount;
+    // Modifies the value at a specific index (1-based) by adding a delta
+    adjustValue(position, changeAmount) {
+        for (; position <= this.maxIndex; position += position & -position) {
+            this.treeStorage[position] += changeAmount;
         }
     }
 
-    for (let k = 0; k < numRequests; k++) {
-        console.log(finalResults[k]);
+    // Computes the cumulative sum from the first element up to a given index (1-based)
+    retrievePrefixSum(position) {
+        let currentSum = 0;
+        for (; position > 0; position -= position & -position) {
+            currentSum += this.treeStorage[position];
+        }
+        return currentSum;
+    }
+
+    // Calculates the sum of values within a specified range (1-based, inclusive)
+    calculateRangeSum(startPosition, endPosition) {
+        if (startPosition > endPosition) return 0;
+        return this.retrievePrefixSum(endPosition) - this.retrievePrefixSum(startPosition - 1);
     }
 }
 
-ProcessSequence(require("fs").readFileSync("/dev/stdin", "utf8"));
+function Main(inputContent) {
+    const dataLines = inputContent.split("\n");
+    const [arrayLength, queryCount] = dataLines.shift().split(" ").map(Number);
+    const valueSequence = dataLines.shift().split(" ").map(Number);
+
+    const previousOccurrenceIndices = new Array(arrayLength).fill(-1);
+    const lastSeenPositionMap = new Map();
+
+    for (let i = 0; i < arrayLength; i++) {
+        const currentElement = valueSequence[i];
+        if (lastSeenPositionMap.has(currentElement)) {
+            previousOccurrenceIndices[i] = lastSeenPositionMap.get(currentElement);
+        }
+        lastSeenPositionMap.set(currentElement, i);
+    }
+
+    const queriesGroupedByRightEndpoint = new Array(arrayLength).fill(null).map(() => []);
+    for (let qi = 0; qi < queryCount; qi++) {
+        let [queryLeft, queryRight] = dataLines[qi].split(" ").map(Number);
+        // Convert to 0-indexed
+        queryLeft--;
+        queryRight--;
+        queriesGroupedByRightEndpoint[queryRight].push([queryLeft, qi]);
+    }
+
+    const finalResults = new Array(queryCount);
+    const bitStructure = new FenwickTree(arrayLength);
+
+    for (let currentProcessingIndex = 0; currentProcessingIndex < arrayLength; currentProcessingIndex++) {
+        const prevPosition = previousOccurrenceIndices[currentProcessingIndex];
+        if (prevPosition !== -1) {
+            bitStructure.adjustValue(prevPosition + 1, -1); // Remove contribution of previous occurrence
+        }
+        bitStructure.adjustValue(currentProcessingIndex + 1, 1); // Add contribution of current occurrence
+
+        for (const [leftBoundary, originalQueryIndex] of queriesGroupedByRightEndpoint[currentProcessingIndex]) {
+            finalResults[originalQueryIndex] = bitStructure.calculateRangeSum(leftBoundary + 1, currentProcessingIndex + 1);
+        }
+    }
+
+    for (let i = 0; i < queryCount; i++) {
+        console.log(finalResults[i]);
+    }
+}
+
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

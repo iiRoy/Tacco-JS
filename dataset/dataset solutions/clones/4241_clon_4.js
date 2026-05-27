@@ -1,65 +1,108 @@
-const terminalReader = require('readline').createInterface({
-    input: process.stdin,
-    output: process.stdout
-});
+class InputProcessor {
+    #sourceLines;
+    #currentLineIndex = 0;
+    #outputCollector = [];
+    #errorCollector = [];
 
-let inputCollector = [];
-const outputDispatcher = console.log;
-const errorNotifier = console.error;
-
-terminalReader.on('line', (dataLine) => {
-    inputCollector.push(dataLine);
-});
-
-terminalReader.on('close', () => {
-    errorNotifier('\n↑DATA_IN ↓DATA_OUT');
-    primaryExecutionUnit(inputCollector, outputDispatcher, errorNotifier);
-});
-
-class DataProcessor {
-    constructor(lines) {
-        this.records = lines;
-        this.currentRecordIdx = 0;
+    constructor(inputContent) {
+        this.#sourceLines = inputContent;
     }
 
-    retrieveNextRecord() {
-        if (this.currentRecordIdx < this.records.length) {
-            return this.records[this.currentRecordIdx++];
+    static #typeParsers = {
+        1: (val) => parseInt(val, 10),
+        2: (val) => val.split(' '),
+        4: (val) => val.split(' ').map(Number),
+        6: (val) => val.split(''),
+        7: (val) => val.split('').map(Number),
+        8: (arr) => arr.join(' '),
+        9: (arr) => arr.join('\n'),
+        0: (arr) => arr.join(''),
+        default: (val) => val
+    };
+
+    static _transformValue(input, transformationCode) {
+        const transformer = InputProcessor.#typeParsers[transformationCode] || InputProcessor.#typeParsers.default;
+        try {
+            return transformer(input);
+        } catch (e) {
+            return input;
         }
-        throw new Error('End of records reached.');
     }
 
-    parseRecordToNumericArray() {
-        return this.retrieveNextRecord().split(' ').map(Number);
+    _advanceLine() {
+        if (this.#currentLineIndex < this.#sourceLines.length) {
+            return this.#sourceLines[this.#currentLineIndex++];
+        }
+        throw new Error('End of input stream reached.');
+    }
+
+    obtainIntegerArray() {
+        return InputProcessor._transformValue(this._advanceLine(), 4);
+    }
+
+    obtainInteger() {
+        return InputProcessor._transformValue(this._advanceLine(), 1);
+    }
+
+    publishResult(content) {
+        this.#outputCollector.push(content);
+    }
+
+    publishDebug(content) {
+        this.#errorCollector.push('debug:' + require('util').inspect(content, false, null));
+    }
+
+    retrieveAllOutput() {
+        return this.#outputCollector.join('\n');
+    }
+
+    retrieveAllErrors() {
+        return this.#errorCollector.join('\n');
     }
 }
 
-const calculateDeviation = (val) => {
-    return val < 0 ? -val : val;
-};
+async function executeComputationalTask() {
+    const readline = require('readline');
+    const collectedInput = [];
 
-const determineGreater = (first, second) => {
-    return first > second ? first : second;
-};
+    const inputInterface = readline.createInterface({
+        input: process.stdin,
+        output: process.stdout
+    });
 
-function primaryExecutionUnit(incomingSegments, dispatchResult, reportAnomaly) {
-    const dataHandler = new DataProcessor(incomingSegments);
-
-    const initialParameters = dataHandler.parseRecordToNumericArray();
-    const countVal = initialParameters[0];
-    // const ignoredVal = initialParameters[1]; // Not utilized in the core logic
-    const comparatorVal = initialParameters[2];
-
-    const numberSequence = dataHandler.parseRecordToNumericArray();
-
-    let finalOutcome;
-    if (countVal === 1) {
-        finalOutcome = calculateDeviation(numberSequence[countVal - 1] - comparatorVal);
-    } else {
-        finalOutcome = determineGreater(
-            calculateDeviation(numberSequence[countVal - 2] - numberSequence[countVal - 1]),
-            calculateDeviation(numberSequence[countVal - 1] - comparatorVal)
-        );
+    for await (const line of inputInterface) {
+        collectedInput.push(line);
     }
-    dispatchResult(finalOutcome);
+
+    const processor = new InputProcessor(collectedInput);
+
+    console.error('\n↑入力 ↓出力');
+
+    const initialParameters = processor.obtainIntegerArray();
+    const countParameter = initialParameters[0];
+    const zValue = initialParameters[1];
+    const wValue = initialParameters[2];
+
+    const dataSequence = processor.obtainIntegerArray();
+
+    const candidateResults = [];
+
+    const finalElement = dataSequence[countParameter - 1];
+    candidateResults.push(Math.abs(finalElement - wValue));
+
+    if (countParameter > 1) {
+        const penultimateElement = dataSequence[countParameter - 2];
+        candidateResults.push(Math.abs(penultimateElement - finalElement));
+    }
+
+    processor.publishResult(Math.max(...candidateResults));
+
+    if (processor.retrieveAllErrors()) {
+        console.error(processor.retrieveAllErrors());
+    }
+    if (processor.retrieveAllOutput()) {
+        console.log(processor.retrieveAllOutput());
+    }
 }
+
+executeComputationalTask();

@@ -1,72 +1,90 @@
-// This script processes input data from a source to calculate specific matching sum patterns.
-var dataContent = getModule('fileSystem').readTextFromFile('/dev/stdinput', 'utfEightEncoding');
+const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-// The raw input content is first cleaned and then divided into separate lines.
-var lineArray = dataContent.stripWhitespace().divideByDelimiter("\n");
+// The input data is initially read as a single string.
+// We then process it by splitting it into individual lines.
+let lineSegments = rawData.trim().split("\n");
 
-// A primary processing loop continues indefinitely until a specific termination signal is encountered.
+// This main loop continues to process sets of data until a specific termination signal is encountered.
 while (true) {
-    // Obtain the very first line from the remaining input lines for the current iteration.
-    var currentLine = lineArray.extractFirst();
+    // Retrieve the first line from the array of input segments.
+    let currentLine = lineSegments.shift();
 
-    // Evaluate if the current line signifies the end of input data.
-    if (currentLine === "0 0") break;
-
-    // Parse the current line, splitting it by space and converting the resulting parts into numeric values.
-    var dimensionsArray = currentLine.divideByDelimiter(" ").transformElements(NumericValue);
-
-    // Initialize two distinct arrays to hold the individual measurement values for height and width.
-    var heightValues = [];
-    var widthValues = [];
-
-    // Populate the height values array based on the first dimension specified in the parsed line.
-    for (var idxH = 0; idxH < dimensionsArray[0]; idxH++) {
-        // Each height value is extracted from the input lines and converted to a number.
-        heightValues.appendElement(lineArray.extractFirst() + 0);
+    // Check if the current line signifies the end of input.
+    if (currentLine === "0 0") {
+        break; // Exit the processing loop.
     }
 
-    // Populate the width values array based on the second dimension specified in the parsed line.
-    for (var idxW = 0; idxW < dimensionsArray[1]; idxW++) {
-        // Each width value is extracted from the input lines and converted to a number.
-        widthValues.appendElement(lineArray.extractFirst() + 0);
+    // Parse the current line to extract two numerical dimensions.
+    const dimensions = currentLine.split(" ").map(Number);
+
+    // Initialize arrays to hold the height and width values for the current test case.
+    const heightsList = [];
+    const widthsList = [];
+
+    // Populate the heightsList array based on the first dimension.
+    // Each height value is read from a new line in the input.
+    for (let idx = 0; idx < dimensions[0]; idx++) {
+        heightsList.push(Number(lineSegments.shift()));
     }
 
-    // Construct a frequency map for all possible contiguous segment sums within the height values.
-    var heightSumsMap = {};
-    for (var outerIdxH = 0; outerIdxH < heightValues.size; outerIdxH++) {
-        var currentSumH = 0; // Initialize sum for each new starting segment point.
-        for (var innerIdxH = outerIdxH; innerIdxH < heightValues.size; innerIdxH++) {
-            // Accumulate the segment sum from the current outer index to the inner index.
-            currentSumH += heightValues[innerIdxH];
-            // Increment the count for this specific sum in the map, or initialize it if new.
-            var keyForHeightSum = currentSumH;
-            (heightSumsMap.hasProperty(keyForHeightSum)) ? heightSumsMap[keyForHeightSum]++ : heightSumsMap[keyForHeightSum] = 1;
+    // Populate the widthsList array based on the second dimension.
+    // Each width value is also read from a new line.
+    for (let idx = 0; idx < dimensions[1]; idx++) {
+        widthsList.push(Number(lineSegments.shift()));
+    }
+
+    // Create a frequency map for all possible contiguous sub-array sums within the heightsList.
+    const heightSumsMap = {};
+    for (let outerIdx = 0; outerIdx < heightsList.length; outerIdx++) {
+        let partialSumH = 0; // This variable accumulates sums for sub-arrays starting at outerIdx.
+        for (let innerIdx = outerIdx; innerIdx < heightsList.length; innerIdx++) {
+            // If it's not the very first element of the current sub-array, add it to the partial sum.
+            if (innerIdx !== outerIdx) {
+                partialSumH += heightsList[innerIdx];
+            }
+            // The full sum for the sub-array from outerIdx to innerIdx is heightsList[outerIdx] + partialSumH.
+            const currentSubarraySumH = heightsList[outerIdx] + partialSumH;
+            // Increment the count for this sum in the map, or initialize it to 1 if it's new.
+            if (heightSumsMap.hasOwnProperty(currentSubarraySumH)) {
+                heightSumsMap[currentSubarraySumH]++;
+            } else {
+                heightSumsMap[currentSubarraySumH] = 1;
+            }
         }
     }
 
-    // Construct a frequency map for all possible contiguous segment sums within the width values.
-    var widthSumsMap = {};
-    for (var outerIdxW = 0; outerIdxW < widthValues.size; outerIdxW++) {
-        var currentSumW = 0; // Initialize sum for each new starting segment point.
-        for (var innerIdxW = outerIdxW; innerIdxW < widthValues.size; innerIdxW++) {
-            // Accumulate the segment sum from the current outer index to the inner index.
-            currentSumW += widthValues[innerIdxW];
-            // Increment the count for this specific sum in the map, or initialize it if new.
-            var keyForWidthSum = currentSumW;
-            (widthSumsMap.hasProperty(keyForWidthSum)) ? widthSumsMap[keyForWidthSum]++ : widthSumsMap[keyForWidthSum] = 1;
+    // Create a frequency map for all possible contiguous sub-array sums within the widthsList.
+    const widthSumsMap = {};
+    for (let outerIdx = 0; outerIdx < widthsList.length; outerIdx++) {
+        let partialSumW = 0; // This variable accumulates sums for sub-arrays starting at outerIdx.
+        for (let innerIdx = outerIdx; innerIdx < widthsList.length; innerIdx++) {
+            // If it's not the very first element of the current sub-array, add it to the partial sum.
+            if (innerIdx !== outerIdx) {
+                partialSumW += widthsList[innerIdx];
+            }
+            // The full sum for the sub-array from outerIdx to innerIdx is widthsList[outerIdx] + partialSumW.
+            const currentSubarraySumW = widthsList[outerIdx] + partialSumW;
+            // Increment the count for this sum in the map, or initialize it to 1 if it's new.
+            if (widthSumsMap.hasOwnProperty(currentSubarraySumW)) {
+                widthSumsMap[currentSubarraySumW]++;
+            } else {
+                widthSumsMap[currentSubarraySumW] = 1;
+            }
         }
     }
 
-    // Compute the total count of pairs where a height sum matches a width sum.
-    var totalMatches = 0;
-    // Iterate over each unique sum found in the height sums map.
-    for (var keyString in heightSumsMap) {
-        // If the same sum also exists in the width sums map, multiply their frequencies.
-        if (widthSumsMap.hasProperty(keyString)) {
-            totalMatches += heightSumsMap[keyString] * widthSumsMap[keyString];
+    // Calculate the total number of pairs of sub-arrays (one from heights, one from widths)
+    // that have the same sum.
+    let matchCount = 0;
+    // Iterate through each unique sum found in the heightSumsMap.
+    for (const keyVal in heightSumsMap) {
+        // If this sum also exists in the widthSumsMap, it means we have matching sub-arrays.
+        if (widthSumsMap.hasOwnProperty(keyVal)) {
+            // Multiply the frequencies of this sum from both maps and add to the total count.
+            matchCount += heightSumsMap[keyVal] * widthSumsMap[keyVal];
         }
     }
 
-    // Display the final calculated total number of matching sums.
-    systemOutput.printLine(totalMatches);
+    // Output the final calculated count for the current test case.
+    console.log(matchCount);
 }

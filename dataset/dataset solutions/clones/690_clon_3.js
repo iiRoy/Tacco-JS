@@ -1,44 +1,34 @@
-const fileSystemModule = require('node:fs');
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
+var trimmedInput = rawData.trim();
+var inputLines = trimmedInput.split("\n");
 
-const calculateCube = (value) => Math.pow(value, 3);
+function calculateMinimumPositiveDifference(baseNumber) {
+    var baseNumberCubed = Math.pow(baseNumber, 3);
+    var candidateDifferences = [];
 
-let rawInputData = fileSystemModule.readFileSync('/dev/stdin', { encoding: 'utf8' });
+    for (var firstFactor = baseNumber - 1; firstFactor > 0; firstFactor--) {
+        var firstFactorCubed = Math.pow(firstFactor, 3);
 
-let inputLineBuffer = rawInputData.trim().split('\n');
+        for (var secondFactor = firstFactor; secondFactor > 0; secondFactor--) {
+            var secondFactorCubed = Math.pow(secondFactor, 3);
 
-let currentNumericInput;
+            var currentDifference = baseNumberCubed - firstFactorCubed - secondFactorCubed;
 
-while ((currentNumericInput = Number(inputLineBuffer.shift())) !== 0) {
-    if (isNaN(currentNumericInput)) {
-        console.error("Warning: Non-numeric input encountered. Skipping.");
-        continue;
-    }
-
-    const targetValueCube = calculateCube(currentNumericInput);
-
-    let foundPositiveDifferences = [];
-
-    for (let firstTerm = currentNumericInput - 1; firstTerm > 0; firstTerm--) {
-        const firstTermCube = calculateCube(firstTerm);
-
-        for (let secondTerm = firstTerm; secondTerm > 0; secondTerm--) {
-            const secondTermCube = calculateCube(secondTerm);
-
-            const candidateDifference = targetValueCube - firstTermCube - secondTermCube;
-
-            if (candidateDifference > 0) {
-                foundPositiveDifferences.push(candidateDifference);
+            if (currentDifference > 0) {
+                candidateDifferences.push(currentDifference);
             }
         }
     }
+    return Math.min.apply(null, candidateDifferences);
+}
 
-    if (foundPositiveDifferences.length === 0) {
-        console.log(Infinity); 
-    } else {
-        const minimumDifference = foundPositiveDifferences.reduce(
-            (accumulator, currentValue) => Math.min(accumulator, currentValue),
-            Infinity
-        );
-        console.log(minimumDifference);
+while (true) {
+    var currentInputNumber = Number(inputLines.shift());
+
+    if (currentInputNumber === 0) {
+        break;
     }
+
+    var result = calculateMinimumPositiveDifference(currentInputNumber);
+    console.log(result);
 }

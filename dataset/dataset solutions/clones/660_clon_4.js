@@ -1,102 +1,136 @@
-const readline = require('readline');
-
-const rlInterface = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout,
-  terminal: false
+let rawInputData = '';
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
+process.stdin.on('data', function(chunk) {
+    rawInputData += chunk;
 });
+process.stdin.on('end', function() {
+    const inputLines = rawInputData.split('\n');
 
-let receivedLines = [];
+    // Tree representation: plain objects { leftChild: null, rightChild: null }
 
-rlInterface.on('line', (singleLine) => {
-  receivedLines.push(singleLine);
-});
+    function parseTreeString(treeText) {
+        const sentinelRoot = { leftChild: null, rightChild: null };
+        let activeNode = sentinelRoot;
+        let childSlot = 'leftChild';
 
-rlInterface.on('close', () => {
+        const nodeStack = [];
 
-  // Functional Tree Representation:
-  // An empty branch is represented by `null`.
-  // A non-empty branch is an object `{ leftChild: <branch>, rightChild: <branch> }`.
-
-  // Parser: Recursive Descent for tree structure strings like `(A,B)`
-  const parseBranchStructure = (structureText) => {
-    let currentCursor = 0;
-
-    const parseSegment = () => {
-      if (currentCursor >= structureText.length || structureText[currentCursor] !== '(') {
-        return null; // Represents an empty branch (e.g., '' in (A,''))
-      }
-      currentCursor++; // Consume '('
-
-      const leftSub = parseSegment();
-
-      if (currentCursor >= structureText.length || structureText[currentCursor] !== ',') {
-        throw new Error(`Syntax error: Expected ',' at position ${currentCursor} in "${structureText}"`);
-      }
-      currentCursor++; // Consume ','
-
-      const rightSub = parseSegment();
-
-      if (currentCursor >= structureText.length || structureText[currentCursor] !== ')') {
-        throw new Error(`Syntax error: Expected ')' at position ${currentCursor} in "${structureText}"`);
-      }
-      currentCursor++; // Consume ')'
-
-      return { leftChild: leftSub, rightChild: rightSub };
-    };
-
-    const finalStructure = parseSegment();
-    if (currentCursor < structureText.length) {
-      throw new Error(`Parsing error: Unconsumed characters after parsing: "${structureText.substring(currentCursor)}"`);
+        for (const char of treeText) {
+            if (char === '(') {
+                const freshNode = { leftChild: null, rightChild: null };
+                activeNode[childSlot] = freshNode;
+                nodeStack.push(activeNode);
+                activeNode = freshNode;
+                childSlot = 'leftChild';
+            } else if (char === ',') {
+                childSlot = 'rightChild';
+            } else if (char === ')') {
+                if (nodeStack.length > 0) {
+                    activeNode = nodeStack.pop();
+                }
+            }
+        }
+        return sentinelRoot.leftChild;
     }
-    return finalStructure;
-  };
 
-  // Operation: Combine structures (equivalent to Union)
-  const combineStructures = (firstStruct, secondStruct) => {
-    if (firstStruct === null) {
-      return secondStruct;
-    }
-    if (secondStruct === null) {
-      return firstStruct;
-    }
-    return {
-      leftChild: combineStructures(firstStruct.leftChild, secondStruct.leftChild),
-      rightChild: combineStructures(firstStruct.rightChild, secondStruct.rightChild)
-    };
-  };
+    function combineTreesIterative(firstTree, secondTree) {
+        if (firstTree === null) return secondTree;
+        if (secondTree === null) return firstTree;
 
-  // Operation: Find common structures (equivalent to Intersection)
-  const findCommonStructures = (firstStruct, secondStruct) => {
-    if (firstStruct === null || secondStruct === null) {
-      return null;
-    }
-    const commonLeft = findCommonStructures(firstStruct.leftChild, secondStruct.leftChild);
-    const commonRight = findCommonStructures(firstStruct.rightChild, secondStruct.rightChild);
-    
-    // According to original logic, a node is created if both inputs exist,
-    // even if children are null.
-    return { leftChild: commonLeft, rightChild: commonRight };
-  };
+        const finalResult = { leftChild: null, rightChild: null };
+        const traversalStack = [{
+            a: firstTree,
+            b: secondTree,
+            resParent: finalResult,
+            resKey: 'leftChild'
+        }];
 
-  // Map for dispatching operations
-  const operationRegistry = {
-    "u": combineStructures,
-    "i": findCommonStructures
-  };
+        while (traversalStack.length > 0) {
+            const { a, b, resParent, resKey } = traversalStack.pop();
 
-  // Process each input line
-  for (const currentInputLine of receivedLines) {
-    const [operationIdentifier, structureRepresentation1, structureRepresentation2] = currentInputLine.split(' ');
-    
-    const treeObject1 = parseBranchStructure(structureRepresentation1);
-    const treeObject2 = parseBranchStructure(structureRepresentation2);
-    
-    const selectedOperation = operationRegistry[operationIdentifier];
-    if (selectedOperation) {
-      const finalResultStructure = selectedOperation(treeObject1, treeObject2);
-      // The original code calculated 'res' but did not print it.
-      // We also do not print anything here to match the exact behavior.
+            let currentResultNode = null;
+            if (a === null) {
+                currentResultNode = b;
+            } else if (b === null) {
+                currentResultNode = a;
+            } else {
+                currentResultNode = { leftChild: null, rightChild: null };
+                traversalStack.push({
+                    a: a.rightChild,
+                    b: b.rightChild,
+                    resParent: currentResultNode,
+                    resKey: 'rightChild'
+                });
+                traversalStack.push({
+                    a: a.leftChild,
+                    b: b.leftChild,
+                    resParent: currentResultNode,
+                    resKey: 'leftChild'
+                });
+            }
+            resParent[resKey] = currentResultNode;
+        }
+        return finalResult.leftChild;
     }
-  }
+
+    function findCommonTreesIterative(firstTree, secondTree) {
+        if (firstTree === null || secondTree === null) return null;
+
+        const finalResult = { leftChild: null, rightChild: null };
+        const traversalStack = [{
+            a: firstTree,
+            b: secondTree,
+            resParent: finalResult,
+            resKey: 'leftChild'
+        }];
+
+        while (traversalStack.length > 0) {
+            const { a, b, resParent, resKey } = traversalStack.pop();
+
+            let currentResultNode = null;
+            if (a === null || b === null) {
+                currentResultNode = null;
+            } else {
+                currentResultNode = { leftChild: null, rightChild: null };
+                traversalStack.push({
+                    a: a.rightChild,
+                    b: b.rightChild,
+                    resParent: currentResultNode,
+                    resKey: 'rightChild'
+                });
+                traversalStack.push({
+                    a: a.leftChild,
+                    b: b.leftChild,
+                    resParent: currentResultNode,
+                    resKey: 'leftChild'
+                });
+            }
+            resParent[resKey] = currentResultNode;
+        }
+        return finalResult.leftChild;
+    }
+
+    // This function is defined but not used in the main loop, just like original Node.toString()
+    function serializeTree(treeObject) {
+        if (treeObject === null) {
+            return '';
+        }
+        const leftPart = treeObject.leftChild === null ? '' : serializeTree(treeObject.leftChild);
+        const rightPart = treeObject.rightChild === null ? '' : serializeTree(treeObject.rightChild);
+        return `(${leftPart},${rightPart})`;
+    }
+
+    for (const currentInput of inputLines) {
+        const [operationType, treeStringA, treeStringB] = currentInput.split(' ');
+        const parsedTreeA = parseTreeString(treeStringA);
+        const parsedTreeB = parseTreeString(treeStringB);
+        let operationResult;
+        if (operationType === "u") {
+            operationResult = combineTreesIterative(parsedTreeA, parsedTreeB);
+        } else if (operationType === "i") {
+            operationResult = findCommonTreesIterative(parsedTreeA, parsedTreeB);
+        }
+        // No output, preserving original behavior.
+    }
 });

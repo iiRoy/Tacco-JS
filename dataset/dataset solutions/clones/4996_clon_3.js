@@ -1,74 +1,36 @@
-// This JavaScript module enforces strict parsing and execution rules.
 'use strict';
 
-// Import the Node.js file system module, aliasing it for brevity.
-const sysIO = require("fs");
+const fileSystem = require("fs");
+const inputFilePath = "/dev/stdin";
+const rawInputContent = fileSystem.readFileSync(inputFilePath, "utf8");
+const characterSequence = rawInputContent.split("");
 
-// Define a constant for the standard input file path, enhancing readability and maintainability.
-const standardInputEndpoint = "/dev/stdin";
+const POSITIVE_OUTCOME = "Yes";
+const NEGATIVE_OUTCOME = "No";
 
-/**
- * Determines if every unique character within a given sequence appears an even number of times.
- * This analysis considers character frequency parity.
- *
- * @param {string[]} charSequenceElements - An array where each element is a single character.
- * @returns {string} "Yes" if all character counts are even; otherwise, "No".
- */
-function assessCharacterFrequencyParity(charSequenceElements) {
-    // Pre-validation: If the input sequence is null, undefined, or empty,
-    // the condition is vacuously met as there are no characters with odd counts.
-    if (!charSequenceElements || charSequenceElements.length === 0) {
-        return "Yes";
+let finalResult = POSITIVE_OUTCOME;
+
+// Helper function to count occurrences of a specific character within an array
+const determineCharacterCount = (sourceCollection, soughtCharacter) => {
+  let currentTally = 0;
+  for (let collectionIndex = 0; collectionIndex < sourceCollection.length; collectionIndex++) {
+    if (sourceCollection[collectionIndex] === soughtCharacter) {
+      currentTally++;
     }
+  }
+  return currentTally;
+};
 
-    // A Map data structure is employed to efficiently store and retrieve
-    // the occurrence count for each distinct character encountered.
-    const characterTallyMap = new Map();
+// Iterate through each character in the sequence
+for (let primaryIndex = 0; primaryIndex < characterSequence.length; primaryIndex++) {
+  const characterToEvaluate = characterSequence[primaryIndex];
+  const frequencyOfCharacter = determineCharacterCount(characterSequence, characterToEvaluate);
 
-    // First pass: Populate the frequency map.
-    // Iterate over each character in the input array to compute its total occurrences.
-    for (const individualCharacter of charSequenceElements) {
-        // Increment the count for the current character. If the character is encountered
-        // for the first time, its count is initialized to zero before incrementing.
-        characterTallyMap.set(individualCharacter, (characterTallyMap.get(individualCharacter) || 0) + 1);
-    }
-
-    // Initialize a boolean flag to track the overall parity compliance.
-    let allFrequenciesAreEven = true;
-
-    // Second pass: Evaluate the parity of each character's frequency.
-    // Iterate through the values (counts) stored in the character frequency map.
-    for (const frequencyCount of characterTallyMap.values()) {
-        // Check if the current character's count is odd.
-        // An odd count violates the condition immediately.
-        if (frequencyCount % 2 !== 0) {
-            allFrequenciesAreEven = false; // Mark that an odd frequency was found.
-            break; // Terminate further checks as the condition is already failed.
-        }
-    }
-
-    // Return the final verdict based on the flag's state.
-    return allFrequenciesAreEven ? "Yes" : "No";
+  // If any character appears an odd number of times, the condition is not met
+  if (frequencyOfCharacter % 2 !== 0) {
+    finalResult = NEGATIVE_OUTCOME;
+    break; // Exit the loop early as the condition is already violated
+  }
 }
 
-// Entry point for script execution.
-try {
-    // Attempt to synchronously read the raw byte data from the standard input path.
-    const rawInputBuffer = sysIO.readFileSync(standardInputEndpoint);
-
-    // Convert the raw buffer data into a UTF-8 encoded string, then split it
-    // into an array of single characters for processing.
-    const processedCharacterArray = rawInputBuffer.toString('utf8').split('');
-
-    // Invoke the character parity assessment function with the prepared input.
-    const finalVerdictString = assessCharacterFrequencyParity(processedCharacterArray);
-
-    // Output the conclusive result to the standard output stream.
-    console.log(finalVerdictString);
-
-} catch (processingIssue) {
-    // Catch and handle any errors that may occur during file system operations or data processing.
-    console.error("An operational error was detected during input processing:", processingIssue.message);
-    // Exit the process with a non-zero status code to indicate an abnormal termination.
-    process.exit(1);
-}
+console.log(finalResult);

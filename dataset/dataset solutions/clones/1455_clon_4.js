@@ -1,26 +1,26 @@
-let accumulatedInput = '';
+(function () {
+  var receivedData = '';
 
-const processEntry = () => {
-    const dataLines = accumulatedInput.trim().split('\n');
+  function processInputAndSort () {
+    const dataLines = receivedData.split('\n');
+    const elementCount = Number(dataLines[0]);
+    const numberStrings = dataLines[1].split(' ');
 
-    if (dataLines.length < 2) {
-        console.error("Insufficient data received.");
-        return;
-    }
+    const numericCollection = numberStrings.map(Number);
 
-    const numbersString = dataLines[1];
-    const numericalValues = numbersString.split(' ').map(Number);
+    numericCollection.sort((firstVal, secondVal) => firstVal - secondVal);
 
-    numericalValues.sort((valA, valB) => valA - valB);
+    console.log(numericCollection.join(' '));
+  }
+  
+  process.stdin.resume();
+  process.stdin.setEncoding('utf8');
+  process.stdin.on('data', function (chunkSegment) {
+    receivedData += chunkSegment;
+  });
 
-    console.log(numericalValues.join(' '));
-};
+  process.stdin.on('end', function () {
+    processInputAndSort();
+  });
 
-process.stdin.resume();
-process.stdin.setEncoding('utf8');
-
-process.stdin.on('data', (fragment) => {
-    accumulatedInput += fragment;
-});
-
-process.stdin.on('end', processEntry);
+}());

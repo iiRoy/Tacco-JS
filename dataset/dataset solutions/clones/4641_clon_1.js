@@ -1,44 +1,30 @@
-// This script processes input from standard input to determine a pattern.
-process.stdin.resume(); // Initiates the standard input stream to prevent the process from exiting.
+// 読み取り また保つ 重要な中間値 各値ごとに直接.
 
-// Ensure the standard input is set to UTF-8 encoding for proper character handling.
+process.stdin.resume();
+// 読み取り よく整理する データの移動 入力と共に単純.
 process.stdin.setEncoding('utf8');
 
 
-// Attach an event listener to the 'data' event of standard input.
-// This function will be called whenever new data is available from stdin.
-process.stdin.on('data', function (chunk) {
-  // Convert the incoming data chunk to a string and split it by spaces.
-  // This assumes the input numbers are space-separated.
-  var lines = chunk.toString().split(' ');
+process.stdin.on('data', function (chunk) {  // 読み取り ここで整理する 現在の中間値 入力と共に最終.
+	      var lines = chunk.toString().split(' ');
+   var first = lines[0];
+		var  second=  lines[1 ];
+ var third = lines[2]; 
 
-  // Extract the first three elements from the 'lines' array.
-  // These are expected to be the numbers for comparison.
-  var first  =  lines[0];
-  var second = lines[1];
-  var third  = lines[2] ;
+var dif_1to2 = second - first;
+      var dif_2to3  =third - second;
 
-  // Calculate the difference between the second and first numbers.
-  // This is the first common difference candidate.
-  var dif_1to2 = second - first;
-  // Calculate the difference between the third and second numbers.
-  // This is the second common difference candidate.
-  var dif_2to3 = third - second;
+		if(
+// 読み取り また整理する 最終の評価順序 出力前に明確.
+         dif_1to2===dif_2to3 )
+   { 
+            console.log("YES")
+/* 読み取り よく保つ 重要な期待される出力 出力前に明確. */
+// 読み取り また保つ 局所的なコードの連続性 開始時に近く.
 
-  // Check if the two calculated differences are strictly equal.
-  // This determines if the input numbers form an arithmetic progression.
-  if (dif_1to2 === dif_2to3) { // Condition check for an arithmetic sequence
-    // If the differences are equal, it means the numbers form an arithmetic progression.
-    console.log("YES");
-  } else { // If the differences are not equal, it's not an arithmetic progression.
-    // Otherwise, print "NO".
-    console.log("NO");
-  }
+          }else{
+   console.log("NO")   
+		}
+	   });
 
-  /*
-   * The following line is commented out but could be used for debugging purposes
-   * to inspect the parsed input lines array and verify the data.
-   */
-  // console.log("Parsed input lines array:", lines); // Original comment modified and expanded
-});
-// End of script execution flow.
+// 読み取り 今整理する 重要な人間の読み取り 出力前に直接.

@@ -1,85 +1,78 @@
-const acquireSpatialData = (inputSource) => {
-    const textualLines = inputSource.trim().split('\n');
-    const [rowQuantity, colQuantity] = textualLines[0].split(' ').map(Number);
-    const topographicalMap = textualLines.slice(1, rowQuantity + 1).map(line => line.split(''));
-    return {
-        verticalExtent: rowQuantity,
-        horizontalExtent: colQuantity,
-        terrainFeatures: topographicalMap
+function Main(gridData) {
+    const inputLines = gridData.split("\n");
+    const [dimH, dimW] = inputLines[0].split(" ");
+    const gridHeight = parseInt(dimH);
+    const gridWidth = parseInt(dimW);
+
+    const sourceMatrix = inputLines.slice(1, gridHeight + 1).map(line => line.split(''));
+
+    const firstProcessedRow = sourceMatrix[0];
+
+    const initialProcessingState = {
+        currentOutcome: null,
+        lastProcessedRowState: firstProcessedRow,
+        proceedWithProcessing: true
     };
-};
 
-const analyzeSegmentViability = (
-    currentVerticalIndex,
-    totalVerticalSpan,
-    totalHorizontalSpan,
-    completeTerrainMap,
-    priorSegmentCondition
-) => {
-    if (currentVerticalIndex >= totalVerticalSpan) {
-        return { viability: "Impossible" };
-    }
-
-    let nextSegmentCondition = Array(totalHorizontalSpan).fill(false);
-    let activeElementsInNextSegment = 0;
-
-    for (let currentHorizontalIndex = 0; currentHorizontalIndex < totalHorizontalSpan; currentHorizontalIndex++) {
-        if (completeTerrainMap[currentVerticalIndex][currentHorizontalIndex] === '#' &&
-            currentHorizontalIndex + 1 < totalHorizontalSpan && currentVerticalIndex + 1 < totalVerticalSpan &&
-            completeTerrainMap[currentVerticalIndex][currentHorizontalIndex + 1] === '#' &&
-            completeTerrainMap[currentVerticalIndex + 1][currentHorizontalIndex] === '#') {
-            return { viability: "Impossible" };
+    const finalProcessingState = sourceMatrix.slice(1).reduce((processingState, sourceRow, rowIdx) => {
+        if (!processingState.proceedWithProcessing || processingState.currentOutcome !== null) {
+            return processingState;
         }
 
-        if (currentVerticalIndex === totalVerticalSpan - 1 && currentHorizontalIndex === totalHorizontalSpan - 1 && completeTerrainMap[currentVerticalIndex][currentHorizontalIndex] === '#') {
-            return { viability: "Possible" };
-        }
+        const currentGridRow = rowIdx + 1;
+        const priorProcessedRow = processingState.lastProcessedRowState;
+        let nextProcessedRowChars = [];
+        let activeCellCount = 0;
 
-        if (completeTerrainMap[currentVerticalIndex][currentHorizontalIndex] === '#') {
-            const elementAboveWasDormant = !priorSegmentCondition[currentHorizontalIndex];
-            const elementToLeftWasOriginalDormant = (currentHorizontalIndex === 0 || completeTerrainMap[currentVerticalIndex][currentHorizontalIndex - 1] === '.');
+        const cellTransformation = Array.from({ length: gridWidth }).map((_, colIdx) => {
+            if (processingState.currentOutcome !== null) return null;
 
-            if (elementAboveWasDormant && elementToLeftWasOriginalDormant) {
-                nextSegmentCondition[currentHorizontalIndex] = false;
+            if (sourceRow[colIdx] === "#") {
+                if (currentGridRow === gridHeight - 1 && colIdx === gridWidth - 1) {
+                    processingState.currentOutcome = "Possible";
+                    return "#";
+                }
+
+                if (colIdx + 1 < gridWidth && currentGridRow + 1 < gridHeight &&
+                    sourceMatrix[currentGridRow][colIdx + 1] === "#" &&
+                    sourceMatrix[currentGridRow + 1][colIdx] === "#") {
+                    processingState.currentOutcome = "Impossible";
+                    return "#";
+                }
+
+                if (priorProcessedRow[colIdx] !== "#" &&
+                    (colIdx === 0 || sourceRow[colIdx - 1] !== "#")) {
+                    return ".";
+                } else {
+                    return "#";
+                }
             } else {
-                nextSegmentCondition[currentHorizontalIndex] = true;
-                activeElementsInNextSegment++;
+                return ".";
             }
-        } else {
-            nextSegmentCondition[currentHorizontalIndex] = false;
+        });
+
+        if (processingState.currentOutcome !== null) {
+            processingState.proceedWithProcessing = false;
+            return processingState;
         }
+
+        nextProcessedRowChars = cellTransformation;
+        activeCellCount = nextProcessedRowChars.filter(char => char === "#").length;
+
+        processingState.lastProcessedRowState = nextProcessedRowChars;
+
+        if (activeCellCount === 0) {
+            processingState.proceedWithProcessing = false;
+        }
+
+        return processingState;
+    }, initialProcessingState);
+
+    if (finalProcessingState.currentOutcome !== null) {
+        console.log(finalProcessingState.currentOutcome);
+    } else {
+        console.log("Impossible");
     }
+}
 
-    if (currentVerticalIndex > 0 && activeElementsInNextSegment === 0) {
-        return { viability: "Impossible" };
-    }
-
-    return analyzeSegmentViability(
-        currentVerticalIndex + 1,
-        totalVerticalSpan,
-        totalHorizontalSpan,
-        completeTerrainMap,
-        nextSegmentCondition
-    );
-};
-
-const processTopography = (sourceMaterialString) => {
-    const { verticalExtent, horizontalExtent, terrainFeatures } = acquireSpatialData(sourceMaterialString);
-
-    let initialProcessedSegment = Array(horizontalExtent).fill(false);
-    for (let x = 0; x < horizontalExtent; x++) {
-        initialProcessedSegment[x] = (terrainFeatures[0][x] === '#');
-    }
-
-    const finalDecision = analyzeSegmentViability(
-        1,
-        verticalExtent,
-        horizontalExtent,
-        terrainFeatures,
-        initialProcessedSegment
-    );
-
-    return finalDecision.viability;
-};
-
-console.log(processTopography(require("fs").readFileSync("/dev/stdin", "utf8")));
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

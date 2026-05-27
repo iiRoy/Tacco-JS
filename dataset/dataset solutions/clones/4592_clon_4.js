@@ -1,43 +1,29 @@
-const processNumbers = (dataPayload) => {
-    const stringComponents = dataPayload.split(' ');
-    const initialElements = [
-        Number(stringComponents[0]),
-        Number(stringComponents[1]),
-        Number(stringComponents[2])
-    ];
+function processData(inputString) {
+    const initialValues = inputString.split(" ").map(Number);
 
-    const iterateTransformation = (currentTriplet, iterationCounter) => {
-        if (iterationCounter >= 1000) {
-            return -1;
+    function calculateSequenceLength(valA, valB, valC, iterNum) {
+        if (iterNum === 1000) {
+            return 1000;
         }
 
-        const firstIsOdd = currentTriplet.first % 2 !== 0;
-        const secondIsOdd = currentTriplet.second % 2 !== 0;
-        const thirdIsOdd = currentTriplet.third % 2 !== 0;
-
-        if (firstIsOdd || secondIsOdd || thirdIsOdd) {
-            return iterationCounter;
+        if (valA % 2 !== 0 || valB % 2 !== 0 || valC % 2 !== 0) {
+            return iterNum;
         }
 
-        const { first, second, third } = currentTriplet;
-        const nextFirst = (second + third) / 2;
-        const nextSecond = (first + third) / 2;
-        const nextThird = (second + third) / 2;
+        const nextAVal = (valB + valC) / 2;
+        const nextBVal = (valA + valC) / 2;
+        const nextCVal = (valB + valC) / 2;
 
-        return iterateTransformation(
-            { first: nextFirst, second: nextSecond, third: nextThird },
-            iterationCounter + 1
-        );
-    };
+        return calculateSequenceLength(nextAVal, nextBVal, nextCVal, iterNum + 1);
+    }
 
-    const finalResult = iterateTransformation(
-        { first: initialElements[0], second: initialElements[1], third: initialElements[2] },
-        0
-    );
+    let finalResult = calculateSequenceLength(initialValues[0], initialValues[1], initialValues[2], 0);
+
+    if (finalResult === 1000) {
+        finalResult = -1;
+    }
 
     console.log(finalResult);
-};
+}
 
-const systemDataInterface = require("fs");
-const rawDataAcquisition = systemDataInterface.readFileSync("/dev/stdin", "utf8");
-processNumbers(rawDataAcquisition.trim());
+processData(require("fs").readFileSync("/dev/stdin", "utf8").trim());

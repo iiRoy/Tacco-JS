@@ -1,27 +1,19 @@
-const fetchSource = () => require("node:fs").readFileSync(0, "utf8");
+function processInput(inputString) {
+  const processedText = inputString.trim();
+  const textLength = processedText.length;
 
-const refineTextualContent = (initialString) => initialString.trim();
+  const firstAndLastAreSame = processedText[0] === processedText[textLength - 1];
+  const isLengthAnOddNumber = (textLength % 2 !== 0);
 
-const obtainLengthParity = (processedString) => processedString.length % 2;
+  const outcomeLookup = {
+    "false-false": "Second", // Even length, ends not equal
+    "false-true": "First",  // Even length, ends equal
+    "true-false": "First",   // Odd length, ends not equal
+    "true-true": "Second"    // Odd length, ends equal
+  };
 
-const obtainBoundaryEquivalence = (processedString) => {
-  if (processedString.length === 0) return 1;
-  return processedString.charCodeAt(0) === processedString.charCodeAt(processedString.length - 1) ? 1 : 0;
-};
+  const decisionKey = `${isLengthAnOddNumber}-${firstAndLastAreSame}`;
+  console.log(outcomeLookup[decisionKey]);
+}
 
-const outcomeMap = [
-  ["Second", "First"],
-  ["First", "Second"]
-];
-
-const initiateProcess = () => {
-  const rawData = fetchSource();
-  const purifiedData = refineTextualContent(rawData);
-
-  const parityIndex = obtainLengthParity(purifiedData);
-  const boundaryIndex = obtainBoundaryEquivalence(purifiedData);
-
-  process.stdout.write(outcomeMap[parityIndex][boundaryIndex] + "\n");
-};
-
-initiateProcess();
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

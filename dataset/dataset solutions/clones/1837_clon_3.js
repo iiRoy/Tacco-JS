@@ -1,75 +1,76 @@
-let transformationCostCache = new Map();
-
-function getOptimalTransformationCost(currentNumber, costDiv2, costDiv3, costDiv5, costAdj) {
-    if (currentNumber < 1) {
-        return Infinity;
-    }
-
-    if (currentNumber === 1) {
-        return 0;
-    }
-
-    if (transformationCostCache.has(currentNumber)) {
-        return transformationCostCache.get(currentNumber);
-    }
-
-    let minCostForCurrentState = Infinity;
-
-    if (currentNumber % 2 === 0) {
-        const costViaDiv2 = getOptimalTransformationCost(currentNumber / 2, costDiv2, costDiv3, costDiv5, costAdj) + costDiv2;
-        minCostForCurrentState = Math.min(minCostForCurrentState, costViaDiv2);
-    }
-
-    if (currentNumber % 3 === 0) {
-        const costViaDiv3 = getOptimalTransformationCost(currentNumber / 3, costDiv2, costDiv3, costDiv5, costAdj) + costDiv3;
-        minCostForCurrentState = Math.min(minCostForCurrentState, costViaDiv3);
-    }
-
-    if (currentNumber % 5 === 0) {
-        const costViaDiv5 = getOptimalTransformationCost(currentNumber / 5, costDiv2, costDiv3, costDiv5, costAdj) + costDiv5;
-        minCostForCurrentState = Math.min(minCostForCurrentState, costViaDiv5);
-    }
-
-    const costViaDecrement = getOptimalTransformationCost(currentNumber - 1, costDiv2, costDiv3, costDiv5, costAdj) + costAdj;
-    minCostForCurrentState = Math.min(minCostForCurrentState, costViaDecrement);
-
-    const costViaIncrement = getOptimalTransformationCost(currentNumber + 1, costDiv2, costDiv3, costDiv5, costAdj) + costAdj;
-    minCostForCurrentState = Math.min(minCostForCurrentState, costViaIncrement);
-
-    transformationCostCache.set(currentNumber, minCostForCurrentState);
-    return minCostForCurrentState;
+function parseTaskLine(lineString) {
+    const stringParts = lineString.split(" ");
+    return stringParts.map(Number);
 }
 
-function processInputData(rawDataString) {
-    transformationCostCache.clear();
+function processRawInput(rawData) {
+    const processedLines = rawData.split("\n");
+    const firstLineParts = processedLines[0].split(" ");
+    const initialCount = Number(firstLineParts[0]);
 
-    let parsedLines = rawDataString.trim().split('\n');
+    const parsedTasks = [];
+    for (let lineIndex = 1; lineIndex < processedLines.length; lineIndex++) {
+        const currentLine = processedLines[lineIndex];
+        if (currentLine.trim() === "") {
+            continue;
+        }
+        parsedTasks.push(parseTaskLine(currentLine));
+    }
+    return { initialCount, parsedTasks };
+}
 
-    const numberOfDefinitions = Number(parsedLines[0].split(' ')[0]);
+function determineNumberProperties(numVal, valA, valB, valC, valD) {
+    let factorCount2 = 0;
+    let factorCount3 = 0;
+    let factorCount5 = 0;
 
-    let taskSpecifications = [];
+    let tempDivisorFor2 = 0;
+    let tempDivisorFor3 = 0;
+    let tempDivisorFor5 = 0;
 
-    for (let currentLineIdx = 1; currentLineIdx <= numberOfDefinitions && currentLineIdx < parsedLines.length; currentLineIdx++) {
-        const currentSpec = parsedLines[currentLineIdx].split(' ').map(Number);
-        taskSpecifications.push(currentSpec);
+    while (numVal % 2 === 0) {
+        tempDivisorFor2 = numVal / 2;
+        factorCount2++;
+        determineNumberProperties(tempDivisorFor2, valA, valB, valC, valD);
+    }
+    while (numVal % 3 === 0) {
+        tempDivisorFor3 = numVal / 3;
+        factorCount3++;
+        determineNumberProperties(tempDivisorFor3, valA, valB, valC, valD);
+    }
+    while (numVal % 5 === 0) {
+        tempDivisorFor5 = numVal / 5;
+        factorCount5++;
+        determineNumberProperties(tempDivisorFor5, valA, valB, valC, valD);
     }
 
-    let computedCosts = [];
+    if (factorCount2 === 0 && factorCount3 === 0 && factorCount5 === 0) {
+        const resultFromIncrement = determineNumberProperties(numVal + 1, valA, valB, valC, valD);
+        const resultFromDecrement = determineNumberProperties(numVal - 1, valA, valB, valC, valD);
+        const finalRecursiveMin = Math.min(resultFromIncrement, resultFromDecrement);
+        return finalRecursiveMin;
+    }
+}
 
-    for (let specIndex = 0; specIndex < taskSpecifications.length; specIndex++) {
-        const currentSpecDetails = taskSpecifications[specIndex];
+function processInputData(rawData) {
+    const { initialCount, parsedTasks } = processRawInput(rawData);
 
-        const initialValue = currentSpecDetails[0];
-        const costFactorTwo = currentSpecDetails[1];
-        const costFactorThree = currentSpecDetails[2];
-        const costFactorFive = currentSpecDetails[3];
-        const costAdjacent = currentSpecDetails[4];
+    const taskCount = parsedTasks.length;
+    const taskCosts = Array(taskCount);
 
-        const resultCost = getOptimalTransformationCost(initialValue, costFactorTwo, costFactorThree, costFactorFive, costAdjacent);
+    const unusedAccumulator = 0;
 
-        computedCosts.push(resultCost);
+    for (let taskIndex = 0; taskIndex < taskCount; taskIndex++) {
+        const currentTaskParams = parsedTasks[taskIndex];
+        const numVal = currentTaskParams[0];
+        const valA = currentTaskParams[1];
+        const valB = currentTaskParams[2];
+        const valC = currentTaskParams[3];
+        const valD = currentTaskParams[4];
 
-        console.log(resultCost);
+        const calculatedCost = determineNumberProperties(numVal, valA, valB, valC, valD);
+        taskCosts[taskIndex] = calculatedCost;
+        console.log(taskCosts[taskIndex]);
     }
 }
 

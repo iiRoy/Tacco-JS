@@ -1,205 +1,320 @@
-module.exports = function(moduleSource) {
+module.exports = function(moduleDefinitions) {
+  // This object serves as a cache for loaded modules.
   var moduleCache = {};
-  function loadModule(moduleIndex) {
-    if (moduleCache[moduleIndex]) {
-      return moduleCache[moduleIndex].exports;
+
+  // The core 'require' function for the bundled modules.
+  function executeModule(moduleId) {
+    // If the module is already in the cache, return its exports.
+    if (moduleCache[moduleId]) {
+      return moduleCache[moduleId].exports;
     }
-    var moduleEntry = moduleCache[moduleIndex] = {
-      id: moduleIndex,
-      isLoaded: false,
-      exports: {}
+
+    // Create a new module object and store it in the cache.
+    var currentModule = moduleCache[moduleId] = {
+      identifier: moduleId, // Unique identifier for the module
+      isLoaded: false, // Flag to indicate if the module has been loaded
+      exports: {} // The exports object for this module
     };
-    moduleSource[moduleIndex].call(moduleEntry.exports, moduleEntry, moduleEntry.exports, loadModule);
-    moduleEntry.isLoaded = true;
-    return moduleEntry.exports;
+
+    // Execute the module function, populating its exports.
+    // The module function receives:
+    // 1. The module object itself.
+    // 2. The module's exports object.
+    // 3. The local 'require' function.
+    moduleDefinitions[moduleId].call(currentModule.exports, currentModule, currentModule.exports, executeModule);
+
+    // Mark the module as loaded.
+    currentModule.isLoaded = true;
+
+    // Return the module's exports.
+    return currentModule.exports;
   }
-  loadModule.sources = moduleSource;
-  loadModule.cache = moduleCache;
-  loadModule.defineExport = function(targetObject, propertyName, getterFunction) {
-    if (!loadModule.hasOwn(targetObject, propertyName)) {
+
+  // Attach the module definitions to the 'require' function.
+  executeModule.moduleMap = moduleDefinitions;
+
+  // Attach the module cache to the 'require' function.
+  executeModule.cache = moduleCache;
+
+  // Helper function to define a property on an exports object.
+  executeModule.defineExport = function(targetObject, propertyName, getterFunction) {
+    if (!executeModule.hasOwn(targetObject, propertyName)) {
       Object.defineProperty(targetObject, propertyName, {
-        enumerable: true,
-        get: getterFunction
+        enumerable: true, // Make the property enumerable
+        get: getterFunction // The getter function for the property
       });
     }
   };
-  loadModule.markAsEsModule = function(moduleObject) {
+
+  // Helper function to mark a module as an ES module.
+  executeModule.registerModule = function(targetObject) {
     if (typeof Symbol !== "undefined" && Symbol.toStringTag) {
-      Object.defineProperty(moduleObject, Symbol.toStringTag, {
+      Object.defineProperty(targetObject, Symbol.toStringTag, {
         value: "Module"
       });
     }
-    Object.defineProperty(moduleObject, "__esModule", {
+    Object.defineProperty(targetObject, "__esModule", {
       value: true
     });
   };
-  loadModule.interopRequireDefault = function(value, mode) {
-    if (1 & mode) {
-      value = loadModule(value);
+
+  // Helper function for interoperability with non-ES modules.
+  executeModule.interopRequire = function(moduleReference, flags) {
+    // If flag 1 is set, treat moduleReference as a module ID and require it.
+    if (flags & 1) {
+      moduleReference = executeModule(moduleReference);
     }
-    if (8 & mode) {
-      return value;
+    // If flag 8 is set, return the moduleReference directly.
+    if (flags & 8) {
+      return moduleReference;
     }
-    if (4 & mode && typeof value === "object" && value && value.__esModule) {
-      return value;
+    // If flag 4 is set and it's an object and an ES module, return it directly.
+    if (flags & 4 && typeof moduleReference === "object" && moduleReference && moduleReference.__esModule) {
+      return moduleReference;
     }
-    var defaultObject = Object.create(null);
-    loadModule.markAsEsModule(defaultObject);
-    Object.defineProperty(defaultObject, "default", {
+
+    // Create a new object for the default export.
+    var defaultExportObject = Object.create(null);
+    executeModule.registerModule(defaultExportObject); // Mark as ES module
+    Object.defineProperty(defaultExportObject, "default", {
       enumerable: true,
-      value: value
+      value: moduleReference
     });
-    if (2 & mode && typeof value !== "string") {
-      for (var propName in value) {
-        loadModule.defineExport(defaultObject, propName, (function(currentProp) {
-          return value[currentProp];
-        }).bind(null, propName));
+
+    // If flag 2 is set and it's not a string, copy all properties.
+    if (flags & 2 && typeof moduleReference !== "string") {
+      for (var propKey in moduleReference) {
+        executeModule.defineExport(defaultExportObject, propKey, (function(key) {
+          return moduleReference[key];
+        }).bind(null, propKey));
       }
     }
-    return defaultObject;
+    return defaultExportObject;
   };
-  loadModule.createGetter = function(moduleInstance) {
-    var getter = moduleInstance && moduleInstance.__esModule ?
+
+  // Helper function to get the default export of a module.
+  executeModule.getModuleDefault = function(moduleReference) {
+    var defaultGetter = moduleReference && moduleReference.__esModule ?
       function() {
-        return moduleInstance.default;
+        return moduleReference.default;
       } :
       function() {
-        return moduleInstance;
+        return moduleReference;
       };
-    loadModule.defineExport(getter, "a", getter);
-    return getter;
+    executeModule.defineExport(defaultGetter, "a", defaultGetter); // 'a' is a common convention for default export
+    return defaultGetter;
   };
-  loadModule.hasOwn = function(obj, prop) {
-    return Object.prototype.hasOwnProperty.call(obj, prop);
+
+  // Helper function to check if an object has a property.
+  executeModule.hasOwn = function(targetObject, propertyName) {
+    return Object.prototype.hasOwnProperty.call(targetObject, propertyName);
   };
-  loadModule.publicPath = "";
-  return loadModule(loadModule.startupModule = 0);
-}(
-  [
-    function(moduleObj, exportsObj, resolveModule) {
-      "use strict";
-      var fileUtil = resolveModule(1);
-      resolveModule(2)(fileUtil.readFileSync("/dev/std_input", "utf_8"));
-    },
-    function(moduleObj, exportsObj) {
-      moduleObj.exports = require("node:fs");
-    },
-    function(moduleObj, exportsObj, resolveModule) {
-      "use strict";
-      var parserClass = resolveModule(3);
-      var processorFunction = resolveModule(5);
-      moduleObj.exports = function(inputData) {
-        var dataParser = new parserClass(inputData);
-        processorFunction(dataParser);
-      };
-    },
-    function(moduleObj, exportsObj, resolveModule) {
-      "use strict";
-      var queueClass = resolveModule(4);
-      moduleObj.exports = class DataInterpreter {
-        constructor(rawData) {
-          var tokens = rawData.trim().split(/\s+/g);
-          this.tokenQueue = new queueClass(tokens);
-        }
-        readNextString() {
-          return this.tokenQueue.dequeue();
-        }
-        readNextInteger() {
-          return parseInt(this.tokenQueue.dequeue(), 10);
-        }
-        finishReading() {
-          this.tokenQueue.resetQueue();
-        }
-      };
-    },
-    function(moduleObj, exportsObj, resolveModule) {
-      "use strict";
-      moduleObj.exports = class StringQueue {
-        constructor() {
-          var initialItems = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : [];
-          this.itemCount = initialItems.length;
-          this.itemArray = initialItems;
-          this.currentIndex = 0;
-        }
-        enqueue(valueToAdd) {
-          this.itemCount += 1;
-          this.itemArray.push(valueToAdd);
-        }
-        dequeue() {
-          var retrievedItem = this.itemArray[this.currentIndex];
-          this.itemCount -= 1;
-          this.currentIndex += 1;
-          return retrievedItem;
-        }
-        resetQueue() {
-          this.itemArray = [];
-          this.itemCount = 0;
-          this.currentIndex = 0;
-        }
-      };
-    },
-    function(moduleObj, exportsObj, resolveModule) {
-      "use strict";
-      var floydWarshallAlgorithm = resolveModule(6);
-      moduleObj.exports = function(inputReader) {
-        var nodeCount = inputReader.readNextInteger();
-        var edgeCount = inputReader.readNextInteger();
-        var maxAllowedDistance = inputReader.readNextInteger();
-        var adjacencyMatrix = new Array(nodeCount);
-        for (var idx = 0; idx < nodeCount; idx++) {
-          adjacencyMatrix[idx] = new Array(nodeCount).fill(9876543210);
-        }
-        for (var edgeIdx = 0; edgeIdx < edgeCount; edgeIdx++) {
-          var sourceNode = inputReader.readNextInteger();
-          var targetNode = inputReader.readNextInteger();
-          var weight = inputReader.readNextInteger();
-          adjacencyMatrix[sourceNode - 1][targetNode - 1] = weight;
-          adjacencyMatrix[targetNode - 1][sourceNode - 1] = weight;
-        }
-        var shortestPaths = floydWarshallAlgorithm(adjacencyMatrix);
-        for (var rowIdx = 0; rowIdx < nodeCount; rowIdx++) {
-          for (var colIdx = 0; colIdx < nodeCount; colIdx++) {
-            if (shortestPaths[rowIdx][colIdx] <= maxAllowedDistance) {
-              adjacencyMatrix[rowIdx][colIdx] = 1;
-              adjacencyMatrix[colIdx][rowIdx] = 1;
-            } else {
-              adjacencyMatrix[rowIdx][colIdx] = 9876543210;
-            }
-          }
-        }
-        var reachabilityMatrix = floydWarshallAlgorithm(adjacencyMatrix);
-        var queryCount = inputReader.readNextInteger();
-        for (var queryIdx = 0; queryIdx < queryCount; queryIdx++) {
-          var startNode = inputReader.readNextInteger();
-          var endNode = inputReader.readNextInteger();
-          var calculatedPath = reachabilityMatrix[startNode - 1][endNode - 1];
-          if (calculatedPath === 9876543210) {
-            console.log(-1);
+
+  // Public path for assets (empty in this case).
+  executeModule.publicPath = "";
+
+  // Start execution by requiring the entry module (module 0).
+  return executeModule(executeModule.startupModule = 0);
+}([
+  /* Module 0: Main entry point */
+  function(moduleObj0, exportsObj0, requireFunc0) {
+    "use strict";
+    // Require the 'fs' module (Module 1).
+    var fileSystemModule = requireFunc0(1);
+    // Require the main processing function (Module 2) and execute it.
+    requireFunc0(2)(fileSystemModule.readFileSync("/dev/stdin", "utf8"));
+  },
+
+  /* Module 1: Node.js 'fs' module */
+  function(moduleObj1, exportsObj1) {
+    moduleObj1.exports = require("fs");
+  },
+
+  /* Module 2: Main processing function */
+  function(moduleObj2, exportsObj2, requireFunc2) {
+    "use strict";
+    // Require the InputReader class (Module 3).
+    var inputProcessorClass = requireFunc2(3);
+    // Require the graph solver function (Module 5).
+    var graphSolverFunction = requireFunc2(5);
+
+    // Export a function that takes raw input string.
+    moduleObj2.exports = function(rawInputText) {
+      // Create an instance of the InputReader with the provided text.
+      var readerInstance = new inputProcessorClass(rawInputText);
+      // Execute the graph solver with the reader instance.
+      graphSolverFunction(readerInstance);
+    };
+  },
+
+  /* Module 3: InputReader class */
+  function(moduleObj3, exportsObj3, requireFunc3) {
+    "use strict";
+    // Require the Deque/Queue class (Module 4).
+    var dataQueueClass = requireFunc3(4);
+
+    // Define the InputReader class.
+    moduleObj3.exports = class InputReader {
+      constructor(inputString) {
+        // Trim whitespace and split the input string by any whitespace.
+        var tokenArray = inputString.trim().split(/\s+/g);
+        // Initialize an internal queue with the parsed tokens.
+        this.inputQueue = new dataQueueClass(tokenArray);
+      }
+
+      // Method to dequeue and return the next string token.
+      readString() {
+        return this.inputQueue.deq();
+      }
+
+      // Method to dequeue, parse as integer, and return the next token.
+      readInteger() {
+        return parseInt(this.inputQueue.deq(), 10);
+      }
+
+      // Method to clear the internal queue.
+      finishReading() {
+        this.inputQueue.clear();
+      }
+    };
+  },
+
+  /* Module 4: Deque/Queue class */
+  function(moduleObj4, exportsObj4, requireFunc4) {
+    "use strict";
+    // Define the Deque class.
+    moduleObj4.exports = class Deque {
+      constructor() {
+        // Initialize with an optional array of elements, defaulting to empty.
+        var initialElements = arguments.length > 0 && void 0 !== arguments[0] ? arguments[0] : [];
+        this.elementCount = initialElements.length; // Current number of elements
+        this.elementStorage = initialElements; // Array to store elements
+        this.readIndex = 0; // Index for dequeuing elements
+      }
+
+      // Method to enqueue a new item.
+      enqueue(newItem) {
+        this.elementCount += 1;
+        this.elementStorage.push(newItem);
+      }
+
+      // Method to dequeue an item from the front.
+      dequeue() {
+        var dequeuedItem = this.elementStorage[this.readIndex];
+        this.elementCount -= 1;
+        this.readIndex += 1;
+        return dequeuedItem;
+      }
+
+      // Method to clear the deque.
+      clear() {
+        this.elementStorage = [];
+        this.elementCount = 0;
+        this.readIndex = 0;
+      }
+    };
+  },
+
+  /* Module 5: Graph processing logic */
+  function(moduleObj5, exportsObj5, requireFunc5) {
+    "use strict";
+    // Require the Floyd-Warshall algorithm function (Module 6).
+    var floydWarshallAlgorithm = requireFunc5(6);
+
+    // Export the main graph processing function.
+    moduleObj5.exports = function(readerInstance) {
+      // Read graph parameters: number of nodes, number of edges, max path length.
+      var nodeCount = readerInstance.readInteger();
+      var edgeCount = readerInstance.readInteger();
+      var maxPathLength = readerInstance.readInteger();
+
+      // Initialize an adjacency matrix for the graph.
+      // All distances are initially set to a large number (representing infinity).
+      var adjMatrix = new Array(nodeCount);
+      for (var idx = 0; idx < nodeCount; idx++) {
+        adjMatrix[idx] = new Array(nodeCount).fill(9999999999); // A large number for infinity
+        adjMatrix[idx][idx] = 0; // Distance to self is 0
+      }
+
+      // Read edge information and populate the adjacency matrix.
+      for (var edgeIdx = 0; edgeIdx < edgeCount; edgeIdx++) {
+        var nodeA = readerInstance.readInteger();
+        var nodeB = readerInstance.readInteger();
+        var edgeWeight = readerInstance.readInteger();
+        // Adjust to 0-indexed.
+        adjMatrix[nodeA - 1][nodeB - 1] = edgeWeight;
+        adjMatrix[nodeB - 1][nodeA - 1] = edgeWeight; // Graph is undirected
+      }
+
+      // Apply Floyd-Warshall to find all-pairs shortest paths based on initial edge weights.
+      var firstFWResult = floydWarshallAlgorithm(adjMatrix);
+
+      // Re-evaluate adjacency based on maxPathLength.
+      // If a path between two nodes is within maxPathLength, consider it an edge with weight 1.
+      for (var rowIdx = 0; rowIdx < nodeCount; rowIdx++) {
+        for (var colIdx = 0; colIdx < nodeCount; colIdx++) {
+          if (firstFWResult[rowIdx][colIdx] <= maxPathLength) {
+            adjMatrix[rowIdx][colIdx] = 1;
+            adjMatrix[colIdx][rowIdx] = 1; // Ensure symmetry
           } else {
-            console.log(calculatedPath - 1);
-          }
-        }
-      };
-    },
-    function(moduleObj, exportsObj, resolveModule) {
-      "use strict";
-      moduleObj.exports = function(graphMatrix) {
-        var matrixSize = graphMatrix.length;
-        var distanceMatrix = [];
-        for (var outerIdx = 0; outerIdx < matrixSize; outerIdx++) {
-          distanceMatrix.push(graphMatrix[outerIdx].concat());
-        }
-        for (var intermediateNodeIdx = 0; intermediateNodeIdx < matrixSize; intermediateNodeIdx++) {
-          for (var startNodeIdx = 0; startNodeIdx < matrixSize; startNodeIdx++) {
-            for (var endNodeIdx = 0; endNodeIdx < matrixSize; endNodeIdx++) {
-              if (distanceMatrix[startNodeIdx][endNodeIdx] > distanceMatrix[startNodeIdx][intermediateNodeIdx] + distanceMatrix[intermediateNodeIdx][endNodeIdx]) {
-                distanceMatrix[startNodeIdx][endNodeIdx] = distanceMatrix[startNodeIdx][intermediateNodeIdx] + distanceMatrix[intermediateNodeIdx][endNodeIdx];
-              }
+            // If not reachable within maxPathLength, reset to infinity (unless it's self-loop)
+            if (rowIdx !== colIdx) {
+              adjMatrix[rowIdx][colIdx] = 9999999999;
             }
           }
         }
-        return distanceMatrix;
-      };
-    }
-  ]
-);
+      }
+
+      // Apply Floyd-Warshall again on the modified adjacency matrix (where edges are 1 or infinity).
+      var secondFWResult = floydWarshallAlgorithm(adjMatrix);
+
+      // Read the number of queries.
+      var queryCount = readerInstance.readInteger();
+
+      // Process each query.
+      for (var queryIdx = 0; queryIdx < queryCount; queryIdx++) {
+        var queryNodeA = readerInstance.readInteger();
+        var queryNodeB = readerInstance.readInteger();
+        // Get the shortest path length from the second Floyd-Warshall result.
+        var resultPathLength = secondFWResult[queryNodeA - 1][queryNodeB - 1];
+
+        // Output the result.
+        if (resultPathLength === 9999999999) {
+          console.log(-1); // Not reachable
+        } else {
+          console.log(resultPathLength - 1); // Output path length minus 1 (as per problem statement)
+        }
+      }
+    };
+  },
+
+  /* Module 6: Floyd-Warshall algorithm implementation */
+  function(moduleObj6, exportsObj6, requireFunc6) {
+    "use strict";
+    // Export the Floyd-Warshall function.
+    moduleObj6.exports = function(graphMatrix) {
+      var matrixDimension = graphMatrix.length;
+      // Create a deep copy of the input graph matrix to store distances.
+      var distanceMatrix = [];
+      for (var outerIdx = 0; outerIdx < matrixDimension; outerIdx++) {
+        distanceMatrix.push(graphMatrix[outerIdx].concat());
+      }
+
+      // Floyd-Warshall algorithm:
+      // Iterate through all possible intermediate nodes.
+      for (var intermediateIdx = 0; intermediateIdx < matrixDimension; intermediateIdx++) {
+        // Iterate through all possible source nodes.
+        for (var sourceIdx = 0; sourceIdx < matrixDimension; sourceIdx++) {
+          // Iterate through all possible destination nodes.
+          for (var destIdx = 0; destIdx < matrixDimension; destIdx++) {
+            // If the path through the intermediate node is shorter, update the distance.
+            if (distanceMatrix[sourceIdx][destIdx] > distanceMatrix[sourceIdx][intermediateIdx] + distanceMatrix[intermediateIdx][destIdx]) {
+              distanceMatrix[sourceIdx][destIdx] = distanceMatrix[sourceIdx][intermediateIdx] + distanceMatrix[intermediateIdx][destIdx];
+            }
+          }
+        }
+      }
+      return distanceMatrix;
+    };
+  }
+]);

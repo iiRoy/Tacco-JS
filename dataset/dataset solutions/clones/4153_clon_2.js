@@ -1,45 +1,48 @@
-"use strict" ;
+"use strict";
 
-// This script processes two input strings and compares them based on specific sorting rules.
-const   PrimaryLogic   =  (   sourceData   )   =>
-{
-    // The input 'sourceData' is expected to be a string containing multiple lines.
-    // First, remove any leading or trailing whitespace, then divide the string into an array of lines.
-    let     textLines   =   sourceData  .  trim  (  )  .  split  (  '\n'  )  ;
+/*
+ * This module defines a primary function to process textual input.
+ * It reads two lines of text, manipulates them, and then performs a comparison.
+ */
+const AnalyzeStrings = (rawText) => {
+    // First, we prepare the incoming data.
+    // The entire input string is trimmed of leading/trailing whitespace,
+    // and then split into an array of individual lines based on newline characters.
+    let textLines = rawText.trim().split('\n');
 
-    // Take the first line from the 'textLines' array and break it down into an array of individual characters.
-    let     firstLineCharacters   =   textLines  [  0  ]  .  split  (  ''  )  ;
+    // We extract the first line from our array of lines.
+    // This line is then broken down into an array of its constituent characters.
+    let firstStringPart = textLines[0].split('');
 
-    // Take the second line from the 'textLines' array and similarly convert it into an array of characters.
-    let     secondLineCharacters   =   textLines  [  1  ]  .  split  (  ''  )  ;
+    // Similarly, we take the second line from the input array.
+    // This line is also converted into an array of characters.
+    let secondStringPart = textLines[1].split('');
 
+    // Now, we transform the character arrays into new string representations.
+    // For the first part, characters are sorted alphabetically (ascending)
+    // and then concatenated back into a single string.
+    firstStringPart = firstStringPart.sort().join('');
 
-    // Sort the characters of the first line alphabetically (ascending order).
-    // After sorting, concatenate these characters back into a single string.
-    firstLineCharacters   =   firstLineCharacters  .  sort  (  )  .  join  (  )  ;
+    // For the second part, characters are first sorted alphabetically (ascending),
+    // then the order of these sorted characters is reversed (descending),
+    // and finally, they are joined to form a single string.
+    secondStringPart = secondStringPart.sort().reverse().join('');
 
-    // For the second line's characters:
-    // 1. Sort them alphabetically (ascending order).
-    // 2. Reverse the order of the sorted characters (making it descending).
-    // 3. Join the characters back into a single string.
-    secondLineCharacters   =   secondLineCharacters  .  sort  (  )  .  reverse  (  )  .  join  (  )  ;
-
-    // Perform a lexicographical comparison between the two resulting strings.
-    // The comparison checks if the processed first string is "less than" the processed second string.
-    if  (   firstLineCharacters   <   secondLineCharacters   )
-    {
-        // If the condition is true, output a specific positive indicator.
-        console  .  log  (  'PositiveOutcome'  )  ;
+    // A lexicographical comparison is performed between the two resulting strings.
+    // If the first processed string is "less than" the second processed string,
+    // according to standard string comparison rules, we output 'Yes'.
+    if (firstStringPart < secondStringPart) {
+        console.log('Yes');
     }
-    else
-    {
-        // Otherwise, if the condition is false or equal, output a negative indicator.
-        console  .  log  (  'NegativeOutcome'  )  ;
+    // Otherwise, if the first string is greater than or equal to the second,
+    // we output 'No'.
+    else {
+        console.log('No');
     }
+};
 
-} ;
-
-// This is the entry point for execution.
-// It reads content from standard input ('/dev/stdin') using 'utf8' encoding.
-// The obtained content is then passed as 'sourceData' to the 'PrimaryLogic' function.
-PrimaryLogic  (  require  (  'fs'  )  .  readFileSync  (  '/dev/stdin'  ,  'utf8'  )  )  ;
+// The program's execution begins here.
+// It reads the entire content of the standard input stream ('/dev/stdin')
+// as a UTF-8 encoded string.
+// This content is then passed to our main processing function, AnalyzeStrings.
+AnalyzeStrings(require('fs').readFileSync('/dev/stdin', 'utf8'));

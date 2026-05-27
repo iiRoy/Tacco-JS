@@ -1,33 +1,23 @@
-global.process.stdin.resume();
-global.process.stdin.setEncoding('utf8');
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
 
-let collectedInputSegments = [];
+let receivedText = '';
 
-global.process.stdin.on('data', (incomingSegment) => {
-  collectedInputSegments.push(incomingSegment);
+process.stdin.on('data', incomingChunk => {
+  receivedText += incomingChunk;
 });
 
-global.process.stdin.on('end', () => {
-  let fullContent = collectedInputSegments.join('');
-  
-  let contentFinalIndex = fullContent.length - 1;
-  while (contentFinalIndex >= 0 && /\s/.test(fullContent[contentFinalIndex])) {
-    contentFinalIndex--;
-  }
-  const contentWithoutTrailingWhitespace = fullContent.substring(0, contentFinalIndex + 1);
-
-  const parsedNumberStrings = contentWithoutTrailingWhitespace.split(' '); 
-
-  executeProductComputation(parsedNumberStrings);
+process.stdin.on('end', () => {
+  let processedSegments = receivedText.replace(/\s*$/g, '').split(' ');
+  performCalculationAndDisplay(processedSegments);
 });
 
-function executeProductComputation(numericTextList) {
-  let computedResult = 1; 
-  
-  for (const currentNumericText of numericTextList) {
-    const numberValue = Number(currentNumericText); 
-    computedResult *= numberValue;
+function performCalculationAndDisplay(numericStrings) {
+  let currentProduct = 1;
+
+  for (const strValue of numericStrings) {
+    currentProduct *= strValue;
   }
 
-  global.process.stdout.write(String(computedResult));
+  process.stdout.write(currentProduct.toString());
 }

@@ -1,146 +1,98 @@
-var INPUT_PROCESSOR=(function(){
-  /**
-   * Initializes a new text processing utility.
-   * This function acts as a factory for creating TextContentProcessor instances.
-   * @param {string} sourceContent - The raw text content to be processed.
-   * @returns {TextContentProcessor} A new processor object, ready for data extraction.
-   */
-  function initializeProcessor(sourceContent){
-    return new TextContentProcessor(sourceContent);
+var INPUT_PARSER = (function() {
+  // This factory function creates and returns a new instance of the DataStreamReader.
+  function createParser(inputString) {
+    return new DataStreamReader(inputString);
   }
 
-  /**
-   * Constructor for the TextContentProcessor.
-   * This object manages an array of text lines and a pointer to the current reading position.
-   * @param {string} rawInput - The complete input text, typically read from a file or stream.
-   */
-  function TextContentProcessor(rawInput){
-    // Trim leading/trailing whitespace from the entire input, then split into individual lines.
-    this._contentLines = rawInput.trim().split("\n");
-    // Initialize the line pointer to the very first line (index 0).
-    this._currentLinePointer = 0;
+  // The constructor for our custom data stream reader.
+  function DataStreamReader(inputString) {
+    // Stores the input, split into an array of lines after trimming whitespace.
+    this.lineBuffer = inputString.trim().split("\n");
+    // Keeps track of the current line being processed.
+    this.currentLineIndex = 0;
   }
 
-  /**
-   * Extracts a single item from the current line of text.
-   * If the line has not been previously processed, it splits the line into words
-   * and reverses them before extracting the last element (effectively the first word
-   * of the original line, or the next word if previous calls have popped elements).
-   * The line pointer is advanced if the current line becomes empty after extraction.
-   * @param {boolean} returnAsText - If true, the item is returned as a string; otherwise, it's converted to a number.
-   * @returns {string|number} The extracted data item.
-   */
-  TextContentProcessor.prototype.getSingleValue = function(returnAsText){
-    var storedLines = this._contentLines, // Reference to the internal array of lines
-        linePosition = this._currentLinePointer, // Current index for reading
-        extractedItem; // Placeholder for the value that will be returned
+  // Reads a single token from the current line.
+  // If 'asString' is true, the token is returned as a string; otherwise, it's converted to a number.
+  DataStreamReader.prototype.readToken = function(asString) {
+    var bufferRef = this.lineBuffer;
+    var lineIdx = this.currentLineIndex;
+    var tokenValue;
 
-    // Check if the current line at 'linePosition' is still a single string.
-    // If it is, it means it hasn't been split into words yet.
-    if (typeof storedLines[linePosition] === "string") {
-      // Split the line by spaces and reverse the order of words.
-      // This allows 'pop()' to retrieve words from the beginning of the original line.
-      storedLines[linePosition] = storedLines[linePosition].split(" ").reverse();
+    // If the current line is still a raw string, split it into words and reverse the array.
+    // This allows popping tokens from the "front" of the original line.
+    if (typeof bufferRef[lineIdx] === "string") {
+      bufferRef[lineIdx] = bufferRef[lineIdx].split(" ").reverse();
     }
 
-    // Retrieve the last element from the (potentially reversed) word array.
-    extractedItem = storedLines[linePosition].pop();
+    // Extract the last element (which is the first word of the original line due to reversal).
+    tokenValue = bufferRef[lineIdx].pop();
 
-    // If the current line (now an array of words) is empty after popping,
-    // increment the line pointer to move to the next line for subsequent reads.
-    if (!storedLines[linePosition].length) {
-      this._currentLinePointer++;
+    // If the current line has no more tokens, advance to the next line.
+    if (!bufferRef[lineIdx].length) {
+      this.currentLineIndex++;
     }
 
-    // Return the extracted item, either as its original string type or converted to a number.
-    return returnAsText ? extractedItem : +extractedItem;
+    // Return the token, optionally converting it to a number.
+    return asString ? tokenValue : +tokenValue;
   };
 
-  /**
-   * Reads an entire line of text, splits it into individual items based on spaces,
-   * and then advances the line pointer to the next line.
-   * @param {boolean} outputAsStrings - If true, returns an array of strings; otherwise, converts each item to a number.
-   * @returns {Array<string|number>} An array containing all items from the processed line.
-   */
-  TextContentProcessor.prototype.fetchLineItems = function(outputAsStrings){
-    // Retrieve the current line, split it by spaces, and then increment the line pointer.
-    var lineTokens = this._contentLines[this._currentLinePointer++].split(" ");
-
-    // Based on the 'outputAsStrings' flag, return the array of tokens as strings or numbers.
-    return outputAsStrings ? lineTokens : lineTokens.map(token => +token);
+  // Reads an entire line, splitting it into an array of tokens.
+  // If 'asStrings' is true, tokens are strings; otherwise, they are numbers.
+  DataStreamReader.prototype.readLine = function(asStrings) {
+    // Get the current line, split by spaces, and then increment the line index.
+    var lineTokens = this.lineBuffer[this.currentLineIndex++].split(" ");
+    // Return the array of tokens, mapping to numbers if 'asStrings' is false.
+    return asStrings ? lineTokens : lineTokens.map(item => +item);
   };
 
-  /**
-   * Reads a specified number of consecutive lines, treating each as a row in a matrix.
-   * Each line is split into items, forming a 2D array. The line pointer is advanced
-   * by the number of lines read.
-   * @param {number} numLinesToProcess - The total count of lines to read for the matrix.
-   * @param {boolean} asStringsMatrix - If true, the matrix cells remain strings; otherwise, they are converted to numbers.
-   * @returns {Array<Array<string|number>>} A two-dimensional array representing the matrix data.
-   */
-  TextContentProcessor.prototype.readBlockMatrix = function(numLinesToProcess, asStringsMatrix){
-    // Extract a segment of lines starting from the current pointer,
-    // and for each line, split it into an array of items.
-    var dataMatrix = this._contentLines.slice(this._currentLinePointer, this._currentLinePointer += numLinesToProcess)
-                       .map(line => line.split(" "));
-
-    // If numerical output is requested, iterate through the matrix rows and convert each item to a number.
-    return asStringsMatrix ? dataMatrix : dataMatrix.map(row => row.map(item => +item));
+  // Reads 'numRows' lines and processes them into a 2D array (matrix).
+  // Each row is split into tokens. 'asStrings' determines token type.
+  DataStreamReader.prototype.readMatrix = function(numRows, asStrings) {
+    // Extract a slice of lines, then map each line to an array of its split tokens.
+    var matrixData = this.lineBuffer.slice(this.currentLineIndex, this.currentLineIndex += numRows).map(row => row.split(" "));
+    // If not returning strings, map all inner tokens to numbers.
+    return asStrings ? matrixData : matrixData.map(row => row.map(item => +item));
   };
 
-  /**
-   * Retrieves a specified number of raw lines directly from the input buffer.
-   * The line pointer is advanced by the number of lines retrieved.
-   * @param {number} linesToExtract - The quantity of lines to fetch.
-   * @param {boolean} stringsOnly - If true, returns the lines as strings; otherwise, attempts to convert each line to a number.
-   * @returns {Array<string|number>} An array containing the raw content of the requested lines.
-   */
-  TextContentProcessor.prototype.getRawLines = function(linesToExtract, stringsOnly){
-    // Extract a slice of lines from the current position and advance the pointer.
-    var rawLineData = this._contentLines.slice(this._currentLinePointer, this._currentLinePointer += linesToExtract);
-
-    // Return the lines either as their original string form or mapped to numbers.
-    return stringsOnly ? rawLineData : rawLineData.map(line => +line);
+  // Reads 'count' lines and returns them as a 1D array.
+  // If 'asStrings' is true, lines are strings; otherwise, they are numbers.
+  DataStreamReader.prototype.readLines = function(count, asStrings) {
+    // Extract a slice of lines from the buffer.
+    var lineArray = this.lineBuffer.slice(this.currentLineIndex, this.currentLineIndex += count);
+    // Return the array, mapping to numbers if 'asStrings' is false.
+    return asStrings ? lineArray : lineArray.map(lineContent => +lineContent);
   };
 
-  return initializeProcessor; // Export the factory function as the public interface of the module.
+  return createParser;
 })();
 
-// Create an instance of our input processor.
-// It reads the entire content of standard input synchronously, encoded as UTF-8.
-var stdInputHandler = INPUT_PROCESSOR(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Initialize the input reader by reading the entire content of /dev/stdin.
+var inputReader = INPUT_PARSER(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-// Execute the primary problem-solving function and output its result to the console.
-console.log(performAnalysis());
+// Execute the main problem-solving function and print its result to the console.
+console.log(solveProblem());
 
-/**
- * Main application logic to determine if an input string matches a specific pattern
- * derived from the word "keyence". The pattern allows for any characters to exist
- * between a prefix and a suffix of "keyence".
- * @returns {string} "YES" if the input string matches the pattern, "NO" otherwise.
- */
-function performAnalysis(){
-  var inputSequence = stdInputHandler.getSingleValue(true); // Read the primary input string (as text).
-  var referenceWord = "keyence"; // The fixed word to form patterns from.
-  var outcomeMessage = "NO"; // Initialize the result to "NO".
+// The primary function containing the solution logic.
+function solveProblem() {
+  // Read the single input string from the data stream.
+  var inputStringValue = inputReader.readToken(true);
+  // Define the target pattern string to search for.
+  var targetPattern = "keyence";
+  // Initialize the default outcome if no match is found.
+  var defaultOutcome = "NO";
 
-  // Iterate through all possible split points within the 'referenceWord'.
-  // 'splitPoint' represents the length of the prefix.
-  for (var splitPoint = 0; splitPoint <= referenceWord.length; splitPoint++) {
-    // Construct a regular expression pattern:
-    // '^'    : Matches the beginning of the string.
-    // prefix : A part of 'referenceWord' from the start up to 'splitPoint'.
-    // '.*'   : Matches any character (except newline) zero or more times.
-    // suffix : The remaining part of 'referenceWord' from 'splitPoint' to the end.
-    // '$'    : Matches the end of the string.
-    var currentPattern = "^" + referenceWord.slice(0, splitPoint) + ".*" + referenceWord.slice(splitPoint) + "$";
-
-    // Test if the 'inputSequence' string matches the dynamically generated regex pattern.
-    if (inputSequence.match(currentPattern)) {
-      return "YES"; // If a match is found at any split point, the condition is met.
+  // Iterate through all possible split points within the target pattern.
+  // This creates prefixes and suffixes to form a regex pattern.
+  for (var splitIndex = 0; splitIndex <= targetPattern.length; splitIndex++) {
+    // Construct a regular expression: "^" + prefix + ".*" + suffix + "$".
+    // This checks if the input string starts with the prefix, ends with the suffix,
+    // and has any characters in between.
+    if (inputStringValue.match("^" + targetPattern.slice(0, splitIndex) + ".*" + targetPattern.slice(splitIndex) + "$")) {
+      return "YES"; // If a match is found, immediately return "YES".
     }
   }
 
-  // If the loop completes without finding any matching pattern, return the default "NO".
-  return outcomeMessage;
+  // If the loop completes without finding any match, return the default outcome.
+  return defaultOutcome;
 }

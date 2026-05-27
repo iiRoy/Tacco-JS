@@ -1,62 +1,79 @@
-function checkPrimality (integerVal) {
-  // Verifies if the supplied integer is a prime number.
-  if ( integerVal === 1 ) {
+// Function to determine if a given integer is a prime number.
+function is_prime_number(value_to_check) {
+  // Handle base cases for small numbers.
+  if (value_to_check === 1) {
+    return false; // The number 1 is not considered prime.
+  } else if (value_to_check === 2) {
+    return true; // The number 2 is the smallest and only even prime.
+  } else if (value_to_check % 2 === 0) {
+    return false; // Any other even number is not prime.
+  }
+  // Apply specific checks for small odd primes (3, 5, 7) as an optimization.
+  else if (value_to_check !== 3 && value_to_check % 3 === 0) {
     return false;
-  } else if ( integerVal === 2 ) {
-    return true;
-  } else if ( integerVal % 2 === 0 ) {
+  } else if (value_to_check !== 5 && value_to_check % 5 === 0) {
     return false;
-  } else if ( integerVal !== 3 && integerVal % 3 === 0 ) {
-    return false;
-  } else if ( integerVal !== 5 && integerVal % 5 === 0 ) {
-    return false;
-  } else if ( integerVal !== 7 && integerVal % 7 === 0 ) {
+  } else if (value_to_check !== 7 && value_to_check % 7 === 0) {
     return false;
   }
 
-  // Iteratively check for divisibility by odd numbers.
-  for ( let loopVar = 3 ; loopVar <= Math.sqrt(integerVal) ; loopVar += 2 ) {
-    if ( integerVal % loopVar === 0 ) {
-      return false;
+  // Iterate through odd numbers starting from 3 up to the square root of the value.
+  // If any divisor is found, the number is not prime.
+  for (let divisor_candidate = 3; divisor_candidate <= Math.sqrt(value_to_check); divisor_candidate += 2) {
+    if (value_to_check % divisor_candidate === 0) {
+      return false; // Found a factor, so it's not prime.
     }
   }
-  return true;
+  return true; // If no factors were found, the number is prime.
 }
 
-// This routine computes the greatest common divisor of two numerical inputs.
-function getHighestCommonFactor (firstNum, secondNum) {
-    if ( secondNum === 0 ) {
-        return firstNum;
-    }
-    return getHighestCommonFactor(secondNum, firstNum % secondNum);
+// Recursive function to compute the greatest common divisor (GCD) of two numbers.
+function calculate_greatest_common_divisor(first_number, second_number) {
+  if (second_number === 0) {
+    return first_number; // Base case: GCD(N, 0) is N.
+  }
+  // Apply the Euclidean algorithm: GCD(A, B) = GCD(B, A mod B).
+  return calculate_greatest_common_divisor(second_number, first_number % second_number);
 }
 
-function PerformCalculations (incomingText) {
-  incomingText = incomingText.split("\n");
-  let splitInputLine = incomingText[0].split(" ");
-  const firstOperand = Number.parseInt(splitInputLine[0]);
-  const secondOperand = Number.parseInt(splitInputLine[1]);
-  const resultHCF = getHighestCommonFactor(firstOperand, secondOperand);
-      
-  // Collections for factors and a temporary array.
-  const factorCollection = [];
-  const placeholderArr = [];
-  // Discover all divisors of the calculated HCF.
-  for ( let loopCounter = 1 ; loopCounter <= resultHCF ; loopCounter++ ) {
-    if ( resultHCF % loopCounter === 0 ) {
-      factorCollection.push(loopCounter);
-      placeholderArr.push(0);
+// Main processing function for handling the program's input.
+function ProcessInput(raw_input_data) {
+  // Split the entire input string into an array of lines.
+  let processed_lines = raw_input_data.split("\n");
+  // Take the first line and split it by spaces to get the two number strings.
+  let number_strings = processed_lines[0].split(" ");
+
+  // Convert the string representations of numbers into actual integers.
+  const first_operand = Number.parseInt(number_strings[0], 10);
+  const second_operand = Number.parseInt(number_strings[1], 10);
+
+  // Compute the greatest common divisor of the two parsed numbers.
+  const common_divisor_result = calculate_greatest_common_divisor(first_operand, second_operand);
+
+  // Initialize arrays to store divisors and a temporary, unused array.
+  let divisors_list = []; // This array will hold all divisors of the GCD.
+  let placeholder_array = []; // This array is populated but its values are not used later.
+
+  // Find all positive divisors of the calculated GCD.
+  for (let current_divisor_check = 1; current_divisor_check <= common_divisor_result; current_divisor_check++) {
+    if (common_divisor_result % current_divisor_check === 0) {
+      divisors_list.push(current_divisor_check); // Add the current number to the list of divisors.
+      placeholder_array.push(0); // Add a zero to the placeholder array (maintains original behavior).
     }
   }
-  
-  // Assess primality for each found factor.
-  let totalPrimesFound = 0;
-  for ( let loopCounter = 1 ; loopCounter <= factorCollection.length ; loopCounter++ ) {
-    if ( checkPrimality(factorCollection[loopCounter]) === true ) {
-      totalPrimesFound += 1;
+
+  // Count how many of the identified divisors are prime numbers.
+  let prime_divisor_count = 0;
+  for (let divisor_index = 0; divisor_index < divisors_list.length; divisor_index++) {
+    // Use the helper function to check if each divisor is prime.
+    if (is_prime_number(divisors_list[divisor_index]) === true) {
+      prime_divisor_count += 1; // Increment the counter if the divisor is prime.
     }
   }
-  // Emit the total count of prime factors.
-  console.log(totalPrimesFound);
+
+  // Output the final tally of prime divisors to the console.
+  console.log(prime_divisor_count);
 }
-PerformCalculations(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+// Read the entire content of standard input as a UTF-8 string and pass it to the main function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

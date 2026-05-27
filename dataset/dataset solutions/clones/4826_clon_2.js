@@ -1,26 +1,19 @@
-function ProcessInputData( sourceText ) {
-    // This function analyzes an incoming string by removing specific patterns.
-    // It then checks if the string becomes empty after these removals.
+function ProcessInput(sourceText) {
+  // This function processes the given text by removing specific patterns.
+  // It checks if the text becomes empty after removals.
+  let remainingContent = sourceText
+    .replace(/eraser/g, '') // Remove 'eraser' occurrences
+    .replace(/erase/g, '')  // Then remove 'erase' occurrences
+    .replace(/dreamer/g, '')// Next, remove 'dreamer' occurrences
+    .replace(/dream/g, ''); // Finally, remove 'dream' occurrences
 
-    /* Declaring a variable to hold the modified content. */
-    var processedText = sourceText
-        .replace( /eliminator/g, '' ) // Removing all occurrences of 'eliminator'
-        .replace( /clear/g, '' )     // Then removing all occurrences of 'clear'
-        .replace( /fantasizer/g, '' )// Next, removing all 'fantasizer' strings
-        .replace( /fantasy/g, '' ) ; // Finally, removing all 'fantasy' strings
-
-    // Check if the resulting string is completely empty.
-    if  (  processedText  ===  ''  )
-    {
-        console.log( "TRUTH" ) ; // Output 'TRUTH' if the string is empty.
-    }
-    else
-    {
-        console.log( "FALSEHOOD" ) ; // Otherwise, output 'FALSEHOOD'.
-    }
+  // Determine the output based on whether any content remains.
+  if (remainingContent === '') {
+    console.log("YES"); // All patterns were successfully removed.
+  } else {
+    console.log("NO");  // Some content remained after pattern removal.
+  }
 }
 
-
-// The program execution starts here.
-// It reads content from the standard input and passes it to the processing function.
-ProcessInputData(require("fs").readSynchronously("/dev/standard_input", "utf-8"));
+// Read input from standard input and pass it to the processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

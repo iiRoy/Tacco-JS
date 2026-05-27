@@ -1,79 +1,26 @@
-function createBlockForm(initialMetrics) {
-    return {
-        top: initialMetrics[0],
-        front: initialMetrics[1],
-        right: initialMetrics[2],
-        left: initialMetrics[3],
-        back: initialMetrics[4],
-        bottom: initialMetrics[5]
-    };
-}
+"use strict";
 
-function rotateTowardsNorth(currentBlock) {
-    return {
-        top: currentBlock.back,
-        front: currentBlock.top,
-        right: currentBlock.right,
-        left: currentBlock.left,
-        back: currentBlock.bottom,
-        bottom: currentBlock.front
-    };
-}
+const rotationPermutations = {
+    'N': [1, 5, 2, 3, 0, 4],
+    'S': [4, 0, 2, 3, 5, 1],
+    'W': [2, 1, 5, 0, 4, 3],
+    'E': [3, 1, 0, 5, 4, 2]
+};
 
-function rotateTowardsSouth(currentBlock) {
-    return {
-        top: currentBlock.front,
-        front: currentBlock.bottom,
-        right: currentBlock.right,
-        left: currentBlock.left,
-        back: currentBlock.top,
-        bottom: currentBlock.back
-    };
-}
+const transformDieState = (currentValues, rotationKey) => {
+    const permutationIndices = rotationPermutations[rotationKey];
+    return currentValues.map((_, newPosition) => currentValues[permutationIndices[newPosition]]);
+};
 
-function rotateTowardsWest(currentBlock) {
-    return {
-        top: currentBlock.left,
-        front: currentBlock.front,
-        right: currentBlock.top,
-        left: currentBlock.bottom,
-        back: currentBlock.back,
-        bottom: currentBlock.right
-    };
-}
+new Promise((resolveInput) => {
+    let accumulatedData = "";
+    process.stdin.on("data", (dataChunk) => { accumulatedData += dataChunk; });
+    process.stdin.on("end", () => { resolveInput(accumulatedData); });
+}).then(async (fullInputContent) => {
+    const [initialConfigurationString, movementSequence] = fullInputContent.trim().split("\n");
+    const initialDieValues = initialConfigurationString.split(" ").map(Number);
 
-function rotateTowardsEast(currentBlock) {
-    return {
-        top: currentBlock.right,
-        front: currentBlock.front,
-        right: currentBlock.bottom,
-        left: currentBlock.top,
-        back: currentBlock.back,
-        bottom: currentBlock.left
-    };
-}
+    const resultantDieValues = Array.from(movementSequence).reduce(transformDieState, initialDieValues);
 
-function enactManeuver(currentBlock, actionSymbol) {
-    switch (actionSymbol) {
-        case "N": return rotateTowardsNorth(currentBlock);
-        case "S": return rotateTowardsSouth(currentBlock);
-        case "W": return rotateTowardsWest(currentBlock);
-        case "E": return rotateTowardsEast(currentBlock);
-        default: return currentBlock;
-    }
-}
-
-new Promise(function (resolveProcess, rejectProcess) {
-    let gatheredInput = "";
-    process.stdin.on("data", dataChunk => { gatheredInput += dataChunk; });
-    process.stdin.on("end", () => { resolveProcess([gatheredInput, process.stdout]); });
-}).then(function([allInput, outputStream]) {
-    const inputLines = allInput.split("\n").slice(0, 2);
-    const startingSurfaces = inputLines[0].split(" ").map(valStr => parseInt(valStr, 10));
-    const maneuverSequence = inputLines[1];
-
-    const initialBlockState = createBlockForm(startingSurfaces);
-    const finalBlockState = Array.from(maneuverSequence).reduce(enactManeuver, initialBlockState);
-
-    outputStream.write(`${finalBlockState.top}\n`);
+    process.stdout.write(`${resultantDieValues[0]}\n`);
 });

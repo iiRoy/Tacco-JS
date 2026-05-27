@@ -1,86 +1,84 @@
-class NodeElement {
-  constructor(dataValue) {
-    this.dataValue = dataValue;
-    this.leftElement = null;
-    this.rightElement = null;
+function performPostorderTraversal(rootNode) {
+  const resultCollector = [];
+  if (!rootNode) {
+    return resultCollector;
   }
+
+  const processingStack = [];
+  const outputStack = [];
+
+  processingStack.push(rootNode);
+
+  while (processingStack.length > 0) {
+    const currentElement = processingStack.pop();
+    outputStack.push(currentElement);
+
+    if (currentElement.left) {
+      processingStack.push(currentElement.left);
+    }
+    if (currentElement.right) {
+      processingStack.push(currentElement.right);
+    }
+  }
+
+  while (outputStack.length > 0) {
+    resultCollector.push(outputStack.pop().val);
+  }
+
+  return resultCollector;
 }
 
-let inOrderIndexMap;
-
-function reconstructStructure(preSequence, inSequence) {
-  inOrderIndexMap = new Map();
-  for (let k = 0; k < inSequence.length; k++) {
-    inOrderIndexMap.set(inSequence[k], k);
+function constructTreeFromTraversals(preOrderSequence, inOrderSequence) {
+  if (!preOrderSequence || preOrderSequence.length === 0 || !inOrderSequence || inOrderSequence.length === 0) {
+    return null;
   }
 
-  function buildSubtree(preStart, preEnd, inStart, inEnd) {
-    if (preStart > preEnd || inStart > inEnd) {
+  const inOrderValueToIndexMap = new Map();
+  for (let i = 0; i < inOrderSequence.length; i++) {
+    inOrderValueToIndexMap.set(inOrderSequence[i], i);
+  }
+
+  function buildSubtreeRecursively(preStartIdx, preEndIdx, inStartIdx, inEndIdx) {
+    if (preStartIdx > preEndIdx || inStartIdx > inEndIdx) {
       return null;
     }
 
-    let currentRootValue = preSequence[preStart];
-    let currentRoot = new NodeElement(currentRootValue);
+    const currentRootValue = preOrderSequence[preStartIdx];
+    const currentRootNode = { val: currentRootValue, left: null, right: null };
 
-    let inRootIdx = inOrderIndexMap.get(currentRootValue);
-    let leftSubtreeSize = inRootIdx - inStart;
+    const rootInOrderIndex = inOrderValueToIndexMap.get(currentRootValue);
 
-    currentRoot.leftElement = buildSubtree(
-      preStart + 1,
-      preStart + leftSubtreeSize,
-      inStart,
-      inRootIdx - 1
+    const leftSubtreeLength = rootInOrderIndex - inStartIdx;
+
+    currentRootNode.left = buildSubtreeRecursively(
+      preStartIdx + 1,
+      preStartIdx + leftSubtreeLength,
+      inStartIdx,
+      rootInOrderIndex - 1
     );
 
-    currentRoot.rightElement = buildSubtree(
-      preStart + leftSubtreeSize + 1,
-      preEnd,
-      inRootIdx + 1,
-      inEnd
+    currentRootNode.right = buildSubtreeRecursively(
+      preStartIdx + leftSubtreeLength + 1,
+      preEndIdx,
+      rootInOrderIndex + 1,
+      inEndIdx
     );
 
-    return currentRoot;
+    return currentRootNode;
   }
 
-  return buildSubtree(0, preSequence.length - 1, 0, inSequence.length - 1);
+  return buildSubtreeRecursively(0, preOrderSequence.length - 1, 0, inOrderSequence.length - 1);
 }
 
-function obtainTailOrder(rootNode) {
-  let outputList = [];
-  if (!rootNode) {
-    return outputList;
-  }
+(function mainExecutionBlock() {
+  const inputLines = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split('\n');
+  const nodeCount = Number(inputLines.shift());
+  const preOrderTraversal = inputLines.shift().split(' ').map(Number);
+  const inOrderTraversal = inputLines.shift().split(' ').map(Number);
 
-  let stackA = [];
-  let stackB = [];
+  const reconstructedTreeRoot = constructTreeFromTraversals(preOrderTraversal, inOrderTraversal);
 
-  stackA.push(rootNode);
+  const postOrderResult = performPostorderTraversal(reconstructedTreeRoot);
 
-  while (stackA.length > 0) {
-    let currentElement = stackA.pop();
-    stackB.push(currentElement.dataValue);
-
-    if (currentElement.leftElement) {
-      stackA.push(currentElement.leftElement);
-    }
-    if (currentElement.rightElement) {
-      stackA.push(currentElement.rightElement);
-    }
-  }
-
-  while (stackB.length > 0) {
-    outputList.push(stackB.pop());
-  }
-
-  return outputList;
-}
-
-(function primaryOperation(){
-  const inputData = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split('\n');
-  const totalNodes = Number(inputData.shift());
-  const initialOrder = inputData.shift().split(' ').map(Number);
-  const centralOrder = inputData.shift().split(' ').map(Number);
-
-  let constructedRoot = reconstructStructure(initialOrder, centralOrder);
-  console.log(obtainTailOrder(constructedRoot).join(' '));
+  console.log(postOrderResult.join(' '));
 })();

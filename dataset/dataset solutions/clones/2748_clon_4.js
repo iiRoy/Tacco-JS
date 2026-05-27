@@ -1,71 +1,59 @@
 'use strict';
 
-const interpretBinaryAsDecimal = (originalValue) => {
-    return Array.from(originalValue.toString(2)).reduce((accumulator, character) => {
-        return accumulator * 10 + Number(character);
-    }, 0);
-};
+const processInputData = (sourceText) => {
+    const textLines = sourceText.split('\n');
+    const totalItemsCount = Number(textLines[0]);
+    const initialNumericValues = textLines[1].split(' ').map(Number);
 
-const determineValidity = (aggregateCount, frequencyRegister) => {
-    const uniqueElements = Object.keys(frequencyRegister).map(Number);
-    const distinctElementCount = uniqueElements.length;
+    const transformedNumericValues = initialNumericValues.map(val => parseInt(val.toString(2)));
 
-    const isTripleDivisible = aggregateCount % 3 === 0;
-
-    const checkTripleEquality = () => {
-        if (!isTripleDivisible || distinctElementCount !== 3) return false;
-        const [firstVal, secondVal, thirdVal] = uniqueElements;
-        const cumulativeXOR = firstVal ^ secondVal ^ thirdVal;
-        const targetFrequency = aggregateCount / 3;
-        return cumulativeXOR === 0 &&
-               frequencyRegister[firstVal] === targetFrequency &&
-               frequencyRegister[secondVal] === targetFrequency &&
-               frequencyRegister[thirdVal] === targetFrequency;
-    };
-
-    const checkZeroAndDouble = () => {
-        if (!isTripleDivisible || distinctElementCount !== 2) return false;
-        const hasZeroComponent = uniqueElements.includes(0);
-        if (!hasZeroComponent) return false;
-        const remainingComponent = uniqueElements.find(val => val !== 0);
-        const zeroComponentFrequency = aggregateCount / 3;
-        const otherComponentFrequency = (2 * aggregateCount) / 3;
-        return frequencyRegister[0] === zeroComponentFrequency &&
-               frequencyRegister[remainingComponent] === otherComponentFrequency;
-    };
-
-    const checkSingleZero = () => {
-        if (!isTripleDivisible || distinctElementCount !== 1) return false;
-        return uniqueElements[0] === 0;
-    };
-
-    const checkNonTripleSingleZero = () => {
-        if (isTripleDivisible || distinctElementCount !== 1) return false;
-        return uniqueElements[0] === 0;
-    };
-
-    return checkTripleEquality() || checkZeroAndDouble() || checkSingleZero() || checkNonTripleSingleZero();
-};
-
-const evaluateConfiguration = (rawInputPayload) => {
-    const dataSegments = rawInputPayload.split('\n');
-    const aggregateCount = Number(dataSegments[0]);
-    const numericStrings = dataSegments[1].split(' ');
-
-    const interpretedNumbers = numericStrings.map(Number).map(interpretBinaryAsDecimal);
-
-    const frequencyRegister = interpretedNumbers.reduce((accumulator, currentNumber) => {
-        accumulator[currentNumber] = (accumulator[currentNumber] || 0) + 1;
+    const valueOccurrenceMap = transformedNumericValues.reduce((accumulator, currentVal) => {
+        accumulator[currentVal] = (accumulator[currentVal] || 0) + 1;
         return accumulator;
     }, {});
 
-    const outcomeIndicator = determineValidity(aggregateCount, frequencyRegister);
+    const uniquePresentValues = Object.keys(valueOccurrenceMap).map(Number);
+    const uniqueValueQuantity = uniquePresentValues.length;
 
-    if (outcomeIndicator) {
+    const verifyFrequencies = (...args) => args.every(([val, expectedCount]) => valueOccurrenceMap[val] === expectedCount);
+
+    const determineOutcome = (overallCount, distinctValuesArray, distinctCount) => {
+        const oneThirdOfTotal = overallCount / 3;
+
+        const logicDispatch = {
+            'isDivisibleByThree': {
+                '3': () => {
+                    const [valX, valY, valZ] = distinctValuesArray;
+                    return (valX ^ valY ^ valZ) === 0 && verifyFrequencies([valX, oneThirdOfTotal], [valY, oneThirdOfTotal], [valZ, oneThirdOfTotal]);
+                },
+                '2': () => {
+                    // Original behavior: if 0 is present among the two distinct values, the condition is met.
+                    // Otherwise, it's not.
+                    return distinctValuesArray.includes(0);
+                },
+                '1': () => distinctValuesArray[0] === 0,
+                'default': () => false
+            },
+            'isNotDivisibleByThree': {
+                '1': () => distinctValuesArray[0] === 0,
+                'default': () => false
+            }
+        };
+
+        const primaryBranchKey = overallCount % 3 === 0 ? 'isDivisibleByThree' : 'isNotDivisibleByThree';
+        const secondaryBranchKey = String(distinctCount);
+
+        const handlerFunction = logicDispatch[primaryBranchKey][secondaryBranchKey] || logicDispatch[primaryBranchKey]['default'];
+        return handlerFunction();
+    };
+
+    const finalConditionMet = determineOutcome(totalItemsCount, uniquePresentValues, uniqueValueQuantity);
+
+    if (finalConditionMet) {
         console.log('Yes');
     } else {
         console.log('No');
     }
 };
 
-evaluateConfiguration(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

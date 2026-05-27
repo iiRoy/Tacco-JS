@@ -1,57 +1,65 @@
 "use strict";
 
-const processQueries = (countElements, numberCollection, queryCount, queryValues) => {
-  const aggregateValues = new Set();
+const processQueries = (countN, sourceNumbers, countQ, queryNumbers) => {
+    const reachableSums = new Set();
 
-  const generateSumsRecursively = (currentPosition, runningTotal) => {
-    if (currentPosition === countElements) {
-      if (runningTotal !== 0) {
-        aggregateValues.add(runningTotal);
-      }
-      return;
-    }
+    const buildSums = (currentIdx, accumulatedVal) => {
+        if (currentIdx === countN) {
+            if (accumulatedVal !== 0) {
+                reachableSums.add(accumulatedVal);
+            }
+            return;
+        }
 
-    generateSumsRecursively(currentPosition + 1, runningTotal + numberCollection[currentPosition]);
-    generateSumsRecursively(currentPosition + 1, runningTotal);
-  };
+        buildSums(currentIdx + 1, accumulatedVal + sourceNumbers[currentIdx]);
+        buildSums(currentIdx + 1, accumulatedVal);
+    };
 
-  generateSumsRecursively(0, 0);
+    buildSums(0, 0);
 
-  const outcomeList = queryValues.map(queryItem => {
-    return aggregateValues.has(queryItem) ? "yes" : "no";
-  });
+    const queryOutcomes = queryNumbers.map(targetVal => {
+        return reachableSums.has(targetVal) ? "yes" : "no";
+    });
 
-  return outcomeList;
+    return queryOutcomes;
 };
 
-let inputLineCount = 0;
-let elementQuantity = 0;
-let elementValues = [];
-let queryQuantity = 0;
-let queryValues = [];
+const inputData = {
+    lineCounter: 0,
+    numElements: 0,
+    elementValues: null,
+    numQueries: 0,
+    queryValues: null
+};
 
-const inputInterface = require("readline").createInterface({
-  input: process.stdin,
-  output: process.stdout,
+const inputProcessor = require("readline").createInterface({
+    input: process.stdin,
+    output: process.stdout,
 });
 
-inputInterface.on("line", (currentLine) => {
-  inputLineCount++;
+inputProcessor.on("line", (currentLine) => {
+    inputData.lineCounter++;
 
-  switch (inputLineCount) {
-    case 1:
-      elementQuantity = Number(currentLine);
-      break;
-    case 2:
-      elementValues = currentLine.trim().split(" ").map(val => Number(val));
-      break;
-    case 3:
-      queryQuantity = Number(currentLine);
-      break;
-    default:
-      queryValues = currentLine.trim().split(" ").map(val => Number(val));
-      const finalOutcomes = processQueries(elementQuantity, elementValues, queryQuantity, queryValues);
-      finalOutcomes.forEach(outcome => console.log(outcome));
-      process.exit(0);
-  }
+    switch (inputData.lineCounter) {
+        case 1:
+            inputData.numElements = Number(currentLine);
+            break;
+        case 2:
+            inputData.elementValues = currentLine.trim().split(" ").map(val => Number(val));
+            break;
+        case 3:
+            inputData.numQueries = Number(currentLine);
+            break;
+        case 4:
+            inputData.queryValues = currentLine.trim().split(" ").map(val => Number(val));
+            const finalResults = processQueries(
+                inputData.numElements,
+                inputData.elementValues,
+                inputData.numQueries,
+                inputData.queryValues
+            );
+            finalResults.forEach(res => console.log(res));
+            process.exit(0);
+            break;
+    }
 });

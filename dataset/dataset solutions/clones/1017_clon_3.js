@@ -1,67 +1,44 @@
-const nodeFileSystem = require('fs');
+var rawInputContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+var expressionTokens = rawInputContent.trim().split(' ');
+var computationStack = [];
 
-const systemInputPath = '/dev/stdin';
+const retrieveNumericValue = () => {
+  const poppedElement = computationStack.pop();
+  return parseInt(poppedElement, 10);
+};
 
-let programInputRaw = nodeFileSystem.readFileSync(systemInputPath, 'utf8');
+const storeNumericValue = (valueToStore) => {
+  computationStack.push(parseInt(valueToStore, 10));
+};
 
-const expressionTokens = programInputRaw.trim().split(' ');
+const ADD_OPERATION_SYMBOL = '+';
+const SUBTRACT_OPERATION_SYMBOL = '-';
+const MULTIPLY_OPERATION_SYMBOL = '*';
 
-const ADD_OPERATOR = '+';
-const SUBTRACT_OPERATOR = '-';
-const MULTIPLY_OPERATOR = '*';
+expressionTokens.forEach(function(currentElement) {
+  switch (currentElement) {
+    case ADD_OPERATION_SYMBOL:
+      const secondAddend = retrieveNumericValue();
+      const firstAddend = retrieveNumericValue();
+      const sumResult = firstAddend + secondAddend;
+      computationStack.push(sumResult);
+      break;
+    case SUBTRACT_OPERATION_SYMBOL:
+      const subtrahendValue = retrieveNumericValue();
+      const minuendValue = retrieveNumericValue();
+      const differenceResult = minuendValue - subtrahendValue;
+      computationStack.push(differenceResult);
+      break;
+    case MULTIPLY_OPERATION_SYMBOL:
+      const secondFactor = retrieveNumericValue();
+      const firstFactor = retrieveNumericValue();
+      const productResult = firstFactor * secondFactor;
+      computationStack.push(productResult);
+      break;
+    default:
+      storeNumericValue(currentElement);
+      break;
+  }
+});
 
-let computationStack = [];
-
-for (const currentToken of expressionTokens) {
-    switch (currentToken) {
-        case ADD_OPERATOR:
-            if (computationStack.length < 2) {
-                console.error("Error: Insufficient operands for addition. Stack size:", computationStack.length);
-            }
-            const secondAddend = parseInt(computationStack.pop(), 10);
-            const firstAddend = parseInt(computationStack.pop(), 10);
-            const sumOfOperands = firstAddend + secondAddend;
-            computationStack.push(sumOfOperands);
-            break;
-
-        case SUBTRACT_OPERATOR:
-            if (computationStack.length < 2) {
-                console.error("Error: Insufficient operands for subtraction. Stack size:", computationStack.length);
-            }
-            const subtrahend = parseInt(computationStack.pop(), 10);
-            const minuend = parseInt(computationStack.pop(), 10);
-            const differenceResult = minuend - subtrahend;
-            computationStack.push(differenceResult);
-            break;
-
-        case MULTIPLY_OPERATOR:
-            if (computationStack.length < 2) {
-                console.error("Error: Insufficient operands for multiplication. Stack size:", computationStack.length);
-            }
-            const secondFactor = parseInt(computationStack.pop(), 10);
-            const firstFactor = parseInt(computationStack.pop(), 10);
-            const productOfFactors = firstFactor * secondFactor;
-            computationStack.push(productOfFactors);
-            break;
-
-        default:
-            const numericValue = parseInt(currentToken, 10);
-
-            if (isNaN(numericValue)) {
-                console.warn(`Warning: Encountered an invalid or unparseable token: '${currentToken}'. It will be ignored.`);
-            } else {
-                computationStack.push(numericValue);
-            }
-            break;
-    }
-}
-
-if (computationStack.length === 1) {
-    const finalCalculatedResult = computationStack[0];
-    console.log(finalCalculatedResult);
-} else if (computationStack.length > 1) {
-    console.error("Error: Multiple values remain on the computation stack. This indicates an invalid RPN expression structure.");
-    console.log(computationStack[0]);
-} else {
-    console.error("Error: The computation stack is empty. No result could be determined from the input expression.");
-}
+console.log(computationStack[0]);

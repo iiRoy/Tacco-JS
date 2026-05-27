@@ -1,93 +1,86 @@
-let cacheMatrix = [];
+function ProcessInput(rawInputData) {
+    // Process the raw input string: trim, split by newline, then split each line by space.
+    rawInputData = rawInputData.trim().split("\n").map(function(lineStr) {
+        return lineStr.split(" ");
+    });
 
-/**
- * This function serves as the primary entry point for processing the input data.
- * It parses the dimensions, initializes the dynamic programming table,
- * and then calls the recursive solver to compute the minimum multiplication cost.
- * @param {string} receivedText - The raw string data received from standard input.
- */
-function ProcessInput(receivedText) {
-    // First, clean and structure the input string into a 2D array.
-    const structuredDataLines = receivedText.trim().split("\n").map(lineSegment => lineSegment.split(" "));
+    // Extract the number of matrices from the first line.
+    var matrixCount = parseInt(rawInputData[0][0], 10);
 
-    // Extract the total count of elements (matrices) from the initial input line.
-    const numObjects = parseInt(structuredDataLines[0][0], 10);
-
-    // Populate an array with the dimension values (p_i in matrix chain multiplication).
-    let dimensionValues = [];
-    for (let outerIndex = 0; outerIndex < numObjects; outerIndex++) {
-        dimensionValues.push(parseInt(structuredDataLines[outerIndex + 1][0], 10));
+    // Initialize an array to store the dimensions (p_0, p_1, ..., p_n).
+    var dimensionsArray = [];
+    // Populate the dimensions array with the 'rows' part of each matrix.
+    for (var idx = 0; idx < matrixCount; idx++) {
+        dimensionsArray.push(parseInt(rawInputData[idx + 1][0], 10));
     }
-    // The final dimension value is typically found in a different input field.
-    dimensionValues.push(parseInt(structuredDataLines[numObjects][1], 10));
+    // Add the 'columns' part of the last matrix.
+    dimensionsArray.push(parseInt(rawInputData[matrixCount][1], 10));
 
-    // Initialize the memoization table (`cacheMatrix`) for dynamic programming.
-    // Each cell will store the [computed_cost, first_dimension, last_dimension] for a subproblem.
-    for (let outerIndex = 0; outerIndex < numObjects; outerIndex++) {
-        cacheMatrix.push([]);
-        for (let innerIndex = 0; innerIndex < numObjects; innerIndex++) {
-            cacheMatrix[outerIndex].push([null]); // 'null' indicates an uncomputed state.
+    // Initialize a 3D memoization table for dynamic programming.
+    // Each cell will store [min_cost, p_i, p_j+1] for the subproblem (i, j).
+    memoizationTable = [];
+    for (var rowIdx = 0; rowIdx < matrixCount; rowIdx++) {
+        memoizationTable.push([]);
+        for (var colIdx = 0; colIdx < matrixCount; colIdx++) {
+            memoizationTable[rowIdx].push([-1]); // -1 indicates not yet computed.
         }
     }
 
-    // Execute the core dynamic programming algorithm for the entire chain of objects.
-    // The first element of the returned array contains the overall minimum cost.
-    console.log(calculateSegmentCost(dimensionValues, 0, numObjects - 1)[0]);
+    // Call the recursive DP function and print the minimum cost (first element of the result).
+    console.log(calculateMinCost(dimensionsArray, 0, matrixCount - 1)[0]);
 }
 
-/**
- * Recursively computes the minimum cost to multiply a chain of matrices within a given segment.
- * This function employs memoization to avoid redundant calculations, characteristic of dynamic programming.
- * @param {number[]} costFactors - The array of dimensions (p_0, p_1, ..., p_n).
- * @param {number} startIdx - The starting index (inclusive) of the current matrix segment.
- * @param {number} endIdx - The ending index (inclusive) of the current matrix segment.
- * @returns {Array<number>} An array: [minimum_cost_for_segment, first_matrix_dim, last_matrix_dim].
- */
-function calculateSegmentCost(costFactors, startIdx, endIdx) {
-    // Check if the solution for this specific segment has already been computed and cached.
-    if (cacheMatrix[startIdx][endIdx][0] !== null) {
-        return cacheMatrix[startIdx][endIdx];
+// Recursive function to calculate the minimum scalar multiplications for a subchain.
+function calculateMinCost(dimArr, leftBound, rightBound) {
+    // Check if the result for this subproblem is already memoized.
+    if (memoizationTable[leftBound][rightBound][0] !== -1) {
+        return memoizationTable[leftBound][rightBound];
     }
 
-    // Base Case 1: If the segment consists of a single matrix (length 1).
-    // The cost of multiplying a single matrix is zero.
-    // Its effective dimensions are p_i and p_{i+1}.
-    if (startIdx === endIdx) {
-        return cacheMatrix[startIdx][endIdx] = [0, costFactors[startIdx], costFactors[startIdx + 1]];
+    // Base case: If the subchain contains only one matrix (l == r).
+    // The cost is 0, and its dimensions are dimArr[l] x dimArr[l+1].
+    if (leftBound === rightBound) {
+        return memoizationTable[leftBound][rightBound] = [0, dimArr[leftBound], dimArr[leftBound + 1]];
     }
 
-    // Base Case 2: If the segment consists of two adjacent matrices (length 2).
-    // The cost is p_i * p_{i+1} * p_{i+2}.
-    // Its effective dimensions are p_i and p_{i+2}.
-    if (Math.abs(startIdx - endIdx) === 1) {
-        const firstDim = costFactors[Math.min(startIdx, endIdx)];
-        const middleDim = costFactors[Math.max(startIdx, endIdx)];
-        const lastDim = costFactors[Math.max(startIdx, endIdx) + 1];
-        return cacheMatrix[startIdx][endIdx] = [firstDim * middleDim * lastDim, firstDim, lastDim].slice();
+    // Base case: If the subchain contains two matrices (abs(l - r) == 1).
+    // Cost is p_l * p_r * p_r+1. Dimensions are p_min(l,r) x p_max(l,r)+1.
+    if (Math.abs(leftBound - rightBound) === 1) {
+        return memoizationTable[leftBound][rightBound] = [
+            dimArr[leftBound] * dimArr[rightBound] * dimArr[Math.max(leftBound, rightBound) + 1],
+            dimArr[Math.min(leftBound, rightBound)],
+            dimArr[Math.max(leftBound, rightBound) + 1]
+        ].slice(); // .slice() creates a new array copy.
     }
 
-    // Recursive Step: Iterate through all possible split points for the current segment.
-    let minimumOverallCost = Infinity;
-    let currentSplitCost, leftSegmentResult, rightSegmentResult;
+    let minOperations = Infinity; // Initialize minimum operations to a very large value.
+    let currentCost;
+    let leftSubproblemResult, rightSubproblemResult;
 
-    for (let partitionIndex = startIdx; partitionIndex <= endIdx - 1; partitionIndex++) {
-        // Recursively find the optimal costs for the left and right sub-segments.
-        leftSegmentResult = calculateSegmentCost(costFactors, startIdx, partitionIndex);
-        rightSegmentResult = calculateSegmentCost(costFactors, partitionIndex + 1, endIdx);
+    // Iterate through all possible split points for the current subchain.
+    for (let splitPoint = leftBound; splitPoint <= rightBound - 1; splitPoint++) {
+        // Recursively solve for the left and right subproblems.
+        leftSubproblemResult = calculateMinCost(dimArr, leftBound, splitPoint);
+        rightSubproblemResult = calculateMinCost(dimArr, splitPoint + 1, rightBound);
 
-        // Calculate the total cost for this particular split:
-        // (cost of left part) + (cost of right part) + (cost to combine the two results).
-        currentSplitCost = leftSegmentResult[0] + rightSegmentResult[0] + leftSegmentResult[1] * leftSegmentResult[2] * rightSegmentResult[2];
+        // Calculate the cost for this specific split:
+        // cost_left + cost_right + (rows_left * cols_left * cols_right)
+        currentCost = leftSubproblemResult[0] + rightSubproblemResult[0] +
+                      leftSubproblemResult[1] * leftSubproblemResult[2] * rightSubproblemResult[2];
 
-        // Update the minimum cost found so far if the current split is better.
-        if (currentSplitCost < minimumOverallCost) {
-            minimumOverallCost = currentSplitCost;
+        // Update the minimum operations if the current split yields a lower cost.
+        if (currentCost < minOperations) {
+            minOperations = currentCost;
         }
     }
 
-    // Cache the computed optimal value for the current segment and return it.
-    return cacheMatrix[startIdx][endIdx] = [minimumOverallCost, costFactors[startIdx], costFactors[endIdx + 1]];
+    // Memoize and return the result for the current subproblem.
+    // The result includes the minimum cost, and the dimensions of the resulting matrix (p_l x p_r+1).
+    return memoizationTable[leftBound][rightBound] = [minOperations, dimArr[leftBound], dimArr[rightBound + 1]];
 }
 
-// Read input from the standard input stream and begin processing.
+// Global variable for memoization table.
+var memoizationTable;
+
+// Read input from stdin and pass it to the main processing function.
 ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

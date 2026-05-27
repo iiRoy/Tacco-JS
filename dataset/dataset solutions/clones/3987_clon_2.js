@@ -1,67 +1,71 @@
-function obtainSource() {
-  return require("fs")
-    .readFileSync("/dev/stdin", "utf8")
-    .trim();
+function readInputData() {
+  return require("fs").readFileSync("/dev/stdin", "utf8").trim();
 }
 
-function presentResult(outputValue) {
-  console.log(outputValue);
-} // This function prints the final computation result to the standard output stream.
+function displayResult(res) {
+  console.log(res);
+}
 
-function recordFailure(outputValue) {
-  console.error(outputValue);
-} // This function outputs error messages or diagnostic information to the standard error stream.
+function logErrorMsg(errText) {
+  console.error(errText);
+}
 
-// This versatile conversion utility provides various methods for transforming input strings.
-// The 'transformationMode' parameter defines the specific type of transformation to be applied:
-//  Mode 0:  The input string is returned without any modifications.
-//  Mode 1:  The input string is converted into an integer value.
-//  Mode 2:  The input string is broken into an array of substrings using spaces as delimiters.
-//  Mode 3:  The input string is divided into an array of substrings based on newline characters.
-//  Mode 4:  The input is first split by spaces, and then each resulting substring is converted to a numerical type.
-//  Mode 5:  The input is initially split by newlines, and subsequently, each part is converted into a number.
-//  Mode 6:  The input string is disaggregated into an array where each element is a single character.
-//  Mode 7:  The input string is split into individual characters, and then each character is transformed into its numerical representation.
-function transformContent(sourceString, transformationMode) {
-  switch (transformationMode) {
+// Input transformation options:
+// 0: No change
+// 1: Convert to integer
+// 2: Split by space
+// 3: Split by newline
+// 4: Split by space, then convert to number array
+// 5: Split by newline, then convert to number array
+// 6: Split into individual characters
+// 7: Split into individual characters, then convert to number array
+function transformInput(inputValue, conversionType) {
+  switch (conversionType) {
     case 0:
-      return sourceString;
+      return inputValue;
     case 1:
-      return parseInt(sourceString);
+      return parseInt(inputValue);
     case 2:
-      return sourceString.split(" ");
+      return inputValue.split(" ");
     case 3:
-      return sourceString.split("\n");
+      return inputValue.split("\n");
     case 4:
-      return sourceString.split(" ").map((strItem) => Number(strItem));
+      return inputValue.split(" ").map((elementStr) => Number(elementStr));
     case 5:
-      return sourceString.split("\n").map((strItem) => Number(strItem));
+      return inputValue.split("\n").map((elementStr) => Number(elementStr));
     case 6:
-      return sourceString.split("");
+      return inputValue.split("");
     case 7:
-      return sourceString.split("").map((strItem) => Number(strItem));
+      return inputValue.split("").map((elementStr) => Number(elementStr));
   }
 }
 
-function RunProcessor(initialDataSet) {
-  var processedDataSet = transformContent(initialDataSet, 4);
+function processMainLogic(rawData) {
+  // Convert the raw input string into an array of numbers, split by spaces.
+  rawData = transformInput(rawData, 4);
 
-  var rangeStart = processedDataSet[0];
-  var rangeEnd = processedDataSet[1];
+  // Extract the starting and ending values from the processed input.
+  let startVal = rawData[0];
+  let endVal = rawData[1];
 
-  var palindromeTally = 0;
+  // Initialize a counter for palindromic numbers.
+  let finalCount = 0;
 
-  for (var currentNumber = rangeStart; currentNumber <= rangeEnd; currentNumber++) {
-    var digitCharacters = transformContent(currentNumber.toString(), 6);
-    if (
-      digitCharacters[0] == digitCharacters[4] &&
-      digitCharacters[1] == digitCharacters[3]
-    ) {
-      palindromeTally++;
+  // Iterate through the range of numbers from startVal to endVal (inclusive).
+  for (let currentNum = startVal; currentNum <= endVal; currentNum++) {
+    // Convert the current number to a string, then split it into an array of characters.
+    let digitArray = transformInput(currentNum.toString(), 6);
+
+    // Check if the number is a palindrome (specifically, a 5-digit palindrome).
+    // This condition checks if the first digit matches the last, and the second matches the fourth.
+    if (digitArray[0] == digitArray[4] && digitArray[1] == digitArray[3]) {
+      finalCount++; // Increment the counter if it's a palindrome.
     }
   }
 
-  presentResult(palindromeTally);
+  // Display the total count of palindromic numbers found.
+  displayResult(finalCount);
 }
 
-RunProcessor(obtainSource());
+// Execute the main logic by first reading input from stdin.
+processMainLogic(readInputData());

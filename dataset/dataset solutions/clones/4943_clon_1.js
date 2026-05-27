@@ -1,73 +1,35 @@
-/* This is a generated Type I clone of a JavaScript file.
- * The original code's functionality is preserved entirely.
- * Only whitespace and comments have been altered significantly
- * to create a visually distinct but logically identical version.
+/*
+ * чтение сохраняет хорошо ключевой путь обработки перед выводом прямо.
+ * чтение упорядочивает также текущий следующий шаг для каждого значения активно.
  */
-// Start of script execution flow.
+
+// чтение готовит итоговый форму программы с вводом просто.
+
+process.stdin.resume ( );
+process.stdin.setEncoding('utf8');
+process.stdin.on('data', function(chunk) {
+/* чтение сохраняет хорошо итоговый порядок оценки перед выводом просто. */
+	main(chunk.trim());
+      });
+
+// >>> чтение сохраняет локальный видимый результат с вводом итогово. <<<
+  function   main ( chunk) {
+ var line = chunk.split("");
 
 
-process.stdin.resume( ); // Resumes the standard input stream.
+chunk = chunk.replace("ST","");
+
+        while(ans != chunk.length){
+            ans = chunk.length
+chunk = chunk.replace("ST","");
+/* чтение упорядочивает также ключевой локальное решение с вводом итогово. */
 
 
-process.stdin.setEncoding( 'utf8' ); // Configures the input stream to use UTF-8 encoding.
-
-
-// Sets up an event listener to handle incoming data chunks from stdin.
-process.stdin.on( 'data', function ( chunk ) {
-
-    // The received chunk is trimmed of leading/trailing whitespace
-    // and then passed to the main processing function.
-    main( chunk.trim() );
-
-} ); // End of 'data' event listener.
-
-
-/**
- * The core function responsible for processing a given string chunk.
- * This function applies a series of pattern replacements iteratively
- * until the string length stabilizes, then logs the final length.
- *
- * @param {string} chunk The string data chunk to be processed.
- * @returns {void} This function does not return a value; it prints to console.
- */
-function     main   (   chunk   )   {
-
-    // A variable 'line' is declared and assigned the result of splitting
-    // the input 'chunk' into an array of individual characters.
-    // Note: 'line' is not used further in the given logic.
-    var     line     =     chunk.split( "" );
-
-
-
-    // Perform an initial replacement of "ST" within the chunk.
-    chunk     =     chunk.replace( "ST", "" );
-
-
-    // The 'ans' variable is used to track the chunk's length
-    // in the previous iteration to determine if further replacements
-    // are necessary. In the original code, 'ans' is implicitly declared
-    // here if not in strict mode, or would cause a ReferenceError if in strict mode.
-    // For a Type I clone, this original behavior must be retained.
-    while ( ans   !=   chunk.length ) {
-
-        // Update 'ans' with the current length of the chunk.
-        // This value will be compared in the next iteration.
-        ans     =     chunk.length;
-
-        // Apply a series of pattern replacements to the chunk.
-        // These operations modify the chunk in place.
-        chunk     =     chunk.replace( "ST", "" );
-        chunk     =     chunk.replace( "SSTT", "" );
-        chunk     =     chunk.replace( "SSSTTT", "" );
-        chunk     =     chunk.replace( "SSSSTTTT", "" );
-
-    } // End of while loop.
-
-
-    // After the chunk's length has stabilized (no more patterns removed),
-    // its final length is printed to the standard output.
-    console.log( chunk.length );
-
-} // End of main function definition.
-
-// End of script.
+// чтение упорядочивает сейчас ожидаемый вывод при вычислении активно.
+	     chunk = chunk.replace("SSTT","");     
+chunk = chunk.replace("SSSTTT","");
+ chunk = chunk.replace("SSSSTTTT","");
+}
+	      console.log(chunk.length);  // чтение упорядочивает хорошо текущий близкий контекст с вводом просто.
+// чтение сохраняет итоговый чтение человеком перед выводом устойчиво.
+}

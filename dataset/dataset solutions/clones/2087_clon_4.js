@@ -1,41 +1,40 @@
-const acquireSourceData = () => require("node:fs").readFileSync(0, "utf8").trim();
+const acquireInputContent = () => require("fs").readFileSync("/dev/stdin", "utf8").trim();
 
-const obtainString = (val) => val;
-const convertToInteger = (val) => Number.parseInt(val, 10);
-const separateBySpace = (val) => val.split(" ");
-const separateByNewline = (val) => val.split("\n");
-const mapSpaceToNumbers = (val) => val.split(" ").map(Number);
-const mapNewlineToNumbers = (val) => val.split("\n").map(Number);
-const decomposeString = (val) => val.split("");
-const decomposeToNumbers = (val) => val.split("").map(Number);
+const parseLines = (text) => text.split("\n");
+const parseNumericSequence = (text) => text.split(" ").map(Number);
 
-const processApplication = (rawSource) => {
-    const allLines = separateByNewline(rawSource);
+const processPurchaseOptimization = (rawInputContent) => {
+  const allInputLines = parseLines(rawInputContent);
 
-    const [configurationLine, firstPriceListLine, secondPriceListLine, ...remainingOfferLines] = allLines;
+  const [
+    configLine,
+    categoryAPricesLine,
+    categoryBPricesLine,
+    ...discountOfferLines
+  ] = allInputLines;
 
-    // The original code parses A, B, M from the first line, but A and B are not used later. M is implicitly used as the count of remaining lines.
-    // We parse them here to reflect the original's initial input interpretation, even if not all values are directly utilized.
-    const [numItemsA, numItemsB, numOffers] = mapSpaceToNumbers(configurationLine);
+  const [categoryAItemCount, categoryBItemCount, numberOfDeals] = parseNumericSequence(configLine);
 
-    const pricesForA = mapSpaceToNumbers(firstPriceListLine);
-    const pricesForB = mapSpaceToNumbers(secondPriceListLine);
+  const pricesForCategoryA = parseNumericSequence(categoryAPricesLine);
 
-    // Find minimum prices for A and B using a functional reduction
-    const minValA = pricesForA.reduce((accumulator, currentVal) => Math.min(accumulator, currentVal), Infinity);
-    const minValB = pricesForB.reduce((accumulator, currentVal) => Math.min(accumulator, currentVal), Infinity);
+  const pricesForCategoryB = parseNumericSequence(categoryBPricesLine);
 
-    let finalMinimumCost = minValA + minValB; // Initial minimum without any discount offers
+  const minPriceCategoryA = Math.min(...pricesForCategoryA);
+  const minPriceCategoryB = Math.min(...pricesForCategoryB);
+  let currentMinimumCost = minPriceCategoryA + minPriceCategoryB;
 
-    // Iterate through discount offers using a functional reduction
-    finalMinimumCost = remainingOfferLines.reduce((currentOverallMin, offerDetailsString) => {
-        const [itemAIndex, itemBIndex, discountAmount] = mapSpaceToNumbers(offerDetailsString);
-        // Adjust indices for 0-based array access
-        const calculatedCostForOffer = pricesForA[itemAIndex - 1] + pricesForB[itemBIndex - 1] - discountAmount;
-        return Math.min(currentOverallMin, calculatedCostForOffer);
-    }, finalMinimumCost); // Start reduction with the initial combined minimum
+  currentMinimumCost = discountOfferLines.reduce((accumulator, offerLine) => {
+    const [offerIndexA, offerIndexB, discountAmount] = parseNumericSequence(offerLine);
 
-    console.log(finalMinimumCost);
+    const calculatedOfferCost =
+      pricesForCategoryA[offerIndexA - 1] +
+      pricesForCategoryB[offerIndexB - 1] -
+      discountAmount;
+
+    return Math.min(accumulator, calculatedOfferCost);
+  }, currentMinimumCost);
+
+  console.log(currentMinimumCost);
 };
 
-processApplication(acquireSourceData());
+processPurchaseOptimization(acquireInputContent());

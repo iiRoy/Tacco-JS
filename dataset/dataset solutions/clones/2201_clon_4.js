@@ -1,92 +1,75 @@
-class StreamProcessor {
-    #sourceLines;
-    #linePointer;
+const acquireInputContent = () => require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");
 
-    constructor() {
-        this.#sourceLines = require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");
-        this.#linePointer = 0;
-    }
+const initializeInputSystem = (inputLines) => {
+    let currentLineIndex = 0;
+    const totalLines = inputLines.length;
 
-    checkAvailability() {
-        return this.#linePointer < this.#sourceLines.length;
-    }
-
-    pullLine() {
-        if (!this.checkAvailability()) {
-            throw new Error("Input exhaustion: No more data lines.");
+    const fetchNextLine = () => {
+        if (currentLineIndex >= totalLines) {
+            throw new Error("No more input lines available.");
         }
-        const lineContent = this.#sourceLines[this.#linePointer];
-        this.#linePointer++;
-        return lineContent;
-    }
+        return inputLines[currentLineIndex++];
+    };
 
-    extractNumbers() {
-        return this.pullLine().split(" ").map(Number);
-    }
-}
+    const hasMoreLines = () => currentLineIndex < totalLines;
 
-const publishResult = (value) => {
-    console.log(value);
+    return { fetchNextLine, hasMoreLines };
 };
 
-const commenceOperation = () => {
-    const inputService = new StreamProcessor();
+const parseInteger = (inputString) => parseInt(inputString, 10);
+const parseIntegerArray = (inputString) => inputString.split(" ").map(Number);
 
-    const initialConfiguration = inputService.extractNumbers();
-    const desiredDamageThreshold = initialConfiguration[0];
-    const totalSpellCount = initialConfiguration[1];
+const inputReader = initializeInputSystem(acquireInputContent());
 
-    const magicalAbilities = [];
-    for (let i = 0; i < totalSpellCount; ++i) {
-        const abilityData = inputService.extractNumbers();
-        magicalAbilities.push({
-            power: abilityData[0],
-            energyCost: abilityData[1]
-        });
+const readInt = () => parseInteger(inputReader.fetchNextLine());
+const readIntArray = () => parseIntegerArray(inputReader.fetchNextLine());
+
+const outputResult = (data) => console.log(data);
+const outputError = (data) => console.error(data);
+
+const processChallenge = () => {
+    const initialParameters = readIntArray();
+    const targetDamageThreshold = initialParameters[0];
+    const spellCount = initialParameters[1];
+
+    const spellData = [];
+    for (let spellIndex = 0; spellIndex < spellCount; spellIndex++) {
+        const currentSpellDetails = readIntArray();
+        spellData.push([currentSpellDetails[0], currentSpellDetails[1]]);
     }
 
-    const maximumCalculableDamage = 100000;
-    const memoizedCosts = new Map();
+    const MAX_DAMAGE_CAP = 100000;
+    const minManaRequired = Array(MAX_DAMAGE_CAP + 1); // Creates array with empty slots (undefined)
+    minManaRequired[0] = 0; // 0 mana for 0 damage
 
-    const calculateExactDamageCost = (currentDamage) => {
-        if (currentDamage <= 0) {
-            return 0;
-        }
-        if (memoizedCosts.has(currentDamage)) {
-            return memoizedCosts.get(currentDamage);
-        }
-
-        let minimumEnergy = Infinity;
-        for (const ability of magicalAbilities) {
-            if (currentDamage - ability.power >= 0) {
-                const previousDamageCost = calculateExactDamageCost(currentDamage - ability.power);
-                if (previousDamageCost !== Infinity) {
-                    minimumEnergy = Math.min(minimumEnergy, previousDamageCost + ability.energyCost);
+    spellData.forEach(([spellDamageValue, spellManaCost]) => {
+        for (let currentDamagePoint = 0; currentDamagePoint < targetDamageThreshold; currentDamagePoint++) {
+            if (minManaRequired[currentDamagePoint] !== undefined) { // Check if currentDamagePoint is reachable
+                const potentialDamage = currentDamagePoint + spellDamageValue;
+                if (potentialDamage <= MAX_DAMAGE_CAP) {
+                    const newManaCost = minManaRequired[currentDamagePoint] + spellManaCost;
+                    if (minManaRequired[potentialDamage] === undefined || newManaCost < minManaRequired[potentialDamage]) {
+                        minManaRequired[potentialDamage] = newManaCost;
+                    }
                 }
             }
         }
-        memoizedCosts.set(currentDamage, minimumEnergy);
-        return minimumEnergy;
-    };
+    });
 
-    for (let d = 1; d <= maximumCalculableDamage; ++d) {
-        calculateExactDamageCost(d);
+    const UNREACHABLE_COST_SENTINEL = 1000000007;
+    if (minManaRequired[MAX_DAMAGE_CAP] === undefined) {
+        minManaRequired[MAX_DAMAGE_CAP] = UNREACHABLE_COST_SENTINEL;
     }
 
-    const cumulativeMinimumEnergy = new Array(maximumCalculableDamage + 1).fill(Infinity);
-    cumulativeMinimumEnergy[0] = 0;
-
-    for (let d = 1; d <= maximumCalculableDamage; ++d) {
-        if (memoizedCosts.has(d)) {
-            cumulativeMinimumEnergy[d] = memoizedCosts.get(d);
+    for (let k = MAX_DAMAGE_CAP - 1; k >= 0; k--) {
+        if (minManaRequired[k]) { // Original logic: 0 is falsy, positive numbers are truthy
+            minManaRequired[k] = Math.min(minManaRequired[k], minManaRequired[k + 1]);
+        } else { // This branch is taken if minManaRequired[k] is 0 or undefined
+            minManaRequired[k] = minManaRequired[k + 1];
         }
     }
 
-    for (let d = maximumCalculableDamage - 1; d >= 0; --d) {
-        cumulativeMinimumEnergy[d] = Math.min(cumulativeMinimumEnergy[d], cumulativeMinimumEnergy[d + 1]);
-    }
-
-    publishResult(cumulativeMinimumEnergy[desiredDamageThreshold]);
+    outputResult(minManaRequired[targetDamageThreshold]);
 };
 
-commenceOperation();
+processChallenge();

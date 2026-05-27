@@ -1,180 +1,194 @@
-initiateProcess (function * (emitOutput, fetchInput) {
-	// Initialize the first counter for pattern generation.
-	var firstCounter = +(yield) - 1;
-	// Initialize the second counter, also from yielded input.
-	var secondCounter = +(yield) - 1;
+executeProgram(function* (outputLine, fetchInput) {
+  // Retrieve the first numerical input, adjusting its value.
+  let firstCount = +(yield) - 1;
+  // Retrieve the second numerical input, adjusting its value.
+  let secondCount = +(yield) - 1;
 
-	// Output an initial informational line, calculating a value based on counters.
-	emitOutput(`${Math.floor((firstCounter - 1) / 50) * 2 + 2 + Math.floor((secondCounter - 1) / 50) * 2 + 2} 100`);
+  // Calculate and print the initial header line.
+  // The calculation involves integer division and multiplication.
+  outputLine(
+    `${Math.floor((firstCount - 1) / 50) * 2 + 2 + Math.floor((secondCount - 1) / 50) * 2 + 2} 100`
+  );
 
-	// Begin the first pattern generation block.
-	do {
-		let currentLineA = "", currentLineB = ""; // Buffers for two lines of the pattern.
-		for (let loopIndex = 0; loopIndex < 100; loopIndex += 2) {
-			if (0 < firstCounter) {
-				currentLineA += ".#";
-				currentLineB += "##";
-				--firstCounter; // Decrement the first counter.
-			} else {
-				currentLineA += "##";
-				currentLineB += "##";
-			}
-		}
-		emitOutput(currentLineA); // Send out the first generated line.
-		emitOutput(currentLineB); // Send out the second generated line.
-	} while (0 < firstCounter); // Continue while the first counter is positive.
-	
-	// Begin the second pattern generation block.
-	do {
-		let currentLineA = "", currentLineB = ""; // Re-initialize line buffers for the next pattern.
-		for (let loopIndex = 0; loopIndex < 100; loopIndex += 2) {
-			if (0 < secondCounter) {
-				currentLineA += "..";
-				currentLineB += "#.";
-				--secondCounter; // Decrement the second counter.
-			} else {
-				currentLineA += "..";
-				currentLineB += "..";
-			}
-		}
-		emitOutput(currentLineA); // Output the first line of the second pattern.
-		emitOutput(currentLineB); // Output the second line of the second pattern.
-	} while (0 < secondCounter); // Continue while the second counter is positive.
+  // Loop to generate the first part of the pattern based on 'firstCount'.
+  do {
+    let patternRowA = ""; // Initialize the first pattern row for this iteration.
+    let patternRowB = ""; // Initialize the second pattern row for this iteration.
+
+    // Iterate to build the pattern rows.
+    for (let idx = 0; idx < 100; idx += 2) {
+      // Check if there are still 'firstCount' units to process.
+      if (0 < firstCount) {
+        patternRowA += ".#"; // Append specific characters for active units.
+        patternRowB += "##";
+        --firstCount; // Decrement the counter.
+      } else {
+        patternRowA += "##"; // Append default characters when units are exhausted.
+        patternRowB += "##";
+      }
+    }
+    outputLine(patternRowA); // Output the first generated row.
+    outputLine(patternRowB); // Output the second generated row.
+  } while (0 < firstCount); // Continue as long as 'firstCount' is positive.
+
+  // Loop to generate the second part of the pattern based on 'secondCount'.
+  do {
+    let patternRowA = ""; // Re-initialize the first pattern row.
+    let patternRowB = ""; // Re-initialize the second pattern row.
+
+    // Iterate to build the pattern rows.
+    for (let idx = 0; idx < 100; idx += 2) {
+      // Check if there are still 'secondCount' units to process.
+      if (0 < secondCount) {
+        patternRowA += ".."; // Append specific characters for active units.
+        patternRowB += "#.";
+        --secondCount; // Decrement the counter.
+      } else {
+        patternRowA += ".."; // Append default characters when units are exhausted.
+        patternRowB += "..";
+      }
+    }
+    outputLine(patternRowA); // Output the first generated row.
+    outputLine(patternRowB); // Output the second generated row.
+  } while (0 < secondCount); // Continue as long as 'secondCount' is positive.
 });
 
 /**
- * Orchestrates the execution of a generator-based application, managing standard I/O.
- * @param {(outputFunc: (textPayload: string, endDelimiter?: string) => void, inputFunc: () => Generator<string|null>) => Generator<any>} applicationEntry The primary generator function for the application logic.
+ * This function orchestrates the execution of a generator-based program,
+ * handling standard input and output streams.
+ * @param {(outputLine: (text: string, ending?: string) => void, fetchInput: () => IterableIterator<string|null>) => IterableIterator<any>} programGenerator
  */
-function initiateProcess (applicationEntry) {
-	const inputChannel = process.stdin; // Reference to standard input stream.
-	const outputChannel = process.stdout; // Reference to standard output stream.
+function executeProgram(programGenerator) {
+  const inputSource = process.stdin; // Standard input stream.
+  const outputSink = process.stdout; // Standard output stream.
 
-	/**
-	 * @type {(string | null)[]} An array to buffer parsed tokens or lines for the generator.
-	 */
-	const parsedTokens = [];
-	/**
-	 * @type {string[]} An array to buffer incoming raw lines from the stream.
-	 */
-	const bufferedLines = [];
-	let unprocessedFragment = ""; // Holds partial data not yet forming a complete line.
-	let processingCompleted = false; // Flag indicating the input stream has finished.
+  /**
+   * @type {[string|null]}
+   */
+  const inputTokens = []; // Buffer for individual input words/tokens.
+  /**
+   * @type {[string]}
+   */
+  const inputLines = []; // Buffer for complete input lines.
+  let remainingBuffer = ""; // Stores partial lines from input chunks.
+  let inputFinished = false; // Flag indicating if input stream has ended.
 
-	const MODE_LINE_BY_LINE = 0; // Constant for input mode: consume an entire line.
-	const MODE_TOKEN_BY_TOKEN = 1; // Constant for input mode: consume a single word/token.
-	let currentParsingMode = MODE_TOKEN_BY_TOKEN; // The current strategy for reading input.
+  const LINE_READ_MODE = 0; // Constant for line-by-line input mode.
+  const WORD_READ_MODE = 1; // Constant for word-by-word input mode.
+  let currentReadMode = WORD_READ_MODE; // Current mode for reading input.
 
-	/**
-	 * Writes content to the standard output stream.
-	 * @param {string} textPayload The string data to be written.
-	 * @param {string} [endDelimiter] Optional string to use as a line terminator; defaults to system EOL.
-	 */
-	function transmitOutput (textPayload, endDelimiter) {
-		outputChannel.write(textPayload + (undefined === endDelimiter ? systemUtilities.EOL : endDelimiter));
-	}
-	
-	/**
-	 * A generator function to provide input to the main application generator.
-	 * It prioritizes buffered lines, otherwise yields to request more data.
-	 * @returns {Generator<string|null>} A generator that yields a single input item.
-	 */
-	function *acquireInput () {
-		if (0 < bufferedLines.length) {
-			return bufferedLines.shift(); // Retrieve an item from the buffer.
-		} else {
-			currentParsingMode = MODE_LINE_BY_LINE; // Switch mode to await a full line.
-			/**
-			 * @type {string}
-			 */
-			const inputRecord = yield; // Pause execution and wait for an input value.
-			currentParsingMode = MODE_TOKEN_BY_TOKEN; // Revert to token parsing mode.
-			return inputRecord;
-		}
-	}
+  /**
+   * Writes a line of text to the output stream.
+   * @param {string} text The string to write.
+   * @param {string} [ending] Optional string to append instead of OS-specific EOL.
+   */
+  function printOutput(text, ending) {
+    outputSink.write(text + (void 0 === ending ? os.EOL : ending));
+  }
 
-	// Instantiate the main application generator with the I/O functions.
-	const coreGenerator = applicationEntry(transmitOutput, acquireInput);
+  /**
+   * Generator function to retrieve input.
+   * Yields a line when in line mode, otherwise expects a line to be pushed.
+   */
+  function* retrieveInput() {
+    if (inputLines.length > 0) {
+      return inputLines.shift(); // Return an already buffered line.
+    } else {
+      currentReadMode = LINE_READ_MODE; // Switch to line mode.
+      /**
+       * @type {string}
+       */
+      const lineFromYield = yield; // Pause execution and wait for a line.
+      currentReadMode = WORD_READ_MODE; // Switch back to word mode.
+      return lineFromYield;
+    }
+  }
 
-	/**
-	 * Callback for handling incoming data chunks from the input stream.
-	 * @param {string | null} dataBlock The data received, or null if the stream has ended.
-	 */
-	function handleIncomingData (dataBlock) {
-		inputChannel.pause(); // Temporarily halt the input stream to process.
-		if (null === dataBlock) {
-			bufferedLines.push(null); // Indicate end of stream in the buffer.
-		} else {
-			unprocessedFragment += dataBlock; // Append new data to the existing fragment.
-			const lineExtractionRegex = /.*(\r?\n|\r)/g; // Regular expression to match complete lines.
-			let extractedLineMatch, lastMatchPosition = 0;
-			
-			while (null !== (extractedLineMatch = lineExtractionRegex.exec(unprocessedFragment))) {
-				lastMatchPosition = lineExtractionRegex.lastIndex;
-				bufferedLines.push(extractedLineMatch[0]); // Add extracted line to the buffer.
-			}
-			unprocessedFragment = unprocessedFragment.substring(lastMatchPosition); // Retain any leftover partial data.
-		}
-		processDataCycle(); // Initiate or continue the main processing loop.
-	}
+  const programIterator = programGenerator(printOutput, retrieveInput); // Initialize the main program generator.
 
-	/**
-	 * The central loop responsible for feeding input to the generator and handling its output.
-	 */
-	function processDataCycle () {
-		while (0 < bufferedLines.length) {
-			switch (currentParsingMode) {
-				case MODE_LINE_BY_LINE:
-				{
-					parsedTokens.push(bufferedLines.shift()); // Consume an entire line as a single token.
-				}
-				break;
-				case MODE_TOKEN_BY_TOKEN:
-				{
-					if (null === bufferedLines[0]) {
-						parsedTokens.push(bufferedLines.shift()); // Propagate the end-of-stream marker.
-					} else {
-						const tokenExtractionRegex = /[^\s]+/g; // Regex to extract individual tokens.
-						let extractedTokenMatch;
-						if (null !== (extractedTokenMatch = tokenExtractionRegex.exec(bufferedLines[0]))) {
-							parsedTokens.push(extractedTokenMatch[0]); // Add the found token to parsed list.
-							bufferedLines[0] = bufferedLines[0].substring(tokenExtractionRegex.lastIndex); // Remove token from the current line.
-						} else {
-							bufferedLines.shift(); // If no tokens remain, discard the line.
-						}
-					}
-				}
-				break;
-			}
+  /**
+   * Processes a received chunk of data from the input stream.
+   * @param {string|null} chunk The data chunk, or null if stream ended.
+   */
+  function processInputChunk(chunk) {
+    inputSource.pause(); // Temporarily pause the input stream.
 
-			while (0 < parsedTokens.length) {
-				const generatorResult = coreGenerator.next(parsedTokens.shift()); // Advance the generator with the next token.
-				
-				if (undefined !== generatorResult.value) {
-					if ('string' === typeof generatorResult.value) {
-						transmitOutput(generatorResult.value, ""); // Output string results directly.
-					} else {
-						transmitOutput(`${generatorResult.value}`, ""); // Convert and output other data types.
-					}
-				}
-				if (generatorResult.done) return; // Terminate if the generator has completed its execution.
-			}
-		}
+    if (null === chunk) {
+      inputLines.push(null); // Mark end of input with a null line.
+    } else {
+      remainingBuffer += chunk; // Append new chunk to the buffer.
+      const lineRegex = /.*(\r?\n|\r)/g; // Regex to find complete lines.
+      let lineMatchResult;
+      let lastMatchPosition = 0;
 
-		// If all processing is done, schedule a final check; otherwise, resume input stream.
-		processingCompleted ? setTimeout(handleIncomingData, 0, null) : inputChannel.resume();
-	}
-	
-	// Register event handlers for data reception and stream termination.
-	inputChannel.on('data', handleIncomingData);
-	inputChannel.on('end', function () {
-		processingCompleted = true; // Mark that the input stream has concluded.
-		handleIncomingData(null); // Process the final end-of-stream event.
-	});
+      // Extract all complete lines from the buffer.
+      while (null !== (lineMatchResult = lineRegex.exec(remainingBuffer))) {
+        lastMatchPosition = lineRegex.lastIndex;
+        inputLines.push(lineMatchResult[0]);
+      }
+      remainingBuffer = remainingBuffer.substring(lastMatchPosition); // Keep any remaining partial line.
+    }
+    processQueue(); // Continue processing the input queue.
+  }
 
-	inputChannel.setEncoding('utf8'); // Ensure input is treated as UTF-8.
-	handleIncomingData(null); // Kick off the initial data processing cycle.
+  /**
+   * Main processing loop for buffered input and generator execution.
+   */
+  function processQueue() {
+    while (inputLines.length > 0) {
+      switch (currentReadMode) {
+        case LINE_READ_MODE: {
+          inputTokens.push(inputLines.shift()); // Move a line to tokens if in line mode.
+          break;
+        }
+        case WORD_READ_MODE: {
+          if (null === inputLines[0]) {
+            inputTokens.push(inputLines.shift()); // If end of input, push null token.
+          } else {
+            const wordRegex = /[^\s]+/g; // Regex to find a word.
+            let lineMatchResult;
+            // Try to extract a word from the current line.
+            if (null !== (lineMatchResult = wordRegex.exec(inputLines[0]))) {
+              inputTokens.push(lineMatchResult[0]); // Push the found word.
+              inputLines[0] = inputLines[0].substring(wordRegex.lastIndex); // Remove the word from the line.
+            } else {
+              inputLines.shift(); // If no word found, discard the line.
+            }
+          }
+          break;
+        }
+      }
+
+      // Process all available input tokens with the generator.
+      while (inputTokens.length > 0) {
+        const iteratorResult = programIterator.next(inputTokens.shift()); // Advance the generator with the next token.
+        if (void 0 !== iteratorResult.value) {
+          // If the generator yielded a value, print it.
+          if ("string" === typeof iteratorResult.value) {
+            printOutput(iteratorResult.value, ""); // Print string value.
+          } else {
+            printOutput(`${iteratorResult.value}`, ""); // Print other values as string.
+          }
+        }
+        if (iteratorResult.done) return; // If generator is done, exit.
+      }
+    }
+
+    // If no more lines are buffered, either signal end or resume input stream.
+    inputFinished
+      ? setTimeout(processInputChunk, 0, null)
+      : inputSource.resume();
+  }
+
+  // Set up event listeners for input stream.
+  inputSource.on("data", processInputChunk);
+  inputSource.on("end", function () {
+    inputFinished = true; // Mark input as finished.
+    processInputChunk(null); // Process any remaining data and signal end.
+  });
+
+  inputSource.setEncoding("utf8"); // Set input encoding.
+  processInputChunk(null); // Initialize by processing a null chunk to start the loop.
 }
 
-// Import the 'os' module for system-specific utilities, e.g., end-of-line character.
-const systemUtilities = require('os');
+const os = require("os"); // Import the 'os' module for platform-specific EOL.

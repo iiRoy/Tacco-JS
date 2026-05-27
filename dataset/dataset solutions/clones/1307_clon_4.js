@@ -1,23 +1,23 @@
-const sourceDataAccumulator = [];
-const inputFlow = globalThis.process.stdin;
-inputFlow.resume();
-inputFlow.setEncoding('utf8');
+let currentBuffer = '';
 
-const transformingFunction = (unitGlyph) => {
-  if (/[a-z]/.test(unitGlyph)) {
-    return unitGlyph.toUpperCase();
-  } else if (/[A-Z]/.test(unitGlyph)) {
-    return unitGlyph.toLowerCase();
-  } else {
-    return unitGlyph;
-  }
-};
+process.stdin.resume();
+process.stdin.setEncoding('utf-8');
 
-inputFlow.on('data', (incomingSlice) => {
-  sourceDataAccumulator.push(incomingSlice);
+process.stdin.on('data', (incomingData) => {
+    currentBuffer += incomingData;
 
-  const currentFullContent = sourceDataAccumulator.join('');
-  const modifiedElements = currentFullContent.split('').map(transformingFunction);
+    const processedResult = Array.from(currentBuffer).reduce((accumulator, charUnit) => {
+        const upperVersion = charUnit.toUpperCase();
+        const lowerVersion = charUnit.toLowerCase();
 
-  globalThis.console.log(modifiedElements.join(''));
+        if (charUnit === upperVersion && charUnit !== lowerVersion) {
+            return accumulator + lowerVersion;
+        } else if (charUnit === lowerVersion && charUnit !== upperVersion) {
+            return accumulator + upperVersion;
+        } else {
+            return accumulator + charUnit;
+        }
+    }, '');
+
+    console.log(processedResult);
 });

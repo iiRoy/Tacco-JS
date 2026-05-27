@@ -1,48 +1,36 @@
-const PRIME_DIVISOR = 1000000007;
+if (typeof process !== "undefined") {
+    let receivedData = "";
+    process.stdin.resume();
+    process.stdin.setEncoding('utf8');
+    process.stdin.on('data', function (chunk) {
+        receivedData += chunk;
+    });
+    process.stdin.on('end', function () {
+        const inputLines = receivedData.split("\n");
+        executeProgram(inputLines);
+    });
+}
 
-function powerIterativeMod(baseValue, exponentValue) {
-    let finalProduct = 1n;
-    let currentBase = BigInt(baseValue);
-    let currentExponent = BigInt(exponentValue);
-    const modulusBigInt = BigInt(PRIME_DIVISOR);
+const moduloDivisor = 1000000007;
 
-    currentBase %= modulusBigInt;
+function computePowerModulo(baseValue, powerExponent) {
+    let resultAccumulator = 1;
+    let currentBase = baseValue % moduloDivisor;
 
-    while (currentExponent > 0n) {
-        if (currentExponent % 2n === 1n) {
-            finalProduct = (finalProduct * currentBase) % modulusBigInt;
+    while (powerExponent > 0) {
+        if (powerExponent % 2 === 1) {
+            resultAccumulator = (resultAccumulator * currentBase) % moduloDivisor;
         }
-        currentBase = (currentBase * currentBase) % modulusBigInt;
-        currentExponent /= 2n;
+        currentBase = (currentBase * currentBase) % moduloDivisor;
+        powerExponent = Math.floor(powerExponent / 2);
     }
-    return Number(finalProduct);
+    return resultAccumulator;
 }
 
-const displayResult = console.log;
-
-if (typeof process !== "undefined" && process.stdin) {
-    const streamReader = require('readline').createInterface({
-        input: process.stdin,
-        output: process.stdout
+function executeProgram(inputLines) {
+    const rawInputString = inputLines[0];
+    const numericValues = rawInputString.split(" ").map(function(element) {
+        return Number(element);
     });
-
-    let collectedLines = [];
-    streamReader.on('line', (currentLine) => {
-        collectedLines.push(currentLine);
-    });
-
-    streamReader.on('close', async () => {
-        await executeProcessing(collectedLines);
-    });
-}
-
-async function executeProcessing(allLinesOfInput) {
-    const firstDataLine = allLinesOfInput[0];
-    const parsedNumbers = firstDataLine.split(" ").map(entry => parseInt(entry, 10));
-    
-    const baseParam = parsedNumbers[0];
-    const exponentParam = parsedNumbers[1];
-    
-    const calculatedValue = powerIterativeMod(baseParam, exponentParam);
-    displayResult(calculatedValue);
+    console.log(computePowerModulo(numericValues[0], numericValues[1]));
 }

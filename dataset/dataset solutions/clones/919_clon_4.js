@@ -1,23 +1,10 @@
-const fileSystemInterface = require('node:fs');
+const fileSystem = require('fs');
+const rawData = fileSystem.readFileSync('/dev/stdin', 'utf8');
 
-const extractNumericalOperands = () => {
-    const rawDataBuffer = fileSystemInterface.readFileSync('/dev/stdin');
-    const textContent = rawDataBuffer.toString('utf8');
-    const trimmedContent = textContent.trim();
-    const stringFragments = trimmedContent.split(/\s+/);
-    return stringFragments.map(str => parseInt(str, 10));
-};
+const numericSegments = rawData.trim().split(" ");
+const primaryValue = parseInt(numericSegments[0], 10);
+const secondaryValue = parseInt(numericSegments[1], 10);
 
-const numericParameters = extractNumericalOperands();
+const outputDecision = (primaryValue % 2 !== secondaryValue % 2) ? "No" : "Yes";
 
-const primaryValue = numericParameters[0];
-const secondaryValue = numericParameters[1];
-
-const primaryParityBit = primaryValue & 1;
-const secondaryParityBit = secondaryValue & 1;
-
-const parityMismatchIndicator = primaryParityBit ^ secondaryParityBit;
-
-const responseCatalogue = ['Yes', 'No'];
-
-console.log(responseCatalogue[parityMismatchIndicator]);
+console.log(outputDecision);

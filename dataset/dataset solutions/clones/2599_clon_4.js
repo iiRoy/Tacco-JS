@@ -1,34 +1,24 @@
-const processSequence = (rawData) => {
-    const textLines = rawData.split('\n');
-    const numberStrings = textLines[1].split(' ');
-    const numericValues = numberStrings.map(Number);
+function ProcessInput(rawData) {
+    const lines = rawData.split("\n");
+    const elementCount = parseInt(lines[0], 10);
+    const heightsData = lines[1].split(" ").map(Number);
 
-    if (numericValues.length <= 1) {
-        return 0;
-    }
+    const determineLongestDescent = (dataPoints, currentIndex, currentRunLength, longestRunFound) => {
+        if (currentIndex >= dataPoints.length - 1) {
+            return longestRunFound;
+        }
 
-    const { overallMaxDescent } = numericValues.slice(1).reduce(
-        (statusAccumulator, currentValue, currentRelativeIndex) => {
-            const previousValue = numericValues[currentRelativeIndex];
-            const isNonIncreasing = previousValue >= currentValue;
+        const currentPoint = dataPoints[currentIndex];
+        const nextPoint = dataPoints[currentIndex + 1];
 
-            const currentDescentStreak = isNonIncreasing ? statusAccumulator.currentDescent + 1 : 0;
-            const updatedMaxDescent = Math.max(statusAccumulator.overallMaxDescent, currentDescentStreak);
+        const newRunLength = (currentPoint >= nextPoint) ? currentRunLength + 1 : 0;
+        const newLongestRun = Math.max(longestRunFound, newRunLength);
 
-            return {
-                currentDescent: currentDescentStreak,
-                overallMaxDescent: updatedMaxDescent,
-            };
-        },
-        { currentDescent: 0, overallMaxDescent: 0 }
-    );
+        return determineLongestDescent(dataPoints, currentIndex + 1, newRunLength, newLongestRun);
+    };
 
-    return overallMaxDescent;
-};
+    const peakNonIncreasingStreak = determineLongestDescent(heightsData, 0, 0, 0);
 
-const handleInputAndOutput = (inputSource) => {
-    const computedResult = processSequence(inputSource);
-    console.log(String(computedResult));
-};
-
-handleInputAndOutput(require("fs").readFileSync("/dev/stdin", "utf8"));
+    console.log(peakNonIncreasingStreak);
+}
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

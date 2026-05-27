@@ -1,62 +1,24 @@
 'use strict';
 
-// Custom facility to load modules into the current scope.
-const   obtainModule  =  require ;
+// This script reads two numbers from standard input, then calculates
+// how many times the first number needs to be doubled to exceed the second number.
 
-// A reference to the file system module.
-const   fileSystemUtility  =  obtainModule ( 'node:fs' ) ;
+const dataArray = require('fs').readFileSync('/dev/stdin', 'utf8')
+                               .trim()
+                               .split(' ')
+                               .map(item => item * 1); // Parse input string into an array of numbers
 
-// A function to read the entire content of a file synchronously.
-const   readContentFromFile  =  fileSystemUtility .readFileSync ;
+let resultCount = 0; // Initialize a variable to store the final count
+let upperBound = dataArray[1]; // The second number from input defines the upper limit
+let initialValue = dataArray[0]; // The first number from input is our starting point
 
-// A utility function to remove whitespace from both ends of a string.
-const   cleanStringBoundary  =  ( stringValue )  =>  stringValue .trim() ;
+let currentValue = initialValue; // A temporary variable to hold the value that gets doubled
 
-// A utility function to break a string into an array of substrings.
-const   segmentStringByDelimiter  =  ( stringToDivide ,  delimiterChar )  =>  stringToDivide .split( delimiterChar ) ;
-
-// A utility function to create a new array by calling a provided function on every element.
-const   processArrayElements  =  ( sourceArray ,  transformationFunction )  =>  sourceArray .map( transformationFunction ) ;
-
-// A global object for console operations.
-const   systemOutput  =  console ;
-
-// A function to output messages to the console.
-const   displayMessage  =  systemOutput .log ;
-
-
-// Retrieve raw data from the standard input, then parse and convert it into an array of numbers.
-const   numericalParameters  =  processArrayElements (
-    segmentStringByDelimiter (
-        cleanStringBoundary (
-            readContentFromFile ( '/dev/stdin' ,  'utf8' )
-        ) ,
-        ' '
-    ) ,
-    (  currentInputItem  )  =>  currentInputItem * 1
-) ;
-
-// Initialize a counter to track the number of doubling operations.
-let     operationCounter  =  0 ;
-
-// Extract the upper boundary value for the comparison loop.
-let     maximumBoundary  =  numericalParameters [ 1 ] ;
-
-// Extract the initial value that will be subject to doubling.
-let     initialMultiplier  =  numericalParameters [ 0 ] ;
-
-// A mutable variable that holds the current value during the doubling process.
-let     currentMultipliedValue  =  initialMultiplier ;
-
-// Execute a loop as long as the current multiplied value remains below the maximum boundary.
-while (  currentMultipliedValue  <  maximumBoundary  )
-{
-    // Double the current value for the next iteration.
-    currentMultipliedValue  *=  2 ;
-
-    // Increment the operation counter for each successful doubling.
-    operationCounter++ ;
+// Loop while the current value is less than the specified upper bound
+while (currentValue < upperBound) {
+  currentValue *= 2; // Double the current value
+  resultCount++;     // Increment the counter for each doubling operation
 }
 
-// Output the final count of operations performed.
-displayMessage (  operationCounter  ) ;
+// Print the total number of doublings required
+console.log(resultCount);

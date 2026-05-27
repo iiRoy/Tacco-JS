@@ -1,43 +1,44 @@
-'use strict'
+'use strict';
 
-function determineMaxScore(documentContent) {
-  const segments = documentContent.split('\n');
-  const primaryCount = Number(segments[0]);
+function processWordScores(inputData) {
+    const inputLines = inputData.split('\n');
+    const positiveTermCount = Number(inputLines[0]);
+    const positiveWordList = inputLines.slice(1, 1 + positiveTermCount);
+    const negativeWordList = inputLines.slice(positiveTermCount + 2, -1);
 
-  const primaryItems = segments.slice(1, 1 + primaryCount);
-  const secondaryItems = segments.slice(primaryCount + 2, -1);
+    const wordTally = new Map();
 
-  // Helper function to calculate item frequencies
-  const calculateFrequencies = (itemArray) => {
-    return itemArray.reduce((frequencyMap, currentItem) => {
-      frequencyMap.set(currentItem, (frequencyMap.get(currentItem) || 0) + 1);
-      return frequencyMap;
-    }, new Map()); // Start with a new Map for each calculation
-  };
+    // Increment counts for positive words
+    for (const currentWord of positiveWordList) {
+        wordTally.set(currentWord, (wordTally.get(currentWord) || 0) + 1);
+    }
 
-  const primaryFrequencies = calculateFrequencies(primaryItems);
-  const secondaryFrequencies = calculateFrequencies(secondaryItems);
+    // Decrement counts for negative words, only if they were present in positive words
+    for (const currentWord of negativeWordList) {
+        if (wordTally.has(currentWord)) {
+            wordTally.set(currentWord, wordTally.get(currentWord) - 1);
+        }
+    }
 
-  const combinedScores = new Map();
+    // The original code throws a TypeError if the initial 'blue' array (and thus 'points' array) is empty.
+    // This occurs when it attempts to access 'points[0].count' on an undefined 'points[0]'.
+    // To preserve exact observable behavior, we must replicate this error.
+    if (positiveWordList.length === 0) {
+        // If no positive words were provided, the 'wordTally' map would be empty.
+        // The original code's final calculation would result in `undefined.count`.
+        // We explicitly throw the equivalent TypeError.
+        throw new TypeError("Cannot read properties of undefined (reading 'count')");
+    }
 
-  // Populate combined scores with primary item frequencies
-  for (const [identifier, frequency] of primaryFrequencies) {
-    combinedScores.set(identifier, frequency);
-  }
+    // Calculate the maximum non-negative score
+    let highestScoreAchieved = 0;
+    for (const currentScore of wordTally.values()) {
+        if (currentScore > highestScoreAchieved) {
+            highestScoreAchieved = currentScore;
+        }
+    }
 
-  // Adjust combined scores by subtracting secondary item frequencies
-  for (const [identifier, frequency] of secondaryFrequencies) {
-    combinedScores.set(identifier, (combinedScores.get(identifier) || 0) - frequency);
-  }
-
-  let finalMax = 0;
-
-  // Find the maximum score among all combined scores, defaulting to 0 if all are negative
-  for (const individualScore of combinedScores.values()) {
-    finalMax = Math.max(finalMax, individualScore);
-  }
-
-  console.log(finalMax);
+    console.log(highestScoreAchieved);
 }
 
-determineMaxScore(require("fs").readFileSync("/dev/stdin", "utf8"));
+processWordScores(require("fs").readFileSync("/dev/stdin", "utf8"));

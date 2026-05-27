@@ -1,21 +1,23 @@
-const processDataSet = (dataSetString) => {
-    const numberSequence = dataSetString.split('\n')[1].split(' ').map(parseFloat);
+function processInputData(rawData) {
+    const inputLines = rawData.split("\n");
+    const numberTokens = inputLines[1].split(" ");
+    const initialNumbers = numberTokens.map(Number);
 
-    const occurrenceMap = numberSequence.reduce((acc, elementValue) => {
-        acc.set(elementValue, (acc.get(elementValue) || 0) + 1);
-        return acc;
-    }, new Map());
-
-    const aggregatePairCount = Array.from(occurrenceMap.values()).reduce((accumulatedSum, elementCount) => {
-        return accumulatedSum + (elementCount * (elementCount - 1) / 2);
-    }, 0);
-
-    const individualAdjustedPairCounts = numberSequence.map(currentValue => {
-        const frequencyOfCurrentValue = occurrenceMap.get(currentValue);
-        return aggregatePairCount - frequencyOfCurrentValue + 1;
+    const occurrenceCounts = new Map();
+    initialNumbers.forEach(currentValue => {
+        occurrenceCounts.set(currentValue, (occurrenceCounts.get(currentValue) || 0) + 1);
     });
 
-    return individualAdjustedPairCounts.join('\n');
-};
+    const totalCombinations = Array.from(occurrenceCounts.values()).reduce((accumulator, count) => {
+        return accumulator + (count * (count - 1)) / 2;
+    }, 0);
 
-console.log(processDataSet(require("fs").readFileSync("/dev/stdin", "utf8").trim()));
+    const outputResults = initialNumbers.map(elementValue => {
+        const elementFrequency = occurrenceCounts.get(elementValue);
+        return totalCombinations - elementFrequency + 1;
+    });
+
+    console.log(outputResults.join("\n"));
+}
+
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8").trim());

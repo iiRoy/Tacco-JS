@@ -1,72 +1,75 @@
-const g_fileSystem = require('fs');
+var inputLinesBuffer = [];
 
-const allInputLines = g_fileSystem.readFileSync('/dev/stdin', 'utf8').trim().split('\n');
+var inputOutputInterface = require("readline").createInterface({
+  input:  process.stdin,
+  output: process.stdout
+});
 
-const firstLineComponents = allInputLines.shift().split(' ').map(Number);
-const totalSticksCount = firstLineComponents[0];
-const targetLengthOne = firstLineComponents[1];
-const targetLengthTwo = firstLineComponents[2];
-const targetLengthThree = firstLineComponents[3];
+inputOutputInterface.on('line', function(currentLineContent) {
+  inputLinesBuffer.push(currentLineContent);
+});
 
-const availableSticks = allInputLines.map(Number);
+let minimumTotalCost = Infinity;
 
-let minimumOverallPenalty = Infinity;
+inputOutputInterface.on('close', function() {
+  const firstLineData = inputLinesBuffer.shift();
+  const parsedFirstLine = firstLineData.split(" ").map(Number);
+  const numBamboos = parsedFirstLine[0];
+  const targetLengthA = parsedFirstLine[1];
+  const targetLengthB = parsedFirstLine[2];
+  const targetLengthC = parsedFirstLine[3];
 
-const totalAssignmentVariations = Math.pow(4, totalSticksCount);
+  const bambooLengths = inputLinesBuffer.map(Number);
 
-for (let variationIndex = 0; variationIndex < totalAssignmentVariations; ++variationIndex) {
-    let currentConfiguration = [];
-    let temporaryIndex = variationIndex;
-    for (let stickPosition = 0; stickPosition < totalSticksCount; ++stickPosition) {
-        currentConfiguration.push(temporaryIndex % 4); // 0: target 1, 1: target 2, 2: target 3, 3: discard
-        temporaryIndex = Math.floor(temporaryIndex / 4);
+  const totalPossibleAssignments = Math.pow(4, numBamboos);
+
+  for (let assignmentIndex = 0; assignmentIndex < totalPossibleAssignments; assignmentIndex++) {
+    let currentAssignmentVector = [];
+    let tempAssignmentValue = assignmentIndex;
+    for (let idx = 0; idx < numBamboos; idx++) {
+      currentAssignmentVector.unshift(tempAssignmentValue % 4);
+      tempAssignmentValue = Math.floor(tempAssignmentValue / 4);
     }
+    
+    const currentCost = calculateCombinationCost(currentAssignmentVector, bambooLengths, targetLengthA, targetLengthB, targetLengthC);
+    if (currentCost < minimumTotalCost) {
+      minimumTotalCost = currentCost;
+    }
+  }
 
-    let accumulatedLengthOne = 0;
-    let accumulatedLengthTwo = 0;
-    let accumulatedLengthThree = 0;
+  console.log(minimumTotalCost);
+});
 
-    let numberOfSticksOne = 0;
-    let numberOfSticksTwo = 0;
-    let numberOfSticksThree = 0;
+function calculateCombinationCost(assignmentVector, bambooLengths, targetLengthA, targetLengthB, targetLengthC) {
+    let currentSums = [0, 0, 0]; // Index 0 for A, 1 for B, 2 for C
+    let countsOfUsedBamboos = [0, 0, 0]; // Index 0 for A, 1 for B, 2 for C
 
-    for (let stickPosition = 0; stickPosition < totalSticksCount; ++stickPosition) {
-        const currentStickLength = availableSticks[stickPosition];
-        const assignmentCategory = currentConfiguration[stickPosition];
-        
-        if (currentStickLength > 0) { // Only consider non-zero length sticks
-            if (assignmentCategory === 0) {
-                accumulatedLengthOne += currentStickLength;
-                numberOfSticksOne++;
-            } else if (assignmentCategory === 1) {
-                accumulatedLengthTwo += currentStickLength;
-                numberOfSticksTwo++;
-            } else if (assignmentCategory === 2) {
-                accumulatedLengthThree += currentStickLength;
-                numberOfSticksThree++;
+    assignmentVector.forEach((assignmentType, idx) => {
+        const currentBambooLength = bambooLengths[idx];
+        if (assignmentType >= 0 && assignmentType <= 2) { // 0, 1, 2 correspond to targets A, B, C
+            currentSums[assignmentType] += currentBambooLength;
+            if (currentBambooLength !== 0) { // Only count non-zero length bamboos for MP cost
+                countsOfUsedBamboos[assignmentType]++;
             }
-            // assignmentCategory === 3 means discarded, no action needed.
         }
+        // assignmentType 3 (discard) does nothing
+    });
+
+    // If any target has a sum of 0, it means no bamboos were effectively assigned to it.
+    // This combination is invalid according to the problem's implicit requirement (a>0 && b>0 && c>0).
+    if (currentSums[0] === 0 || currentSums[1] === 0 || currentSums[2] === 0) {
+        return Infinity;
     }
 
-    // A valid configuration requires at least one stick for each target
-    if (numberOfSticksOne > 0 && numberOfSticksTwo > 0 && numberOfSticksThree > 0) {
-        const joiningPenaltyOne = Math.max(0, numberOfSticksOne - 1) * 10;
-        const joiningPenaltyTwo = Math.max(0, numberOfSticksTwo - 1) * 10;
-        const joiningPenaltyThree = Math.max(0, numberOfSticksThree - 1) * 10;
+    let currentCombinationCost = 0;
+    currentCombinationCost += Math.abs(targetLengthA - currentSums[0]);
+    currentCombinationCost += Math.abs(targetLengthB - currentSums[1]);
+    currentCombinationCost += Math.abs(targetLengthC - currentSums[2]);
 
-        const currentConfigurationPenalty = 
-            Math.abs(targetLengthOne - accumulatedLengthOne) +
-            Math.abs(targetLengthTwo - accumulatedLengthTwo) +
-            Math.abs(targetLengthThree - accumulatedLengthThree) +
-            joiningPenaltyOne +
-            joiningPenaltyTwo +
-            joiningPenaltyThree;
+    // Add MP cost for additional bamboos (only non-zero length ones)
+    countsOfUsedBamboos.forEach(count => {
+        currentCombinationCost += Math.max(0, count - 1) * 10;
+    });
 
-        if (currentConfigurationPenalty < minimumOverallPenalty) {
-            minimumOverallPenalty = currentConfigurationPenalty;
-        }
-    }
+    return currentCombinationCost;
 }
-
-console.log(minimumOverallPenalty);

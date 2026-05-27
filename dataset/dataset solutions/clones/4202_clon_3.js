@@ -1,172 +1,123 @@
-const fileSystemModule = require("fs");
-const standardInputPath = "/dev/stdin"; // Standard input stream path for Unix-like systems
+function readInputString() {
+  return require("fs").readFileSync("/dev/stdin", "utf8").trim();
+}
 
-/**
- * Acquires the raw input string from the standard input.
- * @returns {string} The trimmed content read from stdin.
- */
-const acquireSourceInput = () => {
-    return fileSystemModule.readFileSync(standardInputPath, "utf8").trim();
-};
+function printOutput(message) {
+  console.log(message);
+}
 
-/**
- * Emits the final result message to the standard output.
- * @param {string} outputMessage - The message to display.
- */
-const emitOutput = (outputMessage) => {
-    console.log(outputMessage);
-};
+function logErrorToConsole(errorMessage) {
+  console.error(errorMessage);
+}
 
-// The 'myerr' function from the original code was not utilized in the main logic,
-// so it has been removed to simplify the codebase as a Type III change.
+// Helper function to convert the input string into an array of characters
+function splitStringToCharacters(inputString) {
+  return inputString.split("");
+}
 
-/**
- * Converts a given string into an array of its individual characters.
- * This function replaces the specific use-case (case 6) of the original 'myconv'.
- * @param {string} sourceString - The string to convert.
- * @returns {string[]} An array of characters.
- */
-const convertToCharacterArray = (sourceString) => {
-    // Adding a basic type and length check for robustness, though not strictly required by problem constraints.
-    if (typeof sourceString !== 'string' || sourceString.length === 0) {
-        return []; // Return an empty array for invalid input.
-    }
-    return sourceString.split("");
-};
+// Helper function to check a condition and, if true, output "NO" and indicate an exit
+function evaluateConditionAndExit(conditionMet, outputFunction) {
+  if (conditionMet) {
+    outputFunction("NO");
+    return true; // Signal to the caller that an exit is required
+  }
+  return false; // Signal to the caller to continue processing
+}
 
-// Defines the set of key characters that must be present and in a specific order.
-const REQUIRED_KEY_CHARS = ["K", "I", "H", "B", "R"];
-
-/**
- * Locates the first occurrence index of each required key character within a character sequence.
- * @param {string[]} sequenceChars - The array of characters to search within.
- * @returns {Object.<string, number>} An object mapping each key character to its index, or -1 if not found.
- */
-const locateKeyCharacterPositions = (sequenceChars) => {
-    const positions = {};
-    for (const char of REQUIRED_KEY_CHARS) {
-        positions[char] = sequenceChars.indexOf(char);
-    }
-    return positions;
-};
-
-/**
- * Performs a series of structural and positional validations on the input character sequence.
- * This function encapsulates all the conditional checks from the original 'Main' function.
- * @param {string[]} inputCharacterArray - The array of characters to validate.
- * @returns {boolean} True if all validations pass, false otherwise.
- */
-const validateSequenceStructure = (inputCharacterArray) => {
-    const charPositions = locateKeyCharacterPositions(inputCharacterArray);
-    // Using object destructuring for cleaner access to character indices.
-    const { K, I, H, B, R } = charPositions;
-
-    // Validation 1: Ensure all mandatory characters are present.
-    // This loop replaces multiple individual `list["X"] == -1` checks.
-    for (const char of REQUIRED_KEY_CHARS) {
-        if (charPositions[char] === -1) {
-            return false; // Missing a required character.
-        }
-    }
-
-    // Validation 2: Verify the correct sequential order of the key characters.
-    // Conditions are combined for conciseness.
-    if (!(K < I && I < H && H < B && B < R)) {
-        return false; // Incorrect character order detected.
-    }
-
-    // Validation 3: Check the overall length of the input sequence.
-    const MAX_SEQUENCE_LENGTH = 9; // Defined as a constant for clarity.
-    if (inputCharacterArray.length > MAX_SEQUENCE_LENGTH) {
-        return false; // Sequence exceeds maximum allowed length.
-    }
-
-    // Validation 4: Confirm 'K' and 'I' are directly adjacent.
-    if (I - K !== 1) { // Rewritten from 'K != I-1' for improved readability.
-        return false; // 'K' and 'I' are not adjacent.
-    }
-
-    // Validation 5 & 6: Inspect the gap between 'H' and 'B'.
-    const hbGapSize = B - H;
-    if (hbGapSize > 2) {
-        return false; // Gap between 'H' and 'B' is too wide.
-    }
-    if (hbGapSize === 2) {
-        // Corrected index to check the character *between* H and B.
-        const characterInHBGAP = inputCharacterArray[H + 1];
-        if (characterInHBGAP !== "A") {
-            return false; // The character in the H-B gap is not 'A'.
-        }
-    }
-
-    // Validation 7 & 8: Inspect the gap between 'B' and 'R'.
-    const brGapSize = R - B;
-    if (brGapSize > 2) {
-        return false; // Gap between 'B' and 'R' is too wide.
-    }
-    if (brGapSize === 2) {
-        // Corrected index to check the character *between* B and R.
-        const characterInBRGAP = inputCharacterArray[B + 1];
-        if (characterInBRGAP !== "A") {
-            return false; // The character in the B-R gap is not 'A'.
-        }
-    }
-
-    // Validation 9: Count leading 'A's.
-    let currentLeadingAcount = 0;
-    // Using findIndex for a more declarative approach to locate the first non-'A' character.
-    const firstNonACharacterIndex = inputCharacterArray.findIndex(char => char !== "A");
-
-    if (firstNonACharacterIndex === -1) {
-        // If all characters are 'A', then all are leading 'A's.
-        currentLeadingAcount = inputCharacterArray.length;
+// Helper function to count consecutive occurrences of a character from the start
+function countLeadingCharOccurrences(charArray, charToFind) {
+  let currentCount = 0;
+  for (let charIndex = 0; charIndex < charArray.length; charIndex++) {
+    if (charArray[charIndex] === charToFind) {
+      currentCount++;
     } else {
-        currentLeadingAcount = firstNonACharacterIndex;
+      break; // Stop counting when a different character is encountered
     }
+  }
+  return currentCount;
+}
 
-    if (currentLeadingAcount > 1) {
-        return false; // More than one leading 'A' found.
-    }
-
-    // Validation 10: Count trailing 'A's.
-    let currentTrailingAcount = 0;
-    let lastNonACharacterIndex = -1;
-    // Iterating backwards to find the last non-'A' character.
-    for (let currentIdx = inputCharacterArray.length - 1; currentIdx >= 0; currentIdx--) {
-        if (inputCharacterArray[currentIdx] !== "A") {
-            lastNonACharacterIndex = currentIdx;
-            break;
-        }
-    }
-
-    if (lastNonACharacterIndex === -1) {
-        // If all characters are 'A', then all are trailing 'A's.
-        currentTrailingAcount = inputCharacterArray.length;
+// Helper function to count consecutive occurrences of a character from the end
+function countTrailingCharOccurrences(charArray, charToFind) {
+  let currentCount = 0;
+  for (let charIndex = charArray.length - 1; charIndex >= 0; charIndex--) {
+    if (charArray[charIndex] === charToFind) {
+      currentCount++;
     } else {
-        currentTrailingAcount = inputCharacterArray.length - 1 - lastNonACharacterIndex;
+      break; // Stop counting when a different character is encountered
     }
+  }
+  return currentCount;
+}
 
-    if (currentTrailingAcount > 1) {
-        return false; // More than one trailing 'A' found.
-    }
+function ProcessMainLogic(rawInputContent) {
+  const characterSequence = splitStringToCharacters(rawInputContent);
 
-    return true; // All validation checks passed successfully.
-};
+  const requiredKeyChars = ["K", "I", "H", "B", "R"];
+  const targetCharPositions = {};
 
-/**
- * The main entry point for processing the input sequence.
- * This function orchestrates the input acquisition, transformation, and validation.
- * @param {string} rawInputString - The raw string obtained from the input source.
- */
-const processSequenceValidation = (rawInputString) => {
-    const characterSequence = convertToCharacterArray(rawInputString);
+  // Determine the first occurrence index for each required character
+  for (const keyChar of requiredKeyChars) {
+    targetCharPositions[keyChar] = characterSequence.indexOf(keyChar);
+  }
 
-    if (validateSequenceStructure(characterSequence)) {
-        emitOutput("YES");
-    } else {
-        emitOutput("NO");
-    }
-};
+  // Check if any of the required characters are missing from the input sequence
+  const isAnyKeyCharMissing = requiredKeyChars.some(char => targetCharPositions[char] === -1);
+  if (evaluateConditionAndExit(isAnyKeyCharMissing, printOutput)) return;
 
-// Initiates the program by calling the main processing function with acquired input.
-processSequenceValidation(acquireSourceInput());
+  // Extract positions for easier comparison
+  const kPosition = targetCharPositions["K"];
+  const iPosition = targetCharPositions["I"];
+  const hPosition = targetCharPositions["H"];
+  const bPosition = targetCharPositions["B"];
+  const rPosition = targetCharPositions["R"];
+
+  // Verify the correct sequential order of the key characters
+  const isOrderIncorrect = kPosition > iPosition || iPosition > hPosition ||
+                           hPosition > bPosition || bPosition > rPosition;
+  if (evaluateConditionAndExit(isOrderIncorrect, printOutput)) return;
+
+  // Check if the total length of the input sequence exceeds 9 characters
+  if (evaluateConditionAndExit(characterSequence.length > 9, printOutput)) return;
+
+  // Ensure 'K' and 'I' are adjacent (K immediately followed by I)
+  if (evaluateConditionAndExit(kPosition !== iPosition - 1, printOutput)) return;
+
+  // Calculate the distance between 'H' and 'B'
+  const hToBDistance = bPosition - hPosition;
+  if (evaluateConditionAndExit(hToBDistance > 2, printOutput)) return;
+
+  // Special handling for H-B distance of exactly 2 (original code's bug replicated)
+  if (hToBDistance === 2) {
+    // The original code had: var tmp = input[list["B"]]-1; if(tmp != "A")
+    // This evaluates to characterSequence[bPosition] (e.g., 'B') - 1, which results in NaN.
+    // NaN !== "A" is always true. Thus, this condition always leads to "NO" if hToBDistance is 2.
+    const buggyIntermediateValue = characterSequence[bPosition] - 1;
+    if (evaluateConditionAndExit(buggyIntermediateValue !== "A", printOutput)) return;
+  }
+
+  // Calculate the distance between 'B' and 'R'
+  const bToRDistance = rPosition - bPosition;
+  if (evaluateConditionAndExit(bToRDistance > 2, printOutput)) return;
+
+  // Special handling for B-R distance of exactly 2 (original code's bug replicated)
+  if (bToRDistance === 2) {
+    // Similar to the H-B check, this replicates the original bug.
+    const anotherBuggyIntermediateValue = characterSequence[rPosition] - 1;
+    if (evaluateConditionAndExit(anotherBuggyIntermediateValue !== "A", printOutput)) return;
+  }
+
+  // Count consecutive 'A's at the beginning of the sequence
+  const initialACount = countLeadingCharOccurrences(characterSequence, "A");
+  if (evaluateConditionAndExit(initialACount > 1, printOutput)) return;
+
+  // Count consecutive 'A's at the end of the sequence
+  const finalACount = countTrailingCharOccurrences(characterSequence, "A");
+  if (evaluateConditionAndExit(finalACount > 1, printOutput)) return;
+
+  // If all conditions are met, the sequence is valid
+  printOutput("YES");
+}
+
+// Execute the main logic with input from stdin
+ProcessMainLogic(readInputString());

@@ -1,109 +1,53 @@
-const INPUT_ENCODING = 'utf8';
-const LINE_DELIMITER = '\n';
-const VALUE_DELIMITER = ' ';
-const TRUE_RESULT_MSG = 'YES';
-const FALSE_RESULT_MSG = 'NO';
-const COMPARISON_PRECISION = 6;
-const REQUIRED_COORDINATES_PER_LINE = 8;
+const fileSystemModule = require("fs");
 
-const fileSystemModule = require('fs');
+function calculateFixedSlope(xCoord1, yCoord1, xCoord2, yCoord2) {
+    const numericX1 = Number(xCoord1);
+    const numericY1 = Number(yCoord1);
+    const numericX2 = Number(xCoord2);
+    const numericY2 = Number(yCoord2);
 
-/**
- * Computes the gradient (slope) of a line segment defined by two points.
- * Handles vertical lines by returning Infinity and identical points by returning NaN.
- * @param {number} xA - X-coordinate of the first point.
- * @param {number} yA - Y-coordinate of the first point.
- * @param {number} xB - X-coordinate of the second point.
- * @param {number} yB - Y-coordinate of the second point.
- * @returns {number} The slope value, Infinity for vertical lines, or NaN for identical points.
- */
-function calculateLineGradient(xA, yA, xB, yB) {
-    const deltaX = xB - xA;
-    const deltaY = yB - yA;
+    const deltaX = numericX2 - numericX1;
+    const deltaY = numericY2 - numericY1;
 
     if (deltaX === 0) {
-        if (deltaY === 0) {
-            return NaN; // Degenerate case: identical points
-        }
-        return Infinity; // Vertical line
+        // Handle vertical lines: slope is Infinity or -Infinity.
+        // If deltaY is also 0, it's 0/0 which is NaN.
+        // toFixed(6) on Infinity/-Infinity/NaN produces "Infinity" / "-Infinity" / TypeError respectively.
+        // This matches original behavior.
+        return (deltaY > 0 ? Infinity : (deltaY < 0 ? -Infinity : NaN)).toFixed(6);
     }
 
-    return deltaY / deltaX;
+    const slopeValue = deltaY / deltaX;
+    return slopeValue.toFixed(6);
 }
 
-/**
- * Prints a given message to the standard output.
- * @param {string} messageToDisplay - The string content to be printed.
- */
-function outputConsoleMessage(messageToDisplay) {
-    console.log(messageToDisplay);
-}
+const rawInputContent = fileSystemModule.readFileSync("/dev/stdin", "utf8");
+const allInputLines = rawInputContent.split('\n');
 
-/**
- * Processes a single input string, extracting coordinate data and comparing slopes.
- * It expects 8 space-separated numeric values representing two pairs of 2D points.
- * @param {string} dataLine - A line of text containing coordinate data.
- */
-function evaluateCoordinateData(dataLine) {
-    const trimmedLine = dataLine.trim();
-    if (!trimmedLine) {
-        return; // Skip empty or whitespace-only lines
+allInputLines.forEach(function(currentInputLine) {
+    const lineSegments = currentInputLine.split(' ');
+
+    // The original code checks if lineSegments[2] is truthy (i.e., not an empty string or undefined).
+    // This implicitly means there are at least 3 parts.
+    // If fewer than 8 parts are present, subsequent Number() conversions or arithmetic operations
+    // involving `undefined` will result in `NaN`, and `NaN.toFixed(6)` will throw a TypeError,
+    // which is the exact observable behavior we must preserve.
+    if (lineSegments[2]) {
+        const point1X = lineSegments[0];
+        const point1Y = lineSegments[1];
+        const point2X = lineSegments[2];
+        const point2Y = lineSegments[3];
+
+        const point3X = lineSegments[4];
+        const point3Y = lineSegments[5];
+        const point4X = lineSegments[6];
+        const point4Y = lineSegments[7];
+
+        const firstSegmentSlope = calculateFixedSlope(point1X, point1Y, point2X, point2Y);
+        const secondSegmentSlope = calculateFixedSlope(point3X, point3Y, point4X, point4Y);
+
+        const areSlopesIdentical = (firstSegmentSlope === secondSegmentSlope);
+
+        console.log(areSlopesIdentical ? 'YES' : 'NO');
     }
-
-    const coordinateTokens = trimmedLine.split(VALUE_DELIMITER);
-
-    if (coordinateTokens.length < REQUIRED_COORDINATES_PER_LINE) {
-        return; // Not enough data to form two line segments
-    }
-
-    // Convert string tokens to floating-point numbers
-    const numericCoordinates = coordinateTokens
-        .slice(0, REQUIRED_COORDINATES_PER_LINE)
-        .map(val => parseFloat(val));
-
-    // Validate if all parsed values are actual numbers
-    if (numericCoordinates.some(isNaN)) {
-        return; // Skip lines with non-numeric data
-    }
-
-    // Extracting points for the first line segment
-    const p1_x1 = numericCoordinates[0];
-    const p1_y1 = numericCoordinates[1];
-    const p1_x2 = numericCoordinates[2];
-    const p1_y2 = numericCoordinates[3];
-
-    // Extracting points for the second line segment
-    const p2_x1 = numericCoordinates[4];
-    const p2_y1 = numericCoordinates[5];
-    const p2_x2 = numericCoordinates[6];
-    const p2_y2 = numericCoordinates[7];
-
-    // Calculate gradients for both segments
-    const firstSegmentGradient = calculateLineGradient(p1_x1, p1_y1, p1_x2, p1_y2);
-    const secondSegmentGradient = calculateLineGradient(p2_x1, p2_y1, p2_x2, p2_y2);
-
-    // Compare gradients after formatting to a fixed precision, as per original logic.
-    // This approach effectively compares their string representations.
-    const formattedGradientA = firstSegmentGradient.toFixed(COMPARISON_PRECISION);
-    const formattedGradientB = secondSegmentGradient.toFixed(COMPARISON_PRECISION);
-
-    if (formattedGradientA === formattedGradientB) {
-        outputConsoleMessage(TRUE_RESULT_MSG);
-    } else {
-        outputConsoleMessage(FALSE_RESULT_MSG);
-    }
-}
-
-// Main execution block: Read input from standard input and process each line.
-try {
-    const rawInputContent = fileSystemModule.readFileSync('/dev/stdin', INPUT_ENCODING);
-    const allInputLines = rawInputContent.split(LINE_DELIMITER);
-
-    // Iterate through each line and apply the processing logic
-    allInputLines.forEach(evaluateCoordinateData);
-
-} catch (inputReadError) {
-    // In a production environment, this error would be logged or handled more gracefully.
-    // For competitive programming, sometimes simple failure or exit is sufficient.
-    // console.error("An error occurred while attempting to read input:", inputReadError.message);
-}
+});

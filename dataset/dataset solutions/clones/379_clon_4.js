@@ -1,58 +1,34 @@
-const acquireSource = (pathIdentifier) => require('node:fs').readFileSync(pathIdentifier, 'utf8');
+const fileSystem = require('fs');
 
-const segmentSource = (rawContent) => rawContent.trim().split(/\r?\n/);
+const determineClockStatus = (timeSpecification) => {
+    const [hourComponent, minuteComponent] = timeSpecification.split(':');
+    const currentHourValue = parseInt(hourComponent, 10);
+    const currentMinuteValue = parseInt(minuteComponent, 10);
 
-const extractRelevantEntries = (processedLines) => {
-    const totalRecords = Number(processedLines[0]);
-    return processedLines.slice(1, totalRecords + 1);
+    // Calculate angles for hour and minute hands
+    // Hour hand moves 30 degrees per hour (360/12) and 0.5 degrees per minute (30/60).
+    // Minute hand moves 6 degrees per minute (360/60).
+    const hourHandPosition = ((currentHourValue % 12) * 30) + (currentMinuteValue * 0.5);
+    const minuteHandPosition = currentMinuteValue * 6;
+
+    const absoluteAngularDifference = Math.abs(hourHandPosition - minuteHandPosition);
+
+    // Use a dispatch array for status evaluation
+    const statusRules = [
+        { condition: (diff) => diff >= 0 && diff < 30, outcome: "alert" },
+        { condition: (diff) => diff >= 90 && diff < 180, outcome: "safe" },
+        { condition: (diff) => true, outcome: "warning" } // Default case
+    ];
+
+    return statusRules.find(rule => rule.condition(absoluteAngularDifference)).outcome;
 };
 
-const decomposeTimeDatum = (timeString) => {
-    const regexMatch = timeString.match(/(\d{1,2}):(\d{2})/);
-    return {
-        majorUnit: Number(regexMatch[1]),
-        minorUnit: Number(regexMatch[2])
-    };
-};
+const rawData = fileSystem.readFileSync('/dev/stdin', 'utf8');
+const processedInputLines = rawData.replace(/\n$/, "").split('\n');
 
-const computeRotationalPositions = (timeUnits) => {
-    const mainValue = timeUnits.majorUnit;
-    const subValue = timeUnits.minorUnit;
+const numberOfEntries = parseInt(processedInputLines[0], 10);
+const timeValueStrings = processedInputLines.slice(1, numberOfEntries + 1);
 
-    const maximalDegrees = 360;
-    const majorDivisions = 12;
-    const minorDivisions = 60;
-
-    const anglePrimary = mainValue * (maximalDegrees / majorDivisions) + subValue * (maximalDegrees / (majorDivisions * minorDivisions));
-    const angleSecondary = subValue * (maximalDegrees / minorDivisions);
-
-    return {
-        firstIndicator: anglePrimary,
-        secondIndicator: angleSecondary
-    };
-};
-
-const derivePositionalSeparation = (indicatorAngles) => Math.abs(indicatorAngles.firstIndicator - indicatorAngles.secondIndicator);
-
-const determineSituationalStatus = (angularSeparation) =>
-  [
-    { condition: (val) => val >= 0 && val < 30, outcome: "alert" },
-    { condition: (val) => val >= 90 && val < 180, outcome: "safe" }
-  ].find(ruleSet => ruleSet.condition(angularSeparation))?.outcome || "warning";
-
-const orchestrateProcessing = (sourceLoc) => {
-    const rawData = acquireSource(sourceLoc);
-    const segmentedData = segmentSource(rawData);
-    const pertinentEntries = extractRelevantEntries(segmentedData);
-
-    const resultingStates = pertinentEntries.map(currentEntry => {
-        const parsedTime = decomposeTimeDatum(currentEntry);
-        const rotationalValues = computeRotationalPositions(parsedTime);
-        const separationMagnitude = derivePositionalSeparation(rotationalValues);
-        return determineSituationalStatus(separationMagnitude);
-    });
-
-    resultingStates.forEach(finalStatus => console.log(finalStatus));
-};
-
-orchestrateProcessing('/dev/stdin');
+timeValueStrings.forEach(entryString => {
+    console.log(determineClockStatus(entryString));
+});

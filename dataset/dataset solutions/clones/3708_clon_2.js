@@ -1,117 +1,124 @@
-const processData = (rawData) => {
+function ProcessInput(rawData) {
+    // Split the entire input string by newline characters to get individual lines.
+    const dataLines = rawData.split('\n');
 
-  // Parse the raw input string into an array of lines
-  const lineData = rawData.split('\n');
-  
-  // Extract the total count of elements from the first line
-  const dataLength = parseInt(lineData[0], 10);
-  
-  // Convert the second line into an array of integers
-  const numericValues = lineData[1].split(' ').map(valueStr => parseInt(valueStr, 10));
+    // Parse the first line to get the total number of elements.
+    const countElements = parseInt(dataLines[0]);
 
-  // Variable to maintain the running total for prefix sums
-  let runningTotal = 0;
-  
-  // Compute the cumulative sums for the array elements
-  // This array stores prefix sums where cumulativeSums[k] is the sum of numericValues[0]...numericValues[k]
-  const cumulativeSums = numericValues.map((currentVal) => {
-    runningTotal += currentVal;
-    return runningTotal;
-  });
+    // Parse the second line, split by spaces, and convert each part to an integer.
+    const numericArray = dataLines[1].split(' ').map(val => parseInt(val));
 
-  // Arrays to store the four partitioned segment sums
-  const segmentOne = [];
-  const segmentTwo = [];
-  const segmentThree = [];
-  const segmentFour = [];
+    // Calculate the prefix sums (cumulative sums) of the numeric array.
+    // This allows for efficient calculation of sums of sub-arrays.
+    let currentSum = 0;
+    const prefixSums = numericArray.map((element) => {
+        currentSum += element;
+        return currentSum;
+    });
 
-  // Logic for determining optimal splits for the initial segments (P and Q)
-  for (let outerIndex = 1, leftPointer = 0; outerIndex < dataLength - 2; ++outerIndex) {
-    // The current sum up to the outerIndex, serving as a boundary for the first two segments
-    const currentLeftBoundarySum = cumulativeSums[outerIndex];
-    
-    // Find the best split point 'leftPointer' for the first two parts (P and Q)
-    // This uses a greedy approach, moving 'leftPointer' to minimize the difference between P and Q
-    while (outerIndex >= 2) {
-      // Calculate sums for current split (leftPointer)
-      const firstSubPart = cumulativeSums[leftPointer];
-      const secondSubPart = currentLeftBoundarySum - firstSubPart;
+    // Initialize four arrays to store the sums of the four partitions (P, Q, R, S).
+    const leftPart1 = []; // Corresponds to P in the original problem
+    const leftPart2 = []; // Corresponds to Q in the original problem
+    const rightPart1 = []; // Corresponds to R in the original problem
+    const rightPart2 = []; // Corresponds to S in the original problem
 
-      // Calculate sums for the next potential split (leftPointer + 1)
-      const firstSubPartNext = cumulativeSums[leftPointer + 1];
-      const secondSubPartNext = currentLeftBoundarySum - firstSubPartNext;
+    // --- First pass: Determine optimal P and Q partitions for each possible split point ---
+    // 'currentIdx' represents the split point between the second (Q) and third (R) partitions.
+    // 'leftPtr' represents the split point between the first (P) and second (Q) partitions.
+    for (let currentIdx = 1, leftPtr = 0; currentIdx < countElements - 2; ++currentIdx) {
+        // 'currentLeftSum' is the sum of elements from index 0 up to 'currentIdx'.
+        // This represents the sum of P and Q combined.
+        const currentLeftSum = prefixSums[currentIdx];
+        
+        // Adjust 'leftPtr' to find the optimal split between P and Q.
+        // The goal is to minimize the absolute difference between P and Q.
+        // This loop continues as long as 'currentIdx' is at least 2, allowing 'leftPtr' to be adjusted.
+        while (currentIdx >= 2) {
+            // Calculate sums for P and Q with the current 'leftPtr'.
+            const subLeft1 = prefixSums[leftPtr]; // Sum of P
+            const subLeft2 = currentLeftSum - subLeft1; // Sum of Q
 
-      // If moving the left pointer improves or maintains the balance, do so
-      if (Math.abs(secondSubPartNext - firstSubPartNext) <= Math.abs(secondSubPart - firstSubPart)) {
-        ++leftPointer;
-      } else {
-        // Otherwise, the current 'leftPointer' is optimal for this 'outerIndex'
-        break;
-      }
+            // Calculate sums for P and Q if 'leftPtr' were incremented by one.
+            const subLeft1Plus1 = prefixSums[leftPtr + 1]; // Sum of P if leftPtr++
+            const subLeft2Plus1 = currentLeftSum - subLeft1Plus1; // Sum of Q if leftPtr++
+
+            // If incrementing 'leftPtr' leads to a smaller or equal difference between P and Q,
+            // then it's a better or equally good split, so we move 'leftPtr' forward.
+            if (Math.abs(subLeft2Plus1 - subLeft1Plus1) <= Math.abs(subLeft2 - subLeft1)) {
+                ++leftPtr;
+            } else {
+                // Otherwise, the current 'leftPtr' is the best for this 'currentIdx', so break.
+                break;
+            }
+        }
+
+        // Store the sums of the optimal P and Q for the current 'currentIdx'.
+        leftPart1.push(prefixSums[leftPtr]);
+        leftPart2.push(prefixSums[currentIdx] - prefixSums[leftPtr]);
     }
 
-    // Store the calculated segment sums
-    segmentOne.push(cumulativeSums[leftPointer]);
-    segmentTwo.push(cumulativeSums[outerIndex] - cumulativeSums[leftPointer]);
-  }
+    // --- Second pass: Determine optimal R and S partitions for each possible split point ---
+    // 'currentRightIdx' represents the split point between the second (Q) and third (R) partitions,
+    // iterating backwards from the end.
+    // 'rightPtr' is an offset used to find the split point between the third (R) and fourth (S) partitions.
+    for (let currentRightIdx = countElements - 2, rightPtr = 1; currentRightIdx > 1; --currentRightIdx, ++rightPtr) {
+        // 'segmentEndValue' is the sum of elements up to the end of the second partition (Q).
+        const segmentEndValue = prefixSums[currentRightIdx - 1];
+        // 'totalSum' is the sum of all elements in the original array.
+        const totalSum = prefixSums[countElements - 1];
 
-  // Logic for determining optimal splits for the trailing segments (R and S)
-  // This loop iterates in reverse to match the P and Q segment generation
-  for (let reverseIndex = dataLength - 2, rightPointer = 1; reverseIndex > 1; --reverseIndex, ++rightPointer) {
-    // The sum up to the element just before 'reverseIndex', acting as a lower bound for R and S
-    const precedingSumBoundary = cumulativeSums[reverseIndex - 1];
-    
-    // The total sum of all elements in the entire array
-    const overallTotalSum = cumulativeSums[dataLength - 1];
+        // Adjust 'rightPtr' to find the optimal split between R and S.
+        // The goal is to minimize the absolute difference between R and S.
+        // This loop continues as long as 'currentRightIdx' is less than 'countElements - 2'.
+        while (currentRightIdx < countElements - 2) {
+            // Calculate sums for R and S with the current 'rightPtr'.
+            const subRight2 = totalSum - prefixSums[currentRightIdx + rightPtr - 1]; // Sum of S
+            const subRight1 = prefixSums[currentRightIdx + rightPtr - 1] - segmentEndValue; // Sum of R
 
-    // Find the best split point 'rightPointer' for the last two parts (R and S)
-    // Similar greedy approach to balance segments R and S
-    while (reverseIndex < dataLength - 2) {
-      // Calculate sums for current split (rightPointer)
-      const thirdSubPart = overallTotalSum - cumulativeSums[reverseIndex + rightPointer - 1];
-      const fourthSubPart = cumulativeSums[reverseIndex + rightPointer - 1] - precedingSumBoundary;
+            // Calculate sums for R and S if 'rightPtr' were decremented by one.
+            const subRight2Prev = totalSum - prefixSums[currentRightIdx + rightPtr - 2]; // Sum of S if rightPtr--
+            const subRight1Prev = prefixSums[currentRightIdx + rightPtr - 2] - segmentEndValue; // Sum of R if rightPtr--
 
-      // Calculate sums for the previous potential split (rightPointer - 1)
-      const thirdSubPartPrev = overallTotalSum - cumulativeSums[reverseIndex + rightPointer - 2];
-      const fourthSubPartPrev = cumulativeSums[reverseIndex + rightPointer - 2] - precedingSumBoundary;
+            // If decrementing 'rightPtr' leads to a smaller or equal difference between R and S,
+            // then it's a better or equally good split, so we move 'rightPtr' backward.
+            if (Math.abs(subRight2Prev - subRight1Prev) <= Math.abs(subRight2 - subRight1)) {
+                --rightPtr;
+            } else {
+                // Otherwise, the current 'rightPtr' is the best for this 'currentRightIdx', so break.
+                break;
+            }
+        }
 
-      // If moving the right pointer back improves or maintains balance, do so
-      if (Math.abs(thirdSubPartPrev - fourthSubPartPrev) <= Math.abs(thirdSubPart - fourthSubPart)) {
-        --rightPointer;
-      } else {
-        // Otherwise, the current 'rightPointer' is optimal for this 'reverseIndex'
-        break;
-      }
+        // Store the sums of the optimal R and S for the current 'currentRightIdx'.
+        // 'unshift' is used because the loop iterates backwards, but we want the results
+        // in the same order as the 'leftPart1' and 'leftPart2' arrays.
+        rightPart1.unshift(prefixSums[currentRightIdx + rightPtr - 1] - segmentEndValue);
+        rightPart2.unshift(totalSum - prefixSums[currentRightIdx + rightPtr - 1]);
     }
-    
-    // Store the calculated segment sums. unshift is used because the loop iterates backward,
-    // ensuring the segments are stored in the correct order relative to P and Q.
-    segmentThree.unshift(cumulativeSums[reverseIndex + rightPointer - 1] - precedingSumBoundary);
-    segmentFour.unshift(overallTotalSum - cumulativeSums[reverseIndex + rightPointer - 1]);
-  }
 
-  // Initialize the variable to store the minimum difference found
-  let minDiffResult = -1; 
+    // --- Final pass: Calculate the overall minimum difference ---
+    // Initialize 'minimumDifference' with a value that will be easily overwritten.
+    let minimumDifference = -1;
 
-  // Iterate through all possible combinations of the four segments
-  for (let resultIndex = 0; resultIndex < segmentOne.length; ++resultIndex) {
-    // Determine the maximum and minimum values among the four current segments
-    const currentMax = Math.max(segmentOne[resultIndex], segmentTwo[resultIndex], segmentThree[resultIndex], segmentFour[resultIndex]);
-    const currentMin = Math.min(segmentOne[resultIndex], segmentTwo[resultIndex], segmentThree[resultIndex], segmentFour[resultIndex]);
-    
-    // Calculate the range (difference between max and min) for the current configuration
-    const currentDifference = currentMax - currentMin;
-    
-    // Update the minimum difference if the current one is smaller, or if it's the first result
-    if (minDiffResult < 0 || currentDifference < minDiffResult) {
-      minDiffResult = currentDifference;
+    // Iterate through all corresponding sets of P, Q, R, S partitions.
+    // The length of all four arrays (leftPart1, leftPart2, rightPart1, rightPart2) will be the same.
+    for (let k = 0; k < leftPart1.length; ++k) {
+        // For each set of four partitions, find the maximum and minimum sum among them.
+        // Then calculate the difference between this maximum and minimum.
+        const currentDifference = Math.max(leftPart1[k], leftPart2[k], rightPart1[k], rightPart2[k]) -
+                                  Math.min(leftPart1[k], leftPart2[k], rightPart1[k], rightPart2[k]);
+        
+        // If this 'currentDifference' is the first one calculated, or if it's smaller
+        // than the previously found 'minimumDifference', update 'minimumDifference'.
+        if (minimumDifference < 0 || currentDifference < minimumDifference) {
+            minimumDifference = currentDifference;
+        }
     }
-  }
-  
-  // Output the final minimum range found
-  console.log(minDiffResult);
 
-};
+    // Output the final calculated minimum difference to the console.
+    console.log(minimumDifference);
+}
 
-// Read input from standard input and pass it to the main processing function
-processData(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Read the entire input from standard input (stdin) as a UTF-8 string,
+// then pass it to the 'ProcessInput' function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

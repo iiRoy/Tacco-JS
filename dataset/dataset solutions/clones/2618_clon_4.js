@@ -1,66 +1,69 @@
-class BinaryIndexedTree {
-    constructor(dimension) {
-        this.dataArray = new Array(dimension + 1).fill(0);
-        this.maximumIndex = dimension;
+class FenwickTree {
+    constructor(treeCapacity) {
+        this.treeData = new Array(treeCapacity + 1).fill(0);
+        this.treeSize = treeCapacity;
     }
 
-    adjustValue(index, quantity) {
-        for (let k = index; k <= this.maximumIndex; k += k & -k) {
-            this.dataArray[k] += quantity;
+    updateValue(elementIndex, deltaAmount) {
+        for (; elementIndex <= this.treeSize; elementIndex += elementIndex & -elementIndex) {
+            this.treeData[elementIndex] += deltaAmount;
         }
     }
 
-    getPrefixSum(index) {
-        let currentSum = 0;
-        for (let k = index; k > 0; k -= k & -k) {
-            currentSum += this.dataArray[k];
+    querySum(elementIndex) {
+        let accumulatedSum = 0;
+        for (; elementIndex > 0; elementIndex -= elementIndex & -elementIndex) {
+            accumulatedSum += this.treeData[elementIndex];
         }
-        return currentSum;
+        return accumulatedSum;
     }
 }
 
-function processData(incomingText) {
-    const PRIME_MODULUS = 1000000007;
-    const HALF_MODULUS_INV = 500000004;
+function processInput(rawText) {
+    const lines = rawText.split("\n");
+    const firstLineParts = lines[0].split(" ");
+    const arrayLength = parseInt(firstLineParts[0]);
+    const repeatCount = parseInt(firstLineParts[1]);
+    const sourceArray = lines[1].split(" ").map(valStr => parseInt(valStr));
 
-    const lines = incomingText.split("\n");
-    const parameters = lines[0].split(" ").map(Number);
-    const valueCount = parameters[0];
-    const repetitionFactor = parameters[1];
-    const numericSequence = lines[1].split(" ").map(Number);
+    const uniqueSortedValues = [...new Set(sourceArray)].sort((a, b) => a - b);
+    const valueToCoordinateMap = new Map();
+    uniqueSortedValues.forEach((val, index) => valueToCoordinateMap.set(val, index + 1));
+    const compressedValues = sourceArray.map(val => valueToCoordinateMap.get(val));
+    const maxCoordinate = uniqueSortedValues.length;
 
-    const distinctValues = Array.from(new Set(numericSequence));
-    distinctValues.sort((a, b) => a - b);
-    const valueToRankMap = new Map();
-    distinctValues.forEach((val, idx) => valueToRankMap.set(val, idx + 1));
+    const modulus = Math.pow(10, 9) + 7;
 
-    const compressedSequence = numericSequence.map(val => valueToRankMap.get(val));
-    const maxRank = distinctValues.length;
-
-    let summationOne = 0; 
-    let summationTwo = 0; 
-
-    const treeForS1 = new BinaryIndexedTree(maxRank);
-    for (let currentElementIdx = valueCount - 1; currentElementIdx >= 0; --currentElementIdx) {
-        const currentRank = compressedSequence[currentElementIdx];
-        summationOne = (summationOne + treeForS1.getPrefixSum(currentRank - 1)) % PRIME_MODULUS;
-        treeForS1.adjustValue(currentRank, 1);
+    let inversionsWithinBlock = 0;
+    const ftForWithin = new FenwickTree(maxCoordinate);
+    for (let idx = 0; idx < arrayLength; idx++) {
+        const currentCompressedVal = compressedValues[idx];
+        const greaterCount = ftForWithin.querySum(maxCoordinate) - ftForWithin.querySum(currentCompressedVal);
+        inversionsWithinBlock = (inversionsWithinBlock + greaterCount) % modulus;
+        ftForWithin.updateValue(currentCompressedVal, 1);
     }
 
-    for (let currentElementIdx = 0; currentElementIdx < valueCount; ++currentElementIdx) {
-        const currentRank = compressedSequence[currentElementIdx];
-        summationTwo = (summationTwo + currentRank - 1) % PRIME_MODULUS;
+    let inversionsBetweenBlocks = 0;
+    const ftForBetween = new FenwickTree(maxCoordinate);
+    for (const val of compressedValues) {
+        ftForBetween.updateValue(val, 1);
     }
-    
-    let intermediateResultOne = (summationOne * repetitionFactor) % PRIME_MODULUS;
-    
-    let intermediateResultTwoFactor = (repetitionFactor * (repetitionFactor - 1)) % PRIME_MODULUS;
-    intermediateResultTwoFactor = (intermediateResultTwoFactor * HALF_MODULUS_INV) % PRIME_MODULUS;
-    let intermediateResultTwo = (summationTwo * intermediateResultTwoFactor) % PRIME_MODULUS;
+    for (let idx = 0; idx < arrayLength; idx++) {
+        const currentCompressedVal = compressedValues[idx];
+        const smallerCount = ftForBetween.querySum(currentCompressedVal - 1);
+        inversionsBetweenBlocks = (inversionsBetweenBlocks + smallerCount) % modulus;
+    }
 
-    let finalAccumulation = (intermediateResultOne + intermediateResultTwo) % PRIME_MODULUS;
+    const bigModulus = BigInt(modulus);
 
-    console.log(finalAccumulation);
+    const term1 = (BigInt(repeatCount) * BigInt(inversionsWithinBlock)) % bigModulus;
+
+    const numBlockPairs = (BigInt(repeatCount) * BigInt(repeatCount - 1) / BigInt(2)) % bigModulus;
+    const term2 = (numBlockPairs * BigInt(inversionsBetweenBlocks)) % bigModulus;
+
+    const totalInversions = (term1 + term2) % bigModulus;
+
+    console.log(Number(totalInversions));
 }
 
-processData(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,38 +1,30 @@
-const fileSystem = require('fs');
+"use strict";
 
-const rawInputData = fileSystem.readFileSync('/dev/stdin', 'utf8');
+const fileSystemModule = require('fs');
 
-const inputLines = rawInputData.trim().split('\n');
+const rawInputString = fileSystemModule.readFileSync('/dev/stdin', 'UTF-8');
 
-if (!inputLines || inputLines.length < 2) {
-    console.error("Input error: Expected at least two lines of data.");
-    process.exit(1);
+const inputDataLines = rawInputString.split('\n');
+
+const firstLineTokens = inputDataLines[0].split(' ');
+const pElementStrings = inputDataLines[1].split(' ');
+
+const valueN = parseInt(firstLineTokens[0], 10);
+const valueK = parseInt(firstLineTokens[1], 10);
+
+const foundPermutations = {};
+const pElementsCount = pElementStrings.length;
+
+for (let segmentStartIndex = 0; segmentStartIndex <= pElementsCount - valueK; segmentStartIndex++) {
+    const segmentEndIndex = segmentStartIndex + valueK;
+
+    const leadingElements = pElementStrings.slice(0, segmentStartIndex);
+    const sortedMiddleSegment = pElementStrings.slice(segmentStartIndex, segmentEndIndex).sort((elemA, elemB) => (elemA > elemB ? 1 : 0));
+    const trailingElements = pElementStrings.slice(segmentEndIndex);
+
+    const currentCombinedPermutation = [...leadingElements, ...sortedMiddleSegment, ...trailingElements];
+
+    foundPermutations[currentCombinedPermutation.join(',')] = true;
 }
 
-const configTokens = inputLines[0].split(' ');
-
-const windowLength = Number(configTokens[1]);
-
-const elementSequence = inputLines[1].split(' ');
-
-const sequenceLen = elementSequence.length;
-
-const distinctArrangements = new Set();
-
-for (let currentIndex = 0; currentIndex <= sequenceLen - windowLength; ++currentIndex) {
-    const prefixSegment = elementSequence.slice(0, currentIndex);
-
-    const currentWindow = elementSequence.slice(currentIndex, currentIndex + windowLength);
-
-    const sortedWindow = [...currentWindow].sort((valA, valB) => valA > valB);
-
-    const suffixSegment = elementSequence.slice(currentIndex + windowLength);
-
-    const fullArrangement = [...prefixSegment, ...sortedWindow, ...suffixSegment];
-
-    const arrangementKey = fullArrangement.join(',');
-
-    distinctArrangements.add(arrangementKey);
-}
-
-console.log(distinctArrangements.size);
+console.log(Object.keys(foundPermutations).length);

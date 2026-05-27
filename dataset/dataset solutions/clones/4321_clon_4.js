@@ -1,22 +1,35 @@
-function determineOptimalSum(sourceText) {
-  const numericComponents = sourceText.trim().match(/\d+/g).map(Number);
-  const [initialMarker, ...remainingNumbers] = numericComponents;
+'use strict';
 
-  const collectionOfPairs = [];
-  for (let index = 0; index < remainingNumbers.length; index += 2) {
-    collectionOfPairs.push({ primaryDatum: remainingNumbers[index], secondaryDatum: remainingNumbers[index + 1] });
+function Main(input) {
+  const numericValues = input.trim().split(/\s+/).map(Number);
+  numericValues.shift();
+
+  const valueTuples = [];
+  for (let i = 0; i < numericValues.length; i += 2) {
+    valueTuples.push({ primaryValue: numericValues[i], secondaryValue: numericValues[i + 1] });
   }
 
-  const resultPair = collectionOfPairs.reduce((currentBestItem, currentItem) => {
-    if (currentItem.primaryDatum >= currentBestItem.primaryDatum) {
-      return currentItem;
-    }
-    return currentBestItem;
-  }, { primaryDatum: -Infinity, secondaryDatum: 0 });
+  const processedItems = valueTuples.reverse();
 
-  return resultPair.primaryDatum + resultPair.secondaryDatum;
+  let highestPrimary;
+  let correspondingSecondary;
+
+  if (processedItems.length === 0) {
+    highestPrimary = -Infinity;
+    correspondingSecondary = undefined;
+  } else {
+    const optimalPair = processedItems.reduce((currentBest, currentItem) => {
+      if (currentItem.primaryValue > currentBest.primaryValue) {
+        return currentItem;
+      }
+      return currentBest;
+    }, processedItems[0]);
+
+    highestPrimary = optimalPair.primaryValue;
+    correspondingSecondary = optimalPair.secondaryValue;
+  }
+
+  console.log(highestPrimary + correspondingSecondary);
 }
 
-const fileContent = require('node:fs').readFileSync('/dev/stdin', 'utf8');
-const finalOutcome = determineOptimalSum(fileContent);
-console.log(finalOutcome);
+Main(require('fs').readFileSync('/dev/stdin', 'utf8'));

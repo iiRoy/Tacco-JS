@@ -1,273 +1,225 @@
-// This module provides a flexible utility for parsing structured input data from a single string.
-// It's designed to read lines, individual values, or blocks of data, converting them to numbers
-// by default, or returning them as strings if specified.
-var INPUT_PROCESSOR = (function() {
+// This module provides a utility for parsing input data from a string.
+var INPUT_PARSER_FACTORY = (function() {
+  /**
+   * Creates a new input parser instance.
+   * @param {string} inputString - The raw input content as a single string.
+   * @returns {InputParser} A new parser object.
+   */
+  function createParser(inputString) {
+    return new InputParser(inputString);
+  }
 
-    /**
-     * Factory function: Creates and returns a new data reader instance.
-     * @param {string} sourceText - The entire input data as a single string.
-     * @returns {InputSource} An instance of the InputSource parser.
-     */
-    function createReader(sourceText) {
-        return new InputSource(sourceText);
+  /**
+   * Constructor for the InputParser.
+   * @param {string} rawInputContent - The full input string.
+   */
+  function InputParser(rawInputContent) {
+    // Split the input into lines and store them.
+    this._linesData = rawInputContent.trim().split("\n");
+    // Initialize the current line index.
+    this._currentLineIndex = 0;
+  }
+
+  /**
+   * Reads a single "atom" (number or string) from the current line.
+   * If the current line is exhausted, it moves to the next line.
+   * @param {boolean} returnAsString - If true, returns the value as a string; otherwise, as a number.
+   * @returns {string|number} The extracted atom.
+   */
+  InputParser.prototype.readAtom = function(returnAsString) {
+    var lineData = this._linesData;
+    var lineIdx = this._currentLineIndex;
+    var extractedValue;
+
+    // If the current line hasn't been split into individual atoms yet, do so.
+    // Atoms are assumed to be space-separated and read in reverse order for pop efficiency.
+    if (typeof lineData[lineIdx] === "string") {
+      lineData[lineIdx] = lineData[lineIdx].split(" ").reverse();
     }
 
-    /**
-     * InputSource Constructor: Initializes the parser with raw input data.
-     * @param {string} rawInputData - The raw string content to be parsed.
-     */
-    function InputSource(rawInputData) {
-        // Internal array to store processed lines, splitting the input by newline characters.
-        // Each line is trimmed of leading/trailing whitespace.
-        this._sourceLines = rawInputData.trim().split("\n");
-        // A pointer indicating the index of the current line being processed.
-        this._linePointer = 0;
+    // Extract the last atom from the current line's array.
+    extractedValue = lineData[lineIdx].pop();
+
+    // If the current line is now empty, advance to the next line.
+    if (!lineData[lineIdx].length) {
+      this._currentLineIndex++;
     }
 
-    /**
-     * Prototype Method: Reads and extracts a single value from the current line.
-     * It processes the current line into parts if not already done, and then extracts one item.
-     * @param {boolean} returnAsStringFlag - If true, returns the value as a string; otherwise, as a number.
-     * @returns {string|number} The extracted single value.
-     */
-    InputSource.prototype.fetchNextItem = function(returnAsStringFlag) {
-        var linesReference = this._sourceLines;
-        var pointerReference = this._linePointer;
-        var extractedValue;
+    // Return the value, converting to number if not requested as string.
+    return returnAsString ? extractedValue : +extractedValue;
+  };
 
-        // Check if the current line is still a raw string. If so, split it into parts
-        // and reverse the order. Reversing allows 'pop()' to effectively read from the beginning of the line.
-        if (typeof linesReference[pointerReference] === "string") {
-            linesReference[pointerReference] = linesReference[pointerReference].split(" ").reverse();
-        }
+  /**
+   * Reads an entire line as an array of values.
+   * @param {boolean} asStringArray - If true, returns array of strings; otherwise, array of numbers.
+   * @returns {Array<string|number>} An array of values from the line.
+   */
+  InputParser.prototype.readLine = function(asStringArray) {
+    // Get the current line, split it by spaces, and advance the line index.
+    var lineValues = this._linesData[this._currentLineIndex++].split(" ");
+    // Return as strings or convert to numbers.
+    return asStringArray ? lineValues : lineValues.map(item => +item);
+  };
 
-        // Extract the last element (which was originally the first due to reversal).
-        extractedValue = linesReference[pointerReference].pop();
+  /**
+   * Reads a block of 'numRows' lines as a 2D array (matrix).
+   * @param {number} numRows - The number of rows to read.
+   * @param {boolean} asStringMatrix - If true, returns matrix of strings; otherwise, matrix of numbers.
+   * @returns {Array<Array<string|number>>} The 2D array.
+   */
+  InputParser.prototype.readMatrix = function(numRows, asStringMatrix) {
+    // Slice the relevant lines and advance the line index.
+    var resultMatrix = this._linesData.slice(this._currentLineIndex, this._currentLineIndex += numRows)
+      .map(rowStr => rowStr.split(" ")); // Split each row into cells.
 
-        // If the current line's parts array is now empty, it means all items on that line have been read.
-        // Advance the line pointer to the next line.
-        if (!linesReference[pointerReference].length) {
-            this._linePointer++;
-        }
+    // Return as strings or convert all cells to numbers.
+    return asStringMatrix ? resultMatrix : resultMatrix.map(row => row.map(cellStr => +cellStr));
+  };
 
-        // Return the extracted value. If 'returnAsStringFlag' is true, return as is (string).
-        // Otherwise, use the unary plus operator to convert it to a number.
-        return returnAsStringFlag ? extractedValue : +extractedValue;
-    };
+  /**
+   * Reads a block of 'count' lines as a 1D array of raw line strings or numbers.
+   * @param {number} count - The number of lines to read.
+   * @param {boolean} keepStrings - If true, returns array of strings; otherwise, array of numbers.
+   * @returns {Array<string|number>} An array of lines.
+   */
+  InputParser.prototype.readRawLines = function(count, keepStrings) {
+    // Slice the relevant lines and advance the line index.
+    var rawLines = this._linesData.slice(this._currentLineIndex, this._currentLineIndex += count);
+    // Return as strings or convert to numbers.
+    return keepStrings ? rawLines : rawLines.map(lineVal => +lineVal);
+  };
 
-    /**
-     * Prototype Method: Reads all space-separated values from the current line.
-     * Advances the line pointer after reading.
-     * @param {boolean} asStringFlag - If true, returns an array of strings; otherwise, an array of numbers.
-     * @returns {Array<string|number>} An array containing all values from the line.
-     */
-    InputSource.prototype.getLineItems = function(asStringFlag) {
-        // Retrieve the current line, split it by spaces, and then increment the line pointer.
-        var currentLineParts = this._sourceLines[this._linePointer++].split(" ");
-
-        // Return the parts. If 'asStringFlag' is true, return the array of strings.
-        // Otherwise, map each string part to its numerical equivalent.
-        return asStringFlag ? currentLineParts : currentLineParts.map(elementStr => +elementStr);
-    };
-
-    /**
-     * Prototype Method: Reads a block of 'numRowsToRead' consecutive lines as a 2D matrix.
-     * Each line within the block is split into an array of values.
-     * @param {number} numRowsToRead - The number of lines (rows) to read for the matrix.
-     * @param {boolean} asStringFlag - If true, returns a matrix of strings; otherwise, a matrix of numbers.
-     * @returns {Array<Array<string|number>>} A 2D array representing the matrix data.
-     */
-    InputSource.prototype.fetchBlockData = function(numRowsToRead, asStringFlag) {
-        // Extract a slice of lines from the internal source array.
-        // The line pointer is advanced by 'numRowsToRead' during this operation.
-        // Each extracted line string is then split by spaces to form a row array.
-        var resultMatrix = this._sourceLines.slice(this._linePointer, this._linePointer += numRowsToRead)
-                                           .map(lineStrArray => lineStrArray.split(" "));
-
-        // Return the resulting matrix. If 'asStringFlag' is true, return as is.
-        // Otherwise, iterate through each row and then each item to convert all to numbers.
-        return asStringFlag ? resultMatrix : resultMatrix.map(row => row.map(itemStr => +itemStr));
-    };
-
-    /**
-     * Prototype Method: Reads a specified number of lines as a 1D array of values.
-     * Each line is treated as a single value.
-     * @param {number} numLines - The count of lines to read.
-     * @param {boolean} asStringFlag - If true, returns an array of strings; otherwise, an array of numbers.
-     * @returns {Array<string|number>} An array of values, each corresponding to a line.
-     */
-    InputSource.prototype.getLinesAsValues = function(numLines, asStringFlag) {
-        // Extract a slice of lines directly. The line pointer is advanced.
-        var resultRows = this._sourceLines.slice(this._linePointer, this._linePointer += numLines);
-
-        // Return the rows. If 'asStringFlag' is true, return the array of strings.
-        // Otherwise, map each line string to its numerical equivalent.
-        return asStringFlag ? resultRows : resultRows.map(lineContent => +lineContent);
-    };
-
-    // Expose the factory function, allowing external modules to create parser instances.
-    return createReader;
+  return createParser;
 })();
 
-// Initialize the input parser by reading the entire content of standard input.
-// The 'fs' module is used for file system operations, specifically reading from /dev/stdin.
-var parserObject = INPUT_PROCESSOR(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Initialize the input reader by reading from standard input.
+var inputReader = INPUT_PARSER_FACTORY(require("fs").readFileSync("/dev/stdin", "utf8"));
 
 /**
- * Utility Function: Creates a multi-dimensional array initialized with a given expression.
- * This function dynamically constructs and evaluates JavaScript code to create nested arrays.
- * Example: initializeNestedArray(0, 2, 3) creates a 2x3 array filled with 0s.
- * @param {*} initialExpression - The value or expression to fill the innermost array elements with.
- * @param {...number} dimensions - Variable number of arguments specifying the size of each dimension.
- * @returns {Array} The newly created multi-dimensional array.
+ * Creates a multi-dimensional array initialized with a given value.
+ * This function uses eval, which can be a security risk if 'initialValue' comes from untrusted sources.
+ * @param {*} initialValue - The value to initialize array elements with.
+ * @returns {Array} The created multi-dimensional array.
  */
-function initializeNestedArray(initialExpression) {
-    var argsReference = arguments; // Reference to the arguments object.
-    var dimensionIndex = argsReference.length; // Start with the total number of dimensions.
-    // Construct the innermost array creation code: Array(size).fill(0).map(x => initialExpression).
-    // Note: --dimensionIndex is used to get the last dimension size.
-    var arrayCreationCode = "Array(argsReference[" + --dimensionIndex + "]).fill(0).map(_dummyVar=>{return " + initialExpression + ";})";
-
-    // Loop backwards from the second-to-last dimension down to the first.
-    // Each iteration wraps the existing 'arrayCreationCode' in another Array.map call.
-    while (--dimensionIndex) {
-        arrayCreationCode = "Array(argsReference[" + dimensionIndex + "]).fill(0).map(_dummyVar=>" + arrayCreationCode + ")";
-    }
-    // Evaluate the dynamically constructed string to create the actual array structure.
-    return eval(arrayCreationCode);
+function createMultiDimArray(initialValue) {
+  var argsList = arguments;
+  var argCount = argsList.length;
+  // Build the array creation string from innermost to outermost dimension.
+  var arrayCreationString = "Array(argsList[" + --argCount + "]).fill(0).map(_element=>{return " + initialValue + ";})";
+  while (--argCount) {
+    arrayCreationString = "Array(argsList[" + argCount + "]).fill(0).map(_=>{return " + arrayCreationString + "})";
+  }
+  // Execute the string to create the array.
+  return eval(arrayCreationString);
 }
 
-
-// Execute the primary problem-solving function and output its result to the console.
-console.log(solveProblem());
+// Output the result of the main computation.
+console.log(computeOptimalValue());
 
 /**
- * Main function: Contains the core logic to solve the problem.
- * It processes input data, performs calculations, and determines a final result
- * through an iterative search process.
- * @returns {number} The final computed result.
+ * Main function to solve the problem.
+ * It calculates an optimal value based on input data using a binary search approach.
+ * @returns {number} The calculated optimal value.
  */
-function solveProblem() {
-    // Read two single numerical values from the input: numElements (n) and thresholdValue (x).
-    var numElements = parserObject.fetchNextItem();
-    var thresholdValue = parserObject.fetchNextItem();
+function computeOptimalValue() {
+  // Read problem parameters.
+  var itemCount = inputReader.readAtom(); // N
+  var capacityLimit = inputReader.readAtom(); // X
+  var itemDetails = inputReader.readMatrix(itemCount); // B (N rows)
 
-    // Read a block of 'numElements' lines, parsing them into a 2D array (matrix).
-    var dataMatrix = parserObject.fetchBlockData(numElements);
+  var totalInitialSum = 0; // S
 
-    // Initialize a variable to accumulate a total sum based on initial calculations.
-    var accumulatedValue = 0;
+  // Process each item to calculate additional properties and update total sum.
+  for (var idx = 0; idx < itemCount; idx++) {
+    var baseCost = itemDetails[idx][0] * itemDetails[idx][1]; // t = b[i][0]*b[i][1]
+    var extraCostPerUnit = (capacityLimit - itemDetails[idx][0]) * itemDetails[idx][2]; // a = (x-b[i][0])*b[i][2]
+    totalInitialSum += baseCost; // S += t
+    // Append calculated values: extraCostPerUnit, baseCost, totalCost (extraCostPerUnit + baseCost)
+    itemDetails[idx].push(extraCostPerUnit, baseCost, extraCostPerUnit + baseCost);
+  }
 
-    // First processing loop: Iterate through each row of the data matrix.
-    // This loop calculates additional derived values for each item and appends them to its row.
-    for (var idx = 0; idx < numElements; idx++) {
-        // Calculate a temporary product from the first two elements of the current row.
-        var tempProduct = dataMatrix[idx][0] * dataMatrix[idx][1];
-        // Calculate an adjusted value using the threshold and the third element.
-        var adjustedCalculation = (thresholdValue - dataMatrix[idx][0]) * dataMatrix[idx][2];
+  // Sort items by their total cost in descending order.
+  // itemDetails[i][5] holds the totalCost (a+t)
+  itemDetails.sort((itemA, itemB) => itemB[5] - itemA[5]);
 
-        // Add the temporary product to the overall accumulated sum.
-        accumulatedValue += tempProduct;
+  // Binary search for the optimal value.
+  var upperBound = itemCount * capacityLimit; // ok = N*X
+  var lowerBound = -1; // ng = -1
 
-        // Append the calculated adjusted value, temporary product, and their sum to the current row.
-        // The row now contains more context-specific derived data.
-        dataMatrix[idx].push(adjustedCalculation, tempProduct, adjustedCalculation + tempProduct);
+  while (upperBound - lowerBound > 1) {
+    var midpointValue = Math.floor((upperBound + lowerBound) / 2); // m
+    var currentSum = totalInitialSum; // u = S
+    var remainingCapacity = midpointValue; // k = m
+    var capacityRemainder = midpointValue % capacityLimit; // z = m % X
+
+    var maxSingleItemCost = 0; // u0 = 0
+    var maxCostItemIndex = 0; // i0 = 0
+
+    // Find the item that yields the maximum cost for the 'capacityRemainder'.
+    for (var idx = 0; idx < itemCount; idx++) {
+      var singleItemCost; // u1
+      if (capacityRemainder < itemDetails[idx][0]) {
+        // If remainder is less than item's base capacity, cost is proportional to remainder.
+        singleItemCost = itemDetails[idx][1] * capacityRemainder;
+      } else {
+        // If remainder is greater or equal, cost includes base cost plus extra cost for excess.
+        // itemDetails[idx][4] is baseCost (t)
+        // itemDetails[idx][2] is cost per unit beyond base capacity
+        singleItemCost = itemDetails[idx][4] + (capacityRemainder - itemDetails[idx][0]) * itemDetails[idx][2];
+      }
+      // Keep track of the maximum single item cost and its index.
+      if (singleItemCost > maxSingleItemCost) {
+        maxSingleItemCost = singleItemCost;
+        maxCostItemIndex = idx;
+      }
     }
 
-    // Sort the data matrix. The sorting criterion is the sixth element (index 5) of each row,
-    // which represents the sum of 'adjustedCalculation + tempProduct'.
-    // The sort order is descending (itemB[5] - itemA[5]).
-    dataMatrix.sort((itemA, itemB) => itemB[5] - itemA[5]);
-
-    // Initialize variables for a binary search algorithm.
-    // 'upperBound' represents a known possible answer (n*x is a safe upper bound).
-    // 'lowerBound' represents an impossible answer (typically -1 or 0).
-    var upperBound = numElements * thresholdValue;
-    var lowerBound = -1;
-
-    // Binary search loop: Continues as long as there's a range greater than 1 between bounds.
-    while (upperBound - lowerBound > 1) {
-        // Calculate the midpoint of the current search range.
-        var midPoint = Math.floor((upperBound + lowerBound) / 2);
-
-        // Initialize variables for the inner simulation/check phase of the binary search.
-        var currentBudget = accumulatedValue;    // A budget or total resource level, initialized with the accumulated sum.
-        var remainingCapacity = midPoint;        // A capacity or quantity to be processed, initialized with the midpoint.
-        var remainderAmount = midPoint % thresholdValue; // The remainder after dividing capacity by the threshold.
-        var maxSubValue = 0;                     // Stores the maximum calculated partial sum found.
-        var bestPartialIndex = 0;                // Stores the index where 'maxSubValue' was found.
-
-        // Loop to determine the 'maxSubValue' and its index based on 'remainderAmount'.
-        // This is a preliminary calculation phase before the main simulation.
-        for (var idx = 0; idx < numElements; idx++) {
-            var currentSubValue;
-            // Conditional calculation based on 'remainderAmount' relative to the first element of the current row.
-            if (remainderAmount < dataMatrix[idx][0]) {
-                currentSubValue = dataMatrix[idx][1] * remainderAmount;
-            } else {
-                currentSubValue = dataMatrix[idx][4] + (remainderAmount - dataMatrix[idx][0]) * dataMatrix[idx][2];
-            }
-
-            // Update 'maxSubValue' and 'bestPartialIndex' if a new maximum is found.
-            if (currentSubValue > maxSubValue) {
-                maxSubValue = currentSubValue;
-                bestPartialIndex = idx;
-            }
-        }
-
-        // Second processing loop: Simulates the consumption of 'currentBudget' and 'remainingCapacity'.
-        // This loop iterates through the sorted data matrix, attempting to deplete the capacity and budget.
-        for (var idx = 0; idx < numElements && remainingCapacity > 0 && currentBudget > 0; idx++) {
-            if (thresholdValue <= remainingCapacity) {
-                // If there's enough 'remainingCapacity' to take a full 'thresholdValue' chunk.
-                currentBudget -= dataMatrix[idx][5]; // Deduct the full cost (element at index 5).
-                remainingCapacity -= thresholdValue;  // Reduce the capacity by the threshold.
-            } else {
-                // If 'remainingCapacity' is less than 'thresholdValue', special handling is required.
-                if (idx <= bestPartialIndex) {
-                    // If the current item's index is at or before the 'bestPartialIndex'.
-                    currentBudget -= maxSubValue; // Deduct the pre-calculated maximum partial sum.
-                    remainingCapacity = 0;        // All remaining capacity is considered used.
-                } else {
-                    // If the current item's index is after the 'bestPartialIndex'.
-                    var tempBudget = currentBudget;
-                    // Adjust 'tempBudget' based on the 'bestPartialIndex' item, current item, and 'maxSubValue'.
-                    tempBudget += dataMatrix[bestPartialIndex][5] - dataMatrix[idx][5] - maxSubValue;
-
-                    // If 'tempBudget' is already zero or negative, update 'currentBudget' and skip to next item.
-                    if (tempBudget <= 0) {
-                        currentBudget = tempBudget;
-                        continue;
-                    }
-
-                    // Inner loop: Further refine budget consumption for the remaining 'remainingCapacity'.
-                    // This loop recalculates 'tempBudget' for each item based on 'currentBudget'.
-                    for (tempBudget = currentBudget; idx < numElements && tempBudget > 0; idx++) {
-                        tempBudget = currentBudget; // Reset tempBudget to currentBudget at the start of each inner iteration.
-                        if (remainingCapacity < dataMatrix[idx][0]) {
-                            // Calculation if 'remainingCapacity' is less than the first element.
-                            tempBudget -= dataMatrix[idx][1] * remainingCapacity;
-                        } else {
-                            // Calculation if 'remainingCapacity' is greater or equal.
-                            tempBudget -= dataMatrix[idx][4] + (remainingCapacity - dataMatrix[idx][0]) * dataMatrix[idx][2];
-                        }
-                    }
-                    currentBudget = tempBudget; // Update 'currentBudget' with the final 'tempBudget' from the inner loop.
-                    remainingCapacity = 0;      // All remaining capacity is considered used.
-                }
-            }
-        }
-
-        // Update binary search bounds based on the outcome of the simulation.
-        if (currentBudget > 0) {
-            // If there's still budget left, it means 'midPoint' was too small.
-            lowerBound = midPoint;
+    // Iterate through items to adjust the current sum based on remaining capacity.
+    for (var idx = 0; idx < itemCount && remainingCapacity > 0 && currentSum > 0; idx++) {
+      if (capacityLimit <= remainingCapacity) {
+        // If remaining capacity is enough for a full 'capacityLimit' block, subtract total cost of current item.
+        // itemDetails[idx][5] is totalCost (a+t)
+        currentSum -= itemDetails[idx][5];
+        remainingCapacity -= capacityLimit;
+      } else {
+        // If remaining capacity is less than 'capacityLimit'.
+        if (idx <= maxCostItemIndex) {
+          // If the current item is the one that gave maxSingleItemCost, subtract that max cost.
+          currentSum -= maxSingleItemCost;
+          remainingCapacity = 0; // All remaining capacity is used up.
         } else {
-            // If the budget was depleted or went negative, 'midPoint' is a possible (or too large) answer.
-            upperBound = midPoint;
+          // If current item is not the max cost item, try to find a better way to use remaining capacity.
+          var tempSum = currentSum; // v = u
+          // Adjust tempSum by adding back the max cost item's total cost and subtracting current item's total cost,
+          // then subtracting the maxSingleItemCost. This is a complex adjustment.
+          tempSum += itemDetails[maxCostItemIndex][5] - itemDetails[idx][5] - maxSingleItemCost;
+          if (tempSum <= 0) {
+            currentSum = tempSum;
+            continue; // If this adjustment makes sum non-positive, continue to next item.
+          }
+          // If tempSum is still positive, iterate further to find the exact cost for the remaining capacity.
+          for (tempSum = currentSum; idx < itemCount && tempSum > 0; idx++) {
+            tempSum = currentSum; // Reset tempSum for each iteration of this inner loop.
+            if (remainingCapacity < itemDetails[idx][0]) {
+              // If remaining capacity is less than item's base capacity.
+              tempSum -= itemDetails[idx][1] * remainingCapacity;
+            } else {
+              // If remaining capacity is greater or equal.
+              tempSum -= itemDetails[idx][4] + (remainingCapacity - itemDetails[idx][0]) * itemDetails[idx][2];
+            }
+          }
+          currentSum = tempSum; // Update currentSum with the final calculated tempSum.
+          remainingCapacity = 0; // All remaining capacity is used.
         }
+      }
     }
 
-    // The 'upperBound' will contain the smallest value of 'midPoint' for which the condition was met.
-    return upperBound;
+    // Adjust binary search bounds based on the final currentSum.
+    if (currentSum > 0) {
+      lowerBound = midpointValue; // If sum is still positive, need a larger midpoint.
+    } else {
+      upperBound = midpointValue; // If sum is non-positive, this midpoint is achievable or too high.
+    }
+  }
+  return upperBound; // The optimal value.
 }

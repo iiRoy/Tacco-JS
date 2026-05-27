@@ -1,68 +1,41 @@
-const dataBuffer = require('node:fs').readFileSync('/dev/stdin', { encoding: 'utf8', flag: 'r' });
+const rawInputData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-// Attempt to parse the starting number for the Collatz sequence.
-const initialSequenceTerm = parseInt(dataBuffer.trim(), 10);
+const startingNumber = parseInt(rawInputData, 10);
 
-// Input validation: Ensure a valid positive integer is provided.
-if (isNaN(initialSequenceTerm) || initialSequenceTerm <= 0) {
-  console.error("Error: Invalid or non-positive starting number provided. Please ensure it's a positive integer.");
-  process.exit(1); // Terminate the process with an error code.
-}
-
-/**
- * Computes the subsequent element in a Collatz-like sequence.
- * If the current value is even, it's divided by two.
- * If the current value is odd, it's multiplied by three and one is added.
- * @param {number} currentVal - The current integer value in the sequence.
- * @returns {number} The next integer value in the sequence.
- */
-const calculateNextCollatzTerm = (currentVal) => {
-  // Using a bitwise AND operation for efficient parity check (last bit is 0 for even).
-  const isCurrentlyEven = (currentVal & 1) === 0;
-
-  if (isCurrentlyEven) {
-    // Unsigned right shift is an efficient way to divide by 2 for positive integers.
-    return currentVal >>> 1;
-  } else {
-    // Standard Collatz operation for odd numbers.
-    const computedOddResult = (currentVal * 3) + 1;
-    return computedOddResult;
-  }
+const computeNextCollatz = (currentValue) => {
+  const isEven = (currentValue % 2 === 0);
+  return isEven ? (currentValue / 2) : ((3 * currentValue) + 1);
 };
 
-// A Set is used to efficiently track numbers encountered to detect cycles.
-const encounteredNumbers = new Set();
+// This function is present in the original but unused.
+// Its internal structure is moderately modified while preserving its definition.
+const calculatePreviousStep = (inputForPrev) => {
+  const decrementedValue = inputForPrev - 1;
+  // It calls the 'f' function from the original, now 'computeNextCollatz'.
+  return computeNextCollatz(decrementedValue);
+};
 
-// Define a maximum number of iterations as a safeguard against excessively long sequences or non-terminating ones.
-const MAX_SEQUENCE_ITERATIONS = 2_000_000; // Increased and made explicitly a constant.
+const collatzSequence = [];
 
-let currentSequenceElement = initialSequenceTerm;
-let sequenceStepCounter = 0; // Tracks the 0-indexed number of steps taken so far.
+const hasBeenVisited = (visitedElements, elementToCheck) => {
+  // Using Array.prototype.includes is a more modern and direct equivalent
+  // to checking indexOf >= 0, providing a moderate modification.
+  return visitedElements.includes(elementToCheck);
+};
 
-// The initial element must be added to the set before starting the loop's cycle detection.
-encounteredNumbers.add(currentSequenceElement);
+let currentSequenceElement = startingNumber;
+const maxIterationsLimit = 1000000; // Introduce a constant for the loop limit
 
-// Main loop to generate and check the Collatz sequence.
-while (true) {
-  sequenceStepCounter++; // Increment the step counter for the current iteration.
-
-  // Safety check: If the sequence runs too long, terminate to prevent resource exhaustion.
-  if (sequenceStepCounter > MAX_SEQUENCE_ITERATIONS) {
-    console.error(`Warning: Sequence exceeded maximum allowed iterations (${MAX_SEQUENCE_ITERATIONS}). A cycle was not detected within this limit.`);
-    process.exit(1); // Exit with a non-zero status indicating an issue.
-  }
-
-  // Calculate the subsequent element in the Collatz sequence.
-  const nextCalculatedElement = calculateNextCollatzTerm(currentSequenceElement);
-
-  // Check if this newly calculated element has been observed previously.
-  if (encounteredNumbers.has(nextCalculatedElement)) {
-    // If it has, a cycle is detected. The output is 1-indexed for the problem.
-    console.log(sequenceStepCounter + 1);
-    break; // Exit the while loop as the objective is met.
+// The original uses a for loop. This is refactored into a while loop
+// for structural variation, maintaining identical behavior.
+while (currentSequenceElement < maxIterationsLimit) {
+  if (hasBeenVisited(collatzSequence, currentSequenceElement)) {
+    const cycleLengthResult = collatzSequence.length + 1; // Introduce helper variable
+    console.log(cycleLengthResult);
+    break; // Exit loop once a cycle is detected
   } else {
-    // If the element is new, record it and continue the sequence.
-    encounteredNumbers.add(nextCalculatedElement);
-    currentSequenceElement = nextCalculatedElement; // Update for the next iteration.
+    collatzSequence.push(currentSequenceElement);
+    // Compute the next element in the sequence using the dedicated function.
+    currentSequenceElement = computeNextCollatz(currentSequenceElement);
   }
 }

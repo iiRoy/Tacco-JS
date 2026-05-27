@@ -1,27 +1,31 @@
-function readInputData () {
-  return require("fs") . readFileSync("/dev/stdin" , "utf8") . trim();
+// This function is responsible for obtaining raw input data from the standard input stream.
+function getInputData() {
+  return require("fs").readFileSync("/dev/stdin", "utf8").trim();
 }
 
-/**
- * Sends the computed value to the standard output.
- * @param {any} outputValue - The data to be displayed.
- */
+// This function serves as the primary mechanism for displaying results to the console.
 function displayResult(outputValue) {
   console.log(outputValue);
 }
 
-// Utility function to process and transform input data based on a specified type.
-// Transformation options for 'transformationType':
-// 0: Returns the input string without modification.
-// 1: Converts the input string to an integer.
-// 2: Splits the input string by a single space character.
-// 3: Splits the input string by newline characters.
-// 4: Splits by space, then converts each resulting part to a number.
-// 5: Splits by newline, then converts each resulting part to a number.
-// 6: Splits the input string into an array of individual characters.
-// 7: Splits into individual characters, then converts each character to a number.
-function transformData(inputString, transformationType) {
-  switch (transformationType) {
+/*
+ * The transformInput utility provides various methods for processing string inputs.
+ * It supports different conversion strategies based on the specified type.
+ *
+ * @param {string} inputString - The textual data to be processed.
+ * @param {number} conversionType - An integer indicating the desired transformation:
+ *   0: Returns the input string without any modifications.
+ *   1: Parses the input string into an integer.
+ *   2: Splits the string by single spaces into an array of substrings.
+ *   3: Splits the string by newline characters into an array of substrings.
+ *   4: Splits by spaces and then converts each resulting substring to a number.
+ *   5: Splits by newlines and then converts each resulting substring to a number.
+ *   6: Breaks the string into an array of individual characters.
+ *   7: Breaks the string into individual characters and converts each to a number.
+ * @returns {any} The result of the transformation, which can be a string, number, or array.
+ */
+function transformInput(inputString, conversionType) {
+  switch (conversionType) {
     case 0:
       return inputString;
     case 1:
@@ -31,61 +35,57 @@ function transformData(inputString, transformationType) {
     case 3:
       return inputString.split("\n");
     case 4:
-      return inputString.split(" ").map((element) => Number(element));
+      return inputString.split(" ").map((elementStr) => Number(elementStr));
     case 5:
-      return inputString.split("\n").map((element) => Number(element));
+      return inputString.split("\n").map((elementStr) => Number(elementStr));
     case 6:
       return inputString.split("");
     case 7:
-      return inputString.split("").map((element) => Number(element));
-    default:
-      return inputString;
+      return inputString.split("").map((elementStr) => Number(elementStr));
   }
 }
 
-function ExecuteLogic(rawInput) {
-  // First, process the raw input by splitting it into lines.
-  const processedInput = transformData(rawInput, 3);
+// The main function orchestrates the data processing logic.
+function processData(rawData) {
+  // Split the initial raw input into an array of lines.
+  let processedLines = transformInput(rawData, 3);
 
-  // Extract the total count of elements from the first line of the processed input.
-  const countElements = transformData(processedInput[0], 1);
+  // Extract the first number from the first line, representing the count of elements.
+  const countElements = transformInput(processedLines[0], 1);
 
-  // Retrieve the main sequence of data from the second line, parsing each part as a number.
-  const dataSequence = transformData(processedInput[1], 4);
+  // Parse the second line into an array of numbers.
+  const originalSequence = transformInput(processedLines[1], 4);
 
-  // Initialize an array to hold boolean-like indicators, all set to zero initially.
-  let indicatorArray = Array.from({ length: countElements }, () => 0);
+  // Initialize an auxiliary array with 'countElements' zeros.
+  const indicatorArray = new Array(countElements).fill(0);
 
-  // Populate the indicator array: set an indicator to 1 if a data point matches its expected index.
+  // Populate the auxiliary array based on a specific condition.
   for (let idx = 0; idx < countElements; idx++) {
-    if (dataSequence[idx] === idx + 1) {
+    // If an element in the original sequence matches its 1-based index, mark it in the indicator array.
+    if (originalSequence[idx] === idx + 1) {
       indicatorArray[idx] = 1;
     }
   }
 
-  // Initialize a counter for the final computed result.
-  let finalResult = 0;
+  // Initialize a variable to accumulate the final result.
+  let finalCount = 0;
 
-  // Iterate through the indicator array to calculate the final result based on adjacent values.
+  // Iterate through the indicator array to compute the final count based on patterns.
   for (let idx = 1; idx < countElements; idx++) {
     const previousIndicator = indicatorArray[idx - 1];
     const currentIndicator = indicatorArray[idx];
 
-    // Apply specific logic for incrementing the result, differentiating between the first and subsequent pairs.
+    // Apply specific conditions to increment the final counter.
     if (idx !== 1 && previousIndicator === 0 && currentIndicator === 1) {
-      finalResult++;
-    }
-    else if (idx === 1 && (currentIndicator === 1 || previousIndicator === 1)) {
-      finalResult++;
+      finalCount++;
+    } else if (idx === 1 && (currentIndicator === 1 || previousIndicator === 1)) {
+      finalCount++;
     }
   }
 
-  // The following line is typically used for debugging purposes to inspect the intermediate indicator array.
-  // displayResult(indicatorArray);
-
-  // Output the final calculated value.
-  displayResult(finalResult);
+  // Output the computed final count.
+  displayResult(finalCount);
 }
 
-// Begin the program execution by reading input from stdin and passing it to the main logic function.
-ExecuteLogic(readInputData());
+// Initiate the data processing by calling the main function with input from stdin.
+processData(getInputData());

@@ -1,135 +1,79 @@
-class DataStreamProcessor {
-    #inputLines;
-    #currentLinePosition;
-    #totalLinesAvailable;
+"use strict";
 
-    constructor(sourceFilePath = "/dev/stdin") {
-        try {
-            const rawContent = require("fs").readFileSync(sourceFilePath, "utf8");
-            const processedContent = rawContent.trim();
-            if (processedContent.length === 0) {
-                this.#inputLines = [];
-                console.warn("Warning: The provided input source was empty.");
-            } else {
-                this.#inputLines = processedContent.split("\n");
-            }
+class InputProcessor {
+    #dataLines;
+    #currentLineIndex;
+    #totalLines;
 
-            this.#currentLinePosition = 0;
-            this.#totalLinesAvailable = this.#inputLines.length;
+    constructor(filePath) {
+        const fileContent = require("fs").readFileSync(filePath, "utf8");
+        this.#dataLines = fileContent.trim().split("\n");
+        this.#currentLineIndex = 0;
+        this.#totalLines = this.#dataLines.length;
+    }
 
-        } catch (readError) {
-            console.error(`Error: Could not access input source "${sourceFilePath}". Details: ${readError.message}`);
-            this.#inputLines = [];
-            this.#currentLinePosition = 0;
-            this.#totalLinesAvailable = 0;
+    canReadNext() {
+        return this.#currentLineIndex < this.#totalLines;
+    }
+
+    readNextLine() {
+        if (!this.canReadNext()) {
+            throw new Error("ArrayIndexOutOfBoundsException: Attempted to read past end of input.");
         }
-    }
-
-    hasMoreDataLines() {
-        return this.#currentLinePosition < this.#totalLinesAvailable;
-    }
-
-    retrieveNextLine() {
-        if (!this.hasMoreDataLines()) {
-            throw new Error("InputEndOfStream: Attempted to read beyond the end of the input.");
-        }
-        return this.#inputLines[this.#currentLinePosition++];
-    }
-
-    parseNextInteger() {
-        const lineContent = this.retrieveNextLine();
-        const numericValue = parseInt(lineContent, 10);
-
-        if (isNaN(numericValue)) {
-            console.error(`Error: Expected an integer but received "${lineContent}". Defaulting to 0.`);
-            return 0;
-        }
-        return numericValue;
-    }
-
-    getLineAsTokens() {
-        return this.retrieveNextLine().split(" ");
-    }
-
-    getNumericArrayFromLine() {
-        return this.getLineAsTokens().map(token => {
-            const num = parseInt(token, 10);
-            if (isNaN(num)) {
-                console.warn(`Warning: Non-numeric token "${token}" found; converting to 0.`);
-                return 0;
-            }
-            return num;
-        });
-    }
-
-    getCharacterArrayFromLine() {
-        return this.retrieveNextLine().split("");
-    }
-
-    resetStreamPosition() {
-        this.#currentLinePosition = 0;
-        console.info("Input stream position has been reset.");
+        return this.#dataLines[this.#currentLineIndex++];
     }
 }
 
-const inputHandler = new DataStreamProcessor();
+const inputProcessorInstance = new InputProcessor("/dev/stdin");
 
-const fetchLine = () => inputHandler.retrieveNextLine();
-const fetchInt = () => inputHandler.parseNextInteger();
-const fetchIntArray = () => inputHandler.getNumericArrayFromLine();
-const fetchStringTokens = () => inputHandler.getLineAsTokens();
-const fetchCharList = () => inputHandler.getCharacterArrayFromLine();
-const checkAvailability = () => inputHandler.hasMoreDataLines();
+const getNextLine = () => inputProcessorInstance.readNextLine();
+const getNextInt = () => parseInt(inputProcessorInstance.readNextLine());
+const getNextStringArray = () => inputProcessorInstance.readNextLine().split(" ");
+const getNextIntArray = () => inputProcessorInstance.readNextLine().split(" ").map(Number);
+const getNextCharArray = () => inputProcessorInstance.readNextLine().split("");
+const hasMoreLines = () => inputProcessorInstance.canReadNext();
+const printOutput = (...args) => console.log(...args);
 
-const outputResult = (...itemsToLog) => console.log(...itemsToLog);
-
-const solveBookProblem = () => {
-    const [libraryASize, libraryBSize, budgetTime] = fetchIntArray();
-
-    const libraryATimes = fetchIntArray();
-    const libraryBTimes = fetchIntArray();
-
-    if (libraryATimes.length !== libraryASize) {
-        console.warn(`Mismatch: Declared Library A size (${libraryASize}) vs. actual books read (${libraryATimes.length}). Proceeding with actual count.`);
+const computePrefixSums = (inputArray) => {
+    const prefixSums = [0];
+    let currentAccumulatedSum = 0;
+    for (let k = 0; k < inputArray.length; k++) {
+        currentAccumulatedSum += inputArray[k];
+        prefixSums.push(currentAccumulatedSum);
     }
-    if (libraryBTimes.length !== libraryBSize) {
-        console.warn(`Mismatch: Declared Library B size (${libraryBSize}) vs. actual books read (${libraryBTimes.length}). Proceeding with actual count.`);
-    }
+    return prefixSums;
+};
 
-    const cumulativeTimesA = [0];
-    let currentTotalTimeA = 0;
-    for (let bookIndex = 0; bookIndex < libraryATimes.length; bookIndex++) {
-        currentTotalTimeA += libraryATimes[bookIndex];
-        cumulativeTimesA.push(currentTotalTimeA);
-    }
+const executeMainLogic = () => {
+    let [numN, numM, numK] = getNextIntArray();
+    let arrayA = getNextIntArray();
+    let arrayB = getNextIntArray();
 
-    const cumulativeTimesB = [0];
-    let currentTotalTimeB = 0;
-    libraryBTimes.forEach(timeCost => {
-        currentTotalTimeB += timeCost;
-        cumulativeTimesB.push(currentTotalTimeB);
-    });
+    const prefixSumsA = computePrefixSums(arrayA);
+    const prefixSumsB = computePrefixSums(arrayB);
 
-    let maxBooksPossible = 0;
+    let maxBooksRead = 0;
 
-    let pointerB = libraryBSize;
-
-    for (let countFromA = 0; countFromA <= libraryASize; countFromA++) {
-        const timeSpentA = cumulativeTimesA[countFromA];
-
-        if (timeSpentA > budgetTime) {
+    const nLoopLimit = numN;
+    for (let idxA = 0, idxB = numM; idxA <= nLoopLimit; idxA++) {
+        const currentSumOfA = prefixSumsA[idxA];
+        if (currentSumOfA > numK) {
             break;
         }
 
-        while (pointerB >= 0 && (timeSpentA + cumulativeTimesB[pointerB] > budgetTime)) {
-            pointerB--;
+        while (idxB >= 0) {
+            const combinedCost = currentSumOfA + prefixSumsB[idxB];
+            if (combinedCost > numK) {
+                idxB--;
+            } else {
+                break;
+            }
         }
-
-        const currentCombinedBooks = countFromA + pointerB;
-        maxBooksPossible = Math.max(maxBooksPossible, currentCombinedBooks);
+        
+        const currentTotalBooks = idxA + idxB;
+        maxBooksRead = Math.max(maxBooksRead, currentTotalBooks);
     }
-
-    outputResult(maxBooksPossible);
+    printOutput(maxBooksRead);
 };
 
-solveBookProblem();
+executeMainLogic();

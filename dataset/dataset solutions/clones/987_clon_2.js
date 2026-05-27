@@ -1,27 +1,29 @@
-const fileContentLines = require('node:fs')
-  .readFileSync('/dev/stdin', 'utf-8')
-  .trim()
-  .split('\n');
+// This script reads input from stdin, parses it, and then performs an insertion sort algorithm.
+// It prints the state of the array after each element is correctly placed.
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8') .trim() .split('\n');
 
-const totalEntries = Number.parseInt(fileContentLines.shift(), 10);
+// The first line of input is typically the number of elements, though it's not directly used in the sorting logic here.
+var count = parseInt(rawData.shift(), 10);
 
-let numericElements = fileContentLines.shift()
-  .split(' ')
-  .map(item => Number.parseInt(item, 10));
+// The second line contains the space-separated numbers that will be sorted.
+var dataElements = rawData.shift().split(' ').map(Number);
 
-for ( let mainIterator = 0; mainIterator < numericElements.length; mainIterator++ )
-{
-  let elementToInsert = numericElements[mainIterator];
+// Iterate through the array starting from the second element (index 1) to perform insertion sort.
+for (var outerIndex = 0; outerIndex < dataElements.length; outerIndex += 1) {
+  // Store the current element that needs to be inserted into its correct position in the sorted sub-array.
+  var currentValue = dataElements[outerIndex];
+  // Initialize an inner index to compare with elements in the sorted sub-array.
+  var innerIndex = outerIndex - 1;
 
-  let scanIterator = mainIterator - 1;
-
-  while ( scanIterator >= 0 && numericElements[scanIterator] > elementToInsert )
-  {
-    numericElements[scanIterator + 1] = numericElements[scanIterator];
-    scanIterator--;
+  // Move elements of dataElements[0..outerIndex-1], which are greater than currentValue,
+  // to one position ahead of their current position.
+  while (innerIndex >= 0 && dataElements[innerIndex] > currentValue) {
+    dataElements[innerIndex + 1] = dataElements[innerIndex];
+    innerIndex -= 1; // Decrement the inner index to check the next element to the left.
   }
+  // Place the currentValue at its correct sorted position.
+  dataElements[innerIndex + 1] = currentValue;
 
-  numericElements[scanIterator + 1] = elementToInsert;
-
-  console.log( numericElements.join(' ') );
+  // After each insertion, print the current state of the array, with elements joined by spaces.
+  console.log(dataElements.join(' '));
 }

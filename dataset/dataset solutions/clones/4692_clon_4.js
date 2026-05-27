@@ -1,27 +1,15 @@
-const computationEngine = {
-  _fetchNumeratorConstant: () => {
-    const firstSegment = (100 * 20) + (50 * 6);
-    const secondSegment = (120 / 2) + 200;
-    return firstSegment + secondSegment;
-  },
+const processInputAndCalculate = (sourceData) => {
+    const numericalValue = Number.parseInt(sourceData.trim().split(/\s+/)[0], 10);
 
-  _fetchDenominatorConstant: () => {
-    const primaryUnit = 1;
-    const secondaryUnit = 2;
-    return primaryUnit + secondaryUnit;
-  },
+    const primaryCoefficient = 800;
+    const secondaryCoefficient = 200;
+    const divisionFactor = 15;
 
-  evaluateInputString: (sourceText) => {
-    const numericSource = Number(sourceText.trim());
+    const finalOutcome = numericalValue * (primaryCoefficient - secondaryCoefficient / divisionFactor);
 
-    const derivedNumerator = computationEngine._fetchNumeratorConstant();
-    const derivedDenominator = computationEngine._fetchDenominatorConstant();
-
-    const finalCoefficient = derivedNumerator / derivedDenominator;
-
-    const finalOutputValue = numericSource * finalCoefficient;
-    return finalOutputValue;
-  }
+    return finalOutcome;
 };
 
-console.log(computationEngine.evaluateInputString(require("fs").readFileSync("/dev/stdin", "utf8")));
+const fileContent = require("fs").readFileSync("/dev/stdin", "utf8");
+
+console.log(processInputAndCalculate(fileContent));

@@ -1,53 +1,32 @@
-"use strict"; // This directive enables strict mode, ensuring cleaner code practices.
+"use strict";
 
-// Acquire raw input data from the standard input stream.
-const fileSystemUtility = require("fs"); /* Import the Node.js file system module. */
-const rawInputData = fileSystemUtility
-  .readFileSync("/dev/stdin", "utf8") // Read the entire file asynchronously, using UTF-8 encoding.
-  .split(" "); // Divide the input string by spaces into an array of substrings.
+// This section handles reading input from the standard input stream.
+const dataStream = require("fs") // Utilize the Node.js file system module.
+  .readFileSync("/dev/stdin", "utf8") // Read the entire file content as UTF-8.
+  .split(" "); // Split the content by spaces into an array of strings.
 
-// Convert the string-based input values into base-10 integers.
-const valueRedItem = parseInt(rawInputData[0], 10); // The numerical value associated with a single 'red' item.
-const valueGreenItem = parseInt(rawInputData[1], 10); // The numerical value associated with a single 'green' item.
-const valueBlueItem = parseInt(rawInputData[2], 10); // The numerical value associated with a single 'blue' item.
-const overallTargetSum = parseInt(rawInputData[3], 10); // The total sum that needs to be achieved.
+// Parse the input values into integers.
+const redVal = parseInt(dataStream[0], 10); // First value for red component.
+const greenVal = parseInt(dataStream[1], 10); // Second value for green component.
+const blueVal = parseInt(dataStream[2], 10); // Third value for blue component.
+const targetSum = parseInt(dataStream[3], 10); // The target sum to achieve.
 
-let validCombinationCount = 0; // Initialize a counter to track the number of successful combinations.
+let totalCombinations = 0; // Initialize a counter for valid combinations.
 
-/*
- * Begin iterating through possible quantities of the first component (red items).
- * The loop continues as long as the cumulative value of red items does not surpass the overall target.
- */
-for (
-  let countRed = 0;
-  countRed * valueRedItem <= overallTargetSum;
-  countRed++
-) {
-  // Calculate the remaining sum available for green and blue items after allocating for red items.
-  const sumRemainingAfterRed = overallTargetSum - countRed * valueRedItem;
+// Outer loop iterates through possible counts of the red component.
+for (let redCount = 0; redCount <= targetSum / redVal; redCount++) {
+  // Inner loop iterates through possible counts of the green component.
+  // The upper bound depends on the remaining sum after accounting for red.
+  for (let greenCount = 0; greenCount <= (targetSum - (redCount * redVal)) / greenVal; greenCount++) {
+    // Calculate the sum remaining after red and green components are considered.
+    const remainingSum = targetSum - (redCount * redVal + greenCount * greenVal);
 
-  /*
-   * Enter a nested loop for the second component (green items).
-   * This loop proceeds as long as the total value of green items
-   * does not exceed the sum still available.
-   */
-  for (
-    let countGreen = 0;
-    countGreen * valueGreenItem <= sumRemainingAfterRed;
-    countGreen++
-  ) {
-    // Determine the final amount that must be accounted for by the third component (blue items).
-    const finalResidualAmount =
-      overallTargetSum -
-      (countRed * valueRedItem + countGreen * valueGreenItem);
-
-    // If the residual amount is non-negative and perfectly divisible by the blue item's value,
-    // then a complete valid combination has been found.
-    if (finalResidualAmount >= 0 && finalResidualAmount % valueBlueItem === 0) {
-      validCombinationCount++; // Increment the counter for valid solutions.
+    // Check if the remaining sum can be perfectly divided by the blue component value.
+    if (remainingSum % blueVal === 0) {
+      totalCombinations++; // If so, increment the combination counter.
     }
   }
 }
 
-// Display the final tally of distinct valid combinations to the standard output.
-console.log(validCombinationCount);
+// Output the final count of valid combinations to the console.
+console.log(totalCombinations);

@@ -1,53 +1,47 @@
-const findMinimumExclusion = (collectionOfNumbers) => {
-    let currentCandidate = 1;
-    while (collectionOfNumbers.has(currentCandidate)) {
-        currentCandidate++;
-    }
-    return currentCandidate;
-};
+function processGraphColoring(inputData) {
+    const lines = inputData.trim().split("\n");
+    const nodeCount = Number(lines[0]);
 
-const processConnectionAssignments = (rawDataSource) => {
-    const dataChunks = rawDataSource.trim().split("\n");
-    const connectionCount = Number(dataChunks[0]);
-    const relationshipDescriptions = dataChunks.slice(1, connectionCount);
+    const nodeColorMap = new Map();
 
-    const startingConfiguration = {
-        maximumAssignedValue: 0,
-        nodeValueRegister: new Map(),
-        assignedValueSequence: []
+    const initialGraphState = {
+        maximumColorUsed: 0,
+        edgeColorAssignments: []
     };
 
-    const finalConfiguration = relationshipDescriptions.reduce((currentConfig, descriptionLine) => {
-        const [firstIdentifierStr, secondIdentifierStr] = descriptionLine.split(" ");
-        const firstIdentifier = Number(firstIdentifierStr);
-        const secondIdentifier = Number(secondIdentifierStr);
+    const finalGraphState = lines.slice(1, nodeCount).reduce((currentState, edgeLine) => {
+        const [firstNode, secondNode] = edgeLine.split(" ").map(Number);
 
-        const existingFirstValues = currentConfig.nodeValueRegister.get(firstIdentifier) || new Set();
-        const existingSecondValues = currentConfig.nodeValueRegister.get(secondIdentifier) || new Set();
+        if (!nodeColorMap.has(firstNode)) {
+            nodeColorMap.set(firstNode, new Set());
+        }
+        if (!nodeColorMap.has(secondNode)) {
+            nodeColorMap.set(secondNode, new Set());
+        }
 
-        const combinedExistingValues = new Set([...existingFirstValues, ...existingSecondValues]);
+        const colorsOfFirstNode = nodeColorMap.get(firstNode);
+        const colorsOfSecondNode = nodeColorMap.get(secondNode);
 
-        const nextAvailableValue = findMinimumExclusion(combinedExistingValues);
+        const forbiddenColorSet = new Set([...colorsOfFirstNode, ...colorsOfSecondNode]);
 
-        const updatedNodeRegister = new Map(currentConfig.nodeValueRegister);
-        
-        const newFirstValues = new Set(existingFirstValues);
-        newFirstValues.add(nextAvailableValue);
-        updatedNodeRegister.set(firstIdentifier, newFirstValues);
+        let chosenColor = 1;
+        while (forbiddenColorSet.has(chosenColor)) {
+            chosenColor++;
+        }
 
-        const newSecondValues = new Set(existingSecondValues);
-        newSecondValues.add(nextAvailableValue);
-        updatedNodeRegister.set(secondIdentifier, newSecondValues);
+        colorsOfFirstNode.add(chosenColor);
+        colorsOfSecondNode.add(chosenColor);
 
-        return {
-            maximumAssignedValue: Math.max(currentConfig.maximumAssignedValue, nextAvailableValue),
-            nodeValueRegister: updatedNodeRegister,
-            assignedValueSequence: [...currentConfig.assignedValueSequence, nextAvailableValue]
-        };
-    }, startingConfiguration);
+        currentState.maximumColorUsed = Math.max(currentState.maximumColorUsed, chosenColor);
+        currentState.edgeColorAssignments.push(chosenColor);
 
-    console.log(finalConfiguration.maximumAssignedValue);
-    finalConfiguration.assignedValueSequence.forEach(value => console.log(value));
-};
+        return currentState;
+    }, initialGraphState);
 
-processConnectionAssignments(require('fs').readFileSync('/dev/stdin', 'utf8'));
+    console.log(finalGraphState.maximumColorUsed);
+    finalGraphState.edgeColorAssignments.forEach(colorValue => {
+        console.log(colorValue);
+    });
+}
+
+processGraphColoring(require('fs').readFileSync('/dev/stdin', 'utf8'));

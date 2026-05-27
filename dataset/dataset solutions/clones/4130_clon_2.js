@@ -1,64 +1,46 @@
-'use strict'; // Enforce strict mode for cleaner code practices.
+'use strict';
 
-/**
- * Executes the primary data processing task.
- * This function takes raw input, parses it, performs
- * a sum comparison, and then logs the outcome.
- *
- * @param {string} inputPayload - The raw string data received from standard input.
- */
-function executeProcessing( inputPayload )
-{
+// This primary function orchestrates the processing of the input data.
+function processInput(inputString) {
+  // First, we parse the raw input string.
+  // It's expected to be multiple lines, but we only care about the first.
+  // That first line contains space-separated numeric values.
+  let parsedValues = inputString.split('\n')[0].split(' ');
 
-    // First, process the raw input string:
-    // 1. Split the entire payload by newline characters to get individual lines.
-    // 2. Select only the very first line from the split array.
-    // 3. Split that chosen line by space characters to obtain individual string tokens.
-    let parsedTokens = inputPayload
-                         .split('\n')    // Divide the input into an array of lines.
-                         [0]             // Access the initial line (index 0).
-                         .split(' ');    // Break the selected line into tokens based on spaces.
+  // Extract and convert the string parts into numerical values.
+  // These represent the four components for our comparison.
+  const valA = Number(parsedValues[0]); // The first numerical component.
+  const valB = Number(parsedValues[1]); // The second numerical component.
+  const valC = Number(parsedValues[2]); // The third numerical component.
+  const valD = Number(parsedValues[3]); // The fourth numerical component.
 
-    // Extract four numerical values from the tokenized segments.
-    // Using parseInt with radix 10 to ensure integer conversion from string.
-    const firstValue  = parseInt( parsedTokens[0], 10 ); // Obtain the first numeric component from the tokens.
-    const secondValue = parseInt( parsedTokens[1], 10 ); // Obtain the second numeric component.
-    const thirdValue  = parseInt( parsedTokens[2], 10 ); // Obtain the third numeric component.
-    const fourthValue = parseInt( parsedTokens[3], 10 ); // Obtain the fourth numeric component.
+  // Calculate the sum of the first pair of numbers.
+  const sumLeft = valA + valB;
+  // Calculate the sum of the second pair of numbers.
+  const sumRight = valC + valD;
 
-    // Calculate the total sum for the initial pair of numbers.
-    const sumOfFirstPair  = firstValue + secondValue;
+  // Initialize a variable to hold the outcome of the comparison.
+  let resultString = '';
 
-    // Calculate the total sum for the subsequent pair of numbers.
-    const sumOfSecondPair = thirdValue + fourthValue;
+  // Determine the relationship between the two sums.
+  // If the left sum is greater, it's 'Left'.
+  if (sumLeft > sumRight) {
+    resultString = 'Left';
+  }
+  // If the left sum is less, it's 'Right'.
+  if (sumLeft < sumRight) {
+    resultString = 'Right';
+  }
+  // If both sums are equal, it's 'Balanced'.
+  if (sumLeft === sumRight) {
+    resultString = 'Balanced';
+  }
 
-    // Initialize a string variable to hold the final comparison result message.
-    let comparisonOutcome = '';
-
-    // Perform conditional checks to determine the relationship between the two calculated sums.
-    // The control flow here ensures only one outcome is assigned.
-    if ( sumOfFirstPair > sumOfSecondPair )
-    {
-        comparisonOutcome = 'HigherLeft';    // If the sum of the first pair is greater.
-    }
-    if ( sumOfFirstPair < sumOfSecondPair )
-    {
-        comparisonOutcome = 'HigherRight';   // If the sum of the second pair is greater.
-    }
-    if ( sumOfFirstPair === sumOfSecondPair )
-    {
-        comparisonOutcome = 'EqualAmounts';  // If both sums are numerically identical.
-    }
-
-    // Output the determined comparison outcome string to the standard console.
-    console.log( comparisonOutcome );
+  // Output the final determined status to the standard console.
+  console.log(resultString);
 }
 
-
-// Initiate the primary processing function by feeding it input.
-// This block reads the entire content from standard input (typically /dev/stdin on Unix-like systems),
-// decodes it as UTF-8, and then passes the resulting string to the 'executeProcessing' function.
-executeProcessing(
-    require("fs")                          // Access the Node.js file system module.
-        .readFileSync("/dev/stdin", "utf8") // Read the entire file synchronously, specifying UTF-8 encoding.
-);
+// The program execution begins by reading data from standard input.
+// The 'fs' module is used to read the file content synchronously.
+// The content is then passed to our main processing function.
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

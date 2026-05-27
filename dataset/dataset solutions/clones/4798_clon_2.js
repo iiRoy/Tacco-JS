@@ -1,191 +1,174 @@
-// This section contains auxiliary routines for input/output processing.
-var lineParserModule = require('readline').createInterface({
+var inputProcessor = require('readline').createInterface({
   input: process.stdin,
   output: process.stdout
 });
 
-var parsedInputData; // Stores the processed input data handler.
-var capturedLines = []; // Array to hold all lines read from input.
+var dataHandler;
+var inputLines = [];
 
-// Event listener for each incoming line of data.
-lineParserModule.on('line', function(receivedText) {
-  capturedLines.push(receivedText);
+inputProcessor.on('line', function(currentLine) {
+  inputLines.push(currentLine);
 });
 
-// Event listener for when the input stream closes.
-lineParserModule.on('close', function() {
-  parsedInputData = initializeDataProcessor(capturedLines); // Initialize data handler.
-  console.error('\n'); // Output a newline to error stream for formatting.
+inputProcessor.on('close', function() {
+  dataHandler = initializeInputHandler(inputLines);
+  console.error('\n'); // Output a newline to stderr
 
-  var operationStartTime = Date.now(); // Record the starting time of the main operation.
-  PerformPrimaryLogic(); // Execute the main program logic.
-  var elapsedDuration = Date.now() - operationStartTime; // Calculate elapsed time.
+  var startTime = Date.now();
+  executeProcessing();
+  var endTime = Date.now() - startTime;
 
-  logDiagnostic('execution_time : ' + elapsedDuration + 'ms'); // Log execution time.
-  logDiagnostic('memory_usage : ' + Math.round(process.memoryUsage().heapTotal / 1024) + 'KB'); // Log memory usage.
+  logDebugMessage('execution time : ' + endTime + 'ms');
+  logDebugMessage('memory usage : ' + Math.round(process.memoryUsage().heapTotal / 1024) + 'KB');
 });
 
-// Creates a deep copy of an object or set.
-function duplicateStructure(originalItem) {
-  return (originalItem instanceof Set) ? new Set(Array.from(originalItem)) : JSON.parse(JSON.stringify(originalItem));
+// Creates a deep copy of an object or Set.
+function createDeepCopy(originalObject) {
+  return (originalObject instanceof Set) ? new Set(Array.from(originalObject)) : JSON.parse(JSON.stringify(originalObject));
 }
 
-// Retrieves the next integer from the input stream.
 function retrieveInteger() {
-  return dataTransformer(fetchNext(), 100);
+  return transformInput(fetchNextItem(), 1);
 }
 
-// Retrieves the next line as an array of strings.
 function retrieveStringArray() {
-  return dataTransformer(fetchNext(), 200);
+  return transformInput(fetchNextItem(), 2);
 }
 
-// Retrieves the next line as an array of integers.
 function retrieveIntegerArray() {
-  return dataTransformer(fetchNext(), 300);
+  return transformInput(fetchNextItem(), 4);
 }
 
-// Retrieves the next line as an array of characters.
 function retrieveCharacterArray() {
-  return dataTransformer(fetchNext(), 400);
+  return transformInput(fetchNextItem(), 6);
 }
 
-// Fetches the next available item from the input data.
-function fetchNext() {
-  return parsedInputData.fetchNext();
+function fetchNextItem() {
+  return dataHandler.getNextEntry();
 }
 
-// Checks if there is more data available in the input.
-function hasMoreData() {
-  return parsedInputData.hasMoreData();
+function hasMoreItems() {
+  return dataHandler.checkAvailability();
 }
 
-// Initializes a data processor object from an array of input lines.
-function initializeDataProcessor(sourceInputLines) {
+function initializeInputHandler(sourceInput) {
   return {
-    dataRows: sourceInputLines,
+    sourceData: sourceInput,
     currentPosition: 0,
-    maximumEntries: sourceInputLines.length,
+    maximumEntries: sourceInput.length,
 
-    // Method to check if there are more entries to process.
-    hasMoreData: function() {
+    checkAvailability: function() {
       return (this.currentPosition < this.maximumEntries);
     },
 
-    // Method to retrieve the next entry from the data rows.
-    fetchNext: function() {
-      if (this.hasMoreData()) {
-        return this.dataRows[this.currentPosition++];
+    getNextEntry: function() {
+      if (this.checkAvailability()) {
+        return this.sourceData[this.currentPosition++];
       } else {
-        throw 'InputBoundsExceededError : No more input lines are available';
+        throw 'ArrayIndexOutOfBoundsException ‚There is no more input';
       }
     }
   };
 }
 
-// Displays a message to the standard output.
-function displayOutput(messageContent) {
-  console.log(messageContent);
+function displayResult(outputContent) {
+  console.log(outputContent);
 }
 
-// Logs debug information to the error stream.
-function logDiagnostic(debugInfo) {
-  console.error('debug_info:' + require('util').inspect(debugInfo, false, null));
+function logDebugMessage(debugInfo) {
+  console.error('debug:' + require('util').inspect(debugInfo, false, null));
 }
 
-// Helper function for various data transformations.
-// 'transformType' parameter indicates the desired conversion:
-// 100: Parse as integer.
-// 200: Split by space into string array.
-// 300: Split by space and parse elements as integers.
-// 400: Split by character into character array.
-// 500: Split by character and parse elements as integers.
-// 600: Join elements with spaces.
-// 700: Join elements with newlines.
-// 800: Join elements without any separator.
-function dataTransformer(inputData, transformType) {
+// Utility for converting input based on a specified format code.
+// Format codes:
+// 1: Parse as integer.
+// 2: Split by space.
+// 4: Split by space and parse as integers.
+// 6: Split into individual characters.
+// 7: Split into characters and parse as integers.
+// 8: Join array elements with spaces.
+// 9: Join array elements with newlines.
+// 0: Join array elements without separator.
+// Default: Return input as is.
+function transformInput(inputVal, conversionType) {
   try {
-    switch (transformType) {
-      case 100:
-        return parseInt(inputData);
-      case 200:
-        return inputData.split(' ');
-      case 300:
-        return inputData.split(' ').map(Number);
-      case 400:
-        return inputData.split('');
-      case 500:
-        return inputData.split('').map(Number);
-      case 600:
-        return inputData.join(' ');
-      case 700:
-        return inputData.join('\n');
-      case 800:
-        return inputData.join('');
+    switch (conversionType) {
+      case 1:
+        return parseInt(inputVal);
+      case 2:
+        return inputVal.split(' ');
+      case 4:
+        return inputVal.split(' ').map(Number);
+      case 6:
+        return inputVal.split('');
+      case 7:
+        return inputVal.split('').map(Number);
+      case 8:
+        return inputVal.join(' ');
+      case 9:
+        return inputVal.join('\n');
+      case 0:
+        return inputVal.join('');
       default:
-        return inputData;
+        return inputVal;
     }
-  } catch (conversionError) {
-    return inputData; // Return original data on error.
+  } catch (error) {
+    return inputVal;
   }
 }
 
-// End of auxiliary routines.
-function PerformPrimaryLogic() {
-  var dimensionSize = retrieveInteger(); // Get the size N for the square grid.
-  var inputSequence = retrieveIntegerArray(); // Get the initial sequence of numbers.
-
-  // Initialize a result grid of size N*N.
+function executeProcessing() {
+  var dimensionSize = retrieveInteger();
+  var initialSequence = retrieveIntegerArray();
   var resultGrid = new Array(dimensionSize * dimensionSize);
 
-  // First pass: Populate initial positions based on inputSequence.
-  for (var rowIterator = 0; rowIterator < dimensionSize; rowIterator++) {
-    resultGrid[inputSequence[rowIterator] - 1] = rowIterator + 1;
+  // Populate initial positions based on the input sequence
+  for (var outerLoopIndex = 0; outerLoopIndex < dimensionSize; outerLoopIndex++) {
+    resultGrid[initialSequence[outerLoopIndex] - 1] = outerLoopIndex + 1;
   }
 
-  // Second pass: Fill in remaining null/undefined slots from '2' up to 'N'.
-  for (var fillValue = 2; fillValue <= dimensionSize; fillValue++) {
-    var remainingSlots = fillValue - 1; // Number of slots to fill with current 'fillValue'.
-    for (var gridIndex = 0; gridIndex < dimensionSize * dimensionSize; gridIndex++) {
-      if (resultGrid[gridIndex] == null) {
+  // Fill in remaining slots from left to right for increasing values
+  for (var outerLoopIndex = 2; outerLoopIndex <= dimensionSize; outerLoopIndex++) {
+    var remainingSlots = outerLoopIndex - 1;
+    for (var innerLoopIndex = 0; innerLoopIndex < dimensionSize * dimensionSize; innerLoopIndex++) {
+      if (resultGrid[innerLoopIndex] == null) {
         remainingSlots--;
-        resultGrid[gridIndex] = fillValue;
+        resultGrid[innerLoopIndex] = outerLoopIndex;
         if (remainingSlots == 0) {
-          break; // All required slots for this 'fillValue' are filled.
+          break;
         }
-      } else if (resultGrid[gridIndex] == fillValue) {
-        displayOutput("No"); // Duplicate found, invalid configuration.
+      } else if (resultGrid[innerLoopIndex] == outerLoopIndex) {
+        displayResult("No");
         return;
       }
     }
   }
 
-  // Third pass: Fill in remaining null/undefined slots from 'N-1' down to '1'.
-  for (var reverseFillValue = dimensionSize - 1; reverseFillValue >= 1; reverseFillValue--) {
-    var remainingSlots = dimensionSize - reverseFillValue; // Number of slots to fill.
-    for (var gridIndex = dimensionSize * dimensionSize - 1; gridIndex >= 0; gridIndex--) {
-      if (resultGrid[gridIndex] == null) {
+  // Fill in remaining slots from right to left for decreasing values
+  for (var outerLoopIndex = 1; outerLoopIndex < dimensionSize; outerLoopIndex++) {
+    var remainingSlots = dimensionSize - outerLoopIndex;
+    for (var innerLoopIndex = dimensionSize * dimensionSize - 1; innerLoopIndex >= 0; innerLoopIndex--) {
+      if (resultGrid[innerLoopIndex] == null) {
         remainingSlots--;
-        resultGrid[gridIndex] = reverseFillValue;
+        resultGrid[innerLoopIndex] = outerLoopIndex;
         if (remainingSlots == 0) {
-          break; // All required slots for this 'reverseFillValue' are filled.
+          break;
         }
-      } else if (resultGrid[gridIndex] == reverseFillValue) {
-        displayOutput("No"); // Duplicate found, invalid configuration.
+      } else if (resultGrid[innerLoopIndex] == outerLoopIndex) {
+        displayResult("No");
         return;
       }
     }
   }
 
-  // Final check: Ensure no null/undefined values remain in the grid.
-  for (var finalCheckIndex = 0; finalCheckIndex < dimensionSize * dimensionSize; finalCheckIndex++) {
-    if (resultGrid[finalCheckIndex] == null) {
-      displayOutput("No"); // Grid is not fully populated.
+  // Final check for any unfilled slots
+  for (var outerLoopIndex = 0; outerLoopIndex < dimensionSize * dimensionSize; outerLoopIndex++) {
+    if (resultGrid[outerLoopIndex] == null) {
+      displayResult("No");
       return;
     }
   }
 
-  displayOutput("Yes"); // All conditions met, valid configuration.
-  // Display the final grid, joined by spaces.
-  displayOutput(dataTransformer(resultGrid, 600));
+  displayResult("Yes");
+  displayResult(transformInput(resultGrid, 8));
 }

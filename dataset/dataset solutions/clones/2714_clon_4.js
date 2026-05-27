@@ -1,105 +1,81 @@
-function processInputData(inputSource) {
-    const inputLines = inputSource.split("\n");
-    const initialSequence = inputLines[0];
-    const targetFragment = inputLines[1];
+function processSequence(rawData) {
+    const lines = rawData.split("\n");
+    const primaryString = lines[0];
+    const patternString = lines[1];
 
-    const sequenceLength = initialSequence.length;
-    const fragmentLength = targetFragment.length;
+    const primaryLength = primaryString.length;
+    const patternLength = patternString.length;
 
-    // Handle specific edge cases for empty strings to match original behavior
-    if (fragmentLength === 0) {
-        // If the target fragment is empty, it matches at every position.
-        // Advancing by 0 positions will always create an infinite loop unless the sequence itself is empty.
-        return sequenceLength === 0 ? 0 : -1;
+    const checkPatternAt = (startIndex) => {
+        for (let k = 0; k < patternLength; k++) {
+            if (primaryString[(startIndex + k) % primaryLength] !== patternString[k]) {
+                return false;
+            }
+        }
+        return true;
+    };
+
+    const validStartingPoints = new Set();
+    for (let i = 0; i < primaryLength; i++) {
+        if (checkPatternAt(i)) {
+            validStartingPoints.add(i);
+        }
     }
-    if (sequenceLength === 0) {
-        // If the initial sequence is empty, no matches are possible, so the max chain length is 0.
-        return 0;
-    }
-
-    // Step 1: Determine all starting positions in the 'initialSequence' where 'targetFragment' occurs.
-    // The original code uses `(s+t).slice(i, i+t.length)`. This effectively checks for matches
-    // in the string formed by concatenating 'initialSequence' with 'targetFragment'.
-    // This handles wrapping behavior where the match might span across the end of 'initialSequence'
-    // and take characters from the beginning of 'targetFragment'.
-    const combinedSearchSpace = initialSequence + targetFragment;
-    const validStartingPoints = new Set(
-        Array.from({ length: sequenceLength }, (_, k) => k).filter(
-            idx => combinedSearchSpace.slice(idx, idx + fragmentLength) === targetFragment
-        )
-    );
 
     let overallMaximumChain = 0;
-    const computedChainLengths = new Map(); // Memoization cache for storing computed chain lengths
-    const CYCLE_INDICATOR = Symbol('cycle_detected'); // Special symbol to mark a detected cycle
+    let hasInfinitePath = false;
 
-    // Recursive function to compute the length of a chain starting at 'currentPosition'.
-    // It also detects cycles within the chain using 'activePathTrace'.
-    function computeChainLength(currentPosition, activePathTrace) {
-        // Base case 1: If the 'currentPosition' is not a valid starting point for 'targetFragment',
-        // the chain ends here, contributing 0 to the length.
+    const pathLengthCache = new Map();
+
+    const tracePath = (currentPosition, visitedInCurrentTrace) => {
+        if (pathLengthCache.has(currentPosition)) {
+            const [cachedLength, cachedIsInfinite] = pathLengthCache.get(currentPosition);
+            if (cachedIsInfinite) return { length: Infinity, isInfinite: true };
+            return { length: cachedLength, isInfinite: false };
+        }
+
         if (!validStartingPoints.has(currentPosition)) {
-            return 0;
+            return { length: 0, isInfinite: false };
         }
 
-        // Base case 2: Cycle detection - if 'currentPosition' is already present in 'activePathTrace',
-        // it signifies that we have encountered a cycle in the current path.
-        if (activePathTrace.has(currentPosition)) {
-            return CYCLE_INDICATOR;
+        if (visitedInCurrentTrace.has(currentPosition)) {
+            return { length: Infinity, isInfinite: true };
         }
 
-        // Base case 3: Memoization - If the length for 'currentPosition' has been computed previously,
-        // return the cached value to avoid redundant calculations.
-        if (computedChainLengths.has(currentPosition)) {
-            return computedChainLengths.get(currentPosition);
-        }
+        visitedInCurrentTrace.add(currentPosition);
 
-        // Recursive step:
-        // Mark 'currentPosition' as part of the active path to detect cycles.
-        activePathTrace.add(currentPosition);
+        const nextPosition = (currentPosition + patternLength) % primaryLength;
+        const result = tracePath(nextPosition, visitedInCurrentTrace);
 
-        // Calculate the next position in the chain by advancing 'fragmentLength' steps circularly.
-        const nextPosition = (currentPosition + fragmentLength) % sequenceLength;
+        visitedInCurrentTrace.delete(currentPosition);
 
-        // Recursively determine the length of the chain starting from 'nextPosition'.
-        const lengthFromNext = computeChainLength(nextPosition, activePathTrace);
-
-        // Backtrack: Remove 'currentPosition' from the active path as the recursion unwinds.
-        activePathTrace.delete(currentPosition);
-
-        // If the recursive call detected a cycle, propagate this information.
-        if (lengthFromNext === CYCLE_INDICATOR) {
-            computedChainLengths.set(currentPosition, CYCLE_INDICATOR); // Cache the cycle result
-            return CYCLE_INDICATOR;
-        }
-
-        // The length of the chain starting at 'currentPosition' is 1 (for the current match)
-        // plus the length of the chain extending from 'nextPosition'.
-        const currentChainValue = 1 + lengthFromNext;
-        computedChainLengths.set(currentPosition, currentChainValue); // Cache the computed length
-        return currentChainValue;
-    }
-
-    // Step 2: Iterate through all possible starting indices in 'initialSequence' to find
-    // the longest chain of 'targetFragment' occurrences.
-    for (let k = 0; k < sequenceLength; ++k) {
-        // 'new Set()' is passed for 'activePathTrace' for each top-level call to ensure
-        // cycle detection is specific to the current chain being explored from 'k'.
-        const currentChainResult = computeChainLength(k, new Set());
-
-        if (currentChainResult === CYCLE_INDICATOR) {
-            // If any chain leads to an infinite loop (cycle), the overall result is -1.
-            overallMaximumChain = -1;
-            break; // No need to check further, an infinite chain exists.
+        if (result.isInfinite) {
+            pathLengthCache.set(currentPosition, [Infinity, true]);
+            return { length: Infinity, isInfinite: true };
         } else {
-            // Update the overall maximum chain length found so far.
-            overallMaximumChain = Math.max(overallMaximumChain, currentChainResult);
+            const currentPathLength = 1 + result.length;
+            pathLengthCache.set(currentPosition, [currentPathLength, false]);
+            return { length: currentPathLength, isInfinite: false };
+        }
+    };
+
+    for (let i = 0; i < primaryLength; i++) {
+        if (hasInfinitePath) break;
+
+        if (validStartingPoints.has(i) && !pathLengthCache.has(i)) {
+            const currentTraceResult = tracePath(i, new Set());
+            if (currentTraceResult.isInfinite) {
+                hasInfinitePath = true;
+                overallMaximumChain = -1;
+            } else {
+                overallMaximumChain = Math.max(overallMaximumChain, currentTraceResult.length);
+            }
+        } else if (!validStartingPoints.has(i)) {
+            pathLengthCache.set(i, [0, false]);
         }
     }
 
-    return overallMaximumChain;
+    console.log(overallMaximumChain);
 }
 
-// Standard input reading mechanism as provided in the original problem context.
-const programInput = require("fs").readFileSync("/dev/stdin", "utf8");
-console.log(processInputData(programInput));
+processSequence(require("fs").readFileSync("/dev/stdin", "utf8"));

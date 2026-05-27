@@ -1,16 +1,25 @@
-const dataSource = require('fs').readFileSync('/dev/stdin', 'utf8');
+const fileSystem = require('fs');
+const rawInputContent = fileSystem.readFileSync('/dev/stdin', 'utf8');
+const inputSegments = rawInputContent.split('\n');
 
-const letterTally = dataSource.split('').reduce((accumulator, currentSymbol) => {
-    const processedSymbol = currentSymbol.toLowerCase();
-    if (processedSymbol >= 'a' && processedSymbol <= 'z') {
-        accumulator[processedSymbol] = (accumulator[processedSymbol] || 0) + 1;
-    }
-    return accumulator;
-}, {});
+const characterTally = inputSegments
+    .flatMap(segment => Array.from(segment))
+    .filter(unit => {
+        const normalizedUnit = unit.toLowerCase();
+        return normalizedUnit >= 'a' && normalizedUnit <= 'z';
+    })
+    .reduce((accumulatorMap, validUnit) => {
+        const keyChar = validUnit.toLowerCase();
+        accumulatorMap.set(keyChar, (accumulatorMap.get(keyChar) || 0) + 1);
+        return accumulatorMap;
+    }, new Map());
 
-const alphaSequence = Array.from({ length: 26 }, (_, index) => String.fromCharCode('a'.charCodeAt(0) + index));
+const initialCharCode = 'a'.charCodeAt(0);
+const alphabetSequence = Array.from({ length: 26 }, (_, index) =>
+    String.fromCharCode(initialCharCode + index)
+);
 
-alphaSequence.forEach(alphaChar => {
-    const tallyValue = letterTally[alphaChar] || 0;
-    console.log(`${alphaChar} : ${tallyValue}`);
+alphabetSequence.forEach(letterKey => {
+    const occurrenceCount = characterTally.get(letterKey) || 0;
+    console.log(`${letterKey} : ${occurrenceCount}`);
 });

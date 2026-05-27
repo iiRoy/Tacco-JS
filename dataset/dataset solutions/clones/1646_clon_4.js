@@ -1,44 +1,102 @@
-const processData = (rawData) => {
-    const dataLines = rawData.split("\n");
-    const initialValues = dataLines[0].split(" ").map(Number);
-    const initialFirst = initialValues[0];
-    const initialSecond = initialValues[1];
-    const initialThird = initialValues[2];
-    const operationLimit = Number(dataLines[1]);
+function Main(input) {
+    const lines = input.split("\n");
+    const initialCardStrings = lines[0].split(" ");
+    const initialCardValues = initialCardStrings.map(Number);
+    const initialRed = initialCardValues[0];
+    const initialGreen = initialCardValues[1];
+    const initialBlue = initialCardValues[2];
 
-    const exploreCombinations = (remainingOperations, currentSelections) => {
-        if (remainingOperations === 0) {
-            let transformedValues = [...initialValues]; 
-            
-            for (let operationIndex = 0; operationIndex < currentSelections.length; operationIndex++) {
-                const targetPosition = currentSelections[operationIndex];
-                
-                // Replicate the specific assignment logic from the original code's nested loops
-                if (operationIndex === 4) { // Corresponds to the 't' operation (5th operation, 0-indexed is 4)
-                    const sourcePosition = currentSelections[3]; // 's' operation (4th operation, 0-indexed is 3)
-                    transformedValues[targetPosition] = transformedValues[sourcePosition] * 2;
-                } else if (operationIndex === 6) { // Corresponds to the 'v' operation (7th operation, 0-indexed is 6)
-                    const sourcePosition = currentSelections[5]; // 'u' operation (6th operation, 0-indexed is 5)
-                    transformedValues[targetPosition] = transformedValues[sourcePosition] * 2;
-                } else { // All other operations are simple doubling of the selected position
-                    transformedValues[targetPosition] = transformedValues[targetPosition] * 2;
-                }
-            }
+    const numDoublings = parseInt(lines[1]);
 
-            return transformedValues[0] < transformedValues[1] && transformedValues[1] < transformedValues[2];
-        }
+    const checkAscendingOrder = (arr) => arr[0] < arr[1] && arr[1] < arr[2];
 
-        // Recursively try applying the next operation to each of the three positions
-        for (let nextSelection = 0; nextSelection < 3; nextSelection++) {
-            if (exploreCombinations(remainingOperations - 1, [...currentSelections, nextSelection])) {
-                return true;
-            }
-        }
-        return false;
+    const doublingOperationRegistry = {
+        1: (indices, baseValues) => {
+            let currentSet = [...baseValues];
+            currentSet[indices[0]] *= 2;
+            return checkAscendingOrder(currentSet);
+        },
+        2: (indices, baseValues) => {
+            let currentSet = [...baseValues];
+            currentSet[indices[0]] *= 2;
+            currentSet[indices[1]] *= 2;
+            return checkAscendingOrder(currentSet);
+        },
+        3: (indices, baseValues) => {
+            let currentSet = [...baseValues];
+            currentSet[indices[0]] *= 2;
+            currentSet[indices[1]] *= 2;
+            currentSet[indices[2]] *= 2;
+            return checkAscendingOrder(currentSet);
+        },
+        4: (indices, baseValues) => {
+            let currentSet = [...baseValues];
+            currentSet[indices[0]] *= 2;
+            currentSet[indices[1]] *= 2;
+            currentSet[indices[2]] *= 2;
+            currentSet[indices[3]] *= 2;
+            return checkAscendingOrder(currentSet);
+        },
+        5: (indices, baseValues) => {
+            let currentSet = [...baseValues];
+            currentSet[indices[0]] *= 2;
+            currentSet[indices[1]] *= 2;
+            currentSet[indices[2]] *= 2;
+            currentSet[indices[3]] *= 2;
+            currentSet[indices[4]] = currentSet[indices[3]] * 2;
+            return checkAscendingOrder(currentSet);
+        },
+        6: (indices, baseValues) => {
+            let currentSet = [...baseValues];
+            currentSet[indices[0]] *= 2;
+            currentSet[indices[1]] *= 2;
+            currentSet[indices[2]] *= 2;
+            currentSet[indices[3]] *= 2;
+            currentSet[indices[4]] = currentSet[indices[3]] * 2;
+            currentSet[indices[5]] *= 2;
+            return checkAscendingOrder(currentSet);
+        },
+        7: (indices, baseValues) => {
+            let currentSet = [...baseValues];
+            currentSet[indices[0]] *= 2;
+            currentSet[indices[1]] *= 2;
+            currentSet[indices[2]] *= 2;
+            currentSet[indices[3]] *= 2;
+            currentSet[indices[4]] = currentSet[indices[3]] * 2;
+            currentSet[indices[5]] *= 2;
+            currentSet[indices[6]] = currentSet[indices[5]] * 2;
+            return checkAscendingOrder(currentSet);
+        },
     };
 
-    const isOrderAchievable = exploreCombinations(operationLimit, []);
-    console.log(isOrderAchievable ? "Yes" : "No");
-};
+    function generateAndEvaluate(currentIteration, totalIterations, selectedIndices, originalValues, evaluationFunction) {
+        if (currentIteration === totalIterations) {
+            return evaluationFunction(selectedIndices, originalValues);
+        }
 
-processData(require("fs").readFileSync("/dev/stdin", "utf8"));
+        for (let cardPosition = 0; cardPosition < 3; cardPosition++) {
+            selectedIndices.push(cardPosition);
+            if (generateAndEvaluate(currentIteration + 1, totalIterations, selectedIndices, originalValues, evaluationFunction)) {
+                return true;
+            }
+            selectedIndices.pop();
+        }
+        return false;
+    }
+
+    let outcomeAchieved = false;
+    if (numDoublings >= 1 && numDoublings <= 7) {
+        const specificEvaluation = doublingOperationRegistry[numDoublings];
+        if (specificEvaluation) {
+            outcomeAchieved = generateAndEvaluate(0, numDoublings, [], [initialRed, initialGreen, initialBlue], specificEvaluation);
+        }
+    }
+
+    if (outcomeAchieved) {
+        console.log("Yes");
+    } else {
+        console.log("No");
+    }
+}
+
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

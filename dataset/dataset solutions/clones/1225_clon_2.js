@@ -1,43 +1,44 @@
-'use strict'; // Enforce strict mode for modern JavaScript practices.
+'use strict';
 
-// Set up an event listener for incoming data from the standard input stream.
-process.stdin.on ( 'data',   function ( inputSegment ) {
-    // Convert the received data block to a string, trim any leading/trailing whitespace,
-    // and then split it into an array of strings based on space delimiters.
-    let  parsedValues  = inputSegment . toString (  ) . trim (  ) . split ( ' ' ) ;
+// This script processes input data from standard input to determine
+// if a geometric condition is met based on provided dimensions.
+process.stdin.on('data', function(inputDataBuffer) {
+    // Convert the incoming data buffer to a string, remove leading/trailing whitespace,
+    // and split it into an array of strings using space as a delimiter.
+    const parsedValues = inputDataBuffer.toString().trim().split(' ');
 
-    // Parse the numerical values from the `parsedValues` array.
-    // These represent the dimensions of a container and the properties of a circle.
-    const fieldWidth    = Number ( parsedValues [ 0 ] ) ; // The total width of the containing area.
-    const fieldHeight   = Number ( parsedValues [ 1 ] ) ; // The total height of the containing area.
-    const centerX       = Number ( parsedValues [ 2 ] ) ; // The X-coordinate of the circle's center.
-    const centerY       = Number ( parsedValues [ 3 ] ) ; // The Y-coordinate of the circle's center.
-    const circleRadius  = Number ( parsedValues [ 4 ] ) ; // The radius of the circle.
+    // Parse the string values into numerical types for calculations.
+    // The first value represents the width of the boundary.
+    const boundaryWidth = Number(parsedValues[0]);
+    // The second value represents the height of the boundary.
+    const boundaryHeight = Number(parsedValues[1]);
+    // The third value is the X-coordinate of the circle's center.
+    const circleXCoord = Number(parsedValues[2]);
+    // The fourth value is the Y-coordinate of the circle's center.
+    const circleYCoord = Number(parsedValues[3]);
+    // The fifth value is the radius of the circle.
+    const circleRadius = Number(parsedValues[4]);
 
-    // Calculate transformed boundary coordinates for the circle based on the given logic.
-    // These calculations seem to be determining if a circle, when its center is treated as
-    // an offset from the bottom-right corner, fits within a rectangle.
-    const leftBoundary   = fieldWidth  - centerX - circleRadius ; // Derived left-most point.
-    const rightBoundary  = fieldWidth  - centerX + circleRadius ; // Derived right-most point.
-    const upperBoundary  = fieldHeight - centerY - circleRadius ; // Derived top-most point.
-    const lowerBoundary  = fieldHeight - centerY + circleRadius ; // Derived bottom-most point.
+    // Perform calculations based on the input values.
+    // These intermediate variables represent specific derived coordinates.
+    const calcXLeft = boundaryWidth - circleXCoord - circleRadius;
+    const calcXRight = boundaryWidth - circleXCoord + circleRadius;
+    const calcYBottom = boundaryHeight - circleYCoord - circleRadius;
+    const calcYTop = boundaryHeight - circleYCoord + circleRadius;
 
-    // Check if the calculated boundaries satisfy the specific fitting conditions.
-    // The conditions imply that the transformed circle must be contained within
-    // the boundaries of a transformed rectangle (0 to fieldWidth for X, 0 to fieldHeight for Y).
-    if ( ( leftBoundary >= 0 ) && ( rightBoundary <= fieldWidth ) && ( upperBoundary <= 0 ) && ( lowerBoundary >= fieldHeight ) )
-    {
-        // If all conditions are met, output 'Yes'.
-        console . log ( 'Yes' ) ;
+    // Evaluate a complex condition using the calculated values and original boundaries.
+    // The logical structure and operators are preserved exactly.
+    if (calcXLeft >= 0 && calcXRight <= boundaryWidth && calcYBottom <= 0 && calcYTop >= boundaryHeight) {
+        // If the condition is true, print 'Yes' to standard output.
+        console.log('Yes');
+    } else {
+        // Otherwise, print 'No' to standard output.
+        console.log('No');
     }
-    else
-    {
-        // Otherwise, if any condition fails, output 'No'.
-        console . log ( 'No' ) ;
-    }
-} ) ; // End of the 'data' event handler function.
+});
 
-// Ensure that the standard input stream remains active and does not close prematurely.
-process.stdin.resume (  ) ;
-// Specify the character encoding for the standard input to ensure correct interpretation of data.
-process.stdin.setEncoding ( 'utf8' ) ;
+// Ensure the standard input stream remains open to receive data.
+process.stdin.resume();
+
+// Set the character encoding for standard input to UTF-8.
+process.stdin.setEncoding('utf8');

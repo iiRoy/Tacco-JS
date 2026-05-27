@@ -1,140 +1,148 @@
-function* inputDataIterator ( ) {
-    const rawInputContent = require ( "fs" ) .readFileSync ( "/dev/stdin" , "utf-8" ) .trim ( ) .split ( /\n|\s/ ) ;
-    yield* rawInputContent ;
-}
-function fetchMultipleTokens ( countToFetch , inputSourceIterator ) {
-    const activeIterator = inputSourceIterator || this.sharedIterator || ( this.sharedIterator = inputDataIterator ( ) ) ;
-    const collectedTokens = [ ] ;
-    for ( let indexVar = 0 ; indexVar < countToFetch ; indexVar += 1 ) {
-        collectedTokens.push ( activeIterator.next ( ) .value ) ;
-    }
-    return collectedTokens ;
+function*inputLineIterator(){
+    const fileData = require("fs").readFileSync("/dev/stdin", "utf-8").trim().split(/\n|\s/);
+    yield* fileData;
 }
 
-( ( ) => {
-    // Read grid dimensions and maximum step length.
-    const [ gridHeight , gridWidth , maxJumpLength ] = fetchMultipleTokens ( 3 ) .map ( itemString => parseInt ( itemString ) ) ;
-    // Read start and target coordinates, adjusting to zero-based indexing.
-    const [ startCoordX , startCoordY , targetCoordX , targetCoordY ] = fetchMultipleTokens ( 4 ) .map ( itemString => parseInt ( itemString ) - 1 ) ;
+function obtainMultiple(itemCount, sourceIterator) {
+    const activeIterator = sourceIterator || this.inputSource || (this.inputSource = inputLineIterator());
+    const collectedItems = [];
+    for (let idx = 0; idx < itemCount; idx += 1) {
+        collectedItems.push(activeIterator.next().value);
+    }
+    return collectedItems;
+}
 
-    // Initialize the character grid from input.
-    const characterGrid = [ ] ;
-    for ( let rowIndex = 0 ; rowIndex < gridHeight ; rowIndex += 1 ) {
-        const currentLineChars = fetchMultipleTokens ( 1 ) [ 0 ] .split ( '' ) ;
-        characterGrid.push ( [ ...currentLineChars ] ) ;
+(() => {
+    // Read grid dimensions and maximum movement distance
+    const [ gridHeight, gridWidth, maxMoveDistance ] = obtainMultiple(3).map(it => parseInt(it));
+    // Read start and end coordinates, adjusting to 0-indexed
+    const [ initialX, initialY, targetX, targetY ] = obtainMultiple(4).map(it => parseInt(it) - 1);
+
+    // Initialize the level layout from input
+    const levelLayout = [];
+    for (let rowCounter = 0; rowCounter < gridHeight; rowCounter += 1) {
+        const currentLineContent = obtainMultiple(1)[0].split('');
+        levelLayout.push([ ...currentLineContent ]);
     }
 
-    // Initialize the distance matrix for BFS.
-    const distanceMatrix = [ ] ;
-    for ( let rowIter = 0 ; rowIter < gridHeight ; rowIter += 1 ) {
-        distanceMatrix.push ( [ ] ) ;
-        for ( let colIter = 0 ; colIter < gridWidth ; colIter += 1 ) {
-            if ( characterGrid [ rowIter ] [ colIter ] === '#' ) { // Obstacle character
-                distanceMatrix [ rowIter ] .push ( -99 ) ; // Mark obstacles with a distinct negative value.
+    // Initialize the distance matrix for BFS
+    const distanceMatrix = [];
+    for (let matrixRow = 0; matrixRow < gridHeight; matrixRow += 1) {
+        distanceMatrix.push([]);
+        for (let matrixCol = 0; matrixCol < gridWidth; matrixCol += 1) {
+            if (levelLayout[matrixRow][matrixCol] === '@') {
+                distanceMatrix[matrixRow].push(-1); // Mark obstacles
             } else {
-                distanceMatrix [ rowIter ] .push ( undefined ) ; // Mark unvisited cells as undefined.
+                distanceMatrix[matrixRow].push(null); // Unvisited cells
             }
         }
     }
 
-    // Set starting position distance to 0 and add to the queue.
-    distanceMatrix [ startCoordX ] [ startCoordY ] = 0 ;
-    let searchFrontier = [ [ startCoordX , startCoordY ] ] ;
+    // Set starting point distance and initialize BFS queue
+    distanceMatrix[initialX][initialY] = 0;
+    let processingQueue = [[ initialX, initialY ]];
 
-    // Helper to safely update a cell's value in the distance matrix.
-    const updateGridCell = ( gridX , gridY , newValue ) => {
-        if ( gridX >= 0 && gridY >= 0 && gridX < gridHeight && gridY < gridWidth ) {
-            distanceMatrix [ gridX ] [ gridY ] = newValue ;
+    // Helper function to safely update a cell's distance
+    const updateCellDistance = (cellX, cellY, distValue) => {
+        if (cellX >= 0 && cellY >= 0 && cellX < gridHeight && cellY < gridWidth) {
+            distanceMatrix[cellX][cellY] = distValue;
         }
-    } ;
-    // Helper to safely retrieve a cell's value from the distance matrix.
-    const retrieveGridCell = ( queryX , queryY ) => {
-        const rowReference = distanceMatrix [ queryX ] ;
-        if ( rowReference !== undefined ) { // Ensure row exists.
-            return rowReference [ queryY ] ;
+    };
+
+    // Helper function to safely retrieve a cell's distance
+    const retrieveCellDistance = (queryXCoord, queryYCoord) => {
+        const tempRowRef = distanceMatrix[queryXCoord];
+        if (tempRowRef) {
+            return tempRowRef[queryYCoord];
         }
-        return undefined; // Return undefined for out-of-bounds access.
-    } ;
+        return undefined; // Return undefined for out-of-bounds access
+    };
 
-    // Debugging utility to print the matrix.
-    const printCurrentMatrix = ( ) => {
-        console.log ( ) ;
-        for ( const matrixRow of distanceMatrix ) {
-            console.log ( matrixRow ) ;
+    // Debugging function (not used in final output)
+    const displayDistanceMatrix = () => {
+        console.log();
+        for (const matrixRowData of distanceMatrix) {
+            console.log(matrixRowData);
         }
-    } ;
+    };
 
-    // Main BFS loop.
-    while ( true ) {
-        const currentPosition = searchFrontier.shift ( ) ; // Dequeue the next position.
-        if ( !currentPosition ) {
-            break ; // If queue is empty, no more reachable cells.
-        }
-
-        const [ currX , currY ] = currentPosition ;
-        const nextDistanceValue = retrieveGridCell ( currX , currY ) + 1 ;
-
-        // Check if the target is reached.
-        if ( currX === targetCoordX && currY === targetCoordY ) {
-            break ;
+    // Main Breadth-First Search loop
+    while (true) {
+        const currentPosition = processingQueue.shift();
+        if (!currentPosition) {
+            break; // Queue is empty, no more paths to explore
         }
 
-        // Explore moves in positive X direction (down).
-        for ( let stepCount = 1 ; stepCount <= maxJumpLength ; stepCount += 1 ) {
-            const nextXPos = currX + stepCount ;
-            const nextYPos = currY ;
-            // Stop if obstacle or out-of-bounds.
-            if ( retrieveGridCell ( nextXPos , nextYPos ) === undefined || retrieveGridCell ( nextXPos , nextYPos ) === -99 ) {
-                break ;
+        const [ currentPosX, currentPosY ] = currentPosition;
+        const nextPathLength = retrieveCellDistance(currentPosX, currentPosY) + 1;
+
+        // If target reached, we can stop
+        if (currentPosX === targetX && currentPosY === targetY) {
+            break;
+        }
+
+        // Explore moves in four cardinal directions
+        // Move Down (positive X)
+        for (let stepIncrement = 1; stepIncrement <= maxMoveDistance; stepIncrement += 1) {
+            const nextPosX = currentPosX + stepIncrement;
+            const nextPosY = currentPosY;
+            const cellStatus = retrieveCellDistance(nextPosX, nextPosY);
+            if (cellStatus === undefined || cellStatus === -1) {
+                break; // Out of bounds or hit an obstacle
             }
-            // If cell is unvisited, update its distance and enqueue.
-            if ( retrieveGridCell ( nextXPos , nextYPos ) === undefined ) {
-                updateGridCell ( nextXPos , nextYPos , nextDistanceValue ) ;
-                searchFrontier.push ( [ nextXPos , nextYPos ] ) ;
+            if (cellStatus === null) {
+                updateCellDistance(nextPosX, nextPosY, nextPathLength);
+                processingQueue.push([ nextPosX, nextPosY ]);
             }
         }
-        // Explore moves in negative X direction (up).
-        for ( let stepCount = 1 ; stepCount <= maxJumpLength ; stepCount += 1 ) {
-            const nextXPos = currX - stepCount ;
-            const nextYPos = currY ;
-            if ( retrieveGridCell ( nextXPos , nextYPos ) === undefined || retrieveGridCell ( nextXPos , nextYPos ) === -99 ) {
-                break ;
+
+        // Move Up (negative X)
+        for (let stepIncrement = 1; stepIncrement <= maxMoveDistance; stepIncrement += 1) {
+            const nextPosX = currentPosX - stepIncrement;
+            const nextPosY = currentPosY;
+            const cellStatus = retrieveCellDistance(nextPosX, nextPosY);
+            if (cellStatus === undefined || cellStatus === -1) {
+                break; // Out of bounds or hit an obstacle
             }
-            if ( retrieveGridCell ( nextXPos , nextYPos ) === undefined ) {
-                updateGridCell ( nextXPos , nextYPos , nextDistanceValue ) ;
-                searchFrontier.push ( [ nextXPos , nextYPos ] ) ;
-            }
-        }
-        // Explore moves in positive Y direction (right).
-        for ( let stepCount = 1 ; stepCount <= maxJumpLength ; stepCount += 1 ) {
-            const nextXPos = currX ;
-            const nextYPos = currY + stepCount ;
-            if ( retrieveGridCell ( nextXPos , nextYPos ) === undefined || retrieveGridCell ( nextXPos , nextYPos ) === -99 ) {
-                break ;
-            }
-            if ( retrieveGridCell ( nextXPos , nextYPos ) === undefined ) {
-                updateGridCell ( nextXPos , nextYPos , nextDistanceValue ) ;
-                searchFrontier.push ( [ nextXPos , nextYPos ] ) ;
+            if (cellStatus === null) {
+                updateCellDistance(nextPosX, nextPosY, nextPathLength);
+                processingQueue.push([ nextPosX, nextPosY ]);
             }
         }
-        // Explore moves in negative Y direction (left).
-        for ( let stepCount = 1 ; stepCount <= maxJumpLength ; stepCount += 1 ) {
-            const nextXPos = currX ;
-            const nextYPos = currY - stepCount ;
-            if ( retrieveGridCell ( nextXPos , nextYPos ) === undefined || retrieveGridCell ( nextXPos , nextYPos ) === -99 ) {
-                break ;
+
+        // Move Right (positive Y)
+        for (let stepIncrement = 1; stepIncrement <= maxMoveDistance; stepIncrement += 1) {
+            const nextPosX = currentPosX;
+            const nextPosY = currentPosY + stepIncrement;
+            const cellStatus = retrieveCellDistance(nextPosX, nextPosY);
+            if (cellStatus === undefined || cellStatus === -1) {
+                break; // Out of bounds or hit an obstacle
             }
-            if ( retrieveGridCell ( nextXPos , nextYPos ) === undefined ) {
-                updateGridCell ( nextXPos , nextYPos , nextDistanceValue ) ;
-                searchFrontier.push ( [ nextXPos , nextYPos ] ) ;
+            if (cellStatus === null) {
+                updateCellDistance(nextPosX, nextPosY, nextPathLength);
+                processingQueue.push([ nextPosX, nextPosY ]);
+            }
+        }
+
+        // Move Left (negative Y)
+        for (let stepIncrement = 1; stepIncrement <= maxMoveDistance; stepIncrement += 1) {
+            const nextPosX = currentPosX;
+            const nextPosY = currentPosY - stepIncrement;
+            const cellStatus = retrieveCellDistance(nextPosX, nextPosY);
+            if (cellStatus === undefined || cellStatus === -1) {
+                break; // Out of bounds or hit an obstacle
+            }
+            if (cellStatus === null) {
+                updateCellDistance(nextPosX, nextPosY, nextPathLength);
+                processingQueue.push([ nextPosX, nextPosY ]);
             }
         }
     }
 
-    // Output the result.
-    if ( retrieveGridCell ( targetCoordX , targetCoordY ) === undefined ) {
-        console.log ( -1 ) ; // Target unreachable.
+    // Output the result
+    if (retrieveCellDistance(targetX, targetY) === null) {
+        console.log('-1'); // Target unreachable
     } else {
-        console.log ( retrieveGridCell ( targetCoordX , targetCoordY ) ) ; // Output minimum steps.
+        console.log(retrieveCellDistance(targetX, targetY)); // Print minimum steps
     }
-} ) ( ) ;
+})();

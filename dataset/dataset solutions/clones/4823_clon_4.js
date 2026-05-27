@@ -1,34 +1,37 @@
-const fileSystemUtility = require('fs');
+process.stdin.resume();
+process.stdin.setEncoding('ascii');
 
-const completeInputData = fileSystemUtility.readFileSync('/dev/stdin', 'utf8');
+var accumulatedInput = "";
+var parsedInputLines = [];
+var currentLinePointer = 0;
 
-const processedLines = completeInputData.split('\n');
+process.stdin.on('data', function (chunk) {
+    accumulatedInput += chunk;
+});
 
-let currentSegmentPointer = 0;
+process.on('SIGINT', function(){
+    parsedInputLines = accumulatedInput.split("\n");
+    processData();
+    process.exit();
+});
 
-const obtainNextSegment = () => {
-    if (currentSegmentPointer >= processedLines.length) {
-        return '';
-    }
-    return processedLines[currentSegmentPointer++];
-};
+process.stdin.on('end', function () {
+    parsedInputLines = accumulatedInput.split("\n");
+    processData();
+});
 
-(function initiateProcessingFlow() {
-    const initialConfigurationSegment = obtainNextSegment();
+function obtainLine() {
+    return parsedInputLines[currentLinePointer++];
+}
 
-    const quantitativeMetrics = initialConfigurationSegment.split(' ').map(token => +token);
+function processData() {
+    const [gridHeight, _] = obtainLine().split(" ").map(Number);
 
-    const primaryIterationCount = quantitativeMetrics[0];
+    const gridContent = Array.from({ length: gridHeight }, obtainLine);
 
-    const storedContentFragments = [];
-    let loopIndexVariable = 0;
+    const finalOutput = gridContent
+        .flatMap(item => [item, item])
+        .join('\n');
 
-    while (loopIndexVariable < primaryIterationCount) {
-        storedContentFragments.push(obtainNextSegment());
-        loopIndexVariable++;
-    }
-
-    const finalRenderedOutput = storedContentFragments.flatMap(itemElement => [itemElement, itemElement]);
-
-    process.stdout.write(finalRenderedOutput.join('\n') + '\n');
-})();
+    console.log(finalOutput);
+}

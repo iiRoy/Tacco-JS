@@ -1,31 +1,22 @@
-/* This function processes the incoming text data to perform a specific calculation.
- * It identifies the number of times an array of integers can be simultaneously
- * divided by two before at least one element becomes odd. */
-function processInputData(inputContent)
-{
-  // Extract the relevant line from the input and split it into an array of string representations of numbers.
-  let    numericValues = inputContent
-    .split(   "\n"   )
-    [1]
-      .split( " " ) ;
-  // Initialize a counter to track the number of halving operations.
-  let halvingIterations = 0;
+function processInput(inputString) {
+  // Parse the input string to get the array of numbers.
+  // The first line is usually the count, the second line contains the numbers.
+  let numberArray = inputString.split("\n")[1].split(" ");
 
-  /* Begin a loop that continues as long as all numbers in the array are even.
-   * The 'every' method implicitly converts string elements to numbers for the modulo operation. */
-  while ( numericValues.every( elementToCheck => ( elementToCheck % 2 === 0 ) ) )
-  {
-    // Increment the counter for each successful iteration of halving.
-    halvingIterations++;
+  // Initialize a counter for the number of divisions.
+  let iterationCount = 0;
 
-    // Apply the halving operation to each number in the array.
-    // The 'map' method will convert string elements to numbers, perform division, and result in an array of numbers.
-    numericValues = numericValues.map( currentValue => currentValue / 2 );
+  // Loop as long as all elements in the array are even numbers.
+  while (numberArray.every(elementValue => elementValue % 2 === 0)) {
+    // Increment the division counter.
+    iterationCount++;
+    // Divide each element in the array by 2.
+    numberArray = numberArray.map(elementValue => elementValue / 2);
   }
 
-  // Output the final count of halving iterations to the console.
-  console.log( halvingIterations ) ;
+  // Output the final count of divisions.
+  console.log(iterationCount);
 }
 
-// Invoke the primary processing function with content read from standard input.
-processInputData ( require ( 'fs' ) . readFileSync ( '/dev/stdin' , 'utf8' ) ) ;
+// Read input from standard input and pass it to the main processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

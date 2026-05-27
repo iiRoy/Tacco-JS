@@ -1,44 +1,41 @@
-let inputLinesAccumulator = [];
-process.stdin.on('data', inputChunk => {
-    inputLinesAccumulator.push(inputChunk.toString());
-});
+const inputData = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split('\n');
+const [targetHealthStr, spellCountStr] = inputData.shift().split(' ');
+const targetHealth = Number(targetHealthStr);
+const spellCount = Number(spellCountStr);
+const availableSpells = inputData.map(line => line.split(' ').map(Number));
 
-process.stdin.on('end', () => {
-    let completeInput = inputLinesAccumulator.join('').trim();
-    let parsedLines = completeInput.split('\n');
+const maxSpellAttack = availableSpells.reduce((max, [attack, _]) => Math.max(max, attack), 0);
+const maxDamageToTrack = targetHealth + 1 + maxSpellAttack;
 
-    let [objectiveValue, spellCount] = parsedLines.shift().split(' ').map(Number);
+const manaCosts = Array(maxDamageToTrack + 1).fill(Infinity);
+manaCosts[0] = 0;
 
-    let availableSpells = parsedLines.slice(0, spellCount).map(lineContent => {
-        let [damageOutput, magicCost] = lineContent.split(' ').map(Number);
-        return { output: damageOutput, price: magicCost };
+Array.from({ length: maxDamageToTrack + 1 }, (_, d) => d)
+    .forEach(currentDamageLevel => {
+        if (manaCosts[currentDamageLevel] === Infinity) {
+            return;
+        }
+
+        availableSpells.forEach(([attackValue, manaCost]) => {
+            const nextDamageLevel = currentDamageLevel + attackValue;
+
+            if (nextDamageLevel <= maxDamageToTrack) {
+                manaCosts[nextDamageLevel] = Math.min(
+                    manaCosts[nextDamageLevel],
+                    manaCosts[currentDamageLevel] + manaCost
+                );
+            }
+        });
     });
 
-    let maxSingleSpellOutput = availableSpells.reduce((maxVal, currentSpell) => Math.max(maxVal, currentSpell.output), 0);
-    let maximumReachableOutput = objectiveValue + maxSingleSpellOutput;
+const finalMinMana = Array.from({ length: maxDamageToTrack - targetHealth + 1 }, (_, i) => maxDamageToTrack - i)
+    .reduce((currentOverallMin, damageIndex) => {
+        const costForExact = manaCosts[damageIndex];
 
-    let costTable = Array(maximumReachableOutput + 1).fill(Infinity);
-    costTable[0] = 0;
-
-    for (let currentOutput = 0; currentOutput <= maximumReachableOutput; currentOutput++) {
-        if (costTable[currentOutput] === Infinity) {
-            continue;
+        if (costForExact !== Infinity) {
+            currentOverallMin = Math.min(currentOverallMin, costForExact);
         }
+        return currentOverallMin;
+    }, Infinity);
 
-        for (const currentAvailableSpell of availableSpells) {
-            const nextOutput = currentOutput + currentAvailableSpell.output;
-            const potentialNewCost = costTable[currentOutput] + currentAvailableSpell.price;
-
-            if (nextOutput <= maximumReachableOutput && potentialNewCost < costTable[nextOutput]) {
-                costTable[nextOutput] = potentialNewCost;
-            }
-        }
-    }
-
-    let minimumOverallCost = Infinity;
-    for (let outputIndex = objectiveValue; outputIndex <= maximumReachableOutput; outputIndex++) {
-        minimumOverallCost = Math.min(minimumOverallCost, costTable[outputIndex]);
-    }
-
-    console.log(minimumOverallCost);
-});
+console.log(finalMinMana);

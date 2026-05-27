@@ -1,24 +1,27 @@
-// The complete input data arrives in this parameter.
-function ProcessRangeCheck(entireInputString) {
-    const inputComponents = entireInputString . split ( ' ' ) ;
-    const minimumValue = Number ( inputComponents [ 0 ] ) ; // Extract and convert the first numeric component.
-    const maximumValue = Number ( inputComponents [ 1 ] ) ; // Extract and convert the second numeric component.
-    const valueToTest = Number ( inputComponents [ 2 ] ) ; // Extract and convert the third numeric component.
+/*
+ * This script processes a given string of data.
+ * It parses three numerical values and checks if the third value
+ * falls within the inclusive range defined by the first two values.
+ */
+function ProcessInput(rawData) {
+  // Split the incoming string by spaces to get individual components.
+  const parsedValues = rawData.split(' ');
 
-    // Perform the range validation check.
-    // The valueToTest must be greater than or equal to the minimum,
-    // AND less than or equal to the maximum.
-    if ( ( valueToTest >= minimumValue ) && ( valueToTest <= maximumValue ) )
-    {
-        console . log ( 'Yes' ) ; // Output affirmative if the condition is met.
-    }
-    else {
-        console . log ( 'No' ) ; // Output negative if the condition is not met.
-    }
+  // Extract the three relevant values from the split array.
+  const firstVal = parsedValues[0];
+  const secondVal = parsedValues[1];
+  const checkVal = parsedValues[2];
+
+  // Evaluate the condition: is the third value between the first and second (inclusive)?
+  if (checkVal >= firstVal && checkVal <= secondVal) {
+    // If the condition is met, output "Yes".
+    console.log('Yes');
+  } else {
+    // Otherwise, output "No".
+    console.log('No');
+  }
 }
 
-// Example usage: let testData = `1 10 5`;
-// ProcessRangeCheck(testData); // This would output 'Yes'.
-
-// Do not modify the following line; it handles standard input/output and invokes the primary function.
-ProcessRangeCheck( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+// The following line handles reading from standard input and invoking the main processing function.
+// It should not be modified to ensure compatibility with the execution environment.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

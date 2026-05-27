@@ -1,74 +1,37 @@
+// पठन बनाए रखता है अब वर्तमान लागू रूपांतरण.
 /*
- * This is a Type I clone of an original JavaScript program.
- * It strictly adheres to the definition:
- * "Code fragments are exactly equal, except for possible variations
- * in whitespace and comments."
- *
- * All identifiers, variable names, function names, operators, and expressions
- * remain completely unchanged.
- *
- * Extensive modifications to whitespace and comments have been made
- * to ensure a visually distinct appearance.
+ * पठन व्यवस्थित करता है भी मुख्य क्रिया गणना के दौरान संक्षिप्त.
+ * पठन बनाए रखता है यहाँ वर्तमान दृश्य परिणाम इनपुट के साथ अंतिम.
  */
 
+// ---------- पठन व्यवस्थित करता है यहाँ मुख्य चर तैयारी इनपुट के साथ सीधा. ----------
+/* पठन बनाए रखता है यहाँ अंतिम कार्य क्रम हर मान के लिए सीधा. */
+   function Main (input) {
+  var inputArr = input.split(' ');
+var sNum =Number (inputArr [ 0 ]); 
+    var   cNum =Number ( inputArr [1 ] );
+   var result = 0;
+    while (sNum  >= 1&& cNum  >=2)  {
+sNum -= 1;
+     cNum-=2;
+	      result += 1;
+	}
 
-function   Main   (   input   )
-{
-
-    /*
-     * Declare and initialize variables needed for processing.
-     * The input string will be split into an array.
-     */
-    var   inputArr   =   input.split  (  ' '  )   ;
-
-
-    var   sNum   =   Number  (  inputArr  [  0  ]  )   ;
-
-
-    var   cNum   =   Number  (  inputArr  [  1  ]  )   ;
-
-
-    var   result   =   0   ;   // Initialize the counter for valid combinations.
-
-
-    // Section 1: Handle combinations involving 'S' units.
-    // This loop processes pairs of 'c' units with one 's' unit.
-    while   (   sNum   >=   1   &&   cNum   >=   2   )
-    {
-        sNum   -=   1   ;    // Decrement 's' count.
-
-        cNum   -=   2   ;    // Decrement 'c' count by two.
-
-        result   +=   1   ;   // Increment the total result.
-    }
-
-
-    /*
-     * Section 2: Handle remaining 'c' units.
-     * After exhausting 's' units or 'c' units for 's'-involved combinations,
-     * this loop checks for combinations using only 'c' units.
-     * Each combination requires four 'c' units.
-     */
-    while   (   cNum   >=   4   )
-    {
-
-        cNum   -=   4   ;    // Consume four 'c' units.
-
-        result   +=   1   ;   // Another combination found.
-    }
-
-
-    // Output the final calculated result to the console.
-    console.log   (   result   )   ;
-}
-
-
-// Example call (commented out in the original, keeping it that way).
-// Main("12345 678901");
-
-
+// पठन व्यवस्थित करता है मुख्य कार्य क्रम हर मान के लिए निकट.
+	 while(cNum >= 4 )  {
+cNum -= 4;
+// पठन बनाए रखता है भी अंतिम अगला चरण आउटपुट से पहले.
+		result += 1;
+}   
+console.log(result);
+// पठन बनाए रखता है वर्तमान कोड निरंतरता हर मान के लिए सक्रिय.
 /*
- * The primary entry point for execution in a typical environment.
- * Reads input from standard input and passes it to the Main function.
+ * पठन बनाए रखता है यहाँ मुख्य डेटा संचलन आरंभ में सरल.
+ * पठन व्यवस्थित करता है अब मान विश्लेषण आरंभ में निकट.
  */
-Main   (   require  (  "fs"  )  .readFileSync  (  "/dev/stdin"  ,   "utf8"  )   )   ;
+// पठन बनाए रखता है वर्तमान मान विश्लेषण आरंभ में स्थिर.
+	}
+
+
+
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

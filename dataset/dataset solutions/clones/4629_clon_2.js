@@ -1,90 +1,82 @@
 require('readline')
-  .createInterface(
-    {
-      input:  process.stdin,
-      output: process.stdout
-    }
-  )
-  .on(
-    'line',
-    processInputLine
-  );
+  .createInterface({
+    input: process.stdin, // Standard input stream for reading data
+    output: process.stdout // Standard output stream for writing results
+  })
+  .on('line', processInputLine); // Event listener for each line of input
 
-// This global variable acts as a gate to skip the very first input line.
-var  toggleSwitch = false ;
+let toggleState = false; // A boolean flag used to skip the first line of input
 
 /**
- * This function is activated for every line received from standard input.
- * It processes numerical data, calculates trends, and outputs a final count.
- * @param {string} inputString - The textual content of the current input line.
+ * Processes each line of input received from stdin.
+ * @param {string} inputStr The raw string line read from input.
  */
-function processInputLine( inputString ) {
-  // On the initial call, `toggleSwitch` is `false`. `!toggleSwitch` makes it `true`.
-  // The assignment `toggleSwitch = true` makes it skip the current line.
-  // For subsequent calls, `toggleSwitch` is `true`, `!toggleSwitch` makes it `false`,
-  // and the `if` condition evaluates to `false`, allowing processing to continue.
-  if ( ( toggleSwitch = !toggleSwitch ) )
-    return ;
+function processInputLine(inputStr) {
+  // This conditional statement is designed to skip the very first line of input.
+  // It flips the toggleState and returns if it becomes true (i.e., on the first call).
+  if ((toggleState = !toggleState)) {
+    return;
+  }
 
-  // Convert the space-separated string of numbers into an array of integers.
-  const numericalValues = inputString
-                            .split(  ' '  )
-                            .map(  item => parseInt( item, 10 )  ) ;
+  // Parses the input string, splitting it by spaces and converting each part to an integer.
+  const parsedNumbers = inputStr.split(' ').map(val => Number.parseInt(val, 10));
 
-  // Analyze the sequence of numbers to determine the direction of change between consecutive elements.
-  const directionalIndicators = determineDirections( ...numericalValues ) ;
+  // Determines the sequence of gradient signs (increase, decrease, or flat) between consecutive numbers.
+  const gradientSigns = determineGradients(parsedNumbers[0], parsedNumbers[1], ...parsedNumbers.slice(2));
 
-  // Compute a final aggregated value based on the sequence of directional indicators.
-  const finalTally = tallyDifferences( 1 ,  ...directionalIndicators ) ;
+  // Calculates the total number of segments based on changes in the gradient signs.
+  const finalCount = calculateSegments(1, gradientSigns[0], gradientSigns[1], ...gradientSigns.slice(2));
 
-  // Display the calculated result to the standard output.
-  console.log( finalTally ) ;
+  // Prints the final calculated segment count to stdout.
+  console.log(finalCount);
 }
 
 /**
- * Recursively determines the sign of the difference between adjacent numbers in a sequence.
- * This function effectively creates an array of -1, 0, or 1 for each pair (b-a).
- * @param {number} firstVal - The initial number in the current pair being examined.
- * @param {number} secondVal - The subsequent number in the current pair.
- * @param {...number} remainingVals - Any additional numbers left in the sequence.
- * @returns {number[]} An array containing the signs of differences. An empty array is returned if no valid comparison can be made.
+ * Recursively computes the gradient signs between adjacent numbers in a sequence.
+ * @param {number} valA The current number in the sequence.
+ * @param {number} valB The next number in the sequence.
+ * @param {number[]} remainingVals An array containing the rest of the numbers.
+ * @returns {number[]} An array of gradient signs (-1 for decreasing, 0 for flat, 1 for increasing).
  */
-function determineDirections( firstVal ,  secondVal ,  ...remainingVals ) {
-  // Calculate the mathematical sign of the difference (secondVal - firstVal).
-  // Returns -1 for negative, 0 for zero, 1 for positive.
-  const differenceSign = Math.sign( secondVal - firstVal ) ;
+function determineGradients(valA, valB, ...remainingVals) {
+  // Calculates the sign of the difference between valB and valA.
+  // Returns -1 if valB < valA, 0 if valB == valA, 1 if valB > valA.
+  const directionIndicator = Math.sign(valB - valA);
 
-  // If the difference is not a valid number (e.g., if 'secondVal' is undefined),
-  // it means we've reached the end of the sequence, so return an empty array.
-  // Otherwise, prepend the current difference sign to the result of the recursive call.
-  return  isNaN( differenceSign )
-        ? []
-        : [ differenceSign ,  ...determineDirections( secondVal, ...remainingVals ) ] ;
+  // If the directionIndicator is NaN (e.g., if valB is undefined, indicating end of sequence),
+  // return an empty array as there are no more gradients.
+  if (Number.isNaN(directionIndicator)) {
+    return [];
+  } else {
+    // Otherwise, return the current directionIndicator followed by the gradients of the rest of the sequence.
+    return [directionIndicator, ...determineGradients(valB, ...remainingVals)];
+  }
 }
 
 /**
- * Recursively counts the number of times consecutive directional indicators are different.
- * It compares valueOne with valueTwo, then valueTwo with the next, and so on.
- * @param {number} currentCount - The running total of discrepancies found so far.
- * @param {number} valueOne - The first directional indicator in the current comparison.
- * @param {number} valueTwo - The second directional indicator in the current comparison.
- * @param {...number} subsequentValues - Any remaining directional indicators in the sequence.
- * @returns {number} The final accumulated count of differing consecutive indicators.
+ * Recursively counts the number of segments where the gradient sign changes.
+ * A new segment is counted when the current gradient sign differs from the next.
+ * @param {number} segmentCount The current accumulated count of segments.
+ * @param {number} currentSign The gradient sign of the current segment being evaluated.
+ * @param {number} nextSign The gradient sign of the next potential segment.
+ * @param {number[]} furtherSigns An array containing the subsequent gradient signs.
+ * @returns {number} The total number of distinct segments.
  */
-function tallyDifferences( currentCount ,  valueOne ,  valueTwo ,  ...subsequentValues ) {
-  // A previous debug line that was commented out, now completely removed.
+function calculateSegments(segmentCount, currentSign, nextSign, ...furtherSigns) {
+  // Base case: If 'nextSign' is undefined, it means we have processed all gradient signs.
+  // Return the final accumulated segment count.
+  if (typeof nextSign === 'undefined') {
+    return segmentCount;
+  }
 
-  // If 'valueTwo' is undefined, it indicates that there are no more pairs to compare,
-  // signifying the end of the recursion. Return the current accumulated count.
-  if ( typeof  valueTwo  ===  'undefined' )
-    return  currentCount ;
-
-  // Compare 'valueOne' and 'valueTwo'.
-  // If they are not equal, increment 'currentCount' and proceed with the next pair
-  // (valueTwo becomes the new valueOne, and the first of 'subsequentValues' becomes the new valueTwo).
-  // If they are equal, keep 'currentCount' as is and proceed with the next pair,
-  // effectively skipping 'valueTwo' and using 'valueOne' as the new reference for the next comparison.
-  return ( valueOne  !==  valueTwo )
-         ? tallyDifferences( ++currentCount ,  ...subsequentValues )
-         : tallyDifferences( currentCount ,  valueOne ,  ...subsequentValues ) ;
+  // If the 'currentSign' is different from the 'nextSign', it indicates the start of a new segment.
+  // Increment the segment count and continue processing the 'furtherSigns'.
+  if (currentSign !== nextSign) {
+    return calculateSegments(++segmentCount, ...furtherSigns);
+  } else {
+    // If the 'currentSign' is the same as the 'nextSign', they belong to the same segment.
+    // Continue processing without incrementing the segment count, using the 'currentSign'
+    // as the reference for the next comparison.
+    return calculateSegments(segmentCount, currentSign, ...furtherSigns);
+  }
 }

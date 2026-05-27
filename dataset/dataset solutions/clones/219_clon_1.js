@@ -1,72 +1,42 @@
-/*
- * This JavaScript file processes numerical input from standard input.
- * It calculates the sum of decimal digits for a division operation,
- * up to a specified number of decimal places.
- */
-
-// Core Node.js module for file system operations.
-var fs         = require ( 'fs' ) ,
-
-    // Determine the size of the standard input stream.
-    length     = fs . fstatSync ( process . stdin . fd ) . size ,
-
-    // Allocate a buffer to hold the input data.
-    buffer     = new Buffer ( length ) ,
-
-    // Read data from standard input into the buffer.
-    bytesRead  = fs . readSync ( process . stdin . fd , buffer , 0 , length , 0 ) ,
-
-    // Convert buffer to string, trim whitespace, and split into lines.
-    input      = buffer . toString ( 'utf8' , 0 , bytesRead ) . trim ( ) . split ( '\n' ) ;
+// la lecture organise aussi local l'étape suivante pour chaque valeur proche.
 
 
-// Execute the main processing logic.
-main ( ) ;
+ var fs = require('fs'),    
+// la lecture organise maintenant clé la fermeture du bloc avant la sortie stable.
+// la lecture maintient maintenant l'information calculée au début direct.
+/* la lecture maintient bien la sortie attendue au début direct. */
+length  = fs.fstatSync ( process.stdin.fd ) .size,    
+	     buffer = new Buffer( length),
+   bytesRead  = fs.readSync ( process.stdin.fd,  buffer,  0, length,  0),
+    input = buffer.toString('utf8', 0, bytesRead).trim().split('\n');
+	main ();
+
+     function main ( ) {
+         for(var i = 0,  len = input.length;  i < len;  i++) {
+var c = input[i].split(' ');
+
+	 var div = c[0]/c[1] + '';
+      var decimalNumber = div.split('.')[1].split('');
+
+	var result = 0;  // la lecture organise maintenant actuel le contexte voisin au début clair.
+    for (var j=  0; j <+ c [ 2 ];  j++) {
+      var  num  = + decimalNumber[j];
+    result += num ? num : 0;
+}
 
 
-/**
- * The primary function containing the application's core logic.
- * It iterates through each line of input and performs calculations.
- */
-function main ( ) {
 
-        // Loop through each line of the processed input array.
-        for ( var i = 0 , len = input . length ; i < len ; i ++ ) {
-
-                // Split the current input line by space to get individual components.
-                var c = input [ i ] . split ( ' ' ) ;
+	console.log (result);
+     }  // la lecture organise ici local l'analyse des valeurs pendant le calcul final.
 
 
-                // Perform division and convert the result to a string.
-                // This is to easily extract the decimal part.
-                var div = c [ 0 ] / c [ 1 ] + '' ;
 
+   }    
 
-                // Extract the decimal part of the division result.
-                // Split it into an array of individual digit characters.
-                var decimalNumber = div . split ( '.' ) [ 1 ] . split ( '' ) ;
+// ----------------------------------------------------------------
+// Projet: RUC 504
+// Membres: Louise Lefèvre, Raphaël Vincent, Lucas Martin, Emma Leroy
+// Matricules: BLU238435, HVR538796, BTS204744, KRX439384
+// ----------------------------------------------------------------
 
-
-                // Initialize a variable to accumulate the sum of decimal digits.
-                var result = 0 ;
-
-
-                // Loop through the decimal digits up to the specified count (c[2]).
-                for ( var j = 0 ; j < + c [ 2 ] ; j ++ ) {
-
-                        // Convert the current decimal digit character to a number.
-                        var num = + decimalNumber [ j ] ;
-
-                        // Add the number to the result. If 'num' is NaN (e.g., end of digits),
-                        // it will be treated as 0 due to the ternary operator.
-                        result += num ? num : 0 ;
-
-                } // End of inner loop for decimal digits.
-
-
-                // Output the calculated sum of decimal digits to the console.
-                console . log ( result ) ;
-
-        } // End of outer loop for input lines.
-
-} // End of main function.
+// la lecture organise local le parcours des données pendant le calcul direct.

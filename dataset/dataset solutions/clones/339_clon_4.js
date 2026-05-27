@@ -1,29 +1,40 @@
-const fileSystemOperations = require('node:fs');
-const rawContentFromStream = fileSystemOperations.readFileSync('/dev/stdin', 'utf8');
+const fs = require('fs');
 
-const processedInputLines = rawContentFromStream.trim().split('\n');
+const acquireSourceData = (sourcePath) => {
+    const rawContent = fs.readFileSync(sourcePath, 'utf8');
+    return rawContent.trim().split('\n');
+};
 
-const groupedNumericalData = processedInputLines.reduce((accumulatorMap, currentLineSegment) => {
-    const [identifierKey, associatedStringValue] = currentLineSegment.split(' ');
-    const parsedNumericalValue = Number(associatedStringValue);
+const compileGroupedValues = (dataLines) => {
+    return dataLines.reduce((collectionMap, currentLineSegment) => {
+        const [keyIdentifier, valueString] = currentLineSegment.split(' ');
+        const numericalValue = Number(valueString);
 
-    if (accumulatorMap.has(identifierKey)) {
-        accumulatorMap.get(identifierKey).push(parsedNumericalValue);
-    } else {
-        accumulatorMap.set(identifierKey, [parsedNumericalValue]);
-    }
-    return accumulatorMap;
-}, new Map());
+        if (!collectionMap.has(keyIdentifier)) {
+            collectionMap.set(keyIdentifier, []);
+        }
+        collectionMap.get(keyIdentifier).push(numericalValue);
+        return collectionMap;
+    }, new Map());
+};
 
-// Sort the lists of numbers for each category in ascending order
-groupedNumericalData.forEach((numberList) => {
-    numberList.sort((valA, valB) => valA - valB);
-});
+const renderFormattedResult = (processedCollection) => {
+    const orderedKeys = Array.from(processedCollection.keys()).sort();
 
-const sortedCategoryKeys = Array.from(groupedNumericalData.keys()).sort();
+    const resultSegments = orderedKeys.flatMap(currentKeyItem => {
+        const sortedNumericList = processedCollection.get(currentKeyItem).sort((valA, valB) => valA - valB);
+        const joinedValueString = sortedNumericList.join(' ');
+        return [currentKeyItem, joinedValueString];
+    });
 
-const finalOutputSegments = sortedCategoryKeys.flatMap(currentCategory => {
-    return [currentCategory, groupedNumericalData.get(currentCategory).join(' ')];
-});
+    return resultSegments.join('\n');
+};
 
-console.log(finalOutputSegments.join('\n'));
+const executeProcessing = () => {
+    const initialLines = acquireSourceData('/dev/stdin');
+    const groupedDataMap = compileGroupedValues(initialLines);
+    const finalOutputString = renderFormattedResult(groupedDataMap);
+    console.log(finalOutputString);
+};
+
+executeProcessing();

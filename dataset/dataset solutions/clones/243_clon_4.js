@@ -1,42 +1,31 @@
-const dataCollector = (action) => {
-    let buffer = '';
-    process.stdin.on('data', (chunk) => {
-        buffer += chunk;
-    });
-    process.stdin.on('end', () => {
-        action(buffer.trim().split('\n'));
-    });
-};
+const fileSystem = require('fs');
+const rawInput = fileSystem.readFileSync('/dev/stdin', 'utf8');
 
-const evaluateGameRound = (roundString) => {
-    const componentValues = roundString.split(' ').map(val => parseInt(val, 10));
-    const valA = componentValues[0];
-    const valB = componentValues[1];
-    const valC = componentValues[2];
+const processedLines = rawInput.trim().split("\n");
 
-    const initialCandidateSet = Array.from({ length: 10 }, (_, idx) => idx + 1);
+for (const currentLine of processedLines) {
+    const cardValues = currentLine.split(" ").map(Number);
 
-    const validCandidates = initialCandidateSet.filter(candidateNum =>
-        !(candidateNum === valA && candidateNum === valB && candidateNum === valC)
-    );
+    const firstCard = cardValues[0];
+    const secondCard = cardValues[1];
+    const thirdCard = cardValues[2];
 
-    let goodScores = 0;
-    let badScores = 0;
+    const excludedValue = (firstCard === secondCard && secondCard === thirdCard) ? firstCard : null;
 
-    for (const currentCandidate of validCandidates) {
-        if ((valA + valB + currentCandidate) <= 20) {
-            goodScores++;
+    const baseCards = Array.from({ length: 10 }, (_, idx) => idx + 1);
+
+    const availableCards = baseCards.filter(val => val !== excludedValue);
+
+    const outcomeCounts = availableCards.reduce((accumulator, currentCard) => {
+        const currentSum = firstCard + secondCard + currentCard;
+        if (currentSum <= 20) {
+            accumulator.successfulCombinations++;
         } else {
-            badScores++;
+            accumulator.unsuccessfulCombinations++;
         }
-    }
+        return accumulator;
+    }, { successfulCombinations: 0, unsuccessfulCombinations: 0 });
 
-    return goodScores > badScores ? "YES" : "NO";
-};
-
-dataCollector((inputLines) => {
-    for (let currentLine of inputLines) {
-        const result = evaluateGameRound(currentLine);
-        process.stdout.write(result + '\n');
-    }
-});
+    const finalDecision = outcomeCounts.successfulCombinations > outcomeCounts.unsuccessfulCombinations ? "YES" : "NO";
+    console.log(finalDecision);
+}

@@ -1,46 +1,52 @@
 "use strict";
 
-const obtainProcessedData = (rawTextualData) => {
-    const lines = rawTextualData.trim().split("\n");
-    const countOfEntries = parseInt(lines[0], 10);
-    const relevantEntries = lines.slice(1, countOfEntries + 1);
-    return relevantEntries;
-};
-
-const countDesignatedPrefixes = (listOfStrings) => {
-    const targetPrefixes = ['M', 'A', 'R', 'C', 'H'];
-    const prefixCounts = new Map();
-    targetPrefixes.forEach(prefix => prefixCounts.set(prefix, 0));
-
-    for (const item of listOfStrings) {
-        const firstChar = item[0];
-        if (prefixCounts.has(firstChar)) {
-            prefixCounts.set(firstChar, prefixCounts.get(firstChar) + 1);
-        }
+function* _generateCombinationsInternal(sourceElements, selectionSize) {
+    if (selectionSize === 0) {
+        yield [];
+        return;
+    }
+    if (sourceElements.length < selectionSize) {
+        return;
     }
 
-    return targetPrefixes.map(prefix => prefixCounts.get(prefix));
-};
-
-const computeTriadProductSum = (numericalSequence) => {
-    let totalAccumulation = 0;
-    const sequenceLength = numericalSequence.length;
-
-    for (let firstIndex = 0; firstIndex < sequenceLength - 2; firstIndex++) {
-        for (let secondIndex = firstIndex + 1; secondIndex < sequenceLength - 1; secondIndex++) {
-            for (let thirdIndex = secondIndex + 1; thirdIndex < sequenceLength; thirdIndex++) {
-                totalAccumulation += numericalSequence[firstIndex] * numericalSequence[secondIndex] * numericalSequence[thirdIndex];
-            }
+    for (let i = 0; i <= sourceElements.length - selectionSize; i++) {
+        const currentElement = sourceElements[i];
+        const remainingElements = sourceElements.slice(i + 1);
+        for (const subCombination of _generateCombinationsInternal(remainingElements, selectionSize - 1)) {
+            yield [currentElement, ...subCombination];
         }
     }
-    return totalAccumulation;
+}
+
+const combineWithoutRepetitions = (comboOptions, comboLength) => {
+    return Array.from(_generateCombinationsInternal(comboOptions, comboLength));
 };
 
-const orchestrateSolution = (incomingData) => {
-    const processedStrings = obtainProcessedData(incomingData);
-    const designatedPrefixTallies = countDesignatedPrefixes(processedStrings);
-    const finalResult = computeTriadProductSum(designatedPrefixTallies);
-    console.log(finalResult);
+const entryPoint = (inputData) => {
+    const inputLines = inputData.trim().split("\n");
+    const nameQuantity = Number(inputLines.shift());
+    const nameCollection = inputLines.slice(0, nameQuantity);
+
+    const initialCharacterMap = { 'M': 0, 'A': 1, 'R': 2, 'C': 3, 'H': 4 };
+    const initialTally = Array(5).fill(0);
+
+    nameCollection.forEach(individualName => {
+        const firstLetter = individualName[0];
+        const mappedIndex = initialCharacterMap[firstLetter];
+        if (mappedIndex !== undefined) {
+            initialTally[mappedIndex]++;
+        }
+    });
+
+    let cumulativeProduct = 0;
+    const availableIndices = [0, 1, 2, 3, 4];
+
+    for (const indexTriplet of _generateCombinationsInternal(availableIndices, 3)) {
+        const [firstIdx, secondIdx, thirdIdx] = indexTriplet;
+        cumulativeProduct += initialTally[firstIdx] * initialTally[secondIdx] * initialTally[thirdIdx];
+    }
+
+    console.log(cumulativeProduct);
 };
 
-orchestrateSolution(require('fs').readFileSync('/dev/stdin', 'utf8'));
+entryPoint(require('fs').readFileSync('/dev/stdin', 'utf8'));

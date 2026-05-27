@@ -1,33 +1,41 @@
-const dataExtractor = require('node:fs');
+const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+const parsedNumbers = fileContent.trim().split('\n').map(Number);
 
-const rawInput = dataExtractor.readFileSync('/dev/stdin', 'utf8');
-const numericSeries = rawInput.trim().split('\n').map(item => +item);
-
-const performSummation = (itemsToAggregate) => {
-    return itemsToAggregate.reduce((accumulator, currentVal) => accumulator + currentVal, 0);
-};
-
-const processSegmentsRecursively = (seriesBuffer, currentPoint) => {
-    if (currentPoint >= seriesBuffer.length) {
-        return; // End of buffer reached
+function* numberSequenceGenerator(dataArray) {
+    let indexPosition = 0;
+    while (true) {
+        if (indexPosition < dataArray.length) {
+            yield dataArray[indexPosition++];
+        } else {
+            yield undefined;
+        }
     }
+}
 
-    const segmentHeader = seriesBuffer[currentPoint];
-    const itemQuantity = segmentHeader / 4;
+const numberSource = numberSequenceGenerator(parsedNumbers);
 
-    if (itemQuantity === 0) {
-        return; // Termination signal encountered
+function executeProcessingLoop(sourceIterator) {
+    while (true) {
+        const blockIdentifierValue = sourceIterator.next().value;
+
+        if (blockIdentifierValue === undefined) {
+            break;
+        }
+
+        let elementCountDivisor = blockIdentifierValue / 4;
+
+        if (elementCountDivisor === 0) {
+            break;
+        }
+
+        let currentBlockTotal = 0;
+        while (elementCountDivisor !== 0) {
+            const nextDataElement = sourceIterator.next().value;
+            currentBlockTotal += nextDataElement;
+            elementCountDivisor--;
+        }
+        console.log(currentBlockTotal);
     }
+}
 
-    const startPositionOfItems = currentPoint + 1;
-    const endPositionOfItems = startPositionOfItems + itemQuantity;
-
-    const segmentItems = seriesBuffer.slice(startPositionOfItems, endPositionOfItems);
-    const segmentTotal = performSummation(segmentItems);
-
-    console.log(segmentTotal);
-
-    processSegmentsRecursively(seriesBuffer, endPositionOfItems);
-};
-
-processSegmentsRecursively(numericSeries, 0);
+executeProcessingLoop(numberSource);

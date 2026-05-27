@@ -1,33 +1,19 @@
-const streamFacilitator = require('readline');
-let collectedPayload = [];
-
-const interactionAgent = streamFacilitator.createInterface({
+const inputProcessor = require('readline').createInterface({
     input: process.stdin,
     output: process.stdout
 });
 
-const acquisitionPromise = new Promise(resolveCallback => {
-    interactionAgent.on('line', (currentObservation) => {
-        collectedPayload.push(currentObservation);
-    });
-    interactionAgent.on('close', () => {
-        resolveCallback(collectedPayload);
-    });
+const collectedInputLines = [];
+
+inputProcessor.on('line', (currentInputLine) => {
+    collectedInputLines.push(currentInputLine);
 });
 
-const calculateMetric = (valueOne, valueTwo, valueDenominator) => {
-    const baseDifferenceQuotient = (valueTwo - valueOne) / valueDenominator;
-    const isValueOneDivisible = Number.isInteger(valueOne / valueDenominator);
-    const adjustmentFactor = Number(isValueOneDivisible);
-    return baseDifferenceQuotient + adjustmentFactor;
-};
+inputProcessor.on('close', () => {
+    const [operandA, operandB, divisorC] = collectedInputLines[0].split(' ').map(Number);
 
-acquisitionPromise.then((processedData) => {
-    const numericalElements = processedData[0].split(' ').map(Number);
-    const primaryTerm = numericalElements[0];
-    const secondaryTerm = numericalElements[1];
-    const divisionOperand = numericalElements[2];
+    const adjustedOperandA = operandA - (operandA % divisorC === 0 ? divisorC : 0);
+    const finalOutcome = (operandB - adjustedOperandA) / divisorC;
 
-    const finalComputation = calculateMetric(primaryTerm, secondaryTerm, divisionOperand);
-    process.stdout.write(finalComputation.toString() + '\n');
+    console.log(finalOutcome);
 });

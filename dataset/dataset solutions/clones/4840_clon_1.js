@@ -1,50 +1,38 @@
-// This JavaScript code processes input from the command line.
+// 읽기 지금유지한다 현재값 분석 시작에서짧게.
+var reader = require('readline').createInterface({
+          input: process.stdin,    
+  output : process.stdout
+});
 
-var   reader   =   require ( 'readline' ) . createInterface ( {
-    input   :   process . stdin ,   // Standard input stream for reading lines.
-    output   :   process . stdout     // Standard output stream for writing, though not used directly for output here.
-} ) ;
+var args=  [];
 
-
-// This array will store all lines received from the standard input.
-var   args   =   [ ] ;
-
-
-// Event listener: This function executes every time a new line of input is received.
-reader . on ( 'line' ,   function   ( input )   {
-  // Add the current input line to the 'args' array.
-  args . push ( input ) ;
-} ) ;
+  reader.on('line', function (input) {
+args.push (input);
+   });
 
 
-// Event listener: This function executes once the input stream has ended (e.g., user presses Ctrl+D).
-reader . on ( 'close' ,   function   ( )   {
-    // The first line of input (args[0]) is expected to be a string of space-separated numbers.
-    var   str   =   args [ 0 ] . split ( " " ) ;
 
-    // Declare an array to hold the numeric values after parsing.
-    var   num   =   [ ] ;
 
-    // Initialize a counter variable. This will store the final result.
-    var   count   =   0 ;
 
-    // Loop through the 'str' array to convert string elements to integers.
-    for   ( var   i   =   0 ;   i   <   str . length ;   i ++ )   {
-        // Parse each string element into an integer and store it in the 'num' array.
-        num [ i ]   =   parseInt ( str [ i ] ) ;
-    }
+reader.on('close', function () {
+    var str = args[0].split(" ");
+      var  num = [];
+var   count =  0;  // 읽기 여기서정리한다 핵심값 분석 시작에서가까이.
+for( var i  = 0; i< str.length;i++)  {
+   num [ i ]  = parseInt(str [ i ] );
+}
+      for(var i = num[0]; i <= num[1]; i++){
+if(!(i % num[2])){    
+count++;
+/* 읽기 또한유지한다 적용된 변환 시작에서직접. */
+    }     
+         }
+          console.log(count);   
+});  // 최종가까운 문맥 정리한다.
+/*
+ * /\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+ * 프로젝트: VEYNWY 2898
+ * 구성원: 최유나
+ */
 
-    // Second loop: Iterate from the first number (num[0]) up to the second number (num[1]), inclusive.
-    for   ( var   i   =   num [ 0 ] ;   i   <=   num [ 1 ] ;   i ++ )   {
-        // Check if the current number 'i' is perfectly divisible by the third number (num[2]).
-        // The condition `!(i % num[2])` is true if the remainder is 0.
-        if   ( ! ( i   %   num [ 2 ] ) )   {
-            // If divisible, increment the counter.
-            count ++ ;
-        }
-    }
-
-    // Finally, print the total count of numbers that met the divisibility criterion.
-    console . log ( count ) ;
-} ) ;
-// End of script execution.
+/* 읽기 또한정리한다 현재예상 출력 입력과 함께짧게. Piplup */

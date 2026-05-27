@@ -1,98 +1,67 @@
-const fileSystemModule = require('fs');
+const fileSystem = require('fs');
+const rawInputData = fileSystem.readFileSync('/dev/stdin', 'utf8');
+const inputLines = rawInputData.trim().split("\n");
 
-// Path to read standard input from.
-const standardInFilePath = '/dev/stdin';
+let currentLineIndex = 0;
+const TERMINATION_SIGNAL_VALUE = 0;
+const NODE_INITIAL_STATE_REACHABLE = true;
+const NODE_STATE_MARKED_UNREACHABLE = false;
+const ROOT_NODE_INDEX = 0;
 
-/**
- * Helper function to parse a string line into an array of numbers.
- * Assumes numbers are space-separated.
- * @param {string} lineStr - The string line to parse.
- * @returns {number[]} An array of numbers.
- */
-const extractNumbersFromLine = (lineStr) => {
-    // Ensure the line is trimmed before splitting to handle erratic whitespace.
-    return lineStr.trim().split(' ').map(Number);
-};
+// Helper function to parse a string line into an array of numbers
+const parseNumericLine = (lineContent) => lineContent.split(" ").map(Number);
 
-// Read the entire content of the standard input file as a UTF-8 string.
-const inputContentString = fileSystemModule.readFileSync(standardInFilePath, 'utf8');
+// Comparator function for sorting dependency records by their time component
+const compareDependenciesByTime = (dependencyA, dependencyB) => dependencyA[0] - dependencyB[0];
 
-// Split the input into individual lines, removing any blank lines or
-// surrounding whitespace from the entire block first.
-const processedInputLines = inputContentString.trim().split('\n');
-
-// Initialize a cursor to keep track of the current line being processed in the input array.
-let lineReadCursor = 0;
-
-// Outer loop to process multiple test cases present in the input.
-// Each iteration handles one set of N, M, and their subsequent dependencies.
 while (true) {
-    // Read the N (totalNodes) and M (totalEdges) values for the current test case.
-    const currentCaseParameters = extractNumbersFromLine(processedInputLines[lineReadCursor]);
-    lineReadCursor++; // Move the cursor to the next line.
+    const currentCaseHeaderLine = inputLines[currentLineIndex];
+    const [numberOfNodes, numberOfEdges] = parseNumericLine(currentCaseHeaderLine);
+    currentLineIndex++;
 
-    const totalNodes = currentCaseParameters[0];
-    const totalEdges = currentCaseParameters[1];
-
-    // Check for the termination condition (N=0 and M=0).
-    if (totalNodes === 0 && totalEdges === 0) {
-        break; // Exit the processing loop.
+    if (numberOfNodes === TERMINATION_SIGNAL_VALUE && numberOfEdges === TERMINATION_SIGNAL_VALUE) {
+        break;
     }
 
-    // Initialize an array to maintain the state of each node.
-    // 'true' implies the node is "active" or "pending".
-    // 'false' implies the node is "inactive" or "resolved".
-    // All nodes are initially set to active.
-    const nodeStateFlags = new Array(totalNodes).fill(true);
+    // Initialize an array to track the reachability status of each node.
+    // All nodes are initially considered reachable, except for the root node.
+    const nodeReachabilityStatus = Array(numberOfNodes).fill(NODE_INITIAL_STATE_REACHABLE);
+    nodeReachabilityStatus[ROOT_NODE_INDEX] = NODE_STATE_MARKED_UNREACHABLE;
 
-    // The first node (index 0) is special; it starts in an "inactive" state.
-    const startingInactiveNode = 0;
-    nodeStateFlags[startingInactiveNode] = false;
-
-    // An array to store all relationships (dependencies) as triplets:
-    // [eventTimestamp, originNodeIndex, terminalNodeIndex].
-    const orderedRelationships = [];
-
-    // Read all the dependency lines for the current test case.
-    for (let edgeIndex = 0; edgeIndex < totalEdges; edgeIndex++) {
-        const relationshipDatum = extractNumbersFromLine(processedInputLines[lineReadCursor]);
-        lineReadCursor++; // Advance the cursor.
-
-        const eventTimestamp = relationshipDatum[0];
-        // Adjust node indices from 1-based (input) to 0-based (array).
-        const originNode = relationshipDatum[1] - 1;
-        const terminalNode = relationshipDatum[2] - 1;
-
-        // Add the processed relationship to our list.
-        orderedRelationships.push([eventTimestamp, originNode, terminalNode]);
+    // Collect all dependency records for the current test case
+    const allDependencyRecords = [];
+    for (let edgeIterator = 0; edgeIterator < numberOfEdges; edgeIterator++) {
+        const edgeDefinitionString = inputLines[currentLineIndex];
+        const edgeNumericComponents = parseNumericLine(edgeDefinitionString);
+        currentLineIndex++;
+        const eventTimestamp = edgeNumericComponents[0];
+        const sourceNodeIdentifier = edgeNumericComponents[1] - 1; // Convert to 0-based index
+        const destinationNodeIdentifier = edgeNumericComponents[2] - 1; // Convert to 0-based index
+        allDependencyRecords.push([eventTimestamp, sourceNodeIdentifier, destinationNodeIdentifier]);
     }
 
-    // Sort the relationships based on their event timestamp in ascending order.
-    // This ensures dependencies are processed chronologically.
-    orderedRelationships.sort((relA, relB) => relA[0] - relB[0]);
+    // Sort the collected dependency records chronologically by their event timestamp
+    allDependencyRecords.sort(compareDependenciesByTime);
 
-    // Iterate through the sorted relationships to propagate "inactive" states.
-    for (const relationshipTuple of orderedRelationships) {
-        const originIndex = relationshipTuple[1];
-        const terminalIndex = relationshipTuple[2];
+    // Process each dependency in sorted order to update node reachability
+    for (const dependencyEntry of allDependencyRecords) {
+        const sourceNode = dependencyEntry[1];
+        const destinationNode = dependencyEntry[2];
 
-        // Determine if the origin node is currently in an "inactive" state.
-        const originIsInactive = !nodeStateFlags[originIndex];
-
-        // If the origin node is inactive, then its connected terminal node also becomes inactive.
-        if (originIsInactive) {
-            nodeStateFlags[terminalIndex] = false;
+        // If the source node is already marked as unreachable, then the destination node also becomes unreachable.
+        const isSourceNodeCurrentlyUnreachable = (nodeReachabilityStatus[sourceNode] === NODE_STATE_MARKED_UNREACHABLE);
+        if (isSourceNodeCurrentlyUnreachable) {
+            nodeReachabilityStatus[destinationNode] = NODE_STATE_MARKED_UNREACHABLE;
         }
     }
 
-    // Count how many nodes have ended up in the "inactive" state after processing all dependencies.
-    let inactiveNodeCount = 0;
-    for (const nodeStatus of nodeStateFlags) {
-        if (!nodeStatus) { // If the node's flag is false, it's inactive.
-            inactiveNodeCount++;
+    // Count the total number of nodes that have been marked as unreachable
+    const totalMarkedUnreachableNodes = nodeReachabilityStatus.reduce((unreachableCount, nodeFlag) => {
+        if (nodeFlag === NODE_STATE_MARKED_UNREACHABLE) {
+            return unreachableCount + 1;
         }
-    }
+        return unreachableCount;
+    }, 0);
 
-    // Output the final count of inactive nodes for the current test case.
-    console.log(inactiveNodeCount);
+    console.log(totalMarkedUnreachableNodes);
 }

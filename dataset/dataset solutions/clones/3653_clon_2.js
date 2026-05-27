@@ -1,68 +1,47 @@
-/*
- * This script processes multi-line input to determine if the first line
- * can be rotated to match the second line.
- * It performs character-by-character comparison after potential rotations.
- */
-function processInputData( rawTextContent )
-{
-  // Split the entire input content by newline characters into an array of lines.
-  const lineFragments = rawTextContent .split( '\n' ) ;
+// This function serves as the primary entry point for processing the provided input data.
+function processInput(rawData) {
+    // Divide the entire input string into an array of individual lines, using newline characters as delimiters.
+    const lineSegments = rawData.split('\n');
 
-  // Extract the first line and convert it into an array of individual characters.
-  let firstCharSequence = lineFragments [ 0 ] .split( '' ) ;
+    // Transform the first line of input into an array of its constituent characters.
+    let firstSequence = lineSegments[0].split('');
+    // Transform the second line of input into an array of its constituent characters.
+    let secondSequence = lineSegments[1].split('');
 
-  // Extract the second line and convert it into an array of individual characters.
-  const secondCharSequence = lineFragments [ 1 ] .split( '' ) ;
+    // Initialize a numerical indicator to track whether a match is found; 0 signifies no match, 1 signifies a match.
+    let matchFound = 0;
 
-  // Initialize a boolean-like flag to track if a match is found.
-  let isMatchFound = 0 ; // 0 indicates no match, 1 indicates a match.
+    // First, check if the two character sequences are identical in their initial state.
+    if (firstSequence.toString() === secondSequence.toString()) {
+        matchFound = 1; // If they are, set the indicator to show a match.
+    } else {
+        // If the sequences are not initially identical, proceed to attempt circular shifts on the first sequence.
+        // Iterate through the first sequence, performing a circular shift in each step.
+        // The loop runs (length - 1) times, as the last shift would bring it back to the original state.
+        for (let idx = 0; idx < firstSequence.length - 1; idx++) {
+            // Extract the character currently at the very end of the first sequence.
+            const finalChar = firstSequence[firstSequence.length - 1];
+            // Remove this last character from its current position.
+            firstSequence.pop();
+            // Insert the extracted character at the beginning of the sequence, completing a circular shift.
+            firstSequence.unshift(finalChar);
 
-  // First, check if the sequences are identical without any rotation.
-  if ( firstCharSequence .toString() === secondCharSequence .toString() )
-  {
-    isMatchFound = 1 ; // Set flag to 1 if they are already the same.
-  }
-  else
-  {
-    // If not identical, proceed to rotate the first sequence and compare.
-    // Loop through possible rotations. We only need to rotate length-1 times
-    // because the last rotation would bring it back to the original state.
-    for ( let rotationIndex = 0 ; rotationIndex < firstCharSequence.length - 1 ; rotationIndex++ )
-    {
-      // Store the last character of the sequence.
-      const finalElement = firstCharSequence [ firstCharSequence.length - 1 ] ;
-
-      // Remove the last character from the sequence.
-      firstCharSequence .pop() ;
-
-      // Add the stored character to the beginning of the sequence.
-      firstCharSequence .unshift( finalElement ) ;
-
-      // After rotation, compare the modified first sequence with the second.
-      if ( firstCharSequence .toString() === secondCharSequence .toString() )
-      {
-        isMatchFound = 1 ; // A match is found after rotation.
-        break ;            // No need to check further rotations, exit loop.
-      }
+            // After performing the shift, re-evaluate if the modified first sequence now matches the second.
+            if (firstSequence.toString() === secondSequence.toString()) {
+                matchFound = 1; // If a match is identified, update the indicator.
+                break; // Since a match is found, there's no need for further shifts; exit the loop.
+            }
+        }
     }
-  }
 
-  // Define a constant for the standard output mechanism.
-  const outputDevice = console;
-
-  // Based on the final state of the match flag, print the appropriate result.
-  if ( isMatchFound === 1 )
-  {
-    outputDevice .log( 'Yes' ) ; // Output 'Yes' if a match was found.
-  }
-  else
-  {
-    outputDevice .log( 'No' ) ;  // Output 'No' if no match was found after all checks.
-  }
+    // Based on the final state of the match indicator, output the appropriate result to the console.
+    if (matchFound === 1) {
+        console.log('Yes');
+    } else {
+        console.log('No');
+    }
 }
 
-// Acquire the file system module.
-const fileSystemModule = require( 'fs' );
-
-// Invoke the main processing function with content read from standard input.
-processInputData( fileSystemModule .readFileSync( '/dev/stdin' , 'utf8' ) );
+// Read the entire content of standard input synchronously, interpreting it as UTF-8 text,
+// and then pass this raw data to the processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

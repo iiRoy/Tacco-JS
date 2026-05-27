@@ -1,16 +1,19 @@
-const evaluateJourney = (travelLog) => {
-  const numericComponents = travelLog.match(/\d+/g).map(Number);
+const processInputAndDecide = (inputLine) => {
+  const [distanceStr, timeStr, speedStr] = inputLine.trim().split(' ');
 
-  const targetSpan = numericComponents[0];
-  const temporalBound = numericComponents[1];
-  const paceRate = numericComponents[2];
+  const distanceValue = Number(distanceStr);
+  const timeValue = Number(timeStr);
+  const speedValue = Number(speedStr);
 
-  const outcomeIndicators = ['NO', 'YES'];
+  const isFeasible = (timeValue === 0)
+    ? (distanceValue === 0)
+    : (distanceValue / timeValue) <= speedValue;
 
-  const attainedDistance = paceRate * temporalBound;
-  const achievementStatus = (Math.max(attainedDistance, targetSpan) === attainedDistance);
-
-  console.log(outcomeIndicators[Number(achievementStatus)]);
+  return isFeasible ? 'YES' : 'NO';
 };
 
-evaluateJourney(require('fs').readFileSync('/dev/stdin', 'utf8'));
+const entryPoint = (sourceData) => {
+  console.log(processInputAndDecide(sourceData));
+};
+
+entryPoint(require('fs').readFileSync('/dev/stdin', 'utf8'));

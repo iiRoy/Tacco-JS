@@ -1,82 +1,49 @@
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
 
-var receivedRows = [];
-
-var inputHandler = require('readline').createInterface(
-  {
+let inputBuffer = [];
+const inputHandler = require('readline').createInterface({
     input: process.stdin,
     output: process.stdout
-  }
-);
+});
 
-inputHandler.on(
-  'line',
-  (currentText) => {
-    // Store each incoming data row for later processing.
-    receivedRows.push(currentText);
-  }
-);
+inputHandler.on('line', (currentLine) => {
+    // Store each incoming line of data
+    inputBuffer.push(currentLine);
+});
 
-inputHandler.on(
-  'close',
-  () => {
-    // All input has been gathered; now execute the main computation logic.
+inputHandler.on('close', () => {
+    // All input has been received, now process it
+    const firstLineParts = inputBuffer[0].split(" ");
+    let gridSize = Number(firstLineParts[0]); // Represents N from the problem
+    let iterations = Number(firstLineParts[1]); // Represents K from the problem
 
-    var totalItems = Number(receivedRows[0].split(" ")[0]);
-    var numIterations = Number(receivedRows[0].split(" ")[1]);
+    let currentValues = inputBuffer[1].split(" "); // Array 'A' from the problem, initially strings
+    let nextValues = new Array(gridSize); // Array 'B' from the problem
 
-    var currentValues = receivedRows[1].split(" ").map(val => parseInt(val, 10));
-    var nextValues = new Array(totalItems);
+    let outerLoopIdx = 0; // Counter for the main iteration loop (i)
+    let rowIdx = 0;       // Counter for the inner row loop (j)
+    let colIdx = 0;       // Counter for the innermost column loop (k)
+    let updateIdx = 0;    // Counter for updating the array (l)
 
-    var cycleCounter = 0;
-    var targetIndex = 0;
-    var sourceIndex = 0;
-    var updateIndex = 0;
-
-    // Loop through the specified number of cycles.
-    for (
-      cycleCounter = 0;
-      cycleCounter < numIterations;
-      cycleCounter++
-    ) {
-      // Calculate the next set of values based on the current state.
-      for (
-        targetIndex = 0;
-        targetIndex < totalItems;
-        targetIndex++
-      ) {
-        nextValues[targetIndex] = 0; // Initialize the temporary value for the current position.
-
-        // Iterate through all source elements to determine the new value for the target.
-        for (
-          sourceIndex = 0;
-          sourceIndex < totalItems;
-          sourceIndex++
-        ) {
-          // Apply the condition for incrementing the temporary value.
-          if (
-            currentValues[sourceIndex] >= Math.abs(targetIndex - sourceIndex)
-          ) {
-            nextValues[targetIndex]++;
-          }
+    // Execute the main algorithm for a specified number of iterations
+    for (outerLoopIdx = 0; outerLoopIdx < iterations; outerLoopIdx++) {
+        // Calculate the next state of values
+        for (rowIdx = 0; rowIdx < gridSize; rowIdx++) {
+            nextValues[rowIdx] = 0; // Initialize the current element of the next state array
+            // Sum contributions from all elements in the current state
+            for (colIdx = 0; colIdx < gridSize; colIdx++) {
+                // Check the condition based on absolute difference
+                if (currentValues[colIdx] >= Math.abs(rowIdx - colIdx)) {
+                    nextValues[rowIdx]++; // Increment if condition is met
+                }
+            }
         }
-      }
-
-      // Update the primary array with the newly calculated values.
-      for (
-        updateIndex = 0;
-        updateIndex < totalItems;
-        updateIndex++
-      ) {
-        currentValues[updateIndex] = nextValues[updateIndex];
-      }
+        // Update the current state with the newly calculated next state
+        for (updateIdx = 0; updateIdx < gridSize; updateIdx++) {
+            currentValues[updateIdx] = nextValues[updateIdx];
+        }
     }
-
-    // Display the final results for the initial segment of the array.
-    console.log(
-      currentValues[0] + ' ' + currentValues[1] + ' ' + currentValues[2] + ' ' + currentValues[3] + ' ' + currentValues[4]
-    );
-
-  }
-);
+    // Output the first five elements of the final array, separated by spaces
+    console.log(currentValues[0] + ' ' + currentValues[1] + ' ' + currentValues[2] + ' ' + currentValues[3] + ' ' + currentValues[4]);
+});

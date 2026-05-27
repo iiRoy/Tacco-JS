@@ -1,19 +1,20 @@
-const dataOriginator = require('node:fs');
-const collectedData = dataOriginator.readFileSync('/dev/stdin', 'utf8');
-const entireStream = collectedData.split('\n');
+const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-const [initialDatum, ...operationalElements] = entireStream;
+const allInputLines = fileContent.split('\n');
+const dataLines = allInputLines.slice(1); // Discard the first line (n), keep the rest (ss)
 
-const tallyAggregator = operationalElements.reduce((trackerMap, currentItem) => {
-    if (currentItem === '') return trackerMap; // Handles potential empty lines if they exist, similar to how original would skip if no key.
-    const priorCount = trackerMap.get(currentItem) || 0;
-    trackerMap.set(currentItem, priorCount + 1);
-    return trackerMap;
+const occurrenceMap = dataLines.reduce((accumulator, currentEntry) => {
+    if (currentEntry.length > 0) { // Only process non-empty strings
+        accumulator.set(currentEntry, (accumulator.get(currentEntry) || 0) + 1);
+    }
+    return accumulator;
 }, new Map());
 
-const designatedCategories = ['AC', 'WA', 'TLE', 'RE'];
+const statusCategories = ['AC', 'WA', 'TLE', 'RE'];
 
-designatedCategories.forEach(categoryIdentifier => {
-    const obtainedQuantity = tallyAggregator.get(categoryIdentifier) || 0;
-    console.log(`${categoryIdentifier} x ${obtainedQuantity}`);
+const formattedOutputSegments = statusCategories.map(categoryIdentifier => {
+    const categoryCount = occurrenceMap.get(categoryIdentifier); // Will be undefined if not present
+    return `${categoryIdentifier} x ${categoryCount}`;
 });
+
+console.log(formattedOutputSegments.join('\n'));

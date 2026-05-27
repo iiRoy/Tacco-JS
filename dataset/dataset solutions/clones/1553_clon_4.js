@@ -1,26 +1,23 @@
-function ProcessNumericalSeries(inputDataPayload) {
-    const dataRows = inputDataPayload.split('\n');
-    const numericStringRepresentation = dataRows[1];
+function Main(inputData) {
+    const [ , dataElementsString ] = inputData.split("\n");
 
-    const seriesOfBigIntegers = numericStringRepresentation.split(' ').map(strVal => BigInt(strVal));
+    const MODULUS_VALUE = BigInt(10 ** 9 + 7);
 
-    const CONSTANT_MODIFIER = 10n ** 9n + 7n;
+    const { totalSumOfValues, sumOfSquaredValues } = dataElementsString.split(' ').reduce(
+        (accumulator, currentStringValue) => {
+            const currentValue = BigInt(currentStringValue);
+            accumulator.totalSumOfValues += currentValue;
+            accumulator.sumOfSquaredValues += currentValue * currentValue;
+            return accumulator;
+        },
+        { totalSumOfValues: 0n, sumOfSquaredValues: 0n }
+    );
 
-    let totalSumOfElements = 0n;
-    let sumOfSquaredElements = 0n;
+    const sumOfAllProducts = (totalSumOfValues * totalSumOfValues - sumOfSquaredValues) / 2n;
 
-    seriesOfBigIntegers.forEach(currentElement => {
-        totalSumOfElements += currentElement;
-        sumOfSquaredElements += currentElement * currentElement;
-    });
+    const finalComputedValue = sumOfAllProducts % MODULUS_VALUE;
 
-    const squareOfTotalSum = totalSumOfElements * totalSumOfElements;
-    const differenceOfSums = squareOfTotalSum - sumOfSquaredElements;
-    const ultimateResultBeforeModulo = differenceOfSums / 2n;
-
-    const finalModulatedValue = ultimateResultBeforeModulo % CONSTANT_MODIFIER;
-
-    console.log(finalModulatedValue.toString());
+    console.log(finalComputedValue.toString());
 }
 
-ProcessNumericalSeries(require("fs").readFileSync("/dev/stdin", "utf8"));
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

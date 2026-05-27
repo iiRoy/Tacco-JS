@@ -1,37 +1,28 @@
-const acquireCriterion = (sourceBlob) => {
-  const firstSegment = sourceBlob.substring(0, sourceBlob.indexOf('\n'));
-  const numericString = firstSegment.split(' ')[0];
-  return parseInt(numericString, 10);
-};
+function processInputData(sourceContent) {
+  const parsedLines = sourceContent.split("\n").map(lineSegment => lineSegment.split(" "));
+  const targetDivisor = Number(parsedLines[0][0]);
 
-function* produceNumberedSeries() {
-  let currentPosition = 1;
-  let cumulativeSum = 0;
-  for (;;) {
-    cumulativeSum += currentPosition;
-    yield { ordinal: currentPosition, value: cumulativeSum };
-    currentPosition++;
+  function* produceTriangularNumbers() {
+    let currentSummation = 0;
+    let currentOrdinal = 0;
+    while (true) {
+      currentOrdinal++;
+      currentSummation += currentOrdinal;
+      yield { sum: currentSummation, ordinal: currentOrdinal };
+    }
   }
-}
 
-const identifyMatch = (inputData) => {
-  const requiredDivisor = acquireCriterion(inputData);
-  const sequenceGenerator = produceNumberedSeries();
-  let foundElement;
+  const triangularSequence = produceTriangularNumbers();
+  let resultingOrdinal;
 
-  while (true) {
-    const { ordinal, value } = sequenceGenerator.next().value;
-    if (value % requiredDivisor === 0) {
-      foundElement = ordinal;
+  for (const element of triangularSequence) {
+    if (element.sum % targetDivisor === 0) {
+      resultingOrdinal = element.ordinal;
       break;
     }
   }
-  return foundElement;
-};
 
-const initiateProcess = (rawTextContent) => {
-  const finalOutcome = identifyMatch(rawTextContent);
-  process.stdout.write(String(finalOutcome));
-};
+  console.log(resultingOrdinal);
+}
 
-initiateProcess(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

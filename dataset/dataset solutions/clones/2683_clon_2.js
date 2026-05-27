@@ -1,75 +1,44 @@
-// This JavaScript module performs a specific validation check on a sequence of numerical values.
-// The primary goal is to determine if a series of height adjustments is feasible under given constraints.
-function ExecuteVerification(  inputDataRows  )
-{
-  // First, extract the total number of items from the initial line of input.
-  // The base for parsing is decimal (10).
-  let elementCount =  Number.parseInt( inputDataRows[0],   10   );
+function ProcessInput(rawData) {
+  // Parse the first element of the input array to get the total count of elements.
+  const countElements = parseInt(rawData[0], 10);
 
-  /*
-   * Next, process the subsequent lines of the input array.
-   * These lines represent the individual height measurements.
-   * The .slice(1) method creates a new array starting from the second element,
-   * effectively skipping the count.
-   * The .map() function then converts each string measurement into an integer.
-   */
-  const heightMeasurements = inputDataRows.slice(1).map(  ( singleMeasurementString  ) =>
-    Number.parseInt(  singleMeasurementString,  10  )
-  );
+  // Extract the subsequent elements, starting from the second one,
+  // and convert each of them into an integer to form the heights array.
+  const heightsArray = rawData.slice(1).map(singleHeight => parseInt(singleHeight, 10));
 
-  // Initialize a variable to track the maximum allowed height at the current position.
-  // It starts with the value of the very first height measurement.
-  let currentPermissibleHeight = heightMeasurements[0];
+  // Initialize a variable to keep track of the current maximum allowed height,
+  // starting with the first height value from the processed array.
+  let currentMaxHeight = heightsArray[0];
 
-  // Commence an iterative process through the height measurements,
-  // beginning from the second element (index 1) up to, but not including, the total count.
-  for (  let loopIndex = 1; loopIndex < elementCount; loopIndex++  )
-  {
-    // Condition 1: Check if the present allowed height is exactly equal to the next measured height.
-    if (  currentPermissibleHeight === heightMeasurements[loopIndex]  )
-    {
-      // If they are identical, the allowed height remains unchanged for the next step.
-      currentPermissibleHeight = heightMeasurements[loopIndex];
+  // Iterate through the heights array, starting from the second element (index 1),
+  // up to (but not including) the total count of elements.
+  for (let idx = 1; idx < countElements; idx++) {
+    // Check if the current allowed maximum height is exactly equal to the current height in the array.
+    if (currentMaxHeight === heightsArray[idx]) {
+      // If they are equal, the allowed maximum height remains unchanged for the next iteration.
+      currentMaxHeight = heightsArray[idx];
     }
-    // Condition 2: If not identical, check if the present allowed height is less than or equal to
-    // the next measured height minus one. This represents a permissible downward adjustment.
-    else if (  currentPermissibleHeight <= heightMeasurements[loopIndex] - 1  )
-    {
-      // If this condition is met, the allowed height is adjusted to be one less than the current measurement.
-      currentPermissibleHeight = heightMeasurements[loopIndex] - 1;
+    // Otherwise, check if the current allowed maximum height is less than or equal to
+    // the current height in the array minus one.
+    else if (currentMaxHeight <= heightsArray[idx] - 1) {
+      // If this condition is met, update the allowed maximum height to be
+      // one less than the current height from the array.
+      currentMaxHeight = heightsArray[idx] - 1;
     }
-    // Condition 3: If neither of the above conditions is satisfied, it implies an invalid sequence.
-    else
-    {
-      // Output a 'Failure' message to the console and immediately exit the function,
-      // as the sequence is determined to be non-compliant.
-      return console.info('Failure');
+    // If neither of the above conditions is satisfied, it means a violation has occurred.
+    else {
+      // Output 'No' to the console and immediately exit the function.
+      return console.log('No');
     }
   }
 
-  // Should the loop complete without encountering any invalid conditions,
-  // it signifies that the entire sequence of height adjustments is permissible.
-  // In this case, a 'Success' message is outputted to the console.
-  console.info('Success');
+  // If the loop completes without any violations, it means the condition is met.
+  // Output 'Yes' to the console.
+  console.log('Yes');
 }
 
-
-// This section handles the program's entry point and input acquisition.
-
-// First, obtain a reference to the Node.js 'fs' (file system) module.
-const fileSystemModule = require("fs");
-
-// Read the content from standard input synchronously.
-// The content is expected to be UTF-8 encoded.
-// After reading, leading and trailing whitespace are removed from the entire string.
-// Finally, the string is split into an array of substrings using one or more
-// newline, carriage return, tab, or space characters as delimiters.
-const processedInputContent = fileSystemModule.readFileSync(
-  "/dev/stdin", // Specifies the standard input stream path in Unix-like systems.
-  "utf-8"       // Defines the character encoding for the input data.
-)
-.trim()         // Removes any whitespace characters from the start and end of the string.
-.split(  /[\n\r\t ]+/  ); // Splits the string into an array by any combination of whitespace.
-
-// Invoke the main processing function, passing the prepared array of input strings.
-ExecuteVerification(processedInputContent);
+// Read the input from standard input, decode it as UTF-8,
+// remove any leading or trailing whitespace, and then split the string
+// by newlines or spaces to create an array of strings.
+// Finally, pass this array to the ProcessInput function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8").trim().split(/\n|\s/));

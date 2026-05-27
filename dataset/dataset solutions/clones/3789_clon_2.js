@@ -1,24 +1,32 @@
-"use strict" ;
+"use strict";
 
-let sourceContent = require( "fs" ) . readFileSync( "/dev/stdin" ,  "utf8" ) ;
+let fileContent = require("fs").readFileSync("/dev/stdin", "utf8");
 
-let firstNumericLine = sourceContent.split("\n")[0] ;
+let firstLineValue = fileContent.split("\n")[0];
 
-let secondTextLine = sourceContent.split("\n")[1] ;
+let targetString = fileContent.split("\n")[1];
 
-let segmentPairs = [ ] ;
+let stringSplits = [];
 
-for ( let splitIndex = 1 ; splitIndex < firstNumericLine ; splitIndex ++ )
-{
-    segmentPairs . push ( [ secondTextLine . slice( 0 , splitIndex ) . split ( "" ) ,
-                             secondTextLine . slice( splitIndex ) . split ( "" ) ] ) ;
+for (let splitPoint = 1; splitPoint < firstLineValue; splitPoint++) {
+  stringSplits.push([
+    targetString.slice(0, splitPoint).split(""),
+    targetString.slice(splitPoint).split(""),
+  ]);
 }
 
-let maximumOverlap = segmentPairs . map ( currentTuple =>
-    currentTuple[0] . filter ( ( charItem , charPos , sourceChars ) => sourceChars . indexOf ( charItem ) === charPos )
-                   . reduce ( ( commonCount , checkChar ) =>
-                       currentTuple[1] . includes ( checkChar ) ? commonCount + 1 : commonCount , 0 )
-) . reduce ( ( runningMax , currentCount ) => runningMax > currentCount ? runningMax : currentCount ) ;
+let finalResult = stringSplits
+  .map((currentSplit) => {
+    return currentSplit[0]
+      .filter((uniqueChar, charIndex, allChars) => {
+        return allChars.indexOf(uniqueChar) === charIndex;
+      })
+      .reduce((commonCount, charToCheck) => {
+        return currentSplit[1].includes(charToCheck) ? commonCount + 1 : commonCount;
+      }, 0);
+  })
+  .reduce((highestCount, currentSplitCount) => {
+    return highestCount > currentSplitCount ? highestCount : currentSplitCount;
+  });
 
-
-console . log ( maximumOverlap ) ;
+console.log(finalResult);

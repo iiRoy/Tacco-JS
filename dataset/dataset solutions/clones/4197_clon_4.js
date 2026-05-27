@@ -1,121 +1,116 @@
-const acquireData = (() => {
-    class InputProcessor {
-        constructor(textInput) {
-            this.sourceLines = textInput.trim().split("\n");
-            this.currentLineIndex = 0;
-        }
-
-        extractItem(returnAsString = false) {
-            let lineContent = this.sourceLines[this.currentLineIndex];
-            if (typeof lineContent === "string") {
-                this.sourceLines[this.currentLineIndex] = lineContent.split(" ").reverse();
-            }
-            let retrievedItem = this.sourceLines[this.currentLineIndex].pop();
-            if (this.sourceLines[this.currentLineIndex].length === 0) {
-                this.currentLineIndex++;
-            }
-            return returnAsString ? retrievedItem : Number(retrievedItem);
-        }
-
-        retrieveLineItems(returnAsStrings = false) {
-            let items = this.sourceLines[this.currentLineIndex++].split(" ");
-            return returnAsStrings ? items : items.map(Number);
-        }
-
-        obtainMatrix(count, returnAsStrings = false) {
-            let segment = this.sourceLines.slice(this.currentLineIndex, this.currentLineIndex + count);
-            this.currentLineIndex += count;
-            let outcome = segment.map(line => line.split(" "));
-            return returnAsStrings ? outcome : outcome.map(row => row.map(Number));
-        }
-
-        fetchRows(count, returnAsStrings = false) {
-            let segment = this.sourceLines.slice(this.currentLineIndex, this.currentLineIndex + count);
-            this.currentLineIndex += count;
-            return returnAsStrings ? segment : segment.map(Number);
-        }
+class InputSourceProcessor {
+    constructor(sourceText) {
+        this.sourceLines = sourceText.trim().split("\n");
+        this.currentLineIndex = 0;
+        this.currentLineTokensForRightToLeftRead = [];
     }
 
-    return (rawData) => new InputProcessor(rawData);
-})();
-
-const source = acquireData(require("node:fs").readFileSync("/dev/stdin", "utf8"));
-
-const buildNestedArray = (initialValue, ...dimensions) => {
-    if (dimensions.length === 0) {
-        return initialValue;
-    }
-    const currentDimensionSize = dimensions[0];
-    const remainingDimensions = dimensions.slice(1);
-    return Array.from({ length: currentDimensionSize }, () =>
-        buildNestedArray(initialValue, ...remainingDimensions)
-    );
-};
-
-const calculateMaxConcurrency = () => {
-    const totalEvents = source.extractItem();
-    const totalChannels = source.extractItem();
-
-    const { perChannelEvents, overallMaxTime } = Array.from({ length: totalEvents }).reduce(
-        ({ perChannelEvents, overallMaxTime }, _, eventIdx) => {
-            const [startMoment, endMoment, channelId] = source.retrieveLineItems();
-            perChannelEvents[channelId - 1].push([startMoment, endMoment]);
-            return {
-                perChannelEvents: perChannelEvents,
-                overallMaxTime: Math.max(overallMaxTime, endMoment)
-            };
-        },
-        {
-            perChannelEvents: Array.from({ length: totalChannels }, () => []),
-            overallMaxTime: 0
+    readTokenRightToLeft(asString = false) {
+        if (this.currentLineTokensForRightToLeftRead.length === 0) {
+            if (this.currentLineIndex >= this.sourceLines.length) {
+                return undefined;
+            }
+            this.currentLineTokensForRightToLeftRead = this.sourceLines[this.currentLineIndex].split(" ").reverse();
         }
-    );
+        const tokenValue = this.currentLineTokensForRightToLeftRead.pop();
+        if (this.currentLineTokensForRightToLeftRead.length === 0) {
+            this.currentLineIndex++;
+        }
+        return asString ? tokenValue : +tokenValue;
+    }
 
-    const sweepLineEvents = perChannelEvents.flatMap(channelIntervals => {
-        const sortedIntervals = [...channelIntervals].sort((intA, intB) => intA[0] - intB[0]);
-
-        if (sortedIntervals.length === 0) {
+    readLineTokens(asString = false) {
+        if (this.currentLineIndex >= this.sourceLines.length) {
             return [];
         }
+        this.currentLineTokensForRightToLeftRead = [];
+        const lineContent = this.sourceLines[this.currentLineIndex++];
+        const tokens = lineContent.split(" ");
+        return asString ? tokens : tokens.map(Number);
+    }
 
-        const consolidatedIntervals = sortedIntervals.reduce((accumulator, currentInterval) => {
-            if (accumulator.length === 0) {
-                return [currentInterval];
-            }
-            const lastConsolidated = accumulator[accumulator.length - 1];
-            if (lastConsolidated[1] + 1 >= currentInterval[0]) {
-                lastConsolidated[1] = Math.max(lastConsolidated[1], currentInterval[1]);
-            } else {
-                accumulator.push(currentInterval);
-            }
-            return accumulator;
-        }, []);
-
-        return consolidatedIntervals.flatMap(([start, end]) => [
-            [start - 1, 1],
-            [end, -1]
-        ]);
-    });
-
-    sweepLineEvents.sort((eventA, eventB) => {
-        if (eventA[0] !== eventB[0]) {
-            return eventA[0] - eventB[0];
+    readTokenMatrix(count, asString = false) {
+        const resultMatrix = [];
+        for (let i = 0; i < count; i++) {
+            resultMatrix.push(this.readLineTokens(asString));
         }
-        return eventB[1] - eventA[1];
+        return resultMatrix;
+    }
+
+    readTokenVector(count, asString = false) {
+        const resultVector = [];
+        for (let i = 0; i < count; i++) {
+            if (this.currentLineIndex >= this.sourceLines.length) break;
+            const token = this.sourceLines[this.currentLineIndex++];
+            resultVector.push(asString ? token : +token);
+        }
+        return resultVector;
+    }
+}
+
+const acquireInputData = (sourceContent) => new InputSourceProcessor(sourceContent);
+
+function xArray(v){var a=arguments,l=a.length,r="Array(a["+--l+"]).fill(v)";while(--l)r="Array(a["+l+"]).fill(0).map(x=>"+r+")";return eval(r);}
+
+console.log(computeMaxConcurrentEvents());
+
+function computeMaxConcurrentEvents(){
+  const inputReader = acquireInputData(require("fs").readFileSync("/dev/stdin","utf8"));
+
+  const totalEntries = inputReader.readTokenRightToLeft();
+  const channelIdentifierCount = inputReader.readTokenRightToLeft();
+
+  const channelTimeSegments = new Map();
+
+  Array.from({ length: totalEntries }).forEach(() => {
+    const [segmentStart, segmentEnd, channelId] = inputReader.readLineTokens();
+    if (!channelTimeSegments.has(channelId)) {
+      channelTimeSegments.set(channelId, []);
+    }
+    channelTimeSegments.get(channelId).push([segmentStart, segmentEnd]);
+  });
+
+  const timelineEvents = [];
+
+  for (const [channelId, segments] of channelTimeSegments.entries()) {
+    segments.sort((s1, s2) => s1[0] - s2[0]);
+
+    const consolidatedSegments = segments.reduce((accumulator, currentSegment) => {
+      if (accumulator.length === 0) {
+        accumulator.push(currentSegment);
+      } else {
+        const lastConsolidated = accumulator[accumulator.length - 1];
+        if (currentSegment[0] <= lastConsolidated[1] + 1) {
+          lastConsolidated[1] = Math.max(lastConsolidated[1], currentSegment[1]);
+        } else {
+          accumulator.push(currentSegment);
+        }
+      }
+      return accumulator;
+    }, []);
+
+    consolidatedSegments.forEach(([startPoint, endPoint]) => {
+      timelineEvents.push({ time: startPoint - 1, type: 1 });
+      timelineEvents.push({ time: endPoint, type: -1 });
     });
+  }
 
-    const finalResult = sweepLineEvents.reduce(
-        ({ currentCount, highestCount }, [_, typeChange]) => {
-            const updatedCount = currentCount + typeChange;
-            return {
-                currentCount: updatedCount,
-                highestCount: Math.max(highestCount, updatedCount)
-            };
-        },
-        { currentCount: 0, highestCount: 0 }
-    );
+  timelineEvents.sort((eventA, eventB) => {
+    if (eventA.time !== eventB.time) {
+      return eventA.time - eventB.time;
+    }
+    return eventB.type - eventA.type;
+  });
 
-    return finalResult.highestCount;
-};
+  let currentActiveCount = 0;
+  let maxConcurrentCount = 0;
 
-console.log(calculateMaxConcurrency());
+  timelineEvents.forEach(event => {
+    currentActiveCount += event.type;
+    if (currentActiveCount > maxConcurrentCount) {
+      maxConcurrentCount = currentActiveCount;
+    }
+  });
+
+  return maxConcurrentCount;
+}

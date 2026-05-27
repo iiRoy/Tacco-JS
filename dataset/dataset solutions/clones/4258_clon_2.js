@@ -1,64 +1,83 @@
-let rawData = require("fileSystemModule").readDataFromFile("/dev/stdin", "utf8"); // Acquire all input data as a string
+var rawData = require("fs").readFileSync("/dev/stdin", "utf8");
 
-const dataRows = rawData.split('\n'); // Divide the raw input string into separate lines
-const arraySize = Number(dataRows[0]); // Extract the primary array size from the initial line
+// Split the raw input string into an array of lines
+var dataRows = rawData.split('\n');
 
-const stringArrayOne = dataRows[1].split(' '); // Parse the second line into a set of string tokens
-const stringArrayTwo = dataRows[2].split(' '); // Parse the third line into another set of string tokens
-const stringArrayThree = dataRows[3].split(' '); // Parse the fourth line into a final set of string tokens
+// Parse the first line to get the size of the arrays
+var arraySize = Number(dataRows[0]);
 
-let numericCollectionA = []; // Initialize an empty array to store the first sequence of numbers
-let numericCollectionB = []; // Initialize an empty array to store the second sequence of numbers
-let numericCollectionC = []; // Initialize an empty array to store the third sequence of numbers
+// Split the subsequent lines into string arrays
+var strArrA = dataRows[1].split(' ');
+var strArrB = dataRows[2].split(' ');
+var strArrC = dataRows[3].split(' ');
 
-// Populate the numeric arrays by converting string tokens to integers
-for (let idx = 0; idx < arraySize; idx++) {
-    numericCollectionA.push(parseInt(stringArrayOne[idx], 10)); // Convert and add to first collection
-    numericCollectionB.push(parseInt(stringArrayTwo[idx], 10)); // Convert and add to second collection
-    numericCollectionC.push(parseInt(stringArrayThree[idx], 10)); // Convert and add to third collection
+// Initialize numeric arrays
+var numArrA = [];
+var numArrB = [];
+var numArrC = [];
+
+// Populate the numeric arrays by converting string elements to numbers
+for (var idx = 0; idx < arraySize; idx++) {
+    numArrA.push(Number(strArrA[idx]));
+    numArrB.push(Number(strArrB[idx]));
+    numArrC.push(Number(strArrC[idx]));
 }
 
-const sortAscending = (val1, val2) => val1 - val2; // Helper function for sorting numbers in ascending order
+// Helper function for ascending sort
+function compareNumbers(val1, val2) {
+    return val1 - val2;
+}
 
-numericCollectionA.sort(sortAscending); // Arrange the first numeric collection in ascending sequence
-numericCollectionB.sort(sortAscending); // Arrange the second numeric collection in ascending sequence
-numericCollectionC.sort(sortAscending); // Arrange the third numeric collection in ascending sequence
+// Sort all three numeric arrays in ascending order
+numArrA.sort(compareNumbers);
+numArrB.sort(compareNumbers);
+numArrC.sort(compareNumbers);
 
-let totalCount = 0; // Accumulator for the final computed result
+// Initialize variables for the main calculation
+var totalResult = 0;
+var ptrA = 0; // Pointer for numArrA
+var ptrC = 0; // Pointer for numArrC
+var validCountA = 0; // Count of elements in A less than current B
+var validCountC = 0; // Count of elements in C greater than current B
 
-let indexForA = 0; // Pointer for traversing the first sorted array (numericCollectionA)
-let indexForC = 0; // Pointer for traversing the third sorted array (numericCollectionC)
+// Iterate through each element in numArrB
+for (var ptrB = 0; ptrB < arraySize; ptrB++) {
+    var currentBVal = numArrB[ptrB];
 
-let elementsLessThanB = 0; // Counter for elements in A that are less than the current B value
-let elementsGreaterThanB = 0; // Counter for elements in C that are less than or equal to the current B value
-
-// Iterate through each element of the second sorted array
-for (let indexB = 0; indexB < arraySize; indexB++) {
-    const currentBValue = numericCollectionB[indexB]; // Get the element from numericCollectionB for the current iteration
-
-    // Find count of elements in numericCollectionA that are strictly less than currentBValue
-    for (let iteratorA = indexForA; iteratorA < arraySize; iteratorA++) {
-        const currentAValue = numericCollectionA[iteratorA]; // Element from numericCollectionA
-        if (currentBValue <= currentAValue) { // If currentBValue is no longer strictly greater than currentAValue
-            break; // Stop, as numericCollectionA is sorted
+    // Find count of elements in numArrA that are strictly less than currentBVal
+    for (var innerIdx = ptrA; innerIdx < arraySize; innerIdx++) {
+        var currentAVal = numArrA[innerIdx];
+        if (currentBVal <= currentAVal) {
+            // If current B is less than or equal to current A,
+            // then all subsequent A values will also be greater or equal.
+            // So, we stop and update the pointer for A.
+            break;
         } else {
-            indexForA = iteratorA; // Advance the pointer for array A
-            elementsLessThanB = iteratorA + 1; // Update the count of elements in A that satisfy the condition
+            // currentAVal < currentBVal, so it's a valid 'a'
+            ptrA = innerIdx;
+            validCountA = innerIdx + 1;
         }
     }
 
-    // Find count of elements in numericCollectionC that are strictly greater than currentBValue
-    for (let iteratorC = indexForC; iteratorC < arraySize; iteratorC++) {
-        const currentCValue = numericCollectionC[iteratorC]; // Element from numericCollectionC
-        if (currentBValue < currentCValue) { // If currentBValue is strictly less than currentCValue
-            break; // Stop, as numericCollectionC is sorted
+    // Find count of elements in numArrC that are strictly greater than currentBVal
+    for (var innerIdx = ptrC; innerIdx < arraySize; innerIdx++) {
+        var currentCVal = numArrC[innerIdx];
+        if (currentBVal < currentCVal) {
+            // If current B is strictly less than current C,
+            // then all subsequent C values will also be greater.
+            // So, we stop and update the pointer for C.
+            break;
         } else {
-            indexForC = iteratorC; // Advance the pointer for array C
-            elementsGreaterThanB = iteratorC + 1; // Update the count of elements in C that satisfy the condition
+            // currentCVal <= currentBVal, so it's not a valid 'c' for this condition
+            ptrC = innerIdx;
+            validCountC = innerIdx + 1;
         }
     }
-    // Add to the total: (count of A < B) * (count of C > B)
-    totalCount += elementsLessThanB * (arraySize - elementsGreaterThanB);
+
+    // Add to the total result based on the counts found
+    // (N - validCountC) gives the number of elements in C that are strictly greater than currentBVal
+    totalResult += validCountA * (arraySize - validCountC);
 }
 
-console.log(totalCount); // Display the final aggregated total
+// Output the final calculated sum
+console.log(totalResult);

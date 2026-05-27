@@ -1,74 +1,68 @@
-const dataStream = require('fs').readFileSync('/dev/stdin', 'utf8');
-const parsedLines = dataStream.trim().split('\n');
+const sourceData = require('fs').readFileSync('/dev/stdin', 'utf8');
+const lines = sourceData.trim().split('\n');
+const nodeCount = Number(lines.shift());
+const adjacencyList = lines.map((lineStr) => lineStr.split(' ').map(Number));
 
-const totalNodes = Number(parsedLines.shift());
+const nodeRegistry = Array.from({ length: nodeCount }, (_, idx) => ({
+  identifier: idx,
+  childIdentifiers: [],
+  parentIdentifier: -1,
+  currentDepth: 0,
+  kind: '',
+}));
 
-const structureRecords = new Array(totalNodes);
-for (let i = 0; i < totalNodes; i++) {
-  structureRecords[i] = {
-    recordIndex: i,
-    predecessor: null,
-    descendantsList: [],
-    levelValue: -1,
-    category: ''
-  };
-}
-
-const linkageDetails = parsedLines.map((s) => s.split(' ').map(Number));
-
-linkageDetails.forEach((lineSegment) => {
-  const currentParentId = lineSegment[0];
-  const childIds = lineSegment.slice(2);
-
-  childIds.forEach((currentChildId) => {
-    structureRecords[currentChildId].predecessor = currentParentId;
-    structureRecords[currentParentId].descendantsList.push(currentChildId);
+adjacencyList.forEach(([parentNodeId, numChildren, ...childIdList]) => {
+  nodeRegistry[parentNodeId].childIdentifiers = childIdList;
+  childIdList.forEach((childId) => {
+    nodeRegistry[childId].parentIdentifier = parentNodeId;
   });
 });
 
-let initialNode = -1;
-for (let i = 0; i < totalNodes; i++) {
-  if (structureRecords[i].predecessor === null) {
-    initialNode = i;
+let rootNodeIdentifier = -1;
+for (let i = 0; i < nodeCount; i++) {
+  if (nodeRegistry[i].parentIdentifier === -1) {
+    rootNodeIdentifier = i;
     break;
   }
 }
 
-const workQueue = [];
-workQueue.push([initialNode, 0]);
+const processingQueue = [];
+processingQueue.push(rootNodeIdentifier);
+nodeRegistry[rootNodeIdentifier].currentDepth = 0;
 
-while (workQueue.length > 0) {
-  const [currentRecordIndex, currentLevel] = workQueue.shift();
-  structureRecords[currentRecordIndex].levelValue = currentLevel;
+let head = 0;
+while (head < processingQueue.length) {
+  const currentIdentifier = processingQueue[head++];
+  const currentDepthValue = nodeRegistry[currentIdentifier].currentDepth;
 
-  structureRecords[currentRecordIndex].descendantsList.forEach((descendantId) => {
-    workQueue.push([descendantId, currentLevel + 1]);
+  nodeRegistry[currentIdentifier].childIdentifiers.forEach((childId) => {
+    nodeRegistry[childId].currentDepth = currentDepthValue + 1;
+    processingQueue.push(childId);
   });
 }
 
-for (let i = 0; i < totalNodes; i++) {
-  const currentRecord = structureRecords[i];
-  if (currentRecord.predecessor === null) {
-    currentRecord.category = 'root';
-  } else if (currentRecord.descendantsList.length === 0) {
-    currentRecord.category = 'leaf';
+for (let i = 0; i < nodeCount; i++) {
+  const currentEntry = nodeRegistry[i];
+  if (currentEntry.parentIdentifier === -1) {
+    currentEntry.kind = 'root';
+  } else if (currentEntry.childIdentifiers.length > 0) {
+    currentEntry.kind = 'internal node';
   } else {
-    currentRecord.category = 'internal node';
+    currentEntry.kind = 'leaf';
   }
 }
 
-for (let i = 0; i < totalNodes; i++) {
-  const recordToRender = structureRecords[i];
-  const parentIdentifier = recordToRender.predecessor === null ? -1 : recordToRender.predecessor;
-  const descendantIdentifiers = recordToRender.descendantsList.join(', ');
+for (let i = 0; i < nodeCount; i++) {
+  const entry = nodeRegistry[i];
+  const parentOutput = 'parent = ' + (entry.parentIdentifier !== -1 ? entry.parentIdentifier : -1);
+  const depthOutput = 'depth = ' + entry.currentDepth;
+  const typeOutput = entry.kind;
+  const childrenOutput = '[' + entry.childIdentifiers.join(', ') + ']';
 
   console.log(
-    'node ' + recordToRender.recordIndex + ': ' +
-    [
-      'parent = ' + parentIdentifier,
-      'depth = ' + recordToRender.levelValue,
-      recordToRender.category,
-      '[' + descendantIdentifiers + ']',
-    ].join(', ')
+    'node ' +
+      entry.identifier +
+      ': ' +
+      [parentOutput, depthOutput, typeOutput, childrenOutput].join(', ')
   );
 }

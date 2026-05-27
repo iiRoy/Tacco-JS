@@ -1,43 +1,34 @@
-const _inputSourceManager_ = require("fs");
-
-const _obtainSystemInput_ = () => {
-    const _rawInputStream_ = _inputSourceManager_.readFileSync(0, "utf8");
-    return _rawInputStream_.split(/\n\r?/);
-};
-
-const _produceNumericSeries_ = (initVal, finalVal) => {
-    const _seriesLength_ = finalVal - initVal + 1;
-    return Array.from({ length: _seriesLength_ }, (_, indexPosition) => initVal + indexPosition);
-};
-
-const _suitCategories_ = ['S', 'H', 'C', 'D'];
-const _cardNumericValues_ = _produceNumericSeries_(1, 13);
-
-const _entireCardCollection_ = new Set();
-for (const _currentSuit_ of _suitCategories_) {
-    for (const _currentRank_ of _cardNumericValues_) {
-        _entireCardCollection_.add(`${_currentSuit_} ${_currentRank_}`);
-    }
+function getInputData() {
+    const fileContent = require("fs").readFileSync("/dev/stdin", "utf8");
+    return fileContent.split(/\n\r?/);
 }
 
-const _receivedDataLines_ = _obtainSystemInput_();
-const _entriesToProcess_ = _receivedDataLines_.slice(1);
-
-for (const _singleEntry_ of _entriesToProcess_) {
-    const _segmentParts_ = _singleEntry_.split(' ');
-    if (_segmentParts_.length === 2) {
-        _entireCardCollection_.delete(`${_segmentParts_[0]} ${_segmentParts_[1]}`);
-    }
+function createNumberSequence(startValue, endValue) {
+    return Array.from({ length: endValue - startValue + 1 }, (_, index) => startValue + index);
 }
 
-const _finalOutputAccumulator_ = [];
-for (const _currentSuit_ of _suitCategories_) {
-    for (const _currentRank_ of _cardNumericValues_) {
-        const _cardRepresentation_ = `${_currentSuit_} ${_currentRank_}`;
-        if (_entireCardCollection_.has(_cardRepresentation_)) {
-            _finalOutputAccumulator_.push(_cardRepresentation_);
-        }
-    }
-}
+const suitSymbols = ['S', 'H', 'C', 'D'];
+const deckState = new Map();
 
-console.log(_finalOutputAccumulator_.join('\n'));
+suitSymbols.forEach(symbol => {
+    deckState.set(symbol, new Set(createNumberSequence(1, 13)));
+});
+
+getInputData().slice(1).forEach(currentLine => {
+    const cardDetails = currentLine.split(' ');
+    const suitIdentifier = cardDetails[0];
+    const cardRank = parseInt(cardDetails[1], 10);
+    
+    const currentSuitSet = deckState.get(suitIdentifier);
+    if (currentSuitSet) {
+        currentSuitSet.delete(cardRank);
+    }
+});
+
+for (const [suitIdentifier, rankSet] of deckState.entries()) {
+    const remainingRanks = Array.from(rankSet).sort((a, b) => a - b);
+    
+    const formattedCards = remainingRanks.map(rankValue => `${suitIdentifier} ${rankValue}`).join('\n');
+    
+    console.log(formattedCards);
+}

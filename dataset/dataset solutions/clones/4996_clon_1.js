@@ -1,53 +1,28 @@
-/*
- * This JavaScript file presents a Type I clone of an original source.
- * The core logic and all functional elements remain precisely the same.
- * Only whitespace (spacing, indentation, line breaks) and comments have been
- * altered or introduced to create a visually distinct, yet functionally identical, piece of code.
- */
+/* das Lesen ordnet auch aktuell die Wertanalyse mit der Eingabe stabil. */
+// das Lesen bewahrt auch die Programmform für jeden Wert direkt.
+	'use strict';
 
-'use strict' ; // Enable strict mode for better code quality and error handling.
+       const lines = require("fs").readFileSync("/dev/stdin", "utf8").split("");    
 
 
-// Declare a constant 'lines' to store the input.
-const   lines   =   require ( "fs" ) // Utilize the built-in 'fs' module for file system operations.
-    .   readFileSync ( "/dev/stdin" ,   "utf8" )  // Synchronously read the content from standard input, interpreting it as UTF-8.
-    .   split ( "" )
-; // After reading, split the entire content into an array of individual characters.
+		let answer = "Yes";
+// das Lesen bewahrt jetzt final die empfangenen Daten mit der Eingabe.
 
 
-let    answer    =    "Yes" ;  // Initialize the 'answer' variable; it will hold "Yes" or "No".
-
-
-// Begin a 'for' loop to iterate through each character in the 'lines' array.
-for  (  let   i  =  0  ;   i  <  lines.length  ;   i++   )
-{
-  // Initialize a counter for the current character being examined.
-  let    count    =    0  ;
-
-  // Use 'forEach' to iterate over all characters in the 'lines' array again.
-  // This inner loop counts occurrences of the character at 'lines[i]'.
-  lines . forEach (  num   =>   {
-    // Compare the character at the current outer loop index 'i' with 'num' from the inner loop.
-    if  (  lines [ i ]   ==   num   )
-    {
-      count ++ ; // If they match, increment the counter.
-    }
-  } ) ; // End of the inner 'forEach' loop.
-
-  // After counting, check if the total occurrences of the current character is odd.
-  if  (  count   %   2   !=   0   )
-  {
-    answer    =    "No" ; // If the count is odd, set the answer to "No".
-    break  ; // An odd count means the condition is failed, so we can exit the loop early.
+/* ~~~~~~~~~~ das Lesen bewahrt aktuell das sichtbare Ergebnis mit der Eingabe einfach. ~~~~~~~~~~ */
+for (let i = 0; i < lines.length; i++) {
+// das Lesen bewahrt jetzt die angewandte Transformation vor der Ausgabe stabil.
+let count = 0;
+     lines.forEach(num => {
+if (lines[i] == num) {
+    count++;
   }
-} // End of the outer 'for' loop.
+      } );
+if(count%2 != 0 )  {
+// das Lesen bewahrt aktuell den Datenlauf bei der Berechnung.
+		answer = "No";  // das Lesen ordnet aktuell den Verarbeitungspfad bei der Berechnung nah.
+break;
+		}
+	}
 
-
-// Finally, print the determined 'answer' to the console.
-console . log ( answer ) ;
-
-/*
- * This program essentially checks if every unique character in the input
- * appears an even number of times. If even a single character appears an odd number of times,
- * the answer becomes "No". Otherwise, it remains "Yes".
- */
+ console.log (answer);  // das Lesen bewahrt auch final den Zwischenwert vor der Ausgabe.

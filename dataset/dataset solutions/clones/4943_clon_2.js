@@ -1,75 +1,43 @@
-/*
- * This module is responsible for setting up the standard input stream
- * to receive and process incoming textual data from the operating system.
- */
-process.stdin.resume( );
+process.stdin.resume();
 
-// Configure the encoding for the standard input stream to UTF-8.
-process.stdin.setEncoding( 'utf8' );
+process.stdin.setEncoding('utf8');
 
+// Declare a global variable to track the string length in the previous iteration.
+// This mimics the implicit global nature of 'ans' in the original code,
+// ensuring its state persists across multiple data chunk processing calls.
+let previousLength;
 
-// Establish an event listener for 'data' events on the standard input stream.
-// This callback function will be invoked whenever a new chunk of data is received.
-process.stdin.on (
-    'data',
-
-    function (   input_segment   )
-    {
-        // Before processing, leading and trailing whitespace is removed from the input segment.
-        // The cleaned segment is then passed to the primary data processing function.
-        processInputString(   input_segment.trim()   );
-    }
-
-);
-
+process.stdin.on('data', function(incomingData) {
+    // Trim whitespace from the received data and pass it to the main processing function.
+    processInput(incomingData.trim());
+});
 
 /**
- * Core function to meticulously process a provided string block.
- * The processing involves an iterative removal of specific predefined patterns
- * until the length of the string stabilizes, indicating no further patterns
- * can be removed.
- *
- * @param {string} input_data_block - The string data block to be processed.
+ * Processes an input string by repeatedly removing specific patterns
+ * until no more patterns can be found, then logs the final string length.
+ * @param {string} inputSegment The string segment to be processed.
  */
-function  processInputString (   input_data_block   )
-{
-    // A local variable to hold characters from the input block.
-    // In the original design, this variable was declared but its value was not
-    // subsequently used in the pattern reduction logic. It's retained for structural
-    // equivalence, but its direct utility in the reduction is minimal.
-    let  character_sequence  =  input_data_block.split(  ''  );
+function processInput(inputSegment){
+    // This variable is declared but not used in the original logic.
+    // It is kept here to maintain the exact structural equivalence.
+    let charArray = inputSegment.split("");
 
+    // Perform an initial replacement of the "ST" pattern.
+    inputSegment = inputSegment.replace("ST","");
 
-    // Initialize a variable to track the length of the string block from the previous iteration.
-    // This is critical for determining when the pattern removal process has converged.
-    let    previous_size    =  0;
-
-
-    // Execute an initial replacement for the "ST" pattern.
-    // This pre-loop replacement is consistent with the original logic's flow.
-    input_data_block  =  input_data_block.replace(  "ST"  ,  ""  );
-
-
-    // The primary processing loop. It continues as long as the length of the
-    // data block changes after an iteration of pattern removals.
-    while (   previous_size   !==   input_data_block.length   )
-    {
-        // Update the 'previous_size' with the current length before attempting
-        // new replacements. This enables comparison for the next loop iteration.
-        previous_size  =  input_data_block.length;
-
-
-        // Perform a series of pattern replacements.
-        // The 'replace' method in JavaScript only affects the first occurrence.
-        // The iterative nature of the 'while' loop ensures that all occurrences
-        // of these patterns are eventually removed if they appear.
-        input_data_block  =  input_data_block.replace(  "ST"  ,  ""  );
-        input_data_block  =  input_data_block.replace(  "SSTT"  ,  ""  );
-        input_data_block  =  input_data_block.replace(  "SSSTTT"  ,  ""  );
-        input_data_block  =  input_data_block.replace(  "SSSSTTTT"  ,  ""  );
+    // Continuously remove patterns until the string's length stabilizes,
+    // indicating that no more target patterns are present.
+    while(previousLength != inputSegment.length){
+        // Update the reference length for the current iteration.
+        previousLength = inputSegment.length;
+        
+        // Remove various "ST" related patterns.
+        inputSegment = inputSegment.replace("ST","");
+        inputSegment = inputSegment.replace("SSTT","");
+        inputSegment = inputSegment.replace("SSSTTT","");
+        inputSegment = inputSegment.replace("SSSSTTTT","");
     }
-
-    // After the loop terminates, the final length of the processed string block
-    // is outputted to the standard console.
-    console.log(   input_data_block.length   );
+    
+    // Output the final length of the modified string to the console.
+    console.log(inputSegment.length);
 }

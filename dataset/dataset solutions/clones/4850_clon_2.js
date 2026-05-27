@@ -1,48 +1,62 @@
-function PrimaryHandler (rawInputFeed) {
-    prepareDataSource(rawInputFeed);
+function ProcessInput(rawData) {
+    // Prepare the input data for parsing
+    initializeParser(rawData);
 
-    let firstValue = extractInteger();
-    let secondValue = extractInteger();
+    // Read two integer values from the processed input
+    let valA = readIntegerToken();
+    let valB = readIntegerToken();
 
-    displayLine( ( (firstValue * secondValue) / (firstValue + secondValue) ) . toFixed(10) );
+    // Calculate the result and format it to 10 decimal places
+    let calculationResult = ((valA * valB) / (valA + valB)).toFixed(10);
+
+    // Output the final result followed by a newline
+    printLine(calculationResult);
 }
 
-////////////////////////////////////////////////////////////////////////////////////
-let dataTokens,
-    tokenIndex;
+// Global variables for input parsing
+let parsedTokens;
+let tokenIndex;
 
-// Function to trigger primary processing in a browser environment for testing.
-function testRoutine() {
-    PrimaryHandler( document . querySelector("#input") . value );
+// Function for debugging purposes, typically run in a browser environment
+function runDebugger() {
+    // Retrieve input from a DOM element and pass it to the main processing function
+    ProcessInput(document.getElementById("input").value);
 }
 
-// Initializes the internal data structures from the provided raw string.
-function prepareDataSource (sourceData) {
-    // Normalize all newline characters to spaces.
-    dataTokens = sourceData . replace( /[\r\n]+/g , " " );
-    // Split the processed string into an array of individual data units.
-    dataTokens = dataTokens . split(" ");
-    // Reset the pointer for sequential token access.
+// Initializes the input parsing mechanism
+function initializeParser(rawData) {
+    // Replace all newline characters with spaces and then split the string by spaces
+    // This creates an array of string tokens
+    parsedTokens = rawData.replace(/\n/g, " ").split(" ");
+    // Reset the token index to the beginning of the array
     tokenIndex = 0;
 }
-// Functions for outputting information.
-const printOutput = (messageContent) => {
-    console.log(messageContent);
-};
-const displayLine = (lineContent) => {
-    console.log(lineContent + '\n');
+
+// Utility function to print a value to the console
+const printOutput = (dataToPrint) => {
+    console.log(dataToPrint);
 };
 
-// Functions for retrieving input data.
-const retrieveToken = () => {
-    return dataTokens[tokenIndex++];
-};
-const extractInteger = () => {
-    return Number.parseInt(retrieveToken(), 10);
-};
-const extractFloat = () => {
-    return Number.parseFloat( retrieveToken() );
+// Utility function to print a value to the console followed by a newline
+const printLine = (dataToPrint) => {
+    console.log(dataToPrint + "\n");
 };
 
-// * This section should not be modified (handles reading from standard input and invoking the main processing logic).
-PrimaryHandler( require('node:fs') . readFileSync('/dev/stdin', { encoding: 'utf8' }) );
+// Utility function to read the next string token from the input array
+const readStringToken = () => {
+    return parsedTokens[tokenIndex++];
+};
+
+// Utility function to read the next token as an integer
+const readIntegerToken = () => {
+    return parseInt(readStringToken(), 10);
+};
+
+// Utility function to read the next token as a floating-point number
+const readFloatToken = () => {
+    return parseFloat(readStringToken());
+};
+
+// This section handles standard input/output for Node.js environments.
+// It should not be modified.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

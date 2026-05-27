@@ -1,79 +1,94 @@
-const inputReader = require('readline').createInterface(
-  {
-    dataStream: process.stdin,
-    resultStream: process.stdout
-  }
-);
-let dataContainer;
-let receivedLines = [];
+var inputReader = require('readline').createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
 
-inputReader.on(
-  'line',
-  (currentLineText) => {
-    receivedLines.push(currentLineText);
-  }
-);
+var dataProcessor;
+var inputLines = [];
 
-inputReader.on(
-  'close',
-  () => {
-    dataContainer = initializeProcessor(receivedLines);
-    logDebug("---execution-begin---");
-    const startTimeStamp = new Date();
-    ExecutePrincipal();
-    const elapsedDuration = new Date() - startTimeStamp;
-    logDebug("---execution-end---");
-    logDebug("duration: " + (elapsedDuration) + "ms");
-  }
-);
+inputReader.on('line', function(currentLine) {
+  inputLines.push(currentLine);
+});
 
-function retrieveInteger() { return dataConverter(getNextItem(), 1); }
-function retrieveStringArray() { return dataConverter(getNextItem(), 2); }
-function retrieveIntArray() { return dataConverter(getNextItem(), 4); }
-function retrieveCharList() { return dataConverter(getNextItem(), 6); }
+inputReader.on('close', function() {
+  dataProcessor = initializeProcessor(inputLines);
+  logDebug("--- Program execution started ---");
+  var startTime = new Date();
+  executeMainLogic();
+  var elapsedTime = new Date() - startTime;
+  logDebug("--- Program execution finished ---");
+  logDebug("Execution duration: " + (elapsedTime) + " milliseconds");
+});
 
-function getNextItem() { return dataContainer.retrieveElement(); }
-function hasMoreElements() { return dataContainer.checkMoreElements(); }
+// Helper functions for data retrieval and type conversion
+function retrieveInteger() { return convertInput(fetchNextItem(), 1); }
+function retrieveStringArray() { return convertInput(fetchNextItem(), 2); }
+function retrieveIntegerArray() { return convertInput(fetchNextItem(), 4); }
+function retrieveCharacterArray() { return convertInput(fetchNextItem(), 6); }
 
+function fetchNextItem() { return dataProcessor.getNext(); }
+function hasMoreItems() { return dataProcessor.checkMore(); }
+
+/**
+ * Initializes a data processing object from an array of input strings.
+ * This object provides methods to sequentially access the input.
+ * @param {string[]} sourceData - An array of strings, typically from standard input.
+ * @returns {object} An object with methods to navigate the input.
+ */
 function initializeProcessor(sourceData) {
-  const processorInstance = {
-    sourceList: sourceData,
+  var processorInstance = {
+    dataList: sourceData,
     currentIndex: 0,
-    maximumCount: sourceData.length,
+    maximumIndex: sourceData.length,
 
-    checkMoreElements: function () {
-      return (this.currentIndex < this.maximumCount);
+    // Checks if there are more items available in the input list.
+    checkMore: function() {
+      return (this.currentIndex < this.maximumIndex);
     },
 
-    retrieveElement: function () {
-      if (!this.checkMoreElements()) {
-        throw "DataBoundaryExceeded: No further items available";
+    // Retrieves the next item from the input list and advances the pointer.
+    getNext: function() {
+      if (!this.checkMore()) {
+        throw new Error("InputBoundaryExceeded: No more data available for retrieval.");
       } else {
-        const currentElement = this.sourceList[this.currentIndex];
+        var fetchedValue = this.dataList[this.currentIndex];
         this.currentIndex++;
-        return currentElement;
+        return fetchedValue;
       }
     }
   };
   return processorInstance;
 }
 
-const systemConsole = console;
-function displayOutput(messageContent) { systemConsole.log(messageContent); }
+// Outputs a string to the standard console.
+function displayOutput(messageContent) {
+  console.log(messageContent);
+}
 
-const utilityModule = require('util');
-function logDebug(debugValue) { systemConsole.error("diagnostic:" + utilityModule.inspect(debugValue, false, null)); }
+// Outputs a debug message to the standard error console.
+function logDebug(messageContent) {
+  console.error("DEBUG_INFO: " + require("util").inspect(messageContent, false, null));
+}
 
-// Description of operation codes for data conversion.
-// Default/Error: Return input unchanged. Code 1: Convert to integer.
-// Code 2: Split by space into string array. Code 4: Split by space into number array.
-// Code 6: Split into character array. Code 7: Split into numeric character array.
-// Code 8: Join with space. Code 9: Join with newline. Code 0: Join without separator.
-function dataConverter(inputValue, operationCode) {
+/**
+ * Performs various type conversions or manipulations on input data.
+ * @param {*} inputValue - The value to be converted.
+ * @param {number} conversionType - An integer specifying the conversion operation.
+ *   1: Convert to integer.
+ *   2: Split string by space into an array of strings.
+ *   4: Split string by space into an array of numbers.
+ *   6: Split string by character into an array of strings.
+ *   7: Split string by character into an array of numbers.
+ *   8: Join array elements with spaces.
+ *   9: Join array elements with newlines.
+ *   0: Join array elements without any separator.
+ * @returns {*} The converted value or the original value if conversion fails or type is unknown.
+ */
+function convertInput(inputValue, conversionType) {
   try {
-    switch (operationCode) {
+    switch (conversionType) {
       case 1:
-        return Number.parseInt(inputValue);
+        return parseInt(inputValue);
       case 2:
         return inputValue.split(" ");
       case 4:
@@ -91,18 +106,23 @@ function dataConverter(inputValue, operationCode) {
       default:
         return inputValue;
     }
-  } catch (exceptionObject) {
-    return inputValue;
+  } catch (errorDetails) {
+    return inputValue; // Return original value on conversion error
   }
 }
 
-function ExecutePrincipal() {
-  const limitLength = retrieveInteger();
-  const sourceString = getNextItem();
+/**
+ * The primary logic of the program.
+ * Reads an integer and a string, then prints a truncated version of the string
+ * if its length exceeds the integer limit.
+ */
+function executeMainLogic() {
+  var limitValue = retrieveInteger();
+  var targetString = fetchNextItem();
 
-  if (sourceString.length <= limitLength) {
-    displayOutput(sourceString);
+  if (targetString.length <= limitValue) {
+    displayOutput(targetString);
   } else {
-    displayOutput(sourceString.slice(0, 7) + "...");
+    displayOutput(targetString.slice(0, 7) + "...");
   }
 }

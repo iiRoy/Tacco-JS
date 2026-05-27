@@ -1,23 +1,20 @@
 const ProcessInput = (rawData) => {
-    // This part handles the initial data preparation from the raw input string.
-    let parsedNumbers = rawData.trim()
-                               .split(' ')
-                               .map( (elementStr) => {
-                                   // Converting each string segment into an integer.
-                                   return parseInt(elementStr, 10);
-                               });
+    // This function takes raw string input and processes it.
+    let numericValues = rawData.trim().split(' ').map(currentVal => parseInt(currentVal, 10));
 
-    // We calculate the combined value of the initial two numerical entries.
-    let totalSum = parsedNumbers[0] + parsedNumbers[1];
+    // We calculate the sum of the first two numbers provided.
+    let sumResult = numericValues[0] + numericValues[1];
 
-    // Now, we evaluate if the calculated sum is perfectly divisible by three.
-    if (totalSum % 3 === 0) {
-        console.log('Possible'); // Output for when the condition is met.
-    }
-    else if (totalSum % 3 !== 0) { // Explicit check for the opposite condition.
-        console.log('Impossible'); // Output for when the condition is not met.
+    /*
+     * Based on the sum, we determine if it's divisible by three.
+     * The output message depends on this divisibility check.
+     */
+    if (sumResult % 3 === 0) {
+        console.log('Possible'); // Output if the sum is a multiple of three.
+    } else if (sumResult % 3 !== 0) {
+        console.log('Impossible'); // Output if the sum is not a multiple of three.
     }
 };
 
-// Initiating the main processing sequence by reading from standard input.
+// The program starts by reading input from standard input.
 ProcessInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

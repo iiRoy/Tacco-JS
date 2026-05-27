@@ -1,22 +1,25 @@
-const obtainSource = require('fs').readFileSync;
-const dataEncoding = 'utf8';
+function transformString(sourceText) {
+  const processedText = sourceText.trim();
+  const textUnits = [...processedText];
 
-const rawTransmission = obtainSource('/dev/stdin', dataEncoding);
+  const { initialSegment, finalSegment } = textUnits.reduce((accumulator, unitChar, unitIndex) => {
+    if (unitIndex < 3) {
+      accumulator.initialSegment.push(unitChar);
+    } else if (unitIndex >= 4 && unitIndex < 10) {
+      accumulator.finalSegment.push(unitChar);
+    }
+    return accumulator;
+  }, { initialSegment: [], finalSegment: [] });
 
-const cleanseSignal = (stream) => stream.replace(/^\s+|\s+$/g, '');
+  let constructedOutput = initialSegment.join('');
+  constructedOutput += '8';
+  constructedOutput += finalSegment.join('');
 
-const parseSegments = (payload) => {
-    const charSequence = payload.split('');
-    const primaryFragment = charSequence.slice(0, 3).join('');
-    const secondaryFragment = charSequence.slice(4, 10).join('');
-    const numericInsert = '8';
-    return [primaryFragment, numericInsert, secondaryFragment];
-};
+  return constructedOutput;
+}
 
-const compileOutput = (components) => components.join('');
+function executeTransformation(sourceData) {
+  console.log(transformString(sourceData));
+}
 
-const purifiedData = cleanseSignal(rawTransmission);
-const assembledParts = parseSegments(purifiedData);
-const finalProduct = compileOutput(assembledParts);
-
-process.stdout.write(finalProduct + '\n');
+executeTransformation(require('fs').readFileSync('/dev/stdin', 'utf8'));

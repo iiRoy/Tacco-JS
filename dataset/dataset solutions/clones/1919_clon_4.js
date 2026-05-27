@@ -1,19 +1,21 @@
-const processInputAndCompute = (dataSet) => {
-    const desiredBenchmark = Number(dataSet[0]);
+function processInput(inputLines) {
+  const targetAmount = parseInt(inputLines[0]);
 
-    const determineGrowthPeriods = (currentBalance, passedUnits) => {
-        if (currentBalance >= desiredBenchmark) {
-            return passedUnits;
-        } else {
-            const nextBalance = Math.floor(currentBalance * 1.01);
-            return determineGrowthPeriods(nextBalance, passedUnits + 1);
-        }
-    };
+  function determinePeriods(goalThreshold, currentHoldings, periodsPassed) {
+    if (currentHoldings >= goalThreshold) {
+      return periodsPassed;
+    }
 
-    const initialValue = 100;
-    const startingCount = 0;
-    const finalResult = determineGrowthPeriods(initialValue, startingCount);
-    console.log(finalResult);
-};
+    const nextHoldings = Math.floor(currentHoldings * 1.01);
+    return determinePeriods(goalThreshold, nextHoldings, periodsPassed + 1);
+  }
 
-processInputAndCompute(require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n"));
+  const initialCapital = 100;
+  const startingPeriods = 0;
+
+  const totalPeriods = determinePeriods(targetAmount, initialCapital, startingPeriods);
+
+  console.log(totalPeriods);
+}
+
+processInput(require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n"));

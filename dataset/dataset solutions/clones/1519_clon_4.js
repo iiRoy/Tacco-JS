@@ -1,79 +1,55 @@
-const processInput = (rawText) => {
-    const parts = rawText.split(" ").map(Number);
-    return {
-        limit: parts[0],
-        start: parts[1],
-        mod: parts[2]
-    };
-};
+const processSequenceSum = (inputString) => {
+    const [targetN, initialVal, modulusVal] = inputString.split(" ").map(Number);
 
-const identifyPattern = (beginValue, modulusConstraint) => {
-    let currentTerm = beginValue;
-    const recordedTerms = [];
-    const termPositions = new Map();
+    const sequenceValues = [];
+    const valueToFirstIndex = new Map();
 
-    let position = 0;
-    let cycleInitiationPosition = -1;
+    let currentTerm = initialVal;
+    let cycleStartIdx = -1;
+    let cycleEndIdx = -1;
 
-    while (position <= modulusConstraint) { // A cycle must be found within M+1 steps
-        if (termPositions.has(currentTerm)) {
-            cycleInitiationPosition = termPositions.get(currentTerm);
+    for (let k = 0; k < modulusVal; k++) {
+        if (valueToFirstIndex.has(currentTerm)) {
+            cycleStartIdx = valueToFirstIndex.get(currentTerm);
+            cycleEndIdx = k;
             break;
         }
-        termPositions.set(currentTerm, position);
-        recordedTerms.push(currentTerm);
-        currentTerm = (currentTerm * currentTerm) % modulusConstraint;
-        position++;
+
+        valueToFirstIndex.set(currentTerm, k);
+        sequenceValues.push(currentTerm);
+
+        currentTerm = (currentTerm * currentTerm) % modulusVal;
     }
 
-    const preLoopSegment = recordedTerms.slice(0, cycleInitiationPosition);
-    const loopSegment = recordedTerms.slice(cycleInitiationPosition);
+    let totalAccumulation = 0;
 
-    return {
-        initialSegment: preLoopSegment,
-        cyclicSegment: loopSegment,
-        initialLength: preLoopSegment.length,
-        cyclicLength: loopSegment.length
-    };
-};
-
-const aggregateSequenceValues = (paramObject) => {
-    const { totalElements, initialSegment, cyclicSegment, initialLength, cyclicLength } = paramObject;
-
-    let finalAccumulation = 0;
-
-    const effectiveInitialLength = Math.min(totalElements, initialLength);
-    finalAccumulation += initialSegment.slice(0, effectiveInitialLength).reduce((acc, val) => acc + val, 0);
-
-    const remainingElementsAfterPrefix = totalElements - initialLength;
-
-    if (remainingElementsAfterPrefix > 0 && cyclicLength > 0) {
-        const singleCycleSum = cyclicSegment.reduce((acc, val) => acc + val, 0);
-        
-        const fullCycleOccurrences = Math.floor(remainingElementsAfterPrefix / cyclicLength);
-        finalAccumulation += singleCycleSum * fullCycleOccurrences;
-
-        const partialCycleRemainder = remainingElementsAfterPrefix % cyclicLength;
-        finalAccumulation += cyclicSegment.slice(0, partialCycleRemainder).reduce((acc, val) => acc + val, 0);
+    if (targetN === 0) {
+        console.log(0);
+        return;
     }
-    
-    return finalAccumulation;
+
+    if (cycleStartIdx === -1) {
+        totalAccumulation = sequenceValues.slice(0, Math.min(targetN, sequenceValues.length)).reduce((sum, val) => sum + val, 0);
+    } else {
+        const cycleLength = cycleEndIdx - cycleStartIdx;
+
+        const preCycleElementsCount = Math.min(targetN, cycleStartIdx);
+        totalAccumulation += sequenceValues.slice(0, preCycleElementsCount).reduce((sum, val) => sum + val, 0);
+
+        if (targetN > cycleStartIdx) {
+            let remainingTermsToSum = targetN - cycleStartIdx;
+
+            const sumOfOneCycle = sequenceValues.slice(cycleStartIdx, cycleEndIdx).reduce((sum, val) => sum + val, 0);
+
+            const fullCyclesCount = Math.floor(remainingTermsToSum / cycleLength);
+            totalAccumulation += fullCyclesCount * sumOfOneCycle;
+            remainingTermsToSum -= fullCyclesCount * cycleLength;
+
+            totalAccumulation += sequenceValues.slice(cycleStartIdx, cycleStartIdx + remainingTermsToSum).reduce((sum, val) => sum + val, 0);
+        }
+    }
+
+    console.log(totalAccumulation);
 };
 
-const runCalculation = (inputData) => {
-    const { limit, start, mod } = processInput(inputData);
-    const patternDetails = identifyPattern(start, mod);
-
-    const fullCalculationParams = {
-        totalElements: limit,
-        initialSegment: patternDetails.initialSegment,
-        cyclicSegment: patternDetails.cyclicSegment,
-        initialLength: patternDetails.initialLength,
-        cyclicLength: patternDetails.cyclicLength
-    };
-
-    const overallSum = aggregateSequenceValues(fullCalculationParams);
-    console.log(overallSum);
-};
-
-runCalculation(require("fs").readFileSync("/dev/stdin", "utf8"));
+processSequenceSum(require("fs").readFileSync("/dev/stdin", "utf8"));

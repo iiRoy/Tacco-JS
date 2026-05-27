@@ -1,77 +1,120 @@
-function supplyChain(rawData) {
-    const streamOfLines = rawData.split('\n');
-    let currentLinePointer = 0;
-    let cachedTokens = [];
+function createInputProcessor(inputString) {
+    const lineSegments = inputString.split("\n");
+    let currentLineIndex = 0;
+    const lineTokenCaches = new Map();
 
-    const advanceLine = () => {
-        if (cachedTokens.length === 0 && currentLinePointer < streamOfLines.length) {
-            cachedTokens = streamOfLines[currentLinePointer].split(' ');
-            currentLinePointer++;
+    const extractAtom = (asString) => {
+        if (currentLineIndex >= lineSegments.length) {
+            return undefined;
         }
+
+        let currentLineTokens = lineTokenCaches.get(currentLineIndex);
+
+        if (!currentLineTokens) {
+            const lineContent = lineSegments[currentLineIndex];
+            currentLineTokens = lineContent.split(" ").reverse();
+            lineTokenCaches.set(currentLineIndex, currentLineTokens);
+        }
+
+        const value = currentLineTokens.pop();
+
+        if (currentLineTokens.length === 0) {
+            currentLineIndex++;
+            lineTokenCaches.delete(currentLineIndex - 1);
+        }
+
+        return asString ? value : Number(value);
     };
 
-    const acquireUnit = (isTextual) => {
-        advanceLine();
-        if (cachedTokens.length > 0) {
-            const item = cachedTokens.pop();
-            return isTextual ? item : Number(item);
+    const fetchLine = (asStrings) => {
+        if (currentLineIndex >= lineSegments.length) {
+            return undefined;
         }
-        return undefined;
+        lineTokenCaches.delete(currentLineIndex);
+        const lineContent = lineSegments[currentLineIndex++];
+        const tokens = lineContent.split(" ");
+        return asStrings ? tokens : tokens.map(Number);
     };
 
-    const obtainSequence = (asStrings) => {
-        if (currentLinePointer < streamOfLines.length) {
-            const lineData = streamOfLines[currentLinePointer];
-            currentLinePointer++;
-            return asStrings ? lineData.split(' ') : lineData.split(' ').map(Number);
-        }
-        return undefined;
-    };
-
-    const harvestBlock = (rowCount, asStrings) => {
-        const collectedRows = [];
-        for (let k = 0; k < rowCount; k++) {
-            if (currentLinePointer < streamOfLines.length) {
-                const lineContent = streamOfLines[currentLinePointer];
-                currentLinePointer++;
-                collectedRows.push(asStrings ? lineContent.split(' ') : lineContent.split(' ').map(Number));
-            } else {
-                break;
+    const acquireMultipleLines = (count, asStrings) => {
+        const startIndex = currentLineIndex;
+        currentLineIndex += count;
+        return Array.from({ length: count }, (_, k) => {
+            const lineIdx = startIndex + k;
+            if (lineIdx >= lineSegments.length) {
+                return undefined;
             }
-        }
-        return collectedRows;
+            lineTokenCaches.delete(lineIdx);
+            const lineContent = lineSegments[lineIdx];
+            const tokens = lineContent.split(" ");
+            return asStrings ? tokens : tokens.map(Number);
+        });
     };
 
     return {
-        acquireUnit,
-        obtainSequence,
-        harvestBlock,
+        extractAtom,
+        fetchLine,
+        acquireMultipleLines,
     };
 }
 
-function executeCalculation(inputProvider) {
-    const primaryCount = inputProvider.acquireUnit();
-    const initialList = inputProvider.obtainSequence();
-
-    if (primaryCount <= 2) {
-        return Math.max(...initialList);
+function findKthSmallest(collection, kTarget) {
+    if (kTarget < 0 || kTarget >= collection.length) {
+        throw new Error("Target index k is out of bounds.");
     }
 
-    const derivedPairs = initialList.slice(0, -1).map((element, index) =>
-        Math.max(element, initialList[index + 1])
-    );
-
-    const combinedList = [...initialList, ...derivedPairs];
-
-    const findMedianElement = (dataArray) => {
-        dataArray.sort((val1, val2) => val1 - val2);
-        return dataArray[Math.floor(dataArray.length / 2)];
+    const partitionElements = (items, low, high, pivotIdx) => {
+        const pivotVal = items[pivotIdx];
+        [items[pivotIdx], items[high]] = [items[high], items[pivotIdx]];
+        let storeIdx = low;
+        for (let j = low; j < high; j++) {
+            if (items[j] < pivotVal) {
+                [items[storeIdx], items[j]] = [items[j], items[storeIdx]];
+                storeIdx++;
+            }
+        }
+        [items[high], items[storeIdx]] = [items[storeIdx], items[high]];
+        return storeIdx;
     };
 
-    return findMedianElement(combinedList);
+    const recursiveSelect = (items, low, high, k) => {
+        if (low === high) {
+            return items[low];
+        }
+
+        let pivotIndex = low + Math.floor(Math.random() * (high - low + 1));
+        pivotIndex = partitionElements(items, low, high, pivotIndex);
+
+        if (k === pivotIndex) {
+            return items[k];
+        } else if (k < pivotIndex) {
+            return recursiveSelect(items, low, pivotIndex - 1, k);
+        } else {
+            return recursiveSelect(items, pivotIndex + 1, high, k);
+        }
+    };
+
+    return recursiveSelect(collection, 0, collection.length - 1, kTarget);
 }
 
-const inputSource = require("fs").readFileSync("/dev/stdin", "utf8");
-const dataProcessor = supplyChain(inputSource);
+function executeProblemSolution() {
+    const dataReader = createInputProcessor(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-console.log(executeCalculation(dataProcessor));
+    const elementCount = dataReader.extractAtom();
+    const initialSequence = dataReader.fetchLine();
+
+    if (elementCount <= 2) {
+        return Math.max(...initialSequence);
+    }
+
+    const derivedMaximums = Array.from({ length: elementCount - 1 }, (_, idx) =>
+        Math.max(initialSequence[idx], initialSequence[idx + 1])
+    );
+
+    const combinedSequence = [...initialSequence, ...derivedMaximums];
+
+    const medianIndex = Math.floor(combinedSequence.length / 2);
+    return findKthSmallest(combinedSequence, medianIndex);
+}
+
+console.log(executeProblemSolution());

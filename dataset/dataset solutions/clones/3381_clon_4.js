@@ -1,36 +1,44 @@
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
 
-const obtainPrimeFactors = (targetNumber, currentDivisor = 2, factorCounts = new Map()) => {
-    if (targetNumber <= 1) {
-        return factorCounts;
+const primeDecomposition = (inputNumber) => {
+    const factorCounts = new Map();
+    let currentNumber = inputNumber;
+    let divisorCandidate = 2;
+
+    while (divisorCandidate * divisorCandidate <= currentNumber) {
+        if (currentNumber % divisorCandidate === 0) {
+            let count = 0;
+            while (currentNumber % divisorCandidate === 0) {
+                currentNumber /= divisorCandidate;
+                count++;
+            }
+            factorCounts.set(divisorCandidate, count);
+        }
+        divisorCandidate++;
     }
 
-    if (currentDivisor * currentDivisor > targetNumber) {
-        factorCounts.set(targetNumber, (factorCounts.get(targetNumber) || 0) + 1);
-        return factorCounts;
+    if (currentNumber > 1) {
+        factorCounts.set(currentNumber, (factorCounts.get(currentNumber) || 0) + 1);
     }
 
-    if (targetNumber % currentDivisor === 0) {
-        factorCounts.set(currentDivisor, (factorCounts.get(currentDivisor) || 0) + 1);
-        return obtainPrimeFactors(targetNumber / currentDivisor, currentDivisor, factorCounts);
-    } else {
-        return obtainPrimeFactors(targetNumber, currentDivisor + 1, factorCounts);
-    }
+    return Array.from(factorCounts.entries()).map(([primeBase, exponentValue]) => ({
+        p: primeBase,
+        e: exponentValue
+    }));
 };
 
-const calculateProduct = (primeDistribution, requiredPower) => {
-    return Array.from(primeDistribution.entries()).reduce((productAccumulator, [basePrime, powerCount]) => {
-        const effectivePower = Math.floor(powerCount / requiredPower);
-        return productAccumulator * (basePrime ** effectivePower);
+const processInputAndCalculate = (inputString) => {
+    const [divisorCount, targetProduct] = inputString.split(" ").map(Number);
+
+    const decomposedFactors = primeDecomposition(targetProduct);
+
+    const finalProduct = decomposedFactors.reduce((accumulator, factorEntry) => {
+        const exponentQuotient = Math.floor(factorEntry.e / divisorCount);
+        return accumulator * (factorEntry.p ** exponentQuotient);
     }, 1);
+
+    console.log(finalProduct);
 };
 
-const processInputAndDisplayResult = (rawInputContent) => {
-    const [targetPower, baseValue] = rawInputContent.split(" ").map(Number);
-    const primeBreakdown = obtainPrimeFactors(baseValue);
-    const finalOutcome = calculateProduct(primeBreakdown, targetPower);
-    console.log(finalOutcome);
-};
-
-processInputAndDisplayResult(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInputAndCalculate(require("fs").readFileSync("/dev/stdin", "utf8"));

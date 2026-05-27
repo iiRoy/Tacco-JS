@@ -1,36 +1,72 @@
-function* obtainInputLines() {
-    const rawContent = require("fs").readFileSync("/dev/stdin", "utf8").trim();
-    const lines = rawContent.split("\n");
-    let lineIndex = 0;
-    while (lineIndex < lines.length) {
-        yield lines[lineIndex++];
+class InputHandler {
+  #sourceLines;
+  #currentLineIndex;
+
+  constructor() {
+    this.#sourceLines = require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");
+    this.#currentLineIndex = 0;
+  }
+
+  hasMoreLines() {
+    return this.#currentLineIndex < this.#sourceLines.length;
+  }
+
+  fetchNextLine() {
+    if (!this.hasMoreLines()) {
+      return "";
     }
+    return this.#sourceLines[this.#currentLineIndex++];
+  }
+
+  retrieveInteger() {
+    return Number.parseInt(this.fetchNextLine());
+  }
+
+  retrieveStringArray() {
+    return this.fetchNextLine().split(" ");
+  }
+
+  retrieveIntegerArray() {
+    return this.fetchNextLine().split(" ").map(Number);
+  }
+
+  retrieveCharacterArray() {
+    return this.fetchNextLine().split("");
+  }
 }
 
-function convertLineToNumericArray(inputLine) {
-    return inputLine.split(" ").map(Number);
+function displayResult(content) {
+  console.log(content);
 }
 
-function executeSolution() {
-    const inputSequencer = obtainInputLines();
-
-    const [circuitLength, numStops] = convertLineToNumericArray(inputSequencer.next().value);
-    const stopCoordinates = convertLineToNumericArray(inputSequencer.next().value);
-
-    const pathSegments = stopCoordinates.map((currentCoordinate, index, allCoordinates) => {
-        const nextCoordinate = allCoordinates[(index + 1) % allCoordinates.length];
-        if (index === allCoordinates.length - 1) {
-            return circuitLength - currentCoordinate + allCoordinates[0];
-        } else {
-            return nextCoordinate - currentCoordinate;
-        }
-    });
-
-    pathSegments.sort((first, second) => first - second);
-
-    const finalSum = pathSegments.slice(0, -1).reduce((totalAccumulator, segmentValue) => totalAccumulator + segmentValue, 0);
-
-    console.log(finalSum);
+function logDiagnostic(content) {
+  console.error(content);
 }
 
-executeSolution();
+function executeCalculation() {
+  const inputReader = new InputHandler();
+
+  const firstLineData = inputReader.retrieveIntegerArray();
+  const circumference = firstLineData[0];
+  const pointCount = firstLineData[1];
+
+  const pointPositions = inputReader.retrieveIntegerArray();
+
+  const allGaps = Array.from({ length: pointCount }, (_, idx) => {
+    if (idx < pointCount - 1) {
+      return pointPositions[idx + 1] - pointPositions[idx];
+    } else {
+      return (circumference - pointPositions[pointCount - 1]) + pointPositions[0];
+    }
+  });
+
+  logDiagnostic(allGaps);
+
+  const maximumGap = Math.max(...allGaps);
+
+  const finalSum = circumference - maximumGap;
+
+  displayResult(finalSum);
+}
+
+executeCalculation();

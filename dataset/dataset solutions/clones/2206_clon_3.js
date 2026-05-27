@@ -1,154 +1,113 @@
 "use strict";
 
-const parseNumericValue = (val) => {
-    const num = Number(val);
-    if (isNaN(num)) {
-        return 0;
-    }
-    return num;
-};
+const parseValues = (values, asString) =>
+  asString ? values : values.map((val) => +val);
 
-const InputStreamProcessorFactory = (function() {
-    class LineBasedInputSource {
-        constructor(rawInput) {
-            if (typeof rawInput !== 'string' || rawInput.trim() === '') {
-                this.sourceLines = ["0"];
-                this.currentLinePointer = 0;
-            } else {
-                this.sourceLines = rawInput.trim().split("\n");
-                this.currentLinePointer = 0;
-            }
-        }
+class InputParser {
+  constructor(sourceString) {
+    this.sourceLines = sourceString.trim().split("\n");
+    this.currentLineIndex = 0;
+  }
 
-        readToken(returnAsString = false) {
-            if (this.currentLinePointer >= this.sourceLines.length) {
-                return returnAsString ? "" : 0;
-            }
-
-            let currentLineData = this.sourceLines[this.currentLinePointer];
-            if (typeof currentLineData === "string") {
-                this.sourceLines[this.currentLinePointer] = currentLineData.split(" ").reverse();
-            }
-
-            let tokensOnLine = this.sourceLines[this.currentLinePointer];
-            let extractedToken = tokensOnLine.pop();
-
-            if (tokensOnLine.length === 0) {
-                this.currentLinePointer++;
-            }
-
-            return returnAsString ? extractedToken : parseNumericValue(extractedToken);
-        }
-
-        readLineAsTokens(returnAsStringArray = false) {
-            if (this.currentLinePointer >= this.sourceLines.length) {
-                return [];
-            }
-
-            const lineContent = this.sourceLines[this.currentLinePointer++];
-            const splitTokens = lineContent.split(" ");
-
-            return returnAsStringArray ? splitTokens : splitTokens.map(parseNumericValue);
-        }
-
-        readBlockAsMatrix(count, returnStringMatrix = false) {
-            if (count <= 0 || this.currentLinePointer >= this.sourceLines.length) {
-                return [];
-            }
-            
-            let actualCount = Math.min(count, this.sourceLines.length - this.currentLinePointer);
-
-            const linesToProcess = this.sourceLines.slice(this.currentLinePointer, this.currentLinePointer + actualCount);
-            this.currentLinePointer += actualCount;
-
-            const processedMatrix = linesToProcess.map(line => line.split(" "));
-
-            return returnStringMatrix ? processedMatrix : processedMatrix.map(row => row.map(parseNumericValue));
-        }
-
-        readLinesBlock(count, returnRawLines = false) {
-            if (count <= 0 || this.currentLinePointer >= this.sourceLines.length) {
-                return [];
-            }
-
-            let actualCount = Math.min(count, this.sourceLines.length - this.currentLinePointer);
-            
-            const linesExtracted = this.sourceLines.slice(this.currentLinePointer, this.currentLinePointer + actualCount);
-            this.currentLinePointer += actualCount;
-
-            return returnRawLines ? linesExtracted : linesExtracted.map(parseNumericValue);
-        }
+  readNextValue(asString = false) {
+    let currentLineData = this.sourceLines[this.currentLineIndex];
+    if (typeof currentLineData === "string") {
+      this.sourceLines[this.currentLineIndex] = currentLineData
+        .split(" ")
+        .reverse();
+      currentLineData = this.sourceLines[this.currentLineIndex];
     }
 
-    return (inputString) => new LineBasedInputSource(inputString);
-})();
-
-const readStandardInput = () => {
-    try {
-        const fs = require("fs");
-        return fs.readFileSync("/dev/stdin", "utf8");
-    } catch (error) {
-        return "";
+    const extractedValue = currentLineData.pop();
+    if (!currentLineData.length) {
+      this.currentLineIndex++;
     }
-};
+    return asString ? extractedValue : +extractedValue;
+  }
 
-const dataInputProcessor = InputStreamProcessorFactory(readStandardInput());
+  readLineValues(asString = false) {
+    const lineContent = this.sourceLines[this.currentLineIndex++].split(" ");
+    return parseValues(lineContent, asString);
+  }
 
-function processInputData() {
-    const totalItems = dataInputProcessor.readToken();
-    if (totalItems <= 0) {
-        return 0;
-    }
+  readMatrix(numRows, asString = false) {
+    const startIdx = this.currentLineIndex;
+    this.currentLineIndex += numRows;
+    const matrixRows = this.sourceLines
+      .slice(startIdx, this.currentLineIndex)
+      .map((line) => line.split(" "));
+    return asString
+      ? matrixRows
+      : matrixRows.map((row) => parseValues(row, asString));
+  }
 
-    const decayWindow = dataInputProcessor.readToken();
-    if (decayWindow < 0) {
-        return 0;
-    }
-
-    const impactFactor = dataInputProcessor.readToken();
-    if (impactFactor <= 0) {
-        return 0;
-    }
-
-    const sortedEventData = dataInputProcessor.readBlockAsMatrix(totalItems)
-                                         .sort((eventA, eventB) => eventA[0] - eventB[0]);
-
-    let cumulativeResult = 0;
-    const activeEventsQueue = [];
-    let queueReadPointer = 0;
-    let currentActiveEffectSum = 0;
-
-    for (let currentEventIndex = 0; currentEventIndex < totalItems; currentEventIndex++) {
-        const [eventTimestamp, eventInitialValue] = sortedEventData[currentEventIndex];
-
-        while (queueReadPointer < activeEventsQueue.length) {
-            const [eventExpirationTime, eventContribution] = activeEventsQueue[queueReadPointer];
-            if (eventExpirationTime < eventTimestamp - decayWindow) {
-                currentActiveEffectSum -= eventContribution * impactFactor;
-                queueReadPointer++;
-            } else {
-                break;
-            }
-        }
-
-        let requiredAmount = eventInitialValue - currentActiveEffectSum;
-
-        if (requiredAmount <= 0) {
-            continue;
-        }
-
-        const unitsNeeded = Math.ceil(requiredAmount / impactFactor);
-        
-        activeEventsQueue.push([eventTimestamp + decayWindow, unitsNeeded]);
-        
-        cumulativeResult += unitsNeeded;
-        currentActiveEffectSum += unitsNeeded * impactFactor;
-    }
-
-    return cumulativeResult;
+  readRows(numRows, asString = false) {
+    const startIdx = this.currentLineIndex;
+    this.currentLineIndex += numRows;
+    const rows = this.sourceLines.slice(startIdx, this.currentLineIndex);
+    return parseValues(rows, asString);
+  }
 }
 
-const programOutput = processInputData();
-if (programOutput !== undefined) {
-    console.log(programOutput);
+const InputParserFactory = (sourceString) => new InputParser(sourceString);
+
+const inputReader = InputParserFactory(
+  require("fs").readFileSync("/dev/stdin", "utf8")
+);
+
+function createMultiDimArray(initialValue) {
+  const dimensions = arguments;
+  let dimCount = dimensions.length;
+  let arrayCreationString = `Array(dimensions[${--dimCount}]).fill(0).map(x=>{return ${initialValue};})`;
+  while (--dimCount) {
+    arrayCreationString = `Array(dimensions[${dimCount}]).fill(0).map(x=>${arrayCreationString})`;
+  }
+  return eval(arrayCreationString);
+}
+
+const programResult = executeLogic();
+if (programResult !== undefined) console.log(programResult);
+
+function executeLogic() {
+  const numItems = inputReader.readNextValue();
+  const distanceThreshold = inputReader.readNextValue();
+  const attackPower = inputReader.readNextValue();
+  const itemData = inputReader.readMatrix(numItems).sort((a, b) => a[0] - b[0]);
+
+  let totalAttacks = 0;
+  const activeAttacks = [];
+  let activeAttacksStartIndex = 0;
+  let currentDamageEffect = 0;
+
+  const pruneExpiredAttacks = (currentItemPosition) => {
+    const expirationPoint = currentItemPosition - distanceThreshold;
+    while (activeAttacks.length > activeAttacksStartIndex) {
+      const [attackEndTime, numAttacks] = activeAttacks[activeAttacksStartIndex];
+      if (attackEndTime < expirationPoint) {
+        currentDamageEffect -= numAttacks * attackPower;
+        activeAttacksStartIndex++;
+      } else {
+        break;
+      }
+    }
+  };
+
+  for (let itemIndex = 0; itemIndex < numItems; itemIndex++) {
+    const [currentItemPosition, currentItemHealth] = itemData[itemIndex];
+
+    pruneExpiredAttacks(currentItemPosition);
+
+    let remainingHealth = currentItemHealth - currentDamageEffect;
+
+    if (remainingHealth <= 0) {
+      continue;
+    }
+
+    const attacksRequired = Math.ceil(remainingHealth / attackPower);
+
+    activeAttacks.push([currentItemPosition + distanceThreshold, attacksRequired]);
+    totalAttacks += attacksRequired;
+    currentDamageEffect += attacksRequired * attackPower;
+  }
+  return totalAttacks;
 }

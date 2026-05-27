@@ -1,150 +1,186 @@
-class PrioritizedQueue {
+let _inputLines = [];
+let _currentLineIndex = 0;
+let _currentTokenIndex = 0;
+
+function _readNextToken() {
+    while (_currentLineIndex < _inputLines.length) {
+        const currentLine = _inputLines[_currentLineIndex];
+        if (currentLine === null || currentLine.trim() === '') {
+            _currentLineIndex++;
+            _currentTokenIndex = 0;
+            continue;
+        }
+        const tokens = currentLine.split(/\s+/).filter(token => token.length > 0);
+        if (_currentTokenIndex < tokens.length) {
+            return tokens[_currentTokenIndex++];
+        }
+        _currentLineIndex++;
+        _currentTokenIndex = 0;
+    }
+    return null;
+}
+
+function _readNumber() {
+    return Number(_readNextToken());
+}
+
+function _readBigInt() {
+    return BigInt(_readNextToken());
+}
+
+class NodeMinHeap {
     constructor() {
-        this.heapContent = [];
+        this.heapElements = [];
     }
 
-    // Add an element to the queue with a given priority
-    addElement(elementValue, elementPriority) {
-        this.heapContent.push([elementPriority, elementValue]);
-        this.rebalanceUp(this.heapContent.length - 1);
+    _getParentIndex(idx) {
+        return Math.floor((idx - 1) / 2);
     }
 
-    // Remove and return the element with the lowest priority
-    extractLowest() {
-        if (this.isEmpty()) {
-            return undefined;
-        }
-        const lowestElement = this.heapContent[0];
-        const lastElement = this.heapContent.pop();
-        if (!this.isEmpty()) {
-            this.heapContent[0] = lastElement;
-            this.rebalanceDown(0);
-        }
-        return lowestElement;
+    _getLeftChildIndex(idx) {
+        return 2 * idx + 1;
     }
 
-    // Check if the queue contains any elements
-    isEmpty() {
-        return this.heapContent.length === 0;
+    _getRightChildIndex(idx) {
+        return 2 * idx + 2;
     }
 
-    rebalanceUp(idx) {
-        const currentElement = this.heapContent[idx];
-        while (idx > 0) {
-            const parentIndex = Math.floor((idx - 1) / 2);
-            const parentElement = this.heapContent[parentIndex];
-            if (currentElement[0] >= parentElement[0]) {
-                break;
-            }
-            this.heapContent[idx] = parentElement;
-            this.heapContent[parentIndex] = currentElement;
-            idx = parentIndex;
+    _swapElements(idx1, idx2) {
+        [this.heapElements[idx1], this.heapElements[idx2]] = [this.heapElements[idx2], this.heapElements[idx1]];
+    }
+
+    _heapifyUp(idx) {
+        let current = idx;
+        while (current > 0 && this.heapElements[current].distance < this.heapElements[this._getParentIndex(current)].distance) {
+            this._swapElements(current, this._getParentIndex(current));
+            current = this._getParentIndex(current);
         }
     }
 
-    rebalanceDown(idx) {
-        const totalElements = this.heapContent.length;
-        const currentElement = this.heapContent[idx];
+    _heapifyDown(idx) {
+        let current = idx;
+        const lastIndex = this.heapElements.length - 1;
+
         while (true) {
-            const leftChildIndex = 2 * idx + 1;
-            const rightChildIndex = 2 * idx + 2;
-            let smallestChildIndex = idx;
+            let leftChild = this._getLeftChildIndex(current);
+            let rightChild = this._getRightChildIndex(current);
+            let smallest = current;
 
-            if (leftChildIndex < totalElements && this.heapContent[leftChildIndex][0] < this.heapContent[smallestChildIndex][0]) {
-                smallestChildIndex = leftChildIndex;
-            }
-            if (rightChildIndex < totalElements && this.heapContent[rightChildIndex][0] < this.heapContent[smallestChildIndex][0]) {
-                smallestChildIndex = rightChildIndex;
+            if (leftChild <= lastIndex && this.heapElements[leftChild].distance < this.heapElements[smallest].distance) {
+                smallest = leftChild;
             }
 
-            if (smallestChildIndex === idx) {
+            if (rightChild <= lastIndex && this.heapElements[rightChild].distance < this.heapElements[smallest].distance) {
+                smallest = rightChild;
+            }
+
+            if (smallest !== current) {
+                this._swapElements(current, smallest);
+                current = smallest;
+            } else {
                 break;
             }
-
-            [this.heapContent[idx], this.heapContent[smallestChildIndex]] = [this.heapContent[smallestChildIndex], this.heapContent[idx]];
-            idx = smallestChildIndex;
         }
+    }
+
+    add(element) {
+        this.heapElements.push(element);
+        this._heapifyUp(this.heapElements.length - 1);
+    }
+
+    extractMinimum() {
+        if (this.isEmpty()) {
+            return null;
+        }
+        if (this.heapElements.length === 1) {
+            return this.heapElements.pop();
+        }
+
+        const minimum = this.heapElements[0];
+        this.heapElements[0] = this.heapElements.pop();
+        this._heapifyDown(0);
+        return minimum;
+    }
+
+    isEmpty() {
+        return this.heapElements.length === 0;
     }
 }
 
-// Function to compute shortest path costs using Dijkstra's algorithm
-function computePathScores(sourceOrigin, graphStructure, totalVertexes) {
-    const shortestPathScores = new Array(totalVertexes).fill(Number.MAX_SAFE_INTEGER);
-    const processingQueue = new PrioritizedQueue();
+function calculateShortestPaths(sourceNode, adjacencyList) {
+    const totalNodes = adjacencyList.length;
+    const pathDistances = Array.from({ length: totalNodes }, () => BigInt("1000000000000000000"));
+    const minPriorityQueue = new NodeMinHeap();
 
-    shortestPathScores[sourceOrigin] = 0;
-    processingQueue.addElement(sourceOrigin, 0);
+    pathDistances[sourceNode] = 0n;
+    minPriorityQueue.add({ distance: 0n, node: sourceNode });
 
-    while (!processingQueue.isEmpty()) {
-        const [currentScore, currentVertex] = processingQueue.extractLowest();
+    while (!minPriorityQueue.isEmpty()) {
+        const { distance: currentDist, node: currentNode } = minPriorityQueue.extractMinimum();
 
-        if (currentScore > shortestPathScores[currentVertex]) {
+        if (currentDist > pathDistances[currentNode]) {
             continue;
         }
 
-        for (const connectionDetails of graphStructure[currentVertex]) {
-            const { targetVertex, edgeWeight } = connectionDetails;
-            if (shortestPathScores[targetVertex] > currentScore + edgeWeight) {
-                shortestPathScores[targetVertex] = currentScore + edgeWeight;
-                processingQueue.addElement(targetVertex, shortestPathScores[targetVertex]);
+        for (const connectedEdge of adjacencyList[currentNode]) {
+            const neighborNode = connectedEdge.target;
+            const edgeCost = BigInt(connectedEdge.weight);
+
+            if (pathDistances[neighborNode] > currentDist + edgeCost) {
+                pathDistances[neighborNode] = currentDist + edgeCost;
+                minPriorityQueue.add({ distance: pathDistances[neighborNode], node: neighborNode });
             }
         }
     }
-    return shortestPathScores;
+    return pathDistances;
 }
 
-// Main execution block
-async function runApplication() {
-    const inputReader = require('readline').createInterface({
-        input: process.stdin,
-        output: process.stdout
-    });
+function mainProgram() {
+    _inputLines = require('fs').readFileSync('/dev/stdin', 'utf8').split('\n');
 
-    let collectedLines = [];
-    for await (const singleLine of inputReader) {
-        collectedLines.push(singleLine);
+    const numNodes = _readNumber();
+    const numEdges = _readNumber();
+    let startPointA = _readNumber();
+    let startPointB = _readNumber();
+
+    startPointA--;
+    startPointB--;
+
+    const graphForA = Array.from({ length: numNodes }, () => []);
+    const graphForB = Array.from({ length: numNodes }, () => []);
+
+    for (let i = 0; i < numEdges; i++) {
+        let nodeU = _readNumber();
+        let nodeV = _readNumber();
+        let costA = _readNumber();
+        let costB = _readNumber();
+
+        nodeU--;
+        nodeV--;
+
+        graphForA[nodeU].push({ target: nodeV, weight: costA });
+        graphForA[nodeV].push({ target: nodeU, weight: costA });
+
+        graphForB[nodeU].push({ target: nodeV, weight: costB });
+        graphForB[nodeV].push({ target: nodeU, weight: costB });
     }
 
-    let currentLineIndex = 0;
-    const extractNumericData = () => collectedLines[currentLineIndex++].split(' ').map(Number);
+    const distancesFromA = calculateShortestPaths(startPointA, graphForA);
+    const distancesFromB = calculateShortestPaths(startPointB, graphForB);
 
-    const [vertexQuantity, linkQuantity] = extractNumericData();
-    const [startPoint, endPoint] = extractNumericData().map(val => val - 1);
+    let currentMaxOverallValue = 0n;
+    const finalCalculatedResults = [];
+    const fixedLargeConstant = 1000000000000000n;
 
-    const firstNetworkLinks = Array.from({ length: vertexQuantity }, () => []);
-    const secondNetworkLinks = Array.from({ length: vertexQuantity }, () => []);
-
-    for (let iter = 0; iter < linkQuantity; iter++) {
-        const [vertexOne, vertexTwo] = extractNumericData().map(val => val - 1);
-        const [costFirst, costSecond] = extractNumericData();
-
-        firstNetworkLinks[vertexOne].push({ targetVertex: vertexTwo, edgeWeight: costFirst });
-        firstNetworkLinks[vertexTwo].push({ targetVertex: vertexOne, edgeWeight: costFirst });
-
-        secondNetworkLinks[vertexOne].push({ targetVertex: vertexTwo, edgeWeight: costSecond });
-        secondNetworkLinks[vertexTwo].push({ targetVertex: vertexOne, edgeWeight: costSecond });
+    for (let i = numNodes - 1; i >= 0; i--) {
+        const valueForCurrentNode = fixedLargeConstant - distancesFromA[i] - distancesFromB[i];
+        currentMaxOverallValue = BigInt.max(currentMaxOverallValue, valueForCurrentNode);
+        finalCalculatedResults.push(currentMaxOverallValue);
     }
 
-    const pathScoresFromStart = computePathScores(startPoint, firstNetworkLinks, vertexQuantity);
-    const pathScoresToEnd = computePathScores(endPoint, secondNetworkLinks, vertexQuantity);
-
-    const GLOBAL_MAX_REVENUE = 1000000000000000;
-
-    const temporaryProfitCalculations = new Array(vertexQuantity);
-    for (let nodeIdx = 0; nodeIdx < vertexQuantity; nodeIdx++) {
-        temporaryProfitCalculations[nodeIdx] = GLOBAL_MAX_REVENUE - pathScoresFromStart[nodeIdx] - pathScoresToEnd[nodeIdx];
-    }
-
-    const finalCalculatedProfits = new Array(vertexQuantity);
-    let cumulativeHighestProfit = 0;
-    for (let revIdx = vertexQuantity - 1; revIdx >= 0; revIdx--) {
-        cumulativeHighestProfit = Math.max(cumulativeHighestProfit, temporaryProfitCalculations[revIdx]);
-        finalCalculatedProfits[revIdx] = cumulativeHighestProfit;
-    }
-
-    for (let printIdx = 0; printIdx < vertexQuantity; printIdx++) {
-        console.log(finalCalculatedProfits[printIdx]);
+    for (let i = 0; i < finalCalculatedResults.length; i++) {
+        console.log(finalCalculatedResults[i].toString());
     }
 }
 
-runApplication();
+mainProgram();

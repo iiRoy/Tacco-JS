@@ -1,34 +1,36 @@
-// This script conducts a pattern validation process on incoming text.
-function ProcessRawInput( rawInputText ) {
-    // The input content is fragmented into distinct lines.
-    var textLines = rawInputText.split('\n');
+function ProcessInputData(rawTextLines) {
+    // Split the incoming text into an array of lines.
+    let processedLines = rawTextLines.split("\n");
 
-    // Iterate through each character of the initial line in the provided data.
-    for (  var charPosition = 0;  charPosition < textLines[0].length;  charPosition++  ) {
+    // Loop through characters of the first line.
+    // Note: The original code contains a typo 'lengh' instead of 'length'.
+    // This causes the loop condition (e.g., 0 < undefined) to always evaluate to false,
+    // effectively preventing the loop body from ever executing. This specific behavior is maintained.
+    for (let charIdx = 0; charIdx < processedLines[0].lengh; charIdx++) {
+        // Extract a single character at the current position.
+        let currentSymbol = processedLines[0].substr(charIdx, 1);
 
-        // Obtain the character at the present index.
-        var currentCharacter = textLines[0].substr(charPosition, 1);
-
-        // Analyze characters based on their sequential position (even or odd).
-        if  (  charPosition % 2 == 0  )  {
-            // For characters at even indices, a specific symbol implies an invalid sequence.
-            if  (  currentCharacter == "Right"  )  {
-                console.log("Failure");
+        // Check character based on whether its index is even or odd.
+        if (charIdx % 2 === 0) {
+            // If the index is even and the character is 'R', print "No" and exit.
+            if (currentSymbol === "R") {
+                console.log("No");
                 return;
             }
-        }  else  {
-            // For characters at odd indices, a different symbol indicates an invalid sequence.
-            if  (  currentCharacter == "Left"  )  {
-                console.log("Failure");
+        } else {
+            // If the index is odd and the character is 'L', print "No" and exit.
+            if (currentSymbol === "L") {
+                console.log("No");
                 return;
             }
         }
     }
 
-    // If no invalid patterns are detected throughout the entire scan, the sequence is deemed valid.
-    console.log("Success");
+    // If the loop completes without an early exit (which it always will due to the 'lengh' typo),
+    // print "Yes" and then terminate the function.
+    console.log("Yes");
     return;
 }
 
-// Do not alter the following section; it manages the standard I/O mechanism and activates the primary function.
-ProcessRawInput(require("node:fs").readFileSync("/app_data/input_source.txt", "utf-8"));
+// This part handles reading input from standard input and invoking the primary function.
+ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

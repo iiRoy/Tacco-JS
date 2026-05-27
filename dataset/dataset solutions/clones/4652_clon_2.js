@@ -1,62 +1,54 @@
 "use strict";
 
-// This function orchestrates the primary logic for processing the input data.
-const executeLogic = (rawData) => {
-    // Initial data preparation: remove leading/trailing spaces and split by newline characters.
-    rawData = rawData.trim().split("\n");
+// This function processes the input data to find common characters.
+const processInput = (inputData) => {
+  // Trim whitespace and split the input into lines.
+  inputData = inputData.trim().split("\n");
 
-    // Parse the first line to determine the total number of subsequent strings.
-    const lineCount = parseInt(rawData[0], 10);
+  // The first line contains the number of strings.
+  const numStrings = parseInt(inputData[0]);
 
-    // Extract the relevant input strings based on the 'lineCount'.
-    const stringCollection = rawData.slice(1, lineCount + 1);
+  // The subsequent lines are the strings to analyze.
+  const stringArray = inputData.slice(1, numStrings + 1);
 
-    // Define the complete set of lowercase English characters for analysis.
-    const letterPool = "abcdefghijklmnopqrstuvwxyz".split("");
+  // Define the set of characters to check (lowercase English alphabet).
+  const charSet = "abcdefghijklmnopqrstuvwxyz".split("");
 
-    // Initialize an array to store the characters that are common across all input strings.
-    let outputChars = [];
+  // Initialize an array to store the resulting common characters.
+  let resultChars = [];
 
-    // Begin iterating through each individual character in our predefined 'letterPool'.
-    for (let charIndex in letterPool) {
-        // Initialize a variable to track the minimum occurrences of the current character
-        // found across all strings. Start with a very high value.
-        let leastCount = Infinity;
+  // Iterate through each character in the defined character set.
+  for (let charIndex in charSet) {
+    // Initialize the minimum occurrences for the current character to a very large number.
+    let minOccurrences = Number.POSITIVE_INFINITY; // Using Number.POSITIVE_INFINITY for clarity
 
-        // For each character, iterate through every string in the 'stringCollection'.
-        for (let stringIndex in stringCollection) {
-            // Get the current string being examined from the collection.
-            let currentStr = stringCollection[stringIndex];
-            // Calculate the frequency of the current character within the current string.
-            let currentCount = currentStr.split("").filter(itemChar => itemChar === letterPool[charIndex]).length;
+    // Iterate through each string in the input array.
+    for (let strIndex in stringArray) {
+      // Count how many times the current character appears in the current string.
+      let currentCount = stringArray[strIndex]
+        .split("")
+        .filter((charToCheck) => charToCheck === charSet[charIndex]).length;
 
-            // Check if the current character was present in the current string.
-            if (currentCount > 0) {
-                // If present, update 'leastCount' to be the minimum of its current value
-                // and the 'currentCount' found in this string.
-                leastCount = Math.min(currentCount, leastCount);
-            } else {
-                // If the character is not found in even one string, its overall common
-                // occurrence across all strings is zero.
-                leastCount = 0;
-                // Since it's confirmed not to be common, we can stop checking other strings
-                // for this particular character.
-                break;
-            }
-        }
-
-        // After analyzing all strings for the current character, append it to the
-        // 'outputChars' array 'leastCount' times.
-        for (let repeatCount = 0; repeatCount < leastCount; repeatCount++) {
-            outputChars.push(letterPool[charIndex]);
-        }
+      // If the character is found in the current string, update the minimum occurrences.
+      if (currentCount > 0) {
+        minOccurrences = Math.min(currentCount, minOccurrences);
+      } else {
+        // If the character is not found in any string, its minimum occurrence is 0,
+        // so we can stop checking this character for other strings.
+        minOccurrences = 0;
+        break;
+      }
     }
 
-    // Finally, concatenate all the characters in 'outputChars' into a single string
-    // and print it to the console.
-    console.log(outputChars.join(""));
+    // Append the current character to the result array 'minOccurrences' times.
+    for (let k = 0; k < minOccurrences; k++) {
+      resultChars.push(charSet[charIndex]);
+    }
+  }
+
+  // Join the resulting characters and print the final string to the console.
+  console.log(resultChars.join(""));
 };
 
-// Read the entire content of standard input, decode it as UTF-8, and pass it
-// to our primary processing function 'executeLogic'.
-executeLogic(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// Read input from standard input and pass it to the processing function.
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

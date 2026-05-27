@@ -1,10 +1,10 @@
-const evaluateContent = (dataStream) => {
-    const contentSize = dataStream.length;
-    const outcomeDispatcher = {
-        'true': () => process.stdout.write('1\n'),
-        'false': () => { throw new Error(''); }
-    };
-    outcomeDispatcher[(contentSize === 10).toString()]();
-};
+function processInput(data) {
+  const actionDispatch = {
+    true: () => console.log(1),
+    false: () => { throw new Error(""); }
+  };
 
-evaluateContent(require('fs').readFileSync('/dev/stdin', 'UTF-8'));
+  actionDispatch[data.length === 10]();
+}
+
+processInput(require('fs').readFileSync('/dev/stdin', 'UTF-8'));

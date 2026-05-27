@@ -1,112 +1,90 @@
-/* This function processes a grid-based problem where '#' spreads to '.' cells.
-   It simulates a breadth-first search (BFS) propagation. */
-function ProcessGridData(rawInputStrings)
-{
+function ProcessInputGrid(inputData) {
+    // Split the entire input string into individual lines.
+    inputData = inputData.split("\n");
 
-    // Split the entire input string into an array of individual lines.
-    rawInputStrings = rawInputStrings.split("\n");
+    // Parse the grid dimensions from the first line.
+    var dimensionsString = inputData[0].split(" ");
+    var gridHeight = Number(dimensionsString[0]);
+    var gridWidth = Number(dimensionsString[1]);
 
-    // The first line contains grid dimensions (Height and Width).
-    var dimensionsString = rawInputStrings[0].split(" ");
+    // Initialize the queue for BFS and the 2D grid array.
+    // The queue will store coordinates of currently "black" cells.
+    var currentBlackCells = [];
+    // The gridState represents the map, initialized with placeholder values.
+    var gridState = Array(gridHeight).fill(null).map(() => Array(gridWidth).fill(null));
 
-    // Parse the height and width from the first line.
-    var gridHeight = parseInt(dimensionsString[0], 10);
-    var gridWidth  = parseInt(dimensionsString[1], 10);
-
-    // Initialize the BFS queue with starting '#' cells and a 2D array representing the grid state.
-    var propagationQueue = [];
-    var mapGrid = Array.from({ length: gridHeight }, () => Array(gridWidth).fill(0)); // Initialize 2D array
-
-    // Populate the grid and identify initial source points for propagation.
-    // Loop through each input line representing a row in the grid.
-    for ( let rowIdx = 1; rowIdx <= gridHeight; rowIdx++ )
-    {
-        // Convert the current input line string into an array of characters for the grid row.
-        mapGrid[rowIdx - 1] = rawInputStrings[rowIdx].split("");
-
-        // Iterate through each character in the current row.
-        for ( let colIdx = 0; colIdx < gridWidth; colIdx++ )
-        {
-            // If a cell contains a '#' character, it's an initial propagation source.
-            if (mapGrid[rowIdx - 1][colIdx] === "#") {
-                // Add its coordinates to the propagation queue.
-                propagationQueue.push([rowIdx - 1, colIdx]);
+    // Populate the gridState and initial black cells queue.
+    // Iterate through each row of the input, starting from the second line.
+    for (var rowIndex = 1; rowIndex <= gridHeight; rowIndex++) {
+        // Split the current line into characters to form a row in the grid.
+        gridState[rowIndex - 1] = inputData[rowIndex].split("");
+        // Iterate through each column in the current row.
+        for (var colIndex = 0; colIndex < gridWidth; colIndex++) {
+            // If a cell is marked as '#', it's an initial black cell.
+            if (gridState[rowIndex - 1][colIndex] === "#") {
+                // Add its coordinates to the queue.
+                currentBlackCells.push([rowIndex - 1, colIndex]);
             }
         }
     }
+    
+    // Initialize a counter for the number of spreading iterations.
+    var spreadIterations = 0;
 
-    // Initialize a counter for the number of propagation steps (time elapsed).
-    let propagationSteps = 0;
+    // Perform a Breadth-First Search (BFS) to simulate the spreading.
+    // Continue as long as there are black cells to process in the current iteration.
+    while (currentBlackCells.length > 0) {
+        // Increment the iteration counter for each "time step" of spreading.
+        spreadIterations++;
+        // Create a new queue for cells that will become black in the next iteration.
+        // This ensures all cells from the current iteration spread simultaneously.
+        var nextSpreadQueue = currentBlackCells.concat();
 
-    // Perform the propagation simulation using BFS.
-    // Continue as long as there are cells to propagate from.
-    while (propagationQueue.length > 0)
-    {
-        // Increment the step counter for each level of BFS.
-        propagationSteps++;
+        // Process all black cells from the current iteration.
+        for (var queuePointer = 0; queuePointer < currentBlackCells.length; queuePointer++) {
+            // Dequeue a cell's coordinates from the temporary queue.
+            var cellCoordinates = nextSpreadQueue.shift();
+            var currentYCoord = cellCoordinates[0];
+            var currentXCoord = cellCoordinates[1];
 
-        // Create a copy of the current queue to process cells for the current step.
-        let nextGenQueue = propagationQueue.slice(); // Using slice() instead of concat() for variety
+            // Check and spread to adjacent cells (up, down, left, right).
 
-        // Process all cells that were in the queue at the beginning of this step.
-        for ( let itemIdx = 0; itemIdx < propagationQueue.length; itemIdx++ )
-        {
-            // Get the coordinates of the current cell to process.
-            let currentCellCoords = nextGenQueue.shift();
-            let currentY = currentCellCoords[0];
-            let currentX = currentCellCoords[1];
-
-            // Check and propagate to adjacent cells (up, down, left, right).
-
-            // Check cell below current cell.
-            if ( (currentY + 1 >= 0) && (currentY + 1 < gridHeight) )
-            {
-                if (mapGrid[currentY + 1][currentX] === ".")
-                {
-                    mapGrid[currentY + 1][currentX] = "#"; // Mark as propagated
-                    nextGenQueue.push([currentY + 1, currentX]); // Add to next propagation wave
+            // Check the cell below (y + 1).
+            if (currentYCoord + 1 < gridHeight) { // Ensure within vertical bounds.
+                if (gridState[currentYCoord + 1][currentXCoord] === ".") { // If it's a white cell.
+                    gridState[currentYCoord + 1][currentXCoord] = "#"; // Turn it black.
+                    nextSpreadQueue.push([currentYCoord + 1, currentXCoord]); // Add to next iteration's queue.
                 }
             }
-
-            // Check cell above current cell.
-            if ( (currentY - 1 >= 0) && (currentY - 1 < gridHeight) )
-            {
-                if (mapGrid[currentY - 1][currentX] === ".")
-                {
-                    mapGrid[currentY - 1][currentX] = "#"; // Mark as propagated
-                    nextGenQueue.push([currentY - 1, currentX]); // Add to next propagation wave
+            // Check the cell above (y - 1).
+            if (currentYCoord - 1 >= 0) { // Ensure within vertical bounds.
+                if (gridState[currentYCoord - 1][currentXCoord] === ".") { // If it's a white cell.
+                    gridState[currentYCoord - 1][currentXCoord] = "#"; // Turn it black.
+                    nextSpreadQueue.push([currentYCoord - 1, currentXCoord]); // Add to next iteration's queue.
                 }
             }
-
-            // Check cell to the right of current cell.
-            if ( (currentX + 1 >= 0) && (currentX + 1 < gridWidth) )
-            {
-                if (mapGrid[currentY][currentX + 1] === ".")
-                {
-                    mapGrid[currentY][currentX + 1] = "#"; // Mark as propagated
-                    nextGenQueue.push([currentY, currentX + 1]); // Add to next propagation wave
+            // Check the cell to the right (x + 1).
+            if (currentXCoord + 1 < gridWidth) { // Ensure within horizontal bounds.
+                if (gridState[currentYCoord][currentXCoord + 1] === ".") { // If it's a white cell.
+                    gridState[currentYCoord][currentXCoord + 1] = "#"; // Turn it black.
+                    nextSpreadQueue.push([currentYCoord, currentXCoord + 1]); // Add to next iteration's queue.
                 }
             }
-
-            // Check cell to the left of current cell.
-            if ( (currentX - 1 >= 0) && (currentX - 1 < gridWidth) )
-            {
-                if (mapGrid[currentY][currentX - 1] === ".")
-                {
-                    mapGrid[currentY][currentX - 1] = "#"; // Mark as propagated
-                    nextGenQueue.push([currentY, currentX - 1]); // Add to next propagation wave
+            // Check the cell to the left (x - 1).
+            if (currentXCoord - 1 >= 0) { // Ensure within horizontal bounds.
+                if (gridState[currentYCoord][currentXCoord - 1] === ".") { // If it's a white cell.
+                    gridState[currentYCoord][currentXCoord - 1] = "#"; // Turn it black.
+                    nextSpreadQueue.push([currentYCoord, currentXCoord - 1]); // Add to next iteration's queue.
                 }
             }
         }
 
-        // Update the main queue for the next BFS level.
-        propagationQueue = nextGenQueue.slice();
+        // Update the main queue for the next iteration with the newly blackened cells.
+        currentBlackCells = nextSpreadQueue.concat();
     }
-
-    // The problem likely requires the number of steps *before* the last propagation,
-    // so we subtract one from the total propagation steps.
-    console.log(propagationSteps - 1);
+    // The problem asks for the number of minutes, which is one less than the total iterations.
+    console.log(spreadIterations - 1);
 }
 
 // Read input from standard input and pass it to the main processing function.
-ProcessGridData(require("fs").readFileSync("/dev/stdin", "utf8"));
+ProcessInputGrid(require("fs").readFileSync("/dev/stdin", "utf8"));

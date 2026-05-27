@@ -1,21 +1,31 @@
-function processInputData(incomingData) {
-    const dataSegments = incomingData.split('\n');
-    const targetSequence = dataSegments[1];
+function processDataEntry(inputContent) {
+    const contentLines = inputContent.split('\n');
+    const firstLineValue = contentLines[0];
+    const targetString = contentLines[1];
 
-    const redUnitMatches = targetSequence.match(/R/g);
-    const redUnitCount = redUnitMatches ? redUnitMatches.length : 0;
+    const characterFrequency = Array.from(targetString).reduce((accumulatorMap, charKey) => {
+        accumulatorMap[charKey] = (accumulatorMap[charKey] || 0) + 1;
+        return accumulatorMap;
+    }, {});
 
-    const sequenceLength = targetSequence.length;
-    const nonRedUnitCount = sequenceLength - redUnitCount;
+    const redSymbolCount = characterFrequency['R'] || 0;
+    const blueSymbolCount = characterFrequency['B'] || 0;
 
-    const outcomeCondition = redUnitCount > nonRedUnitCount;
+    let comparisonOperandA;
 
-    const verdictMap = new Map();
-    verdictMap.set(true, 'Yes');
-    verdictMap.set(false, 'No');
+    const decisionDispatch = {
+        true: "Yes",
+        false: "No"
+    };
 
-    const finalOutcome = verdictMap.get(outcomeCondition);
+    const finalOutcomeKey = String(comparisonOperandA > blueSymbolCount);
+    const finalOutput = decisionDispatch[finalOutcomeKey];
 
-    console.log(finalOutcome);
+    console.log('%s', finalOutput);
 }
-processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+function executeMain(inputSource) {
+    processDataEntry(inputSource);
+}
+
+executeMain(require("fs").readFileSync("/dev/stdin", "utf8"));

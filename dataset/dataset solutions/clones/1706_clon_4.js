@@ -1,46 +1,41 @@
-const systemInterface = require('readline').createInterface({
-  input: process.stdin,
-  output: process.stdout
-});
+"use strict";
 
-let inputLines = [];
-systemInterface.on('line', (line) => {
-  inputLines.push(line);
-});
+const acquireNumericStream = (sourcePath) => {
+    const rawData = require("fs").readFileSync(sourcePath, "utf8");
+    const tokenArray = rawData.split(/ |\n/);
+    let currentTokenIndex = 0;
 
-systemInterface.on('close', () => {
-  executeCoreLogic();
-});
+    return {
+        retrieveNextValue: () => {
+            return Number(tokenArray[currentTokenIndex++]);
+        }
+    };
+};
 
-let dataIndex = 0;
-function retrieveNextValues() {
-  const parts = inputLines[dataIndex].split(' ').map(Number);
-  dataIndex++;
-  return parts;
+function performCoreComputation() {
+    const dataProvider = acquireNumericStream("/dev/stdin");
+
+    const primaryCount = dataProvider.retrieveNextValue();
+
+    const cumulativeSumStart = Array.from({ length: primaryCount }, (_, index) => index + 1)
+                                    .reduce((totalAccumulator, currentK) => {
+                                        const triangularNumber = currentK * (currentK + 1) / 2;
+                                        return totalAccumulator + triangularNumber;
+                                    }, 0);
+
+    const finalAdjustedSum = Array.from({ length: primaryCount - 1 }).reduce((currentRunningTotal) => {
+        let firstOperand = dataProvider.retrieveNextValue();
+        let secondOperand = dataProvider.retrieveNextValue();
+
+        [firstOperand, secondOperand] = firstOperand > secondOperand ? [secondOperand, firstOperand] : [firstOperand, secondOperand];
+
+        return currentRunningTotal - (firstOperand * (primaryCount - secondOperand + 1));
+    }, cumulativeSumStart);
+
+    return finalAdjustedSum;
 }
 
-function executeCoreLogic() {
-  const [totalItems] = retrieveNextValues();
-  let accumulatedValue = calculateRecursiveSum(totalItems);
-
-  for (let iterationCount = 0; iterationCount < totalItems - 1; iterationCount++) {
-    let [startPoint, endPoint] = retrieveNextValues();
-    
-    if (startPoint > endPoint) {
-      let exchangeBuffer = startPoint;
-      startPoint = endPoint;
-      endPoint = exchangeBuffer;
-    }
-
-    accumulatedValue -= startPoint * (totalItems - endPoint + 1);
-  }
-
-  process.stdout.write(String(accumulatedValue));
-}
-
-function calculateRecursiveSum(upperLimit) {
-  if (upperLimit === 0) {
-    return 0;
-  }
-  return calculateRecursiveSum(upperLimit - 1) + (upperLimit * (upperLimit + 1)) / 2;
+const programResult = performCoreComputation();
+if (programResult !== undefined) {
+    console.log(String(programResult));
 }

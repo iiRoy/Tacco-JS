@@ -1,30 +1,28 @@
-const sourceAcquisitionModule = globalThis.require('node:fs');
-const contentRetriever = sourceAcquisitionModule.readFileSync;
+'use strict';
 
-const processNumericalSequence = (sequenceOfNumbers) => {
-    const [alpha, beta, gamma, delta, epsilon] = sequenceOfNumbers;
-
-    const conditionResult = (delta + gamma > beta);
-
-    const resultMapping = new Map();
-    resultMapping.set(true, 'No');
-    resultMapping.set(false, 'Yes');
-
-    return resultMapping.get(conditionResult);
+const processInputData = (sourceContent) => {
+  const firstLine = sourceContent.toString().split('\n')[0];
+  const numericalTokens = firstLine.split(' ').map(Number);
+  return {
+    width: numericalTokens[0],
+    height: numericalTokens[1],
+    centerX: numericalTokens[2],
+    centerY: numericalTokens[3],
+    radius: numericalTokens[4]
+  };
 };
 
-const executeFlow = (inputPath) => {
-    const rawInputContent = contentRetriever(inputPath, 'utf8');
-    const firstLineContent = rawInputContent.split('\n')[0];
-    const numericStrings = firstLineContent.split(' ');
-    
-    const parsedNumerics = numericStrings.reduce((accumulator, currentString) => {
-        accumulator.push(Number(currentString));
-        return accumulator;
-    }, []);
-
-    const finalResult = processNumericalSequence(parsedNumerics);
-    globalThis.process.stdout.write(finalResult + '\n');
+const evaluateCondition = (geometry) => {
+  const outcomeMap = new Map([
+    [true, 'No'],
+    [false, 'Yes']
+  ]);
+  return outcomeMap.get(geometry.centerY + geometry.centerX > geometry.height);
 };
 
-executeFlow('/dev/stdin');
+const executeProgram = (inputProvider) => {
+  const parsedGeometry = processInputData(inputProvider);
+  console.log(evaluateCondition(parsedGeometry));
+};
+
+executeProgram(require('fs').readFileSync('/dev/stdin', 'utf8'));

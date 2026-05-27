@@ -1,56 +1,98 @@
-const processCityData = (rawGeoInput) => {
-  const parsedGeoData = rawGeoInput .split ( /\n/ ) .map ( entry => entry .split (/\s/) .map ( val => +val ) ) ;
-  let totalLocations = parsedGeoData [ 0 ] [ 0 ] ;
-  const locationCoordinates = parsedGeoData .slice ( 1 , totalLocations + 1 ) ;
-  let pathLengthsResult = [ ] ;
+// This script processes input data to analyze reachability between various points.
+const processInput = (rawData) => {
+  // First, parse the incoming raw string data.
+  // It's split by newlines, then each line by spaces, and all values are converted to numbers.
+  let parsedData = rawData.split(/\n/).map(lineContent => lineContent.split(/\s/).map(strVal => +strVal));
 
-  // Iterate through each location to find paths starting from it
-  for ( let startNodeIndex = 0 ; startNodeIndex < totalLocations ; startNodeIndex ++ ) {
-    let currentTraversalPath = [ ] ;
-    currentTraversalPath [ 0 ] = startNodeIndex ; // Initialize path with the starting node
+  // The initial element of the first line specifies the total count of entities (cities).
+  let entityCount = parsedData[0x0][0x0];
 
-    // Explore nodes reachable from the current path
-    for ( let pathStepPointer in currentTraversalPath ) {
-        appendUniqueElements (
-            currentTraversalPath ,
-            discoverRelatedNodes ( currentTraversalPath [ pathStepPointer ] , locationCoordinates )
-        ) ;
+  // Extract the coordinate data for each entity.
+  // This data spans from the second line up to the (entityCount + 1)-th line.
+  let entityCoordinates = parsedData.slice(0x1, entityCount + 0x1);
+
+  // Initialize an array to store the computed lengths of reachable paths for each starting entity.
+  let pathLengths = [];
+
+  // Iterate through each entity, treating it as a potential starting point for reachability analysis.
+  for (let initialEntityIndex = 0x0; initialEntityIndex < entityCount; initialEntityIndex++) {
+    // For each starting entity, create a dynamic list to track all entities reachable from it.
+    // This list will expand as new connections are discovered.
+    let discoveredEntities = [];
+    discoveredEntities[0x0] = initialEntityIndex; // The starting entity is always reachable from itself.
+
+    // Employ a breadth-first-search-like mechanism.
+    // The 'for...in' loop iterates over the indices of 'discoveredEntities'.
+    // Crucially, 'discoveredEntities' can be modified (grow) during this iteration,
+    // allowing newly added entities to be processed in subsequent loop cycles.
+    for (let currentEntityKey in discoveredEntities) {
+      // Determine all entities that are "comparable" to the entity currently being examined.
+      // Comparability is defined by a specific coordinate relationship (dominance).
+      let newlyConnected = findComparableEntities(discoveredEntities[currentEntityKey], entityCoordinates);
+
+      // Integrate these newly found comparable entities into our 'discoveredEntities' list.
+      // The 'addUniqueEntities' function ensures that no duplicates are added.
+      addUniqueEntities(discoveredEntities, newlyConnected);
     }
 
-    // Store the total number of unique nodes found for this starting point
-    pathLengthsResult [ startNodeIndex ] = currentTraversalPath .length ;
+    // After exploring all reachable entities from the 'initialEntityIndex',
+    // record the total number of unique entities found.
+    pathLengths[initialEntityIndex] = discoveredEntities.length;
   }
-  // Output the calculated path lengths, each on a new line
-  console.log ( pathLengthsResult .join ( "\n" ) ) ;
+
+  // Output the final results. Each calculated path length is printed on a new line.
+  console.log(pathLengths.join("\n"));
 };
 
-// Execute the main processing function with data from standard input
-processCityData ( require ( 'fs' ) .readFileSync ( '/dev/stdin' , 'utf8' ) ) ;
+// Invoke the primary processing function.
+// It reads the entire content of '/dev/stdin' as a UTF-8 string to serve as input.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));
 
+/**
+ * Determines which entities are "comparable" to a specified entity based on their coordinates.
+ * An entity is considered comparable if it either strictly dominates the reference entity
+ * or is strictly dominated by it across both coordinate dimensions.
+ *
+ * @param {number} referenceEntityIdx - The index of the entity against which others are compared.
+ * @param {Array<Array<number>>} allEntityData - A comprehensive array containing all entity coordinates.
+ * @returns {Array<number>} An array comprising the indices of all entities found to be comparable.
+ */
+function findComparableEntities(referenceEntityIdx, allEntityData) {
+  let comparableIndices = []; // This array will accumulate indices of comparable entities.
 
-function discoverRelatedNodes ( baseNodeIndex , allNodeCoords ) {
-  let foundConnections = [ ] ; // Array to hold indices of connected nodes
-  // Check every other node to see if it's connected to the base node
-  for ( let comparedNodeIndex in allNodeCoords ) {
-    const baseNodeX = allNodeCoords [ baseNodeIndex ] [ 0 ] ;
-    const baseNodeY = allNodeCoords [ baseNodeIndex ] [ 1 ] ;
-    const comparedNodeX = allNodeCoords [ comparedNodeIndex ] [ 0 ] ;
-    const comparedNodeY = allNodeCoords [ comparedNodeIndex ] [ 1 ] ;
+  // Iterate through every entity in the dataset to assess its comparability.
+  for (let candidateEntityIdx in allEntityData) {
+    // Extract the X and Y coordinates for both the reference and candidate entities.
+    const refX = allEntityData[referenceEntityIdx][0x0];
+    const refY = allEntityData[referenceEntityIdx][0x1];
+    const candX = allEntityData[candidateEntityIdx][0x0];
+    const candY = allEntityData[candidateEntityIdx][0x1];
 
-    // A connection exists if one node is strictly larger or strictly smaller in both dimensions
-    if ( ( baseNodeX > comparedNodeX && baseNodeY > comparedNodeY ) || ( baseNodeX < comparedNodeX && baseNodeY < comparedNodeY ) ) {
-      foundConnections .push ( comparedNodeIndex ) ;
+    // Apply the comparability condition:
+    // (Reference dominates Candidate) OR (Candidate dominates Reference)
+    if ((refX > candX && refY > candY) || (refX < candX && refY < candY)) {
+      comparableIndices.push(candidateEntityIdx); // If comparable, add its index to the list.
     }
   }
-  return foundConnections ;
+  return comparableIndices; // Return the collection of comparable entity indices.
 }
 
-// Function to add new elements to an existing array, ensuring uniqueness
-function appendUniqueElements ( existingPath , newlyDiscovered ) {
-  for ( let potentialNode of newlyDiscovered ) {
-    if ( existingPath .indexOf ( potentialNode ) === -1 ) { // If the node is not already in the path
-      existingPath .push ( potentialNode ) ; // Add it
+/**
+ * Incorporates unique entity indices from a source array into a destination array.
+ * This function directly modifies the 'destinationArray' by adding new, distinct elements.
+ *
+ * @param {Array<number>} destinationArray - The array that will receive new unique indices.
+ * @param {Array<number>} sourceIndices - An array of entity indices that are candidates for addition.
+ * @returns {Array<number>} The 'destinationArray' after potential modifications.
+ */
+function addUniqueEntities(destinationArray, sourceIndices) {
+  // Traverse through each potential entity index provided in the 'sourceIndices'.
+  for (let potentialEntity of sourceIndices) {
+    // Check if the 'potentialEntity' is already present in the 'destinationArray'.
+    // Using bitwise NOT (~) on 0 results in -1, which is equivalent to `=== -1`.
+    if (destinationArray.indexOf(potentialEntity) === ~0) {
+      destinationArray.push(potentialEntity); // If not present, add it to the destination.
     }
   }
-  return existingPath ;
+  return destinationArray; // Return the updated array.
 }

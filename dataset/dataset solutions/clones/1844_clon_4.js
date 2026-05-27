@@ -1,55 +1,55 @@
-const processGridData = (rawInput) => {
-    const allLines = rawInput.trim().split('\n');
-    const dimension = parseInt(allLines[0], 10);
-    const removalOrder = allLines[1].split(' ').map(Number);
+function ProcessGrid(rawData) {
+  const lines = rawData.trim().split("\n");
+  const gridDim = parseInt(lines[0], 10);
+  const removalOrder = lines[1].split(" ").map(Number);
 
-    const positionMap = new Map();
-    Array.from({ length: dimension }, (_, rowIndexZero) => rowIndexZero + 1).forEach(rowOneIndexed => {
-        Array.from({ length: dimension }, (_, colIndexZero) => colIndexZero + 1).forEach(colOneIndexed => {
-            const seatIdentifier = (rowOneIndexed - 1) * dimension + colOneIndexed;
-            positionMap.set(seatIdentifier, { r: rowOneIndexed, c: colOneIndexed });
-        });
-    });
+  const cellCoordinates = new Map();
+  const activeCells = new Set();
 
-    const currentVacantPositions = new Set(Array.from({ length: dimension * dimension }, (_, i) => i + 1));
+  for (let r = 0; r < gridDim; r++) {
+    for (let c = 0; c < gridDim; c++) {
+      const cellValue = r * gridDim + c + 1;
+      cellCoordinates.set(cellValue, [r, c]);
+      activeCells.add(`${r},${c}`);
+    }
+  }
 
-    let accumulatedUnhappiness = 0;
+  let unfavorableCount = 0;
 
-    const isSpotAvailable = (row, col) => {
-        if (row < 1 || row > dimension || col < 1 || col > dimension) return false;
-        const spotId = (row - 1) * dimension + col;
-        return currentVacantPositions.has(spotId);
-    };
+  const countCellsInSegment = (fixedCoord, startIter, endIter, isRowFixed) => {
+    let currentCount = 0;
+    const step = startIter < endIter ? 1 : -1;
 
-    removalOrder.forEach(spotToOccupy => {
-        const { r: currentSpotRow, c: currentSpotCol } = positionMap.get(spotToOccupy);
+    if ((step === 1 && startIter > endIter) || (step === -1 && startIter < endIter)) {
+        return 0;
+    }
 
-        currentVacantPositions.delete(spotToOccupy);
+    for (let k = startIter; k !== endIter + step; k += step) {
+      const coordKey = isRowFixed ? `${fixedCoord},${k}` : `${k},${fixedCoord}`;
+      if (activeCells.has(coordKey)) {
+        currentCount++;
+      }
+    }
+    return currentCount;
+  };
 
-        if (currentSpotRow === 1 || currentSpotCol === 1 || currentSpotRow === dimension || currentSpotCol === dimension) {
-            return;
-        }
+  removalOrder.forEach(valToRemove => {
+    const [targetRow, targetCol] = cellCoordinates.get(valToRemove);
+    activeCells.delete(`${targetRow},${targetCol}`);
 
-        const countAbove = Array.from({ length: currentSpotRow - 1 }, (_, i) => i + 1)
-                                .filter(rVal => isSpotAvailable(rVal, currentSpotCol))
-                                .length;
+    if (targetRow === 0 || targetCol === 0 || targetRow === gridDim - 1 || targetCol === gridDim - 1) {
+      return;
+    }
 
-        const countBelow = Array.from({ length: dimension - currentSpotRow }, (_, i) => currentSpotRow + 1 + i)
-                                .filter(rVal => isSpotAvailable(rVal, currentSpotCol))
-                                .length;
+    const rowBefore = countCellsInSegment(targetCol, 0, targetRow - 1, false);
+    const rowAfter = countCellsInSegment(targetCol, targetRow + 1, gridDim - 1, false);
+    const colBefore = countCellsInSegment(targetRow, 0, targetCol - 1, true);
+    const colAfter = countCellsInSegment(targetRow, targetCol + 1, gridDim - 1, true);
 
-        const countLeft = Array.from({ length: currentSpotCol - 1 }, (_, i) => i + 1)
-                               .filter(cVal => isSpotAvailable(currentSpotRow, cVal))
-                               .length;
+    unfavorableCount += Math.min(rowBefore, rowAfter, colBefore, colAfter);
+  });
 
-        const countRight = Array.from({ length: dimension - currentSpotCol }, (_, i) => currentSpotCol + 1 + i)
-                               .filter(cVal => isSpotAvailable(currentSpotRow, cVal))
-                               .length;
+  console.log(unfavorableCount);
+}
 
-        accumulatedUnhappiness += Math.min(countAbove, countBelow, countLeft, countRight);
-    });
-
-    console.log(accumulatedUnhappiness);
-};
-
-processGridData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+ProcessGrid(require("fs").readFileSync("/dev/stdin", "utf8"));

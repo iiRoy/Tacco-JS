@@ -1,25 +1,21 @@
-const processInputData = (inputStringContent) => {
-    const linesOfData = inputStringContent.split('\n');
+const rawText = require("fs").readFileSync("/dev/stdin", "utf8");
 
-    const itemQuantity = parseInt(linesOfData[0], 10);
-    const primarySequence = linesOfData[1].split(' ').map(Number);
-    const secondarySequence = linesOfData[2].split(' ').map(Number);
-    const tertiarySequence = linesOfData[3].split(' ').map(Number);
+const parsedLines = rawText.split("\n");
 
-    const initialSecondarySum = secondarySequence.reduce((accumulator, currentValue) => accumulator + currentValue, 0);
+const countVal = Number(parsedLines[0]);
+const firstArr = parsedLines[1].split(" ").map(Number);
+const secondArr = parsedLines[2].split(" ").map(Number);
+const thirdArr = parsedLines[3].split(" ").map(Number);
 
-    const conditionalTertiarySum = Array.from({ length: itemQuantity - 1 })
-        .map((_, index) => ({
-            firstElement: primarySequence[index],
-            secondElement: primarySequence[index + 1],
-            correspondingItem: tertiarySequence[index]
-        }))
-        .filter(pair => pair.firstElement === pair.secondElement - 1)
-        .reduce((accumulator, filteredPair) => accumulator + filteredPair.correspondingItem, 0);
+const initialSum = secondArr.reduce((accumulator, currentValue) => accumulator + currentValue, 0);
 
-    const finalCalculatedValue = initialSecondarySum + conditionalTertiarySum;
+const finalTotal = Array.from({ length: countVal - 1 }).reduce((currentAccumulatedSum, _, idx) => {
+    const currentElementA = firstArr[idx];
+    const nextElementA = firstArr[idx + 1];
+    if (nextElementA - currentElementA === 1) {
+        return currentAccumulatedSum + thirdArr[idx];
+    }
+    return currentAccumulatedSum;
+}, initialSum);
 
-    console.log(finalCalculatedValue);
-};
-
-processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+console.log(finalTotal);

@@ -1,46 +1,47 @@
-/**
- * This script processes incoming data.
- * The primary execution point receives all input data.
- */
-function ExecuteProcess(dataSource) {
-  // Each line of the input stream is separated by a newline character.
-  // The first line will be at index 0, the second at index 1, and so forth.
-  const rawData = dataSource.split("\n");
+// This function processes the entire input string provided to it.
+function ProcessInput(rawData) {
+    // The raw input string is split into an array of individual lines.
+    let lines = rawData.split("\n");
 
-  // When converting a string to an integer, utilize the parseInt function
-  // to ensure proper base 10 interpretation.
-  let currentVal = parseInt(rawData[0], 10);
-  const encounteredValues = [];
+    // The first line of input is parsed as an integer (base 10) to get the starting number.
+    let currentValue = parseInt(lines[0], 10);
 
-  // Record the initial state.
-  encounteredValues.push(currentVal);
+    // An array is initialized to keep track of all numbers encountered in the sequence.
+    const seenValues = [];
+    // The initial number is added to the list of seen values.
+    seenValues.push(currentValue);
 
-  // Commence iteration to track the sequence.
-  for (let stepCount = 1; stepCount < 1000000; stepCount++) {
-    // Apply the Collatz conjecture rules.
-    if (currentVal % 2 === 0) {
-      currentVal /= 2;
-    } else {
-      currentVal = currentVal * 3 + 1;
+    // A loop iterates to generate the Collatz sequence and detect cycles.
+    // The loop counter starts from 1 and goes up to a large number to cover long sequences.
+    for (let iterationCount = 1; iterationCount < 1000000; iterationCount++) {
+        // Apply the Collatz conjecture rules:
+        // If the current number is even, divide it by 2.
+        if (currentValue % 2 === 0) {
+            currentValue = currentValue / 2;
+        }
+        // If the current number is odd, multiply it by 3 and add 1.
+        else {
+            currentValue = currentValue * 3 + 1;
+        }
+
+        // Check if the newly calculated number has already appeared in the sequence.
+        let foundIndex = seenValues.indexOf(currentValue);
+
+        // If the number is found in the 'seenValues' array, a cycle has been detected.
+        if (foundIndex !== -1) {
+            // Output the current iteration count plus one (for 1-based indexing of steps).
+            console.log(iterationCount + 1);
+            // Terminate the loop as the cycle detection condition is met.
+            break;
+        }
+
+        // If the number is new, add it to the 'seenValues' array at the current iteration index.
+        seenValues[iterationCount] = currentValue;
     }
-
-    // Check if the current value has been seen before in the sequence.
-    const previousIndex = encounteredValues.indexOf(currentVal);
-
-    if (previousIndex !== -1) {
-      // If a cycle is detected, output the total number of steps taken.
-      console.log(stepCount + 1);
-      break; // Terminate the sequence generation.
-    }
-
-    // Store the newly generated value for future cycle detection.
-    encounteredValues[stepCount] = currentVal;
-  }
+    // This line is a commented-out debugging statement and does not affect program execution.
+    // console.log(seenValues);
 }
 
-/*
- * The following section of code handles standard input/output operations.
- * It reads data from standard input and passes it to the main processing function.
- * Do not modify this boilerplate code.
- */
-ExecuteProcess(require("fs").readFileSync("/dev/stdin", "utf8"));
+// This section handles reading input from standard input and invoking the main processing function.
+// It should remain unchanged as it's part of the standard execution environment setup.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

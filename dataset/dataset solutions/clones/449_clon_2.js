@@ -1,45 +1,43 @@
-const systemInputChannel = process.stdin;
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
 
-systemInputChannel.resume();
+process.stdin.on('data', function(rawData) {
+  let inputLines = rawData.split("\n");
 
-systemInputChannel.setEncoding('UTF-8');
+  while (inputLines[0] !== '0') {
+    const currentBlock = inputLines.splice(0, 5);
 
-systemInputChannel.on('data', function (incomingDataBlock) {
+    let outcomeScores;
+    const uniqueValues = [];
 
-  let allContentLines = incomingDataBlock.split('\n');
-
-  while (parseInt(allContentLines[0]) !== 0) { // The '0' acts as a termination signal
-
-    const currentLineGroup = allContentLines.splice(0, 5); // Extract five entries for processing
-
-    let classificationOutcome, uniqueItemsList = [];
-
-    currentLineGroup.forEach(function (singleEntry) {
-      if (uniqueItemsList.indexOf(singleEntry) < 0) { // Check for uniqueness
-        uniqueItemsList.push(singleEntry); // Add if not already present
+    currentBlock.forEach(function (item) {
+      if (uniqueValues.indexOf(item) < 0) {
+        uniqueValues.push(item);
       }
-    }); // End of unique items collection
+    });
 
-    // Determine the result based on the count of distinct values
-    if (uniqueItemsList.length === 3 || uniqueItemsList.length === 1) {
-      classificationOutcome = [3, 3, 3]; /* Default classification for specific counts */
+    if (uniqueValues.length === 3 || uniqueValues.length === 1) {
+      outcomeScores = [3, 3, 3];
     } else {
-      // Special classifications if certain numeric strings are absent
-      if (uniqueItemsList.indexOf('1') < 0) {
-        classificationOutcome = [1, 2, 0];
-      } else if (uniqueItemsList.indexOf('2') < 0) {
-        classificationOutcome = [2, 0, 1];
-      } else if (uniqueItemsList.indexOf('3') < 0) {
-        classificationOutcome = [0, 1, 2];
+      // Note: uniqueValues contains strings (e.g., '1', '2').
+      // The original code uses indexOf(number), which will return -1
+      // if the array contains string representations of those numbers.
+      // This specific behavior is preserved.
+      if (uniqueValues.indexOf(1) < 0) {
+        outcomeScores = [1, 2, 0];
+      } else if (uniqueValues.indexOf(2) < 0) {
+        outcomeScores = [2, 0, 1];
+      } else if (uniqueValues.indexOf(3) < 0) {
+        outcomeScores = [0, 1, 2];
       }
     }
 
-    currentLineGroup.forEach(function (singleEntry) {
-      console.log(classificationOutcome[parseInt(singleEntry) - 1]); // Output the derived result
+    currentBlock.forEach(function (val) {
+      console.log(outcomeScores[parseInt(val, 10) - 1]);
     });
   }
 });
 
-systemInputChannel.on('end', function () {
-  // No specific cleanup or final actions needed upon stream closure.
+process.stdin.on('end', function() {
+  // No specific actions are performed here in the original code.
 });

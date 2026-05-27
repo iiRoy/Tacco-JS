@@ -1,148 +1,150 @@
-const makeInputReader = (initialStringData) => {
-  const allOriginalLines = initialStringData.trim().split('\n');
-  let processedTokenLines = allOriginalLines.map(line => line.split(' '));
-  let lineCursor = 0;
-  let tokenCursor = 0;
+class DataStreamProcessor {
+    #allLines;
+    #currentLineIndex = 0;
+    #currentLineTokens = null;
 
-  const extractNextNumber = (stringFormat = false) => {
-    if (lineCursor >= processedTokenLines.length) {
-      throw new Error("Input exhausted.");
+    constructor(sourceString) {
+        this.#allLines = sourceString.trim().split("\n");
     }
-    let currentLineTokens = processedTokenLines[lineCursor];
-    if (tokenCursor >= currentLineTokens.length) {
-      lineCursor++;
-      tokenCursor = 0;
-      if (lineCursor >= processedTokenLines.length) {
-        throw new Error("Input exhausted.");
-      }
-      currentLineTokens = processedTokenLines[lineCursor];
+
+    #prepareCurrentLineForTokens() {
+        if (this.#currentLineIndex >= this.#allLines.length) {
+            return false;
+        }
+        let lineContent = this.#allLines[this.#currentLineIndex];
+        if (typeof lineContent === "string") {
+            this.#allLines[this.#currentLineIndex] = lineContent.split(" ").reverse();
+        }
+        this.#currentLineTokens = this.#allLines[this.#currentLineIndex];
+        return true;
     }
-    const val = currentLineTokens[tokenCursor];
-    tokenCursor++;
-    return stringFormat ? val : Number(val);
-  };
 
-  const extractLineTokens = (stringFormat = false) => {
-    if (lineCursor >= processedTokenLines.length) {
-      throw new Error("Input exhausted.");
+    fetchNextItem(asString = false) {
+        if (!this.#currentLineTokens || this.#currentLineTokens.length === 0) {
+            if (!this.#prepareCurrentLineForTokens()) {
+                return undefined;
+            }
+        }
+
+        const item = this.#currentLineTokens.pop();
+        if (this.#currentLineTokens.length === 0) {
+            this.#currentLineIndex++;
+            this.#currentLineTokens = null;
+        }
+        return asString ? item : Number(item);
     }
-    const tokens = processedTokenLines[lineCursor];
-    lineCursor++;
-    tokenCursor = 0;
-    return stringFormat ? tokens : tokens.map(Number);
-  };
 
-  const extractGridData = (count, stringFormat = false) => {
-    const segment = processedTokenLines.slice(lineCursor, lineCursor + count);
-    lineCursor += count;
-    tokenCursor = 0;
-    return stringFormat ? segment : segment.map(row => row.map(Number));
-  };
-
-  const extractNumericVector = (count, stringFormat = false) => {
-    const segment = allOriginalLines.slice(lineCursor, lineCursor + count);
-    lineCursor += count;
-    tokenCursor = 0;
-    return stringFormat ? segment : segment.map(Number);
-  };
-
-  return {
-    fetchNumber: extractNextNumber,
-    fetchLine: extractLineTokens,
-    fetchMatrix: extractGridData,
-    fetchVector: extractNumericVector,
-  };
-};
-
-const buildNestedArray = (initialValue, ...dimensions) => {
-  const createLevel = (levelIndex) => {
-    if (levelIndex === dimensions.length - 1) {
-      return Array(dimensions[levelIndex]).fill(initialValue);
-    } else {
-      return Array(dimensions[levelIndex]).fill(null).map(() => createLevel(levelIndex + 1));
+    fetchLineItems(asStrings = false) {
+        if (this.#currentLineIndex >= this.#allLines.length) {
+            return [];
+        }
+        const lineContent = this.#allLines[this.#currentLineIndex++];
+        const items = lineContent.split(" ");
+        return asStrings ? items : items.map(Number);
     }
-  };
-  return createLevel(0);
-};
 
-const primeDivisor = 998244353;
+    fetchMatrix(rowsToRead, asStrings = false) {
+        const matrix = [];
+        for (let k = 0; k < rowsToRead; k++) {
+            matrix.push(this.fetchLineItems(asStrings));
+        }
+        return matrix;
+    }
 
-const getModularProduct = (operand1, operand2) => {
-  const highPart1 = operand1 >>> 16;
-  const lowPart1 = operand1 & 0xFFFF;
+    fetchColumn(rowsToRead, asStrings = false) {
+        const column = [];
+        for (let k = 0; k < rowsToRead; k++) {
+            const lineContent = this.#allLines[this.#currentLineIndex++];
+            column.push(asStrings ? lineContent : Number(lineContent));
+        }
+        return column;
+    }
+}
 
-  const termHigh = (highPart1 * operand2 % primeDivisor * 0x10000) % primeDivisor;
-  const termLow = (lowPart1 * operand2) % primeDivisor;
+const inputProcessor = new DataStreamProcessor(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-  return (termHigh + termLow) % primeDivisor;
-};
+function createMultiDimensionalArray(initialValue, ...dimensions) {
+    if (dimensions.length === 0) {
+        return initialValue;
+    }
+    const currentDimensionSize = dimensions[0];
+    const remainingDimensions = dimensions.slice(1);
+    return Array.from({ length: currentDimensionSize }, () =>
+        createMultiDimensionalArray(initialValue, ...remainingDimensions)
+    );
+}
 
-const chainModularProduct = (...values) => {
-  if (values.length === 0) return 1;
-  return values.reduce((accumulator, currentVal) => getModularProduct(accumulator, currentVal));
-};
+const MOD_CONSTANT = 998244353;
 
-const powerWithMod = (base, exponent) => {
-  if (exponent === 0) return 1;
-  if (exponent < 0) throw new Error("Negative exponents are not supported.");
-  
-  const squaredBase = getModularProduct(base, base);
-  let partialResult = powerWithMod(squaredBase, Math.floor(exponent / 2));
-  
-  if (exponent % 2 === 1) {
-    partialResult = getModularProduct(partialResult, base);
-  }
-  return partialResult;
-};
+function modularProduct(factorA, factorB) {
+    return Number((BigInt(factorA) * BigInt(factorB)) % BigInt(MOD_CONSTANT));
+}
 
-const solveDynamicProblem = (elements, initialDPState, multiplierForSelf = 1) => {
-  return elements.reduce((currentDP, elementVal) => {
-    const maxCurrentSum = currentDP.length - 1;
-    const newMaxSum = maxCurrentSum + elementVal;
-    const nextDP = buildNestedArray(0, newMaxSum + 1);
+function modularExponentiation(baseValue, exponentValue) {
+    let resultAccumulator = 1;
+    let currentBase = baseValue;
+    let currentExponent = exponentValue;
 
-    currentDP.forEach((waysToSum, sumIndex) => {
-      if (waysToSum === 0) return;
+    while (currentExponent > 0) {
+        if (currentExponent % 2 === 1) {
+            resultAccumulator = modularProduct(resultAccumulator, currentBase);
+        }
+        currentBase = modularProduct(currentBase, currentBase);
+        currentExponent = Math.floor(currentExponent / 2);
+    }
+    return resultAccumulator;
+}
 
-      nextDP[sumIndex] = (nextDP[sumIndex] + chainModularProduct(waysToSum, multiplierForSelf)) % primeDivisor;
-      nextDP[sumIndex + elementVal] = (nextDP[sumIndex + elementVal] + waysToSum) % primeDivisor;
-    });
-    return nextDP;
-  }, initialDPState);
-};
+function calculateMainResult() {
+    const elementCount = inputProcessor.fetchNextItem();
+    const numberSequence = inputProcessor.fetchColumn(elementCount).sort((valA, valB) => valA - valB);
+    const totalSum = numberSequence.reduce((acc, val) => acc + val, 0);
 
-const findSpecificSumWays = (numberSequence, targetSum) => {
-  const finalDP = solveDynamicProblem(numberSequence, [1], 1);
-  const ways = finalDP[targetSum] || 0;
-  return chainModularProduct(ways, 3);
-};
+    let sumCounts = [1];
 
-const calculateOutcome = (dataProcessor) => {
-  const quantity = dataProcessor.fetchNumber();
-  const values = dataProcessor.fetchVector(quantity).sort((v1, v2) => v1 - v2);
-  const totalValueSum = values.reduce((acc, val) => acc + val, 0);
+    sumCounts = numberSequence.reduce((currentSumCounts, currentElement) => {
+        const nextSumCounts = createMultiDimensionalArray(0, currentSumCounts.length + currentElement);
+        
+        for (let s = 0; s < currentSumCounts.length; s++) {
+            if (currentSumCounts[s] === 0) continue;
 
-  const mainDPResult = solveDynamicProblem(values, [1], 2);
+            nextSumCounts[s] = (nextSumCounts[s] + modularProduct(currentSumCounts[s], 2)) % MOD_CONSTANT;
+            nextSumCounts[s + currentElement] = (nextSumCounts[s + currentElement] + currentSumCounts[s]) % MOD_CONSTANT;
+        }
+        return nextSumCounts;
+    }, sumCounts);
 
-  let finalResult = powerWithMod(3, quantity);
+    let finalAnswer = modularExponentiation(3, elementCount);
 
-  if (totalValueSum % 2 === 0) {
-    const targetHalfSum = totalValueSum / 2;
-    finalResult = (finalResult + findSpecificSumWays(values, targetHalfSum)) % primeDivisor;
-  }
+    if (totalSum % 2 === 0) {
+        finalAnswer = (finalAnswer + computeSubsetSumWays(numberSequence, elementCount, totalSum / 2)) % MOD_CONSTANT;
+    }
 
-  const subtractionStartIdx = Math.floor((totalValueSum + 1) / 2);
+    const halfTotalSumCeil = (totalSum + 1) >> 1;
 
-  const totalSubtraction = mainDPResult.slice(subtractionStartIdx).reduce((acc, dpValue) => {
-    if (dpValue === 0) return acc;
-    return (acc + chainModularProduct(dpValue, 3)) % primeDivisor;
-  }, 0);
+    for (let s = halfTotalSumCeil; s < sumCounts.length; s++) {
+        finalAnswer = (finalAnswer - modularProduct(sumCounts[s], 3) + MOD_CONSTANT) % MOD_CONSTANT;
+    }
 
-  finalResult = (finalResult - totalSubtraction + primeDivisor) % primeDivisor;
+    return (finalAnswer + MOD_CONSTANT) % MOD_CONSTANT;
+}
 
-  return finalResult;
-};
+function computeSubsetSumWays(sequence, count, targetSum) {
+    let ways = [1];
 
-const fileContent = require("fs").readFileSync("/dev/stdin","utf8");
-const inputHandler = makeInputReader(fileContent);
-console.log(calculateOutcome(inputHandler));
+    ways = sequence.reduce((currentWays, currentElement) => {
+        const nextWays = createMultiDimensionalArray(0, currentWays.length + currentElement);
+        
+        for (let s = 0; s < currentWays.length; s++) {
+            if (currentWays[s] === 0) continue;
+
+            nextWays[s] = (nextWays[s] + currentWays[s]) % MOD_CONSTANT;
+            nextWays[s + currentElement] = (nextWays[s + currentElement] + currentWays[s]) % MOD_CONSTANT;
+        }
+        return nextWays;
+    }, ways);
+
+    return modularProduct(ways[targetSum] || 0, 3);
+}
+
+console.log(calculateMainResult());

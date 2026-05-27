@@ -1,55 +1,40 @@
-const   handleProblemSolution    =   (   sourceData  )   =>
-{
-  // Extracting initial configuration parameters from the first line of input
-  let     configLineElements  =   sourceData[0].split(" ")  ;
+const processInputData = (rawDataLines) => {
+  // Parse the initial configuration from the first line of input.
+  // This line contains N (total participants), K (required score), and Q (total questions).
+  let initialConfig = rawDataLines[0].split(' ');
+  let totalParticipants = initialConfig[0]; // N
+  let requiredScore = initialConfig[1];     // K
+  let totalQuestions = initialConfig[2];    // Q
 
-  let     totalContestants    =   Number( configLineElements[0] )   ; // Represents N
-  let     requiredThreshold   =   Number( configLineElements[1] )   ; // Represents K
-  let     gameEventsCount     =   Number( configLineElements[2] )   ; // Represents Q
+  // Initialize an object to keep track of scores for each participant.
+  // The keys will be participant IDs, and values will be their scores.
+  let participantScores = {};
 
-  // Initialize an object to track scores for each participant
-  const   participantScores     =   {  }  ;
-
-  // Iterate through each game event to update participant scores
-  // The events are listed from index 1 up to gameEventsCount (Q)
-  for
-    (   let   eventCounter  =   1  ;   eventCounter   <=   gameEventsCount  ;   eventCounter++   )
-  {
-    let   victoriousParticipantId   =   Number( sourceData[ eventCounter ] )   ; // The ID of the participant who won this round
-    // Increment the score for the winning participant.
-    // If the participant hasn't scored yet, initialize their score to 0 before incrementing.
-    participantScores[ victoriousParticipantId ]   =   (   participantScores[ victoriousParticipantId ]   ||   0   )   +   1   ;
+  // Iterate through the questions asked (from 1 to Q).
+  // Each subsequent line in the input represents a participant who answered a question correctly.
+  for (let questionIndex = 1; questionIndex <= totalQuestions; questionIndex++) {
+    let winningParticipantId = rawDataLines[questionIndex];
+    // Increment the score for the participant who answered this question correctly.
+    // If the participant is not yet in the map, initialize their score to 0 before incrementing.
+    participantScores[winningParticipantId] = (participantScores[winningParticipantId] || 0) + 1;
   }
 
-  // Determine eligibility for each contestant based on their final scores
-  // Iterate from participant ID 1 up to totalContestants (N)
-  for
-    (   let   contestantId  =   1  ;   contestantId   <=   totalContestants  ;   contestantId++   )
-  {
-    // Calculate the number of points lost by this contestant.
-    // Each round they didn't win counts as a "lost point" from the total possible rounds.
-    let   pointsLostByContestant    =   gameEventsCount   -   (   participantScores[ contestantId ]   ||   0   )   ;
-
-    // Check if the participant's score (represented by points lost) meets the required threshold.
-    // A lower number of lost points means a higher actual score.
-    if
-      (   pointsLostByContestant   <   requiredThreshold   )
-    {
-      console.log   (   "Yes"   )   ; // Participant is eligible
-    }
-    else
-    {
-      console.log   (   "No"   )   ; // Participant is not eligible
+  // Now, evaluate each participant's final status.
+  // Iterate through all participants from 1 to N.
+  for (let currentParticipantId = 1; currentParticipantId <= totalParticipants; currentParticipantId++) {
+    // Calculate the participant's current score. If they didn't answer any questions correctly, their score is 0.
+    let individualScore = participantScores[currentParticipantId] || 0;
+    // Determine if the participant's score, after subtracting from total questions, is less than the required score K.
+    // The logic is: Q - (score) < K.
+    // This is equivalent to checking if their "penalty" (Q - score) is less than K.
+    if (totalQuestions - individualScore < requiredScore) {
+      console.log('Yes'); // If the condition is met, output 'Yes'.
+    } else {
+      console.log('No');  // Otherwise, output 'No'.
     }
   }
-}
+};
 
-// Execute the solution with input data read from standard input.
-// The input is read as a UTF-8 string, trimmed of whitespace, and split into lines.
-handleProblemSolution
-  (
-    require   (   'fs'   )
-      .   readFileSync   (   '/dev/stdin'   ,   'UTF-8'   )
-      .   trim   (   )
-      .   split   (   "\n"   )
-  )   ;
+// Read the entire input from standard input, decode it as UTF-8,
+// remove leading/trailing whitespace, and split it into an array of lines.
+processInputData(require('fs').readFileSync('/dev/stdin', 'UTF-8').trim().split('\n'));

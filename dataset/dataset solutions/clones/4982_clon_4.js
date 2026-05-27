@@ -1,35 +1,23 @@
 'use strict'
-const dataStream = require('fs').readFileSync(0, 'utf8');
-const inputLine = dataStream.split('\n')[0];
+const lines = require('fs').readFileSync(0, 'utf8').split('\n')
+const inputString = lines[0]
 
-const segmentCombinations = (digitSequence) => {
-  const segmentCollection = [];
-  const sequenceLength = digitSequence.length;
+let totalAccumulatedSum = 0
 
-  if (sequenceLength === 0) {
-    return [[]];
+const computeAllSums = (currentPosition, termComponents) => {
+  if (currentPosition === inputString.length) {
+    totalAccumulatedSum += termComponents.reduce((acc, val) => acc + val, 0)
+    return
   }
 
-  for (let firstSegmentEnd = 1; firstSegmentEnd <= sequenceLength; firstSegmentEnd++) {
-    const currentSegmentString = digitSequence.substring(0, firstSegmentEnd);
-    const currentSegmentValue = Number(currentSegmentString);
-    const remainingSequence = digitSequence.substring(firstSegmentEnd);
-
-    const subSegmentations = segmentCombinations(remainingSequence);
-
-    for (const subSet of subSegmentations) {
-      segmentCollection.push([currentSegmentValue, ...subSet]);
-    }
+  for (let nextSegmentEnd = currentPosition; nextSegmentEnd < inputString.length; nextSegmentEnd++) {
+    const segmentValue = parseInt(inputString.substring(currentPosition, nextSegmentEnd + 1), 10)
+    
+    termComponents.push(segmentValue)
+    computeAllSums(nextSegmentEnd + 1, termComponents)
+    termComponents.pop()
   }
-  return segmentCollection;
-};
+}
 
-const allNumerationSets = segmentCombinations(inputLine);
-
-const setTotals = allNumerationSets.map(numeralSet =>
-  numeralSet.reduce((accumulator, currentVal) => accumulator + currentVal, 0)
-);
-
-const grandTotal = setTotals.reduce((accumulator, currentTotal) => accumulator + currentTotal, 0);
-
-console.log(grandTotal);
+computeAllSums(0, [])
+console.log(totalAccumulatedSum)

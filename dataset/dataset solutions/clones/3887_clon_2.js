@@ -1,43 +1,40 @@
 'use strict';
 
-function calculateOrderTotal( inputData ) {
+function processInput(inputData) {
+  // Parse the input string into an array of numbers.
+  inputData = inputData.split('\n')[0].split(' ').map(numStr => Number(numStr));
 
-  // Process the raw input string: extract the first line, split by spaces, and convert to numbers.
-  let processedValues = inputData . split( '\n' ) [ 0 ] . split( ' ' ) . map( ( token ) => Number( token ) );
+  const priceA = inputData[0]; // Cost of item A
+  const priceB = inputData[1]; // Cost of item B
+  const priceAB = inputData[2]; // Cost of one AB set (two halves)
+  const countA = inputData[3]; // Desired quantity of A
+  const countB = inputData[4]; // Desired quantity of B
 
-  const itemAPrice = processedValues[ 0 ]; // Cost for a single 'A' item.
-  const itemBPrice = processedValues[ 1 ]; // Cost for a single 'B' item.
-  const comboPrice = processedValues[ 2 ]; // Cost for an 'AB' combo.
-  const requiredItemA = processedValues[ 3 ]; // Quantity of 'A' items needed.
-  const requiredItemB = processedValues[ 4 ]; // Quantity of 'B' items needed.
+  const difference = Math.abs(countA - countB); // Absolute difference in quantities
+  const minimumCount = Math.min(countA, countB); // Minimum of the two quantities
+  let finalCost = 0; // Initialize the total expenditure
 
-  // Determine the absolute difference in quantities for A and B.
-  const quantityDifference = Math.abs( requiredItemA - requiredItemB );
-  // Find the minimum quantity among A and B, which can be bought as combos.
-  const minimumRequired = Math.min( requiredItemA , requiredItemB );
-  let finalCalculatedCost = 0; // Initialize the total cost.
+  // Check if buying A and B individually is cheaper than buying AB sets.
+  if (priceA + priceB <= priceAB * 2) {
+    // Option 1: Purchase A and B separately.
+    finalCost = priceA * countA + priceB * countB;
+  } else {
+    // Option 2: Consider using AB sets.
+    // Calculate the cost of remaining individual items after forming minimum AB sets.
+    const remainingIndividualCost = (countA - minimumCount) * priceA + (countB - minimumCount) * priceB;
 
-  // Compare the cost of buying A and B individually versus buying two combo packs.
-  if ( ( itemAPrice + itemBPrice ) <= ( comboPrice * 2 ) ) {
-    // Individual purchases are more economical or equal to double combo cost.
-    finalCalculatedCost = ( itemAPrice * requiredItemA ) + ( itemBPrice * requiredItemB );
-  }
-  else {
-    // Combo packs are cheaper than buying A and B individually.
-    // Evaluate if buying remaining items individually is cheaper than more combos.
-    if ( ( ( requiredItemA - minimumRequired ) * itemAPrice + ( requiredItemB - minimumRequired ) * itemBPrice ) <= ( comboPrice * quantityDifference ) ) {
-      // Use combo packs for the common quantity, then buy the remaining items individually.
-      finalCalculatedCost = ( comboPrice * minimumRequired * 2 ) + ( ( requiredItemA - minimumRequired ) * itemAPrice ) + ( ( requiredItemB - minimumRequired ) * itemBPrice );
-    }
-    else {
-      // It's most cost-effective to purchase all required items as combo packs.
-      // This covers the case where buying remaining individually is still more expensive than just buying more combos.
-      finalCalculatedCost = comboPrice * Math.max( requiredItemA , requiredItemB ) * 2;
+    // Compare the cost of remaining individual items with buying AB sets for the difference.
+    if (remainingIndividualCost <= priceAB * difference) {
+      // Option 2a: Buy minimum AB sets, then remaining A and B individually.
+      finalCost = (priceAB * minimumCount * 2) + remainingIndividualCost;
+    } else {
+      // Option 2b: Buy all items as AB sets, as it's cheaper than individual remaining.
+      finalCost = priceAB * Math.max(countA, countB) * 2;
     }
   }
 
-  console.log( finalCalculatedCost ); // Output the final computed cost.
+  console.log(finalCost); // Output the calculated minimum cost.
 }
 
-// Read input from standard input and pass it to the calculation function.
-calculateOrderTotal(require("node:fs").readFileSync("/dev/stdin", { encoding: "utf8" }));
+// Read input from standard input and pass it to the processing function.
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,43 +1,47 @@
 'use strict';
 
-function determineOptimalPathValue(totalElements, heightSequence, valueSequence) {
-    const calculationCache = new Map();
+function computeMaxScore(itemCount, heights, values) {
+  const memoizedScores = new Array(itemCount).fill(null);
+  let overallHighestScore = 0;
 
-    const computePathValue = (idx) => {
-        if (calculationCache.has(idx)) {
-            return calculationCache.get(idx);
-        }
+  function computeSegmentScore(currentElementIndex) {
+    if (memoizedScores[currentElementIndex] !== null) {
+      return memoizedScores[currentElementIndex];
+    }
 
-        const currentValue = valueSequence[idx];
-        const currentHeight = heightSequence[idx];
-        
-        const maxPreviousPathValue = Array.from({ length: idx }, (_, prevIdx) => prevIdx)
-            .reduce((maxSoFar, prevIdx) => {
-                if (currentHeight > heightSequence[prevIdx]) {
-                    return Math.max(maxSoFar, computePathValue(prevIdx));
-                }
-                return maxSoFar;
-            }, 0);
+    let currentElementBaseValue = values[currentElementIndex];
+    let maxPreviousChainContribution = 0;
 
-        const finalValueForCurrentPath = currentValue + maxPreviousPathValue;
-        calculationCache.set(idx, finalValueForCurrentPath);
-        return finalValueForCurrentPath;
-    };
+    for (let previousElementIndex = 0; previousElementIndex < currentElementIndex; previousElementIndex++) {
+      if (heights[currentElementIndex] > heights[previousElementIndex]) {
+        maxPreviousChainContribution = Math.max(
+          maxPreviousChainContribution,
+          computeSegmentScore(previousElementIndex)
+        );
+      }
+    }
 
-    const allPathEndValues = Array.from({ length: totalElements }, (_, i) => computePathValue(i));
-    const overallHighestScore = Math.max(...allPathEndValues);
+    const finalScoreForThisElement = currentElementBaseValue + maxPreviousChainContribution;
+    memoizedScores[currentElementIndex] = finalScoreForThisElement;
+    return finalScoreForThisElement;
+  }
 
-    return overallHighestScore;
+  for (let idx = 0; idx < itemCount; idx++) {
+    const scoreEndingAtIndex = computeSegmentScore(idx);
+    overallHighestScore = Math.max(overallHighestScore, scoreEndingAtIndex);
+  }
+
+  return overallHighestScore;
 }
 
-function processInputAndDisplayResult(rawData) {
-    const dataLines = rawData.split("\n");
-    const elementCount = parseInt(dataLines[0]);
-    const heightData = dataLines[1].split(' ').map(str => parseInt(str));
-    const valueData = dataLines[2].split(' ').map(str => parseInt(str));
+function processInputData(rawData) {
+  const inputLines = rawData.split("\n");
+  const countElements = parseInt(inputLines[0]);
+  const elementHeights = inputLines[1].split(' ').map(valStr => parseInt(valStr));
+  const elementValues = inputLines[2].split(' ').map(valStr => parseInt(valStr));
 
-    const finalAnswer = determineOptimalPathValue(elementCount, heightData, valueData);
-    console.log(finalAnswer);
+  const finalResult = computeMaxScore(countElements, elementHeights, elementValues);
+  console.log(finalResult);
 }
 
-processInputAndDisplayResult(require('node:fs').readFileSync('/dev/stdin', 'utf8'));
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

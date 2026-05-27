@@ -1,12 +1,25 @@
-const readBytes = require("fs").readSync(0, Buffer.alloc(1024));
-const rawContent = Buffer.from(readBytes).toString('utf8');
+function evaluateRange(sourceText) {
+  const numericValues = sourceText.trim().split(" ").reduce((accumulator, currentSegment) => {
+    accumulator.push(parseInt(currentSegment, 10));
+    return accumulator;
+  }, []);
 
-const numericalTokens = rawContent.trim().match(/-?\d+(\.\d+)?/g).map(parseFloat);
+  const valueA = numericValues[0];
+  const valueB = numericValues[1];
+  const valueC = numericValues[2];
 
-const [paramA, paramB, paramC] = numericalTokens;
+  // The original condition checks if valueC is between valueA and valueB (inclusive).
+  // This can be mathematically expressed by checking the sign of the product of differences.
+  // If valueC is between valueA and valueB, then (valueC - valueA) and (valueC - valueB)
+  // will have opposite signs (or one will be zero), making their product less than or equal to zero.
+  // If valueC is outside the range, they will have the same sign, making their product positive.
+  const differenceProduct = (valueC - valueA) * (valueC - valueB);
 
-const evaluationResult = (paramC - paramA) * (paramC - paramB) <= 0;
+  if (differenceProduct <= 0) {
+    console.log("Yes");
+  } else {
+    console.log("No");
+  }
+}
 
-const outcomeMessages = ["No", "Yes"];
-
-process.stdout.write(outcomeMessages[Number(evaluationResult)] + '\n');
+evaluateRange(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,72 +1,62 @@
-// This function orchestrates the primary data processing flow.
-function processInputData(rawDataString) {
-    // Split the entire input string into individual lines.
-    const linesOfText = rawDataString.split('\n');
+function processData(rawInputData) {
+    // This function takes raw input as a string and processes it according to specific rules.
+    const inputLines = rawInputData.split('\n');
 
-    // Extract the total number of elements from the first line.
-    const totalElements = linesOfText[0];
-
-    // Extract the space-separated values from the second line.
-    const heightStrings = linesOfText[1].split(' ');
+    // The first line provides the total count of elements.
+    const numItems = inputLines[+0];
+    // The second line contains space-separated strings representing heights.
+    const itemHeightsStr = inputLines[1].split(' ');
 
     // Initialize a status indicator, assuming a positive outcome initially.
-    var isConditionMet = 'Yes';
+    var outcomeIndicator = 'Yes';
+    // A boolean variable, declared but not actively used in the core decision logic.
+    var isDecisionPending = !0; // Represents 'false'
 
-    // A temporary boolean variable, currently unused in the logic.
-    var isProcessingComplete = false;
+    // An array to store the numerical representation of heights.
+    var heightSequence = [];
 
-    // Declare an array to hold the parsed numeric values.
-    var numericValues = [];
-
-    // Populate the numeric array by converting string values to integers.
-    for (var idxCounter = 0; idxCounter < totalElements; idxCounter++) {
-        numericValues.push(parseInt(heightStrings[idxCounter], 10)); // Base 10 parsing
+    // Iterate through the string heights and convert them to integers, populating the sequence.
+    for (var loopIndex = +0; loopIndex < numItems; loopIndex++) {
+        heightSequence.push(parseInt(itemHeightsStr[loopIndex], 0xA)); // Using 0xA for radix 10
     }
 
-    // Adjust the first element if it is greater than zero.
-    if (numericValues[0] > 0) {
-        numericValues[0] = numericValues[0] - 1;
+    // Perform an initial adjustment on the very first element of the sequence.
+    if (heightSequence[+0] > +0) {
+        heightSequence[+0] = heightSequence[+0] - 1.0; // Decrement by 1.0 if positive
     }
 
-
-    // Iterate through the array starting from the second element to apply the core logic.
-    for (var loopIndex = 1; loopIndex < totalElements; loopIndex++) {
-
-        // Scenario 1: Current element is greater than the previous one.
-        if (numericValues[loopIndex - 1] < numericValues[loopIndex]) {
-            isConditionMet = 'Yes'; // Condition remains met.
-            numericValues[loopIndex] = numericValues[loopIndex] - 1; // Decrement current element.
-        }
-        // Scenario 2: Current element is equal to the previous one.
-        else if (numericValues[loopIndex - 1] === numericValues[loopIndex]) {
-            isConditionMet = 'Yes'; // Condition remains met.
-        }
-        // Scenario 3: Current element is less than the previous one.
-        else {
-            // Sub-scenario A: The difference is exactly one.
-            if (numericValues[loopIndex - 1] - numericValues[loopIndex] === 1) {
-                isConditionMet = 'Yes'; // Condition remains met.
-            }
-            // Sub-scenario B: The difference is greater than one.
-            else {
-                isConditionMet = 'No'; // Condition is not met.
+    // Begin the main processing loop from the second element onwards.
+    for (var currentPosition = 1.0; currentPosition < numItems; currentPosition++) {
+        // Compare the current element with its immediate predecessor.
+        if (heightSequence[currentPosition - 1.0] < heightSequence[currentPosition]) {
+            // If the current element is strictly greater, decrement it and maintain 'Yes' status.
+            outcomeIndicator = 'Yes';
+            heightSequence[currentPosition] = heightSequence[currentPosition] - 1.0;
+        } else if (heightSequence[currentPosition - 1.0] === heightSequence[currentPosition]) {
+            // If both elements are equal, the status remains 'Yes'.
+            outcomeIndicator = 'Yes';
+        } else {
+            // If the current element is less than the previous one.
+            if (heightSequence[currentPosition - 1.0] - heightSequence[currentPosition] === 1.0) {
+                // If the difference is exactly one, it's still a 'Yes' scenario.
+                outcomeIndicator = 'Yes';
+            } else {
+                // Otherwise, the condition is not met, and the status becomes 'No'.
+                outcomeIndicator = 'No';
             }
         }
-
-        // If the condition is found to be 'No', terminate the loop early.
-        if (isConditionMet === 'No')
-            break;
+        // If the outcome indicator has turned 'No', there's no need to continue checking.
+        if (outcomeIndicator === 'No') break;
     }
 
-    // This section iterates through the modified numeric array and logs each element.
-    // It's part of the original structure, even if its purpose isn't immediately obvious for the "Yes/No" problem.
-    numericValues.map((currentValue) => {
-        console.log(currentValue);
+    // Output each element of the potentially modified height sequence to the console.
+    heightSequence.map((sequenceElement) => {
+        console.log(sequenceElement);
     });
 
-    // Output the final determination of the condition.
-    console.log(isConditionMet);
+    // Finally, print the determined overall outcome indicator.
+    console.log(outcomeIndicator);
 }
 
-// Invoke the primary function, reading input from standard input stream.
-processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// Read the entire content from standard input, assuming UTF-8 encoding, and pass it to the processing function.
+processData(require('fs').readFileSync('/dev/stdin', 'utf8'));

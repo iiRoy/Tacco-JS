@@ -1,178 +1,270 @@
-const M = Math;
-const PI_VALUE = M.PI;
-const FLOAT_THRESHOLD_VAL = 1 / 8192;
+const EPSILON_VAL = 1 / 8192;
 
-const createCoord = (h, v) => ({ h, v });
-const createEdge = (start, end) => ({ start, end });
-const createBeam = (anchor, vector) => ({ anchor, vector });
-const createInterval = (low, high) => ({ low, high });
-
-const addCoords = (c1, c2) => createCoord(c1.h + c2.h, c1.v + c2.v);
-const subCoords = (c1, c2) => createCoord(c1.h - c2.h, c1.v - c2.v);
-const scaleCoord = (c, s) => createCoord(c.h * s, c.v * s);
-const inverseCoord = (c) => createCoord(-c.h, -c.v);
-
-const scalarProd = (c1, c2) => c1.h * c2.h + c1.v * c2.v;
-const wedgeProd = (c1, c2) => c1.h * c2.v - c1.v * c2.h;
-
-const normSquared = (c) => scalarProd(c, c);
-const getMagnitude = (c) => M.sqrt(normSquared(c));
-
-const deriveDirection = (c) => {
-    const len = getMagnitude(c);
-    if (len > FLOAT_THRESHOLD_VAL) {
-        return scaleCoord(c, 1 / len);
-    }
-    return createCoord(0, 0);
-};
-
-const rotateQuarter = (c) => createCoord(-c.v, c.h);
-
-const floatCompare = (val1, val2) => M.abs(val1 - val2) < FLOAT_THRESHOLD_VAL;
-
-const angleToArc = (degrees) => degrees * PI_VALUE / 180;
-
-const orientByDegree = (c, degrees) => {
-    const arc = angleToArc(degrees);
-    const sn = M.sin(arc);
-    const cs = M.cos(arc);
-    return createCoord(
-        c.h * cs - c.v * sn,
-        c.h * sn + c.v * cs
-    );
-};
-
-const comparePositions = (p1, p2) => floatCompare(p1.h - p2.h, 0) && floatCompare(p1.v - p2.v, 0);
-
-const checkLinearity = (c1, c2) => floatCompare(0, scalarProd(rotateQuarter(c1), c2));
-const checkPerpendicularity = (c1, c2) => floatCompare(0, scalarProd(c1, c2));
-
-const relativePlacement = (lineObj, edge) => {
-    const firstOffset = subCoords(edge.start, lineObj.anchor);
-    const secondOffset = subCoords(edge.end, lineObj.anchor);
-    const normalVector = rotateQuarter(lineObj.vector);
-    return scalarProd(normalVector, firstOffset) * scalarProd(normalVector, secondOffset) > 0;
-};
-
-const orderInterval = (interval) => {
-    return createInterval(M.min(interval.low, interval.high), M.max(interval.low, interval.high));
-};
-
-const extentOverlap = (int1, int2) => {
-    return int2.low <= int1.high && int1.low <= int2.high;
-};
-
-const linearProjection = (edge, axis) => {
-    const unitAxis = deriveDirection(axis);
-    const projStart = scalarProd(unitAxis, edge.start);
-    const projEnd = scalarProd(unitAxis, edge.end);
-    return orderInterval(createInterval(projStart, projEnd));
-};
-
-const segmentClash = (edge1, edge2) => {
-    const beamA = createBeam(edge1.start, subCoords(edge1.end, edge1.start));
-    const beamB = createBeam(edge2.start, subCoords(edge2.end, edge2.start));
-
-    if (relativePlacement(beamA, edge2) || relativePlacement(beamB, edge1)) {
-        return false;
-    }
-
-    if (checkLinearity(beamA.vector, beamB.vector)) {
-        const rangeA = linearProjection(edge1, beamA.vector);
-        const rangeB = linearProjection(edge2, beamA.vector);
-        return extentOverlap(rangeA, rangeB);
-    } else {
-        return true;
-    }
-};
-
-const combineExtents = (int1, int2) => {
-    return createInterval(M.min(int1.low, int2.low), M.max(int1.high, int2.high));
-};
-
-const componentAlong = (projCoord, ontoCoord) => {
-    const denom = normSquared(ontoCoord);
-    if (denom < FLOAT_THRESHOLD_VAL) {
-        return ontoCoord;
-    }
-    const dotP = scalarProd(projCoord, ontoCoord);
-    return scaleCoord(ontoCoord, dotP / denom);
-};
-
-const perpendicularDrop = (edge, spot) => {
-    const vec1 = subCoords(edge.end, edge.start);
-    const vec2 = subCoords(spot, edge.start);
-    const rate = scalarProd(vec2, vec1) / normSquared(vec1);
-    const vec3 = scaleCoord(vec1, rate);
-    return addCoords(edge.start, vec3);
-};
-
-const reflectLocation = (edge, spot) => {
-    const proj = perpendicularDrop(edge, spot);
-    const disp = subCoords(proj, spot);
-    return addCoords(scaleCoord(disp, 2), spot);
-};
-
-const meetingPoint = (edge1, edge2) => {
-    const baseVec = subCoords(edge2.end, edge2.start);
-    const d1Vec = subCoords(edge1.start, edge2.start);
-    const d2Vec = subCoords(edge1.end, edge2.start);
-    const d1 = M.abs(wedgeProd(baseVec, d1Vec));
-    const d2 = M.abs(wedgeProd(baseVec, d2Vec));
-    const t = d1 / (d1 + d2);
-    const x = edge1.start.h + (edge1.end.h - edge1.start.h) * t;
-    const y = edge1.start.v + (edge1.end.v - edge1.start.v) * t;
-    return createCoord(x, y);
-};
-
-const constrainValue = (val, minBound, maxBound) => {
-    if (val < minBound) return minBound;
-    if (val > maxBound) return maxBound;
-    return val;
-};
-
-const linePerpDistance = (edge, spot) => {
-    const vec1 = subCoords(edge.end, edge.start);
-    const vec2 = subCoords(spot, edge.start);
-    return M.abs(wedgeProd(vec1, vec2) / getMagnitude(vec1));
-};
-
-const pointToSegmentDistance = (edge, spot) => {
-    if (scalarProd(subCoords(edge.end, edge.start), subCoords(spot, edge.start)) < 0) {
-        return getMagnitude(subCoords(spot, edge.start));
-    }
-    if (scalarProd(subCoords(edge.start, edge.end), subCoords(spot, edge.end)) < 0) {
-        return getMagnitude(subCoords(spot, edge.end));
-    }
-    return linePerpDistance(edge, spot);
-};
-
-const edgeToEdgeDistance = (edge1, edge2) => {
-    if (segmentClash(edge1, edge2)) {
-        return 0;
-    }
-    const dist1 = M.min(pointToSegmentDistance(edge1, edge2.start), pointToSegmentDistance(edge1, edge2.end));
-    const dist2 = M.min(pointToSegmentDistance(edge2, edge1.start), pointToSegmentDistance(edge2, edge1.end));
-    return M.min(dist1, dist2);
-};
-
-const fileIO = require('fs');
-const rawData = fileIO.readFileSync('/dev/stdin', 'utf8');
-
-const lineArray = rawData.trim().split("\n");
-const nodeCount = Number(lineArray[0]);
-
-const vertices = lineArray.slice(1).map(line => {
-    const numericValues = line.split(" ").map(Number);
-    return createCoord(numericValues[0], numericValues[1]);
-});
-
-let areaAccumulator = wedgeProd(vertices[nodeCount - 1], vertices[0]);
-
-for (let idx = 0; idx < nodeCount - 1; ++idx) {
-    areaAccumulator += wedgeProd(vertices[idx], vertices[idx + 1]);
+function areApproxEqual(valA, valB) {
+    return Math.abs(valA - valB) < EPSILON_VAL;
 }
 
-const finalArea = M.abs(areaAccumulator) / 2;
+class Vec {
+    constructor(xCoord = 0, yCoord = 0) {
+        this.x = xCoord;
+        this.y = yCoord;
+    }
 
-console.log(finalArea.toFixed(1));
+    add(otherVec) {
+        return new Vec(this.x + otherVec.x, this.y + otherVec.y);
+    }
+
+    subtract(otherVec) {
+        return new Vec(this.x - otherVec.x, this.y - otherVec.y);
+    }
+
+    scale(scalarFactor) {
+        return new Vec(this.x * scalarFactor, this.y * scalarFactor);
+    }
+
+    negate() {
+        return new Vec(-this.x, -this.y);
+    }
+
+    dot(otherVec) {
+        return this.x * otherVec.x + this.y * otherVec.y;
+    }
+
+    crossZ(otherVec) {
+        return this.x * otherVec.y - this.y * otherVec.x;
+    }
+
+    lengthSquared() {
+        return this.x * this.x + this.y * this.y;
+    }
+
+    magnitude() {
+        return Math.sqrt(this.lengthSquared());
+    }
+
+    normalize() {
+        const len = this.magnitude();
+        if (len > EPSILON_VAL) {
+            return this.scale(1 / len);
+        }
+        return new Vec(0, 0);
+    }
+
+    rotate90Deg() {
+        return new Vec(-this.y, this.x);
+    }
+
+    rotate(angleRad) {
+        const cosVal = Math.cos(angleRad);
+        const sinVal = Math.sin(angleRad);
+        return new Vec(
+            this.x * cosVal - this.y * sinVal,
+            this.x * sinVal + this.y * cosVal
+        );
+    }
+
+    isEqual(otherVec) {
+        return areApproxEqual(this.x, otherVec.x) && areApproxEqual(this.y, otherVec.y);
+    }
+
+    isParallelTo(otherVec) {
+        return areApproxEqual(this.crossZ(otherVec), 0);
+    }
+
+    isOrthogonalTo(otherVec) {
+        return areApproxEqual(this.dot(otherVec), 0);
+    }
+
+    projectOnto(targetVec) {
+        const targetLenSq = targetVec.lengthSquared();
+        if (targetLenSq < EPSILON_VAL) {
+            return new Vec(0, 0);
+        }
+        const scalar = this.dot(targetVec) / targetLenSq;
+        return targetVec.scale(scalar);
+    }
+}
+
+function convertDegreesToRadians(degrees) {
+    return degrees * Math.PI / 180;
+}
+
+class Interval {
+    constructor(lowerBound, upperBound) {
+        this.minVal = lowerBound;
+        this.maxVal = upperBound;
+        this.ensureSorted();
+    }
+
+    ensureSorted() {
+        if (this.minVal > this.maxVal) {
+            [this.minVal, this.maxVal] = [this.maxVal, this.minVal];
+        }
+    }
+
+    overlaps(otherInterval) {
+        return otherInterval.minVal <= this.maxVal && this.minVal <= otherInterval.maxVal;
+    }
+}
+
+class Segment {
+    constructor(startPoint, endPoint) {
+        this.start = startPoint;
+        this.end = endPoint;
+    }
+
+    getVector() {
+        return this.end.subtract(this.start);
+    }
+
+    projectOntoAxis(axisVec) {
+        const unitAxis = axisVec.normalize();
+        const p1Proj = this.start.dot(unitAxis);
+        const p2Proj = this.end.dot(unitAxis);
+        return new Interval(p1Proj, p2Proj);
+    }
+
+    distanceToLine(point) {
+        const segVec = this.getVector();
+        if (segVec.lengthSquared() < EPSILON_VAL) {
+            return point.subtract(this.start).magnitude();
+        }
+        const crossProduct = segVec.crossZ(point.subtract(this.start));
+        return Math.abs(crossProduct) / segVec.magnitude();
+    }
+
+    distanceToPoint(point) {
+        const segVec = this.getVector();
+        const pToStart = point.subtract(this.start);
+
+        const dotProduct = pToStart.dot(segVec);
+        if (dotProduct < 0) {
+            return pToStart.magnitude();
+        }
+
+        const segLenSq = segVec.lengthSquared();
+        if (dotProduct > segLenSq) {
+            return point.subtract(this.end).magnitude();
+        }
+
+        return this.distanceToLine(point);
+    }
+
+    projectPoint(point) {
+        const segVec = this.getVector();
+        const pToStart = point.subtract(this.start);
+        const projectionScalar = pToStart.dot(segVec) / segVec.lengthSquared();
+        return this.start.add(segVec.scale(projectionScalar));
+    }
+
+    reflectPoint(point) {
+        const projectedPoint = this.projectPoint(point);
+        const vecToProjected = projectedPoint.subtract(point);
+        return point.add(vecToProjected.scale(2));
+    }
+
+    findIntersection(otherSegment) {
+        const v1 = this.getVector();
+        const v2 = otherSegment.getVector();
+        const p3_minus_p1 = otherSegment.start.subtract(this.start);
+
+        const determinant = v1.crossZ(v2);
+
+        if (areApproxEqual(determinant, 0)) {
+            if (areApproxEqual(p3_minus_p1.crossZ(v1), 0)) {
+                const projAxis = v1.normalize();
+                const intervalA = this.projectOntoAxis(projAxis);
+                const intervalB = otherSegment.projectOntoAxis(projAxis);
+                if (intervalA.overlaps(intervalB)) {
+                    // Original getCrossPoint is not used for parallel/collinear cases.
+                    // It's only called if isSegmentsCollide is true AND not parallel.
+                    // So, for parallel/collinear, we return null here.
+                    return null;
+                }
+            }
+            return null;
+        }
+
+        const t = p3_minus_p1.crossZ(v2) / determinant;
+        const u = p3_minus_p1.crossZ(v1) / determinant;
+
+        if (t >= -EPSILON_VAL && t <= 1 + EPSILON_VAL && u >= -EPSILON_VAL && u <= 1 + EPSILON_VAL) {
+            return this.start.add(v1.scale(t));
+        }
+
+        return null;
+    }
+
+    intersects(otherSegment) {
+        const v1 = this.getVector();
+        const v2 = otherSegment.getVector();
+        const p3_minus_p1 = otherSegment.start.subtract(this.start);
+
+        const determinant = v1.crossZ(v2);
+
+        if (areApproxEqual(determinant, 0)) {
+            if (areApproxEqual(p3_minus_p1.crossZ(v1), 0)) {
+                const projAxis = v1.normalize();
+                const intervalA = this.projectOntoAxis(projAxis);
+                const intervalB = otherSegment.projectOntoAxis(projAxis);
+                return intervalA.overlaps(intervalB);
+            }
+            return false;
+        }
+
+        const t = p3_minus_p1.crossZ(v2) / determinant;
+        const u = p3_minus_p1.crossZ(v1) / determinant;
+
+        return t >= -EPSILON_VAL && t <= 1 + EPSILON_VAL && u >= -EPSILON_VAL && u <= 1 + EPSILON_VAL;
+    }
+
+    distanceToSegment(otherSegment) {
+        if (this.intersects(otherSegment)) {
+            return 0;
+        }
+
+        const dist1 = this.distanceToPoint(otherSegment.start);
+        const dist2 = this.distanceToPoint(otherSegment.end);
+        const dist3 = otherSegment.distanceToPoint(this.start);
+        const dist4 = otherSegment.distanceToPoint(this.end);
+
+        return Math.min(dist1, dist2, dist3, dist4);
+    }
+}
+
+class Line {
+    constructor(pointOnLine, directionVec) {
+        this.origin = pointOnLine;
+        this.direction = directionVec.normalize();
+    }
+
+    distanceToPoint(point) {
+        const vecToPoint = point.subtract(this.origin);
+        const crossProduct = this.direction.crossZ(vecToPoint);
+        return Math.abs(crossProduct);
+    }
+}
+
+function clampValue(value, lowerBound, upperBound) {
+    return Math.max(lowerBound, Math.min(value, upperBound));
+}
+
+const fileSystem = require('fs');
+const inputData = fileSystem.readFileSync('/dev/stdin', 'utf8');
+
+const lines = inputData.trim().split('\n');
+const polygonVertexCount = parseInt(lines[0], 10);
+
+const polygonVertices = lines.slice(1, polygonVertexCount + 1).map(line => {
+    const coords = line.split(' ').map(Number);
+    return new Vec(coords[0], coords[1]);
+});
+
+const areaSum = polygonVertices.reduce((accumulator, currentVertex, index, array) => {
+    const nextVertex = array[(index + 1) % array.length];
+    return accumulator + currentVertex.crossZ(nextVertex);
+}, 0);
+
+const polygonArea = Math.abs(areaSum) / 2;
+
+console.log(polygonArea.toFixed(1));

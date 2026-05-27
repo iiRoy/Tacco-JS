@@ -1,15 +1,19 @@
-function evaluateRange(sourceText) {
-    const numericStrings = sourceText.match(/\d+/g);
-    const [alpha, beta, gamma] = numericStrings.map(Number);
+function processInputAndDecide(rawText) {
+    const numericValues = rawText.trim().split(' ').reduce((accumulator, currentString) => {
+        accumulator.push(Number(currentString));
+        return accumulator;
+    }, []);
 
-    const lowerDelta = gamma - alpha;
-    const upperDelta = (alpha + beta) - gamma;
+    const initialPoint = numericValues[0];
+    const segmentLength = numericValues[1];
+    const targetPoint = numericValues[2];
 
-    const isWithinBounds = (Math.sign(lowerDelta) !== -1) && (Math.sign(upperDelta) !== -1);
+    const isTargetGreaterThanOrEqualToInitial = Math.max(initialPoint, targetPoint) === targetPoint;
+    const isTargetLessThanOrEqualToEndPoint = Math.min(initialPoint + segmentLength, targetPoint) === targetPoint;
 
-    const resultString = isWithinBounds ? "YES" : "NO";
-    console.log(resultString);
+    const finalOutcome = isTargetGreaterThanOrEqualToInitial && isTargetLessThanOrEqualToEndPoint;
+
+    console.log(finalOutcome ? "YES" : "NO");
 }
 
-const inputSource = require("node:fs").readFileSync("/dev/stdin", { encoding: "utf8" });
-evaluateRange(inputSource.trim());
+processInputAndDecide(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,193 +1,142 @@
 "use strict";
 
-// This section handles reading input from standard input.
-// It uses Node.js 'fs' module to read the entire input as a string,
-// then splits it into tokens based on spaces or newlines.
-let fileSystemModule = require("fs");
-let rawInputContent = fileSystemModule.readFileSync("/dev/stdin", "utf8");
-let inputDataTokens = rawInputContent.split(/ |\n/);
-let currentTokenReadIndex = 0; // Index to keep track of the next token to be read.
+const InputReader = (function() {
+    const rawInputContent = require("fs").readFileSync("/dev/stdin", "utf8");
+    const inputTokens = rawInputContent.split(/ |\n/);
+    let currentTokenPosition = 0;
 
-/**
- * Retrieves and parses the next token from the input stream as an integer.
- * Increments the internal token index after reading.
- * @returns {number} The integer value of the next token.
- */
-function getNextNumericValue() {
-    return parseInt(inputDataTokens[currentTokenReadIndex++], 10);
+    const convertToNumber = (str) => +str;
+    const convertToBigInt = (str) => BigInt(str);
+
+    return {
+        readInteger: () => convertToNumber(inputTokens[currentTokenPosition++]),
+        readString: () => inputTokens[currentTokenPosition++],
+        readBigInteger: () => convertToBigInt(inputTokens[currentTokenPosition++]),
+
+        readIntegerSequence: (count) => {
+            const sequence = [];
+            for (let i = 0; i < count; i++) {
+                sequence.push(convertToNumber(inputTokens[currentTokenPosition++]));
+            }
+            return sequence;
+        },
+
+        readStringSequence: (count) => {
+            const sequence = [];
+            for (let i = 0; i < count; i++) {
+                sequence.push(inputTokens[currentTokenPosition++]);
+            }
+            return sequence;
+        },
+
+        readNumberMatrix: (rows, cols, returnStrings = false) => {
+            const matrix = [];
+            for (let r = 0; r < rows; r++) {
+                const row = [];
+                for (let c = 0; c < cols; c++) {
+                    row.push(returnStrings ? inputTokens[currentTokenPosition++] : convertToNumber(inputTokens[currentTokenPosition++]));
+                }
+                matrix.push(row);
+            }
+            return matrix;
+        },
+
+        // Original xArray equivalent, kept as is due to eval for behavioral equivalence
+        createMultiDimensionalArray: function(initialValue) {
+            var args = arguments, argLength = args.length, evalExpression = "Array(args[" + --argLength + "]).fill().map(x=>{return " + initialValue + ";})";
+            while (--argLength) evalExpression = "Array(args[" + argLength + "]).fill().map(x=>" + evalExpression + ")";
+            return eval(evalExpression);
+        }
+    };
+})();
+
+const finalResult = processSolution();
+if (finalResult !== undefined) {
+    console.log(String(finalResult));
 }
 
-/**
- * Reads a specified number of tokens from the input stream and returns them as an array.
- * Optionally parses each token into an integer.
- * @param {number} numberOfElements The count of tokens to read.
- * @param {boolean} shouldConvertToInt If true, each token is parsed as an integer.
- *                                     Otherwise, tokens are returned as strings.
- * @returns {Array<number|string>} An array containing the read tokens.
- */
-function acquireArrayOfTokens(numberOfElements, shouldConvertToInt) {
-    const startIdx = currentTokenReadIndex;
-    currentTokenReadIndex += numberOfElements;
-    const extractedTokens = inputDataTokens.slice(startIdx, currentTokenReadIndex);
-    if (shouldConvertToInt) {
-        return extractedTokens.map(token => parseInt(token, 10));
-    } else {
-        return extractedTokens;
-    }
-}
+function processSolution() {
+    const dataSize = InputReader.readInteger();
+    const dataValues = InputReader.readIntegerSequence(dataSize);
 
-// Execute the main processing function and display its result.
-const calculatedResult = computeMinimumOperations();
-if (calculatedResult !== undefined) {
-    console.log(String(calculatedResult));
-}
+    let searchUpperBoundary = dataSize; // Corresponds to 'ok'
+    let searchLowerBoundary = 0;        // Corresponds to 'ng'
 
-/**
- * Implements the main algorithm to find the minimum 'm' (maximum allowed operations per merge)
- * that allows a given sequence to be processed. This is typically solved using binary search
- * on the possible values of 'm'.
- * @returns {number} The smallest 'm' for which the sequence is processable.
- */
-function computeMinimumOperations() {
-    // Read the length of the input sequence and the sequence itself.
-    const sequenceItemCount = getNextNumericValue();
-    const numericSequence = acquireArrayOfTokens(sequenceItemCount, true); // true to ensure numeric parsing
+    while (searchUpperBoundary - searchLowerBoundary > 1) {
+        const currentMidpoint = (searchUpperBoundary + searchLowerBoundary) >> 1; // Corresponds to 'm'
+        let isFeasible = true;                                                    // Corresponds to 'f'
+        const processingStack = [];                                               // Corresponds to 'b'
 
-    // Early exit for trivial cases.
-    if (sequenceItemCount === 0) {
-        return 0; // Or 1, depending on specific problem constraints for empty sequences.
-    }
-
-    // Binary search variables for 'm'.
-    // `possibleUpperLimit` stores a value of 'm' that is known to work.
-    // `impossibleLowerLimit` stores a value of 'm' that is known to not work.
-    // We are looking for the smallest `possibleUpperLimit`.
-    let possibleUpperLimit = sequenceItemCount; // A safe upper bound for 'm' (e.g., each element handled individually).
-    let impossibleLowerLimit = 0; // 'm' cannot be zero as operations must occur.
-
-    // Helper functions to manage the 'operationStack' array, which stores [value, count] pairs.
-    // The stack is a flat array: [v1, c1, v2, c2, ..., vk, ck].
-    const retrieveStackTopValue = (stack) => stack.length >= 2 ? stack[stack.length - 2] : null;
-    const retrieveStackTopCount = (stack) => stack.length >= 2 ? stack[stack.length - 1] : null;
-    const removeLastPairFromStack = (stack) => { if (stack.length >= 2) stack.length -= 2; };
-    const addNewPairToStack = (stack, value, count) => stack.push(value, count);
-
-    // The binary search loop continues as long as there is a range to explore.
-    while (possibleUpperLimit - impossibleLowerLimit > 1) {
-        // Calculate the midpoint `m` for the current search range.
-        // `Math.floor` ensures integer division.
-        const currentOperationLimit = Math.floor((possibleUpperLimit + impossibleLowerLimit) / 2);
-        let isCurrentLimitViable = true; // Flag to track if `currentOperationLimit` works for the sequence.
-
-        const operationStack = [];
-
-        // Initialize the `operationStack` based on the first element of the sequence.
-        const firstSequenceElement = numericSequence[0];
-        if (firstSequenceElement > 1) {
-            addNewPairToStack(operationStack, 1, 1);
-            addNewPairToStack(operationStack, firstSequenceElement, 1);
+        // Initialize processingStack based on the first element of dataValues
+        if (dataValues[0] > 1) {
+            processingStack.push(1, 1, dataValues[0], 1);
         } else {
-            addNewPairToStack(operationStack, 1, 1);
+            processingStack.push(1, 1);
         }
 
-        // Iterate through the rest of the sequence, starting from the second element.
-        for (let seqIndex = 1; seqIndex < sequenceItemCount; ++seqIndex) {
-            // If `currentOperationLimit` has already been found infeasible, stop processing.
-            if (!isCurrentLimitViable) {
-                break;
-            }
+        for (let elementIndex = 1; elementIndex < dataSize && isFeasible; elementIndex++) {
+            const currentDataElement = dataValues[elementIndex];
+            let stackSecondToLastElement = processingStack[processingStack.length - 2];
 
-            const currentElementValue = numericSequence[seqIndex];
-            const topStackValue = retrieveStackTopValue(operationStack);
-
-            // Scenario 1: Current element is greater than the top value on the stack.
-            // This often means we can add the current element directly, after some stack cleanup.
-            if (topStackValue !== null && topStackValue < currentElementValue) {
-                // Remove any trailing pairs from the stack that have a count of 1.
-                // This simplifies the stack before adding a new larger element.
-                while (operationStack.length > 2 && retrieveStackTopCount(operationStack) === 1) {
-                    removeLastPairFromStack(operationStack);
+            if (stackSecondToLastElement < currentDataElement) {
+                // Trim stack: remove pairs where the count is 1, if stack has more than 2 elements
+                while (processingStack.length > 2 && processingStack[processingStack.length - 1] === 1) {
+                    processingStack.pop(); // Remove count
+                    processingStack.pop(); // Remove value
                 }
-                addNewPairToStack(operationStack, currentElementValue, 1);
-            }
-            // Scenario 2: Current element is less than or equal to the top value on the stack.
-            // This requires more complex merging or modification of the stack.
-            else {
-                // If `currentOperationLimit` is 1, and we're in this scenario, it means
-                // no merging/incrementing is possible, making it unviable.
-                if (currentOperationLimit === 1) {
-                    isCurrentLimitViable = false;
+                processingStack.push(currentDataElement, 1);
+            } else {
+                // Condition not met, further checks needed
+                if (currentMidpoint === 1) {
+                    isFeasible = false;
                     break;
                 }
 
-                // Pop elements from the stack that are strictly greater than the current element.
-                while (retrieveStackTopValue(operationStack) !== null && retrieveStackTopValue(operationStack) > currentElementValue) {
-                    removeLastPairFromStack(operationStack);
+                // Pop elements from stack until stackSecondToLastElement is not greater than currentDataElement
+                while (processingStack[processingStack.length - 2] > currentDataElement) {
+                    processingStack.pop(); // Remove count
+                    processingStack.pop(); // Remove value
                 }
 
-                const updatedTopStackValue = retrieveStackTopValue(operationStack);
+                stackSecondToLastElement = processingStack[processingStack.length - 2]; // Re-fetch after potential pops
 
-                // After popping, if the new stack top value is less than the current element,
-                // add the current element with a count of 2.
-                if (updatedTopStackValue !== null && updatedTopStackValue < currentElementValue) {
-                    addNewPairToStack(operationStack, currentElementValue, 2);
-                }
-                // If the new stack top value is equal to the current element,
-                // we need to attempt to merge or increment counts.
-                else if (updatedTopStackValue === currentElementValue) {
-                    // `requiredMergeDepth` tracks a conceptual merging depth.
-                    // It starts with the current element's value and decreases as pairs are removed.
-                    let requiredMergeDepth = currentElementValue;
+                if (stackSecondToLastElement < currentDataElement) {
+                    processingStack.push(currentDataElement, 2);
+                } else {
+                    let currentComparisonThreshold = stackSecondToLastElement; // Corresponds to 't'
+                    let stackTraversalPointer = processingStack.length - 1;    // Corresponds to 'j'
 
-                    // Iterate backward through the stack, examining pairs.
-                    // `pairCountIndex` points to the count element of a pair.
-                    let pairCountIndex = operationStack.length - 1;
-                    for (; pairCountIndex >= 1; pairCountIndex -= 2) {
-                        const currentPairValue = operationStack[pairCountIndex - 1];
-                        const currentPairCount = operationStack[pairCountIndex];
+                    for (; stackTraversalPointer > 0; stackTraversalPointer -= 2) {
+                        const traversedValue = processingStack[stackTraversalPointer - 1];
+                        const traversedCount = processingStack[stackTraversalPointer];
 
-                        // If a previous pair's value is less than `requiredMergeDepth`,
-                        // we can satisfy the condition by adding the current element with a count of 2.
-                        if (currentPairValue < requiredMergeDepth) {
-                            addNewPairToStack(operationStack, currentElementValue, 2);
-                            break; // Successfully handled, exit inner loop.
+                        if (traversedValue < currentComparisonThreshold) {
+                            processingStack.push(currentDataElement, 2);
+                            break;
                         }
-
-                        // If the current pair's count is less than the `currentOperationLimit`,
-                        // we can increment its count.
-                        if (currentPairCount < currentOperationLimit) {
-                            operationStack[pairCountIndex]++; // Increment the count for this pair.
-                            // If the value of this modified pair is still less than the current element,
-                            // then add the current element with a count of 1.
-                            if (currentPairValue < currentElementValue) {
-                                addNewPairToStack(operationStack, currentElementValue, 1);
+                        if (traversedCount < currentMidpoint) {
+                            processingStack[stackTraversalPointer]++;
+                            if (traversedValue < currentDataElement) {
+                                processingStack.push(currentDataElement, 1);
                             }
-                            break; // Successfully handled, exit inner loop.
+                            break;
                         }
-
-                        // If neither of the above conditions allowed handling the current element,
-                        // remove the current pair from the stack and decrement `requiredMergeDepth`.
-                        removeLastPairFromStack(operationStack);
-                        requiredMergeDepth--;
+                        processingStack.pop(); // Remove count
+                        processingStack.pop(); // Remove value
+                        currentComparisonThreshold--;
                     }
-
-                    // If the inner loop completed without breaking (i.e., `pairCountIndex` became less than 1),
-                    // it means we could not successfully process the current element with `currentOperationLimit`.
-                    if (pairCountIndex < 1) {
-                        isCurrentLimitViable = false;
+                    if (stackTraversalPointer < 0) {
+                        isFeasible = false;
                     }
                 }
             }
-        } // End of sequence iteration.
-
-        // Based on whether `currentOperationLimit` was viable, adjust binary search bounds.
-        if (isCurrentLimitViable) {
-            possibleUpperLimit = currentOperationLimit;
-        } else {
-            impossibleLowerLimit = currentOperationLimit;
         }
-    } // End of binary search loop.
 
-    // After the binary search, `possibleUpperLimit` holds the smallest 'm' that is feasible.
-    return possibleUpperLimit;
+        if (isFeasible) {
+            searchUpperBoundary = currentMidpoint;
+        } else {
+            searchLowerBoundary = currentMidpoint;
+        }
+    }
+    return searchUpperBoundary;
 }

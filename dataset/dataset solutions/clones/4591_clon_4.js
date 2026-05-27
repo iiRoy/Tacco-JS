@@ -1,36 +1,30 @@
 'use strict';
 
-const evaluateSequence = (dataString) => {
-  const parsedNumbers = dataString.trim().split(' ').map(val => +val);
-  const initialX = parsedNumbers[0];
-  const initialY = parsedNumbers[1];
-  const initialZ = parsedNumbers[2];
+const ProcessInput = (rawInput) => {
+    const components = rawInput.trim().split(' ').map(Number);
+    let [firstVal, secondVal, thirdVal] = components;
 
-  if (initialX === initialY && initialY === initialZ && initialX % 2 === 0) {
-    console.log(-1);
-    return -1;
-  }
-
-  const determineEvolutionSteps = (currentX, currentY, currentZ, iterationDepth) => {
-    if (currentX % 2 !== 0 || currentY % 2 !== 0 || currentZ % 2 !== 0) {
-      return iterationDepth;
+    if (firstVal === secondVal && secondVal === thirdVal && firstVal % 2 === 0) {
+        console.log(-1);
+        return -1;
     }
 
-    const valueA = currentX;
-    const valueB = currentY;
-    const valueC = currentZ;
+    let iterationCount = 0;
+    let currentSet = [firstVal, secondVal, thirdVal];
 
-    const nextA = (valueB + valueC) / 2;
-    const nextB = (valueA + valueC) / 2;
-    const nextC = (valueA + valueB) / 2;
+    while (currentSet.every(n => n % 2 === 0)) {
+        const [aPrev, bPrev, cPrev] = currentSet;
 
-    return determineEvolutionSteps(nextA, nextB, nextC, iterationDepth + 1);
-  };
+        const aNext = (bPrev + cPrev) / 2;
+        const bNext = (aPrev + cPrev) / 2;
+        const cNext = (aPrev + bPrev) / 2;
 
-  const finalCount = determineEvolutionSteps(initialX, initialY, initialZ, 0);
+        currentSet = [aNext, bNext, cNext];
+        iterationCount++;
+    }
 
-  console.log(finalCount);
-  return finalCount;
+    console.log(iterationCount);
+    return iterationCount;
 };
 
-evaluateSequence(require('node:fs').readFileSync('/dev/stdin', 'utf8'));
+ProcessInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

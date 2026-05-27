@@ -1,63 +1,71 @@
-const inputReader = require('readline').createInterface({
-  input: process.stdin,
-  output: process.stdout
-});
+function processInputData() {
+  let lineCount = parseInt(input[0], 10);
+  let dataLines = input.slice(1);
 
-let lineBuffer = [];
+  function determinePartitionPossibility(sequenceOfNumbers) {
+    // An explicit stack to manage states for iterative depth-first search.
+    // Each state is represented as an array:
+    // [current_index_in_sequence, last_element_on_left_subsequence, last_element_on_right_subsequence]
+    // The initial state starts at index 0, with 0 as a sentinel for both subsequences,
+    // allowing any positive number to be the first element.
+    const explorationStack = [[0, 0, 0]];
 
-inputReader.on('line', (lineContent) => {
-  lineBuffer.push(lineContent);
-});
+    // A Set to keep track of visited states to prevent redundant computations and infinite loops.
+    // State keys are strings formed by concatenating the index and the last elements.
+    const visitedStates = new Set();
 
-inputReader.on('close', () => {
-  processAllCases(lineBuffer);
-});
+    while (explorationStack.length > 0) {
+      const [currentIdx, leftPeak, rightPeak] = explorationStack.pop();
 
-const evaluateSeries = (valueArray) => {
-    const workStack = [[0, 0, 0]]; 
-    let successFlag = false;
+      // If all numbers in the sequence have been successfully placed, a valid partition exists.
+      if (currentIdx === sequenceOfNumbers.length) {
+        return true;
+      }
 
-    while (workStack.length > 0) {
-        const currentTask = workStack.pop();
-        const currentPosition = currentTask[0];
-        const leftBoundaryValue = currentTask[1];
-        const rightBoundaryValue = currentTask[2];
+      // Construct a unique identifier for the current state.
+      const stateIdentifier = `${currentIdx}-${leftPeak}-${rightPeak}`;
 
-        if (currentPosition === valueArray.length) {
-            successFlag = true;
-            break; 
-        }
+      // If this state has already been explored, skip it.
+      if (visitedStates.has(stateIdentifier)) {
+        continue;
+      }
+      visitedStates.add(stateIdentifier);
 
-        const nextElement = valueArray[currentPosition];
+      const currentNumber = sequenceOfNumbers[currentIdx];
 
-        const canExtendLeft = (nextElement > leftBoundaryValue);
-        const canExtendRight = (nextElement > rightBoundaryValue);
+      // Attempt to place the current number onto the left subsequence.
+      // It must be strictly greater than the last element currently on the left subsequence.
+      if (currentNumber > leftPeak) {
+        explorationStack.push([currentIdx + 1, currentNumber, rightPeak]);
+      }
 
-        if (canExtendRight) {
-            workStack.push([currentPosition + 1, leftBoundaryValue, nextElement]);
-        }
-        if (canExtendLeft) {
-            workStack.push([currentPosition + 1, nextElement, rightBoundaryValue]);
-        }
+      // Attempt to place the current number onto the right subsequence.
+      // It must be strictly greater than the last element currently on the right subsequence.
+      if (currentNumber > rightPeak) {
+        explorationStack.push([currentIdx + 1, leftPeak, currentNumber]);
+      }
     }
 
-    return successFlag;
-};
+    // If the exploration stack becomes empty and no solution was found,
+    // it means no valid partition into two strictly increasing subsequences exists.
+    return false;
+  }
 
-const processAllCases = (dataLines) => {
-    let currentLineIndex = 0;
-    const totalTestSets = Number.parseInt(dataLines[currentLineIndex++], 10);
+  // Iterate through each line of numerical data provided in the input.
+  for (let k = 0; k < lineCount; k++) {
+    const currentNumbers = dataLines[k].split(' ').map(parseFloat);
+    console.log(determinePartitionPossibility(currentNumbers) ? 'YES' : 'NO');
+  }
+}
 
-    for (let setIndex = 0; setIndex < totalTestSets; setIndex++) {
-        const currentEntry = dataLines[currentLineIndex++];
-        const numericalValues = currentEntry.split(' ').map(Number.parseFloat);
+let input = '';
 
-        const resultStatus = evaluateSeries(numericalValues);
-
-        if (resultStatus) {
-            process.stdout.write('YES\n');
-        } else {
-            process.stdout.write('NO\n');
-        }
-    }
-};
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
+process.stdin.on('data', function(chunk) {
+  input += chunk;
+});
+process.stdin.on('end', function() {
+  input = input.split('\n');
+  processInputData();
+});

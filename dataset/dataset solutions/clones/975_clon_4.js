@@ -1,24 +1,13 @@
-const inputDetails = {
-  sourcePath: '/dev/stdin',
-  separator: '\n'
-};
+const sourceConfiguration = { dataPath: '/dev/stdin', lineDelimiter: '\n' };
 
-const fileHandler = require('fs');
+const fileContent = require('fs').readFileSync(sourceConfiguration.dataPath, 'ascii');
+const [targetString, querySubstring] = fileContent.split(sourceConfiguration.lineDelimiter, 2);
 
-const fileContents = fileHandler.readFileSync(inputDetails.sourcePath, 'ascii')
-  .split(inputDetails.separator, 2);
+const searchExpression = new RegExp(querySubstring, 'g');
+const foundPositions = [];
 
-const primaryString = fileContents[0];
-const searchPattern = fileContents[1];
-
-const patternRegex = new RegExp(searchPattern, 'g');
-
-const occurrenceIndices = [];
-
-const matchIterator = primaryString.matchAll(patternRegex);
-
-for (const singleMatch of matchIterator) {
-  occurrenceIndices.push(singleMatch.index);
+for (const matchResult of targetString.matchAll(searchExpression)) {
+  foundPositions.push(matchResult.index);
 }
 
-console.log(occurrenceIndices.join('\n'));
+console.log(foundPositions.join('\n'));

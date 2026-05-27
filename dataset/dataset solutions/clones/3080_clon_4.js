@@ -1,15 +1,11 @@
-const evaluateEquality = (sourceText) => {
-  const numericalElements = sourceText.split(' ').map(Number);
-  const [valA, valB, valC] = numericalElements;
+function processInputData(inputString) {
+  const numericValues = inputString.split(" ").map(Number);
+  
+  const distinctElements = new Set(numericValues);
+  
+  const outputResult = distinctElements.size === 1 ? "Yes" : "No";
+  
+  console.log(outputResult);
+}
 
-  const comparisonResult = (Math.max(valA, valB, valC) === Math.min(valA, valB, valC));
-
-  const decisionTable = new Map([
-    [true, "Yes"],
-    [false, "No"]
-  ]);
-
-  return decisionTable.get(comparisonResult);
-};
-
-console.log(evaluateEquality(require("fs").readFileSync("/dev/stdin", "utf8")));
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

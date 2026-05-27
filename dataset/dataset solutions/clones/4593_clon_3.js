@@ -1,231 +1,180 @@
 "use strict";
-// Module for file system operations, used to read standard input.
-const fileSystemModule = require("fs");
+const fileSystem = require("fs");
+const rawInputData = fileSystem.readFileSync("/dev/stdin", "utf8");
 
-// Read all input from standard input as a UTF-8 string.
-const rawInputContent = fileSystemModule.readFileSync("/dev/stdin", "utf8");
+const InputReader = (() => {
+    let tokenStream = rawInputData.split(/ |\n/);
+    let tokenPointer = 0;
 
-// Split the input content by spaces or newlines to get an array of tokens.
-const dataTokens = rawInputContent.split(/ |\n/);
+    const getNextToken = () => tokenStream[tokenPointer++];
+    const parseNumber = () => +getNextToken();
+    const parseString = () => getNextToken();
+    const parseBigInt = () => BigInt(getNextToken());
 
-// Pointer to keep track of the current token being processed from `dataTokens`.
-let currentTokenPointer = 0;
+    const readMultiple = (count, mapFn) => {
+        const segment = tokenStream.slice(tokenPointer, tokenPointer + count);
+        tokenPointer += count;
+        return mapFn ? segment.map(mapFn) : segment;
+    };
 
-/**
- * Retrieves and converts the next token from the input stream to a number.
- * Increments the token pointer after consumption.
- * @returns {number} The next numerical token.
- */
-function extractNextNumericalValue() {
-    return +dataTokens[currentTokenPointer++];
-}
+    const readMatrixData = (rows, cols, mapFn) => {
+        const matrix = [];
+        for (let i = 0; i < rows; i++) {
+            const rowSegment = tokenStream.slice(tokenPointer, tokenPointer + cols);
+            tokenPointer += cols;
+            matrix.push(mapFn ? rowSegment.map(mapFn) : rowSegment);
+        }
+        return matrix;
+    };
 
-/**
- * Retrieves the next token from the input stream as a string.
- * Increments the token pointer after consumption.
- * @returns {string} The next string token.
- */
-function extractNextStringValue() {
-    return dataTokens[currentTokenPointer++];
-}
+    const generateMultiDimensionalArray = (valueInitializer) => {
+        const args = arguments;
+        let argCount = args.length;
+        let arrayCreationString = `Array(args[${--argCount}]).fill().map(x=>{return ${valueInitializer};})`;
+        while (--argCount) {
+            arrayCreationString = `Array(args[${argCount}]).fill().map(x=>${arrayCreationString})`;
+        }
+        return eval(arrayCreationString);
+    };
 
-/**
- * Retrieves a specified number of tokens from the input stream and returns them as an array of strings.
- * Updates the token pointer.
- * @param {number} count - The number of string tokens to retrieve.
- * @returns {string[]} An array containing the requested string tokens.
- */
-function extractMultipleStrings(count) {
-    const stringSubset = dataTokens.slice(currentTokenPointer, currentTokenPointer + count);
-    currentTokenPointer += count;
-    return stringSubset;
-}
+    return {
+        readNum: parseNumber,
+        readStr: parseString,
+        readBigInt: parseBigInt,
+        readNumsOrStrs: readMultiple,
+        readMatrix: readMatrixData,
+        createMultiDimArray: generateMultiDimensionalArray
+    };
+})();
 
-/**
- * Calculates the shortest path distances from a specified starting cell
- * to all other reachable cells within a 2D grid using a Breadth-First Search (BFS) algorithm.
- *
- * @param {string[]} gridMap - The 2D grid, where each element is a string representing a row.
- *                             '.' for open paths, '#' for obstacles.
- * @param {number} initialX - The x-coordinate (column) of the starting cell.
- * @param {number} initialY - The y-coordinate (row) of the starting cell.
- * @returns {number[][]} A 2D array (distance matrix) where each cell contains the minimum
- *                        number of steps from the start, or a very large number if unreachable.
- */
-function computeShortestPathMatrix(gridMap, initialX, initialY) {
-    const PATH_SYMBOL = "."; // Represents a traversable cell.
-    const OBSTACLE_SYMBOL = "#"; // Represents an impassable wall.
-    const UNREACHABLE_DISTANCE = 1000000000; // A large value to denote infinity or unreachability.
+function calculateGridDistances(inputGrid, startXCoord, startYCoord) {
+    const pathChar = ".";
+    const obstacleChar = "#";
+    const infinityVal = 1e9;
 
-    // Basic validation for the input grid map.
-    if (!gridMap || gridMap.length === 0 || gridMap[0].length === 0) {
-        console.error("Error: Provided grid map is empty or malformed.");
-        return [[]]; // Return an empty matrix or handle error appropriately.
-    }
+    const gridHeight = inputGrid.length;
+    const gridWidth = inputGrid[0].length;
 
-    const gridRows = gridMap.length;
-    const gridColumns = gridMap[0].length;
+    const initialize2DArray = (rows, cols, initialValue) => {
+        return Array(rows).fill(null).map(() => Array(cols).fill(initialValue));
+    };
 
-    // Validate starting coordinates to ensure they are within grid bounds.
-    if (initialX < 0 || initialX >= gridColumns || initialY < 0 || initialY >= gridRows) {
-        console.error(`Error: Starting coordinates (${initialX}, ${initialY}) are outside grid boundaries.`);
-        // If start is invalid, no paths are reachable, so return a matrix of UNREACHABLE_DISTANCE.
-        return Array(gridRows).fill(null).map(() => Array(gridColumns).fill(UNREACHABLE_DISTANCE));
-    }
+    const distanceGrid = initialize2DArray(gridHeight, gridWidth, infinityVal);
 
-    // Initialize the distance matrix with UNREACHABLE_DISTANCE for all cells.
-    const distanceResultMatrix = Array(gridRows).fill(null).map(() => Array(gridColumns).fill(UNREACHABLE_DISTANCE));
+    // Directions: [deltaX, deltaY] for Up, Right, Down, Left
+    const directions = [[0, -1], [1, 0], [0, 1], [-1, 0]];
+    const directionCount = directions.length;
 
-    // Define coordinate changes for moving in 4 cardinal directions (Up, Right, Down, Left).
-    const deltaX = [0, 1, 0, -1]; // Change in X-coordinate.
-    const deltaY = [-1, 0, 1, 0]; // Change in Y-coordinate.
-    const numberOfDirections = deltaX.length; // Expected to be 4.
+    let currentQueue = [startXCoord, startYCoord];
+    let currentDistance = 1;
 
-    // Initialize the BFS queue. Cells are stored as objects {x, y} for clarity.
-    const bfsTraversalQueue = [];
-    bfsTraversalQueue.push({ x: initialX, y: initialY });
+    distanceGrid[startYCoord][startXCoord] = 0;
 
-    // The distance to the starting cell is 0.
-    distanceResultMatrix[initialY][initialX] = 0;
+    const isWithinBounds = (x, y) => {
+        return x >= 0 && x < gridWidth && y >= 0 && y < gridHeight;
+    };
 
-    let currentLevelPathLength = 0; // Tracks the distance for the current BFS level.
+    while (currentQueue.length > 0) {
+        let nextQueue = [];
+        while (currentQueue.length > 0) {
+            // Pop x, y from the end of the queue (original used pop twice, effectively LIFO for a pair)
+            const currY = currentQueue.pop();
+            const currX = currentQueue.pop();
 
-    // Main BFS loop: Continues as long as there are cells to visit.
-    while (bfsTraversalQueue.length > 0) {
-        currentLevelPathLength++; // Increment distance for cells processed in the next level.
-        const nextLevelQueue = []; // Temporarily holds cells for the next BFS level.
+            for (let i = 0; i < directionCount; i++) {
+                const [deltaX, deltaY] = directions[i];
+                const nextX = currX + deltaX;
+                const nextY = currY + deltaY;
 
-        // Process all cells at the current distance level.
-        while (bfsTraversalQueue.length > 0) {
-            const currentCell = bfsTraversalQueue.shift(); // Dequeue the oldest cell (FIFO).
-            const currentCellX = currentCell.x;
-            const currentCellY = currentCell.y;
-
-            // Explore all possible neighbors from the current cell.
-            for (let i = 0; i < numberOfDirections; i++) {
-                const neighborX = currentCellX + deltaX[i];
-                const neighborY = currentCellY + deltaY[i];
-
-                // Check if the neighbor is within the grid boundaries.
-                if (neighborX < 0 || neighborX >= gridColumns || neighborY < 0 || neighborY >= gridRows) {
-                    continue; // Skip if out of bounds.
+                if (!isWithinBounds(nextX, nextY)) {
+                    continue;
                 }
 
-                // Check if the neighbor is an obstacle.
-                if (gridMap[neighborY][neighborX] === OBSTACLE_SYMBOL) {
-                    continue; // Skip if it's a wall.
+                const targetCellContent = inputGrid[nextY][nextX];
+                const existingCellDistance = distanceGrid[nextY][nextX];
+
+                if (targetCellContent === obstacleChar || existingCellDistance !== infinityVal) {
+                    continue;
                 }
 
-                // Check if the neighbor has already been visited with a shorter or equal path.
-                // If it's still UNREACHABLE_DISTANCE, it means it's unvisited.
-                if (distanceResultMatrix[neighborY][neighborX] === UNREACHABLE_DISTANCE) {
-                    distanceResultMatrix[neighborY][neighborX] = currentLevelPathLength; // Mark its distance.
-                    nextLevelQueue.push({ x: neighborX, y: neighborY }); // Enqueue for the next level.
-                }
+                distanceGrid[nextY][nextX] = currentDistance;
+                nextQueue.push(nextX, nextY);
             }
         }
-        // If no new cells were found for the next level, BFS is complete.
-        if (nextLevelQueue.length === 0) {
-            break;
-        }
-        // Add all cells from the next level's queue to the main BFS queue.
-        bfsTraversalQueue.push(...nextLevelQueue);
+        currentDistance++;
+        currentQueue = nextQueue;
     }
-    return distanceResultMatrix;
+    return distanceGrid;
 }
 
-/**
- * The primary function to solve the grid navigation problem.
- * It reads grid dimensions, finds a starting point 'S', calculates path costs,
- * and determines the minimum number of 'teleportations' to reach any edge.
- * @returns {number} The minimum number of teleportations, or -1 if input is invalid
- *                   or the starting point is not found.
- */
-function executeGridAnalysis() {
-    // Read grid dimensions (height, width) and the maximum jump distance (k).
-    const gridDimHeight = extractNextNumericalValue();
-    const gridDimWidth = extractNextNumericalValue();
-    const maximumAllowedJump = extractNextNumericalValue();
+const finalResult = solveProblem();
+if (finalResult !== undefined) {
+    console.log(finalResult);
+}
 
-    // Input validation for grid dimensions and jump distance.
-    if (gridDimHeight <= 0 || gridDimWidth <= 0 || maximumAllowedJump <= 0) {
-        console.error("Error: Grid dimensions and maximum jump distance must be positive integers.");
-        return -1; // Indicate an error.
-    }
+function solveProblem() {
+    const gridH = InputReader.readNum();
+    const gridW = InputReader.readNum();
+    const maxMoveK = InputReader.readNum();
 
-    // Read the grid map, which consists of `gridDimHeight` rows (strings).
-    const gridInputMap = extractMultipleStrings(gridDimHeight);
+    // Read the grid as an array of strings.
+    // Original `nexts(h,1)` reads `h` strings because `1` is truthy.
+    const inputGrid = InputReader.readNumsOrStrs(gridH, (s) => s);
 
-    let startPointX = -1; // X-coordinate of the 'S' (start) character.
-    let startPointY = -1; // Y-coordinate of the 'S' (start) character.
+    let startX = -1;
+    let startY = -1;
 
-    // Loop through the grid rows to locate the 'S' (starting) character.
-    for (let rowIndex = 0; rowIndex < gridDimHeight; rowIndex++) {
-        const currentRowString = gridInputMap[rowIndex];
-        const foundSIndex = currentRowString.indexOf("S");
-        if (foundSIndex !== -1) { // If 'S' is found in the current row.
-            startPointX = foundSIndex;
-            startPointY = rowIndex;
-            break; // Exit loop once 'S' is located.
+    const findStartCoordinates = (grid) => {
+        for (let rowIdx = 0; rowIdx < grid.length; rowIdx++) {
+            const sCharIndex = grid[rowIdx].indexOf("S");
+            if (sCharIndex >= 0) {
+                return { x: sCharIndex, y: rowIdx };
+            }
         }
-    }
+        return { x: -1, y: -1 }; // Should not be reached if 'S' is guaranteed
+    };
 
-    // Guard clause: If the starting point 'S' was not found in the grid.
-    if (startPointX === -1 || startPointY === -1) {
-        console.error("Error: Starting point 'S' not found within the provided grid map.");
-        return -1; // Indicate a critical error.
-    }
+    const startCoords = findStartCoordinates(inputGrid);
+    startX = startCoords.x;
+    startY = startCoords.y;
 
-    // Compute the shortest path distances from 'S' to all reachable cells.
-    const bfsDistanceMatrix = computeShortestPathMatrix(gridInputMap, startPointX, startPointY);
+    const shortestDistances = calculateGridDistances(inputGrid, startX, startY);
 
-    // Initialize the minimum teleportations required to a very large number.
-    let minimumRequiredTeleports = Number.MAX_SAFE_INTEGER;
+    let minTurns = 1e9; // Initialize with a large value
 
-    // Iterate through every cell in the grid to calculate possible teleportation paths.
-    for (let currentY = 0; currentY < gridDimHeight; currentY++) {
-        for (let currentX = 0; currentX < gridDimWidth; currentX++) {
-            const currentCellPathCost = bfsDistanceMatrix[currentY][currentX];
+    const calculateTurnsToEdge = (distanceFromEdge, stepSize) => {
+        // Calculates the minimum number of 'stepSize' jumps required to cover 'distanceFromEdge'.
+        return Math.ceil(distanceFromEdge / stepSize);
+    };
 
-            // If the cell is unreachable from 'S' or requires more steps than `maximumAllowedJump`, skip it.
-            if (currentCellPathCost > maximumAllowedJump) {
+    for (let rowIdx = 0; rowIdx < gridH; rowIdx++) {
+        for (let colIdx = 0; colIdx < gridW; colIdx++) {
+            const currentCellDistance = shortestDistances[rowIdx][colIdx];
+
+            // Guard clause: if current cell is unreachable within K unit steps from 'S', skip it.
+            if (currentCellDistance > maxMoveK) {
                 continue;
             }
 
-            // Calculate the number of 'teleport' steps needed to reach each of the four grid edges
-            // from the current cell, considering `maximumAllowedJump` distance per step.
-            // Math.ceil(coord / k) gives the number of k-sized jumps to reach 0 from coord.
-            const stepsToTopBoundary = Math.ceil(currentY / maximumAllowedJump);
-            const stepsToLeftBoundary = Math.ceil(currentX / maximumAllowedJump);
-            // For bottom/right, it's distance from current cell to (h-1) or (w-1).
-            const stepsToBottomBoundary = Math.ceil((gridDimHeight - 1 - currentY) / maximumAllowedJump);
-            const stepsToRightBoundary = Math.ceil((gridDimWidth - 1 - currentX) / maximumAllowedJump);
+            // Calculate turns to reach each of the four edges from the current cell (rowIdx, colIdx)
+            const turnsToEdgeTop = calculateTurnsToEdge(rowIdx, maxMoveK);
+            const turnsToEdgeLeft = calculateTurnsToEdge(colIdx, maxMoveK);
+            const turnsToEdgeBottom = calculateTurnsToEdge(gridH - rowIdx - 1, maxMoveK);
+            const turnsToEdgeRight = calculateTurnsToEdge(gridW - colIdx - 1, maxMoveK);
 
-            // The minimum steps to reach any edge from the current cell, plus 1 for the initial
-            // teleport from 'S' to this current cell (if this cell is chosen as an intermediate point).
-            const currentCellTotalTeleports = Math.min(
-                stepsToTopBoundary,
-                stepsToLeftBoundary,
-                stepsToBottomBoundary,
-                stepsToRightBoundary
+            // The total number of K-jumps is 1 (to reach current cell from 'S')
+            // plus the minimum K-jumps from current cell to any edge.
+            const currentMinTurns = Math.min(
+                turnsToEdgeTop,
+                turnsToEdgeLeft,
+                turnsToEdgeBottom,
+                turnsToEdgeRight
             ) + 1;
 
-            // Update the overall minimum teleportations if a better path is found.
-            if (currentCellTotalTeleports < minimumRequiredTeleports) {
-                minimumRequiredTeleports = currentCellTotalTeleports;
+            if (currentMinTurns < minTurns) {
+                minTurns = currentMinTurns;
             }
         }
     }
-    return minimumRequiredTeleports;
-}
-
-// Execute the main analysis function.
-const finalProgramResult = executeGridAnalysis();
-
-// Display the result to standard output if it's a valid, non-error value.
-if (finalProgramResult !== undefined && finalProgramResult !== -1) {
-    console.log(finalProgramResult);
-} else if (finalProgramResult === -1) {
-    // A specific error message can be logged if an error code is returned.
-    console.error("Program terminated due to an invalid input configuration or missing start point.");
+    return minTurns;
 }

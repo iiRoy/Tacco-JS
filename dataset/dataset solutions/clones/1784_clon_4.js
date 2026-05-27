@@ -1,78 +1,69 @@
-const obtainSourceData = () => {
-    const rawContent = require("fs").readFileSync("/dev/stdin", "utf-8").trim();
-    const lineSegments = rawContent.split('\n');
+function* inputSourceGen() {
+    const rawInput = require("fs").readFileSync("/dev/stdin", "utf-8").trim().split(/\n|\s/);
+    yield* rawInput;
+}
 
-    const firstNumericalSequence = lineSegments[0].split(/\s+/).map(Number);
-    const rowCount = firstNumericalSequence[0];
-    const colCount = firstNumericalSequence[1];
-    const maxJumpDistance = firstNumericalSequence[2];
-
-    const secondNumericalSequence = lineSegments[1].split(/\s+/).map(Number);
-    const initialRow = secondNumericalSequence[0] - 1;
-    const initialCol = secondNumericalSequence[1] - 1;
-    const finalRow = secondNumericalSequence[2] - 1;
-    const finalCol = secondNumericalSequence[3] - 1;
-
-    const terrainLayout = [];
-    for (let currentR = 0; currentR < rowCount; currentR++) {
-        terrainLayout.push(lineSegments[currentR + 2].split(''));
+function acquireTokens(count, sourceIterator) {
+    const iterator = sourceIterator || (this.iterator = inputSourceGen());
+    const tokens = [];
+    for (let i = 0; i < count; i += 1) {
+        tokens.push(iterator.next().value);
     }
-
-    return { rowCount, colCount, maxJumpDistance, initialRow, initialCol, finalRow, finalCol, terrainLayout };
-};
+    return tokens;
+}
 
 (() => {
-    const { rowCount, colCount, maxJumpDistance, initialRow, initialCol, finalRow, finalCol, terrainLayout } = obtainSourceData();
+    const [ gridHeight, gridWidth, maxJumpDistance ] = acquireTokens(3).map(Number);
+    const [ startRow, startCol, targetRow, targetCol ] = acquireTokens(4).map(val => Number(val) - 1);
 
-    const distanceTraveled = Array.from({ length: rowCount }, () =>
-        Array.from({ length: colCount }, () => Infinity)
-    );
+    const terrainLayout = [];
+    for (let r = 0; r < gridHeight; r += 1) {
+        const lineData = acquireTokens(1)[0];
+        terrainLayout.push(Array.from(lineData));
+    }
 
-    distanceTraveled[initialRow][initialCol] = 0;
+    const pathDistances = new Map();
+    const explorationQueue = [];
 
-    const traversalQueue = [[initialRow, initialCol]];
-    let queuePointer = 0;
+    pathDistances.set(`${startRow},${startCol}`, 0);
+    explorationQueue.push([startRow, startCol]);
 
-    const displacementVectors = [
-        [0, 1],  // East
-        [0, -1], // West
-        [1, 0],  // South
-        [-1, 0]  // North
-    ];
+    const cardinalDirections = [[1, 0], [-1, 0], [0, 1], [0, -1]];
 
-    while (queuePointer < traversalQueue.length) {
-        const [currentRow, currentCol] = traversalQueue[queuePointer++];
-        const currentPathLength = distanceTraveled[currentRow][currentCol];
+    let finalDistance = -1;
 
-        if (currentRow === finalRow && currentCol === finalCol) {
+    while (explorationQueue.length > 0) {
+        const [currentRow, currentCol] = explorationQueue.shift();
+        const currentPathLength = pathDistances.get(`${currentRow},${currentCol}`);
+
+        if (currentRow === targetRow && currentCol === targetCol) {
+            finalDistance = currentPathLength;
             break;
         }
 
-        for (const [deltaR, deltaC] of displacementVectors) {
-            for (let stepCount = 1; stepCount <= maxJumpDistance; stepCount++) {
-                const nextR = currentRow + deltaR * stepCount;
-                const nextC = currentCol + deltaC * stepCount;
+        for (const [deltaR, deltaC] of cardinalDirections) {
+            for (let step = 1; step <= maxJumpDistance; step += 1) {
+                const nextRow = currentRow + deltaR * step;
+                const nextCol = currentCol + deltaC * step;
+                const nextCoordKey = `${nextRow},${nextCol}`;
 
-                if (nextR < 0 || nextR >= rowCount || nextC < 0 || nextC >= colCount) {
+                if (nextRow < 0 || nextRow >= gridHeight || nextCol < 0 || nextCol >= gridWidth) {
                     break;
                 }
 
-                if (terrainLayout[nextR][nextC] === '@') {
+                if (terrainLayout[nextRow][nextCol] === '@') {
                     break;
                 }
 
-                if (distanceTraveled[nextR][nextC] === Infinity) {
-                    distanceTraveled[nextR][nextC] = currentPathLength + 1;
-                    traversalQueue.push([nextR, nextC]);
+                if (pathDistances.has(nextCoordKey)) {
+                    continue;
                 }
+
+                pathDistances.set(nextCoordKey, currentPathLength + 1);
+                explorationQueue.push([nextRow, nextCol]);
             }
         }
     }
 
-    const finalResult = distanceTraveled[finalRow][finalCol];
-    if (finalResult === Infinity) {
-        console.log('-1');
-    } else {
-        console.log(finalResult);
-    }
+    console.log(finalDistance);
 })();

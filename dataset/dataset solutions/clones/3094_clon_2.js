@@ -1,28 +1,21 @@
-// This function serves as the primary entry point for processing an input character.
-function processInputData (rawDataValue)
-{
-    // A constant to hold the single nucleotide character extracted from the input.
-    const currentNucleotide = rawDataValue;
+function processInput(rawData) {
+  // This function processes a single character input
+  // and outputs its complementary base in DNA.
 
-    // Evaluate the specific nucleotide and determine its complementary base.
-    if (currentNucleotide === 'A') {
-        // Adenine's complement is Thymine.
-        console.log('T');
-    }
-    else if (currentNucleotide === 'T') {
-        // Thymine's complement is Adenine.
-        console.log('A');
-    }
-    else if (currentNucleotide === 'C') {
-        // Cytosine's complement is Guanine.
-        console.log('G');
-    }
-    else {
-        // Assuming the only remaining valid nucleotide is Guanine, its complement is Cytosine.
-        console.log('C');
-    }
+  const charSequence = rawData; // Store the input character
+
+  // Check the character and print its complement
+  if (charSequence === 'A') {
+    console.log('T'); // Adenine's complement is Thymine
+  } else if (charSequence === 'T') {
+    console.log('A'); // Thymine's complement is Adenine
+  } else if (charSequence === 'C') {
+    console.log('G'); // Cytosine's complement is Guanine
+  } else {
+    // If it's not A, T, or C, it must be G (based on problem context)
+    console.log('C'); // Guanine's complement is Cytosine
+  }
 }
 
-// The program execution begins here, fetching data from standard input.
-// It reads the entire content of '/dev/stdin' as a UTF-8 encoded string.
-processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// Read input from standard input and pass it to the processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,43 +1,38 @@
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
 
-let collectedData = '';
-
-process.stdin.on('data', (chunk) => {
-  collectedData += chunk;
+const inputBuffer = [];
+const inputReader = require('readline').createInterface({
+  input: process.stdin,
+  output: process.stdout
 });
 
-process.stdin.on('end', () => {
-  const numericElements = collectedData.trim().split(/\s+/).map(val => parseInt(val, 10));
+inputReader.on('line', (currentLine) => {
+  inputBuffer.push(currentLine);
+});
 
-  const [valOne, valTwo, valThree] = numericElements;
+inputReader.on('close', () => {
+  const initialValues = inputBuffer[0].split(' ');
+  const valA = Number(initialValues[0]);
+  const valB = Number(initialValues[1]);
+  const valC = Number(initialValues[2]);
 
-  const areHomogeneous = (tuple) => tuple[0] === tuple[1] && tuple[1] === tuple[2];
-
-  const containsOdd = (tuple) => tuple[0] % 2 !== 0 || tuple[1] % 2 !== 0 || tuple[2] % 2 !== 0;
-
-  const transformTuple = (currentTuple) => {
-    const [alpha, beta, gamma] = currentTuple;
-    return [
-      (beta + gamma) / 2,
-      (alpha + gamma) / 2,
-      (beta + alpha) / 2
-    ];
-  };
-
-  const recurseForSteps = (currentTuple, stepCounter) => {
-    if (containsOdd(currentTuple)) {
-      return stepCounter;
-    } else {
-      const nextTuple = transformTuple(currentTuple);
-      return recurseForSteps(nextTuple, stepCounter + 1);
+  const calculateTransformations = (currentA, currentB, currentC, iterationCount) => {
+    if (currentA % 2 !== 0 || currentB % 2 !== 0 || currentC % 2 !== 0) {
+      return iterationCount;
     }
+
+    const nextA = currentB / 2 + currentC / 2;
+    const nextB = currentA / 2 + currentC / 2;
+    const nextC = currentB / 2 + currentA / 2;
+
+    return calculateTransformations(nextA, nextB, nextC, iterationCount + 1);
   };
 
-  if (areHomogeneous([valOne, valTwo, valThree])) {
-    process.stdout.write("-1\n");
+  if (valA === valB && valB === valC) {
+    console.log("-1");
   } else {
-    const totalSteps = recurseForSteps([valOne, valTwo, valThree], 0);
-    process.stdout.write(totalSteps.toString() + "\n");
+    const finalCount = calculateTransformations(valA, valB, valC, 0);
+    console.log(finalCount);
   }
 });

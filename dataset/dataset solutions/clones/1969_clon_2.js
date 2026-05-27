@@ -1,51 +1,46 @@
-// This primary function processes raw input data to derive a specific numerical result.
-function ComputeSolution(dataLines)
-{
-    // The initial line of input contains two space-separated numbers.
-    // These are parsed and converted into integer types for further computations.
-    let [totalCount, startCount] = dataLines[0]
-                                    .split(" ")
-                                    .map(currentString => Number(currentString));
+// This function serves as the primary entry point for processing the given input data.
+function ProcessInput(rawData) {
+  // The first line of the input contains two space-separated integers.
+  // These represent 'numElements' (N) and 'minGroupSize' (K).
+  // We parse them into numerical values.
+  let [numElements, minGroupSize] = rawData[0].split(" ").map(valStr => parseInt(valStr, 10));
 
-    // A BigInt accumulator is initialized to store the evolving sum,
-    // ensuring precision for potentially very large numbers.
-    let cumulativeSum = BigInt(0);
+  // Initialize a BigInt variable to store the cumulative sum of combinations.
+  // Using BigInt is crucial for handling potentially very large numbers.
+  let totalCombinations = 0n;
 
-    // An iterative process begins, starting from 'startCount' up to 'totalCount + 1'.
-    // Each iteration represents a different length of sequence.
-    for
-    (
-        let iterationIdx = startCount;
+  // Iterate through possible group sizes, starting from 'minGroupSize' up to 'numElements + 1'.
+  // The loop variable 'currentSize' represents the number of elements in the current group.
+  for (let currentSize = minGroupSize; currentSize <= numElements + 1; currentSize++) {
+    // Calculate the minimum possible sum for a group of 'currentSize' elements.
+    // This corresponds to the sum of the smallest 'currentSize' non-negative integers: 0, 1, ..., (currentSize - 1).
+    // The sum of an arithmetic series is n * (first + last) / 2.
+    // Here, n = currentSize, first = 0, last = currentSize - 1.
+    // So, minSum = currentSize * (currentSize - 1) / 2.
+    let minSum = BigInt(currentSize) * BigInt(currentSize - 1) / 2n;
 
-        iterationIdx <= totalCount + 1;
+    // Calculate the maximum possible sum for a group of 'currentSize' elements.
+    // This corresponds to the sum of the largest 'currentSize' integers from 0 to 'numElements'.
+    // These integers would be: (numElements - currentSize + 1), ..., numElements.
+    // Here, n = currentSize, first = (numElements - currentSize + 1), last = numElements.
+    // So, maxSum = currentSize * ((numElements - currentSize + 1) + numElements) / 2.
+    let maxSum = BigInt(currentSize) * BigInt((numElements - currentSize + 1) + numElements) / 2n;
 
-        iterationIdx++
-    )
-    {
-        // Calculate the smallest possible sum for an arithmetic progression
-        // of 'iterationIdx' terms, starting from 0.
-        let rangeMinSum = BigInt(iterationIdx * (iterationIdx - 1) / 2);
+    // The number of distinct sums possible for a group of 'currentSize' elements
+    // is (maxSum - minSum + 1). Add this quantity to the running total.
+    totalCombinations += (maxSum - minSum + 1n);
+  }
 
-        // Calculate the largest possible sum for an arithmetic progression
-        // of 'iterationIdx' terms, ending at 'totalCount'.
-        let rangeMaxSum = BigInt(iterationIdx * ((totalCount - iterationIdx + 1) + totalCount) / 2);
+  // Define the modulo constant as a BigInt. This is 10^9 + 7.
+  const MODULO_CONSTANT = 1000000007n;
 
-        // The count of distinct sums for the current 'iterationIdx' is added
-        // to the overall cumulative total. This is (max_sum - min_sum + 1).
-        cumulativeSum += (rangeMaxSum - rangeMinSum + BigInt(1));
-    }
-
-    // A constant modulus value, common in competitive programming, is defined.
-    // It is cast to BigInt to ensure correct modulo arithmetic with 'cumulativeSum'.
-    const modulusValue = BigInt(Math.pow(10, 9) + 7);
-
-    // The final result, after applying the modulo operation, is converted to a string
-    // and then printed to the console.
-    console.log((cumulativeSum % modulusValue).toString());
+  // Compute the final result by taking the accumulated total combinations modulo the constant.
+  // Then, convert this BigInt result to a string for standard output.
+  console.log((totalCombinations % MODULO_CONSTANT).toString());
 }
 
-
-// The solution is executed by reading data from standard input.
-// The input stream is processed: read as UTF-8, leading/trailing whitespace removed,
-// and then split into an array of individual lines.
-ComputeSolution( require ("fs") .readFileSync ("/dev/stdin", "utf8") .trim() .split ("\n") );
+// Read the entire input from standard input.
+// The input is expected to be UTF-8 encoded.
+// It's then trimmed of leading/trailing whitespace and split into an array of lines.
+// This array of lines is passed to the 'ProcessInput' function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n"));

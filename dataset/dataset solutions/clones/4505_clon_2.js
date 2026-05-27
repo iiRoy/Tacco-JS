@@ -1,84 +1,70 @@
-"use strict"; 
+"use strict";
 
-/*
- *  This script processes a sequence of numbers to simulate a path traversal.
- *  It identifies if a specific target node (value 2) is reachable within a given graph structure,
- *  while also detecting cycles.
- */
-var dataProcessor = function processGraphSequence(incomingText) {
-  // Divide the entire input string into an array of strings,
-  // where each element represents a line from the input.
-  var textLines = incomingText.split('\n');
+// This function processes the input data to find a specific path within a sequence.
+const processInput = function processInput(rawData) {
+  // Split the raw input string into an array of individual lines.
+  const lines = rawData.split('\n');
 
-  // The first line of the input specifies the total number of subsequent elements.
-  // Parse this string into an integer, ensuring base-10 interpretation.
-  var totalElementsCount = parseInt(textLines[0], 10);
+  // Parse the first line to determine the total number of elements in the sequence.
+  const numElements = parseInt(lines[0], 10);
 
-  // Initialize an empty array to store the numerical sequence representing connections.
-  var connectionPath = [];
+  // Initialize an array to store the sequence values, which are parsed from subsequent lines.
+  let valueArray = [];
 
-  // Iterate from the second line of the input up to the total specified count.
-  // Each line is parsed as an integer and added to the connectionPath array.
-  for (var currentIdx = 1; currentIdx <= totalElementsCount; currentIdx++) {
-    connectionPath.push(parseInt(textLines[currentIdx], 10));
+  // Iterate through the input lines, starting from the second line, to populate the value array.
+  for (let idx = 1; idx <= numElements; idx++) {
+    valueArray.push(parseInt(lines[idx], 10));
   }
 
-  // Define the fixed starting point for the traversal process.
-  var traversalStart = 1;
+  // Define the designated starting point for the traversal.
+  const initialPosition = 1;
 
-  // The very first connection in the array dictates the initial 'next' step.
-  var currentWaypoint = connectionPath[0];
+  // Set the current value to the element pointed to by the first value in the sequence (index 0).
+  let currentValue = valueArray[0];
 
-  // An array to keep track of all the nodes that have been visited during the traversal.
-  var visitedWaypoints = [];
-  // Mark the initial traversalStart node as visited at the beginning.
-  visitedWaypoints.push(1);
+  // An array to keep track of all nodes visited during the traversal to detect cycles.
+  let visitedNodes = [];
 
-  // A boolean flag to indicate whether the target node (value 2) has been reached.
-  var targetReached = false;
+  // Mark the initial position as visited to handle the case where the first step leads back to start.
+  visitedNodes.push(1);
 
-  // A counter to keep track of the number of steps taken during the pathfinding.
-  var stepCount = 0;
+  // A boolean flag to indicate whether the target value (2) has been successfully reached.
+  let foundTarget = false;
 
-  // Begin the traversal loop. It continues as long as the current waypoint
-  // is not the original starting point (which would indicate a cycle back to start).
-  while (currentWaypoint !== traversalStart) {
-    // Increment the step counter for each movement.
-    stepCount++;
+  // A counter to record the number of steps taken during the traversal.
+  let stepCounter = 0;
 
-    // Update the current waypoint based on the value found in the connectionPath array.
-    // Note: Array indices are zero-based, so we subtract 1 from the waypoint value.
-    currentWaypoint = connectionPath[currentWaypoint - 1];
+  // Begin the traversal loop; it continues as long as the current value is not the initial position.
+  while (currentValue !== initialPosition) {
+    stepCounter++; // Increment the step counter for each move.
 
-    // Check if the current waypoint is the specific target node (value 2).
-    if (currentWaypoint === 2) {
-      targetReached = true; // If target found, set the flag.
-      break; // Exit the loop immediately as the goal is achieved.
+    // Move to the next value in the sequence by using the current value as an index (1-based).
+    currentValue = valueArray[currentValue - 1];
+
+    // Check if the current value is the target value (2).
+    if (currentValue === 2) {
+      foundTarget = true; // If found, set the flag.
+      break; // Exit the loop immediately as the target is reached.
     }
 
-    // Check if the current waypoint has already been visited.
-    // If it has, it implies a cycle has been detected before reaching the target.
-    if (visitedWaypoints.indexOf(currentWaypoint) >= 0) {
-      break; // Exit the loop due to cycle detection.
+    // Check if the current value has been visited before, indicating a cycle.
+    if (visitedNodes.indexOf(currentValue) >= 0) {
+      break; // If a cycle is detected, exit the loop.
     } else {
-      // If the waypoint is new, add it to the list of visited waypoints.
-      visitedWaypoints.push(currentWaypoint);
+      // If not visited, add the current value to the list of visited nodes.
+      visitedNodes.push(currentValue);
     }
   }
 
-  // After the traversal loop concludes, determine the final output.
-  if (targetReached) {
-    // If the target node (2) was successfully reached, output the total steps taken
-    // plus one (to account for the final step to node 2 itself).
-    console.log(stepCount + 1);
+  // After the loop, determine the output based on whether the target was found.
+  if (foundTarget) {
+    // If the target was found, output the total steps taken, including the final step to 2.
+    console.log(stepCounter + 1);
   } else {
-    // If the target node was not reached (either due to a cycle or other termination),
-    // output -1 as per the problem's requirements.
+    // If the target was not found (due to a cycle or reaching the start without finding 2), output -1.
     console.log(-1);
   }
 };
 
-
-// Execute the graph processing function by reading input from standard input.
-// It uses Node.js's 'fs' module to read the file '/dev/stdin' and decodes it as UTF-8.
-dataProcessor(require('fs').readFileSync('/dev/stdin', 'utf-8'));
+// Read the entire content of standard input synchronously and pass it to the processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf-8'));

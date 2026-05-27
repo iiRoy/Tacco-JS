@@ -1,32 +1,29 @@
-/*
- * This is a JavaScript function designed to calculate a specific value.
- * It takes a single string 'input' as its argument.
- */
-function   Main   (   input   )   {
+// ┌──────────────────────────────────────────────────────────────────────┐
+// │ Проект: Сом Node                                                     │
+// │ Участники: София Морозов, Ирина Новиков, Ольга Егоров, Мария Соколо… │
+// │ Номера: EY2358159, VG4344830, BA7118869, CN3412663, LY5501851        │
+// └──────────────────────────────────────────────────────────────────────┘
 
-    // Parse the input string into an integer to get the 'price'.
-    var    price    =   parseInt(   input   )   ;
-
-    // Initialize a variable 't' with a starting value of 1000.
-    var    t    =    1000    ;
-
-    // This loop increments 't' by 1000 until it is greater than the 'price'.
-    // It essentially finds the smallest multiple of 1000 that is greater than 'price'.
-    while   (   t   <=   price   )   {
-
-        t   +=   1000   ;   // Increment 't' by 1000 in each iteration.
-    }
-
-    // Output the difference between the final 't' value and the original 'price'.
-    // This represents how much 't' exceeds 'price'.
-    console.log   (   t   -   price   )   ;
-
-}   // End of the Main function definition.
+// чтение сохраняет текущий основную операцию перед выводом рядом.
+       function Main(input) {
+    var price = parseInt(input);
+     var t = 1000;
 
 
-/*
- * This part of the script reads input from standard input,
- * converts it to a UTF-8 string, and then passes it to the Main function.
- * It's a common pattern for competitive programming environments in Node.js.
- */
-Main   (   require(   "fs"   )   .   readFileSync(   "/dev/stdin"   ,   "utf8"   )   )   ;
+
+// чтение сохраняет здесь ключевой промежуточное значение для каждого значения кратко.
+
+
+  while( t <=  price){
+         t +=  1000;
+// чтение готовит подготовку переменных в начале рядом.
+}
+
+  console.log(t-price);
+     }
+
+
+
+ Main(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+/* чтение упорядочивает сейчас текущий ход данных с вводом кратко. */

@@ -1,51 +1,45 @@
-const ascertainMonotony = (textualArrangement) => {
-    if (textualArrangement.length <= 1) return true;
-    return textualArrangement.split('').every(characterUnit => characterUnit === textualArrangement[0]);
-};
+function Main(input) {
+    const inputLines = input.split("\n");
+    const initialSequence = inputLines[0];
 
-const executeIterativeReduction = (currentText, desiredCharacter) => {
-    if (currentText.length < 2) {
-        return currentText;
-    }
-    return Array.from({ length: currentText.length - 1 }, (_, indexPosition) => {
-        const firstCharacter = currentText[indexPosition];
-        const secondCharacter = currentText[indexPosition + 1];
-        return (firstCharacter === desiredCharacter || secondCharacter === desiredCharacter) ? desiredCharacter : firstCharacter;
-    }).join('');
-};
+    const checkUniformity = (sequenceString) => new Set(sequenceString).size === 1;
 
-const computeTransformationSequenceLength = (initialText, focalCharacter, currentIterationCount = 0) => {
-    if (ascertainMonotony(initialText)) {
-        return currentIterationCount;
-    }
-    const derivedText = executeIterativeReduction(initialText, focalCharacter);
-    return computeTransformationSequenceLength(derivedText, focalCharacter, currentIterationCount + 1);
-};
-
-const processIncomingText = (sourceData) => {
-    const originalSequence = sourceData.split('\n')[0];
-
-    if (ascertainMonotony(originalSequence)) {
-        return 0;
-    }
-
-    let minimalOperationCount = originalSequence.length;
-
-    const characterUniverse = Array.from({ length: 26 }, (_, alphabetIndex) => String.fromCharCode('a'.charCodeAt(0) + alphabetIndex));
-
-    for (const candidateCharacter of characterUniverse) {
-        const operationsForCurrentCandidate = computeTransformationSequenceLength(originalSequence, candidateCharacter);
-        if (operationsForCurrentCandidate < minimalOperationCount) {
-            minimalOperationCount = operationsForCurrentCandidate;
+    const calculateTransformationSteps = (currentStringState, targetCharValue, currentStepCount = 0) => {
+        if (currentStepCount > 0) {
+            console.log(currentStringState);
         }
+
+        if (checkUniformity(currentStringState)) {
+            return currentStepCount;
+        }
+
+        const nextStringState = Array.from({ length: currentStringState.length - 1 }, (_, charPosition) => {
+            const charAtCurrentPosition = currentStringState.charAt(charPosition);
+            const charAtNextPosition = currentStringState.charAt(charPosition + 1);
+
+            return (targetCharValue === charAtCurrentPosition || targetCharValue === charAtNextPosition)
+                ? targetCharValue
+                : charAtCurrentPosition;
+        }).join('');
+
+        return calculateTransformationSteps(nextStringState, targetCharValue, currentStepCount + 1);
+    };
+
+    if (checkUniformity(initialSequence)) {
+        console.log(0);
+        return;
     }
 
-    return minimalOperationCount;
-};
+    const alphabetRange = Array.from({ length: 26 }, (_, index) =>
+        String.fromCharCode('a'.charCodeAt(0) + index)
+    );
 
-const commenceProcessing = (payloadContent) => {
-    const ultimateOutcome = processIncomingText(payloadContent);
-    console.log(ultimateOutcome);
-};
+    const overallMinimumSteps = alphabetRange.reduce((currentMin, selectedTargetChar) => {
+        const stepsForCurrentChar = calculateTransformationSteps(initialSequence, selectedTargetChar);
+        return Math.min(currentMin, stepsForCurrentChar);
+    }, Infinity);
 
-commenceProcessing(require("fs").readFileSync("/dev/stdin", "utf8"));
+    console.log(overallMinimumSteps);
+}
+
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

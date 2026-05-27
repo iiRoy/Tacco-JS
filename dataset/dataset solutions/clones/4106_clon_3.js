@@ -1,105 +1,71 @@
-// This function processes raw input data to identify a specific combination of currency bills that sum up to a target amount.
-function processFinancialData(rawData) {
+// inputに入力データ全体が入る
+function solveProblem(rawInputData) {
+    // Split the raw input string into an array of lines
+    const inputLines = rawInputData.split("\n");
+    // Take the first line, split it by space, and convert parts to numbers
+    const firstLineTokens = inputLines[0].split(" ").map(Number);
 
-    // The entire input string is typically divided into lines.
-    // We expect the first line to contain the crucial parameters.
-    const lineSegments = rawData.split("\n");
+    // Define constants for the denominations of bills
+    const TEN_THOUSAND_YEN = 10000;
+    const FIVE_THOUSAND_YEN = 5000;
+    const ONE_THOUSAND_YEN = 1000;
 
-    // Extract the numerical components from the very first line.
-    // These components define the total number of bills allowed and the monetary goal.
-    const firstLineTokens = lineSegments[0].split(" ");
+    // Extract the total number of bills (N) and the target total amount (Y)
+    const totalBillsCount = firstLineTokens[0];
+    const targetAmount = firstLineTokens[1];
 
-    // Implement a basic input validation to ensure the expected number of parameters.
-    // If the input doesn't conform, an error is logged, though the program will still attempt to proceed
-    // to output -1 -1 -1 if no solution is found later.
-    if (firstLineTokens.length < 2) {
-        console.error("Data processing warning: Insufficient parameters on the initial line.");
-    }
+    // Initialize variables to store the counts of each bill type if a solution is found.
+    // -1 indicates no solution found yet.
+    let found10kBills = -1;
+    let found5kBills = -1;
+    let found1kBills = -1;
 
-    // Parse the extracted string tokens into integer values.
-    // 'totalBillCount' represents the maximum number of physical bills.
-    // 'targetMonetarySum' is the exact financial value we aim to construct.
-    const totalBillCount = parseInt(firstLineTokens[0], 10);
-    const targetMonetarySum = parseInt(firstLineTokens[1], 10);
+    // A boolean flag to efficiently break out of nested loops once a solution is identified.
+    let solutionFound = false;
 
-    // Initialize variables to store the counts of each bill denomination.
-    // A value of -1 indicates that a valid combination has not yet been identified.
-    let countOfTenThousandYenBills = -1;
-    let countOfFiveThousandYenBills = -1;
-    let countOfOneThousandYenBills = -1;
+    // Determine the maximum possible number of 10,000 yen bills.
+    // This helps to optimize the outer loop by setting an upper bound.
+    const maxPossible10kBills = Math.floor(targetAmount / TEN_THOUSAND_YEN);
 
-    // Early exit check: If the target monetary sum is not a multiple of 1000,
-    // it's impossible to achieve it using 1000, 5000, and 10000 yen bills.
-    // This is a new guard clause to optimize and handle invalid targets upfront.
-    if (targetMonetarySum % 1000 !== 0) {
-        console.log("-1 -1 -1");
-        return; 
-    }
+    // Iterate through all possible counts for 10,000 yen bills, starting from zero.
+    for (let current10kCount = 0; current10kCount <= maxPossible10kBills; current10kCount++) {
+        // Iterate through all possible counts for 5,000 yen bills.
+        // The upper bound is `totalBillsCount - current10kCount` because the total number of bills
+        // (10k + 5k + 1k) cannot exceed `totalBillsCount`.
+        for (let current5kCount = 0; current5kCount <= totalBillsCount - current10kCount; current5kCount++) {
+            // Calculate the remaining number of 1,000 yen bills needed to reach `totalBillsCount`.
+            const current1kCount = totalBillsCount - current10kCount - current5kCount;
 
-    // Determine the absolute maximum number of 10,000 yen bills possible.
-    // This calculation establishes an effective upper boundary for the primary iteration.
-    const maximumTenKYenBills = Math.floor(targetMonetarySum / 10000);
+            // Ensure that the calculated number of 1,000 yen bills is non-negative.
+            // (This check is technically redundant due to the inner loop's upper bound,
+            // but it adds clarity and robustness to the logic.)
+            if (current1kCount >= 0) {
+                // Calculate the total monetary value for the current combination of bills.
+                const calculatedSum = (current10kCount * TEN_THOUSAND_YEN) +
+                                      (current5kCount * FIVE_THOUSAND_YEN) +
+                                      (current1kCount * ONE_THOUSAND_YEN);
 
-    // Begin the primary search loop: Iterate through all possible counts of 10,000 yen bills.
-    // 'currentTenKYen' denotes the current number of 10,000 yen bills being considered.
-    for (let currentTenKYen = 0; currentTenKYen <= maximumTenKYenBills; currentTenKYen++) {
-        
-        // Additional check: If the current number of 10,000 yen bills already exceeds
-        // the overall allowed bill count, this path is infeasible.
-        // This acts as a minor optimization/validation fragment.
-        if (currentTenKYen > totalBillCount) {
-             continue; 
-        }
-
-        // Calculate the remaining capacity for bills after accounting for the 10,000 yen notes.
-        // This helps define the upper limit for the subsequent inner loop.
-        const remainingBillCapacity = totalBillCount - currentTenKYen;
-
-        // Initiate the secondary search loop: Iterate through possible counts of 5,000 yen bills.
-        // 'currentFiveKYen' represents the current number of 5,000 yen bills.
-        // The upper bound for 'currentFiveKYen' ensures the total bill count is not exceeded.
-        for (let currentFiveKYen = 0; currentFiveKYen <= remainingBillCapacity; currentFiveKYen++) {
-
-            // Calculate the required number of 1,000 yen bills for the current combination.
-            // This is derived by subtracting the 10k and 5k bills from the total allowed bills.
-            const currentOneKYen = totalBillCount - currentTenKYen - currentFiveKYen;
-
-            // Ensure the count of 1,000 yen bills is non-negative.
-            // This is a redundant check given the loop bounds, but serves as an explicit fragment.
-            if (currentOneKYen < 0) {
-                continue; 
-            }
-            
-            // Compute the total monetary value for the current combination of bills.
-            // This involves summing the values of all three denominations.
-            const computedTotalValue = (currentTenKYen * 10000) +
-                                       (currentFiveKYen * 5000) +
-                                       (currentOneKYen * 1000);
-
-            // Verify if the computed total value matches the desired target monetary sum.
-            if (computedTotalValue === targetMonetarySum) {
-                // If a match is found, store these counts as the solution.
-                // Since we need only one such combination, we can then terminate the search.
-                countOfTenThousandYenBills = currentTenKYen;
-                countOfFiveThousandYenBills = currentFiveKYen;
-                countOfOneThousandYenBills = currentOneKYen;
-                // A 'break' here would only exit the inner loop; the outer loop needs another check.
-                break; 
+                // Check if the calculated sum matches the target amount.
+                if (calculatedSum === targetAmount) {
+                    // If a solution is found, store the counts and set the flag.
+                    found10kBills = current10kCount;
+                    found5kBills = current5kCount;
+                    found1kBills = current1kCount;
+                    solutionFound = true;
+                    break; // Exit the inner loop immediately as a valid solution has been found.
+                }
             }
         }
-
-        // If a solution was discovered within the inner loop,
-        // it's time to exit the outer loop as well to prevent further unnecessary computations.
-        if (countOfTenThousandYenBills !== -1) {
+        // If the solutionFound flag was set in the inner loop, exit the outer loop as well.
+        if (solutionFound) {
             break;
         }
     }
 
-    // Present the final result. If no valid combination was found,
-    // the output will default to "-1 -1 -1".
-    console.log(`${countOfTenThousandYenBills} ${countOfFiveThousandYenBills} ${countOfOneThousandYenBills}`);
+    // Output the final counts of the bills, separated by spaces.
+    // If no solution was found, the output will be "-1 -1 -1".
+    console.log(`${found10kBills} ${found5kBills} ${found1kBills}`);
 }
 
-// The line below is crucial for standard input/output handling and must not be altered.
-// It reads all input from stdin and passes it to the primary processing function.
-processFinancialData(require("fs").readFileSync("/dev/stdin", "utf8"));
+//*この行以降は編集しないでください（標準入出力から一度に読み込み、Mainを呼び出します）
+solveProblem(require("fs").readFileSync("/dev/stdin", "utf8"));

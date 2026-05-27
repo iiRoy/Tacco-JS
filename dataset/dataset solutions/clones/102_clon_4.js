@@ -1,45 +1,34 @@
-const segmentSourceInput = (entireText) => entireText.split(/\n/).filter(line => line.trim().length > 0);
+const fileSystem = require('fs');
 
-const groupInputIntoSequencePairs = (individualLines) => {
-    return individualLines.reduce((accumulatedPairs, currentLine, index, array) => {
-        if (index % 2 === 0) {
-            if (array[index + 1]) {
-                accumulatedPairs.push([currentLine, array[index + 1]]);
-            }
+const rawInputData = fileSystem.readFileSync('/dev/stdin', 'utf8');
+
+const inputLines = rawInputData.split(/\n/);
+
+const gameResults = [];
+
+let currentPairIndex = 0;
+while (currentPairIndex < inputLines.length) {
+    const firstSequenceDigits = inputLines[currentPairIndex].trim().split(/\s/);
+    const secondSequenceDigits = inputLines[currentPairIndex + 1].trim().split(/\s/);
+
+    let exactMatches = 0;
+    let partialMatches = 0;
+
+    exactMatches = firstSequenceDigits.filter((digit, position) => digit === secondSequenceDigits[position]).length;
+
+    partialMatches = firstSequenceDigits.reduce((accumulator, currentDigitFromFirst, currentPosition) => {
+        if (currentDigitFromFirst !== secondSequenceDigits[currentPosition]) {
+            const occurrencesInSecond = secondSequenceDigits.filter(
+                (digitInSecond) => digitInSecond === currentDigitFromFirst
+            ).length;
+            return accumulator + occurrencesInSecond;
         }
-        return accumulatedPairs;
-    }, []);
-};
-
-const decomposeLineIntoItems = (lineString) => lineString.trim().split(/\s/);
-
-const computeMatchStatistics = (firstCode, secondCode) => {
-    const hitsCount = firstCode.filter((item, position) => item === secondCode[position]).length;
-
-    const nonHitItemsInFirst = firstCode.filter((item, position) => item !== secondCode[position]);
-
-    const blowCount = nonHitItemsInFirst.reduce((totalBlows, currentItem) => {
-        const occurrencesInSecondCode = secondCode.filter(val => val === currentItem).length;
-        return totalBlows + occurrencesInSecondCode;
+        return accumulator;
     }, 0);
 
-    return { hits: hitsCount, blows: blowCount };
-};
+    gameResults.push(`${exactMatches} ${partialMatches}`);
 
-const processAllInput = (fullInputText) => {
-    const rawLineSegments = segmentSourceInput(fullInputText);
-    const codeLinePairs = groupInputIntoSequencePairs(rawLineSegments);
+    currentPairIndex += 2;
+}
 
-    const matchResults = codeLinePairs.map(pair => {
-        const primaryCodeSequence = decomposeLineIntoItems(pair[0]);
-        const secondaryCodeSequence = decomposeLineIntoItems(pair[1]);
-        const stats = computeMatchStatistics(primaryCodeSequence, secondaryCodeSequence);
-        return `${stats.hits} ${stats.blows}`;
-    });
-
-    return matchResults.join('\n');
-};
-
-const acquiredData = require("node:fs").readFileSync("/dev/stdin", "utf8");
-const finalReport = processAllInput(acquiredData);
-console.log(finalReport);
+console.log(gameResults.join('\n'));

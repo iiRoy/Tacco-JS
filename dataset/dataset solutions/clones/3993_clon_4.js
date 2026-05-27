@@ -1,30 +1,22 @@
-const fileSystemUtility = require('node:fs');
+const fileSystem = require('fs');
 
-const calculateSpecialSum = (numericInputA, numericInputB) => {
-    const aggregatedResult = Array.from({ length: numericInputA }, (_, iterationIndex) => iterationIndex + 1)
-        .reduce((currentTotal, currentDivisorCandidate) => {
-            const divisionQuotient = Math.floor(numericInputA / currentDivisorCandidate);
-            const divisionRemainder = numericInputA % currentDivisorCandidate;
+const processInputAndCompute = (inputContent) => {
+    const [firstNumber, secondNumber] = inputContent.split('\n')[0].split(' ').map(Number);
 
-            const componentOne = divisionQuotient * Math.max(0, currentDivisorCandidate - numericInputB);
-            const componentTwo = Math.max(0, divisionRemainder - numericInputB + 1);
+    const totalAccumulation = Array.from({ length: firstNumber }, (_, index) => index + 1)
+        .reduce((currentSum, currentDivisor) => {
+            const currentQuotient = Math.floor(firstNumber / currentDivisor);
+            const currentRemainder = firstNumber % currentDivisor;
 
-            return currentTotal + componentOne + componentTwo;
+            const termComponentA = currentQuotient * ((currentDivisor > secondNumber) ? (currentDivisor - secondNumber) : 0);
+            const termComponentB = ((currentRemainder - secondNumber + 1) > 0) ? (currentRemainder - secondNumber + 1) : 0;
+
+            return currentSum + termComponentA + termComponentB;
         }, 0);
 
-    return (numericInputB === 0) ? (aggregatedResult - numericInputA) : aggregatedResult;
+    const finalResult = (secondNumber === 0) ? (totalAccumulation - firstNumber) : totalAccumulation;
+
+    console.log(finalResult);
 };
 
-(() => {
-    const rawInputContent = fileSystemUtility.readFileSync('/dev/stdin', { encoding: 'utf8' });
-
-    const [valA, valB] = rawInputContent
-        .trim()
-        .split('\n')[0]
-        .split(' ')
-        .map(Number);
-
-    const finalOutcome = calculateSpecialSum(valA, valB);
-
-    console.log(finalOutcome);
-})();
+processInputAndCompute(fileSystem.readFileSync("/dev/stdin", "UTF-8"));

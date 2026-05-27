@@ -1,116 +1,97 @@
-class NetworkSolver {
-    constructor() {
-        this.nodeAdjacency = [];
-        this.nodeCount = 0;
-        this.linkCount = 0;
-        this.levelMap = [];
-        this.currentEdgeIndex = [];
-    }
+let networkGraph = [];
+let nodeCount;
+let edgeCount;
 
-    establishConnection(originId, targetId, capacityValue) {
-        this.nodeAdjacency[originId].push({
-            endpoint: targetId,
-            remainingCapacity: capacityValue,
-            reverseConnectionIdx: this.nodeAdjacency[targetId].length
-        });
-        this.nodeAdjacency[targetId].push({
-            endpoint: originId,
-            remainingCapacity: 0,
-            reverseConnectionIdx: this.nodeAdjacency[originId].length - 1
-        });
-    }
-
-    determineLevels(startNode, endNode) {
-        this.levelMap.fill(-1);
-        this.levelMap[startNode] = 0;
-        const traverseQueue = [startNode];
-        let queueHead = 0;
-
-        while (queueHead < traverseQueue.length) {
-            const currentNode = traverseQueue[queueHead++];
-
-            for (const connection of this.nodeAdjacency[currentNode]) {
-                if (connection.remainingCapacity > 0 && this.levelMap[connection.endpoint] === -1) {
-                    this.levelMap[connection.endpoint] = this.levelMap[currentNode] + 1;
-                    traverseQueue.push(connection.endpoint);
-                }
-            }
-        }
-        return this.levelMap[endNode] !== -1;
-    }
-
-    findAugmentingPath(currentNode, endNode, currentFlowLimit) {
-        if (currentFlowLimit === 0) return 0;
-        if (currentNode === endNode) return currentFlowLimit;
-
-        for (let i = this.currentEdgeIndex[currentNode]; i < this.nodeAdjacency[currentNode].length; i++) {
-            this.currentEdgeIndex[currentNode] = i;
-
-            const connection = this.nodeAdjacency[currentNode][i];
-            if (this.levelMap[connection.endpoint] !== this.levelMap[currentNode] + 1 || connection.remainingCapacity === 0) {
-                continue;
-            }
-
-            const pathFlow = this.findAugmentingPath(
-                connection.endpoint,
-                endNode,
-                Math.min(currentFlowLimit, connection.remainingCapacity)
-            );
-
-            if (pathFlow > 0) {
-                connection.remainingCapacity -= pathFlow;
-                const reverseConnection = this.nodeAdjacency[connection.endpoint][connection.reverseConnectionIdx];
-                reverseConnection.remainingCapacity += pathFlow;
-                return pathFlow;
-            }
-        }
-        return 0;
-    }
-
-    calculateMaxPassage(sourceNode, terminalNode) {
-        if (sourceNode === terminalNode) return 0;
-
-        let totalPassage = 0;
-
-        while (this.determineLevels(sourceNode, terminalNode)) {
-            this.currentEdgeIndex.fill(0);
-            let pathPassage;
-            while ((pathPassage = this.findAugmentingPath(sourceNode, terminalNode, Number.MAX_SAFE_INTEGER)) > 0) {
-                totalPassage += pathPassage;
-            }
-        }
-        return totalPassage;
-    }
-}
-
-let receivedTransmission = '';
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
+process.stdin.on('data', function(inputData) {
+    const rawLines = inputData.trim().split('\n');
 
-process.stdin.on('data', (payload) => {
-    receivedTransmission += payload;
+    const firstLineValues = rawLines[0].split(' ').map(Number);
+    nodeCount = firstLineValues[0];
+    edgeCount = firstLineValues[1];
+
+    networkGraph = Array.from({ length: nodeCount }, () => []);
+
+    rawLines.slice(1).forEach(line => {
+        const edgeValues = line.split(' ').map(Number);
+        addFlowEdge(edgeValues[0], edgeValues[1], edgeValues[2]);
+    });
+
+    console.log(calculateMaxFlow(0, nodeCount - 1));
 });
 
-process.stdin.on('end', () => {
-    const dataSegments = receivedTransmission.trim().split('\n');
-    const flowNetwork = new NetworkSolver();
+function addFlowEdge(origin, destination, capacityValue) {
+    networkGraph[origin].push({
+        targetNode: destination,
+        flowCapacity: capacityValue,
+        reverseLinkIndex: networkGraph[destination].length
+    });
+    networkGraph[destination].push({
+        targetNode: origin,
+        flowCapacity: 0,
+        reverseLinkIndex: networkGraph[origin].length - 1
+    });
+}
 
-    let segmentPointer = 0;
+function findAugmentingPathBFS(startNode, sinkNode, totalNodes, graphStructure, parentEdgeDetails) {
+    const visitedStatus = Array.from({ length: totalNodes }, () => false);
+    Array.from({ length: totalNodes }, (_, i) => parentEdgeDetails[i] = null);
 
-    const initialConfig = dataSegments[segmentPointer++].split(' ').map(Number);
-    flowNetwork.nodeCount = initialConfig[0];
-    flowNetwork.linkCount = initialConfig[1];
+    const nodeQueue = [];
+    let queuePointer = 0;
 
-    for (let currentVertex = 0; currentVertex < flowNetwork.nodeCount; ++currentVertex) {
-        flowNetwork.nodeAdjacency[currentVertex] = [];
+    nodeQueue.push(startNode);
+    visitedStatus[startNode] = true;
+
+    while (queuePointer < nodeQueue.length) {
+        const currentNode = nodeQueue[queuePointer++];
+
+        graphStructure[currentNode].forEach((edge, edgeIndex) => {
+            if (!visitedStatus[edge.targetNode] && edge.flowCapacity > 0) {
+                visitedStatus[edge.targetNode] = true;
+                parentEdgeDetails[edge.targetNode] = {
+                    parentNode: currentNode,
+                    edgeIndexInParent: edgeIndex
+                };
+                nodeQueue.push(edge.targetNode);
+            }
+        });
+
+        if (visitedStatus[sinkNode]) {
+            return true;
+        }
     }
-    flowNetwork.levelMap = new Array(flowNetwork.nodeCount).fill(-1);
-    flowNetwork.currentEdgeIndex = new Array(flowNetwork.nodeCount).fill(0);
 
-    while (segmentPointer < dataSegments.length) {
-        const connectionDetails = dataSegments[segmentPointer++].split(' ').map(Number);
-        flowNetwork.establishConnection(connectionDetails[0], connectionDetails[1], connectionDetails[2]);
+    return false;
+}
+
+function calculateMaxFlow(source, sink) {
+    let totalFlowAccumulator = 0;
+    const parentPathInfo = new Array(nodeCount);
+
+    while (findAugmentingPathBFS(source, sink, nodeCount, networkGraph, parentPathInfo)) {
+        let pathBottleneckCapacity = Number.POSITIVE_INFINITY;
+
+        for (let current = sink; current !== source; current = parentPathInfo[current].parentNode) {
+            const pathSegment = parentPathInfo[current];
+            const parent = pathSegment.parentNode;
+            const edgeInParentList = networkGraph[parent][pathSegment.edgeIndexInParent];
+            pathBottleneckCapacity = Math.min(pathBottleneckCapacity, edgeInParentList.flowCapacity);
+        }
+
+        for (let current = sink; current !== source; current = parentPathInfo[current].parentNode) {
+            const pathSegment = parentPathInfo[current];
+            const parent = pathSegment.parentNode;
+            const forwardEdge = networkGraph[parent][pathSegment.edgeIndexInParent];
+            const reverseEdge = networkGraph[current][forwardEdge.reverseLinkIndex];
+
+            forwardEdge.flowCapacity -= pathBottleneckCapacity;
+            reverseEdge.flowCapacity += pathBottleneckCapacity;
+        }
+
+        totalFlowAccumulator += pathBottleneckCapacity;
     }
 
-    console.log(flowNetwork.calculateMaxPassage(0, flowNetwork.nodeCount - 1));
-});
+    return totalFlowAccumulator;
+}

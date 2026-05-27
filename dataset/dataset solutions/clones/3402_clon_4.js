@@ -1,147 +1,118 @@
-class InputSource {
-    constructor(sourceText) {
-        this.dataLines = sourceText.trim().split('\n');
-        this.currentLineIdx = 0;
-        this.currentLineTokens = [];
-        this.currentTokenIdx = 0;
-    }
+const createInputProcessor = (sourceText) => {
+    let sourceLines = sourceText.trim().split('\n');
+    let linePointer = 0;
+    let currentLineSegments = [];
 
-    _prepareCurrentLine() {
-        while (this.currentTokenIdx >= this.currentLineTokens.length) {
-            if (this.currentLineIdx < this.dataLines.length) {
-                const line = this.dataLines[this.currentLineIdx++];
-                this.currentLineTokens = line.trim().split(/\s+/).filter(Boolean);
-                this.currentTokenIdx = 0;
-            } else {
-                this.currentLineTokens = [];
-                this.currentTokenIdx = 0;
-                break;
-            }
+    const ensureSegments = () => {
+        if (currentLineSegments.length === 0 && linePointer < sourceLines.length) {
+            currentLineSegments = sourceLines[linePointer].split(' ').reverse();
+            linePointer++;
         }
-    }
-
-    pullDatum(asString = false) {
-        this._prepareCurrentLine();
-        if (this.currentTokenIdx < this.currentLineTokens.length) {
-            const val = this.currentLineTokens[this.currentTokenIdx++];
-            return asString ? val : +val;
-        }
-        return asString ? '' : NaN;
-    }
-
-    pullLine(asString = false) {
-        if (this.currentLineIdx < this.dataLines.length) {
-            const line = this.dataLines[this.currentLineIdx++];
-            const tokens = line.trim().split(/\s+/).filter(Boolean);
-            this.currentLineTokens = [];
-            this.currentTokenIdx = 0;
-            return asString ? tokens : tokens.map(Number);
-        }
-        return asString ? [] : [];
-    }
-
-    pullMatrix(count, asString = false) {
-        const result = [];
-        for (let i = 0; i < count; i++) {
-            result.push(this.pullLine(asString));
-        }
-        return result;
-    }
-
-    pullRows(count, asString = false) {
-        const result = [];
-        for (let i = 0; i < count; i++) {
-            const line = this.pullLine(asString);
-            result.push(...line);
-        }
-        return result;
-    }
-}
-
-const dataAccessor = (function() {
-    let instance = null;
-    return (inputContent) => {
-        if (!instance) {
-            instance = new InputSource(inputContent);
-        }
-        return instance;
     };
-})();
 
-function computePathWidth() {
-    const reader = dataAccessor();
+    const extractValue = (asStringFlag) => {
+        ensureSegments();
+        const segment = currentLineSegments.pop();
+        return asStringFlag ? segment : Number(segment);
+    };
 
-    const verticalExtent = reader.pullDatum();
-    const horizontalExtent = reader.pullDatum();
-    const obstacleCount = reader.pullDatum();
+    const retrieveLine = (asStringFlag) => {
+        if (linePointer >= sourceLines.length) return [];
+        const segments = sourceLines[linePointer].split(' ');
+        linePointer++;
+        return asStringFlag ? segments : segments.map(Number);
+    };
 
-    const blockageRegistry = new Map();
-
-    for (let k = 0; k < obstacleCount; k++) {
-        const blockCoordinates = reader.pullLine();
-        const obsCol = blockCoordinates[0];
-        const obsRow = blockCoordinates[1];
-
-        if (obsCol < obsRow) continue;
-
-        if (!blockageRegistry.has(obsRow)) {
-            blockageRegistry.set(obsRow, new Set());
+    const retrieveMatrix = (numRows, asStringFlag) => {
+        const collectedRows = [];
+        for (let k = 0; k < numRows; k++) {
+            if (linePointer >= sourceLines.length) break;
+            const segments = sourceLines[linePointer].split(' ');
+            collectedRows.push(asStringFlag ? segments : segments.map(Number));
+            linePointer++;
         }
-        blockageRegistry.get(obsRow).add(obsCol);
-    }
+        return collectedRows;
+    };
 
-    for (let r = 1; r <= verticalExtent; r++) {
-        if (!blockageRegistry.has(r)) {
-            blockageRegistry.set(r, new Set());
+    const retrieveRawRows = (numRows, asStringFlag) => {
+        const collectedRows = [];
+        for (let k = 0; k < numRows; k++) {
+            if (linePointer >= sourceLines.length) break;
+            const lineContent = sourceLines[linePointer];
+            collectedRows.push(asStringFlag ? lineContent : Number(lineContent));
+            linePointer++;
         }
-        blockageRegistry.get(r).add(horizontalExtent + 1);
-    }
+        return collectedRows;
+    };
 
-    let initialWidth = horizontalExtent;
-    if (blockageRegistry.has(1)) {
-        const row1Obstacles = Array.from(blockageRegistry.get(1)).sort((a, b) => a - b);
-        if (row1Obstacles.length > 0) {
-            initialWidth = row1Obstacles[0] - 1;
+    return {
+        extractValue,
+        retrieveLine,
+        retrieveMatrix,
+        retrieveRawRows,
+    };
+};
+
+function calculateMaxPath() {
+    const hgt = inputReader.extractValue();
+    const wid = inputReader.extractValue();
+    const blockCount = inputReader.extractValue();
+
+    const occupiedPositions = new Map();
+
+    const markOccupied = (rowCoord, colCoord) => {
+        if (!occupiedPositions.has(rowCoord)) {
+            occupiedPositions.set(rowCoord, new Set());
         }
-    }
+        occupiedPositions.get(rowCoord).add(colCoord);
+    };
 
-    const finalResult = Array.from({ length: verticalExtent - 1 }, (_, i) => i + 2)
-        .reduce((accumulator, currentRow) => {
-            let [currentMinEffectiveWidth, currentPathLeftmostColumn] = accumulator;
+    Array.from({ length: blockCount }).forEach(() => {
+        const blockCoords = inputReader.retrieveLine();
+        const [colVal, rowVal] = blockCoords;
+        if (colVal >= rowVal) {
+            markOccupied(rowVal, colVal);
+        }
+    });
 
-            if (currentRow > currentMinEffectiveWidth) {
-                return [currentMinEffectiveWidth, currentPathLeftmostColumn];
+    Array.from({ length: hgt }, (_, rIdx) => rIdx + 1).forEach(rowNum => {
+        markOccupied(rowNum, wid + 1);
+    });
+
+    const rowOneOccupied = occupiedPositions.get(1);
+    let currentMaxReachable = rowOneOccupied
+        ? Math.min(...Array.from(rowOneOccupied)) - 1
+        : wid;
+
+    const finalState = Array.from({ length: hgt - 1 }, (_, rIdx) => rIdx + 2)
+        .reduce(([prevMax, prevCursor], currentRow) => {
+            if (prevCursor >= wid || currentRow > prevMax) {
+                return [prevMax, prevCursor];
             }
-            if (currentPathLeftmostColumn >= horizontalExtent) {
-                return [currentMinEffectiveWidth, currentPathLeftmostColumn];
+
+            let currentCursor = prevCursor;
+            const rowBlocks = occupiedPositions.get(currentRow) || new Set();
+
+            while (rowBlocks.has(currentCursor)) {
+                currentCursor++;
             }
 
-            const obstaclesInCurrentRow = blockageRegistry.get(currentRow) || new Set();
-            while (obstaclesInCurrentRow.has(currentPathLeftmostColumn)) {
-                currentPathLeftmostColumn++;
-            }
-
-            let nextRelevantObstacleCol = Infinity;
-            const sortedObstacles = Array.from(obstaclesInCurrentRow).sort((a, b) => a - b);
-            for (const obsCol of sortedObstacles) {
-                if (obsCol >= currentPathLeftmostColumn) {
-                    nextRelevantObstacleCol = obsCol;
-                    break;
+            let nextBlockColumn = Infinity;
+            for (const blockedCol of rowBlocks) {
+                if (blockedCol >= currentCursor) {
+                    nextBlockColumn = Math.min(nextBlockColumn, blockedCol);
                 }
             }
 
-            if (nextRelevantObstacleCol !== Infinity) {
-                currentMinEffectiveWidth = Math.min(currentMinEffectiveWidth, nextRelevantObstacleCol - 1);
-            }
+            const newMaxReachable = Math.min(prevMax, nextBlockColumn - 1);
 
-            currentPathLeftmostColumn++;
+            const nextCursor = currentCursor + 1;
 
-            return [currentMinEffectiveWidth, currentPathLeftmostColumn];
-        }, [initialWidth, 2]);
+            return [newMaxReachable, nextCursor];
+        }, [currentMaxReachable, 2]);
 
-    return finalResult[0];
+    return finalState[0];
 }
 
-const sourceInputContent = require("fs").readFileSync("/dev/stdin","utf8");
-dataAccessor(sourceInputContent);
-console.log(computePathWidth());
+const inputReader = createInputProcessor(require("fs").readFileSync("/dev/stdin","utf8"));
+console.log(calculateMaxPath());

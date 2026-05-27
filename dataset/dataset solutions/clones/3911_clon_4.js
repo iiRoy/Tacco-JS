@@ -1,29 +1,16 @@
-function evaluateSequence(payload) {
-  const normalizedPayload = payload.trim();
+function main(inputString) {
+  const processedString = inputString.trim();
 
-  const characterMap = normalizedPayload.split('').reduce((tally, symbol) => {
-    switch (symbol) {
-      case 'a':
-      case 'b':
-      case 'c':
-        tally[symbol] = (tally[symbol] || 0) + 1;
-        break;
-      default:
-        // Ignore other characters
-        break;
-    }
-    return tally;
-  }, {});
+  const frequencyMap = processedString.split('').reduce((accumulator, currentCharacter) => {
+    accumulator.set(currentCharacter, (accumulator.get(currentCharacter) || 0) + 1);
+    return accumulator;
+  }, new Map());
 
-  const aOccurrences = characterMap['a'] || 0;
-  const bOccurrences = characterMap['b'] || 0;
-  const cOccurrences = characterMap['c'] || 0;
+  const targetChars = ['a', 'b', 'c'];
 
-  if (aOccurrences === 1 && bOccurrences === 1 && cOccurrences === 1) {
-    console.log('Yes');
-  } else {
-    console.log('No');
-  }
+  const allTargetCharsPresentOnce = targetChars.every(char => frequencyMap.get(char) === 1);
+
+  console.log(allTargetCharsPresentOnce ? 'Yes' : 'No');
 }
 
-evaluateSequence(require('fs').readFileSync('/dev/stdin', 'utf8'));
+main(require('fs').readFileSync('/dev/stdin', 'utf8'));

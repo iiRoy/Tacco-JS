@@ -1,31 +1,24 @@
-'use strict'; // Enforces strict JavaScript parsing and error handling for cleaner code.
+'use strict';
 
 /**
- * Core processing routine that ingests raw textual data, extracts numerical components,
- * sorts them, and then outputs the sum of the two smallest values.
- *
- * @param {string} sourceText - The entire text content provided as input.
+ * Processes the raw input string to calculate the sum of the two smallest numbers.
+ * @param {string} rawData - The raw input string from standard input.
  */
-function ProcessInputData ( sourceText )
-{
-    // First, isolate the initial line from the entire input string.
-    // Then, parse this line by splitting it at space characters, yielding an array of stringified numbers.
-    let stringifiedNumbers = sourceText
-                                .split( '\n' )
-                                [ 0 ]
-                                .split( ' ' )
-                                ;
+function ProcessInput(rawData) {
+    // Split the input string by newline, take the first line, then split by space.
+    // This assumes the input consists of a single line of space-separated numbers.
+    const parsedNumbers = rawData.split("\n")[0].split(" ");
 
-    // Arrange the array elements in ascending numerical order.
-    // The lambda expression (anonymous function) ensures a correct numerical comparison.
-    stringifiedNumbers.sort( ( firstElement , secondElement ) => firstElement - secondElement ) ;
+    // Sort the array of string numbers in ascending numerical order.
+    // The comparison function (a, b) => a - b ensures numerical sorting.
+    parsedNumbers.sort((a, b) => a - b);
 
-    // Convert the first two elements of the sorted array from strings to integers (base 10),
-    // calculate their sum, and display the result to the console.
-    console.info( Number.parseInt( stringifiedNumbers[ 0 ] , 10 ) + Number.parseInt( stringifiedNumbers[ 1 ] , 10 ) ) ;
+    // Parse the first two (smallest) numbers as integers and log their sum.
+    // parseInt(..., 10) ensures parsing in base 10.
+    console.log(parseInt(parsedNumbers[0], 10) + parseInt(parsedNumbers[1], 10));
 }
 
-// Initiate the data processing by calling the main function.
-// This involves synchronously reading the content from standard input (`/dev/stdin`)
-// using Node.js's file system module, interpreted as UTF-8 encoded text.
-ProcessInputData( require( 'node:fs' ) .readFileSync( '/dev/stdin' , 'UTF-8' ) ) ;
+// Read the input from standard input and pass it to the processing function.
+// require("fs") gets the file system module.
+// .readFileSync("/dev/stdin", "utf8") reads the entire content of stdin as a UTF-8 string.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

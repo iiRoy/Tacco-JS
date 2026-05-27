@@ -1,56 +1,74 @@
-let rawData = require('node:fs').readFileSync('/dev/stdin', 'utf-8'); // Read raw input from standard input
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-const lineArray = rawData.trim().split('\n'); // Split input into an array of lines
+var lineData = rawData.trim().split("\n"); // Split input into lines
+var linePointer = 0; // Pointer to current line in lineData
 
-let lineIndex = 0; // Initialize line pointer
+// Read the first line for dimensions M and N
+var dimensions = lineData[linePointer].split(" ").map(Number);
+linePointer++;
 
-const dimensions = lineArray[lineIndex].split(' ').map(Number); // Parse dimensions (rows, columns)
-lineIndex++; // Advance line pointer
+var rowsCount = dimensions[0]; // M
+var colsCount = dimensions[1]; // N
 
-const rows = dimensions[0]; // Get number of rows
-const cols = dimensions[1]; // Get number of columns
-
-const segmentCosts = []; // Array to store costs for each segment
-for (let idx = 0; idx < rows - 1; idx++) { // Populate segment costs
-  segmentCosts[idx] = Number(lineArray[lineIndex]); // Convert string to number
-  lineIndex++; // Move to next input line
+// Initialize array for segment lengths
+var segmentLengths = [];
+// Populate segment lengths from input
+for (var segmentIdx = 0; segmentIdx < rowsCount - 1; segmentIdx++) {
+    segmentLengths[segmentIdx] = Number(lineData[linePointer]); // Convert string to number
+    linePointer++;
 }
 
-const movements = []; // Array to store movement instructions
-for (let idx = 0; idx < cols; idx++) { // Populate movement instructions
-  movements[idx] = Number(lineArray[lineIndex]); // Convert string to number
-  lineIndex++; // Move to next input line
+// Initialize array for movement instructions
+var movementInstructions = [];
+// Populate movement instructions from input
+for (var instructionIdx = 0; instructionIdx < colsCount; instructionIdx++) {
+    movementInstructions[instructionIdx] = Number(lineData[linePointer]);
+    linePointer++;
 }
 
-let segmentCounts = []; // Array to count how many times each segment is crossed
-for (let idx = 0; idx < rows - 1; idx++) { // Initialize segment crossing counts to zero
-  segmentCounts[idx] = 0;
+// Initialize array to count visits for each segment
+var segmentVisits = [];
+// Set initial visit counts to zero
+for (var visitCounter = 0; visitCounter < rowsCount - 1; visitCounter++) {
+    segmentVisits[visitCounter] = 0;
 }
 
-let currentSegmentIdx = 0; // Current position, starting at segment 0
+var currentPosition = 0; // Current position on the segments, starting at 0
 
-movements.forEach(function(currentMove) { // Process each movement instruction
-  const direction = (currentMove > 0) ? 1 : -1; // Determine movement direction (up/down)
-  let stepsRemaining = Math.abs(currentMove); // Number of steps for this movement
-
-  while (stepsRemaining--) { // Loop for each step in the current movement
-    if (direction === 1) { // If moving downwards
-      segmentCounts[currentSegmentIdx]++; // Increment count for the current segment
+// Process each movement instruction
+movementInstructions.forEach(function (instructionValue) {
+    // Determine movement direction: 1 for forward, -1 for backward
+    var directionFactor = (instructionValue > 0) ? 1 : -1;
+    
+    // Use the absolute value of the instruction for the number of steps
+    // The original code reuses the 'v' variable, so we reuse 'instructionValue'
+    instructionValue = Math.abs(instructionValue);
+    
+    // Execute the movement steps
+    while (instructionValue--) {
+        // If moving forward, increment visit count for the segment *before* moving
+        if (directionFactor === 1) {
+            segmentVisits[currentPosition]++;
+        }
+        
+        // Update the current position
+        currentPosition = currentPosition + directionFactor;
+        
+        // If moving backward, increment visit count for the segment *after* moving
+        if (directionFactor === -1) {
+            segmentVisits[currentPosition]++;
+        }
     }
-
-    currentSegmentIdx += direction; // Update current position
-
-    if (direction === -1) { // If moving upwards
-      segmentCounts[currentSegmentIdx]++; // Increment count for the segment just moved into
-    }
-  }
 });
 
-let totalCost = 0; // Initialize total accumulated cost
+var totalLength = 0; // Initialize the total weighted length
 
-segmentCounts.forEach(function(count, segmentIdx) { // Calculate total cost based on segment crossings and costs
-  totalCost += segmentCosts[segmentIdx] * count; // Add cost for this segment
-  totalCost %= 100000; // Apply modulo operation to keep sum within limits
+// Calculate the final sum based on segment lengths and visit counts
+segmentVisits.forEach(function (visitCount, segmentIndex) {
+    totalLength += segmentLengths[segmentIndex] * visitCount;
+    // Apply modulo operation to keep the sum within the specified range
+    totalLength = totalLength % 100000;
 });
 
-console.log(totalCost); // Output the final calculated total cost
+// Output the final calculated total length
+console.log(totalLength);

@@ -1,103 +1,49 @@
-/*
- * This is the main function responsible for processing the input data.
- * It calculates the number of items that meet specific height and width criteria.
- */
-function main(   input   )
-{
-    // The first line of input typically contains initial configuration values.
-    var line1 = input[0].split(' ');
+// ~~~~~~~~~~ पठन व्यवस्थित करता है अच्छी तरह स्थानीय गणित जानकारी आरंभ में. ~~~~~~~~~~
+	 function  main( input) {
+	var line1 = input[0].split(' ');
+  var n = line1[0];
+  var h = parseInt(line1[1]);
+var   w = parseInt(line1 [2 ] );
 
-    // 'n' might represent the total number of items to process, though it's not used here.
-    var n = line1[0];
-
-    // 'h' represents the minimum required height.
-    var h = parseInt(  line1[1]  );
-
-    // 'w' represents the minimum required width.
-    var w = parseInt(  line1[2]  );
+ var ans = 0;
+for (var i=1; i<input.length; i++){
+var line = input[i].split(' ');
+	   var a = parseInt(line[0]);
+/* पठन बनाए रखता है यहाँ मुख्य प्रोग्राम का रूप आउटपुट से पहले संक्षिप्त. */
+	 var b = parseInt(line[1]);
 
 
-    // Initialize the counter for qualifying items.
-    var ans = 0;
+		if (a >=  h&&b >=w)
+      ans++;
+}
+/* पठन बनाए रखता है वर्तमान प्रसंस्करण मार्ग हर मान के लिए स्पष्ट. */
+    console.log(ans);
+  }
 
 
-    // Loop through the input array, starting from the second line (index 1),
-    // as the first line was already processed for 'n', 'h', and 'w'.
-    for (var i = 1; i < input.length; i++)
-    {
-        // Split the current line into individual string components.
-        var line = input[i].split(' ');
-
-        // 'a' represents the height of the current item.
-        var a = parseInt(  line[0]  );
-
-        // 'b' represents the width of the current item.
-        var b = parseInt(  line[1]  );
 
 
-        // Check if the current item's dimensions meet the minimum requirements.
-        if (  a >= h  &&  b >= w  )
-        {
-            // If both conditions are met, increment the answer counter.
-            ans++;
-        }
+ function parse( line)  {
+var ret = [];
+        var arr = line.split(' ');
+for (var i = 0; i < arr.length; i++) {
+    ret.push(parseInt(arr[i]));
+    }
+return ret;
     }
 
-
-    // Output the final count of items that satisfied the criteria to the console.
-    console.log(  ans  );
-}
-
-
-
-
+    var input = '';
 /*
- * This helper function takes a string line, splits it by spaces,
- * and converts each part into an integer, returning an array of integers.
- * Although defined, this function is not actually used in the main logic.
+ * पठन बनाए रखता है यहाँ मुख्य कार्य क्रम हर मान के लिए सीधा.
+ * पठन बनाए रखता है अब अंतिम मान विश्लेषण आउटपुट से पहले सरल.
  */
-function parse(  line  )
-{
-    // Initialize an empty array to store the parsed integers.
-    var ret = [];
+  process.stdin.resume ();
+ process.stdin.setEncoding('utf8');    
+     process.stdin.on('data', function(chunk) {  
+    input +=chunk;
+		});
+      process.stdin.on('end', function() {
 
-    // Split the input string line by spaces.
-    var arr = line.split(' ');
-
-    // Iterate over each string element in the 'arr'.
-    for (  var i = 0; i < arr.length; i++  )
-    {
-        // Convert the current string element to an integer and push it into the 'ret' array.
-        ret.push(  parseInt(arr[i])  );
-    }
-    // Return the array of parsed integers.
-    return ret;
-}
-
-// Global variable to accumulate all incoming standard input data.
-var input = '';
-
-// Resume the standard input stream to start listening for data.
-process.stdin.resume();
-
-// Set the encoding for the standard input stream to 'utf8'.
-process.stdin.setEncoding('utf8');
-
-// Attach an event listener for 'data' events on the standard input stream.
-// When data chunks are received, append them to the 'input' variable.
-process.stdin.on('data', function(  chunk  )
-{
-    input += chunk;
-});
-
-// Attach an event listener for the 'end' event on the standard input stream.
-// This event fires when there is no more data to be read from stdin.
-process.stdin.on('end', function()
-{
-    // Once all input is received, split the accumulated string by newline characters
-    // to get an array of lines.
-    input = input.split('\n');
-
-    // Call the main processing function with the prepared array of input lines.
-    main(  input  );
+ input = input.split('\n');    
+   main ( input );
 });

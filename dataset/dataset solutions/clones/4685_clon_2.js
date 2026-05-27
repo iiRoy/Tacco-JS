@@ -1,42 +1,45 @@
-/*
- * This script calculates the minimum number of shuttle buses
- * required to transport passengers based on their arrival times,
- * bus capacity, and a time window.
- */
+// This JavaScript program processes passenger arrival data to determine the minimum number of buses required.
+// It adheres to specific rules for bus departure based on passenger count and waiting time.
 
-( ( rawInputString ) => {
-  // Split the entire input string into individual lines.
-  const lineSegments = rawInputString.split( '\n' ) ;
+( ( rawDataInput ) => {
+  // Split the entire input string by newline characters to get an array of individual lines.
+  const inputLines = rawDataInput.split( '\n' );
 
-  // Parse the first line to get global constraints:
-  // total_passengers, maximum_capacity_per_bus, and max_wait_duration.
-  const [ totalParticipants , maxCapacity , maxWaitDuration ] = lineSegments[ 0 ].split( ' ' ).map( Number ) ;
+  // The first line contains three space-separated integers:
+  //   - totalTravelers: The total number of passengers.
+  //   - maxBusOccupancy: The maximum number of passengers a single bus can carry.
+  //   - maxWaitDuration: The maximum time (in minutes) a passenger can wait on a bus after the first passenger boarded.
+  const [ totalTravelers, maxBusOccupancy, maxWaitDuration ] = inputLines[ 0 ].split( ' ' ).map( Number );
 
-  // Process subsequent lines to get passenger arrival times,
-  // convert them to numbers, and sort them in ascending order.
-  let participantArrivalTimings = lineSegments.slice( 1 ).map( Number ).sort( ( timeA , timeB ) => timeA - timeB ) ;
+  // Extract the arrival times for all passengers from the remaining lines.
+  // Convert them to numbers and then sort them in ascending order.
+  let passengerArrivalTimes = inputLines.slice( 1 ).map( Number ).sort( ( valA, valB ) => valA - valB );
 
-  // Initialize the count of necessary vehicles. At least one vehicle is always needed.
-  let neededTransports = 1 ;
+  // Initialize the counter for the number of buses needed.
+  // At least one bus is always required for any number of passengers (N >= 1).
+  let requiredBusCount = 1;
 
-  // Iterate through the sorted arrival times to determine bus assignments.
-  // current_person_idx tracks the passenger being considered.
-  // first_on_bus_idx marks the first passenger assigned to the current bus.
-  for ( let current_person_idx = 0 , first_on_bus_idx = 0 ; first_on_bus_idx < totalParticipants - 1 ; current_person_idx++ ) {
+  // Iterate through the sorted passenger arrival times to assign them to buses.
+  //   - currentPassengerIndex: Represents the index of the passenger currently being considered.
+  //   - firstPassengerOnBusIndex: Represents the index of the first passenger who boarded the current bus.
+  // The loop continues as long as the first passenger of the current bus is not the very last passenger.
+  for ( let currentPassengerIndex = 0, firstPassengerOnBusIndex = 0; firstPassengerOnBusIndex < totalTravelers - 1; currentPassengerIndex++ ) {
     // Calculate the latest possible departure time for the current bus.
-    // This is based on the arrival time of the first passenger on the bus plus the allowed waiting duration.
-    const vehicleDepartureCutoff = participantArrivalTimings[ first_on_bus_idx ] + maxWaitDuration ;
+    // This is determined by the arrival time of the first passenger on this bus plus the maximum allowed waiting duration.
+    const busDepartureDeadline = passengerArrivalTimes[ firstPassengerOnBusIndex ] + maxWaitDuration;
 
-    // Check conditions for dispatching a new bus:
-    // 1. The current passenger arrives after the bus's departure cutoff.
-    // 2. The current bus has reached its maximum capacity.
-    if ( participantArrivalTimings[ current_person_idx ] >= vehicleDepartureCutoff || current_person_idx === maxCapacity ) {
-      neededTransports += 1 ; // Increment the count of required buses.
-      first_on_bus_idx = current_person_idx ; // The current passenger becomes the first for the new bus.
+    // Check if a new bus is needed for the current passenger.
+    // A new bus is required if:
+    // 1. The current passenger's arrival time is beyond the current bus's departure deadline.
+    // 2. The absolute index of the current passenger being considered matches the maximum bus occupancy value.
+    //    (This is a specific condition from the original problem's logic, not a standard capacity check like `currentPassengerIndex - firstPassengerOnBusIndex === maxBusOccupancy`).
+    if ( passengerArrivalTimes[ currentPassengerIndex ] >= busDepartureDeadline || currentPassengerIndex === maxBusOccupancy ) {
+      requiredBusCount += 1; // Increment the bus count as a new bus is starting.
+      firstPassengerOnBusIndex = currentPassengerIndex; // The current passenger becomes the first passenger on the new bus.
     }
   }
 
-  // Output the final calculated number of buses.
-  console.log( neededTransports ) ;
+  // Print the final calculated number of buses to the console.
+  console.log( requiredBusCount );
 
-} ) ( require( "fs" ).readFileSync( "/dev/stdin" , "utf8" ) ) ;
+} )( require( "fs" ).readFileSync( "/dev/stdin", "utf8" ) );

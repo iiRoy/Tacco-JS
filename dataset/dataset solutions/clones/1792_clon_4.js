@@ -1,43 +1,31 @@
-function determineOutcome (dataStream) {
-    const parseInformation = (rawContent) => {
-        const lineSegments = rawContent.trim().split(/\r?\n/);
-        const [segmentOne, segmentTwo, segmentThree] = lineSegments.map(chunk =>
-            chunk.split(/\s+/).map(str => parseInt(str, 10))
-        );
+function Main(inputData) {
+    const dataLines = inputData.trim().split("\n");
 
-        return {
-            initialPointAlpha: segmentOne[0],
-            velocityAlpha: segmentOne[1],
-            initialPointBeta: segmentTwo[0],
-            velocityBeta: segmentTwo[1],
-            timeAllowance: segmentThree[0]
-        };
-    };
+    const [firstEntityPositionString, firstEntitySpeedString] = dataLines[0].split(" ");
+    const [secondEntityPositionString, secondEntitySpeedString] = dataLines[1].split(" ");
+    const maximumAllowedTimeString = dataLines[2];
 
-    const evaluateMeetingPotential = (scenarioDetails) => {
-        const absoluteSeparation = Math.abs(scenarioDetails.initialPointAlpha - scenarioDetails.initialPointBeta);
-        const differentialSpeed = scenarioDetails.velocityAlpha - scenarioDetails.velocityBeta;
-        const permittedDuration = scenarioDetails.timeAllowance;
+    const firstEntityPosition = Number(firstEntityPositionString);
+    const firstEntitySpeed = Number(firstEntitySpeedString);
+    const secondEntityPosition = Number(secondEntityPositionString);
+    const secondEntitySpeed = Number(secondEntitySpeedString);
+    const maximumAllowedTime = Number(maximumAllowedTimeString);
 
-        if (absoluteSeparation === 0) {
-            return "YES";
-        }
+    const currentSpatialSeparation = Math.abs(firstEntityPosition - secondEntityPosition);
+    const effectiveApproachRate = firstEntitySpeed - secondEntitySpeed;
 
-        if (differentialSpeed <= 0) {
-            return "NO";
-        }
-
-        const requiredDuration = absoluteSeparation / differentialSpeed;
-
-        if (requiredDuration <= permittedDuration) {
-            return "YES";
+    if (currentSpatialSeparation === 0) {
+        console.log("YES");
+    } else if (effectiveApproachRate <= 0) {
+        console.log("NO");
+    } else {
+        const timeToConverge = currentSpatialSeparation / effectiveApproachRate;
+        if (timeToConverge <= maximumAllowedTime) {
+            console.log("YES");
         } else {
-            return "NO";
+            console.log("NO");
         }
-    };
-
-    const extractedParameters = parseInformation(dataStream);
-    console.log(evaluateMeetingPotential(extractedParameters));
+    }
 }
 
-determineOutcome(require("fs").readFileSync("/dev/stdin", "utf8"));
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

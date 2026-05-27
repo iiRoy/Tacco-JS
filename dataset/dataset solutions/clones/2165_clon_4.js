@@ -1,37 +1,29 @@
-const acquireAndParseData = (sourceMaterial) => {
-    const dataExtractor = /^(\S+)\s+(\S+)\n(\d+)\s+(\d+)\n(\S+)$/;
-    const capturedGroups = sourceMaterial.match(dataExtractor);
+"use strict";
 
-    const [_, firstToken, secondToken, firstNumeric, secondNumeric, queryToken] = capturedGroups;
+function processInput(inputString) {
+    const [firstLineContent, secondLineContent, thirdLineContent] = inputString.trim().split('\n');
 
-    return {
-        firstLabel: firstToken,
-        secondLabel: secondToken,
-        initialValueA: Number(firstNumeric),
-        initialValueB: Number(secondNumeric),
-        targetQuery: queryToken
+    const [comparisonKey] = firstLineContent.split(' ');
+    const [initialValueA, initialValueB] = secondLineContent.split(' ').map(Number);
+    const checkTarget = thirdLineContent;
+
+    const isFirstConditionMet = (checkTarget === comparisonKey);
+
+    const determineAdjustments = (matchStatus) => {
+        if (matchStatus) {
+            return [-1, 0];
+        } else {
+            return [0, -1];
+        }
     };
-};
 
-const computeAdjustedValues = (processedInputs) => {
-    const { firstLabel, secondLabel, initialValueA, initialValueB, targetQuery } = processedInputs;
+    const adjustments = determineAdjustments(isFirstConditionMet);
 
-    const currentQuantities = [initialValueA, initialValueB];
+    const modifiedValues = [initialValueA, initialValueB].map((currentVal, index) => {
+        return currentVal + adjustments[index];
+    });
 
-    const adjustmentMap = new Map();
-    adjustmentMap.set(firstLabel, 0);
-    adjustmentMap.set(secondLabel, 1);
+    console.log(modifiedValues.join(' '));
+}
 
-    const indexToDecrement = adjustmentMap.get(targetQuery);
-
-    currentQuantities[indexToDecrement]--;
-
-    return currentQuantities.join(" ");
-};
-
-const sourceContent = require('fs').readFileSync('/dev/stdin', 'utf8');
-
-const structuredData = acquireAndParseData(sourceContent);
-const finalOutcome = computeAdjustedValues(structuredData);
-
-console.log(finalOutcome);
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

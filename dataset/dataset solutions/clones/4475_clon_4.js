@@ -1,40 +1,20 @@
 "use strict";
-const processData = (dataSource) => {
-    let allLines = dataSource.trim().split('\n');
-    let [configLine, valueLine] = allLines;
 
-    let params = configLine.split(' ').map(val => parseInt(val, 10));
-    let [totalCount, targetCount] = params;
+const performCalculation = (sourceData) => {
+    const [configLine, valuesLine] = sourceData.trim().split('\n');
+    const [totalCount, selectionLimit] = configLine.split(' ').map(Number);
+    const numericValues = valuesLine.split(' ').map(Number);
 
-    if (targetCount > totalCount) {
-        console.log(NaN);
-        return;
-    }
+    const sortedNumbers = numericValues.sort((valA, valB) => valA - valB);
 
-    let numericValues = valueLine.split(' ').map(val => parseInt(val, 10));
+    const finalSum = sortedNumbers.slice(0, selectionLimit).reduce((acc, current) => acc + current, 0);
 
-    let selectedTop = [];
-
-    for (let currentVal of numericValues) {
-        if (selectedTop.length < targetCount) {
-            let insertPos = 0;
-            while (insertPos < selectedTop.length && selectedTop[insertPos] < currentVal) {
-                insertPos++;
-            }
-            selectedTop.splice(insertPos, 0, currentVal);
-        } else if (currentVal > selectedTop[0]) {
-            selectedTop.shift();
-            let insertPos = 0;
-            while (insertPos < selectedTop.length && selectedTop[insertPos] < currentVal) {
-                insertPos++;
-            }
-            selectedTop.splice(insertPos, 0, currentVal);
-        }
-    }
-
-    let resultValue = selectedTop.reduce((accumulator, currentNumber) => accumulator + currentNumber, 0);
-
-    console.log(resultValue);
+    return finalSum;
 };
 
-processData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+const entryPoint = (inputPayload) => {
+    const result = performCalculation(inputPayload);
+    console.log(result);
+};
+
+entryPoint(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,116 +1,80 @@
-function ProcessGame(gameDataInput) {
-    const linesOfData = gameDataInput.trim().split("\n");
-    const [paramLine, itemLine] = linesOfData;
+function ProcessInput(rawData) {
+  const lineSegments = rawData.split("\n");
+  lineSegments.pop();
 
-    const initialParameters = paramLine.split(" ").map(Number);
-    const itemQuantity = initialParameters[0];
-    const actionLimit = initialParameters[1];
+  const configValues = lineSegments[0].split(" ");
+  const totalItems = parseInt(configValues[0]);
+  const maxOperations = parseInt(configValues[1]);
 
-    const initialItemSet = itemLine.split(" ").map(Number);
+  const initialItemSet = lineSegments[1].split(" ").map(str => parseInt(str));
 
-    const totalPositiveSum = initialItemSet.reduce((accumulator, value) => accumulator + (value > 0 ? value : 0), 0);
+  let optimalTarget = 0;
+  for (const itemValue of initialItemSet) {
+    if (itemValue > 0) {
+      optimalTarget += itemValue;
+    }
+  }
 
-    let maximumScoreAttained = 0;
-    let optimumFound = false;
+  let peakScore = 0;
+  let haltTraversal = false;
 
-    const explorationQueue = [];
+  // State object: { r: remainingItems, h: heldItems, o: operationsDone, s: currentScore }
+  // 'r' for remaining, 'h' for held, 'o' for operations, 's' for score
+  const stateQueue = [];
+  stateQueue.push({ r: [...initialItemSet], h: [], o: 0, s: 0 });
 
-    // Initial state: [itemsInQueue, itemsInCollection]
-    explorationQueue.push({
-        currentArrangement: [initialItemSet.slice(), []],
-        actionsPerformed: 0
-    });
+  while (stateQueue.length > 0 && !haltTraversal) {
+    const currentContext = stateQueue.shift();
 
-    const calculateCollectionValue = (itemsInCollection) => {
-        return itemsInCollection.reduce((sum, value) => sum + value, 0);
-    };
-
-    // Operation 1: Move first item from queue to collection
-    const transferFirstToCollection = (arrangement) => {
-        const [queueItems, collectionItems] = arrangement;
-        if (queueItems.length === 0) return null;
-        const newQueue = queueItems.slice();
-        const newCollection = collectionItems.slice();
-        newCollection.push(newQueue.shift());
-        return [newQueue, newCollection];
-    };
-
-    // Operation 2: Move last item from queue to collection
-    const transferLastToCollection = (arrangement) => {
-        const [queueItems, collectionItems] = arrangement;
-        if (queueItems.length === 0) return null;
-        const newQueue = queueItems.slice();
-        const newCollection = collectionItems.slice();
-        newCollection.push(newQueue.pop());
-        return [newQueue, newCollection];
-    };
-
-    // Operation 3: Move item from collection (by index) to front of queue
-    const returnToQueueFront = (arrangement, elementIndex) => {
-        const [queueItems, collectionItems] = arrangement;
-        if (elementIndex < 0 || elementIndex >= collectionItems.length) return null;
-        const newQueue = queueItems.slice();
-        const newCollection = collectionItems.slice();
-        newQueue.unshift(newCollection.splice(elementIndex, 1)[0]);
-        return [newQueue, newCollection];
-    };
-
-    // Operation 4: Move item from collection (by index) to back of queue
-    const returnToQueueBack = (arrangement, elementIndex) => {
-        const [queueItems, collectionItems] = arrangement;
-        if (elementIndex < 0 || elementIndex >= collectionItems.length) return null;
-        const newQueue = queueItems.slice();
-        const newCollection = collectionItems.slice();
-        newQueue.push(newCollection.splice(elementIndex, 1)[0]);
-        return [newQueue, newCollection];
-    };
-
-    // Breadth-First Search for optimal path
-    while (explorationQueue.length > 0 && !optimumFound) {
-        const { currentArrangement, actionsPerformed } = explorationQueue.shift();
-        const [currentQueue, currentCollection] = currentArrangement;
-
-        const currentCollectionValue = calculateCollectionValue(currentCollection);
-        if (currentCollectionValue > maximumScoreAttained) {
-            maximumScoreAttained = currentCollectionValue;
-            if (maximumScoreAttained === totalPositiveSum) {
-                optimumFound = true;
-            }
-        }
-
-        if (actionsPerformed >= actionLimit || optimumFound) {
-            continue;
-        }
-
-        const nextActionsPerformed = actionsPerformed + 1;
-
-        // Explore possible next states
-        if (currentQueue.length > 0) {
-            const nextArrangement1 = transferFirstToCollection(currentArrangement);
-            if (nextArrangement1) {
-                explorationQueue.push({ currentArrangement: nextArrangement1, actionsPerformed: nextActionsPerformed });
-            }
-
-            const nextArrangement2 = transferLastToCollection(currentArrangement);
-            if (nextArrangement2) {
-                explorationQueue.push({ currentArrangement: nextArrangement2, actionsPerformed: nextActionsPerformed });
-            }
-        }
-
-        for (let itemIdx = 0; itemIdx < currentCollection.length; itemIdx++) {
-            const nextArrangement3 = returnToQueueFront(currentArrangement, itemIdx);
-            if (nextArrangement3) {
-                explorationQueue.push({ currentArrangement: nextArrangement3, actionsPerformed: nextActionsPerformed });
-            }
-
-            const nextArrangement4 = returnToQueueBack(currentArrangement, itemIdx);
-            if (nextArrangement4) {
-                explorationQueue.push({ currentArrangement: nextArrangement4, actionsPerformed: nextActionsPerformed });
-            }
-        }
+    if (currentContext.s > peakScore) {
+      peakScore = currentContext.s;
+      if (peakScore === optimalTarget) {
+        haltTraversal = true;
+        break;
+      }
     }
 
-    console.log(maximumScoreAttained);
+    if (currentContext.o >= maxOperations) {
+      continue;
+    }
+
+    // Operation 1: Take from front of remaining, add to held
+    if (currentContext.r.length > 0) {
+      const itemFromFront = currentContext.r[0];
+      const nextRemainingFront = currentContext.r.slice(1);
+      const nextHeldFront = [...currentContext.h, itemFromFront];
+      const nextScoreFront = currentContext.s + itemFromFront;
+      stateQueue.push({ r: nextRemainingFront, h: nextHeldFront, o: currentContext.o + 1, s: nextScoreFront });
+    }
+
+    // Operation 2: Take from back of remaining, add to held
+    if (currentContext.r.length > 0) {
+      const itemFromBack = currentContext.r[currentContext.r.length - 1];
+      const nextRemainingBack = currentContext.r.slice(0, -1);
+      const nextHeldBack = [...currentContext.h, itemFromBack];
+      const nextScoreBack = currentContext.s + itemFromBack;
+      stateQueue.push({ r: nextRemainingBack, h: nextHeldBack, o: currentContext.o + 1, s: nextScoreBack });
+    }
+
+    // Operations 3 and 4: Move from held to remaining
+    for (let heldItemIndex = 0; heldItemIndex < currentContext.h.length; heldItemIndex++) {
+      const itemToReturn = currentContext.h[heldItemIndex];
+      const tempHeld = [...currentContext.h];
+      tempHeld.splice(heldItemIndex, 1);
+
+      const scoreAfterReturn = currentContext.s - itemToReturn;
+
+      // Operation 3: Add to front of remaining
+      const nextRemainingToFront = [itemToReturn, ...currentContext.r];
+      stateQueue.push({ r: nextRemainingToFront, h: tempHeld, o: currentContext.o + 1, s: scoreAfterReturn });
+
+      // Operation 4: Add to back of remaining
+      const nextRemainingToBack = [...currentContext.r, itemToReturn];
+      stateQueue.push({ r: nextRemainingToBack, h: tempHeld, o: currentContext.o + 1, s: scoreAfterReturn });
+    }
+  }
+
+  console.log(peakScore);
 }
 
-ProcessGame(require("fs").readFileSync("/dev/stdin", "utf8"));
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,38 +1,27 @@
-const nodeIO = require('node:fs');
+import * as Fs from 'fs';
 
-const extractNumbers = (sourceIdentifier) => {
-    const rawContent = nodeIO.readFileSync(sourceIdentifier, 'utf8');
-    const numericStrings = rawContent.trimEnd().split(/\s+/);
-    const num1 = globalThis.BigInt(numericStrings[0]);
-    const num2 = globalThis.BigInt(numericStrings[1]);
-    return { firstOperand: num1, secondOperand: num2 };
-};
+const inputData = Fs.readFileSync('/dev/stdin', 'utf8');
+const inputTokens = [];
+let currentTokenAccumulator = '';
 
-const getIntegerPartFloor = (valDividend, valDivisor) => {
-    const floatDividend = Number(valDividend);
-    const floatDivisor = Number(valDivisor);
-    const floatQuotient = floatDividend / floatDivisor;
-    return floatQuotient < 0 && floatQuotient % 1 !== 0 ? Math.trunc(floatQuotient) - 1 : Math.trunc(floatQuotient);
-};
+for (let i = 0; i < inputData.length; i++) {
+    const character = inputData[i];
+    if (character === ' ') {
+        inputTokens.push(currentTokenAccumulator);
+        currentTokenAccumulator = '';
+    } else {
+        currentTokenAccumulator += character;
+    }
+}
+inputTokens.push(currentTokenAccumulator);
 
-const getBigIntRemainder = (valDividend, valDivisor) => {
-    // BigInt division truncates towards zero. This expression is equivalent to the BigInt % operator.
-    return valDividend - (valDividend / valDivisor) * valDivisor;
-};
+const processedNumbers = [];
+for (let j = 0; j < inputTokens.length; j++) {
+    processedNumbers.push(BigInt(inputTokens[j]));
+}
 
-const getFloatingPointQuotient = (valDividend, valDivisor) => {
-    return Number(valDividend) / Number(valDivisor);
-};
+const [firstOperand, secondOperand] = processedNumbers;
 
-const { firstOperand: valueX, secondOperand: valueY } = extractNumbers(0); // 0 is the file descriptor for stdin
+const calculateFloorValue = (valueToFloor) => Math.floor(valueToFloor);
 
-const calculationResult1 = getIntegerPartFloor(valueX, valueY);
-const calculationResult2 = getBigIntRemainder(valueX, valueY);
-const calculationResult3 = getFloatingPointQuotient(valueX, valueY);
-
-const finalOutputElements = [];
-finalOutputElements.push(calculationResult1);
-finalOutputElements.push(calculationResult2);
-finalOutputElements.push(calculationResult3);
-
-process.stdout.write(finalOutputElements.join(' ') + '\n');
+console.log(calculateFloorValue(firstOperand / secondOperand), firstOperand % secondOperand, firstOperand / secondOperand);

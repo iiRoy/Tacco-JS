@@ -1,49 +1,44 @@
-const lineReaderModule = require('readline');
-
-const processedInput = [];
-
-const interfaceInstance = lineReaderModule.createInterface({
+var inputBuffer = [];
+var inputHandler = require('readline').createInterface({
     input: process.stdin,
     output: process.stdout,
 });
 
-interfaceInstance.on('line', (currentLine) => {
-    processedInput.push(currentLine);
+inputHandler.on('line', function (entry) {
+    inputBuffer.push(entry);
 });
 
-interfaceInstance.on('close', () => {
-    const quantity = Number(processedInput[0]);
-    
-    const collectionOne = processedInput[1].split(" ").map(itemString => Number(itemString));
-    const collectionTwo = processedInput[2].split(" ").map(itemString => Number(itemString));
-    const collectionThree = processedInput[3].split(" ").map(itemString => Number(itemString));
+inputHandler.on('close', function () {
+    var arraySize = Number(inputBuffer[0]);
+    var firstArr = inputBuffer[1].split(" ").map(Number);
+    var midArr = inputBuffer[2].split(" ").map(Number);
+    var lastArr = inputBuffer[3].split(" ").map(Number);
 
-    collectionOne.sort((valA, valB) => valA - valB);
-    collectionTwo.sort((valA, valB) => valA - valB);
-    collectionThree.sort((valA, valB) => valA - valB);
+    firstArr.sort((val1, val2) => val1 - val2);
+    midArr.sort((val1, val2) => val1 - val2);
+    lastArr.sort((val1, val2) => val1 - val2);
 
-    let totalTriplets = 0;
+    var totalCount = 0;
+    var leftPointer = 0;
+    var rightPointer = 0;
 
-    let pointerA = 0;
-    let pointerC = 0;
+    for (var midIndex = 0; midIndex < arraySize; midIndex++) {
+        var currentMidVal = midArr[midIndex];
 
-    for (let middleIndex = 0; middleIndex < quantity; ++middleIndex) {
-        const currentBValue = collectionTwo[middleIndex];
-
-        // Advance pointerA to find the count of elements in collectionOne strictly less than currentBValue
-        while (pointerA < quantity && collectionOne[pointerA] < currentBValue) {
-            pointerA++;
+        // Count elements in firstArr strictly less than currentMidVal
+        while (leftPointer < arraySize && firstArr[leftPointer] < currentMidVal) {
+            leftPointer++;
         }
-        const countLower = pointerA;
+        var countLeft = leftPointer;
 
-        // Advance pointerC to find the count of elements in collectionThree strictly greater than currentBValue
-        while (pointerC < quantity && collectionThree[pointerC] <= currentBValue) {
-            pointerC++;
+        // Count elements in lastArr greater than or equal to currentMidVal
+        // Advance rightPointer to the first element in lastArr that is >= currentMidVal
+        while (rightPointer < arraySize && lastArr[rightPointer] < currentMidVal) {
+            rightPointer++;
         }
-        const countHigher = quantity - pointerC;
+        var countRight = arraySize - rightPointer;
         
-        totalTriplets += countLower * countHigher;
+        totalCount += countLeft * countRight;
     }
-
-    console.log(totalTriplets);
+    console.log(totalCount);
 });

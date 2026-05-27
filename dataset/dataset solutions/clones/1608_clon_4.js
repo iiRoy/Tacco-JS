@@ -1,67 +1,83 @@
-const evaluateJourney = (rawTextualData) => {
-    const [configLine, destinationLine, valueLine] = rawTextualData
-        .trim()
-        .split('\n')
-        .map(line => line.split(' ').map(Number));
+function Main(input) {
+    const lines = input.trim().split("\n");
+    const firstLine = lines[0].split(" ").map(Number);
+    const N = firstLine[0];
+    const K = firstLine[1];
+    const planetNext = lines[1].split(" ").map(Number);
+    const planetScores = lines[2].split(" ").map(Number);
 
-    const totalLocations = configLine[0];
-    const maximumJumps = configLine[1];
-    const destinationIndices = destinationLine;
-    const locationValues = valueLine;
+    let overallMaxScore = -Infinity;
 
-    const globallyVisitedLocations = new Set();
-    let overallBestAccumulation = -Infinity;
+    const nodeCycleRegistry = new Map();
 
-    Array.from({ length: totalLocations }, (_, locationIdentifier) => locationIdentifier)
-        .filter(idx => !globallyVisitedLocations.has(idx))
-        .forEach(entryPoint => {
-            const currentCycleNodes = [];
-            const currentCycleRewards = [];
-            let currentTraveler = entryPoint;
+    for (let startNodeIndex = 0; startNodeIndex < N; startNodeIndex++) {
+        if (nodeCycleRegistry.has(startNodeIndex)) {
+            continue;
+        }
 
-            while (!globallyVisitedLocations.has(currentTraveler)) {
-                globallyVisitedLocations.add(currentTraveler);
-                currentCycleNodes.push(currentTraveler);
-                currentCycleRewards.push(locationValues[currentTraveler]);
-                currentTraveler = destinationIndices[currentTraveler] - 1;
-            }
+        const currentPathNodes = [];
+        const pathVisitOrder = new Map();
+        let currentNode = startNodeIndex;
+        let pathPosition = 0;
 
-            const cycleRingSize = currentCycleNodes.length;
-            const cycleNetSum = currentCycleRewards.reduce((acc, val) => acc + val, 0);
+        while (!pathVisitOrder.has(currentNode)) {
+            pathVisitOrder.set(currentNode, pathPosition);
+            currentPathNodes.push(currentNode);
+            currentNode = planetNext[currentNode] - 1;
+            pathPosition++;
+        }
 
-            let initialSegmentLength;
-            if (maximumJumps <= cycleRingSize) {
-                initialSegmentLength = maximumJumps;
-            } else if (cycleNetSum > 0) {
-                initialSegmentLength = maximumJumps % cycleRingSize;
-                if (initialSegmentLength === 0) initialSegmentLength = cycleRingSize;
-            } else {
-                initialSegmentLength = cycleRingSize;
-            }
+        const cycleEntryPosition = pathVisitOrder.get(currentNode);
+        const cycleNodeIndices = currentPathNodes.slice(cycleEntryPosition);
+        const cycleScores = cycleNodeIndices.map(idx => planetScores[idx]);
+        const cycleTotalScore = cycleScores.reduce((acc, val) => acc + val, 0);
 
-            let maxIntermediateGain = -Infinity;
-            Array.from({ length: cycleRingSize }, (_, startOffset) => {
-                let currentTraversalSum = 0;
-                Array.from({ length: initialSegmentLength }, (_, step) => {
-                    const effectiveIndex = (startOffset + step) % cycleRingSize;
-                    currentTraversalSum += currentCycleRewards[effectiveIndex];
-                    maxIntermediateGain = Math.max(maxIntermediateGain, currentTraversalSum);
-                });
-            });
-
-            const fullLoopMultiples = Math.floor((maximumJumps - initialSegmentLength) / cycleRingSize);
-            const cycleContribution = Math.max(0, cycleNetSum) * fullLoopMultiples;
-
-            const currentCycleTotalScore = maxIntermediateGain + cycleContribution;
-            overallBestAccumulation = Math.max(overallBestAccumulation, currentCycleTotalScore);
+        cycleNodeIndices.forEach((nodeIdx, offset) => {
+            nodeCycleRegistry.set(nodeIdx, { cycleId: startNodeIndex, offset: offset });
         });
 
-    return overallBestAccumulation;
-};
+        const cycleLength = cycleScores.length;
+        const cycleSumValue = cycleTotalScore;
 
-const initiateComputationalProcess = (inputStringContent) => {
-    const finalCalculatedValue = evaluateJourney(inputStringContent);
-    console.log(finalCalculatedValue);
-};
+        let stepsForSubpathCalculation = cycleLength;
+        let fullCycleContributionMultiplier = 0;
 
-initiateComputationalProcess(require("fs").readFileSync("/dev/stdin", "utf8"));
+        if (K <= cycleLength) {
+            stepsForSubpathCalculation = K;
+        } else {
+            if (cycleSumValue > 0) {
+                stepsForSubpathCalculation = K % cycleLength;
+                if (stepsForSubpathCalculation === 0) {
+                    stepsForSubpathCalculation = cycleLength;
+                }
+                fullCycleContributionMultiplier = Math.floor((K - stepsForSubpathCalculation) / cycleLength);
+            } else {
+                stepsForSubpathCalculation = cycleLength;
+                fullCycleContributionMultiplier = 0;
+            }
+        }
+
+        let maxSubpathScoreInCycle = -Infinity;
+
+        if (stepsForSubpathCalculation > 0) {
+            const extendedCycleScores = cycleScores.concat(cycleScores.slice(0, stepsForSubpathCalculation - 1));
+            
+            const cumulativeSums = [0];
+            for (const score of extendedCycleScores) {
+                cumulativeSums.push(cumulativeSums[cumulativeSums.length - 1] + score);
+            }
+
+            for (let currentStartOffset = 0; currentStartOffset < cycleLength; currentStartOffset++) {
+                const currentEndOffset = currentStartOffset + stepsForSubpathCalculation;
+                const windowSum = cumulativeSums[currentEndOffset] - cumulativeSums[currentStartOffset];
+                maxSubpathScoreInCycle = Math.max(maxSubpathScoreInCycle, windowSum);
+            }
+        }
+
+        overallMaxScore = Math.max(overallMaxScore, maxSubpathScoreInCycle + fullCycleContributionMultiplier * cycleSumValue);
+    }
+
+    console.log(overallMaxScore);
+}
+
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

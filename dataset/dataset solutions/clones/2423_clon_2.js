@@ -1,31 +1,14 @@
-/*
- * This routine takes the full input data as its argument.
- */
-function ProcessEntry(  incomingDataPayload  )
+// This module handles data processing.
+function ProcessInput(rawData) {
+  let numericValue; // A variable declared but not assigned.
 
-{
-  let   numericValue; /* A value that will be used for computations. */
-
-  // Produce the output.
-  console
-    .log(
-      numericValue
-        *
-      numericValue
-    );
+  // Output the calculated value to the console.
+  console.log(numericValue * numericValue);
 }
 
-
 /*
- *******************************************************************
- * Do not alter the source code below this point.                  *
- * It manages standard input/output and initiates the main task.   *
- *******************************************************************
+ * The subsequent line is responsible for reading standard input
+ * and invoking the primary processing function.
+ * It should not be altered.
  */
-ProcessEntry(
-  require("fs")
-    .retrieveFileContents(
-      "/dev/stdin",
-      "utf8"
-    )
-);
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

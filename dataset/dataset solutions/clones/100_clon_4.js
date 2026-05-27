@@ -1,21 +1,19 @@
 'use strict';
 
-function* numericalSequenceProcessor(dataInput) {
-    const contentLines = dataInput.trim().split('\n');
-    for (const segment of contentLines) {
-        yield Number(segment);
+const sourceInput = require('fs').readFileSync('/dev/stdin', 'utf8');
+
+const calculateAndDisplay = (remainingSegments) => {
+    if (remainingSegments.length === 0) {
+        return;
     }
-}
 
-const fileSystemAccessor = require('node:fs');
-const rawSourceContent = fileSystemAccessor.readFileSync('/dev/stdin', 'utf8');
+    const currentSegment = remainingSegments[0];
+    const numericalValue = +currentSegment;
+    const computedResult = Math.ceil(Math.pow(numericalValue, 2) / 98 + 1);
+    console.log(computedResult);
 
-const calculateDerivedValue = (initialValue) => {
-    return Math.floor((initialValue * initialValue + 97) / 98) + 1;
+    calculateAndDisplay(remainingSegments.slice(1));
 };
 
-const processedNumbers = numericalSequenceProcessor(rawSourceContent);
-
-for (const singleMeasurement of processedNumbers) {
-    console.log(calculateDerivedValue(singleMeasurement));
-}
+const processedSegments = sourceInput.trim().split('\n');
+calculateAndDisplay(processedSegments);

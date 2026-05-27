@@ -1,53 +1,45 @@
-const interpretPayloadLineOne = (payloadString) => {
-    const parts = payloadString.trim().split(" ");
-    return {
-        nodeCount: parseInt(parts[0]),
-        journeyLength: BigInt(parts[1])
-    };
-};
+function processSequence(inputData) {
+  const [countNodesStr, targetStepsStr] = inputData[0].trim().split(" ");
+  const countNodes = BigInt(countNodesStr);
+  const targetSteps = BigInt(targetStepsStr);
 
-const interpretPayloadLineTwo = (payloadString) => {
-    return payloadString.trim().split(" ").map(val => parseInt(val) - 1);
-};
+  const nextIndices = inputData[1].trim().split(" ").map(val => parseInt(val) - 1);
 
-const recursiveCycleDetector = (currentPos, stepNum, pathVisited, connections) => {
-    if (pathVisited.has(currentPos)) {
-        const entryStep = pathVisited.get(currentPos);
-        return {
-            preCycleSteps: BigInt(entryStep),
-            cycleDuration: BigInt(stepNum - entryStep),
-            cycleStartNode: currentPos
-        };
-    }
-    pathVisited.set(currentPos, stepNum);
-    return recursiveCycleDetector(connections[currentPos], stepNum + 1, pathVisited, connections);
-};
+  const pathSequence = [];
+  const visitedStepMap = new Map();
 
-const recursivePathNavigator = (currentLocation, stepsRemaining, passageMapping) => {
-    if (stepsRemaining === 0) {
-        return currentLocation;
-    }
-    return recursivePathNavigator(passageMapping[currentLocation], stepsRemaining - 1, passageMapping);
-};
+  let currentPosition = 0;
+  let currentStep = 0;
+  let cycleEntryStep = -1;
+  let cycleLengthVal = -1;
 
-const processSequenceOutcome = (payload) => {
-    const { nodeCount, journeyLength } = interpretPayloadLineOne(payload[0]);
-    const linkageArray = interpretPayloadLineTwo(payload[1]);
-
-    const cycleData = recursiveCycleDetector(0, 0, new Map(), linkageArray);
-
-    let ultimateStepCount;
-
-    if (journeyLength < cycleData.preCycleSteps) {
-        ultimateStepCount = journeyLength;
-    } else {
-        const remainingStepsInCycle = (journeyLength - cycleData.preCycleSteps) % cycleData.cycleDuration;
-        ultimateStepCount = cycleData.preCycleSteps + remainingStepsInCycle;
+  while (true) {
+    if (visitedStepMap.has(currentPosition)) {
+      cycleEntryStep = visitedStepMap.get(currentPosition);
+      cycleLengthVal = currentStep - cycleEntryStep;
+      break;
     }
 
-    const finalNodePosition = recursivePathNavigator(0, Number(ultimateStepCount), linkageArray);
+    visitedStepMap.set(currentPosition, currentStep);
+    pathSequence.push(currentPosition);
 
-    console.log((finalNodePosition + 1).toString());
-};
+    currentPosition = nextIndices[currentPosition];
+    currentStep++;
+  }
 
-processSequenceOutcome(require('fs').readFileSync('/dev/stdin', 'utf8').trim().split("\n"));
+  let finalEffectiveStep;
+
+  if (targetSteps < BigInt(cycleEntryStep)) {
+    finalEffectiveStep = targetSteps;
+  } else {
+    const stepsBeyondCycleEntry = targetSteps - BigInt(cycleEntryStep);
+    const effectiveStepsWithinCycle = stepsBeyondCycleEntry % BigInt(cycleLengthVal);
+    finalEffectiveStep = BigInt(cycleEntryStep) + effectiveStepsWithinCycle;
+  }
+
+  const finalNode = pathSequence[Number(finalEffectiveStep)];
+
+  console.log((finalNode + 1) + "");
+}
+
+processSequence(require('fs').readFileSync('/dev/stdin', 'utf8').trim().split("\n"));

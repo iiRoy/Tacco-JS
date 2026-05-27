@@ -1,84 +1,75 @@
-function ProcessData( sourceData )
-{
-    // The incoming raw text is split into individual lines for processing.
-    sourceData = sourceData . split ( "\n" ) ;
+function ProcessInput(rawData) {
+    // Split the entire input string into an array of lines.
+    rawData = rawData.split("\n");
+    // Initialize an index to keep track of the current line being processed.
+    let lineIndex = 0;
 
-    // An index to keep track of the current line being processed from the source.
-    var dataPointer = 0;
+    // Loop indefinitely to process multiple test cases until a termination condition is met.
+    while (true) {
+        // Split the current line (which contains N and M) by spaces.
+        rawData[lineIndex] = rawData[lineIndex].split(" ");
+        // Parse the number of T items (N) and H items (M) from the current line.
+        // The lineIndex is incremented after M is read, preparing for the next line.
+        const numTItems = parseInt(rawData[lineIndex][0], 10);
+        const numHItems = parseInt(rawData[lineIndex++][1], 10);
 
-    // This loop continues indefinitely until an explicit break condition is met.
-    while ( true )
-    {
-        // The current line is further split by spaces to isolate numerical values.
-        sourceData [ dataPointer ] = sourceData [ dataPointer ] . split ( " " ) ;
-
-        // The first number on the line represents the size of the first collection.
-        var firstSetSize = parseInt ( sourceData [ dataPointer ] [ 0 ] , 10 ) ;
-        // The second number on the line represents the size of the second collection.
-        // The dataPointer is incremented after reading the second number.
-        var secondSetSize = parseInt ( sourceData [ dataPointer++ ] [ 1 ] , 10 ) ;
-
-        // If both collection sizes are zero, it signifies the end of input, so the loop terminates.
-        if ( firstSetSize === 0 && secondSetSize === 0 )
-        {
-            break ;
+        // Check if both N and M are zero, which is the termination condition for the loop.
+        if (numTItems === 0 && numHItems === 0) {
+            break; // Exit the main processing loop.
         }
 
-        // Initialize two arrays to hold the elements of the collections and their respective sum accumulators.
-        var valuesAlpha = [ ] , valuesBeta = [ ] , alphaSum = 0 , betaSum = 0 ;
+        // Initialize arrays to store T and H values, and variables for their sums.
+        const tValues = [];
+        const hValues = [];
+        let totalT = 0;
+        let totalH = 0;
 
-        // Populate the first collection 'valuesAlpha' and compute its total sum.
-        for ( var primaryIndex = 0 ; primaryIndex < firstSetSize ; primaryIndex++ )
-        {
-            valuesAlpha [ primaryIndex ] = parseInt ( sourceData [ dataPointer++ ] , 10 ) ;
-            alphaSum += valuesAlpha [ primaryIndex ] ;
+        // Read N T-values from subsequent lines and calculate their sum.
+        for (let idxA = 0; idxA < numTItems; idxA++) {
+            tValues[idxA] = parseInt(rawData[lineIndex++], 10); // Parse value and advance line index.
+            totalT += tValues[idxA];
         }
 
-        // Populate the second collection 'valuesBeta' and compute its total sum.
-        for ( var primaryIndex = 0 ; primaryIndex < secondSetSize ; primaryIndex++ )
-        {
-            valuesBeta [ primaryIndex ] = parseInt ( sourceData [ dataPointer++ ] , 10 ) ;
-            betaSum += valuesBeta [ primaryIndex ] ;
+        // Read M H-values from subsequent lines and calculate their sum.
+        for (let idxA = 0; idxA < numHItems; idxA++) {
+            hValues[idxA] = parseInt(rawData[lineIndex++], 10); // Parse value and advance line index.
+            totalH += hValues[idxA];
         }
 
-        // If the combined sum of both collections is odd, it's impossible to balance them with a single swap.
-        if ( ( alphaSum + betaSum ) % 2 !== 0 )
-        {
-            console . log ( "-1" ) ; // Output -1 indicating no solution.
-            continue ; // Proceed to the next set of input data.
+        // If the combined total sum of T and H values is odd, it's impossible to balance them
+        // by swapping two numbers, so output -1 and proceed to the next test case.
+        if ((totalT + totalH) % 2 !== 0) {
+            console.log("-1");
+            continue; // Skip the rest of the current test case and go to the next iteration.
         }
 
-        // A flag to indicate whether a suitable pair of elements for swapping has been located.
-        var matchFound = true ;
+        // A flag to indicate whether a suitable swap has been found.
+        let foundSwap = false;
 
-        // Iterate through each element in the first collection.
-        for ( var primaryIndex = 0 ; primaryIndex < firstSetSize ; primaryIndex++ )
-        {
-            // For each element in the first collection, iterate through every element in the second collection.
-            for ( var secondaryIndex = 0 ; secondaryIndex < secondSetSize ; secondaryIndex++ )
-            {
-               // Check if swapping valuesAlpha[primaryIndex] and valuesBeta[secondaryIndex] would equalize the sums.
-               // The condition simplifies to alphaSum - valuesAlpha[primaryIndex] + valuesBeta[secondaryIndex] == betaSum + valuesAlpha[primaryIndex] - valuesBeta[secondaryIndex]
-               if ( alphaSum - valuesAlpha [ primaryIndex ] + valuesBeta [ secondaryIndex ] === betaSum + valuesAlpha [ primaryIndex ] - valuesBeta [ secondaryIndex ] )
-               {
-                   matchFound = false ; // A matching pair has been found.
-                   console . log ( valuesAlpha [ primaryIndex ] + " " + valuesBeta [ secondaryIndex ] ) ; // Output the found pair.
-                   break ; // Exit the inner loop as only one such pair is required.
-               }
+        // Iterate through each T value.
+        for (let idxA = 0; idxA < numTItems; idxA++) {
+            // For each T value, iterate through each H value.
+            for (let idxB = 0; idxB < numHItems; idxB++) {
+                // Check if swapping tValues[idxA] and hValues[idxB] would make the sums equal.
+                // The condition is: (totalT - tValues[idxA] + hValues[idxB]) === (totalH + tValues[idxA] - hValues[idxB])
+                if (totalT - tValues[idxA] + hValues[idxB] === totalH + tValues[idxA] - hValues[idxB]) {
+                    foundSwap = true; // Mark that a swap was found.
+                    console.log(tValues[idxA] + " " + hValues[idxB]); // Output the pair of values.
+                    break; // Exit the inner loop as we only need one such pair.
+                }
             }
-            // If a pair was found in the inner loop, break from the outer loop as well.
-            if ( ! matchFound )
-            {
-                break ;
+            // If a swap was found in the inner loop, exit the outer loop as well.
+            if (foundSwap) {
+                break;
             }
         }
-        // If, after checking all combinations, no suitable pair was found.
-        if ( matchFound )
-        {
-            console . log ( "-1" ) ; // Output -1 indicating no solution.
+
+        // If after checking all pairs, no suitable swap was found, output -1.
+        if (!foundSwap) {
+            console.log("-1");
         }
     }
 }
 
-// Execute the main processing function by reading input from standard input.
-ProcessData ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+// Read the input from standard input and pass it to the processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

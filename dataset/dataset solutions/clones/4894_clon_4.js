@@ -1,30 +1,40 @@
-function processData(rawData) {
-    const dataSegments = rawData.split('\n');
-    const numericStrings = dataSegments[1].split(' ');
-    const initialNumericSequence = numericStrings.map(value => Number(value));
+function processData(inputContent) {
+    const dataLines = inputContent.split("\n");
+    const initialSizeIndicator = Number(dataLines[0]);
+    const numberStrings = dataLines[1].split(" ");
 
-    const determineCentralValue = (first, second, third) => {
-        return first + second + third - Math.min(first, second, third) - Math.max(first, second, third);
+    const initialSequence = Array.from({ length: 2 * initialSizeIndicator - 1 }, (_, index) => numberStrings[index]);
+
+    const determineMedianOfThreeStrings = (strA, strB, strC) => {
+        if ((strA < strB && strB < strC) || (strC < strB && strB < strA)) return strB;
+        if ((strB < strA && strA < strC) || (strC < strA && strA < strB)) return strA;
+        return strC;
     };
 
-    const iterativelyReduceSequence = (currentSequence) => {
-        if (currentSequence.length <= 1) {
+    const generateNextSequence = (currentSequence) => {
+        if (currentSequence.length < 3) {
+            return currentSequence;
+        }
+        return Array.from({ length: currentSequence.length - 2 }, (_, segmentPosition) =>
+            determineMedianOfThreeStrings(
+                currentSequence[segmentPosition],
+                currentSequence[segmentPosition + 1],
+                currentSequence[segmentPosition + 2]
+            )
+        );
+    };
+
+    const recursivelyReduceSequence = (currentSequence) => {
+        if (currentSequence.length === 1) {
             return currentSequence[0];
         }
-
-        const nextIterationSequence = Array.from({ length: currentSequence.length - 2 }, (_, index) => {
-            const valA = currentSequence[index];
-            const valB = currentSequence[index + 1];
-            const valC = currentSequence[index + 2];
-            return determineCentralValue(valA, valB, valC);
-        });
-
-        return iterativelyReduceSequence(nextIterationSequence);
+        const subsequentSequence = generateNextSequence(currentSequence);
+        return recursivelyReduceSequence(subsequentSequence);
     };
 
-    const finalResult = iterativelyReduceSequence(initialNumericSequence);
+    const finalValue = recursivelyReduceSequence(initialSequence);
 
-    console.log('%d', finalResult);
+    console.log('%d', finalValue);
 }
 
 processData(require("fs").readFileSync("/dev/stdin", "utf8"));

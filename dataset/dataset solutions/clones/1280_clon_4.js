@@ -1,31 +1,27 @@
-const fileSystemOps = require('fs');
+const produceAllCards = () => {
+  const cardSuits = ['S', 'H', 'C', 'D'];
+  const cardRanks = Array.from({ length: 13 }, (_, idx) => idx + 1);
 
-const constructCardSet = () => {
-    const suitDesignators = ['S', 'H', 'C', 'D'];
-    const rankValues = '1 2 3 4 5 6 7 8 9 10 11 12 13'.split(' ');
-    
-    return suitDesignators.reduce((accumulatedCards, currentSuit) => {
-        rankValues.forEach(currentRank => {
-            accumulatedCards.push(`${currentSuit} ${currentRank}`);
-        });
-        return accumulatedCards;
-    }, []);
+  return cardSuits.flatMap(currentSuit =>
+    cardRanks.map(currentRank => `${currentSuit} ${currentRank}`)
+  );
 };
 
-const fetchInputData = () => {
-    const rawData = fileSystemOps.readFileSync(0, 'utf8');
-    return rawData.split('\n');
+const acquireInputLines = () => {
+  return require('node:fs').readFileSync('/dev/stdin', 'utf8').split('\n');
 };
 
-const emitOutput = (contentToDisplay) => {
-    console.info(contentToDisplay);
+const displayAndReturn = (itemToLog) => {
+  console.log(itemToLog);
+  return itemToLog;
 };
 
-const receivedEntries = new Set(fetchInputData());
+const presentCardSet = new Set(acquireInputLines());
+const completeDeck = produceAllCards();
 
-constructCardSet().reduce((missingCardsBuffer, potentialCard) => {
-    if (!receivedEntries.has(potentialCard)) {
-        missingCardsBuffer.push(potentialCard);
-    }
-    return missingCardsBuffer;
-}, []).forEach(emitOutput);
+completeDeck.reduce((accumulator, currentCardIdentifier) => {
+  if (!presentCardSet.has(currentCardIdentifier)) {
+    displayAndReturn(currentCardIdentifier);
+  }
+  return accumulator;
+}, null);

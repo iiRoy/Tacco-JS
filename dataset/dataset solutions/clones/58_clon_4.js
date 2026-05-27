@@ -1,33 +1,23 @@
-let inputAccumulator = '';
+const fileSystem = require("fs");
+const standardInputPath = "/dev/stdin";
 
-process.stdin.on('data', (inputSegment) => {
-    inputAccumulator += inputSegment.toString('utf8');
-});
+const rawContent = fileSystem.readFileSync(standardInputPath, "utf8");
+const dataLines = rawContent.trim().split('\n');
 
-process.stdin.on('end', () => {
-    const processedSegments = inputAccumulator.trim().split('\n');
+const initialConstant = 600;
 
-    for (const currentSegment of processedSegments) {
-        const parsedNumeric = Number(currentSegment);
-        if (isNaN(parsedNumeric) || parsedNumeric === 0) {
-            continue;
+for (const currentLine of dataLines) {
+    const parsedNumber = Number(currentLine);
+
+    let accumulatedResult = 0;
+    let dynamicCounter = initialConstant;
+
+    while (true) {
+        dynamicCounter -= parsedNumber;
+        if (!dynamicCounter) {
+            break;
         }
-
-        const fixedOffset = 600;
-        const computedResult = evaluateGeometricProgression(parsedNumeric, fixedOffset);
-        process.stdout.write(computedResult.toString() + '\n');
+        accumulatedResult += dynamicCounter * dynamicCounter * parsedNumber;
     }
-});
-
-function evaluateGeometricProgression(datumValue, referenceConstant) {
-    const maxIterations = Math.floor((referenceConstant - 1) / datumValue);
-
-    const sequenceIndices = Array.from({length: maxIterations}, (_, indexPosition) => indexPosition + 1);
-
-    const finalAccumulation = sequenceIndices.reduce((currentAggregate, currentFactor) => {
-        const componentTerm = referenceConstant - currentFactor * datumValue;
-        return currentAggregate + (componentTerm * componentTerm * datumValue);
-    }, 0);
-
-    return finalAccumulation;
+    console.log(accumulatedResult);
 }

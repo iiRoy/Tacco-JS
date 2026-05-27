@@ -1,26 +1,18 @@
-const fileSystem = require('fs');
-const inputDataSource = '/dev/stdin';
-const lineDelimiter = '\n';
+const systemConfig = { inputSource: '/dev/stdin', lineSeparator: '\n' };
 
-let rawTextData = fileSystem.readFileSync(inputDataSource, 'ascii').trim();
-let allDataRecords = rawTextData.split(lineDelimiter);
-allDataRecords.shift();
+const rawInputContent = require('fs').readFileSync(systemConfig.inputSource, 'ascii').trim();
+const processedLines = rawInputContent.split(systemConfig.lineSeparator).slice(1);
 
-let gameScores = { firstParticipant: 0, secondParticipant: 0 };
+let firstPlayerScore = 0;
+let secondPlayerScore = 0;
 
-for (const currentRecord of allDataRecords) {
-    const scoreComponents = currentRecord.split(' ');
-    const playerOneScore = scoreComponents[0];
-    const playerTwoScore = scoreComponents[1];
+for (const matchRecord of processedLines) {
+    const [scoreStringA, scoreStringB] = matchRecord.split(' ');
+    const numericScoreA = Number(scoreStringA);
+    const numericScoreB = Number(scoreStringB);
 
-    if (playerOneScore > playerTwoScore) {
-        gameScores.firstParticipant += 3;
-    } else if (playerOneScore !== playerTwoScore) {
-        gameScores.secondParticipant += 3;
-    } else {
-        gameScores.firstParticipant++;
-        gameScores.secondParticipant++;
-    }
+    firstPlayerScore += (numericScoreA > numericScoreB) ? 3 : (numericScoreA === numericScoreB ? 1 : 0);
+    secondPlayerScore += (numericScoreB > numericScoreA) ? 3 : (numericScoreA === numericScoreB ? 1 : 0);
 }
 
-console.log(`${gameScores.firstParticipant} ${gameScores.secondParticipant}`);
+console.log(firstPlayerScore + ' ' + secondPlayerScore);

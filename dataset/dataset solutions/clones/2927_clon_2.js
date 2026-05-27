@@ -1,33 +1,77 @@
 "use strict";
 
-function _destructureArray( collection, limit ) { return _checkArrayType( collection ) || _limitIterableToArray( collection, limit ) || _throwNonIterable(); }
+// Helper function to safely extract a specific number of elements from an array-like structure.
+function _extractElements(data, count) {
+  return _checkArray(data) || _limitIterableToArray(data, count) || _handleNonIterable();
+}
 
-function _throwNonIterable() { throw new TypeError( "Invalid operation: Cannot destructure non-iterable element." ); }
+// Throws an error if an attempt is made to destructure a non-iterable instance.
+function _handleNonIterable() {
+  throw new TypeError("Invalid attempt to destructure non-iterable instance");
+}
 
-function _limitIterableToArray( source, upperLimit ) { var _tempArr = []; var _continue = true; var _errorFlag = false; var _exception = undefined; try { for ( var _iter = source[Symbol.iterator](), _item; ! ( _continue = ( _item = _iter.next() ).done ); _continue = true ) { _tempArr.push( _item.value ); if ( upperLimit && _tempArr.length === upperLimit ) break; } } catch ( errorObject ) { _errorFlag = true; _exception = errorObject; } finally { try { if ( ! _continue && _iter["return"] != null ) _iter["return"](); } finally { if ( _errorFlag ) throw _exception; } } return _tempArr; }
+// Converts an iterable to an array, limiting the number of elements.
+function _limitIterableToArray(source, limit) {
+  var tempArr = [];
+  var isDone = true;
+  var hasError = false;
+  var caughtError = undefined;
 
-function _checkArrayType( potentialArray ) { if ( Array.isArray( potentialArray ) ) return potentialArray; }
+  try {
+    for (var iterator = source[Symbol.iterator](), iterResult; !(isDone = (iterResult = iterator.next()).done); isDone = true) {
+      tempArr.push(iterResult.value);
+      if (limit && tempArr.length === limit) break;
+    }
+  } catch (err) {
+    hasError = true;
+    caughtError = err;
+  } finally {
+    try {
+      if (!isDone && iterator["return"] != null) iterator["return"]();
+    } finally {
+      if (hasError) throw caughtError;
+    }
+  }
+  return tempArr;
+}
 
-! function() {
-  function parseNumbersFromString( textRow ) {
-    return ( Array.isArray( textRow ) ? textRow : textRow.split( /\s+/ ) ).map( function( token ) {
-      return parseInt( token );
-    } );
+// Checks if the input is an array and returns it directly.
+function _checkArray(inputArray) {
+  if (Array.isArray(inputArray)) return inputArray;
+}
+
+// Main application logic encapsulated in an IIFE.
+!function () {
+  /**
+   * Parses a line of text or an array of strings into an array of integers.
+   * @param {string|string[]} inputLine - The input line or array of string numbers.
+   * @returns {number[]} An array of parsed integers.
+   */
+  function parseNumbers(inputLine) {
+    // If it's already an array, map directly; otherwise, split by whitespace first.
+    return (Array.isArray(inputLine) ? inputLine : inputLine.split(/\s+/)).map(function (numStr) {
+      return parseInt(numStr); // Convert each string part to an integer.
+    });
   }
 
-  ! function( rawData ) {
-    var dataRows = rawData.split( "\n" );
+  // Another IIFE to process the input from stdin.
+  !function (rawData) {
+    // Split the entire input string into individual lines.
+    var inputLines = rawData.split("\n");
 
-    var _parsedValues = parseNumbersFromString( dataRows[0] ),
-        _extractedTuple = _destructureArray( _parsedValues, 2 ),
-        firstValue = _extractedTuple[0],
-        secondValue = _extractedTuple[1];
+    // Parse the first line and extract two numbers.
+    var _parsedValues = parseNumbers(inputLines[0]);
+    var _extractedPair = _extractElements(_parsedValues, 2);
+    var firstVal = _extractedPair[0]; // The first number from the input.
+    var secondVal = _extractedPair[1]; // The second number from the input.
 
-    if ( firstValue <= 5 )
-      console.log( 0 );
-    else if ( firstValue <= 12 )
-      console.log( secondValue / 2 );
-    else
-      console.log( secondValue );
-  }( require( "fs" ).readFileSync( "/dev/stdin", "utf8" ) );
+    // Apply conditional logic based on the value of 'firstVal'.
+    if (firstVal <= 5) {
+      console.log(0); // Output 0 if firstVal is 5 or less.
+    } else if (firstVal <= 12) {
+      console.log(secondVal / 2); // Output half of secondVal if firstVal is between 6 and 12.
+    } else {
+      console.log(secondVal); // Output secondVal if firstVal is greater than 12.
+    }
+  }(require("fs").readFileSync("/dev/stdin", "utf8")); // Read input from standard input.
 }();

@@ -1,41 +1,31 @@
-/*
- * This function processes raw string input
- * to extract structured data.
- */
 function ProcessInput(rawData) {
-    // Determine the total number of test scenarios from the first line.
-    const scenarioCount = rawData.split('\n')[0];
+	// The first line indicates the total number of test scenarios.
+	const caseCount = rawData.split("\n")[0];
+	// This array will store processed data for all test scenarios.
+	const allCaseData = [];
+	// Initialize a pointer to navigate through the input lines.
+	let linePointer = 1;
+	// This variable tracks the current iteration, though its value isn't directly used in the logic.
+	let currentIteration = 1;
 
-    // Initialize a collection to hold all processed camel datasets.
-    const allCamelDatasets = [];
+	// Iterate through each test scenario as specified by 'caseCount'.
+	for (let caseIndex = 0; caseIndex < caseCount; caseIndex++) {
+		// Determine how many lines belong to the current test scenario.
+		const linesInCurrentCase = rawData.split("\n")[linePointer];
+		// An array to hold the individual entries for the current scenario.
+		const singleCaseEntries = [];
 
-    // Set an initial pointer for navigating through the input lines.
-    let currentLinePointer = 1;
-
-    // A variable to track the current processing iteration, though not directly used in logic.
-    let processingIteration = 1;
-
-    // Iterate through each test scenario.
-    for (let scenarioIndex = 0; scenarioIndex < scenarioCount; scenarioIndex++) {
-        // Extract the count of camels for the current scenario.
-        const camelsInThisScenario = rawData.split('\n')[currentLinePointer];
-
-        // Create a temporary array to store the camels for the current scenario.
-        const currentScenarioCamels = [];
-
-        // Loop to parse each camel's data within the current scenario.
-        for (let camelDataIndex = 0; camelDataIndex < camelsInThisScenario; camelDataIndex++) {
-            // Split the line into individual data points and add to the current scenario's camels.
-            currentScenarioCamels.push(rawData.split('\n')[currentLinePointer + camelDataIndex + 1].split(' '));
-        }
-
-        // Add the completed camel set for the current scenario to the main collection.
-        allCamelDatasets.push(currentScenarioCamels);
-
-        // Update the line pointer to the start of the next scenario's data.
-        currentLinePointer = parseInt(currentLinePointer) + parseInt(camelsInThisScenario) + 1;
-    }
+		// Loop to extract each entry line for the current scenario.
+		for (let entryIndex = 0; entryIndex < linesInCurrentCase; entryIndex++) {
+			// Split each line by space and add it to the current scenario's entries.
+			singleCaseEntries.push(rawData.split("\n")[linePointer + entryIndex + 1].split(" "));
+		}
+		// Add the collected entries for the current scenario to the main collection.
+		allCaseData.push(singleCaseEntries);
+		// Advance the line pointer to the start of the next scenario or end of input.
+		linePointer = Number(linePointer) + Number(linesInCurrentCase) + Number(1);
+	}
 }
 
-// Invoke the main processing function with data read from standard input.
+// Read the input from standard input and pass it to the processing function.
 ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

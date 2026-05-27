@@ -1,14 +1,18 @@
-function processNumericalData(incomingText) {
-    const extractedParts = incomingText.match(/\d+/g);
-    const parsedQuantities = extractedParts.map(str => Number(str));
-    const operandOne = parsedQuantities[0];
-    const divisorCandidate = parsedQuantities[1];
+function processInputData(rawData) {
+    const inputParts = rawData.split(" ");
+    const valA = parseInt(inputParts[0], 10);
+    const valB = parseInt(inputParts[1], 10);
 
-    const determineOutput = (val1, val2) =>
-        Number.isInteger(val1 / val2) ? -1 : val1;
+    const isDivisibleByB = (valB === 0)
+        ? false
+        : ((valA / valB) === Math.trunc(valA / valB));
 
-    console.log(determineOutput(operandOne, divisorCandidate));
+    const resultSelector = new Map([
+        [true, -1],
+        [false, valA]
+    ]);
+
+    console.log(resultSelector.get(isDivisibleByB));
 }
 
-const rawStream = require("fs").readFileSync("/dev/stdin", "utf8");
-processNumericalData(rawStream);
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,20 +1,31 @@
-function computationEngine(sourceText) {
-    const inputAttributes = sourceText.trim().split(/\s+/);
-    const scaleFactor = Number(inputAttributes[0]);
-    const deductionAmount = Number(inputAttributes[1]);
-    const startingPoint = Number(inputAttributes[2]);
+function Main(inputString) {
+  const inputLines = inputString.split("\n");
+  const [factorR, offsetD, initialX] = inputLines[0].split(" ").map(Number);
 
-    const calculateSeries = (currentValue, remainingIterations, accumulatedResults) => {
-        if (remainingIterations === 0) {
-            return accumulatedResults;
-        }
-        const nextValue = currentValue * scaleFactor - deductionAmount;
-        return calculateSeries(nextValue, remainingIterations - 1, [...accumulatedResults, nextValue]);
-    };
+  function* sequenceGenerator(startValue, multiplier, subtractor) {
+    let currentCalculatedValue = startValue * multiplier - subtractor;
+    yield currentCalculatedValue;
+    for (let iterationCount = 0; iterationCount < 9; iterationCount++) {
+      currentCalculatedValue = currentCalculatedValue * multiplier - subtractor;
+      yield currentCalculatedValue;
+    }
+  }
 
-    const numericalSequence = calculateSeries(startingPoint, 10, []);
-    const formattedResult = numericalSequence.join('\n');
+  const generatedSequence = Array.from(sequenceGenerator(initialX, factorR, offsetD));
+  const formattedOutput = generatedSequence.join("\n");
 
-    console.log(formattedResult);
-    return formattedResult;
+  console.log('%s', formattedOutput);
+  return formattedOutput;
 }
+
+function testFunction(testCaseIdentifier) {
+  const testInputContent = document.getElementById("input" + testCaseIdentifier).value;
+  const functionResult = Main(testInputContent);
+  let comparisonStatus = "WA";
+  if (functionResult === document.getElementById("output" + testCaseIdentifier).value.split("\n")[0]) {
+    comparisonStatus = "AC";
+  }
+  document.getElementById("result" + testCaseIdentifier).innerHTML = comparisonStatus;
+}
+
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

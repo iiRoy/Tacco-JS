@@ -1,109 +1,88 @@
-"use strict"
+"use strict";
 
-// This script processes an input string to find the relative order difference
-// between two specified sequences within a set of all possible permutations.
+// This function orchestrates the main logic for processing input and calculating the result.
+function processInput(inputString) {
+  // Split the input string into individual lines, removing leading/trailing whitespace.
+  const inputLines = inputString.trim().split("\n");
 
-/**
- * Main entry point function for processing the given input data.
- * It parses the input, generates permutations, and calculates
- * the absolute difference in indices of two target arrangements.
- *
- * @param {string} inputString The raw string content from the input source.
- */
-function processInputData( inputString ) {
+  // Extract the first array of numbers from the second line.
+  let firstPermArray = inputLines[1].split(" ");
 
-    // Split the input into individual lines and clean up whitespace.
-    const parsedLines = inputString.trim().split( "\n" ) ;
+  // Extract the second array of numbers from the third line.
+  let secondPermArray = inputLines[2].split(" ");
 
-    // Extract the first sequence from the second line of the input.
-    const firstSequence = parsedLines[ 1 ].split( " " ) ;
+  // Generate all possible permutations of the first array.
+  // The length of the permutation is the same as the array's length.
+  const allPermutations = generatePermutations(firstPermArray, firstPermArray.length);
 
-    // Extract the second sequence from the third line of the input.
-    const secondSequence = parsedLines[ 2 ].split( " " ) ;
+  // Convert the first array into a single string for comparison.
+  const firstPermString = firstPermArray.join("");
 
-    // Generate all possible ordered arrangements of the elements in the first sequence.
-    let allArrangements = generatePermutations( firstSequence, firstSequence.length ) ;
+  // Convert the second array into a single string for comparison.
+  const secondPermString = secondPermArray.join("");
 
-    // Convert the first sequence array into a single contiguous string for comparison.
-    const firstSequenceJoined = firstSequence.join( "" ) ;
+  // Initialize variables to store the indices of the target permutations.
+  let firstPermIndex;
+  let secondPermIndex;
 
-    // Convert the second sequence array into a single contiguous string for comparison.
-    const secondSequenceJoined = secondSequence.join( "" ) ;
+  // Convert each permutation (which is an array of strings) into a single string.
+  for (let permIdx = 0; permIdx < allPermutations.length; permIdx++) {
+    allPermutations[permIdx] = allPermutations[permIdx].join("");
+  }
 
-    let firstSequenceIndex ;
-    let secondSequenceIndex ;
+  // Sort the list of all permutation strings lexicographically.
+  allPermutations.sort();
 
-    // Convert each generated arrangement (which is an array of elements) into a string.
-    for ( let idx = 0 ; idx < allArrangements.length ; idx++ ) {
-        allArrangements[ idx ] = allArrangements[ idx ].join( "" ) ;
+  // Iterate through the sorted permutations to find the indices of the target strings.
+  for (let currentPermIdx = 0; currentPermIdx < allPermutations.length; currentPermIdx++) {
+    if (firstPermString === allPermutations[currentPermIdx]) {
+      firstPermIndex = currentPermIdx;
     }
-
-    // Sort all the generated string arrangements lexicographically.
-    allArrangements.sort() ;
-
-    // Iterate through the sorted arrangements to find the indices of our target sequences.
-    for ( let currentIdx = 0 ; currentIdx < allArrangements.length ; currentIdx++ ) {
-        // Check if the current arrangement matches the first target sequence.
-        if ( firstSequenceJoined === allArrangements[ currentIdx ] ) {
-            firstSequenceIndex = currentIdx ;
-        }
-        // Check if the current arrangement matches the second target sequence.
-        if ( secondSequenceJoined === allArrangements[ currentIdx ] ) {
-            secondSequenceIndex = currentIdx ;
-        }
+    if (secondPermString === allPermutations[currentPermIdx]) {
+      secondPermIndex = currentPermIdx;
     }
+  }
 
-    // Output the absolute difference between the found indices.
-    console.log( Math.abs( firstSequenceIndex - secondSequenceIndex ) ) ;
+  // Output the absolute difference between the found indices.
+  console.log(Math.abs(firstPermIndex - secondPermIndex));
 }
 
-// Invoke the main processing function, reading input from standard input.
-processInputData( require( 'fs' ).readFileSync( '/dev/stdin', 'utf8' ) ) ;
+// This recursive function generates all permutations of a given array of elements.
+function generatePermutations(elements, lengthOfPermutation) {
+  const resultPerms = []; // Stores the generated permutations.
 
+  // Base case: If the desired permutation length is greater than the number of elements,
+  // no permutations can be formed.
+  if (elements.length < lengthOfPermutation) {
+    return [];
+  }
 
-/**
- * Recursively generates all unique permutations (ordered arrangements)
- * of a given set of elements.
- *
- * @param {Array<any>} inputElements The array of items from which to generate permutations.
- * @param {number} subsetSize The number of elements to choose for each permutation (typically inputElements.length).
- * @returns {Array<Array<any>>} An array containing all generated permutations, each as an array.
- */
-function generatePermutations( inputElements, subsetSize ) {
-
-    const resultList = [ ] ; // Stores the collected permutations.
-
-    // If the requested subset size is larger than the available elements,
-    // no permutations are possible.
-    if ( inputElements.length < subsetSize ) {
-        return [ ] ;
+  // Base case: If the desired permutation length is 1, each element is a permutation itself.
+  if (lengthOfPermutation === 1) {
+    for (let elemIndex = 0; elemIndex < elements.length; elemIndex++) {
+      resultPerms[elemIndex] = [elements[elemIndex]];
     }
+  } else {
+    // Recursive step: For each element, consider it as the first element of a permutation,
+    // then find permutations of the remaining elements.
+    for (let currentElemIndex = 0; currentElemIndex < elements.length; currentElemIndex++) {
+      // Create a copy of the elements array.
+      const remainingElements = elements.slice(0);
+      // Remove the current element from the copied array.
+      remainingElements.splice(currentElemIndex, 1)[0];
 
-    // Base case: if we need to choose only one element,
-    // each element itself forms a permutation.
-    if ( subsetSize === 1 ) {
-        for ( let elementIdx = 0 ; elementIdx < inputElements.length ; elementIdx++ ) {
-            resultList[ elementIdx ] = [ inputElements[ elementIdx ] ] ;
-        }
+      // Recursively find permutations of the remaining elements with a reduced length.
+      const subPermutations = generatePermutations(remainingElements, lengthOfPermutation - 1);
+
+      // Prepend the current element to each sub-permutation and add to the results.
+      for (let subPermIndex = 0; subPermIndex < subPermutations.length; subPermIndex++) {
+        resultPerms.push([elements[currentElemIndex]].concat(subPermutations[subPermIndex]));
+      }
     }
-    // Recursive step: for choosing more than one element.
-    else {
-        // Iterate through each element in the input set.
-        for ( let currentElementIdx = 0 ; currentElementIdx < inputElements.length ; currentElementIdx++ ) {
+  }
 
-            // Create a temporary array excluding the current element.
-            const remainingElements = inputElements.slice( 0 ) ;
-            remainingElements.splice( currentElementIdx, 1 ) ; // Remove the current element.
-
-            // Recursively find permutations of the remaining elements for a smaller subset size.
-            const subPermutations = generatePermutations( remainingElements, subsetSize - 1 ) ;
-
-            // Combine the current element with each of the sub-permutations.
-            for ( let subRowIdx = 0 ; subRowIdx < subPermutations.length ; subRowIdx++ ) {
-                resultList.push( [ inputElements[ currentElementIdx ] ].concat( subPermutations[ subRowIdx ] ) ) ;
-            }
-        }
-    }
-
-    return resultList ; // Return the complete list of permutations.
+  return resultPerms;
 }
+
+// Execute the main processing function by reading input from stdin.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

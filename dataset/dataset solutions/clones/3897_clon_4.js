@@ -1,52 +1,62 @@
-var inputMechanism = require('readline').createInterface({
+var inputLines = [];
+var lineCursor = 0;
+require('readline').createInterface({
   input: process.stdin,
   output: process.stdout
+}).on('line', function(lineContent){
+  inputLines.push(lineContent);
+}).on('close', function(){
+  console.error("\n");
+  var startTime = new Date();
+  processData();
+  var elapsedTime = new Date() - startTime;
+  
+  displayDiagnostic("time : " + (elapsedTime) + "ms");
+  displayDiagnostic("memory : " + Math.round(process.memoryUsage().heapTotal / 1024) + "KB");
 });
-var collectedDataLines = [];
-inputMechanism.on('line', function(lineSegment){collectedDataLines.push(lineSegment);});
-inputMechanism.on('close', function(){
-  performComputation(collectedDataLines);
-});
 
-const generateInputHandler = (dataStreams) => {
-    let currentPosition = 0;
-    const streamLength = dataStreams.length;
+function obtainLine() {
+  if (lineCursor >= inputLines.length) {
+    throw new Error("End of input reached.");
+  }
+  return inputLines[lineCursor++];
+}
 
-    const acquireNextEntry = () => {
-        if (currentPosition >= streamLength) {
-            throw new Error("End of input stream reached.");
-        }
-        return dataStreams[currentPosition++];
-    };
+function convertToInt(str) {
+  return parseInt(str, 10);
+}
 
-    const parseNumericEntry = () => parseInt(acquireNextEntry(), 10);
-    const parseNumericList = () => acquireNextEntry().split(" ").map(Number);
-    
-    return {
-        retrieveInteger: parseNumericEntry,
-        retrieveIntegerList: parseNumericList,
-    };
-};
+function convertToArrayOfNumbers(str) {
+  return str.split(" ").map(Number);
+}
 
-const performComputation = (allInputLines) => {
-    const dataInterface = generateInputHandler(allInputLines);
+function displayResult(content) {
+  console.log(content);
+}
 
-    const countParam = dataInterface.retrieveInteger();
-    const sourceCollection = dataInterface.retrieveIntegerList();
+function displayDiagnostic(content) {
+  console.error("debug:" + require("util").inspect(content, false, null));
+}
 
-    const sortedView = [...sourceCollection].sort((elementA, elementB) => elementA - elementB);
-    
-    const centralIndex = Math.floor(countParam / 2);
-    const greaterCandidate = sortedView[centralIndex];
-    const lesserCandidate = sortedView[centralIndex - 1];
+function processData() {
+  var countElements = convertToInt(obtainLine());
+  var sourceValues = convertToArrayOfNumbers(obtainLine());
 
-    const resultGenerator = (value, comparisonThreshold, outcomeIfLessEqual, outcomeIfGreater) => {
-        return (value <= comparisonThreshold) ? outcomeIfLessEqual : outcomeIfGreater;
-    };
+  var orderedValues = Array.from(sourceValues).sort((a, b) => a - b);
 
-    const processedResults = sourceCollection.map(individualValue => {
-        return resultGenerator(individualValue, lesserCandidate, greaterCandidate, lesserCandidate);
-    });
+  displayDiagnostic(orderedValues);
 
-    console.log(processedResults.join('\n'));
-};
+  var upperMidIndex = Math.floor(countElements / 2);
+  var lowerMidIndex = upperMidIndex - 1;
+
+  var upperMidValue = orderedValues[upperMidIndex];
+  var lowerMidValue = orderedValues[lowerMidIndex];
+
+  displayDiagnostic({upperMidValue, lowerMidValue});
+
+  var resultValues = sourceValues.map(currentValue => {
+    return (upperMidValue === lowerMidValue || currentValue <= lowerMidValue) ? upperMidValue : lowerMidValue;
+  });
+
+  displayResult(resultValues.join('\n'));
+}

@@ -1,33 +1,32 @@
 'use strict';
 
-function calculateDivisor(valA, valB) {
+function findGreatestCommonDivisor(valA, valB) {
   while (valB !== 0) {
-    let temp = valB;
+    let temporaryValue = valB;
     valB = valA % valB;
-    valA = temp;
+    valA = temporaryValue;
   }
   return valA;
 }
 
-function processInputData(rawText) {
-  const [firstLineContent, secondLineContent] = rawText.split('\n');
+function processInputAndDeriveResult(sourceData) {
+  const dataLines = sourceData.split('\n');
+  const firstLineElements = dataLines[0].split(' ');
+  const targetValue = Number(firstLineElements[1]);
 
-  const referencePointMatcher = firstLineContent.match(/\d+\s+(\d+)/);
-  const referencePoint = parseInt(referencePointMatcher[1], 10);
+  const numberStrings = dataLines[1].split(' ');
 
-  const sourceNumberMatchers = secondLineContent.match(/-?\d+/g);
-  const sourceNumbers = sourceNumberMatchers.map(valStr => parseInt(valStr, 10));
+  const transformedValues = numberStrings.map(strItem => Math.abs(Number(strItem) - targetValue));
 
-  const transformedValues = sourceNumbers.map(val => Math.abs(val - referencePoint));
+  const finalCommonDivisor = transformedValues.reduce((accumulator, currentElement) => {
+      return findGreatestCommonDivisor(accumulator, currentElement);
+  });
 
-  if (transformedValues.length === 1) {
-    console.log(transformedValues[0]);
-  } else {
-    const finalDivisor = transformedValues.reduce((accumulator, currentVal) =>
-      calculateDivisor(accumulator, currentVal)
-    );
-    console.log(finalDivisor);
-  }
+  return finalCommonDivisor;
 }
 
-processInputData(require("fs").readFileSync("/dev/stdin", "utf8").trim());
+function executeSolution(inputContent) {
+  console.log(processInputAndDeriveResult(inputContent));
+}
+
+executeSolution(require("fs").readFileSync("/dev/stdin", "utf8").trim());

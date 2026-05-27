@@ -1,117 +1,162 @@
 "use strict";
 
-// This section handles reading input from standard input.
-const dataSource = require("fs").readFileSync("/dev/stdin", "utf8");
+// This module handles file system operations to read input data.
+const fileSystemModule = require("fs");
 
-// Initialize an array of tokens and a pointer to the current token.
-let tokenStream = dataSource.split(/ |\n/);
+// Read all input from standard input, decoding it as UTF-8.
+const rawInputData = fileSystemModule.readFileSync("/dev/stdin", "utf8");
+
+// Split the input into tokens using spaces or newlines as delimiters.
+const inputTokens = rawInputData.split(/ |\n/);
+
+// Initialize an index to keep track of the current token being processed.
 let tokenIndex = 0;
 
-// Retrieves the subsequent numeric token from the stream.
+/**
+ * Retrieves the next token from the input stream and converts it to a number.
+ * @returns {number} The next numeric token.
+ */
 function getNextNumber() {
-    return +tokenStream[tokenIndex++];
+  return +inputTokens[tokenIndex++];
 }
 
-// Retrieves the subsequent string token from the stream.
+/**
+ * Retrieves the next token from the input stream as a string.
+ * @returns {string} The next string token.
+ */
 function getNextString() {
-    return tokenStream[tokenIndex++];
+  return inputTokens[tokenIndex++];
 }
 
-// Retrieves the subsequent BigInt token from the stream.
+/**
+ * Retrieves the next token from the input stream and converts it to a BigInt.
+ * @returns {BigInt} The next BigInt token.
+ */
 function getNextBigInt() {
-    return BigInt(tokenStream[tokenIndex++]);
+  return BigInt(inputTokens[tokenIndex++]);
 }
 
-// Fetches an array of specified 'count' items, converting to numbers unless 'isString' is true.
-function getNumbersArray(count, isString) {
-    if (isString) {
-        return tokenStream.slice(tokenIndex, tokenIndex += count);
-    } else {
-        return tokenStream.slice(tokenIndex, tokenIndex += count).map(value => +value);
+/**
+ * Retrieves an array of numbers or strings from the input stream.
+ * @param {number} count - The number of elements to retrieve.
+ * @param {boolean} asStrings - If true, elements are returned as strings; otherwise, as numbers.
+ * @returns {Array<number|string>} An array of tokens.
+ */
+function getNumbersArray(count, asStrings) {
+  if (asStrings) {
+    return inputTokens.slice(tokenIndex, (tokenIndex += count));
+  } else {
+    return inputTokens.slice(tokenIndex, (tokenIndex += count)).map((valStr) => +valStr);
+  }
+}
+
+/**
+ * Retrieves a 2D matrix of numbers or strings from the input stream.
+ * @param {number} height - The number of rows in the matrix.
+ * @param {number} width - The number of columns in each row.
+ * @param {boolean} asStrings - If true, elements are returned as strings; otherwise, as numbers.
+ * @returns {Array<Array<number|string>>} A 2D array representing the matrix.
+ */
+function getMatrix(height, width, asStrings) {
+  const resultMatrix = [];
+  let rowIndex = 0;
+  if (asStrings) {
+    for (; rowIndex < height; rowIndex++) {
+      resultMatrix.push(inputTokens.slice(tokenIndex, (tokenIndex += width)));
     }
-}
-
-// Reads a matrix of 'height' rows and 'width' columns from the token stream.
-function getMatrix(height, width, isString) {
-    let resultMatrix = [];
-    let rowIndex = 0;
-    if (isString) {
-        for (; rowIndex < height; rowIndex++) {
-            resultMatrix.push(tokenStream.slice(tokenIndex, tokenIndex += width));
-        }
-    } else {
-        for (; rowIndex < height; rowIndex++) {
-            resultMatrix.push(tokenStream.slice(tokenIndex, tokenIndex += width).map(value => +value));
-        }
+  } else {
+    for (; rowIndex < height; rowIndex++) {
+      resultMatrix.push(inputTokens.slice(tokenIndex, (tokenIndex += width)).map((elementStr) => +elementStr));
     }
-    return resultMatrix;
+  }
+  return resultMatrix;
 }
 
-// Generates a multi-dimensional array dynamically based on provided dimensions and an initial value.
+/**
+ * Creates a multi-dimensional array initialized with a specific value.
+ * The dimensions are provided as subsequent arguments.
+ * @param {*} initialValue - The value to initialize array elements with.
+ * @param {...number} dimensions - The dimensions of the array (e.g., createMultiDimArray(0, 2, 3) for a 2x3 array of zeros).
+ * @returns {Array} The created multi-dimensional array.
+ */
 function createMultiDimArray(initialValue) {
-    const dimensions = arguments;
-    let lengthCounter = dimensions.length;
-    let arrayExpression = `Array(dimensions[${--lengthCounter}]).fill().map(_ => { return ${initialValue}; })`;
-    while (--lengthCounter) {
-        arrayExpression = `Array(dimensions[${lengthCounter}]).fill().map(_ => ${arrayExpression})`;
-    }
-    return eval(arrayExpression); // Executes the constructed string as JavaScript code.
+  const argsList = arguments;
+  let argCount = argsList.length;
+  let arrayCreationCode = "Array(argsList[" + --argCount + "]).fill().map(_=>{return " + initialValue + ";})";
+  while (--argCount) {
+    arrayCreationCode = "Array(argsList[" + argCount + "]).fill().map(_=>" + arrayCreationCode + ")";
+  }
+  return eval(arrayCreationCode);
 }
 
-
-// Global variable to accumulate the final result score.
+// Initialize a variable to accumulate the total score.
 let totalScore = 0;
 
-// Execute the primary logic of the program and store its return value.
-const programOutput = executeProgram();
+// Execute the main logic of the program.
+const programOutput = executeLogic();
 
-// Output the program's result if it produced any meaningful data.
+// If the program produced any output, print it to the console.
 if (programOutput !== undefined) {
-    console.log(String(programOutput));
+  console.log(String(programOutput));
 }
 
-// console.debug("Final calculated score:", totalScore); // A debugging statement, currently inactive.
+// The core logic of the application.
+function executeLogic() {
+  // Read the number of days for the competition.
+  const numDays = getNextNumber(); // e.g., 365 days
 
+  // Define the number of available contests.
+  const numContests = 26;
 
-// The core function encapsulating the main algorithm.
-function executeProgram() {
-    const numDays = getNextNumber(); // The total duration in days (e.g., 365).
-    const numContests = 26; // A fixed constant representing the number of available competition types.
-    const costArray = getNumbersArray(numContests); // Read the initial cost/penalty associated with each contest type.
+  // Read the satisfaction decrement values for each contest.
+  const satisfactionDecrements = getNumbersArray(numContests);
 
-    // An array to track the last day a particular contest was chosen, initialized to zero.
-    let lastDayArray = createMultiDimArray(0, numContests);
-    const contestChoices = []; // This array will store the selected contest for each day.
+  // Initialize an array to keep track of the last day each contest was held.
+  // All contests are initially considered not held recently (value 0).
+  const lastHeldDays = createMultiDimArray(0, numContests);
 
-    // Iterate through each day of the competition period.
-    for (let dayCounter = 0; dayCounter < numDays; dayCounter++) {
-        const dayScores = getNumbersArray(numContests); // Read the potential scores for each contest on the current day.
-        let maxScoreToday = -1_000_000_000; // Initialize the maximum score found for the current day to a very low value.
-        let chosenContestIndex = 0; // Initialize the index of the best contest for this day.
+  // An array to store the chosen contest ID for each day.
+  const chosenContests = [];
 
-        // Iterate through each available contest type.
-        for (let contestIndex = 0; contestIndex < numContests; contestIndex++) {
-            lastDayArray[contestIndex] -= costArray[contestIndex]; // Adjust the last day tracking based on its cost.
-            // Calculate the potential score if this contest were chosen today.
-            const currentScoreCalc = dayScores[contestIndex] - lastDayArray[contestIndex] + costArray[contestIndex];
+  // Iterate through each day of the competition.
+  for (let dayIndex = 0; dayIndex < numDays; dayIndex++) {
+    // Read the daily scores for each contest.
+    const dailyScores = getNumbersArray(numContests);
 
-            // If the current contest yields a higher potential score, update the maximum and the chosen index.
-            if (maxScoreToday < currentScoreCalc) {
-                maxScoreToday = currentScoreCalc;
-                chosenContestIndex = contestIndex;
-            }
-        }
+    // Initialize variables to find the best contest for the current day.
+    let maxSatisfaction = -1e9; // A very small number to ensure any valid score is greater.
+    let bestContestId = 0; // The index of the chosen contest.
 
-        // Record the 1-indexed chosen contest for the current day.
-        contestChoices[dayCounter] = chosenContestIndex + 1;
-        lastDayArray[chosenContestIndex] = 0; // Reset the last day for the chosen contest.
-        totalScore += dayScores[chosenContestIndex]; // Add the score of the chosen contest to the global total.
+    // Evaluate each contest to find the one with the highest satisfaction.
+    for (let contestIndex = 0; contestIndex < numContests; contestIndex++) {
+      // Decrease the satisfaction for contests not held today.
+      lastHeldDays[contestIndex] -= satisfactionDecrements[contestIndex];
 
-        // Incorporate accumulated penalties/bonuses from all contests into the total score.
-        for (let contestIndex = 0; contestIndex < numContests; contestIndex++) {
-            totalScore += lastDayArray[contestIndex];
-        }
+      // Calculate the potential satisfaction if this contest is chosen today.
+      const currentContestSatisfaction = dailyScores[contestIndex] - lastHeldDays[contestIndex] + satisfactionDecrements[contestIndex];
+
+      // If this contest offers higher satisfaction, update the best choice.
+      if (maxSatisfaction < currentContestSatisfaction) {
+        maxSatisfaction = currentContestSatisfaction;
+        bestContestId = contestIndex;
+      }
     }
-    // Return the list of chosen contests, joined by newlines for output.
-    return contestChoices.join("\n");
+
+    // Record the chosen contest (1-indexed) for the current day.
+    chosenContests[dayIndex] = bestContestId + 1;
+
+    // Reset the last held day for the chosen contest to 0 (meaning it was held today).
+    lastHeldDays[bestContestId] = 0;
+
+    // Add the score from the chosen contest to the total score.
+    totalScore += dailyScores[bestContestId];
+
+    // Add the accumulated satisfaction decrements from all other contests to the total score.
+    for (let k = 0; k < numContests; k++) {
+      totalScore += lastHeldDays[k];
+    }
+  }
+
+  // Return the list of chosen contests, formatted as a newline-separated string.
+  return chosenContests.join("\n");
 }

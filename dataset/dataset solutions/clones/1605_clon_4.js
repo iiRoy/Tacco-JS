@@ -1,90 +1,121 @@
-const parseRawData = (sourceText) => {
-    const dataLines = sourceText.split('\n').filter(line => line.trim() !== '');
-    let currentLineIndex = 0;
+"use strict";
 
-    const extractNumbers = () => dataLines[currentLineIndex++].split(' ').map(Number);
+class InputProcessor {
+    constructor(sourceData) {
+        this.dataTokens = sourceData.split(/ |\n/).filter(Boolean);
+        this.currentPosition = 0;
+    }
 
-    const parameters = extractNumbers();
-    const nodeQuantity = parameters[0];
-    const maximumIterations = parameters[1];
+    retrieveNumber() {
+        return Number(this.dataTokens[this.currentPosition++]);
+    }
 
-    const nextNodeMappings = extractNumbers().map(val => val - 1);
-    const nodeRewards = extractNumbers();
+    retrieveString() {
+        return this.dataTokens[this.currentPosition++];
+    }
 
-    return { nodeQuantity, maximumIterations, nextNodeMappings, nodeRewards };
-};
+    retrieveBigInt() {
+        return BigInt(this.dataTokens[this.currentPosition++]);
+    }
 
-function* generateTraversalData(originNode, mappingsArray, rewardsArray) {
-    let currentPosition = originNode;
-    let totalRewardAccumulated = 0;
-    let iterationCount = 0;
-
-    while (true) {
-        currentPosition = mappingsArray[currentPosition];
-        totalRewardAccumulated += rewardsArray[currentPosition];
-        iterationCount++;
-        yield { nodeIdentifier: currentPosition, accumulatedReward: totalRewardAccumulated, traversalSteps: iterationCount };
-        if (currentPosition === originNode) {
-            break;
+    retrieveNumberSequence(quantity) {
+        const sequence = [];
+        for (let i = 0; i < quantity; i++) {
+            sequence.push(this.retrieveNumber());
         }
+        return sequence;
     }
 }
 
-const computeOptimalJourneyReward = (quantityNodes, iterationLimit, nodeLinks, nodeScores) => {
+const processInput = () => {
+    const rawInput = require("fs").readFileSync("/dev/stdin", "utf8");
+    const processor = new InputProcessor(rawInput);
 
-    const lowestPossibleReward = BigInt('-2000000000000000000');
-    let highestOverallReward = lowestPossibleReward;
+    const nodeCount = processor.retrieveNumber();
+    const stepLimit = processor.retrieveNumber();
+    const nextNodeMap = processor.retrieveNumberSequence(nodeCount).map(val => val - 1);
+    const nodeValues = processor.retrieveNumberSequence(nodeCount);
 
-    Array.from({ length: quantityNodes }, (_, initialNodeIndex) => {
+    return calculateOptimalPathScore(nodeCount, stepLimit, nextNodeMap, nodeValues);
+};
 
-        const cycleSegments = [];
-        for (const segment of generateTraversalData(initialNodeIndex, nodeLinks, nodeScores)) {
-            if (segment.traversalSteps > iterationLimit) {
-                break;
+const calculateOptimalPathScore = (totalNodes, maxSteps, transitionMap, valuesArray) => {
+    let overallMaximumScore = BigInt('-2000000000000000000'); // Equivalent to -2e18 as BigInt
+
+    Array.from({ length: totalNodes }, (_, initialNode) => {
+        let currentNode = initialNode;
+        const pathValueSequence = [];
+        const visitedNodeIndices = new Map(); // Maps node ID to its index in pathValueSequence
+
+        let pathTraversalCount = 0;
+        let cycleStartPointIndex = -1; // Index in pathValueSequence where a cycle begins
+
+        // Trace the path starting from p[initialNode] until maxSteps or a cycle back to initialNode is detected
+        while (pathTraversalCount < maxSteps) {
+            currentNode = transitionMap[currentNode]; // Move to the next node in the sequence
+
+            if (visitedNodeIndices.has(currentNode)) {
+                cycleStartPointIndex = visitedNodeIndices.get(currentNode);
+                break; // Cycle detected
             }
-            cycleSegments.push(segment);
+
+            visitedNodeIndices.set(currentNode, pathTraversalCount);
+            pathValueSequence.push(valuesArray[currentNode]);
+            pathTraversalCount++;
         }
 
-        const pathCycleLength = cycleSegments.length;
-        if (pathCycleLength === 0) return;
+        let currentPathMaximum = BigInt('-2000000000000000000');
 
-        const fullCycleReward = cycleSegments[pathCycleLength - 1].accumulatedReward;
+        if (cycleStartPointIndex === -1) { // No cycle back to initialNode detected within maxSteps
+            // The pathValueSequence contains up to maxSteps elements.
+            // Calculate prefix sums and find the maximum among them.
+            let cumulativeSum = 0;
+            for (let j = 0; j < pathValueSequence.length; j++) {
+                cumulativeSum += pathValueSequence[j];
+                currentPathMaximum = (BigInt(cumulativeSum) > currentPathMaximum) ? BigInt(cumulativeSum) : currentPathMaximum;
+            }
+        } else { // A cycle back to initialNode was detected
+            const preCycleSegment = pathValueSequence.slice(0, cycleStartPointIndex);
+            const cycleSegment = pathValueSequence.slice(cycleStartPointIndex);
+            const cycleSegmentSum = cycleSegment.reduce((sum, val) => sum + val, 0);
+            const cycleSegmentLength = cycleSegment.length;
 
-        cycleSegments.forEach(segment => {
-            const currentStepsUsed = segment.traversalSteps;
-            let currentPotentialReward;
-
-            if (fullCycleReward > 0) {
-                const remainingIterations = iterationLimit - currentStepsUsed;
-                const fullCyclesToRepeat = pathCycleLength > 0 ? Math.floor(remainingIterations / pathCycleLength) : 0;
-                currentPotentialReward = BigInt(segment.accumulatedReward) + BigInt(fullCyclesToRepeat) * BigInt(fullCycleReward);
-            } else {
-                currentPotentialReward = BigInt(segment.accumulatedReward);
+            // Generate prefix sums for the full path segment (pre-cycle + cycle)
+            const fullPathPrefixSums = [];
+            let cumulativeSum = 0;
+            for (const val of preCycleSegment) {
+                cumulativeSum += val;
+                fullPathPrefixSums.push(cumulativeSum);
+            }
+            for (const val of cycleSegment) {
+                cumulativeSum += val;
+                fullPathPrefixSums.push(cumulativeSum);
             }
 
-            if (currentPotentialReward > highestOverallReward) {
-                highestOverallReward = currentPotentialReward;
+            // Iterate through all possible end points within the first full traversal of the path
+            for (let j = 0; j < fullPathPrefixSums.length; j++) {
+                const currentSegmentTotal = BigInt(fullPathPrefixSums[j]);
+                const stepsTakenForSegment = j + 1;
+                const remainingSteps = maxSteps - stepsTakenForSegment;
+
+                if (remainingSteps >= 0) {
+                    let candidateScore = currentSegmentTotal;
+                    if (cycleSegmentSum > 0) {
+                        // Add full cycles if the cycle sum is positive
+                        const numberOfFullCycles = BigInt(Math.floor(remainingSteps / cycleSegmentLength));
+                        candidateScore += numberOfFullCycles * BigInt(cycleSegmentSum);
+                    }
+                    currentPathMaximum = (candidateScore > currentPathMaximum) ? candidateScore : currentPathMaximum;
+                }
             }
-        });
+        }
+        overallMaximumScore = (currentPathMaximum > overallMaximumScore) ? currentPathMaximum : overallMaximumScore;
     });
 
-    return highestOverallReward;
+    return overallMaximumScore;
 };
 
-const applicationEntry = () => {
-    const rawSystemInput = require("fs").readFileSync("/dev/stdin", "utf8");
-    const processedData = parseRawData(rawSystemInput);
-
-    const finalCalculatedReward = computeOptimalJourneyReward(
-        processedData.nodeQuantity,
-        processedData.maximumIterations,
-        processedData.nextNodeMappings,
-        processedData.nodeRewards
-    );
-
-    if (finalCalculatedReward !== undefined) {
-        console.log(String(finalCalculatedReward));
-    }
-};
-
-applicationEntry();
+const finalResult = processInput();
+if (finalResult !== undefined) {
+    console.log(String(finalResult));
+}

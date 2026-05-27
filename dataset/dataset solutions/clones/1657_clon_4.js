@@ -1,84 +1,88 @@
-const AXIS_CHOICES = {
-  UNASSIGNED: 0,
-  X_AXIS_FIXED: 1,
-  Y_AXIS_FIXED: 2,
-};
+const MAX_POSSIBLE_COST = 1 << 30;
 
-const EXTREME_VALUE = Number.MAX_SAFE_INTEGER;
+const ASSIGNMENT_NONE = 'NONE_OPTION';
+const ASSIGNMENT_X_FACILITY = 'X_AXIS_FACILITY';
+const ASSIGNMENT_Y_FACILITY = 'Y_AXIS_FACILITY';
 
-function assessArrangement(totalPoints, pointLocations, pointSelections) {
-  let accumulatedCost = 0;
+function calculateCombinationCost(cityDetails, currentAssignment) {
+    const citiesWithXFacilities = cityDetails.filter((_, idx) => currentAssignment[idx] === ASSIGNMENT_X_FACILITY);
+    const citiesWithYFacilities = cityDetails.filter((_, idx) => currentAssignment[idx] === ASSIGNMENT_Y_FACILITY);
+    const citiesWithoutFacilities = cityDetails.filter((_, idx) => currentAssignment[idx] === ASSIGNMENT_NONE);
 
-  const fixedXCoordinates = []; 
-  const fixedYCoordinates = []; 
+    const xFacilityCoordinates = citiesWithXFacilities.map(c => c.xCoord);
+    const yFacilityCoordinates = citiesWithYFacilities.map(c => c.yCoord);
 
-  for (let i = 0; i < totalPoints; ++i) {
-    if (pointSelections[i] === AXIS_CHOICES.Y_AXIS_FIXED) {
-      fixedXCoordinates.push(pointLocations[i].xCoord);
-    } else if (pointSelections[i] === AXIS_CHOICES.X_AXIS_FIXED) {
-      fixedYCoordinates.push(pointLocations[i].yCoord);
-    }
-  }
+    const totalCurrentCost = citiesWithoutFacilities.reduce((accumulator, currentCity) => {
+        let individualCityCost = Math.min(Math.abs(currentCity.xCoord), Math.abs(currentCity.yCoord)) * currentCity.power;
 
-  for (let i = 0; i < totalPoints; ++i) {
-    if (pointSelections[i] === AXIS_CHOICES.UNASSIGNED) {
-      const currentPoint = pointLocations[i];
-      let individualPointCost = EXTREME_VALUE;
+        individualCityCost = xFacilityCoordinates.reduce((minCostSoFar, facilityX) => {
+            return Math.min(minCostSoFar, Math.abs(currentCity.xCoord - facilityX) * currentCity.power);
+        }, individualCityCost);
 
-      individualPointCost = Math.min(
-        individualPointCost,
-        Math.abs(currentPoint.xCoord) * currentPoint.weight
-      );
-      individualPointCost = Math.min(
-        individualPointCost,
-        Math.abs(currentPoint.yCoord) * currentPoint.weight
-      );
+        individualCityCost = yFacilityCoordinates.reduce((minCostSoFar, facilityY) => {
+            return Math.min(minCostSoFar, Math.abs(currentCity.yCoord - facilityY) * currentCity.power);
+        }, individualCityCost);
 
-      for (const refX of fixedXCoordinates) {
-        individualPointCost = Math.min(
-          individualPointCost,
-          Math.abs(currentPoint.xCoord - refX) * currentPoint.weight
-        );
-      }
+        return accumulator + individualCityCost;
+    }, 0);
 
-      for (const refY of fixedYCoordinates) {
-        individualPointCost = Math.min(
-          individualPointCost,
-          Math.abs(currentPoint.yCoord - refY) * currentPoint.weight
-        );
-      }
-      accumulatedCost += individualPointCost;
-    }
-  }
-
-  return accumulatedCost;
+    return totalCurrentCost;
 }
 
-function calculateOptimalCosts(count, coordinatesData) {
-  const resultCollection = Array(count + 1).fill(EXTREME_VALUE);
-  const totalCombinations = Math.pow(3, count);
+function determineMinimumCosts(cityCount, cityDetails) {
+    const minCostsPerFacilityCount = Array(cityCount + 1).fill(MAX_POSSIBLE_COST);
 
-  for (let currentMask = 0; currentMask < totalCombinations; ++currentMask) {
-    const currentSelections = new Array(count);
-    let tempMask = currentMask;
-    let fixedCount = 0;
+    const totalCombinations = Math.pow(3, cityCount);
 
-    for (let i = 0; i < count; ++i) {
-      const choice = tempMask % 3;
-      currentSelections[i] = choice;
-      if (choice !== AXIS_CHOICES.UNASSIGNED) {
-        fixedCount++;
-      }
-      tempMask = Math.floor(tempMask / 3);
+    for (let comboIndex = 0; comboIndex < totalCombinations; comboIndex++) {
+        let tempComboIndex = comboIndex;
+        const currentAssignment = Array(cityCount);
+        let facilityCounter = 0;
+
+        for (let idx = 0; idx < cityCount; idx++) {
+            const remainder = tempComboIndex % 3;
+            if (remainder === 0) {
+                currentAssignment[idx] = ASSIGNMENT_NONE;
+            } else if (remainder === 1) {
+                currentAssignment[idx] = ASSIGNMENT_X_FACILITY;
+                facilityCounter++;
+            } else {
+                currentAssignment[idx] = ASSIGNMENT_Y_FACILITY;
+                facilityCounter++;
+            }
+            tempComboIndex = Math.floor(tempComboIndex / 3);
+        }
+
+        const currentCombinationCost = calculateCombinationCost(cityDetails, currentAssignment);
+
+        minCostsPerFacilityCount[facilityCounter] = Math.min(minCostsPerFacilityCount[facilityCounter], currentCombinationCost);
     }
 
-    const totalCost = assessArrangement(
-      count,
-      coordinatesData,
-      currentSelections
-    );
-    resultCollection[fixedCount] = Math.min(resultCollection[fixedCount], totalCost);
-  }
-
-  return resultCollection;
+    return minCostsPerFacilityCount;
 }
+
+function processInputAndSolve(inputLine) {
+    const inputTokens = inputLine.split(/\s+/).filter(t => t.length > 0);
+    let tokenIndex = 0;
+    const getNextInteger = () => parseInt(inputTokens[tokenIndex++]);
+
+    const cityCount = getNextInteger();
+    const cityDetails = [];
+
+    for (let idx = 0; idx < cityCount; idx++) {
+        const xCoord = getNextInteger();
+        const yCoord = getNextInteger();
+        const power = getNextInteger();
+        cityDetails.push({ xCoord, yCoord, power });
+    }
+
+    console.log(determineMinimumCosts(cityCount, cityDetails).join('\n'));
+}
+
+if (typeof module !== 'undefined' && module.exports && require.main === module) {
+    const fileSystem = require('fs');
+    const inputData = fileSystem.readFileSync("/dev/stdin", "utf8");
+    processInputAndSolve(inputData);
+}
+
+exports.main = processInputAndSolve;

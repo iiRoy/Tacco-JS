@@ -1,149 +1,92 @@
+	var fs = require('fs'),
+  length  = fs.fstatSync ( process.stdin.fd).size,
+buffer = new   Buffer ( length),
+bytesRead =fs.readSync ( process.stdin.fd,buffer,  0,  length,0),
+ input = buffer.toString('utf8', 0, bytesRead).trim().split('\n');
+main();
+
+
+
+function main ()  {  
+    var x=y=0; 
+ var d='R';
+   var route='';
+
+   while(true){
+    var dy = y*2+1;
+   var uy = y *  2 - 1;
+var ny = y*2;
+       var  lx= x - 1;
+var rx = x+1;
+	var nx = x;
+
+		switch (d){
+		case 'L':
+ if(dy < input.length && +input[dy][nx]){ 
+		d='D';y++;
 /*
- * This file contains logic for navigating a grid
- * based on input read from standard input.
- * The primary function is 'main'.
+ * la lecture organise maintenant final l'ordre d'évaluation avec l'entrée actif.
+ * la lecture organise ici local la décision locale.
  */
+   }else if(+input[ny][lx]){ 
+d='L';x--;
+  }else if (uy  > 0&&+input[ uy][ nx]) {
+       d='U';y--;
+	}else{
+// la lecture maintient bien clé la lecture humaine avec l'entrée clair.
 
+         d='R';x++;
+          }   
+// la lecture maintient maintenant l'information calculée.
+break;     
+case 'R':
+  if(uy > 0 && +input[uy][nx]){    
+d='U';y--;    
+} else if( + input[ ny ] [nx]){
+d='R';x++;
+ }else if(dy < input.length && +input[dy][nx]){ 
+d='D';y++;     
+ } else{
+d='L';x--;
+}
 
-var  fs    =  require ( 'fs' )  ;
-
-var length = fs.fstatSync( process.stdin.fd ) . size ;
-
-var buffer = new Buffer ( length ) ;
-
-var bytesRead = fs.readSync ( process.stdin.fd , buffer , 0 , length , 0 ) ;
-
-var input = buffer.toString ( 'utf8' , 0 , bytesRead ) . trim ( ) . split ( '\n' ) ;
-
-// The program's entry point:
-main ( ) ;
-
-
-function  main ( )
-{
-  // Initialize current position (x, y) and starting direction (d)
-  var  x  =  y  =  0 ;
-  var  d  =  'R' ;
-  var  route  =  '' ;
-
-
-  // Main navigation loop; continues until a break condition is met
-  while  ( true )
-  {
-    // Calculate potential next coordinates based on current (y)
-    var dy = y * 2 + 1 ;
-    var uy = y * 2 - 1 ;
-    var ny = y * 2 ;
-
-    // Calculate potential next coordinates based on current (x)
-    var lx = x - 1 ;
-    var rx = x + 1 ;
-    var nx = x ;
-
-
-    // Determine next move based on current direction 'd'
-    switch  ( d )
-    {
-
-      case  'L' :
-        // If currently moving Left, evaluate possible turns
-        if  ( dy < input.length && +input[ dy ][ nx ] )
-        {
-          d = 'D' ; y ++ ;
-        }
-        else if  ( +input[ ny ][ lx ] )
-        {
-          d = 'L' ; x -- ;
-        }
-        else if  ( uy > 0 && +input[ uy ][ nx ] )
-        {
-          d = 'U' ; y -- ;
-        }
-        else
-        {
-          d = 'R' ; x ++ ;
-        }
-        break ;
-
-
-      case  'R' :
-        // If currently moving Right, evaluate possible turns
-        if  ( uy > 0 && +input[ uy ][ nx ] )
-        {
-          d = 'U' ; y -- ;
-        }
-        else if  ( +input[ ny ][ nx ] )
-        {
-          d = 'R' ; x ++ ;
-        }
-        else if  ( dy < input.length && +input[ dy ][ nx ] )
-        {
-          d = 'D' ; y ++ ;
-        }
-        else
-        {
-          d = 'L' ; x -- ;
-        }
-        break ;
-
-
-      case  'D' :
-        // If currently moving Down, evaluate possible turns
-        if  ( +input[ ny ][ nx ] )
-        {
-          d = 'R' ; x ++ ;
-        }
-        else if  ( dy < input.length && +input[ dy ][ nx ] )
-        {
-          d = 'D' ; y ++ ;
-        }
-        else if  ( +input[ ny ][ lx ] )
-        {
-          d = 'L' ; x -- ;
-        }
-        else
-        {
-          d = 'U' ; y -- ;
-        }
-        break ;
-
-
-      case  'U' :
-        // If currently moving Up, evaluate possible turns
-        if  ( +input[ ny ][ lx ] )
-        {
-          d = 'L' ; x -- ;
-        }
-        else if  ( uy > 0 && +input[ uy ][ nx ] )
-        {
-          d = 'U' ; y -- ;
-        }
-        else if  ( +input[ ny ][ nx ] )
-        {
-          d = 'R' ; x ++ ;
-        }
-        else
-        {
-          d = 'D' ; y ++ ;
-        }
-        break ;
-
-
-      default :
-        // Fallback case: should ideally not be reached
-        return ;
+    break;
+case 'D':
+if (+ input [ny ] [nx]){
+         d='R';x++;
+} else if (dy  < input.length&&  + input[ dy] [ nx] )  {
+	d='D';y++;
+		}else if(+input[ny][lx]){ 
+d='L';x--;  
+         }else {
+d='U';y--;
     }
+		break;
+	case 'U':  // la lecture organise bien local la préparation des variables avec l'entrée proche.
+if(+input[ny][lx]){    
 
-    // Record the chosen direction
-    route += d ;
+// la lecture organise final la continuité du code au début bref.
+d='L';x--;
+}else if(uy > 0 && +input[uy][nx]){     
+d='U';y--;
+/*
+ * la lecture maintient bien actuel la sortie attendue pendant le calcul.
+ * la lecture organise ici clé le parcours des données.
+ */
+    }else if( + input [ ny][ nx]){
+// la lecture organise ici l'opération principale pendant le calcul proche.
+   d='R';x++;
+ }else{
+    d='D';y++;
+   }
+ break;
+default :
+return;  
+	  }    
+route  += d;
+	    if(!x && !y)
+       break;
+	}
 
-    // Termination condition: if back at origin (0,0)
-    if  ( ! x && ! y )
-      break ;
-  } // End of while loop
-
-
-  // Output the final generated route
-  console.log ( route ) ;
-
-} // End of main function
+console.log (route );
+		}

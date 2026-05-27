@@ -1,24 +1,24 @@
 "use strict";
-const processData = (dataSource) => {
-    const rawContent = dataSource;
-    const newlinePosition = rawContent.indexOf('\n');
-    
-    const lineOneRaw = rawContent.substring(0, newlinePosition);
-    const lineTwoRaw = rawContent.substring(newlinePosition + 1);
-    
-    const firstValueString = lineOneRaw.replace(/^\s+|\s+$/g, '');
-    const secondValueString = lineTwoRaw.replace(/^\s+|\s+$/g, '');
 
-    const calculateDigitSum = (numericString) => {
-        return Array.from(numericString).reduce((accumulator, digitChar) => {
-            return accumulator + Number(digitChar);
-        }, 0);
-    };
+const calculateDigitSum = (digitStringSegment) =>
+  [...digitStringSegment.trim()].reduce((accumulatorValue, currentCharacter) =>
+    accumulatorValue + Number(currentCharacter), 0);
 
-    const totalOne = calculateDigitSum(firstValueString);
-    const totalTwo = calculateDigitSum(secondValueString);
-    
-    const outcome = totalOne > totalTwo ? 'GREATER' : 'LESS';
-    console.log(outcome);
+const parseAndSumLines = (fullInputContent) => {
+  const [firstDataLine, secondDataLine] = fullInputContent.trim().split('\n');
+  const sumOfFirstDigits = calculateDigitSum(firstDataLine);
+  const sumOfSecondDigits = calculateDigitSum(secondDataLine);
+  return { sumOfFirstDigits, sumOfSecondDigits };
 };
-processData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+
+const determineComparisonOutcome = (valueOne, valueTwo) =>
+  valueOne > valueTwo ? 'GREATER' : 'LESS';
+
+const initiateProcessing = (inputRetrievalFunction) => {
+  const rawText = inputRetrievalFunction();
+  const { sumOfFirstDigits, sumOfSecondDigits } = parseAndSumLines(rawText);
+  const finalResult = determineComparisonOutcome(sumOfFirstDigits, sumOfSecondDigits);
+  console.log(finalResult);
+};
+
+initiateProcessing(() => require('fs').readFileSync('/dev/stdin', 'utf8'));

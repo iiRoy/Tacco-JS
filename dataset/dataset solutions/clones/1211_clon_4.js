@@ -1,23 +1,22 @@
-(function(inputData) {
-    const parsedLines = inputData.toString().trim().split('\n');
+(function(inputSource) {
+  function renderTimeComponents(totalSecondsValue, separationCharacter) {
+    const activeSeparator = separationCharacter || ':';
 
-    function decomposeInterval(overallUnits) {
-        let remainingUnits = overallUnits;
-        const secondComponent = remainingUnits % 60;
-        remainingUnits = Math.floor(remainingUnits / 60);
-        const minuteComponent = remainingUnits % 60;
-        const hourComponent = Math.floor(remainingUnits / 60);
-        return [hourComponent, minuteComponent, secondComponent];
-    }
+    const overallMinutes = Math.floor(totalSecondsValue / 60);
+    const secondsPart = totalSecondsValue % 60;
 
-    function composeRepresentation(partsArray, linkChar = ':') {
-        return `${partsArray[0]}${linkChar}${partsArray[1]}${linkChar}${partsArray[2]}`;
-    }
+    const hoursPart = Math.floor(overallMinutes / 60);
+    const minutesPart = overallMinutes % 60;
 
-    const initialValue = parseInt(parsedLines[0], 10);
-    const timeParts = decomposeInterval(initialValue);
-    const finalOutput = composeRepresentation(timeParts);
+    return hoursPart + activeSeparator + minutesPart + activeSeparator + secondsPart;
+  }
 
-    console.log(finalOutput);
+  const sourceDataLines = inputSource.toString().trim().split('\n');
+
+  const finalOutputString = (function(initialSecondsValue) {
+    return renderTimeComponents(initialSecondsValue);
+  }(parseInt(sourceDataLines[0], 10)));
+
+  console.log(finalOutputString);
 
 }(require('fs').readFileSync('/dev/stdin', 'utf8')));

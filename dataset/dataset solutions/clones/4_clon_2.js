@@ -1,19 +1,8 @@
-// This module is responsible for producing a multiplication table output.
-
-let primaryFactor = 0; // Initialize the starting value for the outer loop's factor.
-
-while ( primaryFactor++ < 9 ) { // Iterate through the primary factors from 1 to 9.
-
-  let secondaryFactor = 0; // Initialize the starting value for the inner loop's factor.
-
-  while ( secondaryFactor++ < 9 ) { // Iterate through the secondary factors from 1 to 9.
-
-    /*
-     * Compose the message string for the current multiplication operation.
-     * This includes the two factors and their computed product.
-     */
-    SystemOutput.writeMessage(primaryFactor + " * " + secondaryFactor + " = " + (primaryFactor * secondaryFactor));
-  }
+var firstFactor = 0; // Initialize the primary counter for multiplication
+while (firstFactor++ < 9) { // Iterate the first factor from 1 to 9
+    var secondFactor = 0; // Initialize the secondary counter for each primary factor
+    while (secondFactor++ < 9) { // Iterate the second factor from 1 to 9
+        // Output the multiplication expression and its result
+        Console.log(firstFactor + "x" + secondFactor + "=" + (firstFactor * secondFactor));
+    }
 }
-
-// The generation and display of the multiplication table has been completed.

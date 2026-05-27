@@ -1,78 +1,81 @@
-function displayMessage(messageContent) {
-  console.log(messageContent);
-} // Outputs a given string to the console.
-
-function ExecuteProgram(rawData) {
-  rawData = rawData.trim();
-  // This line was commented out in the original: rawData = rawData.trim().split(" ");
-  rawData = rawData.trim().split('\n');
-  // Another commented out line: rawData = rawData.trim().split(" ").map((elementValue) => Number(elementValue));
-  // Yet another commented out line: rawData = rawData.trim().split("\n").map((elementValue) => Number(elementValue));
-
-  var countElements = Number.parseInt(rawData[0]); // Parses the first line as the total number of elements.
-  var numericSequence = rawData[1].split(' ').map((elementValue) => Number(elementValue)); // Parses the second line into an array of numbers.
-  var frequencyMap = {}; // Stores counts of each number encountered.
-
-  for (var idx = 0; idx < countElements; idx++) {
-    // Iterate through the numeric sequence to build the frequency map.
-    if (frequencyMap[numericSequence[idx]] == null) {
-      frequencyMap[numericSequence[idx]] = 1; // First occurrence of this number.
-    } else if (frequencyMap[numericSequence[idx]] == 1) {
-      frequencyMap[numericSequence[idx]]++; // Second occurrence of this number.
-    }
-  }
-
-  /* This section was originally for handling small input sizes,
-   * but it has been commented out in the source.
-   * if (countElements === 1) {
-   *     displayMessage(1);
-   *     return;
-   * } else if (countElements === 2) {
-   *     displayMessage(2);
-   *     return;
-   * }
-   */
-
-  // displayMessage(frequencyMap); // Debugging line, displaying the element counts.
-
-  numericSequence.sort(); // Arrange the sequence in ascending order.
-  numericSequence = numericSequence.filter(function (currentValue, idx, entireArray) {
-    // Retain only unique elements from the sorted sequence.
-    return entireArray.indexOf(currentValue) === idx;
-  });
-
-  var finalResult = 1; // Initialize the computed outcome.
-
-  for (var idx = 0; idx < numericSequence.length; idx++) {
-    // Main validation loop for the unique numeric sequence.
-    if (countElements % 2 === 1 && numericSequence[idx] === 0) {
-      // Special condition check: if total elements count is odd and current element is zero.
-      if (frequencyMap[numericSequence[idx]] !== 1) {
-        // If zero does not appear exactly once, it's an invalid state.
-        displayMessage("0");
-        return; // Terminate early.
-      }
-      continue; // Move to the next element as zero has been handled.
-    }
-
-    // For all other elements, they must appear exactly twice.
-    if (frequencyMap[numericSequence[idx]] !== 2) {
-      displayMessage("0");
-      return; // Terminate early.
-    }
-  }
-
-  if (countElements % 2 === 1) {
-    // If the initial count was odd, remove the first element (which should be zero after sorting and filtering).
-    numericSequence.shift();
-  }
-
-  for (var idx = 0; idx < numericSequence.length; idx++) {
-    // Multiply the result by 2, applying modulo to prevent overflow.
-    finalResult = (finalResult * 2) % 1000000007;
-  }
-
-  displayMessage(finalResult); // Output the final calculated result.
+function logToConsole(message) {
+  // This utility function handles standard output operations.
+  console.log(message);
 }
 
-ExecuteProgram(require('node:fs').readFileSync('/dev/stdin', 'utf8')); // Read input from standard input and process.
+function ProcessInput(rawData) {
+  // First, clean up the raw input string by trimming whitespace.
+  rawData = rawData.trim();
+
+  // Split the input into lines to process individual data points.
+  rawData = rawData.trim().split("\n");
+
+  // Parse the first line to get the length of the array.
+  let arrayLength = parseInt(rawData[0]);
+
+  // Parse the second line, split by spaces, and convert elements to numbers.
+  let numberArray = rawData[1].split(" ").map((val) => Number(val));
+
+  // Initialize an object to store the frequency of each number.
+  const frequencyMap = {};
+
+  // Iterate through the number array to populate the frequency map.
+  for (let idx = 0; idx < arrayLength; idx++) {
+    // If the number is encountered for the first time, set its count to 1.
+    if (frequencyMap[numberArray[idx]] === undefined) {
+      frequencyMap[numberArray[idx]] = 1;
+    }
+    // If the number has been seen once, increment its count to 2.
+    else if (frequencyMap[numberArray[idx]] === 1) {
+      frequencyMap[numberArray[idx]]++;
+    }
+  }
+
+  // Sort the array numerically.
+  numberArray.sort((a, b) => a - b);
+
+  // Filter out duplicate elements to get a unique sorted list.
+  numberArray = numberArray.filter(function (currentElement, index, originalArray) {
+    return originalArray.indexOf(currentElement) === index;
+  });
+
+  // Initialize the result variable for calculations.
+  let resultValue = 1;
+
+  // Iterate through the unique sorted numbers to validate conditions.
+  for (let idx = 0; idx < numberArray.length; idx++) {
+    // Special handling for the number 0 if the array length is odd.
+    if (arrayLength % 2 === 1 && numberArray[idx] === 0) {
+      // If 0 does not appear exactly once, output "0" and exit.
+      if (frequencyMap[numberArray[idx]] !== 1) {
+        logToConsole("0");
+        return;
+      }
+      // Continue to the next element if 0 is valid.
+      continue;
+    }
+    // For all other numbers, they must appear exactly twice.
+    if (frequencyMap[numberArray[idx]] !== 2) {
+      // If not, output "0" and exit.
+      logToConsole("0");
+      return;
+    }
+  }
+
+  // If the original array length was odd, remove the first element (which must have been 0).
+  if (arrayLength % 2 === 1) {
+    numberArray.shift();
+  }
+
+  // Calculate the final result by multiplying by 2 for each remaining unique number,
+  // applying modulo to keep the number within bounds.
+  for (let idx = 0; idx < numberArray.length; idx++) {
+    resultValue = (resultValue * 2) % 1000000007;
+  }
+
+  // Output the final calculated result.
+  logToConsole(resultValue);
+}
+
+// Read input from standard input and pass it to the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

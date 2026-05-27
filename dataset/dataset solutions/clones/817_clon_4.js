@@ -1,75 +1,44 @@
-const queryInterface = require('readline').createInterface({
-    input: process.stdin,
-    output: process.stdout,
-    terminal: false
-});
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
 
-let collectedUserLines = [];
-let totalExpectedQueries = -1;
+const getPowerOfTen = (exponent) => Math.pow(10, Math.floor(exponent));
 
-const computePowerOfTen = (exponentValue) => {
-    let currentPower = 1;
-    for (let k = 0; k < exponentValue; ++k) {
-        currentPower *= 10;
-    }
-    return currentPower;
-};
+const generateNumberRange = (startValue, endValue) =>
+  Array.from({ length: endValue - startValue }, (_, index) => startValue + index);
 
-const generateNumericSequence = (startingPoint, endingPoint) => {
-    const sequenceContainer = [];
-    for (let num = startingPoint; num <= endingPoint; ++num) {
-        sequenceContainer.push(num);
-    }
-    return sequenceContainer;
-};
+process.stdin.on('data', (inputContent) => {
+  const inputLines = inputContent.trim().split('\n');
+  const totalTestCases = Number(inputLines[0]);
 
-queryInterface.on('line', (incomingLine) => {
-    if (totalExpectedQueries === -1) {
-        totalExpectedQueries = parseInt(incomingLine, 10);
+  const testCaseSpecifications = inputLines
+    .slice(1, totalTestCases + 1)
+    .map((line) => line.split(' ').map(Number));
+
+  testCaseSpecifications.forEach((currentSpec) => {
+    const [digitsForA, digitsForB] = currentSpec;
+
+    const lowerBoundA = getPowerOfTen(digitsForA - 1);
+    const upperBoundA = getPowerOfTen(digitsForA);
+    const lowerBoundB = getPowerOfTen(digitsForB - 1);
+    const upperBoundB = getPowerOfTen(digitsForB);
+
+    const possibleValuesA = generateNumberRange(lowerBoundA, upperBoundA);
+    const possibleValuesB = generateNumberRange(lowerBoundB, upperBoundB);
+
+    const matchingPairs = possibleValuesA.flatMap((valueA) =>
+      possibleValuesB
+        .filter((valueB) => {
+          const arithmeticSum = (valueA + valueB) * (valueB - valueA + 1) / 2;
+          const concatenatedNumber = Number(`${valueA}${valueB}`);
+          return arithmeticSum === concatenatedNumber;
+        })
+        .map((valueB) => `${valueA} ${valueB}`)
+    );
+
+    if (matchingPairs.length > 0) {
+      matchingPairs.forEach((pairString) => console.log(pairString));
     } else {
-        collectedUserLines.push(incomingLine);
+      console.log('No cats.');
     }
-
-    if (collectedUserLines.length === totalExpectedQueries) {
-        queryInterface.close();
-    }
-});
-
-queryInterface.on('close', () => {
-    for (let queryIndex = 0; queryIndex < collectedUserLines.length; ++queryIndex) {
-        const queryParameters = collectedUserLines[queryIndex].split(' ').map(Number);
-        const firstDigitCount = queryParameters[0];
-        const secondDigitCount = queryParameters[1];
-
-        const firstRangeLower = computePowerOfTen(firstDigitCount - 1);
-        const firstRangeUpper = computePowerOfTen(firstDigitCount) - 1;
-
-        const secondRangeLower = computePowerOfTen(secondDigitCount - 1);
-        const secondRangeUpper = computePowerOfTen(secondDigitCount) - 1;
-
-        const currentQueryMatches = [];
-
-        const potentialFirstValues = generateNumericSequence(firstRangeLower, firstRangeUpper);
-        const potentialSecondValues = generateNumericSequence(secondRangeLower, secondRangeUpper);
-
-        for (const candidateX of potentialFirstValues) {
-            for (const candidateY of potentialSecondValues) {
-                const numberOfTerms = candidateY - candidateX + 1;
-                const arithmeticSum = (candidateX + candidateY) * numberOfTerms / 2;
-
-                const stringConcatenation = `${candidateX}${candidateY}`;
-                const numericConcatenation = Number(stringConcatenation);
-
-                if (arithmeticSum === numericConcatenation) {
-                    currentQueryMatches.push(`${candidateX} ${candidateY}`);
-                }
-            }
-        }
-
-        if (currentQueryMatches.length > 0) {
-            currentQueryMatches.forEach(resultEntry => console.log(resultEntry));
-        } else {
-            console.log('No cats.');
-        }
-    }
+  });
 });

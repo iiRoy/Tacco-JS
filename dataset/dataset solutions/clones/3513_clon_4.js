@@ -1,44 +1,29 @@
-const processDataAndDeriveOutcome = (initialTextContent) => {
-  const sectionedContent = initialTextContent.trim().split('\n');
-  const numericHeaderValue = Number(sectionedContent[0]);
-  const elementsFromSecondLine = sectionedContent[1].split(' ');
+const processData = (sourceInput) => {
+  const [firstLineContent, secondLineContent] = sourceInput.split('\n');
+  const elementStrings = secondLineContent.split(' ');
+  const totalElements = elementStrings.length;
 
-  const elementFrequencyMap = elementsFromSecondLine.reduce((accumulatorMap, currentElementKey) => {
-    accumulatorMap.set(currentElementKey, (accumulatorMap.get(currentElementKey) || 0) + 1);
-    return accumulatorMap;
+  const itemFrequencies = elementStrings.reduce((accumulator, currentItem) => {
+    accumulator.set(currentItem, (accumulator.get(currentItem) || 0) + 1);
+    return accumulator;
   }, new Map());
 
-  const structuredElementList = Array.from(elementFrequencyMap.entries()).map(([identifier, count]) => ({
-    itemIdentity: identifier,
-    occurrenceCount: count
-  }));
+  const distinctItemEntries = Array.from(itemFrequencies.entries());
+  const distinctItemCount = distinctItemEntries.length;
 
-  const sortedStructuredList = structuredElementList.sort((itemA, itemB) => itemB.occurrenceCount - itemA.occurrenceCount);
-
-  const distinctElementCount = sortedStructuredList.length;
-
-  let finalCalculationResult;
-
-  if (distinctElementCount === 1) {
-    finalCalculationResult = numericHeaderValue / 2;
-  } else if (distinctElementCount === 2) {
-    const topElement = sortedStructuredList[0];
-    const secondTopElement = sortedStructuredList[1];
-
-    if (topElement.occurrenceCount === secondTopElement.occurrenceCount) {
-      finalCalculationResult = 0;
-    } else {
-      finalCalculationResult = (topElement.occurrenceCount - secondTopElement.occurrenceCount) / 2;
-    }
+  if (distinctItemCount === 1) {
+    console.log(totalElements / 2);
+  } else if (distinctItemCount === 2) {
+    distinctItemEntries.sort((entryA, entryB) => entryB[1] - entryA[1]);
+    const topFrequency = distinctItemEntries[0][1];
+    const secondFrequency = distinctItemEntries[1][1];
+    console.log((topFrequency - secondFrequency) / 2);
   } else {
-    finalCalculationResult = sortedStructuredList.slice(2).reduce((totalSum, currentItemObject) => totalSum + currentItemObject.occurrenceCount, 0);
+    distinctItemEntries.sort((entryA, entryB) => entryB[1] - entryA[1]);
+    const remainingEntries = distinctItemEntries.slice(2);
+    const sumOfOtherFrequencies = remainingEntries.reduce((sum, entry) => sum + entry[1], 0);
+    console.log(sumOfOtherFrequencies);
   }
-
-  return finalCalculationResult;
 };
 
-const initiateProcessing = (dataSource) => {
-  console.log(processDataAndDeriveOutcome(dataSource));
-};
-
-initiateProcessing(require("fs").readFileSync("/dev/stdin", "utf8"));
+processData(require("fs").readFileSync("/dev/stdin", "utf8"));

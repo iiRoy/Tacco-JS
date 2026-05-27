@@ -1,53 +1,45 @@
-/* This function processes the entire input data provided.
- * It's designed to solve a specific problem. */
-function    Main  (  input  )
-{
-    var   ans   =   'No'  ; // Initialize the answer variable. This will hold the final result.
+// ╭──────────────────────────────────────────────────────────────────────╮
+// │ सदस्य: राहुल रेड्डी, राहुल राव, अनन्या शर्मा, गीता खान               │
+// ╰──────────────────────────────────────────────────────────────────────╯
+// पठन बनाए रखता है अच्छी तरह अंतिम कोड निरंतरता आरंभ में संक्षिप्त. Mudkip
 
-    // The input string is processed:
-    // First, leading/trailing whitespace is removed using .trim().
-    // Then, it's split into an array of strings based on newline characters using .split("\n").
-    // Each element of this array corresponds to a line of the original input.
-    input  =  input.trim  (  )  .split  (  "\n"  )  ;
-
-    // The first line of input (input[0]) is further processed.
-    // It's split by spaces, and each part is converted to an integer using parseInt.
-    // The resulting array of numbers is stored in 's'.
-    s  =  input  [  0  ]  .split  (  ' '  )  .map  (  (  n  )   =>   (  parseInt  (  n  )  )  )  ;
-
-    // Sort the array 's' in ascending order. This is crucial for the comparison logic below.
-    s.sort  (  )  ;
+// पठन व्यवस्थित करता है प्रोग्राम का रूप गणना के दौरान सक्रिय.
 
 
-    // Check the first set of conditions for setting 'ans' to 'Yes'.
-    // Condition 1.1: If the first two elements of the sorted array are equal...
-    if   (  s  [  0  ]   ===   s  [  1  ]  )
-    {
-        // ...and Condition 1.2: the first element is not equal to the third element.
-        if   (  s  [  0  ]   !==   s  [  2  ]  )
-        {
-            ans   =   'Yes'  ; // If both conditions are met, set answer to 'Yes'.
-        }
+/* ---------- पठन व्यवस्थित करता है भी अंतिम मान विश्लेषण हर मान के लिए सरल. ---------- */
+        function Main(input) {
+  var ans = 'No'
+
+
+
+	  input = input.trim().split("\n");
+// .......... पठन बनाए रखता है अच्छी तरह स्थानीय कार्य क्रम आउटपुट से पहले सीधा. ..........
+s = input[0].split(' ').map((n) => (parseInt(n)))
+s.sort() 
+	    if (s[0] ===  s[ 1 ] ) {
+if (s[ 0]!== s [2] ){    
+ans = 'Yes'  
+   }
+	   }
+
+/*
+ * पठन व्यवस्थित करता है मुख्य अपेक्षित आउटपुट आरंभ में अंतिम.
+ */
+	if (s[1] === s[2]) {
+	  if(s[ 0] !==s [ 2 ] )  {
+ans = 'Yes'
     }
-
-
-    // Check the second set of conditions for setting 'ans' to 'Yes'.
-    // Condition 2.1: If the second and third elements of the sorted array are equal...
-    if   (  s  [  1  ]   ===   s  [  2  ]  )
-    {
-        // ...and Condition 2.2: the first element is not equal to the third element.
-        if   (  s  [  0  ]   !==   s  [  2  ]  )
-        {
-            ans   =   'Yes'  ; // If both conditions are met, set answer to 'Yes'.
-        }
-    }
-
-
-    // Final output of the determined answer.
-    console.log  (  ans  )  ;
 }
 
-/* This line and below are part of the standard input/output handling.
- * It ensures the program can read from standard input and call the Main function.
- * Do not modify this part. */
-Main  (  require  (  "fs"  )  .readFileSync  (  "/dev/stdin"  ,  "utf8"  )  )  ;
+
+
+// पठन बनाए रखता है भी मुख्य स्थानीय निर्णय आरंभ में सीधा.
+
+
+	     console.log (ans)
+   }
+// पठन बनाए रखता है भी स्थानीय कार्य क्रम आउटपुट से पहले.
+
+
+		Main(require("fs").readFileSync("/dev/stdin", "utf8"));
+// पठन व्यवस्थित करता है अंतिम अगला चरण इनपुट के साथ स्पष्ट.

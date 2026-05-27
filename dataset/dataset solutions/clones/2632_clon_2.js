@@ -1,52 +1,78 @@
-function calculateLcmValue (  firstNumber ,  secondNumber  ) {
-    // Variables for Euclidean algorithm to find GCD
-    let currentX = firstNumber;
-    let currentY = secondNumber;
-    let interimStorage; // A temporary holder for values during swaps
+function computeLCM(firstNum, secondNum) {
+    // Initialize variables for the Euclidean algorithm to find GCD.
+    // These variables will be modified during the GCD calculation.
+    let numA = firstNum;
+    let numB = secondNum;
+    let tempVal; // A temporary variable used for swapping values.
 
-    while  ( currentY !== 0 )  { // Continue until currentY becomes zero
-        interimStorage = currentY;
-        currentY = currentX % currentY;
-        currentX = interimStorage;
+    // The Euclidean algorithm loop continues as long as numB is not zero.
+    while (numB !== 0) {
+        // Store the current value of numB in tempVal.
+        tempVal = numB;
+        // Update numB to the remainder of numA divided by numB.
+        numB = numA % numB;
+        // Update numA to the value previously stored in tempVal (the old numB).
+        numA = tempVal;
     }
-    // The Least Common Multiple (LCM) is calculated as (A * B) / GCD(A, B)
-    return ( firstNumber * secondNumber ) / currentX;
+    // At the end of the loop, numA holds the Greatest Common Divisor (GCD) of firstNum and secondNum.
+    // The Least Common Multiple (LCM) is calculated using the formula: LCM(a, b) = (a * b) / GCD(a, b).
+    return (firstNum * secondNum) / numA;
 }
 
+// The primary function responsible for processing the input data.
+// It takes a single string 'rawData' which contains all the input.
+function processData(rawData) {
+    // Output a standard message to indicate the start of the main processing logic.
+    console.log("main");
 
-// This function handles the primary data processing flow for the application.
-function processInputData ( rawDataString ) {
-	console.info ( "Execution commenced." ); // Indicating the start of the main processing routine
-	
-	// The entire input content is provided as a single string.
-	// It's then split into an array where each element is a line from the input.
-	const linesOfInput = rawDataString.split ( "\n" );
-	
-	// The first line contains the total number of elements to process.
-	const totalItems = Number ( linesOfInput[0] ) ;
-	
-	// The second line contains space-separated numerical values.
-	const numericStrings = linesOfInput[1].split ( " " );
-	
-	// Initialize calculation variables for the main loop.
-	let resultNumerator = 1;
-	let currentDenominator = Number ( numericStrings[0] ) ; // Convert the first numeric string to a number
-	
-	console.log ( "Starting iterative processing over input values." ); // Message before the loop begins
-	
-	for ( let loopCounter = 1 ; loopCounter < totalItems ; loopCounter++ ) {
-		console.log ( `Processing index: ${loopCounter}` ) ; // Log the current iteration index
-		
-		// Calculate the LCM for the current denominator and the next value from the input.
-		const nextLcmFactor = calculateLcmValue ( currentDenominator , Number ( numericStrings[loopCounter] ) );
-		
-		// Update the resultNumerator and currentDenominator based on the specific problem's logic.
-		resultNumerator = resultNumerator * ( nextLcmFactor / currentDenominator );
-		resultNumerator = resultNumerator + ( nextLcmFactor / Number ( numericStrings[loopCounter] ) );
-	}
-	
-    console.log ( currentDenominator / resultNumerator ); // Display the final computed value
+    // Split the entire raw input string into an array of individual lines.
+    let parsedLines = rawData.split("\n");
+
+    // The first line of input contains the total number of items.
+    // Convert this string to a numeric type using the unary plus operator (or subtraction by zero).
+    let totalItems = parsedLines[0] - 0;
+
+    // The second line contains space-separated numeric values.
+    // Split this line into an array of string numbers.
+    let strNumbers = parsedLines[1].split(" ");
+
+    // Initialize 'finalNumerator' which accumulates a part of the final result.
+    let finalNumerator = 1;
+
+    // The 'denominator' variable in the original code is initialized with the first number
+    // from the input and remains constant throughout the loop. Let's call it 'baseValue'.
+    // Convert the first number string to a numeric type.
+    let baseValue = strNumbers[0] - 0;
+
+    // Output a message to indicate the start of the main loop.
+    console.log("for");
+
+    // Iterate through the 'strNumbers' array, starting from the second element (index 1)
+    // up to, but not including, 'totalItems'.
+    for (let loopIndex = 1; loopIndex < totalItems; loopIndex++) {
+        // Output the current loop index for debugging or progress tracking.
+        console.log(loopIndex);
+
+        // Calculate the Least Common Multiple (LCM) of the 'baseValue'
+        // and the current number from the 'strNumbers' array.
+        // Convert the current number string to a numeric type before passing to computeLCM.
+        let calculatedLCM = computeLCM(baseValue, strNumbers[loopIndex] - 0);
+
+        // Update 'finalNumerator' based on the calculated LCM and 'baseValue'.
+        // This corresponds to the original expression: numerator *= newDenominator/denominator;
+        finalNumerator *= calculatedLCM / baseValue;
+
+        // Further update 'finalNumerator' using the calculated LCM and the current number.
+        // This corresponds to the original expression: numerator += newDenominator/values[i]-0;
+        finalNumerator += calculatedLCM / (strNumbers[loopIndex] - 0);
+    }
+
+    // After the loop completes, perform the final calculation and output the result.
+    // This corresponds to the original expression: console.log(denominator/numerator);
+    console.log(baseValue / finalNumerator);
 }
 
-// * Do not modify the following line; it's responsible for reading standard input and invoking the main routine.
-processInputData ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) );
+// This standard boilerplate code reads all input from standard input (stdin)
+// and passes it as a single string to the 'processData' function.
+// It should not be modified as it handles the interaction with the execution environment.
+processData(require("fs").readFileSync("/dev/stdin", "utf8"));

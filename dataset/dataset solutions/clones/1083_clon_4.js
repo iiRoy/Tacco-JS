@@ -1,90 +1,84 @@
-const createUnit = (lbl, ant, offsp, lvl) => ({
-  label: lbl,
-  antecedent: ant,
-  progeny: offsp,
-  rank: lvl
+const createStructureElement = (identifier, originator, descendants, level) => ({
+  identifier,
+  originator,
+  descendants,
+  level,
 });
 
-const vault = new Map();
+const getElementType = (element) => {
+  if (element.originator === -1) return 'root';
+  if (element.descendants.length === 0) return 'leaf';
+  return 'internal node';
+};
 
-const adjustRankForDescendants = (initialLabel) => {
-  const processingStack = [initialLabel];
-  const visitedElements = new Set(); // To prevent re-processing in a single chain or cycles if graph allows
+const formatElement = (element) => {
+  const type = getElementType(element);
+  return `node ${element.identifier}: parent = ${element.originator}, depth = ${element.level}, ${type}, [${element.descendants.join(', ')}]`;
+};
 
-  while (processingStack.length > 0) {
-    const currentLabel = processingStack.pop();
+class GraphAssembler {
+  constructor() {
+    this.elementRegistry = new Map();
+  }
 
-    if (visitedElements.has(currentLabel)) continue;
-    visitedElements.add(currentLabel);
+  incorporateBranch(identifier, descendantIdentifiers) {
+    if (!this.elementRegistry.has(identifier)) {
+      this.elementRegistry.set(identifier, createStructureElement(identifier, -1, [], 0));
+    }
+    const currentElement = this.elementRegistry.get(identifier);
+    currentElement.descendants = descendantIdentifiers;
 
-    const currentUnit = vault.get(currentLabel);
-    if (!currentUnit) continue;
+    descendantIdentifiers.forEach((descendantId) => {
+      if (!this.elementRegistry.has(descendantId)) {
+        this.elementRegistry.set(descendantId, createStructureElement(descendantId, identifier, [], currentElement.level));
+      }
+      const descendantElement = this.elementRegistry.get(descendantId);
+      descendantElement.originator = identifier;
+      descendantElement.level = currentElement.level;
 
-    if (currentUnit.progeny.length === 0) { // Is a terminal unit (leaf)
-      currentUnit.rank += 1;
-    } else { // Is an intermediate unit (internal node)
-      // Push children in reverse order to ensure correct processing order for DFS
-      for (let i = currentUnit.progeny.length - 1; i >= 0; i--) {
-        const childLabel = currentUnit.progeny[i];
-        if (vault.has(childLabel)) {
-          processingStack.push(childLabel);
+      this.adjustSubtreeLevels(descendantId);
+    });
+  }
+
+  adjustSubtreeLevels(elementIdentifier) {
+    const processingStack = [elementIdentifier];
+
+    while (processingStack.length > 0) {
+      const currentId = processingStack.pop();
+      const currentElement = this.elementRegistry.get(currentId);
+
+      if (!currentElement) continue;
+
+      if (currentElement.descendants.length === 0) {
+        currentElement.level += 1;
+      } else {
+        for (let i = currentElement.descendants.length - 1; i >= 0; i--) {
+          processingStack.push(currentElement.descendants[i]);
         }
       }
     }
   }
-};
 
-const incorporateBlueprint = (primaryLabel, childLabels) => {
-  if (!vault.has(primaryLabel)) {
-    vault.set(primaryLabel, createUnit(primaryLabel, -1, [], 0));
+  displayStructure() {
+    const sortedElements = Array.from(this.elementRegistry.values()).sort((a, b) => a.identifier - b.identifier);
+    const formattedOutput = sortedElements.map(formatElement).join('\n');
+    console.log(formattedOutput);
   }
-  const mainUnit = vault.get(primaryLabel);
-  mainUnit.progeny = childLabels;
+}
 
-  childLabels.forEach((subLabel) => {
-    if (!vault.has(subLabel)) {
-      vault.set(subLabel, createUnit(subLabel, primaryLabel, [], mainUnit.rank));
-    }
-    const subUnit = vault.get(subLabel);
-    subUnit.antecedent = primaryLabel;
-    subUnit.rank = mainUnit.rank;
+(function processInput() {
+  const inputLines = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split('\n');
+  const totalEntries = Number(inputLines.shift());
 
-    adjustRankForDescendants(subLabel);
-  });
-};
+  const structureBuilder = new GraphAssembler();
 
-const determineCategory = (unitObject) =>
-  unitObject.antecedent === -1
-    ? 'origin'
-    : unitObject.progeny.length === 0
-      ? 'terminal'
-      : 'intermediate';
+  for (const entryLine of inputLines) {
+    const parsedEntry = entryLine.split(' ');
+    const currentIdentifier = Number(parsedEntry.shift());
+    const childCount = Number(parsedEntry.shift());
+    const childIdentifiers = parsedEntry.map(Number);
+    structureBuilder.incorporateBranch(currentIdentifier, childIdentifiers);
+  }
 
-const renderDescription = (unitObject) => {
-  const category = determineCategory(unitObject);
-  return `unit ${unitObject.label}: antecedent = ${unitObject.antecedent}, rank = ${unitObject.rank}, ${category}, [${unitObject.progeny.join(', ')}]`;
-};
-
-const outputNetwork = () => {
-  const sortedLabels = Array.from(vault.keys()).sort((a, b) => a - b);
-  const formattedOutput = sortedLabels.map((lbl) =>
-    renderDescription(vault.get(lbl))
-  );
-  console.log(formattedOutput.join('\n'));
-};
-
-(() => {
-  const inputData = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split('\n');
-  const totalRecords = Number(inputData.shift());
-
-  inputData
-    .map((lineSegment) => lineSegment.split(' '))
-    .forEach((parts) => {
-      const currentLabel = Number(parts.shift());
-      const descendantCount = Number(parts.shift());
-      const descendantLabels = parts.map(Number);
-      incorporateBlueprint(currentLabel, descendantLabels);
-    });
-
-  outputNetwork();
+  structureBuilder.displayStructure();
 })();

@@ -1,96 +1,48 @@
-const fileSystemOperations = require('node:fs');
-const primaryInputSourcePath = process.env.DATA_INPUT_FILE || '/dev/stdin';
-const textDataEncodingScheme = 'utf8';
-const numericalPrecisionEpsilon = 1e-10;
-const successOutputMessage = 'YES';
-const failureOutputMessage = undefined;
+const fileSystemModule = require("fs");
 
-if (!String.prototype.stripLeadingAndTrailingWhitespace) {
-    String.prototype.stripLeadingAndTrailingWhitespace = function() {
-        return this.trim();
-    };
+function parseInputLineToNumbers(lineContent) {
+  return lineContent.split(' ').map(Number);
 }
 
-if (!String.prototype.divideIntoSegments) {
-    String.prototype.divideIntoSegments = function(delimiter = '\n') {
-        return this.split(delimiter);
-    };
+function computeVectorDotProduct(vectorA, vectorB) {
+  return (vectorA.xComponent * vectorB.xComponent) + (vectorA.yComponent * vectorB.yComponent);
 }
 
-function printProcessedResult(messageToDisplay) {
-    console.log(messageToDisplay);
+const rawInputBuffer = fileSystemModule.readFileSync("/dev/stdin", "utf8");
+const processedInputContent = rawInputBuffer.trim();
+const inputDataLines = processedInputContent.split('\n');
+
+const FLOATING_POINT_TOLERANCE = 1e-10;
+
+for (const singleInputLine of inputDataLines) {
+  const parsedNumericValues = parseInputLineToNumbers(singleInputLine);
+
+  const p1X = parsedNumericValues[0];
+  const p1Y = parsedNumericValues[1];
+  const p2X = parsedNumericValues[2];
+  const p2Y = parsedNumericValues[3];
+  const p3X = parsedNumericValues[4];
+  const p3Y = parsedNumericValues[5];
+  const p4X = parsedNumericValues[6];
+  const p4Y = parsedNumericValues[7];
+
+  const vectorOne = {
+    xComponent: p2X - p1X,
+    yComponent: p2Y - p1Y
+  };
+
+  const vectorTwo = {
+    xComponent: p4X - p3X,
+    yComponent: p4Y - p3Y
+  };
+
+  const calculatedDotProduct = computeVectorDotProduct(vectorOne, vectorTwo);
+
+  const isDotProductNearZero = Math.abs(calculatedDotProduct) < FLOATING_POINT_TOLERANCE;
+
+  if (isDotProductNearZero) {
+    console.log('NO');
+  } else {
+    console.log('YES');
+  }
 }
-
-function initiateDataProcessing() {
-    let rawFileData;
-    try {
-        rawFileData = fileSystemOperations.fetchContentSynchronously(primaryInputSourcePath, { encoding: textDataEncodingScheme });
-    } catch (fileReadError) {
-        console.error(`ERROR: Failed to read input from '${primaryInputSourcePath}'. Details: ${fileReadError.message}`);
-        process.exit(1);
-    }
-
-    if (!rawFileData || rawFileData.length === 0) {
-        console.warn('WARNING: Input file is empty or contains no data. No records to process.');
-        return;
-    }
-
-    const individualInputLines = rawFileData
-        .stripLeadingAndTrailingWhitespace()
-        .divideIntoSegments()
-        .filter(line => line.length > 0);
-
-    let successfulRecordCount = 0;
-
-    individualInputLines.forEach((currentInputLine, lineIndex) => {
-        const stringSegmentArray = currentInputLine.split(/\s+/).filter(Boolean);
-
-        const requiredComponentCount = 8;
-        if (stringSegmentArray.length < requiredComponentCount) {
-            console.warn(`WARNING: Line ${lineIndex + 1} ('${currentInputLine}') has insufficient components ` +
-                         `(${stringSegmentArray.length} instead of ${requiredComponentCount}). Skipping this record.`);
-            return;
-        }
-
-        const pointOneX_Coordinate = parseFloat(stringSegmentArray[0]);
-        const pointOneY_Coordinate = parseFloat(stringSegmentArray[1]);
-        const pointTwoX_Coordinate = parseFloat(stringSegmentArray[2]);
-        const pointTwoY_Coordinate = parseFloat(stringSegmentArray[3]);
-        const pointThreeX_Coordinate = parseFloat(stringSegmentArray[4]);
-        const pointThreeY_Coordinate = parseFloat(stringSegmentArray[5]);
-        const pointFourX_Coordinate = parseFloat(stringSegmentArray[6]);
-        const pointFourY_Coordinate = parseFloat(stringSegmentArray[7]);
-
-        if ([pointOneX_Coordinate, pointOneY_Coordinate, pointTwoX_Coordinate, pointTwoY_Coordinate,
-             pointThreeX_Coordinate, pointThreeY_Coordinate, pointFourX_Coordinate, pointFourY_Coordinate]
-            .some(isNaN)) {
-            console.warn(`WARNING: Line ${lineIndex + 1} ('${currentInputLine}') contains non-numeric data after parsing. Skipping.`);
-            return;
-        }
-
-        const deltaX_P1P2 = pointTwoX_Coordinate - pointOneX_Coordinate;
-        const deltaY_P1P2 = pointTwoY_Coordinate - pointOneY_Coordinate;
-        const deltaX_P3P4 = pointFourX_Coordinate - pointThreeX_Coordinate;
-        const deltaY_P3P4 = pointFourY_Coordinate - pointThreeY_Coordinate;
-
-        const calculatedGeometricValue = (deltaX_P1P2 * deltaY_P3P4) + (deltaY_P1P2 * deltaX_P3P4);
-
-        const isCalculatedValueApproximatelyZero = Math.abs(calculatedGeometricValue) < numericalPrecisionEpsilon;
-
-        const finalDeterminedOutcome = isCalculatedValueApproximatelyZero
-                                       ? successOutputMessage
-                                       : failureOutputMessage;
-
-        printProcessedResult(finalDeterminedOutcome);
-
-        successfulRecordCount++;
-    });
-
-    if (successfulRecordCount > 0) {
-        console.info(`INFO: Successfully processed and output results for ${successfulRecordCount} valid data records.`);
-    } else {
-        console.info('INFO: No valid data records were processed in this run.');
-    }
-}
-
-initiateDataProcessing();

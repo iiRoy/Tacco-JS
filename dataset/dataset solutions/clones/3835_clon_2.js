@@ -1,79 +1,105 @@
-function processInput (rawData) {
-  const textRows = rawData.split('\n')
-  const firstRowParts = textRows[0].split(' ')
+// This module processes raw input data to identify specific connectivity patterns.
+function processInput(rawData) {
+    // Split the entire input string into an array of individual text lines.
+    var inputRows = rawData.split('\n');
 
-  const nodeCount = Number.parseInt(firstRowParts[0], 0xA) // Number of nodes in the graph
-  const edgeCount = Number.parseInt(firstRowParts[1], 10) // Number of edges or connections
+    // Parse the initial configuration parameters from the first line.
+    var firstRowParts = inputRows[0].split(' ');
+    var numEntities = parseInt(firstRowParts[0], 10); // Represents 'N' from original
+    var numRelations = parseInt(firstRowParts[1], 10); // Represents 'M' from original
 
-  let priorityValues = textRows[1].split(' ')
-  for (let loopIdx = 0; loopIdx < priorityValues.length; loopIdx++) {
-    priorityValues[loopIdx] = Number.parseInt(priorityValues[loopIdx], 10)
-  }
+    // Extract and convert entity properties from the second line.
+    var entityProperties = inputRows[1].split(' ');
+    // Convert string representations of properties to integer values.
+    for (let itemIdx = 0; itemIdx < entityProperties.length; itemIdx++) {
+        entityProperties[itemIdx] = parseInt(entityProperties[itemIdx], 10);
+    }
 
-  const connectionData = [] // Stores the graph connections
-  for (let outerIdx = 0; outerIdx < edgeCount; outerIdx++) {
-    connectionData[outerIdx] = textRows[outerIdx + 2].split(' ')
-    connectionData[outerIdx][0] = Number.parseInt(connectionData[outerIdx][0], 10)
-    connectionData[outerIdx][1] = Number.parseInt(connectionData[outerIdx][1], 10)
-  }
+    // Initialize a data structure to hold all defined connections.
+    var connections = [];
+    // Populate the connections array from the subsequent input lines.
+    // Each connection is represented as a pair of integers.
+    for (let itemIdx = 0; itemIdx < numRelations; itemIdx++) {
+        connections[itemIdx] = inputRows[itemIdx + 2].split(' ');
+        connections[itemIdx][0] = parseInt(connections[itemIdx][0], 10);
+        connections[itemIdx][1] = parseInt(connections[itemIdx][1], 10);
+    }
 
-  let successfulPaths = 0 // Counter for paths reaching target
-  for (let currentStartNodeIdx = 0; currentStartNodeIdx < nodeCount; currentStartNodeIdx++) {
-    let keepLooping = true
-    let previousConnections = []
-    let currentConnections = [currentStartNodeIdx + 1] // Nodes to explore in current step
-    let nextConnections = [] // Nodes discovered for the next step
-    let allVisitedNodes = [currentStartNodeIdx + 1] // All nodes visited so far in this traversal
+    // Initialize a counter for the final aggregated result.
+    var totalMatches = 0;
 
-    const targetNode = priorityValues[currentStartNodeIdx] // The specific target for this start node
+    // Iterate through each entity to perform a connectivity search.
+    for (let itemIdx = 0; itemIdx < numEntities; itemIdx++) {
+        var continueSearch = true; // A flag to control the inner iterative search.
+        var previousActiveNodes = []; // Stores the set of active nodes from the prior iteration.
+        var activeNodes = [itemIdx + 1]; // The current set of nodes being explored, starting with the current entity.
+        var discoveredNeighbors = []; // A temporary list for newly found connected nodes in the current pass.
+        var allVisitedInSearch = [itemIdx + 1]; // Keeps track of all nodes encountered during the current entity's search.
+        var targetProperty = entityProperties[itemIdx]; // The specific property value to locate within connected components.
 
-    do {
-      for (let subIdx = 0; subIdx < currentConnections.length; subIdx++) {
-        for (let linkIdx = 0; linkIdx < edgeCount; linkIdx++) {
-          if (connectionData[linkIdx][0] === currentConnections[subIdx]) {
-            // Check if the connected node is new
-            if (currentConnections.indexOf(connectionData[linkIdx][1]) === -1 && allVisitedNodes.indexOf(connectionData[linkIdx][1]) === -1) {
-              nextConnections.push(connectionData[linkIdx][1])
-              allVisitedNodes.push(connectionData[linkIdx][1])
+        // Execute a breadth-first-like traversal to find connected components.
+        do {
+            // Iterate over each node in the current set of active nodes.
+            for (let compIdx = 0; compIdx < activeNodes.length; compIdx++) {
+                // Examine every defined connection.
+                for (let relIdx = 0; relIdx < numRelations; relIdx++) {
+                    // Check if the first node of a connection matches the current active node.
+                    if (connections[relIdx][0] === activeNodes[compIdx]) {
+                        // If the second node is not already in active or visited lists, add it.
+                        if (activeNodes.indexOf(connections[relIdx][1]) === -1 && allVisitedInSearch.indexOf(connections[relIdx][1]) === -1) {
+                            discoveredNeighbors.push(connections[relIdx][1]);
+                            allVisitedInSearch.push(connections[relIdx][1]);
+                        }
+                    }
+                    // Check if the second node of a connection matches the current active node.
+                    else if (connections[relIdx][1] === activeNodes[compIdx]) {
+                        // If the first node is not already in active or visited lists, add it.
+                        if (activeNodes.indexOf(connections[relIdx][0]) === -1 && allVisitedInSearch.indexOf(connections[relIdx][0]) === -1) {
+                            discoveredNeighbors.push(connections[relIdx][0]);
+                            allVisitedInSearch.push(connections[relIdx][0]);
+                        }
+                    }
+                    // If the target property is found within the current active nodes, break early.
+                    if (activeNodes.indexOf(targetProperty) >= 0) {
+                        break;
+                    }
+                }
+                // Re-check if the target property was found after the inner loop.
+                if (activeNodes.indexOf(targetProperty) >= 0) {
+                    break;
+                }
             }
-          } else if (connectionData[linkIdx][1] === currentConnections[subIdx]) {
-            // Check if the other connected node is new
-            if (currentConnections.indexOf(connectionData[linkIdx][0]) === -1 && allVisitedNodes.indexOf(connectionData[linkIdx][0]) === -1) {
-              nextConnections.push(connectionData[linkIdx][0])
-              allVisitedNodes.push(connectionData[linkIdx][0])
+
+            // If the target property was successfully located in the current active nodes.
+            if (activeNodes.indexOf(targetProperty) >= 0) {
+                totalMatches += 1; // Increment the overall match counter.
+                continueSearch = false; // Terminate the search for this specific entity.
             }
-          }
 
-          if (currentConnections.indexOf(targetNode) >= 0) {
-            break // Target found, exit inner link loop
-          }
-        }
-        if (currentConnections.indexOf(targetNode) >= 0) {
-          break // Target found, exit sub-index loop
-        }
-      }
+            // Check for a termination condition: if no new progress is made (i.e., active nodes haven't changed).
+            if (previousActiveNodes === activeNodes) { // This comparison checks for reference equality.
+                continueSearch = false; // Stop if the set of active nodes is identical to the previous iteration.
+            } else {
+                // Prepare the next set of active nodes for the subsequent iteration.
+                var nextActiveNodes = [];
+                for (let compIdx = 0; compIdx < discoveredNeighbors.length; compIdx++) {
+                    // Filter to include only truly new nodes that were not in the previous active set.
+                    if (activeNodes.indexOf(discoveredNeighbors[compIdx]) === -1) {
+                        nextActiveNodes.push(discoveredNeighbors[compIdx]);
+                    }
+                }
+                // Update the active nodes for the next pass.
+                activeNodes = nextActiveNodes;
+                // Store the current active nodes to compare in the next iteration.
+                previousActiveNodes = activeNodes; // This assignment also maintains reference equality for the check above.
+            }
+            // console.log(activeNodes); // Original debug output, kept commented.
+        } while (continueSearch === true); // Continue the loop as long as the search flag is active.
+    }
 
-      if (currentConnections.indexOf(targetNode) >= 0) {
-        successfulPaths += 1
-        keepLooping = false // Path found, stop iterating for this start node
-      }
-
-      if (previousConnections === currentConnections) {
-        // If no new paths were found in the last iteration
-        keepLooping = false
-      } else {
-        const nodesForNextIteration = []
-        for (let tempIdx = 0; tempIdx < nextConnections.length; tempIdx++) {
-          if (currentConnections.indexOf(nextConnections[tempIdx]) === -1) {
-            nodesForNextIteration.push(nextConnections[tempIdx])
-          }
-        }
-        currentConnections = nodesForNextIteration
-        previousConnections = currentConnections
-        nextConnections = [] // Clear for next iteration
-      }
-    } while (keepLooping === true)
-  }
-  console.info(successfulPaths)
+    // Output the final calculated total number of matches to the console.
+    console.log(totalMatches);
 }
-processInput(require('node:fs').readFileSync('/dev/stdin', { encoding: 'utf8' }))
+
+// Read the entire content from standard input synchronously and pass it to the processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

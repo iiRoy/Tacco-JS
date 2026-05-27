@@ -1,81 +1,57 @@
-function graphColoringSolver(dataInput) {
-    const allLines = dataInput.split("\n");
-    const nodeQuantity = parseInt(allLines[0], 10);
-    const modularConstant = 1_000_000_007;
+function calculateTreeDP(currentVertex, parentVertex, graphStructure, modulusValue) {
+    let whiteProduct = 1;
+    let blackProduct = 1;
+
+    for (const adjacentVertex of graphStructure[currentVertex]) {
+        if (adjacentVertex !== parentVertex) {
+            const [childWhiteSum, childBlackSum] = calculateTreeDP(adjacentVertex, currentVertex, graphStructure, modulusValue);
+
+            const combinedChildSum = (childWhiteSum + childBlackSum) % modulusValue;
+            const effectiveCombinedChildSum = combinedChildSum === 0 ? 1 : combinedChildSum;
+
+            const effectiveChildWhiteSum = childWhiteSum === 0 ? 1 : childWhiteSum;
+
+            whiteProduct = (whiteProduct * effectiveCombinedChildSum) % modulusValue;
+            blackProduct = (blackProduct * effectiveChildWhiteSum) % modulusValue;
+        }
+    }
+    return [whiteProduct, blackProduct];
+}
+
+function ProcessInput(rawInput) {
+    const inputLines = rawInput.split("\n");
+    const nodeQuantity = parseInt(inputLines[0]);
+    const adjacencyMatrix = Array.from({ length: nodeQuantity }, () => []);
+    const primeConstant = Math.pow(10, 9) + 7;
+
+    for (let i = 0; i < nodeQuantity - 1; i++) {
+        const [nodeA, nodeB] = inputLines[i + 1].split(" ").map(Number);
+        adjacencyMatrix[nodeA - 1].push(nodeB - 1);
+        adjacencyMatrix[nodeB - 1].push(nodeA - 1);
+    }
 
     if (nodeQuantity === 1) {
-        console.log("%s", 2);
         return 2;
     }
 
-    const adjacencyMatrix = new Map(); // Using Map for adjacency list
-    for (let u = 0; u < nodeQuantity; u++) {
-        adjacencyMatrix.set(u, []);
-    }
+    const [finalWhiteCount, finalBlackCount] = calculateTreeDP(0, -1, adjacencyMatrix, primeConstant);
 
-    for (let i = 0; i < nodeQuantity - 1; i++) {
-        const linkData = allLines[i + 1].split(" ").map(Number);
-        const firstNode = linkData[0] - 1;
-        const secondNode = linkData[1] - 1;
-        adjacencyMatrix.get(firstNode).push(secondNode);
-        adjacencyMatrix.get(secondNode).push(firstNode);
-    }
+    return (finalWhiteCount + finalBlackCount) % primeConstant;
+}
 
-    const resultsCache = new Map(); // Memoization for dynamic programming
-
-    // Recursive function to determine coloring possibilities for a subtree
-    const computeNodeColorings = (currentNodeIndex, parentNodeIndex) => {
-        if (resultsCache.has(currentNodeIndex)) {
-            return resultsCache.get(currentNodeIndex);
-        }
-
-        let waysForWhite = 1;
-        let waysForBlack = 1;
-
-        const connectedNeighbors = adjacencyMatrix.get(currentNodeIndex);
-        const childNodesForTraversal = connectedNeighbors.filter(
-            (neighborId) => neighborId !== parentNodeIndex
-        );
-
-        // Base case: If no children in the DFS traversal (it's a leaf relative to parent)
-        if (childNodesForTraversal.length === 0) {
-            resultsCache.set(currentNodeIndex, { whiteCount: 1, blackCount: 1 });
-            return { whiteCount: 1, blackCount: 1 };
-        }
-
-        // Recursive step: Iterate over children and combine results
-        childNodesForTraversal.forEach((childId) => {
-            const childCalculation = computeNodeColorings(childId, currentNodeIndex);
-
-            // If current node is white, its child can be white or black
-            const whiteParentChildOption = Math.max(
-                1,
-                (childCalculation.whiteCount + childCalculation.blackCount) % modularConstant
-            );
-            waysForWhite = (waysForWhite * whiteParentChildOption) % modularConstant;
-
-            // If current node is black, its child must be white
-            const blackParentChildOption = Math.max(
-                1,
-                childCalculation.whiteCount % modularConstant
-            );
-            waysForBlack = (waysForBlack * blackParentChildOption) % modularConstant;
-        });
-
-        const currentComputedResults = { whiteCount: waysForWhite, blackCount: waysForBlack };
-        resultsCache.set(currentNodeIndex, currentComputedResults);
-        return currentComputedResults;
-    };
-
-    // Start the recursive computation from node 0 (arbitrary root), with -1 indicating no parent
-    const finalTreeResults = computeNodeColorings(0, -1);
-
-    // The total number of ways is the sum of ways if the root is white or black
-    const finalAnswer = (finalTreeResults.whiteCount + finalTreeResults.blackCount) % modularConstant;
-    
-    console.log("%s", finalAnswer);
+function Main(input) {
+    const finalAnswer = ProcessInput(input);
+    console.log('%s', finalAnswer);
     return finalAnswer;
 }
 
-// Execute the solver with input from stdin, mimicking the original's execution environment
-graphColoringSolver(require("fs").readFileSync("/dev/stdin", "utf8"));
+function debug(n){
+  var input = document.getElementById("input"+n).value;
+  var ans=ProcessInput(input);
+  var result="WA";
+  if(ans==document.getElementById("output"+n).value.split("\n")[0]){
+    result="AC";
+  }
+  document.getElementById("result"+n).innerHTML=result;
+}
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

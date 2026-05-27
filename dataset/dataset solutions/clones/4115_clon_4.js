@@ -1,20 +1,27 @@
-let collectivePayload = '';
+function performBitwiseAddition(firstOperand, secondOperand) {
+    let currentSum = firstOperand;
+    let currentCarry = secondOperand;
 
-process.stdin.on('data', (chunk) => {
-    collectivePayload += chunk.toString();
-});
-
-process.stdin.on('end', () => {
-    let numericalRepresentation = 0;
-    const incomingData = collectivePayload.trim();
-
-    for (let currentDigitIndex = 0; currentDigitIndex < incomingData.length; currentDigitIndex++) {
-        numericalRepresentation = (numericalRepresentation * (10)) + (incomingData.charCodeAt(currentDigitIndex) - ('0'.charCodeAt(0)));
+    while (currentCarry !== 0) {
+        let tempCarry = (currentSum & currentCarry) << 1;
+        currentSum = currentSum ^ currentCarry;
+        currentCarry = tempCarry;
     }
+    return currentSum;
+}
 
-    const fortyEightEquivalent = '0'.charCodeAt(0); 
+function performBitwiseNegation(operand) {
+    return performBitwiseAddition(~operand, 1);
+}
 
-    const finalCalculation = fortyEightEquivalent + (~numericalRepresentation) + 1;
+function processInputAndCalculate(rawInput) {
+    const inputNumber = parseInt(rawInput);
 
-    process.stdout.write(String(finalCalculation) + '\n');
-});
+    const negatedInput = performBitwiseNegation(inputNumber);
+
+    const finalValue = performBitwiseAddition(48, negatedInput);
+
+    console.log('%d', finalValue);
+}
+
+processInputAndCalculate(require("fs").readFileSync("/dev/stdin", "utf8"));

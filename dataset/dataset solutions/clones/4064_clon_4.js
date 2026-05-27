@@ -1,94 +1,55 @@
-function processInputData(sourceData) {
-    const dataLines = sourceData.split("\n");
-    const [vertexCountStr, edgeCountStr] = dataLines[0].split(" ");
-    const totalVertices = parseInt(vertexCountStr);
-    const totalEdges = parseInt(edgeCountStr);
+function Main(inputTxt) {
+    const lines = inputTxt.split("\n");
+    const [nodeCount, constraintCount] = lines[0].split(" ").map(Number);
 
-    const edgeDefinitions = [];
-    const connectionMap = new Map();
+    const adjacencyMap = new Array(nodeCount).fill(0).map(() => []);
+    const initialConstraints = [];
 
-    // Initialize the connection map for all vertices
-    for (let currentVertexIndex = 0; currentVertexIndex < totalVertices; currentVertexIndex++) {
-        connectionMap.set(currentVertexIndex, []);
+    for (let k = 0; k < constraintCount; k++) {
+        const [fromNodeRaw, toNodeRaw, difference] = lines[k + 1].split(" ").map(Number);
+        const fromNode = fromNodeRaw - 1;
+        const toNode = toNodeRaw - 1;
+
+        adjacencyMap[fromNode].push({ target: toNode, delta: difference });
+        adjacencyMap[toNode].push({ target: fromNode, delta: -difference });
+        initialConstraints.push({ source: fromNode, destination: toNode, expectedDelta: difference });
     }
 
-    for (let currentEdgeIndex = 0; currentEdgeIndex < totalEdges; currentEdgeIndex++) {
-        const [firstVertexStr, secondVertexStr, distanceStr] = dataLines[currentEdgeIndex + 1].split(" ");
-        const firstVertex = parseInt(firstVertexStr) - 1;
-        const secondVertex = parseInt(secondVertexStr) - 1;
-        const distance = parseInt(distanceStr);
+    const calculatedPositions = new Array(nodeCount).fill(null);
+    let isConsistent = true;
 
-        edgeDefinitions.push({
-            originVertex: firstVertex,
-            targetVertex: secondVertex,
-            length: distance
-        });
+    for (let startNode = 0; startNode < nodeCount; startNode++) {
+        if (calculatedPositions[startNode] === null) {
+            const processingQueue = [];
 
-        // Add bidirectional connections to the graph representation
-        connectionMap.get(firstVertex).push({ connectedTo: secondVertex, relativeLength: distance });
-        connectionMap.get(secondVertex).push({ connectedTo: firstVertex, relativeLength: -distance });
-    }
+            calculatedPositions[startNode] = 0;
+            processingQueue.push(startNode);
 
-    const calculatedPositions = new Map();
-    let finalEvaluation = "Yes";
+            let queuePointer = 0;
+            while (queuePointer < processingQueue.length) {
+                const currentNode = processingQueue[queuePointer++];
 
-    // Keep track of vertices that have not yet been assigned an absolute position
-    const unplacedVertices = new Set();
-    for (let currentVertexIndex = 0; currentVertexIndex < totalVertices; currentVertexIndex++) {
-        unplacedVertices.add(currentVertexIndex);
-    }
+                for (const edge of adjacencyMap[currentNode]) {
+                    const { target, delta } = edge;
 
-    // Process vertices component by component using a Breadth-First Search (BFS) like approach
-    while (unplacedVertices.size > 0) {
-        const currentComponentRoot = unplacedVertices.values().next().value; // Pick an arbitrary unplaced vertex
-        const vertexTraversalQueue = [];
-
-        // Assign an arbitrary position (0) to the root of the current connected component
-        calculatedPositions.set(currentComponentRoot, 0);
-        unplacedVertices.delete(currentComponentRoot);
-        vertexTraversalQueue.push(currentComponentRoot);
-
-        let queueReadPointer = 0;
-        while (queueReadPointer < vertexTraversalQueue.length) {
-            const currentTraversalVertex = vertexTraversalQueue[queueReadPointer++];
-            const currentTraversalPosition = calculatedPositions.get(currentTraversalVertex);
-
-            const adjacentConnections = connectionMap.get(currentTraversalVertex) || [];
-
-            for (const connectionEntry of adjacentConnections) {
-                const connectedVertex = connectionEntry.connectedTo;
-                const requiredRelativeLength = connectionEntry.relativeLength;
-
-                // If the connected vertex has not yet been placed in this component
-                if (unplacedVertices.has(connectedVertex)) {
-                    calculatedPositions.set(connectedVertex, currentTraversalPosition + requiredRelativeLength);
-                    unplacedVertices.delete(connectedVertex);
-                    vertexTraversalQueue.push(connectedVertex);
+                    if (calculatedPositions[target] === null) {
+                        calculatedPositions[target] = calculatedPositions[currentNode] + delta;
+                        processingQueue.push(target);
+                    }
                 }
             }
         }
     }
 
-    // Final verification of all original edge definitions
-    for (const definition of edgeDefinitions) {
-        const positionOrigin = calculatedPositions.get(definition.originVertex);
-        const positionTarget = calculatedPositions.get(definition.targetVertex);
-
-        // All vertices should have an assigned position due to the BFS covering all components
-        // If undefined, it indicates a logic error or an isolated node not handled,
-        // but the BFS above ensures all nodes get a position (0 if isolated).
-        if (positionOrigin === undefined || positionTarget === undefined) {
-             finalEvaluation = "No"; // Should not be reached with correct logic
-             break;
-        }
-
-        if (positionTarget - positionOrigin !== definition.length) {
-            finalEvaluation = "No";
+    for (const constraint of initialConstraints) {
+        const { source, destination, expectedDelta } = constraint;
+        if (calculatedPositions[destination] - calculatedPositions[source] !== expectedDelta) {
+            isConsistent = false;
             break;
         }
     }
 
-    console.log(finalEvaluation);
+    console.log(isConsistent ? "Yes" : "No");
 }
 
-processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

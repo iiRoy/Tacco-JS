@@ -1,47 +1,65 @@
-// This script processes spatial data points and their radii.
-(  function( sourceText )
-{
-  // Prepare the input text by splitting it into individual lines.
-  var    processedLines = sourceText.replace ( /\n$/ , '' ) .split ( '\n' );
-  // The first line indicates the total number of test cases to process.
-  var   numIterations = Number ( processedLines.shift() ) ;
+(function(rawData) {
+  // This function processes input data to determine the relationship between pairs of circles.
 
+  // First, clean the raw input string by removing any trailing newline character.
+  // Then, split the cleaned string into an array of individual lines.
+  var linesArray = rawData.replace(/\n$/, '').split('\n');
 
-  for ( var   loopCounter = 0 ;   loopCounter < numIterations ;   loopCounter++ )
-  {
-    // Extract parameters for the current test case.
-    var currentParams = processedLines.shift().split ( ' ' ) .map ( Number ) ;
+  // The very first line of the input specifies the total number of test cases to process.
+  var numCases = Number(linesArray.shift());
 
-    var xCoord1 = currentParams.shift() ; // X-coordinate of the first point
-    var yCoord1 = currentParams.shift() ; // Y-coordinate of the first point
-    var radius1 = currentParams.shift() ; // Radius of the first circle
+  // Begin iterating through each of the provided test cases.
+  for (var caseIndex = 0; caseIndex < numCases; caseIndex++) {
+    // For the current test case, retrieve the next line from the array.
+    // This line contains space-separated parameters for the two circles.
+    // Split these parameters by space and convert each resulting string to a number.
+    var currentCaseParams = linesArray.shift().split(' ').map(Number);
 
-    var xCoord2 = currentParams.shift() ; // X-coordinate of the second point
-    var yCoord2 = currentParams.shift() ; // Y-coordinate of the second point
-    var radius2 = currentParams.shift() ; // Radius of the second circle
+    // Extract the coordinates (x, y) and radius (r) for the first circle (Circle A).
+    var circleAX = currentCaseParams.shift();
+    var circleAY = currentCaseParams.shift();
+    var radiusA = currentCaseParams.shift();
 
-    // Calculate the Euclidean distance between the centers of the two circles.
-    var centerDistance = Math.sqrt( Math.pow( xCoord2 - xCoord1 , 2 ) + Math.pow( yCoord2 - yCoord1 , 2 ) ) ;
+    // Extract the coordinates (x, y) and radius (r) for the second circle (Circle B).
+    var circleBX = currentCaseParams.shift();
+    var circleBY = currentCaseParams.shift();
+    var radiusB = currentCaseParams.shift();
 
-    // Determine the relationship between the two circles based on their distance and radii.
-    if ( centerDistance <= radius1 + radius2 )
-    {
-      if ( centerDistance < radius2 - radius1 )
-      {
-        console.log( -2 ) ; // One circle is completely inside the other, second is larger
+    // Calculate the Euclidean distance between the centers of Circle A and Circle B.
+    // The formula used is: distance = sqrt((x2 - x1)^2 + (y2 - y1)^2).
+    var distanceBetweenCenters = Math.sqrt(
+      Math.pow(circleBX - circleAX, 2) +
+      Math.pow(circleBY - circleAY, 2)
+    );
+
+    // Now, determine the relationship between the two circles based on their distance and radii.
+
+    // Condition 1: Check if the circles intersect or touch at all.
+    // This occurs if the distance between centers is less than or equal to the sum of their radii.
+    if (distanceBetweenCenters <= radiusA + radiusB) {
+      // Sub-condition 1.1: Check if Circle A is completely contained within Circle B.
+      // This happens if the distance is less than the absolute difference of their radii (specifically, radiusB - radiusA).
+      if (distanceBetweenCenters < radiusB - radiusA) {
+        console.log(-2); // Output -2 indicating Circle A is inside Circle B.
       }
-      else if ( centerDistance < radius1 - radius2 )
-      {
-        console.log( 2 ) ; // One circle is completely inside the other, first is larger
+      // Sub-condition 1.2: Check if Circle B is completely contained within Circle A.
+      // This happens if the distance is less than the absolute difference of their radii (specifically, radiusA - radiusB).
+      else if (distanceBetweenCenters < radiusA - radiusB) {
+        console.log(2); // Output 2 indicating Circle B is inside Circle A.
       }
-      else
-      {
-        console.log( 1 ) ; // Circles intersect or touch at one point
+      // Sub-condition 1.3: If neither is fully contained, but they still intersect or touch.
+      // This covers cases where they intersect at two points, touch externally, or touch internally.
+      else {
+        console.log(1); // Output 1 indicating they intersect or touch.
       }
     }
-    else
-    {
-      console.log( 0 ) ; // Circles do not intersect at all
+    // Condition 2: If the circles do not intersect or touch at all.
+    // This means the distance between centers is greater than the sum of their radii.
+    else {
+      console.log(0); // Output 0 indicating they are separate.
     }
   }
-} ) ( require ( 'fs' ) .readFileSync ( '/dev/stdin' , 'utf8' ) ) ;
+})(
+  // This part reads the entire content of standard input as a UTF-8 string.
+  require('fs').readFileSync('/dev/stdin', 'utf8')
+);

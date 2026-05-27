@@ -1,80 +1,68 @@
 "use strict";
 
-const getMagnitude = (val) => (val < 0) ? -val : val;
-
-function obtainIndex(dataCollection, soughtElement, lowBoundary, highBoundary) {
-    if (lowBoundary > highBoundary) {
-        return lowBoundary;
+const locatePosition = (sortedList, targetValue, lowBound, highBound) => {
+    if (lowBound > highBound) {
+        return lowBound;
     }
 
-    const midPoint = lowBoundary + ((highBoundary - lowBoundary) >>> 1);
+    const midPoint = Math.floor((lowBound + highBound) / 2);
+    const midValue = sortedList[midPoint];
 
-    if (dataCollection[midPoint] < soughtElement) {
-        return obtainIndex(dataCollection, soughtElement, midPoint + 1, highBoundary);
+    if (midValue === targetValue) {
+        return midPoint;
+    } else if (midValue < targetValue) {
+        return locatePosition(sortedList, targetValue, midPoint + 1, highBound);
     } else {
-        return obtainIndex(dataCollection, soughtElement, lowBoundary, midPoint - 1);
+        return locatePosition(sortedList, targetValue, lowBound, midPoint - 1);
     }
-}
+};
 
-function executeComputation(inputData) {
-    const MAX_VALUE = Infinity;
-    const MIN_VALUE = -Infinity;
+const findMinimum = (...values) => Math.min(...values);
 
-    const allLines = inputData.split('\n');
-    let currentLineIndex = 0;
+const processInputData = (rawData) => {
+    const positiveSentinel = Number.MAX_SAFE_INTEGER;
+    const negativeSentinel = -positiveSentinel;
 
-    const readNumbersFromLine = () => allLines[currentLineIndex++].split(/\s/).map(Number);
-    const readSingleNumberFromLine = () => Number(allLines[currentLineIndex++]);
+    const inputLines = rawData.split("\n");
 
-    const initialParameters = readNumbersFromLine();
-    const countPrimary = initialParameters[0];
-    const countSecondary = initialParameters[1];
-    const numberOfQueries = initialParameters[2];
+    const [configLine, ...dataLines] = inputLines;
+    const [countA, countB, numQueries] = configLine.split(/\s/).map(Number);
 
-    const primaryLocations = [MIN_VALUE];
-    for (let i = 0; i < countPrimary; ++i) {
-        primaryLocations.push(readSingleNumberFromLine());
-    }
-    primaryLocations.push(MAX_VALUE);
+    let currentLineOffset = 0;
 
-    const secondaryLocations = [MIN_VALUE];
-    for (let i = 0; i < countSecondary; ++i) {
-        secondaryLocations.push(readSingleNumberFromLine());
-    }
-    secondaryLocations.push(MAX_VALUE);
+    const shrineLocations = [
+        negativeSentinel,
+        ...dataLines.slice(currentLineOffset, currentLineOffset + countA).map(Number),
+        positiveSentinel
+    ];
+    currentLineOffset += countA;
 
-    const collectedResults = [];
+    const templeLocations = [
+        negativeSentinel,
+        ...dataLines.slice(currentLineOffset, currentLineOffset + countB).map(Number),
+        positiveSentinel
+    ];
+    currentLineOffset += countB;
 
-    for (let qIdx = 0; qIdx < numberOfQueries; ++qIdx) {
-        const currentQueryPoint = readSingleNumberFromLine();
+    const queryPositions = dataLines.slice(currentLineOffset, currentLineOffset + numQueries).map(Number);
 
-        const primaryLocationIdx = obtainIndex(primaryLocations, currentQueryPoint, 0, primaryLocations.length - 1);
-        const secondaryLocationIdx = obtainIndex(secondaryLocations, currentQueryPoint, 0, secondaryLocations.length - 1);
+    queryPositions.forEach((travelerPosition) => {
+        const shrineIndex = locatePosition(shrineLocations, travelerPosition, 0, shrineLocations.length - 1);
+        const templeIndex = locatePosition(templeLocations, travelerPosition, 0, templeLocations.length - 1);
 
-        let shortestPath = MAX_VALUE;
+        const candidateShrines = [shrineLocations[shrineIndex - 1], shrineLocations[shrineIndex]];
+        const candidateTemples = [templeLocations[templeIndex - 1], templeLocations[templeIndex]];
 
-        const candidatePrimarySites = [
-            primaryLocations[primaryLocationIdx - 1],
-            primaryLocations[primaryLocationIdx]
-        ];
+        const currentOptimalDistance = candidateShrines.reduce((minAccumulator, currentShrine) => {
+            return candidateTemples.reduce((innerMinAccumulator, currentTemple) => {
+                const pathOneDistance = Math.abs(currentShrine - travelerPosition) + Math.abs(currentTemple - currentShrine);
+                const pathTwoDistance = Math.abs(currentTemple - travelerPosition) + Math.abs(currentShrine - currentTemple);
+                return findMinimum(innerMinAccumulator, pathOneDistance, pathTwoDistance);
+            }, minAccumulator);
+        }, positiveSentinel);
 
-        const candidateSecondarySites = [
-            secondaryLocations[secondaryLocationIdx - 1],
-            secondaryLocations[secondaryLocationIdx]
-        ];
+        console.log(currentOptimalDistance);
+    });
+};
 
-        for (const siteP of candidatePrimarySites) {
-            for (const siteS of candidateSecondarySites) {
-                const pathOptionOne = getMagnitude(siteP - currentQueryPoint) + getMagnitude(siteS - siteP);
-                const pathOptionTwo = getMagnitude(siteS - currentQueryPoint) + getMagnitude(siteP - siteS);
-
-                shortestPath = Math.min(shortestPath, pathOptionOne, pathOptionTwo);
-            }
-        }
-        collectedResults.push(shortestPath);
-    }
-
-    console.log(collectedResults.join('\n'));
-}
-
-executeComputation(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

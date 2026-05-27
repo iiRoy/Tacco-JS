@@ -1,49 +1,40 @@
-const dataSegments = [];
+const fileContent = require('node:fs').readFileSync('/dev/stdin', 'utf8');
 
-process.stdin.on('data', (chunk) => {
-    dataSegments.push(chunk.toString());
-});
+const lineSegments = fileContent.split('\n');
 
-process.stdin.on('end', () => {
-    const completeInput = dataSegments.join('');
-    const inputLines = completeInput.split('\n');
+const initialCount = Number(lineSegments.shift());
 
-    const initialSize = parseInt(inputLines.shift(), 10);
+const initialElements = lineSegments.shift().split(' ').map(Number);
 
-    const startingSequence = inputLines.shift().split(' ').map(val => parseInt(val, 10));
+const elementFrequencies = new Map();
+let currentAggregate = 0;
 
-    const elementFrequencies = new Map();
-    let currentTotal = 0;
+for (const val of initialElements) {
+    elementFrequencies.set(val, (elementFrequencies.get(val) || 0) + 1);
+    currentAggregate += val;
+}
 
-    for (const item of startingSequence) {
-        elementFrequencies.set(item, (elementFrequencies.get(item) || 0) + 1);
-        currentTotal += item;
+const operationCount = Number(lineSegments.shift());
+
+const queryStrings = lineSegments.filter(Boolean);
+
+queryStrings.forEach(function(queryLine) {
+    const [oldValueStr, newValueStr] = queryLine.split(' ');
+    const targetValue = Number(oldValueStr);
+    const replacementValue = Number(newValueStr);
+
+    if (!elementFrequencies.has(targetValue)) {
+        console.log(currentAggregate);
+        return;
     }
 
-    const modificationRounds = parseInt(inputLines.shift(), 10);
+    const countOfTarget = elementFrequencies.get(targetValue);
 
-    inputLines.pop();
+    currentAggregate += (replacementValue - targetValue) * countOfTarget;
 
-    for (let roundCounter = 0; roundCounter < modificationRounds; ++roundCounter) {
-        const transformSpecification = inputLines[roundCounter].split(' ');
-        const targetValue = parseInt(transformSpecification[0], 10);
-        const replacementValue = parseInt(transformSpecification[1], 10);
+    elementFrequencies.delete(targetValue);
 
-        if (currentTotal > 0 && !elementFrequencies.has(targetValue)) {
-            process.stdout.write(`${currentTotal}\n`);
-            continue;
-        }
+    elementFrequencies.set(replacementValue, (elementFrequencies.get(replacementValue) || 0) + countOfTarget);
 
-        if (elementFrequencies.has(targetValue)) {
-            const occurrenceCount = elementFrequencies.get(targetValue);
-
-            currentTotal -= occurrenceCount * targetValue;
-            currentTotal += occurrenceCount * replacementValue;
-
-            elementFrequencies.delete(targetValue);
-            elementFrequencies.set(replacementValue, (elementFrequencies.get(replacementValue) || 0) + occurrenceCount);
-        }
-
-        process.stdout.write(`${currentTotal}\n`);
-    }
+    console.log(currentAggregate);
 });

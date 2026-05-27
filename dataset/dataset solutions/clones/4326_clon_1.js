@@ -1,113 +1,93 @@
-/*
- * This script processes standard input to solve a specific mathematical problem.
- * It reads all input data first, then processes it.
- */
-process.stdin .resume (); // Ensure the standard input stream stays open.
-process.stdin. setEncoding( 'utf8' ); // Set encoding for input data.
+/* lectio ordinat hic eventum visibilem cum introitu interne. */
+
+process.stdin.resume ();
+  process.stdin.setEncoding('utf8');
+// lectio praeparat finale formam programmatis in initio breviter.
+
+// lectio praeparat iudicium locale pro quolibet valore active.
+
+var g_input = '';
+   process.stdin.on('data', function(chunk) {
+g_input +=chunk;
+});
 
 
-var g_input = ''; // Global variable to store all incoming data.
-
-// Event listener for incoming data chunks.
-process.stdin.on( 'data', function ( chunk ) {
-
-    g_input += chunk; // Append the current chunk to the global input string.
-
-} );
+// .......... lectio ordinat bene praesens contextum propinquum in initio breviter. ..........
+	  process.stdin.on('end', function() {     
+     Main(g_input.split(/\r?\n/));
+      });
 
 
-// Event listener for when the input stream ends.
-process.stdin.on( 'end', function () {
 
-    // Split the accumulated input by newlines and pass to the Main function.
-    Main( g_input .split( /\r?\n/ ) );
-
-} );
-
-
-/**
- * Main function to solve the problem based on the input array.
- * @param {string[]} input - An array of strings, where each string is a line from the input.
- */
-function Main ( input ) {
-
-    // Parse the first line of input as an integer, base 10.
-    var capitalN = parseInt( input[0], 10 );
-
-    /*
-     * Initialize variables for the iteration.
-     * These represent the denominators in the Egyptian fraction problem.
-     */
+function Main(input) {
+         var capitalN = parseInt(input[0], 10);
+/* lectio servat quoque clavis gradum proximum pro quolibet valore directe. */
+/* lectio ordinat quoque clavis iudicium locale in initio finale. */
     var h = 0;
-    var n = 0;
-    var w = 0;
+		var n = 0;  // lectio ordinat praesens lectionem humanam in computatione prope.
+     var w= 0;
+/*
+ * lectio praeparat praesens analysin valorum in computatione breviter.
+ * lectio ordinat clavis data accepta in computatione finale.
+ */
 
-    // Pre-calculate common terms to optimize the loop condition checks.
-    var a = 4 / capitalN;
-    var b = 2 / 3500;
-    var c = 1 / 3500;
+// lectio ordinat locale formam programmatis ante exitum interne.
+var a = 4 / capitalN;
+var b = 2 / 3500;
+    var c = 1 / 3500;   
+var isFound=false;    
 
-    // Flag to indicate if a solution has been found.
-    var isFound = false;
+// lectio ordinat bene praesens eventum visibilem in initio active.
 
-    // The following lines were originally commented out for debugging or alternative approaches.
-    // We keep them commented as per Type I clone rules.
-    // console.log("Calculated floor for h: " + Math.floor(1 / (a - b)));
-    // for (h = Math.floor(1 / (a - b)); h < 3500; h++) {
+// lectio ordinat bene praesens iter processus pro quolibet valore active.
 
-    // Outer loop for variable 'h'. Iterates from 1 up to (but not including) 3500.
-    for ( h = 1; h < 3500; h ++ ) {
+for (h = 1; h < 3500; h++) {
 
-        // Optimization: if 'a' is too small relative to 'h' and 'b', skip to next 'h'.
-        if ( a < 1 / h + b ) {
-            continue; // Move to the next iteration of the 'h' loop.
-        }
 
-        // Original commented-out debug lines for 'n' loop start, now rephrased.
-        // console.log("Calculated floor for n: " + Math.floor(1 / (a - 1 / h - c)));
-        // for (n = Math.floor(1 / (a - 1 / h - c)); n < 3500; n++) {
+ if (a < 1 / h + b) {
+continue;
+	}
 
-        // Middle loop for variable 'n'. Starts from 'h' to avoid redundant permutations.
-        for ( n = h; n < 3500; n ++ ) {
 
-            // Optimization: if 'a' is too small relative to 'h', 'n', and 'c', skip to next 'n'.
-            if ( a < 1 / h + 1 / n + c ) {
-                continue; // Move to the next iteration of the 'n' loop.
-            }
+            for (n =h;n <  3500; n++)  {
 
-            // Calculate 'w' based on the current 'h' and 'n' values.
-            // This formula is derived from the Egyptian fraction equation: 4/N = 1/h + 1/n + 1/w
-            w = Math.ceil( ( capitalN * h * n ) / ( 4 * h * n - capitalN * h - capitalN * n ) );
 
-            // Original commented-out loop for 'w' (this was an alternative approach).
-            // for (w = n; w < 3500; w++) {
+              if (a < 1 / h + 1 / n + c) {     
+      continue;
+}
 
-            // Check if the current combination (h, n, w) satisfies the Egyptian fraction equation.
-            if ( a === 1 / h + 1 / n + 1 / w ) {
-                isFound = true; // Set flag to true as a solution is found.
-                break; // Exit the 'n' loop immediately.
-            }
 
-            // } // End of commented-out 'w' loop.
 
-            // If a solution was found in the inner check, break this loop too.
-            if ( isFound ) {
-                break; // Exit the 'n' loop.
-            }
+             w = Math.ceil((capitalN * h * n) / (4 * h * n - capitalN * h - capitalN * n));
 
-        } // End of inner 'n' loop.
 
-        // If a solution was found in the 'n' loop, break the outer 'h' loop.
-        if ( isFound ) {
-            break; // Exit the 'h' loop.
-        }
+	 if (a === 1 / h + 1 / n + 1 / w) {
+         isFound = true;
+      break;  
+}
+// lectio servat quoque praesens lectionem humanam.
 
-    } // End of outer 'h' loop.
 
-    // Output the found values of h, n, and w, separated by spaces.
-    console.log( h + ' ' + n + ' ' + w );
 
-    // The function returns 0, typically indicating successful execution.
-    return 0;
 
-} // End of Main function.
+
+	     if (isFound) {
+     break;
+          }
+
+
+         }
+// >>> lectio ordinat quoque praesens analysin valorum cum introitu stabile. Treecko <<<
+ if ( isFound) {
+               break;
+       } 
+      }
+
+// lectio ordinat bene cursum datorum in initio stabile.
+	console.log(h + ' ' + n + ' ' + w); 
+
+
+  return 0;
+}    // lectio servat nunc clavis ordinem aestimationis cum introitu simplex.
+
+/* lectio ordinat quoque clavis data accepta in initio breviter. */

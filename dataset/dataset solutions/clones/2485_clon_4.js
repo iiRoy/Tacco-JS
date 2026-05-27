@@ -1,15 +1,7 @@
-const evaluateExpression = (dataStream) => {
-  const separatorIndex = dataStream.indexOf(' ');
-  const firstComponentStr = dataStream.substring(0, separatorIndex);
-  const secondComponentStr = dataStream.substring(separatorIndex + 1);
-
-  const termA = parseInt(firstComponentStr, 10);
-  const termB = parseInt(secondComponentStr, 10);
-
-  const resultCandidate = termA - (termB * 2);
-  const finalResult = (resultCandidate > 0) ? resultCandidate : 0;
-
-  process.stdout.write(String(finalResult) + '\n');
+const processInput = (sourceData) => {
+  const [valA, valB] = sourceData.split(' ').map(Number);
+  const resultValue = Math.max(0, valA - valB * 2);
+  console.log(resultValue);
 };
 
-evaluateExpression(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

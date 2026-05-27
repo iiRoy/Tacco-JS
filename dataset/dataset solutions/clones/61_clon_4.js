@@ -1,61 +1,40 @@
-const inputAcquirer = [];
-const terminalInterface = require('readline').createInterface({
-    input: process.stdin,
-    output: process.stdout
-});
+const { readFileSync } = require('fs');
 
-terminalInterface.on('line', (individualEntry) => {
-    inputAcquirer.push(individualEntry);
-});
+const inputLines = readFileSync(0, 'utf8').trim().split('\n');
 
-terminalInterface.on('close', () => {
-    beginProcessing(inputAcquirer);
-});
+initiateCalculations();
 
-const stringNumericalAdder = (operandA, operandB) => {
-    let outcomeDigits = [];
-    let indexA = operandA.length - 1;
-    let indexB = operandB.length - 1;
-    let currentCarry = 0;
+function initiateCalculations() {
+    const totalDataSets = Number(inputLines[0]);
 
-    while (indexA >= 0 || indexB >= 0 || currentCarry > 0) {
-        const charValA = indexA >= 0 ? operandA[indexA] : '0';
-        const charValB = indexB >= 0 ? operandB[indexB] : '0';
+    Array.from({ length: totalDataSets }, (_, currentSetIndex) => currentSetIndex + 1).forEach(setNumber => {
+        const lineOffset = setNumber * 2;
+        const firstOperandString = inputLines[lineOffset - 1];
+        const secondOperandString = inputLines[lineOffset];
 
-        const numValA = parseInt(charValA, 10);
-        const numValB = parseInt(charValB, 10);
+        const digitsOfFirst = firstOperandString.split('').map(Number);
+        const digitsOfSecond = secondOperandString.split('').map(Number);
 
-        const cumulativeSum = numValA + numValB + currentCarry;
-        outcomeDigits.unshift(cumulativeSum % 10);
-        currentCarry = Math.floor(cumulativeSum / 10);
+        let carryAccumulator = 0;
+        const sumResultDigits = [];
 
-        indexA--;
-        indexB--;
-    }
-    return outcomeDigits.join('');
-};
+        while (digitsOfFirst.length > 0 || digitsOfSecond.length > 0 || carryAccumulator > 0) {
+            const currentDigitA = digitsOfFirst.length > 0 ? digitsOfFirst.pop() : 0;
+            const currentDigitB = digitsOfSecond.length > 0 ? digitsOfSecond.pop() : 0;
 
-const beginProcessing = (retrievedData) => {
-    const totalOperations = parseInt(retrievedData[0], 10);
-    let dataPointer = 1;
-
-    Array.from({ length: totalOperations }).forEach(() => {
-        const rawFirstNumber = retrievedData[dataPointer];
-        const rawSecondNumber = retrievedData[dataPointer + 1];
-
-        // The original code effectively performs addition on (N / 10) and (M / 10)
-        // by ignoring the least significant digit during its reversed string iteration.
-        // This is replicated by trimming the last character from the input strings.
-        const adjustedFirst = rawFirstNumber.length > 0 ? rawFirstNumber.substring(0, rawFirstNumber.length - 1) : '';
-        const adjustedSecond = rawSecondNumber.length > 0 ? rawSecondNumber.substring(0, rawSecondNumber.length - 1) : '';
-
-        const finalResult = stringNumericalAdder(adjustedFirst, adjustedSecond);
-
-        if (finalResult.length >= 80) {
-            process.stdout.write("overflow\n");
-        } else {
-            process.stdout.write(finalResult + "\n");
+            const currentSumValue = currentDigitA + currentDigitB + carryAccumulator;
+            sumResultDigits.unshift(currentSumValue % 10);
+            carryAccumulator = Math.floor(currentSumValue / 10);
         }
-        dataPointer += 2;
+
+        const finalSumRepresentation = sumResultDigits.length === 1 && sumResultDigits[0] === 0
+            ? ''
+            : sumResultDigits.join('').replace(/^0+(?=\d)/, '');
+
+        if (finalSumRepresentation.length >= 80) {
+            console.log("overflow");
+        } else {
+            console.log(finalSumRepresentation);
+        }
     });
-};
+}

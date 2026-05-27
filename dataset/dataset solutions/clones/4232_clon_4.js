@@ -1,58 +1,42 @@
-function obtainNumericValue(symbol) {
-    if (typeof symbol !== 'string' || symbol.length !== 1) {
-        return NaN; // Not a single character
-    }
-    const charVal = symbol.toUpperCase().charCodeAt(0);
-    if (charVal >= 48 && charVal <= 57) { // ASCII '0' through '9'
-        return charVal - 48;
-    } else if (charVal >= 65 && charVal <= 70) { // ASCII 'A' through 'F'
-        return charVal - 55; // 'A' (65) - 55 = 10, 'F' (70) - 55 = 15
-    }
-    return NaN; // Indicates an invalid hex character
-}
+function convertHexToDec(hexString) {
+    const hexDigitValues = {
+        '0': 0, '1': 1, '2': 2, '3': 3, '4': 4,
+        '5': 5, '6': 6, '7': 7, '8': 8, '9': 9,
+        'A': 10, 'B': 11, 'C': 12, 'D': 13, 'E': 14, 'F': 15
+    };
+    let decimalAccumulator = 0;
+    const normalizedHex = hexString.toUpperCase();
+    const stringLength = normalizedHex.length;
 
-function processHexadecimalString(hexInput) {
-    // If input is null, undefined, or an empty string, parseInt returns NaN.
-    // Mimic this behavior.
-    if (!hexInput || hexInput.length === 0) {
-        return NaN;
-    }
-    let numericalAccumulator = 0;
-    for (let i = 0; i < hexInput.length; i++) {
-        const digitValue = obtainNumericValue(hexInput[i]);
-        if (isNaN(digitValue)) {
-            return NaN; // Propagate NaN if any invalid character is found
+    for (let i = 0; i < stringLength; i++) {
+        const char = normalizedHex[i];
+        const digitValue = hexDigitValues[char];
+        if (digitValue === undefined) {
+            return NaN;
         }
-        numericalAccumulator = numericalAccumulator * 16 + digitValue;
+        decimalAccumulator = decimalAccumulator * 16 + digitValue;
     }
-    return numericalAccumulator;
+    return decimalAccumulator;
 }
 
-function hexComparator(sourceData) {
-    // Split the input string by any sequence of whitespace characters (spaces, newlines, tabs, etc.).
-    // The original code uses split by newline, then split by space, then flattens, then shifts.
-    // This effectively gets the first two non-empty tokens.
-    // `split(/\s+/)` followed by direct indexing handles this for the first two tokens.
-    const tokens = sourceData.split(/\s+/);
+function Main(input){
+  const hexParts = input.trim().split(' ');
+  const firstHex = hexParts[0];
+  const secondHex = hexParts[1];
 
-    // The original `strShift()` can return empty strings or `undefined`.
-    // `parseInt("", 16)` is `NaN`. `parseInt(undefined, 16)` is `NaN`.
-    // We need to ensure `processHexadecimalString` handles these scenarios equivalently.
-    const firstHexToken = tokens[0];
-    const secondHexToken = tokens[1];
+  const firstDec = convertHexToDec(firstHex);
+  const secondDec = convertHexToDec(secondHex);
 
-    const valueOne = processHexadecimalString(firstHexToken);
-    const valueTwo = processHexadecimalString(secondHexToken);
+  const comparisonOutcome = Math.sign(firstDec - secondDec);
+  const outcomeMap = {
+    '1': '>',
+    '-1': '<',
+    '0': '='
+  };
 
-    // If either value is NaN, all comparisons (>, ==, <) are false.
-    // The original Main function would then implicitly return undefined.
-    if (isNaN(valueOne) || isNaN(valueTwo)) {
-        return undefined;
-    }
-
-    // Compare the two numerical values
-    const comparisonDifference = valueOne - valueTwo;
-
-    // Use a ternary chain for the comparison outcome
-    return (comparisonDifference > 0) ? ">" : ((comparisonDifference < 0) ? "<" : "=");
+  return outcomeMap[comparisonOutcome];
 }
+
+((b,c,d)=>"undefined"!=typeof require?console.log(Main(require("fs").readFileSync("/dev/stdin","utf8"))):[b=b.split("\n").slice(1,-1).join("\n"),c=function(){try{return Main(b)}catch(f){return f.stack||f.message}}(),d=typeof c,"string"==d||(c=JSON.stringify(c)),$("<form>").append([[10,b],0,[1,d],0,[10,c]].map(f=>$(f?"<textarea>":"<br>",f&&{rows:f[0],cols:40,text:f[1]}))).appendTo("body")])(`
+A B
+`);

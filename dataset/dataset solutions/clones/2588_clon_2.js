@@ -1,217 +1,138 @@
-// This section handles the input reading and utility functions.
-// It's generally not part of the core algorithm logic.
-const inputReader = require('readline').createInterface({
-  input:  process.stdin,
+var input_reader = require('readline').createInterface({
+  input: process.stdin,
   output: process.stdout
 });
 
-let dataSource;
-const receivedStrings = [];
+var input_processor;
+var input_lines = [];
 
-inputReader.on('line', function(incomingString) {
-    receivedStrings.push(incomingString);
+input_reader.on('line', function(current_line_data) {
+  input_lines.push(current_line_data);
 });
 
-inputReader.on('close', function() {
-    dataSource = setupParser(receivedStrings);
-    console.error('\n↑Input ↓Output'); // Debug message for I/O direction
-    executeMainLogic();
+input_reader.on('close', function() {
+  input_processor = initialize_input_handler(input_lines);
+  console.error('\n↑入力 ↓出力');
+  execute_main_logic();
 });
 
-/**
- * Creates a deep copy of an object or Set.
- * @param {object|Set} originalItem The item to duplicate.
- * @returns {object|Set} A new, independent copy.
- */
-function duplicateObject(originalItem) {
-  return (originalItem instanceof Set)
-    ? new Set(Array.from(originalItem))
-    : JSON.parse(JSON.stringify(originalItem));
+function create_copy(original_object) {
+  return (original_object instanceof Set) ? new Set(Array.from(original_object)) : JSON.parse(JSON.stringify(original_object));
 }
 
-/**
- * Retrieves the next integer from the input stream.
- * @returns {number} The parsed integer value.
- */
-function fetchNumericValue() {
-  return typeTransformer(pullNext(), 1);
+function get_next_integer() {
+  return convert_input_data(fetch_next_item(), 1);
 }
 
-/**
- * Retrieves the next line as an array of strings, split by spaces.
- * @returns {string[]} An array of string tokens.
- */
-function fetchTextList() {
-  return typeTransformer(pullNext(), 2);
+function get_next_string_array() {
+  return convert_input_data(fetch_next_item(), 2);
 }
 
-/**
- * Retrieves the next line as an array of integers, split by spaces.
- * @returns {number[]} An array of numeric values.
- */
-function fetchNumericList() {
-  return typeTransformer(pullNext(), 4);
+function get_next_integer_array() {
+  return convert_input_data(fetch_next_item(), 4);
 }
 
-/**
- * Retrieves the next line as an array of characters.
- * @returns {string[]} An array of single-character strings.
- */
-function fetchCharList() {
-  return typeTransformer(pullNext(), 6);
+function get_next_char_array() {
+  return convert_input_data(fetch_next_item(), 6);
 }
 
-/**
- * Advances the input stream and returns the next raw item.
- * @returns {string} The next line from the input.
- */
-function pullNext() {
-  return dataSource.advanceAndGet();
+function fetch_next_item() {
+  return input_processor.fetch_next_item();
 }
 
-/**
- * Checks if there are more items available in the input stream.
- * @returns {boolean} True if more input exists, false otherwise.
- */
-function hasMoreItems() {
-  return dataSource.canAdvance();
+function has_more_items() {
+  return input_processor.has_more_items();
 }
 
-/**
- * Initializes the input parser object.
- * @param {string[]} textInputArray An array of raw input lines.
- * @returns {object} An object with methods to navigate the input.
- */
-function setupParser(textInputArray) {
+function initialize_input_handler(raw_lines) {
   return {
-    dataRecords: textInputArray,
-    readIndex: 0,
-    dataCount: textInputArray.length,
-    canAdvance: function() {
-      return (this.readIndex < this.dataCount);
+    data_lines: raw_lines,
+    current_idx: 0,
+    max_idx: raw_lines.length,
+    has_more_items: function() {
+      return (this.current_idx < this.max_idx);
     },
-    advanceAndGet: function() {
-      if (this.canAdvance()) {
-        return this.dataRecords[this.readIndex++];
+    fetch_next_item: function() {
+      if (this.has_more_items()) {
+        return this.data_lines[this.current_idx++];
       } else {
-        throw new Error('InputOutOfBounds: No further input segments available');
+        throw 'ArrayIndexOutOfBoundsException ‚There is no more input';
       }
     }
   };
 }
 
-/**
- * Displays a message to the console's standard output.
- * @param {string} outputString The string to print.
- */
-function displayOutput(outputString) {
-  console.log(outputString);
+function print_output(message_content) {
+  console.log(message_content);
 }
 
-/**
- * Logs debug information to the console's error stream.
- * @param {any} logEntry The data to inspect and log.
- */
-function printDebug(logEntry) {
-  console.error('Debug Trace: ' + require('util').inspect(logEntry, false, null));
+function print_debug_info(message_content) {
+  console.error('debug:' + require('util').inspect(message_content, false, null));
 }
 
-/**
- * Converts an input value based on a specified format code.
- * @param {any} valueToConvert The value to transform.
- * @param {number} formatCode An integer indicating the conversion type.
- *   1: Parse as integer.
- *   2: Split string by spaces.
- *   4: Split string by spaces and map to numbers.
- *   6: Split string into individual characters.
- *   7: Split string into characters and map to numbers.
- *   8: Join array elements with spaces.
- *   9: Join array elements with newlines.
- *   0: Join array elements without a separator.
- * @returns {any} The converted value.
- */
-function typeTransformer(valueToConvert, formatCode) {
+function convert_input_data(input_value, conversion_type) {
   try {
-    switch (formatCode) {
+    switch (conversion_type) {
       case 1:
-        return parseInt(valueToConvert);
+        return parseInt(input_value);
       case 2:
-        return valueToConvert.split(' ');
+        return input_value.split(' ');
       case 4:
-        return valueToConvert.split(' ').map(Number);
+        return input_value.split(' ').map(Number);
       case 6:
-        return valueToConvert.split('');
+        return input_value.split('');
       case 7:
-        return valueToConvert.split('').map(Number);
+        return input_value.split('').map(Number);
       case 8:
-        return valueToConvert.join(' ');
+        return input_value.join(' ');
       case 9:
-        return valueToConvert.join('\n');
+        return input_value.join('\n');
       case 0:
-        return valueToConvert.join('');
+        return input_value.join('');
       default:
-        return valueToConvert;
+        return input_value;
     }
-  } catch (e) {
-    return valueToConvert; // Return original on error
+  } catch (error_obj) {
+    return input_value;
   }
 }
 
-// End of input processing and utility functions.
-// ----------------------------------------------------------------------
+function execute_main_logic() {
+  var count_val = get_next_integer();
+  var number_sequence = get_next_integer_array();
 
-/**
- * This is the main application logic that processes the input data.
- * It implements a specific algorithm to compare sorted number sets.
- */
-function executeMainLogic() {
-  const totalElements = fetchNumericValue();
-  const rawNumbers = fetchNumericList();
-
-  // Sort the initial sequence in ascending order.
-  rawNumbers.sort(function(val1, val2) {
-    return val1 - val2;
+  number_sequence.sort(function(elem_a, elem_b) {
+    return elem_a - elem_b;
   });
 
-  // Initialize the primary collection with the largest element.
-  const primaryCollection = [];
-  primaryCollection.push(rawNumbers.pop());
+  var primary_collection = [];
+  primary_collection.push(number_sequence.pop());
 
-  // Iterate based on the total number of elements.
-  for (let mainIndex = 0; mainIndex < totalElements; mainIndex++) {
-    const secondaryGroup = [];
-    // Populate the secondary group with a power-of-2 number of elements.
-    for (let subIndex = 0; subIndex < (1 << mainIndex); subIndex++) {
-      secondaryGroup.push(rawNumbers.pop());
+  for (var outer_idx = 0; outer_idx < count_val; outer_idx++) {
+    var secondary_collection = [];
+    for (var inner_idx = 0; inner_idx < (1 << outer_idx); inner_idx++) {
+      secondary_collection.push(number_sequence.pop());
     }
 
-    // Sort the secondary group in descending order.
-    secondaryGroup.sort(function(val1, val2) {
-      return val2 - val1;
+    secondary_collection.sort(function(elem_a, elem_b) {
+      return elem_b - elem_a;
     });
 
-    // Sort the primary collection in descending order for comparison.
-    primaryCollection.sort(function(val1, val2) {
-      return val2 - val1;
+    primary_collection.sort(function(elem_a, elem_b) {
+      return elem_b - elem_a;
     });
 
-    // Uncomment these lines for detailed debug output during execution.
-    // printDebug(primaryCollection);
-    // printDebug(secondaryGroup);
+    // print_debug_info(primary_collection);
+    // print_debug_info(secondary_collection);
 
-    // Compare elements between the primary and secondary groups.
-    for (let subIndex = 0; subIndex < secondaryGroup.length; subIndex++) {
-      if (primaryCollection[subIndex] <= secondaryGroup[subIndex]) {
-        displayOutput("No"); // Condition not met, output "No" and terminate.
+    for (var inner_idx = 0; inner_idx < secondary_collection.length; inner_idx++) {
+      if (primary_collection[inner_idx] <= secondary_collection[inner_idx]) {
+        print_output("No");
         return;
       }
     }
-
-    // If all comparisons pass, merge the secondary group into the primary.
-    primaryCollection = primaryCollection.concat(secondaryGroup);
+    primary_collection = primary_collection.concat(secondary_collection);
   }
-
-  // After all iterations, log the final state of the primary collection and output "Yes".
-  printDebug(primaryCollection);
-  displayOutput("Yes");
+  print_debug_info(primary_collection);
+  print_output("Yes");
 }

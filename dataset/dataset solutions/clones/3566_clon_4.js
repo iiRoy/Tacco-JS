@@ -1,36 +1,25 @@
-const filesystemUtility = require("fs");
-const standardInputLocation = "/dev/stdin";
-const incomingStreamContent = filesystemUtility.readFileSync(standardInputLocation, "utf8");
+const createPoint = (xVal, yVal) => ({ x: xVal, y: yVal });
+const subtractPoints = (pA, pB) => createPoint(pA.x - pB.x, pA.y - pB.y);
+const addPoints = (pA, pB) => createPoint(pA.x + pB.x, pA.y + pB.y);
+const rotateVector90DegreesCCW = (vec) => createPoint(-vec.y, vec.x);
 
-const coordinateTransformer = (inputStringData) => {
-    const stringComponents = inputStringData.trim().split(/\s*\n\s*/)[0].split(/\s+/);
+function calculateSquareVertices(inputString) {
+    const coordinateValues = inputString.split('\n')[0].split(' ').map(Number);
 
-    const sourcePoints = stringComponents.map(Number);
-    const pointA = { valX: sourcePoints[0], valY: sourcePoints[1] };
-    const pointB = { valX: sourcePoints[2], valY: sourcePoints[3] };
+    const pointOne = createPoint(coordinateValues[0], coordinateValues[1]);
+    const pointTwo = createPoint(coordinateValues[2], coordinateValues[3]);
 
-    const computeVector = (startPt, endPt) => ({
-        dx: endPt.valX - startPt.valX,
-        dy: endPt.valY - startPt.valY
-    });
+    const segmentVector = subtractPoints(pointTwo, pointOne);
 
-    const rotateVectorNinetyDegrees = (vec) => ({
-        dx: -vec.dy,
-        dy: vec.dx
-    });
+    const perpendicularVector = rotateVector90DegreesCCW(segmentVector);
 
-    const displacePoint = (basePt, vec) => ({
-        valX: basePt.valX + vec.dx,
-        valY: basePt.valY + vec.dy
-    });
+    const pointThree = addPoints(pointTwo, perpendicularVector);
 
-    const vectorAB = computeVector(pointA, pointB);
-    const perpendicularVector = rotateVectorNinetyDegrees(vectorAB);
+    const pointFour = addPoints(pointOne, perpendicularVector);
 
-    const pointC = displacePoint(pointB, perpendicularVector);
-    const pointD = displacePoint(pointA, perpendicularVector);
+    return `${pointThree.x} ${pointThree.y} ${pointFour.x} ${pointFour.y}`;
+}
 
-    return [pointC.valX, pointC.valY, pointD.valX, pointD.valY].map(String).join(" ");
-};
-
-console.log(coordinateTransformer(incomingStreamContent));
+const fileContent = require("fs").readFileSync("/dev/stdin", "utf8");
+const finalResult = calculateSquareVertices(fileContent);
+console.log(finalResult);

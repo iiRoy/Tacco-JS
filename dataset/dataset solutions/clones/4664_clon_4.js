@@ -1,58 +1,34 @@
-const calculateSpatialSeparation = (pointAlpha, pointBeta) => {
-    return Math.abs(pointAlpha.coordX - pointBeta.coordX) + Math.abs(pointAlpha.coordY - pointBeta.coordY);
-};
+'use strict';
 
-const processSystemInput = (rawTextContent) => {
-    const contentSegments = rawTextContent.trim().split('\n');
+function ProcessInput(inputData) {
+    const rawLines = inputData.trim().split('\n');
+    const dimensions = rawLines[0].split(' ');
+    const studentCount = Number(dimensions[0]);
+    const landmarkCount = Number(dimensions[1]);
 
-    const obtainDimensions = (linesArray) => {
-        const [dimA, dimB] = linesArray.shift().split(' ').map(Number);
-        return { quantityA: dimA, quantityB: dimB };
-    };
-
-    const parseCoordinateSets = (count, linesArray) => {
-        const collection = [];
-        for (let k = 0; k < count; k++) {
-            const [xVal, yVal] = linesArray.shift().split(' ').map(Number);
-            collection.push({ coordX: xVal, coordY: yVal });
-        }
-        return collection;
-    };
-
-    const { quantityA: individualCount, quantityB: facilityCount } = obtainDimensions(contentSegments);
-
-    const individualLocations = parseCoordinateSets(individualCount, contentSegments);
-    const facilityLocations = parseCoordinateSets(facilityCount, contentSegments).map((facility, index) => ({
-        ...facility,
-        facilityIndex: index + 1
-    }));
-
-    const determinedAssignments = individualLocations.map(currentPerson => {
-        const facilityProximities = facilityLocations.map(currentFacility => ({
-            designator: currentFacility.facilityIndex,
-            proximity: calculateSpatialSeparation(currentPerson, currentFacility)
-        }));
-
-        const nearestFacility = facilityProximities.reduce((closestCandidate, currentConsideration) => {
-            if (currentConsideration.proximity < closestCandidate.proximity) {
-                return currentConsideration;
-            } else if (currentConsideration.proximity === closestCandidate.proximity) {
-                if (currentConsideration.designator < closestCandidate.designator) {
-                    return currentConsideration;
-                }
-            }
-            return closestCandidate;
-        }, { proximity: Number.POSITIVE_INFINITY, designator: -1 });
-
-        return nearestFacility.designator;
+    const studentPositions = Array.from({ length: studentCount }, (_, currentIdx) => {
+        return rawLines[currentIdx + 1].split(' ').map(Number);
     });
 
-    determinedAssignments.forEach(assignment => console.log(assignment));
-};
+    const landmarkPositions = Array.from({ length: landmarkCount }, (_, currentIdx) => {
+        return rawLines[currentIdx + 1 + studentCount].split(' ').map(Number);
+    });
 
-const activateSolution = (inputPath) => {
-    const acquiredContent = require('node:fs').readFileSync(inputPath, 'utf8');
-    processSystemInput(acquiredContent);
-};
+    const nearestLandmarkIdentifiers = studentPositions.map((currentStudentPosition) => {
+        return landmarkPositions.reduce((accumulator, currentLandmarkPosition, landmarkIndex) => {
+            const calculatedSpan = Math.abs(currentStudentPosition[0] - currentLandmarkPosition[0]) + Math.abs(currentStudentPosition[1] - currentLandmarkPosition[1]);
 
-activateSolution('/dev/stdin');
+            if (calculatedSpan < accumulator.minimumObservedDistance) {
+                return {
+                    minimumObservedDistance: calculatedSpan,
+                    nearestLandmarkIdentifier: landmarkIndex + 1
+                };
+            }
+            return accumulator;
+        }, { minimumObservedDistance: Number.MAX_VALUE, nearestLandmarkIdentifier: -1 }).nearestLandmarkIdentifier;
+    });
+
+    console.log(nearestLandmarkIdentifiers.join('\n'));
+}
+
+ProcessInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

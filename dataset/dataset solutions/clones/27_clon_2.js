@@ -1,3 +1,2 @@
-let sourceString;
-// The following line processes the text data.
-console . log ( sourceString . split ( "" ) . reverse ( ) . join ( "" ) ) ;
+var myText;
+console.log(myText.split("").reverse().join(""));

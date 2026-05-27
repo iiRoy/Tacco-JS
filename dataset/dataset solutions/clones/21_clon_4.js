@@ -1,34 +1,19 @@
-const fileSystemInterface = require("fs");
+const rawInputData = require("fs").readFileSync("/dev/stdin", "utf8");
 
-const sourceData = fileSystemInterface.readFileSync("/dev/stdin", "utf8");
+const calculateGcdRecursively = (valA, valB) => (valB === 0 ? valA : calculateGcdRecursively(valB, valA % valB));
 
-const calculateFactorMetrics = (primaryValue, secondaryValue) => {
-    const num1 = Number(primaryValue);
-    const num2 = Number(secondaryValue);
+const processNumericPair = (inputPair) => {
+    const firstOperand = parseInt(inputPair[0], 10);
+    const secondOperand = parseInt(inputPair[1], 10);
 
-    const findCommonDivisor = (firstNum, secondNum) => {
-        if (secondNum === 0) {
-            return firstNum;
-        }
-        return findCommonDivisor(secondNum, firstNum % secondNum);
-    };
+    const greatestCommonDivisor = calculateGcdRecursively(firstOperand, secondOperand);
+    const leastCommonMultiple = (firstOperand * secondOperand) / greatestCommonDivisor;
 
-    const greatestCommonDivisorResult = findCommonDivisor(num1, num2);
-    const leastCommonMultipleResult = (num1 * num2) / greatestCommonDivisorResult;
-
-    console.log(`${leastCommonMultipleResult} ${greatestCommonDivisorResult}`);
+    console.log(`${leastCommonMultiple} ${greatestCommonDivisor}`);
 };
 
-sourceData
-    .trim()
-    .split("\n")
-    .forEach(segment => {
-        const valueSequence = segment
-            .split(" ")
-            .map(Number);
-
-        valueSequence.sort((valB, valA) => valA - valB);
-
-        console.log(valueSequence);
-        calculateFactorMetrics(valueSequence[0], valueSequence[1]);
-    });
+rawInputData.trim().split("\n").forEach(currentLine => {
+    const sortedNumericStrings = currentLine.split(" ").sort((elementD, elementE) => elementE - elementD);
+    console.log(sortedNumericStrings);
+    processNumericPair(sortedNumericStrings);
+});

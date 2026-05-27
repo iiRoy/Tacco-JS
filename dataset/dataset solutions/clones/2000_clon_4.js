@@ -1,13 +1,13 @@
-((sourceIdentifier) => {
-  const rawTextBlob = sourceIdentifier.readFileSync(0, 'utf8');
+function main(sourceText) {
+  const numericComponents = sourceText.split(' ').map(Number);
 
-  const numericalElements = rawTextBlob.match(/\d+/g).map(valStr => Number(valStr));
+  const reorderedComponents = [
+    numericComponents[2],
+    numericComponents[0],
+    numericComponents[1]
+  ];
 
-  const elementAlpha = numericalElements[2];
-  const elementBeta = numericalElements[0];
-  const elementGamma = numericalElements[1];
+  console.log(reorderedComponents.join(' '));
+}
 
-  const finalOutputString = elementAlpha + ' ' + elementBeta + ' ' + elementGamma;
-
-  process.stdout.write(finalOutputString + '\n');
-})(process.stdin);
+main(require('fs').readFileSync('/dev/stdin', 'utf8'));

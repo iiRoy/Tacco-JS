@@ -1,82 +1,79 @@
-( function executeProgram () {
-  // Acquire the necessary module for file system operations.
-  let fileSystemModule = obtainModule ( 'fs' );
+(function executeProgram() {
+  // Obtain raw input data from standard input.
+  // This involves reading the file, decoding it as UTF-8,
+  // removing leading/trailing whitespace, and splitting it into an array of lines.
+  let inputDataRows = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split('\n');
 
-  // Read raw input from standard input stream, applying UTF-8 decoding.
-  // Then, remove any surrounding whitespace and segment the content into individual string rows.
-  let inputRows = fileSystemModule . readTextSynchronously ( '/dev/stdin' , 'utfEightEncoding' ) . stripWhitespace () . divideByDelimiter ( "\n" );
+  // Extract the first line, split it by space, and convert parts to numbers.
+  // The first number is 'itemCount', the second is 'groupCount'.
+  let [itemCount, groupCount] = inputDataRows.shift().split(' ').map(Number);
 
-  // Process the initial row: remove it from the collection, split it by space,
-  // and convert the resulting parts into integer numbers.
-  // These represent the count of total items and the number of available storage bins.
-  let [ totalItems, numBins ] = inputRows . extractFirst () . divideByDelimiter ( ' ' ) . transformElements ( ConvertToInt );
+  // Convert the remaining lines of input into an array of numbers, representing weights.
+  let weightsArray = inputDataRows.map(Number);
 
-  // Convert all subsequent rows, which represent individual item weights, into integers.
-  let itemWeights = inputRows . transformElements ( ConvertToInt );
+  // Calculate the total sum of all weights in the 'weightsArray'.
+  let totalWeight = weightsArray.reduce((previousValue, currentValue) => previousValue + currentValue, 0);
 
-  // Calculate the collective weight of all items.
-  let totalWeight = itemWeights . aggregateValues ( ( previousVal, currentVal ) => previousVal + currentVal , 0 );
-
-  // Implement a special handling path for the scenario where only a single storage bin is available.
-  if ( numBins === 1 ) {
-    outputChannel . printLine ( totalWeight ); // In this case, the maximum load is simply the total weight.
-    exitFunction (); // Exit the program early as the task is complete.
+  // Handle a special edge case: if there's only one group,
+  // the maximum sum is simply the total sum of all weights.
+  if (groupCount === 1) {
+    console.log(totalWeight);
+    return; // Terminate execution early.
   }
 
-  // Set up two arrays: one to track the running sum of weights within each bin,
-  // and another to record the specific items assigned to each bin.
-  let binTotals = [],
-    binContents = [];
-
-  // Initialize each bin's total weight to zero and its contents list to empty.
-  for ( let idx = 0; idx < numBins; idx++ ) {
-    binTotals[ idx ] = 0;
-    binContents[ idx ] = [];
+  // Initialize two arrays:
+  // 'groupSums' will store the accumulated sum for each group.
+  // 'groupContents' will store the individual weights assigned to each group.
+  let groupSums = [], groupContents = [];
+  // Populate these arrays with initial values (0 for sums, empty arrays for contents).
+  for (let loopIndex = 0; loopIndex < groupCount; loopIndex++) {
+    groupSums[loopIndex] = 0;
+    groupContents[loopIndex] = [];
   }
 
-  // Determine an initial average load per bin, based on the overall total weight and number of bins.
-  let averageBinLoad = totalWeight / ( numBins );
+  // Calculate an initial average weight per group.
+  let currentAverage = totalWeight / groupCount;
 
-  // Initialize a counter for the current bin being filled and a variable to store the highest bin load observed.
-  let currentBinIndex = 0;
-  let maximumBinLoad = 0;
+  // Initialize a counter for the current group being processed.
+  let currentGroupIndex = 0;
+  // Initialize a variable to keep track of the maximum group sum encountered.
+  let maximumGroupSum = 0;
 
-  // Process each item one by one to assign it to a bin.
-  itemWeights . iterateOverItems ( function ( currentItemWeight ) {
-    // Evaluate whether the current item should be added to the present bin or if a new bin should be started.
-    // The condition compares the current average bin load with a calculated average of the current bin's state.
-    if ( averageBinLoad - ( 2 * binTotals[ currentBinIndex ] + currentItemWeight ) / 2 > 0 ) {
-      // If the condition holds true, the item is considered suitable for the current bin; no immediate action here.
+  // Iterate over each weight in the 'weightsArray'.
+  weightsArray.forEach(function(currentItemWeight) {
+    // This conditional logic determines whether to add the current item to the
+    // current group or to finalize the current group and move to the next.
+    // The condition `currentAverage - (2 * groupSums[currentGroupIndex] + currentItemWeight) / 2 > 0`
+    // is a heuristic to decide if the current item "fits" well into the current group
+    // without making its average too far off from the overall remaining average.
+    if (currentAverage - (2 * groupSums[currentGroupIndex] + currentItemWeight) / 2 > 0) {
+      // If the condition is true, continue adding to the current group.
+      // No action needed in this block, as additions happen after the if/else.
     } else {
-      // If the condition is false, the current bin is considered sufficiently loaded.
-      // Recalculate the average load for the remaining items and bins, assuming the current bin is now closed.
-      averageBinLoad = totalWeight / ( numBins - currentBinIndex - 1 );
-
-      // Update the overall maximum load if the just-completed bin's total exceeds it.
-      maximumBinLoad = maximumBinLoad < binTotals[ currentBinIndex ] ? binTotals[ currentBinIndex ] : maximumBinLoad;
-
-      // Advance to the next available bin for subsequent items.
-      currentBinIndex++;
+      // If the condition is false, it's time to finalize the current group.
+      // Recalculate the average based on the remaining total weight and remaining groups.
+      currentAverage = totalWeight / (groupCount - currentGroupIndex - 1);
+      // Update 'maximumGroupSum' if the sum of the current group is greater.
+      maximumGroupSum = maximumGroupSum < groupSums[currentGroupIndex] ? groupSums[currentGroupIndex] : maximumGroupSum;
+      // Move to the next group.
+      currentGroupIndex++;
     }
 
-    // Re-evaluate the average bin load for the remaining items and bins.
-    // This value will be used in the decision-making process for the *next* item.
-    averageBinLoad = totalWeight / ( numBins - currentBinIndex - 1 );
-
-    // Deduct the current item's weight from the overall remaining total.
+    // Recalculate the average again. This line appears both inside the 'else'
+    // block and immediately after it in the original logic, so it's preserved here.
+    currentAverage = totalWeight / (groupCount - currentGroupIndex - 1);
+    // Subtract the current item's weight from the running total weight.
     totalWeight -= currentItemWeight;
-
-    // Allocate the current item's weight to the currently active bin.
-    binTotals[ currentBinIndex ] += currentItemWeight;
-
-    // Place the current item into the list of contents for the active bin.
-    binContents[ currentBinIndex ] . push ( currentItemWeight );
+    // Add the current item's weight to the sum of the current group.
+    groupSums[currentGroupIndex] += currentItemWeight;
+    // Add the current item's weight to the list of contents for the current group.
+    groupContents[currentGroupIndex].push(currentItemWeight);
   });
 
-  // After all items have been distributed, perform one final check to ensure
-  // the load of the very last bin is also considered for the maximum.
-  maximumBinLoad = maximumBinLoad < binTotals[ currentBinIndex ] ? binTotals[ currentBinIndex ] : maximumBinLoad;
+  // After processing all weights, ensure the sum of the very last group
+  // is also considered for the 'maximumGroupSum'.
+  maximumGroupSum = maximumGroupSum < groupSums[currentGroupIndex] ? groupSums[currentGroupIndex] : maximumGroupSum;
 
-  // Output the final determined maximum load observed across any single bin.
-  outputChannel . printLine ( maximumBinLoad );
-} ) ();
+  // Output the final calculated maximum group sum.
+  console.log(maximumGroupSum);
+})();

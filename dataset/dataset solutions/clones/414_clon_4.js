@@ -1,64 +1,74 @@
-const rawInputData = require('fs').readFileSync('/dev/stdin', 'utf8');
-const processedLines = rawInputData.trim().split('\n');
+const allInputLines = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split('\n');
 
-const determineMissingColor = (firstHue, secondHue) => {
-  if ((firstHue === 'r' && secondHue === 'g') || (firstHue === 'g' && secondHue === 'r')) {
-    return 'b';
-  }
-  if ((firstHue === 'r' && secondHue === 'b') || (firstHue === 'b' && secondHue === 'r')) {
-    return 'g';
-  }
-  return 'r';
-};
+const colorUniverse = new Set(['r', 'g', 'b']);
 
-const generateMutations = (currentConfig) => {
-  return Array.from({ length: currentConfig.length - 1 }, (_, position) => {
-    const charA = currentConfig[position];
-    const charB = currentConfig[position + 1];
+function determineMissingColor(firstChar, secondChar) {
+  const temporarySet = new Set(colorUniverse);
+  temporarySet.delete(firstChar);
+  temporarySet.delete(secondChar);
+  return temporarySet.values().next().value;
+}
+
+function isHomogeneous(identifierString) {
+  return new Set(identifierString).size === 1;
+}
+
+function produceSuccessorIdentifiers(currentIdentifier) {
+  const successorIdentifiers = [];
+  const charSequence = currentIdentifier.split('');
+  for (let i = 0; i < charSequence.length - 1; i++) {
+    const charA = charSequence[i];
+    const charB = charSequence[i + 1];
 
     if (charA === charB) {
-      return null;
+      continue;
     }
 
-    const missingColor = determineMissingColor(charA, charB);
-    const modifiedConfig = currentConfig.slice(0, position) +
-                           missingColor.repeat(2) +
-                           currentConfig.slice(position + 2);
-    return modifiedConfig;
-  }).filter(Boolean);
-};
+    const replacementColor = determineMissingColor(charA, charB);
+    const newCharSequence = [...charSequence];
+    newCharSequence[i] = replacementColor;
+    newCharSequence[i + 1] = replacementColor;
+    successorIdentifiers.push(newCharSequence.join(''));
+  }
+  return successorIdentifiers;
+}
 
-const seekEquilibrium = (initialPattern) => {
-  const distanceRegistry = new Map();
+function calculateMinimumTransformations(initialIdentifier) {
+  const visitedStates = new Map();
   const processingQueue = [];
 
-  distanceRegistry.set(initialPattern, 0);
-  processingQueue.push([initialPattern, 0]);
+  if (isHomogeneous(initialIdentifier)) {
+    return 0;
+  }
 
-  while (processingQueue.length > 0) {
-    const [currentPattern, currentPathLength] = processingQueue.shift();
+  visitedStates.set(initialIdentifier, 0);
+  processingQueue.push({ identifier: initialIdentifier, steps: 0 });
 
-    const evolvedPatterns = generateMutations(currentPattern);
+  let queueIndex = 0;
 
-    if (evolvedPatterns.length === 0) {
-      return currentPathLength;
+  while (queueIndex < processingQueue.length) {
+    const { identifier: currentIdentifier, steps: currentSteps } = processingQueue[queueIndex++];
+
+    const potentialNextIdentifiers = produceSuccessorIdentifiers(currentIdentifier);
+
+    if (potentialNextIdentifiers.length === 0) {
+        return currentSteps;
     }
 
-    for (const nextForm of evolvedPatterns) {
-      if (!distanceRegistry.has(nextForm)) {
-        distanceRegistry.set(nextForm, currentPathLength + 1);
-        processingQueue.push([nextForm, currentPathLength + 1]);
+    for (const nextIdentifier of potentialNextIdentifiers) {
+      if (!visitedStates.has(nextIdentifier)) {
+        visitedStates.set(nextIdentifier, currentSteps + 1);
+        processingQueue.push({ identifier: nextIdentifier, steps: currentSteps + 1 });
       }
     }
   }
+  return null;
+}
 
-  return -1;
-};
-
-processedLines.forEach(currentLine => {
-  if (currentLine === '0') {
+allInputLines.forEach(currentInputIdentifier => {
+  if (currentInputIdentifier === '0') {
     return;
   }
-  const resultPathLength = seekEquilibrium(currentLine);
-  console.log(resultPathLength === -1 ? 'NA' : resultPathLength);
+  const transformationResult = calculateMinimumTransformations(currentInputIdentifier);
+  console.log(transformationResult !== null ? transformationResult : 'NA');
 });

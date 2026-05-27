@@ -1,85 +1,69 @@
-function ProcessDataForDisplay(rawData) {
-    const numericValues = rawData.match(/\d+/g).map(Number);
-    const valAlpha = numericValues[0];
-    const valBeta = numericValues[1];
+function processInput(inputString) {
+    const [firstValue, secondValue] = inputString.split(" ").map(Number);
 
-    const charConfiguration = valAlpha > valBeta
-        ? { alphaCount: valAlpha, betaCount: valBeta, charAlpha: '.', charBeta: '#' }
-        : { alphaCount: valBeta, betaCount: valAlpha, charAlpha: '#', charBeta: '.' };
+    const [dominantValue, subordinateValue, dominantChar, subordinateChar] = firstValue > secondValue
+        ? [firstValue, secondValue, ".", "#"]
+        : [secondValue, firstValue, "#", "."];
 
-    const gridDimension = Math.ceil(Math.sqrt(charConfiguration.alphaCount)) * 4;
+    const gridDimension = Math.ceil(Math.sqrt(dominantValue)) * 4;
 
-    const patternPrimary = [charConfiguration.charAlpha, charConfiguration.charAlpha, charConfiguration.charAlpha, charConfiguration.charBeta];
-    const patternAlternating = [charConfiguration.charAlpha, charConfiguration.charBeta, charConfiguration.charAlpha, charConfiguration.charBeta];
-    const patternSecondary = [charConfiguration.charBeta, charConfiguration.charBeta, charConfiguration.charBeta, charConfiguration.charBeta];
-
-    const blockTypeA = [
-        patternPrimary,
-        patternPrimary,
-        patternPrimary,
-        patternSecondary
-    ];
-    const blockTypeB = [
-        patternSecondary,
-        patternSecondary,
-        patternSecondary,
-        patternSecondary
-    ];
-    const blockTypeC = [
-        patternPrimary,
-        patternAlternating,
-        patternPrimary,
-        patternSecondary
-    ];
-
-    const blockPositions = Array.from({ length: gridDimension / 4 }, (_, rIdx) =>
-        Array.from({ length: gridDimension / 4 }, (_, cIdx) => ({
-            rowStart: rIdx * 4,
-            colStart: cIdx * 4
-        }))
-    ).flat();
-
-    const initialGridState = {
-        matrix: Array.from({ length: gridDimension }, () => Array(gridDimension).fill('')),
-        currentAlphaCounter: 1,
-        currentBetaCounter: 1
+    const patternDefinitions = {
+        initialBlock: [
+            [dominantChar, dominantChar, dominantChar, subordinateChar],
+            [dominantChar, dominantChar, dominantChar, subordinateChar],
+            [dominantChar, dominantChar, dominantChar, subordinateChar],
+            [subordinateChar, subordinateChar, subordinateChar, subordinateChar]
+        ],
+        dominantExhaustedBlock: Array.from({ length: 4 }, () => Array(4).fill(subordinateChar)),
+        subordinateExhaustedBlock: [
+            [dominantChar, dominantChar, dominantChar, subordinateChar],
+            [dominantChar, dominantChar, dominantChar, subordinateChar],
+            [dominantChar, dominantChar, dominantChar, subordinateChar],
+            [subordinateChar, subordinateChar, subordinateChar, subordinateChar]
+        ],
+        standardBlock: [
+            [dominantChar, dominantChar, dominantChar, subordinateChar],
+            [dominantChar, subordinateChar, dominantChar, subordinateChar],
+            [dominantChar, dominantChar, dominantChar, subordinateChar],
+            [subordinateChar, subordinateChar, subordinateChar, subordinateChar]
+        ]
     };
 
-    const finalGridState = blockPositions.reduce((stateAccumulator, currentPosition) => {
-        let selectedBlockContent;
-        let nextAlphaCounter = stateAccumulator.currentAlphaCounter;
-        let nextBetaCounter = stateAccumulator.currentBetaCounter;
+    const blockRowsCount = gridDimension / 4;
+    const blockColsCount = gridDimension / 4;
+    const totalBlockUnits = blockRowsCount * blockColsCount;
 
-        if (currentPosition.rowStart === 0 && currentPosition.colStart === 0) {
-            selectedBlockContent = blockTypeA;
-        } else if (stateAccumulator.currentAlphaCounter === charConfiguration.alphaCount) {
-            selectedBlockContent = blockTypeB;
-        } else if (stateAccumulator.currentBetaCounter === charConfiguration.betaCount) {
-            selectedBlockContent = blockTypeA;
-            nextAlphaCounter++;
+    const blockUnitSequence = Array.from({ length: totalBlockUnits }).reduce((accumulator, _, blockIndex) => {
+        let { currentDominantCount, currentSubordinateCount, collectedBlocks } = accumulator;
+        let selectedPattern;
+
+        if (blockIndex === 0) {
+            selectedPattern = patternDefinitions.initialBlock;
+        } else if (currentDominantCount === dominantValue) {
+            selectedPattern = patternDefinitions.dominantExhaustedBlock;
+        } else if (currentSubordinateCount === subordinateValue) {
+            selectedPattern = patternDefinitions.subordinateExhaustedBlock;
+            currentDominantCount++;
         } else {
-            selectedBlockContent = blockTypeC;
-            nextAlphaCounter++;
-            nextBetaCounter++;
+            selectedPattern = patternDefinitions.standardBlock;
+            currentDominantCount++;
+            currentSubordinateCount++;
         }
+        collectedBlocks.push(selectedPattern);
+        return { currentDominantCount, currentSubordinateCount, collectedBlocks };
+    }, { currentDominantCount: 1, currentSubordinateCount: 1, collectedBlocks: [] }).collectedBlocks;
 
-        for (let rOffset = 0; rOffset < 4; rOffset++) {
-            for (let cOffset = 0; cOffset < 4; cOffset++) {
-                stateAccumulator.matrix[currentPosition.rowStart + rOffset][currentPosition.colStart + cOffset] = selectedBlockContent[rOffset][cOffset];
-            }
-        }
+    const finalOutputRows = Array.from({ length: gridDimension }, (_, rowIndex) => {
+        const blockRowIdentifier = Math.floor(rowIndex / 4);
+        const subRowIdentifier = rowIndex % 4;
 
-        return {
-            matrix: stateAccumulator.matrix,
-            currentAlphaCounter: nextAlphaCounter,
-            currentBetaCounter: nextBetaCounter
-        };
-    }, initialGridState);
+        return Array.from({ length: blockColsCount }, (_, colBlockIdentifier) => {
+            const sequenceIndex = blockRowIdentifier * blockColsCount + colBlockIdentifier;
+            return blockUnitSequence[sequenceIndex][subRowIdentifier].join("");
+        }).join("");
+    });
 
-    const resultRows = finalGridState.matrix.map(row => row.join(''));
-    const headerLine = `${gridDimension} ${gridDimension}`;
-    return `${headerLine}\n${resultRows.join('\n')}`;
+    console.log("%d %d\n%s", gridDimension, gridDimension, finalOutputRows.join("\n"));
 }
 
-const programInput = require("fs").readFileSync("/dev/stdin", "utf8").trim();
-console.log(ProcessDataForDisplay(programInput));
+processInput(require("fs").readFileSync("/dev/stdin", "utf8").trim());

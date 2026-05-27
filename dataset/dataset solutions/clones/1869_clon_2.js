@@ -1,33 +1,26 @@
-/* This script processes numerical input from standard input. */
-const PrimaryHandler = ( sourceText ) => {
-  // Split the entire input string by spaces to get individual numeric parts.
-  const numericStrings = sourceText.split(" ");
+const ProcessInput = rawData => {
+    // Divide the incoming string into an array of substrings using space as a delimiter.
+    const parsedData = rawData.split(" ");
 
-  // Parse the first number from the obtained segments.
-  const firstNumber = parseInt( numericStrings[0], 10 ); // Base 10 integer conversion.
-  /* Convert the second part into an integer. */
-  const secondNumber = parseInt(numericStrings[1], 10);
-  // The third segment is also converted, though its value isn't used in subsequent logic.
-  const thirdNumber = parseInt(numericStrings[2], 10);
-  // Finally, parse the fourth segment which represents the required total.
-  const targetSum = parseInt(numericStrings[3], 10);
+    // Convert the first substring to an integer, representing the initial quantity of item 'A'.
+    const valA = parseInt(parsedData[0], 10); // Example value: 1
+    // Convert the second substring to an integer, representing the initial quantity of item 'B'.
+    const valB = parseInt(parsedData[1], 10); // Example value: 0
+    // Convert the third substring to an integer, representing the initial quantity of item 'C' (this value is not used in the subsequent logic).
+    const valC = parseInt(parsedData[2], 10); // Example value: -1
+    // Convert the fourth substring to an integer, representing the target threshold or required quantity.
+    const thresholdK = parseInt(parsedData[3], 10);
 
-  // Evaluate if the sum of the first two numbers meets or exceeds the target.
-  if ( (firstNumber + secondNumber) >= targetSum ) {
-    // If the condition is met, output the value of the first number.
-    console.log(firstNumber);
-  }
-  else {
-    /* If the sum is less than the target, calculate the difference
-       between the target and the current sum, and subtract this
-       difference from the first number. This effectively finds
-       how much the first number needs to be reduced if the second number
-       is fully utilized to reach the target, and then some.
-    */
-    console.log(firstNumber - (targetSum - firstNumber - secondNumber));
-  }
-}; // End of the main processing function.
+    // Evaluate if the combined quantity of 'A' and 'B' items is sufficient to meet the target threshold.
+    if (valA + valB >= thresholdK) {
+        // If the combined quantity is sufficient, output the quantity of 'A' items.
+        console.log(valA);
+    } else {
+        // If the combined quantity is not sufficient, calculate the adjusted quantity of 'A' items.
+        // This calculation determines how many 'A' items are "left" after 'B' items are used and the threshold is considered.
+        console.log(valA - (thresholdK - valA - valB));
+    }
+};
 
-
-// Invoke the primary processing function with data read from standard input.
-PrimaryHandler(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Read the entire content of the standard input file as a UTF-8 string, then pass it to the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

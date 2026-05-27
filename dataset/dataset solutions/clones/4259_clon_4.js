@@ -1,52 +1,32 @@
-function ProcessInputData(streamContent) {
-    const linesOfText = streamContent.split('\n');
-    const numericalSize = Number(linesOfText[0]);
+function Main(rawInput) {
+    const rawInputLines = rawInput.split("\n");
+    const arrayLength = Number(rawInputLines[0]);
 
-    const primaryElements = linesOfText[1].split(' ').map(Number);
-    const secondaryElements = linesOfText[2].split(' ').map(Number);
-    const tertiaryElements = linesOfText[3].split(' ').map(Number);
+    const sortedA = rawInputLines[1].split(" ").map(Number).sort((val1, val2) => val1 - val2);
+    const sortedB = rawInputLines[2].split(" ").map(Number).sort((val1, val2) => val1 - val2);
+    const sortedC = rawInputLines[3].split(" ").map(Number).sort((val1, val2) => val1 - val2);
 
-    primaryElements.sort((valA, valB) => valA - valB);
-    secondaryElements.sort((valA, valB) => valA - valB);
-    tertiaryElements.sort((valA, valB) => valA - valB);
+    let totalTriplets = 0;
+    let aPointer = 0;
+    let cPointer = 0;
 
-    let cumulativeSum = 0;
+    for (let bIdx = 0; bIdx < arrayLength; bIdx++) {
+        const currentBValue = sortedB[bIdx];
 
-    const findSmallerCount = (sortedArray, limitValue) => {
-        let lowPointer = 0;
-        let highPointer = sortedArray.length;
-        while (lowPointer < highPointer) {
-            const midPoint = Math.floor((lowPointer + highPointer) / 2);
-            if (sortedArray[midPoint] < limitValue) {
-                lowPointer = midPoint + 1;
-            } else {
-                highPointer = midPoint;
-            }
+        while (aPointer < arrayLength && sortedA[aPointer] < currentBValue) {
+            aPointer++;
         }
-        return lowPointer;
-    };
+        const countSmallerA = aPointer;
 
-    const findLargerCount = (sortedArray, limitValue) => {
-        let lowPointer = 0;
-        let highPointer = sortedArray.length;
-        while (lowPointer < highPointer) {
-            const midPoint = Math.floor((lowPointer + highPointer) / 2);
-            if (sortedArray[midPoint] <= limitValue) {
-                lowPointer = midPoint + 1;
-            } else {
-                highPointer = midPoint;
-            }
+        while (cPointer < arrayLength && sortedC[cPointer] <= currentBValue) {
+            cPointer++;
         }
-        return sortedArray.length - lowPointer;
-    };
+        const countGreaterC = arrayLength - cPointer;
 
-    secondaryElements.forEach(currentMiddleValue => {
-        const countFromPrimary = findSmallerCount(primaryElements, currentMiddleValue);
-        const countFromTertiary = findLargerCount(tertiaryElements, currentMiddleValue);
-        cumulativeSum += countFromPrimary * countFromTertiary;
-    });
+        totalTriplets += countSmallerA * countGreaterC;
+    }
 
-    console.log(String(cumulativeSum));
+    console.log('%s', totalTriplets);
 }
 
-ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

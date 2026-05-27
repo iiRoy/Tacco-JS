@@ -1,126 +1,101 @@
-// This module handles standard input parsing and initiates a grid path simulation.
-let rawDataBuffer = ''; // Accumulates incoming data chunks from standard input.
+const RADIX_DECIMAL = 10;
 
-// Main entry point for the simulation logic after input is fully received.
-function initiateGridPathSimulation(inputLineSegments) {
-  // Declare simulation-specific variables using modern JavaScript keywords.
-  let currentSegmentIndex = 0; // Index to iterate through the input line segments.
-  const totalSegments = inputLineSegments.length; // Total number of segments provided.
+function parseDimensions(lineString) {
+  const dimensionParts = lineString.split(' ');
+  const parsedWidth = parseInt(dimensionParts[0], RADIX_DECIMAL);
+  const parsedHeight = parseInt(dimensionParts[1], RADIX_DECIMAL);
+  return { width: parsedWidth, height: parsedHeight };
+}
 
-  // Loop through each pair of width/height definitions and their corresponding grid data.
-  while (currentSegmentIndex < totalSegments) {
-    const currentLineParts = inputLineSegments[currentSegmentIndex].split(' ');
-    currentSegmentIndex++; // Advance segment index for the next iteration.
+function calculateNextCoordinates(currentRowPosition, currentColPosition, directionIndicator) {
+  let nextRowPosition = currentRowPosition;
+  let nextColPosition = currentColPosition;
 
-    // Basic validation for input format. Ensure at least two parts (width and height).
-    if (currentLineParts.length < 2) {
-      // console.error("Skipping malformed input line:", inputLineSegments[currentSegmentIndex - 1]);
-      continue; // Skip to the next input block if format is incorrect.
+  switch (directionIndicator) {
+    case '>':
+      nextColPosition++;
+      break;
+    case '<':
+      nextColPosition--;
+      break;
+    case 'v':
+      nextRowPosition++;
+      break;
+    case '^':
+      nextRowPosition--;
+      break;
+  }
+  return { row: nextRowPosition, col: nextColPosition };
+}
+
+function processInputData() {
+  let currentInputIndex;
+  let gridRowIndex;
+  let currentWidth;
+  let currentHeight;
+  let currentLineSegments;
+  let visitedCellTracker;
+  let mazeGrid;
+  let loopDetectedFlag;
+
+  const totalInputLines = rawDataInput.length;
+
+  for (currentInputIndex = 0; currentInputIndex < totalInputLines; currentInputIndex++) {
+    currentLineSegments = rawDataInput[currentInputIndex];
+    const dimensions = parseDimensions(currentLineSegments);
+    currentWidth = dimensions.width;
+    currentHeight = dimensions.height;
+
+    if (currentWidth === 0 && currentHeight === 0) {
+      break;
     }
 
-    // Parse grid dimensions. Using Number() for conversion, assuming clean integer input.
-    const gridWidth = Number(currentLineParts[0]);
-    const gridHeight = Number(currentLineParts[1]);
+    mazeGrid = [];
+    visitedCellTracker = {};
 
-    // Termination condition for the entire simulation process.
-    if (gridWidth === 0 && gridHeight === 0) {
-      break; // Exit the main processing loop if the sentinel value is encountered.
+    for (gridRowIndex = 0; gridRowIndex < currentHeight; gridRowIndex++) {
+      currentInputIndex++;
+      mazeGrid[gridRowIndex] = rawDataInput[currentInputIndex];
     }
 
-    // Initialize data structures for the current grid simulation.
-    const simulationGrid = []; // Stores the character map of the grid, row by row.
-    const visitedPathCoordinates = new Set(); // Tracks visited (y, x) coordinates to detect loops efficiently.
+    let currentRowPosition = 0;
+    let currentColPosition = 0;
+    loopDetectedFlag = false;
 
-    // Populate the simulation grid with 'gridHeight' number of lines.
-    // We must ensure there are enough lines available in the input.
-    for (let gridRowIndex = 0; gridRowIndex < gridHeight; gridRowIndex++) {
-      if (currentSegmentIndex >= totalSegments) {
-        // If we run out of input segments before populating the full grid,
-        // this indicates incomplete input for the current simulation block.
-        // console.error("Not enough grid lines provided for H:", gridHeight, "at segment index:", currentSegmentIndex);
-        break; // Exit grid population loop.
-      }
-      simulationGrid[gridRowIndex] = inputLineSegments[currentSegmentIndex];
-      currentSegmentIndex++; // Advance for the next grid row.
-    }
+    while (true) {
+      const currentCellContent = mazeGrid[currentRowPosition].charAt(currentColPosition);
 
-    // If the grid was not fully populated due to insufficient input, skip this simulation block.
-    if (simulationGrid.length < gridHeight) {
-      continue;
-    }
-
-    // Initialize agent's starting position and state within the grid.
-    let currentYPosition = 0; // Vertical coordinate, starting at the top.
-    let currentXPosition = 0; // Horizontal coordinate, starting at the left.
-    let pathCyclical = false; // Flag to indicate if a cycle (loop) is detected during movement.
-
-    // Simulate movement on the grid until an exit point ('.') is reached or a loop is found.
-    // Added boundary checks to prevent 'undefined' access when querying grid cells.
-    while (
-      currentYPosition >= 0 && currentYPosition < gridHeight &&
-      currentXPosition >= 0 && currentXPosition < gridWidth
-    ) {
-      // Retrieve the symbol at the agent's current position.
-      const currentCellSymbol = simulationGrid[currentYPosition].charAt(currentXPosition);
-
-      // If the current cell is the designated exit point, terminate this specific simulation.
-      if (currentCellSymbol === '.') {
+      if (currentCellContent === '.') {
         break;
       }
 
-      // Generate a unique string key for the current coordinates to track visited cells in the Set.
-      const currentCoordKey = `${currentYPosition},${currentXPosition}`;
+      const currentCellKey = currentRowPosition + ',' + currentColPosition;
+      visitedCellTracker[currentCellKey] = true;
 
-      // Check if this coordinate has been visited before in the current path.
-      if (visitedPathCoordinates.has(currentCoordKey)) {
-        pathCyclical = true; // A loop has been detected, the agent is revisiting a cell.
-        break; // Exit the movement simulation.
-      }
+      const nextCoordinates = calculateNextCoordinates(currentRowPosition, currentColPosition, currentCellContent);
+      currentRowPosition = nextCoordinates.row;
+      currentColPosition = nextCoordinates.col;
 
-      // Mark the current cell as visited to detect future cycles.
-      visitedPathCoordinates.add(currentCoordKey);
-
-      // Determine the next movement based on the current cell's symbol.
-      // Using an if-else if structure instead of a switch statement for variation.
-      if (currentCellSymbol === '>') {
-        currentXPosition += 1; // Move right.
-      } else if (currentCellSymbol === '<') {
-        currentXPosition -= 1; // Move left.
-      } else if (currentCellSymbol === 'v') {
-        currentYPosition += 1; // Move down.
-      } else if (currentCellSymbol === '^') {
-        currentYPosition -= 1; // Move up.
-      } else {
-        // Handle unexpected or invalid symbols gracefully.
-        // For this clone, we'll just break as it's an unrecognized instruction.
-        // console.warn("Unrecognized grid symbol encountered:", currentCellSymbol, "at", currentCoordKey);
+      const nextCellKey = currentRowPosition + ',' + currentColPosition;
+      if (visitedCellTracker[nextCellKey] === true) {
+        loopDetectedFlag = true;
         break;
       }
     }
 
-    // Output the result of the current grid simulation.
-    if (pathCyclical) {
-      console.log('LOOP'); // Report a detected cycle.
-    } else {
-      // Output the final coordinates (X Y) if no loop was found and an exit was reached or bounds exceeded.
-      console.log(`${currentXPosition} ${currentYPosition}`);
-    }
+    const outputMessage = loopDetectedFlag ? 'LOOP' : [currentColPosition, currentRowPosition].join(' ');
+    console.log(outputMessage);
   }
 }
 
-// Event listeners for standard input to read all data provided to the script.
-process.stdin.resume(); // Ensures the process stays active to receive all input.
-process.stdin.setEncoding('utf8'); // Specifies the character encoding for incoming data.
+let rawDataInput = '';
 
-// When data chunks are received, append them to the rawDataBuffer.
-process.stdin.on('data', function(incomingChunk) {
-  rawDataBuffer += incomingChunk;
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
+process.stdin.on('data', function(dataChunk) {
+  rawDataInput += dataChunk;
 });
-
-// Once all input data has been received (stream 'end' event), process it.
 process.stdin.on('end', function() {
-  // Split the accumulated data into an array of lines, ready for parsing.
-  const processedInputLines = rawDataBuffer.split('\n');
-  // Call the main simulation function with the parsed input array.
-  initiateGridPathSimulation(processedInputLines);
+  rawDataInput = rawDataInput.split('\n');
+  processInputData();
 });

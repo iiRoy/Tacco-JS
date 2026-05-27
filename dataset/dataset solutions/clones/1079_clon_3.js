@@ -1,101 +1,131 @@
-const utilizeValueSwapper = (elementSeries, positionA, positionB) => {
-    const temporaryValueHolder = elementSeries[positionA];
-    elementSeries[positionA] = elementSeries[positionB];
-    elementSeries[positionB] = temporaryValueHolder;
+const readline = require('readline');
+
+const inputReader = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+});
+
+let storedInputLines = [];
+let currentLineIndex = 0;
+
+inputReader.on('line', (lineContent) => {
+    storedInputLines.push(lineContent);
+});
+
+inputReader.on('close', () => {
+    executeMainLogic();
+});
+
+const retrieveInteger = () => {
+    const value = parseInt(storedInputLines[currentLineIndex], 10);
+    currentLineIndex++;
+    return value;
 };
 
-const implementQuickSortingMechanism = (inputCollection, collectionSize, orderingPredicate) => {
-    if (!inputCollection || collectionSize <= 1) {
-        return;
-    }
+const performQuickSort = (dataArray, arraySize, comparator) => {
+    const exchangeElements = (firstIdx, secondIdx) => {
+        const temporaryValue = dataArray[firstIdx];
+        dataArray[firstIdx] = dataArray[secondIdx];
+        dataArray[secondIdx] = temporaryValue;
+    };
 
-    const arrangePartitionBoundaries = (lowerIndex, upperIndex) => {
-        const pivotElementReference = inputCollection[upperIndex];
-        let separationPoint = lowerIndex - 1;
+    const divideAndConquer = (startIndex, endIndex) => {
+        const pivotValue = dataArray[endIndex];
+        let pivotPlacementIndex = startIndex;
 
-        for (let currentScanPosition = lowerIndex; currentScanPosition < upperIndex; currentScanPosition++) {
-            if (orderingPredicate(inputCollection[currentScanPosition], pivotElementReference) <= 0) {
-                separationPoint++;
-                utilizeValueSwapper(inputCollection, separationPoint, currentScanPosition);
+        for (let currentElementIndex = startIndex; currentElementIndex < endIndex; currentElementIndex++) {
+            if (comparator(dataArray[currentElementIndex], pivotValue) <= 0) {
+                exchangeElements(pivotPlacementIndex, currentElementIndex);
+                pivotPlacementIndex++;
             }
         }
-        utilizeValueSwapper(inputCollection, separationPoint + 1, upperIndex);
-        return separationPoint + 1;
+        exchangeElements(pivotPlacementIndex, endIndex);
+        return pivotPlacementIndex;
     };
 
-    const processSubArraySegments = (startingBoundary, endingBoundary) => {
-        if (startingBoundary < endingBoundary) {
-            const partitionAnchorIndex = arrangePartitionBoundaries(startingBoundary, endingBoundary);
-            processSubArraySegments(startingBoundary, partitionAnchorIndex - 1);
-            processSubArraySegments(partitionAnchorIndex + 1, endingBoundary);
+    const recursiveSort = (lowBound, highBound) => {
+        if (lowBound >= highBound) {
+            return;
         }
+        const pivotFinalIndex = divideAndConquer(lowBound, highBound);
+        recursiveSort(lowBound, pivotFinalIndex - 1);
+        recursiveSort(pivotFinalIndex + 1, highBound);
     };
 
-    processSubArraySegments(0, collectionSize - 1);
+    recursiveSort(0, arraySize - 1);
 };
 
-const computeCycleTransformationCost = (initialSequence, sequenceExtent) => {
-    if (!Array.isArray(initialSequence) || initialSequence.length !== sequenceExtent) {
-        return -1; // Indicate an error or invalid input.
-    }
-    if (sequenceExtent === 0) {
-        return 0;
-    }
+const calculateMinimumCost = (inputValues, totalElements) => {
+    const sortedValues = [...inputValues];
+    const numericComparator = (valA, valB) => valA - valB;
+    performQuickSort(sortedValues, totalElements, numericComparator);
 
-    const sortedSequenceCopy = initialSequence.slice();
-    implementQuickSortingMechanism(sortedSequenceCopy, sequenceExtent, (val1, val2) => val1 - val2);
+    const maxSortedValue = sortedValues[totalElements - 1];
+    const valueToIndexMap = Array(maxSortedValue + 1).fill(0);
+    sortedValues.forEach((elementValue, sortedIndex) => {
+        valueToIndexMap[elementValue] = sortedIndex;
+    });
 
-    const highestElementValue = sortedSequenceCopy[sequenceExtent - 1];
-    const elementValueToSortedIndexMap = new Array(highestElementValue + 1).fill(-1);
+    const isVisited = Array(totalElements).fill(false);
 
-    for (let currentSortedIndex = 0; currentSortedIndex < sequenceExtent; currentSortedIndex++) {
-        elementValueToSortedIndexMap[sortedSequenceCopy[currentSortedIndex]] = currentSortedIndex;
-    }
+    const getCycleElements = (startingIndex) => {
+        const cyclePath = [];
 
-    const visitedElementTracker = new Array(sequenceExtent).fill(false);
-    const overallMinimumValue = sortedSequenceCopy[0];
-    let cumulativePermutationCost = 0;
+        const traceCyclePath = (currentIndex) => {
+            isVisited[currentIndex] = true;
+            const elementInOriginal = inputValues[currentIndex];
+            cyclePath.push(elementInOriginal);
 
-    const extractCycleComponents = (startingPoint, currentCycleAccumulator) => {
-        visitedElementTracker[startingPoint] = true;
-        currentCycleAccumulator.push(initialSequence[startingPoint]);
+            const nextIndexInCycle = valueToIndexMap[elementInOriginal];
 
-        const valueAtCurrentOriginalPosition = initialSequence[startingPoint];
-        const nextTargetIndexInSorted = elementValueToSortedIndexMap[valueAtCurrentOriginalPosition];
+            if (isVisited[nextIndexInCycle]) {
+                return;
+            } else {
+                traceCyclePath(nextIndexInCycle);
+            }
+        };
 
-        if (!visitedElementTracker[nextTargetIndexInSorted]) {
-            extractCycleComponents(nextTargetIndexInSorted, currentCycleAccumulator);
-        }
+        traceCyclePath(startingIndex);
+        return cyclePath;
     };
 
-    let currentIndexIterator = 0;
-    while (currentIndexIterator < sequenceExtent) {
-        if (visitedElementTracker[currentIndexIterator]) {
-            currentIndexIterator++;
-            continue;
+    const processCyclesRecursively = (currentIndex, cumulativeCost) => {
+        if (currentIndex === totalElements) {
+            return cumulativeCost;
         }
 
-        const discoveredCycleValues = [];
-        extractCycleComponents(currentIndexIterator, discoveredCycleValues);
+        if (isVisited[currentIndex]) {
+            return processCyclesRecursively(currentIndex + 1, cumulativeCost);
+        }
 
-        const currentCycleLength = discoveredCycleValues.length;
-        const currentCycleSum = discoveredCycleValues.reduce((total, val) => total + val, 0);
-        const currentCycleSmallestValue = Math.min(...discoveredCycleValues);
+        const currentCycleElements = getCycleElements(currentIndex);
+        const cycleElementCount = currentCycleElements.length;
 
-        const costFormulaOne = currentCycleSum + (currentCycleLength - 2) * currentCycleSmallestValue;
-        const costFormulaTwo = currentCycleSum + currentCycleSmallestValue + (currentCycleLength + 1) * overallMinimumValue;
+        const cycleElementsSum = currentCycleElements.reduce((sum, val) => sum + val, 0);
+        const cycleMinimumValue = Math.min(...currentCycleElements);
 
-        cumulativePermutationCost += Math.min(costFormulaOne, costFormulaTwo);
-        currentIndexIterator++;
-    }
+        const FACTOR_TWO = 2;
+        const FACTOR_ONE = 1;
 
-    return cumulativePermutationCost;
+        const costOptionA = cycleElementsSum + (cycleElementCount - FACTOR_TWO) * cycleMinimumValue;
+        const smallestOverallElement = sortedValues[0];
+        const costOptionB = cycleElementsSum + cycleMinimumValue + (cycleElementCount + FACTOR_ONE) * smallestOverallElement;
+
+        const cycleContribution = Math.min(costOptionA, costOptionB);
+
+        return processCyclesRecursively(currentIndex + 1, cumulativeCost + cycleContribution);
+    };
+
+    return processCyclesRecursively(0, 0);
 };
 
-// Example usage (not part of the final output, but for testing purposes)
-/*
-const testN = 5;
-const testArray = [1, 5, 2, 4, 3];
-const result = computeCycleTransformationCost(testArray, testN);
-console.log(result); // Should output 12 based on the OCaml logic trace
-*/
+const executeMainLogic = () => {
+    const inputCount = retrieveInteger();
+    const initialArray = [];
+    for (let i = 0; i < inputCount; i++) {
+        initialArray.push(retrieveInteger());
+    }
+
+    const finalCalculatedCost = calculateMinimumCost(initialArray, inputCount);
+    console.log(finalCalculatedCost);
+};

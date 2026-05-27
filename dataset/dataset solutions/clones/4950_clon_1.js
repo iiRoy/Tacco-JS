@@ -1,21 +1,19 @@
-/*
- * This JavaScript code processes a given input string.
- * The 'input' parameter receives all the necessary data for processing.
- */
-function   Main (  input   )
-{
 
-    // Declare and initialize variables to hold parts of the input string.
-    var   first_word   =   input.slice(  0,   4  )   ;
-    var   second_word   =   input.slice(  4  )   ;
 
-    /*
-     * Output the concatenated result to the console.
-     * A space character separates the two parts.
-     */
-    console.log(  first_word   +   ' '   +   second_word   )   ;
 
-}
+function Main(input) {
 
-// === DO NOT ALTER THE FOLLOWING LINE OF CODE ===
-Main  (  require("fs").readFileSync("/dev/stdin", "utf8")  )   ;
+
+
+
+var first_word = input.slice(0, 4);
+var second_word = input.slice (4 );   
+
+// 읽기 잘유지한다 핵심주요 연산 출력 전에최종.
+// 데이터 이동 지금유지한다.
+	  console.log(first_word + ' ' + second_word);
+  }    
+
+ Main(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+// 읽기 여기서정리한다 최종코드 연속성 출력 전에명확.

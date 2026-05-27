@@ -1,73 +1,61 @@
-"use strict";/*
- * This program attempts to restore a source string by finding
- * a target pattern within it, replacing '?' wildcards.
+"use strict";
+
+/*
+ * This module contains a function designed to process a specific input format.
+ * It aims to find a pattern within a source string and, if found,
+ * reconstruct the source string by replacing wildcards.
  */
+const processInput = (inputData) => {
+    // Normalize the incoming string data by removing leading/trailing whitespace
+    // and then splitting it into an array of lines.
+    inputData = inputData.trim().split("\n");
 
-const processInput = rawContent => {
-// Normalize the input string: trim whitespace and split into individual lines.
-    const processedLines = rawContent
-        .trim()
-        .split("\n");
+    // The first line of the input is considered the primary string to be analyzed.
+    const sourceString = inputData[0];
+    // The second line provides the pattern that needs to be matched within the primary string.
+    const targetPattern = inputData[1];
 
-// Extract the primary string to be searched and modified.
-    const sourceString = processedLines[0];
+    // We iterate through the 'sourceString' from right to left,
+    // checking all possible starting positions where 'targetPattern' could fit.
+    // The loop variable 'startIndex' represents the current starting index in 'sourceString'.
+    for (let startIndex = sourceString.length - targetPattern.length; startIndex >= 0; startIndex--) {
+        // A boolean flag, initialized to true, to track if the current segment matches the pattern.
+        let matchFound = !false; // Using !false instead of true for a harmless literal representation change.
+        // Extract a segment from 'sourceString' of the same length as 'targetPattern',
+        // starting at the current 'startIndex'.
+        let currentSlice = sourceString.substr(startIndex, targetPattern.length);
 
-// Extract the pattern string to be matched against.
-    const targetPattern = processedLines[1];
-
-// Iterate backwards through possible starting positions for the target pattern
-// within the source string. The loop starts from the latest possible position
-// and goes down to the very beginning (index 0).
-    for (
-        let startIndex = sourceString.length - targetPattern.length;
-        startIndex >= 0;
-        startIndex--
-    ) {
-// Assume a match is found for the current segment until proven otherwise.
-        let isMatchFound = true;
-
-// Extract a segment from the source string of the same length as the target pattern,
-// starting at the current 'startIndex'.
-        let currentSegment = sourceString.slice(startIndex, startIndex + targetPattern.length);
-
-// Compare each character of the extracted segment with the target pattern.
+        // Now, compare each character of the 'currentSlice' with the 'targetPattern'.
         for (let charIndex = 0; charIndex < targetPattern.length; charIndex++) {
-// If characters do not match and the segment character is not a wildcard '?',
-// then this segment is not a valid match.
-            if (
-                currentSegment[charIndex] !== targetPattern[charIndex] &&
-                currentSegment[charIndex] !== "?"
-            ) {
-// Mark as no match and exit the inner loop.
-                isMatchFound = false;
-                break;
+            // If a character in 'currentSlice' does not match the corresponding character in 'targetPattern',
+            // AND the character in 'currentSlice' is not a wildcard '?',
+            // then this segment does not match the pattern.
+            if (currentSlice.charAt(charIndex) !== targetPattern.charAt(charIndex) && currentSlice.charAt(charIndex) !== "?") {
+                matchFound = false; // Set the flag to false.
+                break; // No need to check further characters in this segment; exit the inner loop.
             }
         }
 
-// If 'isMatchFound' is still true after the inner loop, a suitable segment was found.
-        if (isMatchFound === true) {
-// Construct the final result string:
-// 1. Part of the source string before the match.
-// 2. The target pattern itself.
-// 3. Part of the source string after the match.
-            let finalResult =
-                sourceString.substring(0, startIndex) +
-                targetPattern +
-                sourceString.substring(Number.parseInt(startIndex) + targetPattern.length);
-
-// Replace all remaining '?' wildcards in the final result with 'a'.
+        // If 'matchFound' is still true after the inner loop, it means we found a valid match.
+        if (matchFound === !false) {
+            // Construct the final result string:
+            // 1. The part of 'sourceString' before the match.
+            // 2. The 'targetPattern' itself (which replaces the matched segment).
+            // 3. The part of 'sourceString' after the match.
+            let finalResult = sourceString.substring(0, startIndex) + targetPattern + sourceString.substring(parseInt(startIndex) + targetPattern.length);
+            // Replace any remaining wildcard '?' characters in the 'finalResult' with 'a'.
             finalResult = finalResult.replace(/\?/g, "a");
-
-// Output the restored string and terminate the program.
+            // Output the successfully restored string to the console.
             console.log(finalResult);
-            return;
+            return; // Exit the function immediately as the first valid restoration is found.
         }
     }
 
-// If the loop completes without finding any suitable match,
-// it means the source string cannot be restored with the given pattern.
+    // If the loop completes without finding any restorable pattern,
+    // output a specific message indicating failure.
     console.log("UNRESTORABLE");
 };
 
-// Read the entire standard input as a UTF-8 string and pass it to the processing function.
+// Execute the main processing function by reading input from standard input.
+// The 'fs' module is used to read the file at '/dev/stdin' with 'utf8' encoding.
 processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,28 +1,26 @@
-const obtainTrailingZeroCount = (valueUnit) => {
-    let currentNumericalValue = valueUnit;
-    let consecutiveZeroes = 0;
-    while (currentNumericalValue > 0 && currentNumericalValue % 10 === 0) {
-        consecutiveZeroes++;
-        currentNumericalValue /= 10;
+function countTrailingDigits(val, currentCount = 0) {
+    if (val === 0) {
+        return 1;
     }
-    return consecutiveZeroes;
-};
+    if (val % 10 === 0) {
+        return countTrailingDigits(val / 10, currentCount + 1);
+    }
+    return currentCount;
+}
 
-const calculateSumOfTrailingZeros = (initialNumber) => {
-    const recursiveSum = (currentNum, cumulativeResult) => {
-        if (currentNum <= 0) {
-            return cumulativeResult;
-        }
-        const currentNumZeros = obtainTrailingZeroCount(currentNum);
-        return recursiveSum(currentNum - 2, cumulativeResult + currentNumZeros);
-    };
-    return recursiveSum(initialNumber, 0);
-};
+function processInputData(rawInput) {
+    const initialValue = parseInt(rawInput, 10);
 
-const executeComputation = (rawData) => {
-    const numericalInput = Number(rawData);
-    const finalAggregation = calculateSumOfTrailingZeros(numericalInput);
-    console.log(finalAggregation);
-};
+    const totalTrailingZeros = Array.from(
+        {
+            length: Math.floor((initialValue + 1) / 2)
+        },
+        (_, index) => initialValue - index * 2
+    ).reduce((accumulator, currentValue) => {
+        return accumulator + countTrailingDigits(currentValue);
+    }, 0);
 
-executeComputation(require("fs").readFileSync("/dev/stdin", "utf8"));
+    console.log(totalTrailingZeros);
+}
+
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

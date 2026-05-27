@@ -1,91 +1,101 @@
-'use strict';
+'use strict'
 
-const PRIME_DIVISOR = 1000000007;
+var mod = 1e9 + 7
 
-// Function to perform the recursive calculation for a subtree
-// This calculates the number of ways to select nodes such that the current node
-// is either included or excluded, adhering to specific rules (e.g., no adjacent chosen nodes).
-const calculateSubtreeSelections = (
-    currentVertex,
-    connectionNetwork,
-    alreadyVisited,
-    modValue
-) => {
-    // 'excludedFromSet': currentVertex is NOT part of the selection.
-    // Its children can be either included or excluded.
-    // 'includedInSet': currentVertex IS part of the selection.
-    // Its children MUST be excluded.
-    let selectionCounts = { excludedFromSet: 1, includedInSet: 1 };
+function createGraphAdjacency(nodeCount, edgeData) {
+  var graphMap = new Map()
+  for (var i = 1; i <= nodeCount; i++) {
+    graphMap.set(i, [])
+  }
 
-    alreadyVisited.add(currentVertex); // Mark current vertex as processed for this path
+  for (var k = 0; k < edgeData.length; k++) {
+    var nodeA = edgeData[k][0]
+    var nodeB = edgeData[k][1]
+    graphMap.get(nodeA).push(nodeB)
+    graphMap.get(nodeB).push(nodeA)
+  }
+  return graphMap
+}
 
-    const adjacentVertices = connectionNetwork.get(currentVertex) || new Set();
+function calculateTreeDP(startVertex, graphAdjacencyMap) {
+  var parentTracker = new Map()
+  var dfsTraversalStack = []
+  var postOrderSequence = []
+  var visitedSet = new Set()
 
-    for (const connectedVertex of adjacentVertices) {
-        if (!alreadyVisited.has(connectedVertex)) {
-            const childResult = calculateSubtreeSelections(
-                connectedVertex,
-                connectionNetwork,
-                alreadyVisited,
-                modValue
-            );
+  dfsTraversalStack.push([startVertex, null])
+  visitedSet.add(startVertex)
 
-            selectionCounts.excludedFromSet =
-                (selectionCounts.excludedFromSet *
-                    (childResult.excludedFromSet + childResult.includedInSet)) %
-                modValue;
+  var tempPostOrderStack = []
 
-            selectionCounts.includedInSet =
-                (selectionCounts.includedInSet * childResult.excludedFromSet) %
-                modValue;
-        }
+  while (dfsTraversalStack.length > 0) {
+    var current = dfsTraversalStack.pop()
+    var currentVertex = current[0]
+    var parentOfCurrent = current[1]
+
+    parentTracker.set(currentVertex, parentOfCurrent)
+    tempPostOrderStack.push(currentVertex)
+
+    var neighbors = graphAdjacencyMap.get(currentVertex)
+    for (var j = 0; j < neighbors.length; j++) {
+      var neighbor = neighbors[j]
+      if (neighbor !== parentOfCurrent && !visitedSet.has(neighbor)) {
+        visitedSet.add(neighbor)
+        dfsTraversalStack.push([neighbor, currentVertex])
+      }
     }
-    return selectionCounts;
-};
+  }
 
-// Function to construct the graph's adjacency structure
-const constructGraphConnections = (totalVertexCount, rawEdgeData) => {
-    const networkMap = new Map();
-    for (let j = 1; j <= totalVertexCount; ++j) {
-        networkMap.set(j, new Set());
+  while (tempPostOrderStack.length > 0) {
+    postOrderSequence.push(tempPostOrderStack.pop())
+  }
+
+  var dpResultsMap = new Map()
+
+  for (var l = 0; l < postOrderSequence.length; l++) {
+    var nodeToProcess = postOrderSequence[l]
+    var currentIncludeVal = 1
+    var currentExcludeVal = 1
+
+    var childrenOfNode = []
+    var nodeNeighbors = graphAdjacencyMap.get(nodeToProcess)
+    for (var m = 0; m < nodeNeighbors.length; m++) {
+      var potentialChild = nodeNeighbors[m]
+      if (parentTracker.get(potentialChild) === nodeToProcess) {
+        childrenOfNode.push(potentialChild)
+      }
     }
 
-    for (const edgePair of rawEdgeData) {
-        const firstVertex = edgePair[0];
-        const secondVertex = edgePair[1];
-        networkMap.get(firstVertex).add(secondVertex);
-        networkMap.get(secondVertex).add(firstVertex);
+    for (var n = 0; n < childrenOfNode.length; n++) {
+      var childNode = childrenOfNode[n]
+      var childDP = dpResultsMap.get(childNode)
+      var childInclude = childDP[0]
+      var childExclude = childDP[1]
+
+      currentIncludeVal = (currentIncludeVal * (childInclude + childExclude)) % mod
+      currentExcludeVal = (currentExcludeVal * childInclude) % mod
     }
-    return networkMap;
-};
+    dpResultsMap.set(nodeToProcess, [currentIncludeVal, currentExcludeVal])
+  }
 
-// Main logic for processing the graph and deriving the final answer
-const processGraphScenario = (nodeQuantity, edgeDescriptions) => {
-    const graphStructure = constructGraphConnections(nodeQuantity, edgeDescriptions);
-    const visitedTracker = new Set();
+  return dpResultsMap.get(startVertex)
+}
 
-    // The problem implies starting from node 1 and calculating for its component.
-    const finalSelectionResults = calculateSubtreeSelections(
-        1,
-        graphStructure,
-        visitedTracker,
-        PRIME_DIVISOR
-    );
+function computeFinalResult(nodeCount, edgeData) {
+  var graphStructure = createGraphAdjacency(nodeCount, edgeData)
+  var initialVertex = 1
+  var finalDPValues = calculateTreeDP(initialVertex, graphStructure)
+  return (finalDPValues[0] + finalDPValues[1]) % mod
+}
 
-    return (finalSelectionResults.excludedFromSet + finalSelectionResults.includedInSet) % PRIME_DIVISOR;
-};
+function processInputAndDisplay(rawInputString) {
+  var inputLines = rawInputString.split("\n")
+  var totalNodes = Number(inputLines[0])
+  var edgeListParsed = inputLines.slice(1).map(function(line) {
+    return line.split(' ').map(Number)
+  })
+  var solutionOutput = computeFinalResult(totalNodes, edgeListParsed)
+  console.log(solutionOutput)
+}
 
-// Entry point for input processing and output
-const orchestrateCalculation = (inputString) => {
-    const allInputLines = inputString.split("\n");
-    const quantityOfNodes = parseInt(allInputLines[0], 10);
-    // Parse edge data, ensuring each element is an integer
-    const descriptionsOfEdges = allInputLines
-        .slice(1)
-        .map(lineText => lineText.split(' ').map(strNum => parseInt(strNum, 10)));
-
-    const finalAnswer = processGraphScenario(quantityOfNodes, descriptionsOfEdges);
-    console.log(finalAnswer);
-};
-
-orchestrateCalculation(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processInputAndDisplay(require('fs').readFileSync('/dev/stdin', 'utf8'))

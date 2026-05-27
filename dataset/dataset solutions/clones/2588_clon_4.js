@@ -1,89 +1,70 @@
-const dataStreamReader = require('readline').createInterface({
+//Don't have to see. start------------------------------------------
+var read = require('readline').createInterface({
   input: process.stdin, output: process.stdout
 });
-let inputProvider;
-const rawInputLines = [];
-
-dataStreamReader.on('line', function(textLine){rawInputLines.push(textLine);});
-dataStreamReader.on('close', function(){
-  inputProvider = initializeInput(rawInputLines);
+var obj; var inLine = [];
+read.on('line', function(input){inLine.push(input);});
+read.on('close', function(){
+  obj = init(inLine);
   console.error('\n↑入力 ↓出力');
-  executeValidation();
+  Main();
 });
-
-function replicateData(sourceObject){return (sourceObject instanceof Set) ? new Set(Array.from(sourceObject)) : JSON.parse(JSON.stringify(sourceObject));}
-function retrieveInteger(){return convertInput(retrieveNextItem(),1);}
-function retrieveStringArray(){return convertInput(retrieveNextItem(),2);}
-function retrieveIntegerArray(){return convertInput(retrieveNextItem(),4);}
-function retrieveCharacterArray(){return convertInput(retrieveNextItem(),6);}
-function retrieveNextItem(){return inputProvider.retrieveNextItem();}
-function hasMoreItems(){return inputProvider.hasMoreItems();}
-
-function initializeInput(dataLines){
+function makeClone(obj){return (obj instanceof Set) ? new Set(Array.from(obj)) : JSON.parse(JSON.stringify(obj));}
+function nextInt(){return myconv(next(),1);} function nextStrArray(){return myconv(next(),2);}
+function nextIntArray(){return myconv(next(),4);} function nextCharArray(){return myconv(next(),6);}
+function next(){return obj.next();} function hasNext(){return obj.hasNext();}
+function init(input){  
   return {
-    lineCollection : dataLines, currentPosition : 0, totalLines : dataLines.length,
-    hasMoreItems : function(){return (this.currentPosition < this.totalLines);},
-    retrieveNextItem : function(){if(this.hasMoreItems()){return this.lineCollection[this.currentPosition++];}else{throw 'EndOfInputException ‚No further input available';}}
+    list : input, index : 0, max : input.length,
+    hasNext : function(){return (this.index < this.max);},
+    next : function(){if(this.hasNext()){return this.list[this.index++];}else{throw 'ArrayIndexOutOfBoundsException ‚There is no more input';}}
   };
 }
-function outputMessage(str){console.log(str);}
-function outputDebug(str){console.error('trace:' + require('util').inspect(str,false,null));}
+function myout(s){console.log(s);}
+function myerr(s){console.error('debug:' + require('util').inspect(s,false,null));}
+//param "no" is
+//unknown or outlier : return i. 1: parseInt.
+//2: split space. 4: split space and parseInt.
+//6: split 1 character. 7: split 1 character and parseInt.
+//8: join space. 9: join nextline. 0: join no character.
+function myconv(i,no){try{switch(no){case 1:return parseInt(i);case 2:return i.split(' ');case 4:return i.split(' ').map(Number);case 6:return i.split('');case 7:return i.split('').map(Number);case 8:return i.join(' ');case 9:return i.join('\n');case 0:return i.join('');default:return i;}}catch(e){return i;}}
 
-function convertInput(item, transformationCode){
-  try{
-    switch(transformationCode){
-      case 1:return parseInt(item);
-      case 2:return item.split(' ');
-      case 4:return item.split(' ').map(Number);
-      case 6:return item.split('');
-      case 7:return item.split('').map(Number);
-      case 8:return item.join(' ');
-      case 9:return item.join('\n');
-      case 0:return item.join('');
-      default:return item;
+//Don't have to see. end------------------------------------------
+function Main(){
+  var structureDepth = nextInt();
+  var numericSequence = nextIntArray();
+
+  // Sort the entire input sequence in descending order once.
+  // This allows direct comparison of elements based on their overall rank.
+  numericSequence.sort((valA, valB) => valB - valA);
+
+  // The problem implies a hierarchical structure where elements at a higher level
+  // must be strictly greater than their corresponding elements at the next lower level.
+  // The structure involves 1 root element, then 1 child, then 2 children, then 4, etc.
+  // For a given 'level' (from 0 to structureDepth-1), we compare a set of '2^level'
+  // "parent" elements with a set of '2^level' "child" elements.
+  // In the fully sorted descending array, the first '2^level' elements represent
+  // the combined "parents" from all previous levels, and the next '2^level' elements
+  // represent the "children" for the current level.
+
+  for (let currentLevel = 0; currentLevel < structureDepth; currentLevel++) {
+    const currentLevelElementCount = 1 << currentLevel; // Number of elements in the 'parent' group for this comparison
+    const parentGroupOffset = 0; // The 'parent' group always starts from the beginning of the sorted array
+    const childGroupOffset = currentLevelElementCount; // The 'child' group starts immediately after the 'parent' group
+
+    for (let elementRank = 0; elementRank < currentLevelElementCount; elementRank++) {
+      const parentCandidate = numericSequence[parentGroupOffset + elementRank];
+      const childCandidate = numericSequence[childGroupOffset + elementRank];
+
+      // If any parent element is not strictly greater than its corresponding child element,
+      // the condition is violated.
+      if (parentCandidate <= childCandidate) {
+        myout("No");
+        return;
+      }
     }
-  }catch(e){return item;}
-}
+  }
 
-function executeValidation(){
-    const getIntegerParameter = () => retrieveInteger();
-    const getIntegerCollection = () => retrieveIntegerArray();
-    const displayResult = (indicator) => outputMessage(indicator);
-
-    const hierarchyDepth = getIntegerParameter();
-    const allNumericalValues = getIntegerCollection();
-
-    const numericalValuesDescending = [...allNumericalValues].sort((valueA, valueB) => valueB - valueA);
-
-    const validateHierarchyLevel = (currentTierElements, remainingValuesPool, currentLevelIndex) => {
-        if (currentLevelIndex >= hierarchyDepth) {
-            return true;
-        }
-
-        const nextTierSize = 1 << currentLevelIndex;
-        if (remainingValuesPool.length < nextTierSize) {
-             return false;
-        }
-
-        const candidateSubordinates = remainingValuesPool.slice(0, nextTierSize);
-        const subsequentValuesPool = remainingValuesPool.slice(nextTierSize);
-
-        const allComparisonsPass = currentTierElements.every((dominantValue, itemIndex) => {
-            return dominantValue > candidateSubordinates[itemIndex];
-        });
-
-        if (!allComparisonsPass) {
-            return false;
-        }
-
-        const combinedDominantSet = [...currentTierElements, ...candidateSubordinates];
-
-        return validateHierarchyLevel(combinedDominantSet, subsequentValuesPool, currentLevelIndex + 1);
-    };
-
-    const topMostElement = numericalValuesDescending[0];
-    const initialRemainingPool = numericalValuesDescending.slice(1);
-
-    const finalOutcome = validateHierarchyLevel([topMostElement], initialRemainingPool, 0);
-    displayResult(finalOutcome ? "Yes" : "No");
+  // If all hierarchical comparisons pass for all levels, the condition is met.
+  myout("Yes");
 }

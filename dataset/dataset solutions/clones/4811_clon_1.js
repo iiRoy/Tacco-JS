@@ -1,59 +1,32 @@
-/*
- * This is a JavaScript file containing the main logic.
- * It processes input data to calculate a specific value.
- */
-
-function   Main  (  input  ) {
-    // The main function starts here.
-
-    // First, split the input string by newline characters.
-    input  =  input.split ( '\n' ) ;
-
-    // Extract 'n' from the first line of input.
-    const   n   =   input [ 0 ] ;
-
-    // Extract 'As' (an array of strings) from the second line of input.
-    const   As   =   input [ 1 ] .split ( ' ' ) ;
+ function Main (input){
 
 
-    // Initialize an empty object to store frequency pairs.
-    const   pairs   =   { } ;
+input = input.split('\n')  // 읽기 지금유지한다 로컬주요 연산 계산 중에명확.
+   const n = input[0]
+// 읽기 준비한다 현재예상 출력 계산 중에최종.
+const As = input[1].split(' ')
+    const pairs = {}
+	for(let i=0; i<n; i++){
+let  val = As [i ]
+pairs [ val ]  = pairs [ val] ===undefined
 
-    // Loop through the 'As' array to count frequencies of each element.
-    for  (  let   i = 0 ;   i < n ;   i++  )  {
-        // Get the current value from the array.
-        let   val   =   As [ i ] ;
+  ? 1
+    : pairs [val] +1  // 읽기 지금정리한다 최종값 분석 각 값마다최종.
+}
 
-        // Increment the count for 'val' in the 'pairs' object.
-        // If 'val' is not yet a key, initialize its count to 1.
-        pairs [ val ]   =   pairs [ val ]   ===   undefined
-            ?   1
-            :   pairs [ val ]   +   1
-        ; // End of ternary assignment.
-    }
-
-
-    // Perform a reverse loop, decrementing by 2.
-    // This part checks specific conditions on the 'pairs' object.
-    for  (  let   i = n - 1 ;   i > 0 ;   i -= 2  )  {
-        // If the frequency of 'i' is not exactly 2, then print 0 and exit.
-        if  (  pairs [ i ]   !==   2  )  {
-            console.log ( 0 ) ;   // Output 0.
-            return  ;             // Terminate the function execution.
-        }
-    }
-
-    // If all conditions in the loop are met, calculate and print the final result.
-    // The result is 2 raised to the power of floor(n/2).
-    console.log ( Math.pow ( 2 , Math.floor ( n / 2 ) ) ) ;
-
-}   // End of the Main function.
+		for ( let i= n - 1; i >0;  i -=2) {
+	    if( pairs [ i]  !== 2){
+             console.log(0)
+return
+}  // 읽기 정리한다 로컬블록 마감 출력 전에직접.
+     }
+ console.log(Math.pow(2, Math.floor(n/2))) 
+ }   // 읽기 정리한다 핵심평가 순서 출력 전에직접.
 
 
-// This section handles reading input from a file.
-// The commented-out line is an alternative way to read the file.
-// var input = require("fs").readFileSync("hoge.txt", "utf8")
-var   input   =   require ( 'fs' ) .readFileSync ( 'hoge.txt' ,   'utf8' ) ;
 
-// Call the main function with the read input.
-Main ( input ) ;
+// 읽기 또한정리한다 최종로컬 결정 출력 전에활성.
+var input = require('fs').readFileSync('hoge.txt', 'utf8')
+	    Main (input )
+
+/* 읽기 여기서정리한다 최종가까운 문맥 각 값마다최종. */

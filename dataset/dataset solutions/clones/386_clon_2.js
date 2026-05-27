@@ -1,102 +1,116 @@
-// This function recursively traces a path, marking cells in a grid.
-function detonatePath(currentY, currentX, directionIndex) {
-  // If the current cell is not marked with '+', stop processing this path.
-  if (gridMap[currentY][currentX] !== "+") {
+function pathfinder(rowCoord, colCoord, directionIndex) {
+  // Check if the current cell is already part of the path or out of bounds.
+  // If it's not an unvisited cell ('+'), then terminate this path segment.
+  if (gridMap[rowCoord][colCoord] !== "+") {
     return;
   }
 
-  // Define offsets for movement in Y (row) and X (column) directions.
-  const yDirections = [-1, 0, 1, 0]; // Up, Right, Down, Left for Y
-  const xDirections = [0, 1, 0, -1]; // Up, Right, Down, Left for X
+  // Define the row and column offsets for the four cardinal directions:
+  // Up, Right, Down, Left (corresponding to directionIndex 0, 1, 2, 3)
+  const rowOffsets = [-1, 0, 1, 0];
+  const colOffsets = [0, 1, 0, -1];
 
-  // Calculate the coordinates of the next cell based on the current direction.
-  let nextY = currentY + yDirections[directionIndex];
-  let nextX = currentX + xDirections[directionIndex];
+  // Calculate the coordinates of the potential next cell.
+  let nextRow = rowCoord + rowOffsets[directionIndex];
+  let nextCol = colCoord + colOffsets[directionIndex];
 
-  // Check if the next cell is out of bounds.
-  if (nextY < 0 || nextX < 0 || nextY >= boardSize || nextX >= boardSize) {
-    // If out of bounds, rotate the direction clockwise and retry from the current cell.
+  // Determine if the next cell is outside the grid boundaries.
+  if (nextRow < 0 || nextCol < 0 || nextRow >= gridSize || nextCol >= gridSize) {
+    // If out of bounds, change the current direction (rotate clockwise)
+    // and attempt to move from the current cell again with the new direction.
     directionIndex = (directionIndex + 1) % 4;
-    detonatePath(currentY, currentX, directionIndex);
+    pathfinder(rowCoord, colCoord, directionIndex);
   } else {
-    // If the next cell is already marked with '#', it means we've hit an obstacle.
-    if (gridMap[nextY][nextX] === "#") {
-      // Mark the cell *before* the obstacle as '+'.
-      gridMap[nextY - yDirections[directionIndex]][nextX - xDirections[directionIndex]] = "+";
-      // Based on the current direction, recursively call detonatePath with adjusted coordinates.
-      // These adjustments seem to skip cells or re-position for the next segment of the path.
-      if (directionIndex === 3) {
-        detonatePath(nextY - 2 * yDirections[directionIndex] - 1, nextX - 2 * xDirections[directionIndex], 0);
-      } else if (directionIndex === 0) {
-        detonatePath(nextY - 2 * yDirections[directionIndex], nextX - 2 * xDirections[directionIndex] + 1, 1);
-      } else if (directionIndex === 1) {
-        detonatePath(nextY - 2 * yDirections[directionIndex] + 1, nextX - 2 * xDirections[directionIndex], 2);
-      } else if (directionIndex === 2) {
-        detonatePath(nextY - 2 * yDirections[directionIndex], nextX - 2 * xDirections[directionIndex] - 1, 3);
+    // If the next cell is within bounds, check its content.
+    if (gridMap[nextRow][nextCol] === "#") {
+      // If the next cell is already marked as part of the path ('#'),
+      // then the cell *before* it (which was the current cell's previous state)
+      // should be marked as unvisited ('+'). This is part of the spiral logic.
+      gridMap[nextRow - rowOffsets[directionIndex]][nextCol - colOffsets[directionIndex]] = "+";
+
+      // Based on the current direction, make a specific recursive call
+      // to continue the path from an adjusted position and a new starting direction.
+      if (directionIndex === 3) { // Was moving Left, now turn Up (0)
+        pathfinder(nextRow - 2 * rowOffsets[directionIndex] - 1, nextCol - 2 * colOffsets[directionIndex], 0);
+      } else if (directionIndex === 0) { // Was moving Up, now turn Right (1)
+        pathfinder(nextRow - 2 * rowOffsets[directionIndex], nextCol - 2 * colOffsets[directionIndex] + 1, 1);
+      } else if (directionIndex === 1) { // Was moving Right, now turn Down (2)
+        pathfinder(nextRow - 2 * rowOffsets[directionIndex] + 1, nextCol - 2 * colOffsets[directionIndex], 2);
+      } else if (directionIndex === 2) { // Was moving Down, now turn Left (3)
+        pathfinder(nextRow - 2 * rowOffsets[directionIndex], nextCol - 2 * colOffsets[directionIndex] - 1, 3);
       }
     } else {
-      // If the next cell is not an obstacle, mark the current cell with '#'.
-      gridMap[currentY][currentX] = "#";
-      // Store the current position as the last visited cell.
-      finalCell = [currentY, currentX];
-      // Recursively move to the next cell in the same direction.
-      detonatePath(nextY, nextX, directionIndex);
+      // If the next cell is not '#' (meaning it's '+', an unvisited cell),
+      // mark the current cell as part of the path ('#').
+      gridMap[rowCoord][colCoord] = "#";
+      // Store the coordinates of this newly marked cell as the last visited position.
+      finalPosition = [rowCoord, colCoord];
+      // Recursively continue the path from the next cell in the same direction.
+      pathfinder(nextRow, nextCol, directionIndex);
     }
   }
 }
 
-// Read input from standard input.
-const rawInputData = require('fs').readFileSync('/dev/stdin', 'utf8');
+// Declare global variables that will be used across test cases.
+let gridMap;
+let gridSize;
+let finalPosition;
 
-// Process the input: trim whitespace, split by newline, and convert to numbers.
-const numericDataSequence = rawInputData.trim().split("\n").map(Number);
+// Read the entire input from standard input.
+const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
+// Process the input: remove leading/trailing whitespace, split into lines,
+// and convert each line to a number.
+const numericData = rawData.trim().split("\n").map(Number);
 
-// Extract the total number of test cases.
-let totalCases = numericDataSequence.shift();
+// The first number in the input is the total count of test cases.
+let testCaseCount = numericData.shift();
 
 // Iterate through each test case.
-while (totalCases--) {
-  // Get the size of the grid for the current test case.
-  let boardSize = numericDataSequence.shift();
+while (testCaseCount--) {
+  // Get the grid size for the current test case.
+  gridSize = numericData.shift();
 
-  // Handle specific edge cases for board size.
-  if (boardSize === 0) {
-    console.log("");
+  // Handle specific edge cases for very small grid sizes.
+  if (gridSize === 0) {
+    console.log(""); // Output an empty line for a grid of size 0.
     continue;
   }
-  if (boardSize === 1) {
-    console.log("#");
+  if (gridSize === 1) {
+    console.log("#"); // Output a single '#' for a grid of size 1.
     continue;
   }
-  if (boardSize === 2) {
-    // Special pattern for a 2x2 grid.
+  if (gridSize === 2) {
+    // Output a predefined pattern for a grid of size 2.
     const outputString = "##" + "\n" + "# ";
     console.log(outputString);
     continue;
   }
 
-  // Initialize the grid with '+' characters.
-  let gridMap = [];
-  for (let rowIterator = 0; rowIterator < boardSize; rowIterator++) {
-    gridMap[rowIterator] = [];
-    for (let colIterator = 0; colIterator < boardSize; colIterator++) {
-      gridMap[rowIterator][colIterator] = "+";
+  // Initialize the 2D grid for the current test case.
+  // All cells are initially marked as unvisited ('+').
+  gridMap = [];
+  for (let rowIndex = 0; rowIndex < gridSize; rowIndex++) {
+    gridMap[rowIndex] = [];
+    for (let colIndex = 0; colIndex < gridSize; colIndex++) {
+      gridMap[rowIndex][colIndex] = "+";
     }
   }
 
-  // Variable to store the last modified cell's coordinates.
-  let finalCell = [];
+  // Initialize the tracker for the last position visited.
+  finalPosition = [];
+  // Start the pathfinding algorithm from the bottom-left corner (gridSize-1, 0),
+  // initially moving upwards (directionIndex 0).
+  pathfinder(gridSize - 1, 0, 0);
 
-  // Start the path tracing from the bottom-left corner, facing upwards (direction 0).
-  detonatePath(boardSize - 1, 0, 0);
-
-  // If the board size is even, the last cell visited should be reset to '+'.
-  if (boardSize % 2 === 0) {
-    gridMap[finalCell[0]][finalCell[1]] = "+";
+  // Apply a correction for even-sized grids:
+  // The last cell marked by the algorithm needs to be reset to unvisited ('+').
+  if (gridSize % 2 === 0) {
+    gridMap[finalPosition[0]][finalPosition[1]] = "+";
   }
 
-  // Print the final grid, joining rows with newlines, removing commas, and replacing '+' with spaces.
-  console.log(
-    gridMap.join("\n").replace(/,/g, "").replace(/\+/g, " ")
-  );
+  // Format the final grid for output:
+  // 1. Join the rows of the grid with newline characters.
+  // 2. Remove any commas that might appear from joining inner arrays (e.g., ["#", "+"].join() -> "#,+").
+  // 3. Replace all '+' characters (unvisited cells) with spaces for the final visual representation.
+  console.log(gridMap.join("\n").replace(/,/g, "").replace(/\+/g, " "));
 }

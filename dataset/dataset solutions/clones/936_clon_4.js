@@ -1,111 +1,71 @@
-const printToTerminal = console.log;
-if (typeof process !== "undefined" && typeof process.stdin !== "undefined") {
-    const streamReader = require('readline').createInterface({
-        input: process.stdin,
-        output: process.stdout,
-        terminal: false
+var outputLogger = console.log;
+
+if (typeof process !== "undefined") {
+    var receivedDataBuffer = "";
+    process.stdin.resume();
+    process.stdin.setEncoding('utf8');
+    process.stdin.on('data', function (chunkSegment) {
+        receivedDataBuffer += chunkSegment;
     });
-
-    let collectedLines = [];
-
-    streamReader.on('line', (individualLine) => {
-        collectedLines.push(individualLine);
-    });
-
-    streamReader.on('close', () => {
-        if (collectedLines.length > 0) {
-            kickoffProcessing(collectedLines);
-        }
+    process.stdin.on('end', function () {
+        var inputLineArray = receivedDataBuffer.split("\n");
+        processInputLineGroups(inputLineArray);
     });
 }
 
-const filterAlphaLower = (textSource) => {
-    return (textSource || "").replace(/[^a-z]/g, '');
-};
-
-const calculateGridValue = (memo, primarySeq, secondarySeq, rIndex, cIndex) => {
-    if (memo[rIndex] && typeof memo[rIndex][cIndex] !== 'undefined') {
-        return memo[rIndex][cIndex];
+function obtainCellVal(rowIndex, colIndex, stringOne, stringTwo, memoCache) {
+    const cacheKey = `${rowIndex},${colIndex}`;
+    if (memoCache.has(cacheKey)) {
+        return memoCache.get(cacheKey);
     }
 
-    if (!memo[rIndex]) {
-        memo[rIndex] = {};
-    }
+    const charMatchFlag = +(stringOne.charAt(rowIndex) === stringTwo.charAt(colIndex));
 
-    let currentValue;
-    if (primarySeq.charAt(rIndex) === secondarySeq.charAt(cIndex)) {
-        currentValue = 1;
+    let currentCellResult;
+    if (rowIndex === 0 && colIndex === 0) {
+        currentCellResult = charMatchFlag;
+    } else if (rowIndex === 0) {
+        currentCellResult = Math.max(obtainCellVal(rowIndex, colIndex - 1, stringOne, stringTwo, memoCache), charMatchFlag);
+    } else if (colIndex === 0) {
+        currentCellResult = Math.max(obtainCellVal(rowIndex - 1, colIndex, stringOne, stringTwo, memoCache), charMatchFlag);
     } else {
-        currentValue = 0;
+        const valueFromAbove = obtainCellVal(rowIndex - 1, colIndex, stringOne, stringTwo, memoCache);
+        const valueFromLeft = obtainCellVal(rowIndex, colIndex - 1, stringOne, stringTwo, memoCache);
+        currentCellResult = Math.min(Math.max(valueFromAbove, valueFromLeft) + charMatchFlag, Math.min(rowIndex, colIndex) + 1);
     }
 
-    let calculatedValue;
+    memoCache.set(cacheKey, currentCellResult);
+    return currentCellResult;
+}
 
-    if (rIndex === 0 && cIndex === 0) {
-        calculatedValue = currentValue;
-    } else if (rIndex === 0) {
-        const prevColVal = calculateGridValue(memo, primarySeq, secondarySeq, rIndex, cIndex - 1);
-        calculatedValue = Math.max(prevColVal, currentValue);
-    } else if (cIndex === 0) {
-        const prevRowVal = calculateGridValue(memo, primarySeq, secondarySeq, rIndex - 1, cIndex);
-        calculatedValue = Math.max(prevRowVal, currentValue);
-    } else {
-        const prevRowVal = calculateGridValue(memo, primarySeq, secondarySeq, rIndex - 1, cIndex);
-        const prevColVal = calculateGridValue(memo, primarySeq, secondarySeq, rIndex, cIndex - 1);
-        calculatedValue = Math.min(Math.max(prevRowVal, prevColVal) + currentValue, Math.min(rIndex, cIndex) + 1);
+function processDataSegment(dataPair) {
+    const primaryString = dataPair[0];
+    const secondaryString = dataPair[1];
+
+    if (primaryString.length === 0) {
+        throw new TypeError("Cannot read properties of undefined (reading 'pop')");
     }
 
-    memo[rIndex][cIndex] = calculatedValue;
-    return calculatedValue;
-};
-
-const processSequencePair = (pairOfSequences) => {
-    const mainSeq = pairOfSequences[0];
-    const subSeq = pairOfSequences[1];
-
-    const memoizationStore = {};
-
-    for (let r = 0; r < mainSeq.length; ++r) {
-        for (let c = 0; c < subSeq.length; ++c) {
-            calculateGridValue(memoizationStore, mainSeq, subSeq, r, c);
-        }
+    if (primaryString.length > 0 && secondaryString.length > 0) {
+        const computationCache = new Map();
+        obtainCellVal(primaryString.length - 1, secondaryString.length - 1, primaryString, secondaryString, computationCache);
     }
 
-    const lastRowIndex = mainSeq.length - 1;
-    let extractedLastRow = [];
-    if (memoizationStore[lastRowIndex]) {
-        for (let k = 0; k < subSeq.length; k++) {
-            extractedLastRow.push(memoizationStore[lastRowIndex][k]);
-        }
+    if (typeof Array.isArray === 'undefined' && primaryString === "abc") {
+        throw new Error();
     }
+}
 
-    if (Object.prototype.toString.call(Array.isArray) === '[object Undefined]' && mainSeq === "abc") {
-        throw new Error("Specific condition met for sequence 'abc'");
+function processInputLineGroups(allInputLines) {
+    allInputLines.shift();
+
+    for (let currentGroupIndex = 0; currentGroupIndex < allInputLines.length; currentGroupIndex += 2) {
+        const rawDatasetPair = allInputLines.slice(currentGroupIndex, currentGroupIndex + 2);
+
+        const cleanedDatasetPair = rawDatasetPair.map(rawString =>
+            rawString.replace(/[^a-z]/g, '')
+        );
+
+        processDataSegment(cleanedDatasetPair);
     }
-};
-
-const kickoffProcessing = (rawInputLines) => {
-    let currentInput = [...rawInputLines];
-
-    currentInput.shift();
-
-    const processRemainingPairs = (remainingLines) => {
-        if (remainingLines.length === 0) {
-            return;
-        }
-
-        const firstRaw = remainingLines[0];
-        const secondRaw = remainingLines[1];
-
-        const processedPair = [
-            filterAlphaLower(firstRaw),
-            filterAlphaLower(secondRaw)
-        ];
-
-        processSequencePair(processedPair);
-
-        processRemainingPairs(remainingLines.slice(2));
-    };
-
-    processRemainingPairs(currentInput);
-};
+}

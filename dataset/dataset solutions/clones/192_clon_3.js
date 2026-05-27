@@ -1,55 +1,34 @@
-const CONTAINER_LABELS = ["A", "B", "C"];
+const cupLabels = ["A", "B", "C"];
 
-const retrieveContainerPosition = (labelIdentifier) => {
-    return CONTAINER_LABELS.indexOf(labelIdentifier);
-};
-
-const performItemExchange = (targetCollection, firstSpot, secondSpot) => {
-    if (firstSpot < 0 || firstSpot >= targetCollection.length ||
-        secondSpot < 0 || secondSpot >= targetCollection.length) {
+const exchangePositions = (arr, idx1, idx2) => {
+    if (idx1 < 0 || idx2 < 0 || idx1 >= arr.length || idx2 >= arr.length) {
         return;
     }
-    [targetCollection[firstSpot], targetCollection[secondSpot]] = [targetCollection[secondSpot], targetCollection[firstSpot]];
+    [arr[idx1], arr[idx2]] = [arr[idx2], arr[idx1]];
 };
 
-const fileSystemModule = require('fs');
-const rawInputData = fileSystemModule.readFileSync('/dev/stdin', 'utf8');
+const readAndProcessInput = (filePath) => {
+    const rawInputData = require('fs').readFileSync(filePath, 'utf8');
+    return rawInputData.trim().split('\n');
+};
 
-const movementInstructions = rawInputData.trim().split('\n').filter(Boolean);
+const commandLines = readAndProcessInput('/dev/stdin');
 
-let currentContainerStates = Array(CONTAINER_LABELS.length).fill(0);
-const initialBallPlacementIndex = 0;
-currentContainerStates[initialBallPlacementIndex] = 1;
+let cupStates = [1, 0, 0];
 
-let instructionEntry;
-while ((instructionEntry = movementInstructions.shift()) !== undefined) {
-    if (!instructionEntry.includes(',')) {
-        continue;
-    }
+for (const currentCommandStr of commandLines) {
+    const swapCommandParts = currentCommandStr.split(',');
+    const firstCupLabel = swapCommandParts[0];
+    const secondCupLabel = swapCommandParts[1];
 
-    const commandSegments = instructionEntry.split(',');
-    if (commandSegments.length !== 2) {
-        continue;
-    }
+    const firstCupIndex = cupLabels.indexOf(firstCupLabel);
+    const secondCupIndex = cupLabels.indexOf(secondCupLabel);
 
-    const sourceLabel = commandSegments[0].trim();
-    const destinationLabel = commandSegments[1].trim();
-
-    const sourceIndex = retrieveContainerPosition(sourceLabel);
-    const destinationIndex = retrieveContainerPosition(destinationLabel);
-
-    if (sourceIndex === -1 || destinationIndex === -1) {
-        continue;
-    }
-
-    performItemExchange(currentContainerStates, sourceIndex, destinationIndex);
+    exchangePositions(cupStates, firstCupIndex, secondCupIndex);
 }
 
-let ballSuccessfullyLocated = false;
-for (let containerSearchIndex = 0; containerSearchIndex < currentContainerStates.length; containerSearchIndex++) {
-    if (currentContainerStates[containerSearchIndex] === 1) {
-        console.log(CONTAINER_LABELS[containerSearchIndex]);
-        ballSuccessfullyLocated = true;
-        break;
-    }
+const ballPositionIndex = cupStates.findIndex(stateValue => stateValue === 1);
+
+if (ballPositionIndex !== -1) {
+    console.log(cupLabels[ballPositionIndex]);
 }

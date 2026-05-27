@@ -1,46 +1,29 @@
-const extractNumbers = (textualData) => {
-    return textualData
-        .trim()
-        .split(/\s+/)
-        .slice(1)
-        .map(Number);
-};
+function Main(rawInput) {
+  let parsedNumbers = rawInput.trim().split(/\s+/).map(Number);
 
-const findHighest = (collection, currentMaximum = -Infinity) => {
-    if (collection.length === 0) {
-        return currentMaximum;
-    }
-    const [firstItem, ...remainingItems] = collection;
-    return findHighest(remainingItems, Math.max(currentMaximum, firstItem));
-};
+  let countN = parsedNumbers.shift();
 
-const locateClosest = (dataset, targetHalf, maximumValue, minimumDeviation = Infinity, bestCandidate = null) => {
-    if (dataset.length === 0) {
-        return bestCandidate === null ? Infinity : bestCandidate;
-    }
+  let maxVal = parsedNumbers.reduce((currentMax, val) => Math.max(currentMax, val), -Infinity);
 
-    const [currentElement, ...remainingElements] = dataset;
+  let finalR;
+  if (maxVal === -Infinity) {
+    finalR = undefined;
+  } else {
+    let candidatesForR = parsedNumbers.filter(val => val !== maxVal);
 
-    if (currentElement === maximumValue) {
-        return locateClosest(remainingElements, targetHalf, maximumValue, minimumDeviation, bestCandidate);
-    }
-
-    const currentDeviation = Math.abs(currentElement - targetHalf);
-
-    if (currentDeviation < minimumDeviation) {
-        return locateClosest(remainingElements, targetHalf, maximumValue, currentDeviation, currentElement);
+    if (candidatesForR.length === 0) {
+      finalR = Infinity;
     } else {
-        return locateClosest(remainingElements, targetHalf, maximumValue, minimumDeviation, bestCandidate);
+      let targetValue = maxVal / 2;
+      finalR = candidatesForR.reduce((closest, current) => {
+        let diffClosest = Math.abs(closest - targetValue);
+        let diffCurrent = Math.abs(current - targetValue);
+        return (diffCurrent < diffClosest) ? current : closest;
+      });
     }
-};
+  }
 
-const ProcessData = (rawData) => {
-    const numericSequence = extractNumbers(rawData);
-    const peakElement = findHighest(numericSequence);
-    const midpoint = peakElement / 2;
-    const nearestNeighbor = locateClosest(numericSequence, midpoint, peakElement);
+  console.log(maxVal + ' ' + finalR);
+}
 
-    console.log(`${peakElement} ${nearestNeighbor}`);
-};
-
-ProcessData(require('node:fs').readFileSync('/dev/stdin','utf8'));
+Main(require('fs').readFileSync('/dev/stdin', 'utf8'));

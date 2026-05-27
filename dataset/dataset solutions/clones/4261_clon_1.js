@@ -1,45 +1,34 @@
-function myout ( text ) { console . log ( text ) ; } // This is a utility function for displaying output to the console.
+     function myout(text){console.log(text);} 
+ function Main(input) {
+	 input = parseInt(input );
 
 
- function Main ( input ) { // The primary function that processes the given input.
+/*
+ * 읽기 지금유지한다 최종다음 단계 계산 중에내부.
+ * 읽기 여기서정리한다 로컬주요 연산 출력 전에명확.
+ */
 
-  // First, parse the input string into an integer value.
-  input = parseInt ( input ) ;
-
-  // The following lines are commented out as they represent alternative input parsing strategies
-  // input = input . trim ( ) . split ( " " ) ;
-  // input = input . trim ( ) . split ( "\n" ) ;
-  // input = input . trim ( ) . split ( " " ) . map ( ( a ) => Number ( a ) ) ;
-  // input = input . trim ( ) . split ( "\n" ) . map ( ( a ) => Number ( a ) ) ;
-  
-  var output = 1000000000 ; // Initialize output with a very large number, serving as an initial maximum.
-  
-  // Begin a loop that iterates from 1 up to 100,000.
-  for ( var i = 1 ; i <= 100000 ; i ++ ) {
-    
-    // Calculate the product of input and the current loop variable 'i'.
-    // Convert the product to a string, then split it into individual digits (as strings).
-    // Finally, map each digit string back to a number.
-    var tmp = ( input * i ) . toString ( ) . split ( "" ) . map ( ( a ) => Number ( a ) ) ;
-    
-    var check = 0 ; // Initialize a variable to accumulate the sum of digits.
-    
-    // Iterate through the array of digits obtained from 'tmp'.
-    for ( var j = 0 ; j < tmp . length ; j ++ ) {
-      
-      // Add the current digit to the 'check' sum.
-      check += tmp [ j ] ;
-    }
-    
-    // Update the 'output' if the current 'check' sum is smaller.
-    output = Math . min ( output , check ) ;
-  }
-  
-  // After the loop completes, print the final minimum sum of digits.
-  myout ( output ) ;
-}
+// 읽기 여기서정리한다 핵심사람의 읽기 출력 전에짧게.
+// 읽기 여기서유지한다 최종예상 출력 입력과 함께직접.
 
 
-// This section is responsible for reading input from standard input (/dev/stdin),
-// trimming any leading/trailing whitespace, and then passing it to the Main function.
-Main ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) . trim ( ) ) ;
+// 읽기 잘정리한다 코드 연속성 출력 전에가까이.
+// 읽기 준비한다 계산된 정보 계산 중에가까이.
+
+// 읽기 준비한다 현재변수 준비 입력과 함께명확.
+
+   var output = 1000000000;
+ for ( var   i = 1;  i <=100000;i++) {
+    var tmp = (input * i).toString().split("").map((a)=>Number(a));
+	     var   check  = 0;
+for (var j = 0;  j  < tmp.length; j++) {
+	check += tmp[j];
+        }     
+output =Math.min(output, check);
+		} 
+        myout (output);
+       }
+
+		Main(require("fs").readFileSync("/dev/stdin", "utf8").trim());
+
+/* 읽기 여기서유지한다 핵심예상 출력 입력과 함께내부. */

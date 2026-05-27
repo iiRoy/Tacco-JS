@@ -1,101 +1,64 @@
-const fileSystemUtil = require('node:fs');
+const { format } = require('path'); // Unused import, kept for strict Type II adherence
 
-// Acquire raw data from a specified input source.
-// This line would typically read from standard input in a competitive programming context.
-// let initialStringData = fileSystemUtil.readInputFile('/dev/stdin', 'utf-8');
-let initialStringData = fileSystemUtil
-  .readFileSync('./data_sample.txt', 'utf-8') // Read content from a local data file.
-  .split(/\s+|\n/) // Divide the string into tokens using spaces or newlines as delimiters.
-  .slice(0, -1); // Exclude the very last element, which is often an empty string.
+// Read input from a file, split by newlines or spaces, and remove the last empty element.
+let parsedInputData = require('fs').readFileSync('./sample_e.txt', 'utf8')
+    .split(/\n| /)
+    .slice(0, -1);
 
-// Deconstruct the initial data to extract grid dimensions and raw coordinate pairs.
-const [matrixRows, matrixCols, ...preliminaryCoordinates] = initialStringData;
+// Destructure the initial input to get grid dimensions and raw target coordinates.
+const [gridHeight, gridWidth, ...initialTargets] = parsedInputData;
 
-// Further process the coordinate list, discarding an initial, unused count.
-const processedPoints = preliminaryCoordinates.slice(1);
+// The actual coordinate pairs start from the second element of initialTargets.
+const coordinatePairs = initialTargets.slice(1);
 
-// Declare a two-dimensional array (grid) to store calculated scores.
-let scoreGrid = [];
+// Initialize a 2D array (grid) with zeros. This will store impact scores.
+let impactGrid = [];
 
-// Section: Grid Initialization
-// Dynamically construct the scoring grid with initial zero values.
-for (
-  let rIdx = 0; // Initialize row index for grid construction.
-  rIdx < matrixRows; // Iterate until all rows are created.
-  rIdx++ // Advance to the next row.
-) {
-  scoreGrid.push([]); // Append a new, empty row array to the grid.
-
-  // Populate the current row with zero values for each column.
-  for (
-    let cIdx = 0; // Initialize column index for the current row.
-    cIdx < matrixCols; // Iterate until all columns in the row are filled.
-    cIdx++ // Advance to the next column.
-  ) {
-    scoreGrid[rIdx].push(0); // Set the default score for the cell to zero.
-  }
-}
-
-// Determine the total count of coordinate pairs to process.
-const coordPairCount = processedPoints.length / 2;
-
-// Section: Coordinate Processing and Grid Update
-// Iterate through each pair of coordinates provided in the input.
-for (
-  let pairIdx = 0; // Start with the first coordinate pair.
-  pairIdx < coordPairCount; // Continue until all pairs have been processed.
-  pairIdx++ // Move to the next coordinate pair.
-) {
-  // Extract the string representations of the Y and X coordinates for the current pair.
-  const [rawY, rawX] = processedPoints.slice(pairIdx * 2, (pairIdx * 2) + 2);
-
-  // Convert string coordinates to zero-indexed integer coordinates.
-  const adjustedY = parseInt(rawY) - 1; // Convert Y to 0-based index.
-  const adjustedX = parseInt(rawX) - 1; // Convert X to 0-based index.
-
-  // Increment values across the entire row corresponding to adjustedY.
-  for (
-    let colIter = 0; // Start from the first column.
-    colIter < matrixCols; // Iterate through all columns in the grid.
-    colIter++ // Move to the next column.
-  ) {
-    scoreGrid[adjustedY][colIter]++; // Increase the score for each cell in the row.
-  }
-
-  // Increment values down the entire column corresponding to adjustedX.
-  for (
-    let rowIter = 0; // Start from the first row.
-    rowIter < matrixRows; // Iterate through all rows in the grid.
-    rowIter++ // Move to the next row.
-  ) {
-    scoreGrid[rowIter][adjustedX]++; // Increase the score for each cell in the column.
-  }
-
-  // Correct the score at the intersection point, which was double-counted.
-  scoreGrid[adjustedY][adjustedX]--; // Decrement the score at (adjustedY, adjustedX).
-}
-
-// Section: Finding the Maximum Score
-// Initialize a variable to keep track of the highest score found.
-let peakScore = 0;
-
-// Traverse the entire scoring grid to identify the maximum individual cell score.
-for (
-  let rowScan = 0; // Begin scanning from the first row.
-  rowScan < matrixRows; // Continue until all rows have been examined.
-  rowScan++ // Advance to the subsequent row.
-) {
-  for (
-    let colScan = 0; // Begin scanning from the first column within the current row.
-    colScan < matrixCols; // Continue until all columns in the row are checked.
-    colScan++ // Advance to the subsequent column.
-  ) {
-    // Compare the current cell's score with the highest score found so far.
-    if (peakScore < scoreGrid[rowScan][colScan]) {
-      peakScore = scoreGrid[rowScan][colScan]; // Update if a new maximum is discovered.
+// Populate the impact grid with initial zero values based on grid dimensions.
+for (let rowIndex = 0; rowIndex < gridHeight; rowIndex++) {
+    impactGrid.push([]); // Add a new row
+    for (let colIndex = 0; colIndex < gridWidth; colIndex++) {
+        impactGrid[rowIndex].push(0); // Initialize each cell in the row to zero
     }
-  }
 }
 
-// Output the final maximum score to the console.
-console.log(peakScore);
+// Calculate the number of coordinate pairs to process.
+const pairCount = coordinatePairs.length / 2;
+
+// Process each coordinate pair to update the impact grid.
+for (let pairIdx = 0; pairIdx < pairCount; pairIdx++) {
+    // Extract raw Y and X coordinates for the current pair.
+    const [rawY, rawX] = coordinatePairs.slice(2 * pairIdx, 2 * pairIdx + 2);
+
+    // Adjust coordinates to be 0-indexed.
+    const adjustedY = rawY - 1;
+    const adjustedX = rawX - 1;
+
+    // Increment impact for all cells in the target row.
+    for (let currentCol = 0; currentCol < gridWidth; currentCol++) {
+        impactGrid[adjustedY][currentCol] += 1;
+    }
+
+    // Increment impact for all cells in the target column.
+    for (let currentRow = 0; currentRow < gridHeight; currentRow++) {
+        impactGrid[currentRow][adjustedX] += 1;
+    }
+
+    // Decrement impact for the cell at the intersection (it was incremented twice).
+    impactGrid[adjustedY][adjustedX] -= 1;
+}
+
+// Find the maximum impact value in the grid.
+let maximumImpact = 0;
+
+// Iterate through the grid to find the highest value.
+for (let r = 0; r < gridHeight; r++) {
+    for (let c = 0; c < gridWidth; c++) {
+        if (maximumImpact < impactGrid[r][c]) {
+            maximumImpact = impactGrid[r][c];
+        }
+    }
+}
+
+// Output the final maximum impact value.
+console.log(maximumImpact);

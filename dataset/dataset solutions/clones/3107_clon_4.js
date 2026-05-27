@@ -1,94 +1,112 @@
-const obtainNumericInput = async () => {
-    const readline = await import('readline/promises');
-    const rl = readline.createInterface({
-        input: process.stdin,
-        output: process.stdout
+const fs = require('fs');
+
+const acquireInputContent = async () => {
+    return new Promise((resolve, reject) => {
+        fs.readFile("/dev/stdin", "utf8", (err, data) => {
+            if (err) reject(err);
+            else resolve(data);
+        });
     });
-    const line = await rl.question('');
-    rl.close();
-    return parseInt(line, 10);
 };
 
-const MOD_VALUE = 1000000007;
-const DIGIT_COUNT = 4;
-const DIGIT_POSSIBILITIES = [0, 1, 2, 3];
-
-const packDigits = (first, second, third, fourth) => {
-    return first * (DIGIT_COUNT ** 3) + second * (DIGIT_COUNT ** 2) + third * (DIGIT_COUNT ** 1) + fourth;
-};
-
-const buildExclusionSet = () => {
-    const prohibitedCombinations = new Set();
-    for (let currentDigit of DIGIT_POSSIBILITIES) {
-        prohibitedCombinations.add(packDigits(0, 2, 1, currentDigit));
-        prohibitedCombinations.add(packDigits(currentDigit, 0, 2, 1));
-        prohibitedCombinations.add(packDigits(0, 1, 2, currentDigit));
-        prohibitedCombinations.add(packDigits(currentDigit, 0, 1, 2));
-        prohibitedCombinations.add(packDigits(2, 0, 1, currentDigit));
-        prohibitedCombinations.add(packDigits(currentDigit, 2, 0, 1));
-        prohibitedCombinations.add(packDigits(0, currentDigit, 2, 1));
-        prohibitedCombinations.add(packDigits(0, 2, currentDigit, 1));
+function* generateWordTokens(sourceText) {
+    const tokenRegex = /\S+/g;
+    for (const match of sourceText.matchAll(tokenRegex)) {
+        yield match[0];
     }
-    return prohibitedCombinations;
+}
+
+function* parseCustomTokens(sourceText) {
+    let currentPosition = 0;
+    let tokenStart = -1;
+    const textLength = sourceText.length;
+
+    while (currentPosition <= textLength) {
+        const char = sourceText[currentPosition];
+        const isSeparator = char === ' ' || char === '\n' || currentPosition === textLength;
+
+        if (!isSeparator) {
+            if (tokenStart === -1) {
+                tokenStart = currentPosition;
+            }
+        } else {
+            if (tokenStart !== -1) {
+                yield sourceText.substring(tokenStart, currentPosition);
+                tokenStart = -1;
+            }
+        }
+        currentPosition++;
+    }
+}
+
+const retrieveNextFoolishInteger = async () => {
+    const fullContent = await acquireInputContent();
+    const tokenIterator = generateWordTokens(fullContent);
+    return () => parseInt(tokenIterator.next().value, 10);
 };
 
-const executeSequenceCounting = async () => {
-    const sequenceLength = await obtainNumericInput();
+const retrieveNextCarefulInteger = async () => {
+    const fullContent = await acquireInputContent();
+    const tokenIterator = parseCustomTokens(fullContent);
+    return () => parseInt(tokenIterator.next().value, 10);
+};
 
-    if (sequenceLength === 3) {
+const DIM_INDICES = [0, 1, 2, 3];
+const PRIME_MODULO = 1000000007;
+
+const calculateModulo = (value) => value % PRIME_MODULO;
+
+const getLinearIndex = (d1, d2, d3, d4) =>
+    d1 * 64 + d2 * 16 + d3 * 4 + d4;
+
+const applyForbiddenPattern = (gridData) => {
+    for (const rVal of DIM_INDICES) {
+        gridData[getLinearIndex(0, 2, 1, rVal)] = 0;
+        gridData[getLinearIndex(rVal, 0, 2, 1)] = 0;
+        gridData[getLinearIndex(0, 1, 2, rVal)] = 0;
+        gridData[getLinearIndex(rVal, 0, 1, 2)] = 0;
+        gridData[getLinearIndex(2, 0, 1, rVal)] = 0;
+        gridData[getLinearIndex(rVal, 2, 0, 1)] = 0;
+        gridData[getLinearIndex(0, rVal, 2, 1)] = 0;
+        gridData[getLinearIndex(0, 2, rVal, 1)] = 0;
+    }
+};
+
+(async () => {
+    const getNextValue = await retrieveNextCarefulInteger();
+    const inputLimit = getNextValue();
+
+    if (inputLimit === 3) {
         console.log(61);
         return;
     }
 
-    const forbiddenPatterns = buildExclusionSet();
-    let countsForPreviousLength = new Uint32Array(DIGIT_COUNT ** DIGIT_COUNT);
+    const totalGridCells = 4 * 4 * 4 * 4;
+    let currentGridState = Array.from({ length: totalGridCells }, () => 1);
 
-    for (let d1 of DIGIT_POSSIBILITIES) {
-        for (let d2 of DIGIT_POSSIBILITIES) {
-            for (let d3 of DIGIT_POSSIBILITIES) {
-                for (let d4 of DIGIT_POSSIBILITIES) {
-                    const currentEncodedKey = packDigits(d1, d2, d3, d4);
-                    if (!forbiddenPatterns.has(currentEncodedKey)) {
-                        countsForPreviousLength[currentEncodedKey] = 1;
+    applyForbiddenPattern(currentGridState);
+
+    for (let iteration = 5; iteration <= inputLimit; iteration++) {
+        const nextGridState = new Array(totalGridCells).fill(0);
+
+        for (const dimA of DIM_INDICES) {
+            for (const dimB of DIM_INDICES) {
+                for (const dimC of DIM_INDICES) {
+                    for (const dimD of DIM_INDICES) {
+                        let cellAccumulator = 0;
+                        for (const prevDimA of DIM_INDICES) {
+                            cellAccumulator = calculateModulo(cellAccumulator + currentGridState[getLinearIndex(prevDimA, dimA, dimB, dimC)]);
+                        }
+                        nextGridState[getLinearIndex(dimA, dimB, dimC, dimD)] = cellAccumulator;
                     }
                 }
             }
         }
+        applyForbiddenPattern(nextGridState);
+        currentGridState = nextGridState;
     }
 
-    for (let currentLen = 5; currentLen <= sequenceLength; ++currentLen) {
-        const countsForCurrentLength = new Uint32Array(DIGIT_COUNT ** DIGIT_COUNT);
+    const finalResult = currentGridState.reduce((sum, val) => calculateModulo(sum + val), 0);
 
-        for (let d1 of DIGIT_POSSIBILITIES) {
-            for (let d2 of DIGIT_POSSIBILITIES) {
-                for (let d3 of DIGIT_POSSIBILITIES) {
-                    for (let d4 of DIGIT_POSSIBILITIES) {
-                        const currentEncodedKey = packDigits(d1, d2, d3, d4);
-
-                        if (forbiddenPatterns.has(currentEncodedKey)) {
-                            countsForCurrentLength[currentEncodedKey] = 0;
-                            continue;
-                        }
-
-                        let accumulatedCount = 0;
-                        for (let previousFirstDigit of DIGIT_POSSIBILITIES) {
-                            const previousEncodedKey = packDigits(previousFirstDigit, d1, d2, d3);
-                            accumulatedCount = (accumulatedCount + countsForPreviousLength[previousEncodedKey]) % MOD_VALUE;
-                        }
-                        countsForCurrentLength[currentEncodedKey] = accumulatedCount;
-                    }
-                }
-            }
-        }
-        countsForPreviousLength = countsForCurrentLength;
-    }
-
-    let finalTotal = 0;
-    for (let i = 0; i < (DIGIT_COUNT ** DIGIT_COUNT); ++i) {
-        finalTotal = (finalTotal + countsForPreviousLength[i]) % MOD_VALUE;
-    }
-
-    console.log(finalTotal);
-};
-
-executeSequenceCounting();
+    console.log(finalResult);
+})();

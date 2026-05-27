@@ -1,110 +1,91 @@
 process.stdin.resume();
-process.stdin.setEncoding('utf8');
+process.stdin.setEncoding('ascii');
 
-let rawInputBuffer = '';
-let lineData = [];
-let currentLineIndex = 0;
+var rawInputBuffer = "";
+var inputLinesArray = "";
+var currentLineIdx = 0;
 
-process.stdin.on('data', (inputChunk) => {
-    rawInputBuffer += inputChunk;
+process.stdin.on('data', function (data) {
+    rawInputBuffer += data;
 });
 
-const finalizeInputAndExecute = () => {
-    lineData = rawInputBuffer.split('\n').filter(line => line.trim() !== '');
-    analyzeGrid();
-    process.exit(0);
-};
+process.on('SIGINT', function(){
+    inputLinesArray = rawInputBuffer.split("\n");
+    executeProcessing();
+    process.exit();
+});
 
-process.stdin.on('end', finalizeInputAndExecute);
-process.on('SIGINT', finalizeInputAndExecute);
+process.stdin.on('end', function () {
+    inputLinesArray = rawInputBuffer.split("\n");
+    executeProcessing();    
+});
 
-const getNextLine = () => {
-    if (currentLineIndex >= lineData.length) {
-        console.error("Error: Attempted to read past end of input data.");
-        return null;
-    }
-    return lineData[currentLineIndex++];
-};
+function retrieveNextLine() {
+    return inputLinesArray[currentLineIdx++];
+}
 
-/////////////// Above this line is input/output boilerplate ////////////////////
+/////////////// ignore above this line ////////////////////
 
-/**
- * Generates a unique string key for a 3x3 subgrid based on its top-left corner coordinates.
- * @param {number} row The row index of the top-left corner.
- * @param {number} col The column index of the top-left corner.
- * @returns {string} A unique identifier for the subgrid.
- */
-const generateSubgridKey = (row, col) => `R${row}C${col}`;
+function generateGridKey(rowIdentifier, colIdentifier) {
+    return "r" + rowIdentifier.toString() + "_c" + colIdentifier.toString();
+}
 
+function executeProcessing() {
+    const OFFSET_FOR_SQUARE_CHECK = 2;
+    const MIN_VALID_COORD_VALUE = 1;
+    const MAX_FREQUENCY_BUCKETS = 10; // For counts 0 through 9
 
-/**
- * Main function to analyze the grid and count point occurrences in 3x3 subgrids.
- * This function reads grid dimensions and point coordinates from input,
- * then calculates and prints the frequency of 3x3 subgrids containing 0 to 9 points.
- */
-function analyzeGrid() {
-    let subgridImpactCounts = new Map();
+    var squareHitCounts = {}; 
+    
+    var initialParams = retrieveNextLine().split(" ");
+    var gridHeightVal = parseInt(initialParams[0], 10);
+    var gridWidthVal = parseInt(initialParams[1], 10);
+    var numInputPoints = parseInt(initialParams[2], 10);
+    
+    const effectiveGridHeight = gridHeightVal - OFFSET_FOR_SQUARE_CHECK;
+    const effectiveGridWidth = gridWidthVal - OFFSET_FOR_SQUARE_CHECK;
 
-    const initialParamsLine = getNextLine();
-    if (!initialParamsLine) {
-        console.error("No initial parameters line found.");
-        return;
-    }
-    const paramTokens = initialParamsLine.split(' ');
+    for (var pointIndex = 0; pointIndex < numInputPoints; pointIndex++) {
+        var currentLineTokens = retrieveNextLine().split(" ");
+        var pointRow = parseInt(currentLineTokens[0], 10);
+        var pointCol = parseInt(currentLineTokens[1], 10);
 
-    const gridHeight = Number(paramTokens[0]);
-    const gridWidth = Number(paramTokens[1]);
-    const numPoints = Number(paramTokens[2]);
+        const startCheckRow = pointRow - OFFSET_FOR_SQUARE_CHECK;
+        const endCheckRow = pointRow;
+        const startCheckCol = pointCol - OFFSET_FOR_SQUARE_CHECK;
+        const endCheckCol = pointCol;
 
-    if (gridHeight < 3 || gridWidth < 3 || numPoints < 0) {
-        console.error("Invalid grid dimensions or number of points provided for 3x3 subgrids.");
-        for (let i = 0; i < 10; ++i) {
-            console.log("0");
-        }
-        return;
-    }
-
-    for (let pointIdx = 0; pointIdx < numPoints; ++pointIdx) {
-        const pointCoordLine = getNextLine();
-        if (!pointCoordLine) {
-            console.error(`Missing coordinate line for point ${pointIdx + 1}`);
-            continue;
-        }
-        const pointTokens = pointCoordLine.split(' ');
-
-        const pointRow = Number(pointTokens[0]);
-        const pointCol = Number(pointTokens[1]);
-
-        const minSubgridRow = Math.max(1, pointRow - 2);
-        const maxSubgridRow = Math.min(gridHeight - 2, pointRow);
-
-        const minSubgridCol = Math.max(1, pointCol - 2);
-        const maxSubgridCol = Math.min(gridWidth - 2, pointCol);
-
-        for (let subgridRowStart = minSubgridRow; subgridRowStart <= maxSubgridRow; ++subgridRowStart) {
-            for (let subgridColStart = minSubgridCol; subgridColStart <= maxSubgridCol; ++subgridColStart) {
-                const subgridKey = generateSubgridKey(subgridRowStart, subgridColStart);
-                subgridImpactCounts.set(subgridKey, (subgridImpactCounts.get(subgridKey) ?? 0) + 1);
+        for (var checkRow = startCheckRow; checkRow <= endCheckRow; checkRow++) {
+            if (checkRow < MIN_VALID_COORD_VALUE || checkRow > effectiveGridHeight) {
+                continue; 
+            }
+            for (var checkCol = startCheckCol; checkCol <= endCheckCol; checkCol++) {
+                if (checkCol < MIN_VALID_COORD_VALUE || checkCol > effectiveGridWidth) {
+                    continue;
+                }
+                
+                var gridSquareKey = generateGridKey(checkRow, checkCol);
+                squareHitCounts[gridSquareKey] = (squareHitCounts[gridSquareKey] || 0) + 1;
             }
         }
     }
-
-    const pointCountFrequencies = new Array(10).fill(0);
-
-    const totalPossibleSubgrids = (gridHeight - 2) * (gridWidth - 2);
-    pointCountFrequencies[0] = totalPossibleSubgrids;
-
-    for (const [subgridKey, pointCount] of subgridImpactCounts.entries()) {
-        pointCountFrequencies[0]--;
-
-        if (pointCount >= 1 && pointCount <= 9) {
-            pointCountFrequencies[pointCount]++;
-        } else if (pointCount > 9) {
-            pointCountFrequencies[9]++; // Cap at 9, as per typical problem constraints for 3x3 grids.
+    
+    var occurrenceFrequencies = Array.from({ length: MAX_FREQUENCY_BUCKETS }, () => 0);
+    
+    const totalPossibleSquares = effectiveGridHeight * effectiveGridWidth;
+    
+    occurrenceFrequencies[0] = totalPossibleSquares;
+    
+    for (var countedSquareKey in squareHitCounts) {
+        occurrenceFrequencies[0]--;
+        
+        const hits = squareHitCounts[countedSquareKey];
+        if (hits < MAX_FREQUENCY_BUCKETS) {
+            occurrenceFrequencies[hits]++;
         }
     }
-
-    pointCountFrequencies.forEach((frequency) => {
-        console.log(`${frequency}`);
-    });
+    
+    for (var freqIdx = 0; freqIdx < MAX_FREQUENCY_BUCKETS; freqIdx++) {
+        console.log(occurrenceFrequencies[freqIdx].toString());
+    }
 }

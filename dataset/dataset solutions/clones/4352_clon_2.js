@@ -1,161 +1,179 @@
-var lineProcessor = require('readline').createInterface({
-    input:  process.stdin,
-    output: process.stdout
-});
-var inputHandler;
-var receivedLines = [];
-lineProcessor.on('line', function(currentLine){
-    receivedLines.push(currentLine);
-});
-lineProcessor.on('close', function(){
-    inputHandler = setupInputProcessor(receivedLines);
-    console.error("\n");
-    var startTime = Date.now();
-    solveProblem();
-    var duration = Date.now() - startTime;
-    reportError("elapsed time : " + (duration) + "ms");
-    reportError("memory usage : " + Math.round(process.memoryUsage().heapTotal / 1024) + "KB");
+var inputReader = require('readline').createInterface({
+  input: process.stdin,
+  output: process.stdout
 });
 
-function replicateData(sourceObject){
-    return JSON.parse(JSON.stringify(sourceObject));
-}
-function parseIntegerInput(){
-    return transformData(retrieveNextLine(), 1);
-}
-function parseStringList(){
-    return transformData(retrieveNextLine(), 2);
-}
-function parseIntegerList(){
-    return transformData(retrieveNextLine(), 4);
-}
-function parseCharacterList(){
-    return transformData(retrieveNextLine(), 6);
-}
-function retrieveNextLine(){
-    return inputHandler.fetchNextItem();
-}
-function moreDataAvailable(){
-    return inputHandler.canAdvance();
+var dataProcessor;
+var inputLines = [];
+
+inputReader.on('line', function(currentLine) {
+  inputLines.push(currentLine);
+});
+
+inputReader.on('close', function() {
+  dataProcessor = initializeInputProcessor(inputLines);
+  console.error("\n");
+  var startTime = Date.now();
+  executeSolution();
+  var elapsedTime = Date.now() - startTime;
+  logDebugMessage("time : " + (elapsedTime) + "ms");
+  logDebugMessage("memory : " + Math.round(process.memoryUsage().heapTotal / 1024) + "KB");
+});
+
+function createDeepCopy(originalObject) {
+  return JSON.parse(JSON.stringify(originalObject));
 }
 
-function setupInputProcessor(contentList){
-    var dataProcessor = {
-        sourceLines : contentList,
-        lineIndex   : 0,
-        totalLines  : contentList.length,
-        canAdvance  : function(){
-            return (this.lineIndex < this.totalLines);
-        },
-        fetchNextItem : function(){
-            if (!this.canAdvance()){
-                throw "InputError: No further input entries are present.";
-            } else {
-                var currentEntry = this.sourceLines[this.lineIndex++];
-                return currentEntry;
-            }
-        }
-    };
-    return dataProcessor;
-}
-function printResult(messageContent){
-    console.log(messageContent);
-}
-function reportError(errorDetails){
-    console.error("debug output: " + require("util").inspect(errorDetails, false, null));
+function retrieveNextInteger() {
+  return performConversion(fetchNextItem(), 1);
 }
 
-// This function performs various data type conversions based on a given format code.
-//  1: Converts the input to an integer.
-//  2: Splits the input string by spaces into an array of strings.
-//  4: Splits the input string by spaces and converts each part to a number.
-//  6: Splits the input string into an array of individual characters.
-//  7: Splits the input string into characters and converts each to a number.
-//  8: Joins an array of elements with spaces.
-//  9: Joins an array of elements with newline characters.
-//  0: Joins an array of elements without any separator.
-//  Any other code or error: Returns the original input value.
-function transformData(inputValue, formatCode){
-    try {
-        switch(formatCode){
-            case 1: return parseInt(inputValue);
-            case 2: return inputValue.split(" ");
-            case 4: return inputValue.split(" ").map(Number);
-            case 6: return inputValue.split("");
-            case 7: return inputValue.split("").map(Number);
-            case 8: return inputValue.join(" ");
-            case 9: return inputValue.join("\n");
-            case 0: return inputValue.join("");
-            default: return inputValue;
-        }
-    } catch(err) {
-        return inputValue;
+function retrieveNextStringArray() {
+  return performConversion(fetchNextItem(), 2);
+}
+
+function retrieveNextIntegerArray() {
+  return performConversion(fetchNextItem(), 4);
+}
+
+function retrieveNextCharacterArray() {
+  return performConversion(fetchNextItem(), 6);
+}
+
+function fetchNextItem() {
+  return dataProcessor.fetchNextItem();
+}
+
+function hasMoreItems() {
+  return dataProcessor.hasMoreItems();
+}
+
+function initializeInputProcessor(incomingData) {
+  var processorInstance = {
+    sourceData: incomingData,
+    currentIdx: 0,
+    maxIdx: incomingData.length,
+    hasMoreItems: function() {
+      return (this.currentIdx < this.maxIdx);
+    },
+    fetchNextItem: function() {
+      if (!this.hasMoreItems()) {
+        throw "ArrayIndexOutOfBoundsException ‚There is no more input";
+      } else {
+        var currentInput = this.sourceData[this.currentIdx++];
+        return currentInput;
+      }
     }
+  };
+  return processorInstance;
 }
 
-function solveProblem(){
-    var configValues = parseIntegerList();
-    var liquidFactorA = configValues[0] * 100;
-    var liquidFactorB = configValues[1] * 100;
-    var solidFactorA  = configValues[2];
-    var solidFactorB  = configValues[3];
-    var saturationLimit = configValues[4];
-    var overallCapacity = configValues[5];
-
-    var peakDensity = 0;
-    var resultPair  = [0, 0];
-
-    var liquidCombinations = new Set();
-    var solidCombinations  = new Set();
-
-    var maximumIterations = 3000;
-
-    // Iterate through potential coefficients for creating various liquid and solid amounts.
-    for (var countX = 0; countX <= maximumIterations; countX++) {
-        for (var countY = 0; countY <= maximumIterations; countY++) {
-            var solventQuantity = liquidFactorA * countX + liquidFactorB * countY;
-            var soluteQuantity  = solidFactorA  * countX + solidFactorB  * countY;
-
-            if (solventQuantity <= overallCapacity) {
-                liquidCombinations.add(solventQuantity);
-            }
-            if (soluteQuantity <= overallCapacity) {
-                solidCombinations.add(soluteQuantity);
-            }
-        }
-    }
-    
-    var availableLiquids = Array.from(liquidCombinations);
-    var availableSolids  = Array.from(solidCombinations);
-
-    // Calculate concentrations for all valid liquid and solid combinations.
-    for (var idxA = 0; idxA < availableLiquids.length; idxA++) {
-        for (var idxB = 0; idxB < availableSolids.length; idxB++) {
-            var currentLiquid = availableLiquids[idxA];
-            var currentSolid  = availableSolids[idxB];
-            
-            // Check if the combined weight is within total capacity and if the solid dissolves.
-            if (currentLiquid + currentSolid <= overallCapacity && isSoluble(currentLiquid, currentSolid, saturationLimit)) {
-                var combinedWeight = currentLiquid + currentSolid;
-                if (combinedWeight === 0) {
-                    continue;
-                }
-                var mixDensity = currentSolid * 100 / combinedWeight;
-                if (mixDensity > peakDensity) {
-                    peakDensity = mixDensity;
-                    resultPair[0] = combinedWeight;
-                    resultPair[1] = currentSolid;
-                }
-            }
-        }
-    }
-    
-    printResult(transformData(resultPair, 8));
+function printResult(messageContent) {
+  console.log(messageContent);
 }
 
-// Checks if the amount of solute can be fully dissolved in the solvent,
-// given a specific saturation limit.
-function isSoluble(solventQuantity, soluteQuantity, saturationLimit){
-    var allowedSolidAmount = solventQuantity / 100 * saturationLimit;
-    return allowedSolidAmount >= soluteQuantity;
+function logDebugMessage(messageContent) {
+  console.error("debug:" + require("util").inspect(messageContent, false, null));
+}
+
+// The 'conversionType' parameter dictates the transformation:
+// 1: Parse as an integer.
+// 2: Split by spaces into a string array.
+// 4: Split by spaces and convert to an integer array.
+// 6: Split into a character array.
+// 7: Split into a character array and convert to an integer array.
+// 8: Join array elements with a space.
+// 9: Join array elements with a newline.
+// 0: Join array elements without any separator.
+// Default: Return the input value as is.
+function performConversion(inputVal, conversionType) {
+  try {
+    switch (conversionType) {
+      case 1:
+        return parseInt(inputVal);
+      case 2:
+        return inputVal.split(" ");
+      case 4:
+        return inputVal.split(" ").map(Number);
+      case 6:
+        return inputVal.split("");
+      case 7:
+        return inputVal.split("").map(Number);
+      case 8:
+        return inputVal.join(" ");
+      case 9:
+        return inputVal.join("\n");
+      case 0:
+        return inputVal.join("");
+      default:
+        return inputVal;
+    }
+  } catch (error) {
+    return inputVal;
+  }
+}
+
+function executeSolution() {
+  var initialParams = retrieveNextIntegerArray();
+  var paramA = initialParams[0] * 100;
+  var paramB = initialParams[1] * 100;
+  var paramC = initialParams[2];
+  var paramD = initialParams[3];
+  var paramE = initialParams[4];
+  var paramF = initialParams[5];
+
+  var highestConcentration = 0;
+  var resultPair = [0, 0];
+
+  var possibleWaterAmounts = new Set();
+  var possibleSoluteAmounts = new Set();
+
+  var loopLimit = 3000;
+
+  // Iterate to find all possible water and solute quantities
+  for (var idxA = 0; idxA <= loopLimit; idxA++) {
+    for (var idxB = 0; idxB <= loopLimit; idxB++) {
+      var currentWater = paramA * idxA + paramB * idxB;
+      var currentSolute = paramC * idxA + paramD * idxB;
+
+      if (currentWater <= paramF) {
+        possibleWaterAmounts.add(currentWater);
+      }
+      if (currentSolute <= paramF) {
+        possibleSoluteAmounts.add(currentSolute);
+      }
+    }
+  }
+
+  var waterOptions = Array.from(possibleWaterAmounts);
+  var soluteOptions = Array.from(possibleSoluteAmounts);
+
+  // Evaluate combinations of water and solute to find the highest concentration
+  for (var idxC = 0; idxC < waterOptions.length; idxC++) {
+    for (var idxD = 0; idxD < soluteOptions.length; idxD++) {
+      var currentWater = waterOptions[idxC];
+      var currentSolute = soluteOptions[idxD];
+
+      if (currentWater + currentSolute <= paramF && verifySoluteLimit(currentWater, currentSolute, paramE)) {
+        var totalMixture = currentWater + currentSolute;
+        if (totalMixture === 0) {
+          continue;
+        }
+        var currentConcentration = currentSolute * 100 / totalMixture;
+
+        if (currentConcentration > highestConcentration) {
+          highestConcentration = currentConcentration;
+          resultPair[0] = totalMixture;
+          resultPair[1] = currentSolute;
+        }
+      }
+    }
+  }
+
+  printResult(performConversion(resultPair, 8));
+}
+
+function verifySoluteLimit(waterAmount, soluteAmount, maxConcentrationFactor) {
+  var maxAllowedSolute = waterAmount / 100 * maxConcentrationFactor;
+  return maxAllowedSolute >= soluteAmount;
 }

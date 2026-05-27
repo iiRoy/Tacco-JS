@@ -1,59 +1,37 @@
-const acquireInputContent = () => {
-    const rawContent = require('node:fs').readFileSync(0, 'utf8');
-    return rawContent.trim().split('\n');
-};
+const fs = require('fs');
+const inputData = fs.readFileSync('/dev/stdin', 'utf8').trim();
+const rawLines = inputData.split('\n');
 
-function* contentLineStream(linesCollection) {
-    for (const textUnit of linesCollection) {
-        yield textUnit;
+function* lineParser(lines) {
+    let currentIdx = 0;
+    while (currentIdx < lines.length) {
+        yield lines[currentIdx++].split(/\s+/).map(Number);
     }
 }
 
-const parseNumericLine = (lineString) => lineString.split(/\s+/).map(Number);
+const lineStream = lineParser(rawLines);
 
-const computeUnaffectedCount = (totalEntities, interactionRecords) => {
-    let currentUnaffectedSet = new Set([0]);
+let currentCaseParams;
+while ((currentCaseParams = lineStream.next().value) && (currentCaseParams[0] !== 0 || currentCaseParams[1] !== 0)) {
+    const totalPeople = currentCaseParams[0];
+    const eventCount = currentCaseParams[1];
 
-    const chronologicallyOrderedRecords = interactionRecords.sort((recA, recB) => recA[0] - recB[0]);
+    const immuneRegistry = new Set();
+    immuneRegistry.add(0); // Individual 0 is initially not infected
 
-    const finalUnaffectedSet = chronologicallyOrderedRecords.reduce((accumulatorSet, currentRecord) => {
-        const [momentOfInteraction, firstParticipant, secondParticipant] = currentRecord;
-        
-        if (accumulatorSet.has(firstParticipant)) {
-            accumulatorSet.add(secondParticipant);
+    const transmissionRecords = Array.from({ length: eventCount }, () => {
+        const record = lineStream.next().value;
+        return [record[0], record[1] - 1, record[2] - 1]; // [timestamp, senderId, receiverId]
+    });
+
+    transmissionRecords.sort((recA, recB) => recA[0] - recB[0]);
+
+    for (const recordEntry of transmissionRecords) {
+        const [_, senderId, receiverId] = recordEntry;
+        if (immuneRegistry.has(senderId)) {
+            immuneRegistry.add(receiverId);
         }
-        return accumulatorSet;
-    }, currentUnaffectedSet);
-
-    return finalUnaffectedSet.size;
-};
-
-const orchestrateScenarios = (lineIteratorSource) => {
-    const scenarioResults = [];
-    let currentStreamUnit;
-
-    while ((currentStreamUnit = lineIteratorSource.next().value) !== undefined) {
-        const [entityPopulationSize, interactionEventCount] = parseNumericLine(currentStreamUnit);
-
-        if (entityPopulationSize === 0 && interactionEventCount === 0) {
-            break;
-        }
-
-        const eventsForCurrentScenario = [];
-        for (let k = 0; k < interactionEventCount; k++) {
-            const eventUnit = lineIteratorSource.next().value;
-            const [eventTimestamp, participantIdentifierA, participantIdentifierB] = parseNumericLine(eventUnit);
-            eventsForCurrentScenario.push([eventTimestamp, participantIdentifierA - 1, participantIdentifierB - 1]);
-        }
-        
-        scenarioResults.push(computeUnaffectedCount(entityPopulationSize, eventsForCurrentScenario));
     }
-    return scenarioResults;
-};
 
-const allInputLines = acquireInputContent();
-const lineIterator = contentLineStream(allInputLines);
-
-const finalOutcomeList = orchestrateScenarios(lineIterator);
-
-finalOutcomeList.forEach(outcome => console.log(outcome));
+    console.log(immuneRegistry.size);
+}

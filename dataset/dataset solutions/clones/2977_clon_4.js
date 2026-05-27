@@ -1,42 +1,27 @@
 "use strict";
 
-const dataStream = require("fs")
-  .readFileSync("/dev/stdin", "utf8");
-const numericTokens = dataStream.split(" ").map(s => Number.parseInt(s, 10));
+const sourceData = require("fs")
+  .readFileSync("/dev/stdin", "utf8")
+  .split(" ");
 
-const redMultiplier = numericTokens[0];
-const greenMultiplier = numericTokens[1];
-const blueMultiplier = numericTokens[2];
-const desiredTotal = numericTokens[3];
+const redFactor = parseInt(sourceData[0], 10);
+const greenFactor = parseInt(sourceData[1], 10);
+const blueFactor = parseInt(sourceData[2], 10);
+const targetValue = parseInt(sourceData[3], 10);
 
-function calculateWays(remainingValue, currentDimensionIndex, multipliers) {
-    if (remainingValue < 0) {
-        return 0;
-    }
+const maxRedCount = Math.floor(targetValue / redFactor);
 
-    if (currentDimensionIndex === multipliers.length) {
-        return remainingValue === 0 ? 1 : 0;
-    }
+const solutionCount = Array.from({ length: maxRedCount + 1 }, (_, redC) => {
+    const currentRedSum = redC * redFactor;
+    const remainingForGreen = targetValue - currentRedSum;
 
-    let currentDimensionContributions = 0;
-    const currentMultiplier = multipliers[currentDimensionIndex];
+    const maxGreenCount = Math.floor(remainingForGreen / greenFactor);
 
-    for (let k = 0; ; k++) {
-        const valueFromCurrentDimension = k * currentMultiplier;
-        if (valueFromCurrentDimension > remainingValue) {
-            break;
-        }
-        currentDimensionContributions += calculateWays(
-            remainingValue - valueFromCurrentDimension,
-            currentDimensionIndex + 1,
-            multipliers
-        );
-    }
+    return Array.from({ length: maxGreenCount + 1 }, (_, greenC) => {
+        const currentSum = currentRedSum + (greenC * greenFactor);
+        const finalRemainder = targetValue - currentSum;
+        return (finalRemainder % blueFactor === 0) ? 1 : 0;
+    }).reduce((acc, val) => acc + val, 0);
+}).reduce((acc, val) => acc + val, 0);
 
-    return currentDimensionContributions;
-}
-
-const allMultipliers = [redMultiplier, greenMultiplier, blueMultiplier];
-const resultCount = calculateWays(desiredTotal, 0, allMultipliers);
-
-console.log(resultCount);
+console.log(solutionCount);

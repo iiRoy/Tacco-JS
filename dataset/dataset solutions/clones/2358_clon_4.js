@@ -1,114 +1,140 @@
 var inputReader = require('readline').createInterface({
   input: process.stdin, output: process.stdout
 });
-var receivedLines = [];
-var inputDataIterator;
+var inputProcessor;
+var inputLines = [];
 
-inputReader.on('line', function(lineContent) {
-  receivedLines.push(lineContent);
+inputReader.on('line', function(line){
+  inputLines.push(line);
 });
 
-inputReader.on('close', function() {
-  inputDataIterator = (function(lines) {
-    let currentPosition = 0;
-    return {
-      fetchLine: () => {
-        if (currentPosition < lines.length) {
-          return lines[currentPosition++];
-        }
-        throw new Error("Input source exhausted.");
-      }
-    };
-  })(receivedLines);
-  console.error('\n↑ Input ↓ Output');
-  initiateGridCalculations();
+inputReader.on('close', function(){
+  inputProcessor = initializeInput(inputLines);
+  console.error('\n↑入力 ↓出力');
+  solveProblem();
 });
 
-function parseDimensionsFromLine() {
-  const line = inputDataIterator.fetchLine();
-  return line.split(' ').map(Number);
+function deepCopy(item){
+  return (item instanceof Set) ? new Set(Array.from(item)) : JSON.parse(JSON.stringify(item));
 }
 
-function parseRowValuesFromLine() {
-  const line = inputDataIterator.fetchLine();
-  return line.split(' ').map(Number);
+function readInt(){
+  return convertInput(getNextToken(), 1);
 }
 
-function outputResult(value) {
-  console.log(value);
+function readStrArray(){
+  return convertInput(getNextToken(), 2);
 }
 
-function initiateGridCalculations() {
-  const dimensionsPair = parseDimensionsFromLine();
-  const totalRows = dimensionsPair[0];
-  const totalColumns = dimensionsPair[1];
+function readIntArray(){
+  return convertInput(getNextToken(), 4);
+}
 
-  const primaryDataMatrix = [];
-  for (let r = 0; r < totalRows; ++r) {
-    primaryDataMatrix.push(parseRowValuesFromLine());
+function readCharArray(){
+  return convertInput(getNextToken(), 6);
+}
+
+function getNextToken(){
+  return inputProcessor.getNextToken();
+}
+
+function hasMoreTokens(){
+  return inputProcessor.hasMoreTokens();
+}
+
+function initializeInput(lines){
+  return {
+    data : lines,
+    pointer : 0,
+    total : lines.length,
+    hasMoreTokens : function(){
+      return (this.pointer < this.total);
+    },
+    getNextToken : function(){
+      if(this.hasMoreTokens()){
+        return this.data[this.pointer++];
+      } else {
+        throw 'InputExhaustedException: No more input available';
+      }
+    }
+  };
+}
+
+function outputResult(val){
+  console.log(val);
+}
+
+function logDebug(val){
+  console.error('debug:' + require('util').inspect(val, false, null));
+}
+
+function convertInput(data, type){
+  try {
+    switch(type){
+      case 1: return parseInt(data);
+      case 2: return data.split(' ');
+      case 4: return data.split(' ').map(Number);
+      case 6: return data.split('');
+      case 7: return data.split('').map(Number);
+      case 8: return data.join(' ');
+      case 9: return data.join('\n');
+      case 0: return data.join('');
+      default: return data;
+    }
+  } catch(e) {
+    return data;
   }
+}
 
-  const secondaryDataMatrix = [];
-  for (let r = 0; r < totalRows; ++r) {
-    secondaryDataMatrix.push(parseRowValuesFromLine());
-  }
+function solveProblem(){
+  const dimensions = readIntArray();
+  const gridHeight = dimensions[0];
+  const gridWidth = dimensions[1];
 
-  const absoluteDifferenceMatrix = Array.from({ length: totalRows }, (_, r) =>
-    Array.from({ length: totalColumns }, (_, c) =>
-      Math.abs(primaryDataMatrix[r][c] - secondaryDataMatrix[r][c])
-    )
+  const gridA = Array.from({ length: gridHeight }, () => readIntArray());
+
+  const diffGrid = Array.from({ length: gridHeight }, (r) => {
+    const rowB = readIntArray();
+    return Array.from({ length: gridWidth }, (c) => Math.abs(gridA[r][c] - rowB[c]));
+  });
+
+  const sumLimit = 90;
+
+  const dpState = Array.from({ length: gridHeight }, () =>
+    Array.from({ length: gridWidth }, () => new Set())
   );
 
-  const sumUpperBoundary = 90;
+  dpState[0][0].add(diffGrid[0][0]);
 
-  const reachableSumSets = Array.from({ length: totalRows }, () =>
-    Array.from({ length: totalColumns }, () => new Set())
-  );
+  const updateReachableSums = (sourceSet, currentCellValue, targetSet, limit) => {
+    sourceSet.forEach(prevSum => {
+      const sumPlus = Math.abs(prevSum + currentCellValue);
+      const sumMinus = Math.abs(prevSum - currentCellValue);
+      if (sumPlus < limit) targetSet.add(sumPlus);
+      if (sumMinus < limit) targetSet.add(sumMinus);
+    });
+  };
 
-  const initialCellAbsoluteValue = absoluteDifferenceMatrix[0][0];
-  if (initialCellAbsoluteValue < sumUpperBoundary) {
-    reachableSumSets[0][0].add(initialCellAbsoluteValue);
-  }
+  for (let r = 0; r < gridHeight; r++) {
+    for (let c = 0; c < gridWidth; c++) {
+      if (r === 0 && c === 0) continue;
 
-  for (let rCoord = 0; rCoord < totalRows; ++rCoord) {
-    for (let cCoord = 0; cCoord < totalColumns; ++cCoord) {
-      if (rCoord === 0 && cCoord === 0) {
-        continue;
+      if (r > 0) {
+        updateReachableSums(dpState[r - 1][c], diffGrid[r][c], dpState[r][c], sumLimit);
       }
 
-      const currentCellMagnitude = absoluteDifferenceMatrix[rCoord][cCoord];
-      const currentCellPossibleSums = new Set();
-
-      if (rCoord > 0) {
-        const sumsFromNorth = reachableSumSets[rCoord - 1][cCoord];
-        for (const previousTotal of sumsFromNorth) {
-          const plusOption = Math.abs(previousTotal + currentCellMagnitude);
-          const minusOption = Math.abs(previousTotal - currentCellMagnitude);
-          if (plusOption < sumUpperBoundary) currentCellPossibleSums.add(plusOption);
-          if (minusOption < sumUpperBoundary) currentCellPossibleSums.add(minusOption);
-        }
+      if (c > 0) {
+        updateReachableSums(dpState[r][c - 1], diffGrid[r][c], dpState[r][c], sumLimit);
       }
-
-      if (cCoord > 0) {
-        const sumsFromWest = reachableSumSets[rCoord][cCoord - 1];
-        for (const previousTotal of sumsFromWest) {
-          const plusOption = Math.abs(previousTotal + currentCellMagnitude);
-          const minusOption = Math.abs(previousTotal - currentCellMagnitude);
-          if (plusOption < sumUpperBoundary) currentCellPossibleSums.add(plusOption);
-          if (minusOption < sumUpperBoundary) currentCellPossibleSums.add(minusOption);
-        }
-      }
-      reachableSumSets[rCoord][cCoord] = currentCellPossibleSums;
     }
   }
 
-  let minimalFinalPathSum = Infinity;
-  const sumsInTerminalCell = reachableSumSets[totalRows - 1][totalColumns - 1];
-  for (const finalSumValue of sumsInTerminalCell) {
-    if (finalSumValue < minimalFinalPathSum) {
-      minimalFinalPathSum = finalSumValue;
+  let minimumFinalSum = Infinity;
+  dpState[gridHeight - 1][gridWidth - 1].forEach(s => {
+    if (s < minimumFinalSum) {
+      minimumFinalSum = s;
     }
-  }
-  
-  outputResult(minimalFinalPathSum);
+  });
+
+  outputResult(minimumFinalSum);
 }

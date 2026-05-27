@@ -1,39 +1,50 @@
-var initialDataContent = require('fs').readFileSync('/dev/stdin', 'utf8'); // Retrieve raw text from the standard input source
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-var textualRecords = initialDataContent.split('\n'); // Divide the complete input string into an array of separate lines
+// Split the entire input into individual lines for processing.
+var equationLines = rawData.split('\n');
 
-var currentRecord; // Declare a variable to hold the currently processed line
-while (currentRecord = textualRecords.shift()) { // Iterate through each line, extracting one at a time until none remain
+var currentLine; // Declare a variable to hold each line as it's processed.
 
-    var numericalComponents = currentRecord.split(' ').map(function(stringNumber) { // Split the current line by spaces and convert each segment to a numeric value
-        return +stringNumber; // Convert string to number
-    });
+// Loop through each line of input until no more lines are available.
+while (currentLine = equationLines.shift()) {
+  // Parse the current line, splitting by space and converting each part to a number.
+  var numericValues = currentLine.split(' ').map(function(numStr) {
+    return +numStr; // Convert string to number using unary plus.
+  });
 
-    // Assign the extracted numeric components to distinct variables representing coefficients
-    var paramA = numericalComponents[0];
-    var paramB = numericalComponents[1];
-    var paramC = numericalComponents[2];
-    var paramD = numericalComponents[3];
-    var paramE = numericalComponents[4];
-    var paramF = numericalComponents[5];
+  // Assign the parsed numeric values to specific coefficient and constant variables.
+  var coeffA = numericValues[0];
+  var coeffB = numericValues[1];
+  var constC = numericValues[2];
+  var coeffD = numericValues[3];
+  var coeffE = numericValues[4];
+  var constF = numericValues[5];
 
-    // Perform intermediate calculations for solving a system of linear equations
-    var scalingFactor1 = -(paramB / paramE); // Calculate a primary scaling multiplier
-    paramD = paramD * scalingFactor1; // Apply multiplier to coefficient D
-    paramE = paramE * scalingFactor1; // Apply multiplier to coefficient E
-    paramF = paramF * scalingFactor1; // Apply multiplier to coefficient F
+  // Calculate a multiplier to eliminate one variable (e.g., 'y') from the second equation.
+  var factorOne = -(coeffB / coeffE);
 
-    var aggregateCoefficient = paramA + paramD; // Compute a combined coefficient
-    var unknownX = (paramC + paramF) / aggregateCoefficient; // Determine the value of the first unknown (X)
-    var unknownY = (-paramA * unknownX + paramC) / paramB; // Determine the value of the second unknown (Y)
+  // Apply the multiplier to the second equation's coefficients and constant.
+  coeffD = coeffD * factorOne;
+  coeffE = coeffE * factorOne; // This term will become zero or near zero.
+  constF = constF * factorOne;
 
-    // Format the calculated X result to a string with three decimal places
-    var formattedUnknownX = Math.round(unknownX * 1000) + '';
-    formattedUnknownX = formattedUnknownX.replace(/(\d{3})$/, '.$1');
+  // Sum the 'x' coefficients from both equations (after modification).
+  var sumCoeffs = coeffA + coeffD;
 
-    // Format the calculated Y result to a string with three decimal places
-    var formattedUnknownY = Math.round(unknownY * 1000) + '';
-    formattedUnknownY = formattedUnknownY.replace(/(\d{3})$/, '.$1');
+  // Solve for 'x' using the modified equations.
+  var solutionX = (constC + constF) / sumCoeffs;
 
-    console.log(formattedUnknownX + ' ' + formattedUnknownY); // Display the formatted X and Y solutions
+  // Solve for 'y' using the first original equation and the calculated 'x'.
+  var solutionY = (-coeffA * solutionX + constC) / coeffB;
+
+  // Format the 'x' solution to three decimal places.
+  var formattedX = Math.round(solutionX * 1000) + '';
+  formattedX = formattedX.replace(/(\d{3})$/, '.$1');
+
+  // Format the 'y' solution to three decimal places.
+  var formattedY = Math.round(solutionY * 1000) + '';
+  formattedY = formattedY.replace(/(\d{3})$/, '.$1');
+
+  // Output the formatted solutions for 'x' and 'y'.
+  console.log(formattedX + ' ' + formattedY);
 }

@@ -1,60 +1,50 @@
-'use strict'
+'use strict'; // Enforce strict mode for cleaner code execution
 
-/*
- * This helper function calculates the total number of integer divisors
- * for a supplied numerical value. It iterates through potential divisors
- * starting from zero up to the input number itself.
+/**
+ * Computes the total number of divisors for a given positive integer.
+ *
+ * @param {number} targetNumber - The integer for which to count divisors.
+ * @returns {number} The count of divisors.
  */
-const computeFactors = ( inputNumber ) => {
-    let factorCount = 0 ; // Initialize a counter for found divisors.
-
-    // Loop through each integer from 0 up to and including the input value.
-    for ( let loopVar = 0 ; loopVar <= inputNumber ; loopVar ++ ) {
-        // If 'loopVar' is 0, 'inputNumber % loopVar' results in NaN (Not a Number).
-        // The comparison 'NaN === 0' evaluates to false, effectively skipping the increment
-        // for the case where the divisor is zero, preserving original behavior.
-        if ( inputNumber % loopVar === 0 ) {
-            factorCount ++ ; // Increment the counter if a perfect division occurs.
+const calculateDivisorCount = (targetNumber) => {
+    let divisorTally = 0; // Initialize a counter for divisors
+    // Iterate from 0 up to the target number (inclusive)
+    for (let iteratorIndex = 0; iteratorIndex <= targetNumber; iteratorIndex++) {
+        // Check if the current index perfectly divides the target number
+        if (targetNumber % iteratorIndex === 0) {
+            divisorTally++; // Increment the divisor count
         }
     }
+    return divisorTally; // Return the final count
+};
 
-    return factorCount ; // Return the final tally of divisors.
-}
-
-/*
- * This is the primary execution block for the program.
- * It takes raw string input, converts it to a number,
- * then processes a range of numbers based on specific criteria,
- * and finally outputs a calculated total.
+/**
+ * Main processing function that reads input, performs calculations, and outputs the result.
+ * It counts numbers up to a given maximum value that are odd and have exactly 8 divisors.
+ *
+ * @param {string} rawInputData - The raw input string, expected to be a number.
  */
-const ProcessInputAndCalculate = ( rawInputData ) => {
+const executeProcessing = (rawInputData) => {
+    // Convert the input string to a numerical maximum value
+    const maximumValue = Number(rawInputData);
+    let finalTally = 0; // Initialize a counter for numbers meeting the criteria
 
-    // Convert the received string data into a numerical representation.
-    const parsedNumericValue = Number(rawInputData) ;
-
-    let finalAccumulator = 0 ; // A variable to store the final count of numbers meeting the criteria.
-
-    // Iterate through numbers starting from zero, up to and including the parsed value.
-    for ( let currentIterationNumber = 0 ; currentIterationNumber <= parsedNumericValue ; currentIterationNumber ++ ) {
-
-        // Check if the current number is an even number.
-        // If it is, we skip it and proceed to the next iteration.
-        if ( currentIterationNumber % 2 === 0 ) {
-            continue ; // Move to the next number in the sequence.
+    // Loop through numbers from 0 up to the maximum value
+    for (let currentIterationValue = 0; currentIterationValue <= maximumValue; currentIterationValue++) {
+        // Skip even numbers; we are only interested in odd ones
+        if (currentIterationValue % 2 === 0) {
+            continue; // Move to the next iteration
         }
 
-        // For odd numbers, determine if their total number of divisors is exactly eight.
-        if ( computeFactors(currentIterationNumber) === 8 ) {
-            finalAccumulator ++ ; // If the condition is met, increment our main counter.
+        // If the current odd number has exactly 8 divisors, increment the final tally
+        if (calculateDivisorCount(currentIterationValue) === 8) {
+            finalTally++;
         }
     }
+    // Output the final count to the console
+    console.log(finalTally);
+};
 
-    // Print the final computed result to the standard output stream.
-    console.log(finalAccumulator) ;
-}
-
-
-// The following code block is responsible for handling standard input/output.
-// It reads all data from the standard input stream and then passes it to the main processing function.
-// This section should typically remain unaltered as it manages external interactions.
-ProcessInputAndCalculate( require("fs").readFileSync("/dev/stdin", "utf8") ) ;
+// This section handles standard input/output and should not be modified.
+// It reads the entire content from standard input and passes it to the main processing function.
+executeProcessing(require("fs").readFileSync("/dev/stdin", "utf8"));

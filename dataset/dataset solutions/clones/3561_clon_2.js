@@ -1,22 +1,25 @@
-// This function processes a given string input to perform a specific calculation.
-function PerformCalculation( rawContent ) {
-    // First, clean the input string by removing leading/trailing whitespace
-    // and then convert it into an integer for numerical operations.
-    let processedNum = parseInt( rawContent . trim ( ) ) ;
+/**
+ * This module is designed to process a single numerical input
+ * and perform a specific calculation based on its parity (odd or even).
+ */
+function ProcessNumericalData(inputString) {
+    // First, we sanitize the input by trimming whitespace and converting it to an integer.
+    // This variable will hold the clean, numerical value for subsequent operations.
+    let numericalValue = parseInt(inputString.trim());
 
-    // Check if the processed number is odd.
-    if ( processedNum % 2 === 1 )
-    {
-        // For odd numbers, calculate the product of floor(N/2) and ceil(N/2).
-        console.log ( Math . floor ( processedNum / 2 ) * Math . ceil ( processedNum / 2 ) ) ;
-    }
-    // If the number is not odd, it must be even.
-    else
-    {
-        // For even numbers, calculate the square of N/2.
-        console.log ( Math . pow ( processedNum / 2 , 2 ) ) ;
+    // We then evaluate if the obtained numerical value is an odd number.
+    if (numericalValue % 2 === 1) {
+        // If the number is odd, we compute the product of its half rounded down
+        // and its half rounded up. This effectively calculates (n-1)/2 * (n+1)/2.
+        console.log(Math.floor(numericalValue / 2) * Math.ceil(numericalValue / 2));
+    } else {
+        // If the number is even, we calculate the square of its half.
+        // This is equivalent to (n/2)^2.
+        console.log(Math.pow(numericalValue / 2, 2));
     }
 }
 
-// Read the standard input asynchronously and then pass it to our calculation function.
-PerformCalculation ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+// The script's entry point: it reads data from standard input,
+// typically used in environments like competitive programming platforms.
+// The read content is then passed to our primary processing function.
+ProcessNumericalData(require("fs").readFileSync("/dev/stdin", "utf8"));

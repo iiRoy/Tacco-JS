@@ -1,84 +1,49 @@
-((sourceData) => {
-  const lines = sourceData.split("\n");
-  const [itemCount, initialBudget] = lines[0].split(" ").map(Number);
-  const sortedItemValues = lines[1].split(" ").map(Number).sort((x, y) => y - x);
+function main(inputData) {
+    const [firstLineContent, secondLineContent] = inputData;
+    const [itemCount, initialBudget] = firstLineContent.split(" ").map(Number);
+    const sortedItems = Array.from(secondLineContent.split(" "), Number).sort((valA, valB) => valB - valA);
 
-  const solveForSegments = (parameters) => {
-    const { majorPointer, minorPointer, availableUnits, totalCollected, segmentData } = parameters;
-    const dataSize = segmentData.length;
+    let finalScore = 0;
+    let remainingBudget = initialBudget;
 
-    if (availableUnits <= 0) {
-      return totalCollected;
-    }
-    if (majorPointer >= dataSize) {
-      return totalCollected;
-    }
+    // A generator function to produce a sequence of potential operations
+    // in the exact order they would be considered by the original nested loops.
+    function* operationStream(items, limit) {
+        for (let currentItemIdx = 0; currentItemIdx < limit; currentItemIdx++) {
+            // Yield an operation representing taking the current item individually.
+            // This corresponds to the outer loop's `ans += list[i]*2; M--;`
+            yield { kind: 'single', value: items[currentItemIdx], cost: 1 };
 
-    if (minorPointer === majorPointer) {
-      if (availableUnits > 0) {
-        const currentSegment = segmentData[majorPointer];
-        const nextCollected = totalCollected + currentSegment * 2;
-        const nextUnits = availableUnits - 1;
-        return solveForSegments({
-          majorPointer: majorPointer,
-          minorPointer: majorPointer + 1,
-          availableUnits: nextUnits,
-          totalCollected: nextCollected,
-          segmentData: segmentData
-        });
-      } else {
-        return totalCollected;
-      }
-    } else {
-      if (minorPointer >= dataSize) {
-        return solveForSegments({
-          majorPointer: majorPointer + 1,
-          minorPointer: majorPointer + 1,
-          availableUnits: availableUnits,
-          totalCollected: totalCollected,
-          segmentData: segmentData
-        });
-      } else {
-        const segmentOne = segmentData[majorPointer];
-        const segmentTwo = segmentData[minorPointer];
-        const combinedValue = segmentOne + segmentTwo;
-
-        const opportunityRules = [
-          { condition: (units) => units >= 2, contributionMultiplier: 2, unitCost: 2 },
-          { condition: (units) => units === 1, contributionMultiplier: 1, unitCost: 1 }
-        ];
-
-        const applicableRule = opportunityRules.find(rule => rule.condition(availableUnits));
-
-        if (applicableRule) {
-          const valueAddition = combinedValue * applicableRule.contributionMultiplier;
-          const unitsConsumed = applicableRule.unitCost;
-
-          const nextCollected = totalCollected + valueAddition;
-          const nextUnits = availableUnits - unitsConsumed;
-
-          return solveForSegments({
-            majorPointer: majorPointer,
-            minorPointer: minorPointer + 1,
-            availableUnits: nextUnits,
-            totalCollected: nextCollected,
-            segmentData: segmentData
-          });
-        } else {
-          return totalCollected;
+            // Yield operations representing pairing the current item with subsequent items.
+            // This corresponds to the inner loop's `ans += (list[i]+list[j])*Math.min(2,M); M-=2;`
+            for (let subsequentItemIdx = currentItemIdx + 1; subsequentItemIdx < limit; subsequentItemIdx++) {
+                yield { kind: 'combo', primary: items[currentItemIdx], secondary: items[subsequentItemIdx], cost: 2 };
+            }
         }
-      }
     }
-  };
 
-  const initialParameters = {
-    majorPointer: 0,
-    minorPointer: 0,
-    availableUnits: initialBudget,
-    totalCollected: 0,
-    segmentData: sortedItemValues
-  };
+    const operations = operationStream(sortedItems, itemCount);
 
-  const finalAccumulation = solveForSegments(initialParameters);
-  process.stdout.write(String(finalAccumulation));
-})(require('fs').readFileSync('/dev/stdin', 'utf8'));
+    // Iterate through the generated operations, applying them as long as the budget allows.
+    for (const currentOperation of operations) {
+        if (remainingBudget <= 0) {
+            break; // Budget exhausted, stop processing further operations.
+        }
+
+        if (currentOperation.kind === 'single') {
+            finalScore += currentOperation.value * 2;
+            remainingBudget -= currentOperation.cost;
+        } else if (currentOperation.kind === 'combo') {
+            const combinedValue = currentOperation.primary + currentOperation.secondary;
+            // The multiplier depends on the remaining budget, but the cost deduction is always 2.
+            const effectiveMultiplier = Math.min(currentOperation.cost, remainingBudget);
+
+            finalScore += combinedValue * effectiveMultiplier;
+            remainingBudget -= currentOperation.cost; // Always deduct 2 from budget for a combo attempt
+        }
+    }
+
+    console.log(finalScore);
+}
+
+main(require('fs').readFileSync('/dev/stdin', 'utf8').split("\n"));

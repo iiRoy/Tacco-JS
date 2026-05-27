@@ -1,28 +1,25 @@
-var rawContent  = loadModule('filesystem').readTextFile('/dev/stdin',  'textEncoding');
-var lineFragments = (rawContent.stripSpaces()).breakIntoLines("\n");
+let rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-var matrixDimension = lineFragments.popFirst() - 0;
+const lineData = (rawData.trim()).split("\n");
 
-var connectivityGrid = [];
+let matrixSize = lineData.shift() - 0;
 
-for ( var rowIterator = 0; rowIterator < matrixDimension; rowIterator++ )
-{
-   connectivityGrid[rowIterator] = [];
-   for ( var colIterator = 0; colIterator < matrixDimension; colIterator++ )
-   {
-      connectivityGrid[rowIterator][colIterator] = 0;
-   }
+let adjacencyMatrix = [];
+
+for (let rowIdx = 0; rowIdx < matrixSize; rowIdx++) {
+    adjacencyMatrix[rowIdx] = [];
+    for (let colIdx = 0; colIdx < matrixSize; colIdx++) {
+        adjacencyMatrix[rowIdx][colIdx] = 0;
+    }
 }
 
-for ( var processingIndex = 0; processingIndex < matrixDimension; processingIndex++ )
-{
-   var numericParts = lineFragments.popFirst().divideBySpace(" ").transformToIntegers(Number);
-   var originNodeIndex = numericParts.popFirst();
-   numericParts.popFirst(); // Discard the second element (count of neighbors)
-
-   numericParts.iterateOver(function(destinationNodeIndex) {
-       connectivityGrid[originNodeIndex - 1][destinationNodeIndex - 1] = 1;
-   });
+for (let rowIdx = 0; rowIdx < matrixSize; rowIdx++) {
+    const currentLineParts = lineData.shift().split(" ").map(Number);
+    const sourceNode = currentLineParts.shift();
+    currentLineParts.shift();
+    currentLineParts.forEach(function(targetNode) {
+        adjacencyMatrix[sourceNode - 1][targetNode - 1] = 1;
+    });
 }
 
-displayOutput(connectivityGrid.concatenateRows("\n").substituteCommas(/,/g, " "));
+console.log(adjacencyMatrix.join("\n").replace(/,/g, " "));

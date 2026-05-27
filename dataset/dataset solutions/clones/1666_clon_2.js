@@ -1,45 +1,32 @@
-const processNumericalData = function (       incomingPayload     ) {
-    /*
-     * This module processes incoming numerical data to determine divisibility counts.
-     * It reads a single line of input containing three space-separated integers:
-     * a lower bound, an upper bound, and a divisor.
-     * The program then counts how many numbers within the inclusive range [lower bound, upper bound]
-     * are perfectly divisible by the specified divisor.
-     */
+function ProcessInput(rawData) {
+  // Trim leading/trailing whitespace and split into lines, then split each line by space.
+  // This prepares the input for parsing numerical values.
+  let processedLines = rawData.trim().split("\n").map(function(lineContent) {
+    return lineContent.split(" ");
+  });
 
-    // First, prepare the raw text payload.
-    // Trim extraneous whitespace, split into lines, then split each line by spaces.
-    let  processedRecords = incomingPayload
-                                .trim()
-                                .split(        "\n"        )
-                                .map(      function(  singleLineContent  ) {
-                                                                            return singleLineContent.split(  " "  )
-                                                                        }
-                                    );
+  // Extract the lower bound (L) from the first line of input.
+  let lowerBound = parseInt(processedLines[0][0], 10);
+  // Extract the upper bound (R) from the first line of input.
+  let upperBound = parseInt(processedLines[0][1], 10);
+  // Extract the divisor (d) from the first line of input.
+  let divisorValue = parseInt(processedLines[0][2], 10);
 
-    // Extract the numerical parameters from the first processed record.
-    const startingValue = parseInt(    processedRecords[0][0],      10      );
-    const endingValue   = parseInt(    processedRecords[0][1],      10      );
-    const divisorFactor = parseInt(    processedRecords[0][2],      10      );
+  // Initialize a counter for numbers divisible by 'd'.
+  let resultCount = 0;
 
-    // Initialize a counter for numbers meeting the divisibility criterion.
-    let matchingElementCount = 0;
-
-    // Iterate through all integers from the starting value up to and including the ending value.
-    for ( let       currentIterationNumber = startingValue;      currentIterationNumber <= endingValue;      currentIterationNumber++    )
-    {
-        // Check if the current number is perfectly divisible by the divisor factor.
-        // A remainder of zero indicates perfect divisibility.
-        if (      currentIterationNumber % divisorFactor   ===   0       )
-        {
-            matchingElementCount++; // Increment the counter if divisible.
-        }
+  // Iterate through all numbers from L to R, inclusive.
+  for (let currentNumber = lowerBound; currentNumber <= upperBound; currentNumber++) {
+    // Check if the current number is perfectly divisible by the divisor.
+    if (currentNumber % divisorValue === 0) {
+      // If it is, increment the counter.
+      resultCount++;
     }
+  }
 
-    // Output the final tally to the standard console.
-    console.log(matchingElementCount);
-};
+  // Output the final count of divisible numbers to the console.
+  console.log(resultCount);
+}
 
-// Execute the main processing function with data read from standard input.
-// This simulates reading from a file named /dev/stdin in a Unix-like environment.
-processNumericalData( require("fs") . readFileSync( "/dev/stdin", "utf8" ) );
+// Read input from standard input asynchronously and pass it to the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

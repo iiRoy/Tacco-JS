@@ -1,29 +1,31 @@
-const primeModulo = 1000000007;
+const MOD_VAL = 1000000007;
 
-const seriesProduct = (limit) => {
-    let currentAccumulation = 1;
-    for (let idx = 1; idx <= limit; ++idx) {
-        currentAccumulation = (currentAccumulation * idx) % primeModulo;
+function calculateProductSeries(limit) {
+    let result = 1;
+    for (let i = 1; i <= limit; i++) {
+        result = (result * i) % MOD_VAL;
     }
-    return currentAccumulation;
-};
+    return result;
+}
 
-const performComputation = (rawData) => {
-    const dataLines = rawData.split('\n');
-    const firstLineNumbers = dataLines[0].trim().split(' ').map(Number);
+function processInputData(rawData) {
+    const [valA, valB] = rawData.trim().split(' ').map(Number);
+    const absoluteDifference = Math.abs(valA - valB);
 
-    const valA = firstLineNumbers[0];
-    const valB = firstLineNumbers[1];
+    let finalOutputValue;
 
-    const absoluteGap = Math.abs(valA - valB);
+    if (absoluteDifference >= 2) {
+        finalOutputValue = 0;
+    } else {
+        const productA = calculateProductSeries(valA);
+        const productB = calculateProductSeries(valB);
+        const intermediateProduct = (productA * productB) % MOD_VAL;
 
-    const outputValue = (absoluteGap >= 2)
-        ? 0
-        : (absoluteGap === 1)
-            ? (seriesProduct(valA) * seriesProduct(valB)) % primeModulo
-            : (seriesProduct(valA) * seriesProduct(valB) * 2) % primeModulo;
-            
-    console.log(outputValue);
-};
+        finalOutputValue = (absoluteDifference === 0)
+            ? (intermediateProduct * 2) % MOD_VAL
+            : intermediateProduct;
+    }
+    console.log(finalOutputValue);
+}
 
-performComputation(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

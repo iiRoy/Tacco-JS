@@ -1,37 +1,36 @@
-const fileOps = require('node:fs');
-const fullContent = fileOps.readFileSync('/dev/stdin', 'utf8');
+const fileSystem = require('fs');
+const rawInput = fileSystem.readFileSync('/dev/stdin', 'utf8');
 
-const allLines = fullContent.trim().split('\n');
-const relevantLine = allLines.slice(1, 2)[0];
+const lineSegments = rawInput.trim().split('\n');
+const targetLine = lineSegments[1];
 
-const digitSequences = relevantLine.match(/-?\d+/g);
-const numericCollection = [];
-for (let seq of digitSequences) {
-    numericCollection.push(parseInt(seq, 10));
+const parsedNumbers = [];
+let currentNumericString = '';
+
+for (let i = 0; i < targetLine.length; i++) {
+    const character = targetLine[i];
+    if (character === ' ') {
+        parsedNumbers.push(Number(currentNumericString));
+        currentNumericString = '';
+    } else {
+        currentNumericString += character;
+    }
 }
+parsedNumbers.push(Number(currentNumericString));
 
-function sortCollectionAscending(dataArray) {
-    const numElements = dataArray.length;
-    for (let currentIdx = 1; currentIdx < numElements; currentIdx++) {
-        let valueToInsert = dataArray[currentIdx];
-        let comparisonIdx = currentIdx - 1;
-        while (comparisonIdx >= 0 && dataArray[comparisonIdx] > valueToInsert) {
-            dataArray[comparisonIdx + 1] = dataArray[comparisonIdx];
-            comparisonIdx--;
+function arrangeAscending(collection) {
+    const elementCount = collection.length;
+    for (let idx = 1; idx < elementCount; idx++) {
+        let currentVal = collection[idx];
+        let prevIdx = idx - 1;
+        while (prevIdx >= 0 && collection[prevIdx] > currentVal) {
+            collection[prevIdx + 1] = collection[prevIdx];
+            prevIdx--;
         }
-        dataArray[comparisonIdx + 1] = valueToInsert;
-    }
-    return dataArray;
-}
-
-const orderedValues = sortCollectionAscending(numericCollection);
-
-let resultString = '';
-for (let i = 0; i < orderedValues.length; i++) {
-    resultString += orderedValues[i];
-    if (i < orderedValues.length - 1) {
-        resultString += ' ';
+        collection[prevIdx + 1] = currentVal;
     }
 }
 
-console.info(resultString);
+arrangeAscending(parsedNumbers);
+
+console.log(parsedNumbers.join(' '));

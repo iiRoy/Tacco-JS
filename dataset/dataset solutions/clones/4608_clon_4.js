@@ -1,41 +1,64 @@
-let rawDataSegments;
-let currentSegmentPointer = 0;
+class InputHandler {
+  constructor() {
+    this.sourceLines = require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");
+    this.linePointer = 0;
+  }
 
-function acquireInputData() {
-    return require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");
-}
+  hasMoreData() {
+    return this.linePointer < this.sourceLines.length;
+  }
 
-function fetchNextInputLine() {
-    if (currentSegmentPointer >= rawDataSegments.length) {
-        return "";
+  retrieveNextLine() {
+    if (!this.hasMoreData()) {
+      return "";
     }
-    return rawDataSegments[currentSegmentPointer++];
+    const currentLineContent = this.sourceLines[this.linePointer];
+    this.linePointer++;
+    return currentLineContent;
+  }
+
+  obtainInteger() {
+    return parseInt(this.retrieveNextLine(), 10);
+  }
+
+  obtainStringArray() {
+    return this.retrieveNextLine().split(" ");
+  }
+
+  obtainIntegerArray() {
+    return this.retrieveNextLine().split(" ").map(Number);
+  }
+
+  obtainCharacterArray() {
+    return this.retrieveNextLine().split("");
+  }
 }
 
-function parseNumericSequence(textLine) {
-    return textLine.split(" ").map(Number);
+const dataStream = new InputHandler();
+
+function printOutput(content) {
+  console.log(content);
 }
 
-function emitResult(value) {
-    console.log(value);
+function printError(content) {
+  console.error(content);
 }
 
-function processApplicationLogic() {
-    rawDataSegments = acquireInputData();
+function calculateTotalDuration() {
+  const initialConfig = dataStream.obtainIntegerArray();
+  const elementCount = initialConfig[0];
+  const timeLimit = initialConfig[1];
+  const timeSequence = dataStream.obtainIntegerArray();
 
-    const configParameters = parseNumericSequence(fetchNextInputLine());
-    const elementCount = configParameters[0];
-    const maxAllowedInterval = configParameters[1];
+  const accumulatedTime = timeSequence.slice(1).reduce((currentSum, currentMoment, idx) => {
+    const priorMoment = timeSequence[idx];
+    const actualInterval = currentMoment - priorMoment;
+    return currentSum + Math.min(actualInterval, timeLimit);
+  }, 0);
 
-    const numericSeries = parseNumericSequence(fetchNextInputLine());
+  const finalDuration = accumulatedTime + timeLimit;
 
-    const cumulativeMetric = numericSeries.slice(1).reduce((accumulator, currentPoint, index) => {
-        const previousPoint = numericSeries[index];
-        const actualInterval = currentPoint - previousPoint;
-        return accumulator + Math.min(actualInterval, maxAllowedInterval);
-    }, maxAllowedInterval);
-
-    emitResult(cumulativeMetric);
+  printOutput(finalDuration);
 }
 
-processApplicationLogic();
+calculateTotalDuration();

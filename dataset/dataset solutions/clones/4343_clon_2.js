@@ -1,36 +1,44 @@
-(  function  processStreamData (  )  {
-  'use strict' ;  //  Strict parsing activated.
+( function () {
+  'use strict';
 
-  //  Collection for all incoming text lines.
-  let  dataFragments  =  [  ] ;
+  // Array to store all incoming lines from standard input
+  let receivedInputLines = [];
 
-  //  Configuring a mechanism to interpret input streams.
-  require ( 'readline' ) . createInterface ( {
-    input:   process . stdin  ,  //  Input comes from standard input.
-    output:  process . stdout   //  Output goes to standard output.
-  } ) . on ( 'line' ,  function  (  textualPortion  )  {
-    //  Append each processed textual segment to our list.
-    dataFragments . push ( textualPortion ) ;
-  } ) ;
+  // Set up interface for reading input line by line
+  require('readline')
+    .createInterface({
+      input: process.stdin,  // Source for input
+      output: process.stdout // Destination for output (not used for actual output here, just for interface)
+    })
+    .on('line', function (currentInputSegment) {
+      // Each time a line is received, add it to our collection
+      receivedInputLines.push(currentInputSegment);
+    });
 
-  //  Register a callback for when the input stream concludes.
-  process . stdin . on ( 'end' ,  function  (  )  {
-
-    //  (  Prior debug/alternative loop, now inactive  )
+  // When the standard input stream finishes
+  process.stdin.on('end', function () {
+    // The following section was previously commented out,
+    // demonstrating a potential way to process multiple lines.
     /*
-    dataFragments . forEach ( function ( item ) {
-      const parts = item . split ( ' ' ) . map ( Number ) ;
-      console . log ( parts [ 0 ] + ' ' + parts [ 1 ] ) ;
-    } ) ;
+    receivedInputLines.forEach(function(aSingleLine) {
+      let numericTokens = aSingleLine.split(' ').map(Number);
+      console.log(numericTokens[0] + ' ' + numericTokens[1]);
+    });
     */
 
-    //  ---  Primary calculation begins  ---
-    //  Compute the square of the first numerical entry, then subtract the second numerical entry.
-    console . log (
-      Math . pow ( Number ( dataFragments [ 0 ] ) ,  2 )  -  Number ( dataFragments [ 1 ] )
-    ) ;
-    //  ---  Primary calculation ends  ---
+    // --- Core calculation logic starts here ---
+    // This part processes specific lines from the collected input.
+    // It takes the first line, converts it to an integer, squares it.
+    // Then it takes the second line, converts it to an integer, and subtracts it.
+    let firstValue = parseInt(receivedInputLines[0]);
+    let secondValue = parseInt(receivedInputLines[1]);
 
-  } ) ;
+    // Calculate the result: (firstValue ^ 2) - secondValue
+    let finalResult = Math.pow(firstValue, 2) - secondValue;
 
-} ) ( ) ;
+    // Output the computed result to the console.
+    console.log(finalResult);
+    // --- Core calculation logic ends here ---
+  });
+
+})();

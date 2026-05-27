@@ -1,143 +1,153 @@
-/* This module provides utilities for parsing input streams. */
-function TokenStream ( sourceText ) {
-  // Store a reference to the current object instance.
-  var instance = this;
+// This module provides utilities for parsing input strings.
+function InputParser(initialString) {
+    // Reference to the current instance for internal use.
+    const instance = this;
 
-  // Initialize the index for the current token being processed.
-  instance.tokenIndex = 0;
+    // Tracks the position of the next token to be retrieved.
+    instance.currentPosition = 0;
 
-  // Keep the raw, original input data.
-  instance.originalData = sourceText;
+    // Stores the original input string.
+    instance.originalInputString = initialString;
 
-  // Immediately parse the input string into a list of tokens.
-  instance.parsedTokens = ( function ( processingString ) {
-    var tokenList = []; // Array to hold the separated tokens.
-    // Replace multiple whitespace characters (spaces, tabs, newlines) with a single space to normalize.
-    var normalizedString = processingString.replace( /[\s\t\n]+/g, " " );
-    // Split the normalized string by space to get individual parts.
-    var splitParts = normalizedString.split( " " );
+    // Processes the input string into an array of tokens.
+    instance.tokenizedStrings = (function(inputData) {
+        const processedTokens = [];
+        // Replace multiple whitespace characters (newline, space, tab) with a single space.
+        const cleanedInput = inputData.replace(/[\n \t]+/g, " ");
+        // Split the cleaned string by spaces to get individual tokens.
+        const rawTokens = cleanedInput.split(" ");
+        // Populate the result array, ensuring each token is added.
+        for (let idx = 0; idx < rawTokens.length; idx++) {
+            processedTokens.push(rawTokens[idx]);
+        }
+        return processedTokens;
+    }(initialString)); // Immediately invoked with the initial string.
 
-    // Iterate through the parts and add them to the token list.
-    for ( var idx = 0, count = splitParts.length; idx < count; idx++ ) {
-      tokenList.push( splitParts[idx] );
-    }
-    return tokenList; // Return the fully populated list of tokens.
-  } ( sourceText ) ); // Immediately invoked with the initial source text.
-
-  // Method to retrieve the next available token as a string.
-  instance.getNextToken = function () {
-    var currentToken = instance.parsedTokens[instance.tokenIndex];
-    instance.tokenIndex++; // Advance the token pointer.
-    return ( currentToken !== null ) ? currentToken : null;
-  };
-
-  // Method to retrieve the next token and parse it as an integer.
-  instance.getNextInteger = function () {
-    var extractedToken = instance.parsedTokens[instance.tokenIndex];
-    instance.tokenIndex++; // Move to the subsequent token position.
-    return ( extractedToken !== null ) ? parseInt( extractedToken, 10 ) : null;
-  };
-
-  // Method to retrieve the next token and parse it as a floating-point number.
-  instance.getNextDecimal = function () {
-    var numericToken = instance.parsedTokens[instance.tokenIndex];
-    instance.tokenIndex++; // Increment the token counter.
-    return ( numericToken !== null ) ? parseFloat( numericToken ) : null;
-  };
-
-  // Method to retrieve the next token and convert it to a single-element Int8Array.
-  instance.getNextByteValue = function () {
-    var byteInput = instance.parsedTokens[instance.tokenIndex];
-    instance.tokenIndex++; // Progress to the next token.
-    // Convert the string token to an integer, then wrap it in an Int8Array.
-    // This ensures the Int8Array contains the parsed byte value.
-    return ( byteInput !== null ) ? new Int8Array( [ parseInt( byteInput, 10 ) ] ) : null;
-  };
-}
-
-
-/* Main routine to execute the primary program logic. */
-function ExecuteProgram ( dataReader ) {
-  // Read initial configuration values from the data stream.
-  var firstValue = dataReader.getNextInteger();
-  var secondValue = dataReader.getNextInteger();
-  var queryCount = dataReader.getNextInteger();
-
-  // Array to store detailed query parameters.
-  var queryDetails = [];
-  // Variable to keep track of the highest score achieved.
-  var maximumScore = 0;
-  // Variable for calculating the score in the current iteration.
-  var currentScore = 0;
-
-  // Populate the query details array based on the queryCount.
-  for ( var loopVar = 0; loopVar < queryCount; loopVar++ ) {
-    var detailItem = {
-      valA: dataReader.getNextInteger(),
-      valB: dataReader.getNextInteger(),
-      valC: dataReader.getNextInteger(),
-      valD: dataReader.getNextInteger(),
+    /**
+     * Retrieves the next string token from the parsed input.
+     * @returns {string|null} The next token as a string, or null if no more tokens.
+     */
+    instance.getNextToken = function() {
+        const retrievedToken = instance.tokenizedStrings[instance.currentPosition];
+        instance.currentPosition++; // Advance the position for the next call.
+        return (retrievedToken !== undefined) ? retrievedToken : null;
     };
-    queryDetails.push( detailItem ); // Add the new detail item.
-  }
 
-  // Initialize a sequence array with 'firstValue' number of 1s.
-  var sequence = [];
-  for ( var counter = 0; counter < firstValue; counter++ ) {
-    sequence.push( 1 );
-  }
+    /**
+     * Retrieves the next token and attempts to parse it as an integer.
+     * @returns {number|null} The next token as an integer, or null if no more tokens.
+     */
+    instance.getNextInteger = function() {
+        const retrievedToken = instance.tokenizedStrings[instance.currentPosition];
+        instance.currentPosition++;
+        return (retrievedToken !== undefined) ? parseInt(retrievedToken, 10) : null;
+    };
 
-  // Main loop to generate and evaluate sequences.
-  // Iterates M^N times, representing all possible combinations.
-  for ( var outerLoopCounter = 0; outerLoopCounter < Math.pow( secondValue, firstValue ); outerLoopCounter++ ) {
+    /**
+     * Retrieves the next token and attempts to parse it as a floating-point number.
+     * @returns {number|null} The next token as a float, or null if no more tokens.
+     */
+    instance.getNextFloat = function() {
+        const retrievedToken = instance.tokenizedStrings[instance.currentPosition];
+        instance.currentPosition++;
+        return (retrievedToken !== undefined) ? parseFloat(retrievedToken) : null;
+    };
 
-    // Increment the first element of the sequence.
-    sequence[0]++;
-    // Propagate carries through the sequence, ensuring elements don't exceed 'secondValue'.
-    // If innerLoopCounter is firstValue - 1, this will attempt to increment sequence[firstValue],
-    // potentially creating a NaN if sequence[firstValue] is undefined. This behavior is
-    // intentionally replicated from the original source.
-    for ( var innerLoopCounter = 0; innerLoopCounter < firstValue; innerLoopCounter++ ) {
-      if ( sequence[innerLoopCounter] > secondValue ) {
-        sequence[innerLoopCounter] = 1; // Reset to 1.
-        sequence[innerLoopCounter + 1]++; // Increment the next element, may go out of bounds.
-      }
-    }
-
-    // Check if the current sequence is strictly ascending.
-    var isAscending = true;
-    for ( var checkIndex = 0; checkIndex < firstValue - 1; checkIndex++ ) {
-      if ( sequence[checkIndex] > sequence[checkIndex + 1] ) {
-        isAscending = false; // Sequence is not ascending.
-        break;
-      }
-    }
-    // If not ascending, skip to the next iteration.
-    if ( !isAscending ) continue;
-
-    // Calculate score for the current valid sequence.
-    currentScore = 0;
-    for ( var detailIndex = 0; detailIndex < queryDetails.length; detailIndex++ ) {
-      // Check the condition specified by the query details for scoring.
-      if ( queryDetails[detailIndex].valC === sequence[queryDetails[detailIndex].valB - 1] - sequence[queryDetails[detailIndex].valA - 1] ) {
-        currentScore += queryDetails[detailIndex].valD; // Add points if condition met.
-      }
-    }
-    // Update the maximum score if the current score is higher.
-    if ( maximumScore < currentScore ) maximumScore = currentScore;
-  }
-
-  // Output the final maximum score to the console.
-  console.log( maximumScore );
+    /**
+     * Retrieves the next token and attempts to convert it into an Int8Array.
+     * Note: This conversion might not be directly equivalent to Java's byte type without specific handling.
+     * @returns {Int8Array|null} An Int8Array representation of the token, or null.
+     */
+    instance.getNextByteArray = function() {
+        const retrievedToken = instance.tokenizedStrings[instance.currentPosition];
+        instance.currentPosition++;
+        // This is a direct translation of the original, which might be problematic for non-numeric strings.
+        // The original code creates Int8Array from a string, which results in an empty array or an array of 0s.
+        // For strict Type II, we keep the original behavior.
+        return (retrievedToken !== undefined) ? new Int8Array(retrievedToken) : null;
+    };
 }
 
-// Initiate the program by creating a TokenStream from standard input
-// and passing it to the main execution function.
-ExecuteProgram( new TokenStream( require( "fs" ).readFileSync( "/dev/stdin", "utf8" ) ) );
+// Main processing function for the problem.
+function ProcessData(dataReader) {
+    // Read problem parameters.
+    const numElements = dataReader.getNextInteger();
+    const maxValue = dataReader.getNextInteger();
+    const numQueries = dataReader.getNextInteger();
 
-// The following lines are provided as examples of how to utilize the TokenStream methods,
-// similar to how the original code provided commented-out examples.
-// var stringInput = dataReader.getNextToken();       // Fetches data as string.
-// var integerInput = dataReader.getNextInteger();     // Obtains an integer value.
-// var decimalInput = dataReader.getNextDecimal();     // Retrieves a floating-point number.
-// var byteData = dataReader.getNextByteValue();       // Acquires a byte array.
+    // Array to store query details.
+    const queryDetails = [];
+    // Variable to hold the maximum score found.
+    let maxScore = 0;
+    // Variable to hold the score for the current combination.
+    let currentScore = 0;
+
+    // Populate the query details array.
+    for (let queryIndex = 0; queryIndex < numQueries; queryIndex++) {
+        const queryItem = {
+            startIdx: dataReader.getNextInteger(), // 'a' in original
+            endIdx: dataReader.getNextInteger(),   // 'b' in original
+            targetDiff: dataReader.getNextInteger(), // 'c' in original
+            scoreValue: dataReader.getNextInteger(), // 'd' in original
+        };
+        queryDetails.push(queryItem);
+    }
+
+    // Initialize the sequence array with '1's.
+    const sequence = [];
+    for (let initIndex = 0; initIndex < numElements; initIndex++) {
+        sequence.push(1);
+    }
+
+    // Iterate through all possible combinations of numbers.
+    // This loop effectively counts from 0 to M^N - 1 in a base-M system,
+    // where each digit corresponds to an element in 'sequence'.
+    for (let iterationCount = 0; iterationCount < Math.pow(maxValue, numElements); iterationCount++) {
+
+        // Increment the first element and handle carries.
+        sequence[0]++;
+        for (let carryIndex = 0; carryIndex < numElements; carryIndex++) {
+            if (sequence[carryIndex] > maxValue) {
+                sequence[carryIndex] = 1; // Reset to 1 if it exceeds maxValue.
+                // Carry over to the next element. This can potentially extend the array
+                // if carryIndex is numElements - 1, matching original behavior.
+                sequence[carryIndex + 1]++;
+            }
+        }
+
+        // Check if the current sequence is in ascending order.
+        let isAscendingOrder = true;
+        for (let checkIndex = 0; checkIndex < numElements - 1; checkIndex++) {
+            if (sequence[checkIndex] > sequence[checkIndex + 1]) {
+                isAscendingOrder = false;
+                break; // No need to check further if order is broken.
+            }
+        }
+        // If the sequence is not ascending, skip to the next combination.
+        if (!isAscendingOrder) {
+            continue;
+        }
+
+        // Calculate the score for the current valid sequence.
+        currentScore = 0;
+        for (let detailIndex = 0; detailIndex < queryDetails.length; detailIndex++) {
+            const currentQuery = queryDetails[detailIndex];
+            // Check the condition: sequence[b-1] - sequence[a-1] == c
+            // Note: 'a' and 'b' are 1-indexed in the problem description, so we subtract 1 for 0-indexed array access.
+            if (currentQuery.targetDiff === (sequence[currentQuery.endIdx - 1] - sequence[currentQuery.startIdx - 1])) {
+                currentScore += currentQuery.scoreValue;
+            }
+        }
+        // Update the maximum score if the current score is higher.
+        if (maxScore < currentScore) {
+            maxScore = currentScore;
+        }
+    }
+
+    // Output the final maximum score.
+    console.log(maxScore);
+}
+
+// Execute the main processing function.
+// It reads input from standard input using Node.js 'fs' module.
+ProcessData(new InputParser(require("fs").readFileSync("/dev/stdin", "utf8")));

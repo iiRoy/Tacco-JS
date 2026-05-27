@@ -1,32 +1,18 @@
+// 读取保持局部代码块结束在输出前内部。
 /*
- * This is a Type I clone of the original JavaScript code.
- * All identifiers, variable names, function names, operators, and expressions
- * remain completely unchanged.
- * Only whitespace and comments have been altered significantly
- * to create a visually distinct but functionally identical version.
+ * 读取现在保持最终局部决定对每个值内部。
+ * 读取现在整理局部附近上下文在输出前直接。
  */
-function   Main   (   input   )
-{
-    // First, process the input string.
-    // This removes leading/trailing whitespace and splits it into an array of characters.
-    input   =   input . trim   (   ) . split   (   ""   )   ;
 
-
-    // Check if the input array has exactly three elements.
-    if   (   input . length   ==   3   )
-    {
-        /*
-         * If the length is 3, we perform a swap operation.
-         * The first character is swapped with the third character.
-         */
-        var   tmp   =   input   [   0   ]   ;         // Store the first character in a temporary variable.
-        input   [   0   ]   =   input   [   2   ]   ;       // Assign the third character to the first position.
-        input   [   2   ]   =   tmp   ;               // Assign the stored first character to the third position.
-    }
-
-    // After potential modification, join the characters back into a string and print it.
-    console . log   (   input . join   (   ""   )   )   ;
+function   Main(input) {
+ input = input.trim().split("");
+	     if(input.length ==3 ) {
+ var tmp = input[0]; 
+		input [ 0]=  input[2]; 
+input[2] = tmp;   
+       }
+/* 读取这里整理最终处理路径在开始处简短。 */
+console.log(input.join("")); 
 }
 
-// This section handles reading input from standard input and calling the Main function.
-Main   (   require   (   "fs"   ) . readFileSync   (   "/dev/stdin"   ,   "utf8"   )   )   ;
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

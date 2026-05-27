@@ -1,166 +1,138 @@
-/*
- * This function evaluates the game board for a winning sequence starting from a given point.
- * It checks in all 24 predefined 3D directions.
- */
-function checkWinningCondition( activePlayerPiece, startCoordX, startCoordY, startCoordZ )
-{
-    // Define initial sets of directional offsets for X, Y, and Z axes
-    let   xOffsets = [ -1, 0, 1, -1, 1, -1, 0, 1 ];
-    const yOffsets = [ -1, -1, -1, 0, 0, 1, 1, 1 ];
-    let   zOffsets = [ 0, 0, 0, 0, 0, 0, 0, 0 ];
+function checkLine(playerID, coordX, coordY, coordZ) {
+    // Define 3D direction vectors for checking consecutive pieces.
+    // These vectors represent the 26 possible directions in a 3D grid, excluding (0,0,0).
+    // The original code constructs 24 specific directions through concatenation.
+    let deltaX = [-1, 0, 1, -1, 1, -1, 0, 1];
+    let deltaY = [-1, -1, -1, 0, 0, 1, 1, 1];
+    let deltaZ = [0, 0, 0, 0, 0, 0, 0, 0];
 
-    // Expand the Y-axis offsets
-    yOffsets = yOffsets.concat( [ -1, 0, 1, -1, 1, -1, 0, 1 ] );
-    // Expand the Z-axis offsets
-    zOffsets = zOffsets.concat( [ -1, -1, -1, 0, 0, 1, 1, 1 ] );
-    // Expand the X-axis offsets
-    xOffsets = xOffsets.concat( [ 0, 0, 0, 0, 0, 0, 0, 0 ] );
+    // Extend direction vectors for the Z-axis (up/down and diagonals)
+    deltaY = deltaY.concat([-1, 0, 1, -1, 1, -1, 0, 1]);
+    deltaZ = deltaZ.concat([-1, -1, -1, 0, 0, 1, 1, 1]);
+    deltaX = deltaX.concat([0, 0, 0, 0, 0, 0, 0, 0]);
 
-    // Further expand the Z-axis offsets
-    zOffsets = zOffsets.concat( [ -1, 0, 1, -1, 1, -1, 0, 1 ] );
-    // Further expand the X-axis offsets
-    xOffsets = xOffsets.concat( [ -1, -1, -1, 0, 0, 1, 1, 1 ] );
-    // Further expand the Y-axis offsets
-    yOffsets = yOffsets.concat( [ 0, 0, 0, 0, 0, 0, 0, 0 ] );
+    // Further extend for the remaining Z-axis directions
+    deltaZ = deltaZ.concat([-1, 0, 1, -1, 1, -1, 0, 1]);
+    deltaX = deltaX.concat([-1, -1, -1, 0, 0, 1, 1, 1]);
+    deltaY = deltaY.concat([0, 0, 0, 0, 0, 0, 0, 0]);
 
-    // Variable to store the maximum sequence length found across all directions
-    let   longestSequence = 0;
+    let maxConsecutive = 0; // Stores the maximum consecutive pieces found in any direction
 
-    // Iterate through each of the 24 defined directions
-    for ( let directionIndex = 0; directionIndex < xOffsets.length; directionIndex++ )
-    {
-        // Initialize temporary coordinates for traversal in the current direction
-        let currentX = startCoordX;
-        let currentY = startCoordY;
-        let currentZ = startCoordZ;
+    // Iterate through all defined 3D directions
+    for (let idx = 0; idx < deltaX.length; idx++) {
+        let currentX = coordX;
+        let currentY = coordY;
+        let currentZ = coordZ;
 
-        // Step backwards from the starting point until an out-of-bounds position is reached
-        while ( true )
-        {
-            currentX -= xOffsets[ directionIndex ];
-            currentY -= yOffsets[ directionIndex ];
-            currentZ -= zOffsets[ directionIndex ];
+        // Traverse backwards from the placed piece to find the start of the potential line
+        while (true) {
+            currentX -= deltaX[idx];
+            currentY -= deltaY[idx];
+            currentZ -= deltaZ[idx];
 
-            // Break if any coordinate falls below zero
-            if ( currentX < 0 || currentY < 0 || currentZ < 0 ) break;
-            // Break if any coordinate is at or beyond the board's dimension limit
-            if ( currentX >= gridDimension || currentY >= gridDimension || currentZ >= gridDimension ) break;
+            // Break if the coordinates go out of the game board boundaries
+            if (currentX < 0 || currentY < 0 || currentZ < 0) break;
+            if (currentX >= boardSize || currentY >= boardSize || currentZ >= boardSize) break;
         }
 
-        // Initialize a counter for the current sequence length
-        let currentSequenceCount = 0;
+        let currentCount = 0; // Counter for consecutive pieces in the current direction
 
-        // Step forwards from the adjusted starting point (or just outside the board)
-        while ( true )
-        {
-            currentX += xOffsets[ directionIndex ];
-            currentY += yOffsets[ directionIndex ];
-            currentZ += zOffsets[ directionIndex ];
+        // Traverse forwards from the found start (or just past the boundary)
+        while (true) {
+            currentX += deltaX[idx];
+            currentY += deltaY[idx];
+            currentZ += deltaZ[idx];
 
-            // Break if any coordinate falls below zero
-            if ( currentX < 0 || currentY < 0 || currentZ < 0 ) break;
-            // Break if any coordinate is at or beyond the board's dimension limit
-            if ( currentX >= gridDimension || currentY >= gridDimension || currentZ >= gridDimension ) break;
+            // Break if the coordinates go out of the game board boundaries
+            if (currentX < 0 || currentY < 0 || currentZ < 0) break;
+            if (currentX >= boardSize || currentY >= boardSize || currentZ >= boardSize) break;
 
-            // Check if the piece at the current position matches the active player's piece
-            if ( gameBoardState[ currentX ][ currentY ][ currentZ ] === activePlayerPiece )
-            {
-                currentSequenceCount++; // Increment count if it's a match
+            // Check if the piece at the current position belongs to the current player
+            if (gameBoard[currentX][currentY][currentZ] === playerID) {
+                currentCount++; // Increment count if it's the player's piece
+            } else {
+                currentCount = 0; // Reset count if a different piece or empty space is encountered
             }
-            else
-            {
-                currentSequenceCount = 0; // Reset count if it's not a match
-            }
-            // Update the overall maximum sequence length found
-            longestSequence = Math.max( longestSequence, currentSequenceCount );
+
+            // Update the maximum consecutive count found so far
+            maxConsecutive = Math.max(maxConsecutive, currentCount);
         }
     }
-    return longestSequence; // Return the longest sequence found for the active player
+    return maxConsecutive;
 }
 
-// Global declarations for board dimensions and game state.
-let gridDimension;
-let gameBoardState;
+// Read input from standard input using Node.js 'fs' module
+const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+let inputLines = fileContent.trim().split("\n");
 
-// Read the entire input content from standard input.
-const rawDataInput = require( 'fs' ) . readFileSync( '/dev/stdin', 'utf8' );
+// Global variables for game state, accessible by the checkLine function
+let boardSize;      // Represents 'n' from the original problem: N x N board dimensions
+let winCondition;   // Represents 'm' from the original problem: M consecutive pieces to win
+let totalMoves;     // Represents 'p' from the original problem: P total moves in the game
+let gameBoard;      // Represents 'ball' from the original problem: The 3D game board
 
-// Process the raw input: trim whitespace and split into an array of lines.
-const inputLines = rawDataInput.trim().split( "\n" );
+// Main game loop, processes multiple game scenarios until "0 0 0" is encountered
+while (true) {
+    let dimensionsStr = inputLines.shift(); // Get board dimensions and win condition string
+    if (dimensionsStr === "0 0 0") {
+        break; // Exit loop if the termination condition "0 0 0" is met
+    }
 
-// Main game simulation loop.
-while ( true )
-{
-    // Retrieve the first line of configuration for the current game.
-    let   configLine = inputLines.shift();
+    // Parse board dimensions and win condition from the input string
+    const parsedDimensions = dimensionsStr.split(" ").map(Number);
+    boardSize = parsedDimensions[0];
+    winCondition = parsedDimensions[1];
+    totalMoves = parsedDimensions[2];
 
-    // If the configuration line indicates termination, exit the loop.
-    if ( configLine === "0 0 0" ) break;
-
-    // Parse the configuration values (board size, winning length, total moves).
-    configLine = configLine.split( " " ) . map( Number );
-    gridDimension = configLine[ 0 ];      // N: The size of the N x N x P board.
-    const requiredLength = configLine[ 1 ]; // M: The length of the sequence required to win.
-    const totalMoves = configLine[ 2 ];     // P: The total number of moves in this game scenario.
-
-    // Initialize the 3D game board array with all cells set to zero (empty).
-    gameBoardState = [];
-    for ( let rowIter = 0; rowIter < gridDimension; rowIter++ )
-    {
-        gameBoardState[ rowIter ] = [];
-        for ( let colIter = 0; colIter < gridDimension; colIter++ )
-        {
-            gameBoardState[ rowIter ][ colIter ] = [];
-            for ( let depthIter = 0; depthIter < totalMoves; depthIter++ )
-            {
-                gameBoardState[ rowIter ][ colIter ][ depthIter ] = 0;
+    // Initialize the 3D game board (boardSize x boardSize x totalMoves)
+    gameBoard = [];
+    for (let rowIdx = 0; rowIdx < boardSize; rowIdx++) {
+        gameBoard[rowIdx] = [];
+        for (let colIdx = 0; colIdx < boardSize; colIdx++) {
+            gameBoard[rowIdx][colIdx] = [];
+            for (let depthIdx = 0; depthIdx < totalMoves; depthIdx++) {
+                gameBoard[rowIdx][colIdx][depthIdx] = 0; // 0 for empty, 1 for player 1, 2 for player 2
             }
         }
     }
 
-    // Initialize the current player's piece (1 for Black, 2 for White).
-    let   currentPlayerPiece = 1;
-    // Flag to track if the game ends in a draw.
-    let   isGameDraw = true;
+    let currentPlayer = 1;      // Player 1 starts (represented as "Black")
+    let isDrawPossible = true;  // Flag to track if the game ends in a draw
 
-    // Loop through each of the specified moves.
-    for ( let moveIndex = 0; moveIndex < totalMoves; moveIndex++ )
-    {
-        // Get the coordinates for the current move from the input.
-        const moveCoordinates = inputLines.shift().split( " " ).map( Number );
-        let   colPos = moveCoordinates[ 0 ] - 1; // Convert to 0-indexed column.
-        let   rowPos = moveCoordinates[ 1 ] - 1; // Convert to 0-indexed row.
+    // Process each move for the current game scenario
+    for (let moveNum = 0; moveNum < totalMoves; moveNum++) {
+        const moveCoordsStr = inputLines.shift();
+        const [moveXRaw, moveYRaw] = moveCoordsStr.split(" ").map(Number);
+        const moveX = moveXRaw - 1; // Adjust to 0-indexed coordinates
+        const moveY = moveYRaw - 1; // Adjust to 0-indexed coordinates
 
-        // Determine the lowest available Z-coordinate (depth) in the stack.
         let currentDepth = 0;
-        while ( true )
-        {
-            if ( gameBoardState[ colPos ][ rowPos ][ currentDepth ] !== 0 )
-            {
-                currentDepth++; // If occupied, move to the next depth level.
-            }
-            else
-            {
-                break; // Found an empty slot.
+        // Find the lowest available slot in the specified column (stacking pieces)
+        while (true) {
+            if (gameBoard[moveX][moveY][currentDepth] !== 0) {
+                currentDepth++; // Move up if the current slot is occupied
+            } else {
+                break; // Found an empty slot
             }
         }
 
-        // Place the current player's piece onto the board.
-        gameBoardState[ colPos ][ rowPos ][ currentDepth ] = currentPlayerPiece;
+        // Place the current player's piece at the found depth
+        gameBoard[moveX][moveY][currentDepth] = currentPlayer;
 
-        // Check if the current move results in a winning condition.
-        if ( checkWinningCondition( currentPlayerPiece, colPos, rowPos, currentDepth ) >= requiredLength )
-        {
-            // Announce the winner and the move number.
-            console.log( ( currentPlayerPiece === 2 ) ? "White" : "Black", moveIndex + 1 );
-            isGameDraw = false; // A winner has been determined.
-            break; // Terminate the game loop as a winner is found.
+        // Check for a win condition after placing the piece
+        if (checkLine(currentPlayer, moveX, moveY, currentDepth) >= winCondition) {
+            // Output the winner and the move number
+            console.log((currentPlayer === 2) ? "White" : "Black", moveNum + 1);
+            isDrawPossible = false; // Game is not a draw as a winner is found
+            break; // End the current game scenario
         }
 
-        // Switch to the other player for the next turn.
-        currentPlayerPiece = ( currentPlayerPiece === 1 ) ? 2 : 1;
+        // Switch players: 1 becomes 2, 2 becomes 1 (using the trick 2/playerID)
+        currentPlayer = 2 / currentPlayer;
     }
 
-    // If no winner was found after all moves, declare a draw.
-    if ( isGameDraw ) console.log( "Draw" );
+    // If the loop finishes without a winner, it's a draw
+    if (isDrawPossible) {
+        console.log("Draw");
+    }
 }

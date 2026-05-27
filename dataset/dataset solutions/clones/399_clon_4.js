@@ -1,86 +1,60 @@
-const displacementVectors = [
-    { rowDelta: 0, colDelta: 1 },
-    { rowDelta: 1, colDelta: -1 },
-    { rowDelta: 1, colDelta: 0 },
-    { rowDelta: 1, colDelta: 1 }
-];
+const fileSystem = require('fs');
 
-const areCoordinatesValid = (rCoord, cCoord, limit) =>
-    rCoord >= 0 && cCoord >= 0 && rCoord < limit && cCoord < limit;
-
-const tracePathLength = (
-    currentRPosition,
-    currentCPosition,
-    rowStep,
-    colStep,
-    gridReference,
-    gridSizeValue,
-    accumulatedCount = 0
-) => {
-    if (!areCoordinatesValid(currentRPosition, currentCPosition, gridSizeValue) || gridReference[currentRPosition][currentCPosition] !== 1) {
-        return accumulatedCount;
+const checkDirection = (currentGrid, currentSize, currentY, currentX, yIncrement, xIncrement) => {
+    if (currentY < 0 || currentX < 0 || currentY >= currentSize || currentX >= currentSize) {
+        return 0;
     }
-    return tracePathLength(
-        currentRPosition + rowStep,
-        currentCPosition + colStep,
-        rowStep,
-        colStep,
-        gridReference,
-        gridSizeValue,
-        accumulatedCount + 1
-    );
+    if (currentGrid[currentY][currentX] !== 1) {
+        return 0;
+    }
+    return 1 + checkDirection(currentGrid, currentSize, currentY + yIncrement, currentX + xIncrement, yIncrement, xIncrement);
 };
 
-const calculateMaximumSequence = (initialRowPosition, initialColumnPosition, currentGridData, currentGridSize) => {
-    let highestSequence = 0;
-    for (const vector of displacementVectors) {
-        const currentSequenceLength = tracePathLength(
-            initialRowPosition,
-            initialColumnPosition,
-            vector.rowDelta,
-            vector.colDelta,
-            currentGridData,
-            currentGridSize,
-            0
-        );
-        highestSequence = Math.max(highestSequence, currentSequenceLength);
-    }
-    return highestSequence;
+const determineMaxSequence = (gridData, gridSize, startRow, startCol) => {
+    const movementVectors = [
+        { yInc: 0, xInc: 1 },
+        { yInc: 1, xInc: -1 },
+        { yInc: 1, xInc: 0 },
+        { yInc: 1, xInc: 1 }
+    ];
+
+    return movementVectors.reduce((currentMax, vector) => {
+        const sequenceLength = checkDirection(gridData, gridSize, startRow, startCol, vector.yInc, vector.xInc);
+        return Math.max(currentMax, sequenceLength);
+    }, 0);
 };
 
-const rawInputContent = require('fs').readFileSync('/dev/stdin', 'utf8');
-const processedInputLines = rawInputContent.trim().split('\n');
+function* inputProcessor(rawInput) {
+    const lines = rawInput.trim().split('\n');
+    let lineIndex = 0;
 
-let lineCursor = 0;
-
-const fetchNextGridDetails = () => {
-    const dimensionValue = parseInt(processedInputLines[lineCursor++], 10);
-    if (dimensionValue === 0) {
-        return null;
-    }
-
-    const currentMatrix = [];
-    for (let rIdx = 0; rIdx < dimensionValue; rIdx++) {
-        currentMatrix[rIdx] = processedInputLines[lineCursor++].split('').map(Number);
-    }
-    return { matrix: currentMatrix, dimension: dimensionValue };
-};
-
-let gridInformation;
-while ((gridInformation = fetchNextGridDetails()) !== null) {
-    const currentMatrixData = gridInformation.matrix;
-    const currentMatrixDimension = gridInformation.dimension;
-    let globalMaximumLength = 0;
-
-    for (let rowIndex = 0; rowIndex < currentMatrixDimension; rowIndex++) {
-        for (let colIndex = 0; colIndex < currentMatrixDimension; colIndex++) {
-            if (currentMatrixData[rowIndex][colIndex] === 1) {
-                globalMaximumLength = Math.max(
-                    globalMaximumLength,
-                    calculateMaximumSequence(rowIndex, colIndex, currentMatrixData, currentMatrixDimension)
-                );
-            }
+    while (lineIndex < lines.length) {
+        const currentSize = Number(lines[lineIndex++]);
+        if (currentSize === 0) {
+            return;
         }
+
+        const currentGrid = Array.from({ length: currentSize }, (_, r) =>
+            lines[lineIndex++].split('').map(Number)
+        );
+        yield { size: currentSize, grid: currentGrid };
     }
-    console.log(globalMaximumLength);
+}
+
+const allInput = fileSystem.readFileSync('/dev/stdin', 'utf8');
+
+for (const gridSet of inputProcessor(allInput)) {
+    const currentGridSize = gridSet.size;
+    const currentGridData = gridSet.grid;
+
+    const overallMax = Array.from({ length: currentGridSize }).flatMap((_, r) =>
+        Array.from({ length: currentGridSize }, (_, c) => ({ row: r, col: c }))
+    )
+    .filter(coord => currentGridData[coord.row][coord.col] === 1)
+    .reduce((maxVal, coord) =>
+        Math.max(maxVal, determineMaxSequence(currentGridData, currentGridSize, coord.row, coord.col)),
+        0
+    );
+
+    console.log(overallMax);
 }

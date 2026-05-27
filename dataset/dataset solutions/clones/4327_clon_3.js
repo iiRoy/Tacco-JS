@@ -1,114 +1,79 @@
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
 
-let rawInputBuffer = '';
-
-process.stdin.on('data', (incomingDataSegment) => {
-    rawInputBuffer += incomingDataSegment;
+var inputBuffer = '';
+process.stdin.on('data', function(chunk) {
+    inputBuffer += chunk;
 });
 
-process.stdin.on('end', () => {
-    processBufferedInput(rawInputBuffer);
+process.stdin.on('end', function() {
+    processInputData(inputBuffer.split(/\r?\n/));
 });
 
-/**
- * Processes the raw buffered input, extracting necessary data for the solver.
- * @param {string} fullInputString The complete string received from stdin.
- */
-function processBufferedInput(fullInputString) {
-    const lineSegments = fullInputString.trim().split(/\r?\n/);
+const MAX_ITERATION_LIMIT = 3500;
 
-    const solutionResult = FindEgyptianFractions(lineSegments);
-
-    if (solutionResult.found) {
-        console.log(`${solutionResult.h} ${solutionResult.n} ${solutionResult.w}`);
-    } else {
-        console.log("No solution found within specified bounds.");
-    }
+function getInitialHValue(targetRatio, constB) {
+    return Math.floor(1 / (targetRatio - constB));
 }
 
-/**
- * Finds integer denominators (h, n, w) for an Egyptian fraction representation of 4/K.
- * The problem seeks 1/h + 1/n + 1/w = 4/K, with h, n, w up to 3500.
- *
- * @param {string[]} lineSegments An array containing the input lines. The first element
- *                                 is expected to be the integer K.
- * @returns {{h: number, n: number, w: number, found: boolean}} An object containing
- *          the found denominators and a boolean indicating if a solution was found.
- */
-function FindEgyptianFractions(lineSegments) {
-    const targetIntegerK = Number(lineSegments[0]);
+function getInitialNValue(targetRatio, hVal, constC) {
+    return Math.floor(1 / (targetRatio - (1 / hVal) - constC));
+}
 
-    const MAX_DENOMINATOR_LIMIT = 3500;
-    const EPSILON = 1e-9; // For floating-point comparisons
+function verifyEquation(targetRatio, hVal, nVal, wVal) {
+    return targetRatio === (1 / hVal + 1 / nVal + 1 / wVal);
+}
 
-    if (isNaN(targetIntegerK) || targetIntegerK <= 0) {
-        console.error("Invalid or non-positive target integer K provided.");
-        return { h: -1, n: -1, w: -1, found: false };
-    }
+function processInputData(lines) {
+    var targetN = parseInt(lines[0], 10);
+    var hVal = 0;
+    var nVal = 0;
+    var wVal = 0;
 
-    const targetFractionValue = 4.0 / targetIntegerK;
+    var targetRatio = 4 / targetN;
+    var constB = 2 / MAX_ITERATION_LIMIT;
+    var constC = 1 / MAX_ITERATION_LIMIT;
 
-    const smallTermOne = 2.0 / MAX_DENOMINATOR_LIMIT;
-    const smallTermTwo = 1.0 / MAX_DENOMINATOR_LIMIT;
+    var solutionFound = false;
+    var resultH = 0;
+    var resultN = 0;
+    var resultW = 0;
 
-    let reciprocalH = 0;
-    let reciprocalN = 0;
-    let reciprocalW = 0;
-    let foundSolution = false;
+    for (hVal = getInitialHValue(targetRatio, constB); hVal < MAX_ITERATION_LIMIT; hVal++) {
 
-    const solutionContainer = { h: 0, n: 0, w: 0, found: false };
-
-    for (reciprocalH = 1; reciprocalH <= MAX_DENOMINATOR_LIMIT; reciprocalH++) {
-        const currentHReciprocal = 1.0 / reciprocalH;
-
-        if (targetFractionValue < currentHReciprocal + smallTermOne - EPSILON) {
-            // If even with the smallest possible 1/n and 1/w (2/MAX_DENOMINATOR_LIMIT),
-            // the sum 1/h + 1/n + 1/w is already too large, this h is too small.
+        if (targetRatio < (1 / hVal + constB)) {
+            console.log('a');
             continue;
         }
 
-        for (reciprocalN = reciprocalH; reciprocalN <= MAX_DENOMINATOR_LIMIT; reciprocalN++) {
-            const currentNReciprocal = 1.0 / reciprocalN;
-            const sumOfTwoReciprocals = currentHReciprocal + currentNReciprocal;
+        for (nVal = getInitialNValue(targetRatio, hVal, constC); nVal < MAX_ITERATION_LIMIT; nVal++) {
 
-            if (targetFractionValue < sumOfTwoReciprocals + smallTermTwo - EPSILON) {
-                // If even with the smallest possible 1/w (1/MAX_DENOMINATOR_LIMIT),
-                // the sum 1/h + 1/n + 1/w is already too large, this (h, n) pair is invalid.
+            if (targetRatio < (1 / hVal + 1 / nVal + constC)) {
                 continue;
             }
 
-            for (reciprocalW = reciprocalN; reciprocalW <= MAX_DENOMINATOR_LIMIT; reciprocalW++) {
-                const currentWReciprocal = 1.0 / reciprocalW;
-                const totalReciprocalSum = sumOfTwoReciprocals + currentWReciprocal;
+            for (wVal = nVal; wVal < MAX_ITERATION_LIMIT; wVal++) {
 
-                if (Math.abs(totalReciprocalSum - targetFractionValue) < EPSILON) {
-                    solutionContainer.h = reciprocalH;
-                    solutionContainer.n = reciprocalN;
-                    solutionContainer.w = reciprocalW;
-                    solutionContainer.found = true;
-                    foundSolution = true;
-                    break;
-                }
-
-                if (totalReciprocalSum > targetFractionValue + EPSILON) {
-                    // If the current sum already exceeds the target, and w is increasing
-                    // (meaning 1/w is decreasing), further increasing w will only make
-                    // the sum smaller, moving away from the target or staying too large.
-                    // No need to continue with larger 'w' values for this 'h' and 'n'.
+                if (verifyEquation(targetRatio, hVal, nVal, wVal)) {
+                    solutionFound = true;
+                    resultH = hVal;
+                    resultN = nVal;
+                    resultW = wVal;
                     break;
                 }
             }
 
-            if (foundSolution) {
+            if (solutionFound) {
                 break;
             }
         }
 
-        if (foundSolution) {
+        if (solutionFound) {
             break;
         }
     }
 
-    return solutionContainer;
+    console.log(resultH + ' ' + resultN + ' ' + resultW);
+
+    return 0;
 }

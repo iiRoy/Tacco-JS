@@ -1,156 +1,123 @@
-const standardInput = require("fs").readFileSync("/dev/stdin", "utf8");
-const tokenizedInput = standardInput.split(/ |\n/);
-let tokenIndex = 0;
-
-const retrieveNextNumber = () => +tokenizedInput[tokenIndex++];
-const retrieveNextString = () => tokenizedInput[tokenIndex++];
-const retrieveNextBigInt = () => BigInt(tokenizedInput[tokenIndex++]);
-
-const extractNumbers = (count, asIs) => {
-    const subset = tokenizedInput.slice(tokenIndex, tokenIndex + count);
-    tokenIndex += count;
-    return asIs ? subset : subset.map(Number);
-};
-
-const extractMatrix = (rows, cols, asIs) => {
-    const resultMatrix = [];
-    for (let i = 0; i < rows; i++) {
-        const rowData = tokenizedInput.slice(tokenIndex, tokenIndex + cols);
-        tokenIndex += cols;
-        resultMatrix.push(asIs ? rowData : rowData.map(Number));
+"use strict";
+class DataStreamProcessor {
+    constructor(sourceText) {
+        this.dataTokens = sourceText.split(/\s+/);
+        this.tokenIndex = 0;
     }
-    return resultMatrix;
-};
 
-const constructMultiDimArray = (initialValue, ...dimensions) => {
-    const createDim = (dimIdx) => {
-        if (dimIdx === dimensions.length - 1) {
-            return Array(dimensions[dimIdx]).fill(initialValue);
+    retrieveNextInteger() {
+        return Number(this.dataTokens[this.tokenIndex++]);
+    }
+
+    retrieveIntegerArray(count) {
+        const resultCollection = [];
+        for (let k = 0; k < count; k++) {
+            resultCollection.push(this.retrieveNextInteger());
+        }
+        return resultCollection;
+    }
+}
+
+const rawInputData = require("fs").readFileSync("/dev/stdin", "utf8");
+const streamProcessor = new DataStreamProcessor(rawInputData);
+
+const finalResult = processSequence();
+if (finalResult !== undefined) {
+    console.log(String(finalResult));
+}
+
+function processSequence() {
+    const sequenceLength = streamProcessor.retrieveNextInteger();
+    const numericSequence = streamProcessor.retrieveIntegerArray(sequenceLength);
+
+    let searchUpperBoundary = sequenceLength;
+    let searchLowerBoundary = 0;
+
+    while (searchUpperBoundary - searchLowerBoundary > 1) {
+        const currentMidpoint = Math.floor((searchUpperBoundary + searchLowerBoundary) / 2);
+        let isConditionMet = true;
+
+        const segmentStack = [];
+        // Initialize segmentStack based on the first element of numericSequence
+        if (numericSequence[0] > 1) {
+            segmentStack.push({ segmentValue: 1, segmentCount: 1 });
+            segmentStack.push({ segmentValue: numericSequence[0], segmentCount: 1 });
         } else {
-            return Array(dimensions[dimIdx]).fill(null).map(() => createDim(dimIdx + 1));
+            segmentStack.push({ segmentValue: 1, segmentCount: 1 });
         }
-    };
-    return createDim(0);
-};
 
-class SequenceStack {
-    constructor() {
-        this.records = [];
-    }
+        for (let elementIndex = 1; elementIndex < sequenceLength && isConditionMet; elementIndex++) {
+            const currentElementValue = numericSequence[elementIndex];
+            const lastSegmentInStack = segmentStack[segmentStack.length - 1];
+            const lastSegmentValue = lastSegmentInStack.segmentValue;
 
-    get length() {
-        return this.records.length;
-    }
-
-    peek() {
-        if (this.length === 0) return null;
-        return this.records[this.length - 1];
-    }
-
-    push(entry) {
-        this.records.push(entry);
-    }
-
-    pop() {
-        if (this.length === 0) return null;
-        return this.records.pop();
-    }
-
-    popWhile(condition) {
-        while (this.length > 0 && condition(this.peek())) {
-            this.pop();
-        }
-    }
-
-    processBackwards(limit, currentElement, initialTopValue) {
-        let currentIterValue = initialTopValue;
-        let success = false;
-        
-        let current_length = this.records.length;
-        while (current_length > 0) {
-            let j_pair_idx = current_length - 1;
-            let [pair_val, pair_cnt] = this.records[j_pair_idx];
-
-            if (pair_val < currentIterValue) {
-                this.push([currentElement, 2]);
-                success = true;
-                break;
-            }
-
-            if (pair_cnt < limit) {
-                this.records[j_pair_idx][1]++;
-                if (pair_val < currentElement) {
-                    this.push([currentElement, 1]);
+            if (lastSegmentValue < currentElementValue) {
+                // Pop segments with count 1 if they are not the base segment
+                while (segmentStack.length > 1 && segmentStack[segmentStack.length - 1].segmentCount === 1) {
+                    segmentStack.pop();
                 }
-                success = true;
-                break;
+                segmentStack.push({ segmentValue: currentElementValue, segmentCount: 1 });
+            } else { // lastSegmentValue >= currentElementValue
+                if (currentMidpoint === 1) {
+                    isConditionMet = false;
+                    break;
+                }
+
+                // Pop segments whose value is greater than currentElementValue
+                while (segmentStack.length > 0 && segmentStack[segmentStack.length - 1].segmentValue > currentElementValue) {
+                    segmentStack.pop();
+                }
+
+                // If stack becomes empty, condition is not met
+                if (segmentStack.length === 0) {
+                    isConditionMet = false;
+                    break;
+                }
+
+                const updatedLastSegment = segmentStack[segmentStack.length - 1];
+                if (updatedLastSegment.segmentValue < currentElementValue) {
+                    segmentStack.push({ segmentValue: currentElementValue, segmentCount: 2 });
+                } else { // updatedLastSegment.segmentValue === currentElementValue
+                    let currentTargetValue = updatedLastSegment.segmentValue;
+                    let innerLoopCompleted = false;
+
+                    // Iterate backward through the stack to adjust counts or add new segments
+                    for (let stackPosition = segmentStack.length - 1; stackPosition >= 0; stackPosition--) {
+                        const currentStackSegment = segmentStack[stackPosition];
+
+                        if (currentStackSegment.segmentValue < currentTargetValue) {
+                            segmentStack.push({ segmentValue: currentElementValue, segmentCount: 2 });
+                            innerLoopCompleted = true;
+                            break;
+                        }
+
+                        if (currentStackSegment.segmentCount < currentMidpoint) {
+                            currentStackSegment.segmentCount++;
+                            if (currentStackSegment.segmentValue < currentElementValue) {
+                                segmentStack.push({ segmentValue: currentElementValue, segmentCount: 1 });
+                            }
+                            innerLoopCompleted = true;
+                            break;
+                        }
+
+                        // If count reaches midpoint, pop the segment and decrement target value
+                        segmentStack.pop();
+                        currentTargetValue--;
+                    }
+
+                    if (!innerLoopCompleted) {
+                        isConditionMet = false;
+                    }
+                }
             }
-
-            this.pop();
-            currentIterValue--;
-            current_length--;
         }
-        return success;
-    }
-}
 
-function checkCondition(maxLimit, inputData) {
-    if (maxLimit === 0) return false;
-    
-    const processor = new SequenceStack();
-
-    const firstDataItem = inputData[0];
-    if (firstDataItem > 1) {
-        processor.push([1, 1]);
-        processor.push([firstDataItem, 1]);
-    } else {
-        processor.push([1, 1]);
-    }
-
-    for (let currentIdx = 1; currentIdx < inputData.length; currentIdx++) {
-        const currentDataItem = inputData[currentIdx];
-        let [currentTopVal, currentTopCnt] = processor.peek();
-
-        if (currentTopVal < currentDataItem) {
-            processor.popWhile((pair) => pair[1] === 1 && processor.length > 1);
-            processor.push([currentDataItem, 1]);
+        if (isConditionMet) {
+            searchUpperBoundary = currentMidpoint;
         } else {
-            if (maxLimit === 1) return false;
-
-            processor.popWhile((pair) => pair[0] > currentDataItem);
-            if (processor.length === 0) return false;
-
-            [currentTopVal, currentTopCnt] = processor.peek();
-
-            if (currentTopVal < currentDataItem) {
-                processor.push([currentDataItem, 2]);
-            } else {
-                const initialTopValueForInnerLoop = currentTopVal;
-                const innerLoopSuccess = processor.processBackwards(maxLimit, currentDataItem, initialTopValueForInnerLoop);
-                if (!innerLoopSuccess) return false;
-            }
+            searchLowerBoundary = currentMidpoint;
         }
     }
-    return true;
+
+    return searchUpperBoundary;
 }
-
-function performCalculation(){
-  const dataSize = retrieveNextNumber();
-  const dataSequence = extractNumbers(dataSize);
-
-  let lowerBound = 0;
-  let upperBound = dataSize;
-
-  while (upperBound - lowerBound > 1) {
-    const midValue = Math.floor((upperBound + lowerBound) / 2);
-    if (checkCondition(midValue, dataSequence)) {
-      upperBound = midValue;
-    } else {
-      lowerBound = midValue;
-    }
-  }
-  return upperBound;
-}
-
-const executionResult = performCalculation();
-if (executionResult !== undefined) console.log(String(executionResult));

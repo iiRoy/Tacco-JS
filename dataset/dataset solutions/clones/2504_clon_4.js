@@ -1,97 +1,102 @@
-const fileSystem = require('fs');
+const fileSystem = require("fs");
 
-let tokenArray;
-let currentPosition = 0;
+const INFINITY_VALUE = 9999999999;
 
-function prepareInput(sourceString) {
-    tokenArray = sourceString.trim().split(/\s+/g);
-    currentPosition = 0;
-}
+const calculateAllShortestPaths = (graphMatrix) => {
+  const nodeCount = graphMatrix.length;
+  const distanceMatrix = Array.from(graphMatrix, (row) => Array.from(row));
 
-function retrieveStringToken() {
-    if (currentPosition >= tokenArray.length) {
-        throw new Error("End of input stream reached.");
-    }
-    return tokenArray[currentPosition++];
-}
-
-function obtainIntegerToken() {
-    return parseInt(retrieveStringToken(), 10);
-}
-
-const largeValue = Infinity;
-
-function determineShortestPaths(adjacencyMatrix) {
-    const totalVertices = adjacencyMatrix.length;
-    const resultMatrix = Array.from({ length: totalVertices }, (_, rIdx) => 
-        Array.from({ length: totalVertices }, (_, cIdx) => adjacencyMatrix[rIdx][cIdx])
-    );
-
-    for (let kStep = 0; kStep < totalVertices; kStep++) {
-        for (let iStart = 0; iStart < totalVertices; iStart++) {
-            for (let jEnd = 0; jEnd < totalVertices; jEnd++) {
-                const throughK = resultMatrix[iStart][kStep] + resultMatrix[kStep][jEnd];
-                if (resultMatrix[iStart][jEnd] > throughK) {
-                    resultMatrix[iStart][jEnd] = throughK;
-                }
-            }
+  for (let intermediateVertex = 0; intermediateVertex < nodeCount; intermediateVertex++) {
+    for (let sourceVertex = 0; sourceVertex < nodeCount; sourceVertex++) {
+      for (let destinationVertex = 0; destinationVertex < nodeCount; destinationVertex++) {
+        const pathViaIntermediate =
+          distanceMatrix[sourceVertex][intermediateVertex] +
+          distanceMatrix[intermediateVertex][destinationVertex];
+        if (distanceMatrix[sourceVertex][destinationVertex] > pathViaIntermediate) {
+          distanceMatrix[sourceVertex][destinationVertex] = pathViaIntermediate;
         }
+      }
     }
-    return resultMatrix;
-}
+  }
+  return distanceMatrix;
+};
 
-function executeGraphAnalysis() {
-    const numNodes = obtainIntegerToken();
-    const numEdges = obtainIntegerToken();
-    const maxAllowedWeight = obtainIntegerToken();
+const createInputReader = (rawInputString) => {
+  const inputTokens = rawInputString.trim().split(/\s+/g);
+  let currentTokenIndex = 0;
 
-    let graphOneDistances = Array.from({ length: numNodes }, () => Array(numNodes).fill(largeValue));
-    for (let idx = 0; idx < numNodes; idx++) {
-        graphOneDistances[idx][idx] = 0;
+  const fetchNextString = () => {
+    if (currentTokenIndex >= inputTokens.length) {
+      throw new Error("Input exhausted: Attempted to read beyond available tokens.");
     }
+    return inputTokens[currentTokenIndex++];
+  };
 
-    for (let eIdx = 0; eIdx < numEdges; eIdx++) {
-        const nodeA = obtainIntegerToken() - 1;
-        const nodeB = obtainIntegerToken() - 1;
-        const edgeCost = obtainIntegerToken();
-        graphOneDistances[nodeA][nodeB] = edgeCost;
-        graphOneDistances[nodeB][nodeA] = edgeCost; // Undirected
+  const fetchNextInteger = () => {
+    return parseInt(fetchNextString(), 10);
+  };
+
+  return {
+    readNextString: fetchNextString,
+    readNextInteger: fetchNextInteger,
+    resetReaderPosition: () => {
+      currentTokenIndex = 0;
+    },
+  };
+};
+
+const processGraphQueries = (inputSource) => {
+  const totalNodes = inputSource.readNextInteger();
+  const totalEdges = inputSource.readNextInteger();
+  const pathThreshold = inputSource.readNextInteger();
+
+  const initialAdjacencyMatrix = Array.from({ length: totalNodes }, (_, rowIndex) =>
+    Array.from({ length: totalNodes }, (_, colIndex) =>
+      rowIndex === colIndex ? 0 : INFINITY_VALUE
+    )
+  );
+
+  let edgeIterator = 0;
+  while (edgeIterator < totalEdges) {
+    const nodeOne = inputSource.readNextInteger();
+    const nodeTwo = inputSource.readNextInteger();
+    const edgeWeight = inputSource.readNextInteger();
+    initialAdjacencyMatrix[nodeOne - 1][nodeTwo - 1] = edgeWeight;
+    initialAdjacencyMatrix[nodeTwo - 1][nodeOne - 1] = edgeWeight;
+    edgeIterator++;
+  }
+
+  const firstShortestPaths = calculateAllShortestPaths(initialAdjacencyMatrix);
+
+  const transformedAdjacencyMatrix = firstShortestPaths.map((rowContent, rIdx) =>
+    rowContent.map((distanceValue, cIdx) => {
+      if (rIdx === cIdx) return 0;
+      return distanceValue <= pathThreshold ? 1 : INFINITY_VALUE;
+    })
+  );
+
+  const secondShortestPaths = calculateAllShortestPaths(transformedAdjacencyMatrix);
+
+  const queryCount = inputSource.readNextInteger();
+
+  Array.from({ length: queryCount }, () => {
+    const queryStartNode = inputSource.readNextInteger();
+    const queryEndNode = inputSource.readNextInteger();
+    const finalDistance =
+      secondShortestPaths[queryStartNode - 1][queryEndNode - 1];
+
+    if (finalDistance === INFINITY_VALUE) {
+      console.log(-1);
+    } else {
+      console.log(finalDistance - 1);
     }
+  });
+};
 
-    const firstPassResults = determineShortestPaths(graphOneDistances);
+const executeMainLogic = () => {
+  const standardInputContent = fileSystem.readFileSync("/dev/stdin", "utf8");
+  const inputProcessor = createInputReader(standardInputContent);
+  processGraphQueries(inputProcessor);
+};
 
-    let graphTwoDistances = Array.from({ length: numNodes }, () => Array(numNodes).fill(largeValue));
-    for (let idx = 0; idx < numNodes; idx++) {
-        graphTwoDistances[idx][idx] = 0;
-    }
-
-    for (let rIdx = 0; rIdx < numNodes; rIdx++) {
-        for (let cIdx = 0; cIdx < numNodes; cIdx++) {
-            if (firstPassResults[rIdx][cIdx] <= maxAllowedWeight) {
-                graphTwoDistances[rIdx][cIdx] = 1;
-            }
-        }
-    }
-
-    const secondPassResults = determineShortestPaths(graphTwoDistances);
-
-    const numQueries = obtainIntegerToken();
-    const outputCollection = [];
-
-    for (let qIdx = 0; qIdx < numQueries; qIdx++) {
-        const startNode = obtainIntegerToken() - 1;
-        const endNode = obtainIntegerToken() - 1;
-        const finalPathValue = secondPassResults[startNode][endNode];
-
-        if (finalPathValue === largeValue) {
-            outputCollection.push("-1");
-        } else {
-            outputCollection.push((finalPathValue - 1).toString());
-        }
-    }
-    process.stdout.write(outputCollection.join('\n'));
-}
-
-const inputContent = fileSystem.readFileSync('/dev/stdin', 'utf8');
-prepareInput(inputContent);
-executeGraphAnalysis();
+executeMainLogic();

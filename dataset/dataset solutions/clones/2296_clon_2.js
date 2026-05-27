@@ -1,20 +1,31 @@
-'use strict'
-// This script is designed to manipulate numerical inputs from the standard stream.
-function ProcessInputData(rawData) {
-  // Split the entire block of raw input text into an array of strings, one per line.
-  const lineCollection = rawData.split('\n')
+'use strict';
 
-  // Parse three distinct numerical components from the very first line of the input.
-  const initialOperand = Number(lineCollection[0].split(' ')[0]) // The primary value to be operated upon.
-  const secondaryOperand = Number(lineCollection[0].split(' ')[1]) // The auxiliary value for calculations.
-  const reductionQuantity = Number(lineCollection[0].split(' ')[2]) // The amount by which values might be reduced.
+/**
+ * Processes raw input data to perform a specific calculation.
+ * @param {string} rawData - The entire input string, typically read from a source.
+ */
+function ProcessInput(rawData) {
+  // Divide the incoming data into an array of individual lines.
+  const parsedLines = rawData.split("\n");
 
-  // Execute conditional calculations and present the derived outcomes to the console.
+  // Extract the first line and split it by spaces to get its components.
+  const firstLineComponents = parsedLines[0].split(' ');
+
+  // Convert the extracted string components into numerical values.
+  const firstVal = Number(firstLineComponents[0]);
+  const secondVal = Number(firstLineComponents[1]);
+  const limitVal = Number(firstLineComponents[2]);
+
+  // Perform a conditional calculation and output the results.
+  // The first output value is 'firstVal - limitVal' if 'firstVal' exceeds 'limitVal', otherwise it's 0.
+  // The second output value is 'secondVal' if 'firstVal' exceeds 'limitVal'.
+  // Otherwise, if the sum of 'firstVal' and 'secondVal' exceeds 'limitVal', it's 'firstVal + secondVal - limitVal'.
+  // In all other cases for the second value, it's 0.
   console.log(
-    (initialOperand > reductionQuantity ? initialOperand - reductionQuantity : 0), // First result: either the primary value reduced, or zero if reduction is not possible.
-    (initialOperand > reductionQuantity ? secondaryOperand : (initialOperand + secondaryOperand > reductionQuantity ? initialOperand + secondaryOperand - reductionQuantity : 0)) // Second result: either the auxiliary value, or the sum of both operands reduced (or zero).
-  )
+    (firstVal > limitVal ? firstVal - limitVal : 0),
+    (firstVal > limitVal ? secondVal : (firstVal + secondVal > limitVal ? firstVal + secondVal - limitVal : 0))
+  );
 }
 
-// Invoke the main processing function, providing it with content read from standard input.
-ProcessInputData(require('fs').readFileSync('/dev/stdin', 'utf8'))
+// Read the content of standard input synchronously and pass it to the processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

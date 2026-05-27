@@ -1,23 +1,24 @@
 "use strict";
 
-/* This program processes a string of numeric values,
- * performs a specific calculation, and outputs the result. */
-const executeTask = ( inputStr ) => {
+/*
+ * This module processes a given input string to calculate a specific value.
+ * It demonstrates basic string manipulation, array indexing, and conditional logic.
+ */
+const processInput = (inputString) => {
   // Parse the input string into an array of numbers.
-  // Each segment separated by a space is converted to a numerical type.
-  let numericSequence = inputStr .  split(" ") . map( currentSegment => Number(currentSegment) );
+  // The input is expected to be space-separated numeric values.
+  let numericValues = inputString.split(" ").map(currentValue => +currentValue);
 
-  // Determine the final value based on a calculation involving specific elements
-  // from the numeric sequence. If the intermediate result is negative, it defaults to zero.
-  let finalCalculatedValue = (
-      numericSequence[2] + numericSequence[1] - numericSequence[0] >= 0
-    )
-    ? ( numericSequence[2] + numericSequence[1] - numericSequence[0] )
+  // Calculate the result based on specific indices of the numeric array.
+  // The calculation is (third_value + second_value - first_value).
+  // If this sum is negative, the result is 0; otherwise, it's the sum itself.
+  let finalResult = (numericValues[2] + numericValues[1] - numericValues[0] >= 0)
+    ? (numericValues[2] + numericValues[1] - numericValues[0])
     : 0;
 
-  // Print the derived outcome to the standard output.
-  console.log( finalCalculatedValue );
+  // Output the computed result to the console.
+  console.log(finalResult);
 };
 
-// Initiate the primary function by reading content from standard input.
-executeTask( require('fs') . readFileSync( '/dev/stdin', 'utf8' ) );
+// Read the input from standard input and pass it to the processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

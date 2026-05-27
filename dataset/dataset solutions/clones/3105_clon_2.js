@@ -1,80 +1,93 @@
-function processInput(inputString) {
-  'use strict';
+function ProcessInput(rawData) {
+    'use strict'; // Enforce strict parsing and error handling.
 
-  // Extract the target sequence length from the first line of the provided text.
-  const sequenceLength = parseInt(inputString.split("\n").shift());
+    // Parse the input to get the desired sequence length.
+    const sequenceLength = parseInt(rawData.split("\n").shift());
 
-  // Define the fundamental building blocks (nucleotides) for the sequences.
-  const nucleotideSet = ["A", "T", "G", "C"];
+    // Define the set of valid DNA nucleotides.
+    const nucleotideSet = ["A", "T", "G", "C"];
 
-  // Establish a large prime number for modulo arithmetic to manage result size.
-  const modulusValue = 1000000007;
+    // Define a large prime number for modulo operations to prevent overflow.
+    const moduloConstant = 1000000007;
 
-  // Initialize the primary data structure to hold valid sequence counts for the current iteration.
-  let currentPatterns = [];
+    // This object will store counts of valid 3-character patterns.
+    // It's initialized as an array but used as a hash map (object).
+    let currentValidPatterns = [];
 
-  // Create an auxiliary data structure to serve as a template for resetting counts in each step.
-  const initialPatternCounts = [];
+    // A temporary object to hold zero counts for all valid 3-character patterns.
+    const basePatternMap = [];
 
-  // This anonymous function, executed immediately, generates all valid 3-character starting sequences.
-  (function generateValidTriplets(initialFragment) {
-    const combinationQueue = [initialFragment]; // Begin with an empty fragment.
+    /**
+     * Recursively generates all 3-character patterns that do not contain
+     * "ACG", "AGC", or "GAC" as substrings.
+     * These initial patterns are stored in `currentValidPatterns` and `basePatternMap`.
+     * @param {string} startingString - The string to build upon.
+     */
+    (function generateInitialPatterns(startingString){
+        // Use a queue for breadth-first generation of patterns.
+        const patternQueue = [startingString];
 
-    // Continue processing fragments until the queue is empty.
-    while (combinationQueue.length !== 0) {
-      const currentSequence = combinationQueue.shift(); // Retrieve the next fragment.
+        // Process patterns until the queue is empty.
+        while(patternQueue.length !== 0){
+            const currentPattern = patternQueue.shift(); // Get the next pattern from the queue.
 
-      // If the fragment is not yet 3 characters long, extend it with all possible nucleotides.
-      if (currentSequence.length !== 3) {
-        nucleotideSet.forEach(currentNucleotide => combinationQueue.push(currentSequence + currentNucleotide));
-      } else {
-        // If the fragment is 3 characters long, check if it's one of the disallowed patterns.
-        // The forbidden patterns are 'ACG', 'AGC', 'GAC'.
-        if (!currentSequence.match(/ACG|AGC|GAC/)) {
-          currentPatterns[currentSequence] = 1; // Mark this valid 3-char sequence with an initial count of one.
-          initialPatternCounts[currentSequence] = 0; // Prepare the reset template with a zero count.
+            // If the pattern is not yet 3 characters long, extend it.
+            if(currentPattern.length !== 3){
+                nucleotideSet.forEach(nextChar => {
+                    patternQueue.push(currentPattern + nextChar); // Add new extended patterns to the queue.
+                });
+            } else {
+                // If the pattern is 3 characters long, check its validity.
+                // It must not contain "ACG", "AGC", or "GAC".
+                if(!currentPattern.match(/ACG|AGC|GAC/)){
+                    currentValidPatterns[currentPattern] = 1; // Mark as valid with an initial count of 1.
+                    basePatternMap[currentPattern] = 0;       // Initialize its count to 0 in the base map.
+                }
+            }
         }
-      }
+    })(""); // Start the generation with an empty string.
+
+    // Special case: if the sequence length is 3, the answer is simply the number of valid 3-char patterns.
+    if(sequenceLength === 3) {
+        console.log(Object.keys(currentValidPatterns).length);
+    } else {
+        // For sequence lengths greater than 3, iterate to build up longer sequences.
+        // The loop runs for (n - 3) iterations, as we start with 3-char patterns.
+        for(let iterationIndex = 0; iterationIndex < sequenceLength - 3; iterationIndex++){
+            // Create a new map for the next iteration's valid patterns, initialized with zeros.
+            const updatedPatternCounts = Object.assign([], basePatternMap);
+
+            // Iterate over the currently valid 3-character patterns.
+            Object.keys(currentValidPatterns).forEach(patternKey => {
+                const patternValue = currentValidPatterns[patternKey]; // Get the count for the current pattern.
+
+                // Try appending each nucleotide to the current pattern.
+                nucleotideSet.forEach(nextChar => {
+                    const extendedPattern = patternKey + nextChar; // Form a 4-character extended pattern.
+
+                    // Check if the extended pattern (specifically its last 4 chars)
+                    // contains any forbidden substrings: "ACG", "AGC", "GAC", "AG.C", "A.GC".
+                    // The regex `AG.C` covers "AGAC", "AGTC", "AGGC", "AGCC".
+                    // The regex `A.GC` covers "AAGC", "ATGC", "ACGC", "AGGC".
+                    // Note: The original code uses `newStr.match` on a 4-char string,
+                    // which implicitly checks the last 4 characters if the pattern is 4 chars.
+                    // The `slice(-3)` ensures we are always dealing with the last 3 characters for the key.
+                    if(!extendedPattern.match(/ACG|AGC|GAC|AG.C|A.GC/)) {
+                        // If valid, add the current pattern's count to the new pattern's count.
+                        // We only care about the last 3 characters for the key in our map.
+                        updatedPatternCounts[extendedPattern.slice(-3)] = (updatedPatternCounts[extendedPattern.slice(-3)] + patternValue) % moduloConstant;
+                    }
+                });
+            });
+            // Update the current valid patterns for the next iteration.
+            currentValidPatterns = updatedPatternCounts;
+        }
+
+        // After all iterations, sum up the counts of all valid 3-character patterns
+        // and apply the modulo constant.
+        console.log(Object.keys(currentValidPatterns).reduce((accumulator, currentKey) => accumulator + currentValidPatterns[currentKey], 0) % moduloConstant);
     }
-  })(""); // Invoke the function with an empty string to start the generation.
-
-
-  // Handle the specific case where the desired sequence length is exactly three.
-  if (sequenceLength === 3) {
-    console.log(Object.keys(currentPatterns).length); // Output the total number of unique valid 3-char sequences.
-  } else { // For sequence lengths greater than three, proceed with iterative calculation.
-    // Loop to progressively build sequences from length 4 up to the target length.
-    for (let iterationStep = 0; iterationStep < sequenceLength - 3; iterationStep++) {
-      // Create a fresh container for the next iteration's pattern counts, initialized with zeros.
-      const nextIterationPatterns = Object.assign([], initialPatternCounts);
-
-      // Iterate through each valid pattern found in the current iteration.
-      Object.keys(currentPatterns).forEach(currentPatternKey => {
-        const currentPatternValue = currentPatterns[currentPatternKey]; // Get the count associated with this pattern.
-
-        // Append each possible nucleotide to the current pattern to form a longer sequence.
-        nucleotideSet.forEach(currentNucleotide => {
-          const prospectiveSequence = currentPatternKey + currentNucleotide; // Construct a potential 4-char sequence.
-
-          // Verify that this new sequence, or its 3-char suffixes, does not contain any forbidden motifs.
-          // Forbidden motifs include: ACG, AGC, GAC, AG.C, A.GC
-          if (!prospectiveSequence.match(/ACG|AGC|GAC|AG.C|A.GC/)) {
-            // If the sequence is valid, update the count for its last three characters.
-            // The modulo operation is applied here to prevent integer overflow.
-            nextIterationPatterns[prospectiveSequence.slice(-3)] = (nextIterationPatterns[prospectiveSequence.slice(-3)] + currentPatternValue) % modulusValue;
-          }
-        });
-      });
-      currentPatterns = nextIterationPatterns; // Promote the new patterns to become the current patterns for the subsequent loop.
-    }
-
-    // After completing all iterations, sum up the counts of all remaining valid 3-char patterns.
-    const overallTotal = Object.keys(currentPatterns).reduce((sumAccumulator, patternIdentifier) => sumAccumulator + currentPatterns[patternIdentifier], 0);
-
-    // Display the final accumulated count, ensuring it's within the modulo range.
-    console.log(overallTotal % modulusValue);
-  }
 }
 
-// The following code block is responsible for reading input from standard input and invoking the main processing function.
-processInput(require("fs").readFileSync("/dev/stdin", "utf8"));
+// This line should not be modified (reads input from stdin and calls the main function).
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

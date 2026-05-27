@@ -1,62 +1,51 @@
-const { readFileSync: fileReader } = require('node:fs');
-const standardInputPath = '/dev/stdin';
+const fileSystem = require('fs');
 
-function prepareData(rawData) {
-    const rawContent = rawData.toString().trim();
-    const separatedParts = rawContent.split(' ');
-    const typedElements = [];
-    for (const dataPiece of separatedParts) {
-        const numericalValue = Number(dataPiece);
-        if (!Number.isNaN(numericalValue)) {
-            typedElements.push(numericalValue);
-        } else {
-            typedElements.push(dataPiece);
-        }
+const parseTokenValue = (tokenString) => {
+  const numericalValue = parseInt(tokenString);
+  return Number.isFinite(numericalValue) ? numericalValue : tokenString;
+};
+
+const operationRegistry = {
+  '+': (valA, valB) => valA + valB,
+  '-': (valA, valB) => valA - valB,
+  '*': (valA, valB) => valA * valB,
+};
+
+const validateOperationTriplet = (operandOne, operandTwo, operatorSymbol) => {
+  return typeof operandOne === 'number' &&
+         typeof operandTwo === 'number' &&
+         typeof operatorSymbol === 'string' &&
+         operationRegistry.hasOwnProperty(operatorSymbol);
+};
+
+const processTokenStream = (initialTokenSequence) => {
+  let currentSequence = [...initialTokenSequence];
+  
+  while (currentSequence.length > 1) {
+    const nextSequenceBatch = [];
+    let currentBatchPosition = 0;
+
+    while (currentBatchPosition < currentSequence.length) {
+      const elementA = currentSequence[currentBatchPosition];
+      const elementB = currentSequence[currentBatchPosition + 1];
+      const elementC = currentSequence[currentBatchPosition + 2];
+
+      if (validateOperationTriplet(elementA, elementB, elementC)) {
+        nextSequenceBatch.push(operationRegistry[elementC](elementA, elementB));
+      } else {
+        if (elementC !== undefined) nextSequenceBatch.push(elementC);
+        if (elementB !== undefined) nextSequenceBatch.push(elementB);
+        if (elementA !== undefined) nextSequenceBatch.push(elementA);
+      }
+      currentBatchPosition += 3;
     }
-    return typedElements;
-}
+    currentSequence = nextSequenceBatch;
+  }
 
-function checkOperands(firstOperand, secondOperand, operationSymbol) {
-    return (typeof firstOperand === 'number' && typeof secondOperand === 'number' && typeof operationSymbol === 'string');
-}
+  console.log(currentSequence[0]);
+};
 
-function executeOperation(operandX, operandY, symbol) {
-    const operationRegistry = {
-        '+': () => operandX + operandY,
-        '-': () => operandX - operandY,
-        '*': () => operandX * operandY
-    };
-    const selectedOperation = operationRegistry[symbol];
-    return selectedOperation ? selectedOperation() : undefined;
-}
+const rawInputContent = fileSystem.readFileSync('/dev/stdin', 'utf8').trim();
+const processedInputData = rawInputContent.split(' ').map(parseTokenValue);
 
-function processSequence(initialItems) {
-    let currentList = initialItems;
-
-    while (currentList.length !== 1) {
-        const nextIterationList = [];
-        let cursorPosition = 0;
-        const currentListSize = currentList.length;
-
-        while (cursorPosition < currentListSize) {
-            const elementA = currentList[cursorPosition];
-            const elementB = currentList[cursorPosition + 1];
-            const elementC = currentList[cursorPosition + 2];
-
-            if (checkOperands(elementA, elementB, elementC)) {
-                nextIterationList.push(executeOperation(elementA, elementB, elementC));
-                cursorPosition += 3;
-            } else {
-                if (typeof elementC !== 'undefined') nextIterationList.push(elementC);
-                if (typeof elementB !== 'undefined') nextIterationList.push(elementB);
-                if (typeof elementA !== 'undefined') nextIterationList.push(elementA);
-                cursorPosition += 3;
-            }
-        }
-        currentList = nextIterationList;
-    }
-    console.log(currentList[0]);
-}
-
-const preparedArguments = prepareData(fileReader(standardInputPath, 'utf8'));
-processSequence(preparedArguments);
+processTokenStream(processedInputData);

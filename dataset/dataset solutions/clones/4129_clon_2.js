@@ -1,37 +1,26 @@
-/* This module processes a line of numerical input to determine balance. */
-function analyzeValues( dataLines ) {
-  // Extract the first numeric component from the initial input line.
-  var valOne = dataLines[0].split( " " )[0] - 0;
+function processInput(dataLines) {
+    // This function processes an array of input strings to determine balance.
 
-  // Retrieve the second numeric component.
-  var valTwo = dataLines[0].split( " " )[1] - 0;
+    // Extract four numeric values from the first line of input.
+    // The `- 0` converts the string parts to numbers.
+    let firstVal = dataLines[0].split(" ")[0] - 0;
+    let secondVal = dataLines[0].split(" ")[1] - 0;
+    let thirdVal = dataLines[0].split(" ")[2] - 0;
+    let fourthVal = dataLines[0].split(" ")[3] - 0;
 
-  // Obtain the third numeric component.
-  var valThree = dataLines[0].split( " " )[2] - 0;
+    // Calculate the sum for the left side.
+    const leftSum = firstVal + secondVal;
 
-  // Finally, get the fourth numeric component.
-  var valFour = dataLines[0].split( " " )[3] - 0;
+    // Calculate the sum for the right side.
+    const rightSum = thirdVal + fourthVal;
 
+    // Compare the two sums and print the result.
+    // If sums are equal, it's "Balanced".
+    // If the left sum is greater, it's "Left".
+    // Otherwise, it's "Right".
+    console.log(leftSum === rightSum ? "Balanced" : (leftSum > rightSum ? "Left" : "Right"));
+}
 
-  // Calculate the first partial sum.
-  var sumOne = valOne + valTwo;
-
-  // Calculate the second partial sum.
-  var sumTwo = valThree + valFour;
-
-
-  // Output the result based on the comparison of the two sums.
-  console.log(
-    sumOne === sumTwo ? "Balanced" :
-    ( sumOne > sumTwo ? "Left" : "Right" )
-  );
-
-} /* End of analyzeValues function */
-
-// Initiate the processing by reading from standard input.
-analyzeValues(
-  require( 'fs' )
-    .readFileSync( '/dev/stdin', 'utf8' )
-    .trim()
-    .split( "\n" )
-);
+// Read input from standard input, decode as UTF-8, remove leading/trailing whitespace,
+// and split into an array of lines. Then, pass this array to the processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8').trim().split("\n"));

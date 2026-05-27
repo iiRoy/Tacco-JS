@@ -1,31 +1,26 @@
-'use strict'; /*  Strict mode activation */
+'use strict'
 
-// Function to process and duplicate content lines
-function processContent(sourceText) {
-  // Clean up raw input and divide into individual lines
-  let textLines = sourceText.trim() .split('\n');
+// This function processes the incoming data to duplicate image lines.
+function processInput(rawData) {
+  // First, we clean up the raw input by trimming whitespace and splitting it into individual lines.
+  let processedLines = rawData.trim().split('\n');
 
-  // Extract relevant visual data, skipping the first line (often metadata)
-  const visualData = textLines.slice(1);
+  // We then extract the actual image data, skipping the first line (which might be metadata or a header).
+  const imageLines = processedLines.slice(1);
 
-  // Buffer to store the transformed output lines
-  let outputLines = [];
+  // Initialize an array to hold our modified output.
+  let outputBuffer = [];
 
-  // Iterate through each segment of the visual data
-  for (
-    let lineIndex = 0; // Initialize segment counter
-    lineIndex < visualData.length; // Loop condition: until all segments are processed
-    lineIndex++ // Increment counter for next segment
-  ) {
-    // Add the current segment to the output buffer
-    outputLines.push(visualData[lineIndex]);
-    // Add the current segment again, effectively duplicating it
-    outputLines.push(visualData[lineIndex]);
+  // Iterate through each line of the extracted image data.
+  for (let lineIndex = 0; lineIndex < imageLines.length; lineIndex++) {
+    // For every original image line, we add it to our buffer twice.
+    outputBuffer.push(imageLines[lineIndex]);
+    outputBuffer.push(imageLines[lineIndex]);
   }
 
-  // Output the buffered lines, joined by newline characters
-  console.log(outputLines.join('\n'));
+  // Finally, join all the lines in the buffer back into a single string, separated by newlines, and print it.
+  console.log(outputBuffer.join('\n'));
 }
 
-// Invoke the primary processing function with data read from standard input
-processContent( require('fs') .readFileSync('/dev/stdin', 'utf8') );
+// Read the input from standard input and pass it to our processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

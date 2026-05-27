@@ -1,30 +1,27 @@
-function processData(inputContent) {
-    const numericValues = inputContent.split(/\s+/).filter(Boolean).map(parseFloat);
+function Main(sourceData) {
+    const lineSegments = sourceData.split("\n");
 
-    const itemCount = numericValues[0];
-    const thresholdValue = numericValues[1];
-    const sourceItems = numericValues.slice(2, 2 + itemCount);
+    const initialConfig = lineSegments[0].split(' ');
+    const elementQuantity = Number(initialConfig[0]);
+    const upperBound = Number(initialConfig[1]);
 
-    const cumulativeBaseProduct = sourceItems.reduce((acc, current) => acc * current, 1);
-    const scalingFactor = Math.pow(0.5, itemCount);
-    const finalCalculatedValue = cumulativeBaseProduct * scalingFactor;
+    const rawNumericStrings = lineSegments[1].split(' ');
+    
+    const transformedValues = rawNumericStrings
+        .slice(0, elementQuantity)
+        .map(str => Number(str) * 0.5);
 
-    let incrementCount = 0;
+    const currentProduct = transformedValues.reduce((accumulator, currentVal) => accumulator * currentVal, 1);
 
-    // The original code's while loop: while(max > hanKobai) { hanKobai += hanKobai; count++; }
-    // This counts how many times hanKobai needs to be doubled until it is >= max.
-    // This is equivalent to ceil(log2(max / hanKobai)) if max > hanKobai, otherwise 0.
-    // Edge case: if finalCalculatedValue is 0.
-    // If finalCalculatedValue is 0 and thresholdValue > 0, the original loops infinitely.
-    // If finalCalculatedValue is 0 and thresholdValue <= 0, the original returns 0.
-    // Assuming inputs are such that finalCalculatedValue will be positive for a finite integer output.
-    if (thresholdValue <= finalCalculatedValue) {
-        incrementCount = 0;
+    let growthCycles;
+
+    if (upperBound <= currentProduct) {
+        growthCycles = 0;
     } else {
-        incrementCount = Math.ceil(Math.log2(thresholdValue / finalCalculatedValue));
+        growthCycles = Math.floor(Math.log2(upperBound / currentProduct)) + 1;
     }
 
-    console.log(incrementCount);
+    console.log(growthCycles);
 }
 
-processData(require("node:fs").readFileSync("/dev/stdin", "utf8"));
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

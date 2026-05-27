@@ -1,45 +1,32 @@
-function ProcessData(incomingText) {
-    // Divide the entire input string into an array of individual text lines.
-    let textSegments = incomingText.split('\n');
+function ProcessInput(rawData) {
+  // Split the entire input string by newline characters to get individual lines.
+  let processedData = rawData.split('\n');
 
-    // Remove the very first line from the array, as it's often not part of the core data.
-    textSegments.shift();
+  // Remove the first line, which might contain metadata or be an empty string.
+  processedData.shift();
 
-    // Convert each remaining text line into an array of parsed integer values.
-    const numericDataMatrix = textSegments.map(function(lineSegment) {
-        return lineSegment.split(' ').map(function(numericToken) {
-            // Parse each string token into a base-10 integer.
-            return parseInt(numericToken, 10);
-        });
+  // Process each remaining line: split by space and convert parts to integers.
+  processedData = processedData.map(function(lineStr) {
+    // For each line, split it by spaces.
+    return lineStr.split(' ').map(function(numStr) {
+      // Convert each resulting string part into an integer, using base 10.
+      return parseInt(numStr, 10);
     });
+  });
 
-    // Initialize a variable to accumulate the final computed sum.
-    let totalAccumulator = 0;
+  // Initialize a variable to accumulate the final computed value.
+  let totalSum = 0;
 
-    // Iterate through each row of the numerically processed data.
-    for (
-        let dataRowIndex = 0;
-        dataRowIndex < numericDataMatrix.length;
-        dataRowIndex++
-    ) {
-        // Perform a specific calculation: (second element - first element + 1)
-        // and add this result to the running total.
-        totalAccumulator += (
-            numericDataMatrix[dataRowIndex][1] -
-            numericDataMatrix[dataRowIndex][0] +
-            1
-        );
-    }
+  // Iterate through each array of numbers obtained from the input lines.
+  for (let idx = 0; idx < processedData.length; idx++) {
+    // For each pair of numbers [a, b], calculate (b - a + 1) and add it to the total sum.
+    // This effectively counts the number of integers from 'a' to 'b' inclusive.
+    totalSum += (processedData[idx][1] - processedData[idx][0] + 1);
+  }
 
-    // Display the final calculated aggregate value to the standard output.
-    console.log('%d', totalAccumulator);
+  // Output the final calculated sum to the console, formatted as a decimal integer.
+  console.log('%d', totalSum);
 }
 
-// Execute the main data processing function by reading content from standard input.
-ProcessData(
-    require("fs")
-        .readFileSync(
-            "/dev/stdin",
-            "utf8"
-        )
-);
+// Read the entire content from standard input synchronously and pass it to the processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

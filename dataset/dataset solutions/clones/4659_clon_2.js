@@ -1,41 +1,30 @@
-// This script defines a function to process numerical data, aiming to find
-// the smallest digit count among pairs of its factors.
-function ComputeMinDigitLength( rawData )
-{
-  // Convert the initial string input into a whole number for calculations.
-  var targetNumber = parseInt( rawData );
+// This function is designed to process a given input string.
+function ProcessInput(rawData) {
+  // Convert the raw input string into an integer value.
+  var numericValue = parseInt(rawData);
 
-  // Initialize a variable to track the minimal length of digit groups found.
-  // Start by setting it to the number of digits in the original target number.
-  var minimumDigitsFound = ( "" + targetNumber ).length;
+  // Initialize a variable to hold the minimum number of digits found.
+  // It starts with the digit count of the input number itself.
+  var minDigits = String(numericValue).length;
 
-  // Declare iteration and temporary variables for the factoring process.
-  var factorCandidate;
-  var currentPairDigits;
+  // Begin an iterative process from zero up to the square root of the numeric value.
+  // This loop aims to discover factors of the numeric value.
+  for (loopCounter = 0x0; loopCounter < Math.sqrt(numericValue); loopCounter++) {
+    // Calculate the maximum digit count between the current iteration variable
+    // and the quotient of the numeric value divided by the iteration variable.
+    currentMaxDigits = Math.max(String(loopCounter).length, String(numericValue / loopCounter).length);
 
-  // Begin a loop to iterate through potential divisors.
-  // The loop runs from zero up to, but not including, the square root of the target number.
-  // This range is sufficient because factors typically appear in pairs (x, targetNumber/x).
-  for ( factorCandidate = 0; factorCandidate < Math.sqrt( targetNumber ); factorCandidate++ )
-  {
-    // Determine the maximum number of digits between the current factor candidate
-    // and its corresponding quotient (targetNumber divided by factorCandidate).
-    currentPairDigits = Math.max( ( "" + factorCandidate ).length, ( "" + ( targetNumber / factorCandidate ) ).length );
-
-    // Check two conditions:
-    // 1. If the factorCandidate perfectly divides the targetNumber (i.e., no remainder).
-    // 2. If the calculated digit length for this factor pair is less than
-    //    the smallest length recorded so far.
-    if ( ( targetNumber % factorCandidate === 0 ) && ( currentPairDigits < minimumDigitsFound ) )
-    {
-      // If both conditions are true, update minimumDigitsFound with this new, smaller digit count.
-      minimumDigitsFound = currentPairDigits;
+    // Evaluate if the 'loopCounter' is a perfect divisor of 'numericValue'
+    // AND if the 'currentMaxDigits' is less than the 'minDigits' recorded so far.
+    if (numericValue % loopCounter === 0 && currentMaxDigits < minDigits) {
+      // If both conditions are met, update 'minDigits' with the new, smaller digit count.
+      minDigits = currentMaxDigits;
     }
   }
 
-  // Output the final determined minimum digit length to the standard output.
-  console.log( '%s', minimumDigitsFound );
+  // Display the final calculated minimum number of digits to the console.
+  console.log('%s', minDigits);
 }
 
-// Execute the main processing function by reading content from standard input.
-ComputeMinDigitLength( require( "fs" ).readFileSync( "/dev/stdin", "utf8" ) );
+// Execute the main processing function by reading data from standard input.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

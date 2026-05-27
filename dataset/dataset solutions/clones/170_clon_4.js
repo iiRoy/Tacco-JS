@@ -1,68 +1,51 @@
-const libIO = require('fs');
-const sourceContent = libIO.readFileSync('/dev/stdin', 'utf8');
-const sourceLines = sourceContent.split('\n');
+const fileSystem = require('fs');
+const standardInputContent = fileSystem.readFileSync('/dev/stdin', 'utf8');
+const inputLines = standardInputContent.trim().split('\n');
+let currentLinePointer = 0;
 
-let currentLineIndex = 0;
+const retrieveNumericLine = () => Number(inputLines[currentLinePointer++]);
+const retrieveAndSplitLine = () => inputLines[currentLinePointer++].split(',');
 
-function fetchNextValue() {
-    return Number(sourceLines[currentLineIndex++]);
-}
+let caseIdentifier = 1;
 
-function fetchItemSpecs() {
-    const parts = sourceLines[currentLineIndex++].split(',');
-    return {
-        worth: Number(parts[0]),
-        mass: Number(parts[1])
-    };
-}
-
-function ascertainGreater(paramA, paramB) {
-    return (paramA > paramB) ? paramA : paramB;
-}
-
-function initiateSystem() {
-    let currentCaseIdentifier = 1;
-
-    while (true) {
-        const maximumCapacity = fetchNextValue();
-        if (maximumCapacity === 0) {
-            break;
-        }
-
-        const numberOfGoods = fetchNextValue();
-        const availableGoods = [];
-        for (let goodCounter = 0; goodCounter < numberOfGoods; goodCounter++) {
-            availableGoods.push(fetchItemSpecs());
-        }
-
-        const worthAccumulator = new Array(maximumCapacity + 1).fill(0);
-
-        for (let currentCapacityLimit = 1; currentCapacityLimit <= maximumCapacity; currentCapacityLimit++) {
-            for (const currentGood of availableGoods) {
-                if (currentCapacityLimit >= currentGood.mass) {
-                    worthAccumulator[currentCapacityLimit] = ascertainGreater(
-                        worthAccumulator[currentCapacityLimit],
-                        worthAccumulator[currentCapacityLimit - currentGood.mass] + currentGood.worth
-                    );
-                }
-            }
-        }
-
-        let highestWorthAttainable = 0;
-        let massForHighestWorth = 0;
-
-        for (let currentMass = 0; currentMass <= maximumCapacity; currentMass++) {
-            const currentWorth = worthAccumulator[currentMass];
-            if (currentWorth > highestWorthAttainable) {
-                highestWorthAttainable = currentWorth;
-                massForHighestWorth = currentMass;
-            } else if (currentWorth === highestWorthAttainable && currentMass < massForHighestWorth) {
-                massForHighestWorth = currentMass;
-            }
-        }
-        
-        console.log("Case " + currentCaseIdentifier++ + ":\n" + highestWorthAttainable + "\n" + massForHighestWorth);
+while (true) {
+    const knapsackCapacity = retrieveNumericLine();
+    if (knapsackCapacity === 0) {
+        break;
     }
-}
 
-initiateSystem();
+    const itemCount = retrieveNumericLine();
+    
+    const valueMatrix = Array.from({ length: knapsackCapacity + 1 }, () => 0);
+
+    const itemCollection = [];
+    for (let i = 0; i < itemCount; i++) {
+        const itemComponents = retrieveAndSplitLine();
+        itemCollection.push({
+            itemValue: Number(itemComponents[0]),
+            itemWeight: Number(itemComponents[1])
+        });
+    }
+
+    itemCollection.forEach(item => {
+        const { itemValue, itemWeight } = item;
+        for (let currentCapacity = knapsackCapacity; currentCapacity >= itemWeight; currentCapacity--) {
+            valueMatrix[currentCapacity] = Math.max(
+                valueMatrix[currentCapacity - itemWeight] + itemValue,
+                valueMatrix[currentCapacity]
+            );
+        }
+    });
+
+    let optimalValue = 0;
+    let optimalWeight = 0;
+
+    valueMatrix.forEach((currentValue, weightIndex) => {
+        if (currentValue > optimalValue) {
+            optimalValue = currentValue;
+            optimalWeight = weightIndex;
+        }
+    });
+    
+    console.log(`Case ${caseIdentifier++}:\n${optimalValue}\n${optimalWeight}`);
+}

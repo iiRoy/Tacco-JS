@@ -1,22 +1,12 @@
-function processDataStream(incomingPayload) {
-  const structurePattern = /(\d+)\s+(\d+)\s+(\d+)\s+([a-zA-Z0-9]+)/;
-  const extractedElements = incomingPayload.match(structurePattern);
-
-  const operandA = Number(extractedElements[1]);
-  const operandB = Number(extractedElements[2]);
-
-  const controlSequence = extractedElements[4];
-
-  const ultimateCharacter = controlSequence.slice(-1);
-  const decisionValue = parseInt(ultimateCharacter);
-
-  const operationMultiplierMap = new Map([[0, 1], [1, -1]]);
-  const finalMultiplier = operationMultiplierMap.get(decisionValue % 2) || -1;
-
-  const computedOutcome = (operandA - operandB) * finalMultiplier;
-
-  console.log(computedOutcome);
+function processInputAndCalculate(rawInputString) {
+    const dataSegments = rawInputString.match(/(\S+)\s+(\S+)\s+(\S+)\s+(\S+)/);
+    const firstValue = Number(dataSegments[1]);
+    const secondValue = Number(dataSegments[2]);
+    const thirdValue = Number(dataSegments[3]);
+    const keySequence = dataSegments[4];
+    const lastCharacterAsNumber = Number(keySequence.slice(-1));
+    const operationDiscriminator = 1 - 2 * (lastCharacterAsNumber % 2);
+    const finalOutcome = firstValue * operationDiscriminator - secondValue * operationDiscriminator;
+    console.log(finalOutcome);
 }
-
-const rawInputSource = require("fs").readFileSync("/dev/stdin", "utf8");
-processDataStream(rawInputSource);
+processInputAndCalculate(require("fs").readFileSync("/dev/stdin", "utf8"));

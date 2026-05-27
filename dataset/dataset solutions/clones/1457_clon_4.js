@@ -1,47 +1,60 @@
-const sys_input_stream = require('process').stdin;
-const sys_output_stream = require('process').stdout;
+process.stdin.on("data", function(inputBuffer) {
+    const fullInputString = inputBuffer.toString();
+    const trimmedInput = fullInputString.trim();
 
-let received_data_parts = [];
+    let lineSegments = [];
+    let currentSegmentAccumulator = '';
 
-sys_input_stream.on('readable', function read_available_data() {
-    let current_data_block;
-    while (null !== (current_data_block = sys_input_stream.read())) {
-        received_data_parts.push(current_data_block);
+    for (let i = 0; i < trimmedInput.length; i++) {
+        const char = trimmedInput[i];
+        if (char === '\n') {
+            lineSegments.push(currentSegmentAccumulator);
+            currentSegmentAccumulator = '';
+        } else {
+            currentSegmentAccumulator += char;
+        }
     }
-});
+    lineSegments.push(currentSegmentAccumulator);
 
-sys_input_stream.on('end', function complete_data_processing() {
-    const full_buffered_content = Buffer.concat(received_data_parts);
-    const entire_text_payload = full_buffered_content.toString('utf8');
-
-    const normalized_payload = entire_text_payload.replace(/^\s+|\s+$/g, '');
-
-    const second_line_pattern = /^(?:[^\n]*\n)(.*)(?:\n.*)?$/;
-    const line_match_result = normalized_payload.match(second_line_pattern);
-
-    let content_of_second_line;
-    if (line_match_result && line_match_result.length > 1) {
-        content_of_second_line = line_match_result[1];
+    let secondLineContent;
+    if (lineSegments.length > 1) {
+        secondLineContent = lineSegments[1];
     } else {
-        content_of_second_line = undefined;
+        secondLineContent = undefined;
     }
 
-    let final_assembled_string;
-    if (content_of_second_line !== undefined) {
-        const word_elements = content_of_second_line.match(/\S+/g) || [];
+    let processedTokens;
 
-        const organize_strings = (arr) => arr.slice().sort();
-        const ordered_components = organize_strings(word_elements);
+    if (secondLineContent !== undefined) {
+        let currentWordBuilder = '';
+        let temporaryTokenList = [];
 
-        final_assembled_string = ordered_components.reduce((aggregator, part, index_pos) => {
-            return aggregator + (index_pos > 0 ? ' ' : '') + part;
-        }, '');
+        for (let i = 0; i < secondLineContent.length; i++) {
+            const char = secondLineContent[i];
+            if (char === ' ') {
+                temporaryTokenList.push(currentWordBuilder);
+                currentWordBuilder = '';
+            } else {
+                currentWordBuilder += char;
+            }
+        }
+        temporaryTokenList.push(currentWordBuilder);
+        processedTokens = temporaryTokenList;
     } else {
-        const error_trigger = content_of_second_line.match(/\S+/g);
-        final_assembled_string = '';
+        processedTokens = undefined;
     }
 
-    sys_output_stream.write(final_assembled_string + '\n');
-});
+    processedTokens.sort();
 
-sys_input_stream.resume();
+    let finalOutputString = '';
+    if (processedTokens !== undefined && processedTokens.length > 0) {
+        for (let i = 0; i < processedTokens.length; i++) {
+            finalOutputString += processedTokens[i];
+            if (i < processedTokens.length - 1) {
+                finalOutputString += ' ';
+            }
+        }
+    }
+
+    console.log(finalOutputString);
+}).resume();

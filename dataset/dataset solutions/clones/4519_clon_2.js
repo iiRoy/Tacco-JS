@@ -1,124 +1,131 @@
-var resultValue;
-var rawData = require("fs")
-  .readFileSync("/dev/stdin", "utf8")
-  .trim()
-  .split("\n");
+var finalResult; // Variable to store the ultimate outcome
+var rawData = require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n"); // Read input from stdin, clean it, and split by newlines
 
-var inputProcessor = {
-  "sourceData": rawData,
-  "currentPosition": 0,
-  "totalElements": rawData.length,
-  "getNextItem": function() {
-    if (!this.hasMoreItems()) {
-      throw "NoMoreElements: No further items available.";
+// An object to manage iteration over the input data
+var dataProcessor = {
+  "dataItems" : rawData, // The collection of input lines
+  "currentPosition" : 0, // Current index for iteration
+  "totalItems" : rawData.length, // Total number of items in the collection
+  // Method to retrieve the next item from the collection
+  "fetchNextItem" : function(){
+    // Check if there are more items to process
+    if(!this.hasMoreItems()){
+      throw new Error("NoSuchElementException: No more elements available for processing."); // Indicate an error if no more items
     }
-    var retrievedItem = this.sourceData[this.currentPosition];
-    this.currentPosition++;
-    return retrievedItem;
+    var retrievedItem = this.dataItems[this.currentPosition]; // Get the item at the current position
+    this.currentPosition++; // Advance the position for the next call
+    return retrievedItem; // Return the fetched item
   },
-  "hasMoreItems": function() {
-    return (this.currentPosition < this.totalElements);
+  // Method to check if there are more items to process
+  "hasMoreItems" : function(){
+    return (this.currentPosition < this.totalItems); // True if current position is within bounds
   }
 };
 
-ProcessInput();
+executePrimaryLogic(); // Begin the main program execution
 
-function fetchNextElement() {
-  return inputProcessor.getNextItem();
+// Helper function to get the next item using the data processor
+function retrieveNextElement(){
+  return dataProcessor.fetchNextItem();
 }
 
-function checkMoreElements() {
-  return inputProcessor.hasMoreItems();
+// Helper function to check if more items are available using the data processor
+function checkIfMoreElements(){
+  return dataProcessor.hasMoreItems();
 }
 
-function displayResult(content) {
-  console.log(content);
-} // Prints the given content to standard output
+// Function for standard output
+function displayResult(valueToPrint){
+  console.log(valueToPrint);
+}
 
-function reportError(errorMessage) {
+// Function for standard error output
+function reportError(errorMessage){
   console.error(errorMessage);
-} // Outputs an error message to standard error stream
+}
 
-// Handling of input elements based on transformation type. Numeric types.
-// If unknown type or error, returns input value as is.
-// 1: Convert to integer. 2: Split by space. 4: Split by space, convert to number array.
-// 6: Split into characters. 7: Split into characters, convert to number array.
-// 8: Join with spaces. 9: Join with newlines. 0: Join without separator.
-function dataTransformer(inputValue, transformationType) {
+// Function to transform input values based on a specified type number
+// [no] Handling of elements. Numeric type.
+// Unknown value, on error: returns the argument as is.
+// 1: Convert to integer. 2: Split by half-width space. 4: Split by half-width space and convert to number array.
+// 6: Split into individual characters. 7: Split into individual characters and convert to number array.
+// 8: Join with half-width space. 9: Join with newline. 0: Join without any character.
+function transformValue(inputValue, transformationType){
   try {
-    switch (transformationType) {
-      case 1:
-        return parseInt(inputValue);
-      case 2:
-        return inputValue.split(" ");
-      case 4:
-        return inputValue.split(" ").map((item) => Number(item));
-      case 6:
-        return inputValue.split("");
-      case 7:
-        return inputValue.split("").map((item) => Number(item));
-      case 8:
-        return inputValue.join(" ");
-      case 9:
-        return inputValue.join("\n");
-      case 0:
-        return inputValue.join("");
-      default:
-        return inputValue;
+    switch(transformationType){
+      case 1: return parseInt(inputValue, 10); // Parse as integer
+      case 2: return inputValue.split(" "); // Split by space
+      case 4: return inputValue.split(" ").map((element) => Number(element)); // Split and map to numbers
+      case 6: return inputValue.split(""); // Split into characters
+      case 7: return inputValue.split("").map((element) => Number(element)); // Split into characters and map to numbers
+      case 8: return inputValue.join(" "); // Join array with space
+      case 9: return inputValue.join("\n"); // Join array with newline
+      case 0: return inputValue.join(""); // Join array without separator
+      default: return inputValue; // Default: return as is
     }
-  } catch (err) {
-    return inputValue;
+  } catch(error){
+    return inputValue; // On error, return original value
   }
 }
 
-function ProcessInput() {
-  var characterSequence = dataTransformer(fetchNextElement(), 6);
-  var frequencyMap = {};
+// The main logic of the program
+function executePrimaryLogic() {
+  var characterArray = transformValue(retrieveNextElement(), 6); // Get the input string and split it into characters
+  var charOccurrences = {}; // Object to store character frequencies
 
-  for (var idx = 0; idx < characterSequence.length; idx++) {
-    if (frequencyMap[characterSequence[idx]] == null) {
-      frequencyMap[characterSequence[idx]] = 1;
+  // Count occurrences of each character
+  for(var idx = 0; idx < characterArray.length; idx++){
+    var currentChar = characterArray[idx];
+    if(charOccurrences[currentChar] === undefined){ // If character not seen before
+       charOccurrences[currentChar] = 1; // Initialize count
     } else {
-      frequencyMap[characterSequence[idx]]++;
+       charOccurrences[currentChar]++; // Increment count
     }
   }
 
-  var dominantCharacters = [];
-  var operationLimit = 0;
-  var uniqueChars = Array.from(Object.keys(frequencyMap));
+  var unusedMaxKeys = []; // Declared but not used in the current logic path
+  var unusedMaxVal = 0; // Declared but not used in the current logic path
+  var distinctChars = Array.from(Object.keys(charOccurrences)); // Get unique characters from the map
 
-  if (uniqueChars.length === 1) {
-    displayResult(0);
-    return;
+  // If there's only one unique character, no operations are needed
+  if(distinctChars.length === 1){
+     displayResult(0); // Output 0
+     return; // Exit function
   }
+  
+  var minOperations = 107; // Initialize minimum operations with a large value
 
-  var minimumRequiredOperations = 113; // Arbitrary large initial value
-  for (var charIndex = 0; charIndex < uniqueChars.length; charIndex++) {
-    var targetChar = uniqueChars[charIndex];
-    var tempSequence = Object.assign([], characterSequence);
-    var operationCounter = 0;
+  // Iterate through each distinct character as a potential target
+  for(var kdx = 0; kdx < distinctChars.length; kdx++){
+    var currentComparisonChar = distinctChars[kdx]; // The character we want to make the entire sequence
+    var workingCharSequence = Object.assign([], characterArray); // Create a mutable copy of the original sequence
+    var operationCounter = 0; // Counter for operations for the current target character
 
-    while (!verifyAllSame(tempSequence, targetChar)) {
-      for (var k = 0; k < tempSequence.length; k++) {
-        if (tempSequence[k + 1] === targetChar) {
-          tempSequence[k] = targetChar;
+    // Loop until the sequence is uniform with the target character
+    while(!verifyUniformity(workingCharSequence, currentComparisonChar)){
+      // Iterate through the sequence to perform operations
+      for(var idx = 0; idx < workingCharSequence.length; idx++){
+        // If the next character is the target, propagate it backward
+        if(workingCharSequence[idx + 1] === currentComparisonChar){
+           workingCharSequence[idx] = currentComparisonChar;
         }
       }
-      tempSequence.pop();
-      operationCounter++;
+      workingCharSequence.pop(); // Remove the last element
+      operationCounter++; // Increment operation count
     }
-    minimumRequiredOperations = Math.min(minimumRequiredOperations, operationCounter);
+    minOperations = Math.min(minOperations, operationCounter); // Update minimum operations found
   }
-  displayResult(minimumRequiredOperations);
+  displayResult(minOperations); // Output the final minimum operations
 }
 
-function verifyAllSame(inputString, targetCharacter) {
-  var isUniform = true;
-  for (var charPos = 0; charPos < inputString.length; charPos++) {
-    if (inputString[charPos] !== targetCharacter) {
-      isUniform = false;
-      break;
+// Function to check if all characters in a sequence are identical to a target character
+function verifyUniformity(sequenceToCheck, targetChar){
+    var isEntirelyUniform = true; // Assume uniform initially
+    for(var idx = 0; idx < sequenceToCheck.length; idx++){
+      if(sequenceToCheck[idx] !== targetChar){ // If any character doesn't match
+         isEntirelyUniform = false; // It's not uniform
+         break; // No need to check further
+      }
     }
-  }
-  return isUniform;
+    return isEntirelyUniform; // Return the uniformity status
 }

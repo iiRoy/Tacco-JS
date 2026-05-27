@@ -1,43 +1,39 @@
-function displayMessage(msgContent) {
-  // Prints the provided string to the standard output device.
-  console.log(msgContent);
+function displayMessage(messageContent) {
+  console.log(messageContent); // Outputs the provided text to the console.
 }
 
-function ProcessInput(rawData) {
-  /*
-   * The following lines are commented out as they represent
-   * alternative parsing strategies for the incoming data.
-   * This specific implementation uses newline separation.
-   */
-  // let parsedData = Number.parseInt(rawData.trim());
-  // let parsedData = rawData.trim().split(" ");
-  let parsedLines = rawData.trim().split("\n"); // Split the raw input by newlines into an array.
-  // let parsedData = rawData.trim().split(" ").map((val) => Number(val));
-  // let parsedData = rawData.trim().split("\n").map((val) => Number(val));
+function ProcessData(incomingData) {
+  // The input string is first trimmed and then split into an array of lines.
+  let processedLines = incomingData.trim().split("\n");
 
-  // Extract numeric values from the first line of input.
-  const firstNumericValue = Number.parseInt(parsedLines[0].split(" ")[0]);
-  const secondNumericValue = Number.parseInt(parsedLines[0].split(" ")[1]);
+  // Parse the first number from the first line of input.
+  let firstSegmentValue = parseInt(processedLines[0].split(" ")[0]);
 
-  // The second line of input is treated as the primary string to be analyzed.
-  let characterSequence = parsedLines[1];
+  // Parse the second number from the first line of input.
+  let secondSegmentValue = parseInt(processedLines[0].split(" ")[1]);
 
-  // Iterate through each character of the string to validate its format.
-  for (let currentPosition = 0; currentPosition < characterSequence.length; currentPosition++) {
-    const extractedChar = characterSequence.slice(currentPosition, currentPosition + 1); // Get the character at the current index.
+  // The second line of input is treated as the target string for validation.
+  let targetString = processedLines[1];
 
-    // Check for an incorrect character at the specified position.
-    if (currentPosition === firstNumericValue && extractedChar !== "-") {
-      displayMessage("No"); // Output "No" if a non-hyphen character is found at the critical index.
-      return; // Terminate execution immediately upon finding an invalid pattern.
-    } else if (currentPosition !== firstNumericValue && extractedChar === "-") {
-      displayMessage("No"); // Output "No" if a hyphen is found at any other index.
-      return; // Terminate execution immediately upon finding an invalid pattern.
+  // Iterate through each character of the target string.
+  for (let charIndex = 0; charIndex < targetString.length; charIndex++) {
+    // Extract the current character at the current index.
+    let currentCharacter = targetString.slice(charIndex, charIndex + 1);
+
+    // Check if the current index matches the first number AND the character is NOT a hyphen.
+    if (charIndex === firstSegmentValue && currentCharacter !== "-") {
+      displayMessage("No"); // If condition met, output "No" and exit.
+      return;
+    }
+    // Otherwise, check if the current index does NOT match the first number AND the character IS a hyphen.
+    else if (charIndex !== firstSegmentValue && currentCharacter === "-") {
+      displayMessage("No"); // If this condition met, output "No" and exit.
+      return;
     }
   }
-
-  displayMessage("Yes"); // If the loop completes without finding any issues, output "Yes".
+  // If the loop completes without returning, it means all conditions were met.
+  displayMessage("Yes");
 }
 
 // Read input from standard input, trim it, and pass it to the main processing function.
-ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8").trim());
+ProcessData(require("fs").readFileSync("/dev/stdin", "utf8").trim());

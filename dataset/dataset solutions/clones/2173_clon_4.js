@@ -1,13 +1,15 @@
-function processInput(receivedInfo) {
-  const dataSegments = receivedInfo.split('\n');
-  const numericalTokens = dataSegments[1].split(' ').map(Number);
-  const uniqueTokens = new Set(numericalTokens);
-  const areAllUnique = uniqueTokens.size === numericalTokens.length;
+function processInput(rawContent) {
+  const contentLines = rawContent.split('\n');
+  const targetLine = contentLines[1];
+  const stringTokens = targetLine.split(' ');
+  const numericElements = stringTokens.map(Number);
 
-  if (areAllUnique) {
-    console.log("YES");
-  } else {
+  const distinctElements = new Set(numericElements);
+
+  if (distinctElements.size < numericElements.length) {
     console.log("NO");
+  } else {
+    console.log("YES");
   }
 }
 

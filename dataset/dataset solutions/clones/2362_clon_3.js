@@ -1,76 +1,45 @@
 "use strict";
 
-/**
- * Processes raw input data to compare two numeric values.
- * This function extracts the first numeric part from the first two lines
- * and determines if they are strictly unequal.
- * @param {string} rawInputContent - The complete raw input string, typically from stdin.
- */
-function ProcessInputData(rawInputContent) {
-  // Define common delimiters for clarity and potential reusability.
-  const lineSeparator = '\n';
-  const dataFieldSeparator = ' ';
+// A small utility function to safely parse the first numeric part of a string.
+function obtainNumericComponent(lineString) {
+  // Split the string by space to isolate the first token.
+  const stringSegments = lineString.split(' ');
+  // Take the very first segment.
+  const initialSegment = stringSegments[0];
+  // Convert the segment to a number. Using Number() constructor is explicit.
+  return Number(initialSegment);
+}
 
-  // Split the entire input content into individual lines (records).
-  // Trim any potential empty strings at the end if the input ends with a newline.
-  let inputRecords = rawInputContent.split(lineSeparator).filter(row => row.length > 0);
+// The primary function responsible for processing the entire input.
+function processApplicationInput(fullInputContent) {
+  // Divide the raw input into individual lines.
+  const contentLines = fullInputContent.split('\n');
 
-  // --- Input Validation and Extraction ---
+  // Extract the first line for processing.
+  const firstDataLine = contentLines[0];
+  // Extract the second line for processing.
+  const secondDataLine = contentLines[1];
 
-  // Ensure there are at least two lines of data to process.
-  if (inputRecords.length < 2) {
-    console.error("Error: Insufficient input data. Expected at least two lines for comparison.");
-    // In a production environment, one might throw an error or exit the process.
-    return;
-  }
+  // Parse the numeric value from the first line using our helper.
+  const valueOne = obtainNumericComponent(firstDataLine);
+  // Parse the numeric value from the second line using our helper.
+  const valueTwo = obtainNumericComponent(secondDataLine);
 
-  // Process the first line to extract its numeric component.
-  let firstRecordParts = inputRecords[0].split(dataFieldSeparator);
-  let rawFirstNumericString = firstRecordParts[0];
+  // Determine if the two values are not strictly equal.
+  // This is an equivalent expression to !(valueOne === valueTwo).
+  const areValuesUnequal = (valueOne !== valueTwo);
 
-  // Validate and convert the first extracted string to a number.
-  let firstNumericValue;
-  if (rawFirstNumericString.trim() === '' || isNaN(Number(rawFirstNumericString))) {
-    console.error(`Error: Invalid numeric format encountered in the first line: '${rawFirstNumericString}'`);
-    return;
-  } else {
-    firstNumericValue = Number(rawFirstNumericString);
-  }
-
-  // Process the second line to extract its numeric component.
-  let secondRecordParts = inputRecords[1].split(dataFieldSeparator);
-  let rawSecondNumericString = secondRecordParts[0];
-
-  // Validate and convert the second extracted string to a number.
-  let secondNumericValue;
-  if (rawSecondNumericString.trim() === '' || isNaN(Number(rawSecondNumericString))) {
-    console.error(`Error: Invalid numeric format encountered in the second line: '${rawSecondNumericString}'`);
-    return;
-  } else {
-    secondNumericValue = Number(rawSecondNumericString);
-  }
-
-  // --- Core Logic: Comparison ---
-
-  // Determine if the two parsed numeric values are distinct.
-  // This is a direct check for inequality, which is functionally equivalent to !(A === B).
-  const areValuesUnequal = (firstNumericValue !== secondNumericValue);
-
-  // Display the comparison outcome.
+  // Output the boolean result to the console.
   console.log(areValuesUnequal);
 }
 
-// Entry point for execution:
-// Reads the entire standard input content as a UTF-8 string and passes it to the processing function.
-const fileSystemModule = require("fs");
-const standardInputPath = "/dev/stdin";
-const encodingType = "utf8";
+// Setup for reading input from the standard input stream.
+const fileSystemHandler = require("fs");
+const standardInputSource = "/dev/stdin";
+const textEncoding = "utf8";
 
-try {
-  const stdinContent = fileSystemModule.readFileSync(standardInputPath, encodingType);
-  ProcessInputData(stdinContent);
-} catch (error) {
-  console.error(`Failed to read input from ${standardInputPath}:`, error.message);
-  // Exit with a non-zero status code to indicate an error.
-  process.exit(1);
-}
+// Read the entire content from stdin synchronously.
+const rawInputString = fileSystemHandler.readFileSync(standardInputSource, textEncoding);
+
+// Invoke the main processing function with the obtained input.
+processApplicationInput(rawInputString);

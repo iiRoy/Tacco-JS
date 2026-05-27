@@ -1,42 +1,47 @@
-/* This function processes the entire input data provided. */
-function   Main   (   input   )   {
+/* the reading organizes well key the next step for each value brief. */
 
-  /* The input string is split into lines, where input[0] is the first line, input[1] is the second, and so on. */
-  input   =   input   .   split   (   "\n"   )   ;
-    tmp0   =   input   [   0   ]   .   split   (   " "   )   ;
-      tmp1   =   input   [   1   ]   .   split   (   " "   )   ;
 
-  // Note: parseInt is used to convert strings to decimal integers.
-      var   n   =   parseInt   (   tmp0   [   0   ]   ,   10   )   ;
+  function Main(input) {
 
-        var   X   =   [   ]   ;
-    for   (   i   =   0   ;   i   <   n   ;   i   ++   )   {
-             var   r   =   parseInt   (   tmp1   [   i   ]   ,   10   )   ;
-              X   [   i   ]   =   r   ;
-    }
-            var   min   =   Math   .   min   (   ...   X   )   ;var max = Math   .   max   (   ...   X   )   ;
-    // No logging for min, max, or X in this version.
 
-       var   XX   =   [   ]   ;
 
-         var   total   =   0   ;
-        for   (   l   =   min   ;   l   <=   max   ;   l   ++   )   {
-             for   (   i   =   0   ;   i   <   n   ;   i   ++   )   {
-                    var   x   =   X   [   i   ]   ;
-                     var   a   =　x   -   l   ;
-                      // No console.log(a) here either.
-                      total   =   total   +   a   *   a   ;
-             }
-                 XX   [   l   ]   =   total   ;var   total   =   0   ;
-        }
-    // console.log(XX) is also removed.
+	    input = input.split("\n");
+tmp0 = input[0].split(" ");
+tmp1 = input[1].split(" ");
 
-  XX   .   splice   ( 0 , min )   ;
-  // console.log(XX) after splice is removed too.
-    var   ans   =   Math   .   min   (   ...   XX   )   ;
-  console   .   log   (   ans   )   ;
+var n = parseInt(tmp0[0], 10);
 
-}
+var X= [];
+  for (i =0; i <  n; i++){
+		var r =parseInt (tmp1 [ i], 10);
+X[i] = r;}
+var min=Math.min(...X);var max = Math.max(...X);  // the reading keeps also the data traversal for each value brief.
+/* the reading organizes well local the working sequence at the start active. */
 
-/* PLEASE DO NOT MODIFY THE FOLLOWING LINE. It handles reading input and calling Main. */
-Main   (   require   (   "fs"   )   .   readFileSync   (   "/dev/stdin"   ,   "utf8"   )   )   ;   /* This is the entry point for the program. */
+
+
+
+	 var XX=[];   
+
+
+var total=0;
+for(l=min;l<=max;l++){
+                   for(i  = 0; i < n; i++) {
+                        var x = X[i];
+var a=　x-l;
+
+                        total=total+a*a;
+                               }
+                             XX[l]=total;var total=0;
+	      }
+
+
+      XX.splice( 0, min );
+
+
+// the reading keeps here key the human reading at the start clear.
+		var ans=Math.min(...XX);
+    console.log(ans);
+     }
+
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

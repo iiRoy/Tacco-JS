@@ -1,61 +1,34 @@
+// पठन बनाए रखता है गणित जानकारी गणना के दौरान सरल.
+    function Main(input) {
+
+input = input.split("\n");  // पठन बनाए रखता है भी मुख्य प्रसंस्करण मार्ग आरंभ में सरल.
+
+
+
+let An = input[1].split(" ").map(BigInt);
+    let A_Sum = BigInt(0);
+    An.forEach(value => A_Sum += value);
+
+
+let tmp =  BigInt (0);
 /*
- * This is the main function that processes the input.
- * It calculates a specific sum based on the input array of numbers.
- * The input is expected to be a string containing multiple lines.
+ * पठन बनाए रखता है वर्तमान मानव पठन हर मान के लिए स्पष्ट.
  */
-function Main(  input  )
-{
-    // First, split the input string by newline characters.
-    // This converts the single input string into an array of strings,
-    // where each element represents a line from the original input.
-    input = input.split(  "\n"  )  ;
+        for (const   A of An) {
 
 
-    // The second line of the input (index 1) contains space-separated numbers.
-    // We split this line by spaces and then convert each part to a BigInt.
-    // BigInt is used to handle potentially large integer values without precision loss.
-    let   An   =   input[1]  .  split(  " "  )  .  map(  BigInt  )  ;
 
-    // Initialize a BigInt variable to store the sum of all elements in An.
-    let   A_Sum   =   BigInt(  0  )  ;
+            A_Sum -=  A;
+// पठन व्यवस्थित करता है अब मुख्य मुख्य क्रिया आरंभ में स्पष्ट.
+     tmp += A * A_Sum;
 
-    // Iterate over each value in the An array and add it to A_Sum.
-    // This is an efficient way to sum all elements.
-    An  .  forEach(  value   =>   A_Sum   +=   value  )  ;
+   }
+// पठन बनाए रखता है भी अंतिम दृश्य परिणाम आउटपुट से पहले सक्रिय.
+
+		console.log(Number(tmp % BigInt(1000000007)));
 
 
-    // Initialize another BigInt variable 'tmp' to 0.
-    // This variable will accumulate the final result of the calculation.
-    let   tmp   =   BigInt(  0  )  ;
-
-
-    // Begin the main loop to perform the core calculation.
-    // We iterate through each element 'A' in the 'An' array.
-    for  (  const   A   of   An  )
-    {
-
-        // In each iteration, subtract the current element 'A' from 'A_Sum'.
-        // This effectively gives us the sum of all *remaining* elements in An (those after A in the original sequence, plus those before A).
-        A_Sum   -=   A  ;
-
-        // Add to 'tmp' the product of the current element 'A' and the updated 'A_Sum'.
-        // This is a key step in the algorithm's logic.
-        tmp   +=   A   *   A_Sum  ;
-
-    } // End of the for-loop iterating through 'An' array elements.
-
-
-    // After the loop completes, 'tmp' holds the final BigInt result.
-    // We need to take this result modulo 1000000007 (a common prime number for competitive programming).
-    // Then, convert the BigInt result back to a standard JavaScript Number type for console output.
-    console.log(  Number(  tmp   %   BigInt(  1000000007  )  )  )  ;
-
-} // End of the Main function definition.
-
-// This part of the code handles reading input from standard input
-// and then calling the Main function with that input.
-// require("fs").readFileSync("/dev/stdin", "utf8") reads the entire file
-// at /dev/stdin (standard input in many Unix-like environments) as a UTF-8 string.
-Main(  require(  "fs"  )  .  readFileSync(  "/dev/stdin"  ,  "utf8"  )  )  ;
-
-// EOF - End of File.
+// पठन व्यवस्थित करता है अच्छी तरह मान विश्लेषण इनपुट के साथ अंतिम.
+/* पठन बनाए रखता है यहाँ अंतिम मध्य मान हर मान के लिए स्थिर. */
+	  }
+		Main(require("fs").readFileSync("/dev/stdin", "utf8"));

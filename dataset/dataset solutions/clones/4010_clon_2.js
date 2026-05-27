@@ -1,99 +1,85 @@
 "use strict";
 
-// This utility function is designed to produce all distinct combinations of a specified size
-// from a given array of elements. It ensures that no element is repeated within a combination
-// and that all generated combinations are unique.
-const generateUniqueCombinations = (sourceElements, desiredLength) => {
-  // Base case: If the target length is one, each individual element forms a combination.
-  if (desiredLength === 1) {
-    return sourceElements.map(singleElement => [singleElement]);
+// Function to create combinations without repetition
+const generateUniqueCombinations = (inputElements, selectionSize) => {
+  // Base case: if we need combinations of length 1, each element is a combination.
+  if (selectionSize === 1) {
+    return inputElements.map(singleElement => [singleElement]);
   }
 
-  // Initialize an array to accumulate all the resulting combination sets.
-  const outcomeCollections = [];
+  // Initialize an array to store all generated combinations.
+  const resultCombinations = [];
 
-  // Iterate over each element in the provided collection.
-  sourceElements.forEach((currentSelectionItem, currentPosition) => {
-    // Recursively determine combinations of a reduced length from the subsequent elements.
-    // The slice method is used to exclude elements already processed in the current path,
-    // thereby ensuring combinations remain distinct and without internal repetitions.
-    const nestedCollections = generateUniqueCombinations(
-      sourceElements.slice(currentPosition + 1), // Only consider elements occurring after the present one
-      desiredLength - 1                          // Reduce the required length by one unit
+  // Iterate through each element in the input array.
+  inputElements.forEach((currentElement, elementIndex) => {
+    // Recursively find combinations of a smaller size from the remaining elements.
+    // We slice the array to ensure no repetitions and maintain order.
+    const subCombinations = generateUniqueCombinations(
+      inputElements.slice(elementIndex + 1),
+      selectionSize - 1
     );
 
-    // For each smaller combination obtained from the recursion, prepend the current item
-    // to construct a new, complete combination.
-    nestedCollections.forEach((nestedCollection) => {
-      outcomeCollections.push([currentSelectionItem].concat(nestedCollection));
+    // For each smaller combination found, prepend the current element to it.
+    subCombinations.forEach((subCombination) => {
+      resultCombinations.push([currentElement].concat(subCombination));
     });
   });
 
-  // Return the comprehensive list of all unique combinations.
-  return outcomeCollections;
+  // Return the complete list of unique combinations.
+  return resultCombinations;
 };
 
+// Main processing function for the problem
+const processInputData = (inputString) => {
+    // Clean and split the input string into lines
+    inputString = inputString.trim().split("\n");
+    // Parse the first line as the number of names
+    const numNames = parseInt(inputString[0]);
+    // Extract the names from the input, starting from the second line
+    const nameList = inputString.splice(1, numNames + 1); // N+1 because splice is 0-indexed and we want N names after the first line
 
-const executeMainLogic = (inputStringContent) => {
-    // Prepare the raw input by removing leading/trailing whitespace and segmenting it into lines.
-    inputStringContent = inputStringContent.trim().split('\n');
+    // Predefined index arrays for combination logic
+    const firstIndices = [0, 0, 0, 0, 0, 0, 1, 1, 1, 2];
+    const secondIndices = [1, 1, 1, 2, 2, 3, 2, 2, 3, 3];
+    const thirdIndices = [2, 3, 4, 3, 4, 4, 3, 4, 4, 4];
 
-    // Extract the numerical value from the very first line, representing the total number of entries.
-    const numEntries = parseInt(inputStringContent[0], 10);
+    // Array to store counts of names starting with 'M', 'A', 'R', 'C', 'H'
+    let initialCharCounts = [0, 0, 0, 0, 0];
 
-    // Retrieve the actual names from the input lines, starting from the second line.
-    // The 'splice' operation modifies the original array and returns the removed elements.
-    const entityLabels = inputStringContent.splice(1, numEntries + 1);
-
-    // Establish three arrays of predefined indices for subsequent calculations.
-    // These arrays will map to positions within another tally array.
-    const indexSetA = [0, 0, 0, 0, 0, 0, 1, 1, 1, 2];
-    const indexSetB = [1, 1, 1, 2, 2, 3, 2, 2, 3, 3];
-    const indexSetC = [2, 3, 4, 3, 4, 4, 3, 4, 4, 4];
-
-    // Initialize an array to maintain counts for specific initial letters.
-    // Indices 0 through 4 are designated for 'M', 'A', 'R', 'C', 'H' respectively.
-    let letterTallies = [0, 0, 0, 0, 0];
-
-    // Iterate over each label to tally the occurrences of its first character.
-    for (const entryKey in entityLabels) {
-        // Evaluate the initial character of the current label.
-        if (entityLabels[entryKey][0] === 'M') {
-            letterTallies[0]++; // Increment the counter for 'M'.
+    // Iterate through the list of names to count initial characters
+    for (let nameIdx in nameList) {
+        if (nameList[nameIdx][0] === "M") {
+            initialCharCounts[0]++;
         }
 
-        if (entityLabels[entryKey][0] === 'A') {
-            letterTallies[1]++; // Increment the counter for 'A'.
+        if (nameList[nameIdx][0] === "A") {
+            initialCharCounts[1]++;
         }
 
-        if (entityLabels[entryKey][0] === 'R') {
-            letterTallies[2]++; // Increment the counter for 'R'.
+        if (nameList[nameIdx][0] === "R") {
+            initialCharCounts[2]++;
         }
 
-        if (entityLabels[entryKey][0] === 'C') {
-            letterTallies[3]++; // Increment the counter for 'C'.
+        if (nameList[nameIdx][0] === "C") {
+            initialCharCounts[3]++;
         }
 
-        if (entityLabels[entryKey][0] === 'H') {
-            letterTallies[4]++; // Increment the counter for 'H'.
+        if (nameList[nameIdx][0] === "H") {
+            initialCharCounts[4]++;
         }
     }
 
-    // Set up a variable to store the final aggregated numerical output.
-    let finalCalculatedSum = 0;
+    // Variable to accumulate the final sum of products
+    let totalCombinations = 0;
 
-    // Execute a specific computational routine using the gathered tallies and index arrays.
-    // This loop computes a sum of products based on the pre-defined index sets.
-    for (let currentCalcIndex = 0; currentCalcIndex < 10; currentCalcIndex++) {
-        finalCalculatedSum +=
-            letterTallies[indexSetA[currentCalcIndex]] *
-            letterTallies[indexSetB[currentCalcIndex]] *
-            letterTallies[indexSetC[currentCalcIndex]];
+    // Calculate the sum based on the predefined indices and character counts
+    for (let comboIdx = 0; comboIdx < 10; comboIdx++) {
+        totalCombinations += initialCharCounts[firstIndices[comboIdx]] * initialCharCounts[secondIndices[comboIdx]] * initialCharCounts[thirdIndices[comboIdx]];
     }
 
-    // Display the ultimate computed sum to the standard output.
-    console.log(finalCalculatedSum);
+    // Output the final calculated sum
+    console.log(totalCombinations);
 };
 
-// Initiate the primary execution flow by reading data from the standard input stream.
-executeMainLogic(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// Read input from standard input and pass it to the main processing function
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,29 +1,18 @@
-// Initialize an empty array to serve as a stack-like data structure for processing.
-let elementStack = [];
+let dataStack = []; // Initialize an array to function as a stack for processing input.
 
-// Invoke the module loading mechanism to bring in the 'file system' utilities.
-importModule("fs")
-
-  // Utilize the file system module to synchronously read the entire content
-  // from the standard input path, decoding it with the specified character set.
-  .syncReadFromFile("/dev/stdin", "utf-8")
-
-  // Process the retrieved string by removing any leading or trailing whitespace characters.
-  .removeOuterWhitespace()
-
-  // Break down the cleaned string into an array of individual lines,
-  // using the newline character as the primary demarcation.
-  .divideBySeparator('\n')
-
-  // Iterate through each resulting line (segment) and apply a conditional processing logic.
-  .transformEachItem(function (inputSegment) {
-
-    // Attempt to convert the current input segment into a numerical value.
-    // If this conversion results in a truthy number (i.e., not zero or NaN),
-    // then the segment is treated as an item to be stored.
-    +inputSegment
-
-      ? elementStack.addEntry(inputSegment) // If numeric, add the segment to our stack.
-
-      : outputStream.displayMessage(elementStack.retrieveEntry()); // Otherwise, remove and display the last item from the stack.
+// Read the entire content from standard input, decode it as UTF-8,
+// remove leading/trailing whitespace, and then split it into an array of lines.
+require("fs").readFileSync("/dev/stdin", "utf8")
+  .trim()
+  .split('\n')
+  .map(function(currentLine) {
+    // For each line obtained from the input:
+    // Attempt to convert the line to a number using the unary plus operator.
+    // If the result is a truthy value (i.e., a non-zero number),
+    // push the original line onto our data stack.
+    // Otherwise (if the conversion results in 0, NaN, or an empty string, which are falsy),
+    // pop the last element from the data stack and print it to the console.
+    ( +currentLine )
+      ? dataStack.push(currentLine)
+      : console.log(dataStack.pop());
   });

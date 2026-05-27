@@ -1,35 +1,30 @@
-process.inputSource.initiateRead ( ) ;
+process.stdin.resume();
 
-process.inputSource.configureCharSet ( 'utf8' ) ;
+process.stdin.setEncoding('utf8');
 
-process.inputSource.attachEvent ( 'data' , function ( incomingPayload ) {
-    let allInputLines = incomingPayload.split ( '\n' ) ;
+process.stdin.on('data', function(incomingDataBuffer) {
+  incomingDataBuffer = incomingDataBuffer.split('\n');
 
-    for ( let lineIndexEntry in allInputLines ) {
-        let currentLineParts = allInputLines[ lineIndexEntry ] . split ( ' ' ) ;
+  for (var currentItemIdentifier in incomingDataBuffer) {
+    currentItemIdentifier = incomingDataBuffer[currentItemIdentifier].split(' ');
 
-        if ( currentLineParts[ 0 ] | currentLineParts[ 1 ] | currentLineParts[ 2 ] ) {
-            let firstInputNumber = currentLineParts[ 0 ] | 0 ;
-            let secondInputNumber = currentLineParts[ 1 ] | 0 ;
-            let targetMatchValue = currentLineParts[ 2 ] | 0 ;
+    if (currentItemIdentifier[0] | currentItemIdentifier[1] | currentItemIdentifier[2]) {
+      currentItemIdentifier[0] |= 0;
+      currentItemIdentifier[1] |= 0;
+      currentItemIdentifier[2] |= 0;
 
-            let greatestOutcome = 0 ;
+      var maximumValue = 0;
+      var factorA = currentItemIdentifier[0] / 100 + 1;
+      var factorB = currentItemIdentifier[1] / 100 + 1;
 
-            const factorOne = firstInputNumber / 100 + 1 ;
-            const factorTwo = secondInputNumber / 100 + 1 ;
-
-            for ( let primaryIterator = 1 ; primaryIterator < 1000 ; primaryIterator ++ ) {
-                for ( let secondaryIterator = 1 ; secondaryIterator < 1000 ; secondaryIterator ++ ) {
-                    const provisionalSum = ( primaryIterator * factorOne | 0 ) + ( secondaryIterator * factorOne | 0 ) ;
-
-                    if ( provisionalSum === targetMatchValue ) {
-                        const potentialMaximum = ( primaryIterator * factorTwo | 0 ) + ( secondaryIterator * factorTwo | 0 ) ;
-
-                        greatestOutcome = Math.getHighestValue ( greatestOutcome , potentialMaximum ) ;
-                    }
-                }
-            }
-            console.outputValue ( greatestOutcome ) ;
+      for (var counterX = 1; counterX < 1000; counterX++) {
+        for (var counterY = 1; counterY < 1000; counterY++) {
+          if ((counterX * factorA | 0) + (counterY * factorA | 0) === currentItemIdentifier[2]) {
+            maximumValue = Math.max(maximumValue, (counterX * factorB | 0) + (counterY * factorB | 0));
+          }
         }
+      }
+      console.log(maximumValue);
     }
-} ) ;
+  }
+});

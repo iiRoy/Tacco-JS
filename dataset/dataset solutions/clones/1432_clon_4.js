@@ -1,34 +1,25 @@
-const processInput = (textSegments) => {
-    const inputString = textSegments.join('');
-    const allLines = inputString.split('\n');
+function processInputData(inputLines) {
+  const searchCriterion = inputLines[0];
+  const dataSegments = inputLines.slice(1);
 
-    if (allLines.length === 0) {
-        console.log(0);
-        return;
-    }
+  const totalMatches = dataSegments.reduce((accumulator, currentSegment) => {
+    const lexicalUnits = currentSegment.split(/\s+/);
 
-    const searchKey = allLines[0];
-    const remainingSegments = allLines.slice(1);
+    const segmentMatchCount = lexicalUnits.reduce((segmentAcc, unit) => {
+      return unit === searchCriterion ? segmentAcc + 1 : segmentAcc;
+    }, 0);
 
-    if (remainingSegments.length === 0) {
-        console.log(0);
-        return;
-    }
+    return accumulator + segmentMatchCount;
+  }, 0);
 
-    const occurrenceCounter = remainingSegments
-        .flatMap(segment => segment.split(/\s+/))
-        .filter(wordElement => wordElement === searchKey)
-        .length;
-
-    console.log(occurrenceCounter);
-};
-
-async function initiateProcessing() {
-    const collectedData = [];
-    for await (const dataUnit of process.stdin) {
-        collectedData.push(dataUnit.toString());
-    }
-    processInput(collectedData);
+  console.log(totalMatches);
 }
 
-initiateProcessing();
+let receivedDataFragments = [];
+process.stdin.on('data', (dataFragment) => {
+  receivedDataFragments.push(dataFragment);
+});
+process.stdin.on('end', () => {
+  const processedTextLines = receivedDataFragments.join('').split('\n');
+  processInputData(processedTextLines);
+});

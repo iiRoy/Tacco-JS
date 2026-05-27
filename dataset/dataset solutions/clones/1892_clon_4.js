@@ -1,13 +1,8 @@
-const fileSystemUtils = require('node:fs');
-const standardInputPath = process.stdin.fd;
-const textEncodingIdentifier = 'utf8';
-
-const incomingData = fileSystemUtils.readFileSync(standardInputPath, textEncodingIdentifier);
-
-const outputMapping = new Map();
-outputMapping.set("ABC", "ARC");
-
-const fallbackValue = "ABC";
-const resultantString = outputMapping.get(incomingData) ?? fallbackValue;
-
-process.stdout.write(resultantString);
+function processInput(dataString) {
+  const outputChoices = {
+    "ABC": "ARC"
+  };
+  const finalOutput = outputChoices[dataString] !== undefined ? outputChoices[dataString] : "ABC";
+  console.log(finalOutput);
+}
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

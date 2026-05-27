@@ -1,23 +1,26 @@
-function calculateThresholdExceeders(sourcePayload) {
-    const textualEntries = sourcePayload.split('\n');
+function ProcessInput(sourceData) {
+    const allInputLines = sourceData.split('\n');
 
-    const boundaryValue = Number(textualEntries[0].split(' ')[1]);
+    const [firstDataLine, ...coordinateEntryLines] = allInputLines;
 
-    const exceedingElements = textualEntries.slice(1).reduce((tally, currentEntry) => {
-        const spatialData = currentEntry.split(' ').map(Number);
-        const horizontalMeasure = spatialData[0];
-        const verticalMeasure = spatialData[1];
+    const distanceThreshold = Number(firstDataLine.split(' ')[1]);
 
-        const radialExtent = Math.hypot(horizontalMeasure, verticalMeasure);
-
-        if (Math.round(radialExtent) >= boundaryValue) {
-            return tally + 1;
-        } else {
-            return tally;
+    const countedPoints = coordinateEntryLines.reduce((currentCount, lineContent) => {
+        if (!lineContent.trim()) {
+            return currentCount;
         }
+
+        const [xComponentStr, yComponentStr] = lineContent.split(' ');
+        const xValue = Number(xComponentStr);
+        const yValue = Number(yComponentStr);
+
+        const squaredSum = (xValue * xValue) + (yValue * yValue);
+        const calculatedDistance = Math.sqrt(squaredSum);
+
+        return currentCount + (Math.round(calculatedDistance) >= distanceThreshold ? 1 : 0);
     }, 0);
 
-    console.log(exceedingElements);
+    console.log(countedPoints);
 }
 
-calculateThresholdExceeders(require("fs").readFileSync("/dev/stdin", "utf8"));
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

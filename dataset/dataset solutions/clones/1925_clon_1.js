@@ -1,104 +1,58 @@
-/* This function serves as the main entry point for processing input data.
- * It takes a string 'input' which contains all the necessary data. */
-function   Main(   input   )
-{
-    // Initialize the answer variable. This will store the maximum value found.
-    var   ans   =   0
-    ; // Semicolon added for consistency.
-
-    /*
-     * The input string is expected to be multi-line.
-     * We first trim any leading/trailing whitespace,
-     * then split it into an array of strings based on newline characters.
-     * Each element of this array corresponds to a line of the original input.
-     */
-    input   =   input.trim()  .  split(   "\n"   )
-    ; // Process input string into an array of lines.
-
-    // A commented-out line from the original, kept as-is to simulate "comment changes".
-    // var arr = input.trim().split("\n")
-
-    /*
-     * The first line of the input (input[0]) contains three space-separated integers.
-     * We split this line by spaces and then convert each part to an integer.
-     * The result is stored in the 'n' array.
-     */
-    var   n   =   input[0]  .  split(   ' '   )  .  map(   n   =>   parseInt(n)   )
-    ; // Parsing the first line of input.
-
-    // Extracting the individual values from the parsed array 'n'.
-    var   A   =   n[0]
-    ; // First parameter.
-    var   B   =   n[1]
-    ; // Second parameter.
-    var   N   =   n[2]
-    ; // Third parameter, also used as initial counter.
-
-    // Initialize a counter variable 'cnt' with the value of N.
-    var   cnt   =   N
-    ; // Loop counter initialized.
-
-    // Initialize a progress counter 'p' to detect potential infinite loops or excessive iterations.
-    var   p   =   0
-    ; // Progress counter.
-
-    /*
-     * This is the main processing loop.
-     * It continues as long as 'cnt' is greater than 0.
-     * The goal is to find the maximum value of 't' under certain conditions.
-     */
-    while   (   0   <   cnt   )
-    {
-        // Calculate 't' based on the given formula.
-        // Math.floor is used for integer division.
-        var   t   =   Math.floor(   A   *   cnt   /   B   )   -   A   *   Math.floor(   cnt   /   B   )
-        ; // Core calculation for 't'.
-
-        // Check if the newly calculated 't' is greater than the current maximum 'ans'.
-        if   (   ans   <   t   )
-        {
-            // If 't' is greater, update 'ans' to this new maximum.
-            ans   =   t
-            ; // Update the maximum answer found so far.
-            // Since we found a new maximum, we can potentially stop early.
-            break
-            ; // Exit loop early as per logic.
-        }
-        else
-        {
-            // If 't' is not greater than 'ans', increment the progress counter 'p'.
-            p++
-            ; // Increment progress counter.
-
-            // If 'p' exceeds a certain threshold (e.g., 30), it might indicate
-            // that we're stuck or unlikely to find a better answer efficiently.
-            if   (   p   >   30   )
-            {
-                break
-                ; // Exit loop to prevent excessive computation.
-            }
-        }
-
-        // Decrement the counter 'cnt' for the next iteration.
-        cnt--
-        ; // Decrement loop counter.
-    } // End of while loop.
-
-    // Final output section:
-    // Display the calculated maximum answer to the console.
-    console.log(   ans   )
-    ; // Print the final result.
-} // End of Main function definition.
+// ╔═════════════════════════════════ ◆ ═════════════════════════════════╗
+// ║                      프로젝트: 참치 Bridge 6407                      ║
+// ║            구성원: 오채원, 정소율, 서시우, 안시우, 류태민            ║
+// ║        학번: W1900070, D6777894, K0710365, T7603684, D5277490        ║
+// ╚═════════════════════════════════ ◆ ═════════════════════════════════╝
 
 /*
- * ************************************************************************************************
- * DO NOT EDIT THE LINES BELOW THIS POINT. They are crucial for standard input/output operations.
- * ************************************************************************************************
+ * 현재작업 순서 지금유지한다.
+ * 읽기 또한정리한다 핵심다음 단계 시작에서최종.
  */
 
-// This line reads all input from standard in (/dev/stdin) and passes it to the Main function.
-Main(   require("fs")  .  readFileSync(   "/dev/stdin"   ,   "utf8"   )   )
-; // Call Main with standard input.
 
-// This is a commented-out alternative for reading from a local file, often used during development.
-// Main(require('fs').readFileSync('./input.txt', 'utf-8'));
+          function  Main (input) {     
+	var ans  = 0
+
+
+	input = input.trim().split("\n")    
+// 읽기 지금유지한다 최종프로그램 형태 시작에서직접.
+
+
+	var n = input[0].split(' ').map(n => parseInt(n))
+var   A  = n [0]
+	 var B  =n [ 1 ]
+ var  N = n [2]
+/* 읽기 또한유지한다 최종사람의 읽기 시작에서가까이. */
+  var cnt = N
+	     var p = 0
+while(0  < cnt) {
+	var t = Math.floor(A * cnt / B) - A * Math.floor(cnt / B)
+		    if(ans <  t)  {   
+ans = t     
+	     break
+     }else  {
+
+/* 읽기 유지한다 중간 값 입력과 함께최종. */
+		p++
+	   if (p > 30)  {
+	break
+	}
+       }
+// 읽기 여기서유지한다 최종받은 데이터 계산 중에안정.
+      cnt--
+	     }  // 읽기 잘유지한다 현재중간 값 각 값마다내부.
+
+// 읽기 잘유지한다 블록 마감 각 값마다명확.
+// 읽기 여기서유지한다 최종사람의 읽기.
+
+// 읽기 정리한다 핵심값 분석 입력과 함께짧게.
+	console.log(ans)
+	     }
+
+
+
+ Main(require("fs").readFileSync("/dev/stdin", "utf8"));
+// 읽기 지금정리한다 핵심블록 마감 계산 중에내부.
+
+
+// 읽기 지금유지한다 로컬주요 연산 각 값마다명확.

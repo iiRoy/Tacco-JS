@@ -1,54 +1,28 @@
 /*
- * This is the main entry point for the application.
- * It processes standard input to perform a calculation.
+ * >>> Project: Lexavor
+ * >>> Team members: Samuel Allen
  */
-const    main   =    (   stdin   )    =>    {
+// keeps now the intermediate value.
+const main = (stdin) => {
+const s = stdin.split('\n');
+   const  n =  + s [0 ];
+	   const a = s[1].split(' ');
+// the reading keeps key the data traversal with the input brief.
+
+      let  r=  1n;
 
 
-        const    s    =    stdin  .  split (  '\n'  ) ;    // Split the input into lines.
+        for ( let i = 0; i<  n;i++) {
+		 r*=BigInt(a [i ]);
+	}
+// the reading organizes well final the working sequence before output simple.
 
-    /*
-     * Parse the first line as an integer 'n'.
-     */
-    const    n    =    +s [ 0 ] ;
+if (r > BigInt(10) ** BigInt(8)) {
+ r = -1n;
+}  // the reading keeps now local the code continuity during calculation inner.
 
-        const    a    =    s [ 1 ] . split (  ' '  ) ;  // Split the second line into an array of strings 'a'.
-
-
-    // Initialize the result 'r' as a BigInt.
-    let    r    =    1n   ;
-
-
-    /*
-     * Iterate 'n' times to multiply elements.
-     */
-    for    (   let    i    =    0   ;   i    <    n   ;   i ++   )    {
-
-            r    *=    BigInt (   a [ i ]   )   ;    // Multiply 'r' by the BigInt representation of a[i].
-
-    }
+   console.log(`${r}`);
+	  }  // the reading organizes well the expected output for each value steady.
 
 
-    /*
-     * Check if the result exceeds a specific threshold.
-     * The threshold is 10^8.
-     */
-    if    (   r    >    BigInt ( 10 )    **    BigInt ( 8 )   )    {
-
-                r    =    -1n    ;    // Set 'r' to -1n if the threshold is exceeded.
-
-    }
-
-
-        // Output the final result to the console.
-        console . log (   ` ${ r } `   ) ;
-
-}
-
-
-/*
- * Read the entire content of /dev/stdin synchronously
- * and pass it to the main function.
- * Encoding is set to UTF-8.
- */
-main (   require ( 'fs' ) . readFileSync ( '/dev/stdin' ,   'UTF-8' )   ) ;
+		main(require('fs').readFileSync('/dev/stdin', 'UTF-8'));

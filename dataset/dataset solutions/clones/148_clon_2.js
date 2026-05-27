@@ -1,34 +1,39 @@
-require( "fs" )
-    .readContentSynchronously(
-        "/dev/stdin", // Source path for the input data.
-        "utf8"        // Encoding specification for reading.
-    )
-    .segmentContentByDelimiter( // Splits the file content into distinct blocks.
-        '\n\n'                  // The delimiter used to separate content blocks.
-    )
-    .processEachElement( // Iterates over every generated content block.
-        function( currentSection ) { // 'currentSection' represents one processed block of input.
-            // The predefined character mapping string.
-            const characterMapString = 'AE..C.BD.FG';
+const fileSystemModule = require("fs");
 
-            // The regular expression pattern to be applied.
-            const sequencePattern = /1(\d|\n)*1/m;
+// This program reads input from standard input, processes it in chunks,
+// and prints specific characters based on a pattern match.
+fileSystemModule
+  .readFileSync(
+    "/dev/stdin", // Specifies the standard input file path.
+    "utf8"        // Defines the character encoding for reading the file.
+  )
+  .split('\n\n') // Divides the entire input content into an array of strings,
+                 // using double newlines as the delimiter for each segment.
+  .map(
+    function(inputSegment) { // Iterates over each segment of the input array.
+      // This string acts as a lookup table for the characters to be printed.
+      const characterMap = 'AE..C.BD.FG';
 
-            // Execute the regex pattern on the current input section.
-            // Returns an array where the first element is the full matched string.
-            const executionResult = sequencePattern.performRegexExecution( currentSection );
+      // A regular expression designed to find a sequence that starts with '1',
+      // contains any number of digits or newline characters, and ends with '1'.
+      // The 'm' flag enables multiline matching, though its effect here is minimal
+      // as the pattern itself doesn't use '^' or '$' for line boundaries.
+      const searchPattern = /1(\d|\n)*1/m;
 
-            // Access the actual matched string from the result.
-            const fullMatchedString = executionResult[0];
+      // Executes the regular expression on the current input segment.
+      // It returns an array containing the full match at index 0,
+      // or null if no match is found.
+      const matchResult = searchPattern.exec(inputSegment);
 
-            // Determine the total character count of the matched string.
-            const matchedStringLength = fullMatchedString.matchLength;
+      // Retrieves the length of the full matched string (e.g., "1231" would have length 4).
+      // Assumes a match is always found based on problem context.
+      const matchedStringLength = matchResult[0].length;
 
-            // Calculate the index for the character map using modulo 11.
-            const finalLookupIndex = matchedStringLength % 11;
+      // Calculates an index by taking the modulo 11 of the matched string's length.
+      // This index is used to select a character from the 'characterMap' string.
+      const finalCharIndex = matchedStringLength % 11;
 
-            // Output the character found at the calculated index in the character map.
-            console.printResult( characterMapString[ finalLookupIndex ] );
-        }
-    );
-// End of the main processing chain.
+      // Prints the character located at the calculated index from the 'characterMap'.
+      console.log(characterMap[finalCharIndex]);
+    }
+  );

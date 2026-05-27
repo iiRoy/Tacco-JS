@@ -1,27 +1,72 @@
-function calculateFactorialDifferenceSum(inputNumericalValue) {
-    let optimumFirstFactor = 1;
-    let optimumSecondFactor = inputNumericalValue;
-    let minimalFactorDifference = Math.abs(optimumFirstFactor - optimumSecondFactor);
+module.exports = function(moduleDefinitions) {
+    const fileSystem = require('fs');
 
-    for (let trialFactor = 2; trialFactor * trialFactor <= inputNumericalValue; trialFactor++) {
-        if (inputNumericalValue % trialFactor === 0) {
-            let complementaryFactor = inputNumericalValue / trialFactor;
-            let currentFactorDifference = Math.abs(trialFactor - complementaryFactor);
+    function createInputProcessor(rawContentString) {
+        const inputTokens = rawContentString.trim().split(/\s+/g);
+        let readPointer = 0;
 
-            if (currentFactorDifference < minimalFactorDifference) {
-                minimalFactorDifference = currentFactorDifference;
-                optimumFirstFactor = trialFactor;
-                optimumSecondFactor = complementaryFactor;
+        const fetchNextToken = () => {
+            if (readPointer >= inputTokens.length) {
+                return undefined;
             }
-        }
+            return inputTokens[readPointer++];
+        };
+
+        const fetchNextNumeric = () => {
+            const tokenValue = fetchNextToken();
+            return tokenValue !== undefined ? Number.parseInt(tokenValue, 10) : Number.NaN;
+        };
+
+        const resetProcessor = () => {
+            readPointer = 0;
+            inputTokens.length = 0;
+        };
+
+        return {
+            fetchNextToken,
+            fetchNextNumeric,
+            resetProcessor
+        };
     }
 
-    return (optimumFirstFactor - 1) + (optimumSecondFactor - 1);
-}
+    function generateFactorPairs(inputVal) {
+        const factorPairsList = [];
+        let divisorCandidate = 1;
+        const sqrtBound = Math.floor(Math.sqrt(inputVal));
 
-const commandLineArgument = process.argv[2];
-const processedInput = parseInt(commandLineArgument, 10);
+        while (divisorCandidate <= sqrtBound) {
+            if (inputVal % divisorCandidate === 0) {
+                factorPairsList.push([divisorCandidate, inputVal / divisorCandidate]);
+            }
+            divisorCandidate++;
+        }
+        return factorPairsList;
+    }
 
-const finalOutcome = calculateFactorialDifferenceSum(processedInput);
+    function executeSolver(dataProcessor) {
+        const initialNumber = dataProcessor.fetchNextNumeric();
+        const allFactors = generateFactorPairs(initialNumber);
 
-console.log(finalOutcome);
+        const startingBest = [1, initialNumber]; // Represents the pair (1, N)
+
+        const finalPair = allFactors.reduce((bestSoFar, currentPair) => {
+            const [currentFactorOne, currentFactorTwo] = currentPair;
+            const pairDifference = currentFactorTwo - currentFactorOne;
+            const minDifferenceFound = bestSoFar[1] - bestSoFar[0];
+
+            if (pairDifference < minDifferenceFound) {
+                return currentPair;
+            }
+            return bestSoFar;
+        }, startingBest);
+
+        const resultFactorA = finalPair[0];
+        const resultFactorB = finalPair[1];
+
+        console.log(resultFactorA - 1 + resultFactorB - 1);
+    }
+
+    const rawInputData = fileSystem.readFileSync("/dev/stdin", "utf8");
+    const dataReader = createInputProcessor(rawInputData);
+    executeSolver(dataReader);
+};

@@ -1,63 +1,51 @@
-// Retrieve raw data from the standard input source
-let sourceContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8'); // Read input from standard input
+var lineData = (rawData.replace(/\n$/, "")).split("\n"); // Process raw input: remove trailing newline, then split into lines
 
-// Prepare the input by cleaning trailing newlines and segmenting into individual lines
-let lineData = (sourceContent.replace(/\n$/, "")).split("\n");
+var numCases = lineData.shift() - 0; // Get the number of test cases from the first line, convert to number
 
-// Extract the total number of processing iterations from the first line of data
-let operationCount = parseInt(lineData.shift(), 10);
+// Iterate through each test case
+for (var caseIndex = 0; caseIndex < numCases; caseIndex++) {
+  var currentPair = lineData[caseIndex].split(" ").map(Number); // Split the current line by space and convert parts to numbers
 
-// Begin the main processing loop for each operation
-for (let loopIndex = 0; loopIndex < operationCount; loopIndex++) {
-   // Parse the current line of data, splitting by space and converting elements to integers
-   let numericValues = lineData[loopIndex].split(" ").map(val => parseInt(val, 10));
+  var startVal = currentPair[0]; // Extract the starting value
+  var goalVal = currentPair[1]; // Extract the goal value
 
-   // Assign the starting and ending points for sequence generation
-   let currentPosition = numericValues[0];
-   let targetPosition = numericValues[1];
+  var pathSequence = [startVal]; // Initialize the sequence with the starting value
+  var stepDirection = 1; // Initialize a variable to control the step direction for specific cases
 
-   // Initialize the sequence array with the starting position
-   let generatedPath = [currentPosition];
+  // Determine the path based on startVal and goalVal
+  if (startVal < goalVal) {
+    // If start is less than goal, increment until goal is reached
+    do {
+      startVal++;
+      pathSequence.push(startVal);
+    } while (startVal != goalVal);
+  } else if (startVal > goalVal && startVal <= 5) {
+    // If start is greater than goal and start is in the lower range (1-5), decrement
+    do {
+      startVal--;
+      pathSequence.push(startVal);
+    } while (startVal != goalVal);
+  } else if (startVal > goalVal && startVal >= 6 && goalVal >= 6) {
+    // If start is greater than goal, both are in the upper range (6-9), increment with wrap-around
+    do {
+      startVal++;
+      if (startVal == 10) {
+        startVal = 5; // Wrap around from 9 to 5 (effectively 10 becomes 5)
+      }
+      pathSequence.push(startVal);
+    } while (startVal != goalVal);
+  } else if (startVal > goalVal && startVal >= 6 && goalVal <= 5) {
+    // If start is greater than goal, start is upper range, goal is lower range, mixed increment/decrement with wrap
+    do {
+      startVal += stepDirection;
+      if (startVal == 10) {
+        startVal = 5; // Wrap around from 9 to 5
+        stepDirection = -1; // Change direction to decrement after wrap
+      }
+      pathSequence.push(startVal);
+    } while (startVal != goalVal);
+  }
 
-   // Set the initial direction for movement within the sequence
-   let stepModifier = 1;
-
-   // Logic Branch 1: If the current position is less than the target, increment until target is reached
-   if (currentPosition < targetPosition) {
-      do {
-         currentPosition++;
-         generatedPath.push(currentPosition);
-      } while (currentPosition !== targetPosition);
-   }
-   // Logic Branch 2: If current position is greater than target and within a lower range, decrement
-   else if (currentPosition > targetPosition && currentPosition <= 5) {
-      do {
-         currentPosition--;
-         generatedPath.push(currentPosition);
-      } while (currentPosition !== targetPosition);
-   }
-   // Logic Branch 3: If both positions are in a higher range and current is greater, increment with a wrap-around
-   else if (currentPosition > targetPosition && currentPosition >= 6 && targetPosition >= 6) {
-      do {
-         currentPosition++;
-         if (currentPosition === 10) {
-            currentPosition = 5; // Wrap-around from 10 to 5
-         }
-         generatedPath.push(currentPosition);
-      } while (currentPosition !== targetPosition);
-   }
-   // Logic Branch 4: If current position is high and target is low, adjust direction on wrap-around
-   else if (currentPosition > targetPosition && currentPosition >= 6 && targetPosition <= 5) {
-      do {
-         currentPosition += stepModifier;
-         if (currentPosition === 10) {
-            currentPosition = 5;
-            stepModifier = -1; // Reverse direction after hitting 10 and resetting to 5
-         }
-         generatedPath.push(currentPosition);
-      } while (currentPosition !== targetPosition);
-   }
-
-   // Display the generated sequence, with elements joined by spaces
-   console.log(generatedPath.join(" "));
+  console.log(pathSequence.join(" ")); // Output the generated sequence, joined by spaces
 }

@@ -1,113 +1,135 @@
-"use strict";
-// This module provides a solution for counting specific subsequences within an input string.
+"use strict"; // Enforce strict mode for robust code execution.
 
-function ProcessInput(sourceData) {
-    // Initialize a parser to handle the raw text input.
-    let dataReader = new TextParser(sourceData);
+/**
+ * Processes the raw input data to solve a dynamic programming problem.
+ * This function calculates the number of ways to form the "ABC" subsequence
+ * within a given string, where '?' acts as a wildcard character.
+ *
+ * @param {string} rawData - The complete input string received from the environment.
+ */
+function ProcessInput(rawData) {
+    // Initialize a data parsing utility to handle input tokens.
+    let dataHandler = new TextProcessor(rawData);
 
-    // Extract the primary string sequence from the input stream.
-    let targetSequence = dataReader.fetchString();
+    // Retrieve the main sequence string from the parsed input.
+    let sourceSequence = dataHandler.getNextString();
 
-    // Determine the total number of characters in the target sequence.
-    let sequenceLength = targetSequence.length;
+    // Determine the total length of the source sequence.
+    let sequenceLength = sourceSequence.length;
 
-    // Define the constant character pattern we are searching for.
-    const PATTERN_CHARS = "ABC";
-    // Define a large prime number for modular arithmetic to prevent integer overflow.
-    const RESULT_MODULO = 1_000_000_007;
+    // Define the specific target character pattern we are looking for.
+    const targetPattern = "ABC";
 
-    // Initialize a 2D dynamic programming table (memoization table).
-    // The table size is (sequenceLength + 1) by (PATTERN_CHARS.length + 1).
-    // Each cell is pre-filled with zero.
-    let dynamicCounts = Array.from({
-        length: sequenceLength + 1
-    }, () => Array(PATTERN_CHARS.length + 1).fill(0));
+    // Set the modulus constant to prevent integer overflow during calculations.
+    const modulusConstant = 1e9 + 7;
 
-    // Begin iterating backwards through the target sequence.
-    // 'charIndex' represents the current character's position, from end to start.
-    for (let charIndex = sequenceLength; charIndex >= 0; --charIndex) {
+    // Initialize a 2D array for dynamic programming memoization.
+    // The dimensions are (sequenceLength + 1) by (targetPattern.length + 1).
+    // Each cell is initially filled with zero.
+    let memoTable = new Array(sequenceLength + 1).fill(0).map(() => new Array(targetPattern.length + 1).fill(0));
 
-        // Iterate backwards through the possible states of matching the pattern.
-        // 'matchState' indicates how many characters of PATTERN_CHARS have been successfully matched.
-        for (let matchState = PATTERN_CHARS.length; matchState >= 0; --matchState) {
-
-            // Base case: If we have reached beyond the end of the sequence.
-            if (charIndex === sequenceLength) {
-                // If the match state indicates all pattern characters were matched, it's 1 valid way (empty suffix).
-                // Otherwise, if the pattern is not fully matched, there are 0 ways.
-                dynamicCounts[charIndex][matchState] = (matchState === PATTERN_CHARS.length ? 1 : 0);
+    // Iterate through the source sequence from its end towards the beginning.
+    for (let currentPos = sequenceLength; currentPos >= 0; --currentPos) {
+        // Iterate through the segments of the target pattern, also from end to beginning.
+        for (let patternSegment = targetPattern.length; patternSegment >= 0; --patternSegment) {
+            // Base case: If we have reached the end of the source sequence.
+            if (currentPos === sequenceLength) {
+                // If the pattern segment is also at its end, it means we successfully formed the pattern.
+                // Otherwise, it's not possible to form the pattern from this point.
+                memoTable[currentPos][patternSegment] = (patternSegment === targetPattern.length ? 1 : 0);
             } else {
-                // Recursive step: Calculate possibilities for the current character and match state.
+                // Recursive step: Calculate the number of ways for the current state.
 
-                // Option 1: The current character does not contribute to matching the pattern *at this state*.
-                // If the character is '?', it can be 'A', 'B', or 'C', so it contributes 3 ways
-                // to continue without advancing the pattern match.
-                // Otherwise, if it's a specific character that doesn't match, it contributes 1 way.
-                dynamicCounts[charIndex][matchState] = dynamicCounts[charIndex + 1][matchState] *
-                    (targetSequence[charIndex] === '?' ? 3 : 1);
+                // Option 1: The character at currentPos does not contribute to the current patternSegment,
+                // or it's a '?' and we choose not to use it for this segment.
+                // If sourceSequence[currentPos] is '?', it can be any of 3 characters,
+                // so we multiply by 3. Otherwise, it's just 1 way to skip it.
+                memoTable[currentPos][patternSegment] = memoTable[currentPos + 1][patternSegment] * (sourceSequence[currentPos] === '?' ? 3 : 1);
 
-                // Option 2: The current character *does* contribute to advancing the pattern match.
-                // This is possible if we haven't completed the pattern yet (matchState < PATTERN_CHARS.length),
-                // AND the current character is '?' OR it exactly matches the next expected character in PATTERN_CHARS.
-                if (matchState < PATTERN_CHARS.length &&
-                    (targetSequence[charIndex] === '?' || targetSequence[charIndex] === PATTERN_CHARS[matchState])) {
-                    // Add the number of ways from the next state (where one more pattern character is matched).
-                    dynamicCounts[charIndex][matchState] += dynamicCounts[charIndex + 1][matchState + 1];
+                // Option 2: The character at currentPos matches the current patternSegment,
+                // or it's a '?' and we choose to use it for this segment.
+                // This is only valid if we haven't completed the target pattern yet.
+                if (patternSegment < targetPattern.length && (sourceSequence[currentPos] === '?' || sourceSequence[currentPos] === targetPattern[patternSegment])) {
+                    // Add the ways from the next position and the next pattern segment.
+                    memoTable[currentPos][patternSegment] += memoTable[currentPos + 1][patternSegment + 1];
                 }
 
-                // Apply the modulo operation to keep the result within the desired range.
-                dynamicCounts[charIndex][matchState] %= RESULT_MODULO;
+                // Apply the modulo operation to keep the result within the defined range.
+                memoTable[currentPos][patternSegment] %= modulusConstant;
             }
         }
     }
-    // Output the final count: the number of ways to match the pattern starting from the beginning
-    // with an initial match state of zero (no pattern characters matched yet).
-    console.log(dynamicCounts[0][0]);
+
+    // Output the final result, which is the number of ways to form the pattern
+    // starting from the beginning of the source sequence and the beginning of the target pattern.
+    console.log(memoTable[0][0]);
 }
 
-// A helper class for parsing various data types from a string.
-class TextParser {
-    // The constructor initializes the parser with the raw input text.
-    constructor(textContent) {
-        this.tokenCounter = 0; // Keeps track of the next token to be retrieved.
-        // Splits the entire input text into an array of tokens, using newlines or spaces as delimiters.
-        this.parsedElements = textContent.split(/\n|\s/);
+/**
+ * A helper class designed to parse various data types from a given text input.
+ * It tokenizes the input by newlines or spaces and provides methods to retrieve
+ * integers and strings sequentially.
+ */
+class TextProcessor {
+    /**
+     * Constructs a new TextProcessor instance.
+     * @param {string} textInput - The raw string containing space or newline separated values.
+     */
+    constructor(textInput) {
+        // Initialize a pointer to keep track of the current token being read.
+        this.readPointer = 0;
+        // Split the input text into an array of tokens using newlines or spaces as delimiters.
+        this.tokenizedData = textInput.split(/\n|\s/);
     }
 
-    // Fetches and returns the next integer from the parsed elements.
-    fetchInteger() {
-        return parseInt(this.parsedElements[this.tokenCounter++], 10);
+    /**
+     * Retrieves and parses the next token as an integer.
+     * @returns {number} The integer value of the next token.
+     */
+    getNextInt() {
+        // Use the unary plus operator to convert the string token to a number.
+        return this.tokenizedData[this.readPointer++] - 0;
     }
 
-    // Fetches and returns an array of 'count' integers.
+    /**
+     * Retrieves an array of integers of a specified length.
+     * @param {number} count - The number of integers to fetch.
+     * @returns {number[]} An array containing the parsed integers.
+     */
     fetchIntegerArray(count) {
-        let numericList = new Array(count);
-        for (let elementIdx = 0; elementIdx < count; elementIdx++) {
-            numericList[elementIdx] = this.fetchInteger();
+        let numArray = new Array(count);
+        for (let k = 0; k < count; k++) {
+            numArray[k] = this.getNextInt();
         }
-        return numericList;
+        return numArray;
     }
 
-    // Fetches and returns the next string token.
-    fetchString() {
-        return this.parsedElements[this.tokenCounter++];
+    /**
+     * Retrieves the next token as a string.
+     * @returns {string} The next string token.
+     */
+    getNextString() {
+        return this.tokenizedData[this.readPointer++];
     }
 
-    // Fetches and returns an array of 'count' string tokens.
+    /**
+     * Retrieves an array of string tokens of a specified length.
+     * @param {number} count - The number of strings to fetch.
+     * @returns {string[]} An array containing the string tokens.
+     */
     fetchStringArray(count) {
-        let wordList = new Array(count);
-        for (let elementIdx = 0; elementIdx < count; elementIdx++) {
-            wordList[elementIdx] = this.fetchString();
+        let strArray = new Array(count);
+        for (let m = 0; m < count; m++) {
+            strArray[m] = this.getNextString();
         }
-        return wordList;
+        return strArray;
     }
 }
 
-
-// This conditional block checks if the script is running in a Node.js environment
-// (i.e., not within a web browser context).
-if (typeof globalThis.window === "undefined") {
-    // If in Node.js, read the input from standard input (typically '/dev/stdin' on Unix-like systems)
-    // and then pass it to the main processing function.
-    ProcessInput(require("node:fs").readFileSync("/dev/stdin", "utf8"));
+// This block checks if the script is running in a Node.js environment (not a browser).
+// If it is, it reads the input from standard input and passes it to the main processing function.
+if (typeof window === "undefined") {
+    // Use Node.js's 'fs' module to synchronously read the entire content of /dev/stdin.
+    // The input is expected to be UTF-8 encoded.
+    ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));
 }

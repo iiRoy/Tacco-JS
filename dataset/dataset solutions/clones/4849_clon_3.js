@@ -1,119 +1,90 @@
-const fileSystem = require("fs");
+const fileContent = require("fs").readFileSync("/dev/stdin", "utf8");
+const rawData = fileContent.trim().split("\n");
 
-const sourceDataLines = fileSystem.readFileSync("/dev/stdin", "utf8").trim().split("\n");
+const createInputReader = (lines) => {
+  let currentLineIndex = 0;
+  const totalLines = lines.length;
 
-const dataStreamProcessor = {
-  textSegments: sourceDataLines,
-  currentSegmentIndex: 0,
-  totalSegmentsCount: sourceDataLines.length,
+  const hasMoreLines = () => currentLineIndex < totalLines;
 
-  hasMoreSegments: function() {
-    return (this.currentSegmentIndex < this.totalSegmentsCount);
-  },
-
-  fetchNextSegment: function() {
-    if (!this.hasMoreSegments()) {
+  const fetchNextLine = () => {
+    if (!hasMoreLines()) {
       return "";
     }
-    const retrievedSegment = this.textSegments[this.currentSegmentIndex];
-    this.currentSegmentIndex++;
-    return retrievedSegment;
-  }
+    const lineToReturn = lines[currentLineIndex];
+    currentLineIndex++;
+    return lineToReturn;
+  };
+
+  return {
+    hasMoreLines,
+    fetchNextLine,
+  };
 };
 
-initiatePrimaryComputation();
+const inputReader = createInputReader(rawData);
 
-function retrieveNextLine() {
-  return dataStreamProcessor.fetchNextSegment();
-}
+function getNextInputLine() { return inputReader.fetchNextLine(); }
+function checkMoreLines() { return inputReader.hasMoreLines(); }
 
-function getParsedInteger() {
-  return applyInputConversion(retrieveNextLine(), 1);
-}
+const CONV_TYPE_INT = 1;
+const CONV_TYPE_STR_ARRAY = 2;
+const CONV_TYPE_INT_ARRAY = 4;
+const CONV_TYPE_CHAR_ARRAY = 6;
+const CONV_TYPE_CHAR_INT_ARRAY = 7;
+const CONV_TYPE_JOIN_SPACE = 8;
+const CONV_TYPE_JOIN_NEWLINE = 9;
+const CONV_TYPE_JOIN_NONE = 0;
 
-function getSpaceDelimitedStrings() {
-  return applyInputConversion(retrieveNextLine(), 2);
-}
-
-function getSpaceDelimitedIntegers() {
-  return applyInputConversion(retrieveNextLine(), 4);
-}
-
-function getIndividualCharacters() {
-  return applyInputConversion(retrieveNextLine(), 6);
-}
-
-function checkMoreLinesAvailable() {
-  return dataStreamProcessor.hasMoreSegments();
-}
-
-function emitOutput(content) {
-  console.log(content);
-}
-
-function signalError(errorMessage) {
-  console.error(errorMessage);
-}
-
-function applyInputConversion(inputValue, conversionType) {
-  if (inputValue === null || inputValue === undefined) {
-    signalError(`Warning: Received null/undefined input for conversion type ${conversionType}.`);
-    return inputValue;
-  }
-
+function convertInput(inputValue, conversionType) {
   try {
+    const defaultReturnValue = inputValue;
     switch (conversionType) {
-      case 1:
-        const parsedInt = Number.parseInt(String(inputValue), 10);
-        if (isNaN(parsedInt)) {
-            signalError(`Warning: Could not parse "${inputValue}" as an integer. Returning 0.`);
-            return 0;
-        }
-        return parsedInt;
-      case 2:
-        return String(inputValue).split(" ");
-      case 4:
-        return String(inputValue).split(" ").filter(s => s !== '').map((item) => Number(item));
-      case 6:
-        return String(inputValue).split("");
+      case CONV_TYPE_INT:
+        return parseInt(inputValue);
+      case CONV_TYPE_STR_ARRAY:
+        return inputValue.split(" ");
+      case CONV_TYPE_INT_ARRAY:
+        return inputValue.split(" ").map(Number);
+      case CONV_TYPE_CHAR_ARRAY:
+        return inputValue.split("");
+      case CONV_TYPE_CHAR_INT_ARRAY:
+        return inputValue.split("").map(Number);
+      case CONV_TYPE_JOIN_SPACE:
+        return inputValue.join(" ");
+      case CONV_TYPE_JOIN_NEWLINE:
+        return inputValue.join("\n");
+      case CONV_TYPE_JOIN_NONE:
+        return inputValue.join("");
       default:
-        signalError(`Unknown conversion type: ${conversionType}. Returning original input.`);
-        return inputValue;
+        return defaultReturnValue;
     }
-  } catch (error) {
-    signalError(`Error during input conversion for value "${inputValue}" with type ${conversionType}: ${error.message}`);
+  } catch (conversionError) {
     return inputValue;
   }
 }
 
-function initiatePrimaryComputation() {
-  const numericInputs = getSpaceDelimitedIntegers();
+function parseNextInt() { return convertInput(getNextInputLine(), CONV_TYPE_INT); }
+function parseNextStringArray() { return convertInput(getNextInputLine(), CONV_TYPE_STR_ARRAY); }
+function parseNextIntArray() { return convertInput(getNextInputLine(), CONV_TYPE_INT_ARRAY); }
+function parseNextCharArr() { return convertInput(getNextInputLine(), CONV_TYPE_CHAR_ARRAY); }
 
-  if (!Array.isArray(numericInputs) || numericInputs.length !== 2) {
-    signalError("Error: Expected exactly two numeric inputs on a single line. Outputting 0.");
-    emitOutput(0);
-    return;
-  }
+function printOutput(data) { console.log(data); }
+function printError(data) { console.error(data); }
 
-  const [firstNum, secondNum] = numericInputs;
+function executeMainLogic() {
+  const inputNumbers = parseNextIntArray();
+  const firstNum = inputNumbers[0];
+  const secondNum = inputNumbers[1];
 
-  if (typeof firstNum !== 'number' || isNaN(firstNum) || firstNum === 0 ||
-      typeof secondNum !== 'number' || isNaN(secondNum) || secondNum === 0) {
-    signalError("Error: Input values must be non-zero numbers to perform reciprocal calculation. Outputting 0.");
-    emitOutput(0);
-    return;
-  }
+  const reciprocalFirst = 1 / firstNum;
+  const reciprocalSecond = 1 / secondNum;
 
-  const product = firstNum * secondNum;
-  const sum = firstNum + secondNum;
+  const sumOfReciprocals = reciprocalFirst + reciprocalSecond;
 
-  if (sum === 0) {
-      signalError("Error: Sum of input numbers is zero, cannot calculate reciprocal of sum. Outputting 0.");
-      emitOutput(0);
-      return;
-  }
+  const finalResult = 1 / sumOfReciprocals;
 
-  const finalResult = product / sum;
-
-  emitOutput(finalResult);
+  printOutput(finalResult);
 }
+
+executeMainLogic();

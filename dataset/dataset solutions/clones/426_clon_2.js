@@ -1,46 +1,37 @@
-// This script processes numerical input lines from the standard input stream.
-var sourceData = require('node:fs').readFileSync('/dev/stdin', 'utf8'); // Retrieve raw input data
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-// The raw input string is first trimmed, then divided into an array of individual lines.
-let lineBuffer = (sourceData.trim()).split("\n");
+var lineArray = (rawData.trim()).split("\n");
 
-// An array to temporarily store computed numerical values.
-const scoreAccumulator = [];
+var scoreAccumulator = [];
 
-// Begin iterating through each entry in the processed input line buffer.
-for (let currentIdx = 0; currentIdx < lineBuffer.length; currentIdx++)
-{
-    // A specific condition to terminate processing: an empty accumulator combined with a "0 0" line.
-    if (scoreAccumulator.length === 0 && lineBuffer[currentIdx] === "0 0") {
-        break; // Stop further execution if the termination sequence is encountered.
+for (var idx = 0; idx < lineArray.length; idx++) {
+    // Check for the termination condition: if the accumulator is empty and the current line is "0 0"
+    if (scoreAccumulator.length === 0 && lineArray[idx] === "0 0") {
+        break; // Exit the processing loop
     }
 
-    // If exactly five scores have been collected, proceed to evaluate them.
-    if (scoreAccumulator.length === 5)
-    {
-        // Compute the highest numerical value present within the current set of scores.
-        const highestScore = scoreAccumulator.reduce(function(firstVal, secondVal) {
-            return Math.max(firstVal, secondVal);
+    // If five scores have been collected in the accumulator
+    if (scoreAccumulator.length === 5) {
+        // Find the maximum score among the accumulated values
+        var highestScore = scoreAccumulator.reduce(function(valA, valB) {
+            return Math.max(valA, valB);
         });
 
-        // Define a sequence of character labels corresponding to potential score positions.
-        const gradeLabels = "ABCDE".split("");
+        // Define an array of contestant labels
+        var contestantLabels = "ABCDE".split("");
 
-        // Identify the character label associated with the determined highest score.
-        const resultLabel = gradeLabels[scoreAccumulator.indexOf(highestScore)];
+        // Determine the label corresponding to the highest score
+        var resultLabel = contestantLabels[scoreAccumulator.indexOf(highestScore)];
 
-        // Output the identified label alongside its corresponding highest score.
+        // Output the contestant label and their highest score
         console.log(resultLabel + " " + highestScore);
 
-        // Reset the accumulator by clearing all its contents, preparing for the next batch.
-        scoreAccumulator.length = 0;
-    }
-    else
-    {
-        // For other cases, parse the current input line into two distinct numbers.
-        const currentNumbers = lineBuffer[currentIdx].split(" ").map(Number);
-
-        // Compute the sum of these two numbers and append it to the accumulator.
-        scoreAccumulator.push(currentNumbers[0] + currentNumbers[1]);
+        // Reset the accumulator for the next set of scores
+        scoreAccumulator = [];
+    } else {
+        // If fewer than five scores, parse the current line
+        var currentScores = lineArray[idx].split(" ").map(Number);
+        // Add the sum of the two numbers from the current line to the accumulator
+        scoreAccumulator.push(currentScores[0] + currentScores[1]);
     }
 }

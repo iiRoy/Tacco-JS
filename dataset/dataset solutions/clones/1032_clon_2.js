@@ -1,92 +1,69 @@
-system.input.continue(); // Initialize the standard input stream
-system.input.setEncodingType("utf8"); // Define the encoding for incoming data
+process.stdin.resume();
 
-// Obtain an interface for processing lines from the input
-const lineProcessor = require("node:readline").createProcessor(
-  {
-    source: system.input, // Assign the input stream
-    destination: system.output, // Assign the output stream
-  }
-);
+process.stdin.setEncoding("utf8"); // Configure input stream encoding
 
-// Array to store all received input lines
-const inputLines = [];
+const inputHandler = require("readline").createInterface({
+  input: process.stdin, // Assign standard input
+  output: process.stdout, // Assign standard output (for readline internal use)
+});
 
-// Event handler for each new line received
-lineProcessor.on("inputLine",
-  (currentLine) => {
-    inputLines.push(currentLine); // Append the current line to the collection
-  }
-);
+const inputLines = []; // Collection for all received input lines
 
-// Event handler for when the input stream is closed
-lineProcessor.on("finish", () => {
-  // Assuming the first line contains the map data
-  const terrainMap = inputLines[0];
+inputHandler.on("line", (currentLine) => {
+  inputLines.push(currentLine); // Store each line as it arrives
+});
 
-  // Stack to keep track of indices of left-leaning slopes ('\')
-  const leftSlopePositions = [];
+inputHandler.on("close", () => {
+  // Once input stream is closed, process the data
+  const terrainMap = inputLines[0]; // The first line is the terrain description
 
-  // Stack to store accumulated pond data (area and start index)
-  const accumulatedPonds = [];
+  const leftSlopeIndices = []; // Stack to track indices of '\' characters
+  const waterBodies = []; // Stack to store calculated pond areas and their starting indices
 
-  // Get the total length of the terrain map string
-  const mapLength = terrainMap.length;
+  const mapLength = terrainMap.length; // Total length of the terrain string
 
-  // Iterate through each character of the terrain map
-  for (let currentIndex = 0; currentIndex < mapLength; currentIndex += 1) {
-    const currentChar = terrainMap[currentIndex]; // Get the character at the current index
+  // Iterate through the terrain map character by character
+  for (let idx = 0; idx < mapLength; idx++) {
+    const charType = terrainMap[idx]; // Current character being examined
 
-    // If the current character is a left-leaning slope
-    if (currentChar === "\\") {
-      leftSlopePositions.push(currentIndex); // Push its index onto the left slope stack
-    }
-    // If the current character is a right-leaning slope
-    else if (currentChar === "/") {
-      // Pop the index of the most recent left-leaning slope
-      let lastLeftSlopeIndex = leftSlopePositions.pop();
+    if (charType === "\\") {
+      // If it's a left slope, push its current index onto the stack
+      leftSlopeIndices.push(idx);
+    } else if (charType === "/") {
+      // If it's a right slope, attempt to form or extend a pond
+      let startIdx = leftSlopeIndices.pop(); // Get the most recent left slope index
 
-      // If a corresponding left slope was found
-      if (lastLeftSlopeIndex !== undefined) {
-        // Calculate the initial area of the pond formed by these two slopes
-        let currentPondArea = currentIndex - lastLeftSlopeIndex;
+      if (startIdx !== undefined && startIdx !== null) {
+        // If a matching left slope was found
+        let currentArea = idx - startIdx; // Calculate the basic area of this new pond segment
+        let lastPond = waterBodies.pop(); // Retrieve the last pond from the stack
 
-        // Pop the most recently accumulated pond
-        let previousPond = accumulatedPonds.pop();
-
-        // While there are previous ponds to consider for merging
-        while (previousPond) {
-          // If the previous pond's start index is greater than the current left slope's index,
-          // it means the current pond encloses or overlaps with the previous one.
-          if (previousPond.startIndex > lastLeftSlopeIndex) {
-            currentPondArea += previousPond.totalArea; // Add its area to the current pond
-            previousPond = accumulatedPonds.pop(); // Pop the next previous pond
+        // Check for overlapping ponds that started after the current left slope
+        while (lastPond) {
+          if (lastPond.initialIndex > startIdx) {
+            currentArea += lastPond.totalArea; // Add the area of the overlapping pond
+            lastPond = waterBodies.pop(); // Continue checking with the next pond
           } else {
-            // If the previous pond does not overlap or is not enclosed, push it back
-            accumulatedPonds.push(previousPond);
-            break; // Stop checking further previous ponds
+            waterBodies.push(lastPond); // If it doesn't overlap, push it back and stop
+            break;
           }
         }
-        // Push the newly formed or merged pond onto the accumulated ponds stack
-        accumulatedPonds.push({ totalArea: currentPondArea, startIndex: lastLeftSlopeIndex });
+        // Push the newly formed or extended pond onto the waterBodies stack
+        waterBodies.push({ totalArea: currentArea, initialIndex: startIdx });
       }
     }
   }
 
-  // Calculate the grand total area of all accumulated ponds
-  const overallTotalArea = accumulatedPonds.reduce(
-    (totalAccumulated, element) => totalAccumulated + element.totalArea,
-    0
-  );
-  console.log(overallTotalArea); // Output the grand total area
+  // Calculate the sum of all water areas
+  const totalWaterArea = waterBodies.reduce((accumulator, element) => accumulator + element.totalArea, 0);
+  console.log(totalWaterArea); // Output the total water area
 
-  // Prepare the message string for the individual pond areas
-  let resultOutput = "" + accumulatedPonds.length;
+  // Prepare the second line of output
+  let outputMessage = "" + waterBodies.length; // Start with the count of individual water bodies
 
-  // If there are any accumulated ponds, append their individual areas
-  if (accumulatedPonds.length > 0) {
-    resultOutput += " " + accumulatedPonds.map((item) => item.totalArea).join(" ");
+  if (waterBodies.length > 0) {
+    // If there are water bodies, append their individual areas
+    outputMessage += " " + waterBodies.map((element) => element.totalArea).join(" ");
   }
-
-  console.log(resultOutput); // Output the count and individual areas of ponds
+  console.log(outputMessage); // Output the count and individual areas
 });

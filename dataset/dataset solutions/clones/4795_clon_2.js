@@ -1,72 +1,109 @@
-"use strict";
+"use strict"; // Enforce strict mode for cleaner code execution
 
-const   importModule =   require("fs");
-var fileContent = importModule.readFileSync  ("/dev/stdin", "utf8" );
+// Import the file system module to read input from standard input
+var sourceData = require("fs").readFileSync("/dev/stdin", "utf8");
 
-var tokenArray = fileContent.split ( / |\n/ ) ,
-    tokenIndex = 0;
+// Split the input data into tokens using spaces or newlines as delimiters
+var tokenStream = sourceData.split(/ |\n/);
+// Initialize an index to keep track of the current token position
+var tokenIndex = 0;
 
-function retrieveNextToken (isStringMode) {
-  return isStringMode ? tokenArray[tokenIndex++] : Number(tokenArray[tokenIndex++]) ;
+/**
+ * Retrieves the next token from the input stream.
+ * @param {boolean} isString - If true, returns the token as a string; otherwise, attempts to convert it to a number.
+ * @returns {string|number} The next token.
+ */
+function retrieveNext(isString) {
+  return isString ? tokenStream[tokenIndex++] : +tokenStream[tokenIndex++];
 }
 
-function retrieveTokenArray (count, isStringMode) {
-  return isStringMode
-    ? tokenArray.slice(tokenIndex, tokenIndex += count)
-    : tokenArray.slice(tokenIndex, tokenIndex += count).map( (itemValue) => Number(itemValue) );
+/**
+ * Retrieves a specified number of tokens from the input stream.
+ * @param {number} count - The number of tokens to retrieve.
+ * @param {boolean} asStrings - If true, returns tokens as strings; otherwise, attempts to convert them to numbers.
+ * @returns {Array<string|number>} An array containing the retrieved tokens.
+ */
+function retrieveMultiple(count, asStrings) {
+  if (asStrings) {
+    return tokenStream.slice(tokenIndex, tokenIndex += count);
+  } else {
+    return tokenStream.slice(tokenIndex, tokenIndex += count).map(item => +item);
+  }
 }
 
-function retrieveMatrix (heightDim, widthDim, isStringMode) {
-  var resultMatrix = [],
-      rowIndex = 0;
-  if (isStringMode) {
-    for ( ; rowIndex < heightDim ; rowIndex++ ) {
-      resultMatrix.push( tokenArray.slice(tokenIndex, tokenIndex += widthDim) );
+/**
+ * Retrieves a matrix (2D array) of tokens from the input stream.
+ * @param {number} height - The number of rows in the matrix.
+ * @param {number} width - The number of columns in the matrix.
+ * @param {boolean} asStrings - If true, returns tokens as strings; otherwise, attempts to convert them to numbers.
+ * @returns {Array<Array<string|number>>} A 2D array representing the matrix.
+ */
+function retrieveMatrix(height, width, asStrings) {
+  var resultMatrix = [];
+  var rowIndex = 0;
+  if (asStrings) {
+    for (; rowIndex < height; rowIndex++) {
+      resultMatrix.push(tokenStream.slice(tokenIndex, tokenIndex += width));
     }
   } else {
-    for ( ; rowIndex < heightDim ; rowIndex++ ) {
-      resultMatrix.push( tokenArray.slice(tokenIndex, tokenIndex += widthDim).map( (cellValue) => Number(cellValue) ) );
+    for (; rowIndex < height; rowIndex++) {
+      resultMatrix.push(tokenStream.slice(tokenIndex, tokenIndex += width).map(element => +element));
     }
   }
   return resultMatrix;
 }
 
-function createMultiDimArray (initialFillValue) {
-  var argumentList = arguments,
-      dimensionCount = argumentList.length,
-      arrayDefinitionString = "Array(argumentList[" + --dimensionCount + "]).fill().map(elementPlaceholder => { return " + initialFillValue + "; })";
-  while (--dimensionCount) {
-    arrayDefinitionString = "Array(argumentList[" + dimensionCount + "]).fill().map(elementPlaceholder => " + arrayDefinitionString + ")";
+/**
+ * Dynamically creates a multi-dimensional array initialized with a given value.
+ * @param {*} initialValue - The value to initialize the innermost elements with.
+ * @param {...number} dimensions - The dimensions of the array (e.g., createMultiDimArray(0, 2, 3) for a 2x3 array of zeros).
+ * @returns {Array} The created multi-dimensional array.
+ */
+function createMultiDimArray(initialValue) {
+  var args = arguments;
+  var lengthCounter = args.length;
+  // Build the array creation string from inside out
+  var arrayCreationString = "Array(args[" + --lengthCounter + "]).fill().map(_=>{return " + initialValue + ";})";
+  while (--lengthCounter) {
+    arrayCreationString = "Array(args[" + lengthCounter + "]).fill().map(_=>" + arrayCreationString + ")";
   }
-  return eval(arrayDefinitionString);
+  // Evaluate the string to create the array
+  return eval(arrayCreationString);
 }
 
-var programResult = primaryExecution();
+// Execute the main program logic and store its return value
+var programResult = executeProgram();
 
+// If the program returned a value, print it to the console
 if (programResult !== undefined) {
   console.log(programResult);
 }
 
-function primaryExecution () {
-  const inputNumbers = retrieveTokenArray ( 7 );
+/**
+ * The primary function containing the core logic of the program.
+ * @returns {number} The calculated result.
+ */
+function executeProgram() {
+  // Read 7 numbers from the input stream
+  var inputValues = retrieveMultiple(7);
 
-  let finalResult = inputNumbers[1] + (
-    Math.floor(inputNumbers[0] / 2) +
-    Math.floor(inputNumbers[3] / 2) +
-    Math.floor(inputNumbers[4] / 2)
-  ) * 2;
+  // Calculate an initial answer based on specific input values
+  // (a[0]/2|0) performs integer division for a[0] / 2
+  var finalAnswer = inputValues[1] + ((inputValues[0] / 2 | 0) + (inputValues[3] / 2 | 0) + (inputValues[4] / 2 | 0)) * 2;
 
-  const paritySum = (inputNumbers[0] % 2) + (inputNumbers[3] % 2) + (inputNumbers[4] % 2);
-
-  switch (paritySum) {
-    case 3:
-      finalResult += 3;
+  // Determine additional value to add based on the parity of inputValues[0], inputValues[3], and inputValues[4]
+  switch (inputValues[0] % 2 + inputValues[3] % 2 + inputValues[4] % 2) {
+    case 3: // If all three are odd
+      finalAnswer += 3;
       break;
-    case 2:
-      if (inputNumbers[0] * inputNumbers[3] * inputNumbers[4]) {
-        finalResult += 1;
+    case 2: // If two of them are odd
+      // Add 1 only if none of the three values are zero (to avoid 0*0*X = 0)
+      if (inputValues[0] * inputValues[3] * inputValues[4]) {
+        finalAnswer += 1;
       }
       break;
   }
-  return finalResult;
+
+  // Return the final calculated answer
+  return finalAnswer;
 }

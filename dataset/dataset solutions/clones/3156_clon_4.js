@@ -1,29 +1,23 @@
-function findGreatestCommonDivisor(alpha, beta) {
-  if (beta === 0) {
-    return alpha;
-  }
-  return findGreatestCommonDivisor(beta, alpha % beta);
-}
+function main(input) {
+  const parameterTokens = input.split(' ');
+  const valueA = Number(parameterTokens[0]);
+  const valueB = Number(parameterTokens[1]);
+  const rankK = Number(parameterTokens[2]);
 
-function processNumericalData(incomingText) {
-  const numericComponents = incomingText.match(/\d+/g).map(parseFloat);
-  const firstOperand = numericComponents[0];
-  const secondOperand = numericComponents[1];
-  const desiredRank = numericComponents[2];
+  const smallerValue = valueA < valueB ? valueA : valueB;
+  const largerValue = valueA < valueB ? valueB : valueA;
 
-  const ultimateCommonDivisor = findGreatestCommonDivisor(firstOperand, secondOperand);
+  let divisorCounter = 0;
+  let desiredDivisor = 0;
 
-  const allDivisors = [];
-  for (let counter = 1; counter * counter <= ultimateCommonDivisor; counter++) {
-    if (ultimateCommonDivisor % counter === 0) {
-      allDivisors.push(counter);
-      if (counter * counter !== ultimateCommonDivisor) {
-        allDivisors.push(ultimateCommonDivisor / counter);
+  for (let candidateDivisor = smallerValue; candidateDivisor >= 1; candidateDivisor--) {
+    if (largerValue % candidateDivisor === 0 && smallerValue % candidateDivisor === 0) {
+      divisorCounter++;
+      if (divisorCounter === rankK) {
+        desiredDivisor = candidateDivisor;
+        break;
       }
     }
   }
-
-  allDivisors.sort((elementA, elementB) => elementB - elementA);
-
-  console.log(allDivisors[desiredRank - 1]);
+  console.log(desiredDivisor);
 }

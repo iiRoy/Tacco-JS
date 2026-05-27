@@ -1,41 +1,27 @@
-const processNumericTransformation = (valueToModify, accompanyingValue) => {
-  let alteredValue = valueToModify;
-  if (alteredValue % 2 !== 0) {
-    alteredValue--;
-  }
-  alteredValue /= 2;
-  const updatedAccompanyingValue = accompanyingValue + alteredValue;
-  return [alteredValue, updatedAccompanyingValue];
-};
+const processInput = require("fs").readFileSync("/dev/stdin", "utf8");
+const initialValues = processInput.split("\n")[0].split(/\s/).map(Number);
 
-const iterateThroughSteps = (currentCycle, cycleLimit, primaryDatum, secondaryDatum) => {
-  if (currentCycle > cycleLimit) {
-    return [primaryDatum, secondaryDatum];
-  }
+const initialFirstElement = initialValues[0];
+const initialSecondElement = initialValues[1];
+const operationCount = initialValues[2];
 
-  let nextPrimary, nextSecondary;
-  if (currentCycle % 2 !== 0) {
-    const [transformedPrimary, updatedSecondary] = processNumericTransformation(primaryDatum, secondaryDatum);
-    nextPrimary = transformedPrimary;
-    nextSecondary = updatedSecondary;
-  } else {
-    const [transformedSecondary, updatedPrimary] = processNumericTransformation(secondaryDatum, primaryDatum);
-    nextPrimary = updatedPrimary;
-    nextSecondary = transformedSecondary;
-  }
+const finalElements = Array.from({ length: operationCount }, (_, stepIndex) => stepIndex + 1)
+  .reduce((currentElements, currentIteration) => {
+    let [elementA, elementB] = currentElements;
 
-  return iterateThroughSteps(currentCycle + 1, cycleLimit, nextPrimary, nextSecondary);
-};
+    const isOddIteration = currentIteration % 2 === 1;
 
-const initiateComputation = (rawInputContent) => {
-  const parsedNumbers = rawInputContent.split('\n')[0].split(/\s/).map(Number);
-  const startValueA = parsedNumbers[0];
-  const startValueB = parsedNumbers[1];
-  const totalIterations = parsedNumbers[2];
+    const valueToProcess = Math.floor((isOddIteration ? elementA : elementB) / 2);
 
-  const finalResults = iterateThroughSteps(1, totalIterations, startValueA, startValueB);
+    if (isOddIteration) {
+      elementB += valueToProcess;
+      elementA = valueToProcess;
+    } else {
+      elementA += valueToProcess;
+      elementB = valueToProcess;
+    }
 
-  console.log(`${finalResults[0]} ${finalResults[1]}`);
-};
+    return [elementA, elementB];
+  }, [initialFirstElement, initialSecondElement]);
 
-initiateComputation(require('node:fs').readFileSync('/dev/stdin', 'utf8'));
+console.log("%d %d", finalElements[0], finalElements[1]);

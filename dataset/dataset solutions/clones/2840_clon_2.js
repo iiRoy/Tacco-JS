@@ -1,32 +1,22 @@
 'use strict';
-function ProcessInput(incomingData) {
-    // This array will hold the parsed segments from the input string
-    const dataSegments = incomingData.split(' ');
 
-    // The first segment represents the total number of elements
-    const totalItems = dataSegments[0];
+// This function processes the incoming data stream.
+function ProcessInput(rawData) {
+  const segments = rawData.split(" "); // Split the raw input string by space.
+  const firstVal = segments[0]; // Extract the first numerical component.
+  const secondVal = segments[1]; // Extract the second numerical component.
 
-    // The second segment represents the count of items to remove or offset
-    const itemsToRemove = dataSegments[1];
+  let finalOutcome; // Declare a variable to store the computed result.
 
-    // Variable to store the computed result of our operation
-    let finalOutcome;
+  // Determine the final outcome based on the value of the second component.
+  if (secondVal == 1) {
+    finalOutcome = 0; // If the second component is 1, the result is 0.
+  } else {
+    finalOutcome = firstVal - secondVal; // Otherwise, subtract the second from the first.
+  }
 
-    // Check a specific condition for the second value
-    if (itemsToRemove == 1) {
-        finalOutcome = 0; // If it's one, the outcome is zero
-    }
-    // Otherwise, perform a subtraction operation
-    else {
-        finalOutcome = totalItems - itemsToRemove;
-    }
-
-    // Output the final calculated value to the console
-    console.log(finalOutcome);
+  console.log(finalOutcome); // Display the calculated outcome to the console.
 }
 
-/*
- * The following section is for handling standard input and should not be altered.
- * It reads the entire input from stdin and passes it to the main processing function.
- */
-ProcessInput( require("fs").readFileSync("/dev/stdin", "utf8") );
+// Do not modify the following line; it handles reading from standard input and invoking the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

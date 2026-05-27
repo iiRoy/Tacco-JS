@@ -1,69 +1,39 @@
-// A small utility function to perform numerical comparison for sorting.
-// It ensures that elements are sorted in ascending order.
-const numericalComparator = (firstElement, secondElement) => {
-    // This expression calculates the difference between the two numbers.
-    // A negative result means firstElement comes before secondElement.
-    // A positive result means firstElement comes after secondElement.
-    // Zero means their relative order does not change.
-    return firstElement - secondElement;
-};
+function ProcessInput(inputData) {
+    // A utility function for performing a numeric comparison during sorting.
+    const numericSorter = (valueA, valueB) => valueA - valueB;
 
-// The primary routine responsible for processing the incoming data stream.
-function processInputData(sourceContent) {
+    // Extract the first line of input to get the total element count and sub-array length.
+    const firstLineSegments = inputData.split('\n')[0].split(' ');
+    let totalElements = Number(firstLineSegments[0]); // Corresponds to N
+    let segmentLength = Number(firstLineSegments[1]); // Corresponds to K
 
-    // Divide the entire input content into an array of distinct lines.
-    const contentLines = sourceContent.split("\n");
+    // Parse the second line of input to obtain the array of numerical values.
+    const sourceNumbers = inputData.split('\n')[1].split(' ').map(item => Number(item)); // Corresponds to P
 
-    // Extract and parse the initial configuration parameters from the first line.
-    const initialParameters = contentLines[0].split(" ");
+    // An array to accumulate the string representations of the modified sequences.
+    let resultStrings = [];
 
-    // Determine the total count of items in the main sequence.
-    // The unary plus operator efficiently converts the string to a numeric type.
-    let totalItemCount = +initialParameters[0];
+    // Iterate through the source numbers to generate all possible sub-arrays of 'segmentLength'.
+    for (let currentIdx = 0; currentIdx < totalElements - segmentLength + 1; currentIdx++) {
+        // Create a temporary slice of the source numbers.
+        let temporarySlice = sourceNumbers.slice(currentIdx, currentIdx + segmentLength);
+        // Sort this temporary slice numerically using our custom sorter.
+        temporarySlice.sort(numericSorter);
 
-    // Establish the required length for each sub-segment or window.
-    let segmentDesiredLength = +initialParameters[1];
-
-    // Convert the second line of input into an array of numbers.
-    // Each string value from the split operation is transformed into a number.
-    let mainNumericSequence = contentLines[1].split(" ").map(itemString => +itemString);
-
-    // This data structure will accumulate the stringified versions of all modified sequences.
-    let finalStringResults = [];
-
-    // Begin iterating through the main numeric sequence to generate and process sub-segments.
-    // The loop continues as long as a complete segmentDesiredLength window can be formed.
-    for (let currentPosition = 0; currentPosition <= totalItemCount - segmentDesiredLength; ++currentPosition) {
-
-        // Isolate a specific window (segment) of the main sequence.
-        let workingSegment = mainNumericSequence.slice(currentPosition, currentPosition + segmentDesiredLength);
-
-        // Arrange the elements within this working segment in ascending numerical order.
-        workingSegment.sort(numericalComparator);
-
-        // Reconstruct the full sequence by concatenating three parts:
-        // 1. The portion of the main sequence before the current window.
-        // 2. The numerically sorted working segment.
-        // 3. The portion of the main sequence after the current window.
-        // Finally, convert this entire reconstructed array into a single string.
-        finalStringResults[currentPosition] = mainNumericSequence.slice(0, currentPosition)
-                                                    .concat(workingSegment)
-                                                    .concat(mainNumericSequence.slice(currentPosition + segmentDesiredLength))
-                                                    .toString();
+        // Reconstruct the full array by concatenating the parts before, the sorted slice, and the parts after.
+        // Then, convert this reconstructed array into a single string and store it.
+        resultStrings[currentIdx] = sourceNumbers.slice(0, currentIdx)
+                                                .concat(temporarySlice)
+                                                .concat(sourceNumbers.slice(currentIdx + segmentLength))
+                                                .toString();
     }
 
-    // Create a Set object to automatically identify and store only the unique results
-    // from the collection of generated strings. Sets inherently prevent duplicates.
-    const distinctResultSet = new Set(finalStringResults);
+    // Create a Set from the collected strings to automatically filter out duplicates.
+    const distinctOutcomes = new Set(resultStrings);
 
-    // Print the final count of unique string arrangements to the standard output.
-    console.log(distinctResultSet.size);
+    // Output the total number of unique string outcomes.
+    console.log(distinctOutcomes.size);
 }
 
-// Execute the main processing routine by providing it with data
-// obtained from the standard input stream.
-// The 'require' statement loads the Node.js file system module.
-// 'readFileSync' performs a synchronous read operation on the specified file path.
-// '/dev/stdin' is a standard Unix-like path for reading from standard input.
-// 'utf8' specifies the character encoding for the text data.
-processInputData( require("fs").readFileSync("/dev/stdin", "utf8") );
+// Invoke the main processing function, reading input from standard input.
+ProcessInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

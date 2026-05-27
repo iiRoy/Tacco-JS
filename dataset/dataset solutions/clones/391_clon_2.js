@@ -1,76 +1,82 @@
-const rawData = require('fs') .readFileSync('/dev/stdin', 'utf8');
+const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-let numericInputs = rawData
-  .trim()
-  .split("\n")
-  .map(Number);
+// Process the raw input: remove leading/trailing whitespace,
+// split into lines, and convert each line to a numerical value.
+let numericLines = rawData.trim().split("\n").map(Number);
 
-// Begin main processing sequence, iterating through provided datasets
+// Begin the main processing loop. This loop continues indefinitely
+// until a specific termination condition is met.
 while (true) {
-    // Retrieve the next modulus value from the collection
-    let currentModulo = numericInputs.shift();
+  // Extract the first number from the 'numericLines' array.
+  let currentValue = numericLines.shift();
 
-    // Check if the termination value (zero) has been encountered
-    if (currentModulo === 0) {
-        break; // Exit the endless loop if processing is complete
+  // Check for the termination condition: if the extracted value is 0,
+  // exit the loop.
+  if (currentValue === 0) {
+    break;
+  }
+
+  // Initialize a boolean array, 'booleanFlags', with a size equal to 'currentValue'.
+  // All elements are initially set to 'false'.
+  let booleanFlags = [];
+  for (let idx = 0; idx < currentValue; idx++) {
+    booleanFlags[idx] = false;
+  }
+
+  // Populate 'booleanFlags' based on a mathematical operation:
+  // For each index 'idx' from 1 up to 'currentValue' - 1,
+  // set the element at (idx * idx) % currentValue to 'true'.
+  for (let idx = 1; idx < currentValue; idx++) {
+    booleanFlags[(idx * idx) % currentValue] = true;
+  }
+
+  // Create a new array, 'matchingIndices', to store the indices
+  // where 'booleanFlags' contains a 'true' value.
+  let matchingIndices = [];
+  booleanFlags.forEach(function(element, index) {
+    if (element) {
+      matchingIndices.push(index);
     }
+  });
 
-    // Initialize an array to store boolean flags for positions
-    let markFlags = [];
+  // Initialize 'resultCounts', an array that will store the final computed counts.
+  let resultCounts = [];
+  // Calculate 'halfLength', which is used for indexing and value adjustment.
+  const halfLength = (currentValue - 1) / 2;
 
-    // Populate the flag array, setting all initial values to false
-    for (let indexVar = 0; indexVar < currentModulo; indexVar++) {
-        markFlags[indexVar] = false;
+  // Fill 'resultCounts' with zeros up to and including the 'halfLength' index.
+  for (let idx = 0; idx <= halfLength; idx++) {
+    resultCounts[idx] = 0;
+  }
+
+  // Iterate through all unique pairs of elements in 'matchingIndices'.
+  for (let idx = 0; idx < matchingIndices.length; idx++) {
+    for (let innerIdx = idx + 1; innerIdx < matchingIndices.length; innerIdx++) {
+      // Compute the difference between the current pair of indices.
+      let difference = matchingIndices[idx] - matchingIndices[innerIdx];
+
+      // If the difference is negative, adjust it by adding 'currentValue'
+      // to ensure it's within the positive range [0, currentValue - 1].
+      if (difference < 0) {
+        difference += currentValue;
+      }
+
+      // If the 'difference' exceeds 'halfLength', adjust it by subtracting
+      // it from 'currentValue'. This effectively mirrors the value.
+      if (halfLength < difference) {
+        difference = currentValue - difference;
+      }
+
+      // Increment the count for the calculated 'difference' by 2.
+      resultCounts[difference] += 2;
     }
+  }
 
-    // Mark positions that correspond to perfect squares modulo the current modulus
-    for (let indexVar = 1; indexVar < currentModulo; indexVar++) {
-        markFlags[(indexVar * indexVar) % currentModulo] = true;
-    }
+  // Remove the first element from 'resultCounts' (the count for difference 0).
+  resultCounts.shift();
 
-    // Collect all indices where the boolean flag is true
-    let squarePositions = [];
-    markFlags.forEach(function (isMarked, position) {
-        if (isMarked) {
-            squarePositions.push(position); // Add the index to our list of marked squares
-        }
-    });
-
-    // Prepare an array to accumulate the final result counts
-    let tallyResults = [];
-    const halfSize = (currentModulo - 1) / 2; // Determine the effective upper bound for differences
-
-    // Initialize the result array with zero counts up to the calculated half-size
-    for (let indexVar = 0; indexVar <= halfSize; indexVar++) {
-        tallyResults[indexVar] = 0;
-    }
-
-    // Calculate pairwise differences between all collected square positions
-    for (let indexVar = 0; indexVar < squarePositions.length; indexVar++) {
-        for (let secondIndex = indexVar + 1; secondIndex < squarePositions.length; secondIndex++) {
-            // Compute the absolute difference, considering modular arithmetic
-            let calcDiff = squarePositions[indexVar] - squarePositions[secondIndex];
-
-            // Normalize negative differences by adding the modulus
-            if (calcDiff < 0) {
-                calcDiff += currentModulo;
-            }
-
-            // Map larger differences to their symmetric counterparts
-            if (halfSize < calcDiff) {
-                calcDiff = currentModulo - calcDiff;
-            }
-
-            // Increment the tally for the specific difference by two
-            tallyResults[calcDiff] += 2;
-        }
-    }
-
-    // Discard the count for the zero difference (often irrelevant in these problems)
-    tallyResults.shift();
-
-    // Print each calculated tally to the standard output
-    tallyResults.forEach(function (currentCount) {
-        console.log(currentCount);
-    });
+  // Output each remaining count in 'resultCounts' to the console.
+  resultCounts.forEach(function(element) {
+    console.log(element);
+  });
 }

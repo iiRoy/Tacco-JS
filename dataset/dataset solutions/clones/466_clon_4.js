@@ -1,125 +1,105 @@
-const rotateGrid = (originalGrid) => {
-    const dimension = originalGrid.length;
-    return Array.from({ length: dimension }, (_, newRow) =>
-        Array.from({ length: dimension }, (_, newCol) =>
-            originalGrid[dimension - 1 - newCol][newRow]
-        )
-    );
+let inputBuffer = '';
+
+const parseNumericLine = (sourceBuffer) => sourceBuffer.shift().split(/\s+/).map(parseFloat);
+
+const spinMatrix = (sourceMatrix) => {
+  const matrixSize = sourceMatrix.length;
+  return Array.from({ length: matrixSize }, (_, newRowIndex) =>
+    Array.from({ length: matrixSize }, (__, newColIndex) =>
+      sourceMatrix[matrixSize - 1 - newColIndex][newRowIndex]
+    )
+  );
 };
 
-const commenceAnalysis = () => {
-    const parseNumericLine = (textLine) => textLine.split(/\s+/).map(Number);
+const evaluateSubgridMatch = (mainGrid, currentTemplate, gridRowOffset, gridColOffset) => {
+  let initialMatchCol = 0;
+  let initialMatchRow = 0;
 
-    let processedLines = globalInputData.split('\n');
+  const isMatchFound = currentTemplate.every((templateRowData, templateRIndex) =>
+    templateRowData.every((templateValue, templateCIndex) => {
+      if (templateValue === -1) {
+        return true;
+      }
 
-    while (true) {
-        const dimensionsLine = parseNumericLine(processedLines.shift());
-        const gridDim = dimensionsLine[0];
-        const patternDim = dimensionsLine[1];
+      const gridValue = mainGrid[gridRowOffset + templateRIndex][gridColOffset + templateCIndex];
+      if (templateValue !== gridValue) {
+        return false;
+      }
 
-        if (gridDim === 0 && patternDim === 0) break;
+      if (initialMatchCol === 0 && initialMatchRow === 0) {
+        initialMatchCol = gridColOffset + templateCIndex + 1;
+        initialMatchRow = gridRowOffset + templateRIndex + 1;
+      }
+      return true;
+    })
+  );
 
-        const mainCanvas = Array.from({ length: gridDim }, () =>
-            parseNumericLine(processedLines.shift())
-        );
-        const initialPattern = Array.from({ length: patternDim }, () =>
-            parseNumericLine(processedLines.shift())
-        );
+  return isMatchFound ? { col: initialMatchCol, row: initialMatchRow } : null;
+};
 
-        const patternOrientations = Array.from({ length: 4 }).reduce((accumulator, _, index) => {
-            const currentPattern = index === 0 ? initialPattern : rotateGrid(accumulator[index - 1]);
-            accumulator.push(currentPattern);
-            return accumulator;
-        }, []);
+const processInputSequence = () => {
+  let gridDimension, templateDimension;
+  let currentInputLine;
 
-        const evaluateMatch = (currentOrientation, currentGrid, currentPatternDimension, currentOffsetRow, currentOffsetCol) => {
-            let currentFragmentMatches = true;
-            let firstMatchColumn = 0;
-            let firstMatchRow = 0;
+  for (;;) {
+    currentInputLine = parseNumericLine(inputBuffer);
+    gridDimension = currentInputLine[0];
+    templateDimension = currentInputLine[1];
 
-            const patternCoordinates = Array.from({ length: currentPatternDimension }, (_, r) =>
-                Array.from({ length: currentPatternDimension }, (_, c) => ({ r, c }))
-            ).flat();
-
-            const allElementsMatched = patternCoordinates.every(coord => {
-                const { r: fragmentRowIndex, c: fragmentColIndex } = coord;
-                const patternValue = currentOrientation[fragmentRowIndex][fragmentColIndex];
-
-                if (patternValue === -1) return true;
-
-                const canvasValue = currentGrid[currentOffsetRow + fragmentRowIndex][currentOffsetCol + fragmentColIndex];
-
-                if (patternValue !== canvasValue) {
-                    currentFragmentMatches = false;
-                    return false;
-                }
-
-                if (firstMatchColumn === 0 && firstMatchRow === 0) {
-                    firstMatchColumn = currentOffsetCol + fragmentColIndex + 1;
-                    firstMatchRow = currentOffsetRow + fragmentRowIndex + 1;
-                }
-                return true;
-            });
-
-            return {
-                matchStatus: currentFragmentMatches && allElementsMatched,
-                matchX: firstMatchColumn,
-                matchY: firstMatchRow
-            };
-        };
-
-        const allMatchOutcomes = Array.from({ length: gridDim - patternDim + 1 }, (_, rowOffset) =>
-            Array.from({ length: gridDim - patternDim + 1 }, (_, colOffset) =>
-                patternOrientations.map(orientation =>
-                    evaluateMatch(
-                        orientation,
-                        mainCanvas,
-                        patternDim,
-                        rowOffset,
-                        colOffset
-                    )
-                )
-            )
-        ).flat(2);
-
-        const successfulMatches = allMatchOutcomes
-            .filter(outcome => outcome.matchStatus)
-            .map(outcome => ({ col: outcome.matchX, row: outcome.matchY }));
-
-        let minimumCol = Infinity;
-        let minimumRow = Infinity;
-
-        if (successfulMatches.length > 0) {
-            const finalBestResult = successfulMatches.reduce((minResult, currentResult) => {
-                if (currentResult.col < minResult.col) {
-                    return currentResult;
-                }
-                if (currentResult.col === minResult.col &&
-                    currentResult.row < minResult.row) {
-                    return currentResult;
-                }
-                return minResult;
-            }, { col: Infinity, row: Infinity });
-
-            minimumCol = finalBestResult.col;
-            minimumRow = finalBestResult.row;
-        }
-
-        if (minimumCol !== Infinity && minimumRow !== Infinity) {
-            console.log(`${minimumCol} ${minimumRow}`);
-        } else {
-            console.log('NA');
-        }
+    if (gridDimension === 0 && templateDimension === 0) {
+      break;
     }
-};
 
-let globalInputData = '';
+    const gridData = Array.from({ length: gridDimension }, () =>
+      parseNumericLine(inputBuffer)
+    );
+
+    let templateShape = Array.from({ length: templateDimension }, () =>
+      parseNumericLine(inputBuffer)
+    );
+
+    const shapeOrientations = Array.from({ length: 4 }).reduce((accumulator) => {
+      const lastShape = accumulator.length === 0 ? templateShape : spinMatrix(accumulator[accumulator.length - 1]);
+      accumulator.push(lastShape);
+      return accumulator;
+    }, []);
+
+    const potentialMatches = Array.from({ length: gridDimension - templateDimension + 1 }).flatMap((_, rOffset) =>
+      Array.from({ length: gridDimension - templateDimension + 1 }).flatMap((__, cOffset) =>
+        shapeOrientations.map((currentOrientation) =>
+          evaluateSubgridMatch(gridData, currentOrientation, rOffset, cOffset)
+        )
+      )
+    ).filter(Boolean);
+
+    let bestFoundMatch = null;
+
+    if (potentialMatches.length > 0) {
+      bestFoundMatch = potentialMatches.reduce((minCoord, currentCoord) => {
+        if (currentCoord.col < minCoord.col) {
+          return currentCoord;
+        }
+        if (currentCoord.col === minCoord.col && currentCoord.row < minCoord.row) {
+          return currentCoord;
+        }
+        return minCoord;
+      }, potentialMatches[0]);
+    }
+
+    if (bestFoundMatch) {
+      console.log(`${bestFoundMatch.col} ${bestFoundMatch.row}`);
+    } else {
+      console.log('NA');
+    }
+  }
+};
 
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
 process.stdin.on('data', (chunk) => {
-    globalInputData += chunk;
+  inputBuffer += chunk;
 });
 process.stdin.on('end', () => {
-    commenceAnalysis();
+  inputBuffer = inputBuffer.split('\n');
+  processInputSequence();
 });

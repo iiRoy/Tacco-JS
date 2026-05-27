@@ -1,76 +1,41 @@
-const fsModule = require('node:fs');
-const sourceData = fsModule.readFileSync('/dev/stdin', 'utf8');
+const rawInputContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+const processedInputLines = rawInputContent.trimEnd().split('\n');
+let currentInputPointer = 0;
 
-function processStreamSegments(fullContent) {
-    let pointerPosition = 0;
+function executeProcessingCycle() {
+    const entryCount = Number(processedInputLines[currentInputPointer++]);
 
-    function retrieveNextLine() {
-        const newlineIndex = fullContent.indexOf('\n', pointerPosition);
-        if (newlineIndex === -1) {
-            if (pointerPosition < fullContent.length) {
-                const finalSegment = fullContent.substring(pointerPosition).trim();
-                pointerPosition = fullContent.length;
-                return finalSegment;
-            }
-            return null;
-        }
-        const currentSegment = fullContent.substring(pointerPosition, newlineIndex).trim();
-        pointerPosition = newlineIndex + 1;
-        return currentSegment;
+    if (entryCount === 0) {
+        return false;
     }
 
-    let blockHeader;
-    while ((blockHeader = retrieveNextLine()) !== null) {
-        const itemsInBlock = parseInt(blockHeader, 10);
-        if (itemsInBlock === 0) {
-            break;
+    const collectedPerformanceData = Array.from({ length: entryCount }, () => {
+        const currentLineSegments = processedInputLines[currentInputPointer++].split(' ');
+        const [entityLabel, ...numericalValues] = currentLineSegments;
+        const [
+            paramP, paramA, paramB, paramC, paramD,
+            paramE, paramF, paramS, paramM
+        ] = numericalValues.map(Number);
+
+        const calculatedDuration = paramA + paramB + paramC + ((paramD + paramE) * paramM);
+        const calculatedEarnings = (paramF * paramS * paramM) - paramP;
+        
+        return { entityLabel, performanceMetric: calculatedEarnings / calculatedDuration };
+    });
+
+    collectedPerformanceData.sort((itemAlpha, itemBeta) => {
+        if (itemAlpha.performanceMetric === itemBeta.performanceMetric) {
+            return itemAlpha.entityLabel.localeCompare(itemBeta.entityLabel);
         }
+        return itemBeta.performanceMetric - itemAlpha.performanceMetric;
+    });
 
-        const blockResultCollection = [];
-        for (let j = 0; j < itemsInBlock; ++j) {
-            const currentLineContent = retrieveNextLine();
-            if (currentLineContent === null) {
-                break;
-            }
-            const dataFields = currentLineContent.split(' ');
-            const primaryIdentifier = dataFields.shift();
-            const numericFieldValues = dataFields.map(val => parseFloat(val));
-
-            const calculationParameters = {
-                id: primaryIdentifier,
-                paramP: numericFieldValues[0],
-                paramA: numericFieldValues[1],
-                paramB: numericFieldValues[2],
-                paramC: numericFieldValues[3],
-                paramD: numericFieldValues[4],
-                paramE: numericFieldValues[5],
-                paramF: numericFieldValues[6],
-                paramS: numericFieldValues[7],
-                paramM: numericFieldValues[8]
-            };
-            const calculatedYield = calculatePerformanceMetric(calculationParameters);
-            blockResultCollection.push([calculatedYield.identifier, calculatedYield.metricValue]);
-        }
-
-        blockResultCollection.sort((unitA, unitB) => {
-            const metricDifference = unitB[1] - unitA[1];
-            if (metricDifference === 0) {
-                return unitA[0].localeCompare(unitB[0]);
-            }
-            return metricDifference;
-        });
-
-        for (const element of blockResultCollection) {
-            console.log(element[0]);
-        }
-        console.log("##");
-    }
+    collectedPerformanceData.forEach(dataPoint => console.log(dataPoint.entityLabel));
+    console.log("#");
+    
+    return true;
 }
 
-function calculatePerformanceMetric({ id, paramP, paramA, paramB, paramC, paramD, paramE, paramF, paramS, paramM }) {
-    const timeComponentSum = paramA + paramB + paramC + ((paramD + paramE) * paramM);
-    const monetaryComponentDifference = (paramF * paramS * paramM) - paramP;
-    return { identifier: id, metricValue: monetaryComponentDifference / timeComponentSum };
+while (executeProcessingCycle()) {
+    // Continue processing batches until executeProcessingCycle returns false (when n is 0)
 }
-
-processStreamSegments(sourceData);

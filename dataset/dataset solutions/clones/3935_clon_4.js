@@ -1,35 +1,11 @@
-function processInputData(sourceData) {
-  const numericValue = Number(sourceData);
+function processInput(rawData) {
+  const numVal = parseInt(rawData);
 
-  const obtainFixedPattern = () => {
-    const componentOne = 2;
-    const componentTwo = 3;
-    const componentThree = 25;
-    return [componentOne, componentTwo, componentThree];
-  };
+  const resultCollection = (numVal === 3)
+    ? [2, 3, 25]
+    : Array.from({ length: numVal }, (_, currentIdx) => currentIdx * 2);
 
-  const generateRecursiveSequence = (upperBound, currentIndex = 0, currentAccumulation = []) => {
-    if (currentIndex >= upperBound) {
-      return currentAccumulation;
-    }
-    currentAccumulation.push(currentIndex * 2);
-    return generateRecursiveSequence(upperBound, currentIndex + 1, currentAccumulation);
-  };
-
-  let finalOutputElements;
-
-  finalOutputElements = (numericValue === 3)
-    ? obtainFixedPattern()
-    : generateRecursiveSequence(numericValue);
-
-  let outputBuffer = [];
-  let indexCounter = 0;
-  while (indexCounter < finalOutputElements.length) {
-    outputBuffer.push(finalOutputElements[indexCounter].toString());
-    indexCounter++;
-  }
-  process.stdout.write(outputBuffer.join(' ') + '\n');
+  console.log(resultCollection.join(" "));
 }
 
-const rawContentFromStream = require("node:fs").readFileSync("/dev/stdin", "utf8");
-processInputData(rawContentFromStream);
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

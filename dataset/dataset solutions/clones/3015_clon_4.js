@@ -1,26 +1,30 @@
-function ProcessData(rawData) {
-    const dataLines = rawData.trim().split('\n');
-    const numberTokens = dataLines[1].split(' ');
-    
-    const numericalValues = numberTokens.map(val => Number(val));
+const processInput = (rawText) => {
+    const lines = rawText.split('\n');
+    const numericStrings = lines[1].split(' ');
+    return numericStrings.map(Number);
+};
 
-    const allMagnitudes = numericalValues.map(num => num < 0 ? -num : num);
-    
-    const countNegativeElements = numericalValues.filter(num => num < 0).length;
-    
-    const containsZeroElement = numericalValues.some(num => num === 0);
-    
-    const totalMagnitudeSum = allMagnitudes.reduce((accumulator, current) => accumulator + current, 0);
-    
-    const smallestAbsoluteValue = allMagnitudes.length > 0 ? Math.min(...allMagnitudes) : 0; 
+const calculateAdjustedSum = (numbers) => {
+    const negativeCount = numbers.filter(n => n < 0).length;
+    const containsZero = numbers.some(n => n === 0);
 
-    let finalCalculation;
-    if (containsZeroElement || (countNegativeElements % 2 === 0)) {
-        finalCalculation = totalMagnitudeSum;
+    const absoluteValues = numbers.map(Math.abs);
+    const sumOfAbsolutes = absoluteValues.reduce((accumulator, current) => accumulator + current, 0);
+
+    const requiresAdjustment = !containsZero && (negativeCount % 2 !== 0);
+
+    if (requiresAdjustment) {
+        const smallestAbsolute = Math.min(...absoluteValues);
+        return sumOfAbsolutes - (2 * smallestAbsolute);
     } else {
-        finalCalculation = totalMagnitudeSum - (2 * smallestAbsoluteValue);
+        return sumOfAbsolutes;
     }
-    
-    console.log(finalCalculation);
-}
-ProcessData(require("fs").readFileSync("/dev/stdin", "utf8"));
+};
+
+const entryPoint = (sourceText) => {
+    const parsedNumbers = processInput(sourceText);
+    const finalResult = calculateAdjustedSum(parsedNumbers);
+    console.log(finalResult);
+};
+
+entryPoint(require("fs").readFileSync("/dev/stdin", "utf8"));

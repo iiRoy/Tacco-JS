@@ -1,33 +1,19 @@
-function processData(rawData) {
-    const firstLineBreak = rawData.indexOf('\n');
-    const relevantSegment = firstLineBreak === -1 ? rawData : rawData.substring(0, firstLineBreak);
+function processInputData(rawData) {
+    const lineSegments = rawData.split('\n')[0].split(' ');
 
-    const numericalStrings = relevantSegment.match(/-?\d+/g);
+    const primaryNumericValue = Number(lineSegments[0]);
+    const secondaryNumericValue = Number(lineSegments[1]);
+    const tertiaryNumericValue = Number(lineSegments[2]);
 
-    if (!numericalStrings || numericalStrings.length < 3) {
-        // Assuming valid input as per original problem constraints
-        return;
-    }
+    const differenceOne = primaryNumericValue - secondaryNumericValue;
+    const differenceTwo = primaryNumericValue - tertiaryNumericValue;
 
-    const valueA = Number(numericalStrings[0]);
-    const valueB = Number(numericalStrings[1]);
-    const valueC = Number(numericalStrings[2]);
+    const absoluteDifferenceOne = differenceOne < 0 ? -differenceOne : differenceOne;
+    const absoluteDifferenceTwo = differenceTwo < 0 ? -differenceTwo : differenceTwo;
 
-    const calculateAbsoluteDifference = (param1, param2) => {
-        return param1 > param2 ? param1 - param2 : param2 - param1;
-    };
+    const computedMaximum = absoluteDifferenceOne > absoluteDifferenceTwo ? absoluteDifferenceOne : absoluteDifferenceTwo;
 
-    const findLargerValue = (argX, argY) => {
-        return argX > argY ? argX : argY;
-    };
-
-    const diffAB = calculateAbsoluteDifference(valueA, valueB);
-    const diffAC = calculateAbsoluteDifference(valueA, valueC);
-
-    const finalOutcome = findLargerValue(diffAB, diffAC);
-
-    const outputDisplay = console.log;
-    outputDisplay(finalOutcome);
+    console.log(computedMaximum);
 }
 
-processData(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,30 +1,23 @@
-function processTextData(rawData) {
-    const performScan = (collection, initialValue, transformation) => {
-        let outcome = [initialValue];
-        let currentAgg = initialValue;
-        for (let position = 0; position < collection.length; position++) {
-            currentAgg = transformation(currentAgg, collection[position], position, collection);
-            outcome.push(currentAgg);
-        }
-        return outcome;
-    };
+function ProcessInput(rawData) {
+    const dataSegments = rawData.split("\n");
+    const elementCount = Number(dataSegments[0]);
+    const numberSequence = dataSegments[1].split(" ").map(val => Number(val));
 
-    const sourceLines = rawData.split('\n');
-    const elementCount = Number(sourceLines[0]);
-    const numericElements = sourceLines[1].split(' ').map(Number);
+    let currentTotal = 0;
+    const prefixTotals = [0, ...numberSequence.map(val => (currentTotal += val, currentTotal))];
 
-    const cumulativeTotals = performScan(numericElements, 0, (agg, val) => agg + val);
+    console.log(prefixTotals);
 
-    const overallSumValue = cumulativeTotals[elementCount];
+    const discrepancies = Array.from({ length: elementCount - 1 }, (_, idx) => {
+        const leftPartitionSum = prefixTotals[idx];
+        const totalSequenceSum = prefixTotals[elementCount];
+        const rightPartitionSum = totalSequenceSum - leftPartitionSum;
+        return Math.abs(leftPartitionSum - rightPartitionSum);
+    });
 
-    const segmentDisparities = Array.from({ length: elementCount - 1 }, (_, indexPosition) => indexPosition + 1)
-        .map(splitPoint => {
-            const firstSegmentTotal = cumulativeTotals[splitPoint];
-            const secondSegmentTotal = overallSumValue - firstSegmentTotal;
-            return Math.abs(firstSegmentTotal - secondSegmentTotal);
-        });
+    const minimumDiscrepancy = discrepancies.reduce((minVal, currentVal) => Math.min(minVal, currentVal), Infinity);
 
-    console.log(Math.min(...segmentDisparities));
+    console.log(minimumDiscrepancy);
 }
 
-processTextData(require("fs").readFileSync("/dev/stdin", "utf8"));
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

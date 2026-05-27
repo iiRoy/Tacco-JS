@@ -1,11 +1,15 @@
-const   dataSource = require ( 'fs' )
-  . readFileSync ( '/dev/stdin' ,
-                   'utf8' )
-  . split ( '\n' )
-; // Reads the entire input from standard input, then splits it into an array of lines.
+var sourceData = require('fs') .readFileSync( '/dev/stdin' , 'utf8' ) .split( '\n' ) ;
 
-const targetString = dataSource [ 0 ] ; // Retrieves the very first line of the input for processing.
+// The first line of input is the string to process.
+var targetString = sourceData[0] ;
 
-const patternToFind = / [ ? | P ] [ ? | D ] /g ; // Sets up a global regular expression to match '?' or 'P' followed by '?' or 'D'.
+/*
+ * This regular expression looks for sequences of two characters.
+ * The first character can be '?' or 'P'.
+ * The second character can be '?' or 'D'.
+ * The 'g' flag ensures all occurrences are replaced.
+ */
+var patternMatcher = /[\?|P][\?|D]/g ;
 
-console . log ( targetString . replace ( patternToFind , 'PD' ) ) ; // Replaces all occurrences of the defined pattern with "PD" in the target string and prints the final result.
+// Replace all matched patterns with the string 'PD' and print the result.
+console.log( targetString.replace( patternMatcher, 'PD' ) ) ;

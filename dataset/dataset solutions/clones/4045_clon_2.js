@@ -1,40 +1,40 @@
-const inputUtil = require("readline");
+const inputReader = require("readline");
 
-let dataSegments = [];
-
-const lineHandler = inputUtil.createInterface({
-	input: process.stdin, // Standard input stream
-	output: process.stdout // Standard output destination
+let dataStorage = []; // Array to hold input lines
+const lineProcessor = inputReader.createInterface({
+    input: process.stdin,
+    output: process.stdout
 });
 
-const computationRoutine = (function* () {
-	// Function to get a single line of text
-	const acquireInput = () => lineHandler.once("line", receivedString => computationRoutine.next(receivedString));
+// This generator function handles asynchronous input
+const inputGenerator = (function* () {
+    // Helper function to wait for a single line of input
+    const fetchLine = () => lineProcessor.once("line", (inputString) => inputGenerator.next(inputString));
 
-	// Obtain and store the initial data fragment
-	let inputPiece = yield acquireInput();
-	dataSegments.push(inputPiece);
+    let currentLine;
 
-	// Obtain and store the subsequent data fragment
-	inputPiece = yield acquireInput();
-	dataSegments.push(inputPiece);
+    // First input line
+    currentLine = yield fetchLine();
+    dataStorage.push(currentLine);
 
-	// Obtain and store the final data fragment
-	inputPiece = yield acquireInput();
-	dataSegments.push(inputPiece);
+    // Second input line
+    currentLine = yield fetchLine();
+    dataStorage.push(currentLine);
 
-	// Perform the first mathematical calculation on the data
-	dataSegments[0] -= dataSegments[1];
+    // Third input line
+    currentLine = yield fetchLine();
+    dataStorage.push(currentLine);
 
-	// Perform the second mathematical calculation on the data
-	dataSegments[0] %= dataSegments[2];
+    // Perform calculations based on the collected data
+    dataStorage[0] -= dataStorage[1];
+    dataStorage[0] %= dataStorage[2];
 
-	// Output the computed outcome to the console
-	console.log(dataSegments[0]);
+    // Output the final result
+    console.log(dataStorage[0]);
 
-	// Terminate the running program
-	process.exit();
+    // Terminate the process
+    process.exit();
 })();
 
-// Begin the sequence of operations
-computationRoutine.next();
+// Start the generator to prompt for the first input
+inputGenerator.next();

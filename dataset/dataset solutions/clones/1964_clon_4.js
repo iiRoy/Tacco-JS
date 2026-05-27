@@ -1,22 +1,16 @@
-function performCalculation(sourceContent) {
-  const lineBreakPoint = sourceContent.indexOf('\n');
-  const firstSegment = sourceContent.substring(0, lineBreakPoint);
-  const secondSegment = sourceContent.substring(lineBreakPoint + 1);
+function processInput(rawData) {
+    const lineSegments = rawData.split('\n').filter(Boolean);
+    
+    const firstLineMatch = lineSegments[0].match(/\d+/);
+    const thresholdVal = Number(firstLineMatch[0]);
 
-  const primaryOperandSource = (firstSegment.match(/\d+/) || [""])[0];
-  const primaryOperandValue = parseInt(primaryOperandSource, 10);
+    const sequenceSum = lineSegments[1].split(' ').reduce((accumulator, currentStr) => {
+        return accumulator + Number(currentStr);
+    }, 0);
 
-  const secondaryOperandsList = (secondSegment.match(/\d+/g) || []).map(Number);
+    const finalOutcome = thresholdVal - sequenceSum;
 
-  const sumOfSecondaryElements = secondaryOperandsList.reduce((accumulator, currentElement) => accumulator + currentElement, 0);
-
-  const finalDifferenceResult = primaryOperandValue - sumOfSecondaryElements;
-
-  if (finalDifferenceResult >= 0) {
-    console.log(finalDifferenceResult);
-  } else {
-    console.log(-1);
-  }
+    console.log(Math.max(finalOutcome, -1));
 }
 
-performCalculation(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,213 +1,178 @@
-module.exports = function ( moduleSources ) {
-  // This object acts as a cache for already loaded modules.
-  // It stores the module's state once it has been processed.
-  var loadedModulesCache = {};
+module.exports = function(moduleDefinitions) {
+    // This object serves as a cache for loaded modules.
+    var moduleCache = {};
 
-  /**
-   * The core module loading function.
-   * It attempts to retrieve a module from the cache; if not found, it loads it.
-   * @param {number} moduleId - The unique identifier for the module to load.
-   * @returns {object} The exports object of the requested module.
-   */
-  function moduleLoader( moduleId ) {
-    // If the module is already in the cache, return its exports.
-    if ( loadedModulesCache[moduleId] ) {
-      return loadedModulesCache[moduleId].exports;
+    // The core 'require' function for the bundled modules.
+    function localRequire(moduleId) {
+        // If the module is already in the cache, return its exports.
+        if (moduleCache[moduleId]) {
+            return moduleCache[moduleId].exports;
+        }
+
+        // If not, create a new module object and store it in the cache.
+        // 'i': module ID, 'l': loaded flag, 'exports': the actual exports object.
+        var currentModule = moduleCache[moduleId] = {
+            i: moduleId,
+            l: false,
+            exports: {}
+        };
+
+        // Execute the module function, passing the module object, its exports, and the localRequire function.
+        moduleDefinitions[moduleId].call(currentModule.exports, currentModule, currentModule.exports, localRequire);
+
+        // Mark the module as loaded.
+        currentModule.l = true;
+
+        // Return the module's exports.
+        return currentModule.exports;
     }
 
-    // If not in cache, create a new module entry in the cache.
-    // 'currentModule' holds the module's properties: id, loaded status, and exports.
-    var currentModule = loadedModulesCache[moduleId] = {
-      id: moduleId,
-      isLoaded: false,
-      exports: {}
+    // Store the module definitions array on the require function itself.
+    localRequire.m = moduleDefinitions;
+
+    // Store the module cache on the require function.
+    localRequire.c = moduleCache;
+
+    // Helper to define a getter function for an export property.
+    localRequire.d = function(exportObject, propertyName, getterFunction) {
+        // Only define if the property doesn't already exist.
+        if (!localRequire.o(exportObject, propertyName)) {
+            Object.defineProperty(exportObject, propertyName, {
+                enumerable: true, // Make it enumerable.
+                get: getterFunction // Use the provided getter.
+            });
+        }
     };
 
-    // Execute the module function, providing it with the module object, its exports, and the loader itself.
-    // The module function is retrieved from the 'moduleSources' array using 'moduleId'.
-    moduleSources[moduleId].call(currentModule.exports, currentModule, currentModule.exports, moduleLoader);
-
-    // Mark the module as loaded.
-    currentModule.isLoaded = true;
-
-    // Return the module's exports.
-    return currentModule.exports;
-  }
-
-  // --- Helper properties and functions for the moduleLoader ---
-
-  // 'moduleDefinitions' stores all the module functions provided to the loader.
-  moduleLoader.moduleDefinitions = moduleSources;
-
-  // 'moduleCache' is a reference to the cache object used by the loader.
-  moduleLoader.moduleCache = loadedModulesCache;
-
-  /**
-   * Defines a getter property on an object for a specific export.
-   * This is used to expose module exports.
-   * @param {object} targetObject - The object to define the property on (e.g., module.exports).
-   * @param {string} propertyName - The name of the property to define.
-   * @param {Function} getterFunction - The function that returns the value of the property.
-   */
-  moduleLoader.defineExport = function ( targetObject, propertyName, getterFunction ) {
-    // Only define the property if it doesn't already exist on the target object.
-    if ( !moduleLoader.hasOwn(targetObject, propertyName) ) {
-      Object.defineProperty(targetObject, propertyName, {
-        enumerable: true, // Make the property enumerable (visible in loops).
-        get: getterFunction // Define the getter for the property.
-      });
-    }
-  };
-
-  /**
-   * Registers a module by adding '__esModule' and 'Symbol.toStringTag' properties.
-   * This helps in identifying ES modules and provides a custom string tag.
-   * @param {object} exportObject - The module's exports object.
-   */
-  moduleLoader.registerModule = function ( exportObject ) {
-    // If Symbol is available and Symbol.toStringTag exists, define it.
-    if ( typeof Symbol !== "undefined" && Symbol.toStringTag ) {
-      Object.defineProperty(exportObject, Symbol.toStringTag, {
-        value: "Module"
-      });
-    }
-    // Define '__esModule' to true, indicating it's an ES module.
-    Object.defineProperty(exportObject, "__esModule", {
-      value: true
-    });
-  };
-
-  /**
-   * Handles interoperability for different module formats (CommonJS, ES Modules).
-   * It ensures consistent access to module exports, especially the default export.
-   * @param {any} moduleContent - The raw content of the module.
-   * @param {number} flags - Bitmask flags indicating how to process the module.
-   * @returns {any} The processed module content, often an interop object.
-   */
-  moduleLoader.interopRequire = function ( moduleContent, flags ) {
-    // If flag 1 is set, it means the moduleContent itself needs to be required first.
-    if ( flags & 1 ) {
-      moduleContent = moduleLoader(moduleContent);
-    }
-    // If flag 8 is set, simply return the moduleContent as is.
-    if ( flags & 8 ) {
-      return moduleContent;
-    }
-    // If flag 4 is set and it's an object with __esModule, return it directly.
-    if ( flags & 4 && typeof moduleContent === "object" && moduleContent && moduleContent.__esModule ) {
-      return moduleContent;
-    }
-
-    // Create a new interop object.
-    var interopObject = Object.create(null);
-    // Register it as an ES module.
-    moduleLoader.registerModule(interopObject);
-    // Define the 'default' export property.
-    Object.defineProperty(interopObject, "default", {
-      enumerable: true,
-      value: moduleContent
-    });
-
-    // If flag 2 is set and moduleContent is not a string,
-    // iterate over its properties and define them on the interop object.
-    if ( flags & 2 && typeof moduleContent !== "string" ) {
-      for ( var propName in moduleContent ) {
-        moduleLoader.defineExport(interopObject, propName, (function ( currentProp ) {
-          return moduleContent[currentProp];
-        }).bind(null, propName));
-      }
-    }
-    return interopObject;
-  };
-
-  /**
-   * Creates a getter function for the default export of a module.
-   * This is used for 'require' compatibility with ES modules.
-   * @param {object} inputModule - The module object.
-   * @returns {Function} A getter function that returns the default export or the module itself.
-   */
-  moduleLoader.createDefaultExportGetter = function ( inputModule ) {
-    var defaultExportGetter = inputModule && inputModule.__esModule ? function () {
-      return inputModule.default;
-    } : function () {
-      return inputModule;
+    // Helper to mark an exports object as an ES module.
+    localRequire.r = function(exportObject) {
+        // If Symbol and Symbol.toStringTag are available, set the toStringTag.
+        if (typeof Symbol !== "undefined" && Symbol.toStringTag) {
+            Object.defineProperty(exportObject, Symbol.toStringTag, {
+                value: "Module"
+            });
+        }
+        // Mark as an ES module.
+        Object.defineProperty(exportObject, "__esModule", {
+            value: true
+        });
     };
-    // Define a property 'a' (common convention) on the getter that returns the getter itself.
-    moduleLoader.defineExport(defaultExportGetter, "a", defaultExportGetter);
-    return defaultExportGetter;
-  };
 
-  /**
-   * Checks if an object has a specific property as its own property.
-   * @param {object} objToCheck - The object to inspect.
-   * @param {string} propToCheck - The name of the property to check for.
-   * @returns {boolean} True if the object has the property, false otherwise.
-   */
-  moduleLoader.hasOwn = function ( objToCheck, propToCheck ) {
-    return Object.prototype.hasOwnProperty.call(objToCheck, propToCheck);
-  };
+    // Helper to create a namespace object for a module.
+    localRequire.t = function(moduleOrValue, modeFlags) {
+        // If modeFlags indicates it's a direct module ID (1), require it.
+        if (1 & modeFlags) {
+            moduleOrValue = localRequire(moduleOrValue);
+        }
+        // If modeFlags indicates it's already an object and an ES module (4 & object & __esModule), return it directly.
+        if (4 & modeFlags && typeof moduleOrValue === "object" && moduleOrValue && moduleOrValue.__esModule) {
+            return moduleOrValue;
+        }
 
-  // 'publicPath' is typically used for resolving asset URLs in web environments.
-  // Here it's an empty string, indicating no specific public path.
-  moduleLoader.publicPath = "";
+        // Otherwise, create a new namespace object.
+        var namespaceObject = Object.create(null);
+        localRequire.r(namespaceObject); // Mark as ES module.
 
-  // Set the startup module ID and immediately call the module loader for it.
-  // This kicks off the application by loading the entry point module (module ID 0).
-  return moduleLoader(moduleLoader.startupModuleId = 0);
-}(
-  // Array of module definitions. Each function represents a module.
-  [
-    // Module 0: The application's entry point.
-    // It orchestrates the main logic by requiring other modules.
-    function ( moduleExports, moduleObject, requireFunction ) {
-      requireFunction(1)(requireFunction(2).readFileSync("/dev/stdin", "UTF-8"));
-    },
-
-    // Module 1: Contains the core business logic.
-    // It processes the input data to calculate a specific result.
-    function ( moduleExports, moduleObject ) {
-      moduleExports.exports = function ( inputDataString ) {
-        // Split the input string by newlines to get an array of lines.
-        var linesArray = inputDataString.split("\n");
-        // Parse the first line as the total count.
-        var totalCount = Number(linesArray[0]);
-        // Parse the second line, split by spaces, and convert each part to a number.
-        var parsedNumbers = linesArray[1].split(" ").map(function ( currentNumberString ) {
-          return Number(currentNumberString);
+        // Set the 'default' export to the moduleOrValue.
+        Object.defineProperty(namespaceObject, "default", {
+            enumerable: true,
+            value: moduleOrValue
         });
 
-        // Initialize variables for the calculation.
-        var finalResult = 0; // Stores the final calculated count.
-        var consecutiveMatchFlag = 0; // Flag to track consecutive matches.
-
-        // Loop through the parsed numbers up to the total count.
-        for ( var loopIndex = 0; loopIndex < totalCount; loopIndex++ ) {
-          // Check if the number at the current index minus 1 equals the index itself.
-          // This implies a condition like `numbers[i] == i + 1`.
-          if ( parsedNumbers[loopIndex] - 1 == loopIndex ) {
-            // If it's a match:
-            if ( consecutiveMatchFlag == 1 ) {
-              // If there was a consecutive match immediately before, reset the flag.
-              consecutiveMatchFlag = 0;
-            } else {
-              // Otherwise, increment the final result and set the consecutive match flag.
-              finalResult += 1;
-              consecutiveMatchFlag = 1;
+        // If modeFlags indicates it's a non-string module (2 & not string),
+        // copy all properties from the original module to the namespace object.
+        if (2 & modeFlags && typeof moduleOrValue !== "string") {
+            for (var propKey in moduleOrValue) {
+                localRequire.d(namespaceObject, propKey, (function(key) {
+                    return moduleOrValue[key];
+                }).bind(null, propKey));
             }
-          } else {
-            // If it's not a match, reset the consecutive match flag.
-            consecutiveMatchFlag = 0;
-          }
         }
-        // Output the final calculated result to the console.
-        console.log(finalResult);
-      };
-    },
+        return namespaceObject;
+    };
 
-    // Module 2: Exposes the Node.js 'fs' (file system) module.
-    // This allows other modules to interact with the file system.
-    function ( moduleExports, moduleObject ) {
-      moduleExports.exports = require("fs");
-    }
-  ]
+    // Helper to get the default export of a module.
+    localRequire.n = function(moduleObject) {
+        // If it's an ES module, return a getter for its 'default' export.
+        var defaultExportGetter = moduleObject && moduleObject.__esModule ?
+            function() {
+                return moduleObject.default;
+            } :
+            function() {
+                return moduleObject;
+            };
+        // Define an 'a' property on the getter that returns the getter itself.
+        localRequire.d(defaultExportGetter, "a", defaultExportGetter);
+        return defaultExportGetter;
+    };
+
+    // Helper to check if an object has a property.
+    localRequire.o = function(targetObject, targetProperty) {
+        return Object.prototype.hasOwnProperty.call(targetObject, targetProperty);
+    };
+
+    // Public path for assets (empty in this case).
+    localRequire.p = "";
+
+    // Execute the entry module (module ID 0) and return its exports.
+    return localRequire(localRequire.s = 0);
+}(
+    [
+        /* Module 0: Entry Point */
+        function(moduleZero, exportsZero, requireZero) {
+            // Read input from stdin using fs module (required as module 2),
+            // then pass the content to the main logic module (module 1).
+            requireZero(1)(requireZero(2).readFileSync("/dev/stdin", "UTF-8"));
+        },
+
+        /* Module 1: Main Application Logic */
+        function(moduleOne, exportsOne) {
+            // This module exports a function that processes the input string.
+            moduleOne.exports = function(inputDataString) {
+                // Split the input string into lines.
+                var inputLines = inputDataString.split("\n");
+
+                // The first line contains the count N.
+                var countN = Number(inputLines[0]);
+
+                // The second line contains space-separated numbers, convert them to an array of numbers.
+                var numberSequence = inputLines[1].split(" ").map(function(currentStringNum) {
+                    return Number(currentStringNum);
+                });
+
+                // Initialize counters for the result and a flag for consecutive matches.
+                var resultCounter = 0;
+                var consecutiveFlag = 0; // 0: not consecutive, 1: consecutive
+
+                // Iterate through the number sequence.
+                for (var loopIndex = 0; loopIndex < countN; loopIndex++) {
+                    // Check if the current number (1-indexed) matches its index (0-indexed).
+                    // i.e., if numberSequence[loopIndex] - 1 === loopIndex
+                    if (numberSequence[loopIndex] - 1 === loopIndex) {
+                        // If it's a match:
+                        if (consecutiveFlag === 1) {
+                            // If the previous one was also a match, reset consecutive flag.
+                            consecutiveFlag = 0;
+                        } else {
+                            // If not consecutive, increment result and set consecutive flag.
+                            resultCounter += 1;
+                            consecutiveFlag = 1;
+                        }
+                    } else {
+                        // If no match, reset consecutive flag.
+                        consecutiveFlag = 0;
+                    }
+                }
+
+                // Output the final result.
+                console.log(resultCounter);
+            };
+        },
+
+        /* Module 2: File System (fs) Module */
+        function(moduleTwo, exportsTwo) {
+            // This module simply exports the Node.js 'fs' built-in module.
+            moduleTwo.exports = require("fs");
+        }
+    ]
 );

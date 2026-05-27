@@ -1,21 +1,11 @@
-const processInputString = (sourceString) => {
-    const scoreMap = new Map([
-        ['-', -1],
-    ]);
+function processInput(sourceText) {
+    const characterSequence = Array.from(sourceText);
 
-    const characterArray = [...sourceString];
-
-    const finalScore = characterArray.reduce((accumulatedValue, charItem) => {
-        return accumulatedValue + (scoreMap.has(charItem) ? scoreMap.get(charItem) : 1);
+    const finalScore = characterSequence.reduce((currentAccumulation, currentSymbol) => {
+        return currentAccumulation + (currentSymbol === '-' ? -1 : 1);
     }, 0);
 
-    return finalScore;
-};
+    console.log(finalScore + '\n');
+}
 
-const fileProcessor = require("node:fs");
-const standardInputLocation = "/dev/stdin";
-const contentBuffer = fileProcessor.readFileSync(standardInputLocation, "utf8");
-
-const computedTotal = processInputString(contentBuffer);
-
-console.log(computedTotal + '\n');
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

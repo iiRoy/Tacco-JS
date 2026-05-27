@@ -1,79 +1,64 @@
-// This module facilitates interactions with the file system.
-const fileSystemMod = require('fs');
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-// Fetch the complete content from the standard input stream, interpreted as UTF-8 text.
-const rawInputData = fileSystemMod.readFileSync('/dev/stdin', 'utf8');
+// Process the raw input string: remove leading/trailing whitespace and split into an array of lines.
+var lineBuffer = rawData.trim().split("\n");
 
-// Pre-process the raw text: first, remove leading/trailing whitespace,
-// then divide the string into an array of separate lines using the newline character as a delimiter.
-const lineFragments = rawInputData.trim().split('\n');
-
-
-// Initiate the primary processing loop, which is designed to handle multiple sets of input data
-// until a specific termination condition is met.
+// Main processing loop, continues until a specific termination condition is met.
 while (true) {
+   // Retrieve the next line from the buffer, which should contain N and H values.
+   var dimensionsStr = lineBuffer.shift();
 
-    // Retrieve the very first line from the array of input fragments.
-    // This line typically contains the grid dimension and the number of instructions.
-    let dimensionAndHeightStr = lineFragments.shift();
+   // Check for the termination sentinel value.
+   if (dimensionsStr === "0 0") {
+      break; // Exit the loop if "0 0" is encountered.
+   }
 
-    // Evaluate the extracted line to determine if it signals the end of input.
-    if ( dimensionAndHeightStr === "0 0" ) {
-        // If the termination sequence "0 0" is encountered, gracefully exit the processing loop.
-        break;
-    }
+   // Parse the dimensions string into an array of numbers.
+   var parsedDims = dimensionsStr.split(" ").map(Number);
 
-    // Split the current line by spaces and convert each resulting string segment into a numerical value.
-    // This yields an array containing the grid size and the count of subsequent instructions.
-    const dimHeightVals = dimensionAndHeightStr.split(' ').map(Number);
+   // Extract the grid size (N).
+   var gridSize = parsedDims[0];
 
-    // Deconstruct the numerical values into distinct, semantically meaningful constants.
-    const gridDimension = dimHeightVals[0];    // Represents the 'N' value, defining the cube's side length.
-    const numInstructions = dimHeightVals[1];  // Represents the 'H' value, the total number of operations to perform.
+   // Extract the number of operations (H).
+   var numOperations = parsedDims[1];
 
-    // Instantiate an empty JavaScript object to serve as a hash map.
-    // This map will store unique string keys representing the coordinates of 'occupied' cells
-    // within the 3D grid, with a boolean 'true' value indicating their presence.
-    const occupiedCellsMap = { };
+   // Initialize an object to store blocked cells. Keys will be "x,y,z" strings.
+   var blockedCells = {};
 
-    // Commence a loop that iterates through each instruction, for the total count specified by 'numInstructions'.
-    for (let instructionIndex = 0; instructionIndex < numInstructions; ++instructionIndex) {
+   // Loop through each of the H operations.
+   for (var opIndex = 0; opIndex < numOperations; opIndex++) {
+      // Get the next operation line and split it into parts.
+      var operationParts = lineBuffer.shift().split(" ");
 
-        // Extract the next instruction line from the input array,
-        // split it by spaces to get its constituent parts.
-        const currentInstructionParts = lineFragments.shift().split(' ');
+      // The type of plane to block (e.g., "xy", "xz", "yz").
+      var planeType = operationParts[0];
 
-        // Assign descriptive names to the components of the current instruction.
-        const axisType = currentInstructionParts[0];                           // Specifies the plane ('xy', 'xz', or 'yz').
-        const coordA = parseInt(currentInstructionParts[1], 10);              // The first fixed coordinate for the instruction.
-        const coordB = parseInt(currentInstructionParts[2], 10);              // The second fixed coordinate for the instruction.
+      // The first coordinate for the plane. Convert to number explicitly.
+      var coordA = operationParts[1] - 0;
 
-        // Based on the 'axisType', iterate and mark the relevant cells as occupied.
-        if (axisType === "xy") {
-            // When the instruction targets the 'xy' plane, the third coordinate (Z-axis) varies.
-            for (let iterCoord = 1; iterCoord <= gridDimension; ++iterCoord) {
-                // Construct a unique key for the cell (coordA, coordB, iterCoord) and mark it.
-                occupiedCellsMap[`${coordA}_${coordB}_${iterCoord}`] = true;
-            }
-        } else if (axisType === "xz") {
-            // For the 'xz' plane, the middle coordinate (Y-axis) is the one that varies.
-            for (let iterCoord = 1; iterCoord <= gridDimension; ++iterCoord) {
-                // Construct and mark the cell (coordA, iterCoord, coordB).
-                occupiedCellsMap[`${coordA}_${iterCoord}_${coordB}`] = true;
-            }
-        } else if (axisType === "yz") {
-            // In the case of the 'yz' plane, the first coordinate (X-axis) changes.
-            for (let iterCoord = 1; iterCoord <= gridDimension; ++iterCoord) {
-                // Construct and mark the cell (iterCoord, coordA, coordB).
-                occupiedCellsMap[`${iterCoord}_${coordA}_${coordB}`] = true;
-            }
-        }
-    }
+      // The second coordinate for the plane. Convert to number explicitly.
+      var coordB = operationParts[2] - 0;
 
-    // Calculate the total volume of the grid (gridDimension cubed).
-    // Then, subtract the number of uniquely occupied cells (derived from the map's keys).
-    // Finally, output this result to the console, representing the count of unoccupied cells.
-    console.log(
-        (gridDimension * gridDimension * gridDimension) - Object.keys(occupiedCellsMap).length
-    );
+      // If it's an "xy" plane, block all cells where x=coordA, y=coordB, and z varies from 1 to gridSize.
+      if (planeType === "xy") {
+         for (var iterCoord = 1; iterCoord <= gridSize; iterCoord++) {
+            blockedCells[coordA + "," + coordB + "," + iterCoord] = true;
+         }
+      }
+      // If it's an "xz" plane, block all cells where x=coordA, z=coordB, and y varies from 1 to gridSize.
+      else if (planeType === "xz") {
+         for (var iterCoord = 1; iterCoord <= gridSize; iterCoord++) {
+            blockedCells[coordA + "," + iterCoord + "," + coordB] = true;
+         }
+      }
+      // If it's a "yz" plane, block all cells where y=coordA, z=coordB, and x varies from 1 to gridSize.
+      else if (planeType === "yz") {
+         for (var iterCoord = 1; iterCoord <= gridSize; iterCoord++) {
+            blockedCells[iterCoord + "," + coordA + "," + coordB] = true;
+         }
+      }
+   }
+   // Calculate the total number of cells in the N*N*N grid and subtract the count of unique blocked cells.
+   // Then, print the result to the console.
+   console.log(gridSize * gridSize * gridSize - Object.keys(blockedCells).length);
 }

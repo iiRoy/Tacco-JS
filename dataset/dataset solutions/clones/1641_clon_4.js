@@ -1,27 +1,22 @@
-const valueRules = [
-    { lowerBoundary: 400, upperBoundary: 599, resultValue: 8 },
-    { lowerBoundary: 600, upperBoundary: 799, resultValue: 7 },
-    { lowerBoundary: 800, upperBoundary: 999, resultValue: 6 },
-    { lowerBoundary: 1000, upperBoundary: 1199, resultValue: 5 },
-    { lowerBoundary: 1200, upperBoundary: 1399, resultValue: 4 },
-    { lowerBoundary: 1400, upperBoundary: 1599, resultValue: 3 },
-    { lowerBoundary: 1600, upperBoundary: 1799, resultValue: 2 },
-    { lowerBoundary: 1800, upperBoundary: 1999, resultValue: 1 }
+const rangeDefinitions = [
+  { lowerBound: 400, upperBound: 599, outputValue: 8 },
+  { lowerBound: 600, upperBound: 799, outputValue: 7 },
+  { lowerBound: 800, upperBound: 999, outputValue: 6 },
+  { lowerBound: 1000, upperBound: 1199, outputValue: 5 },
+  { lowerBound: 1200, upperBound: 1399, outputValue: 4 },
+  { lowerBound: 1400, upperBound: 1599, outputValue: 3 },
+  { lowerBound: 1600, upperBound: 1799, outputValue: 2 },
+  { lowerBound: 1800, upperBound: 1999, outputValue: 1 },
 ];
 
-const determineOutcome = (inputCriterion) => {
-    const applicableRule = valueRules.find(rule => 
-        inputCriterion > rule.lowerBoundary && inputCriterion < rule.upperBoundary
-    );
+process.stdin.on('data', (inputBuffer) => {
+  const currentNumber = parseInt(inputBuffer.toString().trim(), 10);
 
-    if (applicableRule) {
-        console.log(applicableRule.resultValue);
-    }
-};
+  const matchingDefinition = rangeDefinitions.find(
+    (def) => currentNumber > def.lowerBound && currentNumber < def.upperBound
+  );
 
-const rawInput = process.argv[2];
-const parsedInput = parseInt(rawInput, 10);
-
-if (!isNaN(parsedInput)) {
-    determineOutcome(parsedInput);
-}
+  if (matchingDefinition) {
+    process.stdout.write(matchingDefinition.outputValue.toString() + '\n');
+  }
+});

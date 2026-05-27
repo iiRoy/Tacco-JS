@@ -1,32 +1,17 @@
-let accumulatedData = '';
+function Point(xCoord, yCoord) {
+    this.x = xCoord;
+    this.y = yCoord;
+}
 
-process.stdin.on('data', (fragment) => {
-    accumulatedData += fragment.toString();
-});
+const fileData = require('fs').readFileSync('/dev/stdin', 'utf8');
+const lineSegments = fileData.split('\n');
 
-process.stdin.on('end', () => {
-    const dataLines = accumulatedData.split('\n');
-    const quantity = +dataLines[0];
+const initialCount = Number(lineSegments[0]);
 
-    const generateSpatialUnit = (horizontal, vertical) => {
-        const spatialUnit = new Map();
-        spatialUnit.set('horizontal', horizontal);
-        spatialUnit.set('vertical', vertical);
-        return spatialUnit;
-    };
+const pointSet = lineSegments.slice(1, initialCount + 1).reduce((accumulator, currentLine) => {
+    const [xValue, yValue] = currentLine.split(' ').map(Number);
+    accumulator.push(new Point(xValue, yValue));
+    return accumulator;
+}, []);
 
-    const collectionOfPositions = [];
-
-    dataLines.slice(1, quantity + 1).forEach((lineEntry) => {
-        const dimensionValues = lineEntry.split(' ');
-        const horizontalValue = +dimensionValues[0];
-        const verticalValue = +dimensionValues[1];
-        collectionOfPositions.push(generateSpatialUnit(horizontalValue, verticalValue));
-    });
-
-    // No operations are performed on collectionOfPositions in the original code beyond population.
-    // The 'find_bot' call does nothing as its body is commented out.
-    // The sorting logic is also commented out.
-
-    console.log(collectionOfPositions);
-});
+console.log(pointSet);

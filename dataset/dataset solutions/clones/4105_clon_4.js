@@ -1,49 +1,60 @@
-'use strict'
-function monetaryPuzzle(inputData) {
-    const parts = inputData.split(' ').map(Number);
-    const totalItems = parts[0];
-    const targetAmount = parts[1];
+'use strict';
 
-    // The problem can be expressed as:
-    // x + y + z = totalItems
-    // 10000x + 5000y + 1000z = targetAmount
-    // where x, y, z are counts of 10000, 5000, and 1000 yen bills respectively.
+function findBills(inputString) {
+  const rawInput = inputString.split(' ');
+  const billCount = Number(rawInput[0]);
+  const totalAmount = Number(rawInput[1]);
 
-    // Substitute y = totalItems - x - z into the second equation:
-    // 10000x + 5000(totalItems - x - z) + 1000z = targetAmount
-    // 10000x + 5000*totalItems - 5000x - 5000z + 1000z = targetAmount
-    // 5000x - 4000z + 5000*totalItems = targetAmount
-    // 5000x - 4000z = targetAmount - 5000*totalItems
+  // The problem can be simplified using algebraic manipulation.
+  // Let x be the number of 10000 yen bills, y for 5000 yen, z for 1000 yen.
+  // We have two primary conditions:
+  // 1) 10000x + 5000y + 1000z = totalAmount
+  // 2) x + y + z = billCount
+  // And x, y, z must all be non-negative integers.
 
-    // Let 'grandBillsCount' be 'x' (10000 yen bills)
-    // Let 'smallBillsCount' be 'z' (1000 yen bills)
-    // We iterate 'grandBillsCount' and derive 'smallBillsCount'.
-    const transformedTarget = targetAmount - (5000 * totalItems);
+  // From (2), we can express z as: z = billCount - x - y.
+  // Substitute this into equation (1):
+  // 10000x + 5000y + 1000 * (billCount - x - y) = totalAmount
+  // Expand and simplify:
+  // 10000x + 5000y + 1000 * billCount - 1000x - 1000y = totalAmount
+  // Combine like terms:
+  // 9000x + 4000y + 1000 * billCount = totalAmount
 
-    for (let grandBillsCount = 0; grandBillsCount <= totalItems; grandBillsCount++) {
-        // From the derived equation: 4000 * smallBillsCount = 5000 * grandBillsCount - transformedTarget
-        const numeratorForSmall = (5000 * grandBillsCount) - transformedTarget;
+  // Since totalAmount is guaranteed to be a multiple of 1000, we can divide the entire equation by 1000:
+  // 9x + 4y + billCount = totalAmount / 1000
 
-        // Check if smallBillsCount is an integer and non-negative
-        if (numeratorForSmall % 4000 === 0) {
-            const smallBillsCount = numeratorForSmall / 4000;
+  // Rearrange to isolate terms involving x and y on one side:
+  // 9x + 4y = (totalAmount / 1000) - billCount
 
-            if (smallBillsCount >= 0) {
-                // Now calculate 'mediumBillsCount' (5000 yen bills) using the total items constraint
-                const mediumBillsCount = totalItems - grandBillsCount - smallBillsCount;
+  // Let's define a target value for the right side of this simplified equation:
+  const targetValue = (totalAmount / 1000) - billCount;
 
-                // Check if mediumBillsCount is also non-negative
-                if (mediumBillsCount >= 0) {
-                    // We found a valid combination that satisfies both bill count and total value
-                    console.log(grandBillsCount, mediumBillsCount, smallBillsCount);
-                    return; // Exit after finding the first solution
-                }
-            }
-        }
+  // Now, we can iterate through possible values for x (number of 10000 yen bills).
+  // x can range from 0 up to billCount.
+  for (let numTenThousands = 0; numTenThousands <= billCount; numTenThousands++) {
+    // For a given x, calculate the required value for 4y:
+    const remainderForFiveThousands = targetValue - (9 * numTenThousands);
+
+    // Check if remainderForFiveThousands is valid for y:
+    // 1. It must be non-negative (since y >= 0).
+    // 2. It must be perfectly divisible by 4 (since y must be an integer).
+    if (remainderForFiveThousands >= 0 && remainderForFiveThousands % 4 === 0) {
+      const numFiveThousands = remainderForFiveThousands / 4;
+
+      // With x and y determined, calculate z (number of 1000 yen bills):
+      const numOneThousands = billCount - numTenThousands - numFiveThousands;
+
+      // Finally, check if z is also non-negative.
+      // This implicitly ensures that x + y <= billCount.
+      if (numOneThousands >= 0) {
+        // If all conditions are met, we've found the unique solution.
+        return console.log(numTenThousands, numFiveThousands, numOneThousands);
+      }
     }
+  }
 
-    // If no solution is found after checking all possibilities
-    console.log(-1, -1, -1);
+  // If the loop completes without finding any valid combination, no solution exists.
+  return console.log(-1, -1, -1);
 }
 
-monetaryPuzzle(require('fs').readFileSync(0, 'utf8'));
+findBills(require('fs').readFileSync(0, 'utf8'));

@@ -1,125 +1,82 @@
-/*
- * This script provides functionality to process a given text string
- * by generating and evaluating specific patterns derived from binary representations.
- */
+function processString(inputStr) {
+	// Determine the length of the input string
+	var strLen = inputStr.length;
+	// Initialize a variable for a potential final result (currently unused)
+	var finalResult = 0;
+	// Convert the input string into an array of characters for easier manipulation
+	inputStr = inputStr.split("");
+	// Initialize a counter for unique subsequences found
+	var uniqueSubsequences = 0;
 
-function calculateUniqueSubsequences ( originalText )
-{
-    // Ascertain the character count of the initial input string.
-    let textLength = originalText.length;
+	// Iterate through numbers starting from 0 up to the maximum possible integer value
+	// Each number's binary representation will form a pattern
+	for (var iterIndex = 0; iterIndex < Number.MAX_VALUE; iterIndex++) {
+		// Convert the current iteration index to its binary string representation,
+		// split it into individual characters, reverse the order, and map each character to a number (0 or 1)
+		var binaryPattern = iterIndex.toString(2).split("").reverse().map(Number);
 
-    // This variable serves as a placeholder to maintain structural consistency
-    // with the original design, despite not being actively utilized in computations.
-    let unusedAccumulator = 0;
+		// If the binary pattern's length is less than (string length + 1), skip this iteration
+		// This ensures we have enough bits to represent all possible subsequences
+		if (binaryPattern.length < strLen + 1) {
+			continue;
+		}
+		// If the binary pattern's length exceeds (string length + 1),
+		// it means we've gone past all relevant patterns, so break the loop
+		if (binaryPattern.length > strLen + 1) {
+			break;
+		}
+		// Remove the last bit from the pattern; it's an extra bit from the (N+1) length check
+		binaryPattern.pop();
 
-    // Transform the input string into an array of individual characters
-    // to facilitate element-wise access and manipulation.
-    originalText = originalText.split( "" );
+		// Initialize an array to store the characters of the current subsequence
+		var currentSubsequence = [];
+		// Iterate through the generated binary pattern
+		for (var patternIndex = 0; patternIndex < binaryPattern.length; patternIndex++) {
+			// If the current bit in the pattern is 1, include the corresponding character from the input string
+			if (binaryPattern[patternIndex] === 1) {
+				currentSubsequence.push(inputStr[patternIndex]);
+				// console.log(inputStr[patternIndex]); // Debugging line, kept commented
+			}
+		}
+		
+		// console.log(binaryPattern); // Debugging line, kept commented
+		// console.log(currentSubsequence); // Debugging line, kept commented
 
-    // Initialize a counter to track the quantity of distinct and valid
-    // character sequences discovered during the pattern analysis.
-    let validSequenceCount = 0;
-
-    // Commence an extensive iterative process, generating binary patterns
-    // from a broad spectrum of integer values up to the system's maximum.
-    for ( let iterationValue = 0; iterationValue < Number.MAX_VALUE; iterationValue++ )
-    {
-        // Convert the current integer into its binary string equivalent,
-        // then divide it into an array of '0' or '1' characters,
-        // reverse their order, and finally cast each character to a numeric type.
-        let binaryIndicator = iterationValue.toString( 2 ).split( "" ).reverse().map( Number );
-
-        // A conditional check to bypass patterns that are shorter than
-        // the required length for meaningful comparison with the text.
-        if ( binaryIndicator.length < textLength + 1 )
-        {
-            continue;
-        }
-
-        // If the generated binary pattern exceeds the maximum relevant length,
-        // it signals that further iterations would be unproductive, thus terminating the loop.
-        if ( binaryIndicator.length > textLength + 1 )
-        {
-            break;
-        }
-
-        // Discard the final digit of the binary indicator; it's extraneous
-        // for the purpose of character selection in this context.
-        binaryIndicator.pop();
-
-
-        // Instantiate an array to accumulate characters chosen based on
-        // the current binary pattern's '1's.
-        let selectedCharacters = new Array();
-
-        // Traverse through the modified binary pattern.
-        for ( let sequenceIndex = 0; sequenceIndex < binaryIndicator.length; sequenceIndex++ )
-        {
-            // When a '1' is encountered in the binary pattern, the character
-            // at the corresponding position from the original text is added.
-            if ( binaryIndicator[ sequenceIndex ] === 1 )
-            {
-                selectedCharacters.push( originalText[ sequenceIndex ] );
-            }
-        }
-
-
-        // If the selection process yields an empty set of characters,
-        // this particular pattern is deemed invalid; proceed to the next iteration.
-        if ( selectedCharacters.length === 0 )
-        {
-            continue;
-        }
-
-        // Execute a filtering operation to identify any characters that appear
-        // more than once within the 'selectedCharacters' array.
-        let uniquenessCheck = selectedCharacters.filter( function ( itemValue, itemPosition, sourceArray )
-        {
-            // An item is considered a duplicate if its first occurrence index
-            // does not match its last occurrence index within the array.
-            return sourceArray.indexOf( itemValue ) !== sourceArray.lastIndexOf( itemValue );
-        } );
-
-        // If the 'uniquenessCheck' reveals any duplicate characters,
-        // the current sequence is not considered unique; skip to the next pattern.
-        if ( uniquenessCheck.length > 0 )
-        {
-            continue;
-        }
-
-        // Upon successfully passing all preceding validation steps,
-        // increment the counter for genuinely valid and distinct sequences.
-        validSequenceCount++;
-
-    }
-    // Conclude by returning the total tally of unique character sequences identified.
-    return validSequenceCount;
+		// If the current subsequence is empty, skip to the next iteration
+		if (currentSubsequence.length === 0) {
+			continue;
+		}
+		
+		// Filter the subsequence to find characters that appear more than once
+		var duplicateChars = currentSubsequence.filter(function (charItem, itemIndex, selfArray) {
+            // A character is a duplicate if its first occurrence index is not the same as its last occurrence index
+            return selfArray.indexOf(charItem) !== selfArray.lastIndexOf(charItem);
+        });
+		
+		// If any duplicate characters are found in the subsequence, skip this iteration
+		if (duplicateChars.length > 0) {
+			continue;
+		}
+		
+		// If the subsequence is non-empty and contains no duplicate characters, increment the counter
+		uniqueSubsequences++;
+	}
+	// Return the total count of unique subsequences found
+	return uniqueSubsequences;
 }
 
+// Main function to orchestrate the program execution
+function executeProgram(programArgs) {
+	// Split the input arguments by newline characters
+	programArgs = programArgs.split("\n");
+	// The first line of input (N) is stored, though not used in this specific logic
+	var firstLineVal = programArgs[0];
+	// The second line of input (S) is the string to be processed
+	var secondLineStr = programArgs[1];
 
-/*
- * This is the primary entry point for the application, responsible for
- * handling program arguments and orchestrating the core logic execution.
- */
-function executeProgram ( rawInput )
-{
-    // Divide the comprehensive raw input string into an array of discrete lines,
-    // using the newline character as the delimiter.
-    rawInput = rawInput.split( "\n" );
-
-    // Extract the content of the first line from the input.
-    // Note: This specific line's data is not subsequently used in the calculation logic.
-    let firstLineContent = rawInput[ 0 ];
-
-    // Obtain the target string from the second line of the input,
-    // which will serve as the basis for pattern analysis.
-    let targetString = rawInput[ 1 ];
-
-    // Invoke the principal function to compute the unique subsequences
-    // and display the resulting count to the standard output.
-    console.log( calculateUniqueSubsequences( targetString ) );
+	// Call the processing function with the string and print its result to the console
+	console.log(processString(secondLineStr));
 }
 
-// Initiate the program by reading all available data from the standard input stream,
-// interpreting it as UTF-8 encoded text, and then passing it to the main execution routine.
-executeProgram( require( 'fs' ).readFileSync( '/dev/stdin', 'utf8' ) );
+// Read input from standard input and pass it to the main program execution function
+executeProgram(require('fs').readFileSync('/dev/stdin', 'utf8'));

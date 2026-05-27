@@ -1,181 +1,116 @@
-/**
- * Global storage for memoized expected values.
- * The structure is a 3D array: expectedStepsCache[countOfZeros][countOfOnes][countOfTwos].
- * The third dimension (countOfThrees) is implicitly determined by the total number of items
- * and the counts of 0s, 1s, and 2s.
- */
-let expectedStepsCache;
+function processInput(rawData) {
+    const parseInputData = (inputString) => {
+        const lines = inputString.trim().split("\n");
+        const firstLineParts = lines[0].split(" ");
+        const itemQuantity = parseInt(firstLineParts[0], 10);
+        const itemValues = lines[1].split(" ").map(valStr => parseInt(valStr, 10));
+        return { itemQuantity, itemValues };
+    };
 
-/**
- * Stores the total initial number of items (N) provided in the input.
- * This value remains constant throughout the calculation.
- */
-let totalInitialItemsCount;
+    const { itemQuantity: N, itemValues: a } = parseInputData(rawData);
 
-/**
- * Stores the initial sum of counts for items of value 1, 2, and 3.
- * In the original code, this was 'allCount'. It's used in the denominator
- * of the expected value calculation formula.
- */
-let initialValuableItemsSum;
-
-/**
- * Parses the raw input data and initiates the calculation of expected steps
- * for a specific item transformation problem.
- *
- * @param {string} rawInputData - The raw input string, typically read from stdin.
- */
-function initiateExpectedValueCalculation(rawInputData) {
-    // Trim whitespace, split into lines, and then split each line by space.
-    const processedLines = rawInputData.trim().split("\n").map(line => line.split(" "));
-
-    // Extract the total number of items (N) from the first element of the first line.
-    totalInitialItemsCount = parseInt(processedLines[0][0], 10);
-
-    // Parse the item types from the second line, converting each string to an integer.
-    const initialItemStates = processedLines[1].map(strVal => parseInt(strVal, 10));
-
-    // Initialize an array to store the distribution of item counts:
-    // index 0: count of items with value 0
-    // index 1: count of items with value 1
-    // index 2: count of items with value 2
-    // index 3: count of items with value 3
-    const itemDistribution = [0, 0, 0, 0];
-
-    // Populate the item distribution array based on the initial item states.
-    // Initial items are expected to be of type 1, 2, or 3.
-    for (let i = 0; i < totalInitialItemsCount; i++) {
-        const itemType = initialItemStates[i];
-        // A basic validation check: if an item type is outside the expected range,
-        // it's treated as a '0' for robustness, though problem constraints usually prevent this.
-        if (itemType >= 0 && itemType <= 3) {
-            itemDistribution[itemType]++;
-        } else {
-            // Fallback for unexpected data, treating it as a non-valuable item.
-            itemDistribution[0]++;
+    const getOccurrenceCounts = (values, maxPossibleValue) => {
+        const counts = new Array(maxPossibleValue + 1).fill(0);
+        for (let idx = 0; idx < values.length; idx++) {
+            counts[values[idx]]++;
         }
+        return counts;
+    };
+
+    let occurrenceCounts = getOccurrenceCounts(a, 3);
+
+    const initialTotalNonZeroItems = occurrenceCounts[1] + occurrenceCounts[2] + occurrenceCounts[3];
+
+    let memoizationTable = [];
+
+    // This block explicitly handles the original specific pre-computation:
+    // DPrecord[allCount - 1] = [[], [allCount]];
+    // This sets memoizationTable[initialTotalNonZeroItems - 1][1][0] to initialTotalNonZeroItems.
+    if (initialTotalNonZeroItems > 0) {
+        const targetIndex0 = initialTotalNonZeroItems - 1;
+        const targetIndex1 = 1;
+        const targetIndex2 = 0;
+
+        if (!memoizationTable[targetIndex0]) {
+            memoizationTable[targetIndex0] = [];
+        }
+        if (!memoizationTable[targetIndex0][targetIndex1]) {
+            memoizationTable[targetIndex0][targetIndex1] = [];
+        }
+        memoizationTable[targetIndex0][targetIndex1][targetIndex2] = initialTotalNonZeroItems;
     }
 
-    // Calculate the initial sum of valuable items (types 1, 2, and 3).
-    // This value is crucial for the calculation formula within `calculateExpectedSteps`.
-    initialValuableItemsSum = itemDistribution[1] + itemDistribution[2] + itemDistribution[3];
-
-    // Initialize the memoization table. It's an array whose size accommodates
-    // the maximum possible count for any item type (which is `totalInitialItemsCount`).
-    expectedStepsCache = new Array(totalInitialItemsCount + 1);
-
-    // Start the dynamic programming calculation with the initial item distribution
-    // and print the final expected number of steps.
-    console.log(calculateExpectedSteps(itemDistribution));
+    console.log(calculateExpectedValue(occurrenceCounts, initialTotalNonZeroItems, memoizationTable));
 }
 
-/**
- * A utility function to determine which item types (0, 1, 2, or 3) currently
- * have a count greater than zero.
- *
- * @param {number[]} counts - An array representing the current item counts [c0, c1, c2, c3].
- * @returns {number[]} An array containing the indices (item types) that have a non-zero count.
- */
-function retrievePresentItemValueTypes(counts) {
-    const activeItemValueTypes = [];
-    for (let i = 0; i < counts.length; i++) {
-        if (counts[i] > 0) {
-            activeItemValueTypes.push(i);
+function getNonZeroElementIndices(inputArray) {
+    const indices = [];
+    for (let k = 0; k < inputArray.length; k++) {
+        if (inputArray[k] !== 0) {
+            indices.push(k);
         }
     }
-    return activeItemValueTypes;
+    return indices;
 }
 
-/**
- * Recursively calculates the expected number of steps using dynamic programming.
- * This function models a process where consuming an item of type 'k' (1, 2, or 3)
- * transforms it into an item of type 'k-1'. Type 0 items are removed from play.
- *
- * @param {number[]} currentItemCounts - The current state of item counts [c0, c1, c2, c3].
- * @returns {number} The expected number of steps from this specific item count state.
- */
-function calculateExpectedSteps(currentItemCounts) {
-    // Destructure item counts for clearer variable names.
-    const zeroCount = currentItemCounts[0];
-    const oneCount = currentItemCounts[1];
-    const twoCount = currentItemCounts[2];
-    const threeCount = currentItemCounts[3];
+function calculateExpectedValue(currentCounts, initialTotalNonZeroItems, memoTable) {
+    const countZeros = currentCounts[0];
+    const countOnes = currentCounts[1];
+    const countTwos = currentCounts[2];
+    const countThrees = currentCounts[3];
 
-    // Calculate the sum of valuable items (types 1, 2, 3) in the current state.
-    const currentValuableItems = oneCount + twoCount + threeCount;
+    const getMemoizedResult = (c0, c1, c2) => memoTable[c0]?.[c1]?.[c2];
+    const setMemoizedResult = (c0, c1, c2, value) => {
+        if (!memoTable[c0]) memoTable[c0] = [];
+        if (!memoTable[c0][c1]) memoTable[c0][c1] = [];
+        memoTable[c0][c1][c2] = value;
+    };
 
-    // Base case: If no valuable items remain, the process is complete, and 0 more steps are needed.
-    if (currentValuableItems === 0) {
+    const cachedValue = getMemoizedResult(countZeros, countOnes, countTwos);
+    if (cachedValue !== undefined) {
+        return cachedValue;
+    }
+
+    if (countOnes === 0 && countTwos === 0 && countThrees === 0) {
+        setMemoizedResult(countZeros, countOnes, countTwos, 0);
         return 0;
     }
 
-    // Dynamically initialize parts of the memoization table if they don't exist yet.
-    // This ensures that `expectedStepsCache[zeroCount][oneCount][twoCount]` can be accessed safely.
-    if (expectedStepsCache[zeroCount] === undefined) {
-        expectedStepsCache[zeroCount] = [];
-    }
-    if (expectedStepsCache[zeroCount][oneCount] === undefined) {
-        expectedStepsCache[zeroCount][oneCount] = [];
-    }
+    const probabilityOfZeroSelection = countZeros / initialTotalNonZeroItems;
+    const inverseOfProbNonZeroSelection = 1 / (1 - probabilityOfZeroSelection);
+    const totalItemsForDivision = initialTotalNonZeroItems;
 
-    // Check if the expected value for the current state has already been computed and memoized.
-    if (expectedStepsCache[zeroCount][oneCount][twoCount] !== undefined) {
-        return expectedStepsCache[zeroCount][oneCount][twoCount];
-    }
+    let currentExpectedValue;
+    let sumOfRecursiveTerms = 0;
 
-    let sumOfNextStateExpectedValues = 0; // Accumulates weighted expected values from possible next states.
+    const allFourTypesPresent = countZeros > 0 && countOnes > 0 && countTwos > 0 && countThrees > 0;
 
-    // Identify which item types (1, 2, or 3) are currently present and can be consumed.
-    const activeItemTypesForTransition = retrievePresentItemValueTypes(currentItemCounts);
+    if (allFourTypesPresent) {
+        const termForOne = calculateExpectedValue([countZeros + 1, countOnes - 1, countTwos, countThrees], initialTotalNonZeroItems, memoTable) * countOnes;
+        const termForTwo = calculateExpectedValue([countZeros, countOnes + 1, countTwos - 1, countThrees], initialTotalNonZeroItems, memoTable) * countTwos;
+        const termForThree = calculateExpectedValue([countZeros, countOnes, countTwos + 1, countThrees - 1], initialTotalNonZeroItems, memoTable) * countThrees;
+        
+        sumOfRecursiveTerms = termForOne + termForTwo + termForThree;
 
-    // Iterate through the types of items that can be "eaten" (i.e., types 1, 2, or 3).
-    for (const itemValueType of activeItemTypesForTransition) {
-        // Items of type 0, if present, are "eaten" but don't lead to a productive
-        // state change in terms of valuable items. Their effect is accounted for
-        // in the final division factor. So, we skip them here.
-        if (itemValueType === 0) {
-            continue;
+    } else {
+        const presentItemTypes = getNonZeroElementIndices(currentCounts);
+        for (const itemTypeIndex of presentItemTypes) {
+            if (itemTypeIndex === 0) {
+                continue;
+            }
+
+            const nextStateCounts = [...currentCounts];
+            nextStateCounts[itemTypeIndex]--;
+            nextStateCounts[itemTypeIndex - 1]++;
+
+            sumOfRecursiveTerms += calculateExpectedValue(nextStateCounts, initialTotalNonZeroItems, memoTable) * currentCounts[itemTypeIndex];
         }
-
-        // Create a copy of the current item counts to represent the state after
-        // consuming an item of `itemValueType`.
-        const nextStateItemCounts = [...currentItemCounts];
-        nextStateItemCounts[itemValueType]--;         // Decrement the count of the consumed item type.
-        nextStateItemCounts[itemValueType - 1]++;     // Increment the count of the transformed item type.
-
-        // Add the expected steps from this next state, weighted by the count of
-        // the current `itemValueType`. This forms part of the numerator of the formula.
-        sumOfNextStateExpectedValues += calculateExpectedSteps(nextStateItemCounts) * currentItemCounts[itemValueType];
     }
 
-    // Calculate the numerator for the expected value formula, which is
-    // `(sum of weighted DP results) + (current sum of valuable items)`.
-    // This directly translates to `S + allCount` from the original code's underlying formula.
-    const numeratorTerm = sumOfNextStateExpectedValues + currentValuableItems;
+    currentExpectedValue = (1 + sumOfRecursiveTerms / totalItemsForDivision) * inverseOfProbNonZeroSelection;
 
-    // Calculate the denominator for the expected value formula, which is
-    // `(current sum of valuable items) - (count of zeros)`.
-    // This directly translates to `allCount - countEach[0]` from the original code.
-    const denominatorTerm = currentValuableItems - zeroCount;
-
-    // Guard clause: Handle cases where the denominator becomes zero or negative.
-    // In many expected value problems, this implies an infinite or undefined
-    // expected number of steps, or an unreachable state under normal conditions.
-    // We return `Infinity` as a representation of such scenarios, maintaining the original code's behavior.
-    if (denominatorTerm <= 0) {
-        // If the numerator is also 0 (meaning no valuable items and no steps accumulated),
-        // the expected value is 0 (e.g., state [N,0,0,0]). Otherwise, it's Infinity.
-        return numeratorTerm === 0 ? 0 : Infinity;
-    }
-
-    // Compute the final expected value for the current state.
-    const finalExpectedValue = numeratorTerm / denominatorTerm;
-
-    // Store the calculated value in the memoization table before returning it.
-    expectedStepsCache[zeroCount][oneCount][twoCount] = finalExpectedValue;
-    return finalExpectedValue;
+    setMemoizedResult(countZeros, countOnes, countTwos, currentExpectedValue);
+    return currentExpectedValue;
 }
 
-// The entry point for the program: reads input from standard input
-// (common in competitive programming environments) and begins the calculation.
-initiateExpectedValueCalculation(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

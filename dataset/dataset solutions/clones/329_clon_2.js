@@ -1,114 +1,100 @@
-var displayMessage = console.info;
+var logOutput = console.log;
 
-/**
- * Acquires a source text and prepares a function to extract lines sequentially.
- * @param {string} sourceData - The raw input text string.
- * @returns {Function} A closure that returns the next line from the input.
- */
-function acquireSourceText(sourceData) {
-  var textRows = sourceData.split("\n"); // Divide the input into individual rows.
-  return function () {
-    return textRows.shift(); // Retrieve and remove the first row.
-  };
+function acquireInputReader(sourceText) {
+    // Split the entire input string into an array of lines
+    var textLines = sourceText.split("\n");
+    // Return a function that provides the next line
+    return function () {
+        return textLines.shift();
+    };
 }
 
-// Extends the String prototype to allow repeating the string.
-String.prototype.repeatString = function repeatString(countVal) {
-  var resultStr = ""; // Initialize an empty string for the result.
-  for (let idx = 0; idx < countVal; idx++) {
-    resultStr += this.valueOf(); // Append the string's primitive value.
-  }
-  return resultStr; // Return the concatenated string.
+// Extend String prototype with a repetition method
+String.prototype.repeatString = function stringRepeater(count) {
+    let resultString = ""; // Initialize an empty string for the result
+    for (let idx = 0; idx < count; idx++) {
+        resultString += this.toString(); // Append the string 'count' times
+    }
+    return resultString;
 };
 
-/**
- * Parses a line of space-separated numbers into an array of integers.
- * @param {string} inputLine - The string containing space-separated numbers.
- * @param {boolean} adjustForOneBased - If true, subtracts 1 from the offset.
- * @returns {number[]} An array of parsed integers.
- */
-function parseIntegerList(inputLine, adjustForOneBased) {
-  const segments = inputLine.split(' '); // Split the line by spaces.
-  const valueOffset = adjustForOneBased ? -1 : 0; // Determine the offset value.
-  let integerArray = []; // Initialize an empty array for integers.
-  for (let k = 0; k < segments.length; k++) {
-    integerArray.push(Number.parseInt(segments[k], 10)); // Convert each segment to an integer.
-  }
-  return integerArray; // Return the array of integers.
+// Parse a line of space-separated integers
+function parseIntegerList(inputLine, adjustForZeroIndex) {
+    const parts = inputLine.split(' '); // Split the line by spaces
+    const valueOffset = adjustForZeroIndex ? -1 : 0; // Determine offset if needed
+    const parsedNumbers = []; // Array to store parsed integers
+    for (let partIndex = 0; partIndex < parts.length; partIndex++) {
+        parsedNumbers.push(parseInt(parts[partIndex], 10) + valueOffset); // Parse and add to array
+    }
+    return parsedNumbers;
 }
 
-/**
- * Generates an array of numbers within a specified range.
- * @param {number} startVal - The starting value (inclusive).
- * @param {number} endLimit - The ending value (exclusive).
- * @returns {number[]} An array of numbers.
- */
-function generateSequence(startVal, endLimit) {
-  const sequenceElements = []; // Create an empty array for results.
-  for (; startVal < endLimit; startVal++) {
-    sequenceElements.push(startVal); // Add the current value to the array.
-  }
-  return sequenceElements; // Deliver the generated sequence.
+// Generate an array of numbers within a specified range
+function generateRange(startVal, endVal) {
+    const rangeArray = []; // Initialize an empty array
+    for (; startVal < endVal; startVal++) {
+        rangeArray.push(startVal); // Add current value to array
+    }
+    return rangeArray;
 }
 
-// Determines the greater of two numerical values.
+// Find the maximum of two numbers
 function findMaximum(valA, valB) {
-  return valA > valB ? valA : valB;
+    return valA > valB ? valA : valB;
 }
 
-// Determines the smaller of two numerical values.
-function findMinimum(dataX, dataY) {
-  return dataX < dataY ? dataX : dataY;
+// Find the minimum of two numbers
+function findMinimum(valC, valD) {
+    return valC < valD ? valC : valD;
 }
 
-/**
- * Creates a comparison function for sorting objects by a specific property.
- * @param {string} propName - The name of the property to sort by.
- * @returns {Function} A comparator function suitable for Array.prototype.sort().
- */
-function createSorterByKey(propName) {
-  return function (elementA, elementB) {
-    if (elementA[propName] < elementB[propName]) return -1;
-    else if (elementA[propName] > elementB[propName]) return 1;
-    return 0;
-  };
+// Create a comparator function for sorting objects by a specific property key
+function createItemComparator(propertyKey) {
+    return function (itemOne, itemTwo) {
+        if (itemOne[propertyKey] < itemTwo[propertyKey]) return -1;
+        else if (itemOne[propertyKey] > itemTwo[propertyKey]) return 1;
+        return 0;
+    };
 }
 
 /*
-This section is reserved for complex algorithm descriptions or multi-line comments.
-It could contain pseudocode, design considerations, or licensing information.
-For this cloning exercise, it serves as a placeholder for a different comment block.
-*/
+ This section is reserved for general comments or documentation.
+ It does not contain any executable code and can be freely modified
+ or removed without affecting the program's logic or behavior.
+ */
 
-// Main program entry point, processes the input for a baseball-like simulation.
-function ExecuteGameSimulation(rawInputContent) {
-  var getNextEntry = acquireSourceText(rawInputContent); // Obtain a line-reading utility.
-  var numRounds = getNextEntry() - 0; // Read the number of simulation rounds.
-  for (let roundCounter = 0; roundCounter < numRounds; roundCounter++) {
-    let outsCount = 0; // Initialize outs for the current round.
-    let baseRunners = 0; // Initialize base runners count.
-    let totalPoints = 0; // Initialize points for the current round.
-    while (outsCount < 3) {
-      const eventOutcome = getNextEntry(); // Read the next event.
-      if (eventOutcome === 'SINGLE_HIT') {
-        baseRunners++; // A runner gets on base.
-        if (baseRunners === 4) {
-          totalPoints++; // A point is scored.
-          baseRunners--; // Runner on 3rd scores.
+// Main function to process the baseball game data
+function processGameData(rawData) {
+    const getLine = acquireInputReader(rawData); // Get a function to read lines
+    const numGames = +getLine(); // Read the number of games, convert to number
+
+    for (let gameIndex = 0; gameIndex < numGames; gameIndex++) {
+        let outsCount = 0; // Initialize outs for the current game
+        let runnersOnBase = 0; // Initialize runners on base
+        let totalPoints = 0; // Initialize points for the current game
+
+        // Loop until 3 outs are recorded
+        while (outsCount < 3) {
+            const eventAction = getLine(); // Read the next event
+
+            if (eventAction === 'HIT') {
+                runnersOnBase++; // A runner gets on base
+                if (runnersOnBase === 4) { // If 4 runners, one scores
+                    totalPoints++;
+                    runnersOnBase--; // One runner scores, so one less on base
+                }
+            } else if (eventAction === 'HOMERUN') {
+                totalPoints += runnersOnBase + 1; // All runners plus the batter score
+                runnersOnBase = 0; // Bases are cleared
+            } else {
+                outsCount++; // An out occurred
+            }
         }
-      } else if (eventOutcome === 'GRAND_SLAM') {
-        totalPoints += baseRunners + 1; // All runners plus the batter score.
-        baseRunners = 0; // Bases are cleared.
-      } else {
-        outsCount++; // An out occurs.
-      }
+        logOutput(totalPoints); // Print the total points for the game
     }
-    displayMessage(totalPoints); // Output the total points for the round.
-  }
-
 }
 
-// Initiates the simulation using standard input (e.g., from a pipe or redirected file).
-ExecuteGameSimulation(require("node:fs").readFileSynchronously("/proc/self/fd/0", "utf-8"));
-// Example of reading from a local file, typically commented out for competitive programming.
-// ExecuteGameSimulation(require("node:fs").readFileSynchronously("sample_data.txt", "utf-8"));
+// Execute the main processing function with input from stdin
+processGameData(require("fs").readFileSync("/dev/stdin", "utf8"));
+// For local testing, you might use:
+// processGameData(require("fs").readFileSync("input.txt", "utf8"));

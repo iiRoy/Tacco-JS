@@ -1,76 +1,67 @@
-function processPathfinding(inputData) {
-    const lines = inputData.split('\n');
-    const dimensions = lines[0].split(' ').map(Number);
-    const gridRows = dimensions[0];
-    const gridCols = dimensions[1];
+function Main(input) {
+  const lines = input.split('\n');
+  const [rows, cols] = lines[0].split(' ').map(Number);
+  const infinityValue = Math.pow(10, 9) + 7;
+  const gridContent = lines.slice(1, 1 + rows).map(line => line.split(''));
 
-    const fieldLayout = [];
-    for (let r = 1; r <= gridRows; ++r) {
-        fieldLayout.push(lines[r].split(''));
-    }
+  const adjacencyLists = Array.from({ length: rows * cols }, () => []);
+  const pathableNodes = [];
 
-    const traversableNodes = [];
-    const nodeCoordToId = new Map();
-    const nodeIdToCoord = [];
+  for (let rIdx = 0; rIdx < rows; rIdx++) {
+    for (let cIdx = 0; cIdx < cols; cIdx++) {
+      const currentCellId = rIdx * cols + cIdx;
+      if (gridContent[rIdx][cIdx] === '.') {
+        pathableNodes.push(currentCellId);
 
-    for (let r = 0; r < gridRows; ++r) {
-        for (let c = 0; c < gridCols; ++c) {
-            if (fieldLayout[r][c] === '.') {
-                const currentIdentifier = traversableNodes.length;
-                traversableNodes.push([r, c]);
-                nodeCoordToId.set(`${r},${c}`, currentIdentifier);
-                nodeIdToCoord.push([r, c]);
-            }
+        if (rIdx + 1 < rows && gridContent[rIdx + 1][cIdx] === '.') {
+          const downCellId = (rIdx + 1) * cols + cIdx;
+          adjacencyLists[currentCellId].push(downCellId);
+          adjacencyLists[downCellId].push(currentCellId);
         }
-    }
 
-    const totalNodes = traversableNodes.length;
-    let overallMaxPath = 0;
-
-    const computeLongestPathFromSingleSource = (sourceCellCoords) => {
-        const sourceCellIdentifier = nodeCoordToId.get(`${sourceCellCoords[0]},${sourceCellCoords[1]}`);
-        const currentPathLengths = new Array(totalNodes).fill(-1);
-        currentPathLengths[sourceCellIdentifier] = 0;
-
-        const traversalQueue = [sourceCellIdentifier];
-        let maxPathFromThisSource = 0;
-
-        const movementVectors = [[0, 1], [0, -1], [1, 0], [-1, 0]];
-
-        let queueHeadPointer = 0;
-        while (queueHeadPointer < traversalQueue.length) {
-            const currentNumericId = traversalQueue[queueHeadPointer++];
-            const currentGridLocation = nodeIdToCoord[currentNumericId];
-            const currentPathValue = currentPathLengths[currentNumericId];
-
-            maxPathFromThisSource = Math.max(maxPathFromThisSource, currentPathValue);
-
-            for (const [deltaRow, deltaCol] of movementVectors) {
-                const nextRowPosition = currentGridLocation[0] + deltaRow;
-                const nextColPosition = currentGridLocation[1] + deltaCol;
-
-                if (nextRowPosition >= 0 && nextRowPosition < gridRows &&
-                    nextColPosition >= 0 && nextColPosition < gridCols &&
-                    fieldLayout[nextRowPosition][nextColPosition] === '.') {
-
-                    const nextLocationKey = `${nextRowPosition},${nextColPosition}`;
-                    const nextNumericId = nodeCoordToId.get(nextLocationKey);
-
-                    if (currentPathLengths[nextNumericId] === -1) {
-                        currentPathLengths[nextNumericId] = currentPathValue + 1;
-                        traversalQueue.push(nextNumericId);
-                    }
-                }
-            }
+        if (cIdx + 1 < cols && gridContent[rIdx][cIdx + 1] === '.') {
+          const rightCellId = rIdx * cols + (cIdx + 1);
+          adjacencyLists[currentCellId].push(rightCellId);
+          adjacencyLists[rightCellId].push(currentCellId);
         }
-        return maxPathFromThisSource;
-    };
-
-    for (const startingNode of traversableNodes) {
-        overallMaxPath = Math.max(overallMaxPath, computeLongestPathFromSingleSource(startingNode));
+      }
     }
+  }
 
-    console.log(overallMaxPath);
-    return overallMaxPath;
+  let overallMaxDistance = 0;
+
+  for (const sourceNode of pathableNodes) {
+    const currentDistances = new Array(rows * cols).fill(infinityValue);
+    currentDistances[sourceNode] = 0;
+    const traversalQueue = [sourceNode];
+    let queuePointer = 0;
+    let maxDistanceForSource = 0;
+
+    while (queuePointer < traversalQueue.length) {
+      const activeNode = traversalQueue[queuePointer++];
+      maxDistanceForSource = Math.max(maxDistanceForSource, currentDistances[activeNode]);
+
+      for (const adjacentNode of adjacencyLists[activeNode]) {
+        if (currentDistances[adjacentNode] === infinityValue) {
+          currentDistances[adjacentNode] = currentDistances[activeNode] + 1;
+          traversalQueue.push(adjacentNode);
+        }
+      }
+    }
+    overallMaxDistance = Math.max(overallMaxDistance, maxDistanceForSource);
+  }
+
+  console.log(overallMaxDistance.toString());
+  return overallMaxDistance;
 }
-processPathfinding(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+function debug(n){
+  var input = document.getElementById("input"+n).value;
+  var ans=Main(input);
+  var result="WA";
+  if(ans==document.getElementById("output"+n).value.split("\n")[0]){
+    result="AC";
+  }
+  document.getElementById("result"+n).innerHTML=result;
+}
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

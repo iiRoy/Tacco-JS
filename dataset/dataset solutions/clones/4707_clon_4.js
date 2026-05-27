@@ -1,90 +1,77 @@
-class InputProcessor {
-    constructor(sourceLines) {
-        this.lineQueue = sourceLines;
-        this.currentPosition = 0;
-    }
-
-    retrieveNextItem() {
-        if (this.currentPosition >= this.lineQueue.length) {
-            throw new Error('End of input stream reached.');
-        }
-        return this.lineQueue[this.currentPosition++];
-    }
-
-    // Equivalent to nextInt()
-    fetchNumericValue() {
-        // Using unary plus for type conversion, alternative to parseInt
-        return +this.retrieveNextItem();
-    }
-
-    // Equivalent to nextCharArray()
-    fetchSymbolSequence() {
-        // Using spread operator for character array, alternative to split('')
-        return [...this.retrieveNextItem()];
-    }
+var read = require('readline').createInterface({
+  input: process.stdin, output: process.stdout
+});
+var inputProcessor;
+var inputLines = [];
+read.on('line', function(input){inputLines.push(input);});
+read.on('close', function(){
+  inputProcessor = initializeInput(inputLines);
+  console.error('\n↑入力 ↓出力');
+  executePrimaryLogic();
+});
+function duplicateObject(source){return (source instanceof Set) ? new Set(Array.from(source)) : JSON.parse(JSON.stringify(source));}
+function retrieveInteger(){return convertInput(retrieveNext(),1);}
+function retrieveStringArray(){return convertInput(retrieveNext(),2);}
+function retrieveIntegerArray(){return convertInput(retrieveNext(),4);}
+function retrieveCharacterArray(){return convertInput(retrieveNext(),6);}
+function retrieveNext(){return inputProcessor.next();}
+function hasMoreInput(){return inputProcessor.hasNext();}
+function initializeInput(lines){  
+  return {
+    dataList : lines, currentIdx : 0, maxIdx : lines.length,
+    hasNext : function(){return (this.currentIdx < this.maxIdx);},
+    next : function(){if(this.hasNext()){return this.dataList[this.currentIdx++];}else{throw 'InputExhaustedException: No more input available';}}
+  };
 }
+function displayOutput(content){console.log(content);}
+function displayDebug(content){console.error('debug:' + require('util').inspect(content,false,null));}
+function convertInput(data, conversionType){try{switch(conversionType){case 1:return parseInt(data);case 2:return data.split(' ');case 4:return data.split(' ').map(Number);case 6:return data.split('');case 7:return data.split('').map(Number);case 8:return data.join(' ');case 9:return data.join('\n');case 0:return data.join('');default:return data;}}catch(e){return data;}}
 
-// Equivalent to myout()
-const publishResult = (content) => {
-    // Using console.log as the standard output method, but with a different name
-    console.log(String(content));
-};
+function executePrimaryLogic(){
+  const animalCount = retrieveInteger();
+  const observationPattern = retrieveCharacterArray();
 
-// This global variable would be initialized by the external input handling system,
-// similar to how 'obj' is initialized in the original boilerplate.
-// Example: let inputProvider = new InputProcessor(['3', 'oxx']);
-let inputProvider; 
+  const animalTypeToNum = { 'S': 0, 'W': 1 };
+  const numToAnimalType = { 0: 'S', 1: 'W' };
 
-// Equivalent to Main()
-function processRingConfiguration() {
-    const typeMapping = ['S', 'W']; // 0 for Sheep, 1 for Wolf
+  const deriveNextAnimal = (firstPrev, secondPrev, currentObservation) => {
+    const firstNum = animalTypeToNum[firstPrev];
+    const secondNum = animalTypeToNum[secondPrev];
+    const xorResult = firstNum ^ secondNum;
 
-    const ringSize = inputProvider.fetchNumericValue();
-    const observationReports = inputProvider.fetchSymbolSequence();
+    const nextNum = (currentObservation === 'o') ? xorResult : (1 - xorResult);
+    return numToAnimalType[nextNum];
+  };
 
-    // Four initial hypotheses for the first two entities (0-indexed)
-    const startingConditions = [
-        [0, 0], // S, S
-        [0, 1], // S, W
-        [1, 0], // W, S
-        [1, 1]  // W, W
-    ];
-
-    for (const initialPair of startingConditions) {
-        // Using Int8Array for efficiency and a different array type
-        let deducedTypes = new Int8Array(ringSize + 2);
-        deducedTypes[0] = initialPair[0];
-        deducedTypes[1] = initialPair[1];
-
-        // Propagate types around the ring based on observations
-        for (let entityIndex = 0; entityIndex < ringSize; ++entityIndex) {
-            const previousEntityState = deducedTypes[entityIndex];
-            const currentEntityState = deducedTypes[entityIndex + 1];
-            const currentObservation = observationReports[entityIndex];
-
-            // Determine if the observation ('o' for same, 'x' for different) matches the entity states
-            const observationImpliesSame = (currentObservation === 'o');
-            const statesAreIdentical = (previousEntityState === currentEntityState);
-
-            // Core logic: The type of the next entity (entityIndex + 2) is S (0) if
-            // the observation's implication matches whether the previous two entities are identical.
-            // Otherwise, it's W (1).
-            deducedTypes[entityIndex + 2] = (observationImpliesSame === statesAreIdentical) ? 0 : 1;
-        }
-
-        // Validate the circular consistency:
-        // The type derived for entity 'ringSize' must match the initial guess for entity '0'.
-        // The type derived for entity 'ringSize + 1' must match the initial guess for entity '1'.
-        if (deducedTypes[0] === deducedTypes[ringSize] && deducedTypes[1] === deducedTypes[ringSize + 1]) {
-            // Solution found: extract the relevant part of the array and format
-            const finalArrangement = Array.from(deducedTypes.subarray(0, ringSize))
-                                        .map(binaryValue => typeMapping[binaryValue])
-                                        .join('');
-            publishResult(finalArrangement);
-            return; // Exit the function immediately upon finding a valid solution
-        }
+  const attemptSequenceConstruction = (initialA, initialB) => {
+    const currentSequence = [initialA, initialB];
+    for (let k = 0; k < animalCount; k++) {
+      currentSequence.push(
+        deriveNextAnimal(currentSequence[k], currentSequence[k + 1], observationPattern[k])
+      );
     }
 
-    // If no solution is found after trying all starting conditions
-    publishResult(-1);
+    const isConsistent = (
+      currentSequence[0] === currentSequence[animalCount] &&
+      currentSequence[1] === currentSequence[animalCount + 1]
+    );
+
+    return isConsistent ? currentSequence.slice(0, animalCount).join('') : null;
+  };
+
+  const initialConfigurations = [
+    ['S', 'S'],
+    ['S', 'W'],
+    ['W', 'S'],
+    ['W', 'W']
+  ];
+
+  const foundSolution = initialConfigurations.reduce((accumulator, currentPair) => {
+    if (accumulator !== null) {
+      return accumulator;
+    }
+    return attemptSequenceConstruction(currentPair[0], currentPair[1]);
+  }, null);
+
+  displayOutput(foundSolution !== null ? foundSolution : -1);
 }

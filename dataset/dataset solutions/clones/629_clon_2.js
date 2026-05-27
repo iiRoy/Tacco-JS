@@ -1,83 +1,108 @@
-let dataSource = require('fs') . readFileSync('/dev/stdin' , 'utf8' );
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-let textRows = dataSource . split ( '\n' );
+var dataRows = rawData.split('\n');
 
-let vertexCount = textRows [ 0 ] . split ( ' ' ) [ 0 ] - 0 ;
-let edgeCount = textRows [ 0 ] . split ( ' ' ) [ 1 ] - 0 ;
-let initialAltitude = textRows [ 0 ] . split ( ' ' ) [ 2 ] - 0 ;
+var numNodes = dataRows[0].split(' ')[0] - 0;
+var numEdges = dataRows[0].split(' ')[1] - 0;
+var initialHeight = dataRows[0].split(' ')[2] - 0;
 
-let loopIndex , anotherIndex , thirdIndex ;
-let altitudes = Array ( vertexCount );
+var idx1, idx2, idx3; // Loop counters
+var nodeHeights = Array(numNodes); // Stores height for each node
 
-let adjacencyList = Array ( vertexCount );
-let pathStack = [ ] ;
-for ( loopIndex = 0 ; loopIndex < vertexCount ; loopIndex++ ) {
-  altitudes [ loopIndex ] = textRows [ loopIndex + 1 ] - 0 ;
-  adjacencyList [ loopIndex ] = [ ] ;
+var adjList = Array(numNodes); // Adjacency list for graph
+var processingQueue = []; // Stack for DFS-like traversal
+
+// Initialize node heights and adjacency list structure
+for(idx1 = 0; idx1 < numNodes; idx1++) {
+  nodeHeights[idx1] = dataRows[idx1 + 1] - 0; // Parse height from input
+  adjList[idx1] = []; // Initialize empty array for neighbors
 }
 
-let temporaryData , sourceNode , destinationNode , travelTime ;
-for ( loopIndex = 0 ; loopIndex < edgeCount ; loopIndex++ ) {
-  temporaryData = textRows [ loopIndex + vertexCount + 1 ] . split ( ' ' ) ;
-  sourceNode = temporaryData [ 0 ] - 1 ;
-  destinationNode = temporaryData [ 1 ] - 1 ;
-  travelTime = temporaryData [ 2 ] - 0 ;
-  adjacencyList [ sourceNode ] . push ( {
-    linkedNode : destinationNode ,
-    duration : travelTime
-  } ) ;
-  adjacencyList [ destinationNode ] . push ( {
-    linkedNode : sourceNode ,
-    duration : travelTime
-  } ) ;
+var edgeParts, nodeA, nodeB, travelTime;
+// Populate the adjacency list with edges
+for(idx1 = 0; idx1 < numEdges; idx1++) {
+   edgeParts = dataRows[idx1 + numNodes + 1].split(' ');
+   nodeA = edgeParts[0] - 1; // Adjust to 0-indexed
+   nodeB = edgeParts[1] - 1; // Adjust to 0-indexed
+   travelTime = edgeParts[2] - 0; // Parse travel time
+
+   // Add edge for nodeA to nodeB
+   adjList[nodeA].push({
+     targetNode: nodeB,
+     duration: travelTime
+   });
+   // Add edge for nodeB to nodeA (undirected graph)
+   adjList[nodeB].push({
+     targetNode: nodeA,
+     duration: travelTime
+   });
 }
-pathStack . push ( {
-  currentPoint : 0 ,
-  accumulatedTime : 0 ,
-  currentAltitude : initialAltitude ,
-  visitedPath : [ 0 ]
-} ) ;
-let currentNode , neighborNode , edgeInfo , finalPath ;
-let minimumTime = Infinity ;
-while ( pathStack . length > 0 ) {
-  currentNode = pathStack . pop ( ) ;
-  for ( loopIndex = 0 ; loopIndex < adjacencyList [ currentNode . currentPoint ] . length ; loopIndex++ ) {
-    edgeInfo = adjacencyList [ currentNode . currentPoint ] [ loopIndex ] ;
-    neighborNode = edgeInfo . linkedNode ;
-    if ( currentNode . visitedPath . indexOf ( neighborNode ) !== -1 ) {
-      continue ;
+
+// Push initial state to the processing queue
+processingQueue.push({
+  currentPosition: 0, // Starting node index
+  accumulatedTime: 0, // Time elapsed so far
+  currentWaterLevel: initialHeight, // Current water level
+  visitedPath:[0] // Path taken to reach this state
+});
+
+var currentNode, nextNodeIdx, edgeInfo, finalPath;
+var minimumTime = Infinity; // Initialize minimum time to a very large value
+
+// Process states from the queue
+while (processingQueue.length > 0){
+  currentNode = processingQueue.pop(); // Get the last state from the queue
+
+  // Iterate through all neighbors of the current node
+  for (idx1 = 0; idx1 < adjList[currentNode.currentPosition].length; idx1++) {
+    edgeInfo = adjList[currentNode.currentPosition][idx1];
+    nextNodeIdx = edgeInfo.targetNode;
+
+    // Skip if the next node has already been visited in this path
+    if (currentNode.visitedPath.indexOf(nextNodeIdx) !== -1) {
+      continue;
+    }
+    
+    // Skip if current node's height is less than edge travel time
+    if (nodeHeights[currentNode.currentPosition] < edgeInfo.duration) {
+      continue;
     }
 
-    if ( altitudes [ currentNode . currentPoint ] < edgeInfo . duration ) {
-      continue ;
-    }
-    if ( altitudes [ neighborNode ] + edgeInfo . duration < currentNode . currentAltitude ) {
-      pathStack . push ( {
-        currentPoint : neighborNode ,
-        accumulatedTime : currentNode . accumulatedTime + edgeInfo . duration + currentNode . currentAltitude - ( altitudes [ neighborNode ] + edgeInfo . duration ) ,
-        currentAltitude : altitudes [ neighborNode ] ,
-        visitedPath : currentNode . visitedPath . concat ( neighborNode )
-      } ) ;
-    } else if ( altitudes [ neighborNode + edgeInfo . duration >= currentNode . currentAltitude && currentNode . currentAltitude >= edgeInfo . duration ] ) {
-      pathStack . push ( {
-        currentPoint : neighborNode ,
-        accumulatedTime : currentNode . accumulatedTime + edgeInfo . duration ,
-        currentAltitude : currentNode . currentAltitude - edgeInfo . duration ,
-        visitedPath : currentNode . visitedPath . concat ( neighborNode )
-      } ) ;
+    // Calculate new state based on water level changes
+    if (nodeHeights[nextNodeIdx] + edgeInfo.duration < currentNode.currentWaterLevel ) {
+      // Case 1: Water level drops below next node's height + travel time
+      processingQueue.push({
+        currentPosition: nextNodeIdx,
+        accumulatedTime: currentNode.accumulatedTime + edgeInfo.duration + currentNode.currentWaterLevel - (nodeHeights[nextNodeIdx] + edgeInfo.duration),
+        currentWaterLevel: nodeHeights[nextNodeIdx],
+        visitedPath: currentNode.visitedPath.concat(nextNodeIdx)
+      });
+    } else if (nodeHeights[nextNodeIdx] + edgeInfo.duration >= currentNode.currentWaterLevel && currentNode.currentWaterLevel >= edgeInfo.duration) {
+      // Case 2: Water level stays above or at next node's height + travel time, and above travel time
+      processingQueue.push({
+        currentPosition: nextNodeIdx,
+        accumulatedTime: currentNode.accumulatedTime + edgeInfo.duration,
+        currentWaterLevel: currentNode.currentWaterLevel - edgeInfo.duration,
+        visitedPath: currentNode.visitedPath.concat(nextNodeIdx)
+      });
     } else {
-      pathStack . push ( {
-        currentPoint : neighborNode ,
-        accumulatedTime : currentNode . accumulatedTime + edgeInfo . duration + edgeInfo . duration - currentNode . currentAltitude ,
-        currentAltitude : 0 ,
-        visitedPath : currentNode . visitedPath . concat ( neighborNode )
-      } ) ;
+      // Case 3: Water level drops to 0
+      processingQueue.push({
+        currentPosition: nextNodeIdx,
+        accumulatedTime: currentNode.accumulatedTime + edgeInfo.duration + edgeInfo.duration - currentNode.currentWaterLevel,
+        currentWaterLevel: 0,
+        visitedPath: currentNode.visitedPath.concat(nextNodeIdx)
+      });
     }
-
-    if ( neighborNode === vertexCount - 1 ) {
-      finalPath = pathStack . pop ( ) ;
-      minimumTime = Math . min ( minimumTime , finalPath . accumulatedTime + altitudes [ vertexCount - 1 ] - finalPath . currentAltitude ) ;
+    
+    // If the next node is the destination (n-1)
+    if(nextNodeIdx === numNodes - 1) {
+      finalPath = processingQueue.pop(); // Get the newly added state for the destination
+      // Update minimum time, considering the remaining water level at the destination
+      minimumTime = Math.min(minimumTime, finalPath.accumulatedTime + nodeHeights[numNodes - 1] - finalPath.currentWaterLevel);
     }
   }
 }
-console . log ( minimumTime ) ;
+
+// Output the calculated minimum time
+console.log(minimumTime);

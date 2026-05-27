@@ -1,29 +1,11 @@
-const interfaceModule = require("readline");
+function calculatePolynomialSum(sourceContent) {
+    const contentLines = sourceContent.split("\n");
+    const baseNumber = Number.parseInt(contentLines[0], 10);
 
-const ioHandler = interfaceModule.createInterface({
-  input: process.stdin,
-  output: process.stdout
-});
+    const exponentsToSum = [1, 2, 3];
+    const powerTerms = exponentsToSum.map(expValue => Math.pow(baseNumber, expValue));
+    const finalResult = powerTerms.reduce((accumulator, currentTerm) => accumulator + currentTerm, 0);
 
-let parsedDatum;
-
-ioHandler.on("line", (incomingText) => {
-  parsedDatum = Number(incomingText);
-  ioHandler.close();
-});
-
-ioHandler.on("close", () => {
-  const exponentIndexes = Array.from({ length: 3 }, (_, idx) => idx + 1);
-
-  const calculatedComponents = exponentIndexes.map(expVal => {
-    let currentMultiplier = 1;
-    for (let iterator = 0; iterator < expVal; iterator++) {
-      currentMultiplier *= parsedDatum;
-    }
-    return currentMultiplier;
-  });
-
-  const cumulativeSum = calculatedComponents.reduce((acc, element) => acc + element, 0);
-
-  process.stdout.write(String(cumulativeSum) + '\n');
-});
+    console.log(finalResult);
+}
+calculatePolynomialSum(require("fs").readFileSync("/dev/stdin", "utf8"));

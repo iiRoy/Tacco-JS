@@ -1,171 +1,144 @@
-/* Internal utility functions, not part of the core problem logic. Begin. */
-
-var inputHandler = require('readline').createInterface(
-  {
-    input: process.stdin,
-    output: process.stdout
-  }
-);
-
-var dataProcessor;
-var receivedLines = [];
-
-inputHandler.on(
-  'line',
-  function(currentLine)
-  {
-    receivedLines.push(currentLine);
-  }
-);
-
-inputHandler.on('close', () =>
-{
-  dataProcessor = initializeProcessor(receivedLines);
-  console.warn('\n↑ Input ↓ Output'); /* Displaying input/output direction */
-  ExecuteSolution();
+// This section handles input processing and utility functions.
+var inputReader = require('readline').createInterface({
+  input: process.stdin,
+  output: process.stdout
 });
 
-function createDeepCopy(originalObject)
-{
-  /* Creates a duplicate of an object, handling Set instances specifically. */
-  return (originalObject instanceof Set) ? new Set(Array.from(originalObject)) : JSON.parse(JSON.stringify(originalObject));
+var inputProcessor;
+var inputLinesBuffer = [];
+
+inputReader.on('line', function(currentLine){
+  inputLinesBuffer.push(currentLine);
+});
+
+inputReader.on('close', function(){
+  inputProcessor = initializeInputHandler(inputLinesBuffer);
+  console.error('\n↑入力 ↓出力');
+  executeMainLogic();
+});
+
+/**
+ * Creates a deep copy of an object or Set.
+ * @param {any} sourceObject - The object to copy.
+ * @returns {any} A deep copy of the sourceObject.
+ */
+function createDeepCopy(sourceObject){
+  return (sourceObject instanceof Set)
+    ? new Set(Array.from(sourceObject))
+    : JSON.parse(JSON.stringify(sourceObject));
 }
 
-function retrieveInteger()
-{
-  return dataConverter(getNextItem(), 1);
+function fetchInteger(){
+  return performConversion(getNextItem(), 1);
 }
 
-function retrieveStringArray()
-{
-  return dataConverter(getNextItem(), 2);
+function fetchStringArray(){
+  return performConversion(getNextItem(), 2);
 }
 
-function retrieveNumberArray()
-{
-  return dataConverter(getNextItem(), 4);
+function fetchIntegerArray(){
+  return performConversion(getNextItem(), 4);
 }
 
-function retrieveCharacterArray()
-{
-  return dataConverter(getNextItem(), 6);
+function fetchCharacterArray(){
+  return performConversion(getNextItem(), 6);
 }
 
-function getNextItem()
-{
-  return dataProcessor.getNextItem();
+function getNextItem(){
+  return inputProcessor.retrieveNextEntry();
 }
 
-function hasMoreData()
-{
-  return dataProcessor.hasMoreData();
+function checkHasNext(){
+  return inputProcessor.hasMoreEntries();
 }
 
-function initializeProcessor(rawData)
-{
-  /* Sets up the data processing object. */
+/**
+ * Initializes an input handler object from an array of strings.
+ * @param {string[]} rawInputData - An array of input strings.
+ * @returns {object} An object with methods to access input.
+ */
+function initializeInputHandler(rawInputData){
   return {
-    dataRecords: rawData,
-    currentIndex: 0,
-    maxCount: rawData.length,
-    hasMoreData: function()
-    {
-      return (this.currentIndex < this.maxCount);
+    dataList : rawInputData,
+    currentPosition : 0,
+    maximumLength : rawInputData.length,
+    hasMoreEntries : function(){
+      return (this.currentPosition < this.maximumLength);
     },
-    getNextItem: function()
-    {
-      if (this.hasMoreData())
-      {
-        return this.dataRecords[this.currentIndex++];
-      }
-      else
-      {
-        throw 'NoMoreInputError: Input stream exhausted';
+    retrieveNextEntry : function(){
+      if(this.hasMoreEntries()){
+        return this.dataList[this.currentPosition++];
+      } else {
+        throw 'ArrayIndexOutOfBoundsException ‚There is no more input';
       }
     }
   };
 }
 
-function displayOutput(messageContent)
-{
-  console.log(messageContent);
+/**
+ * Prints a value to standard output.
+ * @param {any} outputValue - The value to print.
+ */
+function printResult(outputValue){
+  console.log(outputValue);
 }
 
-function logError(messageContent)
-{
-  console.error('debug_info: ' + require('util').inspect(messageContent, false, null));
+/**
+ * Logs debug information to standard error.
+ * @param {any} debugMessage - The message to log.
+ */
+function logDebugInfo(debugMessage){
+  console.error('debug:' + require('util').inspect(debugMessage, false, null));
 }
 
-/*
- * This function performs various data type conversions based on the specified type code.
- * conversionType values:
- *   - 1: Parse string to integer.
- *   - 2: Split string by space into an array of strings.
- *   - 4: Split string by space and convert each part to a number.
- *   - 6: Split string into an array of individual characters.
- *   - 7: Split string into characters and convert each to a number.
- *   - 8: Join array elements with spaces.
- *   - 9: Join array elements with newlines.
- *   - 0: Join array elements without any separator.
- *   - Default: Return the input value as-is.
-*/
-function dataConverter(inputValue, conversionType)
-{
-  try
-  {
-    switch (conversionType)
-    {
-      case 1:
-        return Number.parseInt(inputValue);
-      case 2:
-        return inputValue.split(' ');
-      case 4:
-        return inputValue.split(' ').map(numStr => parseInt(numStr));
-      case 6:
-        return inputValue.split('');
-      case 7:
-        return inputValue.split('').map(charStr => Number.parseInt(charStr));
-      case 8:
-        return inputValue.join(' ');
-      case 9:
-        return inputValue.join('\n');
-      case 0:
-        return inputValue.join('');
-      default:
-        return inputValue;
+/**
+ * Performs various conversions on input values based on a type code.
+ * @param {any} inputValue - The value to convert.
+ * @param {number} conversionType - The type of conversion to perform.
+ * @returns {any} The converted value.
+ */
+function performConversion(inputValue, conversionType){
+  try {
+    switch(conversionType){
+      case 1: return parseInt(inputValue);
+      case 2: return inputValue.split(' ');
+      case 4: return inputValue.split(' ').map(Number);
+      case 6: return inputValue.split('');
+      case 7: return inputValue.split('').map(Number);
+      case 8: return inputValue.join(' ');
+      case 9: return inputValue.join('\n');
+      case 0: return inputValue.join('');
+      default: return inputValue;
     }
-  }
-  catch (error)
-  {
-    return inputValue; /* In case of conversion error, return original input */
+  } catch(conversionError) {
+    return inputValue;
   }
 }
 
-/* Internal utility functions. End. */
+// Main program logic starts here.
+function executeMainLogic(){
+  var firstLineData = fetchIntegerArray();
 
-function ExecuteSolution()
-{
-  var inputValues = retrieveNumberArray();
+  var valA = firstLineData[0];
+  var valO = firstLineData[1];
+  var valT = firstLineData[2];
+  var valJ = firstLineData[3];
+  var valL = firstLineData[4];
+  var valS = firstLineData[5];
+  var valZ = firstLineData[6];
 
-  var rectA = inputValues[0];
-  var rectO = inputValues[1];
-  var rectT = inputValues[2];
-  var rectJ = inputValues[3];
-  var rectL = inputValues[4];
-  var rectS = inputValues[5];
-  var rectZ = inputValues[6];
+  // Calculate the first possible result based on pairs.
+  var resultOne = Math.floor(valA / 2) * 2 + Math.floor(valJ / 2) * 2 + Math.floor(valL / 2) * 2;
 
-  var firstCalculation = Math.floor(rectA / 2) * 2 + Math.floor(rectJ / 2) * 2 + Math.floor(rectL / 2) * 2;
-  var secondCalculation;
+  var resultTwo; // Declare variable without immediate assignment
 
-  if (rectA >= 1 && rectJ >= 1 && rectL >= 1)
-  {
-    secondCalculation = Math.floor((rectA - 1) / 2) * 2 + Math.floor((rectJ - 1) / 2) / 2 * 2 + Math.floor((rectL - 1) / 2) * 2 + 3;
-  }
-  else
-  {
-    secondCalculation = 0;
+  // Check for a specific condition to calculate the second result.
+  if (valA >= 1 && valJ >= 1 && valL >= 1) {
+    resultTwo = Math.floor((valA - 1) / 2) * 2 + Math.floor((valJ - 1) / 2) * 2 + Math.floor((valL - 1) / 2) * 2 + 3;
+  } else {
+    resultTwo = 0;
   }
 
-  displayOutput(Math.max(firstCalculation, secondCalculation) + rectO);
+  // Output the maximum of the two results, plus valO.
+  printResult(Math.max(resultOne, resultTwo) + valO);
 }

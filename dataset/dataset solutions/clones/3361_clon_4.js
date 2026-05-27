@@ -1,34 +1,37 @@
-const processSequence = (inputBlob) => {
-    const initialMatch = inputBlob.match(/^(\d+)\s+(\d+)\n([\s\S]*)$/);
-    const overallLength = Number(initialMatch[1]);
-    const numberCount = Number(initialMatch[2]);
-    const coordinateStrings = initialMatch[3].split('\n').filter(Boolean);
+function processInput(inputString) {
+    const dataLines = inputString.split('\n');
+    const [segmentLength, itemCount] = dataLines[0].split(' ').map(Number);
+    const itemPositions = dataLines.slice(1).map(Number);
 
-    const determineOptimalPath = (remainingCoordinates, currentPosition, cumulativeDistance) => {
-        if (remainingCoordinates.length === 0) {
-            return cumulativeDistance;
-        }
+    let currentRobotPosition = 0;
+    let totalTravelledDistance = 0;
+    let leftBoundaryIndex = 0;
+    let rightBoundaryIndex = itemPositions.length - 1;
 
-        const firstCoordinate = Number(remainingCoordinates[0]);
-        const lastCoordinate = Number(remainingCoordinates[remainingCoordinates.length - 1]);
+    let operationCounter = 0;
+    while (operationCounter < itemCount) {
+        const firstAvailableItem = itemPositions[leftBoundaryIndex];
+        const lastAvailableItem = itemPositions[rightBoundaryIndex];
 
-        const costToFirst = firstCoordinate - currentPosition;
-        const costToLast = (overallLength - lastCoordinate) + currentPosition;
+        const distanceToFirst = firstAvailableItem - currentRobotPosition;
+        const distanceToLastWrapped = (segmentLength - lastAvailableItem) + currentRobotPosition;
 
-        if (costToFirst <= costToLast) {
-            const nextCoordinates = remainingCoordinates.slice(1);
-            const nextPosition = firstCoordinate;
-            const nextCumulativeDistance = cumulativeDistance + costToFirst;
-            return determineOptimalPath(nextCoordinates, nextPosition, nextCumulativeDistance);
+        console.log("now:" + currentRobotPosition);
+        console.log("total:" + totalTravelledDistance);
+
+        if (distanceToFirst > distanceToLastWrapped) {
+            totalTravelledDistance += distanceToFirst;
+            leftBoundaryIndex++;
+            currentRobotPosition = firstAvailableItem;
         } else {
-            const nextCoordinates = remainingCoordinates.slice(0, remainingCoordinates.length - 1);
-            const nextPosition = lastCoordinate;
-            const nextCumulativeDistance = cumulativeDistance + costToLast;
-            return determineOptimalPath(nextCoordinates, nextPosition, nextCumulativeDistance);
+            totalTravelledDistance += distanceToLastWrapped;
+            rightBoundaryIndex--;
+            currentRobotPosition = lastAvailableItem;
         }
-    };
+        operationCounter++;
+    }
 
-    return determineOptimalPath(coordinateStrings, 0, 0);
-};
+    console.log(totalTravelledDistance);
+}
 
-process.stdout.write(String(processSequence(require('node:fs').readFileSync(0, 'utf8'))));
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

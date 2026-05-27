@@ -1,34 +1,29 @@
-function calculateAverageCeiling(dataInput) {
-    let numericParts = [];
-    let currentSegment = '';
-    for (let k = 0; k < dataInput.length; ++k) {
-        let symbol = dataInput[k];
-        if (symbol >= '0' && symbol <= '9') {
-            currentSegment += symbol;
-        } else if (currentSegment.length > 0) {
-            numericParts.push(Number(currentSegment));
-            currentSegment = '';
-            if (numericParts.length === 2) break;
-        }
+const fileSystem = require('fs');
+
+function calculateRoundedAverage(sourceText) {
+  const segments = sourceText.trim().split(' ');
+  let primaryValue, secondaryValue;
+  let elementCounter = 0;
+
+  for (const currentSegment of segments) {
+    const convertedNumber = currentSegment | 0;
+    if (elementCounter === 0) {
+      primaryValue = convertedNumber;
+    } else if (elementCounter === 1) {
+      secondaryValue = convertedNumber;
+      break;
     }
-    if (currentSegment.length > 0 && numericParts.length < 2) {
-        numericParts.push(Number(currentSegment));
-    }
+    elementCounter++;
+  }
 
-    const firstOperand = numericParts[0];
-    const secondOperand = numericParts[1];
+  const operandOne = primaryValue === undefined ? 0 : primaryValue;
+  const operandTwo = secondaryValue === undefined ? 0 : secondaryValue;
 
-    let totalSum = firstOperand + secondOperand;
-    let finalEvaluation;
+  const finalResult = (operandOne + operandTwo + 1) >> 1;
 
-    if (totalSum % 2 === 0) {
-        finalEvaluation = totalSum / 2;
-    } else {
-        finalEvaluation = (totalSum + 1) / 2;
-    }
-
-    return finalEvaluation.toString();
+  return String(finalResult);
 }
 
-const sourceContent = require('node:fs').readFileSync('/dev/stdin', 'utf8');
-console.log(calculateAverageCeiling(sourceContent));
+const rawData = fileSystem.readFileSync('/dev/stdin', 'utf8');
+
+console.log(calculateRoundedAverage(rawData));

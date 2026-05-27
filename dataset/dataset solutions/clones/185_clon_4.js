@@ -1,36 +1,51 @@
-const inputSource = require('fs');
-const rawContent = inputSource.readFileSync('/dev/stdin', 'utf8');
-const lineSet = rawContent.split('\n');
+const inputContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+const lineSegments = inputContent.split('\n');
 
-let currentMaximum = Number.NEGATIVE_INFINITY;
-let currentMinimum = Number.POSITIVE_INFINITY;
-let hasValidNumber = false;
+const processingState = {
+    highestNumericString: '',
+    lowestNumericString: '',
+    encounteredFirstValidNumber: false,
+    containsEmptyLine: false,
+    containsNonNumericLine: false
+};
 
-for (let lineItem of lineSet) {
-    const parsedNumber = parseFloat(lineItem.trim());
-    if (!isNaN(parsedNumber)) {
-        if (!hasValidNumber) {
-            currentMaximum = parsedNumber;
-            currentMinimum = parsedNumber;
-            hasValidNumber = true;
-        } else {
-            if (parsedNumber > currentMaximum) {
-                currentMaximum = parsedNumber;
-            }
-            if (parsedNumber < currentMinimum) {
-                currentMinimum = parsedNumber;
-            }
+const finalState = lineSegments.reduce((accumulator, currentSegment) => {
+    if (currentSegment === '') {
+        accumulator.containsEmptyLine = true;
+        return accumulator;
+    }
+
+    const numericValue = Number(currentSegment);
+
+    if (isNaN(numericValue)) {
+        accumulator.containsNonNumericLine = true;
+        return accumulator;
+    }
+
+    if (!accumulator.encounteredFirstValidNumber) {
+        accumulator.highestNumericString = currentSegment;
+        accumulator.lowestNumericString = currentSegment;
+        accumulator.encounteredFirstValidNumber = true;
+    } else {
+        if (numericValue > Number(accumulator.highestNumericString)) {
+            accumulator.highestNumericString = currentSegment;
+        }
+        if (numericValue < Number(accumulator.lowestNumericString)) {
+            accumulator.lowestNumericString = currentSegment;
         }
     }
-}
+    return accumulator;
+}, processingState);
 
-let calculatedRange;
-if (hasValidNumber) {
-    calculatedRange = currentMaximum - currentMinimum;
+let resultMaxOperand;
+let resultMinOperand;
+
+if (finalState.containsNonNumericLine || !finalState.encounteredFirstValidNumber) {
+    resultMaxOperand = NaN;
+    resultMinOperand = NaN;
 } else {
-    calculatedRange = NaN;
+    resultMaxOperand = parseFloat(finalState.highestNumericString);
+    resultMinOperand = finalState.containsEmptyLine ? parseFloat('') : parseFloat(finalState.lowestNumericString);
 }
 
-const finalDisplay = calculatedRange.toFixed(2);
-
-console.log(finalDisplay);
+console.log((resultMaxOperand - resultMinOperand).toFixed(2));

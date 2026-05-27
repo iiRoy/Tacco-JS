@@ -1,21 +1,22 @@
 "use strict";
 
-const processInputData = incomingText => {
-    const lineSegments = incomingText.split('\n');
-    const chromaticSequence = lineSegments[1].trim().split(' ');
+const processInput = rawData => {
+    const lineSegments = rawData.trim().split('\n');
+    const elementCount = Number.parseInt(lineSegments[0], 10);
+    const hueSequence = lineSegments[1].split(' ');
 
-    const evaluateSequenceForChanges = (currentSequence, pointerPosition, currentTally) => {
-        if (pointerPosition >= currentSequence.length - 1) {
-            return currentTally;
-        }
+    let alterationCount = 0;
+    let scanIndex = 0;
 
-        if (currentSequence[pointerPosition] === currentSequence[pointerPosition + 1]) {
-            return evaluateSequenceForChanges(currentSequence, pointerPosition + 2, currentTally + 1);
+    while (scanIndex < elementCount - 1) {
+        if (hueSequence[scanIndex] === hueSequence[scanIndex + 1]) {
+            alterationCount++;
+            scanIndex += 2;
         } else {
-            return evaluateSequenceForChanges(currentSequence, pointerPosition + 1, currentTally);
+            scanIndex++;
         }
-    };
-
-    const finalAlterationCount = evaluateSequenceForChanges(chromaticSequence, 0, 0);
-    console.log(finalAlterationCount);
+    }
+    console.log(alterationCount);
 };
+
+processInput(require('node:fs').readFileSync('/dev/stdin', 'utf8'));

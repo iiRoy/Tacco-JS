@@ -1,17 +1,11 @@
-function processInputAndCompute(dataString) {
-  const parts = dataString.split(/\s+/);
-  const firstOperand = +parts[0];
-  const secondOperand = +parts[1];
+function ProcessInput(rawData) {
+  const parsedValues = rawData.split(" ");
+  const firstNum = Number(parsedValues[0]);
+  const secondNum = Number(parsedValues[1]);
 
-  const difference = firstOperand - secondOperand;
-  const decrementFactor = Math.min(1, Math.max(0, difference));
-
-  const finalResult = firstOperand - decrementFactor;
+  const finalResult = firstNum - (secondNum < firstNum);
 
   console.log(finalResult);
 }
 
-(() => {
-  const contentFromStream = require('node:fs').readFileSync('/dev/stdin', { encoding: 'utf8' });
-  processInputAndCompute(contentFromStream.trim());
-})();
+ProcessInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

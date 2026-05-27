@@ -1,28 +1,29 @@
-'use strict'
+'use strict';
 
-function performCalculation(incomingData) {
-    const processedString = incomingData.trim();
-    const dataLength = processedString.length;
+function processInput(inputData) {
+  const inputString = inputData.trim();
+  const stringLength = inputString.length;
+  const numericValue = Number(inputString);
 
-    let additiveTerm = 0;
-    if (dataLength % 2 !== 0) {
-        if (dataLength === 1) {
-            additiveTerm = 1;
-        } else {
-            additiveTerm = Number.parseInt(processedString.substring(1), 10) + 1;
-        }
-    }
+  const powerBase = stringLength > 1 ? Number('1' + '0'.repeat(stringLength - 1)) : 1;
+  const remainderComponent = (stringLength % 2 !== 0) ? (numericValue % powerBase) + 1 : 0;
 
-    const midpointDivisor = Math.floor(dataLength / 2);
-    let repeatingPatternSum;
+  const halfLength = Math.floor(stringLength / 2);
 
-    if (midpointDivisor === 0) {
-        repeatingPatternSum = Number.NaN;
-    } else {
-        repeatingPatternSum = (9 * (Math.pow(100, midpointDivisor) - 1)) / 99;
-    }
+  let patternComponent;
+  if (halfLength === 0) {
+    patternComponent = NaN;
+  } else {
+    const calculateAlternatingPowerSum = (count) => {
+      if (count <= 0) {
+        return 0;
+      }
+      return calculateAlternatingPowerSum(count - 1) + (10**(2 * (count - 1)));
+    };
+    patternComponent = 9 * calculateAlternatingPowerSum(halfLength);
+  }
 
-    console.log(repeatingPatternSum + additiveTerm);
+  console.log(patternComponent + remainderComponent);
 }
 
-performCalculation(require('node:fs').readFileSync('/dev/stdin', 'utf8'));
+processInput(require('fs').readFilexSync('/dev/stdin', 'utf8'));

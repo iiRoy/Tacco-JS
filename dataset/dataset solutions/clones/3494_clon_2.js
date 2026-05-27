@@ -1,46 +1,55 @@
-'use strict'; /* This directive enforces stricter parsing and error handling in the code. */
+'use strict';
 
-const processInputData = (rawDataLines) => {
-  // Extract the count of data points from the initial line of input.
-  const totalEntries = parseInt(rawDataLines[0], 10); // Parse the first input element as an integer, base 10.
+// This function processes the input data to find a specific coordinate and height.
+const processInput = (dataLines) => {
+  // Determine the total number of data points from the first line.
+  const countOfPoints = parseInt(dataLines[0], 10);
 
-  // Initialize arrays to hold the X, Y coordinates, and corresponding height values for each point.
-  let xCoordinates = new Array(totalEntries);
-  let yCoordinates = new Array(totalEntries);
-  let elevationData = new Array(totalEntries);
+  // Initialize arrays to store X, Y coordinates, and heights for each point.
+  let xCoordinates = new Array(countOfPoints);
+  let yCoordinates = new Array(countOfPoints);
+  let heights = new Array(countOfPoints);
 
-  // Iterate through the input lines, parsing and storing the coordinate and height information.
-  for (  let currentRecordIndex = 0;   currentRecordIndex < totalEntries;   currentRecordIndex++  ) {
-    const segmentData = rawDataLines[currentRecordIndex + 1].split(' '); // Split the current line by spaces.
-    xCoordinates[currentRecordIndex] = parseInt(segmentData[0], 10);
-    yCoordinates[currentRecordIndex] = parseInt(segmentData[1], 10);
-    elevationData[currentRecordIndex] = parseInt(segmentData[2], 10);
+  // Populate the coordinate and height arrays by parsing subsequent input lines.
+  for (let idx = 0; idx < countOfPoints; idx++) {
+    // Split each line by space to get individual values.
+    let lineParts = dataLines[idx + 1].split(' ');
+    xCoordinates[idx] = parseInt(lineParts[0], 10);
+    yCoordinates[idx] = parseInt(lineParts[1], 10);
+    heights[idx] = parseInt(lineParts[2], 10);
   }
 
-  // Begin a nested loop to test all possible central X and Y coordinates within a 0-100 range.
-  for ( let scanX = 0; scanX < 101; scanX++ ) {
-    for ( let scanY = 0; scanY < 101; scanY++ ) {
-      // Calculate a hypothetical elevation for the current (scanX, scanY) based on the first data point.
-      let hypothesizedZ = elevationData[0] + Math.abs(scanX - xCoordinates[0]) + Math.abs(scanY - yCoordinates[0]);
+  // Iterate through all possible X coordinates (0 to 100).
+  for (let currentX = 0; currentX <= 100; currentX++) {
+    // Iterate through all possible Y coordinates (0 to 100).
+    for (let currentY = 0; currentY <= 100; currentY++) {
+      // Calculate the potential peak height based on the first data point.
+      // This assumes the first point is valid and uses its data to derive a candidate height.
+      let calculatedPeakHeight = heights[0] + Math.abs(currentX - xCoordinates[0]) + Math.abs(currentY - yCoordinates[0]);
 
-      let validationFlag = 1; // Assume consistency until proven otherwise.
+      // A flag to check if this calculated peak height is consistent with all other data points.
+      let allMatch = true;
 
-      // Validate this hypothesized elevation against all other provided data points.
-      for ( let validationIndex = 1; validationIndex < totalEntries; validationIndex++ ) {
-        // If the calculated elevation for any other point does not match the hypothesized Z, it's inconsistent.
-        if (hypothesizedZ !== elevationData[validationIndex] + Math.abs(scanX - xCoordinates[validationIndex]) + Math.abs(scanY - yCoordinates[validationIndex])) {
-          validationFlag = 0; // Mark as inconsistent.
+      // Verify the calculated peak height against all other data points.
+      for (let pointIndex = 1; pointIndex < countOfPoints; pointIndex++) {
+        // If the calculated height doesn't match the height derived from the current point,
+        // then this (currentX, currentY) is not the correct center.
+        if (calculatedPeakHeight !== heights[pointIndex] + Math.abs(currentX - xCoordinates[pointIndex]) + Math.abs(currentY - yCoordinates[pointIndex])) {
+          allMatch = false; // Mark as inconsistent.
+          break;            // No need to check further points for this (currentX, currentY).
         }
       }
 
-      // If validationFlag is still 1, all data points are consistent with the current (scanX, scanY, hypothesizedZ).
-      if (validationFlag === 1) {
-        console.log(scanX, scanY, hypothesizedZ); // Output the found central point and its elevation.
-        return 0; // Terminate execution as the unique solution has been found.
+      // If all data points are consistent with the calculated peak height,
+      // then we've found the solution.
+      if (allMatch) {
+        // Output the found coordinates and the peak height.
+        console.log(currentX, currentY, calculatedPeakHeight);
+        return 0; // Exit the function as the solution is found.
       }
     }
   }
 };
 
-// Initiate the processing by reading the entire content from standard input, decoding as UTF-8, and splitting into lines.
-processInputData(require("fs").readFileSync("/dev/stdin", "utf8").split('\n'));
+// Read input from standard input, decode as UTF-8, and split into lines.
+processInput(require("fs").readFileSync("/dev/stdin", "utf8").split('\n'));

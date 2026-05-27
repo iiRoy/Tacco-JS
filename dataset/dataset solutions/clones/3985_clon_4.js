@@ -1,27 +1,28 @@
-const makeMirrorNumber = (f, s, t) => {
-    return (f * 10000) + (s * 1000) + (t * 100) + (s * 10) + f;
-};
+function processInputAndCount(rawInputString) {
+    const numericStrings = rawInputString.split(' ');
+    const lowerBoundary = parseInt(numericStrings[0], 10);
+    const upperBoundary = parseInt(numericStrings[1], 10);
 
-const processNumericalRange = (passage) => {
-    const numericalBounds = passage.trim().split(/\s+/).map(Number);
-    const lowerBound = numericalBounds[0];
-    const upperBound = numericalBounds[1];
+    let foundCount = 0;
 
-    const firstDigits = Array.from({ length: 9 }, (_, i) => i + 1);
+    function* generateFiveDigitPalindromes() {
+        for (let outerDigit = 1; outerDigit <= 9; outerDigit++) {
+            for (let innerDigitA = 0; innerDigitA <= 9; innerDigitA++) {
+                for (let innerDigitB = 0; innerDigitB <= 9; innerDigitB++) {
+                    const constructedString = `${outerDigit}${innerDigitA}${innerDigitB}${innerDigitA}${outerDigit}`;
+                    yield parseInt(constructedString, 10);
+                }
+            }
+        }
+    }
 
-    const middleDigits = Array.from({ length: 10 }, (_, i) => i);
+    for (const currentPalindromeCandidate of generateFiveDigitPalindromes()) {
+        if (currentPalindromeCandidate >= lowerBoundary && currentPalindromeCandidate <= upperBoundary) {
+            foundCount++;
+        }
+    }
 
-    const allPossibleMirroredNumbers = firstDigits.flatMap(d1 =>
-        middleDigits.flatMap(d2 =>
-            middleDigits.map(d3 => makeMirrorNumber(d1, d2, d3))
-        )
-    );
+    console.log(foundCount);
+}
 
-    const qualifyingNumbers = allPossibleMirroredNumbers.filter(value =>
-        value >= lowerBound && value <= upperBound
-    );
-
-    console.log(qualifyingNumbers.length);
-};
-
-processNumericalRange(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processInputAndCount(require('fs').readFileSync('/dev/stdin', 'utf8'));

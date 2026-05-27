@@ -1,52 +1,55 @@
-function ProcessData(rawData) {
-    // Split the raw input string into separate lines
-    rawData = rawData.split('\n');
+function ProcessInput(rawData) {
+    // The input string is first split into an array of lines.
+    rawData = rawData.split("\n");
 
-    // Parse the first line for the number of elements in the primary dataset
-    let numElements = parseInt(rawData[0], 10);
-    // Parse the third line for the number of query items
-    let numQueries = parseInt(rawData[2], 10);
+    // Extract the size of the primary array from the first line.
+    var arraySize = parseInt(rawData[0], 10);
 
-    // Split the second line to get individual source values
-    rawData[1] = rawData[1].split(' ');
-    // Split the fourth line to get individual query values
-    rawData[3] = rawData[3].split(' ');
+    // Extract the number of query elements from the third line.
+    var queryCount = parseInt(rawData[2], 10);
 
-    // Initialize arrays to store parsed integer values
-    let sourceArray = new Array(numElements);
-    let targetQueries = new Array(numQueries);
+    // Split the second line, which contains the elements for the primary array, by spaces.
+    rawData[1] = rawData[1].split(" ");
 
-    // Populate the source array by parsing integer values
-    for (let idxPrimary = 0; idxPrimary < numElements; idxPrimary++) {
-        sourceArray[idxPrimary] = parseInt(rawData[1][idxPrimary], 10);
+    // Split the fourth line, which contains the query elements, by spaces.
+    rawData[3] = rawData[3].split(" ");
+
+    // Initialize two arrays: one for the source data and one for the query data.
+    var sourceArray = Array(arraySize),
+        targetQueries = Array(queryCount);
+
+    // Populate the source array by parsing integer values from the processed input.
+    for (var idxA = 0; idxA < arraySize; idxA++) {
+        sourceArray[idxA] = parseInt(rawData[1][idxA], 10);
     }
 
-    // Populate the target queries array by parsing integer values
-    for (let idxPrimary = 0; idxPrimary < numQueries; idxPrimary++) {
-        targetQueries[idxPrimary] = parseInt(rawData[3][idxPrimary], 10);
+    // Populate the target queries array by parsing integer values from the processed input.
+    for (var idxA = 0; idxA < queryCount; idxA++) {
+        targetQueries[idxA] = parseInt(rawData[3][idxA], 10);
     }
 
-    // Initialize a counter for successful matches
-    let foundMatches = 0;
+    // Initialize a counter to keep track of matching elements.
+    var matchCounter = 0;
 
-    // Outer loop: iterate through each query item
-    for (let idxPrimary = 0; idxPrimary < numQueries; idxPrimary++) {
-        let idxSecondary; // Declare inner loop index
-        // Inner loop: search for the current query item in the source array
-        for (idxSecondary = 0; idxSecondary < numElements; idxSecondary++) {
-            // If a match is found
-            if (sourceArray[idxSecondary] === targetQueries[idxPrimary]) {
-                break; // Exit the inner loop as the item is found
+    // Iterate through each element in the target queries array.
+    for (var idxA = 0; idxA < queryCount; idxA++) {
+        var idxB; // Declare an index for the inner loop.
+        // For each query element, iterate through the source array to find a match.
+        for (idxB = 0; idxB < arraySize; idxB++) {
+            // If a match is found, exit the inner loop.
+            if (sourceArray[idxB] == targetQueries[idxA]) {
+                break;
             }
         }
-        // If the inner loop terminated early (i.e., a match was found)
-        if (idxSecondary < numElements) {
-            foundMatches++; // Increment the total match count
+        // If the inner loop completed because a match was found (i.e., idxB is less than arraySize).
+        if (idxB < arraySize) {
+            matchCounter++; // Increment the match counter.
         }
     }
-    // Output the final count of found query items
-    console.log(foundMatches);
+
+    // Output the final count of matches to the console.
+    console.log(matchCounter);
 }
 
-// Read input from standard input and pass it to the processing function
-ProcessData( require('fs').readFileSync('/dev/stdin', 'utf8') );
+// Read the entire content of standard input synchronously and pass it to the processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

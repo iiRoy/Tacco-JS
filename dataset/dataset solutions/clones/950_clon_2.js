@@ -1,81 +1,82 @@
-/*
-  This script processes graph data to determine connectivity between nodes.
-  It reads graph structure from standard input, then executes multiple path queries.
-*/
-( function processGraphQueries ( )
-{
+(function executeProgram() {
+  // Read all input from stdin, decode as UTF-8, remove leading/trailing whitespace, and split into an array of lines.
+  const inputDataRows = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split('\n');
 
-  const inputContentRows = require('fs') . readFileSync( '/dev/stdin' , 'utf8' ) . trim() . split( '\n' ) ;
+  // Parse the first line to get the number of nodes (nodeCount) and edges (edgeCount).
+  const [nodeCount, edgeCount] = inputDataRows.shift().split(' ').map(Number);
 
-  // Extract the total number of nodes and edges from the first line of input.
-  const [ graphNodeCount , graphEdgeCount ] = inputContentRows . shift() . split( ' ' ) . map( Number ) ;
+  // Initialize an adjacency list structure for the graph.
+  // Each element is an array representing the neighbors of a node.
+  const adjacencyStructure = Array.from(Array(nodeCount), () => []);
 
-  // Initialize the adjacency list structure for the graph. Each node gets an empty array for its connections.
-  const graphConnections = new Array( graphNodeCount ) . fill( null ) . map( ( ) => new Array ( ) ) ;
+  // This variable is declared but not used in the original code.
+  // It's kept for structural equivalence.
+  const distanceArray = [];
 
-  const extraDataPlaceholder = [ ] ; // This array is declared but remains unused in the current logic.
+  let startNode, endNode; // Variables to hold node indices for edges.
 
-  let edgeStartPoint, edgeEndPoint ;
-
-  // Loop through the input to read and add each edge to the graph's adjacency list.
-  for ( let loopIndex = 0 ; loopIndex < graphEdgeCount ; loopIndex ++ )
-  {
-    [ edgeStartPoint, edgeEndPoint ] = inputContentRows . shift() . split( ' ' ) . map( Number ) ;
-    graphConnections[ edgeStartPoint ] . push( edgeEndPoint ) ;
-    graphConnections[ edgeEndPoint ] . push( edgeStartPoint ) ; // Assuming an undirected graph, add reverse connection.
+  // Loop through the next 'edgeCount' lines to populate the adjacency list.
+  for (let idx = 0; idx < edgeCount; idx++) {
+    // Parse each line to get the two nodes connected by an edge.
+    [startNode, endNode] = inputDataRows.shift().split(' ').map(Number);
+    // Add edges to the adjacency list (undirected graph).
+    adjacencyStructure[startNode].push(endNode);
+    adjacencyStructure[endNode].push(startNode);
   }
 
-
   /**
-   * Performs a Breadth-First Search (BFS) to check for a path between two specified nodes.
-   * @param {number} sourceNodeId - The identifier of the starting node for the path search.
-   * @param {number} destinationNodeId - The identifier of the target node to reach.
-   * @returns {boolean} Returns `true` if a path is found, otherwise `false`.
+   * Checks if there is a path between a source node and a target node using Breadth-First Search (BFS).
+   * @param {number} sourceNodeId - The starting node's identifier.
+   * @param {number} targetNodeId - The target node's identifier.
+   * @returns {boolean} True if a path exists, false otherwise.
    */
-  function checkConnectivity ( sourceNodeId, destinationNodeId )
-  {
-    const STATE_UNVISITED = 0x0 ;  // Node has not been discovered or added to the queue yet.
-    const STATE_EXPLORING = 0x1 ;  // Node has been added to the queue and is awaiting processing.
-    const STATE_EXPLORED  = 0x2 ;  // Node has been fully processed (all its neighbors checked).
+  function pathExists(sourceNodeId, targetNodeId) {
+    // Define states for nodes during BFS traversal.
+    const UNVISITED = 0, VISITING = 1, VISITED = 2; // VISITED (BLACK) is not strictly used but kept for consistency.
 
-    // Create an array to maintain the visit status for all nodes, initially marking them as unvisited.
-    const nodeVisitStates = new Array( graphConnections.length ) . fill ( STATE_UNVISITED ) ;
+    // Initialize the status of all nodes to UNVISITED.
+    const nodeStatus = Array.from(adjacencyStructure, () => UNVISITED);
 
-    let bfsQueue = [ sourceNodeId ] ; // Start the BFS traversal with the initial source node.
-    let currentNodeIdentifier, neighborIdentifier ;
+    // Initialize the BFS queue with the source node.
+    let bfsQueue = [sourceNodeId];
+    let currentNodeId, neighborNodeId; // Variables to hold node IDs during traversal.
 
-    // Continue the BFS process as long as there are nodes remaining in the queue to be explored.
-    while ( ( currentNodeIdentifier = bfsQueue . shift() ) !== undefined )
-    {
+    // Perform BFS traversal.
+    while ((currentNodeId = bfsQueue.shift()) !== undefined) {
+      // Iterate over all neighbors of the current node.
+      for (let neighborIndex = 0; neighborIndex < adjacencyStructure[currentNodeId].length; neighborIndex++) {
+        neighborNodeId = adjacencyStructure[currentNodeId][neighborIndex];
 
-      // Iterate over all nodes directly connected to the current node.
-      for ( let neighborLoopIndex = 0 ; neighborLoopIndex < graphConnections[currentNodeIdentifier].length ; neighborLoopIndex ++ )
-      {
-        neighborIdentifier = graphConnections[currentNodeIdentifier][neighborLoopIndex] ;
-
-        // If the current neighbor is the destination node, a path has been successfully found.
-        if ( neighborIdentifier === destinationNodeId ) {
-          return true ;
+        // If the neighbor is the target node, a path is found.
+        if (neighborNodeId === targetNodeId) {
+          return true;
         }
 
-        // If the neighbor node has not been visited yet, mark it for exploration and add it to the queue.
-        if ( nodeVisitStates[neighborIdentifier] === STATE_UNVISITED ) {
-          nodeVisitStates[neighborIdentifier] = STATE_EXPLORING ;
-          bfsQueue . push( neighborIdentifier ) ;
+        // If the neighbor has not been visited yet, mark it as VISITING and add to the queue.
+        if (nodeStatus[neighborNodeId] === UNVISITED) {
+          nodeStatus[neighborNodeId] = VISITING; // Mark as gray (visiting)
+          bfsQueue.push(neighborNodeId);
         }
       }
     }
-    return false ; // If the loop completes and the destination is not found, no path exists.
+    // If the queue becomes empty and the target was not reached, no path exists.
+    return false;
   }
 
-  inputContentRows . shift( ) ; // Consume the line that acts as a separator or indicates query count.
+  // Discard one line from the input, likely a separator or empty line before queries.
+  inputDataRows.shift();
 
-  // Process each remaining line as a connectivity query and output 'yes' or 'no' for each.
-  console . log (
-    inputContentRows . map ( queryLineText => {
-      const queryNodes = queryLineText . split( ' ' ) . map( Number ) ;
-      return checkConnectivity ( ...queryNodes ) ? 'yes' : 'no' ;
-    } ) . join( '\n' )
-  ) ;
-
-} ) ( ) ;
+  // Process the remaining lines as queries.
+  // For each query, determine if a path exists between the two specified nodes.
+  // The result is 'yes' or 'no', joined by newlines for output.
+  console.log(
+    inputDataRows
+      .map(queryLine => {
+        // Parse the query line to get the two nodes for the path check.
+        const [queryStart, queryEnd] = queryLine.split(' ').map(Number);
+        // Call the pathExists function and return 'yes' or 'no'.
+        return pathExists(queryStart, queryEnd) ? 'yes' : 'no';
+      })
+      .join('\n')
+  );
+})();

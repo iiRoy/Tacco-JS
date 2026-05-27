@@ -1,46 +1,28 @@
-let currentDynamicValue = 'A';
-
-const DATA_FIELD_SEPARATOR = ',';
+let accumulatorValue = 'A';
+const inputDelimiter = ',';
 
 process.stdin.resume();
-
 process.stdin.setEncoding('utf8');
 
-let segmentProcessingCount = 0;
+process.stdin.on('data', function(receivedData) {
+  const dataParts = receivedData.split(inputDelimiter);
 
-const determineNextValue = (firstCandidate, secondCandidate, activeValue) => {
-    if (firstCandidate === activeValue) {
-        return secondCandidate;
-    } else if (secondCandidate === activeValue) {
-        return firstCandidate;
-    }
-    return activeValue;
-};
+  const firstSegment = dataParts[0];
+  const secondSegment = dataParts[1];
 
-process.stdin.on('data', (inputBuffer) => {
-    segmentProcessingCount++;
+  let potentialNewValue = null;
 
-    if (!inputBuffer || typeof inputBuffer !== 'string' || inputBuffer.trim().length === 0) {
-        return;
-    }
+  if (firstSegment === accumulatorValue) {
+    potentialNewValue = secondSegment;
+  } else if (secondSegment === accumulatorValue) {
+    potentialNewValue = firstSegment;
+  }
 
-    const parsedTokens = inputBuffer.trim().split(DATA_FIELD_SEPARATOR);
-
-    if (parsedTokens.length < 2) {
-        return;
-    }
-
-    const primaryToken = parsedTokens[0].trim();
-    const secondaryToken = parsedTokens[1].trim();
-
-    currentDynamicValue = determineNextValue(primaryToken, secondaryToken, currentDynamicValue);
+  if (potentialNewValue !== null) {
+    accumulatorValue = potentialNewValue;
+  }
 });
 
-process.stdin.on('end', () => {
-    console.log(currentDynamicValue);
-});
-
-process.stdin.on('error', (err) => {
-    // Error handling can be added here if needed,
-    // for example, console.error('Input stream error:', err.message);
+process.stdin.on('end', function() {
+  console.log(accumulatorValue);
 });

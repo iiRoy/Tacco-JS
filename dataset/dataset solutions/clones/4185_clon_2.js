@@ -1,30 +1,26 @@
-// This function handles all incoming string data
-function ProcessInputData(rawData) {
-    // The raw data is split into an array of lines
-    let linesArray = rawData.split("\n");
+function ProcessData(rawData) {
+  // The rawData parameter contains the entire input content.
+  // We'll split it into individual lines.
+  let lines = rawData.split("\n");
 
-    // The initial line is further tokenized by spaces
-    const firstLineTokens = linesArray[0].split(" ");
-    
-    // Parsing string tokens into base-10 integers
-    const quantity = parseInt(firstLineTokens[0], 10);
-    const costPerUnit = parseInt(firstLineTokens[1], 10);
-    const fixedPrice = parseInt(firstLineTokens[2], 10);
+  // The first line contains space-separated values.
+  let firstLineParts = lines[0].split(" ");
 
-    // Calculate the total cost based on quantity and per-unit cost
-    const totalVariableCost = costPerUnit * quantity;
+  // Convert string parts to integers using base 10.
+  const countVal = parseInt(firstLineParts[0], 10);
+  const costPerUnit = parseInt(firstLineParts[1], 10);
+  const fixedCost = parseInt(firstLineParts[2], 10);
 
-    // Determine and output the greater of two calculated values
-    if  ( totalVariableCost >= fixedPrice )  {
-        console.log('%d', totalVariableCost); // Display the calculated variable cost
-    }
-    else  {
-        console.log('%d', fixedPrice); // Display the alternative fixed price
-    }
+  // Calculate the total cost based on units.
+  let totalVariableCost = costPerUnit * countVal;
 
-    // A commented-out example of a different output format
-    // console.log('%d %s', value1 + value2 + value3, anotherString); 
+  // Compare the calculated cost with the fixed cost and output the larger one.
+  if (totalVariableCost >= fixedCost) {
+    console.log('%d', totalVariableCost);
+  } else {
+    console.log('%d', fixedCost);
+  }
 }
 
-// Invoke the primary processing function with data read from standard input
-ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Read input from standard input and pass it to the processing function.
+ProcessData(require("fs").readFileSync("/dev/stdin", "utf8"));

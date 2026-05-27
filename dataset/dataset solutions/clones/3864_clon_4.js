@@ -1,27 +1,28 @@
-const processInputData = (rawData) => {
-    const textLines = rawData.trim().split('\n');
-    const stringifiedNumbers = textLines[1].split(' ');
-    
-    const numericalValues = stringifiedNumbers.map(val => Number(val));
+"use strict";
 
-    const runningSums = numericalValues.reduce((accumulator, currentElement) => {
-        const previousTotal = accumulator.length > 0 ? accumulator[accumulator.length - 1] : 0;
-        accumulator.push(previousTotal + currentElement);
-        return accumulator;
-    }, [0]);
+const processInputAndSolve = (rawInput) => {
+    const lines = rawInput.trim().split("\n");
+    const numericElements = lines[1].split(" ").map(val => Number(val));
 
-    const sumOccurrences = runningSums.reduce((frequencyMap, presentSum) => {
-        frequencyMap.set(presentSum, (frequencyMap.get(presentSum) || 0) + 1);
-        return frequencyMap;
-    }, new Map());
+    let currentAccumulation = 0;
+    let zeroSumPairings = 0;
+    const cumulativeSumFrequencies = new Map();
 
-    const finalCombinationCount = Array.from(sumOccurrences.values()).reduce((totalCount, currentFrequency) => {
-        return totalCount + (currentFrequency * (currentFrequency - 1)) / 2;
-    }, 0);
-    
-    console.log(finalCombinationCount);
+    cumulativeSumFrequencies.set(0, 1);
+
+    for (const element of numericElements) {
+        currentAccumulation += element;
+        const previousCount = cumulativeSumFrequencies.get(currentAccumulation);
+
+        if (previousCount !== undefined) {
+            zeroSumPairings += previousCount;
+            cumulativeSumFrequencies.set(currentAccumulation, previousCount + 1);
+        } else {
+            cumulativeSumFrequencies.set(currentAccumulation, 1);
+        }
+    }
+
+    console.log(zeroSumPairings);
 };
 
-const acquireExternalContent = () => require('fs').readFileSync('/dev/stdin', 'utf8');
-
-processInputData(acquireExternalContent());
+processInputAndSolve(require('fs').readFileSync('/dev/stdin', 'utf8'));

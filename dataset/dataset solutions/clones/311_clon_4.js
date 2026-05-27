@@ -1,45 +1,36 @@
-const systemUtils = require('fs');
+const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+const contentLines = fileContent.trim().split('\n');
 
-const dataLoader = (path) => systemUtils.readFileSync(path, 'utf8');
+const matrixDimension = Number(contentLines[0]);
+const inputGrid = [];
 
-const fileContent = dataLoader('/dev/stdin');
-const linesOfInput = fileContent.trim().split('\n');
-
-const matrixSize = parseInt(linesOfInput.shift(), 10);
-const sourceGrid = [];
-
-for (let rIndex = 0; rIndex < matrixSize; rIndex++) {
-    const rowData = linesOfInput.shift().split(' ').map(Number);
-    sourceGrid.push(rowData);
+for (let r = 1; r <= matrixDimension; r++) {
+    inputGrid.push(contentLines[r].split(' ').map(Number));
 }
 
-let maximumValue = -Infinity;
+let overallMaximumSubarraySum = -Infinity;
 
-if (matrixSize === 0) {
-    maximumValue = 0; // Or handle as per problem specific empty matrix interpretation
-} else {
-    for (let currentTopRow = 0; currentTopRow < matrixSize; currentTopRow++) {
-        let columnAggregates = new Array(matrixSize).fill(0);
+for (let topBoundaryRow = 0; topBoundaryRow < matrixDimension; topBoundaryRow++) {
+    const currentColumnSums = new Array(matrixDimension).fill(0);
 
-        for (let currentBottomRow = currentTopRow; currentBottomRow < matrixSize; currentBottomRow++) {
-            // Accumulate sums for columns between currentTopRow and currentBottomRow
-            for (let cIndex = 0; cIndex < matrixSize; cIndex++) {
-                columnAggregates[cIndex] += sourceGrid[currentBottomRow][cIndex];
-            }
-
-            // Apply Kadane's algorithm to the 1D columnAggregates array
-            // to find the maximum sum subarray within this band of rows.
-            let currentBandMax = columnAggregates[0];
-            let runningSumForBand = columnAggregates[0];
-
-            for (let colIterator = 1; colIterator < matrixSize; colIterator++) {
-                runningSumForBand = Math.max(columnAggregates[colIterator], runningSumForBand + columnAggregates[colIterator]);
-                currentBandMax = Math.max(currentBandMax, runningSumForBand);
-            }
-            
-            maximumValue = Math.max(maximumValue, currentBandMax);
+    for (let bottomBoundaryRow = topBoundaryRow; bottomBoundaryRow < matrixDimension; bottomBoundaryRow++) {
+        for (let colIndex = 0; colIndex < matrixDimension; colIndex++) {
+            currentColumnSums[colIndex] += inputGrid[bottomBoundaryRow][colIndex];
         }
+
+        let maxSliceSum = -Infinity;
+        let runningSliceSum = 0;
+
+        for (let k = 0; k < matrixDimension; k++) {
+            runningSliceSum += currentColumnSums[k];
+            maxSliceSum = Math.max(maxSliceSum, runningSliceSum);
+            if (runningSliceSum < 0) {
+                runningSliceSum = 0;
+            }
+        }
+        
+        overallMaximumSubarraySum = Math.max(overallMaximumSubarraySum, maxSliceSum);
     }
 }
 
-console.log(maximumValue);
+console.log(overallMaximumSubarraySum);

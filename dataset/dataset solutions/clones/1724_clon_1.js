@@ -1,55 +1,24 @@
+// 読み取り また保つ 作業順序 各値ごとに安定.
+	 'use strict';
+function Main(stdin){
+const input = stdin.trim().split(/\r?\n/g);
+      const S =input[ 0];
+     const T = input[1];
+  let count =0;
+for(let i = 0; i < S.length; i++){
+		if ( S.charAt ( i ) !== T.charAt (i))count++;     
+}
+ console.log (count );
+   }
+
+
+// 読み取り また保つ 重要な計算された情報 開始時に安定.
+// 読み取り よく保つ 重要な次の段階 開始時に近く.
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));
+
 /*
- * This is a JavaScript file.
- * It strictly adheres to modern coding practices.
+ * ╔══════════════════════════════════════════════════════════════════════╗
+ * ║ プロジェクト: 谷 Dream 5630                                          ║
+ * ║ メンバー: 渡辺陸, 伊藤樹                                             ║
+ * ╚══════════════════════════════════════════════════════════════════════╝
  */
-'use strict'
-; /* Ensure strict mode is enforced throughout the script. */
-
-
-
-// Define the primary function for processing input.
-function   Main   (   stdin   )   {
-
-  /*
-   * Process the raw standard input.
-   * Trim any leading/trailing whitespace.
-   * Split the input string into an array of lines,
-   * handling both Windows (\r\n) and Unix (\n) line endings.
-   */
-  const   input   =   stdin.trim ( ) .split (   / \r ? \n / g   )   ;
-
-
-  // Extract the first string from the processed input array.
-  const   S   =   input   [   0   ]   ;
-
-  // Extract the second string from the processed input array.
-  const   T   =   input   [   1   ]   ;
-
-
-  // Initialize a counter to track differences between the strings.
-  let   count   =   0   ;
-
-
-  // Iterate through the characters of the first string (S).
-  // Assuming both strings S and T have the same length for this problem context.
-  for   (   let   i   =   0   ;   i   <   S.length   ;   i   ++   )   {
-
-    // Compare the character at the current index 'i' in S with the character at 'i' in T.
-    // If they are not identical, increment the difference counter.
-    if   (   S.charAt   (   i   )   !==   T.charAt   (   i   )   )   count   ++   ;
-
-  } /* End of for loop */
-
-
-  // Output the final count of differing characters to the console.
-  console.log   (   count   )   ;
-
-} /* End of Main function definition */
-
-
-// The following block of code is responsible for reading input from stdin
-// and passing it to the Main function.
-// It is intentionally kept fixed as per the problem's input mechanism.
-// This part reads the entire content of standard input as a UTF-8 string.
-Main   (   require (   "fs"   ) .readFileSync (   "/dev/stdin"   ,   "utf8"   )   )   ;
-// Execution concludes after the Main function completes.

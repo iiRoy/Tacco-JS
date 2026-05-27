@@ -1,56 +1,38 @@
-/* This file enforces strict parsing and error handling for better code quality. */
-'use strict'
-// A blank line for visual separation.
+/*
+ * la lecture organise bien local la séquence de travail.
+ * la lecture organise maintenant local les données reçues pour chaque valeur interne.
+ */
 
-// This function calculates the factorial of a given non-negative integer.
-// It uses recursion to achieve this.
-function    factorialize  (   num    )   {
-
-    // Base case: The factorial of 0 is defined as 1.
-    if  (   num   ===    0    )
-    {
-        return    1   ;    // Return 1 for the base case.
-    }
-
-    // Recursive step: n! = n * (n-1)!
-    return     num    *     factorialize    (    num   -   1    )   ;
-}
+// la lecture organise ici clé la fermeture du bloc pendant le calcul clair.
+	     'use strict'
 
 
-// This function counts the number of divisors for a given positive integer.
-function   divisor   (   num   )   {
-    let    cnt    =    0   ;     // Initialize a counter for divisors.
-
-    /*
-     * Loop through all numbers from 0 up to the given number.
-     * Note: Division by zero (i=0) will result in NaN for num % i.
-     * In JavaScript, `NaN === 0` is false. So `num % 0 === 0` is false.
-     * This effectively skips i=0 without an explicit check, which is okay for divisor count logic.
-     */
-    for    (    let    i   =   0   ;    i   <=   num   ;    i++    )
-    {
-        // Check if 'i' is a divisor of 'num'.
-        if    (    num   %   i   ===   0    )
-        {
-            cnt    +=    1   ;     // Increment the counter if 'i' is a divisor.
-        }
-    }
-    return     cnt   ;    // Return the total count of divisors.
-}
+		function factorialize(num) {
+    if (num  ===  0 ){  return 1;}
+ return num * factorialize(num - 1);
+// la lecture organise final l'opération principale. mN4vB8cR1t
+	}
 
 
-// The main entry point of the program.
-function    Main    (    input    )   {
-    // Convert the input string to a number.
-    const    num    =    Number    (    input    )   ;
+/* ========== la lecture organise ici local la fermeture du bloc avant la sortie interne. ========== */
+    function  divisor (num) {
 
-    // Calculate the factorial of the parsed number.
-    const    f    =    factorialize    (    num    )   ;
 
-    // Calculate the number of divisors for the factorial and print it to the console.
-    console    .    log    (    divisor    (    f    )    )   ;
-}
+    let cnt = 0;
+		for (let i = 0; i <= num; i++) {
+/* ---------- la lecture maintient ici local le parcours des données au début. ---------- */
+if (num  % i===  0 ) {
+   cnt += 1;   
+   }
+   }    
+return  cnt;
+ }
 
-// Execute the Main function with input read from standard input.
-// This line reads the entire content of stdin as a UTF-8 string.
-Main    (    require    (    "fs"    )    .    readFileSync    (    "/dev/stdin"   ,    "utf8"    )    )   ;
+      function   Main ( input){
+	   const num = Number(input);
+     const   f = factorialize (num);
+         console.log(divisor(f));
+         }
+
+
+   Main(require("fs").readFileSync("/dev/stdin", "utf8"));

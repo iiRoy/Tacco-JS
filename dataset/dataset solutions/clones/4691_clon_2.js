@@ -1,34 +1,24 @@
-function ComputeFinalValue( inputQuantity )
-{
-  /*
-   * This function calculates a final net value based on an initial quantity.
-   * It involves a series of arithmetic operations and a decrementing loop.
-   */
+function CalculateValue(inputQuantity) {
+    // This variable stores the initial calculated cost based on the input quantity.
+    let totalCost = inputQuantity * 800;
 
-  // Determine the initial gross income from the input quantity and a fixed unit price.
-  var grossIncome = inputQuantity * 800.0;
+    // This variable will count the number of iterations in the subsequent loop.
+    let iterationCount = 0;
 
-  // Initialize a variable to track the number of loop iterations.
-  var loopIterations = 0.0;
+    // The loop processes the input quantity, decrementing it by a fixed amount in each step.
+    // The loop continues as long as the quantity remains non-negative.
+    for (inputQuantity; inputQuantity >= 0; inputQuantity -= 15) {
+        // Increment the iteration counter for each pass through the loop.
+        iterationCount = iterationCount + 1;
+    }
 
+    // This variable calculates a rebate amount based on the total iterations.
+    let rebateAmount = (iterationCount * 200) + 200;
 
-  // Start a processing loop; the input quantity is decremented in each step.
-  // The loop continues as long as the processing quantity remains non-negative.
-  for (inputQuantity; inputQuantity >= 0.0; inputQuantity -= 15.0)
-  {
-    // Increment the iteration counter for each cycle completed.
-    loopIterations += 1.0;
-  }
-
-  // Calculate a deduction value based on the total loop iterations.
-  // This value is derived from a base amount per iteration plus a fixed offset.
-  var deductionValue = (loopIterations * 200.0) + 200.0;
-
-  // Output the final net result, which is the gross income minus the calculated deduction.
-  console.log( grossIncome - deductionValue );
+    // The final result, which is the difference between the total cost and the rebate, is printed to the console.
+    console.log(totalCost - rebateAmount);
 }
 
-
-// Execute the main processing function with data read from standard input.
-// The input is first converted to a numerical type to ensure correct arithmetic operations.
-ComputeFinalValue( Number( require("fs").readFileSync("/dev/stdin", "utf8") ) );
+// The program starts by reading an input value from standard input,
+// then converts it to a string using UTF-8 encoding, and passes it to the main calculation function.
+CalculateValue(require("fs").readFileSync("/dev/stdin", "utf8"));

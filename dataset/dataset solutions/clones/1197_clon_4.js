@@ -1,164 +1,116 @@
-const INITIAL_FACE_MAP = [0, 4, 2, 1, 3, 5]; // Maps input labels to internal [T, F, R, B, L, D] indices
-const REVERSE_INITIAL_FACE_MAP = [0, 3, 2, 4, 1, 5]; // Maps internal [T, F, R, B, L, D] indices back to original input order [T, B, R, L, F, D]
+class Cube {
+    static #TOP_FACE_INDEX = 0;
+    static #BACK_FACE_INDEX = 1;
+    static #RIGHT_FACE_INDEX = 2;
+    static #LEFT_FACE_INDEX = 3;
+    static #FRONT_FACE_INDEX = 4;
+    static #BOTTOM_FACE_INDEX = 5;
 
-// Precomputed permutation matrices for each rotation type
-// Each array represents: new_face_value[new_index] = old_face_value[old_index_from_here]
-const ROTATION_RULES = {
-    'W': [4, 1, 0, 3, 5, 2], // West: (L->T, T->R, R->D, D->L)
-    'N': [1, 5, 2, 0, 4, 3], // North: (F->T, T->B, B->D, D->F)
-    'E': [2, 1, 5, 3, 0, 4], // East: (R->T, T->L, L->D, D->R)
-    'S': [3, 0, 2, 5, 4, 1], // South: (B->T, T->F, F->D, D->B)
-    'C': [0, 2, 3, 4, 1, 5], // Clockwise (around top-bottom axis): (R->F, F->L, L->B, B->R)
-    'A': [0, 4, 1, 2, 3, 5]  // Anti-clockwise (around top-bottom axis): (L->F, F->R, R->B, B->L)
-};
-
-// Applies a permutation `rule` to an array of `current_labels`
-const reorderSurfaces = (current_labels, rule) => {
-    const next_labels = new Array(6);
-    for (let i = 0; i < 6; i++) {
-        next_labels[i] = current_labels[rule[i]];
-    }
-    return next_labels;
-};
-
-// Composes two permutations: `base_transformation` followed by `rotation_rule`
-const composeTransformations = (base_transformation, rotation_rule) => {
-    const new_transformation = new Array(6);
-    for (let i = 0; i < 6; i++) {
-        new_transformation[i] = base_transformation[rotation_rule[i]];
-    }
-    return new_transformation;
-};
-
-// Precomputes all 24 unique transformation matrices representing all possible orientations of a cube.
-// This is a core divergence from the original's iterative turning.
-const ALL_CUBE_TRANSFORMATIONS = (() => {
-    const transformations = [];
-    
-    // Define 6 base transformations, each bringing a different original face to the top (index 0).
-    const identity = [0, 1, 2, 3, 4, 5]; // Original Top is Top
-    const northRotation = ROTATION_RULES['N']; // Original Front is Top
-    const southRotation = ROTATION_RULES['S']; // Original Back is Top
-    const westRotation = ROTATION_RULES['W'];  // Original Left is Top
-    const eastRotation = ROTATION_RULES['E'];  // Original Right is Top
-    const bottomRotation = composeTransformations(northRotation, ROTATION_RULES['N']); // Original Bottom is Top (N then N)
-
-    const TOP_FACE_BASES = [
-        identity,
-        northRotation,
-        southRotation,
-        westRotation,
-        eastRotation,
-        bottomRotation
-    ];
-
-    for (const basePermutation of TOP_FACE_BASES) {
-        let currentPermutation = basePermutation;
-        for (let i = 0; i < 4; i++) { // For each top-face base, apply Clockwise rotation 4 times
-            transformations.push(currentPermutation);
-            currentPermutation = composeTransformations(currentPermutation, ROTATION_RULES['C']);
-        }
-    }
-    return transformations;
-})();
-
-// Factory function for creating a block object (equivalent to Dice)
-const createBlock = (indicator_sequence) => {
-    // Map input labels to the internal canonical face order [T, F, R, B, L, D]
-    let current_face_labels = INITIAL_FACE_MAP.map(idx => indicator_sequence[idx]);
-
-    // Method to rotate the block
-    const reposition = (direction_key) => {
-        const rule = ROTATION_RULES[direction_key];
-        if (rule) {
-            current_face_labels = reorderSurfaces(current_face_labels, rule);
-        }
+    static #ROTATION_PERMUTATIONS = {
+        'W': [Cube.#RIGHT_FACE_INDEX, Cube.#BACK_FACE_INDEX, Cube.#BOTTOM_FACE_INDEX, Cube.#TOP_FACE_INDEX, Cube.#FRONT_FACE_INDEX, Cube.#LEFT_FACE_INDEX],
+        'N': [Cube.#FRONT_FACE_INDEX, Cube.#TOP_FACE_INDEX, Cube.#RIGHT_FACE_INDEX, Cube.#LEFT_FACE_INDEX, Cube.#BOTTOM_FACE_INDEX, Cube.#BACK_FACE_INDEX],
+        'E': [Cube.#LEFT_FACE_INDEX, Cube.#BACK_FACE_INDEX, Cube.#TOP_FACE_INDEX, Cube.#BOTTOM_FACE_INDEX, Cube.#FRONT_FACE_INDEX, Cube.#RIGHT_FACE_INDEX],
+        'S': [Cube.#BACK_FACE_INDEX, Cube.#BOTTOM_FACE_INDEX, Cube.#RIGHT_FACE_INDEX, Cube.#LEFT_FACE_INDEX, Cube.#TOP_FACE_INDEX, Cube.#FRONT_FACE_INDEX],
+        'R': [Cube.#TOP_FACE_INDEX, Cube.#LEFT_FACE_INDEX, Cube.#FRONT_FACE_INDEX, Cube.#BACK_FACE_INDEX, Cube.#RIGHT_FACE_INDEX, Cube.#BOTTOM_FACE_INDEX],
+        'L': [Cube.#TOP_FACE_INDEX, Cube.#RIGHT_FACE_INDEX, Cube.#BACK_FACE_INDEX, Cube.#FRONT_FACE_INDEX, Cube.#LEFT_FACE_INDEX, Cube.#BOTTOM_FACE_INDEX]
     };
 
-    // Method to get the current face labels
-    const getFaceLabels = () => [...current_face_labels];
+    #faceValues;
 
-    // Method to create a deep copy of the block in its current state
-    const replicateState = () => {
-        const originalFormatLabels = REVERSE_INITIAL_FACE_MAP.map(idx => current_face_labels[idx]);
-        return createBlock(originalFormatLabels);
-    };
+    constructor(initialLabels) {
+        this.#faceValues = [...initialLabels];
+    }
 
-    // Method to check if two blocks are identical in their current orientation
-    const checkIdentity = (other_block) => {
-        const other_labels = other_block.getFaceLabels();
-        return current_face_labels.every((val, idx) => val === other_labels[idx]);
-    };
+    get top() { return this.#faceValues[Cube.#TOP_FACE_INDEX]; }
+    get back() { return this.#faceValues[Cube.#BACK_FACE_INDEX]; }
+    get right() { return this.#faceValues[Cube.#RIGHT_FACE_INDEX]; }
+    get left() { return this.#faceValues[Cube.#LEFT_FACE_INDEX]; }
+    get front() { return this.#faceValues[Cube.#FRONT_FACE_INDEX]; }
+    get bottom() { return this.#faceValues[Cube.#BOTTOM_FACE_INDEX]; }
 
-    // Method to check if two blocks are rotationally equivalent
-    const areRotationallyEquivalent = (other_block) => {
-        const other_base_labels = other_block.getFaceLabels();
+    applyRotation(direction) {
+        const permutation = Cube.#ROTATION_PERMUTATIONS[direction];
+        const newFaceValues = new Array(6);
+        for (let i = 0; i < 6; i++) {
+            newFaceValues[i] = this.#faceValues[permutation[i]];
+        }
+        this.#faceValues = newFaceValues;
+    }
 
-        // Generate all 24 orientations for 'this' block and store them as stringified arrays in a Set
-        const this_orientations_set = new Set();
-        for (const transformation of ALL_CUBE_TRANSFORMATIONS) {
-            this_orientations_set.add(JSON.stringify(reorderSurfaces(current_face_labels, transformation)));
+    replicate() {
+        return new Cube(this.#faceValues);
+    }
+
+    match(otherCube) {
+        return this.#faceValues.every((val, idx) => val === otherCube.#faceValues[idx]);
+    }
+
+    #generateAllOrientations() {
+        const allStates = [];
+        let current = this.replicate();
+
+        for (let k = 0; k < 4; k++) {
+            allStates.push(current.replicate());
+            current.applyRotation('R');
         }
 
-        // Check if any of 'other_block's 24 orientations match any of 'this_block's orientations
-        for (const transformation of ALL_CUBE_TRANSFORMATIONS) {
-            const transformed_other = reorderSurfaces(other_base_labels, transformation);
-            if (this_orientations_set.has(JSON.stringify(transformed_other))) {
+        const majorTurns = ['N', 'E', 'E', 'E', 'N'];
+        for (const majorDir of majorTurns) {
+            current.applyRotation(majorDir);
+            for (let k = 0; k < 4; k++) {
+                allStates.push(current.replicate());
+                current.applyRotation('R');
+            }
+        }
+        return allStates;
+    }
+
+    isCongruent(otherCube) {
+        const allMyOrientations = this.#generateAllOrientations();
+        for (const myOrientedCube of allMyOrientations) {
+            if (myOrientedCube.match(otherCube)) {
                 return true;
             }
         }
         return false;
-    };
+    }
 
-    // Method to find the right-side label when specific top and back labels are oriented
-    const retrieveRightForTopAndBack = (desired_top, desired_back) => {
-        for (const transformation of ALL_CUBE_TRANSFORMATIONS) {
-            const transformed_labels = reorderSurfaces(current_face_labels, transformation);
-            if (transformed_labels[0] === desired_top && transformed_labels[3] === desired_back) { // index 0 is top, index 3 is back
-                return transformed_labels[2]; // index 2 is right
+    retrieveRightFace(targetTop, targetBack) {
+        const allMyOrientations = this.#generateAllOrientations();
+        for (const myOrientedCube of allMyOrientations) {
+            if (myOrientedCube.top === targetTop && myOrientedCube.back === targetBack) {
+                return myOrientedCube.right;
             }
         }
         return null;
-    };
+    }
+}
 
-    return {
-        reposition,
-        getFaceLabels,
-        replicate: replicateState,
-        checkIdentity,
-        areRotationallyEquivalent,
-        retrieveRightForTopAndBack
-    };
-};
+(function(inputData) {
+    const lines = inputData.split('\n');
+    let lineIndex = 0;
 
-// Main execution logic
-((source_input) => {
-    const input_lines = source_input.split('\n').filter(line => line.trim() !== '');
-    const number_of_blocks = Number(input_lines.shift());
-    const block_collection = [];
+    const numberOfCubes = Number(lines[lineIndex++]);
+    const cubeCollection = [];
 
-    for (let i = 0; i < number_of_blocks; i++) {
-        const marks_for_block = input_lines.shift().split(' ').map(Number);
-        block_collection.push(createBlock(marks_for_block));
+    for (let i = 0; i < numberOfCubes; i++) {
+        const faceLabels = lines[lineIndex++].split(' ').map(Number);
+        const currentCube = new Cube(faceLabels);
+        cubeCollection.push(currentCube);
     }
 
-    let has_equivalent_blocks = false;
-    for (let i = 0; i < number_of_blocks; i++) {
-        for (let j = i + 1; j < number_of_blocks; j++) {
-            if (block_collection[i].areRotationallyEquivalent(block_collection[j])) {
-                has_equivalent_blocks = true;
+    let hasDuplicate = false;
+    for (let i = 0; i < numberOfCubes; i++) {
+        for (let j = i + 1; j < numberOfCubes; j++) {
+            if (cubeCollection[i].isCongruent(cubeCollection[j])) {
+                hasDuplicate = true;
                 break;
             }
         }
-        if (has_equivalent_blocks) {
+        if (hasDuplicate) {
             break;
         }
     }
 
-    if (has_equivalent_blocks) {
-        console.log('No');
-    } else {
-        console.log('Yes');
-    }
-
+    console.log(hasDuplicate ? 'No' : 'Yes');
 })(require('fs').readFileSync('/dev/stdin', 'utf8'));

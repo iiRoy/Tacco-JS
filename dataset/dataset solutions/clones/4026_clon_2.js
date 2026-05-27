@@ -1,61 +1,48 @@
-const ioManager = require('fs'); // Acquire the file system interaction module
+const fs = require('fs'); // Import the file system module for I/O operations
 
 /**
- * Orchestrates the processing of incoming text data to compute
- * a differential score based on numerical values.
- * @param {string} sourceText - The complete string data obtained from input.
+ * Processes the raw input string to calculate a specific difference.
+ * @param {string} rawData The entire input content read from stdin.
  */
-function processInputData( sourceText )
-{
-  // Divide the entire input string into an array of distinct lines.
-  let dataLines = sourceText.split( '\n' );
+function processInput(rawData) {
+  // Split the input string into an array of lines
+  let lineArray = rawData.split('\n');
 
-  // Parse the initial line to determine the total count of items.
-  // Although 'totalElements' might not be directly utilized in this specific algorithm,
-  // it is part of the established input format.
-  let totalElements = parseInt( dataLines[0], 10 );
+  // Parse the first line to get the count of items (N)
+  const itemCount = parseInt(lineArray[0], 10);
 
-  // Retrieve the second line, which is expected to contain space-separated numeric values.
-  let valueList = dataLines[1].split( ' ' );
+  // Split the second line by spaces to get string representations of numbers
+  let numericValues = lineArray[1].split(' ');
 
-  // Transform the array of string representations of numbers into an array of actual integers.
-  valueList = valueList.map( elementText => parseInt( elementText, 10 ) );
+  // Convert string numbers to integers and store them in an array
+  numericValues = numericValues.map(numStr => parseInt(numStr, 10));
 
-  // Arrange the numerical items in descending order to facilitate alternating distribution.
-  valueList.sort().reverse();
+  // Sort the array in descending order
+  numericValues.sort().reverse();
 
-  // Initialize the cumulative scores for the two distinct participants.
-  let firstPlayerTotal  =  0;
-  let secondPlayerTotal = 0;
+  // Initialize two accumulators for sums
+  let sumA = 0;
+  let sumB = 0;
 
-  // Iterate over each numeric item in the sorted collection, distributing them alternately
-  // between the two players based on their sequential position.
-  valueList.forEach( ( numericItem, position ) => {
-    // If the current position (index) is odd, the item goes to the second player;
-    // otherwise, it is assigned to the first player.
-    if ( ( position % 2 ) === 1 )
-    {
-      secondPlayerTotal += numericItem;
+  // Iterate through the sorted numbers, distributing them based on index parity
+  numericValues.forEach((currentVal, idx) => {
+    // If the index is odd, add to sumB; otherwise, add to sumA
+    if (idx % 2 !== 0) { // Equivalent to (idx & 1)
+      sumB += currentVal;
+    } else {
+      sumA += currentVal;
     }
-    else
-    {
-      firstPlayerTotal += numericItem;
-    }
-  } );
+  });
 
-  // Calculate the ultimate difference between the accumulated scores of the two players.
-  let scoreDifference = firstPlayerTotal - secondPlayerTotal;
+  // Calculate the final result as the difference between the two sums
+  const finalResult = sumA - sumB;
 
-  // Display the final computed score difference to the standard output stream.
-  console.log( scoreDifference );
+  // Output the computed result to the console
+  console.log(finalResult);
 }
 
-// Define a constant for the standard input file path, ensuring reusability and clarity.
-const STANDARD_INPUT_PATH = '/dev/stdin';
+// Read the entire content of standard input as a UTF-8 string
+const fileContent = fs.readFileSync('/dev/stdin', 'utf8');
 
-// Read the entirety of the standard input file content synchronously,
-// specifying UTF-8 encoding for proper character interpretation.
-let rawData = ioManager.readFileSync( STANDARD_INPUT_PATH, 'utf8' );
-
-// Initiate the primary data processing routine by passing the freshly read raw input.
-processInputData( rawData );
+// Call the main processing function with the obtained file content
+processInput(fileContent);

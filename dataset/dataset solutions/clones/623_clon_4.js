@@ -1,36 +1,20 @@
-const acquireSourceContent = () => {
-    return require('fs').readFileSync('/dev/stdin', 'utf8');
-};
+const sourceContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+const dataLines = sourceContent.trim().split('\n');
 
-const processRawData = (sourceString) => {
-    const segmentedData = sourceString.trim().split('\n');
-    const recordsCount = Number(segmentedData.shift());
-    
-    const pertinentEntries = segmentedData.slice(0, recordsCount);
+const entryCount = Number(dataLines.shift());
 
-    const dataCollection = pertinentEntries.reduce((registry, currentRecord) => {
-        const parts = currentRecord.split(' ');
-        const itemKey = parts[0];
-        const itemValue = Number(parts[1]);
+const valueAggregator = dataLines.slice(0, entryCount).reduce((accumulatorMap, currentEntry) => {
+    const [identifier, quantityText] = currentEntry.split(' ');
+    const numericQuantity = parseInt(quantityText, 10);
 
-        registry.set(itemKey, (registry.get(itemKey) || 0) + itemValue);
-        return registry;
-    }, new Map());
+    accumulatorMap.set(identifier, (accumulatorMap.get(identifier) || 0) + numericQuantity);
+    return accumulatorMap;
+}, new Map());
 
-    return dataCollection;
-};
+const sortedIdentifiers = Array.from(valueAggregator.keys()).sort();
 
-const generateFormattedOutput = (processedCollection) => {
-    const orderedKeys = [...processedCollection.keys()].sort();
-    
-    const outputLines = orderedKeys.map(key => 
-        `${key} ${processedCollection.get(key)}`
-    );
-    
-    return outputLines.join('\n');
-};
+const outputString = sortedIdentifiers.map(keyIdentifier => {
+    return `${keyIdentifier} ${valueAggregator.get(keyIdentifier)}`;
+}).join('\n');
 
-const sourceText = acquireSourceContent();
-const aggregatedValues = processRawData(sourceText);
-const finalResult = generateFormattedOutput(aggregatedValues);
-console.log(finalResult);
+console.log(outputString);

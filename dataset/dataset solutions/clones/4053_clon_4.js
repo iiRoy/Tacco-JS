@@ -1,50 +1,30 @@
 'use strict';
+function ProcessInput(sourceText) {
+    const rawLines = sourceText.trim().split(/\r?\n/g);
+    const elementCount = Number(rawLines.shift());
+    const dataMatrix = rawLines.map(line => line.split(' ').map(str => Number(str)));
 
-const extractAllNumbers = (sourceText) => {
-    return sourceText.match(/-?\d+/g).map(Number);
-};
+    const firstRowPrefixSums = dataMatrix[0].reduce((accumulator, currentVal, index) => {
+        const previousSum = index > 0 ? accumulator[index - 1] : 0;
+        accumulator.push(previousSum + currentVal);
+        return accumulator;
+    }, []);
 
-const computeAccumulatedPrefixes = (sequence) => {
-    let runningTotal = 0;
-    return sequence.map(item => {
-        runningTotal += item;
-        return runningTotal;
-    });
-};
-
-const computeAccumulatedSuffixes = (sequence) => {
-    const dataSize = sequence.length;
-    const suffixTotals = new Array(dataSize);
-    let sumFromEnd = 0;
-    for (let currentIdx = dataSize - 1; currentIdx >= 0; currentIdx--) {
-        sumFromEnd += sequence[currentIdx];
-        suffixTotals[currentIdx] = sumFromEnd;
-    }
-    return suffixTotals;
-};
-
-function ProcessInput(sourceData){
-    const numericalValues = extractAllNumbers(sourceData);
-
-    const matrixDimension = numericalValues[0];
-    const remainingValues = numericalValues.slice(1);
-
-    const topRowElements = remainingValues.slice(0, matrixDimension);
-    const bottomRowElements = remainingValues.slice(matrixDimension, 2 * matrixDimension);
-
-    const topRowPrefixSums = computeAccumulatedPrefixes(topRowElements);
-    const bottomRowSuffixSums = computeAccumulatedSuffixes(bottomRowElements);
-
-    let overallHighestSum = 0;
-
-    if (matrixDimension > 0) {
-        const candidateSums = Array.from({ length: matrixDimension }, (_, indexPosition) => {
-            return topRowPrefixSums[indexPosition] + bottomRowSuffixSums[indexPosition];
-        });
-        overallHighestSum = Math.max(...candidateSums);
+    const secondRowSuffixSums = new Array(elementCount);
+    if (elementCount > 0) {
+        secondRowSuffixSums[elementCount - 1] = dataMatrix[1][elementCount - 1];
+        for (let i = elementCount - 2; i >= 0; i--) {
+            secondRowSuffixSums[i] = dataMatrix[1][i] + secondRowSuffixSums[i + 1];
+        }
     }
 
-    console.log(Math.max(0, overallHighestSum));
+    const maxCombinedSum = (elementCount === 0)
+        ? 0 // Original code outputs 0 if N is 0, though N=0 would cause errors in array access.
+        : Array.from({ length: elementCount }, (_, index) =>
+            firstRowPrefixSums[index] + secondRowSuffixSums[index]
+        ).reduce((maxVal, currentVal) => Math.max(maxVal, currentVal), -Infinity);
+
+    console.log(maxCombinedSum);
 }
 
 ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

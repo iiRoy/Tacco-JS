@@ -1,94 +1,45 @@
-const sourceConfiguration = {
-  inputPath: '/dev/stdin',
-  lineBreaker: '\n'
-};
+const inputConfig = { input: '/dev/stdin', newline: '\n' };
 
-const fileSystemUtility = require('fs');
-const synchronizedFileRead = fileSystemUtility.readFileSync;
+const fileContent = require('fs').readFileSync(inputConfig.input, 'ascii').trim();
+const rawLines = fileContent.split(inputConfig.newline);
 
-if (!String.prototype.removeOuterWhitespace) {
-    String.prototype.removeOuterWhitespace = function() {
-        return this.trim();
-    };
-}
-if (!String.prototype.splitIntoSegments) {
-    String.prototype.splitIntoSegments = function(separator) {
-        return this.split(separator);
-    };
-}
-if (!Array.prototype.transformWithConverter) {
-    Array.prototype.transformWithConverter = function(converterFunction) {
-        return this.map(converterFunction);
-    };
-}
+const [nodeCount, edgeCount] = rawLines[0].split(' ').map(Number);
+const queryCount = Number(rawLines[edgeCount + 1].split(' ')[0]);
 
-const convertToNumeric = (textValue) => {
-    return Number(textValue);
-};
+const parentArray = Array(nodeCount + 1).fill(0).map((_, idx) => idx);
+const setSizes = Array(nodeCount + 1).fill(1);
 
-const obtainMinimum = (valueA, valueB) => valueA < valueB ? valueA : valueB;
-const obtainMaximum = (valueA, valueB) => valueA > valueB ? valueA : valueB;
-
-const emitResult = (messageContent) => console.log(messageContent);
-
-const rawDataString = synchronizedFileRead(sourceConfiguration.inputPath, 'ascii').toString();
-const cleanedDataString = rawDataString.removeOuterWhitespace();
-const dataLinesArray = cleanedDataString.splitIntoSegments(sourceConfiguration.lineBreaker);
-
-const numericalDataMatrix = [];
-for (const currentLine of dataLinesArray) {
-  if (currentLine === '') continue;
-  numericalDataMatrix.push(currentLine.splitIntoSegments(' ').transformWithConverter(convertToNumeric));
-}
-
-const totalNodes = numericalDataMatrix[0][0];
-const totalConnections = numericalDataMatrix[0][1];
-const totalInquiries = numericalDataMatrix[totalConnections + 1][0];
-
-const componentParentMap = new Map();
-
-function findComponentRoot(nodeIdentifier, structureMap) {
-    if (!structureMap.has(nodeIdentifier)) {
-        structureMap.set(nodeIdentifier, nodeIdentifier);
-        return nodeIdentifier;
+function findSetRepresentative(memberNode) {
+    if (parentArray[memberNode] === memberNode) {
+        return memberNode;
     }
+    parentArray[memberNode] = findSetRepresentative(parentArray[memberNode]);
+    return parentArray[memberNode];
+}
 
-    let parentOfCurrentNode = structureMap.get(nodeIdentifier);
+function uniteSets(firstNode, secondNode) {
+    let rootA = findSetRepresentative(firstNode);
+    let rootB = findSetRepresentative(secondNode);
 
-    if (parentOfCurrentNode === nodeIdentifier) {
-        return nodeIdentifier;
+    if (rootA !== rootB) {
+        if (setSizes[rootA] < setSizes[rootB]) {
+            parentArray[rootA] = rootB;
+            setSizes[rootB] += setSizes[rootA];
+        } else {
+            parentArray[rootB] = rootA;
+            setSizes[rootA] += setSizes[rootB];
+        }
     }
-
-    let ultimateRoot = findComponentRoot(parentOfCurrentNode, structureMap);
-    structureMap.set(nodeIdentifier, ultimateRoot);
-    return ultimateRoot;
 }
 
-function establishConnection(nodeFromInputA, nodeFromInputB, structureMap) {
-    const smallerNodeId = obtainMinimum(nodeFromInputA, nodeFromInputB);
-    const largerNodeId = obtainMaximum(nodeFromInputA, nodeFromInputB);
-
-    let rootOfSmallerComponent = findComponentRoot(smallerNodeId, structureMap);
-
-    structureMap.set(largerNodeId, rootOfSmallerComponent);
+for (let edgeIdx = 1; edgeIdx <= edgeCount; edgeIdx++) {
+    const [u, v] = rawLines[edgeIdx].split(' ').map(Number);
+    uniteSets(u, v);
 }
 
-for (let connectionLoopIndex = 1; connectionLoopIndex <= totalConnections; ++connectionLoopIndex) {
-    const primaryNode = numericalDataMatrix[connectionLoopIndex][0];
-    const secondaryNode = numericalDataMatrix[connectionLoopIndex][1];
-    establishConnection(primaryNode, secondaryNode, componentParentMap);
-}
-
-for (let inquiryLoopIndex = totalConnections + 2; inquiryLoopIndex < (totalConnections + 2) + totalInquiries; ++inquiryLoopIndex) {
-    const querySubjectA = numericalDataMatrix[inquiryLoopIndex][0];
-    const querySubjectB = numericalDataMatrix[inquiryLoopIndex][1];
-
-    const rootForSubjectA = findComponentRoot(querySubjectA, componentParentMap);
-    const rootForSubjectB = findComponentRoot(querySubjectB, componentParentMap);
-
-    if (rootForSubjectA === rootForSubjectB) {
-        emitResult('yes');
-    } else {
-        emitResult('no');
-    }
+for (let queryIdx = edgeCount + 2; queryIdx < (edgeCount + 2) + queryCount; queryIdx++) {
+    const [queryNodeA, queryNodeB] = rawLines[queryIdx].split(' ').map(Number);
+    const representativeA = findSetRepresentative(queryNodeA);
+    const representativeB = findSetRepresentative(queryNodeB);
+    console.log((representativeA === representativeB) ? 'yes' : 'no');
 }

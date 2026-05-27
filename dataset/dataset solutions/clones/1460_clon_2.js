@@ -1,35 +1,15 @@
-// This program reads a sequence of numbers from standard input,
-// sorts them in ascending order, and then prints the sorted sequence.
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8'); // Obtain raw input data from the standard input stream
 
-// Retrieve the entire standard input content as a single string.
-let  sourceData  =  require ( 'fs' )
-    . readFileSync (  '/dev/stdin'  ,  'utf8'  ) ;
+var dataRows = rawData.split('\n'); // Divide the raw input into an array of individual lines
 
-// Break down the received string into an array of lines.
-let  dataSegments  =  sourceData.split (  '\n'  ) ;
+var countVal = +dataRows.shift(); // Extract the first line, converting it to a numeric value (though this variable is not subsequently utilized)
 
-// The initial line is typically a count, though not actively utilized subsequently.
-let  totalCount  =  + dataSegments
-    . shift ( ) ;
+var numberArray = dataRows.shift().split(' ').map(function(itemStr) {
+    return +itemStr; // Convert each string item to a number
+}); // Process the subsequent line: split by spaces and transform each part into a number
 
-// Process the next line:
-// 1.  Split it by spaces to get individual number strings.
-// 2.  Convert each string into a numeric value.
-let  numericElements  =  dataSegments
-    . shift ( )
-    . split (  ' '  )
-    . map (  function (  currentVal  )  {
-        // Explicitly cast the string value to a number.
-        return  + currentVal ;
-    }  ) ;
+numberArray.sort(function(valA, valB) {
+    return valA - valB; // Implement a numerical ascending sort
+}); // Arrange the array of numbers in increasing order
 
-// Arrange the collection of numeric elements in ascending numerical order.
-numericElements . sort (  function (  firstItem ,  secondItem  )  {
-    // A standard comparison for numerical sorting.
-    // Returns a negative value if firstItem < secondItem,
-    // zero if equal, and a positive value if firstItem > secondItem.
-    return  firstItem  -  secondItem ;
-}  ) ;
-
-// Output the final sorted array, with elements separated by a single space.
-console . log (  numericElements . join (  ' '  )  ) ;
+console.log(numberArray.join(' ')); // Display the sorted numbers, separated by single spaces

@@ -1,11 +1,13 @@
-function processInputData(sourcePacket) {
-    const alphaString = sourcePacket[1];
-    const betaString = sourcePacket[2];
+function processInputData(sourceData) {
+  const firstSourceString = sourceData[1];
+  const secondSourceString = sourceData[2];
+  const commonLength = firstSourceString.length;
 
-    const constructedParts = Array.from({ length: alphaString.length }, (_, idx) => {
-        return alphaString.substring(idx, idx + 1) + betaString.substring(idx, idx + 1);
-    });
+  const combinedCharacters = Array.from({ length: commonLength }, (unused, charIndex) => {
+    return firstSourceString[charIndex] + secondSourceString[charIndex];
+  });
 
-    const assembledContent = constructedParts.join('');
-    console.log('%s', assembledContent);
+  const finalResult = combinedCharacters.join('');
+
+  console.log('%s', finalResult);
 }

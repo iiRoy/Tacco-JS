@@ -1,64 +1,57 @@
 "use strict";
 
-const processInput = (rawDataBundle) => {
-    const dataLines = rawDataBundle.trim().split('\n');
+const processInput = (rawInput) => {
+    const parsedLines = rawInput.trim().split("\n");
+    const initialCharacterSequence = parsedLines[0].split("");
+    const numberOfQueries = parseInt(parsedLines[1], 10);
+    const queryInstructions = parsedLines.slice(2, numberOfQueries + 2);
 
-    const initialCharacterSequence = dataLines[0].split('');
-    const numberOfInstructions = parseInt(dataLines[1], 10);
-    const instructionSet = dataLines.slice(2, 2 + numberOfInstructions);
-
-    const stringManipulator = {
-        leftSide: [], // Stores characters added to the effective front (needs reversal for display)
-        rightSide: initialCharacterSequence, // Stores initial characters and those added to the effective back (in display order)
-        isEffectivelyReversed: false // True if the string is conceptually reversed
+    let processingState = {
+        baseSegment: initialCharacterSequence,
+        prefixElements: [],
+        suffixElements: [],
+        isOrientationReversed: false
     };
 
-    for (let opIndex = 0; opIndex < numberOfInstructions; opIndex++) {
-        const currentOperation = instructionSet[opIndex];
-        const operationComponents = currentOperation.split(' ');
+    const finalState = queryInstructions.reduce((accumulator, currentInstruction) => {
+        const instructionParts = currentInstruction.split(" ");
+        const instructionType = instructionParts[0];
 
-        if (operationComponents.length === 1) { // Command type 1: toggle reversal
-            stringManipulator.isEffectivelyReversed = !stringManipulator.isEffectivelyReversed;
-        } else { // Command type 2: add character
-            const placementCode = operationComponents[1]; // "1" for front, "2" for back
-            const characterValue = operationComponents[2];
+        if (instructionType === "1") {
+            accumulator.isOrientationReversed = !accumulator.isOrientationReversed;
+        } else {
+            const insertionPoint = instructionParts[1];
+            const characterToInsert = instructionParts[2];
 
-            if (stringManipulator.isEffectivelyReversed) {
-                // If the string is conceptually reversed:
-                // Adding to the effective front means pushing to the 'rightSide' array.
-                // Adding to the effective back means pushing to the 'leftSide' array.
-                if (placementCode === '1') { // Add to effective front
-                    stringManipulator.rightSide.push(characterValue);
-                } else { // Add to effective back
-                    stringManipulator.leftSide.push(characterValue);
+            if (!accumulator.isOrientationReversed) {
+                if (insertionPoint === "1") {
+                    accumulator.prefixElements.push(characterToInsert);
+                } else {
+                    accumulator.suffixElements.push(characterToInsert);
                 }
             } else {
-                // If the string is in its normal conceptual orientation:
-                // Adding to the effective front means pushing to the 'leftSide' array.
-                // Adding to the effective back means pushing to the 'rightSide' array.
-                if (placementCode === '1') { // Add to effective front
-                    stringManipulator.leftSide.push(characterValue);
-                } else { // Add to effective back
-                    stringManipulator.rightSide.push(characterValue);
+                if (insertionPoint === "1") {
+                    accumulator.suffixElements.push(characterToInsert);
+                } else {
+                    accumulator.prefixElements.push(characterToInsert);
                 }
             }
         }
-    }
+        return accumulator;
+    }, processingState);
 
-    let finalCharacterArray = [];
-    if (stringManipulator.isEffectivelyReversed) {
-        // If conceptually reversed, the final string is formed by:
-        // 1. The 'rightSide' content (which received additions to the *effective* front) reversed.
-        // 2. Concatenated with the 'leftSide' content (which received additions to the *effective* back) as is.
-        finalCharacterArray = stringManipulator.rightSide.reverse().concat(stringManipulator.leftSide);
+    let constructedResult;
+    if (!finalState.isOrientationReversed) {
+        constructedResult = finalState.prefixElements.reverse().join("") +
+                            finalState.baseSegment.join("") +
+                            finalState.suffixElements.join("");
     } else {
-        // If not conceptually reversed, the final string is formed by:
-        // 1. The 'leftSide' content (which received additions to the *effective* front) reversed.
-        // 2. Concatenated with the 'rightSide' content (which received initial characters and additions to the *effective* back) as is.
-        finalCharacterArray = stringManipulator.leftSide.reverse().concat(stringManipulator.rightSide);
+        constructedResult = finalState.suffixElements.reverse().join("") +
+                            finalState.baseSegment.reverse().join("") +
+                            finalState.prefixElements.join("");
     }
 
-    console.log(finalCharacterArray.join(''));
+    console.log(constructedResult);
 };
 
 processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

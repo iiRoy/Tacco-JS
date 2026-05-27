@@ -1,94 +1,125 @@
-const sys = require('readline');
+"use strict";
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
+let inputBuffer = '';
 
-let allInputData = [];
-
-const inputInterface = sys.createInterface({
-    input: process.stdin,
-    output: process.stdout
+process.stdin.on('data', function (chunk) {
+    inputBuffer += chunk;
 });
 
-inputInterface.on('line', (lineContent) => {
-    allInputData.push(lineContent);
-});
-
-const parseNumericLine = (lineContent) => {
-    return lineContent.trim().split(' ').map(Number);
+const parseNumericLine = function (lineContent) {
+    const parts = lineContent.replace(/(^\s+)|(\s+$)/g, "").split(" ");
+    return parts.map(Number);
 };
 
-let linkageStructure;
-let ringDiscoveries;
-let pathTraversalHistory;
-let pathVisitedRegistry;
-let cycleComponentRegistry;
+const parseStringLine = function (lineContent) {
+    const parts = lineContent.replace(/(^\s+)|(\s+$)/g, "").split(" ");
+    return parts;
+};
 
-function explorePathSegments(currentPoint, pathTrace, startingPoint, graphLinks, discoveredRings, visitedSet) {
-    pathTrace.push(currentPoint);
-    visitedSet.add(currentPoint);
+process.stdin.on('end', function () {
+    const inputLines = inputBuffer.split('\n');
+    const graphDimensions = parseNumericLine(inputLines[0]);
+    const nodeCount = graphDimensions[0];
+    const edgeCount = graphDimensions[1];
 
-    const adjacentPoints = graphLinks.get(currentPoint) || new Set();
-    for (const adjacentPoint of adjacentPoints) {
-        if (adjacentPoint === startingPoint && pathTrace.length >= 3) {
-            discoveredRings.push(pathTrace.slice(1).concat(startingPoint));
-        } else if (!visitedSet.has(adjacentPoint)) {
-            explorePathSegments(adjacentPoint, pathTrace, startingPoint, graphLinks, discoveredRings, visitedSet);
+    let initialEdges = inputLines.splice(1).map(l => parseNumericLine(l));
+
+    const adjacencies = new Map();
+    for (let i = 0; i < nodeCount; ++i) {
+        adjacencies.set(i, new Set());
+    }
+
+    for (const edgePair of initialEdges) {
+        const firstNode = edgePair[0] - 1;
+        const secondNode = edgePair[1] - 1;
+        adjacencies.get(firstNode).add(secondNode);
+        adjacencies.get(secondNode).add(firstNode);
+    }
+
+    const allDetectedCycles = new Set(); // Stores stringified canonical paths
+
+    function getCanonicalCyclePath(cycleNodes) {
+        if (cycleNodes.length === 0) return [];
+        const n = cycleNodes.length;
+        let minNode = cycleNodes[0];
+        let minIdx = 0;
+        for (let i = 1; i < n; i++) {
+            if (cycleNodes[i] < minNode) {
+                minNode = cycleNodes[i];
+                minIdx = i;
+            }
+        }
+
+        let forwardPath = cycleNodes.slice(minIdx).concat(cycleNodes.slice(0, minIdx));
+        let backwardPath = [forwardPath[0]];
+        for (let i = n - 1; i > 0; i--) {
+            backwardPath.push(forwardPath[i]);
+        }
+
+        let chosenPath = forwardPath;
+        for (let i = 1; i < n; i++) {
+            if (chosenPath[i] < backwardPath[i]) {
+                break;
+            }
+            if (chosenPath[i] > backwardPath[i]) {
+                chosenPath = backwardPath;
+                break;
+            }
+        }
+        return chosenPath;
+    }
+
+    const visitedNodes = new Array(nodeCount).fill(false);
+    const recursionStack = new Array(nodeCount).fill(false);
+
+    function findGraphCyclesDFS(currentNode, parentNode, currentPath, graph) {
+        visitedNodes[currentNode] = true;
+        recursionStack[currentNode] = true;
+        currentPath.push(currentNode);
+
+        for (const neighbor of graph.get(currentNode) || []) {
+            if (neighbor === parentNode) continue;
+
+            if (recursionStack[neighbor]) {
+                const cycleStartIndex = currentPath.indexOf(neighbor);
+                const cycleNodes = currentPath.slice(cycleStartIndex);
+                if (cycleNodes.length > 2) {
+                    allDetectedCycles.add(JSON.stringify(getCanonicalCyclePath(cycleNodes)));
+                }
+            } else if (!visitedNodes[neighbor]) {
+                findGraphCyclesDFS(neighbor, currentNode, currentPath, graph);
+            }
+        }
+
+        currentPath.pop();
+        recursionStack[currentNode] = false;
+    }
+
+    for (let i = 0; i < nodeCount; ++i) {
+        if (!visitedNodes[i]) {
+            findGraphCyclesDFS(i, -1, [], adjacencies);
         }
     }
 
-    visitedSet.delete(currentPoint);
-    pathTrace.pop();
-}
-
-inputInterface.on('close', () => {
-    const inputRows = allInputData;
-
-    const graphDimensions = parseNumericLine(inputRows[0]);
-    const totalNodes = graphDimensions[0];
-    const totalConnections = graphDimensions[1];
-
-    let initialConnectionPairs = [];
-    for (let currentLine = 1; currentLine <= totalConnections; ++currentLine) {
-        const connectionEntry = parseNumericLine(inputRows[currentLine]);
-        initialConnectionPairs.push([connectionEntry[0] - 1, connectionEntry[1] - 1]);
-    }
-
-    linkageStructure = new Map();
-    for (let nodeIdx = 0; nodeIdx < totalNodes; ++nodeIdx) {
-        linkageStructure.set(nodeIdx, new Set());
-    }
-    for (const connection of initialConnectionPairs) {
-        const firstNode = connection[0];
-        const secondNode = connection[1];
-        linkageStructure.get(firstNode).add(secondNode);
-        linkageStructure.get(secondNode).add(firstNode);
-    }
-
-    ringDiscoveries = [];
-
-    for (let currentInitiatorNode = 0; currentInitiatorNode < totalNodes; ++currentInitiatorNode) {
-        pathTraversalHistory = [];
-        pathVisitedRegistry = new Set();
-        explorePathSegments(currentInitiatorNode, pathTraversalHistory, currentInitiatorNode, linkageStructure, ringDiscoveries, pathVisitedRegistry);
-    }
-
-    ringDiscoveries = ringDiscoveries.filter(ringPath => ringPath.length > 2);
-
-    cycleComponentRegistry = new Set();
-
-    for (const discoveredRingPath of ringDiscoveries) {
-        for (let pathSegmentIndex = 0; pathSegmentIndex < discoveredRingPath.length; ++pathSegmentIndex) {
-            const endpointA = discoveredRingPath[pathSegmentIndex];
-            const endpointB = discoveredRingPath[(pathSegmentIndex + 1) % discoveredRingPath.length];
-            const canonicalLink = endpointA < endpointB ? `${endpointA}-${endpointB}` : `${endpointB}-${endpointA}`;
-            cycleComponentRegistry.add(canonicalLink);
+    const edgesToEliminate = new Set();
+    for (const cycleString of allDetectedCycles) {
+        const cyclePath = JSON.parse(cycleString);
+        const pathLength = cyclePath.length;
+        for (let k = 0; k < pathLength; ++k) {
+            const nodeA = cyclePath[k];
+            const nodeB = cyclePath[(k + 1) % pathLength];
+            const canonicalEdge = JSON.stringify([Math.min(nodeA, nodeB), Math.max(nodeA, nodeB)]);
+            edgesToEliminate.add(canonicalEdge);
         }
     }
 
-    const remainingConnectionCount = initialConnectionPairs.filter(connectionPair => {
-        const nodeOne = connectionPair[0];
-        const nodeTwo = connectionPair[1];
-        const canonicalCheck = nodeOne < nodeTwo ? `${nodeOne}-${nodeTwo}` : `${nodeTwo}-${nodeOne}`;
-        return !cycleComponentRegistry.has(canonicalCheck);
-    }).length;
+    let remainingEdges = initialEdges.filter(originalEdge => {
+        const u = originalEdge[0] - 1;
+        const v = originalEdge[1] - 1;
+        const canonicalEdge = JSON.stringify([Math.min(u, v), Math.max(u, v)]);
+        return !edgesToEliminate.has(canonicalEdge);
+    });
 
-    console.log(remainingConnectionCount);
+    console.log(remainingEdges.length);
 });

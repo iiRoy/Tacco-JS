@@ -1,11 +1,11 @@
-function ProcessNumericData(sourceData) {
-    const numericValue = parseInt(sourceData, 10);
+function Main(input) {
+    const H = Number(input);
 
-    const requiredExponent = Math.ceil(Math.log2(numericValue + 1));
+    const bitCount = H.toString(2).length;
 
-    const finalResult = (1 << requiredExponent) - 1;
+    const answer = (1 << bitCount) - 1;
 
-    console.log(finalResult);
+    console.log(answer);
 }
 
-ProcessNumericData(require("fs").readFileSync("/dev/stdin", "utf8"));
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

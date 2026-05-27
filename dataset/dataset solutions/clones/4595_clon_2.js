@@ -1,164 +1,143 @@
-/*
- * Utility functions for common data parsing and array operations.
- * These functions assist in processing various types of input data.
- */
-function parseInteger( inputStr ) {
-  // Converts a string to an integer.
-  return parseInt(inputStr);
+// Utility function to convert a string to an integer.
+function parseInteger(inputString) {
+  return parseInt(inputString, 10);
 }
 
-function parseFloatValue( inputStr ) {
-  // Converts a string to a floating-point number.
-  return parseFloat(inputStr);
+// Utility function to convert a string to a floating-point number.
+function parseFloatValue(inputString) {
+  return parseFloat(inputString);
 }
 
-function isEvenNumber( numVal ) {
-  // Checks if a number is even.
-  return ( numVal % 2 ) === 0;
+// Checks if a number is even.
+function isEven(value) {
+  return (value % 2) === 0;
 }
 
-function isOddNumber( numVal ) {
-  // Checks if a number is odd.
-  return ( numVal % 2 ) === 1;
+// Checks if a number is odd.
+function isOdd(value) {
+  return (value % 2) === 1;
 }
 
-// Extend Array prototype with custom sorting and filtering methods.
-
-Array.prototype.orderNumbersAscending = function() {
-  // Sorts array elements numerically in ascending order.
-  return this.sort((valA, valB) => (valA - valB));
+// Extends Array prototype with a method to sort numbers in ascending order.
+Array.prototype.numericSortAscending = function () {
+  return this.sort((firstElement, secondElement) => (firstElement - secondElement));
 };
 
-Array.prototype.orderNumbersDescending = function() {
-  // Sorts array elements numerically in descending order.
-  return this.sort((valA, valB) => (valB - valA));
+// Extends Array prototype with a method to sort numbers in descending order.
+Array.prototype.numericSortDescending = function () {
+  return this.sort((firstElement, secondElement) => (secondElement - firstElement));
 };
 
-Array.prototype.orderStringsAscending = function() {
-  // Sorts array elements lexicographically in ascending order.
+// Extends Array prototype with a method to sort strings in ascending order.
+Array.prototype.stringSortAscending = function () {
   return this.sort();
 };
 
-Array.prototype.orderStringsDescending = function() {
-  // Sorts array elements lexicographically in descending order.
+// Extends Array prototype with a method to sort strings in descending order.
+Array.prototype.stringSortDescending = function () {
   return this.sort().reverse();
 };
 
-Array.prototype.filterOutElement = function( excludedVal ) {
-  // Returns a new array with all occurrences of `excludedVal` removed.
-  return this.filter(currentElement => currentElement !== excludedVal);
+// Extends Array prototype with a method to filter out a specific element.
+Array.prototype.filterOutElement = function (elementToRemove) {
+  return this.filter(currentElement => currentElement !== elementToRemove);
 };
 
-/*
- * Main function to process grid-based input and calculate a minimum distance.
- * It simulates a propagation process on a grid.
- */
-function processInputData( inputLines ) {
-  // Parse dimensions and propagation steps from the first line.
-  const numericValues = inputLines[0].split(' ').map(parseInteger);
-  const gridHeight = numericValues[0];
-  const gridWidth = numericValues[1];
-  const propagationSteps = numericValues[2];
+// Main function to process the grid data and calculate the minimum moves.
+function processGridData(inputLines) {
+  // Parse the first line for grid dimensions and expansion steps.
+  const initialParams = inputLines[0].split(' ').map(parseInteger);
+  const gridHeight = initialParams[0];
+  const gridWidth = initialParams[1];
+  const expansionSteps = initialParams[2];
 
-  // Initialize the grid state and find the starting 'StartPoint' cells.
-  let activeCells = []; // Stores coordinates of currently 'StartPoint' cells.
-  const gridState = inputLines.slice(1).map(lineSegment => lineSegment.split(''));
+  // Initialize an array to store the current expansion points (starting with 'S').
+  let currentExpansionPoints = [];
 
-  // Locate the initial 'StartPoint' cell in the grid.
-  searchStartCell: for (let currentRow = 0; currentRow < gridHeight; currentRow++) {
-    for (let currentCol = 0; currentCol < gridWidth; currentCol++) {
-      if (gridState[currentRow][currentCol] === 'S') { // Original 'S'
-        activeCells = [[currentRow, currentCol]];
-        break searchStartCell; // Exit both loops once found.
+  // Create the game grid from the input lines, splitting each line into characters.
+  const gameGrid = inputLines.slice(1).map(lineContent => lineContent.split(''));
+
+  // Find the initial 'S' position on the grid.
+  gridSearch: for (let rowIdx = 0; rowIdx < gridHeight; rowIdx++) {
+    for (let colIdx = 0; colIdx < gridWidth; colIdx++) {
+      if (gameGrid[rowIdx][colIdx] === 'S') {
+        currentExpansionPoints = [[rowIdx, colIdx]];
+        break gridSearch; // Exit both loops once 'S' is found.
       }
     }
   }
 
-  // Simulate the propagation process for K steps.
-  for (let stepIndex = 0; stepIndex < propagationSteps; stepIndex++) {
-    const nextActiveCells = []; // Cells that become 'StartPoint' in the next step.
+  // Perform K expansion steps.
+  for (let stepCounter = 0; stepCounter < expansionSteps; stepCounter++) {
+    const nextExpansionPoints = []; // Stores points expanded in this step.
 
-    // Iterate through all currently active cells.
-    for (let cellIndex = 0, totalActiveCells = activeCells.length; cellIndex < totalActiveCells; cellIndex++) {
-      const currentCellCoords = activeCells[cellIndex];
-      const cellRow = currentCellCoords[0];
-      const cellCol = currentCellCoords[1];
+    // Iterate through all current expansion points.
+    for (let pointIndex = 0, currentPointsLength = currentExpansionPoints.length; pointIndex < currentPointsLength; pointIndex++) {
+      const currentCoords = currentExpansionPoints[pointIndex];
+      const currentRow = currentCoords[0];
+      const currentCol = currentCoords[1];
 
       // Check all four cardinal directions (up, down, left, right).
-      let directionIterator = 4;
-      while (directionIterator--) {
-        let neighborRow, neighborCol;
+      let directionIdx = 4;
+      while (directionIdx--) { // Loop from 3 down to 0
+        let nextRow, nextCol;
 
-        // Determine neighbor coordinates based on direction.
-        switch(directionIterator) {
+        switch (directionIdx) {
           case 3: // Up
-            neighborRow = cellRow - 1;
-            neighborCol = cellCol;
+            nextRow = currentRow - 1;
+            nextCol = currentCol;
             break;
           case 2: // Down
-            neighborRow = cellRow + 1;
-            neighborCol = cellCol;
+            nextRow = currentRow + 1;
+            nextCol = currentCol;
             break;
           case 1: // Left
-            neighborRow = cellRow;
-            neighborCol = cellCol - 1;
+            nextRow = currentRow;
+            nextCol = currentCol - 1;
             break;
           case 0: // Right
-            neighborRow = cellRow;
-            neighborCol = cellCol + 1;
+            nextRow = currentRow;
+            nextCol = currentCol + 1;
             break;
         }
 
-        // Validate neighbor coordinates and check if it's an 'Empty' cell.
-        if (0 <= neighborRow && neighborRow < gridHeight &&
-            0 <= neighborCol && neighborCol < gridWidth &&
-            (gridState[neighborRow][neighborCol] === '.') // Original '.'
+        // Check if the new coordinates are within grid boundaries and the cell is empty ('.').
+        if (nextRow >= 0 && nextRow < gridHeight &&
+            nextCol >= 0 && nextCol < gridWidth &&
+            (gameGrid[nextRow][nextCol] === '.')
         ) {
-          // Mark the neighbor as 'StartPoint' and add it to the next set of active cells.
-          gridState[neighborRow][neighborCol] = 'S'; // Original 'S'
-          nextActiveCells.push([neighborRow, neighborCol]);
+          gameGrid[nextRow][nextCol] = 'S'; // Mark the cell as expanded.
+          nextExpansionPoints.push([nextRow, nextCol]); // Add to the list for the next step.
         }
       }
     }
-    activeCells = nextActiveCells; // Update active cells for the next step.
+    currentExpansionPoints = nextExpansionPoints; // Update points for the next iteration.
   }
 
-  // Calculate the minimum distance from any 'StartPoint' cell to the border.
-  let minDistance = Number.POSITIVE_INFINITY;
+  // Calculate the minimum number of moves required to reach a border.
+  let minRequiredMoves = Infinity;
 
-  findMinDistance: for (let checkRow = 0; checkRow < gridHeight; checkRow++) {
-    for (let checkCol = 0; checkCol < gridWidth; checkCol++) {
-      const cellContent = gridState[checkRow][checkCol];
+  // Iterate through the entire grid to find expanded 'S' cells.
+  gridSearch: for (let rowIdx = 0; rowIdx < gridHeight; rowIdx++) {
+    for (let colIdx = 0; colIdx < gridWidth; colIdx++) {
+      const cellContent = gameGrid[rowIdx][colIdx];
+      if (cellContent === 'S') {
+        // Calculate the distance to the nearest border.
+        const distanceToBorder = Math.min(colIdx, rowIdx, gridWidth - 1 - colIdx, gridHeight - 1 - rowIdx);
 
-      // If the cell is an 'StartPoint' cell, calculate its distance to the border.
-      if (cellContent === 'S') { // Original 'S'
-        const distanceToBorder = Math.min(
-          checkCol,                     // Distance to left border
-          checkRow,                     // Distance to top border
-          gridWidth - 1 - checkCol,     // Distance to right border
-          gridHeight - 1 - checkRow     // Distance to bottom border
-        );
-
-        // If a cell is directly on the border, the minimum distance is 1.
         if (distanceToBorder === 0) {
-          minDistance = 1;
-          break findMinDistance; // No need to check further, 1 is the absolute minimum.
+          minRequiredMoves = 1; // If an 'S' is on the border, 1 move is enough.
+          break gridSearch; // No need to check further.
         }
-
-        // Calculate the required steps to reach the border and update minDistance.
-        minDistance = Math.min(minDistance, Math.ceil(distanceToBorder / propagationSteps) + 1);
+        // Update the minimum moves, considering K expansion steps per move.
+        minRequiredMoves = Math.min(minRequiredMoves, Math.ceil(distanceToBorder / expansionSteps) + 1);
       }
     }
   }
 
-  // Output the final calculated minimum distance.
-  console.log(minDistance);
+  // Output the final minimum number of moves.
+  console.log(minRequiredMoves);
 }
 
-// Read input from standard input, process it, and call the main function.
-processInputData(
-  require("fs")
-    .readFileSync("/dev/stdin", "utf8")
-    .split('\n')
-    .map(lineData => lineData.trim())
-);
+// Read input from stdin, process it, and call the main function.
+processGridData(require("fs").readFileSync("/dev/stdin", "utf8").split('\n').map(line => line.trim()));

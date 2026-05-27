@@ -1,67 +1,69 @@
-const fileSystem = require("fs");
+process.stdin.resume();
+process.stdin.setEncoding("utf8");
 
-const contentBuffer = fileSystem.readFileSync("/dev/stdin", "utf8");
-const contentLines = contentBuffer.trim().split("\n");
-
-const initialValues = contentLines[0].split(" ").map(val => parseInt(val, 10));
-const directionSeries = contentLines[1];
-
-let diceConfig = {
-  up: initialValues[0],
-  back: initialValues[1],
-  right: initialValues[2],
-  left: initialValues[3],
-  front: initialValues[4],
-  down: initialValues[5],
-};
-
-const moveNorth = (current) => ({
-  up: current.back,
-  back: current.down,
-  right: current.right,
-  left: current.left,
-  front: current.up,
-  down: current.front,
+const dataReader = require("readline").createInterface({
+  input: process.stdin,
+  output: process.stdout,
 });
 
-const moveSouth = (current) => ({
-  up: current.front,
-  back: current.up,
-  right: current.right,
-  left: current.left,
-  front: current.down,
-  down: current.back,
+const inputLines = [];
+
+dataReader.on("line", (currentLine) => {
+  inputLines.push(currentLine);
 });
 
-const moveWest = (current) => ({
-  up: current.right,
-  back: current.back,
-  right: current.down,
-  left: current.up,
-  front: current.front,
-  down: current.left,
+dataReader.on("close", () => {
+  const initialValues = inputLines[0].split(" ").map(Number);
+  const rotationSequence = inputLines[1];
+
+  const initialDiceState = {
+    up: initialValues[0],    // top
+    south: initialValues[1], // back
+    east: initialValues[2],  // right
+    west: initialValues[3],  // left
+    north: initialValues[4], // front
+    down: initialValues[5],  // bottom
+  };
+
+  const rotationHandlers = {
+    N: (currentOrientation) => ({
+      up: currentOrientation.south,
+      down: currentOrientation.north,
+      north: currentOrientation.up,
+      south: currentOrientation.down,
+      east: currentOrientation.east,
+      west: currentOrientation.west,
+    }),
+    S: (currentOrientation) => ({
+      up: currentOrientation.north,
+      down: currentOrientation.south,
+      north: currentOrientation.down,
+      south: currentOrientation.up,
+      east: currentOrientation.east,
+      west: currentOrientation.west,
+    }),
+    W: (currentOrientation) => ({
+      up: currentOrientation.east,
+      down: currentOrientation.west,
+      north: currentOrientation.north,
+      south: currentOrientation.south,
+      east: currentOrientation.up,
+      west: currentOrientation.down,
+    }),
+    E: (currentOrientation) => ({
+      up: currentOrientation.west,
+      down: currentOrientation.east,
+      north: currentOrientation.north,
+      south: currentOrientation.south,
+      east: currentOrientation.down,
+      west: currentOrientation.up,
+    }),
+  };
+
+  const finalOrientation = rotationSequence.split("").reduce((currentDice, rotationChar) => {
+    const transformFunction = rotationHandlers[rotationChar];
+    return transformFunction(currentDice);
+  }, initialDiceState);
+
+  console.log(finalOrientation.up);
 });
-
-const moveEast = (current) => ({
-  up: current.left,
-  back: current.back,
-  right: current.up,
-  left: current.down,
-  front: current.front,
-  down: current.right,
-});
-
-const transformationMap = {
-  "N": moveNorth,
-  "S": moveSouth,
-  "W": moveWest,
-  "E": moveEast,
-};
-
-const finalConfiguration = directionSeries.split("").reduce((currentConfiguration, instruction) => {
-  const rotationFunction = transformationMap[instruction];
-  return rotationFunction(currentConfiguration);
-}, diceConfig);
-
-const displayResult = finalConfiguration.up;
-process.stdout.write(displayResult.toString() + "\n");

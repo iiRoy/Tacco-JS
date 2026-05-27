@@ -1,35 +1,41 @@
-// Custom method to replace all occurrences of a substring with another
-String.prototype.swapAllOccurrences = function( oldValue , newValue )
-{ return this . split ( oldValue ) . join ( newValue ) ; }
+String.prototype.replaceEvery = function (oldValue, newValue) {
+  // This function replaces all occurrences of oldValue with newValue within the string.
+  // It achieves this by splitting the string by oldValue and then joining the parts with newValue.
+  return this.split(oldValue).join(newValue);
+};
 
-// Array to store units that pass the length filter
-var filteredUnits = [ ] ;
+// An array to accumulate words that meet specific length criteria.
+let collectedTerms = [];
 
-// Activate standard input stream for reading
-process . stdin . resume ( ) ;
-// Set character encoding for the input
-process . stdin . setEncoding ( 'utf8' ) ;
+// Activate the standard input stream to begin receiving data.
+process.stdin.resume();
 
-// Event listener for incoming data chunks
-process . stdin . on ( 'data' , function ( incomingPayload ) {
-    // Replace delimiters and split the payload into segments
-    var parsedSegments = incomingPayload
-      . swapAllOccurrences ( "." , " " )
-      . swapAllOccurrences ( "," , " " )
-      . split ( " " ) ;
+// Set the character encoding for the incoming data to UTF-8.
+process.stdin.setEncoding('utf8');
 
-    // Iterate through the generated segments
-    for ( var segmentIdx in parsedSegments ) {
-        // Check if segment length is within the desired range
-        if ( parsedSegments [ segmentIdx ] . length > 2 && parsedSegments [ segmentIdx ] . length < 7 ) {
-            // Add qualifying segments to the collection
-            filteredUnits . push ( parsedSegments [ segmentIdx ] ) ;
-        }
+// Attach an event listener for when data chunks are received from standard input.
+process.stdin.on('data', function(incomingData) {
+    // First, replace all periods with spaces, then all commas with spaces,
+    // and finally split the resulting string by spaces to get an array of tokens.
+    const tokenArray = incomingData
+        .replaceEvery(".", " ")
+        .replaceEvery(",", " ")
+        .split(" ");
+
+    // Iterate through each token in the generated array.
+    for (let currentIdx in tokenArray) {
+      // Check if the length of the current token is greater than 2 and less than 7.
+      // This means words with lengths 3, 4, 5, or 6 are considered.
+      if (tokenArray[currentIdx].length > 2 && tokenArray[currentIdx].length < 7) {
+        // If the condition is met, add the token to our collection.
+        collectedTerms.push(tokenArray[currentIdx]);
+      }
     }
-} ) ;
+});
 
-// Event listener for the end of the input stream
-process . stdin . on ( 'end' , function ( ) {
-    // Output the collected units, joined by a single space
-    console . log ( filteredUnits . join ( " " ) ) ;
-} ) ;
+// Attach an event listener for when the standard input stream ends.
+process.stdin.on('end', function() {
+  // Once all input has been processed, join all the collected terms with a single space
+  // and print the resulting string to the console.
+  console.log(collectedTerms.join(" "));
+});

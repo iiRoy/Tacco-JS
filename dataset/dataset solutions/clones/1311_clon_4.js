@@ -1,33 +1,25 @@
-const digitSumExtractor = (numericInput) => {
-    let runningTotal = 0;
-    let currentFigure = Math.abs(numericInput);
-    while (currentFigure > 0) {
-        runningTotal += currentFigure % 10;
-        currentFigure = Math.floor(currentFigure / 10);
+const computeDigitTotal = (numericInput) => {
+    let runningSum = 0;
+    let temporaryNumber = numericInput;
+    while (temporaryNumber > 0) {
+        runningSum += temporaryNumber % 10;
+        temporaryNumber = Math.floor(temporaryNumber / 10);
     }
-    return runningTotal;
+    return runningSum;
 };
 
-const processDataStream = (completeData) => {
-    const contentLines = completeData.trim().split('\n');
-    const outputCollection = [];
+(function(rawInput) {
+    const lineSegments = rawInput.split('\n');
 
-    for (const individualLine of contentLines) {
-        const numericInterpretation = parseInt(individualLine, 10);
+    const terminationPoint = lineSegments.findIndex(segment => Number(segment) === 0);
 
-        if (isNaN(numericInterpretation)) {
-            continue;
-        }
+    const activeSegments = terminationPoint === -1
+        ? lineSegments
+        : lineSegments.slice(0, terminationPoint);
 
-        if (numericInterpretation === 0) {
-            break;
-        }
+    activeSegments.forEach(segment => {
+        const numericRepresentation = Number(segment);
+        console.log(computeDigitTotal(numericRepresentation));
+    });
 
-        const computedDigitSum = digitSumExtractor(numericInterpretation);
-        outputCollection.push(computedDigitSum);
-    }
-
-    outputCollection.forEach(resultItem => process.stdout.write(resultItem + '\n'));
-};
-
-processDataStream(require('node:fs').readFileSync('/dev/stdin', 'utf8'));
+})(require('fs').readFileSync('/dev/stdin', 'utf8'));

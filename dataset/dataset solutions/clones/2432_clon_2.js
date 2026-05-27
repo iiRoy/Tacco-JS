@@ -1,99 +1,102 @@
-function processInput(rawData) {
-  // Extract the total number of items from the first line of raw data.
-  const itemCount = Number(rawData[0]);
+function processInputAndCalculate(inputLines) {
+  // Parse the number of points from the first line of input.
+  const numberOfPoints = Number(inputLines[0]);
 
-  // Initialize an array to hold parsed coordinate pairs for each item.
-  let coordinatePairs = [];
-  // Iterate through the input lines, starting from the second line,
-  // to populate the coordinatePairs array by parsing string coordinates into numbers.
-  for (let currentLineIndex = 1; currentLineIndex <= itemCount; currentLineIndex++) {
-    coordinatePairs.push(
-      rawData[currentLineIndex].split(" ").map(strVal => Number(strVal))
-    );
+  // Initialize an array to store the coordinates of each point.
+  const pointCoordinates = [];
+  // Loop through the input lines to populate the point coordinates.
+  for (let currentLineIndex = 1; currentLineIndex <= numberOfPoints; currentLineIndex++) {
+    // Split each line by space, convert string parts to numbers, and add to the array.
+    pointCoordinates.push(inputLines[currentLineIndex].split(" ").map(coordinateValue => Number(coordinateValue)));
   }
 
-  // Create an object to cache calculated distances between all unique pairs of points.
-  let distanceCache = {};
-  // Use nested loops to calculate and store the Euclidean distances for every unique pair of points.
-  for (let firstPointIdx = 0; firstPointIdx < itemCount; firstPointIdx++) {
-    for (let secondPointIdx = firstPointIdx + 1; secondPointIdx < itemCount; secondPointIdx++) {
-      // Calculate the distance between the two current points.
-      const currentDistance = calculateEuclideanDistance(
-        coordinatePairs[firstPointIdx],
-        coordinatePairs[secondPointIdx]
-      );
-      // Store the distance symmetrically in the cache using string keys (e.g., "0_1" and "1_0" map to the same value).
-      distanceCache[`${secondPointIdx}_${firstPointIdx}`] = currentDistance;
-      distanceCache[`${firstPointIdx}_${secondPointIdx}`] = currentDistance;
+  // Create a map to cache distances between points to avoid redundant calculations.
+  const distanceCache = {};
+  // Calculate and store distances between all unique pairs of points.
+  for (let firstPointIndex = 0; firstPointIndex < numberOfPoints; firstPointIndex++) {
+    for (let secondPointIndex = firstPointIndex + 1; secondPointIndex < numberOfPoints; secondPointIndex++) {
+      // Store distance for both (i,j) and (j,i) keys for easy lookup.
+      distanceCache[secondPointIndex + "_" + firstPointIndex] = distanceCache[firstPointIndex + "_" + secondPointIndex] = calculateEuclideanDistance(pointCoordinates[firstPointIndex], pointCoordinates[secondPointIndex]);
     }
   }
 
-  // Generate all possible permutations of point indices (0 to itemCount-1).
-  const allPermutations = generateAllPermutations(itemCount);
+  // Generate all possible permutations of point indices (paths).
+  const allPossiblePaths = generateAllPermutations(numberOfPoints);
+  // Initialize a variable to accumulate the total length of all paths.
+  let totalPathLengthSum = 0;
 
-  // Initialize a variable to accumulate the sum of path lengths for all generated permutations.
-  let totalPathLength = 0;
-  // Iterate through each generated permutation to compute its total path length.
-  for (let pathCounter = 0; pathCounter < allPermutations.length; pathCounter++) {
-    totalPathLength += computePathDistance(distanceCache, allPermutations[pathCounter]);
+  // Iterate through each generated path.
+  for (let pathIndex = 0; pathIndex < allPossiblePaths.length; pathIndex++) {
+    // Add the length of the current path to the total sum.
+    totalPathLengthSum += computePathLength(distanceCache, allPossiblePaths[pathIndex]);
   }
 
-  // Output the average path length by dividing the total accumulated sum by the number of permutations.
-  console.log(totalPathLength / allPermutations.length);
+  // Output the average path length, formatted to a reasonable precision.
+  console.log(totalPathLengthSum / allPossiblePaths.length);
 }
 
-function computePathDistance(cachedDistances, pathSequence) {
-  // Initialize a variable to store the sum of segment lengths for the current path.
-  let currentPathSum = 0;
-  // Iterate through the path sequence, starting from the second element,
-  // to sum up distances between consecutive points in the sequence.
-  for (let stepIndex = 1; stepIndex < pathSequence.length; stepIndex++) {
-    const prevPoint = pathSequence[stepIndex - 1];
-    const currPoint = pathSequence[stepIndex];
-    // Retrieve the pre-calculated distance from the cache using a concatenated key.
-    currentPathSum += cachedDistances[`${prevPoint}_${currPoint}`];
+/**
+ * Computes the total length of a given path sequence.
+ * @param {Object.<string, number>} distMap A map containing pre-calculated distances between points.
+ * @param {number[]} pathSequence An array representing the order of points in a path.
+ * @returns {number} The total length of the path.
+ */
+function computePathLength(distMap, pathSequence) {
+  let currentPathTotal = 0; // Accumulator for the path's length.
+  // Iterate through the path, summing distances between consecutive points.
+  for (let step = 1; step < pathSequence.length; step++) {
+    // Retrieve distance from the cache using a concatenated key.
+    currentPathTotal += distMap[pathSequence[step - 1] + "_" + pathSequence[step]];
   }
-  return currentPathSum; // Return the total length for this specific path.
+  return currentPathTotal;
 }
 
-function calculateEuclideanDistance(point1, point2) {
-  // Calculate the difference in x-coordinates between the two points.
-  const deltaX = point1[0] - point2[0];
-  // Calculate the difference in y-coordinates between the two points.
-  const deltaY = point1[1] - point2[1];
-  // Apply the Euclidean distance formula: sqrt((deltaX)^2 + (deltaY)^2).
+/**
+ * Calculates the Euclidean distance between two 2D points.
+ * @param {number[]} pointOne An array [x1, y1] representing the first point.
+ * @param {number[]} pointTwo An array [x2, y2] representing the second point.
+ * @returns {number} The Euclidean distance between the two points.
+ */
+function calculateEuclideanDistance(pointOne, pointTwo) {
+  // Calculate the difference in x-coordinates.
+  const deltaX = pointOne[0] - pointTwo[0];
+  // Calculate the difference in y-coordinates.
+  const deltaY = pointOne[1] - pointTwo[1];
+  // Apply the distance formula: sqrt((x2-x1)^2 + (y2-y1)^2).
   return Math.sqrt(Math.pow(deltaX, 2) + Math.pow(deltaY, 2));
 }
 
-function generateAllPermutations(itemCount) {
-  // Initialize an array to store all permutations generated.
-  let permutationList = [];
-  // Base case for the recursion: if only one item, return a list containing a single permutation [0].
-  if (itemCount === 1) {
+/**
+ * Generates all possible permutations of indices from 0 to (count - 1).
+ * This is a recursive function.
+ * @param {number} count The number of elements to permute (e.g., if 3, permutes [0, 1, 2]).
+ * @returns {number[][]} An array of arrays, where each inner array is a permutation.
+ */
+function generateAllPermutations(count) {
+  const permutationResults = []; // Stores the generated permutations.
+
+  // Base case: if only one element, return a list containing a single array with that element.
+  if (count === 1) {
     return [[0]];
   }
 
-  // Recursively generate all permutations for (itemCount - 1) items.
-  const previousPermutations = generateAllPermutations(itemCount - 1);
+  // Recursive step: get all permutations for (count - 1) elements.
+  const previousPermutations = generateAllPermutations(count - 1);
 
-  // For each possible insertion position and each permutation from the previous step,
-  // insert the new item to create new permutations.
-  for (let insertionIndex = 0; insertionIndex < itemCount; insertionIndex++) {
+  // For each permutation from the previous step, insert the new element (count - 1)
+  // at every possible position.
+  for (let insertPosition = 0; insertPosition < count; insertPosition++) {
     for (let prevPermIndex = 0; prevPermIndex < previousPermutations.length; prevPermIndex++) {
-      // Create a shallow copy of the previous permutation to avoid modifying the original array.
-      let tempPermutation = previousPermutations[prevPermIndex].slice();
-      // Insert the new item (which is itemCount - 1, representing the next point index)
-      // at the current insertion index within the temporary permutation.
-      tempPermutation.splice(insertionIndex, 0, itemCount - 1);
-      // Add the newly formed permutation to the main list.
-      permutationList.push(tempPermutation);
+      // Create a copy of the previous permutation to avoid modifying the original.
+      const temporaryPermutation = previousPermutations[prevPermIndex].slice();
+      // Insert the new element (count - 1) at the current insert position.
+      temporaryPermutation.splice(insertPosition, 0, count - 1);
+      // Add the newly formed permutation to the results.
+      permutationResults.push(temporaryPermutation);
     }
   }
-  return permutationList; // Return the complete list of all possible permutations.
+  return permutationResults;
 }
 
-// Execute the main processing function with data read from standard input.
-// The input is read as a UTF-8 string, then split by newline characters into an array of strings.
-processInput(
-  require('fs').readFileSync('/dev/stdin', 'utf8').split('\n')
-);
+// Read input from stdin, decode as UTF-8, split by newlines, and pass to the main processing function.
+processInputAndCalculate(require('fs').readFileSync('/dev/stdin', 'utf8').split("\n"));

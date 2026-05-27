@@ -1,131 +1,135 @@
-class InputSource {
-    #lines;
-    #idx;
+const readline = require('readline');
+const util = require('util');
 
-    constructor(dataLines) {
-        this.#lines = dataLines;
-        this.#idx = 0;
-    }
+let inputLinesBuffer = [];
+let inputLineIterator;
 
-    hasNextLine() {
-        return this.#idx < this.#lines.length;
-    }
-
-    fetchNextLine() {
-        if (!this.hasNextLine()) {
-            throw new Error("No further input available.");
-        }
-        return this.#lines[this.#idx++];
-    }
-
-    retrieveNumericArray() {
-        return this.fetchNextLine().split(' ').map(Number);
-    }
-}
-
-class DisjointSetSystem {
-    #elements; 
-
-    constructor(elementCount) {
-        this.#elements = new Map();
-        for (let i = 0; i < elementCount; ++i) {
-            this.#elements.set(i, { parent: i, size: 1 });
-        }
-    }
-
-    findRepresentative(elementId) {
-        let node = this.#elements.get(elementId);
-        if (node.parent === elementId) {
-            return elementId;
-        }
-        node.parent = this.findRepresentative(node.parent);
-        return node.parent;
-    }
-
-    uniteSets(elementA, elementB) {
-        let rootA = this.findRepresentative(elementA);
-        let rootB = this.findRepresentative(elementB);
-
-        if (rootA !== rootB) {
-            let nodeA = this.#elements.get(rootA);
-            let nodeB = this.#elements.get(rootB);
-
-            if (nodeA.size < nodeB.size) {
-                [rootA, rootB] = [rootB, rootA];
-                [nodeA, nodeB] = [nodeB, nodeA];
-            }
-            
-            nodeB.parent = rootA;
-            nodeA.size += nodeB.size;
-        }
-    }
-
-    checkConnection(elementA, elementB) {
-        return this.findRepresentative(elementA) === this.findRepresentative(elementB);
-    }
-}
-
-let collectedInputLines = [];
-
-const terminalInterface = require('readline').createInterface({
-    input: process.stdin,
-    output: process.stdout
+const rlInterface = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout
 });
 
-terminalInterface.on('line', (lineContent) => {
-    collectedInputLines.push(lineContent);
+rlInterface.on('line', (line) => {
+  inputLinesBuffer.push(line);
 });
 
-terminalInterface.on('close', () => {
-    const dataProcessor = new InputSource(collectedInputLines);
-    ProcessGraphConnections(dataProcessor);
+rlInterface.on('close', () => {
+  inputLineIterator = createLineReader(inputLinesBuffer);
+  console.error('\n↑入力 ↓出力');
+  executePrimaryLogic();
 });
 
-function presentOutput(data) {
-    console.log(data.join(' '));
+function createLineReader(lines) {
+  let currentIdx = 0;
+  return {
+    retrieveNext: () => {
+      if (currentIdx >= lines.length) {
+        throw 'ArrayIndexOutOfBoundsException ‚There is no more input';
+      }
+      return lines[currentIdx++];
+    },
+    hasMore: () => currentIdx < lines.length
+  };
 }
 
-function ProcessGraphConnections(inputReader) {
-    const [nodeCount, kRoadCount, lRoadCount] = inputReader.retrieveNumericArray();
+function printResult(content) {
+  console.log(content);
+}
 
-    const kDisjointSets = new DisjointSetSystem(nodeCount);
-    const lDisjointSets = new DisjointSetSystem(nodeCount);
+function logDebug(data) {
+  console.error('debug:' + util.inspect(data, false, null));
+}
 
-    const kRoads = Array.from({ length: kRoadCount }, () => {
-        const [p1, p2] = inputReader.retrieveNumericArray();
-        const u = p1 - 1;
-        const v = p2 - 1;
-        kDisjointSets.uniteSets(u, v);
-        return [Math.min(u, v), Math.max(u, v)];
-    });
+function parseNumericArray() {
+  return inputLineIterator.retrieveNext().split(' ').map(Number);
+}
 
-    const lRoads = Array.from({ length: lRoadCount }, () => {
-        const [p1, p2] = inputReader.retrieveNumericArray();
-        const u = p1 - 1;
-        const v = p2 - 1;
-        lDisjointSets.uniteSets(u, v);
-        return [Math.min(u, v), Math.max(u, v)];
-    });
+function formatArrayForDisplay(arr) {
+  return arr.join(' ');
+}
 
-    const kRoadIncrements = kRoads.flatMap(([u, v]) => 
-        lDisjointSets.checkConnection(u, v) ? [{ node: u, value: 1 }, { node: v, value: 1 }] : []
-    );
+class DisjointSet {
+  constructor(count) {
+    this.parents = Array.from({ length: count }, (_, i) => i);
+    this.componentSizes = Array(count).fill(1);
+  }
 
-    const existingKRelations = new Set(kRoads.map(([u, v]) => `${u}:${v}`));
+  findRepresentative(member) {
+    let current = member;
+    const path = [];
+    while (this.parents[current] !== current) {
+      path.push(current);
+      current = this.parents[current];
+    }
+    for (const node of path) {
+      this.parents[node] = current;
+    }
+    return current;
+  }
 
-    const lRoadIncrements = lRoads.flatMap(([u, v]) => {
-        if (!existingKRelations.has(`${u}:${v}`)) {
-            return kDisjointSets.checkConnection(u, v) ? [{ node: u, value: 1 }, { node: v, value: 1 }] : [];
-        }
-        return [];
-    });
+  uniteComponents(first, second) {
+    let rep1 = this.findRepresentative(first);
+    let rep2 = this.findRepresentative(second);
 
-    const allIncrements = [...kRoadIncrements, ...lRoadIncrements];
+    if (rep1 !== rep2) {
+      if (this.componentSizes[rep1] < this.componentSizes[rep2]) {
+        [rep1, rep2] = [rep2, rep1];
+      }
+      this.parents[rep2] = rep1;
+      this.componentSizes[rep1] += this.componentSizes[rep2];
+      return true;
+    }
+    return false;
+  }
 
-    const finalConnectionCounts = allIncrements.reduce((currentCounts, { node, value }) => {
-        currentCounts[node] += value;
-        return currentCounts;
-    }, Array(nodeCount).fill(1));
+  areConnected(first, second) {
+    return this.findRepresentative(first) === this.findRepresentative(second);
+  }
 
-    presentOutput(finalConnectionCounts);
+  getComponentSize(member) {
+    return this.componentSizes[this.findRepresentative(member)];
+  }
+}
+
+function executePrimaryLogic() {
+  const initialParams = parseNumericArray();
+  const nodeCount = initialParams[0];
+  const kConnections = initialParams[1];
+  const lConnections = initialParams[2];
+
+  const kSet = new DisjointSet(nodeCount);
+  const lSet = new DisjointSet(nodeCount);
+
+  for (let i = 0; i < kConnections; i++) {
+    const connectionPair = parseNumericArray();
+    const nodeA = connectionPair[0] - 1;
+    const nodeB = connectionPair[1] - 1;
+    kSet.uniteComponents(nodeA, nodeB);
+  }
+
+  for (let i = 0; i < lConnections; i++) {
+    const connectionPair = parseNumericArray();
+    const nodeA = connectionPair[0] - 1;
+    const nodeB = connectionPair[1] - 1;
+    lSet.uniteComponents(nodeA, nodeB);
+  }
+
+  const componentPairCounts = new Map();
+  const nodeComponentPairs = new Array(nodeCount);
+
+  for (let i = 0; i < nodeCount; i++) {
+    const kRoot = kSet.findRepresentative(i);
+    const lRoot = lSet.findRepresentative(i);
+    const pairKey = `${kRoot}:${lRoot}`;
+
+    nodeComponentPairs[i] = pairKey;
+    componentPairCounts.set(pairKey, (componentPairCounts.get(pairKey) || 0) + 1);
+  }
+
+  const finalResults = new Array(nodeCount);
+  for (let i = 0; i < nodeCount; i++) {
+    finalResults[i] = componentPairCounts.get(nodeComponentPairs[i]);
+  }
+
+  printResult(formatArrayForDisplay(finalResults));
 }

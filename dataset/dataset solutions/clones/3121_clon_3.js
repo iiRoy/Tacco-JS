@@ -1,37 +1,37 @@
-let bufferedInputData = [];
-let finalComputedProduct = 1;
+var inputLines = [];
+var primeModulus = Math.pow(10, 9) + 7;
+var cumulativeProduct = 1;
 
-const inputOutputInterface = require('readline');
+var ioModule = require('readline');
 
-const consoleHandler = inputOutputInterface.createInterface({
+var inputReader = ioModule.createInterface({
     input: process.stdin,
     output: process.stdout,
 });
 
-consoleHandler.on('line', (currentInputLine) => {
-    bufferedInputData.push(currentInputLine);
+inputReader.on('line', function (currentInputLine) {
+    inputLines.push(currentInputLine);
 });
 
-consoleHandler.on('close', () => {
-    const declaredLength = Number(bufferedInputData[0]);
-    const characterSequence = bufferedInputData[1];
+inputReader.on('close', function () {
+    const sequenceLength = Number(inputLines[0]);
+    const characterSequence = inputLines[1].split("");
 
-    if (!characterSequence || characterSequence.length === 0) {
-        console.log(0);
-        return;
-    }
+    characterSequence.sort((charA, charB) => charA.charCodeAt(0) - charB.charCodeAt(0));
 
-    const characterFrequencyMap = new Map();
+    const charFrequenciesMap = new Map();
     for (const charItem of characterSequence) {
-        characterFrequencyMap.set(charItem, (characterFrequencyMap.get(charItem) || 0) + 1);
+        const currentFreq = charFrequenciesMap.get(charItem) || 0;
+        charFrequenciesMap.set(charItem, currentFreq + 1);
     }
 
-    const frequencyValues = Array.from(characterFrequencyMap.values());
+    const frequencyCounts = Array.from(charFrequenciesMap.values());
 
-    finalComputedProduct = frequencyValues.reduce((accumulator, count) => {
-        const availableOptions = count + 1;
-        return accumulator * availableOptions;
-    }, 1);
+    let currentProductValue = 1;
+    for (const countValue of frequencyCounts) {
+        const incrementedCount = countValue + 1;
+        currentProductValue *= incrementedCount;
+    }
 
-    console.log(finalComputedProduct - 1);
+    console.log(currentProductValue - 1);
 });

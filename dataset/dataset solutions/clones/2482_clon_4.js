@@ -1,55 +1,105 @@
-function processData(dataSource) {
-    const initialScalars = dataSource[0].split(' ').map(Number);
-    const elementCount = initialScalars[0];
-    const reductionAllowance = initialScalars[1];
-
-    const firstCollection = dataSource[1].split(' ').map(Number);
-    const secondCollection = dataSource[2].split(' ').map(Number);
-
-    firstCollection.sort((elemA, elemB) => elemB - elemA);
-    secondCollection.sort((elemA, elemB) => elemA - elemB);
-
-    const workItems = Array.from({ length: elementCount }, (_, idxVar) => ({
-        baseComponent: firstCollection[idxVar],
-        factorComponent: secondCollection[idxVar]
-    }));
-
-    let maxInitialEvaluation = 0;
-    for (const item of workItems) {
-        maxInitialEvaluation = Math.max(maxInitialEvaluation, item.baseComponent * item.factorComponent);
+class MaxPriorityQueue {
+    constructor() {
+        this.heapElements = [];
     }
 
-    const canAchieveTarget = (desiredMaximum, reductionCeiling) => {
-        let necessaryReductions = 0;
-        for (const item of workItems) {
-            const currentEvaluation = item.baseComponent * item.factorComponent;
-            if (currentEvaluation <= desiredMaximum) {
-                continue;
+    retrieveParentIndex(childIndex) { return Math.floor((childIndex - 1) / 2); }
+    retrieveLeftChildIndex(parentIndex) { return 2 * parentIndex + 1; }
+    retrieveRightChildIndex(parentIndex) { return 2 * parentIndex + 2; }
+
+    hasParentNode(childIndex) { return this.retrieveParentIndex(childIndex) >= 0; }
+    hasLeftChildNode(parentIndex) { return this.retrieveLeftChildIndex(parentIndex) < this.heapElements.length; }
+    hasRightChildNode(parentIndex) { return this.retrieveRightChildIndex(parentIndex) < this.heapElements.length; }
+
+    getParentNode(childIndex) { return this.heapElements[this.retrieveParentIndex(childIndex)]; }
+    getLeftChildNode(parentIndex) { return this.heapElements[this.retrieveLeftChildIndex(parentIndex)]; }
+    getRightChildNode(parentIndex) { return this.heapElements[this.retrieveRightChildIndex(parentIndex)]; }
+
+    exchangeElements(indexA, indexB) {
+        [this.heapElements[indexA], this.heapElements[indexB]] = [this.heapElements[indexB], this.heapElements[indexA]];
+    }
+
+    viewTop() {
+        if (this.heapElements.length === 0) return null;
+        return this.heapElements[0];
+    }
+
+    extractHighest() {
+        if (this.heapElements.length === 0) return null;
+        if (this.heapElements.length === 1) return this.heapElements.pop();
+
+        const highestItem = this.heapElements[0];
+        this.heapElements[0] = this.heapElements.pop();
+        this.siftDown();
+        return highestItem;
+    }
+
+    addEntry(item) {
+        this.heapElements.push(item);
+        this.siftUp();
+    }
+
+    siftUp() {
+        let currentElementIndex = this.heapElements.length - 1;
+        while (this.hasParentNode(currentElementIndex) && this.getParentNode(currentElementIndex).productValue < this.heapElements[currentElementIndex].productValue) {
+            this.exchangeElements(this.retrieveParentIndex(currentElementIndex), currentElementIndex);
+            currentElementIndex = this.retrieveParentIndex(currentElementIndex);
+        }
+    }
+
+    siftDown() {
+        let currentElementIndex = 0;
+        while (this.hasLeftChildNode(currentElementIndex)) {
+            let largerChildIndex = this.retrieveLeftChildIndex(currentElementIndex);
+            if (this.hasRightChildNode(currentElementIndex) && this.getRightChildNode(currentElementIndex).productValue > this.getLeftChildNode(currentElementIndex).productValue) {
+                largerChildIndex = this.retrieveRightChildIndex(currentElementIndex);
             }
-            
-            // If factorComponent is 0, currentEvaluation would be 0, satisfying currentEvaluation <= desiredMaximum.
-            // So this path is only taken if factorComponent is positive.
-            const allowedBaseForTarget = Math.floor(desiredMaximum / item.factorComponent);
-            necessaryReductions += Math.max(0, item.baseComponent - allowedBaseForTarget);
-        }
-        return necessaryReductions <= reductionCeiling;
-    };
 
-    let minimumPossible = 0;
-    let maximumPossible = maxInitialEvaluation;
-    let finalOptimal = maxInitialEvaluation;
-
-    while (minimumPossible <= maximumPossible) {
-        const testValue = Math.floor((minimumPossible + maximumPossible) / 2);
-        if (canAchieveTarget(testValue, reductionAllowance)) {
-            finalOptimal = testValue;
-            maximumPossible = testValue - 1;
-        } else {
-            minimumPossible = testValue + 1;
+            if (this.heapElements[currentElementIndex].productValue > this.heapElements[largerChildIndex].productValue) {
+                break;
+            } else {
+                this.exchangeElements(currentElementIndex, largerChildIndex);
+            }
+            currentElementIndex = largerChildIndex;
         }
     }
-
-    console.log(finalOptimal);
 }
 
-processData(require("fs").readFileSync("/dev/stdin", "utf8").split("\n"));
+function processInputData(sourceLines) {
+    const [firstLineContent, secondLineContent, thirdLineContent] = sourceLines;
+
+    const [countItemsStr, limitOperationsStr] = firstLineContent.split(' ');
+    const countItems = Number(countItemsStr);
+    const limitOperations = Number(limitOperationsStr);
+
+    const firstValueCollection = secondLineContent.split(' ').map(Number);
+    const secondValueCollection = thirdLineContent.split(' ').map(Number);
+
+    firstValueCollection.sort((valX, valY) => valY - valX);
+    secondValueCollection.sort((valX, valY) => valX - valY);
+
+    const productHeap = new MaxPriorityQueue();
+
+    for (let currentPosition = 0; currentPosition < countItems; currentPosition++) {
+        const currentAVal = firstValueCollection[currentPosition];
+        const currentFVal = secondValueCollection[currentPosition];
+        productHeap.addEntry({
+            productValue: currentAVal * currentFVal,
+            aComponent: currentAVal,
+            fComponent: currentFVal
+        });
+    }
+
+    for (let operationCounter = 0; operationCounter < limitOperations; operationCounter++) {
+        const highestProductEntry = productHeap.extractHighest();
+        
+        highestProductEntry.aComponent--;
+        highestProductEntry.productValue = highestProductEntry.aComponent * highestProductEntry.fComponent;
+        
+        productHeap.addEntry(highestProductEntry);
+    }
+
+    console.log(productHeap.viewTop().productValue);
+}
+
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8").split("\n"));

@@ -1,207 +1,298 @@
-"use strict"; // Enforce strict parsing and error handling
+"use strict";
+// This script processes graph-related data from standard input.
 
-// Module acquisition and input processing
-var fileContent = require("fs").readFileSync("/std/input", "textEncoding");
-var inputTokens = fileContent.split(/ |\n/);
-var tokenIndex = 0;
+// Read the entire input from stdin.
+var rawData = require("fs").readFileSync("/dev/stdin", "utf8");
 
-// Helper function to get the next number from the input stream
-function getNextNumber() {
-  return +inputTokens[tokenIndex++];
+// Split the input into tokens by spaces or newlines.
+var tokenStream = rawData.split(/ |\n/);
+// Pointer to the current token in the stream.
+var tokenPointer = 0;
+
+/**
+ * Retrieves the next token from the stream and converts it to a number.
+ * @returns {number} The next number from the input.
+ */
+function readNextNumber() {
+  return +tokenStream[tokenPointer++];
 }
 
-// Helper function to get the next string from the input stream
-function getNextString() {
-  return inputTokens[tokenIndex++];
+/**
+ * Retrieves the next token from the stream as a string.
+ * @returns {string} The next string from the input.
+ */
+function readNextString() {
+  return tokenStream[tokenPointer++];
 }
 
-// Helper function to get the next BigInt from the input stream
-function getNextBigInteger() {
-  return BigInt(inputTokens[tokenIndex++]);
+/**
+ * Retrieves the next token from the stream and converts it to a BigInt.
+ * @returns {BigInt} The next BigInt from the input.
+ */
+function readNextBigInt() {
+  return BigInt(tokenStream[tokenPointer++]);
 }
 
-// Helper to retrieve a sequence of tokens
-// If `convertToNumber` is true, map them to numbers
-function getSequence(count, convertToNumber) {
-  if (convertToNumber) {
-    return inputTokens.slice(tokenIndex, (tokenIndex += count));
+/**
+ * Reads 'count' numbers from the stream.
+ * If 'mapToNum' is true, converts them to numbers; otherwise, returns as strings.
+ * @param {number} count - The number of elements to read.
+ * @param {boolean} mapToNum - If true, map elements to numbers.
+ * @returns {Array<number|string>} An array of the read elements.
+ */
+function readNumbersArray(count, mapToNum) {
+  if (mapToNum) {
+    return tokenStream.slice(tokenPointer, tokenPointer += count);
   } else {
-    return inputTokens.slice(tokenIndex, (tokenIndex += count)).map((value) => +value);
+    return tokenStream.slice(tokenPointer, tokenPointer += count).map(val => +val);
   }
 }
 
-// Helper to retrieve a matrix of tokens
-// If `parseNumbers` is true, map inner arrays to numbers
-function getMatrix(rows, cols, parseNumbers) {
-  var resultArray = [];
-  var rowIndex = 0;
-  if (parseNumbers) {
-    for (; rowIndex < rows; rowIndex++) {
-      resultArray.push(inputTokens.slice(tokenIndex, (tokenIndex += cols)));
+/**
+ * Reads a matrix of 'height' rows and 'width' columns from the stream.
+ * If 'mapToNum' is true, converts elements to numbers; otherwise, returns as strings.
+ * @param {number} height - Number of rows.
+ * @param {number} width - Number of columns.
+ * @param {boolean} mapToNum - If true, map elements to numbers.
+ * @returns {Array<Array<number|string>>} The matrix.
+ */
+function readMatrix(height, width, mapToNum) {
+  var resultMatrix = [],
+    rowIdx = 0;
+  if (mapToNum) {
+    for (; rowIdx < height; rowIdx++) {
+      resultMatrix.push(tokenStream.slice(tokenPointer, tokenPointer += width));
     }
   } else {
-    for (; rowIndex < rows; rowIndex++) {
-      resultArray.push(inputTokens.slice(tokenIndex, (tokenIndex += cols)).map((val) => +val));
+    for (; rowIdx < height; rowIdx++) {
+      resultMatrix.push(tokenStream.slice(tokenPointer, tokenPointer += width).map(val => +val));
     }
   }
-  return resultArray;
+  return resultMatrix;
 }
 
-// Function to create a multi-dimensional array dynamically
-function createMultiDimArray(initialValue) {
-  var dimensions = arguments;
-  var dimLength = dimensions.length;
-  var arrayCreationString = "Array(dimensions[" + --dimLength + "]).fill().map(x=>{return " + initialValue + ";})";
-  while (--dimLength) {
-    arrayCreationString = "Array(dimensions[" + dimLength + "]).fill().map(x=>" + arrayCreationString + ")";
+/**
+ * Creates a multi-dimensional array initialized with a given value.
+ * The dimensions are passed as subsequent arguments.
+ * @param {*} initialValue - The value to initialize array elements with.
+ * @param {...number} dimensions - The dimensions of the array.
+ * @returns {Array} The initialized multi-dimensional array.
+ */
+function initializeMultiArray(initialValue) {
+  var args = arguments,
+    argLength = args.length,
+    arrayCreationString = "Array(args[" + --argLength + "]).fill().map(elem => {return " + initialValue + ";})";
+  while (--argLength) {
+    arrayCreationString = "Array(args[" + argLength + "]).fill().map(elem =>" + arrayCreationString + ")";
   }
   return eval(arrayCreationString);
 }
 
-// Execute the main program logic
-var programOutput = executeProgram();
+// Execute the main program logic.
+var finalOutputValue = runSolver();
 
-// If the program produced output, print it to console
-if (programOutput !== undefined) {
-  console.log(String(programOutput));
+// If the program returns a value, print it to console.
+if (finalOutputValue !== undefined) {
+  console.log(String(finalOutputValue));
 }
 
-// Main program function
-function executeProgram() {
-  var totalElements = getNextNumber(); // Read N
-  // Initialize a dynamic programming table with a very small number, and an additional counter
-  var dynamicProgrammingTable = createMultiDimArray(-1e9, totalElements + 1, totalElements + 1);
-  var additionalCount = 0;
+/**
+ * Main function containing the core algorithm logic.
+ * @returns {number} The final calculated result.
+ */
+function runSolver() {
+  // Read the number of vertices.
+  var numVertices = readNextNumber();
 
-  // Read initial two elements, sort them, and initialize the DP table
-  var currentElements = getSequence(2).sort((valA, valB) => valA - valB);
-  var updateQueue; // Declare update queue for later use
+  // Initialize a 2D DP table with a very small number.
+  // Dimensions are (numVertices + 1) x (numVertices + 1).
+  var dynamicProgTable = initializeMultiArray(-1e9, numVertices + 1, numVertices + 1);
+  // A counter for additional points.
+  var additionalPoints = 0;
 
-  dynamicProgrammingTable[0][0] = dynamicProgrammingTable[0][currentElements[0]] = dynamicProgrammingTable[0][currentElements[1]] = dynamicProgrammingTable[currentElements[0]][currentElements[1]] = 0;
+  // Read the first two nodes, sort them, and initialize DP table entries.
+  var currentInputNodes = readNumbersArray(2).sort((valA, valB) => valA - valB);
+  var pendingUpdates = []; // Queue for DP updates.
 
-  // Process N-1 iterations for subsequent triplets
-  for (var iterationCounter = 1; iterationCounter < totalElements; iterationCounter++) {
-    currentElements = getSequence(3).sort((valA, valB) => valA - valB); // Read three elements and sort them
-    processTriplet(...currentElements); // Process the current triplet
+  // Initialize base cases in the DP table.
+  dynamicProgTable[0][0] = dynamicProgTable[0][currentInputNodes[0]] = dynamicProgTable[0][currentInputNodes[1]] = dynamicProgTable[currentInputNodes[0]][currentInputNodes[1]] = 0;
+
+  // Loop through the remaining 'numVertices - 1' sets of nodes.
+  for (var loopIndex = 1; loopIndex < numVertices; loopIndex++) {
+    // Read the next three nodes and sort them.
+    currentInputNodes = readNumbersArray(3).sort((valA, valB) => valA - valB);
+    // Process this triplet of nodes.
+    processNodeTriplet(...currentInputNodes);
   }
 
-  // Read the final element
-  currentElements = getNextNumber();
+  // Read the final node.
+  currentInputNodes = readNextNumber();
+  // Calculate the final result based on DP table and additional points.
+  return Math.max(dynamicProgTable[0][0], dynamicProgTable[currentInputNodes][currentInputNodes] + 1) + additionalPoints;
 
-  // Calculate and return the final result
-  return Math.max(dynamicProgrammingTable[0][0], dynamicProgrammingTable[currentElements][currentElements] + 1) + additionalCount;
-
-  // Inner function to process a triplet of values (u, v, w)
-  function processTriplet(firstVal, secondVal, thirdVal) {
-    // If first and third values are equal, increment counter and return
-    if (firstVal === thirdVal) {
-      return additionalCount++;
-    }
-    updateQueue = []; // Initialize an empty queue for updates
-
-    // Call handlers for various configurations of values
-    handleSingleValue(firstVal);
-    if (firstVal < secondVal) {
-      handleSingleValue(secondVal);
-    }
-    if (secondVal < thirdVal) {
-      handleSingleValue(thirdVal);
+  /**
+   * Processes a triplet of nodes (nodeOne, nodeTwo, nodeThree) to update the DP table.
+   * @param {number} nodeOne - The first node.
+   * @param {number} nodeTwo - The second node.
+   * @param {number} nodeThree - The third node.
+   */
+  function processNodeTriplet(nodeOne, nodeTwo, nodeThree) {
+    // If all three nodes are identical, increment additional points and return.
+    if (nodeOne === nodeThree) {
+      return additionalPoints++;
     }
 
-    handleTwoValues(firstVal, secondVal);
-    if (secondVal < thirdVal) {
-      handleTwoValues(firstVal, thirdVal);
+    // Clear the update queue for this triplet.
+    pendingUpdates = [];
+
+    // Handle updates related to single nodes.
+    updateForSingleNode(nodeOne);
+    if (nodeOne < nodeTwo) {
+      updateForSingleNode(nodeTwo);
     }
-    if (firstVal < secondVal) {
-      handleTwoValues(secondVal, thirdVal);
+    if (nodeTwo < nodeThree) {
+      updateForSingleNode(nodeThree);
     }
 
-    handleThreeValues(firstVal, secondVal, thirdVal);
+    // Handle updates related to pairs of nodes.
+    updateForTwoNodes(nodeOne, nodeTwo);
+    if (nodeTwo < nodeThree) {
+      updateForTwoNodes(nodeOne, nodeThree);
+    }
+    if (nodeOne < nodeTwo) {
+      updateForTwoNodes(nodeTwo, nodeThree);
+    }
 
-    // Apply updates from the queue to the DP table
-    while (updateQueue.length) {
-      var colIndex = updateQueue.pop(); // Pop elements in reverse order (z, y, x)
-      var rowIndex = updateQueue.pop();
-      var newValue = updateQueue.pop();
-      if (dynamicProgrammingTable[rowIndex][colIndex] < newValue) {
-        dynamicProgrammingTable[rowIndex][colIndex] = newValue;
+    // Handle updates related to the triplet of nodes.
+    updateForThreeNodes(nodeOne, nodeTwo, nodeThree);
+
+    // Apply all pending updates from the queue to the DP table.
+    while (pendingUpdates.length) {
+      var potentialScore = pendingUpdates.pop(),
+        coordY = pendingUpdates.pop(),
+        coordX = pendingUpdates.pop();
+      if (dynamicProgTable[coordX][coordY] < potentialScore) {
+        dynamicProgTable[coordX][coordY] = potentialScore;
       }
     }
   }
 
-  // Inner function to handle operations related to a single value
-  function handleSingleValue(targetValue) {
-    compareAndIncrementUpdate(0, 0, targetValue, targetValue);
-    for (var loopIndex = 0; loopIndex < targetValue; loopIndex++) {
-      compareAndUpdate(loopIndex, targetValue, 0, loopIndex);
+  /**
+   * Updates the DP table based on a single node 'nodeVal'.
+   * This involves iterating through various combinations with 0 and 'nodeVal'.
+   * @param {number} nodeVal - The node value to process.
+   */
+  function updateForSingleNode(nodeVal) {
+    // Update for (0,0) -> (nodeVal, nodeVal)
+    enqueueIncrementUpdate(0, 0, nodeVal, nodeVal);
+    // Iterate for (i, nodeVal) from (0,0)
+    for (var loopIndex = 0; loopIndex < nodeVal; loopIndex++) {
+      enqueueSimpleUpdate(loopIndex, nodeVal, 0, loopIndex);
     }
-    for (var loopIndex = targetValue; loopIndex <= totalElements; loopIndex++) {
-      compareAndUpdate(targetValue, loopIndex, 0, loopIndex);
-    }
-  }
-
-  // Inner function to handle operations related to two values
-  function handleTwoValues(valOne, valTwo) {
-    compareAndUpdate(valOne, valTwo, 0, 0);
-    compareAndIncrementUpdate(0, valTwo, valOne, valOne);
-    if (valOne < valTwo) {
-      compareAndIncrementUpdate(0, valOne, valTwo, valTwo);
-    } else {
-      // Case where valOne equals valTwo
-      for (var idx = 0; idx < valOne; idx++) {
-        compareAndIncrementUpdate(0, idx, idx, valOne);
-      }
-      for (var idx = valOne; idx <= totalElements; idx++) {
-        compareAndIncrementUpdate(0, idx, valOne, idx);
-      }
+    // Iterate for (nodeVal, i) from (0,i)
+    for (var loopIndex = nodeVal; loopIndex <= numVertices; loopIndex++) {
+      enqueueSimpleUpdate(nodeVal, loopIndex, 0, loopIndex);
     }
   }
 
-  // Inner function to handle operations related to three values
-  function handleThreeValues(paramA, paramB, paramC) {
-    compareAndIncrementUpdate(paramB, paramC, paramA, paramA);
-    if (paramA < paramB) {
-      compareAndIncrementUpdate(paramA, paramC, paramB, paramB);
-      if (paramB < paramC) {
-        compareAndIncrementUpdate(paramA, paramB, paramC, paramC);
-      } else {
-        // Case where paramB equals paramC
-        for (var iter = 0; iter < paramA; iter++) {
-          compareAndIncrementUpdate(iter, paramA, iter, paramC);
+  /**
+   * Updates the DP table based on two nodes 'nodeValA' and 'nodeValB'.
+   * Handles cases where nodes are equal or different.
+   * @param {number} nodeValA - The first node value.
+   * @param {number} nodeValB - The second node value.
+   */
+  function updateForTwoNodes(nodeValA, nodeValB) {
+    // Update for (nodeValA, nodeValB) from (0,0)
+    enqueueSimpleUpdate(nodeValA, nodeValB, 0, 0);
+    // Update for (0, nodeValB) from (nodeValA, nodeValA)
+    enqueueIncrementUpdate(0, nodeValB, nodeValA, nodeValA);
+
+    if (nodeValA < nodeValB) {
+      // If nodeValA is less than nodeValB, update for (0, nodeValA) from (nodeValB, nodeValB)
+      enqueueIncrementUpdate(0, nodeValA, nodeValB, nodeValB);
+    } else { // nodeValA === nodeValB
+      // If nodes are equal, iterate through combinations.
+      for (var loopIndex = 0; loopIndex < nodeValA; loopIndex++) {
+        enqueueIncrementUpdate(0, loopIndex, loopIndex, nodeValA);
+      }
+      for (var loopIndex = nodeValA; loopIndex <= numVertices; loopIndex++) {
+        enqueueIncrementUpdate(0, loopIndex, nodeValA, loopIndex);
+      }
+    }
+  }
+
+  /**
+   * Updates the DP table based on three nodes 'nodeValA', 'nodeValB', and 'nodeValC'.
+   * Handles various permutations and equality conditions.
+   * @param {number} nodeValA - The first node value.
+   * @param {number} nodeValB - The second node value.
+   * @param {number} nodeValC - The third node value.
+   */
+  function updateForThreeNodes(nodeValA, nodeValB, nodeValC) {
+    // Update for (nodeValB, nodeValC) from (nodeValA, nodeValA)
+    enqueueIncrementUpdate(nodeValB, nodeValC, nodeValA, nodeValA);
+
+    if (nodeValA < nodeValB) {
+      // If nodeValA < nodeValB, update for (nodeValA, nodeValC) from (nodeValB, nodeValB)
+      enqueueIncrementUpdate(nodeValA, nodeValC, nodeValB, nodeValB);
+      if (nodeValB < nodeValC) {
+        // If nodeValB < nodeValC, update for (nodeValA, nodeValB) from (nodeValC, nodeValC)
+        enqueueIncrementUpdate(nodeValA, nodeValB, nodeValC, nodeValC);
+      } else { // nodeValB === nodeValC
+        // If nodeValB and nodeValC are equal, iterate through combinations.
+        for (var loopIndex = 0; loopIndex < nodeValA; loopIndex++) {
+          enqueueIncrementUpdate(loopIndex, nodeValA, loopIndex, nodeValC);
         }
-        for (var iter = paramA; iter < paramC; iter++) {
-          compareAndIncrementUpdate(paramA, iter, iter, paramC);
+        for (var loopIndex = nodeValA; loopIndex < nodeValC; loopIndex++) {
+          enqueueIncrementUpdate(nodeValA, loopIndex, loopIndex, nodeValC);
         }
-        for (var iter = paramC; iter <= totalElements; iter++) {
-          compareAndIncrementUpdate(paramA, iter, paramC, iter);
+        for (var loopIndex = nodeValC; loopIndex <= numVertices; loopIndex++) {
+          enqueueIncrementUpdate(nodeValA, loopIndex, nodeValC, loopIndex);
         }
       }
-    } else {
-      // Case where paramA equals paramB
-      compareAndIncrementUpdate(paramA, paramA, paramC, paramC);
-      for (var iter = 0; iter < paramA; iter++) {
-        compareAndIncrementUpdate(iter, paramC, iter, paramA);
+    } else { // nodeValA === nodeValB
+      // If nodeValA and nodeValB are equal, update for (nodeValA, nodeValA) from (nodeValC, nodeValC)
+      enqueueIncrementUpdate(nodeValA, nodeValA, nodeValC, nodeValC);
+      // Iterate through combinations.
+      for (var loopIndex = 0; loopIndex < nodeValA; loopIndex++) {
+        enqueueIncrementUpdate(loopIndex, nodeValC, loopIndex, nodeValA);
       }
-      for (var iter = paramA; iter < paramC; iter++) {
-        compareAndIncrementUpdate(iter, paramC, paramA, iter);
+      for (var loopIndex = nodeValA; loopIndex < nodeValC; loopIndex++) {
+        enqueueIncrementUpdate(loopIndex, nodeValC, nodeValA, loopIndex);
       }
-      for (var iter = paramC; iter <= totalElements; iter++) {
-        compareAndIncrementUpdate(paramC, iter, paramA, iter);
+      for (var loopIndex = nodeValC; loopIndex <= numVertices; loopIndex++) {
+        enqueueIncrementUpdate(nodeValC, loopIndex, nodeValA, loopIndex);
       }
     }
   }
 
-  // Utility function: If dp[idx1][idx2] is less than dp[idx3][idx4], push update to queue
-  function compareAndUpdate(idx1, idx2, idx3, idx4) {
-    if (dynamicProgrammingTable[idx1][idx2] < dynamicProgrammingTable[idx3][idx4]) {
-      updateQueue.push(dynamicProgrammingTable[idx3][idx4], idx2, idx1);
+  /**
+   * Enqueues a simple update to the DP table.
+   * If the score at (coordC, coordD) is greater than the current score at (coordA, coordB),
+   * it pushes the score and coordinates to the pendingUpdates queue.
+   * @param {number} coordA - Row coordinate for the target cell.
+   * @param {number} coordB - Column coordinate for the target cell.
+   * @param {number} coordC - Row coordinate for the source cell.
+   * @param {number} coordD - Column coordinate for the source cell.
+   */
+  function enqueueSimpleUpdate(coordA, coordB, coordC, coordD) {
+    if (dynamicProgTable[coordA][coordB] < dynamicProgTable[coordC][coordD]) {
+      pendingUpdates.push(dynamicProgTable[coordC][coordD], coordB, coordA);
     }
   }
 
-  // Utility function: If dp[idx1][idx2] is less than dp[idx3][idx4] + 1, push update to queue
-  function compareAndIncrementUpdate(idx1, idx2, idx3, idx4) {
-    if (dynamicProgrammingTable[idx1][idx2] < dynamicProgrammingTable[idx3][idx4] + 1) {
-      updateQueue.push(dynamicProgrammingTable[idx3][idx4] + 1, idx2, idx1);
+  /**
+   * Enqueues an incremented update to the DP table.
+   * If (score at (coordC, coordD) + 1) is greater than the current score at (coordA, coordB),
+   * it pushes the incremented score and coordinates to the pendingUpdates queue.
+   * @param {number} coordA - Row coordinate for the target cell.
+   * @param {number} coordB - Column coordinate for the target cell.
+   * @param {number} coordC - Row coordinate for the source cell.
+   * @param {number} coordD - Column coordinate for the source cell.
+   */
+  function enqueueIncrementUpdate(coordA, coordB, coordC, coordD) {
+    if (dynamicProgTable[coordA][coordB] < dynamicProgTable[coordC][coordD] + 1) {
+      pendingUpdates.push(dynamicProgTable[coordC][coordD] + 1, coordB, coordA);
     }
   }
 }

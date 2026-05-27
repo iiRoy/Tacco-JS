@@ -1,27 +1,31 @@
-function processInput ( inputData ) {
-  // Obtain the numeric threshold from the initial line of provided data.
-  const maxLen = +inputData[0] ;
+function processInput(inputData) {
+  // Retrieve the numeric character limit from the first line of input.
+  const charLimit = +inputData[0];
+  // Obtain the source text string from the second line of input.
+  const originalText = inputData[1];
 
-  // Retrieve the specific string for manipulation from the subsequent line.
-  const targetString = inputData[1] ;
+  // Determine the resulting string based on the specified character limit.
+  // If the original text's length exceeds the limit, truncate it and append an ellipsis.
+  // Otherwise, the full original text is used.
+  let finalOutput = charLimit < originalText.length
+    ? originalText.slice(0, charLimit) + '...' // Truncate and add '...'
+    : originalText; // Use the complete string
 
-  // Formulate the final textual output based on the established length constraint.
-  let outputStr = maxLen < targetString.length
-    ? targetString.slice(0, maxLen) + '...'
-    : targetString ;
-
-  // Emit the resulting string to the standard output device.
-  console.log( outputStr ) ;
+  // Print the computed final string to the standard output.
+  console.log(finalOutput);
 }
 
-
-// Execute the primary function, feeding it content acquired from standard input.
+// Initiate the main processing flow.
+// This involves reading data from standard input, decoding it as UTF-8,
+// removing any leading or trailing whitespace, and then splitting it into an array of lines.
 processInput(
   require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n")
-) ;
+);
 
 
-// Auxiliary routine for converting a space-delimited string of digits into an array of numeric values.
-function parseNumbers( textParam ) {
-  return textParam.split(' ').map( Number ) ;
+// This is a helper function designed to split a given string by spaces
+// and then convert each resulting substring into a numerical value.
+// Note: This particular function is defined but not invoked within the primary execution path of this script.
+function divideAndConvert(textSegment) {
+  return textSegment.split(' ').map(Number);
 }

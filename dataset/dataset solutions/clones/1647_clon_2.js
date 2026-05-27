@@ -1,52 +1,54 @@
-/* This module handles processing of numerical input data. */
+/*
+ * This script processes numerical input to determine a specific condition.
+ * It reads two lines of data, performs transformations, and then checks an ordering.
+ */
 
-function  processData (   incomingData  )
-{
-  incomingData = incomingData.trim ( ) ;
-  let   firstLineContent   = incomingData.split( "\n" ) [ 0x0 ] ;
-  let   secondLineContent  = incomingData.split( "\n" ) [ 0x1 ] ;
-  let   valX   =   parseInt( firstLineContent.split ( " " ) [ 0 ] ) ;
-  let   valY   =   parseInt( firstLineContent.split ( " " ) [ 1 ] ) ;
-  let   valZ   =   parseInt( firstLineContent.split ( " " ) [ 2 ] ) ;
-  let   loopTimes  =   parseInt( secondLineContent ) ;
+function processInput(rawData) {
+  // Clean up the raw input string by removing leading/trailing whitespace.
+  rawData = rawData.trim();
 
-  // Sub-function to verify current state
-  function  verifyOrder ( )
-  {
-    return ( valX < valY && valY < valZ ) ;
+  // Split the input into lines and extract the first and second lines.
+  let firstLineData = rawData.split("\n")[0];
+  let secondLineData = rawData.split("\n")[1];
+
+  // Parse the numerical values from the first line.
+  let redVal = parseInt(firstLineData.split(" ")[0]);
+  let greenVal = parseInt(firstLineData.split(" ")[1]);
+  let blueVal = parseInt(firstLineData.split(" ")[2]);
+
+  // Parse the iteration count from the second line.
+  let iterationsCount = parseInt(secondLineData);
+
+  // Define a helper function to check if the values are in ascending order.
+  function checkOrder() {
+    return (redVal < greenVal && greenVal < blueVal);
   }
-  
-  /* Sub-procedure for applying transformation rules */
-  function  applyRules ( )
-  {
-    if ( valX >= valY )
-    {
-      valY = valY * 0x2 ;
+
+  // Define a function to apply transformations based on current values.
+  function transformValues() {
+    if (redVal >= greenVal) {
+      greenVal = greenVal * 2; // Double the green value if red is greater or equal.
+    } else if (greenVal >= blueVal) {
+      blueVal = blueVal * 2; // Double the blue value if green is greater or equal.
     }
-    else if ( valY >= valZ )
-    {
-      valZ = valZ * 2 ;
-    }
   }
-  
-  for ( let  iterCount = 0 ; iterCount < loopTimes ; iterCount++ )
-  {
-    applyRules ( ) ;
+
+  // Apply the transformation function 'iterationsCount' times.
+  for (let idx = 0; idx < iterationsCount; idx++) {
+    transformValues();
   }
-  let   finalOutcome  =  "" ;
-  if (  verifyOrder ( )  ===  true  )
-  {
-    finalOutcome = "Yes" ;
+
+  // Determine the final outcome based on the ordered check.
+  let finalResult = "";
+  if (checkOrder() === true) {
+    finalResult = "Yes";
+  } else {
+    finalResult = "No";
   }
-  else
-  {
-    finalOutcome = "No" ;
-  }
-  console.log( finalOutcome ) ;
+
+  // Output the final result to the console.
+  console.log(finalResult);
 }
 
-/* Example usage of the main processing function:
-processData( "1 2 3\n4" );
-*/
-
-processData ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+// The following line reads input from standard input in a Node.js environment.
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

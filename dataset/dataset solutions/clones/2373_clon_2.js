@@ -1,79 +1,71 @@
 "use strict";
 
-const generateCombinationsWithDuplicates = (
-  inputElements,
-  currentLength = inputElements.length
+const generateCombinationsWithRepeats = (
+  optionSet,
+  comboLength = optionSet.length
 ) => {
-  if (currentLength === 1) {
-    // Base case: if length is 1, wrap each element in an array
-    return inputElements.map(singleElement => [singleElement]);
+  if (comboLength === 1) {
+    return optionSet.map(singleOption => [singleOption]);
   }
 
-  // Initialize an array to store all generated combinations.
-  const resultCombinations = [];
+  const resultCombos = [];
 
-  // Recursively obtain combinations for a shorter length.
-  const subCombinations = generateCombinationsWithDuplicates(
-    inputElements,
-    currentLength - 1
+  const subCombos = generateCombinationsWithRepeats(
+    optionSet,
+    comboLength - 1
   );
 
-  // Iterate through each input element and prepend it to the smaller combinations.
-  inputElements.forEach((currentItem) => {
-    subCombinations.forEach((subCombination) => {
-      resultCombinations.push([currentItem].concat(subCombination));
+  optionSet.forEach((currentElement) => {
+    subCombos.forEach((subCombo) => {
+      resultCombos.push([currentElement].concat(subCombo));
     });
   });
 
-  return resultCombinations;
+  return resultCombos;
 };
 
-const processInputData = rawData => {
-    rawData = rawData.trim().split("\n");
-    const initialCountValue = parseInt(rawData[0]);
-    const digitSequence = rawData[1].split("").map(charDigit => parseInt(charDigit));
+const processInput = (inputData) => {
+    inputData = inputData.trim().split("\n");
+    const inputN = parseInt(inputData[0]);
+    const inputSequence = inputData[1].split("").map(n => parseInt(n));
 
-    // Define the possible single-digit numeric values.
-    const numericValuesArray = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+    const availableDigits = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
     
-    const allTriplets = generateCombinationsWithDuplicates(numericValuesArray, 3);
+    const allPossibleCombos = generateCombinationsWithRepeats(availableDigits, 3);
     
-    let matchCount = 0;
-    let unusedList = []; // This variable is present but not used in original logic.
+    let validComboCount = 0;
+    let tempList = [];
     
-    // Iterate through each generated three-digit combination.
-    for (let tripletIndex in allTriplets) {
-        let firstComponent = allTriplets[tripletIndex][0];
-        let secondComponent = allTriplets[tripletIndex][1];
-        let thirdComponent = allTriplets[tripletIndex][2];
+    for (let comboIndex in allPossibleCombos) {
+        let firstDigit = allPossibleCombos[comboIndex][0];
+        let secondDigit = allPossibleCombos[comboIndex][1];
+        let thirdDigit = allPossibleCombos[comboIndex][2];
         
-        // Variables to track the search progress within the sequence.
-        let currentVerificationTarget = firstComponent; // This variable is not utilized further.
-        let successfulFinds = 0; // This variable is not utilized further.
-        let firstPartFound = false;
-        let secondPartFound = false;
-        let thirdPartFound = false;
+        let currentCheckValue = firstDigit;
+        let matchCount = 0;
+        let foundFirst = false;
+        let foundSecond = false;
+        let foundThird = false;
         
-        let temporaryBuffer = []; // This variable is present but not used.
+        let temporaryArray = [];
         
-        // Scan the input digit sequence for the components of the current triplet.
-        for (let sequenceCharIndex in digitSequence) {
-            if (digitSequence[sequenceCharIndex] === firstComponent && !firstPartFound) {
-                firstPartFound = true;
-            } else if (digitSequence[sequenceCharIndex] === secondComponent && firstPartFound && !secondPartFound) {
-                secondPartFound = true;
-            } else if (digitSequence[sequenceCharIndex] === thirdComponent && firstPartFound && secondPartFound) {
-                thirdPartFound = true;
+        
+        for (let sequenceIndex in inputSequence) {
+            if (inputSequence[sequenceIndex] === firstDigit && foundFirst !== true) {
+                foundFirst = true;
+            } else if (inputSequence[sequenceIndex] === secondDigit && foundFirst && foundSecond !== true) {
+                foundSecond = true;
+            } else if (inputSequence[sequenceIndex] === thirdDigit && foundFirst && foundSecond) {
+                foundThird = true;
             }
         }
         
-        // If all three components of the triplet were found in order within the sequence.
-        if (firstPartFound && secondPartFound && thirdPartFound) {
-            matchCount++;
+        
+        if (foundFirst && foundSecond && foundThird) {
+            validComboCount++;
         }
     }
     
-    console.log(matchCount);
+    console.log(validComboCount);
 };
-
-processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

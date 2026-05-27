@@ -1,48 +1,28 @@
-const parseInputData = (sourceMaterial) => {
-    const contentLines = sourceMaterial.trim().split('\n');
-    const totalElements = parseInt(contentLines[0], 10);
-    const primarySequence = contentLines[1].split(' ').map(Number);
-    const secondarySequence = contentLines[2].split(' ').map(Number);
-    return { totalElements, primarySequence, secondarySequence };
-};
+function Main(input) {
+    const dataLines = input.trim().split('\n');
+    const totalColumns = Number(dataLines[0]);
+    const upperRowValues = dataLines[1].split(' ').map(Number);
+    const lowerRowValues = dataLines[2].split(' ').map(Number);
 
-const calculateCumulativeSums = (dataCollection) => {
-    const runningTotals = [];
-    let currentTotal = 0;
-    for (let index = 0; index < dataCollection.length; index++) {
-        currentTotal += dataCollection[index];
-        runningTotals.push(currentTotal);
+    const cumulativeUpperSums = [0];
+    for (let k = 0; k < totalColumns; k++) {
+        cumulativeUpperSums.push(cumulativeUpperSums[k] + upperRowValues[k]);
     }
-    return runningTotals;
-};
 
-const calculateReverseCumulativeSums = (dataCollection) => {
-    const runningTotals = new Array(dataCollection.length);
-    let currentTotal = 0;
-    for (let index = dataCollection.length - 1; index >= 0; index--) {
-        currentTotal += dataCollection[index];
-        runningTotals[index] = currentTotal;
+    const cumulativeLowerSums = [0];
+    for (let k = 0; k < totalColumns; k++) {
+        cumulativeLowerSums.push(cumulativeLowerSums[k] + lowerRowValues[k]);
     }
-    return runningTotals;
-};
 
-const determineOverallBestScore = (numItems, cumulativePrimary, cumulativeSecondaryReverse) => {
-    let maximumAchieved = 0;
-    for (let currentPivot = 0; currentPivot < numItems; currentPivot++) {
-        const combinedScore = cumulativePrimary[currentPivot] + cumulativeSecondaryReverse[currentPivot];
-        if (combinedScore > maximumAchieved) {
-            maximumAchieved = combinedScore;
-        }
-    }
-    return maximumAchieved;
-};
+    const allPossiblePathTotals = Array.from({ length: totalColumns }, (_, pivotIndex) => {
+        const currentUpperSegmentSum = cumulativeUpperSums[pivotIndex + 1];
+        const currentLowerSegmentSum = cumulativeLowerSums[totalColumns] - cumulativeLowerSums[pivotIndex];
+        return currentUpperSegmentSum + currentLowerSegmentSum;
+    });
 
-const processSequenceAggregation = (sourceMaterial) => {
-    const { totalElements, primarySequence, secondarySequence } = parseInputData(sourceMaterial);
-    const cumulativePrimary = calculateCumulativeSums(primarySequence);
-    const cumulativeSecondaryReverse = calculateReverseCumulativeSums(secondarySequence);
-    const finalResult = determineOverallBestScore(totalElements, cumulativePrimary, cumulativeSecondaryReverse);
-    console.log(finalResult);
-};
+    const maximumCollectedCandies = Math.max(...allPossiblePathTotals);
 
-processSequenceAggregation(require("fs").readFileSync("/dev/stdin", "utf8"));
+    console.log(maximumCollectedCandies);
+}
+
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,33 +1,23 @@
-'use strict';
+'use strict'; // Enforce strict mode for cleaner code and error handling
 
-/**
- * Executes the primary processing logic for dimensional data.
- * @param {string} sourceData - The raw input string containing various dimensions.
- */
-const calculateArea = sourceData => {
-  // First, parse the incoming data string by newline characters.
-  // Then, for each resulting line, further split it by spaces to isolate individual dimension components.
-  const lineSegments = sourceData
-    .split('\n')
-    .map(currentLine => currentLine.split(' '));
+const processInput = (rawData) => {
+    // Split the raw input string by newline characters, then further split each line by spaces.
+    // This creates a 2D array of string arguments.
+    const parsedLines = rawData.split('\n').map(lineStr => lineStr.split(' '));
 
-  // Extract and meticulously parse the first set of dimensions (height and width).
-  // The radix '10' ensures proper decimal integer conversion.
-  const firstHeightDim = parseInt(lineSegments[0][0], 10);
-  const firstWidthDim  = parseInt(lineSegments[0][1], 10);
+    // Parse the first height and width values from the first line of input.
+    const heightOne = parseInt(parsedLines[0][0], 10); // The first number on the first line
+    const widthOne = parseInt(parsedLines[0][1], 10);  // The second number on the first line
 
-  // Subsequently, extract and parse the second set of dimensions (height and width).
-  // Consistent radix '10' is used for accurate integer interpretation.
-  const secondHeightDim = parseInt(lineSegments[1][0], 10);
-  const secondWidthDim  = parseInt(lineSegments[1][1], 10);
+    // Parse the second height and width values from the second line of input.
+    const heightTwo = parseInt(parsedLines[1][0], 10); // The first number on the second line
+    const widthTwo = parseInt(parsedLines[1][1], 10);  // The second number on the second line
 
-  // Perform a complex geometric calculation based on the extracted dimensions
-  // and output the final numerical result to the console.
-  // The expression represents a derived area or difference based on the given inputs.
-  console.log((firstHeightDim * firstWidthDim) - (firstWidthDim * secondHeightDim + (firstHeightDim - secondHeightDim) * secondWidthDim));
+    // Calculate the final result based on the given formula and print it to the console.
+    // The formula is (heightOne * widthOne) - (widthOne * heightTwo + (heightOne - heightTwo) * widthTwo).
+    console.log((heightOne * widthOne) - (widthOne * heightTwo + (heightOne - heightTwo) * widthTwo));
 };
 
-// Initiate the main calculation function by providing it with data
-// asynchronously read from the standard input stream ('/dev/stdin'),
-// ensuring the content is interpreted as UTF-8 encoded text.
-calculateArea(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// Read the entire content of standard input synchronously using Node.js 'fs' module,
+// decode it as UTF-8, and then pass it to our processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

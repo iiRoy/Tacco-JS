@@ -1,71 +1,33 @@
-let accumulatedInputContent = '';
+module.exports = (() => {
+    const nodeFileSystem = require('node:fs');
 
-const setupInputPipeline = (callbackFunction) => {
-    process.stdin.on('data', (dataChunk) => {
-        accumulatedInputContent += dataChunk.toString();
-    });
+    const processInputAndCalculate = () => {
+        const rawInputContent = nodeFileSystem.readFileSync('/dev/stdin', 'utf8');
+        const inputLinesArray = rawInputContent.split('\n');
 
-    process.stdin.on('end', () => {
-        callbackFunction(accumulatedInputContent.trim().split('\n'));
-    });
+        const [firstLine, secondLine] = inputLinesArray;
+        const dataSize = Number(firstLine);
+        const initialDataPoints = secondLine.split(' ').map(Number);
 
-    process.stdin.on('error', (err) => {
-        process.stderr.write('Input Stream Error: ' + err.message + '\n');
-        process.exit(1);
-    });
-};
+        const transformedDataPoints = initialDataPoints.map((valueElement, indexPosition) =>
+            valueElement - indexPosition - 1
+        );
 
-const transformSequence = (initialSequence) =>
-    initialSequence.map((elementValue, ordinalPosition) =>
-        elementValue - ordinalPosition - 1
-    );
+        transformedDataPoints.sort((aValue, bValue) => aValue - bValue);
 
-const findCentralPoint = (orderedSequence) => {
-    const sequenceLength = orderedSequence.length;
-    const midPoint = Math.floor(sequenceLength / 2);
-    return (sequenceLength % 2 === 0)
-        ? (orderedSequence[midPoint - 1] + orderedSequence[midPoint]) / 2
-        : orderedSequence[midPoint];
-};
+        const medianIndex = Math.trunc(dataSize / 2);
+        const calculatedMedian = (dataSize % 2 === 0)
+            ? (transformedDataPoints[medianIndex - 1] + transformedDataPoints[medianIndex]) / 2
+            : transformedDataPoints[medianIndex];
 
-const calculateTotalDeviation = (dataSeries, referencePoint) =>
-    dataSeries.reduce((summation, currentValue) =>
-        summation + Math.abs(currentValue - referencePoint), 0
-    );
+        const totalAbsoluteDeviation = transformedDataPoints.reduce((accumulatedSum, currentPoint) =>
+            accumulatedSum + Math.abs(currentPoint - calculatedMedian), 0
+        );
 
-const arrangeElements = (collectionToArrange) => {
-    if (collectionToArrange.length <= 1) {
-        return collectionToArrange;
-    }
+        console.log(totalAbsoluteDeviation);
+    };
 
-    const pivotValue = collectionToArrange[Math.floor(collectionToArrange.length / 2)];
-    const elementsSmaller = [];
-    const elementsLarger = [];
-    const elementsEqual = [];
+    processInputAndCalculate();
 
-    for (const item of collectionToArrange) {
-        if (item < pivotValue) {
-            elementsSmaller.push(item);
-        } else if (item > pivotValue) {
-            elementsLarger.push(item);
-        } else {
-            elementsEqual.push(item);
-        }
-    }
-
-    return arrangeElements(elementsSmaller).concat(elementsEqual).concat(arrangeElements(elementsLarger));
-};
-
-const initiateCalculation = (inputSourceLines) => {
-    const quantity = Number(inputSourceLines[0]);
-    const numericData = inputSourceLines[1].split(' ').map(Number);
-
-    const processedData = transformSequence(numericData);
-    const orderedProcessedData = arrangeElements(processedData);
-    const medianEquivalent = findCentralPoint(orderedProcessedData);
-    const finalSum = calculateTotalDeviation(orderedProcessedData, medianEquivalent);
-
-    process.stdout.write(finalSum.toString() + '\n');
-};
-
-setupInputPipeline(initiateCalculation);
+    return {};
+})();

@@ -1,20 +1,14 @@
-// This function is designed to ingest and process an array of textual entries.
-function ProcessInput( dataLines ) {
-  // Declare a local variable to store the primary numerical component.
-  // The first element of the input array is parsed into a floating-point number.
-  let numericValue = Number( dataLines[0] );
+function ProcessInput(dataLines) {
+  // Extract the first line of input and convert it to a numerical value.
+  // The '-0' operation is a common JavaScript trick to coerce a string to a number.
+  let radiusValue = dataLines[0] - 0;
 
-  // Output the result of a mathematical calculation involving the parsed value.
-  // Specifically, it computes the circumference of a circle with 'numericValue' as its radius.
-  console.log( numericValue * 2.0 * Math.PI );
+  // Calculate the circumference of a circle using the formula 2 * pi * radius.
+  // Then, output the computed value to the standard console.
+  console.log(radiusValue * 2 * Math.PI);
 }
 
-// Invoke the main processing routine.
-// The data is sourced from standard input, decoded as UTF-8,
-// stripped of leading/trailing whitespace, and then segmented into individual lines.
-ProcessInput(
-  require("node:fs").
-    readFileSync("/dev/stdin", "utf8").
-    trim().
-    split("\n")
-);
+// Read the entire content from standard input, decode it as UTF-8,
+// remove any leading/trailing whitespace, and then split it into an array of lines.
+// Finally, pass this array of lines to our main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n"));

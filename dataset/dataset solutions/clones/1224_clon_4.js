@@ -1,53 +1,29 @@
-const fileSystem = require('fs');
-const standardInputPath = '/dev/stdin';
+'use strict';
 
-const inputBufferAllocation = Buffer.alloc(1024);
-let bytesAcquired = 0;
-const inputDescriptor = fileSystem.openSync(standardInputPath, 'r');
-
-try {
-    bytesAcquired = fileSystem.readSync(inputDescriptor, inputBufferAllocation, 0, inputBufferAllocation.length, 0);
-} finally {
-    fileSystem.closeSync(inputDescriptor);
+function presentNumericSequence(sequence) {
+  console.log(sequence);
 }
 
-let fullInputContent = inputBufferAllocation.toString('utf8', 0, bytesAcquired);
+(function(sourceHandle) {
+  let fullInputContent = sourceHandle.toString();
 
-const lineBreakPosition = fullInputContent.indexOf('\n');
-const primaryContentLine = (lineBreakPosition !== -1) ? fullInputContent.substring(0, lineBreakPosition) : fullInputContent;
+  let newlinePosition = fullInputContent.indexOf('\n');
+  let relevantLine = (newlinePosition === -1) ? fullInputContent : fullInputContent.substring(0, newlinePosition);
 
-function processValueSequence(textSource) {
-    const gatheredNumbers = [];
-    let currentSegment = '';
-    const sourceLength = textSource.length;
-    let currentlyInNumber = false;
+  let stringSegments = [];
+  let currentPosition = 0;
+  let delimiterPosition;
 
-    for (let index = 0; index < sourceLength; index++) {
-        let charFromSource = textSource[index];
-        if (charFromSource === ' ') {
-            if (currentlyInNumber || currentSegment.length > 0) {
-                gatheredNumbers.push(Number(currentSegment));
-            } else {
-                gatheredNumbers.push(0);
-            }
-            currentSegment = '';
-            currentlyInNumber = false;
-        } else {
-            currentSegment += charFromSource;
-            currentlyInNumber = true;
-        }
-    }
+  while ((delimiterPosition = relevantLine.indexOf(' ', currentPosition)) !== -1) {
+    stringSegments.push(relevantLine.substring(currentPosition, delimiterPosition));
+    currentPosition = delimiterPosition + 1;
+  }
+  stringSegments.push(relevantLine.substring(currentPosition));
 
-    if (currentlyInNumber || currentSegment.length > 0) {
-        gatheredNumbers.push(Number(currentSegment));
-    } else {
-        if (sourceLength > 0 && textSource[sourceLength - 1] === ' ') {
-            gatheredNumbers.push(0);
-        }
-    }
-    return gatheredNumbers;
-}
+  let numericResults = [];
+  for (const segment of stringSegments) {
+    numericResults.push(Number(segment));
+  }
 
-const finalNumberList = processValueSequence(primaryContentLine);
-
-console.log(finalNumberList);
+  presentNumericSequence(numericResults);
+}(require('fs').readFileSync('/dev/stdin', 'utf8')));

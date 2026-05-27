@@ -1,57 +1,52 @@
-// This function processes a multi-line input string to calculate a specific combinatorial result.
-function ProcessInputData ( inputString ) {
+function ProcessInput(inputData) {
+    // Split the incoming data by newline characters to separate lines.
+    inputData = inputData.split("\n");
 
-  // Split the entire input string into an array of lines.
-  let lineSegments = inputString.split( "\n" ) ;
+    // Convert the first line to a number, representing the total count of elements.
+    let countElements = +inputData[0];
 
-  // The first line contains the total number of elements. Convert it to a number.
-  let elementCount = +lineSegments[ 0 ] ;
+    // Split the second line by spaces to obtain an array of string representations of numbers.
+    let elementStrings = inputData[1].split(" ");
 
-  // The second line contains space-separated numeric values. Split them into an array.
-  let numericValues = lineSegments[ 1 ].split( " " ) ;
+    // Initialize a hash map to store the occurrences of each prefix sum.
+    // The sum of zero is considered to have occurred once before processing any elements.
+    let sumOccurrences = { 0: 1 };
 
-  // Initialize a hash map to store the frequencies of prefix sums.
-  // A sum of 0 is considered to have occurred once initially.
-  let frequencyMap = { 0 : 1 } ;
+    // Initialize a variable to keep track of the running prefix sum.
+    let currentPrefixSum = 0;
 
-  // Initialize the running prefix sum.
-  let currentPrefixSum = 0 ;
+    // Iterate through each element in the array of element strings.
+    for (let elementIndex = 0; elementIndex < countElements; elementIndex++) {
+        // Add the numeric value of the current element to the running prefix sum.
+        currentPrefixSum += +elementStrings[elementIndex];
 
-  // Iterate through each numeric value to calculate prefix sums and their frequencies.
-  for ( let idx = 0 ; idx < elementCount ; idx++ ) {
-    // Add the current numeric value (converted to number) to the running sum.
-    currentPrefixSum += +numericValues[ idx ] ;
-
-    // Increment the frequency of the current prefix sum in the map.
-    // If it's a new sum, initialize its frequency to 1; otherwise, increment.
-    if ( frequencyMap[ currentPrefixSum ] ) {
-      frequencyMap[ currentPrefixSum ]++ ;
-    } else {
-      frequencyMap[ currentPrefixSum ] = 1 ;
+        // Update the count for the current prefix sum in the hash map.
+        // If the sum has been encountered before, increment its count; otherwise, set it to one.
+        if (sumOccurrences[currentPrefixSum]) {
+            sumOccurrences[currentPrefixSum]++;
+        } else {
+            sumOccurrences[currentPrefixSum] = 1;
+        }
     }
-  }
 
-  // Initialize the variable to store the final combinatorial result.
-  let resultCount = 0 ;
+    // Initialize the final tally for the number of pairs.
+    let finalTally = 0, temporaryValue;
 
-  // Declare a temporary variable for frequency.
-  let currentFreq ;
-
-  // Iterate through each unique prefix sum (key) in the frequency map.
-  for ( let mapEntryKey in frequencyMap ) {
-    // Check if the frequency for the current sum exists and assign it to currentFreq.
-    // This is a common pattern for "if assignment successful" in JS.
-    if ( currentFreq = frequencyMap[ mapEntryKey ] ) {
-      // If a sum occurred 'k' times, there are k*(k-1)/2 pairs of indices
-      // where the prefix sum is the same. Add this to the total result.
-      resultCount += currentFreq * ( currentFreq - 1 ) / 2 ;
+    // Iterate over the keys (which are the prefix sums) in the sum occurrences map.
+    for (let sumKey in sumOccurrences) {
+        // Retrieve the frequency of the current prefix sum.
+        // If the frequency is non-zero (which it will be for any existing key),
+        // calculate the number of pairs that can be formed from this frequency.
+        if (temporaryValue = sumOccurrences[sumKey]) {
+            // The formula n * (n - 1) / 2 calculates the number of unique pairs from 'n' items.
+            finalTally += temporaryValue * (temporaryValue - 1) / 2;
+        }
     }
-  }
 
-  // Output the final calculated result to the console.
-  console.log( resultCount ) ;
+    // Print the computed final tally to the console.
+    console.log(finalTally);
 }
 
-
-// Call the main processing function with input read from standard input.
-ProcessInputData( require( "fs" ).readFileSync( "/dev/stdin", "utf8" ) ) ;
+// Read the entire content of standard input synchronously using Node.js file system module,
+// then invoke the processing function with the obtained data.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

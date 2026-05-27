@@ -1,52 +1,39 @@
-// This primary function processes a given input string to analyze numerical sequences.
-function ProcessDataStream(rawData) {
+function ProcessInput(rawData) {
+  // Split the raw input string into an array of lines based on newline characters.
+  var dataRows = rawData.split('\n');
 
-  // First, the raw input data is divided into individual rows
-  // using the newline character as a delimiter.
-  const dataRows = rawData.split('\n');
+  // Parse the first line to get the total number of elements.
+  var totalElements = Number(dataRows[0]);
 
-  // The very first row is expected to contain the total count of items.
-  // This string value is converted into a numerical integer.
-  let totalElements = Number(dataRows[0]);
+  // Split the second line by spaces to get an array of string elements.
+  var elementArray = dataRows[1].split(' ');
 
-  // The second row holds space-separated numeric items.
-  // These are split into an array of string representations.
-  let itemArray = dataRows[1].split(' ');
+  // Sort the array of elements in ascending order.
+  elementArray.sort();
 
-  // To facilitate counting, the array of stringified numbers is sorted
-  // in ascending order.
-  itemArray.sort();
+  // Initialize a pointer to traverse the sorted array.
+  var currentPosition = 0;
 
-  // An internal pointer is initialized to keep track of the current position
-  // within the sorted item array during traversal.
-  let arrayPointer = 0;
+  // Declare a variable to hold the count of occurrences for each number.
+  var occurrenceCount;
 
-  // A variable to hold the computed frequency (occurrence count)
-  // for each distinct expected value.
-  let frequency;
+  // Iterate from 1 up to the total number of elements (inclusive).
+  for (var iterator = 1; iterator <= totalElements; iterator++) {
+    // Reset the occurrence count for the current number being checked.
+    occurrenceCount = 0;
 
-  // A loop iterates through each expected integer value, starting from one
-  // up to the 'totalElements' count.
-  for (let expectedValue = 1; expectedValue <= totalElements; expectedValue++) {
-
-    // For every new expected value, the frequency counter is reset to zero.
-    frequency = 0;
-
-    // This inner loop continues as long as the numerical value of the item
-    // at the 'arrayPointer' matches the 'expectedValue' AND the pointer
-    // has not exceeded the bounds of the 'totalElements'.
-    while (Number(itemArray[arrayPointer]) == expectedValue && arrayPointer < totalElements) {
-      arrayPointer++; // Advance the pointer to the next element in the array.
-      frequency++;    // Increment the occurrence count for the current 'expectedValue'.
+    // While the current element in the array matches the iterator value
+    // and we haven't gone past the end of the array, increment the count.
+    while (Number(elementArray[currentPosition]) === iterator && currentPosition < totalElements) {
+      currentPosition++; // Move to the next element in the array.
+      occurrenceCount++; // Increment the count for the current number.
     }
 
-    // Once all occurrences of the 'expectedValue' have been counted,
-    // its total frequency is printed to the console.
-    console.log(frequency);
+    // Output the total count for the current number (iterator).
+    console.log(occurrenceCount);
   }
 }
 
-// The program initiates by reading the entire content of the standard input
-// asynchronously, decoding it as UTF-8, and then passes this raw string
-// to the 'ProcessDataStream' function for analysis.
-ProcessDataStream(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Read the entire content of standard input as a UTF-8 string
+// and pass it to the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

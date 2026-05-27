@@ -1,17 +1,27 @@
-const calculateOptimal = (inputLine) => {
-    const [primaryElement, secondaryElement] = inputLine.trim().split(/\s+/).map(v => parseInt(v, 10));
+function processInput(dataString) {
+    const [alphaUnits, betaUnits] = dataString.split(' ').map(Number);
 
-    const initialAllocation = Math.min(primaryElement, secondaryElement >>> 1);
+    // Determine the maximum quantity of 'beta' units that can be allocated to form 'alpha'-based pairs.
+    // Each 'alpha' unit requires 2 'beta' units.
+    // So, 'alphaUnits' can potentially utilize 'alphaUnits * 2' 'beta' units.
+    // This utilization is, however, capped by the total 'betaUnits' actually available.
+    const betaAllocatedForAlphaPairs = Math.min(alphaUnits * 2, betaUnits);
 
-    const residualSecondary = secondaryElement - (initialAllocation << 1);
+    // Calculate the number of pairs that can be formed using 'alpha' units.
+    // Since each such pair consumes 2 'beta' units, we divide the allocated 'beta' by 2.
+    const alphaComponentPairs = Math.floor(betaAllocatedForAlphaPairs / 2);
 
-    const additionalAllocation = residualSecondary >>> 2;
+    // Calculate the 'beta' units that remain after forming all possible 'alpha'-based pairs.
+    const remainingBetaComponent = betaUnits - betaAllocatedForAlphaPairs;
 
-    return initialAllocation + additionalAllocation;
-};
+    // The leftover 'beta' units can only be used to form 'beta'-only pairs.
+    // Each 'beta'-only pair requires 4 'beta' units.
+    const betaOnlyComponentPairs = Math.floor(remainingBetaComponent / 4);
 
-const initiateProcess = (dataSource) => {
-    console.log(calculateOptimal(dataSource));
-};
+    // The final count of all formed pairs is the sum of 'alpha'-based pairs and 'beta'-only pairs.
+    const finalPairCount = alphaComponentPairs + betaOnlyComponentPairs;
 
-initiateProcess(require("fs").readFileSync("/dev/stdin", "utf8"));
+    console.log(finalPairCount);
+}
+
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

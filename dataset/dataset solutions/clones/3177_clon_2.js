@@ -1,129 +1,133 @@
-"use strict"; /* Strict mode activated for cleaner code execution */
-function ProcessData( rawInputData )
-{
-  // Split the raw input string by any whitespace characters
-  rawInputData = rawInputData.split( /\s+/ );
+"use strict";
 
-  // Convert all string elements in the array to integers
-  for ( let idx = 0 ; idx < rawInputData.length ; idx++ )
-  {
-    rawInputData[ idx ] = Number.parseInt( rawInputData[ idx ] , 10 ) ;
+/**
+ * Main entry point for processing the input data.
+ * This function orchestrates the parsing, calculation, and output.
+ * @param {string} rawInputData - The entire input content as a single string.
+ */
+function ProcessInput(rawInputData) {
+  // Split the input string by any whitespace and convert each part to an integer.
+  let parsedNumbersArray = rawInputData.split(/\s+/);
+  for (let currentIdx = 0; currentIdx < parsedNumbersArray.length; currentIdx++) {
+    parsedNumbersArray[currentIdx] = parseInt(parsedNumbersArray[currentIdx], 10);
   }
 
-  // Extract initial configuration values
-  let countS = rawInputData.shift(); // Number of shrine locations
-  let countT = rawInputData.shift(); // Number of temple locations
-  let countQueries = rawInputData.shift(); // Number of query points
+  // Extract the initial counts for shrines, temples, and queries.
+  const shrineCount = parsedNumbersArray.shift(); // Number of shrine locations
+  const templeCount = parsedNumbersArray.shift(); // Number of temple locations
+  const queryCount = parsedNumbersArray.shift(); // Number of query points
 
-  // Populate shrine and temple arrays
-  let shrines = rawInputData.splice( 0 , countS );
-  let temples = rawInputData.splice( 0 , countT );
+  // Separate the arrays for shrine locations, temple locations, and query points.
+  const shrineLocations = parsedNumbersArray.splice(0, shrineCount); // Array of shrine coordinates
+  const templeLocations = parsedNumbersArray.splice(0, templeCount); // Array of temple coordinates
+  const queryPoints = parsedNumbersArray; // Remaining numbers are the query coordinates
 
-  // The remaining data are the query coordinates
-  let queryCoordinates = rawInputData;
+  // Sort the query points while retaining their original indices.
+  // This custom function performs an insertion sort to maintain order and track origins.
+  const indexedSortedQueries = performIndexedInsertionSort(queryPoints);
 
-  // Sort queries while preserving their original indices
-  let sortedQueries = sortAndIndex( queryCoordinates );
+  // Arrays to store the closest shrine/temple locations for each query point.
+  // 'Before' refers to the largest location less than or equal to the query.
+  // 'After' refers to the smallest location greater than or equal to the query.
+  const closestShrineBefore = [];
+  const closestShrineAfter = [];
+  const closestTempleBefore = [];
+  const closestTempleAfter = [];
 
-  // Arrays to store closest shrine/temple before and after each query point
-  let shrinesBefore = [];
-  let shrinesAfter = [];
-  let templesBefore = [];
-  let templesAfter = [];
+  // Pointers to efficiently traverse the sorted shrine and temple arrays.
+  let currentShrinePtr = 0;
+  let currentTemplePtr = 0;
 
-  // Pointers for iterating through sorted shrine and temple lists
-  let shrinePointer = 0;
-  let templePointer = 0;
-
-  // Pre-calculate nearest shrines and temples for each query
-  for ( let idx = 0 ; idx < countQueries ; idx++ )
-  {
-    // Find the first shrine greater than or equal to the current query coordinate
-    while ( shrines[ shrinePointer ] < sortedQueries[ idx ][ 0 ] )
-    {
-      shrinePointer++;
+  // Pre-calculate the nearest shrines and temples for each query point.
+  for (let qIndex = 0; qIndex < queryCount; qIndex++) {
+    // Advance shrine pointer until it points to a shrine >= current query value.
+    while (shrineLocations[currentShrinePtr] < indexedSortedQueries[qIndex][0]) {
+      currentShrinePtr++;
     }
-    // Store the shrine before (or a very small number if none) and after (or a very large number)
-    shrinesBefore[ idx ] = ( shrines[ shrinePointer - 1 ] || -1 * Number.MAX_SAFE_INTEGER );
-    shrinesAfter[ idx ] = ( shrines[ shrinePointer ] || Number.MAX_SAFE_INTEGER );
+    // Store the shrine just before and just after the query point.
+    // Use extremely large/small values if no such shrine exists (boundary conditions).
+    closestShrineBefore[qIndex] = (shrineLocations[currentShrinePtr - 1] || -100000000000000); // Equivalent to -1e14
+    closestShrineAfter[qIndex] = (shrineLocations[currentShrinePtr] || 100000000000000); // Equivalent to 1e14
 
-    // Find the first temple greater than or equal to the current query coordinate
-    while ( temples[ templePointer ] < sortedQueries[ idx ][ 0 ] )
-    {
-      templePointer++;
+    // Advance temple pointer until it points to a temple >= current query value.
+    while (templeLocations[currentTemplePtr] < indexedSortedQueries[qIndex][0]) {
+      currentTemplePtr++;
     }
-    // Store the temple before (or a very small number if none) and after (or a very large number)
-    templesBefore[ idx ] = ( temples[ templePointer - 1 ] || -1 * Number.MAX_VALUE );
-    templesAfter[ idx ] = ( temples[ templePointer ] || Number.MAX_VALUE );
+    // Store the temple just before and just after the query point.
+    // Use extremely large/small values for boundary conditions.
+    closestTempleBefore[qIndex] = (templeLocations[currentTemplePtr - 1] || -1000000000000000); // Equivalent to -1e15
+    closestTempleAfter[qIndex] = (templeLocations[currentTemplePtr] || 1000000000000000); // Equivalent to 1e15
   }
 
-  // Array to store the final results for each query
-  let results = [];
+  // Array to store the final minimum distances for each query.
+  const finalDistances = [];
 
-  // Define a local reference for Math.abs to shorten calls
-  const absoluteDifference = Math.abs;
+  // Calculate the minimum travel distance for each query point.
+  for (let qIndex = 0; qIndex < queryCount; qIndex++) {
+    // Retrieve the original index and the actual value of the current query point.
+    const originalQueryIndex = indexedSortedQueries[qIndex][1];
+    const currentQueryValue = indexedSortedQueries[qIndex][0];
 
-  // Calculate the minimum travel distance for each query point
-  for ( let idx = 0 ; idx < countQueries ; idx++ )
-  {
-    let originalIndex = sortedQueries[ idx ][ 1 ]; // Get the original index of the query
-    let currentCoord = sortedQueries[ idx ][ 0 ]; // Get the query coordinate
+    // Get the pre-calculated closest shrine and temple values for this query.
+    const sBefore = closestShrineBefore[qIndex]; // Shrine before query
+    const sAfter = closestShrineAfter[qIndex];   // Shrine after query
+    const tBefore = closestTempleBefore[qIndex]; // Temple before query
+    const tAfter = closestTempleAfter[qIndex];   // Temple after query
 
-    // Retrieve pre-calculated nearest locations
-    let sPrev = shrinesBefore[ idx ];
-    let sNext = shrinesAfter[ idx ];
-    let tPrev = templesBefore[ idx ];
-    let tNext = templesAfter[ idx ];
+    // Create a local alias for Math.abs for conciseness.
+    const absoluteDifference = Math.abs;
 
-    // Determine the minimum distance by checking all 8 possible combinations of shrine/temple pairs
-    results[ originalIndex ] = Math.min(
-      absoluteDifference( sNext - currentCoord ) + absoluteDifference( tNext - sNext ),
-      absoluteDifference( sNext - currentCoord ) + absoluteDifference( tPrev - sNext ),
-      absoluteDifference( sPrev - currentCoord ) + absoluteDifference( tNext - sPrev ),
-      absoluteDifference( sPrev - currentCoord ) + absoluteDifference( tPrev - sPrev ),
-      absoluteDifference( tNext - currentCoord ) + absoluteDifference( sNext - tNext ),
-      absoluteDifference( tNext - currentCoord ) + absoluteDifference( sPrev - tNext ),
-      absoluteDifference( tPrev - currentCoord ) + absoluteDifference( sNext - tPrev ),
-      absoluteDifference( tPrev - currentCoord ) + absoluteDifference( sPrev - tPrev )
-    ).toString( 10 ); // Convert the minimum distance to a string
+    // Calculate the minimum distance by considering all 8 possible paths:
+    // (Query -> Shrine -> Temple) or (Query -> Temple -> Shrine)
+    // using combinations of 'before' and 'after' locations.
+    finalDistances[originalQueryIndex] = Math.min(
+      absoluteDifference(sAfter - currentQueryValue) + absoluteDifference(tAfter - sAfter), // Q -> sA -> tA
+      absoluteDifference(sAfter - currentQueryValue) + absoluteDifference(tBefore - sAfter), // Q -> sA -> tB
+      absoluteDifference(sBefore - currentQueryValue) + absoluteDifference(tAfter - sBefore), // Q -> sB -> tA
+      absoluteDifference(sBefore - currentQueryValue) + absoluteDifference(tBefore - sBefore), // Q -> sB -> tB
+      absoluteDifference(tAfter - currentQueryValue) + absoluteDifference(sAfter - tAfter), // Q -> tA -> sA
+      absoluteDifference(tAfter - currentQueryValue) + absoluteDifference(sBefore - tAfter), // Q -> tA -> sB
+      absoluteDifference(tBefore - currentQueryValue) + absoluteDifference(sAfter - tBefore), // Q -> tB -> sA
+      absoluteDifference(tBefore - currentQueryValue) + absoluteDifference(sBefore - tBefore)  // Q -> tB -> sB
+    ).toString(10); // Convert the minimum distance to a string.
   }
 
-  // Output the results, each on a new line, ensuring no trailing whitespace
-  console.log( results.join( "\n" ).trim() + '\n' );
+  // Output the results, each on a new line, ensuring a trailing newline character.
+  console.log(finalDistances.join("\n").trim() + '\n');
 }
 
-// Custom function to sort an array of numbers while keeping their original indices
-function sortAndIndex( inputArray )
-{
-  let arrayLength = inputArray.length;
-  // Initialize a new array with the first element and its index
-  let indexedSortedArray = [ [ inputArray[ 0 ] , 0 ] ];
+/**
+ * Sorts an array of numbers while preserving their original indices.
+ * This function implements an insertion sort algorithm, using binary search
+ * to find the correct insertion point for each element.
+ * @param {number[]} inputArray - The array of numbers to be sorted.
+ * @returns {Array<[number, number]>} An array of [value, originalIndex] pairs, sorted by value.
+ */
+function performIndexedInsertionSort(inputArray) {
+  const inputLength = inputArray.length;
+  // Initialize the sorted array with the first element and its index.
+  const sortedValueIndexPairs = [[inputArray[0], 0]];
 
-  // Iterate through the rest of the elements
-  for ( let idx = 1 ; idx < arrayLength ; idx++ )
-  {
-    let upperBound = indexedSortedArray.length - 1; // Upper bound for binary search
-    let lowerBound = 0; // Lower bound for binary search
-    let midPoint = Math.floor( ( lowerBound + upperBound ) / 2 );
+  // Iterate through the remaining elements of the input array.
+  for (let currentElementIndex = 1; currentElementIndex < inputLength; currentElementIndex++) {
+    let searchUpperBound = sortedValueIndexPairs.length - 1;
+    let searchLowerBound = 0;
+    let searchMiddleIndex = Math.floor((searchLowerBound + searchUpperBound) / 2);
 
-    // Perform binary search to find the correct insertion point
-    while ( !( lowerBound > upperBound ) )
-    {
-      if ( indexedSortedArray[ midPoint ][ 0 ] < inputArray[ idx ] )
-      {
-        lowerBound = midPoint + 1;
+    // Perform a binary search to find the correct position for the current element.
+    while (!(searchLowerBound > searchUpperBound)) {
+      if (sortedValueIndexPairs[searchMiddleIndex][0] < inputArray[currentElementIndex]) {
+        searchLowerBound = searchMiddleIndex + 1;
+      } else {
+        searchUpperBound = searchMiddleIndex - 1;
       }
-      else
-      {
-        upperBound = midPoint - 1;
-      }
-      midPoint = Math.floor( ( lowerBound + upperBound ) / 2 );
+      searchMiddleIndex = Math.floor((searchLowerBound + searchUpperBound) / 2);
     }
-    // Insert the current element and its original index into the sorted array
-    indexedSortedArray.splice( midPoint + 1 , 0 , [ inputArray[ idx ] , idx ] );
+    // Insert the current element and its original index into the sorted array.
+    sortedValueIndexPairs.splice(searchMiddleIndex + 1, 0, [inputArray[currentElementIndex], currentElementIndex]);
   }
-  return indexedSortedArray; // Return the sorted array with indices
+  return sortedValueIndexPairs;
 }
 
-// Read input from standard input and pass it to the main processing function
-ProcessData( require( 'fs' ).readFileSync( "/dev/stdin" , "utf8" ) );
+// Read the entire content from standard input and pass it to the main processing function.
+ProcessInput(require('fs').readFileSync("/dev/stdin", "utf8"));

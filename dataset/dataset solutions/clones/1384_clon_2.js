@@ -1,42 +1,26 @@
-/*
- * This program is designed to process sequential textual information
- * read from a standard input source. It aims to identify and output
- * the lexicographically smallest string among the provided entries.
- */
-let         rawData
-    =       require('fs')
-            .readFileSync(
-                '/dev/stdin'
-                ,
-                'utf8'
-            )
-;
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8'); // Obtain raw input from standard input
+var dataRows = rawData.split('\n'); // Divide the raw input into an array of strings, one per line
 
-// The comprehensive block of text is then segmented into individual lines.
-let textFragments = rawData.split('\n');
+// The first line is typically a count of subsequent items, but it's not used in this algorithm.
+dataRows.shift();
 
-// The very first line, often metadata or a count, is intentionally discarded.
-textFragments.shift();
+// Initialize the variable that will hold the minimum value found.
+// The second line of input (after the first shift) is used as the initial minimum.
+var smallestValue = dataRows.shift();
 
-// The second line becomes the initial candidate for the minimum value.
-let lowestValue = textFragments.shift();
+// Declare a variable to temporarily store each entry from the input.
+var currentEntry;
 
-let currentEntry; // This variable will temporarily hold each subsequent line for comparison.
-
-// A loop continues as long as there are more lines to process.
-while (
-    (currentEntry = textFragments.shift())
-)
-{
-    // If the currently examined entry is lexicographically smaller than the recorded minimum...
-    if (
-        currentEntry < lowestValue
-    )
-    {
-        // ...then this new entry becomes the new minimum.
-        lowestValue = currentEntry;
+// Iterate through the remaining data rows.
+// The loop continues as long as 'shift()' returns a non-empty string (truthy).
+while (currentEntry = dataRows.shift()) {
+    // Compare the current entry with the smallest value found so far.
+    // String comparison is lexicographical.
+    if (currentEntry < smallestValue) {
+        // If the current entry is lexicographically smaller, update the smallestValue.
+        smallestValue = currentEntry;
     }
 }
 
-// Finally, the determined smallest value is printed to the standard output.
-console.log(lowestValue);
+// Output the final smallest value found to the console.
+console.log(smallestValue);

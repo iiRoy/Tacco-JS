@@ -1,263 +1,190 @@
-/*
- * This module provides a flexible input parsing utility,
- * capable of reading various data formats from a text stream.
- */
-var DATA_READER=(function(){
-  /**
-   * Factory function to create an input handler instance.
-   * @param {string} sourceContent - The raw string content to parse.
-   * @returns {InputHandler} A new InputHandler object.
-   */
-  function createHandler(sourceContent){
-    return new InputHandler(sourceContent);
+var InputProcessor = (function() {
+  // Factory function to create an input reader instance.
+  function createInputReader(sourceString) {
+    return new InputReader(sourceString);
   }
 
-  /**
-   * Constructor for the InputHandler.
-   * Manages the parsing of lines and extraction of values.
-   * @param {string} initialText - The initial text data.
-   */
-  function InputHandler(initialText){
-    // Store lines after trimming and splitting by newline
-    this._textLines=initialText.trim().split("\n");
-    // Current line pointer, initialized to the beginning
-    this._linePointer=0;
+  // Constructor for the InputReader object.
+  function InputReader(sourceString) {
+    this.sourceLines = sourceString.trim().split("\n"); // Stores input lines, trimmed and split.
+    this.currentLineIndex = 0; // Pointer to the current line being processed.
   }
 
-  /**
-   * Prototype methods for InputHandler.
-   */
-  InputHandler.prototype={
-    /**
-     * Extracts a single scalar value from the current line.
-     * If the line is exhausted, moves to the next.
-     * @param {boolean} returnAsString - If true, returns the value as a string; otherwise, as a number.
-     * @returns {string|number} The extracted value.
-     */
-    extractScalar: function(returnAsString){
-      let currentLinesRef=this._textLines,
-          currentLineIdx=this._linePointer,
-          extractedValue;
+  // Reads the next token from the current line.
+  // If 'asString' is true, returns the token as a string; otherwise, as a number.
+  InputReader.prototype.readNextToken = function(asString) {
+    var lines = this.sourceLines;
+    var linePointer = this.currentLineIndex;
+    var tokenValue;
 
-      // Check if the current line needs to be processed (split and reversed)
-      if(typeof currentLinesRef[currentLineIdx]==="string") {
-        currentLinesRef[currentLineIdx]=currentLinesRef[currentLineIdx].split(" ").reverse();
-      }
-
-      // Pop the last element (which is the first element after reversal)
-      extractedValue=currentLinesRef[currentLineIdx].pop();
-
-      // If the current line is now empty, advance to the next line
-      if(!currentLinesRef[currentLineIdx].length) {
-        this._linePointer++;
-      }
-
-      // Return value based on the flag
-      return returnAsString?extractedValue:+extractedValue;
-    },
-
-    /**
-     * Reads an entire line and processes its elements.
-     * @param {boolean} keepLiterals - If true, keeps elements as strings; otherwise, converts to numbers.
-     * @returns {Array<string|number>} An array of values from the line.
-     */
-    fetchLineArray: function(keepLiterals){
-      let parsedRowElements=this._textLines[this._linePointer++].split(" ");
-      return keepLiterals?parsedRowElements:parsedRowElements.map(token=>+token);
-    },
-
-    /**
-     * Reads a block of 'numRows' lines, parsing each into an array of values.
-     * @param {number} numRows - The number of lines to read.
-     * @param {boolean} preserveStringTypes - If true, keeps elements as strings; otherwise, converts to numbers.
-     * @returns {Array<Array<string|number>>} A 2D array representing the data block.
-     */
-    getMultiLineData: function(numRows, preserveStringTypes){
-      let dataBlock=this._textLines.slice(this._linePointer,this._linePointer+=numRows).map(lineContent=>lineContent.split(" "));
-      return preserveStringTypes?dataBlock:dataBlock.map(row=>row.map(item=>+item));
-    },
-
-    /**
-     * Reads a block of 'numLines' raw lines.
-     * @param {number} numLines - The number of lines to read.
-     * @param {boolean} returnRawStrings - If true, returns lines as strings; otherwise, attempts to convert to numbers.
-     * @returns {Array<string|number>} An array of lines or converted numbers.
-     */
-    fetchRawRows: function(numLines, returnRawStrings){
-      let extractedLines=this._textLines.slice(this._linePointer,this._linePointer+=numLines);
-      return returnRawStrings?extractedLines:extractedLines.map(val=>+val);
+    // If the current line hasn't been tokenized yet, split it.
+    if (typeof lines[linePointer] === "string") {
+      lines[linePointer] = lines[linePointer].split(" ").reverse(); // Split and reverse for efficient popping.
     }
+
+    tokenValue = lines[linePointer].pop(); // Retrieve the last token.
+
+    // If the current line is now empty, advance to the next line.
+    if (!lines[linePointer].length) {
+      this.currentLineIndex++;
+    }
+
+    return asString ? tokenValue : +tokenValue; // Return as string or convert to number.
   };
-  return createHandler;
+
+  // Reads all tokens from the current line.
+  // If 'asString' is true, returns an array of strings; otherwise, an array of numbers.
+  InputReader.prototype.readLineTokens = function(asString) {
+    var tokens = this.sourceLines[this.currentLineIndex++].split(" ");
+    return asString ? tokens : tokens.map(value => +value);
+  };
+
+  // Reads a matrix of 'numRows' rows.
+  // If 'asString' is true, returns a matrix of strings; otherwise, a matrix of numbers.
+  InputReader.prototype.readMatrix = function(numRows, asString) {
+    var matrixRows = this.sourceLines.slice(this.currentLineIndex, this.currentLineIndex += numRows)
+                                     .map(line => line.split(" "));
+    return asString ? matrixRows : matrixRows.map(row => row.map(item => +item));
+  };
+
+  // Reads 'numRows' raw lines.
+  // If 'asString' is true, returns an array of strings; otherwise, an array of numbers.
+  InputReader.prototype.readRawLines = function(numRows, asString) {
+    var rawLines = this.sourceLines.slice(this.currentLineIndex, this.currentLineIndex += numRows);
+    return asString ? rawLines : rawLines.map(line => +line);
+  };
+
+  return createInputReader;
 })();
 
-// Initialize the input processing system by reading from standard input
-var inputProcessor=DATA_READER(require("fs").readFileSync("/dev/stdin","utf8"));
+// Initialize the input reader with data from standard input.
+var inputData = InputProcessor(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-/**
- * Generates a multi-dimensional array with a specified default value.
- * @param {*} defaultValue - The value to fill the array with.
- * @returns {Array} A multi-dimensional array.
- */
-function makeNDArray(defaultValue){
-  var dimensionArgs=arguments,
-      argCount=dimensionArgs.length,
-      arrayCreationString="Array(dimensionArgs["+--argCount+"]).fill(0).map( _ => {return "+defaultValue+";})";
-
-  while(--argCount) {
-    arrayCreationString="Array(dimensionArgs["+argCount+"]).fill(0).map( _ => "+arrayCreationString+")";
+// Helper function to create multi-dimensional arrays with an initial value.
+function multiDimArray(initialValue) {
+  var functionArgs = arguments;
+  var argumentCount = functionArgs.length;
+  var arrayCreationExpression = "Array(functionArgs[" + --argumentCount + "]).fill(0).map(x=>{return " + initialValue + ";})";
+  while (--argumentCount) {
+    arrayCreationExpression = "Array(functionArgs[" + argumentCount + "]).fill(0).map(x=>" + arrayCreationExpression + ")";
   }
-  return eval(arrayCreationString);
+  return eval(arrayCreationExpression);
 }
 
-/**
- * Constructor for a Disjoint Set Union (DSU) data structure.
- * @param {number} elementCount - The number of elements in the set.
- */
-function DisjointSetUnion(elementCount){
-  // _parent array stores the parent of each element or the negative size of the set if it's a root.
-  this._parent=Array(elementCount+1).fill(-1);
+// Disjoint Set Union (Union-Find) data structure implementation.
+function DisjointSet(elementCount) {
+  this.parentOrSize = Array(elementCount + 1).fill(-1); // Stores parent index or negative size if root.
 }
 
-/**
- * Prototype methods for the DisjointSetUnion.
- */
-DisjointSetUnion.prototype={
-  /**
-   * Finds the representative (root) of the set containing element 'itemIndex'.
-   * Performs path compression for efficiency.
-   * @param {number} itemIndex - The index of the element.
-   * @returns {number} The root of the set.
-   */
-  findRoot: function(itemIndex){
-    // If _parent[itemIndex] is negative, it's a root.
-    return this._parent[itemIndex]<0?itemIndex:(this._parent[itemIndex]=this.findRoot(this._parent[itemIndex]));
+DisjointSet.prototype = {
+  // Finds the representative (root) of the set containing element 'idx'.
+  // Applies path compression for efficiency.
+  findRoot: function(idx) {
+    if (this.parentOrSize[idx] < 0) {
+      return idx; // 'idx' is the root of its set.
+    }
+    // Recursively find root and apply path compression.
+    return this.parentOrSize[idx] = this.findRoot(this.parentOrSize[idx]);
   },
 
-  /**
-   * Checks if two elements 'itemA' and 'itemB' belong to the same set.
-   * @param {number} itemA - The first element.
-   * @param {number} itemB - The second element.
-   * @returns {boolean} True if they are in the same set, false otherwise.
-   */
-  areConnected: function(itemA, itemB){
-    return this.findRoot(itemA)===this.findRoot(itemB);
+  // Checks if two elements 'elemX' and 'elemY' belong to the same set.
+  areConnected: function(elemX, elemY) {
+    return this.findRoot(elemX) === this.findRoot(elemY);
   },
 
-  /**
-   * Unites the sets containing 'nodeA' and 'nodeB'.
-   * Uses union by size/rank heuristic.
-   * @param {number} nodeA - The first element.
-   * @param {number} nodeB - The second element.
-   * @returns {number} 1 if union occurred, 0 if they were already in the same set.
-   */
-  unionSets: function(nodeA, nodeB){
-    nodeA=this.findRoot(nodeA);
-    nodeB=this.findRoot(nodeB);
+  // Unites the sets containing 'elemX' and 'elemY'.
+  // Returns 1 if 'elemX' and 'elemY' were already in the same set, otherwise undefined.
+  unionSets: function(elemX, elemY) {
+    elemX = this.findRoot(elemX);
+    elemY = this.findRoot(elemY);
 
-    if(nodeA===nodeB) {
-      return 0; // Already in the same set
+    if (elemX === elemY) {
+      return 1; // Elements are already in the same set.
     }
 
-    // Union by size: attach smaller tree under root of larger tree
-    if(this._parent[nodeB]<=this._parent[nodeA]) {
-      this._parent[nodeB]+=this._parent[nodeA];
-      this._parent[nodeA]=nodeB;
+    // Union by size heuristic: attach smaller tree under root of larger tree.
+    if (this.parentOrSize[elemY] <= this.parentOrSize[elemX]) {
+      this.parentOrSize[elemY] += this.parentOrSize[elemX]; // Update size of the new root.
+      this.parentOrSize[elemX] = elemY; // Make elemY the parent of elemX.
     } else {
-      this._parent[nodeA]+=this._parent[nodeB];
-      this._parent[nodeB]=nodeA;
+      this.parentOrSize[elemX] += this.parentOrSize[elemY]; // Update size of the new root.
+      this.parentOrSize[elemY] = elemX; // Make elemX the parent of elemY.
     }
-    return 1; // Union successful
   },
 
-  /**
-   * Returns the size of the set containing 'memberIndex'.
-   * @param {number} memberIndex - The index of an element in the set.
-   * @returns {number} The number of elements in the set.
-   */
-  getSetSize: function(memberIndex){
-    return -this._parent[this.findRoot(memberIndex)];
+  // Returns the size of the set containing element 'idx'.
+  getSetSize: function(idx) {
+    return -this.parentOrSize[this.findRoot(idx)];
   },
 };
 
-
-// Execute the main problem-solving function and print its output.
+// Execute the main problem-solving logic and print the result to console.
 console.log(solveProblem());
 
-/**
- * Main function to solve the graph problem.
- * Reads graph data, processes it using DSU and DFS, and returns a path sequence.
- * @returns {string} A newline-separated string of edges.
- */
-function solveProblem(){
-  const vertexCount=inputProcessor.extractScalar(); // Read number of vertices
-  const edgeCount=inputProcessor.extractScalar(); // Read number of edges
+// Main function encapsulating the problem's solution logic.
+function solveProblem() {
+  var nodeCount = inputData.readNextToken(); // Read the number of nodes.
+  var edgeCount = inputData.readNextToken(); // Read the number of edges.
 
-  // If the number of edges is odd, it's impossible to form a valid path sequence.
-  if((edgeCount % 2)!==0) {
+  // If the total number of edges is odd, it's impossible to orient them
+  // such that all nodes have an even out-degree.
+  if (edgeCount & 1) {
     return -1;
   }
 
-  const graphEdges=inputProcessor.getMultiLineData(edgeCount); // Read all edges
-  const disjointSets=new DisjointSetUnion(vertexCount); // Initialize DSU for graph connectivity
+  var edgeList = inputData.readMatrix(edgeCount); // Read all edge pairs.
+  var disjointSets = new DisjointSet(nodeCount); // Initialize DSU structure.
+  var resultEdges = []; // Array to store the final oriented edges.
+  var adjList = multiDimArray("[]", nodeCount + 1); // Adjacency list for the spanning forest.
+  var parityTracker = multiDimArray(0, nodeCount + 1); // Tracks parity for each node (0 or 1).
 
-  const outputPaths=[]; // Stores the sequence of edges for the result
-  const adjacencyList=makeNDArray("[]",vertexCount+1); // Adjacency list for the graph
-  const nodeParityStates=makeNDArray(0,vertexCount+1); // Stores parity state for each node
+  // Iterate through all given edges.
+  for (var idx = 0; idx < edgeCount; idx++) {
+    var nodeA = edgeList[idx][0];
+    var nodeB = edgeList[idx][1];
 
-  // Process each edge
-  for(let edgeIndex=0;edgeIndex<edgeCount;++edgeIndex){
-    const startNode=graphEdges[edgeIndex][0];
-    const endNode=graphEdges[edgeIndex][1];
-
-    // If uniting the sets for these nodes is successful (they were in different components)
-    if(disjointSets.unionSets(startNode,endNode)){
-      outputPaths.push(startNode+" "+endNode); // Add this edge to the result
-      nodeParityStates[startNode]^=1; // Toggle parity for the start node
-    }else{
-      // If they are already in the same set, it's a back-edge forming a cycle.
-      // Add it to the adjacency list for DFS traversal later.
-      adjacencyList[startNode].push(endNode);
-      adjacencyList[endNode].push(startNode);
+    // Attempt to unite the sets containing nodeA and nodeB.
+    // If unionSets returns 1, it means they were already connected (this edge closes a cycle).
+    if (disjointSets.unionSets(nodeA, nodeB)) {
+      // This is a back-edge (non-tree edge). Add it directly to the result.
+      resultEdges.push(nodeA + " " + nodeB);
+      parityTracker[nodeA] ^= 1; // Flip parity for nodeA.
+    } else {
+      // This is a tree edge (connects two previously disconnected components).
+      // Add it to the adjacency list for the spanning forest.
+      adjList[nodeA].push(nodeB);
+      adjList[nodeB].push(nodeA);
     }
   }
 
-  // Perform Depth First Search starting from node 1 (assuming 1-indexed nodes)
-  traverseGraph(1,0);
+  // Perform Depth-First Search on the spanning forest to orient tree edges.
+  traverseGraph(1, 0); // Start DFS from node 1, with 0 as a dummy parent.
 
-  // Return the collected paths joined by newlines
-  return outputPaths.join("\n");
+  return resultEdges.join("\n"); // Return the oriented edges as a newline-separated string.
 
-  /**
-   * Performs a Depth First Search (DFS) traversal.
-   * This nested function ensures access to `outputPaths`, `adjacencyList`, and `nodeParityStates`.
-   * @param {number} currentNode - The current node being visited.
-   * @param {number} parentNode - The parent node in the DFS tree.
-   */
-  function traverseGraph(currentNode,parentNode){
-    // Iterate over neighbors of the current node
-    for(const neighbor of adjacencyList[currentNode]){
-      // Skip the parent node to avoid going back immediately
-      if(neighbor===parentNode) {
-        continue;
+  // Depth-First Search function to orient edges in the spanning forest.
+  function traverseGraph(currentNode, parentNode) {
+    // Recursively visit all neighbors (children) of the current node.
+    for (var neighborNode of adjList[currentNode]) {
+      if (neighborNode === parentNode) {
+        continue; // Skip the parent to avoid going back up the tree.
       }
-      // Recursively call DFS for the neighbor
-      traverseGraph(neighbor,currentNode);
+      traverseGraph(neighborNode, currentNode); // Recurse on child.
     }
 
-    // Base case: if at the root of the DFS (parentNode is 0), just return.
-    if(parentNode===0) {
+    // If this is the root of the DFS (dummy parent 0), no edge needs to be oriented upwards.
+    if (parentNode === 0) {
       return;
     }
 
-    // Check the parity state of the current node
-    if(nodeParityStates[currentNode]){
-      // If parity is 1, add edge (currentNode -> parentNode)
-      outputPaths.push(currentNode+" "+parentNode);
-    }else{
-      // If parity is 0, add edge (parentNode -> currentNode) and toggle parent's parity
-      outputPaths.push(parentNode+" "+currentNode);
-      nodeParityStates[parentNode]^=1;
+    // After visiting all children, check the parity of the current node.
+    if (parityTracker[currentNode]) {
+      // If parity is 1 (odd), orient the edge from current node to its parent.
+      resultEdges.push(currentNode + " " + parentNode);
+    } else {
+      // If parity is 0 (even), orient the edge from parent to current node.
+      resultEdges.push(parentNode + " " + currentNode);
+      parityTracker[parentNode] ^= 1; // Flip parent's parity as it now has an outgoing edge.
     }
   }
 }

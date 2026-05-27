@@ -1,42 +1,30 @@
-const sourceData = require('fs').readFileSync('/dev/stdin', 'utf8');
+var sourceText = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-const prepareInput = (rawContent) => {
-    return rawContent
-        .trim()
-        .split('\n')
-        .filter(lineEntry => lineEntry !== '0 0 0 0 0 0');
+const computeScore = (numericValues) => {
+    const combinedScores = [
+        numericValues[0] + numericValues[3],
+        numericValues[1] + numericValues[4],
+        numericValues[2] + numericValues[5]
+    ];
+
+    const initialTally = combinedScores.reduce((accumulator, currentScore) => {
+        return accumulator + Math.floor(currentScore / 3);
+    }, 0);
+
+    const residualScores = combinedScores.map(currentScore => currentScore % 3);
+
+    const additionalTally = Math.min(...residualScores);
+
+    return initialTally + additionalTally;
 };
 
-const computeResultForLine = (dataLine) => {
-    const numericalComponents = dataLine.split(' ').map(strVal => parseInt(strVal, 10));
+const lineSegments = sourceText.trim().split("\n");
 
-    const [componentA, componentB, componentC, componentD, componentE, componentF] = numericalComponents;
+const results = lineSegments
+    .filter(segment => segment !== "0 0 0 0 0 0")
+    .map(segment => {
+        const numericValues = segment.split(" ").map(Number);
+        return computeScore(numericValues);
+    });
 
-    const primaryCategorySum = componentA + componentD;
-    const secondaryCategorySum = componentB + componentE;
-    const tertiaryCategorySum = componentC + componentF;
-
-    let finalAccumulator = 0;
-
-    // Add contributions from full groups of three
-    finalAccumulator += Math.floor(primaryCategorySum / 3);
-    finalAccumulator += Math.floor(secondaryCategorySum / 3);
-    finalAccumulator += Math.floor(tertiaryCategorySum / 3);
-
-    // Calculate remaining items after forming full groups
-    const primaryCategoryRemainder = primaryCategorySum % 3;
-    const secondaryCategoryRemainder = secondaryCategorySum % 3;
-    const tertiaryCategoryRemainder = tertiaryCategorySum % 3;
-
-    // Add contributions from forming groups of one from each remaining category
-    // This directly calculates the number of times the original's final 'while' loop would execute
-    finalAccumulator += Math.min(primaryCategoryRemainder, secondaryCategoryRemainder, tertiaryCategoryRemainder);
-
-    return finalAccumulator;
-};
-
-const processedEntries = prepareInput(sourceData);
-
-processedEntries.forEach(entry => {
-    console.log(computeResultForLine(entry));
-});
+console.log(results.join("\n"));

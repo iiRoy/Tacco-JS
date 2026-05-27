@@ -1,379 +1,424 @@
 /*
- *   Internal Utility:
- *   _extractAtIndex(pos) removes the element at the specified position from the heap.
- *   It ensures the heap structure remains balanced.
- *   Returns the removed element, or 'undefined' if the position is invalid.
+ * Internal utility function: _deleteAtIndex(idx)
+ * Removes the element at the specified index from the priority queue.
+ * Ensures the heap property is maintained.
+ * Returns the removed element, or undefined if the index is out of bounds.
  */
-EfficientMinHeap.prototype._extractAtIndex = function (targetIndex) {
-  if (targetIndex > this.itemCount - 1 || targetIndex < 0) {
+QuickPriorityQueue.prototype._deleteAtIndex = function(idx) {
+  if (idx > this.currentSize - 1 || idx < 0) {
     return undefined;
   }
-  // The original code had two implementations commented out.
-  // We'll stick to the live one, which uses sift-up and then extracts the minimum.
-  this._siftUp(targetIndex, true); // Propagate the item to the root (or near it) for extraction
-  return this.fetchMinimum(); // Extract the root element
+
+  // The original implementation had two options for removal, the second one is active.
+  // Option 1 (commented out in original):
+  // this.dataArray.splice(idx, 1);
+  // this.buildHeap(this.dataArray);
+  // Option 2 (active in original):
+  this._bubbleUp(idx, true); // Force bubble up to move the element at 'idx' to the top
+  return this.extractMin(); // Then extract the minimum (which is now the element we wanted to remove)
 };
 
-/*
- *   Deletes an item matching the provided value from the heap.
- *   Equality is determined by the heap's comparison function.
- *   Returns `true` if an item was removed, `false` otherwise.
+/**
+ * Deletes an item matching the provided value from the queue.
+ * The comparison for equality is performed using the queue's internal comparison function:
+ * an item 'a' is considered equal to 'b' if `!isLess(a, b) && !isLess(b, a)`.
+ * @param {any} itemValue - The value to search for and remove.
+ * @returns {boolean} True if an item was found and removed, false otherwise.
  */
-EfficientMinHeap.prototype.deleteValue = function (valueToFind) {
-  for (var loopCounter = 0; loopCounter < this.itemCount; loopCounter++) {
-    // Check if the current element matches the valueToFind using the comparator
-    // (comparator returns false for (a,b) AND false for (b,a) when a and b are equal)
-    if (!this.isLesser(this.heapData[loopCounter], valueToFind) && !this.isLesser(valueToFind, this.heapData[loopCounter])) {
-      this._extractAtIndex(loopCounter); // Found a match, remove it
-      return true; // Indicate successful removal
+QuickPriorityQueue.prototype.deleteItem = function(itemValue) {
+  for (var idx = 0; idx < this.currentSize; idx++) {
+    // Check for equality: comparator returns false both ways
+    if (!this.isLess(this.dataArray[idx], itemValue) && !this.isLess(itemValue, this.dataArray[idx])) {
+      // Items match, proceed with removal
+      this._deleteAtIndex(idx);
+      return true;
     }
   }
-  return false; // No matching item found
+  return false;
 };
 
 /*
- *   Internal Utility:
- *   Removes and returns elements for which the provided filter function returns 'true'.
+ * Internal batch removal function.
+ * Removes and returns elements for which the provided filterFunction returns true.
+ * @param {function} filterFunction - A callback function that takes an element and returns true if it should be removed.
+ * @param {number} [maxItems] - Optional limit on the maximum number of items to remove.
+ * @returns {Array} An array containing the removed elements.
  */
-EfficientMinHeap.prototype._processBulkRemovals = function (filterFunction, maxRemovalCount) {
-  // Initialize a list to hold removed elements, with a maximum size
-  var collectedItems = new Array(maxRemovalCount ? maxRemovalCount : this.itemCount);
-  var removedItemCount = 0;
+QuickPriorityQueue.prototype._batchRemove = function(filterFunction, maxItems) {
+  // Initialize the result array with a maximum size based on maxItems or current queue size
+  var resultArray = new Array(maxItems ? maxItems : this.currentSize);
+  var itemCount = 0;
 
-  // Proceed only if a valid filter function is provided and the heap is not empty
-  if (typeof filterFunction === 'function' && this.itemCount) {
-    var currentPos = 0;
-    while (currentPos < this.itemCount && removedItemCount < collectedItems.length) {
-      if (filterFunction(this.heapData[currentPos])) {
-        // If the filter function returns true, remove the item
-        collectedItems[removedItemCount] = this._extractAtIndex(currentPos);
-        removedItemCount++;
-        // After removal, the heap structure changes,
-        // so we move up to re-evaluate potential parents if necessary.
-        currentPos = currentPos >> 1;
+  if (typeof filterFunction === 'function' && this.currentSize) {
+    var idx = 0;
+    while (idx < this.currentSize && itemCount < resultArray.length) {
+      if (filterFunction(this.dataArray[idx])) {
+        resultArray[itemCount] = this._deleteAtIndex(idx);
+        itemCount++;
+        // After removing an item, the heap structure changes.
+        // The original code moves the index up to its parent's position (idx = idx >> 1).
+        // This is a specific heuristic to re-evaluate the heap from a higher level.
+        idx = idx >> 1;
       } else {
-        currentPos++; // Move to the next item if not removed
+        idx++;
       }
     }
   }
-  collectedItems.length = removedItemCount; // Trim the array to actual removed count
-  return collectedItems;
+  resultArray.length = itemCount; // Trim the array to the actual number of removed items
+  return resultArray;
 };
 
-/*
- *   Executes a predicate function for each element and removes the first element
- *   for which the predicate returns 'true'.
- *   Returns the removed element, or 'undefined' if no element was removed.
+/**
+ * Executes a callback function for each item in the queue and removes the first item
+ * for which the callback returns true.
+ * @param {function} filterFunction - The callback to test elements.
+ * @returns {any|undefined} The removed item, or undefined if no item matches the criteria.
  */
-EfficientMinHeap.prototype.deleteOne = function (testPredicate) {
-  var resultArray = this._processBulkRemovals(testPredicate, 1);
-  return resultArray.length > 0 ? resultArray[0] : undefined;
+QuickPriorityQueue.prototype.deleteOne = function(filterFunction) {
+  var tempArray = this._batchRemove(filterFunction, 1);
+  return tempArray.length > 0 ? tempArray[0] : undefined;
 };
 
-/*
- *   Applies a predicate function to each element and removes all elements
- *   for which the predicate returns 'true', up to an optional maximum limit.
- *   Returns an array containing all removed elements.
+/**
+ * Executes a callback function for each item in the queue and removes all items
+ * for which the callback returns true, up to an optional limit.
+ * @param {function} filterFunction - The callback to test elements.
+ * @param {number} [maxItems] - Optional maximum number of items to remove.
+ * @returns {Array} An array containing all the removed items.
  */
-EfficientMinHeap.prototype.deleteMany = function (testPredicate, maxRemovalCount) {
-  return this._processBulkRemovals(testPredicate, maxRemovalCount);
+QuickPriorityQueue.prototype.deleteMany = function(filterFunction, maxItems) {
+  return this._batchRemove(filterFunction, maxItems);
 };
 
-/*
- *   Inspects the smallest element in the heap without removing it.
- *   This operation runs in constant time.
- *   Returns 'undefined' if the heap is empty.
+/**
+ * Inspects the top element of the queue (one of the smallest elements) without removing it.
+ * This operation runs in constant time.
+ * @returns {any|undefined} The top element, or undefined if the queue is empty.
  */
-EfficientMinHeap.prototype.viewTopElement = function () {
-  if (this.itemCount == 0) {
+QuickPriorityQueue.prototype.viewTop = function() {
+  if (this.currentSize === 0) {
     return undefined;
   }
-  return this.heapData[0];
+  return this.dataArray[0];
 };
 
-/*
- *   Removes and returns the smallest element from the heap.
- *   This operation runs in logarithmic time relative to the number of elements.
- *   Returns 'undefined' if the heap is empty.
+/**
+ * Removes and returns the element on top of the heap (one of the smallest elements).
+ * This operation runs in logarithmic time (O(log n)).
+ * @returns {any|undefined} The smallest element, or undefined if the queue is empty.
  *
- *   For heaps that are very large or have many operations, consider calling
- *   the 'compactStorage' function periodically to free up unused memory.
+ * For long-running priority queues with many removals, consider calling `compactStorage()`
+ * periodically to reclaim allocated memory.
  */
-EfficientMinHeap.prototype.fetchMinimum = function () {
-  if (this.itemCount == 0) {
+QuickPriorityQueue.prototype.extractMin = function() {
+  if (this.currentSize === 0) {
     return undefined;
   }
-  var returnValue = this.heapData[0];
-  if (this.itemCount > 1) {
-    this.heapData[0] = this.heapData[--this.itemCount]; // Move last element to root
-    this._siftDown(0); // Restore heap property
+  var returnValue = this.dataArray[0];
+  if (this.currentSize > 1) {
+    this.dataArray[0] = this.dataArray[--this.currentSize]; // Move last element to root
+    this._bubbleDown(0); // Restore heap property
   } else {
-    this.itemCount -= 1; // Heap becomes empty
+    this.currentSize -= 1; // Queue becomes empty
   }
   return returnValue;
 };
 
-/*
- *   Replaces the smallest element in the heap with a new value.
- *   The size of the heap remains unchanged.
- *   Returns the element that was replaced (the previous smallest element).
+/**
+ * Adds a new element to the heap, while simultaneously removing and returning
+ * one of the smallest elements (similar to `extractMin`).
+ * The size of the queue thus remains unchanged.
+ * @param {any} itemValue - The new value to add to the queue.
+ * @returns {any|undefined} The element that was replaced (the previous smallest), or undefined if the queue was empty.
  */
-EfficientMinHeap.prototype.swapRootAndSift = function (newValue) {
-  if (this.itemCount == 0) {
+QuickPriorityQueue.prototype.swapTop = function(itemValue) {
+  if (this.currentSize === 0) {
     return undefined;
   }
-  var oldRoot = this.heapData[0];
-  this.heapData[0] = newValue;
-  this._siftDown(0); // Restore heap property after replacement
-  return oldRoot;
+  var returnValue = this.dataArray[0];
+  this.dataArray[0] = itemValue; // Replace root with new value
+  this._bubbleDown(0); // Restore heap property
+  return returnValue;
+};
+
+/**
+ * Recovers unused memory by trimming the underlying array to its actual size.
+ * This can be beneficial for long-running priority queues where many elements
+ * have been removed, leading to a sparse internal array.
+ */
+QuickPriorityQueue.prototype.compactStorage = function() {
+  this.dataArray = this.dataArray.slice(0, this.currentSize);
+};
+
+/**
+ * Checks whether the priority queue is empty.
+ * @returns {boolean} True if the queue contains no elements, false otherwise.
+ */
+QuickPriorityQueue.prototype.isQueueEmpty = function() {
+  return this.currentSize === 0;
 };
 
 /*
- *   Recovers unused memory by resizing the internal array to the current number of elements.
- *   Useful for long-running heaps where many elements have been removed.
+ * Iterates over the elements of the queue in sorted order.
+ * Passes a callback function that receives (item, index) as arguments.
+ * Note: This operation involves cloning the queue and repeatedly extracting the minimum,
+ * which can be computationally intensive for large queues.
  */
-EfficientMinHeap.prototype.compactStorage = function () {
-  this.heapData = this.heapData.slice(0, this.itemCount);
-};
-
-/*
- *   Checks if the heap currently contains any elements.
- *   Returns 'true' if the heap is empty, 'false' otherwise.
- */
-EfficientMinHeap.prototype.isVacant = function () {
-  return this.itemCount === 0;
-};
-
-/*
- *   Iterates over the elements of the heap in sorted order.
- *   A callback function is invoked for each element, receiving the element and its index.
- */
-EfficientMinHeap.prototype.applyToEach = function (actionFunction) {
-  if (this.isVacant() || typeof actionFunction != 'function') {
+// TODO: If Symbol.iterator is supported by the target environment/transpiler, uncomment this block.
+// if (Symbol && Symbol.iterator) {
+//   QuickPriorityQueue.prototype[Symbol.iterator] = function*() {
+//     if (this.isQueueEmpty()) return;
+//     var tempQueue = this.duplicateQueue();
+//     while (!tempQueue.isQueueEmpty()) {
+//       yield tempQueue.extractMin();
+//     }
+//   };
+// }
+QuickPriorityQueue.prototype.iterateElements = function(filterFunction) {
+  if (this.isQueueEmpty() || typeof filterFunction !== 'function') {
     return;
   }
-  var currentIdx = 0;
-  var heapCopy = this.duplicate(); // Work on a copy to preserve original heap
-  while (!heapCopy.isVacant()) {
-    actionFunction(heapCopy.extractMinimum(), currentIdx++);
+  var idx = 0;
+  var tempQueue = this.duplicateQueue(); // Create a temporary copy to preserve original queue
+  while (!tempQueue.isQueueEmpty()) {
+    filterFunction(tempQueue.extractMin(), idx++);
   }
 };
 
-/*
- *   Retrieves the 'k' smallest elements from the heap.
- *   This method is optimized for performance compared to repeatedly calling 'extractMinimum'.
- *   Runs in O(k log k) time.
+/**
+ * Retrieves the k 'smallest' elements from the queue.
+ * This method runs in O(k log k) time, which is more efficient than
+ * repeatedly calling `extractMin` k times for large datasets.
+ * @param {number} k - The number of smallest elements to retrieve.
+ * @returns {Array} An array containing the k smallest elements.
  */
-EfficientMinHeap.prototype.retrieveTopK = function (numElements) {
-  if (this.itemCount == 0) {
-    return []; // Return an empty array if the heap is empty
+QuickPriorityQueue.prototype.getKSmallest = function(k) {
+  if (this.currentSize === 0) {
+    return [];
   }
-  var comparisonFn = this.isLesser; // Store the main comparison function
-  var sourceArray = this.heapData; // Reference to the heap's internal array
-
-  // Create a temporary heap to manage indices for efficient retrieval
-  var temporaryHeap = new EfficientMinHeap(function (a, b) {
-    return comparisonFn(sourceArray[a], sourceArray[b]);
+  var comparisonFunc = this.isLess;
+  var dataArray = this.dataArray;
+  // Create a temporary priority queue to store indices, ordered by the value at that index
+  var tempQueue = new QuickPriorityQueue(function(a, b) {
+    return comparisonFunc(dataArray[a], dataArray[b]);
   });
 
-  numElements = Math.min(this.itemCount, numElements); // Ensure k doesn't exceed heap size
-  var topKResults = new Array(numElements);
-  var resultIdx = 0;
-  temporaryHeap.insertElement(0); // Start with the root index
+  k = Math.min(this.currentSize, k); // Ensure k does not exceed queue size
+  var kElements = new Array(k);
+  var counter = 0;
+  tempQueue.insertElement(0); // Start with the root index (index 0)
 
-  while (resultIdx < numElements) {
-    var currentSmallestIdx = temporaryHeap.extractMinimum();
-    topKResults[resultIdx++] = this.heapData[currentSmallestIdx];
+  while (counter < k) {
+    var smallestIndex = tempQueue.extractMin();
+    kElements[counter++] = this.dataArray[smallestIndex];
 
-    var leftChildIdx = (currentSmallestIdx << 1) + 1;
-    var rightChildIdx = leftChildIdx + 1;
+    var leftChild = (smallestIndex << 1) + 1; // Calculate left child index
+    var rightChild = leftChild + 1; // Calculate right child index
 
-    if (leftChildIdx < this.itemCount) {
-      temporaryHeap.insertElement(leftChildIdx);
+    if (leftChild < this.currentSize) {
+      tempQueue.insertElement(leftChild);
     }
-    if (rightChildIdx < this.itemCount) {
-      temporaryHeap.insertElement(rightChildIdx);
+    if (rightChild < this.currentSize) {
+      tempQueue.insertElement(rightChild);
     }
   }
-  return topKResults;
+  return kElements;
 };
 
-// Default comparison function: returns true if 'a' is less than 'b'
-var standardComparison = function (a, b) {
+/**
+ * The default comparison function for the priority queue.
+ * Returns true if 'a' is strictly less than 'b'.
+ * @param {any} a - The first element for comparison.
+ * @param {any} b - The second element for comparison.
+ * @returns {boolean} True if a < b, false otherwise.
+ */
+var standardComparator = function(a, b) {
   return a < b;
 };
 
-/*
- *   Constructor for a new EfficientMinHeap instance.
- *   Takes an optional comparison function. The function should return `true`
- *   if the first argument is considered "less than" the second argument.
- *   By default, it uses a standard less-than comparison.
+/**
+ * Constructor for a QuickPriorityQueue.
+ * Initializes an empty priority queue with an optional custom comparison function.
+ * @param {function} [comparisonFunc] - An optional function that takes two arguments (a, b)
+ *   and returns true if 'a' should come before 'b' in the queue (i.e., a < b).
+ *   If not provided, a default comparator for numerical comparison (a < b) is used.
  */
-function EfficientMinHeap(comparisonFunction) {
-  if (!(this instanceof EfficientMinHeap)) {
-    return new EfficientMinHeap(comparisonFunction);
+function QuickPriorityQueue(comparisonFunc) {
+  // Ensure the constructor is called with 'new'
+  if (!(this instanceof QuickPriorityQueue)) {
+    return new QuickPriorityQueue(comparisonFunc);
   }
-  this.heapData = []; // Internal array to store heap elements
-  this.itemCount = 0; // Current number of elements in the heap
-  this.isLesser = comparisonFunction || standardComparison; // The comparison function
+  this.dataArray = []; // The underlying array storing heap elements
+  this.currentSize = 0; // The number of elements currently in the heap
+  this.isLess = comparisonFunc || standardComparator; // The comparison function
 }
 
-/*
- *   Creates a shallow copy of the current heap instance.
- *   Runs in O(n) time.
+/**
+ * Creates a shallow copy of the priority queue.
+ * Runs in O(n) time, where n is the number of elements.
+ * @returns {QuickPriorityQueue} A new QuickPriorityQueue instance with the same elements and comparator.
  */
-EfficientMinHeap.prototype.duplicate = function () {
-  var newHeapInstance = new EfficientMinHeap(this.isLesser);
-  newHeapInstance.itemCount = this.itemCount;
-  for (var loopCounter = 0; loopCounter < this.itemCount; loopCounter++) {
-    newHeapInstance.heapData.push(this.heapData[loopCounter]);
+QuickPriorityQueue.prototype.duplicateQueue = function() {
+  var tempQueue = new QuickPriorityQueue(this.isLess);
+  tempQueue.currentSize = this.currentSize;
+  for (var idx = 0; idx < this.currentSize; idx++) {
+    tempQueue.dataArray.push(this.dataArray[idx]);
   }
-  return newHeapInstance;
+  return tempQueue;
 };
 
-/*
- *   Adds a new element to the heap, maintaining the heap property.
- *   Runs in O(log n) time.
+/**
+ * Adds an element into the priority queue.
+ * This operation runs in O(log n) time, where n is the number of elements.
+ * @param {any} itemValue - The value to add to the queue.
  */
-EfficientMinHeap.prototype.insertElement = function (elementToAdd) {
-  var currentPosition = this.itemCount;
-  this.heapData[this.itemCount] = elementToAdd;
-  this.itemCount += 1; // Increment element count
-
-  var parentPosition;
+QuickPriorityQueue.prototype.insertElement = function(itemValue) {
+  var idx = this.currentSize;
+  this.dataArray[this.currentSize] = itemValue; // Place new element at the end
+  this.currentSize += 1;
+  var parentIndex;
   var parentValue;
-
-  while (currentPosition > 0) {
-    parentPosition = (currentPosition - 1) >> 1; // Calculate parent index
-    parentValue = this.heapData[parentPosition];
-
-    // If the new element is not less than its parent, heap property holds
-    if (!this.isLesser(elementToAdd, parentValue)) {
+  while (idx > 0) {
+    parentIndex = (idx - 1) >> 1; // Calculate parent index
+    parentValue = this.dataArray[parentIndex];
+    if (!this.isLess(itemValue, parentValue)) {
+      // If the new value is not less than its parent, it's in the correct position
       break;
     }
-    this.heapData[currentPosition] = parentValue; // Move parent down
-    currentPosition = parentPosition; // Move up the heap
+    this.dataArray[idx] = parentValue; // Move parent down to current position
+    idx = parentIndex; // Move up to parent's position
   }
-  this.heapData[currentPosition] = elementToAdd; // Place the new element
+  this.dataArray[idx] = itemValue; // Place the new value in its final sorted position
+};
+
+/**
+ * Replaces the content of the heap with a provided array and then "heapifies" it.
+ * This operation builds a valid heap from an arbitrary array in O(n) time.
+ * @param {Array} dataArray - The array to use as the new heap content.
+ */
+QuickPriorityQueue.prototype.buildHeap = function(dataArray) {
+  this.dataArray = dataArray;
+  this.currentSize = dataArray.length;
+  var idx;
+  // Start from the last non-leaf node and bubble down to build the heap
+  for (idx = this.currentSize >> 1; idx >= 0; idx--) {
+    this._bubbleDown(idx);
+  }
 };
 
 /*
- *   Replaces the entire heap content with a new array and then rebuilds the heap structure.
+ * Internal utility function: _bubbleUp(idx, force)
+ * Moves an element up the heap to maintain the heap property.
+ * @param {number} idx - The index of the element to bubble up.
+ * @param {boolean} [force] - If true, forces the bubble up even if the element is not strictly smaller than its parent.
+ *   This is typically used in removal operations where an element is temporarily moved to the top.
  */
-EfficientMinHeap.prototype.buildFromElements = function (sourceArr) {
-  this.heapData = sourceArr;
-  this.itemCount = sourceArr.length;
-  var loopVar;
-  for (loopVar = this.itemCount >> 1; loopVar >= 0; loopVar--) {
-    this._siftDown(loopVar); // Restore heap property from bottom-up
-  }
-};
-
-/*
- *   Internal Utility:
- *   Performs an upward sift operation starting from a given index.
- *   Used to restore heap property after an insertion or a specific modification.
- */
-EfficientMinHeap.prototype._siftUp = function (startIdx, forcePercolation) {
-  var elementToSift = this.heapData[startIdx];
-  var parentIdx;
-  var parentElem;
-
-  while (startIdx > 0) {
-    parentIdx = (startIdx - 1) >> 1;
-    parentElem = this.heapData[parentIdx];
-
-    // If 'forcePercolation' is false, compare the element with its parent.
-    // If 'forcePercolation' is true, it skips the comparison and always moves up.
-    if (!forcePercolation && !this.isLesser(elementToSift, parentElem)) {
-      break; // Heap property satisfied
+QuickPriorityQueue.prototype._bubbleUp = function(idx, force) {
+  var itemValue = this.dataArray[idx];
+  var parentIndex;
+  var parentValue;
+  while (idx > 0) {
+    parentIndex = (idx - 1) >> 1;
+    parentValue = this.dataArray[parentIndex];
+    // If not forced and the item is not less than its parent, stop bubbling up
+    if (!force && !this.isLess(itemValue, parentValue)) {
+      break;
     }
-    this.heapData[startIdx] = parentElem; // Move parent down
-    startIdx = parentIdx; // Move up to parent's position
+    this.dataArray[idx] = parentValue; // Move parent down
+    idx = parentIndex; // Move up to parent's position
   }
-  this.heapData[startIdx] = elementToSift; // Place the element in its final position
+  this.dataArray[idx] = itemValue; // Place the item in its final position
 };
 
 /*
- *   Internal Utility:
- *   Performs a downward sift operation starting from a given index.
- *   Used to restore heap property after extraction or deletion.
+ * Internal utility function: _bubbleDown(idx)
+ * Moves an element down the heap to maintain the heap property.
+ * @param {number} idx - The index of the element to bubble down.
  */
-EfficientMinHeap.prototype._siftDown = function (startIdx) {
-  var itemCount = this.itemCount;
-  var halfCount = this.itemCount >>> 1; // Optimization: only need to check up to half the size
-  var elementToSift = this.heapData[startIdx];
-  var leftChildIdx;
-  var rightChildIdx;
-  var bestChildElement;
+QuickPriorityQueue.prototype._bubbleDown = function(idx) {
+  var currentSize = this.currentSize;
+  var halfSize = this.currentSize >>> 1; // Optimization: only need to check up to halfSize (non-leaf nodes)
+  var currentValue = this.dataArray[idx];
+  var leftChild;
+  var rightChild;
+  var bestChildValue;
 
-  while (startIdx < halfCount) {
-    leftChildIdx = (startIdx << 1) + 1; // Calculate left child index
-    rightChildIdx = leftChildIdx + 1; // Calculate right child index
-    bestChildElement = this.heapData[leftChildIdx]; // Assume left child is the best
+  while (idx < halfSize) {
+    leftChild = (idx << 1) + 1; // Calculate left child index
+    rightChild = leftChild + 1; // Calculate right child index
+    bestChildValue = this.dataArray[leftChild]; // Assume left child is the best initially
 
-    if (rightChildIdx < itemCount) {
-      // If a right child exists, compare it with the left child
-      if (this.isLesser(this.heapData[rightChildIdx], bestChildElement)) {
-        leftChildIdx = rightChildIdx; // Right child is smaller, update best child index
-        bestChildElement = this.heapData[rightChildIdx]; // Update best child element
+    if (rightChild < currentSize) {
+      // If right child exists, compare it with left child to find the true best child
+      if (this.isLess(this.dataArray[rightChild], bestChildValue)) {
+        leftChild = rightChild; // Update best child index to right child
+        bestChildValue = this.dataArray[rightChild]; // Update best child value
       }
     }
 
-    // If the element to sift is not greater than the best child, heap property holds
-    if (!this.isLesser(bestChildElement, elementToSift)) {
+    // If the current value is not greater than the best child value, stop bubbling down
+    if (!this.isLess(bestChildValue, currentValue)) {
       break;
     }
-    this.heapData[startIdx] = bestChildElement; // Move best child up
-    startIdx = leftChildIdx; // Move down to the child's position
+
+    this.dataArray[idx] = bestChildValue; // Move best child up to current position
+    idx = leftChild; // Move down to the best child's position
   }
-  this.heapData[startIdx] = elementToSift; // Place the element in its final position
+  this.dataArray[idx] = currentValue; // Place the current value in its final sorted position
 };
 
-// Node.js specific input/output handling
-process.stdin.resume();
-process.stdin.setEncoding('utf8');
+// --- Standard Input/Output Handling for the main program logic ---
 
-var receivedLines = []; // Stores lines read from standard input
+process.stdin.resume(); // Keep the process alive for input
+process.stdin.setEncoding('utf8'); // Set input encoding
+
+var receivedLines = []; // Array to store lines read from standard input
 var lineReader = require('readline').createInterface({
   input: process.stdin,
   output: process.stdout
 });
-lineReader.on('line', (line) => {
-  receivedLines.push(line);
+
+// Event listener for each line of input
+lineReader.on('line', (lineContent) => {
+  receivedLines.push(lineContent);
 });
+
+// Event listener for when input stream closes
 lineReader.on('close', () => {
-    // Parse input values from the first line
-    const [numItems, limitVal] = receivedLines[0].split(" ").map(val => val - 0);
-    // Parse the list of numbers from the second line and sort in descending order
-    const inputList = receivedLines[1].split(" ").map(val => val - 0).sort((a, b) => b - a);
+  // Parse N (number of elements) and K (max operations) from the first line
+  const [numElements, maxOperations] = receivedLines[0].split(" ").map(val => val - 0);
+  // Parse the list of numbers from the second line, convert to numbers, and sort in descending order
+  const inputList = receivedLines[1].split(" ").map(val => val - 0).sort((a, b) => b - a);
 
-    let lowerBound = 0;
-    let upperBound = inputList[0]; // Max value in the list
-    let finalResult = upperBound; // Stores the optimal average
+  let lowerBound = 0; // Minimum possible average value
+  let upperBound = inputList[0]; // Maximum possible average value (largest element)
+  let finalResult = upperBound; // Variable to store the answer (minimum feasible average)
 
-    // Binary search for the optimal average value
-    while (lowerBound <= upperBound) {
-        const averageVal = Math.ceil((lowerBound + upperBound) / 2); // Calculate midpoint
-        let isValid = true; // Flag to check if current average is feasible
-        
-        let currentSum = 0;
-        for (let idx = 0; idx < numItems; idx++) {
-            // Calculate operations needed for each item to reach 'averageVal'
-            currentSum += Math.ceil(inputList[idx] / averageVal) - 1;
-            if (currentSum > limitVal) { // If total operations exceed limit
-                isValid = false; // This average is not feasible
-                break;
-            }
-        }
+  // Perform binary search to find the minimum average value
+  while (lowerBound <= upperBound) {
+    const averageValue = Math.ceil((lowerBound + upperBound) / 2); // Calculate midpoint (potential average)
+    let isValid = true; // Flag to check if the current averageValue is feasible
 
-        if (isValid) {
-            finalResult = averageVal; // This average is possible, try for a smaller one
-            upperBound = averageVal - 1;
-        } else {
-            lowerBound = averageVal + 1; // This average is too small, need a larger one
-        }
+    let totalSum = 0;
+    for (let idx = 0; idx < numElements; idx++) {
+      // Calculate the number of operations needed for each element to reach 'averageValue'
+      // If averageValue is 0, and inputList[idx] is positive, Math.ceil(Infinity) is Infinity.
+      // If averageValue is 0, and inputList[idx] is 0, Math.ceil(NaN) is NaN.
+      // The original code's behavior for these edge cases is preserved.
+      totalSum += Math.ceil(inputList[idx] / averageValue) - 1;
+      if (totalSum > maxOperations) {
+        isValid = false; // If operations exceed K, this averageValue is not feasible
+        break;
+      }
     }
-    console.log(finalResult); // Output the final optimal average
-    return;
+
+    if (isValid) {
+      finalResult = averageValue; // This averageValue is feasible, try a smaller one
+      upperBound = averageValue - 1;
+    } else {
+      lowerBound = averageValue + 1; // This averageValue is not feasible, try a larger one
+    }
+  }
+  console.log(finalResult); // Output the final minimum feasible average
+  return;
 });

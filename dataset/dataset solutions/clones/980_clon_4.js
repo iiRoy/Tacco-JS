@@ -1,80 +1,56 @@
-const sourceConfig = { input: '/dev/stdin', newline: '\n' };
+const configuration = { sourcePath: '/dev/stdin', lineDelimiter: '\n' };
 
-function acquireRawData(cfg) {
-    const rawContent = require('fs').readFileSync(cfg.input, 'ascii');
-    return rawContent.split(cfg.newline);
+const assert = require('assert');
+
+const rawInputLines = require('fs').readFileSync(configuration.sourcePath, 'ascii')
+  .split(configuration.lineDelimiter);
+
+const [gridHeight, gridWidth] = rawInputLines[0].split(' ').map(Number);
+
+const binaryStringToBigInt = (binaryString) => BigInt('0b' + binaryString);
+
+const gridLines = rawInputLines.slice(1, 1 + gridHeight).map(binaryStringToBigInt);
+
+const [patternHeight, patternWidth] = rawInputLines[1 + gridHeight].split(' ').map(Number);
+
+const patternLines = rawInputLines.slice(1 + gridHeight + 1, 1 + gridHeight + 1 + patternHeight).map(binaryStringToBigInt);
+
+if (gridHeight < patternHeight || gridWidth < patternWidth) {
+    process.exit();
 }
 
-function processRawData(allLines) {
-    let currentLineIndex = 0;
+const matchAccumulator = Array.from({ length: gridHeight - patternHeight + 1 }, () =>
+    Array(gridWidth - patternWidth + 1).fill(0)
+);
 
-    const dimensions = allLines[currentLineIndex++].split(' ').map(Number);
-    const gridHeight = dimensions[0];
-    const gridWidth = dimensions[1];
+const patternBitMask = (1n << BigInt(patternWidth)) - 1n;
 
-    const mainGridRaw = allLines.slice(currentLineIndex, currentLineIndex + gridHeight);
-    currentLineIndex += gridHeight;
+for (let currentGridRowIndex = 0; currentGridRowIndex < gridHeight; currentGridRowIndex++) {
+    const currentGridBigInt = gridLines[currentGridRowIndex];
 
-    const patternDims = allLines[currentLineIndex++].split(' ').map(Number);
-    const patternRows = patternDims[0];
-    const patternCols = patternDims[1];
+    for (let currentPatternRowIndex = 0; currentPatternRowIndex < patternHeight; currentPatternRowIndex++) {
+        const currentPatternBigInt = patternLines[currentPatternRowIndex];
 
-    const searchPatternRaw = allLines.slice(currentLineIndex, currentLineIndex + patternRows);
+        const potentialMatchTopRow = currentGridRowIndex - currentPatternRowIndex;
 
-    if (gridHeight < patternRows || gridWidth < patternCols) {
-        process.exit();
-    }
+        if (potentialMatchTopRow < 0 || potentialMatchTopRow > gridHeight - patternHeight) {
+            continue;
+        }
 
-    const mainGrid = mainGridRaw.map(s => ({ val: BigInt('0b' + s), len: s.length }));
-    const searchPattern = searchPatternRaw.map(s => ({ val: BigInt('0b' + s), len: s.length }));
+        for (let colShift = 0; colShift <= gridWidth - patternWidth; colShift++) {
+            const gridSegmentAtOffset = (currentGridBigInt >> BigInt(colShift)) & patternBitMask;
 
-    return { gridHeight, gridWidth, patternRows, patternCols, mainGrid, searchPattern };
-}
-
-function verifySubsegment(largerInt, largerLen, smallerInt, smallerLen, startingOffset) {
-    if (startingOffset + smallerLen > largerLen) {
-        return false;
-    }
-    
-    const extractedSegment = (largerInt >> BigInt(largerLen - (startingOffset + smallerLen))) & ((1n << BigInt(smallerLen)) - 1n);
-    
-    return extractedSegment === smallerInt;
-}
-
-function performPatternSearch(dataBundle) {
-    const { gridHeight, gridWidth, patternRows, patternCols, mainGrid, searchPattern } = dataBundle;
-
-    const occurrenceTracker = new Map();
-
-    for (let rOffset = 0; rOffset <= gridHeight - patternRows; rOffset++) {
-        for (let cOffset = 0; cOffset <= gridWidth - patternCols; cOffset++) {
-            let rowsMatchedAtPosition = 0;
-            
-            for (let pRowIdx = 0; pRowIdx < patternRows; pRowIdx++) {
-                const fieldRow = mainGrid[rOffset + pRowIdx];
-                const patternRow = searchPattern[pRowIdx];
-
-                if (verifySubsegment(fieldRow.val, fieldRow.len, patternRow.val, patternRow.len, cOffset)) {
-                    rowsMatchedAtPosition++;
-                } else {
-                    rowsMatchedAtPosition = 0; // Reset if a row doesn't match
-                    break;
-                }
-            }
-
-            if (rowsMatchedAtPosition === patternRows) {
-                const resultKey = `${rOffset},${cOffset}`;
-                occurrenceTracker.set(resultKey, true); // Just mark existence, value doesn't need to be a count
+            if (gridSegmentAtOffset === currentPatternBigInt) {
+                matchAccumulator[potentialMatchTopRow][colShift]++;
             }
         }
     }
-
-    for (const [key, _] of occurrenceTracker.entries()) {
-        const [rowCoordinate, colCoordinate] = key.split(',');
-        console.log(`${rowCoordinate} ${colCoordinate}`);
-    }
 }
 
-const rawInputContent = acquireRawData(sourceConfig);
-const processedData = processRawData(rawInputContent);
-performPatternSearch(processedData);
+for (let r = 0; r < matchAccumulator.length; r++) {
+    for (let c = 0; c < matchAccumulator[r].length; c++) {
+        if (matchAccumulator[r][c] === patternHeight) {
+            console.log('%s %s', r, c);
+        }
+    }
+}

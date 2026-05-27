@@ -1,28 +1,27 @@
-const processNumericSeries = (sourceText) => {
-    const contentLines = sourceText.split('\n');
-    const firstLineTokens = contentLines[0].split(' ').map(numStr => Number.parseInt(numStr, 10));
-    const totalItemsCount = firstLineTokens[0];
-    const thresholdMagnitude = firstLineTokens[1];
-    const inputNumericSequence = contentLines[1].split(' ').map(numStr => Number.parseInt(numStr, 10));
+function processInputData(sourceData) {
+  const lines = sourceData.split('\n');
+  const initialParameters = lines[0].split(' ').map(Number);
+  const iterationLimit = initialParameters[0];
+  const comparisonThreshold = initialParameters[1];
+  const valueSequence = lines[1].split(' ').map(Number);
 
-    const cumulativeSumArray = [];
-    let currentAccumulation = 0;
-    for (const val of inputNumericSequence) {
-        currentAccumulation += val;
-        cumulativeSumArray.push(currentAccumulation);
+  let currentAccumulation = 0;
+  let foundPosition = -1;
+
+  valueSequence.slice(0, iterationLimit).some((currentElement, elementIndex) => {
+    currentAccumulation += currentElement;
+    if (currentAccumulation > comparisonThreshold) {
+      foundPosition = elementIndex + 1;
+      return true;
     }
+    return false;
+  });
 
-    const firstExceedingIndex = cumulativeSumArray.findIndex(sumValue => sumValue > thresholdMagnitude);
+  if (foundPosition !== -1) {
+    console.log(foundPosition);
+  } else {
+    console.log(iterationLimit);
+  }
+}
 
-    let finalResult;
-    if (firstExceedingIndex !== -1) {
-        finalResult = firstExceedingIndex + 1;
-    } else {
-        finalResult = totalItemsCount;
-    }
-
-    console.log(finalResult);
-};
-
-const systemInput = require('node:fs').readFileSync('/dev/stdin', 'utf8');
-processNumericSeries(systemInput);
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

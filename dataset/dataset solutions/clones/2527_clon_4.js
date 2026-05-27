@@ -1,51 +1,37 @@
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
 
-const inputCollector = [];
-const textProcessor = require('readline').createInterface({
+let inputDataLines = [];
+let inputProcessor = require('readline').createInterface({
     input: process.stdin,
     output: process.stdout
 });
 
-textProcessor.on('line', (itemStream) => {
-    inputCollector.push(itemStream);
+inputProcessor.on('line', (currentLine) => {
+    inputDataLines.push(currentLine);
 });
 
-textProcessor.on('close', () => {
-    const elementCount = Number(inputCollector[0]);
+inputProcessor.on('close', () => {
+    // The first line's value (n) is read but not used in the original snippet's core logic.
+    // let firstLineValue = Number(inputDataLines[0]);
 
-    const rawValues = inputCollector[1].split(" ");
+    let secondLineContent = inputDataLines[1];
+    let parsedNumbers = secondLineContent.split(" ").map(Number);
 
-    const indexedValues = [];
-    for (let currentPos = 0; currentPos < rawValues.length; currentPos++) {
-        indexedValues.push([Number(rawValues[currentPos]), currentPos + 1]);
-    }
+    // Create an array of 1-based original indices (positions).
+    // This array will be sorted based on the values in 'parsedNumbers'.
+    let originalPositions = Array.from({ length: parsedNumbers.length }, (_, currentIdx) => currentIdx + 1);
 
-    const sortedIdentifiers = [];
-    const workingList = [...indexedValues];
+    // Sort the 'originalPositions' array.
+    // The comparison function accesses the actual numeric values from 'parsedNumbers'
+    // using the 0-based index derived from the 1-based position.
+    originalPositions.sort((posA, posB) => {
+        let valueAtPosA = parsedNumbers[posA - 1];
+        let valueAtPosB = parsedNumbers[posB - 1];
+        return valueAtPosA - valueAtPosB;
+    });
 
-    while (workingList.length > 0) {
-        let smallestValue = Infinity;
-        let smallestIndexInWorkingList = -1;
+    let finalResultString = originalPositions.join(" ");
 
-        for (let j = 0; j < workingList.length; j++) {
-            if (workingList[j][0] < smallestValue) {
-                smallestValue = workingList[j][0];
-                smallestIndexInWorkingList = j;
-            }
-        }
-        
-        sortedIdentifiers.push(workingList[smallestIndexInWorkingList][1]);
-        workingList.splice(smallestIndexInWorkingList, 1);
-    }
-
-    let finalOutput = "";
-    for (let k = 0; k < sortedIdentifiers.length; k++) {
-        finalOutput += sortedIdentifiers[k];
-        if (k < sortedIdentifiers.length - 1) {
-            finalOutput += " ";
-        }
-    }
-    
-    console.log(finalOutput);
+    console.log(finalResultString);
 });

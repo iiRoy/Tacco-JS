@@ -2,165 +2,74 @@ var inputReader = require('readline').createInterface({
   input: process.stdin,
   output: process.stdout
 });
-
-var dataHandler;
-var capturedLines = [];
-
-inputReader.on('line', function(currentLine) {
-  capturedLines.push(currentLine);
-});
-
-inputReader.on('close', function() {
-  dataHandler = initializeDataProcessor(capturedLines);
-  logDebugMessage("--- Process initiated ---");
-
+var dataProcessor;
+var inputLines = [];
+inputReader.on('line', function(currentLine){inputLines.push(currentLine);});
+inputReader.on('close', function(){
+  dataProcessor = initializeInputProcessor(inputLines);
+  printDebug("-----start-----");
   var startTime = new Date();
-  executePrimaryProcess();
-  var elapsedTime = new Date() - startTime;
-
-  logDebugMessage("--- Process completed ---");
-  logDebugMessage("Execution time: " + elapsedTime + "ms");
-  logDebugMessage("Memory usage: " + Math.round(process.memoryUsage().heapTotal / 1024) + "KB");
+  executeMainLogic();
+  var endTime = new Date() - startTime;
+  printDebug("----- end -----");
+  printDebug("time : " + (endTime) + "ms");
+  printDebug("memory : " + Math.round(process.memoryUsage().heapTotal / 1024) + "KB");
 });
-
-function retrieveInteger() {
-  return transformValue(getNextItem(), 1);
-}
-
-function retrieveStringArray() {
-  return transformValue(getNextItem(), 2);
-}
-
-function retrieveIntegerArray() {
-  return transformValue(getNextItem(), 4);
-}
-
-function retrieveCharacterArray() {
-  return transformValue(getNextItem(), 6);
-}
-
-function getNextItem() {
-  return dataHandler.next();
-}
-
-function hasMoreItems() {
-  return dataHandler.hasNext();
-}
-
-function initializeDataProcessor(inputData) {
+function getNextInteger(){return convertInput(fetchNextLine(),1);} function getNextStringArray(){return convertInput(fetchNextLine(),2);}
+function getNextIntegerArray(){return convertInput(fetchNextLine(),4);} function getNextCharacterArray(){return convertInput(fetchNextLine(),6);}
+function fetchNextLine(){return dataProcessor.retrieveNextLine();} function hasMoreLines(){return dataProcessor.checkMoreLines();}
+function initializeInputProcessor(inputData){  
   var processorInstance = {
-    sourceData: inputData,
-    currentIndex: 0,
-    maximumItems: inputData.length,
-    hasMoreItems: function() {
-      return (this.currentIndex < this.maximumItems);
-    },
-    next: function() {
-      if (!this.hasMoreItems()) {
-        throw "InputOutOfBoundsException: No further items available.";
-      } else {
-        var retrievedItem = this.sourceData[this.currentIndex];
-        this.currentIndex++;
-        return retrievedItem;
-      }
-    }
+    lineList : inputData, currentIndex : 0, maxIndex : inputData.length,
+    checkMoreLines : function(){return (this.currentIndex < this.maxIndex);},
+    retrieveNextLine : function(){if(!this.checkMoreLines()){throw "ArrayIndexOutOfBoundsException No more lines available";}else{var currentInputLine = this.lineList[this.currentIndex];this.currentIndex++;return currentInputLine;}}
   };
   return processorInstance;
 }
+function printOutput(message){console.log(message);}
+function printDebug(message){console.error("debug:" + require("util").inspect(message,false,null));}
+// Conversion utility:
+// [conversionType] handling of elements. Numeric type.
+// Unknown value, error: returns argument as is. 1: convert to integer.
+// 2: split by space. 4: split by space and convert to number array.
+// 6: split by character. 7: split by character and convert to number array.
+// 8: join by space. 9: join by newline. 0: join without separator.
+function convertInput(inputVal,conversionType){try{switch(conversionType){case 1:return parseInt(inputVal);case 2:return inputVal.split(" ");case 4:return inputVal.split(" ").map(Number);case 6:return inputVal.split("");case 7:return inputVal.split("").map(Number);case 8:return inputVal.join(" ");case 9:return inputVal.join("\n");case 0:return inputVal.join("");default:return inputVal;}}catch(e){return inputVal;}}
 
-function displayOutput(messageContent) {
-  console.log(messageContent);
-}
-
-function logDebugMessage(debugInfo) {
-  console.error("DEBUG_INFO: " + require("util").inspect(debugInfo, false, null));
-}
-
-// This utility function handles various data transformations.
-// 'conversionType' determines the specific operation:
-//   1: Convert to an integer.
-//   2: Split string by spaces into an array of strings.
-//   4: Split string by spaces into an array of numbers.
-//   6: Split string into an array of individual characters.
-//   7: Split string into character array, then convert each to a number.
-//   8: Join array elements with a single space.
-//   9: Join array elements with a newline character.
-//   0: Join array elements without any separator.
-// Any other 'conversionType' or an error results in the original value being returned.
-function transformValue(valueToConvert, conversionType) {
-  try {
-    switch (conversionType) {
-      case 1:
-        return parseInt(valueToConvert);
-      case 2:
-        return valueToConvert.split(" ");
-      case 4:
-        return valueToConvert.split(" ").map(Number);
-      case 6:
-        return valueToConvert.split("");
-      case 7:
-        return valueToConvert.split("").map(Number);
-      case 8:
-        return valueToConvert.join(" ");
-      case 9:
-        return valueToConvert.join("\n");
-      case 0:
-        return valueToConvert.join("");
-      default:
-        return valueToConvert;
-    }
-  } catch (operationError) {
-    return valueToConvert;
-  }
-}
-
-function executePrimaryProcess() {
-  var sourceString = getNextItem();
-  var targetString = getNextItem();
-
-  var charIndexMapping = {};
-  var alphabetChars = "abcdefghijklmnopqrstuvwxyz";
-
-  // Initialize character mapping with empty sets for each alphabet character.
-  for (var charPos = 0; charPos < alphabetChars.length; charPos++) {
-    charIndexMapping[alphabetChars[charPos]] = new Set();
-  }
-
-  // Populate the mapping with indices from the source string.
-  for (var charPos = 0; charPos < sourceString.length; charPos++) {
-    charIndexMapping[sourceString[charPos]].add(charPos);
-  }
-
-  // Apply character set swaps based on target string discrepancies.
-  for (var charPos = 0; charPos < sourceString.length; charPos++) {
-    for (var alphaPos = 0; alphaPos < alphabetChars.length; alphaPos++) {
-      if (charIndexMapping[alphabetChars[alphaPos]].has(charPos) && alphabetChars[alphaPos] !== targetString[charPos]) {
-        var temporarySet = charIndexMapping[alphabetChars[alphaPos]];
-        charIndexMapping[alphabetChars[alphaPos]] = charIndexMapping[targetString[charPos]];
-        charIndexMapping[targetString[charPos]] = temporarySet;
-      }
-    }
-  }
-
-  // Reconstruct the output string from the modified character index mapping.
-  var resultArray = new Array(sourceString.length);
-  var mappedKeys = Object.keys(charIndexMapping);
-
-  for (var keyPos = 0; keyPos < mappedKeys.length; keyPos++) {
-    var positionSet = Array.from(charIndexMapping[mappedKeys[keyPos]]);
-    for (var posIdx = 0; posIdx < positionSet.length; posIdx++) {
-      resultArray[positionSet[posIdx]] = mappedKeys[keyPos];
-    }
-  }
-
-  var finalOutputString = transformValue(resultArray, 0);
-
-  logDebugMessage(targetString);
-  logDebugMessage(finalOutputString);
-
-  if (finalOutputString === targetString) {
-    displayOutput("Yes");
-  } else {
-    displayOutput("No");
-  }
+function executeMainLogic(){
+	var sourceString = fetchNextLine();
+	var targetString = fetchNextLine();
+	var charIndexMap = {};
+	var alphabetChars = "abcdefghijklmnopqrstuvwxyz";
+	for(var charPos = 0; charPos < alphabetChars.length; charPos++){
+		charIndexMap[alphabetChars[charPos]] = new Set();
+	}
+	for(var strPos = 0; strPos < sourceString.length; strPos++){
+		charIndexMap[sourceString[strPos]].add(strPos);
+	}
+	for(var strPos = 0; strPos < sourceString.length; strPos++){
+		for(var alphaIdx = 0; alphaIdx < alphabetChars.length; alphaIdx++){
+			if(charIndexMap[alphabetChars[alphaIdx]].has(strPos) && alphabetChars[alphaIdx] != targetString[strPos]){
+				var tempSet = charIndexMap[alphabetChars[alphaIdx]];
+				charIndexMap[alphabetChars[alphaIdx]] = charIndexMap[targetString[strPos]];
+				charIndexMap[targetString[strPos]] = tempSet;
+			}
+		}
+	}
+	var resultArray = new Array(sourceString.length);
+	var mapKeys = Object.keys(charIndexMap);
+	for(var keyIdx = 0; keyIdx < mapKeys.length; keyIdx++){
+		var charIndexes = Array.from(charIndexMap[mapKeys[keyIdx]]);
+		for(var indexInSet = 0; indexInSet < charIndexes.length; indexInSet++){
+			resultArray[charIndexes[indexInSet]] = mapKeys[keyIdx];
+		}
+	}
+	resultArray = convertInput(resultArray,0);
+	printDebug(targetString);
+	printDebug(resultArray);
+	if(resultArray == targetString){
+		printOutput("Yes");
+	}else{
+		printOutput("No");
+	}
 }

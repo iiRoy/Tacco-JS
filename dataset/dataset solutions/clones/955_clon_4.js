@@ -1,94 +1,91 @@
-let edgeList = [];
+let connectionQueue = [];
 
-const addElement = (itemData) => {
-    edgeList.push(itemData);
-};
+function addConnection(connectionDetails) {
+    connectionQueue.push(connectionDetails);
+}
 
-const pullSmallest = () => {
-    if (edgeList.length === 0) {
-        return null;
+function retrieveMinConnection() {
+    if (connectionQueue.length === 0) {
+        return undefined;
     }
 
     let minimumWeight = Infinity;
-    let minimumIndex = -1;
+    let minimumIndex = 0;
 
-    for (let currentIdx = 0; currentIdx < edgeList.length; currentIdx++) {
-        const currentItem = edgeList[currentIdx];
-        if (currentItem[1] < minimumWeight) {
-            minimumWeight = currentItem[1];
+    for (let currentIdx = 0; currentIdx < connectionQueue.length; currentIdx++) {
+        if (connectionQueue[currentIdx][1] < minimumWeight) {
+            minimumWeight = connectionQueue[currentIdx][1];
             minimumIndex = currentIdx;
         }
     }
 
-    const smallestElement = edgeList[minimumIndex];
-    edgeList.splice(minimumIndex, 1);
-    return smallestElement;
-};
+    const extractedConnection = connectionQueue[minimumIndex];
+    connectionQueue[minimumIndex] = connectionQueue[connectionQueue.length - 1];
+    connectionQueue.pop();
 
+    return extractedConnection;
+}
 
-const ExecuteProgram = (rawData) => {
-    const lines = rawData.split("\n");
-    const vertexCount = parseInt(lines[0], 10);
+function processGraphData(inputData) {
+    const lines = inputData.split("\n");
+    const nodeCount = parseInt(lines[0], 10);
 
-    const adjacencyMatrix = Array.from({ length: vertexCount }, () => Array(vertexCount).fill(0));
+    const adjacencyList = Array.from({ length: nodeCount }, () => []);
 
-    for (let r = 0; r < vertexCount; r++) {
-        const rowData = lines[r + 1].split(" ").map(Number);
-        for (let c = 0; c < vertexCount; c++) {
-            adjacencyMatrix[r][c] = rowData[c + 1];
+    for (let rowIdx = 0; rowIdx < nodeCount; rowIdx++) {
+        const rowValues = lines[rowIdx + 1].split(" ").map(Number);
+        for (let colIdx = 0; colIdx < nodeCount; colIdx++) {
+            const edgeWeight = rowValues[colIdx + 1];
+            if (edgeWeight > -1) {
+                adjacencyList[rowIdx].push({ destination: colIdx, weight: edgeWeight });
+            }
         }
     }
 
-    const mstEdges = Array.from({ length: vertexCount }, () => Array(vertexCount).fill(-1));
+    const mstMatrix = Array.from({ length: nodeCount }, () => Array(nodeCount).fill(-1));
 
-    let visitedNodesCount = 1;
-    const nodeVisitedStatus = Array(vertexCount).fill(false);
-    nodeVisitedStatus[0] = true;
+    const visitedSet = new Set();
+    let visitedNodeCount = 0;
 
-    for (let neighborIdx = 0; neighborIdx < vertexCount; neighborIdx++) {
-        if (adjacencyMatrix[0][neighborIdx] > -1) {
-            const edgeDetails = [neighborIdx, adjacencyMatrix[0][neighborIdx], 0];
-            addElement(edgeDetails);
-        }
-    }
+    visitedSet.add(0);
+    visitedNodeCount++;
 
-    while (visitedNodesCount < vertexCount) {
-        const closestEdge = pullSmallest();
+    adjacencyList[0].forEach(connection => {
+        addConnection([connection.destination, connection.weight, 0]);
+    });
 
-        if (closestEdge === null) {
+    while (visitedNodeCount < nodeCount) {
+        const selectedConnection = retrieveMinConnection();
+
+        if (!selectedConnection) {
             break;
         }
 
-        const targetVertex = closestEdge[0];
-        const edgeCost = closestEdge[1];
-        const sourceVertex = closestEdge[2];
+        const [targetNode, edgeWeight, sourceNode] = selectedConnection;
 
-        if (nodeVisitedStatus[targetVertex]) {
+        if (visitedSet.has(targetNode)) {
             continue;
         }
 
-        nodeVisitedStatus[targetVertex] = true;
-        mstEdges[targetVertex][sourceVertex] = mstEdges[sourceVertex][targetVertex] = edgeCost;
-        visitedNodesCount++;
+        visitedSet.add(targetNode);
+        visitedNodeCount++;
 
-        for (let neighborIdx = 0; neighborIdx < vertexCount; neighborIdx++) {
-            if (adjacencyMatrix[targetVertex][neighborIdx] > -1) {
-                const edgeDetails = [neighborIdx, adjacencyMatrix[targetVertex][neighborIdx], targetVertex];
-                addElement(edgeDetails);
+        mstMatrix[targetNode][sourceNode] = mstMatrix[sourceNode][targetNode] = edgeWeight;
+
+        adjacencyList[targetNode].forEach(neighborConnection => {
+            if (!visitedSet.has(neighborConnection.destination)) {
+                addConnection([neighborConnection.destination, neighborConnection.weight, targetNode]);
             }
-        }
+        });
     }
 
-    let totalWeight = 0;
+    const totalMstWeight = mstMatrix.reduce((accumulator, row, rowIdx) => {
+        return accumulator + row.reduce((rowAccumulator, weight, colIdx) => {
+            return (rowIdx < colIdx && weight > -1) ? rowAccumulator + weight : rowAccumulator;
+        }, 0);
+    }, 0);
 
-    for (let r = 0; r < vertexCount; r++) {
-        for (let c = 0; c < vertexCount; c++) {
-            if (r < c && mstEdges[r][c] > -1) {
-                totalWeight += mstEdges[r][c];
-            }
-        }
-    }
-    console.log(totalWeight);
-};
+    console.log(totalMstWeight);
+}
 
-ExecuteProgram(require("fs").readFileSync("/dev/stdin", "utf8"));
+processGraphData(require("fs").readFileSync("/dev/stdin", "utf8"));

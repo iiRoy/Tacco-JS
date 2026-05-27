@@ -1,22 +1,16 @@
-/* This script processes two numeric values from standard input
- * to calculate a specific geometric property, likely an area.
- */
-function computeGeometricValue ( inputString )
-{
-  // Separate the raw input string into its constituent parts
-  const numericParts = inputString.split(' ');
+function processInput ( rawData ) {
+  // Split the incoming string data by spaces to get individual arguments.
+  const tokenizedData = rawData.split(' ');
 
-  // Convert the first part into an integer, assuming base 10
-  const sideLengthA = parseInt(numericParts[0], 10);
+  // Parse the first token as an integer with base 10.
+  const firstNum = parseInt(tokenizedData[0], 10);
 
-  // Convert the second part into an integer, also base 10
-  const sideLengthB = parseInt(numericParts[1], 10);
+  // Parse the second token as an integer with base 10.
+  const secondNum = parseInt(tokenizedData[1], 10);
 
-  // Perform the calculation: product of the two numbers divided by two
-  // And display the result to the console
-  console.log((sideLengthA * sideLengthB) / 2);
+  // Calculate the product of the two numbers, then divide by two, and print the result.
+  console.log(firstNum * secondNum / 2);
 }
 
-// Read the entire content from standard input synchronously
-// and then pass it to our main processing function.
-computeGeometricValue(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// Read the input from standard input and pass it to the processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

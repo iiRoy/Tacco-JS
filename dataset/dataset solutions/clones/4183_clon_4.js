@@ -1,34 +1,27 @@
-const filesystemAdapter = require('node:fs');
+const inputSource = require('fs').readFileSync(0, 'utf8');
+const [firstConfigLine, itemDataLine] = inputSource.trim().split('\n');
 
-const obtainDataset = () => {
-    const rawTextContent = filesystemAdapter.readFileSync('/dev/stdin', 'utf8');
-    const [firstLineContent, secondLineContent, ..._remainingLines] = rawTextContent.split('\n');
+const [totalItems, maxAllowedTypes] = firstConfigLine.split(' ').map(Number);
+const itemIdentifiers = itemDataLine.split(' ');
 
-    const [totalElementsQuantity, desiredDistinctLimit] = firstLineContent.split(' ').map(Number);
-    const elementSequence = secondLineContent.split(' ');
+const typeFrequencyMap = new Map();
 
-    return { totalElementsQuantity, desiredDistinctLimit, elementSequence };
-};
+for (const identifier of itemIdentifiers) {
+  typeFrequencyMap.set(identifier, (typeFrequencyMap.get(identifier) || 0) + 1);
+}
 
-const determineMinimumRemovals = ({ totalElementsQuantity, desiredDistinctLimit, elementSequence }) => {
-    const occurrenceRegistry = new Map();
+const currentDistinctTypes = typeFrequencyMap.size;
+const excessTypesCount = currentDistinctTypes - maxAllowedTypes;
 
-    elementSequence.forEach(itemIdentifier => {
-        occurrenceRegistry.set(itemIdentifier, (occurrenceRegistry.get(itemIdentifier) || 0) + 1);
-    });
+if (excessTypesCount <= 0) {
+  console.log(0);
+} else {
+  const allFrequencies = Array.from(typeFrequencyMap.values());
+  allFrequencies.sort((valA, valB) => valA - valB);
 
-    const currentUniqueCount = occurrenceRegistry.size;
-    const excessUniqueCount = currentUniqueCount - desiredDistinctLimit;
+  const removalCost = allFrequencies
+    .slice(0, excessTypesCount)
+    .reduce((accumulator, currentFrequency) => accumulator + currentFrequency, 0);
 
-    return excessUniqueCount <= 0
-        ? 0
-        : Array.from(occurrenceRegistry.values())
-              .sort((valA, valB) => valA - valB)
-              .slice(0, excessUniqueCount)
-              .reduce((sumAccumulator, frequencyValue) => sumAccumulator + frequencyValue, 0);
-};
-
-const inputParameters = obtainDataset();
-const computedResult = determineMinimumRemovals(inputParameters);
-
-process.stdout.write(computedResult.toString() + '\n');
+  console.log(removalCost);
+}

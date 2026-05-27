@@ -1,89 +1,78 @@
-console .log( ( inputDataString => {
-  // Define a constant for the marker character for clarity.
-  const SYMBOL_MARKER = '#';
+console.log(((inputData) => {
+  // The input string is first trimmed and split by newline characters.
+  // The first line contains dimensions, and subsequent lines represent the grid.
+  const [dimensionsStr, ...inputRows] = inputData.trim().split('\n');
 
-  /*
-   * Split the entire input string by newline characters.
-   * The first line contains dimensions, the rest are grid rows.
-   */
-  const [ dimensionsLine, ...gridRows ] = inputDataString
-                                         . trim()
-                                         . split `\n`;
+  // Parse the dimensions from the first line.
+  // H (heightVal), W (widthVal) are used; K (numCuts) is read but not utilized in this logic.
+  const [heightVal, widthVal, numCuts] = dimensionsStr.split(' ').map(valStr => 0 | valStr);
 
-  // Parse the dimensions: height, width, and an unused 'K' value.
-  const [ numRows, numCols, maxVal ] = dimensionsLine
-                                       . split ` `
-                                       . map( parsedSegment => parseInt(parsedSegment, 10) );
+  // Initialize a 2D array (matrix) with dimensions H x W, filled with zeros.
+  // This matrix will store the assigned group IDs for each cell.
+  const gridMatrix = Array.from({ length: heightVal }, () => Array(widthVal).fill(0));
 
-  // Initialize a 2D array (grid) with dimensions `numRows` x `numCols`, filled with zeros.
-  const processedGrid = Array
-                        . from( { length: numRows }, ( ignoredParam ) =>
-                          new Array( numCols )
-                             . fill( 0 )
-                        );
-
-  /**
-   * Helper function to propagate a segment identifier.
-   * If the cell already has a value, use it.
-   * Otherwise, if a current ID is provided, assign it to the cell.
-   * @param {number} rowIndex - The current row index.
-   * @param {number} colIndex - The current column index.
-   * @param {number} currentId - The ID to potentially propagate.
-   * @returns {number} The value currently in the cell or the propagated ID.
-   */
-  const propagateValue = ( rowIndex, colIndex, currentId ) => {
-    if ( processedGrid[rowIndex][colIndex] ) {
-      return processedGrid[rowIndex][colIndex];
-    } else if ( currentId ) {
-      processedGrid[rowIndex][colIndex] = currentId;
-      return currentId;
-    }
-    return currentId; // If currentId is 0 and cell is 0, return 0
+  // This helper function is crucial for propagating group IDs.
+  // If a cell at (rowIdx, colIdx) already has a non-zero group ID, that ID is used.
+  // Otherwise, if a currentGroup is provided (and non-zero), it's assigned to the cell.
+  // This ensures that once a cell is part of a group, its ID doesn't change,
+  // and empty cells adjacent to a group can be filled.
+  const fillCell = (rowIdx, colIdx, currentGroup) => {
+    return gridMatrix[rowIdx][colIdx]
+      ? (currentGroup = gridMatrix[rowIdx][colIdx]) // If cell already has a group, use it.
+      : currentGroup                                // Otherwise, if currentGroup is valid, assign it.
+        ? (gridMatrix[rowIdx][colIdx] = currentGroup)
+        : currentGroup;                             // If currentGroup is 0, keep it 0.
   };
 
-  // Global counter for unique segment identifiers.
-  let globalIdCounter = 0;
+  // A global counter to assign unique IDs to distinct '#' characters found.
+  let globalGroupCounter = 0;
 
-  // First pass: Process rows from left to right, then right to left.
-  for ( let rowIndex = 0; rowIndex < numRows; rowIndex++ ) {
-    let segmentId = 0; // Local segment ID for the current row.
+  // First major pass: Iterate through each row of the input.
+  // This pass handles horizontal propagation of group IDs.
+  for (let rowIdx = 0; rowIdx < heightVal; rowIdx++) {
+    let currentGroup = 0; // Group ID for the current row's processing.
 
-    // Iterate through columns from left to right.
-    for ( let colIndex = 0; colIndex < numCols; colIndex++ ) {
-      // If a marker is found, increment the global counter and assign it as the new segment ID.
-      if ( gridRows[rowIndex][colIndex] === SYMBOL_MARKER ) {
-        segmentId = ++globalIdCounter;
+    // Forward scan (left to right) within the current row.
+    // If a '#' is found, a new unique group ID is assigned.
+    // This ID is then propagated to subsequent cells in the row.
+    for (let colIdx = 0; colIdx < widthVal; colIdx++) {
+      if (inputRows[rowIdx][colIdx] === '#') {
+        currentGroup = ++globalGroupCounter; // Assign a new, incremented group ID.
       }
-      // Assign the current segment ID to the cell.
-      processedGrid[rowIndex][colIndex] = segmentId;
+      gridMatrix[rowIdx][colIdx] = currentGroup; // Store the current group ID in the matrix.
     }
 
-    // Iterate through columns from right to left to propagate IDs backwards in the row.
-    for ( let colIndex = numCols - 1; colIndex >= 0; colIndex-- ) {
-      segmentId = propagateValue( rowIndex, colIndex, segmentId );
-    }
-  }
-
-  // Second pass: Process columns from top to bottom, then bottom to top.
-  for ( let colIndex = 0; colIndex < numCols; colIndex++ ) {
-    let segmentId = 0; // Local segment ID for the current column.
-
-    // Iterate through rows from top to bottom.
-    for ( let rowIndex = 0; rowIndex < numRows; rowIndex++ ) {
-      segmentId = propagateValue( rowIndex, colIndex, segmentId );
-    }
-
-    // Iterate through rows from bottom to top to propagate IDs upwards in the column.
-    for ( let rowIndex = numRows - 1; rowIndex >= 0; rowIndex-- ) {
-      segmentId = propagateValue( rowIndex, colIndex, segmentId );
+    // Backward scan (right to left) within the current row.
+    // This ensures that any empty cells to the left of a '#' (which might have been 0 initially)
+    // correctly receive the group ID from the '#' or a cell to its right.
+    for (let colIdx = widthVal - 1; colIdx >= 0; colIdx--) {
+      currentGroup = fillCell(rowIdx, colIdx, currentGroup);
     }
   }
 
-  // Format the resulting grid into a string, with space-separated values per row and newline-separated rows.
-  return processedGrid
-         . map( outputRow => outputRow.join ` ` )
-         . join `\n`;
+  // Second major pass: Iterate through each column of the grid.
+  // This pass handles vertical propagation of group IDs.
+  for (let colIdx = 0; colIdx < widthVal; colIdx++) {
+    let currentGroup = 0; // Group ID for the current column's processing.
 
-} )( require( 'fs' )
-     . readFileSync( '/dev/stdin', 'utf8' )
-) );
+    // Forward scan (top to bottom) within the current column.
+    // Propagates group IDs downwards, filling any empty cells.
+    for (let rowIdx = 0; rowIdx < heightVal; rowIdx++) {
+      currentGroup = fillCell(rowIdx, colIdx, currentGroup);
+    }
+
+    // Backward scan (bottom to top) within the current column.
+    // Propagates group IDs upwards, ensuring empty cells above a filled cell
+    // also receive the correct group ID.
+    for (let rowIdx = heightVal - 1; rowIdx >= 0; rowIdx--) {
+      currentGroup = fillCell(rowIdx, colIdx, currentGroup);
+    }
+  }
+
+  // Format the final grid matrix into a string for output.
+  // Each row's elements are joined by a space, and rows are joined by a newline.
+  return gridMatrix.map(rowArr => rowArr.join(' ')).join('\n');
+
+// The entire logic is wrapped in an Immediately Invoked Function Expression (IIFE).
+// It reads input from standard input using Node.js 'fs' module.
+})(require('fs').readFileSync('/dev/stdin', 'utf8')));

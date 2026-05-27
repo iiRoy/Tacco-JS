@@ -1,66 +1,48 @@
-'use strict'
+'use strict';
 
-function processGameData(rawContent) {
-  const linesArray = rawContent.trim().split('\n')
+function processGame(rawInputData) {
+  const lines = rawInputData.trim().split('\n');
 
-  const firstLineData = linesArray[0].split(' ').map(val => parseInt(val))
-  const totalPlays = firstLineData[0]
-  const coolDownPeriod = firstLineData[1]
+  const gameParameters = lines[0].split(' ').map(Number);
+  const totalRounds = gameParameters[0];
+  const penaltyWindow = gameParameters[1];
 
-  const secondLineData = linesArray[1].split(' ').map(val => parseInt(val))
-  const rockScore = secondLineData[0]
-  const scissorsScore = secondLineData[1]
-  const paperScore = secondLineData[2]
+  const pointValues = lines[1].split(' ').map(Number);
+  const rockWinPoints = pointValues[0];
+  const scissorsWinPoints = pointValues[1];
+  const paperWinPoints = pointValues[2];
 
-  const opponentSequenceStr = linesArray[2]
+  const playerMoves = lines[2];
 
-  const scoreLookup = {
-    'r': paperScore,
-    's': rockScore,
-    'p': scissorsScore
-  }
+  const moveOutcomePoints = {
+    'r': paperWinPoints,
+    's': rockWinPoints,
+    'p': scissorsWinPoints
+  };
 
-  // Recursive function to calculate total points
-  // currentPlayIndex: The current round's index
-  // lastWinTimes: An object storing the index of the last round a specific hand type ('r', 's', 'p') scored points
-  function computeTotalPoints(currentPlayIndex, lastWinTimes) {
-    // Base case: If all rounds have been processed, return 0 additional points
-    if (currentPlayIndex === totalPlays) {
-      return 0
+  const finalScoreAccumulator = Array.from({ length: totalRounds }).reduce((acc, _, roundIndex) => {
+    const currentMoveChoice = playerMoves[roundIndex];
+    let currentRoundEarnedPoints = 0;
+
+    const previousPenaltyCheckIndex = roundIndex - penaltyWindow;
+
+    const isPenaltyTriggered = (
+      previousPenaltyCheckIndex >= 0 &&
+      playerMoves[previousPenaltyCheckIndex] === currentMoveChoice &&
+      acc.roundScoreHistory[previousPenaltyCheckIndex] > 0
+    );
+
+    if (!isPenaltyTriggered) {
+      currentRoundEarnedPoints = moveOutcomePoints[currentMoveChoice];
     }
 
-    const opponentMoveAtCurrent = opponentSequenceStr[currentPlayIndex]
-    let currentRoundPoints = 0
-    // Create a new object for the next recursive call to maintain immutability
-    const nextWinTimes = { ...lastWinTimes }
+    acc.cumulativeTotal += currentRoundEarnedPoints;
+    acc.roundScoreHistory.push(currentRoundEarnedPoints);
 
-    const timeOfLastWinForThisMove = lastWinTimes[opponentMoveAtCurrent]
+    return acc;
+  }, { cumulativeTotal: 0, roundScoreHistory: [] });
 
-    // Check if the coolDownPeriod has passed since the last win with this specific move type
-    // If currentPlayIndex - timeOfLastWinForThisMove is >= coolDownPeriod, then we can score
-    if (currentPlayIndex - timeOfLastWinForThisMove >= coolDownPeriod) {
-      currentRoundPoints = scoreLookup[opponentMoveAtCurrent]
-      // Update the last win time for this move type to the current index
-      nextWinTimes[opponentMoveAtCurrent] = currentPlayIndex
-    } else {
-      // If we cannot score, points are 0, and the last win time for this move type remains unchanged
-      nextWinTimes[opponentMoveAtCurrent] = timeOfLastWinForThisMove
-    }
-
-    // Add current round's points to the sum of points from subsequent rounds
-    return currentRoundPoints + computeTotalPoints(currentPlayIndex + 1, nextWinTimes)
-  }
-
-  // Initialize lastWinTimes such that any move at index 0 will satisfy the coolDownPeriod condition
-  // By setting them to -coolDownPeriod, for index 0, 0 - (-coolDownPeriod) = coolDownPeriod, which is >= coolDownPeriod
-  const initialWinHistory = {
-    'r': -coolDownPeriod,
-    's': -coolDownPeriod,
-    'p': -coolDownPeriod
-  }
-
-  const finalResult = computeTotalPoints(0, initialWinHistory)
-  console.log(finalResult)
+  console.log(finalScoreAccumulator.cumulativeTotal);
 }
 
-processGameData(require("fs").readFileSync("/dev/stdin", "utf8"));
+processGame(require("fs").readFileSync("/dev/stdin", "utf8"));

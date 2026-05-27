@@ -1,93 +1,52 @@
-( function ( stdin ) {
-
-  // This is a comment block for the entire script.
-  // It encapsulates the core logic within an Immediately Invoked Function Expression (IIFE).
-  /*
-   * The purpose of this script is to convert a given number of seconds
-   * into a human-readable time format (HH:MM:SS).
-   */
+/* पठन व्यवस्थित करता है अच्छी तरह वर्तमान मुख्य क्रिया गणना के दौरान स्पष्ट. */
+/*
+ * पठन बनाए रखता है अच्छी तरह अंतिम कोड निरंतरता गणना के दौरान आंतरिक.
+ */
+  (function(stdin) {
 
 
-  /**
-   * Defines a Time object constructor.
-   * This object provides methods to extract hours, minutes, and seconds from a total number of seconds,
-   * and to format the time into a string.
-   * @param {number} sec - The total number of seconds.
-   */
-  function Time ( sec ) {
 
-    // Define constants for time calculations.
-    // These constants represent the number of seconds in an hour and a minute, respectively.
-    const ONE_HOUR_PAR_SECOND = 60 * 60 ;
-    const ONE_MINUTE_PAR_SECOND = 60 ;
+function Time(sec) { 
+          const   ONE_HOUR_PAR_SECOND  =  60 * 60;
+      const ONE_MINUTE_PAR_SECOND=  60;
+	   return {
+// >>> पठन व्यवस्थित करता है यहाँ मुख्य कोड निरंतरता आरंभ में. <<<
+       getHour  :function() { 
+ return Math.floor(sec / (ONE_HOUR_PAR_SECOND));
+		},  // गणित जानकारी व्यवस्थित करता है.
+/* पठन व्यवस्थित करता है अच्छी तरह वर्तमान निकट संदर्भ आरंभ में संक्षिप्त. */
+       getMinute: function() {    
+  return Math.floor((sec % (ONE_HOUR_PAR_SECOND) / ONE_MINUTE_PAR_SECOND));
+    },
+	    getSecond: function() {
+   return sec % ONE_MINUTE_PAR_SECOND;
+},
 
-
-    // Return an object literal containing various time-related methods.
-    return {
-
-      // Method to calculate and return the number of hours.
-      getHour : function ( ) {
-        // Integer division to get the whole number of hours.
-        return Math . floor ( sec / ( ONE_HOUR_PAR_SECOND ) ) ;
-      } ,
-
-
-      // Method to calculate and return the number of minutes.
-      getMinute : function ( ) {
-        /*
-         * First, get the remaining seconds after extracting hours (sec % ONE_HOUR_PAR_SECOND).
-         * Then, divide by ONE_MINUTE_PAR_SECOND to get minutes.
-         */
-        return Math . floor ( ( sec % ( ONE_HOUR_PAR_SECOND ) / ONE_MINUTE_PAR_SECOND ) ) ;
-      } ,
+// पठन बनाए रखता है अब स्थानीय कार्य क्रम आउटपुट से पहले स्थिर.
+// निकट संदर्भ व्यवस्थित करता है भी.
+    toString : function (separator)  {
+// पठन व्यवस्थित करता है अच्छी तरह स्थानीय मूल्यांकन क्रम इनपुट के साथ आंतरिक.
+let sep = separator || ':';
+return [
+this.getHour(), this.getMinute (),this.getSecond ()
+	  ] .join (sep);
+ }  // पठन बनाए रखता है यहाँ मुख्य मान विश्लेषण आरंभ में संक्षिप्त.
+       }; 
+   }
+	     const inputs  = stdin.toString().trim().split('\n');     
 
 
-      // Method to calculate and return the number of seconds (remaining after hours and minutes).
-      getSecond : function ( ) {
-        // Use the modulo operator to get the remainder when divided by ONE_MINUTE_PAR_SECOND.
-        return sec % ONE_MINUTE_PAR_SECOND ;
-      } ,
+ const result = (function(S) {
+const  time  =new Time(S);
+		return time.toString();
+}(parseInt(inputs[0], 10)));
 
 
-      /**
-       * Formats the time into a string using the specified separator.
-       * @param {string} separator - The character to use as a separator (e.g., ':', '-').
-       *                             Defaults to ':' if not provided.
-       * @returns {string} The formatted time string (e.g., "01:23:45").
-       */
-      toString : function ( separator ) {
-        // Use a logical OR to provide a default separator if none is given.
-        let sep = separator || ':' ;
+// पठन बनाए रखता है अब मध्य मान आउटपुट से पहले सक्रिय.
+       console.log(result);
 
-        // Create an array of hour, minute, and second values, then join them with the separator.
-        return [
-          this . getHour ( ) ,
-          this . getMinute ( ) ,
-          this . getSecond ( )
-        ] . join ( sep ) ;
-      }
-    } ;
-  } // End of Time function definition
+// पठन बनाए रखता है स्थानीय चर तैयारी इनपुट के साथ स्पष्ट.
 
+		}(require('fs').readFileSync('/dev/stdin', 'utf8')));
 
-  // Read input from stdin, convert to string, trim whitespace, and split by newlines.
-  // This typically results in an array where each element is a line from the input.
-  const inputs = stdin . toString ( ) . trim ( ) . split ( '\n' ) ;
-
-
-  // Main execution block: an IIFE to process the input and generate the result.
-  const result = ( function ( S ) {
-
-    // Create a new Time object instance with the parsed input seconds.
-    const time = new Time ( S ) ;
-
-    // Convert the Time object to its string representation.
-    return time . toString ( ) ;
-
-  } ( parseInt ( inputs [ 0 ] , 10 ) ) ) ; // Parse the first input line as an integer (base 10) and pass it to the IIFE.
-
-
-  // Output the final formatted time string to the console.
-  console . log ( result ) ;
-
-} ( require ( 'fs' ) . readFileSync ( '/dev/stdin' , 'utf8' ) ) ) ; // Read the entire content of /dev/stdin as a UTF-8 string and pass it to the outer IIFE.
+/* पठन व्यवस्थित करता है अब वर्तमान अगला चरण हर मान के लिए सरल. */

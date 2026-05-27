@@ -1,21 +1,23 @@
-(function performProcessing() {
-    const rawSystemInput = require('fs').readFileSync('/dev/stdin', 'utf8');
+'use strict';
 
-    const inputSegments = rawSystemInput.trim().split('\n');
+function processInputData(rawData) {
+  const inputSegments = rawData.split('\n').filter(Boolean);
 
-    const totalItems = parseInt(inputSegments[0], 10);
+  const elementCount = Number(inputSegments[0]);
 
-    const numericCollection = inputSegments[1].split(' ').map(valueText => parseInt(valueText, 10));
+  const numericSequence = inputSegments[1].split(' ').map(Number);
 
-    const validationResult = evaluateSequenceIntegrity(numericCollection);
-
-    console.log(validationResult);
-})();
-
-function evaluateSequenceIntegrity(candidateList) {
-    const deviationCounter = candidateList.reduce((currentMismatchCount, currentElementValue, currentIndex) => {
-        return currentMismatchCount + (currentElementValue !== (currentIndex + 1) ? 1 : 0);
-    }, 0);
-
-    return deviationCounter <= 2 ? 'YES' : 'NO';
+  console.log(evaluateSequence(numericSequence));
 }
+
+function evaluateSequence(sourceSequence) {
+  const sequenceCopy = [...sourceSequence];
+
+  const deviationTally = sequenceCopy.reduce((accumulator, currentVal, currentIdx) => {
+    return accumulator + (currentVal !== (currentIdx + 1) ? 1 : 0);
+  }, 0);
+
+  return deviationTally <= 2 ? 'YES' : 'NO';
+}
+
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

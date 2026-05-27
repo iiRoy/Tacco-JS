@@ -1,35 +1,27 @@
-const processInputData = (sourceLocation) => {
-    const fileSystemModule = require("fs");
-    const rawContent = fileSystemModule.readFileSync(sourceLocation, "utf8");
-    const segments = rawContent.trim().split(' ');
+const fs = require("fs");
 
-    const analysisSummary = {
-        occurrenceCounts: new Map(),
-        highestFrequency: 0,
-        longestString: '',
-        greatestLengthEncountered: 0
-    };
+const inputContent = fs.readFileSync("/dev/stdin", "utf8");
 
-    const finalSummary = segments.reduce((currentAccumulator, currentSegmentToken) => {
-        // Update frequency statistics
-        const currentTokenCount = (currentAccumulator.occurrenceCounts.get(currentSegmentToken) || 0) + 1;
-        currentAccumulator.occurrenceCounts.set(currentSegmentToken, currentTokenCount);
+const wordSegments = inputContent.trim().split(' ');
 
-        if (currentTokenCount > currentAccumulator.highestFrequency) {
-            currentAccumulator.highestFrequency = currentTokenCount;
-        }
+const aggregatedMetrics = wordSegments.reduce((accumulator, currentSegment) => {
+    const currentSegmentCount = (accumulator.segmentCounts.get(currentSegment) || 0) + 1;
+    accumulator.segmentCounts.set(currentSegment, currentSegmentCount);
 
-        // Update longest string statistics
-        const tokenLength = currentSegmentToken.length;
-        if (tokenLength > currentAccumulator.greatestLengthEncountered) {
-            currentAccumulator.greatestLengthEncountered = tokenLength;
-            currentAccumulator.longestString = currentSegmentToken;
-        }
+    accumulator.highestCount = Math.max(accumulator.highestCount, currentSegmentCount);
 
-        return currentAccumulator;
-    }, analysisSummary);
+    const segmentLength = currentSegment.length;
+    if (segmentLength > accumulator.greatestLength) {
+        accumulator.greatestLength = segmentLength;
+        accumulator.longestSegment = currentSegment;
+    }
 
-    console.log(`${finalSummary.highestFrequency} ${finalSummary.longestString}`);
-};
+    return accumulator;
+}, {
+    segmentCounts: new Map(),
+    highestCount: 0,
+    longestSegment: '',
+    greatestLength: 0
+});
 
-processInputData("/dev/stdin");
+console.log(aggregatedMetrics.highestCount + ' ' + aggregatedMetrics.longestSegment);

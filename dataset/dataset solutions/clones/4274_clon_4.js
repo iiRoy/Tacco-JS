@@ -1,28 +1,17 @@
-function processInputData(sourceText) {
-  const parsedElements = sourceText.split('\n').map(Number);
-  const loopCount = parsedElements[0];
-  const constantAdder = parsedElements[1];
+function processInputAndCompute(rawInput) {
+    const [countIterations, incrementLimit] = rawInput.trim().split('\n').map(Number);
 
-  const initialMagnitude = 1;
+    const determineFinalResult = (stepsRemaining, currentQuantity, boundaryValue) => {
+        if (stepsRemaining === 0) {
+            return currentQuantity;
+        }
+        const nextQuantity = currentQuantity + (currentQuantity <= boundaryValue ? currentQuantity : boundaryValue);
+        return determineFinalResult(stepsRemaining - 1, nextQuantity, boundaryValue);
+    };
 
-  const finalMagnitude = performComputation(loopCount, initialMagnitude, constantAdder);
-
-  console.log(finalMagnitude);
+    const initialQuantity = 1;
+    const finalOutcome = determineFinalResult(countIterations, initialQuantity, incrementLimit);
+    console.log(finalOutcome);
 }
 
-function performComputation(remainingIterations, currentMagnitude, constantAdder) {
-  if (remainingIterations === 0) {
-    return currentMagnitude;
-  }
-
-  let nextMagnitude;
-  if (currentMagnitude <= constantAdder) {
-    nextMagnitude = currentMagnitude << 1;
-  } else {
-    nextMagnitude = currentMagnitude + constantAdder;
-  }
-
-  return performComputation(remainingIterations - 1, nextMagnitude, constantAdder);
-}
-
-processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInputAndCompute(require("fs").readFileSync("/dev/stdin", "utf8"));

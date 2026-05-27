@@ -1,17 +1,29 @@
-const dataStream = require('fs').readFileSync('/dev/stdin', 'utf8');
-const processedLines = dataStream.trim().split('\n');
-const configLine = processedLines.shift();
-const configTokens = configLine.split(' ').map(Number);
-const loopExtent = configTokens[1];
-const comparisonThreshold = configTokens[1];
-const itemEntries = processedLines;
-const defaultOutcome = "kogakubu10gokan";
-const indicesToProcess = Array.from({ length: loopExtent }, (_, k) => k);
-const finalResult = indicesToProcess.reduce((accumulatorValue, currentIdx) => {
-    const currentEntryParts = itemEntries[currentIdx].split(' ');
-    const numericalComponent = Number(currentEntryParts[0]);
-    return (numericalComponent <= comparisonThreshold) 
-           ? currentEntryParts[1] 
-           : accumulatorValue;
-}, defaultOutcome);
-console.log(finalResult);
+const rawInputContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+
+const allInputLines = rawInputContent.trim().split('\n');
+
+const configLineData = allInputLines[0].split(' ').map(Number);
+const loopIterations = configLineData[1];
+const comparisonBoundary = configLineData[1];
+
+let finalOutput = "kogakubu10gokan";
+
+const processingIndices = (typeof loopIterations === 'number' && loopIterations > 0)
+    ? Array.from({ length: loopIterations }, (_, index) => index)
+    : [];
+
+finalOutput = processingIndices.reduce((currentMessage, currentIdx) => {
+    const dataLine = allInputLines[currentIdx + 1];
+    
+    const lineComponents = dataLine.split(' ');
+    
+    const numericCheck = Number(lineComponents[0]);
+    const replacementText = lineComponents[1];
+
+    if (numericCheck <= comparisonBoundary) {
+        return replacementText;
+    }
+    return currentMessage;
+}, finalOutput);
+
+console.log(finalOutput);

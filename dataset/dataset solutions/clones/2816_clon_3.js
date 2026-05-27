@@ -1,91 +1,64 @@
-((rawInputContent) => {
-  // A utility function designed to safely parse string representations into integer values.
-  const parseNumericValue = (textualRepresentation) => {
-    const integerValue = parseInt(textualRepresentation, 10);
-    // Basic validation: ensure the parsing resulted in a valid number.
-    if (isNaN(integerValue)) {
-      throw new Error("Critical input error: Non-numeric data found where an integer was expected.");
+((rawInputString) => {
+  const NEWLINE_SEPARATOR = '\n';
+  const SPACE_SEPARATOR = ' ';
+  const MIN_VALID_NODE_COUNT = 2;
+  const CENTRAL_NODE_IDENTIFIER = 1;
+  const NODE_OFFSET_FOR_PAIRS = 2; // Used for nodes 2, 3, ...
+  const PAIR_INCREMENT = 1; // For (X, X+1) pairs
+
+  // Helper function to compute the maximum possible K for a given N
+  const computeMaxKValue = (currentNValue) => {
+    if (currentNValue <= MIN_VALID_NODE_COUNT) {
+      return 0;
     }
-    return integerValue;
+    const nonCentralNodeCount = currentNValue - CENTRAL_NODE_IDENTIFIER;
+    // This formula calculates (N-1)C2, which is the number of pairs
+    // among nodes {2, ..., N}. Each such pair (X,Y) has distance 2
+    // via X-1-Y if no direct edge exists.
+    return (nonCentralNodeCount * (nonCentralNodeCount - PAIR_INCREMENT)) / MIN_VALID_NODE_COUNT;
   };
 
-  // Begin processing the raw input data stream.
-  const allInputLines = rawInputContent.trim().split('\n');
+  const firstInputLine = rawInputString.split(NEWLINE_SEPARATOR)[0];
+  const inputSegments = firstInputLine.split(SPACE_SEPARATOR);
 
-  // Guard clause: If no input lines are provided, signal an error state.
-  if (allInputLines.length === 0) {
+  const nodeQuantity = Number(inputSegments[0]); // Corresponds to N
+  const targetKValue = Number(inputSegments[1]);   // Corresponds to K
+
+  if (nodeQuantity <= MIN_VALID_NODE_COUNT) {
     console.log('-1');
     return;
   }
 
-  // Extract the first meaningful line and tokenize it by whitespace.
-  const initialParameters = allInputLines[0].split(/\s+/).filter(Boolean);
+  const maximumAchievableK = computeMaxKValue(nodeQuantity);
 
-  // Guard clause: Ensure the expected number of parameters (N and K) are present.
-  if (initialParameters.length < 2) {
+  // This condition `N > max` is preserved exactly as in the original code,
+  // even though it implies specific constraints on N (e.g., N must be >= 5).
+  if (nodeQuantity > maximumAchievableK) {
     console.log('-1');
     return;
   }
 
-  // Parse the total count of graph nodes (vertices) from the input.
-  const totalGraphNodes = parseNumericValue(initialParameters[0]);
-  // Parse the desired number of node pairs that should have a shortest path of exactly two.
-  const targetPathLengthTwoPairs = parseNumericValue(initialParameters[1]);
-
-  // Handle trivial cases where a graph cannot be formed as required.
-  // A graph with 2 or fewer nodes cannot have any path of length 2 between distinct non-1 nodes.
-  if (totalGraphNodes <= 2) {
-    console.log('-1');
-    return;
-  }
-
-  // Calculate the maximum possible number of node pairs (excluding node 1)
-  // that would naturally have a shortest path of two in a star-shaped graph
-  // where node 1 is connected to all other nodes.
-  // This is equivalent to "N-1 choose 2", i.e., combinations of 2 nodes from the N-1 non-1 nodes.
-  const potentialMaxPathTwoPairs = ((totalGraphNodes - 1) * (totalGraphNodes - 2)) / 2;
-
-  // Validate if the requested number of path-2 pairs is actually achievable.
-  // If the target exceeds the theoretical maximum, it's an impossible scenario.
-  if (targetPathLengthTwoPairs > potentialMaxPathTwoPairs) {
-    console.log('-1');
-    return;
-  }
-
-  // Initialize an array to store the list of all graph edges (connections).
-  const graphEdgeList = [];
-
-  // Step 1: Construct the base star graph.
-  // Connect node 1 to every other node (from 2 up to totalGraphNodes).
-  // This creates a central hub and ensures all nodes are connected.
-  for (let currentVertex = 2; currentVertex <= totalGraphNodes; ++currentVertex) {
-    graphEdgeList.push([1, currentVertex]);
-  }
-
-  // Determine how many path-2 pairs need to be converted to path-1 pairs
-  // by adding direct edges between them.
-  // Each such added edge reduces the count of path-2 pairs by one.
-  const requiredEdgeAdditions = potentialMaxPathTwoPairs - targetPathLengthTwoPairs;
-
-  // Step 2: Add supplementary edges to adjust the count of path-2 pairs.
-  // These edges are added sequentially between consecutive non-1 nodes,
-  // starting with (2,3), then (3,4), and so on, for the required number of times.
-  for (let edgeAdditionIndex = 0; edgeAdditionIndex < requiredEdgeAdditions; ++edgeAdditionIndex) {
-    const firstNodeInPair = 2 + edgeAdditionIndex;
-    const secondNodeInPair = 3 + edgeAdditionIndex;
-    graphEdgeList.push([firstNodeInPair, secondNodeInPair]);
-  }
-
-  // Output the total count of edges in the constructed graph.
-  console.log(graphEdgeList.length);
-
-  // Iterate through the final list of edges and print each one on a new line,
-  // with the two connected nodes separated by a space.
-  graphEdgeList.forEach(activeEdge => {
-    console.log(`${activeEdge[0]} ${activeEdge[1]}`);
+  // Phase 1: Establish connections from the central node (1) to all other nodes (2 to N)
+  const initialConnectionCount = nodeQuantity - CENTRAL_NODE_IDENTIFIER; // N-1 connections
+  const primaryEdgeList = Array.from({ length: initialConnectionCount }, (_, indexPosition) => {
+    const connectedNodeId = indexPosition + NODE_OFFSET_FOR_PAIRS; // Generates 2, 3, ..., N
+    return [CENTRAL_NODE_IDENTIFIER, connectedNodeId];
   });
 
+  // Phase 2: Add additional edges to reduce the count of distance-2 pairs to targetKValue.
+  // Each added direct edge (X,Y) where X,Y != 1 reduces the number of distance-2 pairs by one.
+  const numberOfEdgesToAppend = maximumAchievableK - targetKValue;
+  const secondaryEdgeList = Array.from({ length: numberOfEdgesToAppend }, (_, indexPosition) => {
+    const firstNodeOfPair = indexPosition + NODE_OFFSET_FOR_PAIRS; // Generates 2, 3, ..., (numberOfEdgesToAppend + 1)
+    const secondNodeOfPair = firstNodeOfPair + PAIR_INCREMENT;      // Generates 3, 4, ..., (numberOfEdgesToAppend + 2)
+    return [firstNodeOfPair, secondNodeOfPair];
+  });
+
+  const finalEdgeCollection = primaryEdgeList.concat(secondaryEdgeList);
+
+  console.log(finalEdgeCollection.length);
+  console.log(finalEdgeCollection.map(edgeTuple => edgeTuple.join(SPACE_SEPARATOR)).join(NEWLINE_SEPARATOR));
+
 })(
-  // Read the entire content of the standard input stream as UTF-8 encoded text.
   require("fs").readFileSync("/dev/stdin", "utf8")
 );

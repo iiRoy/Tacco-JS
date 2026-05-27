@@ -1,47 +1,31 @@
-// This function computes the least common multiple (LCM) of two positive integers.
-// It internally uses a helper function to determine the greatest common divisor (GCD).
-function calculateLcmValue(  valueA  ,  valueB  )
-{
-    // Helper function to find the greatest common divisor (GCD) using the Euclidean algorithm.
-    // The GCD is recursively calculated until the second number becomes zero.
-    var   determineGcd = ( operandOne , operandTwo  )   =>
-      operandTwo
-        ?
-          determineGcd( operandTwo , operandOne % operandTwo )
-        :
-          operandOne
-    ; // End of determineGcd function definition.
+function calculateLCM(firstNum, secondNum) {
+  // This nested function computes the Greatest Common Divisor (GCD) of two numbers
+  // using the Euclidean algorithm.
+  let findGCD = (val1, val2) => {
+    // If the second value is zero, the first value is the GCD.
+    // Otherwise, recursively call with the second value and the remainder of the first divided by the second.
+    return val2 ? findGCD(val2, val1 % val2) : val1;
+  };
 
-    // The LCM of two numbers (valueA, valueB) is their product divided by their GCD.
-    return   (valueA  *  valueB)   /   determineGcd( valueA , valueB )   ;
-} // End of calculateLcmValue function.
+  // The Least Common Multiple (LCM) of two numbers is calculated as their product
+  // divided by their Greatest Common Divisor (GCD).
+  return (firstNum * secondNum) / findGCD(firstNum, secondNum);
+}
 
+// This is the main function responsible for processing the input.
+function ProcessInput(rawData) {
+  // First, remove any leading/trailing whitespace from the input string.
+  // Then, split the string by spaces to get an array of string representations of numbers.
+  // Finally, map each string representation to its integer equivalent.
+  const numArray = rawData.trim().split(' ').map(strVal => parseInt(strVal, 10));
 
-// This is the primary function that orchestrates the program's execution.
-// It takes raw input, parses it, performs calculations, and outputs the result.
-function   runProgramLogic ( inputDataSource )
-{
-    // First, process the raw input string.
-    //   1. Remove leading/trailing whitespace using .trim().
-    //   2. Split the string by spaces into an array of string components.
-    //   3. Convert each string component into an integer using parseInt.
-    const   numericDataSet   =   inputDataSource.
-                                  trim().
-                                  split( ' ' ).
-                                  map( stringComponent => parseInt( stringComponent, 10 ) )   ;
+  // Calculate the LCM of the first two numbers obtained from the input array.
+  const resultValue = calculateLCM(numArray[0], numArray[1]);
 
-    // Calculate the least common multiple for the first two numbers in our parsed dataset.
-    const   finalCalculationResult   =   calculateLcmValue( numericDataSet[ 0 ] ,   numericDataSet[ 1 ] )   ;
+  // Print the computed LCM to the standard output.
+  console.log(resultValue);
+}
 
-    // Display the computed result to the standard output.
-    console.log(   finalCalculationResult   )   ;
-} // End of runProgramLogic function.
-
-
-// Execute the main program logic.
-// It reads content from standard input (typically /dev/stdin for competitive programming environments)
-// as a UTF-8 encoded string and passes it to the primary processing function.
-runProgramLogic(
-  require( "fs" ).
-    readFileSync( "/dev/stdin" ,   "utf8" )
-); // End of program execution.
+// Read the entire content from standard input as a UTF-8 string,
+// and then pass it to the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,25 +1,15 @@
-((dataSupplier) => {
-    const sourceText = dataSupplier();
-    const numericStrings = sourceText.match(/-?\d+(\.\d+)?/g);
+const calculateEuclideanDistance = (sourceData) => {
+    const coordinateValues = sourceData.match(/-?\d+(\.\d+)?/g).map(parseFloat);
 
-    const numberSequence = numericStrings.map(parseFloat);
+    const [firstX, firstY, secondX, secondY] = coordinateValues;
 
-    const pointOne = { hAxis: numberSequence[0], vAxis: numberSequence[1] };
-    const pointTwo = { hAxis: numberSequence[2], vAxis: numberSequence[3] };
+    const deltaHorizontal = secondX - firstX;
+    const deltaVertical = secondY - firstY;
 
-    const applySquare = (val) => val * val;
+    console.log(Math.hypot(deltaHorizontal, deltaVertical));
+};
 
-    const deltaH = pointTwo.hAxis - pointOne.hAxis;
-    const deltaV = pointTwo.vAxis - pointOne.vAxis;
-
-    const squaredDeltaH = applySquare(deltaH);
-    const squaredDeltaV = applySquare(deltaV);
-
-    const sumOfSquares = squaredDeltaH + squaredDeltaV;
-
-    const resultMetric = Math.sqrt(sumOfSquares);
-
-    console.log(resultMetric);
-})(
-    () => require("fs").readFileSync("/dev/stdin", "utf8")
-);
+(() => {
+    const rawInputContent = require("node:fs").readFileSync("/dev/stdin", "utf8");
+    calculateEuclideanDistance(rawInputContent);
+})();

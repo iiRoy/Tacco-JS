@@ -1,74 +1,82 @@
-/*
- * This routine processes the entire provided raw data.
- */
+// This function receives the complete raw input data as a string.
 function ProcessInput(rawData) {
-  let textLines = rawData.split('\n'); // Divide the raw data into individual lines
-  let segments = textLines[0].split(' '); // Split the first line into distinct parts
-  const countA = Number(segments[0]); // Convert the first segment to a numerical count
-  const countB = Number(segments[1]); // Convert the second segment to another numerical count
+    // Split the entire input string into an array of individual lines.
+    var inputLines = rawData.split('\n');
 
-  let leftIndices = []; // Initialize an array to store left boundary indicators
-  let rightIndices = []; // Initialize an array to store right boundary indicators
-  let distances = []; // Initialize an array to store calculated distances
-  
-  for (let idx = 1; idx <= countB; idx++) { // Iterate through the subsequent data lines
-    const currentParts = textLines[idx].split(' '); // Split the current line into its component parts
-    leftIndices.push(Number(currentParts[0])); // Store the converted first part into the left indicators array
-    rightIndices.push(Number(currentParts[1])); // Store the converted second part into the right indicators array
-    distances.push(Number(currentParts[2])); // Store the converted third part into the distances array
+    // Parse the first line to get the number of entities (N) and constraints (M).
+    var firstLineParts = inputLines[0].split(' ');
+    var numEntities = Number(firstLineParts[0]);
+    var numConstraints = Number(firstLineParts[1]);
 
-    // Check for an invalid condition where left and right indicators are identical
-    if (Number(currentParts[0]) === Number(currentParts[1])) {
-      console.log('No'); // Output 'No' to indicate an invalid state
-      return false; // Terminate execution, as the condition is not met
-    }
-  }
+    // Initialize arrays to store the left points, right points, and distances for each constraint.
+    var leftPoints = [];
+    var rightPoints = [];
+    var pointDistances = [];
 
-  let positions = []; // An array to track the determined positions of elements
-  let resultStatus; // Variable to hold the final outcome ('Yes' or 'No')
-  let maxPosition = 1; // Tracks the maximum calculated position, initialized to 1
+    // Iterate through each constraint line, starting from the second line (index 1).
+    for (var constraintIndex = 1; constraintIndex <= numConstraints; constraintIndex++) {
+        var currentConstraintParts = inputLines[constraintIndex].split(' ');
 
-  processingLoop: // Label for the main data processing loop
-  for (let k = 0; k < countB; k++) {
-    if (k === 0) {
-      positions[leftIndices[k] - 1] = 1; // For the first iteration, set the initial position
-    }
-    
-    // Calculate the expected position for the right indicator based on the left and distance
-    const calculatedRightPosition = positions[leftIndices[k] - 1] + distances[k];
-    
-    // Update the maximum observed position if the current calculated position is greater
-    if (maxPosition <= calculatedRightPosition) {
-      maxPosition = calculatedRightPosition;
+        // Convert string parts to numbers and store them in their respective arrays.
+        leftPoints.push(Number(currentConstraintParts[0]));
+        rightPoints.push(Number(currentConstraintParts[1]));
+        pointDistances.push(Number(currentConstraintParts[2]));
+
+        // Check for an invalid constraint where left and right points are the same.
+        if (Number(currentConstraintParts[0]) === Number(currentConstraintParts[1])) {
+            console.log('No'); // Output 'No' if an invalid constraint is found.
+            return false;       // Terminate execution.
+        }
     }
 
-    // Check if the right indicator's position has already been established
-    if (!positions[rightIndices[k] - 1]) {
-      positions[rightIndices[k] - 1] = calculatedRightPosition; // If not, establish it
-    } else {
-      // If already established, verify consistency
-      if (positions[rightIndices[k] - 1] !== calculatedRightPosition) {
-        resultStatus = 'No'; // Inconsistency detected, set result to 'No'
-        break processingLoop; // Exit the loop immediately
-      }
+    // Initialize an array to store the calculated positions of entities.
+    var entityCoordinates = [];
+    // Variable to store the final result ('Yes' or 'No').
+    var finalResult;
+    // Track the maximum coordinate value encountered to check against a limit.
+    var highestCoordinate = 1;
+
+    // Loop through each constraint to determine entity positions.
+    constraintEvaluationLoop: for (var currentConstraint = 0; currentConstraint < numConstraints; currentConstraint++) {
+        // For the very first constraint, set the position of its left point to 1.
+        if (currentConstraint === 0) {
+            entityCoordinates[leftPoints[currentConstraint] - 1] = 1;
+        }
+
+        // Calculate the expected position of the right point based on the left point's position and the distance.
+        var calculatedRightCoordinate = entityCoordinates[leftPoints[currentConstraint] - 1] + pointDistances[currentConstraint];
+
+        // Update the highest coordinate value if the current calculated position is greater.
+        if (highestCoordinate <= calculatedRightCoordinate) {
+            highestCoordinate = calculatedRightCoordinate;
+        }
+
+        // If the right point's position hasn't been set yet, assign the calculated position.
+        if (!entityCoordinates[rightPoints[currentConstraint] - 1]) {
+            entityCoordinates[rightPoints[currentConstraint] - 1] = calculatedRightCoordinate;
+        } else {
+            // If the right point's position has already been set, check for consistency.
+            if (entityCoordinates[rightPoints[currentConstraint] - 1] !== calculatedRightCoordinate) {
+                // If inconsistent, set the result to 'No' and break out of the loop.
+                finalResult = 'No';
+                break constraintEvaluationLoop;
+            }
+        }
     }
-  }
 
-  // Final check: if the overall maximum position exceeds a predefined limit
-  if (maxPosition - 1 > 1000000001) {
-    resultStatus = 'No'; // Set the status to 'No' if the limit is exceeded
-  }
-  
-  // If no inconsistencies were found and no limits exceeded, default to 'Yes'
-  if (!resultStatus) {
-    resultStatus = 'Yes';
-  }
+    // After processing all constraints, check if the maximum coordinate exceeds a predefined limit.
+    if (highestCoordinate - 1 > 1000000001) {
+        finalResult = 'No';
+    }
 
-  console.log(resultStatus); // Display the final determination
+    // If no inconsistencies were found and the max coordinate is within limits, the result is 'Yes'.
+    if (!finalResult) {
+        finalResult = 'Yes';
+    }
+
+    // Output the final determination.
+    console.log(finalResult);
 }
 
-/*
- * The following code segment is responsible for handling standard input/output.
- * It should remain unaltered to ensure proper execution environment interaction.
- */
+// The following section handles standard input/output operations and invokes the primary processing function.
 ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

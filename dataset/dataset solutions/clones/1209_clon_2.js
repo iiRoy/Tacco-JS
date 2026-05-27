@@ -1,41 +1,28 @@
-'use strict'; // Activate strict parsing and execution rules.
+"use strict"; // Enforce strict parsing and error handling for the entire script.
 
-// Obtain a reference to the global process object.
-const systemProcess = process;
+// Attach an event listener to the standard input stream for 'data' events.
+process.stdin.on('data', function (dataBlock) {
+  // Convert the incoming data chunk to a string and remove any leading or trailing whitespace.
+  const rawInputString = dataBlock.toString().trim();
 
-// Define constants for time unit conversions.
-const SECONDS_PER_HOUR_UNIT = 3600;
-const SECONDS_PER_MINUTE_UNIT = 60;
+  // Convert the processed input string into a numerical value, representing the total duration in seconds.
+  const totalSeconds = Number(rawInputString);
 
-// Alias for the standard input stream.
-const inputSource = systemProcess.stdin;
+  // Calculate the number of full hours from the total seconds.
+  const hoursComponent = Math.floor(totalSeconds / 3600);
 
-// Alias for the standard output stream.
-const outputSink = systemProcess.stdout;
+  // Calculate the number of full minutes remaining after accounting for the hours.
+  const minutesComponent = Math.floor((totalSeconds - (hoursComponent * 3600)) / 60);
 
-// Attach an event handler for incoming data on the input stream.
-inputSource.on('streamContent', function(dataPacket) {
-    // Convert the data buffer to a string and remove any leading or trailing whitespace.
-    let receivedString = dataPacket.toString().trim();
+  // Calculate the number of remaining seconds after accounting for hours and minutes.
+  const secondsComponent = totalSeconds % 60;
 
-    // Parse the string representation into an integer representing total seconds.
-    const totalTimeInSecs = Number.parseInt(receivedString, 10);
-
-    // Calculate the whole number of hours from the total seconds.
-    const timeHours = Math.trunc(totalTimeInSecs / SECONDS_PER_HOUR_UNIT);
-
-    // Calculate the whole number of minutes from the remaining seconds after extracting hours.
-    const timeMinutes = Math.trunc((totalTimeInSecs - (timeHours * SECONDS_PER_HOUR_UNIT)) / SECONDS_PER_MINUTE_UNIT);
-
-    // Calculate the leftover seconds.
-    const timeSeconds = totalTimeInSecs % SECONDS_PER_MINUTE_UNIT;
-
-    // Construct the formatted time string and write it to the output stream, followed by a newline.
-    outputSink.write(`${timeHours}:${timeMinutes}:${timeSeconds}\n`);
+  // Log the calculated time components to the console, formatted as HH:MM:SS.
+  console.log([hoursComponent, minutesComponent, secondsComponent].join(':'));
 });
 
-// Activate the input stream to begin data reception.
-inputSource.resume();
+// Resume the standard input stream to ensure it starts emitting 'data' events.
+process.stdin.resume();
 
-// Specify the character encoding for the input stream.
-inputSource.setEncoding('utf-8');
+// Set the character encoding for the standard input stream to UTF-8.
+process.stdin.setEncoding('utf8');

@@ -1,33 +1,28 @@
 "use strict";
 
-const performAnalysis = (rawInput) => {
-    const allTokens = rawInput.split(/\s+/).filter(Boolean);
-    const numericValues = allTokens.slice(1).map(Number);
+const processInput = (rawInputData) => {
+    const inputLines = rawInputData.split("\n");
+    const _initialCount = Number(inputLines[0]);
+    const scoreValues = inputLines[1].split(" ").map(Number);
 
-    const initialAccumulation = { categoriesPresent: 0, excessItems: 0 };
+    const colorThresholds = [400, 800, 1200, 1600, 2000, 2400, 2800, 3200];
 
-    const finalResult = numericValues.reduce((accumulator, currentDatum) => {
-        const zoneIdentifier = Math.floor(currentDatum / 400);
-
-        if (zoneIdentifier >= 0 && zoneIdentifier < 8) {
-            accumulator.categoriesPresent |= (1 << zoneIdentifier);
-        } else if (currentDatum >= 3200) { // Explicitly check original condition for values >= 3200
-            accumulator.excessItems++;
+    const { uniqueColorIndices, bonusPoints } = scoreValues.reduce((accumulator, currentRating) => {
+        const categoryIndex = colorThresholds.findIndex(limit => currentRating < limit);
+        if (categoryIndex === -1) {
+            accumulator.bonusPoints++;
+        } else {
+            accumulator.uniqueColorIndices.add(categoryIndex);
         }
         return accumulator;
-    }, initialAccumulation);
+    }, { uniqueColorIndices: new Set(), bonusPoints: 0 });
 
-    let distinctCategoryCount = 0;
-    let tempBitmask = finalResult.categoriesPresent;
-    while (tempBitmask > 0) {
-        tempBitmask &= (tempBitmask - 1);
-        distinctCategoryCount++;
-    }
+    const distinctColorCount = uniqueColorIndices.size;
 
-    const minimumPossible = distinctCategoryCount === 0 ? 1 : distinctCategoryCount;
-    const maximumPossible = distinctCategoryCount + finalResult.excessItems;
+    const minimumPossible = distinctColorCount === 0 ? 1 : distinctColorCount;
+    const maximumPossible = distinctColorCount + bonusPoints;
 
     console.log(minimumPossible + " " + maximumPossible);
 };
 
-performAnalysis(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,39 +1,45 @@
-let   inputRecords    =    [ ]   ;
+let inputData = [];
 
-const   inputProcessor   =   require   (   'readline'   )   ;
+const ioHandler = require('readline');
 
-const   system   =   {
-  inputSource :   process . stdin   ,
-  outputDestination :   process . stdout
-}   ;
+const inputReader = ioHandler.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+});
 
-let   userInterface   =   inputProcessor . createInterface   (   {
-    input   :   system . inputSource   ,
-    output   :   system . outputDestination   ,
-}   )   ;
+inputReader.on('line', function (currentLine) {
+    inputData.push(currentLine);
+});
 
-userInterface . on   (   'line'   ,   (   currentText   )   =>   {
-    inputRecords . push   (   currentText   )   ;
-}   )   ;
+inputReader.on('close', function () {
+    // Extract the initial parameters from the first line of input.
+    const firstLineParts = inputData[0].split(" ");
+    let numElements = Number(firstLineParts[0]);
+    let windowSize = Number(firstLineParts[1]);
 
-userInterface . on   (   'close'   ,   function   (   )   {
+    // Remove the first line as it has been processed.
+    inputData.shift();
 
-    const   initialCount   =   Number   (   inputRecords   [   0   ]   . split   (   " "   )   [   0   ]   )   ;
-    const   subsetSize   =   Number   (   inputRecords   [   0   ]   . split   (   " "   )   [   1   ]   )   ;
+    // Convert the remaining input lines into an array of numerical values.
+    const heightsArray = inputData.map(strVal => Number(strVal));
 
-    inputRecords . shift   (   )   ;
+    // Sort the array of heights in ascending order.
+    heightsArray.sort((valA, valB) => valA - valB);
 
-    let   dataElements   =   inputRecords . map   (   (   elementValue   )   =>   Number   (   elementValue   )   )   ;
+    // Initialize a variable to store the smallest difference found.
+    let minDifference = Infinity;
 
-    dataElements . sort   (   (   firstVal   ,   secondVal   )   =>   firstVal   -   secondVal   )   ;
+    // Iterate through the sorted array to find the minimum difference within a sliding window.
+    for (let idx = 0; idx <= heightsArray.length - windowSize; idx++) {
+        // Calculate the difference between the largest and smallest element in the current window.
+        const currentWindowDiff = heightsArray[idx + windowSize - 1] - heightsArray[idx];
 
-    let   minimumRange   =   Infinity   ;
-
-    for   (   let   loopIndex   =   0   ;   loopIndex   <   dataElements . length   ;   loopIndex   ++   )   {
-        if   (   minimumRange   >   dataElements   [   loopIndex   +   subsetSize   -   1   ]   -   dataElements   [   loopIndex   ]   )   {
-            minimumRange   =   dataElements   [   loopIndex   +   subsetSize   -   1   ]   -   dataElements   [   loopIndex   ]   ;
+        // Update the minimum difference if the current window's difference is smaller.
+        if (minDifference > currentWindowDiff) {
+            minDifference = currentWindowDiff;
         }
     }
 
-    console . log   (   minimumRange   )   ;
-}   )   ;
+    // Print the final minimum difference to the console.
+    console.log(minDifference);
+});

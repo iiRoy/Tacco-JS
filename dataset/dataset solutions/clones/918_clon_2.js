@@ -1,33 +1,19 @@
-let rawInputData = require ( 'fs' ) . readFileSync ( '/dev/stdin' , 'utf8' ) ;
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8'); // Obtain raw data from standard input stream
 
-// Parse the incoming string data into four distinct numerical components.
-// The input is expected to contain space-separated values.
-let [
-    firstNumber ,   // The initial numeric quantity.
-    secondNumber ,  // The subsequent numeric quantity.
-    thirdNumber ,   // The third numeric quantity encountered.
-    fourthNumber    // The final numeric quantity in the sequence.
-] =
-    rawInputData
-        . trim ( )       // Remove any leading or trailing blank spaces.
-        . split ( " " )  // Divide the cleaned string into an array of substrings using space as a delimiter.
-        . map ( Number ) ; // Transform each substring in the array into its numerical equivalent.
+// Process the incoming string data:
+// 1. Remove any leading or trailing whitespace.
+// 2. Divide the string into an array of substrings using space as a delimiter.
+// 3. Transform each substring in the array into its numerical representation.
+// 4. Assign the first four numerical values to distinct variables.
+var [val1, val2, val3, val4] = rawData.trim().split(" ").map(Number);
 
-
-// Evaluate a specific parity condition involving products and sums of the parsed numbers.
-// The condition checks if the product of the first two numbers is odd AND if the sum of the last two numbers is odd.
-if (
-       ( ( firstNumber * secondNumber ) % 2 !== 0 ) // Is the product of the first and second numbers an odd value?
-    && ( ( thirdNumber + fourthNumber ) % 2 !== 0 )  // Is the sum of the third and fourth numbers an odd value?
-)
-{
-    // If both conditions (product is odd AND sum is odd) are met, then output "No".
-    console.log ( "No" ) ;
+// Evaluate a compound logical condition.
+// The condition checks if the product of the first two numbers is odd
+// AND if the sum of the last two numbers is also odd.
+if ((val1 * val2) % 2 !== 0 && (val3 + val4) % 2 !== 0) {
+  // If both sub-conditions are met, output "No".
+  console.log("No");
+} else {
+  // Otherwise, if at least one sub-condition is false, output "Yes".
+  console.log("Yes");
 }
-else
-{
-    // Otherwise, if either the product is even OR the sum is even (or both), then output "Yes".
-    console.log ( "Yes" ) ;
-}
-
-// Program execution concludes.

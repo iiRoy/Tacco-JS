@@ -1,69 +1,68 @@
-// Obtain program's input
-let fileSystem = require('fs'),
-  bufferSize = fileSystem.fstatSync(process.stdin.fd).size,
-  dataHolder = new Uint8Array(bufferSize),
-  readBytes = fileSystem.readSync(process.stdin.fd, dataHolder, 0, bufferSize, 0),
-  incomingData = Buffer.from(dataHolder.buffer).toString('utf8', 0, readBytes).split('\n');
-startExecution();
+var fileSystemModule = require('fs');
+var inputDataLength = fileSystemModule.fstatSync(process.stdin.fd).size;
+var dataBuffer = new Buffer(inputDataLength);
+var actualBytesRead = fileSystemModule.readSync(process.stdin.fd, dataBuffer, 0, inputDataLength, 0);
+var inputLines = dataBuffer.toString('utf8', 0, actualBytesRead).split('\n');
 
+// Initiate the primary execution flow of the program.
+executePrimaryLogic();
 
-// Main program logic begins here
-function startExecution ( )
-{
-  let generatedPrimes = computePrimes ( ) ;
-  let sumOccurrences = new Uint32Array( 50001 );
+// This function orchestrates the main logic: calculating prime sums and processing user input.
+function executePrimaryLogic() {
+  var calculatedPrimes = determinePrimeNumbers(); // Retrieve the list of prime numbers.
+  var primeSumOccurrences = new Int32Array(50001); // Array to store frequency of prime sums.
 
-  for ( let outerIndex = 1 ; outerIndex < 5133 ; outerIndex ++ )
-  {
-    let currentPrimeVal = generatedPrimes[outerIndex] ;
-    for ( let innerIndex = 1 ; innerIndex <= outerIndex ; innerIndex ++ )
-    {
-      let totalValue = currentPrimeVal + generatedPrimes[innerIndex] ;
-      if ( totalValue > 50000 )
-      {
-        break ;
+  // Iterate through all possible pairs of prime numbers to find their sums.
+  for (var outerIndex = 1; outerIndex < 5133; outerIndex++) {
+    var currentPrimeValue = calculatedPrimes[outerIndex];
+    for (var innerIndex = 1; innerIndex <= outerIndex; innerIndex++) {
+      var currentSum = currentPrimeValue + calculatedPrimes[innerIndex];
+      // If the sum exceeds the maximum allowed value, break the inner loop.
+      if (currentSum > 50000) {
+        break;
       }
-      sumOccurrences[totalValue]++ ;
+      primeSumOccurrences[currentSum]++; // Increment the count for this specific sum.
     }
   }
-  let inputIterator = 0 ;
-  while ( ( currentNumericInput = +incomingData[inputIterator++] ) )
-  {
-    console.log ( sumOccurrences[currentNumericInput] ) ;
-  }
 
+  var linePointer = 0;
+  var currentInputVal;
+  // Read and process input values until a non-positive number is encountered.
+  while (currentInputVal = +inputLines[linePointer++]) {
+    console.log(primeSumOccurrences[currentInputVal]); // Output the frequency of the input number as a prime sum.
+  }
 }
 
+// This function computes prime numbers up to a predefined limit using the Sieve of Eratosthenes.
+function determinePrimeNumbers() {
+  var upperBound = 49999; // The highest number to check for primality.
+  var sieveArray = new Int8Array(upperBound + 1); // A boolean-like array for the sieve (0 = prime, 1 = composite).
 
-function computePrimes ( )
-{
-  const upperLimit = 49999 ;
-  let isCompound = new Uint8Array ( upperLimit + 1 ) ; // 0 for prime, 1 for compound
+  // Mark 0 and 1 as non-prime numbers.
+  sieveArray[0] = sieveArray[1] = 1;
 
-  // Mark non-prime numbers
-  isCompound[0] = isCompound[1] = 1 ;
-  for ( let sieveIteratorA = 2 , sqrtCeiling = ~ ~ Math.sqrt ( upperLimit ) ; sieveIteratorA <= sqrtCeiling ; sieveIteratorA ++ )
-  {
-    if ( isCompound[sieveIteratorA] )
-    {
-      continue ;
+  // Apply the Sieve of Eratosthenes algorithm.
+  for (var sieveIterator = 2, sqrtUpperBound = ~~Math.sqrt(upperBound); sieveIterator <= sqrtUpperBound; sieveIterator++) {
+    // If the current number is already marked as composite, skip to the next.
+    if (sieveArray[sieveIterator]) {
+      continue;
     }
 
-    for ( let sieveIteratorB = ( sieveIteratorA << 1 ) ; sieveIteratorB <= upperLimit ; sieveIteratorB += sieveIteratorA )
-    {
-      isCompound[sieveIteratorB] = 1 ;
-    }
-  }
-
-  let collectedPrimes = new Uint32Array ( 5134 ) ;
-  let primeCounter = 0 ;
-  for ( let numberCheck = 1 ; numberCheck <= upperLimit ; numberCheck ++ )
-  {
-    if ( ! isCompound[numberCheck] )
-    {
-      collectedPrimes [ ++ primeCounter ] = numberCheck ;
+    // Mark all multiples of the current prime number as composite.
+    for (var multipleIterator = (sieveIterator << 1); multipleIterator <= upperBound; multipleIterator += sieveIterator) {
+      sieveArray[multipleIterator] = 1;
     }
   }
 
-  return collectedPrimes ;
+  var foundPrimesList = new Int32Array(5134); // Array to store the actual prime numbers found.
+  var primeCountIndex = 0; // Index to track the position in the foundPrimesList.
+
+  // Populate the list of prime numbers from the sieve array.
+  for (var numberCheckIterator = 1; numberCheckIterator <= upperBound; numberCheckIterator++) {
+    if (!sieveArray[numberCheckIterator]) { // If the number is prime (not marked as composite).
+      foundPrimesList[++primeCountIndex] = numberCheckIterator;
+    }
+  }
+
+  return foundPrimesList; // Return the array containing all prime numbers found.
 }

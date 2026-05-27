@@ -1,87 +1,69 @@
-// This module defines a primary function to process a collection of input data.
-function ExecuteLogic( incomingString )
-{
-  // Utility method: Transforms a textual line into an array of string components.
-  const extractWords = function( textLine )
-  {
-    let stringElements = textLine . trim ( ) . split ( " " );
-    for ( let currentIdx = 0 ; currentIdx < stringElements . length ; ++currentIdx )
-    {
-      stringElements [ currentIdx ] = stringElements [ currentIdx ] ; // Preserves original code's structure
+// This script processes input data to calculate a specific metric.
+function ProcessInput(sourceData) {
+  // Helper function to parse a line into an array of strings.
+  const extractWords = function(textRow) {
+    // Remove leading/trailing whitespace and split by space.
+    let tokenList = textRow.trim().split(" ");
+    // Iterate through elements (no-op, self-assignment).
+    for (let idx = 0; idx < tokenList.length; ++idx) {
+      tokenList[idx] = tokenList[idx];
     }
-    return stringElements ;
+    return tokenList;
   };
 
-
-  // Utility method: Transforms a textual line into an array of numeric values.
-  const convertNumbers = ( dataLine ) =>
-  {
-    let parsedValues = dataLine . trim ( ) . split ( " " ) ;
-    for ( let k = 0 ; k < parsedValues . length ; k ++ )
-    {
-      parsedValues [ k ] = + parsedValues [ k ] ; // Converts string to number
+  // Helper function to parse a line into an array of numbers.
+  const extractNumbers = function(textRow) {
+    // Remove leading/trailing whitespace and split by space.
+    let numericList = textRow.trim().split(" ");
+    // Convert each string token to a number.
+    for (let idx = 0; idx < numericList.length; ++idx) {
+      numericList[idx] = +numericList[idx];
     }
-    return parsedValues ;
+    return numericList;
   };
 
-  // Helper method: Determines the lesser of two given numerical inputs.
-  const determineMinVal = function ( firstNum , secondNum )
-  {
-    return firstNum > secondNum ? secondNum : firstNum ;
+  // Helper function to determine the smaller of two numbers.
+  const determineSmaller = function(firstNum, secondNum) {
+    return firstNum > secondNum ? secondNum : firstNum;
   };
 
+  // Split the entire input string into individual lines.
+  let dataLines = sourceData.split("\n");
 
-  // Divide the entire raw input string into separate lines.
-  const inputSegments = incomingString . split ( "\n" ) ;
-  // Parse the initial line to obtain fundamental configuration parameters.
-  const initialParams = convertNumbers ( inputSegments [ 0 ] ) ;
+  // Parse the first line for initial parameters.
+  let initialParams = extractNumbers(dataLines[0]);
+  let totalElements = initialParams[0]; // Represents 'n' from original.
+  let thresholdValue = initialParams[1]; // Represents 't' from original.
 
-  // Retrieve the total count of items from the first parameter set.
-  const totalElements = initialParams [ 0 ] ;
-  // Retrieve the maximum allowed duration from the second parameter.
-  const maxDuration = initialParams [ 1 ] ;
+  // Parse the second line for the sequence of values.
+  let dataPoints = extractNumbers(dataLines[1]);
 
-  // Process the subsequent line, containing the list of values for items.
-  const itemPrices = convertNumbers ( inputSegments [ 1 ] ) ;
+  let maxProfit = 0; // Stores the maximum profit found.
+  let profitOccurrences = 0; // Counts how many times the max profit occurs.
+  let lowestValue = dataPoints[0]; // Tracks the minimum value encountered so far.
+  let highestValue = dataPoints[0]; // Tracks the maximum value encountered so far (declared but not used in logic).
 
-  // Variables to track the highest observed profit and its frequency.
-  let maxGain = 0 ;
-  let maxProfitCount = 0 ;
+  // Iterate through the data points to find the maximum profit and its frequency.
+  for (let iterator = 0; iterator < totalElements; ++iterator) {
+    let elementValue = dataPoints[iterator];
 
-  // Initialize minimum and maximum tracking values using the first item's price.
-  let lowestValueSeen = itemPrices [ 0 ] ;
-  let highestValueSeen = itemPrices [ 0 ] ; // This variable is present for structural consistency, though unused in logic.
-
-
-  // Begin iterating through each item's price to compute potential gains.
-  for ( let currentItemIndex = 0 ; currentItemIndex < totalElements ; ++currentItemIndex )
-  {
-    const currentPrice = itemPrices [ currentItemIndex ] ;
-
-    // Calculate the profit from buying at the lowest point and selling at the current price.
-    let potentialProfit = currentPrice - lowestValueSeen ;
-
-    if ( potentialProfit > maxGain )
-    {
-      // If a new peak profit is identified, update the maximum and reset the occurrence counter.
-      maxGain = potentialProfit ;
-      maxProfitCount = 1 ;
+    // Check if current profit (elementValue - lowestValue) is greater than maxProfit.
+    if (elementValue - lowestValue > maxProfit) {
+      maxProfit = elementValue - lowestValue; // Update maxProfit.
+      profitOccurrences = 1; // Reset count as a new max profit is found.
     }
-    else if ( potentialProfit === maxGain )
-    {
-      // If the current profit matches the established maximum, increment its occurrence count.
-      maxProfitCount ++ ;
+    // Check if current profit is equal to the current maxProfit.
+    else if (elementValue - lowestValue === maxProfit) {
+      profitOccurrences++; // Increment count if profit matches maxProfit.
     }
 
-    // Update the minimum price encountered so far for subsequent comparisons.
-    lowestValueSeen = currentPrice < lowestValueSeen ? currentPrice : lowestValueSeen ;
+    // Update the lowest value encountered so far.
+    lowestValue = elementValue < lowestValue ? elementValue : lowestValue;
   }
 
-  // Display the result: the smaller of the profit occurrence count or half the maximum duration.
-  console . log ( determineMinVal ( maxProfitCount , Math . floor ( maxDuration / 2 ) ) ) ;
+  // Output the minimum of profitOccurrences and floor(thresholdValue / 2).
+  console.log(determineSmaller(profitOccurrences, Math.floor(thresholdValue / 2)));
 }
 
-
-// This final block is responsible for reading data from the standard input stream
-// and initiating the primary data processing routine. It should remain unaltered.
-ExecuteLogic ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+// Do not modify the following line (reads input from stdin and calls the main processing function).
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

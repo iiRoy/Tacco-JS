@@ -1,155 +1,115 @@
-// This script processes numerical inputs from standard input to determine
-// how many ways each positive integer can be expressed as a sum of at least
-// two consecutive positive integers. It terminates processing upon
-// encountering a non-positive integer or invalid input.
-
-var processInputValues = function() {
-    // Define the smallest possible length for a sequence of consecutive integers.
-    const MINIMUM_SEQUENCE_LENGTH = 2; 
-
-    // Main loop to continuously read and process input values.
+//usr/bin/env node $0 $@;exit
+const executeProgram = function () {
     while (true) {
-        let incomingLineData = fetchNextInputLine();
-        
-        // If there's no more input, exit the processing loop.
-        if (incomingLineData === null) { 
+        const currentInputLine = readInputLine();
+        if (currentInputLine === null) { // Explicitly check for end of input stream
             break;
         }
 
-        // Convert the input string to an integer. Base 10 is explicitly specified.
-        let targetSumValue = parseInt(incomingLineData, 10);
-
-        // Validate the input: terminate if it's not a number, or if it's zero/negative.
-        // The original code used `!n` which handles 0 and NaN similarly.
-        if (isNaN(targetSumValue) || targetSumValue <= 0) {
+        const numericValue = Number(currentInputLine);
+        // Original logic: if (!n) break;
+        // This covers 0, NaN, null, undefined, false, ""
+        // Since we already checked for null, we now check for 0 or NaN.
+        // Number("") is 0, Number("0") is 0. Number("abc") is NaN.
+        if (numericValue === 0 || isNaN(numericValue)) {
             break;
         }
 
-        let validDecompositionCount = 0; // Counter for successful decompositions.
-        let currentSequenceLength = MINIMUM_SEQUENCE_LENGTH; // Start with a sequence of two integers.
+        let solutionCount = 0;
+        let currentIterationDivisor = 2;
 
-        // Inner loop to iterate through possible sequence lengths (i.e., 'i' in the original problem).
-        // The formula for the sum of 'L' consecutive integers starting with 'S' is:
-        // Sum = L * S + L * (L - 1) / 2
-        // We are looking for 'S' (the starting integer) to be positive, so S >= 1.
-        // This implies: (targetSumValue - L * (L - 1) / 2) / L >= 1
-        // Which simplifies to: (targetSumValue - L * (L - 1) / 2) >= L
-        while (true) {
-            // Calculate the sum of the first (currentSequenceLength - 1) integers.
-            let sumOfInitialSequenceTerms = (currentSequenceLength * (currentSequenceLength - 1)) / 2;
-            
-            // Calculate the adjusted sum, which must be divisible by currentSequenceLength.
-            let remainderForStartValue = targetSumValue - sumOfInitialSequenceTerms;
+        // Encapsulate the inner calculation logic into a small helper function
+        const calculateArithmeticProgressionSum = (targetNumber) => {
+            let validCombinations = 0;
+            let divisorCandidate = 2; // Start from 2 as per original logic
 
-            // If the remainder is less than the current sequence length, it means the
-            // starting integer 'S' would be less than 1. Since increasing
-            // currentSequenceLength further would only make remainderForStartValue smaller,
-            // we can confidently terminate this inner loop.
-            if (remainderForStartValue < currentSequenceLength) {
-                break;
+            while (true) {
+                // The sum of an arithmetic progression 1 + 2 + ... + (divisorCandidate - 1)
+                // is divisorCandidate * (divisorCandidate - 1) / 2.
+                // This represents the sum of numbers *before* the first term of the sequence.
+                const sumOfInitialTerms = divisorCandidate * (divisorCandidate - 1) / 2;
+
+                // If targetNumber is N, and we are looking for a sequence of length K (divisorCandidate)
+                // starting with A, then N = K*A + (0 + 1 + ... + K-1)
+                // N = K*A + K*(K-1)/2
+                // N - K*(K-1)/2 = K*A
+                // remainderValue = K*A
+                const remainderValue = targetNumber - sumOfInitialTerms;
+
+                // If remainderValue is less than divisorCandidate, it means K*A < K, so A < 1.
+                // This implies the starting term A would be less than 1, which is not allowed
+                // for positive integer sequences, or the sequence length is too large.
+                if (remainderValue < divisorCandidate) {
+                    break;
+                }
+
+                // The original comment "bitwise operations cause bug." is preserved.
+                // If remainderValue is perfectly divisible by divisorCandidate,
+                // it means A is an integer (A = remainderValue / divisorCandidate).
+                // This indicates a valid sequence.
+                if (remainderValue % divisorCandidate === 0) {
+                    validCombinations++;
+                }
+                divisorCandidate++;
             }
+            return validCombinations;
+        };
 
-            // If the remainder is perfectly divisible by currentSequenceLength,
-            // it means we found a valid starting integer 'S' (S = remainderForStartValue / currentSequenceLength).
-            // This indicates a valid decomposition.
-            if (remainderForStartValue % currentSequenceLength === 0) {
-                validDecompositionCount++;
-            }
-            
-            // Move to the next possible sequence length.
-            currentSequenceLength++; 
-        }
-        // Output the total count of valid decompositions for the current input number.
-        outputResult(validDecompositionCount); 
+        solutionCount = calculateArithmeticProgressionSum(numericValue);
+        outputResult(solutionCount);
     }
 };
 
-// --- Standard Input/Output Abstraction Layer ---
-// This module provides `outputResult` and `fetchNextInputLine` functions,
-// dynamically adapting to either a Node.js environment or a V8 standalone shell (like 'd8').
-
-if (typeof process !== 'undefined' && process.versions && process.versions.node) {
-    // --- Node.js Specific I/O Implementation ---
-    // In Node.js, input is stream-based and asynchronous.
-
-    // Function to write results to standard output, appending a newline.
-    const outputResult = function(dataToWrite) {
-        process.stdout.write(String(dataToWrite) + '\n');
+/// IO Handling Module ///
+if (typeof process !== 'undefined' && typeof process.openStdin === 'function') {
+    // Node.js environment
+    const outputResult = function (valueToLog) {
+        console.log(valueToLog);
     };
 
-    let bufferedInputLines = []; // Stores complete lines read from stdin.
-    let lineIndexCursor = 0;     // Pointer to the next line to be fetched.
-    let partialInputBuffer = ""; // Holds incomplete line fragments from stream chunks.
+    const readInputLine = (function () {
+        let bufferedInputLines = [];
+        let currentBufferIndex = 0;
+        const standardInputStream = process.openStdin();
+        standardInputStream.setEncoding('utf8');
 
-    /**
-     * Processes incoming data chunks from stdin, splitting them into lines.
-     * Complete lines are added to `bufferedInputLines`, and any incomplete
-     * line fragment is stored in `partialInputBuffer`.
-     * @param {string} dataChunk - The string data received from the input stream.
-     */
-    const processBufferedData = (dataChunk) => {
-        // Concatenate any previous partial buffer with the new chunk, then split by newline.
-        const incomingLineSegments = (partialInputBuffer + dataChunk).split("\n");
-        // The last segment might be incomplete; store it back into the partial buffer.
-        partialInputBuffer = incomingLineSegments.pop(); 
+        let pendingInputFragment = "";
 
-        // Iterate through all complete line segments.
-        for (let segmentIndex = 0; segmentIndex < incomingLineSegments.length; segmentIndex++) {
-            const currentLine = incomingLineSegments[segmentIndex].trim(); // Trim whitespace.
-            // Only add non-empty lines to the buffer.
-            if (currentLine.length > 0) { 
-                bufferedInputLines.push(currentLine);
-            }
-        }
-    };
+        // Internal helper to process a chunk of raw input data
+        const processIncomingDataChunk = (dataChunk) => {
+            const combinedRawInput = pendingInputFragment + dataChunk;
+            const splitLines = combinedRawInput.split("\n");
+            pendingInputFragment = splitLines.pop(); // The last element is always the potentially incomplete line
 
-    // Set up the standard input stream.
-    const inputSourceStream = process.openStdin();
-    inputSourceStream.setEncoding('utf8'); // Ensure proper character encoding.
-
-    // Register event listener for incoming data chunks.
-    inputSourceStream.on('data', processBufferedData);
-
-    // Register event listener for when the input stream ends.
-    inputSourceStream.on('end', () => {
-        // If there's any remaining data in the partial buffer, process it as a final complete line.
-        if (partialInputBuffer.length > 0) {
-            // Append a newline to ensure it's treated as a complete line for splitting.
-            const finalSegments = (partialInputBuffer + "\n").split("\n");
-            finalSegments.pop(); // Remove the empty string resulting from the appended newline.
-            for (let segmentIndex = 0; segmentIndex < finalSegments.length; segmentIndex++) {
-                const currentLine = finalSegments[segmentIndex].trim();
-                if (currentLine.length > 0) {
-                    bufferedInputLines.push(currentLine);
+            for (const lineContent of splitLines) { // Using for...of loop for iteration
+                if (lineContent.length > 0) { // Only push non-empty lines
+                    bufferedInputLines.push(lineContent);
                 }
             }
-            partialInputBuffer = ""; // Clear the partial buffer after final processing.
-        }
-        // Once all input has been buffered, initiate the main processing logic.
-        processInputValues(); 
-    });
+        };
 
-    /**
-     * Retrieves the next available line from the buffered input.
-     * @returns {string|null} The next line as a string, or null if no more lines are available.
-     */
-    const fetchNextInputLine = function() {
-        if (lineIndexCursor < bufferedInputLines.length) {
-            return bufferedInputLines[lineIndexCursor++];
-        }
-        return null; // Signal that the input buffer is exhausted.
-    };
+        standardInputStream.on('data', processIncomingDataChunk);
 
+        standardInputStream.on('end', () => {
+            // Process any remaining input fragment at the end of the stream
+            if (pendingInputFragment.length > 0) {
+                // Append a newline to ensure the last fragment is processed as a complete line
+                // if it's not empty, and then clear pendingInputFragment.
+                processIncomingDataChunk(pendingInputFragment + '\n');
+            }
+            executeProgram(); // Start the main program logic after all input is buffered
+        });
+
+        // The public function returned by the IIFE
+        return function () {
+            if (currentBufferIndex >= bufferedInputLines.length) {
+                return null; // Indicate end of available input
+            }
+            return bufferedInputLines[currentBufferIndex++];
+        };
+    })();
 } else {
-    // --- V8 Standalone Shell Specific I/O Implementation ---
-    // Assumes 'print' and 'readline' are globally provided by the V8 environment.
-
-    // Directly use the global 'print' function for output.
-    const outputResult = print; 
-    // Directly use the global 'readline' function for input.
-    const fetchNextInputLine = readline; 
-
-    // In V8 shells, 'readline' is synchronous, so the main processing
-    // can begin immediately after defining the I/O functions.
-    processInputValues();
+    // V8 (d8) environment or other non-Node.js environments with global readline/print
+    // Assuming global `readline` and `print` functions are available
+    executeProgram();
 }

@@ -1,438 +1,315 @@
-/*
- * This file contains a custom module runtime environment.
- * It's designed to load and execute various application components.
- * The primary goal is to manage module dependencies and their lifecycle.
- */
-module.exports = function (packageContents) {
-  // A cache to store already loaded modules.
-  // This prevents redundant execution and ensures singletons where appropriate.
-  const assetStore = {};
+module.exports = function (moduleDefinitions) {
+  // Cache for loaded modules
+  var moduleCache = {};
 
   /**
-   * Loads a specific application component based on its unique identifier.
-   * If the component is already loaded, its exports are returned from the cache.
-   * Otherwise, it's initialized, executed, and then cached.
-   * @param {number} unitKey - The unique identifier for the component to load.
-   * @returns {any} The exports of the loaded component.
+   * Custom module loading function, similar to webpack's __webpack_require__.
+   * @param {number} moduleId - The ID of the module to load.
+   * @returns {object} The exports of the loaded module.
    */
-  function loadComponent(unitKey) {
-    /* Check if the component is already in our asset store. */
-    if (assetStore[unitKey]) {
-      return assetStore[unitKey].output;
+  function moduleLoader(moduleId) {
+    // If module is already in cache, return its exports
+    if (moduleCache[moduleId]) {
+      return moduleCache[moduleId].exports;
     }
 
-    // Initialize a new component object and add it to the store.
-    // 'id' stores the unit key, 'loaded' tracks its initialization status,
-    // and 'output' will hold the component's exported values.
-    const itemInstance = assetStore[unitKey] = {
-      id: unitKey,
-      loaded: false,
-      output: {}
-    };
+    // Create a new module instance and add it to the cache
+    var moduleInstance = (moduleCache[moduleId] = {
+      i: moduleId, // Module ID
+      l: false, // Loaded flag
+      exports: {}, // Module exports object
+    });
 
-    // Execute the component's definition function.
-    // This function receives the component object, its exports, and the loader itself.
-    packageContents[unitKey].call(itemInstance.output, itemInstance, itemInstance.output, loadComponent);
+    // Execute the module function with its exports and the loader
+    moduleDefinitions[moduleId].call(
+      moduleInstance.exports,
+      moduleInstance,
+      moduleInstance.exports,
+      moduleLoader
+    );
 
-    // Mark the component as fully loaded after its definition has run.
-    itemInstance.loaded = true;
+    // Mark module as loaded
+    moduleInstance.l = true;
 
-    // Return the component's exported values.
-    return itemInstance.output;
+    // Return the module's exports
+    return moduleInstance.exports;
   }
 
-  // Attach the module definitions array for internal reference.
-  loadComponent.moduleDefinitions = packageContents;
-
-  // Attach the module cache for internal reference.
-  loadComponent.moduleCache = assetStore;
+  // Store module definitions and cache on the loader for internal use
+  moduleLoader.m = moduleDefinitions;
+  moduleLoader.c = moduleCache;
 
   /**
-   * Defines a property on a target object, often used for module exports.
-   * It ensures the property is enumerable and uses a getter function.
-   * @param {object} targetObject - The object on which to define the property.
+   * Define a getter function for a module export.
+   * @param {object} targetObject - The object to define the property on.
    * @param {string} propertyName - The name of the property to define.
-   * @param {Function} propertyGetter - The function that returns the property's value.
+   * @param {function} getterFunction - The getter function for the property.
    */
-  loadComponent.setProp = function (
-    targetObject,
-    propertyName,
-    propertyGetter
-  ) {
-    if (
-      !loadComponent.hasOwn(targetObject, propertyName)
-    ) {
+  moduleLoader.d = function (targetObject, propertyName, getterFunction) {
+    // Only define if the property doesn't already exist
+    if (!moduleLoader.o(targetObject, propertyName)) {
       Object.defineProperty(targetObject, propertyName, {
-        enumerable: true,
-        get: propertyGetter
+        enumerable: true, // Make it enumerable
+        get: getterFunction, // Set the getter
       });
     }
   };
 
   /**
-   * Marks an object as an ECMAScript module.
-   * This involves setting `Symbol.toStringTag` and `__isESModule` properties.
-   * @param {object} moduleObj - The object to mark as an ES module.
+   * Add __esModule and Symbol.toStringTag properties to exports for ES module compatibility.
+   * @param {object} exportsObject - The exports object to modify.
    */
-  loadComponent.markAsModule = function (
-    moduleObj
-  ) {
-    if (
-      typeof Symbol !== "undefined"
-      && Symbol.toStringTag
-    ) {
-      Object.defineProperty(moduleObj, Symbol.toStringTag, {
-        value: "Module"
+  moduleLoader.r = function (exportsObject) {
+    if (typeof Symbol !== "undefined" && Symbol.toStringTag) {
+      Object.defineProperty(exportsObject, Symbol.toStringTag, {
+        value: "Module",
       });
     }
-    Object.defineProperty(moduleObj, "__isESModule", {
-      value: true
-    });
+    Object.defineProperty(exportsObject, "__esModule", { value: true });
   };
 
   /**
-   * Creates an interoperability namespace object for a given module or value.
-   * This handles various module transformation flags (e.g., default export, commonjs interop).
-   * @param {any} sourceValue - The module or value to create a namespace for.
-   * @param {number} transformFlags - Flags indicating how to process the source value.
-   * @returns {object} The created namespace object.
+   * Create a namespace object for module exports.
+   * @param {any} valueToWrap - The module's exports.
+   * @param {number} modeFlags - Flags indicating how to handle the value.
+   * @returns {object} The namespace object.
    */
-  loadComponent.makeInterop = function (
-    sourceValue,
-    transformFlags
-  ) {
-    // Flag 1: If set, the sourceValue is a module ID and needs to be loaded.
-    if (
-      1 & transformFlags
-    ) {
-      sourceValue = loadComponent(sourceValue);
-    }
+  moduleLoader.t = function (valueToWrap, modeFlags) {
+    // If flag 1 is set, load the module first
+    if (1 & modeFlags) valueToWrap = moduleLoader(valueToWrap);
+    // If flag 8 is set, return the value directly
+    if (8 & modeFlags) return valueToWrap;
+    // If flag 4 is set and it's an object with __esModule, return it directly
+    if (4 & modeFlags && typeof valueToWrap === "object" && valueToWrap && valueToWrap.__esModule)
+      return valueToWrap;
 
-    // Flag 8: If set, directly return the sourceValue.
-    if (
-      8 & transformFlags
-    ) {
-      return sourceValue;
-    }
-
-    // Flag 4: If set and sourceValue is an object and an ES module, return it directly.
-    if (
-      4 & transformFlags
-      && "object" === typeof sourceValue
-      && sourceValue
-      && sourceValue.__isESModule
-    ) {
-      return sourceValue;
-    }
-
-    // Create a new plain object to serve as the namespace.
-    const namespaceObject = Object.create(null);
-
-    // Mark the new object as an ES module.
-    loadComponent.markAsModule(namespaceObject);
-
-    // Define a 'default' export property.
+    // Create a new namespace object
+    var namespaceObject = Object.create(null);
+    moduleLoader.r(namespaceObject); // Add ES module properties
     Object.defineProperty(namespaceObject, "default", {
       enumerable: true,
-      value: sourceValue
-    });
+      value: valueToWrap,
+    }); // Set default export
 
-    // Flag 2: If set and sourceValue is not a string, copy all its properties to the namespace.
-    if (
-      2 & transformFlags
-      && "string" !== typeof sourceValue
-    ) {
-      for (
-        let exportKey in sourceValue
-      ) {
-        // Ensure the property is not already defined by the default export mechanism.
-        loadComponent.setProp(
+    // If flag 2 is set and it's not a string, copy all properties
+    if (2 & modeFlags && typeof valueToWrap !== "string")
+      for (var propKey in valueToWrap)
+        moduleLoader.d(
           namespaceObject,
-          exportKey,
-          ((keyArg) => sourceValue[keyArg]).bind(null, exportKey)
+          propKey,
+          (function (key) {
+            return valueToWrap[key];
+          }).bind(null, propKey)
         );
-      }
-    }
-
-    // Return the constructed namespace object.
     return namespaceObject;
   };
 
   /**
-   * Creates a getter function for a module's default export.
-   * This handles both ES modules (with a `.default` property) and CommonJS modules.
-   * @param {object} moduleRef - The module object.
-   * @returns {Function} A function that returns the module's primary value.
+   * Get a default export function for a module.
+   * @param {object} moduleExports - The module's exports object.
+   * @returns {function} A function that returns the default export.
    */
-  loadComponent.getModuleValue = function (
-    moduleRef
-  ) {
-    const valueGetter =
-      moduleRef && moduleRef.__isESModule ?
-      function () {
-        return moduleRef.default;
-      } :
-      function () {
-        return moduleRef;
-      };
-
-    // Attach the getter itself as property 'a' for some internal mechanism.
-    loadComponent.setProp(valueGetter, "a", valueGetter);
-
-    return valueGetter;
+  moduleLoader.n = function (moduleExports) {
+    var defaultExportGetter =
+      moduleExports && moduleExports.__esModule
+        ? function () {
+            return moduleExports.default;
+          }
+        : function () {
+            return moduleExports;
+          };
+    moduleLoader.d(defaultExportGetter, "a", defaultExportGetter); // Add 'a' property for compatibility
+    return defaultExportGetter;
   };
 
   /**
-   * Checks if an object has a specific property using Object.prototype.hasOwnProperty.
-   * @param {object} targetObj - The object to check.
-   * @param {string} propName - The name of the property.
+   * Check if an object has a property.
+   * @param {object} targetObject - The object to check.
+   * @param {string} propertyKey - The key of the property.
    * @returns {boolean} True if the object has the property, false otherwise.
    */
-  loadComponent.hasOwn = function (
-    targetObj,
-    propName
-  ) {
-    return Object.prototype.hasOwnProperty.call(targetObj, propName);
+  moduleLoader.o = function (targetObject, propertyKey) {
+    return Object.prototype.hasOwnProperty.call(targetObject, propertyKey);
   };
 
-  // The public path for loading assets, currently empty.
-  loadComponent.publicPath = "";
+  // Public path for assets (empty in this case)
+  moduleLoader.p = "";
 
-  // Kick off the application by loading the entry point module (module ID 0).
-  // The 'startupModule' property is also set for internal tracking.
-  return loadComponent(loadComponent.startupModule = 0);
+  // Execute the entry module (module 0) and return its exports
+  return moduleLoader((moduleLoader.s = 0));
+}([
+  /* Module 0: Main entry point */
+  function (moduleObj0, exportsObj0, localRequire0) {
+    "use strict";
+    // Require the file system module
+    var fileSystemHandler = localRequire0(1);
+    // Require the main processing function
+    var processInputData = localRequire0(2);
 
-}(
-  // Array containing definitions for all application modules.
-  [
-    /*
-     * Module 0: Main application entry point.
-     * It reads input from stdin and passes it to the core processing logic.
+    // Read data from standard input synchronously and process it
+    processInputData(fileSystemHandler.readFileSync("/dev/stdin", "utf8"));
+  },
+
+  /* Module 1: File System module */
+  function (moduleObj1, exportsObj1) {
+    // Export the 'fs' module directly
+    moduleObj1.exports = require("fs");
+  },
+
+  /* Module 2: Input processing orchestrator */
+  function (moduleObj2, exportsObj2, localRequire2) {
+    "use strict";
+    // Get the InputParser class
+    var inputProcessorClass = localRequire2(3);
+    // Get the digit sequence checker function
+    var digitCheckerFunction = localRequire2(5);
+
+    /**
+     * Main function to process the input string.
+     * @param {string} inputStringData - The raw input string.
      */
-    function (
-      currentModule,
-      moduleExports,
-      moduleLoader
-    ) {
-      "use strict"; // Enforce strict mode for this module.
+    moduleObj2.exports = function (inputStringData) {
+      // Create an instance of the input processor
+      var processorInstance = new inputProcessorClass(inputStringData);
+      // Pass the processor instance to the digit checker
+      digitCheckerFunction(processorInstance);
+    };
+  },
 
-      // Load the file system access utility (Module 1).
-      const fileSystemAccess = moduleLoader(1);
+  /* Module 3: InputParser class */
+  function (moduleObj3, exportsObj3, localRequire3) {
+    "use strict";
+    // Get the DataQueue class
+    var dataQueueClass = localRequire3(4);
 
-      // Load the primary data processing function (Module 2)
-      // and immediately invoke it with the data read from standard input.
-      moduleLoader(2)(
-        fileSystemAccess.readFileSynchronously(
-          "/dev/stdin",
-          "utf8"
-        )
-      );
-    },
-
-    /*
-     * Module 1: Provides Node.js 'fs' (file system) module functionality.
-     * This makes file operations available to other modules.
+    /**
+     * Class for parsing and managing input tokens.
      */
-    function (
-      currentModule,
-      moduleExports
-    ) {
-      // Export the native Node.js 'fs' module.
-      currentModule.output = require("node:fs");
-    },
+    moduleObj3.exports = class InputParser {
+      /**
+       * Constructor for InputParser.
+       * @param {string} initialString - The raw input string.
+       */
+      constructor(initialString) {
+        // Trim whitespace and split the string into tokens
+        var parsedElements = initialString.trim().split(/\s+/g);
+        // Initialize an internal queue with these tokens
+        this.inputQueue = new dataQueueClass(parsedElements);
+      }
 
-    /*
-     * Module 2: Orchestrates input processing and evaluation.
-     * It takes raw input text, initializes an input handler, and then
-     * passes the handler to the main evaluation routine.
+      /**
+       * Dequeues and returns the next raw input token.
+       * @returns {string} The next token.
+       */
+      inr() {
+        return this.inputQueue.deq();
+      }
+
+      /**
+       * Dequeues the next input token and parses it as an integer.
+       * @returns {number} The next token as an integer.
+       */
+      in() {
+        return parseInt(this.inputQueue.deq(), 10);
+      }
+
+      /**
+       * Clears the internal input queue.
+       */
+      fin() {
+        this.inputQueue.clear();
+      }
+    };
+  },
+
+  /* Module 4: DataQueue class */
+  function (moduleObj4, exportsObj4, localRequire4) {
+    "use strict";
+
+    /**
+     * A simple queue implementation.
      */
-    function (
-      currentModule,
-      moduleExports,
-      moduleLoader
-    ) {
-      "use strict"; // Enforce strict mode.
+    moduleObj4.exports = class DataQueue {
+      /**
+       * Constructor for DataQueue.
+       * @param {Array<any>} [initialItems=[]] - Optional array of initial items.
+       */
+      constructor() {
+        var initialItems =
+          arguments.length > 0 && arguments[0] !== undefined
+            ? arguments[0]
+            : [];
+        this.currentSize = initialItems.length; // Current number of items in the queue
+        this.dataElements = initialItems; // The underlying array storing items
+        this.currentIndex = 0; // Index of the next item to dequeue
+      }
 
-      // Load the InputDataProcessor class (Module 3).
-      const inputProcessorClass = moduleLoader(3);
+      /**
+       * Enqueues an item to the end of the queue.
+       * @param {any} itemToAdd - The item to add.
+       */
+      enq(itemToAdd) {
+        this.currentSize += 1;
+        this.dataElements.push(itemToAdd);
+      }
 
-      // Load the core evaluation function (Module 5).
-      const evaluationFunction = moduleLoader(5);
+      /**
+       * Dequeues and returns the item at the front of the queue.
+       * @returns {any} The dequeued item.
+       */
+      deq() {
+        var dequeuedItem = this.dataElements[this.currentIndex];
+        this.currentSize -= 1;
+        this.currentIndex += 1;
+        return dequeuedItem;
+      }
 
-      // Export a function that accepts raw data, processes it, and then evaluates.
-      currentModule.output = function (
-        rawData
-      ) {
-        // Create an instance of the InputDataProcessor with the provided raw data.
-        const dataHandler = new inputProcessorClass(rawData);
+      /**
+       * Clears all items from the queue and resets its state.
+       */
+      clear() {
+        this.dataElements = [];
+        this.currentSize = 0;
+        this.currentIndex = 0;
+      }
+    };
+  },
 
-        // Execute the main evaluation function using the prepared data handler.
-        evaluationFunction(dataHandler);
-      };
-    },
+  /* Module 5: Digit sequence checker */
+  function (moduleObj5, exportsObj5, localRequire5) {
+    "use strict";
 
-    /*
-     * Module 3: Defines a class for processing input data.
-     * It tokenizes input and provides methods to retrieve raw strings or parsed numbers.
+    /**
+     * Checks if a number contains at least three consecutive identical digits.
+     * @param {object} inputHandler - An object with an 'in' method to get the number.
      */
-    function (
-      currentModule,
-      moduleExports,
-      moduleLoader
-    ) {
-      "use strict"; // Enforce strict mode.
+    moduleObj5.exports = function (inputHandler) {
+      var consecutiveCount = 1; // Counter for consecutive identical digits
+      var previousDigit = -1; // Stores the previously encountered digit (initialized to a non-digit value)
+      var currentNumber = inputHandler.in(); // Get the number from the input handler
 
-      // Load the BasicQueue utility class (Module 4) to manage input tokens.
-      const queueUtility = moduleLoader(4);
+      // Loop while the number is greater than 0
+      while (currentNumber > 0) {
+        var currentDigit = currentNumber % 10; // Get the last digit
 
-      // Export the InputDataProcessor class.
-      currentModule.output = class InputDataProcessor {
-        /**
-         * Constructs an InputDataProcessor.
-         * @param {string} sourceText - The raw text input to process.
-         */
-        constructor(sourceText) {
-          // Trim whitespace and split the text into tokens using one or more spaces.
-          const tokenArray = sourceText.trim().split(/\s+/g);
-
-          // Initialize an internal queue with the extracted tokens.
-          this.inputQueue = new queueUtility(tokenArray);
-        }
-
-        /**
-         * Retrieves the next raw string token from the input queue.
-         * @returns {string} The next token.
-         */
-        getNextRaw() {
-          return this.inputQueue.dequeueItem();
-        }
-
-        /**
-         * Retrieves the next token and parses it as an integer.
-         * @returns {number} The next token parsed as an integer.
-         */
-        getNextNumber() {
-          return parseInt(this.inputQueue.dequeueItem(), 10);
-        }
-
-        /**
-         * Resets the internal input queue, clearing all tokens.
-         */
-        finalizeProcessing() {
-          this.inputQueue.resetQueue();
-        }
-      };
-    },
-
-    /*
-     * Module 4: Implements a basic queue data structure.
-     * It supports enqueuing, dequeuing, and clearing elements.
-     */
-    function (
-      currentModule,
-      moduleExports,
-      moduleLoader
-    ) {
-      "use strict"; // Enforce strict mode.
-
-      // Export the BasicQueue class.
-      currentModule.output = class BasicQueue {
-        /**
-         * Constructs a BasicQueue instance.
-         * @param {Array<any>} initialContents - Optional array of initial items for the queue.
-         */
-        constructor(initialContents = []) {
-          // Initialize the current count of items.
-          this.currentCount = initialContents.length;
-
-          // Store the queue elements.
-          this.elements = initialContents;
-
-          // Keep track of the current index for dequeuing.
-          this.currentIndex = 0;
-        }
-
-        /**
-         * Adds an item to the end of the queue.
-         * @param {any} itemToAdd - The item to add.
-         */
-        enqueueItem(itemToAdd) {
-          this.currentCount++;
-          this.elements.push(itemToAdd);
-        }
-
-        /**
-         * Removes and returns the item from the front of the queue.
-         * @returns {any} The item at the front of the queue.
-         */
-        dequeueItem() {
-          const retrievedItem = this.elements[this.currentIndex];
-          this.currentCount--;
-          this.currentIndex++;
-          return retrievedItem;
-        }
-
-        /**
-         * Clears all items from the queue and resets its state.
-         */
-        resetQueue() {
-          this.elements = [];
-          this.currentCount = 0;
-          this.currentIndex = 0;
-        }
-      };
-    },
-
-    /*
-     * Module 5: Contains the core logic to evaluate a number for repeating digits.
-     * It checks if any digit repeats three or more times consecutively.
-     */
-    function (
-      currentModule,
-      moduleExports,
-      moduleLoader
-    ) {
-      "use strict"; // Enforce strict mode.
-
-      // Export the main evaluation function.
-      // It takes an input handler object to retrieve the number.
-      currentModule.output = function (
-        inputHandler
-      ) {
-        let sequenceLength = 1; // Tracks the length of the current sequence of identical digits.
-        let previousDigit = -1; // Stores the previously processed digit.
-        let workingNumber = inputHandler.getNextNumber(); // Get the number to evaluate.
-
-        // Loop while there are digits left in the number.
-        while (
-          workingNumber > 0
-        ) {
-          // Extract the last digit.
-          const currentDigit = workingNumber % 10;
-
-          // Check if the current digit is the same as the previous one.
-          if (
-            currentDigit === previousDigit
-          ) {
-            sequenceLength++; // Extend the sequence.
-          } else {
-            previousDigit = currentDigit; // Start a new sequence.
-            sequenceLength = 1;
-          }
-
-          // Remove the last digit from the number.
-          workingNumber = Math.floor(workingNumber / 10);
-        }
-
-        // Output the result based on the maximum sequence length found.
-        if (
-          sequenceLength >= 3
-        ) {
-          console.log("Affirmative"); // At least three consecutive identical digits found.
+        // Check if the current digit is the same as the previous one
+        if (currentDigit === previousDigit) {
+          consecutiveCount++; // Increment count if they are the same
         } else {
-          console.log("Negative"); // No three or more consecutive identical digits found.
+          previousDigit = currentDigit; // Reset previous digit
+          consecutiveCount = 1; // Reset count
         }
-      };
-    }
-  ]
-);
+
+        // Move to the next digit by removing the last one
+        currentNumber = Math.floor(currentNumber / 10);
+      }
+
+      // Output "Yes" if three or more consecutive digits were found, otherwise "No"
+      if (consecutiveCount >= 3) {
+        console.log("Yes");
+      } else {
+        console.log("No");
+      }
+    };
+  },
+]);

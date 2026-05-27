@@ -1,53 +1,41 @@
-/* This file contains logic for a simple comparison game. */
+'use strict';
 
-'use strict'; // Enforce stricter parsing and error handling.
-
-// A utility function to modify specific numeric inputs.
-const adjustScore = (currentVal) => {
-  // If the input value is '1', it gets a special high score.
-  if (currentVal == 1) {
-    return 14; // Assign a new, higher value.
-  } else {
-    // Otherwise, convert to number and return the original value.
-    // The subtraction by zero implicitly converts the string to a number.
-    return currentVal - 0;
+// This helper function transforms a numerical input based on a specific rule.
+const convertValue = (inputNumber) => {
+  // If the incoming number is precisely one, it's assigned a distinct, higher value.
+  if (inputNumber == 1) {
+    return (inputNumber = 14); // The variable itself is updated before being returned.
   }
-}; // End of adjustScore helper function.
+  // For any other numerical input, it's simply converted to its numeric representation.
+  else {
+    return +inputNumber; // A concise way to cast the value to a number.
+  }
+};
 
-/**
- * Main program entry point.
- * Processes raw input data to determine a winner.
- * @param {string} rawData - A string containing two space-separated numbers.
- */
-function runComparison(rawData) {
-  // First, split the incoming string by spaces to get individual scores.
-  let scoreParts = rawData.split(' ');
+// The main routine that processes the game logic.
+function processInput(inputString) {
+  // The input string is divided into an array of individual parts, separated by spaces.
+  let partsArray = inputString.split(' ');
 
-  // Process the first part of the input.
-  const firstPlayerScore = adjustScore(scoreParts[0]);
+  // The first part is processed through our custom conversion function.
+  const firstValue = convertValue(partsArray[0]);
+  // The second part undergoes the same conversion.
+  const secondValue = convertValue(partsArray[1]);
 
-  // Process the second part of the input.
-  const secondPlayerScore = adjustScore(scoreParts[1]);
-
-  // Compare the adjusted scores to determine the outcome.
-  if (firstPlayerScore === secondPlayerScore) {
-    // If scores are identical, it's a draw.
-    return console.log('Draw');
+  // A comparison is made between the two processed values.
+  if (firstValue == secondValue) {
+    return console.log('Draw'); // If they are equal, the game is a draw.
   }
 
-  // If not a draw, check who has the higher score.
-  if (firstPlayerScore > secondPlayerScore) {
-    // Player one wins.
+  // If the first value is greater, Alice is declared the winner.
+  if (firstValue > secondValue) {
     console.log('Alice');
-  } else {
-    // Player two wins.
+  }
+  // Otherwise, Bob is the winner.
+  else {
     console.log('Bob');
   }
-} // End of runComparison function.
+}
 
-
-// Invoke the main comparison logic using data from standard input.
-runComparison(
-  require("fs")
-  .readFileSync("/dev/stdin", "utf8")
-);
+// The program initiates by reading data from standard input and passing it to the main processing function.
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

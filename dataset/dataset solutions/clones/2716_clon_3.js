@@ -1,325 +1,222 @@
-const InputReaderUtil = (function () {
-
-    function createReaderInstance(rawInputString) {
-        return new LineParser(rawInputString);
-    }
-
-    class LineParser {
-        constructor(initialString) {
-            this.lineBuffer = initialString.trim().split("\n");
-            this.currentLinePointer = 0;
-            this.currentLineTokens = [];
-        }
-
-        extractNextToken(asString = false) {
-            const lines = this.lineBuffer;
-            let currentIdx = this.currentLinePointer;
-
-            if (this.currentLineTokens.length === 0) {
-                if (currentIdx >= lines.length) {
-                    throw new Error("Attempted to read past end of input.");
-                }
-                const lineContent = lines[currentIdx];
-                this.currentLineTokens = lineContent.split(" ").reverse();
-            }
-
-            const extractedToken = this.currentLineTokens.pop();
-
-            if (this.currentLineTokens.length === 0) {
-                this.currentLinePointer++;
-            }
-
-            return asString ? extractedToken : Number.parseInt(extractedToken, 10);
-        }
-
-        parseLineAsNumbers(keepStrings = false) {
-            this.currentLineTokens = [];
-            
-            const lineContent = this.lineBuffer[this.currentLinePointer];
-            this.currentLinePointer++;
-
-            const tokens = lineContent.split(" ");
-            return keepStrings ? tokens : tokens.map(str => Number.parseInt(str, 10));
-        }
-
-        readMatrixData(numRows, asStrings = false) {
-            this.currentLineTokens = [];
-
-            const startIdx = this.currentLinePointer;
-            const endIdx = startIdx + numRows;
-
-            this.currentLinePointer = endIdx;
-
-            const rawRows = this.lineBuffer.slice(startIdx, endIdx);
-            const processedMatrix = rawRows.map(line => line.split(" "));
-
-            return asStrings ? processedMatrix : processedMatrix.map(row => row.map(val => Number.parseInt(val, 10)));
-        }
-
-        fetchLinesAsStrings(count, numericConvert = false) {
-            this.currentLineTokens = [];
-
-            const startPosition = this.currentLinePointer;
-            const endPosition = startPosition + count;
-
-            this.currentLinePointer = endPosition;
-
-            const rawSegment = this.lineBuffer.slice(startPosition, endPosition);
-            return numericConvert ? rawSegment.map(line => Number.parseInt(line, 10)) : rawSegment;
-        }
-
-        peekNextLine() {
-            if (this.currentLinePointer < this.lineBuffer.length) {
-                return this.lineBuffer[this.currentLinePointer];
-            }
-            return undefined;
-        }
-
-        hasMoreLines() {
-            return this.currentLinePointer < this.lineBuffer.length;
-        }
-    }
-
-    return createReaderInstance;
-})();
-
-const inputReader = InputReaderUtil(require("fs").readFileSync("/dev/stdin", "utf8"));
-
-function createMultiDimArray(initialFillValue, ...dimensions) {
-    if (dimensions.length === 0) {
-        return initialFillValue;
-    }
-
-    const currentDimensionSize = dimensions[0];
-    const remainingDimensions = dimensions.slice(1);
-
-    if (currentDimensionSize < 0 || !Number.isInteger(currentDimensionSize)) {
-        throw new Error(`Invalid dimension size: ${currentDimensionSize}. Must be a non-negative integer.`);
-    }
-
-    const newArray = new Array(currentDimensionSize);
-
-    if (remainingDimensions.length === 0) {
-        for (let i = 0; i < currentDimensionSize; i++) {
-            newArray[i] = initialFillValue;
-        }
-    } else {
-        for (let i = 0; i < currentDimensionSize; i++) {
-            newArray[i] = createMultiDimArray(initialFillValue, ...remainingDimensions);
-        }
-    }
-
-    return newArray;
+function modularMultiply(a, b, c){
+  return ((a>>16)*b%c*65536+(a&65535)*b)%c;
 }
 
-const StringHasher = (function () {
+const InputParser = (function(){
+  const convertToNumber = (value, asNumber) => asNumber ? +value : value;
 
-    const DEFAULT_PRIME_BASES = [1009, 1007];
-    const DEFAULT_HASH_MODULI = [1_000_000_007, 1_000_000_009];
+  function createParser(sourceString){
+    return new ParserInstance(sourceString);
+  }
 
-    function modularMultiply(val1, val2, modulus) {
-        return Number((BigInt(val1) * BigInt(val2)) % BigInt(modulus));
+  function ParserInstance(sourceString){
+    this._sourceLines = sourceString.trim().split("\n");
+    this._currentLineIndex = 0;
+  }
+
+  function prepareLineForTokens(lineContent) {
+    return lineContent.split(" ").reverse();
+  }
+
+  ParserInstance.prototype.readNextToken = function(asNumber){
+    const lines = this._sourceLines;
+    let lineIndex = this._currentLineIndex;
+
+    if(typeof lines[lineIndex] === "string") {
+      lines[lineIndex] = prepareLineForTokens(lines[lineIndex]);
     }
 
-    function createHasher(initialText) {
-        return new StringHasherClass(initialText);
+    const currentLineTokens = lines[lineIndex];
+    const token = currentLineTokens.pop();
+
+    if(!currentLineTokens.length) {
+      this._currentLineIndex++;
     }
+    return convertToNumber(token, asNumber);
+  };
 
-    class StringHasherClass {
-        constructor(initialText) {
-            if (typeof initialText !== 'string' || initialText.length === 0) {
-                console.warn("StringHasher initialized with an empty or non-string input.");
-                this.currentTextLength = 0;
-                this.powerTable = [[], []];
-                this.prefixHashValues = [[], []];
-                return;
-            }
+  ParserInstance.prototype.readLineTokens = function(asNumber){
+    const lineContent = this._sourceLines[this._currentLineIndex++];
+    const tokens = lineContent.split(" ");
+    return asNumber ? tokens.map(val => +val) : tokens;
+  };
 
-            this.currentTextLength = initialText.length;
-            this.primeBases = [...DEFAULT_PRIME_BASES];
-            this.hashModuli = [...DEFAULT_HASH_MODULI];
+  ParserInstance.prototype.readMatrix = function(numRows, asNumber){
+    const startRowIndex = this._currentLineIndex;
+    const endRowIndex = this._currentLineIndex += numRows;
+    const matrixRows = this._sourceLines.slice(startRowIndex, endRowIndex);
+    const parsedMatrix = matrixRows.map(rowStr => rowStr.split(" "));
+    return asNumber ? parsedMatrix.map(row => row.map(val => +val)) : parsedMatrix;
+  };
 
-            this.powerTable = Array(this.hashModuli.length).fill(null).map(() => []);
-            this.prefixHashValues = Array(this.hashModuli.length).fill(null).map(() => []);
+  ParserInstance.prototype.readLines = function(numLines, asNumber){
+    const startRowIndex = this._currentLineIndex;
+    const endRowIndex = this._currentLineIndex += numLines;
+    const lines = this._sourceLines.slice(startRowIndex, endRowIndex);
+    return asNumber ? lines.map(line => +line) : lines;
+  };
 
-            for (let hashFuncIdx = 0; hashFuncIdx < this.hashModuli.length; hashFuncIdx++) {
-                const currentBase = this.primeBases[hashFuncIdx];
-                const currentModulus = this.hashModuli[hashFuncIdx];
-
-                this.powerTable[hashFuncIdx].length = this.currentTextLength + 1;
-                this.prefixHashValues[hashFuncIdx].length = this.currentTextLength + 1;
-
-                this.powerTable[hashFuncIdx][0] = 1;
-                this.prefixHashValues[hashFuncIdx][0] = 0;
-
-                for (let charIndex = 0; charIndex < this.currentTextLength; charIndex++) {
-                    const charCode = initialText.charCodeAt(charIndex);
-
-                    this.powerTable[hashFuncIdx][charIndex + 1] = modularMultiply(
-                        this.powerTable[hashFuncIdx][charIndex],
-                        currentBase,
-                        currentModulus
-                    );
-
-                    let newHash = modularMultiply(
-                        this.prefixHashValues[hashFuncIdx][charIndex],
-                        currentBase,
-                        currentModulus
-                    );
-                    newHash = (newHash + charCode) % currentModulus;
-                    this.prefixHashValues[hashFuncIdx][charIndex + 1] = newHash;
-                }
-            }
-        }
-
-        calculatePatternHash(patternString) {
-            const patternHashes = [];
-            for (let hashFuncIdx = 0; hashFuncIdx < this.hashModuli.length; hashFuncIdx++) {
-                const currentBase = this.primeBases[hashFuncIdx];
-                const currentModulus = this.hashModuli[hashFuncIdx];
-                let currentPatternHash = 0;
-
-                for (let charIndex = 0; charIndex < patternString.length; charIndex++) {
-                    currentPatternHash = modularMultiply(currentPatternHash, currentBase, currentModulus);
-                    currentPatternHash = (currentPatternHash + patternString.charCodeAt(charIndex)) % currentModulus;
-                }
-                patternHashes.push(currentPatternHash);
-            }
-            return patternHashes;
-        }
-
-        retrieveSubsegmentHash(startIdx, endIdx, hashFuncIdx) {
-            const currentModulus = this.hashModuli[hashFuncIdx];
-            const hashBeforeEnd = this.prefixHashValues[hashFuncIdx][endIdx];
-            const hashBeforeStart = this.prefixHashValues[hashFuncIdx][startIdx];
-            const powerFactor = this.powerTable[hashFuncIdx][endIdx - startIdx];
-
-            let segmentHash = hashBeforeEnd - modularMultiply(hashBeforeStart, powerFactor, currentModulus);
-
-            return (segmentHash % currentModulus + currentModulus) % currentModulus;
-        }
-
-        findPatternOccurrence(searchPattern, searchOffset = 0) {
-            if (searchPattern.length === 0 || searchPattern.length > this.currentTextLength) {
-                return -1;
-            }
-
-            const patternHashValues = this.calculatePatternHash(searchPattern);
-            const patternLength = searchPattern.length;
-            const numHashFunctions = this.hashModuli.length;
-
-            const maxSearchIndex = this.currentTextLength - patternLength;
-
-            for (let currentPos = searchOffset; currentPos <= maxSearchIndex; currentPos++) {
-                let matchedHashCount = 0;
-
-                const textSegmentHash0 = this.retrieveSubsegmentHash(currentPos, currentPos + patternLength, 0);
-                if (textSegmentHash0 === patternHashValues[0]) {
-                    matchedHashCount = 1;
-
-                    for (let hfIdx = 1; hfIdx < numHashFunctions; hfIdx++) {
-                        const textSegmentHash = this.retrieveSubsegmentHash(currentPos, currentPos + patternLength, hfIdx);
-                        if (textSegmentHash !== patternHashValues[hfIdx]) {
-                            break;
-                        }
-                        matchedHashCount++;
-                    }
-                }
-
-                if (matchedHashCount === numHashFunctions) {
-                    return currentPos;
-                }
-            }
-
-            return -1;
-        }
-
-        appendSegmentAndRehash(newSegment) {
-            if (typeof newSegment !== 'string' || newSegment.length === 0) {
-                return this.currentTextLength;
-            }
-
-            const previousLength = this.currentTextLength;
-            this.currentTextLength += newSegment.length;
-
-            for (let hashFuncIdx = 0; hashFuncIdx < this.hashModuli.length; hashFuncIdx++) {
-                const currentBase = this.primeBases[hashFuncIdx];
-                const currentModulus = this.hashModuli[hashFuncIdx];
-
-                this.powerTable[hashFuncIdx].length = this.currentTextLength + 1;
-                this.prefixHashValues[hashFuncIdx].length = this.currentTextLength + 1;
-
-                for (let i = previousLength; i < this.currentTextLength; i++) {
-                    const charCode = newSegment.charCodeAt(i - previousLength);
-
-                    this.powerTable[hashFuncIdx][i + 1] = modularMultiply(
-                        this.powerTable[hashFuncIdx][i],
-                        currentBase,
-                        currentModulus
-                    );
-
-                    let newHash = modularMultiply(
-                        this.prefixHashValues[hashFuncIdx][i],
-                        currentBase,
-                        currentModulus
-                    );
-                    newHash = (newHash + charCode) % currentModulus;
-                    this.prefixHashValues[hashFuncIdx][i + 1] = newHash;
-                }
-            }
-            return this.currentTextLength;
-        }
-    }
-
-    return createHasher;
+  return createParser;
 })();
 
-function solveProblem() {
-    const patternA = inputReader.extractNextToken(true);
-    const patternB = inputReader.extractNextToken(true);
+const inputReader = InputParser(require("fs").readFileSync("/dev/stdin","utf8"));
 
-    if (patternB.length === 0) {
-        return -1;
-    }
-    if (patternA.length === 0) {
-        return 0;
-    }
-
-    let extendedPatternA = patternA;
-    while (extendedPatternA.length < patternB.length) {
-        extendedPatternA += patternA;
-    }
-
-    const textSearcher = StringHasher(extendedPatternA + extendedPatternA);
-
-    let currentPatternBRepeated = patternB;
-    let lastMatchPosition = -1;
-    let concatenationCount = 0;
-
-    let currentMatchPosition = textSearcher.findPatternOccurrence(currentPatternBRepeated);
-
-    if (currentMatchPosition === -1) {
-        return 0;
-    }
-
-    while (currentMatchPosition !== -1) {
-        concatenationCount++;
-        lastMatchPosition = currentMatchPosition;
-
-        currentPatternBRepeated += patternB;
-
-        currentMatchPosition = textSearcher.findPatternOccurrence(currentPatternBRepeated, currentMatchPosition);
-    }
-
-    const lastSuccessfulPattern = patternB.repeat(concatenationCount);
-
-    textSearcher.appendSegmentAndRehash(extendedPatternA);
-
-    if (textSearcher.findPatternOccurrence(lastSuccessfulPattern, lastMatchPosition) !== -1) {
-        return -1;
-    }
-
-    return concatenationCount;
+function createMultiDimArray(initialValue){
+  const dimensions = arguments;
+  let currentDimIndex = dimensions.length;
+  let arrayConstructionString = `Array(dimensions[${--currentDimIndex}]).fill(0).map(x=>{return ${initialValue};})`;
+  while(--currentDimIndex) {
+    arrayConstructionString = `Array(dimensions[${currentDimIndex}]).fill(0).map(x=>${arrayConstructionString})`;
+  }
+  return eval(arrayConstructionString);
 }
 
-console.log(solveProblem());
+const StringHasher = (function(){
+  const hashBases = [1009,1007];
+  const hashMods = [1e9+7,1e9+9];
+  const powerValues = [[],[]];
+  const hashPrefixSums = [[],[]];
+  let currentHashedStringLength;
+
+  function createStringHasher(inputString){
+    return new StringHasher(inputString);
+  }
+
+  function computeHashComponents(targetString) {
+    const resultHashes = [];
+    for(let j = 0; j < hashMods.length; j++){
+      let currentHashValue = 0;
+      const currentBase = hashBases[j];
+      const currentMod = hashMods[j];
+      for(let i = 0; i < targetString.length; i++){
+        currentHashValue = modularMultiply(currentHashValue, currentBase, currentMod) + targetString.charCodeAt(i);
+        if(currentHashValue >= currentMod) {
+          currentHashValue -= currentMod;
+        }
+      }
+      resultHashes.push(currentHashValue);
+    }
+    return resultHashes;
+  }
+
+  function getSubstringHash(leftIndex, rightIndex, hashComponentIndex){
+    const currentMod = hashMods[hashComponentIndex];
+    let subHash = hashPrefixSums[hashComponentIndex][rightIndex] - modularMultiply(hashPrefixSums[hashComponentIndex][leftIndex], powerValues[hashComponentIndex][rightIndex - leftIndex], currentMod);
+    if(subHash < 0) {
+      subHash += currentMod;
+    }
+    return subHash;
+  }
+
+  function StringHasher(inputString){
+    currentHashedStringLength = this.size = inputString.length;
+    for(let j = 0; j < hashMods.length; j++){
+      const currentMod = hashMods[j];
+      const currentBase = hashBases[j];
+
+      powerValues[j].length = hashPrefixSums[j].length = currentHashedStringLength + 1;
+      powerValues[j][0] = 1;
+      hashPrefixSums[j][0] = 0;
+
+      for(let i = 0; i < currentHashedStringLength; i++){
+        powerValues[j][i+1] = modularMultiply(powerValues[j][i], currentBase, currentMod);
+        hashPrefixSums[j][i+1] = modularMultiply(hashPrefixSums[j][i], currentBase, currentMod) + inputString.charCodeAt(i);
+        if(hashPrefixSums[j][i+1] >= currentMod) {
+          hashPrefixSums[j][i+1] -= currentMod;
+        }
+      }
+    }
+  }
+
+  StringHasher.prototype.findSubstring = function(subString, searchStartIndex){
+    const subStringHashComponents = computeHashComponents(subString);
+    const subLength = subString.length;
+    const numberOfHashComponents = hashMods.length;
+    const maxPossibleSearchIndex = currentHashedStringLength - subLength + 1;
+    let matchingComponentCount = 0;
+
+    const effectiveStartIndex = searchStartIndex || 0;
+
+    for(let i = effectiveStartIndex; i < maxPossibleSearchIndex; i++){
+      const firstComponentHash = getSubstringHash(i, i + subLength, 0);
+      if(firstComponentHash === subStringHashComponents[0]){
+        matchingComponentCount = 1;
+        for(let j = 1; j < numberOfHashComponents; j++){
+          const currentComponentHash = getSubstringHash(i, i + subLength, j);
+          if(currentComponentHash !== subStringHashComponents[j]) {
+            break;
+          }
+          matchingComponentCount++;
+        }
+        if(matchingComponentCount === numberOfHashComponents) {
+          return i;
+        }
+      }
+    }
+    return -1;
+  };
+
+  StringHasher.prototype.appendString = function(newStringSegment){
+    const oldLength = currentHashedStringLength;
+    currentHashedStringLength = this.size = currentHashedStringLength + newStringSegment.length;
+
+    for(let j = 0; j < hashMods.length; j++){
+      const currentMod = hashMods[j];
+      const currentBase = hashBases[j];
+
+      powerValues[j].length = hashPrefixSums[j].length = currentHashedStringLength + 1;
+
+      for(let i = oldLength; i < currentHashedStringLength; i++){
+        powerValues[j][i+1] = modularMultiply(powerValues[j][i], currentBase, currentMod);
+        hashPrefixSums[j][i+1] = modularMultiply(hashPrefixSums[j][i], currentBase, currentMod) + newStringSegment.charCodeAt(i - oldLength);
+        if(hashPrefixSums[j][i+1] >= currentMod) {
+          hashPrefixSums[j][i+1] -= currentMod;
+        }
+      }
+    }
+    return currentHashedStringLength;
+  };
+
+  return createStringHasher;
+})();
+
+console.log(main());
+
+function main(){
+  const sourceStringS = inputReader.readNextToken(true);
+  const targetStringT = inputReader.readNextToken(true);
+
+  let currentSRepeated = sourceStringS;
+  const minTargetLength = targetStringT.length;
+
+  while(currentSRepeated.length < minTargetLength) {
+    currentSRepeated += sourceStringS;
+  }
+
+  const initialSearchSpace = currentSRepeated + currentSRepeated;
+  const stringHasher = StringHasher(initialSearchSpace);
+
+  let firstOccurrenceIndex = stringHasher.findSubstring(targetStringT);
+  if(firstOccurrenceIndex === -1) {
+    return 0;
+  }
+
+  let growingTargetString = targetStringT;
+  let lastSuccessfulMatchIndex = firstOccurrenceIndex;
+  let successfulRepetitionCount = 0;
+
+  while(firstOccurrenceIndex >= 0){
+    growingTargetString += targetStringT;
+    lastSuccessfulMatchIndex = firstOccurrenceIndex;
+    successfulRepetitionCount++;
+    firstOccurrenceIndex = stringHasher.findSubstring(growingTargetString, firstOccurrenceIndex);
+  }
+
+  stringHasher.appendString(currentSRepeated);
+
+  if(stringHasher.findSubstring(growingTargetString, lastSuccessfulMatchIndex) >= 0) {
+    return -1;
+  }
+
+  return successfulRepetitionCount;
+}

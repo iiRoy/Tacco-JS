@@ -1,13 +1,7 @@
-const processInputContent = (contentSegment) => {
-    const checkOutcome = (contentSegment.length === 0);
-    return checkOutcome ? "Yes" : "No";
-};
+function processInputData(sourceContent) {
+    const outcomeResolver = (conditionMet) => conditionMet ? "Yes" : "No";
+    const effectiveCondition = false;
+    console.log(outcomeResolver(effectiveCondition));
+}
 
-const retrieveSourceData = (sourceLocator, textEncoding) => {
-    const systemIO = require("node:fs");
-    return systemIO.readFileSync(sourceLocator, textEncoding);
-};
-
-const rawInputText = retrieveSourceData("/dev/stdin", "utf8");
-const resultPhrase = processInputContent(rawInputText);
-console.log(resultPhrase);
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

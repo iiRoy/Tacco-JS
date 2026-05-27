@@ -1,72 +1,71 @@
-const motionMappings = new Map([
-    ['N', { deltaX: 0, deltaY: 1 }],
-    ['S', { deltaX: 0, deltaY: -1 }],
-    ['E', { deltaX: 1, deltaY: 0 }],
-    ['W', { deltaX: -1, deltaY: 0 }]
+const directionVectors = new Map([
+    ['N', [0, 1]],
+    ['S', [0, -1]],
+    ['E', [1, 0]],
+    ['W', [-1, 0]]
 ]);
 
-const stringifyCoords = (c_x, c_y) => `${c_x},${c_y}`;
+function Main(sourceText) {
+    const lines = sourceText.split("\n");
+    let lineCursor = 0;
 
-function processPuzzleInput(rawPuzzleData) {
-    const puzzleLines = rawPuzzleData.split('\n');
-    let currentLineIndex = 0;
-    const finalResults = [];
+    const obtainNextInteger = () => parseInt(lines[lineCursor++], 10);
+    const obtainNextLineParts = () => lines[lineCursor++].split(" ");
 
     while (true) {
-        const itemsToCollectCount = Number(puzzleLines[currentLineIndex++]);
+        const totalItems = obtainNextInteger();
 
-        if (itemsToCollectCount === 0) {
+        if (totalItems === 0) {
             break;
         }
 
-        const initialGatheringPoints = new Set();
-        for (let i = 0; i < itemsToCollectCount; i++) {
-            const [xCoord, yCoord] = puzzleLines[currentLineIndex++].split(' ').map(Number);
-            initialGatheringPoints.add(stringifyCoords(xCoord, yCoord));
+        const itemPositions = new Set();
+        for (let itemIndex = 0; itemIndex < totalItems; itemIndex++) {
+            const parts = obtainNextLineParts();
+            const posX = parseInt(parts[0], 10);
+            const posY = parseInt(parts[1], 10);
+            itemPositions.add(`${posX},${posY}`);
         }
 
-        const movementCommandCount = Number(puzzleLines[currentLineIndex++]);
-        const movementCommands = [];
-        for (let i = 0; i < movementCommandCount; i++) {
-            const [directionIdentifier, distanceValue] = puzzleLines[currentLineIndex++].split(' ');
-            movementCommands.push({
-                direction: directionIdentifier,
-                distance: Number(distanceValue)
+        const operationCount = obtainNextInteger();
+        const movementInstructions = [];
+        for (let instructionIndex = 0; instructionIndex < operationCount; instructionIndex++) {
+            const parts = obtainNextLineParts();
+            movementInstructions.push({
+                moveDirection: parts[0],
+                moveDistance: parseInt(parts[1], 10)
             });
         }
 
-        const startingPosition = { x: 10, y: 10 };
+        let currentAgentX = 10;
+        let currentAgentY = 10;
+        let collectedItemCount = 0;
 
-        const allVisitedCoordinates = movementCommands.reduce((pathAccumulator, currentInstruction) => {
-            const lastPoint = pathAccumulator[pathAccumulator.length - 1];
-            let currentX = lastPoint.x;
-            let currentY = lastPoint.y;
-            const { deltaX, deltaY } = motionMappings.get(currentInstruction.direction);
+        const initialAgentLocation = `${currentAgentX},${currentAgentY}`;
+        if (itemPositions.has(initialAgentLocation)) {
+            itemPositions.delete(initialAgentLocation);
+            collectedItemCount++;
+        }
 
-            const segmentPoints = Array.from({ length: currentInstruction.distance }, () => {
-                currentX += deltaX;
-                currentY += deltaY;
-                return { x: currentX, y: currentY };
+        movementInstructions.forEach(instruction => {
+            const [deltaX, deltaY] = directionVectors.get(instruction.moveDirection);
+            Array.from({ length: instruction.moveDistance }).forEach(() => {
+                currentAgentX += deltaX;
+                currentAgentY += deltaY;
+                const currentAgentLocation = `${currentAgentX},${currentAgentY}`;
+                if (itemPositions.has(currentAgentLocation)) {
+                    itemPositions.delete(currentAgentLocation);
+                    collectedItemCount++;
+                }
             });
-            return pathAccumulator.concat(segmentPoints);
-        }, [{ x: startingPosition.x, y: startingPosition.y }]);
-
-        const collectionState = allVisitedCoordinates.reduce((state, currentPoint) => {
-            const pointKey = stringifyCoords(currentPoint.x, currentPoint.y);
-            if (state.remainingItems.has(pointKey)) {
-                state.remainingItems.delete(pointKey);
-                state.collectedCount++;
-            }
-            return state;
-        }, {
-            collectedCount: 0,
-            remainingItems: new Set(initialGatheringPoints)
         });
 
-        finalResults.push(collectionState.collectedCount === itemsToCollectCount ? "Yes" : "No");
+        if (collectedItemCount === totalItems) {
+            console.log("Yes");
+        } else {
+            console.log("No");
+        }
     }
-
-    console.log(finalResults.join('\n'));
 }
 
-processPuzzleInput(require("fs").readFileSync("/dev/stdin","utf8"));
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

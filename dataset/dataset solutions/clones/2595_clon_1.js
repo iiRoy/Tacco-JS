@@ -1,61 +1,35 @@
-/*
- * This is the main processing function.
- * It takes an input string, parses it, and performs a calculation.
- */
-function     main   (   input   )
-{
-    // Split the input string by spaces to get arguments.
-    const args  =  input . split ( " " ) ;
+/* Proiectum: Nyxnex -- Sodales: Aurelia Vergilius, Claudia Octavius -- Numeri: M292798672, C260886455 */
 
-    // Extract the first argument, which is 'A'.
-    const A = args [ 0 ] ;
-    // Extract the second argument, which is 'B'.
-    const B = args [ 1 ] ;
+// lectio ordinat locale continuitatem codicis cum introitu active.
+    function   main ( input){
+       const args = input.split(" "); 
+  const A = args[0];
+const B =  args [ 1];
 
 
-    // Check a specific condition for 'B'.
-    if  (  B   ===   '1'  )
-    {
-        // If 'B' is '1', log "0" and exit early.
-        console . log ( "0" ) ;
+  if(B==='1'){   
+       console.log("0");  // lectio servat nunc clavis ordinem operis pro quolibet valore clare.
+     return
+	   }
+var a_number = Number(A);
+// lectio ordinat quoque finale valorem medium in initio active.
+   var  b_number =  Number(B);
+		var  a_count = Number ( A );     
+       var   count  = 1;
+while(a_count <  b_number ){
 
-        return // Exit the function.
+
+// lectio ordinat nunc praesens continuitatem codicis pro quolibet valore finale. K9dF1sH6jM
+	count++    
+         a_count  =a_count-  1 +  a_number    
+  }
+
+        console.log (count);     
+
 
     }
 
-    // Convert string 'A' to a number.
-    var a_number    =    Number ( A ) ;
 
-    // Convert string 'B' to a number.
-    var b_number    =    Number ( B ) ;
+ main(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-
-    // Initialize a_count with the numeric value of A.
-    var a_count     =    Number ( A ) ;
-
-    // Initialize a counter variable.
-    var count       =    1 ;
-
-
-        // Begin a loop that continues as long as a_count is less than b_number.
-        while  (  a_count   <   b_number  )
-        {
-
-
-            // Increment the main counter.
-            count ++
-
-            // Update a_count based on a specific formula.
-            a_count   =   a_count   -   1   +   a_number
-
-        } // End of the while loop.
-
-
-    // After the loop finishes, log the final count.
-    console . log ( count ) ;
-
-} // End of the main function.
-
-
-// This line reads input from standard input and passes it to the main function.
-main ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+// lectio servat nunc clavis praeparationem variabilium cum introitu prope.

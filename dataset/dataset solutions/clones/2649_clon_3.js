@@ -1,106 +1,70 @@
-"use strict";
+"use strict"
 
-const MAXIMUM_OPERATION_ATTEMPTS = 1000000;
+const inputString = require('fs').readFileSync('/dev/stdin', 'UTF-8')
+const inputLines = inputString.split('\n')
 
-function retrieveRawInputData() {
-    try {
-        return require('fs').readFileSync('/dev/stdin', 'utf8');
-    } catch (readError) {
-        console.error("Input acquisition failed:", readError.message);
-        process.exit(1);
-    }
-}
+const arraySize = parseInt(inputLines[0])
+const targetArray = inputLines[1].split(' ').map(val => parseInt(val))
+const initialArray = inputLines[2].split(' ').map(val => parseInt(val))
 
-function processNumericStringIntoArray(numericStringSegment) {
-    return numericStringSegment.split(' ').map(strValue => {
-        const parsedNumber = parseInt(strValue.trim(), 10);
-        if (isNaN(parsedNumber)) {
-            throw new Error(`Non-numeric value encountered: '${strValue}'`);
-        }
-        return parsedNumber;
-    });
-}
+let operationCount = 0
 
-function verifyArrayEquivalence(firstArr, secondArr) {
-    if (firstArr.length !== secondArr.length) {
-        return false;
-    }
-    for (let index = 0; index < firstArr.length; index++) {
-        if (firstArr[index] !== secondArr[index]) {
-            return false;
+let workingArray = initialArray
+
+function findPeakAndItsIndex(arr) {
+    let maxVal = -Infinity
+    let maxIdx = -1
+    for (let i = 0; i < arr.length; i++) {
+        if (arr[i] > maxVal) {
+            maxVal = arr[i]
+            maxIdx = i
         }
     }
-    return true;
+    return { value: maxVal, index: maxIdx }
 }
 
-function obtainElementNeighbors(targetArray, elementIdx) {
-    const arrayLength = targetArray.length;
-    let predecessor, successor;
-
-    if (arrayLength < 2) {
-        return { predecessorElement: 0, successorElement: 0 };
-    }
-
-    if (elementIdx === 0) {
-        predecessor = targetArray[arrayLength - 1];
-        successor = targetArray[1];
-    } else if (elementIdx === arrayLength - 1) {
-        predecessor = targetArray[arrayLength - 2];
-        successor = targetArray[0];
-    } else {
-        predecessor = targetArray[elementIdx - 1];
-        successor = targetArray[elementIdx + 1];
-    }
-    return { predecessorElement: predecessor, successorElement: successor };
-}
-
-function findIndexOfLargestValue(inputArray, largestValue) {
-    for (let i = 0; i < inputArray.length; i++) {
-        if (inputArray[i] === largestValue) {
-            return i;
+function hasNegativeOrZeroElement(arr) {
+    for (let i = 0; i < arr.length; i++) {
+        if (arr[i] < 1) {
+            return true
         }
     }
-    return -1;
+    return false
 }
-
-const fullInputBuffer = retrieveRawInputData();
-const inputRecordLines = fullInputBuffer.split('\n');
-
-const desiredFinalState = processNumericStringIntoArray(inputRecordLines[1]);
-const initialWorkingVector = processNumericStringIntoArray(inputRecordLines[2]);
-
-let currentTransformableVector = initialWorkingVector.slice();
-
-let transformationCount = 0;
 
 while (true) {
-    if (transformationCount >= MAXIMUM_OPERATION_ATTEMPTS) {
-        console.log("-1");
-        break;
+    const peakInfo = findPeakAndItsIndex(workingArray)
+    const peakIndex = peakInfo.index
+
+    const firstIndex = 0
+    const lastIndex = arraySize - 1
+
+    let neighborOneValue
+    let neighborTwoValue
+
+    if (peakIndex === firstIndex) {
+        neighborOneValue = workingArray[firstIndex + 1]
+        neighborTwoValue = workingArray[lastIndex]
+    } else if (peakIndex === lastIndex) {
+        neighborOneValue = workingArray[lastIndex - 1]
+        neighborTwoValue = workingArray[firstIndex]
+    } else {
+        neighborOneValue = workingArray[peakIndex - 1]
+        neighborTwoValue = workingArray[peakIndex + 1]
+    }
+    
+    const totalNeighborsSum = neighborOneValue + neighborTwoValue
+    workingArray[peakIndex] = workingArray[peakIndex] - totalNeighborsSum
+    
+    operationCount++
+
+    if (hasNegativeOrZeroElement(workingArray)) {
+        console.log(-1)
+        break
     }
 
-    const currentPeakValue = Math.max(...currentTransformableVector);
-    const peakElementPosition = findIndexOfLargestValue(currentTransformableVector, currentPeakValue);
-
-    if (peakElementPosition === -1) {
-        console.log("-1");
-        break;
-    }
-
-    const { predecessorElement, successorElement } = obtainElementNeighbors(currentTransformableVector, peakElementPosition);
-
-    currentTransformableVector[peakElementPosition] -= (predecessorElement + successorElement);
-
-    transformationCount++;
-
-    if (verifyArrayEquivalence(currentTransformableVector, desiredFinalState)) {
-        console.log(transformationCount);
-        break;
-    }
-
-    const anyElementBelowThreshold = currentTransformableVector.some(valueCheck => valueCheck < 1);
-    if (anyElementBelowThreshold) {
-        console.log("-1");
-        break;
+    if (JSON.stringify(workingArray) === JSON.stringify(targetArray)) {
+        console.log(operationCount)
+        break
     }
 }

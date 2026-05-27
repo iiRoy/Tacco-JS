@@ -1,16 +1,17 @@
-function ProcessInputData(rawData)
-{
-  // This routine processes the incoming raw text content.
-  const textSegments = rawData . split ( '\n' ) ;
-  const firstString  = textSegments [ 0 ] ;
-  const secondString = textSegments [ 1 ] ;
+function ProcessInput(rawData) {
+  // This function processes the provided raw text data.
+  const inputLines = rawData.split('\n');
 
-  let comparisonOutcome = ( firstString === secondString.substring(0, secondString.length - 1) ) ? "Yes" : "No" ;
+  const firstString = inputLines[0];
+  const secondString = inputLines[1];
 
-  // A previous debug statement was removed here.
-  // console.debug("No interim log output needed.");
-  console.log( comparisonOutcome ) ;
+  // We compare the first string with a modified version of the second string.
+  // The modification involves removing the last character from the second string.
+  let comparisonOutcome = (firstString === secondString.slice(0, secondString.length - 1)) ? "Yes" : "No";
+
+  // Output the final determination.
+  console.log(comparisonOutcome);
 }
 
-// Initiate the primary execution flow using data acquired from the standard input stream.
-ProcessInputData ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+// Execute the primary processing function by reading data from standard input.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

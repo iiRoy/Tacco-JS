@@ -1,66 +1,37 @@
-((sourceData) => {
-    // Helper function to convert array of strings to array of numbers
-    const assimilateNumerics = (stringCollection) => stringCollection.map(x => +x);
-
-    // Helper function for matrix transposition
-    const invertDimensions = (initialMatrix) => {
-        if (!initialMatrix || initialMatrix.length === 0 || initialMatrix[0].length === 0) {
-            return [];
+Object.defineProperties(Array.prototype, {
+    pInt: {
+        value() {
+            return this.map(Number);
+        },
+    },
+    rot: {
+        value() {
+            if (!this.length || !this[0].length) {
+                return [];
+            }
+            const originalRows = this.length;
+            const originalCols = this[0].length;
+            return Array.from({ length: originalCols }, (_, colIndex) =>
+                Array.from({ length: originalRows }, (_, rowIndex) => this[rowIndex][colIndex])
+            );
         }
-        const width = initialMatrix[0].length;
-        const invertedResult = Array.from({ length: width }, (_, colIndex) =>
-            initialMatrix.map(row => row[colIndex])
-        );
-        return invertedResult;
-    };
+    }
+});
+((inputString) => {
+    const inputLines = inputString.trim().split('\n');
+    const [rowsA, commonDim, colsB] = inputLines[0].split(' ').pInt();
 
-    // Helper function for vector dot product
-    const computeComponentProduct = (vectorA, vectorB) => {
-        return vectorA.reduce((summation, valueA, position) =>
-            summation + (valueA * vectorB[position]), 0);
-    };
+    const dataRows = inputLines.slice(1);
+    const matA = dataRows.slice(0, rowsA).map(line => line.split(' ').pInt());
+    const matB = dataRows.slice(rowsA).map(line => line.split(' ').pInt());
 
-    // Process input data: flatten all numbers into a single array
-    const cleanedInput = sourceData.trim().replace(/\r/g, ''); // Remove carriage returns
-    const allNumericStrings = cleanedInput.split(/\s+/).filter(Boolean); // Split by any whitespace, filter empty strings
-    const allNumericValues = assimilateNumerics(allNumericStrings);
+    const transposedMatB = matB.rot();
 
-    // Use a pointer to extract segments from the flattened number array
-    let currentPosition = 0;
-    const retrieveSegment = (count) => {
-        const segment = allNumericValues.slice(currentPosition, currentPosition + count);
-        currentPosition += count;
-        return segment;
-    };
-
-    // Extract matrix dimensions
-    const [rowsForMatrixA, commonDimensionValue, columnsForMatrixB] = retrieveSegment(3);
-
-    // Reconstruct Matrix A
-    const structureMatrixA = Array.from({ length: rowsForMatrixA }, () =>
-        retrieveSegment(commonDimensionValue)
-    );
-
-    // Reconstruct Matrix B
-    const structureMatrixB = Array.from({ length: commonDimensionValue }, () =>
-        retrieveSegment(columnsForMatrixB)
-    );
-
-    // Transpose Matrix B
-    const transposedStructureMatrixB = invertDimensions(structureMatrixB);
-
-    // Perform matrix multiplication
-    const finalStructureResult = structureMatrixA.map(rowVectorA =>
-        transposedStructureMatrixB.map(columnVectorB =>
-            computeComponentProduct(rowVectorA, columnVectorB)
+    const finalMatrix = matA.map(rowA =>
+        transposedMatB.map(colB =>
+            rowA.reduce((sum, valA, idx) => sum + valA * colB[idx], 0)
         )
     );
 
-    // Format output
-    const formattedResultText = finalStructureResult.map(resultRow =>
-        resultRow.join(' ')
-    ).join('\n');
-
-    console.log(formattedResultText);
-
-})(require('node:fs').readFileSync('/dev/stdin', 'utf8'));
+    console.log(finalMatrix.map(row => row.join(' ')).join('\n'));
+})(require('fs').readFileSync('/dev/stdin', 'utf8'));

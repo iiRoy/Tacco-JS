@@ -1,37 +1,22 @@
-/*
- * This module defines a primary routine for
- * processing textual input from a data source.
- */
-function ProcessText( sourceData )
-{
-  // Extract the initial segment from the provided source data.
-  // The input is assumed to be multi-line, and we only care about the first one.
-  var     transformedFragment = sourceData
-                                  .split( '\n' )
-                                  .shift(  )
-                                  ;
+function ProcessInput (rawData) {
+  // This function processes the input string.
+  let processedText = rawData.split("\n").shift(); // Get the first line of input.
 
-  // Iterate over each alphabetic character within the fragment
-  // and reverse its casing (uppercase becomes lowercase, and vice-versa).
-  transformedFragment = transformedFragment.replace( /([a-zA-Z])/g,
-    function ( charElement )
-    {
-      // Check if the current character is a lowercase letter.
-      return charElement.match( /[a-z]/ )
-        ? charElement.toUpperCase( ) // If lowercase, convert to uppercase.
-        : charElement.toLowerCase( ) // Otherwise (if uppercase), convert to lowercase.
-      ;
+  /*
+   * The following operation iterates through each alphabetic character
+   * in the string and swaps its case.
+   */
+  processedText = processedText.replace(/([a-zA-Z])/g, function(charToModify) {
+    // Check if the character is lowercase.
+    if (charToModify.match(/[a-z]/)) {
+      return charToModify.toUpperCase(); // Convert to uppercase if lowercase.
+    } else {
+      return charToModify.toLowerCase(); // Convert to lowercase if uppercase.
     }
-  );
+  });
 
-  // Output the final modified string to the standard console.
-  console.log( transformedFragment );
+  console.log(processedText); // Output the modified string.
 }
 
-// Invoke the primary processing routine.
-// It synchronously reads content from the standard input stream
-// and passes it as the initial source data.
-ProcessText(
-  require( 'fs' )
-    .readFileSync( '/dev/stdin', 'utf8' )
-);
+// Read input from standard input and pass it to the processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

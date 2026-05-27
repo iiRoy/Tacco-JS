@@ -1,13 +1,4 @@
-const initialData = require('node:fs').readFileSync(0, 'utf8');
-
-const decisionTable = new Map([
-    ['3', 'YES'],
-    ['5', 'YES'],
-    ['7', 'YES']
-]);
-
-const determineVerdict = (queryValue) => {
-    return decisionTable.has(queryValue) ? decisionTable.get(queryValue) : 'NO';
-};
-
-console.log(determineVerdict(initialData));
+const streamInput = require('fs').readFileSync('/dev/stdin', 'utf8');
+const pattern = /^(3|5|7)$/;
+const finalVerdict = pattern.test(streamInput) ? 'YES' : 'NO';
+console.log(finalVerdict);

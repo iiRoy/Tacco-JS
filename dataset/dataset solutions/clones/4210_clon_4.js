@@ -1,35 +1,23 @@
-const processSource = (initialData) => {
-    const initialClean = initialData.replace(/^\s+|\s+$/g, '');
+function processInput(inputStr) {
+    let processedText = inputStr.trim();
+    const insertionIndices = [0, 4, 6, 8];
 
-    const checkLocations = [0, 4, 6, 8];
-    const desiredFinal = "AKIHABARA";
+    let currentChars = Array.from(processedText);
 
-    const applyNextModification = (currentText, remainingLocations) => {
-        if (remainingLocations.length === 0) {
-            return currentText;
+    insertionIndices.forEach(position => {
+        const charAtPosition = currentChars[position];
+        console.log(charAtPosition);
+
+        if (charAtPosition !== 'A') {
+            currentChars.splice(position, 0, 'A');
         }
+    });
 
-        const [currentSpot, ...restSpots] = remainingLocations;
-        let textSegments = currentText.split('');
+    processedText = currentChars.join('');
 
-        const inspectedChar = (currentSpot < textSegments.length) ? textSegments[currentSpot] : undefined;
-        console.log(inspectedChar);
+    console.log(processedText === "AKIHABARA" ? "YES" : "NO");
+}
 
-        if (!Object.is(inspectedChar, 'A')) {
-            if (currentSpot >= textSegments.length) {
-                textSegments.push('A');
-            } else {
-                textSegments.splice(currentSpot, 0, 'A');
-            }
-        }
-
-        return applyNextModification(textSegments.join(''), restSpots);
-    };
-
-    const finalResult = applyNextModification(initialClean, checkLocations);
-
-    console.log(Object.is(finalResult, desiredFinal) ? "YES" : "NO");
-};
-
-const fetchRawInput = require('fs').readFileSync;
-processSource(fetchRawInput('/dev/stdin', 'utf8'));
+const fileSystem = require('fs');
+const inputData = fileSystem.readFileSync('/dev/stdin', 'utf8');
+processInput(inputData);

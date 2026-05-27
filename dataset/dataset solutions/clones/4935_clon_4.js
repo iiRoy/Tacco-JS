@@ -1,41 +1,34 @@
 'use strict';
 
-function evaluateCandidateSet(sourceData) {
-    const segmentedSource = sourceData.replace(/^\s+|\s+$/g, '').split('\n');
-    const numericalConstraints = segmentedSource[0].split(' ').map(strVal => parseInt(strVal, 10));
-    const participantIdentifiers = segmentedSource[1].split('');
+function processContest(rawData) {
+  const inputLines = rawData.trim().split('\n');
 
-    const thresholdA = numericalConstraints[1];
-    const thresholdB = numericalConstraints[2];
-    const cumulativeThreshold = thresholdA + thresholdB;
+  const numericThresholds = inputLines[0].split(' ').reduce((acc, val, idx) => {
+    if (idx === 1) acc.push(parseInt(val, 10));
+    if (idx === 2) acc.push(parseInt(val, 10));
+    return acc;
+  }, []);
 
-    const primaryType = 'a';
-    const secondaryType = 'b';
+  const contestantSymbols = Array.from(inputLines[1]);
 
-    participantIdentifiers.forEach((currentEntity, positionIndex, entireSequence) => {
-        const sequenceOrder = positionIndex + 1;
+  contestantSymbols.forEach((currentSymbol, currentIdx) => {
+    const oneBasedIndex = currentIdx + 1;
+    const sumOfThresholds = numericThresholds[0] + numericThresholds[1];
 
-        let lineResult;
+    const symbolEvaluators = {
+      'a': () => {
+        return oneBasedIndex < sumOfThresholds ? 'Yes\n' : 'No\n';
+      },
+      'b': () => {
+        const precedingBCount = contestantSymbols.slice(0, currentIdx).filter(s => s === 'b').length;
+        return (oneBasedIndex < sumOfThresholds && oneBasedIndex < precedingBCount) ? 'Yes\n' : 'No\n';
+      },
+      'default': () => 'No\n'
+    };
 
-        if (currentEntity === primaryType) {
-            lineResult = (sequenceOrder < cumulativeThreshold) ? 'Yes' : 'No';
-        } else if (currentEntity === secondaryType) {
-            const precedingForeigners = entireSequence.slice(0, positionIndex).filter(p => p === secondaryType).length;
-            lineResult = (sequenceOrder < cumulativeThreshold && sequenceOrder < precedingForeigners) ? 'Yes' : 'No';
-        } else {
-            lineResult = 'No';
-        }
-        outputVerdict(lineResult + '\n');
-    });
+    const resultOutput = (symbolEvaluators[currentSymbol] || symbolEvaluators['default'])();
+    console.log(resultOutput);
+  });
 }
 
-const outputVerdict = (contentString) => process.stdout.write(contentString);
-
-const acquireExternalData = () => {
-    const fileSystemUtility = require('fs');
-    const standardInputPath = '/dev/stdin';
-    const encodingFormat = 'utf8';
-    return fileSystemUtility.readFileSync(standardInputPath, encodingFormat);
-};
-
-evaluateCandidateSet(acquireExternalData());
+processContest(require("fs").readFileSync("/dev/stdin", "utf8"));

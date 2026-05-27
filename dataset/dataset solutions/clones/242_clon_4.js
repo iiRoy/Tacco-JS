@@ -1,31 +1,30 @@
-const dataStream = require('node:fs').readFileSync('/dev/stdin', 'utf8');
-const processedRecords = dataStream.trim().split('\n');
+const fileSystem = require('fs');
 
-for (const currentRecord of processedRecords) {
-    const stringSegments = currentRecord.split(' ');
-    const firstOperand = +stringSegments[0];
-    const secondOperand = +stringSegments[1];
-    const thirdOperand = +stringSegments[2];
+const processLineData = (currentLine) => {
+    const numericStrings = currentLine.split(" ");
+    const [firstValue, secondValue, thirdValue] = numericStrings.map(Number);
 
-    const prohibitedDigits = new Set([firstOperand, secondOperand, thirdOperand]);
-    const eligibleDigitsCollection = [];
-    for (let digitCandidate = 1; digitCandidate <= 10; ++digitCandidate) {
-        if (!prohibitedDigits.has(digitCandidate)) {
-            eligibleDigitsCollection.push(digitCandidate);
-        }
-    }
+    const excludedSet = new Set([firstValue, secondValue, thirdValue]);
 
-    let positiveOutcomeCounter = 0;
-    const baseSumForCheck = firstOperand + secondOperand;
+    const possibleThirdCards = Array.from({ length: 10 }, (_, index) => index + 1)
+        .filter(candidateCard => !excludedSet.has(candidateCard));
 
-    for (const testDigit of eligibleDigitsCollection) {
-        if (baseSumForCheck + testDigit <= 20) {
-            positiveOutcomeCounter++;
-        }
-    }
+    const targetSumLimit = 20;
+    const initialSum = firstValue + secondValue;
 
-    const totalEligibleCount = eligibleDigitsCollection.length;
-    const negativeOutcomeCounter = totalEligibleCount - positiveOutcomeCounter;
+    const successfulCombinations = possibleThirdCards.reduce((countAccumulator, currentCard) => {
+        return countAccumulator + (initialSum + currentCard <= targetSumLimit ? 1 : 0);
+    }, 0);
 
-    process.stdout.write((positiveOutcomeCounter >= negativeOutcomeCounter ? "YES" : "NO") + '\n');
-}
+    const totalPossibleCards = possibleThirdCards.length;
+    const unsuccessfulCombinations = totalPossibleCards - successfulCombinations;
+
+    return successfulCombinations >= unsuccessfulCombinations ? "YES" : "NO";
+};
+
+const rawInputContent = fileSystem.readFileSync('/dev/stdin', 'utf8');
+const inputLines = rawInputContent.trim().split("\n");
+
+const outputResults = inputLines.map(processLineData);
+
+console.log(outputResults.join("\n"));

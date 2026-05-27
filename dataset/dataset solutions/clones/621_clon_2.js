@@ -1,41 +1,41 @@
-const dataSource = require('fs').readFileSync('/dev/stdin', 'utf8');
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-const lineFragments = (dataSource.trim()).split("\n");
+var lineSegments = (rawData.trim()).split("\n");
 
-const numEntries = lineFragments.shift();
+var entryCount = lineSegments.shift();
 
-const dataStore = {};
+var dataMap = {};
 
-for ( let idx = 0; idx < numEntries; idx++ )
-{
-  let currentParts = lineFragments[idx].split(" ");
-  let primaryKey = currentParts[0];
+for (var idx = 0; idx < entryCount; idx++) {
+  var currentEntryParts = lineSegments[idx].split(" ");
+  var keyIdentifier = currentEntryParts[0];
 
-  if ( !dataStore.hasOwnProperty(primaryKey) )
-    dataStore[primaryKey] = 0;
+  if (!dataMap.hasOwnProperty(keyIdentifier)) {
+    dataMap[keyIdentifier] = 0;
+  }
 
-  dataStore[primaryKey] += currentParts[1] - 0;
+  dataMap[keyIdentifier] += currentEntryParts[1] - 0;
 }
 
-const sortedKeys = [];
-
-for ( let elementKey in dataStore )
-{
-  sortedKeys.push(elementKey);
+var sortedKeys = [];
+for (var mapProp in dataMap) {
+  sortedKeys.push(mapProp);
 }
 
-function compareLengths( firstStr, secondStr )
-{
-  if      ( firstStr.length > secondStr.length ) return  1;
-  else if ( firstStr.length < secondStr.length ) return -1;
-  else                                           return  0;
+function compareLengths(firstStr, secondStr) {
+  if (firstStr.length > secondStr.length) {
+    return 1;
+  }
+  if (firstStr.length < secondStr.length) {
+    return -1;
+  }
+  return 0;
 }
 
 sortedKeys.sort();
-
 sortedKeys.sort(compareLengths);
 
-for ( let outputIdx = 0; outputIdx < sortedKeys.length; outputIdx++ )
-{
-  console.log( sortedKeys[outputIdx] + " " + dataStore[sortedKeys[outputIdx]] );
+for (var outputIndex = 0; outputIndex < sortedKeys.length; outputIndex++) {
+  var currentKey = sortedKeys[outputIndex];
+  console.log(currentKey + " " + dataMap[currentKey]);
 }

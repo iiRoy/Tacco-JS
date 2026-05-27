@@ -1,80 +1,83 @@
-const { createInterface } = require('readline');
+function findSolutionRecursive(targetN) {
+    const targetA = 4 / targetN;
+    const constB = 2 / 3500;
+    const constC = 1 / 3500;
+    const upperLimit = 3499;
+    const EPSILON = 1e-9;
 
-let inputLines = [];
-const stdIoHandler = createInterface({
-    input: process.stdin,
-    output: process.stdout,
-    terminal: false
-});
+    let foundH = 0, foundN = 0, foundW = 0;
+    let solutionFound = false;
 
-stdIoHandler.on('line', (lineContent) => {
-    inputLines.push(lineContent);
-});
+    function searchForFraction(currentDepth, currentSumOfReciprocals, previousTermValue) {
+        if (solutionFound) return;
 
-stdIoHandler.on('close', () => {
-    runCalculation(inputLines);
-});
+        if (currentDepth === 2) {
+            const remainingFraction = targetA - currentSumOfReciprocals;
+            if (remainingFraction <= EPSILON) return;
 
-function runCalculation(receivedData) {
-    const targetNumerator = 4;
-    const targetDenominator = parseInt(receivedData[0], 10);
+            const candidateW = 1 / remainingFraction;
 
-    const searchLimit = 3499; 
-
-    const approxEqual = (val1, val2) => Math.abs(val1 - val2) < 1e-9;
-
-    let solutionTriple = [0, 0, 0];
-    let solutionAchieved = false;
-
-    const initialTargetVal = targetNumerator / targetDenominator;
-    const minPossibleSumOfTwoDenoms = 2 / (searchLimit + 1);
-    const minPossibleSumOfOneDenom = 1 / (searchLimit + 1);
-
-    let startX = 1;
-    const calcStartX = initialTargetVal - minPossibleSumOfTwoDenoms;
-    if (calcStartX > 1e-9) { 
-        startX = Math.max(startX, Math.floor(1 / calcStartX));
-    }
-    
-    for (let x = startX; x <= searchLimit; ++x) {
-        if (solutionAchieved) break;
-
-        const remainingTargetAfterX = initialTargetVal - (1 / x);
-
-        if (remainingTargetAfterX < minPossibleSumOfTwoDenoms - 1e-9) {
-            continue;
-        }
-
-        let startY = 1;
-        const calcStartY = remainingTargetAfterX - minPossibleSumOfOneDenom;
-        if (calcStartY > 1e-9) {
-            startY = Math.max(startY, Math.floor(1 / calcStartY));
-        }
-        
-        for (let y = startY; y <= searchLimit; ++y) {
-            if (solutionAchieved) break;
-
-            const remainingTargetAfterY = remainingTargetAfterX - (1 / y);
-
-            if (remainingTargetAfterY < minPossibleSumOfOneDenom - 1e-9) {
-                continue;
-            }
-
-            const calculatedZ = 1 / remainingTargetAfterY;
-
-            if (approxEqual(calculatedZ, Math.round(calculatedZ))) {
-                const z = Math.round(calculatedZ);
-                if (z >= y && z <= searchLimit) {
-                    solutionTriple = [x, y, z];
-                    solutionAchieved = true;
-                    break;
+            if (Math.abs(candidateW - Math.round(candidateW)) < EPSILON) {
+                const integerW = Math.round(candidateW);
+                if (integerW >= previousTermValue && integerW <= upperLimit) {
+                    foundW = integerW;
+                    solutionFound = true;
                 }
             }
-            if (calculatedZ < y - 1e-9) {
-                break;
+            return;
+        }
+
+        let iterationStartValue;
+        if (currentDepth === 0) {
+            const hLowerBoundCalc = targetA - constB;
+            iterationStartValue = hLowerBoundCalc > EPSILON ? Math.max(1, Math.floor(1 / hLowerBoundCalc)) : 1;
+        } else {
+            const nLowerBoundCalc = targetA - currentSumOfReciprocals - constC;
+            iterationStartValue = nLowerBoundCalc > EPSILON ? Math.max(1, Math.floor(1 / nLowerBoundCalc)) : 1;
+        }
+
+        iterationStartValue = Math.max(1, iterationStartValue);
+
+        for (let currentTermValue = iterationStartValue; currentTermValue <= upperLimit; currentTermValue++) {
+            if (solutionFound) break;
+
+            if (currentDepth === 0) {
+                if (targetA - (1 / currentTermValue) < constB - EPSILON) {
+                    continue;
+                }
+                foundH = currentTermValue;
+                searchForFraction(currentDepth + 1, currentSumOfReciprocals + (1 / currentTermValue), currentTermValue);
+            } else if (currentDepth === 1) {
+                if (targetA - currentSumOfReciprocals - (1 / currentTermValue) < constC - EPSILON) {
+                    continue;
+                }
+                foundN = currentTermValue;
+                searchForFraction(currentDepth + 1, currentSumOfReciprocals + (1 / currentTermValue), currentTermValue);
             }
+
+            if (solutionFound) break;
         }
     }
 
-    console.log(solutionTriple.join(' '));
+    searchForFraction(0, 0, 1);
+
+    return [foundH, foundN, foundW];
 }
+
+function processInputAndSolve(inputLines) {
+    const NValue = parseInt(inputLines[0], 10);
+    const solutionResult = findSolutionRecursive(NValue);
+    console.log(solutionResult.join(' '));
+}
+
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
+
+let inputBuffer = '';
+process.stdin.on('data', function(chunk) {
+    inputBuffer += chunk;
+});
+
+process.stdin.on('end', function() {
+    processInputAndSolve(inputBuffer.split(/\r?\n/));
+});

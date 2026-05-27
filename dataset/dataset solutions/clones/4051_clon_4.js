@@ -1,45 +1,44 @@
-function processFinancialData(dataSource) {
-    const numericData = dataSource.split('\n').map(str => Number(str.trim()));
+const processInput = (rawInput) => {
+    const lineSegments = rawInput.split("\n");
+    const maxFiveHundreds = Number(lineSegments[0]);
+    const maxHundreds = Number(lineSegments[1]);
+    const maxFifties = Number(lineSegments[2]);
+    const targetSum = Number(lineSegments[3]);
+    return { maxFiveHundreds, maxHundreds, maxFifties, targetSum };
+};
 
-    const maxQuantityA = numericData[0];
-    const maxQuantityB = numericData[1];
-    const maxQuantityC = numericData[2];
-    const targetSum = numericData[3];
+const calculateCombinations = (remainingAmount, coinDenominations, coinLimits, currentCoinIndex) => {
+    if (currentCoinIndex === coinDenominations.length) {
+        return remainingAmount === 0 ? 1 : 0;
+    }
 
-    const denominationSet = [500, 100, 50];
-    const upperBounds = [maxQuantityA, maxQuantityB, maxQuantityC];
+    const currentDenomination = coinDenominations[currentCoinIndex];
+    const maximumAllowedCount = coinLimits[currentCoinIndex];
+    let accumulatedWays = 0;
 
-    const computeArrangements = (remainingAmount, indexInDenominationSet) => {
-        if (remainingAmount === 0) {
-            return 1;
+    for (let currentCount = 0; currentCount <= maximumAllowedCount; currentCount++) {
+        const valueFromCurrentCoin = currentCount * currentDenomination;
+        if (valueFromCurrentCoin > remainingAmount) {
+            break;
         }
+        accumulatedWays += calculateCombinations(
+            remainingAmount - valueFromCurrentCoin,
+            coinDenominations,
+            coinLimits,
+            currentCoinIndex + 1
+        );
+    }
+    return accumulatedWays;
+};
 
-        if (remainingAmount < 0 || indexInDenominationSet === denominationSet.length) {
-            return 0;
-        }
+const executeMainLogic = (inputContent) => {
+    const { maxFiveHundreds, maxHundreds, maxFifties, targetSum } = processInput(inputContent);
 
-        let accumulatedWays = 0;
-        const currentCoinValue = denominationSet[indexInDenominationSet];
-        const maxAllowedForType = upperBounds[indexInDenominationSet];
+    const denominations = [500, 100, 50];
+    const limits = [maxFiveHundreds, maxHundreds, maxFifties];
 
-        for (let numCoinsOfCurrentType = 0; numCoinsOfCurrentType <= maxAllowedForType; numCoinsOfCurrentType++) {
-            const valueFromCurrentType = numCoinsOfCurrentType * currentCoinValue;
-            if (remainingAmount - valueFromCurrentType >= 0) {
-                accumulatedWays += computeArrangements(
-                    remainingAmount - valueFromCurrentType,
-                    indexInDenominationSet + 1
-                );
-            } else {
-                break;
-            }
-        }
-        return accumulatedWays;
-    };
+    const resultCount = calculateCombinations(targetSum, denominations, limits, 0);
+    console.log(resultCount);
+};
 
-    const totalValidConfigurations = computeArrangements(targetSum, 0);
-
-    console.log(totalValidConfigurations);
-}
-
-const entryPoint = (fileContent) => processFinancialData(fileContent);
-entryPoint(require("fs").readFileSync("/dev/stdin", "utf8"));
+executeMainLogic(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,36 +1,20 @@
-const fileSystemAccess = require('node:fs');
+function engageCombat(battleInput) {
+  const combatantStats = battleInput.split(' ').map(Number);
 
-const extractRawData = (sourcePath, dataEncoding) => {
-    return fileSystemAccess.readFileSync(sourcePath, dataEncoding).toString();
-};
+  const firstFighterHealth = combatantStats[0];
+  const firstFighterAttack = combatantStats[1];
+  const secondFighterHealth = combatantStats[2];
+  const secondFighterAttack = combatantStats[3];
 
-const battleSimulator = (scenarioText) => {
-    const numericElements = scenarioText.match(/-?\d+/g).map(Number);
+  const hitsForFirstToWin = Math.ceil(secondFighterHealth / firstFighterAttack);
 
-    const firstCombatantHP = numericElements[0];
-    const firstCombatantAttack = numericElements[1];
-    const secondCombatantHP = numericElements[2];
-    const secondCombatantAttack = numericElements[3];
+  const hitsForSecondToWin = Math.ceil(firstFighterHealth / secondFighterAttack);
 
-    let roundsForSecondToFall;
-    if (firstCombatantAttack <= 0) {
-        roundsForSecondToFall = Infinity;
-    } else {
-        roundsForSecondToFall = Math.ceil(secondCombatantHP / firstCombatantAttack);
-    }
+  if (hitsForFirstToWin <= hitsForSecondToWin) {
+    console.log('Yes');
+  } else {
+    console.log('No');
+  }
+}
 
-    let roundsForFirstToFall;
-    if (secondCombatantAttack <= 0) {
-        roundsForFirstToFall = Infinity;
-    } else {
-        roundsForFirstToFall = Math.ceil(firstCombatantHP / secondCombatantAttack);
-    }
-
-    return (roundsForSecondToFall <= roundsForFirstToFall) ? 'Yes' : 'No';
-};
-
-globalThis.console.log(
-    battleSimulator(
-        extractRawData('/dev/stdin', 'utf8')
-    )
-);
+engageCombat(require('fs').readFileSync('/dev/stdin', 'utf8'));

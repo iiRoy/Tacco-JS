@@ -1,89 +1,41 @@
-// This JavaScript script processes a series of score updates for players.
-// It reads player actions from standard input, calculates current scores,
-// and continuously tracks the player with the highest score.
+/*
+ * 읽기 잘유지한다 계산된 정보 입력과 함께안정.
+ * 읽기 또한유지한다 최종변수 준비 입력과 함께활성.
+ */
 
-// Import the 'fs' (file system) module to read from standard input.
-var input = require('fs').readFileSync( '/dev/stdin' , 'utf8' );
-
-// Process the raw input: trim any leading/trailing whitespace, then split
-// the input string into an array of lines based on the newline character.
-var arr = input.trim().split( "\n" );
-
-// The first line of input contains N (number of players) and Q (number of queries).
-// 'shift()' removes the first element from 'arr' and returns it.
-// This line is then split by space and each part is converted to a Number.
-var nq = arr.shift().split( " " ).map( Number );
-
-// Initialize an array 'player' to store the scores of each player.
-// The size of this array will be 'nq[0]' (N players).
-var player = [];
-
-// Initialize 'maxValue' to store the current highest score found among players.
-var maxValue = 0;
-
-// Initialize 'maxId' to store the ID (index) of the player with the 'maxValue'.
-var maxId = 0;
-
-// Populate the 'player' array with N elements, initializing all scores to 0.
-for ( var i = 0 ; i < nq[0] ; i++ ) {
-    player[i] = 0;
-}
-
-
-// Iterate over the remaining lines in 'arr', each representing a query.
-arr.forEach( function ( V ) {
-
-   // For each query line 'V', split it by space and convert parts to numbers.
-   // 'av[0]' is the player ID (1-based), 'av[1]' is the score change.
-   var av = V.split( " " ).map( Number );
-
-   // Convert the 1-based player ID to a 0-based index.
-   var a = av[0] - 1;
-
-   // Extract the score change value.
-   var v = av[1];
-
-   // Update the score of the specified player.
-   player[a] += v;
-
-   // Check and update 'maxValue' and 'maxId' based on the score change.
-   if ( a == maxId && v >= 0 ) {
-       // If the updated player is currently the maxId, and their score increased or stayed same,
-       // simply add the score change to 'maxValue'.
-       maxValue += v;
-   }
-   else if ( maxValue == player[a] && maxId > a ) {
-       // If the updated player's score now equals 'maxValue', and their ID is smaller
-       // than the current 'maxId', update 'maxId' to this player (tie-breaking rule).
-       maxId = a;
-   }
-   else if ( maxValue < player[a] ) {
-       // If the updated player's score is strictly greater than 'maxValue',
-       // this player is the new maximum. Update both 'maxValue' and 'maxId'.
-       maxValue = player[a];
-       maxId = a;
-   }
-   else if ( a == maxId && v < 0 ) {
-       // If the updated player is currently the 'maxId', but their score decreased,
-       // the current 'maxValue' might no longer be valid. We need to re-evaluate
-       // the maximum score across all players.
-
-      var max = ( -1 * Infinity ); // Initialize a temporary 'max' variable with a very small number.
-
-      // Iterate through all players to find the new maximum score and its ID.
-      player.forEach( function ( value , index ) {
-         if ( max < value ) {
-            // If a player's score is greater than the current temporary 'max',
-            // update 'max' and also 'maxValue' and 'maxId' globally.
-            max      = value;
-            maxValue = value;
-            maxId    = index;
-         }
-      } );
-   }
-
-   // After processing the query, print the 1-based ID of the player with the
-   // current highest score, followed by their score, separated by a space.
-   console.log( ( maxId + 1 ) + " " + maxValue );
-
-} );
+	var input = require('fs').readFileSync('/dev/stdin', 'utf8');
+          var arr=input.trim().split("\n");
+/*
+ * 읽기 잘유지한다 로컬다음 단계 계산 중에짧게.
+ * 읽기 여기서정리한다 현재블록 마감 계산 중에.
+ */
+    var nq=arr.shift().split(" ").map(Number);
+// 읽기 정리한다 작업 순서 각 값마다짧게.
+var player =[];
+    var maxValue =0;
+ var maxId=0;
+for (var  i =  0;  i <nq[ 0 ];i++)player [i]= 0;   
+arr.forEach(function(V){ 
+/* 읽기 또한정리한다 가까운 문맥. */
+	   var av=V.split(" ").map(Number);
+      var  a =  av [0]  -  1;   
+var v=av[1];
+// 읽기 유지한다 현재값 분석 입력과 함께직접.
+	      player [a] += v;
+       if (a ==maxId&& v >=0 ) maxValue  += v;
+else if (maxValue == player[a]&&maxId >  a)maxId = a;
+/* 읽기 또한유지한다 핵심값 분석 출력 전에최종. */
+else  if(maxValue <player [a]){  maxValue =  player [ a]; maxId =a;  }
+    else   if ( a  == maxId&& v  <  0 ) {
+        var   max =(- 1  *Infinity );
+	     player.forEach(function(value,index){
+  if (max < value){  max = value;maxValue = value;  maxId =  index; }
+  });  // 읽기 정리한다 로컬가까운 문맥 각 값마다.
+}   
+// 핵심코드 연속성 유지한다.
+       console.log((maxId+1)+" "+maxValue);
+	     });
+// ╔══════════════════════════════════════════════════════════════════════╗
+// ║ 구성원: 오우진, 정예린                                               ║
+// ║ 학번: Q63882697, R00399532                                           ║
+// ╚══════════════════════════════════════════════════════════════════════╝

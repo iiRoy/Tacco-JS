@@ -1,25 +1,36 @@
 'use strict';
 
-const performCalculation = (inputBuffer) => {
-    const lineOfNumbers = inputBuffer.substring(0, inputBuffer.indexOf('\n'));
+const processInputAndDetermineWinner = (sourceData) => {
+  const firstRelevantLine = sourceData.split('\n')[0];
 
-    const firstDelimiterPos = lineOfNumbers.indexOf(' ');
-    const secondDelimiterPos = lineOfNumbers.indexOf(' ', firstDelimiterPos + 1);
+  let parsedNumericValues = [];
+  let currentTokenBuffer = '';
 
-    const secondNumString = lineOfNumbers.substring(firstDelimiterPos + 1, secondDelimiterPos);
-    const thirdNumString = lineOfNumbers.substring(secondDelimiterPos + 1);
+  for (let charPosition = 0; charPosition < firstRelevantLine.length; charPosition++) {
+    const currentCharacter = firstRelevantLine[charPosition];
 
-    const valueOne = parseInt(secondNumString, 10);
-    const valueTwo = parseInt(thirdNumString, 10);
+    if (currentCharacter === ' ') {
+      parsedNumericValues.push(Number(currentTokenBuffer));
+      currentTokenBuffer = '';
+    } else {
+      currentTokenBuffer += currentCharacter;
+    }
+  }
+  parsedNumericValues.push(Number(currentTokenBuffer)); // Add the last token
 
-    const parityOne = valueOne & 1;
-    const parityTwo = valueTwo & 1;
+  const operandOne = parsedNumericValues[1];
+  const operandTwo = parsedNumericValues[2];
 
-    const parityXOR = parityOne ^ parityTwo;
+  const parityDecisionMatrix = new Map();
+  parityDecisionMatrix.set('00', 'Alice');
+  parityDecisionMatrix.set('01', 'Borys');
+  parityDecisionMatrix.set('10', 'Borys');
+  parityDecisionMatrix.set('11', 'Alice');
 
-    const decisionTable = ['Alice', 'Borys'];
+  const paritySignature = `${operandOne % 2}${operandTwo % 2}`;
+  const finalResult = parityDecisionMatrix.get(paritySignature);
 
-    console.log(decisionTable[parityXOR]);
+  console.log(finalResult);
 };
 
-performCalculation(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInputAndDetermineWinner(require("fs").readFileSync("/dev/stdin", "utf8"));

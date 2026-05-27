@@ -1,336 +1,205 @@
-(function utilityCore(voidValue) {
+(function initializeCoreUtils(undefined) {
 	'use strict';
+	var arrPrototype = Array.prototype, objPrototype = Object.prototype, funcPrototype = Function.prototype;
 
-	const arrPrototype = Array.prototype;
-	const objPrototype = Object.prototype;
-	const fnPrototype = Function.prototype;
+	var arrPush = arrPrototype.push,
+	arrSlice = arrPrototype.slice,
+	arrConcat = arrPrototype.concat,
+	objToString = objPrototype.toString,
+	objHasOwnProperty = objPrototype.hasOwnProperty;
 
-	const pushMethod = arrPrototype.push;
-	const sliceMethod = arrPrototype.slice;
-	const concatMethod = arrPrototype.concat;
-	const strConverter = objPrototype.toString;
-	const hasOwnPropCheck = objPrototype.hasOwnProperty;
+	var nativeArrForEach = arrPrototype.forEach,
+	nativeArrMap = arrPrototype.map,
+	nativeArrReduce = arrPrototype.reduce,
+	nativeArrReduceRight = arrPrototype.reduceRight,
+	nativeArrFilter = arrPrototype.filter,
+	nativeArrEvery = arrPrototype.every,
+	nativeArrSome = arrPrototype.some,
+	nativeArrIndexOf = arrPrototype.indexOf,
+	nativeArrLastIndexOf = arrPrototype.lastIndexOf,
+	nativeArrIsArray = Array.isArray,
+	nativeObjKeys = Object.keys,
+	nativeFuncBind = funcPrototype.bind;
 
-	const forEachNative = arrPrototype.forEach;
-	const mapNative = arrPrototype.map;
-	const reduceNative = arrPrototype.reduce;
-	const reduceRightNative = arrPrototype.reduceRight;
-	const filterNative = arrPrototype.filter;
-	const everyNative = arrPrototype.every;
-	const someNative = arrPrototype.some;
-	const indexOfNative = arrPrototype.indexOf;
-	const lastIndexOfNative = arrPrototype.lastIndexOf;
-	const isArrayNative = Array.isArray;
-	const keysNative = Object.keys;
-	const bindNative = fnPrototype.bind;
+	global._lib = {};
+	var earlyExitBreaker = {}; // Explicitly define breaker for strict mode compatibility, as it's not returned by extend's iterator.
 
-	this._toolkit = {};
-	const lib = this._toolkit;
-
-	lib.LOOP_BREAK_SIGNAL = {};
-
-	lib.processItems = lib.forEachCollection = function(collection, processor, scope) {
-		if (collection === null || collection === voidValue) {
-			return;
-		}
-
-		if (forEachNative && collection.forEach === forEachNative) {
-			collection.forEach(processor, scope);
-			return;
-		}
-
-		const collectionLength = collection.length;
-		const isArrayLike = typeof collectionLength === 'number' && collectionLength >= 0 && collectionLength % 1 === 0;
-
-		if (isArrayLike) {
-			for (let idx = 0; idx < collectionLength; idx++) {
-				if (processor.call(scope, collection[idx], idx, collection) === lib.LOOP_BREAK_SIGNAL) {
-					return;
-				}
+	var iterateCollection = global._lib.each = global._lib.forEach = function(collection, itemIterator, iterationContext) {
+		if (collection == null) return;
+		if (nativeArrForEach && collection.forEach === nativeArrForEach) {
+			collection.forEach(itemIterator, iterationContext);
+		} else if (collection.length === +collection.length) {
+			for (var i = 0, len = collection.length; i < len; i++) {
+				if (itemIterator.call(iterationContext, collection[i], i, collection) === earlyExitBreaker) return;
 			}
 		} else {
-			const objectKeys = keysNative(collection);
-			for (let i = 0; i < objectKeys.length; i++) {
-				const currentKey = objectKeys[i];
-				if (hasOwnPropCheck.call(collection, currentKey)) {
-					if (processor.call(scope, collection[currentKey], currentKey, collection) === lib.LOOP_BREAK_SIGNAL) {
-						return;
-					}
+			var hasProperty = function(obj, key) { // Helper for hasOwnProperty check
+				return objPrototype.hasOwnProperty.call(obj, key);
+			};
+			for (var propKey in collection) {
+				if (hasProperty(collection, propKey)) {
+					if (itemIterator.call(iterationContext, collection[propKey], propKey, collection) === earlyExitBreaker) return;
 				}
 			}
 		}
 	};
 
-	lib.assignProperties = function(targetObj) {
-		if (targetObj === null || targetObj === voidValue) {
-			targetObj = {};
-		}
-
-		const sources = sliceMethod.call(arguments, 1);
-
-		lib.processItems(sources, function(currentSource) {
-			if (currentSource !== null && currentSource !== voidValue && typeof currentSource === 'object') {
-				for (const propertyName in currentSource) {
-					if (hasOwnPropCheck.call(currentSource, propertyName)) {
-						targetObj[propertyName] = currentSource[propertyName];
-					}
+	global._lib.assignProperties = function(targetObject) {
+		iterateCollection(arrSlice.call(arguments, 1), function(sourceObject) {
+			if (sourceObject) {
+				for (var sourceProp in sourceObject) {
+					targetObject[sourceProp] = sourceObject[sourceProp];
 				}
 			}
 		});
-		return targetObj;
+		return targetObject;
 	};
+}).call(global);
 
-}).call(globalThis);
-
-(function valueFormatters(voidValue) {
+(function initializeFormattingHelpers(undefined){
 	'use strict';
+	global.formatDecimalString = function formatDecimalString(value, base, padding, precision) {
+		var powerOfTen = Math.pow(10, precision);
+		var roundedValueString = "" + Math.round(value * powerOfTen);
 
-	this.formatDecimal = function(inputValue, decimalPlaces = 3, minIntDigits = 1) {
-		if (typeof inputValue !== 'number' || isNaN(inputValue)) {
-			console.warn("Invalid input for formatDecimal. Returning '0.000'.");
+		if (roundedValueString === '0') {
 			return '0.000';
 		}
-		if (typeof decimalPlaces !== 'number' || decimalPlaces < 0 || !Number.isInteger(decimalPlaces)) {
-			decimalPlaces = 3;
+
+		var integerPartLength = roundedValueString.length - precision;
+		if (integerPartLength === 0) {
+			return "0." + roundedValueString.slice(integerPartLength, precision + integerPartLength);
 		}
-		if (typeof minIntDigits !== 'number' || minIntDigits < 0 || !Number.isInteger(minIntDigits)) {
-			minIntDigits = 1;
-		}
-
-		const isNegative = inputValue < 0;
-		let absoluteValue = Math.abs(inputValue);
-
-		let roundedString = absoluteValue.toFixed(decimalPlaces);
-
-		let parts = roundedString.split('.');
-		let integerPart = parts[0];
-		let fractionalPart = parts[1] || '';
-
-		while (integerPart.length < minIntDigits) {
-			integerPart = '0' + integerPart;
-		}
-
-		if (absoluteValue === 0 && +roundedString === 0) {
-			integerPart = '0';
-		}
-		
-		if (decimalPlaces === 0) {
-			return (isNegative ? '-' : '') + integerPart;
-		}
-
-		return (isNegative ? '-' : '') + integerPart + '.' + fractionalPart;
+		return roundedValueString.slice(0, integerPartLength) + "." + roundedValueString.slice(integerPartLength, precision + integerPartLength);
 	};
+}).call(global);
 
-}).call(globalThis);
+(function initializeMathematicalFunctions(namespace, undefined) {
+	var MathOperations = {
+		greatestCommonDivisor: function greatestCommonDivisor(numA, numB) {
+			while (numB) { // Iterative GCD
+				var temp = numB;
+				numB = numA % numB;
+				numA = temp;
+			}
+			return numA;
+		},
+		leastCommonMultiple: function leastCommonMultiple(numA, numB) {
+			if (numA === 0 || numB === 0) return 0;
+			return Math.abs(numA * numB) / MathOperations.greatestCommonDivisor(numA, numB);
+		},
+		squareNumber: function squareNumber(val) {
+			return val * val;
+		}
+	};
+	global.Math = global.Math || {}; // Ensure global.Math exists
+	global._lib.assignProperties(global.Math, MathOperations);
+}).call(global, 'Math');
 
-(function arithmeticHelpers(targetNamespaceKey, voidValue) {
+(function setupProblemSolver(undefined){
 	'use strict';
 
-	const mathOperations = {
-		greatestCommonDivisor: function(valueA, valueB) {
-			if (typeof valueA !== 'number' || typeof valueB !== 'number' || isNaN(valueA) || isNaN(valueB)) {
-				console.error("Invalid input for greatestCommonDivisor: must be numbers. Returning NaN.");
-				return NaN;
-			}
-			valueA = Math.abs(valueA);
-			valueB = Math.abs(valueB);
+	var defaultInputDataType = 'float';
 
-			while (valueB !== 0) {
-				const remainder = valueA % valueB;
-				valueA = valueB;
-				valueB = remainder;
-			}
-			return valueA;
+	var CircleSolverModule = {
+		triggerSolutionProcess: function() {
+			setTimeout( CircleSolverModule.executeSolutionCycle, 0, this );
 		},
+		executeSolutionCycle: function executeSolutionCycle(executionScope) {
+			let remainingCases = executionScope.extractIntegerToken();
 
-		leastCommonMultiple: function(valueA, valueB) {
-			if (typeof valueA !== 'number' || typeof valueB !== 'number' || isNaN(valueA) || isNaN(valueB)) {
-				console.error("Invalid input for leastCommonMultiple: must be numbers. Returning NaN.");
-				return NaN;
-			}
-			if (valueA === 0 || valueB === 0) {
-				return 0;
+			const processSingleCase = () => {
+				const coordinateLabels = ['x1', 'y1', 'x2', 'y2', 'x3', 'y3'];
+				coordinateLabels.forEach(function(label){
+					this[label] = executionScope.extractFloatToken();
+				}, executionScope); // 'this' in forEach callback refers to executionScope
+
+				const x1Val = executionScope.x1;
+				const y1Val = executionScope.y1;
+				const x2Val = executionScope.x2;
+				const y2Val = executionScope.y2;
+				const x3Val = executionScope.x3;
+				const y3Val = executionScope.y3;
+
+				const sqX1 = global.Math.squareNumber(x1Val);
+				const sqY1 = global.Math.squareNumber(y1Val);
+				const sqX2 = global.Math.squareNumber(x2Val);
+				const sqY2 = global.Math.squareNumber(y2Val);
+				const sqX3 = global.Math.squareNumber(x3Val);
+				const sqY3 = global.Math.squareNumber(y3Val);
+
+				const eqCoeffA = x1Val - x2Val;
+				const eqCoeffB = y1Val - y2Val;
+				const eqCoeffC = -1 * ( sqX1 - sqX2 + sqY1 - sqY2 );
+				const eqCoeffD = x1Val - x3Val;
+				const eqCoeffE = y1Val - y3Val;
+				const eqCoeffF = -1 * ( sqX1 - sqX3 + sqY1 - sqY3 );
+
+				const denominatorLM = (eqCoeffE * eqCoeffA - eqCoeffB * eqCoeffD);
+				const resultL = ( eqCoeffC * eqCoeffE - eqCoeffB * eqCoeffF ) / denominatorLM;
+				const resultM = ( eqCoeffD * eqCoeffC - eqCoeffA * eqCoeffF ) / ( eqCoeffD * eqCoeffB - eqCoeffE * eqCoeffA );
+				
+				// Note: 'remainingCases' (original 'n') is used here for radius calculation, preserving original behavior.
+				const radiusTerm = global.Math.squareNumber(resultL) + global.Math.squareNumber(resultM) + 4 * remainingCases;
+				const radiusValue = global.Math.sqrt(radiusTerm) / 2.0;
+
+				const formattedL = global.formatDecimalString(resultL / -2.0, 10, 3, 3);
+				const formattedM = global.formatDecimalString(resultM / -2.0, 10, 3, 3);
+				const formattedRadius = global.formatDecimalString(radiusValue, 10, 3, 3);
+
+				executionScope.logOutput(formattedL, formattedM, formattedRadius);
+			};
+
+			for (let i = 0; i < remainingCases; ++i) {
+				processSingleCase();
 			}
 
-			const gcdResult = mathOperations.greatestCommonDivisor(valueA, valueB);
-			if (gcdResult === 0) {
-				return 0;
+			if ( ! executionScope.hasPendingInput() ) {
+				setTimeout( CircleSolverModule.executeSolutionCycle, 0, executionScope );
 			}
-			return Math.abs(valueA * valueB) / gcdResult;
-		},
-
-		squareValue: function(inputVal) {
-			if (typeof inputVal !== 'number' || isNaN(inputVal)) {
-				console.error("Invalid input for squareValue: must be a number. Returning NaN.");
-				return NaN;
-			}
-			return Math.pow(inputVal, 2);
 		}
 	};
 
-	globalThis[targetNamespaceKey] = globalThis[targetNamespaceKey] || {};
-	_toolkit.assignProperties(globalThis[targetNamespaceKey], mathOperations);
-
-}).call(globalThis, 'Math');
-
-(function applicationEngine(voidValue) {
-	'use strict';
-
-	const DATA_INPUT_FORMAT = 'float';
-
-	const ProblemResolver = {
-		startProcessing: function() {
-			setTimeout(ProblemResolver.executeSolution, 0, this);
-		},
-
-		executeSolution: function(executionContext) {
-			let totalIterations = executionContext.fetchIntegerInput();
-
-			if (isNaN(totalIterations) || totalIterations <= 0) {
-				console.log("No valid number of test cases provided. Exiting solver.");
-				return;
+	(function initializeInputSystem() {
+		global._lib.assignProperties( this, {
+			logOutput: function() {
+				console.log.apply( console, arguments );
+			},
+			inputSourceStream: process.openStdin(),
+			bufferedInputTokens: [],
+			extractIntegerToken: function() {
+				return parseInt( this.bufferedInputTokens.splice(0,1)[0] );
+			},
+			extractFloatToken: function() {
+				return parseFloat( this.bufferedInputTokens.splice(0,1)[0] );
+			},
+			extractTextToken: function() {
+				return this.bufferedInputTokens.splice(0,1)[0];
+			},
+			hasPendingInput: function() {
+				return ! this.bufferedInputTokens.length;
 			}
+		} );
 
-			for (let currentCaseIndex = 0; currentCaseIndex < totalIterations; currentCaseIndex++) {
-				ProblemResolver.solveCurrentProblem(executionContext);
-			}
+		var inputRegexCollection = {};
+		inputRegexCollection['string'] = /\w*/g;
+		inputRegexCollection['number'] = /[-]?\d+/g;
+		inputRegexCollection['float'] = /[-]?\d+(\.\d+)?/g;
+		var activeInputRegex = inputRegexCollection[defaultInputDataType];
 
-			if (executionContext.hasMoreInput()) {
-				setTimeout(ProblemResolver.executeSolution, 0, executionContext);
-			} else {
-				console.log("All input processed. Solver finished.");
-			}
-		},
+		var solverContext = this; // 'this' refers to module.exports
+		solverContext.inputSourceStream.setEncoding('utf8');
 
-		solveCurrentProblem: function(context) {
-			const coordinateKeys = ['p1x', 'p1y', 'p2x', 'p2y', 'p3x', 'p3y'];
-			const coords = {};
+		const filterNonEmptyTokens = (token) => token.length > 0;
 
-			let inputInvalid = false;
-			_toolkit.forEachCollection(coordinateKeys, function(keyName) {
-				coords[keyName] = context.fetchDecimalInput();
-				if (isNaN(coords[keyName])) {
-					console.error(`Invalid input for ${keyName}. Skipping current problem.`);
-					inputInvalid = true;
-					return _toolkit.LOOP_BREAK_SIGNAL;
-				}
-			});
-
-			if (inputInvalid) {
-				return;
-			}
-
-			const { p1x, p1y, p2x, p2y, p3x, p3y } = coords;
-
-			const deltaX12 = p1x - p2x;
-			const deltaY12 = p1y - p2y;
-			const p1xSq = Math.squareValue(p1x);
-			const p1ySq = Math.squareValue(p1y);
-			const p2xSq = Math.squareValue(p2x);
-			const p2ySq = Math.squareValue(p2y);
-			const p3xSq = Math.squareValue(p3x);
-			const p3ySq = Math.squareValue(p3y);
-
-			const sumSquares12 = p2xSq - p1xSq + p2ySq - p1ySq;
-
-			const deltaX13 = p1x - p3x;
-			const deltaY13 = p1y - p3y;
-			const sumSquares13 = p3xSq - p1xSq + p3ySq - p1ySq;
-
-			const determinant = deltaX12 * deltaY13 - deltaY12 * deltaX13;
-
-			if (Math.abs(determinant) < 1e-9) {
-				context.printOutput("Points are collinear or coincident. Cannot form a unique circle.");
-				return;
-			}
-
-			const coeffD = (sumSquares12 * deltaY13 - deltaY12 * sumSquares13) / determinant;
-			const coeffE = (deltaX12 * sumSquares13 - sumSquares12 * deltaX13) / determinant;
-
-			const constTermF = -1 * (p1xSq + p1ySq + coeffD * p1x + coeffE * p1y);
-
-			const centerX = -coeffD / 2.0;
-			const centerY = -coeffE / 2.0;
-
-			const radiusSquared = Math.squareValue(centerX) + Math.squareValue(centerY) - constTermF;
-
-			if (radiusSquared < 0) {
-				context.printOutput("Points do not define a real circle (negative radius squared).");
-				return;
-			}
-
-			const circleRadius = Math.sqrt(radiusSquared);
-
-			const formattedCenterX = formatDecimal(centerX, 3, 1);
-			const formattedCenterY = formatDecimal(centerY, 3, 1);
-			const formattedRadius = formatDecimal(circleRadius, 3, 1);
-
-			context.printOutput(formattedCenterX, formattedCenterY, formattedRadius);
-		}
-	};
-
-	(function initializeEnvironment() {
-		const environment = {};
-
-		environment.printOutput = function() {
-			console.log.apply(console, arguments);
-		};
-
-		environment.standardInputReader = process.stdin;
-		environment.pendingInputTokens = [];
-
-		environment.fetchIntegerInput = function() {
-			const nextToken = environment.pendingInputTokens.shift();
-			return nextToken !== voidValue ? parseInt(nextToken, 10) : NaN;
-		};
-		environment.fetchDecimalInput = function() {
-			const nextToken = environment.pendingInputTokens.shift();
-			return nextToken !== voidValue ? parseFloat(nextToken) : NaN;
-		};
-		environment.fetchStringInput = function() {
-			return environment.pendingInputTokens.shift();
-		};
-		environment.hasMoreInput = function() {
-			return environment.pendingInputTokens.length > 0;
-		};
-
-		_toolkit.assignProperties(this, environment);
-
-		const regexPatternCatalog = {
-			'string': /\S+/g,
-			'number': /[-]?\d+/g,
-			'float': /[-]?\d+(\.\d+)?/g
-		};
-
-		let activeInputPattern = regexPatternCatalog[DATA_INPUT_FORMAT];
-		if (!activeInputPattern) {
-			console.error(`ERROR: Unsupported DATA_INPUT_FORMAT: '${DATA_INPUT_FORMAT}'. Defaulting to 'float'.`);
-			activeInputPattern = regexPatternCatalog['float'];
-		}
-
-		environment.standardInputReader.setEncoding('utf8');
-
-		environment.standardInputReader.on('data', function(inputChunk) {
-			if (typeof inputChunk !== 'string' || inputChunk.trim() === '') {
-				return;
-			}
-			const parsedTokens = inputChunk.match(activeInputPattern);
-
-			if (parsedTokens && parsedTokens.length > 0) {
-				const validTokens = parsedTokens.filter(tokenItem => tokenItem.length > 0);
-				environment.pendingInputTokens = environment.pendingInputTokens.concat(validTokens);
+		solverContext.inputSourceStream.on('data', function(dataChunk){
+			var parsedTokens = dataChunk.match(activeInputRegex);
+			if (parsedTokens) { // Ensure match returns an array
+				solverContext.bufferedInputTokens = solverContext.bufferedInputTokens.concat(parsedTokens.filter(filterNonEmptyTokens));
 			}
 		});
-
-		environment.standardInputReader.on('end', function() {
-			ProblemResolver.startProcessing.call(ProblemResolver);
+		solverContext.inputSourceStream.on('end', function(){
+			CircleSolverModule.triggerSolutionProcess.call(solverContext);
 		});
-
-		environment.standardInputReader.on('error', function(err) {
-			console.error("Standard input error:", err);
-			process.exit(1);
-		});
-
-	}).call(this);
-
-}).call(globalThis);
+	}).call( this ); // 'this' here refers to module.exports in Node.js
+}).call(global);

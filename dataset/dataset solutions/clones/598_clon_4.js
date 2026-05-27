@@ -1,92 +1,66 @@
-function parseEnvironment() {
-    const rawInputString = require('fs').readFileSync('/dev/stdin', 'utf8');
-    const processedLines = rawInputString.trim().split("\n");
+const findPathCost = (startX, startY) => {
+    const moveOffsets = [
+        { deltaX: 0, deltaY: -1 },
+        { deltaX: -1, deltaY: 0 },
+        { deltaX: 1, deltaY: 0 },
+        { deltaX: 0, deltaY: 1 }
+    ];
 
-    const environmentDimensions = processedLines.shift().split(" ").map(Number);
-    const gridHeight = environmentDimensions[0];
-    const gridWidth = environmentDimensions[1];
-    const initialStageLevel = environmentDimensions[2];
+    let totalSteps = 0;
+    const explorationQueue = [{ xCoord: startX, yCoord: startY, pathLength: 0, currentPowerLevel: 1 }];
 
-    const terrainMap = [];
-    let startingPoint = [];
+    const maxPowerReached = new Map();
+    maxPowerReached.set(`${startX},${startY}`, 1);
 
-    for (let currentLineIndex = 0; currentLineIndex < gridHeight; ++currentLineIndex) {
-        const gridRow = processedLines.shift().split("");
-        const startColumnIndex = gridRow.indexOf("S");
-        if (startColumnIndex !== -1) {
-            startingPoint = [startColumnIndex, currentLineIndex];
+    while (explorationQueue.length > 0) {
+        const { xCoord, yCoord, pathLength, currentPowerLevel } = explorationQueue.shift();
+
+        if (currentPowerLevel === power + 1) {
+            totalSteps = pathLength;
+            return totalSteps;
         }
-        terrainMap.push(gridRow);
+
+        moveOffsets.forEach(offset => {
+            const nextX = xCoord + offset.deltaX;
+            const nextY = yCoord + offset.deltaY;
+            let nextPower = currentPowerLevel;
+
+            if (nextX < 0 || nextY < 0 || nextX >= hw[1] || nextY >= hw[0]) {
+                return;
+            }
+            if (YX[nextY][nextX] === "X") {
+                return;
+            }
+
+            if (YX[nextY][nextX] === String(nextPower)) {
+                nextPower++;
+            }
+
+            const coordinateKey = `${nextX},${nextY}`;
+            const existingMaxPower = maxPowerReached.get(coordinateKey) || 0;
+
+            if (existingMaxPower >= nextPower) {
+                return;
+            }
+
+            maxPowerReached.set(coordinateKey, nextPower);
+            explorationQueue.push({ xCoord: nextX, yCoord: nextY, pathLength: pathLength + 1, currentPowerLevel: nextPower });
+        });
     }
 
-    return {
-        initialX: startingPoint[0],
-        initialY: startingPoint[1],
-        grid: terrainMap,
-        height: gridHeight,
-        width: gridWidth,
-        requiredStage: initialStageLevel
-    };
+    return totalSteps;
+};
+
+var input = require('fs').readFileSync('/dev/stdin', 'utf8');
+var Arr = (input.trim()).split("\n");
+var hw = (Arr.shift()).split(" ").map(Number);
+var power = hw[2];
+var YX = [];
+var start = [];
+for (var i = 0; i < hw[0]; i++) {
+    var arr = (Arr.shift()).split("");
+    if (arr.indexOf("S") != -1) start = [arr.indexOf("S"), i];
+    YX.push(arr);
 }
-
-function calculateMinPath(initialXCoordinate, initialYCoordinate, gridStructure, gridHeight, gridWidth, targetStage) {
-    const horizontalMoves = [0, -1, 1, 0];
-    const verticalMoves = [-1, 0, 0, 1];
-
-    const explorationFrontier = [[initialXCoordinate, initialYCoordinate, 0, 1]];
-    let finalPathCost = 0;
-
-    const progressRecords = new Map(); // Map<x, Map<y, max_power_level_achieved_at_x_y>>
-
-    while (explorationFrontier.length > 0) {
-        const [currentCellX, currentCellY, accumulatedCost, currentStageLevel] = explorationFrontier.shift();
-
-        if (currentStageLevel === targetStage + 1) {
-            finalPathCost = accumulatedCost;
-            break;
-        }
-
-        for (let directionIndex = 0; directionIndex < 4; ++directionIndex) {
-            const neighborX = currentCellX + horizontalMoves[directionIndex];
-            const neighborY = currentCellY + verticalMoves[directionIndex];
-            let nextStageLevel = currentStageLevel;
-
-            if (neighborX < 0 || neighborY < 0 || neighborX >= gridWidth || neighborY >= gridHeight) {
-                continue;
-            }
-
-            if (gridStructure[neighborY][neighborX] === "X") {
-                continue;
-            }
-
-            if (gridStructure[neighborY][neighborX] === String(nextStageLevel)) {
-                nextStageLevel++;
-            }
-
-            const existingMaxStage = progressRecords.get(neighborX)?.get(neighborY) || 0;
-            if (existingMaxStage >= nextStageLevel) {
-                continue;
-            }
-
-            if (!progressRecords.has(neighborX)) {
-                progressRecords.set(neighborX, new Map());
-            }
-            progressRecords.get(neighborX).set(neighborY, nextStageLevel);
-            explorationFrontier.push([neighborX, neighborY, accumulatedCost + 1, nextStageLevel]);
-        }
-    }
-
-    return finalPathCost;
-}
-
-const environmentData = parseEnvironment();
-const finalOutcome = calculateMinPath(
-    environmentData.initialX,
-    environmentData.initialY,
-    environmentData.grid,
-    environmentData.height,
-    environmentData.width,
-    environmentData.requiredStage
-);
-
-console.log(finalOutcome);
+var ans = findPathCost(start[0], start[1]);
+console.log(ans);

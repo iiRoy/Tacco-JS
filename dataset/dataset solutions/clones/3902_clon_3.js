@@ -1,100 +1,65 @@
 "use strict";
 
-// This function calculates the number of ordered arrangements (permutations)
-// of 'itemsToSelect' elements chosen from a total set of 'totalItems' distinct elements.
-// It computes P(n, r) = n * (n-1) * ... * (n-r+1).
-const computeOrderedSelections = (totalItems, itemsToSelect) => {
-    // Pre-validation: Ensure inputs are non-negative and 'itemsToSelect'
-    // does not exceed 'totalItems'. If invalid, return 0 as a default.
-    // In a production environment, an error might be thrown.
-    if (totalItems < 0 || itemsToSelect < 0 || itemsToSelect > totalItems) {
-        console.warn(`Invalid input for permutations: totalItems=${totalItems}, itemsToSelect=${itemsToSelect}. Returning 0.`);
-        return 0;
+// Helper function to calculate permutations (P(n, r))
+const calcPermutations = (totalItems, selectedItems) => {
+    let productAccumulator = 1; // Initialize accumulator for the product
+    const iterationLimit = selectedItems; // Store selectedItems in a constant for loop clarity
+
+    for (let iterationIndex = 0; iterationIndex < iterationLimit; iterationIndex++) {
+        const currentFactor = totalItems - iterationIndex; // Calculate the current factor for multiplication
+        productAccumulator *= currentFactor; // Multiply into the accumulator
     }
 
-    let productAccumulator = 1; // Initialize the result with a multiplicative identity.
-    
-    // Loop 'itemsToSelect' times, multiplying by 'totalItems' and decrementing it.
-    for (let currentFactorIndex = 0; currentFactorIndex < itemsToSelect; ++currentFactorIndex) {
-        productAccumulator *= (totalItems - currentFactorIndex);
-    }
-    
-    return productAccumulator; // Deliver the computed permutation value.
+    return productAccumulator;
 };
 
-// The original 'combination' function was not utilized within the main logic.
-// As a Type III transformation, it has been deliberately removed to streamline
-// the codebase and eliminate unused functionality.
+// Function to calculate combinations (C(n, r))
+const calcCombinations = (totalElements, chosenElements) => {
+    // Calculate numerator and denominator permutations separately for improved readability
+    const numeratorPermutationResult = calcPermutations(totalElements, chosenElements);
+    const denominatorPermutationResult = calcPermutations(chosenElements, chosenElements);
+    
+    // Return the result of the division
+    return numeratorPermutationResult / denominatorPermutationResult;
+};
 
-// This is the primary function to process the input, perform the core calculation,
-// and output the result based on the problem's requirements.
-const executeCalculation = (rawInputData) => {
-    // Step 1: Prepare the input data.
-    // Trim any leading/trailing whitespace from the raw input string,
-    // then split it into individual lines. A filter is applied to discard
-    // any potential empty lines, enhancing robustness.
-    const processedInputLines = rawInputData
-                                    .trim()
-                                    .split("\n")
-                                    .filter(lineContent => lineContent.length > 0);
+// Main execution logic encapsulated in a descriptive function
+const processInputAndFindClosest = rawDataString => {
+    // Step 1: Parse the raw input string into individual lines
+    const inputLines = rawDataString.trim().split("\n");
+    
+    // Step 2: Extract N (the first line), although it's not used in the subsequent logic
+    const inputNValue = parseInt(inputLines[0], 10); // Specify radix for parseInt for robustness
+    
+    // Step 3: Parse the second line into an array of numbers and sort it in descending order
+    const numbersAsStringArray = inputLines[1].split(" ");
+    const parsedNumberArray = numbersAsStringArray.map(numStr => parseInt(numStr, 10)); // Convert string numbers to integers
+    // Sort the array in descending order as per the original logic (largest first)
+    const sortedInputArray = parsedNumberArray.sort((valA, valB) => valB - valA);
 
-    // In the original problem, the first line typically contained 'N',
-    // representing the count of elements. However, this 'N' was not
-    // subsequently used in the calculation logic. As a Type III modification,
-    // we omit parsing and storing this unused value to simplify the code.
-    // const elementCountFromInput = Number(processedInputLines[0]); // This line is now removed.
+    // Step 4: Determine the target value, which is half of the largest element in the sorted array
+    const largestElement = sortedInputArray[0];
+    const targetHalfValue = largestElement / 2;
 
-    // Step 2: Parse and sort the array of numbers.
-    // The second line of input contains space-separated numbers.
-    // These are converted to numerical types and then sorted in descending order.
-    // Using `Number()` is a concise way to convert string to number.
-    const sortedNumericCollection = processedInputLines[1]
-                                        .split(" ")
-                                        .map(numericString => Number(numericString))
-                                        .sort((valA, valB) => valB - valA); // Sort from largest to smallest.
+    // Step 5: Find the element in the array that is closest to the targetHalfValue
+    let minimumDifference = Infinity; // Initialize with a very large difference to ensure the first comparison updates it
+    let closestElementToTarget; // This variable will store the number found to be closest
 
-    // Step 3: Implement robustness checks for the input array.
-    // If the input collection is unexpectedly empty after processing,
-    // an error message is logged, and the function exits gracefully.
-    if (sortedNumericCollection.length === 0) {
-        console.error("Error: The input numeric collection is empty. Cannot perform calculations.");
-        return;
-    }
-
-    // Step 4: Identify the largest element and calculate the target midpoint.
-    // The largest element is always at the first index due to descending sort.
-    const largestValueInCollection = sortedNumericCollection[0];
-    // The target midpoint is half of the largest value. Explicitly using 2.0
-    // ensures floating-point division, though JavaScript handles this by default.
-    const idealMidpointTarget = largestValueInCollection / 2.0;
-
-    // Step 5: Find the element in the collection closest to the ideal midpoint.
-    let smallestAbsoluteDifference = Number.MAX_VALUE; // Initialize with a very large number.
-    let selectedClosestElement; // This variable will hold the element found to be closest.
-
-    // Iterate through each element in the sorted collection.
-    // A standard `for` loop is used for direct index control.
-    for (let currentElementIndex = 0; currentElementIndex < sortedNumericCollection.length; ++currentElementIndex) {
-        const currentElementCandidate = sortedNumericCollection[currentElementIndex];
-        // Calculate the absolute difference between the candidate and the midpoint.
-        const differenceToMidpoint = Math.abs(idealMidpointTarget - currentElementCandidate);
-
-        // If this candidate is closer to the midpoint than any previous one,
-        // update our tracking variables.
-        if (differenceToMidpoint < smallestAbsoluteDifference) {
-            smallestAbsoluteDifference = differenceToMidpoint;
-            selectedClosestElement = currentElementCandidate;
+    // Iterate through each number in the sorted array using a for...of loop
+    for (const currentNumber of sortedInputArray) {
+        const absoluteDifference = Math.abs(targetHalfValue - currentNumber); // Calculate the absolute difference
+        
+        // If the current difference is strictly smaller than the previously recorded minimum difference,
+        // update the minimum difference and the closest element.
+        if (absoluteDifference < minimumDifference) {
+            minimumDifference = absoluteDifference;
+            closestElementToTarget = currentNumber;
         }
     }
     
-    // Step 6: Output the final results.
-    // The largest value and the element closest to its half are printed.
-    // Using template literals for a clean and readable output format.
-    console.log(`${largestValueInCollection} ${selectedClosestElement}`);
+    // Step 6: Output the largest element and the closest element found, formatted as a string
+    console.log(`${largestElement} ${closestElementToTarget}`);
 };
 
-// Entry point of the script:
-// Reads all data from standard input ('/dev/stdin') using the Node.js 'fs' module,
-// decodes it as UTF-8, and then passes it to the main processing function.
-const fileSystemUtility = require('fs');
-executeCalculation(fileSystemUtility.readFileSync('/dev/stdin', 'utf8'));
+// Read input from standard input and execute the main processing function
+processInputAndFindClosest(require('fs').readFileSync('/dev/stdin', 'utf8'));

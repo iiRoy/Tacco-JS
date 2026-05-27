@@ -1,6 +1,9 @@
-const calculateValue = (val) => {
-    const isValOne = 1 - Math.sign(Math.abs(val - 1));
-    const isValOdd = val & 1;
-    const nonOneOutcome = (1 - isValOdd) * 0.5 + isValOdd * ((val + 2) / (2 * val));
-    return isValOne * 1 + (1 - isValOne) * nonOneOutcome;
+const computeValue = (val) => {
+  return val === 1
+    ? 1
+    : (val % 2 === 0
+      ? 0.5
+      : (0.5 + 1 / val));
 };
+
+computeValue(input);

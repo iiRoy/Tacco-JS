@@ -1,91 +1,71 @@
-class GraphPathFinder {
-    constructor(nodeCount, edgeList, infiniteMetric) {
-        this.vertexCount = nodeCount;
-        this.edgeList = edgeList;
-        this.infiniteMetric = infiniteMetric;
-        this.nodeDistances = new Array(this.vertexCount).fill(this.infiniteMetric);
-        this.nodeDistances[0] = 0;
-        this.lastVisitedTarget = undefined; // Simulates 't' variable for the bug
-    }
+function processGraphData(rawData) {
+    const minPathValue = -100000000000000;
 
-    // Performs one iteration of the relaxation process
-    applyRelaxationIteration(maximumSourceIndex, isCycleDetectionRun, targetNodeForCycleCheck) {
-        let cyclePathFound = false;
+    const [nodeCount, edgeCount] = rawData[0].split(" ").map(Number);
 
-        // Use 'some' to allow early exit (mimicking 'break' for 'i' loop)
-        Array.from({ length: maximumSourceIndex + 1 }).some((_, currentSourceIndex) => {
-            // Replicate the 't' bug: if (dist[t] === inf) { continue; }
-            if (this.lastVisitedTarget !== undefined && this.nodeDistances[this.lastVisitedTarget] === this.infiniteMetric) {
-                return false; // Equivalent to 'continue' for forEach. `some` continues if false.
-            }
+    const adjacencyMap = new Map();
+    rawData.slice(1, 1 + edgeCount).forEach(line => {
+        const [sourceNode, targetNode, edgeWeight] = line.split(" ").map(Number);
+        const adjustedSource = sourceNode - 1;
+        const adjustedTarget = targetNode - 1;
 
-            if (this.nodeDistances[currentSourceIndex] === this.infiniteMetric) {
-                return false; // Equivalent to 'continue'
-            }
-
-            // Use 'some' to allow early exit (mimicking 'break' for 'j' loop)
-            this.edgeList.filter(e => e.sourceVertex === currentSourceIndex).some(edge => {
-                this.lastVisitedTarget = edge.destinationVertex; // Update 't'
-                if (this.nodeDistances[this.lastVisitedTarget] < this.nodeDistances[currentSourceIndex] + edge.weightValue) {
-                    this.nodeDistances[this.lastVisitedTarget] = this.nodeDistances[currentSourceIndex] + edge.weightValue;
-                    if (isCycleDetectionRun && currentSourceIndex === targetNodeForCycleCheck) {
-                        cyclePathFound = true;
-                        return true; // Equivalent to 'break' for 'j' loop
-                    }
-                }
-                return false; // Equivalent to 'continue' for 'j' loop
-            });
-
-            if (isCycleDetectionRun && cyclePathFound) {
-                return true; // Equivalent to 'break' for 'i' loop
-            }
-            return false; // Equivalent to 'continue' for 'i' loop
-        });
-        return cyclePathFound;
-    }
-
-    // Main solver method
-    solveGraph() {
-        // First set of relaxation passes (N times, source nodes up to N-2)
-        Array.from({ length: this.vertexCount }).forEach(() => {
-            this.applyRelaxationIteration(this.vertexCount - 2, false, -1);
-        });
-
-        // Second set of passes for cycle detection (N times, all source nodes 0 to N-1)
-        let confirmedInfinitePath = false;
-        Array.from({ length: this.vertexCount }).forEach(() => {
-            if (this.applyRelaxationIteration(this.vertexCount - 1, true, this.vertexCount - 1)) {
-                confirmedInfinitePath = true;
-            }
-        });
-
-        if (confirmedInfinitePath) {
-            console.log("inf");
-        } else {
-            console.log(this.nodeDistances[this.vertexCount - 1]);
+        if (!adjacencyMap.has(adjustedSource)) {
+            adjacencyMap.set(adjustedSource, []);
         }
-    }
-}
-
-function processInputData(rawDataLines) {
-    const NegligibleMagnitude = -100000000000000;
-
-    const [firstLineData, ...edgeLines] = rawDataLines;
-    const [vertexQuantityStr, edgeQuantityStr] = firstLineData.split(" ");
-    const vertexQuantity = parseInt(vertexQuantityStr);
-    const edgeQuantity = parseInt(edgeQuantityStr);
-
-    const graphEdges = edgeLines.slice(0, edgeQuantity).map((line, index) => {
-        const [uStr, vStr, wStr] = line.split(" ");
-        return {
-            sourceVertex: parseInt(uStr) - 1,
-            destinationVertex: parseInt(vStr) - 1,
-            weightValue: parseInt(wStr)
-        };
+        adjacencyMap.get(adjustedSource).push({ destination: adjustedTarget, weight: edgeWeight });
     });
 
-    const graphEngine = new GraphPathFinder(vertexQuantity, graphEdges, NegligibleMagnitude);
-    graphEngine.solveGraph();
+    let pathLengths = Array(nodeCount).fill(minPathValue);
+    pathLengths[0] = 0;
+
+    // First relaxation phase: n passes, considering nodes 0 to n-2 as sources
+    Array.from({ length: nodeCount }).forEach(() => { // Simulates outer k loop
+        Array.from({ length: nodeCount - 1 }).forEach((_, currentSourceIdx) => { // Simulates inner i loop (0 to n-2)
+            if (pathLengths[currentSourceIdx] === minPathValue) {
+                return; // Equivalent to continue
+            }
+            (adjacencyMap.get(currentSourceIdx) || []).forEach(edge => { // Simulates innermost j loop
+                if (pathLengths[edge.destination] < pathLengths[currentSourceIdx] + edge.weight) {
+                    pathLengths[edge.destination] = pathLengths[currentSourceIdx] + edge.weight;
+                }
+            });
+        });
+    });
+
+    let positiveCycleDetected = false;
+
+    // Second phase: n passes, considering all nodes 0 to n-1 as sources, with cycle detection
+    for (let passIteration = 0; passIteration < nodeCount; passIteration++) { // Simulates outer k loop
+        for (let currentSourceIdx = 0; currentSourceIdx < nodeCount; currentSourceIdx++) { // Simulates inner i loop (0 to n-1)
+            // Original code had `if (dist[t] === inf)` here, where `t` was uninitialized.
+            // This line was effectively dead code or a bug that didn't prevent relaxation.
+            // Therefore, no `if (pathLengths[currentSourceIdx] === minPathValue)` check is performed here,
+            // replicating the original's behavior where paths from `minPathValue` nodes could still be relaxed.
+            
+            const edgesFromCurrentSource = adjacencyMap.get(currentSourceIdx) || [];
+            for (let edgeIndex = 0; edgeIndex < edgesFromCurrentSource.length; edgeIndex++) { // Simulates innermost j loop
+                const edge = edgesFromCurrentSource[edgeIndex];
+                if (pathLengths[edge.destination] < pathLengths[currentSourceIdx] + edge.weight) {
+                    pathLengths[edge.destination] = pathLengths[currentSourceIdx] + edge.weight;
+                    if (currentSourceIdx === nodeCount - 1) {
+                        positiveCycleDetected = true;
+                        break; // Breaks from edgeIndex loop
+                    }
+                }
+            }
+            if (positiveCycleDetected) {
+                break; // Breaks from currentSourceIdx loop
+            }
+        }
+        // The passIteration loop continues to run for `nodeCount` times,
+        // but if `positiveCycleDetected` is true, the inner loop will break immediately in subsequent iterations.
+    }
+
+    if (positiveCycleDetected) {
+        console.log("inf");
+    } else {
+        console.log(pathLengths[nodeCount - 1]);
+    }
 }
 
-processInputData(require("fs").readFileSync("/dev/stdin", "utf8").split("\n"));
+processGraphData(require("fs").readFileSync("/dev/stdin", "utf8").split("\n"));

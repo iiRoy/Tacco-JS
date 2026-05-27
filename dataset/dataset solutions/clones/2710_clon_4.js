@@ -1,146 +1,195 @@
-const createDataParser = (sourceInput) => {
-    let lineBuffer = sourceInput.trim().split('\n');
-    let tokenBuffer = [];
+class InputProcessor {
+    #lineBuffer;
+    #currentLinePointer;
+    #tokenCache;
 
-    const ensureTokensAvailable = () => {
-        if (tokenBuffer.length === 0 && lineBuffer.length > 0) {
-            tokenBuffer = lineBuffer.shift().split(' ');
-        }
-    };
+    constructor(sourceText) {
+        this.#lineBuffer = sourceText.trim().split('\n');
+        this.#currentLinePointer = 0;
+        this.#tokenCache = [];
+    }
 
-    const retrieveNumericValue = (asString = false) => {
-        ensureTokensAvailable();
-        const extractedValue = tokenBuffer.shift();
-        return asString ? extractedValue : Number(extractedValue);
-    };
-
-    const retrieveNumericLine = (asStrings = false) => {
-        const lineContent = lineBuffer.shift().split(' ');
-        return asStrings ? lineContent : lineContent.map(Number);
-    };
-
-    return { retrieveNumericValue, retrieveNumericLine };
-};
-
-const getManhattanDistance = (pointOne, pointTwo) => Math.abs(pointOne.x - pointTwo.x) + Math.abs(pointOne.y - pointTwo.y);
-
-const advanceCursor = (currentCoordinates, targetCoordinates, stepMagnitude) => {
-    let remainingSteps = stepMagnitude;
-    let nextXPosition = currentCoordinates.x;
-    let nextYPosition = currentCoordinates.y;
-
-    if (targetCoordinates.x < nextXPosition) {
-        const xDifference = nextXPosition - targetCoordinates.x;
-        if (remainingSteps >= xDifference) {
-            remainingSteps -= xDifference;
-            nextXPosition = targetCoordinates.x;
-        } else {
-            nextXPosition -= remainingSteps;
-            remainingSteps = 0;
-        }
-    } else if (targetCoordinates.x > nextXPosition) {
-        const xDifference = targetCoordinates.x - nextXPosition;
-        if (remainingSteps >= xDifference) {
-            remainingSteps -= xDifference;
-            nextXPosition = targetCoordinates.x;
-        } else {
-            nextXPosition += remainingSteps;
-            remainingSteps = 0;
+    #ensureTokensAvailable() {
+        if (this.#tokenCache.length === 0 && this.#currentLinePointer < this.#lineBuffer.length) {
+            this.#tokenCache = this.#lineBuffer[this.#currentLinePointer].split(' ');
+            this.#currentLinePointer++;
         }
     }
 
-    if (remainingSteps > 0) {
-        if (targetCoordinates.y < nextYPosition) {
-            nextYPosition -= remainingSteps;
-        } else {
-            nextYPosition += remainingSteps;
+    extractSingleValue(returnAsString = false) {
+        this.#ensureTokensAvailable();
+        if (this.#tokenCache.length === 0) {
+            return undefined;
         }
-    }
-    return { x: nextXPosition, y: nextYPosition };
-};
-
-const performPathCalculation = (inputContent) => {
-    const dataStreamProcessor = createDataParser(inputContent);
-
-    const strideLength = dataStreamProcessor.retrieveNumericValue();
-    let destinationX = dataStreamProcessor.retrieveNumericValue();
-    let destinationY = dataStreamProcessor.retrieveNumericValue();
-
-    let currentX = 0;
-    let currentY = 0;
-
-    if (destinationX === 0 && destinationY === 0) {
-        console.log(0);
-        return "0";
-    }
-    if (strideLength % 2 === 0 && (destinationX + destinationY) % 2 !== 0) {
-        console.log(-1); // Original code doesn't print length here, just returns -1, then main prints it.
-        return "-1";
+        const extracted = this.#tokenCache.shift();
+        return returnAsString ? extracted : Number(extracted);
     }
 
-    const pathSegments = [];
-    const doubleStrideLength = strideLength * 2;
-
-    const recursiveMovementPhaseOne = (cx, cy, dx, dy, segments) => {
-        const currentPoint = { x: cx, y: cy };
-        const destinationPoint = { x: dx, y: dy };
-        const currentDistance = getManhattanDistance(currentPoint, destinationPoint);
-
-        if (currentDistance > doubleStrideLength || currentDistance % 2 !== 0) {
-            const nextPoint = advanceCursor(currentPoint, destinationPoint, strideLength);
-            segments.push(`${nextPoint.x} ${nextPoint.y}`);
-            return recursiveMovementPhaseOne(nextPoint.x, nextPoint.y, dx, dy, segments);
-        } else {
-            return { finalX: cx, finalY: cy, finalDistance: currentDistance };
+    extractFullLine(returnAsStrings = false) {
+        if (this.#currentLinePointer >= this.#lineBuffer.length) {
+            return undefined;
         }
+        const lineContent = this.#lineBuffer[this.#currentLinePointer++];
+        const lineTokens = lineContent.split(' ');
+        return returnAsStrings ? lineTokens : lineTokens.map(Number);
+    }
+
+    extractValueMatrix(rowsToRead, returnAsStrings = false) {
+        const resultMatrix = [];
+        for (let i = 0; i < rowsToRead; i++) {
+            resultMatrix.push(this.extractFullLine(returnAsStrings));
+        }
+        return resultMatrix;
+    }
+
+    extractValueRows(rowsToRead, returnAsStrings = false) {
+        const resultRows = [];
+        for (let i = 0; i < rowsToRead; i++) {
+            const rowContent = this.#lineBuffer[this.#currentLinePointer++];
+            resultRows.push(returnAsStrings ? rowContent : Number(rowContent));
+        }
+        return resultRows;
+    }
+}
+
+function createNestedArray(initialFillValue, ...dimensions) {
+    const buildRecursive = (dimsArray, currentDepth) => {
+        if (currentDepth === dimsArray.length - 1) {
+            return Array(dimsArray[currentDepth]).fill(initialFillValue);
+        }
+        return Array(dimsArray[currentDepth]).fill(0).map(() => buildRecursive(dimsArray, currentDepth + 1));
     };
+    if (dimensions.length === 0) {
+        return initialFillValue;
+    }
+    return buildRecursive(dimensions, 0);
+}
 
-    const { finalX, finalY, finalDistance } = recursiveMovementPhaseOne(currentX, currentY, destinationX, destinationY, pathSegments);
-    currentX = finalX;
-    currentY = finalY;
+class PathNavigator {
+    #stepMagnitude;
+    #destinationX;
+    #destinationY;
+    #currentPositionX;
+    #currentPositionY;
+    #recordedPath;
 
-    if (finalDistance % strideLength === 0) {
-        const recursiveMovementPhaseTwo = (cx, cy, dx, dy, segments) => {
-            if (getManhattanDistance({ x: cx, y: cy }, { x: dx, y: dy }) === 0) {
-                return;
+    constructor(step, targetX, targetY) {
+        this.#stepMagnitude = step;
+        this.#destinationX = targetX;
+        this.#destinationY = targetY;
+        this.#currentPositionX = 0;
+        this.#currentPositionY = 0;
+        this.#recordedPath = [];
+    }
+
+    #calculateCurrentDistance() {
+        return Math.abs(this.#currentPositionX - this.#destinationX) + Math.abs(this.#currentPositionY - this.#destinationY);
+    }
+
+    #computeNextStepCoordinates() {
+        let remainingMovementBudget = this.#stepMagnitude;
+        let nextCoordX = this.#currentPositionX;
+        let nextCoordY = this.#currentPositionY;
+
+        const deltaX = this.#destinationX - this.#currentPositionX;
+        const absoluteDeltaX = Math.abs(deltaX);
+
+        if (deltaX !== 0) {
+            if (remainingMovementBudget >= absoluteDeltaX) {
+                remainingMovementBudget -= absoluteDeltaX;
+                nextCoordX = this.#destinationX;
+            } else {
+                nextCoordX += Math.sign(deltaX) * remainingMovementBudget;
+                remainingMovementBudget = 0;
             }
-            const nextPoint = advanceCursor({ x: cx, y: cy }, { x: dx, y: dy }, strideLength);
-            segments.push(`${nextPoint.x} ${nextPoint.y}`);
-            recursiveMovementPhaseTwo(nextPoint.x, nextPoint.y, dx, dy, segments);
-        };
-        recursiveMovementPhaseTwo(currentX, currentY, destinationX, destinationY, pathSegments);
-    } else {
-        const originalDestinationX = destinationX;
-        const originalDestinationY = destinationY;
-
-        const offsetMagnitude = (doubleStrideLength - finalDistance) / 2;
-
-        const deltaX = Math.abs(currentX - destinationX);
-        const deltaY = Math.abs(currentY - destinationY);
-
-        if (deltaX >= deltaY) {
-            destinationY = (currentY < destinationY) ? (currentY - offsetMagnitude) : (currentY + offsetMagnitude);
-            destinationX = (currentX < destinationX) ? (currentX + strideLength - offsetMagnitude) : (currentX - strideLength + offsetMagnitude);
-        } else {
-            destinationX = (currentX < destinationX) ? (currentX - offsetMagnitude) : (currentX + offsetMagnitude);
-            destinationY = (currentY < destinationY) ? (currentY + strideLength - offsetMagnitude) : (currentY - strideLength + offsetMagnitude);
         }
 
-        const firstAdjustedPoint = advanceCursor({ x: currentX, y: currentY }, { x: destinationX, y: destinationY }, strideLength);
-        pathSegments.push(`${firstAdjustedPoint.x} ${firstAdjustedPoint.y}`);
-        currentX = firstAdjustedPoint.x;
-        currentY = firstAdjustedPoint.y;
-
-        destinationX = originalDestinationX;
-        destinationY = originalDestinationY;
-
-        const secondAdjustedPoint = advanceCursor({ x: currentX, y: currentY }, { x: destinationX, y: destinationY }, strideLength);
-        pathSegments.push(`${secondAdjustedPoint.x} ${secondAdjustedPoint.y}`);
+        if (remainingMovementBudget > 0) {
+            if (this.#destinationY < this.#currentPositionY) {
+                nextCoordY -= remainingMovementBudget;
+            } else {
+                nextCoordY += remainingMovementBudget;
+            }
+        }
+        return { x: nextCoordX, y: nextCoordY };
     }
 
-    console.log(pathSegments.length);
-    return pathSegments.join("\n");
-};
+    #determineAdjustedTarget(currentX, currentY, targetX, targetY, stepVal, adjustmentVal) {
+        let temporaryTargetX = targetX;
+        let temporaryTargetY = targetY;
 
-const inputSource = require("fs").readFileSync("/dev/stdin", "utf8");
-console.log(performPathCalculation(inputSource));
+        if (Math.abs(currentX - targetX) >= Math.abs(currentY - targetY)) {
+            temporaryTargetY = (currentY < targetY) ? (currentY - adjustmentVal) : (currentY + adjustmentVal);
+            temporaryTargetX = (currentX < targetX) ? (currentX + stepVal - adjustmentVal) : (currentX - stepVal + adjustmentVal);
+        } else {
+            temporaryTargetX = (currentX < targetX) ? (currentX - adjustmentVal) : (currentX + adjustmentVal);
+            temporaryTargetY = (currentY < targetY) ? (currentY + stepVal - adjustmentVal) : (currentY - stepVal + adjustmentVal);
+        }
+        return { x: temporaryTargetX, y: temporaryTargetY };
+    }
+
+    findPath() {
+        if (this.#destinationX === 0 && this.#destinationY === 0) {
+            return "0";
+        }
+        if (this.#stepMagnitude % 2 === 0 && (this.#destinationX + this.#destinationY) % 2 !== 0) {
+            return "-1";
+        }
+
+        const doubleStepMagnitude = this.#stepMagnitude * 2;
+        let currentPathDistance = this.#calculateCurrentDistance();
+
+        while (currentPathDistance > doubleStepMagnitude || currentPathDistance % 2 !== 0) {
+            const { x, y } = this.#computeNextStepCoordinates();
+            this.#currentPositionX = x;
+            this.#currentPositionY = y;
+            this.#recordedPath.push(`${this.#currentPositionX} ${this.#currentPositionY}`);
+            currentPathDistance = this.#calculateCurrentDistance();
+        }
+
+        if (currentPathDistance % this.#stepMagnitude === 0) {
+            while (this.#calculateCurrentDistance() > 0) {
+                const { x, y } = this.#computeNextStepCoordinates();
+                this.#currentPositionX = x;
+                this.#currentPositionY = y;
+                this.#recordedPath.push(`${this.#currentPositionX} ${this.#currentPositionY}`);
+            }
+        } else {
+            const originalDestinationX = this.#destinationX;
+            const originalDestinationY = this.#destinationY;
+
+            const distanceToOriginalDestination = Math.abs(this.#currentPositionX - originalDestinationX) + Math.abs(this.#currentPositionY - originalDestinationY);
+            const adjustmentFactor = (doubleStepMagnitude - distanceToOriginalDestination) / 2;
+
+            const { x: tempTargetX1, y: tempTargetY1 } = this.#determineAdjustedTarget(
+                this.#currentPositionX, this.#currentPositionY, this.#destinationX, this.#destinationY, this.#stepMagnitude, adjustmentFactor
+            );
+
+            this.#destinationX = tempTargetX1;
+            this.#destinationY = tempTargetY1;
+
+            const { x: nextX1, y: nextY1 } = this.#computeNextStepCoordinates();
+            this.#currentPositionX = nextX1;
+            this.#currentPositionY = nextY1;
+            this.#recordedPath.push(`${this.#currentPositionX} ${this.#currentPositionY}`);
+
+            this.#destinationX = originalDestinationX;
+            this.#destinationY = originalDestinationY;
+
+            const { x: nextX2, y: nextY2 } = this.#computeNextStepCoordinates();
+            this.#currentPositionX = nextX2;
+            this.#currentPositionY = nextY2;
+            this.#recordedPath.push(`${this.#currentPositionX} ${this.#currentPositionY}`);
+        }
+
+        return `${this.#recordedPath.length}\n${this.#recordedPath.join("\n")}`;
+    }
+}
+
+const inputReader = new InputProcessor(require("fs").readFileSync("/dev/stdin","utf8"));
+const K_VAL = inputReader.extractSingleValue();
+const X_COORD = inputReader.extractSingleValue();
+const Y_COORD = inputReader.extractSingleValue();
+
+const pathSolver = new PathNavigator(K_VAL, X_COORD, Y_COORD);
+console.log(pathSolver.findPath());

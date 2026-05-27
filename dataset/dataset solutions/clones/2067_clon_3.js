@@ -1,85 +1,38 @@
-const fileSystemModule = require('fs');
+"use strict";
 
-// Defines a function to process raw input and determine the desired sequence value.
-const processInputData = (rawInputString) => {
-    // A specific sequence of numbers, potentially representing some mathematical property
-    // like the number of divisors (tau function) or similar for consecutive integers.
-    const predefinedSequenceValues = [
-        1, 1, 1, 2, 1, 2, 1, 5, 2, 2, 1, 5, 1, 2, 1, 14,
-        1, 5, 1, 5, 2, 2, 1, 15, 2, 2, 5, 4, 1, 4, 1, 51
-    ];
-
-    // Helper function to safely display results.
-    const displayOutputValue = (valueToDisplay) => {
-        console.log(valueToDisplay);
-    };
-
-    if (!rawInputString || typeof rawInputString !== 'string') {
-        displayOutputValue("Error: Invalid or empty input provided.");
-        return;
-    }
-
-    const trimmedInput = rawInputString.trim();
-    if (trimmedInput.length === 0) {
-        displayOutputValue("Error: Input contains only whitespace.");
-        return;
-    }
-
-    const inputLines = trimmedInput.split('\n');
-    if (inputLines.length === 0) {
-        displayOutputValue("Error: No valid lines found in input.");
-        return;
-    }
-
-    const firstLineContent = inputLines[0];
-    const lineComponents = firstLineContent.split(' ');
-
-    if (lineComponents.length === 0 || !lineComponents[0]) {
-        displayOutputValue("Error: First line does not contain a parsable number.");
-        return;
-    }
-
-    // Attempt to parse the target index from the first component of the first line.
-    const rawIndexString = lineComponents[0];
-    const targetSequenceIndex = Number.parseInt(rawIndexString, 10);
-
-    // Validate the parsed index.
-    if (isNaN(targetSequenceIndex)) {
-        displayOutputValue("Error: Input value for index is not a valid number.");
-        return;
-    }
-    if (targetSequenceIndex < 1) {
-        displayOutputValue("Error: Index must be a positive integer (1-based).");
-        return;
-    }
-
-    // Adjust for 0-based indexing for array access.
-    const zeroBasedIndex = targetSequenceIndex - 1;
-
-    // Check if the calculated index is within the bounds of our predefined sequence.
-    if (zeroBasedIndex < 0 || zeroBasedIndex >= predefinedSequenceValues.length) {
-        displayOutputValue(`Error: Index ${targetSequenceIndex} is out of bounds for the sequence (1 to ${predefinedSequenceValues.length}).`);
-        return;
-    }
-
-    // Retrieve the value from the sequence using the validated index.
-    const retrievedValue = predefinedSequenceValues[zeroBasedIndex];
-
-    // Output the final result.
-    displayOutputValue(retrievedValue);
+// Helper function to parse the numerical key from the raw input string content.
+const extractKeyFromInput = (inputStringContent) => {
+    // Remove leading/trailing whitespace and split into lines.
+    const processedLines = inputStringContent.trim().split("\n");
+    // Get the first line and split it by spaces.
+    const firstLineParts = processedLines[0].split(" ");
+    // Parse the first segment of the first line as an integer, using radix 10 for clarity.
+    const numericalKey = parseInt(firstLineParts[0], 10);
+    return numericalKey;
 };
 
-// Main execution block to read input from standard input.
-try {
-    const standardInputPath = '/dev/stdin'; // Standard input file descriptor.
-    const fileEncoding = 'utf8';            // Expected encoding for the input.
+// Main function to process the input data and produce the required output.
+const processInputData = (rawData) => {
+    // Obtain the target key by calling the helper function.
+    const targetKey = extractKeyFromInput(rawData);
 
-    // Read the entire content of the standard input.
-    const inputContent = fileSystemModule.readFileSync(standardInputPath, fileEncoding);
+    // Define the sequence of values. This array serves as a lookup table.
+    const valueSequence = [
+        1, 1, 1, 2, 1, 2, 1, 5, 2, 2, 1, 5,
+        1, 2, 1, 14, 1, 5, 1, 5, 2, 2, 1, 15,
+        2, 2, 5, 4, 1, 4, 1, 51
+    ];
 
-    // Pass the read content to our processing function.
-    processInputData(inputContent);
-} catch (error) {
-    // Catch and report any errors during file reading or initial processing.
-    console.error(`An unexpected error occurred during input processing: ${error.message}`);
-}
+    // Calculate the zero-based index for accessing the valueSequence array.
+    // The problem implies K is 1-based, so we subtract 1.
+    const lookupIndex = targetKey - 1;
+
+    // Retrieve the value at the calculated index and print it to the console.
+    console.log(valueSequence[lookupIndex]);
+};
+
+// Read the entire content of standard input synchronously.
+const standardInputContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+
+// Invoke the main processing function with the content read from stdin.
+processInputData(standardInputContent);

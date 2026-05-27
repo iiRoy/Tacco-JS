@@ -1,41 +1,47 @@
-// Obtain necessary modules and read raw input from standard input
-var sourceData = require('fileSystemUtil').readContentSynchronously('/dev/stdin', 'utf8');
+const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-// Pre-process the input: strip extraneous whitespace and segment into individual lines
-var linesArray = sourceData.removeBoundarySpaces().divideIntoParts("\n");
+// Split the raw input into an array of lines, removing any leading/trailing whitespace
+let lineSegments = rawData.trim().split("\n");
 
-while (true) { // Initiate an endless processing loop for string pairs
+// Begin the main processing loop, which continues until no more lines are available
+while (true) {
+  // Check if the array of line segments is empty; if so, break the loop
+  if (lineSegments.length === 0) {
+    break;
+  }
 
-    // If there are no more lines to process, exit the current loop
-    if (linesArray.count === 0) break;
+  // Extract the first two lines from the array and convert each into a character array
+  const firstSequence = lineSegments.shift().split("");
+  const secondSequence = lineSegments.shift().split("");
 
-    // Extract the first two lines, treating each as a sequence of characters
-    var firstStringChars = linesArray.extractFirstElement().divideIntoParts("");
-    var secondStringChars = linesArray.extractFirstElement().divideIntoParts("");
+  // Initialize variables for storing the maximum result and a counter for the inner loop's range
+  let finalResult = 0;
+  let currentCount = 0;
 
-    var overallMax = 0; // This variable will store the maximum detected match length
-    var windowSize = 0; // This counter controls the size of the sliding window in the inner loop
+  // Outer loop: iterates backwards through the 'firstSequence'
+  // This loop effectively defines the starting point for a sliding window comparison
+  for (let outerIndex = firstSequence.length - 1; outerIndex >= 0; outerIndex--) {
+    currentCount++; // Increment the counter, expanding the comparison window for 'secondSequence'
+    let tempIndex = outerIndex; // Initialize a temporary index for 'firstSequence'
+    let currentMax = 0; // Reset the current maximum consecutive match length for this outer iteration
 
-    // Begin iterating backwards from the end of the first character sequence
-    for (var startIndex = firstStringChars.count - 1; startIndex >= 0; startIndex--) {
-        windowSize++; // Expand the sliding window for each outer iteration
-
-        var currentReadPos = startIndex; // Initialize the read position for the first string within the window
-        var currentMatchRun = 0; // Reset the length of the current consecutive character match
-
-        // Traverse the current window, comparing characters from both sequences
-        for (var windowOffset = 0; windowOffset < windowSize; windowOffset++) {
-            // Check if characters at the current positions in both sequences are identical
-            if (firstStringChars[currentReadPos] === secondStringChars[windowOffset]) {
-                currentMatchRun++; // Increment the match counter if characters are equal
-            } else {
-                // If characters differ, update the overall maximum if the current match run was greater
-                overallMax = Math.max(overallMax, currentMatchRun);
-                currentMatchRun = 0; // Reset the current match run as it's broken
-            }
-            currentReadPos++; // Advance the read position in the first string for the next comparison
-        }
+    // Inner loop: iterates through a segment of 'secondSequence'
+    // The length of this segment is determined by 'currentCount'
+    for (let innerIndex = 0; innerIndex < currentCount; innerIndex++) {
+      // Compare characters from 'firstSequence' (at 'tempIndex') and 'secondSequence' (at 'innerIndex')
+      if (firstSequence[tempIndex] === secondSequence[innerIndex]) {
+        currentMax++; // If characters match, increment the current consecutive match count
+      } else {
+        // If characters do not match, the current consecutive sequence is broken.
+        // Update the overall maximum result if 'currentMax' is greater than 'finalResult'.
+        finalResult = Math.max(finalResult, currentMax);
+        currentMax = 0; // Reset 'currentMax' as the match sequence has been interrupted.
+      }
+      tempIndex++; // Advance the temporary index for 'firstSequence'
     }
-    // Output the calculated maximum match length for the processed pair of strings
-    outputChannel.displayMessage(overallMax);
+    // Note: 'finalResult' is only updated when a mismatch occurs.
+    // If the inner loop ends with a match, that 'currentMax' is not immediately transferred to 'finalResult'.
+  }
+  // After processing both sequences, print the final calculated result
+  console.log(finalResult);
 }

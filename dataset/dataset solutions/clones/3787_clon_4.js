@@ -1,14 +1,55 @@
-function processDataEntry(unprocessed_text) {
-    const numerical_tokens = unprocessed_text.split(/\s+/).filter(Boolean).map(x => +x);
-    const primary_value = numerical_tokens[0];
-    const secondary_value = numerical_tokens[1];
+const lineBreak = "\n";
+const spaceChar = " ";
+const noSpaceChar = "";
 
-    const derived_figures = [];
-    derived_figures.push(primary_value + secondary_value);
-    derived_figures.push(primary_value - secondary_value);
-    derived_figures.push(primary_value * secondary_value);
-
-    derived_figures.sort((v1, v2) => v1 - v2);
-
-    return derived_figures[derived_figures.length - 1];
+function computeExtremeValue(rawInputString) {
+    const parsedNumbers = rawInputString.trim().split(spaceChar).map(Number);
+    
+    const operandA = parsedNumbers[0];
+    const operandB = parsedNumbers[1];
+    
+    const operationOutcomes = [
+        operandA + operandB,
+        operandA - operandB,
+        operandA * operandB
+    ];
+    
+    const resultValue = Math.max(...operationOutcomes);
+    
+    return resultValue;
 }
+
+((inputContent, operationResult, resultType) =>
+    "undefined" !== typeof require
+        ? console.log(computeExtremeValue(require("fs").readFileSync("/dev/stdin", "utf8")))
+        : [
+              (inputContent = inputContent.split(lineBreak).slice(1, -1).join(lineBreak)),
+              (operationResult = (() => {
+                  try {
+                      return computeExtremeValue(inputContent);
+                  } catch (error) {
+                      return error.stack || error.message;
+                  }
+              })()),
+              (resultType = typeof operationResult),
+              "string" === resultType || (operationResult = JSON.stringify(operationResult)),
+              $("<form>")
+                  .append(
+                      [
+                          [10, inputContent],
+                          0,
+                          [1, resultType],
+                          0,
+                          [10, operationResult]
+                      ].map((element) =>
+                          $(
+                              element ? "<textarea>" : "<br>",
+                              element && { rows: element[0], cols: 40, text: element[1] }
+                          )
+                      )
+                  )
+                  .appendTo("body"),
+          ]
+)(`
+-1000 1000
+`);

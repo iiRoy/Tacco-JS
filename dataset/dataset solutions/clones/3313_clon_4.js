@@ -1,55 +1,51 @@
-console.log((function(inputDataPayload) {
-  const processGraphData = (sourceMaterial) => {
-    const tokens = sourceMaterial.trim().split(/\s+/).filter(Boolean);
-    let tokenIndex = 0;
-    const nodeExtent = Number(tokens[tokenIndex++]);
-    const arcCount = Number(tokens[tokenIndex++]);
-    const arcList = Array.from({ length: arcCount }, () => ({
-      departure: Number(tokens[tokenIndex++]),
-      arrival: Number(tokens[tokenIndex++])
-    }));
-    return { nodeExtent, arcCount, arcList };
-  };
+'use strict';
 
-  const performRouteAnalysis = (graphDetails) => {
-    const { arcCount, arcList } = graphDetails;
+const processRawData = (inputString) => {
+    const parsedLines = inputString.trim().split('\n').map(lineSegment =>
+        lineSegment.split(' ').map(valStr => parseInt(valStr, 10))
+    );
 
-    // pathMetricsByIteration[k] stores a Map<node, max_path_length> for paths of exactly k steps
-    const pathMetricsByIteration = Array.from({ length: arcCount + 1 }).reduce((accumulator, _, currentIteration) => {
-      if (currentIteration === 0) {
-        // Base case: iteration 0 implies paths of length 0. All nodes have an implicit path length of 0.
-        // We represent this as an empty Map, as 'get' will return undefined, which evaluates to 0 with '|| 0'.
-        accumulator.push(new Map());
-        return accumulator;
-      }
+    const [dimensions, ...connectionEntries] = parsedLines;
+    const [totalNodes, totalEdges] = dimensions;
 
-      const priorIterationMetrics = accumulator[currentIteration - 1];
-      const currentIterationMetrics = new Map();
+    const originNodes = connectionEntries.map(pairEntry => pairEntry[0]);
+    const destinationNodes = connectionEntries.map(pairEntry => pairEntry[1]);
 
-      arcList.forEach(currentArc => {
-        const previousPathSpan = priorIterationMetrics.get(currentArc.departure) || 0;
+    return { totalNodes, totalEdges, originNodes, destinationNodes };
+};
 
-        // A path of length 1 can start from any departure node (previousPathSpan is 0 from iteration 0).
-        // For subsequent iterations, only extend existing paths (previousPathSpan > 0).
-        if (previousPathSpan > 0 || currentIteration === 1) {
-          const candidatePathSpan = previousPathSpan + 1;
-          const existingPathSpan = currentIterationMetrics.get(currentArc.arrival) || 0;
-          currentIterationMetrics.set(currentArc.arrival, Math.max(existingPathSpan, candidatePathSpan));
+const deriveMaxPathLengths = ({ totalNodes, totalEdges, originNodes, destinationNodes }) => {
+    const pathLengthRecords = Array.from({ length: totalEdges + 1 }).reduce((accumulatedRecords, _, currentStep) => {
+        if (currentStep === 0) {
+            accumulatedRecords.push(new Map());
+            return accumulatedRecords;
         }
-      });
-      accumulator.push(currentIterationMetrics);
-      return accumulator;
+
+        const previousStepMap = accumulatedRecords[currentStep - 1];
+        const currentStepMap = new Map();
+
+        originNodes.forEach((sourceNodeId, connectionIndex) => {
+            const targetNodeId = destinationNodes[connectionIndex];
+            const lengthFromPrevStep = previousStepMap.get(sourceNodeId) || 0;
+            const potentialNewLength = lengthFromPrevStep + 1;
+
+            const existingLengthAtTarget = currentStepMap.get(targetNodeId) || 0;
+            currentStepMap.set(targetNodeId, Math.max(existingLengthAtTarget, potentialNewLength));
+        });
+
+        accumulatedRecords.push(currentStepMap);
+        return accumulatedRecords;
     }, []);
 
-    // The result is the maximum path length found in the final iteration (arcCount steps).
-    const finalMetrics = pathMetricsByIteration[arcCount];
-    const allFinalSpans = Array.from(finalMetrics.values());
-    
-    // Handle case where allFinalSpans is empty or contains only zeros
-    return Math.max(0, ...allFinalSpans);
-  };
+    const finalIterationMap = pathLengthRecords[totalEdges];
+    return finalIterationMap.size > 0 ? Math.max(...finalIterationMap.values()) : 0;
+};
 
-  const graphData = processGraphData(inputDataPayload);
-  const resultValue = performRouteAnalysis(graphData);
-  return resultValue.toString();
-})(require('fs').readFileSync('/dev/stdin', 'utf8')));
+console.log(
+    (() => {
+        const inputContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+        const { totalNodes, totalEdges, originNodes, destinationNodes } = processRawData(inputContent);
+        const finalResult = deriveMaxPathLengths({ totalNodes, totalEdges, originNodes, destinationNodes });
+        return finalResult.toString();
+    })()
+);

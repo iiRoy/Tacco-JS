@@ -1,24 +1,13 @@
-const dataAcquirer = require("node:fs");
+require("fs").readFileSync("/dev/stdin", "utf8").trim().split('\n').map(function(inputLine) {
+  const numericValue = Number(inputLine);
+  const baseTwoExponents = Array.from({
+    length: 10
+  }, (_, index) => 1 << index);
 
-dataAcquirer.readFileSync("/dev/stdin", "utf8")
-    .trim()
-    .split('\n')
-    .forEach(incomingString => {
-        const numericalRepresentation = Number(incomingString);
+  const constituentPowers = baseTwoExponents.filter(currentPower => {
+    return (currentPower & numericValue) === currentPower;
+  });
 
-        if (Number.isNaN(numericalRepresentation)) {
-            console.log('');
-            return;
-        }
-
-        const powerIndices = Array.from({ length: 10 }, (_, index) => index);
-
-        const identifiedPowers = powerIndices
-            .filter(currentPower => {
-                const baseTwoValue = Math.pow(2, currentPower);
-                return (numericalRepresentation & baseTwoValue) !== 0;
-            })
-            .map(currentPower => Math.pow(2, currentPower));
-
-        console.log(identifiedPowers.join(' '));
-    });
+  const outputSequence = constituentPowers.length > 0 ? constituentPowers.join(' ') + ' ' : '';
+  console.log(outputSequence);
+});

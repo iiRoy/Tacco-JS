@@ -1,104 +1,100 @@
-// This section handles output logging for program messages.
-var displayMessage = console.log;
+var outputFn = console.log;
 
-// Check for the presence of a Node.js-like runtime environment for standard input operations.
-if (typeof runtimeContext != "undefined")
-{
-  var collectedInput = ""; // A buffer to accumulate data received from stdin.
-  runtimeContext.stdin.resume(); // Ensure the standard input stream remains open.
-  runtimeContext.stdin.setEncoding("utf-8"); // Configure the character encoding for input data.
-  runtimeContext.stdin.on
-  (
-    'data',
-    function (receivedChunk)
-    {
-      collectedInput += receivedChunk; // Append each incoming data chunk to the buffer.
-    }
-  );
+// Check if running in a Node.js environment to handle standard input
+if (typeof process !== "undefined") {
+    var rawInputData = "";
+    process.stdin.resume();
+    process.stdin.setEncoding('utf8');
 
-  runtimeContext.stdin.on
-  (
-    'end',
-    function ()
-    {
-      var parsedLines = collectedInput.split("\n"); // Split the entire collected input into an array of lines.
-      initiateExecution(parsedLines); // Hand off the parsed lines to the main processing function.
-    }
-  );
+    // Accumulate incoming data chunks
+    process.stdin.on('data', function (dataSegment) {
+        rawInputData += dataSegment;
+    });
+
+    // Process all input once the stream ends
+    process.stdin.on('end', function () {
+        var inputLines = rawInputData.split("\n");
+        processAllInput(inputLines);
+    });
 }
 
-// This function serves as the primary entry point for processing the input data.
-function initiateExecution(parsedLines)
-{
-  parsedLines.shift(); // Remove the very first line, often a header or count.
-  while (parsedLines.length > 0)
-  {
-    var stringPairBlock = parsedLines.slice(0, 2); // Extract the next two lines to form a processing block.
-    stringPairBlock = stringPairBlock.map
-    (
-      function (currentString)
-      {
-        return currentString.split("").filter
-        (
-          function (charElement)
-          {
-            var charCodeVal = charElement.charCodeAt(0); // Retrieve the Unicode code point of the character.
-            return 97 <= charCodeVal && charCodeVal <= 122; // Filter to retain only lowercase English alphabet characters.
-          }
-        ).join(""); // Reconstruct the string from the filtered characters.
-      }
-    );
-    performAnalysis(stringPairBlock); // Pass the cleaned pair of strings for detailed algorithmic analysis.
-    parsedLines = parsedLines.slice(2); // Advance the input array by removing the two lines just processed.
-  }
+// Main function to orchestrate processing of multiple datasets
+function processAllInput(inputLines) {
+    // The first line is often a count of test cases, but it's discarded here.
+    inputLines.shift();
+
+    // Loop through the remaining lines, processing two at a time
+    while (inputLines.length > 0) {
+        // Extract two lines to form a dataset
+        var pairOfStrings = inputLines.slice(0, 2);
+
+        // Cleanse each string in the dataset:
+        // - Split into characters
+        // - Filter out non-lowercase-alphabet characters
+        // - Join back into a single string
+        pairOfStrings = pairOfStrings.map(function (currentLine) {
+            return currentLine.split("").filter(function (charElement) {
+                var charCodeValue = charElement.charCodeAt(0);
+                // Keep only characters 'a' through 'z'
+                return 97 <= charCodeValue && charCodeValue <= 122;
+            }).join("");
+        });
+
+        // Pass the cleaned dataset to the core processing logic
+        analyzeStringPair(pairOfStrings);
+
+        // Remove the two processed lines from the input array
+        inputLines = inputLines.slice(2);
+    }
 }
 
-// This routine implements a dynamic programming algorithm to compare two strings.
-function performAnalysis(stringPairBlock)
-{
-  var computationGrid = []; // A 2D array representing the dynamic programming table.
-  var firstText = stringPairBlock[0]; // The first string from the input pair.
-  var secondText = stringPairBlock[1]; // The second string from the input pair.
-  try
-  {
-    for (var rowIndex = 0; rowIndex < firstText.length; rowIndex++) // Iterate through each character of the first string.
-    {
-      computationGrid[rowIndex] = []; // Initialize a new row within the computation grid.
-      for (var colIndex = 0; colIndex < secondText.length; colIndex++) // Iterate through each character of the second string.
-      {
-        if (firstText.charAt(rowIndex) == secondText.charAt(colIndex)) // Check if the characters at current indices match.
-        {
-          computationGrid[rowIndex][colIndex] = 1; // Set value to 1 if characters are identical.
-        }
-        else
-        {
-          computationGrid[rowIndex][colIndex] = 0; // Set value to 0 if characters differ.
-        }
+// Core function to analyze a pair of strings using dynamic programming
+function analyzeStringPair(pairOfStrings) {
+    var dpMatrix = []; // This matrix will store intermediate results
+    var firstString = pairOfStrings[0];
+    var secondString = pairOfStrings[1];
 
-        // Apply the core dynamic programming recurrence relations.
-        if (rowIndex == 0 && colIndex == 0)
-        {
-          computationGrid[rowIndex][colIndex] += 0; // Base case for the cell at (0,0).
+    try {
+        // Iterate through each character of the first string
+        for (var rowIdx = 0; rowIdx < firstString.length; rowIdx++) {
+            dpMatrix[rowIdx] = []; // Initialize the current row
+
+            // Iterate through each character of the second string
+            for (var colIdx = 0; colIdx < secondString.length; colIdx++) {
+                // Determine if the current characters match
+                if (firstString.charAt(rowIdx) === secondString.charAt(colIdx)) {
+                    dpMatrix[rowIdx][colIdx] = 1; // Match found
+                } else {
+                    dpMatrix[rowIdx][colIdx] = 0; // No match
+                }
+
+                // Apply dynamic programming rules based on position
+                if (rowIdx === 0 && colIdx === 0) {
+                    // For the very first cell, no change needed (base case)
+                    dpMatrix[rowIdx][colIdx] += 0;
+                } else if (rowIdx === 0) {
+                    // For the first row (excluding first cell),
+                    // take the maximum from the left or current value
+                    dpMatrix[rowIdx][colIdx] = Math.max(dpMatrix[rowIdx][colIdx - 1], dpMatrix[rowIdx][colIdx]);
+                } else if (colIdx === 0) {
+                    // For the first column (excluding first cell),
+                    // take the maximum from above or current value
+                    dpMatrix[rowIdx][colIdx] = Math.max(dpMatrix[rowIdx - 1][colIdx], dpMatrix[rowIdx][colIdx]);
+                } else {
+                    // For all other cells, apply the main recurrence relation
+                    // This involves a combination of values from above and left,
+                    // and a constraint based on the minimum of current indices.
+                    dpMatrix[rowIdx][colIdx] = Math.min(
+                        Math.max(dpMatrix[rowIdx - 1][colIdx], dpMatrix[rowIdx][colIdx - 1]) + dpMatrix[rowIdx][colIdx],
+                        Math.min(rowIdx, colIdx) + 1
+                    );
+                }
+            }
         }
-        else if (rowIndex == 0)
-        {
-          computationGrid[rowIndex][colIndex] = Math.max(computationGrid[rowIndex][colIndex - 1], computationGrid[rowIndex][colIndex]); // Calculation for the first row.
-        }
-        else if (colIndex == 0)
-        {
-          computationGrid[rowIndex][colIndex] = Math.max(computationGrid[rowIndex - 1][colIndex], computationGrid[rowIndex][colIndex]); // Calculation for the first column.
-        }
-        else
-        {
-          // General case: combine results from preceding cells according to the algorithm's logic.
-          computationGrid[rowIndex][colIndex] = Math.min(Math.max(computationGrid[rowIndex - 1][colIndex], computationGrid[rowIndex][colIndex - 1]) + computationGrid[rowIndex][colIndex], Math.min(rowIndex, colIndex) + 1);
-        }
-      }
+        // Output the final computed value from the bottom-right cell of the matrix
+        outputFn(dpMatrix[rowIdx - 1][colIdx - 1]);
+    } catch (caughtError) {
+        // Log any errors that occur during processing
+        outputFn(caughtError);
     }
-    displayMessage(computationGrid[rowIndex - 1][colIndex - 1]); // Output the final calculated value from the bottom-right cell.
-  }
-  catch (errorDetails)
-  {
-    displayMessage(errorDetails); // Log any exceptions encountered during the analysis process.
-  }
 }

@@ -1,80 +1,69 @@
-function evaluateSortingCriterion(firstSubject, secondSubject) {
-  if (firstSubject.level === secondSubject.level) return 0;
-  else if (firstSubject.level < secondSubject.level) return -1;
-  else return 1;
-}
+const createPlayingCard = (symbolIdentifier, numericRank) => ({
+  symbol: String(symbolIdentifier),
+  rank: Number(numericRank)
+});
 
-function checkExactMatch(firstSubject, secondSubject) {
-  return firstSubject.level === secondSubject.level && firstSubject.symbol === secondSubject.symbol;
-}
+const comparePlayingCards = (firstCard, secondCard) => {
+  if (firstCard.rank === secondCard.rank) return 0;
+  return firstCard.rank < secondCard.rank ? -1 : 1;
+};
 
-function formatSubjectOutput(aSubject) {
-  return `${aSubject.symbol} ${aSubject.level}`;
-}
+const arePlayingCardsIdentical = (cardOne, cardTwo) => {
+  return cardOne.rank === cardTwo.rank && cardOne.symbol === cardTwo.symbol;
+};
 
-function combineOrderedSegments(leftSegment, rightSegment) {
-  let combinedResult = [];
-  let leftPointer = 0;
-  let rightPointer = 0;
+const displayPlayingCard = (cardObject) => `${cardObject.symbol} ${cardObject.rank}`;
 
-  while (leftPointer < leftSegment.length && rightPointer < rightSegment.length) {
-    if (evaluateSortingCriterion(leftSegment[leftPointer], rightSegment[rightPointer]) <= 0) {
-      combinedResult.push(leftSegment[leftPointer]);
-      leftPointer++;
-    } else {
-      combinedResult.push(rightSegment[rightPointer]);
-      rightPointer++;
+const partitionCards = (cardCollection, lowerBound, upperBound) => {
+  const pivotCard = cardCollection[upperBound];
+  let boundaryPointer = lowerBound - 1;
+
+  for (let currentPointer = lowerBound; currentPointer < upperBound; currentPointer++) {
+    if (comparePlayingCards(cardCollection[currentPointer], pivotCard) <= 0) {
+      boundaryPointer++;
+      [cardCollection[boundaryPointer], cardCollection[currentPointer]] = [cardCollection[currentPointer], cardCollection[boundaryPointer]];
     }
   }
+  [cardCollection[boundaryPointer + 1], cardCollection[upperBound]] = [cardCollection[upperBound], cardCollection[boundaryPointer + 1]];
+  return boundaryPointer + 1;
+};
 
-  return combinedResult.concat(leftSegment.slice(leftPointer)).concat(rightSegment.slice(rightPointer));
-}
+const performIterativeQuickSort = (cardCollection, initialLow, initialHigh) => {
+  const rangeStack = [];
+  rangeStack.push([initialLow, initialHigh]);
 
-function performRecursiveOrdering(collectionToOrder) {
-  if (collectionToOrder.length <= 1) {
-    return collectionToOrder;
-  }
+  while (rangeStack.length > 0) {
+    const [currentLow, currentHigh] = rangeStack.pop();
 
-  const divisionPoint = Math.floor(collectionToOrder.length / 2);
-  const leftHalf = collectionToOrder.slice(0, divisionPoint);
-  const rightHalf = collectionToOrder.slice(divisionPoint);
+    if (currentLow < currentHigh) {
+      const pivotIndex = partitionCards(cardCollection, currentLow, currentHigh);
 
-  const orderedLeft = performRecursiveOrdering(leftHalf);
-  const orderedRight = performRecursiveOrdering(rightHalf);
-
-  return combineOrderedSegments(orderedLeft, orderedRight);
-}
-
-function initiateSortingProcedure() {
-  const fileSystemModule = require('node:fs');
-  const inputDataLines = fileSystemModule.readFileSync('/dev/stdin', 'utf8').trim().split('\n');
-  const totalSubjectCount = Number(inputDataLines.shift());
-
-  const originalSubjectCollection = inputDataLines.map((lineContent, originalPosition) => {
-    const dataParts = lineContent.split(' ');
-    return { symbol: dataParts[0], level: Number(dataParts[1]), originIndex: originalPosition };
-  });
-
-  const algorithmSortedCollection = performRecursiveOrdering([...originalSubjectCollection]);
-
-  const standardSortedReference = [...originalSubjectCollection].sort((subjectA, subjectB) => {
-    const comparisonOutcome = evaluateSortingCriterion(subjectA, subjectB);
-    if (comparisonOutcome === 0) {
-      return subjectA.originIndex - subjectB.originIndex;
-    }
-    return comparisonOutcome;
-  });
-
-  let isResultStable = true;
-  for (let k = 0; k < totalSubjectCount; k++) {
-    if (!checkExactMatch(algorithmSortedCollection[k], standardSortedReference[k])) {
-      isResultStable = false;
-      break;
+      rangeStack.push([pivotIndex + 1, currentHigh]);
+      rangeStack.push([currentLow, pivotIndex - 1]);
     }
   }
+};
 
-  console.log(isResultStable ? 'Consistent' : 'Inconsistent');
-  console.log(algorithmSortedCollection.map(formatSubjectOutput).join('\n'));
-}
+(function executeCardSortingProgram() {
+  const inputDataLines = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split('\n');
+  const totalCardCount = Number(inputDataLines.shift());
+  const initialCardSet = inputDataLines.map(lineSegment => lineSegment.split(' ')).map(cardParts => createPlayingCard(cardParts[0], cardParts[1]));
 
-initiateSortingProcedure();
+  const quickSortedCardSet = Array.from(initialCardSet);
+
+  performIterativeQuickSort(quickSortedCardSet, 0, totalCardCount - 1);
+
+  const stableSortedCardSet = initialCardSet
+    .map((cardElement, originalPosition) => ({ cardValue: cardElement, initialPosition: originalPosition }))
+    .sort((cardAWrapper, cardBWrapper) =>
+      comparePlayingCards(cardAWrapper.cardValue, cardBWrapper.cardValue) ||
+      cardAWrapper.initialPosition - cardBWrapper.initialPosition
+    );
+
+  const isSortStable = stableSortedCardSet.every((wrappedCard, index) =>
+    arePlayingCardsIdentical(wrappedCard.cardValue, quickSortedCardSet[index])
+  );
+
+  console.log(isSortStable ? 'Stable' : 'Not stable');
+  console.log(quickSortedCardSet.map(displayPlayingCard).join('\n'));
+})();

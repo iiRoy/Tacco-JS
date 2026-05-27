@@ -1,114 +1,92 @@
-function makeNum(s) { return Number(s); }
+const parseInteger = (str) => Number.parseInt(str, 10);
 
-function ascendingOrderSort(collection) {
-    let newArr = [...collection]; // Create a shallow copy to avoid modifying original
-    let n = newArr.length;
-    for (let current = 0; current < n - 1; current++) {
-        for (let next = 0; next < n - current - 1; next++) {
-            if (newArr[next] > newArr[next + 1]) {
-                let temporary = newArr[next];
-                newArr[next] = newArr[next + 1];
-                newArr[next + 1] = temporary;
-            }
-        }
-    }
-    return newArr;
-}
-
-function descendingOrderSort(collection) {
-    let newArr = [...collection];
-    let n = newArr.length;
-    for (let current = 0; current < n - 1; current++) {
-        for (let next = 0; next < n - current - 1; next++) {
-            if (newArr[next] < newArr[next + 1]) { // Flipped comparison
-                let temporary = newArr[next];
-                newArr[next] = newArr[next + 1];
-                newArr[next + 1] = temporary;
-            }
-        }
-    }
-    return newArr;
-}
-
-function lexicographicalSort(collection) {
-    return [...collection].sort(); // Default string sort
-}
-
-function reverseLexicographicalSort(collection) {
-    return [...collection].sort().reverse(); // Default string sort then reverse
-}
-
-function omitElement(collection, elementToExclude) {
-    const resultCollection = [];
-    for (const item of collection) {
-        if (item !== elementToExclude) {
-            resultCollection.push(item);
-        }
-    }
-    return resultCollection;
-}
-
-let aggregatedInput = '';
-const lineReader = require('readline').createInterface({
-    input: process.stdin,
-    output: process.stdout,
-    terminal: false
+let rawInputBuffer = '';
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
+process.stdin.on('data', (chunk) => (rawInputBuffer += chunk));
+process.stdin.on('end', () => {
+  let processedLines = rawInputBuffer.split('\n').map((line) => line.trim());
+  if (processedLines[processedLines.length - 1] === '') {
+    processedLines = processedLines.slice(0, -1);
+  }
+  executeLogic(processedLines);
 });
 
-lineReader.on('line', (lineSegment) => {
-    aggregatedInput += lineSegment + '\n';
-});
+function executeLogic(allInputLines) {
+  const firstLineValues = allInputLines[0].split(' ').map(parseInteger);
+  const itemCount = firstLineValues[0];
+  const capacityLimit = firstLineValues[1];
 
-lineReader.on('close', () => {
-    let processedRows = aggregatedInput.split('\n').map(l => l.trim());
-    if (processedRows[processedRows.length - 1] === '') {
-        processedRows = processedRows.slice(0, -1);
-    }
-    commenceCalculations(processedRows);
-});
+  let maxAchievedValue = 0;
 
-let overallBestValue = 0;
+  const itemData = allInputLines.slice(1).map((line) => line.split(' ').map(parseInteger));
 
-function commenceCalculations(allInputRows) {
-    const initialParameters = allInputRows[0].split(' ').map(makeNum);
-    const itemQuantity = initialParameters[0];
-    const weightLimit = initialParameters[1];
+  // Iterative Depth-First Search (DFS) simulation of the original recursive function.
+  // Each element in the stack represents a 'frame' of the original recursive call.
+  // A frame stores: [
+  //   startingIndexForLoop,     // Corresponds to 'ai' in the original 'iter' function
+  //   currentTotalWeight,       // Corresponds to 'aw'
+  //   currentTotalValue,        // Corresponds to 'av'
+  //   nextLoopIterationIndex    // Corresponds to 'i' in the original 'for' loop,
+  //                             // indicating the next item to try from 'startingIndexForLoop'
+  // ]
+  const explorationStack = [];
 
-    const itemDataCollection = allInputRows.slice(1).map(l => l.split(' ').map(makeNum));
+  // Initialize the stack with the equivalent of the initial call: iter(0, 0, 0)
+  // The 'nextLoopIterationIndex' for the initial frame starts at its 'startingIndexForLoop'.
+  explorationStack.push([0, 0, 0, 0]);
 
-    // Stack for iterative Depth-First Search (DFS)
-    // Each element: [nextItemIndexToConsider, currentAccumulatedWeight, currentAccumulatedValue]
-    const explorationStack = [[0, 0, 0]];
+  while (explorationStack.length > 0) {
+    // Get the current frame from the top of the stack to process its state.
+    // We use a reference to mutate the loop counter in place.
+    const currentFrame = explorationStack[explorationStack.length - 1];
+    const [currentStartingIndex, currentTotalWeight, currentTotalValue, nextLoopIterationIndex] = currentFrame;
 
-    while (explorationStack.length > 0) {
-        const [nextItemIndexToConsider, accumulatedWeight, accumulatedValue] = explorationStack.pop();
-
-        if (nextItemIndexToConsider === itemQuantity) {
-            // This condition mirrors the 'ai === N' base case in the original recursive function.
-            // It prints the globally tracked maximum value and immediately terminates the process.
-            console.log(overallBestValue);
-            process.exit();
-        }
-
-        // The loop below corresponds to the 'for (var i = ai, l = N; i < l; i++)' in the original.
-        // It explores all possible items 'k' from 'nextItemIndexToConsider' up to 'itemQuantity - 1'
-        // that can be added to the current accumulated weight.
-        for (let k = nextItemIndexToConsider; k < itemQuantity; k++) {
-            const itemWeight = itemDataCollection[k][0];
-            const itemValue = itemDataCollection[k][1];
-
-            if (itemWeight + accumulatedWeight <= weightLimit) {
-                // Update the overall best value if the current path yields a higher total.
-                overallBestValue = (itemValue + accumulatedValue > overallBestValue ? itemValue + accumulatedValue : overallBestValue);
-                
-                // Push a new state onto the stack, representing the decision to include item 'k'
-                // and then proceed to consider items starting from 'k + 1'.
-                explorationStack.push([k + 1, itemWeight + accumulatedWeight, itemValue + accumulatedValue]);
-            }
-        }
+    // Check the base case: if the 'ai' (currentStartingIndex) has reached 'itemCount' (N).
+    // This check happens at the very beginning of the original recursive function.
+    if (currentStartingIndex === itemCount) {
+      console.log(maxAchievedValue);
+      process.exit();
     }
 
-    // This console.log is a fallback if the explorationStack becomes empty
-    // without ever hitting the 'process.exit()' condition (i.e., no path reached itemQuantity).
-    console.log(overallBestValue);
+    // If the 'for' loop for the current frame has exhausted all its iterations (i.e., 'i' >= N),
+    // then this frame is complete. Pop it from the stack to simulate returning from recursion.
+    if (nextLoopIterationIndex >= itemCount) {
+      explorationStack.pop();
+      continue;
+    }
+
+    // Extract weight and value for the item at 'nextLoopIterationIndex' (which is 'i' in the original loop).
+    const currentItemWeight = itemData[nextLoopIterationIndex][0];
+    const currentItemValue = itemData[nextLoopIterationIndex][1];
+
+    // Increment the 'nextLoopIterationIndex' for the *current* frame.
+    // This prepares the current frame for its next loop iteration if it's revisited,
+    // or ensures it's correctly positioned if a new frame is pushed on top.
+    currentFrame[3]++;
+
+    // Check if adding the current item keeps the total weight within the capacity limit.
+    if (currentItemWeight + currentTotalWeight <= capacityLimit) {
+      // Update the global maximum value found so far.
+      maxAchievedValue = Math.max(maxAchievedValue, currentItemValue + currentTotalValue);
+
+      // Simulate the recursive call: iter(i+1, w + aw, v + av)
+      // Push a new frame onto the stack.
+      // The new frame's 'startingIndexForLoop' is 'i+1' (nextLoopIterationIndex + 1).
+      // Its 'nextLoopIterationIndex' also starts from 'i+1' to begin its own loop.
+      explorationStack.push([
+        nextLoopIterationIndex + 1,
+        currentItemWeight + currentTotalWeight,
+        currentItemValue + currentTotalValue,
+        nextLoopIterationIndex + 1,
+      ]);
+    }
+  }
+
+  // This line is reached only if `process.exit()` is never called.
+  // In the context of the original problem's logic, if `itemCount` is non-negative,
+  // the `process.exit()` within the base case will always be triggered.
+  // Therefore, this line is effectively dead code, but its presence is preserved
+  // to maintain exact observable behavior.
+  console.log(maxAchievedValue);
 }

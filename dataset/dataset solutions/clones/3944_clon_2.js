@@ -1,40 +1,39 @@
-// The entire input data stream is passed into the 'rawData' parameter.
-function ProcessInput(rawData)
-{
-  // The first line of input is in rawData[0], the second in rawData[1], and so on.
-  rawData = rawData.split('\n') ;
+// This function processes the entire input data.
+function ProcessInput(rawData) {
+  // The input is split by newlines; rawData[0] is the first line, rawData[1] is the second, and so on.
+  rawData = rawData.split("\n");
 
-  var     tempArray = rawData[1] .split(' ') ;
+  // The second line (rawData[1]) is further split by spaces to get temporary parts.
+  let tempParts = rawData[1].split(" ");
 
-  // The parseInt function is used to convert string values into base-10 integers.
-  var     numPeople = parseInt(rawData[0], 10) ;
+  // Convert the first line to an integer representing the number of people.
+  const numPeople = parseInt(rawData[0], 10);
 
-  var totalDuration = parseInt(tempArray[0], 10) ;
+  // Convert the first part of the second line to an integer representing the total days.
+  const totalDays = parseInt(tempParts[0], 10);
 
-  var finalResult = parseInt(tempArray[1], 10) ;
+  // Convert the second part of the second line to an integer, initializing the final result.
+  let finalResult = parseInt(tempParts[1], 10);
 
-
-  for
-  (
-    var idx = 1;
-    idx <= numPeople;
-    idx++
-  )
-  {
-    if (totalDuration % rawData[idx + 1] === 0)
-    {
-      finalResult += totalDuration / rawData[idx + 1] ;
-    }
-    else
-    {
-      var currentQuotient = totalDuration / parseInt(rawData[idx + 1], 10) ;
-      finalResult += Math.floor(currentQuotient) + 1 ;
+  // Iterate through each person, starting from the first (index 1).
+  for (let idx = 1; idx <= numPeople; idx++) {
+    // Check if the total days are perfectly divisible by the value associated with the current person.
+    // The value for each person is found in rawData[idx + 1].
+    if (totalDays % rawData[idx + 1] === 0) {
+      // If perfectly divisible, add the exact division result to the final result.
+      finalResult += totalDays / rawData[idx + 1];
+    } else {
+      // If not perfectly divisible, calculate the quotient.
+      let quotientVal = totalDays / parseInt(rawData[idx + 1], 10);
+      // Add the floor of the quotient plus one to the final result.
+      // This effectively rounds up the division.
+      finalResult += Math.floor(quotientVal) + 1;
     }
   }
 
-  // Displaying the computed outcome.
-  console.log(finalResult) ;
+  // Display the computed final result to the console.
+  console.log(finalResult);
 }
 
-// The following line should not be modified (it reads from standard input/output and invokes the primary processing function).
+// Do not modify the code below this line. It handles reading input and calling the main processing function.
 ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

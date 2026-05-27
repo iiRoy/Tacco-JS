@@ -1,58 +1,46 @@
-const fileSystemHandler = require("fs");
+const processInputData = (rawInputContent) => {
+    const inputSegments = rawInputContent.split('\n');
+    const mainTextSegment = inputSegments[0];
+    const searchPatternSegment = inputSegments[1];
 
-const obtainInputData = () => fileSystemHandler.readFileSync("/dev/stdin", "UTF-8");
+    const mainTextCharacters = Array.from(mainTextSegment);
+    const patternCharacters = Array.from(searchPatternSegment);
 
-const segmentConformityCheck = (targetSegment, comparisonPattern) => {
-    if (targetSegment.length !== comparisonPattern.length) {
-        return false;
-    }
-    let charIndex = 0;
-    while (charIndex < comparisonPattern.length) {
-        if (targetSegment[charIndex] !== '?' && targetSegment[charIndex] !== comparisonPattern[charIndex]) {
-            return false;
-        }
-        charIndex++;
-    }
-    return true;
-};
+    const mainTextCharCount = mainTextCharacters.length;
+    const patternCharCount = patternCharacters.length;
 
-const executeTextTransformation = () => {
-    const fullInputContent = obtainInputData();
-    const inputLines = fullInputContent.split('\n');
+    let detectedMatchStart = -1;
 
-    const primaryString = inputLines[0];
-    const secondaryKeyString = inputLines[1];
+    if (patternCharCount <= mainTextCharCount) {
+        const potentialStartIndices = Array.from(
+            { length: mainTextCharCount - patternCharCount + 1 },
+            (_, indexOffset) => mainTextCharCount - patternCharCount - indexOffset
+        );
 
-    const primaryLength = primaryString.length;
-    const secondaryLength = secondaryKeyString.length;
-
-    if (secondaryLength > primaryLength) {
-        console.log("UNRESTORABLE");
-        return;
+        detectedMatchStart = potentialStartIndices.find(currentCandidateIndex => {
+            return patternCharacters.every((patternChar, charRelativeOffset) => {
+                const textCharAtPosition = mainTextCharacters[currentCandidateIndex + charRelativeOffset];
+                return patternChar === textCharAtPosition || textCharAtPosition === '?';
+            });
+        }) ?? -1;
     }
 
-    const candidatePositions = Array.from({ length: primaryLength - secondaryLength + 1 }, (_, index) => index)
-                                    .reverse();
-
-    const detectedStartingPosition = candidatePositions.find(currentPos => {
-        const currentSubsegment = primaryString.substring(currentPos, currentPos + secondaryLength);
-        return segmentConformityCheck(currentSubsegment, secondaryKeyString);
-    });
-
-    if (detectedStartingPosition === undefined) {
+    if (detectedMatchStart === -1) {
         console.log("UNRESTORABLE");
     } else {
-        const initialPortion = primaryString.substring(0, detectedStartingPosition);
-        const finalPortion = primaryString.substring(detectedStartingPosition + secondaryLength);
-        
-        let intermediateResultString = initialPortion + secondaryKeyString + finalPortion;
-        
-        const finalOutputString = Array.from(intermediateResultString)
-                                        .map(symbolChar => (symbolChar === '?' ? 'a' : symbolChar))
-                                        .join('');
-        
-        console.log(finalOutputString);
+        const modifiedTextCharacters = [...mainTextCharacters];
+
+        patternCharacters.forEach((patternChar, charRelativeOffset) => {
+            modifiedTextCharacters[detectedMatchStart + charRelativeOffset] = patternChar;
+        });
+
+        const finalResultString = modifiedTextCharacters
+            .map(char => (char === '?' ? 'a' : char))
+            .join('');
+
+        console.log(finalResultString);
     }
 };
 
-executeTextTransformation();
+const fileSystemUtility = require('fs');
+processInputData(fileSystemUtility.readFileSync("/dev/stdin", "UTF-8"));

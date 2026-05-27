@@ -1,33 +1,50 @@
-const primeModulus = 1_000_000_007; // A large prime number used for modulo operations
+const primeModulo = 10 ** 9 + 7; // A large prime number used as a modulus for calculations
 
-function calculatePowerModulo(baseValue, exponentValue) {
-  // This function computes (baseValue ^ exponentValue) % primeModulus efficiently.
-  let currentResult = 1;
-  for (let iterationIndex = 0; iterationIndex < exponentValue; iterationIndex++) {
-    currentResult = (currentResult * baseValue) % primeModulus;
-  }
-  return currentResult;
+/**
+ * Computes (baseVal ^ exponentVal) modulo primeModulo.
+ * This function implements modular exponentiation using a simple iterative approach.
+ *
+ * @param {number} baseVal The base number for the exponentiation.
+ * @param {number} exponentVal The exponent to raise the base to.
+ * @returns {number} The result of (baseVal ^ exponentVal) % primeModulo.
+ */
+function calculatePower(baseVal, exponentVal) {
+    let resultAccumulator = 1; // Initialize the result to 1 (any number to the power of 0 is 1)
+
+    // Loop 'exponentVal' times, multiplying the base and applying the modulus at each step
+    for (let loopCounter = 0; loopCounter < exponentVal; loopCounter++) {
+        resultAccumulator = (resultAccumulator * baseVal) % primeModulo; // Perform multiplication and then modulo
+    }
+
+    return resultAccumulator; // Return the final modular power
 }
 
-function processInput(sourceString) {
-  // Parse the input string into an integer value.
-  const integerInput = parseInt(sourceString, 10);
+/**
+ * The primary function that processes the input and calculates the required value.
+ * It computes a specific combinatorial expression (10^n - 2*9^n + 8^n) modulo primeModulo.
+ *
+ * @param {string} rawData The input string, which is expected to be a single integer.
+ */
+function ProcessInput(rawData) {
+    // Convert the input string into an integer
+    const parsedNumber = parseInt(rawData, 10); // Using radix 10 for explicit base
 
-  // Perform the primary calculation using the modular exponentiation function.
-  // The formula is (10^N - 2 * 9^N + 8^N) mod M.
-  let calculatedAnswer = calculatePowerModulo(10, integerInput)
-                       - (calculatePowerModulo(9, integerInput) * 2)
-                       + calculatePowerModulo(8, integerInput);
+    // Calculate the core expression: (10^n - 2 * 9^n + 8^n)
+    // This often relates to problems involving inclusion-exclusion principles.
+    let finalResult = calculatePower(10, parsedNumber) - (calculatePower(9, parsedNumber) * 2) + calculatePower(8, parsedNumber);
 
-  // Apply the modulus to the intermediate result.
-  calculatedAnswer = calculatedAnswer % primeModulus;
+    // Apply the modulus to the result.
+    // The first modulo ensures the number is within the range [-primeModulo + 1, primeModulo - 1].
+    finalResult = finalResult % primeModulo;
 
-  // Ensure the final result is non-negative after modulo operation.
-  calculatedAnswer = (calculatedAnswer + primeModulus) % primeModulus;
+    // The second modulo handles potential negative results from subtraction,
+    // ensuring the final result is always positive and within [0, primeModulo - 1].
+    finalResult = (finalResult + primeModulo) % primeModulo;
 
-  // Output the final computed answer to the console.
-  console.log(calculatedAnswer);
+    // Output the computed final value to the standard console.
+    console.log(finalResult);
 }
 
-// Read data from standard input, then process it.
-processInput( require("fs") .readFileSync( "/dev/stdin" , "utf8" ) );
+// Read the input from standard input (usually /dev/stdin in competitive programming environments)
+// and then pass it to the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

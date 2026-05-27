@@ -1,21 +1,18 @@
-function PrimaryProcess (  rawData  )
-{
-  // The initial line goes into rawData[0], the second into rawData[1], and so on.
-  rawData = rawData .  split  (  " "  ) ;
+function ProcessInput(rawData) {
+  // This function takes a raw string as input and performs a numerical comparison.
+  rawData = rawData.split(" "); // Split the input string by spaces into an array.
 
-  const valX  =  Number  (  rawData[0]  ) ;
-  const valY  =  Number  (  rawData[1]  ) ;
-  const valZ  =  Number  (  rawData[2]  ) ;
+  const firstVal = Number(rawData[0]); // Convert the first array element to a number.
+  const secondVal = Number(rawData[1]); // Convert the second array element to a number.
+  const thirdVal = Number(rawData[2]); // Convert the third array element to a number.
 
-  if (  Math.sqrt (  valZ  )  >  Math.sqrt (  valX  )  +  Math.sqrt (  valY  )  )
-  {
-    console . log (  "Yes"  ) ;
-  }
-  else
-  if  (  Math.sqrt (  valZ  )  <=  Math.sqrt (  valX  )  +  Math.sqrt (  valY  )  )
-  {
-    console . log (  "No"  ) ;
+  // Evaluate a condition based on the square roots of the numerical values.
+  if (Math.sqrt(thirdVal) > Math.sqrt(firstVal) + Math.sqrt(secondVal)) {
+    console.log("Yes"); // Print "Yes" if the condition holds true.
+  } else if (Math.sqrt(thirdVal) <= Math.sqrt(firstVal) + Math.sqrt(secondVal)) {
+    console.log("No"); // Otherwise, print "No".
   }
 }
-// The subsequent line should not be altered; it manages standard I/O and calls the primary function.
-PrimaryProcess( require("fs").readFileSync("/dev/stdin", "utf8") );
+
+// Do not modify the line below; it handles reading from standard input and calling the primary function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

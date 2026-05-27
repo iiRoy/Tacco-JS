@@ -1,54 +1,43 @@
-const obtainNumericalValue = () => {
-    const rawDataStream = require("fs").readFileSync("/dev/stdin", "utf8");
-    return Number(rawDataStream.trim());
-};
+function myin(){return require("fs").readFileSync("/dev/stdin", "utf8").trim();}
+function myout(t){console.log(t);}
+function myconv(i,no){switch(no){case 0:return i;case 1:return parseInt(i);case 2:return i.split(" ");case 3:return i.split("\n");case 4:return i.split(" ").map((a)=>Number(a));case 5:return i.split("\n").map((a)=>Number(a));case 6:return i.split("");case 7:return i.split("").map((a)=>Number(a));}}
 
-const presentOutcome = (finalValue) => {
-    console.log(finalValue);
-};
+function computeFactorialDivisorCount(inputString) {
+    const maximumValue = myconv(inputString, 1);
+    const moduloConstant = 1000000007;
 
-const calculateFactorialDivisorCount = (maximumValue) => {
-    const primeModulus = 1000000007;
-    let accumulatedProduct = 1;
+    const primeSieve = new Array(maximumValue + 1).fill(true);
+    primeSieve[0] = false;
+    primeSieve[1] = false;
 
-    // Step 1: Generate primes up to maximumValue using a sieve method
-    const primeCheckArray = Array(maximumValue + 1).fill(true);
-    if (maximumValue >= 0) primeCheckArray[0] = false;
-    if (maximumValue >= 1) primeCheckArray[1] = false;
-
-    for (let currentIterator = 2; currentIterator * currentIterator <= maximumValue; currentIterator++) {
-        if (primeCheckArray[currentIterator]) {
-            for (let nonPrimeMark = currentIterator * currentIterator; nonPrimeMark <= maximumValue; nonPrimeMark += currentIterator) {
-                primeCheckArray[nonPrimeMark] = false;
+    for (let currentNumber = 2; currentNumber * currentNumber <= maximumValue; currentNumber++) {
+        if (primeSieve[currentNumber]) {
+            for (let multiple = currentNumber * currentNumber; multiple <= maximumValue; multiple += currentNumber) {
+                primeSieve[multiple] = false;
             }
         }
     }
 
-    // Step 2: For each prime, calculate its exponent in maximumValue! using Legendre's formula
-    // Then multiply (exponent + 1) to the accumulated product, modulo primeModulus
-    for (let potentialPrime = 2; potentialPrime <= maximumValue; potentialPrime++) {
-        if (primeCheckArray[potentialPrime]) {
-            let currentPrimeExponent = 0;
-            let currentDivisorPower = potentialPrime;
+    let finalDivisorProduct = 1;
 
-            while (currentDivisorPower <= maximumValue) {
-                currentPrimeExponent += Math.floor(maximumValue / currentDivisorPower);
-                // Prevent overflow and ensure currentDivisorPower doesn't exceed maximumValue
-                if (currentDivisorPower > maximumValue / potentialPrime) {
+    for (let primeCandidate = 2; primeCandidate <= maximumValue; primeCandidate++) {
+        if (primeSieve[primeCandidate]) {
+            let totalPrimeExponent = 0;
+            let currentPower = primeCandidate;
+
+            while (currentPower <= maximumValue) {
+                totalPrimeExponent += Math.floor(maximumValue / currentPower);
+                if (currentPower > maximumValue / primeCandidate) {
                     break;
                 }
-                currentDivisorPower *= potentialPrime;
+                currentPower *= primeCandidate;
             }
-            accumulatedProduct = (accumulatedProduct * (currentPrimeExponent + 1)) % primeModulus;
+            
+            finalDivisorProduct = (finalDivisorProduct * (totalPrimeExponent + 1)) % moduloConstant;
         }
     }
-    return accumulatedProduct;
-};
 
-const orchestrateExecution = () => {
-    const inputValue = obtainNumericalValue();
-    const computedResult = calculateFactorialDivisorCount(inputValue);
-    presentOutcome(computedResult);
-};
+    myout(finalDivisorProduct);
+}
 
-orchestrateExecution();
+computeFactorialDivisorCount(myin());

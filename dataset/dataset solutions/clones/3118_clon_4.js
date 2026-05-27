@@ -1,89 +1,117 @@
-const inputProcessor = (function(textualSource) {
-    class DataSegmentHandler {
-        constructor(contentString) {
-            this.segmentsList = contentString.trim().split('\n');
-            this.currentPosition = 0;
+const createInputSource = (rawContent) => {
+    const allLines = rawContent.trim().split('\n');
+    let currentLineIndex = 0;
+    let currentLineTokenBuffer = null;
+
+    const advanceLinePointer = () => {
+        currentLineIndex++;
+        currentLineTokenBuffer = null;
+    };
+
+    const retrieveNextToken = (asString) => {
+        if (currentLineIndex >= allLines.length) {
+            return undefined;
         }
 
-        // Corresponds to original 'a' method
-        extractNextElement(returnAsString) {
-            let activeSegment = this.segmentsList[this.currentPosition];
-            if (typeof activeSegment === "string") {
-                this.segmentsList[this.currentPosition] = activeSegment.split(" ").reverse();
-            }
-            let fetchedItem = this.segmentsList[this.currentPosition].pop();
-            if (!this.segmentsList[this.currentPosition].length) {
-                this.currentPosition++;
-            }
-            return returnAsString ? fetchedItem : +fetchedItem;
+        if (currentLineTokenBuffer === null) {
+            currentLineTokenBuffer = allLines[currentLineIndex].split(' ').reverse();
         }
 
-        // Corresponds to original 'l' method
-        retrieveCurrentLine(returnAsString) {
-            let components = this.segmentsList[this.currentPosition++].split(" ");
-            return returnAsString ? components : components.map(unit => +unit);
+        const value = currentLineTokenBuffer.pop();
+
+        if (currentLineTokenBuffer.length === 0) {
+            advanceLinePointer();
         }
 
-        // Corresponds to original 'm' method
-        getGroupedLines(numberOfRows, returnAsString) {
-            let collection = this.segmentsList.slice(this.currentPosition, this.currentPosition + numberOfRows)
-                .map(lineContent => lineContent.split(" "));
-            this.currentPosition += numberOfRows;
-            return returnAsString ? collection : collection.map(rowUnits => rowUnits.map(itemUnit => +itemUnit));
-        }
+        return asString ? value : Number(value);
+    };
 
-        // Corresponds to original 'r' method
-        fetchSequentialLines(lineQuantity, returnAsString) {
-            let blockData = this.segmentsList.slice(this.currentPosition, this.currentPosition + lineQuantity);
-            this.currentPosition += lineQuantity;
-            return returnAsString ? blockData : blockData.map(item => +item);
+    const retrieveFullLine = (asString) => {
+        if (currentLineIndex >= allLines.length) {
+            return undefined;
         }
-    }
-    return new DataSegmentHandler(textualSource);
-})(require("fs").readFileSync("/dev/stdin","utf8"));
+        const lineContent = allLines[currentLineIndex];
+        advanceLinePointer();
+        const tokens = lineContent.split(' ');
+        return asString ? tokens : tokens.map(Number);
+    };
 
-const locateInsertionPoint = (dataCollection, lowerBoundary, upperBoundary, targetSearchValue) => {
-    let currentLower = lowerBoundary;
-    let currentUpper = upperBoundary;
-    while (currentLower < currentUpper) {
-        let midPoint = Math.floor((currentLower + currentUpper) / 2);
-        if (dataCollection[midPoint] <= targetSearchValue) {
-            currentLower = midPoint + 1;
-        } else {
-            currentUpper = midPoint;
+    const retrieveMultipleLines = (count, asString) => {
+        const result = [];
+        for (let i = 0; i < count; i++) {
+            if (currentLineIndex >= allLines.length) break;
+            const lineContent = allLines[currentLineIndex];
+            advanceLinePointer();
+            const tokens = lineContent.split(' ');
+            result.push(asString ? tokens : tokens.map(Number));
         }
-    }
-    return currentLower;
+        return result;
+    };
+
+    const retrieveRawLines = (count, asString) => {
+        const result = [];
+        for (let i = 0; i < count; i++) {
+            if (currentLineIndex >= allLines.length) break;
+            const lineContent = allLines[currentLineIndex];
+            advanceLinePointer();
+            result.push(asString ? lineContent : Number(lineContent));
+        }
+        return result;
+    };
+
+    return {
+        getSingleValue: (asStr) => retrieveNextToken(asStr),
+        getLineValues: (asStr) => retrieveFullLine(asStr),
+        getMatrixValues: (num, asStr) => retrieveMultipleLines(num, asStr),
+        getRawValues: (num, asStr) => retrieveRawLines(num, asStr),
+    };
 };
 
-const processGraphData = () => {
-    const totalNodes = inputProcessor.extractNextElement();
-    const totalEdges = inputProcessor.extractNextElement();
+var inputProcessor = createInputSource(require("fs").readFileSync("/dev/stdin","utf8"));
 
-    const nodeDegrees = Array.from({length: totalNodes + 1}, () => 0);
-
-    const edgeConnections = Array.from({length: totalEdges}, () => inputProcessor.retrieveCurrentLine());
-
-    edgeConnections.forEach(connectionPair => {
-        nodeDegrees[connectionPair[0]]++;
-        nodeDegrees[connectionPair[1]]++;
-    });
-
-    let cumulativeScore = 0;
-    let isGraphValid = true;
-
-    nodeDegrees.slice(1).forEach(degreeValue => {
-        if (degreeValue % 2 !== 0) {
-            isGraphValid = false;
+function locateUpperBound(sortedArr, startIndex, endIndex, targetVal) {
+    let lowBoundary = startIndex;
+    let highBoundary = endIndex;
+    while (lowBoundary < highBoundary) {
+        let midPoint = Math.floor((lowBoundary + highBoundary) / 2);
+        if (sortedArr[midPoint] <= targetVal) {
+            lowBoundary = midPoint + 1;
+        } else {
+            highBoundary = midPoint;
         }
-        cumulativeScore += degreeValue - 2;
+    }
+    return lowBoundary;
+}
+
+console.log(processGraphData());
+
+function processGraphData() {
+    var nodeCount = inputProcessor.getSingleValue();
+    var edgeCount = inputProcessor.getSingleValue();
+
+    const degreeMap = new Map();
+
+    Array.from({ length: edgeCount }).forEach(() => {
+        const [nodeA, nodeB] = inputProcessor.getLineValues();
+        degreeMap.set(nodeA, (degreeMap.get(nodeA) || 0) + 1);
+        degreeMap.set(nodeB, (degreeMap.get(nodeB) || 0) + 1);
     });
 
-    if (!isGraphValid) {
+    const allNodeIds = Array.from({ length: nodeCount }, (_, i) => i + 1);
+
+    const hasOddDegree = allNodeIds.some(nodeId => {
+        const currentDegree = degreeMap.get(nodeId) || 0;
+        return currentDegree % 2 !== 0;
+    });
+
+    if (hasOddDegree) {
         return "No";
     }
 
-    return cumulativeScore >= 4 ? "Yes" : "No";
-};
+    const totalSumOfAdjustedDegrees = allNodeIds.reduce((accumulator, nodeId) => {
+        const currentDegree = degreeMap.get(nodeId) || 0;
+        return accumulator + (currentDegree - 2);
+    }, 0);
 
-console.log(processGraphData());
+    return totalSumOfAdjustedDegrees >= 4 ? "Yes" : "No";
+}

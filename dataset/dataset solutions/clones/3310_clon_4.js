@@ -1,57 +1,62 @@
-'use strict';
+'use strict'
 
-let memoizationCache;
-let primaryInputString;
-let secondaryInputString;
+function determineLCS(primarySeq, secondarySeq) {
+  const primaryLen = primarySeq.length;
+  const secondaryLen = secondarySeq.length;
 
-function computeLongestCommonSequence(currentPrimaryIndex, currentSecondaryIndex) {
-    if (currentPrimaryIndex >= primaryInputString.length || currentSecondaryIndex >= secondaryInputString.length) {
-        return [0, ''];
+  // Initialize a 2D array to store the lengths of LCS
+  // `lcsLengths[i][j]` will store the length of LCS of primarySeq[0...i-1] and secondarySeq[0...j-1]
+  const lcsLengths = Array.from({ length: primaryLen + 1 }, () =>
+    Array.from({ length: secondaryLen + 1 }, () => 0)
+  );
+
+  // Fill the lcsLengths table using dynamic programming
+  for (let pIdx = 1; pIdx <= primaryLen; pIdx++) {
+    for (let sIdx = 1; sIdx <= secondaryLen; sIdx++) {
+      if (primarySeq[pIdx - 1] === secondarySeq[sIdx - 1]) {
+        // If characters match, extend the LCS from the diagonal element
+        lcsLengths[pIdx][sIdx] = 1 + lcsLengths[pIdx - 1][sIdx - 1];
+      } else {
+        // If characters don't match, take the maximum LCS length from either
+        // removing a character from primarySeq or secondarySeq
+        lcsLengths[pIdx][sIdx] = Math.max(lcsLengths[pIdx - 1][sIdx], lcsLengths[pIdx][sIdx - 1]);
+      }
     }
+  }
 
-    const lookupKey = `${currentPrimaryIndex},${currentSecondaryIndex}`;
-    if (memoizationCache.has(lookupKey)) {
-        return memoizationCache.get(lookupKey);
-    }
+  // Reconstruct the LCS string by backtracking through the lcsLengths table
+  let currentP = primaryLen;
+  let currentS = secondaryLen;
+  const commonSubsequenceChars = []; // Use an array to build the string efficiently
 
-    let currentEvaluationResult;
-
-    if (primaryInputString[currentPrimaryIndex] === secondaryInputString[currentSecondaryIndex]) {
-        const [lengthOfSub, sequenceText] = computeLongestCommonSequence(currentPrimaryIndex + 1, currentSecondaryIndex + 1);
-        currentEvaluationResult = [1 + lengthOfSub, primaryInputString[currentPrimaryIndex] + sequenceText];
+  while (currentP > 0 && currentS > 0) {
+    if (primarySeq[currentP - 1] === secondarySeq[currentS - 1]) {
+      // If characters match, this character is part of the LCS.
+      // Prepend it to the result and move diagonally up-left.
+      commonSubsequenceChars.unshift(primarySeq[currentP - 1]);
+      currentP--;
+      currentS--;
     } else {
-        const skipPrimaryChar = computeLongestCommonSequence(currentPrimaryIndex + 1, currentSecondaryIndex);
-        const skipSecondaryChar = computeLongestCommonSequence(currentPrimaryIndex, currentSecondaryIndex + 1);
-
-        // This condition preserves the specific tie-breaking rule from the original code.
-        // If skipping a char from the secondary string yields a strictly longer sequence, pick that.
-        // Otherwise (if skipping primary char is longer or equal), pick the one skipping primary char.
-        if (skipSecondaryChar[0] > skipPrimaryChar[0]) {
-            currentEvaluationResult = skipSecondaryChar;
-        } else {
-            currentEvaluationResult = skipPrimaryChar;
-        }
+      // If characters don't match, move to the cell that contributed to the maximum length.
+      // This means moving either up (primarySeq[currentP-1] was not part of LCS)
+      // or left (secondarySeq[currentS-1] was not part of LCS).
+      if (lcsLengths[currentP - 1][currentS] > lcsLengths[currentP][currentS - 1]) {
+        currentP--; // Move up
+      } else {
+        currentS--; // Move left (or up if equal, either path is valid for reconstruction)
+      }
     }
+  }
 
-    memoizationCache.set(lookupKey, currentEvaluationResult);
-    return currentEvaluationResult;
+  return commonSubsequenceChars.join('');
 }
 
-function deriveCommonSubsequence(firstSequence, secondSequence) {
-    primaryInputString = firstSequence;
-    secondaryInputString = secondSequence;
-    memoizationCache = new Map();
-
-    const [finalLength, finalSequence] = computeLongestCommonSequence(0, 0);
-    return finalSequence;
+function processInput(inputData) {
+  const dataLines = inputData.split("\n");
+  const firstString = dataLines[0];
+  const secondString = dataLines[1];
+  const result = determineLCS(firstString, secondString);
+  console.log(result);
 }
 
-function processInputAndDisplay(rawInputData) {
-    const dataChunks = rawInputData.split('\n');
-    const firstLineContent = dataChunks[0];
-    const secondLineContent = dataChunks[1];
-    const finalResultSequence = deriveCommonSubsequence(firstLineContent, secondLineContent);
-    console.log(finalResultSequence);
-}
-
-processInputAndDisplay(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

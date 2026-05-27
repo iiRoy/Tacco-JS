@@ -1,83 +1,51 @@
-"use strict"; // Enforce strict parsing and error handling in the script
+"use strict";
 
-/**
- * Main function to process input and calculate the minimum absolute difference
- * based on a specific cumulative sum logic.
- * This function handles input parsing, data validation, and the core calculation.
- * @param {string} rawInputPayload - The raw input string, typically from stdin.
- */
-const executeNumericalProcessing = (rawInputPayload) => {
-  // Step 1: Prepare the input data
-  // Convert the raw buffer to a string, remove leading/trailing whitespace,
-  // and split it into individual lines.
-  const inputLines = rawInputPayload.toString().trim().split('\n');
+const processInput = (rawInputString) => {
+  // Split the raw input string into individual lines after trimming whitespace
+  const inputLines = rawInputString.trim().split("\n");
 
-  // Attempt to parse the second line, which contains space-separated numbers.
-  // Robustly split by one or more whitespace characters, filter out any empty strings
-  // that might result from multiple spaces, and convert each part to a number.
-  // Further filter out any non-numeric results (NaN) to ensure a clean array.
-  const sourceNumbers = inputLines[1]
-    .split(/\s+/)
-    .filter(segment => segment !== '')
-    .map(Number)
-    .filter(value => !isNaN(value));
+  // Parse the first line for the number of elements (N), though it's not used in the core logic
+  const arrayLength = parseInt(inputLines[0], 10);
+  
+  // Parse the second line to get the array of numbers
+  const stringNumbers = inputLines[1].split(" ");
+  const numericArray = stringNumbers.map(str => parseInt(str, 10));
 
-  // --- Type III: Add guard clauses for edge cases ---
-  // If the array of numbers is empty, there's no difference to calculate.
-  if (sourceNumbers.length === 0) {
-    console.log(0);
-    return; // Exit early
+  // Calculate the sum of all elements in the array using a traditional loop
+  let overallArraySum = 0;
+  for (let k = 0; k < numericArray.length; k++) {
+    overallArraySum += numericArray[k];
   }
 
-  // If there's only one number, the only 'split' implies one partition is that number
-  // and the other is zero. The difference is simply the absolute value of that number.
-  if (sourceNumbers.length === 1) {
-    console.log(Math.abs(sourceNumbers[0]));
-    return; // Exit early
+  // Initialize two accumulators based on the first element of the array
+  // These accumulators are updated in a specific way to match the original algorithm's behavior
+  let currentLeftAccumulator = numericArray[0];
+  let currentRightAccumulator = overallArraySum - numericArray[0];
+  
+  // Initialize the minimum difference found to a very large value
+  let minimumDifferenceFound = Infinity;
+  
+  // Iterate through each element of the array to calculate and update differences
+  // The loop runs for each element, from index 0 to length-1
+  for (let elementIndex = 0; elementIndex < numericArray.length; elementIndex++) {
+    // Store the current element in a temporary variable for clarity
+    const currentElementValue = numericArray[elementIndex];
+
+    // Calculate the absolute difference between the current accumulator values
+    const calculatedDifference = Math.abs(currentRightAccumulator - currentLeftAccumulator);
+    
+    // Update the overall minimum difference if the current difference is smaller
+    minimumDifferenceFound = Math.min(minimumDifferenceFound, calculatedDifference);
+    
+    // Update the accumulators for the next iteration
+    // This specific update pattern is critical for preserving the original behavior
+    currentRightAccumulator -= currentElementValue;
+    currentLeftAccumulator += currentElementValue;
   }
-  // --- End of guard clauses ---
-
-  // Step 2: Initialize accumulators and result variable
-  // Calculate the total sum of all numbers in the array.
-  // An explicit initial value of 0 is provided for robustness.
-  const cumulativeTotal = sourceNumbers.reduce((accumulator, currentValue) => accumulator + currentValue, 0);
-
-  // Initialize the first partition's sum with the first element.
-  let accumulatorOne = sourceNumbers[0];
-  // Initialize the second partition's sum with the total sum minus the first element.
-  let accumulatorTwo = cumulativeTotal - accumulatorOne;
-
-  // Initialize the variable to store the minimum absolute difference found so far.
-  // Using Number.POSITIVE_INFINITY ensures any valid difference will be smaller.
-  let minimumObservedDelta = Number.POSITIVE_INFINITY;
-
-  // Step 3: Iterate through the array to find the minimum difference
-  // The loop processes each element, effectively shifting it from the second partition
-  // to the first, and recalculating the difference.
-  // The loop iterates N times, considering N potential "split" configurations
-  // including the case where the second partition becomes empty.
-  for (let processingIndex = 0; processingIndex < sourceNumbers.length; ++processingIndex) {
-    // Store the current element being processed for clarity and potential reuse.
-    const currentElement = sourceNumbers[processingIndex];
-
-    // Calculate the absolute difference between the current states of the two accumulators.
-    const currentDeltaMagnitude = Math.abs(accumulatorTwo - accumulatorOne);
-
-    // Update the minimum observed delta if the current delta is smaller.
-    minimumObservedDelta = Math.min(minimumObservedDelta, currentDeltaMagnitude);
-
-    // Update the accumulators for the next iteration:
-    // Subtract the current element from the second accumulator (as if moving it out).
-    accumulatorTwo -= currentElement;
-    // Add the current element to the first accumulator (as if moving it in).
-    accumulatorOne += currentElement;
-  }
-
-  // Step 4: Output the final result
-  // Display the smallest absolute difference found during the processing.
-  console.log(minimumObservedDelta);
+  
+  // Output the final minimum difference
+  console.log(minimumDifferenceFound);
 };
 
-// Execute the numerical processing function with input read from standard input.
-// This approach is common in competitive programming environments.
-executeNumericalProcessing(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Read input from stdin and pass it to the processing function
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

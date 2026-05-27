@@ -1,36 +1,47 @@
-const processSwitchboard = (rawBoardData) => {
-    const dataLines = rawBoardData.trim().split("\n");
+function processInputData(rawText) {
+    const dataLines = rawText.trim().split("\n");
+    const [switchCount, lampCount] = dataLines[0].split(" ").map(Number);
 
-    const boardDimensions = dataLines[0].split(" ").map(Number);
-    const numberOfSwitches = boardDimensions[0];
-    const numberOfLights = boardDimensions[1];
+    const requiredParities = dataLines[lampCount + 1].split(" ").map(Number);
 
-    const expectedLightParities = dataLines[numberOfLights + 1].split(" ").map(Number);
-
-    const lightSwitchConfigurations = dataLines.slice(1, numberOfLights + 1).map(lineSegment => {
-        const switchIndices = lineSegment.split(" ").map(Number);
-        return switchIndices.slice(1).map(idx => idx - 1); // Convert to 0-indexed
+    const lampSwitchIndices = dataLines.slice(1, lampCount + 1).map(lineContent => {
+        const lineParts = lineContent.split(" ").map(Number);
+        return lineParts.slice(1).map(originalIndex => originalIndex - 1);
     });
 
-    let satisfiedCombinations = 0;
-    const totalPossibleStates = 1 << numberOfSwitches;
+    return {
+        totalSwitches: switchCount,
+        totalLamps: lampCount,
+        parityRequirements: requiredParities,
+        lampConnections: lampSwitchIndices
+    };
+}
 
-    for (let switchStateMask = 0; switchStateMask < totalPossibleStates; switchStateMask++) {
-        const allLightsAreCorrect = lightSwitchConfigurations.every((connectedSwitchesForLight, lightIdentifier) => {
-            const activeConnectedSwitches = connectedSwitchesForLight.filter(switchIdx => {
-                return (switchStateMask >> switchIdx) & 1; // Check if the bit for this switch is set
-            });
+function determineValidConfigurations(systemConfig) {
+    const { totalSwitches, totalLamps, parityRequirements, lampConnections } = systemConfig;
+    let successfulCombinations = 0;
 
-            const currentLightParity = activeConnectedSwitches.length % 2;
-            return currentLightParity === expectedLightParities[lightIdentifier];
+    for (let currentSwitchState = 0; currentSwitchState < (1 << totalSwitches); currentSwitchState++) {
+        const allConditionsMet = lampConnections.every((connectedSwitches, lampIdentifier) => {
+            const activeSwitchSum = connectedSwitches.reduce((accumulator, switchPosition) => {
+                return accumulator + ((currentSwitchState >> switchPosition) & 1);
+            }, 0);
+
+            return (activeSwitchSum % 2) === parityRequirements[lampIdentifier];
         });
 
-        if (allLightsAreCorrect) {
-            satisfiedCombinations++;
+        if (allConditionsMet) {
+            successfulCombinations++;
         }
     }
 
-    console.log(satisfiedCombinations);
-};
+    return successfulCombinations;
+}
 
-processSwitchboard(require("fs").readFileSync("/dev/stdin", "utf8"));
+function mainEntry(inputString) {
+    const configuration = processInputData(inputString);
+    const resultCount = determineValidConfigurations(configuration);
+    console.log(resultCount);
+}
+
+mainEntry(require("fs").readFileSync("/dev/stdin", "utf8"));

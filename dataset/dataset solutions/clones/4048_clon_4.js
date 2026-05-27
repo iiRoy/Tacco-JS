@@ -1,58 +1,23 @@
-function findSatisfyingSets(
-    currentCoinTypeIndex,
-    currentValueAccumulator,
-    maximumCounts,
-    denominationValues,
-    goalAmount
-) {
-    if (currentCoinTypeIndex === denominationValues.length) {
-        return currentValueAccumulator === goalAmount ? 1 : 0;
-    }
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-    let totalSatisfied = 0;
-    const currentDenomination = denominationValues[currentCoinTypeIndex];
-    const currentMaxCount = maximumCounts[currentCoinTypeIndex];
+function Main(inputString) {
+    const lineSegments = inputString.split("\n");
+    const max500Unit = Number(lineSegments[0]);
+    const max100Unit = Number(lineSegments[1]);
+    const max50Unit = Number(lineSegments[2]);
+    const targetValue = Number(lineSegments[3]);
 
-    for (let quantity = 0; quantity <= currentMaxCount; quantity++) {
-        const valueFromThisDenomination = quantity * currentDenomination;
-        const nextValueAccumulator = currentValueAccumulator + valueFromThisDenomination;
+    const valuesFrom500 = Array.from({ length: max500Unit + 1 }, (_, index) => index * 500);
+    const valuesFrom100 = Array.from({ length: max100Unit + 1 }, (_, index) => index * 100);
+    const valuesFrom50 = Array.from({ length: max50Unit + 1 }, (_, index) => index * 50);
 
-        if (nextValueAccumulator > goalAmount) {
-            break;
-        }
-
-        totalSatisfied += findSatisfyingSets(
-            currentCoinTypeIndex + 1,
-            nextValueAccumulator,
-            maximumCounts,
-            denominationValues,
-            goalAmount
-        );
-    }
-
-    return totalSatisfied;
-}
-
-function ProcessInputAndCalculate(sourceText) {
-    const lineSegments = sourceText.split("\n");
-
-    const firstLimit = parseInt(lineSegments[0], 10);
-    const secondLimit = parseInt(lineSegments[1], 10);
-    const thirdLimit = parseInt(lineSegments[2], 10);
-    const targetSum = parseInt(lineSegments[3], 10);
-
-    const coinDenominations = [500, 100, 50];
-    const coinMaximums = [firstLimit, secondLimit, thirdLimit];
-
-    const finalCount = findSatisfyingSets(
-        0,
-        0,
-        coinMaximums,
-        coinDenominations,
-        targetSum
+    const allPossibleSums = valuesFrom500.flatMap(sum500 =>
+        valuesFrom100.flatMap(sum100 =>
+            valuesFrom50.map(sum50 => sum500 + sum100 + sum50)
+        )
     );
 
-    console.log(finalCount);
-}
+    const exactMatches = allPossibleSums.filter(currentSum => currentSum === targetValue);
 
-ProcessInputAndCalculate(require("fs").readFileSync("/dev/stdin", "utf8"));
+    console.log(exactMatches.length);
+}

@@ -1,52 +1,64 @@
-// This function processes the entire input string provided.
-function ProcessCoordinates(rawData)
-{
-  // Convert the raw input string into an array of individual lines.
-  const lineData = rawData.split('\n') ;
+// This function is designed to process a given string of raw input data.
+function ProcessInput(rawData) {
+  // The initial raw input string is split into an array of individual lines.
+  // Each element in 'linesArray' will correspond to one line from the input.
+  let linesArray = rawData.split('\n');
 
-  // The first line indicates the total number of coordinate pairs to process.
-  const numElements = parseInt(lineData[0], 10);
+  // The first line of the input typically specifies the total number of data points
+  // or entries that follow. This value is parsed as an integer.
+  const dataCount = parseInt(linesArray[0], 10);
 
-  // Declare variables for loop indexing, components of points, and the calculated segment length.
-  let outerLoopIdx, innerLoopIdx;
-  let currentPointComponents, currentX, currentY;
-  let comparedPointComponents, comparedX, comparedY;
-  let segmentLength;
+  // Declare several variables that will be used throughout the calculation.
+  // These include loop counters, temporary storage for point coordinates,
+  // and the calculated distance between two points.
+  let idxA, idxB;
+  let pointCoordsA, coordXA, coordYA;
+  let pointCoordsB, coordXB, coordYB;
+  let distanceVal;
 
-  // Initialize an accumulator for the sum of all calculated segment lengths.
-  let totalLengthAccumulator = 0.0 ;
+  // Initialize a variable to accumulate the sum of all pairwise distances.
+  // Using a floating-point zero to ensure subsequent additions maintain precision.
+  let totalDistanceSum = 0.0;
 
-  // Iterate through each point starting from the first actual data line.
-  for ( outerLoopIdx = 1 ; outerLoopIdx <= numElements ; ++outerLoopIdx )
-  {
-    // Parse the coordinates for the current primary point.
-    currentPointComponents = lineData[outerLoopIdx].split(' ');
-    // Extract the X-coordinate for the current primary point.
-    currentX = parseFloat(currentPointComponents[0]);
-    // Extract the Y-coordinate for the current primary point.
-    currentY = parseFloat(currentPointComponents[1]);
+  // Outer loop: Iterates through each data point, starting from the first actual data entry
+  // (which is at index 1 in the 'linesArray', as index 0 holds the 'dataCount').
+  // This loop selects the first point for a pair (Point A).
+  for (idxA = 1; idxA <= dataCount; idxA++) {
+    // Extract the coordinates for Point A from the current line.
+    // The coordinates are expected to be space-separated.
+    pointCoordsA = linesArray[idxA].split(' ');
+    // Convert the string coordinate values to floating-point numbers for calculations.
+    coordXA = parseFloat(pointCoordsA[0]);
+    coordYA = parseFloat(pointCoordsA[1]);
 
-    // Iterate through all subsequent points to calculate distances with the primary point.
-    for ( innerLoopIdx = outerLoopIdx + 1 ; innerLoopIdx <= numElements ; innerLoopIdx++ )
-    {
-      // Parse the coordinates for the secondary point being compared.
-      comparedPointComponents = lineData[innerLoopIdx].split(' ');
-      // Extract the X-coordinate for the secondary point.
-      comparedX = parseFloat(comparedPointComponents[0]);
-      // Extract the Y-coordinate for the secondary point.
-      comparedY = parseFloat(comparedPointComponents[1]);
+    // Inner loop: Iterates through the remaining data points, starting from the one
+    // immediately after Point A. This loop selects the second point for a pair (Point B).
+    // This approach ensures each pair is considered only once (e.g., A-B, not B-A)
+    // and avoids comparing a point with itself.
+    for (idxB = idxA + 1; idxB <= dataCount; idxB++) {
+      // Extract the coordinates for Point B from its respective line.
+      pointCoordsB = linesArray[idxB].split(' ');
+      // Convert the string coordinate values to floating-point numbers.
+      coordXB = parseFloat(pointCoordsB[0]);
+      coordYB = parseFloat(pointCoordsB[1]);
 
-      // Calculate the Euclidean distance between the two points using the distance formula.
-      segmentLength = Math.sqrt(
-        (currentX - comparedX) * (currentX - comparedX) +
-        (currentY - comparedY) * (currentY - comparedY)
+      // Calculate the Euclidean distance between Point A and Point B.
+      // The formula is: sqrt((x_A - x_B)^2 + (y_A - y_B)^2).
+      distanceVal = Math.sqrt(
+        (coordXA - coordXB) * (coordXA - coordXB) +
+        (coordYA - coordYB) * (coordYA - coordYB)
       );
-      // Add the calculated distance to the running total.
-      totalLengthAccumulator += segmentLength;
+
+      // Add the newly calculated distance to the running total sum.
+      totalDistanceSum += distanceVal;
     }
   }
-  // Output the final computed value based on the accumulated distances and the count of elements.
-  console.log(totalLengthAccumulator * 2.0 / numElements);
+
+  // After all pairwise distances have been summed, perform the final calculation
+  // as specified by the problem: multiply the total sum by 2 and then divide by the data count.
+  console.log(totalDistanceSum * 2 / dataCount);
 }
-// The following section handles standard input/output operations and should not be modified.
-ProcessCoordinates(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+// This standard boilerplate code reads the entire content of standard input
+// and passes it to the 'ProcessInput' function. It should remain unchanged.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

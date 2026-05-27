@@ -1,20 +1,10 @@
-/*
- * This module defines a utility function
- * to manipulate text sequences and processes
- * standard input.
- */
-function     invertText(   txt   )
-{
-  return   txt
-           .split('')
-           .reverse()
-           .join('');
+function processStringReversal(inputStringValue) {
+  // This routine takes a string and returns a new string with characters in reverse order.
+  return inputStringValue.split('').reverse().join('');
 }
 
-// Acquire file system utilities and read from the standard input stream
-var   incomingData  =   require('fs')
-                        .readFileSync('/dev/stdin', 'utf8')
-;
+// Acquire content from the standard input file descriptor.
+var acquiredData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-// Display the processed data to the console
-console.log(  invertText(incomingData)  );
+// Output the processed (reversed) string to the console.
+console.log(processStringReversal(acquiredData));

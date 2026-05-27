@@ -1,47 +1,35 @@
 'use strict';
 
-function processData(rawData) {
-    const parsedSegments = rawData.trim().split('\n');
+function processInput(inputString) {
+  const lines = inputString.split('\n');
 
-    const _ignoreCount = parseInt(parsedSegments.shift(), 10);
+  const nameList = lines.slice(1, -1);
 
-    const initialLetterCounts = new Map([
-        ['M', 0],
-        ['A', 0],
-        ['R', 0],
-        ['C', 0],
-        ['H', 0]
-    ]);
+  const targetLetters = ['M', 'A', 'R', 'C', 'H'];
 
-    for (const currentLine of parsedSegments) {
-        const firstGlyph = currentLine[0];
-        if (initialLetterCounts.has(firstGlyph)) {
-            initialLetterCounts.set(firstGlyph, initialLetterCounts.get(firstGlyph) + 1);
-        }
+  const letterOccurrences = nameList.reduce((accumulator, currentName) => {
+    const firstLetter = currentName.charAt(0);
+    if (targetLetters.includes(firstLetter)) {
+      accumulator[firstLetter] = (accumulator[firstLetter] || 0) + 1;
     }
+    return accumulator;
+  }, {});
 
-    const numericalValues = [
-        initialLetterCounts.get('M'),
-        initialLetterCounts.get('A'),
-        initialLetterCounts.get('R'),
-        initialLetterCounts.get('C'),
-        initialLetterCounts.get('H')
-    ];
+  const countArray = targetLetters.map(charKey => letterOccurrences[charKey] || 0);
 
-    let cumulativeProductSum = 0;
+  let resultAccumulator = 0;
 
-    for (let indexA = 0; indexA < numericalValues.length; indexA++) {
-        for (let indexB = indexA + 1; indexB < numericalValues.length; indexB++) {
-            for (let indexC = indexB + 1; indexC < numericalValues.length; indexC++) {
-                const valA = numericalValues[indexA];
-                const valB = numericalValues[indexB];
-                const valC = numericalValues[indexC];
-                cumulativeProductSum += (valA * valB * valC);
-            }
-        }
+  const arrayLength = countArray.length;
+
+  for (let idx1 = 0; idx1 < arrayLength; idx1++) {
+    for (let idx2 = idx1 + 1; idx2 < arrayLength; idx2++) {
+      for (let idx3 = idx2 + 1; idx3 < arrayLength; idx3++) {
+        resultAccumulator += countArray[idx1] * countArray[idx2] * countArray[idx3];
+      }
     }
+  }
 
-    console.log(cumulativeProductSum);
+  console.log(resultAccumulator);
 }
 
-processData(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

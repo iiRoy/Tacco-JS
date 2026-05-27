@@ -1,51 +1,39 @@
-const POSITIVE_MATCH_INDICATOR = "YES";
-const NEGATIVE_MATCH_INDICATOR = "NO";
+function checkAkihabaraPattern(inputString) {
+  const trimmedInput = inputString.trim();
 
-function normalizeInputString(rawString) {
-  if (typeof rawString !== 'string') {
-    return String(rawString || '').trim();
+  // Define the core pattern components
+  const corePart1 = "KIH";
+  const corePart2 = "B";
+  const corePart3 = "R";
+
+  // Construct the full regex pattern using template literals for clarity
+  // (A|) is equivalent to A?
+  const patternSegments = [
+    "^(A?)", // Optional 'A' at the beginning
+    corePart1,
+    "(A?)", // Optional 'A' after KIH
+    corePart2,
+    "(A?)", // Optional 'A' after B
+    corePart3,
+    "(A?)$" // Optional 'A' at the end
+  ];
+
+  const fullPatternString = patternSegments.join('');
+  const akihabaraRegex = new RegExp(fullPatternString);
+
+  const isMatch = akihabaraRegex.test(trimmedInput);
+
+  if (isMatch) {
+    console.log("YES");
+  } else {
+    console.log("NO");
   }
-  return rawString.trim();
 }
 
-function assemblePatternMatcher() {
-  const optionalCharA = "(A|)";
-  const segmentKih = "KIH";
-  const segmentB = "B";
-  const segmentR = "R";
+const fileSystemModule = require("fs");
+const standardInputPath = "/dev/stdin";
+const encodingFormat = "utf8";
 
-  const completePatternString = `^${optionalCharA}${segmentKih}${optionalCharA}${segmentB}${optionalCharA}${segmentR}${optionalCharA}$`;
+const inputData = fileSystemModule.readFileSync(standardInputPath, encodingFormat);
 
-  return new RegExp(completePatternString);
-}
-
-function verifyPatternConformance(textCandidate) {
-  const activePattern = assemblePatternMatcher();
-  const doesMatch = activePattern.test(textCandidate);
-  return doesMatch;
-}
-
-function presentFinalOutcome(isMatchSuccessful) {
-  const resultDisplay = isMatchSuccessful ? POSITIVE_MATCH_INDICATOR : NEGATIVE_MATCH_INDICATOR;
-  console.log(resultDisplay);
-}
-
-function processInputTextForPattern(initialInputString) {
-  const cleanedInput = normalizeInputString(initialInputString);
-  const isInputValidPattern = verifyPatternConformance(cleanedInput);
-  presentFinalOutcome(isInputValidPattern);
-}
-
-try {
-  const acquireRawFileData = (sourcePath, encodingType) => {
-    // Dynamically require 'fs' module to avoid global pollution if not needed elsewhere.
-    const fileSystemModule = require("fs");
-    return fileSystemModule.readFileSync(sourcePath, encodingType);
-  };
-
-  const rawInputContent = acquireRawFileData("/dev/stdin", "utf8");
-  processInputTextForPattern(rawInputContent);
-} catch (fileReadError) {
-  console.error("Failed to read input data:", fileReadError.message);
-  presentFinalOutcome(false);
-}
+checkAkihabaraPattern(inputData);

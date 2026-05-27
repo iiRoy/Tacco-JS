@@ -1,66 +1,64 @@
-function* generateArrangements(availableItems, choiceCount) {
-    if (choiceCount === 0) {
-        yield [];
-        return;
-    }
+function generateOrderedSelections(sourceSet, selectionLength, currentPath, visitedFlags, resultConsumer) {
+  if (currentPath.length === selectionLength) {
+    resultConsumer([...currentPath]);
+    return;
+  }
 
-    if (availableItems.length === 0 || choiceCount < 0) {
-        return;
-    }
+  for (let elementIndex = 0; elementIndex < sourceSet.length; elementIndex++) {
+    if (!visitedFlags[elementIndex]) {
+      visitedFlags[elementIndex] = true;
+      currentPath.push(sourceSet[elementIndex]);
 
-    for (let itemIndex = 0; itemIndex < availableItems.length; itemIndex++) {
-        const selectedItem = availableItems[itemIndex];
-        const remainingItems = availableItems.filter((_, idx) => idx !== itemIndex);
+      generateOrderedSelections(sourceSet, selectionLength, currentPath, visitedFlags, resultConsumer);
 
-        for (const subArrangement of generateArrangements(remainingItems, choiceCount - 1)) {
-            yield [selectedItem, ...subArrangement];
-        }
+      currentPath.pop();
+      visitedFlags[elementIndex] = false;
     }
+  }
 }
 
-const sourceCollection = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+function executeProcessing() {
+  const digitPool = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
 
-function processDataEntry(dataBlock) {
-    if (dataBlock.trim() === '') {
-        return null;
-    }
+  for (const entryString of rawInputLines) {
+    if (entryString.trim() === '') continue;
 
-    const numericParts = dataBlock.split(' ').map(parseFloat);
-    const requiredLength = numericParts[0];
-    const desiredValue = numericParts[1];
+    const parsedValues = entryString.split(' ').map(parseFloat);
+    const selectionSize = parsedValues[0];
+    const targetSum = parsedValues[1];
+    let matchCounter = 0;
 
-    let tally = 0;
+    const initialPath = [];
+    const initialVisitedFlags = new Array(digitPool.length).fill(false);
 
-    for (const currentArrangement of generateArrangements(sourceCollection, requiredLength)) {
-        let computedValue = 0;
-        for (let positionIndex = 0; positionIndex < currentArrangement.length; positionIndex++) {
-            const entryValue = currentArrangement[positionIndex];
-            computedValue += entryValue * (positionIndex + 1);
+    generateOrderedSelections(
+      digitPool,
+      selectionSize,
+      initialPath,
+      initialVisitedFlags,
+      function(currentSelection) {
+        let runningTotal = 0;
+        for (let k = 0; k < currentSelection.length; k++) {
+          runningTotal += currentSelection[k] * (k + 1);
         }
-
-        if (computedValue === desiredValue) {
-            tally++;
+        if (runningTotal === targetSum) {
+          matchCounter++;
         }
-    }
-    return tally;
+      }
+    );
+    console.log(matchCounter);
+  }
 }
 
-var collectedData = '';
+let accumulatedInput = '';
+let rawInputLines;
 
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
-
-process.stdin.on('data', function(chunk) {
-    collectedData += chunk;
+process.stdin.on('data', function(dataChunk) {
+  accumulatedInput += dataChunk;
 });
-
 process.stdin.on('end', function() {
-    const dataRows = collectedData.split('\n');
-
-    for (const row of dataRows) {
-        const outcome = processDataEntry(row);
-        if (outcome !== null) {
-            console.log(outcome);
-        }
-    }
+  rawInputLines = accumulatedInput.split('\n');
+  executeProcessing();
 });

@@ -1,45 +1,28 @@
-const parseInputData = (incomingString) => {
-    const numericValues = incomingString.trim().split(" ").map(Number);
-    return {
-        firstComponent: numericValues[0],
-        secondComponent: numericValues[1]
-    };
-};
+function processInput(rawData) {
+    const parsedValues = rawData.trim().split(" ");
+    const upperBound = parseInt(parsedValues[0], 10);
+    const targetValue = parseInt(parsedValues[1], 10);
 
-const determinePowerCoefficient = (thresholdVal, iterationVal) => {
-    if (thresholdVal <= iterationVal) {
-        return 1;
-    }
-    let currentPower = 1;
-    while (thresholdVal > iterationVal * currentPower) {
-        currentPower <<= 1;
-        // Safety break for extremely large or pathological inputs, though unlikely with typical constraints.
-        // Original code had an implicit limit due to 'j < 100000'.
-        if (currentPower > Number.MAX_SAFE_INTEGER / 2) { // Prevent overflow and infinite loop
-             return currentPower;
+    let cumulativeProbability = 0;
+
+    for (let currentNumber = 1; currentNumber <= upperBound; currentNumber++) {
+        let requiredDoublings;
+        if (currentNumber >= targetValue) {
+            requiredDoublings = 0;
+        } else {
+            // Calculate the minimum non-negative integer 'd' such that currentNumber * 2^d >= targetValue
+            // This is equivalent to 2^d >= targetValue / currentNumber
+            // Taking log base 2: d >= log2(targetValue / currentNumber)
+            // Since 'd' must be an integer, d = ceil(log2(targetValue / currentNumber))
+            requiredDoublings = Math.ceil(Math.log2(targetValue / currentNumber));
         }
+        
+        // The probability of selecting 'currentNumber' is 1/upperBound.
+        // The probability of reaching 'targetValue' from 'currentNumber' in 'requiredDoublings' steps is (1/2)^requiredDoublings.
+        cumulativeProbability += (1 / upperBound) * Math.pow(0.5, requiredDoublings);
     }
-    return currentPower;
-};
 
-const computeExpectedValue = (inputBlob) => {
-    const { firstComponent: upperLimit, secondComponent: minimumTarget } = parseInputData(inputBlob);
+    console.log(cumulativeProbability);
+}
 
-    const sequence = Array.from({ length: upperLimit }, (_, index) => index + 1);
-
-    const accumulatedValue = sequence.reduce((currentSum, elementValue) => {
-        const initialFraction = 1 / upperLimit;
-        const requiredPowerOfTwo = determinePowerCoefficient(minimumTarget, elementValue);
-        const contribution = initialFraction / requiredPowerOfTwo;
-        return currentSum + contribution;
-    }, 0);
-
-    return accumulatedValue;
-};
-
-const processExecution = (dataStream) => {
-    const result = computeExpectedValue(dataStream);
-    console.log(result);
-};
-
-processExecution(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

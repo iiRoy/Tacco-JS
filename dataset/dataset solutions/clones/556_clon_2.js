@@ -1,61 +1,44 @@
-/* This script processes input data from stdin to calculate and rank sums. */
-var       fileContentInput       =       require('fs') . readFileSync       ('/dev/stdin' ,       'utf8'       );
+let rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-// Split the entire input content into individual lines, after trimming any leading/trailing whitespace.
-var       sourceLinesArray       =       (fileContentInput . trim()) . split('\n');
+const lineBuffer = rawData.trim().split('\n');
 
-for (       ;;       )       {
-    /* Retrieve the next line containing dimension information. */
-    var       dimensionSpecString       =       sourceLinesArray . shift();
+while (true) {
+   let matrixDimsStr = lineBuffer.shift();
 
-    // Check for the termination condition: "0 0" indicates end of input.
-    if       (dimensionSpecString       ===       "0 0")       {
-        break;
-    }
+   if (matrixDimsStr === "0 0") {
+      break;
+   }
 
-    // Parse the dimension string into two numeric values for rows and columns.
-    var       parsedDimensionsValues       =       dimensionSpecString . split(' ') . map(Number);
-    var       totalRowsCount       =       parsedDimensionsValues[0];
-    var       totalColumnsCount       =       parsedDimensionsValues[1];
+   const dimensions = matrixDimsStr.split(' ').map(Number);
+   const numRows = dimensions[0];
+   const numCols = dimensions[1];
 
-    // Initialize an array to hold column-wise aggregated data.
-    var       columnDataCollection       =       [];
+   let columnData = [];
+   for (let colIndex = 0; colIndex < numCols; colIndex++) {
+      columnData.push({ originalIdentifier: (colIndex + 1), accumulatedValue: 0 });
+   }
 
-    // Populate the collection with initial objects, each representing a column.
-    for       (var       colIdx       =       0;       colIdx       <       totalColumnsCount;       colIdx++)       {
-        columnDataCollection . push       ({       columnIdentifier:       (colIdx       +       1),       accumulatedTotal:       0       });
-    }
+   for (let rowIndex = 0; rowIndex < numRows; rowIndex++) {
+      const rowValues = lineBuffer.shift().split(' ').map(Number);
+      columnData.forEach(function(currentCol, currentIdx) {
+         columnData[currentIdx].accumulatedValue += rowValues[currentIdx];
+      });
+   }
 
-    // Iterate through each row of input data.
-    for       (var       rowIdx       =       0;       rowIdx       <       totalRowsCount;       rowIdx++)       {
-        /* Extract the numeric data for the current row. */
-        var       currentMeasurementValues       =       (sourceLinesArray . shift()) . split(' ') . map(parseFloat);
+   columnData.sort(function(itemA, itemB) {
+      let valueA = itemA.accumulatedValue;
+      let valueB = itemB.accumulatedValue;
+      if (valueA < valueB) {
+         return true;
+      } else {
+         return false;
+      }
+   });
 
-        // Update the accumulated total for each column based on the current row's data.
-        columnDataCollection . forEach       (function       (columnEntryObject,       currentColumnIndex)       {
-            columnDataCollection[currentColumnIndex] . accumulatedTotal       +=       currentMeasurementValues[currentColumnIndex];
-        });
-    }
+   let sortedIdentifiers = [];
+   columnData.forEach(function(colItem) {
+      sortedIdentifiers.push(colItem.originalIdentifier);
+   });
 
-    // Sort the column data based on their accumulated totals in ascending order.
-    columnDataCollection . sort       (function       (firstDataItem,       secondDataItem)       {
-        var       valueA       =       firstDataItem . accumulatedTotal;
-        var       valueB       =       secondDataItem . accumulatedTotal;
-
-        // Custom comparison logic for sorting.
-        if       (valueA       <       valueB)       {
-            return       true;
-        }       else       {
-            return       false;
-        }
-    });
-
-    // Extract only the identifiers from the sorted column data.
-    var       sortedIdentifiersList       =       [];
-    columnDataCollection . forEach       (function       (itemEntry)       {
-        sortedIdentifiersList . push       (itemEntry . columnIdentifier);
-    });
-
-    // Output the space-separated identifiers to the console.
-    console . log       (sortedIdentifiersList . join(' '));
+   console.log(sortedIdentifiers.join(' '));
 }

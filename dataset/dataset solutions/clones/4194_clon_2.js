@@ -1,67 +1,81 @@
-'use strict'; /* Apply strict parsing rules for improved code quality. */
+'use strict';
 
-function calculateOptimalBenefit(rawDataSource) { // Main routine to process input and find the best outcome.
+/**
+ * Processes the raw input data to determine the maximum achievable profit
+ * by selecting an optimal combination of operating days across all stores.
+ *
+ * @param {string} rawInputData - The complete input string, typically read from stdin.
+ *                                It contains the number of shops, their operating schedules,
+ *                                and corresponding profit matrices.
+ */
+function calculateMaxProfit(rawInputData) {
+  // Divide the entire input string into an array of separate lines.
+  const inputLinesArray = rawInputData.split('\n');
 
-  const sourceLines = rawDataSource.split('\n'); // Split the entire input block into individual text lines.
+  // Extract the total count of shops from the very first line of input.
+  const numberOfShops = parseInt(inputLinesArray.shift(), 10);
 
-  const entityCount = parseInt( sourceLines.shift(), 10 ); // Extract the count of entities from the first line.
-
-  // Store information about entity schedules (e.g., opening times).
-  const openingSchedule = [];
-
-  for ( let sequenceIdx = 0; sequenceIdx < entityCount; sequenceIdx++ ) {
-    openingSchedule.push(
-      sourceLines[sequenceIdx]
-        .split(' ')
-        .map( dataPoint => parseInt(dataPoint, 10) )
+  // Initialize an array to hold the operating schedules for each individual shop.
+  // Each schedule is represented as an array of 0s and 1s, indicating open/closed days.
+  const shopOperatingSchedules = [];
+  for (let shopIndex = 0; shopIndex < numberOfShops; shopIndex++) {
+    shopOperatingSchedules.push(
+      inputLinesArray[shopIndex].split(' ').map(val => parseInt(val, 10))
     );
   }
 
-  // Store the corresponding profit table for different configurations.
-  const profitTable = [];
-
-  for ( let sequenceIdx = 0; sequenceIdx < entityCount; sequenceIdx++ ) {
-    profitTable.push(
-      sourceLines[sequenceIdx + entityCount]
-        .split(' ')
-        .map( dataPoint => parseInt(dataPoint, 10) )
+  // Initialize an array to store the profit lookup tables for each shop.
+  // `profitLookupTable[s][c]` gives the profit for shop `s` when `c` days overlap.
+  const profitLookupTable = [];
+  for (let shopIndex = 0; shopIndex < numberOfShops; shopIndex++) {
+    profitLookupTable.push(
+      inputLinesArray[shopIndex + numberOfShops].split(' ').map(val => parseInt(val, 10))
     );
   }
 
-  let ultimateBenefit = -Infinity; // Initialize the maximum benefit found so far to the lowest possible value.
+  // Initialize the variable that will store the highest profit found across all day combinations.
+  // It's set to negative infinity to ensure any calculated profit will be greater.
+  let overallMaxProfit = -Infinity;
 
-  // Iterate through all possible bitmask patterns from 1 to 1023 (representing 10 bits).
-  for ( let patternMask = 1; patternMask < 1024; patternMask++ ) {
+  // Iterate through all possible combinations of operating days.
+  // There are 10 possible days, so 2^10 = 1024 combinations (from 0 to 1023).
+  // We start from 1 to exclude the case where no days are open (which would yield 0 profit).
+  for (let dayCombinationMask = 1; dayCombinationMask < 1024; dayCombinationMask++) {
+    let currentCombinationProfit = 0; // Accumulator for profit for the current day combination.
 
-    let currentSum = 0; // Reset the sum for the current pattern.
+    // For the current global day combination, calculate the total profit by summing profits from all shops.
+    for (let shopIndex = 0; shopIndex < numberOfShops; shopIndex++) {
+      const currentShopSchedule = shopOperatingSchedules[shopIndex];
 
-    for ( let entityIdx = 0; entityIdx < entityCount; entityIdx++ ) {
+      // 1. Convert the shop's schedule array (e.g., [0,1,0,1]) into a binary string ("0101").
+      // 2. Parse this binary string into an integer, representing the shop's active days.
+      // 3. Perform a bitwise AND operation with the `dayCombinationMask`. This yields a new bitmask
+      //    where bits are set only for days when *both* the shop is open AND the current global
+      //    day combination is active.
+      // 4. Convert this resulting bitmask back into a binary string.
+      // 5. Split the binary string into an array of characters (e.g., ['1', '0', '1']).
+      // 6. Map these character digits to actual numbers (e.g., [1, 0, 1]).
+      // 7. Sum these numbers to get the total count of common operating days.
+      const commonOperatingDaysCount = (
+        parseInt(currentShopSchedule.join(''), 2) & dayCombinationMask
+      ).toString(2).split('').map(digitChar => Number(digitChar)).reduce((accumulator, currentValue) => accumulator + currentValue, 0);
 
-      let entitySchedule = openingSchedule[entityIdx]; // Retrieve the schedule for the current entity.
-
-      // Calculate the number of matching active bits between the entity's schedule and the current pattern.
-      // This involves joining schedule elements, parsing as binary, bitwise AND, converting back to binary string,
-      // splitting, mapping to numbers, and finally summing them.
-      let activeCount = (
-          parseInt( entitySchedule.join(''), 2 ) & patternMask
-        ) .toString(2)
-          .split('')
-          .map( bitChar => Number(bitChar) )
-          .reduce( (acc, bitVal) => acc + bitVal, 0 );
-
-      currentSum += profitTable[entityIdx][activeCount]; // Add the profit corresponding to the active bit count.
+      // Add the profit for the current shop, retrieved from its profit lookup table
+      // using the calculated number of common operating days.
+      currentCombinationProfit += profitLookupTable[shopIndex][commonOperatingDaysCount];
     }
 
-    // Update the ultimate benefit if the current pattern yields a higher sum.
-    if ( currentSum > ultimateBenefit ) { ultimateBenefit = currentSum; }
+    // After calculating the total profit for the current day combination,
+    // update the overall maximum profit if this combination yielded a higher value.
+    if (currentCombinationProfit > overallMaxProfit) {
+      overallMaxProfit = currentCombinationProfit;
+    }
   }
 
-  console.log(ultimateBenefit); // Output the final maximum benefit.
+  // Output the final maximum profit found to the console.
+  console.log(overallMaxProfit);
 }
 
-// Execute the solution by reading input from standard input stream.
-const fileSystemModule = require('fs');
-const inputPath = '/dev/stdin';
-const encodingType = 'utf8';
-
-calculateOptimalBenefit( fileSystemModule.readFileSync(inputPath, encodingType) );
+// Read the entire content of standard input as a UTF-8 string
+// and then pass it to the main profit calculation function.
+calculateMaxProfit(require('fs').readFileSync('/dev/stdin', 'utf8'));

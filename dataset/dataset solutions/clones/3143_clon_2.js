@@ -1,76 +1,76 @@
-// This function initiates the main processing sequence for item acquisition.
-function processInput(  rawData )
-{
-    // The initial input string is separated into an array of individual lines.
-    const inputLines = rawData.split(  '\n'  );
+function processInput(rawData) {
+    // Split the raw input string into an array of lines
+    const lines = rawData.split('\n');
 
-    // The first line of input provides critical configuration values.
-    let firstLineTokens = inputLines[0].split(  ' '  );
+    // Parse the first line to get the number of stores (N) and the maximum drinks to buy (M)
+    let firstLineParts = lines[0].split(' ');
+    let numStores = parseInt(firstLineParts[0], 10); // Total number of stores
+    let maxDrinksToBuy = parseInt(firstLineParts[1], 10); // Maximum drinks allowed to purchase
 
-    // The first configuration value represents the total number of distinct items available.
-    let availableItemsCount = parseInt(  firstLineTokens[0], 10  );
-    // The second configuration value sets the maximum quantity of items that can be obtained.
-    let maxItemsToAcquire = parseInt(  firstLineTokens[1], 10  );
+    // Initialize variables to track the total drinks bought and the total cost
+    let totalDrinksBought = 0;
+    let totalCost = 0;
 
-    // Variables to track the current state of item acquisition.
-    let acquiredItemCount = 0;
-    let totalAcquisitionCost = 0;
-
-    // A placeholder object to define the structure for item details.
-    let itemRecordSchema = {
-        ItemPrice: '',
-        StockQuantity: ''
+    // This object template is declared but not directly used to create instances.
+    // It serves as a structural placeholder, similar to the original.
+    let storeDetailsTemplate = {
+        unitPrice: '',
+        stockQuantity: ''
     };
 
-    // An array to store the detailed information of each item.
-    let itemCatalog = [];
+    // Array to hold information about all stores
+    let allStoreOfferings = [];
 
-    // Iterate through the input lines, starting from the second line, to populate the item catalog.
-    for ( let itemIndex = 0; itemIndex < availableItemsCount; itemIndex++ ) {
-        // Each subsequent line contains details (price and stock) for one item.
-        let currentItemTokens = inputLines[  itemIndex + 1  ].split(  ' '  );
-        // Store the parsed item price and stock quantity in the catalog.
-        itemCatalog[  itemIndex  ] = {
-            ItemPrice: parseInt(  currentItemTokens[0], 10  ),
-            StockQuantity: parseInt(  currentItemTokens[1], 10  )
+    // Loop through the input lines to populate the store offerings array
+    for (let idx = 0; idx < numStores; idx++) {
+        // Each subsequent line contains price and available quantity for a store
+        let currentStoreData = lines[idx + 1].split(' ');
+        // Store the parsed price and quantity for the current store
+        allStoreOfferings[idx] = {
+            unitPrice: parseInt(currentStoreData[0], 10),
+            availableUnits: parseInt(currentStoreData[1], 10)
         };
     }
 
-    // Sort the entire item catalog based on the item's price in ascending order.
-    itemCatalog.sort(  ( itemA, itemB ) => {
-        return (  itemA.ItemPrice < itemB.ItemPrice  ) ? -1 : 1;
-    }  );
+    // Sort the store offerings by unit price in ascending order
+    allStoreOfferings.sort((offerA, offerB) => {
+        // If offerA's price is less than offerB's, it comes first (-1)
+        // Otherwise, offerB comes first (1)
+        return (offerA.unitPrice < offerB.unitPrice) ? -1 : 1;
+    });
 
-    // A variable to hold the details of the item currently under consideration for purchase.
-    let currentCatalogEntry;
+    // Variable to hold the current store offering being considered
+    let currentOffering;
 
-    // Begin the primary loop to iterate through the sorted item catalog and make purchasing decisions.
-    for ( let itemIndex = 0; itemIndex < availableItemsCount; itemIndex++ ) {
-        currentCatalogEntry = itemCatalog[  itemIndex  ];
+    // Iterate through the sorted store offerings to make purchases
+    for (let idx = 0; idx < numStores; idx++) {
+        currentOffering = allStoreOfferings[idx]; // Get the current store's details
 
-        // Check if purchasing the entire stock of the current item would exceed the overall acquisition limit.
-        if (  currentCatalogEntry.StockQuantity + acquiredItemCount <= maxItemsToAcquire  ) {
-            // If not, add the full cost of this item's stock to the total.
-            totalAcquisitionCost += currentCatalogEntry.StockQuantity * currentCatalogEntry.ItemPrice;
-            // Increment the count of acquired items by the full stock quantity.
-            acquiredItemCount += currentCatalogEntry.StockQuantity;
+        // Check if buying all available units from the current store
+        // would exceed the maximum allowed drinks (maxDrinksToBuy)
+        if (currentOffering.availableUnits + totalDrinksBought <= maxDrinksToBuy) {
+            // If not, buy all available units from this store
+            totalCost += currentOffering.availableUnits * currentOffering.unitPrice;
+            totalDrinksBought += currentOffering.availableUnits;
 
-            // If the maximum allowed items have been acquired, terminate the purchasing process.
-            if (  acquiredItemCount === maxItemsToAcquire  ) {
+            // If the maximum drinks limit has been reached, stop purchasing
+            if (totalDrinksBought === maxDrinksToBuy) {
                 break;
             }
         } else {
-            // If purchasing the full stock would exceed the limit, calculate how many more items can be bought.
-            let remainingPurchaseQuantity = maxItemsToAcquire - acquiredItemCount;
-            totalAcquisitionCost += currentCatalogEntry.ItemPrice * remainingPurchaseQuantity;
-            // Since the maximum limit has now been reached with this partial purchase, stop further acquisitions.
-            break;
+            // If buying all units from this store would exceed the limit,
+            // buy only the remaining quantity needed to reach maxDrinksToBuy
+            let remainingNeeded = maxDrinksToBuy - totalDrinksBought;
+            totalCost += currentOffering.unitPrice * remainingNeeded;
+            // No need to update totalDrinksBought as we break immediately after
+            // reaching the limit.
+            break; // Stop purchasing as the limit is now met
         }
     }
 
-    // Display the final calculated total monetary cost of all acquired items.
-    console.log(  totalAcquisitionCost  );
+    // Output the final calculated total cost
+    console.log(totalCost);
 }
 
-// Invoke the main processing function, providing it with data read from the standard input stream.
-processInput(  require('fs').readFileSync(  '/dev/stdin',  'utf8'  )  );
+// Read input from standard input and pass it to the main processing function
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

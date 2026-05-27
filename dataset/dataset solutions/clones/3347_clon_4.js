@@ -1,58 +1,68 @@
 'use strict';
-(function(sourceData) {
-    const extractDetails = (rawContent) => {
-        const contentLines = rawContent.trim().split('\n');
-        const agentQuantity = Number(contentLines.shift());
-        const interactionPreferences = contentLines.map(line => line.split(/\s+/).map(Number));
-        return { agentQuantity, interactionPreferences };
-    };
+(function(inputPayload) {
+  const rawLines = inputPayload.trim().split('\n');
 
-    const { agentQuantity: entityCount, interactionPreferences: compatibilityMatrix } = extractDetails(sourceData);
-    const primeModulus = 1000000007;
+  const numPairs = parseInt(rawLines.shift(), 10);
+  const totalMasks = Math.pow(2, numPairs);
+  const modulus = Math.pow(10, 9) + 7;
 
-    const pairingMemo = new Map(); // Stores results for (currentEntityIndex, assignedMask)
+  const compatibilityMatrix = rawLines.map(line =>
+    line.split(' ').map(val => parseInt(val, 10))
+  );
 
-    const computeArrangements = (currentEntityIndex, assignedMask) => {
-        // Check if this state has been computed before
-        if (pairingMemo.has(currentEntityIndex)) {
-            const innerMap = pairingMemo.get(currentEntityIndex);
-            if (innerMap.has(assignedMask)) {
-                return innerMap.get(assignedMask);
-            }
+  // matchCounts[manCount][womenMask] stores the number of ways to match
+  // the first 'manCount' men (men 0 to manCount-1) with the 'manCount' women
+  // represented by 'womenMask'.
+  // 'manCount' ranges from 0 to numPairs.
+  // 'womenMask' ranges from 0 to totalMasks - 1.
+  const matchCounts = Array.from({ length: numPairs + 1 }, () =>
+    new Array(totalMasks).fill(0)
+  );
+
+  // Base case: 0 men matched with 0 women (empty mask) in 1 way.
+  matchCounts[0][0] = 1;
+
+  // Iterate through each man, from the first (index 0) to the last (index numPairs - 1).
+  // 'currentManIndex' refers to the man being considered for matching in this iteration.
+  for (let currentManIndex = 0; currentManIndex < numPairs; currentManIndex++) {
+    // Iterate through all possible masks of women that could have been matched
+    // with the 'currentManIndex' men processed so far.
+    // 'matchedWomenMask' represents the set of women matched with men 0 to 'currentManIndex - 1'.
+    for (let matchedWomenMask = 0; matchedWomenMask < totalMasks; matchedWomenMask++) {
+      // If there are no ways to achieve the state where 'currentManIndex' men are matched
+      // with 'matchedWomenMask' women, then we cannot extend from this state.
+      if (matchCounts[currentManIndex][matchedWomenMask] === 0) {
+        continue;
+      }
+
+      // Now, try to match the 'currentManIndex'-th man with an available woman.
+      for (let potentialWomanIndex = 0; potentialWomanIndex < numPairs; potentialWomanIndex++) {
+        // Check if the 'currentManIndex'-th man and 'potentialWomanIndex'-th woman are compatible.
+        if (compatibilityMatrix[currentManIndex][potentialWomanIndex] === 0) {
+          continue;
         }
 
-        // Base case: If all entities have been assigned, this is one valid arrangement
-        if (currentEntityIndex === entityCount) {
-            return 1;
+        // Check if the 'potentialWomanIndex'-th woman is already matched in the 'matchedWomenMask'.
+        // If the bit corresponding to 'potentialWomanIndex' is set in 'matchedWomenMask', she's taken.
+        if ((matchedWomenMask & (1 << potentialWomanIndex)) !== 0) {
+          continue;
         }
 
-        let arrangementsCount = 0;
-        // Iterate through all possible partners for the current entity
-        for (let prospectivePartnerIndex = 0; prospectivePartnerIndex < entityCount; prospectivePartnerIndex++) {
-            // Check if current entity can pair with this partner
-            // AND if this partner has not been assigned to a previous entity
-            if (compatibilityMatrix[currentEntityIndex][prospectivePartnerIndex] === 1 &&
-                ( (assignedMask >> prospectivePartnerIndex) & 1 ) === 0 ) {
-                
-                // Recursively find arrangements for the next entity
-                // with the partner added to the assigned mask
-                arrangementsCount = (arrangementsCount + computeArrangements(
-                    currentEntityIndex + 1,
-                    assignedMask | (1 << prospectivePartnerIndex)
-                )) % primeModulus;
-            }
-        }
+        // If compatible and available, we can match the 'currentManIndex'-th man with this woman.
+        // Create a new mask by adding the 'potentialWomanIndex'-th woman to the 'matchedWomenMask'.
+        const nextWomenMask = matchedWomenMask | (1 << potentialWomanIndex);
 
-        // Store the computed result in the memoization cache
-        if (!pairingMemo.has(currentEntityIndex)) {
-            pairingMemo.set(currentEntityIndex, new Map());
-        }
-        pairingMemo.get(currentEntityIndex).set(assignedMask, arrangementsCount);
+        // Add the number of ways to reach the current state (matchCounts[currentManIndex][matchedWomenMask])
+        // to the new state (matchCounts[currentManIndex + 1][nextWomenMask]).
+        // This new state represents 'currentManIndex + 1' men matched with 'nextWomenMask' women.
+        matchCounts[currentManIndex + 1][nextWomenMask] =
+          (matchCounts[currentManIndex + 1][nextWomenMask] + matchCounts[currentManIndex][matchedWomenMask]) % modulus;
+      }
+    }
+  }
 
-        return arrangementsCount;
-    };
+  // The final answer is the number of ways to match all 'numPairs' men
+  // with all 'numPairs' women. 'totalMasks - 1' is the bitmask where all 'numPairs' bits are set.
+  console.log(matchCounts[numPairs][totalMasks - 1]);
 
-    // Start the computation from the first entity (index 0) with no partners assigned (mask 0)
-    console.log(computeArrangements(0, 0));
-
-})(require('fs').readFileSync('/dev/stdin','utf8'));
+})(require('fs').readFileSync('/dev/stdin', 'utf8'));

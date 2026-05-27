@@ -1,37 +1,19 @@
-/*
- * This module processes a given string to append a proper suffix.
- */
-function ProcessInputData ( incomingText )
-{
-  let  finalSymbol  =  incomingText.slice ( -1 ) ;
+// This function is designed to process incoming textual information.
+function processInputData(rawData) {
+    // Obtain the very last character from the provided string.
+    let finalCharacter = rawData.slice(-1);
 
-  if
-  (
-    finalSymbol  ===  "s"
-  )
-  {
-    console
-      . log ( incomingText + "es" ) ;
-  }
-  else
-  {
-    console
-      . log ( incomingText + "s" ) ;
-  }
-} // End of ProcessInputData function.
+    // Evaluate if the concluding character is the letter 's'.
+    if (finalCharacter === "s") {
+        // If the last character is 's', append "es" to the original string for pluralization.
+        console.log(rawData + "es");
+    } else {
+        // Otherwise, simply append "s" to the original string to form the plural.
+        console.log(rawData + "s");
+    }
+}
 
-/*
- * The following lines are for handling standard input/output
- * and should generally not be altered for execution in common environments.
- * It reads the entire content from stdin and passes it to the main logic.
- */
-ProcessInputData
-(
-  require("fs")
-    .readFileSync
-    (
-      "/dev/stdin",
-      "utf8"
-    )
-)
-;
+// The following code segment is responsible for reading data from standard input
+// and subsequently invoking the primary data processing function.
+// It is crucial not to modify this part to ensure correct program execution.
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

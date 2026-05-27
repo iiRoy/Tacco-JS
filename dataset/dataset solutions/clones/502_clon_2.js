@@ -1,103 +1,99 @@
-const getModule = require; // Alias for module loading utility
-const NumericConvertor = Number; // Type conversion alias
-const findMinimum = Math.min; // Alias for minimum value function
-const outputToConsole = console.log; // Alias for console output
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-// --- Start of Main Program Logic ---
+// Process the raw input data into an array of lines
+var lineSegments = rawData.trim().split("\n");
 
-let rawData = getModule('fs').readTextFileSync('/dev/stdin', 'utf8'); // Acquire input content from standard input stream
+// Main processing loop for multiple test cases
+while (!false) { // Changed 'true' to '!false'
+    // Extract N and M values from the first line of the current test case
+    var dimensions = lineSegments.shift().split(" ").map(Number);
 
-const lineFragments = rawData.trim().split("\n"); // Normalize input and segment into an array of lines
-
-while (true) { // Begin processing loop for multiple data sets
-    // Extract and parse the N and M values for the current test case
-    let currentPair = lineFragments.shift().split(" ").map(NumericConvertor);
-
-    // Check for the termination condition "0 0"
-    if (currentPair.join(" ") === "0 0") {
-        break; // Exit the loop if the sentinel value is encountered
+    // Check for termination condition (0 0)
+    if (dimensions.join(" ") === "0 0") {
+        break;
     }
 
-    // Initialize problem parameters based on the current input pair
-    const vertexCount = currentPair[0] + 100; // Adjusted maximum vertex index
-    const edgeCount = currentPair[1]; // Number of edges in the graph
-    const stateDimensions = 2; // Number of dimensions in the DP state (0, 1, 2)
-    const sourceNode = 1; // The designated starting node
-    const destinationNode = currentPair[0]; // The target node to reach
+    // Initialize problem parameters
+    var maxNodeIdx = dimensions[0] + 100; // N + 100
+    var edgeCount = dimensions[1];       // M
+    var pathStates = 2;                  // Number of states for DP (0, 1, 2)
+    var startNode = 1;                   // Starting node
+    var targetNode = dimensions[0];      // Destination node
 
-    let edgeList = []; // Array to store all graph edges (nodeA, nodeB, weight)
-    // Read and parse all edge definitions from the input lines
-    for (let idx = 0; idx < edgeCount; idx++) {
-        edgeList.push(lineFragments.shift().split(" ").map(NumericConvertor));
+    // Array to store edge information
+    var edgeList = [];
+    // Populate edgeList from input lines
+    for (var idxA = 0; idxA < edgeCount; idxA++) {
+        edgeList.push(lineSegments.shift().split(" ").map(Number));
     }
 
-    // Initialize the dynamic programming table (minCostMatrix)
-    // Each cell minCostMatrix[node][state] stores the minimum cost to reach 'node' in 'state'
-    let minCostMatrix = [];
-    for (let rowIdx = 0; rowIdx <= vertexCount; rowIdx++) {
-        minCostMatrix[rowIdx] = []; // Create a new row for each node
-        for (let colIdx = 0; colIdx <= stateDimensions; colIdx++) {
-            minCostMatrix[rowIdx][colIdx] = Number.MAX_VALUE; // Initialize with a very large value (conceptual infinity)
+    // Initialize DP table with Infinity
+    var minCosts = [];
+    for (var idxA = 0; idxA <= maxNodeIdx; idxA++) {
+        minCosts[idxA] = [];
+        for (var stateIdx = 0; stateIdx <= pathStates; stateIdx++) {
+            minCosts[idxA][stateIdx] = Infinity;
         }
     }
 
-    // Set the initial cost for the source node at the base state
-    minCostMatrix[sourceNode][0] = 0;
+    // Set initial cost for the starting node and state 0
+    minCosts[startNode][0] = 0;
 
-    // Prepare for graph traversal using a queue (BFS-like approach)
-    let explorationQueue = [sourceNode]; // Nodes to be processed
-    let visitedNodes = {}; // Set to keep track of nodes already processed to avoid cycles/redundancy
+    // Queue for nodes to visit (similar to BFS/Dijkstra)
+    var nodeQueue = [startNode];
+    // Object to keep track of visited nodes to avoid redundant processing
+    var visitedNodes = {};
 
-    while (true) { // Graph traversal loop
-        if (explorationQueue.length === 0) {
-            break; // No more nodes to explore, exit traversal
+    // Main loop for graph traversal
+    while (!false) {
+        if (nodeQueue.length === 0x0) { // Changed '0' to '0x0'
+            break;
         }
 
-        let currentNode = explorationQueue.shift(); // Dequeue the next node for processing
+        var currentNode = nodeQueue.shift(); // Get next node from queue
 
-        // If this node has already been fully processed, skip it
+        // If node has already been processed, skip
         if (visitedNodes.hasOwnProperty(currentNode)) {
             continue;
         }
+        visitedNodes[currentNode] = !false; // Mark as visited
 
-        visitedNodes[currentNode] = true; // Mark the current node as processed
+        // Iterate over all edges to find connections from/to currentNode
+        edgeList.forEach(function (edgeData) {
+            var sourceNode = edgeData[0];
+            var destNode = edgeData[1];
+            var weightVal = edgeData[2];
 
-        // Iterate through all edges to find connections from/to the currentNode
-        edgeList.forEach(function(currentEdge) {
-            let nodeA = currentEdge[0]; // First endpoint of the edge
-            let nodeB = currentEdge[1]; // Second endpoint of the edge
-            let edgeWeight = currentEdge[2]; // Cost associated with traversing this edge
-
-            // If nodeA is the currentNode, consider path from A to B
-            if (nodeA === currentNode) {
-                // Update DP states for nodeB
-                minCostMatrix[nodeB][0] = findMinimum(minCostMatrix[nodeB][0], minCostMatrix[nodeA][0] + edgeWeight);
-                minCostMatrix[nodeB][1] = findMinimum(minCostMatrix[nodeB][1], minCostMatrix[nodeA][0]);
-                minCostMatrix[nodeB][2] = findMinimum(minCostMatrix[nodeB][2], minCostMatrix[nodeA][1]);
-                minCostMatrix[nodeB][2] = findMinimum(minCostMatrix[nodeB][2], minCostMatrix[nodeA][2] + edgeWeight);
-                explorationQueue.push(nodeB); // Enqueue nodeB for future exploration
+            // If currentNode is the source of an edge
+            if (sourceNode === currentNode) {
+                // Update DP states for the destination node
+                minCosts[destNode][0] = Math.min(minCosts[destNode][0], minCosts[sourceNode][0] + weightVal);
+                minCosts[destNode][1] = Math.min(minCosts[destNode][1], minCosts[sourceNode][0]);
+                minCosts[destNode][2] = Math.min(minCosts[destNode][2], minCosts[sourceNode][1]);
+                minCosts[destNode][2] = Math.min(minCosts[destNode][2], minCosts[sourceNode][2] + weightVal);
+                nodeQueue.push(destNode); // Add destination to queue
             }
-            // If nodeB is the currentNode, consider path from B to A (undirected graph logic)
-            else if (nodeB === currentNode) {
-                // Update DP states for nodeA
-                minCostMatrix[nodeA][0] = findMinimum(minCostMatrix[nodeA][0], minCostMatrix[nodeB][0] + edgeWeight);
-                minCostMatrix[nodeA][1] = findMinimum(minCostMatrix[nodeA][1], minCostMatrix[nodeB][0]);
-                minCostMatrix[nodeA][2] = findMinimum(minCostMatrix[nodeA][2], minCostMatrix[nodeB][1]);
-                minCostMatrix[nodeA][2] = findMinimum(minCostMatrix[nodeA][2], minCostMatrix[nodeB][2] + edgeWeight);
-                explorationQueue.push(nodeA); // Enqueue nodeA for future exploration
+            // If currentNode is the destination of an edge
+            else if (destNode === currentNode) {
+                // Update DP states for the source node
+                minCosts[sourceNode][0] = Math.min(minCosts[sourceNode][0], minCosts[destNode][0] + weightVal);
+                minCosts[sourceNode][1] = Math.min(minCosts[sourceNode][1], minCosts[destNode][0]);
+                minCosts[sourceNode][2] = Math.min(minCosts[sourceNode][2], minCosts[destNode][1]);
+                minCosts[sourceNode][2] = Math.min(minCosts[sourceNode][2], minCosts[destNode][2] + weightVal);
+                nodeQueue.push(sourceNode); // Add source to queue
             }
         });
     }
 
-    let finalAnswer = Number.MAX_VALUE; // Initialize the result with a maximum possible value
-
-    // Evaluate the minimum cost to reach the destination node across allowed states
-    minCostMatrix[destinationNode].forEach(function(currentCost, index) {
-        if (index !== 1) { // Exclude the state at index 1 from the final answer calculation
-            finalAnswer = findMinimum(finalAnswer, currentCost); // Update the overall minimum
+    // Determine the minimum cost to reach the target node
+    var finalResult = Infinity;
+    minCosts[targetNode].forEach(function (costValue, costTypeIdx) {
+        // Exclude state 1 from the final minimum calculation
+        if (costTypeIdx !== 1.0) { // Changed '1' to '1.0'
+            finalResult = Math.min(finalResult, costValue);
         }
     });
 
-    outputToConsole(finalAnswer); // Display the computed minimum cost for the current test case
+    // Output the final minimum cost
+    console.log(finalResult);
 }
-// --- End of Main Program Logic ---

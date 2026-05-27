@@ -1,53 +1,44 @@
-function emitLog(logMessage){
-  console.log(logMessage); // Displays information to the console.
+function displayResult(messageContent) {
+    // This utility function is responsible for printing any given message to the console.
+    console.log(messageContent);
 }
 
-/**
- * This primary routine processes the incoming data to perform a sequence of calculations.
- *
- * @param {string} sourceData - The entire string of content received from the input source.
- */
-function executeCoreLogic (sourceData) {
+function ProcessInput(rawData) {
+    // The following lines are commented out examples of alternative input processing methods.
+    // rawData = parseInt(rawData); // Example: parsing as an integer
+    // rawData = rawData.trim().split(" "); // Example: splitting by space
 
-  // A large prime number used as a modulus to keep results within a specific range,
-  // preventing potential integer overflow during multiplication steps.
-  const MODULO_CONSTANT = 1000000007;
+    // The active input processing method: trim whitespace and split the raw data into an array of lines.
+    var processedLines = rawData.trim().split("\n");
 
-  // First, remove any leading/trailing whitespace, then divide the raw input into an array of strings based on newline characters.
-  let processedInputLines = sourceData.trim().split("\n");
+    // rawData = rawData.trim().split(" ").map((valItem) => Number(valItem)); // Example: splitting and mapping to numbers
+    // rawData = rawData.trim().split("\n").map((valItem) => Number(valItem)); // Example: splitting by line and mapping to numbers
 
-  // Parse the very first element of the processed lines array to get the main limit for our loop.
-  var operationLimit = parseInt(processedInputLines[0]);
+    // Extract the main numerical value from the first line of the processed input.
+    var countVal = parseInt(processedLines[0]);
 
-  // Initialize a variable that will accumulate the product throughout the iterative process.
-  var cumulativeProduct = 1;
+    // Initialize a variable to accumulate the product, starting with 1.
+    var finalProduct = 1;
 
-  // Begin a loop that runs from zero up to (but not including) the determined operation limit.
-  for (
-    var currentIteration = 0;
-    currentIteration < operationLimit;
-    currentIteration++
-  ) {
-    // Check the remainder when the current iteration index is divided by 3.
-    if (currentIteration % 3 === 0) {
-      // If the remainder is 0, multiply the current product by 3 and apply the modulo.
-      cumulativeProduct = (cumulativeProduct * 3) % MODULO_CONSTANT;
+    // Begin a loop that iterates 'countVal' times to perform calculations.
+    for (var loopIndex = 0; loopIndex < countVal; loopIndex++) {
+        // Check if the current loop index is a multiple of 3.
+        if (loopIndex % 3 === 0) {
+            // If it is, multiply the current product by 3 and apply a modulo operation.
+            finalProduct = (finalProduct * 3) % 1000000007;
+        }
+        // Otherwise, check if the current loop index has a remainder of 1 when divided by 3.
+        else if (loopIndex % 3 === 1) {
+            // If it does, multiply the current product by 2 and apply the same modulo operation.
+            finalProduct = (finalProduct * 2) % 1000000007;
+        }
+        // No action is taken if loopIndex % 3 is 2.
     }
-    // Check if the remainder is 1.
-    else if (currentIteration % 3 === 1) {
-      // If the remainder is 1, multiply the current product by 2 and apply the modulo.
-      cumulativeProduct = (cumulativeProduct * 2) % MODULO_CONSTANT;
-    }
-    // If currentIteration % 3 === 2, no operation is performed on cumulativeProduct, mirroring original logic.
-  }
 
-  // After the loop finishes, send the final computed product to the logging function.
-  emitLog(cumulativeProduct);
+    // After the loop completes, display the final calculated product.
+    displayResult(finalProduct);
 }
 
-// Kick off the entire application by reading from standard input, cleaning it, and passing it to the core logic.
-executeCoreLogic(
-  require("fs")
-    .readFileSync("/dev/stdin", "utf8")
-    .trim()
-);
+// This is the entry point of the script. It reads content from standard input,
+// trims any leading/trailing whitespace, and then passes it to the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8").trim());

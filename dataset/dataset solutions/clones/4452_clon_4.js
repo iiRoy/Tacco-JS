@@ -1,31 +1,54 @@
 "use strict";
 
-const processInputData = (rawData) => {
-    const linesOfInput = rawData.trim().split("\n");
+const parseInputData = (rawInputContent) => {
+    const contentLines = rawInputContent.trim().split("\n");
 
-    const [gridRowsCount, gridColsCount] = linesOfInput[0].split(" ").map(val => +val);
-    const totalDistinctItems = +linesOfInput[1];
-    const itemDistribution = linesOfInput[2].split(" ").map(val => +val);
+    const [heightDimension, widthDimension] = contentLines[0].split(" ");
+    const gridHeightValue = parseInt(heightDimension, 10);
+    const gridWidthValue = parseInt(widthDimension, 10);
 
-    if (gridRowsCount * gridColsCount === 1) {
+    const totalColorVarieties = parseInt(contentLines[1], 10);
+    const colorQuantityList = contentLines[2].split(" ").map(Number);
+
+    return { gridHeightValue, gridWidthValue, totalColorVarieties, colorQuantityList };
+};
+
+const executeGridGeneration = (parsedDetails) => {
+    const { gridHeightValue, gridWidthValue, totalColorVarieties, colorQuantityList } = parsedDetails;
+
+    if (gridHeightValue * gridWidthValue === 1) {
         console.log(1);
         return;
     }
 
-    const cellValueSequence = Array.from({ length: totalDistinctItems }, (_, itemIndex) =>
-        Array(itemDistribution[itemIndex]).fill(itemIndex + 1)
-    ).flat();
+    const sequentialColors = colorQuantityList.flatMap((quantity, colorIdentifier) =>
+        Array.from({ length: quantity }, () => colorIdentifier + 1)
+    );
 
-    const formattedGridOutput = Array.from({ length: gridRowsCount }, (_, currentGridRowIndex) => {
-        const segmentStart = currentGridRowIndex * gridColsCount;
-        const segmentEnd = segmentStart + gridColsCount;
-        const rowContent = cellValueSequence.slice(segmentStart, segmentEnd);
+    const twoDimensionalGrid = sequentialColors.reduce((gridAccumulator, currentCellColor, sequencePosition) => {
+        const targetRowIndex = Math.floor(sequencePosition / gridWidthValue);
+        const targetColumnIndex = sequencePosition % gridWidthValue;
 
-        const finalRow = (currentGridRowIndex % 2 !== 0) ? rowContent.reverse() : rowContent;
-        return finalRow.join(" ");
+        if (targetColumnIndex === 0) {
+            gridAccumulator.push([]);
+        }
+        gridAccumulator[targetRowIndex].push(currentCellColor);
+        return gridAccumulator;
+    }, []);
+
+    const finalDisplayLines = twoDimensionalGrid.map((rowContent, rowNumberIndex) => {
+        if (rowNumberIndex % 2 !== 0) {
+            return rowContent.slice().reverse().join(" ");
+        }
+        return rowContent.join(" ");
     });
 
-    console.log(formattedGridOutput.join("\n"));
+    console.log(finalDisplayLines.join("\n"));
 };
 
-processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+const applicationEntry = (inputSource) => {
+    const processedInput = parseInputData(inputSource);
+    executeGridGeneration(processedInput);
+};
+
+applicationEntry(require('fs').readFileSync('/dev/stdin', 'utf8'));

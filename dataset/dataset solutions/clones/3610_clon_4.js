@@ -1,28 +1,46 @@
-function processEntry(providedString) {
-    const sourceData = providedString.split('\x0A');
-    const characterSequence = sourceData[0];
-    const limitValue = Number(sourceData[1]);
+function processInputData(rawData) {
+    const lines = rawData.split('\n');
+    const firstLineContent = lines[0];
+    const secondLineNumeric = Number.parseInt(lines[1], 10);
 
-    let tallyAccumulator = 0;
+    const contributionMap = {
+        '0': 0,
+        '1': 1,
+        '2': Infinity,
+        '3': Infinity,
+        '4': Infinity,
+        '5': Infinity,
+        '6': Infinity,
+        '7': Infinity,
+        '8': Infinity,
+        '9': Infinity
+    };
 
-    const foundElementIndex = Array.from(characterSequence).findIndex(charUnit => {
-        const digitValue = +charUnit;
+    const determineContribution = (charVal) => {
+        return contributionMap[charVal] || NaN;
+    };
 
-        if (digitValue === 0) {
-            // Equivalent to p += 0
-        } else if (digitValue === 1) {
-            tallyAccumulator++; // Equivalent to p += 1
-        } else if (digitValue >= 2 && digitValue <= 9) {
-            // Digits 2-9 make the sum effectively infinite, satisfying any finite limitValue
-            return true;
+    const findMatchingCharacter = (indexPosition, currentAccumulation) => {
+        if (indexPosition >= firstLineContent.length) {
+            return null;
         }
-        
-        return tallyAccumulator >= limitValue;
-    });
 
-    if (foundElementIndex !== -1) {
-        process.stdout.write(characterSequence[foundElementIndex].toString() + '\n');
+        const charAtCurrentIndex = firstLineContent[indexPosition];
+        const charContribution = determineContribution(charAtCurrentIndex);
+        const nextAccumulation = currentAccumulation + charContribution;
+
+        if (secondLineNumeric <= nextAccumulation) {
+            return charAtCurrentIndex;
+        } else {
+            return findMatchingCharacter(indexPosition + 1, nextAccumulation);
+        }
+    };
+
+    const finalCharacter = findMatchingCharacter(0, 0);
+
+    if (finalCharacter !== null) {
+        console.log('%d', finalCharacter);
     }
 }
 
-processEntry(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

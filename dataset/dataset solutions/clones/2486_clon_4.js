@@ -1,14 +1,17 @@
 'use strict';
-((inputResource) => {
-    const numericComponents = inputResource.trim().split(/\s+/).map(Number);
 
-    const resultingDimension = numericComponents.reduce((accumulatedMeasurement, currentMagnitude, iterationIndex) => {
-        if (iterationIndex === 0) {
-            return currentMagnitude;
-        } else {
-            return accumulatedMeasurement - (currentMagnitude + currentMagnitude);
-        }
-    });
+function processDimensions(rawData) {
+  const [houseDimensionString, curtainDimensionString] = rawData.split(' ');
 
-    console.log(Math.max(0, resultingDimension));
-})(require('fs').readFileSync('/dev/stdin', 'utf8'));
+  const houseDimension = Number(houseDimensionString);
+  const curtainDimension = Number(curtainDimensionString);
+
+  const totalCurtainCoverage = curtainDimension * 2;
+  const availableSpace = houseDimension - totalCurtainCoverage;
+
+  const finalOutputValue = (availableSpace + Math.abs(availableSpace)) / 2;
+
+  console.log(finalOutputValue);
+}
+
+processDimensions(require('fs').readFileSync('/dev/stdin', 'utf8'));

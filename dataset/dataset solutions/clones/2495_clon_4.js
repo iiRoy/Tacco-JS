@@ -1,21 +1,20 @@
-function evaluateSequence(sourceContent) {
-  const contentUnits = sourceContent.split('\n');
-  const targetSequence = contentUnits[1];
+function processInput(rawData) {
+  const parsedLines = rawData.split('\n');
+  const stringLengthLimit = Number(parsedLines[0]);
+  const sourceSequence = parsedLines[1];
 
-  if (targetSequence.length === 0) {
-    return 1;
-  }
+  const processedSegment = sourceSequence.substring(0, stringLengthLimit);
 
-  const sequenceElements = targetSequence.split('');
+  const finalTally = [...processedSegment].reduce((accumulator, currentSymbol) => {
+    const { blockCount, lastSeenSymbol } = accumulator;
+    const updatedBlockCount = (lastSeenSymbol !== currentSymbol) ? blockCount + 1 : blockCount;
+    return {
+      blockCount: updatedBlockCount,
+      lastSeenSymbol: currentSymbol,
+    };
+  }, { blockCount: 0, lastSeenSymbol: '' });
 
-  const mutationFlags = sequenceElements.slice(1).map((currentElement, position) => {
-    return currentElement !== sequenceElements[position];
-  });
-
-  const totalMutations = mutationFlags.filter(wasChanged => wasChanged).length;
-
-  const finalScore = 2 + totalMutations;
-  return finalScore;
+  console.log(finalTally.blockCount + 1);
 }
 
-console.log(evaluateSequence(require("fs").readFileSync("/dev/stdin", "utf8")));
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

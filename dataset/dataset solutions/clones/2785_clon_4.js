@@ -1,17 +1,19 @@
-function computeValueDifference(sourceContent) {
-  const allLines = sourceContent.split('\n');
-  const numericStringCollection = allLines[1].split(' ');
+function processInputData(sourceText) {
+  const lineSegments = sourceText.split('\n');
+  const elementCountStr = lineSegments[0];
+  const numericValues = lineSegments[1].split(' ').map(Number);
 
-  const sortedNumericArray = numericStringCollection.map(entry => Number(entry)).sort((valA, valB) => valA - valB);
+  const sortedCollection = obtainSortedSequence(numericValues);
 
-  const totalElements = sortedNumericArray.length;
-  const upperHalfIndex = totalElements / 2;
-  const lowerHalfIndex = upperHalfIndex - 1;
+  const collectionLength = sortedCollection.length;
+  const upperMidIndex = Math.floor(collectionLength / 2);
+  const lowerMidIndex = Math.floor(collectionLength / 2 - 1);
 
-  const largerCentral = sortedNumericArray[upperHalfIndex];
-  const smallerCentral = sortedNumericArray[lowerHalfIndex];
-
-  console.log(largerCentral - smallerCentral);
+  console.log(sortedCollection[upperMidIndex] - sortedCollection[lowerMidIndex]);
 }
 
-computeValueDifference(require('fs').readFileSync('/dev/stdin', 'utf8'));
+function obtainSortedSequence(sourceArray) {
+  return sourceArray.slice().sort((valA, valB) => valA - valB);
+}
+
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

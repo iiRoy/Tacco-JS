@@ -1,60 +1,59 @@
-// This module contains a single function designed to calculate the total number of specific combinations
-// based on a set of numerical parameters provided via a string input.
-function    processInput    (    inputString    )
-{
-    // The initial step involves parsing the raw input string.
-    // It's first divided into individual lines, and then each line is converted into a base-10 integer.
-    // The resulting array of numbers is stored for subsequent computations.
-    const    numericValues    =    inputString . split (  "\n"  ) . map (    itemText    =>    parseInt ( itemText , 10 )    )    ;
+// This module defines a function to calculate specific combinations based on input values.
 
-    // A variable is initialized to keep track of the count of valid scenarios encountered.
-    // Its starting value is zero, represented here in hexadecimal notation.
-    let    validCombinationsCount    =    0x0    ;
+/**
+ * Processes a multi-line string input to determine the number of valid combinations.
+ * The input string is expected to contain four numeric values, each on a new line.
+ * These values represent:
+ * - numericValues[0]: Maximum count for the first type of item.
+ * - numericValues[1]: Maximum count for the second type of item.
+ * - numericValues[2]: Maximum count for the third type of item.
+ * - numericValues[3]: Total budget or target sum.
+ *
+ * The costs for the items are fixed:
+ * - First item: 500 units
+ * - Second item: 100 units
+ * - Third item: 50 units
+ *
+ * The function counts how many combinations of (firstCoinCount, secondCoinCount, thirdCoinCount)
+ * satisfy the following conditions:
+ * 1. firstCoinCount <= numericValues[0]
+ * 2. secondCoinCount <= numericValues[1]
+ * 3. thirdCoinCount <= numericValues[2]
+ * 4. 500 * firstCoinCount + 100 * secondCoinCount + 50 * thirdCoinCount === numericValues[3]
+ *
+ * @param {string} inputLines - The raw string input, with numbers separated by newlines.
+ */
+function processInput(inputLines) {
+    // Convert the input string into an array of numerical values.
+    // Each line is parsed as a number.
+    let numericValues = inputLines.split("\n").map(lineStr => Number(lineStr));
 
-    // The primary logic begins with an outer loop.
-    // This loop iterates, representing a quantity of the first type of item.
-    // The upper bound for this counter is determined by the minimum of the first input value
-    // and a calculated maximum derived from the fourth input value divided by 500 (5e2).
-    for    (    let    firstCounter    =    0x0    ;
-                 firstCounter    <=    Math . min (    numericValues [ 0x0 ]    ,    numericValues [ 0x3 ]    /    5e2    )    ;
-                 firstCounter    ++    )
-    {
-        // Nested within the first, this inner loop handles the quantity of the second type of item.
-        // Its iteration limit is based on the second input value and the remaining budget
-        // after allocating for the first type of item, divided by 100 (1e2).
-        for    (    let    secondCounter    =    0x0    ;
-                     secondCounter    <=    Math . min (    numericValues [ 0x1 ]    ,    (    numericValues [ 0x3 ]    -    5e2    *    firstCounter    )    /    1e2    )    ;
-                     secondCounter    ++    )
-        {
-            // A temporary constant is declared to hold the remaining "budget" or value
-            // after subtracting the cost of the currently considered quantities of the first two item types.
-            const    remainingBudget    =    numericValues [ 0x3 ]    -    5e2    *    firstCounter    -    1e2    *    secondCounter    ;
+    // Initialize a counter for the total number of valid combinations found.
+    let validCombinationsCount = 0;
 
-            // An essential conditional check is performed here.
-            // It verifies two conditions:
-            // 1. If the 'remainingBudget' is perfectly divisible by 50 (5e1), leaving no remainder.
-            // 2. If the number of third items that can be purchased with the 'remainingBudget' (remainingBudget / 50)
-            //    does not exceed the maximum allowed quantity for the third item type (numericValues[2]).
-            if    (    (    remainingBudget    %    5e1    ===    0x0    )    &&    (    remainingBudget    /    5e1    <=    numericValues [ 0x2 ]    )    )
-            {
-                // If both criteria are satisfied, it signifies a valid combination,
-                // and the dedicated counter is incremented by one.
-                validCombinationsCount    +=    1    ;
+    // Outer loop: Iterates through all possible counts for the first item.
+    // The loop continues as long as the count does not exceed the available quantity
+    // and the total cost of these items does not exceed the overall budget.
+    for (let firstCoinCount = 0; firstCoinCount <= Math.min(numericValues[0], numericValues[3] / 500); firstCoinCount++) {
+        // Inner loop: Iterates through all possible counts for the second item.
+        // The upper limit is constrained by its available quantity and the remaining budget
+        // after accounting for the first item's cost.
+        for (let secondCoinCount = 0; secondCoinCount <= Math.min(numericValues[1], (numericValues[3] - 500 * firstCoinCount) / 100); secondCoinCount++) {
+            // Check if the remaining amount, after purchasing the first two types of items,
+            // can be exactly covered by the third type of item (costing 50 units each).
+            // Also, ensure that the required number of third items does not exceed its available quantity.
+            if ((numericValues[3] - 500 * firstCoinCount - 100 * secondCoinCount) % 50 === 0 &&
+                (numericValues[3] - 500 * firstCoinCount - 100 * secondCoinCount) / 50 <= numericValues[2]) {
+                // If both conditions are met, increment the counter for valid combinations.
+                validCombinationsCount++;
             }
         }
     }
 
-    // Finally, after all possible combinations have been evaluated,
-    // the total count of valid combinations is displayed to the standard output.
-    console . log (    validCombinationsCount    )    ;
+    // Print the final count of valid combinations to the console.
+    console.log(validCombinationsCount);
 }
 
-// This section constitutes the main execution block of the script.
-// It sets up the necessary components to read input from the standard input stream.
-const    fileSystemModule    =    require    (    'fs'    )    ;
-const    standardInputPath    =    '/dev/stdin'    ;
-const    encodingType    =    'utf8'    ;
-
-// The 'processInput' function is invoked, passing the content read from '/dev/stdin'
-// as its primary argument, ensuring the correct character encoding is used.
-processInput    (    fileSystemModule . readFileSync    (    standardInputPath    ,    encodingType    )    )    ;
+// Read the entire content of standard input as a UTF-8 string,
+// then pass it to the processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

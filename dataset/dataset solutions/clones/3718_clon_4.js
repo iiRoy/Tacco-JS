@@ -1,12 +1,8 @@
-function evaluateSequence(dataStream, currentIndex) {
-    const streamLength = dataStream.length;
-    const pointAdjustment = (dataStream[currentIndex] === '-') * -2 + 1;
-    return (currentIndex < streamLength - 1) ? (pointAdjustment + evaluateSequence(dataStream, currentIndex + 1)) : pointAdjustment;
-}
+function Main(sourceData) {
+    const finalTally = sourceData.split('').reduce((currentSum, charElement) => {
+        return currentSum + (charElement === '-' ? -1 : 1);
+    }, 0);
 
-function processCharacterString(incomingData) {
-    const finalScore = (incomingData.length === 0) ? 0 : evaluateSequence(incomingData, 0);
-    console.log(finalScore + '\n');
+    console.log(finalTally + '\n');
 }
-
-processCharacterString(require("fs").readFileSync("/dev/stdin", "utf8"));
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

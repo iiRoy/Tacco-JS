@@ -1,100 +1,82 @@
-const rawContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+const inputSource = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-const contentLines = rawContent.trim().split('\n');
-const topLine = contentLines.shift().split(' ');
-const totalEntities = parseInt(topLine[0], 10);
-const timeSlice = parseInt(topLine[1], 10);
+class CustomQueue {
+  constructor() {
+    this.head = null;
+    this.tail = null;
+    this.count = 0;
+  }
 
-function createUnit(label, duration) {
-  return {
-    designation: label,
-    remainingDuration: duration
-  };
+  addBack(val) {
+    const freshNode = { val, next: null };
+    if (!this.head) {
+      this.head = freshNode;
+      this.tail = freshNode;
+    } else {
+      this.tail.next = freshNode;
+      this.tail = freshNode;
+    }
+    this.count++;
+  }
+
+  extractBack() {
+    if (this.count === 0) return undefined;
+
+    const extractedVal = this.tail.val;
+
+    if (this.count === 1) {
+      this.head = null;
+      this.tail = null;
+    } else {
+      let currentPointer = this.head;
+      while (currentPointer.next !== this.tail) {
+        currentPointer = currentPointer.next;
+      }
+      currentPointer.next = null;
+      this.tail = currentPointer;
+    }
+    this.count--;
+    return extractedVal;
+  }
+
+  addFront(val) {
+    const freshNode = { val, next: this.head };
+    this.head = freshNode;
+    if (!this.tail) {
+      this.tail = freshNode;
+    }
+    this.count++;
+  }
+
+  emptyCheck() {
+    return this.count === 0;
+  }
 }
 
-function makeLink(itemValue, nextLink = null, prevLink = null) {
-  return {
-    item: itemValue,
-    next: nextLink,
-    previous: prevLink
-  };
-}
+const lineSegments = inputSource.trim().split('\n');
 
-function createSequenceManager() {
-  let headNode = null;
-  let tailNode = null;
-  let currentSize = 0;
+const [ initialNStr, quantumStr ] = lineSegments[0].split(' ');
+const totalProcesses = Number(initialNStr);
+const quantumDuration = Number(quantumStr);
 
-  return {
-    appendElement: (value) => {
-      const freshLink = makeLink(value, null, tailNode);
-      if (tailNode) {
-        tailNode.next = freshLink;
-      }
-      tailNode = freshLink;
-      if (!headNode) {
-        headNode = freshLink;
-      }
-      currentSize++;
-    },
+const taskQueue = new CustomQueue();
 
-    extractLastElement: () => {
-      if (!tailNode) {
-        return undefined;
-      }
-      const extractedValue = tailNode.item;
-      tailNode = tailNode.previous;
-      if (tailNode) {
-        tailNode.next = null;
-      } else {
-        headNode = null;
-      }
-      currentSize--;
-      return extractedValue;
-    },
-
-    prependElement: (value) => {
-      const freshLink = makeLink(value, headNode, null);
-      if (headNode) {
-        headNode.previous = freshLink;
-      }
-      headNode = freshLink;
-      if (!tailNode) {
-        tailNode = freshLink;
-      }
-      currentSize++;
-    },
-
-    isEmpty: () => currentSize === 0
-  };
-}
-
-const operationalUnits = createSequenceManager();
-contentLines.forEach(line => {
-  const [unitLabel, unitTime] = line.split(' ');
-  operationalUnits.appendElement(createUnit(unitLabel, parseInt(unitTime, 10)));
+lineSegments.slice(1).forEach(line => {
+  const [ taskName, taskTimeStr ] = line.split(' ');
+  taskQueue.addBack({ label: taskName, remainingTime: Number(taskTimeStr) });
 });
 
-let cumulativeElapsed = 0;
+let cumulativeTime = 0;
 
-function executeCycle(currentUnits) {
-  if (currentUnits.isEmpty()) {
-    return;
-  }
+while (!taskQueue.emptyCheck()) {
+  const currentTask = taskQueue.extractBack();
+  const timeSlice = Math.min(currentTask.remainingTime, quantumDuration);
+  cumulativeTime += timeSlice;
+  currentTask.remainingTime -= timeSlice;
 
-  const activeUnit = currentUnits.extractLastElement();
-  const allottedSpan = Math.min(activeUnit.remainingDuration, timeSlice);
-
-  cumulativeElapsed += allottedSpan;
-  activeUnit.remainingDuration -= allottedSpan;
-
-  if (activeUnit.remainingDuration > 0) {
-    currentUnits.prependElement(activeUnit);
+  if (currentTask.remainingTime > 0) {
+    taskQueue.addFront(currentTask);
   } else {
-    console.log(`${activeUnit.designation} ${cumulativeElapsed}`);
+    console.log(currentTask.label + ' ' + cumulativeTime);
   }
-
-  executeCycle(currentUnits);
 }
-
-executeCycle(operationalUnits);

@@ -1,127 +1,120 @@
-// This module contains logic for processing input and solving a knapsack problem.
+function ProcessInput(rawData) {
+  // Split the raw input string into an array of lines
+  rawData = rawData.split("\n");
 
-/**
- * Processes raw input data to extract problem parameters and execute the solver.
- * @param {string} rawData - The entire input string, typically from stdin.
- */
-function processInputData(rawData) {
-  // Break the input string into individual lines for easier parsing.
-  let allInputLines = rawData.split('\n');
-
-  /**
-   * Converts a string representation of a number to an integer.
-   * @param {string} stringNumber - The string to convert.
-   * @returns {number} The parsed integer.
-   */
-  const convertToInteger = (stringNumber) => {
-    return parseInt(stringNumber, 10); // Ensure base-10 parsing.
+  // Helper function to convert a string to an integer
+  const parseNumeric = (strVal) => {
+    return parseInt(strVal, 10);
   };
 
-  // The first line contains the total count of items and the knapsack's weight capacity.
-  const [totalItemCount, knapsackCapacity] = allInputLines[0].split(' ').map(convertToInteger);
+  // Parse the number of items (itemCount) and the weight capacity (capacityLimit)
+  // from the first line of input data
+  const [itemCount, capacityLimit] = rawData[0].split(' ').map(parseNumeric);
 
-  // An array to store the weight and value for each item.
-  const itemSpecifications = [];
-  let cumulativeWeightUpperBound = 0; // Tracks the sum of all item weights.
-  let cumulativeValueUpperBound = 0;  // Tracks the sum of all item values.
+  // Array to store weight-value pairs for each item
+  const itemData = [];
+  // Variables to track the maximum possible total weight and total value across all items
+  let totalWeightSum = 0;
+  let totalValueSum = 0;
 
-  // Iterate from the second line onwards to parse each item's weight and value.
-  for (let k = 0; k < totalItemCount; ++k) {
-    let itemDetails = allInputLines[k + 1].split(' ').map(convertToInteger);
-    itemSpecifications.push(itemDetails); // Store as [weight, value]
-    cumulativeWeightUpperBound += itemDetails[0]; // Add current item's weight to total.
-    cumulativeValueUpperBound += itemDetails[1];  // Add current item's value to total.
+  // Loop through the remaining input lines to populate itemData
+  // and calculate the sums of all weights and values
+  for (let idx = 0; idx < itemCount; ++idx) {
+    // Parse weight and value for the current item from the input line
+    const currentItem = rawData[idx + 0b1].split(' ').map(parseNumeric);
+    itemData.push(currentItem);
+    // Accumulate total weight and total value
+    totalWeightSum += currentItem[0]; // Add item's weight to the sum
+    totalValueSum += currentItem[0b1]; // Add item's value to the sum
   }
 
-  // Invoke the core knapsack algorithm with the parsed data and print the result.
-  console.log(calculateMaxKnapsackValue(totalItemCount, knapsackCapacity, itemSpecifications, cumulativeWeightUpperBound, cumulativeValueUpperBound));
+  // Call the knapsack solver function with the prepared data and print its result
+  console.log(solveKnapsackProblem(itemCount, capacityLimit, itemData, totalWeightSum, totalValueSum));
 }
 
-// Standard entry point for competitive programming: read from /dev/stdin.
-processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));
-
+// Read input from standard input (e.g., from a file or piped data)
+// and pass it to the main processing function
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));
 
 /**
- * Solves the 0/1 knapsack problem to find the maximum value that can be carried.
- * This implementation uses dynamic programming where dp[i][v] stores the minimum
- * weight required to achieve a total value 'v' using items from index 'i' to N-1.
+ * Solves the 0/1 Knapsack problem using dynamic programming.
+ * This implementation aims to find the maximum value that can be achieved
+ * within a given weight capacity, by determining the minimum weight required
+ * for each possible value.
  *
- * @param {number} numAvailableItems - The total number of items available.
- * @param {number} maxKnapsackWeightLimit - The maximum weight the knapsack can hold.
- * @param {Array<Array<number>>} itemWeightsAndValues - An array where each inner array is [weight, value] for an item.
- * @param {number} maxPossibleTotalWeight - The sum of all item weights, used as an "infinity" marker.
- * @param {number} maxPossibleTotalValue - The sum of all item values, representing the upper bound for value iteration.
- * @returns {number} The maximum total value achievable within the knapsack's capacity.
+ * @param {number} itemCount - The total number of available items.
+ * @param {number} capacityLimit - The maximum weight capacity of the knapsack.
+ * @param {Array<Array<number>>} itemData - An array where each inner array [weight, value] represents an item.
+ * @param {number} totalWeightSum - The sum of all item weights (used for DP table initialization).
+ * @param {number} totalValueSum - The sum of all item values (used for DP table size).
+ * @returns {number} The maximum total value that can be placed in the knapsack.
  */
-function calculateMaxKnapsackValue(
-  numAvailableItems,
-  maxKnapsackWeightLimit,
-  itemWeightsAndValues,
-  maxPossibleTotalWeight,
-  maxPossibleTotalValue
-) {
-  let finalAchievedValue = 0; // Initialize the maximum value found.
+function solveKnapsackProblem(itemCount, capacityLimit, itemData, totalWeightSum, totalValueSum) {
+  let resultValue = 0x0; // Stores the maximum value found that fits within capacity
 
-  // Initialize the DP table. `dpTable[i][v]` = minimum weight for value `v` using items `i` through `N-1`.
-  // The table has `numAvailableItems + 1` rows and `maxPossibleTotalValue + 1` columns.
-  // `dpTable[numAvailableItems]` serves as the base case (no items remaining).
-  const dpTable = Array(numAvailableItems + 1).fill(0).map((_unused, rowIndex) => {
-    // For the first row (dpTable[0]), all value slots are initialized to 0.
-    if (rowIndex === 0) {
-      return Array(maxPossibleTotalValue + 1).fill(0);
+  // Initialize the DP table (memoTable).
+  // memoTable[i][v] will store the minimum weight required to achieve value 'v'
+  // using items from index 'i' to 'itemCount - 1'.
+  // The table has (itemCount + 1) rows and (totalValueSum + 1) columns.
+  const memoTable = Array(itemCount + 0b1).fill(0x0).map((_, rowIndex) => {
+    if (rowIndex === 0x0) {
+      // The first row (memoTable[0]) will store results considering all items.
+      // Initialize all values to 0.
+      return Array(totalValueSum + 0b1).fill(0x0);
     } else {
-      // For other rows (dpTable[1] to dpTable[N]), initialize dpTable[i][0] to 0 (0 value needs 0 weight)
-      // and dpTable[i][v > 0] to `maxPossibleTotalWeight` (acting as an "infinite" weight).
-      return Array(maxPossibleTotalValue + 1).fill(0).fill(maxPossibleTotalWeight, 1);
+      // For other rows, initialize with a large weight (totalWeightSum) for any value > 0.
+      // This represents an initially unreachable state for those values.
+      // Value 0 always requires 0 weight.
+      const row = Array(totalValueSum + 0b1).fill(0x0);
+      // Set all elements from index 1 onwards to totalWeightSum
+      for (let valIdx = 0b1; valIdx <= totalValueSum; ++valIdx) {
+          row[valIdx] = totalWeightSum;
+      }
+      return row;
     }
   });
 
-  // Fill the DP table using a reverse item iteration (from N down to 1).
-  // `itemPointer` iterates from `numAvailableItems` down to `1`.
-  // `dpTable[itemPointer - 1]` depends on `dpTable[itemPointer]`.
-  for (let itemPointer = numAvailableItems; itemPointer > 0; --itemPointer) {
-    const currentItemWeight = itemWeightsAndValues[itemPointer - 1][0];
-    const currentItemValue = itemWeightsAndValues[itemPointer - 1][1];
+  // Populate the DP table using a bottom-up approach (from itemCount down to 1)
+  // This loop iterates through items in reverse order.
+  for (let idx = itemCount; idx > 0x0; --idx) {
+    // Loop through all possible values from max down to 1
+    for (let currentValue = totalValueSum; currentValue > 0x0; --currentValue) {
+      // Get the weight and value of the current item (itemData[idx-1] because idx is 1-based)
+      const currentItemWeight = itemData[idx - 0b1][0x0];
+      const currentItemValue = itemData[idx - 0b1][0b1];
 
-    // `targetValue` iterates from `maxPossibleTotalValue` down to `1`.
-    for (let targetValue = maxPossibleTotalValue; targetValue > 0; --targetValue) {
-      // Option 1: Do not include the current item (at index `itemPointer - 1`).
-      // The minimum weight for `targetValue` is simply what was needed using items `itemPointer` to `N-1`.
-      let weightIfSkipped = dpTable[itemPointer][targetValue];
+      // Check if the current item's value can be accommodated to reach 'currentValue'
+      if (currentValue >= currentItemValue) {
+        // Option 1: Include the current item
+        // The weight would be currentItemWeight + min_weight_for_ (currentValue - currentItemValue)
+        const weightIfIncluded = memoTable[idx][currentValue - currentItemValue] + currentItemWeight;
 
-      // Option 2: Consider including the current item.
-      let weightIfTaken = maxPossibleTotalWeight; // Default to "infinity"
+        // Option 2: Exclude the current item
+        // The weight would be the min_weight_for_ currentValue without considering this item
+        const weightIfExcluded = memoTable[idx][currentValue];
 
-      // Check if including the item is feasible (if `targetValue` is large enough to contain `currentItemValue`).
-      if (targetValue >= currentItemValue) {
-        // Calculate the value needed from the subsequent items (items `itemPointer` to `N-1`).
-        const remainingValueTarget = targetValue - currentItemValue;
-
-        // If the remaining value was achievable with items `itemPointer` to `N-1` (i.e., not "infinity").
-        if (dpTable[itemPointer][remainingValueTarget] < maxPossibleTotalWeight) {
-          // The weight if current item is taken is its weight plus the minimum weight for the remaining value.
-          weightIfTaken = dpTable[itemPointer][remainingValueTarget] + currentItemWeight;
-        }
-      }
-
-      // Store the minimum weight to achieve `targetValue` using items `itemPointer - 1` to `N-1`.
-      dpTable[itemPointer - 1][targetValue] = Math.min(weightIfSkipped, weightIfTaken);
-    }
-  }
-
-  // After populating the DP table, find the maximum value that fits within the knapsack capacity.
-  // The original problem's logic iterates through all intermediate `dpTable[i]` rows (from `0` to `N-1`).
-  // This means it considers the maximum value achievable using items from `i` to `N-1` that fits.
-  for (let currentTableIndex = 0; currentTableIndex < numAvailableItems; ++currentTableIndex) {
-    // Iterate through all possible values for the current `dpTable` row.
-    for (let possibleValue = 0; possibleValue <= maxPossibleTotalValue; ++possibleValue) {
-      // If the minimum weight required for `possibleValue` is within the knapsack's capacity.
-      if (dpTable[currentTableIndex][possibleValue] <= maxKnapsackWeightLimit) {
-        // Update the maximum value found so far.
-        finalAchievedValue = Math.max(possibleValue, finalAchievedValue);
+        // Store the minimum weight required for 'currentValue' using items from 'idx-1' onwards
+        memoTable[idx - 0b1][currentValue] = Math.min(weightIfIncluded, weightIfExcluded);
+      } else {
+        // If the current item's value is too large for 'currentValue',
+        // we cannot include it. So, the minimum weight is the same as excluding it.
+        memoTable[idx - 0b1][currentValue] = memoTable[idx][currentValue];
       }
     }
   }
 
-  return finalAchievedValue; // Return the computed maximum value.
+  // After filling the DP table, iterate through all relevant rows (0 to itemCount-1)
+  // and columns (0 to totalValueSum) to find the maximum value 'currentValue'
+  // whose required weight 'memoTable[idx][currentValue]' does not exceed the knapsack's capacityLimit.
+  // Note: The original code iterates through `i` from `0` to `N-1` here,
+  // which means it checks intermediate DP states, not just the final `memoTable[0]`.
+  // This behavior is preserved as per Type II cloning rules.
+  for (let idx = 0x0; idx < itemCount; ++idx) {
+   for (let currentValue = 0x0; currentValue <= totalValueSum; ++currentValue) {
+     if (memoTable[idx][currentValue] <= capacityLimit) {
+       resultValue = Math.max(currentValue, resultValue);
+     }
+   }
+ }
+ return resultValue;
 }

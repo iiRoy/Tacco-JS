@@ -1,88 +1,64 @@
-let gridDimensionsData;
-let pointValueStorage;
-let memoizedResults;
+function ProcessGrid(rawData) {
+  const processedInput = rawData.trim().split("\n");
+  const [gridRows, gridCols, numValEntries] = processedInput.shift().split(" ").map((str) => parseInt(str, 10));
+  const valueEntries = processedInput.map((line) => line.split(" ").map((str) => parseInt(str, 10)));
 
-function parseGridInput(rawTextContent) {
-    const contentLines = rawTextContent.trim().split(/\r?\n/);
-    const firstLineComponents = contentLines.shift().split(/\s+/).map(Number);
-    const parsedDimensions = {
-        matrixHeight: firstLineComponents[0],
-        matrixWidth: firstLineComponents[1],
-        itemCount: firstLineComponents[2]
-    };
+  const gridValues = new Map();
+  for (const entry of valueEntries) {
+    const [rCoord, cCoord, itemValue] = entry;
+    if (!gridValues.has(rCoord - 1)) {
+      gridValues.set(rCoord - 1, new Map());
+    }
+    gridValues.get(rCoord - 1).set(cCoord - 1, itemValue);
+  }
 
-    const itemLocations = new Map();
-    contentLines.forEach(line => {
-        const [rCoord, cCoord, valValue] = line.split(/\s+/).map(Number);
-        const mapKey = `${rCoord - 1}-${cCoord - 1}`;
-        itemLocations.set(mapKey, valValue);
-    });
+  const memoCache = new Map();
 
-    return { parsedDimensions, itemLocations };
+  function getMemoKey(r, c, k) {
+    return `${r},${c},${k}`;
+  }
+
+  function solve(rowIdx, colIdx, collectedCount) {
+    if (rowIdx < 0 || colIdx < 0) {
+      return 0;
+    }
+    if (rowIdx >= gridRows || colIdx >= gridCols) {
+      return 0;
+    }
+
+    const currentKey = getMemoKey(rowIdx, colIdx, collectedCount);
+    if (memoCache.has(currentKey)) {
+      return memoCache.get(currentKey);
+    }
+
+    let currentCellMax = 0;
+
+    currentCellMax = Math.max(currentCellMax, solve(rowIdx, colIdx - 1, collectedCount));
+
+    if (collectedCount === 0) {
+      let maxFromAbove = 0;
+      for (let prevK = 0; prevK < 4; prevK++) {
+        maxFromAbove = Math.max(maxFromAbove, solve(rowIdx - 1, colIdx, prevK));
+      }
+      currentCellMax = Math.max(currentCellMax, maxFromAbove);
+    }
+
+    const itemAtCurrentCell = gridValues.get(rowIdx)?.get(colIdx) || 0;
+    if (collectedCount > 0 && itemAtCurrentCell > 0) {
+      const valueIfPicked = solve(rowIdx, colIdx, collectedCount - 1) + itemAtCurrentCell;
+      currentCellMax = Math.max(currentCellMax, valueIfPicked);
+    }
+
+    memoCache.set(currentKey, currentCellMax);
+    return currentCellMax;
+  }
+
+  let finalResult = 0;
+  for (let kVal = 0; kVal < 4; kVal++) {
+    finalResult = Math.max(finalResult, solve(gridRows - 1, gridCols - 1, kVal));
+  }
+
+  console.log(finalResult);
 }
 
-function fetchItemValue(rowIdx, colIdx) {
-    return pointValueStorage.get(`${rowIdx}-${colIdx}`) || 0;
-}
-
-function calculatePathValue(currentRow, currentCol) {
-    if (currentRow < 0 || currentCol < 0) {
-        return [0, 0, 0, 0]; // Default values for out-of-bounds cells
-    }
-
-    const currentKey = `${currentRow}-${currentCol}`;
-    if (memoizedResults.has(currentKey)) {
-        return memoizedResults.get(currentKey);
-    }
-
-    const cellAccumulators = [0, 0, 0, 0];
-
-    // Inherit from the cell to the left (same row, previous column)
-    const valuesFromLeft = calculatePathValue(currentRow, currentCol - 1);
-    for (let stateIndex = 0; stateIndex < 4; stateIndex++) {
-        cellAccumulators[stateIndex] = valuesFromLeft[stateIndex];
-    }
-
-    // Inherit from the cell above (previous row, same column)
-    const valuesFromAbove = calculatePathValue(currentRow - 1, currentCol);
-    let maxFromPreviousRow = 0;
-    for (let stateIndex = 0; stateIndex < 4; stateIndex++) {
-        maxFromPreviousRow = Math.max(maxFromPreviousRow, valuesFromAbove[stateIndex]);
-    }
-    cellAccumulators[0] = Math.max(cellAccumulators[0], maxFromPreviousRow);
-
-    // Consider adding the item at the current location
-    const itemAtCurrentLocation = fetchItemValue(currentRow, currentCol);
-    if (itemAtCurrentLocation > 0) {
-        for (let prevState = 2; prevState >= 0; prevState--) {
-            cellAccumulators[prevState + 1] = Math.max(
-                cellAccumulators[prevState + 1],
-                cellAccumulators[prevState] + itemAtCurrentLocation
-            );
-        }
-    }
-
-    memoizedResults.set(currentKey, cellAccumulators);
-    return cellAccumulators;
-}
-
-function executeGridTraversal(sourceInput) {
-    const { parsedDimensions, itemLocations } = parseGridInput(sourceInput);
-    gridDimensionsData = parsedDimensions;
-    pointValueStorage = itemLocations;
-    memoizedResults = new Map();
-
-    const finalRow = gridDimensionsData.matrixHeight - 1;
-    const finalCol = gridDimensionsData.matrixWidth - 1;
-
-    const finalCellStates = calculatePathValue(finalRow, finalCol);
-
-    let ultimateMaximum = 0;
-    for (let stateIndex = 0; stateIndex < 4; stateIndex++) {
-        ultimateMaximum = Math.max(ultimateMaximum, finalCellStates[stateIndex]);
-    }
-
-    console.log(ultimateMaximum);
-}
-
-executeGridTraversal(require("fs").readFileSync("/dev/stdin", "utf8"));
+ProcessGrid(require("fs").readFileSync("/dev/stdin", "utf8"));

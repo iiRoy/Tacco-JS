@@ -1,138 +1,172 @@
-const GRID_HEIGHT = 12;
-const GRID_WIDTH = 6;
-const DIRECTION_COUNT = 4;
-const MIN_CHAIN_LENGTH = 4;
-const EMPTY_SPACE_MARKER = ".";
-const ZERO_INDEX = 0;
-const NEG_ONE = -1;
+function scanNeighbors(rowCoord, colCoord, blockType) {
+    // Define relative offsets for adjacent cells (up, left, right, down)
+    var rowOffsets = [-1, 0, 0, 1];
+    var colOffsets = [0, -1, 1, 0];
 
-function chainReaction(rowCoord, colCoord, blockType) {
-    const rowOffsets = [NEG_ONE, ZERO_INDEX, ZERO_INDEX, 1];
-    const colOffsets = [ZERO_INDEX, NEG_ONE, 1, ZERO_INDEX];
+    // Iterate through all four possible adjacent directions
+    for (var idx = 0; idx < 4; idx++) {
+        var nextRow = rowCoord + rowOffsets[idx];
+        var nextCol = colCoord + colOffsets[idx];
 
-    for (let idx = ZERO_INDEX; idx < DIRECTION_COUNT; idx++) {
-        let nextRow = rowCoord + rowOffsets[idx];
-        let nextCol = colCoord + colOffsets[idx];
-
-        if (nextRow < ZERO_INDEX || nextCol < ZERO_INDEX || nextRow >= GRID_HEIGHT || nextCol >= GRID_WIDTH) {
-            continue;
+        // Check if the adjacent cell is within the grid boundaries
+        if (nextRow < 0 || nextCol < 0 || nextRow >= 12 || nextCol >= 6) {
+            continue; // Skip if out of bounds
         }
 
-        if (gridMatrix[nextRow][nextCol] === blockType) {
-            groupCount++;
-            if (groupCount === MIN_CHAIN_LENGTH) {
-                matchedClusters.push([nextRow, nextCol]);
+        // If the adjacent cell has the same block type
+        if (gameGrid[nextRow][nextCol] === blockType) {
+            currentCount++; // Increment the count of connected blocks
+            // If 4 or more connected blocks are found, add the current cell to potential removals
+            if (currentCount === 4) {
+                removalCandidates.push([nextRow, nextCol]);
             }
-            gridMatrix[nextRow][nextCol] = blockType + groupCount;
-            chainReaction(nextRow, nextCol, blockType);
+            // Mark the current cell with its type and count to avoid re-processing in this chain
+            gameGrid[nextRow][nextCol] = blockType + currentCount;
+            // Recursively call to find more connected blocks
+            scanNeighbors(nextRow, nextCol, blockType);
         }
     }
 }
 
-function clearAffected(rowCoord, colCoord, blockType) {
-    const rowOffsets = [NEG_ONE, ZERO_INDEX, ZERO_INDEX, 1];
-    const colOffsets = [ZERO_INDEX, NEG_ONE, 1, ZERO_INDEX];
+function clearConnected(rowCoord, colCoord, blockType) {
+    // Define relative offsets for adjacent cells (up, left, right, down)
+    var rowOffsets = [-1, 0, 0, 1];
+    var colOffsets = [0, -1, 1, 0];
 
-    for (let idx = ZERO_INDEX; idx < DIRECTION_COUNT; idx++) {
-        let nextRow = rowCoord + rowOffsets[idx];
-        let nextCol = colCoord + colOffsets[idx];
+    // Iterate through all four possible adjacent directions
+    for (var idx = 0; idx < 4; idx++) {
+        var nextRow = rowCoord + rowOffsets[idx];
+        var nextCol = colCoord + colOffsets[idx];
 
-        if (nextRow < ZERO_INDEX || nextCol < ZERO_INDEX || nextRow >= GRID_HEIGHT || nextCol >= GRID_WIDTH) {
-            continue;
+        // Check if the adjacent cell is within the grid boundaries
+        if (nextRow < 0 || nextCol < 0 || nextRow >= 12 || nextCol >= 6) {
+            continue; // Skip if out of bounds
         }
 
-        if (gridMatrix[nextRow][nextCol] === blockType) {
-            gridMatrix[nextRow][nextCol] = EMPTY_SPACE_MARKER;
-            clearAffected(nextRow, nextCol, blockType);
-        } else if (gridMatrix[nextRow][nextCol] === "O") {
-            gridMatrix[nextRow][nextCol] = EMPTY_SPACE_MARKER;
-        }
-    }
-}
-
-function shiftBlock(currentY, currentX) {
-    let checkY = currentY;
-    while (currentY > ZERO_INDEX) {
-        currentY--;
-        if (gridMatrix[currentY][currentX] !== EMPTY_SPACE_MARKER) {
-            gridMatrix[checkY][currentX] = gridMatrix[currentY][currentX];
-            gridMatrix[currentY][currentX] = EMPTY_SPACE_MARKER;
-            break;
+        // If the adjacent cell has the same block type, clear it and recurse
+        if (gameGrid[nextRow][nextCol] === blockType) {
+            gameGrid[nextRow][nextCol] = "."; // Mark as empty
+            clearConnected(nextRow, nextCol, blockType);
+        } else if (gameGrid[nextRow][nextCol] === "O") {
+            // If it's an 'O' block (obstacle/special block), clear it too
+            gameGrid[nextRow][nextCol] = "."; // Mark as empty
         }
     }
 }
 
-const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
-const lineArray = (rawData.trim()).split("\n");
-let numCases = lineArray.shift() - ZERO_INDEX;
+function shiftColumnUp(currentRow, targetCol) {
+    // Store the initial empty row position
+    var emptyRow = currentRow;
+    // Move upwards from the current empty row
+    while (currentRow > 0) {
+        currentRow--; // Check the row above
+        // If a non-empty block is found
+        if (gameGrid[currentRow][targetCol] !== ".") {
+            // Move the block down to the empty spot
+            gameGrid[emptyRow][targetCol] = gameGrid[currentRow][targetCol];
+            gameGrid[currentRow][targetCol] = "."; // Clear the original spot
+            break; // Only shift one block up to fill the gap
+        }
+    }
+}
 
-for (let caseIndex = ZERO_INDEX; caseIndex < numCases; caseIndex++) {
-    let gridMatrix = [];
-    for (let rowIndex = ZERO_INDEX; rowIndex < GRID_HEIGHT; rowIndex++) {
-        let rowChars = (lineArray.shift()).split("");
-        gridMatrix.push(rowChars);
+// Global-like variables for the recursive functions, scoped per test case
+var gameGrid; // Corresponds to 'yx'
+var removalCandidates; // Corresponds to 'p'
+var currentCount; // Corresponds to 'CNT'
+
+// Read input from standard input
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
+// Process input: trim whitespace and split into lines
+var inputLines = (rawData.trim()).split("\n");
+
+// Get the number of test cases from the first line
+var numTestCases = inputLines.shift() - 0; // Convert to number
+
+// Loop through each test case
+for (var testCaseIdx = 0; testCaseIdx < numTestCases; testCaseIdx++) {
+    // Initialize game grid for each test case
+    gameGrid = []; // 'yx' in original
+    for (var gridRowIdx = 0; gridRowIdx < 12; gridRowIdx++) {
+        // Read each row, split into characters, and add to the grid
+        var gridRow = (inputLines.shift()).split("");
+        gameGrid.push(gridRow);
     }
 
-    let scoreTotal = ZERO_INDEX;
+    // Initialize the counter for chain reactions
+    var chainReactionCount = 0; // 'result' in original
+
+    // Main game loop: continues as long as blocks are being cleared
     while (true) {
-        let matchedClusters = [];
-        let groupCount;
+        // Initialize removal candidates and current count for each iteration of the game loop
+        removalCandidates = []; // 'p' in original
+        currentCount; // 'CNT' in original, will be assigned 1 before each scanNeighbors call
 
-        for (let rowIndex = ZERO_INDEX; rowIndex < GRID_HEIGHT; rowIndex++) {
-            for (let colIndex = ZERO_INDEX; colIndex < GRID_WIDTH; colIndex++) {
-                if (gridMatrix[rowIndex][colIndex] === "R") {
-                    groupCount = 1;
-                    gridMatrix[rowIndex][colIndex] = "R" + groupCount;
-                    chainReaction(rowIndex, colIndex, "R");
+        // First pass: Identify connected blocks of 4 or more
+        for (var scanRowIdx = 0; scanRowIdx < 12; scanRowIdx++) {
+            for (var scanColIdx = 0; scanColIdx < 6; scanColIdx++) {
+                // Check each block type and initiate a recursive scan if found
+                if (gameGrid[scanRowIdx][scanColIdx] === "R") {
+                    currentCount = 1;
+                    gameGrid[scanRowIdx][scanColIdx] = "R" + currentCount; // Mark as visited
+                    scanNeighbors(scanRowIdx, scanColIdx, "R");
                 }
-                if (gridMatrix[rowIndex][colIndex] === "G") {
-                    groupCount = 1;
-                    gridMatrix[rowIndex][colIndex] = "G" + groupCount;
-                    chainReaction(rowIndex, colIndex, "G");
+                if (gameGrid[scanRowIdx][scanColIdx] === "G") {
+                    currentCount = 1;
+                    gameGrid[scanRowIdx][scanColIdx] = "G" + currentCount;
+                    scanNeighbors(scanRowIdx, scanColIdx, "G");
                 }
-                if (gridMatrix[rowIndex][colIndex] === "B") {
-                    groupCount = 1;
-                    gridMatrix[rowIndex][colIndex] = "B" + groupCount;
-                    chainReaction(rowIndex, colIndex, "B");
+                if (gameGrid[scanRowIdx][scanColIdx] === "B") {
+                    currentCount = 1;
+                    gameGrid[scanRowIdx][scanColIdx] = "B" + currentCount;
+                    scanNeighbors(scanRowIdx, scanColIdx, "B");
                 }
-                if (gridMatrix[rowIndex][colIndex] === "Y") {
-                    groupCount = 1;
-                    gridMatrix[rowIndex][colIndex] = "Y" + groupCount;
-                    chainReaction(rowIndex, colIndex, "Y");
+                if (gameGrid[scanRowIdx][scanColIdx] === "Y") {
+                    currentCount = 1;
+                    gameGrid[scanRowIdx][scanColIdx] = "Y" + currentCount;
+                    scanNeighbors(scanRowIdx, scanColIdx, "Y");
                 }
-                if (gridMatrix[rowIndex][colIndex] === "P") {
-                    groupCount = 1;
-                    gridMatrix[rowIndex][colIndex] = "P" + groupCount;
-                    chainReaction(rowIndex, colIndex, "P");
+                if (gameGrid[scanRowIdx][scanColIdx] === "P") {
+                    currentCount = 1;
+                    gameGrid[scanRowIdx][scanColIdx] = "P" + currentCount;
+                    scanNeighbors(scanRowIdx, scanColIdx, "P");
                 }
             }
         }
 
-        for (let rowIndex = ZERO_INDEX; rowIndex < GRID_HEIGHT; rowIndex++) {
-            for (let colIndex = ZERO_INDEX; colIndex < GRID_WIDTH; colIndex++) {
-                gridMatrix[rowIndex][colIndex] = gridMatrix[rowIndex][colIndex].slice(ZERO_INDEX, 1);
+        // Reset marked blocks to their original single-character type
+        for (var sliceRowIdx = 0; sliceRowIdx < 12; sliceRowIdx++) {
+            for (var sliceColIdx = 0; sliceColIdx < 6; sliceColIdx++) {
+                gameGrid[sliceRowIdx][sliceColIdx] = gameGrid[sliceRowIdx][sliceColIdx].slice(0, 1);
             }
         }
 
-        if (matchedClusters.length === ZERO_INDEX) {
+        // If no blocks were marked for removal in this iteration, break the loop
+        if (removalCandidates.length === 0) {
             break;
         }
 
-        scoreTotal++;
-        matchedClusters.forEach(function(clusterEntry) {
-            let rCoord = clusterEntry[ZERO_INDEX];
-            let cCoord = clusterEntry[1];
-            let blockValue = gridMatrix[rCoord][cCoord];
-            clearAffected(rCoord, cCoord, blockValue);
+        // Increment the chain reaction counter
+        chainReactionCount++;
+
+        // Second pass: Clear the identified connected blocks
+        removalCandidates.forEach(function (candidatePos) {
+            var targetRow = candidatePos[0];
+            var targetCol = candidatePos[1];
+            var blockToClear = gameGrid[targetRow][targetCol]; // Get the actual block type
+            clearConnected(targetRow, targetCol, blockToClear); // Recursively clear connected blocks
         });
 
-        for (let rowIndex = GRID_HEIGHT - 1; rowIndex > ZERO_INDEX; rowIndex--) {
-            for (let colIndex = ZERO_INDEX; colIndex < GRID_WIDTH; colIndex++) {
-                if (gridMatrix[rowIndex][colIndex] === EMPTY_SPACE_MARKER) {
-                    shiftBlock(rowIndex, colIndex);
+        // Third pass: Apply gravity - shift blocks down to fill empty spaces
+        // Iterate from bottom-up, column by column
+        for (var gravityRowIdx = 11; gravityRowIdx > 0; gravityRowIdx--) {
+            for (var gravityColIdx = 0; gravityColIdx < 6; gravityColIdx++) {
+                if (gameGrid[gravityRowIdx][gravityColIdx] === ".") {
+                    shiftColumnUp(gravityRowIdx, gravityColIdx); // Shift blocks in this column
                 }
             }
         }
     }
-    console.log(scoreTotal);
+    // Output the total chain reaction count for the current test case
+    console.log(chainReactionCount);
 }

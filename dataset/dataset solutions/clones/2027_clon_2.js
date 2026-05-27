@@ -1,179 +1,196 @@
-var inputReader = initializeDataProcessor();
+var inputHandler = initializeInputProcessor();
 
-executePrimaryLogic();
+ExecuteProgram();
 
 /**
- * Retrieves an integer value from the input stream.
- * @returns {number} The next integer.
+ * Retrieves the next line from input and converts it to an integer.
+ * @returns {number} The integer value.
  */
-function retrieveIntegerValue() {
-  return transformData(fetchNextEntry(), 1);
+function retrieveInteger() {
+    return convertInput(getNextLine(), 1);
 }
 
 /**
- * Reads the next line and splits it into an array of strings by space.
+ * Retrieves the next line from input and splits it by space into a string array.
  * @returns {string[]} An array of strings.
  */
 function retrieveStringArray() {
-  return transformData(fetchNextEntry(), 2);
+    return convertInput(getNextLine(), 2);
 }
 
 /**
- * Reads the next line, splits it by space, and converts elements to numbers.
- * @returns {number[]} An array of integers.
+ * Retrieves the next line from input, splits it by space, and converts elements to numbers.
+ * @returns {number[]} An array of numbers.
  */
 function retrieveIntegerArray() {
-  return transformData(fetchNextEntry(), 4);
+    return convertInput(getNextLine(), 4);
 }
 
 /**
- * Reads the next line and splits it into an array of single characters.
+ * Retrieves the next line from input and splits it into an array of single characters.
  * @returns {string[]} An array of characters.
  */
 function retrieveCharacterArray() {
-  return transformData(fetchNextEntry(), 6);
+    return convertInput(getNextLine(), 6);
 }
 
 /**
- * Fetches the next available entry from the input source.
- * @returns {string} The next input line.
+ * Fetches the next available line from the input source.
+ * @returns {string} The next line of input.
  */
-function fetchNextEntry() {
-  return inputReader.fetchNextEntry();
+function getNextLine() {
+    return inputHandler.getNextLine();
 }
 
 /**
- * Checks if there are more entries available in the input.
- * @returns {boolean} True if more entries exist, false otherwise.
+ * Checks if there are more lines available in the input.
+ * @returns {boolean} True if more lines exist, false otherwise.
  */
-function hasFurtherEntries() {
-  return inputReader.hasFurtherEntries();
+function hasMoreLines() {
+    return inputHandler.hasMoreLines();
 }
 
 /**
- * Reads all input from standard input, trims it, and splits it into lines.
- * @returns {string[]} An array of input lines.
+ * Reads the entire standard input file.
+ * @returns {string[]} An array of strings, each representing a line from the input.
  */
-function readSystemInput() {
-  return require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");
+function readInputFile() {
+    // Using Node.js 'fs' module to read from standard input
+    return require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");
 }
 
 /**
  * Sets up the input processing object.
- * @returns {object} An object with input handling methods.
+ * This object manages reading lines from the input data.
+ * @returns {object} An object with methods to access input lines.
  */
-function initializeDataProcessor() {
-  var sourceLines = readSystemInput();
-  var processorInstance = {
-    "contentList": sourceLines,
-    "currentPosition": 0,
-    "maximumCount": sourceLines.length,
-    "hasFurtherEntries": function() {
-      return (this.currentPosition < this.maximumCount);
-    },
-    "fetchNextEntry": function() {
-      if (!this.hasFurtherEntries()) {
-        return "";
-      } else {
-        var extractedData = this.contentList[this.currentPosition];
-        this.currentPosition++;
-        return extractedData;
-      }
-    }
-  };
-  return processorInstance;
+function initializeInputProcessor() {
+    // Read all lines from the input source
+    var rawInputData = readInputFile();
+
+    // Create an object to manage input state
+    var processorInstance = {
+        "dataLines": rawInputData, // All lines read from input
+        "currentLineIndex": 0,     // Current position in the input lines array
+        "totalLines": rawInputData.length, // Total number of lines
+        // Method to check if there are more lines to read
+        "hasMoreLines": function() {
+            return (this.currentLineIndex < this.totalLines);
+        },
+        // Method to get the next line from input
+        "getNextLine": function() {
+            if (!this.hasMoreLines()) {
+                return ""; // Return empty string if no more lines
+            } else {
+                var currentLineContent = this.dataLines[this.currentLineIndex];
+                this.currentLineIndex++; // Advance the index
+                return currentLineContent;
+            }
+        }
+    };
+    return processorInstance;
 }
 
 /**
- * Outputs content to the standard output stream.
- * @param {*} resultContent - The data to be displayed.
+ * Displays a message to standard output.
+ * @param {*} messageContent The content to be displayed.
  */
-function displayOutput(resultContent) {
-  console.log(resultContent);
+function displayOutput(messageContent) {
+    console.log(messageContent);
 }
 
 /**
- * Outputs messages to the standard error stream.
- * @param {*} issueDetails - The error information to be reported.
+ * Displays a message to standard error output.
+ * @param {*} messageContent The content to be displayed as an error.
  */
-function reportError(issueDetails) {
-  console.error(issueDetails);
+function displayError(messageContent) {
+    console.error(messageContent);
 }
 
 /**
- * Transforms the input data based on the specified type.
- * Transformation type legend:
+ * Converts input value based on a specified conversion type.
+ * @param {*} inputValue The value to convert.
+ * @param {number} conversionType The type of conversion to perform.
  *   1: Convert to integer.
- *   2: Split by single space into string array.
- *   4: Split by single space and convert to number array.
- *   6: Split into individual characters.
- *   7: Split into individual characters and convert to number array.
- *   8: Join array elements with a single space.
- *   9: Join array elements with a newline.
- *   0: Join array elements without any separator.
- * Default: Returns input as is.
- * @param {*} inputItem - The data to transform.
- * @param {number} transformationType - The type of transformation to apply.
- * @returns {*} The transformed data.
+ *   2: Split by space into string array.
+ *   4: Split by space and convert to number array.
+ *   6: Split into character array.
+ *   7: Split into character array and convert to number array.
+ *   8: Join array elements with space.
+ *   9: Join array elements with newline.
+ *   0: Join array elements without separator.
+ * @returns {*} The converted value.
  */
-function transformData(inputItem, transformationType) {
-  try {
-    switch (transformationType) {
-      case 1:
-        return parseInt(inputItem);
-      case 2:
-        return inputItem.split(" ");
-      case 4:
-        return inputItem.split(" ").map((itemValue) => Number(itemValue));
-      case 6:
-        return inputItem.split("");
-      case 7:
-        return inputItem.split("").map((itemValue) => Number(itemValue));
-      case 8:
-        return inputItem.join(" ");
-      case 9:
-        return inputItem.join("\n");
-      case 0:
-        return inputItem.join("");
-      default:
-        return inputItem;
+function convertInput(inputValue, conversionType) {
+    try {
+        switch (conversionType) {
+            case 1:
+                return parseInt(inputValue);
+            case 2:
+                return inputValue.split(" ");
+            case 4:
+                return inputValue.split(" ").map((itemValue) => Number(itemValue));
+            case 6:
+                return inputValue.split("");
+            case 7:
+                return inputValue.split("").map((itemValue) => Number(itemValue));
+            case 8:
+                return inputValue.join(" ");
+            case 9:
+                return inputValue.join("\n");
+            case 0:
+                return inputValue.join("");
+            default:
+                return inputValue; // Return original value if conversion type is unknown
+        }
+    } catch (error) {
+        return inputValue; // In case of conversion error, return original value
     }
-  } catch (processingError) {
-    return inputItem;
-  }
 }
 
 /**
- * The primary execution logic of the program.
- * Calculates the sum of differences after sorting and removing the largest.
+ * Main program logic.
+ * Calculates the shortest distance around a circle given points.
  */
-function executePrimaryLogic() {
-  var firstLineValues = retrieveIntegerArray();
-  var boundaryValue = firstLineValues[0];
-  var elementCount = firstLineValues[1];
+function ExecuteProgram() {
+    // Read the first line containing K and N
+    var firstLineData = retrieveIntegerArray();
+    var circleLength = firstLineData[0]; // Total length of the circle
+    var numPoints = firstLineData[1];    // Number of points on the circle
 
-  var originalSequence = retrieveIntegerArray();
+    // Read the line containing the coordinates of the points
+    var pointCoordinates = retrieveIntegerArray();
 
-  var differenceArray = new Array(elementCount);
+    // Calculate differences between adjacent points
+    var distanceDifferences = new Array(numPoints);
 
-  for (var idx = 0; idx < elementCount - 1; idx++) {
-    differenceArray[idx] = originalSequence[idx + 1] - originalSequence[idx];
-  }
+    // Calculate distances between consecutive points
+    for (let idx = 0; idx < numPoints - 1; idx++) {
+        distanceDifferences[idx] = pointCoordinates[idx + 1] - pointCoordinates[idx];
+    }
 
-  differenceArray[elementCount - 1] = (boundaryValue - originalSequence[elementCount - 1]) + originalSequence[0];
+    // Calculate the distance from the last point back to the first point,
+    // considering the circular nature (K - last + first)
+    distanceDifferences[numPoints - 1] = (circleLength - pointCoordinates[numPoints - 1]) + pointCoordinates[0];
 
-  reportError(differenceArray);
+    // Output the calculated differences to standard error for debugging
+    displayError(distanceDifferences);
 
-  differenceArray.sort(function(valA, valB) {
-    return valA - valB;
-  });
+    // Sort the differences in ascending order
+    distanceDifferences.sort(function(valA, valB) {
+        return valA - valB;
+    });
 
-  differenceArray.pop();
+    // Remove the largest difference (this corresponds to the longest segment
+    // that we want to avoid traversing)
+    distanceDifferences.pop();
 
-  var totalSum = 0;
-  for (var idx = 0; idx < elementCount - 1; idx++) {
-    totalSum += differenceArray[idx];
-  }
+    // Sum the remaining differences to get the minimum total distance
+    var totalDistance = 0;
+    for (let idx = 0; idx < numPoints - 1; idx++) {
+        totalDistance += distanceDifferences[idx];
+    }
 
-  displayOutput(totalSum);
+    // Display the final calculated minimum total distance
+    displayOutput(totalDistance);
 }

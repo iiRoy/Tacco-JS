@@ -1,89 +1,91 @@
 "use strict";
 
-// This segment manages the initial acquisition of raw input data from the operating system's standard input.
-let fileContent = require("fs").readFileSync("/dev/fd/0", "unicodeEncoding");
+// Read the entire standard input file synchronously.
+var fileContent = require("fs").readFileSync("/dev/stdin", "utf8");
 
-// The entirety of the input content is then segmented into individual tokens, utilizing either spaces or newlines as delimiters.
-let tokensArray = fileContent.split(/ |\n/);
-let tokenIndex = 0;
+// Split the content into tokens using spaces or newlines as delimiters.
+// Initialize a token index for sequential access.
+var tokenStream = fileContent.split(/ |\n/),
+    tokenIndex = 0;
 
 /**
- * Procures the subsequent token available within the global `tokensArray`.
- * @param {boolean} asString - A flag indicating whether the token should be returned in its string form (true) or converted to a numerical value (false).
- * @returns {string|number} The token, either as a string or a number based on the `asString` parameter.
+ * Retrieves the next token from the stream.
+ * @param {boolean} isString - If true, returns the token as a string; otherwise, attempts to convert to a number.
+ * @returns {string|number} The next token.
  */
-function acquireNextToken(asString) {
-  return asString
-    ? tokensArray[tokenIndex++]
-    : +tokensArray[tokenIndex++];
+function retrieveNext(isString) {
+    return isString ? tokenStream[tokenIndex++] : +tokenStream[tokenIndex++];
 }
 
 /**
- * Extracts a specified quantity of tokens from the global array of tokens.
- * @param {number} count - The precise number of tokens intended for retrieval.
- * @param {boolean} keepAsStrings - A control flag; if set to true, tokens retain their string data type, otherwise they are coerced into numbers.
- * @returns {Array<string|number>} An array containing the requested subset of tokens.
+ * Retrieves a specified number of tokens from the stream.
+ * @param {number} count - The number of tokens to retrieve.
+ * @param {boolean} asString - If true, returns tokens as strings; otherwise, attempts to convert to numbers.
+ * @returns {Array<string|number>} An array of tokens.
  */
-function acquireMultipleTokens(count, keepAsStrings) {
-  return keepAsStrings
-    ? tokensArray.slice(tokenIndex, tokenIndex += count)
-    : tokensArray.slice(tokenIndex, tokenIndex += count).map(item => +item);
+function retrieveMultiple(count, asString) {
+    return asString
+        ? tokenStream.slice(tokenIndex, (tokenIndex += count))
+        : tokenStream.slice(tokenIndex, (tokenIndex += count)).map((val) => +val);
 }
 
 /**
- * Facilitates the reading of data structured as a matrix, based on predefined dimensions.
- * @param {number} rows - The total number of rows expected in the matrix.
- * @param {number} cols - The total number of columns expected per row in the matrix.
- * @param {boolean} preserveStringFormat - Determines if matrix elements should remain as strings (true) or be parsed as numbers (false).
- * @returns {Array<Array<string|number>>} A two-dimensional array representing the parsed matrix.
+ * Retrieves a matrix (2D array) of tokens from the stream.
+ * @param {number} height - The number of rows in the matrix.
+ * @param {number} width - The number of columns in each row.
+ * @param {boolean} asStrings - If true, returns elements as strings; otherwise, attempts to convert to numbers.
+ * @returns {Array<Array<string|number>>} The matrix.
  */
-function acquireMatrixData(rows, cols, preserveStringFormat) {
-  let resultMatrix = [];
-  let rowIndex = 0;
-  if (preserveStringFormat) {
-    for (; rowIndex < rows; rowIndex++) {
-      resultMatrix.push(tokensArray.slice(tokenIndex, tokenIndex += cols));
+function retrieveMatrix(height, width, asStrings) {
+    var resultMatrix = [],
+        rowCounter = 0;
+    if (asStrings) {
+        for (; rowCounter < height; rowCounter++) {
+            resultMatrix.push(tokenStream.slice(tokenIndex, (tokenIndex += width)));
+        }
+    } else {
+        for (; rowCounter < height; rowCounter++) {
+            resultMatrix.push(
+                tokenStream.slice(tokenIndex, (tokenIndex += width)).map((element) => +element)
+            );
+        }
     }
-  } else {
-    for (; rowIndex < rows; rowIndex++) {
-      resultMatrix.push(tokensArray.slice(tokenIndex, tokenIndex += cols).map(element => +element));
+    return resultMatrix;
+}
+
+/**
+ * Creates a multi-dimensional array initialized with a given value.
+ * The dimensions are passed as subsequent arguments.
+ * @param {*} initialValue - The value to initialize array elements with.
+ * @param {...number} dimensions - The sizes of each dimension.
+ * @returns {Array} The multi-dimensional array.
+ */
+function createMultiDimArray(initialValue) {
+    var argsList = arguments,
+        dimCount = argsList.length,
+        arrayExpression = "Array(argsList[" + --dimCount + "]).fill().map(_ => {return " + initialValue + ";})";
+    while (--dimCount) {
+        arrayExpression = "Array(argsList[" + dimCount + "]).fill().map(_ => " + arrayExpression + ")";
     }
-  }
-  return resultMatrix;
+    return eval(arrayExpression);
+}
+
+// Execute the primary logic of the program.
+var programOutput = executeSolution();
+
+// If the solution returns a value, print it to the console.
+if (programOutput !== undefined) {
+    console.log(programOutput);
 }
 
 /**
- * Constructs and then executes a string of JavaScript code to generate a multi-dimensional array.
- * @param {*} initialValue - The default value to populate the innermost elements of the array structure.
- * @returns {Array} A newly created array, potentially nested, initialized according to the provided dimensions and value.
+ * Main function containing the problem's core logic.
+ * Reads two numbers and performs a calculation.
+ * @returns {number} The calculated result.
  */
-function buildMultiDimArray(initialValue) {
-  let args = arguments;
-  let lengthCounter = args.length;
-  let arrayCreationString = "Array(args[" + --lengthCounter + "]).fill().map( _ => { return " + initialValue + "; } )";
-  while (--lengthCounter) {
-    arrayCreationString = "Array(args[" + lengthCounter + "]).fill().map( _ => " + arrayCreationString + " )";
-  }
-  return eval(arrayCreationString);
-}
-
-
-// Invokes the primary operational function of this script and stores its computed outcome.
-let programResult = executeProgram();
-
-// Checks if the outcome from the main execution is defined, and if so, prints it to the standard output.
-if (programResult !== undefined) {
-  console.log(programResult);
-}
-
-
-/**
- * Encapsulates the core computational logic of the entire application.
- * It reads two distinct numerical values from the input stream and performs a specific arithmetic calculation.
- * @returns {number} The final calculated numerical result derived from the input values.
- */
-function executeProgram() {
-  let firstValue = acquireNextToken();
-  let secondValue = acquireNextToken();
-  return (firstValue * (firstValue - 1) / 2) + (secondValue * (secondValue - 1) / 2);
+function executeSolution() {
+    var firstNum = retrieveNext(),
+        secondNum = retrieveNext();
+    // Calculate combinations for firstNum and secondNum, then sum them.
+    return (firstNum * (firstNum - 1)) / 2 + (secondNum * (secondNum - 1)) / 2;
 }

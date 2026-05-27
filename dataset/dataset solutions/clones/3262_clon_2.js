@@ -1,280 +1,264 @@
-'use strict'
+'use strict'; // Maintain strict mode declaration
 
-class Processor {
-  // Initiates the primary processing sequence for the given data.
-  execute() {
-    const initialValues = dataFetcher.retrieveIntArray();
-    const selectionLimit = initialValues[1];
-    const itemData = dataFetcher.retrieveIntMatrix(initialValues[0]);
-    const performanceRecords = [];
+class Processor { // Renamed Main to Processor
+  execute() { // Renamed solve to execute
+    // Read the initial numbers from input: N (number of items) and K (limit for selected items)
+    const inputNumbers = dataInput.fetchIntegerArray();
+    const limitK = inputNumbers[1]; // The K value
+    // Read N lines of item data, each with a category and a value
+    const itemData = dataInput.fetchIntegerMatrix(inputNumbers[0]);
+    const calculatedScores = []; // Array to store scores based on distinct categories
 
-    // Sort the items based on their second component in descending order.
-    itemData
-      .sort(entry => entry[1])
-      .reverse();
+    // Sort the item data by value in descending order
+    itemData.sort(itemEntry => itemEntry[1]).reverse();
 
-    const topSelections = utilities.getHeadElements(itemData, selectionLimit);
-    const categoryTally = {};
+    // Select the top K items after sorting
+    const selectedItems = _util.getFirstElements(itemData, limitK);
+    const categoryCounts = {}; // Object to track counts of each category
 
-    // Count occurrences of each category among the selected items.
-    topSelections.forEach(selectionItem => categoryTally[selectionItem[0]] = (categoryTally[selectionItem[0]] ? categoryTally[selectionItem[0]] + 1 : 1));
+    // Populate categoryCounts for the initially selected K items
+    selectedItems.forEach(itemEntry => {
+      categoryCounts[itemEntry[0]] = (categoryCounts[itemEntry[0]] ? categoryCounts[itemEntry[0]] + 1 : 1);
+    });
 
-    let distinctCategories = Object.keys(categoryTally).length;
-    // Calculate initial score based on unique categories and sum of selected item values.
-    performanceRecords[distinctCategories] = utilities.calculateSum(topSelections.map(item => item[1]));
+    // Determine the initial number of distinct categories
+    let distinctCategories = Object.keys(categoryCounts).length;
+    // Calculate the initial score: sum of values of selected items
+    calculatedScores[distinctCategories] = _util.calculateSum(selectedItems.map(itemEntry => itemEntry[1]));
 
-    const priorityStore = new PriorityQueue();
-    // Populate the priority queue with items having duplicate categories.
-    topSelections.forEach(selectedEntry => {
-      if (categoryTally[selectedEntry[0]] > 1) {
-        priorityStore.insertElement(selectedEntry[1], selectedEntry);
+    const priorityQueue = new MaxPriorityQueue(); // Initialize a max-priority queue
+    // Add items that have duplicate categories to the priority queue
+    selectedItems.forEach(itemEntry => {
+      if (categoryCounts[itemEntry[0]] > 1) {
+        priorityQueue.insertElement(itemEntry[1], itemEntry); // Priority is the item's value
       }
     });
 
-    let currentPosition = topSelections.length;
-    // Iterate while there are items in the priority queue and unexamined items in the main data.
-    while (priorityStore.size > 0 && currentPosition < itemData.length) {
-      const extractedEntry = priorityStore.extractMax(); // Get item with highest priority (value)
-
-      // If the extracted item's category has duplicates, attempt replacement.
-      if (categoryTally[extractedEntry[0]] >= 2) {
-        --categoryTally[extractedEntry[0]]; // Decrement count for the category.
-
-        // Find a suitable replacement item.
+    let currentIndex = selectedItems.length; // Pointer for iterating through the remaining itemData
+    // Loop to optimize distinct categories by replacing duplicate items
+    while (priorityQueue.size > 0 && currentIndex < itemData.length) {
+      const removedItem = priorityQueue.extractMax(); // Get the item with the highest value from duplicates
+      // Check if the removed item's category still has duplicates
+      if (categoryCounts[removedItem[0]] >= 2) {
+        --categoryCounts[removedItem[0]]; // Decrement count for the category of the removed item
+        // Search for a new item from the remaining `itemData` to replace the removed one
         do {
-          let incomingItem = itemData[currentPosition];
-          ++currentPosition;
-
-          // If the incoming item introduces a new category.
-          if (!categoryTally[incomingItem[0]]) {
-            categoryTally[incomingItem[0]] = 1; // Mark as new category.
-            priorityStore.insertElement(incomingItem[1], incomingItem); // Add to priority queue.
-            ++distinctCategories; // Increment count of unique categories.
-            // Update performance record for the new category count.
-            performanceRecords[distinctCategories] = performanceRecords[distinctCategories - 1] + incomingItem[1] - extractedEntry[1];
-            break; // Found a replacement, exit inner loop.
+          let nextItem = itemData[currentIndex];
+          ++currentIndex; // Advance the pointer
+          // If the new item's category is not yet present in our selection
+          if (!categoryCounts[nextItem[0]]) {
+            categoryCounts[nextItem[0]] = 1; // Add this new category
+            priorityQueue.insertElement(nextItem[1], nextItem); // Add the new item to the priority queue
+            ++distinctCategories; // Increment the count of distinct categories
+            // Update the score for the new distinct category count
+            calculatedScores[distinctCategories] = calculatedScores[distinctCategories - 1] + nextItem[1] - removedItem[1];
+            break; // Found a suitable replacement, exit inner loop
           }
-        } while (currentPosition < itemData.length); // Continue searching if more items are available.
+        } while (currentIndex < itemData.length); // Continue searching if more items are available
       }
     }
 
-    // Compute final scores by adding the square of the category count to each record.
-    const computedResults = performanceRecords.map((resultValue, resultIndex) => resultValue ? (resultValue + resultIndex * resultIndex) : 0);
-    // Output the maximum final score.
-    console.log(utilities.findMaximum(computedResults));
+    // Final score calculation: add the square of the distinct category count to each score
+    const finalScores = calculatedScores.map((scoreValue, categoryIndex) => scoreValue ? (scoreValue + categoryIndex * categoryIndex) : 0);
+    // Output the maximum final score
+    console.log(_util.findMaximum(finalScores));
   }
 }
 
-class DataSource {
-  // Initializes the data source with a read pointer.
+class DataReader { // Renamed Input to DataReader
   constructor() {
-    this.readPointer = 0;
-    this.loadAllData();
+    this.readPointer = 0; // Renamed cursor to readPointer
+    this.loadAllInput(); // Renamed inputAll to loadAllInput
   }
 
-  // Reads all input from stdin and stores it.
-  loadAllData() {
-    this.fileContent = (require("fs").readFileSync("/dev/stdin", "utf8")).split('\n');
-    return this.fileContent;
+  loadAllInput() { // Renamed inputAll to loadAllInput
+    // Reads all input from stdin and splits it into lines
+    this.inputLines = (require("fs").readFileSync("/dev/stdin", "utf8")).split('\n'); // Renamed data to inputLines
+    return this.inputLines;
   }
 
-  // Retrieves one or more lines of input.
-  retrieveLine(count) {
-    if (count) {
-      const retrievedLines = this.fileContent.slice(this.readPointer, this.readPointer + count);
-      this.readPointer += count;
+  fetchNextLines(lineCount) { // Renamed nextLine to fetchNextLines, n to lineCount
+    // Fetches 'lineCount' number of lines or a single line if 'lineCount' is not provided
+    if (lineCount) {
+      const retrievedLines = this.inputLines.slice(this.readPointer, this.readPointer + lineCount);
+      this.readPointer += lineCount;
       return retrievedLines;
     }
-    // Retrieve a single line and advance the pointer.
-    return this.fileContent[this.readPointer++];
+    return this.inputLines[this.readPointer++];
   }
 
-  // Fetches a line and splits it into an array of strings.
-  retrieveStringArray() {
-    return this.retrieveLine().split(' ');
+  fetchStringArray() { // Renamed nextStrArr to fetchStringArray
+    // Reads the next line and splits it into an array of strings
+    return this.fetchNextLines().split(' ');
   }
 
-  // Fetches a line, splits it, and converts elements to integers.
-  retrieveIntArray() {
-    return this.retrieveStringArray().map((strValue) => parseInt(strValue));
+  fetchIntegerArray() { // Renamed nextIntArr to fetchIntegerArray
+    // Reads the next line, splits it, and converts elements to integers
+    return this.fetchStringArray().map((element) => parseInt(element));
   }
 
-  // Reads multiple lines and splits each into an array of strings.
-  retrieveStringMatrix(rowCount) {
-    return this.retrieveLine(rowCount).map((textLine) => textLine.split(' '));
+  fetchStringMatrix(rowCount) { // Renamed nextStrRange to fetchStringMatrix, n to rowCount
+    // Reads 'rowCount' lines and splits each into an array of strings
+    return this.fetchNextLines(rowCount).map((lineEntry) => lineEntry.split(' '));
   }
 
-  // Reads multiple lines, splits each, and converts elements to integers.
-  retrieveIntMatrix(rowCount) {
-    return this.retrieveLine(rowCount).map((textLine) => textLine.split(' ').map((itemString) => parseInt(itemString)));
+  fetchIntegerMatrix(rowCount) { // Renamed nextIntRange to fetchIntegerMatrix, n to rowCount
+    // Reads 'rowCount' lines, splits each, and converts elements to integers
+    return this.fetchNextLines(rowCount).map((lineEntry) => lineEntry.split(' ').map((element) => parseInt(element)));
   }
 }
 
-/* A collection of common utility functions */
-class UtilityBelt {
-  // Computes the sum of all numbers in an array.
-  calculateSum(collection) { return collection.reduce((accumulator, currentValue) => accumulator + currentValue); }
-
-  // Finds the minimum element in an array, optionally using a custom comparison function.
-  findMinimum(collection, comparisonFunc) {
-    if (comparisonFunc == null) { comparisonFunc = (a, b) => a - b }
-    return collection.reduce((currentMin, nextVal) => comparisonFunc(currentMin, nextVal) < 0 ? currentMin : nextVal);
+/* Collection of utility functions, inspired by Underscore.js */
+class UtilityFunctions { // Renamed Underscore to UtilityFunctions
+  // Calculates the sum of all numbers in an array
+  calculateSum(numberArray) { return numberArray.reduce((accumulator, currentValue) => accumulator + currentValue); }
+  // Finds the minimum element in an array using an optional comparison function
+  findMinimum(numberArray, comparisonFunc) {
+    if (comparisonFunc == null) { comparisonFunc = (valA, valB) => valA - valB; }
+    return numberArray.reduce((currentMin, nextValue) => comparisonFunc(currentMin, nextValue) < 0 ? currentMin : nextValue);
+  }
+  // Finds the maximum element in an array using an optional comparison function
+  findMaximum(numberArray, comparisonFunc) {
+    if (comparisonFunc == null) { comparisonFunc = (valA, valB) => valA - valB; }
+    return numberArray.reduce((currentMax, nextValue) => comparisonFunc(currentMax, nextValue) > 0 ? currentMax : nextValue);
   }
 
-  // Finds the maximum element in an array, optionally using a custom comparison function.
-  findMaximum(collection, comparisonFunc) {
-    if (comparisonFunc == null) { comparisonFunc = (a, b) => a - b }
-    return collection.reduce((currentMax, nextVal) => comparisonFunc(currentMax, nextVal) > 0 ? currentMax : nextVal);
-  }
-
-  // Generates a sequence of numbers within a specified range.
-  generateSequence(beginValue, endValue, incrementStep) {
-    if (endValue == null) {
-      endValue = beginValue || 0;
-      beginValue = 0;
+  // Generates an array of numbers within a specified range
+  generateRange(rangeStart, rangeEnd, rangeStep) {
+    if (rangeEnd == null) {
+      rangeEnd = rangeStart || 0;
+      rangeStart = 0;
     }
-    if (!incrementStep) {
-      incrementStep = endValue < beginValue ? -1 : 1;
+    if (!rangeStep) {
+      rangeStep = rangeEnd < rangeStart ? -1 : 1;
     }
-    const sequenceLength = Math.max(Math.ceil((endValue - beginValue) / incrementStep), 0);
-    const generatedSequence = Array(sequenceLength);
+    const arrayLength = Math.max(Math.ceil((rangeEnd - rangeStart) / rangeStep), 0);
+    const generatedRange = Array(arrayLength);
 
-    for (var currentIdx = 0; currentIdx < sequenceLength; currentIdx++, beginValue += incrementStep) {
-      generatedSequence[currentIdx] = beginValue;
+    for (var indexCounter = 0; indexCounter < arrayLength; indexCounter++, rangeStart += rangeStep) {
+      generatedRange[indexCounter] = rangeStart;
     }
-    return generatedSequence;
+    return generatedRange;
   }
 
-  // Retrieves the first 'count' elements from an array.
-  getHeadElements(sourceArray, elementCount) {
-    if (sourceArray == null || sourceArray.length < 1) return elementCount == null ? void 0 : [];
-    if (elementCount == null) return sourceArray[0];
-    return this.getInitialElements(sourceArray, sourceArray.length - elementCount);
-  };
-
-  // Gets all elements except the last 'count' from an array.
-  getInitialElements(sourceArray, elementCount) { return sourceArray.slice.call(sourceArray, 0, Math.max(0, sourceArray.length - (elementCount == null ? 1 : elementCount))); }
-
-  // Retrieves all elements from an array starting from the 'count'-th element.
-  getTailElements(collection, elementCount) { return collection.slice.call(collection, elementCount == null ? 1 : elementCount); }
-
-  // Retrieves the last 'count' elements from an array.
-  getEndElements(sourceArray, elementCount) {
-    if (elementCount == null) return sourceArray[sourceArray.length - 1];
-    return this.getTailElements(sourceArray, Math.max(0, sourceArray.length - elementCount));
+  // Retrieves the first 'count' elements from an array
+  getFirstElements(inputArray, count) {
+    if (inputArray == null || inputArray.length < 1) return count == null ? void 0 : [];
+    if (count == null) return inputArray[0];
+    return this.getInitialElements(inputArray, inputArray.length - count);
   }
 
-  // Performs a binary search to find the insertion index for a key in a sorted array.
-  locateIndex(sourceArray, searchKey, keyExtractor) {
-    const extractValue = (dataObject) => (typeof dataObject === 'object') ? dataObject[keyExtractor] : dataObject;
-    const targetValue = extractValue(searchKey);
-    let lowerBound = 0, upperBound = sourceArray.length;
+  // Retrieves all elements except the last 'count' elements from an array
+  getInitialElements(inputArray, count) { return inputArray.slice.call(inputArray, 0, Math.max(0, inputArray.length - (count == null ? 1 : count))); }
+
+  // Retrieves all elements except the first 'count' elements from an array
+  getTailElements(inputArray, count) { return inputArray.slice.call(inputArray, count == null ? 1 : count); }
+
+  // Retrieves the last 'count' elements from an array
+  getLastElements(inputArray, count) {
+    if (count == null) return inputArray[inputArray.length - 1];
+    return this.getTailElements(inputArray, Math.max(0, inputArray.length - count));
+  }
+
+  // Performs a binary search on a sorted array
+  performBinarySearch(inputArray, searchKey, iteratorFunction) {
+    const valueExtractor = (currentObject) => (typeof currentObject === 'object') ? currentObject[iteratorFunction] : currentObject;
+    const targetValue = valueExtractor(searchKey);
+    let lowerBound = 0, upperBound = inputArray.length;
     while (lowerBound < upperBound) {
-      let middlePoint = Math.floor((lowerBound + upperBound) / 2);
-      if (extractValue(sourceArray[middlePoint]) < targetValue) lowerBound = middlePoint + 1; else upperBound = middlePoint;
+      let middleIndex = Math.floor((lowerBound + upperBound) / 2);
+      if (valueExtractor(inputArray[middleIndex]) < targetValue) lowerBound = middleIndex + 1; else upperBound = middleIndex;
     }
     return lowerBound;
-  };
+  }
 }
-const utilities = new UtilityBelt();
+const _util = new UtilityFunctions(); // Global instance of utility functions
 
-/* An implementation of a binary max-priority queue */
-class PriorityQueue {
-  // Initializes an empty priority queue.
+/* Max-Heap implementation using a binary tree structure */
+class MaxPriorityQueue { // Renamed BinaryHeap to MaxPriorityQueue
   constructor() {
-    this.internalStorage = [];
-    this.currentSize = 0;
+    this._heapElements = []; // Renamed _data to _heapElements
+    this._elementCount = 0; // Renamed _length to _elementCount
   }
 
-  /* Adds a new element with its priority and value */
-  insertElement(itemPriority, itemValue) {
-    const storage = this.internalStorage;
-    storage.push({ pri: itemPriority, val: itemValue }); // Store as an object with priority and value.
-    let insertionIndex = this.currentSize;
-    let parentIndex = (insertionIndex - 1) >> 1; // Calculate parent index.
-
-    // Perform up-heap operation to maintain heap property.
-    while (parentIndex >= 0 && storage[parentIndex].pri < storage[insertionIndex].pri) {
-      const tempElement = storage[insertionIndex];
-      storage[insertionIndex] = storage[parentIndex];
-      storage[parentIndex] = tempElement;
-      insertionIndex = parentIndex;
-      parentIndex = (insertionIndex - 1) >> 1;
+  /* Adds an element to the priority queue based on its priority and value */
+  insertElement(elementPriority, elementValue) { // Renamed push to insertElement
+    const heapData = this._heapElements;
+    heapData.push({ priorityVal: elementPriority, actualVal: elementValue }); // Renamed p to priorityVal, v to actualVal
+    let currentIndex = this._elementCount;
+    let parentIndex = (currentIndex - 1) >> 1; // Calculate parent index
+    // Up-heap operation: move element up to maintain heap property
+    while (parentIndex >= 0 && heapData[parentIndex].priorityVal < heapData[currentIndex].priorityVal) {
+      const tempHolder = heapData[currentIndex]; heapData[currentIndex] = heapData[parentIndex]; heapData[parentIndex] = tempHolder;
+      currentIndex = parentIndex;
+      parentIndex = (currentIndex - 1) >> 1;
     }
-    ++this.currentSize;
+    ++this._elementCount;
   }
 
-  /* Removes and returns the element with the highest priority */
-  extractMax() {
+  /* Extracts and returns the element with the highest priority */
+  extractMax() { // Renamed pop to extractMax
     if (this.size <= 0) {
       return null;
     }
-    const effectiveSize = this.currentSize - 1;
-    const storage = this.internalStorage;
-    const highestValue = this.peekMax; // Get the value of the root element.
+    const currentLength = this._elementCount - 1;
+    const heapData = this._heapElements;
+    const _maxValue = this.peekMax; // Store the value of the element to be returned
+    heapData[0] = heapData[currentLength]; // Move the last element to the root
+    heapData.pop(); // Remove the last element (which was moved to root)
+    let currentIndex = 0;
+    let leftChildIndex = (currentIndex << 1) + 1;
+    let rightChildIndex = (currentIndex << 1) + 2;
+    // Down-heap operation: move element down to maintain heap property
+    let parentPriority, child1Priority, child2Priority;
+    while (leftChildIndex < currentLength) {
+      if (rightChildIndex < currentLength) {
+        // Both children exist
+        parentPriority = heapData[currentIndex].priorityVal;
+        child1Priority = heapData[leftChildIndex].priorityVal;
+        child2Priority = heapData[rightChildIndex].priorityVal;
 
-    storage[0] = storage[effectiveSize]; // Move the last element to the root.
-    storage.pop(); // Remove the last element.
-
-    let currentIdx = 0;
-    let leftChildIdx = (currentIdx << 1) + 1;
-    let rightChildIdx = (currentIdx << 1) + 2;
-
-    // Perform down-heap operation to restore heap property.
-    let rootPriority, leftPriority, rightPriority;
-    while (leftChildIdx < effectiveSize) {
-      if (rightChildIdx < effectiveSize) {
-        // Both children exist.
-        rootPriority = storage[currentIdx].pri;
-        leftPriority = storage[leftChildIdx].pri;
-        rightPriority = storage[rightChildIdx].pri;
-
-        if ((leftPriority < rightPriority) && (rootPriority < rightPriority)) {
-          // Right child is larger and larger than parent, swap with right child.
-          const temporary = storage[currentIdx];
-          storage[currentIdx] = storage[rightChildIdx];
-          storage[rightChildIdx] = temporary;
-          currentIdx = rightChildIdx;
-        } else if (rootPriority < leftPriority) {
-          // Left child is larger than parent, swap with left child.
-          const temporary = storage[currentIdx];
-          storage[currentIdx] = storage[leftChildIdx];
-          storage[leftChildIdx] = temporary;
-          currentIdx = leftChildIdx;
-        } else {
-          break; // Heap property satisfied.
+        // Original logic: If right child is strictly greater than left, AND right child is strictly greater than parent
+        if ((child1Priority < child2Priority) && (parentPriority < child2Priority)) {
+          // Swap parent with right child
+          const tempHolder = heapData[currentIndex]; heapData[currentIndex] = heapData[rightChildIndex]; heapData[rightChildIndex] = tempHolder;
+          currentIndex = rightChildIndex;
         }
-        leftChildIdx = (currentIdx << 1) + 1;
-        rightChildIdx = (currentIdx << 1) + 2;
-      } else {
-        // Only left child exists.
-        rootPriority = storage[currentIdx].pri;
-        leftPriority = storage[leftChildIdx].pri;
-        if (rootPriority < leftPriority) {
-          // Left child is larger, swap.
-          const temporary = storage[currentIdx];
-          storage[currentIdx] = storage[leftChildIdx];
-          storage[leftChildIdx] = temporary;
+        else {
+          // Otherwise (if right child is not strictly greater than left, OR right child is not strictly greater than parent),
+          // the original code always swaps with the left child.
+          const tempHolder = heapData[currentIndex]; heapData[currentIndex] = heapData[leftChildIndex]; heapData[leftChildIndex] = tempHolder;
+          currentIndex = leftChildIndex;
         }
-        break; // End of heap or heap property satisfied.
+        leftChildIndex = (currentIndex << 1) + 1;
+        rightChildIndex = (currentIndex << 1) + 2;
+      }
+      else {
+        // Only left child exists (right child does not)
+        parentPriority = heapData[currentIndex].priorityVal;
+        child1Priority = heapData[leftChildIndex].priorityVal;
+        if (parentPriority < child1Priority) {
+          // Swap parent with left child if parent is smaller
+          const tempHolder = heapData[currentIndex]; heapData[currentIndex] = heapData[leftChildIndex]; heapData[leftChildIndex] = tempHolder;
+        }
+        break; // Heap property satisfied or no more children to compare
       }
     }
 
-    this.currentSize = effectiveSize;
-    return highestValue;
+    this._elementCount = currentLength; // Update element count
+    return _maxValue;
   }
 
-  /* Retrieves the value of the element with the highest priority without removing it. */
-  get peekMax() {
-    // Returns the value part of the object at the root.
-    return this.internalStorage[0].val;
+  /* Returns the element with the highest priority without removing it */
+  get peekMax() { // Renamed top to peekMax
+    return this._heapElements[0].actualVal;
   }
 
-  /* Returns the number of elements currently in the queue. */
-  get size() {
-    return this.currentSize;
+  /* Returns the number of elements currently in the priority queue */
+  get size() { // Renamed length to size
+    return this._elementCount;
   }
 }
 
-const dataFetcher = new DataSource();
-(new Processor()).execute();
+const dataInput = new DataReader(); // Global instance of DataReader
+(new Processor()).execute(); // Create and execute the main processor

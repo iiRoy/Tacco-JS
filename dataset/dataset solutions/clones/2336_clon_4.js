@@ -1,25 +1,23 @@
-const quantifyEndZeros = (numeral) => {
-    if (numeral === 0 || numeral % 10 !== 0) {
-        return 0;
-    }
-    return 1 + quantifyEndZeros(numeral / 10);
-};
+function countTrailingZeros(numVal) {
+    const strVal = String(numVal);
+    const reversedStr = strVal.split('').reverse().join('');
+    const matchResult = reversedStr.match(/^0*/);
+    return matchResult ? matchResult[0].length : 0;
+}
 
-const formDecreasingSequence = (startVal, collection = []) => {
-    if (startVal <= 0) {
-        return collection;
-    }
-    collection.push(startVal);
-    return formDecreasingSequence(startVal - 2, collection);
-};
+function processInput(rawInput) {
+    const startNum = parseInt(rawInput);
+    
+    const numberSequence = Array.from(
+        { length: Math.floor(startNum / 2) + 1 }, 
+        (_, idx) => startNum - idx * 2
+    ).filter(val => val > 0);
 
-const processNumericalInput = (rawText) => {
-    const initialNumericValue = Number(rawText);
-    const numericalSeries = formDecreasingSequence(initialNumericValue);
-    const sumOfZeroCounts = numericalSeries.reduce((accumulatedSum, currentElement) => {
-        return accumulatedSum + quantifyEndZeros(currentElement);
+    const totalZeroCount = numberSequence.reduce((accumulator, currentNum) => {
+        return accumulator + countTrailingZeros(currentNum);
     }, 0);
-    console.info(sumOfZeroCounts);
-};
 
-processNumericalInput(require("node:fs").readFileSync("/dev/stdin", "utf8"));
+    console.log(totalZeroCount);
+}
+
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

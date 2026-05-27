@@ -1,45 +1,30 @@
 'use strict';
-((inputProvider) => {
-    const dataStream = inputProvider.call(null, '/dev/stdin', 'utf8');
+(function() {
+    const { readFileSync } = require('node:fs');
+    const rawData = readFileSync('/dev/stdin', 'utf8');
 
-    const parseInputData = (textualData) => {
-        const primaryLine = textualData.split('\n')[0];
-        const numericLiterals = primaryLine.split(' ');
-        const parsedNumerics = numericLiterals.map(parseFloat);
-        return parsedNumerics;
-    };
+    const [valA, valB, valC] = rawData
+        .split('\n')[0]
+        .split(' ')
+        .map(Number);
 
-    const processNumericSet = (numberSet) => {
-        const firstVal = numberSet[0];
-        const secondVal = numberSet[1];
-        const thirdVal = numberSet[2];
+    const numericCollection = [valA, valB, valC];
+    const smallestNum = numericCollection.reduce((acc, current) => Math.min(acc, current), Infinity);
+    const largestNum = numericCollection.reduce((acc, current) => Math.max(acc, current), -Infinity);
 
-        const minVal = (firstVal < secondVal)
-            ? ((firstVal < thirdVal) ? firstVal : thirdVal)
-            : ((secondVal < thirdVal) ? secondVal : thirdVal);
+    let middleNum = undefined;
 
-        const maxVal = (firstVal > secondVal)
-            ? ((firstVal > thirdVal) ? firstVal : thirdVal)
-            : ((secondVal > thirdVal) ? secondVal : thirdVal);
+    const conditionActionMap = [
+        { test: (x, y, z) => x < y, result: (x, y, z) => x },
+        { test: (x, y, z) => y < z, result: (x, y, z) => y },
+        { test: (x, y, z) => x <= z, result: (x, y, z) => z }
+    ];
 
-        let interimValue;
+    conditionActionMap.forEach(operation => {
+        if (operation.test(valA, valB, valC)) {
+            middleNum = operation.result(valA, valB, valC);
+        }
+    });
 
-        const conditionallyAssign = (conditionExpression, assignedValue) => {
-            if (conditionExpression) {
-                interimValue = assignedValue;
-            }
-        };
-
-        conditionallyAssign(firstVal < secondVal, firstVal);
-        conditionallyAssign(secondVal < thirdVal, secondVal);
-        conditionallyAssign(firstVal <= thirdVal, thirdVal);
-
-        return [minVal, interimValue, maxVal];
-    };
-
-    const initialNumbers = parseInputData(dataStream);
-    const finalArrangement = processNumericSet(initialNumbers);
-
-    console.log(finalArrangement[0], finalArrangement[1], finalArrangement[2]);
-
-})(require('fs').readFileSync);
+    console.log(smallestNum, middleNum, largestNum);
+})();

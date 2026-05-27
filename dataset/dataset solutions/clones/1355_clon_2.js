@@ -1,11 +1,17 @@
-function ProcessInput ( rawData )
-{
-    numericValues  =  rawData . split(  " "  ) . map (  function( elementString )
-    {
-        return   Number . parseInt(  elementString  ) ;
-    }  ) ;
+function ProcessInputData(rawText) {
+    // This function processes the incoming text data.
+    let numberArray = rawText.split(" ").map(function(itemStr) {
+        // Convert each string part into an integer.
+        return parseInt(itemStr, 10);
+    });
 
-    console . log(  numericValues[ 0 ]  *  numericValues[ 1 ]  +  " "  +  (  numericValues[ 0 ]  +  numericValues[ 1 ]  )  *  2  ) ;
+    // Calculate the product of the first two numbers and twice their sum.
+    let productResult = numberArray[0] * numberArray[1];
+    let sumDoubledResult = (numberArray[0] + numberArray[1]) * 2;
+
+    // Output the results formatted as a string.
+    console.log(productResult + " " + sumDoubledResult);
 }
 
-ProcessInput(  require(  "fs"  ) . readFileSync(  "/dev/stdin"  )  ) ;
+// Read data from standard input and pass it to the processing function.
+ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

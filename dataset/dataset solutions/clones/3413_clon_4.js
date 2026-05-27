@@ -1,35 +1,24 @@
-const calculateOptimalGap = (sourcePayload) => {
-  const contentSegments = sourcePayload.trim().split('\n');
-  const [initialMetadata, ...numericalEntries] = contentSegments;
+'use strict';
 
-  const windowDimension = parseInt(initialMetadata.split(' ')[1], 10);
-  const orderedNumericSequence = numericalEntries.map(Number).sort((first, second) => first - second);
+const processInput = (rawData) => {
+    const lineSegments = rawData.split('\n');
 
-  const totalElementsAvailable = orderedNumericSequence.length;
+    const initialConfig = lineSegments[0].split(' ');
+    const windowSize = Number(initialConfig[1]);
 
-  if (totalElementsAvailable < windowDimension) {
-    // Mimics the original's behavior when no valid window can be formed,
-    // where the initial 'ans' value of 9999 is printed.
-    return 9999;
-  }
+    const numericValues = lineSegments.slice(1)
+                                      .map(entry => Number(entry))
+                                      .sort((valA, valB) => valA - valB);
 
-  const potentialStartingPoints = Array.from({ length: totalElementsAvailable - windowDimension + 1 }, (_, currentIdx) => currentIdx);
+    const rangeCalculations = Array.from({ length: numericValues.length - windowSize + 1 }, (_, startIndex) => {
+        const currentWindowEnd = numericValues[startIndex + windowSize - 1];
+        const currentWindowStart = numericValues[startIndex];
+        return currentWindowEnd - currentWindowStart;
+    });
 
-  const spanValues = potentialStartingPoints.map(startPoint => {
-    const floorValue = orderedNumericSequence[startPoint];
-    const ceilingValue = orderedNumericSequence[startPoint + windowDimension - 1];
-    return ceilingValue - floorValue;
-  });
+    const finalMinimum = rangeCalculations.reduce((accumulator, currentRange) => Math.min(accumulator, currentRange), Infinity);
 
-  const leastDifference = spanValues.reduce((accumulatedMinimum, currentDifference) => Math.min(accumulatedMinimum, currentDifference), Number.MAX_VALUE);
-
-  return leastDifference;
+    console.log(finalMinimum);
 };
 
-const executeProcessing = () => {
-  const fileData = require('fs').readFileSync('/dev/stdin', 'utf8');
-  const finalOutcome = calculateOptimalGap(fileData);
-  console.log(finalOutcome);
-};
-
-executeProcessing();
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

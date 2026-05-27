@@ -1,38 +1,33 @@
-// This function orchestrates the primary logic of the application.
-function ProcessInput(receivedText) {
-    // Split the incoming text by spaces into an array of string tokens.
-    let  segments = receivedText.split(" ");
+// This function processes the raw input data to calculate a specific remainder.
+function ProcessInput(rawData) {
+    // Split the incoming string by spaces into an array of string segments.
+    let segments = rawData.split(" ");
 
-    // Parse the first segment as an integer to determine the iteration limit.
-    const  limitCount = parseInt(segments[0]);
+    // Parse integer values from the obtained segments.
+    const sequenceLength = parseInt(segments[0]); // Corresponds to 'l' in the original.
+    const initialValue = parseInt(segments[1]);  // Corresponds to 'a' in the original.
+    const stepIncrement = parseInt(segments[2]); // Corresponds to 'b' in the original.
+    const divisorModulo = parseInt(segments[3]); // Corresponds to 'm' in the original.
 
-    // Parse the second segment as an integer for the starting value of the series.
-    const initialTerm = parseInt(segments[1]);
+    // Initialize an empty string that will accumulate the generated numbers.
+    let concatenatedString = "";
 
-    // Parse the third segment as an integer for the common difference or step factor.
-    const incrementFactor = parseInt(segments[2]);
-
-    // Parse the fourth segment as an integer to be used as the modulus.
-    const modulusVal = parseInt(segments[3]);
-
-    // Initialize an empty string to accumulate calculated values.
-    let accumulatedString = "";
-
-    // Iterate 'limitCount' times to generate a sequence.
-    for (let loopIndex = 0; loopIndex < limitCount; loopIndex++) {
-        // Calculate the current term in the arithmetic progression.
-        let calculatedValue = initialTerm + (incrementFactor * loopIndex);
-        // Append the string representation of the current term to the accumulator.
-        accumulatedString = accumulatedString + "" + calculatedValue;
+    // Iterate a specific number of times, determined by 'sequenceLength'.
+    for (let currentIdx = 0; currentIdx < sequenceLength; currentIdx++) {
+        // Calculate the current number in the arithmetic progression.
+        const calculatedNumber = initialValue + (stepIncrement * currentIdx);
+        // Append the string representation of the calculated number to the accumulator.
+        concatenatedString = concatenatedString + "" + calculatedNumber;
     }
 
-    // Convert the accumulated string to an integer and compute its remainder
-    // when divided by the specified modulus value.
-    let finalRemainder = parseInt(accumulatedString) % modulusVal;
+    // Convert the final concatenated string to an integer and compute its remainder
+    // when divided by 'divisorModulo'.
+    const finalResultRemainder = parseInt(concatenatedString) % divisorModulo;
 
-    // Output the final computed remainder to the console.
-    console.log(finalRemainder);
+    // Print the computed remainder to the standard output.
+    console.log(finalResultRemainder);
 }
 
-// Invoke the main processing function with data read from standard input.
+// Read the entire content of standard input as a UTF-8 string
+// and pass it to the main processing function.
 ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

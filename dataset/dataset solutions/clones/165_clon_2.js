@@ -1,155 +1,146 @@
-const fileSys = require('node:fs');
-const contentSize = fileSys.fstatSync(process.stdin.fd).size;
-const inputBuffer = new Buffer(contentSize);
-const octetsProcessed = fileSys.readSync(process.stdin.fd, inputBuffer, 0, contentSize, 0);
-const dataLines = inputBuffer.toString('utf8', 0, octetsProcessed).trim().split('\n');
+var fileSystem = require('fs');
 
-processCalculations();
+// Read all standard input at once
+var dataSize = fileSystem.fstatSync(process.stdin.fd).size;
+var dataBuffer = new Buffer(dataSize);
+var readBytesCount = fileSystem.readSync(process.stdin.fd, dataBuffer, 0, dataSize, 0);
+var inputLines = dataBuffer.toString('utf8', 0, readBytesCount).trim().split('\n');
 
-// Main routine to solve the puzzle
-function processCalculations() {
-  // Define the available arithmetic symbols
-  const arithmeticOperators = ['+', '-', '*'];
-  let currentLineData; // Holds the parsed numbers for the current line
+// Begin program execution
+executeLogic();
 
-  // Iterate through each line of input until the termination condition is met
-  for (let lineIndex = 0; (currentLineData = dataLines[lineIndex]) !== '0 0 0 0'; lineIndex++) {
+/**
+ * Main function to process input lines and find solutions.
+ */
+function executeLogic() {
+  // Define the available arithmetic operators
+  var operatorSymbols = ['+', '-', '*'];
+  var currentLine;
 
-    // Parse the current line into an array of numbers
-    currentLineData = new Uint8Array(currentLineData.split(' ').map(Number));
-    let solutionDiscovered = false; // Flag to indicate if a solution is found for the current line
+  // Loop through each input line until '0 0 0 0' is encountered
+  for (var lineIndex = 0; (currentLine = inputLines[lineIndex]) !== '0 0 0 0'; lineIndex++) {
+    // Parse the numbers from the current line into an Int8Array
+    currentLine = new Int8Array(currentLine.split(' ').map(Number));
+    var solutionFound = false; // Flag to indicate if a solution was found for the current line
 
-    // Array to keep track of already checked number permutations
-    // Using Int32Array as a boolean-like flag for up to 10000 entries
-    const visitedPermutations = new Int32Array(10000);
+    // Keep track of unique digit permutations already processed to avoid redundant calculations
+    var visitedCombinations = new Int8Array(10000);
 
-    // Begin iterating through all possible permutations of the four input numbers
-    OUTER_PERMUTATION_LOOP:
-    for (let idxOne = 0; idxOne < 4; idxOne++) {
-      // Cache the value to reduce repeated array lookups
-      const digitVal1 = currentLineData[idxOne];
+    // Label for breaking out of deeply nested loops once a solution is found
+    SolutionSearch:
+    // Iterate through all permutations of the four input digits (a, b, c, d)
+    for (var idxA = 0; idxA < 4; idxA++) {
+      var valA = currentLine[idxA]; // Cache value for performance
+      for (var idxB = 0; idxB < 4; idxB++) {
+        if (idxA === idxB) continue; // Digits must be unique
+        var valB = currentLine[idxB];
+        for (var idxC = 0; idxC < 4; idxC++) {
+          if (idxA === idxC || idxB === idxC) continue; // Digits must be unique
+          var valC = currentLine[idxC];
+          for (var idxD = 0; idxD < 4; idxD++) {
+            if (idxA === idxD || idxB === idxD || idxC === idxD) continue; // Digits must be unique
+            var valD = currentLine[idxD];
 
-      for (let idxTwo = 0; idxTwo < 4; idxTwo++) {
-        if (idxOne === idxTwo) continue; // Ensure unique indices for permutation
-        const digitVal2 = currentLineData[idxTwo];
-
-        for (let idxThree = 0; idxThree < 4; idxThree++) {
-          if (idxOne === idxThree || idxTwo === idxThree) continue; // Ensure unique indices
-          const digitVal3 = currentLineData[idxThree];
-
-          for (let idxFour = 0; idxFour < 4; idxFour++) {
-            if (idxOne === idxFour || idxTwo === idxFour || idxThree === idxFour) continue; // Ensure unique indices
-            const digitVal4 = currentLineData[idxFour];
-
-            // Create a unique key for this number permutation (e.g., 1234 for digits 1,2,3,4)
-            const permutationKey = digitVal1 * 1000 + digitVal2 * 100 + digitVal3 * 10 + digitVal4;
-
-            // If this permutation has already been checked, skip it
-            if (visitedPermutations[permutationKey]) {
-              continue;
+            // Create a unique identifier for this digit permutation
+            var numericTarget = valA * 1000 + valB * 100 + valC * 10 + valD;
+            if (visitedCombinations[numericTarget]) {
+              continue; // Skip if this permutation has already been processed
             }
-            // Mark this permutation as visited
-            visitedPermutations[permutationKey]++;
+            visitedCombinations[numericTarget]++; // Mark as visited
 
-            // Iterate through all combinations of the three operators
-            for (let operatorIdxA = 0; operatorIdxA < 3; operatorIdxA++) {
-              const currentOpA = arithmeticOperators[operatorIdxA];
+            // Iterate through all combinations of three operators
+            for (var opIdx1 = 0; opIdx1 < 3; opIdx1++) {
+              var opSym1 = operatorSymbols[opIdx1];
+              for (var opIdx2 = 0; opIdx2 < 3; opIdx2++) {
+                var opSym2 = operatorSymbols[opIdx2];
+                for (var opIdx3 = 0; opIdx3 < 3; opIdx3++) {
+                  var opSym3 = operatorSymbols[opIdx3];
 
-              for (let operatorIdxB = 0; operatorIdxB < 3; operatorIdxB++) {
-                const currentOpB = arithmeticOperators[operatorIdxB];
+                  // Optimization: If all operators are subtraction, it's unlikely to reach 10 with positive numbers.
+                  // This specific optimization from the original code is preserved.
+                  if (opIdx1 === 1 && opIdx2 === 1 && opIdx3 === 1) continue;
 
-                for (let operatorIdxC = 0; operatorIdxC < 3; operatorIdxC++) {
-                  const currentOpC = arithmeticOperators[operatorIdxC];
+                  // Iterate through different expression patterns (operator precedence/grouping)
+                  for (var expressionPattern = 0; expressionPattern < 3; expressionPattern++) {
+                    var rpnExpression = []; // Array to hold the Reverse Polish Notation (RPN) expression
 
-                  // Skip a specific combination of operators (all subtractions)
-                  // The original code had `op1 == 1 && op2 == 1 && op3 == 1` where 1 is the index of '-'
-                  if (operatorIdxA === 1 && operatorIdxB === 1 && operatorIdxC === 1) {
-                    continue;
-                  }
-
-                  // Iterate through different expression structures (RPN patterns)
-                  for (let expressionStructure = 0; expressionStructure < 3; expressionStructure++) {
-                    let reversePolishNotation = []; // Array to store the expression in RPN
-
-                    switch (expressionStructure) {
+                    // Construct the RPN expression based on the current pattern
+                    switch (expressionPattern) {
                       case 0:
-                        // Pattern A: (((num1 opA num2) opB num3) opC num4)
-                        reversePolishNotation = [digitVal1, digitVal2, currentOpA, digitVal3, currentOpB, digitVal4, currentOpC];
+                        // Pattern 1: (((a op1 b) op2 c) op3 d)
+                        rpnExpression = [valA, valB, opSym1, valC, opSym2, valD, opSym3];
                         break;
                       case 1:
-                        // Pattern B: ((num1 opB (num2 opA num3)) opC num4)
-                        reversePolishNotation = [digitVal1, digitVal2, digitVal3, currentOpA, currentOpB, digitVal4, currentOpC];
+                        // Pattern 2: ((a op2 (b op1 c)) op3 d)
+                        rpnExpression = [valA, valB, valC, opSym1, opSym2, valD, opSym3];
                         break;
                       case 2:
-                        // Pattern C: ((num1 opA num2) opC (num3 opB num4))
-                        reversePolishNotation = [digitVal1, digitVal2, currentOpA, digitVal3, digitVal4, currentOpB, currentOpC];
+                        // Pattern 3: ((c op1 d) op3 (a op2 b)) - Note: This pattern seems to be a typo in the original comment,
+                        // as the RPN `[valA, valB, opSym1, valC, valD, opSym2, opSym3]` corresponds to `( (a op1 b) op3 (c op2 d) )`
+                        // The RPN itself is preserved as per Type II rules.
+                        rpnExpression = [valA, valB, opSym1, valC, valD, opSym2, opSym3];
                         break;
                     }
 
-                    // Evaluate the Reverse Polish Notation expression
-                    const evaluationPile = [];
-                    for (let elementIndex = 0; elementIndex < 7; elementIndex++) {
-                      const currentElement = reversePolishNotation[elementIndex];
-
+                    var evaluationStack = []; // Stack for evaluating the RPN expression
+                    for (var elementIndex = 0; elementIndex < 7; elementIndex++) {
+                      var currentElement = rpnExpression[elementIndex];
                       switch (currentElement) {
                         case '+':
-                          // Addition is commutative, order of pops doesn't strictly matter
-                          evaluationPile.push(evaluationPile.pop() + evaluationPile.pop());
+                          evaluationStack.push(evaluationStack.pop() + evaluationStack.pop());
                           break;
                         case '-':
-                          // Subtraction order matters: (second_popped - first_popped)
-                          const operandB = evaluationPile.pop();
-                          const operandA = evaluationPile.pop();
-                          evaluationPile.push(operandA - operandB);
+                          // Note: The original code's subtraction order `(-stack.pop() + stack.pop())`
+                          // effectively calculates `right - left` if `pop()` gets `right` then `left`.
+                          // For standard RPN, it should be `left - right`.
+                          // However, to preserve exact behavior, the original expression is kept.
+                          // If stack has [L, R], pop() gets R, then pop() gets L. So -R + L = L - R. This is correct.
+                          evaluationStack.push(-evaluationStack.pop() + evaluationStack.pop());
                           break;
                         case '*':
-                          // Multiplication is commutative
-                          evaluationPile.push(evaluationPile.pop() * evaluationPile.pop());
+                          evaluationStack.push(evaluationStack.pop() * evaluationStack.pop());
                           break;
                         default:
-                          // Push number onto the stack
-                          evaluationPile.push(currentElement);
+                          evaluationStack.push(currentElement); // Push numbers onto the stack
                           break;
                       }
                     }
 
                     // Check if the final result of the RPN evaluation is 10
-                    if (evaluationPile.pop() === 10) {
-                      solutionDiscovered = true; // Mark that a solution has been found
+                    if (evaluationStack.pop() === 10) {
+                      solutionFound = true; // A solution has been found
 
-                      // Reconstruct the infix expression for printing
-                      const formattedExpression = [];
-                      let leftTerm, rightTerm;
+                      var infixResult = []; // Array to reconstruct the infix expression string
+                      var leftOperand, rightOperand;
 
-                      for (let tokenIndex = 0; tokenIndex < 7; tokenIndex++) {
-                        const expressionToken = reversePolishNotation[tokenIndex];
-
-                        if (expressionToken === '+' || expressionToken === '-' || expressionToken === '*') {
-                          rightTerm = formattedExpression.pop();
-                          leftTerm = formattedExpression.pop();
-                          formattedExpression.push(`(${leftTerm} ${expressionToken} ${rightTerm})`);
+                      // Reconstruct the infix expression from the RPN
+                      for (var elementIndex = 0; elementIndex < 7; elementIndex++) {
+                        var currentElement = rpnExpression[elementIndex];
+                        if (currentElement === '+' || currentElement === '-' || currentElement === '*') {
+                          rightOperand = infixResult.pop();
+                          leftOperand = infixResult.pop();
+                          infixResult.push("(" + leftOperand + " " + currentElement + " " + rightOperand + ")");
                         } else {
-                          formattedExpression.push(expressionToken);
+                          infixResult.push(currentElement);
                         }
                       }
 
-                      // Output the successfully found expression
-                      console.log(formattedExpression.pop());
-                      // Exit all outer loops as a solution for this line is found
-                      break OUTER_PERMUTATION_LOOP;
-                    } // End if (evaluationPile.pop() === 10)
-                  } // End for (expressionStructure)
-                } // End for (operatorIdxC)
-              } // End for (operatorIdxB)
-            } // End for (operatorIdxA)
-          } // End for (idxFour)
-        } // End for (idxThree)
-      } // End for (idxTwo)
-    } // End for (idxOne)
+                      // Output the found expression and break all loops
+                      console.log(infixResult.pop());
+                      break SolutionSearch; // Exit all permutation loops
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
 
     // If no solution was found for the current input line, print 0
-    if (!solutionDiscovered) {
+    if (!solutionFound) {
       console.log(0);
     }
-  } // End for (lineIndex)
-} // End function processCalculations
+  }
+}

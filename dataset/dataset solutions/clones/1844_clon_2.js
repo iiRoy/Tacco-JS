@@ -1,86 +1,101 @@
-function ProcessGridData(rawData) {
-  // Process the incoming raw text data string
-  rawData = rawData.trim().split("\n");
+function ProcessInput(rawData) {
+  // Process the raw input string: trim whitespace and split into lines.
+  let processedLines = rawData.trim().split("\n");
 
-  var gridDimension = parseInt(rawData[0], 10);
-  var selectionOrder = rawData[1] . split(" ") . map((numStr) => parseInt(numStr, 10));
+  // Parse the grid size from the first line.
+  let gridSize = parseInt(processedLines[0], 10);
 
-  // Initialize the grid structure and a counter for undesirable placements
-  var gridState = new Array(gridDimension);
-  var dislikedTotal = 0;
+  // Parse the sequence of seat numbers from the second line.
+  // Each number represents a seat being removed in that order.
+  let seatRemovalOrder = processedLines[1].split(" ").map((strValue) => parseInt(strValue, 10));
 
-  for (var loopVarX = 0; loopVarX < gridDimension; loopVarX++)
-  {
-    gridState[loopVarX] = new Array(gridDimension);
+  // Initialize a 2D array (grid) to represent the seating arrangement.
+  // Each cell will initially hold its seat number, or 0 if empty.
+  let seatingArrangement = new Array(gridSize);
+  for (let currentGridRow = 0; currentGridRow < gridSize; currentGridRow++) {
+    seatingArrangement[currentGridRow] = new Array(gridSize);
   }
 
-  var positionMap = {}; // Maps seat ID to its 1-based (row, col) coordinates
+  // A counter for the total "dislike" value accumulated.
+  let totalDislikeValue = 0;
 
-  // Populate the grid with unique cell IDs and store their 1-based coordinates in the map
-  for (var rowIterator = 1; rowIterator <= gridDimension; rowIterator++) {
-    for (var colIterator = 1; colIterator <= gridDimension; colIterator++) {
-      var currentCellId = (rowIterator - 1) * gridDimension + 1 + (colIterator - 1);
-      gridState[rowIterator - 1][colIterator - 1] = currentCellId;
-      positionMap[currentCellId] = [rowIterator, colIterator];
+  // A map to quickly find the 1-based (row, column) coordinates for any given seat number.
+  let seatLocationMap = {};
+
+  // Populate the initial seating arrangement and the coordinate map.
+  // Seat numbers are 1-indexed, while array indices are 0-indexed.
+  for (let rNum = 1; rNum <= gridSize; rNum++) {
+    for (let cNum = 1; cNum <= gridSize; cNum++) {
+      let currentSeatIdentifier = (rNum - 1) * gridSize + 1 + (cNum - 1);
+      seatingArrangement[rNum - 1][cNum - 1] = currentSeatIdentifier;
+      seatLocationMap[currentSeatIdentifier] = [rNum, cNum];
     }
   }
 
-  // Iterate through the grid to simulate seat selections and calculate the total disliked count
-  for (var rowIterator = 1; rowIterator <= gridDimension; rowIterator++)
-  {
-    for (var colIterator = 1; colIterator <= gridDimension; colIterator++)
-    {
-      // Determine the 0-indexed position in the selection order array
-      var sequenceIndex = (rowIterator - 1) * gridDimension + (colIterator - 1);
-      var selectedId = selectionOrder[sequenceIndex]; // Retrieve the specific seat ID for this turn
+  // Iterate through the grid positions, simulating the removal of seats
+  // according to the `seatRemovalOrder` array.
+  for (let rIter = 1; rIter <= gridSize; rIter++) {
+    for (let cIter = 1; cIter <= gridSize; cIter++) {
+      // Calculate the 0-based index in the `seatRemovalOrder` array
+      // corresponding to the current (rIter, cIter) grid position.
+      let orderArrayIndex = (rIter - 1) * gridSize + (cIter - 1);
 
-      // Fetch the 1-based row and column coordinates of the selected seat
-      var selectedRow = positionMap[selectedId][0];
-      var selectedCol = positionMap[selectedId][1];
+      // Get the actual seat number that is being removed at this step.
+      let seatToRemove = seatRemovalOrder[orderArrayIndex];
 
-      // Mark the selected seat as occupied (represented by 0)
-      gridState[selectedRow - 1][selectedCol - 1] = 0;
+      // Retrieve the 1-based row and column of the seat being removed from the map.
+      let removedSeatRow = seatLocationMap[seatToRemove][0];
+      let removedSeatCol = seatLocationMap[seatToRemove][1];
 
-      // Skip calculations for seats located on the grid boundaries
-      if ( (selectedRow == 1) || (selectedCol == 1) || (selectedRow == gridDimension) || (selectedCol == gridDimension) ) {
-        continue;
+      // Mark the seat as empty (0) in the seating grid.
+      seatingArrangement[removedSeatRow - 1][removedSeatCol - 1] = 0;
+
+      // If the removed seat is on the border of the grid, it does not contribute
+      // to the "dislike" value, so we skip further calculations for this seat.
+      if (removedSeatRow === 1 || removedSeatCol === 1 || removedSeatRow === gridSize || removedSeatCol === gridSize) {
+        continue; // Move to the next seat in the iteration.
+      } else {
+        // Initialize counters for non-empty seats in each of the four cardinal directions.
+        let countOccupiedLeft = 0;
+        let countOccupiedRight = 0;
+        let countOccupiedUp = 0;
+        let countOccupiedDown = 0;
+
+        // Count occupied seats to the "left" (decreasing row index).
+        for (let tempRowIndexA = removedSeatRow; tempRowIndexA > 0; tempRowIndexA--) {
+          if (seatingArrangement[tempRowIndexA - 1][removedSeatCol - 1] !== 0) {
+            countOccupiedLeft++;
+          }
+        }
+        // Count occupied seats to the "right" (increasing row index).
+        for (let tempRowIndexB = removedSeatRow; tempRowIndexB <= gridSize; tempRowIndexB++) {
+          if (seatingArrangement[tempRowIndexB - 1][removedSeatCol - 1] !== 0) {
+            countOccupiedRight++;
+          }
+        }
+        // Count occupied seats "up" (decreasing column index).
+        for (let tempColIndexC = removedSeatCol; tempColIndexC > 0; tempColIndexC--) {
+          if (seatingArrangement[removedSeatRow - 1][tempColIndexC - 1] !== 0) {
+            countOccupiedUp++;
+          }
+        }
+        // Count occupied seats "down" (increasing column index).
+        for (let tempColIndexD = removedSeatCol; tempColIndexD <= gridSize; tempColIndexD++) {
+          if (seatingArrangement[removedSeatRow - 1][tempColIndexD - 1] !== 0) {
+            countOccupiedDown++;
+          }
+        }
+
+        // Add the minimum of the four counts to the total dislike value.
+        totalDislikeValue += Math.min(countOccupiedLeft, countOccupiedRight, countOccupiedUp, countOccupiedDown);
       }
-      else
-      {
-        // Initialize counters for available seats in four conceptual directions
-        var countDirectionA = 0; // Corresponds to vertical scan upwards (decreasing row index)
-        var countDirectionB = 0; // Corresponds to vertical scan downwards (increasing row index)
-        var countDirectionC = 0; // Corresponds to horizontal scan leftwards (decreasing column index, using row var for iteration)
-        var countDirectionD = 0; // Corresponds to horizontal scan rightwards (increasing column index, using row var for iteration)
-
-        // Scan along the column upwards from the current position
-        for (var scanVarA = selectedRow; scanVarA > 0; scanVarA--) {
-          if (gridState[scanVarA - 1][selectedCol - 1] != 0) countDirectionA++;
-        }
-
-        // Scan along the column downwards from the current position
-        for (var scanVarB = selectedRow; scanVarB <= gridDimension; scanVarB++) {
-          if (gridState[scanVarB - 1][selectedCol - 1] != 0) countDirectionB++;
-        }
-
-        // Scan along the row leftwards from the current position (original logic uses selectedRow for iterator)
-        for (var scanVarC = selectedRow; scanVarC > 0; scanVarC--) {
-          if (gridState[selectedRow - 1][scanVarC - 1] != 0) countDirectionC++;
-        }
-
-        // Scan along the row rightwards from the current position (original logic uses selectedRow for iterator)
-        for (var scanVarD = selectedRow; scanVarD <= gridDimension; scanVarD++) {
-          if (gridState[selectedRow - 1][scanVarD - 1] != 0) countDirectionD++;
-        }
-      }
-      // Add the minimum count from the four directions to the running total
-      dislikedTotal += Math.min(countDirectionA, countDirectionB, countDirectionC, countDirectionD);
     }
   }
 
-  // Output the final computed disliked count to the console
-  console.log(dislikedTotal);
+  // Output the final calculated total dislike value.
+  console.log(totalDislikeValue);
 }
 
-// Entry point: Read input from standard input and pass it to the processing function
-ProcessGridData(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Read input from standard input using Node.js file system module
+// and pass it to the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

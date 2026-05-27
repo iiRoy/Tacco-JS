@@ -1,36 +1,40 @@
-const fileSystem = require('fs');
-const sourceData = fileSystem.readFileSync('/dev/stdin', 'utf8');
+const sourceData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-const processedSegments = sourceData.trim().split('\n');
+const processInputLines = (rawData) => {
+    const contentLines = rawData.trim().split('\n');
 
-for (const currentUnit of processedSegments) {
-    if (currentUnit === ".") {
-        break;
-    }
+    const checkBalance = (textSegment) => {
+        const structuralElements = textSegment.replace(/[^\[\]\(\)]/g, '');
+        const trackingStack = [];
+        const matchingPairs = {
+            '(': ')',
+            '[': ']'
+        };
+        const openers = new Set(['(', '[']);
+        const closers = new Set([')', ']']);
 
-    let validityFlag = true;
-    const bracketReservoir = [];
-
-    for (const characterToken of currentUnit) {
-        if (characterToken === '(' || characterToken === '[') {
-            bracketReservoir.push(characterToken);
-        } else if (characterToken === ')') {
-            if (bracketReservoir.length === 0 || bracketReservoir.pop() !== '(') {
-                validityFlag = false;
-                break;
-            }
-        } else if (characterToken === ']') {
-            if (bracketReservoir.length === 0 || bracketReservoir.pop() !== '[') {
-                validityFlag = false;
-                break;
+        for (const charUnit of structuralElements) {
+            if (openers.has(charUnit)) {
+                trackingStack.push(charUnit);
+            } else if (closers.has(charUnit)) {
+                if (trackingStack.length === 0) {
+                    return false;
+                }
+                const lastPushed = trackingStack.pop();
+                if (matchingPairs[lastPushed] !== charUnit) {
+                    return false;
+                }
             }
         }
-        // Other characters are implicitly ignored, maintaining functional equivalence.
-    }
+        return trackingStack.length === 0;
+    };
 
-    if (validityFlag && bracketReservoir.length === 0) {
-        process.stdout.write("yes\n");
-    } else {
-        process.stdout.write("no\n");
+    for (const currentEntry of contentLines) {
+        if (currentEntry === '.') {
+            break;
+        }
+        console.log(checkBalance(currentEntry) ? 'yes' : 'no');
     }
-}
+};
+
+processInputLines(sourceData);

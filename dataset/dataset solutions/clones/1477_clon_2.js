@@ -1,16 +1,6 @@
-// This script processes some initial data.
+const textData = "ACL"; // Declaring a constant string for later use
+const inputNum = Number(lines[0]); // Converting the first element of the 'lines' array to a number
 
-// A constant string representing a set of initials or a code.
-const   initialsText  =   "ACL";
-
-// Assume 'rawInputArray' is an array of strings,
-// and we're parsing its first element into a numerical value.
-// Note: The 'Number' constructor is a standard built-in.
-const   processedQuantity  =  Number(  rawInputArray[  0  ]  );
-
-// Output the result of a mathematical operation involving the string.
-// In JavaScript, multiplying a string by a number often results in NaN
-// unless the string can be coerced to a number.
-console.log(  initialsText  *  3  );
-
-// End of script execution.
+// Outputting the result of multiplying the string by the number 3.
+// In JavaScript, multiplying a non-numeric string by a number results in NaN.
+console.log(textData * 3);

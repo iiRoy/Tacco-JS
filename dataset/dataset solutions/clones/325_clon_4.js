@@ -1,63 +1,49 @@
-const formatCell = (valueToAlign, desiredWidth) => {
-    const stringRepresentation = String(valueToAlign);
-    const spacesRequired = desiredWidth - stringRepresentation.length;
-    const paddingCharacters = spacesRequired > 0 ? ' '.repeat(spacesRequired) : '';
-    return (paddingCharacters + stringRepresentation).slice(-desiredWidth);
+const formatStringPad = (inputString, targetWidth) => {
+    const padding = ' '.repeat(targetWidth);
+    return (padding + inputString).slice(-targetWidth);
 };
 
-const calculateSum = (dataCollection) => {
-    let runningTotal = 0;
-    for (const element of dataCollection) {
-        runningTotal += Number(element);
+const formatNumericPad = (inputNumber, targetWidth) => {
+    return formatStringPad(String(inputNumber), targetWidth);
+};
+
+const formatArrayElementsPad = (inputArray, targetWidth) => {
+    return inputArray.map(element => formatNumericPad(element, targetWidth));
+};
+
+const calculateArraySum = (numericArray) => {
+    return numericArray.reduce((accumulator, currentValue) => Number(currentValue) + accumulator, 0);
+};
+
+const fileSystem = require("node:fs");
+let inputDataLines = fileSystem.readFileSync("/dev/stdin", "utf8").trim().split('\n');
+let currentLineIndex = 0;
+
+while (inputDataLines[currentLineIndex] !== '0') {
+    const rowCount = Number(inputDataLines[currentLineIndex++]);
+    const originalDataRows = [];
+    const processedOutputRows = [];
+
+    for (let rowIndex = 0; rowIndex < rowCount; rowIndex++) {
+        const currentInputRowValues = inputDataLines[currentLineIndex++].split(' ');
+        originalDataRows.push(currentInputRowValues);
+        const currentRowSum = calculateArraySum(currentInputRowValues);
+        processedOutputRows.push([...currentInputRowValues, currentRowSum]);
     }
-    return runningTotal;
-};
 
-const processInputContent = (fullTextualInput) => {
-    const inputLinesArray = fullTextualInput.trim().split('\n');
-    let lineCursor = 0;
-    const defaultColumnWidth = 5;
-
-    while (true) {
-        const blockRowCountString = inputLinesArray[lineCursor];
-        if (blockRowCountString === '0') {
-            break;
-        }
-
-        const currentBlockNumberOfRows = Number(blockRowCountString);
-        lineCursor++;
-
-        const numericalMatrix = [];
-        const blockOutputStrings = [];
-
-        for (let i = 0; i < currentBlockNumberOfRows; i++) {
-            const currentRawLine = inputLinesArray[lineCursor + i];
-            const stringParts = currentRawLine.split(' ');
-            const numericValues = stringParts.map(Number);
-            const rowSumResult = calculateSum(numericValues);
-
-            const rowWithAddedSum = [...numericValues, rowSumResult];
-            numericalMatrix.push(rowWithAddedSum);
-
-            const formattedRowString = rowWithAddedSum.map(val => formatCell(val, defaultColumnWidth)).join('');
-            blockOutputStrings.push(formattedRowString);
-        }
-
-        blockOutputStrings.forEach(formattedLine => console.log(formattedLine));
-
-        lineCursor += currentBlockNumberOfRows;
-
-        const columnAggregates = Array(numericalMatrix[0].length).fill(0);
-        numericalMatrix.forEach(row => {
-            row.forEach((valueInCell, columnIndex) => {
-                columnAggregates[columnIndex] += valueInCell;
-            });
-        });
-
-        const finalSummaryOutput = columnAggregates.map(val => formatCell(val, defaultColumnWidth)).join('');
-        console.log(finalSummaryOutput);
+    for (const rowToDisplay of processedOutputRows) {
+        console.log(formatArrayElementsPad(rowToDisplay, 5).join(''));
     }
-};
 
-const rawInputContent = require("fs").readFileSync("/dev/stdin", "utf8");
-processInputContent(rawInputContent);
+    const finalColumnAggregates = [];
+    const numberOfOriginalColumns = originalDataRows[0].length;
+
+    for (let colIdx = 0; colIdx < numberOfOriginalColumns; colIdx++) {
+        const currentColumnTotal = calculateArraySum(originalDataRows.map(row => row[colIdx]));
+        finalColumnAggregates.push(currentColumnTotal);
+    }
+    
+    finalColumnAggregates.push(0);
+
+    console.log(formatArrayElementsPad(finalColumnAggregates, 5).join(''));
+}

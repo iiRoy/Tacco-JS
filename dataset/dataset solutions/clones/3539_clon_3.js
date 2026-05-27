@@ -1,51 +1,34 @@
-const evaluateFulfillmentCapacity = (rawDataString) => {
-    let successfulFulfillmentCount = 0;
+function processCandyDistribution(rawData) {
+    const NEWLINE_DELIMITER = '\n';
+    const SPACE_DELIMITER = ' ';
 
-    const dataLines = rawDataString.trim().split('\n');
+    const inputLines = rawData.split(NEWLINE_DELIMITER);
 
-    if (dataLines.length < 2) {
-        console.error("Input format error: Expecting at least two lines of data.");
-        return;
-    }
+    const firstLineParts = inputLines[0].split(SPACE_DELIMITER);
+    const totalParticipants = Number(firstLineParts[0]);
+    const availableCandy = Number(firstLineParts[1]);
 
-    const parametersLine = dataLines[0].split(' ');
-    const totalIndividualsConsidered = Number(parametersLine[0]);
-    const maximumCandyBudget = Number(parametersLine[1]);
+    let demandValues = inputLines[1].split(SPACE_DELIMITER).map(Number);
 
-    if (isNaN(totalIndividualsConsidered) || isNaN(maximumCandyBudget)) {
-        console.error("Data parsing error: Numeric parameters expected for participants and budget.");
-        return;
-    }
+    demandValues.sort(function(valA, valB) {
+        return valA - valB;
+    });
 
-    let individualDemandQuantities = dataLines[1].split(' ').map(Number);
+    let currentCandySum = 0;
+    let satisfiedParticipantsCount = 0;
 
-    individualDemandQuantities = individualDemandQuantities.filter(demand => !isNaN(demand) && demand >= 0);
-
-    individualDemandQuantities.sort((valA, valB) => valA - valB);
-
-    let cumulativeCandyConsumed = 0;
-    let supplyHasBeenExceeded = false;
-
-    for (let currentDemandIndex = 0; currentDemandIndex < totalIndividualsConsidered; ++currentDemandIndex) {
-        if (currentDemandIndex >= individualDemandQuantities.length) {
-            break;
-        }
-
-        const currentDemandAmount = individualDemandQuantities[currentDemandIndex];
-        cumulativeCandyConsumed += currentDemandAmount;
-
-        if (cumulativeCandyConsumed > maximumCandyBudget) {
-            successfulFulfillmentCount = currentDemandIndex;
-            supplyHasBeenExceeded = true;
-            break;
+    for (let idx = 0; idx < totalParticipants; idx++) {
+        const currentDemand = demandValues[idx];
+        currentCandySum += currentDemand;
+        satisfiedParticipantsCount++;
+        
+        if (currentCandySum > availableCandy) {
+            console.log(satisfiedParticipantsCount - 1);
+            return;
         }
     }
 
-    if (supplyHasBeenExceeded) {
-        console.log(successfulFulfillmentCount);
-    } else {
-        console.log(totalIndividualsConsidered);
-    }
-};
+    console.log(satisfiedParticipantsCount);
+}
 
-evaluateFulfillmentCapacity(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processCandyDistribution(require('fs').readFileSync('/dev/stdin', 'utf8'));

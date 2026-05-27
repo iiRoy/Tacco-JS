@@ -1,40 +1,23 @@
-function processDataEntry(dataString) {
-    const numberSequenceMatch = dataString.match(/\n([\d\s]+)$/);
+function ProcessInput(inputString) {
+  let firstLineContent, secondLineContent;
+  [firstLineContent, secondLineContent] = inputString.split("\n");
 
-    if (!numberSequenceMatch || !numberSequenceMatch[1]) {
-        console.log(0);
-        return;
-    }
+  const totalElements = parseInt(firstLineContent);
+  const elementConnections = secondLineContent.split(" ").map(Number);
 
-    const rawNumbersText = numberSequenceMatch[1].trim();
+  const identifiedSymmetricPairs = Array.from({ length: totalElements }, (_, currentElementIndex) => currentElementIndex + 1)
+    .reduce((pairRegistry, currentElementIdentifier) => {
+      const connectedElementIdentifier = elementConnections[currentElementIdentifier - 1];
 
-    const numericCollection = [];
-    let digitBuffer = '';
-    for (let position = 0; position < rawNumbersText.length; position++) {
-        const character = rawNumbersText[position];
-        if (character === ' ') {
-            if (digitBuffer !== '') {
-                numericCollection.push(Number(digitBuffer));
-                digitBuffer = '';
-            }
-        } else {
-            digitBuffer += character;
-        }
-    }
-    if (digitBuffer !== '') {
-        numericCollection.push(Number(digitBuffer));
-    }
+      if (elementConnections[connectedElementIdentifier - 1] === currentElementIdentifier) {
+        const smallerIdentifier = Math.min(currentElementIdentifier, connectedElementIdentifier);
+        const largerIdentifier = Math.max(currentElementIdentifier, connectedElementIdentifier);
+        pairRegistry.add(`${smallerIdentifier}-${largerIdentifier}`);
+      }
+      return pairRegistry;
+    }, new Set());
 
-    const qualifyingElements = numericCollection.filter((currentValue, currentIndex, entireCollection) => {
-        const targetPosition = currentValue - 1;
-        const expectedValue = currentIndex + 1;
-        
-        return entireCollection[targetPosition] === expectedValue;
-    });
-
-    const finalResult = qualifyingElements.length / 2;
-
-    console.log(finalResult);
+  console.log(identifiedSymmetricPairs.size);
 }
 
-processDataEntry(require("fs").readFileSync("/dev/stdin", "utf8"));
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

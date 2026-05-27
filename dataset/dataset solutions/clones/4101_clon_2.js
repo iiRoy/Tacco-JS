@@ -1,32 +1,27 @@
-/*
- * This module is responsible for processing textual data.
- * It reads input, filters out duplicates, and reports the count of unique entries.
- */
-function processData(initialText)
-{
-  // Split the entire input string into an array of individual lines.
-  var   stringLines = initialText.split("\n")  ;
+// This module defines a function to process textual data from standard input.
+function processData(rawData) {
+    // The incoming raw string is first broken down into individual lines.
+    // Each line becomes an element in the 'processedLines' array.
+    let processedLines = rawData.split("\n");
 
-  // Discard the first line and retain all subsequent lines.
-  // The slice operation creates a new array from the second element to the end.
-  stringLines = stringLines.slice(1, stringLines.length + 1);
+    // We then create a new array by excluding the very first line.
+    // The 'slice' method extracts elements from index 1 up to the end of the array.
+    processedLines = processedLines.slice(1, processedLines.length + 1);
 
-  // Filter the array to keep only unique elements.
-  // The filter callback checks if the current element's first occurrence
-  // is at its current index, effectively removing duplicates.
-  var distinctItems = stringLines.filter((elementValue, elementIndex, collectionRef) => {
-    return collectionRef.indexOf(elementValue) === elementIndex;
-  });
+    // To find the count of distinct entries, we filter the array.
+    // The 'filter' method creates a new array containing only elements
+    // that satisfy the provided testing function.
+    const uniqueEntries = processedLines.filter((currentItem, currentIndex, sourceArray) => {
+        // An element is considered unique (for this purpose) if its first occurrence
+        // within the 'sourceArray' is at its current 'currentIndex'.
+        return sourceArray.indexOf(currentItem) === currentIndex;
+    });
 
-  // Output the total count of unique items after converting it to an integer.
-  console.log(Number.parseInt(distinctItems.length));
+    // Finally, the total number of unique entries is converted to an integer
+    // and displayed on the console.
+    console.log(parseInt(uniqueEntries.length));
 }
-; // End of the data processing function definition
 
-// Obtain the necessary file system utility module.
-const fileUtility = require('fs');
-
-// Execute the main data processing function.
-// It reads the entire content from the standard input file path,
-// decodes it as UTF-8, and passes it to the processData function.
-processData(fileUtility.readFileSync('/dev/stdin', 'utf8'));
+// The main execution flow involves reading the entire content of standard input
+// as a UTF-8 encoded string and then passing it to our data processing function.
+processData(require('fs').readFileSync('/dev/stdin', 'utf8'));

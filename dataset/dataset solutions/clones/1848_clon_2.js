@@ -1,38 +1,28 @@
-/*
- * This JavaScript module is designed to process an input string.
- * Its primary function is to inspect the final character of the provided text
- * and produce a specific phonetic output based on that character's value.
- */
-function processInputValues(incomingText) { // Defines the main processing routine
-    // The raw input string is first broken down into an array where each element is a single character.
-    const characterArray = incomingText.split(''); // Converts the input into a sequence of individual characters.
+function processInput(inputString) {
+  // Split the input string into an array of characters
+  const characterArray = inputString.split('');
 
-    // We then identify the very last character present in this newly formed array.
-    const endingCharacter = characterArray[characterArray.length - 1]; // Grabs the character at the ultimate position.
+  // Get the last character, which represents the final digit
+  const finalDigit = characterArray[characterArray.length - 1];
 
-    // A variable intended for storing potential output, though it remains unused in this specific logic path.
-    let consoleOutputString = ''; // Initializes an empty string for potential future use.
+  // Initialize a string variable, though it's not used for output in this specific logic path.
+  let resultString = "";
 
-    // Evaluation starts here: checks for a specific set of numerical characters.
-    if (endingCharacter == '2' || endingCharacter == '4' || endingCharacter == '5' || endingCharacter == '7' || endingCharacter == '9') {
-        console.info('hon'); // If matched, prints 'hon' to the console.
-        return; // Exits the function immediately after output.
-    }
-    // Secondary check: specifically targets the character '3'.
-    else if (endingCharacter == '3') {
-        console.info('bon'); // If '3' is found, prints 'bon'.
-        return; // Exits the function.
-    }
-    // Final fallback check: covers all other specified numerical characters.
-    else if (endingCharacter == '0' || endingCharacter == '1' || endingCharacter == '6' || endingCharacter == '8') {
-        console.info('pon'); // For these digits, 'pon' is the output.
-        return; // Exits the function.
-    }
-    // No explicit 'else' for other characters, as the problem implies only digits 0-9.
+  // Check the value of the final digit to determine the output
+  if (finalDigit == 2 || finalDigit == 4 || finalDigit == 5 || finalDigit == 7 || finalDigit == 9) {
+    // If the digit is one of these, print 'hon'
+    console.log('hon');
+    return; // Exit the function
+  } else if (finalDigit == 3) {
+    // If the digit is 3, print 'bon'
+    console.log('bon');
+    return; // Exit the function
+  } else if (finalDigit == 0 || finalDigit == 1 || finalDigit == 6 || finalDigit == 8) {
+    // If the digit is one of these, print 'pon'
+    console.log('pon');
+    return; // Exit the function
+  }
 }
 
-
-// This line ensures the script is runnable and receives input from standard input.
-// It reads the entire content of '/dev/stdin' as a UTF-8 string and passes it
-// to our primary function for processing.
-processInputValues( require('fs').readFileSync('/dev/stdin', 'utf8') );
+// Read the entire content from standard input and pass it to the processing function
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

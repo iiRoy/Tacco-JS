@@ -1,29 +1,32 @@
-function processSequenceData(inputFeed) {
-    const contentLines = inputFeed.split('\n');
-    const totalItems = parseInt(contentLines[0], 10);
-    const itemValues = contentLines[1].split(' ').map(Number);
+function processInputSequence(sourceData) {
+    const dataLines = sourceData.split('\n');
+    const elementCount = Number(dataLines[0]);
+    const numberArray = dataLines[1].split(' ').map(Number);
 
-    const calculatedState = itemValues.reduce((accumulator, currentElement) => {
-        if (currentElement === accumulator.expectedValue) {
-            return {
-                expectedValue: accumulator.expectedValue + 1,
-                skippedCount: accumulator.skippedCount
-            };
-        } else {
-            return {
-                expectedValue: accumulator.expectedValue,
-                skippedCount: accumulator.skippedCount + 1
-            };
-        }
-    }, { expectedValue: 1, skippedCount: 0 });
+    const { currentExpectedValue, skippedElementCount } = numberArray.reduce(
+        (accumulatorState, currentArrayElement) => {
+            if (currentArrayElement === accumulatorState.currentExpectedValue) {
+                return {
+                    currentExpectedValue: accumulatorState.currentExpectedValue + 1,
+                    skippedElementCount: accumulatorState.skippedElementCount
+                };
+            } else {
+                return {
+                    currentExpectedValue: accumulatorState.currentExpectedValue,
+                    skippedElementCount: accumulatorState.skippedElementCount + 1
+                };
+            }
+        },
+        { currentExpectedValue: 1, skippedElementCount: 0 }
+    );
 
-    let finalOutcome = calculatedState.skippedCount;
+    let finalOutputValue = skippedElementCount;
 
-    if (calculatedState.skippedCount === totalItems && calculatedState.expectedValue === 1) {
-        finalOutcome = -1;
+    if (skippedElementCount === elementCount && currentExpectedValue === 1) {
+        finalOutputValue = -1;
     }
-
-    console.log(finalOutcome);
+        
+    console.log(finalOutputValue);
 }
 
-processSequenceData(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInputSequence(require("fs").readFileSync("/dev/stdin", "utf8"));

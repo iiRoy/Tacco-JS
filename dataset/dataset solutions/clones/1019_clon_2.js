@@ -1,100 +1,90 @@
-// This section is responsible for obtaining initial textual input, cleaning it,
-// and preparing it for numerical processing by converting recognized numbers.
-const initialPayload = require('fs')
-    .readFileSync(
-        '/app/source_input.txt', // A different path for input data.
-        'utf8' // Standard text encoding specified.
-    )
-    .trim() // Removes leading/trailing whitespace from the entire string.
-    .split(' ') // Breaks the string into an array of substrings using space as delimiter.
-    .map(function (itemFragment) { // Iterates over each fragment to transform it.
-        const parsedInteger = parseInt(itemFragment, 10); // Attempts to convert fragment to an integer (base 10).
-        if (!isNaN(parsedInteger)) { // Checks if the parsing was successful (result is not Not-a-Number).
-            return parsedInteger; // If it's a number, return the integer.
-        } else {
-            return itemFragment; // Otherwise, return the fragment as its original string type.
-        }
-    });
-
-
-/*
- *  Function to ascertain if a given set of arguments is suitable for an arithmetic operation.
- *  It checks the data types of the two primary values and the operation symbol.
- *  @param {any} firstOperand - The first value involved in a potential calculation.
- *  @param {any} secondOperand - The second value involved in a potential calculation.
- *  @param {any} operationSymbol - The symbol representing the arithmetic operation.
- *  @returns {boolean} - True if all types are compatible (two numbers, one string operator), false otherwise.
- */
-function isComputationViable(firstOperand,
-                             secondOperand,
-                             operationSymbol) {
-    if (typeof firstOperand === 'number' &&
-        typeof secondOperand === 'number' &&
-        typeof operationSymbol === 'string') {
-        return true;
+var dataStream = require('fs').readFileSync('/dev/stdin', 'utf8')
+  .trim()
+  .split(' ')
+  .map(function(itemVal) {
+    // Attempt to parse the segment as an integer.
+    if (!isNaN(parseInt(itemVal))) {
+      return parseInt(itemVal); // If successful, return the integer.
+    } else {
+      return itemVal; // Otherwise, return the original string value.
     }
-    return false;
-}
-
-
-// This routine executes a basic mathematical operation between two numbers based on a provided symbol.
-function executeArithmetic(firstValue, secondValue, operatorSign) {
-    switch (operatorSign) {
-        case '+': // Addition operation.
-            return firstValue + secondValue;
-        case '-': // Subtraction operation.
-            return firstValue - secondValue;
-        case '*': // Multiplication operation.
-            return firstValue * secondValue;
-        // No default case, implying only these operations are supported.
-    }
-}
-
+  });
 
 /**
- *  The main recursive function that processes an array representing an expression,
- *  reducing it by performing calculations until a single result remains.
- *  It expects an RPN-like structure where operations are applied to the preceding two numbers.
- *  @param {Array<string|number>} expressionTokens - An array containing numbers and operator symbols.
+ * Determines if an arithmetic operation can be performed with the given operands and operator.
+ * @param {any} operandA - The first operand.
+ * @param {any} operandB - The second operand.
+ * @param {any} operatorSymbol - The operator symbol.
+ * @returns {boolean} True if both operands are numbers and the operator is a string, false otherwise.
  */
-function evaluateSequence(expressionTokens) {
-    const tokenCount = expressionTokens.length; // Get the total number of items in the current sequence.
-
-    if (tokenCount === 1) { // If only one item is left, it's the final computed result.
-        console.log(expressionTokens[0]); // Output the final value.
-        return; // Terminate the recursive call.
-    }
-
-    const nextSequenceBuffer = []; // Initialize an array to store the results for the next iteration.
-    for (let indexPosition = 0; indexPosition < tokenCount; indexPosition += 3) { // Iterate through the tokens in steps of three.
-        const currentTriplet = expressionTokens.slice(indexPosition); // Create a temporary slice from the current index.
-
-        const valOne = currentTriplet.shift(); // Extract the first value (operand).
-        const valTwo = currentTriplet.shift(); // Extract the second value (operand).
-        const opIdentifier = currentTriplet.shift(); // Extract the operation identifier.
-
-        // Check if the extracted values and operator can form a valid calculation.
-        if (isComputationViable(valOne, valTwo, opIdentifier)) {
-            // If viable, perform the calculation and add the result to the next sequence.
-            nextSequenceBuffer.push(executeArithmetic(valOne, valTwo, opIdentifier));
-        } else {
-            // If not viable, push the original elements back into the buffer
-            // in the order they were processed (reverse of how they are consumed from `tmp`).
-            if (typeof opIdentifier !== 'undefined') {
-                nextSequenceBuffer.push(opIdentifier);
-            }
-            if (typeof valTwo !== 'undefined') {
-                nextSequenceBuffer.push(valTwo);
-            }
-            if (typeof valOne !== 'undefined') {
-                nextSequenceBuffer.push(valOne);
-            }
-        }
-    }
-
-    // Recursively call the function with the newly formed (and hopefully shorter) sequence.
-    evaluateSequence(nextSequenceBuffer);
+function checkOperands(operandA, operandB, operatorSymbol) {
+  // Ensure both operands are numeric and the operator is a string.
+  if (typeof operandA === 'number' && typeof operandB === 'number' && typeof operatorSymbol === 'string') {
+    return true; // All conditions met for calculation.
+  }
+  return false; // Calculation not possible with current types.
 }
 
-// Begin the evaluation process with the initially prepared payload data.
-evaluateSequence(initialPayload);
+/**
+ * Executes a basic arithmetic operation based on the provided operator.
+ * Assumes operands are numbers and operator is a valid string.
+ * @param {number} operandA - The first number.
+ * @param {number} operandB - The second number.
+ * @param {string} operatorSymbol - The arithmetic operator ('+', '-', '*').
+ * @returns {number} The result of the operation.
+ */
+function executeOperation(operandA, operandB, operatorSymbol) {
+  // Perform the operation based on the operator symbol.
+  switch (operatorSymbol) {
+    case '+':
+      return operandA + operandB; // Addition.
+    case '-':
+      return operandA - operandB; // Subtraction.
+    case '*':
+      return operandA * operandB; // Multiplication.
+  }
+}
+
+/**
+ * Recursively processes an array representing a mathematical expression.
+ * It evaluates segments of three (operand, operand, operator) and reduces the array.
+ * @param {Array<number|string>} currentExpression - The array of numbers and operators to process.
+ */
+function processExpression(currentExpression) {
+  var dataLength = currentExpression.length; // Get the current length of the expression array.
+
+  // Base case: If only one element remains, it's the final result.
+  if (dataLength === 1) {
+    console.log(currentExpression[0]); // Output the final computed value.
+    return; // Terminate recursion.
+  }
+
+  var processedSegments = []; // Array to store the results of processed segments or unprocessed parts.
+  // Iterate through the expression array, taking three elements at a time.
+  for (var idx = 0; idx < dataLength; idx += 3) {
+    // Create a temporary slice to extract the current triplet.
+    var currentSegment = currentExpression.slice(idx);
+    var operandA = currentSegment.shift(); // Extract the first operand.
+    var operandB = currentSegment.shift(); // Extract the second operand.
+    var operatorSymbol = currentSegment.shift(); // Extract the operator.
+
+    // Check if the extracted triplet forms a valid calculation.
+    if (checkOperands(operandA, operandB, operatorSymbol)) {
+      // If valid, perform the calculation and add the result to the new array.
+      processedSegments.push(executeOperation(operandA, operandB, operatorSymbol));
+    } else {
+      // If not a valid calculation, push the elements back in reverse order of extraction
+      // to maintain their relative order for the next iteration, if they exist.
+      // This handles cases where the triplet is incomplete or contains non-numeric operands.
+      if (typeof operatorSymbol !== 'undefined') processedSegments.push(operatorSymbol);
+      if (typeof operandB !== 'undefined') processedSegments.push(operandB);
+      if (typeof operandA !== 'undefined') processedSegments.push(operandA);
+    }
+  }
+
+  // Recursively call the function with the reduced expression.
+  processExpression(processedSegments);
+}
+
+// Initiate the expression processing with the initial parsed input.
+processExpression(dataStream);

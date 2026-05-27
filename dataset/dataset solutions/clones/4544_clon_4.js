@@ -1,26 +1,22 @@
-function processInputString(dataStream) {
-    const cleansedStream = dataStream.trim();
-    const seenSymbols = new Set();
-    const codeA = 'a'.charCodeAt(0);
-    const codeZ = 'z'.charCodeAt(0);
+function processInputSequence(inputContent) {
+    const normalizedInput = inputContent.trim();
 
-    const checkResult = Array.from(cleansedStream).every(currentSymbol => {
-        const charValue = currentSymbol.charCodeAt(0);
-        if (charValue < codeA || charValue > codeZ) {
-            return false;
+    const baseAlphabet = "abcdefghijklmnopqrstuvwxyz";
+    const characterRegistry = new Set(baseAlphabet.split(""));
+
+    const allInputCharactersAreValid = Array.from(normalizedInput).every(currentSymbol => {
+        if (characterRegistry.has(currentSymbol)) {
+            characterRegistry.delete(currentSymbol);
+            return true;
         }
-        if (seenSymbols.has(currentSymbol)) {
-            return false;
-        }
-        seenSymbols.add(currentSymbol);
-        return true;
+        return false;
     });
 
-    if (checkResult) {
+    if (allInputCharactersAreValid) {
         console.log("yes");
     } else {
         console.log("no");
     }
 }
 
-processInputString(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInputSequence(require("fs").readFileSync("/dev/stdin", "utf8"));

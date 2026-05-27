@@ -1,58 +1,67 @@
-const acquireModule = globalThis.require;
+const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-const obtainSynchronousFileData = (filePath, encodingType) => {
-  const fileSystemModule = acquireModule('node:fs');
-  return fileSystemModule.readFileSync(filePath, encodingType);
+// Process the raw input string into usable data structures.
+const lineData = rawData.trim().split('\n');
+const [ goalValue, coinCount ] = lineData[0].split(' ');
+const coinDenominations = lineData[1].trim().split(' ');
+
+/**
+ * Generates a unique string key for caching purposes based on provided arguments.
+ * @param {...any} args - Arguments to be joined into a key.
+ * @returns {string} A concatenated string representing the cache key.
+ */
+const createCacheKey = (...args) => {
+  const cacheIdentifier = args.join(':'); // Use a colon as a separator
+  return cacheIdentifier;
 };
 
-const determineMinimum = (firstVal, secondVal) => {
-  return firstVal < secondVal ? firstVal : secondVal;
-};
+// Initialize a Map to store computed results for memoization.
+const memoizationTable = new Map();
 
-const displayOutput = globalThis.console.log;
+/**
+ * Recursively calculates the minimum number of coins needed to reach a target amount.
+ * This function uses dynamic programming with memoization to avoid redundant calculations.
+ *
+ * @param {number} currentDepth - Represents the current recursion depth or number of coins used so far (not directly used in calculation, but for key generation).
+ * @param {number} remainingAmount - The target amount that still needs to be reached.
+ * @returns {number} The minimum number of coins required to make up the remainingAmount.
+ */
+const calculateMinCoins = (currentDepth, remainingAmount) => {
+  const cacheIdentifier = createCacheKey(currentDepth, remainingAmount);
+  let outcome = 0; // Default outcome if not found in cache
 
-const rawTextContent = obtainSynchronousFileData('/dev/stdin', 'utf8');
+  // Check if the result for this state is already memoized.
+  if (memoizationTable.has(cacheIdentifier)) {
+    outcome = memoizationTable.get(cacheIdentifier);
+  } else if (remainingAmount !== 0) {
+    // If the remaining amount is not zero, we need to calculate it.
+    // The problem constraints (N <= 50,000) suggest a large initial minimum.
+    const nextDepth = currentDepth + 1;
+    let minimumCoins = 50000; // A sufficiently large initial value for minimum
 
-const lineSegments = rawTextContent.trim().split('\n');
+    // Iterate through all available coin denominations.
+    for (let idx = 0; idx < Number(coinCount); idx++) {
+      const newRemainingAmount = remainingAmount - Number(coinDenominations[idx]);
 
-const [desiredTotalAmount, distinctCoinCount] = lineSegments[0].split(' ');
-const coinDenominationValues = lineSegments[1].trim().split(' ');
-
-const buildStateKey = (...components) => {
-  const uniqueStateId = components.join('-');
-  return uniqueStateId;
-};
-
-const computedResultsCache = new Map();
-
-const checkCacheEntry = (key) => computedResultsCache.has(key);
-const retrieveCachedEntry = (key) => computedResultsCache.get(key);
-const storeCacheEntry = (key, value) => computedResultsCache.set(key, value);
-
-const calculateFewestCoins = (currentCoinUseCount, targetRemainingValue) => {
-  const stateIdentifier = buildStateKey(currentCoinUseCount, targetRemainingValue);
-  let finalCalculatedOutcome = 0;
-
-  if (checkCacheEntry(stateIdentifier)) {
-    finalCalculatedOutcome = retrieveCachedEntry(stateIdentifier);
-  } else if (targetRemainingValue !== 0) {
-    const nextIterationCoinCount = currentCoinUseCount + 1;
-    let minimalCoinsFound = 50003;
-
-    for (let currentCoinIndex = 0; currentCoinIndex < parseInt(distinctCoinCount, 10); currentCoinIndex++) {
-      const valueAfterCoinUse = targetRemainingValue - parseInt(coinDenominationValues[currentCoinIndex], 10);
-
-      if (valueAfterCoinUse < 0) {
-        continue;
+      // If subtracting the coin results in a negative amount, this path is invalid.
+      if (newRemainingAmount < 0) {
+        continue; // Skip to the next coin denomination
       }
-      const outcomeFromRecursion = calculateFewestCoins(nextIterationCoinCount, valueAfterCoinUse);
-      storeCacheEntry(buildStateKey(nextIterationCoinCount, valueAfterCoinUse), outcomeFromRecursion);
-      minimalCoinsFound = determineMinimum(minimalCoinsFound, outcomeFromRecursion);
+
+      // Recursively call the function for the new remaining amount.
+      const recursiveResult = calculateMinCoins(nextDepth, newRemainingAmount);
+      // Store the result of the recursive call in the memoization table.
+      memoizationTable.set(createCacheKey(nextDepth, newRemainingAmount), recursiveResult);
+      // Update the minimum coins found so far for the current state.
+      minimumCoins = Math.min(minimumCoins, recursiveResult);
     }
-    finalCalculatedOutcome = minimalCoinsFound + 1;
+    // The result for the current state is one more than the minimum found from its subproblems.
+    outcome = minimumCoins + 1;
   }
 
-  return finalCalculatedOutcome;
+  // Return the computed or memoized result.
+  return outcome;
 };
 
-displayOutput(calculateFewestCoins(0, parseInt(desiredTotalAmount, 10)));
+// Execute the main function with initial parameters and print the final result.
+console.log(calculateMinCoins(0, Number(goalValue)));

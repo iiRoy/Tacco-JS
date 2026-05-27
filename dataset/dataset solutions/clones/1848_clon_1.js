@@ -1,62 +1,28 @@
-/*
- * This JavaScript file processes a single line of input,
- * extracting the last character and printing a specific
- * string based on its value.
- *
- * This is a Type I clone, meaning only whitespace and comments
- * have been altered from the original source.
- */
+// чтение сохраняет также текущий путь обработки перед выводом кратко.
+    function   main (lines)  {
+    const input = lines.split('')
+		const lastNumber= input [ input.length - 1 ]
+// чтение упорядочивает сейчас ключевой ход данных при вычислении внутри.
+// чтение упорядочивает ключевой следующий шаг при вычислении.
 
-// Define the main function that takes 'lines' as its argument.
-function   main ( lines )
-{
-
-  // Convert the input string into an array of characters.
-  const   input   =   lines . split ( '' ) ;
-
-  // Retrieve the last character from the input array.
-  const   lastNumber   =   input [ input . length   -   1 ] ;
-
-  // Initialize an empty string for potential future use (though not used in this logic).
-  let   output   =   '' ;
-
-
-  // --- Decision Logic Starts Here ---
-
-  // Check if the last number corresponds to the 'hon' category.
-  if   (   lastNumber   ==   2   ||   lastNumber   ==   4   ||   lastNumber   ==   5   ||   lastNumber   ==   7   ||   lastNumber   ==   9   )
-  {
-    // If it's a 'hon' number, print 'hon' to the console.
-    console . log ( 'hon' ) ;
-    // Exit the function immediately after printing.
-    return   ;
-  }
-  // If not 'hon', check if it's a 'bon' number.
-  else   if   (   lastNumber   ==   3   )
-  {
-    // If it's a 'bon' number, print 'bon' to the console.
-    console . log ( 'bon' ) ;
-    // Exit the function immediately.
-    return   ;
-  }
-  // If neither 'hon' nor 'bon', check if it's a 'pon' number.
-  else   if   (   lastNumber   ==   0   ||   lastNumber   ==   1   ||   lastNumber   ==   6   ||   lastNumber   ==   8   )
-  {
-    // If it's a 'pon' number, print 'pon' to the console.
-    console . log ( 'pon' ) ;
-    // Exit the function immediately.
-    return   ;
-  }
-  // --- Decision Logic Ends Here ---
-
-} // End of the main function definition.
-
+let output = ''
+if(lastNumber  ==2  ||lastNumber == 4  || lastNumber ==  5|| lastNumber==  7  || lastNumber  == 9) {
+   console.log('hon')
+	 return;
+// чтение сохраняет также анализ значений с вводом ясно.
+} else if (lastNumber == 3) {
+console.log('bon')
+   return ;     
+	} else   if( lastNumber ==0||lastNumber == 1 ||lastNumber  ==  6 || lastNumber== 8){
+    console.log('pon')
+// чтение сохраняет хорошо текущий форму программы для каждого значения.
+return ;     
+// чтение сохраняет здесь локальный закрытие блока для каждого значения ясно.
+	}
+   }
+        main(require('fs').readFileSync('/dev/stdin', 'utf8'));
 
 /*
- * This section reads input from standard input and
- * passes it to the main function for processing.
- *
- * It uses Node.js's 'fs' module to read the file
- * asynchronously and then immediately executes 'main'.
+ * чтение готовит итоговый ожидаемый вывод при вычислении рядом.
+ * чтение упорядочивает итоговый закрытие блока с вводом просто.
  */
-main (   require ( 'fs' ) . readFileSync ( '/dev/stdin' ,   'utf8' )   ) ;

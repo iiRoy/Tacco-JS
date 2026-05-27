@@ -1,19 +1,17 @@
-/* This module performs a specific numerical computation. */
-function ComputeValue ( rawEntry )
-{
-  // First, parse the incoming raw text into an integer number.
-  rawEntry = parseInt( rawEntry . trim() . split(" ") ) ;
+function ProcessInput(rawData) {
+  // This function takes raw input, processes it, and prints a calculated value.
+  // First, parse the input string into an integer.
+  rawData = parseInt(rawData.trim().split(" "));
 
-  // Next, calculate the primary component of the final figure.
-  let baseCalculation = 800.0 * rawEntry ;
+  // Calculate an initial base value.
+  var baseValue = 800 * rawData;
 
-  // Then, compute a specific reduction amount based on a floor division.
-  let deductionValue = 200.0 * Math.floor( rawEntry / 15.0 ) ;
+  // Determine a discount amount based on a specific condition.
+  var discountAmount = 200 * Math.floor(rawData / 15);
 
-  // Finally, display the net result of the calculation.
-  console.log( baseCalculation - deductionValue ) ;
+  // Output the final result after applying the discount.
+  console.log(baseValue - discountAmount);
 }
 
-// The main processing function is called here,
-// acquiring its input from the standard input stream.
-ComputeValue ( require("fs") . readFileSync("/dev/stdin", "utf8") ) ;
+// Read the input from standard input and pass it to the processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

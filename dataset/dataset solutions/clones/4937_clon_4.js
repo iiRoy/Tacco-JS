@@ -1,99 +1,105 @@
-class DisjointUnion {
-    constructor(totalElements) {
-        this.parentArray = Array.from({ length: totalElements }, (_, i) => i);
-        this.rankArray = Array(totalElements).fill(0);
-        this.componentCount = totalElements;
+'use strict';
+
+function processGridConnections(rawData) {
+    let lines = rawData.split("\n");
+    let dimensions = lines[0].split(" ");
+    let gridWidth = parseInt(dimensions[0]);
+    let gridHeight = parseInt(dimensions[1]);
+
+    let horizontalCosts = [];
+    let verticalCosts = [];
+
+    for (let k = 0; k < gridWidth; k++) {
+        horizontalCosts.push(lines[1 + k]);
+    }
+    for (let k = 0; k < gridHeight; k++) {
+        verticalCosts.push(lines[1 + gridWidth + k]);
     }
 
-    identifyRepresentative(idx) {
-        if (this.parentArray[idx] === idx) {
-            return idx;
+    class DisjointSetStructure {
+        constructor(elementCount) {
+            this.parentArray = Array.from({ length: elementCount }, (_, index) => index);
+            this.rankArray = Array(elementCount).fill(0);
+            this.setCounter = elementCount;
         }
-        this.parentArray[idx] = this.identifyRepresentative(this.parentArray[idx]);
-        return this.parentArray[idx];
-    }
 
-    mergeSets(idxA, idxB) {
-        let rootA = this.identifyRepresentative(idxA);
-        let rootB = this.identifyRepresentative(idxB);
-
-        if (rootA !== rootB) {
-            if (this.rankArray[rootA] < this.rankArray[rootB]) {
-                this.parentArray[rootA] = rootB;
-            } else if (this.rankArray[rootA] > this.rankArray[rootB]) {
-                this.parentArray[rootB] = rootA;
-            } else {
-                this.parentArray[rootB] = rootA;
-                this.rankArray[rootA]++;
+        findRepresentative(elementIndex) {
+            if (this.parentArray[elementIndex] === elementIndex) {
+                return elementIndex;
             }
-            this.componentCount--;
-            return true;
+            this.parentArray[elementIndex] = this.findRepresentative(this.parentArray[elementIndex]);
+            return this.parentArray[elementIndex];
         }
-        return false;
-    }
 
-    allConnected() {
-        return this.componentCount === 1;
-    }
-}
+        uniteSets(firstElement, secondElement) {
+            let rootA = this.findRepresentative(firstElement);
+            let rootB = this.findRepresentative(secondElement);
 
-function computeNetworkCost(inputData) {
-    const lines = inputData.split('\n');
+            if (rootA !== rootB) {
+                if (this.rankArray[rootA] < this.rankArray[rootB]) {
+                    this.parentArray[rootA] = rootB;
+                } else if (this.rankArray[rootA] > this.rankArray[rootB]) {
+                    this.parentArray[rootB] = rootA;
+                } else {
+                    this.parentArray[rootB] = rootA;
+                    this.rankArray[rootA]++;
+                }
+                this.setCounter--;
+                return true;
+            }
+            return false;
+        }
 
-    const [widthStr, heightStr] = lines[0].split(' ');
-    const gridWidth = parseInt(widthStr);
-    const gridHeight = parseInt(heightStr);
-
-    const horizontalCostStrings = lines.slice(1, 1 + gridWidth);
-    const horizontalCosts = horizontalCostStrings.map(s => parseInt(s) || 100000001);
-
-    const verticalCostStrings = lines.slice(1 + gridWidth, 1 + gridWidth + gridHeight);
-    const verticalCosts = verticalCostStrings.map(s => parseInt(s) || 100000001);
-
-    const totalGridPoints = (gridWidth + 1) * (gridHeight + 1);
-    const allEdges = [];
-
-    for (let currentY = 0; currentY <= gridHeight; currentY++) {
-        for (let currentX = 0; currentX < gridWidth; currentX++) {
-            const point1 = currentY * (gridWidth + 1) + currentX;
-            const point2 = currentY * (gridWidth + 1) + (currentX + 1);
-            allEdges.push({
-                origin: point1,
-                destination: point2,
-                value: horizontalCosts[currentX]
-            });
+        getDisjointSetCount() {
+            return this.setCounter;
         }
     }
 
-    for (let currentY = 0; currentY < gridHeight; currentY++) {
-        for (let currentX = 0; currentX <= gridWidth; currentX++) {
-            const point1 = currentY * (gridWidth + 1) + currentX;
-            const point2 = (currentY + 1) * (gridWidth + 1) + currentX;
-            allEdges.push({
-                origin: point1,
-                destination: point2,
-                value: verticalCosts[currentY]
-            });
-        }
-    }
+    function calculateMinimumSpanningCost() {
+        const maxPossibleCost = 100000001;
 
-    allEdges.sort((a, b) => a.value - b.value);
+        const totalNodes = (gridWidth + 1) * (gridHeight + 1);
+        let allEdges = [];
 
-    let minimumSpanningTotal = 0;
-    const unionFindStructure = new DisjointUnion(totalGridPoints);
+        for (let row = 0; row <= gridHeight; row++) {
+            for (let col = 0; col <= gridWidth; col++) {
+                const currentNodeId = row * (gridWidth + 1) + col;
 
-    for (const link of allEdges) {
-        if (unionFindStructure.identifyRepresentative(link.origin) !== unionFindStructure.identifyRepresentative(link.destination)) {
-            unionFindStructure.mergeSets(link.origin, link.destination);
-            minimumSpanningTotal += link.value;
+                if (col < gridWidth) {
+                    const nextNodeId = row * (gridWidth + 1) + (col + 1);
+                    const edgeWeight = parseInt(horizontalCosts[col]) || maxPossibleCost;
+                    allEdges.push({ u: currentNodeId, v: nextNodeId, weight: edgeWeight });
+                }
 
-            if (unionFindStructure.allConnected()) {
-                break;
+                if (row < gridHeight) {
+                    const nextNodeId = (row + 1) * (gridWidth + 1) + col;
+                    const edgeWeight = parseInt(verticalCosts[row]) || maxPossibleCost;
+                    allEdges.push({ u: currentNodeId, v: nextNodeId, weight: edgeWeight });
+                }
             }
         }
+
+        allEdges.sort((edgeA, edgeB) => edgeA.weight - edgeB.weight);
+
+        let totalSpanningCost = 0;
+        const ds = new DisjointSetStructure(totalNodes);
+        let edgesIncluded = 0;
+
+        for (const currentEdge of allEdges) {
+            if (ds.uniteSets(currentEdge.u, currentEdge.v)) {
+                totalSpanningCost += currentEdge.weight;
+                edgesIncluded++;
+                if (edgesIncluded === totalNodes - 1) {
+                    break;
+                }
+            }
+        }
+
+        return totalSpanningCost;
     }
 
-    console.log(minimumSpanningTotal);
+    let finalCost = calculateMinimumSpanningCost();
+    console.log(finalCost);
 }
 
-computeNetworkCost(require("fs").readFileSync("/dev/stdin", "utf8"));
+processGridConnections(require("fs").readFileSync("/dev/stdin", "utf8"));

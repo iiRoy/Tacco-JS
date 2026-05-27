@@ -1,129 +1,157 @@
-// Verifies if there are any unilluminated points remaining on the grid.
-function noUnlitSpotsLeft(gridMatrix) {
-  let     unusedList = []; // This list is not utilized in the current logic.
-  for (let currentIdx = 0; currentIdx < gridMatrix.length; currentIdx++) {
-    const characterSet = new Set(gridMatrix[currentIdx]);
-    if (characterSet.size === 1 && gridMatrix[currentIdx][0] === '#') {
-      continue; // Skip lines that are already fully illuminated.
+function check_darkness(grid_map) {
+  // This variable is declared in the original code but not used in its logic.
+  // It is retained here for strict Type II structural equivalence.
+  var dark_cells_list = [];
+
+  // Iterate through each row of the provided grid.
+  for (var row_idx = 0; row_idx < grid_map.length; row_idx++) {
+    // Create a Set to find unique characters in the current row.
+    let current_row_chars = new Set(grid_map[row_idx]);
+
+    // If a row consists solely of '#' characters, it means it's already "dark".
+    // Such rows do not prevent the entire grid from being considered "dark".
+    if (current_row_chars.size === 1 && grid_map[row_idx][0] === '#') {
+      continue; // Move to the next row.
     }
-    // If a line contains both illuminated and unilluminated spots, or is entirely unilluminated.
-    if (characterSet.size === 2 || (characterSet.size === 1 && gridMatrix[currentIdx][0] === '.')) {
-      return false; // The grid is not fully illuminated.
+
+    // If a row contains both '#' and '.' (size is 2), or if it contains only '.' (size is 1 and first char is '.'),
+    // then the grid is not yet fully "dark".
+    if (current_row_chars.size === 2 || (current_row_chars.size === 1 && grid_map[row_idx][0] === '.')) {
+      return false; // The grid is not entirely "dark".
     }
   }
-  return true; // All spots in the grid are illuminated.
+  // If the loop completes, all rows satisfy the "dark" condition, so the grid is considered dark.
+  return true;
 }
 
-// Expands the illuminated regions based on current light sources.
-function expandIllumination(displayArea, currentLightSources) {
-  let     newlyLitCoordinates = []; // Stores coordinates of newly lit cells.
-  for (let currSourceIndex = 0; currSourceIndex < currentLightSources.length; currSourceIndex++) {
-    const     sourcePoint = currentLightSources[currSourceIndex];
-    let       columnPosition = sourcePoint[1];
-    let       rowPosition = sourcePoint[0];
+// This function identifies and "darkens" adjacent '.' cells around existing '#' cells.
+// It modifies the grid in place and returns the coordinates of newly darkened cells.
+function compute_expanded_dark_spots(grid_map, current_dark_spots) {
+  // An array to store the coordinates of cells that become '#' in this iteration.
+  let newly_darkened_locations = [];
 
-    // If the current light source is already surrounded by other light sources, it cannot expand further.
-    if ( ( rowPosition > 0 && displayArea[rowPosition - 1][columnPosition] === '#' ) &&
-         ( columnPosition > 0 && displayArea[rowPosition][columnPosition - 1] === '#' ) &&
-         ( columnPosition < displayArea[0].length - 1 && displayArea[rowPosition][columnPosition + 1] === '#' ) &&
-         ( rowPosition < displayArea.length - 1 && displayArea[rowPosition + 1][columnPosition] === '#' )
-       ) {
-      continue; // Move to the next light source.
+  // Process each cell that was previously marked as '#'.
+  for (let spot_index = 0; spot_index < current_dark_spots.length; spot_index++) {
+    let current_spot_coords = current_dark_spots[spot_index];
+    let col_coord = current_spot_coords[1]; // The column index (x-coordinate).
+    let row_coord = current_spot_coords[0]; // The row index (y-coordinate).
+
+    // Check if the current dark cell is completely surrounded by other dark cells ('#').
+    // If it is, it cannot cause any new '.' cells to become '#', so we skip it.
+    if (
+      (row_coord > 0 && grid_map[row_coord - 1][col_coord] === '#') && // Check cell above
+      (col_coord > 0 && grid_map[row_coord][col_coord - 1] === '#') && // Check cell to the left
+      (col_coord < grid_map[0].length - 1 && grid_map[row_coord][col_coord + 1] === '#') && // Check cell to the right
+      (row_coord < grid_map.length - 1 && grid_map[row_coord + 1][col_coord] === '#') // Check cell below
+    ) {
+      continue; // This dark cell cannot expand further.
     }
 
-    // Check and illuminate adjacent unlit cells ('.')
-    if ( ( rowPosition > 0 ) && ( displayArea[rowPosition - 1][columnPosition] === '.' ) ) {
-      newlyLitCoordinates.push([rowPosition - 1, columnPosition]);
-      displayArea[rowPosition - 1][columnPosition] = '#'; // Mark as lit.
+    // Check and darken the cell above if it's within bounds and is a '.'.
+    if (row_coord > 0 && grid_map[row_coord - 1][col_coord] === '.') {
+      newly_darkened_locations.push([row_coord - 1, col_coord]);
+      grid_map[row_coord - 1][col_coord] = '#'; // Mark as dark.
     }
-    if ( ( columnPosition > 0 ) && ( displayArea[rowPosition][columnPosition - 1] === '.' ) ) {
-      newlyLitCoordinates.push([rowPosition, columnPosition - 1]);
-      displayArea[rowPosition][columnPosition - 1] = '#'; // Mark as lit.
+    // Check and darken the cell to the left.
+    if (col_coord > 0 && grid_map[row_coord][col_coord - 1] === '.') {
+      newly_darkened_locations.push([row_coord, col_coord - 1]);
+      grid_map[row_coord][col_coord - 1] = '#'; // Mark as dark.
     }
-    if ( ( columnPosition < displayArea[0].length - 1 ) && ( displayArea[rowPosition][columnPosition + 1] === '.' ) ) {
-      newlyLitCoordinates.push([rowPosition, columnPosition + 1]);
-      displayArea[rowPosition][columnPosition + 1] = '#'; // Mark as lit.
+    // Check and darken the cell to the right.
+    if (col_coord < grid_map[0].length - 1 && grid_map[row_coord][col_coord + 1] === '.') {
+      newly_darkened_locations.push([row_coord, col_coord + 1]);
+      grid_map[row_coord][col_coord + 1] = '#'; // Mark as dark.
     }
-    if ( ( rowPosition < displayArea.length - 1 ) && ( displayArea[rowPosition + 1][columnPosition] === '.' ) ) {
-      newlyLitCoordinates.push([rowPosition + 1, columnPosition]);
-      displayArea[rowPosition + 1][columnPosition] = '#'; // Mark as lit.
+    // Check and darken the cell below.
+    if (row_coord < grid_map.length - 1 && grid_map[row_coord + 1][col_coord] === '.') {
+      newly_darkened_locations.push([row_coord + 1, col_coord]);
+      grid_map[row_coord + 1][col_coord] = '#'; // Mark as dark.
     }
   }
-  return newlyLitCoordinates; // Return the list of newly illuminated points.
+  return newly_darkened_locations; // Return the list of newly darkened cells.
 }
 
-// Identifies all initially illuminated cells ('#') within the grid.
-function locateLitCells(displaySurface) {
-  let     foundLitPoints = []; // Initialize an array to store coordinates of lit cells.
-  for (let rowIndex = 0; rowIndex < displaySurface.length; rowIndex++) {
-    for (let colIndex = 0; colIndex < displaySurface[0].length; colIndex++) {
-      if (displaySurface[rowIndex][colIndex] === '#') {
-        foundLitPoints.push([rowIndex, colIndex]); // Add the coordinates of the lit cell.
+// This function scans the grid and returns a list of coordinates for all cells
+// that are initially marked as '#'.
+function retrieve_initial_dark_cells(grid_map) {
+  let dark_cell_positions = [];
+  // Iterate through each row and column of the grid.
+  for (let row_idx = 0; row_idx < grid_map.length; row_idx++) {
+    for (let col_idx = 0; col_idx < grid_map[0].length; col_idx++) {
+      // If a cell contains '#', add its [row, col] coordinates to the list.
+      if (grid_map[row_idx][col_idx] === '#') {
+        dark_cell_positions.push([row_idx, col_idx]);
       }
     }
   }
-  return foundLitPoints; // Return the collection of all lit cell coordinates.
+  return dark_cell_positions;
 }
 
-// Orchestrates the entire illumination simulation process.
-function executeLightingSimulation(simulationData) {
-  const   dataLines = simulationData.split('\n');
-  const   gridHeight = parseInt(dataLines[0].split(' ')[0], 10);
-  const   gridWidth = parseInt(dataLines[0].split(' ')[1], 10);
-  let     displayGrid = [];
-  for (let currentLineNum = 0; currentLineNum < gridHeight; currentLineNum++) {
-    const   gridRow = dataLines[1 + currentLineNum].split('');
-    displayGrid.push(gridRow);
+// The primary function that orchestrates the grid darkening process.
+function process_input_data(raw_input_string) {
+  // Split the entire input string into an array of individual lines.
+  const input_lines_array = raw_input_string.split('\n');
+
+  // Parse the grid dimensions (Height and Width) from the first line of input.
+  const grid_height = parseInt(input_lines_array[0].split(' ').map(val => parseInt(val))[0]);
+  const grid_width = parseInt(input_lines_array[0].split(' ').map(val => parseInt(val))[1]);
+
+  // Initialize an empty array to represent the grid.
+  let grid_representation = [];
+  // Populate the grid with characters from the subsequent input lines.
+  for (let row_idx = 0; row_idx < grid_height; row_idx++) {
+    let current_line_chars = input_lines_array[1 + row_idx].split('');
+    grid_representation.push(current_line_chars);
   }
 
-  // Debugging output for grid dimensions and content (originally commented out).
-  // console.log([gridHeight, gridWidth, displayGrid]);
+  // Initialize a counter for the number of darkening steps.
+  let darkening_steps_count = 0;
 
-  let     spreadIterations = 0; // Counter for the number of illumination steps.
+  // Get the initial set of dark cells from the grid.
+  let active_dark_cells = retrieve_initial_dark_cells(grid_representation);
 
-  let     initialLitPoints = locateLitCells(displayGrid); // Find all starting lit cells.
-
-  // This block seems to be a placeholder or for specific conditions, not affecting general flow.
-  if (initialLitPoints.length < 100) {
-    // Arbitrary statement to maintain structure, as per clone requirements.
-    // In original code, 'hoge' was an undefined variable, which would throw an error.
-    // To maintain structural equivalence without crashing, I'll use a no-op statement.
-    void 0; // A no-op expression.
+  // This is an unused labeled statement from the original code.
+  // It is preserved for strict Type II structural equivalence.
+  if (active_dark_cells.length < 100) {
+    dummy_label:;
   }
 
-  if (initialLitPoints.length === 1) {
-    const   loneIllumination = initialLitPoints[0];
-    let     maxHorizontalReach = 0;
-    let     maxVerticalReach = 0;
-    // Calculate maximum reach from the single lit point to the grid edges.
-    if (loneIllumination[0] > gridHeight - 1 - loneIllumination[0]) {
-      maxVerticalReach = loneIllumination[0];
+  // Handle a special case: if there is only one initial dark cell.
+  if (active_dark_cells.length === 1) {
+    let single_dark_spot = active_dark_cells[0];
+    let max_dist_x = 0;
+    let max_dist_y = 0;
+
+    // Calculate the maximum distance in the Y-direction from the single dark spot to an edge.
+    if (single_dark_spot[0] > grid_height - 1 - single_dark_spot[0]) {
+      max_dist_y = single_dark_spot[0];
     } else {
-      maxVerticalReach = gridHeight - 1 - loneIllumination[0];
+      max_dist_y = grid_height - 1 - single_dark_spot[0];
     }
-    if (loneIllumination[1] > gridWidth - 1 - loneIllumination[1]) {
-      maxHorizontalReach = loneIllumination[1];
+
+    // Calculate the maximum distance in the X-direction from the single dark spot to an edge.
+    if (single_dark_spot[1] > grid_width - 1 - single_dark_spot[1]) {
+      max_dist_x = single_dark_spot[1];
     } else {
-      maxHorizontalReach = gridWidth - 1 - loneIllumination[1];
+      max_dist_x = grid_width - 1 - single_dark_spot[1];
     }
-    console.log(maxHorizontalReach + maxVerticalReach); // Output the combined maximum reach.
 
-    return; // Exit the function early for this specific case.
+    // Output the sum of these maximum distances.
+    console.log(max_dist_x + max_dist_y);
+    return; // Exit the function as this is a terminal case.
   }
 
-  // Continue spreading illumination until no unlit spots remain.
-  while (!noUnlitSpotsLeft(displayGrid)) {
-    initialLitPoints = expandIllumination(displayGrid, initialLitPoints);
-    // Original commented-out lines for debugging or alternative logic:
-    // displayGrid = someDarkeningFunction(displayGrid, initialLitPoints);
-    // console.log('=== Step ===');
-    // console.log(initialLitPoints);
-    // console.log(displayGrid);
-    spreadIterations += 1; // Increment the step counter.
+  // Main loop: continue expanding dark areas until the entire grid is "dark".
+  while (!check_darkness(grid_representation)) {
+    // Expand the dark areas and update the list of active dark cells for the next iteration.
+    active_dark_cells = compute_expanded_dark_spots(grid_representation, active_dark_cells);
+    // Increment the step counter for each darkening operation.
+    darkening_steps_count += 1;
   }
 
-  console.log(spreadIterations); // Output the total number of steps taken.
+  // Output the total number of steps required to darken the entire grid.
+  console.log(darkening_steps_count);
 }
 
-// Entry point: read input from standard input and pass to the main simulation function.
-executeLightingSimulation(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// Read the input from standard input and pass it to the main processing function.
+process_input_data(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,97 +1,70 @@
-class InputSource {
-    #rawContent;
-    #lines;
-    #currentLineIndex;
+const acquireData = (function() {
+    function createInputSource(rawTextContent) {
+        const sourceLines = rawTextContent.trim().split('\n');
+        let currentLinePointer = 0;
+        let currentLineTokenBuffer = [];
 
-    constructor(sourceText) {
-        this.#rawContent = sourceText;
-        this.#lines = sourceText.trim().split("\n");
-        this.#currentLineIndex = 0;
-    }
+        return {
+            extractNextToken: (returnAsText) => {
+                if (currentLinePointer >= sourceLines.length) {
+                    return undefined;
+                }
 
-    retrieveFirstTokenString() {
-        if (this.#currentLineIndex >= this.#lines.length) {
-            return undefined;
-        }
-        const line = this.#lines[this.#currentLineIndex];
-        const tokens = line.split(" ");
-        this.#currentLineIndex++;
-        return tokens[0];
-    }
+                if (currentLineTokenBuffer.length === 0) {
+                    const lineContent = sourceLines[currentLinePointer];
+                    currentLineTokenBuffer = lineContent.split(' ').reverse();
+                }
 
-    fetchCurrentLineItems(asNumbers = false) {
-        if (this.#currentLineIndex >= this.#lines.length) {
-            return [];
-        }
-        const lineContent = this.#lines[this.#currentLineIndex++];
-        const items = lineContent.split(" ");
-        return asNumbers ? items.map(Number) : items;
+                const tokenValue = currentLineTokenBuffer.pop();
+                if (currentLineTokenBuffer.length === 0) {
+                    currentLinePointer++;
+                }
+                return returnAsText ? tokenValue : Number(tokenValue);
+            },
+            readFullLine: (returnAsText) => {
+                if (currentLinePointer >= sourceLines.length) {
+                    return undefined;
+                }
+                currentLineTokenBuffer = [];
+                const lineContent = sourceLines[currentLinePointer++];
+                const tokens = lineContent.split(' ');
+                return returnAsText ? tokens : tokens.map(Number);
+            },
+            readMatrix: (rowCount, returnAsText) => {
+                const matrixResult = [];
+                for (let i = 0; i < rowCount; i++) {
+                    matrixResult.push(this.readFullLine(returnAsText));
+                }
+                return matrixResult;
+            },
+            readRawLines: (count, returnAsText) => {
+                const linesResult = [];
+                for (let i = 0; i < count; i++) {
+                    if (currentLinePointer >= sourceLines.length) {
+                        linesResult.push(undefined);
+                    } else {
+                        currentLineTokenBuffer = [];
+                        const rawLine = sourceLines[currentLinePointer++];
+                        linesResult.push(returnAsText ? rawLine : Number(rawLine));
+                    }
+                }
+                return linesResult;
+            }
+        };
     }
+    return createInputSource;
+})();
+const dataReader = acquireData(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-    obtainMatrixData(rowCount, convertToNumbers = false) {
-        const matrixRows = [];
-        for (let i = 0; i < rowCount; i++) {
-            if (this.#currentLineIndex >= this.#lines.length) break;
-            const lineContent = this.#lines[this.#currentLineIndex++];
-            const items = lineContent.split(" ");
-            matrixRows.push(convertToNumbers ? items.map(Number) : items);
-        }
-        return matrixRows;
-    }
+function evaluateInput() {
+  const inputSequence = dataReader.extractNextToken(true);
+  const sequenceChars = Array.from(inputSequence);
 
-    acquireLineSegments(count, parseAsNumbers = false) {
-        const segments = [];
-        for (let i = 0; i < count; i++) {
-            if (this.#currentLineIndex >= this.#lines.length) break;
-            const lineContent = this.#lines[this.#currentLineIndex++];
-            segments.push(parseAsNumbers ? Number(lineContent) : lineContent);
-        }
-        return segments;
-    }
+  const hasConsecutiveMatches = sequenceChars.slice(0, -1).some((char, idx) => {
+    return char === sequenceChars[idx + 1];
+  });
+
+  return hasConsecutiveMatches ? "Bad" : "Good";
 }
 
-const createMultiDimCollection = (...args) => {
-    if (args.length < 1) {
-        throw new Error("At least one argument (the value factory) is required.");
-    }
-
-    const valueProducer = args[args.length - 1];
-    if (typeof valueProducer !== 'function') {
-        throw new Error("The last argument must be a function (value factory).");
-    }
-
-    const dimensionSizes = args.slice(0, -1);
-
-    if (dimensionSizes.some(d => typeof d !== 'number' || d < 0)) {
-        throw new Error("Dimensions must be non-negative numbers.");
-    }
-
-    const buildRecursive = (currentDimIndex) => {
-        if (currentDimIndex === dimensionSizes.length) {
-            return valueProducer();
-        }
-
-        const currentSize = dimensionSizes[currentDimIndex];
-        return Array.from({ length: currentSize }, () => buildRecursive(currentDimIndex + 1));
-    };
-
-    return buildRecursive(0);
-};
-
-const analyzeInputSequence = (inputString) => {
-    const symbols = Array.from(inputString);
-
-    const hasAdjacentDuplicates = symbols.slice(0, 3).some((symbol, idx) => {
-        return symbol === symbols[idx + 1];
-    });
-
-    return hasAdjacentDuplicates ? "Bad" : "Good";
-};
-
-const fileSystemInterface = require("fs");
-const receivedContent = fileSystemInterface.readFileSync("/dev/stdin", "utf8");
-
-const dataHandler = new InputSource(receivedContent);
-const firstParsedToken = dataHandler.retrieveFirstTokenString();
-
-console.log(analyzeInputSequence(firstParsedToken));
+console.log(evaluateInput());

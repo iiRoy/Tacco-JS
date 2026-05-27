@@ -1,45 +1,31 @@
-const systemInputFlow = process.stdin;
-const systemOutputFlow = process.stdout;
+const standardInput = require('readline');
+const inputHandler = standardInput.createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
 
-let collectedDataBuffer = '';
+let dataBuffer = [];
 
-const computeOutcome = (operandPair) => {
-    const firstOperand = operandPair[0];
-    const secondOperand = operandPair[1];
+const processInputAndCalculate = (lineSegments) => {
+    const firstValue = lineSegments[0];
+    const secondValue = lineSegments[1];
 
-    const exceedsThreshold = [firstOperand, secondOperand].some(val => val > 9);
-    
-    return exceedsThreshold ? -1 : firstOperand * secondOperand;
+    const checkLimit = (val) => val <= 9;
+    const areBothValid = checkLimit(firstValue) && checkLimit(secondValue);
+
+    const outcomeMap = new Map([
+        [true, () => firstValue * secondValue],
+        [false, () => -1]
+    ]);
+
+    return outcomeMap.get(areBothValid)();
 };
 
-systemInputFlow.setEncoding('utf8');
-
-systemInputFlow.addListener('data', (portion) => {
-    collectedDataBuffer += portion;
-});
-
-systemInputFlow.addListener('end', () => {
-    const receivedTextLine = collectedDataBuffer.trim();
+inputHandler.on('line', function (currentLine) {
+    dataBuffer = currentLine.split(' ').map(Number);
+  })
+  .on('close', function () {
+	console.log(processInputAndCalculate(dataBuffer));
     
-    const numericStrings = receivedTextLine.match(/\d+/g);
-    
-    const parsedOperands = [];
-    for (let idx = 0; idx < 2; idx++) {
-        if (numericStrings && numericStrings[idx] !== undefined) {
-            parsedOperands.push(Number(numericStrings[idx]));
-        } else {
-            parsedOperands.push(NaN);
-        }
-    }
-    
-    const finalResult = computeOutcome(parsedOperands);
-    
-    systemOutputFlow.write(String(finalResult) + '\n');
-    
-    process.exit(0);
-});
-
-systemInputFlow.addListener('error', (err) => {
-    systemOutputFlow.write(`Input stream failure: ${err.message}\n`);
-    process.exit(1);
-});
+    process.exit();
+  });

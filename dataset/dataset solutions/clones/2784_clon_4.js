@@ -1,28 +1,21 @@
-const processDataStream = (rawText) => {
-  const textLines = rawText.split('\n');
-  const numberSeries = textLines[1].split(' ').map(Number);
+const processData = (rawData) => {
+  const [elementCountStr, valueString] = rawData.split('\n');
+  const numericValues = valueString.split(' ').map(Number);
 
-  const seriesLength = numberSeries.length;
-  if (seriesLength < 3) {
-    console.log(0);
-    return;
-  }
+  const middleIndices = Array.from({ length: Math.max(0, numericValues.length - 2) }, (_, k) => k + 1);
 
-  const checkPositions = Array.from({ length: seriesLength - 2 }, (_, indexOffset) => indexOffset + 1);
+  const monotonicTriplets = middleIndices.reduce((accumulator, currentIdx) => {
+    const priorVal = numericValues[currentIdx - 1];
+    const centralVal = numericValues[currentIdx];
+    const subsequentVal = numericValues[currentIdx + 1];
 
-  const orderedElementCounter = checkPositions.reduce((accumulator, currentIdx) => {
-    const initialTerm = numberSeries[currentIdx - 1];
-    const middleTerm = numberSeries[currentIdx];
-    const finalTerm = numberSeries[currentIdx + 1];
-
-    if ((initialTerm < middleTerm && middleTerm < finalTerm) ||
-        (initialTerm > middleTerm && middleTerm > finalTerm)) {
+    if ((priorVal - centralVal) * (centralVal - subsequentVal) > 0) {
       return accumulator + 1;
     }
     return accumulator;
   }, 0);
 
-  console.log(orderedElementCounter);
+  console.log(monotonicTriplets);
 };
 
-processDataStream(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processData(require('fs').readFileSync('/dev/stdin', 'utf8'));

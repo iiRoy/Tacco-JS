@@ -1,59 +1,71 @@
-function performGridTransformation(dataLines) {
-    const [rowsCount, colsCount] = dataLines[0].split(' ').map(Number);
+const processInput = (inputLines) => {
+    const [heightStr, widthStr] = inputLines[0].split(" ");
+    const gridHeight = Number(heightStr);
+    const gridWidth = Number(widthStr);
 
-    const numericGrid = dataLines.slice(1, rowsCount + 1).map(line => line.split(' ').map(Number));
+    const numericGrid = inputLines.slice(1).map(rowString =>
+        rowString.split(" ").map(Number)
+    );
 
-    const oddCellRegistry = Array.from({ length: rowsCount * colsCount }, (_, cellIndex) => {
-        const zeroIndexedRow = Math.floor(cellIndex / colsCount);
-        const zeroIndexedCol = (zeroIndexedRow % 2 === 0)
-            ? cellIndex % colsCount
-            : colsCount - 1 - (cellIndex % colsCount);
+    const collectOddCellCoordinates = Array.from({ length: gridHeight }, (_, rowIndex) => {
+        const oneIndexedRow = rowIndex + 1;
+        const rowValues = numericGrid[rowIndex];
+        const columnIndices = Array.from({ length: gridWidth }, (_, colIndex) => colIndex);
 
-        const oneIndexedRow = zeroIndexedRow + 1;
-        const oneIndexedCol = zeroIndexedCol + 1;
+        if (rowIndex % 2 === 0) { // Corresponds to 1-indexed odd rows (left-to-right traversal)
+            return columnIndices.map(colIndex => ({
+                r: oneIndexedRow,
+                c: colIndex + 1,
+                val: rowValues[colIndex]
+            }));
+        } else { // Corresponds to 1-indexed even rows (right-to-left traversal)
+            return columnIndices.reverse().map(colIndex => ({
+                r: oneIndexedRow,
+                c: colIndex + 1,
+                val: rowValues[colIndex]
+            }));
+        }
+    }).flat()
+    .filter(cell => cell.val % 2 === 1)
+    .map(cell => [cell.r, cell.c]);
 
-        return {
-            row: oneIndexedRow,
-            col: oneIndexedCol,
-            value: numericGrid[zeroIndexedRow][zeroIndexedCol]
-        };
-    })
-    .filter(cellInfo => cellInfo.value % 2 !== 0)
-    .map(cellInfo => [cellInfo.row, cellInfo.col]);
+    const generatePathSegments = (initialPoint, finalPoint) => {
+        const segments = [];
+        let [currentR, currentC] = initialPoint;
+        const [targetR, targetC] = finalPoint;
 
-    const constructMovementSequence = (initialLocation, finalLocation) => {
-        const generatePathSteps = (currentLocation, targetLocation, currentMoves) => {
-            const [currentR, currentC] = currentLocation;
-            const [targetR, targetC] = targetLocation;
+        const horizontalSteps = Array.from({ length: Math.abs(targetC - currentC) }, () => {
+            const nextC = currentC + (targetC > currentC ? 1 : -1);
+            const segment = [currentR, currentC, currentR, nextC];
+            currentC = nextC;
+            return segment;
+        });
+        segments.push(...horizontalSteps);
 
-            if (currentR === targetR && currentC === targetC) {
-                return currentMoves;
-            }
+        const verticalSteps = Array.from({ length: targetR - currentR }, () => {
+            const nextR = currentR + 1;
+            const segment = [currentR, currentC, nextR, currentC];
+            currentR = nextR;
+            return segment;
+        });
+        segments.push(...verticalSteps);
 
-            if (currentC !== targetC) {
-                const nextC = (currentC < targetC) ? currentC + 1 : currentC - 1;
-                const newMove = [currentR, currentC, currentR, nextC];
-                return generatePathSteps([currentR, nextC], targetLocation, [...currentMoves, newMove]);
-            } else {
-                const nextR = (currentR < targetR) ? currentR + 1 : currentR - 1;
-                const newMove = [currentR, currentC, nextR, currentC];
-                return generatePathSteps([nextR, currentC], targetLocation, [...currentMoves, newMove]);
-            }
-        };
-        return generatePathSteps(initialLocation, finalLocation, []);
+        return segments;
     };
 
-    const collectedInstructions = oddCellRegistry.reduce((allInstructions, currentPoint, idx, fullList) => {
-        if (idx % 2 === 0 && idx + 1 < fullList.length) {
-            const originPoint = currentPoint;
-            const terminalPoint = fullList[idx + 1];
-            return [...allInstructions, ...constructMovementSequence(originPoint, terminalPoint)];
+    const allMovementInstructions = collectOddCellCoordinates.reduce((accumulator, currentCoordinate, index) => {
+        if (index % 2 === 0) {
+            return { ...accumulator, pendingStartCoordinate: currentCoordinate };
+        } else {
+            const start = accumulator.pendingStartCoordinate;
+            const end = currentCoordinate;
+            const pairPaths = generatePathSegments(start, end);
+            return { paths: accumulator.paths.concat(pairPaths), pendingStartCoordinate: null };
         }
-        return allInstructions;
-    }, []);
+    }, { paths: [], pendingStartCoordinate: null }).paths;
 
-    console.log(collectedInstructions.length);
-    console.log(collectedInstructions.join("\n"));
-}
+    console.log(allMovementInstructions.length);
+    console.log(allMovementInstructions.join("\n"));
+};
 
-performGridTransformation(require('fs').readFileSync('/dev/stdin', 'utf8').trim().split("\n"));
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8').trim().split("\n"));

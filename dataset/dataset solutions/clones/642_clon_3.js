@@ -1,116 +1,98 @@
-const fileSystem = require('fs'); // Import the Node.js file system module for input operations.
+const fileSystem = require('fs');
 
-/**
- * Calculates the minimum cost to transform a given flag into a specific
- * three-stripe pattern: White (top), Blue (middle), Red (bottom).
- * Each stripe must consist of at least one row.
- * The input is read from /dev/stdin.
- */
-function calculateOptimalFlagTransformationCost() {
-    // Read the raw input string from standard input.
-    // The input is expected to contain flag dimensions and then color data.
-    const rawFlagData = fileSystem.readFileSync('/dev/stdin', 'utf8');
+// Define constants for color codes to improve readability and maintainability.
+const WHITE_COLOR_CODE = '0';
+const BLUE_COLOR_CODE = '1';
+const RED_COLOR_CODE = '2';
 
-    // --- Phase 1: Input Processing and Normalization ---
+// Helper function to process the raw input string into an array of lines.
+const processRawInput = (rawText) => {
+    let cleanedText = rawText.trim();
+    // Replace color characters with their numeric codes.
+    cleanedText = cleanedText.replace(/W/g, WHITE_COLOR_CODE);
+    cleanedText = cleanedText.replace(/B/g, BLUE_COLOR_CODE);
+    cleanedText = cleanedText.replace(/R/g, RED_COLOR_CODE);
+    return cleanedText.split("\n");
+};
 
-    // Clean up the raw input: remove leading/trailing whitespace,
-    // then replace 'W', 'B', 'R' characters with numeric equivalents ('0', '1', '2').
-    // Finally, split the entire string into an array of individual lines.
-    const normalizedLines = rawFlagData
-        .trim()
-        .replace(/W/g, "0") // Convert White to '0'
-        .replace(/B/g, "1") // Convert Blue to '1'
-        .replace(/R/g, "2") // Convert Red to '2'
-        .split("\n");
+const rawInputData = fileSystem.readFileSync('/dev/stdin', 'utf8');
+let processedInputLines = processRawInput(rawInputData);
 
-    // Extract the flag's dimensions (number of rows and columns) from the very first line.
-    // The `shift()` method removes this line from the `normalizedLines` array.
-    const [numRowsStr, numColsStr] = normalizedLines.shift().split(" ");
-    const totalFlagRows = Number(numRowsStr);    // Corresponds to 'n' in the original code
-    const totalFlagColumns = Number(numColsStr); // Corresponds to 'm' in the original code
+// Extract dimensions (N and M) from the first line.
+const dimensionLine = processedInputLines.shift();
+const [numRows, numCols] = dimensionLine.split(" ").map(Number);
 
-    // --- Phase 2: Pre-calculate Transformation Costs per Row ---
-
-    // Construct a cost matrix where each entry `rowCosts[k]` is an array:
-    // `[cost_to_make_row_k_white, cost_to_make_row_k_blue, cost_to_make_row_k_red]`.
-    // The cost for a specific color is the number of cells in that row
-    // that are NOT the desired color.
-    const rowTransformationCosts = normalizedLines.map(lineCharData => {
-        // Initialize counters for each color present in the current row.
-        // Index 0 for '0' (White), 1 for '1' (Blue), 2 for '2' (Red).
-        const colorCountsInCurrentRow = [0, 0, 0];
-
-        // Iterate through each character (color) in the current row's data.
-        for (let charIndex = 0; charIndex < totalFlagColumns; charIndex++) {
-            // Increment the counter for the color found at `charIndex`.
-            // `parseInt` converts '0', '1', '2' characters to numbers for array indexing.
-            colorCountsInCurrentRow[parseInt(lineCharData[charIndex])]++;
-        }
-
-        // Calculate and return the costs:
-        // Cost to make row entirely White = total columns - count of '0's in this row.
-        // Cost to make row entirely Blue  = total columns - count of '1's in this row.
-        // Cost to make row entirely Red   = total columns - count of '2's in this row.
-        return [
-            totalFlagColumns - colorCountsInCurrentRow[0], // Cost to convert row to all White
-            totalFlagColumns - colorCountsInCurrentRow[1], // Cost to convert row to all Blue
-            totalFlagColumns - colorCountsInCurrentRow[2]  // Cost to convert row to all Red
-        ];
-    });
-
-    // --- Phase 3: Determine Minimum Overall Transformation Cost ---
-
-    // Initialize the minimum cost with a value guaranteed to be higher than any possible actual cost.
-    // The maximum possible cost would be changing every cell in every row, i.e., totalFlagRows * totalFlagColumns.
-    let minimumTotalCost = (totalFlagRows * totalFlagColumns) + 1;
-
-    // Special handling for flags with exactly 3 rows.
-    // In this case, there's only one possible valid configuration:
-    // Row 0 is White, Row 1 is Blue, Row 2 is Red.
-    if (totalFlagRows === 3) {
-        minimumTotalCost = rowTransformationCosts[0][0] + // Cost to make row 0 White
-                           rowTransformationCosts[1][1] + // Cost to make row 1 Blue
-                           rowTransformationCosts[2][2];  // Cost to make row 2 Red
-        console.log(minimumTotalCost);
-        return; // Exit early as no other configurations are possible or need checking.
+// Helper function to calculate the cost to make a single row entirely of a specific color.
+// Returns an array [cost_to_make_white, cost_to_make_blue, cost_to_make_red].
+const calculateRowTransformationCosts = (rowString, totalColumns) => {
+    const transformationCosts = [totalColumns, totalColumns, totalColumns]; // Initialize with max possible changes
+    for (let charIdx = 0; charIdx < totalColumns; charIdx++) {
+        const currentColorChar = rowString[charIdx];
+        // Decrement the cost for the color that is already present.
+        // This effectively calculates (totalColumns - count_of_currentColorChar).
+        transformationCosts[parseInt(currentColorChar)]--;
     }
+    return transformationCosts;
+};
 
-    // Iterate through all valid split points for the White and Blue stripes.
-    // `whiteStripeLastRowIndex` marks the last row belonging to the White stripe (0-indexed).
-    // `blueStripeLastRowIndex` marks the last row belonging to the Blue stripe (0-indexed).
-    // The loops ensure each stripe (White, Blue, Red) has at least one row,
-    // and specifically, that the Red stripe has at least two rows, as implied by the original problem's loop bounds.
-    // White stripe: rows 0 to `whiteStripeLastRowIndex`
-    // Blue stripe: rows `whiteStripeLastRowIndex + 1` to `blueStripeLastRowIndex`
-    // Red stripe: rows `blueStripeLastRowIndex + 1` to `totalFlagRows - 1`
-    for (let whiteStripeLastRowIndex = 0; whiteStripeLastRowIndex <= totalFlagRows - 4; whiteStripeLastRowIndex++) {
-        for (let blueStripeLastRowIndex = whiteStripeLastRowIndex + 1; blueStripeLastRowIndex <= totalFlagRows - 3; blueStripeLastRowIndex++) {
-            let currentCombinationCost = 0; // Accumulated cost for this specific W-B-R configuration.
+// Map each processed row string to its array of transformation costs.
+const rowColorTransformationCosts = processedInputLines.map(rowStr =>
+    calculateRowTransformationCosts(rowStr, numCols)
+);
 
-            // Sum costs for the White stripe.
-            for (let rowNum = 0; rowNum <= whiteStripeLastRowIndex; rowNum++) {
-                currentCombinationCost += rowTransformationCosts[rowNum][0]; // Add cost to make this row White.
-            }
+// Initialize the minimum cost found so far.
+// The original code uses 2500 as an initial large value.
+const INITIAL_MINIMUM_COST_VALUE = 2500;
+let overallMinimumCost = INITIAL_MINIMUM_COST_VALUE;
 
-            // Sum costs for the Blue stripe.
-            for (let rowNum = whiteStripeLastRowIndex + 1; rowNum <= blueStripeLastRowIndex; rowNum++) {
-                currentCombinationCost += rowTransformationCosts[rowNum][1]; // Add cost to make this row Blue.
-            }
-
-            // Sum costs for the Red stripe.
-            // This loop correctly includes all rows from `blueStripeLastRowIndex + 1` up to the last row (`totalFlagRows - 1`).
-            for (let rowNum = blueStripeLastRowIndex + 1; rowNum < totalFlagRows; rowNum++) {
-                currentCombinationCost += rowTransformationCosts[rowNum][2]; // Add cost to make this row Red.
-            }
-
-            // Update the overall minimum cost if the current configuration is more economical.
-            minimumTotalCost = Math.min(minimumTotalCost, currentCombinationCost);
-        }
-    }
-
-    // Output the final calculated minimum transformation cost.
-    console.log(minimumTotalCost);
+// Handle the special case where N (numRows) is 3.
+// In this specific case, the cost is fixed: row 0 all White, row 1 all Blue, row 2 all Red.
+if (numRows === 3) {
+    overallMinimumCost =
+        rowColorTransformationCosts[0][0] + // Cost to make row 0 white
+        rowColorTransformationCosts[1][1] + // Cost to make row 1 blue
+        rowColorTransformationCosts[2][2];  // Cost to make row 2 red
 }
 
-// Execute the main function to start the flag cost calculation process.
-calculateOptimalFlagTransformationCost();
+// Helper function to sum costs for a contiguous segment of rows for a target color.
+// The `endIndex` is exclusive, meaning rows from `startIndex` up to `endIndex - 1`.
+const sumSegmentCosts = (startIndex, endIndex, targetColorIndex, costsMatrix) => {
+    let segmentTotal = 0;
+    for (let k = startIndex; k < endIndex; k++) {
+        segmentTotal += costsMatrix[k][targetColorIndex];
+    }
+    return segmentTotal;
+};
+
+// Iterate through all possible split points for the White, Blue, and Red sections.
+// `whiteSectionEndRow` (original `i`): The last row index for the white section.
+// `blueSectionEndRow` (original `j`): The last row index for the blue section.
+// Note: The original code's loop bounds and segment definitions are preserved for exact behavior.
+// White section: rows 0 to `whiteSectionEndRow`.
+// Blue section: rows `whiteSectionEndRow` to `blueSectionEndRow - 1`.
+// Red section: rows `blueSectionEndRow` to `numRows - 1`.
+for (let whiteSectionEndRow = 1; whiteSectionEndRow < numRows - 2; whiteSectionEndRow++) {
+    let lastInnerLoopCost = 0; // This variable captures the 'cost' from the last 'j' iteration, replicating original bug.
+
+    for (let blueSectionEndRow = whiteSectionEndRow + 1; blueSectionEndRow < numRows - 1; blueSectionEndRow++) {
+        let currentIterationCost = 0;
+
+        // Calculate cost for the White section (rows 0 to whiteSectionEndRow)
+        currentIterationCost += sumSegmentCosts(0, whiteSectionEndRow + 1, 0, rowColorTransformationCosts);
+
+        // Calculate cost for the Blue section (rows whiteSectionEndRow to blueSectionEndRow - 1)
+        currentIterationCost += sumSegmentCosts(whiteSectionEndRow, blueSectionEndRow, 1, rowColorTransformationCosts);
+
+        // Calculate cost for the Red section (rows blueSectionEndRow to numRows - 1)
+        currentIterationCost += sumSegmentCosts(blueSectionEndRow, numRows, 2, rowColorTransformationCosts);
+
+        lastInnerLoopCost = currentIterationCost; // Store the cost for the current (i, j) pair.
+    }
+    // This update is outside the inner loop, meaning `overallMinimumCost` is compared
+    // only with the `lastInnerLoopCost` (which is the cost from the last `blueSectionEndRow` iteration for the current `whiteSectionEndRow`).
+    // This behavior is intentionally preserved from the original code.
+    overallMinimumCost = Math.min(overallMinimumCost, lastInnerLoopCost);
+}
+
+// Output the final minimum cost.
+console.log(overallMinimumCost);

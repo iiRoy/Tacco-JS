@@ -1,24 +1,24 @@
-const initialValue = process.argv[2];
-const numericValue = Number(initialValue);
-const originalReference = numericValue;
+var sourceText = require('fs').readFileSync('/dev/stdin', 'utf8').trim();
+var initialValue = parseInt(sourceText);
 
-let currentRemainder = numericValue;
-const factorCollection = [];
+function extractDivisorInstances(currentNumber, currentDivisor, collectedFactors) {
+    if (currentNumber % currentDivisor !== 0) {
+        return [currentNumber, collectedFactors];
+    }
+    collectedFactors.push(currentDivisor);
+    return extractDivisorInstances(currentNumber / currentDivisor, currentDivisor, collectedFactors);
+}
 
-const repeatedlyExtract = (val, div, collector) => {
-  if (val % div === 0) {
-    collector.push(div);
-    return repeatedlyExtract(val / div, div, collector);
-  }
-  return val;
-};
+function obtainFactors(currentValue, divisorCandidate, factorCollection) {
+    if (divisorCandidate > currentValue / 2) {
+        return factorCollection;
+    }
 
-const upperLimit = Math.floor(originalReference / 2);
-const divisorRangeLength = upperLimit >= 2 ? (upperLimit - 2 + 1) : 0;
+    const [remainingValue, updatedFactors] = extractDivisorInstances(currentValue, divisorCandidate, factorCollection);
 
-Array.from({ length: divisorRangeLength }, (_, idx) => idx + 2)
-  .forEach(possibleDivisor => {
-    currentRemainder = repeatedlyExtract(currentRemainder, possibleDivisor, factorCollection);
-  });
+    return obtainFactors(remainingValue, divisorCandidate + 1, updatedFactors);
+}
 
-console.log(`${originalReference}: ${factorCollection.join(' ')}`);
+var factorCollection = obtainFactors(initialValue, 2, []);
+
+console.log(initialValue + ': ' + factorCollection.join(' '));

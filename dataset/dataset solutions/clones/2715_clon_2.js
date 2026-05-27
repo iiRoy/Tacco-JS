@@ -1,187 +1,286 @@
-var DATA_PARSER = ( function () {
-    // Utility to parse raw string data
-    function createParser( inputString ) {
-        return new InputReader( inputString );
+var INPUT_PARSER_FACTORY = (function () {
+  /**
+   * Creates an input parser instance.
+   * @param {string} rawInputText - The raw input string, typically from stdin.
+   * @returns {InputDataStream} An instance of InputDataStream.
+   */
+  function createInputParser(rawInputText) {
+    return new InputDataStream(rawInputText);
+  }
+
+  /**
+   * Represents a stream of input data, allowing sequential reading.
+   * @param {string} sourceContent - The string content to parse.
+   * @constructor
+   */
+  function InputDataStream(sourceContent) {
+    // Split the input content into lines and store them.
+    this._inputLines = sourceContent.trim().split("\n");
+    // Initialize a pointer to the current line being processed.
+    this._currentLinePointer = 0;
+  }
+
+  /**
+   * Reads the next token from the current line. If the current line is exhausted,
+   * it moves to the next line. Tokens are space-separated.
+   * @param {boolean} [returnAsString=false] - If true, returns the token as a string; otherwise, as a number.
+   * @returns {string|number} The next token.
+   */
+  InputDataStream.prototype.readNextToken = function (returnAsString) {
+    var currentLines = this._inputLines;
+    var lineIndex = this._currentLinePointer;
+    var extractedToken;
+
+    // If the current line hasn't been split into tokens yet, do so.
+    // Tokens are read from right to left (popped from the end of the array).
+    if (typeof currentLines[lineIndex] === "string") {
+      currentLines[lineIndex] = currentLines[lineIndex].split(" ").reverse();
     }
 
-    // Class for reading structured input
-    function InputReader( rawData ) {
-        this.inputLines = rawData.trim().split( "\n" );
-        this.currentLineIndex = 0;
+    // Extract the last token from the current line's token array.
+    extractedToken = currentLines[lineIndex].pop();
+
+    // If the current line is now empty of tokens, advance to the next line.
+    if (!currentLines[lineIndex].length) {
+      this._currentLinePointer++;
     }
 
-    InputReader.prototype.extractValue = function ( asString ) {
-        let linesRef = this.inputLines;
-        let idxRef = this.currentLineIndex;
-        let extractedItem;
+    // Return the token, either as a string or parsed as a number.
+    return returnAsString ? extractedToken : +extractedToken;
+  };
 
-        // If the current line hasn't been processed into an array, do so
-        if ( typeof linesRef[idxRef] === "string" ) {
-            linesRef[idxRef] = linesRef[idxRef].split( " " ).reverse();
-        }
+  /**
+   * Reads an entire line and splits it into tokens.
+   * @param {boolean} [returnStringsOnly=false] - If true, returns tokens as strings; otherwise, as numbers.
+   * @returns {string[]|number[]} An array of tokens from the line.
+   */
+  InputDataStream.prototype.readFullLine = function (returnStringsOnly) {
+    // Get the current line, split it by spaces, and advance the line pointer.
+    var lineTokensArray = this._inputLines[this._currentLinePointer++].split(" ");
+    // Return tokens as strings or parsed as numbers.
+    return returnStringsOnly ? lineTokensArray : lineTokensArray.map((tokenStr) => +tokenStr);
+  };
 
-        extractedItem = linesRef[idxRef].pop();
+  /**
+   * Reads a specified number of lines as a matrix (array of arrays).
+   * @param {number} numberOfRows - The number of rows to read.
+   * @param {boolean} [asStringArrayOfArrays=false] - If true, returns matrix elements as strings; otherwise, as numbers.
+   * @returns {string[][]|number[][]} The matrix data.
+   */
+  InputDataStream.prototype.readMatrixData = function (numberOfRows, asStringArrayOfArrays) {
+    // Extract the specified number of lines and advance the line pointer.
+    var matrixRowsData = this._inputLines.slice(
+      this._currentLinePointer,
+      (this._currentLinePointer += numberOfRows)
+    ).map((rowString) => rowString.split(" "));
 
-        // Move to the next line if the current one is empty
-        if ( !linesRef[idxRef].length ) {
-            this.currentLineIndex++;
-        }
+    // Return matrix elements as strings or parsed as numbers.
+    return asStringArrayOfArrays
+      ? matrixRowsData
+      : matrixRowsData.map((row) => row.map((element) => +element));
+  };
 
-        // Return as string or number based on flag
-        return asString ? extractedItem : +extractedItem;
-    };
+  /**
+   * Reads a specified number of lines as a simple array.
+   * @param {number} lineCount - The number of lines to read.
+   * @param {boolean} [returnAsStrings=false] - If true, returns line contents as strings; otherwise, as numbers.
+   * @returns {string[]|number[]} An array of line contents.
+   */
+  InputDataStream.prototype.readLinesAsNumericArray = function (lineCount, returnAsStrings) {
+    // Extract the specified number of lines and advance the line pointer.
+    var linesExtracted = this._inputLines.slice(
+      this._currentLinePointer,
+      (this._currentLinePointer += lineCount)
+    );
 
-    InputReader.prototype.readCurrentLine = function ( keepStrings ) {
-        // Read the current line and advance the index
-        let lineParts = this.inputLines[this.currentLineIndex++].split( " " );
+    // Return line contents as strings or parsed as numbers.
+    return returnAsStrings ? linesExtracted : linesExtracted.map((lineContent) => +lineContent);
+  };
 
-        // Return parts as strings or convert to numbers
-        return keepStrings ? lineParts : lineParts.map( element => +element );
-    };
+  return createInputParser;
+})();
 
-    InputReader.prototype.readMatrix = function ( numRows, returnStrings ) {
-        // Extract multiple lines and split each into parts
-        let matrixData = this.inputLines.slice( this.currentLineIndex, this.currentLineIndex += numRows ).map( row => row.split( " " ) );
+// Initialize the input handler by reading from standard input.
+var inputHandler = INPUT_PARSER_FACTORY(require("node:fs").readFileSync("/dev/stdin", "utf8"));
 
-        // Convert elements to numbers if not keeping strings
-        return returnStrings ? matrixData : matrixData.map( row => row.map( element => +element ) );
-    };
+/**
+ * Creates a multi-dimensional array initialized with a given value.
+ * This function is not used in the main problem-solving logic but is part of the original utility set.
+ * @param {*} initialElementValue - The value to initialize array elements with.
+ * @param {...number} dimensionArguments - The dimensions of the array (e.g., createMultiDimArray(0, 2, 3) for a 2x3 array).
+ * @returns {Array} The initialized multi-dimensional array.
+ */
+function initializeMultiDimensionalArray(initialElementValue) {
+  var dimensionArguments = arguments;
+  var argLength = dimensionArguments.length;
+  // Start building the array creation expression from the innermost dimension.
+  var arrayCreationExpression = `Array(${dimensionArguments[--argLength]}).fill(0).map(_ignored => { return ${initialElementValue}; })`;
 
-    InputReader.prototype.readRows = function ( count, stringOutput ) {
-        // Get 'count' number of lines
-        let rowItems = this.inputLines.slice( this.currentLineIndex, this.currentLineIndex += count );
+  // Build up the expression for outer dimensions.
+  while (--argLength) {
+    arrayCreationExpression = `Array(${dimensionArguments[argLength]}).fill(0).map(_ignored => ${arrayCreationExpression})`;
+  }
 
-        // Convert items to numbers if not keeping strings
-        return stringOutput ? rowItems : rowItems.map( item => +item );
-    };
-
-    return createParser;
-} )();
-
-// Initialize the input processing object
-var inputProcessor = DATA_PARSER( require( "fs" ).readFileSync( "/dev/stdin", "utf8" ) );
-
-// Function for creating N-dimensional arrays
-function multiDimArray( initialValue ) {
-    var argsList = arguments,
-        lengthCount = argsList.length,
-        arrayCreationString = "Array(argsList[" + --lengthCount + "]).fill(0).map(ignoredVar=>{return " + initialValue + ";})";
-    while ( --lengthCount ) {
-        arrayCreationString = "Array(argsList[" + lengthCount + "]).fill(0).map(ignoredVar=>" + arrayCreationString + ")";
-    }
-    return eval( arrayCreationString );
+  // Evaluate the dynamically constructed string to create the array.
+  return eval(arrayCreationExpression);
 }
 
-// Main program execution logic
-function executeLogic() {
-    var mainString = inputProcessor.extractValue( true ); // Get the primary string
-    var targetPattern = inputProcessor.extractValue( true ); // Get the pattern string
-    var patternRepetitions = calculateRepetitionFactor( targetPattern ); // Determine pattern repetitions
+/**
+ * Main function to process the input and solve the problem.
+ * @returns {number} The result of the problem.
+ */
+function processInputAndSolve() {
+  // Read the main string 's' and the search pattern 't'.
+  var mainString = inputHandler.readNextToken(true);
+  var searchPattern = inputHandler.readNextToken(true);
 
-    // Adjust the target pattern if it's a repeating sequence
-    if ( patternRepetitions > 1 ) {
-        targetPattern = targetPattern.slice( 0, targetPattern.length / patternRepetitions );
+  // Calculate the repetition factor of the search pattern.
+  var patternRepeatFactor = calculatePatternRepetition(searchPattern);
+
+  // If the pattern has a repetition factor greater than 1,
+  // reduce the pattern to its smallest repeating unit.
+  if (patternRepeatFactor > 1) {
+    searchPattern = searchPattern.slice(0, searchPattern.length / patternRepeatFactor);
+  }
+
+  // Create doubled and tripled versions of the main string for searching.
+  var mainStringDoubled = mainString + mainString;
+  var mainStringTripled = mainStringDoubled + mainString;
+
+  // Get the length of the (potentially reduced) search pattern.
+  var patternLength = searchPattern.length;
+
+  // Initialize variables for tracking consecutive matches.
+  var maximumConsecutiveMatches = 0;
+  var currentConsecutiveMatches = 1;
+
+  // Find the first occurrence of the pattern in the doubled main string.
+  var currentSearchPosition = mainStringDoubled.indexOf(searchPattern);
+
+  // If the pattern is not found at all, return 0.
+  if (currentSearchPosition === -1) {
+    return 0;
+  }
+
+  // Advance the search position past the first match.
+  currentSearchPosition += patternLength;
+
+  // Loop through the doubled string to find consecutive matches.
+  while (currentSearchPosition < mainStringDoubled.length) {
+    // Find the next occurrence of the pattern starting from the current search position.
+    var nextMatchPosition = mainStringDoubled.indexOf(searchPattern, currentSearchPosition);
+
+    // If no more matches are found, break the loop.
+    if (nextMatchPosition === -1) {
+      break;
     }
 
-    var doubleString = mainString + mainString; // String concatenated with itself
-    var tripleString = doubleString + mainString; // String concatenated thrice
-    var patternLength = targetPattern.length; // Length of the (possibly adjusted) pattern
-
-    var maxCount = 0,
-        currentCount = 1; // Initialize max and current counts
-
-    // Find the first occurrence of the pattern in the doubled string
-    var startIndex = doubleString.indexOf( targetPattern );
-
-    // If pattern not found, return 0
-    if ( startIndex === -1 ) {
-        return 0;
+    // If the current match immediately follows the previous one, increment consecutive count.
+    if (currentSearchPosition === nextMatchPosition) {
+      currentConsecutiveMatches++;
+    } else {
+      // If there's a gap, update the maximum consecutive count if current is higher, then reset.
+      if (maximumConsecutiveMatches < currentConsecutiveMatches) {
+        maximumConsecutiveMatches = currentConsecutiveMatches;
+      }
+      currentConsecutiveMatches = 1; // Reset count for a new sequence.
     }
+    // Advance the search position past the current match.
+    currentSearchPosition = nextMatchPosition + patternLength;
+  }
 
-    startIndex += patternLength; // Move index past the first occurrence
+  // After the loop, update maximumConsecutiveMatches one last time for the final sequence.
+  if (maximumConsecutiveMatches < currentConsecutiveMatches) {
+    maximumConsecutiveMatches = currentConsecutiveMatches;
+  }
 
-    // Loop through the doubled string to find consecutive pattern occurrences
-    while ( startIndex < doubleString.length ) {
-        var foundIndex = doubleString.indexOf( targetPattern, startIndex );
-        if ( foundIndex === -1 ) { // No more occurrences
-            break;
-        }
-        if ( startIndex === foundIndex ) { // Consecutive occurrence
-            currentCount++;
-        } else { // Non-consecutive, reset count and update max
-            if ( maxCount < currentCount ) {
-                maxCount = currentCount;
-            }
-            currentCount = 1;
-        }
-        startIndex = foundIndex + patternLength; // Advance index
+  // Check for a special case: if the pattern continues into the tripled string
+  // exactly where the doubled string ended, it implies infinite repetition.
+  nextMatchPosition = mainStringTripled.indexOf(searchPattern, currentSearchPosition);
+  if (nextMatchPosition === currentSearchPosition) {
+    currentConsecutiveMatches++;
+    // If this extended sequence is greater than the current maximum, it means infinite matches.
+    if (maximumConsecutiveMatches < currentConsecutiveMatches) {
+      return -1; // Indicate infinite repetition.
     }
+  }
 
-    // Update max count one last time after the loop
-    if ( maxCount < currentCount ) {
-        maxCount = currentCount;
-    }
-
-    // Check for a final consecutive occurrence spanning into the triple string
-    foundIndex = tripleString.indexOf( targetPattern, startIndex );
-    if ( foundIndex === startIndex ) {
-        currentCount++;
-        // If a very long sequence is found, it might be infinite (-1)
-        if ( maxCount < currentCount ) {
-            return -1;
-        }
-    }
-
-    // Return the maximum count divided by the pattern's repetition factor, truncated
-    return maxCount / patternRepetitions | 0;
+  // Return the maximum consecutive matches divided by the pattern's repetition factor, floored.
+  return (maximumConsecutiveMatches / patternRepeatFactor) | 0;
 }
 
-// Determines the repetition factor of a string
-function calculateRepetitionFactor( inputSequence ) {
-    var sequenceLength = inputSequence.length;
-    if ( sequenceLength === 1 ) {
-        return 1; // Single character string has repetition factor 1
-    }
+/**
+ * Calculates the smallest repetition factor for a given string.
+ * E.g., "abcabc" has a factor of 2 (repeats "abc"). "aaaa" has a factor of 4 (repeats "a").
+ * "abc" has a factor of 1.
+ * @param {string} inputPattern - The string to analyze.
+ * @returns {number} The repetition factor.
+ */
+function calculatePatternRepetition(inputPattern) {
+  var patternLength = inputPattern.length;
+  // A single character string always has a repetition factor of 1.
+  if (patternLength === 1) {
+    return 1;
+  }
 
-    var factorsList = findDivisors( sequenceLength ); // Get all divisors of the length
+  // Get all positive divisors of the string's length.
+  var patternDivisors = getPositiveDivisors(patternLength);
 
-    for ( var loopIndex = 0; loopIndex < factorsList.length; loopIndex++ ) {
-        var numOccurrences = sequenceLength / factorsList[loopIndex];
-        // Check if the string matches a pattern repeated 'numOccurrences' times
-        if ( inputSequence.match( new RegExp( "(" + inputSequence.slice( 0, factorsList[loopIndex] ) + "){" + numOccurrences + "}" ) ) ) {
-            return numOccurrences;
-        }
+  // Iterate through the divisors to find the smallest repeating unit.
+  for (var divisorIndex = 0; divisorIndex < patternDivisors.length; divisorIndex++) {
+    var repetitionFactor = patternLength / patternDivisors[divisorIndex];
+    // Construct a regex to check if the string is formed by repeating a prefix.
+    // Example: for "abcabc", divisor is 3, prefix is "abc", factor is 2. Regex: "(abc){2}"
+    if (
+      inputPattern.match(
+        new RegExp(
+          `(${inputPattern.slice(0, patternDivisors[divisorIndex])}){${repetitionFactor}}`
+        )
+      )
+    ) {
+      return repetitionFactor;
     }
-    return 1; // No internal repetition found, factor is 1
+  }
+  // If no repetition is found, the factor is 1 (the string itself is the smallest unit).
+  return 1;
 }
 
-// Finds all divisors of a given integer
-function findDivisors( numberInput ) {
-    var divisorArray = [1]; // Start with 1 as a divisor
-    var sqrtInt = Math.sqrt( numberInput ) | 0; // Integer part of the square root
+/**
+ * Finds all positive divisors of a given integer, including 1 and the number itself.
+ * The divisors are returned in ascending order.
+ * @param {number} inputNumber - The integer for which to find divisors.
+ * @returns {number[]} An array of positive divisors.
+ */
+function getPositiveDivisors(inputNumber) {
+  var foundDivisors = [1]; // 1 is always a divisor.
+  var sqrtInteger = Math.sqrt(inputNumber) | 0; // Integer part of the square root.
 
-    // If perfect square, add its root as a divisor
-    if ( sqrtInt * sqrtInt === numberInput ) {
-        divisorArray.push( sqrtInt );
-    }
+  // If the number is a perfect square, its square root is a divisor.
+  if (sqrtInteger * sqrtInteger === inputNumber) {
+    foundDivisors.push(sqrtInteger);
+  }
 
-    // Find other divisors up to the square root
-    for ( var counter = 2; counter < sqrtInt; counter++ ) {
-        if ( numberInput % counter === 0 ) {
-            divisorArray.push( counter, numberInput / counter );
-        }
+  // Iterate from 2 up to (but not including) the square root.
+  for (var loopCounter = 2; loopCounter < sqrtInteger; loopCounter++) {
+    if (inputNumber % loopCounter === 0) {
+      // If 'loopCounter' is a divisor, then 'inputNumber / loopCounter' is also a divisor.
+      foundDivisors.push(loopCounter, inputNumber / loopCounter);
     }
-    // Sort the divisors in ascending order
-    return divisorArray.sort( ( valA, valB ) => valA - valB );
+  }
+
+  // Sort the divisors in ascending order.
+  return foundDivisors.sort((valOne, valTwo) => valOne - valTwo);
 }
 
-// Handle execution for competitive programming environments
-if ( process.argv.length <= 2 ) {
-    // If run without arguments, fork a child process with increased stack size
-    require( "child_process" ).fork( "Entrypoint.js", ["initial"], {
-        executionArguments: ["--stack-limit=240000"]
-    } );
+// This block handles execution based on command-line arguments.
+// It's typically used for competitive programming environments to manage stack size.
+if (process.argv.length <= 2) {
+  // If no arguments (or only node executable and script name), fork a new process
+  // with an increased stack size to prevent stack overflow for deep recursions.
+  require("child_process").fork("SolutionRunner.js", ["1"], {
+    execArgv: ["--stack-size=" + 256 * 1024], // Set stack size to 256KB
+  });
 } else {
-    // Otherwise, execute the main logic and print the result
-    console.log( executeLogic() );
+  // If arguments are present (e.g., from the forked process), execute the main logic.
+  console.log(processInputAndSolve());
 }

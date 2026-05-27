@@ -1,82 +1,72 @@
-// This function processes an input string to find a specific pattern.
-function CalculateResult(sourceContent)
-{
+function ProcessInput(inputData) {
+    // This function computes the length of the longest common substring within the input string.
 
-    // Extract the sequence length from the first line of the input.
-    // The input is expected to have the length on the first line and the sequence on the second.
-    var sequenceLength = Number(sourceContent.split("\n")[0]);
+    // Extract the array size from the first line of input.
+    let arraySize = inputData.split("\n")[0x0] - 0x0;
+    // Extract the actual string from the second line of input.
+    let inputString = inputData.split("\n")[0x1];
 
-    // Obtain the character sequence from the second line of the input.
-    var characterSequence = sourceContent.split("\n")[1];
+    // Initialize a two-dimensional array (dynamic programming table).
+    let dynamicProgTable = new Array(arraySize);
 
-    // Initialize a 2D dynamic programming matrix (table) with dimensions based on sequenceLength.
-    var dynamicMatrix = new Array(sequenceLength);
-
-    // Populate the dynamic programming matrix with inner arrays and set initial boundary values.
-    for (var rowIndex = 0; rowIndex < sequenceLength; rowIndex++) {
-
-        dynamicMatrix[rowIndex] = new Array(sequenceLength + 1); // Create a new row for the matrix.
-        dynamicMatrix[rowIndex][sequenceLength] = 0;             // Set the rightmost boundary to zero.
+    // Populate the DP table with inner arrays and set initial values for the last column.
+    for (let rowIdx = 0x0; rowIdx < arraySize; rowIdx++) {
+        dynamicProgTable[rowIdx] = new Array(arraySize + 0x1);
+        // The last column is initialized to zero, representing no common substring extending beyond the string's end.
+        dynamicProgTable[rowIdx][arraySize] = 0x0;
     }
 
-    // Process the last row of the matrix or a specific segment, working backwards.
-    for (var columnIndex = sequenceLength - 1; columnIndex >= 0; columnIndex--)
-    {
-        // If we are at the very last column, set its value to zero and skip further checks.
-        if (columnIndex === sequenceLength - 1)
-        {
-            dynamicMatrix[sequenceLength - 1][columnIndex] = 0;
-            continue;
+    // Process the last row (arraySize - 1) of the DP table.
+    for (let colIdx = arraySize - 0x1; colIdx >= 0x0; colIdx--) {
+
+        // If the row and column indices are identical, the length of the common substring is zero.
+        if (colIdx === arraySize - 0x1) {
+            dynamicProgTable[arraySize - 0x1][colIdx] = 0x0;
+            continue; // Skip to the next iteration.
         }
 
-        // Compare characters at specific positions within the sequence.
-        if (characterSequence[sequenceLength - 1] === characterSequence[columnIndex])
-        {
-            dynamicMatrix[sequenceLength - 1][columnIndex] = 1; // Mark as a match.
+        // Compare characters from the end of the input string.
+        if (inputString[arraySize - 0x1] === inputString[colIdx]) {
+            // If characters match, a common substring of length one is found.
+            dynamicProgTable[arraySize - 0x1][colIdx] = 0x1;
         }
-        else
-        {
-            dynamicMatrix[sequenceLength - 1][columnIndex] = 0; // Mark as no match.
+        else {
+            // If characters do not match, the common substring length is zero.
+            dynamicProgTable[arraySize - 0x1][colIdx] = 0x0;
         }
     }
 
-
-    // Iterate through the dynamic matrix from bottom-right towards top-left to fill values.
-    // This part performs the core dynamic programming calculation.
-    for (var rowIndex = sequenceLength - 2; rowIndex >= 0; rowIndex--)
-    {
-        for (var columnIndex = sequenceLength - 1; columnIndex >= 0; columnIndex--)
-        {
-            // If row and column indices are identical, it's a diagonal element; set to zero.
-            if (rowIndex === columnIndex)
-            {
-                dynamicMatrix[rowIndex][columnIndex] = 0;
-                continue;
+    // Iterate through the remaining rows of the DP table from bottom-up.
+    for (let rowIdx = arraySize - 0x2; rowIdx >= 0x0; rowIdx--) {
+        // Iterate through columns from right-to-left.
+        for (let colIdx = arraySize - 0x1; colIdx >= 0x0; colIdx--) {
+            // If the row and column indices are the same, the common substring length is zero.
+            if (rowIdx === colIdx) {
+                dynamicProgTable[rowIdx][colIdx] = 0x0;
+                continue; // Proceed to the next column.
             }
-
-            // Check for character equality at the current indices.
-            if (characterSequence[rowIndex] === characterSequence[columnIndex])
-            {
-                // If characters match, increment the value from the diagonally down-right cell.
-                dynamicMatrix[rowIndex][columnIndex] = dynamicMatrix[rowIndex + 1][columnIndex + 1] + 1;
+            
+            // If the characters at the current indices match.
+            if (inputString[rowIdx] === inputString[colIdx]) {
+                // The length of the common substring is one plus the value from the diagonal element.
+                dynamicProgTable[rowIdx][colIdx] = dynamicProgTable[rowIdx + 0x1][colIdx + 0x1] + 0x1;
             }
-            else
-            {
-                // If characters do not match, reset the count to zero.
-                dynamicMatrix[rowIndex][columnIndex] = 0;
+            else {
+                // If characters do not match, the common substring length is zero.
+                dynamicProgTable[rowIdx][colIdx] = 0x0;
             }
         }
     }
 
-    // Flatten the 2D dynamic matrix into a single, one-dimensional collection for easier processing.
-    var linearCollection = Array.prototype.concat.apply([], dynamicMatrix);
+    // Flatten the 2D DP table into a single 1D array to easily find the maximum value.
+    let flattenedTable = Array.prototype.concat.apply([], dynamicProgTable);
+    
+    // Determine the maximum value found in the flattened table.
+    let maximumValue = Math.max.apply(null, flattenedTable);
 
-    // Find the maximum value within the flattened collection.
-    var ultimateMax = Math.max.apply(null, linearCollection);
-
-    // Output the computed maximum value to the console.
-    console.log(ultimateMax);
+    // Output the calculated maximum value to the console.
+    console.log(maximumValue);
 }
 
-// Invoke the main calculation function, reading input from standard input.
-CalculateResult( require("fs").readFileSync("/dev/stdin", "utf8") );
+// Read the input from standard input and pass it to the processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

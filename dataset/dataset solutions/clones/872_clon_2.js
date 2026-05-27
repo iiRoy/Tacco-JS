@@ -1,81 +1,63 @@
-// This module facilitates file system operations for input handling.
-const ioOperations = require('fs');
+// This script processes graph data from standard input.
+var fileSystemModule = require('fs'),
+    fileSize = fileSystemModule.fstatSync(process.stdin.fd).size,
+    dataBuffer = new Buffer(fileSize),
+    readBytesCount = fileSystemModule.readSync(process.stdin.fd, dataBuffer, 0, fileSize, 0),
+    lineInputs = dataBuffer.toString('utf8', 0, readBytesCount).split('\n');
 
-// Determine the total byte count of the standard input stream.
-const streamLengthInBytes = ioOperations.fstatSync(process.stdin.fd).size;
+processGraphData(); // Start the main processing function
 
-// Create a new buffer to store the incoming data from standard input.
-const dataContentBuffer = new Buffer(streamLengthInBytes);
+function processGraphData() {
+  var temporaryParts = lineInputs.shift().split(' '); // Get first line and split it
+  var nodeCount = +temporaryParts[0]; // Number of nodes
+  var edgeCount = +temporaryParts[1]; // Number of edges
 
-// Read the actual bytes from standard input into the allocated buffer.
-const bytesEffectivelyRead = ioOperations.readSync(process.stdin.fd, dataContentBuffer, 0, streamLengthInBytes, 0);
+  var adjacencyList = []; // Adjacency list to store graph structure
+  var edgeDetails = []; // Declared but not used in the final algorithm
+  var distanceValues = []; // Array to store calculated distances/weights
 
-// Convert the buffer content to a UTF-8 string and then split it into an array of lines.
-const parsedSourceLines = dataContentBuffer.toString('utf8', 0, bytesEffectivelyRead).split('\n');
+  var idx1, idx2; // Loop counters
 
-// Invoke the main routine to begin processing the graph data.
-initiateGraphAnalysis();
-
-/**
- * Orchestrates the primary logic for processing graph-related data.
- * This function reads node and edge information, constructs an adjacency list,
- * and performs a specific path-finding or relaxation algorithm on the graph.
- */
-function initiateGraphAnalysis() {
-  // Extract the first line of input, which contains graph dimensions (nodes and edges).
-  let segmentStrings = parsedSourceLines.shift().split(' ');
-
-  // Convert the string representations of node and edge counts to numerical values.
-  const totalNodes = Number(segmentStrings[0]);
-  const totalEdges = Number(segmentStrings[1]);
-
-  // Initialize data structures: an adjacency list for connections and an array for node scores.
-  const nodeConnections = [];
-  const calculatedScores = [];
-
-  // Declare loop control variables.
-  let nodeIndexIterator, connectionIndexIterator;
-
-  // Prepare each node in the graph by initializing its adjacency list and a default score.
-  for (nodeIndexIterator = 0; nodeIndexIterator < totalNodes; nodeIndexIterator++) {
-    nodeConnections[nodeIndexIterator] = [];
-    calculatedScores[nodeIndexIterator] = 0;
+  for (idx1 = 0; idx1 < nodeCount; idx1++) {
+    adjacencyList[idx1] = []; // Initialize each node's adjacency list
+    distanceValues[idx1] = 0; // Initialize distances to zero
   }
 
-  // Populate the graph's adjacency list with edge information (source, destination, weight).
-  for (connectionIndexIterator = 0; connectionIndexIterator < totalEdges; connectionIndexIterator++) {
-    // Parse the current line representing an individual edge.
-    segmentStrings = parsedSourceLines[connectionIndexIterator].split(' ');
-
-    // Add the directed edge to the source node's list: [target_node_id, edge_weight].
-    nodeConnections[Number(segmentStrings[0])].push([Number(segmentStrings[1]), Number(segmentStrings[2])]);
+  for (idx1 = 0; idx1 < edgeCount; idx1++) {
+    temporaryParts = lineInputs[idx1].split(' '); // Read edge data
+    // The 'edges' array was commented out in the original, so we keep it commented.
+    // edgeDetails[idx1] = [temporaryParts[0] - 0, temporaryParts[1] - 0, temporaryParts[2] - 0];
+    adjacencyList[temporaryParts[0] - 0].push([temporaryParts[1] - 0, temporaryParts[2] - 0]); // Add edge to adjacency list
+    // console.log(temporaryParts); // Original debug comment, kept as such.
   }
 
-  // Initialize a queue with the starting node (node 0) for traversal and evaluation.
-  const processingQueue = [0];
-  let activeNodeIdentifier, neighborNodeIdentifier;
+  // The following block was commented out in the original, preserving that state.
+  // for (idx1 = 0; idx1 < nodeCount; idx1++) {
+  //   for (idx2 = 0; idx2 < edgeCount; idx2++) {
+  //     if (distanceValues[edgeDetails[idx2][1]] < distanceValues[edgeDetails[idx2][0]] + edgeDetails[idx2][2]) {
+  //       distanceValues[edgeDetails[idx2][1]] = distanceValues[edgeDetails[idx2][0]] + edgeDetails[idx2][2];
+  //     }
+  //   }
+  // }
 
-  // Continue iterating as long as there are nodes pending evaluation in the queue.
-  while (processingQueue.length > 0) {
-    // Retrieve the next node to process from the end of the queue.
-    activeNodeIdentifier = processingQueue.pop();
+  var vertexQueue = [0]; // Initialize queue with starting vertex (node 0)
+  var currentVertex, neighborVertex; // Variables for graph traversal
 
-    // Traverse through all outgoing connections from the currently active node.
-    for (nodeIndexIterator = 0; nodeIndexIterator < nodeConnections[activeNodeIdentifier].length; nodeIndexIterator++) {
-      // Identify the destination node of the current connection.
-      neighborNodeIdentifier = nodeConnections[activeNodeIdentifier][nodeIndexIterator][0];
+  while (vertexQueue.length > 0) { // Process vertices in the queue
+    currentVertex = vertexQueue.pop(); // Get the last vertex from the queue
 
-      // Evaluate if the current path to the neighbor yields a higher score.
-      if (calculatedScores[neighborNodeIdentifier] < calculatedScores[activeNodeIdentifier] + nodeConnections[activeNodeIdentifier][nodeIndexIterator][1]) {
-        // Update the neighbor node's score with the new, improved value.
-        calculatedScores[neighborNodeIdentifier] = calculatedScores[activeNodeIdentifier] + nodeConnections[activeNodeIdentifier][nodeIndexIterator][1];
+    for (idx1 = 0; idx1 < adjacencyList[currentVertex].length; idx1++) { // Iterate through neighbors
+      neighborVertex = adjacencyList[currentVertex][idx1][0]; // Get neighbor vertex ID
 
-        // Re-add the neighbor node to the queue as its score has been modified, potentially affecting its own neighbors.
-        processingQueue.push(neighborNodeIdentifier);
+      // console.log(distanceValues[neighborVertex]); // Debugging line, kept commented.
+
+      if (distanceValues[neighborVertex] < distanceValues[currentVertex] + adjacencyList[currentVertex][idx1][1]) {
+        distanceValues[neighborVertex] = distanceValues[currentVertex] + adjacencyList[currentVertex][idx1][1]; // Update distance
+        vertexQueue.push(neighborVertex); // Add neighbor to queue for further processing
       }
+      // The Math.min line was commented out, so it remains commented.
+      // distanceValues[adjacencyList[currentVertex][idx1][0]] = Math.min(distanceValues[adjacencyList[currentVertex][idx1][0]], distanceValues[currentVertex] + adjacencyList[currentVertex][idx1][1]);
     }
   }
-
-  // Display the final computed score for the last node in the graph (node totalNodes - 1).
-  console.log(calculatedScores[totalNodes - 1]);
+  console.log(distanceValues[nodeCount - 1]); // Output the distance to the last node
 }

@@ -1,92 +1,75 @@
-function ProcessInput ( rawData )
-{
-  // Split the entire input string into individual lines
-  let textRows = rawData.split ( '\n' ) ;
+function ProcessInput(rawData) {
+    // Split the entire input string into individual lines for processing.
+    let textRows = rawData.split('\n');
 
-  // Process the first line to get initial parameters
-  let firstLineParts = textRows.shift().split ( ' ' ) ;
+    // Extract the first line, then split it by space to get initial configuration values.
+    let firstLineParts = textRows.shift().split(' ');
 
-  // Extract and convert the first two numbers from the first line
-  let countN = Number ( firstLineParts[0] ) ;
-  let countM = Number ( firstLineParts[1] ) ;
+    // Convert the first part to a number, representing the count of items.
+    let numItems = firstLineParts[0] * 1;
+    // Convert the second part to a number, representing the count of operations.
+    let numOperations = firstLineParts[1] * 1;
 
-  // Get the initial set of values, parse them, and sort them in ascending order
-  let initialValues = textRows.shift()
-                             .split ( ' ' )
-                             .sort ( function ( valA, valB )
-                             {
-                               // Anonymous comparison function for ascending sort
-                               return valA - valB ;
-                             }
-                                    ) ;
+    // Extract the next line, split by space to get item values, and sort them numerically in ascending order.
+    let itemValues = textRows.shift().split(' ').sort(function (valA, valB) {
+        return valA - valB; // Numeric sort for string numbers
+    });
 
-  // Remove the last (potentially empty) line
-  textRows.pop ( ) ;
+    // Remove the last element from the textRows array, which might be an empty string from the final newline.
+    textRows.pop();
 
-  // Sort the remaining lines based on their second numeric part in descending order
-  let sortedOperations = textRows.sort ( function ( itemX, itemY )
-                                         {
-                                           // Extract the second part for comparison
-                                           let valY = Number ( itemY.split ( ' ' )[1] ) ;
-                                           let valX = Number ( itemX.split ( ' ' )[1] ) ;
-                                           return valY - valX ;
-                                         }
-                                       ) ;
+    // Sort the remaining lines (which represent operations) based on their second component (value) in descending order.
+    let operationDetails = textRows.sort(function(op1, op2) {
+        // Split each operation string and compare their second elements after converting to numbers.
+        return op2.split(' ')[1] * 1 - op1.split(' ')[1] * 1;
+    });
 
-  // Initialize a pointer for the initial values array
-  let currentPointer = 0 ;
+    // Initialize an index to track the current position in the itemValues array.
+    let currentIndex = 0;
 
-  // Iterate through each sorted operation
-  for ( let operationIndex = 0 ; operationIndex < sortedOperations.length ; operationIndex++ )
-  {
-    // Split the current operation line into its components
-    let currentOpParts = sortedOperations[ operationIndex ].split ( ' ' ) ;
+    // Iterate through each operation defined in operationDetails.
+    for (let loopCounter = 0; loopCounter < operationDetails.length; loopCounter++) {
+        // Split the current operation string into its constituent parts.
+        let currentOpParts = operationDetails[loopCounter].split(' ');
 
-    // Extract the block count and the replacement value
-    let blockCount = Number ( currentOpParts[0] ) ;
-    let replacementValue = Number ( currentOpParts[1] ) ;
+        // Get the quantity (count) for the current operation.
+        let opCount = currentOpParts[0] * 1;
+        // Get the value to apply for the current operation.
+        let opValue = currentOpParts[1] * 1;
 
-    // Apply the operation for the specified block count
-    while ( blockCount-- )
-    {
-      // If we've exhausted the initial values, stop
-      if ( initialValues[ currentPointer ] === undefined )
-      {
-        break ;
-      }
+        // Apply this operation 'opCount' times, or until conditions are met.
+        while (opCount > 0) {
+            // If we have processed all available item values, stop.
+            if (itemValues[currentIndex] === undefined) {
+                break;
+            }
 
-      // If the current initial value is less than the replacement value, update it
-      if ( Number ( initialValues[ currentPointer ] ) < replacementValue )
-      {
-        initialValues[ currentPointer ] = replacementValue ;
-      }
-      else
-      {
-        // If it's not smaller, no further updates are needed for this operation, due to sorting
-        break ;
-      }
-
-      // Move to the next element in the initial values array
-      currentPointer++ ;
+            // If the current item's value is less than the operation's value, update it.
+            if (itemValues[currentIndex] * 1 < opValue) { // Ensure comparison is numeric
+                itemValues[currentIndex] = opValue; // Assign the new value.
+            } else {
+                // If the current item's value is not less, then due to the initial sorting of itemValues,
+                // subsequent items will also not be less. So, we can stop applying this specific operation.
+                break;
+            }
+            currentIndex++; // Move to the next item value.
+            opCount--; // Decrement the remaining count for this operation.
+        }
+        // If all item values have been processed, no need to continue with further operations.
+        if (itemValues[currentIndex] === undefined) {
+            break;
+        }
     }
 
-    // If all initial values have been processed, no need to continue with further operations
-    if ( initialValues[ currentPointer ] === undefined )
-    {
-      break ;
-    }
-  }
+    // Calculate the final sum of all item values after all modifications.
+    let finalSum = itemValues.reduce(function(accumulator, currentValue) {
+        return accumulator + currentValue * 1; // Ensure numeric addition.
+    }, 0);
 
-  // Calculate the final sum of all (potentially updated) initial values
-  let finalSumResult = initialValues.reduce ( function ( accumulator, currentNum )
-                                            {
-                                              // Sum up the numeric values
-                                              return accumulator + Number ( currentNum ) ;
-                                            }, 0 ) ;
-
-  // Output the computed final sum
-  console.log ( finalSumResult ) ;
+    // Output the computed final sum to the console.
+    console.log(finalSum);
 }
 
-// Invoke the main processing function with input from stdin
-ProcessInput ( require ( "fs" ).readFileSync ( "/dev/stdin", "utf8" ) ) ;
+// Read the entire input from standard input (typically a file in competitive programming environments)
+// and then invoke the main processing function with this raw data.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

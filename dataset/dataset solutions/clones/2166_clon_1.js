@@ -1,52 +1,37 @@
 /*
- * This is a JavaScript file demonstrating a simple input processing logic.
- * The 'use strict' directive enforces stricter parsing and error handling.
+ * ┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ ✦ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
+ * │                            구성원: 최준서                            │
+ * │                          학번: LVC41040521                           │
+ * ┕━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ ✦ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┙
  */
-'use strict' /* Enable strict mode for better code quality */
 
-/*
- * The main function that processes the input string.
- * It reads values, performs a conditional update, and prints the result.
- */
-function         Main       (   input   )
-{
-    // Process the input: trim whitespace and split by newlines.
-    input  =  input.trim ( ) . split ( '\n' ) ;
+  'use strict'
 
-    // Destructure the first line into two string variables, S and T.
-    const    [   S ,    T   ]    =    input[0]     .    split    (    '    '    ) ;
 
-    // Parse the second line into an array of integers.
-    const res       =    input [ 1 ] . split ( ' ' ) . map (    s    =>    parseInt ( s )    ) ;
+/* ========== 읽기 잘유지한다 현재평가 순서 출력 전에내부. ========== */
+function   Main ( input){
+   input = input.trim().split('\n')
+// 읽기 여기서유지한다 최종로컬 결정 입력과 함께안정.
+ const [S, T] = input[0].split(' ')
+    const res = input[1].split(' ').map(s => parseInt(s))
 
-    // Initialize variables A and B from the parsed array.
-    let      A     =     res [ 0 ] ;
-    let      B     =     res [ 1 ] ;
+let  A  = res[ 0 ]
+  let  B = res [1]
+// 읽기 또한정리한다 작업 순서 출력 전에가까이.
+    const U  = input [ 2]  // 읽기 정리한다 작업 순서 각 값마다안정.
 
-    // Get the third line which represents U.
-    const      U      =      input [ 2 ] ;
+	    if (U === S) {
+A-=1
+ } else {
+     B -= 1
+  } 
+   console.log(`${A} ${B}`)
 
-    // Conditional logic: decrement A if U matches S, otherwise decrement B.
-    if      (    U    ===    S    )
-    {
-        A     -=     1 ; // Decrement A
-    }
-    else
-    {
-        B     -=     1 ; // Decrement B
-    }
 
-    // Output the final values of A and B, separated by a space.
-    console.log (    `${A} ${B}`    ) ;
 
-} // End of Main function definition
+// 읽기 또한정리한다 핵심중간 값.
 
-// Call the Main function with input read from standard input.
-// This part handles reading from /dev/stdin in a typical competitive programming setup.
-Main (    require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" )    ) ;
+   }
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));  // 읽기 정리한다 로컬평가 순서 시작에서최종. Umbreon
 
-/*
- * End of the JavaScript program.
- * This program demonstrates basic string manipulation, array operations,
- * conditional statements, and console output.
- */
+// 읽기 정리한다 현재작업 순서 시작에서명확.

@@ -1,30 +1,36 @@
-function processStrings(fullInput) {
-    const [sourceText, patternText] = fullInput.split("\n");
+function Main(input) {
+    const inputLines = input.split("\n");
+    const sourceText = inputLines[0];
+    const targetText = inputLines[1];
 
-    if (patternText.length === 0) {
+    if (targetText.length === 0) {
         return console.log(0);
     }
 
-    const possibleShiftRange = sourceText.length - patternText.length;
+    const sourceChars = [...sourceText];
+    const targetChars = [...targetText];
+    const targetLength = targetChars.length;
+    const sourceLength = sourceChars.length;
 
-    if (possibleShiftRange < 0) {
-        return console.log(patternText.length);
+    let leastMismatchCount = targetLength;
+
+    if (sourceLength >= targetLength) {
+        const possibleStartIndices = Array.from({ length: sourceLength - targetLength + 1 }, (_, idx) => idx);
+
+        const allMismatchCounts = possibleStartIndices.map(currentStartIndex => {
+            const currentSourceSegment = sourceChars.slice(currentStartIndex, currentStartIndex + targetLength);
+
+            const segmentMismatchCount = currentSourceSegment.reduce((accumulator, charFromSource, charPosition) => {
+                return accumulator + (charFromSource !== targetChars[charPosition] ? 1 : 0);
+            }, 0);
+
+            return segmentMismatchCount;
+        });
+
+        leastMismatchCount = Math.min(...allMismatchCounts);
     }
 
-    const allOffsets = Array.from({ length: possibleShiftRange + 1 }, (_, offsetIndex) => offsetIndex);
-
-    const characterDivergences = allOffsets.map(currentOffset => {
-        return Array.from({ length: patternText.length }, (_, characterPosition) => characterPosition)
-            .reduce((cumulativeDifferences, characterPosition) => {
-                const sourceChar = sourceText[currentOffset + characterPosition];
-                const patternChar = patternText[characterPosition];
-                return cumulativeDifferences + (sourceChar !== patternChar ? 1 : 0);
-            }, 0);
-    });
-
-    const minimumDivergence = Math.min(...characterDivergences);
-
-    console.log(minimumDivergence);
+    console.log(leastMismatchCount);
 }
 
-processStrings(require("fs").readFileSync("/dev/stdin", "utf8"));
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

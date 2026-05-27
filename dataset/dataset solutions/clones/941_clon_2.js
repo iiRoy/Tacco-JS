@@ -1,153 +1,139 @@
-const rawInputData = require  ('fs') .  readFileSync (  '/dev/stdin'  , 'utf8'  ); /*
-  Reads the entire content of the standard input stream synchronously
-  and decodes it using UTF-8.
-*/
+const rawData = require('fs').readFileSync('/dev/stdin', 'utf8'); // Read input from standard input
 
-
-const parsedLines = rawInputData.trim().split('\n'); // Breaks the input into an array of strings, one for each line.
-const totalElements = Number(parsedLines.shift());   // Extracts the first line and converts it to a number.
-const adjacencyListRepresentation = parsedLines.map(  (sLine) =>
-  sLine.split(' ').map(Number)  // Parses remaining lines into arrays of numbers, representing graph edges.
-);
+// Process the raw input string
+const parsedLines = rawData.trim().split('\n');
+const vertexCount = Number(parsedLines.shift()); // Get the total number of vertices
+const adjacencyList = parsedLines.map((s) => s.split(' ').map(Number)); // Parse adjacency information
 
 /**
- * Manages a monotonically increasing counter for tracking discovery/finish times.
+ * Manages a global time counter for DFS discovery and finish times.
  */
-class Chronometer {
-  /**
-   * Initializes a new Chronometer instance.
-   * @param {number} initialTick - The starting value for the counter. Defaults to 0.
-   */
-  constructor(initialTick = 0) {
-    this.currentTick = initialTick; /*
-      Stores the current time value.
-    */
+class Clock {
+  // Initializes the clock's current tick.
+  constructor(currentTick = 0) {
+    this.currentTick = currentTick;
   }
 
-  /**
-   * Increments the internal counter and returns its new value.
-   * @returns {number} The updated time value.
-   */
-  advanceAndRetrieveTick() {
+  // Increments the tick and returns the new value.
+  advanceAndGetTick() {
     return ++this.currentTick;
   }
 }
 
-const globalClock = new Chronometer(); // Global instance to manage time for DFS.
+// Create a single instance of the clock for the entire graph traversal.
+const globalClock = new Clock();
 
 /**
- * Represents a single vertex (node) within the graph.
+ * Represents a single vertex in the graph.
+ * Stores its ID, connected vertices, and DFS discovery/finish times.
  */
 class GraphVertex {
-  /**
-   * Creates a new GraphVertex.
-   * @param {number} vertexIdentifier - The unique identifier for this vertex.
-   */
-  constructor(vertexIdentifier) {
-    this.vertexIdentifier = vertexIdentifier;
-    this.connectedVertices = []; // Stores references to adjacent vertices.
+  // Constructor for a graph vertex.
+  constructor(vertexId) {
+    this.vertexId = vertexId; // Unique identifier for this vertex
+    this.connectedVertices = []; // List of vertices directly reachable from this one
+    // These will store the discovery and finish times during DFS
+    this.discoveryTime = undefined;
+    this.finishTime = undefined;
   }
 
-  /**
-   * Adds another vertex to this vertex's list of connected vertices.
-   * @param {GraphVertex} otherVertex - The vertex to connect to.
-   */
-  connectTo(otherVertex) {
-    this.connectedVertices.push(otherVertex);
+  // Adds a connected vertex to this vertex's list.
+  linkVertex(targetVertex) {
+    this.connectedVertices.push(targetVertex);
   }
 
-  /**
-   * Checks if this vertex has already been visited (i.e., has a discovery time).
-   * @returns {boolean} True if visited, false otherwise.
-   */
+  // Checks if this vertex has already been visited (i.e., has a discovery time).
   hasBeenProcessed() {
-    return !!this.discoveryTime; // '!!' converts any truthy/falsy value to true/false.
+    return !!this.discoveryTime;
   }
 
   /**
    * Performs a Depth-First Search (DFS) traversal starting from this vertex.
-   * Marks discovery and finish times.
+   * Calculates discovery and finish times.
    */
-  performDepthFirstSearch() {
-    this.discoveryTime = globalClock.advanceAndRetrieveTick(); // Record entry time.
-    this.connectedVertices.sort((vA, vB) => vA.vertexIdentifier > vB.vertexIdentifier); // Sort children by ID.
-    this.connectedVertices.forEach(
-      (neighborVertex) => {
-        if (!neighborVertex.hasBeenProcessed()) { // Only visit if not already processed.
-          neighborVertex.performDepthFirstSearch();
-        }
+  performDFS() {
+    this.discoveryTime = globalClock.advanceAndGetTick(); // Mark discovery time
+
+    // Sort children by ID for consistent traversal order (as per problem spec)
+    this.connectedVertices.sort((a, b) => a.vertexId > b.vertexId ? 1 : -1);
+
+    // Recursively call DFS on unvisited connected vertices
+    this.connectedVertices.forEach(connectedVertex => {
+      if (!connectedVertex.hasBeenProcessed()) {
+        connectedVertex.performDFS();
       }
-    );
-    this.finishTime = globalClock.advanceAndRetrieveTick(); // Record exit time.
+    });
+
+    this.finishTime = globalClock.advanceAndGetTick(); // Mark finish time
   }
 
-  /**
-   * Formats the vertex's identifier, discovery time, and finish time into a string.
-   * @returns {string} A space-separated string representation.
-   */
+  // Formats the vertex's ID, discovery time, and finish time into a string.
   formatOutput() {
-    return [this.vertexIdentifier, this.discoveryTime, this.finishTime].join(' ');
+    return [this.vertexId, this.discoveryTime, this.finishTime].join(' ');
   }
 }
 
 /**
- * Represents the entire graph structure, managing all vertices.
+ * Manages the collection of graph vertices and orchestrates the DFS.
  */
-class GraphStructure {
-  /**
-   * Constructs a new GraphStructure.
-   */
+class GraphProcessor {
+  // Initializes the graph processor with an empty map for vertices.
   constructor() {
-    this.vertexRegistry = new Map(); // Stores vertices, mapped by their identifiers.
+    this.vertexMap = new Map(); // Stores vertices by their ID
   }
 
   /**
-   * Retrieves an existing vertex or creates a new one if it doesn't exist.
-   * @param {number} vertexId - The identifier of the vertex to retrieve or create.
-   * @returns {GraphVertex} The requested GraphVertex instance.
+   * Retrieves a vertex by its ID, creating it if it doesn't exist.
    */
-  retrieveOrCreateVertex(vertexId) {
-    if (!this.vertexRegistry.has(vertexId)) { // If vertex not in registry, create it.
-      this.vertexRegistry.set(vertexId, new GraphVertex(vertexId));
+  retrieveOrCreateVertex(identifier) {
+    if (!this.vertexMap.has(identifier)) {
+      this.vertexMap.set(identifier, new GraphVertex(identifier));
     }
-    return this.vertexRegistry.get(vertexId);
+    return this.vertexMap.get(identifier);
   }
 
   /**
-   * Initiates DFS traversal for all unvisited vertices in the graph.
+   * Executes the DFS algorithm across all vertices in the graph.
+   * Ensures all connected components are visited.
    */
-  executeTraversal() {
-    for (let currentId = 1; currentId <= this.vertexRegistry.size; currentId++) {
-      const currentVertex = this.vertexRegistry.get(currentId);
-      if (currentVertex && !currentVertex.hasBeenProcessed()) { // Ensure vertex exists and is unvisited.
-        currentVertex.performDepthFirstSearch();
+  executeDFS() {
+    // Iterate through all possible vertex IDs (1 to vertexCount)
+    for (let i = 1; i <= vertexCount; i++) {
+      const currentVertex = this.vertexMap.get(i);
+      // If the vertex exists and hasn't been visited, start DFS from it
+      if (currentVertex && !currentVertex.hasBeenProcessed()) {
+        currentVertex.performDFS();
       }
     }
   }
 
   /**
-   * Prints the formatted output for each vertex in the graph.
+   * Prints the formatted output for each vertex.
    */
   displayResults() {
-    for (let currentId = 1; currentId <= this.vertexRegistry.size; currentId++) {
-      const currentVertex = this.vertexRegistry.get(currentId);
-      if (currentVertex) { // Check if vertex exists before trying to print.
-        console.log(currentVertex.formatOutput());
-      }
+    // Iterate through all possible vertex IDs (1 to vertexCount)
+    for (let i = 1; i <= vertexCount; i++) {
+      const currentVertex = this.vertexMap.get(i);
+      // Output the formatted string for each vertex
+      console.log(currentVertex.formatOutput());
     }
   }
 }
 
-const graphInstance = new GraphStructure(); // Initialize the main graph object.
+// Create an instance of the graph processor.
+const graphHandler = new GraphProcessor();
 
-// Process the adjacency list to build the graph.
-adjacencyListRepresentation.forEach(([originVertexId, _ignoredCount, ...destinationVertexIds]) => {
-  const sourceVertexObject = graphInstance.retrieveOrCreateVertex(originVertexId); // Get or create the source vertex.
-  destinationVertexIds.forEach((targetId) => {
-    const targetVertexObject = graphInstance.retrieveOrCreateVertex(targetId); // Get or create the target vertex.
-    sourceVertexObject.connectTo(targetVertexObject); // Establish connection from source to target.
+// Populate the graph based on the adjacency list input.
+adjacencyList.forEach(([sourceVertexId, numNeighbors, ...neighborIds]) => {
+  const currentSourceVertex = graphHandler.retrieveOrCreateVertex(sourceVertexId);
+  neighborIds.forEach(targetVertexId => {
+    const targetVertex = graphHandler.retrieveOrCreateVertex(targetVertexId);
+    currentSourceVertex.linkVertex(targetVertex); // Establish connection
   });
 });
 
-graphInstance.executeTraversal(); // Perform DFS on the constructed graph.
-graphInstance.displayResults();   // Output the traversal results.
+// Perform the Depth-First Search on the constructed graph.
+graphHandler.executeDFS();
+
+// Display the discovery and finish times for all vertices.
+graphHandler.displayResults();

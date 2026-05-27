@@ -1,173 +1,175 @@
-function Polyhedron(facetValues) {
-    this.summit = facetValues[0];
-    this.rearSide = facetValues[1];
-    this.starboard = facetValues[2];
-    this.port = facetValues[3];
-    this.anterior = facetValues[4];
-    this.base = facetValues[5];
+// Defines a constructor for a six-sided object, initializing its faces with provided values.
+function Cube(faceValues) {
+    this.upperFace = faceValues[0]; // The value on the top side of the cube.
+    this.rearFace = faceValues[1];  // The value on the back side of the cube.
+    this.starboardFace = faceValues[2]; // The value on the right side of the cube.
+    this.portFace = faceValues[3];  // The value on the left side of the cube.
+    this.forwardFace = faceValues[4]; // The value on the front side of the cube.
+    this.lowerFace = faceValues[5]; // The value on the bottom side of the cube.
 }
 
-Polyhedron.prototype.orientate = function(movementAxis) {
-    /* This method adjusts the orientation of the polyhedron based on a given axis of rotation. */
-    switch (movementAxis) {
-        case 'LEFTWARD_MOVE':
-            // Simulates a roll towards the left side (West).
-            var temporaryHolder = this.port;
-            this.port = this.summit;
-            this.summit = this.starboard;
-            this.starboard = this.base;
-            this.base = temporaryHolder;
+// Method to simulate rolling the cube in a specific cardinal direction.
+Cube.prototype.rotate = function(movementDirection) {
+    switch (movementDirection) {
+        case 'W': // Roll West: left becomes top, top becomes right, right becomes bottom, bottom becomes left.
+            let temporaryHolder = this.portFace;
+            this.portFace = this.upperFace;
+            this.upperFace = this.starboardFace;
+            this.starboardFace = this.lowerFace;
+            this.lowerFace = temporaryHolder;
             break;
-
-        case 'UPWARD_MOVE':
-            // Simulates a roll towards the front side (North).
-            var temporaryHolder = this.anterior;
-            this.anterior = this.summit;
-            this.summit = this.rearSide;
-            this.rearSide = this.base;
-            this.base = temporaryHolder;
+        case 'N': // Roll North: front becomes top, top becomes back, back becomes bottom, bottom becomes front.
+            let tempVal = this.forwardFace;
+            this.forwardFace = this.upperFace;
+            this.upperFace = this.rearFace;
+            this.rearFace = this.lowerFace;
+            this.lowerFace = tempVal;
             break;
-
-        case 'RIGHTWARD_MOVE':
-            // Simulates a roll towards the right side (East).
-            var temporaryHolder = this.starboard;
-            this.starboard = this.summit;
-            this.summit = this.port;
-            this.port = this.base;
-            this.base = temporaryHolder;
+        case 'E': // Roll East: right becomes top, top becomes left, left becomes bottom, bottom becomes right.
+            let currentTemp = this.starboardFace;
+            this.starboardFace = this.upperFace;
+            this.upperFace = this.portFace;
+            this.portFace = this.lowerFace;
+            this.lowerFace = currentTemp;
             break;
-
-        case 'DOWNWARD_MOVE':
-            // Simulates a roll towards the back side (South).
-            var temporaryHolder = this.rearSide;
-            this.rearSide = this.summit;
-            this.summit = this.anterior;
-            this.anterior = this.base;
-            this.base = temporaryHolder;
+        case 'S': // Roll South: back becomes top, top becomes front, front becomes bottom, bottom becomes back.
+            let storageUnit = this.rearFace;
+            this.rearFace = this.upperFace;
+            this.upperFace = this.forwardFace;
+            this.forwardFace = this.lowerFace;
+            this.lowerFace = storageUnit;
             break;
     }
 };
 
-Polyhedron.prototype.alignToSummit = function(targetSummitValue) {
-    // Reorients the polyhedron so that a specific face value becomes the new summit.
-    if (targetSummitValue === this.starboard) {
-        this.orientate('LEFTWARD_MOVE');
-    } else if (targetSummitValue === this.port) {
-        this.orientate('RIGHTWARD_MOVE');
-    } else if (targetSummitValue === this.rearSide) {
-        this.orientate('UPWARD_MOVE');
-    } else if (targetSummitValue === this.anterior) {
-        this.orientate('DOWNWARD_MOVE');
+// Adjusts the cube's orientation so a specific face value becomes the top face.
+Cube.prototype.orientToTop = function(targetUpper) {
+    if (targetUpper === this.starboardFace) {
+        this.rotate('W'); // Rotate West to bring the right face to the top.
+    } else if (targetUpper === this.portFace) {
+        this.rotate('E'); // Rotate East to bring the left face to the top.
+    } else if (targetUpper === this.rearFace) {
+        this.rotate('N'); // Rotate North to bring the back face to the top.
+    } else if (targetUpper === this.forwardFace) {
+        this.rotate('S'); // Rotate South to bring the front face to the top.
     }
 };
 
-Polyhedron.prototype.retrieveStarboardFace = function(currentSummitValue, currentRearValue) {
-    // Given the values on the summit and rear faces, this function determines the value on the starboard face.
-    if (currentSummitValue === this.summit) {
-        if (currentRearValue === this.rearSide) {
-            return this.starboard;
+// Determines the value of the starboard face given specific top and back face values.
+Cube.prototype.determineStarboardWithUpperAndRear = function(currentUpper, currentRear) {
+    // Case 1: The current upper face is the cube's inherent upper face.
+    if (currentUpper === this.upperFace) {
+        if (currentRear === this.rearFace) {
+            return this.starboardFace;
         }
-        if (currentRearValue === this.port) {
-            return this.rearSide;
+        if (currentRear === this.portFace) {
+            return this.rearFace;
         }
-        if (currentRearValue === this.anterior) {
-            return this.port;
+        if (currentRear === this.forwardFace) {
+            return this.portFace;
         }
-        if (currentRearValue === this.starboard) {
-            return this.anterior;
-        }
-    }
-    if (currentSummitValue === this.anterior) {
-        if (currentRearValue === this.summit) {
-            return this.starboard;
-        }
-        if (currentRearValue === this.port) {
-            return this.summit;
-        }
-        if (currentRearValue === this.base) {
-            return this.port;
-        }
-        if (currentRearValue === this.starboard) {
-            return this.base;
+        if (currentRear === this.starboardFace) {
+            return this.forwardFace;
         }
     }
-    if (currentSummitValue === this.base) {
-        if (currentRearValue === this.anterior) {
-            return this.starboard;
+    // Case 2: The current upper face is the cube's inherent front face.
+    if (currentUpper === this.forwardFace) {
+        if (currentRear === this.upperFace) {
+            return this.starboardFace;
         }
-        if (currentRearValue === this.port) {
-            return this.anterior;
+        if (currentRear === this.portFace) {
+            return this.upperFace;
         }
-        if (currentRearValue === this.rearSide) {
-            return this.port;
+        if (currentRear === this.lowerFace) {
+            return this.portFace;
         }
-        if (currentRearValue === this.starboard) {
-            return this.rearSide;
-        }
-    }
-    if (currentSummitValue === this.rearSide) {
-        if (currentRearValue === this.base) {
-            return this.starboard;
-        }
-        if (currentRearValue === this.port) {
-            return this.base;
-        }
-        if (currentRearValue === this.summit) {
-            return this.port;
-        }
-        if (currentRearValue === this.starboard) {
-            return this.summit;
+        if (currentRear === this.starboardFace) {
+            return this.lowerFace;
         }
     }
-    if (currentSummitValue === this.starboard) {
-        if (currentRearValue === this.base) {
-            return this.anterior;
+    // Case 3: The current upper face is the cube's inherent bottom face.
+    if (currentUpper === this.lowerFace) {
+        if (currentRear === this.forwardFace) {
+            return this.starboardFace;
         }
-        if (currentRearValue === this.rearSide) {
-            return this.base;
+        if (currentRear === this.portFace) {
+            return this.forwardFace;
         }
-        if (currentRearValue === this.summit) {
-            return this.rearSide;
+        if (currentRear === this.rearFace) {
+            return this.portFace;
         }
-        if (currentRearValue === this.anterior) {
-            return this.summit;
+        if (currentRear === this.starboardFace) {
+            return this.rearFace;
         }
     }
-    if (currentSummitValue === this.port) {
-        if (currentRearValue === this.summit) {
-            return this.anterior;
+    // Case 4: The current upper face is the cube's inherent back face.
+    if (currentUpper === this.rearFace) {
+        if (currentRear === this.lowerFace) {
+            return this.starboardFace;
         }
-        if (currentRearValue === this.anterior) {
-            return this.base;
+        if (currentRear === this.portFace) {
+            return this.lowerFace;
         }
-        if (currentRearValue === this.base) {
-            return this.rearSide;
+        if (currentRear === this.upperFace) {
+            return this.portFace;
         }
-        if (currentRearValue === this.rearSide) {
-            return this.summit;
+        if (currentRear === this.starboardFace) {
+            return this.upperFace;
+        }
+    }
+    // Case 5: The current upper face is the cube's inherent right face.
+    if (currentUpper === this.starboardFace) {
+        if (currentRear === this.lowerFace) {
+            return this.forwardFace;
+        }
+        if (currentRear === this.rearFace) {
+            return this.lowerFace;
+        }
+        if (currentRear === this.upperFace) {
+            return this.rearFace;
+        }
+        if (currentRear === this.forwardFace) {
+            return this.upperFace;
+        }
+    }
+    // Case 6: The current upper face is the cube's inherent left face.
+    if (currentUpper === this.portFace) {
+        if (currentRear === this.upperFace) {
+            return this.forwardFace;
+        }
+        if (currentRear === this.forwardFace) {
+            return this.lowerFace;
+        }
+        if (currentRear === this.lowerFace) {
+            return this.rearFace;
+        }
+        if (currentRear === this.rearFace) {
+            return this.upperFace;
         }
     }
 };
 
-Polyhedron.prototype.areBlocksCongruent = function(anotherPolyhedron) {
-    // Compares the current polyhedron with another to check if they are identical in orientation and values.
-    return this.starboard === anotherPolyhedron.retrieveStarboardFace(this.summit, this.rearSide);
+// Checks if this cube is identical to another cube in terms of face values and orientation.
+Cube.prototype.areIdentical = function(anotherObject) {
+    // Compares the right face of this cube with the calculated right face of the other cube
+    // based on this cube's top and back faces.
+    return this.starboardFace === anotherObject.determineStarboardWithUpperAndRear(this.upperFace, this.rearFace);
 };
 
-( function(rawInputData) {
-    // This immediately-invoked function expression processes the input data.
-    var processedLines = rawInputData.split('\n');
+// Main execution block for processing input and comparing two cubes.
+(function(rawData) {
+    // Split the raw input string into an array of lines.
+    const inputLines = rawData.split('\n');
 
-    // Extract and parse the numerical facet values for the first polyhedron.
-    var firstBlockFacets = processedLines.shift().split(' ').map(Number);
+    // Parse the first line for the initial face values of the first cube.
+    const valuesA = inputLines.shift().split(' ').map(Number);
+    // Parse the second line for the initial face values of the second cube.
+    const valuesB = inputLines.shift().split(' ').map(Number);
 
-    // Extract and parse the numerical facet values for the second polyhedron.
-    var secondBlockFacets = processedLines.shift().split(' ').map(Number);
+    // Create instances of the Cube object using the parsed values.
+    const cubeA = new Cube(valuesA);
+    const cubeB = new Cube(valuesB);
 
-    // Create instances of the Polyhedron object.
-    var blockOne = new Polyhedron(firstBlockFacets);
-    var blockTwo = new Polyhedron(secondBlockFacets);
-
-    // Output whether the two polyhedrons are congruent.
-    console.log(blockOne.areBlocksCongruent(blockTwo) ? 'Yes' : 'No');
-} )( require('fs').readFileSync('/dev/stdin', 'utf8') );
+    // Output "Yes" if the cubes are identical in orientation and values, otherwise "No".
+    console.log(cubeA.areIdentical(cubeB) ? 'Yes' : 'No');
+})(require('fs').readFileSync('/dev/stdin', 'utf8'));

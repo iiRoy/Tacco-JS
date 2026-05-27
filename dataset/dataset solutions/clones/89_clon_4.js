@@ -1,46 +1,43 @@
-(function(sourceData) {
-  const parseData = (textualInput) => {
-    const linesOfText = textualInput.trim().split('\n');
-    let lineIdx = 0;
-    const allProblemSets = [];
+(function(inputContent) {
+  const numericData = inputContent.replace(/\n$/, '').split('\n').map(Number);
 
-    while (lineIdx < linesOfText.length) {
-      const elementCount = parseInt(linesOfText[lineIdx++], 10);
-      if (elementCount === 0) {
-        break;
-      }
-      const currentSequence = [];
-      for (let k = 0; k < elementCount; k++) {
-        currentSequence.push(parseInt(linesOfText[lineIdx++], 10));
-      }
-      allProblemSets.push(currentSequence);
+  function* numericValueIterator(sourceArray) {
+    let currentPosition = 0;
+    while (currentPosition < sourceArray.length) {
+      yield sourceArray[currentPosition++];
     }
-    return allProblemSets;
+  }
+  const dataStream = numericValueIterator(numericData);
+
+  const kadaneAccumulator = (currentTotals, nextValue) => {
+    const newCurrentMax = Math.max(nextValue, currentTotals.currentMaxEndingHere + nextValue);
+    const newOverallMax = Math.max(currentTotals.overallMax, newCurrentMax);
+    return { currentMaxEndingHere: newCurrentMax, overallMax: newOverallMax };
   };
 
-  const determineMaxSubarrayValue = (valueSequence) => {
-    if (valueSequence.length === 0) {
-      return -Infinity;
+  function processNextNumberSequence(iteratorSource) {
+    const sequenceLengthResult = iteratorSource.next();
+    if (sequenceLengthResult.done || sequenceLengthResult.value === 0) {
+      return null;
     }
+    const currentSequenceLength = sequenceLengthResult.value;
 
-    const calculationResult = valueSequence.reduce((accumulatorObject, currentNumber) => {
-      const updatedCurrentMax = Math.max(currentNumber, accumulatorObject.runningTotal + currentNumber);
-      const updatedOverallMax = Math.max(accumulatorObject.peakValue, updatedCurrentMax);
+    const sequenceElements = Array.from({ length: currentSequenceLength }, () => iteratorSource.next().value);
 
-      return {
-        runningTotal: updatedCurrentMax,
-        peakValue: updatedOverallMax
-      };
-    }, { runningTotal: -Infinity, peakValue: -Infinity });
+    const initialKadaneState = { currentMaxEndingHere: -Infinity, overallMax: -Infinity };
+    const finalKadaneState = sequenceElements.reduce(kadaneAccumulator, initialKadaneState);
 
-    return calculationResult.peakValue;
-  };
+    return finalKadaneState.overallMax;
+  }
 
-  const structuredProblems = parseData(sourceData);
+  function processAllInputSequences(iteratorSource) {
+    const sequenceMaxSum = processNextNumberSequence(iteratorSource);
+    if (sequenceMaxSum !== null) {
+      console.log(sequenceMaxSum);
+      processAllInputSequences(iteratorSource);
+    }
+  }
 
-  structuredProblems.forEach(individualSequence => {
-    const finalResult = determineMaxSubarrayValue(individualSequence);
-    console.log(finalResult);
-  });
+  processAllInputSequences(dataStream);
 
 })(require('fs').readFileSync('/dev/stdin', 'utf8'));

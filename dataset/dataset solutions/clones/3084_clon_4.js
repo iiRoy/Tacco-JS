@@ -1,50 +1,47 @@
-function processData(rawData) {
-  const allSegments = rawData.split('\n');
-  const numericValue = Number.parseInt(allSegments[0], 10);
-  const boundaryMark = numericValue / 2;
-  const charString = allSegments[1];
+function ProcessSequence(sourceData) {
+  const lineSegments = sourceData.split("\n");
+  const totalLength = parseInt(lineSegments[0], 10);
+  const midpointThreshold = totalLength / 2;
+  const sequenceString = lineSegments[1];
 
-  const initialStatus = {
-    redTally: 0,
-    blueTally: 0,
-    isConcluded: false,
-    finalJudgment: false
-  };
+  const initialAccumulator = { redCount: 0, blueCount: 0, decisionMade: false, result: false };
 
-  const finalStatus = Array.from(charString).reduce((currentStatus, currentSymbol) => {
-    if (currentStatus.isConcluded) {
-      return currentStatus;
+  const finalStatus = sequenceString.split('').reduce((currentProgress, currentSymbol) => {
+    if (currentProgress.decisionMade) {
+      return currentProgress;
     }
 
-    let nextRedTally = currentStatus.redTally;
-    let nextBlueTally = currentStatus.blueTally;
-    let nextIsConcluded = currentStatus.isConcluded;
-    let nextFinalJudgment = currentStatus.finalJudgment;
+    let nextRedCount = currentProgress.redCount;
+    let nextBlueCount = currentProgress.blueCount;
 
     if (currentSymbol === 'R') {
-      nextRedTally++;
-      if (nextRedTally > boundaryMark) {
-        nextIsConcluded = true;
-        nextFinalJudgment = true;
-      }
+      nextRedCount++;
     } else {
-      nextBlueTally++;
-      if (nextBlueTally >= boundaryMark) {
-        nextIsConcluded = true;
-        nextFinalJudgment = false;
-      }
+      nextBlueCount++;
+    }
+
+    let nextDecisionMade = false;
+    let nextOutcome = false;
+
+    if (nextRedCount > midpointThreshold) {
+      nextDecisionMade = true;
+      nextOutcome = true;
+    } else if (nextBlueCount >= midpointThreshold) {
+      nextDecisionMade = true;
+      nextOutcome = false;
     }
 
     return {
-      redTally: nextRedTally,
-      blueTally: nextBlueTally,
-      isConcluded: nextIsConcluded,
-      finalJudgment: nextFinalJudgment
+      redCount: nextRedCount,
+      blueCount: nextBlueCount,
+      decisionMade: nextDecisionMade,
+      result: nextOutcome
     };
-  }, initialStatus);
+  }, initialAccumulator);
 
-  const resultPhrase = finalStatus.finalJudgment ? 'Yes' : 'No';
-  console.log(resultPhrase);
+  const finalVerdict = finalStatus.decisionMade ? finalStatus.result : false;
+
+  console.log(finalVerdict ? 'Yes' : 'No');
 }
 
-processData(require("fs").readFileSync("/dev/stdin", "utf8"));
+ProcessSequence(require("fs").readFileSync("/dev/stdin", "utf8"));

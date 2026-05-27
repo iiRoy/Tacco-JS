@@ -1,48 +1,45 @@
-const inputProcessor = require('readline').createInterface({
-  input: process.stdin,
-  output: process.stdout,
-  terminal: false
+let receivedData = '';
+const inputStream = process.stdin;
+inputStream.resume();
+inputStream.setEncoding('utf8');
+
+inputStream.on('data', (segment) => {
+  receivedData += segment;
 });
 
-let receivedPayloads = [];
+inputStream.on('end', () => {
+  const lineSegments = receivedData.split('\n');
+  const primaryLine = lineSegments[0];
+  const queryPattern = lineSegments[1];
 
-inputProcessor.on('line', (individualSegment) => {
-  receivedPayloads.push(individualSegment);
-});
-
-inputProcessor.on('close', () => {
-  const primarySource = receivedPayloads[0];
-  const secondaryQuery = receivedPayloads[1];
-
-  const discernPresence = (referenceString, targetPattern) => {
-    const coercedPattern = String(targetPattern); // Mimic String.prototype.indexOf's coercion
-    if (coercedPattern.length === 0) {
-      return 0;
+  const findSubsequence = (mainText, subText) => {
+    if (subText.length === 0) {
+      return true;
     }
-    if (coercedPattern.length > referenceString.length) {
-      return -1;
+    if (mainText.length < subText.length) {
+      return false;
     }
 
-    for (let currentOffset = 0; currentOffset <= referenceString.length - coercedPattern.length; currentOffset++) {
-      let candidateMatch = true;
-      for (let charIndex = 0; charIndex < coercedPattern.length; charIndex++) {
-        if (referenceString[currentOffset + charIndex] !== coercedPattern[charIndex]) {
-          candidateMatch = false;
+    for (let i = 0; i <= mainText.length - subText.length; i++) {
+      let currentMatch = true;
+      for (let j = 0; j < subText.length; j++) {
+        if (mainText[i + j] !== subText[j]) {
+          currentMatch = false;
           break;
         }
       }
-      if (candidateMatch) {
-        return currentOffset;
+      if (currentMatch) {
+        return true;
       }
     }
-    return -1;
+    return false;
   };
 
-  const augmentedSource = primarySource + primarySource;
-
-  if (discernPresence(augmentedSource, secondaryQuery) !== -1) {
-    process.stdout.write("Yes\n");
+  const extendedPrimary = primaryLine.repeat(2);
+  
+  if (findSubsequence(extendedPrimary, queryPattern)) {
+    console.log("Yes");
   } else {
-    process.stdout.write("No\n");
+    console.log("No");
   }
 });

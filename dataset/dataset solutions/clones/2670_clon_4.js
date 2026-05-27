@@ -1,54 +1,52 @@
-const fileSystem = require('node:fs');
+const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+const lines = fileContent.trim().split('\n');
 
-const rawDataString = fileSystem.readFileSync('/dev/stdin', 'utf8');
+const [targetNodeIdentifier, , hopPenaltyFactor] = lines[0].split(' ').map(Number);
+const edgeDefinitions = lines.slice(1).map(line => line.split(' ').map(Number));
 
-const [headerLine, ...edgeSpecificationLines] = rawDataString.trim().split('\n');
+const adjacencyStructure = new Map();
+for (let nodeIndex = 1; nodeIndex <= targetNodeIdentifier; nodeIndex++) {
+    adjacencyStructure.set(nodeIndex, []);
+}
 
-const [
-    totalNodesInGraph,
-    ,
-    penaltyPerSegment
-] = headerLine.split(' ').map(Number);
-
-const networkLinkages = new Map();
-edgeSpecificationLines.forEach(line => {
-    const [sourceNode, destinationNode, connectionValue] = line.split(' ').map(Number);
-    if (!networkLinkages.has(sourceNode)) {
-        networkLinkages.set(sourceNode, []);
+edgeDefinitions.forEach(([sourceNode, destinationNode, edgeValue]) => {
+    if (!adjacencyStructure.has(sourceNode)) {
+        adjacencyStructure.set(sourceNode, []);
     }
-    networkLinkages.get(sourceNode).push({ targetIdentifier: destinationNode, edgeWorth: connectionValue });
+    adjacencyStructure.get(sourceNode).push([destinationNode, edgeValue]);
 });
 
-let maximumAttainableValue = -1;
+let highestPathScore = -1;
 
-const exploreRoutes = (
+function depthFirstSearch(
     currentPosition,
-    traversedPathElements,
-    currentPathAccumulatedValue,
-    segmentsTraversedCount
-) => {
-    if (currentPosition === totalNodesInGraph) {
-        const calculatedPathScore = currentPathAccumulatedValue - penaltyPerSegment * (segmentsTraversedCount + 1);
-        maximumAttainableValue = Math.max(maximumAttainableValue, calculatedPathScore);
+    currentTotalValue,
+    currentHopCount,
+    pathHistorySet
+) {
+    if (pathHistorySet.has(currentPosition)) {
+        return;
     }
 
-    const outboundConnections = networkLinkages.get(currentPosition) || [];
+    const nextPathHistorySet = new Set(pathHistorySet);
+    nextPathHistorySet.add(currentPosition);
 
-    for (const { targetIdentifier: nextPosition, edgeWorth: segmentWorth } of outboundConnections) {
-        if (!traversedPathElements.has(nextPosition)) {
-            const updatedTraversedPathElements = new Set(traversedPathElements);
-            updatedTraversedPathElements.add(nextPosition);
-
-            exploreRoutes(
-                nextPosition,
-                updatedTraversedPathElements,
-                currentPathAccumulatedValue + segmentWorth,
-                segmentsTraversedCount + 1
-            );
-        }
+    if (currentPosition === targetNodeIdentifier) {
+        const calculatedScore = currentTotalValue - hopPenaltyFactor * (currentHopCount + 1);
+        highestPathScore = Math.max(highestPathScore, calculatedScore);
     }
-};
 
-exploreRoutes(1, new Set([1]), 0, 0);
+    const outgoingConnections = adjacencyStructure.get(currentPosition) || [];
+    for (const [nextPosition, connectionValue] of outgoingConnections) {
+        depthFirstSearch(
+            nextPosition,
+            currentTotalValue + connectionValue,
+            currentHopCount + 1,
+            nextPathHistorySet
+        );
+    }
+}
 
-console.log(maximumAttainableValue);
+depthFirstSearch(1, 0, 0, new Set());
+
+console.log(highestPathScore);

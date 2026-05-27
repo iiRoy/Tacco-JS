@@ -1,37 +1,32 @@
-const fileAccessUtility = require("fs");
+const fileSystem = require("fs");
 
-const entireInputContent = fileAccessUtility.readFileSync("/dev/stdin", "UTF-8");
+const calculateMinimalMaxSegment = (rawInputContent) => {
+  const primarySequence = rawInputContent.split('\n')[0];
+  const sequenceLength = primarySequence.length;
 
-const primarySequence = entireInputContent.split("\n")[0];
+  if (sequenceLength <= 1) {
+    return sequenceLength;
+  }
 
-const sequenceTotalLength = primarySequence.length;
+  const potentialSplitPoints = Array.from({ length: sequenceLength - 1 }, (_, index) => index + 1);
 
-if (sequenceTotalLength === 0) {
-    console.log(0);
-    return;
-}
+  const validSplitPositions = potentialSplitPoints.filter((position) => {
+    return primarySequence[position] !== primarySequence[position - 1];
+  });
 
-const transitionPoints = Array.from(primarySequence)
-    .slice(1)
-    .map((charValue, relativeIndex) => ({
-        currentCharacter: charValue,
-        absoluteIndex: relativeIndex + 1
-    }))
-    .filter((item) => {
-        return item.currentCharacter !== primarySequence[item.absoluteIndex - 1];
-    })
-    .map((item) => item.absoluteIndex);
+  const maxSegmentLengths = validSplitPositions.map((position) => {
+    const leftSegmentLength = position;
+    const rightSegmentLength = sequenceLength - position;
+    return Math.max(leftSegmentLength, rightSegmentLength);
+  });
 
-let finalSeparationScore;
+  if (maxSegmentLengths.length === 0) {
+    return sequenceLength;
+  }
 
-if (transitionPoints.length === 0) {
-    finalSeparationScore = sequenceTotalLength;
-} else {
-    const potentialScores = transitionPoints.map((transitionIndex) => {
-        return Math.max(transitionIndex, sequenceTotalLength - transitionIndex);
-    });
+  return Math.min(...maxSegmentLengths);
+};
 
-    finalSeparationScore = Math.min(...potentialScores);
-}
+const standardInputContent = fileSystem.readFileSync("/dev/stdin", "UTF-8");
 
-console.log(finalSeparationScore);
+console.log(calculateMinimalMaxSegment(standardInputContent));

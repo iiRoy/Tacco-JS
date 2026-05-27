@@ -1,74 +1,62 @@
-const calculateBinomialCoefficient = (totalCount, chosenCount) => {
-    const n = BigInt(totalCount);
-    let k = BigInt(chosenCount);
+var inputLines = [];
+var readline = require('readline');
 
-    if (k < 0n || k > n) {
-        return 0n;
-    }
-    if (k === 0n || k === n) {
-        return 1n;
-    }
-    if (k > n / 2n) {
-        k = n - k;
-    }
-
-    let currentResult = 1n;
-    for (let i = 1n; i <= k; ++i) {
-        currentResult = currentResult * (n - i + 1n) / i;
-    }
-    return currentResult;
-};
-
-const processInputData = (incomingLines) => {
-    const [initialParameters, elementValues] = incomingLines;
-
-    const [totalElementsQuantity, minimumChosenSize, maximumChosenSize] = initialParameters.split(" ").map(Number);
-    const numericDataElements = elementValues.split(" ").map(Number);
-
-    const sortedNumericData = [...numericDataElements].sort((firstVal, secondVal) => secondVal - firstVal);
-
-    const topElementsSum = sortedNumericData.slice(0, minimumChosenSize).reduce((accumulator, current) => accumulator + current, 0);
-    const resultingAverage = topElementsSum / minimumChosenSize;
-
-    console.log(resultingAverage);
-
-    const valueFrequencies = new Map();
-    for (const itemValue of sortedNumericData) {
-        valueFrequencies.set(itemValue, (valueFrequencies.get(itemValue) || 0) + 1);
-    }
-
-    let finalCombinationTotal;
-    const peakValue = sortedNumericData[0];
-    const upperLimitValue = sortedNumericData[maximumChosenSize - 1];
-
-    if (peakValue !== upperLimitValue) {
-        const thresholdValue = sortedNumericData[minimumChosenSize - 1];
-        const countOfLargerValues = sortedNumericData.slice(0, minimumChosenSize).filter(val => val > thresholdValue).length;
-        const requiredFromThresholdGroup = minimumChosenSize - countOfLargerValues;
-        
-        finalCombinationTotal = calculateBinomialCoefficient(valueFrequencies.get(thresholdValue), requiredFromThresholdGroup);
-    } else {
-        finalCombinationTotal = Array.from({ length: maximumChosenSize - minimumChosenSize + 1 }, (_, idx) => minimumChosenSize + idx)
-            .reduce((cumulativeSum, currentChoiceCount) => {
-                return cumulativeSum + calculateBinomialCoefficient(valueFrequencies.get(peakValue), currentChoiceCount);
-            }, 0n);
-    }
-
-    console.log(finalCombinationTotal.toString());
-};
-
-const collectedInputSegments = [];
-const stdinHook = require('readline');
-
-const interactiveInputHandler = stdinHook.createInterface({
+var inputReader = readline.createInterface({
     input: process.stdin,
     output: process.stdout,
 });
 
-interactiveInputHandler.on('line', (individualLine) => {
-    collectedInputSegments.push(individualLine);
+inputReader.on('line', function (lineContent) {
+    inputLines.push(lineContent);
 });
 
-interactiveInputHandler.on('close', () => {
-    processInputData(collectedInputSegments);
+inputReader.on('close', function () {
+    const [totalElements, minSelection, maxSelection] = inputLines.shift().split(" ").map(Number);
+    const numericValues = inputLines.shift().split(" ").map(Number);
+
+    numericValues.sort((valA, valB) => valB - valA);
+
+    const valueFrequencies = numericValues.reduce((accumulator, currentVal) => {
+        accumulator[currentVal] = (accumulator[currentVal] || 0) + 1;
+        return accumulator;
+    }, {});
+
+    const sumOfTopElements = numericValues.slice(0, minSelection).reduce((sum, val) => sum + val, 0);
+    const highestAverage = sumOfTopElements / minSelection;
+    console.log(highestAverage);
+
+    const calculateCombinationsAlt = (nVal, kVal) => {
+        if (kVal < 0 || kVal > nVal) return 0;
+        if (kVal === 0 || kVal === nVal) return 1;
+        if (kVal > nVal / 2) kVal = nVal - kVal;
+
+        let result = 1;
+        for (let i = 1; i <= kVal; ++i) {
+            result = result * (nVal - i + 1) / i;
+        }
+        return result;
+    };
+
+    let totalCombinationWays = 0;
+
+    if (numericValues[0] === numericValues[maxSelection - 1]) {
+        const commonValue = numericValues[0];
+        const commonValueCount = valueFrequencies[commonValue];
+
+        totalCombinationWays = Array.from({ length: maxSelection - minSelection + 1 }, (_, idx) => minSelection + idx)
+                                 .reduce((acc, selectCount) => acc + calculateCombinationsAlt(commonValueCount, selectCount), 0);
+    } else {
+        const topSelectedValues = numericValues.slice(0, minSelection);
+        const topSelectionFrequencies = topSelectedValues.reduce((accumulator, currentVal) => {
+            accumulator[currentVal] = (accumulator[currentVal] || 0) + 1;
+            return accumulator;
+        }, {});
+
+        totalCombinationWays = Object.entries(topSelectionFrequencies).reduce((acc, [valStr, neededCount]) => {
+            const val = Number(valStr);
+            const availableCount = valueFrequencies[val];
+            return acc * calculateCombinationsAlt(availableCount, neededCount);
+        }, 1);
+    }
+    console.log(totalCombinationWays);
 });

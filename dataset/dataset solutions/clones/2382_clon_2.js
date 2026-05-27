@@ -1,33 +1,54 @@
-function processData(rawData) {
-  const linesOfText = rawData .split("\n");
-  const timeParams = linesOfText[0].split(" ");
-  const paramSetA = linesOfText[1].split(" ");
-  const paramSetB = linesOfText[2].split(" ");
+function ProcessInput(rawData) {
+  // Split the entire input string by newline characters to get individual lines.
+  rawData = rawData.split("\n");
 
-  const timeVal0 = timeParams[0];
-  const timeVal1 = timeParams[1];
+  // Parse the first line for time-related values.
+  var timeValues = rawData[0].split(" ");
+  // Parse the second line for alpha-related values.
+  var alphaValues = rawData[1].split(" ");
+  // Parse the third line for beta-related values.
+  var betaValues = rawData[2].split(" ");
 
-  const valA0 = paramSetA[0];
-  const valA1 = paramSetA[1];
+  // Extract specific time components.
+  var firstTime = timeValues[0];
+  var secondTime = timeValues[1];
 
-  const valB0 = paramSetB[0];
-  const valB1 = paramSetB[1];
+  // Extract specific alpha components.
+  var alphaInitial = alphaValues[0];
+  var alphaFinal = alphaValues[1];
 
-  let calcValX = timeVal0 * (valA0 - valB0);
-  let calcValY = (timeVal1 * valA1 + calcValX) - (timeVal1 * valB1);
+  // Extract specific beta components.
+  var betaInitial = betaValues[0];
+  var betaFinal = betaValues[1];
 
-  if ( Math.sign(calcValX) == Math.sign(calcValY) ) {
+  // Calculate the first primary term.
+  var numeratorTerm = firstTime * (alphaInitial - betaInitial);
+  // Calculate the second primary term, incorporating the first.
+  var denominatorTerm = (secondTime * alphaFinal + numeratorTerm) - (secondTime * betaFinal);
+
+  // Evaluate conditions based on the signs of the calculated terms.
+  if (Math.sign(numeratorTerm) == Math.sign(denominatorTerm)) {
+    // If signs are the same, output 0.
     console.log(0);
-  } else if ( calcValY == 0 ) {
+  } else if (denominatorTerm == 0) {
+    // If the denominator term is zero, output "infinity".
     console.log("infinity");
   } else {
-    calcValX = Math.abs(calcValX);
-    calcValY = Math.abs(calcValY);
-    if ( calcValX % calcValY == 0 ) {
-      console.log((calcValX / calcValY) * 2);
+    // Otherwise, proceed with further calculations.
+    // Take the absolute values of both terms.
+    numeratorTerm = Math.abs(numeratorTerm);
+    denominatorTerm = Math.abs(denominatorTerm);
+
+    // Check if the absolute numerator is perfectly divisible by the absolute denominator.
+    if (numeratorTerm % denominatorTerm == 0) {
+      // If divisible, output the result of (numerator / denominator) * 2.
+      console.log((numeratorTerm / denominatorTerm) * 2);
     } else {
-      console.log(Math.ceil(calcValX / calcValY) * 2 - 1);
+      // If not divisible, output the result of (ceil(numerator / denominator) * 2) - 1.
+      console.log(Math.ceil(numeratorTerm / denominatorTerm) * 2 - 1);
     }
   }
 }
-processData(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+// Invoke the main processing function with input read from standard input.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

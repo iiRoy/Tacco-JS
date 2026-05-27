@@ -1,58 +1,73 @@
-"use strict"; /* This directive enforces strict parsing and error handling in the JavaScript runtime. */
+"use strict"; // Enforce strict parsing and error handling in the script.
 
-// This function calculates the greatest common divisor (GCD) for a collection of integer values.
-const findGreatestCommonDivisorOfCollection = (numericCollection) => {
-    let collectionLength;       /* Stores the total number of items in the input collection. */
-    let currentCommonDivisor;   /* An accumulator variable for the GCD computation. */
-    let nextElementValue;       /* Holds the value of the current element being processed during iteration. */
+/**
+ * Computes the greatest common divisor (GCD) for a list of numbers.
+ * This function iterates through the provided array, calculating the GCD
+ * of the current result with the next element.
+ * @param {number[]} numberList - An array of integers.
+ * @returns {number} The GCD of all numbers in the list.
+ */
+const calculateCommonDivisorForList = (numberList) => {
+  let listLength; // Variable to store the total number of elements.
+  let currentDivisor; // Holds the running GCD value.
+  let nextNumber; // Stores the next number from the array for GCD calculation.
 
-    collectionLength = numericCollection.length;            /* Retrieve the total count of elements. */
-    currentCommonDivisor = numericCollection[0];            /* Initialize the GCD with the first number in the collection. */
+  listLength = numberList.length; // Determine the size of the input array.
+  currentDivisor = numberList[0]; // Initialize the GCD with the first element.
 
-    // Iterate through the remaining elements of the collection, starting from the second one.
-    for (let indexCounter = 1; indexCounter < collectionLength; indexCounter++) {
-        nextElementValue = numericCollection[indexCounter]; /* Get the value of the next number in the sequence. */
-        currentCommonDivisor = determineGreatestCommonDivisor(currentCommonDivisor, nextElementValue); /* Update the GCD by computing it with the next element. */
-    }
+  // Loop through the array starting from the second element.
+  for (let idx = 1; idx < listLength; idx++) {
+    nextNumber = numberList[idx]; // Get the current element.
+    currentDivisor = findGreatestCommonDivisor(currentDivisor, nextNumber); // Update the GCD.
+  }
 
-    return currentCommonDivisor; /* Return the final computed greatest common divisor of all numbers. */
+  return currentDivisor; // Return the final computed GCD.
 };
 
-// A recursive helper function to compute the greatest common divisor of two individual integers using the Euclidean algorithm.
-const determineGreatestCommonDivisor = (val1, val2) => {
-    // If the first value is not zero, recursively call with (remainder of val2 / val1, val1).
-    // Otherwise, the second value is the GCD.
-    return val1
-        ? determineGreatestCommonDivisor(val2 % val1, val1)
-        : val2;
+/**
+ * Recursively calculates the greatest common divisor (GCD) of two numbers
+ * using the Euclidean algorithm.
+ * @param {number} firstNum - The first integer.
+ * @param {number} secondNum - The second integer.
+ * @returns {number} The GCD of the two input numbers.
+ */
+const findGreatestCommonDivisor = (firstNum, secondNum) => {
+  // If the first number is non-zero, recurse with (secondNum % firstNum, firstNum).
+  // Otherwise, the second number is the GCD.
+  return firstNum ? findGreatestCommonDivisor(secondNum % firstNum, firstNum) : secondNum;
 };
 
-// The primary function responsible for processing input, executing the main logic, and producing an output.
-const executeSolution = (rawInputData) => {
-    rawInputData = rawInputData.trim().split("\n"); /* Clean up input: remove leading/trailing whitespace and split into an array of lines. */
+/**
+ * Main function to process input, perform calculations, and output the result.
+ * It reads N and K, an array A, then determines if K can be reached.
+ * @param {string} inputData - The raw input string from stdin.
+ */
+const processInputAndSolve = (inputData) => {
+  // Clean and split the input string into lines.
+  inputData = inputData.trim().split("\n");
 
-    /* Parse the first line of the input to extract two important integer parameters. */
-    const countVal = parseInt(rawInputData[0].split(" ")[0]);    // The first numeric parameter (often 'N').
-    const targetValue = parseInt(rawInputData[0].split(" ")[1]); // The second numeric parameter (often 'K').
+  // Parse N and K from the first line of input.
+  const countOfElements = parseInt(inputData[0].split(" ")[0]); // N
+  const targetValue = parseInt(inputData[0].split(" ")[1]); // K
 
-    // Process the second line of input: split by spaces, convert each part to an integer, and sort the resulting numbers in descending order.
-    let sortedNumbers = rawInputData[1].split(" ")
-                                       .map(parsedNumber => parseInt(parsedNumber))
-                                       .sort((first, second) => second - first);
+  // Parse the array A from the second line, convert to numbers, and sort in descending order.
+  let numericArray = inputData[1].split(" ").map((item) => parseInt(item)).sort((valA, valB) => valB - valA);
 
-    const highestValue = sortedNumbers[0]; // Identify the largest number from the sorted collection.
-    let resultantGcd = findGreatestCommonDivisorOfCollection(sortedNumbers); // Calculate the GCD of all numbers in the collection.
+  // Get the largest element from the sorted array.
+  const maximumElement = numericArray[0];
+  // Calculate the GCD of all elements in the array.
+  let computedGcd = calculateCommonDivisorForList(numericArray);
 
-    /* Check a specific condition: if the largest number is less than the target value. */
-    if (highestValue < targetValue) {
-        console.log("IMPOSSIBLE"); // Print "IMPOSSIBLE" if the condition is met.
-        return;                    // Exit the function early.
-    }
+  // Check if the maximum element is less than the target value K.
+  if (maximumElement < targetValue) {
+    console.log("IMPOSSIBLE"); // If so, K cannot be reached.
+    return; // Exit the function early.
+  }
 
-    // Finally, determine if the target value is perfectly divisible by the computed GCD.
-    // Output "POSSIBLE" if it is, otherwise "IMPOSSIBLE".
-    console.log(targetValue % resultantGcd === 0 ? "POSSIBLE" : "IMPOSSIBLE");
+  // Determine if K is a multiple of the computed GCD.
+  // If K % computedGcd is 0, it's POSSIBLE; otherwise, it's IMPOSSIBLE.
+  console.log(targetValue % computedGcd === 0 ? "POSSIBLE" : "IMPOSSIBLE");
 };
 
-// Invoke the main solution function, providing it with input read synchronously from standard input.
-executeSolution(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// Read input from standard input and pass it to the main processing function.
+processInputAndSolve(require('fs').readFileSync('/dev/stdin', 'utf8'));

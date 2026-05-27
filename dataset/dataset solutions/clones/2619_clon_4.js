@@ -1,86 +1,74 @@
-const PRIME_MOD = 1000000007;
+function processSequence(inputData) {
+    const MOD_CONSTANT = 1000000007n;
 
-function extractParams(rawTxt) {
-    const lines = rawTxt.split('\n');
-    const firstLineData = lines[0].split(' ').map(Number);
-    const sequenceData = lines[1].split(' ').map(Number);
-    
-    return { factor: firstLineData[1], elements: sequenceData };
-}
+    const [firstLine, secondLine] = inputData.split('\n');
+    const [sequenceLength, repetitionFactor] = firstLine.split(' ').map(Number);
+    const initialSequence = secondLine.split(' ').map(Number);
 
-function checkUniformity(collection) {
-    if (collection.length === 0) return true;
-    return collection.every(item => item === collection[0]);
-}
-
-function calculateDisordersAlt(dataArr) {
-    return dataArr.flatMap((currentVal, currentIndex) => 
-        dataArr.slice(currentIndex + 1).filter(compareVal => currentVal > compareVal)
-    ).length;
-}
-
-function multiplySquareMatrices(matrixA, matrixB) {
-    const resultMatrix = [[0, 0], [0, 0]];
-    for (let row = 0; row < 2; row++) {
-        for (let col = 0; col < 2; col++) {
-            for (let i = 0; i < 2; i++) {
-                resultMatrix[row][col] = (resultMatrix[row][col] + matrixA[row][i] * matrixB[i][col]) % PRIME_MOD;
-            }
-        }
-    }
-    return resultMatrix;
-}
-
-function powerSquareMatrix(baseMatrix, exponent) {
-    let identityMatrix = [[1, 0], [0, 1]];
-    let currentBase = baseMatrix;
-    let power = exponent;
-
-    while (power > 0) {
-        if (power % 2 === 1) {
-            identityMatrix = multiplySquareMatrices(identityMatrix, currentBase);
-        }
-        currentBase = multiplySquareMatrices(currentBase, currentBase);
-        power = Math.floor(power / 2);
-    }
-    return identityMatrix;
-}
-
-function processData(sourceContent) {
-    const parsedData = extractParams(sourceContent);
-    const iterationFactor = parsedData.factor;
-    const numberSequence = parsedData.elements;
-
-    if (checkUniformity(numberSequence)) {
+    const isUniform = initialSequence.every((val, idx, arr) => idx === 0 || val === arr[idx - 1]);
+    if (isUniform) {
         console.log("0");
         return;
     }
 
-    const firstInversionCount = calculateDisordersAlt(numberSequence);
-    const doubledSequence = numberSequence.concat(numberSequence);
-    const secondInversionCount = calculateDisordersAlt(doubledSequence);
+    function calculateInversions(dataArray) {
+        let totalInversions = 0n;
 
-    let finalOutcome;
+        function mergeAndCount(leftHalf, rightHalf) {
+            let mergedResult = [];
+            let leftIndex = 0;
+            let rightIndex = 0;
 
-    switch (iterationFactor) {
-        case 1:
-            finalOutcome = firstInversionCount;
-            break;
-        case 2:
-            finalOutcome = secondInversionCount;
-            break;
-        default:
-            const transformationMatrix = [[0, 1], [1, 2]];
-            const poweredMatrix = powerSquareMatrix(transformationMatrix, iterationFactor - 2);
+            while (leftIndex < leftHalf.length && rightIndex < rightHalf.length) {
+                if (leftHalf[leftIndex] <= rightHalf[rightIndex]) {
+                    mergedResult.push(leftHalf[leftIndex++]);
+                } else {
+                    mergedResult.push(rightHalf[rightIndex++]);
+                    totalInversions += BigInt(leftHalf.length - leftIndex);
+                }
+            }
 
-            finalOutcome = (
-                poweredMatrix[1][0] * firstInversionCount +
-                poweredMatrix[1][1] * secondInversionCount
-            ) % PRIME_MOD;
-            break;
+            while (leftIndex < leftHalf.length) {
+                mergedResult.push(leftHalf[leftIndex++]);
+            }
+            while (rightIndex < rightHalf.length) {
+                mergedResult.push(rightHalf[rightIndex++]);
+            }
+            return mergedResult;
+        }
+
+        function divideAndConquer(segment) {
+            if (segment.length <= 1) {
+                return segment;
+            }
+            const midPoint = Math.floor(segment.length / 2);
+            const leftSorted = divideAndConquer(segment.slice(0, midPoint));
+            const rightSorted = divideAndConquer(segment.slice(midPoint));
+            return mergeAndCount(leftSorted, rightSorted);
+        }
+
+        divideAndConquer([...dataArray]);
+        return totalInversions;
     }
 
-    console.log(finalOutcome);
+    const inversionsForSingle = calculateInversions(initialSequence);
+    const inversionsForDouble = (3n * inversionsForSingle);
+
+    if (repetitionFactor === 1) {
+        console.log(String(inversionsForSingle));
+    } else if (repetitionFactor === 2) {
+        console.log(String(inversionsForDouble));
+    } else {
+        let currentValues = [inversionsForSingle, inversionsForDouble];
+        let currentRepetition = 2;
+
+        while (currentRepetition < repetitionFactor) {
+            const nextTerm = currentValues[0] + currentValues[1] + currentValues[1];
+            currentValues = [currentValues[1], nextTerm];
+            currentRepetition++;
+        }
+        console.log(String(currentValues[1] % MOD_CONSTANT));
+    }
 }
 
-processData(require("fs").readFileSync("/dev/stdin", "utf8"));
+processSequence(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,16 +1,20 @@
-const assessSequenceDivergence = (userSuppliedText) => {
-    const fixedReference = "CODEFESTIVAL2016";
-    const referenceCharacters = Array.from(fixedReference);
-    const suppliedCharacters = Array.from(userSuppliedText);
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
 
-    if (suppliedCharacters.length < referenceCharacters.length) {
-        throw new Error("Input sequence is shorter than the expected reference pattern.");
-    }
+let receivedData = '';
 
-    const deviationCount = referenceCharacters.reduce((accumulatedMismatches, standardChar, charIndex) => {
-        const currentSuppliedChar = suppliedCharacters[charIndex];
-        return accumulatedMismatches + (currentSuppliedChar !== standardChar ? 1 : 0);
-    }, 0);
+process.stdin.on('data', (chunk) => {
+    receivedData += chunk;
+});
 
-    return deviationCount;
-};
+process.stdin.on('end', () => {
+    const inputLine = receivedData.trim().split('\n')[0];
+    const referenceString = "CODEFESTIVAL2016";
+
+    const mismatchCount = [...referenceString].filter((referenceCharacter, currentPosition) => {
+        const inputCharacter = inputLine.charAt(currentPosition);
+        return inputCharacter !== referenceCharacter;
+    }).length;
+
+    console.log(mismatchCount);
+});

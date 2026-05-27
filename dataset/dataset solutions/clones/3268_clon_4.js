@@ -1,21 +1,16 @@
-function processNumericSequence(rawText) {
-    const segments = rawText.split(" ");
+function Main(sourceText) {
+    const elementSet = new Set(sourceText.split(" "));
+    const targetElements = ['1', '9', '7', '4'];
 
-    const essentialDigits = new Set(['1', '9', '7', '4']);
-    const presentDigits = new Set();
-
-    for (const currentSegment of segments) {
-        if (essentialDigits.has(currentSegment)) {
-            presentDigits.add(currentSegment);
+    let allFound = true;
+    for (const item of targetElements) {
+        if (!elementSet.has(item)) {
+            allFound = false;
+            break;
         }
     }
 
-    if (presentDigits.size === essentialDigits.size) {
-        process.stdout.write('YES\n');
-    } else {
-        process.stdout.write('NO\n');
-    }
+    console.log(allFound ? 'YES' : 'NO');
 }
-
-const acquiredText = require("fs").readFileSync("/dev/stdin", "utf8");
-processNumericSequence(acquiredText);
+//*この行以降は編集しないでください（標準入出力から一度に読み込み、Mainを呼び出します）
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

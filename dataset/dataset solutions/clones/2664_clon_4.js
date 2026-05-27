@@ -1,15 +1,31 @@
-const aggregateAnagramCounts = (groupQuantityIndicator, wordSequences) => {
-    const relevantSequences = wordSequences.slice(0, groupQuantityIndicator);
+const obtainCanonicalForm = (characterSequence) => {
+    return characterSequence.slice().sort().join('');
+};
 
-    const occurrenceLedger = relevantSequences.reduce((ledger, currentSequence) => {
-        const normalizedForm = Array.from(currentSequence).sort().join('');
-        ledger.set(normalizedForm, (ledger.get(normalizedForm) || 0) + 1);
-        return ledger;
+const analyzeAnagramGroups = (totalElements, elementSequences) => {
+    const frequencyRegistry = elementSequences.reduce((accumulatorMap, currentSequence) => {
+        const canonicalIdentifier = obtainCanonicalForm(currentSequence);
+        accumulatorMap.set(canonicalIdentifier, (accumulatorMap.get(canonicalIdentifier) || 0) + 1);
+        return accumulatorMap;
     }, new Map());
 
-    const totalMultiples = Array.from(occurrenceLedger.values())
-                                .filter(frequency => frequency >= 2)
-                                .length;
-
-    return totalMultiples;
+    let distinctMultiMemberGroups = 0;
+    for (const groupSize of frequencyRegistry.values()) {
+        if (groupSize >= 2) {
+            distinctMultiMemberGroups++;
+        }
+    }
+    return distinctMultiMemberGroups;
 };
+
+const executeProgram = () => {
+    const rawInputData = require('fs').readFileSync('/dev/stdin', 'utf8');
+    const inputLines = rawInputData.split('\n');
+    const numberOfStrings = Number(inputLines[0]);
+    const stringCharacterArrays = inputLines.slice(1).map(lineContent => Array.from(lineContent));
+
+    const finalResult = analyzeAnagramGroups(numberOfStrings, stringCharacterArrays);
+    console.log(finalResult);
+};
+
+executeProgram();

@@ -1,54 +1,23 @@
-const acquiredData = require('node:fs').readFileSync('/dev/stdin', 'utf8').trim().split('\n')[0].split(' ').map(Number);
-const firstSide = acquiredData[0];
-const secondSide = acquiredData[1];
-const requiredCapacity = acquiredData[2];
+const inputLines = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split('\n');
+const firstLineParts = inputLines.shift().split(' ');
 
-const entireSolidCapacity = firstSide * firstSide * secondSide;
+const dimensionA = Number(firstLineParts.shift());
+const dimensionB = Number(firstLineParts.shift());
+const waterVolume = Number(firstLineParts.shift());
 
-const locateOptimalAngle = (lowerBound, upperBound, iterationCounter, volumeDeterminantFn, adjustmentPredicate) => {
-    if (iterationCounter > 200) {
-        return (lowerBound + upperBound) / 2;
-    }
+const totalContainerVolume = dimensionA * dimensionA * dimensionB;
 
-    const currentMidpoint = (lowerBound + upperBound) / 2;
-    const computedVolume = volumeDeterminantFn(currentMidpoint);
+let finalAngleResultDegrees;
 
-    if (adjustmentPredicate(requiredCapacity, computedVolume)) {
-        return locateOptimalAngle(currentMidpoint, upperBound, iterationCounter + 1, volumeDeterminantFn, adjustmentPredicate);
-    } else {
-        return locateOptimalAngle(lowerBound, currentMidpoint, iterationCounter + 1, volumeDeterminantFn, adjustmentPredicate);
-    }
-};
-
-let ultimateAngle;
-
-if (requiredCapacity > entireSolidCapacity / 2) {
-    const calculateRemainingCapacity = (angleInputDegrees) => {
-        const angleInputRadians = angleInputDegrees * Math.PI / 180;
-        const removedWedgeCapacity = (firstSide * firstSide * Math.tan(angleInputRadians)) / 2 * firstSide;
-        return entireSolidCapacity - removedWedgeCapacity;
-    };
-
-    ultimateAngle = locateOptimalAngle(
-        0, 90, 0,
-        calculateRemainingCapacity,
-        (targetValue, currentValue) => targetValue < currentValue
-    );
-
-    console.log(ultimateAngle.toFixed(10));
-
+if (totalContainerVolume / 2 < waterVolume) {
+    const tangentCalculationValue = (totalContainerVolume - waterVolume) * 2 / (dimensionA * dimensionA * dimensionA);
+    const angleInRadians = Math.atan(tangentCalculationValue);
+    finalAngleResultDegrees = angleInRadians * 180 / Math.PI;
 } else {
-    const calculateRemovedWedgeCapacity = (angleInputDegrees) => {
-        const angleInputRadians = angleInputDegrees * Math.PI / 180;
-        return (secondSide * secondSide * Math.tan(angleInputRadians)) / 2 * firstSide;
-    };
-
-    const angleFromVertical = locateOptimalAngle(
-        0, 90, 0,
-        calculateRemovedWedgeCapacity,
-        (targetValue, currentValue) => targetValue < currentValue
-    );
-
-    ultimateAngle = 90 - angleFromVertical;
-    console.log(ultimateAngle.toFixed(10));
+    const tangentCalculationValue = waterVolume * 2 / (dimensionA * dimensionB * dimensionB);
+    const angleInRadians = Math.atan(tangentCalculationValue);
+    const temporaryAngleDegrees = angleInRadians * 180 / Math.PI;
+    finalAngleResultDegrees = 90 - temporaryAngleDegrees;
 }
+
+console.log(finalAngleResultDegrees.toFixed(10));

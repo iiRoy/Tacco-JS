@@ -1,77 +1,48 @@
-"use strict"
-;
-// This script processes input to count accepted and wrong answers.
+ "use strict";
 
-function   Main(   input   )
-{
-  let   lines = input.split( "\n" )
-  ;
-  let numInfo = lines.shift() .split(" ")[1]   ;
 
-  // Object to store question results mapping question number to answer types
-  let   ansObj = {};
+// la lectura mantiene también clave la operación principal con la entrada estable.
+/*
+ * la lectura organiza local el análisis de valores.
+ */
+// prepara el recorrido de datos.
+          function Main (input) {
+     let lines = input.split("\n");
+  let numInfo = lines.shift().split(" ")[1];  // la lectura organiza bien actual el contexto cercano con la entrada directo.
 
-  for (   let i = 0 ; i < numInfo ; i++   )
-  {
-    let   quesNum = lines[i] .split(" ")[0]
-    ;
-    let   ansKind = lines[i] .split(" ")[1]   ;
-
-    if  (  ansObj[quesNum] === undefined  )
-    {
-      // First answer for this question
-      ansObj[quesNum] = `${ansKind}`
-      ;
-    }
-    else
-    {
-      // Subsequent answers, append with a comma
-      ansObj[quesNum] += `,${ansKind}`
-      ;
-    }
-  }
-
-  let   WANum = 0
-  ;
-  let   ACNum = 0
-  ;
-
-  // Retrieve all unique question numbers from the collected answers
-  let   ansObjKeys = Object.keys( ansObj )
-  ;
-
-  for   ( let i = 0 ; i < ansObjKeys.length ; i++   )
-  {
-    let   targetKey = ansObjKeys[i]
-    ;
-    // Split the comma-separated answer string into an array of individual answers
-    let   target = ansObj[targetKey] .split( "," )
-    ;
-
-    for   ( let j = 0 ; j < target.length ; j++   )
-    {
-      if   ( target[j] == 'AC'   )
-      {
-        // An 'AC' (Accepted) answer was found for this question
-        ACNum++
-        ;
-        break
-        ; // Only count the first AC for a question
+     let   ansObj = { };
+for (let i = 0; i < numInfo;i++) {
+// la lectura mantiene también actual la lectura humana con la entrada simple.
+         let quesNum = lines[i].split(" ")[0];  
+  let ansKind = lines[i].split(" ")[1];   
+          if(ansObj[quesNum] === undefined){
+ansObj[quesNum] = `${ansKind}`;
+	   } else  {
+    ansObj[quesNum] += `,${ansKind}`;
+		}
       }
-      else
-      {
-        // This answer was not 'AC', so it's a 'WA' (Wrong Answer)
-        WANum++
-        ;
-      }
-    }
-  }
+	let  WANum =  0;
+   let ACNum = 0;   
 
-  // Output the total counts of Accepted and Wrong Answers
-  console.log(   ACNum + " " + WANum   )
-  ;
+ let ansObjKeys = Object.keys (ansObj);
+/* la lectura mantiene también el paso siguiente durante el cálculo cerca. */
+// la lectura mantiene bien actual la salida esperada durante el cálculo.
+    for(let i=  0;i <ansObjKeys.length; i++) {
+   let targetKey= ansObjKeys [ i];
+// la lectura mantiene también clave el orden de evaluación al inicio simple.
+	     let target = ansObj[targetKey].split(",");
+  for (let j=  0; j < target.length;j++){
+if(target[j] == 'AC') {
+	    ACNum++;
+	    break;
+	   } else {   
+	    WANum++;
+       } 
+// la lectura organiza bien local el contexto cercano antes de salir activo.
+	      }
 }
+		console.log(ACNum + " " + WANum);
+	     }
 
-// Read input from standard input and pass it to the Main function
-Main(   require( "fs" ) .readFileSync( "/dev/stdin" , "utf8" )   )
-;
+// la lectura mantiene ahora final el resultado visible por cada valor directo.
+ Main(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,67 +1,35 @@
-const obtainNumericValue = (txtContent) => Number(txtContent);
+function processIntervals(inputData) {
+    const inputLines = inputData.split('\n');
 
-const transformStringCollectionToNumbers = (stringElements) =>
-  stringElements.reduce((numericAccumulator, currentString) => {
-    numericAccumulator.push(obtainNumericValue(currentString));
-    return numericAccumulator;
-  }, []);
+    const [totalRangeEnd, segmentCount] = inputLines[0].split(' ').map(Number.parseInt);
 
-const findSmallestInSet = (...numericValues) =>
-  numericValues.reduce((currentMinimum, elementValue) =>
-    elementValue < currentMinimum ? elementValue : currentMinimum
-  );
+    const segmentPairs = inputLines.slice(1, segmentCount + 1).map(lineText =>
+        lineText.split(' ').map(Number.parseInt)
+    );
 
-const findLargestInSet = (...numericValues) =>
-  numericValues.reduce((currentMaximum, elementValue) =>
-    elementValue > currentMaximum ? elementValue : currentMaximum
-  );
+    const initialAccumulator = {
+        activeLeftBound: 0,
+        activeRightBound: totalRangeEnd - 1,
+        resetCounter: 1
+    };
 
-const performLogicOnInput = (rawProgramInput) => {
-  const allContentLines = rawProgramInput.split("\n");
+    const finalState = segmentPairs.reduce((accumulator, currentSegment) => {
+        const [segmentStart, segmentEnd] = currentSegment;
+        let { activeLeftBound, activeRightBound, resetCounter } = accumulator;
 
-  const initialParameters = allContentLines[0].split(" ");
-  const overallRangeUpper = obtainNumericValue(initialParameters[0]);
-  const intervalCount = obtainNumericValue(initialParameters[1]);
+        if (segmentEnd <= activeLeftBound || activeRightBound <= segmentStart) {
+            resetCounter++;
+            activeLeftBound = segmentStart;
+            activeRightBound = segmentEnd;
+        } else {
+            activeLeftBound = Math.max(activeLeftBound, segmentStart);
+            activeRightBound = Math.min(activeRightBound, segmentEnd);
+        }
 
-  const definedIntervals = allContentLines
-    .slice(1, 1 + intervalCount)
-    .reduce((intervalAccumulator, lineRepresentation) => {
-      const componentParts = lineRepresentation.split(" ");
-      const startPoint = obtainNumericValue(componentParts[0]);
-      const endPoint = obtainNumericValue(componentParts[1]);
-      intervalAccumulator.push([startPoint, endPoint]);
-      return intervalAccumulator;
-    }, []);
+        return { activeLeftBound, activeRightBound, resetCounter };
+    }, initialAccumulator);
 
-  const finalComputation = definedIntervals.reduce(
-    (currentComputationalState, activeInterval) => {
-      const { currentSpanStart, currentSpanEnd, segmentCounter } =
-        currentComputationalState;
-      const intervalInitial = activeInterval[0];
-      const intervalFinal = activeInterval[1];
+    console.log(finalState.resetCounter);
+}
 
-      if (intervalFinal <= currentSpanStart || currentSpanEnd <= intervalInitial) {
-        // Intervals are completely separate
-        return {
-          currentSpanStart: intervalInitial,
-          currentSpanEnd: intervalFinal,
-          segmentCounter: segmentCounter + 1,
-        };
-      } else {
-        // Intervals overlap
-        const newSpanBeginning = findLargestInSet(currentSpanStart, intervalInitial);
-        const newSpanEnding = findSmallestInSet(currentSpanEnd, intervalFinal);
-        return {
-          currentSpanStart: newSpanBeginning,
-          currentSpanEnd: newSpanEnding,
-          segmentCounter: segmentCounter,
-        };
-      }
-    },
-    { currentSpanStart: 0, currentSpanEnd: overallRangeUpper - 1, segmentCounter: 1 }
-  );
-
-  console.log(finalComputation.segmentCounter);
-};
-
-performLogicOnInput(require("node:fs").readFileSync("/dev/stdin", "utf8"));
+processIntervals(require("fs").readFileSync("/dev/stdin", "utf8"));

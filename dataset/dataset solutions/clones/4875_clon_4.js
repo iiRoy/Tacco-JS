@@ -1,45 +1,46 @@
 'use strict';
 
-const processCanvas = (dataString) => {
-    const instructionLines = dataString.split('\n').map(line => line.split(' ').map(Number));
-    const dimensionsLine = instructionLines.shift();
-    const canvasWidth = dimensionsLine[0];
-    const canvasHeight = dimensionsLine[1];
+function processGridOperations(rawData) {
+    const parsedLines = rawData.split('\n').map(line => line.split(' '));
+    const dimensionLine = parsedLines.shift();
+    const gridWidth = Number(dimensionLine[0]);
+    const gridHeight = Number(dimensionLine[1]);
+    const operationCount = Number(dimensionLine[2]);
 
-    let minXCoordinate = 0;
-    let maxXCoordinate = canvasWidth;
-    let minYCoordinate = 0;
-    let maxYCoordinate = canvasHeight;
+    const gridMatrix = Array.from({ length: gridHeight }, () => Array(gridWidth).fill(0));
 
-    instructionLines.forEach(operation => {
-        const xVal = operation[0];
-        const yVal = operation[1];
-        const opType = operation[2];
+    const fillInstructions = [];
+    const operationHandlers = {
+        '1': (xVal, yVal, currentGridWidth, currentGridHeight) => ({ xStart: 0, xEnd: Number(xVal), yStart: 0, yEnd: currentGridHeight }),
+        '2': (xVal, yVal, currentGridWidth, currentGridHeight) => ({ xStart: Number(xVal), xEnd: currentGridWidth, yStart: 0, yEnd: currentGridHeight }),
+        '3': (xVal, yVal, currentGridWidth, currentGridHeight) => ({ xStart: 0, xEnd: currentGridWidth, yStart: 0, yEnd: Number(yVal) }),
+        '4': (xVal, yVal, currentGridWidth, currentGridHeight) => ({ xStart: 0, xEnd: currentGridWidth, yStart: Number(yVal), yEnd: currentGridHeight })
+    };
 
-        switch (opType) {
-            case 1:
-                minXCoordinate = Math.max(minXCoordinate, xVal);
-                break;
-            case 2:
-                maxXCoordinate = Math.min(maxXCoordinate, xVal);
-                break;
-            case 3:
-                minYCoordinate = Math.max(minYCoordinate, yVal);
-                break;
-            case 4:
-                maxYCoordinate = Math.min(maxYCoordinate, yVal);
-                break;
-            default:
-                break;
+    for (let opIdx = 0; opIdx < operationCount; opIdx++) {
+        const [xString, yString, typeString] = parsedLines[opIdx];
+        const currentInstruction = operationHandlers[typeString](xString, yString, gridWidth, gridHeight);
+        fillInstructions.push(currentInstruction);
+    }
+
+    for (let rowIdx = 0; rowIdx < gridHeight; rowIdx++) {
+        for (let colIdx = 0; colIdx < gridWidth; colIdx++) {
+            for (const instruction of fillInstructions) {
+                if (colIdx >= instruction.xStart && colIdx < instruction.xEnd &&
+                    rowIdx >= instruction.yStart && rowIdx < instruction.yEnd) {
+                    gridMatrix[rowIdx][colIdx]++;
+                }
+            }
         }
-    });
+    }
 
-    const actualWidth = Math.max(0, maxXCoordinate - minXCoordinate);
-    const actualHeight = Math.max(0, maxYCoordinate - minYCoordinate);
+    console.log(gridMatrix);
 
-    const remainingArea = actualWidth * actualHeight;
+    const zeroCellCount = gridMatrix.reduce((totalCount, currentRow) => {
+        return totalCount + currentRow.filter(cellValue => cellValue === 0).length;
+    }, 0);
 
-    console.log(remainingArea);
-};
+    console.log(zeroCellCount);
+}
 
-processCanvas(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processGridOperations(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,42 +1,36 @@
-// This module contains a primary routine for numerical computation.
-/**
- * Computes the summation of numbers within a specified range,
- * excluding those divisible by specific factors.
- * @param {string} rawSourceData - The raw string input, expected to contain a numerical upper bound.
- */
-const performExclusionSummation = ( rawSourceData ) => {
-
-  // Convert the cleaned input string into an integer representing the upper limit.
-  const maximumValue = parseInt( rawSourceData . trim ( ) , 10 );
-
-  let accumulatedSum = 0; // Initialize the variable that will hold the final sum.
-
-  // Iterate through each integer starting from 1 up to the determined maximum value.
-  for ( let currentIterationValue = 1 ; currentIterationValue <= maximumValue ; currentIterationValue++ ) {
-    // Check if the current value is NOT perfectly divisible by 3 AND NOT perfectly divisible by 5.
-    if ( ( currentIterationValue % 3 ) !== 0 && ( currentIterationValue % 5 ) !== 0 ) {
-      accumulatedSum += currentIterationValue; // If conditions are met, add the value to the running total.
+const processInput = (rawData) => {
+  // Convert the incoming raw string data into a numerical limit, after removing any leading/trailing whitespace.
+  const limitVal = Number(rawData.trim());
+  
+  // Initialize a variable to accumulate the sum of numbers that meet specific criteria.
+  let totalSum = 0;
+  
+  // Iterate through numbers starting from one up to and including the determined limit.
+  for (let counter = 1; counter <= limitVal; counter++) {
+    // Check if the current number is not perfectly divisible by 3 AND not perfectly divisible by 5.
+    // (A non-zero remainder evaluates to true in a boolean context).
+    if (counter % 3 && counter % 5) {
+      // If both conditions are met, add the current number to our running total.
+      totalSum += counter;
     }
   }
-
-  // Output the final calculated total to the standard information stream.
-  return console.info( accumulatedSum );
+  
+  // Output the final calculated sum to the standard console and return the result of console.log (which is undefined).
+  return console.log(totalSum);
 };
 
-// --- Execution Environment Configuration ---
-
-// This conditional block determines the execution path based on an environment variable.
-process.env.APPLICATION_RUNTIME_MODE_KEY
+// This block handles the execution flow, checking for a specific environment variable.
+process.env.MYTEST
+  // If the 'MYTEST' environment variable is set (truthy):
   ? (
-      // If the environment variable is present, check its specific value.
-      process.env.APPLICATION_RUNTIME_MODE_KEY === 'unit_testing'
-        ? invokeTestSuite() // Call a dedicated function for running unit tests.
-        : performExclusionSummation(require('node:fs').readFileSync('test_data/input.dat', 'utf8')) // Read input from a development-specific file.
+      // Further check if 'MYTEST' is exactly the string 'test'.
+      process.env.MYTEST === 'test' 
+        // If it is 'test', invoke an external 'test()' function.
+        ? test() 
+        // Otherwise (if 'MYTEST' is set but not 'test'), read input from 'dev/stdin' 
+        // using the 'fs' module and pass it to our 'processInput' function.
+        : processInput(require('fs').readFileSync('dev/stdin', 'utf8'))
     )
-  : performExclusionSummation(require('node:fs').readFileSync('/prod/app_input.txt', 'utf8')); // Default path: read input from a production file location.
-
-// Placeholder for a testing function, assumed to be defined elsewhere.
-function invokeTestSuite() {
-  console.log("Running simulated unit tests...");
-  // In a real scenario, this would trigger a testing framework.
-}
+  // If the 'MYTEST' environment variable is not set (falsy), 
+  // read input from '/dev/stdin' and pass it to 'processInput'.
+  : processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

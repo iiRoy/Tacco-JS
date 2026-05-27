@@ -1,18 +1,11 @@
-const processInputAndCompute = (sourceText) => {
-    const numericSource = Number(sourceText);
+function computeResult(valueFromInput) {
+    return Math.pow(valueFromInput / 3, 3);
+}
 
-    const cubedSource = numericSource * numericSource * numericSource;
+function processInput(rawText) {
+    const firstLineAsInteger = parseInt(rawText.split('\n')[0], 10);
+    const calculatedValue = computeResult(firstLineAsInteger);
+    console.log(calculatedValue);
+}
 
-    const denominator = 3 * 3 * 3;
-
-    const finalCalculation = cubedSource / denominator;
-
-    process.stdout.write(finalCalculation.toString() + "\n");
-};
-
-const orchestrateExecution = () => {
-    const acquiredContent = require("fs").readFileSync("/dev/stdin", "utf8");
-    processInputAndCompute(acquiredContent);
-};
-
-orchestrateExecution();
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

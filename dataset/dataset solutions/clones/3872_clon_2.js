@@ -1,34 +1,33 @@
-"use strict" // This directive enforces stricter parsing and error handling.
+"use strict"
 
-// Function to compute a final monetary valuation based on a provided string.
-const   computeTotalValuation   =   (  input_character_sequence  )  =>   {
-    // Assign the incoming character sequence to a local reference.
-    const   processed_sequence   =   input_character_sequence;
+// This function processes the raw input data to calculate a final cost.
+const processInput = (rawData) => {
+    // The input string is assigned to a sequence variable.
+    const charSequence = rawData;
+    // Initialize the base cost for the operation.
+    let currentCost = 700;
 
-    // Initialize the base monetary value for the calculation.
-    let   computed_value   =   700;   // Starting amount.
-
-    // Evaluate the first character in the sequence.
-    if   (  processed_sequence[0]   ===   "○"  )   {
-        // Increment the value if the character matches the condition.
-        computed_value   +=   100;
+    // Check the first character of the sequence.
+    if (charSequence[0] === "○") {
+        // If it matches the specific symbol, add a bonus to the cost.
+        currentCost += 100;
     }
 
-    // Evaluate the second character in the sequence.
-    if   (  processed_sequence[1]   ===   "○"  )   {
-        // Increment the value again if this character also matches.
-        computed_value   +=   100;
+    // Check the second character of the sequence.
+    if (charSequence[1] === "○") {
+        // If it matches, apply another increment to the cost.
+        currentCost += 100;
     }
 
-    // Evaluate the third character in the sequence.
-    if   (  processed_sequence[2]   ===   "○"  )   {
-        // Final increment if the last character also matches.
-        computed_value   +=   100;
+    // Check the third character of the sequence.
+    if (charSequence[2] === "○") {
+        // If this also matches, add a final adjustment to the cost.
+        currentCost += 100;
     }
 
-    // Output the final calculated monetary value.
-    console.log(computed_value);
+    // Display the computed total cost to the console.
+    console.log(currentCost);
 };
 
-// Invoke the valuation function, reading input from the standard input stream.
-computeTotalValuation(  require("fs").readFileSync("/dev/stdin","utf8")  );
+// Read the standard input synchronously and pass it to the processing function.
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

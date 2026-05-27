@@ -1,90 +1,48 @@
-function evaluateNumericExpression(firstOperandString, secondOperandString) {
-    let valueA = firstOperandString;
-    let valueB = secondOperandString;
+function performLargeSum(firstOperand, secondOperand) {
+    const firstDigits = String(firstOperand).split('').reverse().map(Number);
+    const secondDigits = String(secondOperand).split('').reverse().map(Number);
+    const resultDigits = [];
+    let currentCarry = 0;
+    let digitIndex = 0;
 
-    // Normalize leading zeros for BigInt parsing, mimicking Number() coercion
-    if (valueA.length > 1 && valueA.startsWith('0')) {
-        valueA = valueA.replace(/^0+/, '');
-        if (valueA === '') valueA = '0';
-    }
-    if (valueB.length > 1 && valueB.startsWith('0')) {
-        valueB = valueB.replace(/^0+/, '');
-        if (valueB === '') valueB = '0';
+    while (digitIndex < firstDigits.length || digitIndex < secondDigits.length || currentCarry > 0) {
+        const digitFromFirst = firstDigits[digitIndex] || 0;
+        const digitFromSecond = secondDigits[digitIndex] || 0;
+
+        const totalSum = digitFromFirst + digitFromSecond + currentCarry;
+        resultDigits.push(totalSum % 10);
+        currentCarry = Math.floor(totalSum / 10);
+        digitIndex++;
     }
 
-    try {
-        const numericValueA = BigInt(valueA);
-        const numericValueB = BigInt(valueB);
-        const summationResult = numericValueA + numericValueB;
-        return summationResult.toString();
-    } catch (error) {
-        // This block should ideally not be reached if input is always valid BigInt format
-        // after zero normalization. Returning a distinct value to indicate a failure.
-        return null;
+    while (resultDigits.length > 1 && resultDigits[resultDigits.length - 1] === 0) {
+        resultDigits.pop();
     }
+
+    return resultDigits.reverse().join('');
 }
 
-// Custom prototype methods and utilities to avoid direct reuse of built-in names
-String.prototype.cleanWhitespace = function() {
-    return this.trim();
-};
+const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+const problemStatements = fileContent.trim().split('\n');
 
-String.prototype.segmentByDelimiter = function(delimiter) {
-    return this.split(delimiter);
-};
+problemStatements.forEach(statementLine => {
+    const components = statementLine.split(/[\+\=]/);
+    const leftTermPattern = components[0];
+    const rightTermPattern = components[1];
+    const expectedOutcomePattern = components[2];
 
-String.prototype.substituteCharacters = function(pattern, replacement) {
-    return this.replace(pattern, replacement);
-};
+    const candidateDigits = Array.from({ length: 10 }, (_, idx) => idx);
+    const matchingSolutions = candidateDigits.filter(digitValue => {
+        const substitutedLeft = Number(leftTermPattern.replace(/X/g, digitValue));
+        const substitutedRight = Number(rightTermPattern.replace(/X/g, digitValue));
+        const substitutedOutcome = expectedOutcomePattern.replace(/X/g, digitValue);
 
-Object.defineProperty(Array.prototype, 'elementCount', {
-    get() { return this.length; }
+        return performLargeSum(substitutedLeft, substitutedRight) === substitutedOutcome;
+    });
+
+    if (matchingSolutions.length === 1) {
+        console.log(matchingSolutions[0]);
+    } else {
+        console.log("NA");
+    }
 });
-
-function displayOutput(message) {
-    console.log(message);
-}
-
-// Main execution logic wrapped in an IIFE
-(function solveEquationPuzzles() {
-    const fileSystemHandler = require('node:fs');
-    const rawDataStream = fileSystemHandler.readFileSync('/dev/stdin', 'utf8');
-
-    const equationCollection = rawDataStream.cleanWhitespace().segmentByDelimiter("\n");
-    let currentProblemIndex = 0;
-
-    while (currentProblemIndex < equationCollection.elementCount) {
-        const currentProblemLine = equationCollection[currentProblemIndex++];
-        if (currentProblemLine.elementCount === 0) continue;
-
-        // Using regex match for parsing, a different approach than simple split
-        const lineParts = currentProblemLine.match(/^(\d*X?\d*)\+(\d*X?\d*)=(\d*X?\d*)$/);
-        if (!lineParts) {
-            displayOutput("Parse Error: " + currentProblemLine);
-            continue;
-        }
-
-        const firstExpression = lineParts[1];
-        const secondExpression = lineParts[2];
-        const expectedOutcome = lineParts[3];
-
-        const validDigitCandidates = [];
-
-        // Iterate through possible digits (0-9) using a functional approach
-        Array.from({ length: 10 }, (_, potentialDigit) => potentialDigit).forEach(digitValue => {
-            const transformedFirst = firstExpression.substituteCharacters(/X/g, digitValue.toString());
-            const transformedSecond = secondExpression.substituteCharacters(/X/g, digitValue.toString());
-            const transformedExpected = expectedOutcome.substituteCharacters(/X/g, digitValue.toString());
-
-            // Compute the sum using the BigInt-based function
-            const computedResult = evaluateNumericExpression(transformedFirst, transformedSecond);
-
-            // Compare the string results
-            if (computedResult === transformedExpected) {
-                validDigitCandidates.push(digitValue);
-            }
-        });
-
-        displayOutput((validDigitCandidates.elementCount === 1) ? validDigitCandidates[0] : "NA");
-    }
-})();

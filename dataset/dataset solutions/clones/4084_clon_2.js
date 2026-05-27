@@ -1,65 +1,55 @@
-/* This script processes a series of journey points to determine if a specific set of conditions is met for each segment. */
-function processJourneyData ( rawDataString ) { // Main entry point for processing sequential journey information.
+function processInput(rawData) {
+  // The input string is split into individual lines.
+  // The first line is typically metadata (like the number of trips) and is discarded using splice(1).
+  const dataRows = rawData.split('\n').splice(1);
 
-  // The initial line of input often contains metadata (like total count) and is typically ignored.
-  // We split the raw string by newline characters and discard the very first line.
-  const   journeyEntries   =   rawDataString . split ( '\n' ) . splice ( 1 )   ;
+  // Each remaining line, representing a journey segment, is parsed.
+  // First, it's split by space, then each part is converted to a number.
+  const journeySegments = dataRows.map(rowStr =>
+    rowStr.split(' ').map(numStr => Number(numStr))
+  );
 
-  // Each remaining line is then parsed. Each line is expected to contain three numerical values:
-  // time, x-coordinate, and y-coordinate, separated by spaces.
-  const parsedJourneys = journeyEntries . map ( ( entryLine ) => {
-    return entryLine . split ( ' ' ) . map ( ( numericValue ) => Number ( numericValue ) ) ;
-  } ) ;
+  // Initialize state variables for the traveler's current position and time.
+  var segmentIndex = 0;   // Iterator for the journeySegments array.
+  var currentTime = 0;    // The current time 't'.
+  var currentX = 0;       // The current x-coordinate.
+  var currentY = 0;       // The current y-coordinate.
 
-  // Initialize variables to track the current state of the journey.
-  let journeyIndex = 0 ;      // An index to iterate through the list of journey segments.
-  let currentTime = 0 ;       // The time elapsed up to the current point.
-  let currentXCoord = 0 ;     // The current X-coordinate, initialized at the origin (0).
-  let currentYCoord = 0 ;     // The current Y-coordinate, initialized at the origin (0).
+  // Loop through each planned journey segment to validate its feasibility.
+  while (segmentIndex < journeySegments.length) {
+    const currentSegment = journeySegments[segmentIndex]; // Get the details for the current destination.
 
-  // Loop through each segment of the journey defined in the input data.
-  while ( journeyIndex < parsedJourneys . length ) {
+    // Calculate the time difference and absolute coordinate differences for this segment.
+    const timeDelta = currentSegment[0] - currentTime; // Time elapsed to reach the next point.
+    const xDeltaAbs = Math.abs(currentSegment[1] - currentX); // Absolute change in x-coordinate.
+    const yDeltaAbs = Math.abs(currentSegment[2] - currentY); // Absolute change in y-coordinate.
 
-    // Extract the details for the current target segment.
-    const currentSegment = parsedJourneys [ journeyIndex ] ;
-
-    // Calculate the time difference required to reach the next segment's time.
-    const timeDifference = currentSegment [ 0 ] - currentTime ;
-
-    // Calculate the absolute change needed in the X-coordinate.
-    // Note: 'currentXCoord' remains 0 throughout this script as per original logic.
-    const xDistance = Math . abs ( currentSegment [ 1 ] - currentXCoord ) ;
-
-    // Calculate the absolute change needed in the Y-coordinate.
-    // Note: 'currentYCoord' remains 0 throughout this script as per original logic.
-    const yDistance = Math . abs ( currentSegment [ 2 ] - currentYCoord ) ;
-
-    // First condition check: Is there enough time to cover the Manhattan distance?
-    // If the time available is less than the sum of absolute X and Y changes, it's impossible.
-    if ( timeDifference < ( xDistance + yDistance ) ) {
-      return console . log ( 'No' ) ;
+    // First condition check: Is there enough time to reach the destination?
+    // The Manhattan distance (dx + dy) must be less than or equal to the time available (dt).
+    if (timeDelta < xDeltaAbs + yDeltaAbs) {
+      return console.log('No'); // If not enough time, output 'No' and terminate.
     }
 
-    // Second condition check: Parity constraint.
-    // If the parity of the time difference matches the parity of the total distance,
-    // this specific logic indicates an impossible scenario for the journey.
-    // This is a direct cloning of the provided condition.
-    if ( ( timeDifference % 2 ) == ( ( xDistance + yDistance ) % 2 ) ) {
-      return console . log ( 'No' ) ;
+    // Second condition check: Parity of time difference and Manhattan distance.
+    // (dt % 2) must be equal to ((dx + dy) % 2). This ensures that any "extra" time
+    // can be spent by moving back and forth, maintaining the same parity.
+    // The original code returns 'No' if they *match*, which implies a specific problem interpretation.
+    if (timeDelta % 2 == (xDeltaAbs + yDeltaAbs) % 2) {
+      return console.log('No'); // If parities match, output 'No' and terminate.
     }
 
-    // Update the current time to the time of the current segment.
-    // Critical: The current X and Y coordinates (currentXCoord, currentYCoord) are not updated
-    // in this specific implementation, meaning all distance calculations are relative to the origin (0,0).
-    currentTime = currentSegment [ 0 ] ;
+    // If both conditions pass, update the current position and time for the next segment.
+    currentTime = currentSegment[0]; // Update current time to the end time of this segment.
+    currentX = currentSegment[1];    // Update current x-coordinate.
+    currentY = currentSegment[2];    // Update current y-coordinate.
 
-    // Advance to the next segment in the journey.
-    journeyIndex ++ ;
+    segmentIndex++; // Move to the next journey segment.
   }
 
-  // If the loop completes without returning 'No', all conditions are met for all segments.
-  return console . log ( 'Yes' ) ;
+  // If the loop completes without returning 'No', all segments are reachable.
+  return console.log('Yes'); // Output 'Yes'.
 }
 
-// Execute the journey processing function by reading input from standard input.
-processJourneyData ( require ( 'fs' ) . readFileSync ( '/dev/stdin' , 'utf8' ) ) ;
+// Read the entire content of standard input as a UTF-8 string.
+// Then, pass this raw input string to the processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,66 +1,51 @@
-const lineProcessor = require('readline').createInterface({
-  input: process.stdin,
-  output: process.stdout,
-  terminal: false
-});
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
 
-let rawInputStorage = [];
+process.stdin.on('data', function(rawInput) {
+    const inputLines = rawInput.split('\n');
+    const totalCases = parseInt(inputLines[0], 10);
 
-lineProcessor.on('line', (currentLine) => {
-  rawInputStorage.push(currentLine);
-});
+    for (let currentCaseIndex = 0; currentCaseIndex < totalCases; ++currentCaseIndex) {
+        const [strDigitCountA, strDigitCountB] = inputLines[currentCaseIndex + 1].split(' ');
+        const digitCountA = parseInt(strDigitCountA, 10);
+        const digitCountB = parseInt(strDigitCountB, 10);
 
-lineProcessor.on('close', () => {
-  processAllEntries(rawInputStorage);
-});
+        const minBoundaryA = Math.pow(10, digitCountA - 1);
+        const maxBoundaryA = Math.pow(10, digitCountA) - 1;
+        const minBoundaryB = Math.pow(10, digitCountB - 1);
+        const maxBoundaryB = Math.pow(10, digitCountB) - 1;
 
-const baseExponentiation = (exponent) => {
-  if (exponent < 0) return 0;
-  return (10 ** exponent);
-};
+        const multiplierForA = Math.pow(10, digitCountB);
+        let foundMatches = [];
 
-const sequenceGenerator = (startValue, endValue) => {
-  if (startValue > endValue) return [];
-  return Array.from({ length: endValue - startValue + 1 }, (_, idx) => startValue + idx);
-};
+        for (let currentValA = minBoundaryA; currentValA <= maxBoundaryA; ++currentValA) {
+            // The original equation is: (b*b + b - a*a + a) / 2 == (a * 10^N2 + b)
+            // Rearranging to a quadratic equation for b:
+            // b^2 + b - a^2 + a = 2 * (a * 10^N2 + b)
+            // b^2 + b - a^2 + a = 2 * a * 10^N2 + 2 * b
+            // b^2 - b - (a^2 - a + 2 * a * 10^N2) = 0
+            // This is of the form X*b^2 + Y*b + Z = 0, where X=1, Y=-1, Z = -(a^2 - a + 2 * a * 10^N2)
 
-const evaluateCriterion = (itemA, itemB, lengthB) => {
-  const expressionLeft = (itemB * itemB + itemB - itemA * itemA + itemA) / 2;
-  const expressionRight = itemA * baseExponentiation(lengthB) + itemB;
-  return expressionLeft === expressionRight;
-};
+            const constantTermK = currentValA * currentValA - currentValA + 2 * currentValA * multiplierForA;
+            const delta = 1 + 4 * constantTermK; // Discriminant (Y^2 - 4XZ)
 
-const discoverConformingPairs = (magnA, magnB) => {
-  const minValA = baseExponentiation(magnA - 1);
-  const maxValA = baseExponentiation(magnA) - 1;
-  const minValB = baseExponentiation(magnB - 1);
-  const maxValB = baseExponentiation(magnB) - 1;
+            const sqrtDelta = Math.sqrt(delta);
 
-  const candidateSetA = sequenceGenerator(minValA, maxValA);
-  const candidateSetB = sequenceGenerator(minValB, maxValB);
+            if (Number.isInteger(sqrtDelta)) {
+                // Solutions for b: (-Y ± sqrt(delta)) / (2X)
+                // b = (1 ± sqrt(delta)) / 2
+                const candidateValB = (1 + sqrtDelta) / 2;
 
-  return candidateSetA.flatMap(itemA =>
-    candidateSetB
-      .filter(itemB => evaluateCriterion(itemA, itemB, magnB))
-      .map(itemB => [itemA, itemB])
-  );
-};
+                if (Number.isInteger(candidateValB) && candidateValB >= minBoundaryB && candidateValB <= maxBoundaryB) {
+                    foundMatches.push(`${currentValA} ${candidateValB}`);
+                }
+            }
+        }
 
-const processAllEntries = (entryStrings) => {
-  const entryCount = Number(entryStrings[0]);
-  let currentReadPosition = 1;
-
-  for (let entryIndex = 0; entryIndex < entryCount; ++entryIndex) {
-    const magnitudeSpecs = entryStrings[currentReadPosition++].split(' ').map(Number);
-    const magnitudeA = magnitudeSpecs[0];
-    const magnitudeB = magnitudeSpecs[1];
-
-    const matchedPairs = discoverConformingPairs(magnitudeA, magnitudeB);
-
-    if (matchedPairs.length === 0) {
-      console.log('No cats.');
-    } else {
-      matchedPairs.forEach(couple => console.log(`${couple[0]} ${couple[1]}`));
+        if (foundMatches.length > 0) {
+            foundMatches.forEach(match => console.log(match));
+        } else {
+            console.log('No cats.');
+        }
     }
-  }
-};
+});

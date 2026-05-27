@@ -1,58 +1,53 @@
 'use strict';
 
-function processGraphQuery(rawData) {
-    const graphLines = rawData.split(/\r?\n/).filter(line => line.length > 0);
+function processGraphData(inputData) {
+    const inputLines = inputData.trim().split('\n');
+    const [nodeCount, startNodeA, startNodeB] = inputLines[0].split(' ').map(Number);
+    const edgePairs = inputLines.slice(1).map(line => line.split(' ').map(Number));
 
-    const initialParameters = graphLines[0].split(' ').map(Number);
-    const totalVertices = initialParameters[0];
-    const initialPointA = initialParameters[1];
-    const initialPointB = initialParameters[2];
-
-    const graphConnections = new Map();
-    for (let nodeIdentifier = 1; nodeIdentifier <= totalVertices; ++nodeIdentifier) {
-        graphConnections.set(nodeIdentifier, new Set());
+    const graphAdjacency = new Map();
+    for (let i = 1; i <= nodeCount; ++i) {
+        graphAdjacency.set(i, []);
     }
 
-    const edgeSegments = graphLines.slice(1);
-    for (const segment of edgeSegments) {
-        const [nodeX, nodeY] = segment.split(' ').map(Number);
-        graphConnections.get(nodeX).add(nodeY);
-        graphConnections.get(nodeY).add(nodeX);
+    for (const [nodeX, nodeY] of edgePairs) {
+        graphAdjacency.get(nodeX).push(nodeY);
+        graphAdjacency.get(nodeY).push(nodeX);
     }
 
-    const computeShortestPaths = (originNode, topology, vertexTotal) => {
-        const pathDistances = new Array(vertexTotal + 1).fill(Infinity);
-        const visitQueue = [];
+    const calculateShortestPaths = (initialPoint, graphStructure, totalNodes) => {
+        const pathDistances = new Array(totalNodes + 1).fill(Infinity);
+        const traversalQueue = [];
 
-        pathDistances[originNode] = 0;
-        visitQueue.push(originNode);
+        pathDistances[initialPoint] = 0;
+        traversalQueue.push(initialPoint);
 
-        let queueHead = 0;
-        while (queueHead < visitQueue.length) {
-            const currentVertex = visitQueue[queueHead++];
-            const currentPathLength = pathDistances[currentVertex];
+        let queuePointer = 0;
+        while (queuePointer < traversalQueue.length) {
+            const currentVertex = traversalQueue[queuePointer++];
+            const adjacentVertices = graphStructure.get(currentVertex) || [];
 
-            for (const adjacentVertex of topology.get(currentVertex)) {
-                if (pathDistances[adjacentVertex] === Infinity) {
-                    pathDistances[adjacentVertex] = currentPathLength + 1;
-                    visitQueue.push(adjacentVertex);
+            for (const neighborVertex of adjacentVertices) {
+                if (pathDistances[neighborVertex] === Infinity) {
+                    pathDistances[neighborVertex] = pathDistances[currentVertex] + 1;
+                    traversalQueue.push(neighborVertex);
                 }
             }
         }
         return pathDistances;
     };
 
-    const lengthsFromA = computeShortestPaths(initialPointA, graphConnections, totalVertices);
-    const lengthsFromB = computeShortestPaths(initialPointB, graphConnections, totalVertices);
+    const distancesFromStartA = calculateShortestPaths(startNodeA, graphAdjacency, nodeCount);
+    const distancesFromStartB = calculateShortestPaths(startNodeB, graphAdjacency, nodeCount);
 
-    let ultimateMaximum = 0;
-    for (let vertexIndex = 1; vertexIndex <= totalVertices; ++vertexIndex) {
-        if (lengthsFromA[vertexIndex] < lengthsFromB[vertexIndex]) {
-            ultimateMaximum = Math.max(ultimateMaximum, lengthsFromB[vertexIndex] - 1);
+    const finalMaximum = Array.from({ length: nodeCount }, (_, index) => index + 1).reduce((currentMaxVal, vertexIndex) => {
+        if (distancesFromStartA[vertexIndex] < distancesFromStartB[vertexIndex]) {
+            return Math.max(currentMaxVal, distancesFromStartB[vertexIndex] - 1);
         }
-    }
+        return currentMaxVal;
+    }, 0);
 
-    console.log(ultimateMaximum);
+    console.log(finalMaximum);
 }
 
-processGraphQuery(require("fs").readFileSync("/dev/stdin", "utf8"));
+processGraphData(require("fs").readFileSync("/dev/stdin", "utf8"));

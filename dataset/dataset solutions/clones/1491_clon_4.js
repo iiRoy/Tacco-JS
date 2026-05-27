@@ -1,140 +1,134 @@
-const DURATION_MODULUS = 998244353;
-const MAX_DIGIT_COUNT = 200005;
-
-let tenMultipliers = new Array(MAX_DIGIT_COUNT);
-let cumulativeTenMultipliers = new Array(MAX_DIGIT_COUNT);
-let nineReciprocal;
-
-function computeModularPower(baseVal, exponentVal) {
-    let outcome = 1;
-    baseVal %= DURATION_MODULUS;
-    while (exponentVal > 0) {
-        if (exponentVal % 2 === 1) outcome = (outcome * baseVal) % DURATION_MODULUS;
-        baseVal = (baseVal * baseVal) % DURATION_MODULUS;
-        exponentVal = Math.floor(exponentVal / 2);
-    }
-    return outcome;
-}
-
-function establishGlobalConstants() {
-    tenMultipliers[0] = 1;
-    for (let k = 1; k < MAX_DIGIT_COUNT; k++) {
-        tenMultipliers[k] = (tenMultipliers[k - 1] * 10) % DURATION_MODULUS;
-    }
-
-    nineReciprocal = computeModularPower(9, DURATION_MODULUS - 2);
-
-    cumulativeTenMultipliers[0] = 1;
-    for (let k = 1; k < MAX_DIGIT_COUNT; k++) {
-        cumulativeTenMultipliers[k] = (cumulativeTenMultipliers[k - 1] + tenMultipliers[k]) % DURATION_MODULUS;
-    }
-}
-
-class SegmentUnit {
-    constructor() {
-        this.aggregatedValue = 0;
-        this.deferredDigit = null;
-    }
-}
-
-class NumericalSequenceStructure {
-    constructor(totalQuantity) {
-        this.totalQuantity = totalQuantity;
-        this.segmentElements = new Array(4 * totalQuantity);
-        for(let i=0; i < 4 * totalQuantity; ++i) {
-            this.segmentElements[i] = new SegmentUnit();
-        }
-        this.constructInitialState(1, 0, totalQuantity - 1);
-    }
-
-    constructInitialState(nodeIndex, rangeStart, rangeEnd) {
-        if (rangeStart === rangeEnd) {
-            this.segmentElements[nodeIndex].aggregatedValue = (1 * tenMultipliers[this.totalQuantity - 1 - rangeStart]) % DURATION_MODULUS;
-        } else {
-            const midPoint = Math.floor((rangeStart + rangeEnd) / 2);
-            this.constructInitialState(nodeIndex * 2, rangeStart, midPoint);
-            this.constructInitialState(nodeIndex * 2 + 1, midPoint + 1, rangeEnd);
-            this.segmentElements[nodeIndex].aggregatedValue = (this.segmentElements[nodeIndex * 2].aggregatedValue + this.segmentElements[nodeIndex * 2 + 1].aggregatedValue) % DURATION_MODULUS;
-        }
-    }
-
-    propagateDeferredAction(nodeIndex, rangeStart, rangeEnd) {
-        const currentUnit = this.segmentElements[nodeIndex];
-        if (currentUnit.deferredDigit !== null) {
-            const digitValue = currentUnit.deferredDigit;
-            const midPoint = Math.floor((rangeStart + rangeEnd) / 2);
-
-            const leftChild = this.segmentElements[nodeIndex * 2];
-            leftChild.deferredDigit = digitValue;
-            leftChild.aggregatedValue = (digitValue * tenMultipliers[this.totalQuantity - 1 - midPoint]) % DURATION_MODULUS;
-            leftChild.aggregatedValue = (leftChild.aggregatedValue * cumulativeTenMultipliers[midPoint - rangeStart]) % DURATION_MODULUS;
-
-            const rightChild = this.segmentElements[nodeIndex * 2 + 1];
-            rightChild.deferredDigit = digitValue;
-            rightChild.aggregatedValue = (digitValue * tenMultipliers[this.totalQuantity - 1 - rangeEnd]) % DURATION_MODULUS;
-            rightChild.aggregatedValue = (rightChild.aggregatedValue * cumulativeTenMultipliers[rangeEnd - (midPoint + 1)]) % DURATION_MODULUS;
-
-            currentUnit.deferredDigit = null;
-        }
-    }
-
-    applyRangeModification(nodeIndex, currentRangeStart, currentRangeEnd, targetRangeStart, targetRangeEnd, newDigitValue) {
-        const currentUnit = this.segmentElements[nodeIndex];
-
-        if (currentRangeStart > targetRangeEnd || currentRangeEnd < targetRangeStart) {
-            return;
-        }
-
-        if (targetRangeStart <= currentRangeStart && currentRangeEnd <= targetRangeEnd) {
-            currentUnit.deferredDigit = newDigitValue;
-            currentUnit.aggregatedValue = (newDigitValue * tenMultipliers[this.totalQuantity - 1 - currentRangeEnd]) % DURATION_MODULUS;
-            currentUnit.aggregatedValue = (currentUnit.aggregatedValue * cumulativeTenMultipliers[currentRangeEnd - currentRangeStart]) % DURATION_MODULUS;
-            return;
-        }
-
-        this.propagateDeferredAction(nodeIndex, currentRangeStart, currentRangeEnd);
-
-        const midPoint = Math.floor((currentRangeStart + currentRangeEnd) / 2);
-        this.applyRangeModification(nodeIndex * 2, currentRangeStart, midPoint, targetRangeStart, targetRangeEnd, newDigitValue);
-        this.applyRangeModification(nodeIndex * 2 + 1, midPoint + 1, currentRangeEnd, targetRangeStart, targetRangeEnd, newDigitValue);
-
-        currentUnit.aggregatedValue = (this.segmentElements[nodeIndex * 2].aggregatedValue + this.segmentElements[nodeIndex * 2 + 1].aggregatedValue) % DURATION_MODULUS;
-    }
-
-    retrieveOverallValue() {
-        return this.segmentElements[1].aggregatedValue;
-    }
-}
-
 (async () => {
-    const streamReader = require('readline').createInterface({
-        input: process.stdin,
-        output: process.stdout,
-        terminal: false
-    });
+    const MOD = 998244353;
+    const INV_9 = 443664157; // Modular multiplicative inverse of 9 mod 998244353
 
-    let collectedInputLines = [];
-    streamReader.on('line', (lineContent) => {
-        collectedInputLines.push(lineContent);
-    });
+    let powersOf10; // powersOf10[k] = 10^k % MOD
+    let sumGeometricSeries; // sumGeometricSeries[k] = (1 + 10 + ... + 10^k) % MOD
 
-    streamReader.on('close', () => {
-        establishGlobalConstants();
+    // Precomputes powers of 10 and sums of geometric series (1 + 10 + ... + 10^k)
+    function precomputePowersAndSums(maximumN) {
+        powersOf10 = new Array(maximumN + 2); // Need up to 10^(maximumN+1)
+        sumGeometricSeries = new Array(maximumN + 1); // Need up to sumGeometricSeries[maximumN]
 
-        const [totalLength, numOperations] = collectedInputLines[0].split(' ').map(Number);
-        const operationSpecifications = collectedInputLines.slice(1, numOperations + 1).map(lineContent => lineContent.split(' ').map(Number));
-
-        const sequenceHandler = new NumericalSequenceStructure(totalLength);
-        const computationResults = [];
-
-        for (const specEntry of operationSpecifications) {
-            const [l_base_one, r_base_one, newDigit] = specEntry;
-            const zeroBasedStart = l_base_one - 1;
-            const zeroBasedEnd = r_base_one - 1;
-            sequenceHandler.applyRangeModification(1, 0, totalLength - 1, zeroBasedStart, zeroBasedEnd, newDigit);
-            computationResults.push(sequenceHandler.retrieveOverallValue());
+        powersOf10[0] = 1;
+        for (let i = 1; i <= maximumN + 1; i++) {
+            powersOf10[i] = (powersOf10[i - 1] * 10) % MOD;
         }
 
-        process.stdout.write(computationResults.join('\n'));
-    });
+        sumGeometricSeries[0] = 1; // Represents 10^0
+        for (let i = 1; i <= maximumN; i++) {
+            // sumGeometricSeries[i] = (10^(i+1) - 1) * INV_9 % MOD
+            sumGeometricSeries[i] = (powersOf10[i + 1] - 1 + MOD) % MOD;
+            sumGeometricSeries[i] = (sumGeometricSeries[i] * INV_9) % MOD;
+        }
+    }
+
+    // Represents a node in the segment tree
+    class SegmentTreeNode {
+        constructor() {
+            this.value = 0;
+            this.lazyDigit = null; // null means no lazy update, a digit (0-9) means update to that digit
+        }
+    }
+
+    // Implements a segment tree with lazy propagation for range updates
+    class DigitSegmentTree {
+        constructor(arrayLength) {
+            this.arraySize = arrayLength;
+            this.treeNodes = new Array(4 * arrayLength); // Max size for segment tree
+            for (let i = 0; i < this.treeNodes.length; i++) {
+                this.treeNodes[i] = new SegmentTreeNode();
+            }
+            this.constructTree(1, 0, this.arraySize - 1);
+        }
+
+        // Calculates the sum of powers of 10 for a given range of indices
+        // This corresponds to (10^(arraySize-1-startIndex) + ... + 10^(arraySize-1-endIndex)) % MOD
+        // which simplifies to 10^(arraySize-1-endIndex) * (1 + 10 + ... + 10^(endIndex-startIndex)) % MOD
+        getRangePowerSum(startIndex, endIndex) {
+            if (startIndex > endIndex) return 0;
+            const lengthOfSeries = endIndex - startIndex;
+            const exponentForRightmost = this.arraySize - 1 - endIndex;
+            return (powersOf10[exponentForRightmost] * sumGeometricSeries[lengthOfSeries]) % MOD;
+        }
+
+        // Builds the segment tree, initializing all digits to 1
+        constructTree(nodeIndex, rangeStart, rangeEnd) {
+            if (rangeStart === rangeEnd) {
+                // Initial value for each digit is 1
+                this.treeNodes[nodeIndex].value = (1 * powersOf10[this.arraySize - 1 - rangeStart]) % MOD;
+            } else {
+                const mid = Math.floor((rangeStart + rangeEnd) / 2);
+                this.constructTree(2 * nodeIndex, rangeStart, mid);
+                this.constructTree(2 * nodeIndex + 1, mid + 1, rangeEnd);
+                this.treeNodes[nodeIndex].value = (this.treeNodes[2 * nodeIndex].value + this.treeNodes[2 * nodeIndex + 1].value) % MOD;
+            }
+        }
+
+        // Pushes down lazy updates to children nodes
+        propagateLazy(nodeIndex, rangeStart, rangeEnd) {
+            const currentNode = this.treeNodes[nodeIndex];
+            if (currentNode.lazyDigit !== null && rangeStart !== rangeEnd) {
+                const mid = Math.floor((rangeStart + rangeEnd) / 2);
+
+                // Apply lazy to left child
+                const leftChild = this.treeNodes[2 * nodeIndex];
+                leftChild.lazyDigit = currentNode.lazyDigit;
+                leftChild.value = (currentNode.lazyDigit * this.getRangePowerSum(rangeStart, mid)) % MOD;
+
+                // Apply lazy to right child
+                const rightChild = this.treeNodes[2 * nodeIndex + 1];
+                rightChild.lazyDigit = currentNode.lazyDigit;
+                rightChild.value = (currentNode.lazyDigit * this.getRangePowerSum(mid + 1, rangeEnd)) % MOD;
+            }
+            currentNode.lazyDigit = null; // Clear lazy tag after pushing down
+        }
+
+        // Updates a range [queryL, queryR] with a new digit D
+        applyRangeUpdate(nodeIndex, rangeStart, rangeEnd, queryL, queryR, digitD) {
+            // If current node's range is outside query range, do nothing
+            if (rangeStart > queryR || rangeEnd < queryL) {
+                return;
+            }
+
+            // If current node's range is fully within query range
+            if (queryL <= rangeStart && rangeEnd <= queryR) {
+                this.treeNodes[nodeIndex].lazyDigit = digitD;
+                this.treeNodes[nodeIndex].value = (digitD * this.getRangePowerSum(rangeStart, rangeEnd)) % MOD;
+                return;
+            }
+
+            // Partial overlap, propagate lazy and recurse
+            this.propagateLazy(nodeIndex, rangeStart, rangeEnd);
+
+            const mid = Math.floor((rangeStart + rangeEnd) / 2);
+            this.applyRangeUpdate(2 * nodeIndex, rangeStart, mid, queryL, queryR, digitD);
+            this.applyRangeUpdate(2 * nodeIndex + 1, mid + 1, rangeEnd, queryL, queryR, digitD);
+
+            // Update current node's value from children
+            this.treeNodes[nodeIndex].value = (this.treeNodes[2 * nodeIndex].value + this.treeNodes[2 * nodeIndex + 1].value) % MOD;
+        }
+
+        // Retrieves the total value of the number represented by the segment tree
+        getOverallValue() {
+            return this.treeNodes[1].value;
+        }
+    }
+
+    let rawInputData = '';
+    for await (const chunk of process.stdin) rawInputData += chunk;
+    const inputLines = rawInputData.split(/\n/);
+
+    const [numElements, numQueries] = inputLines[0].split(/\s/).map(Number);
+    const queryDetails = inputLines.slice(1, numQueries + 1).map(line => line.split(/\s/).map(Number));
+
+    precomputePowersAndSums(numElements);
+
+    const digitStructure = new DigitSegmentTree(numElements);
+
+    for (const currentQuery of queryDetails) {
+        const [leftBoundary, rightBoundary, newDigitValue] = [currentQuery[0] - 1, currentQuery[1] - 1, currentQuery[2]];
+        digitStructure.applyRangeUpdate(1, 0, numElements - 1, leftBoundary, rightBoundary, newDigitValue);
+        console.log(digitStructure.getOverallValue());
+    }
 })();

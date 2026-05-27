@@ -1,150 +1,236 @@
-const lineHandler = require('readline').createInterface({
+// This section handles input processing and utility functions.
+// It's generally not part of the core algorithm logic.
+var inputReader = require('readline').createInterface({
   input: process.stdin,
   output: process.stdout
 });
-let inputSource;
-const bufferedLines = [];
-lineHandler.on('line', function (receivedText) {
-  bufferedLines.push(receivedText);
+
+var dataHandler; // Manages access to processed input data.
+var inputLines = []; // Stores raw input lines from stdin.
+
+// Event listener for each line of input received.
+inputReader.on('line', function(lineContent) {
+  inputLines.push(lineContent);
 });
-lineHandler.on('close', function () {
-  inputSource = setupParser(bufferedLines);
-  console.error("\n"); // Add some spacing to the error output
-  const commenceTime = Date.now();
-  performCoreTask();
-  const durationMs = Date.now() - commenceTime;
-  logDiagnostic(`Execution time: ${durationMs} ms`);
-  logDiagnostic(`Memory usage: ${Math.round(process.memoryUsage().heapTotal / 1024)} KB`);
+
+// Event listener for when input stream closes.
+inputReader.on('close', function() {
+  dataHandler = initializeInputProcessor(inputLines); // Prepare input for consumption.
+  console.error("\n"); // Add a newline for cleaner debug output separation.
+
+  var startTime = Date.now(); // Record start time for performance measurement.
+  ExecuteMainLogic(); // Execute the primary application logic.
+  var elapsedTime = Date.now() - startTime; // Calculate elapsed time.
+
+  logDebugMessage("time : " + (elapsedTime) + "ms"); // Log execution time.
+  logDebugMessage("memory : " + Math.round(process.memoryUsage().heapTotal / 1024) + "KB"); // Log memory usage.
 });
-function replicateObject(originalItem) {
-  return JSON.parse(JSON.stringify(originalItem));
+
+/**
+ * Creates a deep copy of an object using JSON serialization.
+ * @param {object} sourceObject The object to clone.
+ * @returns {object} A deep copy of the source object.
+ */
+function createDeepCopy(sourceObject) {
+  return JSON.parse(JSON.stringify(sourceObject));
 }
-function readInteger() { return transformValue(fetchData(), 1); }
-function readWordsArray() { return transformValue(fetchData(), 2); }
-function readIntegersArray() { return transformValue(fetchData(), 4); }
-function readCharactersArray() { return transformValue(fetchData(), 6); }
-function fetchData() { return inputSource.grabNext(); }
-function checkDataAvailability() { return inputSource.hasMore(); }
-function setupParser(sourceInput) {
-  // Configures an object for sequential access to input data.
-  const parserObject = {
-    sourceData: sourceInput,
-    currentIdx: 0,
-    maxLength: sourceInput.length,
-    hasMore: function () {
-      return (this.currentIdx < this.maxLength);
+
+/**
+ * Retrieves the next input item as an integer.
+ * @returns {number} The next integer from the input.
+ */
+function getNextInteger() {
+  return convertInput(retrieveNextItem(), 1);
+}
+
+/**
+ * Retrieves the next input item as an array of strings, split by space.
+ * @returns {string[]} An array of strings.
+ */
+function getNextStringArray() {
+  return convertInput(retrieveNextItem(), 2);
+}
+
+/**
+ * Retrieves the next input item as an array of integers, split by space.
+ * @returns {number[]} An array of integers.
+ */
+function getNextIntegerArray() {
+  return convertInput(retrieveNextItem(), 4);
+}
+
+/**
+ * Retrieves the next input item as an array of characters.
+ * @returns {string[]} An array of characters.
+ */
+function getNextCharacterArray() {
+  return convertInput(retrieveNextItem(), 6);
+}
+
+/**
+ * Fetches the next raw input string from the data handler.
+ * @returns {string} The next input string.
+ */
+function retrieveNextItem() {
+  return dataHandler.retrieveNextItem();
+}
+
+/**
+ * Checks if there are more input items available.
+ * @returns {boolean} True if more items exist, false otherwise.
+ */
+function hasMoreItems() {
+  return dataHandler.hasMoreItems();
+}
+
+/**
+ * Initializes an object to manage input line access.
+ * @param {string[]} rawInputData An array of raw input strings.
+ * @returns {object} An object with methods to access input.
+ */
+function initializeInputProcessor(rawInputData) {
+  var processorObject = {
+    sourceList: rawInputData,
+    currentIndex: 0,
+    maximumIndex: rawInputData.length,
+
+    /**
+     * Checks if there are more items in the source list.
+     * @returns {boolean} True if more items are available.
+     */
+    hasMoreItems: function() {
+      return (this.currentIndex < this.maximumIndex);
     },
-    grabNext: function () {
-      if (!this.hasMore()) {
-        throw new Error("EndOfDataException: No further elements available.");
+
+    /**
+     * Retrieves the next item from the source list.
+     * Throws an error if no more items are available.
+     * @returns {string} The next input item.
+     */
+    retrieveNextItem: function() {
+      if (!this.hasMoreItems()) {
+        throw "ArrayIndexOutOfBoundsException これ以上ないよ";
       } else {
-        const extractedData = this.sourceData[this.currentIdx];
-        this.currentIdx++;
-        return extractedData;
+        var currentInputItem = this.sourceList[this.currentIndex];
+        this.currentIndex++;
+        return currentInputItem;
       }
     }
   };
-  return parserObject;
+  return processorObject;
 }
-function displayOutput(messageContent) {
+
+/**
+ * Prints a message to standard output.
+ * @param {*} messageContent The content to print.
+ */
+function printOutput(messageContent) {
   console.log(messageContent);
 }
-function logDiagnostic(diagnosticMessage) {
-  console.error("DEBUG INFO: " + require("util").inspect(diagnosticMessage, false, null));
+
+/**
+ * Prints a debug message to standard error.
+ * @param {*} messageContent The content to debug-log.
+ */
+function logDebugMessage(messageContent) {
+  console.error("debug:" + require("util").inspect(messageContent, false, null));
 }
-// This function handles various input data transformations.
-// 'operationCode' dictates the type of conversion:
-// 1: Convert to integer
-// 2: Split by space into string array
-// 4: Split by space, convert to number array
-// 6: Split by character into string array
-// 7: Split by character, convert to number array
-// 8: Join array elements with space
-// 9: Join array elements with newline
-// 0: Join array elements without separator
-// Default: Return input as-is (for unknown/unhandled codes)
-function transformValue(inputVal, operationCode) {
+
+/**
+ * Utility function for converting input based on a specified type.
+ * @param {*} inputValue The input value to convert.
+ * @param {number} conversionType The type of conversion to perform.
+ *   1: Convert to integer.
+ *   2: Split by space into string array.
+ *   4: Split by space into number array.
+ *   6: Split by character into string array.
+ *   7: Split by character into number array.
+ *   8: Join array elements with space.
+ *   9: Join array elements with newline.
+ *   0: Join array elements without separator.
+ * @returns {*} The converted value or original value on error/unknown type.
+ */
+function convertInput(inputValue, conversionType) {
   try {
-    switch (operationCode) {
+    switch (conversionType) {
       case 1:
-        return parseInt(inputVal, 10); // Always specify radix for parseInt
+        return parseInt(inputValue);
       case 2:
-        return inputVal.split(" ");
+        return inputValue.split(" ");
       case 4:
-        return inputVal.split(" ").map(Number);
+        return inputValue.split(" ").map(Number);
       case 6:
-        return inputVal.split("");
+        return inputValue.split("");
       case 7:
-        return inputVal.split("").map(Number);
+        return inputValue.split("").map(Number);
       case 8:
-        return inputVal.join(" ");
+        return inputValue.join(" ");
       case 9:
-        return inputVal.join("\n");
+        return inputValue.join("\n");
       case 0:
-        return inputVal.join("");
+        return inputValue.join("");
       default:
-        return inputVal;
+        return inputValue;
     }
-  } catch (errorDetails) {
-    // If conversion fails, return the original value.
-    return inputVal;
+  } catch (conversionError) {
+    return inputValue; // Return original value if conversion fails.
   }
 }
 
-// End of helper utility functions.
-function performCoreTask() {
-  // Reads the first line of input and parses it into an array of numbers.
-  const initialParams = readIntegersArray();
-  // Extracts the dimension parameter from the parsed input.
-  const paramDimension = initialParams[0];
-  // Extracts the excluded element from the parsed input.
-  const excludedElement = initialParams[1];
+// End of input handling and utility functions.
+// Main application logic starts here.
+function ExecuteMainLogic() {
+  var firstInputLine = getNextIntegerArray(); // Read the first line containing M and K.
+  var paramM = firstInputLine[0]; // Extract M.
+  var paramK = firstInputLine[1]; // Extract K.
 
-  // Checks if the excluded element is within the valid range for the given dimension.
-  if (excludedElement >= 0 && excludedElement < Math.pow(2, paramDimension)) {
-    // Special handling for a dimension of 1.
-    if (paramDimension === 1) {
-      if (excludedElement === 0) {
-        displayOutput("0 0 1 1"); // Specific output for M=1, K=0.
+  // Check if K is within the valid range [0, 2^M - 1].
+  if (paramK >= 0 && paramK < Math.pow(2, paramM)) {
+    // Special case for M = 1.
+    if (paramM === 1) {
+      if (paramK === 0) {
+        printOutput("0 0 1 1"); // Specific output for M=1, K=0.
       } else {
-        displayOutput(-1); // Invalid case for M=1, K!=0.
+        printOutput(-1); // Invalid for M=1, K!=0.
       }
-      return; // Exit the function after handling M=1.
+      return; // Exit function after handling M=1.
     }
 
-    // Handles the case where the excluded element is 0.
-    if (excludedElement === 0) {
-      // Creates an array to store the sequence.
-      const finalSequence = new Array(Math.pow(2, paramDimension + 1));
-      // Populates the sequence with pairs of numbers from 0 to 2^M - 1.
-      for (let sequenceIndex = 0; sequenceIndex < Math.pow(2, paramDimension); sequenceIndex++) {
-        finalSequence[sequenceIndex * 2] = sequenceIndex;
-        finalSequence[sequenceIndex * 2 + 1] = sequenceIndex;
+    // Case where K is 0.
+    if (paramK === 0) {
+      // Construct an array with all numbers from 0 to 2^M - 1 appearing twice.
+      var resultSequence = new Array(Math.pow(2, paramM + 1));
+      for (var loopCounter = 0; loopCounter < Math.pow(2, paramM); loopCounter++) {
+        resultSequence[loopCounter * 2] = loopCounter;
+        resultSequence[loopCounter * 2 + 1] = loopCounter;
       }
-      // Displays the final sequence, joined by spaces.
-      displayOutput(transformValue(finalSequence, 8));
+      printOutput(convertInput(resultSequence, 8)); // Output the sequence joined by spaces.
     } else {
-      // Handles cases where the excluded element is not 0.
-      const finalSequence = [excludedElement, 0]; // Start with K and 0.
-      // Adds numbers from 1 up to (2^M - 1), skipping the excluded element.
-      for (let sequenceIndex = 1; sequenceIndex <= Math.pow(2, paramDimension) - 1; sequenceIndex++) {
-        if (sequenceIndex !== excludedElement) {
-          finalSequence.push(sequenceIndex);
+      // Case where K is not 0.
+      // The sequence is K, 0, (all numbers except K), K, (all numbers except K in reverse), 0.
+      var resultSequence = [paramK, 0]; // Start with K and 0.
+
+      // Add numbers from 1 to 2^M - 1, excluding K.
+      for (var loopCounter = 1; loopCounter <= Math.pow(2, paramM) - 1; loopCounter++) {
+        if (loopCounter !== paramK) {
+          resultSequence.push(loopCounter);
         }
       }
-      finalSequence.push(excludedElement); // Add K again.
-      // Adds numbers from (2^M - 1) down to 1, skipping the excluded element.
-      for (let sequenceIndex = Math.pow(2, paramDimension) - 1; sequenceIndex > 0; sequenceIndex--) {
-        if (sequenceIndex !== excludedElement) {
-          finalSequence.push(sequenceIndex);
+
+      resultSequence.push(paramK); // Add K again.
+
+      // Add numbers from 2^M - 1 down to 1, excluding K.
+      for (var loopCounter = Math.pow(2, paramM) - 1; loopCounter > 0; loopCounter--) {
+        if (loopCounter !== paramK) {
+          resultSequence.push(loopCounter);
         }
       }
-      finalSequence.push(0); // End with 0.
-      // Displays the final sequence, joined by spaces.
-      displayOutput(transformValue(finalSequence, 8));
+
+      resultSequence.push(0); // End with 0.
+      printOutput(convertInput(resultSequence, 8)); // Output the sequence joined by spaces.
     }
   } else {
-    // If the excluded element is outside the valid range, output -1.
-    displayOutput(-1);
+    // If K is out of the valid range.
+    printOutput(-1);
   }
 }

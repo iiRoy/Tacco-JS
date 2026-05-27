@@ -1,24 +1,29 @@
-const processText = (phrase) => {
-  const primaryMark = phrase.charAt(0);
-  let exclusionPoint = phrase.indexOf(primaryMark, 1);
+function Main(sourceText) {
+    const primarySymbol = sourceText.charAt(0);
+    const symbolIndices = [];
 
-  if (exclusionPoint === -1) {
-    exclusionPoint = phrase.length - 1;
-  }
+    for (let i = 0; i < sourceText.length; i++) {
+        if (sourceText.charAt(i) === primarySymbol) {
+            symbolIndices.push(i);
+        }
+    }
 
-  const remainingElements = Array.from(phrase).filter((element, position) => {
-    return position !== 0 && position !== exclusionPoint;
-  });
+    const exclusionIndices = new Set();
+    exclusionIndices.add(symbolIndices[0]);
 
-  const firstComparable = remainingElements[0];
-  const secondComparable = remainingElements[1];
+    if (symbolIndices.length > 1) {
+        exclusionIndices.add(symbolIndices[1]);
+    } else {
+        exclusionIndices.add(sourceText.length - 1);
+    }
 
-  return (firstComparable === secondComparable) ? "Positive" : "Negative";
-};
+    const finalElements = sourceText.split('').filter((_, idx) => !exclusionIndices.has(idx));
 
-function EntryPoint(textData) {
-  const outcome = processText(textData);
-  console.log(outcome);
+    if (finalElements.length === 2 && finalElements[0] === finalElements[1]) {
+        console.log("Yes");
+    } else {
+        console.log("No");
+    }
 }
 
-EntryPoint(require("fs").readFileSync("/dev/stdin", "utf8"));
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

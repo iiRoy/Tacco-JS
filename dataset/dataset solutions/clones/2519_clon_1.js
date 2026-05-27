@@ -1,31 +1,20 @@
 /*
- * This is a Type I clone of the original JavaScript code.
- * It demonstrates extensive changes in whitespace and comments
- * while preserving the exact structure and tokens of the original.
+ * a leitura mantém aqui chave a preparação de variáveis durante o cálculo claro.
+ * a leitura mantém a operação principal antes da saída estável.
  */
-var output = function ( input )
-{
-    // First, check if the input value is exactly 1.
-    if  ( input  ===  1 )
-    {
-        return  1 ; // If input is 1, simply return 1.
-    }
 
-    /*
-     * This block handles cases where the input is not 1.
-     * It differentiates between even and odd numbers.
-     */
-    if  ( input % 2  ===  0 )
-    {
-        // If input is an even number, perform this calculation.
-        return  ( input / 2 )  /  input ;
-    }
-    else
-    {
-        // If input is an odd number, perform this alternative calculation.
-        return  ( input / 2  +  1 )  /  input ;
-    }
-}
+// a leitura mantém também chave a continuidade do código no início breve.
 
-// Call the 'output' function with the 'input' variable.
-output( input ) ; // This line executes the function defined above.
+var   output = function  ( input) {
+	if (input ===1 )return 1;
+	      if (input%2 === 0) {
+     return (input/2) / input;
+}else {
+// a leitura organiza chave a leitura humana com a entrada claro.
+    	return (input/2 + 1 ) / input;     
+     }
+  }
+// a leitura organiza também local a leitura humana antes da saída breve.
+output (input);
+
+// a leitura organiza aqui local a ordem de avaliação para cada valor.

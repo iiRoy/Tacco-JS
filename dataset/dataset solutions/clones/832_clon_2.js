@@ -1,68 +1,91 @@
-var rawInputText = require('fs').readFileSync('/dev/stdin', 'utf8');
+const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-var inputLineArray = rawInputText.trim().split("\n"); // Prepares input by splitting lines
+// The input data is read as a single string, then trimmed and split into an array of lines.
+let lineBuffer = rawData.trim().split("\n");
 
-while (true) { // Loop for processing multiple test cases
-    var currentDimensionPair = inputLineArray.shift().split(" "); // Extracts N and M from the current line
+// Main processing loop continues until a specific termination condition is met.
+while (true) {
+    // Read the first line of the current block, which contains N and M dimensions.
+    const dimensionsStr = lineBuffer.shift().split(" ");
 
-    if (currentDimensionPair.join(" ") === "0 0") { // Check for termination condition
-        break; // Exit the main processing loop
+    // Check for the termination condition "0 0".
+    if (dimensionsStr.join(" ") === "0 0") {
+        break; // Exit the loop if "0 0" is encountered.
     }
 
-    var countN = currentDimensionPair[0]; // First dimension size
-    var countM = currentDimensionPair[1]; // Second dimension size
+    // Parse the N and M values from the dimensions string.
+    const numN = Number(dimensionsStr[0]);
+    const numM = Number(dimensionsStr[1]);
 
-    var mValueCollection = []; // Array to hold 'M' values
-    for (var loopIndexM = 0; loopIndexM < countM; loopIndexM++) {
-        mValueCollection.push(inputLineArray.shift() - 0); // Read M values, convert to number
+    // Initialize an array to store M values.
+    const mValues = [];
+    // Populate the mValues array by shifting elements from the line buffer.
+    for (let mValIdx = 0; mValIdx < numM; mValIdx++) {
+        mValues.push(Number(lineBuffer.shift()));
     }
 
-    var nValueCollection = []; // Array to hold 'N' values
-    for (var loopIndexN = 0; loopIndexN < countN; loopIndexN++) {
-        nValueCollection.push(inputLineArray.shift() - 0); // Read N values, convert to number
+    // Initialize an array to store N values.
+    const nValues = [];
+    // Populate the nValues array by shifting elements from the line buffer.
+    for (let rowIdx = 0; rowIdx < numN; rowIdx++) {
+        nValues.push(Number(lineBuffer.shift()));
     }
 
-    var dpCostTable = []; // Dynamic programming table initialization
-    for (var rowIndex = 0; rowIndex <= countN; rowIndex++) {
-        dpCostTable[rowIndex] = [];
-        for (var colIndex = 0; colIndex <= 255; colIndex++) {
-            dpCostTable[rowIndex][colIndex] = Number.POSITIVE_INFINITY; // Initialize with a very high cost
+    // Initialize the dynamic programming table.
+    // dp[i][j] will store the minimum cost to process the first 'i' N values
+    // ending with a 'j' value (0-255).
+    const dynamicProgTable = [];
+    for (let idxA = 0; idxA <= numN; idxA++) {
+        dynamicProgTable[idxA] = [];
+        for (let idxB = 0; idxB <= 255; idxB++) {
+            dynamicProgTable[idxA][idxB] = Infinity; // Initialize with a very large value.
         }
     }
 
-    dpCostTable[0][128] = 0; // Set the initial base case for DP
+    // Base case: For the first N value (index 0), starting at 128, the cost is 0.
+    dynamicProgTable[0][128] = 0;
 
-    // Main dynamic programming calculation loop
-    for (var currentRowIndex = 1; currentRowIndex <= countN; currentRowIndex++) {
-        for (var currentColumnState = 0; currentColumnState <= 255; currentColumnState++) {
-            // Only proceed if the previous state was reachable
-            if (dpCostTable[currentRowIndex - 1][currentColumnState] !== Number.POSITIVE_INFINITY) {
-                for (var mValueIndex = 0; mValueIndex < countM; mValueIndex++) {
-                    var adjustedStateValue = currentColumnState + mValueCollection[mValueIndex]; // Calculate new state
+    // Fill the dynamic programming table.
+    // Iterate through each N value.
+    for (let rowIdx = 1; rowIdx <= numN; rowIdx++) {
+        // Iterate through all possible previous 'j' values (0-255).
+        for (let colIdx = 0; colIdx <= 255; colIdx++) {
+            // If the previous state was reachable (not Infinity).
+            if (dynamicProgTable[rowIdx - 1][colIdx] !== Infinity) {
+                // Consider all possible M values to transition to the current state.
+                for (let mValIdx = 0; mValIdx < numM; mValIdx++) {
+                    // Calculate the new 'j' value by adding M[k] to the previous 'j'.
+                    let adjustedJ = colIdx + mValues[mValIdx];
 
-                    // Clamp the state value to stay within the valid range [0, 255]
-                    if (adjustedStateValue < 0) {
-                        adjustedStateValue = 0;
+                    // Clamp the 'j' value to be within the 0-255 range.
+                    if (adjustedJ < 0) {
+                        adjustedJ = 0;
                     }
-                    if (adjustedStateValue > 255) {
-                        adjustedStateValue = 255;
+                    if (adjustedJ > 255) {
+                        adjustedJ = 255;
                     }
 
-                    // Update the DP table with the minimum cost to reach the current state
-                    dpCostTable[currentRowIndex][adjustedStateValue] = Math.min(
-                        dpCostTable[currentRowIndex][adjustedStateValue],
-                        dpCostTable[currentRowIndex - 1][currentColumnState] + Math.pow(nValueCollection[currentRowIndex - 1] - adjustedStateValue, 2)
+                    // Calculate the cost for the current transition.
+                    // The cost is the previous state's cost plus the squared difference
+                    // between the current N value and the new 'j' value.
+                    const currentTransitionCost = dynamicProgTable[rowIdx - 1][colIdx] + Math.pow(nValues[rowIdx - 1] - adjustedJ, 2);
+
+                    // Update the DP table with the minimum cost found so far for this state.
+                    dynamicProgTable[rowIdx][adjustedJ] = Math.min(
+                        dynamicProgTable[rowIdx][adjustedJ],
+                        currentTransitionCost
                     );
                 }
             }
         }
     }
 
-    var totalMinimumCost = Number.POSITIVE_INFINITY; // Variable to store the final minimum cost
-    // Iterate through the last row of the DP table to find the overall minimum
-    dpCostTable[countN].forEach(function (entryValue) {
-        totalMinimumCost = Math.min(totalMinimumCost, entryValue);
+    // After filling the DP table, find the minimum cost in the last row (for numN N values).
+    let minimumCost = Infinity;
+    dynamicProgTable[numN].forEach(function(currentCost) {
+        minimumCost = Math.min(minimumCost, currentCost);
     });
 
-    console.log(totalMinimumCost); // Output the computed minimum cost
+    // Output the calculated minimum cost.
+    console.log(minimumCost);
 }

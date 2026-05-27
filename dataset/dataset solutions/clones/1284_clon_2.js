@@ -1,62 +1,59 @@
-/*
- * This script processes building occupancy data from standard input.
- * It simulates a multi-level building structure and updates
- * occupancy counts based on provided records.
- */
-( function ( inputSource )
-{
-  // Function to create an array initialized with zeros.
-  // This helps in setting up the building structure with empty counts.
-  function createCollection( elementCount )
-  {
-    let collection = [ ]; // Using 'let' instead of 'var' for modern JS.
-    // Loop 'elementCount' times to populate the array.
-    for ( let currentIdx = 0; currentIdx < elementCount; currentIdx++ )
-    {
-      collection .push(0); // Each element starts at zero occupancy.
-    }
-    return collection; // Return the newly created array.
-  }
-
-  /*
-   * Updates the building structure with occupancy changes.
-   * The 'propertyGrid' represents the 3D building.
-   * 'activityLogs' contains records of changes (building, floor, room, change_amount).
+(function(inputSource) {
+  /**
+   * Creates a new array of a specified length, with all elements initialized to zero.
+   * @param {number} arrayLength The desired number of elements in the array.
+   * @returns {Array<number>} A new array filled with zeros.
    */
-  function adjustSpaceMetrics( propertyGrid, activityLogs )
-  {
-    activityLogs.map(function( logEntry ) {
-      // Accessing and modifying specific cell in the 3D grid.
-      // logEntry[0] is building index, logEntry[1] is floor index, logEntry[2] is room index.
-      // logEntry[3] is the change in occupancy.
-      propertyGrid[logEntry[0] - 1][logEntry[1] - 1][logEntry[2] - 1] += logEntry[3];
-      return logEntry; // The map function expects a return value, though it's not used here.
-    });
-    return propertyGrid; // Return the modified grid.
+  function createZeroFilledArray(arrayLength) {
+    let zeroArray = [];
+    for (let elementIndex = 0; elementIndex < arrayLength; elementIndex++) {
+      zeroArray.push(0);
+    }
+    return zeroArray;
   }
 
-  // Read all input from the provided source, convert to string,
-  // remove leading/trailing whitespace, and split into individual lines.
-  var rawLines = inputSource.toString().trim().split('\n');
+  /**
+   * Applies a series of occupancy changes to a multi-dimensional building structure.
+   * Each change entry specifies a 1-indexed location (building, floor, room) and an amount to add.
+   *
+   * @param {Array<Array<Array<number>>>} buildingLayout A 3D array representing the building's current occupancy.
+   * @param {Array<Array<number>>>} occupancyUpdates An array of arrays, where each inner array is
+   *   [building_number, floor_number, room_number, change_value].
+   * @returns {Array<Array<Array<number>>>} The modified building layout after applying all updates.
+   */
+  function applyOccupancyUpdates(buildingLayout, occupancyUpdates) {
+    occupancyUpdates.map(function(updateEntry) {
+      // Adjusting 1-indexed input coordinates to 0-indexed array positions.
+      buildingLayout[updateEntry[0] - 1][updateEntry[1] - 1][updateEntry[2] - 1] += updateEntry[3];
+      return updateEntry; // The return value of map is not used, but structure is preserved.
+    });
+    return buildingLayout;
+  }
 
-  // Process each raw line: split by space and convert parts to numbers.
-  var occupantChanges = rawLines.map(function( lineString ) {
-    return lineString.split(' ').map(Number);
+  // Read raw input from the provided source, convert it to a string,
+  // remove leading/trailing whitespace, and split it into individual lines.
+  const rawInputLines = inputSource.toString().trim().split('\n');
+
+  // Process each line of the raw input: split by space and convert each part to a number.
+  const processedNumericData = rawInputLines.map(function(currentLine) {
+    return currentLine.split(' ').map(Number);
   });
 
-  // Initialize a 4x3x10 3D structure for the entire property.
-  // This represents 4 buildings, each with 3 floors, and each floor with 10 rooms.
-  var entireProperty = createCollection(4).map(function() {
-    return createCollection(3).map(function() {
-      return createCollection(10);
+  // Initialize a 3D array to represent the building structure.
+  // It has 4 main sections, each with 3 levels, and each level has 10 units.
+  // All units are initially set to zero occupancy.
+  const buildingStructure = createZeroFilledArray(4).map(function() {
+    return createZeroFilledArray(3).map(function() {
+      return createZeroFilledArray(10);
     });
   });
 
-  // The first line of input often contains metadata (like total number of records),
-  // which is not needed for the actual occupancy updates. So, remove it.
-  occupantChanges.shift();
+  // Remove the first element from the processed data, as it often contains metadata
+  // (e.g., the number of subsequent entries) which is not used in this calculation.
+  processedNumericData.shift();
 
-  // Apply the occupancy changes to the building structure and print the final state.
-  console.log( adjustSpaceMetrics(entireProperty, occupantChanges) );
+  // Apply the occupancy updates to the initialized building structure
+  // and then print the final state of the building to the console.
+  console.log(applyOccupancyUpdates(buildingStructure, processedNumericData));
 
-} )( require('fs').readFileSync('/dev/stdin', 'utf8') );
+})(require('fs').readFileSync('/dev/stdin', 'utf8'));

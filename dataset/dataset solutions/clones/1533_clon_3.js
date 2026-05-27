@@ -1,49 +1,56 @@
-const rawInputData = require("fs").readFileSync("/dev/stdin", "utf8");
+const fileSystem = require("fs");
 
-const inputLineSegments = rawInputData.split('\n');
+const getRawInputContent = () => fileSystem.readFileSync("/dev/stdin", "utf8");
 
-let primaryDimension = parseInt(inputLineSegments[0].trim(), 10);
+const parseLineToInt = (lineString) => {
+    const trimmedLine = lineString.trim();
+    return parseInt(trimmedLine, 10);
+};
 
-const primeModulus = 1000000007;
+(() => {
+    const rawInputData = getRawInputContent();
+    const inputLines = rawInputData.split('\n');
 
-if (primaryDimension < 1) {
-    primaryDimension = 1; 
-}
+    const matrixSize = parseLineToInt(inputLines[0]);
 
-const pathAccumulatorTable = [];
-for (let rowIdx = 0; rowIdx < primaryDimension; ++rowIdx) {
-    const currentRow = new Array(primaryDimension).fill(1);
-    pathAccumulatorTable.push(currentRow);
-}
+    const moduloConstant = 1000000007;
 
-for (let currentRow = 1; currentRow < primaryDimension; currentRow++) {
-    const previousRow = currentRow - 1;
-    for (let currentColumn = 1; currentColumn < primaryDimension; currentColumn++) {
-        const previousColumn = currentColumn - 1;
+    const createInitialDpGrid = (size) => {
+        const grid = [];
+        for (let r = 0; r < size; r++) {
+            const row = Array(size).fill(1);
+            grid.push(row);
+        }
+        return grid;
+    };
 
-        let intermediateSum = pathAccumulatorTable[previousRow][currentColumn] +
-                              pathAccumulatorTable[currentRow][previousColumn];
+    const dpMatrix = createInitialDpGrid(matrixSize);
 
-        pathAccumulatorTable[currentRow][currentColumn] = intermediateSum % primeModulus;
+    const applyModularSum = (a, b, mod) => (a + b) % mod;
+
+    for (let rowIndex = 1; rowIndex < matrixSize; rowIndex++) {
+        for (let colIndex = 1; colIndex < matrixSize; colIndex++) {
+            const valueFromAbove = dpMatrix[rowIndex - 1][colIndex];
+            const valueFromLeft = dpMatrix[rowIndex][colIndex - 1];
+            dpMatrix[rowIndex][colIndex] = applyModularSum(valueFromAbove, valueFromLeft, moduloConstant);
+        }
     }
-}
 
-let finalResultAccumulator = 0;
+    let accumulatedSum = 0;
+    const iterationLimit = Math.floor(matrixSize / 3);
 
-const summationLoopLimit = Math.floor(primaryDimension / 3);
+    const calculateTargetColumn = (currentSize, currentIteration) => {
+        return currentSize - (currentIteration + 1) * 3;
+    };
 
-for (let currentIteration = 0; currentIteration < summationLoopLimit; currentIteration++) {
-    const targetRowIndex = currentIteration;
+    for (let r = 0; r < iterationLimit; r++) {
+        const targetColumnIndex = calculateTargetColumn(matrixSize, r);
 
-    const offsetFactor = currentIteration + 1;
-    const computedColumnIndex = primaryDimension - (offsetFactor * 3);
-
-    if (computedColumnIndex >= 0 && computedColumnIndex < primaryDimension &&
-        targetRowIndex >= 0 && targetRowIndex < primaryDimension) {
-
-        const valueToAdd = pathAccumulatorTable[targetRowIndex][computedColumnIndex];
-        finalResultAccumulator = (finalResultAccumulator + valueToAdd) % primeModulus;
+        if (r < matrixSize && targetColumnIndex >= 0 && targetColumnIndex < matrixSize) {
+            const cellValue = dpMatrix[r][targetColumnIndex];
+            accumulatedSum = applyModularSum(accumulatedSum, cellValue, moduloConstant);
+        }
     }
-}
 
-console.log(finalResultAccumulator);
+    console.log(accumulatedSum);
+})();

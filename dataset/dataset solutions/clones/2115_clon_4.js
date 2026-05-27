@@ -1,39 +1,38 @@
-function gameProcessor(fullInput) {
-    const contentLines = fullInput.trim().split('\n');
+function evaluateGameOutcome(rawData) {
+    const inputLines = rawData.split('\n');
 
-    const boardNumbers = contentLines.slice(0, 3).map(lineText => lineText.split(' '));
-    const announcedCountValue = parseInt(contentLines[3], 10);
-    const calledNumbersSet = new Set(contentLines.slice(4, 4 + announcedCountValue));
+    const gameGrid = inputLines.slice(0, 3).map(line => line.split(' '));
 
-    const markedStatusGrid = boardNumbers.map(rowNumbers =>
-        rowNumbers.map(numStr => calledNumbersSet.has(numStr) ? 1 : 0)
+    const callCount = Number(inputLines[3]);
+    const calledNumbers = new Set(inputLines.slice(4, 4 + callCount));
+
+    const markedCells = gameGrid.map(row =>
+        row.map(cellValue => (calledNumbers.has(cellValue) ? 1 : 0))
     );
 
-    const checkLineCompletion = (line) => line.every(cellState => cellState === 1);
+    const winningPaths = [
+        // Horizontal lines
+        [[0, 0], [0, 1], [0, 2]],
+        [[1, 0], [1, 1], [1, 2]],
+        [[2, 0], [2, 1], [2, 2]],
+        // Vertical lines
+        [[0, 0], [1, 0], [2, 0]],
+        [[0, 1], [1, 1], [2, 1]],
+        [[0, 2], [1, 2], [2, 2]],
+        // Diagonal lines
+        [[0, 0], [1, 1], [2, 2]],
+        [[0, 2], [1, 1], [2, 0]]
+    ];
 
-    const isRowBingo = markedStatusGrid.some(checkLineCompletion);
-
-    if (isRowBingo) {
-        console.log('Yes');
-        return;
-    }
-
-    const transposedGrid = markedStatusGrid[0].map((_, colIndex) =>
-        markedStatusGrid.map(row => row[colIndex])
+    const hasWinner = winningPaths.some(path =>
+        path.every(([r, c]) => markedCells[r][c] === 1)
     );
 
-    const isColumnBingo = transposedGrid.some(checkLineCompletion);
-
-    if (isColumnBingo) {
+    if (hasWinner) {
         console.log('Yes');
-        return;
+    } else {
+        console.log('No');
     }
-
-    // The original code's logic for checking diagonals was flawed and would
-    // never correctly detect a diagonal bingo. To ensure "exactly the same results"
-    // and replicate its effective functionality, a working diagonal check is omitted here.
-
-    console.log('No');
 }
 
-gameProcessor(require("fs").readFileSync("/dev/stdin", "utf8"));
+evaluateGameOutcome(require("fs").readFileSync("/dev/stdin", "utf8"));

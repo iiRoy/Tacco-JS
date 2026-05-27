@@ -1,49 +1,63 @@
-const coordKeyGen = ( rowIdx , colIdx ) => `_row${rowIdx}_col${colIdx}`
+const generateCoordKey = (rowIdx, colIdx) => `r${rowIdx}c${colIdx}`;
 
-const memoStorage = new Map ( ) ;
+// Cache for storing previously computed results to avoid redundant calculations.
+const memoizationCache = new Map();
 
-// Function to compute a specific value, utilizing memoization
-const computeValue = ( paramA , paramB , paramC , paramD ) => {
-  const lookupKey = coordKeyGen ( paramC , paramD ) ; // Generate a unique key for current parameters
+/**
+ * Recursively computes a value based on four BigInt parameters.
+ * Implements memoization to optimize performance.
+ *
+ * @param {BigInt} valA - The first input value.
+ * @param {BigInt} valB - The second input value.
+ * @param {BigInt} currC - The current 'c' value in the computation.
+ * @param {BigInt} currD - The current 'd' value in the computation.
+ * @returns {BigInt} The computed result modulo 998244353n.
+ */
+const computeValue = (valA, valB, currC, currD) => {
+  const cacheKey = generateCoordKey(currC, currD);
 
-  if ( memoStorage . has ( lookupKey ) ) {
-    return memoStorage . get ( lookupKey ) ; // Return cached result if available
+  // Check if the result for this (currC, currD) pair is already in the cache.
+  if (memoizationCache.has(cacheKey)) {
+    return memoizationCache.get(cacheKey);
   }
 
-  let calculationOutput ; // Variable to hold the calculated result
+  let resultVal; // Variable to hold the calculated answer.
 
-  // Check for the first base case condition
-  if ( paramA === paramC ) {
-    calculationOutput = ( paramA ** ( paramD - paramB ) ) % 998244353n ;
-  }
-  // Check for the second base case condition
-  else if ( paramB === paramD ) {
-    calculationOutput = ( paramB ** ( paramC - paramA ) ) % 998244353n ;
-  }
-  // Recursive step for general case
-  else {
-    calculationOutput = (
-      computeValue ( paramA , paramB , paramC - 1n , paramD ) * paramD +
-      computeValue ( paramA , paramB , paramC , paramD - 1n ) * paramC -
-      computeValue ( paramA , paramB , paramC - 1n , paramD - 1n ) * ( paramC - 1n ) * ( paramD - 1n )
-    ) % 998244353n ;
+  // Base cases for the recursive calculation.
+  if (valA === currC) {
+    resultVal = (valA ** (currD - valB)) % 998244353n;
+  } else if (valB === currD) {
+    resultVal = (valB ** (currC - valA)) % 998244353n;
+  } else {
+    // Recursive step: combines results from subproblems.
+    resultVal = (
+      computeValue(valA, valB, currC - 1n, currD) * currD +
+      computeValue(valA, valB, currC, currD - 1n) * currC -
+      computeValue(valA, valB, currC - 1n, currD - 1n) * (currC - 1n) * (currD - 1n)
+    ) % 998244353n;
   }
 
-  // Store the newly computed result in the cache before returning
-  memoStorage . set ( coordKeyGen ( paramC , paramD ) , calculationOutput ) ;
-  return calculationOutput ;
-}
+  // Store the computed result in the cache before returning.
+  memoizationCache.set(generateCoordKey(currC, currD), resultVal);
+  return resultVal;
+};
 
-// Main execution function to process input and display results
-const entryPoint = ( rawData ) => {
-  const parsedLines = rawData . split ( "\n" ) ; // Split raw input into individual lines
-  // Extract numerical parameters from the first line and convert to BigInt
-  const [ valX1 , valY1 , valX2 , valY2 ] = parsedLines [ 0 ] . split ( " " ) . map ( strVal => BigInt ( strVal ) ) ;
+/**
+ * Main function to process input, perform calculations, and output results.
+ *
+ * @param {string} rawData - The raw input string, typically from stdin.
+ */
+const processInputAndCalculate = (rawData) => {
+  const lines = rawData.split('\n');
+  // Parse the four BigInt values from the first line of input.
+  const [firstVal, secondVal, thirdVal, fourthVal] = lines[0].split(' ').map(strNum => BigInt(strNum));
 
-  // Log the parsed BigInt values for debugging/verification
-  console . log ( `X1:${valX1} Y1:${valY1} X2:${valX2} Y2:${valY2}` ) ;
-  // Call the computation function and log its numerical representation
-  console . log ( Number ( computeValue ( valX1 , valY1 , valX2 , valY2 ) ) ) ;
-}
+  // Output the parsed input values in a specific format.
+  console.log(`${firstVal}:${secondVal}:${thirdVal}:${fourthVal}`);
 
-entryPoint ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+  // Compute the final result using the recursive function and output it as a Number.
+  console.log(Number(computeValue(firstVal, secondVal, thirdVal, fourthVal)));
+};
+
+// Read input from standard input and pass it to the main processing function.
+processInputAndCalculate(require("fs").readFileSync("/dev/stdin", "utf8"));

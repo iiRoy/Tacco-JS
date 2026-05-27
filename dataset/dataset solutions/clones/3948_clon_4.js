@@ -1,27 +1,38 @@
-const fileSystem = require('fs');
+var inputBuffer = [];
+var ioHandler = require('readline');
 
-const extractData = fileSystem.readFileSync('/dev/stdin', 'utf8');
-const dataSegments = extractData.trim().split('\n');
-
-const cityCount = Number(dataSegments[0]);
-const originalPositions = dataSegments[1].split(' ').map(Number);
-
-const journeyPoints = [0, ...originalPositions, 0];
-
-const overallPathDistance = journeyPoints.reduce((accumulator, currentPoint, index, fullPath) => {
-    if (index === 0) return 0;
-    return accumulator + Math.abs(currentPoint - fullPath[index - 1]);
-}, 0);
-
-const individualSkipResults = Array.from({ length: cityCount }, (_, idx) => {
-    const pointBefore = journeyPoints[idx];
-    const pointToSkip = journeyPoints[idx + 1];
-    const pointAfter = journeyPoints[idx + 2];
-
-    const costRemoved = Math.abs(pointToSkip - pointBefore) + Math.abs(pointAfter - pointToSkip);
-    const costAdded = Math.abs(pointBefore - pointAfter);
-
-    return overallPathDistance - costRemoved + costAdded;
+var streamProcessor = ioHandler.createInterface({
+    input: process.stdin,
+    output: process.stdout,
 });
 
-individualSkipResults.forEach(value => console.log(value));
+streamProcessor.on('line', function (inputLine) {
+    inputBuffer.push(inputLine);
+});
+
+streamProcessor.on('close', function () {
+    var elementCount = Number(inputBuffer[0]);
+    var sourceValues = inputBuffer[1].split(" ").map(valStr => Number(valStr));
+
+    for (let currentRemovalIndex = 0; currentRemovalIndex < elementCount; currentRemovalIndex++) {
+        const pathSequence = [0]; // Start with the initial 0 point
+
+        // Construct the sequence of points for the current removal scenario
+        for (let i = 0; i < elementCount; i++) {
+            if (i !== currentRemovalIndex) {
+                pathSequence.push(sourceValues[i]);
+            }
+        }
+        pathSequence.push(0); // End with the final 0 point
+
+        // Calculate the total travel cost for this specific path using a functional reducer
+        const totalTravelCost = pathSequence.slice(1).reduce((accumulator, currentPoint, index) => {
+            // 'index' in slice(1) refers to the index within the sliced array.
+            // To get the previous point from the original 'pathSequence', we use 'index' directly.
+            const previousPoint = pathSequence[index];
+            return accumulator + Math.abs(currentPoint - previousPoint);
+        }, 0);
+
+        console.log(totalTravelCost);
+    }
+});

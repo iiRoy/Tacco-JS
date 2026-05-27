@@ -1,44 +1,38 @@
 'use strict';
 
-// This function serves as the primary entry point for the application.
-// It processes raw input, performs calculations, and outputs the result.
-const executeProgram = function (rawDataInput) {
-    // Divide the entire input string into an array of individual lines.
-    const lineArray = rawDataInput.split('\n');
+/**
+ * Core function to process the incoming data stream.
+ * @param {string} rawInputData - The complete string content read from the input source.
+ */
+const processInputData = function (rawInputData) {
+    // Divide the raw input string into an array of individual lines.
+    const inputLinesArray = rawInputData.split(`\n`);
 
-    // Display the array of lines for debugging or informational purposes.
-    console.log(lineArray);
+    // Output the array of lines for diagnostic purposes.
+    console.log(inputLinesArray);
 
-    // Parse the very first line of input to extract key configuration values.
-    // It splits the line by spaces and converts each segment into an integer.
-    const firstLineTokens = lineArray[0]
-        .split(' ')
-        .map(element => parseInt(element, 10)); // Explicitly use base 10 for parsing.
+    // Parse the first line to extract key numerical parameters.
+    // It splits the line by spaces and converts each segment to an integer.
+    const firstLineNumericParts = inputLinesArray[0].split(` `).map(itemValue => parseInt(itemValue, 10));
 
-    // The first number from the parsed line represents the total number of companions.
-    const totalCompanions = firstLineTokens[0];
-    // The second number from the parsed line establishes the minimum height requirement.
-    const minimumBarrier = firstLineTokens[1];
+    // The first number in the first line represents the total number of companions.
+    const totalCompanionsCount = firstLineNumericParts[0];
 
-    // Process the second line of input, which contains the height measurements for each companion.
-    // Similar to the first line, it splits by spaces and converts each measurement to an integer.
-    const companionHeights = lineArray[1]
-        .split(' ')
-        .map(currentHeight => parseInt(currentHeight, 10)); // Ensure base 10 conversion.
+    // The second number in the first line represents the minimum required height.
+    const minimumRequiredHeight = firstLineNumericParts[1];
 
-    // Filter the array of companion heights to find those that meet or exceed the minimum barrier.
-    // Then, count how many companions satisfy this condition.
-    const permittedCount = companionHeights
-        .filter(currentHeight => currentHeight >= minimumBarrier)
-        .length;
+    // Parse the second line to get the height data for each companion.
+    // It splits the line by spaces and converts each height value to an integer.
+    const companionHeightsList = inputLinesArray[1].split(` `).map(itemValue => parseInt(itemValue, 10));
 
-    // Output the final count of companions who meet the height criteria.
-    console.log(permittedCount);
+    // Filter the list of companion heights to find those who meet or exceed the minimum required height.
+    // Then, count how many companions satisfy this height criterion.
+    const eligibleCompanionsTally = companionHeightsList.filter(itemValue => itemValue >= minimumRequiredHeight).length;
+
+    // Display the final count of companions who meet the height requirement.
+    console.log(eligibleCompanionsTally);
 };
 
-// The program initiates execution by reading data from the standard input.
-// It uses the Node.js 'fs' module to read the file content as a UTF-8 string,
-// and then passes this raw data to the main processing function.
-executeProgram(
-    require('fs').readFileSync('/dev/stdin', 'utf8')
-);
+// Execute the main processing function by reading data from standard input.
+// The 'fs' module is used to synchronously read the file at '/dev/stdin' as a UTF-8 string.
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

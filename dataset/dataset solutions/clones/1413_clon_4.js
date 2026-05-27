@@ -1,52 +1,45 @@
-const performCardCheck = (inputLines) => {
-  const suitDesignations = ['S', 'H', 'C', 'D'];
+function processCardData(parsedInputLines) {
+  const cardSuits = ['S', 'H', 'C', 'D'];
+  const cardRanks = Array.from({ length: 13 }, (_, idx) => idx + 1);
 
-  // Generate all possible card identifiers using a functional approach (flatMap)
-  const allCardIdentifiers = suitDesignations.flatMap(designator =>
-    Array.from({ length: 13 }, (_, rankIndex) => `${designator} ${rankIndex + 1}`)
+  const initialDeck = new Set(
+    cardSuits.flatMap(suitSymbol =>
+      cardRanks.map(rankValue => `${suitSymbol} ${rankValue}`)
+    )
   );
 
-  // Initialize a Set with all possible cards; a Set is used for efficient presence tracking
-  const availableCardsRegistry = new Set(allCardIdentifiers);
-
-  // Remove cards specified in the input from the registry
-  // The first line of input is typically a count and is skipped
-  inputLines.slice(1).forEach(observedCardIdentifier => {
-    availableCardsRegistry.delete(observedCardIdentifier);
+  parsedInputLines.slice(1).forEach(cardIdentifier => {
+    initialDeck.delete(cardIdentifier);
   });
 
-  // Define a custom ranking for suits to ensure consistent output order
-  const suitOrdering = { 'S': 0, 'H': 1, 'C': 2, 'D': 3 };
+  const cardOrderComparator = (cardA, cardB) => {
+    const [suitA, rankAStr] = cardA.split(' ');
+    const [suitB, rankBStr] = cardB.split(' ');
 
-  // Convert the Set of remaining cards to an Array and sort it
-  const remainingSortedCards = Array.from(availableCardsRegistry).sort((cardIdentifierA, cardIdentifierB) => {
-    const [designationA, rankValueAStr] = cardIdentifierA.split(' ');
-    const [designationB, rankValueBStr] = cardIdentifierB.split(' ');
+    const suitPrecedence = { 'S': 0, 'H': 1, 'C': 2, 'D': 3 };
+    const suitComparison = suitPrecedence[suitA] - suitPrecedence[suitB];
 
-    const rankValueA = parseInt(rankValueAStr, 10);
-    const rankValueB = parseInt(rankValueBStr, 10);
-
-    const designationRankA = suitOrdering[designationA];
-    const designationRankB = suitOrdering[designationB];
-
-    // Primary sort by suit, secondary sort by rank
-    if (designationRankA !== designationRankB) {
-      return designationRankA - designationRankB;
+    if (suitComparison !== 0) {
+      return suitComparison;
     }
-    return rankValueA - rankValueB;
-  });
 
-  // Iterate and display each remaining card
-  remainingSortedCards.forEach(cardToDisplay => {
-    console.log(cardToDisplay);
-  });
-};
+    const rankA = parseInt(rankAStr, 10);
+    const rankB = parseInt(rankBStr, 10);
+    return rankA - rankB;
+  };
 
-const rawInputBuffer = [];
-process.stdin.on('data', (incomingChunk) => {
-  rawInputBuffer.push(incomingChunk);
+  Array.from(initialDeck)
+    .sort(cardOrderComparator)
+    .forEach(unseenCard => {
+      console.log(unseenCard);
+    });
+}
+
+const dataSegments = [];
+process.stdin.on('data', function(segment) {
+  dataSegments.push(segment);
 });
-process.stdin.on('end', () => {
-  const processedInput = rawInputBuffer.join('').split('\n');
-  performCardCheck(processedInput);
+process.stdin.on('end', function() {
+  const parsedInputLines = dataSegments.join('').split('\n');
+  processCardData(parsedInputLines);
 });

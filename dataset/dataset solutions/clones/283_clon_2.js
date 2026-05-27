@@ -1,64 +1,57 @@
-var rawData = require('fs').readFileSync('/dev/stdin', 'utf8'); // Obtain raw textual data from standard input stream
-var lineFragments = (rawData.stripWhitespace()).divideByDelimiter("\n"); // Process raw data: remove leading/trailing whitespace, then split into an array of lines
+var fileContent = require('fs').readFileSync('/dev/stdin', 'utf8'); // Read the entire input from standard input
 
-for (var lineIndex = 0; lineIndex < lineFragments.length; lineIndex++) { // Iterate through each processed line
-   // If the current line is the termination signal "0 0", exit the processing loop
-   if (lineFragments[lineIndex] === "0 0") {
-      break;
-   }
+var inputLines = (fileContent.trim()).split('\n'); // Trim whitespace and split the input into an array of lines
 
-   // Parse the current line: split by space, then convert each part to a number
-   var numericValues = lineFragments[lineIndex].divideByDelimiter(" ").transformToNumber(Number);
+// Process each line of the input data
+for (var lineIdx = 0; lineIdx < inputLines.length; lineIdx++) {
+    // Check for the termination condition "0 0"
+    if (inputLines[lineIdx] === "0 0") {
+        break; // Exit the loop if the termination sequence is encountered
+    }
 
-   var totalItems = numericValues[0]; // The first number represents the total count of items
-   var stepValue = numericValues[1];   // The second number represents the step size for placement
+    // Parse the current line, splitting by space and converting to numbers
+    var currentNumbers = inputLines[lineIdx].split(' ').map(Number);
 
-   var slotMap = {}; // Initialize an object to represent our circular arrangement of slots
-   // Populate the slot map with 'null' values, indicating all slots are initially empty
-   for (var slotIndex = 0; slotIndex < totalItems; slotIndex++) {
-      slotMap[slotIndex] = null;
-   }
+    var totalItems = currentNumbers[0]; // The first number represents the total count of items
+    var skipCount = currentNumbers[1];  // The second number represents the number of empty slots to skip
 
-   var currentPosition = 0; // Initialize our circular position pointer
-   // Loop to place each item from 0 up to (totalItems - 1)
-   for (var itemCounter = 0; itemCounter < totalItems; itemCounter++) {
-      var emptyCount = 0; // Counter for consecutively found empty slots
-      do {
-         currentPosition++; // Advance the position pointer
-         // If the pointer exceeds the total number of slots, wrap it around to the beginning
-         if (currentPosition === totalItems) {
-            currentPosition = 0;
-         }
-         // If the slot at the current position is empty, increment our empty slot counter
-         if (slotMap[currentPosition] === null) {
-            emptyCount++;
-         }
-      } while (emptyCount !== stepValue); // Continue advancing until 'stepValue' empty slots have been skipped
+    var itemPositions = {}; // An object to store the assigned position for each item
 
-      // Once 'stepValue' empty slots have been skipped, place the current itemCounter into the determined slot
-      slotMap[currentPosition] = itemCounter;
-   }
+    // Initialize all possible item positions to null, indicating they are empty
+    for (var initIdx = 0; initIdx < totalItems; initIdx++) {
+        itemPositions[initIdx] = null;
+    }
 
-   // Special adjustment: if the final position is 0, change it to 1 before output
-   if (currentPosition === 0) {
-      currentPosition = 1;
-   }
+    var currentPointer = 0; // Initialize a pointer to track the current position in the circular arrangement
 
-   // Output the final adjusted position
-   console.log(currentPosition);
+    // Iterate through each item that needs to be placed
+    for (var itemToPlace = 0; itemToPlace < totalItems; itemToPlace++) {
+        var foundEmptySlots = 0; // Counter for the number of empty slots encountered
+
+        // Loop to find the next available position based on 'skipCount'
+        do {
+            currentPointer++; // Move the pointer to the next position
+
+            // If the pointer goes beyond the total items, wrap it around to the beginning
+            if (currentPointer === totalItems) {
+                currentPointer = 0;
+            }
+
+            // If the current position is empty (null), increment the empty slots counter
+            if (itemPositions[currentPointer] === null) {
+                foundEmptySlots++;
+            }
+        } while (foundEmptySlots !== skipCount); // Continue until 'skipCount' empty slots have been found
+
+        // Assign the current item to the determined position
+        itemPositions[currentPointer] = itemToPlace;
+    }
+
+    // If the final pointer position is 0, adjust it to 1 as per problem logic
+    if (currentPointer === 0) {
+        currentPointer = 1;
+    }
+
+    // Output the final adjusted pointer value for the current line
+    console.log(currentPointer);
 }
-
-// Custom prototype methods for clarity (Type II change: adding helper functions/methods)
-// Note: In a real scenario, these might be defined differently or imported.
-// For Type II, it's about changing names and structure while maintaining logic.
-String.prototype.stripWhitespace = function() {
-    return this.trim();
-};
-
-String.prototype.divideByDelimiter = function(delimiter) {
-    return this.split(delimiter);
-};
-
-Array.prototype.transformToNumber = function(converter) {
-    return this.map(converter);
-};

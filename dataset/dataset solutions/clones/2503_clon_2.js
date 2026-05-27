@@ -1,318 +1,350 @@
-module.exports=(function(allModules){
-  // This object serves as a cache for loaded modules, preventing redundant execution.
-  var moduleCache={};
+module.exports = function(moduleDefinitions) {
+  // This object serves as a cache for loaded modules.
+  var moduleCache = {};
 
-  // The core function responsible for loading and executing modules.
-  function acquireModule(moduleIdentifier){
-    // If the module is already present in the cache, return its exported values immediately.
-    if(moduleCache[moduleIdentifier]) {
-      return moduleCache[moduleIdentifier].exports;
+  // The central function responsible for loading and executing modules.
+  function moduleLoader(moduleId) {
+    // If the requested module is already in the cache, return its exports immediately.
+    if (moduleCache[moduleId]) {
+      return moduleCache[moduleId].exports;
     }
 
-    // If not cached, create a new module entry.
-    // This entry tracks the module's ID, its loading status, and its exports object.
-    var moduleEntry=moduleCache[moduleIdentifier]={
-      id: moduleIdentifier,
-      isLoaded: false,
-      exports: {}
+    // If not cached, create a new module object and store it in the cache.
+    var moduleObject = moduleCache[moduleId] = {
+      id: moduleId, // The module's unique identifier.
+      loaded: false, // Flag indicating if the module has finished loading.
+      exports: {} // The object that will hold the module's exported values.
     };
 
     // Execute the module's definition function.
-    // It receives the module entry, its exports object, and the acquireModule function itself (for dependencies).
-    allModules[moduleIdentifier].call(
-      moduleEntry.exports,
-      moduleEntry,
-      moduleEntry.exports,
-      acquireModule
+    // The 'this' context is set to moduleObject.exports.
+    // Arguments passed are: moduleObject, moduleObject.exports, and the moduleLoader itself (for local 'require').
+    moduleDefinitions[moduleId].call(
+      moduleObject.exports,
+      moduleObject,
+      moduleObject.exports,
+      moduleLoader
     );
 
-    // Mark the module as fully loaded after its execution.
-    moduleEntry.isLoaded=true;
-    return moduleEntry.exports;
+    // Mark the module as fully loaded after execution.
+    moduleObject.loaded = true;
+
+    // Return the exports of the newly loaded module.
+    return moduleObject.exports;
   }
 
-  // Attach the complete set of module definitions and the cache to the acquireModule function for internal access.
-  acquireModule.definitions=allModules;
-  acquireModule.cache=moduleCache;
+  // Attach the original module definitions to the loader for internal use.
+  moduleLoader.moduleDefinitions = moduleDefinitions;
+  // Attach the module cache to the loader.
+  moduleLoader.cache = moduleCache;
 
-  // Utility function to define a non-enumerable property on an object, typically for exports.
-  acquireModule.defineExportProp=function(targetObj, propName, getterFn){
-    // Only define if the property does not already exist on the target object.
-    acquireModule.hasProperty(targetObj, propName) || Object.defineProperty(
-      targetObj,
-      propName,
-      { enumerable:true, get:getterFn }
-    );
+  // Helper function to define a getter property on an exports object.
+  moduleLoader.defineExport = function(exportsObject, propertyName, getterFunction) {
+    // Only define if the property doesn't already exist.
+    if (!moduleLoader.hasOwn(exportsObject, propertyName)) {
+      Object.defineProperty(exportsObject, propertyName, {
+        enumerable: true, // Make the property enumerable.
+        get: getterFunction // The function to call when the property is accessed.
+      });
+    }
   };
 
-  // Utility function to mark a module's exports as an ECMAScript module.
-  acquireModule.registerEsModule=function(targetObj){
-    // Set Symbol.toStringTag for better debugging experience in environments that support it.
-    if(typeof Symbol!=='undefined'&&Symbol.toStringTag) {
-      Object.defineProperty(targetObj, Symbol.toStringTag, { value:'Module' });
+  // Helper function to mark an exports object as an ES module.
+  moduleLoader.markAsEsModule = function(exportsObject) {
+    // Set Symbol.toStringTag for better debugging in some environments.
+    if (typeof Symbol !== "undefined" && Symbol.toStringTag) {
+      Object.defineProperty(exportsObject, Symbol.toStringTag, {
+        value: "Module"
+      });
     }
-    // Explicitly set __esModule to true, a common convention for ES modules in transpiled output.
-    Object.defineProperty(targetObj, '__esModule', { value:true });
+    // Set the __esModule flag to true.
+    Object.defineProperty(exportsObject, "__esModule", {
+      value: true
+    });
   };
 
-  // Utility for handling interoperability between different module formats (e.g., CommonJS and ES Modules).
-  acquireModule.interopModule=function(sourceModule, moduleFlags){
-    // Flag 1: If set, the source module itself needs to be resolved through acquireModule.
-    if(1&moduleFlags) {
-      sourceModule=acquireModule(sourceModule);
+  // Helper function to create a namespace object for a module.
+  moduleLoader.createNamespace = function(moduleValue, flags) {
+    // Flag 1: If set, the moduleValue is a module ID and needs to be loaded.
+    if (flags & 1) {
+      moduleValue = moduleLoader(moduleValue);
     }
-    // Flag 8: If set, return the source module directly without further processing.
-    if(8&moduleFlags) {
-      return sourceModule;
+    // Flag 8: If set, return the moduleValue directly (it's already a namespace or raw value).
+    if (flags & 8) {
+      return moduleValue;
     }
-    // Flag 4: If set, and the source is an object that's already marked as an ES module, return it directly.
-    if(4&moduleFlags&&typeof sourceModule==='object'&&sourceModule&&sourceModule.__esModule) {
-      return sourceModule;
+    // Flag 4: If set, and moduleValue is an object and already an ES module, return it directly.
+    if (flags & 4 && typeof moduleValue === "object" && moduleValue && moduleValue.__esModule) {
+      return moduleValue;
     }
 
-    // Create a new, clean object to serve as the namespace for the interoperable module.
-    var namespaceObject=Object.create(null);
-    acquireModule.registerEsModule(namespaceObject); // Mark it as an ES module.
-    // Define a 'default' export pointing to the original source module.
-    Object.defineProperty(namespaceObject, 'default', { enumerable:true, value:sourceModule });
+    // Create a new plain object to serve as the namespace.
+    var namespaceObject = Object.create(null);
+    // Mark it as an ES module.
+    moduleLoader.markAsEsModule(namespaceObject);
+    // Define a 'default' export pointing to the moduleValue.
+    Object.defineProperty(namespaceObject, "default", {
+      enumerable: true,
+      value: moduleValue
+    });
 
-    // Flag 2: If set, and the source is not a string, copy all its enumerable properties to the new namespace.
-    if(2&moduleFlags&&typeof sourceModule!=='string') {
-      for(var keyName in sourceModule) {
-        acquireModule.defineExportProp(
+    // Flag 2: If set, and moduleValue is not a string, copy all its properties as getters.
+    if (flags & 2 && typeof moduleValue !== "string") {
+      for (var key in moduleValue) {
+        moduleLoader.defineExport(
           namespaceObject,
-          keyName,
-          ((propertyKey) => sourceModule[propertyKey]).bind(null, keyName) // Bind key for proper closure.
+          key,
+          (function(currentKey) {
+            return moduleValue[currentKey];
+          }).bind(null, key) // Bind 'key' to the inner function to capture its value.
         );
       }
     }
     return namespaceObject;
   };
 
-  // Utility function to retrieve a module's exports, handling potential default exports from ES modules.
-  acquireModule.getModuleExports=function(targetModule){
-    var exportProvider=targetModule&&targetModule.__esModule
-      ? function(){ return targetModule.default; } // If it's an ES module, return its default export.
-      : function(){ return targetModule; }; // Otherwise, return the module directly.
-    // Define a special 'a' property that also points to the export provider (common webpack pattern).
-    acquireModule.defineExportProp(exportProvider, 'a', exportProvider);
-    return exportProvider;
+  // Helper function to get the default export of a module.
+  moduleLoader.getDefaultExport = function(moduleValue) {
+    var defaultExportGetter = moduleValue && moduleValue.__esModule ?
+      // If it's an ES module, return its 'default' property.
+      function() {
+        return moduleValue.default;
+      } :
+      // Otherwise, the moduleValue itself is the default export.
+      function() {
+        return moduleValue;
+      };
+    // Define a property 'a' on the getter function itself, pointing to the getter.
+    moduleLoader.defineExport(defaultExportGetter, "a", defaultExportGetter);
+    return defaultExportGetter;
   };
 
-  // Utility to check if an object has a specific property directly (not inherited).
-  acquireModule.hasProperty=function(obj, prop){
+  // Helper function to check if an object has its own property.
+  moduleLoader.hasOwn = function(obj, prop) {
     return Object.prototype.hasOwnProperty.call(obj, prop);
   };
 
-  // Base path for assets or resources, though not used in this specific code.
-  acquireModule.baseAssetPath='';
+  // Public path for assets (empty in this specific setup).
+  moduleLoader.publicPath = "";
 
-  // Initiate the application by loading the entry point module (module 0).
-  return acquireModule(acquireModule.entryPoint=0);
-})
-([
-  // Module 0: Entry Point for Application Logic
-  function(currentMod, modExports, getDep){
-    'use strict';
-    // Import the file system utility module.
-    var fileSystemUtility=getDep(1);
-    // Execute the main processing module (Module 2) with input read from a standard input file.
-    getDep(2)(fileSystemUtility.readTextFileSync('/std/input.txt', 'unicode'));
+  // Start the application by loading the entry module (module ID 0).
+  return moduleLoader(moduleLoader.moduleEntry = 0);
+}([
+  /* Module 0: Main Application Entry Point */
+  function(module, moduleExports, localRequire) {
+    "use strict";
+    // Import the Node.js 'fs' (file system) module.
+    var fileSystem = localRequire(1);
+    // Read the entire content of /dev/stdin as a UTF-8 string.
+    // Then, pass this string to the main input processing function (Module 2).
+    localRequire(2)(fileSystem.readFileSync("/dev/stdin", "utf8"));
   },
 
-  // Module 1: Node.js File System Dependency
-  function(currentMod, modExports){
-    // Export the native Node.js file system module.
-    currentMod.exports=require('node:fs');
+  /* Module 1: File System Module Wrapper */
+  function(module, moduleExports) {
+    // Directly export the Node.js 'fs' module.
+    module.exports = require("fs");
   },
 
-  // Module 2: Input Data Processing Orchestrator
-  function(currentMod, modExports, getDep){
-    'use strict';
-    // Retrieve the class responsible for parsing input data.
-    var dataParsingClass=getDep(3);
-    // Retrieve the core algorithm logic that processes the parsed input.
-    var coreProcessingLogic=getDep(5);
+  /* Module 2: Input Processing Orchestrator */
+  function(module, moduleExports, localRequire) {
+    "use strict";
+    // Import the custom InputReader class (Module 3).
+    var inputParserClass = localRequire(3);
+    // Import the main algorithm logic function (Module 5).
+    var processInputData = localRequire(5);
 
-    // Export a function that takes raw textual input for processing.
-    currentMod.exports=function(rawTextualInput){
-      // Create an instance of the input data parser with the provided raw text.
-      var parserInstance=new dataParsingClass(rawTextualInput);
-      // Invoke the core processing logic, passing the parser instance to read data.
-      coreProcessingLogic(parserInstance);
+    // Export a function that takes the raw input string.
+    module.exports = function(rawInputString) {
+      // Create an instance of the InputReader to handle parsing.
+      var readerInstance = new inputParserClass(rawInputString);
+      // Pass the reader instance to the main algorithm for processing.
+      processInputData(readerInstance);
     };
   },
 
-  // Module 3: Input Stream Reader Class
-  function(currentMod, modExports, getDep){
-    'use strict';
-    // Get the utility class that manages a sequence of tokens (a queue-like structure).
-    var tokenSequenceUtility=getDep(4);
+  /* Module 3: InputReader Class Definition */
+  function(module, moduleExports, localRequire) {
+    "use strict";
+    // Import the custom Queue class (Module 4).
+    var tokenQueueClass = localRequire(4);
 
-    // Define and export the InputSequenceReader class.
-    currentMod.exports=class InputSequenceReader {
-      constructor(initialData){
-        // Clean the raw input (trim whitespace), split it into individual tokens by whitespace,
-        // and initialize the internal token stream with these processed tokens.
-        const processedTokens=initialData.trim().split(/\s+/g);
-        this.tokenStream=new tokenSequenceUtility(processedTokens);
+    // Define the InputReader class for convenient input parsing.
+    module.exports = class InputReader {
+      constructor(rawInputString) {
+        // Trim leading/trailing whitespace and split the input string by any whitespace.
+        var inputTokens = rawInputString.trim().split(/\s+/g);
+        // Initialize an internal queue with these parsed tokens.
+        this.inputQueue = new tokenQueueClass(inputTokens);
       }
 
-      // Method to fetch the next string token from the stream.
-      fetchNextString(){
-        return this.tokenStream.extractNext();
+      // Retrieves the next raw string token from the input queue.
+      readNextRaw() {
+        return this.inputQueue.dequeue();
       }
 
-      // Method to fetch the next integer token from the stream, parsing it with base 10.
-      fetchNextInteger(){
-        return parseInt(this.tokenStream.extractNext(), 10);
+      // Retrieves the next token, parses it as an integer (base 10), and returns it.
+      readNextInt() {
+        return parseInt(this.inputQueue.dequeue(), 10);
       }
 
-      // Method to clear and reset the entire input stream.
-      resetInputStream(){
-        this.tokenStream.clearAll();
-      }
-    };
-  },
-
-  // Module 4: Basic Queue Data Structure
-  function(currentMod, modExports, getDep){
-    'use strict';
-    // Define and export the ElementQueue class, implementing a basic queue.
-    currentMod.exports=class ElementQueue {
-      // The constructor can optionally accept an initial array of elements.
-      constructor(){
-        const initialElements=arguments.length>0&&arguments[0]!==undefined?arguments[0]:[];
-        this.currentSize=initialElements.length; // Tracks the number of elements.
-        this.elementStorage=initialElements; // The underlying array storing elements.
-        this.readPointer=0; // Index for the next element to be extracted.
-      }
-
-      // Adds an item to the end of the queue.
-      enqueueItem(item){
-        this.currentSize++;
-        this.elementStorage.push(item);
-      }
-
-      // Removes and returns the item from the front of the queue (FIFO).
-      extractNext(){
-        const extractedItem=this.elementStorage[this.readPointer];
-        this.currentSize--;
-        this.readPointer++;
-        return extractedItem;
-      }
-
-      // Clears all items from the queue and resets its state.
-      clearAll(){
-        this.elementStorage=[];
-        this.currentSize=0;
-        this.readPointer=0;
+      // Clears the internal input queue, effectively resetting the reader.
+      finishReading() {
+        this.inputQueue.clear();
       }
     };
   },
 
-  // Module 5: Graph Algorithm Executor (Floyd-Warshall Application)
-  function(currentMod, modExports, getDep){
-    'use strict';
-    // Import the Floyd-Warshall algorithm implementation module.
-    var floydWarshallImplementer=getDep(6);
+  /* Module 4: Queue Class Definition */
+  function(module, moduleExports, localRequire) {
+    "use strict";
+    // Define a simple Queue class.
+    module.exports = class Queue {
+      constructor() {
+        // Initialize with an optional array of elements.
+        // If no array is provided, it defaults to an empty array.
+        var initialElements = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : [];
+        this.currentSize = initialElements.length; // Current number of elements in the queue.
+        this.queueElements = initialElements; // The underlying array storing queue elements.
+        this.currentIndex = 0; // The index of the next element to dequeue.
+      }
+
+      // Adds an element to the end of the queue.
+      enqueue(elementToAdd) {
+        this.currentSize += 1;
+        this.queueElements.push(elementToAdd);
+      }
+
+      // Removes and returns the element at the front of the queue.
+      dequeue() {
+        var dequeuedElement = this.queueElements[this.currentIndex];
+        this.currentSize -= 1;
+        this.currentIndex += 1;
+        return dequeuedElement;
+      }
+
+      // Resets the queue to an empty state.
+      clear() {
+        this.queueElements = [];
+        this.currentSize = 0;
+        this.currentIndex = 0;
+      }
+    };
+  },
+
+  /* Module 5: Main Algorithm Logic (Graph Processing) */
+  function(module, moduleExports, localRequire) {
+    "use strict";
+    // Import the Floyd-Warshall algorithm implementation (Module 6).
+    var calculateAllPairsShortestPaths = localRequire(6);
 
     // Export the main function that processes graph input and queries.
-    currentMod.exports=function(graphDataReader){
-      // Define a very large constant to represent an unreachable or infinite distance in the graph.
-      const unreachableDistance=1_000_000_000_000_000; // One quadrillion
+    module.exports = function(inputReaderInstance) {
+      // A large number used to represent unreachable paths (infinity).
+      var infinityValue = 99999999999;
 
-      // Read the number of nodes, edges, and the maximum allowed cost for a "teleport" from the input.
-      var totalNodes=graphDataReader.fetchNextInteger();
-      var totalEdges=graphDataReader.fetchNextInteger();
-      var maximumPermittedCost=graphDataReader.fetchNextInteger();
+      // Read graph parameters from the input.
+      var numVertices = inputReaderInstance.readNextInt(); // Number of nodes in the graph.
+      var numEdges = inputReaderInstance.readNextInt(); // Number of direct connections.
+      var maxPathLength = inputReaderInstance.readNextInt(); // Maximum allowed path length for a "valid" connection.
 
-      // Initialize the adjacency matrix. Each node starts with an unreachable distance to others,
-      // and a distance of 0 to itself.
-      var adjacencyRepresentation=new Array(totalNodes);
-      for(let nodeCounter=0; nodeCounter<totalNodes; nodeCounter++) {
-        adjacencyRepresentation[nodeCounter]=new Array(totalNodes).fill(unreachableDistance);
-        adjacencyRepresentation[nodeCounter][nodeCounter]=0;
+      // Initialize an adjacency matrix for the graph.
+      // All distances are initially set to infinity.
+      var adjacencyMatrix = new Array(numVertices);
+      for (var vertexIndex = 0; vertexIndex < numVertices; vertexIndex++) {
+        adjacencyMatrix[vertexIndex] = new Array(numVertices).fill(infinityValue);
       }
 
-      // Populate the adjacency matrix with direct edge weights read from input.
-      // Assumes an undirected graph, so edges are added in both directions.
-      for(let edgeCounter=0; edgeCounter<totalEdges; edgeCounter++) {
-        var firstVertex=graphDataReader.fetchNextInteger();
-        var secondVertex=graphDataReader.fetchNextInteger();
-        var edgeWeightValue=graphDataReader.fetchNextInteger();
-        adjacencyRepresentation[firstVertex-1][secondVertex-1]=edgeWeightValue;
-        adjacencyRepresentation[secondVertex-1][firstVertex-1]=edgeWeightValue;
+      // Populate the adjacency matrix with given edge weights.
+      for (var edgeIndex = 0; edgeIndex < numEdges; edgeIndex++) {
+        var startNode = inputReaderInstance.readNextInt();
+        var endNode = inputReaderInstance.readNextInt();
+        var edgeWeight = inputReaderInstance.readNextInt();
+        // Adjust node indices to be 0-based.
+        adjacencyMatrix[startNode - 1][endNode - 1] = edgeWeight;
+        adjacencyMatrix[endNode - 1][startNode - 1] = edgeWeight; // Assuming an undirected graph.
       }
 
-      // Calculate all-pairs shortest paths for the initial graph using Floyd-Warshall.
-      var intermediatePathMatrix=floydWarshallImplementer(adjacencyRepresentation);
+      // First application of Floyd-Warshall to find all-pairs shortest paths
+      // based on the original edge weights.
+      var firstShortestPaths = calculateAllPairsShortestPaths(adjacencyMatrix);
 
-      // Transform the matrix: if a path exists within `maximumPermittedCost`,
-      // it's treated as a single "teleport" hop (distance 1); otherwise, it remains unreachable.
-      for(let rowIterator=0; rowIterator<totalNodes; rowIterator++) {
-        for(let colIterator=0; colIterator<totalNodes; colIterator++) {
-          if(intermediatePathMatrix[rowIterator][colIterator]<=maximumPermittedCost) {
-            adjacencyRepresentation[rowIterator][colIterator]=1;
+      // Re-evaluate the adjacency matrix based on the 'maxPathLength' threshold.
+      // If a path from 'firstShortestPaths' is within 'maxPathLength',
+      // it's considered a direct connection with cost 1 in the new graph.
+      // Otherwise, it remains infinity.
+      for (var rowIdx = 0; rowIdx < numVertices; rowIdx++) {
+        for (var colIdx = 0; colIdx < numVertices; colIdx++) {
+          if (firstShortestPaths[rowIdx][colIdx] <= maxPathLength) {
+            adjacencyMatrix[rowIdx][colIdx] = 1;
           } else {
-            adjacencyRepresentation[rowIterator][colIterator]=unreachableDistance;
+            adjacencyMatrix[rowIdx][colIdx] = infinityValue;
           }
         }
       }
 
-      // Recalculate all-pairs shortest paths on the transformed graph to find minimum "teleport" hops.
-      var finalConnectivityMatrix=floydWarshallImplementer(adjacencyRepresentation);
+      // Second application of Floyd-Warshall on the modified adjacency matrix.
+      // This calculates shortest paths in terms of "hops" (cost 1 per valid connection).
+      var secondShortestPaths = calculateAllPairsShortestPaths(adjacencyMatrix);
 
-      // Process user queries for pathfinding.
-      var numberOfQueries=graphDataReader.fetchNextInteger();
-      var collectedResults=[];
-      for(let queryIterator=0; queryIterator<numberOfQueries; queryIterator++) {
-        var startVertex=graphDataReader.fetchNextInteger();
-        var endVertex=graphDataReader.fetchNextInteger();
-        var calculatedPathLength=finalConnectivityMatrix[startVertex-1][endVertex-1];
+      // Read the number of queries to process.
+      var numQueries = inputReaderInstance.readNextInt();
+      // An array to store the results for each query.
+      var queryResults = [];
 
-        // Store the result, adjusting for the problem's 0-indexed vs 1-indexed output requirement.
-        if(calculatedPathLength===unreachableDistance) {
-          collectedResults.push(-1); // -1 indicates no valid path.
+      // Process each query.
+      for (var queryIndex = 0; queryIndex < numQueries; queryIndex++) {
+        var queryStart = inputReaderInstance.readNextInt();
+        var queryEnd = inputReaderInstance.readNextInt();
+        // Retrieve the calculated path length from the second shortest paths matrix.
+        var calculatedPath = secondShortestPaths[queryStart - 1][queryEnd - 1];
+
+        // If the path is infinity, it means no valid path exists, so push -1.
+        // Otherwise, push (path length - 1) as the result.
+        // (This implies the problem asks for the number of edges/hops, not total weight).
+        if (calculatedPath === infinityValue) {
+          queryResults.push(-1);
         } else {
-          collectedResults.push(calculatedPathLength-1); // Adjust for the initial self-loop distance.
+          queryResults.push(calculatedPath - 1);
         }
       }
 
-      // Output the final results, with each result on a new line.
-      console.info(collectedResults.join('\n'));
+      // Print all collected query results, each on a new line.
+      console.log(queryResults.join("\n"));
     };
   },
 
-  // Module 6: Floyd-Warshall Algorithm Implementation
-  function(currentMod, modExports, getDep){
-    'use strict';
-    // Export the function that implements the Floyd-Warshall algorithm for all-pairs shortest paths.
-    currentMod.exports=function(inputGraphData){
-      var graphSize=inputGraphData.length;
-      // Create a deep copy of the input graph matrix to avoid modifying the original data.
-      var resultGraphMatrix=[];
-      for(let rIndex=0; rIndex<graphSize; rIndex++) {
-        resultGraphMatrix.push(inputGraphData[rIndex].slice()); // .slice() creates a shallow copy of inner arrays.
+  /* Module 6: Floyd-Warshall Algorithm Implementation */
+  function(module, moduleExports, localRequire) {
+    "use "
+    "strict";
+    // Export the Floyd-Warshall function.
+    module.exports = function(graphMatrix) {
+      var matrixDimension = graphMatrix.length;
+      // Create a deep copy of the input graph matrix.
+      // This copy will be modified to store the shortest distances.
+      var distanceMatrix = [];
+      for (var copyRowIndex = 0; copyRowIndex < matrixDimension; copyRowIndex++) {
+        distanceMatrix.push(graphMatrix[copyRowIndex].concat());
       }
 
-      // Main Floyd-Warshall triple loop:
-      // The 'intermediateNodeIndex' loop iterates through all possible intermediate vertices.
-      for(let intermediateNodeIndex=0; intermediateNodeIndex<graphSize; intermediateNodeIndex++) {
-        // The 'sourceNodeIndex' loop iterates through all possible starting vertices.
-        for(let sourceNodeIndex=0; sourceNodeIndex<graphSize; sourceNodeIndex++) {
-          // The 'destinationNodeIndex' loop iterates through all possible ending vertices.
-          for(let destinationNodeIndex=0; destinationNodeIndex<graphSize; destinationNodeIndex++) {
-            // Check if the path from 'sourceNodeIndex' to 'destinationNodeIndex' can be shortened
-            // by going through 'intermediateNodeIndex'.
-            if(resultGraphMatrix[sourceNodeIndex][destinationNodeIndex]>resultGraphMatrix[sourceNodeIndex][intermediateNodeIndex]+resultGraphMatrix[intermediateNodeIndex][destinationNodeIndex]) {
-              // If a shorter path is found, update the distance in the matrix.
-              resultGraphMatrix[sourceNodeIndex][destinationNodeIndex]=resultGraphMatrix[sourceNodeIndex][intermediateNodeIndex]+resultGraphMatrix[intermediateNodeIndex][destinationNodeIndex];
+      // The core Floyd-Warshall algorithm.
+      // Iterate through all possible intermediate vertices (k).
+      for (var intermediateNode = 0; intermediateNode < matrixDimension; intermediateNode++) {
+        // Iterate through all possible source vertices (i).
+        for (var sourceNode = 0; sourceNode < matrixDimension; sourceNode++) {
+          // Iterate through all possible destination vertices (j).
+          for (var destNode = 0; destNode < matrixDimension; destNode++) {
+            // If the path from source to destination via the intermediate node
+            // is shorter than the currently known path, update the distance.
+            if (distanceMatrix[sourceNode][destNode] > distanceMatrix[sourceNode][intermediateNode] + distanceMatrix[intermediateNode][destNode]) {
+              distanceMatrix[sourceNode][destNode] = distanceMatrix[sourceNode][intermediateNode] + distanceMatrix[intermediateNode][destNode];
             }
           }
         }
       }
-      return resultGraphMatrix; // Return the matrix with all-pairs shortest paths.
+      // Return the matrix containing all-pairs shortest paths.
+      return distanceMatrix;
     };
   }
 ]);

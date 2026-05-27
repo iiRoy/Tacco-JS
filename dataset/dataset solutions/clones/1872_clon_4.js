@@ -1,32 +1,25 @@
-"use strict";
-const processNumericalSequence = (inputBlob) => {
-  const numericalTokens = inputBlob.match(/\d+/g);
-  const numericValues = numericalTokens.map(val => parseInt(val, 10));
+"use strict"
+function main(inputData) {
+    const [alpha, beta, gamma, kappa] = inputData.trim().split("\n")[0].split(" ").map(Number)
 
-  const initialPositiveSupply = numericValues[0];
-  const initialNeutralSupply = numericValues[1];
-  const initialNegativeSupply = numericValues[2];
-  let totalOperationsDesired = numericValues[3];
+    const cardDefinitions = [
+        { quantity: alpha, value: 1 },
+        { quantity: beta, value: 0 },
+        { quantity: gamma, value: -1 }
+    ]
 
-  let accumulatedScore = 0;
+    const finalOutcome = cardDefinitions.reduce((currentStatus, cardType) => {
+        let { totalScore, remainingSelections } = currentStatus
+        const { quantity, value } = cardType
 
-  const positiveContributionsTaken = Math.min(initialPositiveSupply, totalOperationsDesired);
-  accumulatedScore += positiveContributionsTaken;
-  totalOperationsDesired -= positiveContributionsTaken;
+        const selectionsFromCurrentType = Math.min(quantity, remainingSelections)
 
-  const neutralContributionsTaken = Math.min(initialNeutralSupply, totalOperationsDesired);
-  totalOperationsDesired -= neutralContributionsTaken;
+        totalScore += selectionsFromCurrentType * value
+        remainingSelections -= selectionsFromCurrentType
 
-  const negativeContributionsTaken = Math.min(initialNegativeSupply, totalOperationsDesired);
-  accumulatedScore -= negativeContributionsTaken;
+        return { totalScore, remainingSelections }
+    }, { totalScore: 0, remainingSelections: kappa })
 
-  return accumulatedScore;
-};
-
-const executeComputation = (inputData) => {
-  const cleanInput = inputData.trim().split("\n")[0];
-  const finalResult = processNumericalSequence(cleanInput);
-  console.log(finalResult);
-};
-
-executeComputation(require('node:fs').readFileSync(0, 'utf8'));
+    console.log(finalOutcome.totalScore)
+}
+main(require('fs').readFileSync('/dev/stdin', 'utf8'))

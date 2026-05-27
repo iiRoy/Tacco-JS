@@ -1,152 +1,87 @@
-// This script processes numerical input lines to find an optimal difference.
-// It supports both Node.js and V8 (e.g., d8 shell) environments for I/O.
+var computeResults = function() {
+    const INITIAL_MIN_VAL = 1073741824; // Equivalent to 1 << 30
+    let inputLineData;
 
-// --- Global I/O Functions (Type II: Renamed & Restructured) ---
-let displayValue;
-let retrieveLine;
-
-// Determine the execution environment and set up I/O accordingly.
-if (typeof process !== 'undefined' && process.versions && process.versions.node) {
-    // Node.js specific implementation for output.
-    displayValue = function(valueToOutput) {
-        console.log(valueToOutput);
-    };
-
-    let bufferedInputLines = []; // Stores complete lines read from stdin.
-    let currentReadIndex = 0;    // Pointer for reading lines from bufferedInputLines.
-    let pendingInputFragment = ""; // Stores partial lines when data chunks arrive.
-    let isInputCollectionComplete = false; // Flag indicating if all stdin data has been received.
-
-    // A Promise to manage asynchronous input collection.
-    const inputPreparationPromise = new Promise((resolve) => {
-        const standardInputSource = process.openStdin();
-        standardInputSource.setEncoding('utf8');
-
-        // Event listener for incoming data chunks.
-        standardInputSource.on('data', (inputChunk) => {
-            const combinedChunk = pendingInputFragment + inputChunk;
-            const lineSegments = combinedChunk.split("\n");
-            // The last segment might be incomplete; store it for the next chunk.
-            pendingInputFragment = lineSegments.pop();
-
-            // Process all complete lines.
-            for (const segment of lineSegments) {
-                const trimmedSegment = segment.trim();
-                // Only buffer non-empty lines after trimming whitespace.
-                if (trimmedSegment.length > 0) {
-                    bufferedInputLines.push(trimmedSegment);
-                }
-            }
-        });
-
-        // Event listener for the end of the input stream.
-        standardInputSource.on('end', () => {
-            // Process any remaining fragment as a final line.
-            if (pendingInputFragment.length > 0) {
-                const finalSegments = pendingInputFragment.split("\n");
-                for (const segment of finalSegments) {
-                    const trimmedSegment = segment.trim();
-                    if (trimmedSegment.length > 0) {
-                        bufferedInputLines.push(trimmedSegment);
-                    }
-                }
-            }
-            isInputCollectionComplete = true; // Mark input as fully collected.
-            resolve(); // Resolve the promise, signaling that core logic can begin.
-        });
-
-        // Basic error handling for the input stream.
-        standardInputSource.on('error', (err) => {
-            console.error("An error occurred during input stream processing:", err);
-            isInputCollectionComplete = true; // Attempt to prevent indefinite waiting.
-            resolve(); // Resolve even on error to allow program to continue or terminate gracefully.
-        });
-    });
-
-    // Node.js specific implementation for reading lines.
-    retrieveLine = function() {
-        if (currentReadIndex < bufferedInputLines.length) {
-            return bufferedInputLines[currentReadIndex++];
-        }
-        // If all buffered lines are read and input collection is complete, return null.
-        if (isInputCollectionComplete) {
-            return null;
-        }
-        // This state should ideally not be reached if `executeCoreLogic` waits for `inputPreparationPromise`.
-        return null;
-    };
-
-    // For Node.js, defer the execution of the core logic until all input is ready.
-    inputPreparationPromise.then(() => {
-        executeCoreLogic();
-    });
-
-} else {
-    // V8 (e.g., d8 shell) environment or other non-Node.js environments.
-    // Assumes global 'print' and 'readline' functions are available.
-    displayValue = typeof print !== 'undefined' ? print : console.log;
-    retrieveLine = typeof readline !== 'undefined' ? readline : () => null;
-
-    // In V8, input is typically synchronous, so execute core logic immediately.
-    executeCoreLogic();
-}
-
-/**
- * Main function containing the core computational logic.
- * It reads input lines, processes numerical pairs, and calculates a minimum difference.
- *
- * @function
- * @returns {void}
- */
-const executeCoreLogic = function() {
-    let currentInputLine;
-
-    // Loop indefinitely until a termination condition is met (no more input or specific input value).
     while (true) {
-        currentInputLine = retrieveLine(); // Attempt to fetch the next line of input.
+        let currentLine = fetchNextLine();
+        if (currentLine === null) { // Handle end of input gracefully if not handled by 'end' event
+            break;
+        }
+        inputLineData = currentLine.split(' ').map(Number);
 
-        // If no more input lines are available, terminate the processing loop.
-        if (currentInputLine === null) {
+        let firstNum = inputLineData[0];
+
+        if (firstNum === 0) { // Guard clause for loop termination condition
             break;
         }
 
-        // Parse the line: split by space and convert parts to numbers.
-        const numericalComponents = currentInputLine.split(' ').map(Number);
+        let secondNum = inputLineData[1];
+        let minDiffResult = INITIAL_MIN_VAL;
 
-        // Termination condition: If the line is empty, or the first number is zero.
-        // The original logic implicitly handles cases where `numericalComponents[0]` is falsy (like 0 or NaN).
-        if (numericalComponents.length === 0 || numericalComponents[0] === 0) {
-            break;
+        // Small helper function for the core calculation
+        const calculateHypotDiff = (idx, valA, valB) => {
+            return Math.abs(valB - Math.hypot(idx, valA - idx));
+        };
+
+        // Explicitly use Math.floor for integer division, equivalent to `^0` for positive numbers
+        let loopUpperLimit = Math.floor(firstNum / 2);
+
+        for (let loopIndex = 0; loopIndex <= loopUpperLimit; loopIndex++) {
+            minDiffResult = Math.min(minDiffResult, calculateHypotDiff(loopIndex, firstNum, secondNum));
         }
-
-        // Extract the two primary numerical values for the current problem instance.
-        const primaryValue = numericalComponents[0];    // Corresponds to 'a' in original.
-        const secondaryValue = numericalComponents[1];  // Corresponds to 'b' in original.
-
-        // Initialize the minimum difference to positive infinity to ensure any valid difference will be smaller.
-        let minimumDifferenceFound = Number.POSITIVE_INFINITY;
-
-        // The inner loop iterates through possible integer values for one leg of a right triangle.
-        // The loop limit is half of the primaryValue, as (i, primaryValue - i) covers all unique pairs.
-        const iterationLimit = Math.floor(primaryValue / 2);
-
-        // If primaryValue is negative, iterationLimit will be negative, and the loop will not execute.
-        // In this case, minimumDifferenceFound will remain Number.POSITIVE_INFINITY,
-        // which is a reasonable outcome for input outside the expected positive range.
-
-        for (let legA = 0; legA <= iterationLimit; legA++) {
-            const legB = primaryValue - legA; // Calculate the length of the second leg.
-
-            // Calculate the hypotenuse using the Pythagorean theorem.
-            const calculatedHypotenuse = Math.hypot(legA, legB);
-
-            // Determine the absolute difference between the target secondaryValue and the calculated hypotenuse.
-            const currentAbsoluteDelta = Math.abs(secondaryValue - calculatedHypotenuse);
-
-            // Update the overall minimum difference if the current delta is smaller.
-            minimumDifferenceFound = Math.min(minimumDifferenceFound, currentAbsoluteDelta);
-        }
-        // Output the smallest difference found for the current set of input values.
-        displayValue(minimumDifferenceFound);
+        outputValue(minDiffResult);
     }
 };
+
+// Input/Output Handling Module
+if (typeof process !== 'undefined') {
+    // Node.js environment specific implementation
+    const outputValue = function(val) {
+        console.log(val);
+    };
+
+    const fetchNextLine = (function() {
+        let inputBuffer = [];
+        let bufferIndex = 0;
+        const standardInput = process.openStdin();
+        standardInput.setEncoding('utf8');
+
+        let partialInputString = "";
+
+        // Helper function to process incoming data chunks
+        const processInputChunk = (chunk) => {
+            let lineSegments = (partialInputString + chunk).split("\n");
+            partialInputString = lineSegments.pop(); // Keep the last fragment
+            for (let i = 0; i < lineSegments.length; i++) {
+                if (lineSegments[i] === '') { // Skip truly empty lines
+                    continue;
+                }
+                inputBuffer.push(lineSegments[i]);
+            }
+        };
+
+        standardInput.on('data', processInputChunk);
+
+        standardInput.on('end', function(endEventData) {
+            // Process any remaining partial input string at the end
+            if (partialInputString) {
+                // Append a newline to ensure the last fragment is processed as a line
+                processInputChunk(partialInputString + "\n");
+            }
+            computeResults(); // Execute the main logic after all input is buffered
+        });
+
+        return function() {
+            if (bufferIndex >= inputBuffer.length) {
+                return null; // Indicate no more lines
+            }
+            return inputBuffer[bufferIndex++];
+        };
+    })();
+} else {
+    // V8 environment (e.g., d8 shell)
+    // In V8, `print` and `readline` are global built-in functions.
+    const outputValue = print;
+    const fetchNextLine = readline;
+    computeResults(); // Execute the main logic directly
+}

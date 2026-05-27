@@ -1,41 +1,35 @@
-let totalProcessedDataChunks = 0;
+function processAndSortLine(inputChunk) {
+    // Convert the input data (which might be a Buffer) to a string.
+    const fullInputString = String(inputChunk);
 
-process.stdin.on("data", function handleIncomingStreamData(receivedBufferBlock) {
+    // Remove leading and trailing whitespace from the entire input.
+    const trimmedInputString = fullInputString.trim();
 
-    totalProcessedDataChunks++;
+    // Split the trimmed string into an array of lines.
+    const allInputLines = trimmedInputString.split("\n");
 
-    const completeInputText = receivedBufferBlock.toString('utf8').trim();
+    // Access the second line from the input (index 1).
+    // This assumes the input will always contain at least two lines.
+    const targetLineForProcessing = allInputLines[1];
 
-    if (completeInputText.length === 0) {
-        return;
-    }
+    // Split the target line into individual elements based on spaces.
+    const lineElements = targetLineForProcessing.split(" ");
 
-    const allParsedLines = completeInputText.split('\n');
+    // Sort these elements alphabetically.
+    const sortedLineElements = lineElements.sort();
 
-    if (allParsedLines.length < 2) {
-        console.error("Data processing error: Not enough input lines received. At least two lines are required.");
-        return;
-    }
+    // Join the sorted elements back into a single string, separated by spaces.
+    return sortedLineElements.join(" ");
+}
 
-    const targetSegmentForProcessing = allParsedLines[1];
+// Set up an event listener for incoming data on standard input.
+process.stdin.on("data", function handleIncomingData(receivedData) {
+    // Process the received data using the helper function.
+    const finalOutputResult = processAndSortLine(receivedData);
 
-    const cleanedTargetSegment = targetSegmentForProcessing.trim();
-    if (cleanedTargetSegment.length === 0) {
-        console.warn("The designated second line is empty after trimming. Nothing to sort.");
-        return;
-    }
+    // Print the processed and sorted string to standard output.
+    console.log(finalOutputResult);
+});
 
-    const individualTextComponents = cleanedTargetSegment.split(' ').filter(component => component.length > 0);
-
-    if (individualTextComponents.length === 0) {
-        console.warn("No valid textual components found on the second line after splitting.");
-        return;
-    }
-
-    const alphabeticallyArrangedComponents = individualTextComponents.sort((first, second) => first.localeCompare(second));
-
-    const finalFormattedResult = alphabeticallyArrangedComponents.join(' ');
-
-    console.log(finalFormattedResult);
-
-}).resume();
+// Ensure the standard input stream is in flowing mode to receive data.
+process.stdin.resume();

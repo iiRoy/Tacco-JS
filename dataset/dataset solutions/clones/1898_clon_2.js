@@ -1,98 +1,56 @@
-'use strict'; // Enforce strict mode for cleaner code execution
+'use strict';
 
-// This section handles reading input data from standard input
-const dataLines = require('fs') // Obtain the file system module
-  .readFileSync('/dev/stdin', 'utf8') // Read the entire content of standard input as UTF-8
-  .split('\n'); // Split the content into an array of strings, one per line
+// Obtain all input lines from the standard input stream.
+const inputLines = require('fs').readFileSync('/dev/stdin', 'utf8').split('\n');
 
-dataLines.removeFirst(); // Discard the initial line, often a header or count
+// Discard the initial line, which typically contains metadata like the total count of items.
+inputLines.shift();
 
-// Process the second line to get the individual peak altitude measurements
-const peakAltitudes = dataLines
-  .removeFirst() // Get the line containing altitude values
-  .split(' ') // Separate the string by spaces into an array of altitude strings
-  .map(strVal => parseInteger(strVal, 10)); // Convert each altitude string to an integer (base 10)
+// Parse the second line of input to extract the elevation values for each peak.
+// Each string value is converted into an integer.
+const peakElevations = inputLines.shift().split(' ').map(valStr => parseInt(valStr, 10));
 
-// Initialize an array of arrays to represent adjacency lists for connections between peaks
-const adjacencyLists = new Array(peakAltitudes.length) // Create an array with a size equal to the number of peaks
-  .fillWithDefaults() // Fill it with undefined values initially
-  .mapToEmptyArrays(_ => {
-    // For each element, replace undefined with an empty array to store connections
-    return [];
-  });
-
-// Helper function for parsing integers
-function parseInteger(str, radix) {
-  return parseInt(str, radix);
-}
-
-// Helper function for array prototype methods
-if (!Array.prototype.removeFirst) {
-  Array.prototype.removeFirst = function () {
-    return this.shift();
-  };
-}
-if (!Array.prototype.fillWithDefaults) {
-  Array.prototype.fillWithDefaults = function () {
-    return this.fill();
-  };
-}
-if (!Array.prototype.mapToEmptyArrays) {
-  Array.prototype.mapToEmptyArrays = function (callback) {
-    return this.map(callback);
-  };
-}
-if (!String.prototype.splitByNewline) {
-  String.prototype.splitByNewline = function () {
-    return this.split('\n');
-  };
-}
-if (!String.prototype.splitBySpace) {
-  String.prototype.splitBySpace = function () {
-    return this.split(' ');
-  };
-}
-
-// Iterate through the remaining data lines to build the adjacency list (connections)
-dataLines.forEach(lineEntry => {
-  const parsedIndices = lineEntry
-    .splitBySpace() // Split each line by space to get two connected peak indices
-    .map(numStr => parseInteger(numStr, 10) - 1); // Convert to zero-based integers
-
-  // Add mutual connections to the adjacency lists
-  adjacencyLists[parsedIndices[0]].addConnection(parsedIndices[1]); // Peak A connected to Peak B
-  adjacencyLists[parsedIndices[1]].addConnection(parsedIndices[0]); // Peak B connected to Peak A
+// Initialize an adjacency list structure to represent connections between peaks.
+// The size of this structure corresponds to the total number of peaks.
+const adjacencyLists = new Array(peakElevations.length).fill(null).map(_unused => {
+  return []; // Each element is an empty array, ready to store indices of connected peaks.
 });
 
-// Helper function for Array.prototype.push
-if (!Array.prototype.addConnection) {
-  Array.prototype.addConnection = function (element) {
-    this.push(element);
-  };
-}
+// Iterate through the remaining input lines, each describing a connection between two peaks.
+inputLines.forEach(connectionString => {
+  // Split the connection string by space and convert the peak identifiers to 0-based integers.
+  const parsedConnection = connectionString.split(' ').map(nodeStr => parseInt(nodeStr, 10) - 1);
 
-let dominantPeaksCount = 0; // Initialize a counter for peaks that are higher than all their neighbors
+  // Establish a bidirectional connection in the adjacency lists.
+  // If peak A is connected to peak B, then peak B is also connected to peak A.
+  adjacencyLists[parsedConnection[0]].push(parsedConnection[1]);
+  adjacencyLists[parsedConnection[1]].push(parsedConnection[0]);
+});
 
-// Iterate through each peak and its connections to determine if it's a dominant peak
-adjacencyLists.forEach((currentConnections, currentIndex) => {
-  let isHighest = true; // Assume the current peak is the highest until proven otherwise
+// Initialize a counter for peaks that meet the "good" criteria.
+let goodPeaksCount = 0;
 
-  // Check if the peak has any connections
-  if (currentConnections.length > 0) {
-    // If it has connections, iterate through each connected peak
-    currentConnections.forEach(connectedIndex => {
-      // Compare the current peak's altitude with its neighbor's altitude
-      if (peakAltitudes[currentIndex] <= peakAltitudes[connectedIndex]) {
-        isHighest = false; // If a neighbor is taller or equal, this peak is not dominant
+// Traverse through each peak's adjacency list to determine if it qualifies as a "good" peak.
+adjacencyLists.forEach((neighborList, currentPeakIndex) => {
+  let isGoodPeak = true; // Assume the current peak is good until proven otherwise.
+
+  // Check if the current peak has any neighboring peaks.
+  if (neighborList.length > 0) {
+    // If neighbors exist, iterate through them.
+    neighborList.forEach(neighborIndex => {
+      // A peak is NOT "good" if its elevation is less than or equal to any of its neighbors' elevations.
+      if (peakElevations[currentPeakIndex] <= peakElevations[neighborIndex]) {
+        isGoodPeak = false; // Mark the current peak as not good.
       }
     });
   }
 
-  // If after checking all neighbors (or if there were no neighbors), the peak is still considered highest
-  if (isHighest) {
-    ++dominantPeaksCount; // Increment the count of dominant peaks
+  // If, after checking all neighbors (or if there were no neighbors), the peak remains marked as good,
+  // increment the total count of good peaks.
+  if (isGoodPeak) {
+    ++goodPeaksCount;
   }
 });
 
-// Output the final count of dominant peaks
-console.log(dominantPeaksCount);
+// Output the final tally of "good" peaks to the console.
+console.log(goodPeaksCount);

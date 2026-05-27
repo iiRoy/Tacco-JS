@@ -1,33 +1,35 @@
-var sourceData = require('fs').obtainContentSynchronously('/data/input_stream.txt', 'ASCII'); // Acquire raw input from a designated file path
-var processingTokens = sourceData.removeBoundarySpaces().segmentByDelimiter(' '); // Clean and tokenize the input string
-var calculationPile = [ ]; // Initialize a data structure to hold numerical values during processing
+var inputData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-// Iterate over each segment acquired from the input string
-processingTokens.processEachElement(function (currentSymbol) {
-  // Determine the type of the current symbol
-  if (currentSymbol === '+') {
-    // Handle addition operation
-    // Pop two numbers, add them, and push the sum back onto the pile
-    calculationPile.placeOnPile(stringToInteger(calculationPile.extractFromPile(), 10) + stringToInteger(calculationPile.extractFromPile(), 10));
+var tokens = inputData.trim().split(' '); // Parse the raw input string into an array of individual tokens.
+
+var computationPile = []; // Initialize an empty array to function as a stack for our RPN calculations.
+
+// Process each token sequentially from the parsed input.
+tokens.forEach(function(currentItem) {
+  // Check if the current token represents the addition operation.
+  if (currentItem === '+') {
+    // Pop the two topmost numerical values from the stack, convert them to integers, sum them, and push the result back.
+    computationPile.push(parseInt(computationPile.pop(), 10) + parseInt(computationPile.pop(), 10));
   }
-  else if (currentSymbol === '-') {
-    // Handle subtraction operation
-    // Pop the second operand first, then the first operand, perform subtraction, and push result
-    var valB = stringToInteger(calculationPile.extractFromPile(), 10);
-    var valA = stringToInteger(calculationPile.extractFromPile(), 10);
-    calculationPile.placeOnPile(valA - valB);
+  // Otherwise, check if the current token signifies the subtraction operation.
+  else if (currentItem === '-') {
+    // Retrieve the second operand first (subtrahend), then the first operand (minuend) to ensure correct order.
+    var secondValue = parseInt(computationPile.pop(), 10);
+    var firstValue = parseInt(computationPile.pop(), 10);
+    // Perform the subtraction and place the outcome onto the stack.
+    computationPile.push(firstValue - secondValue);
   }
-  else if (currentSymbol === '*') {
-    // Handle multiplication operation
-    // Pop two numbers, multiply them, and push the product back onto the pile
-    calculationPile.placeOnPile(stringToInteger(calculationPile.extractFromPile(), 10) * stringToInteger(calculationPile.extractFromPile(), 10));
+  // Otherwise, check if the current token indicates the multiplication operation.
+  else if (currentItem === '*') {
+    // Pop the two topmost numerical values, convert them to integers, multiply them, and push the product back.
+    computationPile.push(parseInt(computationPile.pop(), 10) * parseInt(computationPile.pop(), 10));
   }
+  // If the token is not an operator, it is assumed to be a numerical value.
   else {
-    // If the symbol is not an operator, it must be a number
-    // Convert the string representation of the number to an integer and push it onto the pile
-    calculationPile.placeOnPile(stringToInteger(currentSymbol, 10));
+    // Convert the numeric token string into an integer and add it to the top of the stack.
+    computationPile.push(parseInt(currentItem, 10));
   }
 });
 
-// After processing all symbols, the final result should be the only element remaining on the calculation pile
-console.printFinalResult(calculationPile[0]); // Display the computed outcome
+// After all tokens have been processed, the final computed result will be the sole element remaining on the stack.
+console.log(computationPile[0]); // Output the final calculated value to the console.

@@ -1,94 +1,64 @@
-const buildReader = (textData) => {
-    let allInputLines = textData.trim().split('\n');
-    let currentLinePointer = 0;
-    let activeLineTokens = [];
+var inputProcessor = (function() {
+    function createParser(sourceText) {
+        const lineSegments = sourceText.trim().split('\n');
+        let currentLinePointer = 0;
+        let currentSegmentTokens = [];
 
-    const obtainNextLineTokens = () => {
-        if (currentLinePointer < allInputLines.length) {
-            activeLineTokens = allInputLines[currentLinePointer].split(' ');
+        const retrieveNextToken = () => {
+            if (currentSegmentTokens.length === 0) {
+                if (currentLinePointer >= lineSegments.length) {
+                    return undefined;
+                }
+                currentSegmentTokens = lineSegments[currentLinePointer].split(' ').reverse();
+                currentLinePointer++;
+            }
+            return currentSegmentTokens.pop();
+        };
+
+        const extractValue = (asStringFlag) => {
+            const token = retrieveNextToken();
+            return asStringFlag ? token : Number(token);
+        };
+
+        const fetchLine = (asStringFlag) => {
+            if (currentLinePointer >= lineSegments.length) {
+                return [];
+            }
+            const lineContent = lineSegments[currentLinePointer];
             currentLinePointer++;
+            currentSegmentTokens = [];
+            const tokens = lineContent.split(' ');
+            return asStringFlag ? tokens : tokens.map(Number);
+        };
+
+        return {
+            extractValue: extractValue,
+            fetchLine: fetchLine,
+        };
+    }
+    return createParser;
+})();
+
+var dataReader = inputProcessor(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+console.log(calculateResult());
+
+function calculateResult() {
+    var totalItems = dataReader.extractValue();
+    var thresholdOne = dataReader.extractValue();
+    var thresholdTwo = dataReader.extractValue();
+    var itemValues = dataReader.fetchLine();
+
+    const { groupA, groupB, groupC } = itemValues.reduce((accumulator, currentItem) => {
+        if (currentItem <= thresholdOne) {
+            accumulator.groupA++;
+        } else if (currentItem > thresholdTwo) {
+            accumulator.groupB++;
         } else {
-            activeLineTokens = [];
+            accumulator.groupC++;
         }
-    };
+        return accumulator;
+    }, { groupA: 0, groupB: 0, groupC: 0 });
 
-    const fetchSingle = (asStringOutput) => {
-        if (activeLineTokens.length === 0) {
-            obtainNextLineTokens();
-        }
-        if (activeLineTokens.length === 0) {
-            return asStringOutput ? '' : NaN;
-        }
-        const extractedValue = activeLineTokens.shift();
-        return asStringOutput ? extractedValue : Number(extractedValue);
-    };
-
-    const fetchLine = (asStringOutput) => {
-        activeLineTokens = []; 
-        if (currentLinePointer >= allInputLines.length) {
-            return [];
-        }
-        obtainNextLineTokens();
-        const tokensCopy = [...activeLineTokens];
-        activeLineTokens = [];
-        return asStringOutput ? tokensCopy : tokensCopy.map(Number);
-    };
-
-    const fetchMatrix = (numRows, asStringOutput) => {
-        const matrixResult = [];
-        activeLineTokens = []; 
-        for (let i = 0; i < numRows; i++) {
-            if (currentLinePointer >= allInputLines.length) break;
-            obtainNextLineTokens();
-            const rowTokens = [...activeLineTokens];
-            matrixResult.push(asStringOutput ? rowTokens : rowTokens.map(Number));
-        }
-        activeLineTokens = []; 
-        return matrixResult;
-    };
-
-    const fetchRows = (numRows, asStringOutput) => {
-        const rowResult = [];
-        activeLineTokens = []; 
-        for (let i = 0; i < numRows; i++) {
-            if (currentLinePointer >= allInputLines.length) break;
-            obtainNextLineTokens();
-            const rowValue = activeLineTokens[0];
-            rowResult.push(asStringOutput ? rowValue : Number(rowValue));
-        }
-        activeLineTokens = []; 
-        return rowResult;
-    };
-
-    return {
-        fetchSingle,
-        fetchLine,
-        fetchMatrix,
-        fetchRows
-    };
-};
-
-const processData = (inputAccess) => {
-    const totalElements = inputAccess.fetchSingle();
-    const limitOne = inputAccess.fetchSingle();
-    const limitTwo = inputAccess.fetchSingle();
-    const elementCollection = inputAccess.fetchLine();
-
-    const categoryCounts = elementCollection.reduce((tally, currentElement) => {
-        if (currentElement <= limitOne) {
-            tally.firstGroup++;
-        } else if (currentElement > limitTwo) {
-            tally.secondGroup++;
-        }
-        return tally;
-    }, { firstGroup: 0, secondGroup: 0 });
-
-    const thirdGroupCount = totalElements - categoryCounts.firstGroup - categoryCounts.secondGroup;
-
-    return Math.min(categoryCounts.firstGroup, categoryCounts.secondGroup, thirdGroupCount);
-};
-
-const systemInput = require("fs").readFileSync("/dev/stdin","utf8");
-const dataAccessor = buildReader(systemInput);
-
-console.log(processData(dataAccessor));
+    return Math.min(groupA, groupB, groupC);
+}

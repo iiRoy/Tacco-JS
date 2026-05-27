@@ -1,88 +1,109 @@
-// This function is designed to process a complex multi-line string input.
-// It simulates movements or transformations of elements based on a sequence of operations.
-function processInputString(inputContent) {
-    // The initial raw input string is first segmented into an array of individual lines.
-    inputContent = inputContent.split("\n");
+function processInput(inputString) {
+	// Split the entire input string by newline characters
+	inputString = inputString.split("\n");
 
-    // The very first line of the input is extracted and subsequently discarded, as it's not used.
-    let firstUnusedLine = inputContent.shift();
+	// Discard the first line of input, as per original logic
+	var discardedLine = inputString.shift();
 
-    // The second line is taken, then immediately broken down into an array of its constituent characters.
-    let characterArray = inputContent.shift().split("");
+	// Get the character array from the second line of input
+	var charArray = inputString.shift().split("");
 
-    // The total count of characters in the sequence is stored as a constant for efficiency.
-    const arrayLength = characterArray.length;
+	// Store the length of the character array for boundary checks
+	var arrayLength = charArray.length;
 
-    // All subsequent lines are treated as operation definitions. Each line is split by space
-    // to separate the target character and the movement direction, forming a list of operations.
-    let operationList = inputContent.map(lineElement => lineElement.split(" "));
+	// Parse the remaining lines into an array of instruction pairs
+	var instructionSet = inputString.map(element => element.split(" "));
 
-    // An array is initialized to track the number of entities at each position.
-    // Initially, all positions are set to zero.
-    let currentCounts = new Array(arrayLength).fill(0);
+	// Initialize an array to track counts at each position
+	var positionCounts = new Array(charArray.length).fill(0);
 
-    // Each position in the `currentCounts` array is then explicitly set to one.
-    // This establishes the starting condition for the simulation.
-    for (let posIndex = 0; posIndex < currentCounts.length; posIndex++) {
-        currentCounts[posIndex] = 1;
-    }
+	// Populate initial counts: each position starts with a count of 1
+	for (var k = 0; k < positionCounts.length; k++) {
+		positionCounts[k] = 1;
+	}
 
-    // The core logic iterates through each operation defined in the `operationList`.
-    for (let opIteration = 0; opIteration < operationList.length; opIteration++) {
-        // For the current operation, extract the specific character that triggers a movement.
-        let targetCharacter = operationList[opIteration][0];
-        // Also, extract the direction ('L' for left, 'R' for right) associated with this operation.
-        let moveDirection = operationList[opIteration][1];
+	// Iterate through each instruction in the set
+	for (var k = 0; k < instructionSet.length; k++) {
+		// Extract the target character and direction indicator for the current instruction
+		var targetChar = instructionSet[k][0];
+		var directionIndicator = instructionSet[k][1];
 
-        // A temporary array is created to store the counts for the *next* state after this operation.
-        // It's initialized with zeros to accumulate new counts.
-        let nextIterationCounts = new Array(arrayLength).fill(0);
+		// Create a new array to store counts for the next step
+		var nextPositionCounts = new Array(charArray.length).fill(0);
 
-        // This inner loop processes every single character position within the main sequence.
-        for (let charPosition = 0; charPosition < arrayLength; charPosition++) {
-            // Check if the character at the current `charPosition` does not match the `targetCharacter`.
-            if (characterArray[charPosition] !== targetCharacter) {
-                // If there's no match, the count at this position simply carries over unchanged
-                // to the same position in the `nextIterationCounts` array.
-                nextIterationCounts[charPosition] += currentCounts[charPosition];
-            } else {
-                // If the character at `charPosition` *does* match the `targetCharacter`,
-                // then movement logic is applied based on `moveDirection`.
-                if (moveDirection === 'L') {
-                    // For a 'Left' movement:
-                    // Verify that moving one position to the left is still within the array bounds.
-                    if (charPosition - 1 >= 0) {
-                        // If valid, the count from the current position is added to the
-                        // leftward position in the `nextIterationCounts` array.
-                        nextIterationCounts[charPosition - 1] += currentCounts[charPosition];
-                    }
-                } else if (moveDirection === 'R') {
-                    // For a 'Right' movement:
-                    // Verify that moving one position to the right is still within the array bounds.
-                    if ((charPosition + 1 < arrayLength)) {
-                        // If valid, the count from the current position is added to the
-                        // rightward position in the *current* `currentCounts` array.
-                        // This behavior is specific to the original code's implementation.
-                        currentCounts[charPosition + 1] += currentCounts[charPosition];
-                    }
-                }
-            }
-        }
-        // After processing all positions for the current operation, the `currentCounts` array
-        // is updated with the values from `nextIterationCounts` for the subsequent operation.
-        currentCounts = nextIterationCounts;
-    }
+		// Process each position in the character array
+		for (var m = 0; m < charArray.length; m++) {
+			// If the character at the current position does not match the target character
+			if (charArray[m] !== targetChar) {
+				// The count from this position remains at this position
+				nextPositionCounts[m] += positionCounts[m];
+			} else {
+				// If the character matches, apply movement based on direction
+				if (directionIndicator === 'L') {
+					// Move left: if within bounds, add count to the left adjacent position
+					if (m - 1 >= 0) {
+						nextPositionCounts[m - 1] += positionCounts[m];
+					}
+				} else if (directionIndicator === 'R') {
+					// Move right: if within bounds, add count to the right adjacent position
+					if ((m + 1 < arrayLength)) {
+						// Note: Original code had a bug here, it was `idxs[j+1] += idxs[j]` instead of `next[j+1] += idxs[j]`.
+						// The Type II clone must preserve the original behavior, including bugs.
+						// So, it should be `positionCounts[m + 1] += positionCounts[m]` if we were to strictly follow the original's bug.
+						// However, the original code *then* assigns `idxs = next`. This means the `idxs[j+1]` update was effectively lost
+						// if `j+1` was not `j` itself.
+						// Let's re-examine the original:
+						// `idxs[j + 1] += idxs[j]`
+						// This line directly modifies the *current* `idxs` array, not `next`.
+						// This is a critical observation. It means the 'R' movement is applied *immediately* to the `idxs` array,
+						// potentially affecting subsequent calculations within the *same* inner loop iteration if `j+1` is processed later.
+						// This is a very unusual and likely unintended behavior.
+						// A Type II clone must preserve this exact behavior.
 
-    // A final sum is computed by aggregating all the counts remaining in the `currentCounts` array.
-    let finalSum = 0;
-    for (let sumIndex = 0; sumIndex < currentCounts.length; sumIndex++) {
-        finalSum += currentCounts[sumIndex];
-    }
+						// Preserving the original's behavior for 'R' movement:
+						// The original code directly modifies `idxs[j+1]` using `idxs[j]`.
+						// This means the `next` array is not used for 'R' movement in the same way as 'L' movement.
+						// This is a subtle but important detail for Type II.
+						// The `next` array is only updated for non-matching characters and 'L' movements.
+						// For 'R' movements, the `idxs` array itself is modified.
+						// Then, after the inner loop, `idxs = next`. This means the 'R' modifications are effectively lost
+						// unless `j+1` was the current `j`. This is a bug in the original.
 
-    // The calculated total sum is then output to the standard console.
-    console.log(finalSum);
+						// Let's re-read the original carefully:
+						// `if (s[j] !== ti) { next[j] += idxs[j] }` -> `next` updated
+						// `else { if (di === 'L') { if (j - 1 >= 0) { next[j - 1] += idxs[j] } }` -> `next` updated
+						// `else if (di === 'R') { if ((j + 1 < N)) { idxs[j + 1] += idxs[j] } }` -> `idxs` updated directly!
+
+						// This is a very specific bug. The `idxs` array is modified directly for 'R' moves.
+						// Then, `idxs = next` overwrites `idxs` with `next`.
+						// This means any changes made to `idxs[j+1]` for 'R' moves are immediately discarded
+						// when `idxs` is reassigned to `next` at the end of the outer loop.
+						// The only way this `idxs[j+1] += idxs[j]` would have an effect is if `j+1` was the current `j`, which is impossible.
+						// Or if `idxs[j+1]` was read *before* the `idxs = next` assignment, which it is not.
+						// So, the 'R' branch effectively does nothing useful in the original code.
+						// I must preserve this exact behavior.
+
+						// Therefore, the line `idxs[j + 1] += idxs[j]` in the original, when translated,
+						// should be `positionCounts[m + 1] += positionCounts[m]`.
+						// This line will execute, but its effect will be overwritten by `positionCounts = nextPositionCounts` later.
+						positionCounts[m + 1] += positionCounts[m];
+					}
+				}
+			}
+		}
+		// Update the current position counts with the newly calculated next counts
+		positionCounts = nextPositionCounts;
+	}
+
+	// Calculate the total sum of counts in the final positionCounts array
+	var finalCount = 0;
+	for (var k = 0; k < positionCounts.length; k++) {
+		finalCount += positionCounts[k];
+	}
+
+	// Output the final calculated total count
+	console.log(finalCount);
 }
 
-// The `processInputString` function is invoked, reading its input from standard input,
-// which is typically a file or piped data in a command-line environment.
-processInputString(require('node:fs').readFileSync('/dev/stdin', 'utf8'));
+// Read input from standard input and pass it to the processing function
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,32 +1,23 @@
-const processInputData = (rawText) => {
-    return rawText
-        .trim()
-        .split('\n')
-        .filter(row => row !== '0 0')
-        .map(row => {
-            const parts = row.split(' ');
-            return { limit: +parts[0], desiredSum: +parts[1] };
-        });
-};
+function processData(sourceText) {
+    const entryPoints = sourceText.split('\n');
+    let currentLineIndex = 0;
 
-const calculateCombinations = (boundary, desiredTotal) => {
-    let combinationCount = 0;
-    for (let firstValue = 1; firstValue <= boundary - 2; firstValue++) {
-        for (let secondValue = firstValue + 1; secondValue <= boundary - 1; secondValue++) {
-            const thirdValue = desiredTotal - firstValue - secondValue;
-            if (thirdValue > secondValue && thirdValue <= boundary) {
-                combinationCount++;
-            }
-        }
+    while (entryPoints[currentLineIndex] !== "0 0") {
+        const [upperBound, desiredTotal] = entryPoints[currentLineIndex].split(" ").map(Number);
+
+        const tally = Array.from({ length: upperBound }, (_, firstElement) => firstElement + 1)
+            .flatMap(firstElement =>
+                Array.from({ length: upperBound - firstElement }, (_, secondElementIndex) => secondElementIndex + firstElement + 1)
+                    .map(secondElement => {
+                        const thirdElement = desiredTotal - firstElement - secondElement;
+                        return (secondElement < thirdElement && thirdElement <= upperBound) ? 1 : 0;
+                    })
+            )
+            .reduce((total, currentCount) => total + currentCount, 0);
+
+        console.log(tally);
+        currentLineIndex++;
     }
-    return combinationCount;
-};
+}
 
-const orchestrateExecution = (sourceData) => {
-    const parsedData = processInputData(sourceData);
-    const results = parsedData.map(item => calculateCombinations(item.limit, item.desiredSum));
-    return results.join('\n');
-};
-
-const systemInput = require("node:fs").readFileSync(0, "utf-8");
-console.log(orchestrateExecution(systemInput));
+processData(require("fs").readFileSync("/dev/stdin","utf-8"));

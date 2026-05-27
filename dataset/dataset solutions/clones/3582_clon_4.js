@@ -1,86 +1,123 @@
-const lineProcessor = require('readline').createInterface({
-  input: process.stdin,
-  terminal: false
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
+var globalInputBuffer = '';
+process.stdin.on('data', function(dataChunk) {
+    globalInputBuffer += dataChunk;
+});
+process.stdin.on('end', function() {
+    executeProcessing(globalInputBuffer.split(/\r?\n/));
 });
 
-let collectedLines = [];
+function processGridData(gridLines) {
+    const initialGridSnapshot = gridLines.join('\n');
 
-lineProcessor.on('line', (individualLine) => {
-  collectedLines.push(individualLine);
-});
+    let gridRepresentation = new Map();
+    let currentMaxRow = -1, currentMaxCol = -1;
 
-lineProcessor.on('close', () => {
-  initiateGridTransformation(collectedLines);
-});
-
-function initiateGridTransformation(sourceLines) {
-  const effectiveLines = sourceLines.slice(1);
-
-  const initialBooleanGrid = effectiveLines.map(line =>
-    line.split('').map(char => char === '#')
-  );
-
-  const finalBooleanGrid = applyRecursivePruning(initialBooleanGrid);
-
-  const stringRepresentation = finalBooleanGrid.map(row =>
-    row.map(cell => (cell ? '#' : '.')).join('')
-  ).join('\n');
-
-  console.log(stringRepresentation);
-}
-
-function pruneMatrixOnce(currentGridState) {
-    let modificationDetected = false;
-
-    const gridAfterRowFiltering = currentGridState.filter(row => {
-        const rowHasTrue = row.some(cellValue => cellValue === true);
-        if (!rowHasTrue) {
-            modificationDetected = true;
-        }
-        return rowHasTrue;
+    gridLines.forEach((lineContent, rowIdx) => {
+        lineContent.split('').forEach((charElement, colIdx) => {
+            gridRepresentation.set(`${rowIdx}_${colIdx}`, charElement);
+            currentMaxRow = Math.max(currentMaxRow, rowIdx);
+            currentMaxCol = Math.max(currentMaxCol, colIdx);
+        });
     });
 
-    if (gridAfterRowFiltering.length === 0) {
-        return [modificationDetected, []];
-    }
+    let rowModificationOccurred = false;
+    let activeRows = new Set();
 
-    const originalColumnCt = currentGridState.length > 0 ? currentGridState[0].length : 0;
-    if (originalColumnCt === 0) {
-        return [modificationDetected, gridAfterRowFiltering];
-    }
-
-    const columnInclusionMap = new Array(originalColumnCt).fill(false);
-    for (const gridRow of gridAfterRowFiltering) {
-        for (let cellIdx = 0; cellIdx < gridRow.length; cellIdx++) {
-            if (gridRow[cellIdx] === true) {
-                columnInclusionMap[cellIdx] = true;
+    for (let r = 0; r <= currentMaxRow; r++) {
+        let rowContainsHash = false;
+        for (let c = 0; c <= currentMaxCol; c++) {
+            if (gridRepresentation.get(`${r}_${c}`) === '#') {
+                rowContainsHash = true;
+                break;
             }
+        }
+        if (rowContainsHash) {
+            activeRows.add(r);
         }
     }
 
-    const finalColumnCt = columnInclusionMap.filter(Boolean).length;
-    if (finalColumnCt < originalColumnCt) {
-        modificationDetected = true;
+    if (activeRows.size !== currentMaxRow + 1) {
+        rowModificationOccurred = true;
     }
 
-    const gridAfterColFiltering = gridAfterRowFiltering.map(gridRow => {
-        const newRowArray = [];
-        for (let cellIdx = 0; cellIdx < gridRow.length; cellIdx++) {
-            if (columnInclusionMap[cellIdx]) {
-                newRowArray.push(gridRow[cellIdx]);
-            }
+    let tempGridForRows = new Map();
+    let newRowIndex = 0;
+    let newMaxRowAfterRowTrim = -1;
+    Array.from(activeRows).sort((a, b) => a - b).forEach(originalRowIdx => {
+        for (let c = 0; c <= currentMaxCol; c++) {
+            tempGridForRows.set(`${newRowIndex}_${c}`, gridRepresentation.get(`${originalRowIdx}_${c}`));
         }
-        return newRowArray;
+        newMaxRowAfterRowTrim = newRowIndex;
+        newRowIndex++;
     });
+    gridRepresentation = tempGridForRows;
+    currentMaxRow = newMaxRowAfterRowTrim;
 
-    return [modificationDetected, gridAfterColFiltering];
+    if (currentMaxRow < 0) {
+        gridLines.length = 0;
+        return [rowModificationOccurred, ''];
+    }
+
+    let columnModificationOccurred = false;
+    let currentColumnPointer = 0;
+    let effectiveMaxColumn = currentMaxCol;
+
+    while (currentColumnPointer <= effectiveMaxColumn) {
+        let columnIsEntirelyEmpty = true;
+        for (let r = 0; r <= currentMaxRow; r++) {
+            if (gridRepresentation.get(`${r}_${currentColumnPointer}`) === '#') {
+                columnIsEntirelyEmpty = false;
+                break;
+            }
+        }
+
+        if (columnIsEntirelyEmpty) {
+            columnModificationOccurred = true;
+            for (let r = 0; r <= currentMaxRow; r++) {
+                for (let c = currentColumnPointer; c < effectiveMaxColumn; c++) {
+                    gridRepresentation.set(`${r}_${c}`, gridRepresentation.get(`${r}_${c + 1}`));
+                }
+                gridRepresentation.delete(`${r}_${effectiveMaxColumn}`);
+            }
+            effectiveMaxColumn--;
+        } else {
+            currentColumnPointer++;
+        }
+    }
+
+    let finalProcessedLines = [];
+    if (currentMaxRow >= 0 && effectiveMaxColumn >= 0) {
+        for (let r = 0; r <= currentMaxRow; r++) {
+            let rowCharacterArray = [];
+            for (let c = 0; c <= effectiveMaxColumn; c++) {
+                rowCharacterArray.push(gridRepresentation.get(`${r}_${c}`));
+            }
+            finalProcessedLines.push(rowCharacterArray.join(''));
+        }
+    }
+
+    const finalGridResult = finalProcessedLines.join('\n');
+    const overallChangeDetected = (finalGridResult !== initialGridSnapshot);
+
+    gridLines.length = 0;
+    gridLines.push(...finalProcessedLines);
+
+    return [overallChangeDetected, finalGridResult];
 }
 
-function applyRecursivePruning(inputGrid) {
-  const [didModify, nextGrid] = pruneMatrixOnce(inputGrid);
-  if (didModify) {
-    return applyRecursivePruning(nextGrid);
-  } else {
-    return nextGrid;
-  }
+function executeProcessing(initialInputLines) {
+    initialInputLines.shift();
+
+    let processingOutcome;
+    let currentGridState = initialInputLines;
+
+    processingOutcome = processGridData(currentGridState);
+
+    while (processingOutcome[0]) {
+        processingOutcome = processGridData(currentGridState);
+    }
+
+    console.log(processingOutcome[1]);
 }

@@ -1,25 +1,7 @@
-function assessPrefix(dataFeed) {
-    const referenceChars = ['Y', 'A', 'K', 'I'];
+const processInput = (textData) => {
+    const patternMatch = /^YAKI/.test(textData);
+    const resultOutput = patternMatch ? "Yes" : "No";
+    console.log(resultOutput);
+};
 
-    if (dataFeed.length < referenceChars.length) {
-        console.log("No");
-        return;
-    }
-
-    const isPrefixed = referenceChars.reduce((accumulator, currentRefChar, index) => {
-        if (!accumulator) {
-            return false;
-        }
-        return dataFeed.charAt(index) === currentRefChar;
-    }, true);
-
-    console.log(isPrefixed ? "Yes" : "No");
-}
-
-const fileService = require("fs");
-const inputSource = "/dev/stdin";
-const textFormat = "utf8";
-
-const contentPayload = fileService.readFileSync(inputSource, textFormat);
-
-assessPrefix(contentPayload);
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

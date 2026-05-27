@@ -1,59 +1,84 @@
 #!/usr/bin/node
-// This script processes incoming data streams.
-// It was transformed from an older CoffeeScript variant.
+// This code is a Type II clone of an original JavaScript program.
+// It maintains the same logic and behavior but uses different identifiers and formatting.
 
 (function() {
-  var dataLinesCollection = [], systemInputPipe; // Declare main storage for input lines and the input stream.
-  systemInputPipe = process.getStandardInput();   // Acquire the standard input stream for reading.
-  systemInputPipe.applyCharacterEncoding('utf8'); // Ensure proper UTF-8 character handling for input.
+  var inputLines = [],
+      inputSource;
 
-  systemInputPipe.attachEventHandler('inputChunk', function(incomingText) {
-    var segmentParts; // Temporary array to hold split input.
-    segmentParts = incomingText.split("\n"); // Divide the incoming text block by newline characters.
-    if ( ( segmentParts.countOfItems > 2 ) || ( segmentParts[1] !== '' ) ) { // Check if multiple lines or a non-empty second line.
-      dataLinesCollection = segmentParts; // Replace the entire collection with new segments.
-    }
-    else {
-      dataLinesCollection.appendElement(segmentParts[0]); // Otherwise, just add the first segment to the collection.
+  // Open standard input stream
+  inputSource = process.openStdin();
+  // Set encoding for incoming data
+  inputSource.setEncoding('utf8');
+
+  // Event listener for incoming data chunks
+  inputSource.on('data', function(rawData) {
+    // Split the raw input by newline characters
+    var lineParts = rawData.split("\n");
+
+    // Check if there are more than two parts or if the second part is not empty
+    // This logic seems to handle multi-line inputs or a single line followed by an empty one
+    if (lineParts.length > 2 || lineParts[1] !== '') {
+      inputLines = lineParts; // If so, replace the entire inputLines array
+    } else {
+      inputLines.push(lineParts[0]); // Otherwise, just add the first part
     }
   });
 
-  systemInputPipe.attachEventHandler('streamClosed', function(completionIndicator) {
-    var currentNumericPair, stringSegment, mainLoopCounter, secondCoordinate, totalProcessedEntries, remainderCalc, firstCoordinate, outerLoopIndex, loopOutputContainer; // Declare variables for the main processing logic.
-    totalProcessedEntries = convertToInt(dataLinesCollection.extractFirstLine()); // Parse the first line as the total number of entries to process.
+  // Event listener for the end of the input stream
+  inputSource.on('end', function(endEventArg) {
+    var parsedNumbers,
+        elementStr,
+        loopIdx,
+        secondVal,
+        numCases,
+        remainderCalc,
+        firstVal,
+        caseIterator,
+        caseResults; // This variable is declared but not used, preserving for Type II
 
-    outputDisplay.printValue(totalProcessedEntries); // Output the total count to the console.
+    // Parse the first line as the number of test cases
+    numCases = parseInt(inputLines.shift());
 
-    loopOutputContainer = []; // This variable might be a remnant from CoffeeScript's array comprehension, but it's not explicitly used here.
+    // Output the number of test cases
+    console.log(numCases);
 
-    for (mainLoopCounter = outerLoopIndex = 0;
-         ( 0 <= totalProcessedEntries ? outerLoopIndex < totalProcessedEntries : outerLoopIndex > totalProcessedEntries );
-         mainLoopCounter = ( 0 <= totalProcessedEntries ? ++outerLoopIndex : --outerLoopIndex ) ) {
+    caseResults = []; // This array is initialized but not used, preserving for Type II
 
-      currentNumericPair = (function() { // Immediately-invoked function expression to parse current line.
-        var innerLoopIndex, segmentLength, linePartsReference, parsedNumbersArray; // Local variables for parsing.
-        linePartsReference = dataLinesCollection[mainLoopCounter].split(" "); // Split the current data line by spaces.
-        parsedNumbersArray = []; // Initialize an array to store parsed numbers.
+    // Loop through each test case
+    for (loopIdx = caseIterator = 0; 0 <= numCases ? caseIterator < numCases : caseIterator > numCases; loopIdx = 0 <= numCases ? ++caseIterator : --caseIterator) {
+      // Immediately invoked function expression to parse numbers for the current line
+      parsedNumbers = (function() {
+        var partIterator,
+            partsLength,
+            currentLineParts,
+            parsedLineNumbers;
 
-        for (innerLoopIndex = 0, segmentLength = linePartsReference.countOfItems; innerLoopIndex < segmentLength; innerLoopIndex++) {
-          stringSegment = linePartsReference[innerLoopIndex]; // Get each string segment.
-          parsedNumbersArray.appendElement(convertToInt(stringSegment)); // Convert to integer and add to the array.
+        // Split the current input line by spaces
+        currentLineParts = inputLines[loopIdx].split(" ");
+        parsedLineNumbers = [];
+
+        // Iterate over each part and parse it as an integer
+        for (partIterator = 0, partsLength = currentLineParts.length; partIterator < partsLength; partIterator++) {
+          elementStr = currentLineParts[partIterator];
+          parsedLineNumbers.push(parseInt(elementStr));
         }
-        return parsedNumbersArray; // Return the array of numbers.
+        return parsedLineNumbers;
       })();
 
-      firstCoordinate = currentNumericPair[0] - 1; // Adjust the first coordinate value.
-      secondCoordinate = currentNumericPair[1] - 1; // Adjust the second coordinate value.
-      remainderCalc = 0; // Initialize a variable for a specific calculation component.
+      // Extract values and adjust them
+      firstVal = parsedNumbers[0] - 1;
+      secondVal = parsedNumbers[1] - 1;
+      remainderCalc = 0;
 
-      if (firstCoordinate % 3 !== 2) { // Conditional logic based on the first coordinate.
-        remainderCalc = mathematicalOperations.roundDownToInteger(secondCoordinate / 2); // Perform a floor division.
+      // Conditional calculation for 'remainderCalc'
+      if (firstVal % 3 !== 2) {
+        remainderCalc = Math.floor(secondVal / 2);
       }
 
-      // Calculate and display the final result using various coefficients.
-      outputDisplay.printValue(196471 - firstCoordinate * 195 - mathematicalOperations.roundDownToInteger(firstCoordinate / 3) * 5 - secondCoordinate * 20 + remainderCalc - currentNumericPair[2]);
+      // Perform a complex calculation and output the result
+      console.log(196471 - firstVal * 195 - Math.floor(firstVal / 3) * 5 - secondVal * 20 + remainderCalc - parsedNumbers[2]);
     }
-
   });
 
-}).call(this); // Execute the anonymous function in the global context.
+}).call(this);

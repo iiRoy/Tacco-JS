@@ -1,35 +1,53 @@
-'use strict'; // Enforce strict mode for cleaner code practices
+'use strict'; // Enforce strict parsing and error handling for better code quality
 
-function  processInputData  (  sourceData  )   {
-  // First, parse the incoming raw data string into structured lines and segments.
-  // Each line is split by newline, and then each resulting line is split by space.
-  const  parsedLines  =  sourceData.split( '\n' ).map(  (  lineFragment  )  =>  lineFragment.split(  ' '  )  );
+/**
+ * Processes raw input data to rearrange a sequence of numbers based on specific parity rules.
+ * The first line of input specifies the count of numbers, and the second line contains the numbers themselves.
+ *
+ * @param {string} rawData - The complete input string read from a source (e.g., standard input).
+ */
+function processInput(rawData) {
+    // Step 1: Parse the incoming raw string data.
+    // First, split the entire string into individual lines.
+    // Then, for each line, split it further by spaces to get an array of tokens.
+    // This results in a 2D array where each sub-array represents a line's content.
+    let parsedLines = rawData.split('\n').map(lineContent => lineContent.split(' '));
 
-  // Extract the total number of elements from the first segment of the first line.
-  const  totalItems  =  parsedLines[0][0];
-  // Retrieve the array of stringified numeric values from the second line.
-  const  elementArray  =  parsedLines[1];
+    // Step 2: Extract key information from the parsed input.
+    // The total number of elements to process is found at the first position of the first line.
+    // This value will be used as the upper bound for our iteration.
+    const elementCount = parsedLines[0][0];
 
-  // Initialize the output string with the very first element of the array.
-  let  finalOutput  =  elementArray.slice(0,  1).toString();
+    // The actual sequence of numbers (as strings) is located on the second line of the input.
+    const dataValues = parsedLines[1];
 
-  // Iterate through the array, starting from the second element.
-  for  (  let  elementIndex  =  1;  elementIndex  <  totalItems;  elementIndex++  )   {
-    // Determine the placement of the current element based on parity checks.
-    // If both the current index and the total count have the same parity (both even or both odd).
-    if  (  elementIndex  %  2  ==  totalItems  %  2  )   {
-      // Append the current element to the end of the accumulating result.
-      finalOutput  =  finalOutput  +  ' '  +  elementArray[elementIndex];
-    }  else   {
-      // Prepend the current element to the beginning of the accumulating result.
-      finalOutput  =  elementArray[elementIndex]  +  ' '  +  finalOutput;
+    // Step 3: Initialize the output string.
+    // Start the result string with the very first element from the 'dataValues' array.
+    // Using slice(0, 1) creates a new array containing only the first item,
+    // and then toString() converts that single-element array into its string representation (e.g., ['5'] becomes '5').
+    let finalSequence = dataValues.slice(0, 1).toString();
+
+    // Step 4: Iterate through the remaining elements and build the sequence.
+    // The loop starts from the second element (index 1) up to, but not including, 'elementCount'.
+    for (let currentIdx = 1; currentIdx < elementCount; currentIdx++) {
+        // Determine the insertion logic based on the parity (even/odd) of the current index
+        // and the total element count.
+        // If both 'currentIdx' and 'elementCount' have the same parity (both even or both odd),
+        // append the current number to the end of the 'finalSequence'.
+        if (currentIdx % 2 == elementCount % 2) {
+            finalSequence = finalSequence + ' ' + dataValues[currentIdx];
+        }
+        // Otherwise (if their parities differ), prepend the current number to the beginning
+        // of the 'finalSequence'.
+        else {
+            finalSequence = dataValues[currentIdx] + ' ' + finalSequence;
+        }
     }
-  }
 
-  // Display the final constructed string to the standard output.
-  console.log(  finalOutput  );
+    // Step 5: Output the final constructed string to the standard console.
+    console.log(finalSequence);
 }
 
-// Invoke the primary data processing function.
-// It reads the entire content of standard input as a UTF-8 string.
-processInputData(  require(  'fs'  ).readFileSync(  '/dev/stdin',  'utf8'  )  );
+// Entry point: Read the entire content from standard input synchronously
+// using Node.js's file system module, and then pass it to the processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

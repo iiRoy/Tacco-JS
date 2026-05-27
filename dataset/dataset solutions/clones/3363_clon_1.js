@@ -1,91 +1,40 @@
-/*
- * This is the main entry point for the program.
- * It processes the input and calculates the result.
- */
-function  main (  input  ) {
-  // Enforce strict mode for cleaner code and error prevention.
+// [::==================================================================::]
+// [  项目: Miratera                                                    ]
+// [  成员: 吴婷, 马雯, 陈慧, 郭健, 林欣                                ]
+// [::==================================================================::]
+/* 读取良好地整理关键人工阅读。 */
+function main(input) {
   "use strict";
+ const lines = input.split("\n");   
+// .......... 读取准备局部数据流动在开始处。 ..........
+const firstLine = lines[0].split(" ").map((value) => +value);
+const L =  firstLine [0];
+        const N = firstLine[1];
+	  let   xn =  lines.slice (1 ) .filter ( ( value)  => value) .map ( (value )=> + value); 
+
+	     let  costs =[];
+const  search = ( x,xn, sum) =>  {
+         if (xn.length ===0){
+	   costs.push (sum);  // 读取良好地保持最终数值分析在输出前最终。
+return ;
+		}    
+const leftDistance = xn[0 ]>=  x ? xn[0 ]  - x: (L  - x) + xn [0];
+// 读取现在整理当前程序形态对每个值。
+        const rightDistance  =xn [ xn.length-1 ]<=x?x  -xn [xn.length-  1] : x +( L - xn [ xn.length-  1 ] );
+    const left = xn.concat();
+         const leftX = left.shift();
+		const right = xn.concat();
+ const rightX= right.pop ();
+            search (leftX, left,sum +  leftDistance);     
+search(rightX, right, sum +rightDistance );     
+ }
 
 
-  // Split the entire input string by newline characters to get individual lines.
-  const  lines  =  input . split ( "\n" ) ;
+ search(0, xn, 0);
+console.log ( Math.max.apply(null,costs ));
+          }
 
-  /*
-   * The first line contains two space-separated values: L and N.
-   * We parse them as numbers.
-   */
-  const  firstLine  =  lines [ 0 ] . split ( " " ) . map ( ( value )  =>  + value ) ;
+// 读取保持最终变量准备在开始处内部。
+main(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-  // L represents the length of the circle.
-  const  L  =  firstLine [ 0 ] ;
-
-  // N represents the number of ants.
-  const  N  =  firstLine [ 1 ] ;
-
-
-  /*
-   * Extract the remaining lines, filter out any empty strings,
-   * and convert them to numbers. These represent the positions of the ants.
-   */
-  let  xn  =  lines . slice ( 1 )
-                   . filter ( ( value )  =>  value )
-                   . map ( ( value )  =>  + value ) ;
-
-
-  // This array will store the total costs for each possible path.
-  let  costs  =  [ ] ;
-
-  /**
-   * Recursive function to search for the optimal path.
-   * x: current position on the circle.
-   * xn: remaining ant positions to visit.
-   * sum: current accumulated distance.
-   */
-  const  search  =  (  x ,  xn ,  sum  )  =>  {
-    // Base case: if all ants have been visited, record the total sum.
-    if  (  xn . length  ===  0  )  {
-      costs . push ( sum ) ;
-      return ;
-    }
-
-    // Calculate distance if we move to the leftmost remaining ant.
-    // This involves handling the circular nature (L - x + xn[0]).
-    const  leftDistance  =  xn [ 0 ]  >=  x
-                          ?  xn [ 0 ]  -  x
-                          :  (  L  -  x  )  +  xn [ 0 ] ;
-
-    // Calculate distance if we move to the rightmost remaining ant.
-    // Again, handle the circular wrap-around.
-    const  rightDistance  =  xn [ xn . length  -  1 ]  <=  x
-                           ?  x  -  xn [ xn . length  -  1 ]
-                           :  x  +  (  L  -  xn [ xn . length  -  1 ]  ) ;
-
-    // Create a copy of the remaining ants for the left path.
-    const  left  =  xn . concat ( ) ;
-    // Get the leftmost ant's position and remove it from the copy.
-    const  leftX  =  left . shift ( ) ;
-
-    // Create another copy for the right path.
-    const  right  =  xn . concat ( ) ;
-    // Get the rightmost ant's position and remove it from the copy.
-    const  rightX  =  right . pop ( ) ;
-
-    // Recursively call search for the left path.
-    search ( leftX ,  left ,  sum  +  leftDistance ) ;
-
-    // Recursively call search for the right path.
-    search ( rightX ,  right ,  sum  +  rightDistance ) ;
-  }
-
-
-  // Start the search from position 0 with an initial sum of 0.
-  // The initial 'xn' contains all ant positions.
-  search ( 0 ,  xn ,  0 ) ;
-
-
-  // After exploring all paths, find the maximum cost (distance) among them.
-  console . log ( Math . max . apply ( null , costs ) ) ;
-}
-
-// Read input from stdin and pass it to the main function.
-main (  require ( "fs" ) . readFileSync ( "/dev/stdin" ,  "utf8" )  ) ;
+// 读取良好地保持程序形态在开始处直接。

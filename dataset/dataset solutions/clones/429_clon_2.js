@@ -1,169 +1,173 @@
-function applyAlpha() {
-  // This routine searches for the first available slot (0)
-  // and marks it with 'A', then exits.
-  for (let currentIdx = 1; currentIdx < itemSequence.length - 1; currentIdx++) {
-    if (itemSequence[currentIdx] === 0) {
-      itemSequence[currentIdx] = "A";
+function processAlpha() {
+  // Iterate through the array from the second element to the second-to-last.
+  for (let idx = 1; idx < elementList.length - 1; idx++) {
+    // If a zero is found, replace it with "A" and exit.
+    if (elementList[idx] === 0) {
+      elementList[idx] = "A";
       return;
     }
   }
 }
 
-function applyBeta() {
-  // First, scan backwards for a specific pattern:
-  // non-'A' on the left, 0 in the middle, non-'A' on the right.
-  // If found, mark the middle with 'B' and return.
-  for (let scanIndex = itemSequence.length - 2; scanIndex >= 1; scanIndex--) {
-    if (itemSequence[scanIndex - 1] !== "A" && itemSequence[scanIndex] === 0 && itemSequence[scanIndex + 1] !== "A") {
-      itemSequence[scanIndex] = "B";
+function processBeta() {
+  // First pass: Iterate backwards from the second-to-last element.
+  for (let idx = elementList.length - 2; idx >= 1; idx--) {
+    // Check for a specific pattern: non-"A" before, zero at current, non-"A" after.
+    if (elementList[idx - 1] !== "A" && elementList[idx] === 0 && elementList[idx + 1] !== "A") {
+      elementList[idx] = "B"; // Mark with "B" and exit.
       return;
     }
   }
-  // If the specific pattern wasn't found, find the first general available slot (0)
-  // and mark it with 'B', then exit.
-  for (let scanIndex = 1; scanIndex < itemSequence.length - 1; scanIndex++) {
-    if (itemSequence[scanIndex] === 0) {
-      itemSequence[scanIndex] = "B";
+
+  // Second pass: If no specific pattern found, iterate forwards.
+  for (let idx = 1; idx < elementList.length - 1; idx++) {
+    // Find the first zero, replace it with "B" and exit.
+    if (elementList[idx] === 0) {
+      elementList[idx] = "B";
       return;
     }
   }
 }
 
-function applyGamma() {
-  // Attempt to place 'C' adjacent to a non-zero element.
-  // Prioritize placing to the right, then to the left.
-  for (let posIndex = 1; posIndex < itemSequence.length - 1; posIndex++) {
-    if (itemSequence[posIndex] !== 0 && itemSequence[posIndex + 1] === 0) {
-      itemSequence[posIndex + 1] = "C";
+function processGamma() {
+  // Iterate through the array from the second element to the second-to-last.
+  for (let idx = 1; idx < elementList.length - 1; idx++) {
+    // Check if current is not zero and next is zero.
+    if (elementList[idx] !== 0 && elementList[idx + 1] === 0) {
+      elementList[idx + 1] = "C"; // Mark next with "C" and exit.
       return;
     }
-    if (itemSequence[posIndex] !== 0 && itemSequence[posIndex - 1] === 0) {
-      itemSequence[posIndex - 1] = "C";
+    // Check if current is not zero and previous is zero.
+    if (elementList[idx] !== 0 && elementList[idx - 1] === 0) {
+      elementList[idx - 1] = "C"; // Mark previous with "C" and exit.
       return;
     }
   }
-  // If no adjacent placement is possible, place 'C' based on sequence size parity.
-  if (sequenceSize % 2 === 1) {
-    // For odd lengths, place 'C' just past the middle.
-    itemSequence[(sequenceSize - 1) / 2 + 1] = "C";
+
+  // Special handling based on 'sizeN' parity.
+  if (sizeN % 2 === 1) {
+    elementList[(sizeN - 1) / 2 + 1] = "C";
   }
-  if (sequenceSize % 2 !== 1) {
-    // For even lengths, place 'C' just past the middle.
-    itemSequence[sequenceSize / 2 + 1] = "C";
+  if (sizeN % 2 !== 1) {
+    elementList[sizeN / 2 + 1] = "C";
   }
 }
 
-function applyDelta() {
-  // Variables to track the maximum valid contiguous empty segment.
-  let extentData = [0, 0]; // [starting_index, segment_length]
+function processDelta() {
+  // Initialize 'maximumInfo' to track the best position and count.
+  let maximumInfo = [0, 0]; // [index, count]
 
-  // Iterate through the array to find potential starting points for empty segments.
-  for (let loopPos = 1; loopPos < itemSequence.length - 1; loopPos++) {
-    if (itemSequence[loopPos] !== 0) {
-      continue; // Skip if the current position is not empty.
+  // Iterate through the array to find potential 'D' placements.
+  for (let idx = 1; idx < elementList.length - 1; idx++) {
+    // Skip if the current element is not zero.
+    if (elementList[idx] !== 0) {
+      continue;
     }
 
-    let leftBoundary = loopPos; // Pointer for scanning left.
-    let rightBoundary = loopPos; // Pointer for scanning right.
-    let segmentCount = 0; // Current segment length.
+    let leftPtr = idx; // Pointer for leftward search.
+    let rightPtr = idx; // Pointer for rightward search.
+    let countVal = 0; // Counter for 'X' boundaries.
 
-    // Expand outwards from the current empty slot.
+    // Expand outwards from the current zero.
     while (true) {
-      // Move left pointer if it's not at an 'X' boundary.
-      if (itemSequence[leftBoundary] !== "X") {
-        leftBoundary--;
+      // Move left pointer if not at 'X'.
+      if (elementList[leftPtr] !== "X") {
+        leftPtr--;
       }
-      // Move right pointer if it's not at an 'X' boundary.
-      if (itemSequence[rightBoundary] !== "X") {
-        rightBoundary++;
-      }
-
-      // Break condition: if both pointers hit 'X' boundaries.
-      if (itemSequence[leftBoundary] === "X" && itemSequence[rightBoundary] === "X") {
-        break;
-      }
-      // Break condition: if left pointer hits a non-empty, non-'X' element.
-      if (itemSequence[leftBoundary] !== "X" && itemSequence[leftBoundary] !== 0) {
-        break;
-      }
-      // Break condition: if right pointer hits a non-empty, non-'X' element.
-      if (itemSequence[rightBoundary] !== "X" && itemSequence[rightBoundary] !== 0) {
-        break;
+      // Move right pointer if not at 'X'.
+      if (elementList[rightPtr] !== "X") {
+        rightPtr++;
       }
 
-      segmentCount++; // Increment the count for the current segment.
+      // If both pointers hit 'X', we've found the boundaries.
+      if (elementList[leftPtr] === "X" && elementList[rightPtr] === "X") {
+        break;
+      }
+      // If left pointer hits a non-'X' and non-zero, boundary found.
+      if (elementList[leftPtr] !== "X" && elementList[leftPtr] !== 0) {
+        break;
+      }
+      // If right pointer hits a non-'X' and non-zero, boundary found.
+      if (elementList[rightPtr] !== "X" && elementList[rightPtr] !== 0) {
+        break;
+      }
 
-      // Update the maximum extent if the current segment is longer.
-      if (extentData[1] < segmentCount) {
-        extentData = [loopPos, segmentCount];
+      countVal++; // Increment count for the current span.
+      // Update 'maximumInfo' if current span is larger.
+      if (maximumInfo[1] < countVal) {
+        maximumInfo = [idx, countVal];
       }
     }
   }
 
-  // If a valid maximum empty segment was found, mark its center with 'D'.
-  if (extentData[0] !== 0 && extentData[1] !== 0) {
-    itemSequence[extentData[0]] = "D";
+  // If a suitable position for 'D' was found, place it.
+  if (maximumInfo[0] !== 0 && maximumInfo[1] !== 0) {
+    elementList[maximumInfo[0]] = "D";
     return;
   }
 
-  // Fallback: if no specific segment was found, just mark the first available slot (0) with 'D'.
-  for (let loopPos = 1; loopPos < itemSequence.length - 1; loopPos++) {
-    if (itemSequence[loopPos] === 0) {
-      itemSequence[loopPos] = "D";
+  // Fallback: If no specific 'D' position found, place it at the first available zero.
+  for (let idx = 1; idx < elementList.length - 1; idx++) {
+    if (elementList[idx] === 0) {
+      elementList[idx] = "D";
       return;
     }
   }
 }
 
-// Read raw data from standard input.
-const fileData = require('fs').readFileSync('/dev/stdin', 'utf8');
+// Read input from standard input.
+const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
+// Split input into lines and trim whitespace.
+const lineSegments = rawData.trim().split("\n");
 
-// Split the input into an array of lines and clean up whitespace.
-const processedLines = fileData.trim().split("\n");
+let elementList; // Declare the array that will be modified by functions.
+let sizeN; // Declare variable for array size.
 
-// Main processing loop; continues until termination condition.
+// Main processing loop for multiple test cases.
 while (true) {
-  // Extract dimensions (array length and number of operations) from the first line.
-  const sizeAndCommands = processedLines.shift().split(" ").map(Number);
-  const arrayLength = sizeAndCommands[0];
-  const commandCount = sizeAndCommands[1];
+  // Extract N and M values from the first line of the current test case.
+  const dimensions = lineSegments.shift().split(" ").map(Number);
+  sizeN = dimensions[0];
+  const iterationsM = dimensions[1];
 
-  // Termination condition: both dimensions are zero.
-  if (arrayLength === 0 && commandCount === 0) {
+  // Check for termination condition (N=0, M=0).
+  if (sizeN === 0 && iterationsM === 0) {
     break;
   }
 
   // Initialize the working array with zeros.
-  let itemSequence = [];
-  for (let initIndex = 0; initIndex < arrayLength; initIndex++) {
-    itemSequence.push(0);
+  elementList = [];
+  for (let idx = 0; idx < sizeN; idx++) {
+    elementList.push(0);
   }
 
-  // Add boundary markers 'X' to both ends of the array.
-  itemSequence.unshift("X");
-  itemSequence.push("X");
+  // Add boundary markers 'X' to the start and end of the array.
+  elementList.unshift("X");
+  elementList.push("X");
 
-  // Process each command.
-  for (let commandIndex = 0; commandIndex < commandCount; commandIndex++) {
-    const currentCommand = processedLines.shift();
-    if (currentCommand === "A") {
-      applyAlpha();
+  // Process M operations.
+  for (let idx = 0; idx < iterationsM; idx++) {
+    const operationType = lineSegments.shift(); // Get the operation type.
+
+    // Call the appropriate function based on the operation type.
+    if (operationType === "A") {
+      processAlpha();
     }
-    if (currentCommand === "B") {
-      applyBeta();
+    if (operationType === "B") {
+      processBeta();
     }
-    if (currentCommand === "C") {
-      applyGamma();
+    if (operationType === "C") {
+      processGamma();
     }
-    if (currentCommand === "D") {
-      applyDelta();
+    if (operationType === "D") {
+      processDelta();
     }
   }
 
-  // Remove the temporary boundary markers.
-  itemSequence.shift();
-  itemSequence.pop();
+  // Remove the 'X' boundary markers before output.
+  elementList.shift();
+  elementList.pop();
 
-  // Output the final state of the array, replacing '0' with '#'.
-  console.log(itemSequence.join("").replace(/0/g, "#"));
+  // Join the array elements into a string, replacing '0' with '#', and print.
+  console.log(elementList.join("").replace(/0/g, "#"));
 }

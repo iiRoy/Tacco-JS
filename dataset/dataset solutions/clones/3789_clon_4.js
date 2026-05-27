@@ -1,40 +1,26 @@
 "use strict";
+const fileContent = require("fs").readFileSync("/dev/stdin", "utf8");
+const lineSegments = fileContent.split("\n");
+const splitBoundary = Number(lineSegments[0]);
+const targetSequence = lineSegments[1];
 
-const acquirePrimaryData = () => {
-    const rawSystemInput = require("fs").readFileSync("/dev/stdin", "utf8");
-    const dataSegments = rawSystemInput.split("\n");
-    return dataSegments[1];
-};
+let maximalIntersectionCount = 0;
 
-const computeUniqueIntersectionSize = (firstStringPart, secondStringPart) => {
-    const charSetOne = new Set(Array.from(firstStringPart));
-    const charSetTwo = new Set(Array.from(secondStringPart));
+maximalIntersectionCount = Array.from({ length: splitBoundary - 1 }, (_, idx) => idx + 1)
+    .reduce((currentHighest, divisionPoint) => {
+        const initialSegment = targetSequence.slice(0, divisionPoint);
+        const trailingSegment = targetSequence.slice(divisionPoint);
 
-    let intersectionCounter = 0;
-    for (const characterSymbol of charSetOne) {
-        if (charSetTwo.has(characterSymbol)) {
-            intersectionCounter++;
+        const uniqueInitialChars = new Set(initialSegment);
+        const trailingCharSet = new Set(trailingSegment);
+
+        let commonUniqueCharCount = 0;
+        for (const charElement of uniqueInitialChars) {
+            if (trailingCharSet.has(charElement)) {
+                commonUniqueCharCount++;
+            }
         }
-    }
-    return intersectionCounter;
-};
+        return Math.max(currentHighest, commonUniqueCharCount);
+    }, 0);
 
-const findOverallMaxIntersection = (mainSequence, currentCutPoint, cumulativeMax) => {
-    if (currentCutPoint >= mainSequence.length) {
-        return cumulativeMax;
-    }
-
-    const segmentAlpha = mainSequence.substring(0, currentCutPoint);
-    const segmentBeta = mainSequence.substring(currentCutPoint);
-
-    const currentSplitIntersection = computeUniqueIntersectionSize(segmentAlpha, segmentBeta);
-
-    const updatedMax = Math.max(cumulativeMax, currentSplitIntersection);
-
-    return findOverallMaxIntersection(mainSequence, currentCutPoint + 1, updatedMax);
-};
-
-const primaryStringValue = acquirePrimaryData();
-const finalMaximumResult = findOverallMaxIntersection(primaryStringValue, 1, 0);
-
-console.log(finalMaximumResult);
+console.log(maximalIntersectionCount);

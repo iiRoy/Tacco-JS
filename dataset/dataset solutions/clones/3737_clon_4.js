@@ -1,44 +1,44 @@
-const calculateDigitSummation = (val) => {
-  return String(val)
-    .split('')
-    .reduce((accumulator, character) => accumulator + Number(character), 0);
-};
+function sumOfDigits(numVal) {
+  let digitSumAccumulator = 0;
+  let currentNumber = numVal;
 
-function* createNumberSeries() {
-  let priorItem = 0;
-  let factorMagnitude = 1;
-
-  while (true) {
-    const trialValue = priorItem + factorMagnitude;
-
-    const trialValueSum = calculateDigitSummation(trialValue);
-    const nextTrialValueSum = calculateDigitSummation(trialValue + factorMagnitude);
-
-    if (trialValue * nextTrialValueSum <= (trialValue + factorMagnitude) * trialValueSum) {
-      yield trialValue;
-      priorItem = trialValue;
-    } else {
-      factorMagnitude *= 10;
-    }
+  while (currentNumber > 0) {
+    digitSumAccumulator += currentNumber % 10;
+    currentNumber = Math.floor(currentNumber / 10);
   }
+  return digitSumAccumulator;
 }
 
-const executeSequenceGeneration = (inputData) => {
-  const requiredCount = Number(inputData);
-  const generatedElements = [];
-  const seriesIterator = createNumberSeries();
+function processInput(inputStr) {
+  const targetCount = +inputStr;
 
-  while (generatedElements.length < requiredCount) {
-    generatedElements.push(seriesIterator.next().value);
+  function* generateSpecialNumbers() {
+    let lastAccepted = 0;
+    let multiplier = 1;
+
+    while (true) {
+      const candidate = lastAccepted + multiplier;
+
+      const ratioCandidate = candidate / sumOfDigits(candidate);
+      const ratioNextStep = (candidate + multiplier) / sumOfDigits(candidate + multiplier);
+
+      if (ratioCandidate <= ratioNextStep) {
+        yield candidate;
+        lastAccepted = candidate;
+      } else {
+        multiplier *= 10;
+      }
+    }
   }
 
-  return generatedElements.join("\n");
-};
+  const resultNumbers = [];
+  const numberGen = generateSpecialNumbers();
 
-const systemEntry = () => {
-  const receivedContent = require("fs").readFileSync("/dev/stdin", "utf8");
-  const finalOutput = executeSequenceGeneration(receivedContent);
-  console.log(finalOutput);
-};
+  for (let i = 0; i < targetCount; ++i) {
+    resultNumbers.push(numberGen.next().value);
+  }
 
-systemEntry();
+  console.log(resultNumbers.join("\n"));
+}
+
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

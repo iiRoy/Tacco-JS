@@ -1,80 +1,49 @@
-/*
- * This module defines a primary function to process
- * a given string input containing numeric data.
- * It categorizes numbers based on two specified thresholds.
- */
-function ProcessInput( rawData )
-{
-    // Split the entire input string by newline characters
-    // to obtain individual lines of data.
-    let lineSegments = rawData.split( '\n' );
+function ProcessInput(rawData) {
+  // Split the raw input string into individual lines
+  let processedLines = rawData.split("\n");
 
-    // The first line contains the total count of numbers.
-    // Convert it to a numeric type.
-    let quantity = Number( lineSegments[ 0 ] );
+  // Extract the total count of numeric values from the first line
+  let totalCount = Number(processedLines[0]);
 
-    // The second line holds two threshold values, space-separated.
-    let thresholdsText = lineSegments[ 1 ].split( ' ' );
+  // Parse the thresholds from the second line
+  let thresholdsStr = processedLines[1].split(" ");
+  let firstThreshold = Number(thresholdsStr[0]);
+  let secondThreshold = Number(thresholdsStr[1]);
 
-    // Extract and convert the first threshold value.
-    let lowerBound = Number( thresholdsText[ 0 ] );
+  // Extract the numeric values from the third line
+  let numericValues = processedLines[2].split(" ");
 
-    // Extract and convert the second threshold value.
-    let upperBound = Number( thresholdsText[ 1 ] );
+  // Initialize arrays to categorize the numeric values
+  let groupOne = []; // For values less than or equal to firstThreshold
+  let groupTwo = []; // For values greater than firstThreshold but less than or equal to secondThreshold
+  let groupThree = []; // For values greater than secondThreshold
 
-    // The third line contains a series of numbers, space-separated.
-    let scoreStrings = lineSegments[ 2 ].split( ' ' );
+  // Convert all string numeric values to actual numbers
+  for (let idx = 0; idx < totalCount; idx++) {
+    numericValues[idx] = Number(numericValues[idx]);
+  }
 
-    // Initialize three distinct arrays to store categorized numbers.
-    let groupOne = [];     // For numbers less than or equal to the lower bound.
-    let groupTwo = [];     // For numbers between the lower and upper bounds (inclusive of upper).
-    let groupThree = [];   // For numbers greater than the upper bound.
+  // Sort the numeric values in ascending order
+  numericValues.sort(function (valA, valB) {
+    if (valA < valB) return -1; // valA comes before valB
+    if (valA > valB) return 1; // valA comes after valB
+    return 0; // valA and valB are equal
+  });
 
-    // First pass: Convert all score strings to actual numbers.
-    for ( let idx = 0; idx < quantity; idx++ )
-    {
-        scoreStrings[ idx ] = Number( scoreStrings[ idx ] );
+  // Iterate through the sorted numeric values and categorize them
+  for (let idx = 0; idx < totalCount; idx++) {
+    if (numericValues[idx] <= firstThreshold) {
+      groupOne.push(numericValues[idx]);
+    } else if (numericValues[idx] <= secondThreshold) {
+      groupTwo.push(numericValues[idx]);
+    } else {
+      groupThree.push(numericValues[idx]);
     }
+  }
 
-    // Sort the numeric scores in ascending order.
-    // This custom comparator ensures correct numeric sorting.
-    scoreStrings.sort( function( valA, valB )
-    {
-        if ( valA < valB )
-        {
-            return -1; // valA comes before valB
-        }
-        if ( valA > valB )
-        {
-            return 1;  // valA comes after valB
-        }
-        return 0;      // valA and valB are equal
-    } );
-
-    // Second pass: Categorize each sorted number into one of the three groups.
-    for ( let idx = 0; idx < quantity; idx++ )
-    {
-        // Check if the current score falls into the first category.
-        if ( scoreStrings[ idx ] <= lowerBound )
-        {
-            groupOne.push( scoreStrings[ idx ] );
-        }
-        // Check if the current score falls into the second category.
-        else if ( scoreStrings[ idx ] <= upperBound )
-        {
-            groupTwo.push( scoreStrings[ idx ] );
-        }
-        // Otherwise, it falls into the third category.
-        else
-        {
-            groupThree.push( scoreStrings[ idx ] );
-        }
-    }
-
-    // Determine the minimum count among the three categorized groups
-    // and output this minimum value to the console.
-    console.log( Math.min( groupOne.length, groupTwo.length, groupThree.length ) );
+  // Output the minimum length among the three categorized groups
+  console.log(Math.min(groupOne.length, groupTwo.length, groupThree.length));
 }
 
-// Invoke the main processing function with data read from standard input.
-ProcessInput( require( 'fs' ).readFileSync( '/dev/stdin', 'utf8' ) );
+// Read input from standard input and pass it to the processing function
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

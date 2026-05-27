@@ -1,238 +1,285 @@
 "use strict";
-
-// This module provides a flexible utility for reading parsed input.
-var INPUT_READER = (function () {
-
-  // Factory function to instantiate a new input parsing mechanism.
-  function createReader(inputString) {
-    return new InputProcessor(inputString);
-  }
-
-  // InputProcessor class definition. Manages the state of input consumption.
-  function InputProcessor(sourceText) {
-    // Internal buffer for lines, trimmed and split by newline characters.
-    this._lines = sourceText.trim().split("\n");
-    // Pointer to the current line being processed.
-    this._lineIndex = 0;
-  }
-
-  // Extracts the next token from the current input line.
-  // If 'returnAsString' is truthy, the token is returned as a string; otherwise, it's parsed as a number.
-  InputProcessor.prototype.readNextValue = function (returnAsString) {
-    var allInputLines = this._lines, // Reference to the array of all input lines
-        currentLinePosition = this._lineIndex, // The index of the current line
-        yieldedToken; // The token retrieved from the line
-
-    // If the current line has not yet been tokenized into an array,
-    // split it by spaces and reverse the order for efficient 'pop' operations.
-    if (typeof allInputLines[currentLinePosition] === "string") {
-      allInputLines[currentLinePosition] = allInputLines[currentLinePosition].split(" ").reverse();
+// This module provides a utility for parsing input text.
+var INPUT_PARSER = (function() {
+    /**
+     * Creates a new input parser instance.
+     * @param {string} sourceText - The raw input string.
+     * @returns {TextParser} A new TextParser object.
+     */
+    function createParser(sourceText) {
+        return new TextParser(sourceText);
     }
 
-    // Retrieve the last token from the current line's token array.
-    yieldedToken = allInputLines[currentLinePosition].pop();
-
-    // If the current line has no more tokens, increment the line pointer.
-    if (!allInputLines[currentLinePosition].length) {
-      this._lineIndex++;
+    /**
+     * Represents a parser for structured text input.
+     * @class
+     * @param {string} sourceText - The raw input string, typically from stdin.
+     */
+    function TextParser(sourceText) {
+        // Store lines of input, trimmed and split by newline.
+        this._lines = sourceText.trim().split("\n");
+        // Current line index for sequential reading.
+        this._currentLineIndex = 0;
     }
 
-    // Return the token, either in its raw string form or as a numeric value.
-    return returnAsString ? yieldedToken : Number(yieldedToken);
-  };
+    /**
+     * Reads the next token from the current line. If the current line is exhausted,
+     * it moves to the next line. Tokens are space-separated.
+     * @param {boolean} [parseAsNumber=false] - If true, returns the token as a string; otherwise, as a number.
+     * @returns {string|number} The parsed token.
+     */
+    TextParser.prototype.a = function(parseAsNumber) {
+        var currentLines = this._lines;
+        var lineIdx = this._currentLineIndex;
+        var tokenValue;
 
-  // Reads all space-separated tokens from the current line and advances the line pointer.
-  // If 'stringsOnly' is true, returns tokens as strings; otherwise, converts them to numbers.
-  InputProcessor.prototype.readLineTokens = function (stringsOnly) {
-    var tokensOnLine = this._lines[this._lineIndex++].split(" "); // Split current line into an array of tokens
+        // If the current line hasn't been split into tokens yet, do so.
+        // Tokens are reversed so `pop()` gets them in original order.
+        if (typeof currentLines[lineIdx] === "string") {
+            currentLines[lineIdx] = currentLines[lineIdx].split(" ").reverse();
+        }
 
-    // Return the token array, applying numeric conversion if 'stringsOnly' is false.
-    return stringsOnly ? tokensOnLine : tokensOnLine.map(tokenVal => Number(tokenVal));
-  };
+        // Get the next token from the end of the reversed array.
+        tokenValue = currentLines[lineIdx].pop();
 
-  // Reads a specified number of lines and processes them as a two-dimensional matrix.
-  // 'numRowsToRead' determines how many lines to consume.
-  // 'keepAsStrings' controls whether matrix cell values are strings or numbers.
-  InputProcessor.prototype.readMatrix = function (numRowsToRead, keepAsStrings) {
-    // Slice 'numRowsToRead' lines and split each into an array of strings.
-    var extractedMatrixRows = this._lines.slice(this._lineIndex, this._lineIndex += numRowsToRead).map(rowEntry => rowEntry.split(" "));
+        // If the current line is now empty, advance to the next line.
+        if (!currentLines[lineIdx].length) {
+            this._currentLineIndex++;
+        }
 
-    // Conditionally convert all cell values to numbers if 'keepAsStrings' is false.
-    return keepAsStrings ? extractedMatrixRows : extractedMatrixRows.map(rowEntry => rowEntry.map(cellValue => Number(cellValue)));
-  };
+        // Return as string or number based on the flag.
+        return parseAsNumber ? tokenValue : +tokenValue;
+    };
 
-  // Reads a specified number of lines, each treated as a single value.
-  // 'countOfRows' specifies the number of lines to read.
-  // 'outputAsString' determines if the values are returned as strings or numbers.
-  InputProcessor.prototype.readRows = function (countOfRows, outputAsString) {
-    // Extract 'countOfRows' lines from the input buffer.
-    var singleRowContent = this._lines.slice(this._lineIndex, this._lineIndex += countOfRows);
+    /**
+     * Reads an entire line and splits it into tokens.
+     * @param {boolean} [returnStrings=false] - If true, returns tokens as strings; otherwise, as numbers.
+     * @returns {Array<string|number>} An array of tokens from the line.
+     */
+    TextParser.prototype.l = function(returnStrings) {
+        // Get the current line, increment index, and split by space.
+        var lineTokens = this._lines[this._currentLineIndex++].split(" ");
+        // Return as strings or map to numbers.
+        return returnStrings ? lineTokens : lineTokens.map(item => +item);
+    };
 
-    // If 'outputAsString' is true, return the rows as strings.
-    // Otherwise, convert each row value to a numeric type.
-    return outputAsString ? singleRowContent : singleRowContent.map(rowItem => Number(rowItem));
-  };
+    /**
+     * Reads a block of 'numRows' lines, treating each line as a row of space-separated tokens.
+     * @param {number} numRows - The number of rows (lines) to read.
+     * @param {boolean} [returnStrings=false] - If true, returns tokens as strings; otherwise, as numbers.
+     * @returns {Array<Array<string|number>>} A 2D array (matrix) of tokens.
+     */
+    TextParser.prototype.m = function(numRows, returnStrings) {
+        // Slice the relevant lines, increment index, and map each line to an array of tokens.
+        var resultMatrix = this._lines.slice(this._currentLineIndex, this._currentLineIndex += numRows).map(rowString => rowString.split(" "));
+        // If not returning strings, map all inner tokens to numbers.
+        return returnStrings ? resultMatrix : resultMatrix.map(row => row.map(item => +item));
+    };
 
-  return createReader; // Export the factory function for external use.
+    /**
+     * Reads a block of 'numLines' lines as individual strings or numbers.
+     * @param {number} numLines - The number of lines to read.
+     * @param {boolean} [returnStrings=false] - If true, returns lines as strings; otherwise, as numbers.
+     * @returns {Array<string|number>} An array of lines.
+     */
+    TextParser.prototype.r = function(numLines, returnStrings) {
+        // Slice the relevant lines and increment index.
+        var lineContents = this._lines.slice(this._currentLineIndex, this._currentLineIndex += numLines);
+        // Return as strings or map to numbers.
+        return returnStrings ? lineContents : lineContents.map(lineContent => +lineContent);
+    };
+
+    return createParser;
 })();
 
+// Initialize the input reader by reading from standard input.
+var inputReader = INPUT_PARSER(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-// Initialize the primary input stream reader by reading from standard input.
-var dataStream = INPUT_READER(require("fs").readFileSync("/dev/stdin", "utf8"));
-
-
-// Dynamically constructs and evaluates a multi-dimensional array initialization expression.
-function multiDimArray(initialValue) {
-  var functionArguments = arguments,
-      argumentCount = functionArguments.length,
-      arrayCodeSnippet = "Array(functionArguments[" + --argumentCount + "]).fill(0).map(x=>{return " + initialValue + ";})";
-
-  // Iteratively build the nested array creation logic.
-  while (--argumentCount) {
-    arrayCodeSnippet = "Array(functionArguments[" + argumentCount + "]).fill(0).map(x=>" + arrayCodeSnippet + ")";
-  }
-
-  // Execute the generated JavaScript code to form the array structure.
-  return eval(arrayCodeSnippet);
-}
-
-
-// Defines a constant for the large prime modulus used in modular arithmetic.
-var PRIME_MODULUS = 1_000_000_007;
-
-
-// Performs modular multiplication of an arbitrary number of arguments.
-function multiplyModulo() {
-  var operandList = arguments,
-      runningProduct = operandList[0],
-      operandIndex = operandList.length;
-
-  // Loop through additional operands, applying modular multiplication.
-  while (--operandIndex) {
-    // Optimized modular multiplication to mitigate intermediate overflow.
-    runningProduct = ((runningProduct >>> 16) * operandList[operandIndex] % PRIME_MODULUS * 65536 + (runningProduct & 65535) * operandList[operandIndex]) % PRIME_MODULUS;
-  }
-  return runningProduct;
-}
-
-
-// Global arrays for caching precomputed combinatorics values.
-var factorialCache = [],
-    invFactorialCache = [],
-    modularInverseCache = [],
-    powerOfTwoCache = [];
-
-
-// Precomputes and caches factorials, inverse factorials, modular inverses (1/i), and powers of 2 up to a given limit.
-function precomputeCombinatorics(upperLimit) {
-  // Populate factorial values.
-  factorialCache.length = upperLimit + 1;
-  factorialCache[0] = factorialCache[1] = 1;
-  for (var loopCounter = 2; loopCounter <= upperLimit;) {
-    factorialCache[loopCounter] = multiplyModulo(factorialCache[loopCounter - 1], loopCounter++);
-  }
-
-  // Populate inverse factorial values.
-  invFactorialCache.length = upperLimit + 1;
-  invFactorialCache[0] = invFactorialCache[1] = 1;
-  invFactorialCache[upperLimit] = modularInverse(factorialCache[upperLimit]);
-  for (loopCounter = upperLimit; 2 < loopCounter;) {
-    invFactorialCache[loopCounter - 1] = multiplyModulo(invFactorialCache[loopCounter], loopCounter--);
-  }
-
-  // Populate modular inverse values (1/i).
-  modularInverseCache.length = upperLimit + 1;
-  modularInverseCache[0] = modularInverseCache[1] = 1;
-  for (loopCounter = 2; loopCounter <= upperLimit;) {
-    // Inverse of i is (i-1)! * (1/i)! mod M.
-    modularInverseCache[loopCounter] = multiplyModulo(factorialCache[loopCounter - 1], invFactorialCache[loopCounter++]);
-  }
-
-  // Populate powers of two values.
-  powerOfTwoCache.length = upperLimit + 1;
-  powerOfTwoCache[0] = 1;
-  for (loopCounter = 1; loopCounter <= upperLimit; loopCounter++) {
-    powerOfTwoCache[loopCounter] = powerOfTwoCache[loopCounter - 1] * 2 % PRIME_MODULUS;
-  }
-}
-
-
-// Calculates the modular multiplicative inverse of 'valueToInvert' modulo PRIME_MODULUS using the extended Euclidean algorithm.
-function modularInverse(valueToInvert) {
-  var currentModulo = PRIME_MODULUS,
-      prevCoefficientU = 0,
-      prevCoefficientV = 1,
-      temporaryVariable;
-
-  while (valueToInvert) {
-    temporaryVariable = currentModulo / valueToInvert | 0; // Integer division for quotient.
-    currentModulo -= temporaryVariable * valueToInvert;
-    prevCoefficientU -= temporaryVariable * prevCoefficientV;
-    temporaryVariable = currentModulo;
-    currentModulo = valueToInvert;
-    valueToInvert = temporaryVariable;
-    temporaryVariable = prevCoefficientU;
-    prevCoefficientU = prevCoefficientV;
-    prevCoefficientV = temporaryVariable;
-  }
-
-  prevCoefficientU %= PRIME_MODULUS;
-  return prevCoefficientU < 0 ? prevCoefficientU + PRIME_MODULUS : prevCoefficientU;
-}
-
-
-// Computes modular exponentiation (base^exponent % PRIME_MODULUS) efficiently using exponentiation by squaring.
-function modularExponentiation(baseValue, exponentValue) {
-  var finalResult = 1; // Initialize the result to 1 (any_base^0).
-
-  // Loop while the exponent is greater than zero.
-  for (; exponentValue; baseValue = multiplyModulo(baseValue, baseValue), exponentValue >>= 1) {
-    if (exponentValue & 1) { // If the current bit of the exponent is 1.
-      finalResult = multiplyModulo(baseValue, finalResult);
+/**
+ * Creates a multi-dimensional array initialized with a given value.
+ * @param {*} initialValue - The value to initialize array elements with.
+ * @param {...number} dimensions - The dimensions of the array (e.g., initializeMultiDimArray(0, 2, 3) creates a 2x3 array of zeros).
+ * @returns {Array} The initialized multi-dimensional array.
+ */
+function initializeMultiDimArray(initialValue) {
+    var dimensions = arguments;
+    var dimCount = dimensions.length;
+    var arrayCreationString = "Array(dimensions[" + --dimCount + "]).fill(0).map(x=>{return " + initialValue + ";})";
+    while (--dimCount) {
+        arrayCreationString = "Array(dimensions[" + dimCount + "]).fill(0).map(x=>" + arrayCreationString + ")";
     }
-  }
-  return finalResult;
+    return eval(arrayCreationString);
 }
 
+// Define a prime modulus for modular arithmetic operations.
+var primeModulus = 1e9 + 7;
 
-// Computes the binomial coefficient "n choose k" modulo PRIME_MODULUS.
-function nChooseK(totalElements, elementsToChoose) {
-  // C(n, k) = n! / (k! * (n-k)!) = n! * (k!)^-1 * ((n-k)!)^-1 mod M.
-  return multiplyModulo(factorialCache[totalElements], invFactorialCache[elementsToChoose], invFactorialCache[totalElements - elementsToChoose]);
+/**
+ * Performs modular multiplication of multiple numbers.
+ * @param {...number} factors - Numbers to multiply.
+ * @returns {number} The product modulo `primeModulus`.
+ */
+function multiplyMod() {
+    var factors = arguments;
+    var productAccumulator = factors[0];
+    // Iterate from the second factor onwards.
+    for (var factorIndex = factors.length; --factorIndex;) {
+        // Optimized modular multiplication to prevent overflow before modulo.
+        // (A * B) % M = ((A >> 16) * B % M * 65536 + (A & 65535) * B) % M
+        productAccumulator = ((productAccumulator >> 16) * factors[factorIndex] % primeModulus * 65536 + (productAccumulator & 65535) * factors[factorIndex]) % primeModulus;
+    }
+    return productAccumulator;
 }
 
+// Arrays to store precomputed factorials, inverse factorials, modular inverses, and powers of two.
+var factorials = [];
+var inverseFactorials = [];
+var modularInverses = [];
+var powersOfTwo = [];
 
-// Computes the permutation "n permute k" modulo PRIME_MODULUS.
-function nPermuteK(totalItems, itemsToSelect) {
-  // P(n, k) = n! / (n-k)! = n! * ((n-k)!)^-1 mod M.
-  return multiplyModulo(factorialCache[totalItems], invFactorialCache[totalItems - itemsToSelect]);
+/**
+ * Precomputes factorials, inverse factorials, modular inverses, and powers of two up to a given limit.
+ * This is useful for combinatorics problems.
+ * @param {number} limit - The upper bound for precomputation.
+ */
+function precomputeCombinatorics(limit) {
+    // Precompute factorials: factorials[i] = i!
+    factorials.length = limit + 1;
+    factorials[0] = factorials[1] = 1;
+    for (var loopCounter = 2; loopCounter <= limit;) {
+        factorials[loopCounter] = multiplyMod(factorials[loopCounter - 1], loopCounter++);
+    }
+
+    // Precompute inverse factorials: inverseFactorials[i] = (i!)^(-1) mod primeModulus
+    inverseFactorials.length = limit + 1;
+    inverseFactorials[0] = inverseFactorials[1] = 1;
+    // Calculate the last inverse factorial using modular exponentiation (or Fermat's Little Theorem).
+    inverseFactorials[limit] = modularInverse(factorials[limit]);
+    // Calculate others iteratively from back to front: inverseFactorials[i-1] = inverseFactorials[i] * i
+    for (loopCounter = limit; 2 < loopCounter;) {
+        inverseFactorials[loopCounter - 1] = multiplyMod(inverseFactorials[loopCounter], loopCounter--);
+    }
+
+    // Precompute modular inverses: modularInverses[i] = i^(-1) mod primeModulus
+    // modularInverses[i] = factorials[i-1] * inverseFactorials[i]
+    modularInverses.length = limit + 1;
+    modularInverses[0] = modularInverses[1] = 1; // modularInverses[0] is typically not used, modularInverses[1] is 1.
+    for (loopCounter = 2; loopCounter <= limit;) {
+        modularInverses[loopCounter] = multiplyMod(factorials[loopCounter - 1], inverseFactorials[loopCounter++]);
+    }
+
+    // Precompute powers of two: powersOfTwo[i] = 2^i mod primeModulus
+    powersOfTwo.length = limit + 1;
+    powersOfTwo[0] = 1;
+    for (loopCounter = 1; loopCounter <= limit; loopCounter++) {
+        powersOfTwo[loopCounter] = powersOfTwo[loopCounter - 1] * 2 % primeModulus;
+    }
 }
 
+/**
+ * Calculates the modular multiplicative inverse of 'valueToInverse' modulo `primeModulus` using the extended Euclidean algorithm.
+ * Assumes `primeModulus` is prime.
+ * @param {number} valueToInverse - The number for which to find the inverse.
+ * @returns {number} The modular inverse.
+ */
+function modularInverse(valueToInverse) {
+    var currentMod = primeModulus;
+    var xCoefficient = 0; // u
+    var yCoefficient = 1; // v
+    var tempVar; // t
 
-// Execute the primary solution logic and print its output.
-console.log(computeSolution());
-function computeSolution() {
-  // Read the number of elements for the array from input.
-  var arraySize = dataStream.readNextValue();
-  // Read the array of coordinate values from the next input line.
-  var coordinateArray = dataStream.readLineTokens();
+    // Extended Euclidean Algorithm
+    while (valueToInverse) {
+        tempVar = currentMod / valueToInverse | 0; // Integer division
+        currentMod -= tempVar * valueToInverse;
+        xCoefficient -= tempVar * yCoefficient;
 
-  // Precalculate combinatorics values up to (arraySize + 1) for later use.
-  precomputeCombinatorics(arraySize + 1);
+        // Swap (currentMod, valueToInverse) and (xCoefficient, yCoefficient)
+        tempVar = currentMod;
+        currentMod = valueToInverse;
+        valueToInverse = tempVar;
 
-  var finalAnswer = 0; // Accumulator for the final result.
-  // Initialize the first coefficient as (n-1)!
-  var currentCoefficient = factorialCache[arraySize - 1];
+        tempVar = xCoefficient;
+        xCoefficient = yCoefficient;
+        yCoefficient = tempVar;
+    }
 
-  // Iterate through the coordinate array, starting from the second element.
-  for (var loopIndex = 1; loopIndex < arraySize; loopIndex++) {
-    // Add the product of the difference and the current coefficient to the total answer.
-    finalAnswer += multiplyModulo(coordinateArray[loopIndex] - coordinateArray[loopIndex - 1], currentCoefficient);
-    // Update the coefficient for the next iteration using the formula:
-    // (previous_coefficient + (n-1)! * (1/(i+1))) % PRIME_MODULUS.
-    currentCoefficient = (currentCoefficient + multiplyModulo(factorialCache[arraySize - 1], modularInverseCache[loopIndex + 1])) % PRIME_MODULUS;
-  }
+    // Ensure the result is positive.
+    xCoefficient %= primeModulus;
+    return xCoefficient < 0 ? xCoefficient + primeModulus : xCoefficient;
+}
 
-  // Ensure the final result is within the positive range of the modulus.
-  return finalAnswer % PRIME_MODULUS;
+/**
+ * Calculates (baseValue^exponentValue) mod `primeModulus` using binary exponentiation (exponentiation by squaring).
+ * @param {number} baseValue - The base.
+ * @param {number} exponentValue - The exponent.
+ * @returns {number} (baseValue^exponentValue) mod `primeModulus`.
+ */
+function modularExponentiation(baseValue, exponentValue) {
+    var resultPower = 1;
+    while (exponentValue) {
+        if (exponentValue & 1) { // If exponentValue is odd
+            resultPower = multiplyMod(baseValue, resultPower);
+        }
+        baseValue = multiplyMod(baseValue, baseValue); // Square the base
+        exponentValue >>= 1; // Divide exponentValue by 2
+    }
+    return resultPower;
+}
+
+/**
+ * Calculates "n choose r" (combinations) modulo `primeModulus`.
+ * Requires `precomputeCombinatorics` to be called first.
+ * @param {number} n - Total number of items.
+ * @param {number} r - Number of items to choose.
+ * @returns {number} C(n, r) mod `primeModulus`.
+ */
+function combinations(n, r) {
+    // C(n, r) = n! / (r! * (n-r)!) = n! * (r!)^(-1) * ((n-r)!)^(-1)
+    return multiplyMod(factorials[n], inverseFactorials[r], inverseFactorials[n - r]);
+}
+
+/**
+ * Calculates "n permute r" (permutations) modulo `primeModulus`.
+ * Requires `precomputeCombinatorics` to be called first.
+ * @param {number} n - Total number of items.
+ * @param {number} r - Number of items to arrange.
+ * @returns {number} P(n, r) mod `primeModulus`.
+ */
+function permutations(n, r) {
+    // P(n, r) = n! / (n-r)! = n! * ((n-r)!)^(-1)
+    return multiplyMod(factorials[n], inverseFactorials[n - r]);
+}
+
+// Output the result of the main problem-solving function.
+console.log(solveProblem());
+
+/**
+ * Main function to solve the problem.
+ * Reads input, performs calculations, and returns the final answer.
+ * @returns {number} The calculated answer modulo `primeModulus`.
+ */
+function solveProblem() {
+    // Read the size of the array.
+    var arraySize = inputReader.a();
+    // Read the array elements.
+    var inputArray = inputReader.l();
+
+    // Precompute factorials, inverse factorials, etc., up to arraySize + 1.
+    precomputeCombinatorics(arraySize + 1);
+
+    var finalAnswer = 0;
+    // Initialize 'currentCoefficient' with (n-1)!
+    var currentCoefficient = factorials[arraySize - 1];
+
+    // Loop from the second element to the last.
+    for (var loopIndex = 1; loopIndex < arraySize; loopIndex++) {
+        // Add (inputArray[loopIndex] - inputArray[loopIndex-1]) * currentCoefficient to the answer.
+        finalAnswer += multiplyMod(inputArray[loopIndex] - inputArray[loopIndex - 1], currentCoefficient);
+        // Update 'currentCoefficient' for the next iteration: currentCoefficient = (currentCoefficient + (n-1)! * (loopIndex+1)^(-1)) % primeModulus
+        currentCoefficient = (currentCoefficient + multiplyMod(factorials[arraySize - 1], modularInverses[loopIndex + 1])) % primeModulus;
+    }
+
+    // Ensure the final answer is positive and within the modulus.
+    return finalAnswer % primeModulus;
 }

@@ -1,138 +1,138 @@
-// Function to perform summation of very large numbers provided as string-like inputs
-function largeSummation(firstOperand, secondOperand) {
-    // Converts the initial numeric values into reversed arrays of individual digits.
-    // Example: 123 becomes [3, 2, 1]
-    const firstDigits = (firstOperand + "").split("").reverse().map(parseInt);
-    const secondDigits = (secondOperand + "").split("").reverse().map(parseInt);
+function performLargeNumberAddition(firstNumStr, secondNumStr) {
+    // Convert the input numbers (which can be strings or numbers) into arrays of digits.
+    // The digits are reversed to facilitate addition from the least significant digit.
+    let digitsOne = (firstNumStr + '').split('').reverse().map(Number);
+    let digitsTwo = (secondNumStr + '').split('').reverse().map(Number);
 
-    // This array will hold the digits of our resulting sum.
-    const resultDigits = [];
-    // Determine the maximum length among the two number strings to ensure all digits are processed.
-    const maxLength = Math.max(firstDigits.length, secondDigits.length);
+    // This array will store the resulting digits of the sum.
+    let resultDigits = [];
+    // Determine the maximum length between the two numbers to ensure all digits are processed.
+    let maximumLength = Math.max(digitsOne.length, digitsTwo.length);
 
-    // Initialize the result array with zeros. An extra slot is added for potential carry-overs.
-    for (let idx = 0; idx < maxLength + 1; idx++) {
-        resultDigits[idx] = 0;
+    // Initialize the resultDigits array with zeros.
+    // We add 1 to maximumLength to account for a potential carry-over to the highest place value.
+    for (let k = 0; k < maximumLength + 1; k++) {
+        resultDigits[k] = 0;
     }
 
-    // Iterates through each digit position, performing the primary addition.
-    for (let idx = 0; idx < maxLength; idx++) {
-        let currentSum = 0; // Reset sum for the current digit position.
-        // Add digit from the first number if it exists at this position.
-        if (firstDigits.length > idx) {
-            currentSum += firstDigits[idx];
+    // Perform the initial digit-by-digit addition.
+    // At this stage, carries are not yet handled, just the sum of corresponding digits.
+    for (let k = 0; k < maximumLength; k++) {
+        let currentDigitSum = 0;
+        // Add digit from the first number if it exists at the current position.
+        if (digitsOne.length > k) {
+            currentDigitSum += digitsOne[k];
         }
-        // Add digit from the second number if it exists at this position.
-        if (secondDigits.length > idx) {
-            currentSum += secondDigits[idx];
+        // Add digit from the second number if it exists at the current position.
+        if (digitsTwo.length > k) {
+            currentDigitSum += digitsTwo[k];
         }
-        // Accumulate the current sum into the corresponding result digit, accounting for prior carries.
-        resultDigits[idx] += currentSum;
+        // Add the sum to the resultDigits array, potentially accumulating from previous carries.
+        resultDigits[k] += currentDigitSum;
     }
 
-    // Process carries: if any digit position sums to 10 or more, carry over to the next position.
-    for (let idx = 0; idx < maxLength; idx++) {
-        if (resultDigits[idx] >= 10) {
-            resultDigits[idx] -= 10; // Reduce current digit by 10.
-            resultDigits[idx + 1]++; // Increment the next digit (this is the carry).
+    // Process carries from right to left (least significant to most significant).
+    for (let k = 0; k < maximumLength; k++) {
+        // If a digit position's value is 10 or more, a carry is needed.
+        if (resultDigits[k] >= 10) {
+            resultDigits[k] -= 10; // Keep only the unit digit.
+            resultDigits[k + 1]++; // Increment the next digit position (carry over).
         }
     }
 
-    // If the last digit (most significant) is zero, it means there was no carry to that position,
-    // so it's a leading zero that should be removed (e.g., 012 becomes 12).
+    // After all additions and carries, if the most significant digit is 0, it means there was no carry
+    // to that position, so it should be removed (e.g., 0123 should be 123).
     if (resultDigits[resultDigits.length - 1] === 0) {
         resultDigits.pop();
     }
 
-    // Reverse the digits back to their correct order and join them into a single string.
-    const finalString = resultDigits.reverse().join("");
-    return finalString; // Return the string representation of the computed sum.
+    // Reverse the digits back to their original order and join them to form the final sum string.
+    let finalSumString = resultDigits.reverse().join('');
+    return finalSumString;
 }
 
+// Read the entire input from standard input.
+const fileData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-// --- Main Program Logic Starts Here ---
+// Process the input: trim whitespace and split into an array of lines.
+let dataLines = fileData.trim().split('\n');
 
-// Read all input data from the standard input stream, assuming UTF-8 encoding.
-const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
+// Remove the first line (often a count, not used in the core logic here).
+dataLines.shift();
 
-// Trim any leading/trailing whitespace from the input and split it into an array of lines.
-const lineData = rawData.trim().split("\n");
-
-// Discard the first line, which often contains count information not directly used here.
-lineData.shift();
-
-// Extract the next line, split it by spaces, and convert each part into an integer.
-const firstNumSet = lineData.shift().split(" ").map(parseInt);
-// Sort the first set of numbers in ascending numerical order.
-firstNumSet.sort(function(valA, valB) {
+// Parse the first set of numbers from the next line, convert to numbers, and sort them ascending.
+let firstSetOfNumbers = dataLines.shift().split(' ').map(Number);
+firstSetOfNumbers.sort(function(valA, valB) {
     return valA - valB;
 });
 
-// Discard another line, likely a separator or another count.
-lineData.shift();
+// Remove another line (likely a count, not used).
+dataLines.shift();
 
-// Extract and parse the second set of numbers similarly.
-const secondNumSet = lineData.shift().split(" ").map(parseInt);
+// Parse the second set of numbers from the next line.
+let secondSetOfNumbers = dataLines.shift().split(' ').map(Number);
 
-// Extract the array of strings that will be used for comparison.
-const comparisonStrings = lineData.shift().split(" ");
+// Parse the expected comparison results from the next line as strings.
+let comparisonStrings = dataLines.shift().split(' ');
 
-// Initialize a memoization array (or lookup table) to store cumulative sums.
-// It's pre-filled with 'false' to indicate uncomputed or non-existent sums.
-const memoizedSums = [];
-for (let indexVar = 0; indexVar <= 1000000; indexVar++) {
-    memoizedSums[indexVar] = false;
+// Initialize a memoization table (or dynamic programming array) to store cumulative sums.
+// The size is set to accommodate values up to 1,000,000 as per typical problem constraints.
+let sumMemo = [];
+for (let idx = 0; idx <= 1000000; idx++) {
+    sumMemo[idx] = false; // 'false' indicates the sum for this index has not been computed yet.
 }
-// The sum for zero is defined as "0".
-memoizedSums[0] = "0";
+sumMemo[0] = '0'; // Base case: the sum up to 0 is the string '0'.
 
-// Calculate cumulative sums for numbers in the first set and store them.
-let runningTotal = "0"; // Initialize a string to hold the cumulative sum.
-firstNumSet.forEach(function(currentVal) {
-    // Use the large summation function to add the current value to the running total.
-    runningTotal = largeSummation(runningTotal, currentVal);
-    // Store the computed running total at the index corresponding to the current value.
-    memoizedSums[currentVal] = runningTotal;
+// Initialize the running total for cumulative sums as a string.
+let currentRunningSum = '0';
+
+// Calculate cumulative sums for each number in the first set and store them in the memo table.
+firstSetOfNumbers.forEach(function(currentNumber) {
+    currentRunningSum = performLargeNumberAddition(currentRunningSum, currentNumber);
+    sumMemo[currentNumber] = currentRunningSum;
 });
 
-// Process each number in the second set.
-secondNumSet.forEach(function(currentVal, currentIdx) {
-    // Find the largest value less than or equal to 'currentVal' for which a sum has been memoized.
+// Process the second set of numbers, performing comparisons with the pre-calculated sums.
+secondSetOfNumbers.forEach(function(currentValue, iterationIndex) {
+    // Find the largest number less than or equal to 'currentValue' for which a sum has been memoized.
     while (true) {
-        if (memoizedSums[currentVal] !== false) {
-            break; // A memoized sum is found, exit the loop.
+        if (sumMemo[currentValue] !== false) {
+            break; // A computed sum for 'currentValue' (or a smaller value) is found.
         }
-        currentVal--; // Decrement 'currentVal' to look for a smaller, memoized sum.
+        currentValue--; // Decrement 'currentValue' to look for a smaller pre-computed sum.
     }
 
-    // Default result indicator is "No".
-    let resultIndicator = "No";
+    let resultVerdict = 'No'; // Default outcome for the comparison.
 
-    // Compare the found memoized sum with the corresponding string from the comparison set.
-    const currentComparison = comparisonStrings[currentIdx];
-    const currentMemoized = memoizedSums[currentVal];
+    // Compare the computed sum (sumMemo[currentValue]) with the expected string (comparisonStrings[iterationIndex]).
+    // The comparison logic handles large numbers represented as strings.
+    if (comparisonStrings[iterationIndex] === sumMemo[currentValue]) {
+        // If the strings are exactly equal, the condition is met.
+        resultVerdict = 'Yes';
+    } else if (comparisonStrings[iterationIndex].length < sumMemo[currentValue].length) {
+        // If the expected string is shorter than the computed sum string,
+        // it implies the computed sum is numerically larger (assuming no leading zeros in the expected string).
+        resultVerdict = 'Yes';
+    } else if (comparisonStrings[iterationIndex].length === sumMemo[currentValue].length) {
+        // If both strings have the same length, compare them digit by digit from left to right.
+        for (let charPos = 0; charPos < comparisonStrings[iterationIndex].length; charPos++) {
+            // Convert characters to numbers for proper numerical comparison.
+            const expectedDigit = comparisonStrings[iterationIndex][charPos] - 0;
+            const computedDigit = sumMemo[currentValue][charPos] - 0;
 
-    if (currentComparison === currentMemoized) {
-        resultIndicator = "Yes"; // If strings are identical, they are equal.
-    } else if (currentComparison.length < currentMemoized.length) {
-        resultIndicator = "Yes"; // If the comparison string is shorter, it's numerically smaller.
-    } else if (currentComparison.length === currentMemoized.length) {
-        // If lengths are equal, perform digit-by-digit comparison.
-        for (let charIndex = 0; charIndex < currentComparison.length; charIndex++) {
-            const compChar = parseInt(currentComparison[charIndex]);
-            const memoChar = parseInt(currentMemoized[charIndex]);
-
-            if (compChar === memoChar) {
-                continue; // Digits are the same, check the next digit.
-            } else if (compChar > memoChar) {
-                resultIndicator = "No"; // Comparison string digit is larger, so it's numerically larger.
+            if (expectedDigit === computedDigit) {
+                continue; // Digits are the same, move to the next position.
+            } else if (expectedDigit > computedDigit) {
+                // If an expected digit is greater, the expected number is larger, so the condition is 'No'.
+                resultVerdict = 'No';
                 break;
-            } else if (compChar < memoChar) {
-                resultIndicator = "Yes"; // Comparison string digit is smaller, so it's numerically smaller.
+            } else if (expectedDigit < computedDigit) {
+                // If an expected digit is smaller, the computed sum is larger, so the condition is 'Yes'.
+                resultVerdict = 'Yes';
                 break;
             }
         }
     }
-    // Output the final comparison result for the current item.
-    console.log(resultIndicator);
+    // Output the final verdict for the current comparison.
+    console.log(resultVerdict);
 });

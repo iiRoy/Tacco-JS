@@ -1,121 +1,107 @@
-const fileSystemModule = require('node:fs');
+config = { input: '/dev/stdin', newline: '\n' }; // linux
 
-const inputSourceDetails = { pathString: '/dev/stdin', lineEnd: '\n' };
+const rawInput = require('fs').readFileSync(config.input, 'ascii');
+const inputLines = rawInput
+  .trim()
+  .split(config.newline);
 
-const rawContent = fileSystemModule.readFileSync(inputSourceDetails.pathString, 'ascii');
-const processedLines = rawContent.split(inputSourceDetails.lineEnd).filter(Boolean).slice(1);
+inputLines.shift();
 
-const graphMap = new Map();
-const descendantRegistry = new Set();
-let primaryVertex = null;
+const nodeData = new Map(); // Maps node ID to an object { left: childId, right: childId }
+const childNodeIds = new Set(); // Stores all IDs that appear as a child
 
-for (const currentLine of processedLines) {
-    const parts = currentLine.split(' ');
-    const centralIdentifier = parts[0];
-    const leftSuccessor = parts[1];
-    const rightSuccessor = parts[2];
+for (const lineEntry of inputLines) {
+  const parts = lineEntry.split(' ');
+  const parentId = parts[0];
+  const leftChild = parts[1];
+  const rightChild = parts[2];
 
-    graphMap.set(centralIdentifier, {
-        leftBranch: leftSuccessor === '-1' ? null : leftSuccessor,
-        rightBranch: rightSuccessor === '-1' ? null : rightSuccessor
-    });
+  nodeData.set(parentId, { left: leftChild, right: rightChild });
 
-    if (leftSuccessor !== '-1') {
-        descendantRegistry.add(leftSuccessor);
-    }
-    if (rightSuccessor !== '-1') {
-        descendantRegistry.add(rightSuccessor);
-    }
+  if (leftChild !== '-1') {
+    childNodeIds.add(leftChild);
+  }
+  if (rightChild !== '-1') {
+    childNodeIds.add(rightChild);
+  }
 }
 
-for (const key of graphMap.keys()) {
-    if (!descendantRegistry.has(key)) {
-        primaryVertex = key;
-        break;
-    }
+let mainRootIdentifier = null;
+for (const nodeId of nodeData.keys()) {
+  if (!childNodeIds.has(nodeId)) {
+    mainRootIdentifier = nodeId;
+    break;
+  }
 }
 
-function traverseFront(initialNodeId, structureMap) {
-    const outputSequence = [];
-    const workingStack = [];
 
-    if (initialNodeId === null) {
-        return outputSequence;
+function traversePreOrder(startNodeId) {
+  const traversalResult = [];
+  const processingStack = [startNodeId];
+
+  while (processingStack.length > 0) {
+    const currentIdentifier = processingStack.pop();
+    traversalResult.push(currentIdentifier);
+
+    const currentChildren = nodeData.get(currentIdentifier);
+    if (currentChildren.right !== '-1') {
+      processingStack.push(currentChildren.right);
     }
-
-    workingStack.push(initialNodeId);
-
-    while (workingStack.length > 0) {
-        const currentId = workingStack.pop();
-        outputSequence.push(currentId);
-
-        const currentChildren = structureMap.get(currentId);
-        if (currentChildren.rightBranch !== null) {
-            workingStack.push(currentChildren.rightBranch);
-        }
-        if (currentChildren.leftBranch !== null) {
-            workingStack.push(currentChildren.leftBranch);
-        }
+    if (currentChildren.left !== '-1') {
+      processingStack.push(currentChildren.left);
     }
-    return outputSequence;
+  }
+  return traversalResult;
 }
 
-function traverseMiddle(initialNodeId, structureMap) {
-    const outputSequence = [];
-    const workingStack = [];
-    let currentId = initialNodeId;
+console.log('Preorder');
+console.log(' ' + traversePreOrder(mainRootIdentifier).join(' '));
 
-    while (currentId !== null || workingStack.length > 0) {
-        while (currentId !== null) {
-            workingStack.push(currentId);
-            const nodeData = structureMap.get(currentId);
-            currentId = nodeData ? nodeData.leftBranch : null;
-        }
 
-        currentId = workingStack.pop();
-        outputSequence.push(currentId);
+function traverseInOrder(startNodeId) {
+  const traversalResult = [];
+  const processingStack = [];
+  let currentIdentifier = startNodeId;
 
-        const nodeData = structureMap.get(currentId);
-        currentId = nodeData ? nodeData.rightBranch : null;
+  while (currentIdentifier !== '-1' || processingStack.length > 0) {
+    while (currentIdentifier !== '-1') {
+      processingStack.push(currentIdentifier);
+      currentIdentifier = nodeData.get(currentIdentifier).left;
     }
-    return outputSequence;
+    currentIdentifier = processingStack.pop();
+    traversalResult.push(currentIdentifier);
+    currentIdentifier = nodeData.get(currentIdentifier).right;
+  }
+  return traversalResult;
 }
 
-function traverseBack(initialNodeId, structureMap) {
-    const outputSequence = [];
-    const stackOne = [];
-    const stackTwo = [];
+console.log('Inorder');
+console.log(' ' + traverseInOrder(mainRootIdentifier).join(' '));
 
-    if (initialNodeId === null) {
-        return outputSequence;
+
+function traversePostOrder(startNodeId) {
+  const traversalResult = [];
+  const stackOne = [startNodeId];
+  const stackTwo = [];
+
+  while (stackOne.length > 0) {
+    const currentIdentifier = stackOne.pop();
+    stackTwo.push(currentIdentifier);
+
+    const currentChildren = nodeData.get(currentIdentifier);
+    if (currentChildren.left !== '-1') {
+      stackOne.push(currentChildren.left);
     }
-
-    stackOne.push(initialNodeId);
-
-    while (stackOne.length > 0) {
-        const currentId = stackOne.pop();
-        stackTwo.push(currentId);
-
-        const currentChildren = structureMap.get(currentId);
-        if (currentChildren.leftBranch !== null) {
-            stackOne.push(currentChildren.leftBranch);
-        }
-        if (currentChildren.rightBranch !== null) {
-            stackOne.push(currentChildren.rightBranch);
-        }
+    if (currentChildren.right !== '-1') {
+      stackOne.push(currentChildren.right);
     }
+  }
 
-    while (stackTwo.length > 0) {
-        outputSequence.push(stackTwo.pop());
-    }
-    return outputSequence;
+  while (stackTwo.length > 0) {
+    traversalResult.push(stackTwo.pop());
+  }
+  return traversalResult;
 }
 
-console.log('Path A');
-console.log(' ' + traverseFront(primaryVertex, graphMap).join(' '));
-
-console.log('Path B');
-console.log(' ' + traverseMiddle(primaryVertex, graphMap).join(' '));
-
-console.log('Path C');
-console.log(' ' + traverseBack(primaryVertex, graphMap).join(' '));
+console.log('Postorder');
+console.log(' ' + traversePostOrder(mainRootIdentifier).join(' '));

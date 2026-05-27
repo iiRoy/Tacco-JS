@@ -1,59 +1,77 @@
-function computeMaxIncreasingSubsequence() {
-    // Determine the total count of numbers including a sentinel
-    let elementCount = dataSequence.shift() + 1;
+// This module is designed to compute the length of the Longest Increasing Subsequence (LIS)
+// from a sequence of numbers provided via standard input.
+// It uses a dynamic programming approach to determine the maximum length.
 
-    // Add an initial placeholder to the front of the sequence for easier processing
-    dataSequence.unshift(0);
+function computeLongestIncreasingSubsequence() {
+    // The initial element of the global 'inputSequence' array is expected to be
+    // the count of actual numbers in the sequence. We extract it and increment
+    // to account for the dummy element we're about to add.
+    let sequenceLength = inputSequence.shift() + 1;
 
-    // Array to store the maximum length of an increasing subsequence ending at each position
-    let currentLengths = [];
+    // A zero is prepended to the sequence. This acts as a sentinel or base case,
+    // ensuring that any positive number in the original sequence can start an LIS
+    // of length 1 (relative to this dummy zero).
+    inputSequence.unshift(0);
 
-    // Array to store the index of the predecessor element in the longest increasing subsequence
-    let previousElements = [];
+    // 'lengthsOfSubsequences' will store the length of the LIS ending at each index.
+    // 'predecessorIndices' will store the index of the element that precedes
+    // the current element in its respective LIS.
+    let lengthsOfSubsequences = [];
+    let predecessorIndices = [];
 
-    // Initialize both arrays with zeros for all anticipated positions
-    for (let position = 0; position < elementCount; position++) {
-        currentLengths.push(0);
-        previousElements.push(0);
+    // Initialize both arrays with zeros for the expected 'sequenceLength'.
+    // This pre-allocates space and sets default values.
+    for (let currentIdx = 0; currentIdx < sequenceLength; currentIdx++) {
+        lengthsOfSubsequences.push(0);
+        predecessorIndices.push(0);
     }
 
-    // The first actual element has no predecessor in a subsequence, so set its pointer to -1
-    previousElements[0] = -1;
+    // The predecessor of the first (dummy) element is set to -1, indicating no prior element.
+    predecessorIndices[0] = -1;
 
-    // Iterate through the input sequence starting from the second element (index 1)
-    for (let currentItemIndex = 1; currentItemIndex < dataSequence.length; currentItemIndex++) {
-        // Initialize the index of the best preceding element for the current position
-        let bestPreviousIndex = 0; // This will store the index of the element that allows the longest valid subsequence ending here
+    // This is the main loop for calculating LIS lengths.
+    // It iterates from the second element (index 1, skipping the dummy zero).
+    for (let currentIdx = 1; currentIdx < inputSequence.length; currentIdx++) {
+        // 'maxLenIdx' keeps track of the index of the element that forms the longest
+        // increasing subsequence ending *before* the 'currentIdx' element.
+        let maxLenIdx = 0;
 
-        // Iterate through all elements that come before the current one
-        for (let pastItemIndex = 0; pastItemIndex <= currentItemIndex - 1; pastItemIndex++) {
-            // Check if the past element is smaller than the current element AND
-            // if using the past element results in a longer subsequence than the current best
-            if (dataSequence[pastItemIndex] < dataSequence[currentItemIndex] && currentLengths[pastItemIndex] > currentLengths[bestPreviousIndex]) {
-                bestPreviousIndex = pastItemIndex; // Update the best predecessor index
+        // Inner loop: checks all elements before 'currentIdx' to find the best predecessor.
+        for (let prevIdx = 0; prevIdx <= currentIdx - 1; prevIdx++) {
+            // Condition for a valid predecessor:
+            // 1. The previous element must be strictly smaller than the current element.
+            // 2. The LIS length ending at 'prevIdx' must be greater than the LIS length
+            //    ending at the current 'maxLenIdx'.
+            if (inputSequence[prevIdx] < inputSequence[currentIdx] && lengthsOfSubsequences[prevIdx] > lengthsOfSubsequences[maxLenIdx]) {
+                maxLenIdx = prevIdx; // Update 'maxLenIdx' if a better predecessor is found.
             }
         }
 
-        // The length of the longest increasing subsequence ending at currentItemIndex is
-        // one more than the length of the LIS ending at the bestPreviousIndex
-        currentLengths[currentItemIndex] = currentLengths[bestPreviousIndex] + 1;
-
-        // Store the index of the best predecessor for potential reconstruction later
-        previousElements[currentItemIndex] = bestPreviousIndex;
+        // The LIS length ending at 'currentIdx' is 1 (for the current element itself)
+        // plus the LIS length ending at its best predecessor ('maxLenIdx').
+        lengthsOfSubsequences[currentIdx] = lengthsOfSubsequences[maxLenIdx] + 1;
+        // Record the chosen predecessor's index.
+        predecessorIndices[currentIdx] = maxLenIdx;
     }
 
-    // Find the maximum value in the currentLengths array, which represents the overall longest increasing subsequence length
-    let finalMaxLen = Math.max.apply(null, currentLengths);
+    // After computing all LIS lengths, find the overall maximum length.
+    // 'Math.max.apply(null, array)' is used to find the maximum value in an array.
+    let maximumLength = Math.max.apply(null, lengthsOfSubsequences);
 
-    // Display the computed maximum length
-    console.log(finalMaxLen);
+    // Output the final calculated maximum LIS length to the console.
+    console.log(maximumLength);
 }
 
-// Use Node.js file system module to read input from standard input
-let fileContent = require('node:fs').readFileSync('/dev/stdin', 'utf8');
+// Utilize Node.js 'fs' module to read input from '/dev/stdin'.
+// The input is read as a UTF-8 string.
+let rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-// Process the raw input: trim whitespace, split by newlines, and convert each part to a number
-let dataSequence = (fileContent.trim()).split('\n').map(Number);
+// Process the raw input:
+// 1. 'trim()' removes leading/trailing whitespace.
+// 2. 'split("\n")' divides the string into an array of strings, one per line.
+// 3. 'map(Number)' converts each string element in the array to a number.
+// This processed array is stored in the global variable 'inputSequence'.
+let inputSequence = (rawData.trim()).split("\n").map(Number);
 
-// Execute the main function to find the longest increasing subsequence
-computeMaxIncreasingSubsequence();
+// Invoke the LIS computation function to start the process.
+computeLongestIncreasingSubsequence();

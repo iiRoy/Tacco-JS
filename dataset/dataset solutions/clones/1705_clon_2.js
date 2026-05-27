@@ -1,21 +1,19 @@
-const [ lineCountString , ... connectionStrings ] = require('fs')
-  .readFileSync('/dev/stdin', 'utf-8')
-  .split(/\n/)
-;
+const [firstLineStr, ...inputLines] = require('fs')
+  .readFileSync('/dev/stdin', 'utf8')
+  .split(/\n/);
 
-const nodeTotal = parseInt(lineCountString, 10) ;
+const vertexCount = Number(firstLineStr);
 
-let cumulativeValue = (nodeTotal * (nodeTotal + 1) * (nodeTotal + 2)) / 6 ;
+let finalSum = (vertexCount * (vertexCount + 1) * (vertexCount + 2)) / 6;
 
-for (const currentConnectionString of connectionStrings) {
-  if (!currentConnectionString) {
-    continue ;
+for (const currentEdgeStr of inputLines) {
+  if (!currentEdgeStr) {
+    continue;
   }
-  let [ nodeA , nodeB ] = currentConnectionString.split(/ /).map(val => parseInt(val, 10)) ;
+  let [nodeA, nodeB] = currentEdgeStr.split(/ /).map(Number);
   if (nodeA > nodeB) {
-    [ nodeA , nodeB ] = [ nodeB , nodeA ] ;
+    [nodeA, nodeB] = [nodeB, nodeA];
   }
-  cumulativeValue -= nodeA * (nodeTotal - nodeB + 1) ;
+  finalSum -= nodeA * (vertexCount - nodeB + 1);
 }
-
-console.info(cumulativeValue) ;
+console.log(finalSum);

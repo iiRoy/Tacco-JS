@@ -1,68 +1,60 @@
-"use strict"
-;
+"use strict";
 
-/*
- * This module processes raw input data to count occurrences of a specific pattern.
- * It also tallies lines starting with 'B' and ending with 'A'.
+/**
+ * Processes the raw input data to count specific string patterns.
+ * @param {string} rawData - The complete input string, typically from stdin.
  */
-function ProcessInput( rawData ) {
+function ProcessInput(rawData) {
+  // Split the input into individual lines.
+  const inputLines = rawData.split('\n');
 
-  // Split the entire input string into an array of individual lines.
-  const lines = rawData.split( '\n' ) ;
+  // The first line is usually a count of subsequent entries, but not directly used in the core logic here.
+  const numberOfStrings = parseInt(inputLines.shift(), 10);
 
-  // The first line is expected to be a number, but it's not used in the core logic.
-  const numLines = parseInt( lines.shift( ) ) ;
+  // Initialize counters for different patterns.
+  let totalABOccurrences = 0; // Accumulates the count of "AB" pairs.
+  let stringsEndingWithA = 0; // Counts lines that end with 'A'.
+  let stringsStartingWithB = 0; // Counts lines that start with 'B'.
+  let hasStringStartingWithBAndEndingWithA = false; // Flag if any line starts with 'B' AND ends with 'A'.
 
-  // Initialize a variable to accumulate the total pattern occurrences.
-  let totalOccurrences = 0 ;
+  // Iterate over each remaining line in the input.
+  inputLines.forEach(currentLine => {
+    // Calculate the number of "AB" occurrences within the current line.
+    // The length difference after removing all "AB"s, divided by 2, gives the count.
+    totalABOccurrences += (currentLine.length - currentLine.replace(/AB/g, '').length) / 2;
 
-  // Initialize counters for lines starting with 'B' and ending with 'A'.
-  let prefixBCount = 0 ;
-  let suffixACount = 0 ;
+    // Output the current running total of AB occurrences. This is behavior-critical.
+    console.log(`count: ${totalABOccurrences}`);
 
-  // Flag to track if any line starts with 'B' AND ends with 'A'.
-  let hasBothEnds = false ;
-
-  /*
-   * Iterate over each remaining line in the input array.
-   * For each line, perform pattern matching and end-character checks.
-   */
-  lines.forEach( currentLine => {
-
-    // Calculate occurrences of "AB" in the current line.
-    // This counts how many "AB" pairs are present.
-    totalOccurrences += ( currentLine.length - currentLine.replace( new RegExp('AB', 'g'), '' ).length ) / 2 ;
-
-    // For debugging purposes, output the current total pattern count.
-    console.log( `Current total pattern count: ${ totalOccurrences }` ) ;
-
-    // Check if the current line begins with the character 'B'.
-    let startsB = currentLine.charAt( 0 ) === 'B' ;
-    if ( startsB ) {
-      prefixBCount ++ ; // Increment counter if it starts with 'B'.
+    // Check if the current line starts with 'B'.
+    let lineStartsB = currentLine.charAt(0) === 'B';
+    if (lineStartsB) {
+      stringsStartingWithB++;
     }
 
-    // Check if the current line concludes with the character 'A'.
-    let endsA = currentLine.charAt( currentLine.length - 1 ) === 'A' ;
-    if ( endsA ) {
-      suffixACount ++ ; // Increment counter if it ends with 'A'.
+    // Check if the current line ends with 'A'.
+    let lineEndsA = currentLine.charAt(currentLine.length - 1) === 'A';
+    if (lineEndsA) {
+      stringsEndingWithA++;
     }
 
-    // Update the flag if this line satisfies both conditions (starts with 'B' AND ends with 'A').
-    hasBothEnds = hasBothEnds || ( endsA && startsB ) ;
+    // Update the flag if this line starts with 'B' and ends with 'A'.
+    hasStringStartingWithBAndEndingWithA = hasStringStartingWithBAndEndingWithA || (lineEndsA && lineStartsB);
+  });
 
-  } ) ;
+  // Add the maximum possible "AB" pairs that can be formed by concatenating strings.
+  // This is limited by the minimum of strings ending with 'A' and strings starting with 'B'.
+  totalABOccurrences += stringsEndingWithA < stringsStartingWithB ? stringsEndingWithA : stringsStartingWithB;
 
-  // Add the minimum of lines starting with 'B' and lines ending with 'A' to the total.
-  totalOccurrences += suffixACount < prefixBCount ? suffixACount : prefixBCount ;
+  // If there was at least one string that started with 'B' and ended with 'A',
+  // it means one potential "AB" pair was already counted within that string,
+  // and it also contributed to both `stringsEndingWithA` and `stringsStartingWithB`.
+  // This adjustment corrects for overcounting when such a string exists and contributes to the concatenation count.
+  totalABOccurrences += hasStringStartingWithBAndEndingWithA ? -1 : 0;
 
-  // Adjust the total if any line satisfied both 'starts with B' and 'ends with A'.
-  totalOccurrences += hasBothEnds ? -1 : 0 ;
-
-  // Output the final calculated total number of occurrences.
-  console.log( totalOccurrences ) ;
-
+  // Output the final calculated total.
+  console.log(totalABOccurrences);
 }
 
-// Read input from standard input and pass it to the processing function.
-ProcessInput( require( "fs" ).readFileSync( "/dev/stdin", "utf8" ) ) ;
+// Read the input from standard input and pass it to the processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

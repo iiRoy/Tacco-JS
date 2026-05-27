@@ -1,28 +1,27 @@
-// The initial input content is received here
-function ProcessInputData(rawData) {
+function ProcessInput(rawData) {
+  // The incoming raw data is first divided into separate lines.
+  let linesOfData = rawData.split("\n");
 
-  // The raw input string is separated into an array of lines
-  rawData = rawData.split( '\n' );
+  // We extract the numerical value from the initial line.
+  const countVal = parseInt(linesOfData[0], 10);
 
-  // A numerical value is extracted from the first line, converted from base 10
-  var countValue = parseInt(rawData[0], 10);
+  // The subsequent line is broken down into distinct string components.
+  let stringParts = linesOfData[1].split(" ");
 
-  // The second line is split into an array of string segments
-  var stringParts = rawData[1].split(' ');
+  // A new string variable is set up to store our combined output.
+  let finalResult = '';
 
-  // An empty string is initialized to store the concatenated output
-  var finalResult = '';
-
-  // Loop through the characters up to the specified count
-  for ( var idx = 0; idx < countValue; idx++ ) {
-    // Append the character at the current index from the first segment
+  // We iterate a specific number of times, determined by 'countVal'.
+  for (let idx = 0; idx < countVal; idx++) {
+    // Append a character from the first string segment.
     finalResult += stringParts[0].charAt(idx);
-    // Then append the character at the same index from the second segment
+    // Then, append a character from the second string segment.
     finalResult += stringParts[1].charAt(idx);
   }
-  // Display the final combined string to the console
+
+  // Display the complete, constructed string.
   console.log(finalResult);
 }
 
-// Do not modify the code below this line; it handles standard input/output
-ProcessInputData( require('fs').readFileSync('/dev/stdin', 'utf8') );
+// The following line is responsible for reading input from the standard stream and initiating the processing.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

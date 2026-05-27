@@ -1,21 +1,15 @@
-function determinePossibility(rawData) {
-    const processedInput = rawData.trim();
-    const parts = processedInput.split(" ");
+function processInputData(rawData) {
+    const [creatureCount, totalFootage] = rawData.trim().split(" ").map(Number);
 
-    const numEntities = Number(parts[0]);
-    const totalConnections = Number(parts[1]);
+    const minimumFootage = creatureCount * 2;
+    const maximumFootage = creatureCount * 4;
 
-    const minimumConnections = numEntities * 2;
-    const maximumConnections = numEntities * 4;
+    const footageFromMin = totalFootage - minimumFootage;
+    const footageToMax = maximumFootage - totalFootage;
 
-    const lowerDifference = totalConnections - minimumConnections;
-    const upperDifference = maximumConnections - totalConnections;
+    const isWithinRange = (footageFromMin >= 0) && (footageToMax >= 0);
 
-    const isWithinBounds = Math.min(lowerDifference, upperDifference) >= 0;
-
-    process.stdout.write(isWithinBounds ? "Yes" : "No");
+    console.log(isWithinRange ? "Yes" : "No");
 }
 
-const nodeFs = require("node:fs");
-const standardInputBuffer = nodeFs.readFileSync("/dev/stdin");
-determinePossibility(standardInputBuffer.toString("utf8"));
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

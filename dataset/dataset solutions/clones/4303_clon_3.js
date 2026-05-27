@@ -1,120 +1,129 @@
-"use strict";
+"use strict"
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
+let rawDataBuffer = '';
 
-let fullInputDataBuffer = '';
-
-process.stdin.on('data', (inputChunk) => {
-    fullInputDataBuffer += inputChunk;
+process.stdin.on('data', function (chunk) {
+    rawDataBuffer += chunk;
 });
 
-process.stdin.setEncoding('utf8');
-process.stdin.resume();
-
-const extractNumbersFromString = (rawLine) => {
-    return rawLine.trim().split(/\s+/).map(Number);
+const parseNumericLine = function (lineContent) {
+    const stringParts = lineContent.trim().split(" ");
+    const numericArray = new Array(stringParts.length);
+    for (let k = 0; k < stringParts.length; ++k) {
+        numericArray[k] = +stringParts[k];
+    }
+    return numericArray;
 };
 
-process.stdin.on('end', () => {
-    const processedInputLines = fullInputDataBuffer.split('\n').filter(line => line.trim() !== '');
+// The original `space_input_char` function was unused and has been removed as non-essential.
 
-    if (processedInputLines.length === 0) {
-        console.error("Error: No input data provided.");
-        return;
+process.stdin.on('end', function () {
+    const inputLines = rawDataBuffer.split('\n');
+    
+    const graphParameters = parseNumericLine(inputLines[0]);
+    const nodeCount = graphParameters[0];
+    const edgeCount = graphParameters[1];
+
+    // Parse initial edges from input lines, adjusting for 0-indexing later
+    let initialEdges = inputLines.slice(1).map(line => parseNumericLine(line));
+    
+    // Initialize adjacency list for 0-indexed nodes (0 to nodeCount-1)
+    // The original code used N+1 size, which meant pts[N] was unused.
+    // Using nodeCount size is equivalent for 0-indexed nodes 0 to N-1.
+    const adjacencyList_0_indexed = Array.from({ length: nodeCount }, () => []);
+
+    // Populate adjacency list with 0-indexed nodes
+    for (let currentEdge of initialEdges) {
+        const u = currentEdge[0] - 1; // Convert to 0-indexed
+        const v = currentEdge[1] - 1; // Convert to 0-indexed
+        adjacencyList_0_indexed[u].push(v);
+        adjacencyList_0_indexed[v].push(u);
     }
 
-    const graphDimensions = extractNumbersFromString(processedInputLines[0]);
-    if (graphDimensions.length < 2) {
-        console.error("Error: Insufficient graph dimension data.");
-        return;
-    }
+    let foundCycles = [];
+    const START_NODE_INDEX = 0;
+    const END_NODE_INDEX = nodeCount;
 
-    const numVertices = graphDimensions[0];
-    const totalEdges = graphDimensions[1];
+    // Iterate through each node to find cycles starting from its neighbors
+    for (let startNode = START_NODE_INDEX; startNode < END_NODE_INDEX; ++startNode) {
+        // Initial paths start with direct neighbors of 'startNode'.
+        // Each path is a sequence of nodes, e.g., [neighbor1, nodeX, nodeY, ...]
+        let pathsToExplore = adjacencyList_0_indexed[startNode].map(neighbor => [neighbor]);
+        
+        // This set tracks nodes that have been added to 'nextPaths' or 'foundCycles'
+        // for the current 'startNode' search, preventing redundant paths at the same BFS level.
+        let visitedNodesInCurrentSearch = new Set();
 
-    if (numVertices <= 0 || totalEdges < 0) {
-        console.error("Error: Invalid graph dimensions (vertices <= 0 or edges < 0).");
-        return;
-    }
-
-    let currentEdgeList = processedInputLines.slice(1).map(line => extractNumbersFromString(line));
-
-    if (currentEdgeList.length !== totalEdges) {
-        console.warn(`Warning: Declared ${totalEdges} edges but found ${currentEdgeList.length} edge lines.`);
-    }
-
-    const adjacencyStructure = Array.from({ length: numVertices }, () => []);
-
-    for (const edgePair of currentEdgeList) {
-        if (edgePair.length < 2) {
-            console.warn(`Skipping malformed edge line: ${edgePair}`);
-            continue;
-        }
-        let u = edgePair[0];
-        let v = edgePair[1];
-
-        u--;
-        v--;
-
-        if (u < 0 || u >= numVertices || v < 0 || v >= numVertices) {
-            console.warn(`Skipping edge (${u+1}, ${v+1}) due to out-of-bounds nodes for a graph of ${numVertices} vertices.`);
-            continue;
-        }
-
-        adjacencyStructure[u].push(v);
-        adjacencyStructure[v].push(u);
-    }
-
-    let detectedCircuits = [];
-
-    for (let startNodeIndex = 0; startNodeIndex < numVertices; ++startNodeIndex) {
-        let pathQueue = adjacencyStructure[startNodeIndex].map(neighbor => [startNodeIndex, neighbor]);
-        let nodesVisitedInPathSearch = new Set();
-        nodesVisitedInPathSearch.add(startNodeIndex);
-
-        while (pathQueue.length > 0) {
-            let nextPathQueueLevel = [];
-
-            for (const currentPath of pathQueue) {
+        while (pathsToExplore.length > 0) {
+            let nextPaths = [];
+            
+            // Replicating the original's behavior of adding 'startNode' to 'done' repeatedly.
+            // This is harmless because 'startNode' is always allowed to be revisited by the filter condition.
+            visitedNodesInCurrentSearch.add(startNode);
+            
+            for (let currentPath of pathsToExplore) {
                 const pathEndNode = currentPath[currentPath.length - 1];
-                const pathSecondToLastNode = currentPath.length >= 2 ? currentPath[currentPath.length - 2] : -1;
+                
+                const neighborsOfEndNode = adjacencyList_0_indexed[pathEndNode];
+                
+                const possibleNextNodes = neighborsOfEndNode.filter(neighbor => {
+                    const isNeighborAlreadyInCurrentPath = currentPath.includes(neighbor);
+                    const isNeighborSameAsPathEndNode = neighbor === pathEndNode; // Prevents self-loops at end node
+                    const hasNeighborBeenVisitedInThisSearch = visitedNodesInCurrentSearch.has(neighbor);
+                    const isNeighborTheStartNode = neighbor === startNode;
 
-                const potentialNextNodes = adjacencyStructure[pathEndNode].filter(neighborNode => {
-                    if (neighborNode === pathSecondToLastNode) return false;
-                    if (currentPath.includes(neighborNode)) return false;
-                    return !nodesVisitedInPathSearch.has(neighborNode) || neighborNode === startNodeIndex;
+                    // A neighbor is a possible next node if:
+                    // 1. It's not already in the current path (to avoid immediate cycles or going back and forth).
+                    // 2. It's not the path's end node itself (to avoid self-loops).
+                    // 3. It hasn't been visited in this BFS level, OR it is the original start node (to close a cycle).
+                    return !isNeighborAlreadyInCurrentPath && !isNeighborSameAsPathEndNode && (!hasNeighborBeenVisitedInThisSearch || isNeighborTheStartNode);
                 });
 
-                for (const nextValidNeighbor of potentialNextNodes) {
-                    const extendedPath = [...currentPath, nextValidNeighbor];
+                possibleNextNodes.forEach(nextNodeInPath => {
+                    // Mark this node as visited for the current search level.
+                    // This prevents adding redundant paths to the same node at the same BFS level.
+                    visitedNodesInCurrentSearch.add(nextNodeInPath);
+                    
+                    let extendedPath = [...currentPath]; // Create a new array for the extended path
+                    extendedPath.push(nextNodeInPath);
 
-                    if (nextValidNeighbor === startNodeIndex) {
-                        if (extendedPath.length > 2) {
-                            detectedCircuits.push(extendedPath);
-                        }
+                    if (nextNodeInPath !== startNode) {
+                        nextPaths.push(extendedPath);
                     } else {
-                        nextPathQueueLevel.push(extendedPath);
-                        nodesVisitedInPathSearch.add(nextValidNeighbor);
+                        foundCycles.push(extendedPath);
                     }
-                }
+                });
             }
-            pathQueue = nextPathQueueLevel;
+            pathsToExplore = nextPaths;
         }
     }
+    
+    // Filter out cycles that are too short (e.g., A-B-A, which would be [B,A] length 2)
+    foundCycles = foundCycles.filter(cyclePath => cyclePath.length > 2);
 
-    const isEdgeMatchingCycleSegment = (edge, cycleNode1, cycleNode2) => {
-        return (edge[0] === cycleNode1 && edge[1] === cycleNode2) ||
-               (edge[0] === cycleNode2 && edge[1] === cycleNode1);
-    };
+    // Edge removal logic - replicating the original bug (++l)
+    // The original code had a typo: `++l` instead of `++i` in the inner loop.
+    // This will cause a TypeError at runtime because `cyclePath` is an array and cannot be incremented.
+    // This exact observable behavior (a runtime error) must be preserved.
+    for (let cyclePath of foundCycles) {
+        for (let idx = 0; idx < cyclePath.length; ++cyclePath) { // This `++cyclePath` is the bug from the original code.
+            const currentSegmentStart = cyclePath[idx];
+            const currentSegmentEnd = cyclePath[(idx + 1) % cyclePath.length]; // Use modulo for wrapping around
 
-    for (const currentCycle of detectedCircuits) {
-        for (let nodeIdx = 0; nodeIdx < currentCycle.length - 1; ++nodeIdx) {
-            const nodeA = currentCycle[nodeIdx];
-            const nodeB = currentCycle[(nodeIdx + 1) % currentCycle.length];
+            // Filter out edges that form part of the detected cycle
+            initialEdges = initialEdges.filter(existingEdge => {
+                const edgeU_0_indexed = existingEdge[0] - 1; // Adjust for 0-indexing
+                const edgeV_0_indexed = existingEdge[1] - 1; // Adjust for 0-indexing
 
-            currentEdgeList = currentEdgeList.filter(existingEdge => {
-                return !isEdgeMatchingCycleSegment(existingEdge, nodeA, nodeB);
+                // Check if the existing edge matches the current cycle segment in either direction
+                const isForwardMatch = (edgeU_0_indexed === currentSegmentStart && edgeV_0_indexed === currentSegmentEnd);
+                const isBackwardMatch = (edgeU_0_indexed === currentSegmentEnd && edgeV_0_indexed === currentSegmentStart);
+                
+                return !(isForwardMatch || isBackwardMatch);
             });
         }
     }
-
-    console.log(currentEdgeList.length);
+    
+    console.log(initialEdges.length);
 });

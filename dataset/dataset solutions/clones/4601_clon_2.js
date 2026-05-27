@@ -1,27 +1,32 @@
 'use strict';
 
-function solveProblem(rawInput) {
+function processInput(inputString) {
+  // Parse the input string into an array of numbers.
+  // The first line is taken, split by space, and each part converted to a number.
+  let numericValues = inputString.split('\n')[0].split(' ').map(function(strVal) {
+    return Number(strVal);
+  });
 
-  let parsedNumbers = rawInput
-    .split('\n')[0]
-    .split(' ')
-    .map(numStr => Number(numStr));
+  // Extract the three primary numeric values.
+  const firstNum = numericValues[0];
+  const secondNum = numericValues[1];
+  const targetNum = numericValues[2];
 
-  const factorOne = parsedNumbers[0];
-  const divisorVal = parsedNumbers[1];
-  const targetValue = parsedNumbers[2];
+  // Initialize a collection to store unique modulo results.
+  let remainderCollection = new Set();
 
-  let remainderSet = new Set();
-
-  for (let currentMultiplier = 0; currentMultiplier <= factorOne * divisorVal; currentMultiplier++) {
-    remainderSet.add((factorOne * currentMultiplier) % divisorVal);
+  // Iterate from 0 up to (firstNum * secondNum) inclusive.
+  // Calculate (firstNum * current_iteration_value) % secondNum and add to the collection.
+  for (let counter = 0; counter <= firstNum * secondNum; counter++) {
+    remainderCollection.add((firstNum * counter) % secondNum);
   }
 
-  const finalOutcome = remainderSet.has(targetValue)
-    ? 'YES'
-    : 'NO';
+  // Determine if the target number is present in the collection of remainders.
+  const resultMessage = remainderCollection.has(targetNum) ? 'YES' : 'NO';
 
-  console.log(finalOutcome);
+  // Output the final determination.
+  console.log(resultMessage);
 }
 
-solveProblem(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Read input from standard input and pass it to the processing function.
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

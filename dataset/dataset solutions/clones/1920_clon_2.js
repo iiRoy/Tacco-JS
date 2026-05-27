@@ -1,52 +1,30 @@
-'use strict';
-// This script calculates the number of periods required for an initial amount to reach a target amount
-// under a specific growth rate.
+'use strict'; // Enforce strict mode for cleaner code
 
 /**
- * Orchestrates the primary processing logic.
- * @param {string} sourceString - The raw string input from the environment.
+ * Processes the given raw input to calculate the number of iterations
+ * required for a balance to reach a target value with compound interest.
+ * @param {string} rawData - The raw input string, typically from stdin.
  */
-function  executeCalculation ( sourceString )
-{
-  /* Define constant values from the parsed input */
+function processInput(rawData) {
+  // Split the input string into an array of lines and parse the target value.
   const
-    // Split the input string into an array of lines, removing leading/trailing whitespace
-    contentRows = sourceString. trim ( ) . split ( '\n' ) ,
+    linesArray = rawData.trim().split('\n'), // Remove leading/trailing whitespace and split by newline
+    targetValue = Number(linesArray[0]); // Convert the first line to a number, which is our goal
 
-    // Convert the first line to a numerical target value
-    desiredAmount = Number ( contentRows [ 0 ] )
-  ; // End of constant declarations
-
-
-  /* Initialize mutable state variables */
+  // Initialize financial variables.
   let
-    // Starting capital amount
-    capitalAmount = 100.00,
+    currentBalance = 100, // Starting capital
+    iterationCount = 0;   // Counter for the number of periods
 
-    // Counter for the number of periods elapsed
-    periodCounter = 0
-  ; // End of mutable variable declarations
-
-
-  // Loop continues as long as the current capital is less than the desired target
-  while ( capitalAmount < desiredAmount )
-  {
-    // Apply the growth multiplier to the capital amount
-    capitalAmount *= 1.010;
-
-    // Increment the period counter for each iteration
-    periodCounter = periodCounter + 1;
+  // Loop until the current balance meets or exceeds the target value.
+  while (currentBalance < targetValue) {
+    currentBalance *= 1.01; // Apply a 1% interest rate (compound)
+    iterationCount++;       // Increment the period counter
   }
 
-  // Output the final count of periods to the console
-  console.log( periodCounter );
+  // Output the final count of iterations to the console.
+  console.log(iterationCount);
 }
 
-// Invoke the main processing function with data read from standard input
-executeCalculation(
-  require('fs')
-    . readFileSync(
-      '/dev/stdin',
-      'utf8'
-    )
-);
+// Read input from standard input and pass it to the processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

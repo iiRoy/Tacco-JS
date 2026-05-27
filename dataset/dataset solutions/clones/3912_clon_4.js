@@ -1,10 +1,18 @@
 'use strict';
 
-function evaluateSource(receivedInput) {
-    const initialSegment = receivedInput.substring(0, 3);
-    const distinctGroup = new Set(initialSegment.split(''));
-    const finalVerdict = distinctGroup.size === 3 ? "Yes" : "No";
-    console.log(finalVerdict);
+function evaluateCharacterUniqueness(sourceText) {
+    const firstSymbol = sourceText.charAt(0);
+    const secondSymbol = sourceText.charAt(1);
+    const thirdSymbol = sourceText.charAt(2);
+
+    const uniqueSymbolCollection = new Set();
+    uniqueSymbolCollection.add(firstSymbol);
+    uniqueSymbolCollection.add(secondSymbol);
+    uniqueSymbolCollection.add(thirdSymbol);
+
+    const allAreDistinct = uniqueSymbolCollection.size === 3;
+
+    console.log(allAreDistinct ? "Yes" : "No");
 }
 
-evaluateSource(require("node:fs").readFileSync(0, "utf8"));
+evaluateCharacterUniqueness(require("fs").readFileSync("/dev/stdin", "utf8"));

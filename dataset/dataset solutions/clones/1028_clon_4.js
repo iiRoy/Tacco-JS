@@ -1,49 +1,44 @@
 process.stdin.resume();
 process.stdin.setEncoding("utf8");
 
-const inputProcessor = require("readline").createInterface({
+const inputReader = require("readline").createInterface({
   input: process.stdin,
   output: process.stdout,
 });
 
-const rawInputData = [];
+const receivedLines = [];
 
-inputProcessor.on("line", (individualLine) => {
-  rawInputData.push(individualLine);
+inputReader.on("line", (currentLine) => {
+  receivedLines.push(currentLine);
 });
 
-inputProcessor.on("close", () => {
-  const currentList = [];
+let dataStore = [];
 
-  const totalOperations = Number(rawInputData[0]);
+inputReader.on("close", () => {
+  const operationCount = Number(receivedLines[0]);
 
-  const operationHandlers = {
-    insert: (content) => {
-      currentList.unshift(content);
-    },
-    delete: (target) => {
-      const location = currentList.indexOf(target);
-      if (location !== -1) {
-        currentList.splice(location, 1);
-      }
-    },
-    deleteFirst: () => {
-      currentList.shift();
-    },
-    deleteLast: () => {
-      currentList.pop();
-    },
-  };
+  for (let opIndex = 1; opIndex <= operationCount; opIndex++) {
+    const [actionType, targetValue] = receivedLines[opIndex].split(" ");
 
-  rawInputData.slice(1, totalOperations + 1).forEach((instructionText) => {
-    const parts = instructionText.split(" ");
-    const operationKey = parts[0];
-    const operationArgument = parts[1];
-
-    if (operationHandlers[operationKey]) {
-      operationHandlers[operationKey](operationArgument);
+    switch (actionType) {
+      case "insert":
+        dataStore.unshift(targetValue);
+        break;
+      case "delete":
+        const itemIndex = dataStore.indexOf(targetValue);
+        if (itemIndex !== -1) {
+          dataStore.splice(itemIndex, 1);
+        }
+        break;
+      case "deleteFirst":
+        dataStore.shift();
+        break;
+      case "deleteLast":
+        dataStore.pop();
+        break;
     }
-  });
+  }
 
-  console.log(currentList.join(" "));
+  process.stdout.write(dataStore.join(" "));
+  console.log("");
 });

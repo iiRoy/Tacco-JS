@@ -1,68 +1,23 @@
-const numericParser = (textual) => {
-    return Number(textual);
-};
+function processInputData(rawData) {
+    const inputLines = rawData.split(/\n/);
+    const firstLineValue = parseInteger(inputLines[0]);
+    const thresholdValue = parseInteger(inputLines[1]);
+    const valueStrings = inputLines[2].split(' ');
 
-const extractNumbers = (sourceString) => {
-    const lineSegments = [];
-    let currentLineFragment = '';
-    for (let currentPos = 0; currentPos < sourceString.length; currentPos++) {
-        const charAtPos = sourceString[currentPos];
-        if (charAtPos === '\n') {
-            lineSegments.push(currentLineFragment);
-            currentLineFragment = '';
-        } else {
-            currentLineFragment += charAtPos;
-        }
-    }
-    if (currentLineFragment !== '') {
-        lineSegments.push(currentLineFragment);
-    }
+    const numericValues = valueStrings.map(parseInteger);
 
-    const firstNumericValue = numericParser(lineSegments[0]);
-    const secondNumericValue = numericParser(lineSegments[1]);
-    
-    const numberComponentStrings = [];
-    let currentNumberComponent = '';
-    const thirdLineSegment = lineSegments[2];
-    
-    if (thirdLineSegment === '') {
-        numberComponentStrings.push('');
-    } else {
-        for (let charIndex = 0; charIndex < thirdLineSegment.length; charIndex++) {
-            const char = thirdLineSegment[charIndex];
-            if (char === ' ') {
-                numberComponentStrings.push(currentNumberComponent);
-                currentNumberComponent = '';
-            } else {
-                currentNumberComponent += char;
-            }
-        }
-        numberComponentStrings.push(currentNumberComponent);
-    }
-    
-    return { initialValue: firstNumericValue, keyFigure: secondNumericValue, valueSeries: numberComponentStrings };
-};
+    const transformedValues = numericValues.map(currentNumeric => {
+        const differenceMagnitude = Math.abs(thresholdValue - currentNumeric);
+        return (differenceMagnitude < currentNumeric) ? differenceMagnitude : currentNumeric;
+    });
 
-const computationEngine = (sourceData) => {
-    const processedDataSet = extractNumbers(sourceData);
-    // initialValue (N) is not utilized, consistent with the original
-    const fixedParameter = processedDataSet.keyFigure;
-    const seriesOfValues = processedDataSet.valueSeries;
+    const finalCalculatedSum = transformedValues.reduce((accumulator, valueToAggregate) => accumulator + valueToAggregate, 0);
 
-    let aggregateSum = 0;
+    console.log(finalCalculatedSum);
+}
 
-    for (let idx = 0; idx < seriesOfValues.length; idx++) {
-        const currentNumericalItem = numericParser(seriesOfValues[idx]);
-        
-        let valDifference = fixedParameter - currentNumericalItem;
-        const absoluteDifference = (valDifference < 0) ? -valDifference : valDifference;
-        
-        const selectedContribution = (absoluteDifference < currentNumericalItem) ? absoluteDifference : currentNumericalItem;
-        
-        aggregateSum += selectedContribution;
-    }
+function parseInteger(textValue) {
+    return parseInt(textValue, 10);
+}
 
-    console.log(aggregateSum);
-};
-
-computationEngine(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

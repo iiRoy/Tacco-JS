@@ -1,404 +1,262 @@
 'use strict';
-// Global namespace for application-wide utilities and environment detection.
-const ApplicationRuntime = {};
+var App = {};
+(function(namespace) {
+    var checkBrowserEnv = function() {
+        return typeof window !== 'undefined';
+    };
+    namespace.checkBrowserEnv = checkBrowserEnv;
 
-(function(runtimeEnv) {
-    // Determines if the current execution environment is a web browser.
-    const checkClientSide = () => typeof window !== 'undefined' && typeof window.document !== 'undefined';
-    runtimeEnv.isBrowserContext = checkClientSide; // Exported for external access
+    var checkNodeEnv = function() {
+        return !checkBrowserEnv();
+    };
+    namespace.checkNodeEnv = checkNodeEnv;
 
-    // Determines if the current execution environment is Node.js.
-    const checkServerSide = () => !checkClientSide();
-    runtimeEnv.isNodejsContext = checkServerSide; // Exported for external access
-
-    // Conditional utilities available only in a browser context.
-    if (checkClientSide()) {
-        /**
-         * Safely encodes a string for HTML display, converting special characters to entities.
-         * @param {string | number} rawContent - The string or number to be HTML-encoded.
-         * @returns {string} The HTML-encoded string. Returns an empty string for invalid input.
-         */
-        const safeEncodeMarkup = (rawContent) => {
-            if (typeof rawContent !== 'string' && typeof rawContent !== 'number') {
-                console.warn('safeEncodeMarkup received non-string/non-number input, returning empty string.');
-                return '';
-            }
-            return String(rawContent)
-                .replace(/&/g, '&amp;')
-                .replace(/\"/g, '&quot;')
-                .replace(/\'/g, '&#39;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;');
+    if (checkBrowserEnv()) {
+        var encodeHtmlEntities = function(rawString) {
+            const stringValue = String(rawString);
+            return stringValue
+                    .replace(/&/g, '&amp;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#39;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;');
         };
-        runtimeEnv.encodeHtml = safeEncodeMarkup;
+        namespace.encodeHtmlEntities = encodeHtmlEntities;
 
-        /**
-         * Renders the source code of a given function into a designated HTML element.
-         * The target element must have the ID 'code'.
-         * @param {Function} funcReference - The function whose source code is to be displayed.
-         */
-        const renderSourceCode = (funcReference) => {
-            const codeContainer = document.getElementById('code');
-            if (codeContainer) {
-                codeContainer.innerHTML = `<pre><code>${safeEncodeMarkup(funcReference.toString())}</code></pre>`;
-            } else {
-                console.warn("HTML element with ID 'code' not found. Cannot display source code.");
+        var displaySourceCode = function(targetFunction) {
+            const codeElement = document.getElementById('code');
+            if (codeElement) {
+                codeElement.innerHTML = '<pre><code>' + encodeHtmlEntities(targetFunction) + '</code></pre>';
             }
         };
-        runtimeEnv.displayCodeSnippet = renderSourceCode;
+        namespace.displaySourceCode = displaySourceCode;
     }
 
-    /**
-     * Retrieves all input lines from the appropriate source (DOM in browser, stdin in Node.js).
-     * @returns {string[]} An array of processed input lines.
-     */
-    const fetchInputContent = () => {
-        let collectedLines = [];
-        if (checkClientSide()) {
-            const inputElement = document.getElementById('input');
-            if (!inputElement) {
-                console.error("HTML element with ID 'input' not found. Cannot retrieve input.");
-                return collectedLines;
-            }
-            const rawHtmlContent = inputElement.innerHTML;
-            collectedLines = rawHtmlContent.split('<br>').map(line => line.trim());
-        } else if (checkServerSide()) {
-            try {
-                // Ensure 'fs' module is available before attempting to use it.
-                if (typeof require === 'function' && require.resolve && require.resolve('fs')) {
-                    const fs = require('fs');
-                    const standardInputPath = '/dev/stdin';
-                    collectedLines = fs.readFileSync(standardInputPath, 'utf8').trim().split('\n');
-                } else {
-                    console.error("Node.js 'fs' module not available or cannot be resolved for input.");
-                }
-            } catch (error) {
-                console.error("Failed to read from /dev/stdin in Node.js:", error);
-            }
+    var retrieveInputLines = function() {
+        var receivedLines = [];
+        if (checkBrowserEnv()) {
+            var htmlContent = document.getElementById('input').innerHTML;
+            receivedLines = htmlContent.split('<br>').map(line => line.trim());
+        } else if (checkNodeEnv()) {
+            receivedLines = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split('\n');
         }
-        return collectedLines;
+        return receivedLines;
     };
 
-    /**
-     * Sets up a mechanism to process input lines one by one, invoking a callback for each.
-     * @param {Function} lineProcessingCallback - The function to call with each input line string.
-     */
-    const setupLineIterator = (lineProcessingCallback) => {
-        if (checkClientSide()) {
-            const allInputLines = fetchInputContent();
-            allInputLines.forEach(line => lineProcessingCallback(line));
-        } else if (checkServerSide()) {
-            try {
-                // Ensure 'fs' and 'readline' modules are available.
-                if (typeof require === 'function' && require.resolve && require.resolve('fs') && require.resolve('readline')) {
-                    const fs = require('fs');
-                    const readline = require('readline');
-                    const fileReadStream = fs.createReadStream('/dev/stdin');
-                    const streamProcessor = readline.createInterface({
-                        input: fileReadStream,
-                        output: process.stdout // Output stream is optional for input processing
-                    });
-
-                    streamProcessor.on('line', (inputLine) => {
-                        lineProcessingCallback(inputLine);
-                    });
-                    streamProcessor.on('close', () => {
-                        // All lines from the stream have been processed.
-                    });
-                } else {
-                    console.error("Node.js 'fs' or 'readline' modules not available or cannot be resolved for line-by-line input.");
-                }
-            } catch (error) {
-                console.error("Error setting up Node.js line reader:", error);
+    var setupLineProcessor = function(lineHandler) {
+        if (checkBrowserEnv()) {
+            var lines = retrieveInputLines();
+            for (var i = 0; i < lines.length; i++) {
+                lineHandler(lines[i]);
             }
+        } else if (checkNodeEnv()) {
+            var fileReadStream = require('fs').ReadStream('/dev/stdin');
+            var lineReaderInterface = require('readline').createInterface({'input': fileReadStream, 'output': {}});
+            lineReaderInterface.on('line', function(line) {
+                lineHandler(line);
+            });
         }
     };
-    runtimeEnv.configureInputReader = setupLineIterator;
+    namespace.setupLineProcessor = setupLineProcessor;
 
-    // Internal buffer to accumulate output lines in browser environments.
-    const outputLineBuffer = [];
-
-    /**
-     * Renders a collection of output strings to the appropriate display medium.
-     * @param {string[]} resultStrings - An array of strings to be displayed as output.
-     */
-    const renderResultArray = (resultStrings) => {
-        if (checkClientSide()) {
+    var renderOutputLines = function(outputContentArray) {
+        if (checkBrowserEnv()) {
             const outputElement = document.getElementById('output');
             if (outputElement) {
-                const encoder = runtimeEnv.encodeHtml || ((s) => s); // Fallback if HTML encoding isn't available
-                outputElement.innerHTML = resultStrings.map(encoder).join('<br>\n');
-                outputLineBuffer.length = 0; // Clear buffer after bulk output
-            } else {
-                console.warn("HTML element with ID 'output' not found for bulk output.");
+                outputElement.innerHTML = outputContentArray.map(encodeHtmlEntities).join('<br>\n');
             }
-        } else if (checkServerSide()) {
-            resultStrings.forEach(line => console.log(line));
+        } else if (checkNodeEnv()) {
+            for (var i = 0; i < outputContentArray.length; i++) {
+                console.log(outputContentArray[i]);
+            }
         }
     };
-    runtimeEnv.outputResults = renderResultArray;
+    namespace.renderOutputLines = renderOutputLines;
 
-    /**
-     * Appends a single line to the output. In a browser, this updates the display immediately.
-     * @param {string} newOutputEntry - The string to append to the output.
-     */
-    const printLineToOutput = (newOutputEntry) => {
-        if (checkClientSide()) {
-            outputLineBuffer.push(newOutputEntry);
+    var bufferedOutput = [];
+    var renderSingleOutputLine = function(singleLineContent) {
+        if (checkBrowserEnv()) {
+            bufferedOutput.push(singleLineContent);
             const outputElement = document.getElementById('output');
             if (outputElement) {
-                const encoder = runtimeEnv.encodeHtml || ((s) => s);
-                outputElement.innerHTML = outputLineBuffer.map(encoder).join('<br>\n');
-            } else {
-                console.warn("HTML element with ID 'output' not found for single line output.");
+                outputElement.innerHTML = bufferedOutput.map(encodeHtmlEntities).join('<br>\n');
             }
-        } else if (checkServerSide()) {
-            console.log(newOutputEntry);
+        } else if (checkNodeEnv()) {
+            console.log(singleLineContent);
         }
     };
-    runtimeEnv.appendOutputLine = printLineToOutput;
+    namespace.renderSingleOutputLine = renderSingleOutputLine;
 
-    /**
-     * Orchestrates the execution of the primary application logic, handling environment-specific setups.
-     * @param {Function} primaryAlgorithm - The main function containing the problem's solution logic.
-     */
-    const orchestrateMainExecution = (primaryAlgorithm) => {
-        if (checkClientSide()) {
-            window.onload = () => {
-                if (runtimeEnv.displayCodeSnippet) {
-                    runtimeEnv.displayCodeSnippet(primaryAlgorithm); // Display code before running
-                }
-                primaryAlgorithm();
+    var executeMainLogic = function(applicationEntry) {
+        if (checkBrowserEnv()) {
+            window.onload = function() {
+                displaySourceCode(applicationEntry);
+                applicationEntry();
             };
-        } else if (checkServerSide()) {
-            primaryAlgorithm(); // Execute immediately in Node.js
+        } else if (checkNodeEnv()) {
+            applicationEntry();
         }
     };
-    runtimeEnv.runApplication = orchestrateMainExecution;
+    namespace.executeMainLogic = executeMainLogic;
+})(App);
 
-})(ApplicationRuntime); // Pass the namespace object for population
+var applicationEntry = function() {
+    const gridMinX = 0;
+    const gridMinY = 0;
+    const gridWidth = 10;
+    const gridHeight = 10;
 
-// --- Main Program Logic Starts Here ---
-
-/**
- * Parses a string of space-separated numbers into an array of floats.
- * Utilizes the `Number` constructor for type conversion, which handles both integers and floats.
- * @param {string} lineStr - The input string containing space-separated numbers.
- * @returns {number[]} An array of parsed numbers.
- */
-const parseNumbersFromString = (lineStr) => lineStr.split(' ').map(Number);
-
-/**
- * The core application logic that solves the problem.
- * This function encapsulates the game state, movement rules, and survival algorithm.
- */
-const solutionLogic = function() {
-    // Configuration object for the game board boundaries.
-    const gameBoardConfig = {
-        minX: 0,
-        minY: 0,
-        maxX: 10, // Exclusive upper bound for X-coordinate
-        maxY: 10  // Exclusive upper bound for Y-coordinate
-    };
-
-    // Defines the possible relative movements for the creature (e.g., a chess knight's moves).
-    const creaturePathOffsets = [
+    const playerMovementVectors = [
         [-1, -2], [0, -2], [1, -2],
         [-2, -1], [2, -1],
         [-2, 0], [2, 0],
         [-2, 1], [2, 1],
         [-1, 2], [0, 2], [1, 2]
     ];
-
-    // Defines the relative coordinates representing the area covered by a single sprayer (3x3 grid).
-    const sprayerEffectArea = [
+    const sprinklerEffectVectors = [
         [-1, -1], [0, -1], [1, -1],
         [-1, 0], [0, 0], [1, 0],
         [-1, 1], [0, 1], [1, 1]
     ];
 
-    // An immutable object acting as an enum for identifying different types of input data.
-    const InputDataIdentifiers = Object.freeze({
-        CREATURE_START_POS: 0,
-        NUMBER_OF_SPRAYERS: 1,
-        SPRAYER_LOCATIONS_LIST: 2
-    });
+    var inputDataKeys = {};
+    inputDataKeys.phyonkichiLocation = 0;
+    inputDataKeys.numSprinklers = 1;
+    inputDataKeys.splinklerLocations = 2;
 
-    // Object to store all parsed input data for the current test case.
-    const applicationInput = {
-        creature: { x: 0, y: 0 },
-        numSprayers: 0,
-        sprayerPositions: []
+    var processedInputData = {
+        phyonkichi: {},
+        splinklerLocations: []
+    };
+    var currentLineIndex = 0;
+
+    var isWithinGridBounds = function(xCoord, yCoord) {
+        const isXValid = xCoord >= gridMinX && xCoord < gridWidth;
+        const isYValid = yCoord >= gridMinY && yCoord < gridHeight;
+        return isXValid && isYValid;
     };
 
-    let currentInputLineIndex = 0; // Tracks the current line number to determine data type.
-
-    /**
-     * Checks if a given coordinate pair (x, y) falls within the defined game board boundaries.
-     * @param {number} xCoord - The X-coordinate to check.
-     * @param {number} yCoord - The Y-coordinate to check.
-     * @returns {boolean} True if the coordinate is within bounds, false otherwise.
-     */
-    const isWithinBounds = (xCoord, yCoord) =>
-        xCoord >= gameBoardConfig.minX && xCoord < gameBoardConfig.maxX &&
-        yCoord >= gameBoardConfig.minY && yCoord < gameBoardConfig.maxY;
-
-    /**
-     * Calculates all valid new positions reachable from a starting point given a set of movement vectors.
-     * Filters out any positions that fall outside the game board boundaries.
-     * @param {number[]} startLocation - The [x, y] coordinates of the starting position.
-     * @param {number[][]} movementVectors - An array of [deltaX, deltaY] offsets.
-     * @returns {number[][]} An array of valid [x, y] coordinates that can be reached.
-     */
-    const determinePotentialPositions = (startLocation, movementVectors) => {
-        const [currentX, currentY] = startLocation;
-        const reachableCells = [];
-
-        for (const [deltaX, deltaY] of movementVectors) {
-            const nextX = currentX + deltaX;
-            const nextY = currentY + deltaY;
-            if (isWithinBounds(nextX, nextY)) {
-                reachableCells.push([nextX, nextY]);
+    var calculatePotentialPositions = function(currentPosition, movementOffsets) {
+        var possibleNewPositions = [];
+        for (var i = 0; i < movementOffsets.length; i++) {
+            var offsetVector = movementOffsets[i];
+            var newX = currentPosition[0] + offsetVector[0];
+            var newY = currentPosition[1] + offsetVector[1];
+            if (isWithinGridBounds(newX, newY)) {
+                possibleNewPositions.push([newX, newY]);
             }
         }
-        return reachableCells;
+        return possibleNewPositions;
     };
 
-    /**
-     * Determines the next possible positions for the creature based on its predefined movement pattern.
-     * @param {number[]} creatureCurrentPosition - The [x, y] coordinates of the creature.
-     * @returns {number[][]} An array of valid [x, y] locations the creature can move to.
-     */
-    const findNextCreatureSpots = (creatureCurrentPosition) =>
-        determinePotentialPositions(creatureCurrentPosition, creaturePathOffsets);
+    var getPlayerNextPositions = function(playerCurrentPos) {
+        return calculatePotentialPositions(playerCurrentPos, playerMovementVectors);
+    };
 
-    /**
-     * Identifies all grid cells that are affected (wet) by a single sprayer.
-     * @param {number[]} sprayerCenterLocation - The [x, y] coordinates of the sprayer's center.
-     * @returns {number[][]} An array of [x, y] locations covered by the sprayer.
-     */
-    const identifySoakedAreas = (sprayerCenterLocation) =>
-        determinePotentialPositions(sprayerCenterLocation, sprayerEffectArea);
+    var getAffectedGridCells = function(currentSprinklerPos) {
+        return calculatePotentialPositions(currentSprinklerPos, sprinklerEffectVectors);
+    };
 
-    // A Map used for memoization (dynamic programming cache) to store results of `checkSurvivalPossibility`.
-    const survivalMemo = new Map();
+    var memoizationStore = {}; // Cache persists across test cases
+    var recursionPath = []; // For debugging, not critical for logic
+    var recursiveCallCounter = 0;
 
-    /**
-     * Generates a unique string key for the memoization cache based on the creature's position
-     * and the count of remaining sprinklers.
-     * @param {number[]} creaturePos - The [x, y] coordinates of the creature.
-     * @param {number[][]} remainingSprayers - The array of remaining sprayer locations.
-     * @returns {string} A unique key for the cache.
-     */
-    const generateCacheKey = (creaturePos, remainingSprayers) =>
-        `${creaturePos[0]},${creaturePos[1]}|${remainingSprayers.length}`;
+    const areLocationsEqual = (loc1, loc2) => loc1[0] === loc2[0] && loc1[1] === loc2[1];
 
-    /**
-     * Recursively checks if the creature can survive a sequence of sprinklers by finding a dry path.
-     * This function uses memoization to optimize performance.
-     * @param {number[]} currentCreaturePosition - The creature's current [x, y] position.
-     * @param {number[][]} remainingSprayerPositions - An array of [x, y] locations of sprinklers yet to activate.
-     * @returns {boolean} True if the creature can survive, false otherwise.
-     */
-    const checkSurvivalPossibility = (currentCreaturePosition, remainingSprayerPositions) => {
-        const memoKey = generateCacheKey(currentCreaturePosition, remainingSprayerPositions);
-        if (survivalMemo.has(memoKey)) {
-            return survivalMemo.get(memoKey); // Return cached result if available
+    var canPlayerEvade = function(playerCurrentPos, activeSprinklerPositions) {
+        recursiveCallCounter++;
+        const xCoord = playerCurrentPos[0];
+        const yCoord = playerCurrentPos[1];
+        const numSprinklers = activeSprinklerPositions.length;
+        const cacheKey = `${numSprinklers},${xCoord},${yCoord}`;
+
+        if (cacheKey in memoizationStore) {
+            return memoizationStore[cacheKey];
         }
 
-        // Base case: If there are no more sprinklers, the creature has successfully survived.
-        if (remainingSprayerPositions.length === 0) {
-            survivalMemo.set(memoKey, true);
+        recursionPath.push(playerCurrentPos);
+
+        if (numSprinklers <= 0) {
+            // console.log('Stack: ' + JSON.stringify(recursionPath));
+            recursionPath.pop(); // Balance stack on return
             return true;
         }
 
-        // Consider the first sprayer in the remaining sequence.
-        const activeSprayerLocation = remainingSprayerPositions[0];
-        // Create a new array for subsequent recursive calls, excluding the current active sprayer.
-        const subsequentSprayers = remainingSprayerPositions.slice(1);
+        var currentSprinklerPos = activeSprinklerPositions[0];
+        var playerNextPossiblePositions = getPlayerNextPositions(playerCurrentPos);
+        var sprinklerAffectedCells = getAffectedGridCells(currentSprinklerPos);
 
-        // Determine all possible next moves for the creature.
-        const possibleNextCreaturePositions = findNextCreatureSpots(currentCreaturePosition);
-        // Identify all grid cells that will be affected by the current active sprayer.
-        const affectedLocations = identifySoakedAreas(activeSprayerLocation);
+        // Guard clause: if no next positions, player cannot survive this turn
+        if (playerNextPossiblePositions.length === 0) {
+            recursionPath.pop(); // Balance stack
+            memoizationStore[cacheKey] = false;
+            return false;
+        }
 
-        // Iterate through each potential next position for the creature.
-        for (const potentialCreatureSpot of possibleNextCreaturePositions) {
-            let isSpotWet = false;
-            // Check if this potential spot is covered by the current sprayer.
-            for (const singleAffectedSpot of affectedLocations) {
-                if (potentialCreatureSpot[0] === singleAffectedSpot[0] &&
-                    potentialCreatureSpot[1] === singleAffectedSpot[1]) {
-                    isSpotWet = true;
-                    break; // This spot is wet, no need to check further wet areas.
-                }
-            }
-
-            // If the potential spot is NOT wet, the creature can try to move there.
-            if (!isSpotWet) {
-                // Recursively check if survival is possible from this new dry spot
-                // considering the *remaining* sprinklers.
-                if (checkSurvivalPossibility(potentialCreatureSpot, subsequentSprayers)) {
-                    survivalMemo.set(memoKey, true); // If any path leads to survival, memoize and return true.
-                    return true;
+        for (var i = 0; i < playerNextPossiblePositions.length; i++) {
+            var nextPlayerPos = playerNextPossiblePositions[i];
+            for (var j = 0; j < sprinklerAffectedCells.length; j++) {
+                var affectedCell = sprinklerAffectedCells[j];
+                if (areLocationsEqual(nextPlayerPos, affectedCell)) {
+                    var remainingSprinklers = activeSprinklerPositions.slice(1);
+                    var canContinue = canPlayerEvade(nextPlayerPos, remainingSprinklers);
+                    if (canContinue) {
+                        memoizationStore[cacheKey] = true;
+                        recursionPath.pop(); // Balance stack on successful path
+                        return true;
+                    }
                 }
             }
         }
-
-        // If no path from the current position leads to survival, memoize and return false.
-        survivalMemo.set(memoKey, false);
+        recursionPath.pop(); // Balance stack on failed path
+        memoizationStore[cacheKey] = false;
         return false;
     };
 
-    /**
-     * Processes a single input line, parsing its contents based on the expected data type
-     * determined by the current line index.
-     * @param {string} inputLineString - The raw string read from input.
-     */
-    const processInputLine = (inputLineString) => {
-        const lineArguments = parseNumbersFromString(inputLineString);
-
-        // Use modulo operator to cycle through input data types for each test case.
-        const currentDataType = currentInputLineIndex % Object.keys(InputDataIdentifiers).length;
-
-        switch (currentDataType) {
-            case InputDataIdentifiers.CREATURE_START_POS:
-                applicationInput.creature.x = lineArguments[0];
-                applicationInput.creature.y = lineArguments[1];
-                // A common problem pattern: (0,0) as creature position might signal the end of input.
-                // For this problem, we assume it's just another valid starting position.
-                break;
-            case InputDataIdentifiers.NUMBER_OF_SPRAYERS:
-                applicationInput.numSprayers = lineArguments[0];
-                // Reset sprayer positions for the new test case.
-                applicationInput.sprayerPositions = [];
-                break;
-            case InputDataIdentifiers.SPRAYER_LOCATIONS_LIST:
-                // Parse all sprayer locations from this line, which typically contains multiple pairs.
-                for (let idx = 0; idx < lineArguments.length; idx += 2) {
-                    applicationInput.sprayerPositions.push([lineArguments[idx], lineArguments[idx + 1]]);
-                }
-
-                // --- Execute the survival check for the current test case ---
-                survivalMemo.clear(); // Clear the cache for every new test case.
-                const initialCreaturePosition = [applicationInput.creature.x, applicationInput.creature.y];
-
-                if (checkSurvivalPossibility(initialCreaturePosition, applicationInput.sprayerPositions)) {
-                    ApplicationRuntime.appendOutputLine('OK');
-                } else {
-                    ApplicationRuntime.appendOutputLine('NA');
-                }
-                break;
-            default:
-                console.warn(`Unrecognized data type identifier (${currentDataType}) encountered for line: "${inputLineString}"`);
-                break;
-        }
-        currentInputLineIndex++;
+    const parseNumericArgs = (lineStr) => {
+        return lineStr.split(' ').map(parseFloat);
     };
 
-    // Configure the application runtime to read input lines and pass them to our processing function.
-    ApplicationRuntime.configureInputReader(processInputLine);
+    var processInputLine = function(line) {
+        var lineTokens = parseNumericArgs(line);
+        var currentDataType = currentLineIndex % Object.keys(inputDataKeys).length;
+
+        switch (currentDataType) {
+            case inputDataKeys.phyonkichiLocation:
+                processedInputData.phyonkichi.x = lineTokens[0];
+                processedInputData.phyonkichi.y = lineTokens[1];
+                // Original comment: if (input.phyonkichi.x === 0 && input.phyonkichi.y === 0) { /* console.log('end'); */ }
+                break;
+            case inputDataKeys.numSprinklers:
+                processedInputData.numSprinklers = lineTokens[0];
+                break;
+            case inputDataKeys.splinklerLocations:
+                const newSprinklerPositions = [];
+                for (var i = 0; i < lineTokens.length; i += 2) {
+                    newSprinklerPositions.push([lineTokens[i], lineTokens[i + 1]]);
+                }
+                processedInputData.splinklerLocations = newSprinklerPositions;
+
+                recursiveCallCounter = 0; // Reset call counter for each test case
+                // memoizationStore is NOT reset here, it persists as per original logic
+
+                const playerStartPos = [processedInputData.phyonkichi.x, processedInputData.phyonkichi.y];
+                const result = canPlayerEvade(playerStartPos, processedInputData.splinklerLocations);
+
+                if (result) {
+                    App.renderSingleOutputLine('OK');
+                } else {
+                    App.renderSingleOutputLine('NA');
+                }
+                // Original comment: console.log('callCount: ' + recursiveCallCounter);
+                break;
+            default:
+                // No action for other data types
+                break;
+        }
+        currentLineIndex++;
+    };
+    App.setupLineProcessor(processInputLine);
 };
 
-// Register the main solution logic function with the application runtime for execution.
-ApplicationRuntime.runApplication(solutionLogic);
+App.executeMainLogic(applicationEntry);

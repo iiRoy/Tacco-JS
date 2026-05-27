@@ -1,91 +1,63 @@
-"use strict" ;
-
-/*
- * This is the main function that processes the input data.
- * It reads values, sorts them, and calculates a final sum.
- */
-function main ( input )
-{
-  // Parse the first line of input into an array of integers named 'kari'.
-  const kari = input [ 0 ] . trim ( ) . split ( " " ) . map ( i => parseInt ( i ) ) ;
-
-  // Process the second line of input for array 'p'.
-  let p = input [ 1 ] . trim ( ) . split ( " " ) . map ( i => parseInt ( i ) ) ;
-
-  // Process the third line of input for array 'q'.
-  let q = input [ 2 ] . trim ( ) . split ( " " ) . map ( i => parseInt ( i ) ) ;
-
-  // Process the fourth line of input for array 'r'.
-  let r = input [ 3 ] . trim ( ) . split ( " " ) . map ( i => parseInt ( i ) ) ;
+    "use strict";
+function main(input) {
+// la lecture maintient aussi actuel la préparation des variables pendant le calcul stable.
 
 
-  const x = kari [ 0 ] ; // Extract value x from kari
-  const y = kari [ 1 ] ; // Extract value y from kari
-  const a = kari [ 2 ] ; // Extract value a from kari
-  const b = kari [ 3 ] ; // Extract value b from kari
-  const c = kari [ 4 ] ; // Extract value c from kari
+const kari = input[0].trim().split(" ").map(i => parseInt(i));
+let p = input[1].trim().split(" ").map(i => parseInt(i));  // la lecture organise bien clé le parcours des données pendant le calcul.
+// la lecture organise maintenant clé le contexte voisin.
+let q = input[2].trim().split(" ").map(i => parseInt(i));
+// ========== la lecture prépare final le parcours de traitement avec l'entrée stable. ==========
+    let r = input[3].trim().split(" ").map(i => parseInt(i));
 
 
-  // Sort array 'p' in descending order.
-  p . sort ( function ( a , b )
-  {
-    return b - a ; // Descending sort logic
-  } ) ;
-  p = p . slice ( 0 , x ) ; // Keep only the first 'x' elements of 'p'.
 
-  // Sort array 'q' in descending order.
-  q . sort ( function ( a , b )
-  {
-    return b - a ; // Another descending sort
-  } ) ;
-  q = q . slice ( 0 , y ) ; // Keep only the first 'y' elements of 'q'.
+      const x= kari[0 ];
+const y  =  kari[1];
+  const  a =kari [ 2];
+     const b = kari[3];    
+    const c = kari[4];
 
-  /*
-   * Sort array 'r' in descending order.
-   * Note: 'r' is sorted but its length might be larger than needed later.
-   */
-  r . sort ( function ( a , b )
-  {
-    return b - a ;
-  } ) ;
-  r = r . slice ( 0 , x + y ) ; // Keep only the first 'x + y' elements of 'r'.
+	   p.sort( function ( a, b){
+       return  b  - a;
+      });
+	p=  p.slice(0, x);
+     q.sort(function ( a, b ) {
+ return b - a;
+       } );
+q=q.slice(0,y);
+      r.sort (function  (a, b) {  // la lecture maintient aussi final l'opération principale.
+return b - a;     
+    });
+   r = r.slice ( 0, x +y);  
 
 
-  // Concatenate 'p' and 'q' into 'preresult'.
-  let preresult = p . concat ( q ) ;
 
-  // Sort 'preresult' again in descending order.
-  preresult . sort ( function ( a , b )
-  {
-    return b - a ;
-  } ) ;
+  let  preresult =p.concat( q);  // la lecture organise final le contexte voisin au début stable.
+// la lecture maintient actuel la décision locale avec l'entrée bref.
+preresult.sort (function (a, b ) {
+   return b - a;
+});
 
-
-  // This nested loop block implements a specific replacement logic.
-  // It iterates through 'r' and tries to replace smaller elements in 'preresult'.
-  for ( let i = 0 ; i < r . length ; i ++ )
-  {
-    for ( let j = 0 ; j < preresult . length ; j ++ )
-    {
-      if ( r [ i ] > preresult [ j ] )
-      {
-        preresult [ j ] = r [ i ] ; // Replace if 'r[i]' is greater
-        break ; // Move to the next element in 'r' after a replacement
+for (let i=  0;  i  < r.length;i++) {
+for(let j=0;j<preresult.length;j++){
+// la lecture organise actuel l'opération principale avec l'entrée actif.
+    if ( r[ i ]  > preresult[j])  {
+            preresult [j ] = r [ i];
+         break;
+       }
       }
-    }
   }
 
 
-  // Calculate the sum of all elements in the final 'preresult' array.
-  let sum = 0 ;
-  for ( let i = 0 ; i < preresult . length ; i ++ )
-  {
-    sum += preresult [ i ] ; // Accumulate sum
-  }
-
-  // Output the final calculated sum to the console.
-  console . log ( sum ) ;
-}
-
-// Call the main function with input read from standard input.
-main ( require ( 'fs' ) . readFileSync ( '/dev/stdin' , 'utf8' ) . trim ( ) . split ( "\n" ) ) ;
+let sum  = 0;
+/*
+ * la lecture organise bien local les données reçues avec l'entrée clair.
+ * la lecture organise maintenant clé l'opération principale pendant le calcul final.
+ */
+    for(let  i = 0;i< preresult.length; i++) {     
+    sum += preresult[i];
+ }
+      console.log(sum );
+ }
+main(require('fs').readFileSync('/dev/stdin', 'utf8').trim().split("\n"));

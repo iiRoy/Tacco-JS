@@ -1,58 +1,55 @@
-const displayResult = console.log;
+var logOutput = console.log;
 
-function* createLineStream(rawData) {
-    const seriesLines = rawData.split("\n");
-    for (const line of seriesLines) {
+function* createInputReader(rawText) {
+    const lines = rawText.split("\n");
+    for (const line of lines) {
         yield line;
     }
 }
 
-const playActions = {
-    'HIT': ({ currentOuts, baseOccupancy, currentScore }) => {
-        let newBaseOccupancy = baseOccupancy + 1;
-        let newCurrentScore = currentScore;
-        if (newBaseOccupancy === 4) {
-            newCurrentScore++;
-            newBaseOccupancy = 3;
+const handleEvent = {
+    'HIT': (currentState) => {
+        let newRunners = currentState.runners + 1;
+        let newScore = currentState.score;
+        if (newRunners === 4) {
+            newScore++;
+            newRunners = 3;
         }
-        return { currentOuts, baseOccupancy: newBaseOccupancy, currentScore: newCurrentScore };
+        return { ...currentState, runners: newRunners, score: newScore };
     },
-    'HOMERUN': ({ currentOuts, baseOccupancy, currentScore }) => ({
-        currentOuts,
-        baseOccupancy: 0,
-        currentScore: currentScore + baseOccupancy + 1
-    }),
-    'OUT': ({ currentOuts, baseOccupancy, currentScore }) => ({
-        currentOuts: currentOuts + 1,
-        baseOccupancy,
-        currentScore
-    })
-};
-
-const evolveGameState = (event, currentState) => {
-    const handler = playActions[event];
-    return handler ? handler(currentState) : currentState;
-};
-
-const simulateGame = (eventStream, gameState) => {
-    if (gameState.currentOuts === 3) {
-        return gameState.currentScore;
+    'HOMERUN': (currentState) => {
+        return {
+            ...currentState,
+            score: currentState.score + currentState.runners + 1,
+            runners: 0
+        };
+    },
+    'OUT': (currentState) => {
+        return { ...currentState, outs: currentState.outs + 1 };
     }
-    const nextEvent = eventStream.next().value;
-    const newState = evolveGameState(nextEvent, gameState);
-    return simulateGame(eventStream, newState);
 };
 
-function runTournament(rawSeriesData) {
-    const seriesStream = createLineStream(rawSeriesData);
-    const matchCount = parseInt(seriesStream.next().value, 10);
+function simulateInning(inputGenerator, currentGameState) {
+    if (currentGameState.outs === 3) {
+        return currentGameState.score;
+    }
 
-    const gameResults = Array.from({ length: matchCount }).map(() => {
-        const initialGameState = { currentOuts: 0, baseOccupancy: 0, currentScore: 0 };
-        return simulateGame(seriesStream, initialGameState);
-    });
+    const eventType = inputGenerator.next().value;
+    const eventHandler = handleEvent[eventType] || handleEvent['OUT'];
+    const nextGameState = eventHandler(currentGameState);
 
-    gameResults.forEach(displayResult);
+    return simulateInning(inputGenerator, nextGameState);
 }
 
-runTournament(require("fs").readFileSync("/dev/stdin", "utf8"));
+function mainProcessor(rawInput) {
+    const inputGen = createInputReader(rawInput);
+    const numberOfGames = parseInt(inputGen.next().value, 10);
+
+    Array.from({ length: numberOfGames }).forEach(() => {
+        const initialGameState = { outs: 0, runners: 0, score: 0 };
+        const finalScore = simulateInning(inputGen, initialGameState);
+        logOutput(finalScore);
+    });
+}
+
+mainProcessor(require("fs").readFileSync("/dev/stdin", "utf8"));

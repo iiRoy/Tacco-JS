@@ -1,54 +1,41 @@
-'use strict';
-(function(rawData){
-  const processLines = rawData.trim().split('\n');
-  const vertexCount = Number(processLines[0]);
+(function(rawInput) {
+    const processedLines = rawInput.trim().split('\n');
+    const totalNodes = parseInt(processedLines[0], 10);
+    const edgeDetails = processedLines.slice(1).map(line =>
+        line.split(/\s+/).map(Number)
+    );
 
-  const graphConnections = new Map();
-  for (let idx = 1; idx <= vertexCount; ++idx) {
-    graphConnections.set(idx, []);
-  }
+    const linkageMatrix = Array.from({ length: totalNodes + 1 }, () => []);
+    const nodeAssignments = Array(totalNodes + 1).fill(-1);
 
-  processLines.slice(1).forEach(line => {
-    const parts = line.split(/\s+/).map(Number);
-    const originVertex = parts[0];
-    const targetVertex = parts[1];
-    const edgeParity = parts[2] % 2;
-    graphConnections.get(originVertex).push({ destination: targetVertex, linkParity: edgeParity });
-  });
+    edgeDetails.forEach(edge => {
+        const [sourceId, targetId, weightVal] = edge;
+        linkageMatrix[sourceId].push([targetId, weightVal % 2]);
+    });
 
-  const assignedParities = new Array(vertexCount + 1).fill(-1);
+    const visitQueue = [];
 
-  const traversalQueue = [];
+    nodeAssignments[1] = 0;
+    visitQueue.push(1);
 
-  assignedParities[1] = 0;
-  traversalQueue.push(1);
+    let queuePointer = 0;
+    while (queuePointer < visitQueue.length) {
+        const currentIdentifier = visitQueue[queuePointer++];
+        const currentAssignment = nodeAssignments[currentIdentifier];
 
-  let queuePointer = 0;
-  while (queuePointer < traversalQueue.length) {
-    const currentVertexIdentifier = traversalQueue[queuePointer++];
-    const currentVertexParity = assignedParities[currentVertexIdentifier];
-
-    const outgoingEdges = graphConnections.get(currentVertexIdentifier);
-
-    if (outgoingEdges) {
-      for (const edge of outgoingEdges) {
-        const neighborVertexIdentifier = edge.destination;
-        const connectionParity = edge.linkParity;
-        const computedNeighborParity = currentVertexParity ^ connectionParity;
-
-        if (assignedParities[neighborVertexIdentifier] === -1) {
-          assignedParities[neighborVertexIdentifier] = computedNeighborParity;
-          traversalQueue.push(neighborVertexIdentifier);
+        for (const connection of linkageMatrix[currentIdentifier]) {
+            const [connectedIdentifier, connectionWeightMod] = connection;
+            if (nodeAssignments[connectedIdentifier] === -1) {
+                nodeAssignments[connectedIdentifier] = currentAssignment ^ connectionWeightMod;
+                visitQueue.push(connectedIdentifier);
+            }
         }
-      }
     }
-  }
 
-  const finalAssignments = [];
-  for (let idx = 1; idx <= vertexCount; ++idx) {
-    finalAssignments.push(assignedParities[idx]);
-  }
+    const resultGroups = [];
+    for (let i = 1; i <= totalNodes; ++i) {
+        resultGroups.push(nodeAssignments[i]);
+    }
+    console.log(resultGroups.join('\n'));
 
-  console.log(finalAssignments.join('\n'));
-
-})(require('fs').readFileSync('/dev/stdin','utf8'));
+})(require('fs').readFileSync('/dev/stdin', 'utf8'));

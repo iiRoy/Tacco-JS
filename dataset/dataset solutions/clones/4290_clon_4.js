@@ -1,33 +1,27 @@
-((inputFetcher) => {
-  const processedDatum = inputFetcher().trim();
-
-  const assessEquivalence = (leftMarker, rightMarker, currentTally) => {
-    if (leftMarker >= rightMarker) {
-      return currentTally;
+console.log((inputData => {
+  const processString = (currentString, startIdx, endIdx, xCounter) => {
+    if (startIdx >= endIdx) {
+      return { count: xCounter, possible: true };
     }
 
-    const charAtLeft = processedDatum.codePointAt(leftMarker);
-    const charAtRight = processedDatum.codePointAt(rightMarker);
-    const placeholderCode = 'x'.codePointAt(0);
+    const charA = currentString[startIdx];
+    const charB = currentString[endIdx];
 
-    if (charAtLeft === charAtRight) {
-      return assessEquivalence(leftMarker + 1, rightMarker - 1, currentTally);
+    if (charA === charB) {
+      return processString(currentString, startIdx + 1, endIdx - 1, xCounter);
+    } else {
+      if (charA === 'x') {
+        return processString(currentString, startIdx + 1, endIdx, xCounter + 1);
+      } else if (charB === 'x') {
+        return processString(currentString, startIdx, endIdx - 1, xCounter + 1);
+      } else {
+        return { count: -1, possible: false };
+      }
     }
-
-    if (charAtLeft === placeholderCode) {
-      return assessEquivalence(leftMarker + 1, rightMarker, currentTally + 1);
-    }
-
-    if (charAtRight === placeholderCode) {
-      return assessEquivalence(leftMarker, rightMarker - 1, currentTally + 1);
-    }
-
-    return -1;
   };
 
-  const acquiredResult = assessEquivalence(0, processedDatum.length - 1, 0);
+  const trimmedInput = inputData.trim();
+  const finalResult = processString(trimmedInput, 0, trimmedInput.length - 1, 0);
 
-  console.log(String(acquiredResult));
-})(function() {
-  return require('node:fs').readFileSync(0, 'utf-8');
-});
+  return finalResult.possible ? `${finalResult.count}` : '-1';
+})(require('fs').readFileSync('/dev/stdin', 'utf8')));

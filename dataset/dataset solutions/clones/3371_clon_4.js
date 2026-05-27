@@ -1,24 +1,27 @@
-let receivedBuffer = '';
+function processData(incomingLines) {
+  const [_, requiredHeight, requiredWidth] = incomingLines.shift().split(' ').map(Number);
+
+  const eligibleItemsCount = incomingLines
+    .filter(itemLine => itemLine.trim() !== '')
+    .map(itemLine => itemLine.split(' ').map(Number))
+    .reduce((accumulator, [itemA, itemB]) => {
+      if (itemA >= requiredHeight && itemB >= requiredWidth) {
+        return accumulator + 1;
+      }
+      return accumulator;
+    }, 0);
+
+  console.log(eligibleItemsCount);
+}
+
+let allInput = '';
 
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
-
-process.stdin.on('data', (dataSegment) => {
-    receivedBuffer += dataSegment;
+process.stdin.on('data', function(chunk) {
+  allInput += chunk;
 });
-
-process.stdin.on('end', () => {
-    const separatedLines = receivedBuffer.split('\n').filter(Boolean);
-    analyzeDimensions(separatedLines);
+process.stdin.on('end', function() {
+  const linesArray = allInput.split('\n');
+  processData(linesArray);
 });
-
-const analyzeDimensions = (sourceCollection) => {
-    const [ignoredValue, requiredHeight, requiredWidth] = sourceCollection[0].split(' ').map(Number);
-
-    const validObjectsCount = sourceCollection.slice(1)
-        .map(entryString => entryString.split(' ').map(Number))
-        .filter(([currentHeight, currentWidth]) => currentHeight >= requiredHeight && currentWidth >= requiredWidth)
-        .length;
-
-    console.log(validObjectsCount);
-};

@@ -1,145 +1,146 @@
-const inputReader = require('readline').createInterface({
-  input:  process.stdin,
+var inputReader = require('readline').createInterface({
+  input: process.stdin,
   output: process.stdout
 });
 
-let dataStream;
-const inputBuffer = [];
+// This variable will hold our processed input handler.
+var dataProcessor;
+// An array to store all incoming lines from standard input.
+var inputLines = [];
 
-inputReader.on('line', function(currentLine) {
-  inputBuffer.push(currentLine);
+// Event listener for each line of input received.
+inputReader.on('line', function(rawInputData){
+  inputLines.push(rawInputData);
 });
 
-inputReader.on('close', function() {
-  dataStream = initializeDataSource(inputBuffer);
-  console.error("\n"); // Output a blank line for visual separation
+// Event listener for when the input stream closes.
+inputReader.on('close', function(){
+  // Initialize the input handler with all collected lines.
+  dataProcessor = initializeInputHandler(inputLines);
 
-  const executionStartTime = Date.now();
-  ExecuteProgramLogic();
-  const executionDuration = Date.now() - executionStartTime;
+  // Output a blank line to stderr for formatting.
+  console.error("\n");
 
-  logDebugMessage("time_taken: " + (executionDuration) + "ms");
-  logDebugMessage("allocated_memory: " + Math.round(process.memoryUsage().heapTotal / 1024) + "KB");
+  // Record the starting time for performance measurement.
+  var operationStartTime = Date.now();
+
+  // Execute the main application logic.
+  executePrimaryLogic();
+
+  // Calculate the elapsed time.
+  var elapsedDuration = Date.now() - operationStartTime;
+
+  // Log the execution time to stderr.
+  logDebugMessage("time : " + (elapsedDuration) + "ms");
+  // Log the memory usage to stderr.
+  logDebugMessage("memory : " + Math.round(process.memoryUsage().heapTotal / 1024) + "KB");
 });
 
-/**
- * Creates a deep replica of a given JavaScript object.
- * @param {object} sourceObject - The object to be copied.
- * @returns {object} A new object, a deep duplicate of the source.
- */
-function duplicateObject(sourceObject) {
-  return JSON.parse(JSON.stringify(sourceObject));
+// Creates a deep copy of an object using JSON serialization/deserialization.
+function duplicateObject(originalObject){
+  return JSON.parse(JSON.stringify(originalObject));
 }
 
-function retrieveNextInteger() {
-  return transformData(advanceAndFetch(), 1);
+// Retrieves and parses the next input item as an integer.
+function retrieveNextInteger(){
+  return performTypeConversion(fetchNextItem(), 1);
 }
 
-function retrieveNextStringArray() {
-  return transformData(advanceAndFetch(), 2);
+// Retrieves the next input item and splits it into a string array.
+function retrieveNextStringArray(){
+  return performTypeConversion(fetchNextItem(), 2);
 }
 
-function retrieveNextIntegerArray() {
-  return transformData(advanceAndFetch(), 4);
+// Retrieves the next input item, splits it, and parses elements as integers.
+function retrieveNextIntegerArray(){
+  return performTypeConversion(fetchNextItem(), 4);
 }
 
-function retrieveNextCharacterArray() {
-  return transformData(advanceAndFetch(), 6);
+// Retrieves the next input item and splits it into a character array.
+function retrieveNextCharacterArray(){
+  return performTypeConversion(fetchNextItem(), 6);
 }
 
-function advanceAndFetch() {
-  return dataStream.next();
+// Fetches the next available item from the input data.
+function fetchNextItem(){
+  return dataProcessor.fetchNextItem();
 }
 
-function hasMoreData() {
-  return dataStream.hasMoreData();
+// Checks if there are more items available in the input data.
+function hasMoreItems(){
+  return dataProcessor.hasMoreItems();
 }
 
-/**
- * Sets up the data source object for sequential input reading.
- * @param {string[]} sourceLines - An array containing all lines of input.
- * @returns {object} An object providing methods to check for and retrieve input.
- */
-function initializeDataSource(sourceLines) {
+// Initializes an object to handle sequential access to input lines.
+function initializeInputHandler(rawInputData){
   return {
-    dataSourceLines: sourceLines,
-    currentPosition: 0,
-    totalLines: sourceLines.length,
-    hasMoreData: function() {
-      return (this.currentPosition < this.totalLines);
+    sourceData : rawInputData, // The array of input lines.
+    currentPosition : 0,       // Current index for reading.
+    maximumCount : rawInputData.length, // Total number of input lines.
+
+    // Method to check if there are more lines to read.
+    hasMoreItems : function(){
+      return (this.currentPosition < this.maximumCount);
     },
-    next: function() {
-      if (this.hasMoreData()) {
-        return this.dataSourceLines[this.currentPosition++];
+
+    // Method to get the next line and advance the position.
+    fetchNextItem : function(){
+      if(this.hasMoreItems()){
+        return this.sourceData[this.currentPosition++];
       } else {
-        throw "InputBoundaryExceeded: No further input available";
+        // Throws an error if no more input is available.
+        throw "ArrayIndexOutOfBoundsException ‚There is no more input";
       }
     }
   };
 }
 
-/**
- * Writes a string to the standard output stream.
- * @param {string} messageContent - The string content to display.
- */
-function outputResult(messageContent) {
+// Displays a message to standard output.
+function displayOutput(messageContent){
   console.log(messageContent);
 }
 
-/**
- * Emits a debug message to the standard error stream.
- * @param {*} messageContent - The data to be logged for debugging.
- */
-function logDebugMessage(messageContent) {
-  console.error("debug_info: " + require("util").inspect(messageContent, false, null));
+// Logs a debug message to standard error, inspecting objects for better readability.
+function logDebugMessage(messageContent){
+  console.error("debug:" + require("util").inspect(messageContent, false, null));
 }
 
-/*
- * Helper function for converting input values based on a given conversion type.
- * Supported conversion types:
- *  - 1: Converts string to an integer.
- *  - 2: Splits string by spaces into a string array.
- *  - 4: Splits string by spaces and maps to a number array.
- *  - 6: Splits string into an array of individual characters.
- *  - 7: Splits string into individual characters and maps to numbers.
- *  - 8: Joins array elements with spaces.
- *  - 9: Joins array elements with newline characters.
- *  - 0: Joins array elements without any separator.
- *  - Default: Returns the input value unchanged.
- */
-function transformData(inputValue, conversionType) {
+// Utility function to convert input based on a specified type.
+// conversionType:
+// 1: parseInt.
+// 2: split by space.
+// 4: split by space and map to Number.
+// 6: split by character.
+// 7: split by character and map to Number.
+// 8: join with space.
+// 9: join with newline.
+// 0: join with no character.
+// Default: return input as is.
+function performTypeConversion(inputValue, conversionType){
   try {
-    switch (conversionType) {
-      case 1:
-        return parseInt(inputValue);
-      case 2:
-        return inputValue.split(" ");
-      case 4:
-        return inputValue.split(" ").map(Number);
-      case 6:
-        return inputValue.split("");
-      case 7:
-        return inputValue.split("").map(Number);
-      case 8:
-        return inputValue.join(" ");
-      case 9:
-        return inputValue.join("\n");
-      case 0:
-        return inputValue.join("");
-      default:
-        return inputValue;
+    switch(conversionType){
+      case 1: return parseInt(inputValue);
+      case 2: return inputValue.split(" ");
+      case 4: return inputValue.split(" ").map(Number);
+      case 6: return inputValue.split("");
+      case 7: return inputValue.split("").map(Number);
+      case 8: return inputValue.join(" ");
+      case 9: return inputValue.join("\n");
+      case 0: return inputValue.join("");
+      default: return inputValue;
     }
-  } catch (exceptionDetails) {
+  } catch(conversionError) {
+    // If an error occurs during conversion, return the original input.
     return inputValue;
   }
 }
 
-/* Primary execution flow of the application */
-function ExecuteProgramLogic() {
-  outputResult("Yes");
-  outputResult(4);
-  outputResult("3 1 2 3");
-  outputResult("3 1 4 5");
-  outputResult("3 2 4 6");
-  outputResult("3 3 5 6");
+// The primary function containing the application's core logic.
+function executePrimaryLogic(){
+  displayOutput("Yes");
+  displayOutput(4);
+  displayOutput("3 1 2 3");
+  displayOutput("3 1 4 5");
+  displayOutput("3 2 4 6");
+  displayOutput("3 3 5 6");
 }

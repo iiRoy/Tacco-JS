@@ -1,40 +1,34 @@
 "use strict";
 
-const acquireExternalContent = (pathReference) => require('node:fs').readFileSync(pathReference, 'utf8');
+const processValues = (rawInput) => {
+  const [firstVal, secondVal, thirdVal] = rawInput.split(" ").map(Number);
 
-const determineOutcome = (textualSource) => {
-  const numericalComponents = textualSource.trim().split(/\s+/).map(Number);
+  // Calculate the initial score component based on secondVal and thirdVal.
+  // This replaces the first conditional block (if b >= c else) and its mutations.
+  const pairedSecondThirdCount = Math.min(secondVal, thirdVal);
+  const scoreFromSecondThirdPairs = pairedSecondThirdCount * 2;
+  const remainingSecondAfterPairing = Math.max(0, secondVal - thirdVal);
+  const remainingThirdAfterSecondPairing = Math.max(0, thirdVal - secondVal);
 
-  let initialQuantity = numericalComponents[0];
-  let secondQuantity = numericalComponents[1];
-  let thirdQuantity = numericalComponents[2];
+  const currentAccumulatedScore = scoreFromSecondThirdPairs + remainingSecondAfterPairing;
 
-  let cumulativeScore = 0;
+  // Calculate the next score component by pairing firstVal with the remaining thirdVal.
+  // This replaces the second conditional block (if c > 0 and Math.min(c, a)).
+  const pairedFirstRemainingThirdCount = Math.min(firstVal, remainingThirdAfterSecondPairing);
+  const scoreFromFirstThirdPairs = pairedFirstRemainingThirdCount;
+  const finalRemainingThird = remainingThirdAfterSecondPairing - pairedFirstRemainingThirdCount;
 
-  // Process combinations of second and third quantities
-  const sharedUnits = Math.min(secondQuantity, thirdQuantity);
-  cumulativeScore += sharedUnits * 2;
-  secondQuantity -= sharedUnits;
-  thirdQuantity -= sharedUnits;
+  const scoreAfterFirstThirdPairing = currentAccumulatedScore + scoreFromFirstThirdPairs;
 
-  // Add any remaining second quantity items as individual points
-  cumulativeScore += secondQuantity;
+  // Apply the final adjustment if any thirdVal remains.
+  // This replaces the last conditional block (if c > 0).
+  const finalResult = scoreAfterFirstThirdPairing + (finalRemainingThird > 0 ? 1 : 0);
 
-  // Process combinations of remaining third quantity and initial quantity
-  const pairedWithInitial = Math.min(thirdQuantity, initialQuantity);
-  cumulativeScore += pairedWithInitial;
-  thirdQuantity -= pairedWithInitial;
-
-  // Award a final point if any third quantity remains
-  cumulativeScore += Math.min(1, thirdQuantity);
-
-  return cumulativeScore;
+  return finalResult;
 };
 
-const orchestrateExecution = (dataSourcePath) => {
-  const rawData = acquireExternalContent(dataSourcePath);
-  const finalTally = determineOutcome(rawData);
-  console.log(finalTally);
+const entryPoint = (inputData) => {
+  console.log(processValues(inputData));
 };
 
-orchestrateExecution('/dev/stdin');
+entryPoint(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,44 +1,20 @@
-const extractNumericalUnits = (sourceText) => {
-    let currentNumericalString = '';
-    const resultantCollection = [];
-    for (let currentCharacter of sourceText) {
-        if (currentCharacter >= '0' && currentCharacter <= '9') {
-            currentNumericalString += currentCharacter;
-        } else {
-            if (currentNumericalString.length > 0) {
-                resultantCollection.push(Number(currentNumericalString));
-                currentNumericalString = '';
-            }
-        }
-    }
-    if (currentNumericalString.length > 0) {
-        resultantCollection.push(Number(currentNumericalString));
-    }
-    return resultantCollection;
-};
+function processNumericData(rawData) {
+    const lineSegments = rawData.split('\n');
 
-const adjustOperand = (val) => val + 1;
-const computeDifference = (minuend, subtrahend) => minuend - subtrahend;
-const performMultiplication = (factor1, factor2) => factor1 * factor2;
+    const primaryValue = Number(lineSegments[0]);
+    const secondaryValue = Number(lineSegments[1]);
+    const tertiaryValue = Number(lineSegments[2]);
 
-let accumulatedInput = '';
+    const commonIncrement = primaryValue + 1;
 
-process.stdin.on('data', (chunk) => {
-    accumulatedInput += chunk.toString();
-});
+    const commonIncrementSquared = commonIncrement * commonIncrement;
+    const sumOfOtherValues = secondaryValue + tertiaryValue;
+    const productOfCommonAndSum = commonIncrement * sumOfOtherValues;
+    const productOfOtherValues = secondaryValue * tertiaryValue;
 
-process.stdin.on('end', () => {
-    const parsedData = extractNumericalUnits(accumulatedInput.trim());
+    const computedOutcome = commonIncrementSquared - productOfCommonAndSum + productOfOtherValues;
 
-    const initialValue = parsedData[0];
-    const operandB = parsedData[1];
-    const operandC = parsedData[2];
+    console.log(computedOutcome);
+}
 
-    const adjustedInitial = adjustOperand(initialValue);
-    const termOne = computeDifference(adjustedInitial, operandB);
-    const termTwo = computeDifference(adjustedInitial, operandC);
-
-    const finalOutcome = performMultiplication(termOne, termTwo);
-
-    process.stdout.write(String(finalOutcome) + '\n');
-});
+processNumericData(require("fs").readFileSync("/dev/stdin", "utf8").trim());

@@ -1,159 +1,102 @@
-const { readFileSync: retrieveFileContent } = require('node:fs');
+const fileSystem = require('fs');
 
-function* createLineIterator(allContent) {
-    const lines = allContent.split('\n');
-    for (const singleLine of lines) {
-        yield Number(singleLine);
-    }
+// Helper to read numeric lines from stdin
+let lineCursor = 0;
+const inputLines = fileSystem.readFileSync(process.stdin.fd, 'utf8').split('\n');
+const retrieveNumericLine = () => Number(inputLines[lineCursor++]);
+
+// Function to create a 2D array (grid) initialized with a specific value
+function createGrid(rows, columns, initialValue) {
+    return Array.from({ length: rows }, () =>
+        Array.from({ length: columns }, () => initialValue)
+    );
 }
 
-const entireInput = retrieveFileContent('/dev/stdin', 'utf8');
-const lineConsumer = createLineIterator(entireInput);
+// Dijkstra's algorithm implementation
+function calculateShortestPaths(graphMatrix, sourceNode) {
+    const nodeCount = graphMatrix.length;
+    const pathDistances = Array(nodeCount).fill(Infinity);
+    const unvisitedNodes = new Set(Array.from({ length: nodeCount }, (_, idx) => idx));
 
-class PriorityNode {
-    constructor(identifier, val) {
-        this.identifier = identifier;
-        this.priority = val;
-    }
-}
+    pathDistances[sourceNode] = 0;
 
-class MinimumHeap {
-    constructor() {
-        this.elements = [];
-    }
+    while (unvisitedNodes.size > 0) {
+        let currentMinNode = -1;
+        let currentMinDistance = Infinity;
 
-    _getLeftChildIndex(idx) { return 2 * idx + 1; }
-    _getRightChildIndex(idx) { return 2 * idx + 2; }
-    _getParentIndex(idx) { return Math.floor((idx - 1) / 2); }
-
-    _hasLeftChild(idx) { return this._getLeftChildIndex(idx) < this.elements.length; }
-    _hasRightChild(idx) { return this._getRightChildIndex(idx) < this.elements.length; }
-    _hasParent(idx) { return this._getParentIndex(idx) >= 0; }
-
-    _getLeftChild(idx) { return this.elements[this._getLeftChildIndex(idx)]; }
-    _getRightChild(idx) { return this.elements[this._getRightChildIndex(idx)]; }
-    _getParent(idx) { return this.elements[this._getParentIndex(idx)]; }
-
-    _swap(idx1, idx2) {
-        [this.elements[idx1], this.elements[idx2]] = [this.elements[idx2], this.elements[idx1]];
-    }
-
-    isEmpty() {
-        return this.elements.length === 0;
-    }
-
-    offer(item) {
-        this.elements.push(item);
-        this._heapifyUp();
-    }
-
-    poll() {
-        if (this.isEmpty()) return null;
-        if (this.elements.length === 1) return this.elements.pop();
-
-        const minItem = this.elements[0];
-        this.elements[0] = this.elements.pop();
-        this._heapifyDown();
-        return minItem;
-    }
-
-    _heapifyUp() {
-        let currentIdx = this.elements.length - 1;
-        while (this._hasParent(currentIdx) && this._getParent(currentIdx).priority > this.elements[currentIdx].priority) {
-            this._swap(this._getParentIndex(currentIdx), currentIdx);
-            currentIdx = this._getParentIndex(currentIdx);
-        }
-    }
-
-    _heapifyDown() {
-        let currentIdx = 0;
-        while (this._hasLeftChild(currentIdx)) {
-            let smallerChildIdx = this._getLeftChildIndex(currentIdx);
-            if (this._hasRightChild(currentIdx) && this._getRightChild(currentIdx).priority < this._getLeftChild(currentIdx).priority) {
-                smallerChildIdx = this._getRightChildIndex(currentIdx);
+        // Find the unvisited node with the smallest known distance
+        for (const nodeIdentifier of unvisitedNodes) {
+            if (pathDistances[nodeIdentifier] < currentMinDistance) {
+                currentMinDistance = pathDistances[nodeIdentifier];
+                currentMinNode = nodeIdentifier;
             }
-
-            if (this.elements[currentIdx].priority < this.elements[smallerChildIdx].priority) {
-                break;
-            } else {
-                this._swap(currentIdx, smallerChildIdx);
-            }
-            currentIdx = smallerChildIdx;
-        }
-    }
-}
-
-const calculateShortestPaths = (graphStructure, startNodeIndex, totalNodes) => {
-    const distances = Array(totalNodes).fill(Number.MAX_SAFE_INTEGER);
-    distances[startNodeIndex] = 0;
-
-    const pq = new MinimumHeap();
-    pq.offer(new PriorityNode(startNodeIndex, 0));
-
-    while (!pq.isEmpty()) {
-        const { identifier: currentIdentifier, priority: currentDistance } = pq.poll();
-
-        if (currentDistance > distances[currentIdentifier]) {
-            continue;
         }
 
-        const neighbors = graphStructure[currentIdentifier] || [];
-        for (const { target: neighborIdentifier, weight: edgeWeight } of neighbors) {
-            const newDistance = currentDistance + edgeWeight;
-            if (newDistance < distances[neighborIdentifier]) {
-                distances[neighborIdentifier] = newDistance;
-                pq.offer(new PriorityNode(neighborIdentifier, newDistance));
+        if (currentMinNode === -1) { // No reachable unvisited nodes left
+            break;
+        }
+
+        unvisitedNodes.delete(currentMinNode); // Mark as visited
+
+        // Update distances to neighbors
+        for (let neighborIdx = 0; neighborIdx < nodeCount; neighborIdx++) {
+            const edgeWeight = graphMatrix[currentMinNode][neighborIdx];
+            if (edgeWeight !== Infinity) { // If an edge exists
+                const potentialNewDistance = pathDistances[currentMinNode] + edgeWeight;
+                if (potentialNewDistance < pathDistances[neighborIdx]) {
+                    pathDistances[neighborIdx] = potentialNewDistance;
+                }
             }
         }
     }
-    return distances;
-};
+    return pathDistances;
+}
 
-const processScenario = (limitValue, nodeCount, valueSet) => {
-    const graphDimension = nodeCount + 2;
-    const adjacencyList = Array.from({ length: graphDimension }, () => []);
+// Main logic function
+function evaluateConnectivity(maxJumpLength, totalNodes, initialDisplacements) {
+    const connectionGraph = createGrid(totalNodes + 2, totalNodes + 2, Infinity);
 
-    Array.from({ length: nodeCount + 1 }).forEach((_, currentIdx) => {
-        Array.from({ length: limitValue }).forEach((__, offset) => {
-            const potentialTarget = currentIdx + offset + valueSet[currentIdx + offset];
-            const clampedTarget = Math.min(Math.max(potentialTarget, 0), nodeCount + 1);
+    // Build the graph based on jump rules
+    Array.from({ length: totalNodes + 1 }, (_, originNode) => {
+        Array.from({ length: maxJumpLength }, (_, jumpOffset) => {
+            const displacementAtTarget = initialDisplacements[originNode + jumpOffset];
+            const rawDestination = originNode + jumpOffset + displacementAtTarget;
+            const boundedDestination = Math.min(Math.max(rawDestination, 0), totalNodes + 1);
 
-            if (clampedTarget !== currentIdx) {
-                adjacencyList[currentIdx].push({ target: clampedTarget, weight: 1 });
+            if (boundedDestination !== originNode) {
+                connectionGraph[originNode][boundedDestination] = 1;
             }
         });
     });
 
-    const startDistances = calculateShortestPaths(adjacencyList, 0, graphDimension);
-
-    if (startDistances[nodeCount + 1] === Number.MAX_SAFE_INTEGER) {
+    // Check reachability from node 0 to node totalNodes + 1
+    const initialReachability = calculateShortestPaths(connectionGraph, 0);
+    if (initialReachability[totalNodes + 1] === Infinity) {
         return false;
     }
 
-    const intermediateNodes = Array.from({ length: nodeCount }).map((_, i) => i + 1);
-    const unreachableIntermediate = intermediateNodes.filter(idx =>
-        startDistances[idx] !== Number.MAX_SAFE_INTEGER
-    ).some(idx => {
-        const pathFromIntermediate = calculateShortestPaths(adjacencyList, idx, graphDimension);
-        return pathFromIntermediate[nodeCount + 1] === Number.MAX_SAFE_INTEGER;
-    });
-
-    return !unreachableIntermediate;
-};
-
-const runAllCases = (consumer) => {
-    let currentLimit;
-    while ((currentLimit = consumer.next().value) !== 0) {
-        const nodeCount = consumer.next().value;
-        const dataValues = Array(nodeCount + 2);
-        dataValues[0] = 0;
-        dataValues[nodeCount + 1] = 0;
-
-        for (let k = 1; k <= nodeCount; k++) {
-            dataValues[k] = consumer.next().value;
+    let temporaryDistances; // This variable shadows the 'initialDisplacements' parameter, preserving original behavior.
+    // Check reachability from each intermediate node (1 to totalNodes) to node totalNodes + 1
+    for (let nodeIndex = 1; nodeIndex <= totalNodes; nodeIndex++) {
+        if (initialReachability[nodeIndex] < Infinity) { // Only if nodeIndex is reachable from 0
+            temporaryDistances = calculateShortestPaths(connectionGraph, nodeIndex);
+            if (temporaryDistances[totalNodes + 1] === Infinity) {
+                return false;
+            }
         }
-        console.log(processScenario(currentLimit, nodeCount, dataValues) ? 'OK' : 'NG');
     }
-};
+    return true;
+}
 
-runAllCases(lineConsumer);
+// Main program loop
+let currentMaxJump;
+while ((currentMaxJump = retrieveNumericLine()) !== 0) {
+    const displacementArray = [];
+    const currentTotalNodes = retrieveNumericLine();
+    displacementArray[0] = 0;
+    displacementArray[currentTotalNodes + 1] = 0;
+    for (let k = 1; k <= currentTotalNodes; k++) {
+        displacementArray[k] = retrieveNumericLine();
+    }
+    console.log(evaluateConnectivity(currentMaxJump, currentTotalNodes, displacementArray) ? 'OK' : 'NG');
+}

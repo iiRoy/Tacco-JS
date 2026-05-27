@@ -1,22 +1,22 @@
-function dataProcessor(  receivedText  )
-{
-  // This function processes a block of text to extract unique elements.
-  // The original example input comment has been deliberately removed.
-  // We divide the input string into multiple parts using the literal sequence "/n" as a delimiter.
-  const textSegments = receivedText . split ( "/n" ) ;
+function processInput(rawData) {
+  // The original code had a commented-out example: "4,10,8,8,6"
+  // This function splits the incoming raw data using the literal string "/n" as a delimiter.
+  const parsedLines = rawData.split("/n");
 
-  // Displaying the resulting array of segments to the console for diagnostic purposes.
-  console . log ( textSegments ) ;
+  // Output the array of parsed lines to the console.
+  console.log(parsedLines);
 
-  // The first segment is stored separately, often representing a count or a primary identifier.
-  const firstComponent = textSegments [ 0 ]
-  // The remaining segments, excluding the very last one, are collected into a separate array.
-  ,     itemStrings = textSegments . slice ( 1 , textSegments . length - 1 ) ;
+  // Extract the first element and a subset of the remaining elements.
+  // The first element is stored in 'firstElement'.
+  const firstElement = parsedLines[0];
+  // 'numberStrings' contains elements from the second up to, but not including, the last element.
+  const numberStrings = parsedLines.slice(1, parsedLines.length - 1);
 
-  // We then determine the number of unique elements within the collected item strings and output this count.
-  console . log ( Array . from ( new Set ( itemStrings ) ) . length ) ;
+  // Determine the count of unique string values within 'numberStrings' and print it.
+  // A Set is used to automatically handle uniqueness.
+  console.log(Array.from(new Set(numberStrings)).length);
 }
 
-// Initiating the data processing by reading the entire content from the standard input stream,
-// ensuring it's interpreted as UTF-8 encoded text.
-dataProcessor ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+// Execute the main processing function by reading content from standard input.
+// The 'fs' module is used to synchronously read the entire file content as a UTF-8 string.
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

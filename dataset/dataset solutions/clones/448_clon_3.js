@@ -1,104 +1,96 @@
-const fs = require('fs');
+function parseNumericLine(inputLine) {
+    return inputLine.split(" ").map(Number);
+}
 
-const PATH_NORMAL = 0;
-const PATH_BLOCKED = 1;
-const PATH_SPECIAL = 2;
+function createInitialized2DArray(numRows, numCols, initialVal) {
+    var newArray = [];
+    for (var r = 0; r < numRows; r++) {
+        newArray[r] = new Array(numCols).fill(initialVal);
+    }
+    return newArray;
+}
 
-const parseNumericSequence = (lineString) => {
-    return lineString.split(' ').map(numStr => Number.parseInt(numStr, 10));
-};
+function getPathValueFromPrevious(dpMatrix, gridMatrix, r, c, currentWidth) {
+    if (r < 0 || c < 0 || c >= currentWidth) {
+        return 0;
+    }
+    if (gridMatrix[r][c] === 2) {
+        return 0;
+    }
+    return dpMatrix[r][c];
+}
 
-let allInputLines = fs.readFileSync('/dev/stdin', 'utf8').trim().split('\n');
+function shouldCellContributeToTotal(r, h, currentGridVal) {
+    var secondToLastRow = h - 2;
+    var lastRow = h - 1;
 
-let currentLinePointer = 0;
+    if (r === secondToLastRow && currentGridVal === 2) {
+        return true;
+    }
+    if (r === lastRow && (currentGridVal === 0 || currentGridVal === 2)) {
+        return true;
+    }
+    return false;
+}
+
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
+var lineData = rawData.trim().split("\n");
+
+const CELL_TYPE_EMPTY = 0;
+const CELL_TYPE_BLOCKED_1 = 1;
+const CELL_TYPE_SPECIAL_2 = 2;
 
 while (true) {
-    const currentDimensions = parseNumericSequence(allInputLines[currentLinePointer++]);
-    const gridWidth = currentDimensions[0];
-    const gridHeight = currentDimensions[1];
+    var [width, height] = parseNumericLine(lineData.shift());
 
-    if (gridWidth === 0 && gridHeight === 0) {
+    if (width === CELL_TYPE_EMPTY && height === CELL_TYPE_EMPTY) {
         break;
     }
 
-    const terrainGrid = [];
-    for (let rowIdx = 0; rowIdx < gridHeight; ++rowIdx) {
-        terrainGrid.push(parseNumericSequence(allInputLines[currentLinePointer++]));
+    var gridValues = [];
+    for (var rowIdx = 0; rowIdx < height; rowIdx++) {
+        gridValues.push(parseNumericLine(lineData.shift()));
     }
 
-    const pathMemo = Array.from({ length: gridHeight }, () => Array(gridWidth).fill(0));
+    var dynamicProg = createInitialized2DArray(height, width, CELL_TYPE_EMPTY);
 
-    for (let r = 0; r < gridHeight; ++r) {
-        for (let c = 0; c < gridWidth; ++c) {
-            if (r === 0) {
-                if (terrainGrid[r][c] === PATH_NORMAL) {
-                    pathMemo[r][c] = 1;
-                }
+    for (var rowIdx = 0; rowIdx < height; rowIdx++) {
+        for (var colIdx = 0; colIdx < width; colIdx++) {
+            var currentGridCellType = gridValues[rowIdx][colIdx];
+
+            if (rowIdx === 0 && currentGridCellType === CELL_TYPE_EMPTY) {
+                dynamicProg[rowIdx][colIdx] = 1;
                 continue;
             }
 
-            let pathsFromDiagLeftUp = 0;
-            let pathsFromStraightUp = 0;
-            let pathsFromDiagRightUp = 0;
-            let pathsFromTwoStepsUpSpecial = 0;
+            if (rowIdx >= 1) {
+                var pathFromTopLeft = getPathValueFromPrevious(dynamicProg, gridValues, rowIdx - 1, colIdx - 1, width);
+                var pathFromTop = getPathValueFromPrevious(dynamicProg, gridValues, rowIdx - 1, colIdx, width);
+                var pathFromTopRight = getPathValueFromPrevious(dynamicProg, gridValues, rowIdx - 1, colIdx + 1, width);
 
-            if (c > 0 && terrainGrid[r - 1][c - 1] !== PATH_SPECIAL) {
-                pathsFromDiagLeftUp = pathMemo[r - 1][c - 1];
-            }
+                var pathFromTwoUpSpecial = (rowIdx >= 2 && gridValues[rowIdx - 2][colIdx] === CELL_TYPE_SPECIAL_2)
+                                         ? dynamicProg[rowIdx - 2][colIdx]
+                                         : CELL_TYPE_EMPTY;
 
-            if (terrainGrid[r - 1][c] !== PATH_SPECIAL) {
-                pathsFromStraightUp = pathMemo[r - 1][c];
-            }
-
-            if (c < gridWidth - 1 && terrainGrid[r - 1][c + 1] !== PATH_SPECIAL) {
-                pathsFromDiagRightUp = pathMemo[r - 1][c + 1];
-            }
-            
-            if (r >= 2 && terrainGrid[r - 2][c] === PATH_SPECIAL) {
-                pathsFromTwoStepsUpSpecial = pathMemo[r - 2][c];
-            }
-
-            const currentCellType = terrainGrid[r][c];
-            switch (currentCellType) {
-                case PATH_NORMAL:
-                    pathMemo[r][c] = pathsFromDiagLeftUp + pathsFromStraightUp + pathsFromDiagRightUp + pathsFromTwoStepsUpSpecial;
-                    break;
-                case PATH_BLOCKED:
-                    pathMemo[r][c] = 0;
-                    break;
-                case PATH_SPECIAL:
-                    pathMemo[r][c] = pathsFromStraightUp + pathsFromTwoStepsUpSpecial;
-                    break;
-                default:
-                    console.error(`Unexpected terrain type encountered at (${r},${c}): ${currentCellType}`);
-                    pathMemo[r][c] = 0;
-                    break;
-            }
-        }
-    }
-
-    let totalAccumulatedPaths = 0;
-
-    for (let finalRow = gridHeight - 2; finalRow < gridHeight; ++finalRow) {
-        if (finalRow < 0) {
-            continue;
-        }
-
-        for (let finalCol = 0; finalCol < gridWidth; ++finalCol) {
-            const currentFinalCellType = terrainGrid[finalRow][finalCol];
-
-            if (finalRow === gridHeight - 2) {
-                if (currentFinalCellType === PATH_SPECIAL) {
-                    totalAccumulatedPaths += pathMemo[finalRow][finalCol];
-                }
-            } 
-            else if (finalRow === gridHeight - 1) {
-                if (currentFinalCellType === PATH_NORMAL || currentFinalCellType === PATH_SPECIAL) {
-                    totalAccumulatedPaths += pathMemo[finalRow][finalCol];
+                if (currentGridCellType === CELL_TYPE_EMPTY) {
+                    dynamicProg[rowIdx][colIdx] += pathFromTopLeft + pathFromTop + pathFromTopRight + pathFromTwoUpSpecial;
+                } else if (currentGridCellType === CELL_TYPE_BLOCKED_1) {
+                    dynamicProg[rowIdx][colIdx] = CELL_TYPE_EMPTY;
+                } else if (currentGridCellType === CELL_TYPE_SPECIAL_2) {
+                    dynamicProg[rowIdx][colIdx] += pathFromTop + pathFromTwoUpSpecial;
                 }
             }
         }
     }
 
-    console.log(totalAccumulatedPaths);
+    var totalPaths = CELL_TYPE_EMPTY;
+    for (var rowIdx = height - 2; rowIdx < height; rowIdx++) {
+        for (var colIdx = 0; colIdx < width; colIdx++) {
+            var currentGridCellType = gridValues[rowIdx][colIdx];
+            if (shouldCellContributeToTotal(rowIdx, height, currentGridCellType)) {
+                totalPaths += dynamicProg[rowIdx][colIdx];
+            }
+        }
+    }
+    console.log(totalPaths);
 }

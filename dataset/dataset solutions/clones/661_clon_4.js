@@ -1,56 +1,38 @@
-const fileSystemModule = require('fs');
-const rawSourceData = fileSystemModule.readFileSync('/dev/stdin', 'utf8');
-let processedLines = rawSourceData.trim().split("\n");
-let currentLinePointer = 0;
+const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
+let lineBuffer = rawData.trim().split("\n");
 
-function executeNextOperation() {
-    const dimensionsAndOperationsLine = processedLines[currentLinePointer++];
-    if (dimensionsAndOperationsLine === "0 0") {
-        return false;
-    }
+while (true) {
+    const dimAndOpsLine = lineBuffer.shift();
+    if (dimAndOpsLine === "0 0") break;
 
-    const parsedDimensions = dimensionsAndOperationsLine.split(" ").map(Number);
-    const cubeWidth = parsedDimensions[0];
-    const numOperations = parsedDimensions[1];
+    const [cubeDim, opCount] = dimAndOpsLine.split(" ").map(Number);
+    const voidedCells = new Set();
 
-    const untouchedPositions = new Set();
-    for (let xPos = 0; xPos < cubeWidth; xPos++) {
-        for (let yPos = 0; yPos < cubeWidth; yPos++) {
-            for (let zPos = 0; zPos < cubeWidth; zPos++) {
-                untouchedPositions.add(`${xPos}-${yPos}-${zPos}`);
-            }
+    for (let opIdx = 0; opIdx < opCount; opIdx++) {
+        let opDetails = lineBuffer.shift().split(" ");
+        const opType = opDetails.shift();
+        const planeCoords = opDetails.map(val => Number(val) - 1);
+
+        switch (opType) {
+            case "xy":
+                for (let zCoord = 0; zCoord < cubeDim; zCoord++) {
+                    voidedCells.add(`${planeCoords[0]},${planeCoords[1]},${zCoord}`);
+                }
+                break;
+            case "xz":
+                for (let yCoord = 0; yCoord < cubeDim; yCoord++) {
+                    voidedCells.add(`${planeCoords[0]},${yCoord},${planeCoords[1]}`);
+                }
+                break;
+            case "yz":
+                for (let xCoord = 0; xCoord < cubeDim; xCoord++) {
+                    voidedCells.add(`${xCoord},${planeCoords[0]},${planeCoords[1]}`);
+                }
+                break;
         }
     }
 
-    for (let opIndex = 0; opIndex < numOperations; opIndex++) {
-        const operationDetails = processedLines[currentLinePointer++].split(" ");
-        const operationType = operationDetails.shift();
-        const operationCoordinates = operationDetails.map(val => Number(val) - 1);
-
-        const firstCoord = operationCoordinates[0];
-        const secondCoord = operationCoordinates[1];
-
-        for (let varyingCoord = 0; varyingCoord < cubeWidth; varyingCoord++) {
-            let positionKey;
-            switch (operationType) {
-                case "xy":
-                    positionKey = `${firstCoord}-${secondCoord}-${varyingCoord}`;
-                    break;
-                case "xz":
-                    positionKey = `${firstCoord}-${varyingCoord}-${secondCoord}`;
-                    break;
-                case "yz":
-                    positionKey = `${varyingCoord}-${firstCoord}-${secondCoord}`;
-                    break;
-            }
-            untouchedPositions.delete(positionKey);
-        }
-    }
-
-    console.log(untouchedPositions.size);
-    return true;
-}
-
-while (executeNextOperation()) {
-    // Continue processing scenarios until "0 0" is encountered
+    const totalCells = cubeDim * cubeDim * cubeDim;
+    const remainingSolid = totalCells - voidedCells.size;
+    console.log(remainingSolid);
 }

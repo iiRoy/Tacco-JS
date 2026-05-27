@@ -1,144 +1,130 @@
-/*
- * This section contains initialization and utility functions
- * and can be safely ignored for understanding the core algorithm.
- * Start of supplementary code.
-*/
-const inputReader = require('readline').createInterface({
+var inputReader = require('readline').createInterface({
   input: process.stdin,
   output: process.stdout
 });
 
-let dataProcessor;
-const receivedLines = [];
+var inputProcessor;
+var rawInputLines = [];
 
-inputReader.on('line', (dataInput) => {
-  receivedLines.push(dataInput);
+inputReader.on('line', function(inputLine) {
+  rawInputLines.push(inputLine);
 });
 
-inputReader.on('close', () => {
-  dataProcessor = setupInputHandler(receivedLines);
-  console.error('\n'); // Emit a newline for console clarity
-
-  const commenceTime = Date.now();
+inputReader.on('close', function() {
+  inputProcessor = initializeInputHandler(rawInputLines);
+  console.error('\n');
+  var startTime = Date.now();
   executePrimaryLogic();
-  const elapsedDuration = Date.now() - commenceTime;
-
-  logDebugInfo('execution time : ' + elapsedDuration + ' milliseconds');
-  logDebugInfo('memory usage : ' + Math.round(process.memoryUsage().heapTotal / 1024) + ' KB');
+  var elapsedTime = Date.now() - startTime;
+  logDebugInfo('execution time : ' + elapsedTime + 'ms');
+  logDebugInfo('memory usage : ' + Math.round(process.memoryUsage().heapTotal / 1024) + 'KB');
 });
 
-/**
- * Creates a deep copy of an object, specifically handling Set instances.
- * @param {any} sourceObject The data structure to be cloned deeply.
- * @returns {any} A new, independent copy of the input object.
- */
-function deepCopyValue(sourceObject) {
-  return (sourceObject instanceof Set)
-    ? new Set(Array.from(sourceObject))
-    : JSON.parse(JSON.stringify(sourceObject));
+function createDeepCopy(originalObject) {
+  return (originalObject instanceof Set) ? new Set(Array.from(originalObject)) : JSON.parse(JSON.stringify(originalObject));
 }
 
-function retrieveInt() { return performConversion(getNextItem(), 1); }
-function retrieveStrArr() { return performConversion(getNextItem(), 2); }
-function retrieveIntArr() { return performConversion(getNextItem(), 4); }
-function retrieveCharArr() { return performConversion(getNextItem(), 6); }
+function retrieveNextInteger() {
+  return convertInputData(fetchNextToken(), 1);
+}
 
-function getNextItem() { return dataProcessor.next(); }
-function hasMoreItems() { return dataProcessor.hasMoreItems(); }
+function retrieveNextStringArray() {
+  return convertInputData(fetchNextToken(), 2);
+}
 
-/**
- * Sets up an object responsible for managing sequential access to input lines.
- * @param {Array<string>} inputCollection The array containing all input lines.
- * @returns {object} An object with methods for navigating through the input.
- */
-function setupInputHandler(inputCollection) {
+function retrieveNextIntegerArray() {
+  return convertInputData(fetchNextToken(), 4);
+}
+
+function retrieveNextCharacterArray() {
+  return convertInputData(fetchNextToken(), 6);
+}
+
+function fetchNextToken() {
+  return inputProcessor.getNextLine();
+}
+
+function hasMoreTokens() {
+  return inputProcessor.hasMoreData();
+}
+
+function initializeInputHandler(linesArray) {
   return {
-    lineBuffer: inputCollection,
+    dataLines: linesArray,
     currentPosition: 0,
-    totalLines: inputCollection.length,
-
-    hasMoreItems: function() {
+    totalLines: linesArray.length,
+    hasMoreData: function() {
       return (this.currentPosition < this.totalLines);
     },
-    next: function() {
-      if (this.hasMoreItems()) {
-        return this.lineBuffer[this.currentPosition++];
+    getNextLine: function() {
+      if (this.hasMoreData()) {
+        return this.dataLines[this.currentPosition++];
       } else {
-        throw new Error('Input exhausted: No more data available for processing.');
+        throw 'InputExhaustedException - No more data available for processing.';
       }
     }
   };
 }
 
-function displayResult(messageText) {
-  console.log(messageText);
+function displayResult(outputValue) {
+  console.log(outputValue);
 }
 
-function logDebugInfo(messageText) {
-  console.error('DEBUG_INFO: ' + require('util').inspect(messageText, false, null));
+function logDebugInfo(debugMessage) {
+  console.error('debug_output:' + require('util').inspect(debugMessage, false, null));
 }
 
-/*
- * This auxiliary function handles diverse data type transformations.
- * The 'transformType' parameter dictates the conversion method:
- *  1: Parse as an integer.
- *  2: Split string by space characters.
- *  4: Split by spaces and cast each part to a Number.
- *  6: Split string into an array of single characters.
- *  7: Split by characters and cast each to a Number.
- *  8: Join array elements with spaces in between.
- *  9: Join array elements, separating them with newlines.
- *  0: Join array elements without any separator.
- *  Any other value: Return the item as is.
-*/
-function performConversion(itemToConvert, transformType) {
+// This function handles various input conversions based on the 'conversionType' parameter.
+// conversionType:
+// 1: Parse as integer.
+// 2: Split by space.
+// 4: Split by space and convert to numbers.
+// 6: Split into individual characters.
+// 7: Split into individual characters and convert to numbers.
+// 8: Join array elements with spaces.
+// 9: Join array elements with newlines.
+// 0: Join array elements without any separator.
+// Default: Return input as is.
+function convertInputData(inputValue, conversionType) {
   try {
-    switch (transformType) {
+    switch (conversionType) {
       case 1:
-        return parseInt(itemToConvert, 10);
+        return parseInt(inputValue);
       case 2:
-        return itemToConvert.split(' ');
+        return inputValue.split(' ');
       case 4:
-        return itemToConvert.split(' ').map(Number);
+        return inputValue.split(' ').map(Number);
       case 6:
-        return itemToConvert.split('');
+        return inputValue.split('');
       case 7:
-        return itemToConvert.split('').map(Number);
+        return inputValue.split('').map(Number);
       case 8:
-        return itemToConvert.join(' ');
+        return inputValue.join(' ');
       case 9:
-        return itemToConvert.join('\n');
+        return inputValue.join('\n');
       case 0:
-        return itemToConvert.join('');
+        return inputValue.join('');
       default:
-        return itemToConvert;
+        return inputValue;
     }
-  } catch (errorObject) {
-    return itemToConvert; // If conversion fails, return the original item
+  } catch (error) {
+    return inputValue;
   }
 }
-
-/*
- * End of supplementary code.
- * This part does not require examination for comprehending the main algorithm.
-*/
-
 
 function executePrimaryLogic() {
-  const elementCount = retrieveInt();
-  const numCollection = retrieveIntArr();
+  var totalElements = retrieveNextInteger();
+  var elementSequence = retrieveNextIntegerArray();
+  var removedCount = 0;
+  var expectedValue = 1;
 
-  let missedElements = 0;
-  let expectedValue = 1;
-
-  for (let idx = 0; idx < elementCount; idx++) {
-    if (numCollection[idx] === expectedValue) {
-      expectedValue++; // Increment expected value as it was found
+  for (var idx = 0; idx < totalElements; idx++) {
+    if (elementSequence[idx] === expectedValue) {
+      expectedValue++;
     } else {
-      missedElements++; // Count this element as a mismatch
+      removedCount++;
     }
   }
 
-  // Output the count of missed elements, or -1 if all were missed.
-  displayResult((missedElements === elementCount) ? -1 : missedElements);
+  displayResult((removedCount === totalElements) ? -1 : removedCount);
 }

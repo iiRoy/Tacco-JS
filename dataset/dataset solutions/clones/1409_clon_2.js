@@ -1,56 +1,34 @@
-// This module provides file system utilities for Node.js
-const fileSystemModule = require('fs');
-// Define the function responsible for reading data from a file synchronously
-const readInputData = fileSystemModule.readFileSync;
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8'); // Read input from standard input as a UTF-8 string
 
-// Specify the path for the standard input stream
-const standardInputPath = '/dev/stdin';
-// Define the character encoding to be used for reading the input
-const inputEncoding = 'utf8';
+var dataRows = rawData.split('\n'); // Split the entire input string into an array of lines
 
-// Retrieve all the raw content from the designated input source
-let rawContent = readInputData(standardInputPath, inputEncoding);
-
-// Split the entire content into an array of textual rows, using newline as a delimiter
-let textRows = rawContent.split('\n');
-
-// Create an alias for the standard output write function to print individual characters
-const charOutputter = process.stdout.write;
-// Create an alias for the console log function to print new lines
-const lineBreaker = console.log;
-
-// Begin the primary execution loop, which will continue indefinitely until a break condition is met
+// Begin an infinite loop to process multiple test cases
 while (true) {
-    // Extract the first line from the array, then divide it into components based on spaces
-    let dimensionComponents = textRows.shift().split(' ');
+    // Extract the first line from the array, split it by space, and store the parts
+    var dimensionsArray = dataRows.shift().split(' ');
 
-    // Convert the first component into a numerical value representing the grid's height
-    let gridHeight = +dimensionComponents[0];
-    // Convert the second component into a numerical value representing the grid's width
-    let gridWidth = +dimensionComponents[1];
+    // Convert the first part to a number for height
+    var heightVal = +dimensionsArray[0];
+    // Convert the second part to a number for width
+    var widthVal = +dimensionsArray[1];
 
-    // Evaluate the termination condition: if the sum of both dimensions is zero
-    if (gridHeight + gridWidth === 0) {
-        // If the condition is met, exit the main processing loop
-        break;
+    // Check the termination condition: if both height and width are zero
+    if (heightVal + widthVal === 0) {
+        break; // Exit the loop if the sum is zero
     }
 
-    // Outer loop: iterates through each row index to construct the grid pattern
-    for (let rowIndex = 0; rowIndex < gridHeight; rowIndex++) {
-        // Inner loop: iterates through each column index within the current row
-        for (let colIndex = 0; colIndex < gridWidth; colIndex++) {
-            // Determine the character to be printed based on the parity of the sum of current indices
-            if ((rowIndex + colIndex) % 2 === 0) {
-                // If the sum of indices is even, output a hash symbol
-                charOutputter('#');
+    // Iterate through each row to construct the pattern
+    for (var rowIdx = 0; rowIdx < heightVal; rowIdx++) {
+        // Iterate through each column within the current row
+        for (var colIdx = 0; colIdx < widthVal; colIdx++) {
+            // Determine the character to print based on the sum of row and column indices
+            if ((rowIdx + colIdx) % 2 === 0) {
+                process.stdout.write('#'); // Print '#' for even sums
             } else {
-                // If the sum of indices is odd, output a dot symbol
-                charOutputter('.');
+                process.stdout.write('.'); // Print '.' for odd sums
             }
         }
-        // After completing all columns for the current row, print a new line character
-        lineBreaker();
+        console.log(); // Move to the next line after completing a row
     }
-    // After successfully drawing an entire grid pattern, print an additional new line for visual separation
-    lineBreaker();
+    console.log(); // Print an additional blank line after each complete pattern
 }

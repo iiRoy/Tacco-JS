@@ -1,322 +1,175 @@
 "use strict";
+// This section handles input reading from standard input.
+var rawData = require("fs").readFileSync("/dev/stdin", "utf8");
+var tokenBuffer = rawData.split(/ |\n/), tokenIndex = 0x0;
 
-// Core module for file system operations in Node.js
-const fileSystem = require("fs");
-
-// Read all incoming data from the standard input stream
-const rawInputData = fileSystem.readFileSync("/dev/stdin", "utf-8");
-
-// Split the entire input string into an array of individual tokens
-// Tokens are separated by either spaces or newline characters
-let inputTokens = rawInputData.split(/ |\n/);
-// An index to keep track of the current token being processed
-let tokenIndex = 0;
-
-/**
- * Retrieves the next available token from the input stream and parses it as a number.
- * Increments the token index after retrieval.
- * @returns {number} The parsed numerical value of the next token.
- */
-function getNextInt() {
-  return +inputTokens[tokenIndex++];
+// Function to read the next number from the input buffer.
+function readNum() {
+    return +tokenBuffer[tokenIndex++];
 }
 
-/**
- * Retrieves the next available token from the input stream as a string.
- * Increments the token index after retrieval.
- * @returns {string} The string value of the next token.
- */
-function getNextString() {
-  return inputTokens[tokenIndex++];
+// Function to read the next string from the input buffer.
+function readStr() {
+    return tokenBuffer[tokenIndex++];
 }
 
-/**
- * Retrieves the next available token from the input stream and parses it as a BigInt.
- * Increments the token index after retrieval.
- * @returns {BigInt} The parsed BigInt value of the next token.
- */
-function getNextBigInt() {
-  return BigInt(inputTokens[tokenIndex++]);
+// Function to read the next BigInt from the input buffer.
+function readBigInt() {
+    return BigInt(tokenBuffer[tokenIndex++]);
 }
 
-/**
- * Reads a specified number of tokens from the input stream.
- * Optionally converts these tokens to numbers or leaves them as strings.
- * @param {number} count - The total number of tokens to read.
- * @param {boolean} asStrings - If true, tokens are returned as strings; otherwise, they are parsed as numbers.
- * @returns {Array<number | string>} An array containing the requested tokens.
- */
-function getMultipleNumbers(count, asStrings) {
-  return asStrings
-    ? inputTokens.slice(tokenIndex, (tokenIndex += count))
-    : inputTokens.slice(tokenIndex, (tokenIndex += count)).map((val) => +val);
-}
-
-/**
- * Reads a specified number of tokens, converts them to numbers, and then sorts them.
- * The sorting order can be specified as ascending (default) or descending.
- * @param {number} count - The number of tokens to read and sort.
- * @param {boolean} descending - If true, sorts in descending order; otherwise, in ascending order.
- * @returns {Array<number>} An array of sorted numbers.
- */
-function getSortedNumbers(count, descending) {
-  return inputTokens
-    .slice(tokenIndex, (tokenIndex += count))
-    .map((val) => +val)
-    .sort((valA, valB) => (descending ? valB - valA : valA - valB));
-}
-
-/**
- * Reads data from the input stream to form a 2D matrix (array of arrays).
- * @param {number} height - The number of rows for the matrix.
- * @param {number} width - The number of columns for each row.
- * @param {boolean} asStrings - If true, matrix elements are strings; otherwise, they are numbers.
- * @returns {Array<Array<number | string>>} The constructed matrix.
- */
-function getMatrix(height, width, asStrings) {
-  let matrixRows = [];
-  let rowIdx = 0;
-  if (asStrings) {
-    for (; rowIdx < height; rowIdx++) {
-      matrixRows.push(inputTokens.slice(tokenIndex, (tokenIndex += width)));
+// Function to read 'count' numbers, optionally mapping them.
+function readNums(count, mapFn) {
+    if (mapFn) {
+        return tokenBuffer.slice(tokenIndex, tokenIndex += count);
+    } else {
+        return tokenBuffer.slice(tokenIndex, tokenIndex += count).map(val => +val);
     }
-  } else {
-    for (; rowIdx < height; rowIdx++) {
-      matrixRows.push(
-        inputTokens.slice(tokenIndex, (tokenIndex += width)).map((val) => +val)
-      );
+}
+
+// Function to read 'count' numbers, parse them, and sort.
+function readSortedNums(count, descending) {
+    if (descending) {
+        return tokenBuffer.slice(tokenIndex, tokenIndex += count).map(val => +val).sort((a, b) => b - a);
+    } else {
+        return tokenBuffer.slice(tokenIndex, tokenIndex += count).map(val => +val).sort((a, b) => a - b);
     }
-  }
-  return matrixRows;
 }
 
-/**
- * A utility function to create multi-dimensional arrays dynamically.
- * The dimensions are passed as arguments after the initial value.
- * @param {any} initialValue - The value to initialize the innermost array elements with.
- * @returns {Array<any>} A multi-dimensional array as specified by the arguments.
- */
-function createMultiDimArray(initialValue) {
-  let args = arguments,
-    argCount = args.length,
-    arrayCreationString = `Array(args[--argCount]).fill().map(x=>{return ` + initialValue + `;})`;
-  while (--argCount) {
-    arrayCreationString = `Array(args[argCount]).fill().map(x=>` + arrayCreationString + `)`;
-  }
-  return eval(arrayCreationString); // Note: eval can be a security risk if input is untrusted.
-}
-
-// A buffer to accumulate output strings before they are finally printed.
-const outputBuffer = [];
-
-/**
- * Adds a given message string to the global output buffer.
- * @param {string} message - The string to be buffered for output.
- */
-function appendToOutput(message) {
-  outputBuffer.push(message);
-}
-
-// The default numerical value for nodes in the segment tree.
-const defaultValue = 0;
-
-/**
- * Constructs an Interval Tree, also known as a Segment Tree.
- * This tree supports range updates and point queries for maximum values.
- * @param {number} initialCapacity - The maximum index that the tree needs to cover.
- */
-function IntervalTree(initialCapacity) {
-  // Calculate the smallest power of 2 that is greater than or equal to initialCapacity.
-  let powerOfTwo = 2;
-  let tempCapacity = initialCapacity - 1;
-  while (tempCapacity > 0) {
-    tempCapacity >>= 1; // Equivalent to tempCapacity = Math.floor(tempCapacity / 2)
-    powerOfTwo <<= 1; // Equivalent to powerOfTwo = powerOfTwo * 2
-  }
-
-  // Initialize the internal data array for the segment tree.
-  // The size is (2*powerOfTwo - 1) to accommodate all nodes up to the leaves.
-  this.data = new Array(powerOfTwo * 2 - 1).fill(defaultValue);
-  // The 'leafOffset' is the index of the first leaf node in the 'data' array.
-  this.leafOffset = powerOfTwo;
-}
-
-// Define the methods for the IntervalTree prototype.
-IntervalTree.prototype = {
-  /**
-   * Performs a point query to find the maximum value associated with a specific leaf index.
-   * This method traverses from the specified leaf node up to the root,
-   * accumulating the maximum value found on this path.
-   * @param {number} leafIndex - The zero-based index of the leaf node to query.
-   * @returns {number} The maximum value encountered from the leaf to the root.
-   */
-  queryMax: function (leafIndex) {
-    const treeArray = this.data;
-    // Calculate the actual array index for the given leaf node.
-    let currentNodeIndex = leafIndex + this.leafOffset - 1;
-    let currentMaxValue = defaultValue;
-
-    // Iterate upwards from the leaf node towards the root.
-    while (currentNodeIndex >= 0) {
-      if (treeArray[currentNodeIndex] > currentMaxValue) {
-        currentMaxValue = treeArray[currentNodeIndex];
-      }
-      // Move to the parent node. Parent of node 'i' is '(i-1)/2'.
-      currentNodeIndex = (currentNodeIndex - 1) >> 1;
-    }
-    return currentMaxValue;
-  },
-
-  /**
-   * Updates a specified range [startIndex, endIndex) with a new numerical value.
-   * This implementation uses a form of lazy propagation, where updates are applied
-   * directly to nodes that fully cover the target range.
-   * @param {number} startIndex - The inclusive start index of the range to update.
-   * @param {number} endIndex - The exclusive end index of the range to update.
-   * @param {number} newValue - The value to set for the nodes within the specified range.
-   */
-  modifyRange: function (startIndex, endIndex, newValue) {
-    // If the update range is empty or invalid, return immediately.
-    if (startIndex >= endIndex) {
-      return;
-    }
-
-    // Capture 'this' for use in the nested recursive function.
-    const instanceRef = this;
-
-    /**
-     * Internal recursive function to perform the range update.
-     * @param {number} currentRangeStart - The start of the update range for the current call.
-     * @param {number} currentRangeEnd - The end of the update range for the current call.
-     * @param {number} nodeRangeStart - The start of the range covered by the current tree node.
-     * @param {number} nodeRangeEnd - The end of the range covered by the current tree node.
-     * @param {number} nodeIndex - The array index of the current node in 'instanceRef.data'.
-     */
-    function recursiveUpdate(
-      currentRangeStart,
-      currentRangeEnd,
-      nodeRangeStart,
-      nodeRangeEnd,
-      nodeIndex
-    ) {
-      // If the current node's covered range perfectly matches the update range,
-      // apply the new value directly to this node.
-      if (currentRangeStart === nodeRangeStart && currentRangeEnd === nodeRangeEnd) {
-        instanceRef.data[nodeIndex] = newValue;
-        return;
-      }
-
-      // Calculate the midpoint of the current node's range to split into children.
-      const midPoint = (nodeRangeStart + nodeRangeEnd) >> 1;
-
-      // Determine which child nodes need to be visited based on the overlap with the update range.
-      if (midPoint < currentRangeEnd) {
-        // The update range extends into the right child's domain.
-        if (currentRangeStart < midPoint) {
-          // The update range also overlaps with the left child's domain.
-          // Recursively update the left child.
-          recursiveUpdate(
-            currentRangeStart,
-            midPoint,
-            nodeRangeStart,
-            midPoint,
-            (nodeIndex * 2) + 1
-          );
-          // Recursively update the right child.
-          recursiveUpdate(
-            midPoint,
-            currentRangeEnd,
-            midPoint,
-            nodeRangeEnd,
-            (nodeIndex * 2) + 2
-          );
-        } else {
-          // The update range is entirely within the right child's domain.
-          // Recursively update only the right child.
-          recursiveUpdate(
-            currentRangeStart,
-            currentRangeEnd,
-            midPoint,
-            nodeRangeEnd,
-            (nodeIndex * 2) + 2
-          );
+// Function to read a matrix of 'height' rows and 'width' columns.
+function readMatrix(height, width, asStrings) {
+    var resultMatrix = [], rowCounter = 0x0;
+    if (asStrings) {
+        for (; rowCounter < height; rowCounter++) {
+            resultMatrix.push(tokenBuffer.slice(tokenIndex, tokenIndex += width));
         }
-      } else {
-        // The update range is entirely within the left child's domain.
-        // Recursively update only the left child.
-        recursiveUpdate(
-          currentRangeStart,
-          currentRangeEnd,
-          nodeRangeStart,
-          midPoint,
-          (nodeIndex * 2) + 1
-        );
-      }
+    } else {
+        for (; rowCounter < height; rowCounter++) {
+            resultMatrix.push(tokenBuffer.slice(tokenIndex, tokenIndex += width).map(val => +val));
+        }
     }
+    return resultMatrix;
+}
 
-    // Begin the recursive update process from the root node (index 0),
-    // covering the full range of the tree's leaves.
-    recursiveUpdate(startIndex, endIndex, 0, this.leafOffset, 0);
-  },
+// Utility to create multi-dimensional arrays.
+function createMultiDimArray(initialValue) {
+    var args = arguments, argCount = args.length, evalString = "Array(args[" + --argCount + "]).fill().map(x=>{return " + initialValue + ";})";
+    while (--argCount) {
+        evalString = "Array(args[" + argCount + "]).fill().map(x=>" + evalString + ")";
+    }
+    return eval(evalString);
+}
+
+// Output buffering system.
+var outputQueue = [];
+function enqueueOutput(content) {
+    outputQueue.push(content);
+}
+
+// Default value for segment tree nodes.
+var defaultVal = 0x0;
+
+// Segment Tree implementation.
+function SegmentTreeDataStructure(initialSize) {
+    var powerOfTwoSize = 0x2;
+    initialSize--;
+    while (initialSize) {
+        initialSize >>= 0x1;
+        powerOfTwoSize <<= 0x1;
+    }
+    this.treeArray = new Array(powerOfTwoSize - 0x1).fill(defaultVal);
+    this.leafOffset = powerOfTwoSize >> 0x1;
+}
+
+SegmentTreeDataStructure.prototype = {
+    // Queries the maximum value in the path from a leaf to the root.
+    queryMax: function(targetIndex) {
+        var currentTree = this.treeArray;
+        targetIndex += this.leafOffset - 0x1;
+        var maxResult = defaultVal;
+        while (targetIndex >= 0x0) {
+            if (currentTree[targetIndex] > maxResult) {
+                maxResult = currentTree[targetIndex];
+            }
+            targetIndex = (targetIndex - 0x1) >> 0x1;
+        }
+        return maxResult;
+    },
+
+    // Updates a range [rangeStart, rangeEnd) with a new value.
+    applyUpdate: function(rangeStart, rangeEnd, newValue) {
+        if (rangeStart >= rangeEnd) {
+            return;
+        }
+        var thisInstance = this;
+        // Helper recursive function for range updates.
+        recursiveUpdate(rangeStart, rangeEnd, 0x0, this.leafOffset, 0x0);
+
+        function recursiveUpdate(currentRangeStart, currentRangeEnd, nodeRangeStart, nodeRangeEnd, nodeIndex) {
+            // If the current node's range perfectly matches the update range.
+            if (currentRangeStart === nodeRangeStart && currentRangeEnd === nodeRangeEnd) {
+                thisInstance.treeArray[nodeIndex] = newValue;
+                return;
+            }
+            var midPoint = (nodeRangeStart + nodeRangeEnd) >> 0x1;
+            // Determine which child nodes to recurse into.
+            if (midPoint < currentRangeEnd) {
+                if (currentRangeStart < midPoint) {
+                    recursiveUpdate(currentRangeStart, midPoint, nodeRangeStart, midPoint, nodeIndex + nodeIndex + 0x1);
+                    recursiveUpdate(midPoint, currentRangeEnd, midPoint, nodeRangeEnd, (nodeIndex + 0x1) << 0x1);
+                } else {
+                    recursiveUpdate(midPoint, currentRangeEnd, midPoint, nodeRangeEnd, (nodeIndex + 0x1) << 0x1);
+                }
+            } else {
+                recursiveUpdate(currentRangeStart, currentRangeEnd, nodeRangeStart, midPoint, nodeIndex + nodeIndex + 0x1);
+            }
+        }
+    },
 };
 
-// Execute the main business logic of the application.
-let finalResult = executeMainLogic();
+// Execute the main solution logic.
+var finalResult = executeSolution();
 
-// If the main logic returned a non-undefined value, print it to the console.
-if (finalResult !== undefined) {
-  console.info(String(finalResult));
+// Output the main result if it's not undefined.
+if (finalResult !== void 0) {
+    console.log(String(finalResult));
 }
 
-// If there are accumulated messages in the output buffer, join them with newlines
-// and print them all to the console.
-if (outputBuffer.length > 0) {
-  console.info(outputBuffer.join("\n"));
+// Output any buffered streams.
+if (outputQueue.length > 0x0) {
+    console.log(outputQueue.join("\n"));
 }
 
-/**
- * The primary function encapsulating the program's core operations.
- * It reads input, processes it using an Interval Tree, and computes a final answer.
- * @returns {number} The ultimate computed maximum value.
- */
-function executeMainLogic() {
-  // Read two numbers from the input: elementsCount (N) and rangeK (K).
-  const [elementsCount, rangeK] = getMultipleNumbers(2);
-  // Read an array of 'elementsCount' numbers from the input.
-  const inputArray = getMultipleNumbers(elementsCount);
+// Main function containing the problem's logic.
+function executeSolution() {
+    // Read N and K from input.
+    var [elementCount, rangeParam] = readNums(0x2);
+    // Read the array 'a'.
+    var inputArray = readNums(elementCount);
 
-  // Instantiate an IntervalTree. The capacity is set to 300001,
-  // which is typically chosen to cover the maximum possible value (e.g., max a[i] + k).
-  const segmentTreeInstance = new IntervalTree(300001);
+    // Initialize a segment tree with a size suitable for values up to 300000.
+    var segmentTreeInstance = new SegmentTreeDataStructure(300001);
 
-  // Iterate through each element in the provided inputArray.
-  for (let loopCounter = 0; loopCounter < elementsCount; loopCounter++) {
-    // Determine the lower bound for the update range.
-    // It's the maximum of 0 and (current element - rangeK).
-    const lowerBound = Math.max(0, inputArray[loopCounter] - rangeK);
-    // Determine the upper bound for the update range.
-    // It's the minimum of 300000 and (current element + rangeK).
-    const upperBound = Math.min(300000, inputArray[loopCounter] + rangeK);
+    // Process each element in the input array.
+    for (var idx = 0x0; idx < elementCount; idx++) {
+        // Calculate the effective range [L, R] for the current element.
+        var lowerBound = Math.max(0x0, inputArray[idx] - rangeParam);
+        var upperBound = Math.min(300000, inputArray[idx] + rangeParam);
 
-    // Query the IntervalTree for the current maximum value at the current element's position.
-    const currentMax = segmentTreeInstance.queryMax(inputArray[loopCounter]);
+        // Query the current maximum value at inputArray[idx] in the segment tree.
+        var currentMaxVal = segmentTreeInstance.queryMax(inputArray[idx]);
 
-    // Update a range in the IntervalTree. The range is [lowerBound, upperBound + 1).
-    // The value used for the update is 'currentMax + 1'.
-    segmentTreeInstance.modifyRange(lowerBound, upperBound + 1, currentMax + 1);
-  }
+        // Update the segment tree for the calculated range with (currentMaxVal + 1).
+        // Note: The range is [lowerBound, upperBound + 1) as per segment tree convention.
+        segmentTreeInstance.applyUpdate(lowerBound, upperBound + 0x1, currentMaxVal + 0x1);
+    }
 
-  // After all updates, find the overall maximum value across the entire possible range
-  // covered by the segment tree.
-  let overallMaximum = 0;
-  // Iterate from 0 up to 300000 (inclusive) to query all possible points.
-  for (let loopCounter = 0; loopCounter <= 300000; loopCounter++) {
-    overallMaximum = Math.max(
-      overallMaximum,
-      segmentTreeInstance.queryMax(loopCounter)
-    );
-  }
+    // Find the overall maximum value in the segment tree across all possible indices.
+    var overallMax = 0x0;
+    for (var idx = 0x0; idx <= 300000; idx++) {
+        overallMax = Math.max(overallMax, segmentTreeInstance.queryMax(idx));
+    }
 
-  // Return the final maximum value found.
-  return overallMaximum;
+    // Return the final answer.
+    return overallMax;
 }

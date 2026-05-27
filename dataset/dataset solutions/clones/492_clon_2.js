@@ -1,93 +1,47 @@
-/*
- * This JavaScript module processes sequential data lines from standard input.
- * Its core function is to simulate a series of events and track a cumulative
- * value, checking if it exceeds a predetermined maximum threshold at any point.
- * The input describes test cases, each containing multiple items with associated
- * mass, start time, and end time.
- */
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
+var lineBuffer = (rawData.trim()).split("\n"); // Split input into lines
 
-// Import the native file system module for input operations.
-const fileSystemModule = require('node:fs');
+while (true) {
+    // Read the number of entries for the current test case
+    var entryCount = lineBuffer.shift() - 0;
 
-// Declare constants for various literal values and string identifiers to enhance readability and maintainability.
-const STD_INPUT_FILE_PATH = '/dev/stdin';          // Path to read input from.
-const TEXT_ENCODING_STANDARD = 'utf8';             // Character encoding for file operations.
-const LINE_BREAK_SEPARATOR = "\n";                  // Delimiter for splitting input into lines.
-const VALUE_SEPARATOR = " ";                        // Delimiter for splitting line parts.
-const EVENT_END_OFFSET = 0.1;                       // Small decimal offset for end events.
-const MAXIMUM_ACCUMULATION_LIMIT = 150;             // The upper bound for the cumulative value.
-const STATUS_INDICATOR_SUCCESS = "OK";              // String for a successful outcome.
-const STATUS_INDICATOR_FAILURE = "NG";              // String for a failed outcome.
-const ZERO_NUMERIC_VALUE = 0;                       // A constant representing the numeric zero.
-
-// Obtain a reference to the readFileSync method for convenience, changing its identifier.
-const obtainFileContentSynchronously = fileSystemModule.readFileSync;
-
-// Read all content from the standard input file, applying the specified encoding.
-let entireInputContent = obtainFileContentSynchronously(STD_INPUT_FILE_PATH, TEXT_ENCODING_STANDARD);
-
-// Process the raw input: trim whitespace and split into an array of individual data strings.
-let processedInputLines = entireInputContent.trim().split(LINE_BREAK_SEPARATOR);
-
-// Begin the main loop to process multiple test scenarios. This loop continues until a specific termination condition is met.
-while (Boolean(true))
-{
-    // Extract the first line, which represents the number of items for the current scenario, and convert it to a whole number.
-    let numberOfScenarioItems = Number(processedInputLines.shift());
-
-    // Check for the termination condition: if the item count is zero, exit the loop.
-    if (numberOfScenarioItems === ZERO_NUMERIC_VALUE) {
+    // If N is 0, it's the end of input
+    if (entryCount === 0) {
         break;
     }
 
-    // Initialize an empty array to store all significant events, each defined by a timestamp and a value change.
-    let timePointAlterations = [];
+    var eventList = []; // Array to store start/end events for mass changes
 
-    // Loop through each item description for the current scenario.
-    for (let itemIndex = 0; itemIndex < numberOfScenarioItems; ++itemIndex)
-    {
-        // Parse the current item's data line: split by space and convert all parts to floating-point numbers.
-        let currentItemData = processedInputLines.shift().split(VALUE_SEPARATOR).map(parseFloat);
+    // Process each entry
+    for (var idx = 0; idx < entryCount; idx++) {
+        var parsedLine = (lineBuffer.shift()).split(" ").map(Number); // Parse line into numbers
+        var massValue = parsedLine[0]; // The mass value
+        var startPoint = parsedLine[1]; // Start coordinate
+        var endPoint = parsedLine[2]; // End coordinate
 
-        // Deconstruct the parsed data into meaningful variables.
-        let itemWeight = currentItemData[0];
-        let initialMoment = currentItemData[1];
-        let finalMoment = currentItemData[2];
-
-        // Record the start event: at the initial moment, the item's weight is added.
-        timePointAlterations.push([initialMoment, itemWeight]);
-        // Record the end event: just before the final moment, the item's weight is removed.
-        timePointAlterations.push([finalMoment - EVENT_END_OFFSET, -1 * itemWeight]);
+        // Add events: mass starts at 'a', mass ends at 'b'
+        eventList.push([startPoint, massValue]);
+        eventList.push([endPoint - 0.1, -1 * massValue]); // Use 0.1 offset for end point
     }
 
-    // Sort all recorded events based on their chronological order (timestamp).
-    timePointAlterations.sort((firstEventDetail, secondEventDetail) =>
-    {
-        // Extract the timestamp from each event for comparison.
-        const timeValueA = firstEventDetail[0];
-        const timeValueB = secondEventDetail[0];
-        return timeValueA - timeValueB; // Sort in ascending order of time.
+    // Sort events by coordinate
+    eventList.sort(function(eventA, eventB) {
+        var coordA = eventA[0];
+        var coordB = eventB[0];
+        return coordA - coordB; // Ascending order sort
     });
 
-    // Initialize the status string to success and the running total to zero.
-    let scenarioOutcomeStatus = STATUS_INDICATOR_SUCCESS;
-    let runningTotalWeight = 0;
+    var statusIndicator = "OK"; // Initial status
+    var currentLoad = 0; // Current accumulated mass
 
-    // Iterate through the chronologically ordered events to simulate the cumulative effect.
-    for (let alterationIdx = 0; alterationIdx < timePointAlterations.length; ++alterationIdx)
-    {
-        // Apply the weight change of the current event to the running total.
-        runningTotalWeight += timePointAlterations[alterationIdx][1];
-
-        // Check if the running total has exceeded the maximum allowable limit.
-        if (runningTotalWeight > MAXIMUM_ACCUMULATION_LIMIT) {
-            scenarioOutcomeStatus = STATUS_INDICATOR_FAILURE; // Update status to failure.
-            break; // No need to process further events, the limit has been breached.
+    // Iterate through sorted events to check load
+    for (var idx = 0; idx < eventList.length; idx++) {
+        currentLoad += eventList[idx][1]; // Add or subtract mass
+        if (currentLoad > 150) { // Check if load exceeds limit
+            statusIndicator = "NG"; // Set status to Not Good
+            break; // No need to check further
         }
     }
 
-    // Output the final determined status for the current scenario to the console.
-    console.log(scenarioOutcomeStatus);
+    console.log(statusIndicator); // Output the result for the current test case
 }
-
-// The script concludes after processing all test scenarios.

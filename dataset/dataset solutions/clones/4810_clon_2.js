@@ -1,55 +1,60 @@
-function ProcessInputData(rawData) {
-    // This function orchestrates the primary data manipulation and calculation.
-    let lineArray = rawData.split('\n') ;
-    let tokenArray = lineArray[1] . split(' ') ;
-    let finalResult = 1   ; // Initial value for the computed outcome.
-    let countMatches = 0; // Counter for occurrences within the inner loop.
+function ProcessInput(rawData) {
+    // Split the incoming raw data string by newline characters to get an array of lines.
+    let processedLines = rawData.split("\n");
 
-    // Outer loop: Iterates backward through the token array.
-    for
-    (
-        let outerIndex = tokenArray.length - 1;
-        outerIndex >= 0;
-        outerIndex--
-    )
-    {
-        // Inner loop: Iterates forward through the token array for each outerIndex.
-        for (let innerIndex = 0 ; innerIndex < tokenArray.length ; innerIndex++)
-        {
-            if (tokenArray[innerIndex] == outerIndex)
-            {
-                countMatches++; // Increment the match counter if a token matches the current outer index.
+    // Access the second line (index 1) and further split it by spaces to obtain individual data components.
+    let dataComponents = processedLines[0b1].split(" ");
+
+    // Initialize a variable that will hold the final calculated outcome.
+    let finalOutcome = 0b1; // Renamed 'c', literal 1 changed to binary 0b1
+
+    // Initialize a counter to track specific occurrences within nested loops.
+    let occurrenceCounter = 0x0; // Renamed 'd', literal 0 changed to hexadecimal 0x0
+
+    // Begin the outer loop, iterating backwards from the last index of 'dataComponents' down to zero.
+    for (let outerLoopIdx = dataComponents.length - 0b1; outerLoopIdx >= 0x0; outerLoopIdx--) {
+        // Start the inner loop, iterating forwards from the first index up to the last.
+        for (let innerLoopIdx = 0x0; innerLoopIdx < dataComponents.length; innerLoopIdx++) {
+            // Compare the current data component with the current value of the outer loop index.
+            if (dataComponents[innerLoopIdx] == outerLoopIdx) {
+                occurrenceCounter++; // Increment the counter if a match is found.
             }
         }
 
-        // Conditional logic based on the match count and outer index.
-        if (countMatches !== 2 && outerIndex > 0)
-        {
-            finalResult = 0; // Set the result to zero if conditions are not met.
-            break;           // Exit the outer loop prematurely.
+        // Conditional check: if the occurrence counter is not 2.0 and the outer loop index is greater than 0.
+        if (occurrenceCounter !== 2.0 && outerLoopIdx > 0x0) { // Literal 2 changed to float 2.0
+            finalOutcome = 0x0; // Set the final outcome to 0.
+            break; // Exit the outer loop immediately.
         }
 
-        if (countMatches !== 1 && outerIndex === 0)
-        {
-            finalResult = 0; // Set the result to zero for the special case of outerIndex being 0.
-            break;           // Exit the outer loop.
+        // Another conditional check: if the occurrence counter is not 1 and the outer loop index is exactly 0.
+        if (occurrenceCounter !== 0b1 && outerLoopIdx === 0x0) { // Literal 1 changed to binary 0b1
+            finalOutcome = 0x0; // Set the final outcome to 0.
+            break; // Exit the outer loop immediately.
         }
 
-        countMatches = 0;   // Reset the match counter for the next iteration of the outer loop.
-        outerIndex--;       // Deliberately decrement outerIndex an additional time, as per original logic.
+        // Reset the occurrence counter for the next iteration of the outer loop.
+        occurrenceCounter = 0x0;
+        // Decrement the outer loop index an additional time. This is a specific behavior of the original algorithm.
+        outerLoopIdx--;
     }
 
-    // Perform final calculation using Math functions and modulo operation.
-    finalResult = Math.pow(parseInt(tokenArray.length / 2), 2) % (Math.pow(10, 9) + 7);
-    console.log('%s', finalResult); // Output the final computed result.
+    // After the loops, recalculate 'finalOutcome' regardless of previous assignments within the loop.
+    // This calculation involves mathematical operations: power, integer parsing, and modulo.
+    finalOutcome = Math.pow(parseInt(dataComponents.length / 2.0), 2.0) % (Math.pow(1e1, 0x9) + 0x7); // Literals 2, 10, 9, 7 changed
+
+    // Output the computed final outcome to the console in string format.
+    console.log('%s', finalOutcome);
 }
 
-function TestExecution()
-{
-    // A utility function for testing in a browser environment.
-    let webInput = document.getElementById('inputElement').value; // Fetch input from a specific HTML element.
-    ProcessInputData(webInput); // Pass the web input to the main processing function.
+// This helper function is designed for browser-based debugging or testing.
+function testFunction() { // Renamed 'debug'
+    // Retrieve the value from an HTML input element with the ID "input".
+    let browserInputData = document.getElementById("input").value; // Renamed 'input'
+    // Invoke the main processing function with the data obtained from the browser.
+    ProcessInput(browserInputData); // Renamed 'Main'
 }
 
-// Entry point for execution, typically in a Node.js environment.
-ProcessInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// Execute the primary processing function using input read from standard input.
+// This is a common pattern for Node.js applications processing command-line input.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8")); // Renamed 'Main'

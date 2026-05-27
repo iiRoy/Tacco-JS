@@ -1,33 +1,42 @@
-const dataExtractor = (sourceContent) => Number.parseInt(sourceContent.match(/^\d+/)[0], 10);
+const generateSequence = (startPoint, endPoint) => Array.from({ length: endPoint - startPoint + 1 }, (_, indexOffset) => startPoint + indexOffset);
 
-const calculateInitialValue = (val) => (val % 2 === 0) ? (val - 2) * val / 2 : (val - 3) * (val - 1) / 2 + (val - 1);
+function ProcessInput(dataString) {
+  const inputLines = dataString.split("\n");
+  const numericValue = parseInt(inputLines[0], 10);
 
-const generateFilteredPairs = (maxVal) => {
-    const conditionChecker = (pItem) => {
-        const sumOfElements = pItem.firstElement + pItem.secondElement;
-        return (maxVal % 2 === 0) ? (sumOfElements !== (maxVal + 1)) : (sumOfElements !== maxVal);
-    };
+  let initialPairCount;
+  let exclusionPredicate;
 
-    const allCombinations = Array.from({ length: maxVal }, (_, indexA) => indexA + 1)
-        .flatMap(primaryElement =>
-            Array.from({ length: maxVal - primaryElement }, (_, indexB) => primaryElement + 1 + indexB)
-                .map(secondaryElement => ({ firstElement: primaryElement, secondElement: secondaryElement }))
-        );
+  if (numericValue % 2 === 0) {
+    initialPairCount = (numericValue - 2) * numericValue / 2;
+    exclusionPredicate = (firstItem, secondItem) => secondItem === numericValue + 1 - firstItem;
+  } else {
+    initialPairCount = (numericValue - 3) * (numericValue - 1) / 2 + (numericValue - 1);
+    exclusionPredicate = (firstItem, secondItem) => secondItem === numericValue - firstItem;
+  }
 
-    return allCombinations.filter(conditionChecker)
-                          .map(pItem => `${pItem.firstElement} ${pItem.secondElement}`);
-};
+  const allFirstItems = generateSequence(1, numericValue);
 
-const MasterProcessor = (sourceContent) => {
-    const numericalParameter = dataExtractor(sourceContent);
-    const leadingOutput = calculateInitialValue(numericalParameter);
-    const subsequentOutputs = generateFilteredPairs(numericalParameter);
+  const constructedPairs = allFirstItems.flatMap(firstItem =>
+    generateSequence(firstItem + 1, numericValue)
+      .filter(secondItem => !exclusionPredicate(firstItem, secondItem))
+      .map(secondItem => `${firstItem} ${secondItem}`)
+  );
 
-    const outputCollection = [leadingOutput, ...subsequentOutputs];
-    const finalRender = outputCollection.join('\n');
+  const finalOutputComponents = [initialPairCount.toString(), ...constructedPairs];
+  const combinedResult = finalOutputComponents.join("\n");
 
-    console.log(finalRender);
-    return finalRender;
-};
+  console.log('%s', combinedResult);
+  return combinedResult;
+}
 
-MasterProcessor(require("fs").readFileSync("/dev/stdin", "utf8"));
+function debug(testCaseNumber){
+  var input = document.getElementById("input"+testCaseNumber).value;
+  var ans=ProcessInput(input);
+  var result="WA";
+  if(ans==document.getElementById("output"+testCaseNumber).value.split("\n")[0]){
+    result="AC";
+  }
+  document.getElementById("result"+testCaseNumber).innerHTML=result;
+}
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

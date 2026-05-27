@@ -1,25 +1,17 @@
-const obtainCalculation = (dataPayload) => {
-    const dataLines = dataPayload.split('\n');
-    const [totalItems, spanSize] = dataLines[0].split(' ').map(Number);
-    const itemValues = dataLines[1].split(' ').map(Number);
+function ProcessInput(sourceData) {
+    const dataLines = sourceData.split('\n');
+    const [totalElements, windowLength] = dataLines[0].split(' ').map(Number);
+    const valueSequence = dataLines[1].split(' ').map(Number);
 
-    let currentWindowTotal = itemValues.slice(0, spanSize).reduce((accumulator, current) => accumulator + current, 0);
-
-    const [_, allSubsequentSums] = itemValues.slice(spanSize).reduce(
-        ([accumulatedSum, collectedSums], currentItem, currentIndex) => {
-            const itemToRemove = itemValues[currentIndex];
-            accumulatedSum += currentItem;
-            accumulatedSum -= itemToRemove;
-            collectedSums.push(accumulatedSum);
-            return [accumulatedSum, collectedSums];
-        },
-        [currentWindowTotal, []]
+    const aggregatedWindowValues = Array.from({ length: valueSequence.length - windowLength + 1 }, (_, index) =>
+        valueSequence.slice(index, index + windowLength).reduce((accumulator, currentVal) => accumulator + currentVal, 0)
     );
 
-    const maxOfSubsequent = Math.max(0, ...allSubsequentSums);
+    const peakWindowSum = Math.max(...aggregatedWindowValues);
 
-    const ultimateResult = (maxOfSubsequent + spanSize) / 2;
-    console.log(ultimateResult);
-};
+    const finalComputedValue = (peakWindowSum + windowLength) / 2;
 
-obtainCalculation(require("fs").readFileSync("/dev/stdin", "utf8").trim());
+    console.log(finalComputedValue);
+}
+
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8").trim());

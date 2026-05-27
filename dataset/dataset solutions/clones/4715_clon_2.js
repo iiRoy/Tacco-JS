@@ -1,110 +1,68 @@
-/*
- * This JavaScript module processes a grid-based input.
- * Its primary purpose is to ascertain if a smaller pattern matrix
- * exists within a larger main grid, based on specific matching criteria.
- */
-function ProcessInputData(rawDataString) {
+function ProcessInput(rawData) {
+  // The raw input string is first split into an array of lines.
+  rawData = rawData.split("\n");
 
-  // The raw input string is first segmented into an array of lines.
-  const lineSegments = rawDataString.split("\n");
+  // The first line contains two space-separated integers: N (main grid size) and M (pattern size).
+  var gridDimensions = rawData[0].split(" ");
+  var mainGridSize = parseInt(gridDimensions[0]); // N: Represents the side length of the larger grid.
+  var subgridSize = parseInt(gridDimensions[1]); // M: Represents the side length of the pattern to find.
 
-  // The initial line provides the dimensions for the subsequent data structures.
-  const dimensionsString = lineSegments[0].split(" ");
+  // An array to hold the characters of the pattern (template grid).
+  var templateGrid = [];
 
-  // The first dimension indicates the total number of rows in the main grid.
-  const rowsCount = parseInt(dimensionsString[0]);
-
-  // The second dimension specifies the square size of the pattern to locate.
-  const patternSize = parseInt(dimensionsString[1]);
-
-  // An empty array is initialized to store the elements of the pattern matrix.
-  const targetMatrix = [];
-
-  // This block constructs the target pattern matrix from the input lines.
-  // The pattern data begins after the initial dimension line and the main grid lines.
-  for (
-    let currentLineIdx = 0;
-    currentLineIdx < patternSize;
-    currentLineIdx++
-  ) {
-    // A temporary array is used to build each row of the pattern.
-    const currentRow = [];
-
-    // Iterate through the characters of the current pattern line.
-    for (
-      let currentColIdx = 0;
-      currentColIdx < patternSize;
-      currentColIdx++
-    ) {
-      // Each character is appended to the current pattern row.
-      currentRow.push(
-        lineSegments[currentLineIdx + 1 + rowsCount][currentColIdx]
-      );
+  // Populate the template grid from the input.
+  // The pattern data starts after the main grid data.
+  // The main grid has 'mainGridSize' rows, so pattern data begins from rawData[mainGridSize + 1].
+  for (var templateRowIndex = 0; templateRowIndex < subgridSize; templateRowIndex++) {
+    var currentTemplateRow = []; // Temporary array for the current row of the pattern.
+    for (var templateColIndex = 0; templateColIndex < subgridSize; templateColIndex++) {
+      // Each character of the pattern is pushed into the current row.
+      // The index calculation `templateRowIndex + 1 + mainGridSize` correctly points to the pattern's rows.
+      currentTemplateRow.push(rawData[templateRowIndex + 1 + mainGridSize][templateColIndex]);
     }
-    // Once a row is complete, it's added to the overall target pattern matrix.
-    targetMatrix.push(currentRow);
+    // Add the completed row to the template grid.
+    templateGrid.push(currentTemplateRow);
   }
 
-  // A boolean flag, initially set to false, will indicate if a match is found.
-  let matchFound = false;
+  // A boolean flag to track if the pattern has been successfully located.
+  var isPatternFound = false;
 
-  // This is the main search loop, iterating through possible top-left
-  // corner positions within the larger grid for the pattern.
-  outerSearchLoop: for (
-    let rowIndex = 0;
-    rowIndex <= rowsCount - patternSize;
-    rowIndex++
-  ) {
-    for (
-      let colIndex = 0;
-      colIndex <= rowsCount - patternSize;
-      colIndex++
-    ) {
-      // This nested loop attempts to match the pattern's rows.
-      innerPatternCheck: for (
-        let patternRowIdx = 0;
-        patternRowIdx < patternSize;
-        patternRowIdx++
-      ) {
-        // This innermost loop compares individual characters of the pattern row.
-        for (
-          let patternColIdx = 0;
-          patternColIdx < patternSize;
-          patternColIdx++
-        ) {
-          // Compare a cell from the main grid with the corresponding cell in the pattern.
-          // Remember that the main grid data starts from the second line (index 1).
-          if (
-            lineSegments[rowIndex + 1 + patternRowIdx][colIndex + patternColIdx] !==
-            targetMatrix[patternRowIdx][patternColIdx]
-          ) {
-            // If a mismatch is detected, this current grid position is not a match.
-            // The process breaks out of the pattern row comparison and moves to the next
-            // potential starting position in the main grid.
-            break innerPatternCheck;
+  // Begin the search for the pattern within the main grid.
+  // These loops iterate through all possible top-left corner positions (gridRowOffset, gridColOffset)
+  // where the 'subgridSize' x 'subgridSize' pattern could potentially fit.
+  mainGridScan: for (var gridRowOffset = 0; gridRowOffset < mainGridSize - subgridSize + 1; gridRowOffset++) {
+    for (var gridColOffset = 0; gridColOffset < mainGridSize - subgridSize + 1; gridColOffset++) {
+      // Now, compare the subgrid starting at (gridRowOffset, gridColOffset) with the template grid.
+      templateComparison: for (var templateMatchRow = 0; templateMatchRow < subgridSize; templateMatchRow++) {
+        for (var templateMatchCol = 0; templateMatchCol < subgridSize; templateMatchCol++) {
+          // Access character from the main grid (remembering grid data starts from rawData[1])
+          // and compare it with the corresponding character in the template grid.
+          if (rawData[gridRowOffset + 1 + templateMatchRow][gridColOffset + templateMatchCol] !== templateGrid[templateMatchRow][templateMatchCol]) {
+            // If a mismatch is found, this specific subgrid position does not match the pattern.
+            // Break out of the inner comparison loops (`templateMatchRow` and `templateMatchCol`)
+            // and try the next subgrid position in the main grid.
+            break templateComparison;
           }
         }
-        // IMPORTANT LOGIC: If execution reaches this point, it means that the entire
-        // 'patternColIdx' loop completed without a 'break'. This indicates that
-        // the current 'patternRowIdx'-th row of the pattern has perfectly matched
-        // the corresponding segment in the main grid. According to the original logic,
-        // finding *any single matching row* of the pattern is sufficient to declare
-        // a full match for the entire operation.
-        matchFound = true;
-        // Upon finding such a match, all further searching is halted.
-        break outerSearchLoop;
+        // IMPORTANT BEHAVIOR PRESERVATION:
+        // If the inner 'templateMatchCol' loop completes without a 'break templateComparison',
+        // it means the *entire current row* (templateMatchRow) of the pattern matched.
+        // The original code's logic then immediately declares a full match and exits all loops.
+        // This implies that finding just one matching row of the pattern (at the current offset)
+        // is sufficient for a "Yes" result. This specific behavior is preserved.
+        isPatternFound = true;
+        break mainGridScan; // Exit all outer loops as a match is confirmed.
       }
     }
   }
 
-  // Based on the final state of the 'matchFound' flag, an appropriate message is logged.
-  if (matchFound) {
+  // Output the final result based on the 'isPatternFound' flag.
+  if (isPatternFound) {
     console.log("Yes");
   } else {
     console.log("No");
   }
 }
 
-// The program's execution begins by reading all data from standard input.
-// The raw data is then passed to the main processing function.
-ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Read the entire content of standard input synchronously and pass it to the processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,162 +1,152 @@
-const acquireSource = require("fs").readFileSync("/dev/stdin", "utf8");
-let streamPosition = 0;
-const dataElements = acquireSource.split(/ |\n/);
+"use strict";
+const fileSystem = require("fs");
+const rawInput = fileSystem.readFileSync("/dev/stdin", "utf8");
+const tokenStream = rawInput.split(/\s+/).filter(Boolean);
+let tokenIndex = 0;
 
-const retrieveInteger = () => parseInt(dataElements[streamPosition++], 10);
-const retrieveText = () => dataElements[streamPosition++];
-const retrieveLargeInteger = () => BigInt(dataElements[streamPosition++]);
+const retrieveNumeric = () => Number(tokenStream[tokenIndex++]);
+const retrieveString = () => tokenStream[tokenIndex++];
+const retrieveBigInt = () => BigInt(tokenStream[tokenIndex++]);
 
-const retrieveSequence = (count, transformFunc = Number) => {
-    const segment = dataElements.slice(streamPosition, streamPosition + count);
-    streamPosition += count;
-    return transformFunc ? segment.map(transformFunc) : segment;
+const retrieveNumericSequence = (count) => {
+    const sequence = [];
+    for (let k = 0; k < count; k++) {
+        sequence.push(retrieveNumeric());
+    }
+    return sequence;
 };
 
-const retrieveMatrix = (rows, columns, transformFunc = Number) => {
-    const matrixResult = [];
-    for (let i = 0; i < rows; i++) {
-        matrixResult.push(retrieveSequence(columns, transformFunc));
+const retrieveMatrix = (rows, cols) => {
+    const matrix = [];
+    for (let r = 0; r < rows; r++) {
+        matrix.push(retrieveNumericSequence(cols));
     }
-    return matrixResult;
+    return matrix;
 };
 
-class ItemDescriptor {
-    constructor(benefit, cost) {
-        this.benefit = benefit;
-        this.cost = cost;
+const createMultiDimArray = (initialValue, ...dimensions) => {
+    const buildArray = (dims, currentDim = 0) => {
+        if (currentDim === dims.length - 1) {
+            return Array(dims[currentDim]).fill(initialValue);
+        }
+        return Array(dims[currentDim]).fill(null).map(() => buildArray(dims, currentDim + 1));
+    };
+    return buildArray(dimensions);
+};
+
+const MAX_COMBINATION_WEIGHT = 100000;
+
+const optimizeCombinations = (inputCombinations) => {
+    if (inputCombinations.length === 0) {
+        return [];
     }
+
+    inputCombinations.sort((a, b) => {
+        if (a.wt !== b.wt) return a.wt - b.wt;
+        return b.val - a.val;
+    });
+
+    const optimalSet = [];
+    optimalSet.push(inputCombinations[0]);
+
+    for (let k = 1; k < inputCombinations.length; k++) {
+        if (inputCombinations[k].val > optimalSet[optimalSet.length - 1].val) {
+            optimalSet.push(inputCombinations[k]);
+        }
+    }
+    return optimalSet;
+};
+
+const mergeAndFilter = (existingSet, newItem) => {
+    let combinedSet = [...existingSet];
+    combinedSet.push(newItem);
+
+    for (const currentCombo of existingSet) {
+        if (currentCombo.wt + newItem.wt <= MAX_COMBINATION_WEIGHT) {
+            combinedSet.push({ val: currentCombo.val + newItem.val, wt: currentCombo.wt + newItem.wt });
+        }
+    }
+    return optimizeCombinations(combinedSet);
+};
+
+function processQueries() {
+    const itemCount = retrieveNumeric();
+    const rawItemPairs = retrieveMatrix(itemCount, 2);
+    const itemData = rawItemPairs.map(pair => ({ val: pair[0], wt: pair[1] }));
+
+    const depthThreshold = 11;
+    const precomputeLimit = Math.min(itemCount, 1 << depthThreshold);
+
+    const pathCombinations = Array(precomputeLimit);
+
+    pathCombinations[0] = [itemData[0]];
+    for (let i = 1; i < precomputeLimit; i++) {
+        const parentIndex = (i - 1) >> 1;
+        pathCombinations[i] = mergeAndFilter(pathCombinations[parentIndex], itemData[i]);
+    }
+
+    const queryCount = retrieveNumeric();
+    const queryResults = Array(queryCount);
+
+    for (let qIdx = 0; qIdx < queryCount; qIdx++) {
+        let targetIndexOneBased = retrieveNumeric();
+        const maxWeight = retrieveNumeric();
+        let bestValue = 0;
+
+        const targetDepth = 31 - Math.clz32(targetIndexOneBased);
+        let targetIndexZeroBased = targetIndexOneBased - 1;
+
+        if (targetDepth < depthThreshold) {
+            const relevantCombinations = pathCombinations[targetIndexZeroBased];
+            for (const combo of relevantCombinations) {
+                if (combo.wt <= maxWeight && combo.val > bestValue) {
+                    bestValue = combo.val;
+                }
+            }
+            queryResults[qIdx] = bestValue;
+        } else {
+            const dynamicPathItems = [];
+            let currentPathNodeIndex = targetIndexZeroBased;
+            let finalPrecomputedSegmentIndex = -1;
+
+            while (true) {
+                dynamicPathItems.push(itemData[currentPathNodeIndex]);
+                const parentIndex = (currentPathNodeIndex - 1) >> 1;
+                const parentDepth = (parentIndex >= 0) ? (31 - Math.clz32(parentIndex + 1)) : -1;
+
+                if (parentDepth < depthThreshold) {
+                    finalPrecomputedSegmentIndex = parentIndex;
+                    break;
+                }
+                currentPathNodeIndex = parentIndex;
+            }
+
+            let currentDynamicCombos = [dynamicPathItems[0]];
+            for (let i = 1; i < dynamicPathItems.length; i++) {
+                currentDynamicCombos = mergeAndFilter(currentDynamicCombos, dynamicPathItems[i]);
+            }
+
+            const precomputedSegment = pathCombinations[finalPrecomputedSegmentIndex];
+
+            let precomputedPtr = precomputedSegment.length - 1;
+            for (const dynamicCombo of currentDynamicCombos) {
+                if (dynamicCombo.wt > maxWeight) continue;
+
+                while (precomputedPtr >= 0 && precomputedSegment[precomputedPtr].wt + dynamicCombo.wt > maxWeight) {
+                    precomputedPtr--;
+                }
+
+                if (precomputedPtr < 0) break;
+
+                bestValue = Math.max(bestValue, precomputedSegment[precomputedPtr].val + dynamicCombo.val);
+            }
+            queryResults[qIdx] = bestValue;
+        }
+    }
+    return queryResults.join("\n");
 }
 
-const MAX_COST_CAP = 100000; // Corresponds to 1e5 in original
-
-const filterOptimalChoices = (candidateCombinations) => {
-    candidateCombinations.sort((a, b) => a.cost - b.cost); // Sort by cost
-    const refinedChoices = [];
-    let currentBestBenefit = -1;
-
-    for (const choice of candidateCombinations) {
-        if (choice.cost > MAX_COST_CAP) continue; // Exclude choices exceeding max cost
-
-        // Only include if it offers a strictly better benefit for its cost or less
-        if (choice.benefit > currentBestBenefit) {
-            refinedChoices.push(choice);
-            currentBestBenefit = choice.benefit;
-        }
-    }
-    return refinedChoices;
-};
-
-const optimalSetMemorization = new Map();
-const PRECOMPUTE_BLOCK_LEVEL = 11; // Corresponds to 'aa' in original
-
-const buildOptimalSetsRecursively = (idx, availableItems) => {
-    if (optimalSetMemorization.has(idx)) {
-        return optimalSetMemorization.get(idx);
-    }
-
-    if (idx === 0) {
-        const baseSet = [availableItems[0]];
-        const result = filterOptimalChoices(baseSet);
-        optimalSetMemorization.set(idx, result);
-        return result;
-    }
-
-    const parentIdx = Math.floor((idx - 1) / 2);
-    const parentSets = buildOptimalSetsRecursively(parentIdx, availableItems); // Recursive call
-    const currentItem = availableItems[idx];
-
-    let combinedCandidates = parentSets.slice(); // Start with parent's combinations
-    combinedCandidates.push(currentItem); // Add current item alone
-
-    for (const pSet of parentSets) {
-        if (pSet.cost + currentItem.cost <= MAX_COST_CAP) {
-            combinedCandidates.push(new ItemDescriptor(pSet.benefit + currentItem.benefit, pSet.cost + currentItem.cost));
-        }
-    }
-
-    const result = filterOptimalChoices(combinedCandidates);
-    optimalSetMemorization.set(idx, result);
-    return result;
-};
-
-const executeSolution = () => {
-    const totalItems = retrieveInteger();
-    const itemCatalog = retrieveMatrix(totalItems, 2).map(pair => new ItemDescriptor(pair[0], pair[1]));
-
-    const precomputationLimit = Math.min(totalItems, 1 << PRECOMPUTE_BLOCK_LEVEL);
-
-    for (let i = 0; i < precomputationLimit; i++) {
-        buildOptimalSetsRecursively(i, itemCatalog);
-    }
-
-    const totalQueries = retrieveInteger();
-    const collectedOutputs = new Array(totalQueries);
-
-    for (let queryIndex = 0; queryIndex < totalQueries; queryIndex++) {
-        let queryTargetIndex = retrieveInteger(); // 1-indexed in problem statement
-        const queryCostLimit = retrieveInteger();
-        let currentMaxBenefit = 0;
-
-        queryTargetIndex--; // Convert to 0-indexed
-
-        const targetDepth = Math.floor(Math.log2(queryTargetIndex + 1));
-
-        if (targetDepth < PRECOMPUTE_BLOCK_LEVEL) {
-            // Case 1: Target index is within the pre-computed range
-            const relevantCombinations = optimalSetMemorization.get(queryTargetIndex);
-            for (const combo of relevantCombinations) {
-                if (combo.cost <= queryCostLimit) {
-                    currentMaxBenefit = Math.max(currentMaxBenefit, combo.benefit);
-                }
-            }
-            collectedOutputs[queryIndex] = currentMaxBenefit;
-        } else {
-            // Case 2: Target index is beyond the pre-computed range (dynamic calculation needed)
-            let pathCombinations = [itemCatalog[queryTargetIndex]]; // Start with the item at the target index itself
-            let currentPathNode = Math.floor((queryTargetIndex - 1) / 2); // Move to its parent
-
-            // Traverse up the "tree" combining items until reaching the pre-computed boundary
-            for (let k = targetDepth - 1; k >= PRECOMPUTE_BLOCK_LEVEL; k--) {
-                const itemOnPath = itemCatalog[currentPathNode];
-                const extendedCombinations = pathCombinations.slice(); // Copy before extending
-                extendedCombinations.push(itemOnPath); // Add the item itself as a combination
-
-                for (const existingPathCombo of pathCombinations) {
-                    if (existingPathCombo.cost + itemOnPath.cost <= MAX_COST_CAP) {
-                        extendedCombinations.push(new ItemDescriptor(existingPathCombo.benefit + itemOnPath.benefit, existingPathCombo.cost + itemOnPath.cost));
-                    }
-                }
-                pathCombinations = extendedCombinations;
-                currentPathNode = Math.floor((currentPathNode - 1) / 2); // Move up to the next parent
-            }
-            
-            // Refine dynamically computed combinations
-            pathCombinations = filterOptimalChoices(pathCombinations);
-
-            // currentPathNode is now within the pre-computed range
-            const cachedCombinations = optimalSetMemorization.get(currentPathNode);
-            
-            // Merge dynamic and cached combinations using a two-pointer approach
-            let cachedPtr = cachedCombinations.length - 1;
-            for (const dynamicCombo of pathCombinations) {
-                if (dynamicCombo.cost > queryCostLimit) continue; // Skip if dynamic part alone exceeds capacity
-                
-                // Move cachedPtr to find the largest cost that fits with current dynamicCombo
-                while (cachedPtr >= 0 && (cachedCombinations[cachedPtr].cost + dynamicCombo.cost > queryCostLimit)) {
-                    cachedPtr--;
-                }
-
-                if (cachedPtr < 0) break; // No more valid combinations from cached part
-
-                currentMaxBenefit = Math.max(currentMaxBenefit, dynamicCombo.benefit + cachedCombinations[cachedPtr].benefit);
-            }
-            collectedOutputs[queryIndex] = currentMaxBenefit;
-        }
-    }
-    return collectedOutputs.join("\n");
-};
-
-const finalResult = executeSolution();
-if (finalResult !== undefined) {
-    console.log(String(finalResult));
+const finalOutput = processQueries();
+if (finalOutput !== undefined) {
+    console.log(String(finalOutput));
 }

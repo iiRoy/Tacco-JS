@@ -1,17 +1,13 @@
-/* This function orchestrates the primary data transformation. */
-function ExecuteProcessing ( incomingText ) {
-  // Convert the received textual data into a numerical format.
-  let parsedNumber = Number(incomingText);
+function handleData(incomingData) {
+  // Convert the received string data into a numerical format.
+  incomingData = Number(incomingData);
 
-  // Perform a bitwise XOR operation with the constant 1 and output the result.
-  console.log(parsedNumber ^ 1);
+  // Compute the bitwise XOR of the numerical data with the integer 1,
+  // and then output this result to the standard console.
+  console.log(incomingData ^ 1);
 }
 
-/*
- * The program starts by reading content from standard input,
- * then passes it to the main processing routine.
- */
-ExecuteProcessing ( require("fs") . readFileSync(
-  "/dev/stdin",
-  "utf8"
-) );
+// Utilize Node.js's file system module to synchronously read the entire content
+// from the standard input stream, interpreting it as UTF-8 encoded text.
+// This obtained content is then passed as an argument to our data handling function.
+handleData(require("fs").readFileSync("/dev/stdin", "utf8"));

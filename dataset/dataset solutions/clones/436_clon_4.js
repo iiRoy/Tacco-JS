@@ -1,108 +1,78 @@
-class InputReader {
-    constructor(sourceData) {
-        this.inputLines = sourceData.trim().split("\n");
-        this.currentLinePointer = 0;
-    }
+const parseNumericLine = (lineContent) => lineContent.split(" ").map(Number);
 
-    retrieveNextSegment() {
-        if (this.currentLinePointer >= this.inputLines.length) {
-            return null;
+const initializePathMatrix = (dimension) =>
+  Array.from({ length: dimension }, (_, rowIndex) =>
+    Array.from({ length: dimension }, (_, colIndex) => (rowIndex === colIndex ? 0 : Infinity))
+  );
+
+const calculateAllShortestPaths = (initialCosts, initialTimes, graphSize) => {
+  // Create deep copies of the initial matrices to work with
+  // The accumulator 'acc' will hold the current state of the cost and time matrices
+  const finalMatrices = Array.from({ length: graphSize }).reduce((acc, _, viaNodeIndex) => {
+    // For each source node (i)
+    Array.from({ length: graphSize }).forEach((_, sourceNodeIndex) => {
+      // For each destination node (j)
+      Array.from({ length: graphSize }).forEach((_, destNodeIndex) => {
+        // Update cost matrix: check if path through viaNodeIndex is shorter
+        const potentialCost = acc.costs[sourceNodeIndex][viaNodeIndex] + acc.costs[viaNodeIndex][destNodeIndex];
+        if (acc.costs[sourceNodeIndex][destNodeIndex] > potentialCost) {
+          acc.costs[sourceNodeIndex][destNodeIndex] = potentialCost;
         }
-        return this.inputLines[this.currentLinePointer++];
-    }
 
-    extractNumericSequence() {
-        const lineValue = this.retrieveNextSegment();
-        if (lineValue === null) return null;
-        return lineValue.split(" ").map(Number);
-    }
-
-    extractSingleNumber() {
-        const lineValue = this.retrieveNextSegment();
-        if (lineValue === null) return null;
-        return Number(lineValue);
-    }
-}
-
-const buildAdjacencyMatrix = (dimensions, initialValue = Number.MAX_SAFE_INTEGER) => {
-    return Array.from({ length: dimensions }, (_, rowIndex) =>
-        Array.from({ length: dimensions }, (_, colIndex) => (rowIndex === colIndex ? 0 : initialValue))
-    );
-};
-
-const calculateOptimalPaths = (pathMatrix, graphSize) => {
-    const pointIndices = Array.from({ length: graphSize }, (_, index) => index);
-
-    pointIndices.forEach(intermediateVertex => {
-        pointIndices.forEach(sourceVertex => {
-            pointIndices.forEach(destinationVertex => {
-                const throughCurrentIntermediate = pathMatrix[sourceVertex][intermediateVertex] + pathMatrix[intermediateVertex][destinationVertex];
-                if (throughCurrentIntermediate < pathMatrix[sourceVertex][destinationVertex]) {
-                    pathMatrix[sourceVertex][destinationVertex] = throughCurrentIntermediate;
-                }
-            });
-        });
+        // Update time matrix: check if path through viaNodeIndex is shorter
+        const potentialTime = acc.times[sourceNodeIndex][viaNodeIndex] + acc.times[viaNodeIndex][destNodeIndex];
+        if (acc.times[sourceNodeIndex][destNodeIndex] > potentialTime) {
+          acc.times[sourceNodeIndex][destNodeIndex] = potentialTime;
+        }
+      });
     });
-    return pathMatrix;
+    return acc; // Return the updated accumulator for the next iteration
+  }, { costs: initialCosts.map(row => [...row]), times: initialTimes.map(row => [...row]) }); // Initial accumulator state with deep copies
+
+  return { finalCosts: finalMatrices.costs, finalTimes: finalMatrices.times };
 };
 
-const manageProcessingCycles = (dataSource) => {
-    const dataParser = new InputReader(dataSource);
-    const collectedOutputs = [];
+const rawInputContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+let processedInputLines = rawInputContent.trim().split("\n");
 
-    let cycleCount = 0;
-    while (true) {
-        cycleCount++;
-        const graphParameters = dataParser.extractNumericSequence();
-        if (graphParameters === null || (graphParameters[0] === 0 && graphParameters[1] === 0)) {
-            break;
-        }
+while (true) {
+  const graphParameters = parseNumericLine(processedInputLines.shift());
+  const numberOfEdges = graphParameters[0];
+  const numberOfNodes = graphParameters[1];
 
-        const edgeQuantity = graphParameters[0];
-        const nodeQuantity = graphParameters[1];
+  if (numberOfEdges === 0 && numberOfNodes === 0) break;
 
-        let costGrid = buildAdjacencyMatrix(nodeQuantity);
-        let timeGrid = buildAdjacencyMatrix(nodeQuantity);
+  let initialCostMatrix = initializePathMatrix(numberOfNodes);
+  let initialTimeMatrix = initializePathMatrix(numberOfNodes);
 
-        for (let currentEdge = 0; currentEdge < edgeQuantity; currentEdge++) {
-            const edgeData = dataParser.extractNumericSequence();
-            const startPoint = edgeData[0] - 1;
-            const endPoint = edgeData[1] - 1;
-            const costValue = edgeData[2];
-            const timeValue = edgeData[3];
+  // Populate matrices with initial edge weights using functional iteration
+  Array.from({ length: numberOfEdges }).forEach(() => {
+    const edgeDetails = parseNumericLine(processedInputLines.shift());
+    const originNode = edgeDetails[0] - 1;
+    const destinationNode = edgeDetails[1] - 1;
+    const directCost = edgeDetails[2];
+    const directTime = edgeDetails[3];
 
-            costGrid[startPoint][endPoint] = costValue;
-            timeGrid[startPoint][endPoint] = timeValue;
-        }
+    initialCostMatrix[originNode][destinationNode] = directCost;
+    initialTimeMatrix[originNode][destinationNode] = directTime;
+  });
 
-        const finalCostGrid = calculateOptimalPaths(costGrid, nodeQuantity);
-        const finalTimeGrid = calculateOptimalPaths(timeGrid, nodeQuantity);
+  // Execute the Floyd-Warshall algorithm with the new functional approach
+  const { finalCosts, finalTimes } = calculateAllShortestPaths(initialCostMatrix, initialTimeMatrix, numberOfNodes);
 
-        const queryQuantity = dataParser.extractSingleNumber();
-        for (let currentQuery = 0; currentQuery < queryQuantity; currentQuery++) {
-            const queryData = dataParser.extractNumericSequence();
-            const queryOrigin = queryData[0] - 1;
-            const queryDestination = queryData[1] - 1;
-            const querySpecification = queryData[2];
+  const totalQueries = Number(processedInputLines.shift());
 
-            if (querySpecification === 0) {
-                collectedOutputs.push(finalCostGrid[queryOrigin][queryDestination]);
-            } else {
-                collectedOutputs.push(finalTimeGrid[queryOrigin][queryDestination]);
-            }
-        }
+  // Process queries using functional iteration
+  Array.from({ length: totalQueries }).forEach(() => {
+    const queryRequest = parseNumericLine(processedInputLines.shift());
+    const queryOrigin = queryRequest[0] - 1;
+    const queryDestination = queryRequest[1] - 1;
+    const queryMetricType = queryRequest[2];
+
+    if (queryMetricType === 0) {
+      console.log(finalCosts[queryOrigin][queryDestination]);
+    } else if (queryMetricType === 1) {
+      console.log(finalTimes[queryOrigin][queryDestination]);
     }
-    return collectedOutputs.join("\n");
-};
-
-const rawInputContent = globalThis.process?.versions?.node
-    ? require('fs').readFileSync('/dev/stdin', 'utf8')
-    : "";
-
-const finalResult = manageProcessingCycles(rawInputContent);
-
-if (globalThis.process?.versions?.node) {
-    console.log(finalResult);
-} else {
-    console.log(finalResult);
+  });
 }

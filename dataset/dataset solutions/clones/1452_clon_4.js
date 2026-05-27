@@ -1,14 +1,17 @@
-(function(externalData) {
-    const lineComponents = externalData.split('\n');
+(function(sourceData) {
+    const dataSegments = sourceData.split('\n');
 
-    const mainSetSize = parseInt(lineComponents[0], 10); // Not directly used but parsed for equivalence
-    const mainCollection = new Set();
-    lineComponents[1].match(/\d+/g).forEach(strNum => mainCollection.add(parseInt(strNum, 10)));
+    const firstCollectionRaw = dataSegments[1];
+    const secondCollectionRaw = dataSegments[3];
 
-    const targetArraySize = parseInt(lineComponents[2], 10); // Not directly used but parsed for equivalence
-    const targetValues = lineComponents[3].match(/\d+/g).map(strNum => parseInt(strNum, 10));
+    const firstNumericElements = firstCollectionRaw.split(' ').map(Number);
+    const secondNumericElements = secondCollectionRaw.split(' ').map(Number);
 
-    const matchCounter = targetValues.filter(val => mainCollection.has(val)).length;
+    const uniqueElementsSet = new Set(firstNumericElements);
 
-    console.log(matchCounter);
+    const intersectionCount = secondNumericElements.reduce((currentTotal, itemToFind) => {
+        return currentTotal + (uniqueElementsSet.has(itemToFind) ? 1 : 0);
+    }, 0);
+
+    console.log(intersectionCount);
 })(require('fs').readFileSync('/dev/stdin', 'utf8'));

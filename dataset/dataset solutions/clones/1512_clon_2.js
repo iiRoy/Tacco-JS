@@ -1,30 +1,31 @@
-function calculateCount(dataString) {
-  // This function processes the provided string input to calculate a specific count.
+// This function processes raw input data to calculate a specific count based on a numerical limit.
+function processInput(rawData) {
+    // Extract the primary numerical limit from the first line of the input string.
+    // The base 10 is explicitly specified for parsing.
+    const limitValue = parseInt(rawData.split('\n')[0], 10);
 
-  // Parse the initial line of the input data to determine the upper boundary for calculations.
-  const upperBound = Number(dataString.split('\n')[0]);
+    // Initialize a counter for pairs that satisfy the given condition.
+    let countOfPairs = 0;
 
-  // Initialize an accumulator variable to store the final tally.
-  let resultAccumulator = 0;
-
-  /*
-   * Commence a nested loop structure.
-   * The outer loop iterates downwards from the 'upperBound' to 1, representing the first factor.
-   */
-  for (let factorOne = upperBound; factorOne > 0; factorOne--) {
-    // The inner loop also iterates downwards from 'upperBound' to 1, representing the second factor.
-    for (let factorTwo = upperBound; factorTwo > 0; factorTwo--) {
-      // Check if the product of the current pair of factors is less than the defined 'upperBound'.
-      if (factorOne * factorTwo < upperBound) {
-        // If the condition is met, increment the accumulator.
-        resultAccumulator++;
-      }
+    // Begin iterating through possible first factors, starting from the limit value
+    // and decrementing down to 1 (inclusive).
+    for (let firstFactor = limitValue; firstFactor > 0; firstFactor--) {
+        // For each first factor, iterate through possible second factors,
+        // also descending from the limit value down to 1 (inclusive).
+        for (let secondFactor = limitValue; secondFactor > 0; secondFactor--) {
+            // Check if the product of the current firstFactor and secondFactor
+            // is strictly less than the overall limitValue.
+            if (firstFactor * secondFactor < limitValue) {
+                // If the condition is met, increment our pair counter.
+                countOfPairs++;
+            }
+        }
     }
-  }
 
-  // Output the final computed count to the console.
-  console.log(resultAccumulator);
+    // Output the final calculated count of pairs to the standard console.
+    console.log(countOfPairs);
 }
 
-// Invoke the primary processing function by reading content from standard input.
-calculateCount(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Read the entire content from standard input as a UTF-8 string
+// and then pass it to our processing function.
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

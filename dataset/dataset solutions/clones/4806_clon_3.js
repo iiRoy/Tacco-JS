@@ -1,85 +1,50 @@
 "use strict";
+exports.__esModule = true;
+var fs_1 = require("fs");
 
-const fileStreamUtils = require("fs");
-
-// Utility to safely convert a string to an integer, providing a fallback.
-const convertToInteger = (textValue, fallback = 0) => {
-    const num = parseInt(textValue, 10);
-    return isNaN(num) ? fallback : num;
+var obtainInputContent = function () {
+    var rawFileContent = fs_1.readFileSync('/dev/stdin', 'utf8');
+    var trimmedContent = rawFileContent.slice(0, -1);
+    return trimmedContent;
 };
 
-// Obtains raw input from standard input and cleans it.
-const acquireCleanInputData = () => {
-    try {
-        const rawBuffer = fileStreamUtils.readFileSync('/dev/stdin', 'utf8');
-        return rawBuffer.trimEnd(); // Removes trailing newlines or spaces.
-    } catch (inputError) {
-        console.error("Failed to read from standard input:", inputError.message);
-        return ""; // Return an empty string on error to prevent crashes.
-    }
+var parseQueryLine = function (queryEntryString) {
+    var queryParts = queryEntryString.split(" ");
+    var positionString = queryParts[0];
+    var valueString = queryParts[1];
+    var parsedPosition = parseInt(positionString, 10);
+    var parsedValue = parseInt(valueString, 10);
+    return { position: parsedPosition, value: parsedValue };
 };
 
-// Computes the sum of all elements in a given numeric array.
-const calculateVectorSum = (numericVector) => {
-    let totalAccumulator = 0;
-    for (const elementValue of numericVector) {
-        totalAccumulator += elementValue;
-    }
-    return totalAccumulator;
+var calculateArraySum = function (numericArray) {
+    var sumReducer = function (totalAccumulator, currentElement) {
+        return totalAccumulator + currentElement;
+    };
+    return numericArray.reduce(sumReducer, 0);
 };
 
-// --- Main processing logic ---
+var fullInputText = obtainInputContent();
+var inputLines = fullInputText.split('\n');
 
-// Fetch and split the entire input into individual lines.
-const systemInputLines = acquireCleanInputData().split('\n');
+var initialNumbersArray = inputLines[1].split(" ").map(Number);
 
-// Ensure sufficient input is present for processing.
-if (systemInputLines.length < 4) {
-    console.error("Insufficient input lines. At least 4 lines are required for operation.");
-    process.exit(1);
-}
+var queryLines = inputLines.slice(3);
 
-// Initialize the primary data array from the second line of input.
-const mutableDataSeries = systemInputLines[1].split(" ").map(s => convertToInteger(s));
+var calculatedSums = queryLines.map(function (queryEntryString) {
+    var queryData = parseQueryLine(queryEntryString);
+    var targetIndex = queryData.position - 1;
+    var replacementValue = queryData.value;
 
-// Container for the final computed sums.
-const aggregatedSums = [];
+    var originalElementValue = initialNumbersArray[targetIndex];
 
-// Iterate through the instruction lines, starting from the fourth line.
-systemInputLines.slice(3).forEach(instructionSegment => {
-    // Parse the current instruction into its components.
-    const parts = instructionSegment.split(" ");
-    if (parts.length !== 2) {
-        console.warn(`Skipping malformed instruction: "${instructionSegment}"`);
-        return; // Skip this instruction and proceed to the next.
-    }
+    initialNumbersArray[targetIndex] = replacementValue;
 
-    const targetIndexOneBased = convertToInteger(parts[0]);
-    const replacementNumber = convertToInteger(parts[1]);
+    var currentSum = calculateArraySum(initialNumbersArray);
 
-    // Validate the target index to prevent out-of-bounds access.
-    if (targetIndexOneBased < 1 || targetIndexOneBased > mutableDataSeries.length) {
-        console.warn(`Invalid index ${targetIndexOneBased} specified for instruction: "${instructionSegment}". Skipping.`);
-        return;
-    }
+    initialNumbersArray[targetIndex] = originalElementValue;
 
-    const actualIndexZeroBased = targetIndexOneBased - 1;
-
-    // Preserve the original value before temporary modification.
-    const originalValueAtPosition = mutableDataSeries[actualIndexZeroBased];
-
-    // Apply the temporary modification.
-    mutableDataSeries[actualIndexZeroBased] = replacementNumber;
-
-    // Calculate the sum with the temporary change.
-    const currentTotalForIteration = calculateVectorSum(mutableDataSeries);
-
-    // Restore the original value to revert the temporary change.
-    mutableDataSeries[actualIndexZeroBased] = originalValueAtPosition;
-
-    // Store the calculated sum.
-    aggregatedSums.push(currentTotalForIteration);
+    return currentSum;
 });
 
-// Output the final list of calculated sums.
-console.log(aggregatedSums);
+console.log(calculatedSums);

@@ -1,35 +1,40 @@
 "use strict";
 
-const processInputData = (rawInputText) => {
-  // Begin processing the incoming text data.
-  let processedLines = rawInputText.trim().split('\n');
+const processInput = (inputData) => {
+  // Normalize input string
+  inputData = inputData.trim().split("\n");
 
-  const boundarySize = parseInt(processedLines[0].split(' ')[0]);
-  const markerCount = parseInt(processedLines[0].split(' ')[1]);
-  const markerPositions = processedLines[1].split(' ').map(coordStr => parseInt(coordStr));
+  // Parse problem parameters
+  const maxCircumference = parseInt(inputData[0].split(" ")[0]);
+  const numPoints = parseInt(inputData[0].split(" ")[1]);
+  const pointLocations = inputData[1].split(" ").map((valStr) => parseInt(valStr));
 
-  let segmentLengths = [];
+  let segmentLengths = []; // Array to store distances between points
 
-  // Determine the lengths of segments between consecutive markers in a circular arrangement.
-  for (let currentIdx = 0; currentIdx < markerCount; currentIdx++) {
+  // Calculate lengths of segments between adjacent points
+  for (let idx = 0; idx < numPoints; idx++) {
     let currentSegment;
 
-    if (currentIdx === markerCount - 1) {
-      // For the last marker, calculate distance back to the first marker.
-      currentSegment = (boundarySize - markerPositions[currentIdx]) + markerPositions[0];
-    }
-    else {
-      // Calculate distance between current marker and the next one.
-      currentSegment = markerPositions[currentIdx + 1] - markerPositions[currentIdx];
+    // Special handling for the last segment (wraps around)
+    if (parseInt(idx) === numPoints - 1) {
+      currentSegment = (maxCircumference - pointLocations[idx]) + pointLocations[0];
+    } else {
+      // Standard segment length
+      currentSegment = pointLocations[parseInt(idx) + 1] - pointLocations[idx];
     }
 
     segmentLengths.push(currentSegment);
   }
 
-  const totalSpan = segmentLengths.reduce((accumulator, segmentVal) => accumulator + segmentVal);
-  let minimumPath = totalSpan - Math.max(...segmentLengths);
+  // Calculate the total length of all segments
+  const totalLength = segmentLengths.reduce((accumulator, currentValue) => accumulator + currentValue);
 
-  console.log(minimumPath);
+  // The answer is the total length minus the longest segment
+  let finalResult = totalLength - Math.max(...segmentLengths);
+
+  // Output the computed result
+  console.log(finalResult);
 };
 
-processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// Read input from standard input and pass it to the processing function
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

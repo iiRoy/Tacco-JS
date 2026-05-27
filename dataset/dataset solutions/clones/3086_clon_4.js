@@ -1,65 +1,62 @@
-const processSimulation = (rawData) => {
-    const lines = rawData.split('\n');
+let boardDimension = 0;
 
-    const [extent, numMoves] = lines[0].split(' ').map(Number);
-    
-    const currentPopulation = Array(extent).fill(0);
+function processInput(inputString) {
+  const lines = inputString.split('\n');
+  const [dimensionString] = lines[0].split(' ');
+  boardDimension = parseInt(dimensionString);
 
-    const initialFootprints = new Map();
+  const characterToInitialPositions = new Map();
+  let currentTileQuantities = new Map();
 
-    lines[1].split('').forEach((char, spot) => {
-        currentPopulation[spot] = 1;
-        if (!initialFootprints.has(char)) {
-            initialFootprints.set(char, new Set());
+  Array.from(lines[1]).forEach((tileChar, initialIndex) => {
+    if (!characterToInitialPositions.has(tileChar)) {
+      characterToInitialPositions.set(tileChar, new Set());
+    }
+    characterToInitialPositions.get(tileChar).add(initialIndex);
+    currentTileQuantities.set(initialIndex, (currentTileQuantities.get(initialIndex) || 0) + 1);
+  });
+
+  const finalTileQuantities = lines.slice(2).reduce((accumulatedQuantities, queryEntry) => {
+    const [targetCharacter, movementDirection] = queryEntry.split(' ');
+
+    const relevantInitialIndices = characterToInitialPositions.get(targetCharacter);
+    if (!relevantInitialIndices) {
+      return accumulatedQuantities;
+    }
+
+    const nextQuantitiesState = new Map(accumulatedQuantities);
+
+    const indicesForProcessing = Array.from(relevantInitialIndices);
+    if (movementDirection === "R") {
+      indicesForProcessing.sort((a, b) => b - a);
+    } else {
+      indicesForProcessing.sort((a, b) => a - b);
+    }
+
+    indicesForProcessing.forEach(sourceIndex => {
+      const quantityAtSource = accumulatedQuantities.get(sourceIndex) || 0;
+
+      if (quantityAtSource > 0) {
+        const displacementValue = (movementDirection === "R") ? 1 : -1;
+        const destinationPosition = sourceIndex + displacementValue;
+
+        nextQuantitiesState.set(sourceIndex, (nextQuantitiesState.get(sourceIndex) || 0) - quantityAtSource);
+        if (nextQuantitiesState.get(sourceIndex) === 0) {
+          nextQuantitiesState.delete(sourceIndex);
         }
-        initialFootprints.get(char).add(spot);
+
+        if (destinationPosition >= 0 && destinationPosition < boardDimension) {
+          nextQuantitiesState.set(destinationPosition, (nextQuantitiesState.get(destinationPosition) || 0) + quantityAtSource);
+        }
+      }
     });
 
-    const movementSeries = lines.slice(2, 2 + numMoves).map(line => {
-        const [kind, way] = line.split(' ');
-        return { kind, vector: way === 'R' ? 1 : -1 };
-    });
+    return nextQuantitiesState;
+  }, currentTileQuantities);
 
-    const shiftPieces = (populationState, originSpot, vector, boardLimit) => {
-        const countToShift = populationState[originSpot];
-        if (countToShift === 0) return;
+  const totalCount = Array.from(finalTileQuantities.values()).reduce((summation, quantity) => summation + quantity, 0);
 
-        populationState[originSpot] = 0;
+  console.log(totalCount);
+}
 
-        const targetSpot = originSpot + vector;
-        if (targetSpot >= 0 && targetSpot < boardLimit) {
-            populationState[targetSpot] += countToShift;
-        }
-    };
-
-    const finalPopulationState = movementSeries.reduce((boardState, instruction) => {
-        const { kind, vector } = instruction;
-        const relevantSpots = initialFootprints.get(kind);
-
-        if (!relevantSpots || relevantSpots.size === 0) {
-            return boardState;
-        }
-
-        const nextBoardState = [...boardState];
-
-        const spotsToOperate = Array.from(relevantSpots);
-
-        if (vector === 1) {
-            spotsToOperate.sort((a, b) => b - a);
-        } else {
-            spotsToOperate.sort((a, b) => a - b);
-        }
-
-        spotsToOperate.forEach(originSpot => {
-            shiftPieces(nextBoardState, originSpot, vector, extent);
-        });
-
-        return nextBoardState;
-    }, currentPopulation);
-
-    const totalRemaining = finalPopulationState.reduce((total, count) => total + count, 0);
-
-    console.log(totalRemaining);
-};
-
-processSimulation(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

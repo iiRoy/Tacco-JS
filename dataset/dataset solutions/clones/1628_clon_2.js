@@ -1,78 +1,61 @@
-const   rawData = require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ;
-// The script begins by reading all content from standard input.
+const rawData = require("fs").readFileSync("/dev/stdin", "utf8"); // Read input from standard input path
+const dataRows = rawData.split('\n'); // Split the entire input string into an array of lines
+const targetNum = dataRows[0] - 0; // Convert the first line of input to a numeric value, which is our 'K'
 
-const dataRows = rawData . split ( '\n' ) ;
-// The raw input string is then divided into an array of individual lines.
-
-const targetValue = parseInt ( dataRows [ 0 ] , 10 ) ;
-// The primary numerical target for our calculations is extracted from the first line
-// and converted to an integer, ensuring proper numerical operations.
-
-const remainderBase = 1_000_000_007 ;
-// This constant defines a large prime modulus, essential for managing
-// intermediate arithmetic results within a specific range and preventing overflows.
+const moduloVal = 1000000007; // Define a large prime number for modular arithmetic operations
 
 /**
- * Implements an efficient modular multiplication function.
- * This routine is designed to accurately compute (firstOperand * secondOperand) % remainderBase,
- * particularly for large numbers, by leveraging bitwise operations to
- * split the first operand into high and low parts.
+ * Performs modular multiplication (valA * valB) % moduloVal.
+ * This function is designed to handle potentially large intermediate products
+ * by splitting the first operand (valA) into two 16-bit parts.
+ * This helps prevent overflow before the modulo operation is applied,
+ * ensuring correctness for numbers that might exceed standard integer limits
+ * if multiplied directly.
  *
- * @param {number} firstOperand  - The multiplicand.
- * @param {number} secondOperand - The multiplier.
- * @returns {number} The result of the modular multiplication.
+ * @param {number} valA - The first integer operand.
+ * @param {number} valB - The second integer operand.
+ * @returns {number} The result of (valA * valB) % moduloVal.
  */
-function calculateProduct ( firstOperand , secondOperand )
-{
-    return (
-        (
-            ( ( firstOperand >>> 16 ) * secondOperand ) % remainderBase * 0x10000
-            + ( ( firstOperand & 0xFFFF ) * secondOperand )
-        ) % remainderBase
-    ) ;
+function multiplyMod(valA, valB) {
+    // The expression (valA >> 16) extracts the higher 16 bits of valA.
+    // The expression (valA & 65535) extracts the lower 16 bits of valA.
+    // The calculation effectively computes ( (high_part * 2^16 * valB) + (low_part * valB) ) % moduloVal.
+    return ((valA >> 16) * valB % moduloVal * 65536 + (valA & 65535) * valB) % moduloVal;
 }
 
-// The main computational logic is encapsulated within an Immediately Invoked Function Expression (IIFE).
-// This pattern helps to avoid polluting the global scope.
-; ( ( initialDataContent ) => {
-
-    // First, a preliminary check is performed for specific edge cases.
-    // If the 'targetValue' is divisible by 2 or 5, it is impossible to form
-    // a number consisting solely of '7's that is also divisible by 'targetValue'.
-    if ( targetValue % 2 === 0 || targetValue % 5 === 0 )
-    {
-        console . log ( -1 ) ; // In such cases, output -1 to indicate no solution.
-        return ; // Terminate the function's execution.
+// An immediately invoked function expression (IIFE) to encapsulate the main program logic.
+((initialInput) => {
+    // Check for trivial cases where no solution exists.
+    // A number composed solely of '7's (e.g., 7, 77, 777) can never be divisible by 2 or 5.
+    if (targetNum % 2 === 0 || targetNum % 5 === 0) {
+        console.log(-1); // Output -1 to indicate no solution.
+        return; // Exit the function early.
     }
 
-    let currentSum = 0 ;
-    // Initialize a variable to accumulate the sum of numbers formed by repeating '7's (e.g., 7, 77, 777...).
+    let currentSum = 0; // Initialize a variable to accumulate the sum of terms.
+                        // This sum represents (7*10^0 + 7*10^1 + ... + 7*10^(outerIdx-1)) % moduloVal.
 
-    // A loop iterates to construct numbers made of '7's of increasing length.
-    // 'outerIndex' represents the number of '7's in the current number being tested minus one.
-    for ( let outerIndex = 0 ; outerIndex <= targetValue ; outerIndex ++ )
-    {
-        let powerMultiplier = 1 ;
-        // 'powerMultiplier' will hold the value of 10 raised to 'outerIndex',
-        // determining the place value for the '7' being added.
+    // Loop through possible lengths of the number consisting of '7's.
+    // The loop runs up to 'targetNum' times, as per the problem's constraints or typical solution bounds.
+    for (let outerIdx = 0; outerIdx <= targetNum; outerIdx++) {
+        let powerOfTen = 1; // Represents 10 raised to the power of 'outerIdx', modulo 'moduloVal'.
 
-        // This inner loop calculates 10^outerIndex using modular multiplication.
-        for ( let innerCount = 0 ; innerCount < outerIndex ; innerCount ++ )
-        {
-            powerMultiplier = calculateProduct ( powerMultiplier , 10 ) ;
+        // Inner loop to calculate 10^outerIdx % moduloVal.
+        // This 'powerOfTen' is used to determine the value of the current '7' term (e.g., 7, 70, 700).
+        for (let innerIdx = 0; innerIdx < outerIdx; innerIdx++) {
+            powerOfTen = multiplyMod(powerOfTen, 10); // Multiply by 10, applying modular arithmetic.
         }
 
-        // The current '7' (multiplied by its place value) is added to the running sum.
-        // The sum is kept within the modulo range using 'remainderBase'.
-        currentSum = ( currentSum + calculateProduct ( powerMultiplier , 7 ) ) % remainderBase ;
+        // Add the current term (7 * 10^outerIdx) % moduloVal to the running sum.
+        // Note: 'currentSum' itself is not taken modulo 'targetNum' at each step,
+        // it accumulates values that are already modulo 'moduloVal'.
+        currentSum += multiplyMod(powerOfTen, 7);
 
-        // After updating 'currentSum', check if it is exactly divisible by the 'targetValue'.
-        if ( currentSum % targetValue === 0 )
-        {
-            // If divisible, 'outerIndex + 1' gives the length of the number formed by '7's.
-            console . log ( outerIndex + 1 ) ;
-            break ; // The first such length found is the answer, so exit the loop.
+        // Check if the accumulated sum (which represents (7 * (10^outerIdx - 1) / 9) % moduloVal)
+        // is divisible by 'targetNum'.
+        if (currentSum % targetNum === 0) {
+            console.log(outerIdx + 1); // Output the length of the number (outerIdx + 1).
+            break; // Terminate the loop as the smallest such number has been found.
         }
     }
-
-} ) ( rawData ) ; // The IIFE is immediately executed, receiving the raw input data.
+})(rawData); // Pass the initially read raw data to the IIFE.

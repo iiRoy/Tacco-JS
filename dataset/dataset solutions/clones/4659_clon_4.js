@@ -1,47 +1,32 @@
-function measureNumericLength(val) {
-  if (val === 0) {
-    return 1;
-  }
-  return Math.floor(Math.log10(val)) + 1;
+const obtainDigitCount = (value) => String(value).length;
+
+function computeMinimumFactorLength(sourceValue) {
+    const parsedSource = parseInt(sourceValue);
+
+    let minimumLength = obtainDigitCount(parsedSource);
+
+    const iterationLimit = Math.floor(Math.sqrt(parsedSource));
+
+    minimumLength = Array.from({ length: iterationLimit }, (_, divisorCandidate) => divisorCandidate)
+        .reduce((currentMinLength, divisorCandidate) => {
+            if (divisorCandidate === 0) {
+                return currentMinLength;
+            }
+
+            if (parsedSource % divisorCandidate === 0) {
+                const complementaryFactor = parsedSource / divisorCandidate;
+                const currentPairLength = Math.max(
+                    obtainDigitCount(divisorCandidate),
+                    obtainDigitCount(complementaryFactor)
+                );
+                return Math.min(currentMinLength, currentPairLength);
+            }
+            return currentMinLength;
+        }, minimumLength);
+
+    return minimumLength;
 }
 
-function trampoline(continuation) {
-  return function(...args) {
-    let currentResult = continuation(...args);
-    while (typeof currentResult === 'function') {
-      currentResult = currentResult();
-    }
-    return currentResult;
-  };
-}
-
-function discoverMinimalExtent(targetNumber, currentCandidate, upperLimit, currentMinimumExtent) {
-  if (currentCandidate > upperLimit) {
-    return currentMinimumExtent;
-  }
-
-  let updatedMinimum = currentMinimumExtent;
-
-  if (targetNumber % currentCandidate === 0) {
-    const complementFactor = targetNumber / currentCandidate;
-    const candidateLength = measureNumericLength(currentCandidate);
-    const complementLength = measureNumericLength(complementFactor);
-    const maximumPairLength = Math.max(candidateLength, complementLength);
-    updatedMinimum = Math.min(currentMinimumExtent, maximumPairLength);
-  }
-
-  return () => discoverMinimalExtent(targetNumber, currentCandidate + 1, upperLimit, updatedMinimum);
-}
-
-function analyzeInputAndCompute(incomingValue) {
-  const numericalData = Number(incomingValue);
-
-  const initialSpan = measureNumericLength(numericalData);
-  const searchBound = Math.floor(Math.sqrt(numericalData));
-
-  const finalSpan = trampoline(discoverMinimalExtent)(numericalData, 1, searchBound, initialSpan);
-
-  console.log('%s', finalSpan);
-}
-
-analyzeInputAndCompute(require("fs").readFileSync("/dev/stdin", "utf8"));
+const rawInput = require("fs").readFileSync("/dev/stdin", "utf8");
+const finalOutput = computeMinimumFactorLength(rawInput);
+console.log('%s', finalOutput);

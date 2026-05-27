@@ -1,73 +1,114 @@
-const displayOutcome = (payload) => console.log(payload);
+const MODULO_VAL = 1000000007;
 
-const calculatePowerModulo = (baseVal, exponentVal, modulusVal) => {
-    let resultAccumulator = 1n;
-    let currentBase = BigInt(baseVal);
-    let currentExponent = BigInt(exponentVal);
-    const currentModulus = BigInt(modulusVal);
+const outputHandler = (value) => console.log(value.toString());
 
-    while (currentExponent > 0n) {
-        if (currentExponent % 2n === 1n) {
-            resultAccumulator = (resultAccumulator * currentBase) % currentModulus;
+const calculateModularPower = (base, exponent) => {
+    let resultAccumulator = 1;
+    let currentBase = base % MODULO_VAL;
+    let currentExponent = exponent;
+
+    while (currentExponent > 0) {
+        if (currentExponent % 2 === 1) {
+            resultAccumulator = (resultAccumulator * currentBase) % MODULO_VAL;
         }
-        currentBase = (currentBase * currentBase) % currentModulus;
-        currentExponent /= 2n;
+        currentBase = (currentBase * currentBase) % MODULO_VAL;
+        currentExponent = Math.floor(currentExponent / 2);
     }
-    return Number(resultAccumulator);
+    return resultAccumulator;
 };
 
-const processData = (dataSource) => {
-    const dataSegments = dataSource.trim().split('\n');
-    const elementCount = Number(dataSegments[0]);
-    const numericalSequence = dataSegments[1].split(' ').map(Number);
+const executeLogic = (rawInputContent) => {
+    const dataLines = rawInputContent.trim().split('\n');
+    const totalElements = Number(dataLines[0]);
+    const numericSequence = dataLines[1].split(' ').map(Number);
 
-    const frequencyMap = numericalSequence.reduce((accumulator, value) => {
-        accumulator.set(value, (accumulator.get(value) || 0) + 1);
-        return accumulator;
-    }, new Map());
-
-    const orderedUniqueValues = Array.from(frequencyMap.keys()).sort((a, b) => a - b);
-
-    let validityCheck = true;
-
-    if (elementCount % 2 !== 0) { // Total count is odd
-        const expectedUniqueCount = (elementCount - 1) / 2 + 1;
-        if (orderedUniqueValues.length !== expectedUniqueCount ||
-            orderedUniqueValues[0] !== 0 ||
-            frequencyMap.get(0) !== 1) {
-            validityCheck = false;
-        } else {
-            for (let index = 1; index < orderedUniqueValues.length; ++index) {
-                const currentUnique = orderedUniqueValues[index];
-                if (frequencyMap.get(currentUnique) !== 2) {
-                    validityCheck = false;
-                    break;
-                }
-            }
-        }
-    } else { // Total count is even
-        const expectedUniqueCount = elementCount / 2;
-        if (orderedUniqueValues.length !== expectedUniqueCount) {
-            validityCheck = false;
-        } else {
-            for (let index = 0; index < orderedUniqueValues.length; ++index) {
-                const currentUnique = orderedUniqueValues[index];
-                if (frequencyMap.get(currentUnique) !== 2) {
-                    validityCheck = false;
-                    break;
-                }
-            }
-        }
-    }
-
-    if (!validityCheck) {
-        displayOutcome('0');
+    if (totalElements === 0) {
+        outputHandler(0);
         return;
     }
 
-    const powerFactor = (elementCount % 2 !== 0) ? (elementCount - 1) / 2 : elementCount / 2;
-    const finalOutcome = calculatePowerModulo(2, powerFactor, 1000000007);
-    displayOutcome(finalOutcome);
+    const elementFrequencies = new Map();
+    for (const itemValue of numericSequence) {
+        elementFrequencies.set(itemValue, (elementFrequencies.get(itemValue) || 0) + 1);
+    }
+
+    let powerFactor;
+
+    if (totalElements % 2 === 1) { // Odd total count scenario
+        // Expected unique values: 0, 2, 4, ..., totalElements - 1
+        // Value 0 must appear exactly once.
+        // Other expected even values must appear two or more times.
+        // No other values should be present.
+
+        if (elementFrequencies.get(0) !== 1) {
+            outputHandler(0);
+            return;
+        }
+
+        const expectedUniqueCount = (totalElements + 1) / 2;
+        if (elementFrequencies.size !== expectedUniqueCount) {
+            outputHandler(0);
+            return;
+        }
+
+        for (let i = 2; i < totalElements; i += 2) {
+            const currentFreq = elementFrequencies.get(i);
+            if (currentFreq === undefined || currentFreq < 2) {
+                outputHandler(0);
+                return;
+            }
+        }
+
+        // Comprehensive check for any unexpected numbers or incorrect frequencies
+        for (const [value, frequency] of elementFrequencies.entries()) {
+            if (value === 0) continue; // Already validated
+            if (value % 2 !== 0 || value < 0 || value >= totalElements) {
+                outputHandler(0); // Value is not an expected positive even number within range
+                return;
+            }
+            if (frequency < 2) { // Expected even numbers must have frequency >= 2
+                outputHandler(0);
+                return;
+            }
+        }
+
+        powerFactor = (totalElements - 1) / 2;
+
+    } else { // Even total count scenario
+        // Expected unique values: 1, 3, 5, ..., totalElements - 1
+        // All expected odd values must appear two or more times.
+        // No other values should be present.
+
+        const expectedUniqueCount = totalElements / 2;
+        if (elementFrequencies.size !== expectedUniqueCount) {
+            outputHandler(0);
+            return;
+        }
+
+        for (let i = 1; i < totalElements; i += 2) {
+            const currentFreq = elementFrequencies.get(i);
+            if (currentFreq === undefined || currentFreq < 2) {
+                outputHandler(0);
+                return;
+            }
+        }
+
+        // Comprehensive check for any unexpected numbers or incorrect frequencies
+        for (const [value, frequency] of elementFrequencies.entries()) {
+            if (value % 2 !== 1 || value < 0 || value >= totalElements) {
+                outputHandler(0); // Value is not an expected positive odd number within range
+                return;
+            }
+            if (frequency < 2) { // Expected odd numbers must have frequency >= 2
+                outputHandler(0);
+                return;
+            }
+        }
+
+        powerFactor = totalElements / 2;
+    }
+
+    outputHandler(calculateModularPower(2, powerFactor));
 };
 
-processData(require("fs").readFileSync("/dev/stdin", "utf8"));
+executeLogic(require("fs").readFileSync("/dev/stdin", "utf8"));

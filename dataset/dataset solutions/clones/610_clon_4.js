@@ -1,68 +1,37 @@
-const { createInterface: establishInputChannel } = require('readline');
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
 
-let storedSegments = [];
+process.stdin.on('data', (inputChunk) => {
+  const allInputLines = inputChunk.split('\n');
+  const boardQuantity = Number(allInputLines[0]);
+  const soughtPattern = allInputLines[1];
 
-const interactionAgent = establishInputChannel({
-  input: process.stdin,
-  output: process.stdout
-});
+  const boardSourceLines = allInputLines.slice(2, 2 + boardQuantity);
 
-interactionAgent.on('line', (segmentEntry) => {
-  storedSegments.push(segmentEntry);
-});
-
-interactionAgent.on('close', () => {
-  initiateTransformation(storedSegments);
-});
-
-function initiateTransformation(entireInputCollection) {
-  const quantityOfTests = parseInt(entireInputCollection[0], 10);
-  const primaryIdentifier = entireInputCollection[1];
-  const testScenarios = entireInputCollection.slice(2, 2 + quantityOfTests);
-
-  const terminalSymbolOfIdentifier = primaryIdentifier.slice(-1);
-  const identifierUnitLength = primaryIdentifier.length;
-
-  let positiveResultsAccumulator = 0;
-
-  const evaluateScenarioRecursively = (
-    currentTestString,
-    targetFinalChar,
-    targetStringLen,
-    currentStepOffset = 0
-  ) => {
-    if (currentStepOffset >= currentTestString.length) {
-      return false;
+  const successfulMatchCount = boardSourceLines.reduce((currentTally, currentBoardString) => {
+    if (!currentBoardString.trim()) {
+      return currentTally;
     }
 
-    const derivedIndexPosition = (targetStringLen - 1) * (1 + currentStepOffset);
+    const patternLength = soughtPattern.length;
+    const finalPatternCharIndex = patternLength - 1;
 
-    if (
-      derivedIndexPosition < currentTestString.length &&
-      currentTestString[derivedIndexPosition] === targetFinalChar
-    ) {
-      return true;
+    if (patternLength === 0) {
+      return currentTally;
     }
 
-    return evaluateScenarioRecursively(
-      currentTestString,
-      targetFinalChar,
-      targetStringLen,
-      currentStepOffset + 1
-    );
-  };
+    const boardStringLength = currentBoardString.length;
 
-  testScenarios.forEach((singleScenario) => {
-    if (
-      evaluateScenarioRecursively(
-        singleScenario,
-        terminalSymbolOfIdentifier,
-        identifierUnitLength
-      )
-    ) {
-      positiveResultsAccumulator++;
-    }
-  });
+    const patternFound = Array.from({ length: boardStringLength }, (_, offsetValue) => offsetValue)
+      .some((currentOffset) => {
+        const boardTargetIndex = finalPatternCharIndex + currentOffset * finalPatternCharIndex;
 
-  console.log(positiveResultsAccumulator);
-}
+        return boardTargetIndex < boardStringLength &&
+               currentBoardString.charAt(boardTargetIndex) === soughtPattern.charAt(finalPatternCharIndex);
+      });
+
+    return currentTally + (patternFound ? 1 : 0);
+  }, 0);
+
+  console.log(successfulMatchCount);
+});

@@ -1,87 +1,78 @@
-// This function processes the incoming string data.
-function ProcessGameData ( rawData )
-{
-  var linesOfData = rawData.split ( '\n' ) ;
-  var gameOutcome ;
+// This script processes input data to determine a game's outcome.
+function ProcessInput(rawData) {
+    // Split the raw input string into an array of lines.
+    var parsedLines = rawData.split('\n');
+    var finalResult; // Variable to store the ultimate game result.
 
-  // Initialize the sequence of characters for the game
-  var characterSequence = linesOfData [ 0 ].split ( '' ) ;
-  var activePlayer = 'PlayerOne' ; // The current player in control
+    // Extract characters from the first line of input.
+    var symbolSequence = parsedLines[0].split('');
+    var activeParticipant = 'First'; // Initialize the current player.
 
-  /*
-   * This subroutine handles the removal of a character segment from the main sequence.
-   * It takes an array of three indices.
-   */
-  function removeSegment ( segmentIndices )
-  {
-    characterSequence.splice ( segmentIndices [ 1 ] , 1 ) ;
-    console.log ( characterSequence ) ; // For debugging purposes, shows sequence after removal
-  }
-
-  /*
-   * Determines if a specific three-character segment can be removed.
-   * A segment can be removed if its first and third characters are not identical.
-   */
-  function isValidRemoval ( segmentIndices )
-  {
-    return ! ( characterSequence [ segmentIndices [ 0 ] ] === characterSequence [ segmentIndices [ 2 ] ] ) ;
-  }
-
-  // Executes a single turn of the game for the current player.
-  function executeMove ( currentSequence )
-  {
-    var segmentIndices ; // Stores the three indices being evaluated
-
-    // Iterate through the sequence to find a valid removal
-    for ( let idx = 0 ; idx < ( currentSequence.length - 2 ) ; idx++ )
-    {
-      segmentIndices = [ idx , idx + 1 , idx + 2 ] ; // Define the triplet of indices
-
-      if ( isValidRemoval ( segmentIndices ) )
-      {
-        removeSegment ( segmentIndices ) ;
-        return true ; // A valid move was made
-      }
+    // Function to remove a character from the sequence based on a triplet of indices.
+    function extractSymbol(idxTuple) {
+        // The second element of the tuple is the index to remove.
+        symbolSequence.splice(idxTuple[1], 1);
+        // Log the modified sequence to standard output.
+        console.log(symbolSequence);
     }
-    return false ; // No valid moves could be made in this turn
-  }
 
-  // Manages the progression of game rounds until no more moves are possible.
-  function manageGameRounds ( )
-  {
-    while ( true )
-    {
-      if ( executeMove ( characterSequence ) === false )
-      {
-        return ; // Game ends if no move is possible
-      }
-
-      // Switch active participant for the next round
-      if ( activePlayer === 'PlayerOne' )
-      {
-        activePlayer = 'PlayerTwo' ;
-      }
-      else
-      {
-        activePlayer = 'PlayerOne' ;
-      }
+    // Function to check if a removal operation is valid based on a triplet of indices.
+    function checkRemovalCondition(idxTuple) {
+        // A removal is valid if the characters at the first and third indices are different.
+        return !(symbolSequence[idxTuple[0]] === symbolSequence[idxTuple[2]]);
     }
-  }
 
-  manageGameRounds ( ) ; // Start the game process
+    // Function to attempt a single turn in the game.
+    function performMove(symbolCollection) { // 'symbolCollection' parameter is not directly used inside this function.
+        var tripleIndices; // Stores the current triplet of indices being examined.
 
-  // Determine the final winner based on who made the last move
-  if ( activePlayer === 'PlayerOne' )
-  {
-    gameOutcome = 'PlayerTwo' ; // If PlayerOne made the last move, PlayerTwo wins
-  }
-  else
-  {
-    gameOutcome = 'PlayerOne' ; // If PlayerTwo made the last move, PlayerOne wins
-  }
+        // Iterate through the sequence, checking for valid removal opportunities.
+        for (var loopCounter = 0; loopCounter < (symbolSequence.length - 2); loopCounter++) {
+            tripleIndices = [loopCounter, loopCounter + 1, loopCounter + 2]; // Define the current triplet.
 
-  // Display the final result
-  console.log ( gameOutcome ) ;
+            // If a valid removal condition is met for the current triplet.
+            if (checkRemovalCondition(tripleIndices)) {
+                extractSymbol(tripleIndices); // Perform the removal.
+                return true; // Indicate that a move was successfully made.
+            }
+            // If no move is possible with the current triplet, exit the function immediately.
+            return false;
+        }
+        // This line is unreachable due to the return statement inside the loop.
+        return false;
+    }
+
+    // Function to manage the overall game progression, alternating turns.
+    function runGameLoop() {
+        // Continue playing turns until no more moves can be made.
+        while (true) {
+            // If the current player cannot make a move, the game ends.
+            if (performMove(symbolSequence) === false) {
+                return; // Exit the game loop.
+            }
+
+            // Switch to the next player for the subsequent turn.
+            if (activeParticipant === 'First') {
+                activeParticipant = 'Second';
+            } else {
+                activeParticipant = 'First';
+            }
+        }
+    }
+
+    // Start the game by running the turn cycle.
+    runGameLoop();
+
+    // Determine the final winner based on whose turn it is when the game ends.
+    if (activeParticipant === 'First') {
+        finalResult = 'Second'; // If 'First' cannot move, 'Second' wins.
+    } else {
+        finalResult = 'First'; // If 'Second' cannot move, 'First' wins.
+    }
+
+    // Output the final winner to the console.
+    console.log(finalResult);
 }
-/* This line and beyond should not be modified (reads from standard input and invokes ProcessGameData) */
-ProcessGameData ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+
+// Do not modify the following section (handles standard input/output and calls the main processing function).
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

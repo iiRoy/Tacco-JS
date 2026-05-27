@@ -1,38 +1,38 @@
-function processDataStream(streamData) {
-    const allRecords = streamData.split('\n');
+"use strict";
 
-    const relevantRecords = allRecords.reduce((accumulator, currentRecord) => {
-        const partsOfRecord = currentRecord.split(' ');
-        const isSentinel = partsOfRecord.length === 2 &&
-                           Number(partsOfRecord[0]) === 0 &&
-                           Number(partsOfRecord[1]) === 0;
+function processInputData(rawData) {
+    const lineSegments = rawData.split('\n');
 
-        if (accumulator.stopProcessing || isSentinel) {
+    const processedResults = lineSegments.reduce((accumulator, currentSegment) => {
+        if (accumulator.stopProcessing) {
+            return accumulator;
+        }
+
+        const numericValues = currentSegment.split(' ').map(Number);
+
+        if (numericValues.length >= 2 && numericValues[0] === 0 && numericValues[1] === 0) {
             accumulator.stopProcessing = true;
-        } else {
-            accumulator.collectedData.push(currentRecord);
+            return accumulator;
+        }
+
+        if (numericValues.length >= 2) {
+            let firstValue = numericValues[0];
+            let secondValue = numericValues[1];
+
+            if (firstValue > secondValue) {
+                [firstValue, secondValue] = [secondValue, firstValue];
+            }
+            accumulator.outputLines.push(`${firstValue} ${secondValue}`);
         }
         return accumulator;
-    }, { collectedData: [], stopProcessing: false }).collectedData;
+    }, { outputLines: [], stopProcessing: false });
 
-    const formattedRecords = relevantRecords.map(recordText => {
-        const components = recordText.split(' ');
-        // Replicate the original's lexicographical sort (e.g., [10, 2] sorts to [10, 2], [5, 1] sorts to [1, 5])
-        components.sort();
-        return components.join(' ');
-    });
-
-    const finalOutputText = formattedRecords.join('\n');
-
-    // The original code appends a newline after each processed line's string,
-    // meaning the final output string will end with a newline if any lines were processed.
-    // To replicate this, if the formatted text is not empty, append a final newline.
-    if (formattedRecords.length > 0) {
-        console.log(finalOutputText + '\n');
-    } else {
-        // If no records were processed (e.g., input is "0 0" or an empty string), output an empty string.
-        console.log('');
-    }
+    return processedResults.outputLines.join('\n');
 }
 
-processDataStream(require('node:fs').readFileSync('/dev/stdin', 'utf8'));
+function primaryExecution(sourceData) {
+    const finalOutput = processInputData(sourceData);
+    console.log(finalOutput);
+}
+
+primaryExecution(require("fs").readFileSync("/dev/stdin", "utf8"));

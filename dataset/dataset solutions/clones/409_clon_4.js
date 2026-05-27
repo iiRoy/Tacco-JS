@@ -1,79 +1,69 @@
-const initialDataLines = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split('\n');
+var rawInputData = require('fs').readFileSync('/dev/stdin', 'utf8');
+var inputLines = rawInputData.trim().split("\n");
 
-function evaluateCase(caseDataRows, numItems) {
-    let itemRegistry = [];
-    for (let currentItemIndex = 0; currentItemIndex < numItems; currentItemIndex++) {
-        const itemComponents = caseDataRows[currentItemIndex].split(' ');
-        itemRegistry.push({
-            identification: itemComponents[0],
-            payloadValue: Number(itemComponents[1]),
-            limitValue: Number(itemComponents[2])
-        });
+while (true) {
+    var itemCount = Number(inputLines.shift());
+    if (itemCount === 0) break;
+
+    var processedItems = [];
+    for (var i = 0; i < itemCount; i++) {
+        var lineParts = inputLines.shift().split(" ");
+        processedItems.push([lineParts[0], Number(lineParts[1]), Number(lineParts[2])]);
     }
 
-    itemRegistry.sort((first, second) => second.payloadValue - first.payloadValue);
+    processedItems.sort((a, b) => b[1] - a[1]);
 
-    let maximumRatioFound = -1.0;
-    let optimalSequenceLabels = [];
+    var highestRatio = 0;
+    var resultSequence = [];
 
-    const explorationStack = [{
-        pathElements: [],
-        availableIndices: new Set(Array.from({ length: numItems }, (_, k) => k)),
-        totalPayloadAccumulated: 0,
-        weightedPositionSumAccumulated: 0
-    }];
+    const searchStates = [];
 
-    while (explorationStack.length > 0) {
-        const {
-            pathElements,
-            availableIndices,
-            totalPayloadAccumulated,
-            weightedPositionSumAccumulated
-        } = explorationStack.pop();
+    const initialAvailableIndices = new Set(Array.from({ length: itemCount }, (_, idx) => idx));
+    searchStates.push({
+        currentPath: [],
+        currentTotalWeight: 0,
+        currentWeightedSum: 0,
+        availableItems: initialAvailableIndices
+    });
 
-        if (availableIndices.size === 0) {
-            if (totalPayloadAccumulated > 0) {
-                const currentRatio = weightedPositionSumAccumulated / totalPayloadAccumulated;
-                if (currentRatio > maximumRatioFound) {
-                    maximumRatioFound = currentRatio;
-                    optimalSequenceLabels = pathElements.map(element => element.identification);
+    while (searchStates.length > 0) {
+        const currentState = searchStates.pop();
+
+        if (currentState.availableItems.size === 0) {
+            if (currentState.currentTotalWeight > 0) {
+                const currentRatio = currentState.currentWeightedSum / currentState.currentTotalWeight;
+                if (currentRatio > highestRatio) {
+                    highestRatio = currentRatio;
+                    resultSequence = currentState.currentPath;
                 }
             }
             continue;
         }
 
-        for (const nextCandidateIndex of Array.from(availableIndices)) {
-            const nextCandidateItem = itemRegistry[nextCandidateIndex];
+        const sortedNextCandidates = Array.from(currentState.availableItems).sort((a, b) => a - b);
 
-            if (totalPayloadAccumulated <= nextCandidateItem.limitValue) {
-                const newPathElements = [...pathElements, nextCandidateItem];
-                const newAvailableIndices = new Set(availableIndices);
-                newAvailableIndices.delete(nextCandidateIndex);
-                const newTotalPayload = totalPayloadAccumulated + nextCandidateItem.payloadValue;
-                const newWeightedSum = weightedPositionSumAccumulated + nextCandidateItem.payloadValue * (newPathElements.length);
+        for (const nextItemIndex of sortedNextCandidates) {
+            const itemData = processedItems[nextItemIndex];
+            const itemWeight = itemData[1];
+            const itemCapacity = itemData[2];
 
-                explorationStack.push({
-                    pathElements: newPathElements,
-                    availableIndices: newAvailableIndices,
-                    totalPayloadAccumulated: newTotalPayload,
-                    weightedPositionSumAccumulated: newWeightedSum
+            if (currentState.currentTotalWeight <= itemCapacity) {
+                const nextPath = [...currentState.currentPath, nextItemIndex];
+                const nextTotalWeight = currentState.currentTotalWeight + itemWeight;
+                const nextWeightedSum = currentState.currentWeightedSum + itemWeight * (currentState.currentPath.length + 1);
+
+                const updatedAvailableItems = new Set(currentState.availableItems);
+                updatedAvailableItems.delete(nextItemIndex);
+
+                searchStates.push({
+                    currentPath: nextPath,
+                    currentTotalWeight: nextTotalWeight,
+                    currentWeightedSum: nextWeightedSum,
+                    availableItems: updatedAvailableItems
                 });
             }
         }
     }
 
-    return optimalSequenceLabels.reverse().join('\n');
-}
-
-let currentLinePointer = 0;
-while (currentLinePointer < initialDataLines.length) {
-    const itemTotalCount = Number(initialDataLines[currentLinePointer++]);
-    if (itemTotalCount === 0) break;
-
-    const currentSegmentLines = [];
-    for (let j = 0; j < itemTotalCount; j++) {
-        currentSegmentLines.push(initialDataLines[currentLinePointer++]);
-    }
-
-    console.log(evaluateCase(currentSegmentLines, itemTotalCount));
+    console.log(resultSequence.map(idx => processedItems[idx][0]).reverse().join("\n"));
 }

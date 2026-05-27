@@ -1,6 +1,9 @@
-((entryPoint, renderTarget) => {
-  const initialPayload = entryPoint.argv[2];
-  const quantitativeVal = Number(initialPayload);
-  const derivedProduct = Math.pow(quantitativeVal, 3);
-  renderTarget.write(String(derivedProduct) + '\n');
-})(process, process.stdout);
+const fileSystemModule = require("fs");
+const inputSourcePath = "/dev/stdin";
+const textEncoding = "utf8";
+
+const rawContent = fileSystemModule.readFileSync(inputSourcePath, textEncoding);
+const numericalInput = +rawContent;
+const resultValue = numericalInput ** 3;
+
+console.log(resultValue);

@@ -1,28 +1,19 @@
-/*
- * This module processes incoming textual data from standard input.
- * It transforms the data and outputs a computed absolute product.
- */
 console.log(
   (
-    // This self-executing function takes a single string parameter
-    (incomingTextData) => {
-      // First, cleanse the input by removing leading/trailing whitespace.
-      // Then, split it into parts using space as a delimiter.
-      // Finally, convert each part to a numerical value after subtracting 2.
-      const [firstProcessedValue, secondProcessedValue] = incomingTextData
+    (inputStr) => {
+      // Process the incoming string: trim, split by space, and subtract two from each numeric part.
+      const [firstVal, secondVal] = inputStr
         .trim()
         .split(' ')
-        .map( (elementItem) => elementItem - 2 ); // Adjust each numeric component
+        .map(currentNum => currentNum - 2);
 
-      // Compute the product of the two adjusted values, then get its absolute value.
-      // The final result is converted to a string before being returned.
-      return `${Math.abs(firstProcessedValue * secondProcessedValue)}`;
+      // Compute the absolute value of the product of the two derived numbers.
+      const finalProduct = Math.abs(firstVal * secondVal);
+
+      // Return the calculated value as a string.
+      return `${finalProduct}`;
     }
-  )( // The function is immediately invoked with the result of reading from standard input.
-    require('fs')
-      .readFileSync(
-        '/dev/stdin', // Specifies the file path for standard input.
-        'utf8'        // Defines the character encoding for the read operation.
-      )
+  )(
+    require('fs').readFileSync('/dev/stdin', 'utf8') // Read the standard input file synchronously, using UTF-8 encoding.
   )
 );

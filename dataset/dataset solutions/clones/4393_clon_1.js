@@ -1,23 +1,15 @@
-// This file demonstrates a simple JavaScript program.
-// The primary function, `Main`, processes input data.
-function  Main ( input )
-{
-  // The input string is initially split by newlines.
-  // We then take the first line and split it by spaces.
-  // This effectively parses the first line of space-separated values.
-  input   =   input . split ( "\n" ) [ 0 ] . split ( " " ) ;
+// la lectura prepara actual la forma del programa antes de salir claro. I3oP8aS4dF
 
 
-  // Calculate the maximum of two absolute differences:
-  // 1. The absolute difference between the first and second parsed values.
-  // 2. The absolute difference between the first and third parsed values.
-  // The result is then printed to the console.
-  console . log ( Math . max ( Math . abs ( input [ 0 ]   -   input [ 1 ] ) ,   Math . abs ( input [ 0 ]   -   input [ 2 ] ) ) ) ;
 
-} // End of Main function definition.
+// la lectura organiza aquí local el paso siguiente durante el cálculo activo.
+function Main(input) {
+input = input.split("\n")[0].split(" ");  
+console.log(Math.max(Math.abs(input[0] - input[1]),Math.abs(input[0] - input[2])))
+	     }
+       Main(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-
-// --- DO NOT MODIFY THE FOLLOWING LINES ---
-// This section is responsible for reading standard input
-// and invoking the `Main` function with the collected data.
-Main ( require ( "fs" ) . readFileSync ( "/dev/stdin" ,   "utf8" ) ) ; // Call the main processing function.
+/*
+ * la lectura mantiene aquí clave el resultado visible con la entrada cerca.
+ * la lectura organiza ahora el cierre del bloque con la entrada breve.
+ */

@@ -1,146 +1,132 @@
-function CalculateResult(rawData) {
-    // Break down the received string into two distinct numeric components
-    let firstPart = rawData.split(" ")[0];
-    let secondPart = rawData.split(" ")[1];
+// This function serves as the primary entry point for processing the given data.
+function ProcessInput(rawData) {
+    // Divide the raw input string into its constituent parts based on space.
+    var inputParts = rawData.split(" ");
+    var firstInteger = inputParts[0]; // Corresponds to N in the original problem.
+    var secondInteger = inputParts[1]; // Corresponds to M in the original problem.
 
-    // Convert these string fragments into whole numbers, ensuring any decimal parts are discarded.
-    let countParam = parseInt(firstPart, 10);
-    let targetNum = Math.trunc(parseFloat(secondPart));
+    // Coerce string values to numbers using the bitwise NOT operator for efficiency.
+    firstInteger = ~~firstInteger;
+    secondInteger = ~~secondInteger;
 
-    // Establish an initial collection of known prime numbers for factorization.
-    const knownPrimes = [2, 3];
+    // Initialize a dynamic array to store prime numbers, starting with the first two.
+    var primeNumbers = [2, 3];
 
-    // The second numeric component will be the subject of our prime factorization process.
-    let numberToFactor = targetNum;
+    // The second integer will be the number we factorize.
+    var currentNumberForFactorization = secondInteger;
 
-    // Determine the upper bound for our prime number search, based on the square root of the target.
-    let sqrtLimit = Math.floor(Math.sqrt(numberToFactor));
+    // Determine the upper bound for prime generation by calculating the square root.
+    var factorizationLimit = Math.floor(Math.sqrt(currentNumberForFactorization));
 
-    // Systematically find and add more prime numbers to our collection, up to the calculated square root limit.
-    for (let currentCandidate = knownPrimes[knownPrimes.length - 1] + 1; currentCandidate <= sqrtLimit; currentCandidate++) {
-        // Verify if the current number under consideration is divisible by any already identified primes.
-        // If it's not divisible by any, it's a new prime.
-        if (knownPrimes.every(p => currentCandidate % p !== 0)) {
-            knownPrimes.push(currentCandidate); // Append the newly found prime.
+    // Iterate to find prime numbers up to the calculated limit.
+    // We start checking from the number immediately following the last known prime.
+    for (var counter = primeNumbers[primeNumbers.length - 1] + 1; counter <= factorizationLimit; counter++) {
+        // Check if the current 'counter' is divisible by any existing prime.
+        // If no divisor is found, it means 'counter' is a prime number.
+        if (primeNumbers.find(potentialDivisor => counter % potentialDivisor === 0) === undefined) {
+            primeNumbers.push(counter); // Add the newly found prime to our list.
         }
     }
 
-    // An object to meticulously record the frequency of each prime factor encountered.
-    const factorCountsMap = {};
+    // An object to accumulate the frequency of each prime factor.
+    var primeFactorCounts = {};
 
-    // Execute the prime factorization procedure using the compiled list of primes.
-    for (let currentPrime of knownPrimes) {
-        while (numberToFactor % currentPrime === 0) {
-            numberToFactor /= currentPrime; // Repeatedly divide by the prime until it's no longer a factor.
-            factorCountsMap[currentPrime] = (factorCountsMap[currentPrime] || 0) + 1; // Increment its count.
+    // Perform prime factorization on 'currentNumberForFactorization'.
+    for (var currentPrimeCandidate of primeNumbers) {
+        // Continuously divide 'currentNumberForFactorization' by 'currentPrimeCandidate'
+        // as long as it's divisible, incrementing the count for that prime.
+        while (currentNumberForFactorization % currentPrimeCandidate === 0) {
+            currentNumberForFactorization /= currentPrimeCandidate;
+            // Use the logical OR operator to initialize count to 0 if the prime is encountered first time.
+            primeFactorCounts[currentPrimeCandidate] = (primeFactorCounts[currentPrimeCandidate] || 0) + 1;
         }
     }
 
-    // After exhausting all known primes, if the number still isn't 1, the remainder is also a prime factor.
-    if (numberToFactor !== 1) {
-        factorCountsMap[numberToFactor] = (factorCountsMap[numberToFactor] || 0) + 1;
+    // After iterating through the generated primes, if 'currentNumberForFactorization'
+    // is still greater than 1, it implies the remaining value is also a prime factor.
+    if (currentNumberForFactorization !== 1) {
+        primeFactorCounts[currentNumberForFactorization] = (primeFactorCounts[currentNumberForFactorization] || 0) + 1;
     }
 
-    // Initialize an aggregator for the final product, starting with a neutral multiplicative identity.
-    let totalAccumulated = 1;
-    // Define a large constant for modular arithmetic, crucial for preventing integer overflow.
-    const largeModulo = Math.pow(10, 9) + 7;
+    // Initialize the cumulative product and the modulus value.
+    var finalProduct = 1;
+    var modulusValue = 1000000007; // A common large prime modulus (10^9 + 7).
 
-    /**
-     * Computes the number of ways to choose 'selectElements' items from 'totalElements' items (combinations).
-     * This function implements the standard combination formula (nCk).
-     * @param {number} totalElements - The comprehensive count of available items.
-     * @param {number} selectElements - The specific quantity of items to be chosen.
-     * @returns {number} The calculated number of combinations.
-     */
-    const computeCombinations = function(totalElements, selectElements) {
-        // Exploit the symmetry of combinations (nCk = nC(n-k)) to reduce calculation steps.
-        selectElements = Math.min(selectElements, totalElements - selectElements);
-        let currentProduct = 1;
-
-        // Compute the numerator part of the combination formula (n * (n-1) * ... * (n-k+1)).
-        for (let idx = 0; idx < selectElements; idx++) {
-            currentProduct *= (totalElements - idx);
+    // Define a nested function to compute combinations (n choose k).
+    var calculateCombinations = function(totalElements, selectedElements) {
+        // Optimize by choosing the smaller value between k and n-k for calculations.
+        selectedElements = Math.min(selectedElements, totalElements - selectedElements);
+        var tempProduct = 1;
+        // Calculate the numerator part of the combination formula.
+        for (var iter = 0; iter < selectedElements; iter++) {
+            tempProduct *= (totalElements - iter);
         }
-
-        // Compute the denominator part (k!).
-        for (let idx = 0; idx < selectElements; idx++) {
-            currentProduct /= (idx + 1);
+        // Calculate the denominator part (k!) by dividing the temporary product.
+        for (var iter = 0; iter < selectedElements; iter++) {
+            tempProduct /= (iter + 1);
         }
-        return currentProduct;
+        return tempProduct;
     };
 
-    // Important consideration: This combination utility may encounter floating-point inaccuracies
-    // with extremely large inputs. A more robust solution for such cases would involve modular inverse.
-    // For the current problem scope, it should function adequately.
-
-    // Iterate through each prime factor and its corresponding count stored in our map.
-    for (let factorId in factorCountsMap) {
-        let factorOccurrence = factorCountsMap[factorId];
-        // Calculate the number of combinations using the "stars and bars" method: (val + N - 1) choose val.
-        let singleCombination = computeCombinations(factorOccurrence + countParam - 1, factorOccurrence);
-        totalAccumulated *= singleCombination; // Integrate this combination into the running total.
-        totalAccumulated %= largeModulo; // Apply the modulo operation to keep the number within bounds.
+    // Iterate through each unique prime factor and its count.
+    for (var factorIdentifier in primeFactorCounts) {
+        var factorExponent = primeFactorCounts[factorIdentifier]; // The power to which the prime is raised.
+        // Compute the number of combinations using the "stars and bars" formula: C(n+k-1, k).
+        // Here, n = firstInteger, k = factorExponent.
+        var currentCombinationResult = calculateCombinations(factorExponent + firstInteger - 1, factorExponent);
+        // Multiply the running product and apply the modulo operation to prevent overflow.
+        finalProduct *= currentCombinationResult;
+        finalProduct %= modulusValue;
     }
 
-    return totalAccumulated; // Deliver the ultimate computed result.
+    // Return the final computed result.
+    return finalProduct;
 }
 
-// This section contains auxiliary code responsible for managing diverse execution environments.
-// It is distinct from the primary algorithmic logic of the 'CalculateResult' function.
-
-((execInput, execResult, execType) => {
-    // Determine if the current execution context is Node.js (e.g., for standard input/output).
+// This self-executing anonymous function handles the execution environment.
+((argA, argB, argC) => {
+    // Check if the 'require' function is available, indicating a Node.js environment.
     if (typeof require !== "undefined") {
-        console.log(CalculateResult(require("node:fs").readFileSync("/dev/stdin", "utf8")));
+        // In Node.js, read input from standard input and print the result to console.
+        console.log(ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8")));
     } else {
-        // If not Node.js, assume a browser environment for interactive testing or debugging.
-        // Extract the test input embedded in the template literal.
-        execInput = execInput.split("\n").slice(1, -1).join("\n");
-        execResult = (() => {
+        // In a browser or similar environment, process the embedded input string.
+        argA = argA.split("\n").slice(1, -1).join("\n"); // Extract the actual input from the multiline string literal.
+        argB = (function() {
             try {
-                return CalculateResult(execInput);
-            } catch (error) {
-                return error.stack || error.message;
+                return ProcessInput(argA); // Attempt to execute the main logic.
+            } catch (errObject) {
+                return errObject.stack || errObject.message; // Capture and return error details if an exception occurs.
             }
-        })();
-        execType = typeof execResult;
-
-        // Ensure the output is a string for consistent display in a text area.
-        if (execType !== "string") {
-            execResult = JSON.stringify(execResult);
+        })(); // Immediately invoke this inner function.
+        argC = typeof argB; // Determine the data type of the result.
+        // If the result is not a string, convert it to a JSON string for display.
+        if (argC !== "string") {
+            argB = JSON.stringify(argB);
         }
-
-        // Employ a DOM manipulation utility (potentially jQuery or a custom fallback) to display results.
-        // This part relies on a global '$' if available, otherwise provides a basic DOM appending mechanism.
-        const domUtil = typeof $ !== 'undefined' ? $ : (selector) => ({
-            append: (elements) => {
-                const target = document.querySelector(selector || 'body');
-                if (target) {
-                    elements.forEach(el => target.appendChild(el));
-                }
-            }
-        });
-
-        domUtil("<form>").append(
+        // Assuming jQuery or a similar library is available for DOM manipulation.
+        // Create and append HTML elements to display the input and output.
+        $("<form>").append(
             [
-                [10, execInput], 0,
-                [1, execType], 0,
-                [10, execResult]
-            ].map(itemSpec => {
-                // For each specification, create either a textarea or a line break element.
-                if (itemSpec) {
-                    const textareaElement = document.createElement("textarea");
-                    textareaElement.rows = itemSpec[0];
-                    textareaElement.cols = 40;
-                    textareaElement.textContent = itemSpec[1];
-                    return textareaElement;
+                [10, argA], // Text area for input.
+                0, // Line break.
+                [1, argC], // Text area for output type.
+                0, // Line break.
+                [10, argB] // Text area for output value.
+            ].map(itemData => {
+                // Map array items to either a textarea or a line break element.
+                if (itemData) {
+                    return $("<textarea>", {
+                        rows: itemData[0],
+                        cols: 40,
+                        text: itemData[1]
+                    });
                 } else {
-                    return document.createElement("br");
+                    return $("<br>");
                 }
             })
-        ).appendTo("body");
+        ).appendTo("body"); // Add the generated form to the document body.
     }
 })(`
 3 12
-`);
+`); // The hardcoded input string for browser-based testing.

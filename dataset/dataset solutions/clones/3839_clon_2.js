@@ -1,53 +1,59 @@
-function ProcessInputData(receivedContent) {
-    // Divide the incoming data string into an array of lines using the newline character as a delimiter.
-    receivedContent = receivedContent.split('\n');
+/*
+ * This module processes textual input to find a specific substring.
+ * It reads data from standard input, performs string manipulations,
+ * and then outputs a particular substring based on its sorted order.
+ */
+function ProcessInput(incomingData) {
+    // Split the raw input into individual lines for further processing.
+    incomingData = incomingData.split("\n");
+
+    // Extract the primary string, convert it to lowercase for case-insensitive operations.
+    let processedText = incomingData[0].toString().toLowerCase();
+
+    // Parse the integer value for the desired rank (K) from the second line of input.
+    let desiredRank = parseInt(incomingData[1]);
+
+    // Determine the total character count of the processed string.
+    let textLength = processedText.length;
 
     /*
-     * Obtain the primary textual sequence from the first line of the divided input.
-     * Ensure it's treated as a string and converted to its lowercase representation.
+     * Potential validation logic for input constraints could be placed here.
+     * For instance, checking if 'textLength' is within an acceptable range
+     * or if 'desiredRank' falls within expected bounds.
+     *
+     * // if (textLength < 1 || 5000 < textLength) { /* handle error * / }
+     * // if (desiredRank < 1 || 5 < desiredRank) { /* handle error * / }
      */
-    let processedText = receivedContent[0].toString().toLowerCase();
 
-    // Parse the integer value from the second line of the input array, which represents the desired position.
-    let lookupPos = parseInt(receivedContent[1]);
+    // Initialize an array to store all unique substrings found.
+    const uniqueSubstrings = [];
 
-    // Calculate the overall character length of the prepared text sequence.
-    let totalLength = processedText.length;
-
-    // // The subsequent section of code was originally commented out in the source.
-    // // It contained preliminary checks for the length of the text and the position value.
-    // // if (totalLength < 1 || 5000 < totalLength)
-    // //     return;
-    // //
-    // // if (lookupPos < 1 || 5 < lookupPos)
-    // //     return;
-
-    // Initialize an empty array that will store all distinct text segments found.
-    let uniqueSegments = [];
-    // Declare a temporary variable to hold the current segment being examined during iterations.
+    // Declare a temporary variable to hold the current substring being examined.
     let currentSegment = '';
 
-    // Begin an outer loop, iterating through all possible starting positions for segments within the text.
-    for (let startPos = 0; startPos <= totalLength; startPos++) {
-        // Nest an inner loop, iterating through all possible ending positions for segments, starting from the current startPos.
-        for (let endPos = startPos; endPos <= totalLength; endPos++) {
-            // Extract a portion of the processed text based on the current startPos and endPos.
+    // Outer loop iterates through all possible starting positions for substrings.
+    for (let startPos = 0; startPos <= textLength; startPos++) {
+        // Inner loop iterates through all possible ending positions for substrings,
+        // starting from the current 'startPos'.
+        for (let endPos = startPos; endPos <= textLength; endPos++) {
+            // Extract the substring from the 'processedText' using the current start and end positions.
             currentSegment = processedText.substring(startPos, endPos);
 
-            // Verify if the extracted segment is not already in our collection, does not contain line breaks, and is not empty.
-            if (!uniqueSegments.includes(currentSegment) && !currentSegment.includes('\n') && currentSegment !== '') {
-                // If all conditions are satisfied, add this unique and valid segment to the collection.
-                uniqueSegments.push(processedText.substring(startPos, endPos));
+            // Check if the current segment is unique, does not contain a newline character,
+            // and is not an empty string.
+            if (!uniqueSubstrings.includes(currentSegment) && !currentSegment.includes('\n') && currentSegment !== '') {
+                // If all conditions are met, add the substring to our collection.
+                uniqueSubstrings.push(processedText.substring(startPos, endPos));
             }
         }
     }
 
-    // Arrange the entire collection of unique segments in ascending alphabetical order.
-    uniqueSegments.sort();
+    // Sort the collected unique substrings alphabetically.
+    uniqueSubstrings.sort();
 
-    // Display the specific segment located at the (lookupPos - 1) index of the sorted array to the console.
-    console.log(uniqueSegments[lookupPos - 1]);
+    // Output the substring at the (desiredRank - 1) index (because arrays are zero-indexed).
+    console.log(uniqueSubstrings[desiredRank - 1]);
 }
 
-// Invoke the primary logic function, supplying it with data read from the standard input stream, decoded as UTF-8.
-ProcessInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// Read the entire content from standard input and pass it to the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,54 +1,45 @@
-// This script processes input from standard input to perform text transformations.
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-// Obtain raw input data from the standard input stream.
-var dataStream = require('fs') . readFileSync(
-    '/dev/stdin',
-    'utf8'
-);
+// Process the raw input data by trimming whitespace and splitting it into an array of lines.
+var lineSegments = (rawData.trim()).split("\n");
 
-// Split the entire input into an array of individual lines, after trimming leading/trailing whitespace.
-let lineCollection = (dataStream.trim()) . split ( "\n" );
+// The main processing loop continues as long as there are more than one line segments remaining.
+while (lineSegments.length > 1) {
 
-// Main processing loop: continues as long as there are more than one line left to process.
-while ( lineCollection . length > 1 )
-{
-    // The first number indicates how many key-value pairs will follow for the current mapping.
-    let mappingCount = parseInt(lineCollection.shift(), 10);
+    // Extract the first numerical value, which represents the count of key-value pairs for the current block.
+    var countVal = lineSegments.shift();
 
-    // Initialize an object to store the current set of key-value mappings.
-    const translationMap = { };
+    // Initialize an empty object to serve as a mapping store (hash map).
+    var mappingStore = {};
 
-    // Loop through to populate the translation map.
-    for ( let counter = 0 ; counter < mappingCount ; counter++ )
-    {
-        // Extract a line, split it by space to get the key and value.
-        let pairParts = ( lineCollection . shift() ) . split ( " " );
-        // Store the key-value pair in the map.
-        translationMap[ pairParts[ 0 ] ] = pairParts[ 1 ];
+    // Loop to populate the mapping store with key-value pairs.
+    for (var idx = 0; idx < countVal; idx++) {
+        // Get the next line, split it by space to separate key and value.
+        var pairData = (lineSegments.shift()).split(" ");
+        // Store the key-value pair in the mapping store.
+        mappingStore[pairData[0]] = pairData[1];
     }
 
-    // The next number indicates how many elements will follow for the current output sequence.
-    let sequenceLength = parseInt(lineCollection.shift(), 10);
+    // Extract the next numerical value, which represents the count of strings to be processed.
+    var countVal = lineSegments.shift(); // Reusing the variable name is acceptable for Type II.
 
-    // Initialize an empty string buffer to accumulate the translated output.
-    let outputBuffer = "";
+    // Initialize an empty string to accumulate the final result.
+    var resultString = "";
 
-    // Loop through to build the output string based on the translation map.
-    for ( let elementIndex = 0 ; elementIndex < sequenceLength ; elementIndex++ )
-    {
-        // Get the current key to be translated.
-        let currentKey = lineCollection . shift();
-        // Append either the translated value or the original key if no translation exists.
-        outputBuffer += ( currentKey in translationMap )
-            ? translationMap[ currentKey ]
-            : currentKey;
+    // Loop to process each string and build the result string.
+    for (var idx = 0; idx < countVal; idx++) {
+        // Get the current key (string) to look up.
+        var currentKey = lineSegments.shift();
+        // Append either the mapped value from the store or the original key if no mapping exists.
+        resultString += (currentKey in mappingStore) ? mappingStore[currentKey] : currentKey;
     }
 
-    // Print the accumulated translated string to the console.
-    console.log( outputBuffer );
+    // Output the constructed result string to the console.
+    console.log(resultString);
 
-    // Check for the termination condition: if the next line is "0", exit the loop.
-    if ( lineCollection[ 0 ] === "0" ) {
+    // Check the first element of the remaining line segments for a termination condition.
+    // If it's "0", break out of the main processing loop.
+    if (lineSegments[0] == "0") {
         break;
     }
 }

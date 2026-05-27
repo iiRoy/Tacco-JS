@@ -1,45 +1,36 @@
-function ProcessData(rawInputString) {
-    // This function takes the raw input string, processes it, and performs a specific calculation.
+function ProcessInput(rawData) {
+    // The input string is first split by newline characters to separate lines.
+    rawData = rawData.split("\n");
 
-    // First, divide the complete input into individual lines.
-    let processedLines = rawInputString.split("\n");
+    // The second line of the input (index 1) is taken, split by spaces,
+    // and each resulting string is converted into a BigInt.
+    let numberArray = rawData[1].split(" ").map(BigInt);
 
-    // Extract the second line (at index 1) and convert its space-separated elements
-    // into an array of BigInt numbers.
-    const numericValues = processedLines[1] . split(" ") . map(BigInt);
-
-    // Initialize a BigInt variable to keep track of the cumulative sum of all numbers.
+    // Initialize a BigInt variable to accumulate the sum of all numbers in the array.
     let totalSum = BigInt(0);
+    // Iterate through the 'numberArray' to calculate its initial total sum.
+    numberArray.forEach(currentVal => totalSum += currentVal);
 
-    // Iterate over each number in the array to compute the initial total sum.
-    numericValues . forEach(itemValue => totalSum += itemValue);
+    // Initialize another BigInt variable to store the final computed result.
+    let resultAccumulator = BigInt(0);
 
-    // Initialize an accumulator for the final computed result, also as a BigInt.
-    let finalAccumulator = BigInt(0);
-
-    // Now, iterate through each element in the array to perform the main calculation.
-    for (
-        const currentElement of numericValues
-    )
-    {
-        // Subtract the current element from the total sum to get the sum of remaining elements.
-        totalSum -= currentElement;
-
-        // Multiply the current element by the sum of remaining elements and add it to the accumulator.
-        finalAccumulator += currentElement * totalSum;
+    // Loop through each individual element in the 'numberArray'.
+    for (const element of numberArray) {
+        // Subtract the current 'element' from 'totalSum'.
+        // This effectively gives the sum of all elements that appear *after* the current one
+        // in the original sequence, as 'totalSum' initially held the sum of all elements.
+        totalSum -= element;
+        // Add to 'resultAccumulator' the product of the current 'element' and the
+        // 'totalSum' (which now represents the sum of subsequent elements).
+        resultAccumulator += element * totalSum;
     }
 
-    // Log the final result: convert the BigInt accumulator to a Number after applying
-    // a modulo operation with a large prime number (1000000007).
-    console.log(
-        Number(
-            finalAccumulator % BigInt(1000000007n)
-        )
-    );
+    // The final result is obtained by taking the modulo of 'resultAccumulator' with
+    // 1000000007 (represented as a BigInt) and then converting it back to a standard Number
+    // for output.
+    console.log(Number(resultAccumulator % BigInt(1000000007)));
 }
 
-// Invoke the primary data processing function.
-// It reads content from standard input synchronously using Node.js 'fs' module.
-ProcessData(
-    require("fs").readFileSync("/dev/stdin", "utf8")
-);
+// Read the entire content from standard input as a UTF-8 string,
+// and then pass it to the 'ProcessInput' function for execution.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

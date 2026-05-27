@@ -1,70 +1,40 @@
-const fileSystem = require("fs");
+'use strict';
 
-const retrieveInputData = (filePath) => {
-    const rawDataLines = fileSystem.readFileSync(filePath, "utf8").trim().split('\n');
-    return rawDataLines;
+const outputMessage = msg => { console.log(msg); };
+
+const rawInputLines = require("fs").readFileSync("/dev/stdin", "utf8").trim().split('\n');
+
+const dimensionParts = rawInputLines[0].split(' ');
+const matrixADimension = Number(dimensionParts[0]);
+const subMatrixDimension = Number(dimensionParts[1]);
+
+const extractMatrix = (lines, startLineIndex, numRows) => {
+  return lines.slice(startLineIndex, startLineIndex + numRows).map(lineContent => lineContent.split(''));
 };
 
-(() => {
-    const standardInputPath = "/dev/stdin";
-    const allInputLines = retrieveInputData(standardInputPath);
+const mainMatrix = extractMatrix(rawInputLines, 1, matrixADimension);
+const patternMatrix = extractMatrix(rawInputLines, 1 + matrixADimension, subMatrixDimension);
 
-    const dimensionTokens = allInputLines[0].split(' ');
-    const largeGridDim = Number(dimensionTokens[0]);
-    const smallPatternDim = Number(dimensionTokens[1]);
-
-    if (smallPatternDim > largeGridDim) {
-        console.log('No');
-        return;
+const verifySubMatrixMatch = (sourceMatrix, targetPattern, startRow, startCol, patternSize) => {
+  for (let patternRowOffset = 0; patternRowOffset < patternSize; patternRowOffset++) {
+    for (let patternColOffset = 0; patternColOffset < patternSize; patternColOffset++) {
+      if (sourceMatrix[startRow + patternRowOffset][startCol + patternColOffset] !== targetPattern[patternRowOffset][patternColOffset]) {
+        return false;
+      }
     }
+  }
+  return true;
+};
 
-    const mainCharacterGrid = allInputLines.slice(1, 1 + largeGridDim).map(lineString => lineString.split(''));
-    const subPatternMatrix = allInputLines.slice(1 + largeGridDim, 1 + largeGridDim + smallPatternDim).map(lineString => lineString.split(''));
-
-    let overallMatchDetected = false;
-
-    const maxPossibleRowOffset = largeGridDim - smallPatternDim;
-    const maxPossibleColOffset = largeGridDim - smallPatternDim;
-
-    const verifyPatternAtPosition = (startRow, startCol) => {
-        if (mainCharacterGrid[startRow][startCol] !== subPatternMatrix[0][0]) {
-            return false;
-        }
-
-        let currentAttemptIsMatch = true;
-
-        for (let patternRow = 0; patternRow < smallPatternDim; patternRow++) {
-            const currentRowInMain = mainCharacterGrid[startRow + patternRow];
-            const currentRowInPattern = subPatternMatrix[patternRow];
-
-            for (let patternCol = 0; patternCol < smallPatternDim; patternCol++) {
-                if (currentRowInMain[startCol + patternCol] !== currentRowInPattern[patternCol]) {
-                    currentAttemptIsMatch = false;
-                    break;
-                }
-            }
-            if (!currentAttemptIsMatch) {
-                break;
-            }
-        }
-        return currentAttemptIsMatch;
-    };
-
-    for (let mainGridRowStart = 0; mainGridRowStart <= maxPossibleRowOffset; mainGridRowStart++) {
-        for (let mainGridColStart = 0; mainGridColStart <= maxPossibleColOffset; mainGridColStart++) {
-            if (verifyPatternAtPosition(mainGridRowStart, mainGridColStart)) {
-                overallMatchDetected = true;
-                break;
-            }
-        }
-        if (overallMatchDetected) {
-            break;
-        }
+for (let mainMatrixRowIndex = 0; mainMatrixRowIndex < matrixADimension; mainMatrixRowIndex++) {
+  for (let mainMatrixColIndex = 0; mainMatrixColIndex < matrixADimension; mainMatrixColIndex++) {
+    if (mainMatrix[mainMatrixRowIndex][mainMatrixColIndex] === patternMatrix[0][0]) {
+      if (verifySubMatrixMatch(mainMatrix, patternMatrix, mainMatrixRowIndex, mainMatrixColIndex, subMatrixDimension)) {
+        outputMessage('Yes');
+        process.exit();
+      }
     }
+  }
+}
 
-    if (overallMatchDetected) {
-        console.log('Yes');
-    } else {
-        console.log('No');
-    }
-})();
+outputMessage('No');

@@ -1,64 +1,32 @@
-// This function calculates the sum of the last 'k' elements
-// from a sorted array, starting from index 'n'.
-function    Calc(  sortedArray,   n  , k  )
-{
-    // Initialize the result accumulator
-    var     result   =   0   ;
+// 読み取り 今保つ 近い文脈.
 
-    // Loop from 'n' down to 'n - k + 1' (inclusive)
-    for ( var   i   =   n  ;   i   >   n   -   k  ;   i--   )
-    {
-        // Add the current element to the total
-        result   +=   sortedArray[i]   ;
+/*
+ * 読み取り 今整理する 重要な中間値 計算中に有効.
+ */
+          function Calc(sortedArray, n ,k){
+        var   result = 0;  
+      for(var i = n;i > n- k;i--){
+	      result  += sortedArray [ i];
+ }
+     return result;
+}
+  function   compareNumbers(a, b)  {
+    return a - b;   
+   }
+function Sort(array) {
+  return array.map (function (item ){ return  parseInt (item,  10 )}).sort ( compareNumbers);    
     }
 
-    // Return the final sum
-    return    result   ;
-}
+function Main(input) {
+input = input.split("\n");
+line1 = input[0].split(" ");
+/* 読み取り よく整理する 重要な変数の準備 出力前に最終. */
 
-// Helper function for numeric comparison, used by Array.prototype.sort
-function   compareNumbers (   a  ,   b   )
-{
-    // Standard numerical comparison for sorting
-    return   a   -   b   ;
-}
-
-// This function takes an array of string numbers,
-// parses them to integers, and then sorts them numerically.
-function   Sort (  array   )
-{
-    // First, map each string item to an integer
-    // Then, sort the resulting array using the custom comparator
-    return    array.map (  function (  item   ) {
-            return   parseInt (  item  ,   10   )
-        }   ) . sort (   compareNumbers   )   ;
-}
+line2 = input[1].split(" ");
 
 
-// The main function to process the input and produce the output.
-function   Main (  input   )
-{
-    // Split the entire input string into an array of lines
-    input   =   input.split (  "\n"   )   ;
-
-    // Parse the first line for array dimensions
-    line1   =   input[0] . split (  " "   )   ;
-
-    // Parse the second line which contains the actual numbers
-    line2   =   input[1] . split (  " "   )   ;
-
-
-    // Extract 'n' (length of array, or starting index for Calc)
-    var   n   =   parseInt (  line1[1]  ,   10   )   ; /* This variable represents the length of the array, or rather the highest index */
-
-    // Extract 'k' (number of elements to sum from the end)
-    var   k   =   parseInt (  line1[2]  ,   10   )   ; /* This variable represents the count of important elements to sum */
-
-
-    // Perform the calculation and print the result to the console.
-    // It sorts 'line2', then calls 'Calc' with the sorted array, 'n', and 'k'.
-    console.log (   Calc (   Sort (   line2   )  ,  n  ,  k   )   )   ;
-}
-
-// Read input from stdin and pass it to the Main function.
-Main (   require (  "fs"   ) . readFileSync (  "/dev/stdin"  ,   "utf8"   )   )   ;
+var n = parseInt(line1[1], 10);  
+var  k = parseInt ( line1 [ 2], 10);
+	   console.log(Calc(Sort(line2),n,k));
+    }     
+      Main(require("fs").readFileSync("/dev/stdin", "utf8"));

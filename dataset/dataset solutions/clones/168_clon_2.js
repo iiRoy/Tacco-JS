@@ -1,155 +1,143 @@
-// This program processes numerical inputs to find mathematical expressions that evaluate to 10.
+function executeProgram() {
+  // Process each line of input data
+  rawInputData.forEach(function(lineOfText) {
+    // Parse numbers from the current line
+    var numericValues = lineOfText.split(' ').map(parseFloat);
 
-// Main function to orchestrate the processing of all received input data.
-function processInputData() {
-  // Iterate through each individual line or segment of text from the input.
-  incomingData
-    .forEach(
-      function(textSegment) {
-        // Declare and initialize a variable to hold numeric values.
-        // It splits the text segment by spaces and converts each part to a floating-point number.
-        var numericValues = textSegment.split(' ').map(parseFloat);
+    // Skip invalid input lines or the termination signal
+    if (numericValues.length !== 4 || lineOfText.indexOf('0 0 0 0') === 0) {
+      return;
+    }
 
-        // Check for invalid input: if the number of values is not exactly four,
-        // or if the line is the specific termination signal "0 0 0 0",
-        // then skip this segment and proceed to the next.
-        if (numericValues.length !== 4 || textSegment.indexOf('0 0 0 0') === 0) {
-          return;
-        }
-
-        // If the input is valid, attempt to find an expression that evaluates to 10
-        // for the given numbers and log the result to the console.
-        console.log(findTargetEquation(numericValues));
-      }
-    );
+    // Find and display the expression that evaluates to 10
+    console.log(findTenExpression(numericValues));
+  });
 }
 
-// Global array containing the basic mathematical operators that can be used.
-var mathematicalOperators = ['+', '-', '*'];
+// Available arithmetic operators
+var arithmeticOps = ['+', '-', '*'];
 
-// Global array of string patterns representing different structural forms of expressions.
-// The '@' acts as a placeholder for numbers, and '%' for operators.
-var formulaPatterns = [
+// Templates for expression structures
+var expressionTemplates = [
   '(@%@)%(@%@)',
   '@%(@%@)%@',
   '@%@%@%@',
   '(@%(@%@))%@'
 ];
 
-// Utility function to construct a complete mathematical expression string
-// by filling a pattern with specific numbers and operators.
-function buildEquation(patternText, numParts, opParts) {
-  var
-    valueIndex = 0, // Iterator for the array of numeric parts.
-    operatorIndex = 0; // Iterator for the array of operator parts.
+/**
+ * Constructs a mathematical formula string from a template, operands, and operators.
+ * @param {string} templateString - The template with placeholders '@' for operands and '%' for operators.
+ * @param {Array<number>} operandArray - An array of numbers to insert as operands.
+ * @param {Array<string>} operatorArray - An array of operators to insert.
+ * @returns {string} The formatted expression string.
+ */
+function constructFormula(templateString, operandArray, operatorArray) {
+  var idxA = 0; // Index for operandArray
+  var idxB = 0; // Index for operatorArray
 
-  // First, replace all number placeholders ('@') in the pattern with actual numeric values.
-  // Then, replace all operator placeholders ('%') with actual operator symbols.
-  return patternText
-    .replace(/@/g, function() {
-      return numParts[valueIndex++];
-    })
-    .replace(/%/g, function() {
-      return opParts[operatorIndex++];
-    });
+  // Replace operand placeholders
+  let intermediateString = templateString.replace(/@/g, function() {
+    return operandArray[idxA++];
+  });
+
+  // Replace operator placeholders
+  return intermediateString.replace(/%/g, function() {
+    return operatorArray[idxB++];
+  });
 }
 
-// Recursive function to generate all possible permutations (arrangements) of elements in an array.
-function createArrangements(inputSequence) {
-  var
-    currentItem, // Holds the element currently being processed.
-    iterator, // Loop counter.
-    sequenceSize = inputSequence.length, // The total number of elements in the input array.
-    outputPerms = []; // An array to accumulate all generated permutations.
+/**
+ * Generates all possible permutations of an array's elements.
+ * @param {Array<any>} sourceElements - The array for which to generate permutations.
+ * @returns {Array<Array<any>>} An array containing all permutations.
+ */
+function generatePermutations(sourceElements) {
+  var currentElement;
+  var arrayLength = sourceElements.length;
+  var resultPermutations = [];
 
-  // Base case: If the input array is empty, there's only one permutation (an empty array).
-  if (sequenceSize === 0) {
+  // Base case: an empty array has one permutation (an empty array)
+  if (arrayLength === 0) {
     return [
       []
     ];
   }
 
-  // Iterate through each element of the input sequence.
-  for (iterator = 0; iterator < sequenceSize; iterator++) {
-    // Remove the current element from the beginning of the sequence.
-    currentItem = inputSequence.shift();
+  // Iterate through each element to make it the first in a permutation
+  for (let i = 0; i < arrayLength; i++) {
+    currentElement = sourceElements.shift(); // Remove the current element
 
-    // Recursively find all permutations of the remaining elements.
-    // For each sub-permutation, prepend the `currentItem` to form new permutations.
-    outputPerms = outputPerms.concat(
-      createArrangements(inputSequence)
-      .map(function(partialArrangement) {
-        return (partialArrangement.unshift(currentItem), partialArrangement);
+    // Recursively get permutations of the remaining elements
+    resultPermutations = resultPermutations.concat(
+      generatePermutations(sourceElements).map(function(subPermutation) {
+        // Add the current element back to the front of each sub-permutation
+        subPermutation.unshift(currentElement);
+        return subPermutation;
       })
     );
 
-    // After processing, add the `currentItem` back to the end of the sequence
-    // to restore the original array for the next iteration's shift operation.
-    inputSequence.push(currentItem);
+    sourceElements.push(currentElement); // Put the element back for the next iteration
   }
-  return outputPerms; // Return the comprehensive list of all permutations.
+  return resultPermutations;
 }
 
-// Main logic function to find an expression that evaluates to 10 using a given set of numbers.
-function findTargetEquation(initialValues) {
-  var
-    outerLoopA, outerLoopB, outerLoopC, outerLoopD, outerLoopE, // Multiple loop counters for exhaustive search.
-    constructedFormula; // Variable to store the dynamically generated expression string.
+/**
+ * Attempts to find an arithmetic expression using the given numbers that evaluates to 10.
+ * @param {Array<number>} inputNumbers - An array of four numbers.
+ * @returns {string|number} The expression string if found, otherwise 0.
+ */
+function findTenExpression(inputNumbers) {
+  var numPermIdx, op1Idx, op2Idx, op3Idx, templateIdx; // Loop counters
+  var evaluatedFormula; // Stores the generated formula string
 
-  // Generate all possible permutations of the four initial numeric values.
-  initialValues = createArrangements(initialValues);
+  // Generate all permutations of the input numbers
+  let numberPermutations = generatePermutations(inputNumbers);
 
-  // Loop through each permutation of the numbers (24 permutations for 4 numbers).
-  for (outerLoopA = 0; outerLoopA < 24; outerLoopA++) {
-    // Loop through each possible operator for the first position.
-    for (outerLoopB = 0; outerLoopB < 3; outerLoopB++) {
-      // Loop through each possible operator for the second position.
-      for (outerLoopC = 0; outerLoopC < 3; outerLoopC++) {
-        // Loop through each possible operator for the third position.
-        for (outerLoopD = 0; outerLoopD < 3; outerLoopD++) {
-          // Loop through each of the four predefined expression patterns.
-          for (outerLoopE = 0; outerLoopE < 4; outerLoopE++) {
-            // Construct the full expression string using the current pattern,
-            // the current number permutation, and the selected operators.
-            constructedFormula = buildEquation(
-              formulaPatterns[outerLoopE],
-              initialValues[outerLoopA],
-              [mathematicalOperators[outerLoopB], mathematicalOperators[outerLoopC], mathematicalOperators[outerLoopD]]
+  // Iterate through all permutations of numbers (4! = 24)
+  for (numPermIdx = 0; numPermIdx < 24; numPermIdx++) {
+    // Iterate through all possible operators for the first position (3 choices)
+    for (op1Idx = 0; op1Idx < 3; op1Idx++) {
+      // Iterate through all possible operators for the second position (3 choices)
+      for (op2Idx = 0; op2Idx < 3; op2Idx++) {
+        // Iterate through all possible operators for the third position (3 choices)
+        for (op3Idx = 0; op3Idx < 3; op3Idx++) {
+          // Iterate through all expression templates (4 choices)
+          for (templateIdx = 0; templateIdx < 4; templateIdx++) {
+            // Construct the formula string
+            evaluatedFormula = constructFormula(
+              expressionTemplates[templateIdx],
+              numberPermutations[numPermIdx],
+              [arithmeticOps[op1Idx], arithmeticOps[op2Idx], arithmeticOps[op3Idx]]
             );
 
-            // Evaluate the constructed mathematical expression.
-            // If its result is exactly 10, we have found a solution.
-            if (eval(constructedFormula) === 10) {
-              return constructedFormula; // Return the successful expression string.
+            // Evaluate the formula and check if it equals 10
+            if (eval(evaluatedFormula) === 10) {
+              return evaluatedFormula; // Return the expression if found
             }
           }
         }
       }
     }
   }
-  return 0; // If no expression evaluates to 10 after checking all possibilities, return 0.
+  return 0; // Return 0 if no expression evaluates to 10
 }
 
-// Global variable to accumulate all chunks of raw data received from standard input.
-var rawInputBuffer = '';
-// Global variable to store the processed input as an array of lines.
-var incomingData;
+// Global variable to accumulate input from stdin
+var rawInputData = '';
 
-// Start listening for input stream events.
-process.stdin.resume();
+// Set up stdin processing
+process.stdin.resume(); // Keep the process alive
+process.stdin.setEncoding('utf8'); // Expect UTF-8 encoded text
 
-// Configure the encoding for the incoming data stream to UTF-8.
-process.stdin.setEncoding('utf8');
-
-// Event handler for when a new chunk of data is received from standard input.
-process.stdin.on('data', function(chunkOfData) {
-  rawInputBuffer += chunkOfData; // Append the new data chunk to the buffer.
+// Event listener for incoming data chunks
+process.stdin.on('data', function(dataChunk) {
+  rawInputData += dataChunk; // Append chunk to the input string
 });
 
-// Event handler for when the end of the standard input stream is detected.
+// Event listener for end of input stream
 process.stdin.on('end', function() {
-  // Once all data has been received, split the entire buffer into an array of lines.
-  incomingData = rawInputBuffer.split('\n');
-  // Initiate the main processing logic with the prepared input data.
-  processInputData();
+  // Split the accumulated input into lines and remove any empty lines
+  rawInputData = rawInputData.split('\n').filter(line => line.trim() !== '');
+  executeProgram(); // Start the main program logic
 });

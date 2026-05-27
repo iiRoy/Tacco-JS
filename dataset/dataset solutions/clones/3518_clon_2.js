@@ -1,133 +1,99 @@
-var parseInteger = val => Number.parseInt(val, 10);
-var parseIntegerArray = inputElements => inputElements.map(val => parseInteger(val));
-var getAbsoluteValue = inputVal => (inputVal > 0) ? inputVal : -inputVal;
+var parseInteger = val => parseInt(val, 0xA);
 
-function findMinimumValue() {
-  var argumentList = arguments;
-  var currentMinimum = argumentList[0];
-  for (var loopIndex = 1; loopIndex < argumentList.length; loopIndex++) {
-    if (argumentList[loopIndex] < currentMinimum) {
-      currentMinimum = argumentList[loopIndex];
+var parseIntegerArray = collection => collection.map(item => parseInteger(item));
+
+var absoluteValue = num => num > +0 ? num : -num;
+
+function findMinimum() {
+  var args = arguments;
+  var currentMin = args[0];
+  for (let index = 0b1; index < args.length; ++index) {
+    if (args[index] < currentMin) {
+      currentMin = args[index];
     }
   }
-  return currentMinimum;
+  return currentMin;
 }
 
-function findMaximumValue() {
-  var argumentList = arguments;
-  var currentMaximum = argumentList[0];
-  for (var loopIndex = 1; loopIndex < argumentList.length; loopIndex++) {
-    if (argumentList[loopIndex] > currentMaximum) {
-      currentMaximum = argumentList[loopIndex];
+function findMaximum() {
+  var args = arguments;
+  var currentMax = args[0];
+  for (let index = 0b1; index < args.length; ++index) {
+    if (args[index] > currentMax) {
+      currentMax = args[index];
     }
   }
-  return currentMaximum;
+  return currentMax;
 }
 
-function calculateGreatestCommonDivisor() {
-  var argumentList = arguments;
-  var gcdResult = argumentList[0];
-  // Helper function for the Euclidean algorithm calculation
-  var euclideanHelper = (numOne, numTwo) => numTwo ? euclideanHelper(numTwo, numOne % numTwo) : numOne;
-  for (var loopIndex = 1; loopIndex < argumentList.length; loopIndex++) {
-    gcdResult = euclideanHelper(gcdResult, argumentList[loopIndex]);
+function greatestCommonDivisor() {
+  var args = arguments;
+  var result = args[0];
+  const calculateGCD = (valA, valB) => valB ? calculateGCD(valB, valA % valB) : valA;
+  for (let index = 0b1; index < args.length; ++index) {
+    result = calculateGCD(result, args[index]);
   }
-  return gcdResult;
+  return result;
 }
 
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-// Initiate the main program flow by reading from the standard input stream
-executeProcessing(require('node:fs').readFileSync('/dev/stdinput', 'utf8'));
+function ProcessInput(rawData) {
+  const lines = rawData.split('\n');
+  const count = parseInteger(lines[0]);
+  let coordinates = [];
 
-
-function executeProcessing(sourceContent) {
-  // Split the entire raw input into an array of individual lines
-  var linesOfText = sourceContent.split('\n');
-
-  // Convert the first line to an integer, representing the total number of entries
-  var numberOfEntries = parseInteger(linesOfText[0]);
-
-  // Create an array to hold all the coordinate pairs after parsing
-  var pointCoordinates = [];
-
-  // Process each subsequent line, converting them into coordinate arrays
-  for (var iterationIndex = 0; iterationIndex < numberOfEntries; iterationIndex++) {
-    // Parse the current line (split by space) into an array of numbers
-    pointCoordinates[iterationIndex] = parseIntegerArray(linesOfText[iterationIndex + 1].split(' '));
-
-    // Perform a specific parity check involving the current and first coordinate pair
-    if ((pointCoordinates[iterationIndex][0] + pointCoordinates[iterationIndex][1] + pointCoordinates[0][0] + pointCoordinates[0][1]) % 2 !== 0) {
-      console.log(-1); // Output an error value if the parity condition is not met
-      return 0; // Exit the function immediately
+  for (let idx = +0; idx < count; ++idx) {
+    coordinates[idx] = parseIntegerArray(lines[idx + 0b1].split(' '));
+    // Check parity condition for all coordinates relative to the first one
+    if ((coordinates[idx][+0] + coordinates[idx][0b1] + coordinates[+0][+0] + coordinates[+0][0b1]) % 0x2 !== +0) {
+      console.log(-0b1);
+      return +0;
     }
   }
 
-  // Calculate a parity offset based on the sum of the first coordinate pair's components
-  var parityCheckResult = (pointCoordinates[0][0] + pointCoordinates[0][1]) % 2;
-
-  // If the parity check result is 1, re-order certain coordinate pairs
-  if (parityCheckResult === 1) {
-    pointCoordinates = pointCoordinates.map(currentElement => currentElement[0] % 2 === 0 ? currentElement : currentElement.reverse());
+  const parityOffset = (coordinates[+0][+0] + coordinates[+0][0b1]) % 0x2;
+  if (parityOffset === 0b1) {
+    // If the initial parity is odd, adjust coordinates by reversing if needed
+    coordinates = coordinates.map(element => element[+0] % 0x2 === +0 ? element : element.reverse());
   }
 
   /*
-   * This block determines the required 'dimension' for path generation.
-   * It starts with a base value and adjusts it based on coordinate parities.
+   * This section calculates a 'magicNumber' based on coordinate parities.
+   * It's related to the number of steps or dimensions required for the path.
    */
-  var pathDimension = 20;
+  let magicNumber = 0x14; // Represents 20
+  if (coordinates[+0][+0] % 0x2 === 0b1) magicNumber++;
+  if (coordinates[+0][0b1] % 0x2 === 0b1) magicNumber++;
+  console.log(magicNumber);
 
-  // Increment dimension if the x-coordinate of the first point is odd
-  if (pointCoordinates[0][0] % 2 === 1) {
-    pathDimension++;
-  }
+  const distances = [];
+  distances.length = magicNumber;
+  distances.fill(0b1); // Fill with 1s
+  const distanceString = distances.join(' ');
+  console.log(distanceString);
 
-  // Increment dimension if the y-coordinate of the first point is odd
-  if (pointCoordinates[0][1] % 2 === 1) {
-    pathDimension++;
-  }
+  for (let idx = +0; idx < count; ++idx) {
+    let resultString = "";
+    const currentCoord = coordinates[idx];
 
-  // Print the calculated path dimension to the console
-  console.log(pathDimension);
-
-  // Initialize an array to store the default step directions
-  var stepDirections = [];
-  stepDirections.length = pathDimension;
-  stepDirections.fill(1); // Populate the array with a uniform value
-
-  // Convert the step directions array to a space-separated string for output
-  stepDirections = stepDirections.join(' ');
-  console.log(stepDirections);
-
-  // Generate a movement path string for each processed coordinate set
-  for (var iterationIndex = 0; iterationIndex < numberOfEntries; iterationIndex++) {
-    var resultPathString = '';
-    var currentPoint = pointCoordinates[iterationIndex];
-
-    // If the x-coordinate is odd, append 'R' and increment x
-    if (currentPoint[0] % 2 === 1) {
-      resultPathString += 'R';
-      currentPoint[0]++;
+    // Adjust coordinates based on parity and append 'R' to path
+    if (currentCoord[+0] % 0x2 === 0b1) {
+      resultString += 'R';
+      currentCoord[+0]++;
+    }
+    if (currentCoord[0b1] % 0x2 === 0b1) {
+      resultString += 'R';
+      currentCoord[0b1]++;
     }
 
-    // If the y-coordinate is odd, append 'R' and increment y
-    if (currentPoint[1] % 2 === 1) {
-      resultPathString += 'R';
-      currentPoint[1]++;
-    }
-
-    // Append 'R' characters to the path based on the adjusted x-coordinate
-    resultPathString += ''.padEnd((10 + currentPoint[0]) / 2, 'R');
-    // Append 'L' characters to the path based on the adjusted x-coordinate
-    resultPathString += ''.padEnd((10 - currentPoint[0]) / 2, 'L');
-    // Append 'U' characters to the path based on the adjusted y-coordinate
-    resultPathString += ''.padEnd((10 + currentPoint[1]) / 2, 'U');
-    // Append 'D' characters to the path based on the adjusted y-coordinate
-    resultPathString += ''.padEnd((10 - currentPoint[1]) / 2, 'D');
-
-    // Output the complete path string for the current point
-    console.log(resultPathString);
+    // Generate path segments based on adjusted coordinates
+    resultString += "".padEnd((0xA + currentCoord[+0]) / 0x2, 'R'); // 0xA is 10
+    resultString += "".padEnd((0xA - currentCoord[+0]) / 0x2, 'L');
+    resultString += "".padEnd((0xA + currentCoord[0b1]) / 0x2, 'U');
+    resultString += "".padEnd((0xA - currentCoord[0b1]) / 0x2, 'D');
+    console.log(resultString);
   }
 
-  // Return 0 to signify successful program termination
-  return 0;
+  return +0;
 }

@@ -1,35 +1,27 @@
-const parseInputData = (incomingText) => {
-    const contentLines = incomingText.trim().split('\n');
-    const elementCount = Number(contentLines[0].split(' ')[0]);
-    const numericValues = contentLines[1].split(' ').map(Number);
-    return { elementCount, numericValues };
-};
-
-const calculatePrefixSums = (valueSequence) => {
-    return valueSequence.reduce((acc, currentNumber) => {
-        acc.push(acc[acc.length - 1] + currentNumber);
-        return acc;
-    }, [0]);
-};
-
-const findMinimumPartitionDifference = (totalElements, prefixSumArray) => {
-    if (totalElements <= 1) {
-        return 10e20; // Matches the initial 'diff' value in the original code for non-split scenarios
+function processInput(inputString) {
+    const lineSegments = inputString.split("\n");
+ 
+    const firstLineElements = lineSegments[0].split(" ");
+    const elementQuantity = Number(firstLineElements[0]);
+ 
+    const numericalSequence = lineSegments[1].split(" ").map(Number);
+    
+    const totalSequenceSum = numericalSequence.reduce((accumulated, currentVal) => accumulated + currentVal, 0);
+ 
+    let minimumAbsoluteDifference = Infinity;
+    let currentLeftPartitionSum = 0;
+ 
+    for (let divisionPoint = 0; divisionPoint < elementQuantity - 1; divisionPoint++) {
+        currentLeftPartitionSum += numericalSequence[divisionPoint];
+        const currentRightPartitionSum = totalSequenceSum - currentLeftPartitionSum;
+ 
+        const currentDifference = Math.abs(currentLeftPartitionSum - currentRightPartitionSum);
+ 
+        if (currentDifference < minimumAbsoluteDifference) {
+            minimumAbsoluteDifference = currentDifference;
+        }
     }
-    const allDifferences = Array.from({ length: totalElements - 1 }, (_, idx) => {
-        const separationPoint = idx + 1; // Represents the index AFTER the first group
-        const firstSegmentTotal = prefixSumArray[separationPoint];
-        const secondSegmentTotal = prefixSumArray[totalElements] - firstSegmentTotal;
-        return Math.abs(firstSegmentTotal - secondSegmentTotal);
-    });
-    return Math.min(...allDifferences);
-};
-
-const initiateProcessing = (rawPayload) => {
-    const { elementCount, numericValues } = parseInputData(rawPayload);
-    const cumulativeSums = calculatePrefixSums(numericValues);
-    const finalDiscrepancy = findMinimumPartitionDifference(elementCount, cumulativeSums);
-    console.log(finalDiscrepancy);
-};
-
-initiateProcessing(require("fs").readFileSync("/dev/stdin", "utf8"));
+    
+    console.log(minimumAbsoluteDifference);
+}
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

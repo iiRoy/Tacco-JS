@@ -1,45 +1,33 @@
 "use strict";
 
-const MAX_MAGNITUDE_THRESHOLD = 1e18;
+const MAGNITUDE_CEILING = 1e18;
 
-const RESULT_TRANSFORMER = {
-    'true': 1,
-    'false': -1
+const processContestData = (inputPayload) => {
+    const extractedDetails = inputPayload.split('\n').reduce((accumulator, currentLine, lineIndex) => {
+        switch (lineIndex) {
+            case 0:
+                accumulator.firstOperand = parseInt(currentLine);
+                break;
+            case 1:
+                accumulator.secondOperand = parseInt(currentLine);
+                break;
+            case 3:
+                accumulator.keyCharacter = currentLine.at(-1);
+                break;
+        }
+        return accumulator;
+    }, {});
+
+    const { firstOperand, secondOperand, keyCharacter } = extractedDetails;
+    const keyModifier = parseInt(keyCharacter);
+
+    const calculatedResult = firstOperand - secondOperand;
+
+    console.log(
+        Math.abs(calculatedResult) > MAGNITUDE_CEILING
+            ? "Unfair"
+            : calculatedResult * (1 - 2 * (keyModifier % 2 && calculatedResult !== 0))
+    );
 };
 
-const dataProcessor = (inputContent) => {
-    let cleanedContent = inputContent.trim();
-
-    let extractedSegments = cleanedContent.match(/^(\d+)\n(\d+)\n(?:.*)\n(?:.*)(.)$/s);
-
-    if (!extractedSegments) {
-        throw new Error("Input data structure is not as expected.");
-    }
-
-    let numberOne = +extractedSegments[1];
-    let numberTwo = +extractedSegments[2];
-    let finalCharacter = extractedSegments[3];
-
-    let calculatedDifference = numberOne - numberTwo;
-
-    let parityIndicator = +finalCharacter;
-
-    let absoluteDifference = (calculatedDifference < 0) ? -calculatedDifference : calculatedDifference;
-
-    if (absoluteDifference > MAX_MAGNITUDE_THRESHOLD) {
-        return "Unfair";
-    } else {
-        let conditionMetForPositive = (parityIndicator % 2 === 0 || calculatedDifference === 0);
-
-        let multiplier = RESULT_TRANSFORMER[String(conditionMetForPositive)];
-
-        return calculatedDifference * multiplier;
-    }
-};
-
-const computationRunner = (resourcePath) => {
-    let fileContents = require("fs").readFileSync(resourcePath, "utf8");
-    return dataProcessor(fileContents);
-};
-
-console.log(computationRunner("/dev/stdin"));
+processContestData(require("fs").readFileSync("/dev/stdin", "utf8").trim());

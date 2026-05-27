@@ -1,70 +1,78 @@
-(  function  initiateProcessing (  )
-{
-  /*
-   * This self-executing block manages the entire application lifecycle.
-   * It handles input acquisition, data transformation, and computes a critical capacity value.
-   */
+(function executeProgram() {
+  // This function serves as the main entry point for the program execution.
 
-  // Access the Node.js file system module to interact with the environment.
-  // Read the entire content from the standard input stream, ensuring UTF-8 decoding.
-  // Any leading or trailing whitespace is removed, and the content is then
-  // divided into an array of individual text records based on newline characters.
-  let  sourceTextRecords  =  require ( 'fs' ) . readFileSync ( '/dev/stdin' ,  'utf8' ) . trim (  ) . split ( "\n" ) ;
+  // Read all input from standard input, decode it as UTF-8,
+  // remove any leading or trailing whitespace, and then split the content
+  // into an array of strings, where each string represents a line.
+  let inputDataRows = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split("\n");
 
-  // Extract the first record from the obtained list.
-  // This record typically contains two numerical parameters separated by a space.
-  // These parameters are then converted into their numeric representations.
-  let  [  totalElementCount ,  maxAllocationUnits  ]  =  sourceTextRecords . shift (  ) . split ( ' ' ) . map ( Number ) ;
+  // The first line of the input contains two space-separated integers.
+  // 'itemCount' (n) represents the total number of items.
+  // 'containerCount' (k) represents the number of available containers.
+  // We extract this line, split it by space, and convert the parts to numbers.
+  let [itemCount, containerCount] = inputDataRows.shift().split(' ').map(Number);
 
-  // The remaining records in the list represent individual item measurements.
-  // These are transformed into an array of numerical values.
-  let  elementMeasurementArray  =  sourceTextRecords . map ( Number ) ;
+  // The remaining lines in 'inputDataRows' represent the individual weights of the items.
+  // We convert each of these lines to a number to form the 'itemWeights' array.
+  let itemWeights = inputDataRows.map(Number);
 
   /**
-   * Determines if all elements can be distributed among the available allocation units,
-   * respecting a given maximum capacity for each unit.
+   * Determines if it's possible to place all items into the specified number of containers,
+   * given a maximum weight capacity for each container.
    *
-   * @param {number} currentUnitThreshold - The maximum collective measurement allowed per allocation unit.
-   * @returns {number} The total count of elements successfully placed under the specified threshold.
+   * Note: This implementation precisely mirrors the original's behavior, including
+   * a specific pattern of item indexing (`itemWeights[++processedItems]`) that
+   * effectively skips the very first item (`itemWeights[0]`) from being placed.
+   *
+   * @param {number} maxWeightPerContainer - The maximum allowed total weight for any single container.
+   * @returns {number} The total count of items that were successfully processed and placed.
+   *                   If this count equals 'itemCount', it means all items fit.
    */
-  const  assessDistributionPossibility  =  (  currentUnitThreshold  )  =>
-  {
-    let  elementsDistributedCounter  =  0 ; // Keeps track of how many elements have been assigned.
+  const checkFeasibility = (maxWeightPerContainer) => {
+    let processedItems = 0; // Tracks the number of items that have been placed so far.
+                            // Also acts as an index for the 'itemWeights' array,
+                            // but due to `++processedItems`, it points to the *next* item to consider.
 
-    // Iterate through each potential allocation unit.
-    for  (  let  unitOrdinal  =  0 ;  unitOrdinal  <  maxAllocationUnits ;  unitOrdinal ++  )
-    {
-      // Initialize the current cumulative measurement for this particular unit.
-      // The inner loop attempts to fill the unit up to `currentUnitThreshold`.
-      // Note: The original implementation increments the element index (`++elementsDistributedCounter`)
-      // *before* retrieving the element's measurement (`elementMeasurementArray[...]`).
-      // This implies that `elementMeasurementArray[0]` will be bypassed if `elementsDistributedCounter`
-      // starts from zero. This specific operational characteristic is preserved.
-      for  (  let  cumulativeUnitLoad  =  0 ;
-               cumulativeUnitLoad  <=  currentUnitThreshold ;
-               cumulativeUnitLoad  +=  elementMeasurementArray [  ++ elementsDistributedCounter  ]  )
-      {
-        // If all elements have been successfully distributed across units,
-        // we can return the total count immediately.
-        if  (  elementsDistributedCounter  ===  totalElementCount  )  return  elementsDistributedCounter ;
+    // Iterate through each available container.
+    for (let containerIndex = 0; containerIndex < containerCount; containerIndex++) {
+      let currentContainerWeight = 0; // Accumulates the weight of items in the current container.
+
+      // This inner loop attempts to fill the current container.
+      // The loop condition `currentContainerWeight <= maxWeightPerContainer` checks if the *current*
+      // accumulated weight is within limits.
+      // The increment part `currentContainerWeight += itemWeights[++processedItems]`
+      // increments 'processedItems' *before* using it as an index, and adds that item's weight.
+      for (
+        ;
+        currentContainerWeight <= maxWeightPerContainer;
+        currentContainerWeight += itemWeights[++processedItems]
+      ) {
+        // If 'processedItems' reaches 'itemCount' at any point, it means all items
+        // have been successfully placed across the containers.
+        if (processedItems === itemCount) {
+          return processedItems; // Return the total count of processed items.
+        }
       }
     }
-    // After attempting to fill all available units, return the final tally of distributed elements.
-    return  elementsDistributedCounter ;
+    // If the outer loop finishes (all containers are processed) but not all items fit,
+    // return the total number of items that were processed.
+    return processedItems;
   };
 
-  // Compute an initial approximate minimum capacity.
-  // This is derived by summing all element measurements and dividing by the number of allocation units.
-  // The result is then rounded down to the nearest integer.
-  let  provisionalCapacityEstimate  =  Math . floor (  elementMeasurementArray . reduce (  (  aggregatedValue ,  individualValue  )  =>  aggregatedValue  +  individualValue  )  /  maxAllocationUnits  ) ;
+  // Calculate an initial lower bound for the 'maxWeightPerContainer'.
+  // This is the total sum of all item weights divided by the number of containers,
+  // rounded down to the nearest integer. This provides a starting point for the search.
+  let currentCapacity = Math.floor(itemWeights.reduce((accumulator, currentWeight) => accumulator + currentWeight) / containerCount);
 
-  // Conduct an iterative search to find the smallest possible capacity
-  // that permits the distribution of all elements.
-  // The process continues to increment the capacity estimate until
-  // `assessDistributionPossibility` confirms all elements can be placed.
-  while  (  assessDistributionPossibility (  ++ provisionalCapacityEstimate  )  !==  totalElementCount  ) ;
+  // Use a 'while' loop to find the minimum 'maxWeightPerContainer' that allows all items to fit.
+  // The '++currentCapacity' increments the capacity *before* it's passed to 'checkFeasibility'.
+  // The loop continues as long as 'checkFeasibility' indicates that not all items ('itemCount')
+  // could be placed with the current 'currentCapacity'.
+  while (checkFeasibility(++currentCapacity) !== itemCount);
 
-  // Display the final, optimized minimum capacity to the standard output.
-  console . log (  provisionalCapacityEstimate  ) ;
+  // Once the loop terminates, 'currentCapacity' holds the smallest integer value
+  // for the maximum weight per container that satisfies the condition.
+  // This result is then printed to the console.
+  console.log(currentCapacity);
 
-} ) (  ) ;
+})();

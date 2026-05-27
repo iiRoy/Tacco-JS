@@ -1,283 +1,222 @@
-function CalculateMinCollisionTime( rawInputData ) {
-    let parsedLines = rawInputData.trim().split( '\n' );
-    let coordinateStrings = parsedLines.map( function( elementString ) {
-        return elementString.split( ' ' );
-    } );
+function ProcessInput(rawData) {
+    let processedData = rawData.trim().split("\n").map(function(lineStr) { return lineStr.split(" "); });
 
-    let numberOfCoordinates = parseInt( coordinateStrings[0][0], 10 );
-    let coordinateDirections = [];
+    let numEntries = parseInt(processedData[0][0], 10);
 
-    for ( let idx = 0 ; idx < numberOfCoordinates ; idx++ ) {
-        coordinateDirections.push( [
-            parseInt( coordinateStrings[idx + 1][0], 10 ),
-            parseInt( coordinateStrings[idx + 1][1], 10 ),
-            coordinateStrings[idx + 1][2]
-        ] );
+    let coordinatesAndDirections = [];
+    for (let idx = 0; idx < numEntries; idx++) {
+        coordinatesAndDirections.push([
+            parseInt(processedData[idx + 1][0], 10),
+            parseInt(processedData[idx + 1][1], 10),
+            processedData[idx + 1][2]
+        ]);
     }
 
-    coordinateDirections.sort( function( firstPoint, secondPoint ) {
-        const sumA = firstPoint[0] + firstPoint[1];
-        const sumB = secondPoint[0] + secondPoint[1];
-
-        if ( sumA < sumB ) {
-            return -1;
-        }
-        if ( sumA > sumB ) {
-            return 1;
-        }
-        if ( firstPoint[0] < secondPoint[0] ) {
-            return -1;
-        }
-        if ( firstPoint[0] > secondPoint[0] ) {
-            return 1;
-        }
+    coordinatesAndDirections.sort(function(itemA, itemB) {
+        if ((itemA[0] + itemA[1]) < (itemB[0] + itemB[1])) return -1;
+        if ((itemA[0] + itemA[1]) > (itemB[0] + itemB[1])) return 1;
+        if (itemA[0] < itemB[0]) return -1;
+        if (itemA[0] > itemB[0]) return 1;
         return 0;
-    } );
+    });
 
     let currentGroupValue = -1;
-    let lastKnownRelevantCoordinate;
-    let minimumEncounterTime = Infinity;
-    let lastEncounteredDirection = 'Up';
+    let lastRelevantCoord;
+    let minCollisionTime = Infinity;
+    let lastDirection = 'U';
 
-    for ( let idx = 0 ; idx < coordinateDirections.length ; idx++ ) {
-        const currentPoint = coordinateDirections[idx];
-        const currentSum = currentPoint[0] + currentPoint[1];
-        const currentX = currentPoint[0];
-        const currentDir = currentPoint[2];
-
-        if ( currentGroupValue === currentSum ) {
-            if ( lastEncounteredDirection === 'Right' ) {
-                if ( currentDir === 'Up' ) {
-                    lastEncounteredDirection = 'Up';
-                    minimumEncounterTime = Math.min( minimumEncounterTime, Math.abs( currentX - lastKnownRelevantCoordinate ) * 10 );
-                } else if ( currentDir === 'R' ) {
-                    lastKnownRelevantCoordinate = currentX;
+    for (let idx = 0; idx < coordinatesAndDirections.length; idx++) {
+        if (currentGroupValue === (coordinatesAndDirections[idx][0] + coordinatesAndDirections[idx][1])) {
+            if (lastDirection === 'R') {
+                if (coordinatesAndDirections[idx][2] === 'U') {
+                    lastDirection = 'U';
+                    minCollisionTime = Math.min(minCollisionTime, Math.abs(coordinatesAndDirections[idx][0] - lastRelevantCoord) * 10);
+                } else if (coordinatesAndDirections[idx][2] === 'R') {
+                    lastRelevantCoord = coordinatesAndDirections[idx][0];
                 }
             } else {
-                if ( currentDir === 'R' ) {
-                    lastEncounteredDirection = 'Right';
-                    lastKnownRelevantCoordinate = currentX;
+                if (coordinatesAndDirections[idx][2] === 'R') {
+                    lastDirection = 'R';
+                    lastRelevantCoord = coordinatesAndDirections[idx][0];
                 }
             }
         } else {
-            currentGroupValue = currentSum;
-            if ( currentDir === 'R' ) {
-                lastEncounteredDirection = 'Right';
-                lastKnownRelevantCoordinate = currentX;
+            currentGroupValue = coordinatesAndDirections[idx][0] + coordinatesAndDirections[idx][1];
+            if (coordinatesAndDirections[idx][2] === 'R') {
+                lastDirection = 'R';
+                lastRelevantCoord = coordinatesAndDirections[idx][0];
             } else {
-                lastEncounteredDirection = 'Up';
+                lastDirection = 'U';
             }
         }
     }
 
     currentGroupValue = -1;
-    lastEncounteredDirection = 'Left';
-
-    for ( let idx = 0 ; idx < coordinateDirections.length ; idx++ ) {
-        const currentPoint = coordinateDirections[idx];
-        const currentSum = currentPoint[0] + currentPoint[1];
-        const currentX = currentPoint[0];
-        const currentDir = currentPoint[2];
-
-        if ( currentGroupValue === currentSum ) {
-            if ( lastEncounteredDirection === 'D' ) {
-                if ( currentDir === 'L' ) {
-                    lastEncounteredDirection = 'Left';
-                    minimumEncounterTime = Math.min( minimumEncounterTime, Math.abs( currentX - lastKnownRelevantCoordinate ) * 10 );
-                } else if ( currentDir === 'D' ) {
-                    lastKnownRelevantCoordinate = currentX;
+    lastDirection = 'L';
+    for (let idx = 0; idx < coordinatesAndDirections.length; idx++) {
+        if (currentGroupValue === (coordinatesAndDirections[idx][0] + coordinatesAndDirections[idx][1])) {
+            if (lastDirection === 'D') {
+                if (coordinatesAndDirections[idx][2] === 'L') {
+                    lastDirection = 'L';
+                    minCollisionTime = Math.min(minCollisionTime, Math.abs(coordinatesAndDirections[idx][0] - lastRelevantCoord) * 10);
+                } else if (coordinatesAndDirections[idx][2] === 'D') {
+                    lastRelevantCoord = coordinatesAndDirections[idx][0];
                 }
             } else {
-                if ( currentDir === 'D' ) {
-                    lastEncounteredDirection = 'D';
-                    lastKnownRelevantCoordinate = currentX;
+                if (coordinatesAndDirections[idx][2] === 'D') {
+                    lastDirection = 'D';
+                    lastRelevantCoord = coordinatesAndDirections[idx][0];
                 }
             }
         } else {
-            currentGroupValue = currentSum;
-            if ( currentDir === 'D' ) {
-                lastEncounteredDirection = 'D';
-                lastKnownRelevantCoordinate = currentX;
+            currentGroupValue = coordinatesAndDirections[idx][0] + coordinatesAndDirections[idx][1];
+            if (coordinatesAndDirections[idx][2] === 'D') {
+                lastDirection = 'D';
+                lastRelevantCoord = coordinatesAndDirections[idx][0];
             } else {
-                lastEncounteredDirection = 'Left';
+                lastDirection = 'L';
             }
         }
     }
 
-    coordinateDirections.sort( function( firstPoint, secondPoint ) {
-        const diffA = firstPoint[1] - firstPoint[0];
-        const diffB = secondPoint[1] - secondPoint[0];
-
-        if ( diffA < diffB ) {
-            return -1;
-        }
-        if ( diffA > diffB ) {
-            return 1;
-        }
-        if ( firstPoint[0] < secondPoint[0] ) {
-            return -1;
-        }
-        if ( firstPoint[0] > secondPoint[0] ) {
-            return 1;
-        }
+    coordinatesAndDirections.sort(function(itemA, itemB) {
+        if ((itemA[1] - itemA[0]) < (itemB[1] - itemB[0])) return -1;
+        if ((itemA[1] - itemA[0]) > (itemB[1] - itemB[0])) return 1;
+        if (itemA[0] < itemB[0]) return -1;
+        if (itemA[0] > itemB[0]) return 1;
         return 0;
-    } );
+    });
 
     currentGroupValue = Infinity;
-    lastEncounteredDirection = 'D';
-
-    for ( let idx = 0 ; idx < coordinateDirections.length ; idx++ ) {
-        const currentPoint = coordinateDirections[idx];
-        const currentDiff = currentPoint[1] - currentPoint[0];
-        const currentX = currentPoint[0];
-        const currentDir = currentPoint[2];
-
-        if ( currentGroupValue === currentDiff ) {
-            if ( lastEncounteredDirection === 'R' ) {
-                if ( currentDir === 'D' ) {
-                    lastEncounteredDirection = 'D';
-                    minimumEncounterTime = Math.min( minimumEncounterTime, Math.abs( currentX - lastKnownRelevantCoordinate ) * 10 );
-                } else if ( currentDir === 'R' ) {
-                    lastKnownRelevantCoordinate = currentX;
+    lastDirection = 'D';
+    for (let idx = 0; idx < coordinatesAndDirections.length; idx++) {
+        if (currentGroupValue === (coordinatesAndDirections[idx][1] - coordinatesAndDirections[idx][0])) {
+            if (lastDirection === 'R') {
+                if (coordinatesAndDirections[idx][2] === 'D') {
+                    lastDirection = 'D';
+                    minCollisionTime = Math.min(minCollisionTime, Math.abs(coordinatesAndDirections[idx][0] - lastRelevantCoord) * 10);
+                } else if (coordinatesAndDirections[idx][2] === 'R') {
+                    lastRelevantCoord = coordinatesAndDirections[idx][0];
                 }
             } else {
-                if ( currentDir === 'R' ) {
-                    lastEncounteredDirection = 'R';
-                    lastKnownRelevantCoordinate = currentX;
+                if (coordinatesAndDirections[idx][2] === 'R') {
+                    lastDirection = 'R';
+                    lastRelevantCoord = coordinatesAndDirections[idx][0];
                 }
             }
         } else {
-            currentGroupValue = currentDiff;
-            if ( currentDir === 'R' ) {
-                lastEncounteredDirection = 'R';
-                lastKnownRelevantCoordinate = currentX;
+            currentGroupValue = coordinatesAndDirections[idx][1] - coordinatesAndDirections[idx][0];
+            if (coordinatesAndDirections[idx][2] === 'R') {
+                lastDirection = 'R';
+                lastRelevantCoord = coordinatesAndDirections[idx][0];
             } else {
-                lastEncounteredDirection = 'D';
+                lastDirection = 'D';
             }
         }
     }
 
     currentGroupValue = Infinity;
-    lastEncounteredDirection = 'Left';
-
-    for ( let idx = 0 ; idx < coordinateDirections.length ; idx++ ) {
-        const currentPoint = coordinateDirections[idx];
-        const currentDiff = currentPoint[1] - currentPoint[0];
-        const currentX = currentPoint[0];
-        const currentDir = currentPoint[2];
-
-        if ( currentGroupValue === currentDiff ) {
-            if ( lastEncounteredDirection === 'Up' ) {
-                if ( currentDir === 'L' ) {
-                    lastEncounteredDirection = 'Left';
-                    minimumEncounterTime = Math.min( minimumEncounterTime, Math.abs( currentX - lastKnownRelevantCoordinate ) * 10 );
-                } else if ( currentDir === 'U' ) {
-                    lastKnownRelevantCoordinate = currentX;
+    lastDirection = 'L';
+    for (let idx = 0; idx < coordinatesAndDirections.length; idx++) {
+        if (currentGroupValue === (coordinatesAndDirections[idx][1] - coordinatesAndDirections[idx][0])) {
+            if (lastDirection === 'U') {
+                if (coordinatesAndDirections[idx][2] === 'L') {
+                    lastDirection = 'L';
+                    minCollisionTime = Math.min(minCollisionTime, Math.abs(coordinatesAndDirections[idx][0] - lastRelevantCoord) * 10);
+                } else if (coordinatesAndDirections[idx][2] === 'U') {
+                    lastRelevantCoord = coordinatesAndDirections[idx][0];
                 }
             } else {
-                if ( currentDir === 'U' ) {
-                    lastEncounteredDirection = 'Up';
-                    lastKnownRelevantCoordinate = currentX;
+                if (coordinatesAndDirections[idx][2] === 'U') {
+                    lastDirection = 'U';
+                    lastRelevantCoord = coordinatesAndDirections[idx][0];
                 }
             }
         } else {
-            currentGroupValue = currentDiff;
-            if ( currentDir === 'U' ) {
-                lastEncounteredDirection = 'Up';
-                lastKnownRelevantCoordinate = currentX;
+            currentGroupValue = coordinatesAndDirections[idx][1] - coordinatesAndDirections[idx][0];
+            if (coordinatesAndDirections[idx][2] === 'U') {
+                lastDirection = 'U';
+                lastRelevantCoord = coordinatesAndDirections[idx][0];
             } else {
-                lastEncounteredDirection = 'Left';
+                lastDirection = 'L';
             }
         }
     }
 
-    coordinateDirections.sort( function( firstPoint, secondPoint ) {
-        if ( firstPoint[0] < secondPoint[0] ) return -1;
-        if ( firstPoint[0] > secondPoint[0] ) return 1;
-        if ( firstPoint[1] < secondPoint[1] ) return -1;
-        if ( firstPoint[1] > secondPoint[1] ) return 1;
+    coordinatesAndDirections.sort(function(itemA, itemB) {
+        if (itemA[0] < itemB[0]) return -1;
+        if (itemA[0] > itemB[0]) return 1;
+        if (itemA[1] < itemB[1]) return -1;
+        if (itemA[1] > itemB[1]) return 1;
         return 0;
-    } );
+    });
 
     currentGroupValue = -1;
-    lastEncounteredDirection = 'D';
-
-    for ( let idx = 0 ; idx < coordinateDirections.length ; idx++ ) {
-        const currentPoint = coordinateDirections[idx];
-        const currentX = currentPoint[0];
-        const currentY = currentPoint[1];
-        const currentDir = currentPoint[2];
-
-        if ( currentGroupValue === currentX ) {
-            if ( lastEncounteredDirection === 'Up' ) {
-                if ( currentDir === 'D' ) {
-                    lastEncounteredDirection = 'D';
-                    minimumEncounterTime = Math.min( minimumEncounterTime, Math.abs( currentY - lastKnownRelevantCoordinate ) * 5 );
-                } else if ( currentDir === 'U' ) {
-                    lastKnownRelevantCoordinate = currentY;
+    lastDirection = 'D';
+    for (let idx = 0; idx < coordinatesAndDirections.length; idx++) {
+        if (currentGroupValue === (coordinatesAndDirections[idx][0])) {
+            if (lastDirection === 'U') {
+                if (coordinatesAndDirections[idx][2] === 'D') {
+                    lastDirection = 'D';
+                    minCollisionTime = Math.min(minCollisionTime, Math.abs(coordinatesAndDirections[idx][1] - lastRelevantCoord) * 5);
+                } else if (coordinatesAndDirections[idx][2] === 'U') {
+                    lastRelevantCoord = coordinatesAndDirections[idx][1];
                 }
             } else {
-                if ( currentDir === 'U' ) {
-                    lastEncounteredDirection = 'Up';
-                    lastKnownRelevantCoordinate = currentY;
+                if (coordinatesAndDirections[idx][2] === 'U') {
+                    lastDirection = 'U';
+                    lastRelevantCoord = coordinatesAndDirections[idx][1];
                 }
             }
         } else {
-            currentGroupValue = currentX;
-            if ( currentDir === 'U' ) {
-                lastEncounteredDirection = 'Up';
-                lastKnownRelevantCoordinate = currentY;
+            currentGroupValue = coordinatesAndDirections[idx][0];
+            if (coordinatesAndDirections[idx][2] === 'U') {
+                lastDirection = 'U';
+                lastRelevantCoord = coordinatesAndDirections[idx][1];
             } else {
-                lastEncounteredDirection = 'D';
+                lastDirection = 'D';
             }
         }
     }
 
-    coordinateDirections.sort( function( firstPoint, secondPoint ) {
-        if ( firstPoint[1] < secondPoint[1] ) return -1;
-        if ( firstPoint[1] > secondPoint[1] ) return 1;
-        if ( firstPoint[0] < secondPoint[0] ) return -1;
-        if ( firstPoint[0] > secondPoint[0] ) return 1;
+    coordinatesAndDirections.sort(function(itemA, itemB) {
+        if (itemA[1] < itemB[1]) return -1;
+        if (itemA[1] > itemB[1]) return 1;
+        if (itemA[0] < itemB[0]) return -1;
+        if (itemA[0] > itemB[0]) return 1;
         return 0;
-    } );
+    });
 
     currentGroupValue = -1;
-    lastEncounteredDirection = 'Left';
-
-    for ( let idx = 0 ; idx < coordinateDirections.length ; idx++ ) {
-        const currentPoint = coordinateDirections[idx];
-        const currentY = currentPoint[1];
-        const currentX = currentPoint[0];
-        const currentDir = currentPoint[2];
-
-        if ( currentGroupValue === currentY ) {
-            if ( lastEncounteredDirection === 'R' ) {
-                if ( currentDir === 'L' ) {
-                    lastEncounteredDirection = 'Left';
-                    minimumEncounterTime = Math.min( minimumEncounterTime, Math.abs( currentX - lastKnownRelevantCoordinate ) * 5 );
-                } else if ( currentDir === 'R' ) {
-                    lastKnownRelevantCoordinate = currentX;
+    lastDirection = 'L';
+    for (let idx = 0; idx < coordinatesAndDirections.length; idx++) {
+        if (currentGroupValue === (coordinatesAndDirections[idx][1])) {
+            if (lastDirection === 'R') {
+                if (coordinatesAndDirections[idx][2] === 'L') {
+                    lastDirection = 'L';
+                    minCollisionTime = Math.min(minCollisionTime, Math.abs(coordinatesAndDirections[idx][0] - lastRelevantCoord) * 5);
+                } else if (coordinatesAndDirections[idx][2] === 'R') {
+                    lastRelevantCoord = coordinatesAndDirections[idx][0];
                 }
             } else {
-                if ( currentDir === 'R' ) {
-                    lastEncounteredDirection = 'R';
-                    lastKnownRelevantCoordinate = currentX;
+                if (coordinatesAndDirections[idx][2] === 'R') {
+                    lastDirection = 'R';
+                    lastRelevantCoord = coordinatesAndDirections[idx][0];
                 }
             }
         } else {
-            currentGroupValue = currentY;
-            if ( currentDir === 'R' ) {
-                lastEncounteredDirection = 'R';
-                lastKnownRelevantCoordinate = currentX;
+            currentGroupValue = coordinatesAndDirections[idx][1];
+            if (coordinatesAndDirections[idx][2] === 'R') {
+                lastDirection = 'R';
+                lastRelevantCoord = coordinatesAndDirections[idx][0];
             } else {
-                lastEncounteredDirection = 'Left';
+                lastDirection = 'L';
             }
         }
     }
 
-    let collisionOutcome = minimumEncounterTime === Infinity ? "SAFE" : minimumEncounterTime;
-    console.log( collisionOutcome );
+    let finalResult = minCollisionTime === Infinity ? "SAFE" : minCollisionTime;
+    console.log(finalResult);
 }
 
-
-CalculateMinCollisionTime( require( "fs" ).readFileSync( "/dev/stdin", "utf8" ) );
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

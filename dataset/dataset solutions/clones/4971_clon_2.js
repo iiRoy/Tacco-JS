@@ -1,35 +1,44 @@
 'use strict';
-function GameProcessor( inputData )
-{
-  const gameLines = inputData.split( '\n' );
 
-  const playerQueues = {
-    firstPlayer : Array.from( gameLines[0] ),
-    secondPlayer: Array.from( gameLines[1] ),
-    thirdPlayer : Array.from( gameLines[2] )
+// This function processes the input to simulate a game or turn-based process.
+function ProcessInput(rawData) {
+  // Divide the incoming raw data string into individual lines.
+  const lineSegments = rawData.split('\n');
+
+  // Establish an object to manage character queues for three distinct players.
+  const charQueues = {
+    a: [...lineSegments[0]], // Player 'a's queue, initialized from the first line.
+    b: [...lineSegments[1]], // Player 'b's queue, initialized from the second line.
+    c: [...lineSegments[2]]  // Player 'c's queue, initialized from the third line.
   };
 
-  let currentPlayerKey = 'firstPlayer';
-  let nextPlayerLabel  = '';
-  let gameResult       = '';
+  // Designate the starting player.
+  let currentTurn = 'a';
+  // A temporary variable to hold the identifier of the subsequent player.
+  let nextPlayer = '';
+  // The variable that will ultimately store the identifier of the winning player.
+  let finalOutcome = '';
 
-  while( true )
-  {
-    // The original code had a likely typo: `obj[nextTurn]`.
-    // It's assumed `nextTurn` was intended to be `thisTime` (now `currentPlayerKey`).
-    // This clone reflects the corrected logical flow to be functional.
-    nextPlayerLabel = playerQueues[ currentPlayerKey ].shift();
+  // Commence an indefinite loop to simulate game turns.
+  while (1) {
+    // Extract the next player's identifier from the current player's queue.
+    nextPlayer = charQueues[currentTurn].shift();
 
-    if( playerQueues[ currentPlayerKey ].length === 0 )
-    {
-      gameResult = currentPlayerKey.toLocaleUpperCase();
+    // Evaluate if the current player's queue has become empty.
+    if (charQueues[currentTurn].length === 0) {
+      // If the queue is empty, the current player is declared the winner.
+      finalOutcome = currentTurn.toUpperCase();
+      // Terminate the game loop.
       break;
     }
 
-    currentPlayerKey = nextPlayerLabel;
+    // Transfer control to the next player.
+    currentTurn = nextPlayer;
   }
 
-  console.log( gameResult );
+  // Display the final winner to the console.
+  console.log(finalOutcome);
 }
 
-GameProcessor( require( 'fs' ).readFileSync( '/dev/stdin', 'utf8' ) );
+// Execute the main processing function by reading input from standard input.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

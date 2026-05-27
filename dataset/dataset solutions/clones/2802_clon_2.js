@@ -1,54 +1,35 @@
-'use strict';
+'use strict'; // Enforce strict parsing and error handling
 
-// This function serves as the primary entry point for processing input data.
-function  processInput  (  rawData  )
-{
-  // Parse the raw string into an array of integer values.
-  // It splits by space and converts each part to a base-10 integer.
-  const   parsedValues   =   rawData . split ( ' ' ) . map ( item => parseInt ( item , 10 ) ) ;
+/**
+ * Processes the raw input string to calculate a specific value.
+ * @param {string} rawData - The raw input string from standard input.
+ */
+function processInput(rawData) {
+  // Parse the input string into an array of numbers.
+  const parsedValues = rawData.split(' ').map(currentVal => parseInt(currentVal, 10));
 
-  // Extract the first number as the quantity of elements to process.
-  const   quantity   =   parsedValues [ 0 ] ;
-  // Extract the second number as the initial value for the sequence.
-  const   initialNum   =   parsedValues [ 1 ] ;
+  // Extract the number of items and the starting value from the parsed input.
+  const countItems = parsedValues[0];
+  const startValue = parsedValues[1];
 
-  // Initialize a variable to accumulate the sum of numbers.
-  let   accumulatedValue   =   0 ;
-  // Initialize a variable to track the number with the smallest absolute value.
-  // Start with positive infinity to ensure any number is smaller initially.
-  let   closestToZero   =   Infinity ;
+  // Initialize variables for the running total and the number with the smallest absolute value.
+  let totalSum = 0;
+  let smallestAbs = Infinity; // Use a large initial value for comparison
 
-  // Iterate through a sequence of numbers starting from 'initialNum'
-  // and continuing for 'quantity' times.
-  for
-  (
-    let   loopVar   =   initialNum ;
-    loopVar   <   initialNum   +   quantity ;
-    ++loopVar
-  )
-  {
+  // Iterate through a sequence of numbers starting from 'startValue'.
+  for (let iteratorIndex = startValue; iteratorIndex < startValue + countItems; ++iteratorIndex) {
     // Add the current number to the running total.
-    accumulatedValue   +=   loopVar ;
+    totalSum += iteratorIndex;
 
-    // Check if the absolute value of the current number is smaller
-    // than the absolute value of the currently tracked 'closestToZero'.
-    if
-    (
-      Math . abs ( loopVar )
-      <
-      Math . abs ( closestToZero )
-    )
-    {
-      // If it is, update 'closestToZero' to the current number.
-      closestToZero   =   loopVar ;
+    // Check if the absolute value of the current number is smaller than the current smallest absolute value.
+    if (Math.abs(iteratorIndex) < Math.abs(smallestAbs)) {
+      smallestAbs = iteratorIndex; // Update the smallest absolute value found so far.
     }
   }
-
-  // Output the final result: the total sum minus the number
-  // that was closest to zero (in absolute terms).
-  console . log ( accumulatedValue   -   closestToZero ) ;
+  
+  // Output the result: the total sum minus the number with the smallest absolute value.
+  console.log(totalSum - smallestAbs);
 }
 
-// Read input from standard input asynchronously using Node.js fs module.
-// The data is read as UTF-8 encoded text.
-processInput ( require ( 'fs' ) . readFileSync ( '/dev/stdin' ,   'utf8' ) ) ;
+// Read the input from standard input and pass it to the processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

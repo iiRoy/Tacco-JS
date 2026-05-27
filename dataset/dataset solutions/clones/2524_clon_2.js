@@ -1,32 +1,28 @@
-function processor( rawData ) {
-    // This program processes text-based input data.
-    // Each line from the input stream is stored sequentially in an array.
-    let processedLines = rawData . split( "\n" );
+function processInputData(rawData) {
+  // The incoming raw text is divided into separate lines.
+  let lineSegments = rawData.split("\n");
 
-    // The first line of input may contain multiple values separated by spaces.
-    // These are parsed into a separate array for easier access.
-    const firstLineData = processedLines[ 0 ] . split( " " );
+  // The initial line is then broken down into its constituent parts, separated by spaces.
+  let firstLineParts = lineSegments[0].split(" ");
 
-    // The second line of input is also processed similarly,
-    // splitting its contents by spaces into another array.
-    var secondLineItems = processedLines[ 1 ] . split( " " );
+  // Similarly, the subsequent line is parsed into its individual values.
+  let secondLineValues = lineSegments[1].split(" ");
 
-    let tally = 0; // A numeric accumulator initialized to zero.
+  let resultCounter = 0; // A counter is initialized to keep track of qualifying entries.
 
-    // Iterate a specific number of times, determined by the first element
-    // of the first line's parsed data.
-    for ( let idx = 0; idx < firstLineData[ 0 ]; idx++ ) {
-        // Compare the second element from the first line with the current
-        // element from the second line, incrementing the counter if a condition is met.
-        if ( Number( firstLineData[ 1 ] ) <= Number( secondLineItems[ idx ] ) ) {
-            tally++; // Increment the accumulator.
-        }
+  // A loop iterates a number of times, determined by the first element of the first line.
+  for (let idx = 0; idx < firstLineParts[0]; idx++) {
+    // Inside the loop, a condition checks if the second element of the first line
+    // is less than or equal to the current value from the second line.
+    if (firstLineParts[1] <= secondLineValues[idx]) {
+      resultCounter++; // If the condition holds true, the counter is incremented.
     }
-    console . log( tally ); // Display the final accumulated count.
+  }
+
+  // The final tally is then displayed to the standard output.
+  console.log(resultCounter);
 }
 
-
-// The following section is responsible for reading standard input and
-// should not be modified to ensure proper execution within the environment.
-// It reads all available input data and passes it to the primary processing function.
-processor( require( 'fs' ) . readFileSync( '/dev/stdin' , 'utf8' ) );
+// This part of the code is responsible for reading input from the system's standard input
+// and passing it to the main processing function. It should remain unaltered.
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

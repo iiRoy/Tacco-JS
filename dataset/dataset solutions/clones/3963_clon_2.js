@@ -1,29 +1,31 @@
-"use strict" /* This directive enforces strict parsing and error handling in the script. */
+"use strict"; // Enforce strict mode for cleaner code
 
-// Define the primary function to handle incoming data.
-const ProcessInputData = ( initialString ) => {
+/**
+ * Processes the raw input string to determine if the sum of the first two numbers
+ * is greater than or equal to the third number.
+ * @param {string} rawInputString - The input string containing space-separated numbers.
+ */
+const ProcessInputData = (rawInputString) => {
+  // Split the input string into an array of string tokens based on spaces.
+  const parsedTokens = rawInputString.split(" ");
 
-  // Split the input string by spaces to get individual components.
-  const numericStrings = initialString.split(" ");
+  // Convert the first token to an integer, using base 10.
+  const valueOne = parseInt(parsedTokens[0], 10);
 
-  // Parse the first component into an integer.
-  const firstValue = parseInt( numericStrings[0], 10 );
+  // Convert the second token to an integer, using base 10.
+  const valueTwo = parseInt(parsedTokens[1], 10);
 
-  // Parse the second component into an integer.
-  const secondValue = parseInt( numericStrings[1], 10 );
+  // Convert the third token to an integer, using base 10.
+  const valueThree = parseInt(parsedTokens[2], 10);
 
-  // Parse the third component into an integer.
-  const threshold = parseInt( numericStrings[2], 10 );
+  // Determine the outcome based on the condition (valueOne + valueTwo) >= valueThree.
+  // If true, the outcome is "Yes"; otherwise, it's "No".
+  const finalOutcome = (valueOne + valueTwo) >= valueThree ? "Yes" : "No";
 
-  // Determine the outcome based on whether the sum of the first two values
-  // meets or exceeds the threshold.
-  const outcomeMessage = ( firstValue + secondValue ) >= threshold ? "Yes" : "No";
+  // Output the determined outcome to the console.
+  console.log(finalOutcome);
+};
 
-  // Display the determined outcome to the console.
-  console.log( outcomeMessage );
-
-}; // End of the main data processing function.
-
-
-// Invoke the data processing function, reading input from standard input.
-ProcessInputData( require('fs').readFileSync( '/dev/stdin', 'utf8' ) );
+// Read the input from standard input (usually a file in competitive programming environments)
+// and pass it to the main processing function.
+ProcessInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

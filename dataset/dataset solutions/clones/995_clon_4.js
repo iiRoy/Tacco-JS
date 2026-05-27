@@ -1,55 +1,38 @@
-const _fetchSystemModule = (moduleAlias) => globalThis.require(moduleAlias);
-const _fileSystemInterface = _fetchSystemModule('fs');
-const _obtainContent = (pathReference, formatSpec) => _fileSystemInterface.readFileSync(pathReference, formatSpec);
-const _pruneWhitespace = (textString) => textString.trim();
-const _segmentByPattern = (textString, delimiterChar) => textString.split(delimiterChar);
-const _toNumericType = (textValue) => +textValue;
+var fileSystem = require('fs');
 
-const _checkPrimalStatus = (potentialPrime) => {
-    const _recursiveDivisorTest = (currentDivisor, upperLimit) => (
-        (currentDivisor * currentDivisor > upperLimit)
-            ? 1
-            : (upperLimit % currentDivisor === 0)
-                ? 0
-                : _recursiveDivisorTest(currentDivisor + 2, upperLimit)
-    );
+function determinePrimeStatus(candidate) {
+  if (candidate < 2) {
+    return 0;
+  }
+  if (candidate === 2) {
+    return 1;
+  }
+  if (candidate % 2 === 0) {
+    return 0;
+  }
 
-    return (potentialPrime < 2)
-        ? 0
-        : (potentialPrime === 2)
-            ? 1
-            : (potentialPrime % 2 === 0)
-                ? 0
-                : _recursiveDivisorTest(3, potentialPrime);
-};
+  const upperLimit = Math.floor(Math.sqrt(candidate));
+  const potentialDivisors = Array.from(
+    { length: Math.max(0, (upperLimit - 3) / 2 + 1) },
+    (_, index) => 3 + index * 2
+  );
 
-const _rawInputString = _obtainContent('/dev/stdin', 'utf8');
-const _cleanedInputString = _pruneWhitespace(_rawInputString);
-const _individualLines = _segmentByPattern(_cleanedInputString, '\n');
+  const isNotDivisibleByAny = potentialDivisors.every(
+    (divisor) => candidate % divisor !== 0
+  );
 
-const _processLineData = (indexPosition, currentNumericList) => (
-    (indexPosition >= _individualLines.length)
-        ? currentNumericList
-        : _processLineData(
-            indexPosition + 1,
-            (indexPosition === 0)
-                ? currentNumericList
-                : [...currentNumericList, _toNumericType(_individualLines[indexPosition])]
-        )
-);
+  return isNotDivisibleByAny ? 1 : 0;
+}
 
-const _inputNumericSeries = _processLineData(0, []);
+var rawInputContent = fileSystem.readFileSync('/dev/stdin', 'utf8');
+var processedLines = rawInputContent.trim().split('\n');
+var numericValues = processedLines.map(Number);
 
-const _accumulatePrimeCounts = (idx, currentTotal, dataItems) => (
-    (idx >= dataItems.length)
-        ? currentTotal
-        : _accumulatePrimeCounts(
-            idx + 1,
-            currentTotal + _checkPrimalStatus(dataItems[idx]),
-            dataItems
-        )
-);
+var initialCount = numericValues.shift();
 
-const _finalPrimeSum = _accumulatePrimeCounts(0, 0, _inputNumericSeries);
+var totalPrimeCount = 0;
+for (const currentNumber of numericValues) {
+  totalPrimeCount += determinePrimeStatus(currentNumber);
+}
 
-globalThis.console.log(_finalPrimeSum);
+console.log(totalPrimeCount);

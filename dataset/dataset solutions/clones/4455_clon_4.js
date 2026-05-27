@@ -1,23 +1,25 @@
-const inputFacility = require('readline');
+const fs = require('fs');
 
-async function retrieveLineContent() {
-    const conversationInterface = inputFacility.createInterface({
-        input: process.stdin,
-        output: process.stdout
-    });
+const inputBufferCapacity = 256;
+const dataBuffer = Buffer.alloc(inputBufferCapacity);
+let collectedInput = '';
+let bytesProcessed;
 
-    return new Promise(completionSignal => {
-        conversationInterface.question('', (responsePayload) => {
-            conversationInterface.close();
-            completionSignal(responsePayload);
-        });
-    });
+try {
+  while ((bytesProcessed = fs.readSync(process.stdin.fd, dataBuffer, 0, inputBufferCapacity, null)) !== 0) {
+    collectedInput += dataBuffer.toString('utf8', 0, bytesProcessed);
+    if (collectedInput.includes('\n')) {
+      collectedInput = collectedInput.substring(0, collectedInput.indexOf('\n'));
+      break;
+    }
+  }
+} catch (readError) {
+  // If stdin is not available or other read errors occur, collectedInput might remain empty
+  // or the program might terminate depending on the error.
+  // This matches the potential behavior of a synchronous readline() if it fails.
 }
 
-async function processAndDisplay() {
-    const acquiredText = await retrieveLineContent();
-    const constructedMessage = "ABC" + acquiredText;
-    process.stdout.write(constructedMessage + '\n');
-}
+const outputPrefix = "ABC";
+const finalMessage = `${outputPrefix}${collectedInput}`;
 
-processAndDisplay();
+console.log(finalMessage);

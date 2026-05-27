@@ -1,95 +1,92 @@
-function processCoordinateInfo(sourceData) {
-    let computationResult;
+function ProcessInput(inputData) {
+    let finalOutcome;
+    const numEntries = parseInt(inputData.shift());
+    const coordinateRecords = inputData;
 
-    const particleCount = Number.parseInt(sourceData.shift());
-    const positionAndDirectionArray = sourceData;
+    let leftMinXCoord = Number.MAX_SAFE_INTEGER;
+    let leftMaxXCoord = Number.MIN_SAFE_INTEGER;
+    let leftRightMinYCoord = Number.MAX_SAFE_INTEGER;
+    let leftRightMaxYCoord = Number.MIN_SAFE_INTEGER;
+    let rightMinXCoord = Number.MAX_SAFE_INTEGER;
+    let rightMaxXCoord = Number.MIN_SAFE_INTEGER;
+    let upDownMinXCoord = Number.MAX_SAFE_INTEGER;
+    let upDownMaxXCoord = Number.MIN_SAFE_INTEGER;
+    let upMinYCoord = Number.MAX_SAFE_INTEGER;
+    let upMaxYCoord = Number.MIN_SAFE_INTEGER;
+    let downMinYCoord = Number.MAX_SAFE_INTEGER;
+    let downMaxYCoord = Number.MIN_SAFE_INTEGER;
 
-    let leftward_min_x_bound = Number.MAX_SAFE_INTEGER,
-        leftward_max_x_bound = Number.MIN_SAFE_INTEGER,
-        horizontal_min_y_bound = Number.MAX_SAFE_INTEGER,
-        horizontal_max_y_bound = Number.MIN_SAFE_INTEGER,
-        rightward_min_x_bound = Number.MAX_SAFE_INTEGER,
-        rightward_max_x_bound = Number.MIN_SAFE_INTEGER,
-        vertical_min_x_bound = Number.MAX_SAFE_INTEGER,
-        vertical_max_x_bound = Number.MIN_SAFE_INTEGER,
-        upward_min_y_bound = Number.MAX_SAFE_INTEGER,
-        upward_max_y_bound = Number.MIN_SAFE_INTEGER,
-        downward_min_y_bound = Number.MAX_SAFE_INTEGER,
-        downward_max_y_bound = Number.MIN_SAFE_INTEGER;
+    let foundLeft = false;
+    let foundRight = false;
+    let foundUp = false;
+    let foundDown = false;
 
-    let hasLeftData = false,
-        hasRightData = false,
-        hasUpwardData = false,
-        hasDownwardData = false;
+    for (let entryIndex = 0; entryIndex < numEntries; entryIndex++) {
+        const currentX = parseInt(coordinateRecords[entryIndex * 3]);
+        const currentY = parseInt(coordinateRecords[entryIndex * 3 + 1]);
+        const directionString = coordinateRecords[entryIndex * 3 + 2];
 
-    for (let currentIdx = 0; currentIdx < particleCount; currentIdx++) {
-        let coordX = Number.parseInt(positionAndDirectionArray[currentIdx * 3]);
-        let coordY = Number.parseInt(positionAndDirectionArray[currentIdx * 3 + 1]);
-        let movementDirection = positionAndDirectionArray[currentIdx * 3 + 2];
-
-        switch (movementDirection) {
+        switch (directionString) {
             case "L":
-                leftward_min_x_bound = Math.min(leftward_min_x_bound, coordX);
-                leftward_max_x_bound = Math.max(leftward_max_x_bound, coordX);
-                horizontal_min_y_bound = Math.min(horizontal_min_y_bound, coordY);
-                horizontal_max_y_bound = Math.max(horizontal_max_y_bound, coordY);
-                hasLeftData = true;
+                leftMinXCoord = Math.min(leftMinXCoord, currentX);
+                leftMaxXCoord = Math.max(leftMaxXCoord, currentX);
+                leftRightMinYCoord = Math.min(leftRightMinYCoord, currentY);
+                leftRightMaxYCoord = Math.max(leftRightMaxYCoord, currentY);
+                foundLeft = true;
                 break;
             case "R":
-                rightward_min_x_bound = Math.min(rightward_min_x_bound, coordX);
-                rightward_max_x_bound = Math.max(rightward_max_x_bound, coordX);
-                horizontal_min_y_bound = Math.min(horizontal_min_y_bound, coordY);
-                horizontal_max_y_bound = Math.max(horizontal_max_y_bound, coordY);
-                hasRightData = true;
+                rightMinXCoord = Math.min(rightMinXCoord, currentX);
+                rightMaxXCoord = Math.max(rightMaxXCoord, currentX);
+                leftRightMinYCoord = Math.min(leftRightMinYCoord, currentY);
+                leftRightMaxYCoord = Math.max(leftRightMaxYCoord, currentY);
+                foundRight = true;
                 break;
             case "U":
-                vertical_min_x_bound = Math.min(vertical_min_x_bound, coordX);
-                vertical_max_x_bound = Math.max(vertical_max_x_bound, coordX);
-                upward_min_y_bound = Math.min(upward_min_y_bound, coordY);
-                upward_max_y_bound = Math.max(upward_max_y_bound, coordY);
-                hasUpwardData = true;
+                upDownMinXCoord = Math.min(upDownMinXCoord, currentX);
+                upDownMaxXCoord = Math.max(upDownMaxXCoord, currentX);
+                upMinYCoord = Math.min(upMinYCoord, currentY);
+                upMaxYCoord = Math.max(upMaxYCoord, currentY);
+                foundUp = true;
                 break;
             case "D":
-                vertical_min_x_bound = Math.min(vertical_min_x_bound, coordX);
-                vertical_max_x_bound = Math.max(vertical_max_x_bound, coordX);
-                downward_min_y_bound = Math.min(downward_min_y_bound, coordY);
-                downward_max_y_bound = Math.max(downward_max_y_bound, coordY);
-                hasDownwardData = true;
+                upDownMinXCoord = Math.min(upDownMinXCoord, currentX);
+                upDownMaxXCoord = Math.max(upDownMaxXCoord, currentX);
+                downMinYCoord = Math.min(downMinYCoord, currentY);
+                downMaxYCoord = Math.max(downMaxYCoord, currentY);
+                foundDown = true;
                 break;
             default:
                 break;
         }
     }
 
-    let smallestCalculatedArea = Number.MAX_SAFE_INTEGER;
-    let continueProcessingLoop = true;
+    let minimumArea = Number.MAX_SAFE_INTEGER;
+    let continueLooping = true;
+    while (continueLooping) {
+        const overallMinX = Math.min(rightMinXCoord, leftMinXCoord, upDownMinXCoord);
+        const overallMaxX = Math.max(rightMaxXCoord, leftMaxXCoord, upDownMaxXCoord);
+        const overallMinY = Math.min(leftRightMinYCoord, upMinYCoord, downMinYCoord);
+        const overallMaxY = Math.max(leftRightMaxYCoord, upMaxYCoord, downMaxYCoord);
 
-    while (continueProcessingLoop) {
-        let overallMinimumX = Math.min(rightward_min_x_bound, leftward_min_x_bound, vertical_min_x_bound);
-        let overallMaximumX = Math.max(rightward_max_x_bound, leftward_max_x_bound, vertical_max_x_bound);
-        let overallMinimumY = Math.min(horizontal_min_y_bound, upward_min_y_bound, downward_min_y_bound);
-        let overallMaximumY = Math.max(horizontal_max_y_bound, upward_max_y_bound, downward_max_y_bound);
+        minimumArea = Math.min(minimumArea, (overallMaxX - overallMinX) * (overallMaxY - overallMinY));
 
-        smallestCalculatedArea = Math.min(smallestCalculatedArea, (overallMaximumX - overallMinimumX) * (overallMaximumY - overallMinimumY));
-
-        continueProcessingLoop = !(
-            (overallMinimumX === leftward_min_x_bound || !hasLeftData) &&
-            (overallMaximumX === rightward_max_x_bound || !hasRightData) &&
-            (overallMinimumY === downward_min_y_bound || !hasDownwardData) &&
-            (overallMaximumY === upward_max_y_bound || !hasUpwardData)
+        continueLooping = !(
+            (overallMinX === leftMinXCoord || !foundLeft) &&
+            (overallMaxX === rightMaxXCoord || !foundRight) &&
+            (overallMinY === downMinYCoord || !foundDown) &&
+            (overallMaxY === upMaxYCoord || !foundUp)
         );
 
-        leftward_min_x_bound -= 0.5;
-        leftward_max_x_bound -= 0.5;
-        rightward_min_x_bound += 0.5;
-        rightward_max_x_bound += 0.5;
-        upward_min_y_bound += 0.5;
-        upward_max_y_bound += 0.5;
-        downward_min_y_bound -= 0.5;
-        downward_max_y_bound -= 0.5;
+        leftMinXCoord -= 0.5;
+        leftMaxXCoord -= 0.5;
+        rightMinXCoord += 0.5;
+        rightMaxXCoord += 0.5;
+        upMinYCoord += 0.5;
+        upMaxYCoord += 0.5;
+        downMinYCoord -= 0.5;
+        downMaxYCoord -= 0.5;
     }
-
-    console.log(smallestCalculatedArea);
+    console.log(minimumArea);
 }
 
-processCoordinateInfo(require("fs").readFileSync("/dev/stdin", "utf8").trim().split(/\n|\s/));
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8").trim().split(/\n|\s/));

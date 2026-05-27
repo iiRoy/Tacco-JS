@@ -1,30 +1,26 @@
-function CoordinateProcessor(rawData) {
-    const dataLines = rawData.split('\n');
+function processCoordinates(rawInput) {
+  const lines = rawInput.split('\n');
+  const pointQuantity = Number(lines[0]);
 
-    const pointQuantity = parseInt(dataLines.shift(), 10);
-    
-    const coordinateSet = dataLines.slice(0, pointQuantity).map(line => {
-        const parts = line.split(' ').map(parseFloat);
-        return { abscissa: parts[0], ordinate: parts[1] };
-    });
+  const coordinateSet = lines.slice(1, pointQuantity + 1).map(lineSegment => {
+    const [xVal, yVal] = lineSegment.split(' ').map(Number);
+    return { xVal, yVal };
+  });
 
-    const measureSeparation = (coord1, coord2) => {
-        const deltaX = coord1.abscissa - coord2.abscissa;
-        const deltaY = coord1.ordinate - coord2.ordinate;
-        return Math.sqrt(Math.pow(deltaX, 2) + Math.pow(deltaY, 2));
-    };
+  const computeDistance = (pointAlpha, pointBeta) => {
+    const deltaX = pointAlpha.xVal - pointBeta.xVal;
+    const deltaY = pointAlpha.yVal - pointBeta.yVal;
+    return Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+  };
 
-    const spanValues = coordinateSet.flatMap((currentCoord, currentIdx) => {
-        return coordinateSet.slice(currentIdx + 1).map(otherCoord =>
-            measureSeparation(currentCoord, otherCoord)
-        );
-    });
+  const totalDistanceSum = coordinateSet.reduce((accumulator, currentPoint, currentIndex) => {
+    const distancesFromCurrent = coordinateSet.slice(currentIndex + 1).map(subsequentPoint =>
+      computeDistance(currentPoint, subsequentPoint)
+    );
+    return accumulator + distancesFromCurrent.reduce((sum, dist) => sum + dist, 0);
+  }, 0);
 
-    const cumulativeSpan = spanValues.reduce((summation, value) => summation + value, 0);
-
-    const finalMetric = (cumulativeSpan * 2) / pointQuantity;
-
-    console.log(finalMetric);
+  console.log(totalDistanceSum * 2 / pointQuantity);
 }
 
-CoordinateProcessor(require("fs").readFileSync("/dev/stdin", "utf8"));
+processCoordinates(require("fs").readFileSync("/dev/stdin", "utf8"));

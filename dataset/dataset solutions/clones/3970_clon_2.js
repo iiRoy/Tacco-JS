@@ -1,72 +1,72 @@
-function ProcessInputData( inputStringContent ) {
+// This module defines a function to process structured input data.
+function ProcessInput(rawData) {
+  // Divide the incoming string into individual lines.
+  rawData = rawData.split("\n");
 
-  // Split the monolithic input string into individual lines for easier parsing.
-  let parsedLines = inputStringContent.split( '\n' );
+  // Extract the total count of items from the first line.
+  let itemCount = parseInt(rawData[0]);
 
-  // Extract the number of data items from the first line of input.
-  const dataQuantity = parseInt( parsedLines[0], 10 );
+  // Initialize two distinct arrays to hold numerical data pairs.
+  let firstDataSet = new Array(itemCount);
+  let secondDataSet = new Array(itemCount);
 
-  // Initialize two distinct arrays to store different categories of coordinate pairs.
-  // The 'lowerBoundItems' will hold the first set of points, typically representing 'red' points.
-  let lowerBoundItems = new Array( dataQuantity );
-  // The 'upperBoundItems' will hold the second set of points, often referred to as 'blue' points.
-  let upperBoundItems = new Array( dataQuantity );
-
-  // Populate the 'lowerBoundItems' array by parsing subsequent input lines.
-  // Each line (after the initial count) is expected to contain two space-separated integers.
-  for ( let currentLineIndex = 0; currentLineIndex < dataQuantity; ++currentLineIndex ) {
-    lowerBoundItems[currentLineIndex] = parsedLines[ currentLineIndex + 1 ]
-                                          .split( ' ' )
-                                          .map( ( stringToken ) => parseInt( stringToken, 10 ) );
+  // Populate the 'firstDataSet' from the lines following the item count.
+  // Each line is split by space, and its components are converted to integers.
+  for (let currentIdx = 0; currentIdx < itemCount; currentIdx++) {
+    firstDataSet[currentIdx] = rawData[currentIdx + 1]
+      .split(" ")
+      .map((element) => parseInt(element));
   }
 
-  // Populate the 'upperBoundItems' array from the remaining input lines.
-  // These lines follow directly after the first set of points.
-  for ( let currentLineIndex = 0; currentLineIndex < dataQuantity; currentLineIndex++ ) {
-    upperBoundItems[currentLineIndex] = parsedLines[ currentLineIndex + dataQuantity + 1 ]
-                                          .split( ' ' )
-                                          .map( ( stringToken ) => parseInt( stringToken, 10 ) );
+  // Populate the 'secondDataSet' from the lines after the 'firstDataSet' entries.
+  for (let currentIdx = 0; currentIdx < itemCount; currentIdx++) {
+    secondDataSet[currentIdx] = rawData[currentIdx + itemCount + 1]
+      .split(" ")
+      .map((element) => parseInt(element));
   }
 
-  // Sort the 'lowerBoundItems' array based on specific criteria.
-  // First, sort by the second coordinate (y-value) in ascending order.
-  lowerBoundItems = lowerBoundItems.sort( ( pointOne, pointTwo ) => pointOne[1] - pointTwo[1] );
-  // Subsequently, sort by the first coordinate (x-value) in ascending order.
-  // This two-step sort ensures a stable ordering, primarily by x then by y.
-  lowerBoundItems = lowerBoundItems.sort( ( pointOne, pointTwo ) => pointOne[0] - pointTwo[0] );
+  // Sort 'firstDataSet'. The primary sort key is the first element (ascending),
+  // and the secondary sort key is the second element (ascending).
+  firstDataSet = firstDataSet.sort((valA, valB) => valA[1] - valB[1]);
+  firstDataSet = firstDataSet.sort((valA, valB) => valA[0] - valB[0]);
 
-  // Sort the 'upperBoundItems' array using a different sorting logic.
-  // Initially, sort by the second coordinate (y-value) in descending order.
-  upperBoundItems = upperBoundItems.sort( ( pointOne, pointTwo ) => pointTwo[1] - pointOne[1] );
-  // Then, sort by the first coordinate (x-value) in ascending order.
-  // This provides a stable sort that prioritizes x-value ascending, then y-value descending.
-  upperBoundItems = upperBoundItems.sort( ( pointOne, pointTwo ) => pointOne[0] - pointTwo[0] );
+  // Sort 'secondDataSet'. The primary sort key is the first element (ascending),
+  // and the secondary sort key is the second element (descending).
+  secondDataSet = secondDataSet.sort((valA, valB) => valB[1] - valA[1]);
+  secondDataSet = secondDataSet.sort((valA, valB) => valA[0] - valB[0]);
 
-  // Initialize a counter to track the number of successful pairings or matches.
-  let successfulMatches = 0;
+  // Initialize a variable to store the final tally.
+  let matchedPairsCount = 0;
 
-  // Iterate through the 'lowerBoundItems' array in reverse order, starting from the last element.
-  for ( let outerLoopIndex = dataQuantity - 1; outerLoopIndex >= 0; outerLoopIndex-- ) {
-    // For each 'lowerBoundItem', iterate through the 'upperBoundItems' array, also in reverse.
-    for ( let innerLoopIndex = upperBoundItems.length - 1; innerLoopIndex >= 0; innerLoopIndex-- ) {
-      // Check if the current 'lowerBoundItem' can be "contained" or "matched" by the current 'upperBoundItem'.
-      // The condition requires both x and y coordinates of the first point to be strictly less than those of the second.
-      if ( lowerBoundItems[outerLoopIndex][0] < upperBoundItems[innerLoopIndex][0] &&
-           lowerBoundItems[outerLoopIndex][1] < upperBoundItems[innerLoopIndex][1] ) {
-        // If a valid match is found, increment the total count of successful pairings.
-        successfulMatches++;
-        // Remove the 'upperBoundItem' from its array to ensure it is not reused for another match.
-        upperBoundItems.splice( innerLoopIndex, 1 );
-        // Exit the inner loop, as the current 'lowerBoundItem' has found its match.
+  // Iterate through 'firstDataSet' starting from the last element.
+  for (let outerIdx = itemCount - 1; outerIdx >= 0; outerIdx--) {
+    // For each element in 'firstDataSet', iterate through 'secondDataSet' in reverse.
+    for (
+      let innerIdx = secondDataSet.length - 1;
+      innerIdx >= 0;
+      innerIdx--
+    ) {
+      // Check if both components of the current 'firstDataSet' element
+      // are strictly less than the corresponding components of the 'secondDataSet' element.
+      if (
+        firstDataSet[outerIdx][0] < secondDataSet[innerIdx][0] &&
+        firstDataSet[outerIdx][1] < secondDataSet[innerIdx][1]
+      ) {
+        // If the condition is satisfied, increment the counter.
+        matchedPairsCount++;
+        // Remove the matched element from 'secondDataSet' to ensure it's used only once.
+        secondDataSet.splice(innerIdx, 1);
+        // Exit the inner loop as a match has been found for the current 'firstDataSet' element.
         break;
       }
     }
   }
 
-  // Output the final computed number of successful matches to the standard console.
-  console.log( successfulMatches );
+  // Print the total number of matched pairs to the console.
+  console.log(matchedPairsCount);
 }
 
-// Entry point for execution: Reads input synchronously from '/dev/stdin',
-// removes any leading/trailing whitespace, and then passes it to the main processing function.
-ProcessInputData( require('fs').readFileSync('/dev/stdin', 'utf8').trim() );
+// Read the entire content from standard input,
+// decode it as UTF-8, remove leading/trailing whitespace,
+// and then pass it to the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8").trim());

@@ -1,33 +1,27 @@
-function ProcessInputData(rawTextContent) {
-    const textSections = rawTextContent.split('\n');
+function Main (sourceInput) {
+    const sourceSegments = sourceInput.split("\n");
 
-    function iterateAndCompute(currentSections) {
-        if (currentSections.length === 0) {
+    function processSegmentCollection(segmentCollection, currentSegmentIndex = 0) {
+        if (currentSegmentIndex >= segmentCollection.length) {
             return;
         }
 
-        const activeSection = currentSections[0];
+        const currentSegment = segmentCollection[currentSegmentIndex];
 
-        if (activeSection.length > 0 && activeSection.charAt(0) === '0') {
+        if (currentSegment.length === 0 || currentSegment[0] == 0) {
             return;
         }
 
-        let totalValue = 0;
-        if (activeSection.length > 0) {
-            try {
-                totalValue = eval(Array.from(activeSection).join('+'));
-            } catch (computationError) {
-                totalValue = 0;
-            }
+        let segmentTotal = 0;
+        for (const charDigit of currentSegment) {
+            segmentTotal += parseInt(charDigit, 10);
         }
+        console.log(segmentTotal);
 
-        console.log(totalValue);
-
-        iterateAndCompute(currentSections.slice(1));
+        processSegmentCollection(segmentCollection, currentSegmentIndex + 1);
     }
 
-    iterateAndCompute(textSections);
+    processSegmentCollection(sourceSegments);
 }
 
-const sourceContent = require("node:fs").readFileSync("/dev/stdin", "utf8");
-ProcessInputData(sourceContent);
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,46 +1,42 @@
 'use strict';
 
-function ExecuteProgram(rawData) {
-    const allLines = rawData.trim().split('\n');
+function scheduleOptimizer(inputData) {
+    const parsedInput = inputData.trim().split('\n');
+    const numDays = Number(parsedInput[0]);
+    const dropCoefficients = parsedInput[1].split(' ').map(Number);
+    const satisfactionMatrix = parsedInput
+        .slice(2, 2 + numDays)
+        .map((line) => line.split(' ').map(Number));
 
-    const totalEventPeriods = parseInt(allLines[0], 10);
-    const decayFactors = allLines[1].split(' ').map(Number);
-    const distinctEventTypes = decayFactors.length;
+    let lastHeldEventDay = Array(dropCoefficients.length).fill(0);
 
-    const dailyGainMatrices = Array.from({ length: totalEventPeriods }, (_, lineIdx) =>
-        allLines[2 + lineIdx].split(' ').map(Number)
-    );
+    Array.from({ length: numDays }, (_, dayIdx) => dayIdx + 1).forEach((currentDay) => {
+        const currentDaySatisfaction = satisfactionMatrix[currentDay - 1];
 
-    const mostRecentEventDays = Array(distinctEventTypes).fill(0);
+        const individualDropValues = dropCoefficients.map((coeff, eventIdx) =>
+            coeff * (currentDay - lastHeldEventDay[eventIdx])
+        );
 
-    for (let currentCycle = 1; currentCycle <= totalEventPeriods; ++currentCycle) {
-        const typeEvaluations = decayFactors.map((factor, typeId) => {
-            const immediateGain = dailyGainMatrices[currentCycle - 1][typeId];
-            const cyclesSinceLast = currentCycle - mostRecentEventDays[typeId];
-            
-            // This calculation derives from simplifying the original logic:
-            // The term `sum(C[j] * (i - LastContestDays[j]) * -1 for all j)`
-            // is constant for a given day `i` and does not affect which contest `k` is chosen.
-            // Thus, we only need to maximize `S[i-1][k] + C[k] * (i - LastContestDays[k])`.
-            return immediateGain + (factor * cyclesSinceLast);
+        const totalDropSum = individualDropValues.reduce((acc, val) => acc + val, 0);
+
+        const potentialEventScores = currentDaySatisfaction.map((baseSatisfaction, eventIdx) =>
+            baseSatisfaction - totalDropSum + individualDropValues[eventIdx]
+        );
+
+        let selectedEvent = 0;
+        let highestScore = 0;
+
+        potentialEventScores.forEach((score, eventIdx) => {
+            if (score > highestScore) {
+                highestScore = score;
+                selectedEvent = eventIdx;
+            }
         });
 
-        const selectionResult = typeEvaluations.reduce((accumulator, scoreValue, currentTypeId) => {
-            if (scoreValue > accumulator.peakScore) {
-                return { peakScore: scoreValue, chosenId: currentTypeId };
-            }
-            return accumulator;
-        }, { peakScore: -Infinity, chosenId: -1 });
+        lastHeldEventDay[selectedEvent] = currentDay;
 
-        const selectedEventTypeIdentifier = selectionResult.chosenId;
-        
-        mostRecentEventDays[selectedEventTypeIdentifier] = currentCycle;
-
-        console.log(selectedEventTypeIdentifier + 1);
-    }
+        console.log(selectedEvent + 1);
+    });
 }
 
-(function() {
-    const inputContent = require('fs').readFileSync('/dev/stdin', 'utf8');
-    ExecuteProgram(inputContent);
-})();
+scheduleOptimizer(require('fs').readFileSync('/dev/stdin', 'utf8'));

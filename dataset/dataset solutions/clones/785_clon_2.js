@@ -1,146 +1,143 @@
-const inputBuffer = [];
-const nodeReadLine = require('readline');
-const ioInterface = nodeReadLine.buildStreamInterface({
-    input: process.stdin,
-    output: process.stdout
+let inputData = []; // Stores all input lines read from standard input.
+const inputProcessor = require('readline').createInterface({
+  input: process.stdin, // Configure to read from standard input.
+  output: process.stdout // Configure to write to standard output (though not directly used for output here).
 });
 
-// Listener for each incoming line of text
-ioInterface.on('line', (receivedText) => {
-    // Add the current line to our collection of input data
-    inputBuffer.push(receivedText);
+// Event handler for each line received from the input stream.
+inputProcessor.on('line', function (currentLine) {
+  // Append the current line to our collection of input data.
+  inputData.push(currentLine);
 });
 
-// When the standard input stream signals its end
-process.stdin.on('end', () => {
-    // Once all input is received, initiate the primary data processing
-    processInputData(inputBuffer);
+// Event handler for when the standard input stream concludes.
+process.stdin.on('end', function () {
+  // Once all input has been gathered, initiate the main program logic.
+  executeProgram(inputData);
 });
 
-// A small constant for floating-point comparisons to account for precision errors
-const GEOMETRIC_ACCURACY_THRESHOLD = 1e-10;
+// A small constant value used for floating-point comparisons to account for precision errors.
+const TOLERANCE = 1e-10;
 
 /**
- * Determines the intersection point of two line segments.
- * Returns null if segments are parallel or do not intersect within their bounds.
- * @param {Array<Object>} segmentOne - First line segment, e.g., [{x:x1, y:y1}, {x:x2, y:y2}]
- * @param {Array<Object>} segmentTwo - Second line segment, e.g., [{x:x3, y:y3}, {x:x4, y:y4}]
- * @returns {Object|null} The intersection point {x, y} or null.
+ * Computes the intersection point of two given line segments.
+ * This function returns null if the segments are parallel, collinear, or if their intersection
+ * falls outside the bounds of the first segment (segmentA).
+ *
+ * @param {Array<Object>} segmentA - The first line segment, defined by an array of two point objects ({x: number, y: number}).
+ * @param {Array<Object>} segmentB - The second line segment, defined by an array of two point objects ({x: number, y: number}).
+ * @returns {Object|null} An object {x: number, y: number} representing the intersection point, or null if no valid intersection is found.
  */
-const calculateSegmentIntersection = (segmentOne, segmentTwo) => {
-    const startPt1 = segmentOne[0],
-          endPt1 = segmentOne[1],
-          startPt2 = segmentTwo[0],
-          endPt2 = segmentTwo[1];
+function calculateIntersectionPoint(segmentA, segmentB) {
+  // Destructure the points from the input segments for easier access.
+  // segmentA is from pointA to pointB, segmentB is from pointC to pointD.
+  const pointA = segmentA[0], pointB = segmentA[1], pointC = segmentB[0], pointD = segmentB[1];
+  let paramR, coordX, coordY, determinant; // Variables for intermediate calculations.
 
-    let paramValR,
-        paramValS, // 's' parameter is not used for point calculation but often part of the formula
-        intersectCoordX,
-        intersectCoordY,
-        crossProductDeterminant;
+  // Calculate the determinant of the system of equations.
+  // This value determines if the lines are parallel or intersect.
+  determinant = (pointB.x - pointA.x) * (pointD.y - pointC.y) - (pointB.y - pointA.y) * (pointD.x - pointC.x);
 
-    // Calculate the determinant to check if lines are parallel
-    crossProductDeterminant = (endPt1.x - startPt1.x) * (endPt2.y - startPt2.y) - (endPt1.y - startPt1.y) * (endPt2.x - startPt2.x);
+  // If the absolute value of the determinant is very small, the lines are parallel or collinear.
+  if (Math.abs(determinant) < TOLERANCE) {
+    return null; // In this case, there is no unique intersection point.
+  }
 
-    // If determinant is close to zero, lines are parallel or collinear
-    if (Math.abs(crossProductDeterminant) < GEOMETRIC_ACCURACY_THRESHOLD) {
-        return null;
-    }
+  // Calculate the parameter 'paramR' for the first line segment.
+  // 'paramR' indicates the position of the intersection along segmentA (0 for pointA, 1 for pointB).
+  paramR = ((pointD.y - pointC.y) * (pointC.x - pointA.x) - (pointD.x - pointC.x) * (pointC.y - pointA.y)) / determinant;
+  // The original code declared 'paramS' but did not use it, so we maintain that behavior.
+  // let paramS = ((pointB.y - pointA.y) * (pointC.x - pointA.x) - (pointB.x - pointA.x) * (pointC.y - pointA.y)) / determinant;
 
-    // Calculate parameter 'r' for the first segment
-    paramValR = ((endPt2.y - startPt2.y) * (startPt2.x - startPt1.x) - (endPt2.x - startPt2.x) * (startPt2.y - startPt1.y)) / crossProductDeterminant;
+  // Compute the coordinates of the intersection point using 'paramR'.
+  coordX = pointA.x * (1 - paramR) + pointB.x * paramR;
+  coordY = pointA.y * (1 - paramR) + pointB.y * paramR;
 
-    // Calculate the intersection coordinates using 'r' and the first segment
-    intersectCoordX = startPt1.x * (1 - paramValR) + endPt1.x * paramValR;
-    intersectCoordY = startPt1.y * (1 - paramValR) + endPt1.y * paramValR;
+  // Check if the intersection point lies strictly within the bounds of the first segment.
+  // The original logic excludes endpoints, so we replicate that.
+  if (paramR < TOLERANCE || (1 - paramR) < TOLERANCE) {
+    return null; // Intersection is at or beyond an endpoint of segmentA.
+  }
 
-    // Check if the intersection point lies within the bounds of the first segment
-    // (r must be between 0 and 1, inclusive of endpoints for some definitions,
-    // but here we exclude endpoints to avoid counting existing vertices as new intersections)
-    if (paramValR < GEOMETRIC_ACCURACY_THRESHOLD || (1 - paramValR) < GEOMETRIC_ACCURACY_THRESHOLD) {
-        return null;
-    }
-
-    // Return the calculated intersection point
-    return { x: intersectCoordX, y: intersectCoordY };
-};
+  // Return the calculated intersection point.
+  return { x: coordX, y: coordY };
+}
 
 /**
- * Computes the number of regions formed by a set of line segments.
- * This is based on Euler's formula V - E + F = 1 for planar graphs,
- * or more simply, for lines, it's 1 + number_of_lines + number_of_intersections.
- * Each new line adds a region, and each intersection adds another region.
- * @param {Array<Array<Object>>} geometricSegments - A list of line segments.
- * @returns {number} The total count of regions.
+ * Computes the total number of regions created by a given set of line segments.
+ * This function implements an algorithm to count regions based on the number of lines
+ * and their unique intersection points.
+ *
+ * @param {Array<Array<Object>>} lineSegments - An array where each element is a line segment,
+ *                                              represented as an array of two point objects.
+ * @returns {number} The total count of distinct regions formed by the segments.
  */
-const computeRegionCount = (geometricSegments) => {
-    let uniqueIntersections,
-        regionsFormed = 1; // Start with 1 region (the entire plane)
-    let outerLoopIdx,
-        innerLoopIdx,
-        potentialIntersection;
+function processGeometry(lineSegments) {
+  let intersectionPoints; // Temporary list to store unique intersection points for the current segment.
+  let totalRegions = 1; // Initialize with 1 region (the entire plane before any lines are added).
+  let idx1, idx2; // Loop counters for iterating through the line segments.
+  let currentIntersection; // Holds the result of an intersection calculation.
 
-    // Iterate through each segment to add it to the plane
-    for (outerLoopIdx = 0; outerLoopIdx < geometricSegments.length; outerLoopIdx++) {
-        regionsFormed++; // Each new segment potentially adds one more region if it doesn't intersect
+  // Iterate through each line segment in the input array.
+  for (idx1 = 0; idx1 < lineSegments.length; idx1++) {
+    totalRegions++; // Each new line segment, if it doesn't intersect previous lines, adds one new region.
+    intersectionPoints = []; // Reset the list of intersection points for the current segment.
 
-        uniqueIntersections = []; // Reset intersection list for the current segment
+    // Compare the current segment (lineSegments[idx1]) with all previously processed segments.
+    for (idx2 = 0; idx2 < idx1; idx2++) {
+      // Attempt to find an intersection point between the two segments.
+      currentIntersection = calculateIntersectionPoint(lineSegments[idx1], lineSegments[idx2]);
 
-        // Compare the current segment with all previously processed segments
-        for (innerLoopIdx = 0; innerLoopIdx < outerLoopIdx; innerLoopIdx++) {
-            potentialIntersection = calculateSegmentIntersection(geometricSegments[outerLoopIdx], geometricSegments[innerLoopIdx]);
+      // If no valid intersection is found, skip to the next pair of segments.
+      if (currentIntersection === null) {
+        continue;
+      }
 
-            // If no valid intersection is found, move to the next pair
-            if (potentialIntersection === null) {
-                continue;
-            }
-
-            // Check if this intersection point is already recorded (due to multiple lines intersecting at same spot)
-            const isDuplicate = uniqueIntersections.some((existingIntersection) => {
-                // Use squared Euclidean distance for comparison to avoid Math.sqrt
-                const distanceSquared = Math.pow(potentialIntersection.x - existingIntersection.x, 2) +
-                                        Math.pow(potentialIntersection.y - existingIntersection.y, 2);
-                return distanceSquared < GEOMETRIC_ACCURACY_THRESHOLD;
-            });
-
-            // If it's a new unique intersection, add it to the list
-            if (!isDuplicate) {
-                uniqueIntersections.push(potentialIntersection);
-            }
-        }
-        // Each unique intersection point adds an additional region
-        regionsFormed += uniqueIntersections.length;
+      // Check if this intersection point is already recorded for the current segment.
+      // This prevents double-counting intersections if multiple lines meet at the same point.
+      // The `||` operator with `push` is a concise way to add an element only if `some` returns false.
+      intersectionPoints.some(function (existingPoint) {
+        // Compare points using squared Euclidean distance to handle floating-point inaccuracies.
+        return (Math.pow(currentIntersection.x - existingPoint.x, 2) + Math.pow(currentIntersection.y - existingPoint.y, 2) < TOLERANCE);
+      }) || intersectionPoints.push(currentIntersection);
     }
-    return regionsFormed;
-};
+    // Each unique intersection point on the current line segment effectively splits it,
+    // and each split segment adds an additional region.
+    totalRegions += intersectionPoints.length;
+  }
+  return totalRegions; // Return the final calculated number of regions.
+}
 
 /**
- * Main function to process the entire input buffer.
- * Reads segment data and outputs the region count for each test case.
- * @param {Array<string>} rawInputBuffer - Array of string lines from standard input.
+ * The primary execution function that processes raw input data.
+ * It parses line segment definitions, then calls the region calculation function,
+ * and finally prints the result for each test case.
+ *
+ * @param {Array<string>} rawInputLines - An array of strings, where each string is a line from the standard input.
  */
-const processInputData = (rawInputBuffer) => {
-    let numberOfSegments,
-        segmentIdx,
-        coordinateStrings;
-    let parsedSegments; // Collection of segments for the current test case
+function executeProgram(rawInputLines) {
+  let numSegments; // Variable to hold the number of segments for the current test case.
+  let loopCounter; // Generic loop counter.
+  let segmentCoords; // Temporary array to store coordinate strings after splitting a line.
+  let parsedSegments; // Array to store the parsed line segment objects for the current test case.
 
-    // Loop through the input buffer until a '0' is encountered (end of input)
-    while ((numberOfSegments = +rawInputBuffer.shift()) !== 0) {
-        parsedSegments = []; // Initialize segments for the current test case
+  // Loop continues as long as the first number in the input block (number of segments) is not zero.
+  // `+rawInputLines.shift()` converts the string to a number and removes it from the array.
+  while ((numSegments = +rawInputLines.shift()) !== 0) {
+    parsedSegments = []; // Initialize an empty array to store segments for the current test case.
 
-        // Read 'numberOfSegments' lines, each defining a segment
-        for (segmentIdx = 0; segmentIdx < numberOfSegments; segmentIdx++) {
-            // Each line contains four space-separated coordinate values: x1 y1 x2 y2
-            coordinateStrings = rawInputBuffer.shift().split(' ');
+    // Read 'numSegments' lines, each defining a line segment.
+    for (loopCounter = 0; loopCounter < numSegments; loopCounter++) {
+      // Each line contains four space-separated numbers: x1 y1 x2 y2.
+      segmentCoords = rawInputLines.shift().split(' ');
 
-            // Parse coordinates and store them as segment objects
-            parsedSegments.push([
-                { x: +coordinateStrings[0], y: +coordinateStrings[1] }, // Start point
-                { x: +coordinateStrings[2], y: +coordinateStrings[3] }  // End point
-            ]);
-        }
-        // Calculate and print the region count for the current set of segments
-        console.log(computeRegionCount(parsedSegments));
+      // Parse the string coordinates into numbers and create point objects, then push the segment.
+      parsedSegments.push([
+        { x: +segmentCoords[0], y: +segmentCoords[1] }, // First point of the segment.
+        { x: +segmentCoords[2], y: +segmentCoords[3] }  // Second point of the segment.
+      ]);
     }
-};
+    // Calculate the number of regions for the current set of segments and print the result.
+    console.log(processGeometry(parsedSegments));
+  }
+}

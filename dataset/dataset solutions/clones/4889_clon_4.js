@@ -1,51 +1,23 @@
-const extractComponents = (rawTextualData) => {
-    const linesOfData = rawTextualData.split('\n');
-    return {
-        numericalThreshold: Number(linesOfData[0]),
-        initialSequence: linesOfData[1],
-        subsequentSequence: linesOfData[2],
-    };
-};
+function processInput(rawInputText) {
+    const inputLines = rawInputText.split("\n");
+    const requiredCombinedLength = Number(inputLines[0]);
+    const firstStringSegment = inputLines[1];
+    const secondStringSegment = inputLines[2];
 
-const processSequences = (threshold, seqOne, seqTwo) => {
-    const lengthOne = seqOne.length;
-    const lengthTwo = seqTwo.length;
-    const maximumPossibleMatch = Math.min(lengthOne, lengthTwo);
+    const firstSegmentLength = firstStringSegment.length;
+    const secondSegmentLength = secondStringSegment.length;
+    const maxPossibleMatchLength = Math.min(firstSegmentLength, secondSegmentLength);
 
-    const locateOptimalMatch = (currentTestLength) => {
-        if (currentTestLength < 0) {
-            return 0;
-        }
+    const candidateMatchLengths = Array.from({ length: maxPossibleMatchLength }, (_, index) => maxPossibleMatchLength - index);
 
-        const endingOfSeqOne = seqOne.slice(lengthOne - currentTestLength);
-        const beginningOfSeqTwo = seqTwo.slice(0, currentTestLength);
+    const determinedOverlapLength = candidateMatchLengths.find(currentLength => {
+        const trailingPart = firstStringSegment.slice(-currentLength);
+        const leadingPart = secondStringSegment.slice(0, currentLength);
+        const lengthConditionSatisfied = firstSegmentLength + secondSegmentLength - currentLength >= requiredCombinedLength;
+        return trailingPart === leadingPart && lengthConditionSatisfied;
+    }) || 0;
 
-        const segmentsAlign = (endingOfSeqOne === beginningOfSeqTwo);
-        const combinedLengthCheck = (lengthOne + lengthTwo - currentTestLength >= threshold);
+    console.log(firstStringSegment.slice(0, firstSegmentLength - determinedOverlapLength) + secondStringSegment);
+}
 
-        if (segmentsAlign && combinedLengthCheck) {
-            return currentTestLength;
-        } else {
-            return locateOptimalMatch(currentTestLength - 1);
-        }
-    };
-
-    const finalOverlapLength = locateOptimalMatch(maximumPossibleMatch);
-
-    const constructedOutput = seqOne.slice(0, lengthOne - finalOverlapLength) + seqTwo;
-    return constructedOutput;
-};
-
-(function() {
-    const systemInterface = require("fs");
-    const rawInputContent = systemInterface.readFileSync("/dev/stdin", "utf8").trim();
-    const parsedInputElements = extractComponents(rawInputContent);
-
-    const finalRenderedString = processSequences(
-        parsedInputElements.numericalThreshold,
-        parsedInputElements.initialSequence,
-        parsedInputElements.subsequentSequence
-    );
-
-    console.log(finalRenderedString);
-})();
+processInput(require("fs").readFileSync("/dev/stdin", "utf8").trim());

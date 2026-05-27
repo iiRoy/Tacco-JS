@@ -1,33 +1,37 @@
-const processSchedule = (sourceText) => {
-    const lines = sourceText.split('\n');
-    const headerParts = lines[0].split(' ');
-    const activityCount = Number(headerParts[0]);
-    const overallPeriod = Number(headerParts[1]);
+function processJobData(rawData) {
+    const lineSegments = rawData.split('\n');
 
-    const taskEntries = lines.slice(1, activityCount + 1).map(line => {
-        const [timeCost, monetaryGain] = line.split(' ').map(Number);
-        return { timeCost, monetaryGain };
+    const [jobCountStr, totalDaysStr] = lineSegments[0].split(' ');
+    const jobCount = parseInt(jobCountStr, 10);
+    const totalDays = parseInt(totalDaysStr, 10);
+
+    const jobOfferings = lineSegments.slice(1, jobCount + 1).map(line => {
+        const [deadlineValue, rewardValue] = line.split(' ');
+        return [parseInt(deadlineValue, 10), parseInt(rewardValue, 10)];
     });
 
-    taskEntries.sort((a, b) => b.monetaryGain - a.monetaryGain);
+    jobOfferings.sort((offerA, offerB) => offerB[1] - offerA[1]);
 
-    const scheduleSlots = new Array(overallPeriod).fill(0);
+    let accumulatedValue = 0;
+    const scheduledSlots = new Array(totalDays).fill(false);
 
-    let totalAccumulatedGain = 0;
+    jobOfferings.forEach(currentOffer => {
+        const [offerDeadline, offerReward] = currentOffer;
+        const completionDayIndex = offerDeadline - 1;
 
-    for (const currentTask of taskEntries) {
-        const latestPossibleSlotIndex = overallPeriod - currentTask.timeCost;
+        let potentialScheduleDay = Math.min(totalDays - 1, completionDayIndex);
 
-        for (let slotCandidate = latestPossibleSlotIndex; slotCandidate >= 0; slotCandidate--) {
-            if (scheduleSlots[slotCandidate] === 0) {
-                scheduleSlots[slotCandidate] = currentTask.monetaryGain;
-                totalAccumulatedGain += currentTask.monetaryGain;
+        while (potentialScheduleDay >= 0) {
+            if (!scheduledSlots[potentialScheduleDay]) {
+                scheduledSlots[potentialScheduleDay] = true;
+                accumulatedValue += offerReward;
                 break;
             }
+            potentialScheduleDay--;
         }
-    }
+    });
 
-    console.log(totalAccumulatedGain);
-};
+    console.log(accumulatedValue);
+}
 
-processSchedule(require("fs").readFileSync("/dev/stdin", "utf8"));
+processJobData(require("fs").readFileSync("/dev/stdin", "utf8"));

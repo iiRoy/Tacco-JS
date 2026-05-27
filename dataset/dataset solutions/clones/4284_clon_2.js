@@ -1,21 +1,14 @@
-// This function examines the provided textual content for a specific pattern.
-function ProcessInputData(rawContentStream)
-{
-    // Check if the target pattern exists within the input stream.
-    // The indexOf method returns -1 if the substring is not found.
-    if ( rawContentStream.indexOf ( "GOOD" ) != -1 )
-    {
-        // If the pattern is successfully located, output a positive message.
-        console.log( "Detected" );
-    }
-    else
-    {
-        // Otherwise, if the pattern is absent, output a negative message.
-        console.log( "Not_Detected" );
+function ProcessInput(dataString) {
+    // Check if the provided string contains the specific sequence "AC"
+    if (dataString.indexOf("AC") !== -1) {
+        // If "AC" is found, output "Yes" to the console
+        console.log("Yes");
+    } else {
+        // Otherwise, if "AC" is not found, output "No"
+        console.log("No");
     }
 }
 
-// Invoke the primary processing routine.
-// It reads the entire content from standard input, encoded as UTF-8,
-// and passes it as an argument to the processing function.
-ProcessInputData( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) );
+// Read the entire content from standard input, decode it as UTF-8,
+// and then pass it to our primary processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

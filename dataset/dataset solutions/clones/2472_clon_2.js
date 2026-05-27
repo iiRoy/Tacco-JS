@@ -1,22 +1,31 @@
-function ProcessInput( rawData ) {
-    rawData = rawData.split( "\n" );
+// This module defines a function to process numerical input.
+function ProcessInput(incomingData) {
+    // Divide the raw input string into an array of lines.
+    let lineSegments = incomingData.split("\n");
 
-    let targetValue = parseInt( rawData[0], 10 );
+    // Convert the first line of input into an integer, using base 10.
+    let targetValue = parseInt(lineSegments[0], 10);
 
-    let foundProduct = false;
+    // Initialize a boolean indicator to track if a specific condition is met.
+    let conditionMet = false;
 
-    for ( let factorOne = 1; factorOne < 10; factorOne++ ) {
-        for ( let factorTwo = 1; factorTwo < 10; ++factorTwo ) {
-            if ( factorOne * factorTwo === targetValue ) {
-                foundProduct = true;
-                break;
+    // Begin an outer loop, iterating through numbers from 1 up to (but not including) 10.
+    for (let firstFactor = 1; firstFactor < 10; firstFactor++) {
+        // Begin an inner loop, iterating through numbers from 1 up to (but not including) 10.
+        for (let secondFactor = 1; secondFactor < 10; ++secondFactor) {
+            // Check if the product of the current factors equals the target value.
+            if (firstFactor * secondFactor === targetValue) {
+                conditionMet = true; // Set the flag to true if a match is found.
+                break; // Exit the inner loop immediately as the condition is satisfied.
             }
         }
     }
 
-    foundProduct
-        ? console.log( "yes" )
-        : console.log( "no" );
+    // Output "yes" to the console if the condition was met, otherwise output "no".
+    conditionMet ? console.log("yes") : console.log("no");
 }
 
-ProcessInput( require( "fs" ).readFileSync( "/dev/stdin", "utf8" ) );
+// Invoke the primary processing function, reading its input from standard input.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));
+// For development or testing purposes, one might use a local file:
+// ProcessInput(require("fs").readFileSync("sample_data.txt", "utf8"));

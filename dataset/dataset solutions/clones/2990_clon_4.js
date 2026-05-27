@@ -1,62 +1,46 @@
-const processGridTransformation = (sourceText) => {
-    const dataBlocks = sourceText.split('\n');
+function Main(inputContent) {
+    const dataLines = inputContent.split("\n");
 
-    const dimensions = dataBlocks[0].split(' ').map(token => parseInt(token, 10));
-    const gridRows = dimensions[0];
-    const gridCols = dimensions[1];
+    const [gridHeight, gridWidth] = dataLines[0].split(" ").map(Number);
 
-    const INFINITE_DISTANCE = Number.MAX_SAFE_INTEGER;
+    const terrainMap = Array.from({ length: gridHeight }, () => Array(gridWidth).fill(null));
+    let currentWaveFront = new Set(); // Stores stringified coordinates "y,x"
 
-    let propagationGrid = Array.from({ length: gridRows }, () =>
-        Array.from({ length: gridCols }, () => INFINITE_DISTANCE)
-    );
-
-    let propagationQueue = [];
-    let longestPropagationPath = -1;
-
-    for (let r = 0; r < gridRows; ++r) {
-        const rowContent = dataBlocks[r + 1];
-        for (let c = 0; c < gridCols; ++c) {
-            if (rowContent[c] === '#') {
-                propagationGrid[r][c] = 0;
-                propagationQueue.push([r, c]);
-                longestPropagationPath = Math.max(longestPropagationPath, 0);
+    for (let r = 0; r < gridHeight; r++) {
+        const rowElements = dataLines[r + 1].split("");
+        for (let c = 0; c < gridWidth; c++) {
+            terrainMap[r][c] = rowElements[c];
+            if (rowElements[c] === "#") {
+                currentWaveFront.add(`${r},${c}`);
             }
         }
     }
 
-    const adjacencyVectors = [
-        [-1, 0], // North
-        [1, 0],  // South
-        [0, -1], // West
-        [0, 1]   // East
-    ];
+    let expansionCycles = 0;
+    const cardinalDirections = [[0, 1], [0, -1], [1, 0], [-1, 0]]; // [deltaY, deltaX]
 
-    let currentQueuePointer = 0;
-    while (currentQueuePointer < propagationQueue.length) {
-        const currentCoordinates = propagationQueue[currentQueuePointer++];
-        const currentR = currentCoordinates[0];
-        const currentC = currentCoordinates[1];
-        const currentPathLength = propagationGrid[currentR][currentC];
+    while (currentWaveFront.size > 0) {
+        expansionCycles++;
+        const nextWaveFront = new Set();
 
-        for (const [dr, dc] of adjacencyVectors) {
-            const nextR = currentR + dr;
-            const nextC = currentC + dc;
+        for (const currentCoordKey of currentWaveFront) {
+            const [yPos, xPos] = currentCoordKey.split(",").map(Number);
 
-            if (nextR >= 0 && nextR < gridRows && nextC >= 0 && nextC < gridCols) {
-                if (propagationGrid[nextR][nextC] === INFINITE_DISTANCE) {
-                    const newPathLength = currentPathLength + 1;
-                    propagationGrid[nextR][nextC] = newPathLength;
-                    propagationQueue.push([nextR, nextC]);
-                    longestPropagationPath = Math.max(longestPropagationPath, newPathLength);
+            for (const [dy, dx] of cardinalDirections) {
+                const nextY = yPos + dy;
+                const nextX = xPos + dx;
+
+                if (nextY >= 0 && nextY < gridHeight && nextX >= 0 && nextX < gridWidth) {
+                    if (terrainMap[nextY][nextX] === ".") {
+                        terrainMap[nextY][nextX] = "#"; // Mark as filled
+                        nextWaveFront.add(`${nextY},${nextX}`);
+                    }
                 }
             }
         }
+        currentWaveFront = nextWaveFront;
     }
+    console.log(expansionCycles - 1);
+}
 
-    return longestPropagationPath;
-};
-
-const systemInputContent = require("fs").readFileSync("/dev/stdin", "utf8");
-const computedResult = processGridTransformation(systemInputContent);
-console.log(computedResult);
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

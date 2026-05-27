@@ -1,107 +1,93 @@
-var ProductionMode = function () {
-    /* This function provides a mechanism
-     * to read input in a production environment. */
+var InputSourceProvider = function () {
+    // Load the Node.js file system module for I/O operations.
     var fileSystemModule = require('fs');
-    var readStandardInput = function (optionalPrompt) {
-        // If a prompt message is provided, display it.
-        if (optionalPrompt) {
-            console.log(optionalPrompt);
+
+    // Define an internal function to handle standard input reading.
+    var readInputData = function (promptMessage) {
+        // If a message is provided, display it to the console.
+        if (promptMessage) {
+            console.log(promptMessage);
         }
-        // Read content from standard input synchronously.
+        // Synchronously read the entire content of the standard input stream.
         return fileSystemModule.readFileSync('/dev/stdin', 'utf8');
     };
-    return readStandardInput; /* Return the input reading function. */
+
+    // Return the configured input reading function.
+    return readInputData;
 };
 
-/* A flag to determine if the application is running in a test mode. */
-var isTestRun = false;
+// A boolean flag to control debug mode, currently set to inactive.
+var isDebuggingActive = !true; // Represents 'false'
 
-/* Initialize the input fetcher based on the run mode.
- * (Assuming a TestModeSupplier function exists for isTestRun = true,
- * though not explicitly defined here, it maintains the structure.) */
-var inputFetcher = isTestRun ? TestModeSupplier() : ProductionMode();
+// Select the appropriate input function based on the debug flag.
+// Since 'isDebuggingActive' is false, 'InputSourceProvider()' will be invoked.
+var obtainInputFunction = isDebuggingActive ? DebugModeInput() : InputSourceProvider();
 
-// Obtain all raw lines from the input source, splitting by newline characters.
-var rawInputLines = inputFetcher().split('\n');
+// Retrieve all lines from the standard input and split them by newline characters.
+var rawInputLines = obtainInputFunction().split('\n');
 
-/* Parse the first line to get the primary dimensions (N and M). */
-var dimensionsArray = rawInputLines.shift().split(' ').map(val => parseInt(val, 10));
+// Extract the first line, split it by spaces, and convert parts to integers.
+var dimensionsArray = rawInputLines.shift().split(' ').map(val => parseInt(val));
 
-// Extract the number of rows and columns from the parsed dimensions.
-var rowCount = dimensionsArray[0];
-var colCount = dimensionsArray[1];
+// Assign the first and second parsed integer values to specific dimension variables.
+var firstDimension = dimensionsArray[0x0]; // Represents index 0
+var secondDimension = dimensionsArray[0x1]; // Represents index 1
 
-/* Process the subsequent input lines to form constraint records.
- * Only consider 'colCount' number of lines after the first. */
-var constraintRecords = rawInputLines.filter((lineItem, lineIndex) => lineIndex < colCount).map(lineItem => lineItem.split(' ').map(numericValue => parseInt(numericValue, 10)));
+// Filter the remaining input lines to keep only the relevant 'secondDimension' entries,
+// then parse each entry into an array of integers.
+var constraintData = rawInputLines.filter((element, idx) => idx < secondDimension).map(element => element.split(' ').map(subElement => parseInt(subElement)));
 
-/* Initialize a boolean flag to track the overall consistency of the graph.
- * True indicates consistent, false indicates inconsistent. */
-var isGraphConsistent = true;
+// Initialize a flag to track the consistency of the constraints.
+var isConsistent = !false; // Represents 'true'
 
-// Iterate through each constraint, processing them in reverse order using pop().
-for (var constraintIdx = 0; constraintIdx < colCount; constraintIdx++) {
-    /* Retrieve the last constraint tuple from the records array. */
-    var currentTuple = constraintRecords.pop();
+// Begin iterating through the constraint data, processing elements from the end.
+for (var outerLoopIndex = (1 - 1); outerLoopIndex < secondDimension; outerLoopIndex++) { // Loop starts from 0
+    // Remove and retrieve the last constraint from the array.
+    var currentConstraint = constraintData.pop();
+    var leftEndpoint = currentConstraint[0];
+    var rightEndpoint = currentConstraint[1];
+    var differenceValue = currentConstraint[2];
 
-    /* Deconstruct the constraint tuple into its components:
-     * firstNode (L), secondNode (R), and edgeWeight (D). */
-    var firstNode = currentTuple[0];
-    var secondNode = currentTuple[1];
-    var edgeWeight = currentTuple[2];
+    // First validation phase: Check constraints where the first element matches 'leftEndpoint'.
+    var filteredConstraints = constraintData.filter(item => item[0] === leftEndpoint);
+    for (var innerLoopIndex = 0; innerLoopIndex < filteredConstraints.length; innerLoopIndex++) {
+        var neighborConstraint = filteredConstraints[innerLoopIndex];
+        // Identify potential conflicting constraints based on specific conditions and a non-zero difference.
+        var conflictingConstraints = constraintData.filter(item => item[0] === neighborConstraint[1] && item[1] === rightEndpoint)
+            .concat(constraintData.filter(item => item[1] === neighborConstraint[1] && item[0] === rightEndpoint))
+            .filter(item => (neighborConstraint[2] + item[2] - differenceValue) !== (0x0)); // Check if the sum is not zero
 
-    /* First block of consistency checks:
-     * Find existing constraints where the first element matches 'firstNode'. */
-    var nodesStartingWithFirst = constraintRecords.filter(item => item[0] === firstNode);
-
-    // Iterate through these filtered constraints to check for inconsistencies.
-    for (var startNodeIdx = 0; startNodeIdx < nodesStartingWithFirst.length; startNodeIdx++) {
-        var relatedStartNode = nodesStartingWithFirst[startNodeIdx];
-
-        /* Identify inconsistent paths originating from 'relatedStartNode'.
-         * This involves checking for specific patterns (relatedStartNode[1] -> secondNode or secondNode -> relatedStartNode[1])
-         * where the combined weights do not match 'edgeWeight'. */
-        var inconsistentStartPaths = constraintRecords.filter(item => item[0] === relatedStartNode[1] && item[1] === secondNode).concat(
-            constraintRecords.filter(item => item[1] === relatedStartNode[1] && item[0] === secondNode)
-        ).filter(item => (relatedStartNode[2] + item[2] - edgeWeight) !== 0);
-
-        // If any inconsistent paths are found, the graph is inconsistent.
-        if (inconsistentStartPaths.length > 0) {
-            isGraphConsistent = false;
-            break; // Exit the inner loop.
+        // If any conflicting constraints are found, mark as inconsistent and exit the inner loop.
+        if (conflictingConstraints.length > (1 - 1)) { // Check if length is greater than 0
+            isConsistent = !true; // Set to 'false'
+            break;
         }
     }
-    /* If an inconsistency was detected, no further checks are needed. */
-    if (!isGraphConsistent) {
-        break; // Exit the main loop.
+    // If inconsistency was detected in the first phase, exit the main loop.
+    if (!isConsistent) {
+        break;
     }
 
+    // Second validation phase: Check constraints where the second element matches 'leftEndpoint'.
+    filteredConstraints = constraintData.filter(item => item[1] === leftEndpoint);
+    for (var innerLoopIndex = 0; innerLoopIndex < filteredConstraints.length; innerLoopIndex++) {
+        var neighborConstraint = filteredConstraints[innerLoopIndex];
+        // Identify potential conflicting constraints using similar conditions as the first phase.
+        var conflictingConstraints = constraintData.filter(item => item[0] === neighborConstraint[0] && item[1] === rightEndpoint)
+            .concat(constraintData.filter(item => item[1] === neighborConstraint[0] && item[0] === rightEndpoint))
+            .filter(item => (neighborConstraint[2] + item[2] - differenceValue) !== (0x0)); // Check if the sum is not zero
 
-    /* Second block of consistency checks:
-     * Find existing constraints where the second element matches 'firstNode'. */
-    var nodesEndingWithFirst = constraintRecords.filter(item => item[1] === firstNode);
-
-    // Iterate through these filtered constraints.
-    for (var endNodeIdx = 0; endNodeIdx < nodesEndingWithFirst.length; endNodeIdx++) {
-        var relatedEndNode = nodesEndingWithFirst[endNodeIdx];
-
-        /* Identify inconsistent paths using the same logic as the first block,
-         * but considering 'relatedEndNode[0]' as the connecting point. */
-        var inconsistentEndPaths = constraintRecords.filter(dataPoint => dataPoint[0] === relatedEndNode[0] && dataPoint[1] === secondNode).concat(
-            constraintRecords.filter(dataPoint => dataPoint[1] === relatedEndNode[0] && dataPoint[0] === secondNode)
-        ).filter(dataPoint => (relatedEndNode[2] + dataPoint[2] - edgeWeight) !== 0);
-
-        // If any inconsistencies are found, mark the graph as inconsistent.
-        if (inconsistentEndPaths.length > 0) {
-            isGraphConsistent = false;
-            break; // Exit the inner loop.
+        // If any conflicting constraints are found, mark as inconsistent and exit the inner loop.
+        if (conflictingConstraints.length > (1 - 1)) { // Check if length is greater than 0
+            isConsistent = !true; // Set to 'false'
+            break;
         }
     }
-    // If an inconsistency was detected, exit the main loop.
-    if (!isGraphConsistent) {
+    // If inconsistency was detected in the second phase, exit the main loop.
+    if (!isConsistent) {
         break;
     }
 }
 
-// Output the final consistency status.
-console.log(isGraphConsistent ? 'Yes' : 'No');
+// Output the final result based on the consistency flag.
+console.log(isConsistent ? 'Yes' : 'No');

@@ -1,23 +1,24 @@
 'use strict';
-(function (inputSource) {
-    const processInputAndEvaluate = (dataContent) => {
-        const contentLines = dataContent.toString().trim().split('\n');
-        const firstValueLine = contentLines[0];
 
-        const numberParts = firstValueLine.match(/-?\d+/g);
-        const operandA = +numberParts[0];
-        const operandB = +numberParts[1];
+const inputSource = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-        const comparisonMap = new Map([
-            [1, 'a > b'],
-            [-1, 'a < b'],
-            [0, 'a == b']
-        ]);
+const extractNumericParameters = (sourceText) => {
+  const [firstLine] = sourceText.trim().split('\n');
+  const [valueOne, valueTwo] = firstLine.split(' ').map(Number);
+  return { valueOne, valueTwo };
+};
 
-        const resultKey = Math.sign(operandA - operandB);
-        return comparisonMap.get(resultKey);
-    };
+const resolveComparisonResult = (operandA, operandB) => {
+  const comparisonOutcomes = {
+    '1': 'a > b',
+    '-1': 'a < b',
+    '0': 'a == b'
+  };
+  return comparisonOutcomes[Math.sign(operandA - operandB)] || 'a == b';
+};
 
-    console.log(processInputAndEvaluate(inputSource));
+const { valueOne, valueTwo } = extractNumericParameters(inputSource);
 
-}(require('fs').readFileSync('/dev/stdin', 'utf8')));
+const finalOutputString = resolveComparisonResult(valueOne, valueTwo);
+
+console.log(finalOutputString);

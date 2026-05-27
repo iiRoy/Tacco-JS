@@ -1,58 +1,98 @@
-const fileSystem = require("node:fs");
+class InputProcessor {
+  #lineData;
+  #currentPosition;
 
-const acquiredText = fileSystem.readFileSync("/dev/stdin", "utf8").trim();
+  constructor(sourceContent) {
+    this.#lineData = sourceContent.trim().split('\n');
+    this.#currentPosition = 0;
+  }
 
-let textualSegments = acquiredText.split("\n");
-
-const retrieveNextSegment = () => {
-    if (textualSegments.length === 0) {
-        throw new Error("Source exhaustion detected.");
+  obtainNextItem() {
+    if (!this.hasMoreItems()) {
+      throw "NoSuchElementException:次に要素は無いよ";
     }
-    return textualSegments.shift();
+    return this.#lineData[this.#currentPosition++];
+  }
+
+  hasMoreItems() {
+    return this.#currentPosition < this.#lineData.length;
+  }
+}
+
+const conversionRegistry = {
+  1: (val) => Number.parseInt(val, 10),
+  2: (val) => val.split(" "),
+  4: (val) => val.split(" ").map(Number),
+  6: (val) => val.split(""),
+  7: (val) => val.split("").map(Number),
+  8: (arr) => arr.join(" "),
+  9: (arr) => arr.join("\n"),
+  0: (arr) => arr.join("")
 };
 
-const parseIntegerSet = (lineContent) => lineContent.split(" ").map(Number);
-const parseSingleInteger = (lineContent) => Number(lineContent);
+class DataTransformer {
+  process(value, transformationType) {
+    try {
+      const operation = conversionRegistry[transformationType];
+      return operation ? operation(value) : value;
+    } catch (e) {
+      return value;
+    }
+  }
+}
 
-const findMinimumValue = (collection) => collection.reduce((currentMin, element) => (element < currentMin ? element : currentMin), Infinity);
+let globalInputHandler;
+let globalDataConverter;
 
-const deriveCostRates = (initialCharges) => {
-    const [quarterCharge, halfCharge, singleCharge, doubleCharge] = initialCharges;
+function initializeEnvironment(rawData) {
+  globalInputHandler = new InputProcessor(rawData);
+  globalDataConverter = new DataTransformer();
+}
 
-    const chargesForOneLiter = findMinimumValue([
-        quarterCharge * 4,
-        halfCharge * 2,
-        singleCharge
-    ]);
+function retrieveNextEntry() { return globalInputHandler.obtainNextItem(); }
+function retrieveNextInteger() { return globalDataConverter.process(retrieveNextEntry(), 1); }
+function retrieveNextStringArray() { return globalDataConverter.process(retrieveNextEntry(), 2); }
+function retrieveNextIntegerArray() { return globalDataConverter.process(retrieveNextEntry(), 4); }
+function retrieveNextCharacterArray() { return globalDataConverter.process(retrieveNextEntry(), 6); }
+function checkInputAvailability() { return globalInputHandler.hasMoreItems(); }
 
-    const chargesForTwoLiters = findMinimumValue([
-        quarterCharge * 8,
-        halfCharge * 4,
-        singleCharge * 2,
-        doubleCharge
-    ]);
+function displayOutput(content) { console.log(content); }
+function displayError(content) { console.error(content); }
 
-    return { singleUnitCost: chargesForOneLiter, doubleUnitCost: chargesForTwoLiters };
-};
+function calculateOptimalLiquidCost(quarterPrice, halfPrice, singlePrice, doublePrice, totalLiters) {
+  const determineVolumeCost = (volume, q, h, s, d) => {
+    if (volume === 1) {
+      return Math.min(q * 4, h * 2, s);
+    } else if (volume === 2) {
+      return Math.min(q * 8, h * 4, s * 2, d);
+    }
+    return Infinity;
+  };
 
-const determineFinalPrice = (volumeRequired, rateInformation) => {
-    const { singleUnitCost, doubleUnitCost } = rateInformation;
+  const costForTwoLiters = determineVolumeCost(2, quarterPrice, halfPrice, singlePrice, doublePrice);
+  const costForOneLiter = determineVolumeCost(1, quarterPrice, halfPrice, singlePrice, doublePrice);
 
-    const twoLiterCount = Math.floor(volumeRequired / 2);
-    const oneLiterCount = volumeRequired % 2;
+  const numTwoLiterUnits = Math.floor(totalLiters / 2);
+  const remainingLiters = totalLiters % 2;
 
-    return (twoLiterCount * doubleUnitCost) + (oneLiterCount * singleUnitCost);
-};
+  let totalExpense = numTwoLiterUnits * costForTwoLiters;
+  if (remainingLiters === 1) {
+    totalExpense += costForOneLiter;
+  }
+  return totalExpense;
+}
 
-const executeProcessing = () => {
-    const firstLineValues = parseIntegerSet(retrieveNextSegment());
-    const targetVolume = parseSingleInteger(retrieveNextSegment());
+function executeMainLogic() {
+  const initialParameters = retrieveNextIntegerArray();
+  const qVal = initialParameters[0];
+  const hVal = initialParameters[1];
+  const sVal = initialParameters[2];
+  const dVal = initialParameters[3];
+  const nVal = retrieveNextInteger();
 
-    const { singleUnitCost, doubleUnitCost } = deriveCostRates(firstLineValues);
+  const finalResult = calculateOptimalLiquidCost(qVal, hVal, sVal, dVal, nVal);
+  displayOutput(finalResult);
+}
 
-    const finalResult = determineFinalPrice(targetVolume, { singleUnitCost, doubleUnitCost });
-
-    console.log(finalResult);
-};
-
-executeProcessing();
+initializeEnvironment(require("fs").readFileSync("/dev/stdin", "utf8"));
+executeMainLogic();

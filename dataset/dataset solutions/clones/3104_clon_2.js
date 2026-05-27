@@ -1,41 +1,43 @@
 'use strict';
 
-// This primary routine handles the incoming data stream and orchestrates the query processing.
-function ProcessQueries(rawData) {
+/*
+ * This function serves as the primary entry point for processing input data.
+ * It takes a raw string as an argument, processes it, and then performs
+ * a series of operations based on queries embedded within the input.
+ */
+function ProcessInput(rawData) {
+  // Split the entire input string into an array of individual lines.
+  // This helps in parsing different parts of the input.
+  let processedLines = rawData.split("\n");
 
-    // First, segment the entire input string into an array of individual lines.
-    // Each line represents either metadata or a specific query.
-    rawData = rawData.split('\n');
+  // The second line (index 1) of the input is considered the main string
+  // against which queries will be performed.
+  const targetString = processedLines[1];
 
-    // The second line of the input (at array index 1) is designated as the primary
-    // text sequence against which all subsequent queries will be performed.
-    var targetString = rawData[1];
+  // All lines from the third line (index 2) onwards are treated as individual queries.
+  // These queries will be iterated over.
+  const queryList = processedLines.slice(2);
 
+  // Iterate through each query present in the query list.
+  for (const currentQuery of queryList) {
+    // For each query line, split it by space to get individual query parameters.
+    // These parameters typically define a range or specific values for the query.
+    const queryValues = currentQuery.split(" ");
 
-    // The remaining lines, starting from the third line (index 2), constitute
-    // a collection of distinct search queries.
-    var queryList = rawData.slice(2);
+    // Extract a substring from the target string based on the query parameters.
+    // The first parameter (qv[0]) is the start index (1-based, so subtract 1),
+    // and the second parameter (qv[1]) is the end index (inclusive).
+    let subSegment = targetString.slice(parseInt(queryValues[0]) - 1, parseInt(queryValues[1]));
 
-    // We now iterate through each individual query present in our query collection.
-    for (var currentQuery of queryList) {
-
-        // Every query string is expected to contain two space-separated numeric values.
-        // These values define the start and end boundaries for a sub-segment extraction.
-        var queryParts = currentQuery.split(' ');
-
-        // From the main target string, we extract a specific sub-segment.
-        // The query's first index is 1-based, so we adjust it to be 0-based for JavaScript's `slice` method.
-        // The second index is already suitable for `slice` as it's exclusive.
-        var subSegment = targetString.slice(queryParts[0] - 1, queryParts[1]);
-
-        // Finally, we determine the count of 'AC' occurrences within the extracted sub-segment.
-        // This is achieved by splitting the sub-segment by 'AC' and then counting the resulting array elements,
-        // subtracting one to get the actual number of occurrences. The result is then printed to the console.
-        console.log(subSegment.split('AC').length - 1);
-    }
+    // Count the occurrences of the substring 'AC' within the extracted segment.
+    // This is done by splitting the segment by 'AC' and then subtracting 1 from the length
+    // of the resulting array. For example, "ACAC" split by "AC" gives ["", "", ""], length 3, so 2 occurrences.
+    // "BACA" split by "AC" gives ["B", "A"], length 2, so 1 occurrence.
+    console.log(subSegment.split('AC').length - 1);
+  }
 }
 
-// To initiate the process, we read the entire content of standard input synchronously.
-// The content is assumed to be UTF-8 encoded.
-// This read data is then passed to our main processing function.
-ProcessQueries(require("fs").readFileSync('/dev/stdin', 'utf8'));
+// The program execution starts here.
+// It reads the entire content of the standard input file synchronously,
+// decodes it as UTF-8, and then passes it to the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

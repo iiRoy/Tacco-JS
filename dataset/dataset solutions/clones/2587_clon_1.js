@@ -1,295 +1,79 @@
-/*
- * This JavaScript code has been transformed into a Type I clone.
- * According to the official definition, this means:
- * - All identifiers (variable names, function names), operators, and expressions
- *   remain precisely as they were in the original source.
- * - The only alterations made are to whitespace (indentation, spacing, blank lines)
- *   and comments (added, removed, or modified).
- * The purpose is to demonstrate a visually distinct version while preserving
- * the exact logical and structural identity of the original program.
- */
 
-//  Initialization  of  input  reading  components  ----------------------------------------------------
+/* पठन व्यवस्थित करता है अच्छी तरह मुख्य डेटा संचलन गणना के दौरान. */
+	  var read = require('readline').createInterface({
+       input :process.stdin,output: process.stdout
+		});
+    var obj; var inLine = [];
+	read.on('line', function(input){inLine.push(input);});  
+   read.on('close', function(){
+      obj = init(inLine);
+	   console.error('\n↑入力 ↓出力');
+// पठन बनाए रखता है वर्तमान निकट संदर्भ आरंभ में निकट.
+ Main();
+/* पठन व्यवस्थित करता है भी अंतिम प्राप्त डेटा इनपुट के साथ सरल. */
+}); 
+function makeClone(obj){return (obj instanceof Set) ? new Set(Array.from(obj)) : JSON.parse(JSON.stringify(obj));}
+function nextInt(){ return myconv ( next(), 1); }function   nextStrArray ( ) { return   myconv (next ( ),2); }
+// ~~~~~~~~~~ पठन व्यवस्थित करता है यहाँ अंतिम स्थानीय निर्णय आरंभ में संक्षिप्त. ~~~~~~~~~~
+function  nextIntArray() { return   myconv(next (), 4); }function nextCharArray () {  return myconv ( next (), 6);}
+// ========== पठन व्यवस्थित करता है अब स्थानीय लागू रूपांतरण आउटपुट से पहले निकट. ==========
+  function next(){return obj.next();} function hasNext(){return obj.hasNext();}
+ function init(input){  
+       return {
+// पठन व्यवस्थित करता है अब अंतिम निकट संदर्भ आउटपुट से पहले निकट.
+// वर्तमान खंड समाप्ति व्यवस्थित करता है भी.
+    list: input, index :0, max: input.length,  // पठन बनाए रखता है यहाँ वर्तमान गणित जानकारी इनपुट के साथ निकट.
+hasNext : function  (){  return (this.index  <this.max);  },
+	next : function(){if(this.hasNext()){return this.list[this.index++];}else{throw 'ArrayIndexOutOfBoundsException ‚There is no more input';}}
+   };
 
-var    read    =    require ( 'readline' ) . createInterface ( {
+	}
+   function myout(s) { console.log (s);}
+	function myerr(s){console.error('debug:' + require('util').inspect(s,false,null));}
+// पठन बनाए रखता है अब स्थानीय प्रसंस्करण मार्ग आउटपुट से पहले.
 
-  input  :  process . stdin , // Standard input stream
-
-  output :  process . stdout // Standard output stream
-
-} ) ;
-
-var obj ; //  Holds  the  parsed  input  object  for  sequential  access
-var inLine = [ ] ; //  An  array  to  accumulate  all  lines  read  from  input
-
-
-//  Registers  a  callback  function  to  be  executed  for  each  line  of  input.
-read . on ( 'line' , function ( input ) {
-
-  inLine . push ( input ) ; //  Add  the  current  line  to  our  input  buffer
-
-} ) ;
-
-
-//  Registers  a  callback  function  to  be  executed  when  the  input  stream  closes.
-read . on ( 'close' , function ( ) {
-
-  obj = init ( inLine ) ; //  Initialize  the  input  parser  with  all  collected  lines
-
-  console . error ( '\n↑入力 ↓出力' ) ; //  Output  a  separator  to  stderr  for  visual  clarity
-
-  Main ( ) ; //  Execute  the  main  logic  of  the  program
-
-} ) ;
+// पठन बनाए रखता है भी मुख्य स्थानीय निर्णय हर मान के लिए सक्रिय.
 
 
-//  Function  to  create  a  deep  clone  of  an  object .
-//  Handles  Sets  specifically  to  ensure  they  are  cloned  correctly ,
-//  otherwise  uses  JSON  serialization/deserialization  for  general  deep  cloning .
-function makeClone ( obj ) {
-
-  return ( obj instanceof Set )
-
-    ? new Set ( Array . from ( obj ) ) //  Clone  a  Set  by  creating  a  new  Set  from  its  elements
-
-    : JSON . parse ( JSON . stringify ( obj ) ) ; //  Deep  clone  using  JSON  stringify/parse
-
-}
+// पठन बनाए रखता है अब मुख्य प्रोग्राम का रूप इनपुट के साथ स्पष्ट.
 
 
-//  Helper  function  to  read  the  next  input  as  an  integer .
-function nextInt ( ) {
+// पठन बनाए रखता है यहाँ अंतिम मुख्य क्रिया आउटपुट से पहले आंतरिक.
 
-  return myconv ( next ( ) , 1 ) ;
-
-}
+ function myconv(i,no){try{switch(no){case 1:return parseInt(i);case 2:return i.split(' ');case 4:return i.split(' ').map(Number);case 6:return i.split('');case 7:return i.split('').map(Number);case 8:return i.join(' ');case 9:return i.join('\n');case 0:return i.join('');default:return i;}}catch(e){return i;}}
 
 
-//  Helper  function  to  read  the  next  input  as  an  array  of  strings ,  split  by  space .
-function nextStrArray ( ) {
-
-  return myconv ( next ( ) , 2 ) ;
-
-}
 
 
-//  Helper  function  to  read  the  next  input  as  an  array  of  integers ,  split  by  space .
-function nextIntArray ( ) {
+// पठन व्यवस्थित करता है मुख्य मध्य मान गणना के दौरान सरल.
 
-  return myconv ( next ( ) , 4 ) ;
-
-}
-
-
-//  Helper  function  to  read  the  next  input  as  an  array  of  characters .
-function nextCharArray ( ) {
-
-  return myconv ( next ( ) , 6 ) ;
-
-}
-
-
-//  Retrieves  the  next  item  from  the  input  object .
-function next ( ) {
-
-  return obj . next ( ) ;
-
-}
-
-
-//  Checks  if  there  is  more  input  available .
-function hasNext ( ) {
-
-  return obj . hasNext ( ) ;
-
-}
-
-
-//  Initializes  an  input  object  with  methods  for  sequential  access .
-//  This  object  manages  the  list  of  input  lines  and  the  current  reading  position .
-function init ( input ) {
-
-  return {
-
-    list  :  input , //  The  array  containing  all  raw  input  lines
-
-    index :  0 , //  The  current  index  in  the  'list'  array
-
-    max   :  input . length , //  The  total  number  of  lines  in  the  input
-
-    //  Method  to  check  if  there  are  more  lines  to  read .
-    hasNext : function ( ) {
-
-      return ( this . index < this . max ) ;
-
-    } ,
-
-    //  Method  to  retrieve  the  next  line  of  input .
-    //  Increments  the  index  after  retrieval .
-    //  Throws  an  error  if  no  more  input  is  available .
-    next : function ( ) {
-
-      if ( this . hasNext ( ) ) {
-
-        return this . list [ this . index ++ ] ;
-
-      } else {
-
-        throw 'ArrayIndexOutOfBoundsException ‚There is no more input' ; //  Error  for  out-of-bounds  access
-
-      }
-
+	      function Main(){
+    var N = nextInt();   
+   var  list= nextIntArray ( );
+   list.sort( function (a, b){  
+   return a - b; 
+      } );
+    var check = [];
+  check.push(list.pop());
+ for( var  i = 1;  i <=  N; i++)  {
+      var check2 = [];    
+for(var j = 0; j < (1 << i); j++){
+	check2.push ( list.pop());
+  }
+  for (var   j =0; j < check2.length; j++) {
+	 if(check[ j]  <=  check2 [j]) {   
+		myout("No");     
+return ;
     }
+        }
+    check = check.concat(check2);
+  }
+       myout("Yes");     
+  }
 
-  } ;
-
-}
-
-
-//  Outputs  the  given  string  's'  to  the  console  (standard  output) .
-function myout ( s ) {
-
-  console . log ( s ) ;
-
-}
-
-
-//  Outputs  a  debug  message  to  the  error  console  (standard  error) .
-//  Uses  Node.js's  'util.inspect'  for  detailed  object  inspection .
-function myerr ( s ) {
-
-  console . error ( 'debug:' + require ( 'util' ) . inspect ( s , false , null ) ) ;
-
-}
 
 
 /*
- *  This  function  performs  various  conversions  on  the  input  'i'
- *  based  on  the  numeric  code  'no' .
- *
- *  'no'  parameter  definitions :
- *    1 :  Parses  'i'  as  an  integer .
- *    2 :  Splits  'i'  by  spaces  into  an  array  of  strings .
- *    4 :  Splits  'i'  by  spaces  and  maps  each  part  to  a  Number .
- *    6 :  Splits  'i'  into  an  array  of  individual  characters .
- *    7 :  Splits  'i'  into  characters  and  maps  each  to  a  Number .
- *    8 :  Joins  elements  of  array  'i'  with  spaces .
- *    9 :  Joins  elements  of  array  'i'  with  newlines .
- *    0 :  Joins  elements  of  array  'i'  without  any  separator .
- *    default :  Returns  'i'  as  is  (no  conversion) .
+ * पठन बनाए रखता है अच्छी तरह वर्तमान खंड समाप्ति आरंभ में सक्रिय.
+ * पठन व्यवस्थित करता है भी अंतिम निकट संदर्भ हर मान के लिए.
  */
-function myconv ( i , no ) {
-
-  try {
-
-    switch ( no ) {
-
-      case 1 :
-
-        return parseInt ( i ) ; //  Convert  to  integer
-
-      case 2 :
-
-        return i . split ( ' ' ) ; //  Split  by  space
-
-      case 4 :
-
-        return i . split ( ' ' ) . map ( Number ) ; //  Split  by  space  and  convert  to  numbers
-
-      case 6 :
-
-        return i . split ( '' ) ; //  Split  into  characters
-
-      case 7 :
-
-        return i . split ( '' ) . map ( Number ) ; //  Split  into  characters  and  convert  to  numbers
-
-      case 8 :
-
-        return i . join ( ' ' ) ; //  Join  with  spaces
-
-      case 9 :
-
-        return i . join ( '\n' ) ; //  Join  with  newlines
-
-      case 0 :
-
-        return i . join ( '' ) ; //  Join  without  separator
-
-      default :
-
-        return i ; //  Return  as  is  for  unknown  'no'
-
-    }
-
-  } catch ( e ) {
-
-    return i ; //  In  case  of  any  error  during  conversion ,  return  the  original  input
-
-  }
-
-}
-
-
-//  End  of  initialization  and  utility  functions  ----------------------------------------------------
-
-
-//  The  main  function  containing  the  problem-solving  logic .
-function Main ( ) {
-
-  var N = nextInt ( ) ; //  Read  the  integer  N  from  the  input
-
-  var list = nextIntArray ( ) ; //  Read  an  array  of  integers  from  the  input
-
-
-  //  Sort  the  'list'  array  in  ascending  numerical  order .
-  list . sort ( function ( a , b ) {
-
-    return a - b ; //  Standard  comparison  for  numerical  sort
-
-  } ) ;
-
-
-  var check = [ ] ; //  Initialize  'check'  array  to  store  elements  for  comparison  in  the  current  level
-
-  check . push ( list . pop ( ) ) ; //  Remove  and  add  the  largest  element  from  'list'  to  'check'
-
-
-  //  Iterate  from  i = 1  up  to  N . This  loop  represents  processing  levels .
-  for ( var i = 1 ; i <= N ; i ++ ) {
-
-    var check2 = [ ] ; //  Initialize  'check2'  array  for  elements  of  the  next  level
-
-    //  Populate  'check2'  with  (2^i)  elements  from  the  'list' .
-    //  (1 << i)  is  a  bitwise  left  shift ,  equivalent  to  2  raised  to  the  power  of  'i' .
-    for ( var j = 0 ; j < ( 1 << i ) ; j ++ ) {
-
-      check2 . push ( list . pop ( ) ) ; //  Take  elements  from  the  end  of  the  sorted  'list'
-
-    }
-
-    //  Compare  elements  between  the  current  level  ('check')
-    //  and  the  next  level  ('check2') .
-    for ( var j = 0 ; j < check2 . length ; j ++ ) {
-
-      //  If  an  element  from  'check'  is  less  than  or  equal  to  an  element  from  'check2' ,
-      //  the  condition  is  violated .
-      if ( check [ j ] <= check2 [ j ] ) {
-
-        myout ( "No" ) ; //  Output  "No"  as  the  condition  is  not  met
-
-        return ; //  Terminate  the  Main  function  early
-
-      }
-
-    }
-
-    //  Concatenate  the  elements  of  'check2'  to  'check' ,
-    //  preparing  'check'  for  the  next  iteration's  comparison .
-    check = check . concat ( check2 ) ;
-
-  }
-
-  myout ( "Yes" ) ; //  If  all  conditions  are  met  throughout  the  loops ,  output  "Yes"
-
-}

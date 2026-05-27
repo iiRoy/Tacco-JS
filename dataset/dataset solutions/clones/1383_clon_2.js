@@ -1,36 +1,27 @@
-/* This module handles processing of standard input to extract and display the first sorted string. */
+function processInput(inputRows) {
+  // This variable stores the count of words, though it's not used later in the logic.
+  let numEntries = parseInt(inputRows[0], 10);
 
-function  processInputContent (textRows)
-{
-  // Determine the expected number of entries from the first line, using base 10
-  const   totalItemsExpected = parseInt (textRows [0] , 10) ;
+  // Extract words from the second line onwards and sort them alphabetically.
+  let sortedTerms = inputRows.slice(1).sort();
 
-  // Slice the array from the second element onwards and sort them alphabetically
-  const   alphabetizedStrings = textRows.slice(1).sort() ;
-
-  // Output the very first element from the now-sorted collection of strings to the console
-  console.log( alphabetizedStrings[0] );
+  // Output the first word after sorting.
+  console.log(sortedTerms[0]);
 }
 
-// Global array to accumulate incoming data segments from the standard input stream
-let     incomingBufferParts = [ ] ;
+// Array to accumulate incoming data chunks from standard input.
+let dataParts = [];
 
-// Set up an event listener for when data becomes available on standard input
-process.stdin.on( 'data',
-  function ( dataBlock ) // Callback function triggered when a new data block is received
-  {
-    // Add the current data block to our collection of buffer parts
-    incomingBufferParts.push(dataBlock);
-  }
-);
+// Set up an event listener for incoming data.
+process.stdin.on('data', function(currentPart) {
+  dataParts.push(currentPart);
+});
 
-// Set up an event listener for when the standard input stream finishes
-process.stdin.on( 'end',
-  function ( ) { // Callback function executed once all input has been received
-    // Join all accumulated buffer parts into a single string and then split it by newline characters
-    const   concatenatedLines = incomingBufferParts.join('').split('\n');
+// Set up an event listener for the end of input stream.
+process.stdin.on('end', function() {
+  // Combine all data parts, then split into individual lines using the newline character.
+  let parsedLines = dataParts.join('').split('\n');
 
-    // Invoke the primary content processing function with the fully parsed lines
-    processInputContent(concatenatedLines);
-  }
-);
+  // Call the main processing function with the parsed lines.
+  processInput(parsedLines);
+});

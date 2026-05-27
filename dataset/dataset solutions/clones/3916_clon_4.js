@@ -1,20 +1,19 @@
-function processNumericSequence(sourceText) {
-  const numericParts = sourceText.match(/\d+/g).map(Number);
-  const lowerBoundary = numericParts[0];
-  const upperBoundary = numericParts[1];
-  const expansionLimit = numericParts[2];
+function processRangeData(inputString) {
+  const [initialValue, finalValue, selectionCount] = inputString.trim().split(" ").map(Number);
 
-  const initialSequenceLength = Math.min(expansionLimit, upperBoundary - lowerBoundary + 1);
-  const firstSet = Array.from({ length: initialSequenceLength }, (_, index) => lowerBoundary + index);
+  const distinctElements = new Set();
 
-  const finalSequenceLength = Math.min(expansionLimit, upperBoundary - lowerBoundary + 1);
-  const secondSet = Array.from({ length: finalSequenceLength }, (_, index) => upperBoundary - index);
+  Array.from({ length: selectionCount }, (_, index) => initialValue + index)
+    .filter(element => element <= finalValue)
+    .forEach(element => distinctElements.add(element));
 
-  const uniqueElements = new Set([...firstSet, ...secondSet]);
+  Array.from({ length: selectionCount }, (_, index) => finalValue - index)
+    .filter(element => element >= initialValue)
+    .forEach(element => distinctElements.add(element));
 
-  const orderedCollection = Array.from(uniqueElements).sort((valA, valB) => valA - valB);
+  const orderedResult = Array.from(distinctElements).sort((valA, valB) => valA - valB);
 
-  console.log(orderedCollection.join('\n'));
+  orderedResult.forEach(item => console.log(item));
 }
 
-processNumericSequence(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processRangeData(require('fs').readFileSync('/dev/stdin', 'utf8'));

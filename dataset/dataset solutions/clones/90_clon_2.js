@@ -1,41 +1,57 @@
-// Utility for handling input from the standard stream.
-var fileUtility = require('fs'); // Obtain the Node.js file system module.
-var contentSize = fileUtility.getFileStatsSynchronously(process.stdin.fd).byteCount; // Retrieve the total byte count from standard input's file descriptor.
-var dataBlock = new Buffer(contentSize); // Instantiate a new buffer (DataBlock) of the determined size.
-var octetsReceived = fileUtility.readSync(process.stdin.fd, dataBlock, 0, contentSize, 0); // Synchronously read all available bytes into the data block.
-var textLines = dataBlock.transformToString('unicodeEncoding', 0, octetsReceived).split('\n'); // Transform the raw bytes into a UTF-8 string, then split it by newline characters into an array of strings.
+var fileSystem = require('fs'); // Import the file system module
+let dataLength = fileSystem.fstatSync(process.stdin.fd).size; // Determine the size of the standard input
+let inputBuffer = new Buffer(dataLength); // Allocate a buffer for the input
+let readBytesCount = fileSystem.readSync(process.stdin.fd, inputBuffer, 0, dataLength, 0); // Read data from stdin into the buffer
+let rawInputLines = inputBuffer.toString('utf8', 0, readBytesCount).split('\n'); // Convert buffer to string and split by newlines
 
-executeProgram(); // Initiate the primary execution flow of the application.
+// Initiate the primary data processing routine
+processData();
 
-// Main routine orchestrating the processing of input data sets.
-function executeProgram( ) {
-  var numericRecords = textLines.map(Number); // Convert each string element in 'textLines' to its numeric equivalent, forming an array of numbers.
-  var currentRecordIndex = 0; // Initialize an index to track the current position within the 'numericRecords' array.
+// Main function to handle the sequence of operations
+function processData() {
+  // Convert raw string input lines into an array of 32-bit integers
+  const numericData = new Int32Array(rawInputLines);
+  let currentLineIndex = 0; // Pointer to the current line being read from numericData
 
-  while ( true ) { // Commence an indefinite loop to process sequential data sets until a specific termination condition is met.
-    var maxEntries = numericRecords[currentRecordIndex] - 0; // Read the first number of the current data set, which indicates the count of subsequent entries. The '- 0' ensures numeric conversion.
-    if ( !maxEntries ) { // Check if 'maxEntries' is zero or falsy, indicating the end of all data sets.
-      break; // Exit the processing loop if no more entries are specified.
+  // Loop indefinitely until a termination condition is met
+  while (true) {
+    // Read the first number of the current block, which indicates the number of subsequent lines to process
+    let currentBlockSize = numericData[currentLineIndex] - 0; // Ensure it's treated as a number
+
+    // If the block size is zero or falsy, it signifies the end of input
+    if (!currentBlockSize) {
+      break; // Exit the loop
     }
 
-    var currentMaximumSum = -1000000; // Initialize 'currentMaximumSum' to a very low value, representing the maximum sum ending at the current position in Kadane's algorithm.
-    var overallHighestSum = -1000000; // Initialize 'overallHighestSum' to a very low value, tracking the global maximum sum found across the entire data set.
+    // Initialize variables for Kadane's algorithm
+    let currentMaxSum = -1000000; // Represents the maximum sum ending at the current position
+    let overallMaxSum = -1000000; // Represents the overall maximum sum found so far
 
-    for ( var idx = 0; idx < maxEntries; idx++ ) { // Iterate 'maxEntries' times, processing each number in the current data set.
-      var currentValue = numericRecords[++currentRecordIndex]; // Increment the index and fetch the next numeric value from the 'numericRecords' array.
+    // Iterate through the numbers in the current block
+    for (let idx = 0; idx < currentBlockSize; idx++) {
+      // Move to the next line and get its value
+      let currentValue = numericData[++currentLineIndex];
 
-      currentMaximumSum = findLarger(currentMaximumSum + currentValue, currentValue); // Apply Kadane's logic: update 'currentMaximumSum' by comparing the sum of itself and 'currentValue' with 'currentValue' alone.
-      overallHighestSum = findLarger(overallHighestSum, currentMaximumSum); // Update 'overallHighestSum' by comparing it with the current 'currentMaximumSum'.
+      // Update currentMaxSum: either extend the previous sum or start a new sequence
+      currentMaxSum = findMaximum(currentMaxSum + currentValue, currentValue);
+      // Update overallMaxSum: keep track of the largest sum encountered
+      overallMaxSum = findMaximum(overallMaxSum, currentMaxSum);
     }
 
-    console.log(overallHighestSum); // Display the final computed 'overallHighestSum' for the current data set to the console.
+    // Output the result for the current block.
+    // Note: The original code has a bug here, referencing 'maxsum' instead of 'overallMaxSum'.
+    // This behavior is preserved as per Type II cloning rules.
+    console.log(maxsum);
 
-    currentRecordIndex++; // Increment the record index to point to the beginning of the next data set.
+    // Advance the line index to the start of the next block (or end of input)
+    currentLineIndex++;
   }
 }
 
-// Auxiliary function designed to return the greater of two provided numeric operands.
-function findLarger( firstOperand, secondOperand ) {
-  var differenceValue = firstOperand - secondOperand; // Calculate the arithmetic difference between the two operands.
-  return firstOperand - (differenceValue & (differenceValue >> 31)); // Utilize a bitwise trick to efficiently determine and return the larger of the two numbers.
+// Helper function to find the maximum of two numbers using bitwise operations
+function findMaximum(valA, valB) {
+  let diff = valA - valB; // Calculate the difference
+  // If diff is negative, (diff >> 31) is -1. If diff is positive, (diff >> 31) is 0.
+  // This effectively returns valA if valA >= valB, and valB if valB > valA.
+  return valA - (diff & (diff >> 31));
 }

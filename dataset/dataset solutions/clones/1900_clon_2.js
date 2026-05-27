@@ -1,58 +1,44 @@
-const processData = (rawData) => {
-  // Normalize the input string: trim whitespace and split into individual lines.
-  const lineSegments = rawData.trim() .split('\n');
+const processInput = (rawData) => {
+  // Clean up the raw input string and split it into lines.
+  rawData = rawData.trim().split('\n');
 
-  // Parse the first line to get the total number of items and connections.
-  const [totalItems, numConnections] = lineSegments[0] .split(' ') .map(Number);
+  // Extract the first line to get the number of items and pairs.
+  const [numItems, numPairs] = rawData[0].split(' ').map(Number);
 
-  // Extract the remaining lines which represent the connections.
-  // The first element of lineSegments (totalItems, numConnections) is discarded.
-  const [, ...edgeList] = lineSegments;
+  // The rest of the lines represent the pairs.
+  const [, ...pairData] = rawData;
 
-  // Initialize an array to hold scores for each item.
-  // The first element is a dummy 0, followed by scores parsed from the second input line.
-  const itemScores = [0, ...lineSegments[1].split(' ').map(Number)];
-  // Create a boolean array to track if an item is dominant.
-  // The first element is a dummy false, followed by 'true' for all N items initially.
-  const isDominant = [false, ...new Array(totalItems).fill(true)];
+  // Initialize beacon strengths, adding a dummy 0 at index 0 for 1-based indexing.
+  const beaconStrengths = [0, ...rawData[1].split(' ').map(Number)];
 
-  // Iterate through each connection (edge) in the list.
-  for (let k = 0; k < edgeList.length; k++) {
-    // Parse the two items involved in the current connection.
-    const [pointX, pointY] = edgeList[k].split(' ').map(Number);
+  // Initialize an array to track if each item is the strongest, assuming all are initially.
+  const isStrongest = [false, ...new Array(numItems).fill(true)];
 
-    // Compare scores of the two connected items.
-    // If item X's score is greater than or equal to item Y's score, then Y is not dominant.
-    if (itemScores[pointX] >= itemScores[pointY]) {
-      isDominant[pointY] = false;
-    }
-    // If item X's score is less than or equal to item Y's score, then X is not dominant.
-    else if (itemScores[pointX] <= itemScores[pointY]) {
-      isDominant[pointX] = false;
+  // Iterate through each pair to determine which items are not the strongest.
+  for (let idx = 0; idx < pairData.length; idx++) {
+    const [firstItem, secondItem] = pairData[idx].split(' ').map(Number);
+
+    // Compare strengths and mark the weaker one as not strongest.
+    if (beaconStrengths[firstItem] >= beaconStrengths[secondItem]) {
+      isStrongest[secondItem] = false;
+    } else if (beaconStrengths[firstItem] <= beaconStrengths[secondItem]) {
+      isStrongest[firstItem] = false;
     }
   }
 
-  // Initialize a counter for dominant items.
-  let dominantCount = 0;
-  // Loop through the 'isDominant' array, starting from the first actual item (index 1).
-  for (let j = 1; j < isDominant.length; j++) {
-    // If an item is marked as dominant, increment the counter.
-    if (isDominant[j]) {
-      dominantCount++;
+  // Count how many items remain marked as strongest.
+  let strongestCount = 0;
+  for (let jdx = 1; jdx < isStrongest.length; jdx++) {
+    if (isStrongest[jdx]) {
+      strongestCount++;
     }
   }
 
-  // Output the final count of dominant items.
-  return console.log(dominantCount);
+  // Output the final count.
+  return console.log(strongestCount);
 };
 
-// Determine the execution context: test environment or standard input.
-process.env.EXECUTION_MODE
-  // If EXECUTION_MODE is set, check if it's 'test'.
-  ? (process.env.EXECUTION_MODE === 'test'
-      // If 'test', call a hypothetical test function (not provided in original, but maintaining structure).
-      ? executeTestScenario()
-      // Otherwise, read from 'dev/stdin' for custom testing.
-      : processData(require('fs').readFileSync('dev/stdin', 'utf8')))
-  // If EXECUTION_MODE is not set, read from standard input '/dev/stdin'.
-  : processData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// Conditional execution based on environment variable, for testing or production.
+process.env.MYTEST
+  ? (process.env.MYTEST === 'test' ? test() : processInput(require('fs').readFileSync('dev/stdin', 'utf8')))
+  : processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

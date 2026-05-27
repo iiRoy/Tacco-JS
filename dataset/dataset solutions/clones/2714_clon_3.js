@@ -1,116 +1,82 @@
-function processInputData(rawInputText) {
-    // Normalize input by trimming whitespace and splitting into lines.
-    // Using destructuring assignment for cleaner input parsing.
-    const linesOfInput = rawInputText.trim().split('\n');
+function processInput(rawData) {
+    const inputLines = rawData.split("\n");
+    const sourceString = inputLines[0];
+    const targetString = inputLines[1];
 
-    // Type III: Added input validation guard clause.
-    if (linesOfInput.length < 2) {
-        // In a real application, this might throw an error or handle it differently.
-        // For this context, we'll just log and exit.
-        console.error("Error: Input must contain at least two lines (source string and pattern string).");
-        return;
+    const sourceLength = sourceString.length;
+    const targetLength = targetString.length;
+
+    // Pre-calculate potential matches.
+    // The original code uses (s+t).slice, which means if the segment to check
+    // extends beyond s.length, it uses characters from t itself.
+    const extendedSourceForMatchCheck = sourceString + targetString;
+    const isMatchAtPosition = [];
+
+    for (let currentSourceIndex = 0; currentSourceIndex < sourceLength; currentSourceIndex++) {
+        const segmentFromExtendedSource = extendedSourceForMatchCheck.slice(currentSourceIndex, currentSourceIndex + targetLength);
+        isMatchAtPosition.push(segmentFromExtendedSource === targetString);
     }
 
-    const sourceSequence = linesOfInput[0]; // Represents the original 's'
-    const targetFragment = linesOfInput[1]; // Represents the original 't'
+    // Helper function to determine the length of a match chain starting from a given position,
+    // and to detect if it forms an infinite loop.
+    const evaluateMatchChain = (startingIndex) => {
+        let currentChainPosition = startingIndex;
+        const visitedIndicesInCurrentChain = [];
+        let chainLength = 0;
+        let hasDetectedCycle = false;
 
-    const sequenceLength = sourceSequence.length;
-    const fragmentLength = targetFragment.length;
+        // Special handling for targetString.length === 0, which creates an immediate cycle
+        // if a match is found (which it always is for empty string).
+        if (targetLength === 0) {
+            if (isMatchAtPosition[startingIndex]) {
+                // Original behavior: if targetLength is 0 and a match exists, it's an infinite loop.
+                // This results in max = -1.
+                return { length: -1, isInfinite: true };
+            } else {
+                return { length: 0, isInfinite: false };
+            }
+        }
 
-    // Type III: Added guard clauses for edge cases with fragment length.
-    if (fragmentLength === 0) {
-        // An empty pattern can always 'match' anywhere, leading to an infinite chain
-        // if the sequence itself is not empty. If sequence is also empty, it's 0.
-        // The original logic would lead to an infinite loop, so -1 is consistent.
-        console.log(-1);
-        return;
-    }
-    if (sequenceLength === 0) {
-        // If there's no source sequence, no matches can be found, so chain length is 0.
-        console.log(0);
-        return;
-    }
+        while (isMatchAtPosition[currentChainPosition]) {
+            visitedIndicesInCurrentChain.push(currentChainPosition);
+            chainLength++;
 
-    // Type III: Extracted the original, peculiar matching logic into a helper function
-    // to ensure exact behavior replication. The original code checks against 's + t'.
-    const checkOriginalMatchLogic = (mainStr, patternStr, currentStartingIndex) => {
-        const combinedStringForComparison = mainStr + patternStr;
-        return combinedStringForComparison.slice(currentStartingIndex, currentStartingIndex + patternStr.length) === patternStr;
+            // Move to the next potential match position, wrapping around the source string.
+            currentChainPosition = (currentChainPosition + targetLength) % sourceLength;
+
+            // Check if the new position has already been visited in this chain, indicating a cycle.
+            if (visitedIndicesInCurrentChain.includes(currentChainPosition)) {
+                hasDetectedCycle = true;
+                break;
+            }
+        }
+        return { length: chainLength, isInfinite: hasDetectedCycle };
     };
 
-    // Type II: Renamed variable for clarity.
-    // This array indicates if the targetFragment matches a substring of (sourceSequence + targetFragment)
-    // starting at each respective index in sourceSequence.
-    const fragmentStartMatches = new Array(sequenceLength).fill(false);
+    let maximumChainLength = 0;
+    let overallInfiniteLoopFound = false;
 
-    // Type II: Renamed loop variable.
-    // First pass: Populate the 'fragmentStartMatches' array based on the original matching rule.
-    for (let currentPos = 0; currentPos < sequenceLength; currentPos++) {
-        if (checkOriginalMatchLogic(sourceSequence, targetFragment, currentPos)) {
-            fragmentStartMatches[currentPos] = true;
-        }
-    }
+    // Iterate through all possible starting positions in the source string.
+    for (let startPoint = 0; startPoint < sourceLength; startPoint++) {
+        const chainEvaluationResult = evaluateMatchChain(startPoint);
 
-    // Type II: Renamed variable.
-    let maximumChainLengthFound = 0; // Stores the longest chain of matches without a cycle.
-    // Type II: Renamed variable and made it a global flag for early exit.
-    let infiniteChainDetectedGlobally = false;
-
-    // Type II: Renamed loop variable.
-    // Second pass: Iterate through all possible starting positions to find the longest chain of matches.
-    for (let chainInitialPoint = 0; chainInitialPoint < sequenceLength; chainInitialPoint++) {
-        // Type III: Early exit if an infinite chain has already been found.
-        if (infiniteChainDetectedGlobally) {
-            break;
-        }
-
-        let currentLinkPosition = chainInitialPoint; // Represents the 'now' from original code.
-        // Type III: Using a Set for O(1) average time complexity for cycle detection,
-        // improving upon Array.prototype.indexOf's O(N) complexity.
-        const visitedPositionsInCurrentChain = new Set(); // Represents 'getted' from original code.
-        let lengthOfCurrentChain = 0; // Counts the number of elements in the current chain.
-
-        // Type II: Renamed variable.
-        let localChainIsCyclic = false; // Flag for a cycle within the current chain.
-
-        // Traverse the chain as long as there's a valid match at the current position.
-        while (fragmentStartMatches[currentLinkPosition]) {
-            // Type III: Improved cycle detection using Set.
-            if (visitedPositionsInCurrentChain.has(currentLinkPosition)) {
-                localChainIsCyclic = true;
-                break; // Cycle detected in this specific chain traversal.
-            }
-
-            visitedPositionsInCurrentChain.add(currentLinkPosition);
-            lengthOfCurrentChain++; // Increment the count of matches in this chain.
-
-            // Move to the next potential starting position in the chain, wrapping around the sequence.
-            currentLinkPosition = (currentLinkPosition + fragmentLength) % sequenceLength;
-        }
-
-        if (localChainIsCyclic) {
-            infiniteChainDetectedGlobally = true; // Mark the global flag.
-            maximumChainLengthFound = -1; // As per requirement, -1 indicates an infinite chain.
-            break; // No need to check further, an infinite chain means -1 is the final answer.
+        if (chainEvaluationResult.isInfinite) {
+            overallInfiniteLoopFound = true;
+            break; // An infinite loop anywhere means the final result is -1.
         } else {
-            // If no cycle was found in this chain, update the maximum length if it's longer.
-            if (lengthOfCurrentChain > maximumChainLengthFound) {
-                maximumChainLengthFound = lengthOfCurrentChain;
+            // Update the maximum chain length found so far.
+            if (chainEvaluationResult.length > maximumChainLength) {
+                maximumChainLength = chainEvaluationResult.length;
             }
         }
     }
 
-    // Type II: Output the final result.
-    console.log(maximumChainLengthFound);
+    // Output the final result based on whether an infinite loop was detected.
+    if (overallInfiniteLoopFound) {
+        console.log(-1);
+    } else {
+        console.log(maximumChainLength);
+    }
 }
 
-// Type II: Renamed function call.
-// Type III: Added a try-catch block for robust file reading.
-try {
-    const fileContent = require("fs").readFileSync("/dev/stdin", "utf8");
-    processInputData(fileContent);
-} catch (readingError) {
-    console.error("An error occurred while reading input from /dev/stdin:", readingError.message);
-    // In a production environment, you might want to exit the process with an error code.
-    // process.exit(1);
-}
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

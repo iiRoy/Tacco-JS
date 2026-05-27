@@ -1,57 +1,66 @@
-function processInputData(sourceText) {
-    const lineSegments = sourceText.split("\n");
-    const countEntries = Number(lineSegments[0]);
+function locateBeacon(rawInput) {
+    const inputLines = rawInput.split("\n");
+    const pointCount = parseInt(inputLines[0], 10);
 
-    const parsedMeasurements = Array.from({ length: countEntries }, (_, idx) => {
-        const parts = lineSegments[idx + 1].split(" ").map(Number);
-        return { pointX: parts[0], pointY: parts[1], heightValue: parts[2] };
+    const sensorReadings = Array.from({ length: pointCount }, (_, idx) => {
+        const parts = inputLines[idx + 1].split(" ");
+        return {
+            xCoord: parseInt(parts[0], 10),
+            yCoord: parseInt(parts[1], 10),
+            sensorHeight: parseInt(parts[2], 10)
+        };
     });
 
-    const candidateXCoords = Array.from({ length: 101 }, (_, i) => i);
-    const candidateYCoords = Array.from({ length: 101 }, (_, i) => i);
+    const allPossibleCenters = Array.from({ length: 101 }, (_, xVal) =>
+        Array.from({ length: 101 }, (_, yVal) => ({ x: xVal, y: yVal }))
+    ).flat();
 
-    const finalSolution = candidateXCoords.flatMap(testX =>
-        candidateYCoords.map(testY => {
-            const computedAltitude = evaluateLocation(testX, testY, parsedMeasurements);
-            return computedAltitude !== null ? { x: testX, y: testY, h: computedAltitude } : null;
-        })
-    ).find(result => result !== null);
+    let finalResult = null;
 
-    if (finalSolution) {
-        return `${finalSolution.x} ${finalSolution.y} ${finalSolution.h}`;
-    }
-    return "";
+    allPossibleCenters.some(potentialCenter => {
+        const beaconAltitude = checkBeaconValidity(sensorReadings, potentialCenter.x, potentialCenter.y);
+        if (beaconAltitude !== false) {
+            finalResult = `${potentialCenter.x} ${potentialCenter.y} ${beaconAltitude}`;
+            return true;
+        }
+        return false;
+    });
+
+    return finalResult;
 }
 
-function evaluateLocation(testX, testY, measurementPoints) {
-    let computedAltitude = measurementPoints.reduce((currentAltitude, point) => {
-        if (point.heightValue > 0) {
-            const derivedAltitudeFromPoint = point.heightValue + Math.abs(testX - point.pointX) + Math.abs(testY - point.pointY);
-            if (currentAltitude === null) {
-                return derivedAltitudeFromPoint;
-            } else if (currentAltitude !== derivedAltitudeFromPoint) {
-                return NaN;
-            }
+function checkBeaconValidity(readings, candidateX, candidateY) {
+    const initialBounds = {
+        lowerBound: 1,
+        upperBound: 1000000000,
+        isConsistent: true
+    };
+
+    const evaluationResult = readings.reduce((accumulator, currentReading) => {
+        if (!accumulator.isConsistent) {
+            return accumulator;
         }
-        return currentAltitude;
-    }, null);
 
-    if (computedAltitude === NaN) {
-        return null;
-    }
+        const { xCoord, yCoord, sensorHeight } = currentReading;
+        const calculatedAltitude = sensorHeight + Math.abs(candidateX - xCoord) + Math.abs(candidateY - yCoord);
 
-    if (computedAltitude === null) {
-        computedAltitude = 1;
-    }
-
-    const allConditionsMet = measurementPoints.every(point => {
-        const gridDistance = Math.abs(testX - point.pointX) + Math.abs(testY - point.pointY);
-        if (point.heightValue > 0) {
-            return computedAltitude === point.heightValue + gridDistance;
+        if (sensorHeight === 0) {
+            accumulator.upperBound = Math.min(accumulator.upperBound, calculatedAltitude);
         } else {
-            return computedAltitude <= gridDistance;
+            accumulator.upperBound = Math.min(accumulator.upperBound, calculatedAltitude);
+            accumulator.lowerBound = Math.max(accumulator.lowerBound, calculatedAltitude);
         }
-    });
 
-    return allConditionsMet ? computedAltitude : null;
+        if (accumulator.lowerBound > accumulator.upperBound) {
+            accumulator.isConsistent = false;
+        }
+        return accumulator;
+    }, initialBounds);
+
+    if (!evaluationResult.isConsistent || evaluationResult.lowerBound !== evaluationResult.upperBound) {
+        return false;
+    }
+    return evaluationResult.lowerBound;
 }
+
+console.log(locateBeacon(require("fs").readFileSync("/dev/stdin", "utf8")));

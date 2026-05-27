@@ -1,71 +1,64 @@
-const processedInputContent = require('fs').readFileSync('/dev/stdin', 'utf8');
-const processedLines = processedInputContent.trim().split(/\r?\n/);
-let currentLinePointer = 0;
-
-function advanceToNextLine() {
-    return processedLines[currentLinePointer++];
-}
+const fileSystem = require('fs');
+const inputData = fileSystem.readFileSync('/dev/stdin', 'utf8');
+let lineBuffer = inputData.trim().split("\n");
 
 while (true) {
-    const dimensions = advanceToNextLine().split(" ").map(Number);
-    const verticalExtent = dimensions[0];
-    const horizontalExtent = dimensions[1];
+    const dimensions = lineBuffer.shift().split(" ").map(Number);
+    const currentHeight = dimensions[0];
+    const currentWidth = dimensions[1];
 
-    if (verticalExtent === 0 && horizontalExtent === 0) {
+    if (currentHeight === 0 && currentWidth === 0) {
         break;
     }
 
-    const characterGrid = [];
-    for (let rowCursor = 0; rowCursor < verticalExtent; ++rowCursor) {
-        characterGrid.push(advanceToNextLine().split(""));
+    let previousRowHeights = Array(currentWidth).fill(0);
+    const heightMapGrid = [];
+
+    for (let rowIndex = 0; rowIndex < currentHeight; rowIndex++) {
+        const characterRow = lineBuffer.shift().split("");
+        const currentRowCalculatedHeights = characterRow.map((charValue, colIndex) => {
+            return charValue === '.' ? (previousRowHeights[colIndex] + 1) : 0;
+        });
+        heightMapGrid.push(currentRowCalculatedHeights);
+        previousRowHeights = currentRowCalculatedHeights;
     }
 
-    const derivedHeightMatrix = Array.from({ length: verticalExtent }, () => Array(horizontalExtent).fill(0));
-
-    for (let rIdx = 0; rIdx < verticalExtent; ++rIdx) {
-        for (let cIdx = 0; cIdx < horizontalExtent; ++cIdx) {
-            if (characterGrid[rIdx][cIdx] === '.') {
-                derivedHeightMatrix[rIdx][cIdx] = (rIdx === 0) ? 1 : derivedHeightMatrix[rIdx - 1][cIdx] + 1;
-            } else {
-                derivedHeightMatrix[rIdx][cIdx] = 0;
+    const determineLeftSmaller = (heightsSequence) => {
+        const indexStack = [];
+        const leftBoundaryIndices = Array(heightsSequence.length);
+        for (let idx = 0; idx < heightsSequence.length; idx++) {
+            while (indexStack.length > 0 && heightsSequence[indexStack[indexStack.length - 1]] >= heightsSequence[idx]) {
+                indexStack.pop();
             }
+            leftBoundaryIndices[idx] = indexStack.length === 0 ? -1 : indexStack[indexStack.length - 1];
+            indexStack.push(idx);
+        }
+        return leftBoundaryIndices;
+    };
+
+    const determineRightSmaller = (heightsSequence) => {
+        const indexStack = [];
+        const rightBoundaryIndices = Array(heightsSequence.length);
+        for (let idx = heightsSequence.length - 1; idx >= 0; idx--) {
+            while (indexStack.length > 0 && heightsSequence[indexStack[indexStack.length - 1]] >= heightsSequence[idx]) {
+                indexStack.pop();
+            }
+            rightBoundaryIndices[idx] = indexStack.length === 0 ? heightsSequence.length : indexStack[indexStack.length - 1];
+            indexStack.push(idx);
+        }
+        return rightBoundaryIndices;
+    };
+
+    let currentMaxRectangleArea = 0;
+    for (const rowHeightSequence of heightMapGrid) {
+        const leftLimits = determineLeftSmaller(rowHeightSequence);
+        const rightLimits = determineRightSmaller(rowHeightSequence);
+
+        for (let i = 0; i < rowHeightSequence.length; i++) {
+            const barHeight = rowHeightSequence[i];
+            const rectangleWidth = rightLimits[i] - leftLimits[i] - 1;
+            currentMaxRectangleArea = Math.max(currentMaxRectangleArea, barHeight * rectangleWidth);
         }
     }
-
-    let overallMaxArea = 0;
-
-    for (let currentHistogramRowIdx = 0; currentHistogramRowIdx < verticalExtent; ++currentHistogramRowIdx) {
-        const histogramValues = derivedHeightMatrix[currentHistogramRowIdx];
-        const valueCount = horizontalExtent;
-
-        const leftLimits = Array(valueCount).fill(0);
-        const rightLimits = Array(valueCount).fill(valueCount);
-        const indexTrackerStack = [];
-
-        for (let index = 0; index < valueCount; ++index) {
-            while (indexTrackerStack.length > 0 && histogramValues[indexTrackerStack[indexTrackerStack.length - 1]] >= histogramValues[index]) {
-                indexTrackerStack.pop();
-            }
-            leftLimits[index] = (indexTrackerStack.length === 0) ? -1 : indexTrackerStack[indexTrackerStack.length - 1];
-            indexTrackerStack.push(index);
-        }
-
-        indexTrackerStack.length = 0;
-
-        for (let index = valueCount - 1; index >= 0; --index) {
-            while (indexTrackerStack.length > 0 && histogramValues[indexTrackerStack[indexTrackerStack.length - 1]] >= histogramValues[index]) {
-                indexTrackerStack.pop();
-            }
-            rightLimits[index] = (indexTrackerStack.length === 0) ? valueCount : indexTrackerStack[indexTrackerStack.length - 1];
-            indexTrackerStack.push(index);
-        }
-
-        for (let index = 0; index < valueCount; ++index) {
-            const currentBarValue = histogramValues[index];
-            const calculatedWidth = rightLimits[index] - leftLimits[index] - 1;
-            overallMaxArea = Math.max(overallMaxArea, currentBarValue * calculatedWidth);
-        }
-    }
-
-    console.log(overallMaxArea);
+    console.log(currentMaxRectangleArea);
 }

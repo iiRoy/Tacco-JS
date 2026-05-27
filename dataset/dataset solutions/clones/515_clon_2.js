@@ -1,58 +1,50 @@
-/* This JavaScript module is designed to process sequential
- * numeric data provided via standard input, performing
- * calculations based on distinct data sets.
- */
-var data_source_content = require ( 'fs' ) . readFileSync ( '/usr/local/input_data' , 'ascii' ) ;
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-// The raw input string is first cleaned and then divided into individual lines.
-let input_line_segments = ( data_source_content . trim ( ) ) . split ( "\r" ) ;
+var lineSegments = (rawData.trim()).split("\n"); // Split the input into an array of lines
 
-// The primary processing loop continues until a specific termination condition is met.
-while ( true )
-{
-  // Extract the initial quantity indicator from the input segments.
-  var current_numeric_count = input_line_segments . shift ( ) + 0 ;
+while (true) {
+    // Extract the first numerical value from the line segments
+    var countVal = lineSegments.shift() - 0;
 
-  // If the extracted count is zero, gracefully exit the processing loop.
-  if ( current_numeric_count == 0 )
-  {
-    break ;
-  }
+    // If the extracted value is zero, terminate the main processing loop
+    if (countVal === 0) {
+        break;
+    }
 
-  // Parse the subsequent line to form the first collection of numerical values.
-  const first_value_collection = input_line_segments . shift ( ) . split ( "," ) . map ( Number ) ;
+    // Parse the next line into an array of numbers (primary set)
+    var primaryNums = lineSegments.shift().split(" ").map(Number);
 
-  // Parse the next line to form the second collection of numerical values.
-  const second_value_collection = input_line_segments . shift ( ) . split ( "," ) . map ( Number ) ;
+    // Parse the subsequent line into another array of numbers (secondary set)
+    var secondaryNums = lineSegments.shift().split(" ").map(Number);
 
-  // Compute the grand total by summing all elements within the first collection.
-  var overall_total_sum = first_value_collection . reduce ( function ( running_total , individual_item_value )
-  {
-    return running_total + individual_item_value ;
-  } ) ;
+    // Calculate the aggregate sum of all elements in the primary number array
+    var totalSum = primaryNums.reduce(function (accumulator, currentVal) {
+        return accumulator + currentVal;
+    });
 
-  // Arrange the second collection's elements in a reverse numerical order.
-  second_value_collection . sort ( function ( element_alpha , element_beta )
-  {
-    return element_beta - element_alpha ;
-  } ) ;
+    // Arrange the secondary number array in descending order
+    secondaryNums.sort(function (firstElement, secondElement) {
+        return secondElement - firstElement;
+    });
 
-  // Establish an initial maximum potential value based on the current state.
-  var ultimate_maximum_result = overall_total_sum * current_numeric_count ;
+    // Initialize the greatest value with the product of the total sum and the initial count
+    var greatestValue = totalSum * countVal;
 
-  /*
-   * The following block contains supplementary logic for refining
-   * the ultimate maximum result. It is currently deactivated.
-   *
-   * while ( true ) {
-   *     if ( second_value_collection . length == 0 ) {
-   *         break ;
-   *     }
-   *     current_numeric_count -- ;
-   *     ultimate_maximum_result = Math . max ( ultimate_maximum_result , ( overall_total_sum + second_value_collection . shift ( ) ) * current_numeric_count ) ;
-   * }
-   */
+    // Inner loop for iterative calculation and comparison
+    while (true) {
+        // If the secondary number array is depleted, exit this inner loop
+        if (secondaryNums.length === 0) {
+            break;
+        }
 
-  // Display the final computed highest numerical value to the standard output.
-  console . log ( ultimate_maximum_result ) ;
+        // Decrement the count value for the current iteration
+        countVal--;
+
+        // Update the greatest value by comparing it with a new computed product
+        // The new product is formed by adding the next secondary number to the total sum, then multiplying by the decremented count
+        greatestValue = Math.max(greatestValue, (totalSum + secondaryNums.shift()) * countVal);
+    }
+
+    // Output the final greatest value determined for the current input set
+    console.log(greatestValue);
 }

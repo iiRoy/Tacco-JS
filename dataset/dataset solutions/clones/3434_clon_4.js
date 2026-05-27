@@ -1,69 +1,45 @@
-const processInputAndCompute = (dataString) => {
-    const initialValue = Number(dataString);
+function processInputData(inputContent) {
+    const numericInput = Number(inputContent);
 
-    const factorialMemo = new Map();
-    const calculateFactorial = (num) => {
-        if (num === 0 || num === 1) return 1;
-        if (factorialMemo.has(num)) return factorialMemo.get(num);
-        const result = num * calculateFactorial(num - 1);
-        factorialMemo.set(num, result);
-        return result;
+    const calculateProductSeries = (limitValue) => {
+        if (limitValue < 0) return 1;
+        if (limitValue === 0) return 1;
+        return Array.from({ length: limitValue }, (_, index) => index + 1)
+                    .reduce((productAccumulator, currentNumber) => productAccumulator * currentNumber, 1);
     };
+    const factorialResult = calculateProductSeries(numericInput);
 
-    const totalFactorialValue = calculateFactorial(initialValue);
-
-    const retrieveProperFactors = (quantity) => {
-        const properFactors = new Set();
-        for (let trialDivisor = 1; trialDivisor * trialDivisor <= quantity; trialDivisor++) {
-            if (quantity % trialDivisor === 0) {
-                properFactors.add(trialDivisor);
-                if (trialDivisor * trialDivisor !== quantity) {
-                    properFactors.add(quantity / trialDivisor);
-                }
+    const findProperFactors = (valueToFactor) => {
+        const factorsCollection = [];
+        const searchLimit = Math.floor(valueToFactor / 2);
+        for (let candidate = 1; candidate <= searchLimit; candidate++) {
+            if (valueToFactor % candidate === 0) {
+                factorsCollection.push(candidate);
             }
         }
-        properFactors.delete(quantity);
-        return Array.from(properFactors);
+        return factorsCollection;
+    };
+    const properFactorsOfFactorial = findProperFactors(factorialResult);
+
+    const assessDivisorProperties = (numberValue) => {
+        const halfValue = numberValue / 2;
+        const innerLoopUpper = Math.floor(halfValue);
+        if (innerLoopUpper < 1) return 0;
+
+        return Array.from({ length: innerLoopUpper }, (_, idx) => idx + 1)
+                    .filter(divisorCandidate => halfValue % divisorCandidate === 0)
+                    .length;
     };
 
-    const allProperFactors = retrieveProperFactors(totalFactorialValue);
-
-    const countAllFactors = (numToFactor) => {
-        if (numToFactor === 0) return 0;
-        if (numToFactor === 1) return 1;
-
-        let workingNum = numToFactor;
-        let factorCount = 1;
-
-        for (let currentPrime = 2; currentPrime * currentPrime <= workingNum; currentPrime++) {
-            if (workingNum % currentPrime === 0) {
-                let exponentValue = 0;
-                while (workingNum % currentPrime === 0) {
-                    workingNum /= currentPrime;
-                    exponentValue++;
-                }
-                factorCount *= (exponentValue + 1);
-            }
+    const finalCount = properFactorsOfFactorial.reduce((accumulatorForCount, currentFactor) => {
+        const divisorCountForHalf = assessDivisorProperties(currentFactor);
+        if (divisorCountForHalf === 75) {
+            return accumulatorForCount + 1;
         }
-        if (workingNum > 1) {
-            factorCount *= 2;
-        }
-        return factorCount;
-    };
+        return accumulatorForCount;
+    }, 0);
 
-    let finalAccumulator = 0;
+    console.log(finalCount);
+}
 
-    for (const factorElement of allProperFactors) {
-        if (factorElement % 2 === 0) {
-            const derivedHalf = factorElement / 2;
-            const factorsOfHalf = countAllFactors(derivedHalf);
-            if (factorsOfHalf === 75) {
-                finalAccumulator++;
-            }
-        }
-    }
-
-    console.log(finalAccumulator);
-};
-
-processInputAndCompute(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

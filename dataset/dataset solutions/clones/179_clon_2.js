@@ -1,84 +1,71 @@
-/*
- * This module provides functionality to compute prime numbers
- * up to a specified upper bound using the Sieve of Eratosthenes algorithm.
- */
-function calcPrimes ( upperBound ) {
-    // Initialize an array where each index represents a number,
-    // initially marking all numbers as potentially prime.
-    var candidateFlags = [];
-    for ( var currentNum = 0 ; currentNum <= upperBound ; currentNum ++ ) {
-        candidateFlags[ currentNum ] = currentNum;
+function findPrimes(upperBound) {
+    // Initialize an array to represent the sieve.
+    let sieveArray = [];
+
+    // Populate the array with numbers from 0 to the upper limit.
+    for (let idx = 0; idx <= upperBound; idx++) {
+        sieveArray[idx] = idx;
     }
 
-    // Mark 0 and 1 as non-prime explicitly, as they are not considered prime numbers.
-    candidateFlags[ 0 ] = false;
-    candidateFlags[ 1 ] = false;
+    // Mark 0 and 1 as not prime numbers.
+    sieveArray[0] = false;
+    sieveArray[1] = false;
 
-    // Calculate the square root of the upper bound,
-    // which is the limit for the outer loop in the sieve process.
-    var sqrtBound = Math.floor( Math.sqrt( upperBound ) );
+    // Calculate the square root of the upper bound for optimization in the sieve process.
+    const limitSqrt = Math.floor(Math.sqrt(upperBound));
 
-    // Iterate from 2 up to the square root limit.
-    // For each number that is still marked as prime,
-    // mark its multiples as non-prime.
-    for ( var currentNum = 2 ; currentNum <= sqrtBound ; currentNum ++ ) {
-        // If the current number is already marked as non-prime,
-        // it means it's a multiple of a smaller prime, so skip it.
-        if ( candidateFlags[ currentNum ] === false ) {
+    // Iterate from 2 up to the square root of the upper bound.
+    for (let idx = 2; idx <= limitSqrt; idx++) {
+        // If the current number is already marked as not prime, skip to the next number.
+        if (sieveArray[idx] === false) {
             continue;
         }
 
-        // Mark all multiples of the current prime number as non-prime.
-        // Start marking from `currentNum * currentNum` (or `currentNum + currentNum` as an optimization here)
-        // because smaller multiples would have already been marked by smaller prime factors.
-        for ( var multipleVal = currentNum + currentNum ; multipleVal <= upperBound ; multipleVal += currentNum ) {
-            candidateFlags[ multipleVal ] = false;
+        // Mark all multiples of the current prime number as not prime.
+        for (let multipleIdx = idx + idx; multipleIdx <= upperBound; multipleIdx += idx) {
+            sieveArray[multipleIdx] = false;
         }
     }
 
-    // After the sieve process, collect all numbers that remain marked as prime
-    // into a new list for the final result.
-    var primeCollection = [];
-    for ( var currentNum = 0 ; currentNum <= upperBound ; currentNum ++ ) {
-        if ( candidateFlags[ currentNum ] !== false ) {
-            primeCollection.push( candidateFlags[ currentNum ] );
+    // Create a new array to store only the prime numbers found.
+    const primeNumbersList = [];
+
+    // Iterate through the sieve array and collect all numbers that are still marked as prime.
+    for (let idx = 0; idx <= upperBound; idx++) {
+        if (sieveArray[idx] !== false) {
+            primeNumbersList.push(sieveArray[idx]);
         }
     }
-    // Return the final collection of prime numbers found within the given range.
-    return primeCollection;
+    // Return the list of prime numbers.
+    return primeNumbersList;
 }
 
-// Generate a comprehensive list of prime numbers up to a specified large value.
-var generatedPrimesList = calcPrimes( 999999 );
+// Generate a list of prime numbers up to 999,999 using the sieve method.
+const calculatedPrimes = findPrimes(999999);
 
-// Load input data from standard input stream.
-// This typically involves reading contents from a file or console.
-var rawInputContent = require( 'fs' ) .readFileSync( '/dev/stdin', 'utf8' );
+// Read input data from standard input, assuming UTF-8 encoding.
+const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-// Process the raw input content:
-// 1. Remove leading/trailing whitespace.
-// 2. Split the string into an array of strings based on newline characters.
-// 3. Convert each string element into a numeric value.
-var queryNumbersArray = ( rawInputContent.trim() ) .split( "\n" ) .map( Number );
+// Process the raw input: trim whitespace, split by newline, and convert each part to a number.
+const inputNumbers = (rawData.trim()).split("\n").map(Number);
 
-// Iterate through each numeric query provided in the input array.
-for ( var queryIndex = 0 ; queryIndex < queryNumbersArray.length ; queryIndex ++ ) {
-    var targetNumber = queryNumbersArray[ queryIndex ];
-    // For each target number, search within the pre-generated list of primes
-    // to find its immediate prime neighbors.
-    for ( var primeIndex = 0 ; primeIndex < generatedPrimesList.length ; primeIndex ++ ) {
-        // If the target number is exactly one of the primes in our list,
-        // print the prime immediately preceding it and the prime immediately succeeding it.
-        if ( generatedPrimesList[ primeIndex ] === targetNumber ) {
-            console.log( generatedPrimesList[ primeIndex - 1 ] + " " + generatedPrimesList[ primeIndex + 1 ] );
-            break; // Exit the inner loop as the neighbors have been found for the current target.
+// Iterate through each number provided in the input.
+for (let idx = 0; idx < inputNumbers.length; idx++) {
+    const currentNum = inputNumbers[idx];
+
+    // Search for the current input number within the pre-calculated list of primes.
+    for (let multipleIdx = 0; multipleIdx < calculatedPrimes.length; multipleIdx++) {
+        // If the current prime in the list matches the input number,
+        // print its preceding and succeeding primes.
+        if (calculatedPrimes[multipleIdx] === currentNum) {
+            console.log(calculatedPrimes[multipleIdx - 1] + " " + calculatedPrimes[multipleIdx + 1]);
+            break; // Exit the inner loop once a match is found.
         }
-        // If the current prime in the list is greater than the target number,
-        // it means the target number lies between the previous prime and the current prime.
-        // Print the prime immediately preceding the target number and the current prime itself.
-        if ( generatedPrimesList[ primeIndex ] > targetNumber ) {
-            console.log( generatedPrimesList[ primeIndex - 1 ] + " " + generatedPrimesList[ primeIndex ] );
-            break; // Exit the inner loop as the bounding primes have been found.
+        // If the current prime in the list is greater than the input number,
+        // print its preceding prime and itself (as the next prime).
+        if (calculatedPrimes[multipleIdx] > currentNum) {
+            console.log(calculatedPrimes[multipleIdx - 1] + " " + calculatedPrimes[multipleIdx]);
+            break; // Exit the inner loop.
         }
     }
 }

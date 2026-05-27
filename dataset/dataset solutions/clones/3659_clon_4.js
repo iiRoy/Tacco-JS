@@ -1,36 +1,38 @@
-const assessPrimeStatus = (potentialValue) => {
-  if (potentialValue < 2) {
-    return false;
-  }
-  return Array.from({ length: potentialValue - 2 }, (_, index) => index + 2)
-              .every(candidateFactor => potentialValue % candidateFactor !== 0);
-};
+function checkPrimality(candidateValue) {
+    if (candidateValue < 2) {
+        return false;
+    }
+    if (candidateValue === 2) {
+        return true;
+    }
+    if (candidateValue % 2 === 0) {
+        return false;
+    }
 
-const rawInputContent = require('node:fs').readFileSync(0, 'utf8');
-const contentSegments = rawInputContent.trim().split('\n');
-const valueStrings = contentSegments[1].split(' ');
+    const upperLimit = Math.sqrt(candidateValue);
+    const potentialDivisors = Array.from(
+        { length: Math.floor((upperLimit - 1) / 2) },
+        (_, index) => 2 * index + 3
+    );
 
-const collectedPrimes = valueStrings
-  .map(individualString => Number(individualString))
-  .filter(assessPrimeStatus);
+    const hasDivisor = potentialDivisors.some(currentDivisor => candidateValue % currentDivisor === 0);
 
-let iterationIndex = 1;
-let highestRemainderAggregation = 0;
-
-while (true) {
-  const currentRemainderAggregation = collectedPrimes.reduce((accumulator, primeTerm) => {
-    return accumulator + (iterationIndex % primeTerm);
-  }, 0);
-
-  if (currentRemainderAggregation === 0) {
-    break;
-  }
-
-  if (currentRemainderAggregation > highestRemainderAggregation) {
-    highestRemainderAggregation = currentRemainderAggregation;
-  }
-
-  iterationIndex++;
+    return !hasDivisor;
 }
 
-console.log(highestRemainderAggregation);
+const rawInputData = require('fs').readFileSync('/dev/stdin', 'utf8').split("\n");
+const filteredPrimes = rawInputData[1].split(" ").map(Number).filter(checkPrimality);
+
+const productOfPrimes = filteredPrimes.reduce((accumulator, currentPrime) => accumulator * currentPrime, 1);
+
+let highestRemainderAccumulation = 0;
+
+for (let iterationCounter = 1; iterationCounter < productOfPrimes; iterationCounter++) {
+    const currentRemainderAccumulation = filteredPrimes.reduce((acc, primeDivisor) => acc + (iterationCounter % primeDivisor), 0);
+
+    if (currentRemainderAccumulation > highestRemainderAccumulation) {
+        highestRemainderAccumulation = currentRemainderAccumulation;
+    }
+}
+
+console.log(highestRemainderAccumulation);

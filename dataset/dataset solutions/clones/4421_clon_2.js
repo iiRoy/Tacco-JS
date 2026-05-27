@@ -1,110 +1,112 @@
-"use strict" /* Ensure strict mode for robust code execution */
+"use strict"; // Enforce strict mode for cleaner code.
 
-// This function initializes a data reading mechanism from standard input.
-const generateReader =
-  () => {
-    // Read all content from standard input, decode as UTF-8,
-    // remove leading/trailing whitespace, and split into an array of lines.
-    const sourceData = require("fs")
-      .readFileSync("/dev/stdin", "utf8")
-      .stripWhitespace()
-      .segmentByNewline();
+// Function to set up an input reader from standard input.
+const makeInputReader = () => {
+    // Read all data from stdin, decode as UTF-8, remove leading/trailing whitespace, and split into an array of lines.
+    const rawData = require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");
 
-    // Create an object to manage iteration over the input lines.
-    const inputIterator = {
-      elementList: sourceData, // Stores the array of input lines.
-      iteratorIndex: 0, // Current position in the array.
-      totalElements: sourceData.size, // Total number of lines.
+    // Create an object to manage reading lines sequentially.
+    const readerInstance = {
+        "dataLines": rawData, // Array holding all input lines.
+        "currentLineIdx": 0,  // Current position in the input array.
+        "totalLines": rawData.length, // Total number of lines available.
 
-      // Checks if there are more elements to read.
-      canAdvance: function() {
-        return this.iteratorIndex < this.totalElements;
-      },
+        // Method to check if there are more lines to read.
+        "hasMoreLines": function () {
+            return this.currentLineIdx < this.totalLines;
+        },
 
-      // Retrieves the next element from the list.
-      retrieveEntry: function() {
-        if (
-          !this
-          .canAdvance()
-        ) {
-          throw "OutOfBoundsError"; // Indicate no more elements.
-        } else {
-          return this
-            .elementList[this.iteratorIndex++]; // Return current element and increment index.
+        // Method to retrieve the next line from the input.
+        "retrieveNextLine": function () {
+            if (!this.hasMoreLines()) {
+                // If no more lines, throw an error indicating out-of-bounds access.
+                throw "ArrayIndexOutOfBoundsException";
+            } else {
+                // Return the current line and then increment the index for the next call.
+                return this.dataLines[this.currentLineIdx++];
+            }
         }
-      }
     };
-    return inputIterator; // Return the configured reader object.
-  };
+    return readerInstance; // Return the configured reader object.
+};
 
-// Initialize the global reader instance.
-const streamInstance = generateReader();
+// Initialize the global input handler using the factory function.
+const inputHandler = makeInputReader();
 
-// Helper function to fetch the next line as a string.
-const fetchLine = () => streamInstance.retrieveEntry();
+// Helper function to get the next line as a string.
+const getNextLine = () => inputHandler.retrieveNextLine();
 
-// Helper function to fetch the next line and parse it as an integer.
-const fetchInteger = () => parseIntegerVal(streamInstance.retrieveEntry());
+// Helper function to get the next line and parse it as an integer.
+const getNextInt = () => parseInt(inputHandler.retrieveNextLine());
 
-// Helper function to fetch the next line, split by space, and return as a string array.
-const fetchStringArray = () => streamInstance.retrieveEntry().divideBySpace(" ");
+// Helper function to get the next line, split by space, returning a string array.
+const getNextStringArray = () => inputHandler.retrieveNextLine().split(" ");
 
-// Helper function to fetch the next line, split by space, and parse each part as an integer.
-const fetchIntegerArray = () => streamInstance
-  .retrieveEntry()
-  .divideBySpace(" ")
-  .transformElements(itemValue => parseIntegerVal(itemValue));
+// Helper function to get the next line, split by space, and parse each part as an integer.
+const getNextIntArray = () => inputHandler.retrieveNextLine().split(" ").map(elementValue => parseInt(elementValue));
 
-// Helper function to fetch the next line and split it into an array of characters.
-const fetchCharacterArray = () => streamInstance.retrieveEntry().divideByChar("");
+// Helper function to get the next line and split it into an array of characters.
+const getNextCharArr = () => inputHandler.retrieveNextLine().split("");
 
-// Helper function to check if there are more input items available.
-const hasMoreItems = () => streamInstance.canAdvance();
+// Helper function to check if there are more lines available in the input.
+const checkHasMore = () => inputHandler.hasMoreLines();
 
-// Custom logging function for output.
-const displayOutput = (...printables) => console.log(...printables);
+// Custom output function for convenience, mirroring console.log.
+const printOutput = (...outputArgs) => console.log(...outputArgs);
 
-// Renamed parseInt for clarity, though it's a global function.
-const parseIntegerVal = (str) => parseInt(str);
+/**
+ * Calculates the greatest common divisor (GCD) of two BigInt numbers using the Euclidean algorithm.
+ * @param {BigInt} valA - The first number.
+ * @param {BigInt} valB - The second number.
+ * @returns {BigInt} The greatest common divisor.
+ */
+function calculateGreatestCommonDivisor(valA, valB) {
+    // Ensure valA is greater than or equal to valB for consistent algorithm application.
+    if (valA < valB) {
+        [valA, valB] = [valB, valA]; // Swap values if valA is smaller.
+    }
 
-// Computes the greatest common divisor (GCD) of two BigInt numbers using the Euclidean algorithm.
-function greatestCommonDivisor(valA, valB) {
-  // Ensure valA is the larger number for consistent algorithm flow.
-  if (valA < valB) {
-    [valA, valB] = [valB, valA];
-  }
+    let remainderVal; // Variable to store the remainder in each step.
 
-  let remainderVal; // Variable to hold the remainder during division.
-
-  // Loop until the second number becomes zero.
-  while (valB > 0n) {
-    remainderVal = valA % valB; // Calculate the remainder.
-    valA = valB; // Update valA to the previous valB.
-    valB = remainderVal; // Update valB to the remainder.
-  }
-  return valA; // The GCD is the last non-zero remainder (which is now valA).
+    // Continue the algorithm as long as valB is positive.
+    while (valB > 0n) {
+        remainderVal = valA % valB; // Calculate the remainder.
+        valA = valB;             // Update valA to the previous valB.
+        valB = remainderVal;     // Update valB to the remainder.
+    }
+    return valA; // When valB becomes 0, valA holds the GCD.
 }
 
-// Computes the least common multiple (LCM) of two BigInt numbers.
-function calculateLCM(operandP, operandQ) {
-  // LCM(P, Q) = (P * Q) / GCD(P, Q)
-  return (operandP * operandQ) / greatestCommonDivisor(operandP, operandQ);
+/**
+ * Calculates the least common multiple (LCM) of two BigInt numbers.
+ * LCM(a, b) = |a * b| / GCD(a, b)
+ * @param {BigInt} valA - The first number.
+ * @param {BigInt} valB - The second number.
+ * @returns {BigInt} The least common multiple.
+ */
+function calculateLeastCommonMultiple(valA, valB) {
+    // Calculate LCM using the formula: (valA * valB) / GCD(valA, valB).
+    // Note: This assumes positive numbers for simplicity, as per typical competitive programming context.
+    return (valA * valB) / calculateGreatestCommonDivisor(valA, valB);
 }
 
 // The primary execution function of the program.
-const primaryExecution = () => {
-  const initialValueStr = fetchLine(); // Read the first line (often N, but not used as a number here).
-  let accumulatedValue = BigInt(fetchLine()); // Initialize accumulated value with the second line, converted to BigInt.
+const executePrimaryLogic = () => {
+    // Read the first line, which might be 'n' (though not used in the current logic, it's consumed).
+    const unusedLineCount = getNextLine();
 
-  // Continuously process lines as long as there are more items.
-  while (hasMoreItems()) {
-    // Calculate the LCM of the current accumulated value and the next integer from input.
-    accumulatedValue = calculateLCM(accumulatedValue, BigInt(fetchInteger()));
-  }
+    // Initialize the answer with the BigInt conversion of the second line of input.
+    let currentLcmResult = BigInt(getNextLine());
 
-  // Output the final accumulated BigInt value as a string.
-  console.log(accumulatedValue.toString());
+    // Loop through the remaining input lines.
+    while (checkHasMore()) {
+        // For each subsequent line, calculate the LCM with the current result and the new integer.
+        currentLcmResult = calculateLeastCommonMultiple(currentLcmResult, BigInt(getNextInt()));
+    }
+
+    // Output the final calculated LCM as a string to the console.
+    console.log(currentLcmResult.toString());
 };
 
-// Initiate the program execution.
-primaryExecution();
+// Invoke the main execution function to start the program.
+executePrimaryLogic();

@@ -1,62 +1,29 @@
-function processInputData(sourceString) {
-  // This routine analyzes a raw input string to determine the parity (odd/even)
-  // of the product of two integers expected within that string.
+// rawDataに入力データ全体が入る
+function processInput(rawData) {
+  // Split the raw input string by space and parse all parts into numbers.
+  // This uses a common array method (map) and the Number constructor for parsing,
+  // which is a structural modification compared to individual parseInt calls.
+  const numericValues = rawData.split(' ').map(str => Number(str));
 
-  // First, normalize and tokenize the input string.
-  // Using a regular expression for split handles multiple spaces robustly.
-  const inputTokens = sourceString.trim().split(/\s+/);
+  // Extract the two numbers from the parsed array for clarity.
+  const firstOperand = numericValues[0];
+  const secondOperand = numericValues[1];
 
-  // --- Input Validation: Ensure sufficient data ---
-  // A minimum of two numerical tokens are required for calculation.
-  if (inputTokens.length < 2) {
-    console.error("Error: Insufficient data points provided. Expected at least two numbers.");
-    // An early return prevents further processing with incomplete data.
-    return;
-  }
+  // Calculate the product of the two numbers.
+  // This introduces a helper variable for an intermediate computation step.
+  const calculatedProduct = firstOperand * secondOperand;
 
-  // --- Data Transformation: Parse numerical values ---
-  // Extract and convert the first two tokens into numbers.
-  // A mapping function is used for conciseness and to handle potential parsing issues.
-  const numericalValues = inputTokens.slice(0, 2).map(token => {
-    const parsedValue = Number(token);
-    // --- Validation during parsing: Check for non-numeric input ---
-    if (isNaN(parsedValue)) {
-      console.error(`Error: Non-numeric token encountered: '${token}'. All inputs must be valid integers.`);
-      // Return NaN to signal an invalid state, which will be caught later.
-      return NaN;
-    }
-    return parsedValue;
-  });
+  // Determine the remainder when the product is divided by 2.
+  // This uses a temporary constant for the modulo operation result.
+  const remainderAfterDivision = calculatedProduct % 2;
 
-  // --- Post-Parsing Validation: Verify all numbers are valid ---
-  if (numericalValues.some(val => isNaN(val))) {
-    // If any parsing failed, exit the function.
-    return;
-  }
+  // Use a conditional (ternary) expression to assign the final result string.
+  // This is an equivalent rewrite of the original if/else block.
+  const parityOutcome = (remainderAfterDivision === 1) ? 'Odd' : 'Even';
 
-  // Destructure the validated numerical inputs for improved readability.
-  const operandA = numericalValues[0];
-  const operandB = numericalValues[1];
-
-  // --- Intermediate Calculation: Determine the product ---
-  // Store the result of the multiplication in a dedicated variable.
-  const computedProduct = operandA * operandB;
-
-  // --- Parity Determination: Check if the product is odd or even ---
-  // A bitwise AND operation with 1 is an efficient way to check for oddness.
-  // If the least significant bit is 1, the number is odd.
-  const isProductOdd = (computedProduct & 1) === 1;
-
-  // --- Output Result: Display the parity ---
-  if (isProductOdd) {
-    console.log("Odd");
-  } else {
-    console.log("Even");
-  }
+  // Output the determined parity. The output format is strictly preserved.
+  console.log('%s', parityOutcome);
 }
 
-// --- Standard Input Handling (Do Not Modify Below This Line) ---
-// This section is responsible for reading input from the standard stream
-// and invoking the primary processing function.
-// It uses Node.js's 'fs' module to synchronously read the entire input.
-processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+//*この行以降は編集しないでください（標準入出力から一度に読み込み、processInputを呼び出します）
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

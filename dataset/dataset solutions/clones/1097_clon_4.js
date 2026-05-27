@@ -1,83 +1,110 @@
 process.stdin.resume();
 process.stdin.setEncoding("utf8");
-let receivedContent = "";
-process.stdin.on("data", function(dataChunk) {
-    receivedContent += dataChunk;
+let accumulatedInput = "";
+process.stdin.on("data", (segment) => {
+    accumulatedInput += segment;
 });
-process.stdin.on("end", function() {
-    processCommands(receivedContent.split("\n"));
+process.stdin.on("end", () => {
+    processCommands(accumulatedInput.split("\n"));
 });
 
-class NodeBlueprint {
-    constructor(val, leftBranch = null, rightBranch = null) {
+class TreeNode {
+    constructor(val) {
         this.val = val;
-        this.leftBranch = leftBranch;
-        this.rightBranch = rightBranch;
+        this.leftNode = null;
+        this.rightNode = null;
     }
 }
 
-function addValue(currentRoot, valueToInsert) {
-    if (currentRoot === null) {
-        return new NodeBlueprint(valueToInsert);
+class BinarySearchTree {
+    constructor() {
+        this.rootNode = null;
     }
 
-    if (valueToInsert < currentRoot.val) {
-        return new NodeBlueprint(
-            currentRoot.val,
-            addValue(currentRoot.leftBranch, valueToInsert),
-            currentRoot.rightBranch
-        );
-    } else {
-        return new NodeBlueprint(
-            currentRoot.val,
-            currentRoot.leftBranch,
-            addValue(currentRoot.rightBranch, valueToInsert)
-        );
-    }
-}
-
-function collectInOrder(nodeToVisit) {
-    if (nodeToVisit === null) {
-        return [];
-    }
-    return [
-        ...collectInOrder(nodeToVisit.leftBranch),
-        nodeToVisit.val,
-        ...collectInOrder(nodeToVisit.rightBranch)
-    ];
-}
-
-function collectPreOrder(nodeToVisit) {
-    if (nodeToVisit === null) {
-        return [];
-    }
-    return [
-        nodeToVisit.val,
-        ...collectPreOrder(nodeToVisit.leftBranch),
-        ...collectPreOrder(nodeToVisit.rightBranch)
-    ];
-}
-
-function processCommands(inputRecords) {
-    inputRecords.slice(1).reduce((currentTree, commandLine) => {
-        if (!commandLine.trim()) {
-            return currentTree;
+    addValue(value) {
+        const newNode = new TreeNode(value);
+        if (!this.rootNode) {
+            this.rootNode = newNode;
+            return;
         }
-        const parts = commandLine.split(" ");
-        const actionType = parts[0][0];
 
-        if (actionType === "i") {
-            const numericalValue = Number(parts[1]);
-            return addValue(currentTree, numericalValue);
-        } else if (actionType === "p") {
-            const sortedValues = collectInOrder(currentTree);
-            console.log(sortedValues.join(" "));
-
-            const prefixedValues = collectPreOrder(currentTree);
-            console.log(prefixedValues.join(" "));
-            
-            return currentTree;
+        let current = this.rootNode;
+        while (true) {
+            if (value < current.val) {
+                if (!current.leftNode) {
+                    current.leftNode = newNode;
+                    return;
+                }
+                current = current.leftNode;
+            } else {
+                if (!current.rightNode) {
+                    current.rightNode = newNode;
+                    return;
+                }
+                current = current.rightNode;
+            }
         }
-        return currentTree;
-    }, null);
+    }
+
+    retrieveInOrder() {
+        const result = [];
+        const stack = [];
+        let current = this.rootNode;
+
+        while (current || stack.length > 0) {
+            while (current) {
+                stack.push(current);
+                current = current.leftNode;
+            }
+            current = stack.pop();
+            result.push(current.val);
+            current = current.rightNode;
+        }
+        return result;
+    }
+
+    retrievePreOrder() {
+        const result = [];
+        if (!this.rootNode) return result;
+
+        const stack = [this.rootNode];
+        while (stack.length > 0) {
+            const current = stack.pop();
+            result.push(current.val);
+
+            if (current.rightNode) {
+                stack.push(current.rightNode);
+            }
+            if (current.leftNode) {
+                stack.push(current.leftNode);
+            }
+        }
+        return result;
+    }
+}
+
+function processCommands(inputLines) {
+    const totalOperations = Number(inputLines[0]);
+    const treeInstance = new BinarySearchTree();
+
+    const commandHandlers = {
+        "i": (params) => {
+            const numericValue = Number(params[0]);
+            treeInstance.addValue(numericValue);
+        },
+        "p": () => {
+            console.log(treeInstance.retrieveInOrder().join(" "));
+            console.log(treeInstance.retrievePreOrder().join(" "));
+        }
+    };
+
+    inputLines.slice(1, totalOperations + 1).forEach(lineEntry => {
+        const parts = lineEntry.split(" ");
+        const operationType = parts[0][0];
+        const operationParams = parts.slice(1);
+
+        if (commandHandlers[operationType]) {
+            commandHandlers[operationType](operationParams);
+        }
+    });
 }

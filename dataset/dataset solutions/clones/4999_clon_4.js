@@ -1,40 +1,32 @@
-let globalCardinality;
-let globalTargetMean;
-let globalValueList;
-let finalTally = 0;
-
-function assessSubgroup(idx, accumulatedValue, elementsChosen) {
-  if (idx === globalCardinality) {
-    if (elementsChosen > 0 && accumulatedValue / elementsChosen === globalTargetMean) {
-      finalTally++;
-    }
-    return;
-  }
-
-  assessSubgroup(idx + 1, accumulatedValue, elementsChosen);
-
-  assessSubgroup(idx + 1, accumulatedValue + globalValueList[idx], elementsChosen + 1);
+function ensureLengthWithPadding(valueString, targetLength) {
+  return String(valueString).padStart(targetLength, '0');
 }
 
-let storedInput = '';
+function processInputData(rawData) {
+  const inputLines = rawData.split('\n');
+  const [elementCountStr, targetAverageStr] = inputLines[0].split(' ');
+  const elementCount = parseInt(elementCountStr);
+  const targetAverage = parseInt(targetAverageStr);
+  const numericValues = inputLines[1].split(' ').map(Number);
 
-process.stdin.resume();
-process.stdin.setEncoding('utf8');
+  let validSubsetCount = 0;
 
-process.stdin.on('data', chunk => {
-  storedInput += chunk;
-});
+  function exploreSubsets(currentElementIndex, accumulatedSum, chosenElementCount) {
+    if (currentElementIndex === elementCount) {
+      if (chosenElementCount > 0 && accumulatedSum / chosenElementCount === targetAverage) {
+        validSubsetCount++;
+      }
+      return;
+    }
 
-process.stdin.on('end', () => {
-  const lineSeparators = storedInput.trim().split('\n');
+    exploreSubsets(currentElementIndex + 1, accumulatedSum, chosenElementCount);
 
-  const firstEntry = lineSeparators[0].split(' ').map(Number);
-  globalCardinality = firstEntry[0];
-  globalTargetMean = firstEntry[1];
+    exploreSubsets(currentElementIndex + 1, accumulatedSum + numericValues[currentElementIndex], chosenElementCount + 1);
+  }
 
-  globalValueList = lineSeparators[1].split(' ').map(Number);
+  exploreSubsets(0, 0, 0);
 
-  assessSubgroup(0, 0, 0);
+  console.log(validSubsetCount);
+}
 
-  console.log(finalTally);
-});
+processInputData(require('fs').readFileSync('/dev/stdin', 'UTF-8'));

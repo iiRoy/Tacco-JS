@@ -1,79 +1,67 @@
-// This function processes a list of input strings to check for a specific pattern.
-function  analyzeString( receivedLines )
-{
-  // Extract the first line from the provided array of strings.
-  var    targetLine = receivedLines[0] ;
-  // Define the specific pattern we are looking for.
-  var    searchWord = 'keyence' ;
-  // Initialize an index to track our progress through the search pattern.
-  var    patternIndex = 0 ;
-  // A flag indicating if a mismatch has been encountered after a successful match.
-  var    foundMismatch = false ;
-  // A flag indicating if the current character matches the pattern's expected character.
-  var    isMatching = true ;
+function processInput(dataLines) {
+  // The first element of the input array is the string to be examined.
+  var currentString = dataLines[0];
+  // This constant string represents the pattern we are looking for.
+  var targetPattern = 'keyence';
+  // An index to keep track of our current position within the target pattern.
+  var patternIndex = 0;
+  // A boolean flag indicating if we have entered a non-matching segment after an initial match.
+  var stateFlag = false;
+  // A boolean indicating if the current character sequence is part of a valid segment (either matching or the first non-matching part).
+  var validSegment = true;
 
-  // Iterate through each character of the target line.
-  for ( var  charIndex = 0 ;  charIndex < targetLine.length ;  charIndex++ )
-  {
-    // Check if the current character from the line matches the character
-    // at the current position in our search pattern.
-    if ( targetLine[charIndex]  ===  searchWord[patternIndex] )
-    {
-      // If they match, advance the pattern index.
-      patternIndex++ ;
-      // Reset the matching flag, as we are currently in a matching sequence.
-      isMatching = false ;
-    }
-    else
-    {
-      // If a mismatch occurs:
-      // Check if we previously had a match and then a mismatch,
-      // and also if we've already set the 'foundMismatch' flag.
-      if ( !isMatching  &&  foundMismatch )
-      {
-        // If this condition is met, it means the pattern is broken in an unrecoverable way.
-        console.log( 'NO' ) ;
-        return ; // Exit the function immediately.
+  // Iterate through each character of the provided input string.
+  for (var charIterator = 0; charIterator < currentString.length; charIterator++) {
+    // Compare the current character from the input string with the character at the current pattern index.
+    if (currentString[charIterator] === targetPattern[patternIndex]) {
+      // If they match, advance the pattern index to the next character in the target pattern.
+      patternIndex++;
+      // Reset the valid segment flag, as we just found a match.
+      validSegment = false;
+    } else {
+      // If the characters do not match:
+      // Check if we were previously in a matching state (validSegment is false) AND we have already encountered a non-matching segment (stateFlag is true).
+      if (!validSegment && stateFlag) {
+        // If both conditions are true, it means there's a second non-matching segment, which is not allowed.
+        console.log('NO');
+        return; // Terminate the function immediately.
       }
-      // Reset the matching flag because the current character did not match.
-      isMatching = true ;
-      // Set the 'foundMismatch' flag to true, indicating we've seen a non-matching character.
-      foundMismatch = true ;
+      // Mark the current segment as non-matching.
+      validSegment = true;
+      // Set the state flag to true, indicating that a non-matching segment has now begun.
+      stateFlag = true;
     }
   }
 
-  // After iterating through the entire line, check if the entire pattern was matched.
-  if ( patternIndex  ===  searchWord.length )
-  {
-    console.log( 'YES' ) ; // If the pattern index reached the full length of the search word, it's a match.
-  }
-  else
-  {
-    console.log( 'NO' ) ; // Otherwise, the pattern was not fully found.
+  // After the loop finishes, check if the entire target pattern was successfully matched.
+  if (patternIndex === targetPattern.length) {
+    // If the pattern index equals the length of the target pattern, it means all characters were found in order.
+    console.log('YES');
+  } else {
+    // Otherwise, the target pattern was not fully matched according to the rules.
+    console.log('NO');
   }
 }
 
 
-// Declare a global variable to accumulate incoming data from standard input.
-var   accumulatedText = '' ;
+// A global variable to accumulate all incoming data from standard input.
+var rawDataBuffer = '';
 
-// Resume standard input stream to start receiving data.
-process.stdin.resume() ;
-// Set the character encoding for the input stream.
-process.stdin.setEncoding( 'utf8' ) ;
+// Instruct the standard input stream to begin emitting data.
+process.stdin.resume();
+// Set the character encoding for the incoming data to UTF-8.
+process.stdin.setEncoding('utf8');
 
-// Attach an event listener for incoming data chunks.
-process.stdin.on( 'data' ,  function( incomingSegment )
-{
-  // Append each incoming data chunk to our accumulator variable.
-  accumulatedText += incomingSegment ;
-} ) ;
+// Attach an event listener for 'data' events from stdin.
+process.stdin.on('data', function(dataChunk) {
+  // Append each received chunk of data to our buffer.
+  rawDataBuffer += dataChunk;
+});
 
-// Attach an event listener for when the standard input stream ends.
-process.stdin.on( 'end' ,  function()
-{
-  // Split the accumulated text by newline characters to get an array of lines.
-  accumulatedText = accumulatedText.split( '\n' ) ;
-  // Call the main processing function with the prepared array of lines.
-  analyzeString( accumulatedText ) ;
-} ) ;
+// Attach an event listener for the 'end' event, which signifies the end of the input stream.
+process.stdin.on('end', function() {
+  // Split the accumulated raw data into an array of strings, using newline characters as delimiters.
+  var processedLines = rawDataBuffer.split('\n');
+  // Call our main processing function with the array of input lines.
+  processInput(processedLines);
+});

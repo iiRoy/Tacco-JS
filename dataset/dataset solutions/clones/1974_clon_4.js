@@ -1,100 +1,83 @@
-const combineOrderedHalves = (firstHalf, secondHalf) => {
-    let combinedResult = [];
-    let leftPosition = 0;
-    let rightPosition = 0;
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
 
-    while (leftPosition < firstHalf.length && rightPosition < secondHalf.length) {
-        if (firstHalf[leftPosition][0] < secondHalf[rightPosition][0]) {
-            combinedResult.push(firstHalf[leftPosition]);
-            leftPosition++;
-        } else {
-            combinedResult.push(secondHalf[rightPosition]);
-            rightPosition++;
-        }
+const sortItems = (collection) => {
+    collection.sort((itemOne, itemTwo) => itemTwo.value - itemOne.value);
+    return collection;
+};
+
+const computeGcdRecursive = (firstVal, secondVal) => {
+    if (secondVal === 0) {
+        return firstVal;
     }
-    return combinedResult.concat(firstHalf.slice(leftPosition)).concat(secondHalf.slice(rightPosition));
+    return computeGcdRecursive(secondVal, firstVal % secondVal);
 };
 
-const organizeNumericCollection = (collection) => {
-    if (collection.length <= 1) {
-        return collection;
+const findGreatestCommonDivisor = (numX, numY) => {
+    return numX > numY ? computeGcdRecursive(numX, numY) : computeGcdRecursive(numY, numX);
+};
+
+const calculateArrayGcd = (numberSequence) => {
+    if (numberSequence.length === 0) {
+        return 0;
     }
-
-    const midPoint = Math.floor(collection.length / 2);
-    const leftSegment = collection.slice(0, midPoint);
-    const rightSegment = collection.slice(midPoint);
-
-    return combineOrderedHalves(
-        organizeNumericCollection(leftSegment),
-        organizeNumericCollection(rightSegment)
-    );
+    if (numberSequence.length === 1) {
+        return numberSequence[0];
+    }
+    return numberSequence.reduce((accumulator, current) => findGreatestCommonDivisor(accumulator, current));
 };
 
-const ingestData = (sourceText) => {
-    const lines = sourceText.trim().split(/\n/);
-    const initialParameters = lines[0].split(/\s+/).map(Number);
-    const dataValues = lines[1].split(/\s+/).map(Number);
+const executeProcessing = (rawInput) => {
+    const inputLines = rawInput.split("\n");
+    const firstLineData = inputLines[0].split(" ");
+    const elementCount = parseInt(firstLineData[0]);
+    const inputNumbers = inputLines[1].split(" ").map(Number);
 
-    const dataObjects = dataValues.map((val, idx) => ({ initialPosition: idx, actualValue: val }));
-    return { overallSize: initialParameters[0], items: dataObjects };
-};
+    const indexedData = inputNumbers.map((val, idx) => ({ originalIndex: idx, value: val }));
 
-const deriveOverallMagnitude = (inputPayload) => {
-    const totalCount = inputPayload.overallSize;
-    const itemCollection = inputPayload.items;
+    const sortedIndexedData = sortItems(indexedData);
 
-    const sortedCollection = organizeNumericCollection(itemCollection.map(obj => [obj.actualValue, obj.initialPosition]));
+    const initialAccumulatorState = {
+        currentTotalSum: 0,
+        leftBoundaryMarker: 1,
+        rightBoundaryMarker: elementCount
+    };
 
-    const finalAccumulationState = sortedCollection.reduceRight((accumulator, currentItemPair, itemIndex) => {
-        const { currentLeftBoundary, currentRightBoundary, runningSum } = accumulator;
-        const [currentNumericalValue, currentOriginalIndex] = currentItemPair;
+    const finalResultState = sortedIndexedData.reduceRight((accumulator, currentItem, currentIndex, fullArray) => {
+        let { currentTotalSum, leftBoundaryMarker, rightBoundaryMarker } = accumulator;
 
-        const distanceToRightEnd = totalCount - currentOriginalIndex;
+        const currentOriginalIndex = currentItem.originalIndex;
+        const currentItemValue = currentItem.value;
+
+        const distanceToRightEnd = elementCount - currentOriginalIndex;
         const distanceToLeftEnd = currentOriginalIndex + 1;
 
-        let nextLeftBoundary = currentLeftBoundary;
-        let nextRightBoundary = currentRightBoundary;
-        let nextRunningSum = runningSum;
-
         if (distanceToRightEnd < distanceToLeftEnd) {
-            nextRunningSum += currentNumericalValue * (currentOriginalIndex - currentLeftBoundary + 1);
-            nextLeftBoundary++;
+            currentTotalSum += currentItemValue * (currentOriginalIndex - leftBoundaryMarker + 1);
+            leftBoundaryMarker++;
         } else if (distanceToRightEnd > distanceToLeftEnd) {
-            nextRunningSum += currentNumericalValue * (currentRightBoundary - currentOriginalIndex - 1);
-            nextRightBoundary--;
+            currentTotalSum += currentItemValue * (rightBoundaryMarker - currentOriginalIndex - 1);
+            rightBoundaryMarker--;
         } else {
-            // Equidistant case: tie-breaking by examining the next larger element in the sorted list
-            const nextItemInSortedArray = sortedCollection[itemIndex + 1];
-            const [, nextOriginalIndex] = nextItemInSortedArray;
+            const nextItemInSorted = fullArray[currentIndex + 1];
+            
+            const nextOriginalIndex = nextItemInSorted.originalIndex;
+            const nextDistanceToRightEnd = elementCount - nextOriginalIndex;
+            const nextDistanceToLeftEnd = nextOriginalIndex + 1;
 
-            const nextItemDistanceToRightEnd = totalCount - nextOriginalIndex;
-            const nextItemDistanceToLeftEnd = nextOriginalIndex + 1;
-
-            if (nextItemDistanceToRightEnd < nextItemDistanceToLeftEnd) {
-                nextRunningSum += currentNumericalValue * (currentRightBoundary - currentOriginalIndex - 1);
-                nextRightBoundary--;
-            } else if (nextItemDistanceToRightEnd > nextItemDistanceToLeftEnd) {
-                nextRunningSum += currentNumericalValue * (currentOriginalIndex - currentLeftBoundary + 1);
-                nextLeftBoundary++;
+            if (nextDistanceToRightEnd > nextDistanceToLeftEnd) {
+                currentTotalSum += currentItemValue * (currentOriginalIndex - leftBoundaryMarker + 1);
+                leftBoundaryMarker++;
+            } else {
+                currentTotalSum += currentItemValue * (rightBoundaryMarker - currentOriginalIndex - 1);
+                rightBoundaryMarker--;
             }
         }
 
-        return {
-            currentLeftBoundary: nextLeftBoundary,
-            currentRightBoundary: nextRightBoundary,
-            runningSum: nextRunningSum
-        };
-    }, { currentLeftBoundary: 1, currentRightBoundary: totalCount, runningSum: 0 });
+        return { currentTotalSum, leftBoundaryMarker, rightBoundaryMarker };
+    }, initialAccumulatorState);
 
-    return finalAccumulationState.runningSum;
+    console.log(finalResultState.currentTotalSum);
 };
 
-const commenceProcessing = () => {
-    const fileSystem = require("fs");
-    const rawInputContent = fileSystem.readFileSync("/dev/stdin", "utf8");
-    const parsedData = ingestData(rawInputContent);
-    const finalOutcome = deriveOverallMagnitude(parsedData);
-    console.log(finalOutcome);
-};
-
-commenceProcessing();
+executeProcessing(require("fs").readFileSync("/dev/stdin", "utf8"));

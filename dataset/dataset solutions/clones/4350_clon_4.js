@@ -1,76 +1,58 @@
-const fileSystem = require("fs");
+const processSolution = (inputData) => {
+    const [
+        waterUnit1Amount,
+        waterUnit2Amount,
+        sugarUnit1Amount,
+        sugarUnit2Amount,
+        maxSugarPercentage,
+        maxTotalSolutionWeight
+    ] = inputData.split('\n')[0].split(' ').map(Number);
 
-const processMixture = function(dataSourceContent) {
-    const componentValues = dataSourceContent.trim().split(' ').map(Number);
+    const maximumPermittedSugarRatio = (100 * maxSugarPercentage) / (100 + maxSugarPercentage);
 
-    const firstWaterAmount = componentValues[0];
-    const secondWaterAmount = componentValues[1];
-    const firstSugarAmount = componentValues[2];
-    const secondSugarAmount = componentValues[3];
-    const maxSugarPercentageInput = componentValues[4];
-    const overallWeightLimit = componentValues[5];
+    let bestFoundMixture = { liquid: 0, sweetener: 0, concentration: -1 };
 
-    const maxSolutionConcentration = (100 * maxSugarPercentageInput) / (100 + maxSugarPercentageInput);
+    const visitedStates = new Set();
 
-    const visitedStatesMap = new Map();
-    const explorationQueue = [];
+    let currentIterationQueue = [{ liquid: 0, sweetener: 0 }];
 
-    let currentOptimalOutcome = {
-        aqueousComponent: 0,
-        sweetComponent: 0,
-        highestAttainedConcentration: 0
-    };
+    while (currentIterationQueue.length > 0) {
+        const nextIterationQueue = [];
 
-    explorationQueue.push({ aqueousComponent: 0, sweetComponent: 0 });
-    visitedStatesMap.set("0_0", true);
+        for (const { liquid, sweetener } of currentIterationQueue) {
+            const currentTotalWeight = liquid + sweetener;
+            const stateKey = `${liquid}-${sweetener}`;
 
-    let queueTraversalIndex = 0;
-    while (queueTraversalIndex < explorationQueue.length) {
-        const currentMaterial = explorationQueue[queueTraversalIndex++];
-        const currentTotalMass = currentMaterial.aqueousComponent + currentMaterial.sweetComponent;
-        const stateIdentifier = `${currentMaterial.aqueousComponent}_${currentMaterial.sweetComponent}`;
-
-        if (currentTotalMass > overallWeightLimit) {
-            continue;
-        }
-
-        let currentConcentrationValue = 0;
-        if (currentTotalMass > 0) {
-            currentConcentrationValue = (100 * currentMaterial.sweetComponent) / currentTotalMass;
-        }
-
-        if (currentConcentrationValue > currentOptimalOutcome.highestAttainedConcentration &&
-            currentConcentrationValue <= maxSolutionConcentration) {
-            currentOptimalOutcome.highestAttainedConcentration = currentConcentrationValue;
-            currentOptimalOutcome.aqueousComponent = currentMaterial.aqueousComponent;
-            currentOptimalOutcome.sweetComponent = currentMaterial.sweetComponent;
-        }
-
-        const possibleOperations = [
-            { waterIncrement: 100 * firstWaterAmount, sugarIncrement: 0 },
-            { waterIncrement: 100 * secondWaterAmount, sugarIncrement: 0 },
-            { waterIncrement: 0, sugarIncrement: firstSugarAmount },
-            { waterIncrement: 0, sugarIncrement: secondSugarAmount }
-        ];
-
-        for (const operation of possibleOperations) {
-            const nextWaterQuantity = currentMaterial.aqueousComponent + operation.waterIncrement;
-            const nextSugarQuantity = currentMaterial.sweetComponent + operation.sugarIncrement;
-            const nextCombinedQuantity = nextWaterQuantity + nextSugarQuantity;
-            const nextStateKey = `${nextWaterQuantity}_${nextSugarQuantity}`;
-
-            if (nextCombinedQuantity <= overallWeightLimit && !visitedStatesMap.has(nextStateKey)) {
-                visitedStatesMap.set(nextStateKey, true);
-                explorationQueue.push({ aqueousComponent: nextWaterQuantity, sweetComponent: nextSugarQuantity });
+            if (currentTotalWeight > maxTotalSolutionWeight || visitedStates.has(stateKey)) {
+                continue;
             }
+
+            visitedStates.add(stateKey);
+
+            const currentConcentration = currentTotalWeight === 0 ? 0 : (100 * sweetener) / currentTotalWeight;
+
+            if (currentConcentration > bestFoundMixture.concentration && currentConcentration <= maximumPermittedSugarRatio) {
+                bestFoundMixture = { liquid, sweetener, concentration: currentConcentration };
+            }
+
+            // Explore adding water unit 1
+            nextIterationQueue.push({ liquid: liquid + 100 * waterUnit1Amount, sweetener: sweetener });
+            // Explore adding water unit 2
+            nextIterationQueue.push({ liquid: liquid + 100 * waterUnit2Amount, sweetener: sweetener });
+            // Explore adding sugar unit 1
+            nextIterationQueue.push({ liquid: liquid, sweetener: sweetener + sugarUnit1Amount });
+            // Explore adding sugar unit 2
+            nextIterationQueue.push({ liquid: liquid, sweetener: sweetener + sugarUnit2Amount });
         }
+        currentIterationQueue = nextIterationQueue;
     }
 
-    if (currentOptimalOutcome.aqueousComponent === 0 && currentOptimalOutcome.sweetComponent === 0) {
-        currentOptimalOutcome.aqueousComponent = 100 * firstWaterAmount;
+    if (bestFoundMixture.liquid === 0 && bestFoundMixture.sweetener === 0) {
+        bestFoundMixture.liquid = 100 * waterUnit1Amount;
     }
 
-    console.log(`${currentOptimalOutcome.aqueousComponent + currentOptimalOutcome.sweetComponent} ${currentOptimalOutcome.sweetComponent}`);
+    console.log(`${bestFoundMixture.liquid + bestFoundMixture.sweetener} ${bestFoundMixture.sweetener}`);
 };
 
-processMixture(fileSystem.readFileSync("/dev/stdin", "UTF-8"));
+const fileSystemModule = require('fs');
+processSolution(fileSystemModule.readFileSync('/dev/stdin', 'UTF-8'));

@@ -1,27 +1,27 @@
-const displayResult = (finalOutput) => console.log(finalOutput);
+function processInputAndFindMinSum(inputString) {
+    const parsedInput = parseInt(inputString);
 
-const calculateSumOfDigits = (valueToProcess) => {
-    let accumulator = 0;
-    let mutableValue = valueToProcess;
-    while (mutableValue > 0) {
-        accumulator += mutableValue % 10;
-        mutableValue = Math.floor(mutableValue / 10);
-    }
-    return accumulator;
-};
+    const calculateSumOfDigits = (numberValue) => {
+        let digitAccumulator = 0;
+        let tempNumber = Math.abs(numberValue);
+        while (tempNumber > 0) {
+            digitAccumulator += tempNumber % 10;
+            tempNumber = Math.floor(tempNumber / 10);
+        }
+        return digitAccumulator;
+    };
 
-const executeComputation = (rawInputText) => {
-    const primaryNumber = Number(rawInputText);
-    const iterationCeiling = 100000;
+    const iterationLimit = 100000;
+    const initialMinimum = 1000000000;
 
-    const minimumDigitSum = Array.from({ length: iterationCeiling }, (_, iterationIndex) => iterationIndex + 1)
-        .map(currentMultiplier => primaryNumber * currentMultiplier)
-        .map(productValue => calculateSumOfDigits(productValue))
-        .reduce((currentMin, digitSum) => Math.min(currentMin, digitSum), Number.MAX_SAFE_INTEGER);
+    const finalMinimumSum = Array.from({ length: iterationLimit }, (_, index) => index + 1)
+        .reduce((currentMin, currentMultiplier) => {
+            const productValue = parsedInput * currentMultiplier;
+            const sumOfDigits = calculateSumOfDigits(productValue);
+            return Math.min(currentMin, sumOfDigits);
+        }, initialMinimum);
 
-    displayResult(minimumDigitSum);
-};
+    console.log(finalMinimumSum);
+}
 
-const retrieveSourceData = () => require("fs").readFileSync("/dev/stdin", "utf8").trim();
-
-executeComputation(retrieveSourceData());
+processInputAndFindMinSum(require("fs").readFileSync("/dev/stdin", "utf8").trim());

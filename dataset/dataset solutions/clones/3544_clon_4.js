@@ -1,54 +1,37 @@
-const parseNumeric = (textValue) => +textValue;
+const parseNum = (strValue) => Number(strValue);
+const parseNumArray = (strArray) => strArray.map(parseNum);
+const getAbsolute = (value) => Math.abs(value);
+const findMinimum = (...values) => Math.min(...values);
+const findMaximum = (...values) => Math.max(...values);
 
-const convertStringArrayToNumbers = (stringArray) => stringArray.map(parseNumeric);
+((inputContent) => {
+    const contentLines = inputContent.split('\n');
+    const firstLineData = parseNumArray(contentLines[0].split(' '));
+    const countN = firstLineData[0];
+    const valueX = firstLineData[1];
+    const dataPoints = parseNumArray(contentLines[1].split(' '));
 
-const executeProcessing = (rawDataContent) => {
-    const allLines = rawDataContent.split('\n');
+    let currentRunningSum = 0;
+    const prefixSums = dataPoints.map(point => (currentRunningSum += point));
 
-    const [totalElementsCount, thresholdValue] = convertStringArrayToNumbers(allLines[0].split(' '));
-    const valueSequence = convertStringArrayToNumbers(allLines[1].split(' '));
+    const finalCalculationState = dataPoints.reduceRight((accumulator, currentPoint, idx) => {
+        let { totalAccumulatedSum, currentIterationCount } = accumulator;
+        currentIterationCount++;
 
-    const cumulativeSums = valueSequence.reduce((acc, currentVal, currentIndex) => {
-        const previousTotal = currentIndex === 0 ? 0 : acc[currentIndex - 1];
-        acc.push(previousTotal + currentVal);
-        return acc;
-    }, []);
+        const currentPrefixSum = prefixSums[idx];
 
-    let totalScoreAccumulator = (totalElementsCount + 1) * thresholdValue;
+        const evaluationCondition = currentIterationCount < 3 || (currentPrefixSum * (currentIterationCount - 1) * 2 - currentPoint * 2 < valueX);
 
-    const computeFinalScoreRecursively = (currentIdx, consecutiveCount, currentTotalScore) => {
-        if (currentIdx < 0) {
-            return currentTotalScore;
-        }
-
-        const nextConsecutiveCount = consecutiveCount + 1;
-        const currentItem = valueSequence[currentIdx];
-        const currentCumulative = cumulativeSums[currentIdx];
-
-        const firstRuleApplies = nextConsecutiveCount < 3 || currentCumulative * (nextConsecutiveCount - 1) * 2 - currentItem * 2 < thresholdValue;
-
-        let updatedTotalScore;
-        let newConsecutiveState;
-
-        if (firstRuleApplies) {
-            const effectiveMultiplierBase = nextConsecutiveCount < 2 ? 2 : nextConsecutiveCount;
-            const finalMultiplier = effectiveMultiplierBase * 2 + 1;
-            updatedTotalScore = currentTotalScore + currentItem * finalMultiplier;
-            newConsecutiveState = nextConsecutiveCount;
+        if (evaluationCondition) {
+            totalAccumulatedSum += currentPoint * (findMaximum(currentIterationCount, 2) * 2 + 1);
         } else {
-            updatedTotalScore = currentTotalScore + currentItem * 5 + thresholdValue;
-            newConsecutiveState = 1;
+            currentIterationCount = 1;
+            totalAccumulatedSum += currentPoint * 5 + valueX;
         }
 
-        return computeFinalScoreRecursively(currentIdx - 1, newConsecutiveState, updatedTotalScore);
-    };
+        return { totalAccumulatedSum, currentIterationCount };
+    }, { totalAccumulatedSum: (countN + 1) * valueX, currentIterationCount: 0 });
 
-    totalScoreAccumulator = computeFinalScoreRecursively(totalElementsCount - 1, 0, totalScoreAccumulator);
+    console.log(finalCalculationState.totalAccumulatedSum);
 
-    console.log(totalScoreAccumulator);
-};
-
-(function() {
-    const receivedContent = require("fs").readFileSync("/dev/stdin", "utf8");
-    executeProcessing(receivedContent);
-})();
+})(require("fs").readFileSync("/dev/stdin", "utf8"));

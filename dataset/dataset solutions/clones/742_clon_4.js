@@ -1,42 +1,38 @@
-const { readFileSync: retrieveData } = require('node:fs');
-const rawSourceContent = retrieveData(0, 'utf8');
-const processedLines = rawSourceContent.trim().split(/\r?\n/);
+const sourceText = require('fs').readFileSync('/dev/stdin', 'utf8');
+const lineSegments = sourceText.trim().split("\n");
+let inputCursor = 0;
 
-function analyzeNextBlock(remainingInputLines) {
-    if (remainingInputLines.length === 0) {
-        return;
+while (true) {
+    const blockCount = Number.parseInt(lineSegments[inputCursor++], 10);
+    if (blockCount === 0) break;
+
+    const initialLine = lineSegments[inputCursor++];
+    const initialContentMatch = initialLine.match(/\[([^\]]+)\]/);
+    const seedElements = initialContentMatch[1].split(',');
+
+    const expansionRegistry = new Map();
+    for (let k = 0; k < blockCount - 1; k++) {
+        const mapLine = lineSegments[inputCursor++];
+        const mapContentMatch = mapLine.match(/([^:]+):\[([^\]]+)\]/);
+        expansionRegistry.set(mapContentMatch[1], mapContentMatch[2].split(','));
     }
 
-    let currentBlockSize = Number(remainingInputLines.shift());
-    if (currentBlockSize === 0) {
-        return;
-    }
+    const discoveredElements = new Set(seedElements);
+    const processingQueue = Array.from(seedElements);
+    let queueHead = 0;
 
-    const primaryExpression = remainingInputLines.shift();
-    const initialElementsMatch = primaryExpression.match(/^[^:]+:(.*);$/);
-    const initialElementSet = new Set(initialElementsMatch[1].split(','));
+    while (queueHead < processingQueue.length) {
+        const currentElement = processingQueue[queueHead++];
 
-    const expansionRules = new Map();
-    for (let k = 0; k < currentBlockSize - 1; ++k) {
-        const ruleExpression = remainingInputLines.shift();
-        const ruleParts = ruleExpression.match(/^([^:]+):(.*);$/);
-        expansionRules.set(ruleParts[1], ruleParts[2].split(','));
-    }
-
-    const collectedUniqueItems = new Set();
-
-    initialElementSet.forEach(elementIdentifier => {
-        if (expansionRules.has(elementIdentifier)) {
-            const expandedArray = expansionRules.get(elementIdentifier);
-            collectedUniqueItems.add(expandedArray.join(','));
-        } else {
-            collectedUniqueItems.add(elementIdentifier);
+        if (expansionRegistry.has(currentElement)) {
+            const relatedElements = expansionRegistry.get(currentElement);
+            for (const related of relatedElements) {
+                if (!discoveredElements.has(related)) {
+                    discoveredElements.add(related);
+                    processingQueue.push(related);
+                }
+            }
         }
-    });
-
-    console.log(collectedUniqueItems.size);
-
-    analyzeNextBlock(remainingInputLines);
+    }
+    console.log(discoveredElements.size);
 }
-
-analyzeNextBlock(processedLines);

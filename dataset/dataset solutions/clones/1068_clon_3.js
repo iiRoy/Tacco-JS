@@ -1,87 +1,67 @@
 const fileSystem = require('fs');
-let inputRawLines;
-try {
-    inputRawLines = fileSystem.readFileSync('/dev/stdin', 'utf-8').split('\n');
-} catch (readError) {
-    inputRawLines = [];
-}
 
-function performCountingSort(sourceCollection) {
-    if (!sourceCollection || sourceCollection.length === 0) {
-        return [];
-    }
-
-    let maximumValue = -1;
-    const collectionLength = sourceCollection.length;
-    let currentIdx = 0;
-    while (currentIdx < collectionLength) {
-        const valueToCheck = sourceCollection[currentIdx];
-        if (typeof valueToCheck === 'number' && Number.isInteger(valueToCheck) && valueToCheck >= 0) {
-            if (valueToCheck > maximumValue) {
-                maximumValue = valueToCheck;
-            }
-        }
-        currentIdx++;
-    }
-
-    let frequencyMap = new Array(maximumValue + 1).fill(0);
-    let orderedElements = new Array(collectionLength);
-
-    sourceCollection.forEach(itemValue => {
-        if (typeof itemValue === 'number' && Number.isInteger(itemValue) && itemValue >= 0 && itemValue <= maximumValue) {
-            frequencyMap[itemValue]++;
-        }
-    });
-
-    let mapIndex = 1;
-    while (mapIndex <= maximumValue) {
-        const previousAccumulatedCount = frequencyMap[mapIndex - 1];
-        frequencyMap[mapIndex] += previousAccumulatedCount;
-        mapIndex++;
-    }
-
-    let reverseIterationIndex = collectionLength - 1;
-    while (reverseIterationIndex >= 0) {
-        const elementToPlace = sourceCollection[reverseIterationIndex];
-
-        if (typeof elementToPlace === 'number' && Number.isInteger(elementToPlace) && elementToPlace >= 0 && elementToPlace <= maximumValue) {
-            let finalPosition = frequencyMap[elementToPlace] - 1;
-
-            if (finalPosition >= 0 && finalPosition < collectionLength) {
-                orderedElements[finalPosition] = elementToPlace;
-            }
-            frequencyMap[elementToPlace]--;
-        }
-        reverseIterationIndex--;
-    }
-
-    return orderedElements;
-}
-
-const parseNumericSequence = (textSequence) => {
-    if (!textSequence || textSequence.trim() === '') {
-        return [];
-    }
-    return textSequence.split(' ').map(elementString => {
-        const parsedNumber = Number(elementString);
-        if (isNaN(parsedNumber)) {
-            return null;
-        }
-        return parsedNumber;
-    }).filter(num => num !== null);
+const readInputFileContent = (filePath) => {
+    return fileSystem.readFileSync(filePath, 'utf-8');
 };
 
-let rawDataLine = '';
-if (inputRawLines.length > 1) {
-    rawDataLine = inputRawLines[1];
-}
+const determineMaxValue = (inputArray) => {
+    if (inputArray.length === 0) {
+        return -1; // Or throw an error, but for counting sort, usually non-empty positive integers.
+                   // Returning -1 is a safe sentinel if the array is empty, though the problem context implies non-empty.
+    }
+    let currentMaximum = inputArray[0]; // Initialize with the first element
+    for (let index = 1; index < inputArray.length; index++) {
+        const elementValue = inputArray[index];
+        if (elementValue > currentMaximum) {
+            currentMaximum = elementValue;
+        }
+    }
+    return currentMaximum;
+};
 
-let numericValues = parseNumericSequence(rawDataLine);
+const performCountingSort = (sourceArray) => {
+    const arrayLength = sourceArray.length;
 
-if (numericValues.length === 0) {
-    console.log("");
-} else {
-    const finalSortedResult = performCountingSort(numericValues);
-    let outputString = finalSortedResult.join(' ');
-    console.log(outputString);
-}
+    if (arrayLength === 0) {
+        return [];
+    }
+
+    const maximumValue = determineMaxValue(sourceArray);
+    
+    // Initialize frequency counts array
+    const frequencyCounts = new Array(maximumValue + 1).fill(0);
+
+    // Count occurrences of each element
+    for (let index = 0; index < arrayLength; index++) {
+        const currentElement = sourceArray[index];
+        frequencyCounts[currentElement]++;
+    }
+
+    // Calculate cumulative frequencies
+    for (let index = 1; index <= maximumValue; index++) {
+        frequencyCounts[index] += frequencyCounts[index - 1];
+    }
+    
+    // Create the sorted output array
+    const sortedElements = new Array(arrayLength);
+
+    // Place elements into their sorted positions
+    // Iterate backwards to ensure stability for equal elements
+    for (let index = arrayLength - 1; index >= 0; index--) {
+        const elementToPlace = sourceArray[index];
+        const targetPosition = frequencyCounts[elementToPlace] - 1;
+        sortedElements[targetPosition] = elementToPlace;
+        frequencyCounts[elementToPlace]--; // Decrement count for the next identical element
+    }
+
+    return sortedElements;
+};
+
+const inputContentLines = readInputFileContent('/dev/stdin').split('\n');
+
+const rawNumberString = inputContentLines[1];
+const stringNumbers = rawNumberString.split(' ');
+const inputNumbers = stringNumbers.map(Number);
+
+const finalSortedResult = performCountingSort(inputNumbers);
+console.log(finalSortedResult.join(' '));

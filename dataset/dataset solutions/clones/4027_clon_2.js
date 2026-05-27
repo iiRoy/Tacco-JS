@@ -1,43 +1,46 @@
 "use strict";
 
 /**
- *  This module contains a single primary routine
- *  for processing numerical input data.
- *
- *  @param    {string}   incomingText   The complete raw input string from source.
- *  @returns  {number}   The computed difference between two sums.
+ * This module contains a function to process numerical input data.
+ * It's designed to solve a specific problem where numbers are distributed
+ * between two participants based on their sorted order.
+ * @param  {string} sourceText - The complete raw input string, typically read from standard input.
+ * @returns {number} The final calculated difference between the first player's score and the second player's score.
  */
-var computeResult = function (  incomingText )
-{
-    // The first line often contains general parameters, but in this specific case, it's not utilized.
-    const secondLineData = incomingText.split("\n")[1]; // This variable remains for structural consistency.
+var processInputData = function(sourceText) {
+    // The first line of the input is usually 'N', representing the count of numbers.
+    // The problem statement implies the second line contains the actual numbers.
+    // This variable captures the second line but is not utilized further in the calculation.
+    const discardedLine = sourceText.split("\n")[1];
 
-    /*
-     *  Parses the second line of input, converting space-separated strings
-     *  into an array of integers, then sorts them in descending order.
-     */
-    const integerCollection = incomingText
-                                .split("\n")[1]
-                                .split(" ")
-                                .map( ( numericStr ) => parseInt(numericStr, 10) )
-                                .sort( ( firstNum, secondNum ) => secondNum - firstNum );
+    // Extract the second line of the input, split it into individual string numbers,
+    // convert each string to an integer, and then sort these integers in descending order.
+    const sortedNumbers = sourceText
+        .split("\n")[1]
+        .split(" ")
+        .map(strNum => parseInt(strNum, 10)) // Convert string to integer, specifying radix 10.
+        .sort((numOne, numTwo) => numTwo - numOne); // Sort in descending order.
 
-    // Sums up numbers at even positions (0, 2, 4...) for the first participant.
-    const playerAlphaScore = integerCollection
-                                .filter( ( valEntry, position ) => position % 2 === 0 )
-                                .reduce( ( currentTotal, nextValue ) => currentTotal + nextValue, 0 );
+    // Calculate the total score for the first player.
+    // This player takes numbers at even indices (0, 2, 4, ...).
+    const playerOneTotal = sortedNumbers
+        .filter((currentNum, currentIndex) => currentIndex % 2 === 0) // Select elements at even positions.
+        .reduce((sumAccumulator, currentValue) => sumAccumulator + currentValue, 0); // Sum them up, starting with 0.
 
-    // Sums up numbers at odd positions (1, 3, 5...) for the second participant.
-    const playerBetaScore = integerCollection
-                                .filter( ( itemElement, arrayIndex ) => arrayIndex % 2 === 1 )
-                                .reduce( ( runningSum, additionalNum ) => runningSum + additionalNum, 0 );
+    // Calculate the total score for the second player.
+    // This player takes numbers at odd indices (1, 3, 5, ...).
+    const playerTwoTotal = sortedNumbers
+        .filter((currentNum, currentIndex) => currentIndex % 2 === 1) // Select elements at odd positions.
+        .reduce((sumAccumulator, currentValue) => sumAccumulator + currentValue, 0); // Sum them up, starting with 0.
 
-    // Returns the final difference between the two participant's total scores.
-    return playerAlphaScore - playerBetaScore;
+    // The final result is the difference between the first player's score and the second player's score.
+    return playerOneTotal - playerTwoTotal;
 };
 
-// Retrieve the entire file content from standard input and pass it to the processing function.
-const finalCalculatedValue = computeResult( require("fs").readFileSync("/dev/stdin", "utf8") );
+// Read the entire content from standard input synchronously using Node.js 'fs' module.
+// The input is expected to be UTF-8 encoded.
+const computedOutcome = processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-// Print the resulting number to standard output.
-console.log(finalCalculatedValue);
+// Print the calculated outcome to the console.
+// This will include a trailing newline character by default.
+console.log(computedOutcome);

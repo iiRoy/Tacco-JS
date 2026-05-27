@@ -1,43 +1,40 @@
-function emitResult(dataValue) {
-    console.log(dataValue);
+function myout(text) {
+    console.log(text);
 }
 
-function calculatePowerModulo(baseValue, exponentValue, moduloValue) {
-    let resultAccumulator = 1;
-    baseValue %= moduloValue;
-    while (exponentValue > 0) {
-        if (exponentValue % 2 === 1) {
-            resultAccumulator = (resultAccumulator * baseValue) % moduloValue;
+function calculateModularPower(baseValue, exponentValue, modulusValue) {
+    let resultAccumulator = 1n;
+    let currentBase = BigInt(baseValue);
+    let currentExponent = BigInt(exponentValue);
+    const currentModulus = BigInt(modulusValue);
+
+    currentBase %= currentModulus;
+
+    while (currentExponent > 0n) {
+        if (currentExponent % 2n === 1n) {
+            resultAccumulator = (resultAccumulator * currentBase) % currentModulus;
         }
-        baseValue = (baseValue * baseValue) % moduloValue;
-        exponentValue = Math.floor(exponentValue / 2);
+        currentBase = (currentBase * currentBase) % currentModulus;
+        currentExponent /= 2n;
     }
-    return resultAccumulator;
+    return Number(resultAccumulator);
 }
 
-function performComplexOperation(inputPayload) {
-    const PRIME_MODULUS = 1000000007;
-    const quantityIndicator = parseInt(inputPayload);
+function Main(programInput) {
+    const parsedInputLines = programInput.trim().split("\n");
+    const integerValue = parseInt(parsedInputLines[0], 10);
 
-    const quotient = Math.floor(quantityIndicator / 3);
-    const remainder = quantityIndicator % 3;
+    const primeModulus = 1000000007;
 
-    let countForThree = quotient;
-    let countForTwo = quotient;
+    const factorThreeCount = Math.floor((integerValue + 2) / 3);
+    const factorTwoCount = Math.floor((integerValue + 1) / 3);
 
-    if (remainder === 1) {
-        countForThree++;
-    } else if (remainder === 2) {
-        countForThree++;
-        countForTwo++;
-    }
+    const powerOfThreeTerm = calculateModularPower(3, factorThreeCount, primeModulus);
+    const powerOfTwoTerm = calculateModularPower(2, factorTwoCount, primeModulus);
 
-    const termThree = calculatePowerModulo(3, countForThree, PRIME_MODULUS);
-    const termTwo = calculatePowerModulo(2, countForTwo, PRIME_MODULUS);
+    const finalComputedValue = (powerOfThreeTerm * powerOfTwoTerm) % primeModulus;
 
-    const computedValue = (termThree * termTwo) % PRIME_MODULUS;
-
-    emitResult(computedValue);
+    myout(finalComputedValue);
 }
 
-performComplexOperation(require("fs").readFileSync("/dev/stdin", "utf8").trim());
+Main(require("fs").readFileSync("/dev/stdin", "utf8").trim());

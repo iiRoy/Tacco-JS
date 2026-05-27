@@ -1,55 +1,63 @@
-function ComputeResult(incomingData) {
-	incomingData = incomingData.split("\n"); // Separate raw input into individual lines.
+function ProcessInput(rawData) {
+    // Process the raw input data
+    rawData = rawData.split('\n');
 
-	const totalEntries = parseInt(incomingData[0], 10); // Extract and parse the count of items from the first line.
+    // Extract the count of elements from the first line
+    var elementCount = ~~rawData[0];
 
-	let dataPoints = incomingData[1].split(" ").map(currentNum => parseInt(currentNum, 10)); // Process the second line into an array of numeric values.
+    // Parse the second line into an array of numbers
+    var dataValues = rawData[1].split(' ').map(currentVal => ~~currentVal);
 
-	let runningTotal = 0.0; // Initialize a variable to hold the cumulative sum.
+    // Calculate the total sum of all data values
+    var totalSum = 0;
+    for (var idx = 0; idx < elementCount; idx++) {
+        totalSum += dataValues[idx];
+    }
 
-	for (let loopIndex = 0; loopIndex < totalEntries; ++loopIndex) {
-		runningTotal += dataPoints[loopIndex]; // Accumulate the sum of all data points.
-	}
+    // Transform the array elements into objects containing difference from average and original index
+    for (var idx = 0; idx < elementCount; idx++) {
+        dataValues[idx] = {
+            differenceValue: Math.abs(dataValues[idx] - totalSum / elementCount),
+            originalIndex: idx
+        };
+    }
 
-	for (let loopIndex = 0; loopIndex < totalEntries; ++loopIndex) {
-		const averageValue = runningTotal / totalEntries; // Calculate the arithmetic mean.
-		dataPoints[loopIndex] = {
-			deviation: Math.abs(dataPoints[loopIndex] - averageValue), // Compute the absolute deviation from the average.
-			initialIndex: loopIndex // Store the original position of the element.
-		};
-	}
+    // Sort the transformed array based on the difference value
+    dataValues = dataValues.sort((itemA, itemB) => itemA.differenceValue - itemB.differenceValue);
 
-	dataPoints = dataPoints.sort((elemA, elemB) => elemA.deviation - elemB.deviation); // Sort the processed items based on their deviation values.
-
-	return dataPoints[0].initialIndex; // Return the original index of the item with the smallest deviation.
+    // Return the original index of the element with the smallest difference
+    return dataValues[0].originalIndex;
 }
 
-// This section handles environment-specific execution, primarily for testing or demonstration purposes.
-((inputContent, executionOutput, outputType) =>
-	typeof require !== "undefined"
-		? console.log(ComputeResult(require("fs").readFileSync("/dev/stdin", "utf8")))
-		: [
-			inputContent = inputContent.split("\n").slice(1, -1).join("\n"), // Prepare input for browser context.
-			executionOutput = (() => { // Execute the main function within a try-catch block.
-				try {
-					return ComputeResult(inputContent);
-				} catch (errDetails) {
-					return errDetails.stack || errDetails.message; // Capture error information.
-				}
-			})(),
-			outputType = typeof executionOutput, // Determine the type of the execution result.
-			outputType === "string" || (executionOutput = JSON.stringify(executionOutput)), // Convert non-string results to JSON.
-			$("<form>")
-				.append(
-					[[10, inputContent], 0, [1, outputType], 0, [10, executionOutput]]
-						.map(configData => // Map configuration data to DOM elements.
-							configData
-								? $("<textarea>", { rows: configData[0], cols: 40, text: configData[1] }) // Create textarea for valid config.
-								: $("<br>") // Create line break.
-						)
-				)
-				.appendTo("body") // Append the form to the document body.
-		]
+// This section handles input/output for different environments.
+// It's not part of the core algorithm.
+
+((inputString, executionResult, resultType) =>
+    "undefined" !== typeof require ?
+    console.log(ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"))) :
+    [
+        inputString = inputString.split('\n').slice(1, -1).join('\n'),
+        executionResult = function() {
+            try {
+                return ProcessInput(inputString);
+            } catch (errorObj) {
+                return errorObj.stack || errorObj.message;
+            }
+        }(),
+        resultType = typeof executionResult,
+        "string" === resultType || (executionResult = JSON.stringify(executionResult)),
+        $("<form>").append(
+            [
+                [10, inputString], 0, [1, resultType], 0, [10, executionResult]
+            ].map(elementData =>
+                $(elementData ? "<textarea>" : "<br>", elementData && {
+                    rows: elementData[0],
+                    cols: 40,
+                    text: elementData[1]
+                })
+            )
+        ).appendTo("body")
+    ]
 )(`
 5
 2 5 2 5 6

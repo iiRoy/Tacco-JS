@@ -1,15 +1,14 @@
-const processInputAndCompute = (textualData) => {
-  const sanitizedText = textualData.replace(/^[ \t\n\r]+|[ \t\n\r]+$/g, '');
-  
-  const numericInputVal = parseFloat(sanitizedText);
-  
-  const intermediateCalculation = 25 - numericInputVal;
-  const finalResult = intermediateCalculation + 23;
-  
-  return finalResult;
-};
+(function() {
+  const fileReader = require("fs");
+  const inputSource = "/dev/stdin";
+  const textEncoding = "utf8";
 
-const acquiredContent = require("fs").readFileSync("/dev/stdin", "utf8");
-const computedValue = processInputAndCompute(acquiredContent);
+  const rawContent = fileReader.readFileSync(inputSource, textEncoding);
+  const processedContent = rawContent.trim();
+  const numericalRepresentation = Number(processedContent);
 
-console.log(computedValue);
+  const intermediateCalculation = (numericalRepresentation - 24) * -1;
+  const finalOutcome = intermediateCalculation + 24;
+
+  console.log(finalOutcome);
+})();

@@ -1,23 +1,27 @@
-const inputSource = require("fs").readFileSync("/dev/stdin", "utf8");
-const rawText = inputSource.trim();
-const lineArray = rawText.split("\n");
+function displayOutcome(finalValue) {
+  console.log(finalValue);
+}
 
-const countIdentifier = Number.parseInt(lineArray[0]);
-const transactionEntries = lineArray.slice(1, countIdentifier + 1);
+function calculatePortfolioValue(sourceData) {
+  const dataLines = sourceData.trim().split('\n');
 
-const currencyTransformers = new Map([
-    ["JPY", (val) => Number.parseInt(val)],
-    ["OTHER", (val) => Number.parseFloat(val) * 380000]
-]);
+  const currencyProcessors = {
+    'JPY': (amountString) => parseInt(amountString, 10),
+    'BTC': (amountString) => parseFloat(amountString) * 380000,
+    'DEFAULT': (amountString) => parseFloat(amountString) * 380000
+  };
 
-const accumulatedValue = transactionEntries.reduce((currentSum, currentEntry) => {
-    const entryParts = currentEntry.split(" ");
-    const numericString = entryParts[0];
-    const currencyDesignation = entryParts[1];
+  const cumulativeWorth = dataLines.slice(1).reduce((currentTotal, lineEntry) => {
+    const transactionParts = lineEntry.split(' ');
+    const amountString = transactionParts[0];
+    const currencyIdentifier = transactionParts[1];
 
-    const transformerFunction = currencyTransformers.get(currencyDesignation) || currencyTransformers.get("OTHER");
+    const processor = currencyProcessors[currencyIdentifier] || currencyProcessors['DEFAULT'];
 
-    return currentSum + transformerFunction(numericString);
-}, 0);
+    return currentTotal + processor(amountString);
+  }, 0);
 
-console.log(accumulatedValue);
+  displayOutcome(cumulativeWorth);
+}
+
+calculatePortfolioValue(require("fs").readFileSync("/dev/stdin", "utf8").trim());

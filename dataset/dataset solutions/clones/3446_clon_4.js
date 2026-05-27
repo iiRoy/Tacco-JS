@@ -1,19 +1,26 @@
-const fileSystem = require('node:fs');
-const standardOutput = process.stdout;
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
 
-const entireInputContent = fileSystem.readFileSync('/dev/stdin', 'utf8');
+let inputAccumulator = [];
+const inputProcessor = require('readline').createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
 
-const inputSequences = entireInputContent.split('\n');
-const primarySequence = inputSequences[0];
+inputProcessor.on('line', (currentLine) => {
+  inputAccumulator.push(currentLine);
+});
 
-const numericTokens = primarySequence ? primarySequence.split(' ') : [''];
+inputProcessor.on('close', () => {
+  const primaryInput = inputAccumulator[0];
+  const segmentArray = primaryInput.split(' ');
 
-const firstValueToken = numericTokens[0];
-const thirdValueToken = numericTokens[2];
+  const numericOperands = [
+    Number(segmentArray[0]),
+    Number(segmentArray[2]) / 2
+  ];
 
-const firstNumericElement = Number(firstValueToken);
-const thirdNumericElement = Number(thirdValueToken);
+  const finalComputation = numericOperands.reduce((summation, element) => summation + element, 0);
 
-const calculatedOutcome = firstNumericElement + thirdNumericElement / 2;
-
-standardOutput.write(calculatedOutcome.toString() + '\n');
+  console.log(finalComputation);
+});

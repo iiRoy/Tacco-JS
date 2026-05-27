@@ -1,79 +1,75 @@
-// This function orchestrates the primary processing sequence
-function executeCoreLogic() {
+function executeProgram() {
+  // Declare variables for processing card hands.
+  let cardValues; // Renamed 'hands'
+  let uniqueCardsMap; // Renamed 'pattern'
+  let tempValue; // Renamed 'swap'
+  let inputIndex = 0x0; // Renamed 'i', changed literal representation
+  let loopCounter; // Renamed 'j'
 
-  // Declare variables for card values, their presence map, a temporary holder, and iterators.
-  var
-    numerics,
-    valuePresence,
-    exchangeVal,
-    currentPosition = 0,
-    innerIndex;
-
-  // Begin an indefinite loop to process input data segments.
-  for (; /* This loop continues until an explicit break condition is met */ ;) {
-    // Check if the current input segment indicates termination (value 0).
-    if (incomingStream[currentPosition] == 0) {
-      break; // Exit the processing loop.
+  // Main processing loop: continues until a specific termination condition is met.
+  for (;;) {
+    // Check if the current input line indicates termination (a '0').
+    if (rawData[inputIndex] === '0') { // Renamed 'input', used strict equality for string '0'
+      break; // Exit the infinite loop.
     }
 
-    // Initialize an array to store five numeric values.
-    numerics = [];
-    // Populate the 'numerics' array with five values from the incoming stream.
-    for (innerIndex = 0; innerIndex < 5; innerIndex++) {
-      numerics.push(Number(incomingStream[currentPosition++]));
+    // Initialize an array to store the five card values for the current hand.
+    cardValues = []; // Renamed 'hands'
+
+    // Populate the 'cardValues' array with five numbers from the input.
+    for (loopCounter = 0; loopCounter < 0b101; loopCounter++) { // Renamed 'j', changed literal '5'
+      cardValues.push(Number(rawData[inputIndex++])); // Renamed 'hands', 'input', 'i'
     }
 
-    // Create a map to track the presence of unique numeric values.
-    valuePresence = numerics.reduce(function (valueTracker, currentNumeric) {
-      return (valueTracker[currentNumeric] = true, valueTracker);
-    }, {}); // Start with an empty object as the initial accumulator.
+    // Create a map (object) to track the presence of unique card values in the hand.
+    uniqueCardsMap = cardValues.reduce(function (cardPresence, currentCard) { // Renamed 'pattern', 'hands', 'pat', 'h'
+      cardPresence[currentCard] = true; // Mark the current card as present.
+      return cardPresence; // Return the updated map.
+    }, {}); // Start with an empty object.
 
-    // Extract unique numeric values, convert them to numbers, and sort them in ascending order.
-    var distinctValues = Object.keys(valuePresence)
-      .map(Number)
-      .sort(function (firstNum, secondNum) {
-        return firstNum - secondNum; /* Standard numeric sort */
+    // Extract unique card values, convert them to numbers, and sort them numerically.
+    const sortedUniqueCards = Object.keys(uniqueCardsMap) // Renamed 'keys', 'pattern'
+      .map(Number) // Convert string keys to actual numbers.
+      .sort(function (valA, valB) { // Renamed 'x', 'y' for sort function arguments.
+        return valA - valB; // Sort in ascending numerical order.
       });
 
-    // Check if exactly two distinct values were found.
-    if (distinctValues.length === 2) {
-      // Further check if these two distinct values are separated by 2 (e.g., 1 and 3).
-      if (distinctValues[1] - distinctValues[0] == 2) {
-        // If so, swap their positions.
-        exchangeVal = distinctValues[0];
-        distinctValues[0] = distinctValues[1];
-        distinctValues[1] = exchangeVal;
+    // Conditional logic based on the number of unique card values found.
+    if (sortedUniqueCards.length === 0x2) { // Renamed 'keys', changed literal '2'
+      // If there are exactly two unique cards, apply specific reordering logic.
+      if (sortedUniqueCards[0x1] - sortedUniqueCards[0x0] === 0x2) { // Renamed 'keys', changed literals '1', '0', '2'
+        // If the difference between the two unique cards is 2, swap their positions.
+        tempValue = sortedUniqueCards[0x0]; // Renamed 'swap', 'keys', changed literal '0'
+        sortedUniqueCards[0x0] = sortedUniqueCards[0x1]; // Renamed 'keys', changed literals '0', '1'
+        sortedUniqueCards[0x1] = tempValue; // Renamed 'keys', changed literal '1'
       }
-      // For each numeric value, print its index (plus one) within the distinct sorted values.
-      numerics.forEach(function (val) {
-        console.log(distinctValues.indexOf(val) + 1);
+      // For each card in the original hand, print its 1-based index in the sorted unique list.
+      cardValues.forEach(function (individualCard) { // Renamed 'hands', 'h'
+        console.log(sortedUniqueCards.indexOf(individualCard) + 0x1); // Renamed 'keys', changed literal '1'
       });
     } else {
-      // If not exactly two distinct values, print '3' for each numeric value.
-      numerics.forEach(function () {
-        console.log(3);
+      // If the number of unique cards is not two, print a default value for each card.
+      cardValues.forEach(function () { // Renamed 'hands'
+        console.log(0x3); // Changed literal '3'
       });
     }
   }
 }
 
-// Global variable to accumulate incoming data.
-var incomingStream = '';
+// Global variable to store the raw input received from standard input.
+let rawData = ''; // Renamed 'input'
 
-// Resume standard input stream.
-process.stdin.resume();
-// Set encoding for the input stream.
-process.stdin.setEncoding('utf8');
+// Configure standard input stream.
+process.stdin.resume(); // Ensures the process stays alive to receive input.
+process.stdin.setEncoding('utf8'); // Sets the encoding for incoming data.
 
-// Event listener for data chunks.
-process.stdin.on('data', function (dataPortion) {
-  incomingStream += dataPortion; // Append new data to the buffer.
+// Event listener for when data chunks are received from stdin.
+process.stdin.on('data', function(dataChunk) { // Renamed 'chunk'
+  rawData += dataChunk; // Append the received data chunk to the 'rawData' string.
 });
 
-// Event listener for end of input stream.
-process.stdin.on('end', function () {
-  // Split the accumulated data by newline characters.
-  incomingStream = incomingStream.split('\n');
-  // Execute the main processing logic.
-  executeCoreLogic();
+// Event listener for when the standard input stream ends.
+process.stdin.on('end', function() {
+  rawData = rawData.split('\n'); // Split the accumulated raw data into an array of lines.
+  executeProgram(); // Call the main program execution function.
 });

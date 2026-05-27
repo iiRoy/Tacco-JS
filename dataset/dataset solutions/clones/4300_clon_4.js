@@ -1,67 +1,47 @@
-function processGridData(rawData) {
-    const allLines = rawData.split('\n');
-    const dimensions = allLines[0].split(' ');
-    const matrixHeight = parseInt(dimensions[0], 10);
-    const matrixWidth = parseInt(dimensions[1], 10);
+const countAdjacentBombs = (rCoord, cCoord, currentMap, mapHeight, mapWidth) => {
+    const relativePositions = [
+        [-1, -1], [-1, 0], [-1, 1],
+        [0, -1],           [0, 1],
+        [1, -1], [1, 0], [1, 1]
+    ];
 
-    let currentGridMap = [];
-    let totalDotCells = 0;
-    let totalHashCells = 0;
+    return relativePositions.reduce((bombTally, [deltaR, deltaC]) => {
+        const neighborR = rCoord + deltaR;
+        const neighborC = cCoord + deltaC;
 
-    for (let r = 1; r <= matrixHeight; r++) {
-        const gridRowString = allLines[r];
-        const charArrayRow = [];
-        for (let c = 0; c < matrixWidth; c++) {
-            charArrayRow.push(gridRowString[c]);
-            if (gridRowString[c] === '.') {
-                totalDotCells++;
-            } else if (gridRowString[c] === '#') {
-                totalHashCells++;
-            }
+        const isWithinBounds = neighborR >= 0 && neighborR < mapHeight && neighborC >= 0 && neighborC < mapWidth;
+        
+        if (isWithinBounds && currentMap[neighborR][neighborC] === '#') {
+            return bombTally + 1;
         }
-        currentGridMap.push(charArrayRow);
-    }
+        return bombTally;
+    }, 0);
+};
 
-    if (totalDotCells === 0) {
-        // Scenario 1: Grid contains only bombs
-        const finalOutput = currentGridMap.map(row => row.join('')).join('\n') + '\n';
-        console.log(finalOutput);
-    } else if (totalHashCells === 0) {
-        // Scenario 2: Grid contains only empty spaces
-        const finalOutput = currentGridMap.map(row => row.map(() => '0').join('')).join('\n') + '\n';
-        console.log(finalOutput);
+const processMinefield = (sourceData) => {
+    const dataLines = sourceData.split('\n');
+    const [fieldHeight, fieldWidth] = dataLines[0].split(' ').map(Number);
+    const fieldRows = dataLines.slice(1);
+
+    const dotOccurrences = sourceData.match(/\./g);
+
+    if (!dotOccurrences) {
+        console.log(fieldRows.join('\n') + '\n');
+    } else if (dotOccurrences.length === fieldHeight * fieldWidth) {
+        console.log(fieldRows.join('\n').replace(/./g, '0') + '\n');
     } else {
-        // Scenario 3: Mixed grid, calculate adjacent bombs
-        const deltaCoords = [
-            [-1, -1], [-1, 0], [-1, 1],
-            [0, -1],           [0, 1],
-            [1, -1],  [1, 0],  [1, 1]
-        ];
-
-        const calculateAdjacentBombCount = (yPos, xPos, boardState) => {
-            let nearbyExplosives = 0;
-            for (const [dy, dx] of deltaCoords) {
-                const newY = yPos + dy;
-                const newX = xPos + dx;
-
-                if (newY >= 0 && newY < matrixHeight && newX >= 0 && newX < matrixWidth) {
-                    if (boardState[newY][newX] === '#') {
-                        nearbyExplosives++;
-                    }
+        const finalFieldState = Array.from({ length: fieldHeight }).reduce((currentField, _, rIndex) => {
+            return Array.from({ length: fieldWidth }).reduce((rowProcessingField, _, cIndex) => {
+                if (rowProcessingField[rIndex][cIndex] === '.') {
+                    const bombCount = countAdjacentBombs(rIndex, cIndex, rowProcessingField, fieldHeight, fieldWidth);
+                    rowProcessingField[rIndex] = rowProcessingField[rIndex].replace('.', bombCount.toString());
                 }
-            }
-            return nearbyExplosives;
-        };
+                return rowProcessingField;
+            }, currentField);
+        }, [...fieldRows]);
 
-        for (let y = 0; y < matrixHeight; y++) {
-            for (let x = 0; x < matrixWidth; x++) {
-                if (currentGridMap[y][x] === '.') {
-                    const bombCount = calculateAdjacentBombCount(y, x, currentGridMap);
-                    currentGridMap[y][x] = bombCount.toString();
-                }
-            }
-        }
-        const finalOutput = currentGridMap.map(row => row.join('')).join('\n') + '\n';
-        console.log(finalOutput);
+        console.log(finalFieldState.join('\n'));
     }
-}
+};
+
+// processMinefield(require("fs").readFileSync("/dev/stdin", "utf8"));

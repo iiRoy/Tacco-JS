@@ -1,118 +1,114 @@
 "use strict";
+var input = require("fs").readFileSync("/dev/stdin", "utf8");
+var cin = input.split(/ |\n/),
+  cid = 0;
 
-// Custom Input Processing Class
-class DataFeeder {
-    constructor(sourceData) {
-        // Split input by any whitespace and filter out empty strings
-        this.inputTokens = sourceData.split(/\s+/).filter(Boolean);
-        this.tokenPointer = 0;
-    }
-
-    // Retrieves the next integer from the input stream
-    fetchInteger() {
-        return parseInt(this.inputTokens[this.tokenPointer++], 10);
-    }
-
-    // Retrieves the next string token from the input stream
-    fetchText() {
-        return this.inputTokens[this.tokenPointer++];
-    }
-
-    // Retrieves a specified count of integers
-    retrieveIntegers(count) {
-        const numbers = [];
-        for (let i = 0; i < count; i++) {
-            numbers.push(this.fetchInteger());
-        }
-        return numbers;
-    }
+function next() {
+  return +cin[cid++];
 }
 
-// Function to create a multi-dimensional array filled with a specific value
-function constructGrid(rows, columns, initialValue) {
-    const freshGrid = new Array(rows);
-    for (let r = 0; r < rows; r++) {
-        freshGrid[r] = new Array(columns).fill(initialValue);
-    }
-    return freshGrid;
+function nextstr() {
+  return cin[cid++];
 }
 
-// Main processing logic
-function solutionKernel() {
-    const MAXIMUM_COST = 1e9 + 7; // A large value representing infinity
-    const ROW_OFFSETS = [-1, 0, 1, 0]; // Corresponds to North, East, South, West changes in row index
-    const COL_OFFSETS = [0, 1, 0, -1]; // Corresponds to North, East, South, West changes in column index
-    const DIRECTION_COUNT = 4;
-
-    const dataStream = new DataFeeder(require("fs").readFileSync("/dev/stdin", "utf8"));
-
-    const [mapHeight, mapWidth, maxJumpDistance] = dataStream.retrieveIntegers(3);
-    const [initialRow, initialCol, finalRow, finalCol] = dataStream.retrieveIntegers(4);
-
-    // Create the map layout with padding for boundaries using '@'
-    const mapLayout = constructGrid(mapHeight + 2, mapWidth + 2, '@');
-    for (let r = 0; r < mapHeight; r++) {
-        const rowString = dataStream.fetchText();
-        for (let c = 0; c < mapWidth; c++) {
-            mapLayout[r + 1][c + 1] = rowString[c]; // Fill inner part of the map
-        }
-    }
-
-    // Initialize minimum costs grid with MAXIMUM_COST
-    const minimumCosts = constructGrid(mapHeight + 2, mapWidth + 2, MAXIMUM_COST);
-    minimumCosts[initialRow][initialCol] = 0; // Starting point has 0 cost
-
-    // BFS Queue: stores objects { r, c, cost }
-    const explorationQueue = [{ row: initialRow, col: initialCol, pathCost: 0 }];
-    let queueHead = 0; // Manual pointer for queue optimization (avoids Array.shift performance overhead)
-
-    while (queueHead < explorationQueue.length) {
-        const { row: currentRow, col: currentCol, pathCost: currentPathCost } = explorationQueue[queueHead++];
-
-        // If a shorter path to this cell has already been found and processed, skip
-        if (currentPathCost > minimumCosts[currentRow][currentCol]) {
-            continue;
-        }
-
-        // Explore all four cardinal directions
-        for (let dirIndex = 0; dirIndex < DIRECTION_COUNT; ++dirIndex) {
-            let tempRow = currentRow;
-            let tempCol = currentCol;
-
-            // Try jumping up to maxJumpDistance steps in the current direction
-            for (let stepIndex = 0; stepIndex < maxJumpDistance; ++stepIndex) {
-                tempRow += ROW_OFFSETS[dirIndex];
-                tempCol += COL_OFFSETS[dirIndex];
-
-                // If obstacle or boundary, stop exploring further in this direction
-                if (mapLayout[tempRow][tempCol] === '@') {
-                    break;
-                }
-
-                // The cost to reach this new cell is one "jump" more than the current cell's path cost
-                const nextPathCost = currentPathCost + 1;
-
-                // Crucial optimization: If this cell has already been reached with a cost
-                // equal to or less than the current cell's path cost, then any path extending
-                // through this cell from the current cell won't be optimal. Break early.
-                if (minimumCosts[tempRow][tempCol] <= currentPathCost) {
-                    break;
-                }
-
-                // If a shorter path to (tempRow, tempCol) is found
-                if (nextPathCost < minimumCosts[tempRow][tempCol]) {
-                    minimumCosts[tempRow][tempCol] = nextPathCost;
-                    explorationQueue.push({ row: tempRow, col: tempCol, pathCost: nextPathCost });
-                }
-            }
-        }
-    }
-
-    const finalCost = minimumCosts[finalRow][finalCol];
-    return finalCost === MAXIMUM_COST ? -1 : finalCost;
+function nextbig() {
+  return BigInt(cin[cid++]);
 }
 
-const outputVal = solutionKernel();
-if (outputVal !== undefined) {
-    console.log(String(outputVal));
+function nexts(n, a) {
+  return a ? cin.slice(cid, (cid += n)) : cin.slice(cid, (cid += n)).map((a) => +a);
+}
+
+function nextm(h, w, a) {
+  var r = [],
+    i = 0;
+  if (a)
+    for (; i < h; i++) r.push(cin.slice(cid, (cid += w)));
+  else
+    for (; i < h; i++) r.push(cin.slice(cid, (cid += w)).map((a) => +a));
+  return r;
+}
+
+// The custom xArray utility function from the original code has been removed.
+// Its functionality for array initialization is replaced directly within the main function
+// using standard JavaScript Array methods.
+
+var myOut = main();
+if (myOut !== undefined) console.log(String(myOut));
+
+function main() {
+  const infinityVal = 1e9;
+  // Direction vectors for (Up, Right, Down, Left)
+  const deltaY = [-1, 0, 1, 0];
+  const deltaX = [0, 1, 0, -1];
+  const directionCount = deltaX.length;
+
+  const [gridHeight, gridWidth, maxSteps] = nexts(3);
+  const [startY, startX, goalY, goalX] = nexts(4);
+
+  const mapGrid = [];
+  // Initialize mapGrid with padding, replacing xArray usage
+  mapGrid.push(Array(gridWidth + 2).fill('@').join('')); // Top border row
+  for (let rowIdx = 0; rowIdx < gridHeight; rowIdx++) {
+    mapGrid.push('@' + nextstr() + '@'); // Padded input row
+  }
+  mapGrid.push(Array(gridWidth + 2).fill('@').join('')); // Bottom border row
+
+  // Initialize minMoves 2D array with infinity, replacing xArray usage
+  const minMoves = Array.from({ length: gridHeight + 2 }, () =>
+    Array(gridWidth + 2).fill(infinityVal)
+  );
+
+  minMoves[startY][startX] = 0;
+  // Using a single queue for BFS, storing objects with coordinates and current move count
+  const bfsQueue = [{ y: startY, x: startX, moves: 0 }];
+  let queuePointer = 0; // Acts as a head pointer for efficient dequeue (simulating shift())
+
+  while (queuePointer < bfsQueue.length) {
+    const { y: currentY, x: currentX, moves: currentMoveCount } = bfsQueue[queuePointer++];
+
+    // If a shorter path to this cell has already been discovered and processed,
+    // skip this entry as it represents a suboptimal path.
+    if (currentMoveCount > minMoves[currentY][currentX]) {
+      continue;
+    }
+
+    // Explore all four cardinal directions
+    for (let dirIdx = 0; dirIdx < directionCount; dirIdx++) {
+      let traverseY = currentY;
+      let traverseX = currentX;
+
+      // Attempt to move up to maxSteps in the current direction
+      for (let stepCount = 1; stepCount <= maxSteps; stepCount++) {
+        traverseY += deltaY[dirIdx];
+        traverseX += deltaX[dirIdx];
+
+        // If an obstacle ('@') is encountered, stop moving further in this direction
+        if (mapGrid[traverseY][traverseX] === '@') {
+          break;
+        }
+
+        // If a path to this cell has already been found that is shorter than
+        // or equal to the current path's level (currentMoveCount + 1),
+        // then we cannot improve by extending further through this cell.
+        // This is a critical optimization for multi-step BFS, preventing redundant exploration.
+        if (minMoves[traverseY][traverseX] < currentMoveCount + 1) {
+          break;
+        }
+
+        // If we found a new shortest path to this cell (i.e., minMoves is currently infinityVal or a longer path)
+        if (minMoves[traverseY][traverseX] > currentMoveCount + 1) {
+          minMoves[traverseY][traverseX] = currentMoveCount + 1;
+          bfsQueue.push({ y: traverseY, x: traverseX, moves: currentMoveCount + 1 });
+        }
+        // If minMoves[traverseY][traverseX] === currentMoveCount + 1,
+        // it means this cell is already part of the current frontier (already added to queue
+        // or processed for this level). We do not add it again, but we *continue*
+        // extending *past* it in the same direction, as per the multi-step BFS logic.
+      }
+    }
+  }
+
+  // Return the minimum moves to the goal, or -1 if unreachable
+  return minMoves[goalY][goalX] === infinityVal ? -1 : minMoves[goalY][goalX];
 }

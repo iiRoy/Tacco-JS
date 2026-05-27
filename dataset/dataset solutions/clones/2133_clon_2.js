@@ -1,32 +1,29 @@
-// This primary function handles the processing of an incoming data stream.
-function processInputData(incomingStream) {
+function ProcessInput(rawData) {
+  // Split the raw input string by space to get individual components.
+  var parts = rawData.split(' ');
 
-  // Divide the raw input into distinct sections using a space as the delimiter.
-  const dataSections = incomingStream.split(' ');
+  // Convert the first part to a number, representing the initial value.
+  var currentNumber = +parts[0];
 
-  // Extract the first section and convert it into an integer, representing the initial quantity.
-  let currentQuantity = parseInt(dataSections[0], 10);
+  // Convert the second part to a number, representing the base or divisor.
+  var baseValue = +parts[1];
 
-  // Extract the second section and convert it into an integer, serving as the system's base.
-  const operationalBase = parseInt(dataSections[1], 10);
+  // Initialize an empty string to accumulate results.
+  var outputString = '';
 
-  // Initialize an empty string variable to accumulate the transformation results.
-  let transformationResult = '';
+  // Loop as long as the current number is positive.
+  while (currentNumber > 0) {
+    // Append the remainder of currentNumber divided by baseValue to the output string.
+    outputString += currentNumber % baseValue;
 
-  // Continue iterating as long as the current quantity remains positive.
-  while (currentQuantity > 0) {
-
-    // Append the remainder of the current quantity divided by the operational base to the result string.
-    transformationResult += currentQuantity % operationalBase;
-
-    // Update the current quantity by performing integer division with the operational base.
-    currentQuantity = Math.floor(currentQuantity / operationalBase);
+    // Update currentNumber by dividing it by baseValue and taking the floor (integer part).
+    currentNumber = Math.floor(currentNumber / baseValue);
   }
 
-  // Output the total character count of the final transformation result string.
-  console.log(transformationResult.length);
+  // Output the length of the accumulated string to the console.
+  console.log(outputString.length);
 }
 
-// The following code segment is responsible for managing standard input/output operations.
-// It should not be altered, as it reads data from the system's standard input and invokes the main processing logic.
-processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+// The following line handles standard input/output and should not be modified.
+// It reads data from stdin and passes it to the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

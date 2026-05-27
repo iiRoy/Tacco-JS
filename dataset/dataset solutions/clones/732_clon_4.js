@@ -1,48 +1,53 @@
-const qL = require('readline');
-const streamProcessor = qL.createInterface({
-  input: process.stdin,
-  output: process.stdout,
-  terminal: false
+let accumulatedInput = '';
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
+
+process.stdin.on('data', (inputChunk) => {
+  accumulatedInput += inputChunk;
 });
 
-let collectedLines = [];
+process.stdin.on('end', () => {
+  const processedLines = accumulatedInput.split('\n').filter(Boolean);
 
-streamProcessor.on('line', (currentLineData) => {
-  collectedLines.push(currentLineData);
-});
+  processedLines.forEach((currentInputLine) => {
+    const numericalComponents = currentInputLine.split(' ').map(Number);
 
-streamProcessor.on('close', () => {
-  collectedLines.forEach(inputDatum => {
-    const parsedValues = inputDatum.split(' ').map(Number);
+    if (numericalComponents[0] || numericalComponents[1] || numericalComponents[2]) {
+      const firstInputVal = Math.floor(numericalComponents[0]);
+      const secondInputVal = Math.floor(numericalComponents[1]);
+      const targetConstraint = Math.floor(numericalComponents[2]);
 
-    if (parsedValues[0] || parsedValues[1] || parsedValues[2]) {
-      const paramOne = parsedValues[0];
-      const paramTwo = parsedValues[1];
-      const targetSum = parsedValues[2];
+      const multiplierAlpha = firstInputVal / 100 + 1;
+      const multiplierBeta = secondInputVal / 100 + 1;
 
-      const multiplierOne = paramOne / 100 + 1;
-      const multiplierTwo = paramTwo / 100 + 1;
+      let overallMaximum = 0;
 
-      let resultAccumulator = 0;
+      const valueToSourceIndices = new Map();
+      const iterationCeiling = 1000;
 
-      const iterationRange = Array.from({ length: 999 }, (_, index) => index + 1);
-
-      const calculatedOutcomes = iterationRange.flatMap(primaryVal => {
-        return iterationRange.map(secondaryVal => {
-          return { primaryVal, secondaryVal };
-        })
-        .filter(pairOfVals => {
-          return Math.floor(pairOfVals.primaryVal * multiplierOne) + Math.floor(pairOfVals.secondaryVal * multiplierOne) === targetSum;
-        })
-        .map(pairOfVals => {
-          return Math.floor(pairOfVals.primaryVal * multiplierTwo) + Math.floor(pairOfVals.secondaryVal * multiplierTwo);
-        });
-      });
-
-      if (calculatedOutcomes.length > 0) {
-        resultAccumulator = Math.max(...calculatedOutcomes);
+      for (let currentIdx = 1; currentIdx < iterationCeiling; ++currentIdx) {
+        const derivedValue = Math.floor(currentIdx * multiplierAlpha);
+        if (!valueToSourceIndices.has(derivedValue)) {
+          valueToSourceIndices.set(derivedValue, []);
+        }
+        valueToSourceIndices.get(derivedValue).push(currentIdx);
       }
-      console.log(resultAccumulator);
+
+      for (const [alphaValI, indicesForAlphaI] of valueToSourceIndices.entries()) {
+        const requiredAlphaValJ = targetConstraint - alphaValI;
+
+        if (valueToSourceIndices.has(requiredAlphaValJ)) {
+          const indicesForAlphaJ = valueToSourceIndices.get(requiredAlphaValJ);
+
+          for (const actualI of indicesForAlphaI) {
+            for (const actualJ of indicesForAlphaJ) {
+              const currentComputedSum = Math.floor(actualI * multiplierBeta) + Math.floor(actualJ * multiplierBeta);
+              overallMaximum = Math.max(overallMaximum, currentComputedSum);
+            }
+          }
+        }
+      }
+      console.log(overallMaximum);
     }
   });
 });

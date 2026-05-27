@@ -1,31 +1,13 @@
-function PerformDivisionCalculation(inputContent)
-{
-    // First, remove any leading or trailing whitespace from the raw input string.
-    // This ensures clean parsing of numerical values.
-    let processedContent = inputContent.trim();
+function ProcessInput(incomingData) {
+  // Remove any leading or trailing whitespace from the raw string data.
+  let processedData = incomingData.trim();
 
-    /*
-     *  Next, split the cleaned string by spaces to get an array of string components.
-     *  Then, transform each string component into its numerical equivalent.
-     */
-    let numericalArray = processedContent.split(" ").map(Number);
+  // Split the string by spaces and convert each resulting substring into a number.
+  processedData = processedData.split(" ").map(Number);
 
-    // Perform the division operation using the first two numerical elements.
-    // The result is stored in a temporary variable.
-    let calculatedQuotient = numericalArray[0] / numericalArray[1];
-
-    // Output the final computed value to the standard output, followed by a newline.
-    process.stdout.write(String(calculatedQuotient) + '\n');
+  // Calculate the division of the first element by the second and output the result.
+  console.log(processedData[0] / processedData[1]);
 }
 
-// Define an alias for the Node.js module loading function.
-const moduleLoader = require;
-
-// Access the file system module using the alias.
-const fileOperations = moduleLoader('fs');
-
-// Create a specific function alias for reading file contents synchronously.
-const readDataFromFile = fileOperations.readFileSync;
-
-// Invoke the main calculation function with data read from the standard input stream.
-PerformDivisionCalculation(readDataFromFile("/dev/standard_input_stream", "utf-8"));
+// Read the entire content from standard input as a UTF-8 string and pass it to the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

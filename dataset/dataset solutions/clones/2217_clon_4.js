@@ -1,28 +1,23 @@
-const processNumericalSequence = (sourceText) => {
-    const contentSegments = sourceText.trim().split('\n');
-    const valueSeriesString = contentSegments[1];
-    const numericElements = valueSeriesString.split(' ').map(parseFloat);
+const processData = (rawData) => {
+  const lineSegments = rawData.split('\n');
+  const sequenceValues = lineSegments[1].split(' ').map(Number);
 
-    const resultAccumulator = numericElements.reduce((progressState, currentElement) => {
-        const { currentMinimumEncountered, uniqueMinimumOccurrences } = progressState;
+  const initialMetric = {
+    lowestEncountered: sequenceValues[0],
+    distinctMinimums: 1,
+  };
 
-        if (currentElement < currentMinimumEncountered) {
-            return {
-                currentMinimumEncountered: currentElement,
-                uniqueMinimumOccurrences: uniqueMinimumOccurrences + 1
-            };
-        } else {
-            return progressState;
-        }
-    }, { currentMinimumEncountered: Infinity, uniqueMinimumOccurrences: 0 });
+  const finalMetric = sequenceValues.slice(1).reduce((accumulator, currentVal) => {
+    if (currentVal < accumulator.lowestEncountered) {
+      return {
+        lowestEncountered: currentVal,
+        distinctMinimums: accumulator.distinctMinimums + 1,
+      };
+    }
+    return accumulator;
+  }, initialMetric);
 
-    return resultAccumulator.uniqueMinimumOccurrences;
+  console.log(finalMetric.distinctMinimums);
 };
 
-const acquireExternalData = () => {
-    const fileAccessUtility = require('fs');
-    return fileAccessUtility.readFileSync('/dev/stdin', 'utf8');
-};
-
-const finalComputation = processNumericalSequence(acquireExternalData());
-console.log(finalComputation);
+processData(require('fs').readFileSync('/dev/stdin', 'utf8').trim());

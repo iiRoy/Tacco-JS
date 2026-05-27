@@ -1,45 +1,42 @@
-const systemCore = require('process');
-const lineIterator = require('readline');
+const fileSystem = require('fs');
 
-const inputHandler = lineIterator.createInterface({
-  input: systemCore.stdin,
-  output: systemCore.stdout,
-  terminal: false
-});
+const obtainInputContent = () => {
+  const inputLength = fileSystem.fstatSync(process.stdin.fd).size;
+  const dataBuffer = Buffer.alloc(inputLength);
+  const readBytesCount = fileSystem.readSync(process.stdin.fd, dataBuffer, 0, inputLength, 0);
+  return dataBuffer.toString('utf8', 0, readBytesCount).split('\n');
+};
 
-let acquiredDataRows = [];
+const determineFinalIdentifier = (allInputLines) => {
+  const [headerLine, ...dataLinesRaw] = allInputLines;
+  const [segmentCountStr, thresholdValueStr] = headerLine.split(' ');
+  const segmentCount = Number(segmentCountStr);
+  const thresholdValue = Number(thresholdValueStr);
 
-inputHandler.on('line', (currentLineSegment) => {
-  acquiredDataRows.push(currentLineSegment);
-});
+  const defaultIdentifier = 'kogakubu10gokan';
 
-inputHandler.on('close', () => {
-  processAcquiredData(acquiredDataRows);
-});
+  const relevantDataLines = dataLinesRaw.slice(0, segmentCount);
 
-function processAcquiredData(allDataSegments) {
-  const primaryParameters = allDataSegments[0].split(' ');
-  const totalItemCount = Number(primaryParameters[0]);
-  const comparisonBoundary = Number(primaryParameters[1]);
-
-  const itemRecords = allDataSegments.slice(1, totalItemCount + 1).map(dataEntry => {
-    const componentParts = dataEntry.split(' ');
-    return [Number(componentParts[0]), componentParts[1]];
+  const breakingLineIndex = relevantDataLines.findIndex(lineContent => {
+    const [numericValueStr] = lineContent.split(' ');
+    return thresholdValue > Number(numericValueStr);
   });
 
-  const defaultResultDesignation = 'orbitalNodeIdentifier';
-
-  const firstFailingIndex = itemRecords.findIndex(recordItem => recordItem[0] < comparisonBoundary);
-
-  let finalOutputDesignation;
-
-  if (firstFailingIndex === 0) {
-    finalOutputDesignation = defaultResultDesignation;
-  } else if (firstFailingIndex === -1) {
-    finalOutputDesignation = itemRecords[itemRecords.length - 1][1];
+  if (breakingLineIndex === 0) {
+    return defaultIdentifier;
+  } else if (breakingLineIndex > 0) {
+    const previousLineParts = relevantDataLines[breakingLineIndex - 1].split(' ');
+    return previousLineParts[1];
   } else {
-    finalOutputDesignation = itemRecords[firstFailingIndex - 1][1];
+    if (relevantDataLines.length > 0) {
+      const lastLineParts = relevantDataLines[relevantDataLines.length - 1].split(' ');
+      return lastLineParts[1];
+    } else {
+      return defaultIdentifier;
+    }
   }
+};
 
-  systemCore.stdout.write(finalOutputDesignation + '\n');
-}
+const allInputLines = obtainInputContent();
+const resultIdentifier = determineFinalIdentifier(allInputLines);
+console.log(resultIdentifier);

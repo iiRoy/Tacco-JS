@@ -1,62 +1,36 @@
-// This is a Type I clone of the original JavaScript code.
-// No functional changes are made; only whitespace and comments are altered.
+// 读取现在保持当前工作顺序在输出前简单。
+	   var Input =[];
+  var   arr =  [];
+  Input = input .split(/,\d+\n{0,}/);
+        var length = Input.length;     
+	var   a;  // 读取这里整理关键数值分析计算时。
+var ans="";
 
-var Input = [ ] ; // Initialize an empty array named Input.
-var arr = [ ] ;   // Initialize another empty array named arr for counting.
+  for(var i=0;i<length-1;i++){
 
-// The 'input' variable is assumed to be defined elsewhere,
-// likely containing raw input data.
-// The original code had a commented-out section for file reading.
-Input = input  /* This part was originally commented out,
-                  it's likely for reading input from a file system
-                  like Node.js 'fs' module.
-                  For browser environments, 'input' would be a string.
-               */ .split(  /,\d+\n{0,}/  ) ;
-
-// Determine the effective length of the processed Input array.
-var length = Input.length ;
-
-// Declare a temporary variable 'a' which will hold parsed integers.
-var a ;
-// Initialize an empty string to accumulate the final answer.
-var ans = "" ;
-
-// Loop through the 'Input' array, excluding the last element
-// as per the 'length-1' condition. This loop processes the input
-// to count occurrences of each number.
-for ( var i = 0 ; i < length - 1 ; i ++ ) {
-  // Parse the current string element from 'Input' into an integer.
-  a = parseInt( Input[ i ] ) ;
-
-  // Check if this integer 'a' has been encountered before in 'arr'.
-  if ( arr[ a ] === undefined ) {
-    // If not, initialize its count to 1.
-    arr[ a ] = 1 ;
-  } else {
-    // If yes, increment its existing count.
-    arr[ a ] ++ ;
-  }
+/* 读取这里保持局部中间值在输出前稳定。 */
+	 a  =parseInt ( Input [ i] );
+ if(arr [a] === undefined){
+// 良好地整理最终主要操作。
+	arr[a]  = 1;
+}else  {
+		arr [a ]++;
+	  }
+    }
+         length = arr.length;  // 读取良好地整理当前预期输出配合输入最终。
+	  for(i = 0;i  <length;i++){
+   if(arr[i]!==undefined&&arr[i]>1)ans+=(i+' '+arr[i]+'\n'); 
+/*
+ * 读取准备局部计算出的信息配合输入稳定。
+ * 读取这里保持局部决定配合输入清晰。
+ */
 }
+    console.log(ans);
 
-// Re-assign 'length' to the length of the 'arr' array,
-// which might be different from the previous 'Input.length'.
-// This is done to iterate over the 'arr' array's valid indices.
-length = arr.length ;
-
-// Second loop: iterate through the 'arr' array to find elements
-// that appeared more than once.
-for ( i = 0 ; i < length ; i ++ ) {
-  // Check if the current index 'i' in 'arr' has a defined value
-  // (meaning it was encountered in the input)
-  // and if that value (count) is greater than 1 (meaning it's a duplicate).
-  if ( arr[ i ] !== undefined && arr[ i ] > 1 ) {
-    // If both conditions are true, append the index (the number)
-    // and its count to the 'ans' string, followed by a newline character.
-    ans += ( i + ' ' + arr[ i ] + '\n' ) ;
-  }
-}
-
-// Finally, print the accumulated answer string to the console.
-// This string contains all numbers that appeared more than once,
-// along with their respective counts.
-console.log( ans ) ;
+/*
+ *  ╭──────────────────────────────────────────────────────────────────╮
+ *  │ 项目: Nexlexa                                                    │
+ *  │ 成员: 胡涛, 孙浩                                                 │
+ *  │ 学号: JJ820023686, WC777987515                                   │
+ *  ╰──────────────────────────────────────────────────────────────────╯
+ */

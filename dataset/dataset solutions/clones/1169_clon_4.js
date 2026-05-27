@@ -1,55 +1,14 @@
-let dataBuffer = '';
-let processingComplete = false;
-
-const squaredDifference = (valueA, valueB) => {
-  const diff = valueA - valueB;
-  return diff * diff;
-};
-
-process.stdin.on('data', (incomingSegment) => {
-  if (processingComplete) {
-    return;
-  }
-  dataBuffer += incomingSegment.toString('utf8');
-
-  const newlineIndex = dataBuffer.indexOf('\n');
-  if (newlineIndex !== -1) {
-    const inputLine = dataBuffer.substring(0, newlineIndex).trim();
-    processingComplete = true;
-
-    process.stdin.pause();
-    process.stdin.removeAllListeners('data');
-    process.stdin.removeAllListeners('end');
-
-    const numberStrings = inputLine.split(/\s+/);
-    const [firstX, firstY, secondX, secondY] = numberStrings.map(parseFloat);
-
-    const xDistanceSquared = squaredDifference(firstX, secondX);
-    const yDistanceSquared = squaredDifference(firstY, secondY);
-
-    const finalDistance = Math.pow(xDistanceSquared + yDistanceSquared, 0.5);
-
-    process.stdout.write(finalDistance.toFixed(8) + '\n');
-    process.exit(0);
-  }
+const inputHandler = require('readline').createInterface({
+  input: process.stdin,
+  output: process.stdout
 });
 
-process.stdin.on('end', () => {
-  if (!processingComplete && dataBuffer.trim() !== '') {
-    const inputLine = dataBuffer.trim();
-    const numberStrings = inputLine.split(/\s+/);
-    const [firstX, firstY, secondX, secondY] = numberStrings.map(parseFloat);
-
-    const xDistanceSquared = squaredDifference(firstX, secondX);
-    const yDistanceSquared = squaredDifference(firstY, secondY);
-
-    const finalDistance = Math.pow(xDistanceSquared + yDistanceSquared, 0.5);
-
-    process.stdout.write(finalDistance.toFixed(8) + '\n');
-    process.exit(0);
-  } else if (!processingComplete) {
-     process.exit(1);
-  }
+inputHandler.on('line', (currentInputLine) => {
+  const coordinateValues = currentInputLine.split(' ').map(strVal => parseInt(strVal, 10));
+  const [firstX, firstY, secondX, secondY] = coordinateValues;
+  const xDifference = firstX - secondX;
+  const yDifference = firstY - secondY;
+  const computedDistance = Math.hypot(xDifference, yDifference);
+  console.log(computedDistance.toFixed(8));
+  process.exit();
 });
-
-process.stdin.resume();

@@ -1,57 +1,52 @@
-(function(rawText) {
-    let movementCounter = 0;
+(function(inputSource) {
+    const parsedLines = inputSource.split('\n');
+    const itemCount = parseInt(parsedLines.shift(), 10);
+    const dataElements = parsedLines.slice(0, itemCount);
 
-    const extractData = (textualInput) => {
-        const lines = textualInput.split('\n');
-        const totalItems = parseInt(lines[0], 10);
-        const itemCollection = lines.slice(1, totalItems + 1);
-        return { totalItems, itemCollection };
-    };
-    const { totalItems, itemCollection } = extractData(rawText);
+    let globalComparisonCounter = 0;
 
-    const produceDecreasingIntervals = (collectionSize) => {
-        let currentInterval = 1;
-        const intervalList = [];
-        while (currentInterval <= collectionSize) {
-            intervalList.push(currentInterval);
-            currentInterval *= 2;
+    const generateGaps = (limit) => {
+        const gapsAscending = [];
+        let currentPowerOfTwo = 1;
+        while (currentPowerOfTwo <= limit) {
+            gapsAscending.push(currentPowerOfTwo);
+            currentPowerOfTwo <<= 1;
         }
-        return intervalList.reverse();
+        return gapsAscending.reverse();
     };
-    const stepsArray = produceDecreasingIntervals(itemCollection.length);
 
-    const orchestrateSorting = (elements, intervals) => {
-        intervals.forEach(stepValue => {
-            // Recursive helper for g-insertion sort
-            const performSubsortRecursive = (dataArr, currentGap, startIndex) => {
-                if (startIndex >= dataArr.length) {
-                    return; // Base case: end of the sub-array
-                }
+    const gapSequence = generateGaps(dataElements.length);
 
-                const valueToInsert = dataArr[startIndex];
-                let scanIndex = startIndex - currentGap;
+    const performShellSort = (targetArray, gaps) => {
+        gaps.forEach(currentGap => {
+            const applyGappedInsertion = (arr, gap) => {
+                Array.from({ length: Math.ceil((arr.length - gap) / gap) }, (_, k) => gap + k * gap)
+                     .forEach(mainIdx => {
+                        const elementValue = arr[mainIdx];
+                        let subIdx = mainIdx - gap;
 
-                while (scanIndex >= 0 && dataArr[scanIndex] > valueToInsert) {
-                    dataArr[scanIndex + currentGap] = dataArr[scanIndex];
-                    scanIndex -= currentGap;
-                    movementCounter++;
-                }
-                dataArr[scanIndex + currentGap] = valueToInsert;
+                        const shiftAndPlace = (currentSubIdx, valToPlace) => {
+                            if (currentSubIdx < 0 || arr[currentSubIdx] <= valToPlace) {
+                                arr[currentSubIdx + gap] = valToPlace;
+                                return;
+                            }
+                            arr[currentSubIdx + gap] = arr[currentSubIdx];
+                            globalComparisonCounter++;
+                            shiftAndPlace(currentSubIdx - gap, valToPlace);
+                        };
 
-                // Recursive step: move to the next element in the g-spaced sequence
-                performSubsortRecursive(dataArr, currentGap, startIndex + currentGap);
+                        shiftAndPlace(subIdx, elementValue);
+                    });
             };
-
-            // Start the recursive g-insertion sort for the current gap
-            performSubsortRecursive(elements, stepValue, stepValue);
+            applyGappedInsertion(targetArray, currentGap);
         });
     };
 
-    orchestrateSorting(itemCollection, stepsArray);
+    performShellSort(dataElements, gapSequence);
 
-    console.log(stepsArray.length);
-    console.log(stepsArray.join(' '));
-    console.log(movementCounter);
-    console.log(itemCollection.join('\n'));
+    console.log(gapSequence.length);
+    console.log(gapSequence.join(' '));
+    console.log(globalComparisonCounter);
+    console.log(dataElements.join('\n'));
 
 })(require('fs').readFileSync('/dev/stdin', 'utf8'));

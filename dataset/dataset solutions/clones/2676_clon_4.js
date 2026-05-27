@@ -1,25 +1,24 @@
 'use strict';
 
-const determineOutcome = (sourceData) => {
-  const primaryLine = sourceData[0];
-  const extractedNumbers = primaryLine.match(/-?\d+/g);
-  
-  const convertedValues = extractedNumbers.map(valStr => Number(valStr));
+const calculateExcessValue = (inputContent) => {
+  const dataLines = inputContent.split('\n');
+  const primaryLine = dataLines[0];
 
-  const firstTerm = convertedValues[0];
-  const secondTerm = convertedValues[1];
-  const thirdTerm = convertedValues[2];
+  const numericalComponents = primaryLine
+    .split(/\s+/)
+    .filter(Boolean)
+    .map(Number);
 
-  const sumOfSecondAndThird = secondTerm + thirdTerm;
-  const computationResult = sumOfSecondAndThird - firstTerm;
+  const referenceValue = numericalComponents[0];
+  const componentOne = numericalComponents[1];
+  const componentTwo = numericalComponents[2];
 
-  return Math.max(0, computationResult);
+  const sumOfComponents = componentOne + componentTwo;
+  const difference = sumOfComponents - referenceValue;
+
+  return Math.max(0, difference);
 };
 
-(function processExternalInput() {
-  const fileSystemModule = require("fs");
-  const rawFileContents = fileSystemModule.readFileSync("/dev/stdin", "utf8");
-  const lineCollection = rawFileContents.split('\n');
-  const finalCalculation = determineOutcome(lineCollection);
-  console.log(finalCalculation);
-})();
+const fileData = require("fs").readFileSync("/dev/stdin", "utf8");
+const finalResult = calculateExcessValue(fileData);
+console.log(finalResult);

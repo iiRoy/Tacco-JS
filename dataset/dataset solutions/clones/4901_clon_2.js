@@ -1,45 +1,34 @@
-const ProcessInputData = (rawData) => {
-    // Divide the incoming string data into an array of lines.
-    let lineData = rawData.split('\n');
+// This function serves as the primary entry point for processing input data.
+function ProcessInput(rawData) {
+  // The raw input string is split into an array of individual lines.
+  let lines = rawData.split("\n");
 
-    // Extract the first numeric quantity from the initial line.
-    const initialCount = Number(lineData[0].split(' ')[0]);
+  // From the first line, extract two integer values.
+  // The first number on the first line is assigned to numK.
+  let numK = parseInt(lines[0].split(" ")[0]);
+  // The second number on the first line is assigned to numT.
+  let numT = parseInt(lines[0].split(" ")[1]);
 
-    // Retrieve the second numeric quantity from the initial line.
-    const typeCount = Number(lineData[0].split(' ')[1]);
+  // The second line of input is processed to create an array of numbers.
+  // It's split by spaces, and each part is converted to an integer.
+  let dataArray = lines[1].split(" ").map((element, idx) => {
+    // Convert the string element to its integer representation.
+    return parseInt(element);
+  });
 
-    // Parse the second line: split by spaces, then convert each segment into a numerical value.
-    let valueList = lineData[1].split(' ').map((elementItem, indexPosition) => {
-        // Convert the string representation of a number to its actual numeric type.
-        return Number(elementItem);
-    });
+  // Sort the array in descending order.
+  // The largest element will be at index 0 after this operation.
+  dataArray.sort((valA, valB) => {
+    // If valA is less than valB, valA should come after valB (descending order).
+    return valA < valB;
+  });
 
-    // Arrange the list of values in descending sequence.
-    valueList.sort((firstValue, secondValue) => {
-        // This comparison function results in a descending sort,
-        // positioning the highest values at the start of the array.
-        return secondValue - firstValue;
-    });
+  // Calculate the final result using a specific formula.
+  // This involves the largest element (dataArray[0]), the sum of all elements,
+  // and then taking the maximum of this calculated value and zero.
+  console.log(Math.max.apply(null, [2 * dataArray[0] - 1 - dataArray.reduce((accumulator, currentValue) => accumulator + currentValue, 0), 0]));
+}
 
-    // The largest value is now conveniently located at the beginning of the sorted array.
-    const largestElement = valueList[0];
-
-    // Compute the sum of all numerical entries within the list.
-    const totalSumOfValues = valueList.reduce((currentSum, nextItem) => currentSum + nextItem, 0);
-
-    // Calculate the final output: twice the largest element, minus one, minus the total sum.
-    // The result is then ensured to be non-negative.
-    console.log(
-        Math.max.apply(
-            null,
-            [
-                (2 * largestElement) - 1 - totalSumOfValues,
-                0
-            ]
-        )
-    );
-};
-
-// Acquire the complete file content from the standard input stream
-// and then initiate the primary data processing routine.
-ProcessInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// The program reads its input from standard input using Node.js file system module.
+// The content is read synchronously and encoded as UTF-8, then passed to the processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

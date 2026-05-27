@@ -1,71 +1,29 @@
-/* This script processes numerical input from standard input. */
-var rawDataObtained = require ( 'fs' ) . readFileSync ( '/dev/stdin' , 'utf8' );
+let rawData = require('fs').readFileSync('/dev/stdin', 'utf8'); // Read raw input data from standard input
+const lineData = rawData.trim().split("\n"); // Clean up input and split into an array of lines
 
-// The raw input string is then processed to create an array of lines.
-var stringSegments = rawDataObtained . trim ( ) . split ( "\n" ) ;
+while (true) { // Begin main processing loop
+  let currentNum = lineData.shift() - 0; // Extract the next number from the input array and convert to numeric type
 
-// Main processing loop continues until a specific termination condition is met.
-while
-(
-  true
-)
-{
-
-  // Extract the first segment, convert it to a number, and store it.
-  var mainInteger = Number ( stringSegments . shift ( ) ) ;
-
-  // Check if the extracted number signifies termination.
-  if
-  (
-    mainInteger
-    ===
-    0
-  )
-  {
-    break ; // Exit the loop if the main integer is zero.
+  if (currentNum === 0) { // Check for termination condition
+    break; // Exit the loop if the number is zero
   }
 
-  // Calculate the cube of the main integer for subsequent computations.
-  var cubeOfMain = mainInteger * mainInteger * mainInteger ;
+  const cubeOfNum = currentNum * currentNum * currentNum; // Compute the cube of the current number
+  let resultValues = []; // Initialize an array to store positive differences
 
-  // Initialize an empty array to store positive calculated differences.
-  var positiveDifferences = [ ] ;
+  // Outer loop: iterate from (currentNum - 1) down to 1
+  for (let outerIndex = currentNum - 1; outerIndex > 0; outerIndex--) {
+    // Inner loop: iterate from outerIndex down to 1
+    for (let innerIndex = outerIndex; innerIndex > 0; innerIndex--) {
+      // Calculate the difference: cubeOfNum - (outerIndex^3) - (innerIndex^3)
+      const difference = cubeOfNum - (outerIndex * outerIndex * outerIndex) - (innerIndex * innerIndex * innerIndex);
 
-  // Outer loop: iterates downwards from one less than the main integer.
-  for
-  (
-    var outerLoopIndex = mainInteger - 1 ;
-    outerLoopIndex > 0 ;
-    outerLoopIndex--
-  )
-  {
-    // Inner loop: iterates downwards from the current outer loop index.
-    for
-    (
-      var innerLoopIndex = outerLoopIndex ;
-      innerLoopIndex > 0 ;
-      innerLoopIndex--
-    )
-    {
-      // Calculate a target value based on the cube of the main integer
-      // and the cubes of the current loop indices.
-      var calculatedDifference = cubeOfMain
-                               - outerLoopIndex * outerLoopIndex * outerLoopIndex
-                               - innerLoopIndex * innerLoopIndex * innerLoopIndex
-                               ;
-
-      // If the calculated difference is positive, add it to our list.
-      if
-      (
-        calculatedDifference
-        >
-        0
-      )
-      {
-        positiveDifferences . push ( calculatedDifference ) ;
+      if (difference > 0) { // If the calculated difference is positive
+        resultValues.push(difference); // Add it to our collection of results
       }
     }
   }
-  // After all calculations, find and output the smallest positive difference.
-  console . log ( Math . min . apply ( null , positiveDifferences ) ) ;
+
+  // Output the smallest positive difference found among the calculated values
+  console.log(Math.min.apply(null, resultValues));
 }

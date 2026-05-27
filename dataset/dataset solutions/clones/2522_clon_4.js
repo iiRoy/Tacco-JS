@@ -1,16 +1,16 @@
-function ProcessInput(sourceText) {
-    const documentLines = sourceText.split('\n');
+function ProcessInput(rawData) {
+    const [configurationLine, heightValuesLine] = rawData.split('\n');
 
-    const [firstQuantifierRaw, limitValueRaw] = documentLines[0].split(' ');
-    const boundaryValue = Number(limitValueRaw);
+    const [_, thresholdHeightString] = configurationLine.split(' '); // First element (member count) is not directly used in the core logic
+    const heightThreshold = Number(thresholdHeightString);
 
-    const numericSamplesRaw = documentLines[1].split(' ');
+    const individualHeights = heightValuesLine.split(' ').map(Number);
 
-    const qualifyingElementsCount = numericSamplesRaw
-        .map(reading => Number(reading))
-        .filter(measure => measure >= boundaryValue)
-        .length;
+    const qualifyingCount = individualHeights.filter(
+        (currentValue) => currentValue >= heightThreshold
+    ).length;
 
-    console.log(qualifyingElementsCount);
+    console.log(qualifyingCount);
 }
+
 ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

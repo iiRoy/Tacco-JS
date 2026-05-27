@@ -1,18 +1,14 @@
-const fileSystemProvider = require('fs');
+const fileSystem = require('fs');
 
-const performAnalysis = (sourceData) => {
-    const dataSegments = sourceData.split('\n');
-    const primarySequence = dataSegments[1];
-    const detectionPattern = /ABC/g;
-    let totalDiscoveries = 0;
+const segmentInput = (sourceData) => sourceData.split('\n');
 
-    const matchedIterations = primarySequence.matchAll(detectionPattern);
-    for (const matchResult of matchedIterations) {
-        totalDiscoveries++;
-    }
-
-    console.info(totalDiscoveries);
+const processData = (rawText) => {
+  const dataSegments = segmentInput(rawText);
+  const relevantString = dataSegments[1];
+  const searchPattern = /ABC/g;
+  const foundMatches = relevantString.match(searchPattern);
+  const totalOccurrences = foundMatches ? foundMatches.length : 0;
+  console.log(totalOccurrences);
 };
 
-const retrievedContent = fileSystemProvider.readFileSync('/dev/stdin', 'utf8');
-performAnalysis(retrievedContent);
+processData(fileSystem.readFileSync('/dev/stdin', 'utf8'));

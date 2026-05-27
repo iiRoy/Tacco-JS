@@ -1,27 +1,19 @@
-const numberExtractor = (sourceText) => sourceText.match(/\d+/g).map(Number);
+function processInputAndCompute(sourceText) {
+  const numericValues = sourceText.match(/\S+/g).map(Number);
 
-const quantityDivider = (dividend, divisor) => Math.floor((dividend + divisor - 1) / divisor);
-
-const computeSchemeCost = (baseAmount, unitDivisor, priceMultiplier) => quantityDivider(baseAmount, unitDivisor) * priceMultiplier;
-
-const determineOptimalCost = (inputStringData) => {
   const [
-    initialVolume,
-    firstUnitCapacity,
-    firstUnitPrice,
-    secondUnitCapacity,
-    secondUnitPrice
-  ] = numberExtractor(inputStringData);
+    initialQuantity,
+    firstDivisor,
+    firstMultiplier,
+    secondDivisor,
+    secondMultiplier
+  ] = numericValues;
 
-  const costSchemeA = computeSchemeCost(initialVolume, firstUnitCapacity, firstUnitPrice);
-  const costSchemeB = computeSchemeCost(initialVolume, secondUnitCapacity, secondUnitPrice);
+  const firstCalculationResult = Math.floor((initialQuantity + firstDivisor - 1) / firstDivisor) * firstMultiplier;
 
-  return Math.min(costSchemeA, costSchemeB);
-};
+  const secondCalculationResult = Math.floor((initialQuantity + secondDivisor - 1) / secondDivisor) * secondMultiplier;
 
-const applicationEntry = (rawInput) => {
-  const outcome = determineOptimalCost(rawInput);
-  process.stdout.write(outcome.toString() + '\n');
-};
+  console.log(Math.min(firstCalculationResult, secondCalculationResult));
+}
 
-applicationEntry(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processInputAndCompute(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,63 +1,31 @@
-const obtainGameInput = () => {
-    const comprehensiveRawData = process.stdin.readFileSync(0, 'utf8');
-    const segmentedLines = comprehensiveRawData.trim().split('\n');
+const fileSystem = require('fs');
+const rawInputContent = fileSystem.readFileSync('/dev/stdin', 'utf8');
 
-    const setupLine = segmentedLines.shift();
-    const [participantCount] = setupLine.split(' ').map(Number);
+const inputSegments = rawInputContent.trim().split("\n");
+const [totalPlayers, totalQueries] = inputSegments.shift().split(" ").map(Number);
 
-    const initialScoreboard = Array.from({ length: participantCount }, () => 0);
+const playerPerformance = Array.from({ length: totalPlayers }, () => 0);
 
-    const initialLeadingPlayer = {
-        identity: 0,
-        score: 0
-    };
-
-    return {
-        initialGameState: {
-            currentScores: initialScoreboard,
-            leadingPlayerIdentity: initialLeadingPlayer.identity,
-            leadingPlayerScore: initialLeadingPlayer.score
-        },
-        actionRecords: segmentedLines
-    };
-};
-
-const identifyLeadingCompetitor = (currentScoreboard) => {
-    let peakScore = -Infinity;
-    let peakIdentity = -1;
-
-    for (let playerIndex = 0; playerIndex < currentScoreboard.length; playerIndex++) {
-        const individualPoints = currentScoreboard[playerIndex];
-        if (individualPoints > peakScore) {
-            peakScore = individualPoints;
-            peakIdentity = playerIndex;
+const determineCurrentTopPerformer = (performanceRecords) => {
+    return performanceRecords.reduce((bestResult, currentScore, currentIndex) => {
+        if (currentScore > bestResult.score) {
+            return { score: currentScore, index: currentIndex };
+        } else if (currentScore === bestResult.score && currentIndex < bestResult.index) {
+            return { score: currentScore, index: currentIndex };
         }
-    }
-    return {
-        identity: peakIdentity,
-        score: peakScore
-    };
+        return bestResult;
+    }, { score: -Infinity, index: -1 });
 };
 
-const processSingleAction = (previousGameState, currentActionRecord) => {
-    const actionDetails = currentActionRecord.split(' ').map(Number);
-    const affectedPlayerIndex = actionDetails[0] - 1;
-    const pointsDelta = actionDetails[1];
+let topPerformer = determineCurrentTopPerformer(playerPerformance);
 
-    const updatedScores = [...previousGameState.currentScores];
-    updatedScores[affectedPlayerIndex] += pointsDelta;
+inputSegments.forEach((queryEntry) => {
+    const [targetPlayerIdOneBased, scoreAdjustment] = queryEntry.split(" ").map(Number);
+    const targetPlayerIdZeroBased = targetPlayerIdOneBased - 1;
 
-    const { identity: newLeadingIdentity, score: newLeadingScore } = identifyLeadingCompetitor(updatedScores);
+    playerPerformance[targetPlayerIdZeroBased] += scoreAdjustment;
 
-    console.log(`${newLeadingIdentity + 1} ${newLeadingScore}`);
+    topPerformer = determineCurrentTopPerformer(playerPerformance);
 
-    return {
-        currentScores: updatedScores,
-        leadingPlayerIdentity: newLeadingIdentity,
-        leadingPlayerScore: newLeadingScore
-    };
-};
-
-const gameContext = obtainGameInput();
-
-gameContext.actionRecords.reduce(processSingleAction, gameContext.initialGameState);
+    console.log(`${topPerformer.index + 1} ${topPerformer.score}`);
+});

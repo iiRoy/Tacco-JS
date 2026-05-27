@@ -1,67 +1,68 @@
-'use strict'
+'use strict';
 
-function obtainCommonDivisor(firstNum, secondNum) {
-    while (secondNum !== 0) {
-        let temporary = secondNum;
-        secondNum = firstNum % secondNum;
-        firstNum = temporary;
-    }
-    return firstNum;
-}
+const processInput = (rawInput) => {
+    const lines = rawInput.trim().split('\n');
+    const configParts = lines[0].split(' ').map(Number);
+    const entryCount = configParts[0];
+    const targetRatioString = `${configParts[1]} ${configParts[2]}`;
 
-function replicateRatioFinder(numeratorVal, denominatorVal) {
-    if (numeratorVal === 0 && denominatorVal === 0) return "0 0";
-    if (numeratorVal === 0) return `0 ${denominatorVal}`;
-    if (denominatorVal === 0) return `${numeratorVal} 0`;
+    const allEntries = lines.slice(1, entryCount + 1).map(line => {
+        const [valA, valB, costValue] = line.split(' ').map(Number);
+        return { valA, valB, costValue };
+    });
 
-    const commonFactor = obtainCommonDivisor(numeratorVal, denominatorVal);
-    return `${numeratorVal / commonFactor} ${denominatorVal / commonFactor}`;
-}
+    let minimumAchievedCost = Infinity;
 
-const processInputData = (inputDataString) => {
-    const linesArray = inputDataString.trim().split("\n");
-    const configParameters = linesArray[0].split(" ").map(Number);
-    const totalItemUnits = configParameters[0];
-    const desiredRatioKey = `${configParameters[1]} ${configParameters[2]}`;
+    for (let startIdx = 0; startIdx < entryCount; startIdx++) {
+        let currentSumA = 0;
+        let currentSumB = 0;
+        let currentAccumulatedCost = 0;
 
-    const unitRecords = [];
-    for (let currentLineIndex = 1; currentLineIndex <= totalItemUnits; currentLineIndex++) {
-        const componentParts = linesArray[currentLineIndex].split(" ").map(Number);
-        unitRecords.push({
-            dimensionX: componentParts[0],
-            dimensionY: componentParts[1],
-            priceTag: componentParts[2]
-        });
-    }
+        for (let endIdx = startIdx; endIdx < entryCount; endIdx++) {
+            const currentItem = allEntries[endIdx];
 
-    let overallMinimalPrice = Infinity;
+            currentSumA += currentItem.valA;
+            currentSumB += currentItem.valB;
+            currentAccumulatedCost += currentItem.costValue;
 
-    for (let startPointer = 0; startPointer < totalItemUnits; startPointer++) {
-        let accumulatedX = 0;
-        let accumulatedY = 0;
-        let accumulatedPrice = 0;
+            if (currentAccumulatedCost >= minimumAchievedCost) {
+                break;
+            }
 
-        for (let endPointer = startPointer; endPointer < totalItemUnits; endPointer++) {
-            const currentUnit = unitRecords[endPointer];
-            accumulatedX += currentUnit.dimensionX;
-            accumulatedY += currentUnit.dimensionY;
-            accumulatedPrice += currentUnit.priceTag;
+            const calculatedRatio = determineRatioString(currentSumA, currentSumB);
 
-            const currentRatioKey = replicateRatioFinder(accumulatedX, accumulatedY);
-
-            if (currentRatioKey === desiredRatioKey) {
-                if (accumulatedPrice < overallMinimalPrice) {
-                    overallMinimalPrice = accumulatedPrice;
+            if (calculatedRatio === targetRatioString) {
+                if (currentAccumulatedCost < minimumAchievedCost) {
+                    minimumAchievedCost = currentAccumulatedCost;
                 }
             }
         }
     }
 
-    if (overallMinimalPrice === Infinity) {
-        console.log(-1);
-    } else {
-        console.log(overallMinimalPrice);
-    }
+    console.log(minimumAchievedCost === Infinity ? -1 : minimumAchievedCost);
 };
 
-processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+function determineRatioString(numerator, denominator) {
+    const smallerValue = Math.min(numerator, denominator);
+    let finalNumerator = numerator;
+    let finalDenominator = denominator;
+
+    if (smallerValue === 0) {
+        return `${numerator} ${denominator}`;
+    }
+
+    const possibleDivisors = Array.from({ length: smallerValue }, (_, k) => k + 1);
+
+    const result = possibleDivisors.reduce((accumulator, currentDivisor) => {
+        const dividedNumerator = numerator / currentDivisor;
+        const dividedDenominator = denominator / currentDivisor;
+        if (Number.isInteger(dividedNumerator) && Number.isInteger(dividedDenominator)) {
+            return { num: dividedNumerator, den: dividedDenominator };
+        }
+        return accumulator;
+    }, { num: numerator, den: denominator });
+
+    return `${result.num} ${result.den}`;
+}
+
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

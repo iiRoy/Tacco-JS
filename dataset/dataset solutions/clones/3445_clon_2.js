@@ -1,5 +1,8 @@
-const   incomingText = require(  'fs'  ) .  readFileSync(    '/dev/stdin'  ,  'utf8'  ) ; // Acquire raw text from standard input.
+const rawData = require('fs').readFileSync('/dev/stdin', 'utf8'); // Read the entire standard input as a UTF-8 string
 
-const   numericParts = incomingText.split(   ' '    ) ; // Tokenize the input string by spaces.
+const tokenArray = rawData.split(' '); // Divide the input string into an array of substrings, using a space as the separator
 
-console.log(     Number(  numericParts[0] )   +    Number(  numericParts[1]  )   /   2    ) ; // Calculate and display the sum of the first part and half of the second part.
+// Convert the first and second elements of the array to numbers,
+// perform the specified arithmetic operation (second number divided by two, then added to the first),
+// and output the final numerical result to the console.
+console.log(Number(tokenArray[0]) + Number(tokenArray[1]) / 2);

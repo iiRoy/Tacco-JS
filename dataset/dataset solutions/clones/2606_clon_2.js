@@ -1,103 +1,131 @@
-var DATA_GRABBER = ( function () {
+var INPUT_PARSER=(function(){
+  // Factory function to create an input source instance.
+  function createParser(sourceText){
+    return new InputSource(sourceText);
+  }
 
-    function createParser ( sourceString ) {
-        return new LineParser(sourceString);
+  // Constructor for the input source handler.
+  function InputSource(sourceText){
+    this._sourceLines = sourceText.trim().split("\n"); // Store lines, trimmed and split.
+    this._currentLineIndex = 0; // Current line pointer.
+  }
+
+  // Reads a single item from the current line.
+  // If 'asString' is true, returns string; otherwise, converts to number.
+  InputSource.prototype.readItem = function(asString){
+    var lineData = this._sourceLines;
+    var lineIdx = this._currentLineIndex;
+    var resultVal;
+
+    // If the current line hasn't been processed into parts yet, do it.
+    if(typeof lineData[lineIdx] === "string") {
+      lineData[lineIdx] = lineData[lineIdx].split(" ").reverse(); // Reverse to use pop efficiently.
     }
 
-    function LineParser ( sourceString ) {
-        this._dataRows = sourceString.trim().split("\n");
-        this._linePosition = 0;
+    resultVal = lineData[lineIdx].pop(); // Get the last item (originally first).
+
+    // If the current line is exhausted, advance to the next.
+    if(!lineData[lineIdx].length) {
+      this._currentLineIndex++;
     }
 
-    LineParser.prototype.extractNext = function ( keepText ) {
-        var currentLines = this._dataRows;
-        var currentIndex = this._linePosition;
-        var resultValue;
+    return asString ? resultVal : +resultVal; // Return as string or number.
+  };
 
-        if ( typeof currentLines[currentIndex] === "string" ) {
-            currentLines[currentIndex] = currentLines[currentIndex].split(" ").reverse();
-        }
-        resultValue = currentLines[currentIndex].pop();
+  // Reads an entire line.
+  // If 'asString' is true, returns array of strings; otherwise, array of numbers.
+  InputSource.prototype.readLine = function(asString){
+    var lineParts = this._sourceLines[this._currentLineIndex++].split(" ");
+    return asString ? lineParts : lineParts.map(element => +element);
+  };
 
-        if ( !currentLines[currentIndex].length ) {
-            this._linePosition++;
-        }
-        return keepText ? resultValue : +resultValue;
-    };
+  // Reads 'numLines' lines as a 2D matrix.
+  // If 'asString' is true, returns matrix of strings; otherwise, matrix of numbers.
+  InputSource.prototype.readMatrix = function(numLines, asString){
+    var matrixRows = this._sourceLines.slice(this._currentLineIndex, this._currentLineIndex += numLines)
+                                      .map(row => row.split(" "));
+    return asString ? matrixRows : matrixRows.map(row => row.map(element => +element));
+  };
 
-    LineParser.prototype.fetchLine = function ( keepText ) {
-        var lineParts = this._dataRows[this._linePosition++].split(" ");
-        return keepText ? lineParts : lineParts.map(val => +val);
-    };
+  // Reads 'numLines' lines as a 1D array.
+  // If 'asString' is true, returns array of strings; otherwise, array of numbers.
+  InputSource.prototype.readArray = function(numLines, asString){
+    var arrayElements = this._sourceLines.slice(this._currentLineIndex, this._currentLineIndex += numLines);
+    return asString ? arrayElements : arrayElements.map(element => +element);
+  };
 
-    LineParser.prototype.fetchMatrix = function ( numRows, keepText ) {
-        var matrixData = this._dataRows.slice(this._linePosition, this._linePosition += numRows).map(rowStr => rowStr.split(" "));
-        return keepText ? matrixData : matrixData.map(row => row.map(cell => +cell));
-    };
+  return createParser; // Return the factory function.
+})();
 
-    LineParser.prototype.fetchRows = function ( numRows, keepText ) {
-        var rowData = this._dataRows.slice(this._linePosition, this._linePosition += numRows);
-        return keepText ? rowData : rowData.map(val => +val);
-    };
+// Initialize the input reader with content from standard input.
+var inputReader = INPUT_PARSER(require("fs").readFileSync("/dev/stdin","utf8"));
 
-    return createParser;
-} )();
-
-var inputReader = DATA_GRABBER( require("fs").readFileSync("/dev/stdin", "utf8") );
-
-function buildMultiDimArray ( initialValue ) {
-    var argsList = arguments,
-        argCount = argsList.length,
-        arrayCreationString = "Array(argsList[" + --argCount + "]).fill(0).map(x=>{return " + initialValue + ";})";
-
-    while ( --argCount ) {
-        arrayCreationString = "Array(argsList[" + argCount + "]).fill(0).map(x=>" + arrayCreationString + ")";
-    }
-    return eval(arrayCreationString);
+// Function to create multi-dimensional arrays dynamically.
+function createMultiDimArray(initialValue){
+  var dimensions = arguments;
+  var dimCount = dimensions.length;
+  var arrayExpression = "Array(dimensions[" + --dimCount + "]).fill(0).map(x=>{return " + initialValue + ";})";
+  while(--dimCount) {
+    arrayExpression = "Array(dimensions[" + dimCount + "]).fill(0).map(x=>" + arrayExpression + ")";
+  }
+  return eval(arrayExpression); // Evaluate the generated array creation string.
 }
 
-console.log( solveChallenge() );
+// Output the result of the main problem-solving function.
+console.log(solveProblem());
 
-function solveChallenge () {
-    var elementCount = inputReader.extractNext();
-    var pairingData = inputReader.fetchMatrix(elementCount);
+// Main function containing the problem's logic.
+function solveProblem(){
+  var entityCount = inputReader.readItem(); // Read the number of entities.
+  var preferenceMatrix = inputReader.readMatrix(entityCount); // Read the preference matrix.
 
-    pairingData = pairingData.map(row => row.map(val => val - 1));
+  // Adjust preferences to be 0-indexed.
+  preferenceMatrix = preferenceMatrix.map(row => row.map(item => item - 1));
 
-    var matchProgress = buildMultiDimArray(0, elementCount);
-    var processingQueue = Array(elementCount).fill().map( (_, idx) => idx );
+  // Initialize an array to track the current preference index for each entity.
+  var preferenceIndices = createMultiDimArray(0, entityCount);
 
-    var resultSteps = 0;
+  // Initialize the queue with all entities (0 to entityCount-1).
+  var currentQueue = Array(entityCount).fill().map((_, idx) => idx);
 
-    while ( processingQueue.length ) {
-        resultSteps++;
-        var nextIterationQueue = [];
-        var processedThisIteration = new Set();
+  var roundCount = 0; // Counter for the number of rounds.
 
-        for ( var loopIndex = 0; loopIndex < processingQueue.length; loopIndex++ ) {
-            var currentItem = processingQueue[loopIndex];
+  // Main loop: continues as long as there are entities in the queue.
+  while(currentQueue.length){
+    roundCount++; // Increment round counter for each iteration.
+    var nextQueue = []; // Queue for the next round.
+    var processedThisRound = new Set(); // Set to track entities processed in the current round.
 
-            if ( processedThisIteration.has(currentItem) || matchProgress[currentItem] === elementCount - 1 ) {
-                continue;
-            }
+    // Iterate through entities in the current queue.
+    for(var idx = 0; idx < currentQueue.length; idx++){
+      var currentEntity = currentQueue[idx];
 
-            var partnerItem = pairingData[currentItem][matchProgress[currentItem]];
+      // Skip if this entity has already been processed in this round or has no more preferences.
+      if(processedThisRound.has(currentEntity) || preferenceIndices[currentEntity] === entityCount - 1) {
+        continue;
+      }
 
-            if ( currentItem === pairingData[partnerItem][matchProgress[partnerItem]] ) {
-                matchProgress[currentItem]++;
-                matchProgress[partnerItem]++;
-                nextIterationQueue.push(currentItem, partnerItem);
-                processedThisIteration.add(partnerItem);
-            }
-        }
-        processingQueue = nextIterationQueue;
+      // Get the current entity's most preferred partner.
+      var preferredPartner = preferenceMatrix[currentEntity][preferenceIndices[currentEntity]];
+
+      // Check for mutual preference: if currentEntity is preferred by preferredPartner.
+      if(currentEntity === preferenceMatrix[preferredPartner][preferenceIndices[preferredPartner]]){
+        // Both entities mutually prefer each other, so they are "matched" for this round.
+        preferenceIndices[currentEntity]++; // Advance currentEntity's preference index.
+        preferenceIndices[preferredPartner]++; // Advance preferredPartner's preference index.
+        nextQueue.push(currentEntity, preferredPartner); // Add both to the next round's queue.
+        processedThisRound.add(preferredPartner); // Mark preferredPartner as processed for this round.
+      }
     }
+    currentQueue = nextQueue; // Update the queue for the next round.
+  }
 
-    for ( var loopIndex = 0; loopIndex < elementCount; loopIndex++ ) {
-        if ( matchProgress[loopIndex] !== elementCount - 1 ) {
-            return -1;
-        }
+  // After the main loop, check if all entities have processed all their preferences.
+  for(var idx = 0; idx < entityCount; idx++){
+    if(preferenceIndices[idx] !== entityCount - 1) {
+      return -1; // If any entity hasn't, return -1 (unstable state).
     }
+  }
 
-    return resultSteps;
+  return roundCount; // Return the total number of rounds.
 }

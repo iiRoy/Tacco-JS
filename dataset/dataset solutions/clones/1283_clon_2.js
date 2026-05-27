@@ -1,34 +1,43 @@
-let buildingStructure = []; // Initialize the main structural array
+let buildingData = []; // Initialize a structure to hold building information
 
-for ( let levelIndex = 0; levelIndex < 4; levelIndex++ ) { // Loop through each level (e.g., floor)
-  let unitCollection = []; // Create a collection of units for the current level
-  for ( let roomBlockIndex = 0; roomBlockIndex < 3; roomBlockIndex++ ) { // Loop through each block of rooms within a unit
-    unitCollection[roomBlockIndex] = [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]; // Initialize a room block with ten zero counters
+// Populate the building structure with default zero values
+for (let buildingIdx = 0; buildingIdx < 4; buildingIdx++) {
+  let floorUnits = []; // Represents floors within a building
+  for (let floorIdx = 0; floorIdx < 3; floorIdx++) {
+    // Each floor has 10 units, initialized to zero occupants
+    floorUnits[floorIdx] = Array(10).fill(0);
   }
-  buildingStructure[levelIndex] = unitCollection; // Assign the completed unit collection to the current level
+  buildingData[buildingIdx] = floorUnits; // Assign the floors to the current building
 }
 
-const rawDataStream = require('fs').readFileSync('/dev/stdin', 'utf8'); // Read all input from standard input as a UTF-8 string
-let processedLines = rawDataStream.split('\n'); // Split the input string into an array of lines
+// Read input from standard input
+let rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
+// Split the input into individual lines
+rawData = rawData.split("\n");
 
-for ( let currentLineNum = 1; currentLineNum < processedLines.length; currentLineNum++ ) { // Iterate through each line of input data, starting from the second line
-  const parsedValues = processedLines[currentLineNum].split(' ').map(Number); // Split the current line by spaces and convert parts to numbers
-
-  let targetFloor = parsedValues[0] - 1; // Extract and adjust the floor identifier
-  let targetUnit = parsedValues[1] - 1; // Extract and adjust the unit identifier
-  let targetRoom = parsedValues[2] - 1; // Extract and adjust the room identifier
-  let incrementValue = parsedValues[3]; // Extract the value to be added
-
-  buildingStructure[targetFloor][targetUnit][targetRoom] += incrementValue; // Update the counter in the structure
+// Process each line of input, starting from the second line (index 1)
+for (let lineIdx = 1; lineIdx < rawData.length; lineIdx++) {
+  // Parse the current line into numbers
+  let parsedLine = rawData[lineIdx].split(" ").map(Number);
+  
+  // Extract and adjust values for 0-based indexing
+  let buildingNum = parsedLine[0] - 1; // Building index
+  let floorNum = parsedLine[1] - 1;    // Floor index
+  let roomNum = parsedLine[2] - 1;     // Room index
+  let occupants = parsedLine[3];       // Number of occupants to add
+  
+  // Update the building data with the new occupant count
+  buildingData[buildingNum][floorNum][roomNum] += occupants;
 }
 
-for ( let currentFloorIter = 0; currentFloorIter < buildingStructure.length; currentFloorIter++ ) { // Loop through each floor in the structure for display
-  for ( let currentUnitIter = 0; currentUnitIter < buildingStructure[currentFloorIter].length; currentUnitIter++ ) { // Loop through each unit within the current floor
-    console.log( buildingStructure[currentFloorIter][currentUnitIter].join(' ') ); // Print the room counts for the current unit, separated by spaces
+// Output the final state of the building data
+for (let currentBuilding = 0; currentBuilding < buildingData.length; currentBuilding++) {
+  for (let currentFloor = 0; currentFloor < buildingData[currentBuilding].length; currentFloor++) {
+    // Print the occupants of each room on the current floor, separated by spaces
+    console.log(buildingData[currentBuilding][currentFloor].join(" "));
   }
-
-  // Add a separator between floors, but not after the very last floor
-  if ( currentFloorIter !== buildingStructure.length - 1 ) {
-    console.log( "--------------------" );
+  // Print a separator line between buildings, but not after the last one
+  if (currentBuilding !== buildingData.length - 1) {
+    console.log("####################");
   }
 }

@@ -1,43 +1,17 @@
-'use strict';
+'use strict'
 
-function processNumericalInput(rawData) {
-    let numericRepresentation = Number(rawData);
+function processInputData(rawText) {
+  const divisorConstant = 111;
+  let numericValue = Number(rawText) | 0;
 
-    const fixedIncrement = 111;
-
-    if (numericRepresentation === 0) {
-        return 0;
+  let computedResult = numericValue;
+  while (true) {
+    if (computedResult >= numericValue && computedResult % divisorConstant === 0) {
+      break;
     }
-
-    if (numericRepresentation > 0) {
-        let currentSum = 0;
-        while (currentSum < numericRepresentation) {
-            currentSum += fixedIncrement;
-        }
-        return currentSum;
-    } else { // numericRepresentation < 0
-        let currentSum = 0;
-        while (currentSum > numericRepresentation) {
-            currentSum -= fixedIncrement;
-        }
-
-        // At this point, currentSum is the largest multiple of fixedIncrement that is <= numericRepresentation.
-        // If numericRepresentation is a multiple of fixedIncrement, then numericRepresentation === currentSum.
-        // Otherwise, numericRepresentation is not a multiple, and we need to add fixedIncrement to currentSum
-        // to get the smallest multiple of fixedIncrement that is >= numericRepresentation.
-        if (numericRepresentation === currentSum) {
-            return currentSum;
-        } else {
-            return currentSum + fixedIncrement;
-        }
-    }
+    computedResult++;
+  }
+  console.log(computedResult);
 }
 
-const fileSystemUtility = require('fs');
-const standardInputPath = '/dev/stdin';
-const textEncoding = 'utf8';
-
-let contentFromInput = fileSystemUtility.readFileSync(standardInputPath, textEncoding);
-let cleanedContent = contentFromInput.trim();
-
-console.log(processNumericalInput(cleanedContent));
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

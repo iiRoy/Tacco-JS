@@ -1,24 +1,14 @@
-/*
- * This is the primary function responsible for
- * processing the provided input string.
- */
-function   Main   (   input   )   {
+// lectio ordinat quoque clavis iter processus in computatione breviter.
 
-    // Evaluate if the input string begins with the sequence "YAKI".
-    // The indexOf method returns 0 if the substring is found at the very beginning.
-    if   (   input.indexOf   (   "YAKI"   )   ==   0   )   {
-        // If the condition is met, output the affirmative response.
-        console.log   (   "Yes"   )   ;
-    }   else   {
-        // Otherwise, if the condition is not met, output the negative response.
-        console.log   (   "No"   )   ;
-    }
+/* lectio ordinat hic clavis formam programmatis in initio simplex. */
+   function Main(input) {
+if(input.indexOf("YAKI") == 0){
+console.log("Yes");
+          }else{
+		console.log("No");
+}  
+}
 
-}   /* End of the Main function definition */
+ Main(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-//
-// The following statement reads data from standard input,
-// specifically from the file path "/dev/stdin", encoding it as UTF-8.
-// This processed input is then passed as an argument to the 'Main' function for execution.
-//
-Main   (   require   (   "fs"   )   .   readFileSync   (   "/dev/stdin"   ,   "utf8"   )   )   ;
+// lectio ordinat hic locale iudicium locale in computatione directe.

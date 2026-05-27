@@ -1,91 +1,60 @@
-const integerValueExtractor = (inputStr) => Number.parseInt(inputStr, 10);
-const floatValueExtractor = (inputStr) => Number.parseFloat(inputStr);
+function processInput(inputLines) {
+  const [dimensionLine, ...gridRows] = inputLines;
+  const [gridHeight, gridWidth, maxPropagationSteps] = dimensionLine.split(' ').map(Number);
 
-const isEvenCheck = (valueItem) => (valueItem & 1) === 0;
-const isOddCheck = (valueItem) => (valueItem & 1) === 1;
+  let initialPosition = [-1, -1];
+  const gameBoard = gridRows.map((rowContent, rowIndex) =>
+    rowContent.split('').map((cellChar, colIndex) => {
+      if (cellChar === 'S') {
+        initialPosition = [rowIndex, colIndex];
+        return 0; // Mark the starting 'S' cell with 0 steps
+      }
+      return cellChar;
+    })
+  );
 
-const ascendingNumericSorter = (collectionInstance) => [...collectionInstance].sort((firstEl, secondEl) => firstEl - secondEl);
-const descendingNumericSorter = (collectionInstance) => [...collectionInstance].sort((firstEl, secondEl) => secondEl - firstEl);
-const ascendingLexicographicSorter = (collectionInstance) => [...collectionInstance].sort();
-const descendingLexicographicSorter = (collectionInstance) => [...collectionInstance].sort().reverse();
+  // The original 'search' function uses setTimeout(..., 0) for its recursive calls.
+  // This means the propagation of step values (i) beyond the initial 'S' cell
+  // is deferred to subsequent event loop ticks.
+  // The final loop that calculates 'minimum' runs synchronously immediately after
+  // the initial call to 'search'.
+  // Therefore, at the time the 'minimum' calculation loop executes,
+  // only the 'S' cell itself (which is marked '0') will have a numeric value.
+  // All other cells will still be their original '.' or '#' characters.
+  // Thus, the complex propagation logic of the original 'search' function
+  // is effectively not observed by the 'minimum' calculation.
+  // We only need to ensure the 'S' cell is marked '0', which is done during 'gameBoard' creation.
 
-const filterOutElement = (collectionInstance, undesiredElement) => collectionInstance.filter(currentElement => currentElement !== undesiredElement);
+  const computeBoundaryProximity = (rowCoord, colCoord) => {
+    const topDistance = rowCoord;
+    const bottomDistance = gridHeight - 1 - rowCoord;
+    const leftDistance = colCoord;
+    const rightDistance = gridWidth - 1 - colCoord;
+    return Math.min(topDistance, bottomDistance, leftDistance, rightDistance);
+  };
 
-const computeGridAnalysis = (inputDataLines) => {
-    const configSettings = inputDataLines[0].split(' ').map(integerValueExtractor);
-    const gridHeight = configSettings[0];
-    const gridWidth = configSettings[1];
-    const maxMoveDistance = configSettings[2];
+  let overallSmallestValue = Infinity;
+  let borderReachedImmediately = false;
 
-    let currentGridState = inputDataLines.slice(1).map(oneGridRow => oneGridRow.split(''));
-    let startingPointCoords = [-1, -1];
+  gameBoard.forEach((rowCells, r) => {
+    rowCells.forEach((cellContent, c) => {
+      if (borderReachedImmediately) return; // Short-circuit if minimum is already 1
 
-    currentGridState.some((rowContents, rowIndex) => {
-        const colIndex = rowContents.findIndex(cellChar => cellChar === 'S');
-        if (colIndex !== -1) {
-            startingPointCoords = [rowIndex, colIndex];
-            return true;
+      if (typeof cellContent === 'number') { // This will only be true for the initial 'S' cell (marked 0)
+        const currentCellBoundaryDistance = computeBoundaryProximity(r, c);
+
+        if (currentCellBoundaryDistance === 0) {
+          overallSmallestValue = 1;
+          borderReachedImmediately = true; // Set flag to conceptually break out of nested loops
+        } else {
+          overallSmallestValue = Math.min(overallSmallestValue, Math.ceil(currentCellBoundaryDistance / maxPropagationSteps) + 1);
         }
-        return false;
+      }
     });
+  });
 
-    const bfsTraversalQueue = [];
-    bfsTraversalQueue.push([...startingPointCoords, 0]);
+  console.log(overallSmallestValue);
+}
 
-    const neighborOffsets = [[-1, 0], [1, 0], [0, -1], [0, 1]];
-
-    let queueHeadIndex = 0;
-    while (queueHeadIndex < bfsTraversalQueue.length) {
-        const [currentRow, currentCol, currentPathLength] = bfsTraversalQueue[queueHeadIndex++];
-
-        if (currentPathLength > maxMoveDistance) continue;
-        if (currentRow < 0 || currentRow >= gridHeight || currentCol < 0 || currentCol >= gridWidth) continue;
-
-        const currentCellVal = currentGridState[currentRow][currentCol];
-
-        if (
-            currentCellVal === '.' ||
-            currentCellVal === 'S' ||
-            (typeof currentCellVal === 'number' && currentCellVal > currentPathLength)
-        ) {
-            currentGridState[currentRow][currentCol] = currentPathLength;
-
-            for (const [rowOffset, colOffset] of neighborOffsets) {
-                bfsTraversalQueue.push([currentRow + rowOffset, currentCol + colOffset, currentPathLength + 1]);
-            }
-        }
-    }
-
-    const calculateExitProximity = (rCoord, cCoord) => {
-        const distanceToTop = rCoord;
-        const distanceToBottom = (gridHeight - 1) - rCoord;
-        const distanceToLeft = cCoord;
-        const distanceToRight = (gridWidth - 1) - cCoord;
-        return Math.min(distanceToTop, distanceToBottom, distanceToLeft, distanceToRight);
-    };
-
-    let finalCalculatedMin = Infinity;
-
-    const processedCells = currentGridState.flatMap((rowArr, r) =>
-        rowArr.map((valueInCell, c) => ({ rIndex: r, cIndex: c, cellPathLength: valueInCell }))
-    ).filter(cellInfo => typeof cellInfo.cellPathLength === 'number');
-
-    finalCalculatedMin = processedCells.reduce((currentOverallMin, cellInfo) => {
-        const cellExitDistance = calculateExitProximity(cellInfo.rIndex, cellInfo.cIndex);
-
-        if (cellExitDistance === 0) {
-            return 1;
-        }
-
-        const requiredJourneyCount = Math.ceil(cellExitDistance / maxMoveDistance) + 1;
-        return Math.min(currentOverallMin, requiredJourneyCount);
-    }, Infinity);
-
-    console.log(finalCalculatedMin);
-};
-
-const acquireInputData = (sourceText) => {
-    return sourceText.split('\n').map(lineString => lineString.trim());
-};
-
-computeGridAnalysis(acquireInputData(require("fs").readFileSync("/dev/stdin", "utf8")));
+const inputData = require("fs").readFileSync("/dev/stdin", "utf8").split('\n').map(l => l.trim());
+processInput(inputData);

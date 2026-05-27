@@ -1,108 +1,103 @@
 'use strict';
 
-let accumulatedInputData = '';
+let incomingData = '';
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
-process.stdin.on('data', (dataChunk) => {
-    accumulatedInputData += dataChunk;
+process.stdin.on('data', (chunk) => {
+    incomingData += chunk;
 });
 process.stdin.on('end', () => {
-    const allInputLines = accumulatedInputData.split('\n');
+    const inputLines = incomingData.split('\n');
 
-    // A branch structure is represented as an array: [leftSubBranch, rightSubBranch]
-    // An empty branch is represented as null.
+    // Tree representation: a plain object { l: leftChild, r: rightChild }
+    // An empty child is represented by null.
 
-    // Transforms a branch structure into its string representation.
-    const renderBranch = (currentBranch) => {
-        if (currentBranch === null) {
+    // Function to parse a string into the new tree structure
+    function buildStructure(structureString) {
+        const rootWrapper = { branch: null }; // A dummy wrapper for the actual root
+        let currentBranchingPoint = rootWrapper; // The object whose child we are currently setting
+        let isSettingLeft = true; // True if setting 'l', false if setting 'r'
+        const branchStack = []; // Stack of parent branching points
+
+        if (structureString === undefined) {
+            // Replicate original behavior for undefined input string
+            // Original `for (var _iterator = str[Symbol.iterator](), _s; ...)` throws TypeError
+            // if `str` is undefined.
+            // This loop will also throw if `structureString` is undefined.
+        }
+
+        for (const charToken of structureString) {
+            if (charToken === '(') {
+                const newBranch = { l: null, r: null };
+                if (currentBranchingPoint === rootWrapper) {
+                    currentBranchingPoint.branch = newBranch; // Set the actual root
+                } else if (isSettingLeft) {
+                    currentBranchingPoint.l = newBranch;
+                } else {
+                    currentBranchingPoint.r = newBranch;
+                }
+                branchStack.push(currentBranchingPoint); // Push the parent onto the stack
+                currentBranchingPoint = newBranch; // Descend to the new branch
+                isSettingLeft = true; // For the new branch, always start by expecting its left child
+            } else if (charToken === ',') {
+                isSettingLeft = false; // For the current branch, expect its right child next
+            } else if (charToken === ')') {
+                if (branchStack.length > 0) {
+                    currentBranchingPoint = branchStack.pop(); // Ascend to parent
+                    isSettingLeft = true; // Reset to true for the parent, as per original `comma = 0` logic
+                }
+            }
+        }
+        return rootWrapper.branch; // Return the actual root of the parsed tree
+    }
+
+    // Function to serialize the new tree structure back to a string
+    function serializeStructure(nodeElement) {
+        if (!nodeElement) {
             return '';
         }
-        // currentBranch is [leftSubBranch, rightSubBranch]
-        const leftPart = renderBranch(currentBranch[0]);
-        const rightPart = renderBranch(currentBranch[1]);
+        const leftPart = serializeStructure(nodeElement.l);
+        const rightPart = serializeStructure(nodeElement.r);
         return `(${leftPart},${rightPart})`;
-    };
+    }
 
-    // Recursively builds a branch structure from a string representation.
-    // The `idxRef` object is used to pass the current parsing index by reference.
-    const buildBranch = (expressionString, idxRef) => {
-        // If the current character is not '(', it means this sub-branch is empty.
-        // This handles cases like `(,)` where left/right children are implicitly empty.
-        if (expressionString[idxRef.val] !== '(') {
-            return null;
+    // Function to perform union operation
+    function combineStructures(firstStruct, secondStruct) {
+        if (!firstStruct) return secondStruct;
+        if (!secondStruct) return firstStruct;
+
+        const combinedNode = { l: null, r: null };
+        const combinedLeft = combineStructures(firstStruct.l, secondStruct.l);
+        if (combinedLeft) combinedNode.l = combinedLeft;
+        const combinedRight = combineStructures(firstStruct.r, secondStruct.r);
+        if (combinedRight) combinedNode.r = combinedRight;
+        return combinedNode;
+    }
+
+    // Function to perform intersection operation
+    function findCommonStructures(firstStruct, secondStruct) {
+        if (!firstStruct || !secondStruct) return null;
+
+        const commonNode = { l: null, r: null };
+        const commonLeft = findCommonStructures(firstStruct.l, secondStruct.l);
+        if (commonLeft) commonNode.l = commonLeft;
+        const commonRight = findCommonStructures(firstStruct.r, secondStruct.r);
+        if (commonRight) commonNode.r = commonRight;
+        return commonNode;
+    }
+
+    for (const currentInputLine of inputLines) {
+        const [operationType, firstTreeString, secondTreeString] = currentInputLine.split(' ');
+
+        const firstParsedStructure = buildStructure(firstTreeString);
+        const secondParsedStructure = buildStructure(secondTreeString);
+        let operationResult;
+
+        if (operationType === "u") {
+            operationResult = combineStructures(firstParsedStructure, secondParsedStructure);
+        } else if (operationType === "i") {
+            operationResult = findCommonStructures(firstParsedStructure, secondParsedStructure);
         }
-
-        idxRef.val++; // Consume '('
-
-        let leftChild = null;
-        // If the next character is not ',', it means there's a left child to parse.
-        if (expressionString[idxRef.val] !== ',') {
-            leftChild = buildBranch(expressionString, idxRef);
-        }
-
-        idxRef.val++; // Consume ','
-
-        let rightChild = null;
-        // If the next character is not ')', it means there's a right child to parse.
-        if (expressionString[idxRef.val] !== ')') {
-            rightChild = buildBranch(expressionString, idxRef);
-        }
-
-        idxRef.val++; // Consume ')'
-
-        return [leftChild, rightChild];
-    };
-
-    // Performs a logical OR-like combination of two branch structures.
-    const combineBranches = (firstUnit, secondUnit) => {
-        if (firstUnit === null) {
-            return secondUnit;
-        }
-        if (secondUnit === null) {
-            return firstUnit;
-        }
-        // Both units are non-null, so they are [L, R] arrays.
-        const combinedLeft = combineBranches(firstUnit[0], secondUnit[0]);
-        const combinedRight = combineBranches(firstUnit[1], secondUnit[1]);
-        return [combinedLeft, combinedRight];
-    };
-
-    // Performs a logical AND-like intersection of two branch structures.
-    const filterBranches = (firstUnit, secondUnit) => {
-        if (firstUnit === null || secondUnit === null) {
-            return null;
-        }
-        // Both units are non-null, so they are [L, R] arrays.
-        const filteredLeft = filterBranches(firstUnit[0], secondUnit[0]);
-        const filteredRight = filterBranches(firstUnit[1], secondUnit[1]);
-        return [filteredLeft, filteredRight];
-    };
-
-    // Iterate through each processed input line
-    for (let lineIterator = 0; lineIterator < allInputLines.length; lineIterator++) {
-        const currentDataLine = allInputLines[lineIterator];
-        if (!currentDataLine.trim()) {
-            continue; // Skip any empty lines
-        }
-
-        const lineSegments = currentDataLine.split(' ');
-        const operationIndicator = lineSegments[0];
-        const firstStructureText = lineSegments[1];
-        const secondStructureText = lineSegments[2];
-
-        // Parse the two input structures
-        const pointerA = { val: 0 };
-        const primaryStructure = buildBranch(firstStructureText, pointerA);
-        
-        const pointerB = { val: 0 };
-        const secondaryStructure = buildBranch(secondStructureText, pointerB);
-
-        let finalStructure;
-        if (operationIndicator === "u") {
-            finalStructure = combineBranches(primaryStructure, secondaryStructure);
-        } else if (operationIndicator === "i") {
-            finalStructure = filterBranches(primaryStructure, secondaryStructure);
-        }
-        console.log(renderBranch(finalStructure));
+        console.log(serializeStructure(operationResult));
     }
 });

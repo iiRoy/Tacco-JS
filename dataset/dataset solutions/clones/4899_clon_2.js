@@ -1,57 +1,37 @@
-/*
- * This module processes a given input string to determine
- * if a specific character sequence condition is met.
- */
-function processInputContent( rawContent )
-{
-  // Split the raw input string by newline characters into an array of lines.
-  var contentLines = rawContent.split( "\n" );
+function analyzeSequence(rawInputData) {
+  // Split the raw input data into an array of lines.
+  var inputLines = rawInputData.split("\n");
 
-  // The primary string to be analyzed is the first line of the input.
-  var searchString = contentLines[ 0 ];
+  // The first line of input is our target sequence.
+  var targetSequence = inputLines[0];
 
-  // Initialize variables to store the positions of the target characters.
-  // 'firstOccurrenceOfC' will hold the index of the first 'C'.
-  // 'lastOccurrenceOfF' will hold the index of the last 'F'.
-  var firstOccurrenceOfC, lastOccurrenceOfF;
+  // Variables to store the indices of 'C' and 'F'.
+  var firstCharCIndex;
+  var lastCharFIndex;
 
-  // Iterate through the search string from the beginning
-  // to find the first occurrence of the character 'C'.
-  for ( var iteratorIndex = 0; iteratorIndex < searchString.length; iteratorIndex++ )
-  {
-    // If 'C' is found, store its index and exit the loop.
-    if ( searchString[ iteratorIndex ] === "C" )
-    {
-      firstOccurrenceOfC = iteratorIndex;
-      break;
+  // Iterate through the sequence from the beginning to find the first 'C'.
+  for (var charIndex = 0; charIndex < targetSequence.length; charIndex++) {
+    if (targetSequence[charIndex] === "C") {
+      firstCharCIndex = charIndex;
+      break; // Stop after finding the first 'C'.
     }
   }
 
-  // Iterate through the search string from the end
-  // to find the last occurrence of the character 'F'.
-  for ( var reverseIterator = searchString.length - 1; reverseIterator >= 0; reverseIterator-- )
-  {
-    // If 'F' is found, store its index and exit the loop.
-    if ( searchString[ reverseIterator ] === "F" )
-    {
-      lastOccurrenceOfF = reverseIterator;
-      break;
+  // Iterate through the sequence from the end to find the last 'F'.
+  for (var reverseCharIndex = targetSequence.length - 1; reverseCharIndex >= 0; reverseCharIndex--) {
+    if (targetSequence[reverseCharIndex] === "F") {
+      lastCharFIndex = reverseCharIndex;
+      break; // Stop after finding the last 'F'.
     }
   }
 
-  // Compare the found indices to determine the final output.
-  // The condition is met if 'C' appears before 'F' in the string.
-  if ( firstOccurrenceOfC < lastOccurrenceOfF )
-  {
-    console.log( "Yes" ); // Output "Yes" if 'C' comes before 'F'.
-  }
-  else
-  {
-    console.log( "No" );  // Output "No" otherwise.
+  // Compare the found indices to determine the output.
+  if (firstCharCIndex < lastCharFIndex) {
+    console.log("Yes");
+  } else {
+    console.log("No");
   }
 }
 
-// Main execution block: Read input from standard input and pass it to the processing function.
-// Renaming 'require("fs")' to 'fileOperations' for Type II compliance, as 'fs' is an identifier.
-const fileOperations = require( "fs" );
-processInputContent( fileOperations.readFileSync( "/dev/stdin", "utf8" ) );
+// Read input from standard input and pass it to the analysis function.
+analyzeSequence(require("fs").readFileSync("/dev/stdin", "utf8"));

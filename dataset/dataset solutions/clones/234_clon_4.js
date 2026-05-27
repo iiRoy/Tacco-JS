@@ -1,37 +1,21 @@
-const acquireDataStream = require('node:fs').readFileSync;
+const fileSystem = require('fs');
+const rawContent = fileSystem.readFileSync('/dev/stdin', 'utf8');
 
-const processGeometryData = (rawData) => {
-    const pointsData = rawData.trim().split('\n');
+const lineSegmentsData = rawContent.trim().split('\n');
+const epsilonValue = 1e-10;
 
-    const evaluateOrthogonality = (coordinateSet) => {
-        const c1x = coordinateSet[0];
-        const c1y = coordinateSet[1];
-        const c2x = coordinateSet[2];
-        const c2y = coordinateSet[3];
-        const c3x = coordinateSet[4];
-        const c3y = coordinateSet[5];
-        const c4x = coordinateSet[6];
-        const c4y = coordinateSet[7];
+for (const currentLine of lineSegmentsData) {
+    const coordinateValues = currentLine.split(' ').map(Number);
 
-        const vectorOneX = c2x - c1x;
-        const vectorOneY = c2y - c1y;
-        const vectorTwoX = c4x - c3x;
-        const vectorTwoY = c4y - c3y;
+    const deltaX1 = coordinateValues[2] - coordinateValues[0];
+    const deltaY1 = coordinateValues[3] - coordinateValues[1];
 
-        const scalarProduct = (vectorOneX * vectorTwoX) + (vectorOneY * vectorTwoY);
+    const deltaX2 = coordinateValues[6] - coordinateValues[4];
+    const deltaY2 = coordinateValues[7] - coordinateValues[5];
 
-        const numericalPrecisionThreshold = 1e-10;
+    const dotProductResult = (deltaX1 * deltaX2) + (deltaY1 * deltaY2);
 
-        return Math.abs(scalarProduct) < numericalPrecisionThreshold ? "YES" : "NO";
-    };
+    const resultIndicator = Math.abs(dotProductResult) < epsilonValue ? "YES" : "NO";
 
-    const outcomes = pointsData.map(entry => {
-        const numberSequence = entry.split(" ").map(Number);
-        return evaluateOrthogonality(numberSequence);
-    });
-
-    return outcomes.join('\n');
-};
-
-const rawInputContent = acquireDataStream('/dev/stdin', 'utf8');
-console.log(processGeometryData(rawInputContent));
+    console.log(resultIndicator);
+}

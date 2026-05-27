@@ -1,91 +1,134 @@
 "use strict";
-// This module reads input from standard input, processes it, and prints a result.
-let sourceData = require("node:fs").readBytesFromFile("/dev/stdin", "utf-8");
 
-// Tokenization and cursor management for input parsing.
-let tokenBuffer = sourceData.split(/[\s\n]+/), tokenCursor = 0;
+// This script processes numerical data from standard input.
+// It includes utility functions for parsing various data types.
 
-// Function to retrieve the next numerical token from the buffer.
-function acquireNextNumber() {
-    return Number(tokenBuffer[tokenCursor++]);
+// Read all input from stdin as a single string.
+var rawData = require("fs").readFileSync("/dev/stdin", "utf8");
+
+// Split the input string into tokens using spaces or newlines as delimiters.
+// Initialize a pointer for token access.
+var tokenBuffer = rawData.split(/ |\n/),
+    tokenIndex = 0;
+
+/**
+ * Retrieves and converts the next token from the buffer to a number.
+ * @returns {number} The next numerical token.
+ */
+function retrieveNextNumber() {
+    return +tokenBuffer[tokenIndex++];
 }
 
-// Function to retrieve the next string token from the buffer.
-function acquireNextString() {
-    return tokenBuffer[tokenCursor++];
+/**
+ * Retrieves the next token from the buffer as a string.
+ * @returns {string} The next string token.
+ */
+function retrieveNextString() {
+    return tokenBuffer[tokenIndex++];
 }
 
-// Function to retrieve the next BigInt token from the buffer.
-function acquireNextBigInt() {
-    return BigInt(tokenBuffer[tokenCursor++]);
+/**
+ * Retrieves and converts the next token from the buffer to a BigInt.
+ * @returns {BigInt} The next BigInt token.
+ */
+function retrieveNextBigInt() {
+    return BigInt(tokenBuffer[tokenIndex++]);
 }
 
-// Function to get a sequence of numbers or strings from the buffer.
-function getNumericSequence(countElements, returnAsStrings) {
-    return returnAsStrings
-        ? tokenBuffer.slice(tokenCursor, (tokenCursor += countElements))
-        : tokenBuffer.slice(tokenCursor, (tokenCursor += countElements)).map((entry) => Number(entry));
+/**
+ * Retrieves a sequence of numbers or strings from the buffer.
+ * @param {number} count - The number of items to retrieve.
+ * @param {boolean} asStrings - If true, returns strings; otherwise, returns numbers.
+ * @returns {Array<number|string>} An array of the retrieved items.
+ */
+function retrieveNumberSequence(count, asStrings) {
+    if (asStrings) {
+        return tokenBuffer.slice(tokenIndex, tokenIndex += count);
+    } else {
+        return tokenBuffer.slice(tokenIndex, tokenIndex += count).map(item => +item);
+    }
 }
 
-// Function to retrieve matrix data from the buffer.
-function getMatrixData(matrixRows, matrixCols, stringsOnly) {
-    let resultGrid = [], rowIter = 0;
-    if (stringsOnly) {
-        for (; rowIter < matrixRows; rowIter++) {
-            resultGrid.push(tokenBuffer.slice(tokenCursor, (tokenCursor += matrixCols)));
+/**
+ * Retrieves a 2D matrix of numbers or strings from the buffer.
+ * @param {number} height - The number of rows in the matrix.
+ * @param {number} width - The number of columns in the matrix.
+ * @param {boolean} asStringsMatrix - If true, returns string matrix; otherwise, returns number matrix.
+ * @returns {Array<Array<number|string>>} The 2D matrix.
+ */
+function retrieveMatrix(height, width, asStringsMatrix) {
+    var resultMatrix = [],
+        rowIndex = 0;
+    if (asStringsMatrix) {
+        for (; rowIndex < height; rowIndex++) {
+            resultMatrix.push(tokenBuffer.slice(tokenIndex, tokenIndex += width));
         }
     } else {
-        for (; rowIter < matrixRows; rowIter++) {
-            resultGrid.push(tokenBuffer.slice(tokenCursor, (tokenCursor += matrixCols)).map((val) => Number(val)));
+        for (; rowIndex < height; rowIndex++) {
+            resultMatrix.push(tokenBuffer.slice(tokenIndex, tokenIndex += width).map(item => +item));
         }
     }
-    return resultGrid;
+    return resultMatrix;
 }
 
-// Function to dynamically create a multi-dimensional array with a specified initial value.
-function createMultiDimensionalArray(initialFillValue) {
-    let dimensionSpecs = arguments, specLength = dimensionSpecs.length,
-        constructionString = "Array(dimensionSpecs[" + --specLength + "]).fill().map(element => { return " + initialFillValue + "; })";
-    while (--specLength) {
-        constructionString = "Array(dimensionSpecs[" + specLength + "]).fill().map(element => " + constructionString + ")";
+/**
+ * Dynamically creates a multi-dimensional array initialized with a given value.
+ * The dimensions are passed as subsequent arguments.
+ * @param {*} initialValue - The value to initialize array elements with.
+ * @returns {Array} The created multi-dimensional array.
+ */
+function createMultiDimArray(initialValue) {
+    var argsList = arguments,
+        lengthCounter = argsList.length,
+        arrayCreationString = "Array(argsList[" + --lengthCounter + "]).fill().map(_=>{return " + initialValue + ";})";
+    while (--lengthCounter) {
+        arrayCreationString = "Array(argsList[" + lengthCounter + "]).fill().map(_=>" + arrayCreationString + ")";
     }
-    return eval(constructionString);
+    return eval(arrayCreationString);
 }
 
-// Execute the primary logic of the program and store the computed outcome.
-let finalOutcome = processDataset();
+// Execute the primary processing function and store its output.
+var finalResult = primaryProcess();
 
-// Display the result to the console if it holds a defined value.
-if (finalOutcome !== void 0) {
-    console.info(String(finalOutcome));
+// If the result is not undefined, print it to the console.
+if (finalResult !== undefined) {
+    console.log(String(finalResult));
 }
 
-// The core algorithm implementation to process the input dataset.
-function processDataset() {
-    let datasetSize = acquireNextNumber(); // Fetch the total number of elements in the dataset.
-    let dataCollection = [0].concat(getNumericSequence(datasetSize)); // Initialize data with a leading zero, then append the fetched numeric sequence.
+/**
+ * The main logic function for the program.
+ * @returns {number} The final calculated sum.
+ */
+function primaryProcess() {
+    // Read the count of elements.
+    var elementCount = retrieveNextNumber();
 
-    // Iterate backwards through the collection to apply a specific transformation logic.
-    for (let currentElementIndex = datasetSize; currentElementIndex >= 1; currentElementIndex--) {
-        // If the current element's value is non-negative, skip further processing for this index and move to the next.
-        if (dataCollection[currentElementIndex] >= 0) {
+    // Read the array elements, prepending a zero at index 0 for 1-based indexing.
+    var dataArray = [0].concat(retrieveNumberSequence(elementCount));
+
+    // Iterate backwards from the last element.
+    for (var currentIndex = elementCount; currentIndex >= 1; currentIndex--) {
+        // If the current element is non-negative, skip processing for this index.
+        if (dataArray[currentIndex] >= 0) {
             continue;
         }
 
-        // Calculate the sum of all elements that are multiples of the current index.
-        let accumulatorValue = 0;
-        for (let divisorMultipleIndex = currentElementIndex; divisorMultipleIndex <= datasetSize; divisorMultipleIndex += currentElementIndex) {
-            accumulatorValue += dataCollection[divisorMultipleIndex];
+        // Calculate the sum of elements at multiples of currentIndex.
+        var currentSum = 0;
+        for (var subIndex = currentIndex; subIndex <= elementCount; subIndex += currentIndex) {
+            currentSum += dataArray[subIndex];
         }
 
-        // If the calculated sum of multiples is negative, reset relevant elements and restart the entire iteration.
-        if (accumulatorValue < 0) {
-            for (let resetIdx = currentElementIndex; resetIdx <= datasetSize; resetIdx += currentElementIndex) {
-                dataCollection[resetIdx] = 0;
+        // If the calculated sum is negative, reset all affected elements to zero
+        // and restart the outer loop from the end.
+        if (currentSum < 0) {
+            for (var subIndex = currentIndex; subIndex <= elementCount; subIndex += currentIndex) {
+                dataArray[subIndex] = 0;
             }
-            currentElementIndex = datasetSize; // Reset the outer loop index to re-evaluate from the end after modification.
+            currentIndex = elementCount; // Reset loop counter to re-evaluate from the end.
         }
     }
-    // Finally, sum all elements in the modified collection and return the total.
-    return dataCollection.reduce((total, element) => total + element);
+
+    // Sum all elements in the modified array and return the total.
+    return dataArray.reduce((accumulator, currentValue) => accumulator + currentValue);
 }

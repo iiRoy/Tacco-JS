@@ -1,14 +1,23 @@
 'use strict';
 
-const acquiredData = require('node:fs').readFileSync(0, 'utf8').trim().split(' ').map(numericItem => +numericItem);
+const sourceData = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split(' ').map(val => Number(val));
 
-const startFactor = acquiredData[0];
-const upperThreshold = acquiredData[1];
+let finalCount;
+const initialQuantity = sourceData[0];
+const targetThreshold = sourceData[1];
 
-let multiplicationsRequired = 0;
-
-if (upperThreshold > startFactor) {
-  multiplicationsRequired = Math.ceil(Math.log2(upperThreshold / startFactor));
+if (initialQuantity === 0) {
+    if (targetThreshold > 0) {
+        while (true) { }
+    } else {
+        finalCount = 0;
+    }
+} else {
+    if (initialQuantity >= targetThreshold) {
+        finalCount = 0;
+    } else {
+        finalCount = Math.ceil(Math.log2(targetThreshold / initialQuantity));
+    }
 }
 
-console.log(multiplicationsRequired);
+console.log(finalCount);

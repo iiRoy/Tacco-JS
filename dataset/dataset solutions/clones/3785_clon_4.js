@@ -1,18 +1,19 @@
-const sourceData = require('node:fs').readFileSync(0, 'utf8');
-const processedLine = sourceData.trim().split('\n')[0];
+function calculateAndDisplayMax(sourceData) {
+    const lineComponents = sourceData[0].split(' ');
+    const firstOperand = Number(lineComponents[0]);
+    const secondOperand = Number(lineComponents[1]);
 
-const operandMatches = processedLine.match(/(-?\d+)\s+(-?\d+)/);
-const firstOperand = Number(operandMatches[1]);
-const secondOperand = Number(operandMatches[2]);
+    const sumResult = firstOperand + secondOperand;
+    const differenceResult = firstOperand - secondOperand;
+    const productResult = firstOperand * secondOperand;
 
-const computedValues = [
-    firstOperand + secondOperand,
-    firstOperand - secondOperand,
-    firstOperand * secondOperand
-];
+    let currentHighestValue;
 
-const greatestResult = computedValues.reduce((currentMax, element) => {
-    return currentMax > element ? currentMax : element;
-});
+    currentHighestValue = (sumResult > differenceResult) ? sumResult : differenceResult;
 
-process.stdout.write(greatestResult.toString() + '\n');
+    currentHighestValue = (productResult > currentHighestValue) ? productResult : currentHighestValue;
+
+    console.log(currentHighestValue);
+}
+
+calculateAndDisplayMax(require('fs').readFileSync('/dev/stdin', 'utf8').trim().split("\n"));

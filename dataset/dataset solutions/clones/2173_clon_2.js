@@ -1,64 +1,48 @@
-// This core module is designed to meticulously process incoming raw data.
-function ProcessData(initialPayload) {
-  /*
-   * The first step involves segmenting the entire input string.
-   * This is achieved by splitting it at each newline character,
-   * yielding an array where each element corresponds to a distinct line.
-   */
-  let lineArray = initialPayload.split("\n");
+function ProcessData(rawData) {
+  // This function takes raw input data as a string.
+  // It processes the data to determine if there are any duplicate numbers in the second line.
 
-  // We then focus our attention on the second line (index 1) of the `lineArray`.
-  // This particular line is further fragmented into individual tokens,
-  // using a space character as the delimiter for separation.
-  let tokenizedValues = lineArray[1].split(" ");
+  // First, the input string is divided into an array of strings,
+  // with each element representing a line from the original input.
+  let linesOfText = rawData.split("\n");
 
-  /**
-   * A dedicated utility function to facilitate numerical comparison between two values.
-   * This ensures that the subsequent sorting operation correctly orders the tokens
-   * based on their numerical magnitude, rather than their string representation.
-   * @param {string} valA - The first string value to be evaluated.
-   * @param {string} valB - The second string value to be evaluated.
-   * @returns {number} A value indicating the relative order:
-   *                   negative if valA < valB, zero if valA == valB, positive if valA > valB.
-   */
-  const compareNumericValues = (valA, valB) => {
-    return parseInt(valA, 10) - parseInt(valB, 10);
+  // The second line (at index 1) is then taken and split by spaces.
+  // This creates an array of strings, where each string is expected to be a number.
+  let processedNumbers = linesOfText[1].split(" ");
+
+  // A custom comparison function is defined for sorting.
+  // This function ensures that the array elements are sorted numerically rather than lexicographically.
+  const numericComparator = (firstElement, secondElement) => {
+    // Converts string elements to integers and subtracts them to achieve numerical sorting.
+    return parseInt(firstElement, 10) - parseInt(secondElement, 10);
   };
 
-  // The array of `tokenizedValues` is now sorted using the custom numerical comparator.
-  // This crucial preprocessing step groups identical values together,
-  // making the detection of duplicates straightforward and efficient.
-  let orderedValues = tokenizedValues.sort(compareNumericValues);
+  // The array of number strings is sorted in ascending numerical order.
+  processedNumbers = processedNumbers.sort(numericComparator);
 
-  // A boolean flag, `hasRepetitions`, is initialized to indicate the absence of duplicates.
-  // Its state will be updated if any repeated elements are subsequently discovered.
-  let hasRepetitions = false;
+  // A boolean variable is initialized to track whether any duplicate numbers are found.
+  let hasDuplicates = false;
 
-  // We traverse through the `orderedValues` array, starting from the second element.
-  // Each element is systematically compared against its immediately preceding neighbor.
-  for (let itemIndex = 1; itemIndex < orderedValues.length; itemIndex++) {
-    // If an element is found to be exactly identical to the element that came before it,
-    // this signifies the presence of a duplicate within the sorted sequence.
-    if (orderedValues[itemIndex - 1] === orderedValues[itemIndex]) {
-      hasRepetitions = true; // The flag is set to true to record the discovery of a duplicate.
-      // (The original algorithm does not break early, so we maintain that behavior.)
+  // The code then iterates through the sorted array, starting from the second element.
+  // It compares each element with its immediate predecessor.
+  for (let currentIdx = 1; currentIdx < processedNumbers.length; currentIdx++) {
+    // If an element is found to be identical to the one before it,
+    // it signifies the presence of a duplicate.
+    if (processedNumbers[currentIdx - 1] === processedNumbers[currentIdx]) {
+      hasDuplicates = true; // The duplicate flag is set to true.
+      // The loop continues to check for other potential duplicates, mirroring the original logic.
     }
   }
 
-  // Finally, based on the outcome of the duplicate detection,
-  // an appropriate textual message is dispatched to the console output.
-  if (hasRepetitions) {
-    console.log("NO"); // "NO" is output if any repetitions were found.
+  // Finally, based on the value of the 'hasDuplicates' flag,
+  // an appropriate message is printed to the console.
+  if (hasDuplicates) {
+    console.log("NO"); // If duplicates were found, "NO" is output.
   } else {
-    console.log("YES"); // "YES" is output if the data set is entirely unique.
+    console.log("YES"); // Otherwise, "YES" is output.
   }
 }
 
-// This is the initial entry point for the script's execution.
-// It retrieves the content from standard input, processes it by removing leading/trailing whitespace,
-// and then feeds this cleaned data into the primary `ProcessData` function.
-ProcessData(
-  require("fs")
-  .readFileSync("/dev/stdin", "utf8")
-  .trim()
-);
+// The main processing function is invoked with data read from standard input.
+// The data is read as UTF-8, and any leading or trailing whitespace is removed.
+ProcessData(require("fs").readFileSync("/dev/stdin", "utf8").trim());

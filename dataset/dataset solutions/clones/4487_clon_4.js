@@ -1,29 +1,28 @@
-const evaluateDataCombinations = (sourceData) => {
-    const dataSegments = sourceData.trim().split('\n');
-    const configurationValues = dataSegments[0].split(' ').map(Number);
-    const paritySelector = configurationValues[1]; // Corresponds to 'amari'
+function processInputData(rawInputString) {
+    const [firstConfigLine, numberSequenceLine] = rawInputString.split("\n");
 
-    const numericElements = dataSegments[1].split(' ').map(Number);
+    const [_, requiredParity] = firstConfigLine.split(" ").map(Number);
+    const numericValues = numberSequenceLine.split(" ").map(Number);
 
-    const evenElementCount = numericElements.filter(val => val % 2 === 0).length;
-    const oddElementCount = numericElements.filter(val => val % 2 !== 0).length;
+    const { evenCount, oddCount } = numericValues.reduce((accumulator, currentNumber) => {
+        if (currentNumber % 2 === 0) {
+            accumulator.evenCount++;
+        } else {
+            accumulator.oddCount++;
+        }
+        return accumulator;
+    }, { evenCount: 0, oddCount: 0 });
 
-    const evenSubsetWays = 1 << evenElementCount; // Equivalent to Math.pow(2, evenElementCount)
+    const allEvenSubsets = Math.pow(2, evenCount);
 
-    let oddSubsetWays;
-    if (oddElementCount === 0) {
-        // If there are no odd numbers:
-        // If paritySelector is 0 (even count of odds), only C(0,0) = 1 way.
-        // If paritySelector is 1 (odd count of odds), only C(0,1) = 0 ways.
-        oddSubsetWays = (paritySelector === 0) ? 1 : 0;
+    let conditionalOddSubsets;
+    if (oddCount === 0) {
+        conditionalOddSubsets = (requiredParity === 0) ? 1 : 0;
     } else {
-        // For N > 0, the sum of combinations with even indices (C(N,0)+C(N,2)+...)
-        // and the sum of combinations with odd indices (C(N,1)+C(N,3)+...)
-        // are both equal to 2^(N-1).
-        oddSubsetWays = 1 << (oddElementCount - 1); // Equivalent to Math.pow(2, oddElementCount - 1)
+        conditionalOddSubsets = Math.pow(2, oddCount - 1);
     }
 
-    return evenSubsetWays * oddSubsetWays;
-};
+    console.log(allEvenSubsets * conditionalOddSubsets);
+}
 
-console.log(evaluateDataCombinations(require("fs").readFileSync("/dev/stdin", "utf8")));
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

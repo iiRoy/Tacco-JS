@@ -1,24 +1,20 @@
-/* This module handles processing of incoming text data. */
-function processEntry( sourceContent )
-{
-    // Separate the entire input content into individual lines based on newline characters.
-    var contentLines = sourceContent.split( '\n' );
+function ProcessInput(rawData) {
+  // Split the entire raw input string by newline characters.
+  var lineData = rawData.split('\n');
 
-    // Extract the second line and then split it by spaces to get specific data points.
-    var specificDatum = contentLines[ 1 ].split( ' ' );
-
-    // Check if the second part of the specific data point is '1'.
-    if ( specificDatum[ 1 ] === '1' )
-    {
-        // If it is '1', output the integer 1 to the console.
-        console.log( 1 );
-    }
-    else
-    {
-        // Otherwise, output the integer 0.
-        console.log( 0 );
-    }
+  // Access the second line of the input (index 1) and split it by space.
+  var dateParts = lineData[1].split(' ');
+  
+  // Evaluate the second element of the 'dateParts' array.
+  if (dateParts[1] === '1') {
+    // If the second element is the string '1', output the number 1.
+    console.log(1);
+  } else {
+    // Otherwise, output the number 0.
+    console.log(0);
+  }
 }
 
-// Invoke the primary processing function with data read from standard input.
-processEntry( require( 'fs' ).readFileSync( '/dev/stdin', 'utf8' ) );
+// Read the content of '/dev/stdin' synchronously using UTF-8 encoding
+// and pass it to the main processing function.
+ProcessInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

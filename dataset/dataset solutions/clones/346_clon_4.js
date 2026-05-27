@@ -1,166 +1,140 @@
-(function (sourceData) {
-    const operationProperties = {
-        '+': { priority: 1, type: 'left' },
-        '-': { priority: 1, type: 'left' },
-        '*': { priority: 2, type: 'left' },
-        '/': { priority: 2, type: 'left' }
+(function (rawInput) {
+    const operatorPrecedence = {
+        '+': 1,
+        '-': 1,
+        '*': 2,
+        '/': 2
     };
 
-    function isAnOperator(symbol) {
-        return operationProperties.hasOwnProperty(symbol);
+    const isOperatorChar = (char) => ['+', '-', '*', '/'].includes(char);
+
+    const isNumericToken = (token) => typeof token === 'number';
+
+    function tokenizeExpression(expressionString) {
+        const tokens = [];
+        let currentPosition = 0;
+
+        while (currentPosition < expressionString.length) {
+            let char = expressionString[currentPosition];
+
+            if (char >= '0' && char <= '9') {
+                let numStr = '';
+                while (currentPosition < expressionString.length && expressionString[currentPosition] >= '0' && expressionString[currentPosition] <= '9') {
+                    numStr += expressionString[currentPosition];
+                    currentPosition++;
+                }
+                tokens.push(parseInt(numStr, 10));
+                continue;
+            }
+
+            if (isOperatorChar(char) || char === '(' || char === ')') {
+                tokens.push(char);
+                currentPosition++;
+                continue;
+            }
+
+            throw new Error(`Unexpected character encountered during tokenization: ${char}`);
+        }
+        return tokens;
     }
 
-    // Determines if an operator on the stack (stackTopOp) should be moved to output
-    // before an incoming operator (incomingOp) is pushed to the stack.
-    function shouldTransferFromStack(incomingOp, stackTopOp) {
-        if (!isAnOperator(incomingOp) || !isAnOperator(stackTopOp)) return false;
+    function convertToRPN(infixTokens) {
+        const outputQueue = [];
+        const operatorStack = [];
 
-        const incomingProps = operationProperties[incomingOp];
-        const stackTopProps = operationProperties[stackTopOp];
-
-        // Pop if stackTop has strictly higher priority
-        if (stackTopProps.priority > incomingProps.priority) {
-            return true;
-        }
-        // Pop if stackTop has equal priority AND is left-associative
-        if (stackTopProps.priority === incomingProps.priority && stackTopProps.type === 'left') {
-            return true;
-        }
-        return false;
-    }
-
-    // Phase 1: Convert expression string into an array of distinct tokens
-    function segmentExpressionIntoTokens(expressionString) {
-        const tokenList = [];
-        let cursor = 0;
-        while (cursor < expressionString.length) {
-            let char = expressionString[cursor];
-            if (char === ' ' || char === '\t') {
-                cursor++;
-                continue;
-            }
-
-            if (char === '(' || char === ')') {
-                tokenList.push(char);
-                cursor++;
-                continue;
-            }
-
-            if (isAnOperator(char)) {
-                tokenList.push(char);
-                cursor++;
-                continue;
-            }
-
-            if (/[0-9]/.test(char)) {
-                let numberBuffer = '';
-                while (cursor < expressionString.length && /[0-9]/.test(expressionString[cursor])) {
-                    numberBuffer += expressionString[cursor];
-                    cursor++;
+        for (const token of infixTokens) {
+            if (isNumericToken(token)) {
+                outputQueue.push(token);
+            } else if (isOperatorChar(token)) {
+                while (
+                    operatorStack.length > 0 &&
+                    isOperatorChar(operatorStack[operatorStack.length - 1]) &&
+                    operatorPrecedence[token] <= operatorPrecedence[operatorStack[operatorStack.length - 1]]
+                ) {
+                    outputQueue.push(operatorStack.pop());
                 }
-                tokenList.push(numberBuffer);
-                continue;
-            }
-            throw new Error("Unrecognized character in expression: " + char);
-        }
-        return tokenList;
-    }
-
-    // Phase 2: Apply Shunting-yard algorithm to transform infix tokens to Postfix (RPN)
-    function convertToReversePolishNotation(infixTokens) {
-        const outputSequence = [];
-        const operatorPile = [];
-
-        for (let i = 0; i < infixTokens.length; i++) {
-            const currentToken = infixTokens[i];
-
-            if (!isNaN(parseFloat(currentToken))) { // Is a number
-                outputSequence.push(currentToken);
-            } else if (isAnOperator(currentToken)) {
-                while (operatorPile.length > 0 &&
-                       isAnOperator(operatorPile[operatorPile.length - 1]) &&
-                       shouldTransferFromStack(currentToken, operatorPile[operatorPile.length - 1])) {
-                    outputSequence.push(operatorPile.pop());
+                operatorStack.push(token);
+            } else if (token === '(') {
+                operatorStack.push(token);
+            } else if (token === ')') {
+                while (operatorStack.length > 0 && operatorStack[operatorStack.length - 1] !== '(') {
+                    outputQueue.push(operatorStack.pop());
                 }
-                operatorPile.push(currentToken);
-            } else if (currentToken === '(') {
-                operatorPile.push(currentToken);
-            } else if (currentToken === ')') {
-                while (operatorPile.length > 0 && operatorPile[operatorPile.length - 1] !== '(') {
-                    outputSequence.push(operatorPile.pop());
+                if (operatorStack.length === 0 || operatorStack[operatorStack.length - 1] !== '(') {
+                    throw new Error("Mismatched parentheses in expression.");
                 }
-                if (operatorPile.length === 0 || operatorPile[operatorPile.length - 1] !== '(') {
-                    throw new Error("Parentheses mismatch error");
-                }
-                operatorPile.pop(); // Discard the '('
+                operatorStack.pop();
             } else {
-                throw new Error("Invalid token encountered: " + currentToken);
+                throw new Error(`Unexpected token type during RPN conversion: ${token}`);
             }
         }
 
-        while (operatorPile.length > 0) {
-            const remainingOp = operatorPile.pop();
-            if (remainingOp === '(' || remainingOp === ')') {
-                throw new Error("Unmatched parentheses remaining on stack");
+        while (operatorStack.length > 0) {
+            const op = operatorStack.pop();
+            if (op === '(' || op === ')') {
+                throw new Error("Mismatched parentheses in expression.");
             }
-            outputSequence.push(remainingOp);
+            outputQueue.push(op);
         }
 
-        return outputSequence;
+        return outputQueue;
     }
 
-    // Phase 3: Evaluate the Reverse Polish Notation (RPN) expression
-    function computePostfixResult(rpnTokens) {
-        const calculationStack = [];
+    function evaluateRPN(rpnTokens) {
+        const valueStack = [];
 
-        for (let i = 0; i < rpnTokens.length; i++) {
-            const token = rpnTokens[i];
+        for (const token of rpnTokens) {
+            if (isNumericToken(token)) {
+                valueStack.push(token);
+            } else if (isOperatorChar(token)) {
+                const operand2 = valueStack.pop();
+                const operand1 = valueStack.pop();
 
-            if (!isNaN(parseFloat(token))) { // Is a number
-                calculationStack.push(parseInt(token, 10));
-            } else if (isAnOperator(token)) {
-                const operandB = calculationStack.pop();
-                const operandA = calculationStack.pop();
-
-                if (operandA === undefined || operandB === undefined) {
-                    throw new Error("Insufficient operands for operator: " + token);
+                if (operand1 === undefined || operand2 === undefined) {
+                    throw new Error("Invalid RPN expression: insufficient operands for operator.");
                 }
 
-                let interimResult;
+                let calculationResult;
                 switch (token) {
-                    case '+': interimResult = operandA + operandB; break;
-                    case '-': interimResult = operandA - operandB; break;
-                    case '*': interimResult = Math.floor(operandA * operandB); break;
-                    case '/': interimResult = Math.floor(operandA / operandB); break;
-                    default: throw new Error("Unknown operator in RPN: " + token);
+                    case '+':
+                        calculationResult = operand1 + operand2;
+                        break;
+                    case '-':
+                        calculationResult = operand1 - operand2;
+                        break;
+                    case '*':
+                        calculationResult = Math.floor(operand1 * operand2);
+                        break;
+                    case '/':
+                        calculationResult = Math.floor(operand1 / operand2);
+                        break;
+                    default:
+                        throw new Error(`Unknown operator encountered during RPN evaluation: ${token}`);
                 }
-                calculationStack.push(interimResult);
+                valueStack.push(calculationResult);
             } else {
-                throw new Error("Invalid token in RPN sequence: " + token);
+                throw new Error(`Unexpected token type during RPN evaluation: ${token}`);
             }
         }
 
-        if (calculationStack.length !== 1) {
-            throw new Error("Malformed RPN expression: stack not in final state");
+        if (valueStack.length !== 1) {
+            throw new Error("Invalid RPN expression: final result stack has incorrect size.");
         }
 
-        return calculationStack[0];
+        return valueStack.pop();
     }
 
-    // Main program flow
-    const processedInputLines = sourceData.replace(/\r/g, '').split("\n");
-    let lineIndex = 0;
+    const inputLines = rawInput.replace(/\r/g, '').split("\n");
+    let numberOfExpressions = parseInt(inputLines.shift(), 10);
 
-    const totalExpressionCount = parseInt(processedInputLines[lineIndex++], 10);
-
-    for (let currentIteration = 0; currentIteration < totalExpressionCount; currentIteration++) {
-        const currentExpressionLine = processedInputLines[lineIndex++].replace(/\s/g, "");
+    while (numberOfExpressions--) {
+        const currentExpressionLine = inputLines.shift().replace(/\s/g, "");
         
-        const tokens = segmentExpressionIntoTokens(currentExpressionLine);
-        const postfixForm = convertToReversePolishNotation(tokens);
-        const finalComputedValue = computePostfixResult(postfixForm);
+        const tokens = tokenizeExpression(currentExpressionLine);
+        const rpnForm = convertToRPN(tokens);
+        const finalResult = evaluateRPN(rpnForm);
         
-        console.log(finalComputedValue);
+        console.log(finalResult);
     }
 
 })(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,42 +1,52 @@
-const acquiredData = require('fs').readFileSync('/dev/stdin', 'utf8');
-const inputSegments = acquiredData.trim().split('\n');
-const initialConfig = inputSegments[0].split(' ').map(Number);
-const participantSequence = inputSegments[1].split('');
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
 
-const [totalParticipants, typeALimit, typeBLimit] = initialConfig;
+var inputLines = [];
+var inputReader = require('readline').createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
 
-const finalState = participantSequence.reduce((currentStatus, participantType) => {
-    let { acceptedCount, typeBAcceptedCount, outcomes } = currentStatus;
-    let currentOutcome = "No";
+inputReader.on('line', (lineContent) => {
+  inputLines.push(lineContent);
+});
+
+inputReader.on('close', () => {
+  const parsedNumbers = inputLines[0].split(' ').map(Number);
+  const studentCount = parsedNumbers[0];
+  const foreignQuota = parsedNumbers[1];
+  const bQuota = parsedNumbers[2];
+
+  const applicantTypes = inputLines[1].split('');
+
+  const overallQuota = foreignQuota + bQuota;
+
+  const processApplicant = (currentStatus, applicantType) => {
+    let [passCount, bCount] = currentStatus;
+
+    const outcomeMap = {
+      'a': () => {
+        if (passCount < overallQuota) {
+          return ["Yes", passCount + 1, bCount];
+        }
+        return ["No", passCount, bCount];
+      },
+      'b': () => {
+        if (passCount < overallQuota && bCount <= bQuota) {
+          return ["Yes", passCount + 1, bCount + 1];
+        }
+        return ["No", passCount, bCount];
+      },
+      'c': () => ["No", passCount, bCount]
+    };
+
+    const actionHandler = outcomeMap[applicantType] || (() => ["No", passCount, bCount]);
+    const [displayMessage, updatedPassCount, updatedBCount] = actionHandler();
     
-    const totalAllowed = typeALimit + typeBLimit;
+    console.log(displayMessage);
+    
+    return [updatedPassCount, updatedBCount];
+  };
 
-    const decisionMaker = {
-        'a': () => {
-            if (acceptedCount < totalAllowed) {
-                currentOutcome = "Yes";
-                acceptedCount++;
-            }
-        },
-        'b': () => {
-            if (acceptedCount < totalAllowed && typeBAcceptedCount < typeBLimit) {
-                currentOutcome = "Yes";
-                acceptedCount++;
-                typeBAcceptedCount++;
-            }
-        },
-        'c': () => { /* always "No" */ }
-    };
-
-    (decisionMaker[participantType] || (() => {}))();
-
-    outcomes.push(currentOutcome);
-
-    return {
-        acceptedCount,
-        typeBAcceptedCount,
-        outcomes
-    };
-}, { acceptedCount: 0, typeBAcceptedCount: 0, outcomes: [] });
-
-console.log(finalState.outcomes.join('\n'));
+  applicantTypes.reduce(processApplicant, [0, 1]);
+});

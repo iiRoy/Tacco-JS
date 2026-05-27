@@ -1,95 +1,63 @@
-// Function to efficiently locate a specific target value within a pre-sorted collection of elements.
-function  locateValueInSortedArray (  sortedElements ,  targetValue  )
-{
-    // Establish the initial boundary for the search range on the left side.
-    let  startIndex  =  0 ;
+function findPosition(dataArray, targetValue) {
+  // Initialize search boundaries and iteration counter
+  let startIndex = 0;
+  let endIndex = dataArray.length;
+  let iterationCount = 0;
 
-    // Define the initial boundary for the search range on the right side,
-    // which is one past the last valid index.
-    let  endIndex  =  sortedElements.length ;
+  // Loop indefinitely until a break condition is met
+  while (true) {
+    iterationCount++; // Increment the counter for each iteration
 
-    // A counter to keep track of how many comparisons or steps are performed
-    // during the search operation.
-    let  iterationCounter  =  0 ;
-
-    // Begin an infinite loop to repeatedly narrow down the search space.
-    while ( true )
-    {
-        // Increment the counter for every pass through the loop.
-        iterationCounter++ ;
-
-        // Check if the search boundaries have converged, meaning the element
-        // is either found or not present in the array.
-        if (  startIndex  ===  endIndex  )
-        {
-            // If boundaries meet, terminate the search process.
-            break ;
-        }
-
-        // Calculate the middle point of the current search interval.
-        // Math.floor ensures we get an integer index.
-        const  middleIndex  =  Math.floor( ( startIndex  +  endIndex )  /  2 ) ;
-
-        // Compare the element at the calculated middle index with the desired target.
-        if (  sortedElements[ middleIndex ]  ===  targetValue  )
-        {
-            // If a match is found, return the total count of iterations taken.
-            return  iterationCounter ;
-        }
-
-        // If the target value is numerically smaller than the middle element,
-        // adjust the upper boundary to the middle index, focusing on the left half.
-        if (  targetValue  <  sortedElements[ middleIndex ]  )
-        {
-            endIndex  =  middleIndex ;
-        }
-        // Otherwise, if the target is larger, adjust the lower boundary
-        // to one position past the middle, focusing on the right half.
-        else
-        {
-            startIndex  =  middleIndex  +  1 ;
-        }
+    // If the start and end indices meet, the element is not found or the search space is exhausted
+    if (startIndex === endIndex) {
+      break;
     }
 
-    // Should the loop complete without finding the target,
-    // return the final iteration count, indicating the search completed.
-    return  iterationCounter ;
+    // Calculate the middle index of the current search range
+    const middleIndex = Math.floor((startIndex + endIndex) / 2);
+
+    // Check if the element at the middle index is the target value
+    if (dataArray[middleIndex] === targetValue) {
+      return iterationCount; // Return the count if found
+    }
+
+    // Adjust search boundaries based on comparison with the target value
+    if (targetValue < dataArray[middleIndex]) {
+      endIndex = middleIndex; // Target is in the left half
+    } else {
+      startIndex = middleIndex + 1; // Target is in the right half
+    }
+  }
+  return iterationCount; // Return the count even if not found (loop completed)
 }
 
-// --- Script's main execution flow starts here ---
+// Read input from standard input
+const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-// Read all incoming data from the standard input stream as a UTF-8 string.
-let  rawData  =  require('fs').readFileSync('/dev/stdin',  'utf8') ;
+// Process the input: trim whitespace and split into lines
+const lineData = rawData.trim().split("\n");
 
-// Prepare the raw input: remove any leading/trailing whitespace
-// and then split the content into an array of individual lines.
-let  processedLines  =  rawData.trim().split('\n') ;
+// Process multiple test cases
+while (true) {
+  // Get the number of elements for the current array, converting to a number
+  const elementCount = lineData.shift() - 0;
 
-// Enter an infinite processing loop to handle multiple sets of input data.
-while ( true )
-{
-    // Extract the first number from the processed lines, representing the
-    // quantity of elements for the current array, and convert it to a number.
-    let  elementCount  =  +processedLines.shift() ;
+  // If the element count is 0, it signifies the end of input
+  if (elementCount === 0) {
+    break;
+  }
 
-    // If the extracted element count is zero, it signals the end of the input stream.
-    if (  elementCount  ===  0  )
-    {
-        // Exit the processing loop.
-        break ;
-    }
+  // Initialize an empty array for the current test case
+  const currentArray = [];
 
-    // Initialize an empty array to store the numeric elements for the current test case.
-    let  currentNumericArray  =  [] ;
+  // Populate the current array with 'elementCount' numbers from the input
+  for (let idx = 0; idx < elementCount; idx++) {
+    currentArray.push(lineData.shift() - 0);
+  }
 
-    // Populate the current numeric array by iteratively taking elements
-    // from the processed lines and converting them to numbers.
-    for (  let  idx  =  0 ;  idx  <  elementCount ;  idx++  )
-    {
-        currentNumericArray.push(  +processedLines.shift()  ) ;
-    }
+  // Get the target value for the binary search
+  const searchTarget = lineData.shift() - 0;
 
-    // Perform the binary search using the prepared array and the next target value
-    // extracted from the input, then display the result (iteration count) to the console.
-    console.log(  locateValueInSortedArray(  currentNumericArray,  +processedLines.shift()  )  ) ;
+  // Perform the binary search and print the result to console
+  console.log(findPosition(currentArray, searchTarget));
 }

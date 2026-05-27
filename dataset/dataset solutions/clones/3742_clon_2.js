@@ -1,185 +1,185 @@
-/*
- * Main entry point for processing graph data from standard input.
- * This function aims to partition a graph and calculate a specific metric.
- */
-function ProcessGraphData(inputStringData) {
-  // Split the entire input string into individual lines for easier parsing.
-  const inputLines = inputStringData.split("\n");
+function ProcessInput(inputString) {
+  // Split the input string into lines
+  const lines = inputString.split("\n");
 
-  // Parse the first line to get the total number of nodes and edges.
-  // The first element is the total number of nodes, the second is the number of edges.
-  let parsedCounts = inputLines[0].split(" ").map(valStr => parseInt(valStr, 10));
+  // Parse the first line to get nodeCount (n) and edgeCount (m)
+  // The original code uses `+a` for type conversion, here we use Number()
+  let dimensions = lines[0].split(" ").map((val) => Number(val));
+  let nodeCount = dimensions[0];
+  const edgeCount = dimensions[1];
 
-  const edgeCount = parsedCounts[1]; // Store the number of edges.
-  let totalNodes = parsedCounts[0]; // Store the total number of nodes.
+  // Initialize an adjacency matrix.
+  // `connectionMatrix[i][j] = 1` means nodes i and j are *not* connected by an input edge.
+  // `connectionMatrix[i][j] = 0` means nodes i and j *are* connected by an input edge.
+  // Initially, assume all nodes are "not connected" by an input edge (i.e., they are in the same group).
+  const connectionMatrix = new Array(nodeCount).fill(0b0).map(() => new Array(nodeCount).fill(0b1));
 
-  // Initialize an adjacency matrix where all nodes are initially considered connected.
-  // A value of 1 indicates a connection, 0 indicates no connection.
-  const connectivityMatrix = Array(totalNodes).fill(null).map(() => Array(totalNodes).fill(1));
-
-  // Process each edge from the input to mark disconnections in the matrix.
-  // Edges are 0-indexed in the problem description after parsing.
+  // Process each edge from the input.
+  // For each given edge (u, v), set connectionMatrix[u][v] and connectionMatrix[v][u] to 0.
+  // This marks them as "connected" by an input edge, meaning they must be in different groups.
   for (let edgeIdx = 0; edgeIdx < edgeCount; edgeIdx++) {
-    // Parse the current edge definition (e.g., "0 1" means node 0 and 1 are connected).
-    const currentEdge = inputLines[edgeIdx + 1].split(" ").map(valStr => parseInt(valStr, 10) - 1);
-    const nodeA = currentEdge[0];
-    const nodeB = currentEdge[1];
-
-    // Mark the nodes as disconnected in both directions (undirected graph).
-    connectivityMatrix[nodeA][nodeB] = connectivityMatrix[nodeB][nodeA] = 0;
+    // Convert node IDs to 0-indexed
+    const edgeNodes = lines[edgeIdx + 0b1].split(" ").map((val) => val - 0b1);
+    const nodeU = edgeNodes[0b0];
+    const nodeV = edgeNodes[0b1];
+    connectionMatrix[nodeU][nodeV] = 0b0;
+    connectionMatrix[nodeV][nodeU] = 0b0;
   }
 
-  // Array to keep track of visited nodes during graph traversal.
-  // 0: unvisited, 1: visited.
-  const nodeStatus = Array(totalNodes).fill(0);
-  // Cursor to track the current component being processed.
-  let componentCursor = 0;
+  // `visitedNodes` array to keep track of nodes already processed within a component.
+  const visitedNodes = new Array(nodeCount).fill(0b0);
+  // `componentCounter` tracks the number of distinct components found.
+  let componentCounter = 0b0;
+  // `groupOneCounts` and `groupTwoCounts` store the sizes of the two partitions for each component.
+  const groupOneCounts = [];
+  const groupTwoCounts = [];
 
-  // Arrays to store the sizes of the two partitions (A and B) for each connected component.
-  const partitionASizes = [];
-  const partitionBSizes = [];
-
-  // Iterate through all nodes to find and process connected components.
-  for (let nodeIdx = 0; nodeIdx < totalNodes; nodeIdx++) {
-    // If the current node has already been visited as part of another component, skip it.
-    if (nodeStatus[nodeIdx]) {
+  // Iterate through all nodes to find connected components.
+  for (let currentNodeIdx = 0b0; currentNodeIdx < nodeCount; currentNodeIdx++) {
+    // If the node has already been visited as part of another component, skip it.
+    if (visitedNodes[currentNodeIdx]) {
       continue;
     }
 
-    // Initialize sizes for the new component's partitions.
-    partitionASizes[componentCursor] = 0;
-    partitionBSizes[componentCursor] = 0;
-
+    // Start a new component. Initialize counts for its two potential groups.
+    groupOneCounts[componentCounter] = 0b0;
+    groupTwoCounts[componentCounter] = 0b0;
     // Mark the current node as visited.
-    nodeStatus[nodeIdx] = 1;
+    visitedNodes[currentNodeIdx] = 0b1;
 
-    // Find all direct neighbors of the current node.
-    const connectedNeighbors = [];
-    for (let neighborIdx = nodeIdx + 1; neighborIdx < totalNodes; neighborIdx++) {
-      // If there's a connection, it means this node is part of a component.
-      if (connectivityMatrix[nodeIdx][neighborIdx]) {
-        partitionASizes[componentCursor] = 1; // Mark this component as having at least one node in partition A.
-        connectedNeighbors.push(neighborIdx); // Add neighbor to be explored.
+    // `nodesToExplore` will hold nodes that are *not* connected by an input edge to `currentNodeIdx`.
+    // These nodes are candidates for being in the same group as `currentNodeIdx`.
+    const nodesToExplore = [];
+    for (let neighborIdx = currentNodeIdx + 0b1; neighborIdx < nodeCount; neighborIdx++) {
+      if (connectionMatrix[currentNodeIdx][neighborIdx]) {
+        // If connectionMatrix[currentNodeIdx][neighborIdx] is 1, it means they are *not* connected by an input edge.
+        // So, they can be in the same group. Add neighborIdx to nodesToExplore.
+        groupOneCounts[componentCounter] = 0b1; // Mark that this group has at least one node.
+        nodesToExplore.push(neighborIdx);
       }
     }
 
-    // If there are neighbors, explore the component recursively.
-    if (connectedNeighbors.length) {
-      // If the exploration finds an invalid partition (e.g., a cycle within a partition),
-      // output -1 and terminate. (This typically means it's not a bipartite graph).
-      if (explorePartition(connectedNeighbors, 1)) { // Start exploring from side B.
-        console.log(-1);
+    // If there are nodes to explore in this component (i.e., nodes that can be in the same group as currentNodeIdx).
+    if (nodesToExplore.length) {
+      // Call the recursive helper function to explore this component.
+      // `exploreComponent` returns 1 if an invalid configuration is found (e.g., a node needs to be in both groups).
+      if (exploreComponent(nodesToExplore, 0b1)) {
+        console.log(-0b1); // Output -1 and terminate if an invalid state is detected.
         return;
       }
     } else {
-      // If no neighbors, this node forms a component of size 1.
-      // It is placed in partition A by default.
-      partitionASizes[componentCursor] = 1;
+      // If `nodesToExplore` is empty, it means `currentNodeIdx` has no other nodes that can be in its group.
+      // It forms a group of size 1.
+      groupOneCounts[componentCounter] = 0b1;
     }
-    // Move to the next component index.
-    componentCursor++;
+    // Increment the component counter for the next component.
+    componentCounter++;
   }
 
-  // Array to track all possible sums of partition sizes.
-  // The index represents a sum, and the value indicates if that sum is achievable (1) or not (0).
-  const possiblePartitionSums = Array(totalNodes).fill(0);
+  // `reachableSums` array for dynamic programming.
+  // `reachableSums[i]` will be 1 if a sum `i` can be formed by selecting `groupOneCounts` or `groupTwoCounts` from components.
+  const reachableSums = new Array(nodeCount + 0b1).fill(0b0);
+  // Initialize for the first component.
+  // We can form a sum equal to `groupOneCounts[0]` or `groupTwoCounts[0]`.
+  reachableSums[groupOneCounts[0b0]] = 0b1;
+  reachableSums[groupTwoCounts[0b0]] = 0b1;
 
-  // The initial state: sums of the first component's partitions are achievable.
-  possiblePartitionSums[partitionASizes[0]] = 1;
-  possiblePartitionSums[partitionBSizes[0]] = 1;
-
-  // Iterate through the remaining components to build up all possible partition sums.
-  for (let compIdx = 1; compIdx < partitionASizes.length; compIdx++) {
-    // Iterate backwards through existing possible sums to avoid using newly added sums in the same iteration.
-    for (let currentSumIdx = totalNodes - 1; currentSumIdx >= 0; currentSumIdx--) {
-      if (possiblePartitionSums[currentSumIdx]) { // If currentSumIdx is an achievable sum
-        // Add the current component's partition A size to the achievable sum.
-        // In JavaScript, assigning to an index beyond the current array length will extend the array.
-        possiblePartitionSums[totalNodes + partitionASizes[compIdx]] = 1;
-        // Add the current component's partition B size to the achievable sum.
-        possiblePartitionSums[totalNodes + partitionBSizes[compIdx]] = 1;
+  // Iterate through the remaining components (from the second component onwards).
+  for (let compIdx = 0b1; compIdx < groupOneCounts.length; compIdx++) {
+    // Iterate backwards through `reachableSums` to avoid using the current component's values multiple times in one pass.
+    for (let currentSum = nodeCount - 0b1; currentSum >= 0b0; currentSum--) {
+      if (reachableSums[currentSum]) {
+        // If `currentSum` is reachable, then `currentSum + groupOneCounts[compIdx]` is also reachable.
+        reachableSums[currentSum + groupOneCounts[compIdx]] = 0b1;
+        // And `currentSum + groupTwoCounts[compIdx]` is also reachable.
+        reachableSums[currentSum + groupTwoCounts[compIdx]] = 0b1;
       }
     }
   }
 
-  // Find the largest valid group size 'largestValidGroup'.
-  // This is the largest 'i' such that 'i' is a possible partition sum,
-  // and 'i' is less than or equal to 'totalNodes / 2'.
-  let largestValidGroup = 0;
-  for (let sumIdx = 0; sumIdx < possiblePartitionSums.length; sumIdx++) { // Loop through all potential sums
-    if (possiblePartitionSums[sumIdx]) {
-      // We want to maximize min(i, totalNodes - i). This is maximized when i is closest to totalNodes/2.
-      // So, iterate through possible sums and update largestValidGroup.
-      largestValidGroup = Math.max(largestValidGroup, Math.min(sumIdx, totalNodes - sumIdx));
+  // Find the maximum `maxPartitionSize` such that `maxPartitionSize` nodes can be separated from `nodeCount - maxPartitionSize` nodes.
+  // This `maxPartitionSize` must be a reachable sum in `reachableSums`.
+  let maxPartitionSize = 0b0;
+  for (let currentSumIdx = 0b0; currentSumIdx < nodeCount; currentSumIdx++) {
+    if (reachableSums[currentSumIdx]) {
+      // We want to maximize `min(currentSumIdx, nodeCount - currentSumIdx)`.
+      // This is equivalent to finding a `currentSumIdx` closest to `nodeCount / 2`.
+      maxPartitionSize = Math.max(maxPartitionSize, Math.min(currentSumIdx, nodeCount - currentSumIdx));
     }
   }
 
-  // Output the final calculated result.
-  // This formula appears to be for counting pairs within two groups of sizes largestValidGroup and (totalNodes - largestValidGroup).
-  console.log(largestValidGroup * (largestValidGroup - 1) / 2 + (totalNodes - largestValidGroup) * (totalNodes - largestValidGroup - 1) / 2);
+  // The final result is the sum of combinations C(k, 2) + C(n-k, 2).
+  // This represents the number of pairs within the two partitions.
+  console.log(maxPartitionSize * (maxPartitionSize - 0b1) / 0b10 + (nodeCount - maxPartitionSize) * (nodeCount - maxPartitionSize - 0b1) / 0b10);
 
-  /*
-   * Recursive helper function to explore a connected component and assign nodes to partitions.
-   * It attempts to perform a 2-coloring (bipartitioning) of the component.
-   * @param {Array<number>} nodesInQueue - List of nodes to process in the current step.
-   * @param {number} currentPartitionSide - The partition side (0 or 1) to assign the current nodes to.
-   * @returns {number | undefined} - 1 if an invalid partitioning is found, otherwise undefined.
+  /**
+   * Recursive helper function to explore a connected component and assign nodes to groups.
+   * It attempts to partition nodes into two groups such that no two nodes within the same group
+   * are connected by an input edge (i.e., connectionMatrix[u][v] == 0).
+   *
+   * @param {number[]} currentNodes - An array of nodes to process in the current step.
+   * @param {number} groupFlag - A flag (0 or 1) indicating which group to assign the current nodes to.
+   * @returns {number|undefined} Returns 1 if an invalid partitioning is found, otherwise undefined.
    */
-  function explorePartition(nodesInQueue, currentPartitionSide) {
-    // Base case: if there are no nodes left to process, return.
-    if (!nodesInQueue.length) {
+  function exploreComponent(currentNodes, groupFlag) {
+    // Base case: If there are no nodes left to process, return.
+    if (!currentNodes.length) {
       return;
     }
 
-    const nextNodesToExplore = []; // Nodes that are neighbors of current nodes and need to be processed next.
+    const nextNodesToExplore = []; // Nodes for the next recursive call.
 
-    // Iterate through the nodes provided in the current queue.
-    for (let nodeQueueIdx = 0; nodeQueueIdx < nodesInQueue.length; nodeQueueIdx++) {
-      const currentNode = nodesInQueue[nodeQueueIdx];
+    // Iterate through the nodes provided in `currentNodes`.
+    for (let nodeIterator = 0b0; nodeIterator < currentNodes.length; nodeIterator++) {
+      const processingNode = currentNodes[nodeIterator];
 
-      // If the current node has already been visited, skip it.
-      if (nodeStatus[currentNode]) {
+      // If the node has already been visited, skip it.
+      if (visitedNodes[processingNode]) {
         continue;
       }
 
-      // Mark the current node as visited.
-      nodeStatus[currentNode] = 1;
+      // Mark the node as visited.
+      visitedNodes[processingNode] = 0b1;
 
-      // Assign the node to the appropriate partition based on 'currentPartitionSide'.
-      if (currentPartitionSide) {
-        partitionBSizes[componentCursor]++;
+      // Increment the count for the appropriate group in the current component.
+      if (groupFlag) {
+        groupTwoCounts[componentCounter]++;
       } else {
-        partitionASizes[componentCursor]++;
+        groupOneCounts[componentCounter]++;
       }
 
-      // Check for conflicts: ensure no two nodes within the current `nodesInQueue` (which are all supposed to be on the same 'side') are connected.
-      // This is a crucial check for bipartiteness.
-      for (let otherNodeQueueIdx = nodeQueueIdx + 1; otherNodeQueueIdx < nodesInQueue.length; otherNodeQueueIdx++) {
-        const otherNode = nodesInQueue[otherNodeQueueIdx];
-        if (nodeStatus[otherNode]) { // If the other node is already visited, means it's been processed.
+      // Check for conflicts within the `currentNodes` list itself.
+      // If two nodes in `currentNodes` are *not* connected by an input edge (connectionMatrix[u][v] == 1),
+      // but they are being assigned to the same group (implicitly by being in `currentNodes`),
+      // then it's an invalid configuration.
+      for (let innerNodeIterator = nodeIterator + 0b1; innerNodeIterator < currentNodes.length; innerNodeIterator++) {
+        const otherNode = currentNodes[innerNodeIterator];
+        if (visitedNodes[otherNode]) {
           continue;
         }
-        // If two nodes within the same partition side are connected, it's not a bipartite graph.
-        if (connectivityMatrix[currentNode][otherNode]) {
-          return 1; // Indicate an error (non-bipartite component).
+        if (connectionMatrix[processingNode][otherNode]) {
+          // If connectionMatrix[processingNode][otherNode] is 1, it means they are *not* connected by an input edge.
+          // But they are both in `currentNodes` and thus assigned to the same group. This is a contradiction.
+          return 0b1; // Indicate an invalid state.
         }
       }
 
-      // Find all unvisited neighbors of the current node and add them to the next queue.
-      for (let graphNodeIdx = 0; graphNodeIdx < totalNodes; graphNodeIdx++) {
-        if (connectivityMatrix[currentNode][graphNodeIdx] && !nodeStatus[graphNodeIdx]) {
-          nextNodesToExplore.push(graphNodeIdx);
+      // Collect all neighbors of `processingNode` that are *not* connected by an input edge.
+      // These neighbors should be in the *opposite* group.
+      for (let neighborIterator = 0b0; neighborIterator < nodeCount; neighborIterator++) {
+        if (connectionMatrix[processingNode][neighborIterator]) {
+          nextNodesToExplore.push(neighborIterator);
         }
       }
     }
 
-    // Recursively call `explorePartition` with the next set of nodes and flip the partition side.
-    // The `^ 1` operator efficiently flips between 0 and 1.
-    if (explorePartition(nextNodesToExplore, currentPartitionSide ^ 1)) {
-      return 1; // Propagate the error if any.
+    // Recursively call `exploreComponent` with the collected `nextNodesToExplore` and flip the group flag.
+    // If the recursive call returns 1, propagate the invalid state.
+    if (exploreComponent(nextNodesToExplore, groupFlag ^ 0b1)) {
+      return 0b1;
     }
   }
 }
 
 // Read input from stdin and pass it to the main processing function.
-ProcessGraphData(require("fs").readFileSync("/dev/stdin", "utf8"));
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

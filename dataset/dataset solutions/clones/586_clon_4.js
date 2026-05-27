@@ -1,81 +1,81 @@
-const eliminateConsecutiveGroups = (digitSequence) => {
-    const performCleaningPass = (currentSeq) => {
-        let nextSeqChars = [];
-        let traversalIndex = 0;
-        while (traversalIndex < currentSeq.length) {
-            let charIdentifier = currentSeq[traversalIndex];
-            let consecutiveCount = 0;
-            let checkIndex = traversalIndex;
-            while (checkIndex < currentSeq.length && currentSeq[checkIndex] === charIdentifier) {
-                consecutiveCount++;
-                checkIndex++;
+function detonateSequence(initialString) {
+    let currentStringRepresentation = initialString;
+    let sequenceModified = true;
+
+    while (sequenceModified) {
+        sequenceModified = false;
+        const processedCharacters = [];
+        let currentIndex = 0;
+
+        while (currentIndex < currentStringRepresentation.length) {
+            const currentChar = currentStringRepresentation[currentIndex];
+            let charCount = 0;
+            let tempIndex = currentIndex;
+
+            // Count consecutive identical characters
+            while (tempIndex < currentStringRepresentation.length && currentStringRepresentation[tempIndex] === currentChar) {
+                charCount++;
+                tempIndex++;
             }
-            if (consecutiveCount < 4) {
-                for (let k = 0; k < consecutiveCount; k++) {
-                    nextSeqChars.push(charIdentifier);
+
+            // Check if the sequence forms a 'bomb' (4 or more '1', '2', or '3')
+            if ((currentChar === '1' || currentChar === '2' || currentChar === '3') && charCount >= 4) {
+                sequenceModified = true; // A bomb was found and removed
+            } else {
+                // If not a bomb, append the characters to the new sequence
+                for (let k = 0; k < charCount; k++) {
+                    processedCharacters.push(currentChar);
                 }
             }
-            traversalIndex = checkIndex;
+            currentIndex = tempIndex; // Move to the next distinct character sequence
         }
-        const newSequenceRepresentation = nextSeqChars.join('');
-        if (newSequenceRepresentation === currentSeq) {
-            return newSequenceRepresentation;
-        } else {
-            return performCleaningPass(newSequenceRepresentation);
-        }
-    };
-    return performCleaningPass(digitSequence);
-};
-
-const processTestCase = (elementList) => {
-    let shortestLengthFound = Infinity;
-
-    const generatedSequenceVariants = [];
-    const currentListLength = elementList.length;
-
-    for (let p = 0; p < currentListLength; p++) {
-        if (p < currentListLength - 1) {
-            let variantOne = [...elementList];
-            variantOne[p] = variantOne[p + 1];
-            generatedSequenceVariants.push(variantOne.join(''));
-        }
-
-        if (p > 0) {
-            let variantTwo = [...elementList];
-            variantTwo[p] = variantTwo[p - 1];
-            generatedSequenceVariants.push(variantTwo.join(''));
-        }
+        currentStringRepresentation = processedCharacters.join('');
     }
-
-    for (const sequenceCandidate of generatedSequenceVariants) {
-        const finalProcessedSequence = eliminateConsecutiveGroups(sequenceCandidate);
-        if (finalProcessedSequence.length < shortestLengthFound) {
-            shortestLengthFound = finalProcessedSequence.length;
-        }
-    }
-
-    return shortestLengthFound;
-};
-
-const rawInputContent = require('fs').readFileSync('/dev/stdin', 'utf8');
-const inputLinesArray = rawInputContent.trim().split('\n');
-
-let linePointer = 0;
-const collectedResults = [];
-
-while (true) {
-    const numberOfItems = parseInt(inputLinesArray[linePointer++], 10);
-    if (numberOfItems === 0) {
-        break;
-    }
-
-    const currentItems = [];
-    for (let q = 0; q < numberOfItems; q++) {
-        currentItems.push(parseInt(inputLinesArray[linePointer++], 10));
-    }
-
-    const caseOutcome = processTestCase(currentItems);
-    collectedResults.push(caseOutcome);
+    return currentStringRepresentation.length;
 }
 
-collectedResults.forEach(singleResult => console.log(singleResult));
+function* generateNumberBlocks(allInputLines) {
+    let linePointer = 0;
+    while (linePointer < allInputLines.length) {
+        const blockLength = parseInt(allInputLines[linePointer++], 10);
+        if (blockLength === 0) break;
+
+        const blockNumbers = [];
+        for (let i = 0; i < blockLength; i++) {
+            blockNumbers.push(parseInt(allInputLines[linePointer++], 10));
+        }
+        yield blockNumbers;
+    }
+}
+
+const rawInputData = require('fs').readFileSync('/dev/stdin', 'utf8');
+const inputLines = rawInputData.trim().split('\n');
+
+for (const currentNumericBlock of generateNumberBlocks(inputLines)) {
+    let minimumResultLength = Infinity;
+
+    // Generate all possible modified sequences for the current block
+    const allModifiedSequences = Array.from({ length: currentNumericBlock.length }, (_, elementIndex) => {
+        const baseSequenceCopy = [...currentNumericBlock];
+        const forwardShiftedSequence = [...baseSequenceCopy];
+        const backwardShiftedSequence = [...baseSequenceCopy];
+
+        // Apply forward shift modification
+        if (elementIndex < currentNumericBlock.length - 1) {
+            forwardShiftedSequence[elementIndex] = forwardShiftedSequence[elementIndex + 1];
+        }
+        // Apply backward shift modification
+        if (elementIndex > 0) {
+            backwardShiftedSequence[elementIndex] = backwardShiftedSequence[elementIndex - 1];
+        }
+        return [forwardShiftedSequence, backwardShiftedSequence];
+    }).flat(); // Flatten the array of pairs into a single list of sequences
+
+    // Process each modified sequence and update the minimum length
+    for (const transformedNumericSequence of allModifiedSequences) {
+        const sequenceAsString = transformedNumericSequence.join('');
+        const finalLengthAfterDetonation = detonateSequence(sequenceAsString);
+        minimumResultLength = Math.min(minimumResultLength, finalLengthAfterDetonation);
+    }
+    console.log(minimumResultLength);
+}

@@ -1,62 +1,61 @@
-let accumulatedInput = '';
-let inputPosition = 0;
+function executeProgram() {
+    const numItems = readInputToken();
+    const numResources = readInputToken();
 
-const fetchNumericValue = () => {
-    return +accumulatedInput[inputPosition++];
-};
+    const itemCosts = Array.from({ length: numItems }, () => readInputToken());
+    const resourceCosts = Array.from({ length: numResources }, () => readInputToken());
 
-const memoizationContainer = new Map();
+    const memoizationCache = new Map();
 
-const computeOptimalMetric = (firstDimensionSize, secondDimensionSize, dimensionOneItems, dimensionTwoItems) => {
-    const uniqueKey = `${firstDimensionSize}-${secondDimensionSize}`;
-    if (memoizationContainer.has(uniqueKey)) {
-        return memoizationContainer.get(uniqueKey);
+    const determineMinimumCost = (currentItems, currentResources) => {
+        const cacheKey = `${currentItems},${currentResources}`;
+        if (memoizationCache.has(cacheKey)) {
+            return memoizationCache.get(cacheKey);
+        }
+
+        let calculatedCost;
+        if (currentItems === 0) {
+            calculatedCost = 0;
+        } else if (currentResources === 0) {
+            calculatedCost = Infinity;
+        } else {
+            const costWithoutCurrentResource = determineMinimumCost(currentItems, currentResources - 1);
+            const costWithCurrentResource = determineMinimumCost(currentItems - 1, currentResources - 1) +
+                                            itemCosts[currentItems - 1] * resourceCosts[currentResources - 1];
+            calculatedCost = Math.min(costWithoutCurrentResource, costWithCurrentResource);
+        }
+
+        memoizationCache.set(cacheKey, calculatedCost);
+        return calculatedCost;
+    };
+
+    const finalCost = determineMinimumCost(numItems, numResources);
+    outputResult(finalCost);
+}
+
+let programInput = '';
+let inputPointer = 0;
+
+function readInputToken(dataType) {
+    if (dataType === 'string') {
+        return programInput[inputPointer++];
+    } else {
+        return +programInput[inputPointer++];
     }
+}
 
-    if (firstDimensionSize === 0) {
-        return 0;
-    }
-    if (secondDimensionSize === 0) {
-        return Number.POSITIVE_INFINITY;
-    }
-
-    const valueIfSkippingSecond = computeOptimalMetric(firstDimensionSize, secondDimensionSize - 1, dimensionOneItems, dimensionTwoItems);
-
-    const currentProductTerm = dimensionOneItems[firstDimensionSize - 1] * dimensionTwoItems[secondDimensionSize - 1];
-    const valueIfIncludingBoth = computeOptimalMetric(firstDimensionSize - 1, secondDimensionSize - 1, dimensionOneItems, dimensionTwoItems) + currentProductTerm;
-
-    const finalResult = Math.min(valueIfSkippingSecond, valueIfIncludingBoth);
-    memoizationContainer.set(uniqueKey, finalResult);
-    return finalResult;
-};
-
-const commenceOperation = () => {
-    const countOfFirstSet = fetchNumericValue();
-    const countOfSecondSet = fetchNumericValue();
-
-    const collectionOfFirstSet = Array.from({ length: countOfFirstSet }, fetchNumericValue);
-    const collectionOfSecondSet = Array.from({ length: countOfSecondSet }, fetchNumericValue);
-
-    memoizationContainer.clear();
-
-    const ultimateOutcome = computeOptimalMetric(
-        countOfFirstSet,
-        countOfSecondSet,
-        collectionOfFirstSet,
-        collectionOfSecondSet
-    );
-
-    console.log(ultimateOutcome);
-};
+function outputResult(value) {
+    console.log(value);
+}
 
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
 
-process.stdin.on('data', (dataSegment) => {
-    accumulatedInput += dataSegment;
+process.stdin.on('data', function(chunk) {
+    programInput += chunk;
 });
 
-process.stdin.on('end', () => {
-    accumulatedInput = accumulatedInput.split(/\s+/).filter(entry => entry !== '');
-    commenceOperation();
+process.stdin.on('end', function() {
+    programInput = programInput.split(/\s+/);
+    executeProgram();
 });

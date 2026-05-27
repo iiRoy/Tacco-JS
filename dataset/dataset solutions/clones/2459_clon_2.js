@@ -1,81 +1,58 @@
-// Function to handle reading file content.
-const fileSystemHandler = require('fs');
+var inputSequence = require('fs').readFileSync('/dev/stdin', 'utf8').trim();
 
-// Helper function to remove leading/trailing whitespace from a string.
-function removeEdgeSpaces(textString) {
-  return textString.trim();
+// This variable stores the very first character of the input string.
+// Its value is not directly used in the main calculation logic.
+var initialChar = inputSequence[0];
+
+// Initialize a counter for consecutive '<' characters found in a segment.
+var lessThanCount = 0;
+
+// Initialize a counter for consecutive '>' characters found in a segment.
+var greaterThanCount = 0;
+
+// This variable will accumulate the final sum based on the pattern analysis.
+var cumulativeSum = 0;
+
+// Check if the input string begins with a '>' character.
+// If it does, prepend a '<' to ensure the processing starts with a '<' segment.
+if (inputSequence[0] === '>') {
+  inputSequence = '<' + inputSequence;
 }
 
-// Define standard input path and encoding.
-const standardInputPath = '/dev/stdin';
-const textEncoding = 'utf8';
-
-// Read the input data, decode it, and clean up whitespace.
-let inputData = removeEdgeSpaces(
-  fileSystemHandler.readFileSync(standardInputPath, textEncoding)
-);
-
-// Store the initial character of the input for potential future use (though not used in this logic).
-const initialChar = inputData[0];
-
-// Initialize counters and an accumulator for calculations.
-let lessCount = 0;    // Counter for '<' symbols
-let greaterCount = 0; // Counter for '>' symbols
-let finalSummation = 0; // Accumulates the result
-
-// Check if the input stream starts with a '>' symbol.
-// If it does, prepend a '<' to ensure proper processing logic.
-if (inputData[0] === '>') {
-  inputData = '<' + inputData;
-}
-
-// Iterate through the input stream using a primary index.
-// The loop continues until the end of the input string is reached.
-for (let charIndex = 0; charIndex < inputData.length; )
-{
-  // First nested loop: Count consecutive occurrences of the '<' character.
-  // This loop advances 'charIndex' and increments 'lessCount'.
-  for (; charIndex < inputData.length; charIndex++) {
-    if (inputData[charIndex] !== '<') {
-      break; // Exit if the character is not '<'
-    }
-    lessCount++; // Increment the count for '<'
+// Begin iterating through the modified input sequence.
+// The outer loop's increment is handled by the inner loops.
+for (var idx = 0; idx < inputSequence.length; ) {
+  // Inner loop to count consecutive '<' characters.
+  // It continues as long as the current character is '<' and within bounds.
+  for (; idx < inputSequence.length; idx++) {
+    if (inputSequence[idx] !== '<') break; // Exit if a non-'<' character is encountered.
+    lessThanCount += 1; // Increment the '<' counter.
   }
 
-  // Second nested loop: Count consecutive occurrences of the '>' character.
-  // This loop continues from where the previous one stopped.
-  for (; charIndex < inputData.length; charIndex++) {
-    if (inputData[charIndex] !== '>') {
-      break; // Exit if the character is not '>'
-    }
-    greaterCount++; // Increment the count for '>'
+  // Inner loop to count consecutive '>' characters.
+  // It continues as long as the current character is '>' and within bounds.
+  for (; idx < inputSequence.length; idx++) {
+    if (inputSequence[idx] !== '>') break; // Exit if a non-'>' character is encountered.
+    greaterThanCount += 1; // Increment the '>' counter.
   }
 
-  // Apply conditional logic based on the comparison of the two counts.
-  if (lessCount > greaterCount) {
-    // If 'lessCount' is larger, perform summation with inclusive upper bound for 'lessCount'.
-    for (let currentVal = 0; currentVal <= lessCount; currentVal++) {
-      finalSummation += currentVal;
-    }
-    // And exclusive upper bound for 'greaterCount'.
-    for (let currentVal = 0; currentVal < greaterCount; currentVal++) {
-      finalSummation += currentVal;
-    }
+  // Conditional logic to calculate the sum based on the comparison of the two counts.
+  if (lessThanCount > greaterThanCount) {
+    // If there are more '<' characters, sum from 0 up to and including 'lessThanCount'.
+    for (var loopVar = 0; loopVar <= lessThanCount; loopVar++) cumulativeSum += loopVar;
+    // Then, sum from 0 up to but not including 'greaterThanCount'.
+    for (var loopVar = 0; loopVar < greaterThanCount; loopVar++) cumulativeSum += loopVar;
   } else {
-    // If 'greaterCount' is larger or equal, perform summation with exclusive upper bound for 'lessCount'.
-    for (let currentVal = 0; currentVal < lessCount; currentVal++) {
-      finalSummation += currentVal;
-    }
-    // And inclusive upper bound for 'greaterCount'.
-    for (let currentVal = 0; currentVal <= greaterCount; currentVal++) {
-      finalSummation += currentVal;
-    }
+    // If there are more or an equal number of '>' characters, sum from 0 up to but not including 'lessThanCount'.
+    for (var loopVar = 0; loopVar < lessThanCount; loopVar++) cumulativeSum += loopVar;
+    // Then, sum from 0 up to and including 'greaterThanCount'.
+    for (var loopVar = 0; loopVar <= greaterThanCount; loopVar++) cumulativeSum += loopVar;
   }
 
-  // Reset the counters for the next segment of the input string.
-  lessCount = 0;
-  greaterCount = 0;
+  // Reset the segment counters for the next iteration of the outer loop.
+  lessThanCount = 0;
+  greaterThanCount = 0;
 }
 
-// Output the final computed summation to the console.
-console.log(finalSummation);
+// Print the final calculated cumulative sum to the console.
+console.log(cumulativeSum);

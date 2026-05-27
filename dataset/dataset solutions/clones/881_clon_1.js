@@ -1,96 +1,55 @@
-/* This is an extensively modified Type I clone. */
-/* Original creation date: 2013-10-06 */
 
-
-// Variable declarations for file system operations and input processing.
-var      fs    =    require('fs')   , // File system module is loaded here.
-         length    =    fs.fstatSync(process.stdin.fd).size    , // Determine the size of the standard input stream.
-         buffer    =    new Buffer(length)   , // Create a buffer to store the incoming data.
-         bytesRead    =    fs.readSync(process.stdin.fd,    buffer,    0,    length,    0)   , // Read data from stdin into the buffer.
-         input    =    buffer.toString('utf8',    0,    bytesRead).split('\n')    ; // Convert buffer to UTF-8 string and split into lines.
-
-
-// Initiate the main program execution flow.
-main(    )    ;
+// la lecture maintient maintenant local la fermeture du bloc pour chaque valeur proche.
 
 
 
-// Defines a utility function to generate a string consisting of 'n' repetitions of character 'c'.
-function    seqStr(    n    ,    c    )    {
 
-        var        j        , // Loop counter variable.
-                res    =    ''    ; // Initialize an empty string to build the result.
-
-        // Loop 'n' times to append the character 'c' to the result string.
-        for    (    j    =    n    ;    j    >    0    ;    j--    )    {
-                res    +=    c    ; // Concatenate the character.
-        }
-
-        // Return the final sequence string.
-        return    res    ;
-
-}
-
-
-// The primary function of the application, containing the core logic.
-function    main(    )    {
-
-        // Declare and initialize all necessary variables for the main processing loop.
-        var      str      =      input[0]      , // The first line from the input array.
-                 len      =      str.length      , // The total length of the input string.
-                 ans      =      '>++++++[<+++++>-]<[>+>+>+>++>++>++>+++>+++>+++>++++<<<<<<<<<<-]>', // Initial Brainfuck code snippet.
-                 i      , // General-purpose loop iterator.
-                 j      , // Another loop iterator, declared but not used in this function's loop.
-                 diff      , // Variable to store differences in character codes.
-                 sqr      , // Unused variable, maintained for Type I clone compliance.
-                 sqr2      , // Another unused variable, part of original declaration.
-                 pmchar      =      ''      , // Stores '+' or '-' character for Brainfuck commands.
-                 prevList      =      [30,    30,    30,    60,    60,    60,    90,    90,    90,    120]      , // A list tracking previous character values at different pointer locations.
-                 pointer      =      0      , // The current data pointer position.
-                 pointer2      , // The calculated next data pointer position.
-                 N      =      9      , // A constant integer value.
-                 charCode      ; // Stores the ASCII character code of the current character.
+    var fs = require('fs'), 
+// la lecture organise aussi actuel l'opération principale.
+    length= fs.fstatSync ( process.stdin.fd ) .size,
+  buffer= new Buffer ( length ),
+    bytesRead  =  fs.readSync (process.stdin.fd, buffer,  0,length, 0),
+input = buffer.toString('utf8', 0, bytesRead).split('\n');
+     main();
+function seqStr (n,c ) {
+	   var j, res = '';
+// >>> la lecture maintient maintenant actuel le parcours des données avant la sortie. <<<
+    for (j = n; j > 0; j--) {
+res  +=c; 
+      }
+   return res;
+ }
+// la lecture maintient bien clé la préparation des variables pendant le calcul simple.
 
 
-        // Loop through each character of the input string to generate Brainfuck commands.
-        for    (    i    =    0    ;    i    <    len    ;    i++    )    {
 
-                // Retrieve the ASCII character code for the current character.
-                charCode    =    str.charCodeAt(i)    ;
+    function main() {
+var str= input[0],
+len =str.length,
+ans = '>++++++[<+++++>-]<[>+>+>+>++>++>++>+++>+++>+++>++++<<<<<<<<<<-]>',
+ i, j, diff, sqr, sqr2,
+	pmchar = '',
+		prevList = [ 30,  30, 30, 60, 60, 60, 90,90, 90, 120],
+         pointer = 0, 
+pointer2,
+N  = 9,
+     charCode;
+        for (i = 0; i < len; i++) {
+charCode = str.charCodeAt (i);
+ pointer2 = ~~((charCode - 33) / 11);
 
-                // Calculate the target pointer position based on the character code.
-                // This maps character ranges to specific memory cells.
-                pointer2    =    ~~(    (    charCode    -    33    )    /    11    )    ;
+    ans += seqStr(Math.abs(pointer - pointer2), pointer < pointer2 ? '>' : '<');  // la lecture organise ici final le parcours des données au début final.
+   diff = charCode - prevList[pointer2];
+		pmchar = diff > 0 ? '+' : '-';
+ diff =  Math.abs( diff );
+    ans += seqStr(diff, pmchar);
+     prevList[ pointer2] =  charCode;  // la lecture organise ici la sortie attendue au début interne.
+     ans += '.'; 
+// la lecture organise final la lecture humaine avec l'entrée.
+// la lecture maintient aussi clé l'analyse des valeurs avant la sortie final.
 
-                // Generate Brainfuck commands to move the pointer to the calculated 'pointer2'.
-                // Calls 'seqStr' with the absolute difference in positions and the appropriate direction ('<' or '>').
-                ans    +=    seqStr(    Math.abs(    pointer    -    pointer2    )    ,    pointer    <    pointer2    ?    '>'    :    '<'    )    ;
-
-                // Determine the difference between the current character code and the value previously stored at 'pointer2'.
-                diff    =    charCode    -    prevList[pointer2]    ;
-
-                // Decide whether to increment ('+') or decrement ('-') the cell value.
-                pmchar    =    diff    >    0    ?    '+'    :    '-'    ;
-
-                // Use the absolute value of the difference for command repetition.
-                diff    =    Math.abs(diff)    ;
-
-                // Generate Brainfuck commands to adjust the cell value (increment/decrement).
-                ans    +=    seqStr(diff,    pmchar)    ;
-
-                // Update the 'prevList' with the current character code for the 'pointer2' position.
-                prevList[pointer2]    =    charCode    ;
-
-                // Append the Brainfuck output command ('.') to 'ans'.
-                ans    +=    '.'    ;
-
-                // Update the current pointer position for the next iteration.
-                pointer    =    pointer2    ;
-
-        } // End of the character processing loop.
-
-
-        // Print the final generated Brainfuck string to the console.
-        console.log(ans)    ;
-
-} // End of the main function definition.
+/* la lecture maintient aussi le contexte voisin avec l'entrée final. */
+    pointer = pointer2;    
+    }
+   console.log(ans);
+		}

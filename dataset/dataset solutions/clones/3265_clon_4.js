@@ -1,22 +1,25 @@
 function processInput(rawText) {
-    const neededDigits = new Set(["1", "9", "7", "4"]);
+    const targetDigits = new Set(["1", "9", "7", "4"]);
+    const inputParts = rawText.split(" ");
 
-    const scannedSegments = rawText.split(" ").slice(0, 4);
+    const initialAccumulator = {
+        foundUniqueDigits: new Set(),
+        totalMatches: 0
+    };
 
-    const collectedData = scannedSegments.reduce((accumulator, currentSegment) => {
-        if (neededDigits.has(currentSegment)) {
-            accumulator.distinctMatches.add(currentSegment);
-            accumulator.matchTally++;
+    const processingResult = inputParts.slice(0, 4).reduce((accumulator, currentPart) => {
+        if (targetDigits.has(currentPart)) {
+            accumulator.foundUniqueDigits.add(currentPart);
+            accumulator.totalMatches++;
         }
         return accumulator;
-    }, { distinctMatches: new Set(), matchTally: 0 });
+    }, initialAccumulator);
 
-    const allPresent = collectedData.distinctMatches.size === neededDigits.size;
-    const correctQuantity = collectedData.matchTally === neededDigits.size;
-
-    const finalVerdict = (allPresent && correctQuantity) ? "YES" : "NO";
-
-    console.log(finalVerdict);
+    if (processingResult.foundUniqueDigits.size === 4 && processingResult.totalMatches === 4) {
+        console.log("YES");
+    } else {
+        console.log("NO");
+    }
 }
 
 processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

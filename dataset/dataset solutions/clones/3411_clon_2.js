@@ -1,33 +1,41 @@
-'use strict' // Enforce strict parsing and error handling for better code quality.
+'use strict';
 
-// This function serves as the primary entry point for data processing.
-const executeProcessor = rawDataString => {
-  // First, split the incoming string into individual lines, then convert each line
-  // into a numeric value. This creates a temporary array of numbers.
-  const processedLines = rawDataString . split ( '\n' ) . map ( lineStr => Number ( lineStr ) ) ;
+/**
+ * This function processes a given raw input string to perform a specific calculation.
+ * It expects the input to be newline-separated numbers, with the first line
+ * typically being a count that is then discarded.
+ *
+ * @param {string} rawData - The complete input string, usually read from a source like stdin.
+ */
+const processData = (rawData) => {
+  // First, split the incoming string by newline characters.
+  // Then, convert each resulting string segment into a numerical value.
+  // This creates an array of numbers from the input.
+  const temporaryNumbers = rawData.split('\n').map((numStr) => Number(numStr));
 
-  // Remove the first element from the temporary array.
-  // This is often a header or count that's not part of the data to be summed.
-  processedLines . shift ( ) ;
+  // The initial element of the array is often a count or header,
+  // which is not part of the actual data for this calculation, so it's removed.
+  temporaryNumbers.shift();
 
-  // Sort the remaining numeric data in descending order.
-  // The largest number will be at the beginning of the array.
-  let sortedNumericData = processedLines . sort ( ( valA , valB ) => valB - valA ) ;
+  // Sort the remaining numerical values in descending order.
+  // The comparison function (valB - valA) ensures that larger numbers come first.
+  let sortedNumbers = temporaryNumbers.sort((valA, valB) => valB - valA);
 
-  // Initialize the final result. The largest number is halved as a starting point.
-  let finalResult = sortedNumericData [ 0 ] / 2 ;
+  // Initialize the final accumulated result.
+  // The largest number (which is the first element after sorting) is divided by two.
+  let finalResult = sortedNumbers[0] / 2;
 
-  // Iterate through the sorted data, starting from the second element (index 1).
-  // Each subsequent number is added directly to the running total.
-  for ( let idx = 1 ; idx < sortedNumericData . length ; idx ++ )
-  {
-    finalResult += sortedNumericData [ idx ] ; // Accumulate the sum.
+  // Iterate through the rest of the sorted numbers, starting from the second element.
+  // Each subsequent number is added to the running total.
+  for (let idx = 1; idx < sortedNumbers.length; idx++) {
+    finalResult += sortedNumbers[idx];
   }
 
-  // Display the computed final result to the console.
-  console . log ( finalResult ) ;
+  // Display the computed final result to the standard output.
+  console.log(finalResult);
 };
 
-// Invoke the main processing function with data read from standard input.
-// The 'fs' module is used to read the file synchronously.
-executeProcessor(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// The program execution starts here.
+// It reads the entire content of the standard input stream synchronously,
+// using UTF-8 encoding, and then passes this content to the 'processData' function.
+processData(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,48 +1,34 @@
-// This module addresses a bioinformatics sequence analysis task.
-function processSequenceChallenge ( rawInputText )
-{
-  /*
-   * Split the entire input block into individual lines.
-   * Assuming the problem input provides one line relevant to the sequence.
-   */
-  var inputLines = rawInputText . split ( '\n' ) ;
+// This program processes a sequence of characters to find the longest substring composed only of specific nucleotides.
+function processInput(rawData) {
+  // Split the entire input string by newline characters to get individual lines.
+  const linesOfText = rawData.split('\n');
+  // The first line of input contains the string to be analyzed.
+  let targetString = linesOfText[0];
 
-  // Extract the primary sequence string from the first line.
-  var targetString = inputLines [ 0 ] ;
+  // Convert the target string into an array of its individual characters for easier iteration.
+  const charSequence = targetString.split('');
+  // Define the set of valid characters (nucleotides) we are looking for.
+  const validNucleotides = ['A', 'C', 'G', 'T'];
 
-  // Convert the target string into an array of its constituent characters.
-  var charArray = targetString . split ( '' ) ;
+  // Initialize variables to track the maximum length found and the current consecutive length.
+  let longestMatch = 0;
+  let currentMatchLength = 0;
 
-  // Define the set of valid DNA nucleotide bases for comparison.
-  var validBases = [ 'A' , 'C' , 'G' , 'T' ] ;
-
-  // Initialize a variable to store the maximum length of a valid subsequence found.
-  var maximumLength = 0 ;
-
-  // Initialize a variable to track the length of the current consecutive valid subsequence.
-  var currentRunLength = 0 ;
-
-  // Iterate through each character of the sequence array.
-  for ( var idx = 0 ; idx < charArray . length ; idx ++ )
-  {
-    // Check if the current character is one of the valid DNA bases.
-    if ( validBases . indexOf ( charArray [ idx ] ) >= 0 )
-    {
-      // If it's a valid base, increment the current run length
-      // and update the maximum length if the current run is longer.
-      currentRunLength ++ ;
-      maximumLength = Math . max ( maximumLength , currentRunLength ) ;
-    }
-    else
-    {
-      // If the character is not a valid base, reset the current run length.
-      currentRunLength = 0 ;
+  // Iterate through each character in the sequence.
+  for (let idx = 0; idx < charSequence.length; idx++) {
+    // Check if the current character is one of the valid nucleotides.
+    if (validNucleotides.indexOf(charSequence[idx]) >= 0) {
+      // If it is, increment the current consecutive match length.
+      // Then, update the overall longest match if the current length is greater.
+      longestMatch = Math.max(longestMatch, ++currentMatchLength);
+    } else {
+      // If the character is not a valid nucleotide, reset the current consecutive match length.
+      currentMatchLength = 0;
     }
   }
-
   // Output the final calculated maximum length to the console.
-  console . log ( maximumLength ) ;
+  console.log(longestMatch);
 }
 
-// Invoke the main processing function with data read from standard input.
-processSequenceChallenge ( require ( 'node:fs' ) . readFileSync ( '/dev/fd/0' , 'utf-8' ) ) ;
+// Read the input from standard input and pass it to the processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

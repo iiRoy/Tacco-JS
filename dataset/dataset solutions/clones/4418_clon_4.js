@@ -1,25 +1,14 @@
 "use strict";
 
-const processSegments = (sourceText) => {
-    const rawParts = sourceText.trim().split(/\s+/);
-    const numericalComponents = [];
-    for (const part of rawParts) {
-        numericalComponents.push(Number(part));
-    }
+const calculateOverlap = (rawData) => {
+    const [s1, e1, s2, e2] = rawData.trim().split(' ').map(Number);
 
-    const [startOne, endOne, startTwo, endTwo] = numericalComponents;
+    const commonStart = Math.max(s1, s2);
+    const commonEnd = Math.min(e1, e2);
 
-    let totalOverlapExtent;
-
-    if (endOne < startTwo || endTwo < startOne) {
-        totalOverlapExtent = 0;
-    } else {
-        const commonBeginning = Math.max(startOne, startTwo);
-        const commonEnding = Math.min(endOne, endTwo);
-        totalOverlapExtent = commonEnding - commonBeginning;
-    }
+    const length = Math.max(0, commonEnd - commonStart);
     
-    console.info(totalOverlapExtent);
+    console.log(length);
 };
 
-processSegments(require('node:fs').readFileSync('/dev/stdin','utf8'));
+calculateOverlap(require('fs').readFileSync('/dev/stdin', 'utf8'));

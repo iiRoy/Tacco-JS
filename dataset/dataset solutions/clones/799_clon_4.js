@@ -1,74 +1,52 @@
-const makeInputConsumer = (fullText) => {
-    const allLines = fullText.trim().split('\n');
-    let currentLinePointer = 0;
-    let currentLineParts = [];
-    let partPointer = 0;
+function Main(input) {
+    const rawLines = input.split("\n");
+    let linePointer = 0;
 
-    const getNextPart = () => {
-        if (partPointer >= currentLineParts.length) {
-            if (currentLinePointer >= allLines.length) {
-                return null;
+    const obtainNextLine = () => rawLines[linePointer++];
+
+    const generatePrefixSums = (count) => {
+        const values = Array.from({ length: count }, () => parseInt(obtainNextLine(), 10));
+        return values.reduce((accumulator, current) => {
+            accumulator.push(accumulator[accumulator.length - 1] + current);
+            return accumulator;
+        }, [0]);
+    };
+
+    const computeDifferenceCounts = (sumSequence) => {
+        const diffOccurrences = new Map();
+        for (let firstIdx = 0; firstIdx < sumSequence.length; ++firstIdx) {
+            for (let secondIdx = firstIdx + 1; secondIdx < sumSequence.length; ++secondIdx) {
+                const currentDifference = sumSequence[secondIdx] - sumSequence[firstIdx];
+                diffOccurrences.set(currentDifference, (diffOccurrences.get(currentDifference) || 0) + 1);
             }
-            currentLineParts = allLines[currentLinePointer].split(' ');
-            currentLinePointer++;
-            partPointer = 0;
         }
-        return currentLineParts[partPointer++];
+        return diffOccurrences;
     };
 
-    return {
-        grabInteger: () => parseInt(getNextPart(), 10)
-    };
-};
+    for (;;) {
+        const [nStr, mStr] = obtainNextLine().split(' ');
+        const nDimension = parseInt(nStr, 10);
+        const mDimension = parseInt(mStr, 10);
 
-const executeSolution = (rawData) => {
-    const inputGrabber = makeInputConsumer(rawData);
-
-    while (true) {
-        const countX = inputGrabber.grabInteger();
-        const countY = inputGrabber.grabInteger();
-
-        if (countX === 0 && countY === 0) {
+        if (nDimension === 0 && mDimension === 0) {
             break;
         }
 
-        const xComponents = Array.from({ length: countX }, () => inputGrabber.grabInteger());
-        const yComponents = Array.from({ length: countY }, () => inputGrabber.grabInteger());
+        const heightAccumulations = generatePrefixSums(nDimension);
+        const widthAccumulations = generatePrefixSums(mDimension);
 
-        const getCumulativeSums = (parts) => {
-            return parts.reduce((accumulator, currentElement) => {
-                accumulator.push(accumulator[accumulator.length - 1] + currentElement);
-                return accumulator;
-            }, [0]);
-        };
+        const heightDifferenceCounts = computeDifferenceCounts(heightAccumulations);
+        const widthDifferenceCounts = computeDifferenceCounts(widthAccumulations);
 
-        const xCumulative = getCumulativeSums(xComponents);
-        const yCumulative = getCumulativeSums(yComponents);
+        let totalMatchingPairs = 0;
 
-        const buildFrequencyMap = (cumulativeValues) => {
-            const allDifferences = [];
-            for (let startIdx = 0; startIdx < cumulativeValues.length; ++startIdx) {
-                for (let endIdx = startIdx + 1; endIdx < cumulativeValues.length; ++endIdx) {
-                    allDifferences.push(cumulativeValues[endIdx] - cumulativeValues[startIdx]);
-                }
-            }
-            return allDifferences.reduce((mapOfCounts, value) => {
-                mapOfCounts.set(value, (mapOfCounts.get(value) || 0) + 1);
-                return mapOfCounts;
-            }, new Map());
-        };
-
-        const xFrequencies = buildFrequencyMap(xCumulative);
-        const yFrequencies = buildFrequencyMap(yCumulative);
-
-        let totalMatches = 0;
-        for (const [val, countA] of xFrequencies.entries()) {
-            if (yFrequencies.has(val)) {
-                totalMatches += countA * yFrequencies.get(val);
+        for (const [lengthValue, hCount] of heightDifferenceCounts.entries()) {
+            if (widthDifferenceCounts.has(lengthValue)) {
+                totalMatchingPairs += hCount * widthDifferenceCounts.get(lengthValue);
             }
         }
-        console.log(totalMatches);
+        console.log(totalMatchingPairs);
     }
-};
+}
 
-executeSolution(require("fs").readFileSync("/dev/stdin","utf8"));
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

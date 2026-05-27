@@ -1,74 +1,66 @@
-/*
- * This script processes numerical data from standard input.
- * It reads a sequence of numbers, duplicates them to create a larger array,
- * and then performs calculations to find a specific maximum value based on segment sums.
- */
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-// Obtain the raw data from the standard input stream.
-const dataSource = require('fs').readFileSync('/dev/stdin', 'utf8');
+// Split the raw input string into an array of lines
+var dataRows = rawData.split('\n');
 
-// Split the input string into an array of individual lines.
-const textRows = dataSource.split('\n');
+// The first line contains the number of elements, convert to integer
+var countElements = parseInt(dataRows[0], 10);
 
-// The first line contains the count of original numbers, converted to an integer.
-const arraySize = Number(textRows[0]);
+// Initialize an array to store the elements, which will be extended for circular processing
+var circularArray = [];
 
-// Initialize an array to hold the processed numerical sequence.
-const dataSequence = [];
+// Declare loop counters
+var outerIdx, middleIdx, innerIdx;
 
-// Declare loop counters for various iterations.
-let outerIdx, innerIdx, subIdx;
-
-// Populate the data sequence by reading numbers from input lines.
-// Each number is duplicated twice to extend the sequence (original, original, original).
-for (outerIdx = 0; outerIdx < arraySize; outerIdx++) {
-  // Convert the input line (after the first one) to a number.
-  dataSequence[outerIdx] = Number(textRows[outerIdx + 1]);
-  // Duplicate the current number at an offset.
-  dataSequence[outerIdx + arraySize] = dataSequence[outerIdx];
-  // Duplicate it again at a further offset.
-  dataSequence[outerIdx + arraySize + arraySize] = dataSequence[outerIdx];
+// Populate the circular array
+// The original array 'a' is extended to 'a[i + n]' and 'a[i + n + n]'
+// This effectively creates three copies of the original sequence for circular calculations.
+for (outerIdx = 0; outerIdx < countElements; outerIdx++) {
+  // Convert each line (starting from the second line) to an integer
+  circularArray[outerIdx] = parseInt(dataRows[outerIdx + 1], 10);
+  circularArray[outerIdx + countElements] = circularArray[outerIdx];
+  circularArray[outerIdx + countElements + countElements] = circularArray[outerIdx];
 }
 
-// Define a simple function for summing two numbers.
-const additionOp = function (accumulator, currentVal) {
-  return accumulator + currentVal;
+// Helper function to sum two numbers, used with Array.prototype.reduce
+var addNumbers = function (accumulator, currentValue) {
+  return accumulator + currentValue;
 };
 
-// Initialize variables to store the maximum and minimum values found during calculations.
-let greatestValue = 0;
-let lowestValue = 0;
+// Initialize variables for tracking maximum and minimum sums
+var greatestValue = 0;
+var smallestPartitionSum = 0;
 
-// Temporary variable to hold the sum of a current segment, and an array for remaining elements.
-let currentSegmentSum = 0, remainingSegment;
+// Temporary variables for current segment sum and remaining array segment
+var currentSegmentSum = 0, remainingSegment;
 
-// Main processing loop: Iterate through possible lengths of the first segment.
-// The loop runs from 1 up to (arraySize - 3) to ensure valid segment lengths.
-for (outerIdx = 1; outerIdx < arraySize - 2; outerIdx++) {
-  // Inner loop: Iterate through all possible starting positions for the first segment.
-  for (innerIdx = 0; innerIdx < arraySize; innerIdx++) {
-    // Calculate the sum of the first segment using 'slice' and 'reduce'.
-    currentSegmentSum = dataSequence.slice(innerIdx, innerIdx + outerIdx).reduce(additionOp, 0);
+// Main logic: Iterate through possible segment lengths and positions
+// The outer loop determines the length of the first segment (i)
+for (outerIdx = 1; outerIdx < countElements - 2; outerIdx++) {
+  // The middle loop determines the starting position (j) of the first segment
+  for (middleIdx = 0; middleIdx < countElements; middleIdx++) {
+    // Calculate the sum of the current segment
+    currentSegmentSum = circularArray.slice(middleIdx, middleIdx + outerIdx).reduce(addNumbers, 0);
 
-    // Extract the remaining part of the sequence after the first segment.
-    remainingSegment = dataSequence.slice(innerIdx + outerIdx, innerIdx + arraySize);
+    // Get the remaining part of the circular array after the current segment
+    remainingSegment = circularArray.slice(middleIdx + outerIdx, middleIdx + countElements);
 
-    // Innermost loop: Iterate through possible split points for the remaining segment.
-    for (subIdx = 1; subIdx < remainingSegment.length; subIdx++) {
-      // Split the remaining segment into two parts and find the minimum of their sums.
-      lowestValue = Math.min(
-        remainingSegment.slice(0, subIdx).reduce(additionOp, 0),
-        remainingSegment.slice(subIdx, remainingSegment.length).reduce(additionOp, 0)
+    // The inner loop iterates through possible split points (k) in the remaining segment
+    for (innerIdx = 1; innerIdx < remainingSegment.length; innerIdx++) {
+      // Calculate the minimum sum of the two partitions of the remaining segment
+      smallestPartitionSum = Math.min(
+        remainingSegment.slice(0, innerIdx).reduce(addNumbers, 0),
+        remainingSegment.slice(innerIdx, remainingSegment.length).reduce(addNumbers, 0)
       );
 
-      // If the current segment sum is less than or equal to the minimum of the two remaining parts' sums,
-      // then update the overall greatest value found so far.
-      if (currentSegmentSum <= lowestValue) {
+      // If the current segment sum is less than or equal to the smallest partition sum,
+      // update the greatest value found so far.
+      if (currentSegmentSum <= smallestPartitionSum) {
         greatestValue = Math.max(greatestValue, currentSegmentSum);
       }
     }
   }
 }
 
-// Output the final calculated greatest value to the console.
+// Output the final greatest value
 console.log(greatestValue);

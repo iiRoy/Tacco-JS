@@ -1,40 +1,28 @@
 "use strict";
 
-const pathGenerator = (inputData) => {
-    const numericalCoordinates = inputData.trim().split(/\s+/).map(Number);
-    const startXCoordinate = numericalCoordinates[0];
-    const startYCoordinate = numericalCoordinates[1];
-    const endXCoordinate = numericalCoordinates[2];
-    const endYCoordinate = numericalCoordinates[3];
+const coordinateProcessor = (inputData) => {
+    const [firstLine] = inputData.trim().split("\n");
+    const [xStartStr, yStartStr, xEndStr, yEndStr] = firstLine.split(" ");
 
-    const firstLeg = "R".repeat(endXCoordinate);
-    const secondLeg = "U".repeat(endYCoordinate);
-    const thirdLeg = "L".repeat(endXCoordinate);
-    const fourthLeg = "D".repeat(endYCoordinate);
-    const fifthLeg = "L";
-    const sixthLeg = "U".repeat(endYCoordinate + 1);
-    const seventhLeg = "R".repeat(endXCoordinate + 1);
-    const eighthLeg = "D";
-    const ninthLeg = "D".repeat(endYCoordinate + 1);
-    const tenthLeg = "L".repeat(endXCoordinate + 1);
-    const eleventhLeg = "U";
+    const xStart = +xStartStr;
+    const yStart = +yStartStr;
+    const xEnd = +xEndStr;
+    const yEnd = +yEndStr;
 
-    const completePathSegments = [
-        firstLeg,
-        secondLeg,
-        thirdLeg,
-        fourthLeg,
-        fifthLeg,
-        sixthLeg,
-        seventhLeg,
-        eighthLeg,
-        ninthLeg,
-        tenthLeg,
-        eleventhLeg
-    ];
+    const generatedPath =
+        "R".repeat(xEnd) +
+        "U".repeat(yEnd) +
+        "L".repeat(xEnd) +
+        "D".repeat(yEnd) +
+        "L" +
+        "U".repeat(yEnd + 1) +
+        "R".repeat(xEnd + 1) +
+        "D" +
+        "D".repeat(yEnd + 1) +
+        "L".repeat(xEnd + 1) +
+        "U";
 
-    const finalOutput = completePathSegments.join('');
-    console.log(finalOutput);
+    console.log(generatedPath);
 };
 
-pathGenerator(require('fs').readFileSync('/dev/stdin', 'utf8'));
+coordinateProcessor(require('fs').readFileSync('/dev/stdin', 'utf8'));

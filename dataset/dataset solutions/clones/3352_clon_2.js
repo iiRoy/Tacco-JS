@@ -1,121 +1,123 @@
-'use strict' // Enforce strict parsing and error handling in the script.
+'use strict'; // Enforce strict mode for better code quality and error handling
 
-const PRIME_MOD = 1_000_000_007 // A large prime number used for modulo operations, preventing integer overflow.
+// Define a large prime number for modulo arithmetic, commonly used in combinatorial problems
+var primeModulo = 1e9 + 7;
 
 /**
- * Performs a Depth-First Search (DFS) on the graph to compute a specific value.
- * This function recursively explores connected components.
+ * Executes a Depth First Search (DFS) traversal on the graph to calculate specific counts.
+ * This function computes two values for each subtree rooted at 'currentNode':
+ * 1. The number of ways to select nodes such that 'currentNode' itself is chosen.
+ * 2. The number of ways to select nodes such that 'currentNode' is NOT chosen.
  *
- * @param {number} currentNodeId   The identifier of the current node being visited.
- * @param {Array<Array<number>>} adjacencyMap An adjacency list representation of the graph.
- * @param {Array<number>} visitedNodes A boolean-like array indicating if a node has been visited (1 for visited, 0 for not).
- * @returns {Array<number>} An array containing two computed values based on the traversal.
+ * @param {number} currentNode - The identifier of the node currently being processed.
+ * @param {Array<Array<number>>} adjacencyMap - The graph represented as an adjacency list.
+ * @param {Array<number>} nodeVisited - An array indicating whether a node has been visited (1 for visited, 0 for not).
+ * @returns {Array<number>} A pair of integers [waysIfCurrentSelected, waysIfCurrentNotSelected] for the subtree.
  */
-function depthFirstSearch(currentNodeId, adjacencyMap, visitedNodes) {
+function traverseGraph(currentNode, adjacencyMap, nodeVisited) {
+  // Initialize the result pair for the current node's subtree.
+  // The first element (index 0) is for when 'currentNode' is selected.
+  // The second element (index 1) is for when 'currentNode' is NOT selected.
+  var resultPair = [1, 1];
 
-  // Initialize a pair of results for the current node's subtree.
-  let resultsPair = [1, 1]
+  // Iterate through all adjacent nodes (neighbors) of the 'currentNode'
+  for (var idx = 0; idx < adjacencyMap[currentNode].length; idx++) {
+    var neighborNode = adjacencyMap[currentNode][idx];
 
-  // Iterate over all neighbors of the current node.
-  for (let k = 0; k < adjacencyMap[currentNodeId].length; ++k) {
-    const neighborId = adjacencyMap[currentNodeId][k]
+    // Check if the neighbor has not been visited yet to prevent infinite loops in undirected graphs
+    if (!nodeVisited[neighborNode]) {
+      // Mark the neighbor as visited before making the recursive call
+      nodeVisited[neighborNode] = 1;
 
-    // If the neighbor has not been visited yet, perform a recursive DFS call.
-    if (!visitedNodes[neighborId]) {
-      visitedNodes[neighborId] = 1 // Mark the neighbor as visited.
+      // Recursively call traverseGraph for the neighbor to get its subtree's results
+      var childResult = traverseGraph(neighborNode, adjacencyMap, nodeVisited);
 
-      // Recursively call DFS for the unvisited neighbor.
-      const traversalOutput = depthFirstSearch(neighborId, adjacencyMap, visitedNodes)
+      // Update the first element of 'resultPair' (ways if 'currentNode' is selected):
+      // If 'currentNode' is selected, its child 'neighborNode' can either be selected or not selected.
+      // So, we multiply by the sum of childResult[0] (child selected) and childResult[1] (child not selected).
+      resultPair[0] = (resultPair[0] * (childResult[0] + childResult[1])) % primeModulo;
 
-      // Update the first result component using values from the subtree.
-      resultsPair[0] = (resultsPair[0] * (traversalOutput[0] + traversalOutput[1])) % PRIME_MOD
-
-      // Update the second result component using values from the subtree.
-      resultsPair[1] = (resultsPair[1] * traversalOutput[0]) % PRIME_MOD
+      // Update the second element of 'resultPair' (ways if 'currentNode' is NOT selected):
+      // If 'currentNode' is NOT selected, its child 'neighborNode' MUST be selected.
+      // So, we multiply by childResult[0] (child selected).
+      resultPair[1] = (resultPair[1] * childResult[0]) % primeModulo;
     }
   }
-
-  // Return the computed pair of results for this subtree.
-  return resultsPair
+  // Return the computed result pair for the subtree rooted at 'currentNode'
+  return resultPair;
 }
 
 /**
- * Constructs an adjacency list representation of a graph from a list of edges.
+ * Constructs an adjacency list representation of an undirected graph from a list of edges.
  *
- * @param {number} nodeCount The total number of nodes in the graph.
- * @param {Array<Array<number>>} edgeData An array of arrays, where each inner array represents an edge [source, destination].
- * @returns {Array<Array<number>>} An adjacency list where each index corresponds to a node, and its value is an array of its neighbors.
+ * @param {number} nodeCount - The total number of nodes in the graph (1-indexed).
+ * @param {Array<Array<number>>} edgeList - An array where each inner array represents an edge [source, destination].
+ * @returns {Array<Array<number>>} The adjacency list, where graphStructure[i] contains neighbors of node i.
  */
-function buildAdjacencyStructure(nodeCount, edgeData) {
+function buildAdjacencyList(nodeCount, edgeList) {
+  // Initialize an array of empty arrays. The size is nodeCount + 1 to accommodate 1-indexed nodes.
+  var graphStructure = new Array(nodeCount + 1).fill(0).map(_ => new Array());
 
-  // Create an array of empty arrays to represent the adjacency list.
-  // The size is nodeCount + 1 to accommodate 1-indexed node IDs.
-  let connectionMap = Array.from({ length: nodeCount + 1 }, () => [])
+  // Iterate through each edge in the provided edge list
+  for (var edgeIndex = 0; edgeIndex < edgeList.length; edgeIndex++) {
+    var sourceNode = edgeList[edgeIndex][0];
+    var destinationNode = edgeList[edgeIndex][1];
 
-  // Process each edge in the input data.
-  for (let j = 0; j < edgeData.length; ++j) {
-    const sourceNode = edgeData[j][0]      // Extract the source node from the current edge.
-    const destinationNode = edgeData[j][1] // Extract the destination node from the current edge.
-
-    // Add the destination to the source's adjacency list (undirected graph).
-    connectionMap[sourceNode].push(destinationNode)
-
-    // Add the source to the destination's adjacency list (undirected graph).
-    connectionMap[destinationNode].push(sourceNode)
+    // For an undirected graph, add the connection in both directions
+    graphStructure[sourceNode].push(destinationNode);
+    graphStructure[destinationNode].push(sourceNode);
   }
-
-  return connectionMap // Return the complete adjacency list.
+  return graphStructure;
 }
 
 /**
- * The primary function to process the graph problem.
- * (Note: The original implementation was incomplete, returning 0 directly.
- * This version maintains that structure, with the core logic commented out
- * to match the original's behavior and statement count.)
+ * The primary function to orchestrate graph processing.
+ * As per the original code, the DFS calculation is commented out,
+ * and this function currently returns a fixed value.
  *
- * @param {number} numNodes The total number of nodes in the graph.
- * @param {Array<Array<number>>} edges The list of edges defining connections between nodes.
- * @returns {number} A placeholder value, as the original logic was commented out.
+ * @param {number} nodeCount - The total number of nodes in the graph.
+ * @param {Array<Array<number>>} edgeList - The list of edges defining the graph.
+ * @returns {number} The result of the graph processing (currently 0, matching original behavior).
  */
-function processGraph(numNodes, edges) {
-  const graphConnections = buildAdjacencyStructure(numNodes, edges)
+function processGraph(nodeCount, edgeList) {
+  // First, construct the adjacency list from the given node count and edges
+  var adjacencyGraph = buildAdjacencyList(nodeCount, edgeList);
 
-  // A boolean array to track visited nodes during traversal.
-  // let visitedFlags = new Array(numNodes + 1).fill(0)
+  // The following lines are commented out in the original source code.
+  // They represent the intended logic for calling the DFS function,
+  // but are currently inactive.
+  // var nodeVisitedStatus = new Array(nodeCount + 1).fill(0); // Initialize visited array
+  // nodeVisitedStatus[1] = 1; // Mark the starting node (e.g., node 1) as visited
+  // var finalResult = traverseGraph(1, adjacencyGraph, nodeVisitedStatus); // Perform DFS
 
-  // Mark the initial node (typically node 1) as visited before starting DFS.
-  // visitedFlags[1] = 1
-
-  // Execute the depth-first search from node 1.
-  // const finalOutcome = depthFirstSearch(1, graphConnections, visitedFlags)
-
-  // The problem's actual solution would likely involve returning something based on 'finalOutcome'.
-  // However, mirroring the original, we return 0.
-  return 0
+  // In accordance with the original code's behavior, this function returns 0.
+  return 0;
 }
 
 /**
- * Main entry point for the program, handling input parsing and execution orchestration.
+ * The main entry point of the program. It handles reading input, parsing it,
+ * calling the graph processing function, and printing the final output.
  *
- * @param {string} rawInputText The raw string input read from stdin.
+ * @param {string} rawData - The raw string input read from standard input.
  */
-function orchestrateExecution(rawInputText) {
-  const dataLines = rawInputText.split('\n') // Split the input into individual lines.
+function entryPoint(rawData) {
+  // Split the entire input string into an array of individual lines
+  var inputLines = rawData.split("\n");
 
-  // Parse the number of vertices from the first line.
-  const numberOfVertices = parseInt(dataLines[0])
+  // Parse the first line to get the total number of nodes (N)
+  var nodeCount = parseInt(inputLines[0]);
 
-  // Parse the edges from the remaining lines. Each line is split into two integers.
-  const graphEdges = dataLines.slice(1).map(lineText =>
-    lineText.split(' ').map(elementStr => parseInt(elementStr))
-  )
+  // Process the remaining lines to extract the edge list.
+  // Each line is split by space, and each part is converted to an integer.
+  var edgeList = inputLines.slice(1).map(lineStr => lineStr.split(' ').map(edgeVal => parseInt(edgeVal)));
 
-  // Call the graph processing function with the parsed data.
-  const computationalResult = processGraph(numberOfVertices, graphEdges)
+  // Call the graph processing function with the parsed node count and edge list
+  var finalAnswer = processGraph(nodeCount, edgeList);
 
-  // Output the final result to the console.
-  console.log(computationalResult)
+  // Print the computed final answer to the console
+  console.log(finalAnswer);
 }
 
-// Read input from standard input and pass it to the main execution function.
-orchestrateExecution(require('node:fs').readFileSync('/dev/stdin', 'utf8'))
+// Read the entire content of standard input synchronously using Node.js 'fs' module,
+// decode it as UTF-8, and then pass it to the entryPoint function.
+entryPoint(require('fs').readFileSync('/dev/stdin', 'utf8'));

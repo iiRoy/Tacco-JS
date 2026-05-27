@@ -1,266 +1,185 @@
 "use strict";
 
-// Renamed from I. This constructor initializes an object to process raw string input,
-// breaking it into lines and then into tokens, with an optional type conversion function.
-function InputReader(rawInputString, conversionFunction) {
-  // Stores the input as an array of individual lines, handling both Unix and Windows line endings.
-  this.sourceLines = rawInputString.split(/\r?\n/);
-  // Keeps track of the current token's index within the active line.
-  this.currentColumn = 0;
-  // Indicates the index of the line currently being processed from `sourceLines`.
-  this.currentLine = 0;
-  // A function (defaulting to `Number`) used to convert string tokens into their desired data type.
-  this.valueConverter = conversionFunction || Number;
+// InputReader class for parsing input strings from a multi-line source
+class InputReader {
+  constructor(sourceString, parseFunction) {
+    this._sourceLines = sourceString.split("\n");
+    this._currentColumn = 0;
+    this._currentLine = 0;
+    this._valueParser = parseFunction || Number; // Function to parse individual values
+  }
+
+  // Reads the next single value from the input stream
+  readNextValue() {
+    const currentLineContent = this._sourceLines[this._currentLine];
+    if (currentLineContent === undefined) { // If no more lines, return undefined
+      return undefined;
+    }
+
+    // Split the current line into tokens, handling whitespace
+    const tokens = currentLineContent.trim().split(" ");
+    const valueToParse = tokens[this._currentColumn];
+    this._currentColumn++;
+
+    // If all tokens on the current line have been read, advance to the next line
+    if (this._currentColumn >= tokens.length) {
+      this._currentColumn = 0;
+      this._currentLine++;
+    }
+    return this._valueParser(valueToParse);
+  }
+
+  // Reads all values from the current line and advances to the next line
+  readLineValues() {
+    const currentLineContent = this._sourceLines[this._currentLine];
+    if (currentLineContent === undefined) { // If no more lines, return undefined
+      return undefined;
+    }
+    this._currentColumn = 0; // Reset column as we're reading a whole new line
+    this._currentLine++;
+    return currentLineContent.split(" ").map(this._valueParser);
+  }
 }
 
-// A new helper method to determine if there are any more tokens left to read in the input.
-InputReader.prototype.hasMoreTokens = function() {
-  // First, skip any entirely empty lines until a line with content or the end of input is reached.
-  while (this.currentLine < this.sourceLines.length && this.sourceLines[this.currentLine].trim() === '') {
-    this.currentLine++;
-    this.currentColumn = 0; // Reset column index for the new line.
-  }
-  // If all lines have been processed, there are no more tokens.
-  if (this.currentLine >= this.sourceLines.length) {
-    return false;
-  }
-  // Split the current line into tokens, filtering out any empty strings that might result from multiple spaces.
-  const currentLineTokens = this.sourceLines[this.currentLine].trim().split(/\s+/).filter(Boolean);
-  // Returns true if the current column index is within the bounds of the tokens on the current line.
-  return this.currentColumn < currentLineTokens.length;
-};
+// Function to generate prime numbers up to a given limit using the Sieve of Eratosthenes
+function generatePrimesUpTo(upperLimit) {
+  const isPrimeFlags = new Array(upperLimit + 1).fill(true);
+  isPrimeFlags[0] = false; // 0 is not prime
+  isPrimeFlags[1] = false; // 1 is not prime
 
-// Renamed from 'a'. This method reads and returns the next single token from the input stream.
-InputReader.prototype.readSingleValue = function() {
-  // Before attempting to read, check if there are actually any tokens remaining.
-  if (!this.hasMoreTokens()) {
-    // If no more tokens, return undefined to signal the end of input.
-    return undefined;
-  }
-
-  // Get the tokens from the current line, filtering out any empty strings.
-  const lineTokens = this.sourceLines[this.currentLine].trim().split(/\s+/).filter(Boolean);
-
-  // Extract the token at the current column and then advance the column index.
-  const token = lineTokens[this.currentColumn];
-  this.currentColumn++;
-
-  // If all tokens on the current line have been consumed, reset the column and move to the next line.
-  if (this.currentColumn >= lineTokens.length) {
-    this.currentColumn = 0;
-    this.currentLine++;
-  }
-
-  // Convert the extracted token using the specified `valueConverter` and return it.
-  return this.valueConverter(token);
-};
-
-// Renamed from 'l'. This method reads and returns all tokens from the current line as an array.
-InputReader.prototype.readEntireLine = function() {
-  // Similar to `hasMoreTokens`, skip any empty lines at the start.
-  while (this.currentLine < this.sourceLines.length && this.sourceLines[this.currentLine].trim() === '') {
-    this.currentLine++;
-    this.currentColumn = 0;
-  }
-
-  // If no more lines are available, return an empty array.
-  if (this.currentLine >= this.sourceLines.length) {
-    return [];
-  }
-
-  const currentLineText = this.sourceLines[this.currentLine];
-  // Reset column and advance to the next line, as the entire current line is now processed.
-  this.currentColumn = 0;
-  this.currentLine++;
-
-  // Split the line, filter out any empty string tokens, and apply the value converter to each.
-  return currentLineText.trim().split(/\s+/).filter(Boolean).map(this.valueConverter);
-};
-
-// Renamed from sieveOfEratosthenes. This function generates a list of all prime numbers
-// up to a specified maximum value using the Sieve of Eratosthenes algorithm.
-function calculatePrimesUpToLimit(maxVal) {
-  // If the maximum value is less than 2, there are no prime numbers to find.
-  if (maxVal < 2) {
-    return [];
-  }
-
-  // Initialize a boolean array `isPrime` where `isPrime[i]` is true if `i` is currently considered a prime candidate.
-  const isPrime = new Array(maxVal + 1).fill(true);
-
-  // Explicitly mark 0 and 1 as not prime.
-  isPrime[0] = false;
-  isPrime[1] = false;
-
-  // This array will accumulate all the prime numbers discovered.
   const foundPrimes = [];
-
-  // Iterate through numbers starting from 2 up to the specified maximum value.
-  for (let currentNumber = 2; currentNumber <= maxVal; currentNumber++) {
-    // If `currentNumber` is still marked as prime, it means it hasn't been crossed out by a smaller prime,
-    // thus it is a prime number.
-    if (isPrime[currentNumber]) {
-      foundPrimes.push(currentNumber); // Add this prime to our list.
-
-      // Mark all multiples of this prime as not prime. We start marking from `currentNumber * currentNumber`
-      // because any smaller multiples (e.g., 2*currentNumber, 3*currentNumber) would have already been
-      // marked by their respective smaller prime factors (2, 3, etc.).
-      for (let multipleOfPrime = currentNumber * currentNumber; multipleOfPrime <= maxVal; multipleOfPrime += currentNumber) {
-        isPrime[multipleOfPrime] = false;
+  for (let currentNum = 2; currentNum <= upperLimit; currentNum++) {
+    if (isPrimeFlags[currentNum]) {
+      foundPrimes.push(currentNum);
+      // Mark multiples of currentNum as not prime, starting from currentNum * currentNum
+      for (let multiple = currentNum * currentNum; multiple <= upperLimit; multiple += currentNum) {
+        isPrimeFlags[multiple] = false;
       }
     }
   }
   return foundPrimes;
 }
 
-// Renamed from gcd. This function computes the Greatest Common Divisor (GCD) of two numbers
-// using an iterative implementation of the Euclidean algorithm.
-function findGreatestCommonDivisor(firstOperand, secondOperand) {
-  // The Euclidean algorithm continues as long as the second operand is not zero.
-  while (secondOperand !== 0) {
-    // Calculate the remainder when `firstOperand` is divided by `secondOperand`.
-    const remainder = firstOperand % secondOperand;
-    // Update `firstOperand` to the value of `secondOperand`.
-    firstOperand = secondOperand;
-    // Update `secondOperand` to the calculated `remainder`.
-    secondOperand = remainder;
+// Recursive function to calculate the greatest common divisor (GCD) of two numbers
+function calculateGCD(numA, numB) {
+  if (numB === 0) {
+    return numA;
   }
-  // When `secondOperand` becomes zero, `firstOperand` holds the GCD.
-  return firstOperand;
+  return calculateGCD(numB, numA % numB);
 }
 
-// Pre-calculate a list of prime numbers up to a high limit (e.g., 100,000).
-// This list is stored globally and reused to optimize subsequent prime factorizations.
-const precomputedPrimeList = calculatePrimesUpToLimit(100000);
+// Global constant for the maximum prime sieve limit
+const MAX_PRIME_SIEVE_LIMIT = 100000;
+const PRECOMPUTED_PRIMES = generatePrimesUpTo(MAX_PRIME_SIEVE_LIMIT);
 
-// Renamed from main. This is the primary function that processes a sequence of numbers
-// to identify specific prime factors based on a set of criteria.
-function analyzeNumberSequence(rawDataInput) {
-  // Create an instance of the InputReader to parse the raw input data.
-  const dataReader = new InputReader(rawDataInput);
-
-  // Read the first value from the input, which defines the length of the number sequence (N).
-  let sequenceLength = dataReader.readSingleValue();
-
-  // Implement a guard clause: Validate `sequenceLength` to ensure it's a non-negative integer.
-  if (typeof sequenceLength !== 'number' || !Number.isInteger(sequenceLength) || sequenceLength < 0) {
-    console.error("Error: Invalid or missing sequence length provided. Must be a non-negative integer.");
-    return; // Exit if validation fails.
-  }
-
-  // Initialize an array to store the numerical sequence elements.
-  const numericalSeries = [];
-  // Populate the `numericalSeries` array with `sequenceLength + 1` elements as required by the problem.
-  for (let elementCounter = 0; elementCounter <= sequenceLength; elementCounter++) {
-    const value = dataReader.readSingleValue();
-    // Guard clause: Check if enough elements are available in the input.
-    if (value === undefined) {
-      console.error(`Error: Insufficient input elements. Expected ${sequenceLength + 1}, but only found ${elementCounter}.`);
-      return;
-    }
-    numericalSeries.push(value);
-  }
-
-  // The problem's logic necessitates processing the sequence in reverse order.
-  // Explicitly reversing the array for clarity.
-  numericalSeries.reverse();
-
-  // Calculate the Greatest Common Divisor (GCD) for all elements in the `numericalSeries`.
-  // Start with the absolute value of the first element to ensure a positive base for GCD calculation.
-  let overallSequenceGcd = Math.abs(numericalSeries[0]);
-  for (let currentElementIdx = 1; currentElementIdx <= sequenceLength; currentElementIdx++) {
-    // Continuously update the `overallSequenceGcd` by finding the GCD with the next element.
-    overallSequenceGcd = Math.abs(findGreatestCommonDivisor(overallSequenceGcd, numericalSeries[currentElementIdx]));
-  }
-
-  // Handle the edge case where the overall GCD is 0 (implying all numbers in the sequence were 0).
-  if (overallSequenceGcd === 0) {
-    console.error("Error: The Greatest Common Divisor of the sequence is zero. Cannot proceed with normalization.");
-    return; // Cannot divide by zero, so terminate.
-  }
-
-  // Normalize the sequence: divide each element by the `overallSequenceGcd`.
-  // This simplifies the numbers while preserving their relative divisibility properties.
-  const normalizedSequence = numericalSeries.map(elementValue => elementValue / overallSequenceGcd);
-
-  // Initialize a Set to store all unique prime factors discovered during the analysis.
-  // Using a Set automatically handles uniqueness, avoiding duplicate factors.
-  const discoveredPrimeFactors = new Set();
-
-  // Filter the globally precomputed prime list to include only primes that are less than or equal to `sequenceLength`.
-  // Primes larger than `sequenceLength` are not relevant for certain divisibility checks within the array bounds.
-  const relevantPrimesForN = precomputedPrimeList.filter(p => p <= sequenceLength);
-
-  // Begin the core analysis: Iterate through each relevant prime to check specific divisibility conditions.
-  for (const currentPrimeCandidate of relevantPrimesForN) {
-    // Condition 1: The first element (index 0) of the normalized sequence must be divisible by the `currentPrimeCandidate`.
-    if (normalizedSequence[0] % currentPrimeCandidate !== 0) {
-      continue; // If not divisible, this prime cannot be a factor according to the rules, so skip to the next prime.
+// Helper function to find primes that satisfy specific array conditions
+function findPrimesMeetingArrayConditions(arrayLength, dataArray, primesToCheck) {
+  const qualifyingPrimes = [];
+  for (const candidatePrime of primesToCheck) {
+    // Guard clause: if the first element is not divisible by candidatePrime, skip this prime
+    if (dataArray[0] % candidatePrime !== 0) {
+      continue;
     }
 
-    let allSubConditionsMet = true; // Flag to track if all subsequent conditions for this prime are satisfied.
-
-    // Condition 2: Evaluate sums of elements in specific sub-segments of the sequence.
-    // This loop iterates through possible starting offsets for these segments.
-    for (let segmentStartOffset = 1; segmentStartOffset < currentPrimeCandidate; segmentStartOffset++) {
-      let currentSegmentSum = 0;
-      // Traverse the sequence, summing elements at intervals defined by `(currentPrimeCandidate - 1)`.
-      // The pattern is: `normalizedSequence[offset]`, `normalizedSequence[offset + (P-1)]`, `normalizedSequence[offset + 2*(P-1)]`, etc.
-      for (let traversalIndex = segmentStartOffset; traversalIndex <= sequenceLength; traversalIndex += (currentPrimeCandidate - 1)) {
-        currentSegmentSum += normalizedSequence[traversalIndex];
+    let allConditionsMetForPrime = true;
+    // Check the sum condition for each 'i' from 1 up to (candidatePrime - 1)
+    for (let i = 1; i < candidatePrime; i++) {
+      let currentSumIndex = i;
+      let accumulatedSum = 0;
+      // Sum elements at specific indices: i, i + (prime-1), i + 2*(prime-1), etc.
+      while (currentSumIndex <= arrayLength) {
+        accumulatedSum += dataArray[currentSumIndex];
+        currentSumIndex += candidatePrime - 1; // Specific pattern from original logic
       }
-
-      // If the sum of elements within this segment is not divisible by `currentPrimeCandidate`,
-      // then this prime is not a valid factor for the sequence under these rules.
-      if (currentSegmentSum % currentPrimeCandidate !== 0) {
-        allSubConditionsMet = false; // Mark that a sub-condition failed.
-        break; // No need to check further segments for this prime; move to the next prime candidate.
+      // If the accumulated sum is not divisible, this prime fails the condition
+      if (accumulatedSum % candidatePrime !== 0) {
+        allConditionsMetForPrime = false;
+        break; // Exit inner loop for 'i'
       }
     }
 
-    // If all conditions (initial divisibility and all segment sums) are met for this prime,
-    // add it to our set of discovered factors.
-    if (allSubConditionsMet) {
-      discoveredPrimeFactors.add(currentPrimeCandidate);
+    if (allConditionsMetForPrime) {
+      qualifyingPrimes.push(candidatePrime);
     }
   }
-
-  // Now, factorize the `overallSequenceGcd` (which is the GCD of the original unnormalized sequence)
-  // and add its prime factors to our `discoveredPrimeFactors` set.
-  let remainingGcdValue = overallSequenceGcd; // Use a temporary variable to avoid modifying `overallSequenceGcd`.
-  let primeIndex = 0;
-
-  // Iterate through the `precomputedPrimeList` to find prime factors of `remainingGcdValue`.
-  while (remainingGcdValue > 1 && primeIndex < precomputedPrimeList.length) {
-    const currentPrecomputedPrime = precomputedPrimeList[primeIndex];
-
-    // If the current prime divides `remainingGcdValue`.
-    if (remainingGcdValue % currentPrecomputedPrime === 0) {
-      discoveredPrimeFactors.add(currentPrecomputedPrime); // Add this prime factor to the set.
-
-      // Continuously divide `remainingGcdValue` by this prime until it's no longer divisible.
-      while (remainingGcdValue % currentPrecomputedPrime === 0) {
-        remainingGcdValue /= currentPrecomputedPrime;
-      }
-    }
-    primeIndex++; // Move to the next prime in our precomputed list.
-  }
-
-  // After iterating through all precomputed primes, if `remainingGcdValue` is still greater than 1,
-  // it implies that the `remainingGcdValue` itself is a prime number (larger than any in our precomputed list).
-  if (remainingGcdValue > 1) {
-    discoveredPrimeFactors.add(remainingGcdValue); // Add this final prime factor.
-  }
-
-  // Convert the Set of unique prime factors into an Array and sort them in ascending numerical order.
-  const finalSortedFactors = Array.from(discoveredPrimeFactors).sort((valA, valB) => valA - valB);
-
-  // Print each unique, sorted prime factor to the console.
-  finalSortedFactors.forEach(factor => {
-    console.log(factor);
-  });
+  return qualifyingPrimes;
 }
 
-// Read the entire input from standard input (e.g., a file redirected to stdin)
-// and then pass it to the `analyzeNumberSequence` function for processing.
-analyzeNumberSequence(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Helper function to extract unique prime factors from a given number
+function extractPrimeFactors(numberToFactor, primeList) {
+  const factors = new Set(); // Use a Set to store unique factors
+  let tempNumber = numberToFactor;
+  let primeListIndex = 0;
+
+  while (tempNumber > 1 && primeListIndex < primeList.length) {
+    const currentPrimeDivisor = primeList[primeListIndex];
+    if (tempNumber % currentPrimeDivisor === 0) {
+      factors.add(currentPrimeDivisor); // Add to set to ensure uniqueness
+      while (tempNumber % currentPrimeDivisor === 0) {
+        tempNumber /= currentPrimeDivisor;
+      }
+    }
+    primeListIndex++;
+  }
+
+  if (tempNumber > 1) { // If tempNumber is still > 1, it's a prime factor itself
+    factors.add(tempNumber);
+  }
+  return Array.from(factors); // Convert Set back to Array
+}
+
+// Helper function to print unique numbers from a sorted array
+function printUniqueSortedNumbers(numbersArray) {
+  numbersArray.sort((a, b) => a - b); // Ensure sorted order
+
+  let lastPrintedValue = null; // Initialize to a value guaranteed not to be in the array
+  for (const num of numbersArray) { // Using for...of for cleaner iteration
+    if (num !== lastPrintedValue) {
+      console.log(num);
+      lastPrintedValue = num;
+    }
+  }
+}
+
+// Main function to process the input and produce the required output
+function main(inputString) {
+  const inputProcessor = new InputReader(inputString);
+
+  const arrayLength = inputProcessor.readNextValue();
+  const rawInputArray = [];
+
+  // Read N+1 elements into the array
+  for (let i = 0; i <= arrayLength; i++) {
+    rawInputArray.push(inputProcessor.readNextValue());
+  }
+
+  // Reverse the array in place as per original logic
+  rawInputArray.reverse();
+
+  // Calculate the GCD of all elements in the array
+  let overallGCD = rawInputArray[0];
+  for (let i = 1; i <= arrayLength; i++) {
+    overallGCD = Math.abs(calculateGCD(overallGCD, rawInputArray[i]));
+  }
+
+  // Create a new array with elements normalized by the overall GCD
+  const normalizedArray = rawInputArray.map(val => val / overallGCD);
+
+  // Filter the precomputed primes to only those relevant to the array length
+  const relevantPrimesForConditions = PRECOMPUTED_PRIMES.filter(p => p <= arrayLength);
+
+  // Find primes that satisfy the specific array conditions
+  const conditionPrimes = findPrimesMeetingArrayConditions(arrayLength, normalizedArray, relevantPrimesForConditions);
+
+  // Extract prime factors from the calculated overall GCD
+  const gcdFactors = extractPrimeFactors(overallGCD, PRECOMPUTED_PRIMES);
+
+  // Combine all found primes and remove duplicates using a Set
+  const finalResultPrimes = [...new Set([...conditionPrimes, ...gcdFactors])];
+
+  // Print the unique sorted primes to console
+  printUniqueSortedNumbers(finalResultPrimes);
+}
+
+// Entry point: Read input from stdin and call the main processing function
+main(require("fs").readFileSync("/dev/stdin", "utf8"));

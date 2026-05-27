@@ -1,289 +1,333 @@
-/* This module provides utility functions for parsing input data,
-   typically from standard input or a file. */
-var INPUT_PARSER=(function(){
-  /**
-   * Factory function to create a new input parser instance.
-   * @param {string} inputSource The raw string data to parse.
-   * @returns {StringDataParser} A new parser object.
-   */
-  function createParser(inputSource){
-    return new StringDataParser(inputSource);
-  }
+// This module provides utilities for parsing input from stdin.
+var INPUT_PARSER = (function() {
+    /**
+     * Creates a new input reader instance.
+     * @param {string} inputString - The raw input string.
+     * @returns {InputReader} A new InputReader object.
+     */
+    function createInputReader(inputString) {
+        return new InputReader(inputString);
+    }
 
-  /**
-   * Constructor for the StringDataParser.
-   * It preprocesses the input string into an array of lines.
-   * @param {string} rawStringData The unprocessed string input.
-   */
-  function StringDataParser(rawStringData){
-    this._linesArray = rawStringData.trim().split("\n");
-    this._currentLineIndex = 0; // Tracks the current line being processed.
-  }
+    /**
+     * Constructor for the InputReader.
+     * @param {string} inputString - The raw input string.
+     */
+    function InputReader(inputString) {
+        // Store lines of input, trimmed and split by newline.
+        this._lines = inputString.trim().split("\n");
+        // Initialize current line index.
+        this._currentLineIndex = 0;
+    }
 
-  /* Methods for StringDataParser prototype */
+    /**
+     * Reads the next token from the current line. If the current line is exhausted,
+     * it moves to the next line. Tokens are read in reverse order of appearance on the line.
+     * @param {boolean} asString - If true, returns the token as a string; otherwise, as a number.
+     * @returns {string|number} The next token.
+     */
+    InputReader.prototype.readNextToken = function(asString) {
+        var currentLines = this._lines;
+        var lineIdx = this._currentLineIndex;
+        var resultToken;
 
-  /**
-   * Retrieves the next 'atom' (word or number) from the current line.
-   * If the current line is exhausted, it moves to the next line.
-   * @param {boolean} returnAsString If true, returns the atom as a string; otherwise, attempts to convert to a number.
-   * @returns {string|number} The parsed atom.
-   */
-  StringDataParser.prototype.nextAtom=function(returnAsString){
-    var currentLines=this._linesArray,
-        lineIndex=this._currentLineIndex,
-        resultValue;
-    // If the current line hasn't been split into words yet, do it.
-    if(typeof currentLines[lineIndex]==="string") currentLines[lineIndex]=currentLines[lineIndex].split(" ").reverse();
-    // Pop the last element (which is the first word due to reverse).
-    resultValue=currentLines[lineIndex].pop();
-    // If the line is now empty, advance to the next line.
-    if(!currentLines[lineIndex].length) this._currentLineIndex++;
-    return returnAsString?resultValue:+resultValue;
-  };
+        // If the current line hasn't been processed into tokens yet, do so.
+        if (typeof currentLines[lineIdx] === "string") {
+            currentLines[lineIdx] = currentLines[lineIdx].split(" ").reverse();
+        }
 
-  /**
-   * Retrieves all elements from the current line and advances to the next line.
-   * @param {boolean} getRawElements If true, returns elements as strings; otherwise, attempts to convert to numbers.
-   * @returns {string[]|number[]} An array of elements from the line.
-   */
-  StringDataParser.prototype.nextLine=function(getRawElements){
-    var lineParts=this._linesArray[this._currentLineIndex++].split(" ");
-    return getRawElements?lineParts:lineParts.map(item=>+item);
-  };
+        // Pop the last token (which was originally the first due to reverse).
+        resultToken = currentLines[lineIdx].pop();
 
-  /**
-   * Retrieves a matrix of data (multiple lines, multiple columns) and advances the line index.
-   * @param {number} numRows The number of rows (lines) to read for the matrix.
-   * @param {boolean} getRawElements If true, returns elements as strings; otherwise, attempts to convert to numbers.
-   * @returns {string[][]|number[][]} A 2D array representing the matrix.
-   */
-  StringDataParser.prototype.nextMatrix=function(numRows,getRawElements){
-    var matrixResult=this._linesArray.slice(this._currentLineIndex,this._currentLineIndex+=numRows).map(line=>line.split(" "));
-    return getRawElements?matrixResult:matrixResult.map(row=>row.map(element=>+element));
-  };
+        // If the current line is now empty, advance to the next line.
+        if (!currentLines[lineIdx].length) {
+            this._currentLineIndex++;
+        }
 
-  /**
-   * Retrieves a range of lines as a 1D array and advances the line index.
-   * @param {number} count The number of lines to read.
-   * @param {boolean} getRawElements If true, returns lines as strings; otherwise, attempts to convert to numbers.
-   * @returns {string[]|number[]} An array of lines.
-   */
-  StringDataParser.prototype.nextRange=function(count,getRawElements){
-    var rangeResult=this._linesArray.slice(this._currentLineIndex,this._currentLineIndex+=count);
-    return getRawElements?rangeResult:rangeResult.map(item=>+item);
-  };
-  return createParser;
+        // Return as string or number based on the flag.
+        return asString ? resultToken : +resultToken;
+    };
+
+    /**
+     * Reads all tokens from the current line and advances to the next line.
+     * @param {boolean} asString - If true, returns tokens as strings; otherwise, as numbers.
+     * @returns {Array<string|number>} An array of tokens from the line.
+     */
+    InputReader.prototype.readLineTokens = function(asString) {
+        var lineTokens = this._lines[this._currentLineIndex++].split(" ");
+        return asString ? lineTokens : lineTokens.map(item => +item);
+    };
+
+    /**
+     * Reads a matrix of 'numRows' rows, where each row is split into tokens.
+     * Advances the current line index by 'numRows'.
+     * @param {number} numRows - The number of rows to read.
+     * @param {boolean} asString - If true, returns elements as strings; otherwise, as numbers.
+     * @returns {Array<Array<string|number>>} The matrix.
+     */
+    InputReader.prototype.readMatrix = function(numRows, asString) {
+        var resultMatrix = this._lines.slice(this._currentLineIndex, this._currentLineIndex += numRows).map(item => item.split(" "));
+        return asString ? resultMatrix : resultMatrix.map(item => item.map(subItem => +subItem));
+    };
+
+    /**
+     * Reads 'numLines' raw lines of input.
+     * Advances the current line index by 'numLines'.
+     * @param {number} numLines - The number of lines to read.
+     * @param {boolean} asString - If true, returns lines as strings; otherwise, attempts to convert to number.
+     * @returns {Array<string|number>} An array of lines.
+     */
+    InputReader.prototype.readLines = function(numLines, asString) {
+        var resultLines = this._lines.slice(this._currentLineIndex, this._currentLineIndex += numLines);
+        return asString ? resultLines : resultLines.map(item => +item);
+    };
+
+    return createInputReader;
 })();
 
-// Initialize an input reader instance
-var inputReader=INPUT_PARSER(require("fs").readFileSync("/dev/stdin","utf8"));
+// Initialize the input parser with content from stdin.
+var inputData = INPUT_PARSER(require("fs").readFileSync("/dev/stdin", "utf8"));
 
 /**
- * Creates a multi-dimensional array initialized with a specific value.
- * @param {*} initialValue The value to initialize array elements with.
- * @param {...number} dimensions Variable number of arguments representing array dimensions.
+ * Creates a multi-dimensional array initialized with a given value.
+ * @param {*} initialValue - The value to initialize array elements with.
+ * @param {...number} dimensions - The dimensions of the array (e.g., dim1, dim2, dim3).
  * @returns {Array} The initialized multi-dimensional array.
  */
-function multiDimArray(initialValue){
-  var argumentsList=arguments,
-      lengthCounter=argumentsList.length,
-      arrayCreationCode="Array(argumentsList["+ --lengthCounter+"]).fill(0).map(x=>{return "+initialValue+";})";
-  while(--lengthCounter) arrayCreationCode="Array(argumentsList["+lengthCounter+"]).fill(0).map(x=>"+arrayCreationCode+")";
-  return eval(arrayCreationCode); // Evaluate the dynamically constructed array creation string.
+function initializeMultiDimArray(initialValue) {
+    var args = arguments;
+    var argLength = args.length;
+    // Construct the string for array creation using eval.
+    var arrayCreationString = "Array(args[" + --argLength + "]).fill(0).map(x=>{return " + initialValue + ";})";
+    while (--argLength) {
+        arrayCreationString = "Array(args[" + argLength + "]).fill(0).map(x=>" + arrayCreationString + ")";
+    }
+    return eval(arrayCreationString);
 }
 
-/*
- * This module implements a Double Hashing (Rolling Hash) algorithm
- * for efficient substring search and comparison.
- * It uses two different prime bases and moduli to minimize collision probability.
- */
-var DoubleHasher=(function(){
-  // Two distinct prime bases for hashing
-  var hashBases = [1009, 1007];
-  // Two distinct large prime moduli
-  var primeModuli = [1e9 + 7, 1e9 + 9];
-  // Stores powers of bases modulo respective primes for efficient hash calculation
-  var powerValues = [[], []];
-  // Stores prefix hashes for the string being processed
-  var prefixHashes = [[], []];
-  // Current length of the string managed by the hasher
-  var currentStringLength;
+// Rolling Hash implementation for string searching.
+var StringHasher = (function() {
+    // Two different bases for polynomial hashing to reduce collision probability.
+    var hashBases = [1009, 1007];
+    // Two different large prime moduli.
+    var hashModuli = [1e9 + 7, 1e9 + 9];
+    // Stores powers of bases modulo respective moduli. powerValues[j][i] = hashBases[j]^i % hashModuli[j]
+    var powerValues = [
+        [],
+        []
+    ];
+    // Stores prefix hashes. prefixHashes[j][i] = hash of s[0...i-1] using hashBases[j] and hashModuli[j]
+    var prefixHashes = [
+        [],
+        []
+    ];
+    // Current length of the string being hashed.
+    var currentStringLength;
 
-  /**
-   * Factory function to create a new DoubleHasher instance.
-   * @param {string} targetSequence The string to initialize the hasher with.
-   * @returns {DoubleHasher} A new DoubleHasher object.
-   */
-  function createDoubleHasher(targetSequence){
-    return new DoubleHasher(targetSequence);
-  }
-
-  /**
-   * Constructor for the DoubleHasher.
-   * Precomputes prefix hashes and powers for the given string.
-   * @param {string} initialSequence The string to hash.
-   */
-  function DoubleHasher(initialSequence){
-    currentStringLength = this.sequenceLength = initialSequence.length;
-    // Iterate over each modulus/base pair
-    for(var modulusIndex = 0; modulusIndex < primeModuli.length; modulusIndex++){
-      powerValues[modulusIndex].length = prefixHashes[modulusIndex].length = currentStringLength + 1;
-      powerValues[modulusIndex][0] = 1;
-      prefixHashes[modulusIndex][0] = 0;
-      // Calculate powers and prefix hashes
-      for(var charIndex = 0; charIndex < currentStringLength; charIndex++){
-        powerValues[modulusIndex][charIndex+1] = multiplyModulo(powerValues[modulusIndex][charIndex], hashBases[modulusIndex], primeModuli[modulusIndex]);
-        prefixHashes[modulusIndex][charIndex+1] = multiplyModulo(prefixHashes[modulusIndex][charIndex], hashBases[modulusIndex], primeModuli[modulusIndex]) + initialSequence.charCodeAt(charIndex);
-        if(prefixHashes[modulusIndex][charIndex+1] >= primeModuli[modulusIndex]) prefixHashes[modulusIndex][charIndex+1] -= primeModuli[modulusIndex];
-      }
+    /**
+     * Factory function to create a new StringHasher instance.
+     * @param {string} inputStr - The string to hash.
+     * @returns {StringHasher} A new StringHasher object.
+     */
+    function createStringHasher(inputStr) {
+        return new StringHasher(inputStr);
     }
-  }
 
-  /**
-   * Searches for occurrences of a substring within the main string.
-   * @param {string} subString The substring to search for.
-   * @param {number} [startIndex=0] The starting index in the main string to begin the search.
-   * @returns {number} The starting index of the first match, or -1 if not found.
-   */
-  DoubleHasher.prototype.findSubstring=function(subString,startIndex){
-    var subStringHashes=calculateStringHashes(subString); // Get hashes for the substring
-    var subLength=subString.length;
-    var numModuli=primeModuli.length;
-    var searchLimit=currentStringLength-subLength+1; // Upper bound for search loop
-    var matchCount=0; // Counter for matched moduli
+    /**
+     * Constructor for StringHasher. Computes initial hashes for the given string.
+     * @param {string} inputStr - The string to hash.
+     */
+    function StringHasher(inputStr) {
+        currentStringLength = this.size = inputStr.length; // 'size' is also a property of the instance.
 
-    for(var mainStringIndex=startIndex||0; mainStringIndex < searchLimit; mainStringIndex++){
-      var currentHash=getSegmentHash(mainStringIndex,mainStringIndex+subLength,0);
-      // Check the first hash
-      if(currentHash===subStringHashes[0]){
-        matchCount=1;
-        // Check subsequent hashes if the first one matches
-        for(var modulusIteration=1; modulusIteration < numModuli; modulusIteration++){
-          currentHash=getSegmentHash(mainStringIndex,mainStringIndex+subLength,modulusIteration);
-          if(currentHash!==subStringHashes[modulusIteration]) break; // Mismatch, break and try next position
-          matchCount++;
+        // Iterate over each modulus/base pair.
+        for (var modIdx = 0; modIdx < hashModuli.length; modIdx++) {
+            // Initialize arrays for powers and hashes for the current modulus.
+            powerValues[modIdx].length = prefixHashes[modIdx].length = currentStringLength + 1;
+            powerValues[modIdx][0] = 1; // base^0 = 1
+            prefixHashes[modIdx][0] = 0; // Hash of empty prefix is 0
+
+            // Compute powers and prefix hashes.
+            for (var charIdx = 0; charIdx < currentStringLength; charIdx++) {
+                powerValues[modIdx][charIdx + 1] = modularMultiply(powerValues[modIdx][charIdx], hashBases[modIdx], hashModuli[modIdx]);
+                prefixHashes[modIdx][charIdx + 1] = modularMultiply(prefixHashes[modIdx][charIdx], hashBases[modIdx], hashModuli[modIdx]) + inputStr.charCodeAt(charIdx);
+                // Ensure hash stays within the modulus.
+                if (prefixHashes[modIdx][charIdx + 1] >= hashModuli[modIdx]) {
+                    prefixHashes[modIdx][charIdx + 1] -= hashModuli[modIdx];
+                }
+            }
         }
-        if(matchCount===numModuli) return mainStringIndex; // All moduli matched, substring found
-      }
     }
-    return -1; // Substring not found
-  };
 
-  /**
-   * Appends an additional string to the current string and updates hashes.
-   * @param {string} extraString The string to append.
-   * @returns {number} The new total length of the string.
-   */
-  DoubleHasher.prototype.appendString=function(extraString){
-    var previousLength=currentStringLength;
-    currentStringLength=this.sequenceLength=currentStringLength+extraString.length;
-    // Update hashes for each modulus
-    for(var modulusIndex=0; modulusIndex < primeModuli.length; modulusIndex++){
-      powerValues[modulusIndex].length=prefixHashes[modulusIndex].length=currentStringLength+1;
-      // Calculate hashes for the newly appended part
-      for(var charIndex=previousLength; charIndex < currentStringLength; charIndex++){
-        powerValues[modulusIndex][charIndex+1]=multiplyModulo(powerValues[modulusIndex][charIndex],hashBases[modulusIndex],primeModuli[modulusIndex]);
-        prefixHashes[modulusIndex][charIndex+1]=multiplyModulo(prefixHashes[modulusIndex][charIndex],hashBases[modulusIndex],primeModuli[modulusIndex])+extraString.charCodeAt(charIndex-previousLength);
-        if(prefixHashes[modulusIndex][charIndex+1]>=primeModuli[modulusIndex]) prefixHashes[modulusIndex][charIndex+1]-=primeModuli[modulusIndex];
-      }
+    /**
+     * Searches for the first occurrence of a substring within the hashed string.
+     * @param {string} searchStr - The substring to search for.
+     * @param {number} [startIndex=0] - The index to start the search from.
+     * @returns {number} The starting index of the first match, or -1 if not found.
+     */
+    StringHasher.prototype.findSubstring = function(searchStr, startIndex) {
+        var targetHashValues = calculateStringHash(searchStr); // Hash of the search string.
+        var subStrLength = searchStr.length;
+        var numModuli = hashModuli.length;
+        var searchRange = currentStringLength - subStrLength + 1;
+        var matchCount = 0; // Counter for matching hash components.
+
+        // Iterate through all possible starting positions in the main string.
+        for (var charIdx = startIndex || 0; charIdx < searchRange; charIdx++) {
+            var currentHashValue = getRangeHash(charIdx, charIdx + subStrLength, 0); // Get hash for first modulus.
+            if (currentHashValue === targetHashValues[0]) {
+                matchCount = 1; // First hash component matches.
+                // Check remaining hash components.
+                for (var modIdx = 1; modIdx < numModuli; modIdx++) {
+                    currentHashValue = getRangeHash(charIdx, charIdx + subStrLength, modIdx);
+                    if (currentHashValue !== targetHashValues[modIdx]) {
+                        break; // Mismatch, move to next starting position.
+                    }
+                    matchCount++;
+                }
+                // If all hash components match, we found it.
+                if (matchCount === numModuli) {
+                    return charIdx;
+                }
+            }
+        }
+        return -1; // Substring not found.
+    };
+
+    /**
+     * Appends a string to the current hashed string and updates hashes.
+     * @param {string} appendStr - The string to append.
+     * @returns {number} The new total length of the hashed string.
+     */
+    StringHasher.prototype.appendString = function(appendStr) {
+        var previousLength = currentStringLength;
+        currentStringLength = this.size = currentStringLength + appendStr.length;
+
+        // Update power values and prefix hashes for the appended part.
+        for (var modIdx = 0; modIdx < hashModuli.length; modIdx++) {
+            powerValues[modIdx].length = prefixHashes[modIdx].length = currentStringLength + 1;
+            for (var charIdx = previousLength; charIdx < currentStringLength; charIdx++) {
+                powerValues[modIdx][charIdx + 1] = modularMultiply(powerValues[modIdx][charIdx], hashBases[modIdx], hashModuli[modIdx]);
+                prefixHashes[modIdx][charIdx + 1] = modularMultiply(prefixHashes[modIdx][charIdx], hashBases[modIdx], hashModuli[modIdx]) + appendStr.charCodeAt(charIdx - previousLength);
+                if (prefixHashes[modIdx][charIdx + 1] >= hashModuli[modIdx]) {
+                    prefixHashes[modIdx][charIdx + 1] -= hashModuli[modIdx];
+                }
+            }
+        }
+        return currentStringLength;
+    };
+
+    /**
+     * Calculates the hash values for a given string.
+     * @param {string} targetStr - The string for which to calculate hashes.
+     * @returns {Array<number>} An array of hash values, one for each modulus.
+     */
+    function calculateStringHash(targetStr) {
+        var hashResult = [];
+        for (var modIdx = 0; modIdx < hashModuli.length; modIdx++) {
+            var tempHash = 0;
+            for (var charIdx = 0; charIdx < targetStr.length; charIdx++) {
+                tempHash = modularMultiply(tempHash, hashBases[modIdx], hashModuli[modIdx]) + targetStr.charCodeAt(charIdx);
+            }
+            if (tempHash >= hashModuli[modIdx]) {
+                tempHash -= hashModuli[modIdx];
+            }
+            hashResult.push(tempHash);
+        }
+        return hashResult;
     }
-    return currentStringLength;
-  };
 
-  /**
-   * Calculates the double hashes for a given string.
-   * @param {string} targetString The string for which to calculate hashes.
-   * @returns {number[]} An array containing the hash values for each modulus.
-   */
-  function calculateStringHashes(targetString){
-    var hashResults=[];
-    for(var modulusIndex=0; modulusIndex < primeModuli.length; modulusIndex++){
-      var tempHash=0;
-      for(var charIndex=0; charIndex < targetString.length; charIndex++){
-        tempHash=multiplyModulo(tempHash,hashBases[modulusIndex],primeModuli[modulusIndex])+targetString.charCodeAt(charIndex);
-      }
-      if(tempHash>=primeModuli[modulusIndex]) tempHash-=primeModuli[modulusIndex];
-      hashResults.push(tempHash);
+    /**
+     * Gets the hash of a substring from the precomputed prefix hashes.
+     * Formula: hash(s[leftBound...rightBound-1]) = (prefixHashes[rightBound] - prefixHashes[leftBound] * powerValues[modIndex][rightBound - leftBound]) % hashModuli[modIndex]
+     * @param {number} leftBound - The starting index of the substring (inclusive).
+     * @param {number} rightBound - The ending index of the substring (exclusive).
+     * @param {number} modIndex - The index of the modulus/base pair to use.
+     * @returns {number} The hash value of the substring.
+     */
+    function getRangeHash(leftBound, rightBound, modIndex) {
+        var computedHash = prefixHashes[modIndex][rightBound] - modularMultiply(prefixHashes[modIndex][leftBound], powerValues[modIndex][rightBound - leftBound], hashModuli[modIndex]);
+        if (computedHash < 0) {
+            computedHash += hashModuli[modIndex];
+        }
+        return computedHash;
     }
-    return hashResults;
-  }
 
-  /**
-   * Retrieves the hash of a segment (substring) of the main string.
-   * Uses precomputed prefix hashes for O(1) retrieval.
-   * @param {number} leftBoundary The starting index of the segment (inclusive).
-   * @param {number} rightBoundary The ending index of the segment (exclusive).
-   * @param {number} modIndex The index of the modulus/base pair to use.
-   * @returns {number} The hash value of the specified segment.
-   */
-  function getSegmentHash(leftBoundary,rightBoundary,modIndex){
-    var segmentHash=prefixHashes[modIndex][rightBoundary]-multiplyModulo(prefixHashes[modIndex][leftBoundary],powerValues[modIndex][rightBoundary-leftBoundary],primeModuli[modIndex]);
-    if(segmentHash < 0) segmentHash+=primeModuli[modIndex]; // Ensure positive result
-    return segmentHash;
-  }
+    /**
+     * Performs modular multiplication (a * b) % c efficiently.
+     * This helps prevent overflow for large numbers before the modulo operation.
+     * @param {number} factorA - First factor.
+     * @param {number} factorB - Second factor.
+     * @param {number} moduloC - Modulo value.
+     * @returns {number} (factorA * factorB) % moduloC.
+     */
+    function modularMultiply(factorA, factorB, moduloC) {
+        // Split factorA into two parts to handle potential overflow if factorA * factorB exceeds JS max safe integer.
+        // (A * B) % C = ((A_high * 2^16) % C * B % C + (A_low) % C * B % C) % C
+        return ((factorA >> 16) * factorB % moduloC * 65536 + (factorA & 65535) * factorB) % moduloC;
+    }
 
-  /**
-   * Performs modular multiplication: (a * b) % c.
-   * Optimized for JavaScript's number representation to prevent overflow before modulo.
-   * @param {number} operandA First operand.
-   * @param {number} operandB Second operand.
-   * @param {number} moduloValue The modulus.
-   * @returns {number} The result of (a * b) % c.
-   */
-  function multiplyModulo(operandA,operandB,moduloValue){
-    // This trick uses bitwise operations to break down multiplication
-    // and apply modulo earlier, preventing large intermediate results.
-    return ((operandA>>16)*operandB%moduloValue*65536+(operandA&65535)*operandB)%moduloValue;
-  }
-  return createDoubleHasher;
+    return createStringHasher;
 })();
 
-global.print(primaryExecution()); // Use global.print for output.
+// Execute the main logic and print the result.
+console.log(executeSolution());
 
 /**
- * Main execution function for the program logic.
- * Reads two strings and determines a specific count based on their occurrences.
- * @returns {number} The calculated count.
+ * Main function containing the problem's logic.
+ * Reads two strings, 's' and 't', and determines how many times 't' can be
+ * formed by concatenating 's' and then repeatedly concatenating 't' itself,
+ * such that the final string is a substring of the extended 's'.
+ * @returns {number} The count of 't' concatenations, or -1 if infinite, or 0 if not found.
  */
-function primaryExecution(){
-  var firstString=inputReader.nextAtom(1); // Read first string from input
-  var secondString=inputReader.nextAtom(1); // Read second string from input
+function executeSolution() {
+    var sourceString = inputData.readNextToken(true); // Read string 's'
+    var patternString = inputData.readNextToken(true); // Read string 't'
 
-  var extendedFirstString=firstString;
-  // Extend the first string until it's at least as long as the second string
-  while(extendedFirstString.length < secondString.length) extendedFirstString+=firstString;
+    var extendedSource = sourceString;
+    // Extend 's' until it's at least as long as 't'.
+    while (extendedSource.length < patternString.length) {
+        extendedSource += sourceString;
+    }
 
-  // Initialize the double hasher with a doubled version of the extended first string
-  // This allows searching for patterns that wrap around.
-  var stringMatcher=DoubleHasher(extendedFirstString+extendedFirstString);
+    // Create a rolling hash for 's' concatenated with itself.
+    // This allows searching for patterns that might wrap around the original 's'.
+    var stringProcessor = StringHasher(extendedSource + extendedSource);
 
-  var foundIndex=stringMatcher.findSubstring(secondString); // Find first occurrence of secondString
-  if(foundIndex===-1) return 0; // If not found, count is 0
+    // Find the first occurrence of 't' in the extended 's'.
+    var firstMatchIndex = stringProcessor.findSubstring(patternString);
 
-  var tempSecondString=secondString;
-  var lastFoundPosition;
-  var occurrenceCount=0;
+    // If 't' is not found at all, return 0.
+    if (firstMatchIndex === -1) {
+        return 0;
+    }
 
-  // Loop to find consecutive occurrences of the second string
-  while(foundIndex >= 0){
-    tempSecondString+=secondString; // Extend the search pattern
-    lastFoundPosition=foundIndex; // Store the last valid found index
-    occurrenceCount++;
-    // Search for the extended pattern starting from the previous found index
-    foundIndex=stringMatcher.findSubstring(tempSecondString,foundIndex);
-  }
+    var growingPattern = patternString; // This will grow by concatenating 't'.
+    var lastSuccessfulMatchIndex; // Stores the index of the last successful match.
+    var resultCount = 0; // Counts how many times 't' can be concatenated.
 
-  // After the loop, the `tempSecondString` is `secondString` repeated `occurrenceCount` times.
-  // We need to check if `tempSecondString` repeated `occurrenceCount` times
-  // with one more `firstString` appended to the original `extendedFirstString`
-  // can still match the `tempSecondString` (which is `secondString` * `occurrenceCount` + 1)
-  // This is a subtle check for an edge case or boundary condition.
+    // Loop to find how many times 't' can be concatenated and still be found.
+    while (firstMatchIndex >= 0) {
+        growingPattern += patternString; // Append 't' to the growing pattern.
+        lastSuccessfulMatchIndex = firstMatchIndex; // Store current match index.
+        resultCount++; // Increment count.
+        // Search for the new, longer pattern, starting from the previous match index.
+        firstMatchIndex = stringProcessor.findSubstring(growingPattern, firstMatchIndex);
+    }
 
-  // Append one more `extendedFirstString` to the hasher's internal string
-  stringMatcher.appendString(extendedFirstString);
-  // Check if the pattern `tempSecondString` (which grew) still matches
-  // starting from the last successful position.
-  // If it matches, it implies an infinite repetition, meaning -1.
-  if(stringMatcher.findSubstring(tempSecondString,lastFoundPosition)>=0) return -1;
-  return occurrenceCount; // Return the final count
+    // After the loop, 'growingPattern' is one 't' longer than what was last found.
+    // We need to check if appending 's' to the hashed string allows finding this
+    // 'growingPattern' at the 'lastSuccessfulMatchIndex'.
+    // If it does, it implies 't' can be concatenated infinitely.
+    stringProcessor.appendString(extendedSource); // Append another 's' to the hashed string.
+
+    // If the 'growingPattern' (which is one 't' longer than the last found)
+    // can now be found starting at 'lastSuccessfulMatchIndex', it means
+    // we can keep extending 's' and finding it, implying infinite concatenations.
+    if (stringProcessor.findSubstring(growingPattern, lastSuccessfulMatchIndex) >= 0) {
+        return -1; // Infinite concatenations possible.
+    }
+
+    // Otherwise, return the count of successful concatenations.
+    return resultCount;
 }

@@ -1,29 +1,13 @@
-(function() {
-    const fsModule = require("fs");
-    const inputBuffer = fsModule.readFileSync("/dev/stdin");
-    const processedText = inputBuffer.toString("utf8");
+const processInput = (rawData) => {
+  const [firstLineContent] = rawData.split('\n');
+  const [firstVal, secondVal] = firstLineContent.split(' ');
 
-    const extractNumerics = (sourceString) => {
-        const patternMatch = sourceString.match(/(\d+)\s(\d+)/);
-        if (patternMatch && patternMatch.length >= 3) {
-            return {
-                first: Number(patternMatch[1]),
-                second: Number(patternMatch[2])
-            };
-        }
-        return { first: 0, second: 0 };
-    };
+  const numericFirst = Number(firstVal);
+  const numericSecond = Number(secondVal);
 
-    const deriveOutcome = (numA, numB) => {
-        const outcomeDecider = {
-            true: 0,
-            false: numA - numB
-        };
-        return outcomeDecider[numB === 1];
-    };
+  const resultValue = (1 - +(numericSecond === 1)) * (numericFirst - numericSecond);
 
-    const { first: quantityA, second: quantityB } = extractNumerics(processedText);
-    const finalComputation = deriveOutcome(quantityA, quantityB);
+  console.log(resultValue);
+};
 
-    process.stdout.write(String(finalComputation) + '\n');
-})();
+processInput(require("node:fs").readFileSync("/dev/stdin", "utf8"));

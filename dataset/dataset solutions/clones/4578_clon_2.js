@@ -1,46 +1,39 @@
 "use strict";
 
-// This module processes input data to count occurrences of node identifiers.
-const processInputData = (inputStringData) => {
-  // Split the entire input by newline characters to get individual lines.
-  const lines = inputStringData.split("\n");
+// This module processes input data to count node occurrences in edge lists.
+const processInput = (inputData) => {
+    // Split the input by newlines to get individual lines.
+    const lines = inputData.split("\n");
 
-  // Parse the first line to extract the total number of nodes (N) and edges (M).
-  // The first part of the first line represents the node count.
-  const firstLineParts = lines[0].split(" ");
-  const totalVertices = parseInt(firstLineParts[0]);
-  // The second part of the first line represents the edge count.
-  const totalConnections = parseInt(firstLineParts[1]);
+    // Parse the first line to extract the number of nodes and edges.
+    // The first line contains two space-separated integers: N (nodes) and M (edges).
+    const firstLineParts = lines[0].split(" ");
+    const numNodes = parseInt(firstLineParts[0]); // Total number of nodes in the graph.
+    const numEdges = parseInt(firstLineParts[1]); // Total number of edges provided.
 
-  // Extract the connection definitions from the input.
-  // These are lines from the second line up to M lines after the first.
-  const connectionStrings = lines.slice(1, totalConnections + 1);
+    // Extract the edge definitions from the input.
+    // These are lines from the second line up to (and including) the M-th edge line.
+    const edgeListStrings = lines.slice(1, numEdges + 1);
 
-  // Process each connection string: remove spaces and then concatenate all into one long string.
-  // This effectively creates a single string of all connected nodes.
-  const combinedRoutes = connectionStrings
-    .map((currentLine) => currentLine.split(" ").join(""))
-    .join("");
+    // Process the edge strings: remove spaces from each edge, then concatenate all into one long string.
+    // Example: ["1 2", "2 3"] -> ["12", "23"] -> "1223"
+    const concatenatedEdges = edgeListStrings.map(
+        (edgeStr) => edgeStr.split(" ").join("")
+    ).join("");
 
-  // Iterate from 1 up to the total number of vertices (nodes).
-  // For each vertex, count its occurrences in the combined routes string.
-  for (let vertexIdentifier = 1; vertexIdentifier <= totalVertices; vertexIdentifier++) {
-    // Convert the combined routes string into an array of characters,
-    // filter to find characters that match the current vertex identifier,
-    // and then output the total count of such characters.
-    console.log(
-      combinedRoutes
-        .split("")
-        .filter((digitChar) => parseInt(digitChar) === vertexIdentifier)
-        .length
-    );
-  }
+    // Iterate through each possible node ID from 1 to numNodes.
+    for (let currentNodeId = 1; currentNodeId <= numNodes; currentNodeId++) {
+        // For each node ID, count its occurrences in the concatenated edge string.
+        // Convert the concatenated string to an array of characters, then filter
+        // to find characters that match the current node ID (after type coercion by '==').
+        const occurrenceCount = concatenatedEdges.split("").filter(
+            (charVal) => charVal == currentNodeId
+        ).length;
+
+        // Output the count for the current node ID.
+        console.log(occurrenceCount);
+    }
 };
 
-// Execute the main processing function with data read from standard input.
-// Utilize the Node.js 'fs' (file system) module to read the file contents.
-const fileSystemModule = require("fs");
-const standardInputPath = "/dev/stdin";
-const textEncoding = "utf8";
-
-processInputData(fileSystemModule.readFileSync(standardInputPath, textEncoding));
+// Read input from standard input and pass it to the processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,19 +1,14 @@
-const dataRetriever = require('node:fs');
+const fileSystem = require('fs');
+let sourceText = fileSystem.readFileSync('/dev/stdin', 'utf8').trim();
 
-const rawContent = dataRetriever.readFileSync('/dev/stdin', 'utf8');
-const processedContent = rawContent.trim();
-
-const firstToken = 'apple';
-const secondToken = 'peach';
-
-const replacementMap = new Map();
-replacementMap.set(firstToken, secondToken);
-replacementMap.set(secondToken, firstToken);
-
-const swapPattern = new RegExp(`(${firstToken}|${secondToken})`, 'g');
-
-const finalContent = processedContent.replace(swapPattern, (capturedSegment) => {
-    return replacementMap.get(capturedSegment);
+sourceText = sourceText.replace(/peach|apple/g, (matchedPhrase) => {
+    if (matchedPhrase === 'peach') {
+        return 'apple';
+    }
+    if (matchedPhrase === 'apple') {
+        return 'peach';
+    }
+    return matchedPhrase;
 });
 
-process.stdout.write(finalContent + '\n');
+console.log(sourceText);

@@ -1,27 +1,28 @@
-const receivedData = [];
+var inputBuffer = [];
+const moduloConstant = Math.pow(10, 9) + 7;
+let finalProduct = 1;
 
-const streamUtility = require('readline');
-const inputController = streamUtility.createInterface({
+const ioHandler = require('readline').createInterface({
     input: process.stdin,
     output: process.stdout,
 });
 
-inputController.on('line', (dataSegment) => {
-    receivedData.push(dataSegment);
+ioHandler.on('line', function (lineContent) {
+    inputBuffer.push(lineContent);
 });
 
-inputController.on('close', () => {
-    const lengthIndicator = Number(receivedData[0]);
-    const inputString = receivedData[1];
+ioHandler.on('close', function () {
+    const strLength = Number(inputBuffer[0]);
+    const charSequence = inputBuffer[1];
 
     const frequencyMap = new Map();
-    for (const individualChar of inputString) {
-        frequencyMap.set(individualChar, (frequencyMap.get(individualChar) || 0) + 1);
+    for (const charUnit of charSequence) {
+        frequencyMap.set(charUnit, (frequencyMap.get(charUnit) || 0) + 1);
     }
 
-    const aggregateResult = Array.from(frequencyMap.values()).reduce((accumulator, countValue) => {
-        return accumulator * (countValue + 1);
+    finalProduct = Array.from(frequencyMap.values()).reduce((accumulator, currentCount) => {
+        return accumulator * (currentCount + 1);
     }, 1);
 
-    process.stdout.write((aggregateResult - 1).toString() + '\n');
+    console.log(finalProduct - 1);
 });

@@ -1,23 +1,9 @@
-const evaluateAndPresent = (payloadText) => {
-    const tokenizedParts = payloadText.split(' ');
-    let firstOperand = 0;
-    let secondOperand = 0;
+function computeOutcome(sourceText) {
+  const [initialQuantity, deductionAmount] = sourceText.split(' ').map(valStr => Number(valStr));
 
-    let processingIndex = 0;
-    while (processingIndex < tokenizedParts.length && processingIndex < 2) {
-        const currentToken = tokenizedParts[processingIndex];
-        if (processingIndex === 0) {
-            firstOperand = parseInt(currentToken, 10);
-        } else {
-            secondOperand = parseInt(currentToken, 10);
-        }
-        processingIndex++;
-    }
+  const finalResult = Math.max(0, initialQuantity - deductionAmount);
 
-    const calculationInput = firstOperand - secondOperand;
-    const computedOutcome = (calculationInput + Math.abs(calculationInput)) / 2;
+  console.log(String(finalResult));
+}
 
-    process.stdout.write(String(computedOutcome) + '\n');
-};
-
-evaluateAndPresent(require("fs").readFileSync("/dev/stdin", "utf8"));
+computeOutcome(require("fs").readFileSync("/dev/stdin", "utf8"));

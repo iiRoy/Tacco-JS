@@ -1,48 +1,41 @@
-function CalculateNetBenefit(sourceContent) {
-    // Split the raw input string into an array of individual lines
-    const dataLines = sourceContent.split('\n');
+function ProcessInput(rawData) {
+  // Split the raw input string into an array of lines for easier processing.
+  let processedLines = rawData.split("\n");
 
-    // Extract the first set of numeric values from the second line
-    const firstSetOfValues = dataLines[1].split(' ');
+  // Extract the string representations of values from the second line.
+  let valueStrings = processedLines[1].split(" ");
+  // Extract the string representations of costs from the third line.
+  let costStrings = processedLines[2].split(" ");
 
-    // Extract the second set of numeric values from the third line
-    const secondSetOfValues = dataLines[2].split(' ');
+  // Parse the total number of elements from the first line of input.
+  const countElements = parseInt(processedLines[0], 10);
 
-    // Parse the total number of entries from the first line
-    let totalEntries = parseInt(dataLines[0], 10);
+  // Initialize arrays to hold the numeric values and costs after parsing.
+  let itemValues = new Array(countElements);
+  let itemCosts = new Array(countElements);
 
-    // Initialize an array to store the 'gain' values
-    let gains = Array.from({ length: totalEntries });
+  // Initialize a variable to accumulate the total positive benefit.
+  let totalBenefit = 0;
 
-    // Initialize an array to store the 'loss' values
-    let losses = new Array(totalEntries);
+  // Iterate through the string arrays to parse and store integer values and costs.
+  for (let idx = 0; idx < countElements; idx++) {
+    itemValues[idx] = parseInt(valueStrings[idx], 10);
+    itemCosts[idx] = parseInt(costStrings[idx], 10);
+  }
 
-    // Initialize a variable to accumulate the total positive difference
-    let cumulativeProfit = 0;
-
-    // Loop through the entries to populate the gain and loss arrays
-    for (let currentIdx = 0; currentIdx < totalEntries; currentIdx++) {
-        // Convert string values to integers for gains
-        gains[currentIdx] = parseInt(firstSetOfValues[currentIdx], 10);
-
-        // Convert string values to integers for losses
-        losses[currentIdx] = parseInt(secondSetOfValues[currentIdx], 10);
+  // Iterate again to calculate the benefit for each item and sum up only the positive ones.
+  for (let idx = 0; idx < countElements; idx++) {
+    // Calculate the current item's net benefit (value minus cost).
+    let currentBenefit = itemValues[idx] - itemCosts[idx];
+    // If the calculated benefit is greater than zero, add it to the running total.
+    if (currentBenefit > 0) {
+      totalBenefit += currentBenefit;
     }
+  }
 
-    // Loop through the arrays again to calculate the net benefit for each item
-    for (let loopCounter = 0; loopCounter < totalEntries; loopCounter++) {
-        // Calculate the difference between gain and loss for the current item
-        const itemDifference = gains[loopCounter] - losses[loopCounter];
-
-        // If the difference is positive, add it to the cumulative profit
-        if (itemDifference > 0) {
-            cumulativeProfit += itemDifference;
-        }
-    }
-
-    // Output the final calculated cumulative profit
-    console.log(cumulativeProfit);
+  // Print the final accumulated total positive benefit to the console.
+  console.log(totalBenefit);
 }
 
-// Call the main processing function with content read from standard input
-CalculateNetBenefit(require("fs").readFileSync("/dev/stdin", "utf-8"));
+// Read the entire content of standard input as a UTF-8 string and pass it to the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf-8"));

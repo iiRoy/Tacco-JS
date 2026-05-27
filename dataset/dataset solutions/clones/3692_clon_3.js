@@ -1,36 +1,9 @@
-(function() {
-  const baseNumericCharacter = '9';
-  const repetitionCount = 8;
-  const allowContentPresentation = true;
-  const outputPrefix = "";
+const targetDigit = '9';
+const repeatTimes = 8;
 
-  let constructedNumericSequence = '';
-  for (let i = 0; i < repetitionCount; i++) {
-    constructedNumericSequence += baseNumericCharacter;
-  }
+const digitArray = new Array(repeatTimes);
+digitArray.fill(targetDigit);
 
-  const finalMessagePayload = String(constructedNumericSequence);
+const resultString = digitArray.join('');
 
-  function dispatchDisplay(contentToDisplay) {
-    if (typeof contentToDisplay !== 'string' || contentToDisplay.length === 0) {
-      return false;
-    }
-
-    if (typeof console !== 'undefined' && typeof console.log === 'function') {
-      console.log(outputPrefix + contentToDisplay);
-      return true;
-    }
-    else if (typeof print === 'function') {
-      print(outputPrefix + contentToDisplay);
-      return true;
-    }
-    return false;
-  }
-
-  if (allowContentPresentation) {
-    const displayResult = dispatchDisplay(finalMessagePayload);
-    if (!displayResult) {
-      // Fallback or error handling logic could reside here
-    }
-  }
-})();
+console.log(resultString);

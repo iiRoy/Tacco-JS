@@ -1,82 +1,68 @@
-const acquireSourceData = () => {
-    const rawContent = require('fs').readFileSync('/dev/stdin', 'utf8');
-    return rawContent.trim().split('\n');
-};
+const sourceData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-function* problemSetIterator(lines) {
-    let currentLineIndex = 0;
+function* inputLineProcessor(fullTextContent) {
+    const contentLines = fullTextContent.trim().split('\n');
+    let currentPosition = 0;
     while (true) {
-        const firstSegment = lines[currentLineIndex++];
-        if (firstSegment === "0 0 0 0 0") {
+        const firstSegmentLine = contentLines[currentPosition++];
+        if (firstSegmentLine === "0 0 0 0 0") {
             return;
         }
-        const secondSegment = lines[currentLineIndex++];
-        const numericValues = (firstSegment + " " + secondSegment).split(" ").map(Number);
-        yield {
-            costUnitX: numericValues[0],
-            costUnitY: numericValues[1],
-            costUnitZ: numericValues[2],
-            batchSizeZ: numericValues[3],
-            batchItemCostZ: numericValues[4],
-            quantityX: numericValues[5],
-            quantityY: numericValues[6],
-            quantityZ: numericValues[7]
-        };
+        // Original code would proceed to arr.shift() for the second line,
+        // potentially leading to `undefined` if input ends unexpectedly.
+        // This generator replicates that behavior by allowing `undefined` to be concatenated.
+        const secondSegmentLine = contentLines[currentPosition++];
+        yield (firstSegmentLine + " " + secondSegmentLine).split(" ").map(Number);
     }
 }
 
-const computePlanAlphaCost = (parameters) => {
-    const { costUnitX, costUnitY, costUnitZ, batchSizeZ, batchItemCostZ, quantityX, quantityY, quantityZ } = parameters;
+function determineMinimumCost(
+    itemPriceA,
+    itemPriceB,
+    itemPriceC,
+    blockQuantityD,
+    blockItemPriceE, // This variable has dual meaning in original logic
+    countOfA,
+    countOfB,
+    countOfC
+) {
+    // Calculation for the first strategy (equivalent to original 'A' logic)
+    const fullBlockCostComponent = Math.floor(countOfC / blockQuantityD) * blockQuantityD * blockItemPriceE;
+    const remainingCCostComponent = (countOfC % blockQuantityD) * itemPriceC;
+    const totalCostStrategyOne = fullBlockCostComponent + remainingCCostComponent + countOfA * itemPriceA + countOfB * itemPriceB;
 
-    const fullBatchesAcquired = Math.floor(quantityZ / batchSizeZ);
-    const costFromFullBatches = fullBatchesAcquired * batchSizeZ * batchItemCostZ;
-    const remainingZItems = quantityZ % batchSizeZ;
-    const costForRemainingZItems = remainingZItems * costUnitZ;
+    // Calculation for the second strategy (equivalent to original 'B' logic)
+    let totalCostStrategyTwo;
+    if (fullBlockCostComponent === 0) { // This condition implies countOfC < blockQuantityD
+        let itemsNeededToCompleteBlock = (countOfC % blockQuantityD === 0) ? 0 : blockQuantityD - (countOfC % blockQuantityD);
+        let currentAccumulatedCost = 0;
 
-    return costFromFullBatches + costForRemainingZItems + (quantityX * costUnitX) + (quantityY * costUnitY);
-};
-
-const computePlanBetaCost = (parameters) => {
-    const { costUnitX, costUnitY, batchSizeZ, batchItemCostZ, quantityX, quantityY, quantityZ } = parameters;
-
-    let totalCostForZ = 0;
-    let currentQuantityX = quantityX;
-    let currentQuantityY = quantityY;
-
-    if (quantityZ < batchSizeZ) {
-        if (quantityZ > 0) {
-            totalCostForZ = batchSizeZ * batchItemCostZ;
-            let surplusFromBatch = batchSizeZ - quantityZ;
-
-            if (surplusFromBatch <= currentQuantityY) {
-                currentQuantityY -= surplusFromBatch;
-            } else {
-                surplusFromBatch -= currentQuantityY;
-                currentQuantityY = 0;
-                if (surplusFromBatch <= currentQuantityX) {
-                    currentQuantityX -= surplusFromBatch;
-                } else {
-                    currentQuantityX = 0;
-                }
-            }
+        if (itemsNeededToCompleteBlock > 0) {
+            currentAccumulatedCost += blockItemPriceE * blockQuantityD; // Cost of one full block
         }
-    } else {
-        totalCostForZ = quantityZ * batchItemCostZ;
+
+        // Simulate the reduction of countOfB then countOfA, as in the original 'while' loop
+        let tempCountB = countOfB;
+        let tempCountA = countOfA;
+
+        const usedFromB = Math.min(tempCountB, itemsNeededToCompleteBlock);
+        tempCountB -= usedFromB;
+        itemsNeededToCompleteBlock -= usedFromB;
+
+        const usedFromA = Math.min(tempCountA, itemsNeededToCompleteBlock);
+        tempCountA -= usedFromA;
+        // itemsNeededToCompleteBlock is now fully accounted for, no further tracking needed
+
+        currentAccumulatedCost += tempCountA * itemPriceA + tempCountB * itemPriceB;
+        totalCostStrategyTwo = currentAccumulatedCost;
+    } else { // This condition implies countOfC >= blockQuantityD
+        // Here, blockItemPriceE acts as an individual item price for countOfC
+        totalCostStrategyTwo = countOfA * itemPriceA + countOfB * itemPriceB + countOfC * blockItemPriceE;
     }
 
-    return totalCostForZ + (currentQuantityX * costUnitX) + (currentQuantityY * costUnitY);
-};
+    console.log(Math.min(totalCostStrategyOne, totalCostStrategyTwo));
+}
 
-const determineOptimalExpenditure = (purchaseParameters) => {
-    const planAlphaResult = computePlanAlphaCost(purchaseParameters);
-    const planBetaResult = computePlanBetaCost(purchaseParameters);
-    return Math.min(planAlphaResult, planBetaResult);
-};
-
-const allRawLines = acquireSourceData();
-const problemDataStream = problemSetIterator(allRawLines);
-
-for (const currentProblemSet of problemDataStream) {
-    const finalCalculatedCost = determineOptimalExpenditure(currentProblemSet);
-    console.log(finalCalculatedCost);
+for (const numericParameters of inputLineProcessor(sourceData)) {
+    determineMinimumCost(...numericParameters);
 }

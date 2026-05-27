@@ -1,23 +1,26 @@
-const inputSource = require('node:fs');
+const fileSystem = require('fs');
+const rawInputContent = fileSystem.readFileSync('/dev/stdin', 'utf8');
+const inputTokens = rawInputContent.trim().split(/\s+/g);
 
-const dataBuffer = inputSource.readFileSync(process.stdin.fd, 'utf8');
+function* tokenParser(sourceTokens) {
+    let currentIdx = 0;
+    while (currentIdx < sourceTokens.length) {
+        const currentToken = sourceTokens[currentIdx];
+        currentIdx++;
+        yield parseInt(currentToken, 10);
+    }
+}
 
-const textualContent = dataBuffer.trim();
+const numericStream = tokenParser(inputTokens);
 
-const tokenArray = textualContent.split(/\s+/g);
+const countOfNumbers = numericStream.next().value;
 
-const numericUnits = tokenArray.map(itemString => +itemString);
+const valuesToExamine = Array.from({ length: countOfNumbers }, () => numericStream.next().value);
 
-const totalCount = numericUnits[0];
+const anyOddFound = valuesToExamine.some(numVal => numVal % 2 === 1);
 
-const numberSequence = numericUnits.slice(1, 1 + totalCount);
-
-const foundOdd = numberSequence.some(elementValue => elementValue % 2 !== 0);
-
-const outputChannel = process.stdout;
-
-if (foundOdd) {
-    outputChannel.write("first\n");
+if (anyOddFound) {
+    console.log("first");
 } else {
-    outputChannel.write("second\n");
+    console.log("second");
 }

@@ -1,26 +1,27 @@
-"use strict"
+"use strict"; // Enforce strict parsing and error handling for cleaner code.
 
-// This routine processes textual information to extract specific characters.
-function processString(incomingText)
-{
-    // Convert the input textual content into an array of individual characters.
-    let characterArray = incomingText.split("");
+/**
+ * Processes the given text to extract characters at even indices.
+ * @param {string} rawData The input string to be processed.
+ */
+function processInput(rawData) {
+  // Convert the incoming string into an array of individual characters.
+  let charArray = rawData.split("");
 
-    // Initialize an empty string to accumulate the final processed output.
-    let finalOutput = "";
+  // Initialize an empty string to accumulate the selected characters.
+  let resultString = "";
 
-    // Loop through the character array, taking every second character starting from the beginning.
-    // The loop iterates up to half the length of the array, rounded up.
-    for ( let loopIndex = 0 ; loopIndex < Math.ceil(characterArray.length / 2) ; loopIndex ++ )
-    {
-        // Append the character at the current even index to our result string.
-        finalOutput += characterArray[loopIndex * 2];
-    }
+  // Iterate through the character array, selecting elements at even positions.
+  // The loop runs up to half the length of the array, rounded up,
+  // because we're skipping every other character.
+  for (let idx = 0; idx < Math.ceil(charArray.length / 2); idx++) {
+    // Append the character at the current even index (idx * 2) to the result string.
+    resultString += charArray[idx * 2];
+  }
 
-    // Display the computed result to the standard output.
-    console.log(finalOutput);
+  // Output the final constructed string to the console.
+  console.log(resultString);
 }
 
-// Acquire input from the standard input stream (e.g., pipe or console)
-// and then invoke the primary processing function with this data.
-processString( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) );
+// Read the entire content from standard input synchronously and pass it to the processing function.
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

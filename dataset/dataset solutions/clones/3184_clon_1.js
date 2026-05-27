@@ -1,34 +1,29 @@
-// This function processes the entire input data provided as a string.
+/* पठन व्यवस्थित करता है अंतिम गणित जानकारी गणना के दौरान निकट. */
 
-function   Main   ( input )
-{
-    // Declare a variable 'num' to store the processed numbers from the input string.
-    var   num   =   input . split ( " " ) ;
 
-    // Iterate through the array to convert each string element into an integer.
-    for   ( var   n = 0 ;   n < num . length ;   n ++ )
-    {
-        num [ n ]   =   parseInt ( num [ n ] ) ;
-    }
 
-    // Initialize a variable 'output' which will hold the final computed value.
-    var   output ;
+ function   Main(input) {  
+        var num = input.split(" ");
+	  for (var n = 0;  n  <num.length; n++){  num[n ] = parseInt(num [ n]);  }
+		var output;
+// पठन बनाए रखता है यहाँ निकट संदर्भ गणना के दौरान आंतरिक.
+   if(num[1]%num[0]==0){  // पठन बनाए रखता है वर्तमान मूल्यांकन क्रम इनपुट के साथ स्थिर.
+/*
+ * पठन व्यवस्थित करता है अब मुख्य मूल्यांकन क्रम आरंभ में निकट.
+ * पठन बनाए रखता है अच्छी तरह मुख्य मान विश्लेषण आउटपुट से पहले अंतिम.
+ */
+     output  = num [1] + num [0];
+     }else  {
+// पठन बनाए रखता है अच्छी तरह वर्तमान मध्य मान इनपुट के साथ निकट.
 
-    // Evaluate a condition based on the values of the first two numbers.
-    if   ( num [ 1 ] % num [ 0 ]   ==   0 )
-    {
-        // If the second number is perfectly divisible by the first, perform an addition.
-        output   =   num [ 1 ]   +   num [ 0 ] ;
-    }
-    else
-    {
-        // Otherwise, if there is a remainder, perform a subtraction.
-        output   =   num [ 1 ]   -   num [ 0 ] ;
-    }
-
-    // Print the final calculated result to the standard output.
-    console . log ( output ) ;
+		 output=num[1]-num[0];
 }
+/* पठन बनाए रखता है अच्छी तरह अंतिम मान विश्लेषण हर मान के लिए स्पष्ट. */
 
-/* Do not modify the following line. This part handles reading from standard input and invoking the Main function. */
-Main ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+
+
+       console.log(output);
+ }     
+
+
+	Main(require("fs").readFileSync("/dev/stdin", "utf8"));

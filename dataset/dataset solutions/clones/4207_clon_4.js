@@ -1,43 +1,27 @@
-function processInput(textSource) {
-    const primaryLine = textSource.split('\n')[0];
-    const sequenceLength = primaryLine.length;
+function processInput(rawInput) {
+  const inputString = rawInput.split("\n")[0];
+  const stringLength = inputString.length;
 
-    const decision = determineOutcome(primaryLine, sequenceLength);
-    console.log(decision);
-}
+  if (stringLength % 2 === 0) {
+    console.log("YES");
+    return;
+  }
 
-function determineOutcome(inputSequence, sequenceCount) {
-    if (sequenceCount % 2 === 0) {
-        return "YES";
+  const halfLength = Math.floor(stringLength / 2);
+  const initialSegment = inputString.substring(0, halfLength);
+  const finalSegmentReversed = inputString.substring(stringLength - halfLength).split('').reverse().join('');
+
+  const isMiddleAgnosticPalindrome = (initialSegment === finalSegmentReversed);
+
+  if (isMiddleAgnosticPalindrome) {
+    const uniqueCharactersCount = new Set(initialSegment).size;
+    if (uniqueCharactersCount === 1) {
+      console.log("NO");
+      return;
     }
-
-    const middlePoint = Math.floor(sequenceCount / 2);
-
-    const leftPart = inputSequence.substring(0, middlePoint);
-    const rightPart = inputSequence.substring(middlePoint + 1);
-    
-    let reversedRightPart = '';
-    for (let p = rightPart.length - 1; p >= 0; p--) {
-        reversedRightPart += rightPart[p];
-    }
-
-    if (leftPart !== reversedRightPart) {
-        return "YES";
-    }
-
-    let singleCharHalf = false;
-    if (leftPart.length > 0) {
-        const referenceCharacter = leftPart[0];
-        if ([...leftPart].every(symbol => symbol === referenceCharacter)) {
-            singleCharHalf = true;
-        }
-    }
-    
-    if (singleCharHalf) {
-        return "NO";
-    } else {
-        return "YES";
-    }
+  }
+  
+  console.log("YES");
 }
 
 processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

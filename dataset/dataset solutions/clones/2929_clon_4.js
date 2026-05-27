@@ -1,13 +1,20 @@
-function processDataStream(sourceText) {
-  const [coefficient, offset, initialPoint] = sourceText.split(/\s+/).map(val => Number(val));
-
-  const sequenceIndices = Array.from({ length: 10 }, (_, k) => k + 1);
-
-  sequenceIndices.reduce((priorValue, currentIteration) => {
-    const nextCalculatedValue = coefficient * priorValue - offset;
-    console.log(nextCalculatedValue);
-    return nextCalculatedValue;
-  }, initialPoint);
+function* generateSequence(multiplier, subtractor, startValue) {
+  let previousValue = startValue;
+  for (let k = 0; k < 10; k++) {
+    previousValue = multiplier * previousValue - subtractor;
+    yield previousValue;
+  }
 }
 
-processDataStream(require('fs').readFileSync('/dev/stdin', 'utf8'));
+function computeAndDisplay(sourceData) {
+  const components = sourceData.split(" ");
+  const coeff = Number(components[0]);
+  const diff = Number(components[1]);
+  const seed = Number(components[2]);
+
+  for (const val of generateSequence(coeff, diff, seed)) {
+    console.log(val);
+  }
+}
+
+computeAndDisplay(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,28 +1,24 @@
-const processInput = (receivedText) => {
-    const dataLines = receivedText.split("\n");
+const processInput = (rawData) => {
+    // Divide the incoming raw data string into individual lines.
+    const parsedLines = rawData.split("\n");
 
-    const [ totalItems, numQueries ] = dataLines[0].split(' ').map(strNum => Number(strNum));
+    // Parse the first line to obtain the total number of items and the number of queries.
+    const [ totalItems, queryCount ] = parsedLines[0].split(' ').map(val => Number(val));
 
-    const itemIdentifiers = dataLines[1].split(' ');
+    // The second line contains the collection of items, split by spaces.
+    const itemCollection = parsedLines[1].split(' ');
       
- 
-    for (
-        let currentLineIdx = 2;
-        currentLineIdx < numQueries + 2;
-        currentLineIdx++
-    ) {
-        const [ beginPos, finalPos ] = dataLines[currentLineIdx].split(' ').map(numStr => Number(numStr));
+    // Iterate through each query, starting from the third line of the input.
+    for (let loopIndex = 2; loopIndex < queryCount + 2; loopIndex++) {
+        // Extract the starting and ending indices for the current query.
+        const [ startIndex, endIndex ] = parsedLines[loopIndex].split(' ').map(val => Number(val));
         
-        console.log(
-            itemIdentifiers
-                .slice(beginPos - 1, finalPos)
-                .filter(
-                    (itemVal, pos, collection) => collection.indexOf(itemVal) === pos
-                )
-                .length
-        );
+        // Slice the item collection based on the query's range (adjusting for 1-based indexing).
+        // Then, filter the sliced portion to find only the unique elements.
+        // Finally, print the count of these unique elements to the console.
+        console.log(itemCollection.slice(startIndex - 1, endIndex).filter((currentItem, currentIndex, currentArray) => currentArray.indexOf(currentItem) === currentIndex).length);
     }
- 
 };
  
+// Read the entire content of standard input synchronously and pass it to the processing function.
 processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

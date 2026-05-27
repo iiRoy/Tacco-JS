@@ -1,57 +1,65 @@
 const ProcessInput = (rawData) => {
-  // Split the raw input string into an array of lines
-  const lineFragments = rawData.split('\n');
+  // Split the entire input string into individual lines
+  const lineSegments = rawData.split('\n');
 
-  // The first line often contains a count, though not used here directly
-  const recordCount = lineFragments[0];
+  // The first line often contains a count, but it's not used in this logic.
+  const firstLineValue = lineSegments[0];
 
-  // Process all subsequent lines to create structured data for restaurants
-  const evaluatedEstablishments = lineFragments
-    .filter((item, idx) => !!idx) // Skip the first line (recordCount)
-    .map((dataRow, idx) => {
-      // Each restaurant entry includes its original 1-based index and parsed data
-      return [idx + 1].concat(dataRow.split(' '));
+  // Process the remaining lines to extract restaurant data and assign original indices.
+  // Each entry will be [original_index, restaurant_name, score_value].
+  const restaurantEntries = lineSegments
+    .filter((currentElement, elementIndex) => !!elementIndex) // Skip the first line
+    .map((dataRow, rowIndex) => {
+      // Split each data row by space to get name and score
+      const parts = dataRow.split(' ');
+      // Prepend the 1-based original index to the parts
+      return [rowIndex + 1].concat(parts);
     });
 
-  // Sort the establishments based on a custom comparison logic
-  const orderedRecords = evaluatedEstablishments.sort(sortEntities);
+  // Sort the collected restaurant entries using a custom comparison function.
+  const orderedEntries = restaurantEntries.sort(entryComparator);
 
-  // Iterate through the sorted records and print the original index
-  orderedRecords.forEach((element, index) => {
-    // Only print if the name (second element) is not an empty string
-    if (element[1] !== '') {
-      console.log(element[0]);
+  // Iterate through the sorted entries and print the original index for valid ones.
+  orderedEntries.forEach((itemEntry, itemIndex) => {
+    // Check if the restaurant name (second element) is not empty.
+    if (itemEntry[1] !== '') {
+      console.log(itemEntry[0]); // Output the original 1-based index.
     }
   });
 };
 
-// Comparison function for sorting restaurant entries
-const sortEntities = (firstEntry, secondEntry) => {
-    // Extract restaurant names for primary comparison
-    const entryAName = firstEntry[1];
-    const entryBName = secondEntry[1];
+// This function compares two restaurant entries primarily by name, then by score.
+const entryComparator = (firstEntry, secondEntry) => {
+    // Extract restaurant names from the second position of each entry.
+    const firstName = firstEntry[1];
+    const secondName = secondEntry[1];
 
-    // If names are identical, compare by score; otherwise, compare alphabetically by name
-    return entryAName === entryBName
-        ? compareScores(firstEntry, secondEntry)
-        : entryAName < entryBName
-            ? -1 // entryA comes before entryB
-            : 1;  // entryA comes after entryB
+    // Compare names alphabetically.
+    // If names are identical, use the score comparator.
+    // Otherwise, sort by name in ascending order.
+    return firstName === secondName
+        ? scoreComparator(firstEntry, secondEntry)
+        : firstName < secondName
+            ? -1 // firstEntry comes before secondEntry
+            : 1;  // firstEntry comes after secondEntry
 };
 
-// Secondary comparison function for scores (descending order)
-const compareScores = (firstEntry, secondEntry) => {
-    // Parse scores as integers for numerical comparison
-    const firstScoreValue = Number.parseInt(firstEntry[2], 10);
-    const secondScoreValue = Number.parseInt(secondEntry[2], 10);
+// This function compares two restaurant entries by their scores in descending order.
+const scoreComparator = (firstScoreEntry, secondScoreEntry) => {
+    // Parse scores as integers from the third position of each entry.
+    const firstScoreValue = parseInt(firstScoreEntry[2], 10);
+    const secondScoreValue = parseInt(secondScoreEntry[2], 10);
 
-    // Compare scores: higher score comes first
+    // Compare scores.
+    // If scores are equal, their relative order doesn't change.
+    // If firstScoreValue is less than secondScoreValue, secondScoreEntry comes first (descending).
+    // Otherwise, firstScoreValue is greater, so firstScoreEntry comes first.
     return firstScoreValue === secondScoreValue
-        ? 0  // Scores are equal
+        ? 0
         : firstScoreValue < secondScoreValue
-            ? 1  // firstEntry has lower score, comes after
-            : -1; // firstEntry has higher score, comes before
+            ? 1  // firstScoreEntry comes after secondScoreEntry (lower score)
+            : -1; // firstScoreEntry comes before secondScoreEntry (higher score)
 };
 
-// Execute the main processing function with data read from standard input
-ProcessInput(require("node:fs").readFileSync("/dev/stdin", "utf8"));
+// Execute the main processing function by reading input from standard input.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

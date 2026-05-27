@@ -1,71 +1,50 @@
-/*
- * This script processes a string of raw data, typically read from standard input,
- * to perform conditional calculations and output results. It extracts two numeric
- * values from the input and applies different logic paths based on their magnitudes.
- */
-function processInputData(rawDataContent) {
-  // Establish a foundational numeric value for computations.
-  const BASE_VALUE_LIMIT = 100;
+function processInput (rawData) {
+  const parsedValues = rawData.split(/\s/g);
+  const limitValue = 100; // Declared as const to replicate TypeError on reassignment attempt
+  const iterationCount = parsedValues[0]; // Kept as string for initial comparison fidelity
+  let dataIndex; // Declared with `let` as its assignment is conditional
 
-  // Split the raw input string by any sequence of whitespace characters.
-  // The filter ensures that any empty strings resulting from the split are removed.
-  const splitDataTokens = rawDataContent.split(/\s+/).filter(Boolean);
+  // Helper function to encapsulate console logging, preserving the format specifier
+  const displayResult = (valueToLog) => console.log('%s', valueToLog);
 
-  // --- Robust Input Verification ---
-  // Ensure that at least two distinct data tokens are available for processing.
-  if (splitDataTokens.length < 2) {
-    // If input is insufficient, log an error and terminate execution gracefully.
-    console.error("Input Error: Expected a minimum of two numeric components.");
-    return;
+  // Replicate the exact behavior of the original `index` assignment:
+  // `const index = inputValue[1] <= parameter ? inputValue[1] : parameter = 100;;`
+  // This means if `Number(parsedValues[1])` is greater than `limitValue`,
+  // an attempt to reassign `limitValue` (a const) occurs, throwing a TypeError.
+  const numericInputIndex = Number(parsedValues[1]);
+  if (numericInputIndex <= limitValue) {
+    dataIndex = numericInputIndex;
+  } else {
+    // This line attempts to assign a value to a `const` variable (`limitValue`).
+    // This action will trigger a `TypeError: Assignment to constant variable.`,
+    // precisely mirroring the original code's behavior in this scenario.
+    limitValue = 100; // This statement is designed to cause the TypeError
+    // If the error did not occur, `dataIndex` would receive `100` (the result of the assignment).
+    // However, execution halts due to the error, so `dataIndex`'s value here is not reached.
   }
 
-  // Attempt to parse the first token as a floating-point number, then convert to an integer.
-  const exponentFactor = Math.floor(parseFloat(splitDataTokens[0]));
-  // Attempt to parse the second token as a floating-point number.
-  const primaryOperand = parseFloat(splitDataTokens[1]);
-
-  // Validate that both parsed values are indeed valid numbers (not NaN).
-  if (isNaN(exponentFactor) || isNaN(primaryOperand)) {
-    // If any parsing fails, report an error and halt.
-    console.error("Data Parsing Error: One or both input values are not valid numbers.");
-    return;
+  // Guard clause: Preserve original comparison behavior.
+  // `iterationCount === 0` will be false for string "0", "1", etc.
+  // `Number(iterationCount) > 2` handles numeric comparison with coercion.
+  if (iterationCount === 0 || Number(iterationCount) > 2) {
+    return displayResult(dataIndex);
   }
 
-  // --- Conditional Execution Pathways ---
+  // Convert iterationCount to a number for mathematical operations
+  const numericIterationCount = Number(iterationCount);
 
-  // Check if the exponent factor falls outside the desired range [1, 2].
-  // This serves as an initial bypass condition.
-  if (!(exponentFactor >= 1 && exponentFactor <= 2)) {
-    // When the exponent factor is 0 or greater than 2, output the primary operand directly.
-    // A template literal is used for dynamic string construction.
-    const directOutputString = `Initial Condition Met: ${primaryOperand}`;
-    console.log(directOutputString);
-    return; // Exit the function immediately after this condition.
+  // Introduce intermediate variables for clarity and Type III modification
+  const baseValueForPower = limitValue; // Helper variable for the base of the power calculation
+  const calculatedPower = Math.pow(baseValueForPower, numericIterationCount);
+  const finalProduct = calculatedPower * dataIndex;
+
+  // This conditional block (`if (dataIndex > 100)`) is effectively unreachable.
+  // If `numericInputIndex` was `> limitValue` (100), a `TypeError` would have been thrown earlier.
+  // If `numericInputIndex` was `<= limitValue` (100), then `dataIndex` is `<= 100`.
+  if (dataIndex > 100) {
+    displayResult(finalProduct);
   }
-
-  // If the code reaches this point, 'exponentFactor' is guaranteed to be 1 or 2.
-  // Now, evaluate the 'primaryOperand' against the 'BASE_VALUE_LIMIT'.
-  if (primaryOperand > BASE_VALUE_LIMIT) {
-    // For cases where 'primaryOperand' exceeds the limit, perform a specific calculation.
-    // The exponentiation operator (**) is used for clarity and modern JS syntax.
-    let powerResult = BASE_VALUE_LIMIT ** exponentFactor;
-    let finalComputation = powerResult * primaryOperand;
-
-    // Display the computed result, formatted to two decimal places for consistency.
-    console.log(`Calculation Complete: ${finalComputation.toFixed(2)}`);
-  }
-  // Note: If 'primaryOperand' is less than or equal to 'BASE_VALUE_LIMIT',
-  // and 'exponentFactor' is 1 or 2, no output is generated, mirroring the original behavior.
 }
 
-// --- Application Initialization and Error Handling ---
-try {
-  // Read the entire content of standard input synchronously, assuming UTF-8 encoding.
-  // The .trim() method removes leading/trailing whitespace from the input string.
-  const fileDataContent = require("fs").readFileSync("/dev/stdin", "utf8").trim();
-  // Invoke the main processing function with the acquired data.
-  processInputData(fileDataContent);
-} catch (runtimeError) {
-  // Catch and report any exceptions that occur during file reading or the processing logic.
-  console.error("An unexpected system error occurred:", runtimeError.message);
-}
+// Preserve the exact input reading mechanism
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

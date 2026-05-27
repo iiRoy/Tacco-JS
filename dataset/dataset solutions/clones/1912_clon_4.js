@@ -1,97 +1,99 @@
 "use strict";
+var inputSource = require("fs").readFileSync("/dev/stdin", "utf8");
+var parsedInput = inputSource.split(/ |\n/);
+var inputCursor = 0;
 
-const acquireData = () => {
-    const rawContent = require("fs").readFileSync("/dev/stdin", "utf8");
-    const parts = rawContent.split(/\s+/).filter(Boolean); 
-    let pointer = 0;
+function readSingleValue(isString) {
+  return isString ? parsedInput[inputCursor++] : +parsedInput[inputCursor++];
+}
 
-    const fetchNum = () => Number(parts[pointer++]);
-    const fetchSeq = (count) => Array.from({ length: count }, () => parts[pointer++]);
+function readMultipleValues(count, isString) {
+  if (isString) {
+    return parsedInput.slice(inputCursor, inputCursor += count);
+  } else {
+    return parsedInput.slice(inputCursor, inputCursor += count).map(val => +val);
+  }
+}
 
-    const opCount = fetchNum();
-    const initialValX = fetchNum();
-    const initialValY = fetchNum();
-    const initialValZ = fetchNum();
-    const operationSeries = fetchSeq(opCount);
+function readMatrix(height, width, isString) {
+  var resultMatrix = [];
+  var i = 0;
+  if (isString) {
+    for (; i < height; i++) resultMatrix.push(parsedInput.slice(inputCursor, inputCursor += width));
+  } else {
+    for (; i < height; i++) resultMatrix.push(parsedInput.slice(inputCursor, inputCursor += width).map(val => +val));
+  }
+  return resultMatrix;
+}
 
-    return { opCount, initialValX, initialValY, initialValZ, operationSeries };
-};
+function createMultiDimArray(initialValue) {
+  var args = arguments,
+    len = args.length,
+    expression = "Array(args[" + --len + "]).fill().map(x=>{return " + initialValue + ";})";
+  while (--len) expression = "Array(args[" + len + "]).fill().map(x=>" + expression + ")";
+  return eval(expression);
+}
 
-const processedInput = acquireData();
-const totalOps = processedInput.opCount;
-const initialQuantities = [processedInput.initialValX, processedInput.initialValY, processedInput.initialValZ];
-const opSequence = processedInput.operationSeries;
+var finalResult = processSequence();
+if (finalResult !== undefined) console.log(finalResult);
 
-const failureMessage = "No";
-const successIdentifier = "Yes";
+function processSequence() {
+  const [sequenceLength, initialA, initialB, initialC] = readMultipleValues(4);
+  const pairSequence = readMultipleValues(sequenceLength, true);
 
-const charIdx = { 'A': 0, 'B': 1, 'C': 2 };
+  const decisionRules = {
+    "AB": { chars: ['A', 'B'], nextExclusion: 'AC', primaryForNextCheck: 'A' },
+    "AC": { chars: ['A', 'C'], nextExclusion: 'AB', primaryForNextCheck: 'A' },
+    "BC": { chars: ['C', 'B'], nextExclusion: 'AC', primaryForNextCheck: 'C' }
+  };
 
-const performPairOp = (currentQ, idx1, idx2, char1, char2, nextForbiddenOp, nextOp, isFinal) => {
-    let nextQ = [...currentQ];
-    nextQ[idx1]--;
-    nextQ[idx2]--;
+  const initialProcessingState = {
+    currentCounts: { A: initialA, B: initialB, C: initialC },
+    decisionPath: [],
+    outcomeStatus: "Proceed"
+  };
 
-    if (nextQ[idx1] < 0 && nextQ[idx2] < 0) {
-        return { isFailure: true };
+  const finalProcessingState = pairSequence.reduce((accumulator, currentPair, index) => {
+    if (accumulator.outcomeStatus === "No") {
+      return accumulator;
     }
 
-    let decisionChar = '';
-    if (isFinal) {
-        if (nextQ[idx1] > nextQ[idx2]) {
-            decisionChar = char2;
-        } else {
-            decisionChar = char1;
-        }
+    const { currentCounts } = accumulator;
+    const nextPairInSequence = (index < sequenceLength - 1) ? pairSequence[index + 1] : null;
+    const isFinalStep = (index === sequenceLength - 1);
+
+    const config = decisionRules[currentPair];
+    const [charPrimary, charSecondary] = config.chars;
+
+    const stepCounts = { ...currentCounts };
+
+    stepCounts[charPrimary]--;
+    stepCounts[charSecondary]--;
+
+    if (stepCounts[charPrimary] < 0 && stepCounts[charSecondary] < 0) {
+      return { ...accumulator, outcomeStatus: "No" };
+    }
+
+    let chosenCharacter;
+    if (isFinalStep) {
+      chosenCharacter = (stepCounts[charPrimary] > stepCounts[charSecondary]) ? charSecondary : charPrimary;
     } else {
-        if (nextQ[idx1] > nextQ[idx2] || (nextOp !== nextForbiddenOp && nextQ[idx1] >= 0)) {
-            nextQ[idx2] += 2;
-            decisionChar = char2;
-        } else {
-            nextQ[idx1] += 2;
-            decisionChar = char1;
-        }
-    }
-    return { nextQuantities: nextQ, choice: decisionChar, isFailure: false };
-};
-
-const processCurrentOperation = (currentQuantities, currentOpString, nextOpString, isFinalStep) => {
-    switch (currentOpString) {
-        case 'AB': return performPairOp(currentQuantities, charIdx['A'], charIdx['B'], 'A', 'B', 'AC', nextOpString, isFinalStep);
-        case 'AC': return performPairOp(currentQuantities, charIdx['A'], charIdx['C'], 'A', 'C', 'AB', nextOpString, isFinalStep);
-        case 'BC': return performPairOp(currentQuantities, charIdx['C'], charIdx['B'], 'C', 'B', 'AC', nextOpString, isFinalStep);
-        default: return { isFailure: true };
-    }
-};
-
-const conductSequence = (currentValues, collectedChoices, indexInSequence, fullSequence) => {
-    if (indexInSequence === fullSequence.length) {
-        return { outcome: true, finalChoices: collectedChoices };
+      const conditionOne = (stepCounts[charPrimary] > stepCounts[charSecondary]);
+      const conditionTwo = (nextPairInSequence !== config.nextExclusion && stepCounts[config.primaryForNextCheck] >= 0);
+      chosenCharacter = (conditionOne || conditionTwo) ? charSecondary : charPrimary;
     }
 
-    const currentOp = fullSequence[indexInSequence];
-    const nextOp = fullSequence[indexInSequence + 1]; 
-    const isLast = indexInSequence === fullSequence.length - 1;
+    stepCounts[chosenCharacter] += 2;
 
-    const opResult = processCurrentOperation(currentValues, currentOp, nextOp, isLast);
+    accumulator.decisionPath.push(chosenCharacter);
+    accumulator.currentCounts = stepCounts;
+    return accumulator;
+  }, initialProcessingState);
 
-    if (opResult.isFailure) {
-        return { outcome: false };
-    }
-
-    return conductSequence(
-        opResult.nextQuantities,
-        [...collectedChoices, opResult.choice],
-        indexInSequence + 1,
-        fullSequence
-    );
-};
-
-const ultimateResult = conductSequence(initialQuantities, [], 0, opSequence);
-
-if (ultimateResult.outcome) {
-    console.log(successIdentifier);
-    console.log(ultimateResult.finalChoices.join("\n"));
-} else {
-    console.log(failureMessage);
+  if (finalProcessingState.outcomeStatus === "No") {
+    return "No";
+  } else {
+    console.log("Yes");
+    return finalProcessingState.decisionPath.join("\n");
+  }
 }

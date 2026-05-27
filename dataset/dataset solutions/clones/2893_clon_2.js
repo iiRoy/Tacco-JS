@@ -1,137 +1,152 @@
-var INPUT_PARSER_FACTORY = (
-  function( ) {
-  // Internal factory function to create a new processor
-  function createStreamProcessor ( textualInput ) {
-    return new StreamBuffer( textualInput ) ;
+var INPUT_PARSER = (function () {
+  // This function serves as the factory for creating input source objects.
+  function createParser(sourceContent) {
+    return new InputSource(sourceContent);
   }
-  // Constructor for the stream buffer object
-  function StreamBuffer ( textualInput ) {
-    // Store lines after trimming and splitting
-    this.bufferedTextLines = textualInput.trim().split("\n");
-    // Initialize current reading position
-    this.currentReadPosition = 0;
+
+  // The InputSource class manages reading data from the provided string.
+  function InputSource(rawString) {
+    this._sourceLines = rawString.trim().split("\n"); // Store lines, trimmed and split.
+    this._currentLineIndex = 0; // Keep track of the current line being processed.
   }
-  // Prototype method to extract a single numeric value
-  StreamBuffer.prototype.extractNextNumber = function ( returnAsString ) {
-    var lineContent = this.bufferedTextLines,
-        linePosition = this.currentReadPosition,
-        poppedToken;
-    // If the current line hasn't been processed into tokens, do so now
-    if ( typeof lineContent[linePosition] === "string" ) {
-      lineContent[linePosition] = lineContent[linePosition].split(" ").reverse();
+
+  // Reads a single item from the current line. Items are space-separated.
+  // If 'asStrings' is true, returns the item as a string; otherwise, as a number.
+  // The line is processed from right to left (popping from a reversed array).
+  InputSource.prototype.readSingleItem = function (asStrings) {
+    var lineData = this._sourceLines;
+    var lineIdx = this._currentLineIndex;
+    var resultVal;
+
+    // If the current line hasn't been split into items yet, do so and reverse it.
+    if (typeof lineData[lineIdx] === "string") {
+      lineData[lineIdx] = lineData[lineIdx].split(" ").reverse();
     }
-    poppedToken = lineContent[linePosition].pop();
-    // If the current line is exhausted, advance to the next line
-    if ( !lineContent[linePosition].length ) {
-      this.currentReadPosition++;
+
+    resultVal = lineData[lineIdx].pop(); // Get the next item.
+
+    // If the current line is exhausted, advance to the next line.
+    if (!lineData[lineIdx].length) {
+      this._currentLineIndex++;
     }
-    // Return token as string or number based on flag
-    return returnAsString ? poppedToken : +poppedToken;
+
+    return asStrings ? resultVal : +resultVal; // Convert to number if not requested as string.
   };
-  // Prototype method to read a full line of numbers
-  StreamBuffer.prototype.readNumericLine = function ( returnAsString ) {
-    // Fetch and split the current line, then advance the line pointer
-    var lineTokens = this.bufferedTextLines[this.currentReadPosition++].split(" ");
-    // Return tokens as strings or numbers based on flag
-    return returnAsString ? lineTokens : lineTokens.map( tokenItem => +tokenItem );
+
+  // Reads an entire line and splits it into items.
+  // If 'asStrings' is true, returns items as strings; otherwise, as numbers.
+  InputSource.prototype.readLineItems = function (asStrings) {
+    var items = this._sourceLines[this._currentLineIndex++].split(" ");
+    return asStrings ? items : items.map((item) => +item); // Convert all items to numbers.
   };
-  // Prototype method to read a block of lines as a matrix of numbers
-  StreamBuffer.prototype.readMatrixData = function ( numRowsToRead, returnAsString ) {
-    // Extract a slice of lines and split each into tokens
-    var matrixResult = this.bufferedTextLines.slice(this.currentReadPosition, this.currentReadPosition += numRowsToRead).map( line => line.split(" ") );
-    // Return matrix as strings or numbers based on flag
-    return returnAsString ? matrixResult : matrixResult.map( row => row.map( tokenItem => +tokenItem ) );
+
+  // Reads 'numLines' lines and parses them into a 2D array (matrix).
+  // If 'asStrings' is true, returns items as strings; otherwise, as numbers.
+  InputSource.prototype.readMatrix = function (numLines, asStrings) {
+    var matrixRows = this._sourceLines
+      .slice(this._currentLineIndex, (this._currentLineIndex += numLines))
+      .map((line) => line.split(" "));
+
+    return asStrings
+      ? matrixRows
+      : matrixRows.map((row) => row.map((item) => +item)); // Convert all items to numbers.
   };
-  // Prototype method to read a block of raw lines
-  StreamBuffer.prototype.readRawBlock = function ( numRowsToRead, returnAsString ) {
-    // Extract a slice of lines
-    var rawLines = this.bufferedTextLines.slice(this.currentReadPosition, this.currentReadPosition += numRowsToRead);
-    // Return lines as strings or numbers (if applicable)
-    return returnAsString ? rawLines : rawLines.map( tokenItem => +tokenItem );
+
+  // Reads 'numLines' lines and parses them into a 1D array.
+  // If 'asStrings' is true, returns items as strings; otherwise, as numbers.
+  InputSource.prototype.readLinesAsArray = function (numLines, asStrings) {
+    var lineArray = this._sourceLines.slice(
+      this._currentLineIndex,
+      (this._currentLineIndex += numLines)
+    );
+
+    return asStrings ? lineArray : lineArray.map((item) => +item); // Convert all items to numbers.
   };
-  return createStreamProcessor; // The public interface for creating a processor
+
+  return createParser; // Return the factory function.
 })();
 
-// Instantiate the input reader with content from standard input
-var dataInputInstance = INPUT_PARSER_FACTORY(require("fs").readFileSync("/dev/stdin","utf8"));
+// Initialize the input reader with data from standard input.
+var inputReader = INPUT_PARSER(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-// Function to create N-dimensional arrays
-function buildMultiArray( initializerCode ) {
-  var dimensions = arguments,
-      dimCount = dimensions.length,
-      arrayExpression = "Array(dimensions[" + --dimCount + "]).fill(0).map( _ => {return " + initializerCode + ";})";
-  // Construct the nested array creation string
-  while ( --dimCount ) {
-    arrayExpression = "Array(dimensions[" + dimCount + "]).fill(0).map( _ => " + arrayExpression + ")";
+// Helper function to create multi-dimensional arrays with an initial value.
+// Uses eval for dynamic array creation based on provided dimensions.
+function createMultiDimArray(initialValue) {
+  var dimensions = arguments;
+  var dimCount = dimensions.length;
+  var arrayCreationString =
+    "Array(dimensions[" +
+    --dimCount +
+    "]).fill(0).map(_element_ => {return " +
+    initialValue +
+    ";})";
+
+  while (--dimCount) {
+    arrayCreationString =
+      "Array(dimensions[" +
+      dimCount +
+      "]).fill(0).map(_element_ => " +
+      arrayCreationString +
+      ")";
   }
-  // Evaluate the string to create the array
-  return eval( arrayExpression );
+  return eval(arrayCreationString);
 }
 
-// Execute the main algorithm and print its output
-console.log(solveProblem());
+// Execute the main graph processing logic and print the result.
+console.log(processGraph());
 
-// Main algorithm function
-function solveProblem() {
-  // Read the total number of vertices
-  var vertexCount = dataInputInstance.extractNextNumber();
-  // Initialize adjacency lists for each vertex, using Sets
-  var adjLists = buildMultiArray("new Set()", vertexCount);
-  // Keep track of vertices that are still active in the graph
-  var remainingVertices = new Set();
-  // Add the initial vertex (0) to the active set
-  remainingVertices.add(0);
+// Main function to solve the graph problem.
+function processGraph() {
+  var nodeCount = inputReader.readSingleItem(); // Read the number of nodes.
+  var adjacencyLists = createMultiDimArray("new Set()", nodeCount); // Create an array of Sets for adjacency lists.
+  var activeNodes = new Set(); // Set to keep track of nodes that are still part of the graph.
 
-  // Loop to read all edges and build the graph
-  for ( var vertexId = 1; vertexId < vertexCount; vertexId++ ) {
-    // Read a pair of connected vertices
-    var connectionPair = dataInputInstance.readNumericLine(),
-        firstVertex = connectionPair[0] - 1,
-        secondVertex = connectionPair[1] - 1;
-    // Add bidirectional connections to adjacency lists
-    adjLists[firstVertex].add(secondVertex);
-    adjLists[secondVertex].add(firstVertex);
-    // Add the current vertex to the set of remaining vertices
-    remainingVertices.add(vertexId);
+  activeNodes.add(0); // Add the first node to the active set.
+
+  // Read edges and build the adjacency list.
+  for (var nodeIndex = 1; nodeIndex < nodeCount; nodeIndex++) {
+    var edgeData = inputReader.readLineItems();
+    var nodeA = edgeData[0] - 1; // Adjust to 0-indexed.
+    var nodeB = edgeData[1] - 1; // Adjust to 0-indexed.
+
+    adjacencyLists[nodeA].add(nodeB);
+    adjacencyLists[nodeB].add(nodeA);
+    activeNodes.add(nodeIndex); // Add current node to active set.
   }
 
-  // Read the costs/values for each vertex and sort them
-  var sortedValues = dataInputInstance.readNumericLine().sort((valA, valB) => valA - valB);
+  // Read the values to be assigned to nodes and sort them.
+  var sortedValues = inputReader.readLineItems().sort((val1, val2) => val1 - val2);
 
-  // Initialize variables for total sum and final assignments
-  var valueIndex = 0; // Pointer for the sorted values array
-  var totalSumOfValues = 0,
-      finalAssignment = Array(vertexCount); // Array to store assigned values
+  var valueIndex = 0; // Index for `sortedValues`.
+  var totalSum = 0; // Accumulator for the sum of assigned values.
+  var assignedValues = Array(nodeCount); // Array to store the final assigned values for each node.
 
-  // Main loop: continues until all vertices have been processed
-  while ( valueIndex < vertexCount ) {
-    // List to store vertices that will be removed in this iteration
-    var verticesToProcess = [];
-    // Iterate through all currently active vertices
-    for ( var vertexId of remainingVertices ) {
-      // If a vertex has more than one neighbor, it's not a leaf yet; skip it
-      if ( adjLists[vertexId].size > 1 ) continue;
-      // This vertex is a leaf (or isolated), add it to the removal list
-      verticesToProcess.push(vertexId);
-      // Assign the next smallest cost/value to this vertex
-      finalAssignment[vertexId] = sortedValues[valueIndex++];
-      // Add its assigned value to the running total sum
-      totalSumOfValues += finalAssignment[vertexId];
-    }
-    // Process the vertices identified for removal
-    for ( vertexId of verticesToProcess ) {
-      // For each neighbor of the vertex being removed
-      for ( var connectedVertex of adjLists[vertexId] ) {
-        // Remove the current vertex from its neighbor's adjacency list
-        adjLists[connectedVertex].delete(vertexId);
+  // Main loop: continues until all nodes have been processed.
+  while (valueIndex < nodeCount) {
+    var nodesToProcess = []; // Temporary list for nodes to be processed in this iteration.
+
+    // Identify nodes with degree 1 (or 0 if isolated, though not expected in this problem context).
+    for (var currentNode of activeNodes) {
+      if (adjacencyLists[currentNode].size > 1) {
+        continue; // Skip nodes with more than one neighbor.
       }
-      // Remove the current vertex from the set of active vertices
-      remainingVertices.delete(vertexId);
+      nodesToProcess.push(currentNode); // Add "leaf-like" node to the list.
+      assignedValues[currentNode] = sortedValues[valueIndex++]; // Assign the next smallest value.
+      totalSum += assignedValues[currentNode]; // Add to the total sum.
+    }
+
+    // Remove processed nodes and their edges from the graph.
+    for (var processedNode of nodesToProcess) {
+      for (var neighborNode of adjacencyLists[processedNode]) {
+        adjacencyLists[neighborNode].delete(processedNode); // Remove edge from neighbor's list.
+      }
+      activeNodes.delete(processedNode); // Remove node from the active set.
     }
   }
 
-  // The problem's specific result: total sum minus the largest assigned value
-  console.log(totalSumOfValues - sortedValues[vertexCount - 1]);
-  // Return the final assignments as a space-separated string
-  return finalAssignment.join(" ");
+  // The problem asks for a specific sum calculation: totalSum minus the largest value.
+  console.log(totalSum - sortedValues[nodeCount - 1]);
+
+  // Return the assigned values as a space-separated string.
+  return assignedValues.join(" ");
 }

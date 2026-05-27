@@ -1,44 +1,44 @@
-function ProcessInputData(inputContent) {
-  // Split the entire input string into an array of individual lines
-  inputContent = inputContent.split('\n');
+function ProcessInput(inputString) {
+  // Split the entire input string by newline characters to get individual lines.
+  let lineData = inputString.split('\n');
 
-  // Extract the total number of test cases from the first line
-  const totalQueries = Number(inputContent[0]);
+  // The first line contains the number of queries. Convert it to a number.
+  const queryCount = +lineData[0];
 
-  // Iterate through each test case
-  for (let currentIdx = 0; currentIdx < totalQueries; currentIdx++) {
-    // Parse two integers from the current line of input
-    var numberPair = inputContent[currentIdx + 1].split(' ').map(strValue => Number(strValue));
+  // Iterate through each query.
+  for (let idx = 0; idx < queryCount; idx++) {
+    // For each query, parse the numbers from the corresponding line.
+    // The numbers are space-separated, so split and convert them to integers.
+    let currentNumbers = lineData[idx + 1].split(' ').map(val => +val);
 
-    // Determine the greater of the two numbers
-    var largerValue = Math.max(numberPair[0], numberPair[1]);
+    // Determine the maximum of the two numbers.
+    let maxVal = Math.max(currentNumbers[0], currentNumbers[1]);
+    // Determine the minimum of the two numbers.
+    let minVal = Math.min(currentNumbers[0], currentNumbers[1]);
 
-    // Determine the smaller of the two numbers
-    var smallerValue = Math.min(numberPair[0], numberPair[1]);
+    // Calculate an intermediate value 'c' based on the product of minVal and maxVal.
+    let calcVal = Math.ceil(Math.sqrt(minVal * maxVal)) - 1;
 
-    // Calculate a derived boundary value based on the product of the two numbers
-    var calculatedBoundary = Math.ceil(Math.sqrt(smallerValue * largerValue)) - 1;
+    // Initialize the result with a base calculation.
+    let resultValue = (minVal - 1) * 2;
 
-    // Initialize the final outcome based on the smaller value
-    var finalOutcome = (smallerValue - 1) * 2;
-
-    // Adjust the result if the smaller value is significantly less than the larger value
-    if (smallerValue < largerValue - 1) {
-      finalOutcome++;
+    // Adjust the result based on a comparison between minVal and maxVal.
+    if (minVal < maxVal - 1) {
+      resultValue++;
     }
 
-    // Further adjust the result with another derived component
-    finalOutcome += Math.max(calculatedBoundary - smallerValue, 0) * 2;
+    // Further adjust the result using the intermediate value 'c'.
+    resultValue += Math.max(calcVal - minVal, 0) * 2;
 
-    // Apply a final adjustment if a specific condition involving the values and boundary is met
-    if (Math.floor(smallerValue / calculatedBoundary * largerValue) === calculatedBoundary) {
-      finalOutcome--;
+    // Apply a final adjustment if a specific condition involving floor division is met.
+    if (Math.floor(minVal / calcVal * maxVal) === calcVal) {
+      resultValue--;
     }
 
-    // Output the computed result for the current query
-    console.log(finalOutcome);
+    // Output the final calculated result for the current query.
+    console.log(resultValue);
   }
 }
 
-// Entry point: Read input from standard input and process it
-ProcessInputData(require('node:fs').readFileSync('/dev/stdin', 'utf8'));
+// Read the input from standard input and pass it to the main processing function.
+ProcessInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

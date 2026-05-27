@@ -1,70 +1,21 @@
-class SmallestKeeper {
-    constructor(limit) {
-        this.dataStore = [];
-        this.maxSize = limit;
-    }
+const processInputData = (rawData) => {
+    const parsedLines = rawData.split('\n');
 
-    _moveUp(idx) {
-        while (idx > 0) {
-            const parentIdx = Math.floor((idx - 1) / 2);
-            if (this.dataStore[parentIdx] > this.dataStore[idx]) {
-                [this.dataStore[parentIdx], this.dataStore[idx]] = [this.dataStore[idx], this.dataStore[parentIdx]];
-                idx = parentIdx;
-            } else {
-                break;
-            }
-        }
-    }
+    const [countItems, topCount] = parsedLines[0].split(' ').map(Number);
 
-    _moveDown(idx) {
-        const leftChildIdx = 2 * idx + 1;
-        const rightChildIdx = 2 * idx + 2;
-        let minimumIdx = idx;
+    const absoluteSums = parsedLines.slice(1, countItems + 1).map(line => {
+        const currentLineValues = line.split(' ').map(Number);
+        const lineTotal = currentLineValues.reduce((accumulator, currentValue) => accumulator + currentValue, 0);
+        return Math.abs(lineTotal);
+    });
 
-        if (leftChildIdx < this.dataStore.length && this.dataStore[leftChildIdx] < this.dataStore[minimumIdx]) {
-            minimumIdx = leftChildIdx;
-        }
-        if (rightChildIdx < this.dataStore.length && this.dataStore[rightChildIdx] < this.dataStore[minimumIdx]) {
-            minimumIdx = rightChildIdx;
-        }
+    const sortedSums = absoluteSums.sort((first, second) => second - first);
 
-        if (minimumIdx !== idx) {
-            [this.dataStore[idx], this.dataStore[minimumIdx]] = [this.dataStore[minimumIdx], this.dataStore[idx]];
-            this._moveDown(minimumIdx);
-        }
-    }
+    const finalResult = sortedSums.slice(0, topCount).reduce((accumulator, current) => accumulator + current, 0);
 
-    incorporate(value) {
-        if (this.dataStore.length < this.maxSize) {
-            this.dataStore.push(value);
-            this._moveUp(this.dataStore.length - 1);
-        } else if (this.maxSize > 0 && value > this.dataStore[0]) {
-            this.dataStore[0] = value;
-            this._moveDown(0);
-        }
-    }
+    console.log(finalResult);
 
-    calculateTotal() {
-        return this.dataStore.reduce((currentSum, elementValue) => currentSum + elementValue, 0);
-    }
-}
-
-const performAnalysis = (sourceContent) => {
-    const rawLines = sourceContent.split('\n');
-    const [dimensionA, dimensionB] = rawLines[0].split(' ').map(Number);
-
-    const largestElementCollector = new SmallestKeeper(dimensionB);
-
-    for (let lineIterator = 1; lineIterator <= dimensionA; ++lineIterator) {
-        const numericComponents = rawLines[lineIterator].split(' ').map(Number);
-        const tripleSum = numericComponents[0] + numericComponents[1] + numericComponents[2];
-        const absoluteTripleSum = Math.abs(tripleSum);
-        largestElementCollector.incorporate(absoluteTripleSum);
-    }
-
-    const finalAccumulation = largestElementCollector.calculateTotal();
-
-    process.stdout.write(finalAccumulation.toString() + '\n');
+    return 0;
 };
 
-performAnalysis(require("fs").readFileSync("/dev/stdin", "utf8").trim());
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8").trim());

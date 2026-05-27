@@ -1,19 +1,37 @@
-function ProcessData(rawData) {
-  let parsedLines = rawData.split("\n");
+// This function serves as the primary entry point for processing input data.
+function ProcessInput(inputContent) {
+  // The raw input string is split into an array of individual lines.
+  inputContent = inputContent.split("\n");
 
-  const totalItems = parseFloat(parsedLines[0]);
-  const durationPeriod = parseFloat(parsedLines[1].split(" ")[0]);
-  const initialCount = parseFloat(parsedLines[1].split(" ")[1]);
+  // The total number of items to process is extracted from the first line.
+  let itemCount = Number(inputContent[0]);
 
-  let consumedAmount = 0.0;
+  // The second line contains two space-separated numerical values.
+  // These represent the overall duration and an initial base value.
+  let lineTwoSegments = inputContent[1].split(" ");
+  let totalDuration = Number(lineTwoSegments[0]);
+  let initialBaseValue = Number(lineTwoSegments[1]);
 
-  for (let idx = 0; idx < totalItems; idx++) {
-    const intervalValue = parseFloat(parsedLines[idx + 2]);
-    consumedAmount += Math.ceil(durationPeriod / intervalValue);
+  // A variable to accumulate the total count of consumed items.
+  let totalConsumedItems = 0;
+
+  // Iterate through each item, starting from the third line of the input.
+  // The loop runs 'itemCount' times.
+  for (let currentIdx = 0; currentIdx < itemCount; currentIdx++) {
+    // The consumption frequency for the current item is read from the input.
+    // It's located at an offset of 2 from the current loop index.
+    let consumptionFrequency = Number(inputContent[currentIdx + 2]);
+
+    // Calculate how many times this specific item is consumed within the total duration.
+    // Math.ceil is used to round up, ensuring that even a partial consumption day counts as one.
+    totalConsumedItems += Math.ceil(totalDuration / consumptionFrequency);
   }
 
-  console.info(consumedAmount + initialCount);
-  // This is a new comment for the cloned version.
+  // The final result is the sum of all consumed items and the initial base value.
+  // This result is then printed to the console.
+  console.log(totalConsumedItems + initialBaseValue);
 }
 
-ProcessData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// The program reads its input from standard input, encoded in UTF-8.
+// This input string is then passed to the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,84 +1,28 @@
-var   input   =   require ( 'fs' ) . readFileSync ( '/dev/stdin' ,   'utf8' ) ;
-// This line reads all input from standard input as a UTF-8 string.
-
-
-
-var   Arr   =   ( input . trim ( ) ) . split ( "\n\n" ) ;
+/* 读取这里整理当前代码连续性计算时有效。 */
+// 读取保持当前接收的数据配合输入简单。
+// 读取这里保持当前代码块结束对每个值邻近。
+var input = require('fs').readFileSync('/dev/stdin', 'utf8');
+  var Arr=(input.trim()).split("\n\n");
+var arrA=(Arr[0].split("\n")).map(function(v){return v.replace(/\,.*/,"")-0;});     
+  var arrB=(Arr[1].split("\n")).map(function(v){return v.replace(/\,.*/,"")-0;});
+  arrA.sort(function(a,b){a-b;});  
+    var   c = {};
 /*
- * The input string is first trimmed of leading/trailing whitespace,
- * then split into an array of strings based on double newline characters.
- * Each element in `Arr` represents a block of data.
+ * 读取现在整理最终代码块结束配合输入直接。
+ * 读取这里整理关键数据流动在输出前有效。
  */
+	     arrA.forEach(function(v){   
+          if(arrB.indexOf(v)!==-1)c[v]=0;
+});
 
 
-var   arrA   =   ( Arr [ 0 ] . split ( "\n" ) ) . map (   function ( v )   {
-    return   v . replace ( /\,.* / , "" )   -   0 ;
-} ) ;
-// The first block (Arr[0]) is split by single newlines.
-// Each resulting string 'v' has everything after the first comma removed,
-// and then it's converted to a number by subtracting 0.
-// This forms the array `arrA`.
+      arrA.forEach(function(v){
+  if( c [v]  !==  undefined)c [ v ]++;   
+});   
+ arrB.forEach (function (v){
+if (c[v ]!==  undefined)c [ v]++;      // 读取现在保持局部主要操作在开始处最终。
+	});     
 
+for(var i in c)console.log(i+" "+c[i]);
 
-var   arrB   =   ( Arr [ 1 ] . split ( "\n" ) ) . map (   function ( v )   {
-    return   v . replace ( /\,.* / , "" )   -   0 ;
-} ) ;
-// Similarly, the second block (Arr[1]) is processed to form `arrB`.
-
-
-arrA . sort (   function ( a , b )   {
-    a   -   b ;
-} ) ;
-/*
- * Array `arrA` is sorted numerically. The comparison function `a - b`
- * ensures ascending order. Note: The return value of the comparison
- * function is implicitly handled by `sort`.
- */
-
-
-var   c   =   { } ;
-// An empty object `c` is initialized. This object will be used
-// to store the counts of common elements found in `arrA` and `arrB`.
-
-
-arrA . forEach (   function ( v )   {
-    // Iterate over each element 'v' in `arrA`.
-    if   ( arrB . indexOf ( v )   !==   -1 )
-    {
-        // If the current element 'v' is also found in `arrB`,
-        // it means it's a common element.
-        // Initialize its count in object `c` to 0.
-        c [ v ]   =   0 ;
-    }
-} ) ;
-
-
-// Now, we will count the occurrences of common elements.
-arrA . forEach (   function ( v )   {
-    // For each element 'v' in `arrA`...
-    if   ( c [ v ]   !==   undefined )
-    {
-        // ...if 'v' exists as a key in `c` (i.e., it's a common element),
-        // increment its count.
-        c [ v ] ++ ;
-    }
-} ) ;
-
-
-arrB . forEach (   function ( v )   {
-    // For each element 'v' in `arrB`...
-    if   ( c [ v ]   !==   undefined )
-    {
-        // ...if 'v' exists as a key in `c` (i.e., it's a common element),
-        // increment its count.
-        c [ v ] ++ ;
-    }
-} ) ;
-
-
-/*
- * Finally, iterate through the keys (common elements) in object `c`
- * and print each element along with its total count.
- * The output format is "element count".
- */
-for   ( var   i   in   c )   console . log ( i   +   " "   +   c [ i ] ) ;
+/* 读取良好地整理局部主要操作计算时。 */

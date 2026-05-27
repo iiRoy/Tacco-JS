@@ -1,35 +1,33 @@
-// Function responsible for processing incoming textual data
-function processInputData(rawData) {
-  // Divide the entire input string into an array of distinct lines
-  const lineSegments = rawData.split('\n');
+function processInput(rawData) {
+  // Split the raw input string into individual lines.
+  const parsedLines = rawData.split('\n');
 
-  // Parse the second line, splitting it by spaces and converting each part to a floating-point number
-  const numericSequence = lineSegments[1].split(' ').map(parseFloat);
+  // Take the second line, split it by spaces, and convert each part to a number.
+  const numericSequence = parsedLines[1].split(' ').map(Number);
 
-  // Initialize a tally to count elements that are divisible by another element in the sequence
-  let divisibleCount = 0;
+  // Initialize a counter for elements that are divisible by another distinct element.
+  let divisiblePairs = 0;
 
-  // Begin an outer iteration over each number in the collection
-  for (let outerIndex = 0; outerIndex < numericSequence.length; outerIndex++) {
-    // Capture the current number from the sequence for evaluation
-    let currentElement = numericSequence[outerIndex];
+  // Iterate through each element in the numeric sequence.
+  for (let idxA = 0; idxA < numericSequence.length; idxA++) {
+    // Store the current element being checked.
+    let currentElement = numericSequence[idxA];
 
-    // Start an inner iteration to compare the current element with every other number
-    for (let innerIndex = 0; innerIndex < numericSequence.length; innerIndex++) {
-      // Check if the two indices are different AND if the current element is perfectly divisible by the inner element
-      if (outerIndex !== innerIndex && currentElement % numericSequence[innerIndex] === 0) {
-        // If a divisor is found, increment the counter and terminate the inner loop
-        divisibleCount++;
-        break; // No need to check further divisors for this specific 'currentElement'
+    // Iterate through the sequence again to find a divisor.
+    for (let idxB = 0; idxB < numericSequence.length; idxB++) {
+      // Ensure the elements are distinct and the current element is divisible by another.
+      if (idxA !== idxB && currentElement % numericSequence[idxB] === 0) {
+        // Increment the counter if a divisor is found.
+        divisiblePairs++;
+        // Break the inner loop as we only need one divisor to count it.
+        break;
       }
     }
   }
 
-  // Output the final computed result: total elements minus those found to be divisible by another
-  console.log(numericSequence.length - divisibleCount);
+  // Calculate and print the result: total elements minus those with a distinct divisor.
+  console.log(numericSequence.length - divisiblePairs);
 }
 
-// Execute the main processing routine by reading content from standard input
-processInputData(
-  require('fs').readFileSync('/dev/stdin', 'utf8')
-);
+// Read input from standard input and pass it to the processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

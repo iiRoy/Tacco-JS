@@ -1,46 +1,28 @@
-process.stdin.resume( );
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
 
-process.stdin.setEncoding( 'utf8' );
+let inputVal; // This variable will hold the integer value from standard input.
+const modulusVal = 1000000007; // A constant for the modulo operation.
 
-let finalInputNumber; // A variable to store the parsed numeric value from the input stream.
+// Attach an event handler for when data is received from standard input.
+process.stdin.on('data', function (receivedData) {
+    // Process each line of the received data.
+    receivedData.trim().split('\n').forEach(function(currentLine) {
+        // Convert the line string to an integer and store it.
+        inputVal = parseInt(currentLine);
+    });
+});
 
-const modularConstant = 1_000_000_007; // A large prime number for arithmetic operations, often used in competitive programming.
+// Attach an event handler for when the end of standard input is reached.
+process.stdin.on('end', function () {
+    let finalProduct = 1; // Initialize a variable to calculate the factorial product.
 
-// Establishes an event handler for when input data becomes available.
-process.stdin.on(
-    'data',
-    function ( inputDataChunk )
-    {
-        inputDataChunk
-            .trim( )
-            .split( '\n' )
-            .forEach(
-                function ( individualLine )
-                {
-                    // For debugging: outputStream.log( `Processed line: ${individualLine}` );
-                    finalInputNumber = Number.parseInt( individualLine ); // Convert the text line into an integer.
-                }
-            );
+    // Iterate from 1 up to the value stored in inputVal (inclusive).
+    for (let loopIndex = 1; loopIndex <= inputVal; loopIndex++) {
+        finalProduct *= loopIndex; // Multiply the current product by the loop index.
+        finalProduct %= modulusVal; // Apply the modulo operation to the product.
     }
-);
 
-// Defines the action to take once the input stream has concluded.
-process.stdin.on(
-    'end',
-    ( ) =>
-    {
-        let resultantFactorial = 1; // Initialize accumulator for factorial calculation.
-
-        for (
-            let indexVariable = 1;
-            indexVariable <= finalInputNumber;
-            indexVariable++
-        )
-        {
-            resultantFactorial *= indexVariable; // Multiply the running product by the current index.
-            resultantFactorial %= modularConstant; // Apply the modulo operation to prevent overflow.
-        }
-
-        console.log( resultantFactorial ); // Output the final computed factorial value to the standard output.
-    }
-);
+    // Display the final computed product to the console.
+    console.log(finalProduct);
+});

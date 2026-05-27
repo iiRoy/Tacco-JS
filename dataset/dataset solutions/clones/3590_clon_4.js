@@ -1,26 +1,33 @@
-const fileSystem = require('fs');
+const inputBuffer = [];
+const ioHandler = require('readline').createInterface({
+    input: process.stdin,
+    output: process.stdout,
+});
 
-const fullInputContent = fileSystem.readFileSync('/dev/stdin', 'utf8');
+ioHandler.on('line', (currentLine) => {
+    inputBuffer.push(currentLine);
+});
 
-const inputLines = fullInputContent.trim().split('\n');
+ioHandler.on('close', () => {
+    const [elementCountStr, spanLengthStr] = inputBuffer[0].split(" ");
+    const elementCount = Number(elementCountStr);
+    const spanLength = Number(spanLengthStr);
+    const pointCoordinates = inputBuffer[1].split(" ").map(Number);
 
-const dimensions = inputLines[0].split(' ').map(numStr => parseInt(numStr, 10));
-const totalItems = dimensions[0];
-const subsegmentLength = dimensions[1];
+    const determinePathCost = (firstPoint, secondPoint) => {
+        const distanceBetween = Math.abs(secondPoint - firstPoint);
+        const costFromOrigin = Math.min(Math.abs(firstPoint), Math.abs(secondPoint));
+        return costFromOrigin + distanceBetween;
+    };
 
-const itemValues = inputLines[1].split(' ').map(numStr => parseInt(numStr, 10));
+    const windowStartIndices = Array.from({ length: elementCount - spanLength + 1 }, (_, idx) => idx);
 
-const resultObtainer = (currentMin, indexOffset) => {
-    const startPoint = itemValues[indexOffset];
-    const endPoint = itemValues[indexOffset + subsegmentLength - 1];
+    const minTraversalCost = windowStartIndices.reduce((currentMinimum, windowStartIdx) => {
+        const leftBoundaryPoint = pointCoordinates[windowStartIdx];
+        const rightBoundaryPoint = pointCoordinates[windowStartIdx + spanLength - 1];
+        const currentWindowCost = determinePathCost(leftBoundaryPoint, rightBoundaryPoint);
+        return Math.min(currentMinimum, currentWindowCost);
+    }, Infinity);
 
-    const routeOne = Math.abs(startPoint) + Math.abs(endPoint - startPoint);
-    const routeTwo = Math.abs(endPoint) + Math.abs(endPoint - startPoint);
-
-    return Math.min(currentMin, routeOne, routeTwo);
-};
-
-const finalResult = Array.from({ length: totalItems - subsegmentLength + 1 }, (_, index) => index)
-    .reduce(resultObtainer, Infinity);
-
-console.log(finalResult);
+    console.log(minTraversalCost);
+});

@@ -1,180 +1,155 @@
-const outputLogger = {
-    emit: (message) => console.log(message),
-    error: (errMessage) => console.error("APPLICATION ERROR:", errMessage)
-};
+const outputFn = console.log;
 
-if (typeof process !== "undefined" && process.stdin && process.stdin.isTTY === false) {
-    let collectedInputBuffer = "";
-
+if (typeof process !== "undefined") {
+    let rawData = "";
     process.stdin.resume();
     process.stdin.setEncoding('utf8');
-
-    process.stdin.on('data', (dataChunk) => {
-        collectedInputBuffer += dataChunk;
+    process.stdin.on('data', function (chunk) {
+        rawData += chunk;
     });
+    process.stdin.on('end', function () {
+        const inputLines = rawData.split("\n");
+        main(inputLines);
+    });
+}
 
-    process.stdin.on('end', () => {
-        try {
-            const processedLines = collectedInputBuffer.split("\n").filter(line => line.trim() !== '');
-            if (processedLines.length === 0) {
-                outputLogger.error("No input data received. Exiting.");
-                return;
-            }
-            analyzeGridData(processedLines);
-        } catch (inputErr) {
-            outputLogger.error(`Error processing input stream: ${inputErr.message}`);
+//----- Helper functions -----
+
+function isRighterThan(pointOne, pointTwo) {
+    // Returns true if pointTwo is strictly to the right of pointOne
+    return pointOne[1] < pointTwo[1];
+}
+
+function isLowerThan(pointOne, pointTwo) {
+    // Returns true if pointTwo is strictly below pointOne
+    return pointOne[0] < pointTwo[0];
+}
+
+function getRightNeighbor(coordinates) {
+    // Returns coordinates one unit to the right
+    return [coordinates[0], coordinates[1] + 1];
+}
+
+function getLowerNeighbor(coordinates) {
+    // Returns coordinates one unit below
+    return [coordinates[0] + 1, coordinates[1]];
+}
+
+// Refactored helper: checks if a candidate point is subdominant to any point in a given set
+function isPointSubdominant(candidatePoint, dominantSet) {
+    return dominantSet.some(function (dominantPoint) {
+        // If they are in the same column
+        if (candidatePoint[1] === dominantPoint[1]) {
+            // Check if dominantPoint is above candidatePoint
+            return isLowerThan(dominantPoint, candidatePoint);
         }
+        // If they are in the same row
+        if (candidatePoint[0] === dominantPoint[0]) {
+            // Check if dominantPoint is to the left of candidatePoint
+            return isRighterThan(dominantPoint, candidatePoint);
+        }
+        return false;
     });
-} else {
-    outputLogger.emit("Application expects piped input (e.g., 'cat input.txt | node script.js').");
-    outputLogger.emit("No standard input detected or TTY is active. Exiting.");
 }
 
-function isToTheRight(pointAlpha, pointBeta) {
-    return pointAlpha[1] < pointBeta[1];
-}
-
-function isBelow(pointAlpha, pointBeta) {
-    return pointAlpha[0] < pointBeta[0];
-}
-
-const getRightwardNeighbor = (currentPoint) => {
-    return [currentPoint[0], currentPoint[1] + 1];
-};
-
-const getDownwardNeighbor = (currentPoint) => {
-    return [currentPoint[0] + 1, currentPoint[1]];
-};
-
-function hasDominatingPredecessor(candidatePoint, predecessorSet) {
-    for (const predecessor of predecessorSet) {
-        if (candidatePoint[1] === predecessor[1]) {
-            if (isBelow(predecessor, candidatePoint)) {
-                return true;
-            }
-        } else if (candidatePoint[0] === predecessor[0]) {
-            if (isToTheRight(predecessor, candidatePoint)) {
-                return true;
-            }
+// New helper function to filter out duplicate points from an array
+function getUniquePoints(pointList) {
+    const seenPointKeys = new Set();
+    const uniquePointsResult = [];
+    for (let i = 0; i < pointList.length; i++) {
+        const currentPoint = pointList[i];
+        const pointKey = `${currentPoint[0]},${currentPoint[1]}`;
+        if (!seenPointKeys.has(pointKey)) {
+            seenPointKeys.add(pointKey);
+            uniquePointsResult.push(currentPoint);
         }
     }
-    return false;
+    return uniquePointsResult;
 }
 
-function analyzeGridData(rawLineData) {
-    let gridDimensions = [];
+function main(inputLines) {
     try {
-        gridDimensions = rawLineData.shift().trim().split(" ").map(valStr => parseInt(valStr, 10));
-        if (gridDimensions.length !== 2 || isNaN(gridDimensions[0]) || isNaN(gridDimensions[1])) {
-            throw new Error("Invalid grid dimensions provided. Expected two numbers.");
-        }
-    } catch (parseError) {
-        outputLogger.error(`Failed to parse grid dimensions: ${parseError.message}`);
-        return;
-    }
+        const parsedGridData = inputLines.map(function (line) {
+            return line.split(" ").map(Number);
+        });
 
-    const totalRows = gridDimensions[0];
-    const totalCols = gridDimensions[1];
+        const gridDimensions = parsedGridData.shift();
+        const gridHeight = gridDimensions[0];
+        const gridWidth = gridDimensions[1];
 
-    if (totalRows <= 0 || totalCols <= 0) {
-        outputLogger.emit(`Grid dimensions must be positive (Rows: ${totalRows}, Cols: ${totalCols}). Exiting.`);
-        return;
-    }
+        let maximumArea = -1;
 
-    const numericGrid = rawLineData.map(lineStr =>
-        lineStr.trim().split(" ").map(numChar => {
-            const parsedNum = parseInt(numChar, 10);
-            if (isNaN(parsedNum) || (parsedNum !== 0 && parsedNum !== 1)) {
-                outputLogger.error(`Invalid grid cell value '${numChar}'. Expected 0 or 1. Defaulting to 1.`);
-                return 1;
-            }
-            return parsedNum;
-        })
-    );
+        // DP arrays initialization
+        const lastZeroX = Array.from({ length: gridHeight }, () => Array(gridWidth).fill(-1));
+        const lastZeroY = Array.from({ length: gridHeight }, () => Array(gridWidth).fill(-1));
+        const dominantPoints = Array.from({ length: gridHeight }, () => Array(gridWidth).fill([]));
 
-    if (numericGrid.length !== totalRows || (totalRows > 0 && numericGrid[0].length !== totalCols)) {
-        outputLogger.error(`Input grid size mismatch. Expected ${totalRows}x${totalCols}, got ${numericGrid.length}x${(numericGrid.length > 0 ? numericGrid[0].length : 0)}. Exiting.`);
-        return;
-    }
+        // Constants for cell values
+        const EMPTY_CELL = 0;
+        const OBSTACLE_CELL = 1;
 
-    let overallMaxArea = 0;
+        for (let rowIdx = 0; rowIdx < gridHeight; rowIdx++) {
+            for (let colIdx = 0; colIdx < gridWidth; colIdx++) {
+                const currentCellValue = parsedGridData[rowIdx][colIdx];
 
-    const lastZeroRowIndex = Array.from({ length: totalRows }, () => Array(totalCols).fill(-1));
-    const lastZeroColIndex = Array.from({ length: totalRows }, () => Array(totalCols).fill(-1));
-    const currentDominantOrigins = Array.from({ length: totalRows }, () => Array(totalCols).fill(null));
+                const prevRowIdx = rowIdx - 1;
+                const prevColIdx = colIdx - 1;
 
-    for (let r = 0; r < totalRows; r++) {
-        for (let c = 0; c < totalCols; c++) {
-            const cellValue = numericGrid[r][c];
+                let currentLastZeroX = (rowIdx === 0) ? -1 : lastZeroX[prevRowIdx][colIdx];
+                let currentLastZeroY = (colIdx === 0) ? -1 : lastZeroY[rowIdx][prevColIdx];
+                const prevDominantPoints = (rowIdx === 0 || colIdx === 0) ? [] : dominantPoints[prevRowIdx][prevColIdx];
 
-            const prevZeroRowCoord = (r === 0) ? -1 : lastZeroRowIndex[r - 1][c];
-            const prevZeroColCoord = (c === 0) ? -1 : lastZeroColIndex[r][c - 1];
-            const prevDominantSet = (r === 0 || c === 0) ? [] : currentDominantOrigins[r - 1][c - 1];
+                let newDominantPoints;
 
-            let cellDominantOrigins = [];
-            let cellLastZeroRow = r;
-            let cellLastZeroCol = c;
+                if (currentCellValue === EMPTY_CELL) {
+                    const xCoordCandidate = [currentLastZeroX, colIdx];
+                    const yCoordCandidate = [rowIdx, currentLastZeroY];
 
-            if (cellValue === 0) {
-                cellLastZeroRow = prevZeroRowCoord;
-                cellLastZeroCol = prevZeroColCoord;
+                    const mappedDominants = prevDominantPoints.map(function (pointEntry) {
+                        if (!isRighterThan(yCoordCandidate, pointEntry)) {
+                            return [pointEntry[0], currentLastZeroY + 1];
+                        }
+                        if (!isLowerThan(xCoordCandidate, pointEntry)) {
+                            return [currentLastZeroX + 1, pointEntry[1]];
+                        }
+                        return pointEntry;
+                    });
 
-                const candidatePointX = [prevZeroRowCoord, c];
-                const candidatePointY = [r, prevZeroColCoord];
+                    const combinedDominants = mappedDominants.concat([
+                        getRightNeighbor(yCoordCandidate),
+                        getLowerNeighbor(xCoordCandidate)
+                    ]);
 
-                cellDominantOrigins = prevDominantSet.map(prevOrigin => {
-                    if (!isToTheRight(candidatePointY, prevOrigin)) {
-                        return [prevOrigin[0], prevZeroColCoord + 1];
-                    }
-                    if (!isBelow(candidatePointX, prevOrigin)) {
-                        return [prevZeroRowCoord + 1, prevOrigin[1]];
-                    }
-                    return prevOrigin;
+                    const filteredDominants = combinedDominants.filter(function (point) {
+                        return !isPointSubdominant(point, combinedDominants);
+                    });
+
+                    newDominantPoints = getUniquePoints(filteredDominants);
+
+                } else { // currentCellValue === OBSTACLE_CELL
+                    currentLastZeroX = rowIdx;
+                    currentLastZeroY = colIdx;
+                    newDominantPoints = [];
+                }
+
+                dominantPoints[rowIdx][colIdx] = newDominantPoints;
+                lastZeroX[rowIdx][colIdx] = currentLastZeroX;
+                lastZeroY[rowIdx][colIdx] = currentLastZeroY;
+
+                let currentMaxAreaForCell = 0;
+                newDominantPoints.forEach(function (dominantPoint) {
+                    const rectangleHeight = rowIdx - dominantPoint[0] + 1;
+                    const rectangleWidth = colIdx - dominantPoint[1] + 1;
+                    currentMaxAreaForCell = Math.max(currentMaxAreaForCell, rectangleHeight * rectangleWidth);
                 });
 
-                cellDominantOrigins.push(getRightwardNeighbor(candidatePointY));
-                cellDominantOrigins.push(getDownwardNeighbor(candidatePointX));
-
-                cellDominantOrigins = cellDominantOrigins.filter(origin =>
-                    !hasDominatingPredecessor(origin, cellDominantOrigins)
-                );
-
-                const uniqueOriginsSet = new Set();
-                cellDominantOrigins = cellDominantOrigins.filter(origin => {
-                    const originKey = `${origin[0]},${origin[1]}`;
-                    if (uniqueOriginsSet.has(originKey)) {
-                        return false;
-                    }
-                    uniqueOriginsSet.add(originKey);
-                    return true;
-                });
-
-            } else {
-                cellLastZeroRow = r;
-                cellLastZeroCol = c;
-                cellDominantOrigins = [];
-            }
-
-            currentDominantOrigins[r][c] = cellDominantOrigins;
-            lastZeroRowIndex[r][c] = cellLastZeroRow;
-            lastZeroColIndex[r][c] = cellLastZeroCol;
-
-            let currentCellAreas = [0];
-            if (cellDominantOrigins.length > 0) {
-                cellDominantOrigins.forEach(originPoint => {
-                    const rectangleHeight = r - originPoint[0] + 1;
-                    const rectangleWidth = c - originPoint[1] + 1;
-                    if (rectangleHeight > 0 && rectangleWidth > 0) {
-                        currentCellAreas.push(rectangleHeight * rectangleWidth);
-                    }
-                });
-            }
-
-            const maxAreaAtCurrentCell = Math.max(...currentCellAreas);
-            if (maxAreaAtCurrentCell > overallMaxArea) {
-                overallMaxArea = maxAreaAtCurrentCell;
+                if (currentMaxAreaForCell > maximumArea) {
+                    maximumArea = currentMaxAreaForCell;
+                }
             }
         }
+        outputFn(maximumArea);
+    } catch (e) {
+        outputFn(e);
     }
-    outputLogger.emit(overallMaxArea);
 }

@@ -1,90 +1,46 @@
-function processGridTraversal(rawJourneyData) {
-  const numericalData = rawJourneyData.trim().match(/\d+/g).map(Number);
+function processPathfinding(rawInput) {
+  const inputLines = rawInput.trim().split("\n");
 
-  const [
-    gridDimensionY,
-    gridDimensionX,
-    initialYCoord,
-    initialXCoord,
-    destinationYCoord,
-    destinationXCoord
-  ] = numericalData;
+  const [gridRows, gridCols] = inputLines[0].split(" ").map(Number);
+  const [initialY, initialX] = inputLines[1].split(" ").map(s => Number(s) - 1);
+  const [finalY, finalX] = inputLines[2].split(" ").map(s => Number(s) - 1);
 
-  const gridRows = rawJourneyData.trim().split('\n').slice(3).map(row => row.split(''));
+  const gridMatrix = inputLines.slice(3).map(line => line.split(""));
 
-  const explorePath = (cY, cX, tY, tX, currentLayout, currentTeleports) => {
-    if (cY === tY && cX === tX) {
-      return currentTeleports;
+  const advancePath = (currentState) => {
+    const { y: currentY, x: currentX, teleports: currentTeleports } = currentState;
+
+    const rightwardOption = finalX > currentX &&
+                            currentY >= 0 && currentY < gridRows &&
+                            currentX + 1 >= 0 && currentX + 1 < gridCols &&
+                            gridMatrix[currentY][currentX + 1] === '.';
+
+    const downwardOption = finalY > currentY &&
+                           currentY + 1 >= 0 && currentY + 1 < gridRows &&
+                           currentX >= 0 && currentX < gridCols &&
+                           gridMatrix[currentY + 1][currentX] === '.';
+
+    const teleportOption = Math.abs(finalY - currentY) <= 2 &&
+                           Math.abs(finalX - currentX) <= 2;
+
+    if (rightwardOption) {
+      return { y: currentY, x: currentX + 1, teleports: currentTeleports };
+    } else if (downwardOption) {
+      return { y: currentY + 1, x: currentX, teleports: currentTeleports };
+    } else if (teleportOption) {
+      return { y: finalY, x: finalX, teleports: currentTeleports + 1 };
+    } else {
+      return currentState; // Should not be reached if a solution always exists
     }
-
-    const possibleMovements = [
-      (currentPos, targetPos, layout, teleCount) => {
-        if (targetPos.x > currentPos.x && layout[currentPos.y][currentPos.x + 1] === '.') {
-          return {
-            nextY: currentPos.y,
-            nextX: currentPos.x + 1,
-            nextTeleports: teleCount,
-            executed: true
-          };
-        }
-        return { executed: false };
-      },
-      (currentPos, targetPos, layout, teleCount) => {
-        if (targetPos.y > currentPos.y && layout[currentPos.y + 1][currentPos.x] === '.') {
-          return {
-            nextY: currentPos.y + 1,
-            nextX: currentPos.x,
-            nextTeleports: teleCount,
-            executed: true
-          };
-        }
-        return { executed: false };
-      },
-      (currentPos, targetPos, layout, teleCount) => {
-        const yDiff = Math.abs(targetPos.y - currentPos.y);
-        const xDiff = Math.abs(targetPos.x - currentPos.x);
-        if (yDiff <= 2 && xDiff <= 2) {
-          return {
-            nextY: targetPos.y,
-            nextX: targetPos.x,
-            nextTeleports: teleCount + 1,
-            executed: true
-          };
-        }
-        return { executed: false };
-      }
-    ];
-
-    const currentPosition = { y: cY, x: cX };
-    const targetPosition = { y: tY, x: tX };
-    let chosenAction = null;
-
-    for (const movement of possibleMovements) {
-      const result = movement(currentPosition, targetPosition, currentLayout, currentTeleports);
-      if (result.executed) {
-        chosenAction = result;
-        break;
-      }
-    }
-
-    return explorePath(
-      chosenAction.nextY,
-      chosenAction.nextX,
-      tY,
-      tX,
-      currentLayout,
-      chosenAction.nextTeleports
-    );
   };
 
-  return explorePath(
-    initialYCoord - 1,
-    initialXCoord - 1,
-    destinationYCoord - 1,
-    destinationXCoord - 1,
-    gridRows,
-    0
-  );
+  let pathState = { y: initialY, x: initialX, teleports: 0 };
+
+  while (pathState.y !== finalY || pathState.x !== finalX) {
+    pathState = advancePath(pathState);
+  }
+
+  console.log(pathState.teleports);
 }
 
-processGridTraversal(require("fs").readFileSync("/dev/stdin", "utf8"));
+processPathfinding(require("fs").readFileSync("/dev/stdin", "utf8"));

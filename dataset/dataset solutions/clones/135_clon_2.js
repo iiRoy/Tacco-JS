@@ -1,44 +1,57 @@
-(  function(   dataSource   ) { // Main processing function, accepts raw input content.
-    var lineFragments = dataSource.
-        replace(   /\n$/,   ''   ) // Remove any trailing newline character from the input.
-        .split(   '\n'   )    ; // Split the input content into an array of individual lines.
+(function (rawData) {
+  // Remove trailing newline and split the input into individual lines.
+  var processedLines = rawData.replace(/\n$/, '').split('\n');
 
-    var caseCount = Number( lineFragments.shift() ); // Extract the first line, convert it to a number, and store it as the total number of test cases.
+  // The first line indicates the number of test cases to process.
+  var numIterations = Number(processedLines.shift());
 
-    for ( let   idx = 0;   idx < caseCount;   idx++   ) { // Iterate through each of the specified test cases.
-        var currentNumbers = lineFragments
-                                .shift() // Retrieve the next line representing the current test case.
-                                .split(   ' '   ) // Split the line by spaces to get individual string numbers.
-                                .map(   Number   )    ; // Convert each string number into an actual numeric type.
+  // Iterate through each test case.
+  for (var idx = 0; idx < numIterations; idx++) {
+    // Parse the current line into an array of numbers.
+    var currentNumbers = processedLines.shift().split(' ').map(Number);
 
-        console.log(   validateArrangement(   currentNumbers   )   )   ; // Process the current set of numbers and print the resulting validation status.
+    // Call the sequence checking function and print its result.
+    console.log(checkSequence(currentNumbers));
+  }
+})(require('fs').readFileSync('/dev/stdin', 'utf8')); // Read input from standard input.
+
+/**
+ * Checks if a sequence of numbers, after filtering, is strictly increasing.
+ * @param {number[]} inputArray - The array of numbers to process.
+ * @returns {string} 'YES' if the filtered sequence is strictly increasing, 'NO' otherwise.
+ */
+function checkSequence(inputArray) {
+  var intermediateList = []; // This will store elements less than or equal to the first element.
+  var currentVal; // Temporary variable to hold shifted elements.
+
+  // Get the first element of the input array; this acts as a threshold.
+  var initialThreshold = inputArray.shift();
+
+  // Process the remaining elements in the input array.
+  while ((currentVal = inputArray.shift()) !== undefined) {
+    // If the current element is greater than the initial threshold, skip it.
+    if (currentVal > initialThreshold) {
+      continue;
     }
-})(require(   'fs'   ) .readFileSync(   '/dev/stdin',   'utf8'   ))   ; // Read the entire content of standard input as a UTF-8 string and pass it to the main function.
+    // Otherwise, add it to our intermediate list.
+    intermediateList.push(currentVal);
+  }
 
+  // Initialize a variable to track the maximum value encountered so far in the intermediate list.
+  var maximumSeen = -Infinity;
 
-function validateArrangement(   inputArray   ) { // This function assesses if a given sequence of numbers adheres to specific sorting and filtering rules.
-
-    let filteredElements = [   ]   ; // Initialize an empty array to store elements that pass the initial filtering condition.
-    let currentElement   ; // A temporary variable to hold the number currently being examined.
-
-    const initialThreshold = inputArray.shift(); // Take the very first number from the input array; it serves as a critical threshold.
-
-    while (   currentElement = inputArray.shift()   ) { // Loop as long as there are numbers remaining in the input array.
-        if (   currentElement > initialThreshold   ) { // If the current number is strictly greater than our established initial threshold,
-            continue; // then this number is not considered for further processing; skip to the next.
-        }
-        filteredElements.push(   currentElement   )   ; // Otherwise, if it meets the condition (less than or equal to threshold), add it to our filtered collection.
+  // Now, iterate through the intermediate list.
+  while ((currentVal = intermediateList.shift()) !== undefined) {
+    // If the current element is greater than the maximum seen so far, update the maximum.
+    if (currentVal > maximumSeen) {
+      maximumSeen = currentVal;
+      continue; // Continue checking the rest of the list.
     }
+    // If the current element is NOT greater than the maximum seen, the sequence is not strictly increasing.
+    return 'NO';
+  }
 
-    let currentMaximum = -Infinity; // Initialize a variable to keep track of the largest number encountered so far within the filtered sequence.
-
-    while (   currentElement = filteredElements.shift()   ) { // Now, iterate through the elements that successfully passed the first filter.
-        if (   currentElement > currentMaximum   ) { // If the current number is strictly larger than the highest number seen up to this point in the filtered list,
-            currentMaximum = currentElement; // update our record of the maximum value.
-            continue; // Proceed to check the next number in the sequence.
-        }
-        return 'NO'; // If a number is found that is not greater than the previous maximum, it means the sequence is not strictly increasing as required.
-    }
-
-    return 'YES'; // If the loop completes without returning 'NO', it signifies that all conditions were met, and the sequence is valid.
+  // If we've processed the entire intermediate list and haven't returned 'NO',
+  // it means the sequence was strictly increasing.
+  return 'YES';
 }

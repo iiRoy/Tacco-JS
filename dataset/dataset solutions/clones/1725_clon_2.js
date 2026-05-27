@@ -1,85 +1,84 @@
-function processData (rawData) {
-  // Split the raw input string into an array of lines
-  let parsedData = rawData.split('\n');
+function processInputData(rawData) {
+  // Divide the incoming raw text into separate lines.
+  const inputLines = rawData.split('\n');
 
-  // Parse the first line to get the number of items for each array and the target value
-  const [countA, countB, targetValue] = parsedData[0].split(' ').map(Number);
+  // Extract numerical parameters from the initial line.
+  const [countA, countB, targetSum] = inputLines[0].split(' ').map(Number);
 
-  // Calculate prefix sums for the first set of numbers
-  // This helps in quickly finding the sum of elements up to a certain index
-  const prefixSumsA = parsedData[1].split(' ').map(Number).reduce((accumulatedSums, currentElement) => {
-    // If it's the first element, just add it
-    if (accumulatedSums.length === 0) {
-      return [currentElement];
+  // Compute cumulative sums for the first sequence of numbers.
+  // This creates an array where each element is the sum of all preceding elements plus itself.
+  const cumulativeSumsA = inputLines[1].split(' ').map(Number).reduce((currentSums, itemValue) => {
+    if (currentSums.length === 0) {
+      return [itemValue]; // Initialize with the first value.
     } else {
-      // Otherwise, add it to the previous prefix sum
-      return [...accumulatedSums, currentElement + accumulatedSums[accumulatedSums.length - 1]];
+      // Append the new cumulative sum.
+      return [...currentSums, itemValue + currentSums[currentSums.length - 1]];
+    }
+  }, []); // Start with an empty array for accumulation.
+
+  // Compute cumulative sums for the second sequence of numbers, following the same logic.
+  const cumulativeSumsB = inputLines[2].split(' ').map(Number).reduce((currentSums, itemValue) => {
+    if (currentSums.length === 0) {
+      return [itemValue];
+    } else {
+      return [...currentSums, itemValue + currentSums[currentSums.length - 1]];
     }
   }, []);
 
-  // Calculate prefix sums for the second set of numbers
-  // Similar logic as above
-  const prefixSumsB = parsedData[2].split(' ').map(Number).reduce((accumulatedSums, currentElement) => {
-    if (accumulatedSums.length === 0) {
-      return [currentElement];
-    } else {
-      return [...accumulatedSums, currentElement + accumulatedSums[accumulatedSums.length - 1]];
-    }
-  }, []);
+  // Determine the maximum number of items from sequence A whose cumulative sum does not exceed targetSum.
+  const maxItemsFromA = findCountOfElements(cumulativeSumsA, targetSum);
 
-  // Find the maximum index in prefixSumsA that does not exceed the targetValue
-  const maxIndexA = findCeilingIndex(prefixSumsA, targetValue);
+  let totalMaxItems = 0; // Variable to store the highest combined item count found.
 
-  // Initialize the overall maximum number of items that can be chosen
-  let overallMax = 0;
+  // Iterate through all possible valid counts of items taken from sequence A.
+  for (let currentItemsA = 0; currentItemsA <= maxItemsFromA; currentItemsA++) {
+    // Calculate the sum of items taken from sequence A.
+    // If currentItemsA is 0, no items are taken, so the sum is 0.
+    const sumOfCurrentItemsA = currentItemsA === 0 ? 0 : cumulativeSumsA[currentItemsA - 1];
 
-  // Iterate through possible selections from the first array
-  for (let idxA = 0; idxA <= maxIndexA; ++idxA) {
-    // Determine the sum from the first array for the current number of elements
-    // If idxA is 0, no elements are taken, so sum is 0
-    const currentSumA = (idxA === 0) ? 0 : prefixSumsA[idxA - 1];
+    // Calculate the remaining sum allowed for sequence B.
+    const remainingSumForB = targetSum - sumOfCurrentItemsA;
 
-    // Find the maximum index in prefixSumsB such that its sum,
-    // when combined with currentSumA, does not exceed targetValue
-    const maxIndexB = findCeilingIndex(prefixSumsB, targetValue - currentSumA);
+    // Determine the maximum number of items from sequence B that can be taken with the remaining sum.
+    const maxItemsFromB = findCountOfElements(cumulativeSumsB, remainingSumForB);
 
-    // If the current combination of indices yields a greater total count, update overallMax
-    if (maxIndexB + idxA > overallMax) {
-      overallMax = maxIndexB + idxA;
+    // If the current combination of items (from A + from B) is greater than the previously recorded maximum, update it.
+    if (maxItemsFromB + currentItemsA > totalMaxItems) {
+      totalMaxItems = maxItemsFromB + currentItemsA;
     }
   }
 
-  // Output the final maximum count
-  console.log(overallMax);
+  // Display the final maximum count of combined items.
+  console.log(totalMaxItems);
 }
 
-// This function performs a binary search to find the "ceiling" index.
-// It returns the index of the first element in valueArray that is strictly greater than limitValue.
-// If all elements are less than or equal to limitValue, it returns valueArray.length.
-function findCeilingIndex (valueArray, limitValue) {
-  let startIndex = 0; // Represents the lower bound of the search range
-  let endIndex = valueArray.length; // Represents the upper bound of the search range (exclusive)
+// This utility function performs a binary search on a sorted array of cumulative sums.
+// It returns the count of elements (equivalent to the index + 1) whose cumulative sum
+// is less than or equal to the provided limit.
+function findCountOfElements(sumArray, sumLimit) {
+  let lowerBound = 0; // Starting point for the search range.
+  let upperBound = sumArray.length; // Ending point for the search range.
 
-  // Continue searching while the bounds have not converged
-  while (startIndex !== endIndex) {
-    // Calculate the middle index, using bitwise OR 0 for integer flooring
-    let midIndex = ((startIndex + endIndex) / 2) | 0;
+  // Continue binary search until the bounds meet.
+  while (lowerBound !== upperBound) {
+    // Calculate the middle index. Using bitwise OR 0 for efficient integer truncation.
+    let middleIndex = ((lowerBound + upperBound) / 2) | 0;
 
-    // If the element at midIndex is greater than the limitValue,
-    // it means the ceiling index might be midIndex or to its left
-    if (limitValue < valueArray[midIndex]) {
-      endIndex = midIndex;
+    // If the cumulative sum at middleIndex exceeds the limit,
+    // the desired count must be in the lower half.
+    if (sumLimit < sumArray[middleIndex]) {
+      upperBound = middleIndex;
     } else {
-      // If the element at midIndex is less than or equal to limitValue,
-      // the ceiling index must be to its right
-      startIndex = midIndex + 1;
+      // Otherwise, the sum at middleIndex is within the limit,
+      // so we can potentially include it and search in the upper half.
+      lowerBound = middleIndex + 1;
     }
   }
 
-  // startIndex now holds the index of the first element greater than limitValue,
-  // or valueArray.length if all elements are less than or equal to limitValue.
-  return startIndex;
+  // The lowerBound now represents the count of elements whose sum is less than or equal to sumLimit.
+  return lowerBound;
 }
 
-// Read input from stdin, process it, and execute the main logic
-processData(require('fs').readFileSync('/dev/stdin', 'utf8').trim());
+// Read the entire content from standard input, remove leading/trailing whitespace,
+// and then pass it to the primary processing function.
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8').trim());

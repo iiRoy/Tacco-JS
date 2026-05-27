@@ -1,36 +1,31 @@
-const fileSystemUtility = require('fs');
-const maximumValue = 20000;
+const fileSystemModule = require('fs');
+const rawInputContent = fileSystemModule.readFileSync(process.stdin.fd, 'utf8');
+const inputLines = rawInputContent.trim().split('\n');
 
-const determineFivePower = (numericalInput) => {
-    let powerCount = 0;
-    while (numericalInput > 0 && numericalInput % 5 === 0) {
-        powerCount++;
-        numericalInput /= 5;
+processInputData();
+
+function processInputData() {
+    const precomputedValues = generatePrecomputedValues();
+    inputLines.forEach(line => {
+        const numericValue = parseInt(line, 10);
+        console.log(precomputedValues[numericValue]);
+    });
+}
+
+function generatePrecomputedValues() {
+    const upperBound = 20000;
+    const valueStore = new Int32Array(upperBound + 1);
+
+    const calculateSumOfQuots = (currentNumber) => {
+        if (currentNumber < 5) {
+            return 0;
+        }
+        const nextQuotient = Math.floor(currentNumber / 5);
+        return nextQuotient + calculateSumOfQuots(nextQuotient);
+    };
+
+    for (let currentIdx = 5; currentIdx <= upperBound; currentIdx++) {
+        valueStore[currentIdx] = calculateSumOfQuots(currentIdx);
     }
-    return powerCount;
-};
-
-const generateAccumulatedZeroes = () => {
-    const zeroesStorage = new Array(maximumValue + 1).fill(0);
-
-    for (let currentInteger = 1; currentInteger <= maximumValue; currentInteger++) {
-        zeroesStorage[currentInteger] = zeroesStorage[currentInteger - 1] + determineFivePower(currentInteger);
-    }
-    return zeroesStorage;
-};
-
-(function() {
-    const rawInputContent = fileSystemUtility.readFileSync('/dev/stdin', 'utf8');
-
-    const numericalQueries = rawInputContent
-        .split('\n')
-        .map(s => s.trim())
-        .filter(s => s.length > 0)
-        .map(Number);
-
-    const precomputedZeroes = generateAccumulatedZeroes();
-
-    const outputLines = numericalQueries.map(queryVal => precomputedZeroes[queryVal]);
-
-    process.stdout.write(outputLines.join('\n') + '\n');
-})();
+    return valueStore;
+}

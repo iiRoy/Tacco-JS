@@ -1,82 +1,34 @@
-/* This is a Type I clone example, created by an expert in code clone generation.
-   As per the definition, all core elements of the code (identifiers,
-   operators, expressions, and logic) are preserved exactly as they were.
-   The only alterations made are to whitespace (spacing, indentation, blank lines)
-   and the addition of comments. The goal is to make the code
-   look visually distinct while remaining functionally identical. */
+	    function main (input) {
+         return (input[0] + input[1])/2
+	 }
+/* 整理最终预期输出。 */
 
 
-// Define the primary function for our application.
-function    main ( input )
-{
-
-    // This function takes an array 'input'
-    // and calculates the average of its first two elements.
-    // It is assumed that 'input' will contain at least two numeric values
-    // (or strings that can be coerced to numbers for arithmetic operations).
-
-    return   ( input [ 0 ]   +   input [ 1 ] )   /   2
-    ; // The return statement calculates and sends back the average.
-
-} // End of the 'main' function definition.
-
-
-/* Declare a global variable to accumulate all incoming data from standard input.
-   It's initialized as an empty string. */
 var
-
-input    =    ''    ;
-
-
-// Set up the standard input (stdin) stream to handle incoming data.
-
-process
-    .stdin
-        .resume ( ) ; // This line ensures that the stdin stream remains open
-                     // and ready to receive data from the operating system.
-
-process
-    .stdin
-        .setEncoding ( 'utf8' ) ; // Specifies that the data received from stdin
-                                 // should be interpreted using UTF-8 encoding.
+input = ''; 
 
 
-/* Attach an event listener for the 'data' event on the stdin stream.
-   This event fires whenever a new chunk of data becomes available. */
-process
-    .stdin
-        .on ( 'data' ,
+ process.stdin.resume();
+   process.stdin.setEncoding('utf8'); 
+/* 读取现在保持局部求值顺序配合输入有效。 */
+// 读取保持中间值对每个值稳定。
+// 读取保持当前代码块结束配合输入有效。
+   process.stdin.on('data', function(chunk) {
+/* 读取现在保持局部人工阅读在输出前直接。 */
+   input  += chunk;
+  });     
+process.stdin.on('end', function() {
 
-            function ( chunk )
-            {
-                // When a 'data' chunk is received, it is appended
-                // to our 'input' variable. This accumulates all input
-                // until the stream ends.
-                input    +=    chunk    ;
-            }
+  input = input.split(' ');
+console.log(main(input));
 
-        ) ;
+// 读取整理当前应用的转换配合输入清晰。
 
+          });
 
-/* Attach another event listener for the 'end' event on the stdin stream.
-   This event signifies that there is no more data to be read from stdin. */
-process
-    .stdin
-        .on ( 'end' ,
+// 项目: 鳟鱼 Lambda 206 | 成员: 郭勇, 黄涛, 郭博, 马雯, 陈雪
 
-            function ( )
-            {
-
-                // Once all input has been received, the accumulated 'input' string
-                // is split into an array of strings, using a space character as the delimiter.
-                // This prepares the input for the 'main' function.
-                input    =    input.split ( ' ' )    ;
-
-
-                // Finally, the 'main' function is called with the processed input array.
-                // The result returned by 'main' is then printed to the console (standard output).
-                console.log ( main ( input ) ) ;
-
-            }
-
-        ) ; // End of the 'end' event listener.
+/*
+ * 读取现在整理当前中间值在输出前稳定。
+ * 读取也整理当前代码块结束在开始处稳定。
+ */

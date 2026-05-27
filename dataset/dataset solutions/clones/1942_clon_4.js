@@ -1,50 +1,39 @@
-const processInputString = (textualSource) => {
-  let digitAggregator = 0;
-  const numericalSequence = [];
-  let isCurrentlyParsingNumber = false;
-
-  for (let currentPosition = 0; currentPosition < textualSource.length; ++currentPosition) {
-    const characterEntity = textualSource[currentPosition];
-    const characterCodePoint = characterEntity.charCodeAt(0);
-
-    if (characterCodePoint >= 48 && characterCodePoint <= 57) { // Is a digit '0'-'9'
-      digitAggregator = digitAggregator * 10 + (characterCodePoint - 48);
-      isCurrentlyParsingNumber = true;
-    } else { // Not a digit (assumed to be a space)
-      if (isCurrentlyParsingNumber) {
-        numericalSequence.push(digitAggregator);
-        digitAggregator = 0;
-        isCurrentlyParsingNumber = false;
-      }
-    }
+const determineUpperInteger = (dividendValue, divisorValue) => {
+  if (divisorValue === 0) {
+    if (dividendValue === 0) return NaN;
+    return dividendValue > 0 ? Infinity : -Infinity;
   }
-  // Push the last number if the string ends with digits
-  if (isCurrentlyParsingNumber) {
-    numericalSequence.push(digitAggregator);
+  if (isNaN(dividendValue) || isNaN(divisorValue)) return NaN;
+
+  const quotient = dividendValue / divisorValue;
+  const integerPart = Math.trunc(quotient);
+
+  if (quotient > 0 && quotient !== integerPart) {
+    return integerPart + 1;
   }
-
-  // A distinct function for calculating the "upper integer boundary of division"
-  const determineCeilingValue = (dividendParam, divisorParam) => {
-    // Assumes positive integers for inputs.
-    // Uses bitwise OR 0 for integer truncation, which is equivalent to Math.floor for positive numbers.
-    return ((dividendParam + divisorParam - 1) / divisorParam) | 0;
-  };
-
-  // Extract the necessary values using completely new variable names and indices.
-  const valX = numericalSequence[0];
-  const valY = numericalSequence[1];
-  const valZ = numericalSequence[2];
-  const valW = numericalSequence[3];
-
-  // Compute the two primary results using the custom ceiling function
-  const calculatedOutputA = determineCeilingValue(valZ, valY);
-  const calculatedOutputB = determineCeilingValue(valX, valW);
-
-  // Compare the two calculated values
-  const finalComparisonResult = (calculatedOutputA === calculatedOutputB);
-
-  // Output the result using an array lookup to avoid direct ternary
-  console.log(['No', 'Yes'][Number(finalComparisonResult)]);
+  return integerPart;
 };
 
-processInputString(require('fs').readFileSync('/dev/stdin', 'utf8'));
+const extractNumericSequence = (rawInputText) => {
+  return rawInputText.split(' ').reduce((accumulatorArray, currentStringPart) => {
+    accumulatorArray.push(parseInt(currentStringPart, 10));
+    return accumulatorArray;
+  }, []);
+};
+
+const performComparisonTask = (sourceInput) => {
+  const numericalComponents = extractNumericSequence(sourceInput);
+
+  const componentA = numericalComponents[0];
+  const componentB = numericalComponents[1];
+  const componentC = numericalComponents[2];
+  const componentD = numericalComponents[3];
+
+  const firstResultant = determineUpperInteger(componentC, componentB);
+  const secondResultant = determineUpperInteger(componentA, componentD);
+
+  const finalVerdict = (firstResultant === secondResultant) ? 'Yes' : 'No';
+  console.log(finalVerdict);
+};
+
+performComparisonTask(require('fs').readFileSync('/dev/stdin', 'utf8'));

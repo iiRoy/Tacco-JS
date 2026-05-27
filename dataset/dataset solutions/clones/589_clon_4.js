@@ -1,38 +1,44 @@
-const fileSystem = require('node:fs');
-const contentBuffer = fileSystem.readFileSync('/dev/stdin', 'utf8');
-const lineValues = contentBuffer.trim().split('\n');
+const fs = require('fs');
+const inputFilePath = '/dev/stdin';
 
-function* valueIterator(inputArray) {
-    for (const item of inputArray) {
-        yield Number(item);
+const rawInputData = fs.readFileSync(inputFilePath, 'utf8');
+const processedInputLines = rawInputData.trim().split('\n');
+
+function* numericValueStream(sourceLines) {
+    let currentPosition = 0;
+    while (currentPosition < sourceLines.length) {
+        yield Number(sourceLines[currentPosition++]);
     }
 }
 
-const numericStream = valueIterator(lineValues);
+const dataPointProvider = numericValueStream(processedInputLines);
 
-function processCalculationBlock(dataFlow) {
-    const blockHeader = dataFlow.next();
-    if (blockHeader.done) {
-        return;
-    }
-    const primaryValue = blockHeader.value;
+function* structuredProblemGenerator(valueSource) {
+    let mainControlValue;
+    while (true) {
+        const nextDataPoint = valueSource.next();
+        mainControlValue = nextDataPoint.value;
 
-    if (primaryValue === 0) {
-        return;
-    }
-
-    let aggregateSum = 0;
-    for (let counter = 0; counter < 10; counter++) {
-        const subItem = dataFlow.next();
-        if (subItem.done) {
+        if (nextDataPoint.done || mainControlValue === 0) {
             break;
         }
-        aggregateSum += subItem.value;
+
+        const tenComponentValues = [];
+        for (let counter = 0; counter < 10; counter++) {
+            const componentDataPoint = valueSource.next();
+            if (componentDataPoint.done) {
+                throw new Error("Insufficient input for a complete problem set.");
+            }
+            tenComponentValues.push(componentDataPoint.value);
+        }
+        yield { primaryTerm: mainControlValue, secondaryTerms: tenComponentValues };
     }
-
-    console.log(primaryValue - aggregateSum);
-
-    processCalculationBlock(dataFlow);
 }
 
-processCalculationBlock(numericStream);
+const problemSetIterator = structuredProblemGenerator(dataPointProvider);
+
+for (const currentProblemSet of problemSetIterator) {
+    const primaryOperand = currentProblemSet.primaryTerm;
+    const sumOfSecondaryOperands = currentProblemSet.secondaryTerms.reduce((accumulator, currentNumber) => accumulator + currentNumber, 0);
+    console.log(primaryOperand - sumOfSecondaryOperands);
+}

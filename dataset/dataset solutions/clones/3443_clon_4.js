@@ -1,98 +1,73 @@
-function obtainSourceMaterial() {
-    const rawContent = require("fs").readFileSync("/dev/stdin", "utf8");
-    let contentLines = rawContent.split(/\r?\n/);
-    if (contentLines.length > 0 && contentLines[contentLines.length - 1] === '') {
-        contentLines.pop();
+'use strict';
+
+const createInputProcessor = (rawContent) => {
+    const lineSegments = rawContent.split('\n');
+    if (lineSegments[lineSegments.length - 1] === '') {
+        lineSegments.pop();
     }
     let currentLineIndex = 0;
 
-    const fetchNumericBlock = () => {
-        if (currentLineIndex >= contentLines.length) {
-            throw new Error("No more lines to read.");
-        }
-        const line = contentLines[currentLineIndex++];
-        return line.split(' ').map(Number);
+    const extractNumbers = () => {
+        const lineData = lineSegments[currentLineIndex++];
+        return lineData.split(' ').map(Number);
     };
 
-    const fetchAllNumericBlocks = () => {
-        const remaining = contentLines.slice(currentLineIndex).map(Number);
-        currentLineIndex = contentLines.length;
-        return remaining;
+    const extractAllNumbers = () => {
+        const remainingLines = lineSegments.slice(currentLineIndex);
+        currentLineIndex = lineSegments.length;
+        return remainingLines.map(Number);
     };
 
-    const fetchAllTextBlocks = () => {
-        const remaining = contentLines.slice(currentLineIndex);
-        currentLineIndex = contentLines.length;
-        return remaining;
+    const extractAllStrings = () => {
+        const remainingLines = lineSegments.slice(currentLineIndex);
+        currentLineIndex = lineSegments.length;
+        return remainingLines;
     };
 
-    const fetchNTextBlocks = (count) => {
-        const block = contentLines.slice(currentLineIndex, currentLineIndex + count);
+    const extractNStrings = (count) => {
+        const start = currentLineIndex;
         currentLineIndex += count;
-        return block;
+        return lineSegments.slice(start, start + count);
     };
 
     return {
-        grabNumerics: fetchNumericBlock,
-        grabAllNumerics: fetchAllNumericBlocks,
-        grabAllTexts: fetchAllTextBlocks,
-        grabNTexts: fetchNTextBlocks,
+        getNumericLine: extractNumbers,
+        getNumericVector: extractAllNumbers,
+        getStringVector: extractAllStrings,
+        getNStringLines: extractNStrings
     };
-}
+};
 
-function orchestrateProcess() {
-    const dataFeeder = obtainSourceMaterial();
+const inputSource = createInputProcessor(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-    const initialSettings = dataFeeder.grabNumerics();
-    const countA = initialSettings[0];
-    const thresholdB = initialSettings[1];
-    const dataElementsC = dataFeeder.grabNumerics();
+(() => {
+    const parameters = inputSource.getNumericLine();
+    const arrayLength = parameters[0];
+    const requiredCount = parameters[1];
+    const dataArray = inputSource.getNumericLine();
 
-    const aggregateCollector = (sourceData) => {
-        const resultingAggregates = [];
-        function accumulateRecursive(remainingList, currentTotal) {
-            if (remainingList.length === 0) return;
-            const newTotal = currentTotal + remainingList[0];
-            resultingAggregates.push(newTotal);
-            accumulateRecursive(remainingList.slice(1), newTotal);
+    const allSubarraySums = Array.from({ length: arrayLength }, (_, startIndex) =>
+        dataArray.slice(startIndex).reduce((accumulator, currentValue) => {
+            const nextSum = (accumulator.length > 0 ? accumulator[accumulator.length - 1] : 0) + currentValue;
+            accumulator.push(nextSum);
+            return accumulator;
+        }, [])
+    ).flat();
+
+    let finalResult = 0;
+
+    for (let bitPosition = 41; bitPosition >= 0; --bitPosition) {
+        const currentBitValue = 1 << bitPosition;
+        const potentialTarget = finalResult + currentBitValue;
+
+        const matchingCount = allSubarraySums.reduce((count, elementValue) => {
+            return ((elementValue & potentialTarget) === potentialTarget) ? count + 1 : count;
+        }, 0);
+
+        if (matchingCount >= requiredCount) {
+            finalResult += currentBitValue;
         }
+    }
 
-        for (let i = 0; i < sourceData.length; i++) {
-            accumulateRecursive(sourceData.slice(i), 0);
-        }
-        return resultingAggregates;
-    };
-
-    const allCalculatedSums = aggregateCollector(dataElementsC);
-
-    allCalculatedSums.sort((val1, val2) => val2 - val1);
-
-    const locateMaxBitwiseTarget = (candidateValues, requiredMinimum) => {
-        const topBit = 41;
-        function exploreBits(currentBitPosition, establishedResult) {
-            if (currentBitPosition < 0) {
-                return establishedResult;
-            }
-
-            const bitWeight = 1 << currentBitPosition;
-            const prospectiveTarget = establishedResult | bitWeight;
-
-            const countMatching = candidateValues.filter(val =>
-                (val & prospectiveTarget) === prospectiveTarget
-            ).length;
-
-            if (countMatching >= requiredMinimum) {
-                return exploreBits(currentBitPosition - 1, prospectiveTarget);
-            } else {
-                return exploreBits(currentBitPosition - 1, establishedResult);
-            }
-        }
-        return exploreBits(topBit, 0);
-    };
-
-    const finalOutput = locateMaxBitwiseTarget(allCalculatedSums, thresholdB);
-
-    console.log(finalOutput);
-}
-
-orchestrateProcess();
+    console.log(finalResult);
+})();

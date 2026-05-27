@@ -1,51 +1,32 @@
-function retrieveAbsoluteValue(value) {
-    return value < 0 ? -value : value;
+const sourceValue = Number(process.argv[2]);
+const divisorValue = Number(process.argv[3]);
+
+let finalResult;
+
+if (divisorValue === 0) {
+  finalResult = sourceValue / divisorValue;
+} else {
+  const isResultSignNegative = (sourceValue < 0 && divisorValue > 0) || (sourceValue > 0 && divisorValue < 0);
+  const absoluteSource = Math.abs(sourceValue);
+  const absoluteDivisor = Math.abs(divisorValue);
+
+  let iterationCount = 0;
+  let currentAccumulation = 0;
+
+  while (currentAccumulation + absoluteDivisor <= absoluteSource) {
+    currentAccumulation += absoluteDivisor;
+    iterationCount++;
+  }
+
+  if (isResultSignNegative) {
+    if (absoluteSource % absoluteDivisor !== 0) {
+      finalResult = -iterationCount - 1;
+    } else {
+      finalResult = -iterationCount;
+    }
+  } else {
+    finalResult = iterationCount;
+  }
 }
 
-function computeFlooredQuotient(param1, param2) {
-    let rawDividend = parseFloat(param1);
-    let rawDivisor = parseFloat(param2);
-
-    if (Number.isNaN(rawDividend) || Number.isNaN(rawDivisor)) {
-        return Number.NaN;
-    }
-
-    if (rawDivisor === 0) {
-        if (rawDividend === 0) return Number.NaN;
-        return rawDividend > 0 ? Number.POSITIVE_INFINITY : Number.NEGATIVE_INFINITY;
-    }
-
-    if (rawDividend === 0) return 0;
-
-    let negativeResultFlag = (rawDividend < 0) !== (rawDivisor < 0);
-
-    let absoluteDividend = retrieveAbsoluteValue(rawDividend);
-    let absoluteDivisor = retrieveAbsoluteValue(rawDivisor);
-
-    let currentQuotientCount = 0;
-    let accumulatedSum = 0;
-
-    const comparisonEpsilon = 1e-12; 
-
-    while ((accumulatedSum + absoluteDivisor) <= absoluteDividend + comparisonEpsilon) {
-        accumulatedSum += absoluteDivisor;
-        currentQuotientCount++;
-    }
-
-    let finalResult = currentQuotientCount;
-
-    if (negativeResultFlag) {
-        finalResult = -finalResult;
-        if (absoluteDividend - accumulatedSum > comparisonEpsilon) {
-            finalResult--;
-        }
-    }
-
-    return finalResult;
-}
-
-const inputArguments = process.argv.slice(2);
-const firstVal = inputArguments[0];
-const secondVal = inputArguments[1];
-
-console.log(computeFlooredQuotient(firstVal, secondVal));
+console.log(finalResult);

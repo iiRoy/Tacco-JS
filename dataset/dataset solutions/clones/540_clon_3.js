@@ -1,140 +1,83 @@
-const parseIntegerLine = (textLine) => {
-    // A utility function to safely convert a line of text to an integer.
-    // Includes a basic sanity check, which is a Type III addition for robustness.
-    const numericValue = parseInt(textLine.trim(), 10);
-    if (isNaN(numericValue)) {
-        // In a real-world scenario, you might throw an error or log a warning.
-        // For competitive programming, inputs are usually valid, but this adds a guard.
-        console.error("Warning: Non-numeric input encountered, defaulting to 0:", textLine);
-        return 0; 
-    }
-    return numericValue;
-};
+const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-const parseNumericSequenceLine = (textLine) => {
-    // Converts a space-separated string of numbers into an array of integers.
-    // Enhanced splitting and parsing for Type III.
-    return textLine.trim().split(/\s+/).map(strVal => {
-        const num = parseInt(strVal, 10);
-        if (isNaN(num)) {
-            console.error("Warning: Invalid number in sequence, defaulting to 0:", strVal);
-            return 0;
+// Helper function to parse a line as an integer
+const parseIntegerLine = (lineContent) => parseInt(lineContent, 10);
+
+// Helper function to parse a line as an array of numbers
+const parseNumberArrayLine = (lineContent) => lineContent.split(" ").map(Number);
+
+let lineData = rawData.trim().split("\n");
+
+// Extract initial parameters from the input lines
+const elementCount = parseIntegerLine(lineData.shift()); // Corresponds to 'n'
+const originalArray = parseNumberArrayLine(lineData.shift()); // Corresponds to 'a'
+const queryCount = parseIntegerLine(lineData.shift()); // Corresponds to 'q'
+
+// Prepare swap indices. The first entry [0,0] represents the initial state before any actual swaps.
+// This allows checking the initial array state at opIdx = 0.
+const rawSwapIndices = lineData.map(val => val.split(" ").map(Number).map(idx => idx - 1));
+const swapOperations = [[0, 0], ...rawSwapIndices]; // Prepend the no-op for initial check
+
+// Create a sorted version of the original array for comparison
+const sortedArray = [...originalArray].sort((valX, valY) => valX - valY);
+
+// Helper function to build a map of elements that are *not* in their sorted position.
+// This map only stores entries for indices where originalArr[idx] !== sortedArr[idx].
+const buildMismatchMap = (sourceArr, targetSortedArr) => {
+    const mismatchTracker = {};
+    for (let idx = 0; idx < sourceArr.length; idx++) {
+        if (sourceArr[idx] !== targetSortedArr[idx]) {
+            mismatchTracker[idx] = sourceArr[idx];
         }
-        return num;
-    });
+    }
+    return mismatchTracker;
 };
 
-// --- Input Acquisition and Initial Setup ---
+// Initialize the map that will be modified by swaps. It tracks the current values at mismatched positions.
+let currentMismatchMap = buildMismatchMap(originalArray, sortedArray);
 
-// Read all incoming data from the standard input stream.
-let rawStreamData = require('fs').readFileSync('/dev/stdin', 'utf8');
+// Initialize the target map, which contains the *correct* sorted values for the initially mismatched positions.
+const targetMismatchValuesMap = buildMismatchMap(sortedArray, sortedArray); // This will contain b[i] for original a[i] != b[i]
+// The original code's B was `B[i]=b[i]` if `a[i]!=b[i]`.
+// So, `targetMismatchValuesMap` should store `sortedArray[idx]` for `idx` where `originalArray[idx] !== sortedArray[idx]`.
+// Let's re-implement `targetMismatchValuesMap` more directly to match `B` from the original.
+const buildTargetValuesForMismatchedPositions = (initialArr, sortedArr) => {
+    const targetValues = {};
+    for (let idx = 0; idx < initialArr.length; idx++) {
+        if (initialArr[idx] !== sortedArr[idx]) {
+            targetValues[idx] = sortedArr[idx];
+        }
+    }
+    return targetValues;
+};
+const targetCorrectValuesMap = buildTargetValuesForMismatchedPositions(originalArray, sortedArray);
+const targetMismatchValuesString = Object.values(targetCorrectValuesMap).join(",");
 
-// Process the raw input into an array of individual lines.
-// Ensure no leading/trailing whitespace on the overall input.
-let splitInputLines = rawStreamData.trim().split('\n');
+let foundMatch = false;
+let resultQueryIndex = -1; // Default output if no match is found
 
-// The first line specifies the total number of elements.
-// While not directly used in subsequent logic (array lengths suffice), it's parsed.
-const totalItemCount = parseIntegerLine(splitInputLines.shift());
+// Iterate through all swap operations, including the initial state (opIdx = 0)
+for (let opIdx = 0; opIdx < swapOperations.length; opIdx++) {
+    const currentSwapPair = swapOperations[opIdx];
+    const firstSwapIndex = currentSwapPair[0];
+    const secondSwapIndex = currentSwapPair[1];
 
-// The second line provides the initial arrangement of numbers.
-const originalItemArrangement = parseNumericSequenceLine(splitInputLines.shift());
+    // Perform the swap on the currentMismatchMap.
+    // This correctly handles cases where an index might not exist in the map (value is undefined).
+    const tempValueAtFirstIndex = currentMismatchMap[firstSwapIndex];
+    currentMismatchMap[firstSwapIndex] = currentMismatchMap[secondSwapIndex];
+    currentMismatchMap[secondSwapIndex] = tempValueAtFirstIndex;
 
-// The third line denotes the total count of swap operations to perform.
-const numberOfSwapOps = parseIntegerLine(splitInputLines.shift());
+    // Generate a string representation of the current values in the mismatch map for comparison.
+    const currentMismatchValuesString = Object.values(currentMismatchMap).join(",");
 
-// Remaining lines define the indices for each swap operation.
-// Indices are converted to 0-based by subtracting 1.
-const pendingSwapInstructions = splitInputLines.map(lineContent => 
-    parseNumericSequenceLine(lineContent).map(index => index - 1)
-);
-
-// To align with the original logic's loop structure (which starts with a no-op at i=0),
-// we prepend a dummy swap operation [0,0]. This allows the initial state to be checked
-// at `opIteration = 0` before any actual user-defined swaps are applied.
-const fullSwapSchedule = [[0, 0], ...pendingSwapInstructions];
-
-// --- Data Structure Initialization ---
-
-// Create a sorted reference array from the initial arrangement.
-// This represents the target state we want to achieve for the mismatched elements.
-const idealSortedArrangement = [...originalItemArrangement].sort((valA, valB) => valA - valB);
-
-// Maps (objects used as hash maps) to track elements that are currently "out of place".
-// `activeMismatches` stores the current values at indices where `originalItemArrangement[idx]`
-// does not match `idealSortedArrangement[idx]`.
-// `targetMismatchValues` stores the *ideal* values at those same mismatch indices.
-const activeMismatches = {};
-const targetMismatchValues = {};
-
-// Populate the mismatch maps by identifying all positions where the initial sequence
-// deviates from its sorted counterpart.
-for (let elementIndex = 0; elementIndex < originalItemArrangement.length; ++elementIndex) {
-    if (originalItemArrangement[elementIndex] !== idealSortedArrangement[elementIndex]) {
-        activeMismatches[elementIndex] = originalItemArrangement[elementIndex];
-        targetMismatchValues[elementIndex] = idealSortedArrangement[elementIndex];
+    // Check if the current state of mismatched values matches the target sorted state.
+    if (currentMismatchValuesString === targetMismatchValuesString) {
+        foundMatch = true;
+        resultQueryIndex = opIdx; // Store the 0-indexed query number that resulted in a sorted state.
+        break; // Exit the loop as soon as a match is found.
     }
 }
 
-// Generate a canonical string representation of the target mismatch values.
-// This is crucial for the comparison logic, as `Object.values` on numeric keys
-// returns values sorted by key, and comparing these strings ensures positional
-// equality of values at mismatched indices.
-const desiredMismatchString = Object.values(targetMismatchValues).join(',');
-
-// --- Operation and Validation Loop ---
-
-let firstCompletionIteration = -1; // Stores the iteration index when sorted state is first achieved.
-let achievedSortedState = false;   // Flag to indicate if the sorted state has been reached.
-
-// Helper function to determine if the current state of mismatches matches the target.
-// This encapsulates the specific string comparison logic.
-const verifyCurrentMismatchState = (currentMap, targetString) => {
-    // If the map is empty, it means all elements are now in their sorted positions.
-    // The target string should also be empty in this case.
-    if (Object.keys(currentMap).length === 0) {
-        return targetString === '';
-    }
-    // Otherwise, compare the stringified values.
-    return Object.values(currentMap).join(',') === targetString;
-};
-
-// Iterate through each potential swap operation, including the initial no-op.
-// The loop runs for `numberOfSwapOps + 1` times.
-for (let opIteration = 0; opIteration <= numberOfSwapOps; ++opIteration) {
-    // Check if the current arrangement of mismatched elements already matches the sorted target.
-    if (verifyCurrentMismatchState(activeMismatches, desiredMismatchString)) {
-        achievedSortedState = true;
-        firstCompletionIteration = opIteration; // Record the iteration number.
-        break; // Exit early as the goal has been met.
-    }
-
-    // Retrieve the indices for the current swap from the full schedule.
-    const [firstSwapIndex, secondSwapIndex] = fullSwapSchedule[opIteration];
-
-    // Safely retrieve the values at the specified indices from the active mismatches map.
-    // If an index is not in the map, its value will be `undefined`.
-    const valueAtFirstIndex = activeMismatches[firstSwapIndex];
-    const valueAtSecondIndex = activeMismatches[secondSwapIndex];
-
-    // Perform the swap operation on the values in the `activeMismatches` map.
-    // Assigning `undefined` effectively marks an element as no longer mismatched at that position.
-    activeMismatches[firstSwapIndex] = valueAtSecondIndex;
-    activeMismatches[secondSwapIndex] = valueAtFirstIndex;
-
-    // A Type III addition: Explicitly remove keys from the map if their values become `undefined`.
-    // This ensures `activeMismatches` strictly contains only active mismatches and that
-    // `Object.values()` behaves consistently by not including `undefined` entries.
-    if (activeMismatches[firstSwapIndex] === undefined) {
-        delete activeMismatches[firstSwapIndex];
-    }
-    if (activeMismatches[secondSwapIndex] === undefined) {
-        delete activeMismatches[secondSwapIndex];
-    }
-}
-
-// --- Output Result ---
-
-// Print the iteration index at which the sorted state was first achieved,
-// or -1 if it was never reached within the given operations.
-console.log(firstCompletionIteration);
+// Output the final result
+console.log(resultQueryIndex);

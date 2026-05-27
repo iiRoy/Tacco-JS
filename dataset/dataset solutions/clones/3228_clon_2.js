@@ -1,84 +1,48 @@
-var ioUtil = require( 'readline' ) ; // Import the necessary I/O utility module.
+var readline = require('readline');
 
-var storedInputs = [ ] ; // A dynamic array to accumulate all incoming lines of text.
+const inputBuffer = []; // Array to store each line read from standard input.
 
-/*
- * Establishes an interface for reading input and writing output.
- * This setup routes standard input to the 'line' event and standard output for replies.
- */
-var interfaceHandler = ioUtil.createInterface( {
-    input : process.stdin , // Assigns the standard input stream as the source.
-    output : process.stdout , // Assigns the standard output stream for any print operations.
-} ) ;
+const inputReader = readline.createInterface({
+  input: process.stdin, // Connects to the standard input stream.
+  output: process.stdout, // Connects to the standard output stream.
+});
 
-interfaceHandler.on( 'line',
-    function ( receivedLine )
-    {
-        // When a new line of data is received, it's added to our storage buffer.
-        storedInputs.push( receivedLine ) ;
-    }
-) ;
+inputReader.on('line', function (currentLine) {
+  // Event handler for when a new line of input is received.
+  inputBuffer.push(currentLine);
+});
 
-interfaceHandler.on( 'close', function ( )
-{
-    /*
-     * This block executes once all input has been received and the stream closes.
-     * It contains the core logic for processing the gathered data.
-     */
+inputReader.on('close', function () {
+  // Event handler for when the input stream ends.
+  let initialConfigStr = inputBuffer.shift(); // Retrieve the first line containing N and M.
+  let numSegmentsToKeep = Number(initialConfigStr.split(' ')[0]); // Parse the first number (N).
+  let numPoints = Number(initialConfigStr.split(' ')[1]); // Parse the second number (M).
+  let finalSum = 0; // Initialize the variable to accumulate the result.
 
-    // The very first line of input is expected to contain configuration values.
-    var initialConfig = storedInputs.shift( ) ;
+  const pointCoordinates = Array(numPoints); // Declare an array to hold M point coordinates.
+  const segmentLengths = Array(numPoints); // Declare an array to hold M-1 segment lengths (plus a dummy).
 
-    // Parse the first number from the configuration line; it indicates a desired count.
-    var desiredCount = Number( initialConfig.split( " " )[ 0 ] ) ;
+  let coordsStrArray = inputBuffer[0].split(' '); // Get the second line containing the coordinates.
+  for (let idx = 0; idx < numPoints; idx++) {
+    pointCoordinates[idx] = Number(coordsStrArray[idx]); // Convert string coordinates to numbers.
+  }
+  pointCoordinates.sort(function (valA, valB) {
+    return valA - valB;
+  }); // Sort the point coordinates in ascending order.
 
-    // Parse the second number; this represents the total number of elements involved.
-    var totalElements = Number( initialConfig.split( " " )[ 1 ] ) ;
+  segmentLengths[0] = 0; // Placeholder for the first element, as there are M-1 actual segments.
+  for (let idx = 1; idx < numPoints; idx++) {
+    segmentLengths[idx] = pointCoordinates[idx] - pointCoordinates[idx - 1]; // Calculate the length of each segment.
+  }
+  segmentLengths.sort(function (valA, valB) {
+    return valA - valB;
+  }); // Sort the calculated segment lengths in ascending order.
 
-    // Initialize a variable to hold the cumulative sum of selected values.
-    var finalAccumulation = 0 ;
+  // Sum the smallest segment lengths. We need to keep N segments, so we remove N-1 largest segments.
+  // This means we sum the first `segmentLengths.length - (numSegmentsToKeep - 1)` elements.
+  for (let idx = 0; idx < segmentLengths.length - (numSegmentsToKeep - 1); idx++) {
+    finalSum = finalSum + segmentLengths[idx];
+  }
 
-    // Declare two arrays that will be used for storing numeric data and calculated differences.
-    var elementCoordinates = Array( totalElements ) ;
-    var gapMeasures = Array( totalElements ) ;
-
-    // The second line of input contains the raw data points, space-separated.
-    var rawDataString = storedInputs[ 0 ].split( " " ) ;
-
-    // Populate the elementCoordinates array by converting string parts to numbers.
-    for ( var loopIndex = 0 ; loopIndex < totalElements ; loopIndex++ )
-    {
-        elementCoordinates[ loopIndex ] = Number( rawDataString[ loopIndex ] ) ;
-    }
-
-    // Sort the elementCoordinates array in ascending numerical order.
-    elementCoordinates.sort( function ( firstValue , secondValue )
-    {
-        return ( firstValue - secondValue ) ;
-    } ) ;
-
-    // The first element of gapMeasures is set to zero, often a placeholder.
-    gapMeasures[ 0 ] = 0 ;
-
-    // Calculate the differences between consecutive sorted coordinates.
-    for ( var loopIndex = 1 ; loopIndex < totalElements ; loopIndex++ )
-    {
-        gapMeasures[ loopIndex ] = elementCoordinates[ loopIndex ] - elementCoordinates[ loopIndex - 1 ] ;
-    }
-
-    // Sort the calculated differences, also in ascending order.
-    gapMeasures.sort( function ( firstValue , secondValue )
-    {
-        return ( firstValue - secondValue ) ;
-    } ) ;
-
-    // Sum the smallest differences, excluding a certain number of the largest ones.
-    // The number of largest differences to exclude is `desiredCount - 1`.
-    for ( var loopIndex = 0 ; loopIndex < gapMeasures.length - ( desiredCount - 1 ) ; loopIndex++ )
-    {
-        finalAccumulation = finalAccumulation + gapMeasures[ loopIndex ] ;
-    }
-
-    // Print the final computed result to the console.
-    console.log( finalAccumulation ) ;
-} ) ;
+  console.log(finalSum); // Output the final calculated sum.
+});

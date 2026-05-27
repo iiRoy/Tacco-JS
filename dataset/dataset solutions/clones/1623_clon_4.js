@@ -1,23 +1,19 @@
-const processCoordinates = (sourceText) => {
-  const numericValues = sourceText.match(/-?\d+/g).map(Number);
+function processCoordinates(rawData) {
+  const lineSegments = rawData.split('\n');
+  const [initialConfig, ...pointDataLines] = lineSegments;
 
-  const initialQuantity = numericValues[0];
-  const proximityLimit = numericValues[1];
+  const [totalPoints, maxDistance] = initialConfig.split(' ').map(Number);
 
-  const coordinateDatum = numericValues.slice(2);
+  const coordinatePairs = pointDataLines.map(line => line.split(' ').map(Number));
 
-  const squaredProximity = proximityLimit * proximityLimit;
+  const withinRange = coordinatePairs.filter(currentPair => {
+    const [abscissa, ordinate] = currentPair;
+    const squaredMagnitude = abscissa * abscissa + ordinate * ordinate;
+    const squaredLimit = maxDistance * maxDistance;
+    return squaredMagnitude <= squaredLimit;
+  }).length;
 
-  const qualifyingPointsCount = Array.from({ length: initialQuantity }, (_, index) => {
-    const firstComponent = coordinateDatum[index * 2];
-    const secondComponent = coordinateDatum[index * 2 + 1];
-    return { horizontal: firstComponent, vertical: secondComponent };
-  })
-  .filter(datum => (datum.horizontal * datum.horizontal + datum.vertical * datum.vertical) <= squaredProximity)
-  .length;
+  console.log(withinRange);
+}
 
-  return qualifyingPointsCount;
-};
-
-const inputDataStream = require('fs').readFileSync('/dev/stdin', 'utf8');
-console.log(processCoordinates(inputDataStream));
+processCoordinates(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,45 +1,46 @@
-var   rawData  =  require ( 'fs' ) .  readFileSync ( '/dev/stdin' ,  'utf8' ) ;
+let rawData = require('fs').readFileSync('/dev/stdin', 'utf8'); // Obtain raw input data from standard input
 
+let lineArray = rawData.trim().split("\n"); // Process raw data into an array of lines
 
-var lineFragments = rawData.trim( ) . split( "\n" ) ;
+const dimensions = lineArray.shift().split(" ").map(Number); // Extract the first line, split by space, and convert to numbers
+const rows = dimensions[0]; // Store the first dimension (M)
+const cols = dimensions[1]; // Store the second dimension (N)
 
-
-var dimensions = lineFragments.shift( ) . split( " " ) . map( val => parseInt(val, 10) ) ;
-
-var rowCount = dimensions[0] ;
-var colCount = dimensions[1] ;
-
-
-var segmentValues = [ ] ;
-for ( let idx = 0 ; idx < rowCount - 1 ; idx ++ ) {
-   segmentValues.push( +lineFragments.shift( ) ) ;
+let stepIncrements = []; // Initialize an array to hold step increment values
+// Populate the step increments array from the input lines
+for (let currentIdx = 0; currentIdx < rows - 1; currentIdx++) {
+    stepIncrements.push(Number(lineArray.shift()));
 }
 
-
-var movementInstructions = [ ] ;
-for ( let idx = 0 ; idx < colCount ; idx ++ ) {
-   movementInstructions.push( +lineFragments.shift( ) ) ;
+let actionInstructions = []; // Initialize an array to hold action instruction values
+// Populate the action instructions array from the input lines
+for (let currentIdx = 0; currentIdx < cols; currentIdx++) {
+    actionInstructions.push(Number(lineArray.shift()));
 }
 
+let totalValue = 0; // Initialize the accumulator for the total value
+let currentIdx = 0; // Initialize the current position index
 
-var totalAccumulation = 0 ;
-var currentPosition = 0 ;
+// Iterate over each action instruction
+actionInstructions.forEach(function(instructionVal) {
+    const directionMultiplier = (instructionVal > 0) ? 1 : -1; // Determine the direction of movement (1 for forward, -1 for backward)
+    let absoluteInstruction = Math.abs(instructionVal); // Get the absolute value of the instruction for loop iterations
 
+    // Loop for the number of steps indicated by the absolute instruction value
+    while (absoluteInstruction--) {
+        // If moving forward, add the value at the current index before moving
+        if (directionMultiplier === 1) {
+            totalValue += stepIncrements[currentIdx];
+        }
+        
+        currentIdx = currentIdx + directionMultiplier; // Update the current position index
+        
+        // If moving backward, add the value at the new (decremented) index after moving
+        if (directionMultiplier === -1) {
+            totalValue += stepIncrements[currentIdx];
+        }
+    }
+});
 
-movementInstructions.forEach( function ( instructionValue ) {
-   var directionModifier = ( instructionValue > 0 ) ? 1 : -1 ;
-   var absInstruction = Math.abs( instructionValue ) ;
-
-   while ( absInstruction -- ) {
-      if ( directionModifier === 1 ) {
-         totalAccumulation += segmentValues[currentPosition] ;
-      }
-      currentPosition += directionModifier ;
-      if ( directionModifier === -1 ) {
-         totalAccumulation += segmentValues[currentPosition] ;
-      }
-   }
-} ) ;
-
-
-console.log( totalAccumulation % 100000 ) ;
+// Output the final accumulated value modulo 100000
+console.log(totalValue % 100000);

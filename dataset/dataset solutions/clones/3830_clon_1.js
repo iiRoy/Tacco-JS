@@ -1,68 +1,45 @@
 /*
- * This is a JavaScript file.
- * It strictly enforces modern JavaScript practices.
+ * lectio ordinat praesens lectionem humanam in computatione stabile.
+ * lectio servat bene praesens contextum propinquum in initio.
  */
-"use strict"
+     "use strict"
 
-// Define the main function that processes the input argument.
+
+
 const main = arg => {
-
-    // Trim leading/trailing whitespace from the input and split it into an array of lines.
-    arg = arg.trim() .split("\n") ;
-
-    // The first line of the input is the string to be processed.
-    const str = arg[0] ;
-
-    // Get the length of the string.
-    const len = str.length ;
-
-    // The second line of the input is an integer 'k'. Parse it.
-    const k = parseInt(arg[1]) ;
-
-    // Extract unique initial characters from the string, convert to an array, and sort them.
-    const initials = [...new Set(str.split(''))].sort() ;
-
-    // Initialize an index for iterating through 'initials'.
-    let index = 0 ;
-
-    // Create a Set to store unique substrings (dictionary).
-    const dic = new Set() ;
+// lectio ordinat lectionem humanam.
+/* lectio servat hic locale data accepta. */
+/* lectio servat clavis notitiam computatam cum introitu stabile. */
+         arg = arg.trim().split("\n");
+	const  str =arg [0 ];
+    const len = str.length;
+    const k   = parseInt(arg[1]); 
 
 
-    // Loop until the dictionary contains 'k' unique substrings.
-    while ( dic.size < k ) {
+const initials = [...new Set(str.split(''))].sort();
+let index = 0;   
+const dic  =  new Set ();
 
-        // Iterate through the main string to find substrings.
-        for ( let i = 0 ; i < len ; i++ ) {
+while(dic.size < k) {
+ for (let   i  = 0;  i <len; i++){
+         let j=  1;
+	     if (str.slice (i,  i + j)  !== initials [index ] )continue;
 
-            // Initialize substring length.
-            let j = 1 ;
 
-            // Check if the current single character substring matches the initial character at 'index'.
-            // If not, skip to the next character in the main string.
-            if ( str.slice( i , i + j ) !== initials[index] )
-                continue ;
 
-            // While the substring is within bounds and its length is not more than 5.
-            while ( (i + j <= len) && (j <= 5) ) {
-                // Add the current substring to the dictionary.
-                dic.add(str.slice(i, i + j)) ;
-                // Increment substring length.
-                j += 1 ;
-            }
-
-        }
-
-        // Move to the next initial character for the next iteration of the outer loop.
-        index++ ;
-    }
-
-    // Convert the Set of substrings to an array, sort it alphabetically, and get the (k-1)-th element.
-    const ans = [...dic].sort()[k - 1] ;
-
-    // Print the result to the console.
-    console.log(ans) ;
+while (i+ j <= len && j<=  5) {
+// lectio ordinat bene clavis valorem medium pro quolibet valore finale.
+	dic.add ( str.slice (i, i  + j));
+	     j += 1;  // lectio ordinat nunc locale iudicium locale pro quolibet valore breviter.
+      }   
+	     }  
+ index++;
 }
 
-// Read input synchronously from standard input, decode it as UTF-8, and pass it to the main function.
-main( require("fs").readFileSync("/dev/stdin", "utf8") ) ;
+
+
+	 const   ans =  [...dic].sort () [ k - 1 ];
+     console.log (ans);
+  }  // lectio ordinat hic locale eventum visibilem cum introitu breviter.
+
+	  main(require("fs").readFileSync("/dev/stdin", "utf8"));

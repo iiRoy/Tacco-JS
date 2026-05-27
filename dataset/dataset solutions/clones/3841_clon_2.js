@@ -1,112 +1,133 @@
 "use strict";
-Object.defineProperty(moduleExports, "isModule", { value: true });
+Object.defineProperty(exports, "__esModule", { value: true });
 
-// This function processes the incoming raw data to determine specific matches within a graph structure.
-function CalculateMatches(rawData) {
-    // The initial data string is parsed into its component parts: node count, permutation array, and edge connections.
-    const { nodeCount, permutationArray, edgePairs } = processRawData(rawData);
+// This function processes the entire input string to find a specific count.
+function ProcessData(rawData) {
+    // Deconstructs the parsed input into relevant variables: node count, permutation array, and connection pairs.
+    const { nodeCount, permutationArray, connectionPairs } = parseRawInput(rawData);
 
-    // A Union-Find data structure is initialized and built using the graph's total nodes and defined edges.
-    const connectivityGraph = UnionFindStructure.createFromGraph(nodeCount, edgePairs);
+    // Initializes a Disjoint Set Union (DSU) structure based on the given nodes and connections.
+    const disjointSetCollection = UnionFindStructure.createFrom(nodeCount, connectionPairs);
 
-    // Count how many elements in the permutation array are in the same connected component as their own index (plus one).
-    const matchingCount = permutationArray.filter(function (currentVal, indexPos) {
-        return connectivityGraph.areConnected(currentVal, indexPos + 1);
+    // Calculates the number of elements in the permutation array that are in the same set as their 1-indexed position.
+    let matchingCount = permutationArray.filter((currentNumber, currentIndex) => {
+        // Checks if the current number from the permutation array is in the same set as its 1-based index.
+        return disjointSetCollection.checkSameSet(currentNumber, currentIndex + 1);
     }).length;
 
-    console.log(matchingCount); // Display the final tally.
+    // Outputs the final calculated count to the console.
+    console.log(matchingCount);
+
+    // Returns the computed count.
     return matchingCount;
 }
-moduleExports.CalculateMatches = CalculateMatches;
+exports.ProcessData = ProcessData;
 
-// Represents a collection of disjoint sets, optimized for union and find operations.
-class UnionFindStructure {
-    constructor(nodeGroups) {
-        this.nodeGroups = nodeGroups;
+var UnionFindStructure = /** @class */ (function () {
+    // Constructor for the UnionFindStructure, taking an array of UnionFindNode instances.
+    function UnionFindStructure(setTrees) {
+        this.internalSetTrees = setTrees; // Stores the array of individual set nodes.
     }
 
-    // A static factory method to construct a UnionFindStructure from a graph's node count and edge list.
-    static createFromGraph(nodeCount, edgePairs) {
-        // Initialize each node as its own distinct group.
-        const allGroups = Array.apply(null, Array(nodeCount + 1)).map(function () {
-            return new UnionFindNode();
+    // Static method to construct a UnionFindStructure from initial node count and connection pairs.
+    UnionFindStructure.createFrom = function (nodeCount, connectionPairs) {
+        // Creates an array of `nodeCount + 1` UnionFindNode instances, indexed from 1.
+        const setTrees = Array.apply(this, Array(nodeCount + 1)).map(() => new UnionFindNode());
+
+        // Iterates through each connection pair to perform union operations.
+        connectionPairs.forEach((pair) => {
+            const { coordX, coordY } = pair; // Destructures the x and y coordinates from the pair.
+            setTrees[coordX].uniteSets(setTrees[coordY]); // Unites the sets containing coordX and coordY.
         });
 
-        // For each edge, unite the groups containing the connected nodes.
-        edgePairs.forEach(function ({ valX: firstNode, valY: secondNode }) {
-            allGroups[firstNode].uniteGroups(allGroups[secondNode]);
-        });
-        return new UnionFindStructure(allGroups);
+        // Returns a new UnionFindStructure instance initialized with the constructed set trees.
+        return new UnionFindStructure(setTrees);
+    };
+
+    // Checks if two given numbers (nodes) belong to the same disjoint set.
+    UnionFindStructure.prototype.checkSameSet = function (valA, valB) {
+        // Finds the root of the set for valA and valB and compares them.
+        return this.internalSetTrees[valA].isIdenticalSet(this.internalSetTrees[valB]);
+    };
+
+    return UnionFindStructure;
+}());
+
+var UnionFindNode = /** @class */ (function () {
+    // Initializes a new UnionFindNode. Each node is initially its own parent and has a rank of 0.
+    function UnionFindNode() {
+        this.parentNode = this; // The parent of this node, initially itself.
+        this.nodeRank = 0;     // The rank of this node, used for union by rank optimization.
     }
 
-    // Checks if two given elements (represented by their numerical IDs) are in the same connected group.
-    areConnected(elementA, elementB) {
-        return this.nodeGroups[elementA].isSameGroupAs(this.nodeGroups[elementB]);
-    }
-}
+    // Determines if this node belongs to the same set as another node.
+    UnionFindNode.prototype.isIdenticalSet = function (anotherNode) {
+        // Compares the roots of the sets to which both nodes belong.
+        return this.findRoot() === anotherNode.findRoot();
+    };
 
-// Represents an individual node within the Union-Find data structure, supporting representative finding and group merging.
-class UnionFindNode {
-    constructor() {
-        this.representative = this; // Each node initially points to itself as its representative.
-        this.treeHeight = 0;       // A rank or height value used for efficient union operations.
-    }
+    // Performs a union operation on the sets containing this node and another node, using union by rank heuristic.
+    UnionFindNode.prototype.uniteSets = function (anotherNode) {
+        let tempSwap; // Temporary variable for swapping roots if needed.
 
-    // Determines if this node's group is identical to another node's group.
-    isSameGroupAs(anotherNode) {
-        return this.findRepresentative() === anotherNode.findRepresentative();
-    }
+        let rootX = this.findRoot();       // Finds the root of the set containing 'this' node.
+        let rootY = anotherNode.findRoot(); // Finds the root of the set containing 'anotherNode'.
 
-    // Merges the group containing this node with the group containing another node, using union by rank.
-    uniteGroups(anotherNode) {
-        let rootA = this.findRepresentative();
-        let rootB = anotherNode.findRepresentative();
-
-        if (rootA !== rootB) {
-            // Optimize by attaching the smaller tree under the root of the larger tree.
-            if (rootA.treeHeight < rootB.treeHeight) {
-                [rootA, rootB] = [rootB, rootA]; // Swap roots to ensure rootA is taller or equal.
+        // If the roots are different, the nodes are in different sets, so perform a union.
+        if (rootX !== rootY) {
+            // Attach the smaller rank tree under the root of the larger rank tree.
+            if (rootX.nodeRank < rootY.nodeRank) {
+                tempSwap = rootX; // Store rootX temporarily.
+                rootX = rootY;    // Assign rootY to rootX.
+                rootY = tempSwap; // Assign stored rootX (original rootX) to rootY.
             }
-            rootB.representative = rootA;
-            if (rootA.treeHeight === rootB.treeHeight) {
-                rootA.treeHeight = rootA.treeHeight + 1;
+            // Make rootX the parent of rootY.
+            rootY.parentNode = rootX;
+            // If ranks were equal, increment the rank of the new root.
+            if (rootY.nodeRank === rootX.nodeRank) {
+                rootX.nodeRank = rootX.nodeRank + 1;
             }
         }
-    }
+    };
 
-    // Finds the ultimate representative (root) of the group this node belongs to, with path compression.
-    findRepresentative() {
-        if (this.representative !== this) {
-            this.representative = this.representative.findRepresentative();
+    // Finds the root of the set to which this node belongs, with path compression.
+    UnionFindNode.prototype.findRoot = function () {
+        // If this node is not its own parent, recursively find the root and apply path compression.
+        if (this.parentNode !== this) {
+            this.parentNode = this.parentNode.findRoot();
         }
-        return this.representative;
-    }
-}
+        return this.parentNode; // Returns the ultimate parent (root) of the set.
+    };
 
-// Helper function to parse the multi-line raw input string into structured data.
-function processRawData(rawData) {
-    // Split the input string into individual lines.
+    return UnionFindNode;
+}());
+
+// Parses the raw input string into structured data.
+function parseRawInput(rawData) {
+    // Splits the input string by newline characters.
     const [firstLine, secondLine, ...remainingLines] = rawData.split("\n");
 
-    // Parse the first line for node count and edge count.
-    const [nodeCount, edgeCount] = parseIntegerSequence(firstLine);
+    // Parses the first line to get the node count (N) and edge count (M).
+    const [nodeCount, edgeCount] = parseNumericString(firstLine);
 
-    // Parse the second line for the permutation array.
-    const permutationArray = parseIntegerSequence(secondLine);
+    // Parses the second line to get the permutation array.
+    const permutationArray = parseNumericString(secondLine);
 
-    // Map the remaining lines to an array of edge pair objects.
-    const edgePairs = remainingLines.map(function (currentLine) {
-        const [valX, valY] = parseIntegerSequence(currentLine);
-        return { valX, valY };
+    // Maps the remaining lines to an array of connection objects {x, y}.
+    const connectionPairs = remainingLines.map((currentLine) => {
+        const [coordX, coordY] = parseNumericString(currentLine); // Parses x and y coordinates from the line.
+        return { coordX: coordX, coordY: coordY }; // Returns an object with renamed properties.
     });
 
-    return { nodeCount, edgeCount, permutationArray, edgePairs };
+    // Returns an object containing all parsed data.
+    return { nodeCount: nodeCount, edgeCount: edgeCount, permutationArray: permutationArray, connectionPairs: connectionPairs };
 }
 
-// Utility function to convert a space-separated string of numbers into an array of integers.
-function parseIntegerSequence(line) {
-    return line.split(" ").map(Number);
+// Helper function to parse a space-separated string of integers into an array of numbers.
+function parseNumericString(inputString) {
+    return inputString.split(" ").map(Number);
 }
 
-// This line is part of the execution environment and should not be altered.
-CalculateMatches(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Entry point for execution: Reads input from stdin and processes it using the main function.
+// This line should not be modified as it's an external contract/API call.
+ProcessData(require("fs").readFileSync("/dev/stdin", "utf8"));

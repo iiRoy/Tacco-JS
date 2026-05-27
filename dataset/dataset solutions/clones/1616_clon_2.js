@@ -1,47 +1,41 @@
-function ProcessData(incomingContent) {
+function ProcessInput(rawData) {
+  // Split the raw input string by newline characters.
+  // The first line is assigned to 'initialValue', and the rest go into 'numericValues'.
+  let [initialValue, ...numericValues] = rawData.split('\n');
 
-  /*
-   * The initial content is split by newline characters.
-   * The first line is stored in `initialConfig` (though it's not used further).
-   * The rest of the lines form `numberSequence` as an array of strings.
-   */
-  let [ initialConfig, ...numberSequence ] = incomingContent.split('\n')
+  // Convert all elements in 'numericValues' to floating-point numbers
+  // and then sort them in ascending order.
+  numericValues = numericValues.map(item => parseFloat(item)).sort(function(valA, valB) {
+    // Standard comparison function for numeric sort.
+    return valA - valB;
+  });
 
+  // This array will store elements that satisfy the condition.
+  let integerProducts = [];
 
-  // Convert string entries to floating-point numbers and then sort them in ascending order.
-  numberSequence = numberSequence
-                     .map( itemStr => Number(itemStr) ) // Using Number() instead of parseFloat()
-                     .sort( function(valA, valB) {
-                       return valA - valB // Standard numeric ascending sort
-                     })
+  // A simple index to manage the slicing of the array in the loop.
+  let loopIndex = 0;
 
-  // Initialize an array to store the final collected results.
-  let finalCollection = []
-  // Initialize a tracker to manage the slicing of the array.
-  let indexTracker = 0
+  // Iterate through each number in the sorted list.
+  for (let currentNum of numericValues) {
+    // Create a sub-array starting from the next element after 'currentNum'.
+    // The 'loopIndex' is pre-incremented to ensure we don't compare an element with itself
+    // and to avoid redundant comparisons (e.g., if (a,b) is checked, (b,a) is not needed).
+    let remainingNumbers = numericValues.slice(++loopIndex, numericValues.length);
 
-  // Iterate through each number in the sorted sequence.
-  for (let primaryNum of numberSequence) {
+    // Filter the 'remainingNumbers' to find elements whose product with 'currentNum' is an integer.
+    // The modulo operator `% 1` checks if a number has a fractional part.
+    let matchingElements = remainingNumbers.filter(candidate => (candidate * currentNum) % 1 === 0);
 
-    // Create a sublist from the current position onwards.
-    // The `indexTracker` is incremented BEFORE slicing to ensure we don't re-process pairs.
-    let remainingSublist = numberSequence.slice(++indexTracker, numberSequence.length)
-
-    // Filter this sublist to find numbers that, when multiplied by `primaryNum`, result in an integer.
-    // The condition `(innerNum * primaryNum) % 1 === 0` checks for integer results.
-    let matchingEntries = remainingSublist.filter( innerNum => {
-      return (innerNum * primaryNum) % 1 === 0
-    })
-
-    // If any matching entries are found, append them to the `finalCollection`.
-    if (matchingEntries.length > 0) {
-      finalCollection = [ ...finalCollection, ...matchingEntries ]
+    // If any matching elements are found, add them to our 'integerProducts' array.
+    if (matchingElements.length) {
+      integerProducts = [...integerProducts, ...matchingElements];
     }
   }
 
-  // Output the total count of items found in the final collection.
-  console.info(finalCollection.length)
+  // Output the total count of elements found that satisfy the condition.
+  console.log(integerProducts.length);
 }
 
-// Execute the main processing function by reading input from standard input.
-ProcessData(require("fs").readFileSync("/dev/stdin", "utf8"))
+// Read input from standard input and pass it to the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

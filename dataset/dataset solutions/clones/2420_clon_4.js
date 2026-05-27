@@ -1,68 +1,64 @@
-"use strict";
+const readline = require("readline");
 
-const inputFacility = require("readline").createInterface({
-    input: process.stdin,
-    output: process.stdout
-});
+async function executeInteractiveProcess() {
+    const ioInterface = readline.createInterface({
+        input: process.stdin,
+        output: process.stdout
+    });
+    const inputLineIterator = ioInterface[Symbol.asyncIterator]();
 
-const retrieveLine = () => new Promise(resolve => {
-    inputFacility.once("line", resolve);
-});
+    async function sendQueryAndAwaitResponse(dataArray) {
+        ioInterface.write(`? ${dataArray.join(" ")}\n`);
+        const { value: responseLine } = await inputLineIterator.next();
+        return responseLine;
+    }
 
-async function processInteractiveChallenge() {
-    // Stage 1: Obtain the problem dimension
-    const problemDimension = parseInt(await retrieveLine());
+    // Step 1: Read the value of N
+    const { value: nInput } = await inputLineIterator.next();
+    const nValue = parseInt(nInput, 10);
 
-    // Stage 2: Formulate the initial query and capture its characteristic response
-    const initialSequence = Array.from({ length: problemDimension }, (_, index) => index + 1);
-    console.log("?", initialSequence.join(" "));
-    const initialCharacteristic = (await retrieveLine())[0];
+    // Step 2: Discover the pivot element 'x'
+    let currentSequence = Array.from({ length: nValue }, (_, idx) => idx + 1);
+    const initialQueryResponse = await sendQueryAndAwaitResponse(currentSequence);
+    const initialResponseChar = initialQueryResponse[0];
 
-    // Stage 3: Discover the critical displacement value
-    let displacementMarker = 1;
-    while (true) {
-        const alteredSequence = [...initialSequence];
-        alteredSequence[displacementMarker - 1] = displacementMarker + problemDimension;
-        console.log("?", alteredSequence.join(" "));
-        const currentCharacteristic = (await retrieveLine())[0];
+    let pivotElement = 1;
+    let pivotFound = false;
+    let mutableSequence = Array.from({ length: nValue }, (_, idx) => idx + 1); // This array accumulates changes
 
-        if (initialCharacteristic !== currentCharacteristic) {
-            break;
+    while (!pivotFound) {
+        mutableSequence[pivotElement - 1] = pivotElement + nValue;
+        const currentQueryResponse = await sendQueryAndAwaitResponse(mutableSequence);
+        if (currentQueryResponse[0] !== initialResponseChar) {
+            pivotFound = true;
+        } else {
+            pivotElement++;
         }
-        displacementMarker++;
+    }
+    // At this point, pivotElement holds the determined 'x' value.
+
+    // Step 3: Determine the 'R' or 'B' property for each number from 1 to 2*N
+    const finalResultArray = new Array(2 * nValue);
+
+    // Pre-calculate the fixed parts of the query arrays and the set of elements
+    const pPrefixElements = Array.from({ length: nValue - 1 }, (_, idx) => (pivotElement + idx - 1) % (2 * nValue) + 1);
+    const qPrefixElements = Array.from({ length: nValue - 1 }, (_, idx) => (pPrefixElements[idx] + nValue - 1) % (2 * nValue) + 1);
+    const elementsInSet = new Set(Array.from({ length: nValue - 1 }, (_, idx) => idx + pivotElement));
+
+    for (let currentNum = 1; currentNum <= 2 * nValue; currentNum++) {
+        let constructedQueryArray;
+        if (elementsInSet.has(currentNum)) {
+            constructedQueryArray = [...qPrefixElements, currentNum];
+        } else {
+            constructedQueryArray = [...pPrefixElements, currentNum];
+        }
+        const responseForNum = await sendQueryAndAwaitResponse(constructedQueryArray);
+        finalResultArray[currentNum - 1] = responseForNum[0] === "R" ? "R" : "B";
     }
 
-    // Stage 4: Pre-compute patterns for subsequent queries
-    const { primaryPattern, secondaryPattern, specificMarkers } = Array.from({ length: problemDimension - 1 }, (_, currentIdx) => {
-        const valA = (displacementMarker + currentIdx - 1) % (2 * problemDimension) + 1;
-        const valB = (valA + problemDimension - 1) % (2 * problemDimension) + 1;
-        const valC = currentIdx + displacementMarker;
-        return { valA, valB, valC };
-    }).reduce((accumulator, item) => {
-        accumulator.primaryPattern.push(item.valA);
-        accumulator.secondaryPattern.push(item.valB);
-        accumulator.specificMarkers.add(item.valC);
-        return accumulator;
-    }, { primaryPattern: [], secondaryPattern: [], specificMarkers: new Set() });
-
-    // Stage 5: Systematically query for each possible value to determine its attribute
-    const outcomeAttributes = [];
-    for (let candidateValue = 1; candidateValue <= 2 * problemDimension; ++candidateValue) {
-        let constructedProbe;
-        const baseElementsForProbe = specificMarkers.has(candidateValue) ? secondaryPattern : primaryPattern;
-        
-        constructedProbe = [...baseElementsForProbe, candidateValue];
-
-        console.log("?", constructedProbe.join(" "));
-        const probeResponse = await retrieveLine();
-        outcomeAttributes.push((probeResponse[0] === "R") ? "R" : "B");
-    }
-
-    // Stage 6: Output the final determined attributes
-    console.log("!", outcomeAttributes.join(""));
-
-    inputFacility.close();
+    // Step 4: Print the final answer
+    ioInterface.write(`!${finalResultArray.join("")}\n`);
+    ioInterface.close();
 }
 
-// Initiate the interactive challenge processing
-processInteractiveChallenge();
+executeInteractiveProcess();

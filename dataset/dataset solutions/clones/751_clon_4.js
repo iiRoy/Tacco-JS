@@ -1,58 +1,58 @@
-const fileSystem = require('fs');
-const rawContent = fileSystem.readFileSync('/dev/stdin', 'utf8');
-const lineSet = rawContent.trim().split('\n');
+const fs = require('fs');
+const inputContent = fs.readFileSync('/dev/stdin', 'utf8');
+const dataLines = inputContent.trim().split('\n');
 
-const validLineSet = lineSet.filter(l => l !== '0 0 0 0 0');
+let currentLinePointer = 0;
 
-const dataChunks = [];
-for (let i = 0; i < validLineSet.length; i += 2) {
-    const combinedLine = validLineSet[i] + ' ' + validLineSet[i + 1];
-    dataChunks.push(combinedLine.split(' ').map(Number));
-}
+function computeOptimalCost(
+    coeffA, coeffB, coeffC, coeffD, coeffE,
+    initialQuantityNA, initialQuantityNB, initialQuantityNC
+) {
+    let calculationResult1, calculationResult2;
 
-const determineOptimalExpenditure = (
-    unitCostAlpha, unitCostBeta, unitCostGamma,
-    packageSizeDelta, packageCostEpsilon,
-    initialQuantityAlpha, initialQuantityBeta, totalQuantityGamma
-) => {
-    let scenarioOneCost;
-    let scenarioTwoCost;
+    // First calculation path (equivalent to original A)
+    const currentRemainder = initialQuantityNC % coeffD;
+    calculationResult1 =
+        initialQuantityNA * coeffA +
+        initialQuantityNB * coeffB +
+        Math.floor(initialQuantityNC / coeffD) * coeffD * coeffE +
+        currentRemainder * coeffC;
 
-    const remainderUnits = totalQuantityGamma % packageSizeDelta;
-    const fullPackages = Math.floor(totalQuantityGamma / packageSizeDelta);
-    scenarioOneCost = (initialQuantityAlpha * unitCostAlpha) +
-                      (initialQuantityBeta * unitCostBeta) +
-                      (fullPackages * packageSizeDelta * packageCostEpsilon) +
-                      (remainderUnits * unitCostGamma);
-
-    if (totalQuantityGamma >= packageSizeDelta) {
-        scenarioTwoCost = (initialQuantityAlpha * unitCostAlpha) +
-                          (initialQuantityBeta * unitCostBeta) +
-                          (totalQuantityGamma * packageCostEpsilon);
+    // Second calculation path (equivalent to original B)
+    if (initialQuantityNC >= coeffD) {
+        calculationResult2 =
+            initialQuantityNA * coeffA +
+            initialQuantityNB * coeffB +
+            initialQuantityNC * coeffE;
     } else {
-        const neededToReachPackageSize = packageSizeDelta - totalQuantityGamma;
-        
-        let adjustedQuantityBeta = initialQuantityBeta;
-        let adjustedQuantityAlpha = initialQuantityAlpha;
-        let remainingToCover = neededToReachPackageSize;
+        // Divergent implementation for the 'else' branch
+        // Original: imperative loop to decrement quantities (while(husoku--))
+        // New: declarative calculation using Math.max to determine adjusted quantities
+        const requiredAdjustment = coeffD - initialQuantityNC;
 
-        adjustedQuantityBeta = Math.max(0, initialQuantityBeta - remainingToCover);
-        remainingToCover = Math.max(0, remainingToCover - initialQuantityBeta); 
-        
-        adjustedQuantityAlpha = Math.max(0, initialQuantityAlpha - remainingToCover);
-        
-        scenarioTwoCost = (adjustedQuantityAlpha * unitCostAlpha) +
-                          (adjustedQuantityBeta * unitCostBeta) +
-                          (packageSizeDelta * packageCostEpsilon);
+        const adjustedQuantityNB = Math.max(0, initialQuantityNB - requiredAdjustment);
+        const remainingAdjustmentForNA = Math.max(0, requiredAdjustment - initialQuantityNB);
+        const adjustedQuantityNA = Math.max(0, initialQuantityNA - remainingAdjustmentForNA);
+
+        calculationResult2 =
+            adjustedQuantityNA * coeffA +
+            adjustedQuantityNB * coeffB +
+            coeffD * coeffE;
     }
 
-    return Math.min(scenarioOneCost, scenarioTwoCost);
-};
+    console.log(Math.min(calculationResult1, calculationResult2));
+}
 
-dataChunks.forEach(params => {
-    const result = determineOptimalExpenditure(
-        params[0], params[1], params[2], params[3], params[4],
-        params[5], params[6], params[7]
-    );
-    console.log(result);
-});
+while (true) {
+    const firstPartString = dataLines[currentLinePointer++];
+    if (firstPartString === '0 0 0 0 0') {
+        break;
+    }
+    const secondPartString = dataLines[currentLinePointer++];
+
+    const combinedNumericInputs = (firstPartString + ' ' + secondPartString)
+        .split(' ')
+        .map(Number);
+
+    computeOptimalCost(...combinedNumericInputs);
+}

@@ -1,36 +1,30 @@
-/* This script processes numerical input to determine a specific calculated outcome.
- * It's designed to handle three integer values provided as a space-separated string.
- */
-function ProcessInputData( incomingString ) {
-    // Split the incoming string into an array of string segments based on spaces.
-    let  segmentArray  = incomingString.split(' ') ;
+function CalculateOutcome(inputString) {
+    // Split the incoming string by spaces to get individual numeric parts.
+    inputString = inputString.split(' ');
 
-    // Parse the first segment into an integer representing the initial amount.
-    const  initialAmount  =  parseInt(segmentArray[0], 10) ;
+    // Parse the first three parts into integer variables.
+    var initialQuantity = parseInt(inputString[0]);
+    var thresholdA = parseInt(inputString[1]);
+    var thresholdB = parseInt(inputString[2]);
 
-    // Parse the second segment into an integer representing the base rate.
-    const  baseRate  =  parseInt(segmentArray[1], 10) ;
+    // Calculate the difference between thresholdB and thresholdA.
+    var valueDifference = thresholdB - thresholdA;
 
-    // Parse the third segment into an integer representing the bonus rate.
-    const  bonusRate  =  parseInt(segmentArray[2], 10) ;
+    // Determine the remaining quantity based on initialQuantity and thresholdA.
+    var remainingQuantity = initialQuantity - thresholdA;
 
-    // Calculate the difference between the bonus rate and the base rate.
-    let  rateDifference  =  bonusRate  -  baseRate ;
+    // Apply a complex conditional logic to compute the final count.
+    // This involves checking conditions on remainingQuantity and valueDifference,
+    // and then further checking the parity of remainingQuantity.
+    var finalCount = ((remainingQuantity < 2) || (valueDifference < 3))
+        ? (initialQuantity + 1)
+        : (remainingQuantity % 2 === 0)
+            ? (thresholdA + remainingQuantity * valueDifference / 2 + 1)
+            : (thresholdA + (remainingQuantity + 1) * valueDifference / 2);
 
-    // Calculate the effective range by subtracting the base rate from the initial amount.
-    let  effectiveRange  =  initialAmount  -  baseRate ;
-
-    // Determine the final computed total using complex conditional logic.
-    // This involves checking conditions related to effective range and rate difference.
-    let  computedTotal  =  ( ( effectiveRange < 2 ) || ( rateDifference < 3 ) )
-        ? ( initialAmount + 1 ) // Case 1: Special condition met.
-        : ( ( effectiveRange % 2 === 0 )
-            ? ( baseRate + effectiveRange * rateDifference / 2 + 1 ) // Case 2: Even effective range.
-            : ( baseRate + ( effectiveRange + 1 ) * rateDifference / 2 ) ) ; // Case 3: Odd effective range.
-
-    // Output the calculated result to the console.
-    console.log( computedTotal ) ;
+    // Output the computed final count to the console.
+    console.log(finalCount);
 }
 
-// Read input from standard input, decode it as UTF-8, and pass it to the processing function.
-ProcessInputData( require("fs").readFileSync( "/dev/stdin", "utf8" ) ) ;
+// Read input from standard input and pass it to the main processing function.
+CalculateOutcome(require("fs").readFileSync("/dev/stdin", "utf8"));

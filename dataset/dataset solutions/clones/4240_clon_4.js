@@ -1,27 +1,31 @@
-const dataHandler = require('fs');
+const inputLines = [];
+const inputReader = require('readline').createInterface({
+    input: process.stdin,
+    output: process.stdout,
+});
 
-const rawContent = dataHandler.readFileSync('/dev/stdin', 'utf8');
+inputReader.on('line', (currentLine) => {
+    inputLines.push(currentLine);
+});
 
-const numericExtractor = /(\d+)\s+(\d+)/;
-const matchResult = rawContent.match(numericExtractor);
+inputReader.on('close', () => {
+    const processInputAndCompute = (dataLines) => {
+        const firstLineContent = dataLines[0];
+        const numericValues = firstLineContent.split(' ').map(Number);
 
-let valA;
-let valB;
+        const problemCount = numericValues[0];
+        const solvedCount = numericValues[1];
 
-if (matchResult && matchResult.length >= 3) {
-    valA = parseInt(matchResult[1], 10);
-    valB = parseInt(matchResult[2], 10);
-} else {
-    valA = 0;
-    valB = 0;
-}
+        const calculateBaseScore = (solved) => 1900 * solved;
+        const calculatePenalty = (total, solved) => 100 * (total - solved);
+        const calculateMultiplier = (solved) => 2 ** solved;
 
-const baseFactor = (1 << valB);
-const termOne = 1800 * valB;
-const termTwo = 100 * valA;
-const aggregateSum = termOne + termTwo;
+        const baseComponent = calculateBaseScore(solvedCount);
+        const penaltyComponent = calculatePenalty(problemCount, solvedCount);
+        const sumComponent = baseComponent + penaltyComponent;
 
-const finalOutput = baseFactor * aggregateSum;
+        return calculateMultiplier(solvedCount) * sumComponent;
+    };
 
-const outputChannel = process.stdout;
-outputChannel.write(String(finalOutput) + '\n');
+    console.log(processInputAndCompute(inputLines));
+});

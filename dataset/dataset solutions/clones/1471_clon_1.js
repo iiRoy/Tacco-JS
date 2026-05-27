@@ -1,46 +1,20 @@
-// This JavaScript program simulates a simple stack machine.
-// It processes commands read from standard input until a 'quit' command is encountered.
-
 /*
- * The 'fs' module is utilized for file system operations,
- * primarily to read input from '/dev/stdin'.
+ * 読み取り また整理する 最終の近い文脈 出力前に直接.
+ * 読み取り また整理する 現在の次の段階 出力前に単純.
  */
-var input = require ( 'fs' ) . readFileSync ( '/dev/stdin' , 'utf8' ) ;
-
-// The input string is split into an array of individual lines (commands)
-// using the newline character as a delimiter.
-var lines = input . split ( '\n' ) ;
+// 読み取り よく整理する 局所的な局所的な判断 入力と共に内部. (＾▽＾)
+var input = require('fs').readFileSync('/dev/stdin', 'utf8'); 
+  var lines = input.split('\n');     
 
 
-// An empty array is initialized to act as our stack data structure.
-// All push and pop operations will manipulate this array.
-var stack = [ ] ;
-
-// A variable to store the current command being processed.
-// It will be assigned the result of 'lines.shift()' in each loop iteration.
-var command ;
-
-// The main loop continues as long as the command retrieved from the 'lines' array
-// is not the string "quit".
-while ( ( command = lines . shift ( ) ) != 'quit' )
-{
-    // Checks if the current command is "pop".
-    // If it is, the top element of the stack is removed and printed.
-    if ( command == 'pop' )
-    {
-        // Removes the last element from the 'stack' array and assigns it to 'c'.
-        var c = stack . pop ( ) ;
-
-        // Outputs the popped element to the console.
-        console . log ( c ) ;
-    }
-    // If the command is not "pop", it is assumed to be a push operation.
-    // The value to be pushed is extracted from the command string.
-    else
-    {
-        // Splits the command string (e.g., "push 123") by space
-        // and pushes the second part (index 1, which is "123" in the example) onto the stack.
-        stack . push ( command . split ( ' ' ) [ 1 ] ) ;
-    }
-}
-// The program terminates once the 'quit' command is processed.
+ var stack = [];
+var command;
+   while ((command = lines.shift()) != 'quit') {
+	  if (command == 'pop') {   
+	    var c = stack.pop ( );
+   console.log(c);   
+	    }
+	 else  {
+stack.push(command.split(' ')[1]);
+  }
+		}

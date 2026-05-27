@@ -1,50 +1,32 @@
 "use strict";
 
-const parseParameters = (inputString) => {
-  const [upperBound, primaryInput, secondaryInput] = inputString.split(" ").map(Number);
-  return {
-    limit: upperBound,
-    firstQuantity: primaryInput,
-    secondQuantity: secondaryInput,
-    currentSum: 0
-  };
+const processInputValues = (inputLine) => {
+  const [firstVal, secondVal, thirdVal] = inputLine.split(" ").map(Number);
+
+  // Calculate the initial score and remaining third value based on the interaction of second and third values.
+  // This replaces the first if/else block by using a ternary operator and array destructuring.
+  const [initialScoreComponent, thirdValAfterSecondInteraction] = secondVal >= thirdVal
+    ? [secondVal + thirdVal, 0]
+    : [secondVal * 2, thirdVal - secondVal];
+
+  // Calculate the score component from the first value interacting with the remaining third value.
+  // This replaces the second if block.
+  const amountConsumedByFirst = Math.min(thirdValAfterSecondInteraction, firstVal);
+  const scoreFromFirstInteraction = amountConsumedByFirst;
+  const thirdValAfterFirstInteraction = thirdValAfterSecondInteraction - amountConsumedByFirst;
+
+  // Determine the final bonus point if any third value still remains.
+  // This replaces the third if block with a conditional expression.
+  const finalRemainingBonus = thirdValAfterFirstInteraction > 0 ? 1 : 0;
+
+  // Sum all calculated score components for the total result.
+  const overallResult = initialScoreComponent + scoreFromFirstInteraction + finalRemainingBonus;
+
+  return overallResult;
 };
 
-const evaluateFirstPhase = (systemState) => {
-  const { limit, firstQuantity, secondQuantity, currentSum } = systemState;
-  const pairedPortion = Math.min(firstQuantity, secondQuantity);
-  const phaseOneSum = currentSum + (pairedPortion * 2) + (firstQuantity - pairedPortion);
-  const remainingSecond = secondQuantity - pairedPortion;
-  return {
-    limit: limit,
-    secondRemaining: remainingSecond,
-    intermediateSum: phaseOneSum
-  };
+const executeProgram = (inputData) => {
+  console.log(processInputValues(inputData));
 };
 
-const evaluateSecondPhase = (systemState) => {
-  const { limit, secondRemaining, intermediateSum } = systemState;
-  const usedByLimit = Math.min(secondRemaining, limit);
-  const phaseTwoSum = intermediateSum + usedByLimit;
-  const finalSecondRemaining = secondRemaining - usedByLimit;
-  return {
-    secondFinal: finalSecondRemaining,
-    finalAccumulation: phaseTwoSum
-  };
-};
-
-const evaluateThirdPhase = (systemState) => {
-  const { secondFinal, finalAccumulation } = systemState;
-  const phaseThreeSum = finalAccumulation + (secondFinal > 0 ? 1 : 0);
-  return phaseThreeSum;
-};
-
-const processDataStream = (dataSource) => {
-  const initialConfiguration = parseParameters(dataSource);
-  const resultAfterPhaseOne = evaluateFirstPhase(initialConfiguration);
-  const resultAfterPhaseTwo = evaluateSecondPhase(resultAfterPhaseOne);
-  const ultimateOutcome = evaluateThirdPhase(resultAfterPhaseTwo);
-  console.log(ultimateOutcome);
-};
-
-processDataStream(require('fs').readFileSync('/dev/stdin', 'utf8'));
+executeProgram(require('fs').readFileSync('/dev/stdin', 'utf8'));

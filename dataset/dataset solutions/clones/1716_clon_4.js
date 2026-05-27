@@ -1,108 +1,75 @@
-class InputLineSource {
-    constructor(sourceLines) {
-        this.dataLines = sourceLines;
-        this.currentPosition = 0;
-    }
+const inputReader = require('readline').createInterface({
+    input: process.stdin,
+    output: process.stdout
+});
 
-    hasMoreContent() {
-        return this.currentPosition < this.dataLines.length;
-    }
+let rawInputLines = [];
+inputReader.on('line', (line) => rawInputLines.push(line));
+inputReader.on('close', () => {
+    console.error("\n");
+    const startTime = new Date();
+    executeMainLogic();
+    const endTime = new Date() - startTime;
 
-    retrieveNextValue() {
-        if (!this.hasMoreContent()) {
-            throw new Error("Input stream exhausted. No further data available.");
-        }
-        return this.dataLines[this.currentPosition++];
+    logDebug("time : " + (endTime) + "ms");
+    logDebug("memory : " + Math.round(process.memoryUsage().heapTotal / 1024) + "KB");
+});
+
+let currentInputLineIndex = 0;
+
+function retrieveNextLine() {
+    if (currentInputLineIndex >= rawInputLines.length) {
+        throw new Error("Input line index out of bounds.");
     }
+    return rawInputLines[currentInputLineIndex++];
 }
 
-let globalDataStream;
-let inputBufferContainer = [];
+function parseInteger() {
+    return parseInt(retrieveNextLine(), 10);
+}
 
-const getNextItem = () => globalDataStream.retrieveNextValue();
-const hasPendingItems = () => globalDataStream.hasMoreContent();
+function parseIntegerArray() {
+    return retrieveNextLine().split(" ").map(Number);
+}
 
-const getNextInteger = () => parseInt(getNextItem(), 10);
-const getNextIntegerSequence = () => getNextItem().split(" ").map(Number);
+function displayOutput(dataArray) {
+    console.log(dataArray.join("\n"));
+}
 
-const displayOutput = (contentList, joinString = "\n") => {
-    console.log(contentList.join(joinString));
-};
+function logDebug(message) {
+    console.error("debug:" + require("util").inspect(message, false, null));
+}
 
-const displayDebugInfo = (debugObject) => {
-    console.error(`diagnostics: ${JSON.stringify(debugObject)}`);
-};
+function executeMainLogic() {
+    const totalDays = parseInteger();
+    const satisfactionCosts = parseIntegerArray();
+    const dailyScoreLists = Array.from({ length: totalDays }, () => parseIntegerArray());
 
-const executeCompetitionSimulation = () => {
-    const totalEventPeriods = getNextInteger();
-    const penaltyFactors = getNextIntegerSequence();
+    const lastActivityDay = new Array(26).fill(0);
 
-    const recentEventOccurrences = new Map(Array.from({ length: 26 }, (_, index) => [index, 0]));
+    const cumulativeScores = dailyScoreLists.reduce((acc, dailyScores, dayIndex) => {
+        const currentDay = dayIndex + 1;
 
-    const cumulativeScores = [];
-
-    const processDailyCycle = (currentCycleNumber, previousCumulativeTotal) => {
-        if (currentCycleNumber > totalEventPeriods) {
-            return;
-        }
-
-        const currentDaySatisfactionValues = getNextIntegerSequence();
-
-        const { maximumSatisfactionValue, selectedEventIdentifier } = currentDaySatisfactionValues.reduce(
-            (accumulator, satisfactionRating, eventTypeIdentifier) => {
-                if (satisfactionRating > accumulator.maximumSatisfactionValue) {
-                    return {
-                        maximumSatisfactionValue: satisfactionRating,
-                        selectedEventIdentifier: eventTypeIdentifier,
-                    };
-                }
-                return accumulator;
-            },
-            { maximumSatisfactionValue: -Infinity, selectedEventIdentifier: -1 }
+        const { score: bestScore, index: bestIndex } = dailyScores.reduce(
+            (maxInfo, currentScore, contestIndex) =>
+                currentScore > maxInfo.score ? { score: currentScore, index: contestIndex } : maxInfo,
+            { score: -Infinity, index: -1 }
         );
 
-        recentEventOccurrences.set(selectedEventIdentifier, currentCycleNumber);
+        lastActivityDay[bestIndex] = currentDay;
 
-        const totalPenaltyAdjustment = penaltyFactors.reduce((totalAdjustment, factorCoefficient, eventIdentifier) => {
-            const lastHeldDate = recentEventOccurrences.get(eventIdentifier) || 0;
-            return totalAdjustment + factorCoefficient * (currentCycleNumber - lastHeldDate);
-        }, 0);
+        const adjustedScore = satisfactionCosts.reduce((currentDayScore, cost, contestTypeIndex) => {
+            return currentDayScore - cost * (currentDay - lastActivityDay[contestTypeIndex]);
+        }, bestScore);
 
-        const currentPeriodAdjustedScore = maximumSatisfactionValue - totalPenaltyAdjustment;
+        logDebug(adjustedScore);
 
-        const newCumulativeTotal = previousCumulativeTotal + currentPeriodAdjustedScore;
-        cumulativeScores.push(newCumulativeTotal);
+        const previousCumulative = acc.length > 0 ? acc[acc.length - 1] : 0;
+        const currentCumulative = adjustedScore + previousCumulative;
 
-        displayDebugInfo(currentPeriodAdjustedScore);
-
-        processDailyCycle(currentCycleNumber + 1, newCumulativeTotal);
-    };
-
-    processDailyCycle(1, 0);
+        acc.push(currentCumulative);
+        return acc;
+    }, []);
 
     displayOutput(cumulativeScores);
-};
-
-const setupAndRun = (inputLinesFromSource) => {
-    inputBufferContainer = inputLinesFromSource;
-    globalDataStream = new InputLineSource(inputBufferContainer);
-
-    const executionStartTime = new Date();
-    executeCompetitionSimulation();
-    const executionEndTime = new Date() - executionStartTime;
-
-    displayDebugInfo(`time elapsed: ${executionEndTime}ms`);
-    displayDebugInfo(`memory footprint: ${Math.round(process.memoryUsage().heapTotal / 1024)}KB`);
-};
-
-// This final part simulates the original's readline event handling.
-// In a real environment, `process.stdin` would be read into `inputBufferContainer`.
-// For a self-contained clone, we assume `setupAndRun` will be called with an array of input strings.
-// Example:
-// const sampleInput = [
-//     "2",
-//     "1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1",
-//     "100 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0",
-//     "0 100 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0"
-// ];
-// setupAndRun(sampleInput);
+}

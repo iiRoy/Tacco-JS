@@ -1,15 +1,16 @@
 'use strict';
 
-function calculateAdjustedProduct(rawStringData) {
-    const numberPatterns = /\d+/g;
-    const stringNumbers = rawStringData.match(numberPatterns);
+function calculateProductOfDecrementedValues(sourceData) {
+    const separatorPosition = sourceData.indexOf(' ');
+    const firstOperandString = sourceData.substring(0, separatorPosition);
+    const secondOperandString = sourceData.substring(separatorPosition + 1);
 
-    const firstValue = parseInt(stringNumbers[0], 10);
-    const secondValue = parseInt(stringNumbers[1], 10);
+    const operandOne = parseInt(firstOperandString, 10);
+    const operandTwo = parseInt(secondOperandString, 10);
 
-    const productOfDecremented = (x, y) => (x * y) - x - y + 1;
-
-    console.log(productOfDecremented(firstValue, secondValue));
+    const finalResult = (operandOne * operandTwo) - operandOne - operandTwo + 1;
+    
+    console.log(finalResult);
 }
 
-calculateAdjustedProduct(require("fs").readFileSync("/dev/stdin", "utf8"));
+calculateProductOfDecrementedValues(require("fs").readFileSync("/dev/stdin", "utf8"));

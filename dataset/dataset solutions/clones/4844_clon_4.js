@@ -1,42 +1,43 @@
-const obtainProcessedResult = (initialData) => {
-    const lines = initialData.trim().split('\n');
+"use strict";
 
-    const [firstLineContents] = lines;
-    const initialParameters = firstLineContents.split(' ').map(numericString => parseInt(numericString, 10));
-    const [numberOfElements, thresholdValue] = initialParameters;
+const processInputData = (inputContent) => {
+    const contentLines = inputContent.trim().split("\n");
+    const [firstNumStr, secondNumStr] = contentLines[0].split(" ");
+    const limitCount = parseInt(firstNumStr);
+    const maxSumValue = parseInt(secondNumStr);
+    
+    const initialValues = contentLines[1].split(" ").map(Number);
+    
+    const iterationIndices = Array.from({ length: limitCount - 1 }, (_, idx) => idx);
 
-    const elementValues = lines[1].split(' ').map(numericString => parseInt(numericString, 10));
+    const finalAccumulation = iterationIndices.reduce((accumulator, currentIdx) => {
+        const currentValues = accumulator.modifiedValues;
+        let currentTotalReduction = accumulator.totalReducedAmount;
 
-    if (numberOfElements <= 1) {
-        return 0;
-    }
+        const firstElement = currentValues[currentIdx];
+        const secondElement = currentValues[currentIdx + 1];
 
-    const finalAccumulation = elementValues.slice(1).reduce((currentStatus, currentItemOriginalValue) => {
-        const adjacentSum = currentStatus.previousEffectiveValue + currentItemOriginalValue;
+        const pairSum = firstElement + secondElement;
 
-        if (adjacentSum > thresholdValue) {
-            const surplusAmount = adjacentSum - thresholdValue;
-            const adjustedCurrentElement = Math.max(0, currentItemOriginalValue - surplusAmount);
-
+        if (pairSum > maxSumValue) {
+            const excessAmount = pairSum - maxSumValue;
+            const actualReductionForSecond = Math.min(secondElement, excessAmount);
+            
+            const nextValues = [...currentValues];
+            nextValues[currentIdx + 1] = secondElement - actualReductionForSecond;
+            
+            currentTotalReduction += excessAmount;
+            
             return {
-                totalModifications: currentStatus.totalModifications + surplusAmount,
-                previousEffectiveValue: adjustedCurrentElement
+                modifiedValues: nextValues,
+                totalReducedAmount: currentTotalReduction
             };
         } else {
-            return {
-                totalModifications: currentStatus.totalModifications,
-                previousEffectiveValue: currentItemOriginalValue
-            };
+            return accumulator;
         }
-    }, { totalModifications: 0, previousEffectiveValue: elementValues[0] });
+    }, { modifiedValues: initialValues, totalReducedAmount: 0 });
 
-    return finalAccumulation.totalModifications;
+    return finalAccumulation.totalReducedAmount;
 };
 
-const executeCalculation = () => {
-    const rawInputText = require('fs').readFileSync('/dev/stdin', 'utf8');
-    const computedOutcome = obtainProcessedResult(rawInputText);
-    console.log(computedOutcome);
-};
-
-executeCalculation();
+console.log(processInputData(require('fs').readFileSync('/dev/stdin', 'utf8')));

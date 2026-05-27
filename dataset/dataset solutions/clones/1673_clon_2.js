@@ -1,340 +1,290 @@
-let dataSource = require("node:fs").readFileSync("/dev/stdin", "utf-8"); // Obtain raw input from standard input stream
+let rawData = require("fs").readFileSync("/dev/stdin", "utf8"); // Read raw input from standard input
 
-// Constraints: alpha, beta, gamma are within [1, 100], ordered ascendingly.
-// 1 <= alpha <= beta <= gamma <= 100
+// Constraints for variables: 1 <= firstVal <= secondVal <= thirdVal <= 100
 
-function performCalculation() {
-  const [limitVal] = acquireData(); // Get the single input value N
+function processData() { // Main processing function
+    const [limitVal] = fetchInput(); // Load the single integer N
 
-  let tallyArray = new Array(limitVal + 1).fill(0.0); // Initialize an array to store counts, using floating-point zeros
+    let outputArray = new Array(limitVal + 1).fill(0); // Initialize an array to store counts, indexed from 1 to N
 
-  for (let currentIter = 1; currentIter <= limitVal; currentIter++) {
-    for (let alpha = 1; alpha <= 100; alpha++) {
-      const alphaSquared = alpha * alpha; // Pre-calculate alpha squared
-      for (let beta = alpha; beta <= 100; beta++) {
-        const betaSquared = beta * beta; // Pre-calculate beta squared
-        for (let gamma = beta; gamma <= 100; gamma++) {
-          const sumComponent =
-            alphaSquared +
-            betaSquared +
-            gamma * gamma +
-            alpha * beta +
-            beta * gamma +
-            gamma * alpha; // Calculate the complex sum
+    for (let currentNum = 1; currentNum <= limitVal; currentNum++) { // Iterate from 1 to N
+        for (let firstVal = 1; firstVal <= 100; firstVal++) { // Iterate for x from 1 to 100
+            const firstValSq = firstVal * firstVal; // Calculate x^2
+            for (let secondVal = firstVal; secondVal <= 100; secondVal++) { // Iterate for y from x to 100
+                const secondValSq = secondVal * secondVal; // Calculate y^2
+                for (let thirdVal = secondVal; thirdVal <= 100; thirdVal++) { // Iterate for z from y to 100
 
-          if (sumComponent > currentIter) {
-            // If the sum exceeds the current iteration number,
-            // further increments of gamma will also exceed it, so break.
-            break;
-          }
+                    const calculatedSum = firstValSq + secondValSq + thirdVal * thirdVal + firstVal * secondVal + secondVal * thirdVal + thirdVal * firstVal; // Calculate the expression
 
-          if (sumComponent === currentIter) {
-            // Check for strict equality
-            if (alpha === beta && beta === gamma) {
-              // All three variables are identical
-              tallyArray[currentIter] += 1;
-            } else if (alpha === beta || beta === gamma || gamma === alpha) {
-              // Exactly two variables are identical
-              tallyArray[currentIter] += 3;
-            } else {
-              // All three variables are distinct
-              tallyArray[currentIter] += 6;
+                    if (calculatedSum > currentNum) { // If the sum exceeds currentNum, no need to check larger z values
+                        break;
+                    }
+
+                    if (calculatedSum === currentNum) { // If the sum equals currentNum
+                        if (firstVal === secondVal && secondVal === thirdVal) { // Case 1: x = y = z
+                            outputArray[currentNum] += 1; // Add 1 to the count
+                        } else if (firstVal === secondVal || secondVal === thirdVal || thirdVal === firstVal) { // Case 2: Two variables are equal
+                            outputArray[currentNum] += 3; // Add 3 to the count
+                        } else { // Case 3: All variables are distinct
+                            outputArray[currentNum] += 6; // Add 6 to the count
+                        }
+
+                        break; // Found a match for this (x,y) pair, move to next (x,y)
+                    }
+                }
             }
-
-            // Once a match is found for a given (alpha, beta, gamma),
-            // subsequent increments of gamma will change sumComponent,
-            // so we can break this inner loop.
-            break;
-          }
         }
-      }
     }
-  }
 
-  // Return the results, excluding the first element (index 0), joined by carriage return and newline.
-  return tallyArray.slice(1).join("\r\n");
+    return outputArray.slice(1).join('\n'); // Return the results from index 1, joined by newlines
 }
 
 /*
-
-Reads and parses input values.
-acquireData(numRows = 1, numCols = 1, valueType = Number)
-
-Provides 'Affirmative' for truthy, 'Negative' for falsy.
-affirmativeNegative(boolean) => String
-
-Computes the sum of a numerical sequence.
-sequenceTotal(numbers) => Number
-
-Mechanism to prevent unending iterations.
-iterationGuard(max = 1e5)
-
-Retrieves the maximum element from an array.
-findMaximum(numbers, startingValue = undefined) => Number
-
-Retrieves the minimum element from an array.
-findMinimum(numbers, startingValue = undefined) => Number
-
-Logs a deep copy of an object to the console.
-dumpObjectSnapshot(value)
-
-Performs prime factorization.
-decomposeIntoPrimes(n) => { prime: exponent }
-
-Constructs a two-dimensional array.
-createMatrix(rowsCount, colsCount = 0, defaultValue = 0) => [[]]
-
-Calculates the Greatest Common Divisor.
-computeGCD(a, b) => Number
-
-Calculates the Least Common Multiple.
-computeLCM(a,b) => Number
-
-Checks if one set is a proper subset of another.
-isSubcollection(mainCollection, subCollection) => Boolean
-
-Computes the union of two sets.
-combineSets(a, b) => Set
-
-Computes the intersection of two sets.
-intersectSets(a, b) => Set
-
-Computes the symmetric difference of two sets.
-symmetricDifference(a, b) => Set
-
-Computes the difference of two sets.
-subtractSets(a, b) => Set
-
-Enumerates all combinations of 'k' elements from an array.
-enumerateCombinations(array, count) => [[]]
-
+Helper functions documentation:
+fetchInput(numRows = 1, numCols = 1, dataType = Number): Reads input values.
+isTruthyYesNo(inputVal): Returns 'Yes' for truthy, 'No' for falsy.
+sumNumericList(numericList): Calculates the sum of numbers in an array.
+loopGuard(maxIterations = 100000): Prevents infinite loops.
+findMaxInArray(numericList, startValue = null): Finds the maximum value in an array.
+findMinInArray(numericList, startValue = null): Finds the minimum value in an array.
+dumpObject(inputVal): Logs a deep copy of an object to console.
+getPrimeFactors(targetNum): Returns prime factors of a number as an object { prime: power }.
+create2DArray(xDimension, yDimension = 0, initialFillValue = 0): Creates a 2D array.
+calculateGCD(valA, valB): Computes the greatest common divisor.
+calculateLCM(valA, valB): Computes the least common multiple.
+isSubsetOf(mainSet, subCollection): Checks if subCollection is a subset of mainSet.
+unionSets(setA, setB): Returns the union of two sets.
+intersectSets(setA, setB): Returns the intersection of two sets.
+symmetricDifferenceSets(setA, setB): Returns the symmetric difference of two sets.
+differenceSets(setA, setB): Returns the difference of two sets (A - B).
+generateCombinations(sourceArray, selectionCount): Generates all combinations of 'selectionCount' elements from 'sourceArray'.
+calculatePermutations(totalItems, selectedItems): Calculates the number of permutations P(n, r).
+calculateCombinations(totalItems, selectedItems): Calculates the number of combinations C(n, r).
 */
 
-let parsedLines = dataSource.split(/[\s\n]/); // Split input by whitespace or newlines
-let loopSafetyCheck = 0; // Initialize counter for loop guard
-let finalOutput = performCalculation(); // Execute the main logic
-console.log(finalOutput); // Display the final computed result
 
-if (finalOutput === undefined) {
-  console.warn("computationOutcome is unset"); // Warn if the output is not defined
+let parsedInputSegments = rawData.split(/[\s\n]/); // Split the raw input into segments by whitespace or newline
+let loopSafetyCounter = 0; // Counter for infinite loop prevention
+let finalOutput = processData(); // Execute the main processing logic
+console.log(finalOutput); // Print the final result to console
+
+if (finalOutput === undefined) { // Check if the final output is undefined
+    console.warn("The computed result is undefined."); // Log a warning if it is
 }
-// Performance measurement concluded
+// console.timeEnd(); // Commented out performance timer end
 
-// Reads and parses input values.
-function acquireData(numRows = 1, numCols = 1, valueType = Number) {
-  const totalElements = numRows * numCols; // Determine total number of elements to read
-  let dataItems = parsedLines.splice(0, totalElements); // Extract relevant data from parsed lines
 
-  if (valueType !== String) {
-    dataItems = dataItems.map(valueType); // Convert data types if not string
-  }
-  if (numCols > 1) {
-    const columnarData = new Array(numCols); // Prepare array for columnar storage
-    for (let currentColIdx = 0; currentColIdx < numCols; currentColIdx++) {
-      columnarData[currentColIdx] = []; // Initialize inner arrays
-      for (let rowIdx = 0; rowIdx < numRows; rowIdx++) {
-        columnarData[currentColIdx].push(
-          dataItems[rowIdx * numCols + currentColIdx]
-        ); // Populate columns
-      }
+// Function to load input values from the parsed segments
+function fetchInput(numRows = 1, numCols = 1, dataType = Number) {
+    const totalElements = numRows * numCols; // Calculate total number of elements to read
+    let extractedValues = parsedInputSegments.splice(0, totalElements); // Extract elements from the global input array
+
+    if (dataType !== String) { // If the desired type is not String, convert elements
+        extractedValues = extractedValues.map(dataType);
     }
-    dataItems = columnarData; // Reassign to columnar format
-  }
-
-  return dataItems; // Return the processed data
-}
-
-// Provides 'Affirmative' for truthy, 'Negative' for falsy.
-function affirmativeNegative(inputBool) {
-  return inputBool ? "Affirmative" : "Negative"; // Ternary operator for boolean check
-}
-
-// Computes the sum of a numerical sequence.
-function sequenceTotal(numericalList) {
-  return numericalList.reduce(
-    (accumulator, currentElement) => accumulator + currentElement,
-    0
-  ); // Use reduce to sum elements
-}
-
-// Mechanism to prevent unending iterations.
-function iterationGuard(maxIterations = 100000) {
-  loopSafetyCheck++; // Increment the global loop counter
-  if (loopSafetyCheck >= maxIterations) {
-    throw new Error("Loop exceeded maximum allowed iterations."); // Throw error if limit reached
-  }
-}
-
-// Retrieves the maximum element from an array.
-function findMaximum(numericCollection, startingValue = undefined) {
-  let maxValue =
-    startingValue === undefined ? numericCollection[0] : startingValue; // Set initial max value
-  for (const currentNum of numericCollection) {
-    if (currentNum > maxValue) {
-      maxValue = currentNum; // Update if a larger number is found
-    }
-  }
-  return maxValue; // Return the greatest value
-}
-
-// Retrieves the minimum element from an array.
-function findMinimum(numericCollection, startingValue = undefined) {
-  let minValue =
-    startingValue === undefined ? numericCollection[0] : startingValue; // Set initial min value
-  for (const currentNum of numericCollection) {
-    if (currentNum < minValue) {
-      minValue = currentNum; // Update if a smaller number is found
-    }
-  }
-  return minValue; // Return the smallest value
-}
-
-// Logs a deep copy of an object to the console.
-function dumpObjectSnapshot(targetObject) {
-  console.log(JSON.parse(JSON.stringify(targetObject))); // Deep clone and log
-}
-
-// Performs prime factorization.
-function decomposeIntoPrimes(inputNumber) {
-  const factorMap = {}; // Object to store prime factors and their exponents
-
-  for (let divisorCandidate = 2; divisorCandidate * divisorCandidate <= inputNumber; divisorCandidate++) {
-    if (inputNumber % divisorCandidate === 0) {
-      inputNumber /= divisorCandidate; // Divide by factor
-      factorMap[divisorCandidate] = 1; // Initialize count
-
-      while (inputNumber % divisorCandidate === 0) {
-        inputNumber /= divisorCandidate; // Continue dividing
-        factorMap[divisorCandidate]++; // Increment exponent
-      }
-    }
-  }
-
-  if (inputNumber > 1) {
-    factorMap[inputNumber] = 1; // If remaining number is prime, add it
-  }
-
-  return factorMap; // Return the map of prime factors
-}
-
-// Constructs a two-dimensional array.
-function createMatrix(rowsCount, colsCount = 0, defaultValue = 0) {
-  const matrixContainer = []; // Outer array for rows
-  for (let rowIdx = 0; rowIdx < rowsCount; rowIdx++) {
-    const rowArray = colsCount
-      ? new Array(colsCount).fill(defaultValue)
-      : []; // Create inner array, possibly filled
-    matrixContainer.push(rowArray); // Add row to matrix
-  }
-
-  return matrixContainer; // Return the 2D array
-}
-
-// Calculates the Greatest Common Divisor.
-function computeGCD(valA, valB) {
-  if (valB === 0) {
-    return valA; // Base case for Euclidean algorithm
-  }
-  return computeGCD(valB, valA % valB); // Recursive step
-}
-
-// Calculates the Least Common Multiple.
-function computeLCM(numOne, numTwo) {
-  const greatestCommonDivisor = (firstNum, secondNum) =>
-    secondNum ? greatestCommonDivisor(secondNum, firstNum % secondNum) : firstNum; // Inner GCD function
-  return (numOne * numTwo) / greatestCommonDivisor(numOne, numTwo); // LCM formula
-}
-
-// Checks if one set is a proper subset of another.
-function isSubcollection(mainCollection, subCollection) {
-  for (let elementItem of subCollection) {
-    if (!mainCollection.has(elementItem)) {
-      return false; // If any element is not in main, it's not a subset
-    }
-  }
-  return true; // All elements found
-}
-
-// Computes the union of two sets.
-function combineSets(collectionA, collectionB) {
-  const unionResult = new Set(collectionA); // Start with elements from A
-  for (const itemB of collectionB) {
-    unionResult.add(itemB); // Add elements from B
-  }
-  return unionResult; // Return the combined set
-}
-
-// Computes the intersection of two sets.
-function intersectSets(collectionA, collectionB) {
-  let intersectionResult = new Set(); // Initialize an empty set for intersection
-  for (let itemB of collectionB) {
-    if (collectionA.has(itemB)) {
-      intersectionResult.add(itemB); // Add common elements
-    }
-  }
-  return intersectionResult; // Return the intersection set
-}
-
-// Computes the symmetric difference of two sets.
-function symmetricDifference(collectionA, collectionB) {
-  let diffResult = new Set(collectionA); // Start with elements from A
-  for (let itemB of collectionB) {
-    if (diffResult.has(itemB)) {
-      diffResult.delete(itemB); // Remove if present (common)
-    } else {
-      diffResult.add(itemB); // Add if not present (unique to B)
-    }
-  }
-  return diffResult; // Return the symmetric difference
-}
-
-// Computes the difference of two sets.
-function subtractSets(collectionA, collectionB) {
-  let differenceResult = new Set(collectionA); // Start with elements from A
-  for (let itemB of collectionB) {
-    differenceResult.delete(itemB); // Remove elements found in B
-  }
-  return differenceResult; // Return the difference set (A - B)
-}
-
-// Enumerates all combinations of 'k' elements from an array.
-function enumerateCombinations(sourceArray, selectionCount) {
-  const allCombinations = []; // Array to store all generated combinations
-
-  function _generateRecursive({ currentSelection = [], remainingElements }) {
-    if (currentSelection.length + remainingElements.length < selectionCount) {
-      return; // Pruning: not enough elements left to form a combination of desired size
+    if (numCols > 1) { // If multiple columns are expected, restructure into column-major arrays
+        const columnArrays = new Array(numCols); // Create an array to hold column arrays
+        for (let currentCol = 0; currentCol < numCols; currentCol++) { // Iterate through columns
+            columnArrays[currentCol] = []; // Initialize each column array
+            for (let currentRow = 0; currentRow < numRows; currentRow++) { // Iterate through rows
+                columnArrays[currentCol].push(extractedValues[currentRow * numCols + currentCol]); // Add element to current column
+            }
+        }
+        extractedValues = columnArrays; // Update result to be the column-major arrays
     }
 
-    if (currentSelection.length < selectionCount) {
-      for (let idx = 0; idx < remainingElements.length; idx++) {
-        _generateRecursive({
-          currentSelection: [...currentSelection, remainingElements[idx]],
-          remainingElements: remainingElements.slice(idx + 1), // Correct slice for combinations
-        });
-      }
-    } else {
-      allCombinations.push(currentSelection); // Combination found, add to results
+    return extractedValues; // Return the processed input values
+}
+
+// Determines 'Yes' or 'No' based on a boolean value
+function isTruthyYesNo(inputVal) {
+    return inputVal ? 'Yes' : 'No';
+}
+
+// Computes the sum of all numbers in a given list
+function sumNumericList(numericList) {
+    return numericList.reduce((accumulator, currentElement) => accumulator + currentElement, 0);
+}
+
+// Safety mechanism to prevent unintended infinite loops
+function loopGuard(maxIterations = 100000) { // Default max iterations set to 100,000
+    loopSafetyCounter++; // Increment the global loop counter
+    if (loopSafetyCounter >= maxIterations) { // If counter exceeds max, throw an error
+        throw new Error("Infinite loop detected!"); // Error message for infinite loop
     }
-  }
-
-  _generateRecursive({ remainingElements: sourceArray }); // Start the recursive process
-
-  return allCombinations; // Return all combinations
 }
 
-function calculatePermutations(totalItems, chosenItems) {
-  let productValue = 1; // Initialize product
-  for (let loopCounter = 0; loopCounter < chosenItems; loopCounter++) {
-    productValue *= totalItems - loopCounter; // Multiply by decreasing values
-  }
-  return productValue; // Return the permutation count
+// Finds the maximum value within an array of numbers
+function findMaxInArray(numericList, startValue = null) {
+    let calculationResult = (startValue === null) ? numericList[0] : startValue; // Initialize result with first element or provided start value
+    for (const currentElement of numericList) { // Iterate through the list
+        if (currentElement > calculationResult) { // If current element is greater
+            calculationResult = currentElement; // Update the maximum
+        }
+    }
+    return calculationResult; // Return the found maximum
 }
 
-function calculateCombinations(totalItems, chosenItems) {
-  // Use permutation formula for combinations: P(n, r) / P(r, r)
-  return (
-    calculatePermutations(totalItems, chosenItems) /
-    calculatePermutations(chosenItems, chosenItems)
-  );
+// Finds the minimum value within an array of numbers
+function findMinInArray(numericList, startValue = null) {
+    let calculationResult = (startValue === null) ? numericList[0] : startValue; // Initialize result with first element or provided start value
+    for (const currentElement of numericList) { // Iterate through the list
+        if (currentElement < calculationResult) { // If current element is smaller
+            calculationResult = currentElement; // Update the minimum
+        }
+    }
+    return calculationResult; // Return the found minimum
+}
+
+// Logs a deep copy (snapshot) of an object to the console
+function dumpObject(inputVal) {
+    console.log(JSON.parse(JSON.stringify(inputVal))); // Use JSON stringify/parse for deep copy
+}
+
+// Performs prime factorization of a given number, returning factors and their powers
+function getPrimeFactors(targetNum) {
+    const factorMap = {}; // Object to store prime factors and their counts
+
+    for (let divisorCandidate = 2; divisorCandidate * divisorCandidate <= targetNum; divisorCandidate++) { // Iterate from 2 up to sqrt(targetNum)
+        if (targetNum % divisorCandidate === 0) { // If divisorCandidate is a factor
+            targetNum /= divisorCandidate; // Divide targetNum by the factor
+            factorMap[divisorCandidate] = 1; // Initialize count for this prime factor
+
+            while (targetNum % divisorCandidate === 0) { // Continue dividing by the same factor
+                targetNum /= divisorCandidate;
+                factorMap[divisorCandidate]++; // Increment count
+            }
+        }
+    }
+
+    if (targetNum > 1) { // If remaining targetNum is greater than 1, it's a prime factor itself
+        factorMap[targetNum] = 1;
+    }
+
+    return factorMap; // Return the map of prime factors
+}
+
+// Creates a new 2D array (matrix) with specified dimensions and initial values
+function create2DArray(xDimension, yDimension = 0, initialFillValue = 0) {
+
+    const matrix = []; // Initialize an empty array for the matrix
+    for (let rowIndex = 0; rowIndex < xDimension; rowIndex++) { // Iterate for each row
+        const rowContent = yDimension ? new Array(yDimension).fill(initialFillValue) : []; // Create a row, filled if yDimension is provided
+        matrix.push(rowContent); // Add the row to the matrix
+    }
+
+    return matrix; // Return the newly created 2D array
+}
+
+// Computes the Greatest Common Divisor (GCD) of two numbers using Euclidean algorithm
+function calculateGCD(valA, valB) {
+    if (valB === 0) { // Base case: if valB is 0, valA is the GCD
+        return valA;
+    }
+    return calculateGCD(valB, valA % valB); // Recursive call
+}
+
+// Computes the Least Common Multiple (LCM) of two numbers
+function calculateLCM(valA, valB) {
+    // Helper function for GCD, using a different name to avoid conflict and demonstrate renaming
+    const gcdHelper = (num1, num2) => num2 ? gcdHelper(num2, num1 % num2) : num1;
+    return (valA * valB) / gcdHelper(valA, valB); // LCM(a,b) = |a*b| / GCD(a,b)
+}
+
+// Checks if a subCollection is a subset of a mainSet
+function isSubsetOf(mainSet, subCollection) {
+    for (let elementItem of subCollection) { // Iterate through elements of the potential subset
+        if (!mainSet.has(elementItem)) { // If any element is not in the main set
+            return false; // It's not a subset
+        }
+    }
+    return true; // All elements are in the main set, so it's a subset
+}
+
+// Computes the union of two sets
+function unionSets(setA, setB) {
+    const unionResult = new Set(setA); // Start with all elements from setA
+    for (const elementItem of setB) { // Add all elements from setB
+        unionResult.add(elementItem);
+    }
+    return unionResult; // Return the combined set
+}
+
+// Computes the intersection of two sets
+function intersectSets(setA, setB) {
+    let intersectionResult = new Set(); // Initialize an empty set for the intersection
+    for (let elementItem of setB) { // Iterate through elements of setB
+        if (setA.has(elementItem)) { // If an element from setB is also in setA
+            intersectionResult.add(elementItem); // Add it to the intersection set
+        }
+    }
+    return intersectionResult; // Return the common elements
+}
+
+// Computes the symmetric difference of two sets
+function symmetricDifferenceSets(setA, setB) {
+    let symDiffResult = new Set(setA); // Start with elements from setA
+    for (let elementItem of setB) { // Iterate through elements of setB
+        if (symDiffResult.has(elementItem)) { // If element is already in symDiffResult (meaning it's in both A and B)
+            symDiffResult.delete(elementItem); // Remove it
+        } else { // If element is not in symDiffResult (meaning it's only in B)
+            symDiffResult.add(elementItem); // Add it
+        }
+    }
+    return symDiffResult; // Return the symmetric difference
+}
+
+// Computes the difference of two sets (elements in A but not in B)
+function differenceSets(setA, setB) {
+    let diffResult = new Set(setA); // Start with all elements from setA
+    for (let elementItem of setB) { // Iterate through elements of setB
+        diffResult.delete(elementItem); // Remove any element that is also in setB
+    }
+    return diffResult; // Return the difference set
+}
+
+// Generates all possible combinations of 'selectionCount' elements from a sourceArray
+function generateCombinations(sourceArray, selectionCount) {
+
+    const combinationsList = []; // Array to store all generated combinations
+
+    // Recursive helper function for combination generation
+    function _recursiveCombinator({ prefixElements = [], remainingElements }) {
+
+        // Pruning: if current prefix length plus remaining elements count is less than desired selectionCount,
+        // no valid combination can be formed from this path.
+        if (prefixElements.length + remainingElements.length < selectionCount) {
+            return;
+        }
+
+        if (prefixElements.length < selectionCount) { // If current combination is not yet complete
+            for (let idx = 0; idx < remainingElements.length; idx++) { // Iterate through remaining elements
+                _recursiveCombinator({
+                    prefixElements: [...prefixElements, remainingElements[idx]], // Add current element to prefix
+                    remainingElements: remainingElements.slice(0, idx) // Pass remaining elements before current one (original buggy behavior)
+                });
+            }
+        } else { // If a combination of desired length is formed
+            combinationsList.push(prefixElements); // Add it to the results
+        }
+    }
+
+    _recursiveCombinator({ remainingElements: sourceArray }); // Start the recursion with the full source array
+
+    return combinationsList; // Return the list of all combinations
+}
+
+// Calculates the number of permutations P(n, r)
+function calculatePermutations(totalItems, selectedItems) {
+    let calculationResult = 1; // Initialize result to 1
+    for (let i = 0; i < selectedItems; i++) { // Loop 'r' times
+        calculationResult *= (totalItems - i); // Multiply by (n-i)
+    }
+    return calculationResult; // Return the permutation count
+}
+
+// Calculates the number of combinations C(n, r)
+function calculateCombinations(totalItems, selectedItems) {
+    // C(n, r) = P(n, r) / P(r, r)
+    return calculatePermutations(totalItems, selectedItems) / calculatePermutations(selectedItems, selectedItems);
 }

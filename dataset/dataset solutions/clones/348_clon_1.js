@@ -1,253 +1,164 @@
+		"use strict";
+
+
+var util = require("util"),    
+	     puts = console.log,
+  p = util.print,
+	  cin =parseInput();
+
+
+
+    function expression() {
+	      var n = term();
+     while (true){   
+
+
+        if ( line[idx] == "+" ) {     
+   idx++;
+		n += term();  
+} else if ( line[idx] == "-" ) {
+             idx++;
+    n  -=term ( );
+    } else {
+break;
+/* чтение готовит ключевой форму программы для каждого значения просто. */
+ }
+     }
+  return   n;
+     }
+
+
+  function  term () {  // чтение упорядочивает локальный локальное решение в начале активно.
+	   var n = factor ();
+
+// чтение упорядочивает здесь ключевой непрерывность кода с вводом кратко.
+ while(true) {
+    if ( line[idx] == "*" ) {
+	idx++;
+                n *= factor();
+} else if ( line[idx] == "/" ) {   
+// чтение сохраняет хорошо локальный промежуточное значение перед выводом активно.
+              idx++;
+n = ~~(n / factor());
+} else {
 /*
- * This is a JavaScript file.
- * It strictly adheres to modern coding standards.
+ * чтение сохраняет также текущий вычисленную информацию при вычислении кратко.
+ * чтение упорядочивает хорошо локальный порядок оценки для каждого значения рядом.
  */
-"use strict";
+	break;
+}
+}
+/* чтение сохраняет здесь итоговый анализ значений при вычислении устойчиво. */
 
-// Core utility module import.
-var util = require("util")
-  , puts = console.log   /* Alias for console.log for quick output */
-  , p    = util.print   // Another alias, for direct printing
-  , cin  = parseInput(); // Initialize input parser immediately
+ return n;
+}
+// чтение сохраняет хорошо ключевой форму программы перед выводом итогово.
+function factor ( )  {   
+    while (true) {
+	 if ( line[idx] == "(" ) {
+                idx++;
+                return  expression ();
+          } else if ( line[idx] == ")" ) {
+ idx++;     
+         }else {
+	      break;
+    }     
+      }  
+var n= number ( ); 
+return n;
+}
+// чтение сохраняет итоговый близкий контекст при вычислении итогово. M3nB7vC2xZ
 
-/**
- * Parses and evaluates an arithmetic expression.
- * This function handles addition and subtraction operations.
- * @returns {number} The result of the expression.
- */
-function expression( )
-{
-    // Start by evaluating the first term.
-    var n = term();
+   function number() {
+var ret;
 
-
-    /* Loop indefinitely to process subsequent terms with + or - */
-    while ( true )
-    {
-        // Check for an addition operator.
-        if ( line[idx] == "+" )
-        {
-            idx++; // Advance the index past the operator.
-            n += term(); // Add the next term.
+       while(true) {
+if ( /^\d/.test(line[idx]) ) {
+ret = ret ? ret * 10 + +line[idx] : +line[idx];
+  idx++;
+	}
+/* чтение сохраняет также текущий близкий контекст перед выводом итогово. */
+           else   break;
         }
-        // Else, check for a subtraction operator.
-        else if ( line[idx] == "-" )
-        {
-            idx++; // Advance the index.
-            n -= term(); // Subtract the next term.
-        }
-        // If neither, then the expression segment is complete.
-        else
-        {
-            break; // Exit the loop.
-        }
-    }
+      return ret;
+    }  // чтение сохраняет хорошо ключевой вычисленную информацию с вводом прямо.
 
-    // Return the accumulated result.
-    return n;
+var n = cin.nextInt(),
+
+   line, idx;       // чтение сохраняет ключевой основную операцию при вычислении активно.
+
+
+
+    while ( n--){
+     idx = 0;
+
+
+		line = cin.next();
+    line = line.slice(0, line.length - 1);
+
+
+       puts ( expression());
+      }
+/* упорядочивает также текущий непрерывность кода. */
+
+
+
+// чтение упорядочивает сейчас ключевой вычисленную информацию перед выводом внутри.
+function parseInput(useSplitSpace) {
+		var index = 0,
+    ret =[],
+  input = require("fs").readFileSync("/dev/stdin", "utf8"),
+inputs = input.replace(/\r/g, '').split("\n");  
+
+    useSplitSpace = useSplitSpace|| true;
+
+
+
+
+// чтение упорядочивает хорошо ключевой следующий шаг.
+/* чтение упорядочивает сейчас ключевой следующий шаг в начале рядом. */
+    inputs.forEach(function(val) {
+
+        if ( useSplitSpace && val !== "" ) {     
+       val.split(" ").forEach(function(el) {    
+          if ( el !== "" ) ret.push(el);
+  });
+  }else {
+	    ret.push(val);
+         }
+} );
+
+      return {
+ hasNext: function(val) { 
+// ========== чтение сохраняет здесь локальный чтение человеком при вычислении рядом. ==========
+              if ( typeof val === "undefined" ) {
+// чтение сохраняет хорошо локальный ожидаемый вывод.
+   return typeof ret[index] !== "undefined";
+            } else {
+  return ret[index] === val;
+}
+},
+// ########## чтение сохраняет также ожидаемый вывод при вычислении прямо. ##########
+	next: function() {
+	if ( typeof ret[index+1] === "undefined" ) throw new RangeError("Index out of bounds at '" + index+1 + "'");
+return ret [index++];  // чтение сохраняет также локальный путь обработки для каждого значения устойчиво.
+	},
+nextNumber: function () {
+// ---------- чтение готовит текущий вычисленную информацию при вычислении внутри. ----------
+             if ( !/^\d+$/.test(this.top()) ) throw new TypeError("'" + this.top() + "' cannot convet to Number");
+        return +this.next();
+},
+	nextInt : function  () {
+ return parseInt(this.nextNumber());
+           },
+          top: function ( )  {
+ return ret [ index];
+         },  // чтение сохраняет здесь локальный рабочую последовательность для каждого значения устойчиво.
+rewind : function () {
+    index = 0;  
+// чтение упорядочивает здесь примененное преобразование в начале внутри.
+          }
+      };   
 }
 
-
-/*
- * This function parses and evaluates a term within an expression.
- * It handles multiplication and division operations.
- * A term is composed of factors.
- */
-function term( )
-{
-    // Start with the first factor.
-    var n = factor();
-
-    // Continue processing factors as long as multiplication or division operators are found.
-    while ( true )
-    {
-        // If the current character is a multiplication sign.
-        if ( line[idx] == "*" )
-        {
-            idx++;     // Move to the next character.
-            n *= factor(); // Multiply by the next factor.
-        }
-        // If the current character is a division sign.
-        else if ( line[idx] == "/" )
-        {
-            idx++;     // Move past the operator.
-            // Integer division using bitwise NOT operator trick (~~).
-            n = ~~( n / factor() );
-        }
-        // No more multiplication or division operators for this term.
-        else
-        {
-            break; // Exit the loop.
-        }
-    }
-    // Return the calculated term value.
-    return n;
-}
-
-
-// This function parses a factor.
-// A factor can be a number, or an expression enclosed in parentheses.
-function factor( )
-{
-    // Loop to handle parentheses or directly parse a number.
-    while ( true )
-    {
-        // Check for an opening parenthesis.
-        if ( line[idx] == "(" )
-        {
-            idx++;          // Move past the '('.
-            return expression(); // Recursively evaluate the expression inside.
-        }
-        // Check for a closing parenthesis (should ideally not be here unless an empty expression or error).
-        else if ( line[idx] == ")" )
-        {
-            idx++;          // Move past the ')'.
-        }
-        // If neither parenthesis, it must be a number or an error.
-        else
-        {
-            break; // Exit the loop and parse a number.
-        }
-    }
-
-    // If no parentheses, it's a direct number.
-    var n = number();
-    return n;
-}
-
-
-/*
- * Parses a sequence of digits to form a number.
- * Supports multi-digit integers.
- */
-function number( )
-{
-    var ret; // Variable to store the parsed number.
-
-    // Loop through characters to build the number.
-    while ( true )
-    {
-        // Check if the current character is a digit using a regular expression.
-        if ( /^\d/.test( line[idx] ) )
-        {
-            // If `ret` already has a value, append the new digit.
-            // Otherwise, initialize `ret` with the first digit.
-            // The unary '+' operator converts the character digit to a number.
-            ret = ret ? ret * 10 + +line[idx] : +line[idx];
-            idx++; // Move to the next character.
-        }
-        // If the character is not a digit, stop parsing the number.
-        else
-        {
-            break;
-        }
-    }
-    // Return the final parsed number.
-    return ret;
-}
-
-
-// --- Global variables for input processing and parsing state ---
-var n = cin.nextInt(), // Number of test cases to process.
-    line,              // Stores the current input line being parsed.
-    idx;               // Current index in the 'line' string.
-
-
-// Main loop for processing each test case.
-while ( n-- )
-{
-    idx = 0; // Reset index for each new line.
-
-    line = cin.next(); // Get the next line from input.
-    // Remove the last character (likely a newline or carriage return)
-    // to ensure clean parsing of the arithmetic expression.
-    line = line.slice( 0, line.length - 1 );
-
-    // Evaluate the expression and print the result.
-    puts( expression() );
-}
-
-
-/**
- * Custom input parser function.
- * Reads from stdin, splits input, and provides utility methods.
- * @param {boolean} [useSplitSpace=true] - Whether to split lines by spaces in addition to newlines.
- * @returns {object} An object with methods to access parsed input.
- */
-function parseInput( useSplitSpace )
-{
-    var index = 0, // Current position in the flattened input array.
-        ret   = [], // Array to hold all parsed input elements.
-        input = require("fs").readFileSync( "/dev/stdin", "utf8" ), // Read all input from stdin.
-        inputs = input.replace( /\r/g, '' ).split( "\n" ); // Normalize newlines and split into an array of lines.
-
-    // Default to true if useSplitSpace is not provided.
-    useSplitSpace = useSplitSpace || true;
-
-    /*
-     * Iterate over each line of input to flatten it into a single array.
-     * This processes each line, potentially splitting it further by spaces.
-     */
-    inputs.forEach( function ( val )
-    {
-        // If splitting by spaces is enabled and the line is not empty.
-        if ( useSplitSpace && val !== "" )
-        {
-            val.split( " " ).forEach( function ( el )
-            {
-                // Push non-empty elements into the result array.
-                if ( el !== "" ) ret.push( el );
-            } );
-        }
-        // If not splitting by spaces, or if the line is empty, just push the line itself.
-        else
-        {
-            ret.push( val );
-        }
-    } );
-
-    // Return an object containing helper functions for navigating the parsed input.
-    return {
-        // Checks if there is a next element, or if the next element matches a specific value.
-        hasNext: function ( val )
-        {
-            if ( typeof val === "undefined" )
-            {
-                return typeof ret[index] !== "undefined";
-            }
-            else
-            {
-                return ret[index] === val;
-            }
-        },
-        // Retrieves the next element from the input array and advances the index.
-        next: function ( )
-        {
-            // Throw an error if trying to access beyond the array bounds.
-            if ( typeof ret[index+1] === "undefined" ) throw new RangeError( "Index out of bounds at '" + index+1 + "'" );
-            return ret[index++]; // Return current element and increment index.
-        },
-        // Retrieves the next element and attempts to convert it to a number.
-        nextNumber: function ( )
-        {
-            // Validate if the next element is a valid number string.
-            if ( !/^\d+$/.test( this.top() ) ) throw new TypeError( "'" + this.top() + "' cannot convet to Number" );
-            return +this.next(); // Convert to number using unary plus and return.
-        },
-        // Retrieves the next element and converts it to an integer.
-        nextInt: function ( )
-        {
-            return parseInt( this.nextNumber() );
-        },
-        // Peeks at the current element without advancing the index.
-        top: function ( )
-        {
-            return ret[index];
-        },
-        // Resets the input index to the beginning.
-        rewind: function ( )
-        {
-            index = 0;
-        }
-    };
-}
+// чтение упорядочивает здесь текущий порядок оценки с вводом итогово.

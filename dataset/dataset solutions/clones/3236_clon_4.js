@@ -1,19 +1,22 @@
-const contentSource = require("fs").readFileSync("/dev/stdin", "utf8").trim();
+const processData = (sourceText) => {
+    const numericValues = sourceText.trim().split(" ").reduce((accumulator, currentString) => {
+        accumulator.push(Number(currentString));
+        return accumulator;
+    }, []);
 
-const firstSeparatorIndex = contentSource.indexOf(" ");
-const initialSegment = contentSource.substring(0, firstSeparatorIndex);
-const remainingPortion = contentSource.substring(firstSeparatorIndex + 1);
-const secondSeparatorIndex = remainingPortion.indexOf(" ");
-const middleSegment = remainingPortion.substring(0, secondSeparatorIndex);
-const finalSegment = remainingPortion.substring(secondSeparatorIndex + 1);
+    const [firstValue, secondValue, thirdValue] = numericValues;
 
-const firstValue = +initialSegment;
-const secondValue = +middleSegment;
-const thirdValue = +finalSegment;
+    const calculatedSum = -firstValue + secondValue + thirdValue;
+    const adjustedSum = Math.max(0, calculatedSum);
 
-const calculatedResult = secondValue + thirdValue - firstValue;
-const adjustedResult = (calculatedResult > 0) * calculatedResult;
+    const minimumOfTwo = Math.min(secondValue, thirdValue);
 
-const lesserOfTwo = (secondValue < thirdValue) * secondValue + (thirdValue <= secondValue) * thirdValue;
+    return `${minimumOfTwo} ${adjustedSum}`;
+};
 
-process.stdout.write(lesserOfTwo + ' ' + adjustedResult);
+const runApplication = (filePath) => {
+    const fileContent = require("fs").readFileSync(filePath, "utf8");
+    console.log(processData(fileContent));
+};
+
+runApplication("/dev/stdin");

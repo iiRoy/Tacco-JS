@@ -1,66 +1,52 @@
-const k_io = require('readline');
-const k_lineReader = k_io.createInterface({
-    input: process.stdin,
-    output: process.stdout
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
+
+let accumulatedData = '';
+process.stdin.on('data', (chunk) => {
+    accumulatedData += chunk;
 });
 
-let k_dataLines = [];
-
-k_lineReader.on('line', (line) => {
-    k_dataLines.push(line);
+process.stdin.on('end', () => {
+    processInputData(accumulatedData.split(/\r?\n/));
 });
 
-k_lineReader.on('close', () => {
-    k_processInput(k_dataLines);
-});
+function processInputData(linesOfText) {
+    const parsedInputVal = parseInt(linesOfText[0], 10);
+    const MAX_ITERATION_LIMIT = 3500;
 
-function k_processInput(receivedLines) {
-    const k_valA = parseInt(receivedLines[0], 10);
+    let solutionTuple = null;
 
-    let k_solX = 0;
-    let k_solY = 0;
-    let k_solZ = 0;
+    // Iterate through possible values for the first component (h)
+    Array.from({ length: MAX_ITERATION_LIMIT }, (_, hIndex) => hIndex + 1)
+        .some(currentH => {
+            // Iterate through possible values for the second component (n), starting from currentH
+            return Array.from({ length: MAX_ITERATION_LIMIT - currentH + 1 }, (_, nIndex) => currentH + nIndex)
+                .some(currentN => {
+                    // Calculate the denominator for 'w' based on the equation 4/K = 1/h + 1/n + 1/w
+                    // Rearranged: w = (Khn) / (4hn - Kh - Kn)
+                    const denominatorTerm = 4 * currentH * currentN - parsedInputVal * currentH - parsedInputVal * currentN;
 
-    const k_maxIter = 3500; // Upper bound for the first two variables
+                    // If the denominator is not positive, 'w' cannot be a positive integer.
+                    // This implicitly handles division by zero and negative 'w'.
+                    if (denominatorTerm <= 0) {
+                        return false; // Continue to the next 'n' value
+                    }
 
-    // Use Array.from and some for a functional-style iteration to find the first solution
-    const k_solutionFound = Array.from({ length: k_maxIter }).some((_, xIdx) => {
-        const currentX = xIdx + 1; // x starts from 1
+                    const numeratorTerm = parsedInputVal * currentH * currentN;
 
-        // The second variable 'y' starts from 'x' up to k_maxIter
-        return Array.from({ length: k_maxIter - xIdx }).some((_, yOffset) => {
-            const currentY = yOffset + currentX; // y = x + offset
+                    // Check if 'w' is an integer by checking for exact divisibility
+                    if (numeratorTerm % denominatorTerm === 0) {
+                        const calculatedW = numeratorTerm / denominatorTerm;
 
-            // Perform calculations using BigInt for exact integer arithmetic
-            const termA = 4n * BigInt(currentX) * BigInt(currentY);
-            const termB = BigInt(k_valA) * BigInt(currentY);
-            const termC = BigInt(k_valA) * BigInt(currentX);
-
-            const k_denominator = termA - termB - termC;
-
-            // Check if denominator is positive to ensure 'z' can be positive
-            if (k_denominator > 0n) {
-                const k_numerator = BigInt(k_valA) * BigInt(currentX) * BigInt(currentY);
-
-                // Check if 'z' is an integer
-                if (k_numerator % k_denominator === 0n) {
-                    const calculatedZBigInt = k_numerator / k_denominator;
-                    const calculatedZ = Number(calculatedZBigInt); // Convert back to Number for output
-
-                    // Since denominator > 0 and numerator is always positive, calculatedZ will be positive.
-                    // The original code only checked w > 0.
-                    // No explicit upper bound for z is given in the original code, unlike for h and n.
-
-                    k_solX = currentX;
-                    k_solY = currentY;
-                    k_solZ = calculatedZ;
-                    return true; // Solution found, exit inner 'some' loop
-                }
-            }
-            return false; // Continue searching in inner loop
+                        // Since numeratorTerm and denominatorTerm are positive, calculatedW will be positive.
+                        // The original code's `w > 0` check is implicitly satisfied here.
+                        solutionTuple = [currentH, currentN, calculatedW];
+                        return true; // Solution found, stop inner loop (and outer loop due to 'some')
+                    }
+                    return false; // No integer 'w' for this 'n', continue to the next 'n'
+                });
         });
-    });
 
-    // Output the found solution
-    console.log(`${k_solX} ${k_solY} ${k_solZ}`);
+    // Output the found solution components
+    console.log(solutionTuple[0] + ' ' + solutionTuple[1] + ' ' + solutionTuple[2]);
 }

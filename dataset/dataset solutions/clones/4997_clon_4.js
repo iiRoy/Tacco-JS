@@ -1,30 +1,27 @@
-const interpretData = (rawContent) => {
-    const contentLines = rawContent.split('\n');
+function processInput(rawContent) {
+  const lineSegments = rawContent.split("\n");
+  const initialValues = lineSegments[0].split(" ");
+  const dimensionSize = parseInt(initialValues[0], 10);
+  const comparisonValue = parseInt(initialValues[1], 10);
+  const numericSequence = lineSegments[1].split(" ").map((strNum) => parseInt(strNum, 10));
 
-    const numericTokens = contentLines[0].match(/\d+/g).map(Number);
-    const dimension = numericTokens[0];
-    const keyVal = numericTokens[1];
+  let finalTally = numericSequence.filter(num => num === comparisonValue).length;
 
-    const numberSequence = contentLines[1].split(' ').map(Number);
+  const sequenceIndices = Array.from({ length: dimensionSize }, (_, index) => index);
 
-    const initialTally = numberSequence.filter(element => element === keyVal).length;
+  const additionalContributions = sequenceIndices.flatMap(outerIndex =>
+    sequenceIndices.flatMap(middleIndex =>
+      sequenceIndices.map(innerIndex => {
+        const leftExpression = (outerIndex + 2) * comparisonValue;
+        const rightExpression = (numericSequence[innerIndex] + numericSequence[middleIndex]) * (outerIndex + 1);
+        return leftExpression === rightExpression ? 1 : 0;
+      })
+    )
+  ).reduce((accumulator, value) => accumulator + value, 0);
 
-    const indexRange = Array.from({ length: dimension }, (_, index) => index);
+  finalTally += additionalContributions;
 
-    const additionalTally = indexRange.flatMap(outerIndex =>
-        indexRange.flatMap(middleIndex =>
-            indexRange.filter(innerIndex =>
-                (outerIndex + 2) * keyVal === (numberSequence[innerIndex] + numberSequence[middleIndex]) * (outerIndex + 1)
-            )
-        )
-    ).length;
+  console.log(finalTally);
+}
 
-    const finalTally = initialTally + additionalTally;
-
-    console.log(finalTally);
-};
-
-(() => {
-    const standardInput = require("fs").readFileSync("/dev/stdin", "utf8");
-    interpretData(standardInput);
-})();
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

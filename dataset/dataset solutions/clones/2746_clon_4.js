@@ -1,101 +1,56 @@
-((sourceInput) => {
-    let parsedNumericData = sourceInput.trim().split(/\s+/).map(numStr => Number(numStr));
-    let principalFigure = parsedNumericData.shift();
-    let remainingNumericItems = parsedNumericData;
+"use strict";
+(function(sourceData){
+  const parsedData = sourceData.trim().split(/\s+/).map(Number);
 
-    let isPrincipalDivisibleByThree = (principalFigure % 3 === 0);
-    let areAllRemainingItemsZero = (remainingNumericItems.every(val => val === 0));
+  const initialValue = parsedData[0];
+  const subsequentNumbers = parsedData.slice(1);
 
-    if (!isPrincipalDivisibleByThree && !areAllRemainingItemsZero) {
-        console.log("No");
-        return;
+  const isInitialDivisibleByThree = (initialValue % 3 === 0);
+  const areAllSubsequentZero = subsequentNumbers.every(val => val === 0);
+
+  if (!isInitialDivisibleByThree && !areAllSubsequentZero) {
+    console.log("No");
+    return;
+  }
+
+  if (areAllSubsequentZero) {
+    console.log("Yes");
+    return;
+  }
+
+  const numberOccurrences = new Map();
+  for (const currentNumber of subsequentNumbers) {
+    numberOccurrences.set(currentNumber, (numberOccurrences.get(currentNumber) || 0) + 1);
+    if (numberOccurrences.size > 3) {
+      console.log("No");
+      return;
     }
-    if (areAllRemainingItemsZero) {
-        console.log("Yes");
-        return;
-    }
+  }
 
-    const recursiveItemProcessor = (iterationsLeft, currentItemPointer, uniqueElementsList, occurrenceCounts, sourceCollection) => {
-        if (iterationsLeft === 0) {
-            return {
-                uniques: uniqueElementsList,
-                counts: occurrenceCounts
-            };
-        }
+  const distinctElements = Array.from(numberOccurrences.keys());
+  const elementCounts = Array.from(numberOccurrences.values());
 
-        if (uniqueElementsList.length > 3) {
-            throw new Error("TOO_MANY_UNQUES");
-        }
+  if (distinctElements.length !== 3) {
+    console.log("No");
+    return;
+  }
 
-        let workingPointer = currentItemPointer;
-        let workingUniques = [...uniqueElementsList];
-        let workingCounts = [...occurrenceCounts];
+  const countOne = elementCounts[0];
+  const countTwo = elementCounts[1];
+  const countThree = elementCounts[2];
 
-        let itemForInnerScan = sourceCollection[workingPointer];
+  const allCountsMatch = (countOne === countTwo && countTwo === countThree);
 
-        let internalScanIndex = 0;
-        while (internalScanIndex < workingUniques.length) {
-            if (itemForInnerScan === workingUniques[internalScanIndex]) {
-                workingCounts[internalScanIndex]++;
-                workingPointer++;
-                itemForInnerScan = sourceCollection[workingPointer];
-                internalScanIndex = 0;
-            } else {
-                internalScanIndex++;
-            }
-        }
+  if (!allCountsMatch) {
+    console.log("No");
+    return;
+  }
 
-        workingUniques.push(itemForInnerScan);
-        if (uniqueElementsList.length < 3) {
-            if (workingCounts[uniqueElementsList.length] === 0) {
-                workingCounts[uniqueElementsList.length]++;
-            }
-        }
+  const xorResult = distinctElements[0] ^ distinctElements[1] ^ distinctElements[2];
 
-        return recursiveItemProcessor(
-            iterationsLeft - 1,
-            workingPointer + 1,
-            workingUniques,
-            workingCounts,
-            sourceCollection
-        );
-    };
-
-    let processingOutcome;
-    try {
-        processingOutcome = recursiveItemProcessor(principalFigure, 0, [], [0, 0, 0], remainingNumericItems);
-    } catch (signal) {
-        if (signal.message === "TOO_MANY_UNQUES") {
-            console.log("No");
-            return;
-        }
-        throw signal;
-    }
-
-    const finalUniqueValues = processingOutcome.uniques;
-    const finalFrequencies = processingOutcome.counts;
-
-    if (finalUniqueValues.length > 3) {
-        console.log("No");
-        return;
-    }
-
-    const areAllFrequenciesIdentical = (finalFrequencies[0] === finalFrequencies[1] && finalFrequencies[1] === finalFrequencies[2]);
-    const isSpecialFrequencyPattern = (finalFrequencies[2] === 0 && ((finalFrequencies[0] === (2 * finalFrequencies[1])) || (finalFrequencies[1] === (2 * finalFrequencies[0]))));
-
-    if (!areAllFrequenciesIdentical && !isSpecialFrequencyPattern) {
-        console.log("No");
-        return;
-    }
-
-    const exclusiveOrSumIsZero = ((finalUniqueValues[0] ^ finalUniqueValues[1] ^ finalUniqueValues[2]) === 0);
-
-    if (!exclusiveOrSumIsZero) {
-        console.log("No");
-        return;
-    } else {
-        console.log("Yes");
-        return;
-    }
-
-})(require("fs").readFileSync("/dev/stdin", "utf8"));
+  if (xorResult === 0) {
+    console.log("Yes");
+  } else {
+    console.log("No");
+  }
+})(require("fs").readFileSync("/dev/stdin","utf8"));

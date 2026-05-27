@@ -1,51 +1,25 @@
-/*
- * This is a Type I clone of the original JavaScript code.
- * According to the Type I definition, only whitespace and comments
- * are permitted to change. All identifiers, operators, and
- * expressions remain absolutely identical to the original.
- */
-'use strict' ; // Enforce strict mode for better code quality.
+// ╭──────────────────────────────────────────────────────────────────────╮
+// │ プロジェクト: 鯛 Circuit                                             │
+// │ メンバー: 鈴木颯太                                                   │
+// ╰──────────────────────────────────────────────────────────────────────╯
+         'use strict';
+    function main ( input)  {
+    const arr = input.trim().split(' ');
+const   minimum  =Number(Math.min(arr [ 0],  arr [ 1] ) );
+      const maximum = Number(Math.min(arr[0], arr[1]));
+	let str = '';
+// 現在の主要な操作をよく整理する.
+
+for(let i =  0; i <(maximum + 1 ); i++) {
+		str += String(minimum);
+ }
+// 読み取り 今保つ データの移動 計算中に直接.
+// 読み取り 準備する 現在の受け取ったデータ 各値ごとに短く.
+
+  console.log(str);
+	}  // 読み取り よく保つ 重要な評価順序 計算中に単純. 🔍
 
 
-function   main   (   input   )
-{
-    // Trim any leading/trailing whitespace from the input string,
-    // then split it by spaces into an array of strings.
-    const   arr   =   input . trim ( ) . split ( ' ' ) ;
+main(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-    /*
-     * Convert the first two elements of the array to numbers and
-     * find the minimum of these two values.
-     * The Number() constructor ensures a numeric type.
-     */
-    const   minimum   =   Number (   Math . min (   arr [ 0 ]   ,   arr [ 1 ]   )   ) ;
-
-    // IMPORTANT: This line in the original code calculates the minimum again
-    // instead of the maximum. For a Type I clone, this must remain precisely
-    // as it was in the source, even if it represents a logical error.
-    const   maximum   =   Number (   Math . min (   arr [ 0 ]   ,   arr [ 1 ]   )   ) ;
-
-
-    // Initialize an empty string that will be built up in the loop.
-    let   str   =   ''   ;
-
-    // Loop 'maximum + 1' times.
-    // The loop iterates from i = 0 up to and including 'maximum'.
-    for   (   let   i   =   0   ;   i   <   (   maximum   +   1   )   ;   i   ++   )
-    {
-        // Concatenate the string representation of 'minimum' to 'str'.
-        // String() ensures the value is treated as a string before concatenation.
-        str   +=   String (   minimum   )   ;
-    }
-
-    // Output the final concatenated string to the standard console.
-    console . log (   str   )   ;
-}   // End of the main function definition.
-
-
-// This section handles reading input and calling the main function.
-// It uses Node.js's 'fs' (file system) module to read from standard input.
-// readFileSync is a synchronous operation.
-// "/dev/stdin" is the common path for standard input on Unix-like systems.
-// "utf8" specifies the character encoding.
-main (   require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" )   )   ;
+// 読み取り ここで保つ 最終の局所的な判断 入力と共に短く.

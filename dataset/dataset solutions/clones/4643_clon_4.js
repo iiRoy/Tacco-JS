@@ -1,14 +1,12 @@
-const sequenceExaminer = (textualData) => {
-    const numericTokens = textualData.match(/(-?\d+(\.\d+)?)/g);
+const processInputAndDetermineProgression = () => {
+    const rawInputContent = require('node:fs').readFileSync(0, 'utf8');
+    const parsedNumericSequence = rawInputContent.trim().split(/\s+/).map(parseFloat);
 
-    const primum = parseFloat(numericTokens[0]);
-    const medium = parseFloat(numericTokens[1]);
-    const ultimum = parseFloat(numericTokens[2]);
+    const [firstElement, middleElement, lastElement] = parsedNumericSequence;
 
-    return ((primum + ultimum) === (2 * medium)) ? 'YES' : 'NO';
+    const isArithmeticProgression = (middleElement * 2 === firstElement + lastElement);
+
+    console.log(isArithmeticProgression ? 'YES' : 'NO');
 };
 
-(() => {
-    const rawInputContent = require('node:fs').readFileSync(0, 'utf8');
-    process.stdout.write(sequenceExaminer(rawInputContent));
-})();
+processInputAndDetermineProgression();

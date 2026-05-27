@@ -1,220 +1,176 @@
-const programConfig = { dataPath: 'tmp', lineBreak: '\r\n' };
-//const programConfig = { dataPath: '/dev/stdin', lineBreak: '\n' };
-
-const verifier = (condition, message = 'Assertion Failed') => {
-  if (!condition) {
-    throw new Error(message);
-  }
-};
-
-const rawInputData = require('fs').readFileSync(programConfig.dataPath, 'ascii');
-const inputSegments = rawInputData.trim().split(programConfig.lineBreak);
-const nodeCount = Number(inputSegments.shift());
-
-const forwardGraph = Array.from({ length: nodeCount }, () => []);
-const backwardGraph = Array.from({ length: nodeCount }, () => []);
-
-const linkNodes = (graphCollection, origin, destination, weight) => {
-  graphCollection[origin].push({ destination, weight });
-};
-
-for (let currentLine of inputSegments) {
-  const numericalParts = currentLine.split(' ').map(Number);
-  const mainNode = numericalParts[0];
-  for (let k = 2; k < numericalParts.length; k += 2) {
-    linkNodes(forwardGraph, mainNode, numericalParts[k], numericalParts[k + 1]);
-    linkNodes(backwardGraph, numericalParts[k], mainNode, numericalParts[k + 1]);
-  }
-}
-
-verifier(forwardGraph.length > 0, 'Forward graph not populated.');
-verifier(backwardGraph.length > 0, 'Backward graph not populated.');
-
 class MinPriorityQueue {
-  constructor() {
-    this.elements = [];
-  }
-
-  enqueue(item, priority) {
-    this.elements.push({ item, priority });
-    this.bubbleUp();
-  }
-
-  dequeue() {
-    if (this.isEmpty()) return null;
-    const min = this.elements[0];
-    const last = this.elements.pop();
-    if (!this.isEmpty()) {
-      this.elements[0] = last;
-      this.bubbleDown();
+    constructor() {
+        this.heap = [];
     }
-    return min;
-  }
 
-  isEmpty() {
-    return this.elements.length === 0;
-  }
-
-  bubbleUp() {
-    let index = this.elements.length - 1;
-    while (index > 0) {
-      const parentIndex = Math.floor((index - 1) / 2);
-      if (this.elements[parentIndex].priority > this.elements[index].priority) {
-        [this.elements[parentIndex], this.elements[index]] = [this.elements[index], this.elements[parentIndex]];
-        index = parentIndex;
-      } else {
-        break;
-      }
+    push(item, priority) {
+        this.heap.push({ item, priority });
+        this._bubbleUp(this.heap.length - 1);
     }
-  }
 
-  bubbleDown() {
-    let index = 0;
-    const lastIndex = this.elements.length - 1;
-    while (true) {
-      const leftChildIndex = 2 * index + 1;
-      const rightChildIndex = 2 * index + 2;
-      let smallestIndex = index;
-
-      if (leftChildIndex <= lastIndex && this.elements[leftChildIndex].priority < this.elements[smallestIndex].priority) {
-        smallestIndex = leftChildIndex;
-      }
-
-      if (rightChildIndex <= lastIndex && this.elements[rightChildIndex].priority < this.elements[smallestIndex].priority) {
-        smallestIndex = rightChildIndex;
-      }
-
-      if (smallestIndex !== index) {
-        [this.elements[index], this.elements[smallestIndex]] = [this.elements[smallestIndex], this.elements[index]];
-        index = smallestIndex;
-      } else {
-        break;
-      }
+    pop() {
+        if (this.isEmpty()) return null;
+        const min = this.heap[0];
+        const last = this.heap.pop();
+        if (!this.isEmpty()) {
+            this.heap[0] = last;
+            this._sinkDown(0);
+        }
+        return min.item;
     }
-  }
+
+    isEmpty() {
+        return this.heap.length === 0;
+    }
+
+    _bubbleUp(idx) {
+        while (idx > 0) {
+            const parentIdx = Math.floor((idx - 1) / 2);
+            if (this.heap[parentIdx].priority > this.heap[idx].priority) {
+                [this.heap[parentIdx], this.heap[idx]] = [this.heap[idx], this.heap[parentIdx]];
+                idx = parentIdx;
+            } else {
+                break;
+            }
+        }
+    }
+
+    _sinkDown(idx) {
+        const lastIdx = this.heap.length - 1;
+        while (true) {
+            const leftChildIdx = 2 * idx + 1;
+            const rightChildIdx = 2 * idx + 2;
+            let smallestIdx = idx;
+
+            if (leftChildIdx <= lastIdx && this.heap[leftChildIdx].priority < this.heap[smallestIdx].priority) {
+                smallestIdx = leftChildIdx;
+            }
+            if (rightChildIdx <= lastIdx && this.heap[rightChildIdx].priority < this.heap[smallestIdx].priority) {
+                smallestIdx = rightChildIdx;
+            }
+
+            if (smallestIdx !== idx) {
+                [this.heap[idx], this.heap[smallestIdx]] = [this.heap[smallestIdx], this.heap[idx]];
+                idx = smallestIdx;
+            } else {
+                break;
+            }
+        }
+    }
 }
 
-const shortestPathWeights = new Array(nodeCount).fill(Number.MAX_VALUE);
-const startingPoint = 0; 
-shortestPathWeights[startingPoint] = 0;
-
-const pathQueue = new MinPriorityQueue();
-pathQueue.enqueue(startingPoint, 0);
-
-while (!pathQueue.isEmpty()) {
-  const { item: currentNodeId, priority: currentDistanceDequeued } = pathQueue.dequeue(); 
-
-  if (currentDistanceDequeued > shortestPathWeights[currentNodeId]) {
-    continue;
-  }
-  
-  for (const connection of forwardGraph[currentNodeId]) {
-    const candidatePathValue = currentDistanceDequeued + connection.weight;
-    if (candidatePathValue < shortestPathWeights[connection.destination]) {
-      shortestPathWeights[connection.destination] = candidatePathValue;
-      pathQueue.enqueue(connection.destination, candidatePathValue);
+function findPathMinContribution(currentNode, targetNodeU, currentPathCostFromV, visitedSet, distanceValues, bfsNodeRankMap, inverseAdjacencyMap, currentMinOverall) {
+    if (currentPathCostFromV >= currentMinOverall) {
+        return currentMinOverall;
     }
-  }
+
+    if (bfsNodeRankMap.get(currentNode) < bfsNodeRankMap.get(targetNodeU)) {
+        return Math.min(currentMinOverall, currentPathCostFromV + distanceValues[currentNode]);
+    }
+
+    visitedSet.add(currentNode);
+    let localMinResult = currentMinOverall;
+
+    const neighbors = inverseAdjacencyMap.get(currentNode);
+    if (neighbors) {
+        for (const [neighborNode, edgeWeight] of neighbors.entries()) {
+            if (!visitedSet.has(neighborNode)) {
+                const newPathCost = currentPathCostFromV + edgeWeight;
+                localMinResult = findPathMinContribution(neighborNode, targetNodeU, newPathCost, visitedSet, distanceValues, bfsNodeRankMap, inverseAdjacencyMap, localMinResult);
+            }
+        }
+    }
+    visitedSet.delete(currentNode);
+
+    return localMinResult;
 }
 
-verifier(shortestPathWeights.some(val => val !== Number.MAX_VALUE), 'Shortest path weights not calculated.');
+config = { input: 'tmp', newline: '\r\n' };
+assert = require('assert');
+fs = require('fs');
 
-const sortedNodeIdentifiers = Array.from({ length: nodeCount }, (_, i) => i);
-sortedNodeIdentifiers.sort((a, b) => shortestPathWeights[a] - shortestPathWeights[b]);
+const inputLines = fs.readFileSync(config.input, 'ascii')
+  .trim()
+  .split(config.newline);
 
-const identifierOrderMap = new Array(nodeCount);
-for (let i = 0; i < nodeCount; i++) {
-  identifierOrderMap[sortedNodeIdentifiers[i]] = i;
+const nodeCount = Number(inputLines.shift());
+
+const adjacencyMap = new Map();
+const inverseAdjacencyMap = new Map();
+
+inputLines.forEach(lineData => {
+    const numericData = lineData.split(' ').map(Number);
+    const sourceNode = numericData[0];
+    for (let k = 2; k < numericData.length; k += 2) {
+        const targetNode = numericData[k];
+        const edgeWeight = numericData[k + 1];
+
+        if (!adjacencyMap.has(sourceNode)) adjacencyMap.set(sourceNode, new Map());
+        adjacencyMap.get(sourceNode).set(targetNode, edgeWeight);
+
+        if (!inverseAdjacencyMap.has(targetNode)) inverseAdjacencyMap.set(targetNode, new Map());
+        inverseAdjacencyMap.get(targetNode).set(sourceNode, edgeWeight);
+    }
+});
+
+assert(adjacencyMap.size > 0 || nodeCount === 0);
+assert(inverseAdjacencyMap.size > 0 || nodeCount === 0);
+
+const shortestPathCosts = new Array(nodeCount).fill(Number.MAX_VALUE);
+shortestPathCosts[0] = 0;
+
+const priorityQueue = new MinPriorityQueue();
+priorityQueue.push(0, 0);
+
+while (!priorityQueue.isEmpty()) {
+    const currentNode = priorityQueue.pop();
+    const currentCost = shortestPathCosts[currentNode];
+
+    const neighbors = adjacencyMap.get(currentNode);
+    if (neighbors) {
+        for (const [neighborNode, edgeWeight] of neighbors.entries()) {
+            const newCost = currentCost + edgeWeight;
+            if (newCost < shortestPathCosts[neighborNode]) {
+                shortestPathCosts[neighborNode] = newCost;
+                priorityQueue.push(neighborNode, newCost);
+            }
+        }
+    }
 }
 
-verifier(sortedNodeIdentifiers.length > 0, 'Sorted node identifiers not created.');
-verifier(identifierOrderMap.length > 0, 'Identifier order map not created.');
+assert(shortestPathCosts.length === nodeCount);
 
-const recursivePathTraversal = (
-  explorationNode,        
-  primaryTargetNode,      
-  pathAccumulatedWeight,  
-  costLimit,              
-  nodesInCurrentPath      
-) => {
-  if (identifierOrderMap[explorationNode] < identifierOrderMap[primaryTargetNode]) {
-    return shortestPathWeights[explorationNode] + pathAccumulatedWeight;
-  }
+const sortedNodesByCost = Array.from({ length: nodeCount }, (_, i) => i);
+sortedNodesByCost.sort((nodeA, nodeB) => shortestPathCosts[nodeA] - shortestPathCosts[nodeB]);
 
-  if (pathAccumulatedWeight >= costLimit) {
-    return Number.MAX_VALUE;
-  }
+const bfsNodeRankMap = new Map();
+sortedNodesByCost.forEach((node, index) => bfsNodeRankMap.set(node, index));
 
-  nodesInCurrentPath.add(explorationNode); 
+assert(sortedNodesByCost.length === nodeCount);
+assert(bfsNodeRankMap.size === nodeCount);
 
-  let minimalPathSegment = Number.MAX_VALUE;
-
-  for (const inboundConnection of backwardGraph[explorationNode]) {
-    const previousNode = inboundConnection.destination;
-    const connectionCost = inboundConnection.weight;
-
-    if (nodesInCurrentPath.has(previousNode)) {
-      continue; 
+sortedNodesByCost.forEach(currentNodeU => {
+    const incomingEdges = inverseAdjacencyMap.get(currentNodeU);
+    if (incomingEdges) {
+        for (const [prevNodeV, edgeWeight] of incomingEdges.entries()) {
+            if (bfsNodeRankMap.get(prevNodeV) < bfsNodeRankMap.get(currentNodeU)) {
+                shortestPathCosts[currentNodeU] = Math.min(shortestPathCosts[currentNodeU], shortestPathCosts[prevNodeV] + edgeWeight);
+            }
+        }
     }
 
-    const potentialPathValue = recursivePathTraversal(
-      previousNode,
-      primaryTargetNode,
-      pathAccumulatedWeight + connectionCost,
-      costLimit,
-      nodesInCurrentPath
-    );
-    minimalPathSegment = Math.min(minimalPathSegment, potentialPathValue);
-  }
-
-  nodesInCurrentPath.delete(explorationNode); 
-  return minimalPathSegment;
-};
-
-
-for (let nodeIndex = 0; nodeIndex < nodeCount; nodeIndex++) {
-  const currentFocalNode = sortedNodeIdentifiers[nodeIndex];
-
-  for (const inboundConnection of backwardGraph[currentFocalNode]) {
-    const predecessor = inboundConnection.destination;
-    const edgeWeight = inboundConnection.weight;
-    if (identifierOrderMap[predecessor] < identifierOrderMap[currentFocalNode]) {
-      shortestPathWeights[currentFocalNode] = Math.min(
-        shortestPathWeights[currentFocalNode],
-        shortestPathWeights[predecessor] + edgeWeight
-      );
+    if (incomingEdges) {
+        for (const [prevNodeV, edgeWeight] of incomingEdges.entries()) {
+            if (bfsNodeRankMap.get(prevNodeV) > bfsNodeRankMap.get(currentNodeU)) {
+                const initialMinResult = shortestPathCosts[currentNodeU] - adjacencyMap.get(prevNodeV).get(currentNodeU);
+                const initialVisitedNodes = new Set([currentNodeU, prevNodeV]);
+                const pathContribution = findPathMinContribution(prevNodeV, currentNodeU, 0, initialVisitedNodes, shortestPathCosts, bfsNodeRankMap, inverseAdjacencyMap, initialMinResult);
+                shortestPathCosts[currentNodeU] = pathContribution + adjacencyMap.get(prevNodeV).get(currentNodeU);
+            }
+        }
     }
-  }
-
-  for (const inboundConnection of backwardGraph[currentFocalNode]) {
-    const predecessorNode = inboundConnection.destination;
-    const edgeWeightToFocal = inboundConnection.weight;
-
-    if (identifierOrderMap[predecessorNode] > identifierOrderMap[currentFocalNode]) {
-      const pathSearchLimit = shortestPathWeights[currentFocalNode] - edgeWeightToFocal;
-      
-      const visitedForThisSearch = new Set();
-      visitedForThisSearch.add(currentFocalNode);
-      visitedForThisSearch.add(predecessorNode);
-
-      const alternativePathResult = recursivePathTraversal(
-        predecessorNode,
-        currentFocalNode,
-        0, 
-        pathSearchLimit,
-        visitedForThisSearch
-      );
-
-      if (alternativePathResult !== Number.MAX_VALUE) {
-        shortestPathWeights[currentFocalNode] = Math.min(
-          shortestPathWeights[currentFocalNode],
-          alternativePathResult + edgeWeightToFocal 
-        );
-      }
-    }
-  }
-}
+});
 
 for (let i = 0; i < nodeCount; i++) {
-  console.log(i + ' ' + shortestPathWeights[i]);
+    console.log(i + ' ' + shortestPathCosts[i]);
 }

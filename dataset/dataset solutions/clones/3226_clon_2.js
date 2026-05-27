@@ -1,40 +1,33 @@
-// This function processes raw string data to compute a specific sum.
 function processInput(rawData) {
-  // Split the entire input string into an array of individual lines.
-  const lines = rawData.split('\n');
+  // Split the raw input string into individual lines
+  let lineSegments = rawData.split('\n');
 
-  // Extract the number of segments from the first line.
-  // The first number in the first line determines how many segments are considered.
-  const numSegments = lines[0]
-                         .split(" ")
-                         .map(Number)[0];
+  // Extract the number of pieces from the first line
+  // Convert the first element of the split string to a number
+  let numPieces = lineSegments[0].split(" ").map(Number)[0];
 
-  // Parse the coordinate points from the second line, clean whitespace, convert to numbers, and sort them.
-  const pointLocations = lines[1]
-                           .trim()
-                           .split(" ")
-                           .map(Number)
-                           .sort((valA, valB) => valA - valB);
+  // Process the second line: trim whitespace, split by space, convert to numbers, and sort ascending
+  let pointPositions = lineSegments[1].trim().split(" ").map(Number).sort((a, b) => a - b);
 
-  // Initialize an array to store the distances or 'gaps' between consecutive points.
-  let gaps = [];
+  // Initialize an array to store differences between consecutive positions
+  let diffs = [];
 
-  // Iterate through the sorted point locations to calculate the distances between adjacent points.
-  pointLocations.forEach((currentPoint, idx) => {
-    if (idx > 0) { // Ensure we are not at the very first point, as there's no preceding point.
-      gaps.push(currentPoint - pointLocations[idx - 1]); // Add the difference to the gaps array.
+  // Iterate through the sorted point positions to calculate differences
+  pointPositions.forEach((currentPos, idx) => {
+    // For all elements except the first, calculate the difference with the previous element
+    if (idx > 0) {
+      diffs.push(currentPos - pointPositions[idx - 1]);
     }
   });
 
-  // Sort the calculated gaps in ascending order.
-  // Then, select a specific subset of these gaps: all but the 'numSegments - 1' largest gaps.
-  // This effectively removes the 'numSegments - 1' largest gaps, keeping the smallest ones.
-  gaps = gaps.sort((valA, valB) => valA - valB)
-             .slice(0, gaps.length - numSegments + 1);
+  // Sort the differences in ascending order
+  // Then, slice the array to keep only the smallest differences,
+  // excluding the largest (numPieces - 1) differences.
+  diffs = diffs.sort((a, b) => a - b).slice(0, diffs.length - numPieces + 1);
 
-  // Calculate the total sum of the remaining (smallest) gaps and print it to the console.
-  console.log(gaps.reduce((accumulator, currentValue) => accumulator + currentValue, 0));
+  // Calculate the sum of the remaining differences and print it to the console
+  console.log(diffs.reduce((accumulator, currentVal) => accumulator + currentVal, 0));
 }
 
-// Read the input from standard input and pass it to the main processing function.
+// Read input from standard input and pass it to the processing function
 processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,95 +1,107 @@
-/*
- * Program developed by an anonymous author.
- * Date of creation: 2013-10-06.
- */
+var fileSystemModule = require('fs'); // Import the Node.js file system module for file operations.
 
-// Acquire the necessary module for file system operations.
-var diskOps = require('fs'),
-    // Determine the total size of data from standard input.
-    dataLength = diskOps.fstatSync(process.stdin.fd).size,
-    // Allocate a memory block to store the input bytes.
-    rawBytes = new Buffer(dataLength),
-    // Read the actual data from standard input into the buffer.
-    numBytesAcquired = diskOps.readSync(process.stdin.fd, rawBytes, 0, dataLength, 0),
-    // Convert the raw bytes to a UTF-8 string and split it into individual lines.
-    sourceInput = rawBytes.toString('utf8', 0, numBytesAcquired).split('\n');
+// Determine the total byte length of the standard input stream.
+var dataLength = fileSystemModule.fstatSync(process.stdin.fd).size;
 
-// Initiate the primary execution sequence.
-primaryRoutine();
+// Create a new Buffer object to store the incoming data.
+var inputBuffer = new Buffer(dataLength);
+
+// Read the entire content from standard input into the allocated buffer.
+var actualBytesRead = fileSystemModule.readSync(process.stdin.fd, inputBuffer, 0, dataLength, 0);
+
+// Convert the buffer's content to a UTF-8 string and then split it into an array of lines.
+var processedInputLines = inputBuffer.toString('utf8', 0, actualBytesRead).split('\n');
+
+// Initiate the main execution sequence of the program.
+executeProgram();
 
 /**
- * Generates a string by repeating a specified character a given number of times.
- * @param {number} repetitions - The total number of times the character should be repeated.
- * @param {string} symbol - The character to be repeated.
- * @returns {string} The resulting string sequence.
+ * Generates a string by repeating a given character a specified number of times.
+ *
+ * @param {number} count The total number of times the character should be repeated.
+ * @param {string} character The single character to be repeated.
+ * @returns {string} A new string composed of the repeated character.
  */
-function generateSequence(repetitions, symbol) {
-  var loopCounter; // Loop control variable.
-  var outputSequence = ''; // Accumulator for the resulting string.
+function generateCharSequence(count, character) {
+  var loopIndex; // Iterator for the repetition loop.
+  var resultString = ''; // Accumulator for the generated sequence.
 
-  for (loopCounter = repetitions; loopCounter > 0; loopCounter--) {
-    outputSequence += symbol; // Append the character in each iteration.
+  // Loop downwards from 'count' to 1, appending the character in each iteration.
+  for (loopIndex = count; loopIndex > 0; loopIndex--) {
+    resultString += character;
   }
-
-  return outputSequence; // Return the final generated sequence.
+  return resultString; // Return the final concatenated string.
 }
 
 /**
- * This is the core function of the application, responsible for processing
- * the input and generating the Brainfuck-like output.
+ * This is the primary function that orchestrates the logic to convert an input string
+ * into a Brainfuck-like sequence of commands.
  */
-function primaryRoutine() {
-  // Extract the first line of the source input.
-  var sourceText = sourceInput[0],
-      // Obtain the total character count of the input string.
-      totalChars = sourceText.length,
-      // Initialize the Brainfuck output string with a predefined preamble.
-      bfCode = '>++++++[<+++++>-]<[>+>+>+>++>++>++>+++>+++>+++>++++<<<<<<<<<<-]>',
-      // Declare variables for loop indexing, value differences, and temporary characters.
-      charIndex, loopCounterJ, valueDifference, tempSquare, anotherTempSquare,
-      // Variable to hold either '+' or '-' for BF operations.
-      signSymbol = '',
-      // Array storing the last known ASCII values for each Brainfuck cell.
-      lastKnownValues = [30, 30, 30, 60, 60, 60, 90, 90, 90, 120],
-      // Current active Brainfuck cell pointer position.
-      headPosition = 0,
-      // The target Brainfuck cell pointer position.
-      destinationPosition,
-      // An arbitrary constant, not actively used in the main loop logic.
-      ARBITRARY_CONSTANT = 9,
-      // Variable to store the ASCII code of the current character.
-      glyphCode;
+function executeProgram() {
+  // Extract the first line from the processed input array.
+  var targetString = processedInputLines[0];
 
-  // Iterate through each character of the input string.
-  for (charIndex = 0; charIndex < totalChars; charIndex++) {
-    glyphCode = sourceText.charCodeAt(charIndex); // Retrieve the ASCII value of the current character.
-    // Calculate the target cell index based on the character's ASCII value.
-    destinationPosition = Math.floor((glyphCode - 33) / 11);
+  // Get the character length of the target string.
+  var stringLength = targetString.length;
 
-    // console.log("Current character code:", glyphCode, "Target cell:", destinationPosition); // Debugging output, currently commented.
+  // Initialize the Brainfuck output string with a predefined setup sequence.
+  var brainfuckOutput = '>++++++[<+++++>-]<[>+>+>+>++>++>++>+++>+++>+++>++++<<<<<<<<<<-]>';
 
-    // Append commands to move the Brainfuck pointer to the target cell.
-    bfCode += generateSequence(Math.abs(headPosition - destinationPosition), headPosition < destinationPosition ? '>' : '<');
+  // Declare several variables that will be used within the main processing loop.
+  var charIndex, loopCounterJ, differenceValue, squareVal, squareVal2;
 
-    // Determine the difference between the current character's code and the stored cell value.
-    valueDifference = glyphCode - lastKnownValues[destinationPosition];
-    // Set the operator symbol based on whether the difference is positive or negative.
-    signSymbol = valueDifference > 0 ? '+' : '-';
-    // Use the absolute value of the difference for character repetition.
-    valueDifference = Math.abs(valueDifference);
+  // Variable to hold either a '+' or '-' character for cell value adjustments.
+  var plusMinusChar = '';
 
-    // console.log("Cell values:", lastKnownValues, "Value difference:", valueDifference, "Target cell:", destinationPosition); // Another debugging line.
+  // An array storing the last processed character code for each of the 10 pointer positions.
+  var previousValuesArray = [30, 30, 30, 60, 60, 60, 90, 90, 90, 120];
 
-    // Append commands to adjust the value of the target Brainfuck cell.
-    bfCode += generateSequence(valueDifference, signSymbol);
-    // Update the last known value for the current target cell.
-    lastKnownValues[destinationPosition] = glyphCode;
-    // Append the Brainfuck output command ('.').
-    bfCode += '.';
-    // Update the current head position to the target cell.
-    headPosition = destinationPosition;
+  // Represents the current active pointer position in the conceptual Brainfuck memory.
+  var currentPointerPosition = 0;
+
+  // Will store the calculated next pointer position for the current character.
+  var nextPointerPosition;
+
+  // A constant value, declared but not utilized in the original algorithm's executable logic.
+  var constantN = 9;
+
+  // Variable to store the ASCII character code of the current character being processed.
+  var currentCharCode;
+
+  // Iterate through each character of the input string to generate corresponding Brainfuck commands.
+  for (charIndex = 0; charIndex < stringLength; charIndex++) {
+    // Obtain the ASCII (Unicode) value of the character at the current index.
+    currentCharCode = targetString.charCodeAt(charIndex);
+
+    // Calculate the target pointer position based on the character code.
+    // The `~~` operator performs a bitwise NOT twice, effectively truncating to an integer (Math.floor).
+    nextPointerPosition = ~~((currentCharCode - 33) / 11);
+
+    // Append Brainfuck pointer movement commands ('>' or '<') to reach the `nextPointerPosition`.
+    brainfuckOutput += generateCharSequence(Math.abs(currentPointerPosition - nextPointerPosition), currentPointerPosition < nextPointerPosition ? '>' : '<');
+
+    // Calculate the numerical difference between the current character's code and its previously stored value.
+    differenceValue = currentCharCode - previousValuesArray[nextPointerPosition];
+
+    // Determine whether to use '+' (increment) or '-' (decrement) based on the difference.
+    plusMinusChar = differenceValue > 0 ? '+' : '-';
+
+    // Take the absolute value of the difference, as `generateCharSequence` expects a positive count.
+    differenceValue = Math.abs(differenceValue);
+
+    // Append Brainfuck cell value adjustment commands ('+' or '-') based on the calculated difference.
+    brainfuckOutput += generateCharSequence(differenceValue, plusMinusChar);
+
+    // Update the `previousValuesArray` with the current character's code for the `nextPointerPosition`.
+    previousValuesArray[nextPointerPosition] = currentCharCode;
+
+    // Append the Brainfuck output command ('.') to print the current cell's value.
+    brainfuckOutput += '.';
+
+    // Update the `currentPointerPosition` to reflect the new position.
+    currentPointerPosition = nextPointerPosition;
   }
 
-  // Print the final generated Brainfuck code to the console.
-  console.log(bfCode);
+  // Output the final generated Brainfuck command sequence to the console.
+  console.log(brainfuckOutput);
 }

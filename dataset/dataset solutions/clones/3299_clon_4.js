@@ -1,37 +1,50 @@
-let dataBuffer = '';
+function calculateOptimalPainting(rawInputLines) {
+  const houseQuantityString = rawInputLines[0];
+  const houseQuantityValue = parseInt(houseQuantityString, 10);
 
-global.process.stdin.resume();
-global.process.stdin.setEncoding('utf8');
+  try {
+    new Array(houseQuantityValue);
+  } catch (error) {
+    if (error instanceof RangeError) {
+      throw error;
+    }
+    throw error;
+  }
 
-global.process.stdin.on('data', (incomingData) => {
-  dataBuffer += incomingData;
-});
+  if (houseQuantityValue === 0) {
+    console.log(NaN);
+    return;
+  }
 
-global.process.stdin.on('end', () => {
-  const parsedData = dataBuffer.split('\n').filter(Boolean);
-  evaluateProfit(parsedData);
-});
+  const houseColorPriceData = rawInputLines
+    .slice(1, houseQuantityValue + 1)
+    .map(line => line.split(' ').map(Number));
 
-function evaluateProfit(rawLines) {
-    const totalItems = Number(rawLines[0]);
-    const initialItemValues = rawLines[1].split(' ').map(Number);
+  const initialHouseCostSet = houseColorPriceData[0];
 
-    const remainingItemLines = rawLines.slice(2, totalItems + 1);
+  const finalHouseMaxCostsByColor = houseColorPriceData.slice(1).reduce((previousMaxCosts, currentHousePrices) => {
+    const [prevMaxRed, prevMaxGreen, prevMaxBlue] = previousMaxCosts;
+    const [currentRedPrice, currentGreenPrice, currentBluePrice] = currentHousePrices;
 
-    const finalItemScores = remainingItemLines.reduce((priorItemScores, currentItemLine) => {
-        const currentItemPrices = currentItemLine.split(' ').map(Number);
-        const nextItemScores = new Array(3);
+    const nextMaxRed = currentRedPrice + Math.max(prevMaxGreen, prevMaxBlue);
+    const nextMaxGreen = currentGreenPrice + Math.max(prevMaxRed, prevMaxBlue);
+    const nextMaxBlue = currentBluePrice + Math.max(prevMaxRed, prevMaxGreen);
 
-        for (let hueIdentifier = 0; hueIdentifier < 3; hueIdentifier++) {
-            const alternativeHueA = (hueIdentifier + 1) % 3;
-            const alternativeHueB = (hueIdentifier + 2) % 3;
-            
-            const bestPriorScore = Math.max(priorItemScores[alternativeHueA], priorItemScores[alternativeHueB]);
-            
-            nextItemScores[hueIdentifier] = currentItemPrices[hueIdentifier] + bestPriorScore;
-        }
-        return nextItemScores;
-    }, initialItemValues);
+    return [nextMaxRed, nextMaxGreen, nextMaxBlue];
+  }, initialHouseCostSet);
 
-    console.log(Math.max(...finalItemScores));
+  console.log(Math.max(...finalHouseMaxCostsByColor));
 }
+
+
+let accumulatedInput = '';
+
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
+process.stdin.on('data', function(chunk) {
+  accumulatedInput += chunk;
+});
+process.stdin.on('end', function() {
+  const processedInputLines = accumulatedInput.split('\n');
+  calculateOptimalPainting(processedInputLines);
+});

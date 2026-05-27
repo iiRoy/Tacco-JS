@@ -1,227 +1,111 @@
-const InputProcessorFactory = (function () {
-  /**
-   * Creates an instance of a TextDataReader to process raw input.
-   * @param {string} rawInputText The entire input content as a single string.
-   * @returns {TextDataReader} An object capable of reading various data types from the input.
-   */
-  function createInputReader(rawInputText) {
-    return new TextDataReader(rawInputText);
-  }
+const InputReaderFactory = (() => {
+    class InputReader {
+        constructor(sourceText) {
+            this._sourceLines = sourceText.trim().split("\n");
+            this._currentLineIndex = 0;
+        }
 
-  /**
-   * @class TextDataReader
-   * @description A utility class for parsing line-based and space-separated data.
-   */
-  class TextDataReader {
-    /**
-     * Initializes the data reader with the raw input string.
-     * @param {string} rawInputText The complete input content.
-     */
-    constructor(rawInputText) {
-      // Clean and split the input into individual lines.
-      this.lineSegments = rawInputText.trim().split("\n");
-      // Initialize a pointer to the current line being read.
-      this.currentReadPointer = 0;
+        readAtom(asStringFlag) {
+            let currentLineContent = this._sourceLines[this._currentLineIndex];
+            if (typeof currentLineContent === "string") {
+                this._sourceLines[this._currentLineIndex] = currentLineContent.split(" ").reverse();
+                currentLineContent = this._sourceLines[this._currentLineIndex];
+            }
+
+            const extractedToken = currentLineContent.pop();
+
+            if (!currentLineContent.length) {
+                this._currentLineIndex++;
+            }
+            return asStringFlag ? extractedToken : +extractedToken;
+        }
+
+        readLine(asStringFlag) {
+            const lineTokens = this._sourceLines[this._currentLineIndex++].split(" ");
+            return asStringFlag ? lineTokens : lineTokens.map(token => +token);
+        }
+
+        readMatrix(numRows, asStringFlag) {
+            const matrixRows = this._sourceLines.slice(this._currentLineIndex, this._currentLineIndex + numRows)
+                                                .map(line => line.split(" "));
+            this._currentLineIndex += numRows;
+            return asStringFlag ? matrixRows : matrixRows.map(row => row.map(token => +token));
+        }
+
+        readRows(numRows, asStringFlag) {
+            const rawRows = this._sourceLines.slice(this._currentLineIndex, this._currentLineIndex + numRows);
+            this._currentLineIndex += numRows;
+            return asStringFlag ? rawRows : rawRows.map(token => +token);
+        }
     }
 
-    /**
-     * Extracts a single numeric item from the current line.
-     * It reads items from right to left on a line.
-     * Advances the line pointer if the current line becomes empty after extraction.
-     * @param {boolean} [returnStringFormat=false] If true, returns the value as a string; otherwise, as a number.
-     * @returns {(string|number)} The extracted item.
-     */
-    extractNextInteger(returnStringFormat = false) {
-      const currentSegments = this.lineSegments;
-      const currentIdx = this.currentReadPointer;
-
-      // Guard against reading beyond available lines.
-      if (currentIdx >= currentSegments.length) {
-        throw new Error("Attempted to read past end of input data.");
-      }
-
-      // If the current line hasn't been split into items yet, split it and reverse for right-to-left popping.
-      if (typeof currentSegments[currentIdx] === "string") {
-        currentSegments[currentIdx] = currentSegments[currentIdx].split(" ").reverse();
-      }
-
-      // Pop the last item (which is the first item after reversing).
-      const extractedValue = currentSegments[currentIdx].pop();
-
-      // If the current line is now empty, advance to the next line.
-      if (!currentSegments[currentIdx] || currentSegments[currentIdx].length === 0) {
-        this.currentReadPointer++;
-      }
-
-      // Return as string or convert to number based on the flag.
-      return returnStringFormat ? extractedValue : Number(extractedValue);
-    }
-
-    /**
-     * Reads an entire line, splits it by spaces, and returns an array of items.
-     * Advances the line pointer after reading.
-     * @param {boolean} [returnStringFormat=false] If true, returns array of strings; otherwise, array of numbers.
-     * @returns {Array<(string|number)>} An array of items from the line.
-     */
-    readNextLineAsNumbers(returnStringFormat = false) {
-      const currentLineContent = this.lineSegments[this.currentReadPointer++];
-      // Guard against empty or undefined lines.
-      if (!currentLineContent) {
-        return [];
-      }
-      const splitItems = currentLineContent.split(" ");
-      return returnStringFormat ? splitItems : splitItems.map((item) => Number(item));
-    }
-
-    /**
-     * Reads 'numberOfLines' consecutive lines, splits each into items, and returns a 2D array (matrix).
-     * Advances the line pointer by 'numberOfLines'.
-     * @param {number} numberOfLines The number of lines to read for the matrix.
-     * @param {boolean} [returnStringFormat=false] If true, returns matrix of strings; otherwise, matrix of numbers.
-     * @returns {Array<Array<(string|number)>>} A 2D array representing the matrix.
-     */
-    fetchMatrixOfNumbers(numberOfLines, returnStringFormat = false) {
-      const startLine = this.currentReadPointer;
-      const endLine = startLine + numberOfLines;
-
-      // Slice the relevant lines and then update the pointer.
-      const rawMatrixLines = this.lineSegments.slice(startLine, endLine);
-      this.currentReadPointer = endLine;
-
-      const processedMatrix = rawMatrixLines.map((line) => line.split(" "));
-
-      return returnStringFormat
-        ? processedMatrix
-        : processedMatrix.map((row) => row.map((item) => Number(item)));
-    }
-
-    /**
-     * Reads 'numberOfLines' consecutive lines as raw strings.
-     * Advances the line pointer by 'numberOfLines'.
-     * @param {number} numberOfLines The number of lines to read.
-     * @param {boolean} [returnStringFormat=false] This parameter is ignored as raw lines are always strings.
-     * @returns {Array<string>} An array of raw line strings.
-     */
-    getRawLines(numberOfLines, returnStringFormat = false) {
-      const startLine = this.currentReadPointer;
-      const endLine = startLine + numberOfLines;
-
-      const rawLines = this.lineSegments.slice(startLine, endLine);
-      this.currentReadPointer = endLine;
-
-      return rawLines;
-    }
-  }
-
-  return createInputReader; // Expose the factory function.
+    return (source) => new InputReader(source);
 })();
 
-// Instantiate the input reader by reading from standard input.
-const dataReaderInstance = InputProcessorFactory(require("fs").readFileSync("/dev/stdin", "utf8"));
+const inputDataProcessor = InputReaderFactory(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-/**
- * Finds all divisors of a given number and returns them in descending order.
- * Uses a Set to handle duplicates efficiently.
- * @param {number} targetNumber The number for which to find divisors.
- * @returns {Array<number>} An array of divisors sorted in descending order.
- */
-function calculateDivisorsInDescendingOrder(targetNumber) {
-  // Guard against non-positive numbers if the context expects positive.
-  if (targetNumber <= 0) {
-    // For competitive programming, usually inputs are positive.
-    // If targetNumber can be 0 or negative, this logic needs adjustment.
-    return targetNumber === 0 ? [] : [-Math.abs(targetNumber)]; // Example: for -5, return [-5, -1]
-  }
+function createMultiDimArray(initialValue) {
+    const args = arguments;
+    let lengthIndex = args.length;
+    let arrayCreationString = `Array(args[${--lengthIndex}]).fill(0).map(x => { return ${initialValue}; })`;
 
-  const foundDivisors = new Set();
-  foundDivisors.add(1); // 1 is always a divisor.
-  foundDivisors.add(targetNumber); // The number itself is always a divisor.
-
-  const squareRootLimit = Math.sqrt(targetNumber);
-
-  // Iterate from 2 up to the square root of the target number.
-  for (let candidate = 2; candidate <= squareRootLimit; candidate++) {
-    if (targetNumber % candidate === 0) {
-      foundDivisors.add(candidate);
-      foundDivisors.add(targetNumber / candidate); // Add the complementary divisor.
+    while (--lengthIndex > 0) {
+        arrayCreationString = `Array(args[${lengthIndex}]).fill(0).map(x => ${arrayCreationString})`;
     }
-  }
-
-  // Convert the Set to an Array and sort in descending order.
-  const sortedDivisors = Array.from(foundDivisors).sort((valA, valB) => valB - valA);
-  return sortedDivisors;
+    return eval(arrayCreationString);
 }
 
-/**
- * Main function to solve the problem: find the largest divisor 'd'
- * such that the sum of remainders of elements in 'inputNumberArray' modulo 'd'
- * can be adjusted within a 'maxPermissibleCost' budget.
- * @returns {number} The optimal divisor or 1 if no other valid divisor is found.
- */
-function calculateOptimalDivisor() {
-  const totalElements = dataReaderInstance.extractNextInteger(); // Read N
-  const maxPermissibleCost = dataReaderInstance.extractNextInteger(); // Read K
-  const inputNumberArray = dataReaderInstance.readNextLineAsNumbers(); // Read array A
+console.log(solveProblem());
 
-  // Calculate the total sum of the input array elements.
-  const totalArraySum = inputNumberArray.reduce((accumulator, currentValue) => accumulator + currentValue, 0);
+function solveProblem() {
+    const arraySize = inputDataProcessor.readAtom();
+    const maxCost = inputDataProcessor.readAtom();
+    const inputArray = inputDataProcessor.readLine();
 
-  // Get all divisors of the total sum, sorted in descending order.
-  const potentialDivisors = calculateDivisorsInDescendingOrder(totalArraySum);
-
-  // Iterate through each potential divisor, starting from the largest.
-  for (let divisorIterator = 0; divisorIterator < potentialDivisors.length; divisorIterator++) {
-    const currentDivisor = potentialDivisors[divisorIterator];
-
-    // Calculate remainders for each element in the input array with the current divisor.
-    // Sort these remainders in ascending order.
-    const remainderValues = inputNumberArray
-      .map((value) => value % currentDivisor)
-      .sort((valA, valB) => valA - valB);
-
-    let currentRemainderSumForDivisor = 0; // Tracks the sum of remainders currently considered, adjusted by "payments".
-    let currentBudgetUsage = 0; // Tracks the sum of the smallest remainders (original 'mx' variable).
-    let rightmostPointer = totalElements; // Pointer for removing largest remainders (original 'y' variable, starts at N).
-
-    // Iterate through the sorted remainders from smallest to largest (left pointer).
-    for (let currentLeftPointer = 0; currentLeftPointer < totalElements; currentLeftPointer++) {
-      // Add the current smallest remainder to both sums.
-      currentRemainderSumForDivisor += remainderValues[currentLeftPointer];
-      currentBudgetUsage += remainderValues[currentLeftPointer];
-
-      // If the sum of the smallest remainders (budget usage) exceeds the limit,
-      // this divisor is not valid. Mark it and break from the inner loop.
-      if (currentBudgetUsage > maxPermissibleCost) {
-        currentBudgetUsage = Infinity; // Ensures this divisor fails the final check.
-        break;
-      }
-
-      // While the adjusted sum of remainders is positive, "pay" to make the largest available remainders multiples of the divisor.
-      // This reduces 'currentRemainderSumForDivisor' but does NOT add to 'currentBudgetUsage'.
-      // The condition `rightmostPointer > currentLeftPointer + 1` ensures that `remainderValues[rightmostPointer - 1]`
-      // is always a distinct element to the right of `remainderValues[currentLeftPointer]`.
-      while (currentRemainderSumForDivisor > 0 && rightmostPointer > currentLeftPointer + 1) {
-        rightmostPointer--; // Decrement the pointer to consider the next largest remainder.
-        // Calculate the "cost" to make this remainder a multiple of the divisor.
-        const adjustmentCost = currentDivisor - remainderValues[rightmostPointer];
-        currentRemainderSumForDivisor -= adjustmentCost; // Apply the adjustment to the sum.
-      }
+    let arraySum = 0;
+    for (const val of inputArray) {
+        arraySum += val;
     }
 
-    // After iterating through all elements (or breaking early),
-    // if the total budget usage (sum of smallest remainders) is within the limit,
-    // this currentDivisor is the largest valid one found so far.
-    if (currentBudgetUsage <= maxPermissibleCost) {
-      return currentDivisor; // Return this divisor as it's the largest valid one due to descending sort.
-    }
-  }
+    const divisorsOfSum = findDivisors(arraySum);
 
-  // If no suitable divisor is found, return 1 as a fallback.
-  return 1;
+    for (const currentDivisor of divisorsOfSum) {
+        const remainderArray = inputArray.map(element => element % currentDivisor).sort((valA, valB) => valA - valB);
+
+        let rightPointer = arraySize;
+        let currentWindowSum = 0;
+        let currentMaxCost = 0;
+
+        for (let leftPointer = 0; leftPointer < rightPointer && currentMaxCost <= maxCost; ++leftPointer) {
+            currentWindowSum += remainderArray[leftPointer];
+            currentMaxCost += remainderArray[leftPointer];
+
+            while (currentWindowSum > 0 && leftPointer < rightPointer) {
+                rightPointer--;
+                currentWindowSum -= (currentDivisor - remainderArray[rightPointer]);
+            }
+        }
+
+        if (currentMaxCost <= maxCost) {
+            return currentDivisor;
+        }
+    }
+    return 1;
 }
 
-// Execute the main logic and print the result.
-(function () {
-  const finalResult = calculateOptimalDivisor();
-  process.stdout.write(String(finalResult) + "\n");
-})();
+function findDivisors(targetNumber) {
+    const divisorList = [targetNumber];
+    const sqrtTarget = Math.sqrt(targetNumber);
+    const intSqrt = Math.floor(sqrtTarget);
+
+    if (intSqrt * intSqrt === targetNumber) {
+        divisorList.push(intSqrt);
+    }
+
+    for (let currentDivisorCandidate = 2; currentDivisorCandidate < sqrtTarget; ++currentDivisorCandidate) {
+        if (targetNumber % currentDivisorCandidate === 0) {
+            divisorList.push(currentDivisorCandidate, targetNumber / currentDivisorCandidate);
+        }
+    }
+    return divisorList.sort((valA, valB) => valB - valA);
+}

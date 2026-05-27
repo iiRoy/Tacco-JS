@@ -1,40 +1,19 @@
-'use strict'
+'use strict';
 
-// This function processes an input string to compute a specific value.
-function calculateResult(
-    inputString
-) {
+function processInputData(rawData) {
+  // First, remove any leading/trailing whitespace from the input string.
+  // Then, split the string into an array of substrings using space as a delimiter.
+  // Finally, convert each substring in the array to a numeric type.
+  let numericValues = rawData.trim().split(' ').map(strVal => strVal * 1);
 
-    // First, clean the input and convert it into an array of numbers.
-    // The original string is trimmed, split by spaces, and each part
-    // is explicitly converted to an integer.
-    const numericValues = inputString
-        .trim()
-        .split(' ')
-        .map(
-            item => parseInt(item, 10)
-        );
+  // Calculate the product of the first two numbers, divide by two,
+  // and then round the result up to the nearest whole number.
+  let finalOutcome = Math.ceil((numericValues[0] * numericValues[1]) / 2);
 
-    // Calculate the final outcome: multiply the first two numbers,
-    // divide by two, and then round up to the nearest whole number.
-    let finalOutcome = Math.ceil(
-            (
-                numericValues[0] * numericValues[1]
-            ) / 2
-        );
-
-    // Display the computed result to the standard output.
-    console.log(finalOutcome);
-
+  // Display the computed final outcome to the standard output.
+  console.log(finalOutcome);
 }
 
-
-// The program starts by reading input from standard input,
-// then passes it to the main processing function.
-calculateResult(
-    require('fs')
-        .readFileSync(
-            '/dev/stdin',
-            'utf8'
-        )
-);
+// Read the entire content from standard input synchronously,
+// using UTF-8 encoding, and pass it to the processing function.
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

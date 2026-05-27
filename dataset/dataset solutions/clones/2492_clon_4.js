@@ -1,24 +1,37 @@
-const { readFileSync: retrieveData } = require('node:fs');
+function readInput() { return require("fs").readFileSync("/dev/stdin", "utf8").trim(); }
+function printOutput(value) { console.log(value); }
 
-const presentOutput = (value) => process.stdout.write(String(value) + '\n');
-
-const acquireInput = () => retrieveData('/dev/stdin', 'utf8').trim();
-
-const computeProductSum = () => {
-  const initialLoad = acquireInput();
-  const dataLines = initialLoad.split('\n');
-
-  const elementCount = parseInt(dataLines[0], 10);
-  const numericSequence = dataLines[1].split(' ').map(Number);
-
-  const totalSum = numericSequence.reduce((accumulator, currentVal) => accumulator + currentVal, 0);
-  const sumOfSquares = numericSequence.reduce((accumulator, currentVal) => accumulator + (currentVal * currentVal), 0);
-
-  const squaredTotal = totalSum * totalSum;
-  const difference = squaredTotal - sumOfSquares;
-  const finalProductSum = difference / 2;
-
-  presentOutput(finalProductSum);
+const inputTransformers = {
+  0: (data) => data,
+  1: (data) => Number.parseInt(data),
+  2: (data) => data.split(" "),
+  3: (data) => data.split("\n"),
+  4: (data) => data.split(" ").map(Number),
+  5: (data) => data.split("\n").map(Number),
+  6: (data) => data.split(""),
+  7: (data) => data.split("").map(Number),
 };
 
-computeProductSum();
+function processInput(source, transformationType) {
+  return inputTransformers[transformationType](source);
+}
+
+function calculateAndDisplay(rawInput) {
+  const lines = processInput(rawInput, 3);
+  const elementCount = processInput(lines[0], 1);
+  const numberSequence = processInput(lines[1], 4);
+
+  const { cumulativeSum, sumOfSquares } = numberSequence.reduce(
+    (accumulator, currentValue) => ({
+      cumulativeSum: accumulator.cumulativeSum + currentValue,
+      sumOfSquares: accumulator.sumOfSquares + currentValue * currentValue,
+    }),
+    { cumulativeSum: 0, sumOfSquares: 0 }
+  );
+
+  const pairProductSum = (cumulativeSum * cumulativeSum - sumOfSquares) / 2;
+
+  printOutput(pairProductSum);
+}
+
+calculateAndDisplay(readInput());

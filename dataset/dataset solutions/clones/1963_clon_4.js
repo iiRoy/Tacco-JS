@@ -1,28 +1,15 @@
-const processDataStream = (dataPayload) => {
-    const lineBreakIndex = dataPayload.indexOf('\n');
+function processInputData(rawData) {
+    const contentLines = rawData.trim().split('\n');
 
-    const capacityString = dataPayload.substring(0, lineBreakIndex);
-    const initialCapacity = Number(capacityString.trim());
+    const nValue = Number.parseInt(contentLines[0], 10);
 
-    const consumptionString = dataPayload.substring(lineBreakIndex + 1);
+    const totalDays = contentLines[1]
+        .split(' ')
+        .map(Number.parseInt)
+        .reduce((sumAccumulator, currentDayValue) => sumAccumulator + currentDayValue, 0);
 
-    const consumptionValues = (consumptionString.match(/-?\d+/g) || []).map(val => Number(val));
+    const remainingBalance = nValue - totalDays;
+    console.log((remainingBalance < 0) ? -1 : remainingBalance);
+}
 
-    const totalConsumed = consumptionValues.reduce((currentSum, nextValue) => {
-        return currentSum + nextValue;
-    }, 0);
-
-    const remainingBalance = initialCapacity - totalConsumed;
-
-    const finalOutcome = remainingBalance < 0 ? -1 : remainingBalance;
-
-    console.log(finalOutcome);
-};
-
-const retrieveSystemInput = () => {
-    const fileSystemModule = require("fs");
-    const receivedContent = fileSystemModule.readFileSync("/dev/stdin", "utf8");
-    return receivedContent;
-};
-
-processDataStream(retrieveSystemInput());
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

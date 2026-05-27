@@ -1,74 +1,66 @@
-const fileSystemInterface = require("fs");
+const fileSystem = require('fs');
 
-const largePrimeDivisor = 1000000007;
+const MOD_CONSTANT = 1000000007;
 
-const singleBlockCoefficients = new Map([
-    [0, 3], 
-    [1, 2], 
-    [2, 1]  
+const PREVIOUS_OUTCOME_STATE = {
+    INITIAL: Symbol('INITIAL'),
+    LAST_MATCH: Symbol('LAST_MATCH'),
+    LAST_MISMATCH: Symbol('LAST_MISMATCH')
+};
+
+const FACTOR_MAP = new Map([
+    [true, new Map([
+        [PREVIOUS_OUTCOME_STATE.INITIAL, 3],
+        [PREVIOUS_OUTCOME_STATE.LAST_MATCH, 2],
+        [PREVIOUS_OUTCOME_STATE.LAST_MISMATCH, 1]
+    ])],
+    [false, new Map([
+        [PREVIOUS_OUTCOME_STATE.INITIAL, 6],
+        [PREVIOUS_OUTCOME_STATE.LAST_MATCH, 2],
+        [PREVIOUS_OUTCOME_STATE.LAST_MISMATCH, 3]
+    ])]
 ]);
 
-const doubleBlockCoefficients = new Map([
-    [0, 6], 
-    [1, 2], 
-    [2, 3]  
+const NEXT_STATE_TRANSITION = new Map([
+    [true, PREVIOUS_OUTCOME_STATE.LAST_MATCH],
+    [false, PREVIOUS_OUTCOME_STATE.LAST_MISMATCH]
 ]);
 
-function computePatternCombinations(
-    currentLocation,
-    cumulativeProduct,
-    previousPatternKind,
-    totalItems,
-    firstItemCollection,
-    secondItemCollection
-) {
-    if (currentLocation >= totalItems) {
-        return cumulativeProduct;
+function computeSequenceValue(currentPosition, accumulatedProduct, priorState, totalElements, sequenceOne, sequenceTwo) {
+    if (currentPosition >= totalElements) {
+        return accumulatedProduct;
     }
 
-    let nextProductValue;
-    let nextPatternKind;
-    let nextLocationIndex;
+    const charFromOne = sequenceOne.charAt(currentPosition);
+    const charFromTwo = sequenceTwo.charAt(currentPosition);
+    const areEquivalent = (charFromOne === charFromTwo);
 
-    if (firstItemCollection[currentLocation] === secondItemCollection[currentLocation]) {
-        const coefficient = singleBlockCoefficients.get(previousPatternKind);
-        nextProductValue = (cumulativeProduct * coefficient) % largePrimeDivisor;
-        nextPatternKind = 1; 
-        nextLocationIndex = currentLocation + 1;
-    } else {
-        const coefficient = doubleBlockCoefficients.get(previousPatternKind);
-        nextProductValue = (cumulativeProduct * coefficient) % largePrimeDivisor;
-        nextPatternKind = 2; 
-        nextLocationIndex = currentLocation + 2;
-    }
+    const multiplier = FACTOR_MAP.get(areEquivalent).get(priorState);
+    const nextProduct = (accumulatedProduct * multiplier) % MOD_CONSTANT;
+    const nextState = NEXT_STATE_TRANSITION.get(areEquivalent);
+    const nextPosition = currentPosition + (areEquivalent ? 1 : 2);
 
-    return computePatternCombinations(
-        nextLocationIndex,
-        nextProductValue,
-        nextPatternKind,
-        totalItems,
-        firstItemCollection,
-        secondItemCollection
-    );
+    return computeSequenceValue(nextPosition, nextProduct, nextState, totalElements, sequenceOne, sequenceTwo);
 }
 
-function orchestrateCalculation(inputContent) {
-    const contentLines = inputContent.split("\n");
-    const countOfElements = Number(contentLines[0]);
-    const primaryElementSequence = contentLines[1].split("");
-    const secondaryElementSequence = contentLines[2].split("");
+const mainProcessor = function() {
+    const inputContent = fileSystem.readFileSync("/dev/stdin", "UTF-8");
+    const contentLines = inputContent.split('\n');
+    const elementCount = Number(contentLines[0]);
+    const firstString = contentLines[1];
+    const secondString = contentLines[2];
 
-    const finalResult = computePatternCombinations(
-        0, 
-        1, 
-        0, 
-        countOfElements,
-        primaryElementSequence,
-        secondaryElementSequence
+    const finalResult = computeSequenceValue(
+        0,
+        1,
+        PREVIOUS_OUTCOME_STATE.INITIAL,
+        elementCount,
+        firstString,
+        secondString
     );
 
     console.log(finalResult);
-}
+};
 
-const rawStreamData = fileSystemInterface.readFileSync("/dev/stdin", "UTF-8");
-orchestrateCalculation(rawStreamData);
+module.exports = mainProcessor;
+mainProcessor();

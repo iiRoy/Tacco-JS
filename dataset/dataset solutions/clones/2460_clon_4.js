@@ -1,73 +1,47 @@
-function fetchInput() {
-    return require("fs").readFileSync("/dev/stdin", "utf8").trim();
+function retrieveInput(){return require("fs").readFileSync("/dev/stdin", "utf8").trim();}
+function displayOutput(content){console.log(content);}
+
+function processConversion(dataItem, conversionType){
+    switch(conversionType){
+        case 0: return dataItem;
+        case 1: return parseInt(dataItem);
+        case 2: return dataItem.split(" ");
+        case 3: return dataItem.split("\n");
+        case 4: return dataItem.split(" ").map((val)=>Number(val));
+        case 5: return dataItem.split("\n").map((val)=>Number(val));
+        case 6: return dataItem.split("");
+        case 7: return dataItem.split("").map((val)=>Number(val));
+    }
 }
 
-function postOutput(data) {
-    console.log(data);
-}
+function calculateSequenceScores(inputString) {
+    const characterArray = processConversion(inputString, 6);
+    const arrayLength = characterArray.length;
+    const scorePositions = arrayLength + 1;
 
-function orchestrateCalculation(sourceText) {
-    const symbols = sourceText.split("");
-    const totalLength = symbols.length;
-    
-    const initialMarks = new Map();
+    const leftScores = new Array(scorePositions).fill(0);
+    const rightScores = new Array(scorePositions).fill(0);
 
-    if (symbols[0] === "<") {
-        initialMarks.set(0, 0);
-    }
-    if (symbols[totalLength - 1] === ">") {
-        initialMarks.set(totalLength, 0);
-    }
-
-    for (let j = 1; j < totalLength; j++) {
-        const previousSymbol = symbols[j - 1];
-        const currentSymbol = symbols[j];
-        if (previousSymbol === ">" && currentSymbol === "<") {
-            initialMarks.set(j, 0);
-        } else if (previousSymbol === "<" && currentSymbol === ">") {
-            initialMarks.set(j, "zeta");
+    // Propagate scores from left to right based on '<' relations
+    for (let position = 0; position < arrayLength; position++) {
+        if (characterArray[position] === '<') {
+            leftScores[position + 1] = leftScores[position] + 1;
         }
     }
 
-    const valueSequence = Array.from({ length: totalLength + 1 }, (_, idx) => 
-        initialMarks.has(idx) ? initialMarks.get(idx) : null
-    );
-
-    function fillSequenceRecursively(currentPosition, sequenceData) {
-        if (currentPosition > totalLength) {
-            return sequenceData;
+    // Propagate scores from right to left based on '>' relations
+    for (let position = arrayLength - 1; position >= 0; position--) {
+        if (characterArray[position] === '>') {
+            rightScores[position] = rightScores[position + 1] + 1;
         }
-
-        let elementAtCurrent = sequenceData[currentPosition];
-        const elementBefore = (currentPosition > 0) ? sequenceData[currentPosition - 1] : undefined;
-        let nextPosition = currentPosition + 1;
-
-        if (currentPosition === 0) {
-            if (elementAtCurrent === null) {
-                sequenceData[0] = 1;
-            }
-        } else if (elementAtCurrent === 0) {
-            // Already 0, move to next
-        } else if (elementBefore === 0) {
-            sequenceData[currentPosition] = 1;
-        } else if (elementAtCurrent === "zeta") {
-            sequenceData[currentPosition] = elementBefore + 1;
-            if (currentPosition + 1 <= totalLength && sequenceData[currentPosition + 1] !== 0) {
-                sequenceData[currentPosition + 1] = 1;
-            }
-            nextPosition = currentPosition + 2;
-        } else {
-            sequenceData[currentPosition] = elementBefore + 1;
-        }
-        
-        return fillSequenceRecursively(nextPosition, sequenceData);
     }
 
-    const finalSequence = fillSequenceRecursively(0, valueSequence);
+    let totalSum = 0;
+    for (let position = 0; position < scorePositions; position++) {
+        totalSum += Math.max(leftScores[position], rightScores[position]);
+    }
 
-    const finalResult = finalSequence.reduce((accumulator, value) => accumulator + value, 0);
-    
-    postOutput(finalResult);
+    return totalSum;
 }
 
-orchestrateCalculation(fetchInput());
+displayOutput(calculateSequenceScores(retrieveInput()));

@@ -1,59 +1,59 @@
-const dataStream = require('node:fs').readFileSync('/dev/stdin', 'utf8');
-const contentLines = dataStream.split('\n');
+"use strict"
 
-const arrayDimension = Number(contentLines[0]);
-const targetArray = contentLines[1].split(' ').map(Number);
-const initialArray = contentLines[2].split(' ').map(Number);
+const inputRawData = require('fs').readFileSync('/dev/stdin', 'UTF-8')
+const inputLinesArray = inputRawData.split('\n')
+const arrayLength = parseInt(inputLinesArray[0])
+const desiredArray = inputLinesArray[1].split(' ').map(Number)
+const initialArray = inputLinesArray[2].split(' ').map(Number)
 
-const checkEquality = (arrA, arrB) => {
-    if (arrA.length !== arrB.length) return false;
-    for (let i = 0; i < arrA.length; ++i) {
-        if (arrA[i] !== arrB[i]) return false;
+const checkEquality = (firstArr, secondArr) => {
+    if (firstArr.length !== secondArr.length) {
+        return false
     }
-    return true;
-};
-
-const identifyNeighbors = (sequence, position, length) => {
-    let leftComponent, rightComponent;
-    if (position === 0) {
-        leftComponent = sequence[length - 1];
-        rightComponent = sequence[1];
-    } else if (position === length - 1) {
-        leftComponent = sequence[length - 2];
-        rightComponent = sequence[0];
-    } else {
-        leftComponent = sequence[position - 1];
-        rightComponent = sequence[position + 1];
+    for (let i = 0; i < firstArr.length; i++) {
+        if (firstArr[i] !== secondArr[i]) {
+            return false
+        }
     }
-    return { leftComponent, rightComponent };
-};
+    return true
+}
 
-const transformSequence = (currentArrState, stepCounter, arrLength, desiredArrState) => {
-    if (checkEquality(currentArrState, desiredArrState)) {
-        return stepCounter;
+const transformAndCount = (currentSequence, stepCounter) => {
+    if (checkEquality(currentSequence, desiredArray)) {
+        return stepCounter
     }
 
-    if (currentArrState.some(val => val < 1)) {
-        return -1;
+    if (currentSequence.some(element => element < 1)) {
+        return -1
     }
 
-    let maxFoundValue = -Infinity;
-    let maxFoundIndex = -1;
-    for (let i = 0; i < arrLength; ++i) {
-        if (currentArrState[i] > maxFoundValue) {
-            maxFoundValue = currentArrState[i];
-            maxFoundIndex = i;
+    let maximumValue = -Infinity
+    let maximumIndex = -1
+    for (let idx = 0; idx < arrayLength; idx++) {
+        if (currentSequence[idx] > maximumValue) {
+            maximumValue = currentSequence[idx]
+            maximumIndex = idx
         }
     }
 
-    const { leftComponent, rightComponent } = identifyNeighbors(currentArrState, maxFoundIndex, arrLength);
+    const nextSequence = [...currentSequence]
 
-    const nextArrState = [...currentArrState];
-    nextArrState[maxFoundIndex] = currentArrState[maxFoundIndex] - leftComponent - rightComponent;
+    let leftNeighbor, rightNeighbor
+    if (maximumIndex === 0) {
+        leftNeighbor = currentSequence[arrayLength - 1]
+        rightNeighbor = currentSequence[1]
+    } else if (maximumIndex === arrayLength - 1) {
+        leftNeighbor = currentSequence[arrayLength - 2]
+        rightNeighbor = currentSequence[0]
+    } else {
+        leftNeighbor = currentSequence[maximumIndex - 1]
+        rightNeighbor = currentSequence[maximumIndex + 1]
+    }
 
-    return transformSequence(nextArrState, stepCounter + 1, arrLength, desiredArrState);
-};
+    nextSequence[maximumIndex] = currentSequence[maximumIndex] - leftNeighbor - rightNeighbor
 
-const finalResultValue = transformSequence(initialArray, 0, arrayDimension, targetArray);
+    return transformAndCount(nextSequence, stepCounter + 1)
+}
 
-console.log(finalResultValue);
+const finalResult = transformAndCount(initialArray, 0)
+console.log(finalResult)

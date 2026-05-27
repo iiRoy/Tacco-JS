@@ -1,180 +1,169 @@
 "use strict";
 
-// Helper function to convert an iterable to an array, handling various cases.
-function _convertToArray(inputCollection) {
-    return _grabArrayItems(inputCollection) || _iterateToArray(inputCollection) || _handleNonIterable();
+// Helper function to convert an array-like object to an array with holes
+function _arrayWithHoles(arr) {
+  if (Array.isArray(arr)) return arr;
 }
 
-// Helper function to iterate through an object or arguments and return an array.
-function _iterateToArray(dataIterable) {
-    // Check if the object is iterable or an arguments object.
-    if (Symbol.iterator in Object(dataIterable) || Object.prototype.toString.call(dataIterable) === "[object Arguments]") {
-        return Array.from(dataIterable);
+// Helper function to convert an iterable to an array
+function _iterableToArray(iter) {
+  if (Symbol.iterator in Object(iter) || Object.prototype.toString.call(iter) === "[object Arguments]") return Array.from(iter);
+}
+
+// Helper function for non-iterable rest elements
+function _nonIterableRest() {
+  throw new TypeError("Invalid attempt to destructure non-iterable instance");
+}
+
+// Helper function to limit iterable to a certain number of elements
+function _iterableToArrayLimit(arr, i) {
+  var _arr = [];
+  var _n = true;
+  var _d = false;
+  var _e = undefined;
+  try {
+    for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) {
+      _arr.push(_s.value);
+      if (i && _arr.length === i) break;
     }
-}
-
-// Helper function for destructuring assignment, returning a slice of an array.
-function _extractArraySegment(sourceArray, itemLimit) {
-    return _grabArrayItems(sourceArray) || _iterateToArrayWithLimit(sourceArray, itemLimit) || _handleNonIterable();
-}
-
-// Helper function to throw an error if an attempt to destructure a non-iterable is made.
-function _handleNonIterable() {
-    throw new TypeError("Cannot destructure non-iterable instance. Invalid attempt.");
-}
-
-// Helper function to iterate through an array up to a certain limit.
-function _iterateToArrayWithLimit(sourceArray, itemLimit) {
-    var _tempArray = [];
-    var _normalOperation = true;
-    var _hadError = false;
-    var _errorDetails = undefined;
+  } catch (err) {
+    _d = true;
+    _e = err;
+  } finally {
     try {
-        // Get iterator and loop through elements.
-        for (var _sourceIterator = sourceArray[Symbol.iterator](), _currentEntry; !(_normalOperation = (_currentEntry = _sourceIterator.next()).done); _normalOperation = true) {
-            _tempArray.push(_currentEntry.value);
-            // Break if the limit is reached and it's defined.
-            if (itemLimit && _tempArray.length === itemLimit) break;
-        }
-    } catch (processingIssue) {
-        _hadError = true;
-        _errorDetails = processingIssue;
+      if (!_n && _i["return"] != null) _i["return"]();
     } finally {
-        try {
-            // Ensure iterator is closed if it wasn't a normal completion.
-            if (!_normalOperation && _sourceIterator["return"] != null) {
-                _sourceIterator["return"]();
+      if (_d) throw _e;
+    }
+  }
+  return _arr;
+}
+
+// Helper function for slicing an array into parts
+function _slicedToArray(arr, i) {
+  return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || _nonIterableRest();
+}
+
+// Helper function to convert an array-like object to an array
+function _toArray(arr) {
+  return _arrayWithHoles(arr) || _iterableToArray(arr) || _nonIterableRest();
+}
+
+// Main application logic wrapped in an IIFE
+(function () {
+
+  /**
+   * Parses a line of space-separated numbers into an array of integers.
+   * @param {string|string[]} inputLine - The line string or an array of string numbers.
+   * @returns {number[]} An array of parsed integers.
+   */
+  function parseNumbers(inputLine) {
+    return (Array.isArray(inputLine) ? inputLine : inputLine.split(/\s+/)).map(function (numStr) {
+      return parseInt(numStr);
+    });
+  }
+
+  // Immediately invoked function to process input
+  (function (rawData) {
+    // Split the raw input string into individual lines
+    var inputLines = rawData.split("\n");
+
+    // Parse the first line to get the number of switches (numSwitches) and lamps (numLamps)
+    var _parseNumbers = parseNumbers(inputLines[0]),
+      _parseNumbers2 = _slicedToArray(_parseNumbers, 2),
+      numSwitches = _parseNumbers2[0],
+      numLamps = _parseNumbers2[1];
+
+    // Process subsequent lines to get lamp configurations
+    var lampConfigurations = inputLines.slice(1, numLamps + 1).map(function (currentLine, lampIndex) {
+      var _parseNumbers3 = parseNumbers(currentLine),
+        _parseNumbers4 = _toArray(_parseNumbers3),
+        switchCount = _parseNumbers4[0], // Number of switches connected to this lamp
+        switchIndices = _parseNumbers4.slice(1); // Indices of connected switches
+
+      return {
+        switchCount: switchCount,
+        switchIndices: switchIndices,
+        lampIdentifier: lampIndex // Original index of the lamp
+      };
+    });
+
+    // Parse the line containing parity requirements for each lamp
+    var parityRequirements = parseNumbers(inputLines[numLamps + 1]);
+
+    // Initialize a counter for valid switch combinations
+    var validCombinations = 0;
+
+    // Iterate through all possible switch combinations (2^numSwitches)
+    combinationLoop: for (var currentCombination = 0; currentCombination < Math.pow(2, numSwitches); currentCombination++) {
+      var _iteratorNormalCompletion = true;
+      var _didIteratorError = false;
+      var _iteratorError = undefined;
+
+      try {
+        // For each combination, check every lamp
+        for (var _iterator = lampConfigurations[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+          var _step$value = _step.value,
+            lampSwitchIndices = _step$value.switchIndices, // Switches connected to the current lamp
+            lampIdentifier = _step$value.lampIdentifier; // Index of the current lamp
+
+          var activeSwitchCount = 0; // Counter for active switches for this lamp
+          var _iteratorNormalCompletion2 = true;
+          var _didIteratorError2 = false;
+          var _iteratorError2 = undefined;
+
+          try {
+            // Check each switch connected to the current lamp
+            for (var _iterator2 = lampSwitchIndices[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+              var switchIdx = _step2.value; // Index of a connected switch
+
+              // If the switch is 'on' in the current combination (bit is set)
+              if (currentCombination & 1 << switchIdx - 1) {
+                activeSwitchCount++;
+              }
             }
-        } finally {
-            // Re-throw error if one occurred.
-            if (_hadError) throw _errorDetails;
-        }
-    }
-    return _tempArray;
-}
-
-// Helper function to check if an input is an array.
-function _grabArrayItems(potentialArray) {
-    if (Array.isArray(potentialArray)) return potentialArray;
-}
-
-// Main application scope.
-!function () {
-
-    // Function to parse a string line into an array of integers.
-    // Accepts either an array of strings or a single string.
-    function parseNumbers(textSegment) {
-        return (Array.isArray(textSegment) ? textSegment : textSegment.split(/\s+/)).map(function (numericString) {
-            return parseInt(numericString, 10); // Explicitly use base 10 for parsing.
-        });
-    }
-
-    // Immediately invoked function expression for core logic.
-    !function (sourceText) {
-        // Split the entire input into individual lines.
-        var dataRows = sourceText.split("\n");
-
-        // Parse the first line to get the number of switches (S) and lamps (L).
-        var _parsedHeader = parseNumbers(dataRows[0]),
-            _extractedHeader = _extractArraySegment(_parsedHeader, 2),
-            totalSwitches = _extractedHeader[0], // Total number of available switches.
-            totalLamps = _extractedHeader[1];   // Total number of lamps to control.
-
-        // Process subsequent lines to define each lamp's properties.
-        var lampObjects = dataRows.slice(1, totalLamps + 1).map(function (lampDescription, lampPosition) {
-            // Parse the current lamp's description line.
-            var _lampDataElements = parseNumbers(lampDescription),
-                _switchConnectionInfo = _convertToArray(_lampDataElements),
-                connectedSwitchesCount = _switchConnectionInfo[0],      // How many switches affect this lamp.
-                associatedSwitchIndices = _switchConnectionInfo.slice(1); // The indices of those switches.
-
-            // Return an object representing the lamp.
-            return {
-                connectedSwitchesCount: connectedSwitchesCount,
-                associatedSwitchIndices: associatedSwitchIndices,
-                lampPosition: lampPosition
-            };
-        });
-
-        // Parse the line containing the required parity for each lamp.
-        var expectedParities = parseNumbers(dataRows[totalLamps + 1]);
-        // Initialize a counter for valid switch configurations.
-        var validConfigurations = 0;
-
-        // Outer loop: Iterate through all possible switch configurations.
-        // There are 2^totalSwitches possible states.
-        configLoop: for (var configIndex = 0; configIndex < Math.pow(2, totalSwitches); configIndex++) {
-            var _loopRunningNormally = true;
-            var _errorOccurred = false;
-            var _errorObject = undefined;
-
+          } catch (err) {
+            _didIteratorError2 = true;
+            _iteratorError2 = err;
+          } finally {
             try {
-                // Inner loop: Check each lamp against the current switch configuration.
-                for (var _lampIterator = lampObjects[Symbol.iterator](), _currentLampEntry; !(_loopRunningNormally = (_currentLampEntry = _lampIterator.next()).done); _loopRunningNormally = true) {
-                    var _lampDetails = _currentLampEntry.value,
-                        currentLampSwitches = _lampDetails.associatedSwitchIndices, // Switches connected to this lamp.
-                        currentLampPosition = _lampDetails.lampPosition;          // Original index of this lamp.
-
-                    // Counter for switches that are 'on' for the current lamp.
-                    var turnedOnSwitches = 0;
-
-                    var _nestedLoopRunning = true;
-                    var _nestedErrorOccurred = false;
-                    var _nestedErrorObject = undefined;
-
-                    try {
-                        // Innermost loop: Iterate through switches connected to the current lamp.
-                        for (var _switchIterator = currentLampSwitches[Symbol.iterator](), _currentSwitchEntry; !(_nestedLoopRunning = (_currentSwitchEntry = _switchIterator.next()).done); _nestedLoopRunning = true) {
-                            var switchIdentifier = _currentSwitchEntry.value; // The index of a connected switch.
-                            // Check if this specific switch is 'on' in the current configuration.
-                            // (configIndex & 1 << (switchIdentifier - 1)) uses bitwise AND to check the (switchIdentifier-1)-th bit.
-                            if (configIndex & 1 << switchIdentifier - 1) turnedOnSwitches++;
-                        }
-                    } catch (innerProcessingIssue) {
-                        _nestedErrorOccurred = true;
-                        _nestedErrorObject = innerProcessingIssue;
-                    } finally {
-                        try {
-                            // Clean up the nested iterator if it didn't complete normally.
-                            if (!_nestedLoopRunning && _switchIterator.return != null) {
-                                _switchIterator.return();
-                            }
-                        } finally {
-                            // Re-throw if a nested error occurred.
-                            if (_nestedErrorOccurred) {
-                                throw _nestedErrorObject;
-                            }
-                        }
-                    }
-
-                    // Check if the parity of 'on' switches matches the expected parity for this lamp.
-                    // If not, this configuration is invalid; move to the next config.
-                    if (turnedOnSwitches % 2 !== expectedParities[currentLampPosition]) {
-                        continue configLoop; // Jump to the next iteration of the outer loop.
-                    }
-                }
-            } catch (outerProcessingIssue) {
-                _errorOccurred = true;
-                _errorObject = outerProcessingIssue;
+              if (!_iteratorNormalCompletion2 && _iterator2.return != null) {
+                _iterator2.return();
+              }
             } finally {
-                try {
-                    // Clean up the outer iterator if it didn't complete normally.
-                    if (!_loopRunningNormally && _lampIterator.return != null) {
-                        _lampIterator.return();
-                    }
-                } finally {
-                    // Re-throw if an outer error occurred.
-                    if (_errorOccurred) {
-                        throw _errorObject;
-                    }
-                }
+              if (_didIteratorError2) {
+                throw _iteratorError2;
+              }
             }
+          }
 
-            // If all lamps passed the parity check for this configuration, increment the valid count.
-            validConfigurations++;
+          // Check if the parity of active switches matches the requirement for this lamp
+          if (activeSwitchCount % 2 !== parityRequirements[lampIdentifier]) {
+            // If not, this combination is invalid; move to the next combination
+            continue combinationLoop;
+          }
         }
+      } catch (err) {
+        _didIteratorError = true;
+        _iteratorError = err;
+      } finally {
+        try {
+          if (!_iteratorNormalCompletion && _iterator.return != null) {
+            _iterator.return();
+          }
+        } finally {
+          if (_didIteratorError) {
+            throw _iteratorError;
+          }
+        }
+      }
 
-        // Output the final count of valid configurations.
-        console.log(validConfigurations);
-    }(require("fs").readFileSync("/dev/stdin", "utf8")); // Read input from standard input.
-}();
+      // If all lamps are satisfied for this combination, increment the valid combinations count
+      validCombinations++;
+    }
+
+    // Output the total number of valid switch combinations
+    console.log(validCombinations);
+
+  }(require("fs").readFileSync("/dev/stdin", "utf8"))); // Read input from stdin
+}());

@@ -1,34 +1,27 @@
-'use strict'; // Ensure strict mode for code execution consistency
+'use strict'; // Activates strict mode for the entire script, helping to catch common coding errors and "unsafe" actions.
 
-/*
- * This function orchestrates the primary computation flow.
- * It takes raw textual data as its primary argument.
+/**
+ * This function processes the provided raw input string to perform a calculation.
+ * It expects the first line of the input to be an integer representing a radius.
+ * The function then calculates and prints the circumference of a circle with that radius.
+ *
+ * @param {string} rawDataString - The complete input received, typically from standard input.
  */
-function ExecuteRoutine (incomingData) {
+function ProcessInputData(rawDataString) {
+    // Split the entire input string into an array of individual lines.
+    // This assumes each piece of data is on a new line.
+    let inputLinesArray = rawDataString.split("\n");
 
-  // First, segment the comprehensive data into individual lines
-  // based on newline delimiters.
-  let linesOfText = incomingData.split ( "\n" );
+    // Parse the first element of the array (the first line of input) as an integer.
+    // The '10' specifies base-10 for parsing.
+    let circleRadius = parseInt(inputLinesArray[0], 10);
 
-
-  // Extract the first numeric entry from the parsed lines,
-  // ensuring it's interpreted as a base-10 integer.
-  let    radiusValue    = parseInt ( linesOfText[0] , 10 );
-
-  // Finally, compute and display the circumference of a circle
-  // using the extracted numeric value as its radius.
-  console.log(  2 * radiusValue * Math.PI );
-
-
+    // Calculate the circumference of the circle using the formula 2 * pi * radius.
+    // Then, print the calculated value to the console.
+    console.log(2 * circleRadius * Math.PI);
 }
 
-
-// Invoke the main processing routine.
-// The input data is sourced from standard input,
-// read synchronously and decoded as UTF-8 text.
-ExecuteRoutine (
-  require("fs")
-  .readFileSync("/dev/stdin",
-    "utf8"
-  )
-);
+// This is the entry point of the script.
+// It reads the entire content of standard input synchronously as a UTF-8 string,
+// and then passes that string to the main processing function.
+ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

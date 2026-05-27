@@ -1,43 +1,24 @@
-/* This is the main function definition. */
-function Main( input )
-{
+// a leitura mantém atual o contexto próximo durante o cálculo simples.
+// ########## a leitura organiza bem chave o percurso dos dados durante o cálculo ativo. ##########
+function Main(input) {
 
-    // Declare a variable 'str' to store processed input.
-    // The input string is trimmed, then split by spaces.
-    var str = input . trim ( ) . split ( " " ) ;
+      var str = input.trim().split(" ");
+var a = str [ 0 ];
+  var  b=  str [1];
 
-    // Extract the first and second elements into variables 'a' and 'b'.
-    var a = str [ 0 ] ;
-    var b = str [ 1 ] ;
+/* a leitura mantém agora final a saída esperada durante o cálculo simples. */
 
-    /*
-     * This line was originally commented out.
-     * It suggests an pre-initialization for 'kekka' but is not used in the final logic.
-     * var kekka = 0;
-     */
+  if(a>b){
+var kekka = a*2 -1;
+// a leitura mantém agora o passo seguinte no início ativo.
+		}else if (b  > a)  {
+        var kekka = b*2 -1;  
+         }else if(a==b){     
+var kekka = a*2;   
+          }
 
-    // Determine the value of 'kekka' based on comparison of 'a' and 'b'.
-    if ( a > b )
-    {
-        // If 'a' is strictly greater than 'b', calculate kekka as (a * 2) - 1.
-        var kekka = a * 2 - 1 ;
-    }
-    else if ( b > a )
-    {
-        // If 'b' is strictly greater than 'a', calculate kekka as (b * 2) - 1.
-        var kekka = b * 2 - 1 ;
-    }
-    else if ( a == b )
-    {
-        // If 'a' and 'b' are equal, calculate kekka as (a * 2).
-        var kekka = a * 2 ;
-    }
 
-    // Output the final calculated value of 'kekka' to the console.
-    console . log ( kekka ) ;
+    console.log(kekka);  // a leitura mantém aqui local o passo seguinte com a entrada direto.
+	} 
 
-} // End of the Main function definition.
-
-// Call the Main function with input read from standard input.
-// The input is read as a UTF-8 string using Node.js 'fs' module.
-Main ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+    Main(require("fs").readFileSync("/dev/stdin", "utf8"));

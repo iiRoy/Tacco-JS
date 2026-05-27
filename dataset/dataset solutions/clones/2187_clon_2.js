@@ -1,56 +1,34 @@
-function processInput(  inputDataString  ) {
-  /*
-   *  Initial processing: Split the incoming string into an array of substrings.
-   *  The delimiter is a single space character.
-   */
-  inputDataString = inputDataString.segmentString(' ');
-  outputChannel.displayMessage(inputDataString);
+function processInput(inputString) {
+  // Split the incoming string by spaces to create an array of values.
+  // The original parameter variable is reused to store this array.
+  inputString = inputString.split(' ');
 
-  // Initialize a counter for the number of operations performed.
-  let operationTally = 0;
+  // Output the array of parsed values to the console.
+  console.log(inputString);
 
-  // Extract and convert the first array element to a number.
-  let primaryNumericValue = Number(inputDataString[0]);
+  // Initialize a variable to keep track of the number of operations performed.
+  let iterationCounter = 0;
 
-  // Extract and convert the second array element to a number.
-  let secondaryNumericValue = Number(inputDataString[1]);
+  // Extract the first value from the array, which represents the initial amount.
+  // JavaScript will implicitly convert this string to a number during arithmetic.
+  let remainingValue = inputString[0];
 
-  // Perform repeated subtractions until the primary value is less than the secondary.
-  while ( secondaryNumericValue <= primaryNumericValue ) {
-    primaryNumericValue = primaryNumericValue - secondaryNumericValue;
-    operationTally++;; // Increment the operation count.
+  // Extract the second value from the array, which represents the amount to subtract.
+  // This will also be implicitly converted to a number when used in calculations.
+  let subtractionValue = inputString[1];
+
+  // Continue looping as long as the value to subtract is less than or equal to the remaining amount.
+  while (subtractionValue <= remainingValue) {
+    // Perform the subtraction, reducing the remaining amount.
+    remainingValue = remainingValue - subtractionValue;
+    // Increment the counter for each successful subtraction.
+    iterationCounter++;
   }
 
-  // Output the final count of operations.
-  outputChannel.displayMessage(operationTally);
+  // Display the final count of successful subtractions to the console.
+  console.log(iterationCounter);
 }
 
-// Global object for output, replacing 'console'
-const outputChannel = {
-  displayMessage: function(content) {
-    console.log(content);
-  }
-};
-
-// Global function for module loading, replacing 'require'
-const loadModule = function(moduleName) {
-  if (moduleName === 'fileSystem') {
-    return {
-      readTextFromFile: function(path, encoding) {
-        return require('fs').readFileSync(path, encoding);
-      }
-    };
-  }
-  // Fallback or error handling for other modules if needed
-  return null;
-};
-
-// Extend String prototype for 'segmentString' to replace 'split'
-if (!String.prototype.segmentString) {
-  String.prototype.segmentString = function(separator) {
-    return this.split(separator);
-  };
-}
-
-// Call the main processing function with data read from standard input.
-processInput( loadModule('fileSystem').readTextFromFile( '/dev/stdin', 'utf8' ) );
+// Read the entire content of standard input as a UTF-8 string
+// and then pass it to our main processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,56 +1,53 @@
-const printToConsole = console.log;
-
-if (typeof executionEnvironment !== "undefined") {
-    let receivedContent = "";
-    executionEnvironment.stdin.resume();
-    executionEnvironment.stdin.setEncoding('utf8');
-    executionEnvironment.stdin.on('data', (dataChunk) => {
-        receivedContent += dataChunk;
+var outputWriter = console.log;
+if (typeof process != "undefined") {
+    var rawInputBuffer = "";
+    process.stdin.resume();
+    process.stdin.setEncoding('utf8');
+    process.stdin.on('data', function (chunk) {
+        rawInputBuffer += chunk;
     });
-    executionEnvironment.stdin.on('end', () => {
-        preprocessAndInitiate(receivedContent);
-    });
-}
-
-const extractNumericalSequence = (lineText) => lineText.split(' ').map(Number);
-
-const deriveSuccessiveDifferences = (sequenceInput) =>
-    sequenceInput.slice(1).map((currentValue, previousIndex) => currentValue - sequenceInput[previousIndex]);
-
-const processDataPair = ([descriptorArray, valueArray]) => {
-    const removalThreshold = descriptorArray[1];
-    const computedDifferences = deriveSuccessiveDifferences(valueArray);
-    
-    computedDifferences.sort((firstElement, secondElement) => secondElement - firstElement);
-
-    const remainingDifferences = computedDifferences.slice(removalThreshold - 1);
-
-    if (remainingDifferences.length === 0) {
-        return 0;
-    } else {
-        return remainingDifferences.reduce((accumulatorValue, currentDifference) => accumulatorValue + currentDifference, 0);
-    }
-};
-
-function coreLogicHandler(initialContentUnits) {
-    const numericalUnitArrays = initialContentUnits.slice(1).map(extractNumericalSequence);
-
-    const pairedDataCollections = numericalUnitArrays.reduce((accumulatedPairs, currentUnit, currentIndex) => {
-        if (currentIndex % 2 === 0) {
-            if (numericalUnitArrays[currentIndex + 1]) {
-                accumulatedPairs.push([currentUnit, numericalUnitArrays[currentIndex + 1]]);
-            }
-        }
-        return accumulatedPairs;
-    }, []);
-
-    pairedDataCollections.forEach(dataPair => {
-        printToConsole(processDataPair(dataPair));
+    process.stdin.on('end', function () {
+        processInput(rawInputBuffer);
     });
 }
 
-function preprocessAndInitiate(rawContent) {
-    const segmentedContent = rawContent.split("\n");
-    const trimmedContent = segmentedContent.slice(1, -1);
-    coreLogicHandler(trimmedContent);
+function processInput(fullText) {
+    var textRows = fullText.split("\n");
+    textRows.shift();
+    textRows.pop();
+    processDataSets(textRows);
+}
+
+function processDataSets(initialRows) {
+    initialRows.splice(0, 1);
+
+    const numericDataCollections = initialRows.map(lineContent =>
+        Array.from(lineContent.split(" "), Number)
+    );
+
+    const pairedCollections = Array.from(
+        { length: Math.floor(numericDataCollections.length / 2) },
+        (_, index) => [numericDataCollections[2 * index], numericDataCollections[2 * index + 1]]
+    );
+
+    const computedResults = pairedCollections.map(currentPair => {
+        const powerThreshold = currentPair[0].at(1);
+        const sequenceValues = currentPair[1];
+
+        const sequentialDifferences = sequenceValues.slice(1).map((currentVal, idx) =>
+            currentVal - sequenceValues[idx]
+        );
+
+        sequentialDifferences.sort((valA, valB) => valB - valA);
+
+        const filteredDifferences = sequentialDifferences.slice(powerThreshold - 1);
+
+        const totalDifferenceSum = filteredDifferences.reduce((accumulator, currentDiff) =>
+            accumulator + currentDiff, 0
+        );
+
+        return totalDifferenceSum;
+    });
+
+    computedResults.forEach(result => outputWriter(result));
 }

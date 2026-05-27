@@ -1,40 +1,35 @@
 "use strict";
-const obtainData = () => require('node:fs').readFileSync('/dev/stdin', { encoding: 'utf-8' });
 
-const processInputLine = (textContents) => {
-    const extractedNumerals = textContents.match(/\d+/g);
-    return extractedNumerals.slice(0, 3).map(Number);
-};
+const processInput = (rawData) => {
+    const parts = rawData.trim().split(' ');
+    const alpha = Number(parts[0]);
+    const beta = Number(parts[1]);
+    const gamma = Number(parts[2]);
 
-const getConclusion = (firstValue, secondValue, thirdValue) => {
-    const outcomeMapping = {
-        0: 'delicious',
-        1: 'dangerous',
-        2: 'safe',
-        3: ''
+    const deriveOutcomeIdentifier = (valA, valB, valC) => {
+        const deltaValue = valC - valB;
+        const limitValue = valA + 1;
+
+        return valB >= valC
+            ? 'scenarioOne'
+            : limitValue < deltaValue
+                ? 'scenarioTwo'
+                : limitValue > deltaValue
+                    ? 'scenarioThree'
+                    : 'scenarioFour';
     };
 
-    const isFirstConditionMet = (secondValue >= thirdValue);
-    const calculatedDifference = thirdValue - secondValue;
-    const adjustedFirstValue = firstValue + 1;
+    const outcomeRegistry = {
+        'scenarioOne': 'delicious',
+        'scenarioTwo': 'dangerous',
+        'scenarioThree': 'safe',
+        'scenarioFour': ''
+    };
 
-    const isSecondConditionMet = (!isFirstConditionMet && (adjustedFirstValue < calculatedDifference));
-    const isThirdConditionMet = (!isFirstConditionMet && (adjustedFirstValue > calculatedDifference));
-    const isFourthConditionMet = (!isFirstConditionMet && (adjustedFirstValue === calculatedDifference));
+    const identifier = deriveOutcomeIdentifier(alpha, beta, gamma);
+    const finalMessage = outcomeRegistry[identifier];
 
-    const resultantKey = (isFirstConditionMet * 0) +
-                         (isSecondConditionMet * 1) +
-                         (isThirdConditionMet * 2) +
-                         (isFourthConditionMet * 3);
-
-    return outcomeMapping[resultantKey];
+    console.log(finalMessage);
 };
 
-const executeProgram = () => {
-    const rawInputContent = obtainData();
-    const [alpha, beta, gamma] = processInputLine(rawInputContent);
-    const finalOutputString = getConclusion(alpha, beta, gamma);
-    console.log(finalOutputString);
-};
-
-executeProgram();
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

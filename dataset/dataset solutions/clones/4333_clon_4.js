@@ -1,35 +1,27 @@
-const verifyCondition = (currentX, currentY, limitX, limitY, target) => {
-    if (currentX > limitX) {
-        return false;
+var main = function(entryData) {
+    var numericInputs = entryData.split(' ').map(val => parseInt(val));
+    var upperI = numericInputs[0];
+    var upperJ = numericInputs[1];
+    var targetSum = numericInputs[2];
+
+    let outcomeIndicator = false;
+
+    const iRange = Array.from({ length: upperI + 1 }, (_, index) => index);
+
+    outcomeIndicator = iRange.some(currentIValue => {
+        const jRange = Array.from({ length: upperJ + 1 }, (_, index) => index);
+        return jRange.some(currentJValue => {
+            const computedResult = currentJValue * (upperI - currentIValue) + currentIValue * (upperJ - currentJValue);
+            return computedResult === targetSum;
+        });
+    });
+
+    if (outcomeIndicator) {
+        console.log('Yes');
+    } else {
+        console.log('Ans');
     }
-    if (currentY > limitY) {
-        return verifyCondition(currentX + 1, 0, limitX, limitY, target);
-    }
-
-    const computedVal = currentY * (limitX - currentX) + currentX * (limitY - currentY);
-    if (computedVal === target) {
-        return true;
-    }
-
-    return verifyCondition(currentX, currentY + 1, limitX, limitY, target);
-};
-
-const solveProblem = (dataString) => {
-    const numericals = dataString.split(' ').map(Number);
-    const upperBoundaryX = numericals[0];
-    const upperBoundaryY = numericals[1];
-    const desiredOutcome = numericals[2];
-
-    const resultBool = verifyCondition(0, 0, upperBoundaryX, upperBoundaryY, desiredOutcome);
-
-    const finalResultText = resultBool ? 'Yes' : 'Ans';
-    console.log(finalResultText);
     return 0;
 };
 
-const entryPoint = (filePath) => {
-    const contentBuffer = require("node:fs").readFileSync(filePath, "utf8");
-    solveProblem(contentBuffer.trim());
-};
-
-entryPoint("/dev/stdin");
+main(require("fs").readFileSync("/dev/stdin", "utf8").trim());

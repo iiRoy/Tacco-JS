@@ -1,42 +1,33 @@
 "use strict";
 
-function runSolution(sourceText) {
-  let numberList = sourceText
-    .split(
-      '\n'
-    )
-    .map(
-      strVal => parseInt(strVal, 10)
-    )
-  ;
+// This function processes the provided input string.
+function processInput(rawData) {
+  // The input string is first split by newline characters,
+  // and then each resulting string is converted into an integer.
+  let numericValues = rawData.split(/\n/).map((val) => ~~val);
 
-  let occurrenceRegister =
-    new Set();
+  // A Set data structure is initialized to keep track of unique numbers.
+  let uniqueElementsTracker = new Set();
 
-  for (
-    let currentPosition = 1;
-    currentPosition < numberList.length;
-    currentPosition++
-  ) {
-    // This block determines if an element has appeared an odd or even number of times.
-    if (
-      occurrenceRegister.has(numberList[currentPosition])
-    ) {
-      occurrenceRegister.delete(
-        numberList[currentPosition]
-      );
+  // We iterate through the array of numbers, starting from the second element.
+  // The first element is typically ignored based on common competitive programming patterns.
+  for (let idx = 1; idx < numericValues.length; idx++) {
+    // Check if the current number is already present in our tracker.
+    if (uniqueElementsTracker.has(numericValues[idx])) {
+      // If the number is found, it means it has appeared an even number of times so far,
+      // so we remove it from the set.
+      uniqueElementsTracker.delete(numericValues[idx]);
     } else {
-      occurrenceRegister.add(
-        numberList[currentPosition]
-      );
+      // If the number is not found, it means it has appeared an odd number of times,
+      // so we add it to the set.
+      uniqueElementsTracker.add(numericValues[idx]);
     }
   }
 
-  console.log(occurrenceRegister.size);
+  // Finally, the total count of unique elements remaining in the set is printed to the console.
+  console.log(uniqueElementsTracker.size);
 }
 
-runSolution(
-  require("fs").readFileSync(
-    "/dev/stdin", "utf8"
-  )
-);
+// The main processing function is invoked with data read from standard input.
+// The 'fs' module is used to read the file synchronously, and 'utf8' specifies the encoding.
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

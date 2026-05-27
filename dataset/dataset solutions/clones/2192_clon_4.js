@@ -1,17 +1,25 @@
-function processIncomingData(rawData) {
-    let contentLines = rawData.split('\n');
-    let comparisonTarget = contentLines[0].split(' ')[0];
-    let itemsForCombination = contentLines[1].split(' ');
+function Main(entryPoint) {
+  const firstNewlinePosition = entryPoint.indexOf('\n');
+  const firstLineContent = entryPoint.substring(0, firstNewlinePosition);
+  const remainingInput = entryPoint.substring(firstNewlinePosition + 1);
 
-    let combinedSequence = "";
-    let itemPointer = 0;
-    while (itemPointer < itemsForCombination.length) {
-        combinedSequence += itemsForCombination[itemPointer];
-        itemPointer++;
-    }
+  const secondNewlinePosition = remainingInput.indexOf('\n');
+  const secondLineContent = remainingInput.substring(0, secondNewlinePosition === -1 ? undefined : secondNewlinePosition);
 
-    let outcomeMessage = (combinedSequence > comparisonTarget) ? "Yes" : "No";
-    console.log(outcomeMessage);
+  const primaryTokens = firstLineContent.split(" ");
+  console.log(primaryTokens);
+
+  const secondaryTokens = secondLineContent.split(' ');
+  console.log(secondaryTokens);
+
+  let aggregatedString = '';
+  secondaryTokens.forEach(function(tokenPiece) {
+    aggregatedString += tokenPiece;
+  });
+
+  const comparisonValue = primaryTokens[0];
+
+  console.log(aggregatedString > comparisonValue ? "Yes" : "No");
 }
 
-processIncomingData(require("fs").readFileSync("/dev/stdin", "utf8"));
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

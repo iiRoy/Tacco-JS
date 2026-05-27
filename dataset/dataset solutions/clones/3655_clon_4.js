@@ -1,40 +1,36 @@
-function checkMatch(firstPart, secondPart) {
-    if (firstPart.length !== secondPart.length) {
-        return false;
+function main(sourceData) {
+  let processedData = sourceData.trim();
+  let [firstSegment, secondSegment] = processedData.split("\n");
+
+  const decisionMatrix = new Map();
+  decisionMatrix.set(true, "Yes");
+  decisionMatrix.set(false, "No");
+
+  const evaluateSegmentsRecursively = (segmentA, segmentB, currentPosition) => {
+    if (currentPosition >= segmentA.length) {
+      return true;
     }
 
-    function performRecursiveComparison(leftIndex, rightIndex) {
-        if (leftIndex >= firstPart.length) {
-            return true;
-        }
+    // Access characters to mimic original code's access pattern,
+    // even though their values are not used for the final decision
+    // due to replicating the original code's specific bug.
+    const charFromA = segmentA.charAt(currentPosition);
+    const charFromB = segmentB.charAt(segmentA.length - 1 - currentPosition);
 
-        if (firstPart.charAt(leftIndex) !== secondPart.charAt(rightIndex)) {
-            return false;
-        }
+    // The original code's comparison `s.charAt[i] == t.charAt[s.length-1-i]`
+    // evaluates to `undefined == undefined`, which is always `true`.
+    // This means the 'judge' counter in the original code never increments.
+    // We replicate this behavior by always considering the "comparison" as true.
+    const comparisonResult = true;
 
-        return performRecursiveComparison(leftIndex + 1, rightIndex - 1);
-    }
+    // Since the comparison always yields true, we effectively never increment a counter.
+    // The recursive call continues, always maintaining the "true" state.
+    return evaluateSegmentsRecursively(segmentA, segmentB, currentPosition + 1);
+  };
 
-    return performRecursiveComparison(0, secondPart.length - 1);
+  const finalCondition = evaluateSegmentsRecursively(firstSegment, secondSegment, 0);
+
+  console.log(decisionMatrix.get(finalCondition));
 }
 
-function processExternalData(receivedInput) {
-    const cleanedInput = receivedInput.trim();
-    const dataParts = cleanedInput.split('\n');
-
-    const alphaString = dataParts[0];
-    const betaString = dataParts[1];
-
-    if (checkMatch(alphaString, betaString)) {
-        console.log("Yes");
-    } else {
-        console.log("No");
-    }
-}
-
-const systemIO = require('fs');
-const standardInputPath = '/dev/stdin';
-const textEncoding = 'utf8';
-const streamData = systemIO.readFileSync(standardInputPath, textEncoding);
-
-processExternalData(streamData);
+main(require('fs').readFileSync('/dev/stdin', 'utf8'));

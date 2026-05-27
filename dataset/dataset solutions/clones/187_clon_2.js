@@ -1,95 +1,59 @@
-/* This JavaScript file processes numerical input from standard input
- * to determine the range (maximum minus minimum) of the provided numbers.
- * It demonstrates basic asynchronous input handling and numerical comparisons.
- */
+function executeProgram() {
+  // Initialize variables to track the lowest and highest numbers encountered.
+  var minimumValue = Infinity; // Renamed 'l' to 'minimumValue'
+  var maximumValue = -Infinity; // Renamed 'h' to 'maximumValue'
+
+  // Iterate through each line of the processed input data.
+  rawData.forEach(function(currentNumberString) { // Renamed 'input' to 'rawData', 'n' to 'currentNumberString'
+    // Convert the string representation of a number to a floating-point value.
+    var parsedNumber = parseFloat(currentNumberString); // Renamed 'n' to 'parsedNumber'
+    // Update the minimum value if the current number is smaller.
+    minimumValue = findSmaller(parsedNumber, minimumValue); // Renamed 'l' to 'minimumValue', 'min' to 'findSmaller'
+    // Update the maximum value if the current number is larger.
+    maximumValue = findLarger(parsedNumber, maximumValue); // Renamed 'h' to 'maximumValue', 'max' to 'findLarger'
+  });
+
+  // Print the difference between the highest and lowest numbers found.
+  console.log(maximumValue - minimumValue); // Renamed 'h' and 'l'
+}
 
 /**
- * Main execution routine for the application.
- * Initializes extrema, processes each line of input, and prints the final range.
+ * Compares two numbers and returns the smaller one.
+ * @param {number} valA - The first number.
+ * @param {number} valB - The second number.
+ * @returns {number} The smaller of the two input values.
  */
-function   processNumericalData ( )
-{
-  // Declare and initialize variables for tracking the smallest and largest numbers found.
-  // Using Number.POSITIVE_INFINITY and Number.NEGATIVE_INFINITY ensures any valid number
-  // from the input will correctly update these initial values.
-  let   smallestObserved   =   Number.POSITIVE_INFINITY ;
-  let   largestObserved    =   Number.NEGATIVE_INFINITY ;
-
-  // Iterate over each string entry in our collection of parsed input lines.
-  parsedDataLines . forEach ( function ( currentLineContent )
-  {
-    // Attempt to convert the string content of the current line into a floating-point number.
-    // This is crucial for handling decimal values correctly.
-    let   numericValue   =   parseFloat ( currentLineContent ) ;
-
-    // Update the smallest observed value by comparing the current numeric value
-    // with the previously recorded smallest value.
-    smallestObserved = determineMinimum ( numericValue , smallestObserved ) ;
-
-    // Update the largest observed value by comparing the current numeric value
-    // with the previously recorded largest value.
-    largestObserved  = determineMaximum ( numericValue , largestObserved  ) ;
-  } ) ; // End of the iteration over parsed input lines.
-
-  // Output the calculated range, which is the difference between the largest and smallest numbers.
-  console . log ( largestObserved - smallestObserved ) ;
-} // End of the primary data processing function.
-
+function findSmaller(valA, valB) { // Renamed 'min' to 'findSmaller', 'x' to 'valA', 'y' to 'valB'
+  return valA < valB ? valA : valB;
+}
 
 /**
- * Compares two numerical values and returns the smaller of the two.
- * @param {number} valueA - The first numerical operand.
- * @param {number} valueB - The second numerical operand.
- * @returns {number} The lesser of valueA and valueB.
+ * Compares two numbers and returns the larger one.
+ * @param {number} valA - The first number.
+ * @param {number} valB - The second number.
+ * @returns {number} The larger of the two input values.
  */
-function    determineMinimum (    valueA   ,   valueB    )
-{
-  // A simple ternary operator is used for concise comparison.
-  return    valueA    <    valueB    ?    valueA    :    valueB ;
-} // End of the minimum determination utility.
+function findLarger(valA, valB) { // Renamed 'max' to 'findLarger', 'x' to 'valA', 'y' to 'valB'
+  return valA > valB ? valA : valB;
+}
 
+// Global variable to accumulate all data received from standard input.
+var rawData = ''; // Renamed 'input' to 'rawData'
 
-/**
- * Compares two numerical values and returns the larger of the two.
- * @param {number} valueA - The first numerical operand.
- * @param {number} valueB - The second numerical operand.
- * @returns {number} The greater of valueA and valueB.
- */
-function    determineMaximum (    valueA   ,   valueB    )
-{
-  // Another ternary operator for straightforward comparison.
-  return    valueA    >    valueB    ?    valueA    :    valueB ;
-} // End of the maximum determination utility.
+// Ensure the standard input stream remains open and active.
+process.stdin.resume();
+// Set the character encoding for incoming standard input data.
+process.stdin.setEncoding('utf8');
 
+// Attach an event listener to handle incoming data chunks from stdin.
+process.stdin.on('data', function(dataSegment) { // Renamed 'chunk' to 'dataSegment'
+  rawData += dataSegment; // Append the current data segment to the accumulated raw data.
+});
 
-// A global variable to accumulate all incoming data from standard input.
-// It starts as an empty string and gets appended with new chunks of data.
-var   incomingTextBuffer   =   '' ;
-
-// Another global variable, intended to hold an array of parsed numeric strings
-// once all input has been received and split into individual lines.
-var   parsedDataLines    ;
-
-// Prepare the standard input stream to begin receiving data.
-process . stdin . resume ( ) ;
-
-// Set the encoding for the incoming data to UTF-8, a common character encoding.
-process . stdin . setEncoding ( 'utf8' ) ;
-
-// Register an event listener for when new 'data' chunks arrive on standard input.
-process . stdin . on ( 'data' , function ( dataBlock )
-{
-  // Append the newly received data chunk to our accumulating buffer.
-  incomingTextBuffer   +=   dataBlock ;
-} ) ; // End of data reception handler.
-
-// Register an event listener for when the standard input stream signals 'end' (no more data).
-process . stdin . on ( 'end' , function ( )
-{
-  // Once all data is received, split the entire buffer into an array of strings,
-  // using the newline character as the delimiter. Each element will be a line.
-  parsedDataLines = incomingTextBuffer . split ( '\n' ) ;
-
-  // Initiate the primary data processing routine now that all input is available.
-  processNumericalData ( ) ;
-} ) ; // End of stream completion handler.
+// Attach an event listener to execute code when the standard input stream ends.
+process.stdin.on('end', function() {
+  // Split the accumulated raw data into an array of strings, using newline characters as delimiters.
+  rawData = rawData.split('\n'); // Renamed 'input' to 'rawData'
+  // Invoke the primary program execution function.
+  executeProgram(); // Renamed 'main' to 'executeProgram'
+});

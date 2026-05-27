@@ -1,156 +1,141 @@
-let inputReader = require('readline').createInterface({
+var inputReader = require('readline').createInterface({
   input: process.stdin,
   output: process.stdout
 });
+var inputProcessor;
+var inputLines = [];
 
-let dataProcessor;
-let receivedLines = [];
-
-inputReader.on('line', function(currentLine) {
-  receivedLines.push(currentLine);
+inputReader.on('line', function(currentLine){
+  inputLines.push(currentLine);
 });
 
-inputReader.on('close', function() {
-  dataProcessor = initializeProcessor(receivedLines);
-  console.error(" ");
-
-  let commencementTime = Date.now();
-  executePrimaryLogic();
-  let elapsedDuration = Date.now() - commencementTime;
-
-  reportDiagnostic("duration : " + (elapsedDuration) + "ms");
-  reportDiagnostic("memory : " + Math.round(process.memoryUsage().heapTotal / 1024) + "KB");
+inputReader.on('close', function(){
+  inputProcessor = initializeInputHandler(inputLines);
+  console.error("\n");
+  var startTime = Date.now();
+  executeMainLogic();
+  var elapsedTime = Date.now() - startTime;
+  logDebugMessage("time : " + (elapsedTime) + "ms");
+  logDebugMessage("memory : " + Math.round(process.memoryUsage().heapTotal / 1024) + "KB");
 });
 
-function deepCopyObject(sourceObj) {
-  return JSON.parse(JSON.stringify(sourceObj));
+function createDeepCopy(originalObject){
+  return JSON.parse(JSON.stringify(originalObject));
 }
 
-function retrieveNextInteger() {
-  return transformValue(getNextItem(), 1);
+function retrieveNextInteger(){
+  return convertInputData(fetchNextLine(), 1);
 }
 
-function retrieveNextStringArray() {
-  return transformValue(getNextItem(), 2);
+function retrieveNextStringArray(){
+  return convertInputData(fetchNextLine(), 2);
 }
 
-function retrieveNextIntegerArray() {
-  return transformValue(getNextItem(), 4);
+function retrieveNextIntegerArray(){
+  return convertInputData(fetchNextLine(), 4);
 }
 
-function retrieveNextCharacterArray() {
-  return transformValue(getNextItem(), 6);
+function retrieveNextCharacterArray(){
+  return convertInputData(fetchNextLine(), 6);
 }
 
-function getNextItem() {
-  return dataProcessor.retrieve();
+function fetchNextLine(){
+  return inputProcessor.fetchNextLine();
 }
 
-function hasMoreItems() {
-  return dataProcessor.peekNext();
+function hasMoreLines(){
+  return inputProcessor.hasMoreLines();
 }
 
-function initializeProcessor(inputData) {
-  let processedObject = {
-    dataLines: inputData,
-    currentPosition: 0,
-    maximumLength: inputData.length,
-    peekNext: function() {
-      return (this.currentPosition < this.maximumLength);
+function initializeInputHandler(sourceData){
+  var handlerObject = {
+    sourceLines : sourceData,
+    currentLineIndex : 0,
+    totalLines : sourceData.length,
+    hasMoreLines : function(){
+      return (this.currentLineIndex < this.totalLines);
     },
-    retrieve: function() {
-      if (!this.peekNext()) {
-        throw "InputDataExhaustedException ‚No further input available";
+    fetchNextLine : function(){
+      if(!this.hasMoreLines()){
+        throw "ArrayIndexOutOfBoundsException ‚There is no more input";
+      } else {
+        var currentInputLine = this.sourceLines[this.currentLineIndex++];
+        return currentInputLine;
       }
-      let extractedEntry = this.dataLines[this.currentPosition++];
-      return extractedEntry;
     }
   };
-  return processedObject;
+  return handlerObject;
 }
 
-function displayOutput(content) {
-  console.log(content);
+function displayResult(outputValue){
+  console.log(outputValue);
 }
 
-function reportDiagnostic(message) {
-  console.error("debug_info:" + require("util").inspect(message, false, null));
+function logDebugMessage(messageContent){
+  console.error("debug:" + require("util").inspect(messageContent, false, null));
 }
 
-// The 'conversionType' parameter indicates:
-// unknown or default: returns input as is.
-// 1: parses to integer.
-// 2: splits by space.
-// 4: splits by space and maps to numbers.
-// 6: splits by character.
-// 7: splits by character and maps to numbers.
-// 8: joins array elements with space.
-// 9: joins array elements with newline.
-// 0: joins array elements without separator.
-function transformValue(inputValue, conversionType) {
+// The 'conversionType' parameter dictates the parsing method:
+// 1: Parse as integer.
+// 2: Split by space.
+// 4: Split by space and parse each part as number.
+// 6: Split into individual characters.
+// 7: Split into individual characters and parse each as number.
+// 8: Join array elements with space.
+// 9: Join array elements with newline.
+// 0: Join array elements without separator.
+// Default: Return input as is.
+function convertInputData(inputValue, conversionType){
   try {
-    switch (conversionType) {
-      case 1:
-        return parseInt(inputValue);
-      case 2:
-        return inputValue.split(" ");
-      case 4:
-        return inputValue.split(" ").map(Number);
-      case 6:
-        return inputValue.split("");
-      case 7:
-        return inputValue.split("").map(Number);
-      case 8:
-        return inputValue.join(" ");
-      case 9:
-        return inputValue.join("\n");
-      case 0:
-        return inputValue.join("");
-      default:
-        return inputValue;
+    switch(conversionType){
+      case 1: return parseInt(inputValue);
+      case 2: return inputValue.split(" ");
+      case 4: return inputValue.split(" ").map(Number);
+      case 6: return inputValue.split("");
+      case 7: return inputValue.split("").map(Number);
+      case 8: return inputValue.join(" ");
+      case 9: return inputValue.join("\n");
+      case 0: return inputValue.join("");
+      default: return inputValue;
     }
-  } catch (errorObject) {
+  } catch(error){
     return inputValue;
   }
 }
 
-function executePrimaryLogic() {
-  let totalElements = retrieveNextInteger();
-  let inputSequence = retrieveNextIntegerArray();
+function executeMainLogic(){
+  var arraySize = retrieveNextInteger();
+  var numberSequence = retrieveNextIntegerArray();
+  var totalCount = 0;
+  var leftPointer = 0;
+  var rightPointer = 0;
+  var currentXorSum = numberSequence[0];
 
-  let cumulativeResult = 0;
-  let leftPointer = 0;
-  let rightPointer = 0;
-  let currentXORSum = inputSequence[0];
+  while(leftPointer < arraySize || rightPointer < arraySize){
+    // Advance the right pointer as long as the XOR sum property holds.
+    // The 'totalCount' increases by the current subarray length.
+    // If the property fails, we adjust the left pointer.
+    // Then repeat the process.
+    // logDebugMessage("current XOR state : " + currentXorSum);
+    // logDebugMessage({leftPointer, rightPointer});
 
-  while (leftPointer < totalElements || rightPointer < totalElements) {
-    // Advance the right boundary as long as the condition (sum == XOR sum) holds.
-    // The cumulative result increases by the distance between boundaries.
-    // If the condition becomes false:
-    // Add the accumulated distance between the pointers to the result.
-    // Advance the left boundary. Repeat the process.
-    // reportDiagnostic("current XOR state: " + currentXORSum);
-    // reportDiagnostic({leftPointer, rightPointer});
-
-    if ((currentXORSum + inputSequence[rightPointer + 1]) == (currentXORSum ^ inputSequence[rightPointer + 1])) {
-      // reportDiagnostic("Condition met.");
-      // reportDiagnostic(rightPointer - leftPointer + 1);
-      cumulativeResult += rightPointer - leftPointer + 1;
+    if(currentXorSum + numberSequence[rightPointer + 1] === (currentXorSum ^ numberSequence[rightPointer + 1])){
+      // logDebugMessage("condition met");
+      // logDebugMessage(rightPointer - leftPointer + 1);
+      totalCount += rightPointer - leftPointer + 1;
       rightPointer++;
-      currentXORSum += inputSequence[rightPointer];
+      currentXorSum += numberSequence[rightPointer];
     } else {
-      // reportDiagnostic("Condition failed.");
-      // cumulativeResult += 1; // This line seems commented out in the original, keeping it so.
-      currentXORSum -= inputSequence[leftPointer];
+      // logDebugMessage("condition not met");
+      currentXorSum -= numberSequence[leftPointer];
       leftPointer++;
-
-      if (rightPointer < leftPointer) {
+      if(rightPointer < leftPointer){
         rightPointer = leftPointer;
-        currentXORSum = inputSequence[rightPointer];
+        currentXorSum = numberSequence[rightPointer];
       }
     }
-    // reportDiagnostic("next XOR state: " + currentXORSum);
-    // reportDiagnostic({leftPointer, rightPointer});
+    // logDebugMessage("next XOR state : " + currentXorSum);
+    // logDebugMessage({leftPointer, rightPointer});
   }
-  displayOutput(cumulativeResult + totalElements);
+  displayResult(totalCount + arraySize);
 }

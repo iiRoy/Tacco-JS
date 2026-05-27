@@ -1,84 +1,165 @@
-const dataStream = require('node:fs').readFileSync(0, 'utf8');
-const rawSegments = dataStream.trim().split('\n');
+class MaxPriorityQueue {
+    constructor(comparator) {
+        this._heap = [];
+        this._comparator = comparator;
+    }
 
-const [vertexCountStr, edgeCountStr, initialElevationStr] = rawSegments[0].split(' ');
-const vertexCount = parseInt(vertexCountStr, 10);
-const edgeCount = parseInt(edgeCountStr, 10);
-const initialElevation = parseInt(initialElevationStr, 10);
+    size() {
+        return this._heap.length;
+    }
 
-const elevationLevels = Array.from({ length: vertexCount }, (_, idx) =>
-  parseInt(rawSegments[idx + 1], 10)
-);
+    isEmpty() {
+        return this.size() === 0;
+    }
 
-const connectionMap = Array.from({ length: vertexCount }, () => []);
+    insert(item) {
+        this._heap.push(item);
+        this._bubbleUp();
+    }
 
-for (let linkIdx = 0; linkIdx < edgeCount; linkIdx++) {
-  const [originVertexStr, targetVertexStr, journeyCostStr] = rawSegments[linkIdx + vertexCount + 1].split(' ');
-  const originVertex = parseInt(originVertexStr, 10) - 1;
-  const targetVertex = parseInt(targetVertexStr, 10) - 1;
-  const journeyCost = parseInt(journeyCostStr, 10);
+    extractMax() {
+        if (this.isEmpty()) return undefined;
+        const max = this._heap[0];
+        const last = this._heap.pop();
+        if (!this.isEmpty()) {
+            this._heap[0] = last;
+            this._sinkDown();
+        }
+        return max;
+    }
 
-  connectionMap[originVertex].push({
-    destination: targetVertex,
-    toll: journeyCost
-  });
-  connectionMap[targetVertex].push({
-    destination: originVertex,
-    toll: journeyCost
-  });
+    _bubbleUp() {
+        let currentIdx = this.size() - 1;
+        while (currentIdx > 0) {
+            const parentIdx = Math.floor((currentIdx - 1) / 2);
+            if (this._comparator(this._heap[currentIdx], this._heap[parentIdx]) > 0) {
+                [this._heap[currentIdx], this._heap[parentIdx]] = [this._heap[parentIdx], this._heap[currentIdx]];
+                currentIdx = parentIdx;
+            } else {
+                break;
+            }
+        }
+    }
+
+    _sinkDown() {
+        let currentIdx = 0;
+        const lastIdx = this.size() - 1;
+        while (true) {
+            let leftChildIdx = 2 * currentIdx + 1;
+            let rightChildIdx = 2 * currentIdx + 2;
+            let largestIdx = currentIdx;
+
+            if (leftChildIdx <= lastIdx && this._comparator(this._heap[leftChildIdx], this._heap[largestIdx]) > 0) {
+                largestIdx = leftChildIdx;
+            }
+
+            if (rightChildIdx <= lastIdx && this._comparator(this._heap[rightChildIdx], this._heap[largestIdx]) > 0) {
+                largestIdx = rightChildIdx;
+            }
+
+            if (largestIdx !== currentIdx) {
+                [this._heap[currentIdx], this._heap[largestIdx]] = [this._heap[largestIdx], this._heap[currentIdx]];
+                currentIdx = largestIdx;
+            } else {
+                break;
+            }
+        }
+    }
 }
 
-let minimumJourneyTime = Infinity;
+const rawInputData = require('fs').readFileSync('/dev/stdin', 'utf8');
+const parsedLines = rawInputData.split('\n');
 
-const explorePath = (currentVertex, accumulatedTime, currentElevation, visitedNodes) => {
-  if (accumulatedTime >= minimumJourneyTime) {
-    return;
-  }
+const [vertexCount, edgeCountVal, initialWaterLevel] = parsedLines[0].split(' ').map(Number);
 
-  if (currentVertex === vertexCount - 1) {
-    minimumJourneyTime = Math.min(minimumJourneyTime, accumulatedTime + elevationLevels[currentVertex] - currentElevation);
-    return;
-  }
+const vertexWaterLevels = Array(vertexCount);
+for (let i = 0; i < vertexCount; i++) {
+    vertexWaterLevels[i] = Number(parsedLines[i + 1]);
+}
 
-  const currentConnections = connectionMap[currentVertex];
-  for (const connectionDetail of currentConnections) {
-    const nextVertex = connectionDetail.destination;
-    const journeyToll = connectionDetail.toll;
+const adjacencyMap = new Map();
+for (let i = 0; i < vertexCount; i++) {
+    adjacencyMap.set(i, []);
+}
 
-    if (visitedNodes.has(nextVertex)) {
-      continue;
+for (let i = 0; i < edgeCountVal; i++) {
+    const edgeData = parsedLines[i + vertexCount + 1].split(' ').map(Number);
+    const sourceVertex = edgeData[0] - 1;
+    const targetVertex = edgeData[1] - 1;
+    const travelDuration = edgeData[2];
+
+    adjacencyMap.get(sourceVertex).push([targetVertex, travelDuration]);
+    adjacencyMap.get(targetVertex).push([sourceVertex, travelDuration]);
+}
+
+const pathQueue = new MaxPriorityQueue((a, b) => b.accumulatedTime - a.accumulatedTime);
+
+pathQueue.insert({
+    position: 0,
+    accumulatedTime: 0,
+    currentWaterLevel: initialWaterLevel,
+    pathHistory: new Set([0])
+});
+
+let minimumTravelTime = Infinity;
+
+while (!pathQueue.isEmpty()) {
+    const currentPath = pathQueue.extractMax();
+
+    if (currentPath.accumulatedTime >= minimumTravelTime) {
+        continue;
     }
 
-    if (elevationLevels[currentVertex] < journeyToll) {
-      continue;
+    const neighbors = adjacencyMap.get(currentPath.position) || [];
+
+    for (const [neighborIndex, travelCost] of neighbors) {
+        if (currentPath.pathHistory.has(neighborIndex)) {
+            continue;
+        }
+
+        if (vertexWaterLevels[currentPath.position] < travelCost) {
+            continue;
+        }
+
+        let nextAccumulatedTime;
+        let nextWaterLevel;
+        const nextPathHistory = new Set([...currentPath.pathHistory, neighborIndex]);
+
+        const conditionForHIndex = (neighborIndex + travelCost >= currentPath.currentWaterLevel && currentPath.currentWaterLevel >= travelCost);
+        const hValueFromBooleanIndex = vertexWaterLevels[conditionForHIndex ? 1 : 0];
+
+        if (vertexWaterLevels[neighborIndex] + travelCost < currentPath.currentWaterLevel) {
+            nextAccumulatedTime = currentPath.accumulatedTime + travelCost + currentPath.currentWaterLevel - (vertexWaterLevels[neighborIndex] + travelCost);
+            nextWaterLevel = vertexWaterLevels[neighborIndex];
+        } else if (hValueFromBooleanIndex + travelCost >= currentPath.currentWaterLevel && currentPath.currentWaterLevel >= travelCost) {
+            nextAccumulatedTime = currentPath.accumulatedTime + travelCost;
+            nextWaterLevel = currentPath.currentWaterLevel - travelCost;
+        } else {
+            nextAccumulatedTime = currentPath.accumulatedTime + travelCost + travelCost - currentPath.currentWaterLevel;
+            nextWaterLevel = 0;
+        }
+        
+        if (neighborIndex === vertexCount - 1) {
+            const finalPathCandidate = {
+                position: neighborIndex,
+                accumulatedTime: nextAccumulatedTime,
+                currentWaterLevel: nextWaterLevel,
+                pathHistory: nextPathHistory
+            };
+            minimumTravelTime = Math.min(minimumTravelTime, finalPathCandidate.accumulatedTime + vertexWaterLevels[vertexCount - 1] - finalPathCandidate.currentWaterLevel);
+        } else {
+            pathQueue.insert({
+                position: neighborIndex,
+                accumulatedTime: nextAccumulatedTime,
+                currentWaterLevel: nextWaterLevel,
+                pathHistory: nextPathHistory
+            });
+        }
     }
+}
 
-    const nextVisitedNodesSet = new Set(visitedNodes).add(nextVertex);
-
-    let newAccumulatedTime;
-    let newElevation;
-
-    if (elevationLevels[nextVertex] + journeyToll < currentElevation) {
-      newAccumulatedTime = accumulatedTime + journeyToll + currentElevation - (elevationLevels[nextVertex] + journeyToll);
-      newElevation = elevationLevels[nextVertex];
-    }
-    else if (elevationLevels[nextVertex] + journeyToll >= currentElevation && currentElevation >= journeyToll) {
-      newAccumulatedTime = accumulatedTime + journeyToll;
-      newElevation = currentElevation - journeyToll;
-    }
-    else {
-      newAccumulatedTime = accumulatedTime + journeyToll + journeyToll - currentElevation;
-      newElevation = 0;
-    }
-
-    explorePath(nextVertex, newAccumulatedTime, newElevation, nextVisitedNodesSet);
-  }
-};
-
-explorePath(0, 0, initialElevation, new Set([0]));
-
-if (minimumJourneyTime === Infinity) {
-  console.log(-1);
+if (minimumTravelTime === Infinity) {
+    console.log(-1);
 } else {
-  console.log(minimumJourneyTime);
+    console.log(minimumTravelTime);
 }

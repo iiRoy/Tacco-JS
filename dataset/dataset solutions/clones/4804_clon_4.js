@@ -1,60 +1,21 @@
-const obtainSourceData = () => require("node:fs").readFileSync("/dev/stdin", "utf8");
+function evaluateArithmetic(sourceInput) {
+    const expressionParts = sourceInput.trim().split(" ");
 
-const performArithmeticOperation = (incomingText) => {
-    const refinedText = incomingText.trim();
-    const sequenceElements = refinedText.match(/(\S+)/g) || [];
+    const operandOne = parseInt(expressionParts[0], 10);
+    const operatorSymbol = expressionParts[1];
+    const operandTwo = parseInt(expressionParts[2], 10);
 
-    const convertToInteger = (item) => {
-        if (item === null || item === undefined || typeof item !== 'string') {
-            return NaN;
-        }
-        item = item.trim();
-        let indexPosition = 0;
-        let numericalSign = 1;
-
-        if (item[indexPosition] === '-') {
-            numericalSign = -1;
-            indexPosition++;
-        } else if (item[indexPosition] === '+') {
-            indexPosition++;
-        }
-
-        let currentResult = 0;
-        let digitEncountered = false;
-        while (indexPosition < item.length) {
-            const charCodeValue = item.charCodeAt(indexPosition);
-            if (charCodeValue >= 48 && charCodeValue <= 57) {
-                currentResult = currentResult * 10 + (charCodeValue - 48);
-                digitEncountered = true;
-            } else {
-                break;
-            }
-            indexPosition++;
-        }
-        return digitEncountered ? numericalSign * currentResult : NaN;
+    const operationDispatch = {
+        "+": (a, b) => a + b,
+        "-": (a, b) => a - b,
     };
 
-    const firstTermString = sequenceElements[0];
-    const operatorSymbolString = sequenceElements[1];
-    const secondTermString = sequenceElements[2];
+    // The original logic implies that if the operator is not '+', it defaults to '-'.
+    const chosenOperation = (operatorSymbol === '+') ? operationDispatch['+'] : operationDispatch['-'];
 
-    const valueA = convertToInteger(firstTermString);
-    const valueB = convertToInteger(secondTermString);
+    const computedValue = chosenOperation(operandOne, operandTwo);
 
-    const operationMap = {
-        "+": (x, y) => x + y,
-        "-": (x, y) => x - y
-    };
+    console.log(computedValue);
+}
 
-    const chosenOperationFunction = operationMap[operatorSymbolString] || operationMap["-"];
-
-    return chosenOperationFunction(valueA, valueB);
-};
-
-const executeComputation = () => {
-    const rawData = obtainSourceData();
-    const finalCalculatedValue = performArithmeticOperation(rawData);
-    process.stdout.write(finalCalculatedValue.toString() + "\n");
-};
-
-executeComputation();
+evaluateArithmetic(require("fs").readFileSync("/dev/stdin", "utf8"));

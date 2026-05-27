@@ -1,81 +1,84 @@
+#!/usr/bin/node
 (function() {
-  const inputSource = process.stdin;
+  let rawDataSegments = [];
+  let partialLineBuffer = "";
+  const inputSource = process.openStdin();
   inputSource.setEncoding('utf8');
 
-  let fullInputBuffer = '';
+  const traverseRegion = (startX, startY, activeMatrix, visitedCoordinates) => {
+    const processingQueue = [[startX, startY]];
+    const matrixHeight = activeMatrix.length;
+    const matrixWidth = activeMatrix[0].length;
 
-  inputSource.on('data', (dataChunk) => {
-    fullInputBuffer += dataChunk;
-  });
+    visitedCoordinates.add(`${startX}_${startY}`);
 
-  inputSource.on('end', () => {
-    const allTextLines = fullInputBuffer.split('\n');
-    let currentLineIndex = 0;
-
-    const neighborOffsets = [
+    const directionalOffsets = [
       [-1, -1], [-1, 0], [-1, 1],
       [0, -1],           [0, 1],
       [1, -1], [1, 0], [1, 1]
     ];
 
-    while (currentLineIndex < allTextLines.length) {
-      const dimensionLine = allTextLines[currentLineIndex].trim();
-      if (dimensionLine === '') {
-        currentLineIndex++;
-        continue;
-      }
+    while (processingQueue.length > 0) {
+      const [currentX, currentY] = processingQueue.shift();
 
-      const parsedDimensions = dimensionLine.split(' ').map(Number);
-      const matrixColumns = parsedDimensions[0];
-      const matrixRows = parsedDimensions[1];
-      currentLineIndex++;
+      for (const [deltaX, deltaY] of directionalOffsets) {
+        const nextX = currentX + deltaX;
+        const nextY = currentY + deltaY;
+        const coordinateKey = `${nextX}_${nextY}`;
 
-      if (matrixRows === 0) {
-        break;
-      }
-
-      const currentMap = [];
-      for (let r = 0; r < matrixRows; r++) {
-        const rowValues = allTextLines[currentLineIndex + r].trim().split(' ').map(Number);
-        currentMap.push(rowValues);
-      }
-      currentLineIndex += matrixRows;
-
-      let detectedClusters = 0;
-      const cellsVisited = Array(matrixRows).fill(0).map(() => Array(matrixColumns).fill(false));
-
-      for (let rowScan = 0; rowScan < matrixRows; rowScan++) {
-        for (let colScan = 0; colScan < matrixColumns; colScan++) {
-          if (currentMap[rowScan][colScan] === 1 && !cellsVisited[rowScan][colScan]) {
-            detectedClusters++;
-            const processingQueue = [[rowScan, colScan]];
-            cellsVisited[rowScan][colScan] = true;
-
-            let queuePointer = 0;
-
-            while (queuePointer < processingQueue.length) {
-              const [activeRow, activeCol] = processingQueue[queuePointer++];
-
-              for (const [rowOffset, colOffset] of neighborOffsets) {
-                const nextRow = activeRow + rowOffset;
-                const nextCol = activeCol + colOffset;
-
-                const withinBounds = nextRow >= 0 && nextRow < matrixRows &&
-                                     nextCol >= 0 && nextCol < matrixColumns;
-
-                if (withinBounds &&
-                    currentMap[nextRow][nextCol] === 1 &&
-                    !cellsVisited[nextRow][nextCol]) {
-
-                  cellsVisited[nextRow][nextCol] = true;
-                  processingQueue.push([nextRow, nextCol]);
-                }
-              }
-            }
+        if (nextX >= 0 && nextX < matrixWidth && nextY >= 0 && nextY < matrixHeight) {
+          if (activeMatrix[nextY][nextX] === 1 && !visitedCoordinates.has(coordinateKey)) {
+            visitedCoordinates.add(coordinateKey);
+            processingQueue.push([nextX, nextY]);
           }
         }
       }
-      console.log(detectedClusters);
+    }
+  };
+
+  inputSource.on('data', (incomingData) => {
+    const currentBuffer = partialLineBuffer + incomingData;
+    const lines = currentBuffer.split("\n");
+    partialLineBuffer = lines.pop();
+
+    for (const lineContent of lines) {
+      if (lineContent === '') continue;
+      const parsedRow = lineContent.split(" ").map(Number);
+      rawDataSegments.push(parsedRow);
+    }
+  });
+
+  inputSource.on('end', (_) => {
+    let currentSegmentOffset = 0;
+    while (currentSegmentOffset < rawDataSegments.length) {
+      const headerRow = rawDataSegments[currentSegmentOffset];
+      if (!headerRow || headerRow.length < 2) break;
+      const gridHeight = headerRow[1];
+
+      if (!gridHeight) break;
+
+      const activeMatrix = rawDataSegments.slice(currentSegmentOffset + 1, currentSegmentOffset + 1 + gridHeight);
+
+      let componentCount = 0;
+      const visitedCoordinates = new Set();
+
+      if (activeMatrix.length > 0 && activeMatrix[0].length > 0) {
+          const matrixWidth = activeMatrix[0].length;
+          const matrixHeight = activeMatrix.length;
+
+          for (let rowIdx = 0; rowIdx < matrixHeight; rowIdx++) {
+            for (let colIdx = 0; colIdx < matrixWidth; colIdx++) {
+              const currentCellKey = `${colIdx}_${rowIdx}`;
+              if (activeMatrix[rowIdx][colIdx] === 1 && !visitedCoordinates.has(currentCellKey)) {
+                componentCount++;
+                traverseRegion(colIdx, rowIdx, activeMatrix, visitedCoordinates);
+              }
+            }
+          }
+      }
+      console.log(componentCount);
+
+      currentSegmentOffset += (gridHeight + 1);
     }
   });
 }).call(this);

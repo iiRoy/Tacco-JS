@@ -1,62 +1,64 @@
-function Cube (initialFaces) {
+function Cube(initialFaces) {
   this.upperFace   = initialFaces[0];
   this.forwardFace = initialFaces[1];
-  this.rightFace   = initialFaces[2];
-  this.leftFace    = initialFaces[3];
+  this.rightSide   = initialFaces[2];
+  this.leftSide    = initialFaces[3];
   this.rearFace    = initialFaces[4];
   this.lowerFace   = initialFaces[5];
 
-  this.rotate = function (moveCommand) {
-    let temporaryValue;
-    switch (moveCommand) {
+  this.rotate = function(rotationDir) {
+    let swapVar;
+    switch (rotationDir) {
       case 'E':
-        temporaryValue    = this.upperFace;
-        this.upperFace    = this.leftFace;
-        this.leftFace     = this.lowerFace;
-        this.lowerFace    = this.rightFace;
-        this.rightFace    = temporaryValue;
+        swapVar         = this.upperFace;
+        this.upperFace   = this.leftSide;
+        this.leftSide    = this.lowerFace;
+        this.lowerFace   = this.rightSide;
+        this.rightSide   = swapVar;
         break;
       case 'N':
-        temporaryValue    = this.upperFace;
-        this.upperFace    = this.forwardFace;
-        this.forwardFace  = this.lowerFace;
-        this.lowerFace    = this.rearFace;
-        this.rearFace     = temporaryValue;
+        swapVar         = this.upperFace;
+        this.upperFace   = this.forwardFace;
+        this.forwardFace = this.lowerFace;
+        this.lowerFace   = this.rearFace;
+        this.rearFace    = swapVar;
         break;
       case 'S':
-        temporaryValue    = this.upperFace;
-        this.upperFace    = this.rearFace;
-        this.rearFace     = this.lowerFace;
-        this.lowerFace    = this.forwardFace;
-        this.forwardFace  = temporaryValue;
+        swapVar         = this.upperFace;
+        this.upperFace   = this.rearFace;
+        this.rearFace    = this.lowerFace;
+        this.lowerFace   = this.forwardFace;
+        this.forwardFace = swapVar;
         break;
       case 'W':
-        temporaryValue    = this.upperFace;
-        this.upperFace    = this.rightFace;
-        this.rightFace    = this.lowerFace;
-        this.lowerFace    = this.leftFace;
-        this.leftFace     = temporaryValue;
+        swapVar         = this.upperFace;
+        this.upperFace   = this.rightSide;
+        this.rightSide   = this.lowerFace;
+        this.lowerFace   = this.leftSide;
+        this.leftSide    = swapVar;
         break;
     }
-  }
+  };
 }
+
+
 
 let receivedData = "";
 process.stdin.resume();
 process.stdin.setEncoding('utf-8');
-process.stdin.on('data', function(dataSegment) {
-  receivedData += dataSegment;
+process.stdin.on('data', function(chunk) {
+  receivedData += chunk;
 });
 
-process.stdin.on('end', () => {
-  receivedData = receivedData.split("\n");
+process.stdin.on('end', function() {
+  let lines = receivedData.split("\n");
 
-  const faceNumbers = receivedData[0].split(' ').map(Number);
-  const movementSequence = receivedData[1].split('');
-  const gameCube = new Cube(faceNumbers);
+  let faceNumbers = lines[0].split(' ').map(Number);
+  let rotationCommands = lines[1].split('');
+  let gameDie = new Cube(faceNumbers);
 
-  for (let idx = 0; idx < movementSequence.length; idx++) {
-    gameCube.rotate(movementSequence[idx]);
+  for (let idx = 0; idx < rotationCommands.length; idx++) {
+    gameDie.rotate(rotationCommands[idx]);
   }
-  console.log(gameCube.upperFace);
+  console.log(gameDie.upperFace);
 });

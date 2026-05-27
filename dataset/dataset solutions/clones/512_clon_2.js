@@ -1,73 +1,78 @@
-/* This script initializes standard input handling for a Node.js application. */
-process.stdin.resume(); // Ensures the standard input stream stays open.
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
 
-process.stdin.setEncoding('utf8'); // Sets the character encoding for input data.
+// This event listener processes incoming data from standard input.
+process.stdin.on('data', function(receivedData) {
+    let idx; // Loop counter for array processing
+    // Clean up the input string and split it into individual lines.
+    const inputLines = receivedData.trim().split("\n");
 
-// An event listener is attached to the standard input stream to process incoming 'data'.
-process.stdin.on('data', function (rawInputData) {
-    let idxB; // A general-purpose index variable, often used for inner loops.
-    // The raw input string is trimmed of leading/trailing whitespace and then split into an array of individual lines.
-    let inputRows = rawInputData.trim().split("\n");
+    // Iterate through each line of the provided input.
+    for (let lineIndex = 0; lineIndex < inputLines.length; ++lineIndex) {
+        let countVal; // Stores the number of elements in the sequence
+        let finalIndex; // Upper bound for array indexing
+        let dataCollection; // Array holding the sequence elements as strings
+        let diffArray; // Array to store differences between consecutive elements
 
-    // This loop iterates through each line (or pair of lines, depending on processing) from the input.
-    for (let rowIndex = 0; rowIndex < inputRows.length; ++rowIndex) {
-        let countValue;     // This variable will hold a numeric count, parsed from an input line.
-        let limitIndex;     // Represents an upper bound or size limit for data structures.
-        let stringElements; // An array storing individual string components parsed from an input line.
-        let differenceArray; // An array specifically designed to store calculated numerical differences.
+        // Parse the first number on the current line, which indicates the size of the sequence.
+        countVal = parseInt(inputLines[lineIndex++]);
 
-        // Parses the current line as an integer for 'countValue' and then increments 'rowIndex' to move to the next line.
-        countValue = parseInt(inputRows[rowIndex++]);
-
-        // If the parsed 'countValue' is zero, it signifies the end of input or a termination condition.
-        if (countValue === 0) {
-            break; // Exits the main loop.
+        // If the count value is zero, it signifies the end of input processing.
+        if (countVal === 0) {
+            break;
         }
 
-        limitIndex = countValue + 1; // Establishes the exclusive upper bound for array indexing based on 'countValue'.
+        // Determine the final index for array allocation (n + 1 for 1-based indexing).
+        finalIndex = countVal + 1;
+        // Initialize an array to store the calculated differences.
+        diffArray = new Array(finalIndex);
 
-        // Initializes a new array with a predefined size, determined by 'limitIndex'.
-        differenceArray = new Array(limitIndex);
+        // Split the next line (which contains the sequence) into an array of string numbers.
+        dataCollection = inputLines[lineIndex].trim().split(" ");
 
-        // Takes the next available input line, trims it, and splits it into an array of string-based elements.
-        stringElements = inputRows[rowIndex].trim().split(" ");
-
-        // Populates the 'differenceArray' by calculating the difference between consecutive elements from 'stringElements'.
-        for (idxB = 1; idxB < limitIndex; ++idxB) {
-            differenceArray[idxB] = parseInt(stringElements[idxB]) - parseInt(stringElements[idxB - 1]);
+        // Calculate the differences between adjacent elements and store them in diffArray.
+        // The loop starts from 1 because diffArray[0] is unused, and we compare dataset[ii] with dataset[ii-1].
+        for (idx = 1; idx < finalIndex; ++idx) {
+            diffArray[idx] = parseInt(dataCollection[idx]) - parseInt(dataCollection[idx - 1]);
         }
 
-        // --- Extensive Conditional Logic for Pattern Matching and Output ---
+        // Check for various patterns in the differences to identify the missing number.
 
-        // Checks if the first four calculated differences (from index 1 to 4) are all equal.
-        if (differenceArray[1] === differenceArray[2] && differenceArray[2] === differenceArray[3] && differenceArray[3] === differenceArray[4]) {
-            // If the initial pattern holds, this loop verifies if the same difference continues for subsequent elements.
-            for (idxB = 5; idxB < limitIndex; ++idxB) {
-                if (differenceArray[idxB] !== differenceArray[1]) {
-                    break; // Breaks if a discrepancy is found.
+        // Case 1: The first four differences are identical.
+        if (diffArray[1] === diffArray[2] && diffArray[2] === diffArray[3] && diffArray[3] === diffArray[4]) {
+            // Verify if this pattern holds for all subsequent differences.
+            for (idx = 5; idx < finalIndex; ++idx) {
+                if (diffArray[idx] !== diffArray[1]) {
+                    break; // Found a mismatch, so the missing number is at this position.
                 }
             }
-            console.log(stringElements[idxB]); // Outputs the element at the point where the pattern broke or the last element.
+            // Output the element at the identified position.
+            console.log(dataCollection[idx]);
         }
-        // Checks if differences at indices 2, 3, and 4 are identical.
-        else if (differenceArray[2] === differenceArray[3] && differenceArray[3] === differenceArray[4]) {
-            console.log(stringElements[0]); // If this pattern matches, the first string element is logged.
+        // Case 2: The second, third, and fourth differences are identical.
+        else if (diffArray[2] === diffArray[3] && diffArray[3] === diffArray[4]) {
+            // The missing number is likely the first one.
+            console.log(dataCollection[0]);
         }
-        // Checks if differences at indices 1, 2, and 3 are identical.
-        else if (differenceArray[1] === differenceArray[2] && differenceArray[2] === differenceArray[3]) {
-            console.log(stringElements[4]); // If this pattern matches, the fifth string element is logged.
+        // Case 3: The first, second, and third differences are identical.
+        else if (diffArray[1] === diffArray[2] && diffArray[2] === diffArray[3]) {
+            // The missing number is likely the fifth one (index 4).
+            console.log(dataCollection[4]);
         }
-        // Evaluates a more complex condition involving a difference of string elements and two difference array elements.
-        else if (parseInt(stringElements[2]) - parseInt(stringElements[0]) === differenceArray[3] && differenceArray[3] === differenceArray[4]) {
-            console.log(stringElements[1]); // If this specific pattern holds, the second string element is logged.
+        // Case 4: The difference between dataset[2] and dataset[0] matches the third and fourth differences.
+        else if (parseInt(dataCollection[2]) - parseInt(dataCollection[0]) === diffArray[3] && diffArray[3] === diffArray[4]) {
+            // The missing number is likely the second one (index 1).
+            console.log(dataCollection[1]);
         }
-        // Another complex condition comparing difference array elements with a calculated difference from string elements.
-        else if (differenceArray[1] === differenceArray[2] && differenceArray[2] === parseInt(stringElements[4]) - parseInt(stringElements[2])) {
-            console.log(stringElements[3]); // If this pattern is met, the fourth string element is logged.
+        // Case 5: The first and second differences are identical, and they match the difference between dataset[4] and dataset[2].
+        else if (diffArray[1] === diffArray[2] && diffArray[2] === parseInt(dataCollection[4]) - parseInt(dataCollection[2])) {
+            // The missing number is likely the fourth one (index 3).
+            console.log(dataCollection[3]);
         }
-        // A final complex condition, checking a difference from string elements against two difference array elements.
-        else if (differenceArray[1] === parseInt(stringElements[3]) - parseInt(stringElements[1]) && differenceArray[1] === differenceArray[4]) {
-            console.log(stringElements[2]); // If this last pattern holds, the third string element is logged.
+        // Case 6: The first difference matches the difference between dataset[3] and dataset[1], and also matches the fourth difference.
+        else if (diffArray[1] === parseInt(dataCollection[3]) - parseInt(dataCollection[1]) && diffArray[1] === diffArray[4]) {
+            // The missing number is likely the third one (index 2).
+            console.log(dataCollection[2]);
         }
-    } // End of the main loop iterating through input rows.
-}); // End of the 'data' event handler function.
+    }
+});

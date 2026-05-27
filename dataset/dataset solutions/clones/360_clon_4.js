@@ -1,62 +1,54 @@
-const retrieveInputData = () => require('fs').readFileSync('/dev/stdin', 'utf8');
-const allSourceSegments = retrieveInputData().trim().split('\n');
+let rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
+let lineSegments = rawData.trim().split('\n');
+let linePointer = 0;
 
-let currentSegmentPointer = 0;
+function propagateClear(startY, startX, targetChar, maxRows, maxCols, currentGrid) {
+  const traversalQueue = [[startY, startX]];
+  const directions = [[0, -1], [0, 1], [-1, 0], [1, 0]];
+  let head = 0;
 
-const processConnectedEntities = (startR, startC, entityType, currentMap, totalMapRows, totalMapCols) => {
-    const entityQueue = [];
-    entityQueue.push([startR, startC]);
-    currentMap[startR][startC] = null; // Mark as processed
+  while (head < traversalQueue.length) {
+    const [cY, cX] = traversalQueue[head++];
 
-    const directionalDisplacements = [
-        [0, -1], // West
-        [0, 1],  // East
-        [-1, 0], // North
-        [1, 0]   // South
-    ];
+    for (const [deltaY, deltaX] of directions) {
+      const nY = cY + deltaY;
+      const nX = cX + deltaX;
 
-    while (entityQueue.length > 0) {
-        const [activeR, activeC] = entityQueue.shift();
-
-        for (const [deltaR, deltaC] of directionalDisplacements) {
-            const adjacentR = activeR + deltaR;
-            const adjacentC = activeC + deltaC;
-
-            // Verify bounds
-            if (adjacentR >= 0 && adjacentR < totalMapRows && adjacentC >= 0 && adjacentC < totalMapCols) {
-                // Verify entity type
-                if (currentMap[adjacentR][adjacentC] === entityType) {
-                    currentMap[adjacentR][adjacentC] = null; // Mark as processed
-                    entityQueue.push([adjacentR, adjacentC]);
-                }
-            }
-        }
+      if (nY >= 0 && nY < maxRows && nX >= 0 && nX < maxCols && currentGrid[nY][nX] === targetChar) {
+        currentGrid[nY][nX] = '0';
+        traversalQueue.push([nY, nX]);
+      }
     }
-};
+  }
+}
 
 while (true) {
-    const dimensionsString = allSourceSegments[currentSegmentPointer++].split(' ').map(Number);
-    const mapHeight = dimensionsString[0];
-    const mapWidth = dimensionsString[1];
+  let dimensions = lineSegments[linePointer++].split(' ').map(Number);
+  let rowCount = dimensions[0];
+  let colCount = dimensions[1];
 
-    if (mapHeight === 0 && mapWidth === 0) {
-        break;
+  if (rowCount === 0 && colCount === 0) {
+    break;
+  }
+
+  let gridMatrix = [];
+  for (let r = 0; r < rowCount; r++) {
+    gridMatrix.push(lineSegments[linePointer++].split(''));
+  }
+
+  let totalClusters = 0;
+  const bombIndicators = new Set(['@', '#', '*']);
+
+  for (let rIdx = 0; rIdx < rowCount; rIdx++) {
+    for (let cIdx = 0; cIdx < colCount; cIdx++) {
+      let cellContent = gridMatrix[rIdx][cIdx];
+
+      if (bombIndicators.has(cellContent)) {
+        totalClusters++;
+        gridMatrix[rIdx][cIdx] = '0';
+        propagateClear(rIdx, cIdx, cellContent, rowCount, colCount, gridMatrix);
+      }
     }
-
-    const topographyMatrix = Array.from({ length: mapHeight }, (_, rowIndex) => 
-        allSourceSegments[currentSegmentPointer++].split('')
-    );
-
-    let formationTally = 0;
-
-    for (let rIndex = 0; rIndex < mapHeight; rIndex++) {
-        for (let cIndex = 0; cIndex < mapWidth; cIndex++) {
-            const contentAtCell = topographyMatrix[rIndex][cIndex];
-            if (contentAtCell === '@' || contentAtCell === '#' || contentAtCell === '*') {
-                formationTally++;
-                processConnectedEntities(rIndex, cIndex, contentAtCell, topographyMatrix, mapHeight, mapWidth);
-            }
-        }
-    }
-    console.log(formationTally);
+  }
+  console.log(totalClusters);
 }

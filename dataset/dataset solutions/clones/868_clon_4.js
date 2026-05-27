@@ -1,87 +1,56 @@
-let concertSheet = [];
-let sheetPointer = 0;
+const createGrid = (rows, cols, initialValue) =>
+  Array.from({ length: rows }, () => Array.from({ length: cols }, () => initialValue));
 
-const acquireConcertData = () => {
-    const rawConcertText = require('fs').readFileSync(0, 'utf8');
-    concertSheet = rawConcertText.split('\n').filter(entry => entry.trim() !== '');
-};
+const calculateOptimalScore = (targetLength, phraseDefinitions) => {
+  const phraseCount = phraseDefinitions.length;
+  const scoreTable = createGrid(phraseCount + 1, targetLength + 1, 0);
 
-const extractNextValue = () => {
-    return concertSheet[sheetPointer++];
-};
+  phraseDefinitions.forEach((currentPhrase, phraseIndex) => {
+    const [startPoint, minLength, profitValue] = currentPhrase;
+    Array.from({ length: targetLength + 1 }, (_, currentLength) => currentLength).forEach(currentLength => {
+      const previousPhraseScore = scoreTable[phraseIndex][currentLength];
+      let currentPhraseMaxScore = previousPhraseScore;
 
-const computeMaxScore = (timeLimit, tuneComponents) => {
-    let timeScores = new Array(timeLimit + 1).fill(0);
+      if (startPoint <= currentLength) {
+        const lowerBound = Math.max(0, currentLength - minLength);
+        const upperBound = currentLength - startPoint;
 
-    for (const component of tuneComponents) {
-        const componentStartCost = component[0];
-        const componentDuration = component[1];
-        const componentWorth = component[2];
-
-        let nextTimeScores = timeScores.slice();
-        let windowIndices = []; // Deque for sliding window maximum, stores indices
-
-        for (let currentMoment = 0; currentMoment <= timeLimit; ++currentMoment) {
-            const minPrevMoment = Math.max(0, currentMoment - componentDuration);
-            const candidatePrevMoment = currentMoment - componentStartCost;
-
-            // 1. Remove indices from the front of the deque that are no longer within the sliding window
-            while (windowIndices.length > 0 && windowIndices[0] < minPrevMoment) {
-                windowIndices.shift();
-            }
-
-            // 2. Add the current candidate index to the deque, maintaining the monotonic property
-            if (candidatePrevMoment >= 0) {
-                while (windowIndices.length > 0 && nextTimeScores[windowIndices[windowIndices.length - 1]] <= nextTimeScores[candidatePrevMoment]) {
-                    windowIndices.pop();
-                }
-                windowIndices.push(candidatePrevMoment);
-            }
-            
-            // 3. If the deque is not empty, its front element holds the index of the maximum value in the current window
-            if (windowIndices.length > 0) {
-                const bestPrevScore = nextTimeScores[windowIndices[0]];
-                // Update the current moment's score by considering taking this component
-                nextTimeScores[currentMoment] = Math.max(nextTimeScores[currentMoment], bestPrevScore + componentWorth);
-            }
+        let rangeMax = 0;
+        if (upperBound >= lowerBound) {
+          rangeMax = Array.from({ length: upperBound - lowerBound + 1 }, (_, idx) => scoreTable[phraseIndex + 1][lowerBound + idx])
+                       .reduce((accumulator, value) => Math.max(accumulator, value), 0);
         }
-        timeScores = nextTimeScores; // Update the scores for the next component
-    }
-    return timeScores[timeLimit];
+        currentPhraseMaxScore = Math.max(previousPhraseScore, rangeMax + profitValue);
+      }
+      scoreTable[phraseIndex + 1][currentLength] = currentPhraseMaxScore;
+    });
+  });
+  return scoreTable[phraseCount][targetLength];
 };
 
-const orchestrateConcertPlan = () => {
-    acquireConcertData();
+const processInputAndExecute = () => {
+  const rawInput = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split('\n');
+  let inputCursor = 0;
 
-    const countComponents = parseInt(extractNextValue(), 10);
-    const componentDetails = [];
-    for (let idx = 0; idx < countComponents; ++idx) {
-        componentDetails.push(extractNextValue().split(' ').map(Number));
-    }
+  const getNextLine = () => rawInput[inputCursor++];
+  const parseNumericLine = () => parseInt(getNextLine(), 10);
+  const parsePhraseLine = () => getNextLine().split(' ').map(Number);
 
-    const countTunes = parseInt(extractNextValue(), 10);
-    const tuneDurations = [];
-    for (let idx = 0; idx < countTunes; ++idx) {
-        tuneDurations.push(parseInt(extractNextValue(), 10));
-    }
+  const definitionCount = parseNumericLine();
+  const phraseDefinitions = Array.from({ length: definitionCount }, parsePhraseLine);
 
-    const finalResults = [];
-    let encounteredZero = false;
+  const melodyQueryCount = parseNumericLine();
+  const melodyQueries = Array.from({ length: melodyQueryCount }, parseNumericLine);
 
-    for (const individualTuneDuration of tuneDurations) {
-        const currentTuneScore = computeMaxScore(individualTuneDuration, componentDetails);
-        if (currentTuneScore === 0) {
-            encounteredZero = true;
-            break;
-        }
-        finalResults.push(currentTuneScore);
-    }
+  const results = melodyQueries.map(queryLength =>
+    calculateOptimalScore(queryLength, phraseDefinitions)
+  );
 
-    if (encounteredZero) {
-        console.log(-1);
-    } else {
-        finalResults.forEach(scoreEntry => console.log(scoreEntry));
-    }
+  if (results.some(res => res === 0)) {
+    console.log(-1);
+  } else {
+    console.log(results.join('\n'));
+  }
 };
 
-orchestrateConcertPlan();
+processInputAndExecute();

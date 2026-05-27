@@ -1,252 +1,143 @@
-// Represents an individual element within the ordered tree structure.
 class TreeNode {
-  /**
-   * Initializes a new tree node.
-   * @param {*} nodeValue - The value stored in this node.
-   * @param {TreeNode|null} leftChild - Reference to the left child node.
-   * @param {TreeNode|null} rightChild - Reference to the right child node.
-   */
   constructor(nodeValue, leftChild = null, rightChild = null) {
-    this.nodeValue = nodeValue; // The actual data key for this node
-    this.leftChild = leftChild;     // Pointer to the left subtree
-    this.rightChild = rightChild;   // Pointer to the right subtree
-    this.parentRef = null;      // Reference to the parent node, null for root (added for Type III)
-    this.nodeDepth = 0;         // Depth of this node in the tree (added for Type III)
+    this.nodeValue = nodeValue;
+    this.leftChild = leftChild;
+    this.rightChild = rightChild;
   }
 }
 
-// Manages a binary search tree, ensuring elements are kept in order.
-class OrderedTree {
+class BinarySearchTree {
   constructor() {
-    this.treeRoot = null;        // The starting point of the tree
-    this.nodeCount = 0;          // Total number of elements in the tree (Type III addition)
-    this.maxTreeDepth = -1;      // Maximum depth reached by any node (Type III addition)
+    this.treeRoot = null;
   }
 
-  /**
-   * Adds a new value to the ordered tree, maintaining its sorted property.
-   * @param {*} val - The value to be inserted.
-   * @returns {boolean} True if insertion was successful, false otherwise.
-   */
-  addValue(val) {
-    // Type III: Guard clause for invalid input
-    if (val === null || typeof val !== 'number' || isNaN(val)) {
-      // console.warn(`Attempted to add an invalid value: ${val}. Skipping.`);
-      return false;
+  static get Node() { return TreeNode; }
+
+  addNode(nodeValue) {
+    // This method exhibits a specific behavior: it initializes the root on the first call
+    // and then replaces itself with a new function for all subsequent insertions.
+    // We preserve this exact mechanism for behavioral equivalence.
+    this.treeRoot = new BinarySearchTree.Node(nodeValue);
+    this.addNode = (valToInsert) => {
+      this._insertIterative(valToInsert);
+    };
+  }
+
+  // Private helper for iterative insertion, used by the replaced addNode method.
+  _insertIterative(valueToInsert) {
+    let currentTraversalNode = this.treeRoot;
+    let parentOfTraversalNode = null;
+    const newTreeNode = new BinarySearchTree.Node(valueToInsert);
+
+    while (currentTraversalNode !== null) {
+      parentOfTraversalNode = currentTraversalNode;
+      currentTraversalNode = currentTraversalNode[valueToInsert < currentTraversalNode.nodeValue ? 'leftChild' : 'rightChild'];
     }
 
-    const freshNode = new TreeNode(val);
-    freshNode.nodeDepth = 0; // Initial depth for a new node
-
-    // Type III: Explicitly handle the very first insertion
-    if (this.treeRoot === null) {
-      this.treeRoot = freshNode;
-      this.nodeCount = 1;
-      this.maxTreeDepth = 0;
-      return true;
+    // Attach the new node to its parent
+    if (parentOfTraversalNode === null) { // Should not happen if treeRoot is already set
+        this.treeRoot = newTreeNode;
+    } else if (valueToInsert < parentOfTraversalNode.nodeValue) {
+        parentOfTraversalNode.leftChild = newTreeNode;
+    } else {
+        parentOfTraversalNode.rightChild = newTreeNode;
     }
+  }
 
-    let currentNode = this.treeRoot;
-    let parentNode = null;
-    let currentDepth = 0; // Track depth during insertion (Type III addition)
-
-    // Iterate to find the correct insertion point
-    while (currentNode !== null) {
-      parentNode = currentNode;
-      currentDepth++; // Increment depth for the next level
-
-      if (val < currentNode.nodeValue) {
-        currentNode = currentNode.leftChild;
+  searchNode(nodeValue) {
+    let current = this.treeRoot;
+    while (current !== null) {
+      if (current.nodeValue === nodeValue) {
+        return true;
+      } else if (nodeValue < current.nodeValue) {
+        current = current.leftChild;
       } else {
-        // If values are equal, original code effectively places to the right.
-        // We'll maintain that behavior, but could be modified to ignore/update.
-        currentNode = currentNode.rightChild;
+        current = current.rightChild;
       }
     }
-
-    // Link the new node to its parent
-    freshNode.parentRef = parentNode; // Type III: Set parent reference
-    freshNode.nodeDepth = currentDepth; // Type III: Set node's depth
-
-    if (val < parentNode.nodeValue) {
-      parentNode.leftChild = freshNode;
-    } else {
-      parentNode.rightChild = freshNode;
-    }
-
-    // Type III: Update tree metrics
-    this.nodeCount++;
-    if (currentDepth > this.maxTreeDepth) {
-      this.maxTreeDepth = currentDepth;
-    }
-    return true;
+    return false;
   }
 
-  /**
-   * Searches for a specific value within the tree.
-   * @param {*} targetVal - The value to search for.
-   * @param {TreeNode|null} [currentRef=this.treeRoot] - The node to start the search from (defaults to root).
-   * @returns {TreeNode|null} The node containing the value if found, otherwise null.
-   */
-  locateValue(targetVal, currentRef = this.treeRoot) {
-    // Type III: Guard clause for invalid input
-    if (targetVal === null || typeof targetVal !== 'number' || isNaN(targetVal)) {
-      return null;
-    }
-
-    // Base case: If current node is null, value not found along this path
-    if (currentRef === null) {
-      return null;
-    }
-
-    // Base case: Value found
-    if (currentRef.nodeValue === targetVal) {
-      return currentRef;
-    }
-
-    // Recursive step: Traverse left or right based on comparison
-    if (targetVal < currentRef.nodeValue) {
-      return this.locateValue(targetVal, currentRef.leftChild);
-    } else {
-      return this.locateValue(targetVal, currentRef.rightChild);
-    }
-  }
-
-  /**
-   * Performs an in-order traversal of the tree, collecting node values.
-   * @returns {Array<*>} An array of values in in-order sequence.
-   */
-  getInOrderTraversal() {
-    const collectedValues = [];
-    // Type III: Early exit if tree is empty
-    if (this.treeRoot === null) {
-      return collectedValues;
-    }
-
-    const recursiveCollector = (currNode) => {
-      if (currNode === null) {
+  displayInOrder() {
+    let collectedOutput = '';
+    const performInOrderTraversal = (nodeToVisit) => {
+      if (nodeToVisit === null) {
         return;
       }
-      recursiveCollector(currNode.leftChild);
-      collectedValues.push(currNode.nodeValue);
-      recursiveCollector(currNode.rightChild);
+      performInOrderTraversal(nodeToVisit.leftChild);
+      const currentKeyValue = nodeToVisit.nodeValue; // Helper variable
+      collectedOutput += ` ${currentKeyValue}`;
+      performInOrderTraversal(nodeToVisit.rightChild);
     };
 
-    recursiveCollector(this.treeRoot);
-    return collectedValues;
+    if (this.treeRoot === null) {
+        console.log('');
+    } else {
+        performInOrderTraversal(this.treeRoot);
+        console.log(collectedOutput);
+    }
   }
 
-  /**
-   * Performs a pre-order traversal of the tree, collecting node values.
-   * @returns {Array<*>} An array of values in pre-order sequence.
-   */
-  getPreOrderTraversal() {
-    const collectedValues = [];
-    // Type III: Early exit if tree is empty
-    if (this.treeRoot === null) {
-      return collectedValues;
-    }
-
-    const recursiveCollector = (currNode) => {
-      if (currNode === null) {
+  displayPreOrder() {
+    let collectedOutput = '';
+    const performPreOrderTraversal = (nodeToVisit) => {
+      if (nodeToVisit === null) {
         return;
       }
-      collectedValues.push(currNode.nodeValue);
-      recursiveCollector(currNode.leftChild);
-      recursiveCollector(currNode.rightChild);
+      const currentKeyValue = nodeToVisit.nodeValue; // Helper variable
+      collectedOutput += ` ${currentKeyValue}`;
+      performPreOrderTraversal(nodeToVisit.leftChild);
+      performPreOrderTraversal(nodeToVisit.rightChild);
     };
 
-    recursiveCollector(this.treeRoot);
-    return collectedValues;
+    if (this.treeRoot === null) {
+        console.log('');
+    } else {
+        performPreOrderTraversal(this.treeRoot);
+        console.log(collectedOutput);
+    }
   }
 
-  /**
-   * Outputs the tree structure using different traversal methods.
-   * Type III: Added more detail to output, removed original print() method's behavior.
-   */
-  outputTreeStructure() {
-    // Type III: Added contextual information
-    console.log(`--- Tree Summary ---`);
-    console.log(`Node Count: ${this.nodeCount}`);
-    console.log(`Max Depth: ${this.maxTreeDepth}`);
-
-    // Using the new traversal methods that return arrays
-    const inOrderResult = this.getInOrderTraversal();
-    const preOrderResult = this.getPreOrderTraversal();
-
-    // Type III: Enhanced output formatting
-    if (inOrderResult.length > 0) {
-      console.log(`In-Order Traversal: ${inOrderResult.map(v => ` ${v}`).join('')}`);
-    } else {
-      console.log(`In-Order Traversal: (Tree is empty)`);
-    }
-
-    if (preOrderResult.length > 0) {
-      console.log(`Pre-Order Traversal: ${preOrderResult.map(v => ` ${v}`).join('')}`);
-    } else {
-      console.log(`Pre-Order Traversal: (Tree is empty)`);
-    }
-    console.log(`--------------------`);
+  displayAll() {
+    this.displayInOrder();
+    this.displayPreOrder();
   }
 }
 
-// Self-executing function to handle tree operations from standard input.
-(function processTreeOperations() {
-  let commandLines;
-  try {
-    // Type III: Added more robust file reading and error handling
-    const fs = require('fs');
-    commandLines = fs.readFileSync('/dev/stdin', 'utf8').trim().split('\n');
-  } catch (error) {
-    console.error("Error reading input from /dev/stdin:", error.message);
-    // Provide some default commands for local testing if file read fails
-    commandLines = [
-      '5',
-      'i 8', 'i 3', 'i 10', 'i 1', 'i 6', 'i 4', 'i 7', 'i 14', 'i 13',
-      'f 6', 'f 9',
-      'p'
-    ];
-    console.warn("Using default test commands due to input error.");
+(function executeOperations(){
+  const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+  const inputCommands = fileContent.trim().split('\n');
+
+  const numCommands = Number(inputCommands.shift()); // This variable is not used, but its removal would be a Type IV change.
+
+  if (inputCommands.length === 0) {
+      return; // Guard clause for empty input
   }
 
+  const bstInstance = new BinarySearchTree();
 
-  // Type III: Renamed variables and added more explicit parsing
-  const totalCommands = Number(commandLines.shift()); // First line is number of commands, can be ignored for dynamic input
+  // Helper function to parse command lines
+  const parseCommandAndValue = (commandLineString) => {
+      const parts = commandLineString.split(' ');
+      const commandTypeChar = parts[0].charAt(0);
+      const numericValue = parts.length > 1 ? Number(parts[1]) : null;
+      return { commandTypeChar, numericValue };
+  };
 
-  const dataStructure = new OrderedTree(); // Instantiate the new tree class
+  inputCommands.forEach(function(currentCommand) {
+    const { commandTypeChar, numericValue } = parseCommandAndValue(currentCommand);
 
-  // Type III: Changed loop type from forEach to for...of for variety
-  for (const cmdLine of commandLines) {
-    try {
-      const parts = cmdLine.split(' ');
-      const commandType = parts[0];
-      const commandArgString = parts[1];
-      let numericArg = null;
-
-      if (commandArgString) {
-        numericArg = Number(commandArgString);
-        // Type III: Added a guard for invalid numeric arguments
-        if (isNaN(numericArg)) {
-          console.warn(`Skipping command '${cmdLine}' due to invalid numeric argument.`);
-          continue;
-        }
-      }
-
-      // Type III: Changed switch to if/else if for structural difference
-      if (commandType === 'i') {
-        dataStructure.addValue(numericArg);
-      } else if (commandType === 'f') {
-        const foundNode = dataStructure.locateValue(numericArg);
-        console.log(foundNode !== null ? 'yes' : 'no'); // Type III: Checks for node reference
-      } else if (commandType === 'p') {
-        dataStructure.outputTreeStructure(); // Calls the new display method
-      } else {
-        // Type III: Added a warning for unrecognized commands
-        console.warn(`Unrecognized command: '${commandType}'. Skipping.`);
-      }
-    } catch (operationError) {
-      // Type III: Generic error handling for individual command processing
-      console.error(`Error processing command '${cmdLine}':`, operationError.message);
+    switch(commandTypeChar) {
+      case 'i':
+        bstInstance.addNode(numericValue);
+        break;
+      case 'f':
+        const foundStatus = bstInstance.searchNode(numericValue) ? 'yes' : 'no';
+        console.log(foundStatus);
+        break;
+      default: // 'p' for print
+        bstInstance.displayAll();
+        break;
     }
-  }
+  });
 })();

@@ -1,34 +1,42 @@
-const processData = (sourceString) => {
-    const numericalStrings = sourceString.split('\n')[0].match(/\d+/g);
-    const primaryNumber = +numericalStrings[0];
-    const secondaryNumber = +numericalStrings[1];
+'use strict';
 
-    const groupIdentifier = new Map([
-        [1, 31], [3, 31], [5, 31], [7, 31], [8, 31], [10, 31], [12, 31],
-        [4, 30], [6, 30], [9, 30], [11, 30],
-        [2, 28]
-    ]);
+function processMonthComparison(rawInput) {
+    const parsedValues = rawInput.split("\n")[0].split(" ");
+    const firstMonth = parseInt(parsedValues[0], 10);
+    const secondMonth = parseInt(parsedValues[1], 10);
 
-    const primaryTypeClassification = groupIdentifier.get(primaryNumber);
+    const monthsWithThirtyOneDays = [1, 3, 5, 7, 8, 10, 12];
+    const monthsWithThirtyDays = [4, 6, 9, 11];
 
-    let finalVerdict = false;
+    const monthCharacteristicsMap = Array.from({ length: 12 }, (_, index) => index + 1).reduce((accumulator, currentMonthNumber) => {
+        const isCurrentMonthFebruary = (currentMonthNumber === 2);
+        const indexInThirtyOneDayGroup = monthsWithThirtyOneDays.indexOf(currentMonthNumber);
+        const isInThirtyOneDayGroup = (indexInThirtyOneDayGroup >= 0);
+        const indexInThirtyDayGroup = monthsWithThirtyDays.indexOf(currentMonthNumber);
+        const isInThirtyDayGroup = (indexInThirtyDayGroup >= 0);
 
-    const isPrimaryInCategoryA = (primaryTypeClassification === 31);
-    const isPrimaryInCategoryB = (primaryTypeClassification === 30);
+        accumulator[currentMonthNumber] = {
+            isFebruary: isCurrentMonthFebruary,
+            inGroupA: isInThirtyOneDayGroup,
+            groupAIdx: indexInThirtyOneDayGroup,
+            inGroupB: isInThirtyDayGroup,
+            groupBIdx: indexInThirtyDayGroup
+        };
+        return accumulator;
+    }, {});
 
-    const secondaryNotOne = (secondaryNumber !== 1);
-    const secondaryNotFour = (secondaryNumber !== 4);
+    const dataForFirstMonth = monthCharacteristicsMap[firstMonth];
+    const dataForSecondMonth = monthCharacteristicsMap[secondMonth];
 
-    if ((primaryNumber === 2 && secondaryNumber === 2) ||
-        (isPrimaryInCategoryA && secondaryNotOne) ||
-        (isPrimaryInCategoryB && secondaryNotFour)) {
-        finalVerdict = true;
+    const februaryMatch = (dataForFirstMonth.isFebruary && dataForSecondMonth.isFebruary);
+    const groupAMatch = (dataForFirstMonth.inGroupA && !!dataForSecondMonth.groupAIdx);
+    const groupBMatch = (dataForFirstMonth.inGroupB && !!dataForSecondMonth.groupBIdx);
+
+    if (februaryMatch || groupAMatch || groupBMatch) {
+        console.log("Yes");
+    } else {
+        console.log("No");
     }
+}
 
-    process.stdout.write(finalVerdict ? "Yes\n" : "No\n");
-};
-
-(() => {
-    const sourceContent = globalThis.require("node:fs").readFileSync("/dev/stdin", "utf8");
-    processData(sourceContent);
-})();
+processMonthComparison(require("fs").readFileSync("/dev/stdin", "utf8"));

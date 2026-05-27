@@ -1,60 +1,101 @@
-class InputProcessor {
-  #inputLines;
-  #linePointer = 0;
+function createInputParser(rawText) {
+    let lineBuffer = rawText.trim().split('\n');
+    let lineCursor = 0;
+    let currentLineTokens = [];
+    let tokenCursor = 0;
 
-  constructor(rawData) {
-    this.#inputLines = rawData.trim().split('\n');
-  }
-
-  obtainNumericValue() {
-    const currentLineData = this.#inputLines[this.#linePointer];
-    this.#linePointer++;
-    return Number(currentLineData.split(' ')[0]);
-  }
-
-  obtainNumericList() {
-    const currentLineData = this.#inputLines[this.#linePointer];
-    this.#linePointer++;
-    return currentLineData.split(' ').map(Number);
-  }
-}
-
-function processChallenge() {
-  const AFFIRMATIVE = "Yes";
-  const NEGATIVE = "No";
-
-  const dataProcessor = new InputProcessor(require("fs").readFileSync("/dev/stdin", "utf8"));
-
-  const totalElements = dataProcessor.obtainNumericValue();
-  const elementCollection = dataProcessor.obtainNumericList();
-
-  const elementCategories = elementCollection.reduce((tally, currentElement) => {
-    const remainderValue = currentElement % 4;
-    if (remainderValue === 0) {
-      tally.multipleOfFour++;
-    } else if (remainderValue === 2) {
-      tally.evenButNotMultipleOfFour++;
-    } else { // remainderValue === 1 or 3
-      tally.oddModuloFour++;
+    function ensureLineTokens() {
+        if (tokenCursor >= currentLineTokens.length) {
+            if (lineCursor < lineBuffer.length) {
+                currentLineTokens = lineBuffer[lineCursor].split(' ');
+                tokenCursor = 0;
+            } else {
+                currentLineTokens = [];
+            }
+        }
     }
-    return tally;
-  }, { multipleOfFour: 0, evenButNotMultipleOfFour: 0, oddModuloFour: 0 });
 
-  const { multipleOfFour, evenButNotMultipleOfFour, oddModuloFour } = elementCategories;
-
-  if (totalElements === evenButNotMultipleOfFour) {
-    return AFFIRMATIVE;
-  }
-
-  if (multipleOfFour === 0) {
-    return NEGATIVE;
-  }
-
-  if (oddModuloFour <= multipleOfFour) {
-    return AFFIRMATIVE;
-  }
-
-  return NEGATIVE;
+    return {
+        grabToken: function(asString) {
+            ensureLineTokens();
+            if (tokenCursor < currentLineTokens.length) {
+                let tokenValue = currentLineTokens[tokenCursor];
+                tokenCursor++;
+                if (tokenCursor === currentLineTokens.length) {
+                    lineCursor++;
+                    tokenCursor = 0;
+                    currentLineTokens = [];
+                }
+                return asString ? tokenValue : +tokenValue;
+            }
+            return undefined;
+        },
+        grabLine: function(asString) {
+            if (lineCursor >= lineBuffer.length) return undefined;
+            currentLineTokens = [];
+            tokenCursor = 0;
+            let lineContent = lineBuffer[lineCursor];
+            lineCursor++;
+            return asString ? lineContent.split(' ') : lineContent.split(' ').map(Number);
+        },
+        grabBlock: function(count, asString) {
+            let collectedBlocks = [];
+            for (let i = 0; i < count; i++) {
+                collectedBlocks.push(this.grabLine(asString));
+            }
+            return collectedBlocks;
+        },
+        grabRawLines: function(count, asString) {
+            let collectedLines = [];
+            for (let i = 0; i < count; i++) {
+                if (lineCursor >= lineBuffer.length) break;
+                let lineContent = lineBuffer[lineCursor];
+                lineCursor++;
+                currentLineTokens = [];
+                tokenCursor = 0;
+                collectedLines.push(asString ? lineContent : +lineContent);
+            }
+            return collectedLines;
+        }
+    };
 }
 
-console.log(processChallenge());
+const inputSource = createInputParser(require("fs").readFileSync("/dev/stdin","utf8"));
+
+console.log(solveProblem());
+
+function solveProblem(){
+  const affirmativeResponse = "Yes";
+  const negativeResponse = "No";
+
+  const totalElementsCount = inputSource.grabToken();
+  const numberSequence = inputSource.grabLine();
+
+  const remainderClassifierMap = new Map([
+      [0, 'multipleOfFour'],
+      [1, 'odd'],
+      [2, 'evenNotFour'],
+      [3, 'odd']
+  ]);
+
+  const categoryCounts = numberSequence.reduce((accumulator, currentNumber) => {
+      const remainderResult = currentNumber % 4;
+      const categoryKey = remainderClassifierMap.get(remainderResult);
+      accumulator[categoryKey]++;
+      return accumulator;
+  }, { odd: 0, evenNotFour: 0, multipleOfFour: 0 });
+
+  const { odd, evenNotFour, multipleOfFour } = categoryCounts;
+
+  if (totalElementsCount === evenNotFour) {
+      return affirmativeResponse;
+  }
+
+  const adjustedOddCount = odd + 1;
+
+  if (multipleOfFour > 0 && adjustedOddCount <= multipleOfFour + 1) {
+      return affirmativeResponse;
+  }
+
+  return negativeResponse;
+}

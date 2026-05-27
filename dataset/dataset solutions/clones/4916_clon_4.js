@@ -1,24 +1,23 @@
-function Processor(payload) {
-  const lineGroups = payload.match(/[^\n]+/g);
+function processInput(sourceText) {
+  const lineSegments = sourceText.split("\n");
 
-  const initialPair = lineGroups[1].split(" ").map(Number);
-  let initialAlpha = initialPair[0];
-  let initialBeta = initialPair[1];
+  const initialCount = Number(lineSegments[0]);
+  const [currentTValue, currentAValue] = lineSegments[1].split(" ").map(Number);
 
-  const finalValues = lineGroups.slice(2).reduce((accumulator, currentLine) => {
-    const componentPair = currentLine.split(" ").map(Number);
-    const requiredX = componentPair[0];
-    const requiredY = componentPair[1];
+  const finalAccumulatedValues = lineSegments.slice(2).reduce((previousPair, segmentData) => {
+    const [prevT, prevA] = previousPair;
+    const [segmentTFactor, segmentAFactor] = segmentData.split(" ").map(Number);
 
-    const scaleFactor = Math.ceil(Math.max(accumulator.currentAlpha / requiredX, accumulator.currentBeta / requiredY));
+    const requiredMultiplier = Math.ceil(Math.max(prevT / segmentTFactor, prevA / segmentAFactor));
 
-    accumulator.currentAlpha = requiredX * scaleFactor;
-    accumulator.currentBeta = requiredY * scaleFactor;
+    const nextT = segmentTFactor * requiredMultiplier;
+    const nextA = segmentAFactor * requiredMultiplier;
 
-    return accumulator;
-  }, { currentAlpha: initialAlpha, currentBeta: initialBeta });
+    return [nextT, nextA];
+  }, [currentTValue, currentAValue]);
 
-  console.log(finalValues.currentAlpha + finalValues.currentBeta);
+  const [finalT, finalA] = finalAccumulatedValues;
+  console.log(finalT + finalA);
 }
 
-Processor(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

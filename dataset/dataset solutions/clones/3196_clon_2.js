@@ -1,99 +1,124 @@
-var obtainInteger = (valInput) => parseInt(valInput, 10);
+var parseInteger = (inputString) => parseInt(inputString, 10);
 
-var convertToIntList = (inputList) =>
-  inputList.map((itemElement) => obtainInteger(itemElement));
+var parseIntegerArray = (inputArray) => inputArray.map((item) => parseInteger(item));
 
-var getAbsolute = (numericalValue) => (numericalValue > 0 ? numericalValue : -numericalValue);
+var absoluteValue = (numericValue) => (numericValue > 0 ? numericValue : -numericValue);
 
-function determineMinimum() {
-  var valueArguments = arguments;
-  var minValue = valueArguments[0];
-  for (var iterationCounter = 1; iterationCounter < valueArguments.length; iterationCounter++) {
-    if (valueArguments[iterationCounter] < minValue) {
-      minValue = valueArguments[iterationCounter];
+function findMinimum() {
+  var argumentList = arguments;
+  var currentValue = argumentList[0];
+  for (var loopIndex = 1; loopIndex < argumentList.length; loopIndex++) {
+    if (argumentList[loopIndex] < currentValue) {
+      currentValue = argumentList[loopIndex];
     }
   }
-  return minValue;
+  return currentValue;
 }
 
-function determineMaximum() {
-  var valueArguments = arguments;
-  var maxValue = valueArguments[0];
-  for (var iterationCounter = 1; iterationCounter < valueArguments.length; iterationCounter++) {
-    if (valueArguments[iterationCounter] > maxValue) {
-      maxValue = valueArguments[iterationCounter];
+function findMaximum() {
+  var argumentList = arguments;
+  var currentValue = argumentList[0];
+  for (var loopIndex = 1; loopIndex < argumentList.length; loopIndex++) {
+    if (argumentList[loopIndex] > currentValue) {
+      currentValue = argumentList[loopIndex];
     }
   }
-  return maxValue;
+  return currentValue;
 }
 
-function calculateGCD() {
-  var numberSequence = arguments;
-  var currentGCD = numberSequence[0];
-  var gcdRecursive = (firstNumber, secondNumber) => (secondNumber ? gcdRecursive(secondNumber, firstNumber % secondNumber) : firstNumber);
-  for (var iterationCounter = 1; iterationCounter < numberSequence.length; iterationCounter++) {
-    currentGCD = gcdRecursive(currentGCD, numberSequence[iterationCounter]);
+function greatestCommonDivisor() {
+  var argumentList = arguments;
+  var currentValue = argumentList[0];
+  // Helper function for GCD calculation
+  var recursiveGcd = (valA, valB) => (valB ? recursiveGcd(valB, valA % valB) : valA);
+  for (var loopIndex = 1; loopIndex < argumentList.length; loopIndex++) {
+    currentValue = recursiveGcd(currentValue, argumentList[loopIndex]);
   }
-  return currentGCD;
+  return currentValue;
 }
 
-performMainProcessing(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Entry point for processing input
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-function performMainProcessing(inputContentString) {
-  var processedInputLines = inputContentString
-    .split('\n')
-    .map((lineElement, indexPosition, originalArray) => convertToIntList(lineElement.split(' ')));
+function ProcessInput(rawData) {
+  // Parse the raw input into a 2D array of integers
+  var parsedData = rawData
+    .split("\n")
+    .map((lineContent) => parseIntegerArray(lineContent.split(" ")));
 
-  var remainingBudget = processedInputLines[0][0];
-  var numberOfAvailableDigits = processedInputLines[0][1];
-  var sortedAvailableDigits = processedInputLines[1].sort((valueA, valueB) => valueB - valueA);
-  var digitMatchCosts = [0, 2, 5, 5, 4, 5, 6, 3, 7, 6];
-  var feasibleDigitOptions = [];
-  var currentDigitValue, smallestRemainder, tempPlaceholder;
+  // Extract N and M from the first line
+  var targetSum = parsedData[0][0];
+  var numElements = parsedData[0][1];
 
-  for (var iterationCounter = 0; iterationCounter < numberOfAvailableDigits; iterationCounter++) {
-    currentDigitValue = sortedAvailableDigits[iterationCounter];
-    if (feasibleDigitOptions.find((optionEntry) => optionEntry[1] === digitMatchCosts[currentDigitValue]) === undefined) {
-      feasibleDigitOptions.push([currentDigitValue, digitMatchCosts[currentDigitValue]]);
+  // Get the available digits and sort them in descending order
+  var sortedDigits = parsedData[1].sort((valA, valB) => valB - valA);
+
+  // Define the cost (number of segments) for each digit (0-9)
+  var digitCosts = [0, 2, 5, 5, 4, 5, 6, 3, 7, 6];
+
+  // Initialize an array to store unique available digits and their costs
+  var availableDigits = [];
+
+  var currentDigit, remainderValue, unusedVar; // Declare temporary variables
+
+  // Populate availableDigits with unique digits and their costs
+  for (var idx = 0; idx < numElements; idx++) {
+    currentDigit = sortedDigits[idx];
+    // Check if a digit with the same cost is already added to avoid duplicates based on cost
+    if (availableDigits.find((elementItem) => elementItem[1] === digitCosts[currentDigit]) === undefined) {
+      availableDigits.push([currentDigit, digitCosts[currentDigit]]);
     }
   }
 
-  feasibleDigitOptions.sort((optionA, optionB) => optionA[1] - optionB[1]);
+  // Sort availableDigits by cost in ascending order
+  availableDigits.sort((valA, valB) => valA[1] - valB[1]);
 
-  var partialResultComponents = [];
+  // Initialize an array to store the intermediate result (digit, count)
+  var intermediateResult = [];
 
-  partialResultComponents[0] = [feasibleDigitOptions[0][0], Math.floor(remainingBudget / feasibleDigitOptions[0][1])];
-  remainingBudget %= feasibleDigitOptions[0][1];
+  // Start with the cheapest digit
+  intermediateResult[0] = [availableDigits[0][0], Math.floor(targetSum / availableDigits[0][1])];
+  targetSum %= availableDigits[0][1]; // Update remaining target sum
 
-  var currentListLength = feasibleDigitOptions.length;
-  while (remainingBudget !== 0) {
-    remainingBudget += feasibleDigitOptions[0][1];
-    partialResultComponents[0][1]--;
-    currentDigitValue = 10;
-    smallestRemainder = 10;
+  var listLength = availableDigits.length;
 
-    for (var innerLoopIndex = 1; innerLoopIndex < currentListLength; innerLoopIndex++) {
-      if (remainingBudget % feasibleDigitOptions[innerLoopIndex][1] < smallestRemainder) {
-        currentDigitValue = innerLoopIndex;
-        smallestRemainder = remainingBudget % feasibleDigitOptions[innerLoopIndex][1];
+  // Greedily try to replace digits with more expensive ones to maximize the number
+
+  while (targetSum !== 0) {
+    targetSum += availableDigits[0][1]; // Add back the cost of one cheapest digit
+    intermediateResult[0][1]--; // Decrease count of the cheapest digit
+
+    currentDigit = 10; // Placeholder for best replacement digit index
+    remainderValue = 10; // Placeholder for best remainder
+
+    // Find the best digit to replace with
+    for (var idx = 1; idx < listLength; idx++) {
+      if (targetSum % availableDigits[idx][1] < remainderValue) {
+        currentDigit = idx;
+        remainderValue = targetSum % availableDigits[idx][1];
       }
     }
 
-    if (smallestRemainder < 10) {
-      partialResultComponents.push([feasibleDigitOptions[currentDigitValue][0], Math.floor(remainingBudget / feasibleDigitOptions[currentDigitValue][1])]);
-      remainingBudget = smallestRemainder;
+    // If a better replacement is found (remainderValue < 10 means a valid replacement)
+    if (remainderValue < 10) {
+      intermediateResult.push([availableDigits[currentDigit][0], Math.floor(targetSum / availableDigits[currentDigit][1])]);
+      targetSum = remainderValue; // Update remaining target sum
     }
   }
 
-  partialResultComponents.sort((componentA, componentB) => componentB[0] - componentA[0]);
+  // Sort the intermediate result by digit value in descending order
+  intermediateResult.sort((valA, valB) => valB[0] - valA[0]);
 
-  var finalConstructedString = '';
+  var finalOutputString = "";
 
-  currentListLength = partialResultComponents.length;
-  for (var iterationCounter = 0; iterationCounter < currentListLength; iterationCounter++) {
-    finalConstructedString += String(partialResultComponents[iterationCounter][0]).repeat(partialResultComponents[iterationCounter][1]);
+  listLength = intermediateResult.length;
+  // Construct the final output string
+  for (var idx = 0; idx < listLength; idx++) {
+    finalOutputString += String(intermediateResult[idx][0]).repeat(intermediateResult[idx][1]);
   }
 
-  console.log(finalConstructedString);
-  return 0;
+  // Print the result to console
+  console.log(finalOutputString);
+
+  return 0; // Indicate successful execution
 }

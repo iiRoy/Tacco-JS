@@ -1,34 +1,24 @@
-const fileSystemModule = require('fs');
+const applicationSettings = { sourcePath: '/dev/stdin', lineSeparator: '\n' };
 
-const inputSourcePath = '/dev/stdin';
-const lineSeparationChar = '\n';
+const fileContent = require('node:fs').readFileSync(applicationSettings.sourcePath, 'ascii');
+const contentSegments = fileContent.split(applicationSettings.lineSeparator, 2);
 
-const rawDataSource = fileSystemModule.readFileSync(inputSourcePath, 'ascii');
-const contentSegments = rawDataSource.split(lineSeparationChar, 2);
+const primaryString = contentSegments[0];
+const targetSubstring = contentSegments[1];
 
-const primaryDocument = contentSegments[0];
-const searchFragment = contentSegments[1];
+const locateAllOccurrences = (sourceString, patternString, currentSearchOffset = 0, foundIndicesAccumulator = []) => {
+  const nextMatchIndex = sourceString.indexOf(patternString, currentSearchOffset);
 
-const resultingIndexes = [];
+  if (nextMatchIndex === -1) {
+    return foundIndicesAccumulator;
+  }
 
-if (searchFragment.length === 0) {
-    // Special handling for empty search fragment to match String.prototype.indexOf behavior
-    // An empty fragment is found at every position, including after the last character
-    for (let currentScanPoint = 0; currentScanPoint <= primaryDocument.length; currentScanPoint++) {
-        resultingIndexes.push(currentScanPoint);
-    }
-} else {
-    // Escape special regex characters in the search fragment
-    const escapedFragment = searchFragment.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const searchExpression = new RegExp(escapedFragment, 'g');
+  foundIndicesAccumulator.push(nextMatchIndex);
+  return locateAllOccurrences(sourceString, patternString, nextMatchIndex + 1, foundIndicesAccumulator);
+};
 
-    // Utilize RegExp.prototype.exec or String.prototype.matchAll for finding all occurrences
-    // matchAll returns an iterator of match objects
-    for (const matchEntry of primaryDocument.matchAll(searchExpression)) {
-        resultingIndexes.push(matchEntry.index);
-    }
-}
+const discoveredPositions = locateAllOccurrences(primaryString, targetSubstring);
 
-if (resultingIndexes.length > 0) {
-    console.log(resultingIndexes.join('\n'));
+if (discoveredPositions.length > 0) {
+  console.log(discoveredPositions.join('\n'));
 }

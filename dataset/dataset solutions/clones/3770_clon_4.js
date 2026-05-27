@@ -1,50 +1,40 @@
-const findLargestDivisor = (val, base) => {
-    let currentMult = base;
-    let maxFound = 0;
-    while (currentMult <= val) {
-        maxFound = currentMult;
-        if (currentMult > Number.MAX_SAFE_INTEGER / base) {
+function Main(inputVal) {
+    let currentVal = Number.parseInt(inputVal, 10);
+    let resultCount = 0;
+
+    let ninePowerCandidate = 9;
+    let largestNinePower = 0;
+    while (ninePowerCandidate <= currentVal) {
+        largestNinePower = ninePowerCandidate;
+        if (ninePowerCandidate > currentVal / 9) {
             break;
         }
-        currentMult *= base;
+        ninePowerCandidate *= 9;
     }
-    return maxFound;
-};
 
-const processDivisorType = (total, remaining, base) => {
-    const divisor = findLargestDivisor(remaining, base);
-    if (divisor > 0) {
-        return {
-            newTotal: total + 1,
-            newRemaining: remaining - divisor
-        };
-    } else {
-        return {
-            newTotal: total,
-            newRemaining: remaining
-        };
+    if (largestNinePower > 0) {
+        currentVal -= largestNinePower;
+        resultCount++;
     }
-};
 
-const ExecuteComputation = (dataStream) => {
-    let valueHolder = Number(dataStream);
-    let cumulativeSum = 0;
+    let sixPowerCandidate = 6;
+    let largestSixPower = 0;
+    while (sixPowerCandidate <= currentVal) {
+        largestSixPower = sixPowerCandidate;
+        if (sixPowerCandidate > currentVal / 6) {
+            break;
+        }
+        sixPowerCandidate *= 6;
+    }
 
-    const resultA = processDivisorType(cumulativeSum, valueHolder, 9);
-    cumulativeSum = resultA.newTotal;
-    valueHolder = resultA.newRemaining;
+    if (largestSixPower > 0) {
+        currentVal -= largestSixPower;
+        resultCount++;
+    }
 
-    const resultB = processDivisorType(cumulativeSum, valueHolder, 6);
-    cumulativeSum = resultB.newTotal;
-    valueHolder = resultB.newRemaining;
+    resultCount += currentVal;
 
-    cumulativeSum += valueHolder;
+    console.log(resultCount);
+}
 
-    return cumulativeSum;
-};
-
-const programWrapper = (data) => {
-    console.log(ExecuteComputation(data));
-};
-
-programWrapper(require("fs").readFileSync("/dev/stdin", "utf8"));
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

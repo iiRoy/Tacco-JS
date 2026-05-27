@@ -1,89 +1,80 @@
 class Coordinate {
-    initializer(horiz, vert) {
-        this.horiz = horiz;
-        this.vert = vert;
-    };
-};
+    constructor(valX, valY) {
+        this.horiz = valX;
+        this.vert = valY;
+    }
+}
 
-function evaluatePosition(itemA, itemB) {
-    // Compute a scalar product for directional comparison
-    // Note: 'refPoint' is not declared in the original code's scope,
-    // assuming it should be provided externally or be a global variable.
-    const vectorProduct = (itemA.vert * refPoint.vert - itemB.horiz * itemA.horiz) - (itemA.horiz * refPoint.horiz - itemB.vert * itemA.vert);
+// This function is present in the original code but not called.
+// It contains a reference to an undeclared global variable 'p0'.
+// This behavior is preserved by referencing 'originPoint' which is also undeclared.
+function evaluateOrder(itemA, itemB) {
+    let vectorProduct = (itemA.vert * originPoint.vert - itemB.horiz * itemA.horiz) - (itemA.horiz * originPoint.horiz - itemB.vert * itemA.vert);
 
-    // If the calculated product is zero, points are aligned
     if (vectorProduct === 0) {
-        // Use vertical coordinate for tie-breaking
         return itemA.vert <= itemB.vert ? -1 : 1;
     }
-    // Otherwise, use the product's sign for ordering
     return vectorProduct > 0 ? -1 : 1;
-};
-
-function exchangeElements(collection, targetIndex) {
-    let temporaryValue = collection[0]; // Retain the value at the initial position
-    collection[0] = collection[targetIndex]; // Move the value from target to initial
-    collection[targetIndex] = temporaryValue; // Place the retained value at target
-    return collection; // Deliver the modified data collection
 }
 
-function locateLowestItem(dataArray, dataCount) {
-    // Identify the entry with the smallest Y-coordinate
-    let minimumCoord = dataArray[0].vert;
-    let lowestIndex = 0;
-
-    // Traverse the array to discover the point with the minimal vertical component.
-    // In case of identical vertical values, prioritize the one with the minimal horizontal component.
-    for (let idxIterator = 0; idxIterator < dataCount; idxIterator++) {
-        if (dataArray[idxIterator].vert < minimumCoord || (dataArray[idxIterator].vert === minimumCoord && dataArray[idxIterator].horiz < dataArray[lowestIndex].horiz)) {
-            lowestIndex = idxIterator;
-            minimumCoord = dataArray[idxIterator].vert;
-        };
-    };
-    // Relocate the identified minimal entry to the beginning of the array
-    return exchangeElements(dataArray, lowestIndex);
-};
-
-// Initiate program execution
-// Obtain data from a standard input stream
-const importModule = require; // Alias require for identifier change
-const fileSystem = importModule('fs');
-let contentStream = fileSystem.readDataSync('/dev/stdin', 'utf8');
-
-// Break down the input content into individual lines
-let lineData = contentStream.split("\n");
-
-// Convert the first line to an integer representing the total element count
-const parseInteger = parseInt; // Alias parseInt for identifier change
-let elementCount = parseInteger(lineData[0]);
-
-// Prepare an array to store the parsed coordinate objects
-let geometricObjects = [];
-
-// Loop through each line of input to create coordinate instances
-for (let counter = 1; counter < elementCount + 1; counter++) {
-    let currentLineSegment = lineData[counter].split(" "); // Divide the line by spaces
-    let valX = parseInteger(currentLineSegment[0]); // Extract the X-value
-    let valY = parseInteger(currentLineSegment[1]); // Extract the Y-value
-    geometricObjects.push(new Coordinate(valX, valY)); // Append new coordinate object
+// Utility function to swap the first element with an element at a given index.
+function exchangeElements(dataCollection, minimumIndex) {
+    let temporaryValue = dataCollection[0];
+    dataCollection[0] = dataCollection[minimumIndex];
+    dataCollection[minimumIndex] = temporaryValue;
+    return dataCollection;
 }
 
-// Find the lowest point in the collection and position it at the start
-geometricObjects = locateLowestItem(geometricObjects, elementCount);
+// Finds the point with the lowest Y-coordinate (and lowest X in case of ties)
+// and moves it to the first position in the array.
+function locateLowestPoint(pointArray, collectionSize) {
+    let minimumYValue = pointArray[0].vert;
+    let minimumYIndex = 0;
 
-// Define a reference object from the first element of the processed collection.
-// Original code had `parseInt(points[0])` which is likely a bug as points[0] is an object.
-let referencePoint = geometricObjects[0];
+    for (let loopCounter = 0; loopCounter < collectionSize; loopCounter++) {
+        if (pointArray[loopCounter].vert < minimumYValue || (pointArray[loopCounter].vert === minimumYValue && pointArray[loopCounter].horiz < pointArray[minimumYIndex].horiz)) {
+            minimumYIndex = loopCounter;
+            minimumYValue = pointArray[loopCounter].vert;
+        }
+    }
+    return exchangeElements(pointArray, minimumYIndex);
+}
 
-// Sort a subset of the geometric objects, excluding the first one
-// Note: 'subarray' is not a standard Array method; assuming it was intended as 'slice'.
-// Cloning as 'getSubArrayFrom' to maintain structural similarity.
-let orderedCollection = geometricObjects.slice(1).sort(function (itemA, itemB) { // Changed subarray to slice for correctness, but maintained identifier change for sort
-    // The original code included a commented-out complex comparison.
-    // The active comparison simply subtracts vertical components.
-    return itemA.vert - itemB.vert;
+// Read input from standard input.
+const fileSystem = require('fs');
+let fileContents = fileSystem.readFileSync('/dev/stdin', 'utf8');
+let inputLines = fileContents.split("\n");
+
+// Parse the total number of points.
+let totalPointsCount = parseInt(inputLines[0]);
+let coordinateList = [];
+
+// Populate the list of Coordinate objects from input lines.
+for (let idx = 1; idx < totalPointsCount + 1; idx++) {
+    let currentLineParts = inputLines[idx].split(" ");
+    let coordX = parseInt(currentLineParts[0]);
+    let coordY = parseInt(currentLineParts[1]);
+    coordinateList.push(new Coordinate(coordX, coordY));
+}
+
+// Process the list to find and move the lowest point.
+coordinateList = locateLowestPoint(coordinateList, totalPointsCount);
+
+// This variable will be NaN because parseInt(object) results in NaN.
+// This behavior is identical to the original code.
+let initialReference = parseInt(coordinateList[0]);
+
+// Attempt to sort a subarray. Note: 'subarray' is not a standard Array method,
+// which will cause a TypeError at runtime, preserving the original code's behavior.
+let orderedCoordinates = coordinateList.subarray(1).sort(function (itemOne, itemTwo) {
+    // The original commented-out comparison logic is preserved as comments.
+    // var cross_prod = (itemOne.vert * initialReference.vert - itemTwo.horiz * itemOne.horiz) - (itemOne.horiz * initialReference.horiz - itemTwo.vert * itemOne.vert);
+    // if (cross_prod == 0) {
+    //     return itemOne.vert <= itemTwo.vert ? -1 : 1;
+    // }
+    // return cross_prod > 0 ? -1 : 1;
+    return itemOne.vert - itemTwo.vert;
 });
 
-// Output the final state of the collection to the standard console
-const outputToConsole = console.log; // Alias console.log for identifier change
-outputToConsole(geometricObjects);
+// Output the final state of the coordinate list.
+console.log(coordinateList);

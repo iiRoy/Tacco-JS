@@ -1,61 +1,58 @@
-function processConditions(totalElements, initialXORSum, numericElements, controlSequence) {
-    const sequenceLength = totalElements;
-    const stateRepository = new Array(sequenceLength + 1);
+function determineXorPossibility(countElements, xorTarget, valueArray, operationString) {
+    let maximumValue = 0;
+    for (let j = 0; j < countElements; j++) {
+        maximumValue = Math.max(maximumValue, Number(valueArray[j]));
+    }
 
-    // Initialize the base case: when no elements remain (index 'sequenceLength'),
-    // only an XOR sum of 0 is considered 'achievable' to result in a final 0.
-    stateRepository[sequenceLength] = new Map([[0, true]]);
+    let xorSpaceSize = 1;
+    while (xorSpaceSize <= maximumValue) {
+        xorSpaceSize <<= 1;
+    }
 
-    // Iterate backwards through the elements, building up the achievable XOR sums.
-    // currentSegmentIndex corresponds to 'k' in A[k] and S[k].
-    for (let currentSegmentIndex = sequenceLength - 1; currentSegmentIndex >= 0; currentSegmentIndex--) {
-        const currentNumericalValue = Number(numericElements[currentSegmentIndex]);
-        const currentControlCharacter = controlSequence[currentSegmentIndex];
-        const nextSegmentStates = stateRepository[currentSegmentIndex + 1]; // States from the next segment (k+1)
-        const currentSegmentStates = new Map(); // States for the current segment (k)
+    let nextIterationStates = new Uint8Array(xorSpaceSize).fill(0);
+    let currentIterationStates = new Uint8Array(xorSpaceSize).fill(0);
 
-        if (currentControlCharacter === '0') {
-            // 'OR' condition: If 'xorVal' OR 'xorVal ^ currentNumericalValue' was achievable from the next segment,
-            // then 'xorVal' is achievable from the current segment.
-            // This means we are expanding the set of reachable XOR sums.
-            for (const xorVal of nextSegmentStates.keys()) {
-                currentSegmentStates.set(xorVal, true);
-                currentSegmentStates.set(xorVal ^ currentNumericalValue, true);
-            }
-        } else { // currentControlCharacter === '1'
-            // 'AND' condition: If 'xorVal' AND 'xorVal ^ currentNumericalValue' were both achievable from the next segment,
-            // then 'xorVal' is achievable from the current segment.
-            // This means we are filtering the set of reachable XOR sums.
-            for (const xorVal of nextSegmentStates.keys()) {
-                if (nextSegmentStates.has(xorVal ^ currentNumericalValue)) {
-                    currentSegmentStates.set(xorVal, true);
+    nextIterationStates[0] = 1;
+
+    for (let elementIndex = countElements - 1; elementIndex >= 0; elementIndex--) {
+        const currentNumericValue = Number(valueArray[elementIndex]);
+        const currentOperationChar = operationString[elementIndex];
+
+        currentIterationStates.fill(0);
+
+        for (let currentXorSumCandidate = 0; currentXorSumCandidate < xorSpaceSize; currentXorSumCandidate++) {
+            const resultWithoutXor = nextIterationStates[currentXorSumCandidate];
+            const resultWithXor = nextIterationStates[currentXorSumCandidate ^ currentNumericValue];
+
+            if (currentOperationChar === '0') {
+                if (resultWithoutXor || resultWithXor) {
+                    currentIterationStates[currentXorSumCandidate] = 1;
+                }
+            } else {
+                if (resultWithoutXor && resultWithXor) {
+                    currentIterationStates[currentXorSumCandidate] = 1;
                 }
             }
         }
-        stateRepository[currentSegmentIndex] = currentSegmentStates;
+        [currentIterationStates, nextIterationStates] = [nextIterationStates, currentIterationStates];
     }
 
-    // The original problem asks if an initial XOR sum of 0 can be 'zeroed out'
-    // by processing all 'totalElements' (from index 0 to sequenceLength-1).
-    // This corresponds to checking if 0 is present in the states for the first segment.
-    return stateRepository[0].has(0);
+    return nextIterationStates[xorTarget] === 1;
 }
 
-function orchestrateExecution(rawInputData) {
-    const inputLines = rawInputData.split('\n');
-    let lineCursor = 0;
-    const totalTestCases = Number(inputLines[lineCursor++]);
-    const outputResults = [];
+function processInputData(rawData) {
+    const inputLines = rawData.split('\n');
+    let currentLinePointer = 0;
+    const totalTestCases = Number(inputLines[currentLinePointer++]);
 
-    for (let caseIterator = 0; caseIterator < totalTestCases; caseIterator++) {
-        const currentCaseLength = Number(inputLines[lineCursor++]);
-        const currentCaseNumericArray = inputLines[lineCursor++].split(' ').map(Number);
-        const currentCaseControlString = inputLines[lineCursor++];
+    for (let caseCounter = 0; caseCounter < totalTestCases; caseCounter++) {
+        const numElements = Number(inputLines[currentLinePointer++]);
+        const arrayValues = inputLines[currentLinePointer++].split(' ');
+        const sequenceString = inputLines[currentLinePointer++];
 
-        const outcome = processConditions(currentCaseLength, 0, currentCaseNumericArray, currentCaseControlString);
-        outputResults.push(outcome ? '0' : '1');
+        const finalOutcome = determineXorPossibility(numElements, 0, arrayValues, sequenceString);
+        console.log(finalOutcome ? '0' : '1');
     }
-    console.log(outputResults.join('\n'));
 }
 
-orchestrateExecution(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

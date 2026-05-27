@@ -1,10 +1,16 @@
-const addValues = ( firstOperand , secondOperand ) =>
-{
-  return firstOperand + secondOperand ;
+const addNumbers = function (firstVal, secondVal) {
+  // This function performs addition of two numerical values.
+  return firstVal + secondVal;
 };
 
-const fileContent = require ( 'fs' ) . readFileSync ( '/dev/stdin' , 'utf8' ) ;
-const numberCollection = ( fileContent . trim ( ) ) . split ( '\n' ) . map ( Number ) ;
-let accumulatorVar = 0 ;
+// Read raw data from standard input, assuming UTF-8 encoding.
+let rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-console . log ( numberCollection . reduce ( addValues ) ) ;
+// Process the raw input: trim whitespace, split by newline, and convert each part to a number.
+const numericArray = (rawData.trim()).split("\n").map(Number);
+
+// Initialize a variable for accumulation, though it might not be used directly in this specific flow.
+let totalAccumulator = 0;
+
+// Calculate the sum of all numbers in the array using the 'addNumbers' function and print the result.
+console.log(numericArray.reduce(addNumbers));

@@ -1,31 +1,23 @@
 "use strict";
 
-const processGraphData = (rawInputText) => {
-    const connectionTuples = rawInputText.split('\n')
-                                        .filter(Boolean)
-                                        .map(line => line.split(/\s+/).map(Number));
+function ProcessInput(rawData) {
+    const numericEntries = rawData
+        .split("\n")
+        .slice(0, 3)
+        .flatMap((lineSegment) =>
+            lineSegment.split(" ").map(Number)
+        );
 
-    const frequencyRegistry = new Map();
+    const occurrenceRegistry = numericEntries.reduce((accumulator, currentNumber) => {
+        accumulator.set(currentNumber, (accumulator.get(currentNumber) || 0) + 1);
+        return accumulator;
+    }, new Map());
 
-    connectionTuples.forEach(pair => {
-        pair.forEach(nodeIdentifier => {
-            frequencyRegistry.set(nodeIdentifier, (frequencyRegistry.get(nodeIdentifier) || 0) + 1);
-        });
-    });
+    const hasExactThreeOccurrences = Array.from(occurrenceRegistry.values()).some(
+        (freqCount) => freqCount === 3
+    );
 
-    let hasTripleConnection = false;
-    for (const count of frequencyRegistry.values()) {
-        if (count === 3) {
-            hasTripleConnection = true;
-            break;
-        }
-    }
+    console.log(hasExactThreeOccurrences ? "NO" : "YES");
+}
 
-    console.log(hasTripleConnection ? "NO" : "YES");
-};
-
-const dataSource = require("node:fs");
-const inputPath = "/dev/stdin";
-const encodingType = "utf8";
-
-processGraphData(dataSource.readFileSync(inputPath, encodingType));
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

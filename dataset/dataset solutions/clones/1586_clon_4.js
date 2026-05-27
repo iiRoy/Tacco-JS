@@ -1,40 +1,40 @@
-const fileSystem = require('fs');
+const { format } = require('path');
 
-const rawContent = fileSystem.readFileSync('./sample_e.txt', 'utf8');
-const allNumericValues = rawContent.trim().split(/\s+/).map(Number);
+const rawData = require('fs').readFileSync('./sample_e.txt', 'utf8')
+    .split(/\n| /)
+    .slice(0, -1);
 
-const gridHeight = allNumericValues[0];
-const gridWidth = allNumericValues[1];
-const targetPairCount = allNumericValues[2];
-const coordinateValues = allNumericValues.slice(3);
+const [rawHeight, rawWidth, ...rawCoords] = rawData;
+const gridHeight = parseInt(rawHeight);
+const gridWidth = parseInt(rawWidth);
 
-const rowInfluence = Array(gridHeight).fill(0);
-const colInfluence = Array(gridWidth).fill(0);
-const markedLocations = new Set();
+const coordPairs = rawCoords.slice(1);
 
-for (let i = 0; i < targetPairCount; i++) {
-    const currentY = coordinateValues[2 * i] - 1;
-    const currentX = coordinateValues[2 * i + 1] - 1;
+const rowTally = Array(gridHeight).fill(0);
+const colTally = Array(gridWidth).fill(0);
+const intersectionAdjustments = new Map();
 
-    rowInfluence[currentY]++;
-    colInfluence[currentX]++;
-    markedLocations.add(`${currentY},${currentX}`);
+for (let i = 0; i < coordPairs.length; i += 2) {
+    const currentY = parseInt(coordPairs[i]);
+    const currentX = parseInt(coordPairs[i + 1]);
+
+    const targetRow = currentY - 1;
+    const targetCol = currentX - 1;
+
+    rowTally[targetRow]++;
+    colTally[targetCol]++;
+
+    const intersectionKey = `${targetRow},${targetCol}`;
+    intersectionAdjustments.set(intersectionKey, (intersectionAdjustments.get(intersectionKey) || 0) + 1);
 }
 
-let highestConcentration = 0;
+const resultGrid = Array.from({ length: gridHeight }, (_, rIdx) =>
+    Array.from({ length: gridWidth }, (_, cIdx) => {
+        const key = `${rIdx},${cIdx}`;
+        return rowTally[rIdx] + colTally[cIdx] - (intersectionAdjustments.get(key) || 0);
+    })
+);
 
-for (let r = 0; r < gridHeight; r++) {
-    for (let c = 0; c < gridWidth; c++) {
-        let currentCellTally = rowInfluence[r] + colInfluence[c];
+const peakValue = Math.max(...resultGrid.flat());
 
-        if (markedLocations.has(`${r},${c}`)) {
-            currentCellTally--;
-        }
-        
-        if (currentCellTally > highestConcentration) {
-            highestConcentration = currentCellTally;
-        }
-    }
-}
-
-console.log(highestConcentration);
+console.log(peakValue);

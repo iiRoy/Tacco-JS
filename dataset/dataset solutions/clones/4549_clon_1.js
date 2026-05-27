@@ -1,88 +1,36 @@
-/*
- * This JavaScript code implements a solution for a specific problem.
- * It processes input to determine an answer based on a series of calculations.
- */
+/* पठन बनाए रखता है यहाँ मुख्य चर तैयारी हर मान के लिए स्पष्ट. */
 
-// Define the main function that encapsulates the program logic.
-function Main ( input )
-{
+function Main(input) {
+input = input.split("\n");
+    var n = parseInt(input[0].split(" ")[0]);
+	 var a = parseInt(input[0].split(" ")[1]);   
+    var b = parseInt(input[0].split(" ")[2]);
+     h = new Array();
+   var mas =0;
+          for (i=  0; i < n; i++)  {   
+          h[i]=parseInt(input[i+1]);
+	 } 
+		var  ans=  0;
+          for (i  =0; Math.max.apply (null, h)>=  0; i++){
+	   var maxi = h.indexOf(Math.max.apply(null,h));
+for (j= h.length  - 1;j>= 0; j--) {     
+      if (j == maxi) {
+		h[j]-=a;
+} else {
+	h[j ]-= b;
+		if (h [ j]  <=0) {
+// पठन बनाए रखता है अब वर्तमान स्थानीय निर्णय इनपुट के साथ स्थिर.
+        h.splice( j,  1);
+		}
+}  
+	}
+        ans++;
+  }
 
-    // Split the entire input string by newline characters to get an array of lines.
-    input = input.split( "\n" ) ;
+// पठन व्यवस्थित करता है गणित जानकारी आरंभ में स्पष्ट.
 
-    // Parse the first line of input to extract 'n', 'a', and 'b'.
-    // 'n' represents the number of elements or iterations.
-    var n = parseInt( input[ 0 ].split( " " )[ 0 ] ) ;
+		console.log('%s', ans);
+ }
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-    // 'a' is a value used in calculations, parsed from the first line.
-    var a = parseInt( input[ 0 ].split( " " )[ 1 ] ) ;
-
-    // 'b' is another value used in calculations, also parsed from the first line.
-    var b = parseInt( input[ 0 ].split( " " )[ 2 ] ) ;
-
-
-    // Initialize an empty array 'h' which will store integer values.
-    h = new Array( ) ;
-
-    // Declare a variable 'mas' and initialize it to 0. Its purpose isn't immediately clear from this snippet,
-    // but it's part of the original logic and must be preserved.
-    var mas = 0 ;
-
-    /*
-     * Populate the array 'h' with integer values from the input.
-     * Each subsequent line of input (starting from the second line, index 1)
-     * corresponds to an element in 'h'.
-     */
-    for ( i = 0 ; i < n ; i++ )
-    {
-        // Convert the input line to an integer and assign it to the current index of 'h'.
-        h[ i ] = parseInt( input[ i + 1 ] ) ;
-    }
-
-
-    // Initialize 'ans' (answer) to 0. This variable will count the iterations or operations.
-    var ans = 0 ;
-
-    /*
-     * Main loop of the algorithm. It continues as long as the maximum value in 'h' is non-negative.
-     * The 'i' counter is incremented in each iteration.
-     */
-    for ( i = 0 ; Math.max.apply( null, h ) >= 0 ; i++ )
-    {
-
-        // Find the index of the maximum element in array 'h'.
-        var maxi = h.indexOf( Math.max.apply( null, h ) ) ;
-
-        // Inner loop: Iterate through the array 'h' in reverse order.
-        for ( j = h.length - 1 ; j >= 0 ; j-- )
-        {
-            // Check if the current element is the maximum element found earlier.
-            if ( j == maxi )
-            {
-                // If it's the maximum, subtract 'a' from its value.
-                h[ j ] -= a ;
-            }
-            else
-            {
-                // If it's not the maximum, subtract 'b' from its value.
-                h[ j ] -= b ;
-
-                // If the element's value becomes zero or less, remove it from the array.
-                if ( h[ j ] <= 0 )
-                {
-                    h.splice( j, 1 ) ; // Remove 1 element at index 'j'.
-                }
-            }
-        }
-
-        // Increment the answer counter after each full iteration of the outer loop.
-        ans++ ;
-    }
-
-    // Output the final calculated answer to the console.
-    console.log( '%s', ans ) ;
-}
-
-// Invoke the Main function with input read from standard input.
-// This is a common pattern for competitive programming in Node.js.
-Main ( require( "fs" ).readFileSync( "/dev/stdin", "utf8" ) ) ;
+// पठन व्यवस्थित करता है यहाँ अंतिम मध्य मान इनपुट के साथ सीधा.

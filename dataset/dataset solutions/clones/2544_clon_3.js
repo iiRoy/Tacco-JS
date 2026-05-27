@@ -1,149 +1,97 @@
-const processMatrixGeneration = (sourceText) => {
-  // Use "let" for variables that might be reassigned or for loop counters
-  // Renamed 'input' to 'sourceText' for clarity
-  const lineSegments = sourceText.split("\n");
+function ProcessInput(rawData) {
+    "use strict";
 
-  // Add a guard clause for empty or invalid input
-  if (!lineSegments || lineSegments.length === 0) {
-    // In a real application, this might throw an error or log to stderr
-    console.error("Input data is empty or invalid. Exiting.");
-    return;
-  }
+    const linesArray = rawData.split('\n');
+    const dimensionsAndCounts = linesArray.shift().split(' ').map(elementStr => Number.parseInt(elementStr, 10));
 
-  // Extract and parse the first line containing dimensions
-  // Renamed 'temp' to 'lineSegments', 'hwab' to 'dimensionValues'
-  const rawDimensionString = lineSegments.shift();
-  if (!rawDimensionString) { // Another guard for empty first line
-    console.error("Dimension string is missing. Exiting.");
-    return;
-  }
+    const heightVal = dimensionsAndCounts[0];
+    const widthVal = dimensionsAndCounts[1];
+    const countA = dimensionsAndCounts[2];
+    const countB = dimensionsAndCounts[3];
 
-  // Using Number constructor as a shorthand for parseInt
-  const dimensionValues = rawDimensionString.split(" ").map(Number);
+    // Helper function to create a string of repeated characters
+    const createCharString = (length, char) => {
+        let resultString = '';
+        for (let k = 0; k < length; k++) {
+            resultString += char;
+        }
+        return resultString;
+    };
 
-  // Validate the number of parameters and check for NaN values
-  if (dimensionValues.length !== 4 || dimensionValues.some(isNaN)) {
-    console.error("Invalid dimension parameters provided. Expected 4 numbers.");
-    return;
-  }
+    if (countB === 0) {
+        // Case 1: countB is zero
+        const patternPartOne = createCharString(countA, '1');
+        const patternPartZero = createCharString(widthVal - countA, '0');
+        const finalOutputLine = patternPartOne + patternPartZero;
 
-  // Destructure for better readability, renamed variables
-  const [heightVal, widthVal, onesWidth, onesHeight] = dimensionValues;
+        for (let rowIdx = 0; rowIdx < heightVal; rowIdx++) {
+            console.log(finalOutputLine);
+        }
+    } else if (countA === 0) {
+        // Case 2: countA is zero
+        const zeroPatternLine = createCharString(widthVal, '0');
+        const onePatternLine = createCharString(widthVal, '1');
+        const bThreshold = countB; // Helper variable for clarity
 
-  // Add validation for positive dimensions
-  if (heightVal <= 0 || widthVal <= 0 || onesWidth < 0 || onesHeight < 0) {
-    console.log("Input dimensions must be positive, block sizes non-negative.");
-    console.log("No"); // Output "No" as per problem context for invalid states
-    return;
-  }
-
-  // --- Handle special cases first with early returns ---
-
-  // Case 1: The '1' block height (onesHeight) is zero
-  if (onesHeight === 0) {
-    // Generate the row pattern: 'onesWidth' ones followed by zeros
-    const initialOnesSegment = '1'.repeat(onesWidth);
-    const trailingZerosSegment = '0'.repeat(widthVal - onesWidth);
-    const completeRowPattern = initialOnesSegment + trailingZerosSegment;
-
-    // Print this pattern for all rows
-    for (let rowIndex = 0; rowIndex < heightVal; ++rowIndex) {
-      console.log(completeRowPattern);
-    }
-    return; // Exit function after handling this case
-  }
-
-  // Case 2: The '1' block width (onesWidth) is zero
-  else if (onesWidth === 0) {
-    const allZerosRow = '0'.repeat(widthVal);
-    const allOnesRow = '1'.repeat(widthVal);
-
-    // Print all-zeros for 'onesHeight' rows, then all-ones for the rest
-    for (let rowIndex = 0; rowIndex < heightVal; ++rowIndex) {
-      if (rowIndex < onesHeight) {
-        console.log(allZerosRow);
-      } else {
-        console.log(allOnesRow);
-      }
-    }
-    return; // Exit function
-  }
-
-  // Case 3: Check for fundamental incompatibility (h * a !== w * b)
-  // This condition means a periodic pattern cannot be formed
-  else if (heightVal * onesWidth !== widthVal * onesHeight) {
-    console.log("No");
-    return; // Exit function
-  }
-
-  // --- General case: h * a === w * b and a, b > 0 ---
-
-  // Helper function to construct a single row based on the complex logic
-  const constructMatrixRow = (
-    currentRowIndex,
-    totalColumns,
-    blockWidth,
-    blockHeight,
-    isWidthDivisibleByBlockWidth
-  ) => {
-    // Initialize an array of characters, then join at the end for efficiency
-    // This is a structural change from direct string concatenation
-    const rowCharacters = Array(totalColumns).fill('0');
-
-    if (isWidthDivisibleByBlockWidth) {
-      // Subcase A: Total width is a multiple of block width (simpler pattern)
-      const currentBlockGroupIndex = Math.floor(currentRowIndex / blockHeight);
-      const startColumnPosition = currentBlockGroupIndex * blockWidth;
-      // Ensure the end position doesn't exceed the total width
-      const endColumnPosition = Math.min(
-        (currentBlockGroupIndex + 1) * blockWidth,
-        totalColumns
-      );
-
-      // Fill the '1's in the calculated range
-      for (let col = startColumnPosition; col < endColumnPosition; ++col) {
-        rowCharacters[col] = '1';
-      }
+        for (let rowIdx = 0; rowIdx < heightVal; rowIdx++) {
+            if (rowIdx < bThreshold) {
+                console.log(zeroPatternLine);
+            } else {
+                console.log(onePatternLine);
+            }
+        }
+    } else if ((heightVal * countA) !== (widthVal * countB)) {
+        // Case 3: Incompatible dimensions
+        console.log("No");
     } else {
-      // Subcase B: Total width is NOT a multiple of block width (wrapping pattern)
-      const columnShiftOffset = (currentRowIndex * blockWidth) % totalColumns;
-      const effectiveBlockEnd = columnShiftOffset + blockWidth;
+        // Case 4: General pattern generation
+        const isWidthDivisibleByA = (widthVal % countA === 0);
 
-      if (effectiveBlockEnd > totalColumns) {
-        // The block of '1's wraps around the end of the row
-        // Part 1: from the offset to the end of the row
-        for (let col = columnShiftOffset; col < totalColumns; ++col) {
-          rowCharacters[col] = '1';
+        if (isWidthDivisibleByA) {
+            // Subcase 4.1: width is a multiple of countA
+            for (let rowIdx = 0; rowIdx < heightVal; rowIdx++) {
+                const currentBlockRowIndex = Math.floor(rowIdx / countB);
+                const blockStartColumn = currentBlockRowIndex * countA;
+                const blockEndColumn = (currentBlockRowIndex + 1) * countA;
+
+                const lineCharacters = Array(widthVal).fill('0'); // Initialize with '0's
+                for (let colIdx = blockStartColumn; colIdx < blockEndColumn; colIdx++) {
+                    if (colIdx < widthVal) { // Ensure index is within bounds
+                        lineCharacters[colIdx] = '1';
+                    }
+                }
+                console.log(lineCharacters.join(''));
+            }
+        } else {
+            // Subcase 4.2: width is not a multiple of countA (modulo arithmetic)
+            for (let rowIdx = 0; rowIdx < heightVal; rowIdx++) {
+                const lineCharacters = Array(widthVal).fill('0'); // Initialize with '0's
+
+                const currentModuloStart = (rowIdx * countA) % widthVal;
+                const nextModuloEnd = ((rowIdx + 1) * countA) % widthVal;
+
+                const requiresWrapAroundLogic = (currentModuloStart + countA >= widthVal);
+
+                if (requiresWrapAroundLogic) {
+                    // Pattern wraps around the end of the line
+                    for (let colIdx = 0; colIdx < widthVal; colIdx++) {
+                        if (colIdx >= currentModuloStart || colIdx < nextModuloEnd) {
+                            lineCharacters[colIdx] = '1';
+                        }
+                    }
+                } else {
+                    // Pattern is a contiguous block
+                    for (let colIdx = 0; colIdx < widthVal; colIdx++) {
+                        if (colIdx >= currentModuloStart && colIdx < nextModuloEnd) {
+                            lineCharacters[colIdx] = '1';
+                        }
+                    }
+                }
+                console.log(lineCharacters.join(''));
+            }
         }
-        // Part 2: from the beginning of the row up to the wrapped-around end
-        for (let col = 0; col < effectiveBlockEnd % totalColumns; ++col) {
-          rowCharacters[col] = '1';
-        }
-      } else {
-        // The block of '1's does not wrap around
-        for (let col = columnShiftOffset; col < effectiveBlockEnd; ++col) {
-          rowCharacters[col] = '1';
-        }
-      }
     }
-    return rowCharacters.join('');
-  };
+}
 
-  // Determine if matrix width is divisible by 'onesWidth' once
-  const widthIsMultipleOfOnesWidth = (widthVal % onesWidth === 0);
-
-  // Iterate through each row to generate and print the pattern
-  for (let currentOutputRowIndex = 0; currentOutputRowIndex < heightVal; ++currentOutputRowIndex) {
-    const outputLineString = constructMatrixRow(
-      currentOutputRowIndex,
-      widthVal,
-      onesWidth,
-      onesHeight,
-      widthIsMultipleOfOnesWidth
-    );
-    console.log(outputLineString);
-  }
-};
-
-// Standard input reading mechanism, remains largely unchanged as it's environment-specific
-processMatrixGeneration(require("fs").readFileSync("/dev/stdin", "utf8"));
+// This line should remain unchanged as per instructions
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

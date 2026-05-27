@@ -1,23 +1,15 @@
-function executeNumericalAnalysis(sourceInputText) {
-    const numericContentMatch = sourceInputText.match(/\n([\d\s]+)/);
-    if (!numericContentMatch || !numericContentMatch[1]) {
-        console.log(0);
-        return;
-    }
+function processInput(rawData) {
+  const parsedLines = rawData.split('\n');
+  const numericSequence = parsedLines[1].split(' ').map(Number);
 
-    const processedIntegers = numericContentMatch[1].split(' ').map(val => parseInt(val, 10));
+  const nonDivisibleElements = numericSequence.filter((currentValue, currentIndex, fullSequence) => {
+    const isDivisibleByAnother = fullSequence.some((otherValue, otherIndex) => {
+      return currentIndex !== otherIndex && currentValue % otherValue === 0;
+    });
+    return !isDivisibleByAnother;
+  });
 
-    const resultantTally = processedIntegers.filter((elementUnderTest, currentIndex) => {
-        return !processedIntegers.some((comparisonCandidate, otherIndex) => {
-            const positionsAreDistinct = (currentIndex !== otherIndex);
-            const divisorIsNonZero = (comparisonCandidate !== 0);
-            const isPerfectlyDivisible = Number.isInteger(elementUnderTest / comparisonCandidate);
-
-            return positionsAreDistinct && divisorIsNonZero && isPerfectlyDivisible;
-        });
-    }).length;
-
-    console.log(resultantTally);
+  console.log(nonDivisibleElements.length);
 }
 
-executeNumericalAnalysis(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

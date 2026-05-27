@@ -1,37 +1,19 @@
-const fetchSource = (targetPath) => {
-    const systemInterface = globalThis.require('fs');
-    return systemInterface.readFileSync(targetPath, 'utf8');
-};
+var externalInput = require('fs').readFileSync('/dev/stdin', 'utf8');
+var initialData = externalInput.trim().split("\n");
 
-const parseContent = (contentString) => {
-    return contentString.trim().split('\n');
-};
+function processRemainingSegments(segmentCollection, currentPosition) {
+    var currentLine = segmentCollection[currentPosition];
 
-const navigateSequence = (segmentCollection) => {
-    const currentMarker = segmentCollection[0];
+    var controlPair = currentLine.split(" ").map(Number);
 
-    // This will cause a TypeError if currentMarker is undefined,
-    // mimicking the original's crash behavior for insufficient input.
-    const numericIndicators = currentMarker.split(' ').map(token => +token);
+    var firstValue = controlPair[0];
+    var secondValue = controlPair[1];
 
-    const primaryIndicator = numericIndicators[0];
-    const secondaryIndicator = numericIndicators[1];
-
-    if (primaryIndicator === 0 && secondaryIndicator === 0) {
-        return; // Termination condition
+    if (firstValue === 0 && secondValue === 0) {
+        return;
     }
 
-    const skipAmount = (secondaryIndicator > 0 && Number.isFinite(secondaryIndicator)) ? secondaryIndicator : 0;
-    const segmentsToAdvance = 1 + skipAmount;
+    processRemainingSegments(segmentCollection, currentPosition + 1 + secondValue);
+}
 
-    const nextSegmentCollection = segmentCollection.slice(segmentsToAdvance);
-
-    // Recursively call with the remaining segments.
-    // If nextSegmentCollection is empty, the subsequent call will lead to a TypeError,
-    // consistent with the original code's behavior for premature end of input.
-    navigateSequence(nextSegmentCollection);
-};
-
-const initialDataSource = fetchSource('/dev/stdin');
-const processedLines = parseContent(initialDataSource);
-navigateSequence(processedLines);
+processRemainingSegments(initialData, 0);

@@ -1,40 +1,42 @@
 'use strict';
+
 /**
- * This module handles the processing of input data from standard input.
- * It reads a sequence of numbers, performs some operations, and logs the result.
+ * Processes raw input data to find the sum of the maximum value
+ * from one derived list and its corresponding value from another.
+ * @param {string} rawData The raw string input, typically from a file or stdin.
  */
-function ProcessInputData(rawDataString) {
-    // Trim any leading/trailing whitespace from the raw input string,
-    // then split it into an array of strings using one or more whitespace characters as delimiters.
-    // Finally, convert each string element to a numerical value.
-    const numericValues = rawDataString.trim().split(/\s+/).map(  (currentStringValue) => currentStringValue - 0  );
+function ProcessInput(rawData) {
+  // Clean and parse the raw input string into an array of numerical values.
+  // The input string is trimmed, split by whitespace, and each part is converted to a number.
+  let parsedNumbers = rawData.trim().split(/\s+/).map((val) => +val);
 
-    // The first number in the input is shifted off and stored, but not used further in this specific logic.
-    let firstElementCount = numericValues.shift();
+  // The first number in the input is often a count, but its value is not
+  // utilized in the subsequent logic of this particular function.
+  const countElements = parsedNumbers.shift();
 
-    // Initialize two separate arrays to store processed data.
-    let primarySet = [  ];
-    let secondarySet = [  ];
+  // Initialize two empty arrays to store processed data.
+  let firstList = [];
+  let secondList = [];
 
-    // Loop until all elements have been processed from the numericValues array.
-    // Elements are popped from the end of numericValues and pushed into secondarySet and primarySet in a specific order.
-    while (  numericValues.length > 0  ) {
-        secondarySet.push( numericValues.pop() ); // Add the last element to the secondary collection.
-        primarySet.push( numericValues.pop() );   // Then add the new last element (which was the second to last originally) to the primary collection.
-    }
+  // Populate the two lists by iteratively taking elements from the end
+  // of the parsed numbers array. Elements are pushed in reverse order
+  // of their original appearance in the input after the initial shift.
+  while (parsedNumbers.length > 0) {
+    secondList.push(parsedNumbers.pop()); // Add to second list
+    firstList.push(parsedNumbers.pop());  // Add to first list
+  }
 
-    // Find the maximum value within the primarySet.
-    // Math.max.apply is used to find the maximum value from an array.
-    let maximumPrimaryValue = Math.max.apply( undefined, primarySet );
+  // Determine the highest numerical value present within the 'firstList'.
+  const maximumValue = Math.max.apply(null, firstList);
 
-    // Determine the index of the maximumPrimaryValue within primarySet.
-    // Use this index to retrieve the corresponding value from secondarySet.
-    let correspondingSecondaryValue = secondarySet[ primarySet.indexOf(maximumPrimaryValue) ];
+  // Find the index of this maximum value in 'firstList', then use that
+  // index to retrieve the corresponding element from 'secondList'.
+  const correspondingValue = secondList[firstList.indexOf(maximumValue)];
 
-    // Output the sum of the maximum primary value and its corresponding secondary value to the console.
-    console.log(  maximumPrimaryValue + correspondingSecondaryValue  );
+  // Print the sum of the identified maximum value and its paired corresponding value.
+  console.log(maximumValue + correspondingValue);
 }
 
-// Read the entire content from standard input synchronously using Node.js 'fs' module,
-// decode it as UTF-8, and then pass it to the main processing function.
-ProcessInputData( require('fs').readFileSync('/dev/stdin', 'utf8') );
+// Execute the primary processing function by reading input from standard input.
+// The input is read as a UTF-8 encoded string.
+ProcessInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

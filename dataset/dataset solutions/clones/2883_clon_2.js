@@ -1,110 +1,73 @@
-function ProcessStudyPlan(rawInputLines) {
-  // Extract the total number of subjects from the first part of the initial input line.
-  const numberOfSubjects = parseInt(rawInputLines[0].split(/\s/)[0]);
+function ProcessInput(rawData) {
+    // Parse the initial configuration values from the first line of input.
+    const numItems = parseInt(rawData[0].split(/\s/)[0]);
+    const maxDuration = parseInt(rawData.shift().split(/\s/)[1]);
 
-  // Extract the standard study block duration from the second part of the initial input line,
-  // and then remove that line from the input array for subsequent processing.
-  const standardStudyBlock = parseInt(rawInputLines.shift().split(/\s/)[1]);
+    // Initialize an array to hold processed item data.
+    const itemData = [];
 
-  // Initialize an array to store detailed metrics for each subject.
-  const subjectAssessments = [];
+    // Iterate over each remaining line of raw data to extract and process item details.
+    rawData.forEach(currentEntry => {
+        let parts = currentEntry.split(/\s/); // Split the line by whitespace.
+        let itemInfo = {
+            baseTime: parseInt(parts[0]),
+            lowPriorityPoints: parseInt(parts[1]),
+            highPriorityPoints: parseInt(parts[2]),
+        };
+        // Calculate the minimum score achievable for this item.
+        itemInfo.minScore = itemInfo.baseTime * itemInfo.lowPriorityPoints;
+        // Calculate the maximum potential contribution if maxDuration is spent.
+        itemInfo.maxContribution = (maxDuration - itemInfo.baseTime) * itemInfo.highPriorityPoints;
+        itemData.push(itemInfo); // Add the processed item to our collection.
+    });
 
-  // Iterate over each remaining input line to parse subject-specific data.
-  rawInputLines.forEach(currentLineData => {
-    // Split the current line by whitespace to get individual components.
-    var lineParts = currentLineData.split(/\s/);
+    // Sort the items in descending order based on their maximum contribution.
+    itemData.sort((firstItem, secondItem) => secondItem.maxContribution - firstItem.maxContribution);
 
-    // Create an object to hold the parsed metrics for the current subject.
-    var subjectMetrics = {
-      baselineTime: parseInt(lineParts[0]), // Baseline time requirement (B)
-      lowEffortScore: parseInt(lineParts[1]), // Score obtained with low effort (L)
-      unitEfficiency: parseInt(lineParts[2]), // Efficiency per unit of extra time (U)
-    };
+    let totalMinScore = 0; // Accumulator for the sum of minimum scores.
+    // Calculate the total minimum score if all items were handled with minimum effort.
+    itemData.forEach(currentItem => {
+        totalMinScore += currentItem.minScore;
+    });
 
-    // Calculate the minimum score achievable for this subject based on baseline time and low effort score.
-    subjectMetrics.minimumAchievableScore = subjectMetrics.baselineTime * subjectMetrics.lowEffortScore;
+    // console.log(itemData); // Debugging output, commented out as per rules.
 
-    // Calculate the maximum potential gain in score for this subject if studied for the standard block duration.
-    // This represents the score increase beyond the minimum achievable.
-    subjectMetrics.maxPotentialGain = (standardStudyBlock - subjectMetrics.baselineTime) * subjectMetrics.unitEfficiency;
+    let remainingScore = totalMinScore; // Represents the score difference we need to cover.
+    let totalStudyTime = 0; // Accumulator for the total time spent.
+    let breakPoint = 0; // Index where the main loop stopped.
 
-    // Add the fully processed subject metrics object to our collection.
-    subjectAssessments.push(subjectMetrics);
-  });
+    // Main loop to determine the bulk of the study time.
+    for (let idx = 0; idx < numItems; idx++) {
+        let currentItem = itemData[idx];
+        // Reduce the remaining score by the item's full potential contribution.
+        remainingScore -= (currentItem.maxContribution + currentItem.minScore);
 
-  // Sort the subjects in descending order based on their maximum potential gain.
-  // This prioritizes subjects that offer the largest score increase for the standard study block.
-  subjectAssessments.sort((metricA, metricB) => metricB.maxPotentialGain - metricA.maxPotentialGain);
-
-  // Initialize a variable to accumulate the total score if all subjects were studied at their minimum achievable level.
-  var baseOpponentScore = 0;
-
-  // Sum up the minimum achievable scores for all subjects.
-  subjectAssessments.forEach(subjectData => {
-    baseOpponentScore += subjectData.minimumAchievableScore;
-  });
-
-  // console.log(subjectAssessments); // Debugging output, currently commented out
-
-  // Initialize the target score gap that needs to be covered.
-  var scoreGapToCover = baseOpponentScore;
-
-  // Initialize the total cumulative study duration.
-  var cumulativeStudyDuration = 0;
-
-  // Initialize an index to mark the point where the target score gap is met or exceeded.
-  var thresholdIndex = 0;
-
-  // Iterate through the sorted subjects to determine the primary study duration.
-  for (var subjectIdx = 0; subjectIdx < numberOfSubjects; subjectIdx++) {
-    var currentSubject = subjectAssessments[subjectIdx];
-
-    // Subtract the combined minimum score and maximum potential gain for the current subject
-    // from the score gap. This simulates covering the gap by studying this subject for the standard block.
-    scoreGapToCover -= currentSubject.maxPotentialGain + currentSubject.minimumAchievableScore;
-
-    // If the score gap becomes zero or negative, it means we've covered enough score.
-    if (scoreGapToCover <= 0) {
-      // Revert the last subtraction, as this subject pushed us over the edge.
-      scoreGapToCover += currentSubject.maxPotentialGain + currentSubject.minimumAchievableScore;
-
-      // Record the index of this subject, as it's the one requiring fine-tuning.
-      thresholdIndex = subjectIdx;
-      break; // Exit the loop as the primary duration is determined.
-    } else {
-      // If the gap is still positive, we commit the full standard study block to this subject.
-      cumulativeStudyDuration += standardStudyBlock;
+        if (remainingScore <= 0) {
+            // If the remaining score becomes non-positive, we've overshot.
+            // Revert the last subtraction to find the exact point.
+            remainingScore += (currentItem.maxContribution + currentItem.minScore);
+            breakPoint = idx; // Mark this index as the stopping point.
+            break; // Exit the loop.
+        } else {
+            // If still positive, we commit maxDuration to this item.
+            totalStudyTime += maxDuration;
+        }
     }
-  }
 
-  // Perform final adjustments to the study duration to precisely meet the score gap.
+    // Final adjustment phase to precisely calculate the remaining time.
+    let finalAdjustmentTime = Number.MAX_SAFE_INTEGER; // Initialize with a very large value.
+    for (let idx = breakPoint; idx < numItems; idx++) {
+        let currentItem = itemData[idx];
+        // Calculate the time needed for the current item to cover the remaining score.
+        // Use Math.ceil to ensure enough time is allocated, then add base time.
+        finalAdjustmentTime = Math.min(finalAdjustmentTime, Math.ceil((remainingScore - currentItem.minScore) / currentItem.highPriorityPoints) + currentItem.baseTime);
+        // console.log(finalAdjustmentTime); // Debugging output, commented out.
+    }
+    totalStudyTime += finalAdjustmentTime; // Add the final adjusted time.
 
-  // Initialize a variable to track the minimum additional time required for adjustment.
-  var minimumAdjustmentTime = Number.MAX_SAFE_INTEGER;
-
-  // Iterate from the threshold index to the end of the subjects array.
-  // This loop finds the most efficient way to cover the remaining score gap.
-  for (var adjustmentIdx = thresholdIndex; adjustmentIdx < numberOfSubjects; adjustmentIdx++) {
-    var subjectForAdjustment = subjectAssessments[adjustmentIdx];
-
-    // Calculate the additional time needed for the current subject to cover the remaining score gap.
-    // This involves subtracting the minimum achievable score and then dividing by efficiency,
-    // taking the ceiling to ensure the score is met, and adding the baseline time.
-    minimumAdjustmentTime = Math.min(
-      minimumAdjustmentTime,
-      Math.ceil((scoreGapToCover - subjectForAdjustment.minimumAchievableScore) / subjectForAdjustment.unitEfficiency) + subjectForAdjustment.baselineTime
-    );
-    // console.log(minimumAdjustmentTime); // Debugging output for adjustment time
-  }
-
-  // Add the minimum adjustment time to the total cumulative study duration.
-  cumulativeStudyDuration += minimumAdjustmentTime;
-
-  // Output the final calculated total study duration.
-  console.log(cumulativeStudyDuration);
+    console.log(totalStudyTime); // Output the final calculated total study time.
 }
 
-// Example usage to process input from standard input:
-// This section reads the entire content of stdin, trims leading/trailing whitespace,
-// and then splits it into an array of strings based on newline characters.
-ProcessStudyPlan(require("fs").readFileSync("/dev/stdin", "utf8").trim().split(/\n/));
+// The following lines handle reading input from standard input and passing it to the main processing function.
+// This part is external to the core algorithm and remains unchanged as per Type II rules.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8").trim().split(/\n/));

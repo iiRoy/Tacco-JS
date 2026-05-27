@@ -1,114 +1,70 @@
 "use strict";
 
-/**
- * The primary entry point for processing the input data.
- * This function orchestrates the parsing and manipulation of data.
- * @param {string} rawData - The entire input provided as a single string.
- */
-function ProcessInput (rawData)
-{
-    // Initialize a data parsing utility instance
-    let parser = new DataParser(rawData);
+// This function processes the main input data
+function ProcessInput(rawData) {
+    // Initialize a data parsing utility
+    let parserInstance = new DataParser(rawData);
 
-    // Extract the numerical count, the target character sequence, and the reference index
-    let countNum = parser.extractInteger(),
-        targetString = parser.extractString(),
-        indexPos = parser.extractInteger();
+    // Extract numerical count, the main string, and a key index
+    let countElements = parserInstance.retrieveInteger();
+    let inputString = parserInstance.retrieveString();
+    let targetIndex = parserInstance.retrieveInteger();
 
-    // Initialize an array to hold the processed characters
-    let resultArray = [],
-        referenceChar = targetString.charAt(indexPos - 1); // Determine the character at the specified index
+    // Prepare an array for the final output and determine the character for comparison
+    let resultArray = [];
+    let comparisonChar = inputString.charAt(targetIndex - 1); // Adjust for 0-based indexing
 
-    // Loop through the input based on the extracted count
-    for (let loopIdx = 0; loopIdx < countNum; loopIdx++)
-    {
-        // Compare the current character in the target string with the reference character
-        // If they match, add the reference character; otherwise, add an asterisk
-        resultArray.push(
-            referenceChar === targetString.charAt(loopIdx)
-                ? referenceChar
-                : "*"
-        );
+    // Iterate through the input string based on the provided count
+    for (let idx = 0; idx < countElements; idx++) {
+        // Compare each character of the string with the comparison character
+        // If they match, add the character itself; otherwise, add an asterisk
+        resultArray.push(comparisonChar === inputString.charAt(idx) ? comparisonChar : "*");
     }
 
-    // Print the final concatenated string to the console
+    // Output the joined characters of the result array to the console
     console.log(resultArray.join(''));
 }
 
-/**
- * A helper class designed for parsing various data types from a structured input string.
- * It manages an internal pointer to track the current position in the parsed elements.
- */
-class DataParser
-{
-    /**
-     * Initializes a new DataParser instance.
-     * @param {string} sourceText - The raw text string to be parsed.
-     */
-    constructor (sourceText)
-    {
-        this.currentPos = 0; // The current position for reading elements
-        // Splits the input text into an array of elements using newlines or spaces as delimiters
-        this.dataElements = sourceText.split(/\n|\s/);
+// Utility class for parsing various data types from a string
+class DataParser {
+    // Constructor initializes the parser with raw text
+    constructor(sourceText) {
+        this.currentIndex = 0; // Tracks the current position in the parsed tokens
+        // Splits the input text by newlines or spaces to get individual tokens
+        this.parsedTokens = sourceText.split(/\n|\s/);
     }
 
-    /**
-     * Extracts and returns the next integer from the data elements.
-     * The internal pointer is advanced after extraction.
-     * @returns {number} The extracted integer.
-     */
-    extractInteger ()
-    {
-        // Convert the string element to a number
-        return this.dataElements[this.currentPos++] - 0;
+    // Retrieves and converts the next token to an integer
+    retrieveInteger() {
+        return this.parsedTokens[this.currentIndex++] - 0; // The '-0' ensures numeric conversion
     }
 
-    /**
-     * Extracts an array of integers of a specified length.
-     * @param {number} arrayLength - The desired length of the integer array.
-     * @returns {number[]} An array containing the extracted integers.
-     */
-    extractIntegerArray (arrayLength)
-    {
-        let tempArray = new Array(arrayLength); // Pre-allocate array
-        for (let arrIdx = 0; arrIdx < arrayLength; arrIdx++)
-        {
-            tempArray[arrIdx] = this.extractInteger(); // Fill array using extractInteger
+    // Retrieves an array of integers of a specified length
+    retrieveIntegerArray(length) {
+        let outputCollection = new Array(length);
+        for (let loopCounter = 0; loopCounter < length; loopCounter++) {
+            outputCollection[loopCounter] = this.retrieveInteger();
         }
-        return tempArray;
+        return outputCollection;
     }
 
-    /**
-     * Extracts and returns the next string from the data elements.
-     * The internal pointer is advanced after extraction.
-     * @returns {string} The extracted string.
-     */
-    extractString ()
-    {
-        return this.dataElements[this.currentPos++]; // Return the string element directly
+    // Retrieves the next token as a string
+    retrieveString() {
+        return this.parsedTokens[this.currentIndex++];
     }
 
-    /**
-     * Extracts an array of strings of a specified length.
-     * @param {number} arrayLength - The desired length of the string array.
-     * @returns {string[]} An array containing the extracted strings.
-     */
-    extractStringArray (arrayLength)
-    {
-        let tempArray = new Array(arrayLength); // Pre-allocate array
-        for (let arrIdx = 0; arrIdx < arrayLength; arrIdx++)
-        {
-            tempArray[arrIdx] = this.extractString(); // Fill array using extractString
+    // Retrieves an array of strings of a specified length
+    retrieveStringArray(length) {
+        let outputCollection = new Array(length);
+        for (let loopCounter = 0; loopCounter < length; loopCounter++) {
+            outputCollection[loopCounter] = this.retrieveString();
         }
-        return tempArray;
+        return outputCollection;
     }
 }
 
-// Environment check: If not running in a browser environment (e.g., Node.js)
-if (typeof window === "undefined")
-{
-    // Read input from standard input and pass it to the main processing function
-    ProcessInput(
-        require("fs").readFileSync("/dev/stdin", "utf8")
-    );
+// Entry point for execution, handles environment differences (browser vs. Node.js)
+if (typeof window === "undefined") {
+    // In a Node.js environment, read from standard input
+    ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));
 }

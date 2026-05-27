@@ -1,172 +1,103 @@
-// Input handling utilities: Please do not modify this section.
-const   consoleReader = require('readline') .createInterface(  {
-    input  : process.stdin,
-    output : process.stdout
-} );
-let     inputProcessor;
-const   collectedLines = [];
-consoleReader.on ( 'line',  (incomingLine) => {  collectedLines.push(incomingLine); }  );
-consoleReader.on('close' , function ( ) {
-    inputProcessor = initializeInputHandler(collectedLines);
-    console.error ( "debug:--- Execution Start ---" );
-    const executionStart = new Date();
-    executeMainAlgorithm();
-    const durationMs = new Date() - executionStart;
-    console.error ( "debug:--- Execution End ---" );
-    console.error ( `debug:Time elapsed: ${durationMs}ms` );
-    console.error ( `debug:Memory used: ${Math.round(process.memoryUsage().heapTotal / 1024)}KB` );
+var inputReader = require('readline').createInterface({
+  input: process.stdin,
+  output: process.stdout
 });
-
-function retrieveInteger ( ) { return convertInputType ( fetchNextItem(), 1 ); }
-function retrieveStringArray ( ) { return convertInputType ( fetchNextItem(), 2 ); }
-function retrieveIntegerArray ( ) { return convertInputType ( fetchNextItem(), 4 ); }
-function retrieveCharacterArray ( ) { return convertInputType ( fetchNextItem(), 6 ); }
-
-function fetchNextItem ( ) { return inputProcessor.getNextValue(); }
-function hasMoreInput ( ) { return inputProcessor.hasMoreElements(); }
-
-// Initializes an object for sequential input processing.
-function initializeInputHandler (sourceData) {
-    const dataHandler = {
-        valueList : sourceData,
-        currentIdx : 0,
-        maxCount : sourceData.length,
-        hasMoreElements : function ( ) {
-            return ( this.currentIdx < this.maxCount );
-        },
-        getNextValue : function ( ) {
-            if ( !this.hasMoreElements() ) {
-                throw new Error("InputOutOfBoundsException : No more elements to retrieve.");
-            } else {
-                const fetchedValue = this.valueList[this.currentIdx];
-                this.currentIdx++;
-                return fetchedValue;
-            }
-        }
-    };
-    return dataHandler;
+var dataProcessor;
+var inputLines = [];
+inputReader.on('line', function(currentLine){inputLines.push(currentLine);});
+inputReader.on('close', function(){
+  dataProcessor = initializeInputHandler(inputLines);
+  debugLog("----- Program Start -----");
+  var startTime = new Date();
+  executePrimaryLogic();
+  var endTime = new Date() - startTime;
+  debugLog("----- Program End -----");
+  debugLog("Execution Time : " + (endTime) + "ms");
+  debugLog("Memory Usage : " + Math.round(process.memoryUsage().heapTotal / 1024) + "KB");
+});
+function getNextInteger(){return convertInput(fetchNextLine(),1);} function getNextStringArray(){return convertInput(fetchNextLine(),2);}
+function getNextIntegerArray(){return convertInput(fetchNextLine(),4);} function getNextCharacterArray(){return convertInput(fetchNextLine(),6);}
+function fetchNextLine(){return dataProcessor.next();} function hasMoreLines(){return dataProcessor.hasNext();}
+function initializeInputHandler(incomingData){
+  var handlerObject = {
+    lineCollection : incomingData, currentPosition : 0, totalLines : incomingData.length,
+    hasNext : function(){return (this.currentPosition < this.totalLines);},
+    next : function(){if(!this.hasNext()){throw "InputOutOfBoundsException: No more input available.";}else{var retrievedLine = this.lineCollection[this.currentPosition];this.currentPosition++;return retrievedLine;}}
+  };
+  return handlerObject;
 }
+function printOutput(message){console.log(message);}
+function debugLog(messageContent){console.error("DEBUG_INFO: " + require("util").inspect(messageContent,false,null));}
+// Input conversion utility
+// conversionType: 1:integer, 2:string array, 4:integer array, 6:char array
+// 7:char integer array, 8:join with space, 9:join with newline, 0:join without separator
+function convertInput(inputItem, conversionType){try{switch(conversionType){case 1:return parseInt(inputItem, 10);case 2:return inputItem.split(" ");case 4:return inputItem.split(" ").map(Number);case 6:return inputItem.split("");case 7:return inputItem.split("").map(Number);case 8:return inputItem.join(" ");case 9:return inputItem.join("\n");case 0:return inputItem.join("");default:return inputItem;}}catch(error){return inputItem;}}
 
-function outputResult (content) { console.log(content); }
-
-function logDebug (message) {
-    console.error ( `debug:${require("util").inspect(message, false, null)}` );
-}
-
-/*
- * This function handles various input transformations.
- * Parameter 'dataItem': The item to be converted.
- * Parameter 'conversionType': Specifies the type of conversion.
- * 1: Convert to integer.
- * 2: Split by space into string array.
- * 4: Split by space and convert to number array.
- * 6: Split into character array.
- * 7: Split into character array and convert to number array.
- * 8: Join array elements with space.
- * 9: Join array elements with newline.
- * 0: Join array elements without separator.
- * Default: Return dataItem as is.
- */
-function convertInputType (dataItem, conversionType) {
-    try {
-        switch (conversionType) {
-            case 1: return parseInt(dataItem, 10);
-            case 2: return dataItem.split(" ");
-            case 4: return dataItem.split(" ").map(Number);
-            case 6: return dataItem.split("");
-            case 7: return dataItem.split("").map(Number);
-            case 8: return dataItem.join(" ");
-            case 9: return dataItem.join("\n");
-            case 0: return dataItem.join("");
-            default: return dataItem;
-        }
-    } catch (error) {
-        return dataItem; // If conversion fails, return original.
-    }
-}
-
-// End of helper functions. Do not alter this header.
-function executeMainAlgorithm() {
-  const currentNum = retrieveInteger();
-  const primaryDivisors = calculateAllDivisors(currentNum);
-  const oneLessDivisors = calculateAllDivisors(currentNum - 1);
-  const distinctSolutions = new Set();
-
-  // Add divisors of (N-1) to the set, excluding 1.
-  for (let idx = 1; idx < oneLessDivisors.length; idx++) {
-    distinctSolutions.add(oneLessDivisors[idx]);
+function executePrimaryLogic(){
+  var inputNumber = getNextInteger();
+  var divisorsOfN = calculateDivisors(inputNumber);
+  var divisorsOfNMinusOne = calculateDivisors(inputNumber - 1);
+  var resultantSet = new Set();
+  for(var counterA = 1; counterA < divisorsOfNMinusOne.length; counterA++){
+    resultantSet.add(divisorsOfNMinusOne[counterA]);
   }
-
-  // Iterate through divisors of N to find special cases.
-  for (let jdx = 1; jdx < primaryDivisors.length; jdx++) {
-    let tempValue = currentNum;
-    const currentDiv = primaryDivisors[jdx];
-
-    // Repeatedly divide or take modulo.
-    while (tempValue >= currentDiv) {
-      if (tempValue % currentDiv === 0) {
-        tempValue /= currentDiv;
-      } else {
-        tempValue %= currentDiv;
+  for(var counterB = 1; counterB < divisorsOfN.length; counterB++){
+    var tempNumber = inputNumber;
+    var currentDivisor = divisorsOfN[counterB];
+    while(tempNumber >= currentDivisor){
+      if(tempNumber % currentDivisor === 0){
+        tempNumber /= currentDivisor;
+      }else{
+        tempNumber %= currentDivisor;
       }
     }
-    // If the value reduces to 1, add the divisor to solutions.
-    if (tempValue === 1) {
-      distinctSolutions.add(currentDiv);
+    if(tempNumber === 1){
+      resultantSet.add(currentDivisor);
     }
   }
-  outputResult(distinctSolutions.size);
+  printOutput(resultantSet.size);
 }
-
-// Computes all divisors for a given number.
-function calculateAllDivisors(inputNumber) {
-  const divisorStorage = [];
-  for (let kdx = 1; kdx * kdx <= inputNumber; kdx++) {
-    if (inputNumber % kdx === 0) {
-      divisorStorage.push(kdx);
-      if (kdx * kdx !== inputNumber) {
-        divisorStorage.push(inputNumber / kdx);
+function calculateDivisors(currentValue){
+  var divisorCollection = [];
+  for(var factor = 1; factor * factor <= currentValue; factor++){
+    if(currentValue % factor === 0){
+      divisorCollection.push(factor);
+      if(factor * factor !== currentValue){
+        divisorCollection.push(currentValue / factor);
       }
     }
   }
-  // Sort the divisors in ascending order.
-  divisorStorage.sort((valA, valB) => valA - valB);
-  return divisorStorage;
+  divisorCollection.sort(function(first, second){ return first - second; });
+  return divisorCollection;
 }
-
-// Determines if a number is prime.
-function checkIfPrime(numericValue) {
-  if (numericValue === null || numericValue <= 1 || (numericValue !== 2 && numericValue % 2 === 0)) {
+function checkIfPrime(numberToCheck){
+  if(numberToCheck === null || numberToCheck <= 1 || (numberToCheck !== 2 && numberToCheck % 2 === 0)){
     return false;
-  } else if (numericValue === 2) {
+  }else if(numberToCheck === 2){
     return true;
   }
-  const squareRootLimit = Math.floor(Math.sqrt(numericValue));
-  for (let count = 3; count <= squareRootLimit; count += 2) {
-    if (numericValue % count === 0) {
+  var squareRootVal = Math.floor(Math.sqrt(numberToCheck));
+  for(var oddFactor = 3; oddFactor <= squareRootVal; oddFactor += 2){
+    if(numberToCheck % oddFactor === 0){
       return false;
     }
   }
   return true;
 }
-
-// Generates a map of prime factors and their counts.
-function computePrimeFactors(valueToFactor) {
-  const primeFactorMap = {};
-  let currentFactor = 2;
-  while (valueToFactor !== 1) {
-    if (valueToFactor % currentFactor === 0) {
-      primeFactorMap[currentFactor] = (primeFactorMap[currentFactor] === undefined) ? 1 : primeFactorMap[currentFactor] + 1;
-      valueToFactor /= currentFactor;
-      // Optimization: if remaining value is prime, add it and break.
-      if (checkIfPrime(valueToFactor)) {
-        primeFactorMap[valueToFactor] = (primeFactorMap[valueToFactor] === undefined) ? 1 : primeFactorMap[valueToFactor] + 1;
+function factorizeIntoPrimes(numberToFactor){
+  var primeFactorCounts = {};
+  var currentDivisor = 2;
+  while(numberToFactor !== 1){
+    if(numberToFactor % currentDivisor === 0){
+      (primeFactorCounts[currentDivisor] === undefined)  ? primeFactorCounts[currentDivisor] = 1 : primeFactorCounts[currentDivisor]++;
+      numberToFactor /= currentDivisor;
+      if(checkIfPrime(numberToFactor)){
+        (primeFactorCounts[numberToFactor] === undefined)  ? primeFactorCounts[numberToFactor] = 1 : primeFactorCounts[numberToFactor]++;
         break;
       }
-    } else {
-      // Move to next potential factor (skip even numbers after 2).
-      currentFactor = (currentFactor === 2) ? currentFactor + 1 : currentFactor + 2;
+    }else{
+      currentDivisor = (currentDivisor === 2) ? currentDivisor + 1 : currentDivisor + 2;
     }
   }
-  return primeFactorMap;
+  return primeFactorCounts;
 }

@@ -1,96 +1,94 @@
-let leastSteps = 1000; // Stores the minimum path length found
-let gridState; // Holds the parsed maze configuration
+var minimumPathCost = 1000; // Stores the minimum cost found so far
+var gridState; // Represents the grid or map with cell states
 
 /**
- * Main function to process input and initiate pathfinding.
+ * Main function to process input and initiate the pathfinding algorithm.
  * @param {string} rawData - The raw input string from stdin.
  */
-function ProcessData(rawData) {
-    // Remove any leading or trailing whitespace from the input string.
+function ProcessInputAndSolve(rawData) {
+    // Trim leading/trailing whitespace from the input
     rawData = rawData.trim();
-    // Split the input string into an array of lines.
-    rawData = rawData.split("\n");
+    // Split the input into an array of lines
+    let inputLines = rawData.split("\n");
 
-    // Parse the first line to get the target coordinates.
-    // The coordinates are 0-indexed, so we subtract 1.
-    const startEndCoords = rawData[0].split(" ");
+    // The first line contains grid dimensions
+    let dimensions = inputLines[0].split(" ");
+    // The rest of the lines represent the grid state
+    gridState = inputLines.slice(1, inputLines.length);
 
-    // Extract the grid rows from the input, skipping the first line.
-    gridState = rawData.slice(1, rawData.length);
-    // Convert each row string into an array of characters for easier access.
-    gridState = gridState.map(elementRow => {
-        return elementRow.split('');
+    // Convert each grid line string into an array of characters
+    gridState = gridState.map(rowStr => {
+        return rowStr.split('');
     });
 
-    // Start the recursive path exploration from the origin [0,0].
-    // The target position is derived from the parsed coordinates.
-    // Initial path length is 0.
-    ExplorePath([0, 0], [parseInt(startEndCoords[0]) - 1, parseInt(startEndCoords[1]) - 1], 0);
+    // Start the recursive path exploration from [0,0] to the bottom-right corner
+    // The target position is (rows-1, cols-1)
+    ExplorePath(
+        [0, 0], // Starting coordinates (row, column)
+        [parseInt(dimensions[0]) - 1, parseInt(dimensions[1]) - 1], // Target coordinates
+        0 // Initial cost
+    );
 
-    // Print the globally stored minimum number of steps.
-    console.log(leastSteps);
+    // Output the final minimum cost found
+    console.log(minimumPathCost);
 }
 
-// Read input from standard input and pass it to the processing function.
-ProcessData(
-    require("fs").readFileSync("/dev/stdin", "utf8")
-);
+// Read input from standard input and pass it to the main processing function
+ProcessInputAndSolve(require("fs").readFileSync("/dev/stdin", "utf8"));
 
 /**
- * Recursively explores paths in the grid to find the shortest path.
- * @param {number[]} currentPos - The current [row, column] coordinates.
- * @param {number[]} targetPos - The target [row, column] coordinates.
- * @param {number} pathLength - The current length of the path taken.
+ * Recursively explores paths from the current position to the target position.
+ * @param {number[]} currentPosition - The current [row, column] coordinates.
+ * @param {number[]} targetPosition - The target [row, column] coordinates.
+ * @param {number} currentCost - The accumulated cost to reach the current position.
  */
-function ExplorePath(currentPos, targetPos, pathLength) {
-    // Extract row and column for clarity.
-    const rowCoord = currentPos[0];
-    const colCoord = currentPos[1];
+function ExplorePath(currentPosition, targetPosition, currentCost) {
+    let currentRow = currentPosition[0]; // Current row index
+    let currentCol = currentPosition[1]; // Current column index
 
-    // If the current cell is an obstacle ('#'), increment path length.
-    // This problem implies '#' cells add to the count, while '.' cells do not.
-    if (gridState[rowCoord][colCoord] !== ".") {
-        pathLength++;
-        // Pruning: if the current path length already exceeds the best found,
-        // there's no need to continue this path.
-        if (pathLength > leastSteps) return;
-    }
-
-    // Check if the target destination has been reached.
-    if (rowCoord === targetPos[0] && colCoord === targetPos[1]) {
-        // If this path is shorter than the current minimum, update it.
-        if (pathLength < leastSteps) {
-            leastSteps = pathLength;
+    // If the current cell is a '#' (obstacle), increment the cost
+    if (gridState[currentRow][currentCol] !== ".") {
+        currentCost++;
+        // If the current cost already exceeds the minimum found, prune this path
+        if (currentCost > minimumPathCost) {
+            return;
         }
-        return; // Path found, terminate this branch.
     }
-    // If only horizontal movement is left (already at the target row).
-    else if (rowCoord === targetPos[0]) {
-        // Move one step to the right.
-        ExplorePath([rowCoord, colCoord + 1], targetPos, pathLength);
-    }
-    // If only vertical movement is left (already at the target column).
-    else if (colCoord === targetPos[1]) {
-        // Move one step down.
-        ExplorePath([rowCoord + 1, colCoord], targetPos, pathLength);
-    }
-    // If both horizontal and vertical movements are possible.
-    else {
-        // Check the state of the right and bottom neighbors.
-        const neighborOne = gridState[rowCoord][colCoord + 1]; // Right neighbor
-        const neighborTwo = gridState[rowCoord + 1][colCoord]; // Bottom neighbor
 
-        // Specific handling for prioritizing paths through '.' cells.
-        if (neighborOne === "#" && neighborTwo === ".") {
-            // If right is '#' and bottom is '.', only go down.
-            ExplorePath([rowCoord + 1, colCoord], targetPos, pathLength);
-        } else if (neighborOne === "." && neighborTwo === "#") {
-            // If right is '.' and bottom is '#', only go right.
-            ExplorePath([rowCoord, colCoord + 1], targetPos, pathLength);
-        } else {
-            // If both are '.' or both are '#', explore both paths.
-            ExplorePath([rowCoord, colCoord + 1], targetPos, pathLength); // Go right
-            ExplorePath([rowCoord + 1, colCoord], targetPos, pathLength); // Go down
+    // Check if the target has been reached
+    if (currentRow === targetPosition[0] && currentCol === targetPosition[1]) {
+        // If this path's cost is less than the current minimum, update it
+        if (currentCost < minimumPathCost) {
+            minimumPathCost = currentCost;
+        }
+        return; // Path found, return
+    }
+    // If not at the target, determine the next move
+    else if (currentRow === targetPosition[0]) {
+        // If already in the target row, only move right
+        ExplorePath([currentRow, currentCol + 1], targetPosition, currentCost);
+    }
+    else if (currentCol === targetPosition[1]) {
+        // If already in the target column, only move down
+        ExplorePath([currentRow + 1, currentCol], targetPosition, currentCost);
+    }
+    else {
+        // If not in the target row or column, check both right and down paths
+        let rightCellContent = gridState[currentRow][currentCol + 1];
+        let downCellContent = gridState[currentRow + 1][currentCol];
+
+        // Prioritize moving down if right is an obstacle and down is clear
+        if (rightCellContent === "#" && downCellContent === ".") {
+            ExplorePath([currentRow + 1, currentCol], targetPosition, currentCost);
+        }
+        // Prioritize moving right if down is an obstacle and right is clear
+        else if (rightCellContent === "." && downCellContent === "#") {
+            ExplorePath([currentRow, currentCol + 1], targetPosition, currentCost);
+        }
+        // If both are clear, or both are obstacles, explore both paths
+        else {
+            ExplorePath([currentRow, currentCol + 1], targetPosition, currentCost); // Move right
+            ExplorePath([currentRow + 1, currentCol], targetPosition, currentCost); // Move down
         }
     }
 }

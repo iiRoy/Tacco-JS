@@ -1,37 +1,43 @@
-const obtainRawInput = () => {
-    const diskAccess = require("node:fs");
-    const entireFileContents = diskAccess.readFileSync("/dev/stdin", "utf8");
-    return entireFileContents.split(/\r?\n/);
+const retrieveInputLines = () => {
+    const fileSystem = require("fs");
+    const fileContent = fileSystem.readFileSync("/dev/stdin", "utf8");
+    return fileContent.split(/\n\r?/);
 };
 
-for (const currentLineDatum of obtainRawInput()) {
-    const numericalSegments = currentLineDatum.split(' ').map(Number);
-    const upperLimit = numericalSegments[0];
-    const targetAggregate = numericalSegments[1];
+function getTripletCount(limitVal, targetVal) {
+    let finalCount = 0;
 
-    if (upperLimit === 0 && targetAggregate === 0) {
+    function findUniqueTriplets(currentCandidate, currentDepth, accumulatedSum) {
+        if (currentDepth === 3) {
+            if (accumulatedSum === targetVal) {
+                finalCount++;
+            }
+            return;
+        }
+
+        const maxNumForCurrentSlot = limitVal - (3 - (currentDepth + 1));
+
+        for (let numChoice = currentCandidate; numChoice <= maxNumForCurrentSlot; numChoice++) {
+            if (accumulatedSum + numChoice > targetVal) {
+                break;
+            }
+            findUniqueTriplets(numChoice + 1, currentDepth + 1, accumulatedSum + numChoice);
+        }
+    }
+
+    findUniqueTriplets(1, 0, 0);
+    return finalCount;
+}
+
+for (const currentInputLine of retrieveInputLines()) {
+    const numericValues = currentInputLine.split(' ');
+    const upperBound = +numericValues[0];
+    const targetSum = +numericValues[1];
+
+    if (!upperBound && !targetSum) {
         break;
     }
 
-    const possibleFirstNumbers = Array.from({ length: upperLimit }, (_, idx) => idx + 1);
-
-    const numberOfValidSets = possibleFirstNumbers
-        .flatMap(primaryVal => {
-            const possibleSecondNumbers = Array.from({ length: upperLimit }, (_, idx) => idx + 1);
-            return possibleSecondNumbers
-                .flatMap(secondaryVal => {
-                    if (primaryVal >= secondaryVal) {
-                        return [];
-                    }
-
-                    const tertiaryVal = targetAggregate - primaryVal - secondaryVal;
-
-                    if (secondaryVal < tertiaryVal && tertiaryVal <= upperLimit) {
-                        return [[primaryVal, secondaryVal, tertiaryVal]];
-                    }
-                    return [];
-                });
-        }).length;
-
-    console.log(numberOfValidSets);
+    const combinationResult = getTripletCount(upperBound, targetSum);
+    console.log(combinationResult);
 }

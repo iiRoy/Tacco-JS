@@ -1,103 +1,74 @@
 "use strict";
 
-// Utility module for handling file system operations.
-const fileSystemModule = require("fs");
-
-/**
- * Transforms a given data source (string or array of strings) into an array of valid numbers.
- * It handles whitespace trimming and filters out any non-numeric results.
- *
- * @param {string | string[]} sourceInput - The input data, either a space-separated string or an array of string numbers.
- * @returns {number[]} An array containing only valid numeric values parsed from the input.
- */
-function convertInputToNumericArray(sourceInput) {
-  // Defensive check for null or undefined input to prevent runtime errors.
-  if (sourceInput == null) {
-    console.warn("Input for numeric conversion was null or undefined, returning empty array.");
-    return [];
-  }
-
-  let preliminaryStrings;
-  // Branch based on the type of the input source.
-  const isArrayFormat = Array.isArray(sourceInput);
-
-  if (isArrayFormat) {
-    // If it's already an array, use it directly.
-    preliminaryStrings = sourceInput;
-  } else if (typeof sourceInput === 'string') {
-    // If it's a string, trim leading/trailing whitespace and split by one or more spaces.
-    preliminaryStrings = sourceInput.trim().split(/\s+/);
-  } else {
-    // Log an error for unexpected input types and return an empty array.
-    console.error(`Invalid input type for numeric conversion: ${typeof sourceInput}. Expected string or array.`);
-    return [];
-  }
-
-  // Map each string part to its numeric equivalent and filter out any resulting NaN values.
-  const numericalSequence = preliminaryStrings
-    .map(function (strValue) {
-      // Number() constructor is used for type conversion; it's robust for various number formats.
-      return Number(strValue);
-    })
-    .filter(function (numValue) {
-      // Ensure that only actual numbers (not NaN) are retained in the final array.
-      return !isNaN(numValue);
-    });
-
-  return numericalSequence;
+function _destructureArray(inputArray, limitCount) {
+  return _checkArrayType(inputArray) || _limitIterableToArray(inputArray, limitCount) || _handleNonIterableInstance();
 }
 
-// The core application logic is encapsulated within an immediately invoked function expression (IIFE)
-// to avoid polluting the global scope and ensure all necessary setup is done before execution.
-(function executeMainLogic() {
-  let rawTextContent = '';
-  const standardInputPath = "/dev/stdin"; // Standard path for input in Unix-like systems.
+function _handleNonIterableInstance() {
+  throw new TypeError("Invalid attempt to destructure non-iterable instance");
+}
 
-  // Attempt to read the input file, handling potential errors.
+function _limitIterableToArray(iterableSource, limitCount) {
+  var _collectedElements = [];
+  var _iterationComplete = true;
+  var _errorOccurred = false;
+  var _caughtError = undefined;
   try {
-    rawTextContent = fileSystemModule.readFileSync(standardInputPath, "utf8");
-  } catch (fileReadError) {
-    // Log a critical error if input cannot be read and terminate the script.
-    console.error(`Fatal error: Could not read from ${standardInputPath}. Details: ${fileReadError.message}`);
-    process.exit(1); // Exit with a non-zero code to indicate an error.
+    for (var _iterator = iterableSource[Symbol.iterator](), _step; !(_iterationComplete = (_step = _iterator.next()).done); _iterationComplete = true) {
+      _collectedElements.push(_step.value);
+      if (limitCount && _collectedElements.length === limitCount) break;
+    }
+  } catch (err) {
+    _errorOccurred = true;
+    _caughtError = err;
+  } finally {
+    try {
+      if (!_iterationComplete && _iterator["return"] != null) _iterator["return"]();
+    } finally {
+      if (_errorOccurred) throw _caughtError;
+    }
   }
+  return _collectedElements;
+}
 
-  // Split the entire input content into individual lines.
-  const contentLines = rawTextContent.split("\n");
+function _checkArrayType(potentialArray) {
+  if (Array.isArray(potentialArray)) return potentialArray;
+}
 
-  // Validate that there is at least one line of meaningful input.
-  if (contentLines.length === 0 || contentLines[0].trim().length === 0) {
-    console.error("Input contains no valid data lines to process.");
-    process.exit(1);
-  }
+function extractIntegersFromLine(sourceData) {
+  const elementsToProcess = Array.isArray(sourceData) ? sourceData : sourceData.split(/\s+/);
 
-  // Process the first line of the input to extract numerical parameters.
-  // We expect three space-separated integers on this line.
-  const extractedNumbers = convertInputToNumericArray(contentLines[0]);
+  return elementsToProcess.map(function (numericString) {
+    return parseInt(numericString, 10);
+  });
+}
 
-  // Define the expected count of numerical parameters.
-  const requiredParameterCount = 3;
+function readStandardInputContent() {
+  return require("fs").readFileSync("/dev/stdin", "utf8");
+}
 
-  // Verify that the correct number of parameters was successfully parsed.
-  if (extractedNumbers.length !== requiredParameterCount) {
-    console.error(`Data error: Expected ${requiredParameterCount} numbers on the first line, but found ${extractedNumbers.length}.`);
-    process.exit(1);
-  }
+function calculateAndDisplayMinSum(rawInputContent) {
+  const allInputLines = rawInputContent.split("\n");
 
-  // Assign the extracted numbers to distinctly named variables for clarity.
-  // This avoids the use of helper functions for array destructuring.
-  const primaryValue = extractedNumbers[0];
-  const secondaryValue = extractedNumbers[1];
-  const tertiaryValue = extractedNumbers[2];
+  const firstDataLine = allInputLines[0];
 
-  // Calculate the sum of each unique pair of values.
-  const sumOfFirstTwo = primaryValue + secondaryValue;
-  const sumOfLastTwo = secondaryValue + tertiaryValue;
-  const sumOfFirstAndLast = tertiaryValue + primaryValue;
+  const parsedNumberArray = extractIntegersFromLine(firstDataLine);
 
-  // Determine the smallest among these three calculated sums.
-  const overallMinimumSum = Math.min(sumOfFirstTwo, sumOfLastTwo, sumOfFirstAndLast);
+  const destructuredValues = _destructureArray(parsedNumberArray, 3);
+  const valP = destructuredValues[0];
+  const valQ = destructuredValues[1];
+  const valR = destructuredValues[2];
 
-  // Output the final computed result to standard output.
-  console.log(`The calculated minimum pairwise sum is: ${overallMinimumSum}`);
+  const sumPQ = valP + valQ;
+  const sumQR = valQ + valR;
+  const sumRP = valR + valP;
+
+  const finalMinimumSum = Math.min(sumPQ, sumQR, sumRP);
+
+  console.log(finalMinimumSum);
+}
+
+(function initializeAndRunProgram() {
+  const programInputData = readStandardInputContent();
+  calculateAndDisplayMinSum(programInputData);
 })();

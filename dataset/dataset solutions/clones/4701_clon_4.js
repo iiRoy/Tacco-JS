@@ -1,12 +1,14 @@
-const calculateCompositeValue = (originData) => {
-  const digitStrings = originData.match(/\d+/g) || ["0", "0"];
-  const firstComponent = +digitStrings[0];
-  const secondComponent = +digitStrings[1];
+function processInputData(rawData) {
+  const lineSegments = rawData.split('\n');
+  const numericValues = lineSegments[0].split(' ').map(val => parseInt(val, 10));
+  const firstQuantity = numericValues[0];
+  const secondQuantity = numericValues[1];
 
-  const conditionCheck = (firstComponent * 2 >= secondComponent);
+  const productsFromSpecialItems = Math.min(firstQuantity, Math.floor(secondQuantity / 2));
+  const remainingRegularItems = secondQuantity - (productsFromSpecialItems * 2);
+  const finalProductCount = productsFromSpecialItems + Math.floor(remainingRegularItems / 4);
 
-  const firstTerm = (secondComponent / 2) | 0;
-  const secondTerm = (firstComponent + ((secondComponent - firstComponent * 2) / 4)) | 0;
+  console.log(finalProductCount);
+}
 
-  return firstTerm * conditionCheck + secondTerm * !conditionCheck;
-};
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

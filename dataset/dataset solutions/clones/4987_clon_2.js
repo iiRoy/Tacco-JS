@@ -1,133 +1,43 @@
-// Alias for global 'process' object and its standard I/O streams.
-const executionContext = {
-  inputSource: {
-    // Renamed method to initiate reading from standard input.
-    initiateReception: () => process.stdin.resume(),
-    // Renamed method to set the character encoding for the input stream.
-    configureEncoding: (encVal) => process.stdin.setEncoding(encVal)
-  },
-  // Reference to standard output, used by the line processing module.
-  outputSink: process.stdout
-};
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
 
-// Alias for the global 'require' function, used for module importation.
-const acquireModule = require;
+// This array will hold all the input lines received.
+let inputDataRows = [];
 
-// Alias for the global 'console' object, specifically its logging method.
-const displayService = {
-  // Renamed method for outputting messages to the console.
-  outputMessage: (msg) => console.log(msg)
-};
-
-// Wrapper function to convert a string into a BigInt (large integer).
-const convertToBigNumber = (inputString) => BigInt(inputString);
-
-// Extend the String prototype with a new method for splitting a string.
-String.prototype.divideIntoSegments = function(separatorSymbol) {
-  return this.split(separatorSymbol);
-};
-
-// Extend the Array prototype with a new method for mapping elements.
-Array.prototype.transformEachElement = function(transformationFunction) {
-  return this.map(transformationFunction);
-};
-
-// Extend the Array prototype with a new method for reduction operations.
-Array.prototype.aggregateToSingleValue = function(reducerFunction, initialAccumulator) {
-  return this.reduce(reducerFunction, initialAccumulator);
-};
-
-// Extend the Array prototype with a new method for appending elements.
-Array.prototype.appendToCollection = function(elementToAdd) {
-  this.push(elementToAdd);
-};
-
-// Extend the BigInt prototype with a new method for string conversion.
-BigInt.prototype.asStringRepresentation = function() {
-  return this.toString();
-};
-
-// Extend the Array prototype with a utility method to retrieve the first element.
-Array.prototype.fetchFirst = function() {
-    return this[0];
-};
-
-// This script initializes an input processing routine.
-executionContext.inputSource.initiateReception();
-
-// Character encoding for incoming data is specified here.
-executionContext.inputSource.configureEncoding('utf8');
-
-
-// A dynamic array to hold all lines read from the input stream.
-let collectedTextLines =    [];
-
-
-// Obtain the 'readline' utility and establish an interactive interface.
-let streamReaderInstance =
-  acquireModule('readline')
-  .createInterface(
-    {
-      input:  executionContext.inputSource,
-      output: executionContext.outputSink
-    }
-  );
-
-// Register a callback function to execute upon receiving each new line.
-streamReaderInstance.on('line',
-  (currentInputLine) =>
-{
-  collectedTextLines.appendToCollection(currentInputLine);
+// Set up an interface to read input line by line.
+const inputProcessor = require('readline').createInterface({
+  input: process.stdin,
+  output: process.stdout
 });
 
+// When a new line of input is received, add it to our collection.
+inputProcessor.on('line', (currentLineText) => {
+  inputDataRows.push(currentLineText);
+});
 
-// Register a final callback function to execute when the input stream concludes.
-streamReaderInstance.on('close',
-  () =>
-{
-    // Destructure the first line, converting string segments into large integer types.
-    const [firstNumber, secondNumber, thirdNumber] =
-      collectedTextLines
-      .fetchFirst()
-      .divideIntoSegments(" ")
-      .transformEachElement(
-        valItem => convertToBigNumber(valItem)
-      );
+// Once the input stream is closed, process the collected data.
+inputProcessor.on('close', () => {
+    // Extract the three numbers from the first line, converting them to BigInt.
+    const [firstNum, secondNum, thirdNum] = inputDataRows[0].split(" ").map(strVal => BigInt(strVal));
 
-    // Conditional check: if any of the large integers are even (divisible by 2).
-    if
-    (
-      firstNumber % 2n === 0n
-      || secondNumber % 2n === 0n
-      || thirdNumber % 2n === 0n
-    )
-    {
-        // Output zero if the condition is met.
-        displayService.outputMessage(0);
-    }
-    else
-    {
-        // Otherwise, calculate products, find the minimum, and print its string representation.
-        displayService.outputMessage(
-          computeMinimumOfThreeProducts(
-            firstNumber * secondNumber,
-            secondNumber * thirdNumber,
-            firstNumber * thirdNumber
-          )
-          .asStringRepresentation()
-        );
+    // Check if any of the numbers are even.
+    // If any number is even, then at least one of the products (A*B, B*C, A*C) will be even.
+    // Since we are looking for the minimum product of two numbers, and if all numbers are odd,
+    // the products will be odd. If any number is even, the minimum product will be 0 if we consider
+    // the problem to be about finding the smallest possible product of two numbers from the set,
+    // and if any number is even, it implies a different context or a misunderstanding of the problem.
+    // However, following the original logic, if any number is even, the output is 0.
+    if (firstNum % 2n === 0n || secondNum % 2n === 0n || thirdNum % 2n === 0n) {
+        console.log(0);
+    } else {
+        // If all numbers are odd, calculate the products of each pair and find the smallest one.
+        // The products will also be odd.
+        console.log(findSmallest(firstNum * secondNum, secondNum * thirdNum, firstNum * thirdNum).toString());
     }
 });
 
-
-// This function determines the minimum value from a variable number of arguments.
-const computeMinimumOfThreeProducts =
-  (...valueArguments) =>
-{
-    // Uses an array aggregation method to find the smallest element.
-    return valueArguments
-      .aggregateToSingleValue(
-        (currentMin, nextElement) => currentMin < nextElement ? currentMin : nextElement,
-        valueArguments.fetchFirst()
-      );
+// A utility function to determine the smallest value among a set of BigInt numbers.
+const findSmallest = (...numericValues) => {
+    // Use the reduce method to iterate through the array and find the minimum.
+    return numericValues.reduce((currentMin, nextVal) => currentMin < nextVal ? currentMin : nextVal, numericValues[0]);
 };

@@ -1,66 +1,47 @@
-const processInputData = ( rawInputText ) => {
-    // This function takes raw text input and performs a comparison logic.
+function processInputData(rawText) {
+  // Extract initial positions and velocities from the input string.
+  // The first line contains position A and velocity A.
+  let posA = rawText.split("\n")[0].split(" ")[0];
+  let velA = rawText.split("\n")[0].split(" ")[1];
 
-    const   firstEntityStartPos     =   Number( rawInputText.split('\n')[0].split(' ')[0] )
-    ;
-    const   firstEntitySpeed        =   Number( rawInputText.split('\n')[0].split(' ')[1] )
-    ;
+  // The second line contains position B and velocity B.
+  let posB = rawText.split("\n")[1].split(" ")[0];
+  let velB = rawText.split("\n")[1].split(" ")[1];
 
-    const   secondEntityStartPos    =   Number( rawInputText.split('\n')[1].split(' ')[0] )
-    ;
-    const   secondEntitySpeed       =   Number( rawInputText.split('\n')[1].split(' ')[1] )
-    ;
+  // The third line specifies the maximum time for observation.
+  let maxTime = rawText.split("\n")[2];
 
-    const   maximumIterationTime    =   Number( rawInputText.split('\n')[2] )
-    ;
+  // Calculate the initial absolute separation between the two points.
+  let currentSeparation = 0;
+  if (posA > posB) {
+    currentSeparation = posA - posB;
+  } else {
+    currentSeparation = posB - posA;
+  }
 
-    let     currentRelativeDistance =   0
-    ;
+  // Determine the rate at which the separation changes.
+  // This is the difference in their velocities.
+  let relativeVelocity = velA - velB;
 
-    // Calculate the absolute initial distance between the two entities.
-    if  ( firstEntityStartPos > secondEntityStartPos )
-    {
-        currentRelativeDistance = firstEntityStartPos - secondEntityStartPos
-        ;
+  // Iterate through each time step up to the maximum allowed time.
+  for (let timeStep = 0; timeStep <= maxTime; timeStep++) {
+    // After the very first moment (timeStep 0), update the separation.
+    if (timeStep !== 0) {
+      currentSeparation -= relativeVelocity;
     }
-    else
-    {
-        currentRelativeDistance = secondEntityStartPos - firstEntityStartPos
-        ;
+    // If the separation becomes exactly zero, they have met.
+    if (currentSeparation == 0) {
+      break; // Exit the loop early as the condition is met.
     }
-    
-    // Determine the rate at which the distance between them changes.
-    const   distanceReductionPerUnitTime    =   firstEntitySpeed - secondEntitySpeed
-    ;
-    
-    // Iterate through time steps to see if the distance closes.
-    for ( let timeStepCount = 0; timeStepCount <= maximumIterationTime; timeStepCount++ )
-    {
-        if ( timeStepCount !== 0 )
-        {
-            currentRelativeDistance -= distanceReductionPerUnitTime
-            ;
-        }
-        if ( currentRelativeDistance <= 0 ) // If distance is 0 or less, they've met or passed.
-        {
-            break
-            ;
-        }
-    }
-    
-    // Output the result based on whether the distance was closed.
-    if ( currentRelativeDistance <= 0 )
-    {
-        console.log("YES")
-        ;
-    }
-    else
-    {
-        console.log("NO")
-        ;
-    }
+  }
+
+  // Check the final separation status to determine the outcome.
+  if (currentSeparation == 0) {
+    console.log("YES"); // Output "YES" if they met.
+  } else {
+    console.log("NO"); // Output "NO" otherwise.
+  }
 }
 
-// Invoke the main processing function with data from standard input.
-processInputData ( require("fs").readFileSync("/dev/stdin", "utf8") )
-;
+// Read the entire content from standard input synchronously and pass it to the main processing function.
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

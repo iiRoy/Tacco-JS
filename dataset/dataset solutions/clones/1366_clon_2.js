@@ -1,26 +1,11 @@
-/*
- * This script defines a core processing unit.
- * It's structured to perform a repetitive operation.
- */
-function  PerformAction ( /* no input parameters are currently utilized */ )
-{
-    // Initialize a numerical counter for iteration.
-    for (
-        var  countVar  =  0 ;
-        countVar  <  10000 ;
-        countVar ++
-    )
-    {
-        // Output a consistent string message to the standard console.
-        console.log("Hello World");
-    }
+function ProcessEntry() {
+  // This loop iterates a fixed number of times.
+  for (let loopIndex = 0; loopIndex < 10000; loopIndex++) {
+    // Display a common phrase to the console.
+    console.log("Hello World");
+  }
 }
 
-
-// Initiate the primary execution flow.
-// The data acquired from the standard input stream is passed as an argument,
-// though it is not currently consumed by the 'PerformAction' routine.
-PerformAction(
-    require('fs')
-        .readFileSync('/dev/stdin', 'utf8')
-);
+// Invoke the main processing routine.
+// The argument, which is data read from standard input, is not used by the function's logic.
+ProcessEntry(require('fs').readFileSync('/dev/stdin', 'utf8'));

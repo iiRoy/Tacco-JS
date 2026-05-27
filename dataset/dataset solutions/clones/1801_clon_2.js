@@ -1,63 +1,72 @@
-function processRecurse(countRemaining, targetValue, dataArray, choiceString, memoTable) {
-  // Debugging line, originally commented: current state of parameters
-  if (countRemaining === 0) {
-    // Base case: if no elements left to process, target must be zero
-    return targetValue === 0;
+function calculateXorPossibility(remainingElements, targetXorValue, inputNumbers, binarySequence, memoizationCache) {
+  // Base case: If there are no more elements to consider,
+  // the target XOR sum must be zero for this path to be valid.
+  if (remainingElements === 0) {
+    return targetXorValue === 0;
   }
 
-  const currentChoice = choiceString[choiceString.length - countRemaining];
+  // Determine the current element's index from the end of the sequence.
+  const currentElementIndex = binarySequence.length - remainingElements;
+  const currentDigit = binarySequence[currentElementIndex]; // Fetch the binary digit ('0' or '1').
 
-  // Check if this subproblem's result is already stored in the memoization table
-  if (memoTable[countRemaining] !== void 0 && memoTable[countRemaining][targetValue] !== void 0) {
-    // Debugging line, originally commented: returning cached result
-    return memoTable[countRemaining][targetValue];
+  // Check if the result for this specific subproblem (defined by remainingElements and targetXorValue)
+  // has already been computed and stored in our memoization cache.
+  if (memoizationCache[remainingElements] !== undefined && memoizationCache[remainingElements][targetXorValue] !== undefined) {
+    return memoizationCache[remainingElements][targetXorValue];
   }
 
-  let resultFlag; // Stores the boolean outcome of the current recursive step
+  let possibleOutcome; // This variable will store the boolean result of the current computation.
 
-  // Logic depends on the character in the choice string
-  if (currentChoice === '1') {
-    // When '1', both options must be true for the overall result to be true (AND operation)
-    // First recursive call: skip the current element
-    // Second recursive call: XOR the target with the current element's numeric value
-    resultFlag = processRecurse(countRemaining - 1, targetValue, dataArray, choiceString, memoTable) &&
-                 processRecurse(countRemaining - 1, targetValue ^ Number(dataArray[choiceString.length - countRemaining]), dataArray, choiceString, memoTable);
+  // The decision logic branches based on the value of the current binary digit.
+  if (currentDigit === '1') {
+    // If the digit is '1', both recursive calls must yield a true result (logical AND).
+    // Option 1: Exclude the current number from the XOR sum.
+    // Option 2: Include the current number, XORing it with the target sum.
+    possibleOutcome = calculateXorPossibility(remainingElements - 1, targetXorValue, inputNumbers, binarySequence, memoizationCache) &&
+                      calculateXorPossibility(remainingElements - 1, targetXorValue ^ inputNumbers[currentElementIndex], inputNumbers, binarySequence, memoizationCache);
   } else {
-    // When '0', either option being true is sufficient for the overall result to be true (OR operation)
-    // First recursive call: skip the current element
-    // Second recursive call: XOR the target with the current element's numeric value
-    resultFlag = processRecurse(countRemaining - 1, targetValue, dataArray, choiceString, memoTable) ||
-                 processRecurse(countRemaining - 1, targetValue ^ Number(dataArray[choiceString.length - countRemaining]), dataArray, choiceString, memoTable);
+    // If the digit is '0', at least one of the recursive calls must yield a true result (logical OR).
+    // Option 1: Exclude the current number.
+    // Option 2: Include the current number.
+    possibleOutcome = calculateXorPossibility(remainingElements - 1, targetXorValue, inputNumbers, binarySequence, memoizationCache) ||
+                      calculateXorPossibility(remainingElements - 1, targetXorValue ^ inputNumbers[currentElementIndex], inputNumbers, binarySequence, memoizationCache);
   }
 
-  // Initialize the inner object in the memoization table if it doesn't exist
-  if (memoTable[countRemaining] === void 0) {
-    memoTable[countRemaining] = {};
+  // Before returning, store the computed result in the memoization cache
+  // to prevent re-calculation if this subproblem is encountered again.
+  if (memoizationCache[remainingElements] === undefined) {
+    memoizationCache[remainingElements] = {}; // Initialize the inner object if it doesn't exist.
   }
+  memoizationCache[remainingElements][targetXorValue] = possibleOutcome;
 
-  // Store the computed result for future use
-  memoTable[countRemaining][targetValue] = resultFlag;
-  return resultFlag;
+  return possibleOutcome; // Return the final computed outcome for this state.
 }
 
+// The primary function to handle input processing, test case parsing,
+// and orchestrating the XOR possibility calculation for each test case.
+function processInput(rawInputString) {
+  const inputLines = rawInputString.split('\n'); // Divide the raw input string into an array of lines.
+  const totalTestCases = Number(inputLines[0]); // The very first line specifies the total number of test cases.
 
-function executeProgram(rawData) {
-  const parsedLines = rawData.split('\n'); // Split input into individual lines
-  const testCases = +parsedLines[0]; // Convert first line to number of test cases
+  // Iterate through each test case. Each test case occupies three lines of input.
+  for (let caseIterator = 0; caseIterator < totalTestCases * 3; caseIterator += 3) {
+    // Extract the specific data required for the current test case.
+    // The length of the sequence (N) is on the line immediately following the test case count.
+    const sequenceLength = inputLines[caseIterator + 1];
+    // The array of numbers (A) is on the subsequent line; it's split by spaces and converted to actual numbers.
+    const inputNumbers = inputLines[caseIterator + 2].split(' ').map(Number);
+    // The binary string (S) is found on the line after the array of numbers.
+    const binarySequence = inputLines[caseIterator + 3];
 
-  // Iterate through each set of test case inputs
-  for (let loopIndex = 0; loopIndex < testCases * 3; loopIndex += 3) {
-    const initialCount = parsedLines[loopIndex + 1]; // Number of elements for this case
-    const dataArray = parsedLines[loopIndex + 2].split(' '); // Array of values as strings
-    const choiceString = parsedLines[loopIndex + 3]; // String dictating AND/OR logic
+    // Invoke the recursive solver function. We start with the full sequence length,
+    // an initial target XOR sum of 0, and an empty memoization object.
+    const possibleOutcome = calculateXorPossibility(sequenceLength, 0, inputNumbers, binarySequence, {});
 
-    // Call the recursive solver with initial parameters and an empty memoization object
-    const finalOutcome = processRecurse(Number(initialCount), 0, dataArray, choiceString, {});
-
-    // Output '0' if true (target can be reached), '1' if false
-    console.log(finalOutcome ? '0' : '1');
+    // Based on the boolean outcome, print '0' if possible (true) or '1' if not possible (false).
+    console.log(possibleOutcome ? '0' : '1');
   }
-  // Debugging line, originally commented: console.log('total iterations:', iterationCount);
 }
 
-executeProgram(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Read the entire content from standard input synchronously using Node.js 'fs' module,
+// then pass this raw string data to our main processing function.
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

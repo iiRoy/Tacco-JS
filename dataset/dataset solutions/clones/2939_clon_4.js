@@ -1,26 +1,61 @@
-function doWork(sourceData) {
-    const dataSegments = sourceData.split('\n').map(s => s.trim()).filter(s => s.length > 0);
+function combineSortedHalves(leftArr, rightArr) {
+    let resultCollection = [];
+    let leftPointer = 0;
+    let rightPointer = 0;
 
-    const firstLineValues = dataSegments[0].split(' ');
-    const desiredQuantity = +firstLineValues[0];
-    const modificationRounds = +firstLineValues[1];
+    while (leftPointer < leftArr.length && rightPointer < rightArr.length) {
+        if (leftArr[leftPointer] < rightArr[rightPointer]) {
+            resultCollection.push(leftArr[leftPointer]);
+            leftPointer++;
+        } else {
+            resultCollection.push(rightArr[rightPointer]);
+            rightPointer++;
+        }
+    }
 
-    const initialElements = dataSegments[1].split(' ').map(Number);
+    return resultCollection.concat(leftArr.slice(leftPointer)).concat(rightArr.slice(rightPointer));
+}
 
-    const allCollectedNumbers = dataSegments.slice(2, 2 + modificationRounds)
-        .reduce((currentCollection, currentLine) => {
-            const [entryCount, entryValue] = currentLine.split(' ').map(Number);
-            return currentCollection.concat(Array(entryCount).fill(entryValue));
-        }, initialElements);
+function performMergeSort(dataCollection) {
+    if (dataCollection.length <= 1) {
+        return dataCollection;
+    }
 
-    allCollectedNumbers.sort((firstItem, secondItem) => secondItem - firstItem);
+    const divisionPoint = Math.floor(dataCollection.length / 2);
+    const firstSegment = dataCollection.slice(0, divisionPoint);
+    const secondSegment = dataCollection.slice(divisionPoint);
 
-    const finalSum = allCollectedNumbers
-        .filter(val => val > 0)
-        .slice(0, desiredQuantity)
-        .reduce((sum, val) => sum + val, 0);
+    const sortedFirst = performMergeSort(firstSegment);
+    const sortedSecond = performMergeSort(secondSegment);
+
+    return combineSortedHalves(sortedFirst, sortedSecond);
+}
+
+function ProcessInputAndCalculate(rawInput) {
+    const inputLines = rawInput.trim().split("\n");
+
+    const [initialCount, modificationCount] = inputLines[0].split(" ").map(Number);
+
+    let baseValues = inputLines[1].split(" ").map(Number);
+
+    const modificationInstructions = inputLines.slice(2, 2 + modificationCount);
+    
+    const generatedValues = modificationInstructions.flatMap(instructionLine => {
+        const [numCopies, valueToAdd] = instructionLine.split(" ").map(Number);
+        return Array.from({ length: numCopies }, () => valueToAdd);
+    });
+
+    const allValues = baseValues.concat(generatedValues);
+
+    const orderedValues = performMergeSort(allValues);
+
+    const positiveOrderedValues = orderedValues.filter(val => val > 0);
+    
+    const topNPositiveValues = positiveOrderedValues.slice(Math.max(0, positiveOrderedValues.length - initialCount));
+
+    const finalSum = topNPositiveValues.reduce((accumulator, currentVal) => accumulator + currentVal, 0);
 
     console.log(finalSum);
 }
 
-doWork(require("fs").readFileSync("/dev/stdin", "utf8"));
+ProcessInputAndCalculate(require("fs").readFileSync("/dev/stdin", "utf8"));

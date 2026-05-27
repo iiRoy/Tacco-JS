@@ -1,85 +1,56 @@
-/* Configuration for the data input process */
-const   settings   =
-{
-    inputPath:    '/dev/stdin', // Standard input file path
-    lineDelimiter: '\n'         // Character marking the end of a line
+let appSettings = {
+  inputSource: '/dev/stdin', // Path to standard input for Linux systems
+  lineDelimiter: '\n'         // Newline character for line separation
 };
 
+// Read the input file, decode as ASCII, split into lines, and parse numbers
+const parsedInputVectors = require('fs').readFileSync(appSettings.inputSource, 'ascii')
+  .split(appSettings.lineDelimiter, 3) // Split into at most 3 lines
+  .map(function(currentInputLine) {
+    // For each line, split by space and convert parts to numbers
+    return currentInputLine.split(' ').map(Number);
+  });
 
-// Read all incoming data, process it, and convert to numerical arrays.
-let   inputData   =
-  require('fs')
-    .readFileSync( settings.inputPath,
-                   'ascii' )  // Read file content as ASCII
-    .split( settings.lineDelimiter,
-            3 )               // Split into lines, taking only the first 3
-    .map( ( currentString ) => {
-      // For each line, split by space and convert each part to a number
-      return   currentString
-               .split( ' ' )
-               .map( Number );
-    } );
-
-
-/*
-  Immediately invoked function expression to calculate
-  the absolute differences between two vectors.
-*/
-const absoluteDifferences =
-(
-  function ( vectorA, vectorB )
-  {
-    // Array to store the computed differences
-    let resultsArray = [];
-
-    // Iterate through elements of the first vector
-    for ( let indexVal in vectorA )
-    {
-      // Calculate absolute difference for corresponding elements
-      resultsArray.push( Math.abs( vectorA[indexVal] - vectorB[indexVal] ) );
-    }
-
-    return resultsArray; // Return the array of differences
+// Calculate the absolute differences between corresponding elements of the second and third input vectors
+const vectorDifferences = (function(firstVector, secondVector) {
+  let differenceResults = []; // Initialize an array to store results
+  // Iterate over the elements of the first vector
+  for (let elementIndex in firstVector) {
+    // Calculate the absolute difference and add it to the results array
+    differenceResults.push(Math.abs(firstVector[elementIndex] - secondVector[elementIndex]));
   }
-)( inputData[1], inputData[2] ); // Pass the second and third lines as vectors
+  return differenceResults; // Return the array of differences
+})(parsedInputVectors[1], parsedInputVectors[2]); // Pass the second and third parsed lines as vectors
 
-
-// Output the Manhattan distance (L1 norm)
+// Output the sum of all absolute differences (L1 norm)
 console.log(
-  absoluteDifferences.reduce(
-    ( accumulator, currentValue ) => accumulator + currentValue,
-    0
-  )
+  vectorDifferences.reduce(function(accumulatedValue, currentElementValue) {
+    return accumulatedValue + currentElementValue;
+  }, 0) // Start sum from 0
 );
 
-
-// Output the Euclidean distance squared (L2 norm squared)
+// Output the Euclidean distance (L2 norm)
 console.log(
   Math.sqrt(
-    absoluteDifferences.reduce(
-      ( accumulator, currentValue ) => accumulator + currentValue * currentValue,
-      0
-    )
+    vectorDifferences.reduce(function(accumulatedValue, currentElementValue) {
+      return accumulatedValue + currentElementValue * currentElementValue;
+    }, 0) // Start sum of squares from 0
   )
 );
 
-
-// Output the Minkowski distance (L3 norm, cubic root of sum of cubes)
+// Output the L3 norm
 console.log(
   Math.pow(
-    absoluteDifferences.reduce(
-      ( accumulator, currentValue ) => accumulator + currentValue * currentValue * currentValue,
-      0
-    ),
-    1 / 3
+    vectorDifferences.reduce(function(accumulatedValue, currentElementValue) {
+      return accumulatedValue + currentElementValue * currentElementValue * currentElementValue;
+    }, 0), // Start sum of cubes from 0
+    1 / 3 // Raise to the power of 1/3
   )
 );
 
-
-// Output the Chebyshev distance (L-infinity norm, maximum difference)
+// Output the Chebyshev distance (L-infinity norm)
 console.log(
-  absoluteDifferences.reduce(
-    ( accumulator, currentValue ) => Math.max( accumulator, currentValue ),
-    0
-  )
+  vectorDifferences.reduce(function(accumulatedValue, currentElementValue) {
+    return Math.max(accumulatedValue, currentElementValue);
+  }, 0) // Start with 0, find maximum absolute difference
 );

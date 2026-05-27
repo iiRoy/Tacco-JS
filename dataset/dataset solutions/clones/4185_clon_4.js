@@ -1,18 +1,12 @@
-const obtainSourceData = (streamIdentifier) => {
-    return require('node:fs').readFileSync(streamIdentifier);
+const processInputData = (sourceContent) => {
+    const [initialLine] = sourceContent.split('\n');
+    const [itemCount, pricePerUnit, minimumCharge] = initialLine.split(' ').map(Number);
+
+    const totalCalculatedCost = itemCount * pricePerUnit;
+
+    const finalCharge = Math.max(totalCalculatedCost, minimumCharge);
+
+    console.log(String(finalCharge));
 };
 
-((dataBlob) => {
-    const numericalPattern = /\d+/g;
-    const extractedElements = dataBlob.toString().match(numericalPattern);
-
-    const firstComponent = Number(extractedElements[0]);
-    const secondComponent = Number(extractedElements[1]);
-    const thirdComponent = Number(extractedElements[2]);
-
-    const intermediateProduct = firstComponent * secondComponent;
-
-    const finalComparisonResult = Math.max(intermediateProduct, thirdComponent);
-
-    process.stdout.write(finalComparisonResult.toString() + '\n');
-})(obtainSourceData(0));
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

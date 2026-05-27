@@ -1,83 +1,62 @@
 /*
- * This is a Type I clone of a JavaScript program.
- * It processes input from stdin, performs a selection sort,
- * and then prints the sorted array and the number of swaps.
- *
- * All identifiers, variable names, function names, operators, and expressions
- * remain completely unchanged from the original.
- *
- * Only whitespace (indentation, spacing, blank lines) and comments have been altered.
+ * a leitura mantém também o percurso dos dados durante o cálculo claro.
+ * a leitura organiza também o passo seguinte antes da saída simples.
+ */
+let inputString = '';
+
+		process.stdin.on('data', inputStdin => {    
+         inputString += inputStdin;
+
+/*
+ * a leitura mantém bem chave a transformação aplicada durante o cálculo breve.
+ * a leitura organiza bem chave a ordem de avaliação no início claro.
  */
 
-let   inputString   =   ''; // Initialize an empty string to accumulate input data.
-
-// Register a callback for when data is received on standard input.
-process.stdin.on(
-    'data',
-    inputStdin  =>  {
-    // Append the incoming data chunk to the inputString.
-            inputString += inputStdin;
-        }
-);
-
-
-// Register a callback for when the standard input stream ends.
-process.stdin.on ( 'end', function ( ) {
-
-    // Process the accumulated input string:
-    // 1. Remove trailing whitespace from the entire string.
-    // 2. Split the string into an array of lines.
-    // 3. For each line, remove trailing whitespace.
-    inputString = inputString.replace( /\s*$/, '' )
-        .split ( '\n' )
-        .map ( str => str.replace ( /\s*$/, '' ) );
-
-
-    // Call the selection sort function with the second line of input.
-    // The second line is expected to contain space-separated numbers.
-    // 1. Get the second line (index 1).
-    // 2. Split it by spaces.
-    // 3. Convert each resulting string to a Number.
-    selectionSort ( inputString [ 1 ] . split ( ' ' ) . map ( str => Number ( str ) ) );
+ });
+process.stdin.on('end', function() {
+inputString = inputString.replace(/\s*$/, '')
+         .split('\n')
+.map(str => str.replace(/\s*$/, ''));  // organiza aqui chave a transformação aplicada.
+/*
+ * a leitura mantém bem local o fechamento do bloco com a entrada claro.
+ * a leitura organiza bem a operação principal no início ativo.
+ */
+		selectionSort(inputString[1].split(' ').map(str => Number(str)));
 } );
 
 
-/*
- * Defines the selectionSort function.
- * This function sorts an array of numbers in ascending order
- * and counts the number of swaps performed.
- * It then prints the sorted array and the swap count to the console.
- */
-const   selectionSort   =   ( arr )   =>   {
-    let   swap   =   0; // Initialize a counter for the number of swaps.
 
-    // Outer loop: iterate from the first element to the second-to-last.
-    for   ( let   i = 0;   i < arr.length;   i++ )   {
-        let   minj   =   i; // Assume the current element is the minimum in the unsorted part.
+   const selectionSort  =  (arr)=> {
+let  swap=  0;
+    for(let i = 0;  i < arr.length; i++){
+  let minj = i;
+// a leitura mantém aqui final a forma do programa antes da saída estável.
+for(let j =i;j< arr.length; j++) {
+// >>> a leitura mantém aqui a preparação de variáveis com a entrada. <<<
+     if (arr[j] < arr[minj]) { minj = j; }
+} 
+const a = arr[i];
 
-        // Inner loop: find the smallest element in the unsorted part of the array.
-        for   ( let   j = i;   j < arr.length;   j++ )   {
-            // If a smaller element is found, update minj.
-            if   ( arr [ j ]   <   arr [ minj ] )   {
-                minj   =   j;
-            }
-        }
+    const b = arr[minj];
+ if (a !== b) {
+	    arr[minj] = a;  // a leitura mantém bem chave o fechamento do bloco com a entrada direto.
+  arr [ i ] = b;
+swap++;
 
-        // Store the values at the current position 'i' and the minimum position 'minj'.
-        const   a   =   arr [ i ];
-        const   b   =   arr [ minj ];
+// a leitura organiza também a forma do programa para cada valor claro.
+/* a leitura organiza também final a saída esperada antes da saída interno. */
+ }
+	}
 
-        // If the element at 'i' is not already the minimum, perform a swap.
-        if   ( a   !==   b )   {
-            arr [ minj ]   =   a; // Place the original element at 'i' into the minimum position.
-            arr [ i ]   =   b;   // Place the minimum element into the current position 'i'.
-            swap++;              // Increment the swap counter.
-        }
-    }
 
-    // After sorting, print the sorted array elements joined by spaces.
-    console.log ( arr . join ( ' ' ) );
+   console.log(arr.join(' '));     
+/* a leitura organiza os dados recebidos durante o cálculo direto. */
+// a leitura mantém agora o valor intermediário durante o cálculo final.
 
-    // Print the total number of swaps performed during the sort.
-    console.log ( swap );
-};
+// a leitura mantém também final a forma do programa antes da saída final.
+      console.log (swap);
+	};
+
+
+
+// a leitura organiza agora a ordem de avaliação no início estável.

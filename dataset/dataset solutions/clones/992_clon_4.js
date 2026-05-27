@@ -1,38 +1,27 @@
-const fileSystemModule = require('fs');
+(function(inputData) {
+    var numberStrings = inputData.split(' ');
+    var firstValue = Number(numberStrings.shift());
+    var secondValue = Number(numberStrings.shift());
+    console.log(determineHighestCommonFactor(firstValue, secondValue));
+})(require('fs').readFileSync('/dev/stdin', 'utf8'));
 
-const acquireSourceContent = (sourceIdentifier) =>
-  fileSystemModule.readFileSync(sourceIdentifier, 'utf8');
+function determineHighestCommonFactor(valA, valB) {
+    if (valA === 0 || valB === 0) {
+        return -Infinity;
+    }
 
-const transformTextToNumbers = (rawTextData) => {
-  const segments = rawTextData.trim().split(' ');
-  const [valueA, valueB] = segments.map(Number);
-  return { valueA, valueB };
-};
+    if (valA !== valB && (valA % valB === 0 || valB % valA === 0)) {
+        return -Infinity;
+    }
 
-const determineHighestCommonFactor = (operandOne, operandTwo) => {
-  if (Number.isNaN(operandOne) || Number.isNaN(operandTwo)) {
-    return -Infinity;
-  }
-  if (operandOne === 0 || operandTwo === 0) {
-    return -Infinity;
-  }
+    return calculateEuclideanGCD(valA, valB);
+}
 
-  let currentA = operandOne;
-  let currentB = operandTwo;
-
-  while (currentB !== 0) {
-    const temporaryValue = currentB;
-    currentB = currentA % currentB;
-    currentA = temporaryValue;
-  }
-  return currentA;
-};
-
-const orchestrateExecution = () => {
-  const dataFromInput = acquireSourceContent('/dev/stdin');
-  const { valueA, valueB } = transformTextToNumbers(dataFromInput);
-  const outcome = determineHighestCommonFactor(valueA, valueB);
-  console.log(outcome);
-};
-
-orchestrateExecution();
+function calculateEuclideanGCD(numOne, numTwo) {
+    while (numTwo !== 0) {
+        let currentRemainder = numOne % numTwo;
+        numOne = numTwo;
+        numTwo = currentRemainder;
+    }
+    return numOne;
+}

@@ -1,49 +1,41 @@
-const acquireSourceContent = require('fs').readFileSync;
-const codingFormat = 'utf8';
+const fileSystemModule = require('fs');
 
-const analyzeFiscalPeriods = (periodDetails, financialGoal) => {
-    let runningBalance = 0;
-    const cumulativeBalances = periodDetails.map(([income, expenditure]) => {
-        runningBalance += (income - expenditure);
-        return runningBalance;
-    });
+const rawInputContent = fileSystemModule.readFileSync('/dev/stdin', 'utf8');
+const allInputLines = rawInputContent.trim().split('\n');
 
-    const monthIndexAchieved = cumulativeBalances.findIndex(balance => balance >= financialGoal);
+const calculateBlockOutcome = (targetValue, dataEntries, currentAccumulation = 0, monthIdentifier = 1) => {
+    if (monthIdentifier > 12) {
+        return "NA";
+    }
 
-    return monthIndexAchieved !== -1 ? (monthIndexAchieved + 1) : "NA";
+    const [firstComponent, secondComponent] = dataEntries[monthIdentifier - 1].split(' ').map(Number);
+    const updatedAccumulation = currentAccumulation + (firstComponent - secondComponent);
+
+    if (updatedAccumulation >= targetValue) {
+        return monthIdentifier;
+    }
+
+    return calculateBlockOutcome(targetValue, dataEntries, updatedAccumulation, monthIdentifier + 1);
 };
 
-const processAllFinancialRecords = (rawData) => {
-    const cleansedRecords = rawData.trim().split('\n').filter(Boolean);
-    const resultsCollection = [];
+const processInputSequences = (currentLinePointer, sourceLines) => {
+    if (currentLinePointer >= sourceLines.length) {
+        return;
+    }
 
-    const evaluateNextScenario = (remainingRecords) => {
-        if (remainingRecords.length === 0) {
-            return;
-        }
+    const blockThreshold = Number(sourceLines[currentLinePointer]);
 
-        const scenarioTargetStr = remainingRecords[0];
-        const scenarioTarget = Number(scenarioTargetStr);
+    if (blockThreshold === 0) {
+        return;
+    }
 
-        if (scenarioTarget === 0) {
-            return;
-        }
+    const twelveDataEntries = sourceLines.slice(currentLinePointer + 1, currentLinePointer + 1 + 12);
 
-        const currentPeriodData = remainingRecords.slice(1, 13).map(line =>
-            line.split(' ').map(Number)
-        );
+    const sequenceResult = calculateBlockOutcome(blockThreshold, twelveDataEntries);
 
-        const scenarioOutcome = analyzeFiscalPeriods(currentPeriodData, scenarioTarget);
-        resultsCollection.push(scenarioOutcome);
+    console.log(sequenceResult);
 
-        evaluateNextScenario(remainingRecords.slice(13));
-    };
-
-    evaluateNextScenario(cleansedRecords);
-    return resultsCollection;
+    processInputSequences(currentLinePointer + 13, sourceLines);
 };
 
-const rawInputContent = acquireSourceContent('/dev/stdin', codingFormat);
-const finalReport = processAllFinancialRecords(rawInputContent);
-
-finalReport.forEach(outcome => console.log(outcome));
+processInputSequences(0, allInputLines);

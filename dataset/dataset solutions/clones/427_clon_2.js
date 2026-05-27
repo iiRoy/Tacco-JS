@@ -1,74 +1,57 @@
-(  function  processInputData  (  )  {
-  /* This module reads numerical data from standard input,
-     processes it in groups, and prints a character label
-     alongside the maximum sum found within each group. */
+$( function () {
+    // This script is designed to read numerical input from standard input,
+    // process it in batches, and then output a specific result based on calculations.
 
-  // Obtain the file system utility to manage file operations.
-  const    fileSystemModule  =  require('fs')   ;
+    // Utilize the Node.js 'fs' module to synchronously read the entire content
+    // of the standard input stream, interpreting it as UTF-8 encoded text.
+    let rawData = require( 'fs' ) . readFileSync( '/dev/stdin', 'utf8' );
 
-  // Define the constant path for reading standard input.
-  const  standardInputPath  =  '/dev/stdin'  ;
+    // Process the raw input: first, remove any leading or trailing whitespace,
+    // then split the cleaned string into an array of individual lines based on newline characters.
+    let lineSegments = ( rawData . trim() ) . split( "\n" );
 
-  // Specify the character encoding for input data.
-  const  encodingType      =  'utf8'        ;
+    // Initialize an empty array to temporarily store sums of numbers from input lines.
+    let scoreAccumulator = [ ];
 
-  // Read all content from the standard input path using the specified encoding.
-  let incomingText = fileSystemModule.readFileSync( standardInputPath ,  encodingType ) ;
+    // Begin iterating through each line segment obtained from the input.
+    for ( let idx = 0; idx < lineSegments . length; idx++ ) {
+        // Implement a specific termination condition:
+        // If the score accumulator is currently empty AND the current line segment
+        // is exactly the string "0 0", then the processing loop should be exited.
+        if ( scoreAccumulator . length === 0 && lineSegments[ idx ] === "0 0" ) {
+            break; // Exit the loop as per the specified condition.
+        }
 
-  // Define the delimiter used to split the input into individual lines.
-  const  newLineDelimiter  =  '\n' ;
+        // For the current line segment, split it by spaces and convert each resulting
+        // substring into a numerical value, storing them in a new array.
+        let currentNumbers = lineSegments[ idx ] . split( " " ) . map( Number );
 
-  // Trim any leading/trailing whitespace from the entire input and then split it into an array of lines.
-  let lineSegments = incomingText.trim().split( newLineDelimiter ) ;
+        // Calculate the sum of the first two numbers from the current line
+        // and append this sum to the score accumulator array.
+        scoreAccumulator . push( currentNumbers[ 0 ] + currentNumbers[ 1 ] );
 
-  // Initialize an array to temporarily hold calculated sums.
-  // This buffer will be reset after a certain number of sums are accumulated.
-  let calculatedSums = [ ] ;
+        // Check if the score accumulator has gathered exactly five entries.
+        // If so, it's time to process this batch of scores.
+        if ( scoreAccumulator . length === 5 ) {
+            // Find the maximum value within the current batch of five accumulated scores.
+            let highestScore = scoreAccumulator . reduce( function ( currentMax, nextValue ) {
+                return Math . max( currentMax, nextValue );
+            } );
 
-  // Define the specific string that acts as a signal to terminate processing.
-  const  terminationSignal  =  "0 0" ;
+            // Define a fixed set of character labels that correspond to the positions
+            // of scores in the accumulator (A for index 0, B for index 1, etc.).
+            let labelCharacters = "ABCDE" . split( "" );
 
-  // Set the required number of sums to collect before performing a group calculation.
-  const  groupSize  =  5   ;
+            // Determine the character label that corresponds to the position
+            // of the highest score found in the current batch.
+            let resultLabel = labelCharacters[ scoreAccumulator . indexOf( highestScore ) ];
 
-  // Create an array of characters that will be used as labels for output.
-  const  alphabetSequence  =  [ 'A' , 'B' , 'C' , 'D' , 'E' ] ;
+            // Output the determined character label followed by a space and the highest score.
+            console . log( resultLabel + " " + highestScore );
 
-  // Iterate through each line segment obtained from the input.
-  for  (  let  idx  =  0  ;  idx  <  lineSegments.length  ;  idx++  )  {
-
-    // Check if the current line is the termination signal and if the sums buffer is empty.
-    // This condition prevents processing further input once the signal is encountered at the start of a new group.
-    if  (  calculatedSums.length  ===  0  &&  lineSegments[idx]  ===  terminationSignal  )  {
-      break ; // Exit the loop, stopping further input processing.
+            // After processing and outputting, clear the score accumulator
+            // to prepare for the next batch of five scores.
+            scoreAccumulator = [ ];
+        }
     }
-
-    // Define the delimiter used to separate numbers within a single line.
-    const  spaceDelimiter  =  ' '  ;
-
-    // Split the current line by the space delimiter and convert each resulting part into a number.
-    const  parsedPair = lineSegments[idx].split( spaceDelimiter ).map( Number ) ;
-
-    // Sum the two numbers from the parsed pair and add the result to the calculated sums buffer.
-    calculatedSums.push( parsedPair[0]  +  parsedPair[1] ) ;
-
-    // Evaluate if the calculated sums buffer has reached its predefined group size.
-    if  (  calculatedSums.length  ===  groupSize  )  {
-      // Use the reduce method to find the maximum value among the sums in the current buffer.
-      const  peakValue  =  calculatedSums.reduce(  ( current , next )  =>  Math.max( current , next )  ) ;
-
-      // Determine the index of the peak value within the calculated sums.
-      const  valueIndex  =  calculatedSums.indexOf( peakValue ) ;
-
-      // Retrieve the corresponding character label from the alphabet sequence using the found index.
-      const  finalSymbol  =  alphabetSequence[ valueIndex ] ;
-
-      // Print the character label and the peak value to the console, separated by a space.
-      console.log( finalSymbol  +  " "  +  peakValue ) ;
-
-      // Reset the calculated sums buffer to an empty array, preparing for the next group of inputs.
-      calculatedSums  =  [ ] ;
-    }
-  }
-
-})(); // Execute the defined function immediately upon script load.
+} );

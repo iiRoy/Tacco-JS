@@ -1,83 +1,103 @@
-function initiateChallenge(rawData) {
-  const tokenStream = rawData.split(/\s+/);
-  const numericValues = tokenStream.map(Number);
+'use strict'
 
-  const totalStickAllowance = numericValues.shift();
-  const availableDigitCount = numericValues.shift();
+function processInput(rawText) {
+    let parsedNumbers = rawText.split(/\s+/).map(Number);
 
-  const digitToMatchstickCostMap = new Map([
-    [1, 2], [2, 5], [3, 5], [4, 4], [5, 5], [6, 6], [7, 3], [8, 7], [9, 6]
-  ]);
+    const targetSum = parsedNumbers.shift();
+    const availableDigitCount = parsedNumbers.shift();
+    const inputDigits = parsedNumbers;
 
-  const bestDigitForCost = new Map();
-  for (let idx = 0; idx < availableDigitCount; ++idx) {
-    const currentDigitCandidate = numericValues[idx];
-    const correspondingCost = digitToMatchstickCostMap.get(currentDigitCandidate);
-    if (correspondingCost !== undefined) {
-      if (!bestDigitForCost.has(correspondingCost) || currentDigitCandidate > bestDigitForCost.get(correspondingCost)) {
-        bestDigitForCost.set(correspondingCost, currentDigitCandidate);
-      }
-    }
-  }
+    const digitCosts = [false, 2, 5, 5, 4, 5, 6, 3, 7, 6];
 
-  const solutionMemo = new Map();
-  const NO_SOLUTION = null;
-
-  function compareNumberConfigurations(configOne, configTwo) {
-    if (configOne === NO_SOLUTION) return configTwo;
-    if (configTwo === NO_SOLUTION) return configOne;
-
-    if (configOne.totalDigits !== configTwo.totalDigits) {
-      return configOne.totalDigits > configTwo.totalDigits ? configOne : configTwo;
-    }
-
-    for (let currentDigit = 9; currentDigit >= 1; --currentDigit) {
-      if (configOne.digitCounts[currentDigit] !== configTwo.digitCounts[currentDigit]) {
-        return configOne.digitCounts[currentDigit] > configTwo.digitCounts[currentDigit] ? configOne : configTwo;
-      }
-    }
-    return configOne; // Configurations are identical, return one
-  }
-
-  function findOptimalNumber(remainingSticks) {
-    if (remainingSticks === 0) {
-      return { digitCounts: new Array(10).fill(0), totalDigits: 0 };
-    }
-
-    if (solutionMemo.has(remainingSticks)) {
-      return solutionMemo.get(remainingSticks);
-    }
-
-    let currentOptimal = NO_SOLUTION;
-
-    for (const [costValue, digitValue] of bestDigitForCost.entries()) {
-      if (remainingSticks >= costValue) {
-        const previousResult = findOptimalNumber(remainingSticks - costValue);
-        if (previousResult !== NO_SOLUTION) {
-          const updatedDigitCounts = [...previousResult.digitCounts];
-          updatedDigitCounts[digitValue]++;
-          const updatedTotalDigits = previousResult.totalDigits + 1;
-          const candidateConfiguration = { digitCounts: updatedDigitCounts, totalDigits: updatedTotalDigits };
-          currentOptimal = compareNumberConfigurations(currentOptimal, candidateConfiguration);
+    const costToMaxDigit = new Map();
+    for (let k = 0; k < availableDigitCount; k++) {
+        const currentDigit = inputDigits[k];
+        const currentCost = digitCosts[currentDigit];
+        if (!costToMaxDigit.has(currentCost) || currentDigit > costToMaxDigit.get(currentCost)) {
+            costToMaxDigit.set(currentCost, currentDigit);
         }
-      }
     }
 
-    solutionMemo.set(remainingSticks, currentOptimal);
-    return currentOptimal;
-  }
-
-  const finalNumberConfiguration = findOptimalNumber(totalStickAllowance);
-
-  if (finalNumberConfiguration === NO_SOLUTION || finalNumberConfiguration.totalDigits === 0) {
-    console.log("");
-  } else {
-    let constructedNumberString = '';
-    for (let digitPlace = 9; digitPlace >= 1; --digitPlace) {
-      constructedNumberString += String(digitPlace).repeat(finalNumberConfiguration.digitCounts[digitPlace]);
+    function getCanonicalStringArray(digitCountsMap) {
+        const result = Array(10).fill('');
+        for (let d = 1; d <= 9; d++) {
+            const count = digitCountsMap.get(d) || 0;
+            if (count > 0) {
+                result[d] = String(d).repeat(count);
+            }
+        }
+        return result;
     }
-    console.log(constructedNumberString);
-  }
+
+    function compareSolutions(currentBest, potentialSolution) {
+        if (!currentBest || !currentBest.reachable) {
+            return potentialSolution;
+        }
+
+        const currentBestStrings = getCanonicalStringArray(currentBest.digitCounts);
+        const potentialSolutionStrings = getCanonicalStringArray(potentialSolution.digitCounts);
+
+        const currentBestJoinedLength = currentBestStrings.join().length;
+        const potentialSolutionJoinedLength = potentialSolutionStrings.join().length;
+
+        if (potentialSolutionJoinedLength > currentBestJoinedLength) {
+            return potentialSolution;
+        }
+        if (potentialSolutionJoinedLength < currentBestJoinedLength) {
+            return currentBest;
+        }
+
+        for (let d = 9; d >= 1; d--) {
+            const currentCountStr = currentBestStrings[d];
+            const potentialCountStr = potentialSolutionStrings[d];
+
+            if (potentialCountStr.length > currentCountStr.length) {
+                return potentialSolution;
+            }
+            if (potentialCountStr.length < currentCountStr.length) {
+                return currentBest;
+            }
+        }
+
+        return currentBest;
+    }
+
+    const memoizedSolutions = Array(targetSum + 1).fill(null);
+    memoizedSolutions[0] = { reachable: true, digitCounts: new Map() };
+
+    for (let currentSum = 1; currentSum <= targetSum; currentSum++) {
+        for (let currentCost = 1; currentCost <= 9; currentCost++) {
+            if (currentSum - currentCost >= 0) {
+                const previousState = memoizedSolutions[currentSum - currentCost];
+                if (previousState && previousState.reachable && costToMaxDigit.has(currentCost)) {
+                    const actualDigit = costToMaxDigit.get(currentCost);
+
+                    const potentialSolution = {
+                        reachable: true,
+                        digitCounts: new Map(previousState.digitCounts)
+                    };
+                    potentialSolution.digitCounts.set(actualDigit, (potentialSolution.digitCounts.get(actualDigit) || 0) + 1);
+
+                    memoizedSolutions[currentSum] = compareSolutions(memoizedSolutions[currentSum], potentialSolution);
+                }
+            }
+        }
+    }
+
+    let resultString = '';
+    const finalSolution = memoizedSolutions[targetSum];
+
+    if (finalSolution && finalSolution.reachable) {
+        const finalCounts = finalSolution.digitCounts;
+        for (let d = 9; d >= 1; d--) {
+            const count = finalCounts.get(d) || 0;
+            if (count > 0) {
+                resultString += String(d).repeat(count);
+            }
+        }
+    }
+
+    console.log(resultString);
 }
 
-initiateChallenge(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

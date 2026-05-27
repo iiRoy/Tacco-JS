@@ -1,69 +1,49 @@
-const fileSystemInterface = require('fs');
-const consoleOutputFacility = console;
+const n = {};
 
-const processingTools = {
-    textOperations: {
-        normalizeInput: (textualData) => textualData.trim(),
-        segmentString: (sourceString, separator) => sourceString.split(separator)
-    },
-    numericalInterpretations: {
-        convertToInt: (textForm) => parseInt(textForm, 10),
-        executeIntegerDivision: (numerator, denominator) => {
-            // Replicates the original's specific integer division behavior
-            // where division by zero yields 0, and for positive divisors,
-            // it performs floor division.
-            if (denominator === 0) {
-                return 0;
-            }
-            return Math.floor(numerator / denominator);
-        }
-    },
-    comparativeLogic: {
-        findLesserValue: (valOne, valTwo) => Math.min(valOne, valTwo)
-    },
-    reportingMechanism: {
-        displayResult: (outputContent) => consoleOutputFacility.log(outputContent)
-    },
-    dataAcquisition: {
-        retrieveFileContent: (pathIdentifier) => fileSystemInterface.readFileSync(pathIdentifier, { encoding: 'utf8' })
-    },
-    errorManagement: {
-        triggerFatalError: (errorMessage) => {
-            throw new Error(errorMessage);
-        }
+n["AtCoder.ABC120.A"] = {};
+
+n["AtCoder.ABC120.A"].solve = function(inputString) {
+    const processedInput = inputString.trim();
+    const segmentArray = processedInput.split(' ');
+
+    if (segmentArray.length !== 3) {
+        throw new Error("invalid line");
     }
+
+    const firstValue = parseInt(segmentArray[0], 10);
+    if (Number.isNaN(firstValue)) {
+        throw new Error("a");
+    }
+
+    const secondValue = parseInt(segmentArray[1], 10);
+    if (Number.isNaN(secondValue)) {
+        throw new Error("b");
+    }
+
+    const thirdValue = parseInt(segmentArray[2], 10);
+    if (Number.isNaN(thirdValue)) {
+        throw new Error("c");
+    }
+
+    const computedResult = Math.min(Math.floor(secondValue / firstValue), thirdValue);
+
+    return String(computedResult);
 };
 
-const problemSolverCore = {
-    resolveChallenge: (rawInputLine) => {
-        const cleanedLine = processingTools.textOperations.normalizeInput(rawInputLine);
-        const partsArray = processingTools.textOperations.segmentString(cleanedLine, ' ');
+n.Main = {};
 
-        if (partsArray.length !== 3) {
-            processingTools.errorManagement.triggerFatalError("Input structure invalid: expected three numeric components.");
-        }
+n.Main.main = function() {
+    const fileSystemAccess = require('fs');
+    const standardInputContent = fileSystemAccess.readFileSync('/dev/stdin', { encoding: 'utf8' });
 
-        const paramA = processingTools.numericalInterpretations.convertToInt(partsArray[0]);
-        const paramB = processingTools.numericalInterpretations.convertToInt(partsArray[1]);
-        const paramC = processingTools.numericalInterpretations.convertToInt(partsArray[2]);
-
-        if (isNaN(paramA) || isNaN(paramB) || isNaN(paramC)) {
-            processingTools.errorManagement.triggerFatalError("Input data invalid: non-numeric values detected.");
-        }
-
-        const interimQuotient = processingTools.numericalInterpretations.executeIntegerDivision(paramB, paramA);
-        const finalAnswer = processingTools.comparativeLogic.findLesserValue(interimQuotient, paramC);
-
-        return finalAnswer.toString();
+    let programResult;
+    try {
+        programResult = n["AtCoder.ABC120.A"].solve(standardInputContent);
+    } catch (operationError) {
+        throw operationError;
     }
+
+    console.log(programResult);
 };
 
-const programLauncher = {
-    initiateApplication: () => {
-        const inputData = processingTools.dataAcquisition.retrieveFileContent('/dev/stdin');
-        const calculatedOutput = problemSolverCore.resolveChallenge(inputData);
-        processingTools.reportingMechanism.displayResult(calculatedOutput);
-    }
-};
-
-programLauncher.initiateApplication();
+n.Main.main();

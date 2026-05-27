@@ -1,88 +1,117 @@
-function ProcessInputData(rawDataString) {
+function solveProblem(inputString) {
+    const inputLines = inputString.split('\n');
+    const numElements = Number(inputLines[0]);
+    const initialNumbers = inputLines[1].split(' ').map(Number);
 
-    const inputLines = rawDataString.split('\n');
+    let runningTotal = 0;
+    const prefixSums = initialNumbers.map((num) => {
+        runningTotal += num;
+        return runningTotal;
+    });
 
-    const dataElementCount = Number.parseInt(inputLines[0], 10);
+    const part1Sums = [];
+    const part2Sums = [];
+    const part3Sums = [];
+    const part4Sums = [];
 
-    const sourceDataElements = inputLines[1].split(' ').map(Number);
+    // Process left partitions (P and Q)
+    // `leftSplitPointer` corresponds to `l` in the original code.
+    // It's the index in `prefixSums` that marks the split point for the first two segments.
+    let leftSplitPointer = 0;
+    for (let i = 1; i < numElements - 2; ++i) {
+        // The current segment being considered for splitting into P and Q is A[0...i].
+        // Its total sum is `prefixSums[i]`.
+        // We are looking for a split point `leftSplitPointer` such that
+        // P = A[0...leftSplitPointer] (sum = `prefixSums[leftSplitPointer]`)
+        // Q = A[leftSplitPointer+1...i] (sum = `prefixSums[i] - prefixSums[leftSplitPointer]`)
 
-    const cumulativeSumsArray = new Array(dataElementCount + 1).fill(0);
-    let currentRunningSum = 0;
-    for (let elementIndex = 0; elementIndex < dataElementCount; ++elementIndex) {
-        currentRunningSum += sourceDataElements[elementIndex];
-        cumulativeSumsArray[elementIndex + 1] = currentRunningSum;
-    }
+        // The original condition `leftArr.length > 2` is equivalent to `i + 1 > 2`, or `i > 1`.
+        // The `leftSplitPointer` must be less than `i-1` to allow `leftSplitPointer+1` to be a valid split point
+        // (i.e., ensuring Q has at least one element).
+        while (leftSplitPointer < i - 1) {
+            const currentP_sum = prefixSums[leftSplitPointer];
+            const currentQ_sum = prefixSums[i] - prefixSums[leftSplitPointer];
 
-    const sumsForSegmentOne = [];
-    const sumsForSegmentTwo = [];
-    const sumsForSegmentThree = [];
-    const sumsForSegmentFour = [];
+            const nextP_sum = prefixSums[leftSplitPointer + 1];
+            const nextQ_sum = prefixSums[i] - prefixSums[leftSplitPointer + 1];
 
-    let optimalInnerLeftSplitIdx = 1;
-    for (let splitIdxK = 2; splitIdxK <= dataElementCount - 2; ++splitIdxK) {
-        while (optimalInnerLeftSplitIdx < splitIdxK - 1) {
-            const currentSplitS1 = cumulativeSumsArray[optimalInnerLeftSplitIdx];
-            const currentSplitS2 = cumulativeSumsArray[splitIdxK] - cumulativeSumsArray[optimalInnerLeftSplitIdx];
-
-            const candidateSplitS1 = cumulativeSumsArray[optimalInnerLeftSplitIdx + 1];
-            const candidateSplitS2 = cumulativeSumsArray[splitIdxK] - cumulativeSumsArray[optimalInnerLeftSplitIdx + 1];
-
-            if (Math.abs(candidateSplitS1 - candidateSplitS2) <= Math.abs(currentSplitS1 - currentSplitS2)) {
-                optimalInnerLeftSplitIdx++;
+            // If moving the split point one step to the right (`leftSplitPointer + 1`)
+            // results in a better or equally balanced split (smaller or equal absolute difference),
+            // then we advance the split pointer.
+            if (Math.abs(nextQ_sum - nextP_sum) <= Math.abs(currentQ_sum - currentP_sum)) {
+                leftSplitPointer++;
             } else {
+                // Otherwise, the current `leftSplitPointer` is optimal for this `i`.
                 break;
             }
         }
-        sumsForSegmentOne.push(cumulativeSumsArray[optimalInnerLeftSplitIdx]);
-        sumsForSegmentTwo.push(cumulativeSumsArray[splitIdxK] - cumulativeSumsArray[optimalInnerLeftSplitIdx]);
+        part1Sums.push(prefixSums[leftSplitPointer]);
+        part2Sums.push(prefixSums[i] - prefixSums[leftSplitPointer]);
     }
 
-    let optimalInnerRightSplitIdx = dataElementCount - 1;
-    for (let splitIdxK = dataElementCount - 2; splitIdxK >= 2; --splitIdxK) {
-        while (optimalInnerRightSplitIdx > splitIdxK + 1) {
-            const currentSplitS3 = cumulativeSumsArray[optimalInnerRightSplitIdx] - cumulativeSumsArray[splitIdxK];
-            const currentSplitS4 = cumulativeSumsArray[dataElementCount] - cumulativeSumsArray[optimalInnerRightSplitIdx];
+    // Process right partitions (R and S)
+    // `rightSplitRelativeIndex` corresponds to `r` in the original code.
+    // It's a relative index into the segment A[i...numElements-1].
+    // The absolute index in `prefixSums` for the split point is `i + rightSplitRelativeIndex - 1`.
+    let rightSplitRelativeIndex = 1;
+    for (let i = numElements - 2; i > 1; --i) {
+        // `totalArraySum` is the sum of all elements A[0...numElements-1].
+        const totalArraySum = prefixSums[numElements - 1];
+        // `sumBeforeRightSegment` is the sum of elements A[0...i-1].
+        const sumBeforeRightSegment = prefixSums[i - 1];
 
-            const candidateSplitS3 = cumulativeSumsArray[optimalInnerRightSplitIdx - 1] - cumulativeSumsArray[splitIdxK];
-            const candidateSplitS4 = cumulativeSumsArray[dataElementCount] - cumulativeSumsArray[optimalInnerRightSplitIdx - 1];
+        // The current segment being considered for splitting into R and S is A[i...numElements-1].
+        // We are looking for a split point `i + rightSplitRelativeIndex - 1` such that
+        // R = A[i...i+rightSplitRelativeIndex-1] (sum = `prefixSums[i+rightSplitRelativeIndex-1] - sumBeforeRightSegment`)
+        // S = A[i+rightSplitRelativeIndex...numElements-1] (sum = `totalArraySum - prefixSums[i+rightSplitRelativeIndex-1]`)
 
-            if (Math.abs(candidateSplitS3 - candidateSplitS4) <= Math.abs(currentSplitS3 - currentSplitS4)) {
-                optimalInnerRightSplitIdx--;
-            } else {
-                break;
+        // The original condition `rightArr.length > 2` is equivalent to `numElements - i > 2`.
+        // The `rightSplitRelativeIndex` must be greater than 1 to allow `rightSplitRelativeIndex - 1` to be a valid split point
+        // (i.e., ensuring R has at least one element and the comparison is valid).
+        if (numElements - i > 2 && rightSplitRelativeIndex > 1) {
+            const currentSplitAbsIndex = i + rightSplitRelativeIndex - 1;
+            const prevSplitAbsIndex = i + rightSplitRelativeIndex - 2; // This corresponds to `r-1` in the original's `rightArr`
+
+            const currentR_sum = prefixSums[currentSplitAbsIndex] - sumBeforeRightSegment;
+            const currentS_sum = totalArraySum - prefixSums[currentSplitAbsIndex];
+
+            const prevR_sum = prefixSums[prevSplitAbsIndex] - sumBeforeRightSegment;
+            const prevS_sum = totalArraySum - prefixSums[prevSplitAbsIndex];
+
+            // If moving the split point one step to the left (`rightSplitRelativeIndex - 1`)
+            // results in a better or equally balanced split, we decrement the split pointer.
+            if (Math.abs(prevS_sum - prevR_sum) <= Math.abs(currentS_sum - currentR_sum)) {
+                rightSplitRelativeIndex--;
             }
         }
-        sumsForSegmentThree.unshift(cumulativeSumsArray[optimalInnerRightSplitIdx] - cumulativeSumsArray[splitIdxK]);
-        sumsForSegmentFour.unshift(cumulativeSumsArray[dataElementCount] - cumulativeSumsArray[optimalInnerRightSplitIdx]);
+        const finalSplitAbsIndex = i + rightSplitRelativeIndex - 1;
+        part3Sums.unshift(prefixSums[finalSplitAbsIndex] - sumBeforeRightSegment);
+        part4Sums.unshift(totalArraySum - prefixSums[finalSplitAbsIndex]);
+
+        // Increment `rightSplitRelativeIndex` for the next iteration of `i`.
+        // This mimics the `++r` in the original loop header, which implements a sliding window optimization.
+        rightSplitRelativeIndex++;
     }
 
-    const computeValueRange = (valueSet) => {
-        if (valueSet.length === 0) {
-             return 0;
-        }
-        const maximumValue = Math.max(...valueSet);
-        const minimumValue = Math.min(...valueSet);
-        return maximumValue - minimumValue;
+    // Helper function to calculate the difference between the maximum and minimum of four values.
+    const calculateMinMaxDifference = (val1, val2, val3, val4) => {
+        const maxVal = Math.max(val1, val2, val3, val4);
+        const minVal = Math.min(val1, val2, val3, val4);
+        return maxVal - minVal;
     };
 
-    let minimumOverallDifference = -1;
-
-    for (let index = 0; index < sumsForSegmentOne.length; ++index) {
-        const currentPartitionSet = [
-            sumsForSegmentOne[index],
-            sumsForSegmentTwo[index],
-            sumsForSegmentThree[index],
-            sumsForSegmentFour[index]
-        ];
-
-        const currentPartitionDifference = computeValueRange(currentPartitionSet);
-
-        if (minimumOverallDifference === -1 || currentPartitionDifference < minimumOverallDifference) {
-            minimumOverallDifference = currentPartitionDifference;
-        }
+    let overallMinDifference = Infinity; // Initialize with a very large value
+    for (let k = 0; k < part1Sums.length; ++k) {
+        const currentPartitionDifference = calculateMinMaxDifference(
+            part1Sums[k],
+            part2Sums[k],
+            part3Sums[k],
+            part4Sums[k]
+        );
+        overallMinDifference = Math.min(overallMinDifference, currentPartitionDifference);
     }
 
-    console.log(minimumOverallDifference);
+    console.log(overallMinDifference);
 }
 
-ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+solveProblem(require("fs").readFileSync("/dev/stdin", "utf8"));

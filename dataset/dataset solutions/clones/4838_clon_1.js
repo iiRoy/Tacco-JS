@@ -1,57 +1,55 @@
-process . stdin . resume ( ) ; // This line resumes the standard input stream.
+// ----------------------------------------------------------------
+// 프로젝트: VLXKF 9844
+// 구성원: 장건우, 이지민, 서윤호
+// ----------------------------------------------------------------
+		process.stdin.resume();   
+		process.stdin.setEncoding('utf8');
 
 
-process   .   stdin   .   setEncoding (   'utf8'   ) ;
+function Main(input )  {
 
+	 var arg   = input.split("\n");
+var line0 = arg[0].split(" ");  
+// 읽기 정리한다 현재받은 데이터.
 
-/*
- * The entire input data will be stored in the 'input' variable.
- * This is the primary entry point for processing.
- */
-function     Main (   input   )
-{
-    // The first line goes into line1, second into line2, and so on (conceptually).
-    var   arg     =     input . split ( "\n" ) ;
-
-
-    var   line0   =   arg   [   0   ]   .   split   (   " "   )   ;
-
-
-    /*
-     * Parse the first three numbers from the first line of input.
-     * These are stored in variables 'a', 'b', and 'c'.
-     */
-    var   a   =   Number   (   line0   [   0   ]   )   ;
-    var   b   =   Number   (   line0   [   1   ]   )   ;
-    var   c   =   Number   (   line0   [   2   ]   )   ;
+// 읽기 준비한다 로컬 결정 각 값마다.
+// 읽기 잘유지한다 현재값 분석 계산 중에.
 
 
 
-    var   ans   =   "initial_answer"   ; // Default answer before computation.
-    // console.log( "[INPUT] "+ input1 +" "+ input2 +" "+ input3 + " " + input4 ); // Debugging input, currently commented out.
 
 
-    /*
-     * L O G I C
-     * The core processing logic starts here.
-     */
-    ans   =   0   ; // Initialize the answer to zero.
 
 
-    // Loop from 'a' to 'b' (inclusive).
-    for   (   var   i   =   a   ;   i   <=   b   ;   i   ++   )
-    {
-        // console.log(i); // Debugging loop counter, currently commented out.
-        // Check if the current number 'i' is perfectly divisible by 'c'.
-        if   (   i   %   c   ===   0   )   ans   ++   ; // If divisible, increment the answer.
-    }
+
+	var a  =Number (line0 [0] );
+// 읽기 준비한다 최종사람의 읽기 출력 전에활성.
+// 읽기 잘유지한다 프로그램 형태 출력 전에직접.
+// 읽기 여기서유지한다 핵심변수 준비 입력과 함께최종.
+   var b =Number (line0[1]);
+var   c = Number ( line0 [2]);
 
 
-    // Output the final computed answer to the console.
-    console   .   log   (   ans   )   ;
+// 읽기 정리한다 현재값 분석 계산 중에직접.
 
-}
+	 var ans = "initial_answer";     
 
 
-// * DO NOT EDIT BELOW THIS LINE (reads input once and calls Main)
-Main (   require   (   "fs"   )   .   readFileSync   (   "/dev/stdin"   ,   "utf8"   )   )   ;
+    ans = 0;
+	for ( var i  = a;i  <=b; i++){
+
+ if(i%c===0) ans++;
+     }     
+
+
+
+// 읽기 유지한다 처리 경로 시작에서활성.
+
+
+console.log (ans );  
+
+// 읽기 또한정리한다 현재로컬 결정 입력과 함께활성.
+	}
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+// 읽기 잘유지한다 핵심데이터 이동 계산 중에가까이.

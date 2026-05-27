@@ -1,69 +1,64 @@
-"use strict" /* enables strict mode for better error handling */;
+"use strict";
 
-// Kick off the processing by reading input from standard in.
-processInputData( require("fs").readFileSync("/dev/stdin", "utf8") );
+// Initiates the primary processing function by reading data from standard input.
+processInput(require("fs").readFileSync("/dev/stdin", "utf-8"));
 
 /**
- * This function serves as the primary entry point for the application's logic.
- * It parses raw input data, performs calculations to find a optimal split point,
- * and then outputs a specific result.
- * @param {string} rawData - The complete string content read from the input stream.
+ * This function serves as the main entry point for processing the input string.
+ * It parses the raw data, performs calculations, and outputs a result.
+ * @param {string} rawData - The complete string content read from the input source.
  */
-function processInputData(rawData) {
+function processInput(rawData) {
+  // Divides the incoming raw string into an array of strings, using newline characters as delimiters.
+  let processedData = rawData.split("\n");
 
-  let parsedDataLines = rawData.split('\n') ; // Divide the raw input into separate lines.
+  // Extracts and parses the first line of the input, converting it to an integer.
+  // This value represents a count of breaks, though its direct use might vary.
+  const breakCount = parseInt(processedData.shift());
 
-  // The first line contains a count of breakpoints, which we parse but do not use further in this specific algorithm.
-  const breakpointCount = Number.parseInt(parsedDataLines.shift(), 10);
+  // Takes the first remaining line, splits it by spaces, and transforms each part into an integer.
+  // This creates an array of numerical segment lengths.
+  processedData = processedData[0].split(" ").map(segmentValue => parseInt(segmentValue));
 
-  // Extract the actual numeric segments from the first remaining line and convert them into an array of integers.
-  let numericSegments = parsedDataLines[0]
-                         .split(' ')
-                         .map(
-                           segmentStr => Number.parseInt(segmentStr, 10)
-                         );
+  // Initializes a variable to accumulate the sum of segments on one side of a potential split.
+  let currentSum = 0;
+  // Initializes an index to mark the position where the array is conceptually divided.
+  let splitIndex = 0;
 
-  // Initialize variables to track the sum of the left partition and the index where the split occurs.
-  let leftPartitionSum = 0;
-  let currentSplitIndex = 0;
-
-  // Iterate through each segment to determine the split point that minimizes the difference between two partitions.
-  for ( let idx = 0; idx < numericSegments.length; ++idx ) {
-    // Calculate the total sum of segments for the potential right partition.
-    const rightSideTotal = computeRangeTotal(numericSegments, idx + 1, numericSegments.length);
-
-    // If adding the current segment to the left partition keeps it smaller than the right partition.
-    if ( leftPartitionSum + numericSegments[idx] < rightSideTotal ) {
-      leftPartitionSum += numericSegments[idx]; // Extend the left partition.
-    }
-    else {
-      leftPartitionSum += numericSegments[idx]; // Add the current segment to the left sum.
-      currentSplitIndex = idx;                  // This index marks our determined split point.
-      break;                                    // Exit the loop as the split point has been found.
+  // Iterates through the array of segment lengths to determine an optimal split point.
+  for (let idx = 0; idx < processedData.length; idx++) {
+    // Compares the sum of segments up to the current point (plus the current segment)
+    // with the sum of the remaining segments.
+    if (currentSum + processedData[idx] < calculateSegmentSum(processedData, idx + 1, processedData.length)) {
+      // If the left side remains smaller, add the current segment to the left sum.
+      currentSum += processedData[idx];
+    } else {
+      // If adding the current segment makes the left side greater or equal,
+      // this segment completes the left side, and we've found our split point.
+      currentSum += processedData[idx];
+      splitIndex = idx;
+      break; // Terminates the loop as the split point has been identified.
     }
   }
 
-  // With the split point identified, calculate the final sum of the right partition.
-  const finalRightPartitionSum = computeRangeTotal(numericSegments, currentSplitIndex + 1, numericSegments.length);
-
-  // Output the absolute difference between the sums of the two partitions.
+  // Prints the absolute difference between the sum of the left partition and the sum of the right partition.
   console.log(
-    Math.abs(leftPartitionSum - finalRightPartitionSum)
+    Math.abs(currentSum - calculateSegmentSum(processedData, splitIndex + 1, processedData.length))
   );
 }
 
 /**
- * Computes the sum of elements within a specified range of a numeric array.
- * @param {Array<number>} numberList - The array from which to sum elements.
- * @param {number} startIndex - The starting index of the range (inclusive).
- * @param {number} endIndex - The ending index of the range (exclusive).
- * @returns {number} The accumulated sum of all numbers within the defined range.
+ * Computes the sum of numerical elements within a specified range of an array.
+ * @param {number[]} dataArray - The array containing numerical values.
+ * @param {number} startIndex - The starting index for summation (inclusive).
+ * @param {number} endIndex - The ending index for summation (exclusive).
+ * @returns {number} The total sum of elements within the given range.
  */
-function computeRangeTotal(numberList, startIndex, endIndex) {
-  let rangeTotal = 0; // Initialize the sum accumulator for the range.
-  // Loop through the array from the start index up to (but not including) the end index.
-  for ( /* initialization already done via parameter */; startIndex < endIndex; ++startIndex ) {
-    rangeTotal += numberList[startIndex]; // Add the current element's value to the total.
+function calculateSegmentSum(dataArray, startIndex, endIndex) {
+  let segmentTotal = 0; // Accumulator for the sum of the segment.
+  // Loops from the start index up to (but not including) the end index.
+  for (startIndex; startIndex < endIndex; startIndex++) {
+    segmentTotal += dataArray[startIndex]; // Adds the value at the current index to the total.
   }
-  return rangeTotal; // Return the final sum of the range.
+  return segmentTotal; // Returns the computed sum of the segment.
 }

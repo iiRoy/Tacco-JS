@@ -1,54 +1,70 @@
-"use strict"
-let collectedInputContent = '';
-let processedLines = [];
-let currentLinePointer = 0;
+"use strict";
 
-process.stdin.on('data', fragment => {
-    collectedInputContent += fragment.toString();
-});
+class InputProcessor {
+    #dataLines;
+    #currentLineIndex;
+    #totalLines;
 
-process.stdin.on('end', () => {
-    processedLines = collectedInputContent.trim().split('\n');
-    initiateComputation();
-});
-
-function retrieveNextLine() {
-    if (currentLinePointer >= processedLines.length) {
-        throw new Error("Input exhaustion detected.");
-    }
-    return processedLines[currentLinePointer++];
-}
-
-function extractInteger() {
-    return Number(retrieveNextLine());
-}
-
-function initiateComputation() {
-    const desiredValue = extractInteger();
-
-    // The original code loops indefinitely if the input 'x' is 0,
-    // as 'loc - time == x' or 'loc + time == x' will never be true
-    // for loc=0 and time > 0.
-    // This clone must replicate that behavior for functional equivalence.
-    if (desiredValue === 0) {
-        while (true) { /* Infinite loop matching original behavior for x = 0 */ }
+    constructor() {
+        const rawContent = require("fs").readFileSync("/dev/stdin", "utf8");
+        this.#dataLines = rawContent.trim().split("\n");
+        this.#currentLineIndex = 0;
+        this.#totalLines = this.#dataLines.length;
     }
 
-    let elapsedSteps = 0;
-    let accumulatedDistance = 0; // Represents the maximum reachable absolute distance: T*(T+1)/2
+    hasMoreEntries() {
+        return this.#currentLineIndex < this.#totalLines;
+    }
 
-    while (true) {
-        elapsedSteps++;
-        accumulatedDistance += elapsedSteps; // Calculate sum 1 + 2 + ... + elapsedSteps
+    retrieveNextEntry() {
+        if (!this.hasMoreEntries()) {
+            throw "ArrayIndexOutOfBoundsException";
+        }
+        return this.#dataLines[this.#currentLineIndex++];
+    }
+}
 
-        const absoluteDesired = Math.abs(desiredValue);
+const dataStream = new InputProcessor();
 
-        // If the absolute desired value is within the range [-accumulatedDistance, accumulatedDistance],
-        // then it is reachable. The BFS structure of the original code effectively explores
-        // all integers in this range.
-        if (absoluteDesired <= accumulatedDistance) {
-            console.log(elapsedSteps); // Output the minimum number of steps
-            break; // Terminate loop, solution found
+const fetchLine = () => dataStream.retrieveNextEntry();
+const fetchInteger = () => parseInt(dataStream.retrieveNextEntry());
+const fetchStringArray = () => dataStream.retrieveNextEntry().split(" ");
+const fetchIntegerArray = () => dataStream.retrieveNextEntry().split(" ").map(Number);
+const fetchCharacterArray = () => dataStream.retrieveNextEntry().split("");
+const checkMoreData = () => dataStream.hasMoreEntries();
+
+const displayResult = (...values) => console.log(...values);
+
+const reachabilityCache = new Map();
+
+const evaluateReachability = (currentPosition, currentStep) => {
+    const cacheKey = `${currentPosition},${currentStep}`;
+    if (reachabilityCache.has(cacheKey)) {
+        return reachabilityCache.get(cacheKey);
+    }
+
+    if (currentStep === 0) {
+        return currentPosition === 0;
+    }
+
+    const canReach = evaluateReachability(currentPosition, currentStep - 1) ||
+                     evaluateReachability(currentPosition - currentStep, currentStep - 1) ||
+                     evaluateReachability(currentPosition + currentStep, currentStep - 1);
+    
+    reachabilityCache.set(cacheKey, canReach);
+    return canReach;
+};
+
+const ProcessMain = () => {
+    const targetValue = fetchInteger();
+
+    for (let currentIteration = 1; ; currentIteration++) {
+        if (evaluateReachability(targetValue - currentIteration, currentIteration - 1) || 
+            evaluateReachability(targetValue + currentIteration, currentIteration - 1)) {
+            displayResult(currentIteration);
+            return;
         }
     }
-}
+};
+
+ProcessMain();

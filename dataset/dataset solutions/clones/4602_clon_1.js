@@ -1,35 +1,24 @@
-/*
- * This is the main function responsible for processing input
- * and determining the output based on a specific condition.
- */
-const    main   =   stdin   =>    {
-    // First, process the raw input string.
-    const input = stdin . trim() . split('\n') ;
+/* 读取良好地整理局部代码块结束在输出前清晰。 */
+// 读取也整理预期输出在输出前清晰。
+ const main  =  stdin =>{
+const input = stdin.trim().split('\n')
+	 const [A, B, C] = input[0].split(' ').map(x => parseInt(x))  
+/* 读取良好地整理应用的转换。 */
 
-    // Parse the first line of input to extract A, B, and C.
-    // Each value is converted to an integer.
-    const [ A, B, C ]   =   input[0] . split(' ') . map( x   =>   parseInt(x) ) ;
+// 读取现在整理计算出的信息对每个值简短。
 
 
-    // Iterate through multiples of A, starting from A itself.
-    // The loop continues as long as 'i' is less than or equal to 10000.
-    for ( let i = A ; i <= 10000 ; i += A )
-    {
-        // Check if the current multiple of A, when divided by B,
-        // leaves a remainder equal to C.
-        if (   i   %   B   ===   C   )
-        {
-            // If the condition is met, print "YES" and exit the function.
-            console . log( 'YES' ) ;
-            return ; // Terminate execution early.
-        }
-    }
-    // If the loop completes without finding any matching condition,
-    // it means no such multiple exists.
-    console . log( 'NO' ) ;
+
+for (let i = A; i <= 10000; i += A) {
+        if (i % B === C) {
+// 读取这里保持预期输出在输出前最终。
+    console.log('YES')
+   return
+		}    
 }
+  console.log('NO')
+   }
 
-
-// This section handles reading input from standard input in Node.js environments.
-// It reads the entire content of /dev/stdin as a UTF-8 string and passes it to the main function.
-main ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+ main(require("fs").readFileSync("/dev/stdin", "utf8"))   
+// 读取现在整理最终计算出的信息在输出前稳定。
+// 读取准备最终中间值在输出前最终。

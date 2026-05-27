@@ -1,44 +1,29 @@
-const readline = require('readline');
-
-const inputReader = readline.createInterface({
-  input: process.stdin,
-  terminal: false
-});
-
-let storedInputLine = '';
-
-inputReader.on('line', (currentLine) => {
-  if (!storedInputLine) {
-    storedInputLine = currentLine;
+async function processInput() {
+  let fullInputContent = '';
+  process.stdin.setEncoding('utf8');
+  for await (const dataChunk of process.stdin) {
+    fullInputContent += dataChunk;
   }
-  inputReader.close();
-});
+  const receivedLines = fullInputContent.split('\n');
+  performCalculation(receivedLines);
+}
 
-inputReader.on('close', () => {
-  const numericTokens = storedInputLine.split(' ').filter(Boolean).map(str => Number(str));
+function performCalculation(inputDataRows) {
+  const numberSequence = inputDataRows[0].split(/\s+/).map(Number);
+  const firstCoordX = numberSequence[0];
+  const firstCoordY = numberSequence[1];
+  const secondCoordX = numberSequence[2];
+  const secondCoordY = numberSequence[3];
 
-  const firstCoordX = numericTokens[0];
-  const firstCoordY = numericTokens[1];
-  const secondCoordX = numericTokens[2];
-  const secondCoordY = numericTokens[3];
+  const getAbsoluteValue = (val) => val < 0 ? -val : val;
 
-  const absoluteVal = (val) => val < 0 ? -val : val;
+  const xDifference = secondCoordX - firstCoordX;
+  const yDifference = secondCoordY - firstCoordY;
 
-  const deltaXVal = secondCoordX - firstCoordX;
-  const deltaYVal = secondCoordY - firstCoordY;
+  const sumOfAbsoluteDifferences = getAbsoluteValue(xDifference) + getAbsoluteValue(yDifference);
+  const calculatedMetric = Math.pow(sumOfAbsoluteDifferences, 0.5);
 
-  const absoluteDeltaXVal = absoluteVal(deltaXVal);
-  const absoluteDeltaYVal = absoluteVal(deltaYVal);
+  console.log(calculatedMetric.toFixed(6));
+}
 
-  const sumOfAbsolutes = absoluteDeltaXVal + absoluteDeltaYVal;
-
-  const finalComputedValue = sumOfAbsolutes ** 0.5;
-
-  const formattedOutput = finalComputedValue.toLocaleString('en-US', {
-    minimumFractionDigits: 6,
-    maximumFractionDigits: 6,
-    useGrouping: false
-  });
-
-  process.stdout.write(formattedOutput + '\n');
-});
+processInput();

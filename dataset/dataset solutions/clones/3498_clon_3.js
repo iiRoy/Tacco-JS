@@ -1,146 +1,94 @@
-class DataStreamProcessor {
-    #sourceLines;
-    #currentLineIndex = 0;
-    #currentTokenIndex = 0;
-    #valueTransformFn;
+"use strict";
 
-    /**
-     * Constructs a new DataStreamProcessor instance to parse input data.
-     * @param {string} rawInputString - The entire input content as a single string.
-     * @param {Function} [transformer=Number] - An optional function to transform parsed tokens (e.g., Number, String).
-     */
-    constructor(rawInputString, transformer = Number) {
-        // Validate input string
-        if (typeof rawInputString !== 'string' || rawInputString.length === 0) {
-            // In a real application, this might throw an error or log a warning.
-            // For clone generation, we'll initialize safely.
-            this.#sourceLines = [];
-            console.error("Input string for DataStreamProcessor is invalid or empty.");
-        } else {
-            this.#sourceLines = rawInputString.split("\n");
-        }
-
-        // Ensure the transformer is a callable function, default to Number
-        this.#valueTransformFn = typeof transformer === 'function' ? transformer : Number;
-    }
-
-    /**
-     * Retrieves the next individual token from the input stream.
-     * Advances the internal line and token pointers.
-     * Skips empty lines automatically.
-     * @returns {*} The transformed token value, or undefined if no more tokens are available.
-     */
-    retrieveNextToken() {
-        // Loop to find the next non-empty line with tokens
-        while (this.#currentLineIndex < this.#sourceLines.length) {
-            const currentLineContent = this.#sourceLines[this.#currentLineIndex];
-
-            // If the line is undefined (shouldn't happen with split), or just whitespace, skip it.
-            if (currentLineContent === undefined || currentLineContent.trim() === "") {
-                this.#currentLineIndex++;
-                this.#currentTokenIndex = 0; // Reset token index for the new line
-                continue; // Try the next line
-            }
-
-            // Split the current line into tokens, using one or more whitespace characters as delimiters
-            const tokensOnCurrentLine = currentLineContent.trim().split(/\s+/);
-
-            // If there are tokens left on the current line
-            if (this.#currentTokenIndex < tokensOnCurrentLine.length) {
-                const rawToken = tokensOnCurrentLine[this.#currentTokenIndex];
-                this.#currentTokenIndex++; // Advance token pointer
-
-                // If all tokens on this line are now consumed, prepare for the next line
-                if (this.#currentTokenIndex >= tokensOnCurrentLine.length) {
-                    this.#currentTokenIndex = 0;
-                    this.#currentLineIndex++;
-                }
-                return this.#valueTransformFn(rawToken); // Transform and return the token
-            } else {
-                // All tokens on this line were consumed, move to the next line
-                this.#currentTokenIndex = 0;
-                this.#currentLineIndex++;
-            }
-        }
-        // If we reach here, all lines and tokens have been processed
-        return undefined;
-    }
+function InputReader(sourceStr, parseFunc) {
+  this._sourceLines = sourceStr.split("\n");
+  this._currentCol = 0;
+  this._currentLine = 0;
+  this._valueParser = parseFunc || Number;
 }
 
-/**
- * Helper function to compute all positive divisors of a given number.
- * Uses a Set to efficiently handle duplicates (e.g., for perfect squares).
- * @param {number} numToFactor - The integer for which to find divisors.
- * @returns {number[]} An array of unique positive divisors, sorted in ascending order.
- */
-const computeAllDivisors = (numToFactor) => {
-    // Guard clause: Divisors are typically for positive integers.
-    if (numToFactor <= 0 || !Number.isInteger(numToFactor)) {
-        return [];
-    }
+InputReader.prototype.readNextNumber = function () {
+  const currentLineContent = this._sourceLines[this._currentLine];
+  if (!currentLineContent) {
+    return;
+  }
 
-    const foundFactors = new Set();
-    const sqrtLimit = Math.sqrt(numToFactor);
+  const lineTokens = currentLineContent.trim().split(" ");
+  const nextToken = lineTokens[this._currentCol];
+  this._currentCol++;
 
-    // Iterate up to the square root to find factor pairs
-    for (let currentCandidate = 1; currentCandidate <= sqrtLimit; currentCandidate++) {
-        if (numToFactor % currentCandidate === 0) {
-            foundFactors.add(currentCandidate); // Add the smaller factor
-            foundFactors.add(numToFactor / currentCandidate); // Add the complementary larger factor
-        }
-    }
-
-    // Convert the Set to an Array and sort numerically for consistent output.
-    const sortedFactors = Array.from(foundFactors).sort((a, b) => a - b);
-    return sortedFactors;
+  if (this._currentCol >= lineTokens.length) {
+    this._currentCol = 0;
+    this._currentLine++;
+  }
+  return this._valueParser(nextToken);
 };
 
-/**
- * Main function to solve the problem: find the largest divisor 'd' of 'M'
- * such that 'M/d' is greater than or equal to 'N'.
- * @param {string} problemInput - The raw input string containing the values for N and M.
- */
-function processProblemSolution(problemInput) {
-    const inputHandler = new DataStreamProcessor(problemInput);
+InputReader.prototype.readLineAsNumbers = function () {
+  const currentLineContent = this._sourceLines[this._currentLine];
+  if (!currentLineContent) {
+    return;
+  }
+  this._currentCol = 0;
+  this._currentLine++;
+  return currentLineContent.split(" ").map(this._valueParser);
+};
 
-    // Read the two required numerical parameters from the input stream
-    const requiredCountN = inputHandler.retrieveNextToken(); // Represents N in the original problem
-    const totalValueM = inputHandler.retrieveNextToken();    // Represents M in the original problem
+module.exports = InputReader;
 
-    // Validate the parsed input values
-    if (requiredCountN === undefined || totalValueM === undefined ||
-        isNaN(requiredCountN) || isNaN(totalValueM) ||
-        requiredCountN <= 0 || totalValueM <= 0 ||
-        !Number.isInteger(requiredCountN) || !Number.isInteger(totalValueM))
-    {
-        console.error("Error: Problem parameters N and M must be positive integers.");
-        return; // Abort processing if input is invalid
+function generateAllFactors(numberToFactor) {
+  const factors = [];
+  const sqrtOfNumber = Math.sqrt(numberToFactor);
+
+  for (let k = 1; k <= sqrtOfNumber; k++) {
+    if (numberToFactor % k === 0) {
+      factors.push(k);
     }
+  }
 
-    // Calculate all positive divisors for the totalValueM
-    const allPossibleFactors = computeAllDivisors(totalValueM);
+  const initialFactorCount = factors.length;
+  if (initialFactorCount === 0) { // Handle case for numberToFactor = 0 or 1 if sqrt logic changes
+      return factors;
+  }
+  const largestInitialFactor = factors[initialFactorCount - 1];
 
-    let largestApplicableFactor = 1; // Initialize with the smallest possible factor (1 is always a divisor)
+  for (let k = initialFactorCount - 1; k >= 0; k--) {
+    const currentFactor = factors[k];
+    const complementaryFactor = numberToFactor / currentFactor;
 
-    // Iterate through the sorted factors to find the largest one that meets the condition.
-    // The condition (M / d >= N) can be rewritten as (d <= M / N).
-    // Since factors are sorted ascending, we can stop early if a factor becomes too large.
-    const thresholdForFactor = totalValueM / requiredCountN;
-
-    for (const currentFactor of allPossibleFactors) {
-        if (currentFactor <= thresholdForFactor) {
-            largestApplicableFactor = currentFactor;
-        } else {
-            // Optimization: Since the factors are sorted, if the current factor
-            // exceeds the threshold, all subsequent factors will also exceed it.
-            // Therefore, we can break the loop early.
-            break;
-        }
+    if (complementaryFactor > largestInitialFactor) {
+      factors.push(complementaryFactor);
     }
-
-    // Output the final computed result to standard output.
-    console.log(largestApplicableFactor);
+  }
+  return factors;
 }
 
-// Execute the problem solution by reading input from standard input.
-processProblemSolution(require("fs").readFileSync("/dev/stdin", "utf8"));
+function findMaxValidFactor(factorList, targetN, targetM) {
+  let maxFoundFactor = 1;
+  const threshold = targetM / targetN;
+
+  for (let k = 0; k < factorList.length; k++) {
+    const currentFactor = factorList[k];
+    if (currentFactor <= threshold) {
+      maxFoundFactor = currentFactor;
+    } else {
+      break;
+    }
+  }
+  return maxFoundFactor;
+}
+
+function processInput(inputData) {
+  const dataReader = new InputReader(inputData);
+
+  const targetN = dataReader.readNextNumber();
+  const targetM = dataReader.readNextNumber();
+
+  const allFactors = generateAllFactors(targetM);
+
+  const resultMaxFactor = findMaxValidFactor(allFactors, targetN, targetM);
+
+  console.log(resultMaxFactor);
+}
+
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

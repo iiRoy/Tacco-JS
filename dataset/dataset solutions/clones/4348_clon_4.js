@@ -1,27 +1,20 @@
-(function() {
-    const rawSourceText = require('fs').readFileSync('/dev/stdin', 'utf8');
+function ComputeTotalDistance(inputString) {
+  const inputLines = inputString.split('\n').map(s => s.trim());
 
-    const segmentManifest = rawSourceText.split('\n')
-                                         .map(chunk => chunk.trim())
-                                         .filter(chunk => chunk.length > 0);
+  const elementCount = parseInt(inputLines[0]);
+  const thresholdValue = parseInt(inputLines[1]);
+  const coordinateArray = inputLines[2].split(' ').map(Number);
 
-    const itemCount = parseInt(segmentManifest[0], 10);
-    const upperBound = parseInt(segmentManifest[1], 10);
-    const numericSeries = segmentManifest[2].split(' ').map(Number);
+  const finalSum = coordinateArray
+    .slice(0, elementCount)
+    .reduce((currentTotal, currentCoord) => {
+      const distToOrigin = currentCoord;
+      const distToK = thresholdValue - currentCoord;
+      const minDistanceToTarget = Math.min(distToOrigin, distToK);
+      return currentTotal + (minDistanceToTarget * 2);
+    }, 0);
 
-    const evaluateSequenceRecursively = (currentPosition, runningTotal, valueContainer, comparisonLimit) => {
-        if (currentPosition >= valueContainer.length) {
-            return runningTotal;
-        }
+  console.log(finalSum);
+}
 
-        const currentValue = valueContainer[currentPosition];
-        const optionAlpha = currentValue;
-        const optionBeta = comparisonLimit - currentValue;
-        const minimalChoice = Math.min(optionAlpha, optionBeta);
-
-        return evaluateSequenceRecursively(currentPosition + 1, runningTotal + (minimalChoice * 2), valueContainer, comparisonLimit);
-    };
-
-    const computedOutcome = evaluateSequenceRecursively(0, 0, numericSeries, upperBound);
-    console.log(computedOutcome);
-})();
+ComputeTotalDistance(require('fs').readFileSync('/dev/stdin', 'utf8'));

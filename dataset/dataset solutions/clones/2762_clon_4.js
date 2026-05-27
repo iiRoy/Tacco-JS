@@ -1,33 +1,50 @@
-const processInput = (sourceText) => {
-    const textLines = sourceText.trim().split('\n');
+const entryPoint = (sourceText) => {
+  const parseInputData = (rawInputContent) => {
+    const lines = rawInputContent.split("\n");
+    const [pointCountStr, dimensionCountStr] = lines[0].split(" ");
+    const pointCount = Number(pointCountStr);
+    const dimensionCount = Number(dimensionCountStr);
 
-    const [pointQuantity, dimensionCount] = textLines[0].split(' ').map(Number);
-
-    const spatialPoints = textLines.slice(1, 1 + pointQuantity).map(line =>
-        line.split(' ').map(Number)
+    const coordinateSets = lines.slice(1, pointCount + 1).map((line) =>
+      line.split(" ").map(Number)
     );
 
-    let integralDistanceCount = 0;
+    return { pointCount, dimensionCount, coordinateSets };
+  };
 
-    Array.from({ length: pointQuantity }).forEach((_, primaryIndex) => {
-        Array.from({ length: primaryIndex }).forEach((_, secondaryIndex) => {
-            const currentPoint = spatialPoints[primaryIndex];
-            const comparedPoint = spatialPoints[secondaryIndex];
+  const calculateDistanceBetweenPoints = (firstPoint, secondPoint) => {
+    const squaredDifferencesSum = firstPoint.reduce(
+      (accumulator, currentCoordinate, index) =>
+        accumulator + Math.pow(currentCoordinate - secondPoint[index], 2),
+      0
+    );
+    return Math.sqrt(squaredDifferencesSum);
+  };
 
-            const sumOfSquaredDifferences = currentPoint.reduce((accumulator, coordA, dimensionIndex) => {
-                const coordB = comparedPoint[dimensionIndex];
-                return accumulator + Math.pow(coordA - coordB, 2);
-            }, 0);
+  const processGeometricData = (inputDetails) => {
+    const { pointCount, coordinateSets } = inputDetails;
+    let integerDistanceCounter = 0;
 
-            const calculatedDistance = Math.sqrt(sumOfSquaredDifferences);
+    const allUniqueIndexPairs = Array.from({ length: pointCount }, (_, i) =>
+      Array.from({ length: pointCount - (i + 1) }, (_, k) => [i, i + 1 + k])
+    ).flat();
 
-            if (calculatedDistance % 1 === 0) {
-                integralDistanceCount++;
-            }
-        });
+    allUniqueIndexPairs.forEach(([idxA, idxB]) => {
+      const pointA = coordinateSets[idxA];
+      const pointB = coordinateSets[idxB];
+      const currentDistance = calculateDistanceBetweenPoints(pointA, pointB);
+
+      if (Number.isInteger(currentDistance)) {
+        integerDistanceCounter++;
+      }
     });
 
-    console.log(integralDistanceCount);
+    return integerDistanceCounter;
+  };
+
+  const parsedData = parseInputData(sourceText);
+  const finalResult = processGeometricData(parsedData);
+  console.log(finalResult);
 };
 
-processInput(require("fs").readFileSync("/dev/stdin", "utf8"));
+entryPoint(require("fs").readFileSync("/dev/stdin", "utf8"));

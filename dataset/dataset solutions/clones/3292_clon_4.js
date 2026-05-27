@@ -2,44 +2,44 @@
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
 
-const processInputAndCalculate = (sourcePayload) => {
-    const dataLines = sourcePayload.split('\n');
-    const totalPositions = Number(dataLines[0]);
-    const elevationValues = dataLines[1].split(' ').map(Number);
+const findLargestElement = (dataArray) => {
+    return dataArray.reduce((currentMax, value) => (value > currentMax ? value : currentMax), -Infinity);
+};
 
-    const memoizedJumps = new Map();
+const findSmallestElement = (dataArray) => {
+    return dataArray.reduce((currentMin, value) => (value < currentMin ? value : currentMin), Infinity);
+};
 
-    const computeJumpCost = (currentPosition) => {
-        if (memoizedJumps.has(currentPosition)) {
-            return memoizedJumps.get(currentPosition);
+const processInputAndCalculate = (inputContent) => {
+    const [firstLine, secondLine] = inputContent.split('\n');
+    const totalElements = Number(firstLine);
+    const heightSequence = secondLine.split(' ').map(Number);
+
+    const memoizedCosts = new Map();
+
+    const calculateMinimumCost = (stepIndex) => {
+        if (stepIndex === 0) {
+            return 0;
+        }
+        if (stepIndex === 1) {
+            return Math.abs(heightSequence[0] - heightSequence[1]);
+        }
+        if (memoizedCosts.has(stepIndex)) {
+            return memoizedCosts.get(stepIndex);
         }
 
-        let costForCurrentPosition;
-        switch (currentPosition) {
-            case 0:
-                costForCurrentPosition = 0;
-                break;
-            case 1:
-                costForCurrentPosition = Math.abs(elevationValues[0] - elevationValues[1]);
-                break;
-            default:
-                const costFromPreviousStep = computeJumpCost(currentPosition - 1) + Math.abs(elevationValues[currentPosition] - elevationValues[currentPosition - 1]);
-                const costFromTwoStepsBack = computeJumpCost(currentPosition - 2) + Math.abs(elevationValues[currentPosition] - elevationValues[currentPosition - 2]);
-                costForCurrentPosition = Math.min(costFromPreviousStep, costFromTwoStepsBack);
-                break;
-        }
+        const costFromTwoStepsBack = calculateMinimumCost(stepIndex - 2) + Math.abs(heightSequence[stepIndex] - heightSequence[stepIndex - 2]);
+        const costFromOneStepBack = calculateMinimumCost(stepIndex - 1) + Math.abs(heightSequence[stepIndex] - heightSequence[stepIndex - 1]);
 
-        memoizedJumps.set(currentPosition, costForCurrentPosition);
-        return costForCurrentPosition;
+        const currentStepMinCost = Math.min(costFromTwoStepsBack, costFromOneStepBack);
+        memoizedCosts.set(stepIndex, currentStepMinCost);
+        return currentStepMinCost;
     };
 
-    for (let k = 0; k < totalPositions; k++) {
-        computeJumpCost(k);
-    }
-    
-    const jumpPathResults = Array.from({ length: totalPositions }, (_, idx) => memoizedJumps.get(idx));
+    const minimumCosts = Array.from({ length: totalElements }, (_, index) => calculateMinimumCost(index));
 
-    console.log(jumpPathResults, memoizedJumps.get(totalPositions - 1));
+    console.log(heightSequence);
+    console.log(minimumCosts, minimumCosts[totalElements - 1]);
 };
 
 processInputAndCalculate(require("fs").readFileSync("/dev/stdin", "utf8").trim());

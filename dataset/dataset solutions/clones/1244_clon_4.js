@@ -1,73 +1,26 @@
-class InputInterpreter {
-    constructor(payloadString) {
-        this.payload = payloadString;
-        this.valueA = 0;
-        this.valueB = 0;
-    }
+((rawInputContent) => {
+    const processNumericalInput = (text) => {
+        const numericTokens = text.trim().split(/\s+/);
+        return numericTokens.map(parseFloat);
+    };
 
-    disassemblePayload() {
-        let currentSegmentBuffer = '';
-        let spaceEncountered = false;
+    const performCalculations = (operands) => {
+        const [firstOperand, secondOperand] = operands;
 
-        for (let idx = 0; idx < this.payload.length; idx++) {
-            const charToken = this.payload[idx];
-            if (charToken === ' ' && !spaceEncountered) {
-                this.valueA = Number(currentSegmentBuffer);
-                currentSegmentBuffer = '';
-                spaceEncountered = true;
-            } else if ((charToken >= '0' && charToken <= '9') || charToken === '-') {
-                currentSegmentBuffer += charToken;
-            }
-        }
-        this.valueB = Number(currentSegmentBuffer);
-    }
-}
+        const resultFloat = firstOperand / secondOperand;
+        const resultInteger = Math.floor(firstOperand / secondOperand);
+        const resultRemainder = firstOperand % secondOperand;
 
-class ArithmeticProcessor {
-    constructor(firstOperand, secondOperand) {
-        this.operandX = firstOperand;
-        this.operandY = secondOperand;
-    }
+        return [resultInteger, resultRemainder, resultFloat];
+    };
 
-    deriveFloorQuotient() {
-        const preciseRatio = this.operandX / this.operandY;
-        if (preciseRatio >= 0) {
-            return Math.trunc(preciseRatio);
-        } else {
-            if (preciseRatio === Math.trunc(preciseRatio)) {
-                return Math.trunc(preciseRatio);
-            } else {
-                return Math.trunc(preciseRatio) - 1;
-            }
-        }
-    }
+    const formatOutput = (values) => {
+        return values.join(' ');
+    };
 
-    deriveJsRemainder() {
-        const truncRatio = Math.trunc(this.operandX / this.operandY);
-        return this.operandX - (truncRatio * this.operandY);
-    }
+    const parsedNumbers = processNumericalInput(rawInputContent);
+    const computedValues = performCalculations(parsedNumbers);
+    const finalOutputString = formatOutput(computedValues);
 
-    deriveFloatingResult() {
-        return this.operandX / this.operandY;
-    }
-}
-
-class OutputPresenter {
-    static createDisplayString(integralPart, remainderValue, fractionalPart) {
-        return integralPart + ' ' + remainderValue + ' ' + fractionalPart;
-    }
-}
-
-const rawSystemInput = require('fs').readFileSync('/dev/stdin', 'utf8');
-
-const inputParser = new InputInterpreter(rawSystemInput);
-inputParser.disassemblePayload();
-
-const calculationEngine = new ArithmeticProcessor(inputParser.valueA, inputParser.valueB);
-
-const floorResult = calculationEngine.deriveFloorQuotient();
-const remainderResult = calculationEngine.deriveJsRemainder();
-const floatResult = calculationEngine.deriveFloatingResult();
-
-const finalOutputString = OutputPresenter.createDisplayString(floorResult, remainderResult, floatResult);
-console.log(finalOutputString);
+    process.stdout.write(finalOutputString + '\n');
+})(require('fs').readFileSync('/dev/stdin', 'utf8'));

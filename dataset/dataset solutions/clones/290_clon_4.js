@@ -1,29 +1,30 @@
-const dataAcquirer = require('fs');
-const rawExpressionSource = dataAcquirer.readFileSync('/dev/stdin', 'utf8').trim();
-const mathematicalOperations = {
-    '+': (val1, val2) => val1 + val2,
-    '-': (val1, val2) => val1 - val2,
-    '*': (val1, val2) => val1 * val2,
-    '/': (val1, val2) => val1 / val2
+var rawInput = require('fs').readFileSync('/dev/stdin', 'utf8').trim();
+var expressionLines = rawInput.split('\n');
+
+const operationRegistry = {
+    '+': (first, second) => first + second,
+    '-': (first, second) => first - second,
+    '*': (first, second) => first * second,
+    '/': (first, second) => first / second,
 };
-const evaluateRpnExpression = (expressionString) => {
-    const componentParts = expressionString.trim().split(/\s+/);
-    const computationalStack = componentParts.reduce((currentPile, currentElement) => {
-        const numericConversion = parseFloat(currentElement);
-        if (!isNaN(numericConversion)) {
-            currentPile.push(numericConversion);
-        } else if (mathematicalOperations[currentElement]) {
-            const operandB = currentPile.pop();
-            const operandA = currentPile.pop();
-            const operationFunction = mathematicalOperations[currentElement];
-            const intermediateResult = operationFunction(operandA, operandB);
-            currentPile.push(intermediateResult);
+
+expressionLines.forEach(currentExpression => {
+    if (!currentExpression.trim()) return;
+
+    var expressionSymbols = currentExpression.trim().split(/ +/);
+
+    const finalOperandStack = expressionSymbols.reduce((currentStack, currentSymbol) => {
+        const numericValue = parseFloat(currentSymbol);
+        if (Number.isFinite(numericValue)) {
+            currentStack.push(numericValue);
+        } else if (operationRegistry[currentSymbol]) {
+            const secondOperand = currentStack.pop();
+            const firstOperand = currentStack.pop();
+            const operationFunction = operationRegistry[currentSymbol];
+            currentStack.push(operationFunction(firstOperand, secondOperand));
         }
-        return currentPile;
+        return currentStack;
     }, []);
-    return computationalStack.pop();
-};
-rawExpressionSource.split('\n').forEach(singleLineExpression => {
-    const finalOutcome = evaluateRpnExpression(singleLineExpression);
-    process.stdout.write(finalOutcome.toFixed(6) + '\n');
+
+    console.log(finalOperandStack.pop().toFixed(6));
 });

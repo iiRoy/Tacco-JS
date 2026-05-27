@@ -1,48 +1,47 @@
 'use strict';
 
-/**
- * Initiates and manages the core numerical sequence generation task.
- * It processes a given string, extracts key parameters, and then constructs
- * a series of integers based on those parameters.
- * @param {string} rawStringData The unprocessed string obtained from the input source.
- */
-function initiateProcess(rawStringData) {
-  // First, remove any leading or trailing whitespace from the string.
-  // Then, break the string into an array of substrings using spaces as delimiters.
-  // Finally, transform each substring into its corresponding integer representation (base 10).
-  let parsedNumericalData = rawStringData
-    .trim() // Eliminate exterior whitespace
-    .split(' ') // Divide the string into distinct parts
-    .map(singleComponent => parseInt(singleComponent, 10)); // Convert each part to an integer
+// This function is responsible for processing raw input data
+// to generate a specific sequence of numbers based on given parameters.
+function processData(rawData) {
+  // Step 1: Prepare the input string.
+  // It removes leading/trailing whitespace, splits the string into parts by space,
+  // and then converts each part into an integer using the bitwise NOT operator (~~).
+  let processedNumbers = rawData
+    .trim()
+    .split(' ')
+    .map(numString => ~~numString);
 
-  // Assign the first two elements of the parsed array to clearly named constants.
-  const numericalRangeSize = parsedNumericalData[0]; // Corresponds to the 'k' value in the problem
-  const focalPointNumber = parsedNumericalData[1]; // Corresponds to the 'x' value in the problem
+  // Step 2: Extract the two primary values from the processed array.
+  // 'limitVal' determines the range of numbers to generate.
+  // 'centerVal' is the central point around which numbers are generated.
+  const limitVal = processedNumbers[0];
+  const centerVal = processedNumbers[1];
 
-  // Evaluate a specific condition: if the desired range size is exactly one.
-  if (numericalRangeSize === 1) {
-    // In this unique scenario, only the focal point number needs to be displayed.
-    console.log(String(focalPointNumber)); // Convert the number to a string for printing
-    return; // Exit the function prematurely as the task is complete for this case
+  // Step 3: Handle a specific edge case where the limit value is 1.
+  // If 'limitVal' is 1, only the 'centerVal' itself should be output.
+  if (limitVal === 1) {
+    // Output the center value as a string.
+    console.log(centerVal + '');
+    return; // Exit the function early.
   }
 
-  // Prepare an empty array to store the resultant sequence of numbers.
-  let generatedSequence = [];
+  // Step 4: Initialize an array to store the resulting sequence of numbers.
+  let finalSequence = [];
 
-  // Commence a loop to populate the sequence.
-  // The loop iterates from a calculated start point up to a calculated end point.
-  // The start is `focalPointNumber - (numericalRangeSize - 1)`, and it continues
-  // as long as the current number is less than `focalPointNumber + numericalRangeSize`.
-  for (let currentIterationNumber = focalPointNumber - (numericalRangeSize - 1); currentIterationNumber < focalPointNumber + numericalRangeSize; currentIterationNumber++) {
-    // Add the number generated in the current iteration to our collection.
-    generatedSequence.push(currentIterationNumber);
+  // Step 5: Iterate to generate the sequence of numbers.
+  // The loop starts from 'centerVal - (limitVal - 1)' and goes up to, but not including, 'centerVal + limitVal'.
+  // This creates a sequence of '2 * limitVal - 1' numbers centered around 'centerVal'.
+  for (let currentNumber = centerVal - (limitVal - 1); currentNumber < centerVal + limitVal; currentNumber++) {
+    finalSequence.push(currentNumber); // Add each generated number to the sequence array.
   }
 
-  // Output the complete sequence. The numbers are joined together with a single space
-  // between each element before being printed to the console.
-  console.log(generatedSequence.join(' ')); // Concatenate all elements with a space separator
+  // Step 6: Output the final sequence.
+  // The numbers in the 'finalSequence' array are joined together by a single space
+  // and then printed to the console.
+  console.log(finalSequence.join(' '));
 }
 
-// Execute the primary process. This line reads content from standard input,
-// assuming it's UTF-8 encoded, and passes that content as a string to the function.
-initiateProcess(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// The program starts by reading input from standard input.
+// It uses Node.js's 'fs' module to synchronously read the file '/dev/stdin'
+// and decodes it as a 'utf8' string. This string is then passed to the 'processData' function.
+processData(require('fs').readFileSync('/dev/stdin', 'utf8'));

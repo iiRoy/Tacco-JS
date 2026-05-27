@@ -1,86 +1,60 @@
-const acquireRawMaterial = () => require('fs').readFileSync('/dev/stdin', 'utf8');
+var getRawInput = require('fs').readFileSync('/dev/stdin', 'utf8');
+var dataSegments = getRawInput.trim().split("\n");
 
-const analyzeConnectionScheme = (lineStreamReference) => {
-    const unitCountRaw = lineStreamReference.shift();
-    const unitCount = parseInt(unitCountRaw, 10);
-
-    if (unitCount === 0) {
-        return null;
+while (true) {
+    var segmentCount = Number(dataSegments.shift());
+    if (segmentCount === 0) {
+        break;
     }
 
-    const initialElementsLine = lineStreamReference.shift();
-    const initialElementNames = initialElementsLine.split(':')[1].slice(0, -1).split(',');
+    var initialActivationLine = dataSegments.shift().split(":");
+    var initialActiveItems = initialActivationLine[1].slice(0, -1).split(",");
 
-    const elementState = new Map();
-    const explorationQueue = [];
+    var reachableElements = new Set();
+    var elementsToExplore = []; // Queue for Breadth-First Search (BFS)
+    var exploredOutgoings = new Set(); // Tracks elements whose outgoing dependencies have been processed
 
-    initialElementNames.forEach(name => {
-        if (!elementState.has(name)) {
-            elementState.set(name, true);
-            explorationQueue.push(name);
-        }
+    initialActiveItems.forEach(function(itemIdentifier) {
+        reachableElements.add(itemIdentifier);
+        elementsToExplore.push(itemIdentifier);
     });
 
-    const componentDependencies = new Map();
-    for (let i = 0; i < unitCount - 1; ++i) {
-        const dependencyLine = lineStreamReference.shift();
-        const parts = dependencyLine.split(':');
-        componentDependencies.set(
-            parts[0],
-            parts[1].slice(0, -1).split(',')
-        );
+    var adjacencyGraph = new Map(); // Stores dependency rules, replaces 'obj'
+    for (var i = 0; i < segmentCount - 1; i++) {
+        var graphRule = dataSegments.shift().split(":");
+        var sourceIdentifier = graphRule[0];
+        var targetIdentifiers = graphRule[1].slice(0, -1).split(",");
+        adjacencyGraph.set(sourceIdentifier, targetIdentifiers);
     }
 
-    let queueHead = 0;
-    while (queueHead < explorationQueue.length) {
-        const currentComponent = explorationQueue[queueHead];
-        queueHead++;
+    // BFS-like propagation to find all reachable elements and mark processed outgoings
+    while (elementsToExplore.length > 0) {
+        var currentIdentifier = elementsToExplore.shift();
 
-        if (componentDependencies.has(currentComponent)) {
-            elementState.set(currentComponent, false);
+        // Only process and mark as explored if the current element has outgoing dependencies
+        // This mirrors the original's F[k]=false logic which only applies if obj.hasOwnProperty(k)
+        if (adjacencyGraph.has(currentIdentifier)) {
+            if (exploredOutgoings.has(currentIdentifier)) {
+                continue; // Skip if this node's outgoing edges were already processed
+            }
+            exploredOutgoings.add(currentIdentifier); // Mark this node's outgoing edges as processed
 
-            const linkedComponents = componentDependencies.get(currentComponent);
-            for (const linked of linkedComponents) {
-                if (!elementState.has(linked)) {
-                    elementState.set(linked, true);
-                    explorationQueue.push(linked);
+            for (const dependentIdentifier of adjacencyGraph.get(currentIdentifier)) {
+                if (!reachableElements.has(dependentIdentifier)) {
+                    reachableElements.add(dependentIdentifier);
+                    elementsToExplore.push(dependentIdentifier); // Add to queue for future exploration
                 }
             }
         }
     }
 
-    let finalActiveCount = 0;
-    for (const status of elementState.values()) {
-        if (status === true) {
+    var finalActiveCount = 0;
+    // Count elements that are reachable but whose outgoing dependencies were NOT processed
+    // This matches the original's final `if(F[k])cnt++` logic
+    for (const itemIdentifier of reachableElements) {
+        if (!exploredOutgoings.has(itemIdentifier)) {
             finalActiveCount++;
         }
     }
-
-    return finalActiveCount;
-};
-
-const initiateProcessing = () => {
-    const rawDataContent = acquireRawMaterial();
-    const splitLines = rawDataContent.trim().split('\n');
-    let currentLineIndex = 0;
-
-    const lineConsumer = {
-        shift: () => {
-            if (currentLineIndex < splitLines.length) {
-                return splitLines[currentLineIndex++];
-            }
-            return undefined;
-        }
-    };
-
-    let calculatedResult;
-    const collectedResults = [];
-
-    while ((calculatedResult = analyzeConnectionScheme(lineConsumer)) !== null) {
-        collectedResults.push(calculatedResult);
-    }
-
-    collectedResults.forEach(result => console.log(result));
-};
-
-initiateProcessing();
+    console.log(finalActiveCount);
+}

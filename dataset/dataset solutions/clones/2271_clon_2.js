@@ -1,46 +1,39 @@
-// This function serves as the primary entry point for processing system input.
-function processInput  ( rawData ) {
+function processInput(rawData) {
+  // Define the modulo value for the final calculation
+  let moduloVal = 10000000007;
 
-  /*
-   *  A significant prime number utilized for modulo operations
-   *  to keep results within a manageable range.
-   */
-  const moduloValue = 10000000007;
-  let tempPlaceholder = undefined; // A temporary, currently unused variable.
+  // This variable is declared but not used in the original logic.
+  // It's kept for structural equivalence.
+  let tempVar = 0;
 
-  // The raw input string is separated into individual lines.
-  const linesArray = rawData.split ( '\n' );
+  // Split the raw input string into an array of lines
+  const linesArray = rawData.split("\n");
 
-  // The very first line of input specifies the total count of numerical elements.
-  const elementCount = Number( linesArray[0] );
+  // Parse the first line to get the count of elements
+  const countElements = Number(linesArray[0]);
 
-  /*
-   * The second line of the input contains space-separated numbers.
-   * These are parsed into an array of integers.
-   */
-  const numberSequence = rawData
-    .split ( '\n' ) [1]
-    .split ( ' ' )
-    .map (  currentNumStr  => parseInt ( currentNumStr, 10 )  );
+  // Parse the second line, split by space, and convert to an array of integers
+  const numberSequence = linesArray[1]
+    .split(" ")
+    .map(numStr => parseInt(numStr, 10));
 
-  // An accumulator variable, initialized to zero, for computing the sum of elements.
+  // Initialize variables for sum and factorial calculation
   let totalSum = 0;
+  let productFactorial = 1;
 
-  // An accumulator variable, initialized to one, for computing a product (factorials-like).
-  let productAccumulator = 1;
-
-  // A loop iterating through the number sequence, starting from the second element.
-  for ( let idx = 1;  idx < elementCount;  idx++ ) {
-    // Each number is added to the running total.
+  // Loop through the number sequence starting from the second element
+  // (index 1) up to, but not including, countElements.
+  for (let idx = 1; idx < countElements; idx++) {
+    // Accumulate the sum of elements from index 1 onwards
     totalSum += numberSequence[idx];
-    // The product accumulator is multiplied by the current loop index.
-    productAccumulator *= idx;
+    // Calculate the factorial of the loop index
+    productFactorial *= idx;
   }
 
-  // The final computed result is outputted to the console, after applying the modulo.
-  console.log( ( ( totalSum / ( elementCount - 1 ) ) * productAccumulator ) % moduloValue );
+  // Perform the final calculation and print the result to the console.
+  // The calculation is: ((sum / (N - 1)) * factorial) % mod
+  console.log(((totalSum / (countElements - 1)) * productFactorial) % moduloVal);
 }
 
-
-// The program execution begins by reading data from standard input.
-processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// Read input from standard input and pass it to the main processing function
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

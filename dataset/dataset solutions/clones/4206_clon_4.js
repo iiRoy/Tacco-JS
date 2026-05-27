@@ -1,25 +1,26 @@
-function performAnalysis(rawData) {
-  const cleanedData = String(rawData).replace(/^[ \t\n\r]+|[ \t\n\r]+$/g, '');
+function processInput(rawData) {
+  const processedText = rawData.trim();
 
-  const alphaCount = [...cleanedData].filter(x => x === 'a').length;
-  const betaCount = [...cleanedData].filter(x => x === 'b').length;
-  const gammaCount = [...cleanedData].filter(x => x === 'c').length;
+  const charOccurrences = new Map();
+  charOccurrences.set('a', 0);
+  charOccurrences.set('b', 0);
+  charOccurrences.set('c', 0);
 
-  const countsArray = [alphaCount, betaCount, gammaCount];
-  countsArray.sort((p, q) => p - q);
-
-  const minimumCount = countsArray[0];
-  const maximumCount = countsArray[countsArray.length - 1];
-
-  let conclusion = '';
-  if (maximumCount - minimumCount < 2) {
-    conclusion = 'YES';
-  } else {
-    conclusion = 'NO';
+  for (const charUnit of processedText) {
+    if (charOccurrences.has(charUnit)) {
+      charOccurrences.set(charUnit, charOccurrences.get(charUnit) + 1);
+    }
   }
-  console.log(conclusion);
+
+  const frequencyValues = Array.from(charOccurrences.values());
+  frequencyValues.sort((x, y) => x - y);
+
+  const lowestCount = frequencyValues[0];
+  const highestCount = frequencyValues[frequencyValues.length - 1];
+
+  const countDifference = highestCount - lowestCount;
+
+  console.log(countDifference < 2 ? 'YES' : 'NO');
 }
 
-const nodeUtils = typeof module !== 'undefined' && module.exports && require;
-const fileContent = nodeUtils('fs').readFileSync('/dev/stdin', 'utf8');
-performAnalysis(fileContent);
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

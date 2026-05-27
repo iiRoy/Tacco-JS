@@ -1,50 +1,51 @@
-((inputString) => {
-  const allLines = inputString.trim().split('\n');
-  const totalCount = Number(allLines[0]);
+console.log((inputData => {
+  const inputLines = inputData.trim().split('\n');
+  const pointQuantity = parseInt(inputLines[0], 10);
 
-  const crimsonPoints = [];
-  const ceruleanPoints = [];
+  const redPointCollection = [];
+  const bluePointCollection = [];
 
-  for (let iter = 1; iter <= totalCount; iter++) {
-    const [valX, valY] = allLines[iter].split(' ').map(Number);
-    crimsonPoints.push({ primary: valX, secondary: valY });
+  for (let k = 1; k <= pointQuantity; k++) {
+    const [coordX, coordY] = inputLines[k].split(' ').map(Number);
+    redPointCollection.push({ x: coordX, y: coordY });
   }
 
-  for (let iter = totalCount + 1; iter <= 2 * totalCount; iter++) {
-    const [valX, valY] = allLines[iter].split(' ').map(Number);
-    ceruleanPoints.push({ primary: valX, secondary: valY });
+  for (let k = pointQuantity + 1; k <= 2 * pointQuantity; k++) {
+    const [coordX, coordY] = inputLines[k].split(' ').map(Number);
+    bluePointCollection.push({ x: coordX, y: coordY });
   }
 
-  ceruleanPoints.sort((pointOne, pointTwo) => pointOne.primary - pointTwo.primary);
+  bluePointCollection.sort((ptA, ptB) => ptA.x - ptB.x);
 
-  const crimsonAvailability = new Array(totalCount).fill(false);
-  let matchedPairs = 0;
+  let totalMatches = 0;
+  const availableRedIndices = new Set(Array.from({ length: pointQuantity }, (_, i) => i));
 
-  for (const currentCerulean of ceruleanPoints) {
-    let topYCandidate = -1;
-    let selectedCrimsonIndex = -1;
+  for (const currentBluePoint of bluePointCollection) {
+    let bestRedYValue = -1;
+    let bestRedPointIndex = -1;
 
-    for (let crimsonIndex = 0; crimsonIndex < totalCount; crimsonIndex++) {
-      const currentCrimson = crimsonPoints[crimsonIndex];
+    for (const redIndexCandidate of availableRedIndices) {
+      const candidateRedPoint = redPointCollection[redIndexCandidate];
 
-      if (crimsonAvailability[crimsonIndex]) {
-        continue;
-      }
-
-      if (currentCrimson.primary < currentCerulean.primary && currentCrimson.secondary < currentCerulean.secondary) {
-        if (currentCrimson.secondary > topYCandidate) {
-          topYCandidate = currentCrimson.secondary;
-          selectedCrimsonIndex = crimsonIndex;
+      // The original code's 'continue' condition:
+      // if ( bp[i][0] < rp[j][0] && bp[i][1] < rp[j][1] ) continue;
+      // This means a red point is considered eligible if it's NOT strictly
+      // to the top-right of the blue point.
+      // Equivalently, if (blueX >= redX OR blueY >= redY).
+      if (currentBluePoint.x >= candidateRedPoint.x || currentBluePoint.y >= candidateRedPoint.y) {
+        // Among eligible red points, select the one with the highest Y-coordinate.
+        if (candidateRedPoint.y > bestRedYValue) {
+          bestRedYValue = candidateRedPoint.y;
+          bestRedPointIndex = redIndexCandidate;
         }
       }
     }
 
-    if (selectedCrimsonIndex !== -1) {
-      matchedPairs++;
-      crimsonAvailability[selectedCrimsonIndex] = true;
+    if (bestRedPointIndex !== -1) {
+      availableRedIndices.delete(bestRedPointIndex);
+      totalMatches++;
     }
   }
 
-  return `${matchedPairs}`;
-
-})(require('fs').readFileSync('/dev/stdin', 'utf8'));
+  return `${totalMatches}`;
+})(require('fs').readFileSync('/dev/stdin', 'utf8')));

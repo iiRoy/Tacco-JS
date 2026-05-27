@@ -1,48 +1,44 @@
-// This file processes incoming data to calculate a specific sum.
-function processInputData() {
-  // Extract the number of days from the first line of input.
-  let numDays = Number(receivedInput[0]);
-  // Parse initial configuration settings from the second line.
-  const initialSettings = receivedInput[1] .split(' ') .map(Number) ;
+function processData() {
+  // The first line of input represents the total number of days.
+  const numDays = Number(rawData[0]);
+  // The second line contains initial cost parameters, which are not used in the score calculation.
+  const initialCosts = rawData[1].split(' ').map(Number);
   
-  // Isolate the lines containing daily scores.
-  const rawScoreLines = receivedInput.slice(2, numDays + 2);
-  // Transform raw score strings into arrays of numbers.
-  const dayScores = rawScoreLines.map( (dataString) => {
-    return dataString.split(' ').map(Number);
+  // Extract the lines corresponding to daily scores.
+  const dailyScoreStrings = rawData.slice(2, numDays + 2);
+  // Convert these string lines into a 2D array of numerical scores.
+  const parsedDailyScores = dailyScoreStrings.map((scoreLine) => {
+    return scoreLine.split(' ').map(Number);
   });
+  // Extract the chosen contest types for each day.
+  const chosenContestTypes = rawData.slice(numDays + 2, 2 * numDays + 2).map(Number);
   
-  // Obtain the chosen index for each day.
-  const chosenIndices = receivedInput.slice(numDays + 2, 2 * numDays + 2).map(Number);
-  
-  // Initialize a variable to accumulate the final sum.
-  let runningTotal = 0;
-  // Iterate through each day to calculate the sum.
+  // Initialize the running total score.
+  let currentTotalScore = 0;
+  // Loop through each day to calculate and display the cumulative score.
   for (let dayIndex = 0; dayIndex < numDays; dayIndex++) {
-    runningTotal += dayScores[dayIndex][chosenIndices[dayIndex]];
-    // Output the current running total after each day's contribution.
-    console.log(runningTotal);
+    // Add the score for the selected contest type on the current day to the total.
+    currentTotalScore += parsedDailyScores[dayIndex][chosenContestTypes[dayIndex]];
+    // Print the cumulative score after processing each day.
+    console.log(currentTotalScore);
   }
-  
 }
 
-// Global variable to store all incoming standard input.
-let receivedInput = '';
+// A global variable to store all incoming standard input data.
+var rawData = '';
 
-// Begin listening for standard input.
+// Activate the standard input stream.
 process.stdin.resume();
 // Set the character encoding for the input stream.
 process.stdin.setEncoding('utf8');
-
-// Event listener for incoming data chunks.
-process.stdin.on('data', function (inputChunk) {
-  receivedInput += inputChunk; // Append the new chunk to the buffer.
+// Attach an event listener to accumulate data chunks as they arrive.
+process.stdin.on('data', function(dataChunk) {
+  rawData += dataChunk;
 });
-
-// Event listener for the end of the input stream.
-process.stdin.on('end', function () {
-  // Split the accumulated input into lines.
-  receivedInput = receivedInput.split('\n');
+// Attach an event listener for when the input stream ends.
+process.stdin.on('end', function() {
+  // Split the accumulated raw data into an array of lines.
+  rawData = rawData.split('\n');
   // Invoke the primary data processing function.
-  processInputData();
+  processData();
 });

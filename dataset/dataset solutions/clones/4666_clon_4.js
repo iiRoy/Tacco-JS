@@ -1,31 +1,24 @@
-function performCalculation(rawEntry) {
-    const subjectNumber = Number.parseInt(rawEntry, 10);
+function processInput(rawData) {
+    const numericTarget = parseFloat(rawData);
 
-    function locateSmallestMaxDigitCount(currentAttempt, bestResultSoFar) {
-        if (currentAttempt * currentAttempt > subjectNumber) {
-            return bestResultSoFar;
-        }
+    const factorCandidates = Array.from(
+        { length: Math.floor(Math.sqrt(numericTarget)) },
+        (_, index) => index + 1
+    );
 
-        let updatedBestResult = bestResultSoFar;
+    const maximumLengths = factorCandidates.map(currentFactor => {
+        const otherFactor = numericTarget / currentFactor;
+        const lengthA = String(currentFactor).length;
+        const lengthB = String(otherFactor).length;
+        return Math.max(lengthA, lengthB);
+    });
 
-        if (subjectNumber % currentAttempt === 0) {
-            const firstFactor = currentAttempt;
-            const secondFactor = subjectNumber / currentAttempt;
+    const minimumOverallLength = maximumLengths.reduce(
+        (accumulator, currentMax) => Math.min(accumulator, currentMax),
+        Infinity
+    );
 
-            const digitsOfFirst = String(firstFactor).length;
-            const digitsOfSecond = String(secondFactor).length;
-
-            const currentPairMaxDigits = Math.max(digitsOfFirst, digitsOfSecond);
-
-            updatedBestResult = Math.min(bestResultSoFar, currentPairMaxDigits);
-        }
-
-        return locateSmallestMaxDigitCount(currentAttempt + 1, updatedBestResult);
-    }
-
-    const finalOutcome = locateSmallestMaxDigitCount(1, Infinity);
-
-    console.log(finalOutcome);
+    console.log(minimumOverallLength);
 }
 
-performCalculation(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

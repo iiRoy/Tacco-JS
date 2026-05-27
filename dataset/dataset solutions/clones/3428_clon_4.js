@@ -1,34 +1,28 @@
-const fileSystemAccess = require('fs');
-const terminalLogger = console;
+const fileSystem = require('fs');
 
-function computeOptimalDifference(inputDataStream) {
-    const cleanedEntry = inputDataStream.trim();
-    let smallestAbsoluteDeviation = Number.MAX_SAFE_INTEGER;
-    
-    const targetNumericalValue = 753;
-    const segmentSize = 3;
-    
-    for (let currentPosition = 0; currentPosition <= cleanedEntry.length - segmentSize; ++currentPosition) {
-        const textPortion = cleanedEntry.substring(currentPosition, currentPosition + segmentSize);
-        
-        const convertedNumber = parseInt(textPortion, 10);
-        
-        if (!isNaN(convertedNumber)) {
-            const currentDeviation = Math.abs(convertedNumber - targetNumericalValue);
-            
-            smallestAbsoluteDeviation = Math.min(smallestAbsoluteDeviation, currentDeviation);
+function determineSmallestDifference(sourceText) {
+    const processedText = sourceText.trim();
+    let currentMinimum = Number.MAX_SAFE_INTEGER;
+
+    for (let positionIndex = 0; positionIndex <= processedText.length - 3; positionIndex++) {
+        const threeCharSegment = processedText.substring(positionIndex, positionIndex + 3);
+        const numericalValue = parseInt(threeCharSegment, 10);
+
+        if (isNaN(numericalValue)) {
+            return currentMinimum;
         }
+
+        const absoluteDifference = Math.abs(numericalValue - 753);
+        currentMinimum = Math.min(currentMinimum, absoluteDifference);
     }
-    
-    return String(smallestAbsoluteDeviation);
+
+    return currentMinimum;
 }
 
-function initiateProcessing() {
-    const standardInputContent = fileSystemAccess.readFileSync('/dev/stdin', 'utf8');
-    
-    const finalResultString = computeOptimalDifference(standardInputContent);
-    
-    terminalLogger.log(finalResultString);
+function runApplication() {
+    const inputData = fileSystem.readFileSync('/dev/stdin', 'utf8');
+    const computedResult = determineSmallestDifference(inputData);
+    console.log(computedResult.toString());
 }
 
-initiateProcessing();
+runApplication();

@@ -1,28 +1,27 @@
-function processInput(contentPayload) {
-  const dataLines = contentPayload.trim().split('\n');
-  const limitCount = Number(dataLines[0]);
-  const numberSeries = dataLines[1].split(' ').map(Number);
+function evaluateNumericSequence(inputData) {
+  const processedLines = inputData.split(/\r?\n/);
+  const combinedString = processedLines.join(' ');
+  const tokenizedValues = combinedString.split(' ');
 
-  const finalOutcome = numberSeries.slice(0, limitCount).reduce((currentVerdict, currentNumericValue) => {
-    if (currentVerdict === 'DENIED') {
+  const limitCount = Number(tokenizedValues[0]);
+  const numericalElements = tokenizedValues.slice(1).map(Number);
+
+  const finalOutcome = numericalElements.slice(0, limitCount).reduce((currentStatus, elementValue) => {
+    if (currentStatus === 'DENIED') {
       return 'DENIED';
     }
 
-    if (currentNumericValue % 2 === 0) {
-      if (currentNumericValue % 3 === 0 || currentNumericValue % 5 === 0) {
+    if (elementValue % 2 === 0) {
+      if (elementValue % 3 === 0 || elementValue % 5 === 0) {
         return 'APPROVED';
       } else {
         return 'DENIED';
       }
     }
-    return currentVerdict;
+    return currentStatus;
   }, '');
 
-  process.stdout.write(finalOutcome + '\n');
+  console.log(finalOutcome);
 }
 
-const nodeFsModule = require('node:fs');
-const inputPath = '/dev/stdin';
-const sourceContent = nodeFsModule.readFileSync(inputPath, 'utf8');
-
-processInput(sourceContent);
+evaluateNumericSequence(require("fs").readFileSync("/dev/stdin", "utf8"));

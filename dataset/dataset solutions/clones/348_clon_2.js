@@ -1,152 +1,128 @@
-"use strict"
-; var
-    utilityModule = require("util")
-  , outputLine = console.log
-  , printToConsole = utilityModule.print
-  , inputProcessor = createInputHandler()
-;
+"use strict";
+
+var utilityModule = require("util"),
+    logOutput = console.log,
+    printChar = utilityModule.print,
+    inputReader = obtainInputParser();
 
 function evaluateExpression() {
-    var currentCalc = evaluateTerm();
-    
-    while
-      (true)
-    {
-        if
-          ( currentInputLine[positionTracker] === "+" )
-        {
-            positionTracker++;
-            currentCalc += evaluateTerm();
-        }
-        else if ( currentInputLine[positionTracker] === "-" )
-        {
-            positionTracker++;
-            currentCalc -= evaluateTerm();
-        }
-        else
-        {
+    var resultValue = processTerm();
+
+    while (true) {
+        if (currentLine[currentIndex] === "+") {
+            currentIndex++;
+            resultValue += processTerm();
+        } else if (currentLine[currentIndex] === "-") {
+            currentIndex++;
+            resultValue -= processTerm();
+        } else {
             break;
         }
     }
-    return currentCalc;
+    return resultValue;
 }
 
-function evaluateTerm() {
-    var currentProduct = evaluateFactor();
+function processTerm() {
+    var resultValue = handleFactor();
 
-    while( true )
-    {
-        if ( currentInputLine[positionTracker] === "*" )
-        {
-            positionTracker++;
-            currentProduct *= evaluateFactor();
-        }
-        else if ( currentInputLine[positionTracker] === "/" )
-        {
-            positionTracker++;
-            currentProduct = ~~(currentProduct / evaluateFactor());
-        }
-        else
-        {
+    while (true) {
+        if (currentLine[currentIndex] === "*") {
+            currentIndex++;
+            resultValue *= handleFactor();
+        } else if (currentLine[currentIndex] === "/") {
+            currentIndex++;
+            resultValue = ~~(resultValue / handleFactor());
+        } else {
             break;
         }
     }
-    return currentProduct;
+    return resultValue;
 }
 
-function evaluateFactor() {
-    while
-      (true)
-    {
-        if ( currentInputLine[positionTracker] === "(" )
-        {
-            positionTracker++;
+function handleFactor() {
+    while (true) {
+        if (currentLine[currentIndex] === "(") {
+            currentIndex++;
             return evaluateExpression();
-        }
-        else if ( currentInputLine[positionTracker] === ")" )
-        {
-            positionTracker++;
-        }
-        else
-        {
+        } else if (currentLine[currentIndex] === ")") {
+            currentIndex++;
+        } else {
             break;
         }
     }
-    var parsedValue = parseNumericValue();
-    return parsedValue;
+    var resultValue = extractNumber();
+    return resultValue;
 }
 
-function parseNumericValue() {
-    var finalNumber;
+function extractNumber() {
+    var numVal;
 
-    while ( true )
-    {
-        if
-          ( /^\d/.test(currentInputLine[positionTracker]) )
-        {
-            finalNumber = finalNumber ? finalNumber * 10 + +currentInputLine[positionTracker] : +currentInputLine[positionTracker];
-            positionTracker++;
+    while (true) {
+        if (/^\d/.test(currentLine[currentIndex])) {
+            numVal = numVal ? numVal * 10 + +currentLine[currentIndex] : +currentLine[currentIndex];
+            currentIndex++;
+        } else {
+            break;
         }
-        else break;
     }
-    return finalNumber;
+    return numVal;
 }
 
-var inputCount = inputProcessor.getNextInteger(),
-    currentInputLine, positionTracker;
+var loopCount = inputReader.nextInt(),
+    currentLine, currentIndex;
 
-while ( inputCount-- ) {
-    positionTracker = 0x0;
+while (loopCount--) {
+    currentIndex = 0;
 
-    currentInputLine = inputProcessor.getNextToken();
-    currentInputLine = currentInputLine.slice(0, currentInputLine.length - 1);
+    currentLine = inputReader.next();
+    currentLine = currentLine.slice(0, currentLine.length - 1);
 
-    outputLine(evaluateExpression());
+    logOutput(evaluateExpression());
 }
 
-function createInputHandler(shouldSplitBySpace) {
-    var readPointer = 0,
-        tokenArray = [],
-        rawData = require("fs").readFileSync("/dev/stdin", "utf8"),
-        lineFragments = rawData.replace(/\r/g, '').split("\n");
+function obtainInputParser(splitBySpace) {
+    var itemIndex = 0,
+        collectedItems = [],
+        rawInputData = require("fs").readFileSync("/dev/stdin", "utf8"),
+        processedLines = rawInputData.replace(/\r/g, '').split("\n");
 
-    shouldSplitBySpace = shouldSplitBySpace || true;
+    splitBySpace = splitBySpace || true;
 
-    // Transforms input data into a flattened array by splitting on newlines and spaces.
-    lineFragments.forEach(function(segment) {
-        if ( shouldSplitBySpace && segment !== "" ) {
-            segment.split(" ").forEach(function(element) {
-                if ( element !== "" ) tokenArray.push(element);
+    // Process input by splitting lines and optionally by spaces
+    processedLines.forEach(function(lineContent) {
+        if (splitBySpace && lineContent !== "") {
+            lineContent.split(" ").forEach(function(elementPart) {
+                if (elementPart !== "") collectedItems.push(elementPart);
             });
         } else {
-            tokenArray.push(segment);
+            collectedItems.push(lineContent);
         }
     });
 
     return {
-        hasMoreTokens: function(checkValue) {
-            if ( typeof checkValue === "undefined" ) {
-                return typeof tokenArray[readPointer] !== "undefined";
+        hasNext: function(val) {
+            if (typeof val === "undefined") {
+                return typeof collectedItems[itemIndex] !== "undefined";
             } else {
-                return tokenArray[readPointer] === checkValue;
+                return collectedItems[itemIndex] === val;
             }
         },
-        getNextToken: function() {
-            if ( typeof tokenArray[readPointer + 1] === "undefined" ) throw new RangeError("Index out of bounds at '" + (readPointer + 1) + "'");
-            return tokenArray[readPointer++];
+        next: function() {
+            if (typeof collectedItems[itemIndex + 1] === "undefined") throw new RangeError("Index out of bounds at '" + itemIndex + 1 + "'");
+            return collectedItems[itemIndex++];
         },
-        getNextNumericToken: function () {
-            if ( !/^\d+$/.test(this.peekToken()) ) throw new TypeError("'" + this.peekToken() + "' cannot convert to Number");
-            return +this.getNextToken();
+        nextNumber: function() {
+            if (!/^\d+$/.test(this.top())) throw new TypeError("'" + this.top() + "' cannot convet to Number");
+            return +this.next();
         },
-        getNextInteger: function() {
-            return parseInt(this.getNextNumericToken());
+        nextInt: function() {
+            return parseInt(this.nextNumber());
         },
-        peekToken: function() {
-            return tokenArray[readPointer];
+        top: function() {
+            return collectedItems[itemIndex];
         },
-        resetPointer: function() {
-            readPointer = 0;
+        rewind: function() {
+            itemIndex = 0;
         }
     };
 }

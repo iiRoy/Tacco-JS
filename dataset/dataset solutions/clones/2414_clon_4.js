@@ -1,93 +1,54 @@
-const inputRetrievalSystem = require('node:fs');
+const fileSystem = require('fs');
 
-const extractGridInformation = (rawData) => {
-    const dataRecords = rawData.trim().split('\n');
-    const headerDetails = dataRecords.shift().split(' ').map(Number);
-    const gridRowsCount = headerDetails[0]; // Corresponds to H
-    const gridColumnsCount = headerDetails[1]; // Corresponds to W
-    // headerDetails[2] is an unused value (K)
-    const gridContentRows = dataRecords;
-    return { gridRowsCount, gridColumnsCount, gridContentRows };
-};
+const UNASSIGNED_ROW_MARKER = Symbol('UNASSIGNED_ROW');
 
-const processRowForMarkers = (currentLineText, columnSpan, identifierState) => {
-    const markerLocations = Array.from(currentLineText)
-        .map((character, position) => (character === '#' ? position : -1))
-        .filter(position => position !== -1);
+const inputLines = fileSystem.readFileSync('/dev/stdin', 'utf8').split('\n');
 
-    if (markerLocations.length === 0) {
-        return null; // Indicates a row without any markers, to be filled later
-    }
+const [gridHeight, gridWidth, keyCount] = inputLines.shift().split(' ').map(Number);
 
-    let columnCursor = 0;
-    const rowOutputArray = new Array(columnSpan);
-
-    markerLocations.forEach(markerColumnIndex => {
-        identifierState.value++; // Increment the shared global counter
-        const currentSegmentDesignation = identifierState.value;
-        while (columnCursor <= markerColumnIndex) {
-            rowOutputArray[columnCursor++] = currentSegmentDesignation;
+const { processedRows: finalGridOutput } = inputLines.reduce((accumulator, currentInputRowString) => {
+    const hashColumnPositions = Array.from(currentInputRowString).reduce((positions, character, columnIndex) => {
+        if (character === '#') {
+            positions.push(columnIndex);
         }
-    });
+        return positions;
+    }, []);
 
-    // Fill any remaining cells in the row with the last assigned designation
-    while (columnCursor < columnSpan) {
-        rowOutputArray[columnCursor++] = identifierState.value;
-    }
-    return rowOutputArray;
-};
-
-const propagateDesignationsDown = (preliminaryGridData) => {
-    let lastValidDesignationRow = null;
-    return preliminaryGridData.map(rowData => {
-        if (rowData !== null) {
-            lastValidDesignationRow = rowData;
-            return rowData;
+    if (hashColumnPositions.length === 0) {
+        if (accumulator.lastPopulatedRow) {
+            accumulator.processedRows.push(accumulator.lastPopulatedRow);
         } else {
-            return lastValidDesignationRow; // Propagate from the last known valid row
+            accumulator.processedRows.push(UNASSIGNED_ROW_MARKER);
         }
-    });
-};
+    } else {
+        const currentRowAssignments = new Array(gridWidth);
+        let currentFillStartColumn = 0;
+        let currentIdentifier = accumulator.nextAvailableIdentifier;
 
-const propagateDesignationsUp = (partiallyCompletedGrid) => {
-    const reversedGridSegment = partiallyCompletedGrid.slice().reverse(); // Create a reversed copy
-    let nextValidDesignationRow = null;
-    const completedReversedSegments = reversedGridSegment.map(segmentData => {
-        if (segmentData !== null) {
-            nextValidDesignationRow = segmentData;
-            return segmentData;
-        } else {
-            return nextValidDesignationRow; // Propagate from the next known valid row (from below)
-        }
-    });
-    return completedReversedSegments.reverse(); // Restore original order
-};
+        hashColumnPositions.forEach(hashColumnIndex => {
+            currentRowAssignments.fill(currentIdentifier, currentFillStartColumn, hashColumnIndex + 1);
+            currentFillStartColumn = hashColumnIndex + 1;
+            currentIdentifier++;
+        });
 
-const executeGridTransformation = () => {
-    const fileContents = inputRetrievalSystem.readFileSync('/dev/stdin', 'utf8');
-    const { gridRowsCount, gridColumnsCount, gridContentRows } = extractGridInformation(fileContents);
+        currentRowAssignments.fill(currentIdentifier - 1, currentFillStartColumn, gridWidth);
 
-    const globalDesignationCounter = { value: 0 }; // Mutable object to hold the shared ID counter
+        accumulator.processedRows.push(currentRowAssignments);
+        accumulator.nextAvailableIdentifier = currentIdentifier;
+        accumulator.lastPopulatedRow = currentRowAssignments;
+    }
+    return accumulator;
+}, { processedRows: [], nextAvailableIdentifier: 1, lastPopulatedRow: null });
 
-    // First stage: Assign unique IDs to segments in rows containing '#' markers.
-    // Rows without markers are temporarily marked as 'null'.
-    const initialDesignationPass = gridContentRows.map(lineText =>
-        processRowForMarkers(lineText, gridColumnsCount, globalDesignationCounter)
-    );
+const firstPopulatedRowIndex = finalGridOutput.findIndex(row => row !== UNASSIGNED_ROW_MARKER);
 
-    // Second stage: Fill 'null' rows by propagating designations from the row directly above.
-    const downwardPropagatedGrid = propagateDesignationsDown(initialDesignationPass);
+if (firstPopulatedRowIndex > 0) {
+    const dataToPropagate = finalGridOutput[firstPopulatedRowIndex];
+    for (let i = 0; i < firstPopulatedRowIndex; i++) {
+        finalGridOutput[i] = dataToPropagate;
+    }
+}
 
-    // Third stage: Fill any remaining 'null' rows (which would be at the top)
-    // by propagating designations from the row directly below.
-    const finalTransformedGrid = propagateDesignationsUp(downwardPropagatedGrid);
+const formattedOutputLines = finalGridOutput.map(rowArray => rowArray.join(' '));
 
-    // Format the resulting grid into the required string output.
-    const finalOutputString = finalTransformedGrid
-        .map(rowArray => rowArray.join(' '))
-        .join('\n');
-
-    console.log(finalOutputString);
-};
-
-executeGridTransformation();
+console.log(formattedOutputLines.join('\n'));

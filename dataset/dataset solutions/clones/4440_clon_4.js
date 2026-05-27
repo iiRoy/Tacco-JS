@@ -1,36 +1,27 @@
-const processNumericChain = (sourceContent) => {
-    const parsedComponents = sourceContent
-        .split(/[\s\n]+/)
-        .filter(Boolean)
-        .map(Number);
+function processInputData(rawData) {
+    const cleanedContent = rawData.trim();
+    const contentTokens = cleanedContent.split(/\s+/);
 
-    const initialSizeIndicator = parsedComponents[0];
-    const numericalSequence = parsedComponents.slice(1);
+    const countIndicator = contentTokens.shift(); // Corresponds to original 'A'
+    const numericalSequence = contentTokens.map(Number); // Corresponds to original 'input[i]' values
 
-    const tally = numericalSequence.reduce((accumulator, currentValue) => {
-        if (currentValue % 4 === 0) {
+    const categoryTallies = numericalSequence.reduce((accumulator, currentNumber) => {
+        if (currentNumber % 4 === 0) {
             accumulator.multiplesOfFour++;
-        } else if (currentValue % 2 === 0) {
-            accumulator.evensNotMultiplesOfFour++;
+        } else if (currentNumber % 2 === 0) {
+            accumulator.evenButNotFour++;
         } else {
-            accumulator.oddValues++;
+            accumulator.oddNumbers++;
         }
         return accumulator;
-    }, { multiplesOfFour: 0, evensNotMultiplesOfFour: 0, oddValues: 0 });
+    }, { multiplesOfFour: 0, evenButNotFour: 0, oddNumbers: 0 });
 
-    const countMultiplesOfFour = tally.multiplesOfFour;
-    const countEvensNotMultiplesOfFour = tally.evensNotMultiplesOfFour;
-    const countOddValues = tally.oddValues;
+    const { multiplesOfFour, evenButNotFour, oddNumbers } = categoryTallies;
 
-    const conditionSatisfied = 
-        (countOddValues <= countMultiplesOfFour) || 
-        (countOddValues === countMultiplesOfFour + 1 && countEvensNotMultiplesOfFour === 0);
+    const finalVerdict = (oddNumbers <= multiplesOfFour) ||
+                         (oddNumbers === multiplesOfFour + 1 && evenButNotFour === 0);
 
-    const outcomeMap = new Map([[true, "Yes"], [false, "No"]]);
-    const finalVerdict = outcomeMap.get(conditionSatisfied);
+    console.log(finalVerdict ? "Yes" : "No");
+}
 
-    console.log(finalVerdict);
-};
-
-const rawInputFromSystem = require("node:fs").readFileSync("/dev/stdin", "utf8");
-processNumericChain(rawInputFromSystem);
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

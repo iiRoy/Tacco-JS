@@ -1,42 +1,31 @@
-// This function processes raw input to display a framed grid.
-function ProcessGridData( rawData )
-{
-  // Split the entire input string into an array of individual lines.
-  let lineArray = rawData.split( '\n' );
+function ProcessInput(rawData) {
+  // Split the raw input string into an array of lines.
+  let lineSegments = rawData.split("\n");
 
-  // The very first line of input contains the grid's dimensions;
-  // it is split by spaces to get width and height as strings.
-  const dimensionsString = lineArray[0].split( ' ' );
-  
-  // Convert the string representations of height and width into numerical values.
-  const gridHeight = Number( dimensionsString[0] );
-  const gridWidth = Number( dimensionsString[1] );
+  // The first line contains the dimensions, split it by space.
+  const firstLineParts = lineSegments[0].split(" ");
 
-  // Initialize an empty string that will store the top and bottom border rows.
-  let borderRow = '';
-  // This loop constructs the border row by appending '#' characters.
-  // The length is gridWidth + 2 to account for the left and right border characters.
-  for ( let counter = 0; counter < gridWidth + 2; counter++ )
-  {
-    borderRow += '#';
+  // Extract height and width values, converting them to numbers.
+  const heightValue = Number(firstLineParts[0]);
+  const widthValue = Number(firstLineParts[1]);
+
+  // Initialize a string to hold the top/bottom border.
+  let borderString = "";
+  // Loop to construct the border string with '#' characters.
+  for (let idx = 0; idx < widthValue + 2; idx++) {
+    borderString += "#";
   }
-  // Output the fully constructed top border row to the console.
-  console.log( borderRow );
+  // Output the top border.
+  console.log(borderString);
 
-  // Iterate through each line that represents the actual content of the grid.
-  // The loop starts from index 1 because index 0 contained the dimensions.
-  // It continues up to gridHeight, covering all content lines.
-  for ( let lineIndex = 1; lineIndex < gridHeight + 1; lineIndex++ )
-  {
-    // For each content line, output it framed by a '#' character on both sides.
-    console.log( '#' + lineArray[lineIndex] + '#' );
+  // Loop through the actual content lines, adding '#' borders.
+  for (let idx = 1; idx < heightValue + 1; idx++) {
+    console.log("#" + lineSegments[idx] + "#");
   }
 
-  // Finally, output the bottom border row, which is identical to the top border.
-  console.log( borderRow );
+  // Output the bottom border, which is identical to the top.
+  console.log(borderString);
 }
 
-// Execute the grid processing function.
-// It reads input from standard input using Node.js's 'fs' module,
-// ensuring the input is interpreted as UTF-8 encoded text.
-ProcessGridData( require( "fs" ) . readFileSync( "/dev/stdin", "utf8" ) );
+// Read input from standard input and pass it to the processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

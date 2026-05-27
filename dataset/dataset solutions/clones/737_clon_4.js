@@ -1,42 +1,37 @@
-const rawInputBytes = require('node:fs').readFileSync(0, 'utf8');
+const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+const dataSegments = fileContent.trim().split("\n");
+let segmentPointer = 0;
 
-function identifySoleSurvivor(numPeople, stepCount, initialTarget) {
-    let participantList = Array.from({ length: numPeople }, (_, k) => k + 1);
-    let eliminationPointer = participantList.indexOf(initialTarget);
+while (true) {
+    const currentSegment = dataSegments[segmentPointer++];
+    if (currentSegment === "0 0 0") break;
 
-    participantList.splice(eliminationPointer, 1); // Perform the first elimination
+    const [totalParticipants, eliminationInterval, initialParticipant] = currentSegment.split(" ").map(Number);
 
-    // Adjust the pointer for the subsequent counting, wrapping if necessary
-    if (eliminationPointer >= participantList.length) {
-        eliminationPointer = 0;
+    const activeParticipants = new Set();
+    for (let participantId = 1; participantId <= totalParticipants; participantId++) {
+        activeParticipants.add(participantId);
     }
 
-    while (participantList.length > 1) {
-        // Calculate the index of the next participant to be removed
-        // The count starts from the current eliminationPointer and advances 'stepCount' positions
-        eliminationPointer = (eliminationPointer + stepCount - 1) % participantList.length;
-        participantList.splice(eliminationPointer, 1);
+    activeParticipants.delete(initialParticipant);
+
+    let lastProcessedParticipant = initialParticipant;
+    let intervalCounter = 0;
+
+    while (activeParticipants.size > 1) {
+        let nextConsideredParticipant = lastProcessedParticipant;
+        do {
+            nextConsideredParticipant = (nextConsideredParticipant % totalParticipants) + 1;
+        } while (!activeParticipants.has(nextConsideredParticipant));
+
+        intervalCounter++;
+
+        if (intervalCounter === eliminationInterval) {
+            activeParticipants.delete(nextConsideredParticipant);
+            intervalCounter = 0;
+        }
+        lastProcessedParticipant = nextConsideredParticipant;
     }
-    return participantList[0];
-}
 
-const validEntries = rawInputBytes
-    .trim()
-    .split('\n')
-    .filter(segment => segment !== '0 0 0' && segment.length > 0);
-
-const finalOutputs = [];
-
-for (const currentEntry of validEntries) {
-    const parsedNumbers = currentEntry.split(' ').map(Number);
-    const numPeople = parsedNumbers[0];
-    const stepCount = parsedNumbers[1];
-    const initialTarget = parsedNumbers[2];
-
-    const loneSurvivor = identifySoleSurvivor(numPeople, stepCount, initialTarget);
-    finalOutputs.push(loneSurvivor);
-}
-
-for (const ultimateVictor of finalOutputs) {
-    console.log(ultimateVictor);
+    console.log([...activeParticipants][0]);
 }

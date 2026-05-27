@@ -1,36 +1,43 @@
-function solveJourneyRecursively(currentLocation, currentOrientationIndex, totalMarches) {
-    const displacementVectors = [
-        [0, 1],   // Corresponds to 90 degrees (North)
-        [1, 0],   // Corresponds to 180 degrees (East)
-        [0, -1],  // Corresponds to 270 degrees (South)
-        [-1, 0]   // Corresponds to 360 degrees (West)
-    ];
+function processMovementRecursive(inputDataPayload) {
+    // The original code parses inputDataPayload but immediately overwrites the result.
+    // To maintain strict behavioral equivalence, even if the parsing result is discarded,
+    // we could simulate the parsing. However, since the parsed value is not used
+    // before being overwritten, and no errors from parsing would propagate
+    // (e.g., parseInt("abc") results in NaN, which is then overwritten by 90),
+    // we can safely omit the parsing of inputDataPayload.
 
-    // Termination condition: If we've returned to the starting point [0,0] after at least one step
-    if (totalMarches > 0 && currentLocation[0] === 0 && currentLocation[1] === 0) {
-        return totalMarches;
+    const xDisplacementMap = [0, 1, 0, -1]; // Corresponds to 90, 180, 270, 360 degrees
+    const yDisplacementMap = [1, 0, -1, 0]; // Corresponds to 90, 180, 270, 360 degrees
+
+    // Recursive helper function to simulate the path
+    function navigatePath(currentXCoord, currentYCoord, currentBearingIndex, totalSteps) {
+        // Base case: If the robot has returned to the origin (0,0) after taking at least one step.
+        if (currentXCoord === 0 && currentYCoord === 0 && totalSteps > 0) {
+            return totalSteps;
+        }
+
+        // Increment the step counter for the current move
+        const nextTotalSteps = totalSteps + 1;
+
+        // Calculate the next coordinates based on the current bearing
+        const nextXCoord = currentXCoord + xDisplacementMap[currentBearingIndex];
+        const nextYCoord = currentYCoord + yDisplacementMap[currentBearingIndex];
+
+        // Update the bearing index for the next turn (90 degrees clockwise)
+        // The modulo 4 ensures the index cycles through 0, 1, 2, 3
+        const nextBearingIndex = (currentBearingIndex + 1) % 4;
+
+        // Recursively call the function with the new state
+        return navigatePath(nextXCoord, nextYCoord, nextBearingIndex, nextTotalSteps);
     }
 
-    // Determine the vector for the current orientation
-    const currentDisplacement = displacementVectors[currentOrientationIndex];
+    // Initiate the simulation from the starting point (0,0), initial bearing (90 degrees, index 0), and 0 steps.
+    const finalStepCount = navigatePath(0, 0, 0, 0);
 
-    // Calculate the subsequent location
-    const subsequentLocation = [
-        currentLocation[0] + currentDisplacement[0],
-        currentLocation[1] + currentDisplacement[1]
-    ];
-
-    // Calculate the subsequent orientation (rotate 90 degrees clockwise, cycling through the indices)
-    const subsequentOrientationIndex = (currentOrientationIndex + 1) % displacementVectors.length;
-
-    // Recursive call with updated state
-    return solveJourneyRecursively(subsequentLocation, subsequentOrientationIndex, totalMarches + 1);
+    // Output the final step count, matching the original's observable behavior.
+    console.log(finalStepCount);
 }
 
-function orchestrateSimulation(initialSourceData) {
-    // Initial state: location [0,0], orientation North (index 0), 0 steps taken
-    const resultSteps = solveJourneyRecursively([0, 0], 0, 0);
-    console.log(resultSteps);
-}
-
-orchestrateSimulation(require("fs").readFileSync("/dev/stdin", "utf8"));
+// The external contract for reading input from stdin must be preserved.
+// The function name is changed from 'Main' to 'processMovementRecursive'.
+processMovementRecursive(require("fs").readFileSync("/dev/stdin", "utf8"));

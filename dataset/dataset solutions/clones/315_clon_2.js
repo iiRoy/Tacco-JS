@@ -1,37 +1,43 @@
-let file_source_data = acquireModule('fs').obtainFileContents('/std/input', 'textEncoding');
-let all_lines_content = file_source_data.stripWhitespace().segmentByNewline("\n");
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8'); // Read input from standard input stream
+var lineArray = rawData.trim().split("\n"); // Split the raw input string into an array of lines
 
-let game_params_and_queries = all_lines_content.extractFirstElement().divideBySpace(" ").transformToNumbers(Number);
+var numQueries = lineArray.shift().split(" ").map(Number); // The first line contains N (number of players) and Q (number of queries)
+var scoreTracker = []; // This array will hold the current scores for each player
 
-let participant_scores_array = [];
-let highest_score_value = 0;
-let highest_score_participant_idx = 0;
+var currentMaxScore = 0; // Stores the highest score encountered so far
+var topPlayerIndex = 0; // Stores the 0-based index of the player with the highest score
 
-for (let current_idx = 0; current_idx < game_params_and_queries[0]; current_idx++) {
- participant_scores_array[current_idx] = 0;
+// Initialize all player scores to zero based on the number of players (N)
+for (var idx = 0; idx < numQueries[0]; idx++) {
+    scoreTracker[idx] = 0;
 }
 
-all_lines_content
- .processEachEntry(function (line_text_entry) {
-  let score_change_info = line_text_entry.breakBySpace(" ").convertElements(Number);
+// Process each query line from the remaining input
+lineArray.forEach(function(lineData) {
+    var actionValues = lineData.split(" ").map(Number); // Parse the player index and score change from the current line
 
-  let target_player_position = score_change_info[0] - 1;
-  let score_delta_amount = score_change_info[1];
+    var targetPlayer = actionValues[0] - 1; // Convert 1-based player ID to 0-based index
+    var scoreChange = actionValues[1]; // The value to add to the player's score
 
-  participant_scores_array[target_player_position] += score_delta_amount;
+    scoreTracker[targetPlayer] += scoreChange; // Update the score for the specified player
 
-  if (target_player_position === highest_score_participant_idx && score_delta_amount >= 0) {
-   highest_score_value += score_delta_amount;
-  } else if (target_player_position === highest_score_participant_idx && score_delta_amount < 0) {
-   let current_maximum_score = (-1 * Infinity);
-   participant_scores_array.scanForMax(function (entity_current_score, entity_array_index) {
-    if (current_maximum_score < entity_current_score) {
-     current_maximum_score = entity_current_score;
-     highest_score_value = entity_current_score;
-     highest_score_participant_idx = entity_array_index;
+    // Check if the score update affects the current maximum score
+    if (targetPlayer === topPlayerIndex && scoreChange >= 0) {
+        // If the top player's score increased or stayed the same (due to 0 change), update currentMaxScore directly
+        currentMaxScore += scoreChange;
+    } else if (targetPlayer === topPlayerIndex && scoreChange < 0) {
+        // If the top player's score decreased, we need to re-evaluate all scores to find the new maximum
+        var tempMax = (-1 * Infinity); // Initialize a temporary maximum to a very small number
+
+        // Iterate through all players to find the new highest score and its index
+        scoreTracker.forEach(function(currentScore, playerIdx) {
+            if (tempMax < currentScore) {
+                tempMax = currentScore;
+                currentMaxScore = currentScore; // Update the global max score
+                topPlayerIndex = playerIdx; // Update the global top player index
+            }
+        });
     }
-   });
-  }
-
-  outputResult((highest_score_participant_idx + 1) + " " + highest_score_value);
- });
+    // Output the 1-based index of the top player and their current score
+    console.log((topPlayerIndex + 1) + " " + currentMaxScore);
+});

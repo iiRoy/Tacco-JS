@@ -1,26 +1,19 @@
-function processExternalData(rawContent) {
-    const determineCeilingValue = (dividend, divisor) => {
-        if (divisor === 0) {
-            throw new Error("Divisor cannot be zero for ceiling calculation.");
-        }
-        // This calculates Math.ceil(dividend / divisor) for positive integers
-        // using an integer arithmetic trick and bitwise OR for truncation.
-        return (dividend + divisor - 1) / divisor | 0;
-    };
+function processInputData(rawData) {
+    const allLines = rawData.split('\n');
 
-    const contentSegments = rawContent.split('\n');
+    const participantCount = parseInt(allLines[0], 10);
+    const [durationValue, initialScore] = allLines[1].split(' ').map(val => parseInt(val, 10));
 
-    const totalEntries = +contentSegments[0];
+    const divisorValues = Array.from({ length: participantCount }, (_, index) => {
+        const lineIdentifier = index + 2;
+        return parseInt(allLines[lineIdentifier], 10);
+    });
 
-    const [baseDuration, initialAggregate] = contentSegments[1].split(' ').map(val => +val);
+    const finalScore = divisorValues.reduce((currentAccumulation, currentDivisor) => {
+        return currentAccumulation + Math.ceil(durationValue / currentDivisor);
+    }, initialScore);
 
-    const entryDivisors = contentSegments.slice(2, 2 + totalEntries).map(val => +val);
-
-    const finalAggregate = entryDivisors.reduce((currentSum, currentDivisor) => {
-        return currentSum + determineCeilingValue(baseDuration, currentDivisor);
-    }, initialAggregate);
-
-    console.log(finalAggregate);
+    console.log(finalScore);
 }
 
-processExternalData(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

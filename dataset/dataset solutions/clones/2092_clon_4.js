@@ -1,133 +1,136 @@
 "use strict";
 
 class InputProcessor {
-    constructor(sourceData) {
-        this.tokenArray = sourceData.toString().trim().split(/\s+/);
-        this.currentTokenIndex = 0;
+    constructor(sourceText) {
+        this.tokenStream = sourceText.split(/ |\n/).filter(Boolean);
+        this.currentPosition = 0;
     }
 
-    retrieveNumber() {
-        return parseInt(this.tokenArray[this.currentTokenIndex++], 10);
+    retrieveNext(asString = false) {
+        const token = this.tokenStream[this.currentPosition++];
+        return asString ? token : Number(token);
+    }
+
+    retrieveMany(count, asString = false) {
+        const segment = this.tokenStream.slice(this.currentPosition, this.currentPosition + count);
+        this.currentPosition += count;
+        return asString ? segment : segment.map(Number);
+    }
+
+    constructNestedArray(initialElement, ...dimensions) {
+        if (dimensions.length === 0) {
+            return initialElement;
+        }
+        const currentDimensionLength = dimensions[0];
+        const remainingDimensions = dimensions.slice(1);
+        return Array.from({ length: currentDimensionLength }, () =>
+            this.constructNestedArray(initialElement, ...remainingDimensions)
+        );
     }
 }
 
-class ValueGenerator {
-    constructor(startingValue) {
-        this.currentValue = startingValue;
-    }
+function calculateGraphDepths(totalNodes, graphAdjacencyList, startingNode) {
+    const nodeDepths = Array(totalNodes).fill(-1);
+    const traversalQueue = [];
 
-    inspectNext() {
-        return this.currentValue;
-    }
+    traversalQueue.push(startingNode);
+    nodeDepths[startingNode] = 0;
 
-    extractNext() {
-        const resultValue = this.currentValue;
-        this.currentValue += 3;
-        return resultValue;
-    }
-}
+    let queuePointer = 0;
+    while (queuePointer < traversalQueue.length) {
+        const currentNode = traversalQueue[queuePointer++];
+        const currentDepth = nodeDepths[currentNode];
 
-function executeSolution() {
-    const dataReader = new InputProcessor(require("fs").readFileSync("/dev/stdin", "utf8"));
-
-    const totalNodes = dataReader.retrieveNumber();
-    const connectionMap = Array.from({ length: totalNodes }, () => new Set());
-    const nodeDepths = new Array(totalNodes).fill(-1);
-    const assignedLabels = new Array(totalNodes);
-
-    for (let i = 0; i < totalNodes - 1; i++) {
-        const nodeOne = dataReader.retrieveNumber() - 1;
-        const nodeTwo = dataReader.retrieveNumber() - 1;
-        connectionMap[nodeOne].add(nodeTwo);
-        connectionMap[nodeTwo].add(nodeOne);
-    }
-
-    // Breadth-First Search to determine depths
-    const processingQueue = [];
-    processingQueue.push([0, 0]); // [nodeIdentifier, currentLevel]
-    nodeDepths[0] = 0;
-
-    let queueHead = 0;
-    while (queueHead < processingQueue.length) {
-        const [activeNode, currentLevel] = processingQueue[queueHead++];
-        
-        for (const connectedNode of connectionMap[activeNode]) {
-            if (nodeDepths[connectedNode] === -1) { // If not yet visited
-                nodeDepths[connectedNode] = currentLevel + 1;
-                processingQueue.push([connectedNode, currentLevel + 1]);
+        for (const connectedNode of graphAdjacencyList[currentNode]) {
+            if (nodeDepths[connectedNode] === -1) {
+                nodeDepths[connectedNode] = currentDepth + 1;
+                traversalQueue.push(connectedNode);
             }
         }
     }
+    return nodeDepths;
+}
 
-    const depthParities = nodeDepths.map(d => d % 2); // 0 for even, 1 for odd
+function executeCoreLogic() {
+    const rawInputContent = require("fs").readFileSync("/dev/stdin", "utf8");
+    const inputHandler = new InputProcessor(rawInputContent);
 
-    let countOddDepths = 0;
-    let countEvenDepths = 0;
-    depthParities.forEach(p => {
-        if (p === 1) countOddDepths++;
-        else countEvenDepths++;
-    });
+    const totalNodes = inputHandler.retrieveNext();
+    const graphAdjacencyList = inputHandler.constructNestedArray([], totalNodes);
 
-    const generatorA = new ValueGenerator(1);
-    const generatorB = new ValueGenerator(2);
-    const generatorC = new ValueGenerator(3);
-
-    const divisionThreshold = Math.floor(totalNodes / 3);
-
-    if (countOddDepths <= divisionThreshold) { // Odd-depth nodes are the smaller group or equal to threshold
-        depthParities.forEach((parityStatus, nodeIdentifier) => {
-            if (parityStatus === 1) { // Odd depth node
-                assignedLabels[nodeIdentifier] = generatorC.extractNext();
-            } else { // Even depth node
-                if (generatorA.inspectNext() <= totalNodes) {
-                    assignedLabels[nodeIdentifier] = generatorA.extractNext();
-                } else if (generatorB.inspectNext() <= totalNodes) {
-                    assignedLabels[nodeIdentifier] = generatorB.extractNext();
-                } else {
-                    assignedLabels[nodeIdentifier] = generatorC.extractNext();
-                }
-            }
-        });
-    } else if (countEvenDepths <= divisionThreshold) { // Even-depth nodes are the smaller group or equal to threshold
-        depthParities.forEach((parityStatus, nodeIdentifier) => {
-            if (parityStatus === 0) { // Even depth node
-                assignedLabels[nodeIdentifier] = generatorC.extractNext();
-            } else { // Odd depth node
-                if (generatorA.inspectNext() <= totalNodes) {
-                    assignedLabels[nodeIdentifier] = generatorA.extractNext();
-                } else if (generatorB.inspectNext() <= totalNodes) {
-                    assignedLabels[nodeIdentifier] = generatorB.extractNext();
-                } else {
-                    assignedLabels[nodeIdentifier] = generatorC.extractNext();
-                }
-            }
-        });
-    } else { // Both groups are larger than the threshold
-        depthParities.forEach((parityStatus, nodeIdentifier) => {
-            if (parityStatus === 1) { // Odd depth node
-                if (generatorA.inspectNext() <= totalNodes) {
-                    assignedLabels[nodeIdentifier] = generatorA.extractNext();
-                } else {
-                    assignedLabels[nodeIdentifier] = generatorC.extractNext();
-                }
-            } else { // Even depth node
-                if (generatorB.inspectNext() <= totalNodes) {
-                    assignedLabels[nodeIdentifier] = generatorB.extractNext();
-                } else {
-                    assignedLabels[nodeIdentifier] = generatorC.extractNext();
-                }
-            }
-        });
+    for (let i = 0; i < totalNodes - 1; i++) {
+        const u = inputHandler.retrieveNext() - 1;
+        const v = inputHandler.retrieveNext() - 1;
+        graphAdjacencyList[u].push(v);
+        graphAdjacencyList[v].push(u);
     }
 
-    return assignedLabels.join(" ");
+    const nodeDepths = calculateGraphDepths(totalNodes, graphAdjacencyList, 0);
+
+    const finalResultArray = Array(totalNodes);
+    const oddDepthNodeIndices = [];
+    const evenDepthNodeIndices = [];
+
+    for (let i = 0; i < totalNodes; i++) {
+        if (nodeDepths[i] % 2 === 1) {
+            oddDepthNodeIndices.push(i);
+        } else {
+            evenDepthNodeIndices.push(i);
+        }
+    }
+
+    const sequenceType1 = []; // Numbers 1, 4, 7, ...
+    const sequenceType2 = []; // Numbers 2, 5, 8, ...
+    const sequenceType3 = []; // Numbers 3, 6, 9, ...
+    for (let i = 1; i <= totalNodes; i++) {
+        const remainder = i % 3;
+        if (remainder === 1) sequenceType1.push(i);
+        else if (remainder === 2) sequenceType2.push(i);
+        else sequenceType3.push(i);
+    }
+
+    let oddNodeNumberSources, evenNodeNumberSources;
+
+    if (oddDepthNodeIndices.length <= sequenceType3.length) {
+        oddNodeNumberSources = [sequenceType3];
+        evenNodeNumberSources = [sequenceType1, sequenceType2, sequenceType3];
+    } else if (evenDepthNodeIndices.length <= sequenceType3.length) {
+        evenNodeNumberSources = [sequenceType3];
+        oddNodeNumberSources = [sequenceType1, sequenceType2, sequenceType3];
+    } else {
+        oddNodeNumberSources = [sequenceType1, sequenceType3];
+        evenNodeNumberSources = [sequenceType2, sequenceType3];
+    }
+
+    const acquireNumbersFromPools = (pools, requiredCount) => {
+        const collectedNumbers = [];
+        for (const pool of pools) {
+            const remainingToCollect = requiredCount - collectedNumbers.length;
+            if (remainingToCollect <= 0) break;
+            const countToTake = Math.min(remainingToCollect, pool.length);
+            collectedNumbers.push(...pool.splice(0, countToTake));
+        }
+        return collectedNumbers;
+    };
+
+    const assignedOddNumbers = acquireNumbersFromPools(oddNodeNumberSources, oddDepthNodeIndices.length);
+    const assignedEvenNumbers = acquireNumbersFromPools(evenNodeNumberSources, evenDepthNodeIndices.length);
+
+    oddDepthNodeIndices.forEach((nodeIndex, i) => {
+        finalResultArray[nodeIndex] = assignedOddNumbers[i];
+    });
+    evenDepthNodeIndices.forEach((nodeIndex, i) => {
+        finalResultArray[nodeIndex] = assignedEvenNumbers[i];
+    });
+
+    return finalResultArray.join(" ");
 }
 
 if (process.argv.length <= 2) {
-    require("child_process").fork(process.argv[1], ["1"], { execArgv: ["--stack-size=240000"] });
+    require("child_process").fork("Main.js", ["1"], { execArgv: ["--stack-size=240000"] });
 } else {
-    const programResult = executeSolution();
-    if (programResult !== undefined) {
-        console.log(programResult);
+    const programOutput = executeCoreLogic();
+    if (programOutput !== undefined) {
+        console.log(programOutput);
     }
 }

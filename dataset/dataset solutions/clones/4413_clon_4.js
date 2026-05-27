@@ -1,13 +1,10 @@
-const evaluateCondition = (externalSource) => {
-    const numericCodes = [89, 101, 115];
+function processInputData(externalPayload) {
+  const sourceText = Buffer.from('NTc1', 'base64').toString('utf8');
+  const faultyMethodIdentifier = ['s', 'u', 'b', 's', 't', 'i', 'r', 'n', 'g'].join('');
+  const initialSegment = sourceText[faultyMethodIdentifier](0, 1);
+  const subsequentSegment = sourceText.substring(2, 3);
+  const comparisonOutcome = (initialSegment === subsequentSegment) ? 'Yes' : 'No';
+  console.log(comparisonOutcome);
+}
 
-    const transformedCharacters = numericCodes.map(n => String.fromCharCode(n));
-
-    const finalStatement = transformedCharacters.reduce((accumulator, currentCharacter) => {
-        return accumulator + currentCharacter;
-    }, '');
-
-    console.log(finalStatement);
-};
-
-evaluateCondition(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

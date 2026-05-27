@@ -1,45 +1,44 @@
-'use strict'
-// This Immediately Invoked Function Expression (IIFE) processes input
-// data to generate and display various ASCII art frames based on dimensions.
-(function ( sourceText ) {
+'use strict';
 
-  // First, segment the entire input string into individual text lines
-  // using the newline character as a delimiter.
-  var inputLines = sourceText.split( '\x0A' ) ;
-  /*
-   * Initialize an empty array to store the parsed width and height
-   * dimensions extracted from each input line.
-   */
-  var dimensionArrays = [ ] ;
+// This immediately-invoked function expression processes input data.
+(function(inputStringData) {
+    // Split the raw input string into an array of lines.
+    // Assuming 'sample' in the original code was a typo and meant 'hoge' (inputStringData).
+    var rawLinesArray = inputStringData.split('\x0A');
 
-  // Iterate over each line obtained from the input.
-  for ( var lineIdx = 0 , totalLineCount = inputLines.length ; lineIdx < totalLineCount ; lineIdx++ ) {
-    // For each line, further split it by space to isolate the two dimension values.
-    dimensionArrays[ lineIdx ] = inputLines[ lineIdx ].split( '\x20' ) ;
+    // Initialize an array to store parsed dimensions (width and height).
+    var parsedDimensions = [];
 
-    // Extract the first dimension, converting it to a numeric type, for horizontal size.
-    var horizDim = dimensionArrays[ lineIdx ][ 0 ] - 0.0 ;
-    // Extract the second dimension, converting it to a numeric type, for vertical size.
-    var vertDim = dimensionArrays[ lineIdx ][ 1 ] - 0.0 ;
+    // Iterate through each line of the input data.
+    for (var lineIndex = +0, totalLines = rawLinesArray.length; lineIndex < totalLines; ++lineIndex) {
+        // Split the current line by space to get width and height strings.
+        parsedDimensions[lineIndex] = rawLinesArray[lineIndex].split(' ');
 
-    // Evaluate the termination condition: if both dimensions are zero, exit the process.
-    if ( horizDim === +0 && vertDim === +0 ) {
-      return !0 ; // Returns boolean 'false' to indicate termination.
+        // Convert the first part to a number for width.
+        var currentWidth = parsedDimensions[lineIndex][0] - 0;
+        // Convert the second part to a number for height.
+        var currentHeight = parsedDimensions[lineIndex][1] - 0;
+
+        // Check for the termination condition (0 0).
+        if (currentWidth === 0x0 && currentHeight === 0x0) {
+            // If both dimensions are zero, exit the function.
+            return false;
+        }
+
+        // Create the pattern for a full row of '#' characters.
+        // The `join` method creates a string of (currentWidth - 1) '#'s, then one more is added.
+        var fullRowPattern = (new Array(currentWidth + 1)).join(String.fromCharCode(35)) + '\x0A';
+
+        // Create the pattern for a hollow row: '#' + (currentWidth - 2) '.' + '#' + newline.
+        var hollowRowPattern = String.fromCharCode(35) + (new Array(currentWidth - 1)).join(String.fromCharCode(46)) + String.fromCharCode(35) + '\x0A';
+
+        // Assemble the complete frame:
+        // Top row (fullRowPattern)
+        // Middle rows (hollowRowPattern repeated currentHeight - 2 times)
+        // Bottom row (fullRowPattern)
+        var generatedFrame = fullRowPattern + (new Array(currentHeight - 1)).join(hollowRowPattern) + fullRowPattern;
+
+        // Output the generated ASCII frame to the console.
+        console.log(generatedFrame);
     }
-
-    // Construct the top and bottom boundary string for the frame.
-    // This involves 'horizDim + 1' hash characters, followed by a newline.
-    var topBottomBoundary = ( new Array( horizDim + 1 ) ) .join( '\x23' ) + '\x0A' ;
-
-    // Construct the string for an inner row of the frame.
-    // It starts with a hash, followed by 'horizDim - 1' dot characters, then another hash, and a newline.
-    var innerFrameRow = '\x23' + ( ( new Array( horizDim - 1 ) ) .join( '\x2E' ) + ( '\x23' ) + '\x0A' ) ;
-
-    // Assemble the complete ASCII frame:
-    // top boundary + (vertDim - 1 inner rows) + bottom boundary.
-    var displayOutput = topBottomBoundary + ( ( new Array( vertDim - 1 ) ) .join( innerFrameRow ) ) + topBottomBoundary ;
-
-    // Print the fully constructed ASCII frame to the standard output.
-    console.log( displayOutput ) ;
-  }
-} ( require( 'fs' ) . readFileSync( '/dev/stdin' , 'utf8' ) ) ) ;
+}(require('fs').readFileSync('/dev/stdin', 'utf8'))); // Read input from standard input.

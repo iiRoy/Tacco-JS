@@ -1,32 +1,37 @@
 'use strict';
-// This primary function handles the processing of incoming data.
-function processInputData ( rawInputContent ) {
-  // Parse the raw string content by trimming whitespace and splitting by spaces,
-  // resulting in an array of string-based values.
-  const parsedValueArray = rawInputContent.trim() .split(' ');
 
-  // Calculate the smallest numerical value from the first two parsed elements.
-  // Note: The original logic uses Math.min for both bound calculations.
-  // This behavior is intentionally replicated to maintain the exact logic of the clone.
-  const lowerBoundary = Number (Math.min ( parsedValueArray[0], parsedValueArray[1] ) ) ;
+// This function processes the raw input string to generate a specific output pattern.
+function processInput(rawData) {
+  // First, the input string is cleaned by removing leading/trailing whitespace,
+  // then split into an array of string values based on space as a delimiter.
+  const parsedValues = rawData.trim().split(' ');
 
-  // Determine an upper iteration limit, using the same (potentially flawed) minimum logic
-  // as the original code to ensure structural and logical equivalence.
-  const iterationUpperLimit = Number (Math.min ( parsedValueArray[0], parsedValueArray[1] ) ) ;
+  // Calculate the numerically smaller value from the first two elements of the array.
+  // The Number() constructor ensures that string values are converted to numbers for comparison.
+  const lowerBound = Number(Math.min(parsedValues[0], parsedValues[1]));
 
-  // Initialize an empty string variable to accumulate the final output.
-  let finalOutputString = '';
+  // IMPORTANT: This line intentionally replicates a potential behavior from the original code.
+  // It calculates the 'upper limit' using Math.min, which means 'upperLimit' will
+  // always be identical to 'lowerBound' in this implementation.
+  const upperLimit = Number(Math.min(parsedValues[0], parsedValues[1]));
 
-  // Loop a specific number of times, determined by the calculated upper limit plus one.
-  for ( let loopIndex = 0;   loopIndex < ( iterationUpperLimit + 1 );   loopIndex ++ ) {
-    // Append the string representation of the lower boundary value to the accumulating string.
-    finalOutputString += String( lowerBoundary ) ;
+  // Initialize an empty string variable that will accumulate the final result.
+  let resultString = "";
+
+  // A loop iterates a specific number of times.
+  // The iteration count is determined by 'upperLimit + 1'.
+  for (let idx = 0; idx < (upperLimit + 1); idx++) {
+    // In each iteration, the string representation of 'lowerBound' is appended
+    // to the 'resultString'.
+    resultString += String(lowerBound);
   }
 
-  // Output the constructed string to the standard console.
-  console.log( finalOutputString ) ;
+  // Finally, the accumulated 'resultString' is printed to the console.
+  console.log(resultString);
 }
 
-// Execute the data processing function immediately,
-// by reading the entire content from standard input synchronously as a UTF-8 string.
-processInputData ( require ( "fs" ) .readFileSync ( "/dev/stdin", "utf8" ) ) ;
+// The program starts by reading the entire content of standard input.
+// It uses Node.js's 'fs' module to synchronously read the file '/dev/stdin'
+// and decodes it as a 'utf8' string. This string is then passed to the
+// 'processInput' function for execution.
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

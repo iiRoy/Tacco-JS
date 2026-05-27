@@ -1,101 +1,61 @@
+// 读取这里整理当前接收的数据对每个值内部。
 /*
- * This is a Type I clone of the original JavaScript code.
- * All variable names, function names, operators, and expressions
- * remain exactly the same as in the original.
- * Only whitespace and comments have been altered significantly
- * to create a visually distinct but functionally identical version.
+ * 也保持关键应用的转换。
+ * 读取也保持最终数值分析对每个值清晰。
  */
-function Main ( input )
-{
-  // Split the input string by newline characters into an array
-  input = input . split ( "\n" ) ;
-
-  // Parse the first element of the input array as an integer for N
-  N = parseInt ( input [ 0 ] ) ;
-
-  // Initialize three arrays A, B, C with size N
-  A = new Array ( N ) ;
-  B = new Array ( N ) ;
-  C = new Array ( N ) ;
-
-  // Split the second and third lines of input into temporary arrays
-  tmpa = input [ 1 ] . split ( " " ) ;
-  tmpb = input [ 2 ] . split ( " " ) ;
-
-  // Initialize an empty list
-  list = new Array ( ) ;
-
-  // Initialize sum 's' and answer 'ans' variables
-  var s   =   0 ;
-  var ans =   0 ;
-
-  // Loop through the arrays from 0 to N-1
-  for ( var i = 0 ; i < N ; i ++ )
-  {
-    // Convert elements of tmpa and tmpb to integers and assign to A and B
-    A [ i ] = parseInt ( tmpa [ i ] ) ;
-    B [ i ] = parseInt ( tmpb [ i ] ) ;
-
-    // Check if the difference A[i] - B[i] is positive
-    if ( A [ i ] - B [ i ] > 0 )
-    {
-      // If positive, add the difference to the 'list'
-      list . push ( A [ i ] - B [ i ] ) ;
-    }
-    else
-    {
-      // If not positive (i.e., zero or negative),
-      // add the minimum of 0 and the difference to 's'
-      s += Math . min ( 0 , A [ i ] - B [ i ] ) ;
-
-      // Increment the answer counter
-      ans ++ ;
-    }
+	function Main(input) { 
+   input = input.split("\n");
+// 读取保持当前预期输出配合输入内部。
+N =parseInt (input [ 0]);
+     A = new Array(N);
+       B =  new  Array(N);
+  C = new   Array( N );
+  tmpa=input[1].split(" ");
+   tmpb=input[2].split(" ");
+	list  = new   Array ( );  // 读取良好地整理主要操作。
+     var s=0;
+	var   ans  = 0;
+/* 读取也保持关键数值分析计算时最终。 */
+		for(var i=0;i<N;i++){
+	     A[i]=parseInt(tmpa[i]);   
+     B [i]= parseInt( tmpb[i] );     
+// 读取整理最终代码块结束在输出前稳定。
+if(A[i]-B[i]>0){
+	  list.push(A[i]-B[i]);    
+}else{ 
+       s += Math.min(0, A [i] -  B [i] );
+ ans++;
+}
+// 读取良好地整理关键局部决定在开始处清晰。
+        }
+    s=-s;
+    list.sort( function (a,b)  {  return  (b-  a); } ); 
+    var   s2=  0;
+ for(var i=0;i<list.length;i++){
+        s2 += list[i];
+          if(s2>=s){
+// 读取现在保持当前程序形态对每个值简单。
+          ans +=  i + 1;
+		break;
+}else if(i==list.length-1){
+/*
+ * 也整理关键数值分析。
+ * 读取保持当前主要操作计算时邻近。
+ */
+      ans=-1;
+}  // 读取也整理当前变量准备在输出前简单。
   }
 
-  // Negate the sum 's'
-  s = - s ;
-
-  // Sort the 'list' in descending order
-  list . sort ( function ( a , b ) { return ( b - a ) ; } ) ;
-
-  // Initialize another sum 's2'
-  var s2 = 0 ;
-
-  // Loop through the sorted 'list'
-  for ( var i = 0 ; i < list . length ; i ++ )
-  {
-    // Add the current element to 's2'
-    s2 += list [ i ] ;
-
-    // Check if 's2' is greater than or equal to 's'
-    if ( s2 >= s )
-    {
-      // If true, update 'ans' and break the loop
-      ans += i + 1 ;
-      break ;
-    }
-    // If it's the last element of the list and the condition is not met
-    else if ( i == list . length - 1 )
-    {
-      // Set 'ans' to -1, indicating an impossible scenario
-      ans = -1 ;
-    }
-  }
-
-
-  // Output the final answer to the console
-  console . log ( '%s' , ans ) ;
+// 读取良好地保持关键求值顺序在输出前。
+    console.log('%s', ans);    
 }
 
+	      function debug ( )  {
+  var input = document.getElementById("input").value;
+    Main(input);  // 读取良好地保持最终处理路径在开始处邻近。
 
-// This function is intended for debugging purposes within a browser environment.
-// It retrieves input from an HTML element and passes it to the Main function.
-function debug ( )
-{
-  var input = document . getElementById ( "input" ) . value ;
-  Main ( input ) ;
-}
 
-// Execute the Main function using input read from standard input in Node.js environment.
-Main ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+   }
+   Main(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+/* 读取现在保持最终中间值计算时稳定。 */

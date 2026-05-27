@@ -1,194 +1,171 @@
 'use strict';
 
-// This utility function helps in destructuring an array-like object into a fixed number of elements.
-function _partitionInputArray(sourceArray, chunkSize) {
-  return (
-    _checkArrayValidity(sourceArray) || // Check if it's a direct array
-    _limitIterableConversion(sourceArray, chunkSize) || // Try converting iterable to array with a limit
-    _handleNonArrayConversion(sourceArray, chunkSize) || // Handle non-array, non-iterable cases
-    _throwNonIterableError() // If all else fails, throw an error
-  );
+// Helper function to slice an array into parts, primarily used for destructuring assignments.
+function _splitArrayIntoParts(arr, i) {
+  return _arrayWithGaps(arr) || _limitedIterableToArray(arr, i) || _unsupportedArrayConversion(arr) || _noIterableRemainder();
 }
 
-// Throws an error when an attempt to destructure a non-iterable instance occurs.
-function _throwNonIterableError() {
-  throw new TypeError(
-    "Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."
-  );
+// Throws a TypeError if an attempt is made to destructure a non-iterable instance.
+function _noIterableRemainder() {
+  throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
 }
 
-// Converts various types of objects (like strings, Maps, Sets, TypedArrays) into an array.
-function _handleNonArrayConversion(inputObject, minimumLength) {
-  if (!inputObject) return; // If the object is null or undefined, return early.
-
-  if (typeof inputObject === "string")
-    return _convertStringToArray(inputObject, minimumLength); // Handle strings specifically.
-
-  // Determine the type name of the object.
-  var objectTypeName = Object.prototype.toString.call(inputObject).slice(8, -1);
-
-  if (objectTypeName === "Object" && inputObject.constructor)
-    objectTypeName = inputObject.constructor.name; // Use constructor name if available for plain objects.
-
-  if (objectTypeName === "Map" || objectTypeName === "Set")
-    return Array.from(inputObject); // Convert Maps and Sets directly.
-
-  // Handle various TypedArrays.
-  if (
-    objectTypeName === "Arguments" ||
-    /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(objectTypeName)
-  )
-    return _convertStringToArray(inputObject, minimumLength);
-
-  // If no specific handling, return undefined.
+// Converts various unsupported iterable types (like arguments or typed arrays) into a standard array.
+function _unsupportedArrayConversion(o, minLen) {
+  if (!o) return;
+  if (typeof o === "string") return _convertArrayLike(o, minLen);
+  var typeName = Object.prototype.toString.call(o).slice(8, -1);
+  if (typeName === "Object" && o.constructor) typeName = o.constructor.name;
+  if (typeName === "Map" || typeName === "Set") return Array.from(o);
+  if (typeName === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(typeName)) return _convertArrayLike(o, minLen);
 }
 
-// Helper for converting array-like structures (including strings) to a new array.
-function _convertStringToArray(sourceCollection, desiredLength) {
-  // Adjust the desired length if it's not provided or exceeds the collection's actual length.
-  if (desiredLength == null || desiredLength > sourceCollection.length)
-    desiredLength = sourceCollection.length;
-
-  // Create a new array and populate it.
-  for (var idx = 0, resultCollection = new Array(desiredLength); idx < desiredLength; idx++) {
-    resultCollection[idx] = sourceCollection[idx];
+// Converts an array-like object (e.g., string, arguments) into a new array up to a specified length.
+function _convertArrayLike(arr, len) {
+  if (len == null || len > arr.length) len = arr.length;
+  for (var i = 0, newArray = new Array(len); i < len; i++) {
+    newArray[i] = arr[i];
   }
-  return resultCollection;
+  return newArray;
 }
 
-// Attempts to convert an iterable object into an array, limiting the number of elements.
-function _limitIterableConversion(sourceArray, chunkSize) {
-  // Check if Symbol.iterator exists and the object is iterable.
-  if (typeof Symbol === "undefined" || !(Symbol.iterator in Object(sourceArray))) return;
-
-  var collectedElements = []; // Stores elements from the iterable.
-  var isNotDone = true; // Flag for iteration status.
-  var encounteredError = false; // Flag to track if an error occurred during iteration.
-  var errorObject = undefined; // Stores the error object if an error occurs.
-
+// Converts an iterable object into an array, with an optional limit on the number of elements.
+function _limitedIterableToArray(arr, i) {
+  if (typeof Symbol === "undefined" || !(Symbol.iterator in Object(arr))) return;
+  var _tempArray = [];
+  var _isIterationComplete = false;
+  var _encounteredError = false;
+  var _errorDetails = undefined;
   try {
-    // Get the iterator instance.
-    for (
-      var iteratorInstance = sourceArray[Symbol.iterator](), iterationResult;
-      !(isNotDone = (iterationResult = iteratorInstance.next()).done);
-      isNotDone = true
-    ) {
-      collectedElements.push(iterationResult.value); // Add the current value to the collection.
-      if (chunkSize && collectedElements.length === chunkSize) break; // Stop if chunk limit is reached.
+    for (var _iterator = arr[Symbol.iterator](), _step; !(_isIterationComplete = (_step = _iterator.next()).done); _isIterationComplete = true) {
+      _tempArray.push(_step.value);
+      if (i && _tempArray.length === i) break;
     }
   } catch (err) {
-    encounteredError = true; // Mark error state.
-    errorObject = err; // Store the error.
+    _encounteredError = true;
+    _errorDetails = err;
   } finally {
     try {
-      // If iteration was not done and a 'return' method exists on the iterator, call it.
-      if (!isNotDone && iteratorInstance["return"] != null) iteratorInstance["return"]();
+      if (!_isIterationComplete && _iterator["return"] != null) _iterator["return"]();
     } finally {
-      if (encounteredError) throw errorObject; // Re-throw the error if one occurred.
+      if (_encounteredError) throw _errorDetails;
     }
   }
-  return collectedElements; // Return the collected elements.
+  return _tempArray;
 }
 
-// Checks if the given argument is a native JavaScript Array.
-function _checkArrayValidity(sourceArray) {
-  if (Array.isArray(sourceArray)) return sourceArray; // If it's an array, return it directly.
+// Checks if the provided argument is an actual array.
+function _arrayWithGaps(arr) {
+  if (Array.isArray(arr)) return arr;
 }
 
-// The primary function to process input lines and calculate a specific modulus.
-function processInputLines(inputContent) {
-  // Destructure the first line from the input content.
-  var _parsedLines = _partitionInputArray(inputContent, 1),
-    targetString = _parsedLines[0]; // The string to be processed.
+// Constants used throughout the dynamic programming solution.
+const MODULO_CONSTANT = 1000000007; // (10^9 + 7) for modulo operations
+const MAX_STRING_LENGTH_PLUS_ONE = 100001; // Max length of S is 10^5, plus one for array indexing
+const NUM_REMAINDERS = 13; // We are interested in remainders when divided by 13
+const TARGET_FINAL_REMAINDER = 5; // The specific remainder required by the problem
+const DECIMAL_BASE = 10; // Base for numerical digit calculations
 
-  // Initialize a 2D array (memoization table) for dynamic programming.
-  // The size is based on a maximum string length (10^5) + 1, and 13 possible remainders.
-  var memoizationGrid = new Array(Math.pow(10, 5) + 1)
-    .fill(null) // Fill with null first, then map
-    .map(function () {
-      return new Array(13).fill(undefined); // Each inner array represents remainders 0-12.
-    });
+/**
+ * Main function to process the input and compute the result.
+ * @param {string[]} inputLines - An array where the first element is the input string S.
+ */
+function processInputData(inputLines) {
+  // Extract the input string S from the first line.
+  const _parsedInput = _splitArrayIntoParts(inputLines, 1);
+  const inputString = _parsedInput[0];
+
+  // Initialize a 2D array for memoization (dynamic programming table).
+  // `memoizationTable[digits][remainder]` stores the number of ways to form a number
+  // with `digits` length that has `remainder` when divided by 13.
+  const memoizationTable = new Array(MAX_STRING_LENGTH_PLUS_ONE).fill(null).map(() => {
+    return new Array(NUM_REMAINDERS).fill(undefined); // Use undefined to indicate uncomputed states
+  });
 
   /**
-   * Recursive function to compute the number of ways to achieve a target remainder.
-   * @param {number} currentPosition - The current digit position being processed (from right to left).
-   * @param {number} targetRemainder - The desired remainder when the number formed by digits up to currentPosition is divided by 13.
-   * @returns {number} The count of ways to achieve the target remainder.
+   * Recursive dynamic programming function to count ways.
+   * @param {number} currentDigits - The number of digits remaining to consider (from right to left).
+   * @param {number} currentRemainder - The target remainder for the number formed by these `currentDigits`.
+   * @returns {number} The count of valid ways for the given state.
    */
-  function calculateModulus(currentPosition, targetRemainder) {
-    // Base case: If no digits are left and the target remainder is 0, it's one valid way.
-    if (currentPosition === 0 && targetRemainder === 0) return 1;
-    // Base case: If no digits are left but the target remainder is not 0, it's not a valid way.
-    if (currentPosition === 0) return 0;
-
-    // Check if the result for this state is already memoized.
-    var cachedValue = memoizationGrid[currentPosition][targetRemainder];
-    if (cachedValue !== undefined) return cachedValue;
-
-    var currentCharacter = targetString[currentPosition - 1]; // Get the digit character at the current position.
-
-    // If the current character is a wildcard '?'.
-    if (currentCharacter === "?") {
-      // Iterate through all possible digits (0-9) for the wildcard.
-      return (memoizationGrid[currentPosition][targetRemainder] = new Array(10)
-        .fill(null)
-        .reduce(function (accumulator, _dummy, currentDigitValue) {
-          // For each possible digit, find previous remainders that would lead to the targetRemainder.
-          var partialSum = new Array(13)
-            .fill(null)
-            .map(function (_, index) {
-              return index;
-            }) // Create an array [0, 1, ..., 12]
-            .filter(function (previousRemainder) {
-              // Filter for remainders that, when combined with currentDigitValue, yield targetRemainder.
-              return (previousRemainder * 10 + currentDigitValue) % 13 === targetRemainder;
-            })
-            .reduce(function (innerAccumulator, previousRemainder) {
-              // Recursively call for the previous state and sum up the results.
-              return calculateModulus(currentPosition - 1, previousRemainder) + innerAccumulator;
-            }, 0);
-          return partialSum + accumulator; // Add the partial sum for this digit to the total accumulator.
-        }, 0) % // Take modulus by (10^9 + 7) to prevent overflow.
-        (Math.pow(10, 9) + 7));
+  function calculateWays(currentDigits, currentRemainder) {
+    // Base case 1: If no digits are left and the remainder is 0, this is a valid way.
+    if (currentDigits === 0 && currentRemainder === 0) {
+      return 1;
+    }
+    // Base case 2: If no digits are left but the remainder is not 0, this path is invalid.
+    if (currentDigits === 0) {
+      return 0;
     }
 
-    // If the current character is a specific digit.
-    var numericValue = Number(currentCharacter); // Convert the character to its numeric value.
+    // Check if the result for this state has already been computed and memoized.
+    const cachedResult = memoizationTable[currentDigits][currentRemainder];
+    if (cachedResult !== undefined) {
+      return cachedResult;
+    }
 
-    // Calculate for a specific digit.
-    return (memoizationGrid[currentPosition][targetRemainder] = new Array(13)
-      .fill(null)
-      .map(function (_, index) {
-        return index;
-      }) // Create an array [0, 1, ..., 12]
-      .filter(function (previousRemainder) {
-        // Filter for remainders that, when combined with numericValue, yield targetRemainder.
-        return (previousRemainder * 10 + numericValue) % 13 === targetRemainder;
-      })
-      .reduce(function (innerAccumulator, previousRemainder) {
-        // Recursively call for the previous state and sum up the results.
-        return calculateModulus(currentPosition - 1, previousRemainder) + innerAccumulator;
-      }, 0) % // Take modulus by (10^9 + 7) to prevent overflow.
-      (Math.pow(10, 9) + 7));
+    // Get the character at the current digit position (working from right to left).
+    const currentCharacter = inputString[currentDigits - 1];
+    let totalWaysForThisState = 0;
+
+    // If the current character is a wildcard '?'
+    if (currentCharacter === '?') {
+      // Iterate through all possible digits (0-9) for the wildcard.
+      totalWaysForThisState = new Array(DECIMAL_BASE).fill(null).reduce((accumulator, _, digitValue) => {
+        // For each possible digit, find all previous remainders that would lead to `currentRemainder`.
+        const waysWithThisDigit = new Array(NUM_REMAINDERS).fill(null).map((_, index) => index) // Create an array [0, 1, ..., 12]
+          .filter(previousRemainder => {
+            // The formula for new remainder is (previousRemainder * 10 + newDigit) % 13
+            return (previousRemainder * DECIMAL_BASE + digitValue) % NUM_REMAINDERS === currentRemainder;
+          })
+          .reduce((innerAccumulator, previousRemainder) => {
+            // Recursively call `calculateWays` for the previous state and sum up the results.
+            return calculateWays(currentDigits - 1, previousRemainder) + innerAccumulator;
+          }, 0);
+        return (waysWithThisDigit + accumulator) % MODULO_CONSTANT; // Sum up and apply modulo
+      }, 0);
+    } else {
+      // If the current character is a specific digit.
+      const digitValue = Number(currentCharacter);
+      // Find all previous remainders that would lead to `currentRemainder` with this fixed digit.
+      totalWaysForThisState = new Array(NUM_REMAINDERS).fill(null).map((_, index) => index) // Create an array [0, 1, ..., 12]
+        .filter(previousRemainder => {
+          // The formula for new remainder is (previousRemainder * 10 + newDigit) % 13
+          return (previousRemainder * DECIMAL_BASE + digitValue) % NUM_REMAINDERS === currentRemainder;
+        })
+        .reduce((accumulator, previousRemainder) => {
+          // Recursively call `calculateWays` for the previous state and sum up the results.
+          return calculateWays(currentDigits - 1, previousRemainder) + accumulator;
+        }, 0) % MODULO_CONSTANT; // Sum up and apply modulo
+    }
+
+    // Memoize the computed result before returning it.
+    return memoizationTable[currentDigits][currentRemainder] = totalWaysForThisState;
   }
 
-  // Finally, log the result of calculating the modulus for the entire string and a target remainder of 5.
-  console.log(calculateModulus(targetString.length, 5));
+  // Initiate the dynamic programming calculation with the full string length and the target remainder (5).
+  console.log(calculateWays(inputString.length, TARGET_FINAL_REMAINDER));
 }
 
-// Sets up standard input processing to run the main logic.
+/**
+ * Sets up the standard input stream to read data and pass it to the main processing function.
+ */
 function executeWithStandardInput() {
-  var receivedInput = ""; // Buffer to store all incoming data.
-  process.stdin.resume(); // Ensure stdin is open.
-  process.stdin.setEncoding("utf8"); // Set encoding for input.
-  process.stdin.on("data", function (chunkData) {
-    receivedInput += chunkData; // Append incoming data chunks.
+  let accumulatedInputData = ""; // Buffer to store all incoming input
+  process.stdin.resume(); // Ensure the standard input stream stays open
+  process.stdin.setEncoding("utf8"); // Set the character encoding for input
+
+  // Event listener for when data chunks are received from stdin.
+  process.stdin.on("data", function (chunk) {
+    accumulatedInputData += chunk; // Append the new chunk to the buffer
   });
+
+  // Event listener for when the standard input stream ends.
   process.stdin.on("end", function () {
-    // When input ends, split by newlines and pass to the main processing function.
-    processInputLines(receivedInput.split("\n"));
+    // Split the accumulated data by newline characters and pass the resulting array to `processInputData`.
+    processInputData(accumulatedInputData.split("\n"));
   });
 }
 
-// Initiate the process of reading from standard input and executing the program.
+// Start the process of reading from standard input.
 executeWithStandardInput();

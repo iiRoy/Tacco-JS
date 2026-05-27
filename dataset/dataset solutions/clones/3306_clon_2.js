@@ -1,64 +1,53 @@
-const UPPER_BOUND_ITEM_VALUE = 1000; // Defines a maximum possible value for any single item
+var MAX_ITEM_VAL = 1000; // Maximum possible value for a single item
 
-let fileContents = require('fs')
-  .readFileSync('/dev/stdin', 'utf8');
+var rawInputData = require('fs').readFileSync('/dev/stdin', 'utf8');
+var dataLines = rawInputData.trim().split('\n');
 
-let processedLines = fileContents.trim()
-  .split('\n');
+var firstLineVals = dataLines[0].split(' ').map(Number);
+var numItems = firstLineVals[0];
+var maxWeight = firstLineVals[1];
 
-const initialParameters = processedLines[0].split(' ')
-  .map(Number);
+var itemDetails = dataLines.slice(1).map(currentLine => currentLine.split(' ').map(Number));
 
-const totalItemsCount = initialParameters[0];
-const maxCapacityWeight = initialParameters[1];
+// Initialize a 2D array for dynamic programming
+var memoTable = Array.from({ length: numItems + 1 }, () => Array(numItems * MAX_ITEM_VAL + 1).fill(0));
 
-const itemDetailsList = processedLines
-  .slice(1)
-  .map(singleLine => singleLine.split(' ').map(Number));
+// Set the first row (base case for 0 items)
+memoTable[0] = Array(numItems * MAX_ITEM_VAL + 1).fill(Infinity);
+memoTable[0][0] = 0;
 
-// Initialize a 2D array for dynamic programming, filled with zeros
-let dpTable = Array.from(
-  { length: totalItemsCount + 1 },
-  _ => Array(totalItemsCount * UPPER_BOUND_ITEM_VALUE + 1).fill(0)
-);
 
-dpTable[0] = Array(totalItemsCount * UPPER_BOUND_ITEM_VALUE + 1).fill(Infinity);
-dpTable[0][0] = 0; // Base case: zero weight, zero value
+function calculateOptimalValue() {
 
-function computeBestValue() {
-
-  // Iterate through each item available
-  for (let currentItemIdx = 0; currentItemIdx < totalItemsCount; currentItemIdx++) {
+  // Iterate through each item
+  for (var itemIndex = 0; itemIndex < numItems; itemIndex++) {
     // Iterate through all possible accumulated values
-    for (let currentAccumulatedValue = 0; currentAccumulatedValue <= totalItemsCount * UPPER_BOUND_ITEM_VALUE; currentAccumulatedValue++) {
-      const itemWeight = itemDetailsList[currentItemIdx][1];
-      const itemValue = itemDetailsList[currentItemIdx][0];
+    for (var currentValue = 0; currentValue <= numItems * MAX_ITEM_VAL; currentValue++) {
 
-      // Check if the current item's weight can be accommodated
-      if (itemWeight <= currentAccumulatedValue) {
-        // Option 1: Include the current item
-        const weightIfIncluded = dpTable[currentItemIdx][currentAccumulatedValue - itemWeight] + itemValue;
-        // Option 2: Exclude the current item
-        const weightIfExcluded = dpTable[currentItemIdx][currentAccumulatedValue];
-
-        dpTable[currentItemIdx + 1][currentAccumulatedValue] = Math.min(weightIfIncluded, weightIfExcluded);
+      // Check if the current item's value can be included
+      if (itemDetails[itemIndex][1] <= currentValue) {
+        // Option A: Include the current item
+        var optionA = memoTable[itemIndex][currentValue - itemDetails[itemIndex][1]] + itemDetails[itemIndex][0];
+        // Option B: Exclude the current item
+        var optionB = memoTable[itemIndex][currentValue];
+        
+        // Take the minimum weight for the current value
+        memoTable[itemIndex + 1][currentValue] = Math.min(optionA, optionB);
       } else {
-        // If item weight is too large, we must exclude it
-        dpTable[currentItemIdx + 1][currentAccumulatedValue] = dpTable[currentItemIdx][currentAccumulatedValue];
+        // If current item's value is too large, it cannot be included
+        memoTable[itemIndex + 1][currentValue] = memoTable[itemIndex][currentValue];
       }
     }
   }
 
-  let finalMaxAchievableValue = 0; // Stores the highest value whose total weight is within capacity
-
-  // Find the maximum value whose corresponding weight is within the allowed capacity
-  for (let valueIterator = 0; valueIterator <= totalItemsCount * UPPER_BOUND_ITEM_VALUE; valueIterator++) {
-    if (dpTable[totalItemsCount][valueIterator] <= maxCapacityWeight) {
-      finalMaxAchievableValue = valueIterator;
+  var finalOutcome = 0;
+  // Find the maximum value whose total weight does not exceed maxWeight
+  for (var itemIndex = 0; itemIndex <= numItems * MAX_ITEM_VAL; itemIndex++) {
+    if (memoTable[numItems][itemIndex] <= maxWeight) {
+      finalOutcome = itemIndex;
     }
   }
-
-  return finalMaxAchievableValue;
+  return finalOutcome;
 }
 
-console.log(computeBestValue());
+console.log(calculateOptimalValue());

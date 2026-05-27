@@ -1,51 +1,21 @@
-let receivedInput = '';
+const processInputData = (sourceContent) => {
+    const contentSegments = sourceContent.split(/\s/);
+    const relevantSegments = contentSegments.slice(1);
 
-process.stdin.on('data', (chunk) => {
-    receivedInput += chunk.toString();
-});
-
-process.stdin.on('end', () => {
-    const computeDelta = (numericString) => {
-        if (typeof numericString !== 'string' || numericString.length === 0) {
-            return null;
-        }
-        
-        const digitSequence = numericString.split('').map(Number);
-
-        const maxFormed = parseInt(
-            digitSequence.slice().sort((val1, val2) => val2 - val1).join('')
-        );
-
-        const minFormed = parseInt(
-            digitSequence.slice().sort((val1, val2) => val1 - val2).join('')
-        );
-
-        return maxFormed - minFormed;
-    };
-
-    const rawContentSegments = receivedInput.split(/\s/);
-
-    const processSegmentsRecursively = (currentIndex) => {
-        if (currentIndex >= rawContentSegments.length) {
+    relevantSegments.forEach(currentSegment => {
+        if (!currentSegment) {
             return;
         }
 
-        const currentSegment = rawContentSegments[currentIndex];
+        const digitCharacters = currentSegment.split('');
 
-        if (currentSegment) {
-            const resultValue = computeDelta(currentSegment);
-            if (resultValue !== null && !isNaN(resultValue)) {
-                console.log(resultValue);
-            }
-            processSegmentsRecursively(currentIndex + 1);
-        } else {
-            return;
-        }
-    };
+        const sortedAscendingDigits = [...digitCharacters].sort((first, second) => first - second);
 
-    processSegmentsRecursively(1);
-});
+        const smallestNumberString = sortedAscendingDigits.join('');
+        const largestNumberString = [...sortedAscendingDigits].reverse().join('');
 
-process.stdin.on('error', (err) => {
-    process.exit(1);
-});
+        console.log(largestNumberString - smallestNumberString);
+    });
+};
+
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

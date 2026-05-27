@@ -1,140 +1,127 @@
-'use strict'; // Enable strict mode for better error handling and cleaner code
+'use strict';
 
-// A large prime number used for modulo operations to prevent integer overflow.
-// This constant ensures results stay within a manageable range for calculations.
-const primeDivisor = 1000000007;
+// A large prime modulus used for calculations to prevent overflow
+const primeModulus = 1e9 + 7;
 
 /**
- * Performs a Depth-First Search (DFS) traversal on the graph.
- * It calculates two values for each subtree:
- *   - The first value (index 0) represents the number of ways to select nodes
- *     such that the current node is NOT selected, and its children are processed.
- *   - The second value (index 1) represents the number of ways to select nodes
- *     such that the current node IS selected, and its children are processed.
+ * Performs a Depth-First Search (DFS) on the graph to calculate two values for each subtree:
+ * 1. The number of ways to color the subtree such that the current node is NOT colored.
+ * 2. The number of ways to color the subtree such that the current node IS colored.
  *
- * @param {number} currentVertex - The identifier of the node currently being visited.
- * @param {Array<Array<number>>} graphNeighbors - The adjacency list representing the graph structure.
- * @param {Array<boolean>} visitedState - An array tracking which nodes have already been visited.
- * @returns {Array<number>} A pair of numbers [waysIfCurrentNotSelected, waysIfCurrentSelected].
+ * @param {number} currentNode The identifier of the node currently being processed.
+ * @param {Array<Array<number>>} adjacencyMap The graph's adjacency list representation.
+ * @param {Array<number>} seenNodes An array tracking visited nodes (1 for visited, 0 for not).
+ * @returns {Array<number>} A pair of integers [ways_if_current_not_colored, ways_if_current_colored].
  */
-function traverseGraph(currentVertex, graphNeighbors, visitedState) {
-  // Initialize the result pair for the current node.
-  // [1, 1] means:
-  // - If currentVertex is NOT selected, there's 1 way (no children yet considered).
-  // - If currentVertex IS selected, there's 1 way (no children yet considered).
-  const traversalResult = [1, 1];
+function traverseGraph(currentNode, adjacencyMap, seenNodes) {
+  // Initialize the result pair for the subtree rooted at 'currentNode'.
+  // If 'currentNode' is not colored, there's 1 way (it's not colored).
+  // If 'currentNode' is colored, there's 1 way (it's colored).
+  let resultPair = [1, 1];
 
-  // Iterate over all neighbors of the current vertex.
-  for (let neighborIdx = 0; neighborIdx < graphNeighbors[currentVertex].length; neighborIdx += 1) {
-    const adjacentNode = graphNeighbors[currentVertex][neighborIdx];
+  // Iterate through all adjacent nodes (neighbors) of the current node.
+  for (let idx = 0; idx < adjacencyMap[currentNode].length; idx++) {
+    const neighborNode = adjacencyMap[currentNode][idx];
 
-    // If the neighbor has not been visited yet, perform a recursive DFS call.
-    if (!visitedState[adjacentNode]) {
-      visitedState[adjacentNode] = true; // Mark the neighbor as visited before recursion.
+    // Check if the neighbor has not been visited yet to prevent cycles in an undirected graph traversal.
+    if (!seenNodes[neighborNode]) {
+      // Mark the neighbor as visited before making a recursive call.
+      seenNodes[neighborNode] = 1;
 
-      // Recursively get the results for the child subtree.
-      const childResult = traverseGraph(adjacentNode, graphNeighbors, visitedState);
+      // Recursively call traverseGraph for the unvisited neighbor.
+      const childResult = traverseGraph(neighborNode, adjacencyMap, seenNodes);
 
-      // Update the first value (current node NOT selected):
-      // If current node is NOT selected, its children can either be selected or not selected.
-      // So, we multiply by the sum of child's results (both cases).
-      traversalResult[0] = (traversalResult[0] * (childResult[0] + childResult[1])) % primeDivisor;
+      // Update the resultPair for 'currentNode' based on the child's results.
+      // If 'currentNode' is NOT colored (resultPair[0]):
+      //   Its children can either be colored or not colored.
+      //   So, we multiply by the sum of childResult[0] (child not colored) and childResult[1] (child colored).
+      resultPair[0] = (resultPair[0] * (childResult[0] + childResult[1])) % primeModulus;
 
-      // Update the second value (current node IS selected):
-      // If current node IS selected, its children CANNOT be selected.
-      // So, we multiply by the child's 'not selected' result.
-      traversalResult[1] = (traversalResult[1] * childResult[0]) % primeDivisor;
+      // If 'currentNode' IS colored (resultPair[1]):
+      //   Its children MUST NOT be colored (due to coloring rules).
+      //   So, we multiply by childResult[0] (child not colored).
+      resultPair[1] = (resultPair[1] * childResult[0]) % primeModulus;
     }
   }
-
-  // Return the computed pair of results for the current subtree.
-  return traversalResult;
+  // Return the computed pair of ways for the subtree rooted at 'currentNode'.
+  return resultPair;
 }
 
 /**
  * Constructs an adjacency list representation of a graph from a list of edges.
- * The graph is undirected, so each edge adds connections in both directions.
  *
- * @param {number} vertexCount - The total number of nodes in the graph.
- * @param {Array<Array<number>>} edgeList - An array of arrays, where each inner array [u, v] represents an edge between node u and node v.
- * @returns {Array<Array<number>>} The adjacency list, where adjacencyStructure[i] is an array of neighbors of node i.
+ * @param {number} nodeCount The total number of nodes in the graph.
+ * @param {Array<Array<number>>} edgeList An array where each inner array represents an edge [source, destination].
+ * @returns {Array<Array<number>>} The adjacency list, where graphStructure[i] contains an array of neighbors of node i.
  */
-function buildGraphAdjacency(vertexCount, edgeList) {
-  // Initialize an adjacency list with 'vertexCount + 1' empty arrays.
-  // We use +1 because nodes are typically 1-indexed.
-  const adjacencyStructure = Array.from({
-    length: vertexCount + 1
-  }, () => []);
+function buildAdjacencyList(nodeCount, edgeList) {
+  // Initialize an adjacency list. Nodes are 1-indexed, so we create an array of size nodeCount + 1.
+  // Each element is initialized as an empty array to store neighbors.
+  const graphStructure = new Array(nodeCount + 1).fill(null).map(() => []);
 
-  // Iterate through each edge in the provided list.
-  for (let edgePointer = 0; edgePointer < edgeList.length; edgePointer++) {
-    const currentEdge = edgeList[edgePointer];
-    const sourceNodeId = currentEdge[0]; // The first node in the edge pair.
-    const destinationNodeId = currentEdge[1]; // The second node in the edge pair.
+  // Iterate through each edge in the provided edge list.
+  for (let edgeIndex = 0; edgeIndex < edgeList.length; edgeIndex++) {
+    const sourceNode = edgeList[edgeIndex][0];
+    const destinationNode = edgeList[edgeIndex][1];
 
-    // Add the destination node to the source node's adjacency list.
-    adjacencyStructure[sourceNodeId].push(destinationNodeId);
-    // Add the source node to the destination node's adjacency list (for undirected graph).
-    adjacencyStructure[destinationNodeId].push(sourceNodeId);
+    // Add bidirectional connections for an undirected graph.
+    graphStructure[sourceNode].push(destinationNode);
+    graphStructure[destinationNode].push(sourceNode);
   }
-  return adjacencyStructure;
+  return graphStructure;
 }
 
 /**
- * Solves the main problem: calculating the total number of ways to select a subset of nodes
- * from a given tree such that no two selected nodes are adjacent.
+ * Calculates the total number of valid colorings for the given graph.
  *
- * @param {number} nodeTotal - The total number of nodes in the graph (N).
- * @param {Array<Array<number>>} edgesInput - The list of edges connecting the nodes (E).
- * @returns {number} The total count of valid node selections modulo primeDivisor.
+ * @param {number} nodeCount The total number of nodes in the graph.
+ * @param {Array<Array<number>>} edgeList The list of edges defining the graph.
+ * @returns {number} The total count of valid colorings, modulo primeModulus.
  */
-function computeSolution(nodeTotal, edgesInput) {
-  // First, build the adjacency list from the given node count and edges.
-  const generatedAdjacency = buildGraphAdjacency(nodeTotal, edgesInput);
+function calculateSolution(nodeCount, edgeList) {
+  // First, convert the edge list into an adjacency list for efficient traversal.
+  const adjacencyMap = buildAdjacencyList(nodeCount, edgeList);
 
-  // Initialize a tracker for visited nodes. All nodes start as unvisited (false).
-  // Array size is nodeTotal + 1 to accommodate 1-indexed nodes.
-  const nodeVisitedTracker = new Array(nodeTotal + 1).fill(false);
+  // Initialize an array to keep track of visited nodes during the DFS traversal.
+  // Nodes are 1-indexed, so the array size is nodeCount + 1, filled with 0s (unvisited).
+  const seenNodes = new Array(nodeCount + 1).fill(0);
 
-  // Mark the starting node (node 1) as visited before initiating the DFS.
-  // This is crucial to prevent infinite recursion in the first call.
-  nodeVisitedTracker[1] = true;
+  // Start the DFS traversal from node 1 (assuming the graph is connected and 1-indexed).
+  // Mark the starting node as visited before the initial recursive call.
+  seenNodes[1] = 1;
+  const finalResult = traverseGraph(1, adjacencyMap, seenNodes);
 
-  // Perform the DFS traversal starting from node 1.
-  // This returns the result pair [waysIf1NotSelected, waysIf1Selected] for the entire tree.
-  const overallResult = traverseGraph(1, generatedAdjacency, nodeVisitedTracker);
-
-  // The final answer is the sum of ways when the root is not selected and ways when the root is selected,
-  // all taken modulo the prime divisor.
-  return (overallResult[0] + overallResult[1]) % primeDivisor;
+  // The total number of ways to color the entire graph is the sum of:
+  // 1. Ways where node 1 is not colored (finalResult[0]).
+  // 2. Ways where node 1 is colored (finalResult[1]).
+  // The sum is taken modulo primeModulus.
+  return (finalResult[0] + finalResult[1]) % primeModulus;
 }
 
 /**
- * The primary entry point for the program.
- * It reads input, parses it, calls the solution function, and prints the result.
+ * Main function to handle input parsing, problem solving, and output printing.
  *
- * @param {string} rawInputData - The entire input as a single string.
+ * @param {string} rawData The raw input string read from standard input.
  */
-function processInputAndOutput(rawInputData) {
-  // Split the input string into an array of lines.
-  const inputStringLines = rawInputData.split("\n");
+function processInput(rawData) {
+  // Split the raw input string into an array of lines.
+  const inputLines = rawData.split("\n");
 
-  // Parse the first line to get the total number of nodes (N).
-  const totalNodesCount = parseInt(inputStringLines[0], 10);
+  // Parse the number of nodes from the first line of input.
+  const nodeCount = parseInt(inputLines[0], 10);
 
-  // Parse the remaining lines to get the edge data.
-  // Each line is split by space, and elements are converted to integers.
-  const parsedEdgesArray = inputStringLines.slice(1).map(currentLine =>
-    currentLine.split(' ').map(elementString => parseInt(elementString, 10))
+  // Parse the edge list from the remaining lines.
+  // Each line is split by space, and its parts are converted to integers.
+  const edgeList = inputLines.slice(1).map(lineStr =>
+    lineStr.split(' ').map(numStr => parseInt(numStr, 10))
   );
 
-  // Compute the final answer using the parsed N and E.
-  const finalOutput = computeSolution(totalNodesCount, parsedEdgesArray);
+  // Calculate the final answer using the core solution logic.
+  const finalAnswer = calculateSolution(nodeCount, edgeList);
 
-  // Output the calculated result to the console.
-  console.log(finalOutput);
+  // Print the computed result to standard output.
+  console.log(finalAnswer);
 }
 
-// Execute the main function by reading input from standard input.
-// This setup is common for competitive programming environments.
-processInputAndOutput(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// Read the entire content of standard input and pass it to the processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

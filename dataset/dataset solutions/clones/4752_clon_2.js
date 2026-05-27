@@ -1,57 +1,34 @@
-// This module retrieves file system utilities.
-const getModule = require;
+const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-// Read all raw text data from the standard input file.
-const rawData = getModule('fs')
-    .readFileSync(
-        '/dev/stdin',
-        'utf8'
-    );
+// The first line 'count' is read but not used in the subsequent calculation.
+// The remaining lines are processed as 'sequenceStrings'.
+const [count, ...sequenceStrings] = rawData.split('\n');
 
+// Each string representing a pair of numbers is split into an array of two strings.
+const parsedSequences = sequenceStrings.map(singleSetString => singleSetString.split(' '));
 
-// Separate the raw data by newline characters.
-// The first element (a count) is ignored, the rest are line fragments.
-const [countVal, ...lineFragments] = rawData.split('\n');
+// Extract the first number from each pair and convert it to a numeric type.
+const firstNumbers = parsedSequences.map(pairArray => +pairArray[0]);
 
-// Process each line fragment: split it by spaces to form arrays of string pairs.
-const pairArrays = lineFragments
-    .map(
-        (linePiece) => linePiece.split(' ')
-    );
+// Extract the second number from each pair and convert it to a numeric type.
+const secondNumbers = parsedSequences.map(pairArray => +pairArray[1]);
 
-// Create a sequence of the first numerical elements from each pair.
-const firstElements = pairArrays.map(
-    (pairArr) => +pairArr[0]
-);
+// Perform a right-to-left reduction to calculate the final adjusted value.
+const finalResult = firstNumbers.reduceRight((cumulativeAdjustment, currentAValue, indexPosition) => {
+  // Retrieve the corresponding 'b' value for the current index.
+  const correspondingBValue = secondNumbers[indexPosition];
 
-// Create a sequence of the second numerical elements from each pair.
-const secondElements = pairArrays.map(
-    (pairArr) => +pairArr[1]
-);
+  // Calculate the 'a' value, incorporating the cumulative adjustment from previous steps.
+  const adjustedAValue = currentAValue + cumulativeAdjustment;
 
+  // Determine the remainder when 'adjustedAValue' is divided by 'correspondingBValue'.
+  const remainder = adjustedAValue % correspondingBValue;
 
-// Perform a right-to-left reduction operation on the first elements sequence.
-// This calculates a cumulative adjusted sum.
-const totalResult = firstElements.reduceRight(
-    (accumulator, currentFirst, indexPos) => {
-        // Retrieve the corresponding second element using the current index.
-        const currentSecond = secondElements[indexPos];
+  // If there's a remainder, calculate the amount needed to make 'adjustedAValue' a multiple of 'correspondingBValue'.
+  // Then, subtract the original 'currentAValue' to get the new cumulative adjustment for the next iteration.
+  // If there's no remainder, the cumulative adjustment remains unchanged.
+  return remainder > 0 ? adjustedAValue + (correspondingBValue - remainder) - currentAValue : cumulativeAdjustment;
+}, 0); // The initial cumulative adjustment is set to zero.
 
-        // Calculate a temporary value by adding the current first element to the accumulator.
-        const modifiedFirst = currentFirst + accumulator;
-
-        // Determine the remainder when the temporary value is divided by the second element.
-        const remainder = modifiedFirst % currentSecond;
-
-        // If there's a remainder, adjust the temporary value to be a multiple of currentSecond
-        // that is greater than or equal to modifiedFirst, then subtract currentFirst.
-        // Otherwise, the accumulator remains unchanged.
-        return remainder > 0
-            ? modifiedFirst + (currentSecond - remainder) - currentFirst
-            : accumulator;
-    },
-    0 // Initialize the accumulator to zero.
-);
-
-// Display the final computed result.
-console.log(totalResult);
+// Print the final calculated result to standard output.
+console.log(finalResult);

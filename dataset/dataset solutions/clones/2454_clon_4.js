@@ -1,314 +1,319 @@
-"use strict";
-
-function createNestedArrays(initialValue, ...dimensions) {
-  if (dimensions.length === 0) {
-    return initialValue;
-  }
-  const currentDim = dimensions[0];
-  const remainingDims = dimensions.slice(1);
-  const arr = new Array(currentDim);
-  for (let i = 0; i < currentDim; i++) {
-    arr[i] = createNestedArrays(initialValue, ...remainingDims);
-  }
-  return arr;
+function createMultiDimArray(dimensions, initialValue) {
+    if (dimensions.length === 0) {
+        return initialValue;
+    }
+    const currentDimSize = dimensions[0];
+    const remainingDims = dimensions.slice(1);
+    const arr = new Array(currentDimSize);
+    for (let i = 0; i < currentDimSize; i++) {
+        arr[i] = createMultiDimArray(remainingDims, initialValue);
+    }
+    return arr;
 }
 
-class DisjointSetCollection {
-  constructor(elementQuantity) {
-    this.representativeInfo = new Array(elementQuantity + 1).fill(-1);
-  }
-
-  findRepresentative(element) {
-    if (this.representativeInfo[element] < 0) {
-      return element;
-    }
-    return (this.representativeInfo[element] = this.findRepresentative(
-      this.representativeInfo[element]
-    ));
-  }
-
-  areConnected(elementA, elementB) {
-    return this.findRepresentative(elementA) === this.findRepresentative(elementB);
-  }
-
-  unifySets(elementA, elementB) {
-    let repA = this.findRepresentative(elementA);
-    let repB = this.findRepresentative(elementB);
-
-    if (repA === repB) {
-      return true;
+class DisjointSet {
+    constructor(nodeCount) {
+        this.parent = new Array(nodeCount + 1).fill(-1);
     }
 
-    if (this.representativeInfo[repB] <= this.representativeInfo[repA]) {
-      this.representativeInfo[repA] += this.representativeInfo[repB];
-      this.representativeInfo[repB] = repA;
-    } else {
-      this.representativeInfo[repB] += this.representativeInfo[repA];
-      this.representativeInfo[repA] = repB;
-    }
-    return false;
-  }
-
-  getSetSize(element) {
-    return -this.representativeInfo[this.findRepresentative(element)];
-  }
-}
-
-class SimulationController {
-  constructor() {
-    this.movesRemaining = 0;
-    this.currentLocation = 0;
-    this.daysPassed = 0;
-    this.lastOrderDayProcessed = -1;
-    this.totalScore = 0;
-
-    this.infinityValue = 1e9;
-    this.nodeCount = 0;
-    this.edgeCount = 0;
-    this.shortestPathDistances = null;
-    this.directEdgeWeights = null;
-    this.adjacencyList = null;
-    this.maxSimulationDays = 0;
-    this.scoreFactor = 0;
-
-    this.pendingDeliveries = new Set();
-    this.deliveryRouteStack = [];
-    this.itemArrivalHistory = null;
-    this.rawInputQueue = [];
-    this.inputBufferIndex = 0;
-
-    this.dailyOutputLog = [];
-  }
-
-  getNextInputValue() {
-    return +this.rawInputQueue[this.inputBufferIndex++];
-  }
-
-  constructMinimalSpanningTree(targetNodes) {
-    const relevantNodes = Array.from(targetNodes).concat(0);
-    const numRelevantNodes = relevantNodes.length;
-    const potentialEdges = [];
-
-    for (let i = 0; i < numRelevantNodes; i++) {
-      for (let j = i + 1; j < numRelevantNodes; j++) {
-        const nodeA = relevantNodes[i];
-        const nodeB = relevantNodes[j];
-        potentialEdges.push({
-          from: nodeA,
-          to: nodeB,
-          weight: this.shortestPathDistances[nodeA][nodeB],
-        });
-      }
-    }
-
-    potentialEdges.sort((edge1, edge2) => edge1.weight - edge2.weight);
-
-    const dsu = new DisjointSetCollection(this.nodeCount);
-    const mstEdges = [];
-
-    for (const edge of potentialEdges) {
-      if (dsu.getSetSize(0) === numRelevantNodes) break;
-      if (!dsu.unifySets(edge.from, edge.to)) {
-        mstEdges.push([edge.from, edge.to, edge.weight]);
-      }
-    }
-    return mstEdges;
-  }
-
-  planNextMovement() {
-    if (this.pendingDeliveries.size === 0) {
-      if (this.currentLocation === 0) return -2;
-      return this.determineNextHop(0);
-    }
-
-    if (
-      this.deliveryRouteStack.length > 0 &&
-      this.currentLocation ===
-        this.deliveryRouteStack[this.deliveryRouteStack.length - 1]
-    ) {
-      this.deliveryRouteStack.pop();
-    }
-
-    if (this.deliveryRouteStack.length === 0) {
-      return this.determineNextHop(0);
-    }
-    return this.determineNextHop(
-      this.deliveryRouteStack[this.deliveryRouteStack.length - 1]
-    );
-  }
-
-  determineNextHop(destinationNode) {
-    if (destinationNode === this.currentLocation) return -2;
-
-    for (const neighbor of this.adjacencyList[this.currentLocation]) {
-      if (
-        this.shortestPathDistances[this.currentLocation][destinationNode] ===
-        this.directEdgeWeights[this.currentLocation][neighbor] +
-          this.shortestPathDistances[neighbor][destinationNode]
-      ) {
-        this.movesRemaining =
-          this.directEdgeWeights[this.currentLocation][neighbor] - 1;
-        return (this.currentLocation = neighbor);
-      }
-    }
-    return -2;
-  }
-
-  executeDailyOperation() {
-    if (this.movesRemaining > 0) {
-      this.movesRemaining--;
-      return this.currentLocation;
-    }
-
-    if (this.currentLocation === 0) {
-      this.processNewOrders();
-    } else {
-      this.completeDelivery();
-    }
-    return this.planNextMovement();
-  }
-
-  processNewOrders() {
-    this.deliveryRouteStack = [];
-    while (this.lastOrderDayProcessed < this.daysPassed) {
-      this.lastOrderDayProcessed++;
-      const numNewOrders = this.getNextInputValue();
-      for (let i = 0; i < numNewOrders; i++) {
-        const itemId = this.getNextInputValue() - 1;
-        const deliveryNode = this.getNextInputValue() - 1;
-        this.pendingDeliveries.add(deliveryNode);
-        this.itemArrivalHistory[deliveryNode].push(this.lastOrderDayProcessed);
-      }
-    }
-
-    if (this.pendingDeliveries.size === 0) return;
-
-    const treeEdges = this.constructMinimalSpanningTree(this.pendingDeliveries);
-    const treeAdjacency = createNestedArrays([], this.nodeCount);
-    for (const [nodeA, nodeB, weight] of treeEdges) {
-      treeAdjacency[nodeA].push(nodeB);
-      treeAdjacency[nodeB].push(nodeA);
-    }
-
-    this.depthFirstTraversalForPath(0, -1, treeAdjacency);
-    this.deliveryRouteStack.reverse();
-    this.deliveryRouteStack.pop();
-  }
-
-  depthFirstTraversalForPath(currentNode, parentNode, treeAdjacency) {
-    this.deliveryRouteStack.push(currentNode);
-    for (const neighbor of treeAdjacency[currentNode]) {
-      if (neighbor === parentNode) continue;
-      this.depthFirstTraversalForPath(neighbor, currentNode, treeAdjacency);
-    }
-  }
-
-  completeDelivery() {
-    this.pendingDeliveries.delete(this.currentLocation);
-    while (this.itemArrivalHistory[this.currentLocation].length) {
-      const arrivalDay = this.itemArrivalHistory[this.currentLocation].pop();
-      const timeElapsed = this.daysPassed - arrivalDay;
-      this.totalScore += this.scoreFactor - timeElapsed * timeElapsed;
-    }
-  }
-
-  async initializeAndRun() {
-    const rl = require("readline").createInterface(
-      process.stdin,
-      process.stdout
-    );
-
-    const readLineAsync = () =>
-      new Promise((resolve) => rl.once("line", resolve));
-
-    let line = await readLineAsync();
-    let parts = line.split(" ");
-    this.nodeCount = +parts[0];
-    this.edgeCount = +parts[1];
-
-    this.shortestPathDistances = createNestedArrays(
-      this.infinityValue,
-      this.nodeCount,
-      this.nodeCount
-    );
-    this.directEdgeWeights = createNestedArrays(
-      this.infinityValue,
-      this.nodeCount,
-      this.nodeCount
-    );
-    this.adjacencyList = createNestedArrays([], this.nodeCount);
-
-    for (let i = 0; i < this.nodeCount; i++) {
-      this.shortestPathDistances[i][i] = 0;
-    }
-
-    for (let i = 0; i < this.edgeCount; i++) {
-      line = await readLineAsync();
-      parts = line.split(" ");
-      const node1 = +parts[0] - 1;
-      const node2 = +parts[1] - 1;
-      const weight = +parts[2];
-      this.shortestPathDistances[node1][node2] = this.shortestPathDistances[
-        node2
-      ][node1] = this.directEdgeWeights[node1][node2] = this.directEdgeWeights[
-        node2
-      ][node1] = weight;
-      this.adjacencyList[node1].push(node2);
-      this.adjacencyList[node2].push(node1);
-    }
-
-    for (let k = 0; k < this.nodeCount; k++) {
-      for (let i = 0; i < this.nodeCount; i++) {
-        for (let j = 0; j < this.nodeCount; j++) {
-          if (
-            this.shortestPathDistances[i][k] +
-              this.shortestPathDistances[k][j] <
-            this.shortestPathDistances[i][j]
-          ) {
-            this.shortestPathDistances[i][j] =
-              this.shortestPathDistances[i][k] +
-              this.shortestPathDistances[k][j];
-          }
+    findSet(idx) {
+        if (this.parent[idx] < 0) {
+            return idx;
         }
-      }
+        return this.parent[idx] = this.findSet(this.parent[idx]);
     }
 
-    line = await readLineAsync();
-
-    this.maxSimulationDays = +(await readLineAsync());
-    this.scoreFactor = this.maxSimulationDays * this.maxSimulationDays;
-
-    this.itemArrivalHistory = createNestedArrays([], this.nodeCount);
-
-    for (; this.daysPassed < this.maxSimulationDays; this.daysPassed++) {
-      const currentDayInputCount = +(await readLineAsync());
-      this.rawInputQueue.push(currentDayInputCount);
-      for (let i = 0; i < currentDayInputCount; i++) {
-        const itemDetails = (await readLineAsync()).split(" ").map((val) => +val);
-        this.rawInputQueue.push(...itemDetails);
-      }
-
-      const dummyInputCount1 = +(await readLineAsync());
-      for (let i = 0; i < dummyInputCount1; i++) {
-        await readLineAsync();
-      }
-
-      this.dailyOutputLog[this.daysPassed] = this.executeDailyOperation() + 1;
-      console.log(this.dailyOutputLog[this.daysPassed]);
-
-      const statusLine = await readLineAsync();
-      if (statusLine[0] !== "O") {
-        rl.close();
-        return;
-      }
-
-      const dummyInputCount2 = +(await readLineAsync());
-      for (let i = 0; i < dummyInputCount2; i++) {
-        await readLineAsync();
-      }
+    areConnected(firstIdx, secondIdx) {
+        return this.findSet(firstIdx) === this.findSet(secondIdx);
     }
-    rl.close();
-  }
+
+    uniteSets(firstIdx, secondIdx) {
+        let rootA = this.findSet(firstIdx);
+        let rootB = this.findSet(secondIdx);
+
+        if (rootA === rootB) {
+            return false;
+        }
+
+        if (this.parent[rootB] < this.parent[rootA]) {
+            [rootA, rootB] = [rootB, rootA];
+        }
+        this.parent[rootA] += this.parent[rootB];
+        this.parent[rootB] = rootA;
+        return true;
+    }
+
+    getSetSize(idx) {
+        return -this.parent[this.findSet(idx)];
+    }
 }
 
-new SimulationController().initializeAndRun();
+class DeliverySimulation {
+    constructor() {
+        this.pathSegmentLength = 0;
+        this.currentLocation = 0;
+        this.currentDay = 0;
+        this.lastOrderDay = -1;
+        this.totalScore = 0;
+
+        this.infinity = 1e9;
+        this.numVertices;
+        this.numEdges;
+        this.allPairDistances;
+        this.directEdgeWeights;
+        this.adjacencyLists;
+        this.factorArray;
+        this.maximumTime;
+        this.maximumTimeSquared;
+
+        this.activeDeliveries = new Set();
+        this.deliveryRoute = [];
+        this.orderArrivalDays = [];
+        this.inputQueue = [];
+        this.inputPointer = 0;
+        this.outputLog = [];
+    }
+
+    retrieveNextInput() {
+        return +this.inputQueue[this.inputPointer++];
+    }
+
+    computeMinimumSpanningTree(vertexSubset) {
+        const relevantVertices = Array.from(vertexSubset).concat(0);
+        const subsetSize = relevantVertices.length;
+        const potentialEdges = [];
+
+        for (let i = 0; i < subsetSize; i++) {
+            for (let j = i + 1; j < subsetSize; j++) {
+                const u = relevantVertices[i];
+                const v = relevantVertices[j];
+                potentialEdges.push({
+                    u: u,
+                    v: v,
+                    weight: this.allPairDistances[u][v]
+                });
+            }
+        }
+
+        potentialEdges.sort((edgeA, edgeB) => edgeA.weight - edgeB.weight);
+
+        const dsu = new DisjointSet(this.numVertices);
+        const mstEdges = [];
+        
+        for (const edge of potentialEdges) {
+            if (dsu.uniteSets(edge.u, edge.v)) {
+                mstEdges.push(edge);
+                let currentComponentSize = 0;
+                const rootOfZero = dsu.findSet(0);
+                for(const rv of relevantVertices) {
+                    if (dsu.findSet(rv) === rootOfZero) {
+                        currentComponentSize++;
+                    }
+                }
+                if (currentComponentSize === subsetSize) {
+                    break;
+                }
+            }
+        }
+        return mstEdges;
+    }
+
+    determineNextMove() {
+        if (this.activeDeliveries.size === 0) {
+            if (this.currentLocation === 0) return -2;
+            return this.navigatePath(0);
+        }
+        if (this.deliveryRoute.length > 0 && this.currentLocation === this.deliveryRoute[this.deliveryRoute.length - 1]) {
+            this.deliveryRoute.pop();
+        }
+        if (this.deliveryRoute.length === 0) {
+            return this.navigatePath(0);
+        }
+        return this.navigatePath(this.deliveryRoute[this.deliveryRoute.length - 1]);
+    }
+
+    navigatePath(targetVertex) {
+        if (targetVertex === this.currentLocation) return -2;
+
+        for (const neighbor of this.adjacencyLists[this.currentLocation]) {
+            if (this.allPairDistances[this.currentLocation][targetVertex] ===
+                this.directEdgeWeights[this.currentLocation][neighbor] + this.allPairDistances[neighbor][targetVertex]) {
+                this.pathSegmentLength = this.directEdgeWeights[this.currentLocation][neighbor] - 1;
+                this.currentLocation = neighbor;
+                return this.currentLocation;
+            }
+        }
+        return -2;
+    }
+
+    executeSimulationStep() {
+        if (this.pathSegmentLength > 0) {
+            this.pathSegmentLength--;
+            return this.currentLocation;
+        }
+        if (this.currentLocation === 0) {
+            this.processNewOrders();
+        } else {
+            this.completeDelivery();
+        }
+        return this.determineNextMove();
+    }
+
+    processNewOrders() {
+        this.deliveryRoute = [];
+        while (this.lastOrderDay < this.currentDay) {
+            this.lastOrderDay++;
+            const numNewOrders = this.retrieveNextInput();
+            for (let i = 0; i < numNewOrders; i++) {
+                this.retrieveNextInput();
+                const destinationVertex = this.retrieveNextInput() - 1;
+                this.activeDeliveries.add(destinationVertex);
+                this.orderArrivalDays[destinationVertex].push(this.lastOrderDay);
+            }
+        }
+
+        if (this.activeDeliveries.size === 0) return;
+
+        const mstEdges = this.computeMinimumSpanningTree(this.activeDeliveries);
+        const mstAdjacency = createMultiDimArray([this.numVertices], []);
+        for (const edge of mstEdges) {
+            mstAdjacency[edge.u].push(edge.v);
+            mstAdjacency[edge.v].push(edge.u);
+        }
+        
+        this.deliveryRoute = [];
+        this.buildDeliveryRouteDFS(0, -1, mstAdjacency);
+        this.deliveryRoute.reverse();
+        this.deliveryRoute.pop();
+    }
+
+    buildDeliveryRouteDFS(currentV, parentV, mstAdjacency) {
+        this.deliveryRoute.push(currentV);
+        for (const neighbor of mstAdjacency[currentV]) {
+            if (neighbor !== parentV) {
+                this.buildDeliveryRouteDFS(neighbor, currentV, mstAdjacency);
+            }
+        }
+    }
+
+    completeDelivery() {
+        this.activeDeliveries.delete(this.currentLocation);
+        const arrivalTimes = this.orderArrivalDays[this.currentLocation];
+        while (arrivalTimes.length > 0) {
+            const orderDay = arrivalTimes.pop();
+            const deliveryTime = this.currentDay - orderDay;
+            this.totalScore += this.maximumTimeSquared - deliveryTime * deliveryTime;
+        }
+    }
+
+    async initializeSimulation(inputReader) {
+        let line = await inputReader.readLine();
+        let parts = line.split(" ");
+        this.numEdges = +parts[1];
+        this.numVertices = +parts[0];
+
+        this.allPairDistances = createMultiDimArray([this.numVertices, this.numVertices], this.infinity);
+        this.directEdgeWeights = createMultiDimArray([this.numVertices, this.numVertices], this.infinity);
+        this.adjacencyLists = createMultiDimArray([this.numVertices], []);
+
+        for (let i = 0; i < this.numVertices; i++) {
+            this.allPairDistances[i][i] = 0;
+        }
+
+        for (let i = 0; i < this.numEdges; i++) {
+            line = await inputReader.readLine();
+            parts = line.split(" ");
+            const vertex1 = +parts[0] - 1;
+            const vertex2 = +parts[1] - 1;
+            const distance = +parts[2];
+
+            this.allPairDistances[vertex1][vertex2] = this.allPairDistances[vertex2][vertex1] = distance;
+            this.directEdgeWeights[vertex1][vertex2] = this.directEdgeWeights[vertex2][vertex1] = distance;
+            this.adjacencyLists[vertex1].push(vertex2);
+            this.adjacencyLists[vertex2].push(vertex1);
+        }
+
+        for (let k = 0; k < this.numVertices; k++) {
+            for (let i = 0; i < this.numVertices; i++) {
+                for (let j = 0; j < this.numVertices; j++) {
+                    const pathThroughK = this.allPairDistances[i][k] + this.allPairDistances[k][j];
+                    if (pathThroughK < this.allPairDistances[i][j]) {
+                        this.allPairDistances[i][j] = pathThroughK;
+                    }
+                }
+            }
+        }
+
+        line = await inputReader.readLine();
+        this.factorArray = line.split(" ").map(val => +val);
+
+        line = await inputReader.readLine();
+        this.maximumTime = +line;
+        this.maximumTimeSquared = this.maximumTime * this.maximumTime;
+
+        this.orderArrivalDays = createMultiDimArray([this.numVertices], []);
+
+        for (; this.currentDay < this.maximumTime; this.currentDay++) {
+            let numEvents = +(await inputReader.readLine());
+            this.inputQueue.push(numEvents);
+            for (let i = 0; i < numEvents; i++) {
+                let eventData = (await inputReader.readLine()).split(" ").map(val => +val);
+                this.inputQueue.push(eventData[0], eventData[1]);
+            }
+
+            numEvents = +(await inputReader.readLine());
+            for (let i = 0; i < numEvents; i++) {
+                await inputReader.readLine();
+            }
+
+            this.outputLog[this.currentDay] = this.executeSimulationStep() + 1;
+            console.log(this.outputLog[this.currentDay]);
+
+            let statusLine = await inputReader.readLine();
+            if (statusLine[0] !== "O") return;
+
+            numEvents = +(await inputReader.readLine());
+            for (let i = 0; i < numEvents; i++) {
+                await inputReader.readLine();
+            }
+        }
+    }
+}
+
+class InputReader {
+    constructor(inputSource) {
+        this.source = inputSource;
+        this.lineQueue = [];
+        this.resolveQueue = [];
+
+        this.source.on("line", (line) => {
+            if (this.resolveQueue.length > 0) {
+                const resolve = this.resolveQueue.shift();
+                resolve(line);
+            } else {
+                this.lineQueue.push(line);
+            }
+        });
+    }
+
+    readLine() {
+        return new Promise((resolve) => {
+            if (this.lineQueue.length > 0) {
+                resolve(this.lineQueue.shift());
+            } else {
+                this.resolveQueue.push(resolve);
+            }
+        });
+    }
+}
+
+const standardInputReader = require("readline").createInterface({
+    input: process.stdin,
+    output: process.stdout
+});
+
+const reader = new InputReader(standardInputReader);
+const simulation = new DeliverySimulation();
+simulation.initializeSimulation(reader).then(() => {
+    standardInputReader.close();
+});

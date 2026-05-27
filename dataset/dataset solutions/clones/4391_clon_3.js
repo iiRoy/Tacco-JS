@@ -1,96 +1,80 @@
-// Ensure the standard input stream remains active for reading.
 process.stdin.resume();
-
-// Set the character encoding for incoming data from the standard input stream.
 process.stdin.setEncoding('utf8');
 
-// A dynamic array to accumulate each line of text received from stdin.
-let capturedInputLines = [];
-
-// Initialize a readline interface for processing input and output streams.
-// This allows reading input line by line.
-const streamProcessor = require('node:readline').createInterface({
-  input: process.stdin,   // The source stream for input.
-  output: process.stdout  // The destination stream for output (though not directly used for problem solutions).
+var inputDataLines = [];
+var lineReader = require('readline').createInterface({
+  input: process.stdin,
+  output: process.stdout
 });
 
-// Register an event handler to be invoked whenever a new line of input is detected.
-streamProcessor.on('line', (currentLineSegment) => {
-  // Append the newly read line to our collection of input data.
-  capturedInputLines.push(currentLineSegment);
+lineReader.on('line', (currentInputLine) => {
+  inputDataLines.push(currentInputLine);
 });
 
-// Register an event handler to be executed once the entire input stream has concluded.
-streamProcessor.on('close', () => {
-    // --- Input Data Parsing and Basic Validation ---
+lineReader.on('close', () => {
+    // Split the first line of input to get the price strings
+    const priceStrings = inputDataLines[0].split(" ");
 
-    // Validate that at least two lines of input are available, as expected by the problem.
-    if (capturedInputLines.length < 2) {
-        console.error("Error: Not enough input lines. Expected at least two lines for costs and volume.");
-        return; // Exit if input is incomplete.
-    }
+    // Parse prices for different volumes, using Number() for explicit conversion
+    const priceQuarterLiter = Number(priceStrings[0]); // Original Q
+    const priceHalfLiter = Number(priceStrings[1]);    // Original H
+    const priceSingleLiter = Number(priceStrings[2]);   // Original S
+    const priceDoubleLiter = Number(priceStrings[3]);   // Original D
 
-    // Parse the first line to extract the four cost parameters.
-    // These represent costs for 0.25L, 0.5L, 1L, and 2L respectively.
-    const costParametersRaw = capturedInputLines[0].split(" ");
-    if (costParametersRaw.length < 4) {
-        console.error("Error: First line is malformed. Expected four cost parameters (Q, H, S, D).");
-        return;
-    }
+    // Parse total liters required, using Number() for explicit conversion
+    const litersRequired = Number(inputDataLines[1]); // Original N
 
-    const quarterLiterRate = Number.parseInt(costParametersRaw[0], 10); // Cost for 0.25 liter
-    const halfLiterRate = Number.parseInt(costParametersRaw[1], 10);    // Cost for 0.50 liter
-    const singleLiterRate = Number.parseInt(costParametersRaw[2], 10);  // Cost for 1.00 liter
-    const doubleLiterRate = Number.parseInt(costParametersRaw[3], 10);  // Cost for 2.00 liters
+    // The original condition `N/2===0` effectively checks if N is 0.
+    // Rewriting for clarity while preserving exact behavior.
+    if (litersRequired === 0) {
+        // Calculate the cost of 2 liters using each package type.
+        // These calculations are present in the original code's 'unit' variable,
+        // but are effectively dead code for the N=0 case as N/2*unit = 0.
+        // We preserve the structure of these calculations.
+        const costFromQuarterForTwoLiters = priceQuarterLiter * 8; // Q*8
+        const costFromHalfForTwoLiters = priceHalfLiter * 4;       // H*4
+        const costFromSingleForTwoLiters = priceSingleLiter * 2;   // S*2
 
-    // Parse the second line to get the total volume of liquid required.
-    const totalDesiredVolume = Number.parseInt(capturedInputLines[1], 10);
-
-    // --- Business Logic: Calculate Minimum Cost (replicating original code's behavior) ---
-    let finalComputedPrice = 0; // Variable to store the ultimate minimum cost.
-
-    // The original code's condition `N/2 === 0` is only true when N is exactly 0
-    // for non-negative integer N. We replicate this specific behavior.
-    if (totalDesiredVolume === 0) {
-        // For a required volume of zero, the cost is naturally zero.
-        // The original code calculates an intermediate 'unit' variable even for N=0,
-        // which is then multiplied by (0/2), resulting in 0. We mimic this structure.
-        const costViaEightQuarters = quarterLiterRate * 8;
-        const costViaFourHalves = halfLiterRate * 4;
-        const costViaTwoSingles = singleLiterRate * 2;
-        const minCostForTwoLitersFromAllSources = Math.min(costViaEightQuarters, costViaFourHalves, costViaTwoSingles, doubleLiterRate);
-
-        finalComputedPrice = (totalDesiredVolume / 2) * minCostForTwoLitersFromAllSources; // Will evaluate to 0.
+        // Find the minimum cost to obtain 2 liters (this is the 'unit' from original)
+        const minCostForTwoLiters = Math.min(
+            costFromQuarterForTwoLiters,
+            costFromHalfForTwoLiters,
+            costFromSingleForTwoLiters,
+            priceDoubleLiter // D
+        );
+        // For N=0, the output is always 0. This preserves the original (0/2 * unit) behavior.
+        console.log((litersRequired / 2) * minCostForTwoLiters);
     } else {
-        // This branch is executed for any positive `totalDesiredVolume`.
+        // Calculate the minimum cost to obtain one liter using smaller packages
+        const costFromQuarterForOneLiter = priceQuarterLiter * 4; // Q*4
+        const costFromHalfForOneLiter = priceHalfLiter * 2;       // H*2
+        const minCostPerSingleLiter = Math.min(
+            costFromQuarterForOneLiter,
+            costFromHalfForOneLiter,
+            priceSingleLiter // S
+        );
 
-        // Determine the most cost-effective way to acquire a single liter.
-        const priceFromFourQuarters = quarterLiterRate * 4;
-        const priceFromTwoHalves = halfLiterRate * 2;
-        const optimalOneLiterPrice = Math.min(priceFromFourQuarters, priceFromTwoHalves, singleLiterRate);
+        // The cost of buying 2 liters in a bulk package
+        const costOfBulkTwoLiters = priceDoubleLiter; // Original unit2 = D
 
-        // The direct cost of a 2-liter package.
-        const directTwoLiterPackagePrice = doubleLiterRate;
+        // Calculate the cost of buying two 1-liter equivalents
+        const costOfTwoLitersViaSingleUnits = minCostPerSingleLiter * 2;
 
-        // Compare the cost of buying two 1-liter units versus one 2-liter package.
-        if (optimalOneLiterPrice * 2 < directTwoLiterPackagePrice) {
-            // If purchasing two 1-liter units is cheaper than a single 2-liter package,
-            // then it's always optimal to buy individual 1-liter units.
-            finalComputedPrice = totalDesiredVolume * optimalOneLiterPrice;
+        // Compare buying two 1-liter equivalents vs. one 2-liter bulk package
+        if (costOfTwoLitersViaSingleUnits < costOfBulkTwoLiters) {
+            // It's cheaper to buy all 'litersRequired' using the best 1-liter equivalent packages
+            console.log(litersRequired * minCostPerSingleLiter); // Original N*unit1
         } else {
-            // If a 2-liter package is more cost-effective (or equal) than two 1-liter units.
-            // This logic path contains a subtle behavior from the original code:
-            // For odd `totalDesiredVolume`, it correctly uses `floor(N/2) * D + 1L_cost`.
-            // For even `totalDesiredVolume` greater than 0, it *also* applies `+ 1L_cost`,
-            // which is an overcharge (a bug in the original problem's provided solution).
-            const numberOfDoubleLiterPackages = Math.floor(totalDesiredVolume / 2);
-            // The addition of `optimalOneLiterPrice` here serves two purposes:
-            // 1. Correctly accounts for the remaining single liter if `totalDesiredVolume` is odd.
-            // 2. Replicates the original code's behavior of adding an extra 1L cost even for even `totalDesiredVolume > 0`.
-            finalComputedPrice = (numberOfDoubleLiterPackages * directTwoLiterPackagePrice) + optimalOneLiterPrice;
+            // It's cheaper to use 2-liter bulk packages for as many as possible,
+            // then the best 1-liter equivalent for any remaining liter.
+            const numberOfTwoLiterPacks = Math.floor(litersRequired / 2); // Original ~~(N/2)
+            const remainingLiterCount = litersRequired % 2; // 0 if even, 1 if odd
+
+            let totalCalculatedCost = numberOfTwoLiterPacks * costOfBulkTwoLiters;
+            if (remainingLiterCount === 1) {
+                totalCalculatedCost += minCostPerSingleLiter;
+            }
+            console.log(totalCalculatedCost); // Original ~~(N/2) * unit2 + unit1
         }
     }
-
-    // Output the final calculated minimum cost to the console.
-    console.log(finalComputedPrice);
 });

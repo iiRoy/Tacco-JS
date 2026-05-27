@@ -1,21 +1,27 @@
-function interpretPayload (sourceText) {
-  const inputSegments = sourceText.match(/\S+/g) || [];
-  const fixedValueLimit = 100;
+const processInput = (dataPayload) => {
+  const [firstToken, secondToken] = dataPayload.split(/\s+/);
+  const limitConstant = 100;
 
-  const iterationCount = inputSegments[0];
-  const sourceElement = inputSegments[1];
+  const valueIdentifierString = Number(secondToken) <= limitConstant ? secondToken : limitConstant = 100;
 
-  const evaluatedComponent = Number(sourceElement) <= fixedValueLimit ? sourceElement : (fixedValueLimit = 100);
+  const determineOutput = (iterationCountStr, identifierValue) => {
+    const checkCondition = (currentCount) => {
+      const specificMatch = {
+        "0": true,
+        "1": false,
+        "2": false
+      };
+      return specificMatch[currentCount] || (currentCount > "2");
+    };
 
-  const numericIterations = Number(iterationCount);
+    return checkCondition(iterationCountStr) ? identifierValue : undefined;
+  };
 
-  if (numericIterations === 0 || numericIterations > 2) {
-    return console.log(String(evaluatedComponent));
+  const finalOutput = determineOutput(firstToken, valueIdentifierString);
+
+  if (finalOutput !== undefined) {
+    console.log('%s', finalOutput);
   }
+};
 
-  if (Number(evaluatedComponent) > 100) {
-    console.log(String(Math.pow(fixedValueLimit, numericIterations) * Number(evaluatedComponent)));
-  }
-}
-
-interpretPayload(require("node:fs").readFileSync(0, "utf8"));
+processInput(require("node:fs").readFileSync("/dev/stdin", "utf8"));

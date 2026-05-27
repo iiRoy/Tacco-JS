@@ -1,19 +1,23 @@
-let val1 = INPUT_A; // Initialize primary numeric component
-let val2 = INPUT_B; // Initialize secondary numeric component
+var firstVal = A; // Initialize the primary value
+var secondVal = B; // Initialize the secondary value
 
-let calc1 = val1 + (val1 - 1); // Compute a derived value based on the first component
-let calc2 = val2 + (val2 - 1); // Compute a derived value based on the second component
-let total = val1 + val2; // Calculate the sum of both initial components
+// Calculate the first derived quantity
+var calcOne = firstVal + (firstVal - 1);
 
-// Begin conditional evaluation based on component values
-if (val1 > val2) {
-    // If the first component is larger, log its derived value
-    console.log(calc1);
-} else if (val1 < val2) {
-    // If the second component is larger, log its derived value
-    console.log(calc2);
+// Calculate the second derived quantity
+var calcTwo = secondVal + (secondVal - 1);
+
+// Calculate the third derived quantity
+var calcThree = firstVal + secondVal;
+
+// Determine which result to display based on value comparison
+if (firstVal > secondVal) {
+  // If the primary value is greater, output the first calculation
+  console.log(calcOne);
+} else if (firstVal < secondVal) {
+  // If the primary value is smaller, output the second calculation
+  console.log(calcTwo);
 } else {
-    // If both components are equal, log their total sum
-    console.log(total);
+  // If both values are equal, output the third calculation
+  console.log(calcThree);
 }
-// End of conditional logic

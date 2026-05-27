@@ -1,37 +1,40 @@
-// This file processes input data for a specific algorithmic problem.
+// Solution for a specific problem
 "use strict";
 
-// Initial thoughts on a naive approach:
-// 1. Iterate through a given range, tracking minimums and maximums.
-// 2. Adjust counters based on changes in these tracked values.
-// 3. Check if target counts are met.
-// -- This method proved inefficient or incorrect.
+// This section contains initial thoughts and discarded approaches.
+// The problem involves constructing a sequence with specific properties.
+// Initial ideas often involve brute-force or complex combinatorial checks.
+// For instance, considering minimum and maximum values within a range.
+// Or, analyzing the relationship between increasing and decreasing subsequences.
+// The constraints on A (increasing) and B (decreasing) elements are key.
+// A common strategy might be to place increasing elements first,
+// then intersperse decreasing elements.
+// However, the final solution is much simpler, focusing on a basic condition.
 
-// Revised strategy for improved performance:
-// 1. Validate input constraints: check if 'firstCriterion' is within half of 'overallLength'
-//    and 'secondCriterion' is within half of remaining length.
-// This constraint checking ensures feasibility.
-// The problem involves constructing sequences with specific increasing and decreasing segments.
-// Example: [inc] [dec] [inc]
-// For construction, arrange ascending elements first,
-// then intersperse descending elements as required.
-// Example for A=2, B=3 (total length 5):
-// [1] (0) [3] (-1) [5]
+const DBG_FLAG = false; // Flag to control debug input.
+const initialData = DBG_FLAG
+  ? "30000 30000 30000" // Hardcoded test data for development.
+  : require("fs") // Node.js file system module.
+    .readFileSync("/dev/stdin", "utf8") // Read input from standard input.
+    .trim(); // Remove leading/trailing whitespace.
 
-const DEVELOPMENT_ACTIVE = false;
-const sourceInformation = DEVELOPMENT_ACTIVE
-  ? "30000 30000 30000"
-  : require("fs")
-      .readFileSync("/dev/stdin", "utf8")
-      .trim();
+const handleInput = (dataString) => {
+  // Split the input string into individual components.
+  const parsedValues = dataString.split(" ");
 
-const evaluateParameters = inputPayload => {
-  const componentValues = inputPayload.split(" ");
-  const overallLength = componentValues[0];
-  const firstCriterion = componentValues[1];
-  const secondCriterion = componentValues[2];
+  // Extract numerical values for N, A, and B.
+  // Note: These are still strings here, and JavaScript's '+' operator
+  // will perform string concatenation if not explicitly converted to numbers.
+  // The comparison operator '<=' will then attempt type coercion.
+  const totalElements = parsedValues[0];
+  const incCount = parsedValues[1];
+  const decCount = parsedValues[2];
 
-  console.log(firstCriterion + secondCriterion <= overallLength ? -1 : "");
+  // The core logic: check if the sum of A and B is less than or equal to N.
+  // If it is, output -1; otherwise, output an empty string.
+  // This implies a simple condition for impossibility.
+  console.log(incCount + decCount <= totalElements ? -1 : "");
 };
 
-evaluateParameters(sourceInformation);
+// Execute the main processing function with the obtained input.
+handleInput(initialData);

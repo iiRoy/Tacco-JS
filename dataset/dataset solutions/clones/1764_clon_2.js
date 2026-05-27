@@ -1,55 +1,33 @@
-const makeMemoKey = (rowIdx, colIdx) => `row${rowIdx}col${colIdx}`;
+const generateCoordKey = (rowIdx, colIdx) => `r${rowIdx}c${colIdx}`;
 
-// A persistent storage for memoized results of computations.
-const resultsCache = new Map();
+const memoizationCache = new Map();
 
-// This function performs a recursive calculation based on four BigInt parameters.
 const computeValue = (startRow, startCol, endRow, endCol) => {
-  // Generate a unique identifier for the current state (endRow, endCol) for caching.
-  const currentKey = makeMemoKey(endRow, endCol);
-
-  // If the result for this state is already computed and stored, return it directly.
-  if (resultsCache.has(currentKey)) {
-    return resultsCache.get(currentKey);
+  const cacheKey = generateCoordKey(endRow, endCol);
+  if (memoizationCache.has(cacheKey)) {
+    return memoizationCache.get(cacheKey);
   }
 
-  // Declare a variable to hold the final computed outcome for the current call.
-  let outcome;
-
-  // First base case: if the starting row index is equal to the ending row index.
+  let resultVal;
   if (startRow === endRow) {
-    outcome = (startRow ** (endCol - startCol)) % 998244353n;
-  }
-  // Second base case: if the starting column index is equal to the ending column index.
-  else if (startCol === endCol) {
-    outcome = (startCol ** (endRow - startRow)) % 998244353n;
-  }
-  // Recursive step: for all other cases, apply a complex recurrence relation.
-  else {
-    outcome = (
+    resultVal = (startRow ** (endCol - startCol)) % 998244353n;
+  } else if (startCol === endCol) {
+    resultVal = (startCol ** (endRow - startRow)) % 998244353n;
+  } else {
+    resultVal = (
       computeValue(startRow, startCol, endRow - 1n, endCol) * endCol +
       computeValue(startRow, startCol, endRow, endCol - 1n) * endRow -
       computeValue(startRow, startCol, endRow - 1n, endCol - 1n) * (endRow - 1n) * (endCol - 1n)
     ) % 998244353n;
   }
-
-  // Store the newly calculated outcome in the cache before returning it.
-  resultsCache.set(makeMemoKey(endRow, endCol), outcome);
-
-  return outcome; // Return the final computed value.
+  memoizationCache.set(generateCoordKey(endRow, endCol), resultVal);
+  return resultVal;
 };
 
-// The main entry point function to handle input parsing and trigger the calculation.
-const processInputAndRun = (rawInputString) => {
-  // Split the raw input string into an array of lines.
-  const inputLines = rawInputString.split("\n");
-
-  // Parse the first line of input to extract the four BigInt parameters.
-  const [initialR, initialC, finalR, finalC] = inputLines[0].split(" ").map(val => BigInt(val));
-
-  // Execute the primary calculation and print the result, converted to a standard Number.
-  console.log(Number(computeValue(initialR, initialC, finalR, finalC)));
+const processInputAndDisplay = (rawData) => {
+  const inputLines = rawData.split("\n");
+  const [initialA, initialB, finalC, finalD] = inputLines[0].split(" ").map(numericStr => BigInt(numericStr));
+  console.log(Number(computeValue(initialA, initialB, finalC, finalD)));
 };
 
-// Read input from standard input and then invoke the main processing function.
-processInputAndRun(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInputAndDisplay(require("fs").readFileSync("/dev/stdin", "utf8"));

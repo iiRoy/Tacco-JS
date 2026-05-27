@@ -1,137 +1,37 @@
 "use strict";
 
-const processInputData = (streamOfCharacters) => {
+function ProcessInput(inputString) {
+  const rawDataLines = inputString.split('\n');
+  // The first line contains 'n', which is not directly used in the subsequent logic.
+  const robotDescriptions = rawDataLines.slice(1);
 
-    const deriveNumericalExpressions = (sourceText) => {
-        let numericalCollections = [];
-        let currentNumericSequence = "";
-        const rowSeparator = "\n";
-        const componentSeparator = " ";
-        let currentRowData = [];
+  const calculatedIntervals = robotDescriptions.map(descriptionText => {
+    const numericComponents = descriptionText.split(' ').map(Number);
+    const centerPosition = numericComponents[0];
+    const reachDistance = numericComponents[1];
+    // Transform [x, d] into [x-d, x+d] representing [start_point, end_point]
+    return [centerPosition - reachDistance, centerPosition + reachDistance];
+  });
 
-        const finalizeNumber = () => {
-            if (currentNumericSequence.length > 0) {
-                currentRowData.push(Number(currentNumericSequence));
-                currentNumericSequence = "";
-            }
-        };
+  // Sort the intervals primarily by their end points in ascending order.
+  calculatedIntervals.sort((firstInterval, secondInterval) => firstInterval[1] - secondInterval[1]);
 
-        for (let characterIndex = 0; characterIndex < sourceText.length; ++characterIndex) {
-            const currentCharacter = sourceText[characterIndex];
+  const schedulingResult = calculatedIntervals.reduce((currentStatus, currentSegment) => {
+    const [segmentStartPoint, segmentEndPoint] = currentSegment;
 
-            if (currentCharacter === rowSeparator) {
-                finalizeNumber();
-                numericalCollections.push(currentRowData);
-                currentRowData = [];
-            } else if (currentCharacter === componentSeparator) {
-                finalizeNumber();
-            } else if ((currentCharacter >= '0' && currentCharacter <= '9') || currentCharacter === '-') {
-                currentNumericSequence += currentCharacter;
-            }
-        }
-        finalizeNumber();
-        if (currentRowData.length > 0) {
-             numericalCollections.push(currentRowData);
-        }
+    // If the current segment's start point is greater than or equal to the end point
+    // of the last successfully chosen segment, it can be selected without overlap.
+    if (segmentStartPoint >= currentStatus.lastChosenEnd) {
+      return {
+        selectedCount: currentStatus.selectedCount + 1,
+        lastChosenEnd: segmentEndPoint
+      };
+    }
+    // Otherwise, the segment overlaps, so we don't select it and the status remains unchanged.
+    return currentStatus;
+  }, { selectedCount: 0, lastChosenEnd: -1e10 }); // Initialize lastChosenEnd to a very small number, matching original logic.
 
-        return numericalCollections;
-    };
+  console.log(schedulingResult.selectedCount);
+}
 
-    const parsedDataSegments = deriveNumericalExpressions(streamOfCharacters);
-    const totalSubjectCount = parsedDataSegments[0][0];
-    const subjectDescriptions = parsedDataSegments.slice(1);
-
-    const projectPairsToSegments = (sourcePairs, accumulatedSegments = []) => {
-        if (sourcePairs.length === 0) {
-            return accumulatedSegments;
-        }
-        const [firstPair, ...restOfPairs] = sourcePairs;
-        const [centralPoint, deviationSpan] = firstPair;
-        accumulatedSegments.push([centralPoint - deviationSpan, centralPoint + deviationSpan]);
-        return projectPairsToSegments(restOfPairs, accumulatedSegments);
-    };
-
-    let transformedSegments = projectPairsToSegments(subjectDescriptions);
-
-    const mergeSortedCollections = (leftSequence, rightSequence) => {
-        let combinedResult = [];
-        let leftIdx = 0;
-        let rightIdx = 0;
-
-        while (leftIdx < leftSequence.length && rightIdx < rightSequence.length) {
-            if (leftSequence[leftIdx][1] <= rightSequence[rightIdx][1]) {
-                combinedResult.push(leftSequence[leftIdx]);
-                leftIdx++;
-            } else {
-                combinedResult.push(rightSequence[rightIdx]);
-                rightIdx++;
-            }
-        }
-
-        while (leftIdx < leftSequence.length) {
-            combinedResult.push(leftSequence[leftIdx]);
-            leftIdx++;
-        }
-
-        while (rightIdx < rightSequence.length) {
-            combinedResult.push(rightSequence[rightIdx]);
-            rightIdx++;
-        }
-
-        return combinedResult;
-    };
-
-    const orderSegmentsByFinishPoint = (unorderedSegments) => {
-        if (unorderedSegments.length <= 1) {
-            return unorderedSegments;
-        }
-
-        const midPoint = Math.floor(unorderedSegments.length / 2);
-        const leftPortion = unorderedSegments.slice(0, midPoint);
-        const rightPortion = unorderedSegments.slice(midPoint);
-
-        const sortedLeftPortion = orderSegmentsByFinishPoint(leftPortion);
-        const sortedRightPortion = orderSegmentsByFinishPoint(rightPortion);
-
-        return mergeSortedCollections(sortedLeftPortion, sortedRightPortion);
-    };
-
-    let orderedIntervals = orderSegmentsByFinishPoint(transformedSegments);
-
-    const countMaximalDisjointSegments = (currentSegmentList, lastTakenEndpoint = -Infinity, currentTally = 0) => {
-        if (currentSegmentList.length === 0) {
-            return currentTally;
-        }
-
-        const [firstAvailableSegment, ...remainingSegmentList] = currentSegmentList;
-        const [segmentStartPoint, segmentEndPoint] = firstAvailableSegment;
-
-        if (segmentStartPoint >= lastTakenEndpoint) {
-            return countMaximalDisjointSegments(remainingSegmentList, segmentEndPoint, currentTally + 1);
-        } else {
-            return countMaximalDisjointSegments(remainingSegmentList, lastTakenEndpoint, currentTally);
-        }
-    };
-
-    let finalNonOverlappingCount = countMaximalDisjointSegments(orderedIntervals);
-
-    const outputResultValue = (valueToDisplay) => {
-        console.log(valueToDisplay);
-    };
-
-    outputResultValue(finalNonOverlappingCount);
-};
-
-const acquireSystemInput = () => {
-    const fileSystemHandler = require("fs");
-    const standardInputPath = "/dev/stdin";
-    const textEncoding = "utf8";
-    return fileSystemHandler.readFileSync(standardInputPath, textEncoding);
-};
-
-const orchestrateExecution = () => {
-    const rawInputContent = acquireSystemInput();
-    processInputData(rawInputContent.toString());
-};
-
-orchestrateExecution();
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

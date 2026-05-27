@@ -1,7 +1,7 @@
-const processGeomData = (dataFetcher) => {
-    const numericValue = Number(dataFetcher().slice().trim());
-    const finalResult = (numericValue * 180) - 360;
-    console.log(finalResult);
-};
-
-processGeomData(() => require("node:fs").readFileSync("/dev/stdin", { encoding: "utf8" }));
+function computePolygonAngles(sourceData) {
+    const processedInput = sourceData.trim();
+    const polygonSides = Number.parseInt(processedInput, 10);
+    const sumOfInteriorAngles = polygonSides * 180 - 360;
+    console.log(sumOfInteriorAngles);
+}
+computePolygonAngles(require("fs").readFileSync("/dev/stdin", "utf8"));

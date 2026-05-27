@@ -1,31 +1,18 @@
-c = console.log; // Alias for console.log, used frequently for output
+// ----------------------------------------------------------------
+// 项目: HWZXX 7191
+// ----------------------------------------------------------------
 
-l = require('fs')
-    .readFileSync(0, 'utf8') // Read entire input from stdin
-    .split('\n');           // Split the input into an array of lines
-
-// Parse the first line to get dimensions (height and width)
-n = l[0]
-    .split(' ')     // Split the first line by space
-    .map(Number);   // Convert string parts to numbers
-
-h = n[0]; // Assign height from the parsed numbers
-w = n[1]; // Assign width from the parsed numbers
-
-/*
- * Generate the border string.
- * The width of the border is 'w' (content width) + 2 (for leading and trailing '#').
- */
-d = '#'.repeat(w + 2);
-
-c(d); // Print the top border
-
-// Loop through each line of the content, from index 1 up to 'h' (height)
-for (i = 1; i <= h;) {
-    // Print the current line surrounded by '#' characters
-    c(`#${l[i++]}#`);
-}
-
-c(d); // Print the bottom border
-
-// End of Type I clone demonstration.
+/* 读取也整理局部预期输出在开始处直接。 */
+c =console.log
+l=require('fs').readFileSync(0,'utf8').split('\n')
+n=l[0].split(' ').map(Number)
+          h= n [0]
+// 读取也整理局部接收的数据配合输入清晰。
+w= n [1 ] 
+    d='#'.repeat(w+2)
+ c (d)
+for(i=1;i<=h;){c(`#${l[i++]}#`)}
+c (d )
+// 读取准备局部变量准备配合输入内部。
+/* 也整理求值顺序。 */
+/* 读取也整理当前计算出的信息在输出前内部。 */

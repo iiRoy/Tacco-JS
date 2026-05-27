@@ -1,71 +1,75 @@
-const UNREACHABLE = -1_000_000_000_000_000;
+function processGraphPaths(inputLines) {
+    const NEG_INF_VAL = -100000000000000;
 
-function acquireGraphElements(inputLines) {
-    const [nodeCountStr, linkCountStr] = inputLines[0].split(" ");
-    const nodeCount = parseInt(nodeCountStr);
-    const linkCount = parseInt(linkCountStr);
+    const [graphParamsLine, ...edgeDefinitionLines] = inputLines;
+    const [vertexCountStr, connectionCountStr] = graphParamsLine.split(" ");
+    const vertexCount = parseInt(vertexCountStr);
+    const connectionCount = parseInt(connectionCountStr);
 
-    const connections = inputLines.slice(1, 1 + linkCount).map(line => {
-        const [sourceId, destId, gainValue] = line.split(" ").map(Number);
-        return { start: sourceId - 1, end: destId - 1, value: gainValue };
+    const connectionList = edgeDefinitionLines.slice(0, connectionCount).map(line => {
+        const [startNode, endNode, edgeCost] = line.split(" ").map(Number);
+        return {
+            sourceVertex: startNode - 1,
+            targetVertex: endNode - 1,
+            weightValue: edgeCost
+        };
     });
 
-    return { totalNodes: nodeCount, allConnections: connections };
-}
+    let currentPathDistances = Array.from({ length: vertexCount }, () => NEG_INF_VAL);
+    currentPathDistances[0] = 0;
 
-function updatePathValues(currentPathMap, allLinks, targetNodeIndex, voidValue) {
-    let nextPathMap = new Map(currentPathMap);
-    let targetBecameBetter = false;
+    const phaseOneConnections = connectionList.filter(conn => conn.sourceVertex < vertexCount - 1);
 
-    for (const { start, end, value } of allLinks) {
-        const currentStartValue = currentPathMap.get(start);
-        if (currentStartValue === voidValue) {
-            continue;
-        }
+    const applyPathRelaxation = (distances, connectionsToUse) => {
+        connectionsToUse.forEach(conn => {
+            const { sourceVertex, targetVertex, weightValue } = conn;
+            if (distances[sourceVertex] !== NEG_INF_VAL) {
+                const candidateNewDistance = distances[sourceVertex] + weightValue;
+                if (distances[targetVertex] < candidateNewDistance) {
+                    distances[targetVertex] = candidateNewDistance;
+                }
+            }
+        });
+    };
 
-        const potentialEndValue = currentStartValue + value;
-        const existingEndValue = currentPathMap.get(end);
+    Array.from({ length: vertexCount }).forEach(() => {
+        applyPathRelaxation(currentPathDistances, phaseOneConnections);
+    });
 
-        if (potentialEndValue > existingEndValue) {
-            nextPathMap.set(end, potentialEndValue);
-            if (end === targetNodeIndex) {
-                targetBecameBetter = true;
+    let targetAffectedByPositiveCycle = false;
+    const finalTargetIndex = vertexCount - 1;
+
+    const checkCycleImpact = (distances, connectionsToUse, targetIdx) => {
+        let targetRelaxedInPass = false;
+        connectionsToUse.forEach(conn => {
+            const { sourceVertex, targetVertex, weightValue } = conn;
+            if (distances[sourceVertex] !== NEG_INF_VAL) {
+                const candidateNewDistance = distances[sourceVertex] + weightValue;
+                if (distances[targetVertex] < candidateNewDistance) {
+                    distances[targetVertex] = candidateNewDistance;
+                    if (targetVertex === targetIdx) {
+                        targetRelaxedInPass = true;
+                    }
+                }
+            }
+        });
+        return targetRelaxedInPass;
+    };
+
+    Array.from({ length: vertexCount }).forEach(() => {
+        if (!targetAffectedByPositiveCycle) {
+            const wasTargetRelaxed = checkCycleImpact(currentPathDistances, connectionList, finalTargetIndex);
+            if (wasTargetRelaxed) {
+                targetAffectedByPositiveCycle = true;
             }
         }
-    }
-    return { newMap: nextPathMap, targetAffected: targetBecameBetter };
-}
+    });
 
-function chartPathGains(dataLines) {
-    const { totalNodes, allConnections } = acquireGraphElements(dataLines);
-
-    let nodeGains = new Map();
-    for (let i = 0; i < totalNodes; i++) {
-        nodeGains.set(i, UNREACHABLE);
-    }
-    nodeGains.set(0, 0);
-
-    for (let p = 0; p < totalNodes; p++) {
-        nodeGains = updatePathValues(nodeGains, allConnections, -1, UNREACHABLE).newMap;
-    }
-
-    let hasInfiniteGainToTarget = false;
-    const finalNode = totalNodes - 1;
-
-    for (let p = 0; p < totalNodes; p++) {
-        const result = updatePathValues(nodeGains, allConnections, finalNode, UNREACHABLE);
-        nodeGains = result.newMap;
-        if (result.targetAffected) {
-            hasInfiniteGainToTarget = true;
-            break;
-        }
-    }
-
-    if (hasInfiniteGainToTarget) {
+    if (targetAffectedByPositiveCycle) {
         console.log("inf");
     } else {
-        console.log(nodeGains.get(finalNode));
+        console.log(currentPathDistances[finalTargetIndex]);
     }
 }
 
-chartPathGains(require("fs").readFileSync("/dev/stdin", "utf8").split("\n"));
+processGraphPaths(require("fs").readFileSync("/dev/stdin", "utf8").split("\n"));

@@ -1,150 +1,260 @@
 "use strict";
-let rawInputData = require('node:fs').readFileSync('/dev/fd/0', 'utf-8');
-let tokenSequence = rawInputData.split(/[\s\n]+/), currentTokenIndex = 0;
 
-function readInteger() { return Number(tokenSequence[currentTokenIndex++]); }
-function readStringValue() { return tokenSequence[currentTokenIndex++]; }
-function readBigIntValue() { return BigInt(tokenSequence[currentTokenIndex++]); }
+// Input handling utilities
+let inputData = require("fs").readFileSync("/dev/stdin", "utf8");
+let tokenStream = inputData.split(/ |\n/), tokenIndex = 0;
 
-function retrieveArray(itemCount, asNumbersFlag) {
-    if (asNumbersFlag) {
-        return tokenSequence.slice(currentTokenIndex, currentTokenIndex += itemCount).map(val => Number(val));
+/**
+ * Fetches the next numerical value from the input stream.
+ * @returns {number} The parsed number.
+ */
+function getNextNum() {
+    return +tokenStream[tokenIndex++];
+}
+
+/**
+ * Fetches the next string value from the input stream.
+ * @returns {string} The string token.
+ */
+function getNextStr() {
+    return tokenStream[tokenIndex++];
+}
+
+/**
+ * Fetches the next BigInt value from the input stream.
+ * @returns {BigInt} The parsed BigInt.
+ */
+function getNextBigInt() {
+    return BigInt(tokenStream[tokenIndex++]);
+}
+
+/**
+ * Reads a specified number of elements from the input stream.
+ * Optionally applies a transformation function to each element.
+ * @param {number} count - The number of elements to read.
+ * @param {function(string): any} [transformFunc] - An optional function to map each string token.
+ * @returns {Array<any>} An array containing the read elements.
+ */
+function getNumArray(count, transformFunc) {
+    return transformFunc ? tokenStream.slice(tokenIndex, tokenIndex += count) : tokenStream.slice(tokenIndex, tokenIndex += count).map(elem => +elem);
+}
+
+/**
+ * Reads a matrix of specified dimensions from the input stream.
+ * Elements can be kept as strings or converted to numbers.
+ * @param {number} rows - The number of rows in the matrix.
+ * @param {number} cols - The number of columns in the matrix.
+ * @param {boolean} [asStrings] - If true, elements are stored as strings; otherwise, as numbers.
+ * @returns {Array<Array<any>>} The parsed matrix.
+ */
+function getMatrix(rows, cols, asStrings) {
+    let resultMatrix = [], rowCounter = 0;
+    if (asStrings) {
+        for (; rowCounter < rows; rowCounter++) resultMatrix.push(tokenStream.slice(tokenIndex, tokenIndex += cols));
     } else {
-        return tokenSequence.slice(currentTokenIndex, currentTokenIndex += itemCount);
+        for (; rowCounter < rows; rowCounter++) resultMatrix.push(tokenStream.slice(tokenIndex, tokenIndex += cols).map(elem => +elem));
     }
+    return resultMatrix;
 }
 
-function retrieveMatrix(numRows, numCols, asNumbersFlag) {
-    let resultGrid = [];
-    let currentRow = 0;
-    if (asNumbersFlag) {
-        for (; currentRow < numRows; currentRow++) {
-            resultGrid.push(tokenSequence.slice(currentTokenIndex, currentTokenIndex += numCols).map(val => Number(val)));
-        }
-    } else {
-        for (; currentRow < numRows; currentRow++) {
-            resultGrid.push(tokenSequence.slice(currentTokenIndex, currentTokenIndex += numCols));
-        }
+/**
+ * Dynamically creates a multi-dimensional array initialized with a given value.
+ * The dimensions are provided as subsequent arguments.
+ * @param {any} initialValue - The value to fill the array elements with.
+ * @param {...number} dimensions - The sizes of each dimension.
+ * @returns {Array<any>} The newly created multi-dimensional array.
+ */
+function createMultiDimArray(initialValue) {
+    let args = arguments,
+        argLength = args.length,
+        resultStr = "Array(args[" + --argLength + "]).fill().map(x=>{return " + initialValue + ";})";
+    while (--argLength) {
+        resultStr = "Array(args[" + argLength + "]).fill().map(x=>" + resultStr + ")";
     }
-    return resultGrid;
+    return eval(resultStr);
 }
 
-function initializeMultiDimensionalArray(initialValue) {
-    let dimensions = arguments, dimCount = dimensions.length, arrayCreationCode;
-    arrayCreationCode = `Array(dimensions[${--dimCount}]).fill().map(x => {return ${initialValue};})`;
-    while (--dimCount) {
-        arrayCreationCode = `Array(dimensions[${dimCount}]).fill().map(x => ${arrayCreationCode})`;
+// Modular arithmetic constants and helper functions
+const MODULUS_VAL = 1000000007; // A common prime modulus
+
+let factorialCache = [], invFactorialCache = [], modularInverses = [], powersOfTwo = [];
+
+/**
+ * Performs modular multiplication for multiple operands.
+ * This implementation uses a specific trick to handle potential intermediate overflows
+ * for numbers up to 2^31-1 when MODULUS_VAL is also within that range.
+ * @param {...number} operands - Numbers to multiply.
+ * @returns {number} The product modulo MODULUS_VAL.
+ */
+function multiplyMod() {
+    let operands = arguments, product = operands[0], idx = operands.length;
+    while (--idx) {
+        product = ((product >> 16) * operands[idx] % MODULUS_VAL * 65536 + (product & 65535) * operands[idx]) % MODULUS_VAL;
     }
-    return eval(arrayCreationCode);
+    return product;
 }
 
-let currentModulo = 1_000_000_007;
+/**
+ * Precomputes factorials and their modular inverses up to a specified limit.
+ * These are stored in `factorialCache` and `invFactorialCache`.
+ * @param {number} limit - The upper bound for precomputation.
+ */
+function precomputeFactorials(limit) {
+    factorialCache.length = limit + 1;
+    factorialCache[0] = factorialCache[1] = 1;
+    for (let counter = 2; counter <= limit;) factorialCache[counter] = multiplyMod(factorialCache[counter - 1], counter++);
 
-function calculateModularProduct() {
-    let operands = arguments, productResult = operands[0], opIndex = operands.length;
-    while (--opIndex) {
-        productResult = ( (productResult >>> 16) * operands[opIndex] % currentModulo * 65536 + (productResult & 0xFFFF) * operands[opIndex] ) % currentModulo;
+    invFactorialCache.length = limit + 1;
+    invFactorialCache[0] = invFactorialCache[1] = 1;
+    invFactorialCache[limit] = modularInverse(factorialCache[limit]);
+    for (let counter = limit; 2 < counter;) invFactorialCache[counter - 1] = multiplyMod(invFactorialCache[counter], counter--);
+
+    // The following lines were commented out in the original code,
+    // so they remain commented here to preserve the exact structure and behavior.
+    // modularInverses.length = limit + 1; modularInverses[0] = modularInverses[1] = 1;
+    // for (let counter = 2; counter <= limit;) modularInverses[counter] = multiplyMod(factorialCache[counter - 1], invFactorialCache[counter++]);
+    // powersOfTwo.length = limit + 1; powersOfTwo[0] = 1;
+    // for (let counter = 1; counter <= limit; counter++) powersOfTwo[counter] = powersOfTwo[counter - 1] * 2 % MODULUS_VAL;
+}
+
+/**
+ * Computes the modular multiplicative inverse of a number using the extended Euclidean algorithm.
+ * Assumes MODULUS_VAL is a prime number.
+ * @param {number} num - The number for which to find the inverse.
+ * @returns {number} The modular inverse of 'num' modulo MODULUS_VAL.
+ */
+function modularInverse(num) {
+    let modVal = MODULUS_VAL, x0 = 0, x1 = 1, temp;
+    while (num) {
+        temp = modVal / num | 0; // Integer division
+        modVal -= temp * num;
+        x0 -= temp * x1;
+        temp = modVal;
+        modVal = num;
+        num = temp;
+        temp = x0;
+        x0 = x1;
+        x1 = temp;
     }
-    return productResult;
+    x0 %= MODULUS_VAL;
+    return x0 < 0 ? x0 + MODULUS_VAL : x0;
 }
 
-let factorialsStore = [], inverseFactorials = [];
-
-function precomputeFactorials(limitValue) {
-    factorialsStore.length = limitValue + 1;
-    factorialsStore[0] = factorialsStore[1] = 1;
-    for (let counter = 2; counter <= limitValue;) {
-        factorialsStore[counter] = calculateModularProduct(factorialsStore[counter - 1], counter++);
+/**
+ * Calculates (base^exponent) % MODULUS_VAL using binary exponentiation (exponentiation by squaring).
+ * @param {number} base - The base value.
+ * @param {number} exponent - The exponent value.
+ * @returns {number} The result of the modular exponentiation.
+ */
+function powerMod(base, exponent) {
+    let result = 1;
+    while (exponent) {
+        if (exponent & 1) result = multiplyMod(base, result);
+        base = multiplyMod(base, base);
+        exponent >>= 1;
     }
-    inverseFactorials.length = limitValue + 1;
-    inverseFactorials[0] = inverseFactorials[1] = 1;
-    inverseFactorials[limitValue] = calculateModularInverse(factorialsStore[limitValue]);
-    for (let counter = limitValue; 2 < counter;) {
-        inverseFactorials[counter - 1] = calculateModularProduct(inverseFactorials[counter], counter--);
-    }
+    return result;
 }
 
-function calculateModularInverse(divisor) {
-    let dividend = currentModulo, xCoefficient = 0, yCoefficient = 1, tempVar;
-    for (; divisor; yCoefficient = tempVar) {
-        tempVar = Math.floor(dividend / divisor);
-        dividend -= tempVar * divisor;
-        xCoefficient -= tempVar * yCoefficient;
-        tempVar = dividend;
-        dividend = divisor;
-        divisor = tempVar;
-        tempVar = xCoefficient;
-        xCoefficient = yCoefficient;
-    }
-    xCoefficient %= currentModulo;
-    return (xCoefficient < 0) ? (xCoefficient + currentModulo) : xCoefficient;
+/**
+ * Computes the number of combinations (nCr) modulo MODULUS_VAL.
+ * Requires `precomputeFactorials` to have been called beforehand.
+ * @param {number} total - The total number of items.
+ * @param {number} choose - The number of items to choose.
+ * @returns {number} nCr % MODULUS_VAL.
+ */
+function combinationsMod(total, choose) {
+    return multiplyMod(factorialCache[total], invFactorialCache[choose], invFactorialCache[total - choose]);
 }
 
-function modularExponentiation(baseVal, exponentVal) {
-    let resultVal = 1;
-    for (; exponentVal; baseVal = calculateModularProduct(baseVal, baseVal), exponentVal >>>= 1) {
-        if (exponentVal & 1) {
-            resultVal = calculateModularProduct(baseVal, resultVal);
-        }
-    }
-    return resultVal;
+/**
+ * Computes the number of permutations (nPr) modulo MODULUS_VAL.
+ * Requires `precomputeFactorials` to have been called beforehand.
+ * @param {number} total - The total number of items.
+ * @param {number} choose - The number of items to choose.
+ * @returns {number} nPr % MODULUS_VAL.
+ */
+function permutationsMod(total, choose) {
+    return multiplyMod(factorialCache[total], invFactorialCache[total - choose]);
 }
 
-function nChooseK(totalItems, chosenItems) {
-    return calculateModularProduct(factorialsStore[totalItems], inverseFactorials[chosenItems], inverseFactorials[totalItems - chosenItems]);
+/**
+ * Normalizes a number to be within the range [0, MODULUS_VAL - 1].
+ * @param {number} value - The number to normalize.
+ * @returns {number} The normalized value.
+ */
+function normalizeMod(value) {
+    return (value % MODULUS_VAL + MODULUS_VAL) % MODULUS_VAL;
 }
 
-function nPermuteK(totalItems, chosenItems) {
-    return calculateModularProduct(factorialsStore[totalItems], inverseFactorials[totalItems - chosenItems]);
-}
-
-function normalizeModulo(inputNumber) {
-    return ( (inputNumber % currentModulo) + currentModulo ) % currentModulo;
-}
-
-let programResult = executeMainLogic();
+// Execute the main problem-solving function and print its result
+let programResult = solveProblem();
 if (programResult !== undefined) {
-    console.info(String(programResult));
+    console.log(String(programResult));
 }
 
-function executeMainLogic() {
-    let elementCount = readInteger();
-    let firstOperand = readBigIntValue(), secondOperand = readBigIntValue();
-    let xorSumOthers = 0n;
-    for (let loopIndex = 2; loopIndex < elementCount; loopIndex++) {
-        xorSumOthers ^= readBigIntValue();
+/**
+ * The core logic for solving the problem.
+ * This function processes input BigInts and performs XOR operations
+ * to find a specific transformation.
+ * @returns {BigInt | number} The calculated answer as a BigInt, or -1 if no solution is found.
+ */
+function solveProblem() {
+    let countN = getNextNum();
+    let valA1 = getNextBigInt(), valA2 = getNextBigInt();
+    let xorSum = 0n;
+
+    // Calculate the XOR sum of elements from the third element up to the N-th element.
+    for (let loopIdx = 2; loopIdx < countN; loopIdx++) {
+        xorSum ^= getNextBigInt();
     }
 
-    let finalAnswer = 0n, currentXorSum = firstOperand ^ secondOperand ^ xorSumOthers;
+    let finalAnswer = 0n, currentXor = valA1 ^ valA2 ^ xorSum;
 
-    while (currentXorSum !== 0n) {
-        if (firstOperand === 1n) {
-            return -1;
-        }
-        for (let bitPosition = 40; bitPosition >= 0; bitPosition--) {
-            let bitMask = 1n << BigInt(bitPosition);
-            if ((currentXorSum & bitMask) === 0n) {
-                continue;
-            }
+    // Continue as long as the currentXor is not zero.
+    while (currentXor) {
+        // IMPORTANT: valA1 is a BigInt, while '1' is a Number.
+        // The strict equality (===) comparison between BigInt and Number always yields false.
+        // This preserves the original code's behavior where this condition is effectively unreachable.
+        if (valA1 === 1) return -1;
+
+        // Iterate through bits from the 40th position down to the 0th position.
+        for (let bitPos = 40; bitPos >= 0; bitPos--) {
+            let bitMask = 1n << BigInt(bitPos); // Create a BigInt mask for the current bit.
+
+            // If the currentXor does not have this bit set, move to the next bit.
+            if ((currentXor & bitMask) === 0n) continue;
 
             let moveAmount;
-            moveAmount = (firstOperand & (bitMask - 1n)) + 1n;
-            moveAmount = findMinBigInt(moveAmount, bitMask - (secondOperand & (bitMask - 1n)));
+            // Calculate a potential move amount based on valA1 and the current bit mask.
+            moveAmount = (valA1 & (bitMask - 1n)) + 1n;
+            // Further refine moveAmount by taking the minimum with another calculated value
+            // involving valA2 and the bit mask.
+            moveAmount = findMin(moveAmount, bitMask - (valA2 & (bitMask - 1n)));
 
-            if (moveAmount < firstOperand) {
-                finalAnswer += moveAmount;
-                firstOperand -= moveAmount;
-                secondOperand += moveAmount;
-                break;
+            // If the calculated moveAmount is valid (i.e., less than valA1).
+            if (moveAmount < valA1) {
+                finalAnswer += moveAmount; // Add to the total answer.
+                valA1 -= moveAmount;       // Adjust valA1.
+                valA2 += moveAmount;       // Adjust valA2.
+                break; // Break from the inner bit-loop to re-evaluate currentXor.
             } else {
+                // If no valid move can be made for this bit, the problem is unsolvable.
                 return -1;
             }
         }
-        currentXorSum = firstOperand ^ secondOperand ^ xorSumOthers;
+        // Recalculate currentXor after adjustments to valA1 and valA2.
+        currentXor = valA1 ^ valA2 ^ xorSum;
     }
     return finalAnswer;
 }
 
-function findMinBigInt(valA, valB) {
-    return (valA > valB) ? valB : valA;
+/**
+ * Determines the minimum of two BigInt values.
+ * @param {BigInt} value1 - The first BigInt.
+ * @param {BigInt} value2 - The second BigInt.
+ * @returns {BigInt} The smaller of the two BigInts.
+ */
+function findMin(value1, value2) {
+    return value1 > value2 ? value2 : value1;
 }

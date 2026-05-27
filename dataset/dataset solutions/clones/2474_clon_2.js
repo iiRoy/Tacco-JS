@@ -1,52 +1,34 @@
-"use strict"; /* Activate strict parsing and execution rules for the current script. */
+"use strict";
 
-/**
- * Determines and returns the largest proper divisor (factor) of a given positive integer.
- * A proper divisor is a divisor of a number, other than the number itself.
- *
- * @param {number} targetNumber The positive integer for which to find the largest factor.
- * @returns {number} The largest factor of the 'targetNumber' found, defaulting to 1 if no other factor is present.
- */
-function findLargestFactor(targetNumber) {
-    let currentLargestFactor = 1; // Initialize the variable to hold the largest factor identified so far.
+// This function aims to find the largest proper divisor of a given number.
+function findLargestFactor(inputNumber) {
+  let currentLargestFactor = 1; // Initialize with 1, as it's always a divisor.
+  const halfValue = parseInt(inputNumber) / 2; // We only need to check up to half the number.
 
-    // Calculate the midpoint of the target number; we only need to check for factors up to this point.
-    // Factors beyond the midpoint would have a corresponding smaller factor already found.
-    const midpointValue = Number.parseInt(targetNumber) / 2;
-
-    // Loop through potential divisors starting from 2 up to, but not including, the midpoint.
-    for (let iterationIndex = 2; iterationIndex < midpointValue; iterationIndex++) {
-        // If the current 'iterationIndex' divides 'targetNumber' evenly
-        // AND 'iterationIndex' is greater than the 'currentLargestFactor' we've found,
-        if ((targetNumber % iterationIndex === 0) && (iterationIndex > currentLargestFactor)) {
-            currentLargestFactor = iterationIndex; // Update our record for the largest factor.
-        }
+  // Iterate from 2 up to (but not including) half the number.
+  for (let iterator = 2; iterator < halfValue; iterator++) {
+    // Check if 'iterator' divides 'inputNumber' evenly
+    // and if it's greater than the current largest factor found.
+    if (inputNumber % iterator === 0 && iterator > currentLargestFactor) {
+      currentLargestFactor = iterator; // Update the largest factor.
     }
-
-    return currentLargestFactor; // Return the final largest factor discovered.
+  }
+  return currentLargestFactor; // Return the determined largest factor.
 }
 
-/**
- * This primary function orchestrates the application's execution flow.
- * It reads input, processes it, performs calculations, and outputs results.
- *
- * @param {string} rawInputContent The complete raw string content read from the standard input source.
- */
-function initiateProcessing(rawInputContent) {
-    // Parse the first line of the raw input content into an integer, discarding any subsequent lines.
-    let primaryNumericValue = Number.parseInt(rawInputContent.split('\n')[0]);
+// The primary execution function that processes the input.
+function processInput(rawData) {
+  // Parse the first line of the input string into an integer.
+  rawData = parseInt(rawData.split("\n")[0]);
+  console.log(rawData); // Output the parsed input number.
 
-    console.log(primaryNumericValue); // Output the primary numeric value that was successfully parsed.
+  // Calculate the largest proper divisor for the processed number.
+  let calculatedFactor = findLargestFactor(rawData);
 
-    // Compute the largest factor for the 'primaryNumericValue' using our dedicated function.
-    let calculatedFactor = findLargestFactor(primaryNumericValue);
-
-    // Perform a specific arithmetic operation involving the calculated factor and the primary numeric value,
-    // then display the final computed result to the console.
-    console.log(calculatedFactor - 1 + primaryNumericValue / calculatedFactor - 1);
+  // Perform a specific calculation and output the result.
+  // This calculation seems to be (factor - 1) + (number / factor - 1).
+  console.log(calculatedFactor - 1 + rawData / calculatedFactor - 1);
 }
 
-// Begin the program execution by calling the main processing function.
-// It reads all data from the standard input stream ('/dev/stdin') using UTF-8 encoding
-// and passes it as a string to 'initiateProcessing'.
-initiateProcessing(require('node:fs').readFileSync('/dev/stdin', 'utf8'));
+// Read input from standard input and pass it to the main processing function.
+processInput(require("fs").readFileSync("/dev/stdin", "UTF-8"));

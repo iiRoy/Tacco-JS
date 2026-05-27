@@ -1,35 +1,17 @@
-const processTextualContent = (incomingSequence) => {
-  const determineCountParity = (charCollection) => {
-    let parityAccumulator = 0; // 0 for even, 1 for odd
-    for (const singleCharacter of charCollection) {
-      parityAccumulator = 1 - parityAccumulator;
-    }
-    return parityAccumulator === 1; // True if odd character count
-  };
+function analyzeSequence(sourceString) {
+  if (0 === (sourceString.length & 1)) {
+    console.log("No");
+    return;
+  }
 
-  const locateSpecificPattern = (charCollection) => {
-    return charCollection.some((currentElement, index, completeArray) =>
-      currentElement === 'h' && completeArray[index + 1] === 'i'
-    );
-  };
+  let outcomeIndicator = "Yes";
+  const segments = sourceString.split("hi");
 
-  const sequenceUnits = Array.from(incomingSequence);
-  const hasOddCharacterCount = determineCountParity(sequenceUnits);
-  const specificPatternFound = locateSpecificPattern(sequenceUnits);
+  if (segments.length > 1) {
+    outcomeIndicator = "No";
+  }
 
-  const outcomeRegistry = {
-    "true_false": "Yes",
-    "true_true": "No",
-    "false_false": "No",
-    "false_true": "No"
-  };
+  console.log(outcomeIndicator);
+}
 
-  const decisionKey = `${hasOddCharacterCount}_${specificPatternFound}`;
-  return outcomeRegistry[decisionKey];
-};
-
-const executeProcessingRoutine = (receivedPayload) => {
-  console.log(processTextualContent(receivedPayload));
-};
-
-executeProcessingRoutine(require("fs").readFileSync("/dev/stdin", "utf8"));
+analyzeSequence(require("fs").readFileSync("/dev/stdin", "utf8"));

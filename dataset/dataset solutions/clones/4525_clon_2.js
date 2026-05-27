@@ -1,20 +1,27 @@
-'use strict';
+'use strict'; // Enforce strict mode for cleaner code execution
 
-const processInputData = (sourceString) => {
-  // First, we parse the raw string data to extract and sort numerical values.
-  const numericValuesAsc = sourceString
-    .split('\n')                                    // Divide the input into individual lines.
-    .at(1)                                          // Select the second line, which contains the numbers.
-    .split(' ')                                     // Break that line into separate string-numbers.
-    .map( (currentStrItem) => parseInt(currentStrItem, 10) ) // Convert each string-number to an integer.
-    .sort( (firstNumber, secondNumber) => firstNumber - secondNumber ); // Arrange numbers in ascending order.
+/**
+ * Processes the raw input string to calculate the range of numbers.
+ * The range is defined as the difference between the maximum and minimum number.
+ *
+ * @param {string} rawData - The complete input string, expected to contain
+ *                           numbers on the second line, separated by spaces.
+ */
+const processInput = (rawData) => {
+    // Split the input by newline characters, then take the second line (index 1).
+    // This line is then split by spaces to get individual number strings.
+    // Each string is converted to an integer, and the resulting array is sorted numerically.
+    const sortedNumbers = rawData.split('\n')[1].split(' ').map(valStr => parseInt(valStr, 10)).sort((numA, numB) => numA - numB);
 
-  // Then, calculate the difference between the largest and smallest numbers.
-  console.log(numericValuesAsc[numericValuesAsc.length - 1] - numericValuesAsc[0]);
+    // After sorting, the smallest number is at index 0 and the largest is at the last index.
+    // Calculate the difference between the largest and smallest number.
+    const resultValue = sortedNumbers[sortedNumbers.length - 1] - sortedNumbers[0];
+
+    // Output the calculated range to the console.
+    console.log(resultValue);
 };
 
-// Initiate the data processing by reading from standard input.
-processInputData(
-  require('fs')
-    .readFileSync('/dev/stdin', 'utf-8')
-);
+// Read the entire content from standard input synchronously using Node.js 'fs' module.
+// The input is expected to be UTF-8 encoded.
+// Then, pass this content to the main processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf-8'));

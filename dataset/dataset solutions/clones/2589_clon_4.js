@@ -1,19 +1,16 @@
-const processText = (dataBlock) => {
-    const segments = dataBlock.split('\n');
-    const firstSequence = segments[0].split('');
-    const secondSequence = segments[1].split('');
+const processInput = (sourceData) => {
+    const allLines = sourceData.split('\n');
+    const primaryLine = allLines[0];
+    const secondaryLine = allLines[1];
 
-    const comparisonExtent = firstSequence.length;
+    const primaryCharacters = Array.from(primaryLine);
+    const secondaryCharacters = Array.from(secondaryLine);
 
-    const matchedPositionsCount = Array.from({ length: comparisonExtent }, (_, positionIndex) => positionIndex)
-        .reduce((currentAccumulator, currentPosition) => {
-            if (firstSequence[currentPosition] === secondSequence[currentPosition]) {
-                return currentAccumulator + 1;
-            }
-            return currentAccumulator;
-        }, 0);
+    const matchingSymbolCount = primaryCharacters.reduce((accumulator, currentSymbol, symbolIndex) => {
+        return accumulator + (currentSymbol === secondaryCharacters[symbolIndex] ? 1 : 0);
+    }, 0);
 
-    console.log(matchedPositionsCount);
+    console.log(matchingSymbolCount);
 };
 
-processText(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,105 +1,61 @@
-const convertToNumber = (strRepresentation) => {
-  let numericValue = 0;
-  let isValueNegative = false;
-  let charPosition = 0;
+const parseNum = (s) => +s;
+const parseCoordinates = (s) => s.split(' ').map(parseNum);
 
-  if (strRepresentation.charCodeAt(0) === 45) { // ASCII for '-'
-    isValueNegative = true;
-    charPosition = 1;
-  }
+function mainLogic(rawInput) {
+    const inputLines = rawInput.split('\n');
+    const coordinateCount = parseNum(inputLines[0]);
 
-  while (charPosition < strRepresentation.length) {
-    numericValue = numericValue * 10 + (strRepresentation.charCodeAt(charPosition) - 48); // ASCII for '0' is 48
-    charPosition++;
-  }
+    const initialCoordinatePairs = inputLines
+        .slice(1, coordinateCount + 1)
+        .map(parseCoordinates);
 
-  return isValueNegative ? -numericValue : numericValue;
-};
+    const firstPointSumParity = (initialCoordinatePairs[0][0] + initialCoordinatePairs[0][1]) % 2;
 
-const buildRepeatedSequence = (characterUnit, repetitionCount) => {
-  let resultingString = '';
-  let currentRepetition = 0;
-  while (currentRepetition < repetitionCount) {
-    resultingString += characterUnit;
-    currentRepetition++;
-  }
-  return resultingString;
-};
+    const allPointsValid = initialCoordinatePairs.every(pair => {
+        return ((pair[0] + pair[1]) % 2) === firstPointSumParity;
+    });
 
-const processCoordinateData = (rawDataInput) => {
-  const inputLines = rawDataInput.split('\n');
-  const countOfPoints = convertToNumber(inputLines[0]);
-
-  const pointCollection = [];
-  let initialPointSumParity = 0;
-
-  let pointIndex = 0;
-  while (pointIndex < countOfPoints) {
-    const coordinateStrings = inputLines[pointIndex + 1].split(' ');
-    const currentXCoord = convertToNumber(coordinateStrings[0]);
-    const currentYCoord = convertToNumber(coordinateStrings[1]);
-
-    pointCollection.push({ xComponent: currentXCoord, yComponent: currentYCoord });
-
-    if (pointIndex === 0) {
-      initialPointSumParity = (currentXCoord + currentYCoord) & 1; // Check parity using bitwise AND
-    } else {
-      const currentPointSumParity = (currentXCoord + currentYCoord) & 1;
-      if (currentPointSumParity !== initialPointSumParity) {
+    if (!allPointsValid) {
         console.log(-1);
         return;
-      }
-    }
-    pointIndex++;
-  }
-
-  if (initialPointSumParity === 1) {
-    let adjustIndex = 0;
-    while (adjustIndex < countOfPoints) {
-      let targetPoint = pointCollection[adjustIndex];
-      if ((targetPoint.xComponent & 1) === 1) { // If xComponent is odd
-        let swapTemp = targetPoint.xComponent;
-        targetPoint.xComponent = targetPoint.yComponent;
-        targetPoint.yComponent = swapTemp;
-      }
-      adjustIndex++;
-    }
-  }
-
-  const basePathLength = 20;
-  let parityContributionToLength = (pointCollection[0].xComponent & 1) + (pointCollection[0].yComponent & 1);
-  const totalPathLength = basePathLength + parityContributionToLength;
-
-  const pathComponentMagnitudes = Array.from({ length: totalPathLength }, () => '1').join(' ');
-  console.log(totalPathLength);
-  console.log(pathComponentMagnitudes);
-
-  let outputGenerationIndex = 0;
-  while (outputGenerationIndex < countOfPoints) {
-    let currentPointBeingProcessed = pointCollection[outputGenerationIndex];
-    let currentPath = '';
-    let adjustedX = currentPointBeingProcessed.xComponent;
-    let adjustedY = currentPointBeingProcessed.yComponent;
-
-    if ((adjustedX & 1) === 1) {
-      currentPath += 'R';
-      adjustedX++;
-    }
-    if ((adjustedY & 1) === 1) {
-      currentPath += 'R';
-      adjustedY++;
     }
 
-    const decompositionMagnitude = 10; // Constant used in path calculation
+    const adjustedCoordinatePairs = initialCoordinatePairs.map(pair => {
+        if (firstPointSumParity === 1 && pair[0] % 2 !== 0) {
+            return [pair[1], pair[0]];
+        }
+        return pair;
+    });
 
-    currentPath += buildRepeatedSequence('R', (decompositionMagnitude + adjustedX) / 2);
-    currentPath += buildRepeatedSequence('L', (decompositionMagnitude - adjustedX) / 2);
-    currentPath += buildRepeatedSequence('U', (decompositionMagnitude + adjustedY) / 2);
-    currentPath += buildRepeatedSequence('D', (decompositionMagnitude - adjustedY) / 2);
-    
-    console.log(currentPath);
-    outputGenerationIndex++;
-  }
-};
+    const baseArmLength = 20;
+    const totalArmCount = baseArmLength + (adjustedCoordinatePairs[0][0] % 2) + (adjustedCoordinatePairs[0][1] % 2);
 
-processCoordinateData(require("fs").readFileSync("/dev/stdin", "utf8"));
+    console.log(totalArmCount);
+    console.log(Array.from({ length: totalArmCount }, () => 1).join(' '));
+
+    const movementPaths = adjustedCoordinatePairs.map(currentPair => {
+        let [currentX, currentY] = currentPair;
+        let pathPrefix = '';
+
+        if (currentX % 2 !== 0) {
+            pathPrefix += 'R';
+            currentX++;
+        }
+        if (currentY % 2 !== 0) {
+            pathPrefix += 'R';
+            currentY++;
+        }
+
+        const fixedOffset = 10;
+        const rightSteps = 'R'.repeat((fixedOffset + currentX) / 2);
+        const leftSteps = 'L'.repeat((fixedOffset - currentX) / 2);
+        const upSteps = 'U'.repeat((fixedOffset + currentY) / 2);
+        const downSteps = 'D'.repeat((fixedOffset - currentY) / 2);
+
+        return pathPrefix + rightSteps + leftSteps + upSteps + downSteps;
+    });
+
+    console.log(movementPaths.join('\n'));
+}
+
+mainLogic(require("fs").readFileSync("/dev/stdin", "utf8"));

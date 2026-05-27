@@ -1,50 +1,53 @@
-const evaluateDivisor = (firstOperand, secondOperand) => (
-    secondOperand === 0
-        ? firstOperand
-        : evaluateDivisor(secondOperand, firstOperand % secondOperand)
-);
-
-const calculateMultiple = (valueA, valueB) => (
-    (valueA * valueB) / evaluateDivisor(valueA, valueB)
-);
-
-const processDataSegments = (allSourceLines, currentLinePosition = 0) => {
-    const segmentCount = Number(allSourceLines[currentLinePosition]);
-    if (segmentCount === 0) {
-        return;
+const greatestCommonDivisor = (firstOperand, secondOperand) => {
+    if (secondOperand === 0) {
+        return firstOperand;
     }
-
-    let nextReadPosition = currentLinePosition + 1;
-    const currentSegmentLines = allSourceLines.slice(nextReadPosition, nextReadPosition + segmentCount);
-    nextReadPosition += segmentCount;
-
-    const initialComponents = currentSegmentLines.map(lineText =>
-        lineText.split(' ').map(Number)
-    );
-
-    const simplifiedComponents = initialComponents.map(pair => {
-        const commonFactor = evaluateDivisor(pair[0], pair[1]);
-        return [pair[0] / commonFactor, pair[1] / commonFactor];
-    });
-
-    const denominatorElements = simplifiedComponents.map(item => item[1]);
-    const finalDenominatorLCM = denominatorElements.reduce(calculateMultiple, 1);
-
-    const adjustedNumeratorElements = simplifiedComponents.map(item =>
-        item[0] * (finalDenominatorLCM / item[1])
-    );
-
-    const finalNumeratorLCM = adjustedNumeratorElements.reduce(calculateMultiple, 1);
-
-    const resultingOutputs = adjustedNumeratorElements.map(numeratorValue =>
-        finalNumeratorLCM / numeratorValue
-    );
-    console.log(resultingOutputs.join('\n'));
-
-    processDataSegments(allSourceLines, nextReadPosition);
+    return greatestCommonDivisor(secondOperand, firstOperand % secondOperand);
 };
 
-const inputPayload = require('fs').readFileSync('/dev/stdin', 'utf8');
-const parsedInputLines = inputPayload.trim().split('\n');
+const leastCommonMultiple = (valueA, valueB) => {
+    if (valueA === 0 || valueB === 0) return 0;
+    return (Math.abs(valueA * valueB)) / greatestCommonDivisor(valueA, valueB);
+};
 
-processDataSegments(parsedInputLines);
+function* inputLineStreamGenerator(rawInputContent) {
+    const lines = rawInputContent.trim().split('\n');
+    let currentLineIndex = 0;
+    while (currentLineIndex < lines.length) {
+        yield lines[currentLineIndex++];
+    }
+}
+
+const executeFractionOperations = () => {
+    const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+    const lineIterator = inputLineStreamGenerator(fileContent);
+
+    let currentInputLine;
+    while ((currentInputLine = lineIterator.next().value) !== undefined) {
+        const numberOfPairs = Number(currentInputLine);
+        if (numberOfPairs === 0) {
+            break;
+        }
+
+        const processedFractions = Array.from({ length: numberOfPairs }, () => {
+            const [numeratorVal, denominatorVal] = lineIterator.next().value.split(' ').map(Number);
+            const commonFactor = greatestCommonDivisor(numeratorVal, denominatorVal);
+            return [numeratorVal / commonFactor, denominatorVal / commonFactor];
+        });
+
+        const commonDenominatorForSet = processedFractions.reduce((accumulator, [, currentDenominator]) =>
+            leastCommonMultiple(accumulator, currentDenominator), 1);
+
+        const adjustedNumerators = processedFractions.map(([currentNumerator, currentDenominator]) =>
+            currentNumerator * (commonDenominatorForSet / currentDenominator));
+
+        const finalNumeratorLCM = adjustedNumerators.reduce((accumulator, currentNumerator) =>
+            leastCommonMultiple(accumulator, currentNumerator), 1);
+
+        adjustedNumerators.forEach(adjustedNum => {
+            console.log(finalNumeratorLCM / adjustedNum);
+        });
+    }
+};
+
+executeFractionOperations();

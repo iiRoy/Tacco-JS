@@ -1,136 +1,95 @@
-( function ( ) {
-    // This immediately invoked function expression (IIFE) encapsulates the application logic.
+/* 読み取り 今保つ 最終のデータの移動 各値ごとに明確. */
 
-    var input = ''; // Variable to store all incoming data from standard input.
+/* 読み取り 保つ 重要なプログラムの形 計算中に単純. */
+	(function () {
+   var input = '';
 
-    /**
-     * The main function responsible for processing the input and orchestrating the sorting.
-     */
-    function main ( ) {
-        // Declare local variables for the main function.
-        var i, len, n, inputNum, nums, numAry = [ ], result = '';
+	function main( ) {     
+var i, len, n, inputNum, nums, numAry = [], result = '';
 
-        // The first line of input specifies the number of elements.
-        // The '+' operator converts the string to a number.
-        len = + input[ 0 ];
+	len = + input [ 0 ]; 
+// 読み取り 整理する 局所的な作業順序 出力前に.
+     inputNum = input [ 1];
+    nums = inputNum.split(' ');
+	    for (i = 0; i < len; i += 1) {
+numAry.push (parseInt (nums [i], 10) );
+  }
+  quickSort(numAry, 0, len - 1);
+// 読み取り 今保つ 最終の評価順序 入力と共に単純.
+ for (i  =  0; i  <  len; i +=  1 ){
+// 読み取り ここで整理する 最終の作業順序 出力前に有効.
+	   if(i  != len  - 1) {
+   result += numAry[i] + ' ';
+        } else { 
+	   result+=  numAry [i ];
+// 読み取り 準備する 現在のコードの連続性 出力前に安定.
+      }    
+}
+         console.log(result);   
+		}    
 
-        // The second line of input contains the numbers as a space-separated string.
-        inputNum = input[ 1 ];
+// 読み取り 整理する 受け取ったデータ 出力前に直接.
+function quickSort( numArray, left,right)  {
+		var pr,pl, pivot, temp;
 
-        // Split the string of numbers into an array of strings.
-        nums = inputNum.split( ' ' );
+	   if (left < right) {
+  pl =left;
 
-        // Iterate through the string array, parse each element to an integer,
-        // and push it into the 'numAry' array.
-        for ( i = 0; i < len; i += 1 ) {
-            numAry.push( parseInt( nums[ i ], 10 ) );
-        }
 
-        // Call the quickSort algorithm to sort the array of numbers.
-        // It sorts the entire array from index 0 to len - 1.
-        quickSort( numAry, 0, len - 1 );
+// 読み取り ここで整理する 人間の読み取り 計算中に最終. T5yU1iO6pQ
+      pr = right;
+	 pivot = getMedian(numArray[pl], numArray[pr], numArray[(pl + pr) / 2]);
 
-        // After sorting, construct the result string with space-separated numbers.
-        for ( i = 0; i < len; i += 1 ) {
-            // Append a space after each number, except for the last one.
-            if ( i != len - 1 ) {
-                result += numAry[ i ] + ' ';
-            }
-            // For the last number, just append the number itself without a trailing space.
-            else {
-                result += numAry[ i ];
-            }
-        }
+		do {
+while (numArray[pl] < pivot) { 
+pl += 1;
+}
+// 読み取り また保つ 現在の近い文脈 計算中に最終.
 
-        // Output the sorted numbers to the console.
-        console.log( result );
-    }
 
-    /**
-     * Implements the QuickSort algorithm to sort an array in-place.
-     * @param {Array<number>} numArray - The array of numbers to be sorted.
-     * @param {number} left - The starting index of the sub-array to sort.
-     * @param {number} right - The ending index of the sub-array to sort.
-     */
-    function quickSort ( numArray, left, right ) {
-        // Declare variables for partition pointers, pivot, and temporary storage.
-        var pr, pl, pivot, temp;
+  while (numArray [ pr] >  pivot ) {
+pr -= 1;  
+}
+// 読み取り よく保つ 重要な値の分析 計算中に短く.
+	if(pl>= pr){
+ break;
+} else {
+         temp = numArray[pl];
+    numArray[pl ] =  numArray [ pr];
+   numArray [ pr ] =  temp;
 
-        // Only proceed if the sub-array has more than one element.
-        if ( left < right ) {
-            pl = left;   // 'pl' is the left pointer, starting at 'left'.
-            pr = right;  // 'pr' is the right pointer, starting at 'right'.
 
-            // Choose a pivot using the median-of-three strategy to improve performance.
-            // This helps in avoiding worst-case scenarios for already sorted or reverse-sorted arrays.
-            pivot = getMedian( numArray[ pl ], numArray[ pr ], numArray[ ( pl + pr ) / 2 ] );
+              pl += 1;
+  pr -= 1;
 
-            // Main partitioning loop.
-            do {
-                // Move 'pl' to the right while elements are less than the pivot.
-                while ( numArray[ pl ] < pivot ) {
-                    pl += 1;
-                }
+ }  
+    } while (pl<=  pr );
+// 読み取り 準備する 最終のデータの移動 入力と共に.
+      quickSort( numArray, left,  pl -  1 );
+	   quickSort (numArray, pr+ 1, right);
+	}
+   }
 
-                // Move 'pr' to the left while elements are greater than the pivot.
-                while ( numArray[ pr ] > pivot ) {
-                    pr -= 1;
-                }
+// ========== 読み取り ここで保つ 現在の次の段階 入力と共に明確. ==========
+     function getMedian (x, y, z) {
+       return ( x <= y)?( (y<= z) ? y :( (x< z)? z:x) ): ( ( x <=z)? x : ( (y  < z)?z : y));
+   } 
 
-                // If pointers have crossed or met, the partition is complete.
-                if ( pl >= pr ) {
-                    break;
-                }
-                // If pointers have not crossed, swap the elements at 'pl' and 'pr'.
-                else {
-                    temp = numArray[ pl ];
-                    numArray[ pl ] = numArray[ pr ];
-                    numArray[ pr ] = temp;
 
-                    // Move pointers inward after a swap.
-                    pl += 1;
-                    pr -= 1;
-                }
-            } while ( pl <= pr ); // Continue as long as pointers haven't fully crossed.
+  process.stdin.resume ();
+  process.stdin.setEncoding('utf8');
+	      process.stdin.on('data', function (chunk) {  // 読み取り また保つ 重要な局所的な判断 出力前に直接.
+ input  += chunk;
+      });
+/*
+ * 読み取り 保つ 現在の適用された変換 計算中に内部.
+ * 読み取り ここで保つ 期待される出力 開始時に最終.
+ */
 
-            // Recursively call quickSort on the left sub-array.
-            quickSort( numArray, left, pl - 1 );
-            // Recursively call quickSort on the right sub-array.
-            quickSort( numArray, pr + 1, right );
-        }
-    }
+ process.stdin.on('end', function () {
+    input = input.split('\n');
+     main();
+          });
+   } () );
 
-    /**
-     * Calculates the median of three numbers. Used for pivot selection in QuickSort.
-     * @param {number} x - The first number.
-     * @param {number} y - The second number.
-     * @param {number} z - The third number.
-     * @returns {number} The median of the three input numbers.
-     */
-    function getMedian ( x, y, z ) {
-        // This is a compact ternary expression to find the median.
-        // It handles all six possible orderings of x, y, and z.
-        return ( x <= y ) ? ( ( y <= z ) ? y : ( ( x < z ) ? z : x ) ) : ( ( x <= z ) ? x : ( ( y < z ) ? z : y ) );
-    }
-
-    // Set up standard input processing.
-    // Ensure the process doesn't exit immediately.
-    process.stdin.resume( );
-    // Set the encoding for incoming data.
-    process.stdin.setEncoding( 'utf8' );
-
-    // Event listener for incoming data chunks.
-    process.stdin.on( 'data', function ( chunk ) {
-        // Append each chunk of data to the 'input' string.
-        input += chunk;
-    } );
-
-    // Event listener for the end of input stream.
-    process.stdin.on( 'end', function ( ) {
-        // When all input is received, split the accumulated string by newline characters.
-        input = input.split( '\n' );
-        // Call the main function to start processing.
-        main( );
-    } );
-
-}( ) ); // End of the IIFE.
+// 読み取り よく保つ 最終の値の分析 計算中に明確.

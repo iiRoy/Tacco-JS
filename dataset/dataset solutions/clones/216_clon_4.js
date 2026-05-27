@@ -1,51 +1,46 @@
-const acquireData = require('node:fs').readFileSync;
-const rawContent = acquireData(0, 'utf8');
+const fileSystem = require('fs');
+const streamStats = fileSystem.fstatSync(process.stdin.fd);
+const totalBytes = streamStats.size;
+const dataBuffer = Buffer.alloc(totalBytes);
+const actualBytesRead = fileSystem.readSync(process.stdin.fd, dataBuffer, 0, totalBytes, 0);
+const rawInputLines = dataBuffer.toString('utf8', 0, actualBytesRead).split('\n');
 
-const processedInputs = rawContent
-    .split('\n')
-    .map(line => {
-        const candidateValue = parseInt(line.trim(), 10);
-        if (candidateValue === 0 || isNaN(candidateValue)) {
-            return null;
-        }
-        return candidateValue;
-    })
-    .filter(item => item !== null);
+processInputAndOutput();
 
-initiateProcessing();
+function processInputAndOutput() {
+    const cumulativePrimeSums = calculatePrimeSumsAlternative();
 
-function generateCumulativePrimeSums() {
-    const upperBoundary = 10000;
-    const isCandidatePrime = new Array(upperBoundary + 1).fill(true);
+    rawInputLines.slice(0, rawInputLines.length - 1)
+                 .map(Number)
+                 .filter(val => !!val)
+                 .forEach(idx => {
+                     console.log(cumulativePrimeSums[idx]);
+                 });
+}
 
-    isCandidatePrime[0] = false;
-    isCandidatePrime[1] = false;
+function* primeGenerator(upperBound) {
+    const compositeTracker = new Array(upperBound + 1).fill(false);
+    compositeTracker[0] = compositeTracker[1] = true;
 
-    for (let factor = 2; factor * factor <= upperBoundary; factor++) {
-        if (isCandidatePrime[factor]) {
-            for (let multiple = factor * factor; multiple <= upperBoundary; multiple += factor) {
-                isCandidatePrime[multiple] = false;
+    for (let candidate = 2; candidate <= upperBound; candidate++) {
+        if (!compositeTracker[candidate]) {
+            yield candidate;
+            for (let multiple = candidate * candidate; multiple <= upperBound; multiple += candidate) {
+                compositeTracker[multiple] = true;
             }
         }
     }
-
-    const aggregatedSums = [];
-    let currentAccumulation = 0;
-
-    for (let currentNumber = 2; currentNumber <= upperBoundary; currentNumber++) {
-        if (isCandidatePrime[currentNumber]) {
-            currentAccumulation += currentNumber;
-            aggregatedSums.push(currentAccumulation);
-        }
-    }
-
-    return aggregatedSums;
 }
 
-function initiateProcessing() {
-    const precalculatedSequence = generateCumulativePrimeSums();
+function calculatePrimeSumsAlternative() {
+    const upperLimit = 10000;
+    const sumAccumulator = [];
+    let currentRunningTotal = 0;
 
-    processedInputs.forEach(inputIndex => {
-        console.log(precalculatedSequence[inputIndex]);
-    });
+    for (const currentPrime of primeGenerator(upperLimit)) {
+        currentRunningTotal += currentPrime;
+        sumAccumulator.push(currentRunningTotal);
+    }
+    
+    return sumAccumulator;
 }

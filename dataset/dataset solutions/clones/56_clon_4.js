@@ -1,60 +1,60 @@
-function LinkCell(itemPayload, nextLink) {
-    this.itemPayload = itemPayload;
-    this.nextLink = nextLink;
-}
+function processInputSequence(dataUnits) {
+    const initialAccumulator = {
+        dataPile: [],
+        outputQueue: []
+    };
 
-function ValueCollection() {
-    this.topElement = null;
-}
+    const finalState = dataUnits.reduce((acc, currentUnit) => {
+        const numericUnit = +currentUnit;
 
-ValueCollection.prototype.addEntry = function(newValue) {
-    this.topElement = new LinkCell(newValue, this.topElement);
-};
-
-ValueCollection.prototype.removeEntry = function() {
-    if (this.topElement === null) {
-        return undefined;
-    }
-    const extractedValue = this.topElement.itemPayload;
-    this.topElement = this.topElement.nextLink;
-    return extractedValue;
-};
-
-function* numberSequenceProducer(fullTextContent) {
-    const rawSegments = fullTextContent.trim().split(/\s+/);
-    for (const segment of rawSegments) {
-        yield Number(segment);
-    }
-}
-
-function displayOutput(valueToDisplay) {
-    console.log(valueToDisplay);
-}
-
-function orchestrateProcessing() {
-    const dataStack = new ValueCollection();
-    const numberIterator = numberSequenceProducer(streamBuffer);
-
-    for (const currentNumericValue of numberIterator) {
-        if (Number.isNaN(currentNumericValue)) {
-            break;
-        } else if (currentNumericValue === 0) {
-            displayOutput(dataStack.removeEntry());
-        } else {
-            dataStack.addEntry(currentNumericValue);
+        if (numericUnit === 0) {
+            acc.outputQueue.push(acc.dataPile.pop());
+        } else if (numericUnit === numericUnit) {
+            acc.dataPile.push(numericUnit);
         }
-    }
-}
+        return acc;
+    }, initialAccumulator);
 
+    finalState.outputQueue.forEach(displayResult);
+}
+ 
+function iterateRange(startVal, endVal, callbackFn) {
+    let actualStart = startVal;
+    let actualEnd = endVal;
+    let actualCallback = callbackFn;
+
+    if (actualCallback === undefined) {
+        actualCallback = endVal;
+        actualEnd = startVal;
+        actualStart = 0;
+    }
+
+    const recursiveIterator = (currentIdx) => {
+        if (currentIdx >= actualEnd) {
+            return;
+        }
+        if (actualCallback(currentIdx) === false) {
+            return;
+        }
+        recursiveIterator(currentIdx + 1);
+    };
+
+    recursiveIterator(actualStart);
+}
+ 
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
-
-var streamBuffer = '';
-
-process.stdin.on('data', function(incomingChunk) {
-    streamBuffer += incomingChunk;
+ 
+let rawInputBuffer = '';
+ 
+function displayResult(valueToLog) {
+	console.log(valueToLog);
+}
+ 
+process.stdin.on('data', function(chunk){
+	rawInputBuffer += chunk;
 });
-
-process.stdin.on('end', function() {
-    orchestrateProcessing();
+process.stdin.on('end', function(){
+	const processedDataUnits = rawInputBuffer.trim().split(/\s+/);
+	processInputSequence(processedDataUnits);
 });

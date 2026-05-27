@@ -1,136 +1,123 @@
-class DataStreamIterator {
-    #sourceLines;
-    #currentLineIndex;
-    #lineTokens;
-    #tokenIndex;
-
-    constructor(fullInputString) {
-        this.#sourceLines = fullInputString.trim().split("\n");
-        this.#currentLineIndex = 0;
-        this.#lineTokens = [];
-        this.#tokenIndex = 0;
+class DataStreamParser {
+    constructor(sourceText) {
+        this.lineBuffer = sourceText.trim().split("\n");
+        this.currentLineIndex = 0;
+        this.tokenCache = [];
     }
 
-    #ensureLineTokensLoaded() {
-        if (this.#tokenIndex >= this.#lineTokens.length) {
-            if (this.#currentLineIndex >= this.#sourceLines.length) {
-                throw new Error("End of input stream reached.");
+    _refillTokens() {
+        if (this.tokenCache.length === 0 && this.currentLineIndex < this.lineBuffer.length) {
+            this.tokenCache = this.lineBuffer[this.currentLineIndex++].split(" ");
+        }
+    }
+
+    extractSingle(asString) {
+        this._refillTokens();
+        const extractedToken = this.tokenCache.shift();
+        return asString ? extractedToken : Number(extractedToken);
+    }
+
+    extractLine(asStrings) {
+        if (this.currentLineIndex >= this.lineBuffer.length) {
+            throw new Error("End of input reached for line extraction.");
+        }
+        const lineContent = this.lineBuffer[this.currentLineIndex++];
+        const tokens = lineContent.split(" ");
+        return asStrings ? tokens : tokens.map(Number);
+    }
+
+    extractMultiLine(numLines, asStrings) {
+        const collectedData = [];
+        for (let k = 0; k < numLines; k++) {
+            if (this.currentLineIndex >= this.lineBuffer.length) {
+                throw new Error("Insufficient lines for multi-line extraction.");
             }
-            this.#lineTokens = this.#sourceLines[this.#currentLineIndex++].trim().split(" ");
-            this.#tokenIndex = 0;
+            const lineContent = this.lineBuffer[this.currentLineIndex++];
+            const tokens = lineContent.split(" ");
+            collectedData.push(asStrings ? tokens : tokens.map(Number));
         }
+        return collectedData;
     }
 
-    extractNumericAtom(returnAsString = false) {
-        this.#ensureLineTokensLoaded();
-        const value = this.#lineTokens[this.#tokenIndex++];
-        return returnAsString ? value : +value;
-    }
-
-    fetchLineAsNumbers(returnAsString = false) {
-        if (this.#currentLineIndex >= this.#sourceLines.length) {
-            throw new Error("End of input stream reached.");
+    extractRawLines(numLines, asStrings) {
+        const collectedData = [];
+        for (let k = 0; k < numLines; k++) {
+            if (this.currentLineIndex >= this.lineBuffer.length) {
+                throw new Error("Insufficient lines for raw line extraction.");
+            }
+            const lineContent = this.lineBuffer[this.currentLineIndex++];
+            collectedData.push(asStrings ? lineContent : Number(lineContent));
         }
-        this.#lineTokens = []; // Reset token state for extractNumericAtom
-        this.#tokenIndex = 0;
-
-        const line = this.#sourceLines[this.#currentLineIndex++].trim().split(" ");
-        return returnAsString ? line : line.map(Number);
-    }
-
-    fetchMatrixSlice(numRows, returnAsString = false) {
-        if (this.#currentLineIndex + numRows > this.#sourceLines.length) {
-            throw new Error("Not enough rows for matrix slice.");
-        }
-        this.#lineTokens = []; // Reset token state
-        this.#tokenIndex = 0;
-
-        const slice = this.#sourceLines.slice(this.#currentLineIndex, this.#currentLineIndex + numRows);
-        this.#currentLineIndex += numRows;
-        return returnAsString ?
-            slice.map(l => l.trim().split(" ")) :
-            slice.map(l => l.trim().split(" ").map(Number));
-    }
-
-    fetchVectorSlice(numElements, returnAsString = false) {
-        if (this.#currentLineIndex + numElements > this.#sourceLines.length) {
-            throw new Error("Not enough rows for vector slice.");
-        }
-        this.#lineTokens = []; // Reset token state
-        this.#tokenIndex = 0;
-
-        const slice = this.#sourceLines.slice(this.#currentLineIndex, this.#currentLineIndex + numElements);
-        this.#currentLineIndex += numElements;
-        return returnAsString ? slice : slice.map(Number);
+        return collectedData;
     }
 }
 
-function locateFloorIndex(dataCollection, startIdx, endIdx, targetValue) {
-    if (startIdx >= endIdx) {
-        return startIdx;
+const createDataParser = (inputSource) => new DataStreamParser(inputSource);
+
+const inputReader = createDataParser(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+function findLowerBoundIndex(sortedArr, startIdx, endIdx, targetVal) {
+    let low = startIdx;
+    let high = endIdx;
+    let mid;
+
+    while (low < high) {
+        mid = Math.floor((low + high) / 2);
+        if (sortedArr[mid] < targetVal) {
+            low = mid + 1;
+        } else {
+            high = mid;
+        }
     }
-    const midIdx = startIdx + Math.floor((endIdx - startIdx) / 2);
-    if (dataCollection[midIdx] < targetValue) {
-        return locateFloorIndex(dataCollection, midIdx + 1, endIdx, targetValue);
-    } else {
-        return locateFloorIndex(dataCollection, startIdx, midIdx, targetValue);
-    }
+    return low;
 }
 
-function filterOddOccurrences(inputNumericArray) {
-    const valueCounts = new Map();
-    for (const val of inputNumericArray) {
-        valueCounts.set(val, (valueCounts.get(val) || 0) + 1);
-    }
-    const filteredValues = [];
-    for (const [val, count] of valueCounts.entries()) {
-        if (count % 2 !== 0) {
-            filteredValues.push(val);
+function filterOddFrequencyElements(inputCollection) {
+    const uniqueOddElements = new Set();
+    for (const item of inputCollection) {
+        if (uniqueOddElements.has(item)) {
+            uniqueOddElements.delete(item);
+        } else {
+            uniqueOddElements.add(item);
         }
     }
-    return filteredValues.sort((valA, valB) => valA - valB);
+    return Array.from(uniqueOddElements).map(Number);
 }
 
-function calculateAggregateSum() {
-    const rawInput = require("fs").readFileSync("/dev/stdin", "utf8");
-    const inputReader = new DataStreamIterator(rawInput);
+console.log(computeFinalResult());
 
-    const countElements = inputReader.extractNumericAtom();
-    let firstArray = inputReader.fetchLineAsNumbers();
-    let secondArray = inputReader.fetchLineAsNumbers();
-    let finalResult = 0;
+function computeFinalResult() {
+    const elementCount = inputReader.extractSingle();
+    let primaryArray = inputReader.extractLine();
+    let secondaryArray = inputReader.extractLine();
+    let cumulativeSum = 0;
 
-    for (let bitPosition = 28; bitPosition >= 0; bitPosition--) {
-        const currentBitVal = 1 << bitPosition;
-        const doubleBitVal = currentBitVal * 2;
-        const tripleBitVal = currentBitVal * 3;
-        const bitMask = currentBitVal - 1;
+    for (let bitPosition = 28; bitPosition >= 0; --bitPosition) {
+        const currentBitValue = 1 << bitPosition;
+        const twiceBitValue = currentBitValue * 2;
+        const thriceBitValue = currentBitValue * 3;
+        const bitMask = currentBitValue - 1;
+        let pairCount = elementCount * elementCount;
 
-        let parityAccumulator = countElements * countElements;
+        secondaryArray.sort((valA, valB) => valA - valB);
 
-        secondArray.sort((valA, valB) => valA - valB);
+        primaryArray.forEach(pElement => {
+            const upperLimitTwo = findLowerBoundIndex(secondaryArray, 0, elementCount, twiceBitValue - pElement);
+            const upperLimitOne = findLowerBoundIndex(secondaryArray, 0, upperLimitTwo, currentBitValue - pElement);
+            const upperLimitThree = findLowerBoundIndex(secondaryArray, upperLimitTwo, elementCount, thriceBitValue - pElement);
+            pairCount += (-upperLimitThree + upperLimitTwo - upperLimitOne);
+        });
 
-        for (let elementIndex = 0; elementIndex < countElements; elementIndex++) {
-            const currentAVal = firstArray[elementIndex];
-
-            const idxBoundary2 = locateFloorIndex(secondArray, 0, countElements, doubleBitVal - currentAVal);
-            const idxBoundary1 = locateFloorIndex(secondArray, 0, idxBoundary2, currentBitVal - currentAVal);
-            const idxBoundary3 = locateFloorIndex(secondArray, idxBoundary2, countElements, tripleBitVal - currentAVal);
-
-            parityAccumulator += -idxBoundary3 + idxBoundary2 - idxBoundary1;
+        if (pairCount % 2 !== 0) {
+            cumulativeSum += currentBitValue;
         }
 
-        if (parityAccumulator % 2 !== 0) {
-            finalResult += currentBitVal;
-        }
-
-        secondArray = secondArray.map(val => val & bitMask);
+        secondaryArray = secondaryArray.map(qElement => qElement & bitMask);
         if (bitPosition < 18) {
-            secondArray = filterOddOccurrences(secondArray);
+            secondaryArray = filterOddFrequencyElements(secondaryArray);
         }
-        firstArray = firstArray.map(val => val & bitMask);
+        primaryArray = primaryArray.map(pElement => pElement & bitMask);
     }
-    return finalResult;
-}
 
-console.log(calculateAggregateSum());
+    return cumulativeSum;
+}

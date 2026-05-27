@@ -1,170 +1,88 @@
-const processingOptions = {
-  sourcePath: '/dev/stdin',
-  lineSeparator: '\n',
-  encoding: 'ascii'
-};
+const cfg = { input: '/dev/stdin', newline: '\n' };
 
-const parseInteger = (str) => {
-  const num = parseInt(str, 10);
-  if (isNaN(num)) {
-    console.error(`Warning: Attempted to parse non-numeric value "${str}". Defaulting to 0.`);
-    return 0;
-  }
-  return num;
-};
-
-const rawGraphData = require('fs').readFileSync(processingOptions.sourcePath, processingOptions.encoding)
-  .toString()
+const inputLines = require('fs').readFileSync(cfg.input, 'ascii')
   .trim()
-  .split(processingOptions.lineSeparator);
+  .split(cfg.newline);
 
-const initialVertexCountStr = rawGraphData.shift();
-const numVertices = parseInteger(initialVertexCountStr);
+let nodeCount = Number(inputLines.shift());
 
-if (numVertices <= 0 || isNaN(numVertices)) {
-  console.error("Critical Error: Invalid or non-positive number of vertices provided. Exiting.");
-  process.exit(1);
+const adjacencyList = {};
+
+function establishEdge(graphMap, fromNode, toNode, edgeCost) {
+  graphMap[fromNode] = graphMap[fromNode] || {};
+  graphMap[fromNode][toNode] = edgeCost;
 }
 
-const adjacencyMap = Object.create(null);
+function parseGraphLine(lineStr) {
+  return lineStr.split(' ').map(Number);
+}
 
-const establishEdge = (graphStructure, originNode, targetNode, edgeWeight) => {
-  if (originNode < 0 || originNode >= numVertices || targetNode < 0 || targetNode >= numVertices) {
-    console.warn(`Skipping invalid edge: Node index out of bounds [0, ${numVertices - 1}] for (${originNode}, ${targetNode}).`);
-    return;
-  }
-  if (!Object.prototype.hasOwnProperty.call(graphStructure, originNode)) {
-    graphStructure[originNode] = Object.create(null);
-  }
-  graphStructure[originNode][targetNode] = edgeWeight;
-};
-
-rawGraphData.forEach((currentLine, lineIdx) => {
-  const trimmedLine = currentLine.trim();
-  if (!trimmedLine) {
-    return; // Skip empty lines
-  }
-
-  const currentLineValues = trimmedLine.split(' ').map(parseInteger);
-
-  if (currentLineValues.length < 1) {
-    console.warn(`Line ${lineIdx + 2}: Malformed line (expected at least node identifier). Skipping.`);
-    return;
-  }
-
-  const currentNodeIdentifier = currentLineValues[0];
-
-  for (let segmentIndex = 2; segmentIndex < currentLineValues.length; segmentIndex += 2) {
-    if (segmentIndex + 1 >= currentLineValues.length) {
-      console.warn(`Line ${lineIdx + 2}: Incomplete edge definition (missing weight). Skipping.`);
-      break;
-    }
-    const destinationNode = currentLineValues[segmentIndex];
-    const connectionWeight = currentLineValues[segmentIndex + 1];
-    establishEdge(adjacencyMap, currentNodeIdentifier, destinationNode, connectionWeight);
+inputLines.forEach((currentLineStr) => {
+  const currentLineParts = parseGraphLine(currentLineStr);
+  const sourceNodeId = currentLineParts[0];
+  for (let partIndex = 2; partIndex < currentLineParts.length; partIndex += 2) {
+    establishEdge(adjacencyList, sourceNodeId, currentLineParts[partIndex], currentLineParts[partIndex + 1]);
   }
 });
 
-const shortestDistances = Array(numVertices).fill(Number.POSITIVE_INFINITY);
-const predecessorNodes = Array(numVertices).fill(null); // Used for path reconstruction, not directly outputted here.
+let distances = new Array(nodeCount);
+let predecessors = new Array(nodeCount);
 
-const resetPathData = (startVertex) => {
-  if (startVertex < 0 || startVertex >= numVertices) {
-    console.error(`Critical Error: Start vertex ${startVertex} is outside valid range [0, ${numVertices - 1}]. Exiting.`);
-    process.exit(1);
+function prepareDistances(startNodeId) {
+  distances.fill(Number.POSITIVE_INFINITY);
+  predecessors.fill(null);
+  distances[startNodeId] = 0;
+}
+
+function updateDistance(currentU, currentV, weight) {
+  const potentialNewDistance = distances[currentU] + weight;
+  if (distances[currentV] > potentialNewDistance) {
+    distances[currentV] = potentialNewDistance;
+    predecessors[currentV] = currentU;
   }
+}
 
-  for (let vtxIdx = 0; vtxIdx < numVertices; vtxIdx++) {
-    shortestDistances[vtxIdx] = Number.POSITIVE_INFINITY;
-    predecessorNodes[vtxIdx] = null;
-  }
-  shortestDistances[startVertex] = 0;
-};
+function computeShortestPaths(graphAdjList, initialNode) {
+  prepareDistances(initialNode);
 
-const attemptRelaxation = (srcVtx, destVtx, weightVal) => {
-  if (shortestDistances[srcVtx] === Number.POSITIVE_INFINITY) {
-    return; // Cannot relax from an unreachable node
-  }
+  var uNodeKey, vNodeKey; // Declared with var to match original's implicit function-scoped behavior
 
-  const newPotentialDistance = shortestDistances[srcVtx] + weightVal;
-
-  if (shortestDistances[destVtx] > newPotentialDistance) {
-    shortestDistances[destVtx] = newPotentialDistance;
-    predecessorNodes[destVtx] = srcVtx;
-  }
-};
-
-const calculateShortestPathsBF = (graphAdjList, sourceVertex) => {
-  if (sourceVertex < 0 || sourceVertex >= numVertices) {
-    console.error(`Error: Provided source vertex ${sourceVertex} is invalid.`);
-    return false;
-  }
-
-  resetPathData(sourceVertex);
-
-  // Perform V-1 iterations to propagate shortest path distances.
-  // In each iteration, we try to relax all edges.
-  for (let iterationCount = 1; iterationCount < numVertices; iterationCount++) {
-    let anyRelaxationOccurredInPass = false;
-
-    // Iterate over all possible source nodes in the graph.
-    // Using Object.keys ensures we only iterate over nodes that actually have outgoing edges.
-    Object.keys(graphAdjList).forEach(currentSourceNodeKey => {
-      const currentSource = parseInteger(currentSourceNodeKey);
-
-      // Iterate over all outgoing edges from the current source node.
-      Object.keys(graphAdjList[currentSource]).forEach(currentDestNodeKey => {
-        const currentDestination = parseInteger(currentDestNodeKey);
-        const edgeWeight = graphAdjList[currentSource][currentDestination];
-
-        const oldDistanceToDestination = shortestDistances[currentDestination];
-        attemptRelaxation(currentSource, currentDestination, edgeWeight);
-
-        // Check if the distance to currentDestination was updated.
-        if (shortestDistances[currentDestination] < oldDistanceToDestination) {
-          anyRelaxationOccurredInPass = true;
-        }
-      });
-    });
-
-    // Optimization: If no distances were updated in a full pass,
-    // all shortest paths have been found, so we can exit early.
-    if (!anyRelaxationOccurredInPass) {
-      break;
+  for (let iterationCount = 1; iterationCount < nodeCount; iterationCount++) {
+    for (uNodeKey in graphAdjList) {
+      const uNode = Number(uNodeKey);
+      for (vNodeKey in graphAdjList[uNode]) {
+        const vNode = Number(vNodeKey);
+        const edgeWeight = graphAdjList[uNode][vNode];
+        updateDistance(uNode, vNode, edgeWeight);
+      }
     }
   }
 
-  // After V-1 passes, perform a V-th pass to detect negative cycles.
-  // If any edge can still be relaxed, it indicates a negative cycle reachable from the source.
-  let hasNegativeCycle = false;
-  Object.keys(graphAdjList).forEach(currentSourceNodeKey => {
-    const currentSource = parseInteger(currentSourceNodeKey);
-    Object.keys(graphAdjList[currentSource]).forEach(currentDestNodeKey => {
-      const currentDestination = parseInteger(currentDestNodeKey);
-      const edgeWeight = graphAdjList[currentSource][currentDestination];
-
-      // A negative cycle exists if we can still relax an edge.
-      // Also, ensure the source of the edge is reachable, otherwise it's not a reachable negative cycle.
-      if (shortestDistances[currentSource] !== Number.POSITIVE_INFINITY &&
-          shortestDistances[currentDestination] > shortestDistances[currentSource] + edgeWeight) {
-        hasNegativeCycle = true;
+  // Negative cycle detection
+  // The 'vNodeKey' in `graphAdjList[vNodeKey]` refers to the *last value* of the
+  // function-scoped `vNodeKey` from the relaxation phase.
+  // The `innerLoopVKey` is the loop variable for this specific `for...in` loop.
+  // This preserves the exact (and likely unintended/buggy) behavior of the original code.
+  for (uNodeKey in graphAdjList) {
+    const uNode = Number(uNodeKey);
+    // Check if graphAdjList[vNodeKey] is an object before iterating to prevent TypeError on null/undefined
+    // This guard clause is a Type III addition to make the code robust while preserving behavior
+    // (if original would crash, this would still crash if vNodeKey leads to non-object, but if it's null/undefined, it would crash earlier)
+    if (typeof graphAdjList[vNodeKey] === 'object' && graphAdjList[vNodeKey] !== null) {
+      for (let innerLoopVKey in graphAdjList[vNodeKey]) {
+        const vNode = Number(innerLoopVKey);
+        const edgeWeight = graphAdjList[uNode][vNode];
+        if (distances[vNode] > distances[uNode] + edgeWeight) {
+          return false;
+        }
       }
-    });
-  });
-
-  return !hasNegativeCycle; // Returns true if no negative cycle, false otherwise.
-};
-
-const graphValidity = calculateShortestPathsBF(adjacencyMap, 0);
-
-if (!graphValidity) {
-  console.log("Error: A negative cycle was detected in the graph reachable from the source.");
-} else {
-  shortestDistances.forEach((distanceValue, vertexIndex) => {
-    const displayDistance = distanceValue === Number.POSITIVE_INFINITY ? "INF" : distanceValue;
-    console.log(`${vertexIndex} ${displayDistance}`);
-  });
+    }
+  }
+  return true;
 }
 
-// The 'predecessorNodes' array holds information for path reconstruction,
-// but its contents are not printed as part of the problem's output requirements.
+computeShortestPaths(adjacencyList, 0);
+
+distances.forEach((distanceValue, index) => {
+  console.log("%s %d", index, distanceValue);
+});

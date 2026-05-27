@@ -1,23 +1,17 @@
-const { readFileSync: retrieveContent } = require('fs');
+const fileData = require('fs').readFileSync('/dev/stdin', 'utf8');
+const dataLines = fileData.split('\n');
 
-const operationMap = new Map();
-operationMap.set(1, (val1, val2) => "Hello World");
-operationMap.set("default", (val1, val2) => val1 + val2);
+const [valNStr, valAStr, valBStr] = dataLines;
 
-const processExternalData = () => {
-    const rawContent = retrieveContent('/dev/stdin', 'utf8');
-    const numericalEntities = rawContent
-        .split('\n')
-        .filter(segment => segment.trim() !== '')
-        .map(segment => Number(segment));
+const valN = parseInt(valNStr, 10);
+const valA = parseInt(valAStr, 10);
+const valB = parseInt(valBStr, 10);
 
-    const primaryKey = numericalEntities[0];
-    const firstElement = numericalEntities[1];
-    const secondElement = numericalEntities[2];
+const resultGenerator = new Map([
+    [true, () => 'Hello World'],
+    [false, (a, b) => a + b]
+]);
 
-    const chosenAction = operationMap.has(primaryKey) ? operationMap.get(primaryKey) : operationMap.get("default");
-    
-    return chosenAction(firstElement, secondElement);
-};
+const outputValue = resultGenerator.get(valN === 1)(valA, valB);
 
-console.log(processExternalData());
+console.log(outputValue);

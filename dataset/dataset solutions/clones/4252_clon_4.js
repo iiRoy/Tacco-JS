@@ -1,38 +1,21 @@
-function processInputText(incomingText) {
-  const cleanedSequence = incomingText.replace(/^\s+|\s+$/g, '');
-  const sequenceLength = cleanedSequence.length;
+function executeLogic(sourceContent) {
+    const variableFactory = (rawText) => {
+        const cleanedText = rawText.trim();
+        const firstArray = Array.from(cleanedText.split('\n'));
+        const secondArray = Array.from(cleanedText);
+        return {
+            firstIdentifier: firstArray,
+            secondIdentifier: secondArray
+        };
+    };
 
-  if (sequenceLength <= 1) {
-    return displayResult(true);
-  }
+    const { firstIdentifier: a, secondIdentifier: ｂ } = variableFactory(sourceContent);
 
-  let initialIndex = 0;
-  let finalIndex = sequenceLength - 1;
-  let isSymmetrical = true;
+    const decisionMap = new Map();
+    decisionMap.set(true, 'YES');
+    decisionMap.set(false, 'NO');
 
-  while (initialIndex < finalIndex) {
-    if (cleanedSequence[initialIndex] !== cleanedSequence[finalIndex]) {
-      isSymmetrical = false;
-      break;
-    }
-    initialIndex++;
-    finalIndex--;
-  }
-
-  displayResult(isSymmetrical);
+    console.log(decisionMap.get(a == b.reverse().join("")));
 }
 
-function displayResult(outcome) {
-  if (outcome) {
-    process.stdout.write('YES\n');
-  } else {
-    process.stdout.write('NO\n');
-  }
-}
-
-const gatherData = (sourcePath) => {
-    const fileSystem = require('fs');
-    return fileSystem.readFileSync(sourcePath, 'utf8');
-};
-
-processInputText(gatherData('/dev/stdin'));
+executeLogic(require('fs').readFileSync('/dev/stdin', 'utf8'));

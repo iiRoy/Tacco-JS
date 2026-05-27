@@ -1,146 +1,134 @@
-const dataStream = (rawContent) => {
-    let contentLines = rawContent.trim().split(/\r?\n/).filter(line => line.length > 0);
+const createInputProcessor = (sourceText) => {
+    let lineSegments = sourceText.trim().split('\n');
     let currentLinePointer = 0;
-    let currentLineTokens = null;
-    let currentTokenIndex = 0;
+    let currentLineWordCache = []; // Stores words for the current line, in reverse order for 'fetchToken'
 
-    const fillTokens = () => {
-        if (currentLineTokens === null || currentTokenIndex >= currentLineTokens.length) {
-            if (currentLinePointer >= contentLines.length) {
-                throw new Error("Input stream exhausted");
-            }
-            currentLineTokens = contentLines[currentLinePointer].split(/\s+/).filter(token => token.length > 0);
+    const advanceLineIfCacheEmpty = () => {
+        if (currentLineWordCache.length === 0) {
             currentLinePointer++;
-            currentTokenIndex = 0;
-            if (currentLineTokens.length === 0) {
-                return fillTokens();
-            }
         }
     };
 
     return {
-        grabNext: (asString = false) => {
-            fillTokens();
-            const token = currentLineTokens[currentTokenIndex++];
-            return asString ? token : Number(token);
-        },
-        extractLine: (asString = false) => {
-            if (currentLinePointer >= contentLines.length) {
-                throw new Error("Input stream exhausted");
+        fetchToken(asString) {
+            // This method processes the current line by splitting it into words
+            // and then extracting them from right to left (mimicking original pop/reverse behavior).
+            // It's designed to be called multiple times on the same line until exhausted.
+            if (currentLineWordCache.length === 0 && currentLinePointer < lineSegments.length) {
+                currentLineWordCache = lineSegments[currentLinePointer].split(' ').reverse();
             }
-            currentLineTokens = null;
-            currentTokenIndex = 0;
+            const extractedToken = currentLineWordCache.pop();
+            advanceLineIfCacheEmpty(); // Move to next line if current one is fully consumed by tokens
+            return asString ? extractedToken : Number(extractedToken);
+        },
 
-            const lineData = contentLines[currentLinePointer++];
-            const tokens = lineData.split(/\s+/).filter(token => token.length > 0);
+        fetchLineTokens(asString) {
+            // This method processes an entire line at once, moving to the next line.
+            // It assumes 'fetchToken' has either not been called for this line,
+            // or has fully consumed it and advanced 'currentLinePointer'.
+            if (currentLinePointer >= lineSegments.length) {
+                throw new Error("Input source exhausted.");
+            }
+            const lineContent = lineSegments[currentLinePointer++];
+            const tokens = lineContent.split(' ');
             return asString ? tokens : tokens.map(Number);
         },
-        extractTable: (rows, asString = false) => {
-            if (currentLinePointer + rows > contentLines.length) {
-                throw new Error("Not enough lines for table extraction");
-            }
-            currentLineTokens = null;
-            currentTokenIndex = 0;
 
-            const tableRows = contentLines.slice(currentLinePointer, currentLinePointer + rows);
-            currentLinePointer += rows;
-            return tableRows.map(line => {
-                const tokens = line.split(/\s+/).filter(token => token.length > 0);
-                return asString ? tokens : tokens.map(Number);
-            });
+        fetchLineBlock(numRows, asString) {
+            const blockData = [];
+            for (let i = 0; i < numRows; i++) {
+                blockData.push(this.fetchLineTokens(asString));
+            }
+            return blockData;
         },
-        extractSeries: (rows, asString = false) => {
-            if (currentLinePointer + rows > contentLines.length) {
-                throw new Error("Not enough lines for series extraction");
-            }
-            currentLineTokens = null;
-            currentTokenIndex = 0;
 
-            const seriesLines = contentLines.slice(currentLinePointer, currentLinePointer + rows);
-            currentLinePointer += rows;
-            return asString ? seriesLines : seriesLines.map(Number);
+        fetchRawLines(numRows, asString) {
+            const rawLines = [];
+            for (let i = 0; i < numRows; i++) {
+                if (currentLinePointer >= lineSegments.length) {
+                    throw new Error("Input source exhausted.");
+                }
+                const lineContent = lineSegments[currentLinePointer++];
+                rawLines.push(asString ? lineContent : Number(lineContent));
+            }
+            return rawLines;
         }
     };
 };
 
-const matrixBuilder = (initialValue, ...dimensions) => {
-    const normalizeInitial = (val) => {
-        if (typeof val === 'string') {
-            try {
-                const parsed = JSON.parse(val);
-                return parsed;
-            } catch (e) {
-                // Not valid JSON, treat as string literal
-            }
-        }
-        return val;
-    };
-
-    const baseElement = normalizeInitial(initialValue);
-
-    const constructRecursive = (dims) => {
+const createMultiDimensionalArray = (initialValue, ...dimensions) => {
+    const recursiveBuilder = (dims) => {
         if (dims.length === 0) {
-            return (typeof baseElement === 'object' && baseElement !== null)
-                ? JSON.parse(JSON.stringify(baseElement))
-                : baseElement;
+            // If initialValue is an object (like []), return a new instance to avoid shared references.
+            return (typeof initialValue === 'object' && initialValue !== null)
+                ? JSON.parse(JSON.stringify(initialValue))
+                : initialValue;
         }
         const currentDimensionSize = dims[0];
         const remainingDimensions = dims.slice(1);
-        const result = new Array(currentDimensionSize);
-        for (let i = 0; i < currentDimensionSize; i++) {
-            result[i] = constructRecursive(remainingDimensions);
-        }
-        return result;
+        return Array.from({ length: currentDimensionSize }, () => recursiveBuilder(remainingDimensions));
     };
-    return constructRecursive(dimensions);
+    return recursiveBuilder(dimensions);
 };
 
-const processGraph = () => {
-    const inputSource = dataStream(require("fs").readFileSync("/dev/stdin", "utf8"));
-    const vertexCount = inputSource.grabNext();
+const determineGraphOutcome = () => {
+    const inputReader = createInputProcessor(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-    const adjacencies = matrixBuilder("[]", vertexCount);
+    const totalNodes = inputReader.fetchToken();
+    const graphAdjacency = createMultiDimensionalArray([], totalNodes);
 
-    for (let linkIndex = 0; linkIndex < vertexCount - 1; linkIndex++) {
-        const [node1, node2] = inputSource.extractLine().map(id => id - 1);
-        adjacencies[node1].push(node2);
-        adjacencies[node2].push(node1);
+    for (let i = 1; i < totalNodes; i++) {
+        const [nodeA, nodeB] = inputReader.fetchLineTokens().map(idx => idx - 1);
+        graphAdjacency[nodeA].push(nodeB);
+        graphAdjacency[nodeB].push(nodeA);
     }
 
-    const performBFS = (startNodeId) => {
-        const traversalQueue = [];
-        traversalQueue.push([startNodeId, 0]);
-        const seenNodes = new Set();
-        seenNodes.add(startNodeId);
+    // First Breadth-First Search (BFS) to find one of the farthest nodes from an arbitrary start (node 0).
+    let bfsQueue = [{ vertex: 0, distance: 0 }];
+    let distancesFromStart = createMultiDimensionalArray(-1, totalNodes); // -1 indicates unvisited
+    distancesFromStart[0] = 0;
+    let farthestNodeEndpoint = 0;
+    let maximumDistanceEncountered = 0;
 
-        let finalNode = startNodeId;
-        let greatestDistance = 0;
-        let queueHead = 0;
+    let queueHead = 0; // Using a pointer for efficient queue processing (avoids array shift)
+    while (queueHead < bfsQueue.length) {
+        const { vertex: currentVertex, distance: currentDistance } = bfsQueue[queueHead++];
 
-        while (queueHead < traversalQueue.length) {
-            const [currentNodeId, currentDist] = traversalQueue[queueHead++];
+        if (currentDistance > maximumDistanceEncountered) {
+            maximumDistanceEncountered = currentDistance;
+            farthestNodeEndpoint = currentVertex;
+        }
 
-            if (currentDist > greatestDistance) {
-                greatestDistance = currentDist;
-                finalNode = currentNodeId;
-            }
-
-            for (const neighborId of adjacencies[currentNodeId]) {
-                if (!seenNodes.has(neighborId)) {
-                    seenNodes.add(neighborId);
-                    traversalQueue.push([neighborId, currentDist + 1]);
-                }
+        for (const neighbor of graphAdjacency[currentVertex]) {
+            if (distancesFromStart[neighbor] === -1) {
+                distancesFromStart[neighbor] = currentDistance + 1;
+                bfsQueue.push({ vertex: neighbor, distance: currentDistance + 1 });
             }
         }
-        return { furthestNode: finalNode, maxPathLength: greatestDistance };
-    };
+    }
 
-    const firstTraversalResult = performBFS(0);
-    const secondTraversalResult = performBFS(firstTraversalResult.furthestNode);
+    // Second BFS, starting from the 'farthestNodeEndpoint' found in the first pass,
+    // to determine the actual diameter (longest path) of the graph.
+    bfsQueue = [{ vertex: farthestNodeEndpoint, distance: 0 }];
+    distancesFromStart = createMultiDimensionalArray(-1, totalNodes); // Reset distances for the new start
+    distancesFromStart[farthestNodeEndpoint] = 0;
+    let graphDiameterLength = 0;
 
-    const graphDiameter = secondTraversalResult.maxPathLength;
+    queueHead = 0;
+    while (queueHead < bfsQueue.length) {
+        const { vertex: currentVertex, distance: currentDistance } = bfsQueue[queueHead++];
 
-    return graphDiameter % 3 === 2 ? "Second" : "First";
+        graphDiameterLength = Math.max(graphDiameterLength, currentDistance);
+
+        for (const neighbor of graphAdjacency[currentVertex]) {
+            if (distancesFromStart[neighbor] === -1) {
+                distancesFromStart[neighbor] = currentDistance + 1;
+                bfsQueue.push({ vertex: neighbor, distance: currentDistance + 1 });
+            }
+        }
+    }
+
+    return graphDiameterLength % 3 === 2 ? "Second" : "First";
 };
 
-console.log(processGraph());
+console.log(determineGraphOutcome());

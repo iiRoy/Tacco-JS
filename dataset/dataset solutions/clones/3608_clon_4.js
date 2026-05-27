@@ -1,20 +1,18 @@
-const calculateFactors = (inputNumber) => {
-    if (inputNumber === 0) return 0;
-
-    return Array.from({ length: inputNumber }, (_, index) => index + 1)
-                .filter(potentialFactor => inputNumber % potentialFactor === 0)
+const computeDivisorCount = (targetNumber) => {
+    return Array.from({ length: targetNumber + 1 }, (_, indexValue) => indexValue)
+                .filter(potentialDivisor => targetNumber % potentialDivisor === 0)
                 .length;
 };
 
-const analyzeRange = (textualInput) => {
-    const upperLimit = parseInt(textualInput, 10);
+const executeSolution = (inputData) => {
+    const numericValue = Number(inputData);
 
-    const finalCount = Array.from({ length: upperLimit }, (_, index) => index + 1)
-                           .filter(currentValue => currentValue % 2 !== 0)
-                           .filter(oddValue => calculateFactors(oddValue) === 8)
-                           .length;
+    const finalTally = Array.from({ length: numericValue + 1 }, (_, currentIteration) => currentIteration)
+        .filter(valueCandidate => valueCandidate % 2 !== 0)
+        .filter(oddCandidate => computeDivisorCount(oddCandidate) === 8)
+        .length;
 
-    console.log(finalCount);
+    console.log(finalTally);
 };
 
-analyzeRange(require("fs").readFileSync("/dev/stdin", "utf8"));
+executeSolution(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,110 +1,47 @@
-/* This function calculates the Greatest Common Divisor (GCD)
-   of two non-negative integers using the Euclidean algorithm. */
-function   GCD ( a , b )
-{
-    // Initialize variables for the algorithm.
-    var    m    =    Math.max    ( a , b )    ;    // 'm' will hold the larger of the two numbers initially.
+// 읽기 또한유지한다 로컬보이는 결과 출력 전에안정.
+function GCD( a, b) {
+var m=Math.max(a,b);
+	var n=Math.min ( a,b);
+  while(n !=  0){  // 핵심변수 준비 여기서유지한다.
+		var N= n;
+    n=m%n;
+m=N;
+}  
+return m;
+  }    
+var input = require('fs').readFileSync('/dev/stdin', 'utf8');       // 읽기 여기서정리한다 로컬값 분석 출력 전에명확.
+// 읽기 지금유지한다 핵심변수 준비 각 값마다단순.
+var Arr=input.trim().split("\n");
+ while(true){
+    var   n  =Arr.shift ( )- 0;
+if(n==0)break;
+    var arr =[];
 
-    var    n    =    Math.min    ( a , b )    ;    /* 'n' will hold the smaller number. */
-
-
-    while ( n != 0 )
-    {
-        // Store the current value of 'n' temporarily.
-        var    N    =    n    ;
-
-        // Calculate the remainder of 'm' divided by 'n'.
-        n    =    m    %    n    ;
-
-        m    =    N    ;    /* Update 'm' to the previous value of 'n'. */
+/* 읽기 잘유지한다 로컬블록 마감 각 값마다활성. */
+/* 읽기 정리한다 핵심프로그램 형태 각 값마다최종. */
+   for(var I=0;I<n;I++){
+var v=Arr.shift().split(" ").map(Number);
+var gcd=GCD(v[0],v[1]);
+arr.push([v[0]/gcd,v[1]/gcd]);
+       }
+// 읽기 여기서정리한다 로컬변수 준비 계산 중에단순.
+var lcm=1;
+// ========== 읽기 여기서유지한다 현재코드 연속성 계산 중에안정. ==========
+arr.forEach(function  (v)  {
+    var gcd=GCD(v[1],lcm);
+          lcm=(v[1]*lcm)/gcd;  
+// 읽기 잘정리한다 가까운 문맥 시작에서내부.
+    });
+// ########## 읽기 또한정리한다 현재데이터 이동 시작에서짧게. ##########
+   arr=arr.map(function(v,i){return v[0]*(lcm/v[1]);});
+    var lcm  =  1;
+arr.forEach ( function (v) {     
+          var gcd=GCD(v,lcm);    // 읽기 여기서정리한다 핵심블록 마감 출력 전에명확.
+lcm=(v*lcm)/gcd;
+} );
+      arr.forEach(function(v){
+ console.log(lcm/v);
+   } );
     }
 
-    /* After the loop, 'm' holds the GCD. */
-    return    m    ;
-} // End of GCD function definition.
-
-
-/* Read input from standard input.
-   The 'fs' module is used for file system operations.
-   '/dev/stdin' is a common path for standard input in Unix-like systems.
-   'utf8' specifies the encoding.
-*/
-var    input    =    require ( 'fs' ) . readFileSync ( '/dev/stdin' , 'utf8' ) ;
-
-
-/* Process the input string:
-   - trim() removes leading/trailing whitespace.
-   - split("\n") breaks the string into an array of lines. */
-var    Arr    =    input . trim ( ) . split ( "\n" ) ;
-
-
-// Main processing loop.
-// Continues until a line containing '0' is encountered.
-while ( true )
-{
-    // Read the first number from the array and convert it to a number.
-    // The '-0' is a common trick to convert a string to a number.
-    var    n    =    Arr . shift ( ) - 0 ;
-
-    // If 'n' is 0, it signifies the end of input for this problem set.
-    if ( n == 0 )
-        break ;    /* Exit the loop. */
-
-    // Initialize an empty array to store processed fractions.
-    var    arr    =    [ ]    ;
-
-    // Loop 'n' times to read 'n' pairs of numbers.
-    for ( var    I    =    0    ;    I    <    n    ;    I ++ )
-    {
-        /* Read a line, split by space, and convert parts to numbers.
-           v[0] and v[1] will be the numerator and denominator respectively. */
-        var    v    =    Arr . shift ( ) . split ( " " ) . map ( Number ) ;
-
-        // Calculate the GCD of the two numbers.
-        var    gcd    =    GCD ( v [ 0 ] , v [ 1 ] ) ;
-
-        // Store the simplified fraction [numerator/gcd, denominator/gcd].
-        arr . push ( [ v [ 0 ] / gcd , v [ 1 ] / gcd ] ) ;
-    }
-
-
-    // Calculate the Least Common Multiple (LCM) of all denominators.
-    var    lcm    =    1    ;
-
-    /* Iterate over the array of simplified fractions. */
-    arr . forEach ( function ( v )
-    {
-        // Calculate GCD of current denominator and the running LCM.
-        var    gcd    =    GCD ( v [ 1 ] , lcm ) ;
-
-        // Update LCM using the formula: LCM(a, b) = (a * b) / GCD(a, b).
-        lcm    =    ( v [ 1 ] * lcm ) / gcd ;
-    } ) ;
-
-
-    // Transform the array: Multiply each numerator by (lcm / its denominator).
-    // This converts all fractions to have the common denominator 'lcm'.
-    arr    =    arr . map ( function ( v , i ) { return v [ 0 ] * ( lcm / v [ 1 ] ) ; } ) ;
-
-
-    // Re-calculate the LCM of the transformed numerators.
-    // This LCM will be the final answer.
-    var    lcm    =    1    ;
-
-    arr . forEach ( function ( v )
-    {
-        // Calculate GCD of the current numerator and the running LCM.
-        var    gcd    =    GCD ( v , lcm ) ;
-
-        // Update LCM.
-        lcm    =    ( v * lcm ) / gcd ;
-    } ) ;
-
-
-    // For each transformed numerator, calculate lcm / numerator and print it.
-    arr . forEach ( function ( v )
-    {
-        // Output the result to the console.
-        console . log ( lcm / v ) ;
-    } ) ;
-} // End of main while loop.
+// 읽기 지금정리한다 로컬다음 단계 출력 전에활성.

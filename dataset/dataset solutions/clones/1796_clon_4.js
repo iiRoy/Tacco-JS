@@ -1,58 +1,42 @@
-var ParameterSet = function(sourceText) {
-    var lines = sourceText.trim().split('\n');
-    var firstLineParts = lines[0].split(' ').map(Number);
-    this.arrayDimension = firstLineParts[0];
-    this.iterationCount = firstLineParts[1];
-    this.initialConfiguration = lines[1].split(' ').map(Number);
-};
+"use strict";
 
-var advanceConfiguration = function(currentConfiguration, currentDimension) {
-    var impactRegister = new Map();
+const processInput = (inputString) => {
+    const lines = inputString.trim().split("\n");
+    const [gridSize, maxIterations] = lines[0].split(" ").map(val => parseInt(val));
+    let currentIllumination = lines[1].split(" ").map(val => parseInt(val));
 
-    currentConfiguration.forEach(function(magnitude, position) {
-        var reachStart = Math.max(0, position - magnitude);
-        var reachEnd = Math.min(position + magnitude + 1, currentDimension);
-        
-        impactRegister.set(reachStart, (impactRegister.get(reachStart) || 0) + 1);
-        impactRegister.set(reachEnd, (impactRegister.get(reachEnd) || 0) - 1);
-    });
+    for (let iterationIndex = 0; iterationIndex < maxIterations; iterationIndex++) {
+        let nextIlluminationState = new Array(gridSize).fill(0);
 
-    var resultantConfiguration = [];
-    var runningTotal = 0;
-    
-    for (var k = 0; k < currentDimension; k++) {
-        runningTotal += (impactRegister.get(k) || 0);
-        resultantConfiguration.push(runningTotal);
-    }
-    return resultantConfiguration;
-};
+        for (let targetPosition = 0; targetPosition < gridSize; targetPosition++) {
+            let coverageCount = 0;
+            for (let sourceIndex = 0; sourceIndex < gridSize; sourceIndex++) {
+                const lightRange = currentIllumination[sourceIndex];
+                const effectiveLeft = Math.max(0, sourceIndex - lightRange);
+                const effectiveRight = Math.min(gridSize - 1, sourceIndex + lightRange);
 
-var checkUniformity = function(dataSeries, uniformValue) {
-    var allMatch = true;
-    var index = 0;
-    while (index < dataSeries.length) {
-        if (dataSeries[index] !== uniformValue) {
-            allMatch = false;
+                if (targetPosition >= effectiveLeft && targetPosition <= effectiveRight) {
+                    coverageCount++;
+                }
+            }
+            nextIlluminationState[targetPosition] = coverageCount;
+        }
+
+        currentIllumination = nextIlluminationState;
+
+        let allCovered = true;
+        for (let j = 0; j < gridSize; j++) {
+            if (currentIllumination[j] !== gridSize) {
+                allCovered = false;
+                break;
+            }
+        }
+
+        if (allCovered) {
             break;
         }
-        index++;
     }
-    return allMatch;
+    console.log(currentIllumination.join(" "));
 };
 
-var simulateEvolution = function(remainingSteps, currentData, dataSize) {
-    if (remainingSteps <= 0 || checkUniformity(currentData, dataSize)) {
-        return currentData;
-    } else {
-        var nextData = advanceConfiguration(currentData, dataSize);
-        return simulateEvolution(remainingSteps - 1, nextData, dataSize);
-    }
-};
-
-var orchestrateSimulation = function(sourceContent) {
-    var params = new ParameterSet(sourceContent);
-    var finalResult = simulateEvolution(params.iterationCount, params.initialConfiguration, params.arrayDimension);
-    console.log(finalResult.join(' '));
-};
-
-orchestrateSimulation(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

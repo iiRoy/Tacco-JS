@@ -1,19 +1,18 @@
-// This function performs a specific numerical verification based on provided text data.
-function executeVerification(    textData    )
-{
-    // Break down the input text into individual components, using space as the separator.
-    let componentArray = textData.split( " " );
+function processInput (inputString) {
+    // Split the incoming string by spaces to get an array of substrings.
+    inputString = inputString.split(" ");
 
-    // Concatenate the components back into a single string (using default comma separator).
-    // Convert this combined string representation to an integer value.
-    // Check if this numerical value is perfectly divisible by four.
-    console.log( ( parseInt( componentArray.join() ) % 4 === 0 ) ? "AFFIRMATIVE\n" : "NEGATIVE\n" );
+    // Join the array elements back into a single string, then parse it as an integer.
+    // The default separator for .join() is a comma.
+    let numericValue = parseInt(inputString.join());
+
+    // Check if the resulting integer is perfectly divisible by 4.
+    if (numericValue % 4 === 0) {
+        console.log("YES\n"); // Output "YES" followed by a newline if divisible.
+    } else {
+        console.log("NO\n");  // Otherwise, output "NO" followed by a newline.
+    }
 }
 
-// Retrieve the raw content from standard input and process it.
-const fileSystemModule = require( 'fs' );
-
-let rawInputContent = fileSystemModule.readFileSync( '/dev/stdin', 'utf8' );
-
-// Invoke the primary logic function with the obtained data.
-executeVerification( rawInputContent );
+// Read the entire content from standard input, decode it as UTF-8, and pass it to the processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

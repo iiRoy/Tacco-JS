@@ -1,27 +1,24 @@
-const analyzeInput = (sourceMaterial) => {
-    const entireDocument = sourceMaterial.split('\n');
+function processInputData(rawData) {
+    const allInputLines = rawData.split('\n');
 
-    const initialParameters = entireDocument[0].split(' ');
-    const paramA = Number(initialParameters[1]);
-    const paramB = Number(initialParameters[2]);
+    const [criteriaLine, ...dataEntryLines] = allInputLines;
 
-    const workingSet = entireDocument.slice(1);
+    const criteriaParts = criteriaLine.split(' ').map(Number);
+    const lowerBoundA = criteriaParts[1];
+    const lowerBoundB = criteriaParts[2];
 
-    const qualifiedEntries = workingSet.filter(candidateEntry => {
-        const entryParts = candidateEntry.split(' ');
-        const firstPoint = Number(entryParts[0]);
-        const secondPoint = Number(entryParts[1]);
+    const matchingEntryCount = dataEntryLines.filter(entryText => {
+        if (!entryText.trim()) {
+            return false;
+        }
+        const entryParts = entryText.split(' ').map(Number);
+        const currentValA = entryParts[0];
+        const currentValB = entryParts[1];
 
-        return firstPoint >= paramA && secondPoint >= paramB;
-    });
+        return currentValA >= lowerBoundA && currentValB >= lowerBoundB;
+    }).length;
 
-    const resultCount = qualifiedEntries.length;
-    console.log(resultCount);
-};
+    console.log(matchingEntryCount);
+}
 
-const processExternalData = (processorFunction) => {
-    const rawData = require("fs").readFileSync("/dev/stdin", "utf8").trim();
-    processorFunction(rawData);
-};
-
-processExternalData(analyzeInput);
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8").trim());

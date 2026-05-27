@@ -1,65 +1,56 @@
-// This module encapsulates core processing logic for textual data.
-function ExecuteLogic(incomingContent)
-{
-  // First, segment the entire incoming content string into an array of lines.
-  const lineFragments = incomingContent.split( '\n' );
+function ProcessInput(rawData) {
+  // Split the incoming data by newline characters to get an array of lines.
+  let processedLines = rawData.split("\n");
 
-  // Extract the very first line and then decompose it into individual characters.
-  const symbolSequence = lineFragments[0].split( "" );
+  // Extract the first line and convert it into an array of individual characters.
+  let charArray = processedLines[0].split("");
 
-  // Initialize a counter specifically for occurrences of a designated character.
-  let targetCharacterTally = 0;
+  // Initialize a counter to keep track of 'x' occurrences.
+  let xCount = 0;
 
-  // Iterate through each element in the character sequence.
-  for ( let charIndex = 0;
-        charIndex < symbolSequence.length;
-        charIndex++ )
-  {
-    // If the current character being examined is 'x', increment the tally.
-    if ( symbolSequence[charIndex] === "x" )
-    {
-      targetCharacterTally++; // Increment for 'x'.
+  // Iterate through each character in the character array.
+  for (let idx = 0; idx < charArray.length; idx++) {
+    // If the current character is 'x', increment the counter.
+    if (charArray[idx] === "x") {
+      xCount++;
     }
   }
 
-  // Establish a default, unfavorable conclusion string.
-  let finalVerdict = "NO";
-
-  // Evaluate the accumulated tally against a predefined threshold.
-  if ( targetCharacterTally <= 7 )
-  {
-    finalVerdict = "YES"; // If the condition is met, update to a favorable conclusion.
+  // Declare a variable to store the ultimate outcome, defaulting to "NO".
+  let finalResult = "NO";
+  // Check if the count of 'x's is less than or equal to 7.
+  if (xCount <= 7) {
+    // If the condition is met, change the outcome to "YES".
+    finalResult = "YES";
   }
 
-  // Display the determined verdict to the standard output stream.
-  console.log( '%s', finalVerdict );
-
-  // Return the computed string verdict.
-  return finalVerdict;
-} // End of the ExecuteLogic routine.
-
-
-// This supplementary function provides a mechanism for testing and verifying the primary logic.
-function VerificationRoutine ( scenarioNumber )
-{
-  // Acquire the specific test input data from a designated HTML element based on the scenario ID.
-  const testData = document.getElementById( "input" + scenarioNumber ).value;
-
-  // Invoke the main logic function with the acquired test data to obtain an outcome.
-  const outcomeString = ExecuteLogic( testData );
-
-  // Initialize the test's assessment status to "Wrong Answer".
-  let testOutcome = "WA";
-
-  // Compare the actual outcome from our logic against the expected outcome from another HTML element.
-  if ( outcomeString === document.getElementById( "output" + scenarioNumber ).value.split( "\n" )[0] )
-  {
-    testOutcome = "AC"; // If they match, the test is deemed "Accepted".
-  }
-
-  // Update the visual representation of the test result within the document.
-  document.getElementById( "result" + scenarioNumber ).innerHTML = testOutcome;
+  // Print the final result to the console.
+  console.log('%s', finalResult);
+  // Return the determined result.
+  return finalResult;
 }
 
-// The main entry point for execution, reading input from a file system and passing it to the core logic.
-ExecuteLogic( require( "fs" ).readFileSync( "/dev/stdin", "utf8" ) );
+// This helper function is designed for testing or debugging within a web environment.
+function testFunction(testNum) {
+  // Retrieve the input string from a specific HTML element identified by its ID.
+  let testInputString = document.getElementById("input" + testNum).value;
+
+  // Execute the main processing logic with the retrieved test input.
+  let testOutput = ProcessInput(testInputString);
+
+  // Set an initial status for the test.
+  let testStatus = "WA"; // Stands for "Wrong Answer"
+
+  // Compare the actual output from ProcessInput with the expected output from another HTML element.
+  if (testOutput === document.getElementById("output" + testNum).value.split("\n")[0]) {
+    // If the outputs match, update the test status.
+    testStatus = "AC"; // Stands for "Accepted"
+  }
+
+  // Display the test status in a designated HTML element.
+  document.getElementById("result" + testNum).innerHTML = testStatus;
+}
+
+// This line executes the primary function, reading input from standard input,
+// typically used in a Node.js environment for competitive programming.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

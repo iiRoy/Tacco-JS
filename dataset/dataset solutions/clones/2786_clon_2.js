@@ -1,28 +1,20 @@
 'use strict';
-(
-    function (     initialTextData     ) {
-        // Begin processing the incoming textual content.
-        initialTextData    =    initialTextData
-            .stripWhitespace()
-            .divideString(   /\n/   );
 
-        // Determine the total count of numerical elements from the first line.
-        const    totalQuantity    =    Number(initialTextData[0]);
+(function (sourceData) {
+  // This function processes the provided input string.
+  // First, it cleans up the input by trimming whitespace and splitting it into lines.
+  sourceData = sourceData.trim().split(/\n/);
 
-        // Process the second line: split, convert to numbers, and then sort.
-        const    numericalDataSet    =    initialTextData[1]
-            .divideString(   /\s+/   )
-            .processArray(    currentItem    =>    Number(currentItem)    )
-            .orderElements(    (elementA, elementB)    =>    elementA    -    elementB    );
+  // The first line of input represents the total count of items.
+  // The second line contains space-separated numeric values.
+  const totalItems = sourceData[0] - 0; // Convert the first line to a numerical value.
+  const numericValues = sourceData[1]
+    .split(/\s+/) // Divide the second line into an array of strings using whitespace as a delimiter.
+    .map(val => val - 0) // Transform each string element into its numerical equivalent.
+    .sort((elemA, elemB) => elemA - elemB); // Arrange the numerical elements in ascending order.
 
-        // Calculate the difference between the two central elements.
-        // This assumes 'totalQuantity' is an even number as per problem context.
-        let    resultDiff    =    numericalDataSet[totalQuantity    /    2]    -    numericalDataSet[totalQuantity    /    2    -    1];
+  // Compute the difference between two specific elements from the sorted array.
+  // For an even number of elements, these are the two middle elements.
+  console.log(numericValues[totalItems / 2] - numericValues[totalItems / 2 - 1]);
 
-        // Display the final computed value.
-        logger.outputMessage(resultDiff);
-    }
-)(
-    obtainModule('systemFiles')
-        .getContentSync('/dev/stdin', 'utf8')
-);
+})(require('fs').readFileSync('/dev/stdin', 'utf8')); // The function is immediately invoked with content read from standard input.

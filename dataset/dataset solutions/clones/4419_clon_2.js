@@ -1,27 +1,30 @@
-/* This script processes a specific set of numerical inputs. */
-function processInputData(rawData) {
-    // The initial raw data string is split by newline characters.
-    let cleanedData = rawData.split('\n');
+function ProcessInput(rawData) {
+    // Split the entire input string by newline characters to get an array of lines.
+    rawData = rawData.split('\n');
 
-    // The very first line of the input is extracted for further parsing.
-    const firstLineData = cleanedData[0];
+    // The first line of input contains the relevant data.
+    let firstLineData = rawData[0];
 
-    // Numerical components are then extracted from the first line.
-    const firstNum = firstLineData.split(' ')[0];
-    const minuendVal = firstLineData.split(' ')[1];
-    const subtrahendVal = firstLineData.split(' ')[2];
-    const unusedVal = firstLineData.split(' ')[3]; // This value is not used in subsequent calculations.
+    // Parse the components from the first line, separated by spaces.
+    // Note: These are implicitly converted to numbers during arithmetic operations.
+    const valA = firstLineData.split(' ')[0]; // First numerical component
+    const valB = firstLineData.split(' ')[1]; // Second numerical component
+    const valC = firstLineData.split(' ')[2]; // Third numerical component
+    const valD = firstLineData.split(' ')[3]; // Fourth numerical component (unused in calculation)
 
-    // A specific arithmetic operation is performed on the extracted numbers.
-    const computedDifference = minuendVal - subtrahendVal - firstNum;
+    // Perform the core arithmetic operation.
+    const calculatedValue = valB - valC - valA;
 
-    // A conditional check determines the final output.
-    if (minuendVal < subtrahendVal) {
-        _outputChannel_._printMessage_(0); // If the minuend is less than the subtrahend, output zero.
+    // Evaluate a conditional statement based on the parsed values.
+    if (valB < valC) {
+        // If the second value is less than the third, output 0.
+        console.log(0);
     } else {
-        _outputChannel_._printMessage_(computedDifference); // Otherwise, display the calculated difference.
+        // Otherwise, output the result of the calculation.
+        console.log(calculatedValue);
     }
 }
 
-// Execution starts here: Read input from standard input and pass it to the processing function.
-processInputData(_getSystemModule_("fs")._retrieveFileDataSync_("/dev/stdin", "utf8"));
+// Read the input from standard input using Node.js file system module.
+// The input is read synchronously and decoded as UTF-8.
+ProcessInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

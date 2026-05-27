@@ -1,74 +1,96 @@
-let sourceText = require("fs").readFileSync("/dev/stdin", "utf8") // Acquire raw textual input for processing
+let rawData = require("fs").readFileSync("/dev/stdin", "utf8");
 
-function processInput( { procInput, dataGrabber, boolConverter, numSummer } ) { // Main data processing routine
+/**
+ * Processes an array of numbers to find the count of unique prime numbers.
+ * This function identifies numbers that appear exactly once after marking multiples.
+ *
+ * @param {object} params - An object containing utility functions and input data.
+ * @param {string} params.sourceData - The raw input string (not directly used in this main logic, but passed through).
+ * @param {function} params.dataLoader - A function to load numerical data from the input.
+ * @param {function} params.boolFormatter - A utility to format boolean values (not used here).
+ * @param {function} params.numericAggregator - A utility to sum numbers (not used here).
+ */
+function processData({ sourceData, dataLoader, boolFormatter, numericAggregator }) {
+    // Load the first line, which contains the count of elements.
+    const [countOfElements] = dataLoader();
+    // Load the array of numbers based on the provided count.
+    const elementList = dataLoader(countOfElements);
 
-    // Fetch initial configuration values from the data source
-    const [ countVal ] = dataGrabber( )
-
-    // Load the primary list of numbers based on the fetched count
-    const numberList = dataGrabber( countVal )
-
-    let maximumElement = 0 // Tracker for the largest number encountered in the list
-    for ( const currentNum of numberList ) { // Iterate through each number in the provided list
-        if ( currentNum > maximumElement ) { // If the current number is larger than the current maximum
-            maximumElement = currentNum // Update the maximum element found so far
+    // Determine the maximum value present in the input array.
+    let maximumValue = 0;
+    for (const currentElement of elementList) {
+        if (currentElement > maximumValue) {
+            maximumValue = currentElement;
         }
     }
 
-    // Initialize an array to count frequencies of numbers, sized by the maximum element plus one
-    const frequencyArray = new Array( maximumElement + 1 ).fill( 0 )
+    // Initialize a frequency map (array) to store counts of each number up to maximumValue.
+    // All elements are initially set to zero.
+    const frequencyMap = new Array(maximumValue + 1).fill(0);
 
-    for ( const currentNum of numberList ) { // Populate the frequency array with counts
-        frequencyArray[ currentNum ]++ // Increment the count for each occurrence of a number
+    // Populate the frequency map by counting occurrences of each number in elementList.
+    for (const currentElement of elementList) {
+        frequencyMap[currentElement]++;
     }
 
-    // Implement a sieve-like mechanism to identify numbers that are unique and not multiples of other present numbers
-    for ( let idx = 1; idx <= maximumElement; idx++ ) { // Iterate from 1 up to the maximum element
-        if ( !frequencyArray[ idx ] ) { // If this number 'idx' is not present in the input list, skip it
-            continue
+    // Sieve-like process: Mark multiples of numbers that appear in the input.
+    // If a number `currentNumber` is present in the input (frequencyMap[currentNumber] > 0),
+    // then all its multiples `multipleNumber` (starting from 2*currentNumber) are marked as 0
+    // in the frequencyMap. This effectively removes non-prime numbers and their multiples.
+    for (let currentNumber = 1; currentNumber <= maximumValue; currentNumber++) {
+        // Skip if the current number is not present in the input array.
+        if (!frequencyMap[currentNumber]) {
+            continue;
         }
-        // If 'idx' is present, mark all its multiples (starting from 2*idx) as non-unique by setting their count to 0
-        for ( let multiplier = idx * 2; multiplier <= maximumElement; multiplier += idx ) {
-            frequencyArray[ multiplier ] = 0
+        // Iterate through multiples of currentNumber.
+        for (let multipleNumber = currentNumber * 2; multipleNumber <= maximumValue; multipleNumber += currentNumber) {
+            frequencyMap[multipleNumber] = 0; // Mark multiples as not unique/prime-like.
         }
     }
 
-    // Output the count of numbers that appeared exactly once and were not marked as multiples of other numbers
-    console.log( frequencyArray.filter( elementCount => elementCount === 1 ).length )
+    // Filter the frequency map to count how many numbers have a frequency of exactly 1.
+    // These are the numbers that were present in the input and were not marked as multiples of other numbers.
+    const finalCount = frequencyMap.filter(itemCount => itemCount === 1).length;
+
+    // Output the final count to the console.
+    console.log(finalCount);
 }
 
-let parsedSegments = sourceText.split( /[\s\n]/ ) // Break down the raw input string into smaller segments by whitespace or newline
+// Split the raw input string into segments based on whitespace or newlines.
+let parsedSegments = rawData.split(/[\s\n]/);
 
-// Initiate the processing with a set of helper functions provided as an object
-processInput( {
-    procInput: sourceText, // Pass the original input string (though not utilized directly by the core logic here)
-    // Helper function for boolean to string conversion (e.g., 'Y' for true, 'N' for false)
-    boolConverter: inputCondition => inputCondition ? 'Y' : 'N',
-    // Function to retrieve structured data from the globally parsed segments array
-    dataGrabber( numRows = 1, numColumns = 1, convertToNumber = true ) {
-        const segmentLength = numRows * numColumns // Determine the total number of items to extract
-        let extractedValues = parsedSegments.splice( 0, segmentLength ) // Remove and get the required items from the global array
-        if ( convertToNumber ) { // If numerical conversion of extracted values is desired
-            extractedValues = extractedValues.map( Number ) // Convert all extracted items to their numerical representation
+// Invoke the main processing function with an object containing necessary utilities.
+processData({
+    sourceData: rawData, // The original raw input string.
+    boolFormatter: (value) => (value ? 'Yes' : 'No'), // A simple boolean formatter.
+    // A flexible data loading function.
+    dataLoader(numRows = 1, numCols = 1, shouldParseAsNumber = true) {
+        const totalItems = numRows * numCols;
+        // Extract the required number of segments from the beginning of parsedSegments.
+        let extractedData = parsedSegments.splice(0, totalItems);
+        // Convert segments to numbers if specified.
+        if (shouldParseAsNumber) {
+            extractedData = extractedData.map(Number);
         }
-        if ( numColumns > 1 ) { // If data needs to be structured into columns (e.g., for matrix-like input)
-            const columnarArrays = new Array( numColumns ) // Create an array to hold column arrays
-            for ( let columnIdx = 0; columnIdx < numColumns; columnIdx++ ) { // Iterate through each column
-                columnarArrays[ columnIdx ] = new Array( ) // Initialize an empty array for the current column
-                for ( let rowIdx = 0; rowIdx < numRows; rowIdx++ ) { // Iterate through each row
-                    columnarArrays[ columnIdx ].push( extractedValues[ rowIdx * numColumns + columnIdx ] ) // Add the appropriate value to the column
+        // If multiple columns are requested, restructure the data into columnar arrays.
+        if (numCols > 1) {
+            const columnarArrays = new Array(numCols);
+            for (let columnIndex = 0; columnIndex < numCols; columnIndex++) {
+                columnarArrays[columnIndex] = new Array();
+                for (let rowIndex = 0; rowIndex < numRows; rowIndex++) {
+                    columnarArrays[columnIndex].push(extractedData[rowIndex * numCols + columnIndex]);
                 }
             }
-            extractedValues = columnarArrays // Assign the newly formed columnar structure
+            extractedData = columnarArrays;
         }
-        return extractedValues // Return the organized data
+        return extractedData;
     },
-    // A safety function designed to prevent runaway or infinite loops
-    loopProtector( ) {
-        throw new Error( "Infinite iteration detected!" ) // Throw an error if called, indicating an infinite loop
+    // A function to prevent infinite loops (throws an error if called).
+    loopGuard() {
+        throw new Error("Infinite loop detected!");
     },
-    // Utility function to calculate the sum of a collection of numbers
-    numSummer( inputNumbers ) {
-        return inputNumbers.reduce( ( accumulator, currentValue ) => accumulator + currentValue, 0 ) // Sums all numbers in the array
+    // A function to calculate the sum of an array of numbers.
+    numericAggregator(inputNumbers) {
+        return inputNumbers.reduce((accumulator, currentValue) => accumulator + currentValue, 0);
     },
-} )
+});

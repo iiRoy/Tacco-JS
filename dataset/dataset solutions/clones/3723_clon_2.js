@@ -1,28 +1,30 @@
-function processData ( rawData ) {
- /*
-  * This function analyzes a given input string.
-  * It determines if the numeric value of the input
-  * is perfectly divisible by the sum of its digits.
-  */
- 
-  var charArray = rawData . toString ( ) . split ( '' ) ; // Break down the input into individual character digits.
-  var numericValue = parseInt ( rawData ) ; // Convert the entire input string into an integer.
-  
-  var digitSum = 0 ; // Initialize a variable to accumulate the sum of digits.
-  
-  // Loop through each character in the array to sum its numeric value.
-  for ( var idx = 0 ; idx < charArray . length ; idx ++ ) {
-   	digitSum += parseInt ( charArray [ idx ] ) ; // Convert character to integer and add to the running sum.
+function processData(rawData) {
+  // This function processes the provided input string.
+
+  // Convert the raw input to a string and then split it into an array of individual characters.
+  let digitChars = rawData.toString().split('');
+
+  // Parse the raw input into an integer.
+  let numericValue = parseInt(rawData);
+
+  // Initialize a variable to accumulate the sum of digits.
+  let digitSum = 0;
+
+  // Iterate through each character in the digitChars array.
+  for (let idx = 0; idx < digitChars.length; idx++) {
+    // Convert each character back to an integer and add it to the running sum.
+    digitSum += parseInt(digitChars[idx]);
   }
-  
-  // Check if the overall numeric value is perfectly divisible by the calculated digit sum.
-  if ( numericValue % digitSum === 0 ) {
-  	console . log ( 'Yes' ) ; // If divisible, print 'Yes'.
+
+  // Check if the numeric value is perfectly divisible by the sum of its digits.
+  if (numericValue % digitSum === 0) {
+    // If it is divisible, print 'Yes' to the console.
+    console.log('Yes');
   } else {
-  	console . log ( 'No' ) ; /* Otherwise, print 'No'. */
+    // Otherwise, print 'No'.
+    console.log('No');
   }
-  
 }
 
-// Call the primary function, reading input from standard input.
-processData ( require ( 'fs' ) . readFileSync ( '/dev/stdin' , 'utf8' ) ) ;
+// Read the entire content of standard input as a UTF-8 string and pass it to the processing function.
+processData(require('fs').readFileSync('/dev/stdin', 'utf8'));

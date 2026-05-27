@@ -1,75 +1,61 @@
-/*
- * This module contains a primary function for processing structured text data
- * and a utility for validating its output in a testing environment.
- */
+function ProcessData(rawData) {
+  // Split the incoming raw data string into an array of individual lines.
+  let processedLines = rawData.split("\n");
 
-// Function to process raw input and compute a specific numerical result.
-function ProcessInputData(rawData) {
-  // First, segment the entire raw data string into an array of individual line strings.
-  let lineFragments = rawData.split("\n");
+  // Parse the first line to extract the total count of items, ensuring base-10 interpretation.
+  const itemCount = parseInt(processedLines[0], 10);
 
-  // The very first line contains the total count of subsequent data records.
-  const recordCount = parseInt(lineFragments[0], 10);
+  // Remove the first element (which was the item count) from the array of lines.
+  processedLines.shift();
 
-  // Remove the count line from the array, as it has served its purpose.
-  lineFragments.shift();
+  // Adjust the array to contain only the relevant 'itemCount' lines, removing any excess.
+  // This operation removes elements from 'itemCount' index up to the end of the array.
+  processedLines.splice(itemCount, processedLines.length);
 
-  // Ensure the array only contains the actual data records, trimming any excess lines.
-  lineFragments.splice(recordCount, lineFragments.length);
+  // Process each line to extract the first numerical value, parse it, and then sort these values in ascending order.
+  const firstValues = processedLines.map(entryLine => parseInt(entryLine.split(" ")[0], 10)).sort((a, b) => a - b);
 
-  // Map each record to its first numerical component, parse as integer, and sort in ascending order.
-  let firstValues = lineFragments
-    .map(itemString => parseInt(itemString.split(" ")[0], 10))
-    .sort((a, b) => a - b);
+  // Process each line to extract the second numerical value, parse it, sort in ascending order, and then reverse to get descending order.
+  const secondValues = processedLines.map(entryLine => parseInt(entryLine.split(" ")[1], 10)).sort((a, b) => a - b).reverse();
 
-  // Map each record to its second numerical component, parse as integer, sort ascending, then reverse.
-  let secondValues = lineFragments
-    .map(itemString => parseInt(itemString.split(" ")[1], 10))
-    .sort((a, b) => a - b)
-    .reverse();
+  let finalResult; // Variable to store the calculated final outcome.
 
-  // Variable to store the final calculated numerical outcome.
-  let finalResult;
-
-  // Determine the calculation logic based on whether the record count is even or odd.
-  if (recordCount % 2 === 0) {
-    // If the count is even, calculate using the two middle elements, with specific arithmetic.
-    finalResult = (secondValues[recordCount / 2 - 1] - firstValues[recordCount / 2 - 1]) * 2 - 1;
+  // Determine the calculation logic based on whether the item count is even or odd.
+  if (itemCount % 2 === 0) {
+    // If the item count is even, calculate using elements around the middle.
+    // The index (itemCount / 2 - 1) points to the upper-middle element in a zero-indexed array.
+    finalResult = (secondValues[itemCount / 2 - 1] - firstValues[itemCount / 2 - 1]) * 2 - 1;
   } else {
-    // If the count is odd, calculate using the single middle element, with different arithmetic.
-    finalResult = (secondValues[Math.floor(recordCount / 2)] - firstValues[Math.floor(recordCount / 2)]) + 1;
+    // If the item count is odd, calculate using the exact middle element.
+    // Math.floor(itemCount / 2) gives the index of the middle element.
+    finalResult = (secondValues[Math.floor(itemCount / 2)] - firstValues[Math.floor(itemCount / 2)]) + 1;
   }
 
-  // Display the final computed result to the standard output.
+  // Output the computed final result to the standard console.
   console.log('%s', finalResult);
 
-  // Return the calculated value for further use or testing.
+  // Return the calculated result.
   return finalResult;
 }
 
-
-// Auxiliary function designed for validating the correctness of the main logic
-// within a simulated web environment, typically for testing specific cases.
-function TestRunner(testCaseIndex) {
-  // Fetch the input data for the current test case from a designated HTML element.
+// This helper function is designed for testing the solution within a web browser environment.
+function testSolution(testCaseIndex) {
+  // Retrieve the input string for the specific test case from a designated HTML input element.
   const testInputString = document.getElementById("input" + testCaseIndex).value;
 
-  // Execute the primary processing function with the retrieved test input.
-  let computedAnswer = ProcessInputData(testInputString);
+  // Execute the main data processing function with the retrieved test input.
+  const computedAnswer = ProcessData(testInputString);
 
-  // Initialize the result status for the test case as 'Wrong Answer'.
-  let testOutcome = "WA";
+  let testOutcome = "WA"; // Initialize the test outcome as "Wrong Answer".
 
-  // Compare the computed answer against the expected output, obtained from another HTML element.
-  if (computedAnswer === parseInt(document.getElementById("output" + testCaseIndex).value.split("\n")[0], 10)) {
-    // If the computed answer matches the expected one, update the status to 'Accepted'.
-    testOutcome = "AC";
+  // Compare the computed answer with the expected output, which is taken from the first line of a corresponding HTML output element.
+  if (computedAnswer == document.getElementById("output" + testCaseIndex).value.split("\n")[0]) {
+    testOutcome = "AC"; // If they match, set the outcome to "Accepted".
   }
 
-  // Update the HTML element corresponding to the test case result with the determined outcome.
+  // Display the final test outcome in a specific HTML element.
   document.getElementById("result" + testCaseIndex).innerHTML = testOutcome;
 }
 
-
-// Entry point: Read data from standard input and pass it to the main processing function.
-ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+// For execution in a Node.js environment, read input from standard input and pass it to the main processing function.
+ProcessData(require("fs").readFileSync("/dev/stdin", "utf8"));

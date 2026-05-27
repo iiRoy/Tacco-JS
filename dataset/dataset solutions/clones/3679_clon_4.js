@@ -1,28 +1,28 @@
-const acquireSourcePayload = () => require("node:fs").readFileSync("/dev/stdin", "utf8");
+const convertToNumericValue = (textualInput) => Number(textualInput);
 
-const transformTextToNumeral = (textualRepresentation) => Number(textualRepresentation);
+const processStringArrayIntoNumbers = (stringElements) => stringElements.reduce((accumulator, currentElement) => {
+    accumulator.push(convertToNumericValue(currentElement));
+    return accumulator;
+}, []);
 
-const computeSymbolicOutcome = (rawPayload) => {
-    const numericStrings = rawPayload.match(/\d+/g);
+const determineAndDisplaySymbol = (fullInputContent) => {
+    const contentSegments = fullInputContent.split(' ');
+    const [firstValue, secondValue] = processStringArrayIntoNumbers(contentSegments);
 
-    const primaryValue = transformTextToNumeral(numericStrings[0]);
-    const secondaryValue = transformTextToNumeral(numericStrings[1]);
+    const operationRuleset = [
+        { conditionMet: (val1, val2) => val1 + val2 === 15, outcomeSymbol: '+' },
+        { conditionMet: (val1, val2) => val1 * val2 === 15, outcomeSymbol: '*' }
+    ];
 
-    let calculatedSymbol;
-
-    if (primaryValue + secondaryValue === 15) {
-        calculatedSymbol = String.fromCharCode(43);
-    } else if (primaryValue * secondaryValue === 15) {
-        calculatedSymbol = String.fromCharCode(42);
-    } else {
-        calculatedSymbol = String.fromCharCode(120);
+    let finalSymbol = 'x';
+    for (const ruleEntry of operationRuleset) {
+        if (ruleEntry.conditionMet(firstValue, secondValue)) {
+            finalSymbol = ruleEntry.outcomeSymbol;
+            break;
+        }
     }
 
-    return calculatedSymbol;
+    console.log(finalSymbol);
 };
 
-(() => {
-    const dataParcel = acquireSourcePayload();
-    const finalCharacter = computeSymbolicOutcome(dataParcel);
-    process.stdout.write(finalCharacter + '\n');
-})();
+determineAndDisplaySymbol(require("fs").readFileSync("/dev/stdin", "utf8"));

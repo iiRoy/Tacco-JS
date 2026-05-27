@@ -1,321 +1,214 @@
-pkgExporter = function (bundleComponents) {
-  // This object acts as a cache for loaded modules.
-  // When a component is requested, we first check if it's already in the cache.
+module.exports = function (moduleDefinitions) {
+  // This object serves as a cache for already loaded modules.
   var moduleCache = {};
 
-  /**
-   * Fetches a component from the bundle. If it's already in the cache,
-   * it returns the cached instance. Otherwise, it loads the component,
-   * executes its definition, and then caches it.
-   * @param {number} componentId The identifier for the component to fetch.
-   * @returns {object} The exported members of the requested component.
-   */
-  function fetchComponent(componentId) {
-    if (moduleCache[componentId]) {
-      return moduleCache[componentId].exportedMembers;
+  // The custom 'require' function for this module system.
+  function executeModule(moduleId) {
+    // If the module is already in the cache, return its exports immediately.
+    if (moduleCache[moduleId]) {
+      return moduleCache[moduleId].exports;
     }
 
-    // Initialize a new component instance and add it to the cache.
-    // The 'identity' property stores its ID, 'isLoaded' tracks its loading status,
-    // and 'exportedMembers' will hold its exports.
-    var componentInstance = (moduleCache[componentId] = {
-      identity: componentId,
+    // If not in cache, create a new module object and store it.
+    // 'identifier' (original 'i') stores the module's ID.
+    // 'isLoaded' (original 'l') tracks if the module has been executed.
+    // 'exports' is the object that will hold the module's exported values.
+    var moduleObject = moduleCache[moduleId] = {
+      identifier: moduleId,
       isLoaded: false,
-      exportedMembers: {},
-    });
+      exports: {}
+    };
 
-    // Execute the component's definition function.
-    // The definition function is expected to populate componentInstance.exportedMembers.
-    // It receives the module's exports, the module instance itself,
-    // and the fetchComponent function (for internal requires).
-    bundleComponents[componentId].call(
-      componentInstance.exportedMembers,
-      componentInstance,
-      componentInstance.exportedMembers,
-      fetchComponent
+    // Execute the module function.
+    // The module function receives:
+    // 1. The module's exports object (as 'this' context and first argument).
+    // 2. The module object itself.
+    // 3. The module's exports object again.
+    // 4. The 'executeModule' function (for local 'require' calls).
+    moduleDefinitions[moduleId].call(
+      moduleObject.exports,
+      moduleObject,
+      moduleObject.exports,
+      executeModule
     );
 
-    // Mark the component as loaded.
-    componentInstance.isLoaded = true;
+    // Mark the module as loaded after execution.
+    moduleObject.isLoaded = true;
 
-    // Return the exports of the newly loaded component.
-    return componentInstance.exportedMembers;
+    // Return the module's exports.
+    return moduleObject.exports;
   }
 
-  // Attach the bundle components definition list to the fetcher for internal use.
-  fetchComponent.componentDefinitions = bundleComponents;
-  // Attach the module cache to the fetcher.
-  fetchComponent.componentCache = moduleCache;
+  // Attach the array of module definitions to the 'executeModule' function.
+  executeModule.modules = moduleDefinitions;
 
-  /**
-   * Defines a getter property on an object, making it enumerable.
-   * This is used for lazy loading or exposing properties.
-   * @param {object} targetObject The object on which to define the property.
-   * @param {string} propertyName The name of the property.
-   * @param {Function} getterFunction The function that returns the property's value.
-   */
-  fetchComponent.addPropertyAccessor = function (
-    targetObject,
-    propertyName,
-    getterFunction
-  ) {
-    // Check if the property already exists to avoid overwriting.
-    if (!fetchComponent.ownPropertyCheck(targetObject, propertyName)) {
+  // Attach the module cache to the 'executeModule' function.
+  executeModule.cache = moduleCache;
+
+  // Helper function to define a getter property on an object.
+  // This is used for creating enumerable properties that expose module exports.
+  executeModule.define = function (targetObject, propertyName, getterFunction) {
+    // Only define the property if it doesn't already exist.
+    if (!executeModule.hasOwn(targetObject, propertyName)) {
       Object.defineProperty(targetObject, propertyName, {
-        enumerable: true, // Make the property visible during enumeration.
-        get: getterFunction, // Use the provided function as a getter.
+        enumerable: true, // Make the property enumerable.
+        get: getterFunction // Use the provided function as the getter.
       });
     }
   };
 
-  /**
-   * Marks an object as an ES Module by setting specific properties.
-   * This helps JavaScript environments correctly interpret its export structure.
-   * @param {object} targetModule The module object to mark.
-   */
-  fetchComponent.setEsModuleFlag = function (targetModule) {
-    // If Symbol and Symbol.toStringTag are available, set the toStringTag for better debugging.
-    if (
-      typeof Symbol !== "undefined" &&
-      Symbol.toStringTag &&
-      Symbol.toStringTag instanceof Symbol
-    ) {
-      Object.defineProperty(targetModule, Symbol.toStringTag, {
-        value: "Module",
-      });
+  // Helper function to mark a module's exports as an ES module.
+  executeModule.register = function (targetModule) {
+    // If Symbol and Symbol.toStringTag are available, set the toStringTag.
+    if (typeof Symbol !== "undefined" && Symbol.toStringTag) {
+      Object.defineProperty(targetModule, Symbol.toStringTag, { value: "Module" });
     }
-    // Set the __esModule flag to true, indicating it's an ES module.
+    // Mark the module as an ES module.
     Object.defineProperty(targetModule, "__esModule", { value: true });
   };
 
-  /**
-   * Creates a module namespace object for interop compatibility,
-   * especially when dealing with CommonJS modules in an ES module context.
-   * @param {*} valueToWrap The module's exports or value to wrap.
-   * @param {number} wrappingFlags Flags indicating how to wrap the value.
-   * @returns {object} The created namespace object.
-   */
-  fetchComponent.createNamespaceProxy = function (valueToWrap, wrappingFlags) {
-    // If flag 1 is set, it means valueToWrap is a module ID, so resolve it first.
-    if (1 & wrappingFlags) {
-      valueToWrap = fetchComponent(valueToWrap);
+  // Helper function for handling module interoperability (e.g., CommonJS to ES Module).
+  executeModule.interop = function (moduleExports, modeFlags) {
+    // If flag 1 is set, it means 'moduleExports' is a module ID, so require it.
+    if (modeFlags & 1) {
+      moduleExports = executeModule(moduleExports);
     }
-    // If flag 8 is set, return the value as is (it's already a namespace).
-    if (8 & wrappingFlags) {
-      return valueToWrap;
+    // If flag 8 is set, return 'moduleExports' directly.
+    if (modeFlags & 8) {
+      return moduleExports;
     }
-    // If flag 4 is set and it's an object with __esModule, it's already an ES module.
-    if (
-      4 & wrappingFlags &&
-      typeof valueToWrap === "object" &&
-      valueToWrap &&
-      valueToWrap.__esModule
-    ) {
-      return valueToWrap;
+    // If flag 4 is set, and 'moduleExports' is an object and already an ES module, return it directly.
+    if (modeFlags & 4 && typeof moduleExports === "object" && moduleExports && moduleExports.__esModule) {
+      return moduleExports;
     }
 
-    // Create a new empty object to serve as the namespace.
+    // Create a new plain object to serve as the namespace.
     var namespaceObject = Object.create(null);
-    // Mark this new object as an ES module.
-    fetchComponent.setEsModuleFlag(namespaceObject);
-    // Define a 'default' export property pointing to the wrapped value.
-    Object.defineProperty(namespaceObject, "default", {
-      enumerable: true,
-      value: valueToWrap,
-    });
+    executeModule.register(namespaceObject); // Register it as an ES module.
+    // Define a 'default' export pointing to the original 'moduleExports'.
+    Object.defineProperty(namespaceObject, "default", { enumerable: true, value: moduleExports });
 
-    // If flag 2 is set and the wrapped value is not a string,
-    // iterate over its properties and add them as getters to the namespace.
-    if (2 & wrappingFlags && typeof valueToWrap !== "string") {
-      for (var propKey in valueToWrap) {
-        // Use bind to capture propKey for the getter function.
-        fetchComponent.addPropertyAccessor(
+    // If flag 2 is set and 'moduleExports' is not a string, copy its properties to the namespace.
+    if (modeFlags & 2 && typeof moduleExports !== "string") {
+      for (var propertyKey in moduleExports) {
+        executeModule.define(
           namespaceObject,
-          propKey,
-          ((prop) => {
-            return valueToWrap[prop];
-          }).bind(null, propKey)
+          propertyKey,
+          (function (key) {
+            return moduleExports[key];
+          }).bind(null, propertyKey) // Bind 'propertyKey' to the inner function.
         );
       }
     }
     return namespaceObject;
   };
 
-  /**
-   * Retrieves the default export of a module.
-   * Handles both ES modules (with a .default property) and CommonJS modules.
-   * @param {object} sourceObject The module's exports object.
-   * @returns {*} The default export or the entire module object.
-   */
-  fetchComponent.retrieveDefaultExport = function (sourceObject) {
-    var defaultGetter =
-      sourceObject && sourceObject.__esModule
-        ? // If it's an ES module, return its .default property.
-          function () {
-            return sourceObject.default;
-          }
-        : // Otherwise, return the entire object as its "default".
-          function () {
-            return sourceObject;
-          };
-    // Add an 'a' property (common webpack convention) as a getter for the default export.
-    fetchComponent.addPropertyAccessor(defaultGetter, "a", defaultGetter);
+  // Helper function to get the default export of a module.
+  executeModule.getExport = function (moduleReference) {
+    // Determine the getter function: if it's an ES module, get its 'default' property; otherwise, return the module itself.
+    var defaultGetter = moduleReference && moduleReference.__esModule ?
+      function () { return moduleReference.default; } :
+      function () { return moduleReference; };
+    // Define an 'a' property on the getter function itself, pointing to the getter.
+    executeModule.define(defaultGetter, "a", defaultGetter);
     return defaultGetter;
   };
 
-  /**
-   * Checks if an object has a specified property directly on itself (not inherited).
-   * @param {object} objectToCheck The object to inspect.
-   * @param {string} propertyKey The name of the property to check.
-   * @returns {boolean} True if the object has the property, false otherwise.
-   */
-  fetchComponent.ownPropertyCheck = function (objectToCheck, propertyKey) {
-    return Object.prototype.hasOwnProperty.call(objectToCheck, propertyKey);
+  // Helper function to check if an object has its own property.
+  executeModule.hasOwn = function (targetObject, propertyName) {
+    return Object.prototype.hasOwnProperty.call(targetObject, propertyName);
   };
 
-  // Set the public path for assets (empty in this case).
-  fetchComponent.assetBasePath = "";
+  // Public path for assets (empty in this specific bundle).
+  executeModule.publicPath = "";
 
-  // Execute the entry component (module 0) to start the application logic.
-  return fetchComponent((fetchComponent.startupModule = 0));
-})(
-  [
-    // Module 0: Main application logic
-    function (currentExportModule, moduleExportObject, moduleLoaderFn) {
-      "use strict"; // Enforce strict mode for this module.
+  // Set the startup module ID and execute it to start the application.
+  return executeModule(executeModule.startupModule = 0);
+}([
+  // Module 0: The main entry point of the application.
+  function (currentModule, moduleExports, localRequire) {
+    "use strict";
+    // Require the 'fs' (file system) module.
+    var fileSystem = localRequire(1);
+    // Create an instance of the input processing class (Module 2).
+    // It reads from /dev/stdin, removes leading/trailing whitespace, and splits by any whitespace.
+    var inputProcessor = new (localRequire(2))(
+      fileSystem.readFileSync("/dev/stdin", "utf8").trim().split(/\s+/g)
+    );
+    // Pass the input processor instance to Module 4 for further processing.
+    localRequire(4)(inputProcessor);
+  },
 
-      // Load the 'fs' (file system) utility module.
-      var fileSystemUtil = moduleLoaderFn(1);
+  // Module 1: Exports the Node.js 'fs' module.
+  function (currentModule, moduleExports) {
+    currentModule.exports = require("fs");
+  },
 
-      // Create an input processing unit.
-      // It reads from /dev/stdin, decodes as UTF-8, trims whitespace,
-      // and splits by any whitespace character to get individual tokens.
-      var inputProcessor = new (moduleLoaderFn(2))(
-        fileSystemUtil.readFileSync("/dev/stdin", "utf8").trim().split(/\s+/g)
-      );
+  // Module 2: Defines a class for handling input data.
+  function (currentModule, moduleExports, localRequire) {
+    "use strict";
+    // Require Module 3, which provides a queue-like data structure.
+    var dataStructure = localRequire(3);
+    currentModule.exports = class InputHandler { // Renamed class from anonymous to InputHandler
+      constructor(initialData) {
+        // Initialize an internal queue with the provided initial data.
+        this.dataQueue = new dataStructure(initialData);
+      }
+      // Dequeues and returns the next raw string from the input.
+      readNextRaw() {
+        return this.dataQueue.dequeueElement();
+      }
+      // Dequeues the next string and parses it as an integer (base 10).
+      readNextInt() {
+        return parseInt(this.dataQueue.dequeueElement(), 10);
+      }
+      // Enqueues a new item into the input queue.
+      enqueueItem(itemToAdd) {
+        this.dataQueue.enqueueElement(itemToAdd);
+      }
+    };
+  },
 
-      // Pass the initialized input processor to the main processing function (module 4).
-      moduleLoaderFn(4)(inputProcessor);
-    },
+  // Module 3: Defines a simple queue (or deque) class.
+  function (currentModule, moduleExports, localRequire) {
+    "use strict";
+    currentModule.exports = class SimpleQueue { // Renamed class from anonymous to SimpleQueue
+      constructor() {
+        // Initialize with an optional array of elements; defaults to an empty array.
+        var initialElements = arguments.length > 0 && void 0 !== arguments[0] ? arguments[0] : [];
+        this.currentSize = initialElements.length; // Tracks the number of elements.
+        this.elementList = initialElements;       // The underlying array storing elements.
+        this.currentIndex = 0;                    // The index of the next element to dequeue.
+      }
+      // Adds an element to the end of the queue.
+      enqueueElement(elementToEnqueue) {
+        this.currentSize += 1;
+        this.elementList.push(elementToEnqueue);
+      }
+      // Removes and returns the element from the front of the queue.
+      dequeueElement() {
+        var dequeuedValue = this.elementList[this.currentIndex];
+        this.currentSize -= 1;
+        this.currentIndex += 1;
+        return dequeuedValue;
+      }
+    };
+  },
 
-    // Module 1: Node.js 'fs' module export
-    function (currentExportModule, moduleExportObject) {
-      // Export the native Node.js 'fs' module.
-      currentExportModule.exports = require("node:fs");
-    },
-
-    // Module 2: Input processing unit class definition
-    function (currentExportModule, moduleExportObject, moduleLoaderFn) {
-      "use strict";
-
-      // Load the data structure (SimpleQueue) module.
-      var dataStructure = moduleLoaderFn(3);
-
-      // Define and export the ProcessingUnit class.
-      currentExportModule.exports = class ProcessingUnit {
-        /**
-         * Constructs a ProcessingUnit with initial data.
-         * @param {Array<string>} initialData An array of strings to initialize the internal buffer.
-         */
-        constructor(initialData) {
-          // The internal buffer is a SimpleQueue instance.
-          this.inputBuffer = new dataStructure(initialData);
+  // Module 4: Contains the core logic to process the input.
+  function (currentModule, moduleExports, localRequire) {
+    "use strict";
+    currentModule.exports = function (processorInstance) {
+      // Read the first integer from the input, which determines the loop limit.
+      for (var loopLimit = processorInstance.readNextInt(), loopCounter = 0; loopCounter < loopLimit; loopCounter++) {
+        // For each iteration, read another integer from the input.
+        // If the read integer is odd, print "first" and immediately exit the function.
+        if (processorInstance.readNextInt() % 2 === 1) {
+          return void console.log("first");
         }
-
-        /**
-         * Dequeues and returns the next raw string from the input buffer.
-         * @returns {string} The next string item.
-         */
-        readNextRaw() {
-          return this.inputBuffer.dequeueItem();
-        }
-
-        /**
-         * Dequeues the next string from the input buffer and parses it as an integer.
-         * @returns {number} The next integer value.
-         */
-        readNextInt() {
-          return Number.parseInt(this.inputBuffer.dequeueItem(), 10);
-        }
-
-        /**
-         * Enqueues an item into the input buffer.
-         * @param {*} item The item to add to the buffer.
-         */
-        appendData(item) {
-          this.inputBuffer.enqueueItem(item);
-        }
-      };
-    },
-
-    // Module 3: SimpleQueue data structure class definition
-    function (currentExportModule, moduleExportObject, moduleLoaderFn) {
-      "use strict";
-
-      // Define and export the SimpleQueue class.
-      currentExportModule.exports = class SimpleQueue {
-        /**
-         * Constructs a SimpleQueue, optionally initialized with an array of elements.
-         * @param {Array} [initialElements=[]] An array of elements to pre-populate the queue.
-         */
-        constructor() {
-          var initialElements =
-            arguments.length > 0 && arguments[0] !== undefined
-              ? arguments[0]
-              : [];
-
-          // Current number of items in the queue.
-          this.currentCount = initialElements.length;
-          // The underlying array storing the elements.
-          this.elementList = initialElements;
-          // The index of the next element to be dequeued.
-          this.readIndex = 0;
-        }
-
-        /**
-         * Adds an item to the end of the queue.
-         * @param {*} itemToAdd The item to enqueue.
-         */
-        enqueueItem(itemToAdd) {
-          this.currentCount += 1;
-          this.elementList.push(itemToAdd);
-        }
-
-        /**
-         * Removes and returns the item from the front of the queue.
-         * @returns {*} The dequeued item.
-         */
-        dequeueItem() {
-          var extractedItem = this.elementList[this.readIndex];
-          this.currentCount -= 1;
-          this.readIndex += 1;
-          return extractedItem;
-        }
-      };
-    },
-
-    // Module 4: Core logic to process input and print results
-    function (currentExportModule, moduleExportObject, moduleLoaderFn) {
-      "use strict";
-
-      // Export a function that takes an input handler (ProcessingUnit instance).
-      currentExportModule.exports = function (inputHandler) {
-        // Read the first integer as the loop limit.
-        // Then iterate 'loopLimit' times.
-        for (
-          var loopLimit = inputHandler.readNextInt(), iterationCounter = 0;
-          iterationCounter < loopLimit;
-          iterationCounter++
-        ) {
-          // In each iteration, read another integer.
-          // If it's odd, print "first output" and exit the function.
-          if (inputHandler.readNextInt() % 2 === 1) {
-            return void console.log("first output");
-          }
-        }
-        // If the loop completes without finding an odd number, print "second output".
-        console.log("second output");
-      };
-    },
-  ]
-);
+      }
+      // If the loop completes without finding any odd numbers, print "second".
+      console.log("second");
+    };
+  }
+]);

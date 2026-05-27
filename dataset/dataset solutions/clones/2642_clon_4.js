@@ -1,75 +1,66 @@
-(function(inputRaw) {
-  const lines = inputRaw.trim().split('\n');
-  const mainSequence = lines[0];
-  const targetSubsequence = lines[1];
+console.log((inputData => {
+    const [sourceSequence, targetSequence] = inputData.trim().split('\n');
+    const sourceLength = sourceSequence.length;
+    const targetLength = targetSequence.length;
 
-  const mainLen = mainSequence.length;
-  const targetLen = targetSubsequence.length;
-  const characterRange = 26; // Assuming 'a' through 'z'
-
-  if (targetLen === 0) return '0';
-
-  // Precompute next character occurrences.
-  // nextCharacterLookup[charVal][idx] stores the first index >= idx
-  // where the character (corresponding to charVal) appears in mainSequence.
-  // If not found, it stores mainLen.
-  const nextCharacterLookup = Array(characterRange).fill(null).map(() => Array(mainLen + 1).fill(mainLen));
-
-  for (let idx = mainLen - 1; idx >= 0; idx--) {
-    for (let charVal = 0; charVal < characterRange; charVal++) {
-      nextCharacterLookup[charVal][idx] = nextCharacterLookup[charVal][idx + 1];
-    }
-    const charCode = mainSequence.charCodeAt(idx) - 97; // 'a' is 97
-    nextCharacterLookup[charCode][idx] = idx;
-  }
-
-  // Process the target subsequence using a functional reduction approach.
-  const processingResult = Array.from(targetSubsequence).reduce((currentStatus, charToFind) => {
-    // If a final outcome (e.g., impossible to form subsequence) has already been determined,
-    // propagate it without further processing.
-    if (currentStatus.finalOutcome !== null) {
-      return currentStatus;
+    // Build a map of characters to their sorted indices in the source sequence.
+    // This allows for efficient lookup of character positions.
+    const characterPositionsMap = {};
+    for (let currentIdx = 0; currentIdx < sourceLength; currentIdx++) {
+        const char = sourceSequence[currentIdx];
+        if (!characterPositionsMap[char]) {
+            characterPositionsMap[char] = [];
+        }
+        characterPositionsMap[char].push(currentIdx);
     }
 
-    const charIndex = charToFind.charCodeAt(0) - 97;
-    let searchStartAt = currentStatus.lastFoundIdx + 1;
+    let lastMatchedPosition = -1; // Tracks the last index matched in the source sequence, -1 implies before the start.
+    let fullSequenceRotations = 0; // Counts how many times we've "wrapped around" the source sequence.
 
-    let foundAt = nextCharacterLookup[charIndex][searchStartAt];
+    // Utility function to find the smallest index in a sorted array that is greater than a given reference index.
+    // This uses a binary search approach.
+    const findNextAvailableIndex = (sortedIndices, referencePoint) => {
+        let lowerBound = 0;
+        let upperBound = sortedIndices.length - 1;
+        let bestFoundIndex = -1; // Stores the smallest index found that is greater than referencePoint
 
-    if (foundAt < mainLen) {
-      // Character found in the current segment of mainSequence.
-      currentStatus.lastFoundIdx = foundAt;
-    } else {
-      // Character not found in the current segment, indicating a new cycle of mainSequence is needed.
-      if (currentStatus.lastFoundIdx === -1) {
-        // If the character couldn't be found even from the beginning of a fresh mainSequence,
-        // it's impossible to form the subsequence.
-        currentStatus.finalOutcome = '-1';
-        return currentStatus;
-      }
+        while (lowerBound <= upperBound) {
+            const midPoint = Math.floor((lowerBound + upperBound) / 2);
+            if (sortedIndices[midPoint] > referencePoint) {
+                bestFoundIndex = sortedIndices[midPoint];
+                upperBound = midPoint - 1; // Try to find an even smaller index in the left half
+            } else {
+                lowerBound = midPoint + 1; // Look in the right half
+            }
+        }
+        return bestFoundIndex;
+    };
 
-      currentStatus.cycleCount++;
-      currentStatus.lastFoundIdx = -1; // Reset index to search from the start of the new mainSequence cycle.
+    // Iterate through each character of the target sequence.
+    for (let targetIdx = 0; targetIdx < targetLength; targetIdx++) {
+        const requiredChar = targetSequence[targetIdx];
+        const possibleIndices = characterPositionsMap[requiredChar];
 
-      // Re-attempt to find the character from the beginning of mainSequence (index 0).
-      searchStartAt = currentStatus.lastFoundIdx + 1; // This will be 0.
-      foundAt = nextCharacterLookup[charIndex][searchStartAt];
+        // If the required character is not present in the source sequence at all, it's impossible.
+        if (!possibleIndices) {
+            return '-1';
+        }
 
-      if (foundAt < mainLen) {
-        currentStatus.lastFoundIdx = foundAt;
-      } else {
-        // This implies the character is not present in mainSequence at all.
-        currentStatus.finalOutcome = '-1';
-        return currentStatus;
-      }
+        // Attempt to find the next occurrence of requiredChar after the lastMatchedPosition
+        let nextMatchCandidate = findNextAvailableIndex(possibleIndices, lastMatchedPosition);
+
+        if (nextMatchCandidate !== -1) {
+            // A match was found within the current "rotation" of the source sequence.
+            lastMatchedPosition = nextMatchCandidate;
+        } else {
+            // No match found after lastMatchedPosition in the current "rotation".
+            // This means we need to complete a full rotation of the source sequence.
+            fullSequenceRotations++;
+            // The next match will be the first occurrence of requiredChar in the source sequence.
+            lastMatchedPosition = possibleIndices[0];
+        }
     }
-    return currentStatus;
-  }, { lastFoundIdx: -1, cycleCount: 0, finalOutcome: null }); // Initial state for the reducer.
 
-  if (processingResult.finalOutcome !== null) {
-    return processingResult.finalOutcome;
-  } else {
-    // Calculate the total length based on completed cycles and the position in the last cycle.
-    return `${processingResult.cycleCount * mainLen + processingResult.lastFoundIdx + 1}`;
-  }
-})(require('fs').readFileSync('/dev/stdin', 'utf8'));
+    // Calculate the final effective 1-based position in the infinitely repeating source sequence.
+    return `${fullSequenceRotations * sourceLength + lastMatchedPosition + 1}`;
+})(require('fs').readFileSync('/dev/stdin', 'utf8')));

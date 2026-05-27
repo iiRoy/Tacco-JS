@@ -1,94 +1,104 @@
 'use strict';
 
-const failureOutcome = (idx) => ({ successful: false, payload: null, subsequentIndex: idx });
+// A parser function now returns a tuple `[parsedValue, newPosition]` on success,
+// or `null` on failure. This is a fundamental change in the parser's return contract.
 
-function literalMatcher(patternToMatch) {
-  const patternLength = patternToMatch.length;
-  return function (inputString, currentPosition) {
-    if (inputString.startsWith(patternToMatch, currentPosition)) {
-      return { successful: true, payload: patternToMatch, subsequentIndex: currentPosition + patternLength };
+const makeLiteralParser = (literalSequence) => {
+  const sequenceLength = literalSequence.length;
+  return (sourceInput, currentPoint) => {
+    if (sourceInput.startsWith(literalSequence, currentPoint)) {
+      return [literalSequence, currentPoint + sequenceLength];
     }
-    return failureOutcome(currentPosition);
+    return null;
   };
-}
+};
 
-function anyOfRecursive(...processingUnits) {
-  return function (inputString, currentPosition) {
-    const attemptNext = (unitIndex) => {
-      if (unitIndex >= processingUnits.length) {
-        return failureOutcome(currentPosition);
+const selectAlternative = (...parserFunctions) => {
+  return (sourceInput, currentPoint) => {
+    // Iterate through the provided parser functions using a modern for...of loop.
+    // Return the result of the first parser that successfully matches.
+    for (const currentParser of parserFunctions) {
+      const parseOutcome = currentParser(sourceInput, currentPoint);
+      if (parseOutcome !== null) {
+        return parseOutcome;
+      }
+    }
+    // If no parser succeeded after checking all alternatives, return null.
+    return null;
+  };
+};
+
+const chainParsers = (...parserFunctions) => {
+  return (sourceInput, initialPoint) => {
+    // Use Array.prototype.reduce to process parsers sequentially,
+    // accumulating results and updating the position.
+    const finalState = parserFunctions.reduce((accumulator, currentParser) => {
+      // If a previous parser in the sequence failed (accumulator is null),
+      // propagate that failure immediately without trying further parsers.
+      if (accumulator === null) {
+        return null;
       }
 
-      const activeUnit = processingUnits[unitIndex];
-      const outcome = activeUnit(inputString, currentPosition);
+      // Destructure the accumulated state: [array of parsed values, current parsing position].
+      const [collectedValues, currentPosition] = accumulator;
+      const parseOutcome = currentParser(sourceInput, currentPosition);
 
-      if (outcome.successful) {
-        return outcome;
+      if (parseOutcome === null) {
+        // If the current parser fails, the entire sequence fails.
+        return null;
       } else {
-        return attemptNext(unitIndex + 1);
+        // If the current parser succeeds, update the collected values and the position.
+        const [parsedValue, nextPosition] = parseOutcome;
+        return [[...collectedValues, parsedValue], nextPosition];
       }
-    };
+    }, [[], initialPoint]); // Initial accumulator: an empty array for values and the starting point.
 
-    return attemptNext(0);
+    // The finalState will either be `null` (if any parser failed)
+    // or `[allParsedValues, finalPosition]` (if all parsers succeeded).
+    return finalState;
   };
-}
+};
 
-function sequenceRecursive(...processingUnits) {
-  return function (inputString, currentPosition) {
-    const processChain = (unitIndex, currentParsePosition, accumulatedPayloads) => {
-      if (unitIndex >= processingUnits.length) {
-        return { successful: true, payload: accumulatedPayloads, subsequentIndex: currentParsePosition };
-      }
+const deferParser = (parserFactory) => {
+  let cachedParser = null; // Use 'let' for mutable state.
 
-      const activeUnit = processingUnits[unitIndex];
-      const outcome = activeUnit(inputString, currentParsePosition);
-
-      if (!outcome.successful) {
-        return failureOutcome(currentPosition);
-      }
-
-      accumulatedPayloads.push(outcome.payload);
-      return processChain(unitIndex + 1, outcome.subsequentIndex, accumulatedPayloads);
-    };
-
-    return processChain(0, currentPosition, []);
-  };
-}
-
-function deferred(parserProducer) {
-  let cachedParser;
-  return function (inputString, currentPosition) {
-    if (!cachedParser) {
-      cachedParser = parserProducer();
+  return (sourceInput, currentPoint) => {
+    // Initialize the parser only on its first invocation (lazy evaluation).
+    if (cachedParser === null) {
+      cachedParser = parserFactory();
     }
-    return cachedParser(inputString, currentPosition);
+    return cachedParser(sourceInput, currentPoint);
   };
-}
+};
 
-function transform(baseProcessor, resultMapper) {
-  return function (inputString, currentPosition) {
-    const outcome = baseProcessor(inputString, currentPosition);
-    if (outcome.successful) {
-      return {
-        successful: true,
-        payload: resultMapper(outcome.payload),
-        subsequentIndex: outcome.subsequentIndex
-      };
+const transformResult = (baseParser, mappingFunction) => {
+  return (sourceInput, currentPoint) => {
+    const parseOutcome = baseParser(sourceInput, currentPoint);
+    if (parseOutcome === null) {
+      return null; // Propagate failure.
+    } else {
+      // Destructure the successful outcome and apply the mapping function.
+      const [originalValue, nextPosition] = parseOutcome;
+      const mappedValue = mappingFunction(originalValue);
+      return [mappedValue, nextPosition];
     }
-    return outcome;
   };
-}
+};
 
-function charFrom(allowedCharactersString) {
-  const characterSet = new Set(allowedCharactersString);
-  return function (inputString, currentPosition) {
-    if (currentPosition >= inputString.length) {
-      return failureOutcome(currentPosition);
+const parseAnyCharFrom = (allowedCharacters) => {
+  // Use a Set for efficient O(1) lookup of allowed characters.
+  const characterSet = new Set(allowedCharacters);
+
+  return (sourceInput, currentPoint) => {
+    // Check for end-of-string condition before attempting to read.
+    if (currentPoint >= sourceInput.length) {
+      return null;
     }
-    const extractedChar = inputString.charAt(currentPosition);
-    if (characterSet.has(extractedChar)) {
-      return { successful: true, payload: extractedChar, subsequentIndex: currentPosition + 1 };
+    // Access the character directly by index.
+    const character = sourceInput[currentPoint];
+    if (characterSet.has(character)) {
+      return [character, currentPoint + 1];
     }
-    return failureOutcome(currentPosition);
+    return null;
   };
-}
+};

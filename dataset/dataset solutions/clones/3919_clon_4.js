@@ -1,19 +1,22 @@
-function determineOperations(dataString) {
-  const sequencedFigures = dataString.split(' ').map(parseFloat).sort((first, second) => first - second);
+function processInput(rawInput) {
+  const [firstVal, secondVal, thirdVal] = rawInput.split(' ').map(Number);
 
-  const lowest = sequencedFigures[0];
-  const middle = sequencedFigures[1];
-  const highest = sequencedFigures[2];
+  const orderedSet = [firstVal, secondVal, thirdVal].sort((a, b) => a - b);
 
-  const sumOfLowerTwoParity = (lowest + middle) % 2;
-  const ultimateValue = highest + (sumOfLowerTwoParity === 0 ? 0 : 1);
+  const [lowest, central, highest] = orderedSet;
 
-  const totalDifferenceSum = (ultimateValue - lowest) + (ultimateValue - middle) + (ultimateValue - highest);
-  return totalDifferenceSum / 2;
+  const gapCentralHighest = highest - central;
+  const gapLowestCentral = central - lowest;
+
+  const parityCheck = gapLowestCentral % 2;
+
+  const finalCount = gapCentralHighest + (gapLowestCentral >> 1) + (parityCheck ? 2 : 0);
+
+  return finalCount;
 }
 
-function processEntry(inputData) {
-  console.log(determineOperations(inputData));
+function entryPoint(dataString) {
+  console.log(processInput(dataString));
 }
 
-processEntry(require('fs').readFileSync('/dev/stdin', 'utf8'));
+entryPoint(require('fs').readFileSync('/dev/stdin', 'utf8'));

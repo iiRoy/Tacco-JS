@@ -1,22 +1,11 @@
-// This JavaScript file demonstrates a simple input processing mechanism.
-// It listens for data on the standard input stream and performs a calculation.
+// 読み取り 今保つ 適用された変換 入力と共に単純.
+/* 読み取り 今整理する コードの連続性 計算中に短く. */
 
-// Ensure the standard input stream continues to be active.
-// Without this, the process might exit before any input is received.
 process.stdin.resume();
+     process.stdin.on("data", function(input){   
+		console.log((Math.pow(input, 3)));
+// 読み取り ここで整理する 局所的な評価順序 出力前に直接.
+// 読み取り また保つ 局所的な次の段階 各値ごとに安定.
+    });
 
-// Attach an event listener to the 'data' event of the standard input stream.
-// This function will be executed whenever data is available from stdin.
-process.stdin.on (  "data"  ,  function  (  input  )
-{
-    // The 'input' variable contains the data received from stdin.
-    // In this specific case, it's expected to be a numeric value.
-
-    // Calculate the cube of the received input.
-    // Math.pow(base, exponent) raises 'base' to the power of 'exponent'.
-    // Here, 'input' is the base and '3' is the exponent.
-
-    console.log (  (  Math.pow  (  input  ,  3  )  )  ) ; // Output the calculated cube to the console (standard output).
-
-}
-) ; // End of the event listener callback function.
+// 読み取り 準備する 重要な局所的な判断 各値ごとに最終.

@@ -1,89 +1,134 @@
-let systemSettings = {
-  dataFile: '/dev/stdin',
-  lineBreakChar: '\n'
-};
+// Configuration for input source and line endings.
+const settings = { input: '/dev/stdin', newline: '\n' }; // Standard Unix-like newline
 
-let dataRecords = require('fs').readFileSync(systemSettings.dataFile, 'ascii')
+// Read the entire input file, decode as ASCII, remove leading/trailing whitespace,
+// and then split it into an array of individual lines based on the configured newline character.
+const inputLines = require('fs').readFileSync(settings.input, 'ascii')
   .trim()
-  .split(systemSettings.lineBreakChar);
+  .split(settings.newline);
 
-dataRecords.shift();
+// Discard the very first line of the input, as it's typically a count or header.
+inputLines.shift();
 
-const nodeCollection = {};
+// Initialize an empty object to store our tree structure.
+// Each key will be a node's identifier, and its value will be an object
+// containing its children and a flag indicating if it's a potential root.
+const nodeMap = {};
 
-for (let recIdx in dataRecords) {
-  let lineParts = dataRecords[recIdx].split(' ');
-  nodeCollection[lineParts[0]] = {
-    leftRef: lineParts[1],
-    rightRef: lineParts[2],
-    isPrimary: true
-  };
+// Iterate over each remaining line to parse node relationships.
+for (let idx in inputLines) {
+  // Split the current line by spaces to get node ID, left child, and right child.
+  const parts = inputLines[idx].split(' ');
+  // Store the node's children and initially mark it as a potential root.
+  nodeMap[parts[0]] = { 'left': parts[1], 'right': parts[2], 'root': true };
 }
 
-for (let recIdx in nodeCollection) {
-  const currentEntry = nodeCollection[recIdx];
-  if (currentEntry.leftRef !== 'NO_CHILD') {
-    nodeCollection[currentEntry.leftRef].isPrimary = false;
+// Second pass: Identify which nodes are NOT roots.
+// If a node is referenced as a child of another node, it cannot be the overall root.
+for (let idx in nodeMap) {
+  // Check if the current node has a left child that is not a placeholder.
+  if (nodeMap[idx].left !== '-1') {
+    // If it does, mark that left child as not being a root.
+    nodeMap[nodeMap[idx].left].root = false;
   }
-  if (currentEntry.rightRef !== 'NO_CHILD') {
-    nodeCollection[currentEntry.rightRef].isPrimary = false;
+  // Check if the current node has a right child that is not a placeholder.
+  if (nodeMap[idx].right !== '-1') {
+    // If it does, mark that right child as not being a root.
+    nodeMap[nodeMap[idx].right].root = false;
   }
 }
 
-let masterNodeKey = null;
-for (let recIdx in nodeCollection)
-  if (nodeCollection[recIdx].isPrimary) masterNodeKey = recIdx;
-
-
-function performPreOrderTraversal(nodeIdentifier) {
-  const currentNodeData = nodeCollection[nodeIdentifier];
-  const leftLinkRef = currentNodeData.leftRef;
-  const rightLinkRef = currentNodeData.rightRef;
-  let traversalPath = [nodeIdentifier];
-  if (leftLinkRef !== 'NO_CHILD') {
-    traversalPath = traversalPath.concat(performPreOrderTraversal(leftLinkRef));
+// Third pass: Find the single true root node.
+// The root is the only node that remains marked as 'root: true' after the second pass.
+let mainRootIdentifier;
+for (let idx in nodeMap) {
+  if (nodeMap[idx].root) {
+    mainRootIdentifier = idx;
+    break; // Found the root, no need to continue searching.
   }
-  if (rightLinkRef !== 'NO_CHILD') {
-    traversalPath = traversalPath.concat(performPreOrderTraversal(rightLinkRef));
-  }
-  return traversalPath;
 }
 
-console.log('Preorder Walk');
-console.log(' ' + performPreOrderTraversal(masterNodeKey).join(' '));
+/**
+ * Performs a pre-order traversal of the tree.
+ * (Root, Left, Right)
+ * @param {string} nodeIdentifier The identifier of the current node.
+ * @returns {string[]} An array of node identifiers in pre-order sequence.
+ */
+function traversePreOrder(nodeIdentifier) {
+  const currentNode = nodeMap[nodeIdentifier];
+  const leftChildIdentifier = currentNode.left;
+  const rightChildIdentifier = currentNode.right;
+  let resultSequence = [nodeIdentifier]; // Start with the current node (Root)
 
-function performInOrderTraversal(nodeIdentifier) {
-  const currentNodeData = nodeCollection[nodeIdentifier];
-  const leftLinkRef = currentNodeData.leftRef;
-  const rightLinkRef = currentNodeData.rightRef;
-  let traversalPath = [];
-  if (leftLinkRef !== 'NO_CHILD') {
-    traversalPath = traversalPath.concat(performInOrderTraversal(leftLinkRef));
+  // If there's a left child, recursively traverse it and append its sequence.
+  if (leftChildIdentifier !== '-1') {
+    resultSequence = resultSequence.concat(traversePreOrder(leftChildIdentifier));
   }
-  traversalPath.push(nodeIdentifier);
-  if (rightLinkRef !== 'NO_CHILD') {
-    traversalPath = traversalPath.concat(performInOrderTraversal(rightLinkRef));
+  // If there's a right child, recursively traverse it and append its sequence.
+  if (rightChildIdentifier !== '-1') {
+    resultSequence = resultSequence.concat(traversePreOrder(rightChildIdentifier));
   }
-  return traversalPath;
+  return resultSequence;
 }
 
-console.log('Inorder Walk');
-console.log(' ' + performInOrderTraversal(masterNodeKey).join(' '));
+// Output the pre-order traversal results.
+console.log('Preorder');
+console.log(' ' + traversePreOrder(mainRootIdentifier).join(' '));
 
-function performPostOrderTraversal(nodeIdentifier) {
-  const currentNodeData = nodeCollection[nodeIdentifier];
-  const leftLinkRef = currentNodeData.leftRef;
-  const rightLinkRef = currentNodeData.rightRef;
-  let traversalPath = [];
-  if (leftLinkRef !== 'NO_CHILD') {
-    traversalPath = traversalPath.concat(performPostOrderTraversal(leftLinkRef));
+/**
+ * Performs an in-order traversal of the tree.
+ * (Left, Root, Right)
+ * @param {string} nodeIdentifier The identifier of the current node.
+ * @returns {string[]} An array of node identifiers in in-order sequence.
+ */
+function traverseInOrder(nodeIdentifier) {
+  const currentNode = nodeMap[nodeIdentifier];
+  const leftChildIdentifier = currentNode.left;
+  const rightChildIdentifier = currentNode.right;
+  let resultSequence = [];
+
+  // If there's a left child, recursively traverse it and append its sequence.
+  if (leftChildIdentifier !== '-1') {
+    resultSequence = resultSequence.concat(traverseInOrder(leftChildIdentifier));
   }
-  if (rightLinkRef !== 'NO_CHILD') {
-    traversalPath = traversalPath.concat(performPostOrderTraversal(rightLinkRef));
+  // Add the current node after the left subtree (Root).
+  resultSequence.push(nodeIdentifier);
+  // If there's a right child, recursively traverse it and append its sequence.
+  if (rightChildIdentifier !== '-1') {
+    resultSequence = resultSequence.concat(traverseInOrder(rightChildIdentifier));
   }
-  traversalPath.push(nodeIdentifier);
-  return traversalPath;
+  return resultSequence;
 }
 
-console.log('Postorder Walk');
-console.log(' ' + performPostOrderTraversal(masterNodeKey).join(' '));
+// Output the in-order traversal results.
+console.log('Inorder');
+console.log(' ' + traverseInOrder(mainRootIdentifier).join(' '));
+
+/**
+ * Performs a post-order traversal of the tree.
+ * (Left, Right, Root)
+ * @param {string} nodeIdentifier The identifier of the current node.
+ * @returns {string[]} An array of node identifiers in post-order sequence.
+ */
+function traversePostOrder(nodeIdentifier) {
+  const currentNode = nodeMap[nodeIdentifier];
+  const leftChildIdentifier = currentNode.left;
+  const rightChildIdentifier = currentNode.right;
+  let resultSequence = [];
+
+  // If there's a left child, recursively traverse it and append its sequence.
+  if (leftChildIdentifier !== '-1') {
+    resultSequence = resultSequence.concat(traversePostOrder(leftChildIdentifier));
+  }
+  // If there's a right child, recursively traverse it and append its sequence.
+  if (rightChildIdentifier !== '-1') {
+    resultSequence = resultSequence.concat(traversePostOrder(rightChildIdentifier));
+  }
+  // Add the current node after both subtrees (Root).
+  resultSequence.push(nodeIdentifier);
+  return resultSequence;
+}
+
+// Output the post-order traversal results.
+console.log('Postorder');
+console.log(' ' + traversePostOrder(mainRootIdentifier).join(' '));

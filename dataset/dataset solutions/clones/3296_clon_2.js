@@ -1,52 +1,50 @@
 function ProcessInput(rawData) {
-  // Parse the incoming raw data into individual lines
-  const linesOfData = rawData.split('\n');
+  // Parse the incoming raw data string
+  rawData = rawData.split("\n");
 
   // Extract numerical parameters from the first line
-  const firstLineItems = linesOfData[0].split(' ');
-  const numSteps = Number.parseInt(firstLineItems[0], 10);
-  const maxJump = Number.parseInt(firstLineItems[1], 10);
+  let lineParts = rawData[0].split(" ");
+  const numSteps = Number.parseInt(lineParts[0]);
+  const maxJump = Number.parseInt(lineParts[1]);
 
-  // Retrieve the step height values from the second line
-  const secondLineItems = linesOfData[1].split(' ');
-  const stepHeights = secondLineItems.map(str => Number.parseInt(str, 10));
+  // Extract height values from the second line and convert to numbers
+  lineParts = rawData[1].split(" ");
+  const heightsArray = lineParts.map(strVal => parseInt(strVal, 10));
 
-  // Initialize an array to store the minimal energy cost to reach each platform
-  const minimalCosts = [];
+  // Initialize variables for the dynamic programming approach
+  let currentStepIdx = 0; // This variable is later reused as a loop counter
+  const minCosts = []; // Array to store the minimum cost to reach each step
 
-  // The energy expenditure to be at the starting platform (index 0) is zero
-  minimalCosts.push(0);
+  // The cost to reach the initial (0th) step is always zero
+  minCosts.push(0);
 
-  // Calculate the energy cost to reach the next platform (index 1)
-  // This is the absolute difference in height between platform 0 and platform 1
-  minimalCosts.push(Math.abs(stepHeights[1] - stepHeights[0]));
+  // Calculate the cost to reach the first step (from the 0th step)
+  minCosts.push(Math.abs(heightsArray[1] - heightsArray[0]));
 
-  // Iterate through platforms starting from the third one (index 2)
-  for (let currentPlatformIndex = 2; currentPlatformIndex < numSteps; currentPlatformIndex++) {
-    let bestCurrentCost = Number.MAX_SAFE_INTEGER; // Set an initial high value for comparison
+  // Iterate through the remaining steps, starting from the second step (index 2)
+  for (currentStepIdx = 2; currentStepIdx < numSteps; currentStepIdx++) {
+    let minCostForCurrent = 1e9; // Initialize with a very large number for comparison
 
-    // Evaluate all possible preceding platforms from which a jump could be made
-    for (let prevPlatformOffset = 1; prevPlatformOffset <= maxJump; prevPlatformOffset++) {
-      const priorPlatformIndex = currentPlatformIndex - prevPlatformOffset;
-
-      // If the calculated prior platform index is invalid (less than zero), stop
-      if (priorPlatformIndex < 0) {
-        break;
+    // Consider all possible previous steps within the maximum jump distance
+    for (let prevStepOffset = 1; prevStepOffset <= maxJump; prevStepOffset++) {
+      // Ensure the previous step index is valid (not less than 0)
+      if (currentStepIdx - prevStepOffset < 0) {
+        break; // No more valid previous steps within this range
       }
 
-      // Compute the total energy cost if arriving from 'priorPlatformIndex'
-      const candidateCost = minimalCosts[priorPlatformIndex] + Math.abs(stepHeights[currentPlatformIndex] - stepHeights[priorPlatformIndex]);
+      // Calculate the cost to reach the current step from the potential previous step
+      const calculatedCost = minCosts[currentStepIdx - prevStepOffset] + Math.abs(heightsArray[currentStepIdx] - heightsArray[currentStepIdx - prevStepOffset]);
 
-      // Update the minimum cost found for the 'currentPlatformIndex'
-      bestCurrentCost = Math.min(candidateCost, bestCurrentCost);
+      // Update the minimum cost for the current step if a smaller path is found
+      minCostForCurrent = Math.min(calculatedCost, minCostForCurrent);
     }
-    // Record the lowest energy cost to reach the current platform
-    minimalCosts.push(bestCurrentCost);
+    // Store the determined minimum cost for the current step
+    minCosts.push(minCostForCurrent);
   }
 
-  // Output the final minimal energy cost to reach the last platform
-  console.log(minimalCosts[numSteps - 1]);
+  // Output the minimum cost to reach the final step (N-1)
+  console.log(minCosts[numSteps - 1]);
 }
 
-// Execute the processing function using data acquired from the standard input stream
-ProcessInput(require('node:fs').readFileSync('/dev/fd/0', 'utf-8'));
+// Invoke the main processing function with input read from standard input
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

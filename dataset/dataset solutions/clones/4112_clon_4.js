@@ -1,47 +1,42 @@
 "use strict";
 
-const processCombatScenario = (inputDataString) => {
-    const allLines = inputDataString.trim().split('\n');
-    const firstLineDetails = allLines[0].split(' ').map(Number);
-    let currentVitality = firstLineDetails[1];
+const processChallenge = (inputSource) => {
+    const contentLines = inputSource.trim().split('\n');
 
-    const weaponCatalog = allLines.slice(1).map(entry => {
-        const numericalParts = entry.split(' ').map(Number);
-        return { attackPower: numericalParts[0], damageOutput: numericalParts[1] };
-    });
+    const [entityQuantity, initialLifePoints] = contentLines.shift().split(' ').map(Number);
 
-    const strongestStrikeForce = Math.max(...weaponCatalog.map(item => item.attackPower));
+    const combatActions = contentLines.map(line => line.split(' ').map(Number));
 
-    const potentThrowables = weaponCatalog
-        .filter(item => item.damageOutput > strongestStrikeForce)
-        .sort((itemA, itemB) => itemB.damageOutput - itemA.damageOutput);
-
-    const engageThrowables = (vitalityStatus, actionCounter, remainingItems) => {
-        if (vitalityStatus <= 0) {
-            return { healthRemaining: 0, totalActions: actionCounter };
+    let highestAttackPower = 0;
+    for (const [attackValue] of combatActions) {
+        if (attackValue > highestAttackPower) {
+            highestAttackPower = attackValue;
         }
-        if (remainingItems.length === 0) {
-            return { healthRemaining: vitalityStatus, totalActions: actionCounter };
-        }
-
-        const [nextItem, ...restItems] = remainingItems;
-        const newVitality = vitalityStatus - nextItem.damageOutput;
-        const newActionCount = actionCounter + 1;
-
-        return engageThrowables(newVitality, newActionCount, restItems);
-    };
-
-    const throwPhaseOutcome = engageThrowables(currentVitality, 0, potentThrowables);
-
-    let finalActionCount = throwPhaseOutcome.totalActions;
-
-    if (throwPhaseOutcome.healthRemaining > 0) {
-        const additionalMeleeStrikes = Math.ceil(throwPhaseOutcome.healthRemaining / strongestStrikeForce);
-        finalActionCount += additionalMeleeStrikes;
     }
 
-    console.log(finalActionCount);
+    const effectiveThrowAttacks = combatActions
+        .filter(([, throwDamageValue]) => throwDamageValue > highestAttackPower)
+        .sort(([, throwDamageA], [, throwDamageB]) => throwDamageB - throwDamageA);
+
+    let currentLifePointsRemaining = initialLifePoints;
+    let throwActionCount = 0;
+
+    for (const [, currentThrowDamage] of effectiveThrowAttacks) {
+        if (currentLifePointsRemaining <= 0) {
+            break;
+        }
+        currentLifePointsRemaining -= currentThrowDamage;
+        throwActionCount++;
+    }
+
+    if (currentLifePointsRemaining <= 0) {
+        console.log(throwActionCount);
+        return;
+    }
+
+    const requiredDirectStrikes = Math.ceil(currentLifePointsRemaining / highestAttackPower);
+
+    console.log(throwActionCount + requiredDirectStrikes);
 };
 
-const obtainExternalInput = require('fs').readFileSync('/dev/stdin', 'utf8');
-processCombatScenario(obtainExternalInput);
+processChallenge(require('fs').readFileSync('/dev/stdin', 'utf8'));

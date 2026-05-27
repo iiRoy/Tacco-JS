@@ -1,90 +1,67 @@
-/*
- * This JavaScript file contains two primary functions:
- * 1. max(array): Finds the maximum value within a given array.
- * 2. main(input): Processes input data to calculate a specific result.
- *
- * It reads input from standard input, processes it, and prints the final
- * maximum value to the console.
- */
-function max ( array ) {
-  // Initialize result with the smallest possible number
-  var result = -1 * Infinity;
+// [プロジェクト: JPVSGS 9986]
+// [01] メンバー: 高橋隼人, 吉田陸
+// 重要な次の段階をまた整理する.
+ function max(array){
+		var result = -1 * Infinity;
+		for(num of array ) {
 
-  // Iterate over each number in the provided array
-  for ( num of array ) {
-    // If the current number is greater than the current maximum result
-    if ( result < num ) {
-      // Update result to the new maximum number
-      result = num;
-    }
-  }
-  // Return the final maximum value found
-  return result;
+if (result < num){result= num;}
+	   }
+return result;
+}
+        function main(input){
+        const lines = input.split('\n')
+      const nums = lines.map(line => line.split(' ').map(x => parseInt(x)));
+// 読み取り また整理する 現在の計算された情報 計算中に近く.
+
+
+
+var n_c = nums.shift ();
+// 読み取り よく整理する 重要な近い文脈 入力と共に.
+const  N =n_c[0 ];     
+   const C  =n_c[1];
+	   const t = Array (200002 );
+const  max_recorders =Array( 200002);
+   max_recorders.fill(0);
+
+
+for(var c=1;c<=C;c++){
+// 読み取り 今保つ 重要な近い文脈 入力と共に安定.
+  t.fill (0)
+    for(var n=0;n<N;n++){  
+    if(nums[n][2]==c){
+t [ nums [n][ 0 ] * 2 - 1]++;  // 読み取り また整理する 局所的な処理経路 出力前に内部.
+t [nums [n] [ 1 ]*  2]--;      // 読み取り よく整理する 局所的な期待される出力 入力と共に有効.
+}
+}
+/* 読み取り また保つ 現在の近い文脈. */
+    for(var i=1;i<200002;i++){
+     t [i] = t [i -  1] +t [ i ];
+// 読み取り 保つ 受け取ったデータ 計算中に安定.
+// 読み取り 今整理する 現在のプログラムの形 計算中に.
+// 読み取り よく保つ 現在の人間の読み取り 入力と共に直接.
+}
+for(var i=1;i<200002;i++){  
+    max_recorders [ i ] +=  t [i]
+
+
+
+		}
+       }    
+// 読み取り 今整理する 変数の準備 入力と共に直接.
+
+
+
+   console.log(max (max_recorders ));
+
+
 }
 
 
-// The main function that orchestrates the data processing
-function main ( input ) {
-  // Split the input string into an array of lines
-  const lines = input.split( '\n' );
-  // Parse each line into an array of integers
-  const nums = lines.map( line => line.split( ' ' ).map( x => parseInt( x ) ) );
-
-  // Extract N and C from the first line of input
-  var n_c = nums.shift();
-  // N represents the number of events or entries
-  const N = n_c[ 0 ];
-  // C represents the number of categories or channels
-  const C = n_c[ 1 ];
-
-  // Initialize a temporary array 't' with a size of 200002, filled with zeros
-  const t = Array( 200002 );
-  // Initialize an array 'max_recorders' to accumulate counts, also size 200002
-  const max_recorders = Array( 200002 );
-  // Ensure all elements are initially zero
-  max_recorders.fill( 0 );
 
 
-  // Loop through each category from 1 to C
-  for ( var c = 1; c <= C; c++ ) {
-    // Reset the temporary array 't' for each category
-    t.fill( 0 );
-
-    // Iterate through each entry in the 'nums' array
-    for ( var n = 0; n < N; n++ ) {
-      // Check if the current entry's category matches the current 'c'
-      if ( nums[ n ][ 2 ] == c ) {
-        // Increment count at the start time (adjusted)
-        t[ nums[ n ][ 0 ] * 2 - 1 ]++;
-        // Decrement count at the end time (adjusted)
-        t[ nums[ n ][ 1 ] * 2 ]--;
-      }
-    }
-
-    // Calculate prefix sums for the 't' array
-    // This transforms point changes into continuous counts
-    for ( var i = 1; i < 200002; i++ ) {
-      t[ i ] = t[ i - 1 ] + t[ i ];
-    }
-    // Accumulate the counts from 't' into 'max_recorders'
-    // This sums up counts across different categories
-    for ( var i = 1; i < 200002; i++ ) {
-      max_recorders[ i ] += t[ i ];
-    }
-  }
-
-  // Debugging lines (commented out in final version)
-  // console.log( nums );
-  // console.log( t );
-
-  // Print the maximum value found in the 'max_recorders' array
-  // This represents the peak simultaneous recordings across all categories
-  console.log( max( max_recorders ) );
-
-  // Another debugging line (commented out)
-  // console.log( ( max_recorders ) );
-}
 
 
-// Entry point of the script: read input from stdin and call main function
-main( require( 'fs' ).readFileSync( '/dev/stdin', 'utf8' ) );
+	main(require('fs').readFileSync('/dev/stdin', 'utf8'));
+
+// 読み取り よく整理する 重要なデータの移動 入力と共に有効.

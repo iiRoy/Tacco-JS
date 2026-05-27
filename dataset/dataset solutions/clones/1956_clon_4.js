@@ -1,43 +1,97 @@
-const acquireStandardInput = () => {
-    return require("node:fs").readFileSync(0, "utf8");
-};
+class InputReader {
+    constructor(inputString) {
+        this.tokenBuffer = inputString.split(/ |\n/);
+        this.currentIndex = 0;
+    }
 
-const obtainData = (sourceText) => {
-    let tokens = sourceText.trim().split(/\s+/);
-    let currentIdx = 0;
-    return {
-        fetchNumeric: () => Number(tokens[currentIdx++]),
-        fetchSequence: (count) => Array.from({ length: count }, () => Number(tokens[currentIdx++])),
-        fetchGrid: (rows, cols) => Array.from({ length: rows }, () => Array.from({ length: cols }, () => Number(tokens[currentIdx++])))
-    };
-};
+    fetchNumber() {
+        return Number(this.tokenBuffer[this.currentIndex++]);
+    }
 
-const establishPrioritizedCollection = () => {
-    let internalStorage = [];
-    const compareElements = (a, b) => a[0] - b[0];
+    fetchNumbers(count) {
+        const result = [];
+        for (let i = 0; i < count; i++) {
+            result.push(Number(this.tokenBuffer[this.currentIndex++]));
+        }
+        return result;
+    }
 
-    const siftUp = (index) => {
+    fetchMatrix(height, width) {
+        const matrix = [];
+        for (let r = 0; r < height; r++) {
+            const row = [];
+            for (let c = 0; c < width; c++) {
+                row.push(Number(this.tokenBuffer[this.currentIndex++]));
+            }
+            matrix.push(row);
+        }
+        return matrix;
+    }
+}
+
+function createNestedArray(initialValue, ...dimensions) {
+    if (dimensions.length === 0) {
+        return initialValue;
+    }
+    const currentDimensionSize = dimensions[0];
+    const remainingDimensions = dimensions.slice(1);
+
+    return Array.from({ length: currentDimensionSize }, () =>
+        createNestedArray(initialValue, ...remainingDimensions)
+    );
+}
+
+class MinHeap {
+    constructor() {
+        this.dataStore = [];
+    }
+
+    insert(item) {
+        this.dataStore.push(item);
+        this._bubbleUp(this.dataStore.length - 1);
+    }
+
+    extractMin() {
+        if (this.dataStore.length === 0) {
+            return undefined;
+        }
+        if (this.dataStore.length === 1) {
+            return this.dataStore.pop();
+        }
+
+        const minItem = this.dataStore[0];
+        this.dataStore[0] = this.dataStore.pop();
+        this._sinkDown(0);
+        return minItem;
+    }
+
+    get size() {
+        return this.dataStore.length;
+    }
+
+    _bubbleUp(index) {
         while (index > 0) {
-            let parentIndex = (index - 1) >> 1;
-            if (compareElements(internalStorage[parentIndex], internalStorage[index]) <= 0) {
+            const parentIndex = Math.floor((index - 1) / 2);
+            if (this.dataStore[parentIndex].time <= this.dataStore[index].time) {
                 break;
             }
-            [internalStorage[index], internalStorage[parentIndex]] = [internalStorage[parentIndex], internalStorage[index]];
+            [this.dataStore[parentIndex], this.dataStore[index]] = [this.dataStore[index], this.dataStore[parentIndex]];
             index = parentIndex;
         }
-    };
+    }
 
-    const siftDown = (index) => {
-        let lastIndex = internalStorage.length - 1;
+    _sinkDown(index) {
+        const lastIndex = this.dataStore.length - 1;
         while (true) {
-            let leftChildIndex = (index << 1) + 1;
-            let rightChildIndex = (index << 1) + 2;
             let smallestIndex = index;
+            const leftChildIndex = 2 * index + 1;
+            const rightChildIndex = 2 * index + 2;
 
-            if (leftChildIndex <= lastIndex && compareElements(internalStorage[leftChildIndex], internalStorage[smallestIndex]) < 0) {
+            if (leftChildIndex <= lastIndex && this.dataStore[leftChildIndex].time < this.dataStore[smallestIndex].time) {
                 smallestIndex = leftChildIndex;
             }
-            if (rightChildIndex <= lastIndex && compareElements(internalStorage[rightChildIndex], internalStorage[smallestIndex]) < 0) {
+
+            if (rightChildIndex <= lastIndex && this.dataStore[rightChildIndex].time < this.dataStore[smallestIndex].time) {
                 smallestIndex = rightChildIndex;
             }
 
@@ -45,120 +99,87 @@ const establishPrioritizedCollection = () => {
                 break;
             }
 
-            [internalStorage[index], internalStorage[smallestIndex]] = [internalStorage[smallestIndex], internalStorage[index]];
+            [this.dataStore[index], this.dataStore[smallestIndex]] = [this.dataStore[smallestIndex], this.dataStore[index]];
             index = smallestIndex;
         }
-    };
-
-    return {
-        insertItem: (item) => {
-            internalStorage.push(item);
-            siftUp(internalStorage.length - 1);
-        },
-        extractMinimum: () => {
-            if (internalStorage.length === 0) {
-                return undefined;
-            }
-            if (internalStorage.length === 1) {
-                return internalStorage.pop();
-            }
-            const minItem = internalStorage[0];
-            internalStorage[0] = internalStorage.pop();
-            siftDown(0);
-            return minItem;
-        },
-        isEmpty: () => internalStorage.length === 0
-    };
-};
-
-const createMultiDimArray = (defaultValue, ...dimensions) => {
-    if (dimensions.length === 0) {
-        return defaultValue;
     }
-    const currentDim = dimensions[0];
-    const remainingDims = dimensions.slice(1);
-    return Array.from({ length: currentDim }, () => createMultiDimArray(defaultValue, ...remainingDims));
-};
+}
 
-const executeGraphProblem = () => {
-    const inputReader = obtainData(acquireStandardInput());
+function processGraphTraversal() {
+    const rawInput = require("fs").readFileSync("/dev/stdin", "utf8");
+    const dataParser = new InputReader(rawInput);
 
-    const numLocations = inputReader.fetchNumeric();
-    const numConnections = inputReader.fetchNumeric();
-    let initialSilver = inputReader.fetchNumeric();
+    const [nodeCount, edgeCount, initialSilver] = dataParser.fetchNumbers(3);
 
-    const connectionList = createMultiDimArray([], numLocations);
-    for (let k = 0; k < numConnections; k++) {
-        const [origin, target, silverCost, timeCost] = inputReader.fetchSequence(4);
-        const adjustedOrigin = origin - 1;
-        const adjustedTarget = target - 1;
-        connectionList[adjustedOrigin].push([adjustedTarget, silverCost, timeCost]);
-        connectionList[adjustedTarget].push([adjustedOrigin, silverCost, timeCost]);
+    const adjacencyList = createNestedArray([], nodeCount);
+    for (let i = 0; i < edgeCount; i++) {
+        const [sourceNode, targetNode, silverCost, timeCost] = dataParser.fetchNumbers(4);
+        const adjustedSource = sourceNode - 1;
+        const adjustedTarget = targetNode - 1;
+        adjacencyList[adjustedSource].push({ target: adjustedTarget, silver: silverCost, time: timeCost });
+        adjacencyList[adjustedTarget].push({ target: adjustedSource, silver: silverCost, time: timeCost });
     }
 
-    const silverExchangeDetails = inputReader.fetchGrid(numLocations, 2);
+    const exchangeRates = dataParser.fetchMatrix(nodeCount, 2);
 
-    const SILVER_LIMIT_EXCLUSIVE = 2501;
-    const INFINITE_TIME = Number.MAX_SAFE_INTEGER;
+    const minTimeAtNodeSilver = createNestedArray(1e18, nodeCount, 2501);
+    
+    const finalTravelTimes = createNestedArray(1e18, nodeCount);
 
-    const minimumTimesToState = createMultiDimArray(INFINITE_TIME, numLocations, SILVER_LIMIT_EXCLUSIVE);
-    const finalMinimumTimes = createMultiDimArray(INFINITE_TIME, numLocations);
+    let unvisitedNodesCount = nodeCount;
+    const priorityQueueInstance = new MinHeap();
 
-    let remainingNodes = numLocations;
+    const clampedInitialSilver = Math.min(initialSilver, 2500);
+    
+    priorityQueueInstance.insert({ time: 0, node: 0, silver: clampedInitialSilver });
+    minTimeAtNodeSilver[0][clampedInitialSilver] = 0;
 
-    const journeyQueue = establishPrioritizedCollection();
+    while (priorityQueueInstance.size > 0 && unvisitedNodesCount > 0) {
+        const { time: currentTime, node: currentNode, silver: currentSilver } = priorityQueueInstance.extractMin();
 
-    if (initialSilver >= SILVER_LIMIT_EXCLUSIVE) {
-        initialSilver = SILVER_LIMIT_EXCLUSIVE - 1;
-    }
-
-    journeyQueue.insertItem([0, 0, initialSilver]);
-    minimumTimesToState[0][initialSilver] = 0;
-
-    while (!journeyQueue.isEmpty()) {
-        const [currentTime, currentNode, currentSilver] = journeyQueue.extractMinimum();
-
-        if (minimumTimesToState[currentNode][currentSilver] < currentTime) {
+        if (minTimeAtNodeSilver[currentNode][currentSilver] < currentTime) {
             continue;
         }
 
-        if (finalMinimumTimes[currentNode] === INFINITE_TIME) {
-            remainingNodes--;
-            finalMinimumTimes[currentNode] = currentTime;
+        if (finalTravelTimes[currentNode] === 1e18) {
+            finalTravelTimes[currentNode] = currentTime;
+            unvisitedNodesCount--;
         }
 
-        if (currentSilver < SILVER_LIMIT_EXCLUSIVE - 1) {
-            const newTimeAfterExchange = currentTime + silverExchangeDetails[currentNode][1];
-            const gainedSilver = silverExchangeDetails[currentNode][0];
-            let newSilverAfterExchange = currentSilver + gainedSilver;
-            if (newSilverAfterExchange >= SILVER_LIMIT_EXCLUSIVE - 1) {
-                newSilverAfterExchange = SILVER_LIMIT_EXCLUSIVE - 1;
-            }
+        const silverToGain = exchangeRates[currentNode][0];
+        const timeForExchange = exchangeRates[currentNode][1];
+        
+        if (currentSilver < 2500) {
+            const nextSilverAfterExchange = Math.min(currentSilver + silverToGain, 2500);
+            const timeAfterExchange = currentTime + timeForExchange;
 
-            if (minimumTimesToState[currentNode][newSilverAfterExchange] > newTimeAfterExchange) {
-                minimumTimesToState[currentNode][newSilverAfterExchange] = newTimeAfterExchange;
-                journeyQueue.insertItem([newTimeAfterExchange, currentNode, newSilverAfterExchange]);
+            if (minTimeAtNodeSilver[currentNode][nextSilverAfterExchange] > timeAfterExchange) {
+                minTimeAtNodeSilver[currentNode][nextSilverAfterExchange] = timeAfterExchange;
+                priorityQueueInstance.insert({ time: timeAfterExchange, node: currentNode, silver: nextSilverAfterExchange });
             }
         }
 
-        for (const [neighborNode, requiredSilver, travelTime] of connectionList[currentNode]) {
-            const silverRemainingAfterTravel = currentSilver - requiredSilver;
-            if (silverRemainingAfterTravel < 0) {
+        for (const neighborEdge of adjacencyList[currentNode]) {
+            const { target: neighborNode, silver: edgeSilverCost, time: edgeTimeCost } = neighborEdge;
+
+            const silverAfterTravel = currentSilver - edgeSilverCost;
+            if (silverAfterTravel < 0) {
                 continue;
             }
 
-            const newTimeAfterTravel = currentTime + travelTime;
-            if (minimumTimesToState[neighborNode][silverRemainingAfterTravel] > newTimeAfterTravel) {
-                minimumTimesToState[neighborNode][silverRemainingAfterTravel] = newTimeAfterTravel;
-                journeyQueue.insertItem([newTimeAfterTravel, neighborNode, silverRemainingAfterTravel]);
+            const timeAfterTravel = currentTime + edgeTimeCost;
+
+            if (minTimeAtNodeSilver[neighborNode][silverAfterTravel] > timeAfterTravel) {
+                minTimeAtNodeSilver[neighborNode][silverAfterTravel] = timeAfterTravel;
+                priorityQueueInstance.insert({ time: timeAfterTravel, node: neighborNode, silver: silverAfterTravel });
             }
         }
     }
 
-    return finalMinimumTimes.slice(1).join("\n");
-};
+    return finalTravelTimes.slice(1).join("\n");
+}
 
-const programResult = executeGraphProblem();
-if (programResult !== undefined) {
-    console.log(programResult);
+const problemOutput = processGraphTraversal();
+if (problemOutput !== undefined) {
+    console.log(problemOutput);
 }

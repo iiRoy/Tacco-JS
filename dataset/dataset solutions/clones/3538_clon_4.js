@@ -1,37 +1,28 @@
-function sweetApportionment(payloadData) {
-  const lineSeparations = payloadData.split('\n');
+const processSweetAllocation = (rawInputContent) => {
+    const inputLines = rawInputContent.split('\n');
 
-  const [firstLineContent, secondLineContent] = [lineSeparations[0], lineSeparations[1]];
+    const [personCountString, candyLimitString] = inputLines[0].split(' ');
+    const availableSweets = Number(candyLimitString);
 
-  const [entityCountStr, totalSweetnessLimitStr] = firstLineContent.split(' ');
-  const requestedPortionsStr = secondLineContent.split(' ');
+    const demandStrings = inputLines[1].split(' ');
+    const parsedDemands = demandStrings.map(Number);
 
-  const totalEntities = parseInt(entityCountStr, 10);
-  const maximumSweetness = parseInt(totalSweetnessLimitStr, 10);
-  const individualRequests = requestedPortionsStr
-    .filter(segment => segment !== '')
-    .map(segment => parseInt(segment, 10));
+    const sortedDemands = parsedDemands.slice().sort((a, b) => a - b);
 
-  if (totalEntities === 0) {
-    return 0;
-  }
+    const distributionResult = sortedDemands.reduce((accumulatedState, currentDemand) => {
+        if (accumulatedState.remainingSweets >= currentDemand) {
+            return {
+                satisfiedFolks: accumulatedState.satisfiedFolks + 1,
+                remainingSweets: accumulatedState.remainingSweets - currentDemand
+            };
+        } else {
+            return accumulatedState;
+        }
+    }, { satisfiedFolks: 0, remainingSweets: availableSweets });
 
-  const sortedRequests = [...individualRequests].sort((valueA, valueB) => valueA - valueB);
+    return distributionResult.satisfiedFolks;
+};
 
-  const progressiveSums = sortedRequests.reduce((accumulator, currentRequest, index) => {
-    const priorSum = index === 0 ? 0 : accumulator[index - 1];
-    accumulator.push(priorSum + currentRequest);
-    return accumulator;
-  }, []);
-
-  let boundaryIndex = progressiveSums.findIndex(aggregate => aggregate > maximumSweetness);
-
-  if (boundaryIndex === -1) {
-    return totalEntities - 1;
-  } else {
-    return boundaryIndex;
-  }
-}
-
-const acquiredContent = require('fs').readFileSync('/dev/stdin', 'utf8');
-console.log(sweetApportionment(acquiredContent));
+const inputContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+const finalTally = processSweetAllocation(inputContent);
+console.log(finalTally);

@@ -1,153 +1,93 @@
-let incomingRawText = '';
+const getMin = (valueA, valueB) => {
+  return valueA < valueB ? valueA : valueB;
+};
 
-function getLesserOfTwo(valA, valB) {
-  if (valA < valB) {
-    return valA;
-  } else {
-    return valB;
+function calculateCost(productCatalog, currentProduct, visitedProducts = []) {
+  const productDetails = productCatalog[currentProduct];
+  let effectivePrice = productDetails.price;
+  const productRecipe = productDetails.recipe;
+
+  if (productRecipe) {
+    visitedProducts.push(currentProduct);
+    let accumulatedRecipeCost = 0;
+    let pathIsCyclic = false;
+
+    for (let componentIndex = 0; componentIndex < productRecipe.length; componentIndex++) {
+      const componentName = productRecipe[componentIndex];
+
+      if (visitedProducts.includes(componentName)) {
+        pathIsCyclic = true;
+        break;
+      }
+
+      const componentPriceContribution = calculateCost(productCatalog, componentName, visitedProducts);
+      accumulatedRecipeCost += componentPriceContribution;
+    }
+
+    if (!pathIsCyclic) {
+      effectivePrice = getMin(effectivePrice, accumulatedRecipeCost);
+    }
+    visitedProducts.pop();
+  }
+
+  return effectivePrice;
+}
+
+function processInputData(inputLinesArray) {
+  let lineCursor = 0;
+  const totalInputLines = inputLinesArray.length;
+
+  const parseNextIntAndAdvance = () => {
+    const value = parseInt(inputLinesArray[lineCursor], 10);
+    lineCursor++;
+    return value;
+  };
+
+  while (lineCursor < totalInputLines) {
+    let currentProductCatalog = {};
+
+    const numProducts = parseNextIntAndAdvance();
+    if (numProducts === 0) {
+      break;
+    }
+    const productDefinitionsEndLine = lineCursor + numProducts;
+
+    for (; lineCursor < productDefinitionsEndLine; lineCursor++) {
+      const lineParts = inputLinesArray[lineCursor].split(' ');
+      const productName = lineParts[0];
+      const productBasePrice = parseInt(lineParts[1], 10);
+      currentProductCatalog[productName] = { price: productBasePrice };
+    }
+
+    const numRecipes = parseNextIntAndAdvance();
+    const recipeDefinitionsEndLine = lineCursor + numRecipes;
+
+    for (; lineCursor < recipeDefinitionsEndLine; lineCursor++) {
+      const lineParts = inputLinesArray[lineCursor].split(' ');
+      const productName = lineParts[0];
+      if (currentProductCatalog[productName]) {
+        currentProductCatalog[productName].recipe = lineParts.slice(2);
+      }
+    }
+
+    const finalProductKey = inputLinesArray[lineCursor++];
+    console.log(calculateCost(currentProductCatalog, finalProductKey));
   }
 }
 
-function determineMinimalPrice(productCatalog, targetProductId, currentDependencyPath) {
-  if (!currentDependencyPath) {
-    currentDependencyPath = [];
-  }
-
-  const productDetails = productCatalog[targetProductId];
-  if (!productDetails) {
-    return Infinity;
-  }
-
-  let finalCalculatedCost = productDetails.price;
-  const craftingPlan = productDetails.recipe;
-  let accumulatedRecipeCost = 0;
-  let hasValidCraftingPath = true;
-
-  if (craftingPlan) {
-    currentDependencyPath.push(targetProductId);
-    accumulatedRecipeCost = 0;
-    hasValidCraftingPath = true;
-
-    for (let componentIdx = 0; componentIdx < craftingPlan.length; componentIdx++) {
-      const requiredComponentId = craftingPlan[componentIdx];
-
-      if (currentDependencyPath.includes(requiredComponentId)) {
-        hasValidCraftingPath = false;
-        break;
-      }
-      
-      const componentCost = determineMinimalPrice(productCatalog, requiredComponentId, currentDependencyPath);
-      if (componentCost === Infinity) {
-          hasValidCraftingPath = false;
-          break;
-      }
-      accumulatedRecipeCost += componentCost;
-    }
-
-    if (hasValidCraftingPath) {
-      finalCalculatedCost = getLesserOfTwo(finalCalculatedCost, accumulatedRecipeCost);
-    }
-    
-    currentDependencyPath.pop();
-  }
-  
-  return finalCalculatedCost;
-}
-
-function orchestrateItemCostEvaluation() {
-  const processedInputLines = incomingRawText.split('\n');
-  let currentLinePointer = 0;
-  const totalAvailableLines = processedInputLines.length;
-
-  if (totalAvailableLines === 0 || (totalAvailableLines === 1 && processedInputLines[0].trim() === '')) {
-      return;
-  }
-
-  while (currentLinePointer < totalAvailableLines) {
-    let currentItemCatalog = {};
-    
-    const itemPriceCountStr = processedInputLines[currentLinePointer];
-    currentLinePointer++;
-    const numberOfItemsWithPrices = parseInt(itemPriceCountStr, 10);
-    
-    if (isNaN(numberOfItemsWithPrices)) {
-        break;
-    }
-    if (numberOfItemsWithPrices === 0 && itemPriceCountStr.trim() === '0') {
-        break;
-    }
-
-    const priceSectionEndLine = currentLinePointer + numberOfItemsWithPrices;
-    if (priceSectionEndLine > totalAvailableLines) {
-        break;
-    }
-
-    for (; currentLinePointer < priceSectionEndLine; currentLinePointer++) {
-      const currentItemPriceLine = processedInputLines[currentLinePointer];
-      if (!currentItemPriceLine) { // Handle empty lines
-          continue;
-      }
-      const priceLineSegments = currentItemPriceLine.split(' ');
-      if (priceLineSegments.length < 2) { // Ensure enough segments
-          continue;
-      }
-      const itemName = priceLineSegments[0];
-      const itemBasePriceStr = priceLineSegments[1];
-      const parsedPrice = parseInt(itemBasePriceStr, 10);
-
-      if (isNaN(parsedPrice) || parsedPrice < 0) {
-          continue;
-      }
-      currentItemCatalog[itemName] = { price: parsedPrice };
-    }
-
-    const recipeCountStr = processedInputLines[currentLinePointer];
-    currentLinePointer++;
-    const numberOfRecipes = parseInt(recipeCountStr, 10);
-
-    if (isNaN(numberOfRecipes)) {
-        break;
-    }
-
-    const recipeSectionEndLine = currentLinePointer + numberOfRecipes;
-    if (recipeSectionEndLine > totalAvailableLines) {
-        break;
-    }
-
-    for (; currentLinePointer < recipeSectionEndLine; currentLinePointer++) {
-      const currentRecipeLine = processedInputLines[currentLinePointer];
-      if (!currentRecipeLine) { // Handle empty lines
-          continue;
-      }
-      const recipeLineSegments = currentRecipeLine.split(' ');
-      if (recipeLineSegments.length < 1) { // Ensure at least item name
-          continue;
-      }
-      const itemToCraft = recipeLineSegments[0];
-      if (currentItemCatalog[itemToCraft]) {
-          currentItemCatalog[itemToCraft].recipe = recipeLineSegments.slice(2);
-      }
-    }
-
-    const finalTargetItem = processedInputLines[currentLinePointer];
-    currentLinePointer++;
-
-    if (finalTargetItem && currentItemCatalog[finalTargetItem]) {
-        const minimalCost = determineMinimalPrice(currentItemCatalog, finalTargetItem, []);
-        console.log(minimalCost);
-    } else if (finalTargetItem) {
-        console.log(Infinity);
-    }
-  }
-}
+let accumulatedInputString = '';
 
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
 
-process.stdin.on('data', function(dataChunk) {
-  incomingRawText += dataChunk;
-});
+const handleDataChunk = (inputChunk) => {
+  accumulatedInputString += inputChunk;
+};
 
-process.stdin.on('end', function() {
-  orchestrateItemCostEvaluation();
-});
+const handleEndOfInput = () => {
+  const rawInputLines = accumulatedInputString.split('\n');
+  processInputData(rawInputLines);
+};
+
+process.stdin.on('data', handleDataChunk);
+process.stdin.on('end', handleEndOfInput);

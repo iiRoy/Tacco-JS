@@ -1,66 +1,71 @@
-var bufferedInputStrings = [];
-var computedAnswer = 0;
-var remainderFrequencyMap;
+var inputLines = [];
+var unusedVariable = 0; // This variable was declared but not utilized in the original logic.
 
-var inputProcessorUtility = require('readline');
+// Import the necessary module for reading input line by line.
+var standardInputReader = require('readline');
 
-var streamInterface = inputProcessorUtility.createInterface(
- {
-    input:  process.stdin,
-    output: process.stdout
- }
-);
+// Configure the interface for reading from standard input and writing to standard output.
+var inputReader = standardInputReader.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+});
 
+// Event listener for each line of input received.
+inputReader.on('line', function (currentLine) {
+    inputLines.push(currentLine); // Store the received line in our array.
+});
 
-streamInterface.on('line', function (currentDataString)
- {
-    bufferedInputStrings.push(currentDataString);
- });
+// Event listener for when the input stream is closed.
+inputReader.on('close', function () {
+    // Parse the first line to get the two main parameters.
+    var totalElements = parseNumberAtIndex(inputLines[0], 0);
+    var moduloValue = parseNumberAtIndex(inputLines[0], 1);
 
+    // Parse the second line, splitting by space and converting each part to a number.
+    var inputArray = inputLines[1].split(" ").map(elementString => Number(elementString));
 
-streamInterface.on('close', function ()
- {
-    // Retrieve the main numerical parameters from the first input line.
-    var primaryCount = parseNumericalElement(bufferedInputStrings[0], 0);
-    var moduloDivisor = parseNumericalElement(bufferedInputStrings[0], 1);
+    // Initialize an array to store prefix sums modulo M.
+    // The first element (index 0) is always 0, representing the sum before any elements.
+    var prefixSums = [];
+    prefixSums[0] = 0;
 
-    // Convert the second input line into an array of numbers.
-    var parsedNumbers = bufferedInputStrings[1].split(" ").map(stringElement => Number(stringElement));
-
-    var prefixRemainderArray = [];
-    prefixRemainderArray[0] = 0; // Initialize the first element for cumulative sums.
-
-    // Compute the cumulative sums modulo 'moduloDivisor'.
-    // This process helps identify subarrays whose sum is divisible by 'moduloDivisor'.
-    for (var loopIterator = 0; loopIterator < primaryCount; loopIterator++)
-    {
-        prefixRemainderArray[loopIterator + 1] = (prefixRemainderArray[loopIterator] + parsedNumbers[loopIterator]) % moduloDivisor;
+    // Calculate the cumulative sums modulo M.
+    // This loop computes prefixSums[k+1] = (prefixSums[k] + inputArray[k]) % moduloValue.
+    for (var idx = 0; idx < totalElements; idx++) {
+        prefixSums[idx + 1] = (prefixSums[idx] + inputArray[idx]) % moduloValue;
     }
 
-    var finalPairCount = 0;
-    remainderFrequencyMap = {}; // Initialize the globally declared map here.
+    // Initialize the final count of subarrays and a frequency map for remainders.
+    var finalCount = 0;
+    var remainderCounts = {}; // This object will store how many times each remainder has appeared.
 
-    // Iterate through the prefix remainder array to find pairs that yield a sum divisible by 'moduloDivisor'.
-    // If two prefix sums have the same remainder, the segment between them sums to a multiple of 'moduloDivisor'.
-    for (var loopIterator = 0; loopIterator < prefixRemainderArray.length; loopIterator++)
-    {
-        var currentModValue = prefixRemainderArray[loopIterator];
-
-        if (remainderFrequencyMap[currentModValue] === undefined)
-        {
-            remainderFrequencyMap[currentModValue] = 0;
+    // Iterate through the prefix sums to find pairs that satisfy the condition.
+    // If prefixSums[j] and prefixSums[i] (where j > i) have the same remainder modulo M,
+    // then the subarray from index i to j-1 sums to a multiple of M.
+    for (var idx = 0; idx < prefixSums.length; idx++) {
+        // If this remainder hasn't been seen before, initialize its count to zero.
+        if (remainderCounts[prefixSums[idx]] === undefined) {
+            remainderCounts[prefixSums[idx]] = 0;
         }
 
-        finalPairCount += remainderFrequencyMap[currentModValue];
-        remainderFrequencyMap[currentModValue]++;
+        // Add the number of times this remainder has been seen previously to our total count.
+        // Each previous occurrence forms a valid subarray ending at the current position.
+        finalCount += remainderCounts[prefixSums[idx]];
+
+        // Increment the count for the current remainder.
+        remainderCounts[prefixSums[idx]]++;
     }
 
-    console.log(finalPairCount);
- });
+    // Output the final calculated count.
+    console.log(finalCount);
+});
 
-
-// Utility function to extract a specific numeric value from a space-separated string.
-function parseNumericalElement(sourceString, targetIndex)
-{
-    return ( Number(sourceString.split(" ")[targetIndex]) );
+/**
+ * Parses a number from a space-separated string at a specific index.
+ * @param {string} inputString - The string containing space-separated numbers.
+ * @param {number} indexToParse - The zero-based index of the number to parse.
+ * @returns {number} The parsed number.
+ */
+function parseNumberAtIndex(inputString, indexToParse) {
+    return (Number(inputString.split(" ")[indexToParse]));
 }

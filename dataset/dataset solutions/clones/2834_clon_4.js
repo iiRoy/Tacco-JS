@@ -1,165 +1,132 @@
-const createDataInterpreter = (sourceText) => {
-    let sourceLines = sourceText.trim().split("\n");
-    let currentLinePointer = 0;
-    let currentLineTokenBuffer = [];
-    let currentLineTokenBufferPointer = 0;
+class InputProcessor {
+    #lineIterator;
+    #currentLineTokens;
 
-    const pullNextElement = (getStringValue) => {
-        if (currentLineTokenBufferPointer >= currentLineTokenBuffer.length) {
-            if (currentLinePointer >= sourceLines.length) {
-                return undefined;
+    constructor(rawInputContent) {
+        this.#lineIterator = rawInputContent.trim().split('\n')[Symbol.iterator]();
+        this.#currentLineTokens = null;
+    }
+
+    #ensureLineTokens() {
+        if (!this.#currentLineTokens || this.#currentLineTokens.length === 0) {
+            const nextLineResult = this.#lineIterator.next();
+            if (nextLineResult.done) {
+                throw new Error("Input exhausted unexpectedly.");
             }
-            const lineToProcess = sourceLines[currentLinePointer];
-            currentLineTokenBuffer = lineToProcess.split(" ").reverse();
-            currentLineTokenBufferPointer = 0;
-            currentLinePointer++;
-        }
-
-        const value = currentLineTokenBuffer[currentLineTokenBufferPointer];
-        currentLineTokenBufferPointer++;
-        return getStringValue ? value : Number(value);
-    };
-
-    const fetchEntireLine = (getStringValues) => {
-        if (currentLinePointer >= sourceLines.length) {
-            return undefined;
-        }
-        const lineToParse = sourceLines[currentLinePointer];
-        currentLinePointer++;
-        currentLineTokenBuffer = [];
-        currentLineTokenBufferPointer = 0;
-
-        const tokens = lineToParse.split(" ");
-        return getStringValues ? tokens : tokens.map(Number);
-    };
-
-    const grabMatrixBlock = (numberOfRows, getStringValues) => {
-        const matrix = [];
-        for (let k = 0; k < numberOfRows; k++) {
-            if (currentLinePointer >= sourceLines.length) break;
-            const line = sourceLines[currentLinePointer];
-            matrix.push(line.split(" "));
-            currentLinePointer++;
-        }
-        currentLineTokenBuffer = [];
-        currentLineTokenBufferPointer = 0;
-        return getStringValues ? matrix : matrix.map(row => row.map(Number));
-    };
-
-    const extractRawSegment = (numberOfRows, getStringValues) => {
-        const segment = [];
-        for (let k = 0; k < numberOfRows; k++) {
-            if (currentLinePointer >= sourceLines.length) break;
-            segment.push(sourceLines[currentLinePointer]);
-            currentLinePointer++;
-        }
-        currentLineTokenBuffer = [];
-        currentLineTokenBufferPointer = 0;
-        return getStringValues ? segment : segment.map(Number);
-    };
-
-    return {
-        pull: pullNextElement,
-        fetchLine: fetchEntireLine,
-        grabMatrix: grabMatrixBlock,
-        extractRaw: extractRawSegment
-    };
-};
-
-const multiDimensionalArrayCreator = (fillValue, ...dimensions) => {
-    const construct = (dims) => {
-        if (dims.length === 0) {
-            return fillValue === "[]" ? [] : JSON.parse(fillValue);
-        }
-        const currentDim = dims[0];
-        const remainingDims = dims.slice(1);
-        return Array(currentDim).fill(null).map(() => construct(remainingDims));
-    };
-    return construct(dimensions);
-};
-
-const findMaximum = (...values) => {
-    let result = values[0];
-    for (let k = 1; k < values.length; k++) {
-        if (isNaN(values[k])) continue;
-        if (isNaN(result) || values[k] > result) {
-            result = values[k];
+            this.#currentLineTokens = nextLineResult.value.split(' ');
         }
     }
-    return result;
-};
 
-const findMinimum = (...values) => {
-    let result = values[0];
-    for (let k = 1; k < values.length; k++) {
-        if (isNaN(values[k])) continue;
-        if (isNaN(result) || values[k] < result) {
-            result = values[k];
+    retrieveNextToken(asString = false) {
+        this.#ensureLineTokens();
+        const tokenValue = this.#currentLineTokens.shift();
+        return asString ? tokenValue : Number(tokenValue);
+    }
+}
+
+const inputSource = new InputProcessor(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+function buildNestedArray(dimensions, initialElement) {
+    const recursiveBuilder = (currentDims, depth) => {
+        if (depth === currentDims.length - 1) {
+            return Array.from({ length: currentDims[depth] }, () => {
+                return Array.isArray(initialElement) ? [...initialElement] : initialElement;
+            });
+        } else {
+            return Array.from({ length: currentDims[depth] }, () => recursiveBuilder(currentDims, depth + 1));
+        }
+    };
+    return recursiveBuilder(dimensions, 0);
+}
+
+const boundaryRanges = buildNestedArray([6], []);
+const significantPoints = new Set([0]);
+
+function findMaximum(...values) {
+    let resultAccumulator = values[0];
+    for (let i = 1; i < values.length; i++) {
+        const currentValue = values[i];
+        if (isNaN(currentValue)) continue;
+        if (isNaN(resultAccumulator) || currentValue > resultAccumulator) {
+            resultAccumulator = currentValue;
         }
     }
-    return result;
-};
+    return resultAccumulator;
+}
 
-const inputSource = createDataInterpreter(require("fs").readFileSync("/dev/stdin","utf8"));
-const boundaryRanges = multiDimensionalArrayCreator("[]", 6);
-const candidateValues = new Set([0]);
+function findMinimum(...values) {
+    let resultAccumulator = values[0];
+    for (let i = 1; i < values.length; i++) {
+        const currentValue = values[i];
+        if (isNaN(currentValue)) continue;
+        if (isNaN(resultAccumulator) || currentValue < resultAccumulator) {
+            resultAccumulator = currentValue;
+        }
+    }
+    return resultAccumulator;
+}
 
-const updateBoundary = (idx, val) => {
-    if (boundaryRanges[idx][0] === undefined) {
-        boundaryRanges[idx][0] = boundaryRanges[idx][1] = val;
+function updateCoordinateRange(indexIdentifier, coordinateValue) {
+    const targetRange = boundaryRanges[indexIdentifier];
+    if (targetRange.length > 0) {
+        targetRange[0] = Math.min(targetRange[0], coordinateValue);
+        targetRange[1] = Math.max(targetRange[1], coordinateValue);
     } else {
-        boundaryRanges[idx][0] = findMinimum(boundaryRanges[idx][0], val);
-        boundaryRanges[idx][1] = findMaximum(boundaryRanges[idx][1], val);
+        targetRange.push(coordinateValue, coordinateValue);
     }
-};
+}
 
-const generatePotentialOffsets = (v1, v2, v3) => {
-    candidateValues.add(findMaximum(0, (v3 - v2) || 0));
-    candidateValues.add(findMaximum(0, ((v3 - v1) / 2) || 0));
-    candidateValues.add(findMaximum(0, (v2 - v1) || 0));
-};
+function addDerivedPoints(valA, valB, valC) {
+    [
+        Math.max(0, (valC - valB) || 0),
+        Math.max(0, ((valC - valA) / 2) || 0),
+        Math.max(0, (valB - valA) || 0)
+    ].forEach(point => significantPoints.add(point));
+}
 
-const directionActionMap = {
-    "U": [ { targetIndex: 0, coordSelector: (x, y) => y }, { targetIndex: 5, coordSelector: (x, y) => x } ],
-    "R": [ { targetIndex: 1, coordSelector: (x, y) => x }, { targetIndex: 4, coordSelector: (x, y) => y } ],
-    "D": [ { targetIndex: 2, coordSelector: (x, y) => y }, { targetIndex: 5, coordSelector: (x, y) => x } ],
-    "L": [ { targetIndex: 3, coordSelector: (x, y) => x }, { targetIndex: 4, coordSelector: (x, y) => y } ]
-};
+function executeCalculation() {
+    const numberOfEntries = inputSource.retrieveNextToken();
 
-const executeCalculation = () => {
-    const numOps = inputSource.pull();
-
-    Array.from({length: numOps}).forEach(() => {
-        const currentX = inputSource.pull();
-        const currentY = inputSource.pull();
-        const motionDirection = inputSource.pull(true);
-
-        const actions = directionActionMap[motionDirection];
-        actions.forEach(action => {
-            updateBoundary(action.targetIndex, action.coordSelector(currentX, currentY));
-        });
-    });
-
-    generatePotentialOffsets(boundaryRanges[0][1], boundaryRanges[4][1], boundaryRanges[2][1]);
-    generatePotentialOffsets(-boundaryRanges[2][0], -boundaryRanges[4][0], -boundaryRanges[0][0]);
-    generatePotentialOffsets(boundaryRanges[1][1], boundaryRanges[5][1], boundaryRanges[3][1]);
-    generatePotentialOffsets(-boundaryRanges[3][0], -boundaryRanges[5][0], -boundaryRanges[1][0]);
-
-    let minimalArea = Infinity;
-
-    Array.from(candidateValues).forEach(offsetVal => {
-        const currentU = findMaximum(boundaryRanges[0][1] + offsetVal, boundaryRanges[2][1] - offsetVal, boundaryRanges[4][1]);
-        const currentD = findMinimum(boundaryRanges[0][0] + offsetVal, boundaryRanges[2][0] - offsetVal, boundaryRanges[4][0]);
-        const currentR = findMaximum(boundaryRanges[1][1] + offsetVal, boundaryRanges[3][1] - offsetVal, boundaryRanges[5][1]);
-        const currentL = findMinimum(boundaryRanges[1][0] + offsetVal, boundaryRanges[3][0] - offsetVal, boundaryRanges[5][0]);
-
-        const currentComputedArea = (currentU - currentD) * (currentR - currentL);
-        if (currentComputedArea < minimalArea) {
-            minimalArea = currentComputedArea;
+    const directionDispatch = {
+        "U": (xVal, yVal) => {
+            updateCoordinateRange(0, yVal);
+            updateCoordinateRange(5, xVal);
+        },
+        "R": (xVal, yVal) => {
+            updateCoordinateRange(1, xVal);
+            updateCoordinateRange(4, yVal);
+        },
+        "D": (xVal, yVal) => {
+            updateCoordinateRange(2, yVal);
+            updateCoordinateRange(5, xVal);
+        },
+        "L": (xVal, yVal) => {
+            updateCoordinateRange(3, xVal);
+            updateCoordinateRange(4, yVal);
         }
+    };
+
+    Array.from({ length: numberOfEntries }).forEach(() => {
+        const currentX = inputSource.retrieveNextToken();
+        const currentY = inputSource.retrieveNextToken();
+        const directionIndicator = inputSource.retrieveNextToken(true);
+        directionDispatch[directionIndicator](currentX, currentY);
     });
 
-    return minimalArea;
-};
+    addDerivedPoints(boundaryRanges[0][1], boundaryRanges[4][1], boundaryRanges[2][1]);
+    addDerivedPoints(-boundaryRanges[2][0], -boundaryRanges[4][0], -boundaryRanges[0][0]);
+    addDerivedPoints(boundaryRanges[1][1], boundaryRanges[5][1], boundaryRanges[3][1]);
+    addDerivedPoints(-boundaryRanges[3][0], -boundaryRanges[5][0], -boundaryRanges[1][0]);
+
+    return Array.from(significantPoints).reduce((minimumArea, currentOffset) => {
+        const upperYBound = findMaximum(boundaryRanges[0][1] + currentOffset, boundaryRanges[2][1] - currentOffset, boundaryRanges[4][1]);
+        const lowerYBound = findMinimum(boundaryRanges[0][0] + currentOffset, boundaryRanges[2][0] - currentOffset, boundaryRanges[4][0]);
+        const rightXBound = findMaximum(boundaryRanges[1][1] + currentOffset, boundaryRanges[3][1] - currentOffset, boundaryRanges[5][1]);
+        const leftXBound = findMinimum(boundaryRanges[1][0] + currentOffset, boundaryRanges[3][0] - currentOffset, boundaryRanges[5][0]);
+
+        const calculatedArea = (upperYBound - lowerYBound) * (rightXBound - leftXBound);
+        return Math.min(minimumArea, calculatedArea);
+    }, Infinity);
+}
 
 console.log(executeCalculation());

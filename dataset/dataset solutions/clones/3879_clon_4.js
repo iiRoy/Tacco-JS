@@ -1,59 +1,33 @@
-const obtainParameters = (sourceText) => {
-  return sourceText.split(' ').map(v => parseInt(v, 10));
-};
+function calculateFinalCost(inputDataString) {
+    const numericalParameters = inputDataString.split(" ").map(Number);
 
-const computeOutcome = (inputArray) => {
-  const [operandA, operandB, factorC, amountD, amountE] = inputArray;
+    const qOne = numericalParameters[0];
+    const qTwo = numericalParameters[1];
+    const factorLimit = numericalParameters[2];
+    const costOne = numericalParameters[3];
+    const costTwo = numericalParameters[4];
 
-  const initialCalculation = operandA * amountD + operandB * amountE;
+    const doubleFactorLimit = factorLimit * 2;
 
-  const intermediateState = {
-    currentSum: initialCalculation,
-    currentAmountD: amountD,
-    currentAmountE: amountE
-  };
+    let currentAggregateValue = qOne * costOne + qTwo * costTwo;
 
-  const afterFirstStage = ((state) => {
-    const excessCombined = operandA + operandB - 2 * factorC;
-    if (excessCombined > 0) {
-      const sharedPortion = (state.currentAmountD < state.currentAmountE) ? state.currentAmountD : state.currentAmountE;
-      return {
-        currentSum: state.currentSum - (excessCombined * sharedPortion),
-        currentAmountD: state.currentAmountD - sharedPortion,
-        currentAmountE: state.currentAmountE - sharedPortion
-      };
-    }
-    return state;
-  })(intermediateState);
+    const commonDiscountRate = Math.min(costOne, costTwo);
 
-  const afterSecondStage = ((state) => {
-    const excessOperandA = operandA - 2 * factorC;
-    if (state.currentAmountD > 0 && excessOperandA > 0) {
-      return {
-        ...state,
-        currentSum: state.currentSum - (excessOperandA * state.currentAmountD)
-      };
-    }
-    return state;
-  })(afterFirstStage);
+    const combinedExcessForCommonDiscount = Math.max(0, qOne + qTwo - doubleFactorLimit);
 
-  const finalStage = ((state) => {
-    const excessOperandB = operandB - 2 * factorC;
-    if (state.currentAmountE > 0 && excessOperandB > 0) {
-      return {
-        ...state,
-        currentSum: state.currentSum - (excessOperandB * state.currentAmountE)
-      };
-    }
-    return state;
-  })(afterSecondStage);
+    currentAggregateValue -= combinedExcessForCommonDiscount * commonDiscountRate;
 
-  return finalStage.currentSum;
-};
+    const remainingCostOne = costOne - commonDiscountRate;
+    const remainingCostTwo = costTwo - commonDiscountRate;
 
-const executeProcess = (dataInput) => {
-  const processedData = obtainParameters(dataInput);
-  console.log(computeOutcome(processedData));
-};
+    const excessQOneForIndividualDiscount = Math.max(0, qOne - doubleFactorLimit);
+    currentAggregateValue -= excessQOneForIndividualDiscount * Math.max(0, remainingCostOne);
 
-executeProcess(require("fs").readFileSync("/dev/stdin","utf8"));
+    const excessQTwoForIndividualDiscount = Math.max(0, qTwo - doubleFactorLimit);
+    currentAggregateValue -= excessQTwoForIndividualDiscount * Math.max(0, remainingCostTwo);
+
+    return currentAggregateValue;
+}
+
+const fileContents = require("fs").readFileSync("/dev/stdin", "utf8");
+console.log(calculateFinalCost(fileContents));

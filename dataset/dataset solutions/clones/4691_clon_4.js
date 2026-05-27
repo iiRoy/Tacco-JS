@@ -1,18 +1,18 @@
-var calculateNetValue = function(inputString) {
-    var initialMeasurement = parseFloat(inputString);
+const calculateFinancialOutcome = (inputQuantity) => {
+    const initialAmount = Number(inputQuantity);
 
-    var grossProceeds = initialMeasurement * 800;
+    const revenueComponent = initialAmount * 800;
 
-    var cycleIterations;
-    if (initialMeasurement < 0) {
-        cycleIterations = 0;
-    } else {
-        cycleIterations = (initialMeasurement - (initialMeasurement % 15)) / 15 + 1;
-    }
+    const cycleCount = (initialAmount < 0)
+        ? 0
+        : Math.floor(initialAmount / 15) + 1;
 
-    var totalAdjustments = (cycleIterations * 200) + 200;
+    const expenseComponent = (cycleCount * 200) + 200;
 
-    console.log(grossProceeds - totalAdjustments);
+    return revenueComponent - expenseComponent;
 };
 
-calculateNetValue(require("node:fs").readFileSync("/dev/stdin", "utf8"));
+const fileSystem = require("fs");
+const standardInputContent = fileSystem.readFileSync("/dev/stdin", "utf8");
+
+console.log(calculateFinancialOutcome(standardInputContent));

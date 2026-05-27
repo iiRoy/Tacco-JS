@@ -1,208 +1,183 @@
-// Main entry point for the graph processing algorithm.
-function executeDijkstra()
-{
-	// This array will function as our min-priority queue.
-	let priorityQueue = [ ] ;
+function primaryExecution() {
+    // A min-priority queue to store [distance, vertex] pairs.
+    let priorityQueue = [];
 
-	/*
-	 * Inserts an element into the priority queue, maintaining the min-heap property.
-	 * The elementToAdd is typically an array like [distance, nodeIndex].
-	 */
-	function enqueueItem( elementToAdd )
-	{
-		let currentIndex = priorityQueue.length ; // Start at the end of the array.
+    // Inserts an element into the min-priority queue.
+    function enqueueElement(itemToInsert) {
+        let currentIndex = priorityQueue.length;
 
-		// Bubble up the new element until the min-heap property is satisfied.
-		while ( currentIndex > 0 )
-		{
-			let parentIndex = ( currentIndex - 1 ) >> 1 ; // Calculate the parent's index.
+        // Bubble up the new element to maintain heap property.
+        while (currentIndex > 0) {
+            // Calculate parent index using bitwise right shift.
+            let parentIndex = (currentIndex - 1) >>> 1;
 
-			// If the parent's value is already smaller or equal to the new element,
-			// we have found the correct position for elementToAdd.
-			if ( priorityQueue[ parentIndex ] <= elementToAdd )
-			{
-				break;
-			}
+            // If parent is less than or equal to the new item, heap property is satisfied.
+            if (priorityQueue[parentIndex][0] <= itemToInsert[0]) {
+                break;
+            }
 
-			// Otherwise, move the parent element down to the current index.
-			priorityQueue[ currentIndex ] = priorityQueue[ parentIndex ];
-			currentIndex = parentIndex; // Move up to the parent's old position.
-		}
-		// Place the new element in its final, correct position.
-		priorityQueue[ currentIndex ] = elementToAdd;
-	}
+            // Move parent down.
+            priorityQueue[currentIndex] = priorityQueue[parentIndex];
+            // Move current index up.
+            currentIndex = parentIndex;
+        }
+        // Place the new item in its final position.
+        priorityQueue[currentIndex] = itemToInsert;
+    }
 
-	/*
-	 * Extracts the smallest element (which is always at the root of the min-heap)
-	 * from the priority queue. It then re-establishes the min-heap property.
-	 */
-	function extractMin()
-	{
-		let minElement = priorityQueue[ 0 ]; // The smallest element is always at index 0.
+    // Removes and returns the smallest element from the min-priority queue.
+    function dequeueMin() {
+        // The minimum element is always at the root.
+        let minElement = priorityQueue[0];
 
-		let lastElement = priorityQueue.pop(); // Remove the last element to use as a temporary root.
+        // Take the last element to replace the root.
+        let lastElement = priorityQueue.pop();
 
-		// If the queue becomes empty after removing the root, simply return the extracted min.
-		if ( ! priorityQueue.length )
-		{
-			return minElement;
-		}
+        // If the queue is now empty, return the min element directly.
+        if (!priorityQueue.length) {
+            return minElement;
+        }
 
-		let currentPosition = 0; // Start bubbling down from the root (index 0).
-		while ( currentPosition * 2 + 1 < priorityQueue.length )
-		{
-			let leftChild = currentPosition * 2 + 1;  // Index of the left child.
-			let rightChild = currentPosition * 2 + 2; // Index of the right child.
+        // Start bubbling down from the root.
+        let currentPos = 0;
+        // Continue as long as there's at least a left child.
+        while (currentPos * 2 + 1 < priorityQueue.length) {
+            let leftChild = currentPos * 2 + 1;
+            let rightChild = currentPos * 2 + 2;
 
-			// Determine which child is smaller. Assume left child is smaller initially.
-			// If right child exists and is smaller than the left child, then use the right child.
-			if ( rightChild < priorityQueue.length && priorityQueue[ rightChild ] < priorityQueue[ leftChild ] )
-			{
-				leftChild = rightChild; // Update 'leftChild' to point to the smaller child.
-			}
+            // Find the smaller child.
+            if (rightChild < priorityQueue.length && priorityQueue[rightChild][0] < priorityQueue[leftChild][0]) {
+                leftChild = rightChild;
+            }
 
-			// If the replacement element is smaller than or equal to the smallest child,
-			// its correct position has been found.
-			if ( priorityQueue[ leftChild ] >= lastElement )
-			{
-				break;
-			}
+            // If the smaller child is greater than or equal to the last element, stop bubbling down.
+            if (priorityQueue[leftChild][0] >= lastElement[0]) {
+                break;
+            }
 
-			// Move the smallest child up to the current position.
-			priorityQueue[ currentPosition ] = priorityQueue[ leftChild ];
-			currentPosition = leftChild; // Move down to the child's position to continue bubbling.
-		}
-		// Place the `lastElement` in its final position after bubbling down.
-		priorityQueue[ currentPosition ] = lastElement;
+            // Move the smaller child up.
+            priorityQueue[currentPos] = priorityQueue[leftChild];
+            // Move current position down to the child's index.
+            currentPos = leftChild;
+        }
+        // Place the last element in its final position.
+        priorityQueue[currentPos] = lastElement;
 
-		return minElement; // Return the original minimum element that was extracted.
-	}
+        return minElement;
+    }
 
+    // Read the number of nodes.
+    let nodeCount = readInput();
+    // Read the number of edges.
+    let edgeCount = readInput();
+    // Read the starting node.
+    let startNode = readInput();
 
-	// Read initial configuration values: number of vertices, number of edges, and the starting vertex.
-	const vertexCount = parseInput();
-	const edgeCount = parseInput();
-	const sourceVertex = parseInput();
+    // Adjacency list representation of the graph.
+    let adjacencyList = [];
+    // Initialize adjacency list for each node.
+    iterateRange(nodeCount, function(loopIndex) {
+        adjacencyList[loopIndex] = [];
+    });
+    // Read and add edges to the graph.
+    iterateRange(edgeCount, function() {
+        let sourceNode = readInput();
+        let targetNode = readInput();
+        let weightValue = readInput();
 
-	// Initialize the adjacency list structure for representing the graph.
-	let graphConnections = [];
-	iterateRange( vertexCount, function( vertexId )
-	{
-		graphConnections[ vertexId ] = []; // Each vertex gets an empty list for its connections.
-	});
+        // Add edge from source to target with its weight.
+        adjacencyList[sourceNode].push([targetNode, weightValue]);
+    });
 
-	// Populate the adjacency list by reading edge details for each edge.
-	iterateRange( edgeCount, function()
-	{
-		let fromNode = parseInput(); // Starting node of the edge.
-		let toNode = parseInput();   // Ending node of the edge.
-		let weight = parseInput();   // Weight/cost of traversing this edge.
+    // Array to store shortest distances from the start node.
+    let distances = [];
+    // Initialize all distances to infinity.
+    iterateRange(nodeCount, function(loopIndex) {
+        distances[loopIndex] = Infinity;
+    });
 
-		graphConnections[ fromNode ].push( [ toNode, weight ] ); // Add the edge to the 'fromNode's list.
-	});
+    // Distance to the start node is 0.
+    distances[startNode] = 0;
+    // Add the start node with distance 0 to the priority queue.
+    enqueueElement([0, startNode]);
+    // Dijkstra's algorithm main loop.
+    while (priorityQueue.length) {
+        // Get the vertex with the smallest distance from the priority queue.
+        let currentVertexData = dequeueMin();
 
-	// Initialize the array to store shortest distances from the source vertex to all other vertices.
-	let shortestDistances = [];
-	iterateRange( vertexCount, function( nodeIndex )
-	{
-		shortestDistances[ nodeIndex ] = Infinity; // All distances are initially set to infinity.
-	});
+        // If we found a shorter path to this vertex already, skip.
+        if (currentVertexData[0] > distances[currentVertexData[1]]) {
+            continue;
+        }
 
-	shortestDistances[ sourceVertex ] = 0; // The distance from the source to itself is zero.
-	enqueueItem( [ 0, sourceVertex ] ); // Add the source vertex to the priority queue with its distance.
+        // Iterate over all neighbors of the current vertex.
+        iterateRange(adjacencyList[currentVertexData[1]].length, function(loopIndex) {
+            let currentEdge = adjacencyList[currentVertexData[1]][loopIndex];
+            // If a shorter path to the neighbor is found.
+            if (distances[currentEdge[0]] > distances[currentVertexData[1]] + currentEdge[1]) {
+                // Update the distance.
+                distances[currentEdge[0]] = distances[currentVertexData[1]] + currentEdge[1];
+                // Add the neighbor to the priority queue with its new distance.
+                enqueueElement([distances[currentEdge[0]], currentEdge[0]]);
+            }
+        });
+    }
 
-	// Main loop for Dijkstra's algorithm. Continues as long as there are nodes to process in the queue.
-	while ( priorityQueue.length )
-	{
-		let currentProcessingPair = extractMin(); // Get the vertex with the smallest known distance.
-
-		// If we've already found a shorter path to this node than what's in the queue, skip it.
-		// This handles outdated entries in the priority queue.
-		if ( currentProcessingPair[ 0 ] > shortestDistances[ currentProcessingPair[ 1 ] ] )
-		{
-			continue;
-		}
-
-		// Iterate over all outgoing connections (edges) from the current vertex.
-		iterateRange( graphConnections[ currentProcessingPair[ 1 ] ].length, function( connIndex )
-		{
-			let pathSegment = graphConnections[ currentProcessingPair[ 1 ] ][ connIndex ];
-			// Relaxation step: Check if a shorter path to the neighbor (pathSegment[0]) can be found.
-			if ( shortestDistances[ pathSegment[ 0 ] ] > shortestDistances[ currentProcessingPair[ 1 ] ] + pathSegment[ 1 ] )
-			{
-				// If a shorter path is found, update the distance.
-				shortestDistances[ pathSegment[ 0 ] ] = shortestDistances[ currentProcessingPair[ 1 ] ] + pathSegment[ 1 ];
-				// Add the updated neighbor to the priority queue for further processing.
-				enqueueItem( [ shortestDistances[ pathSegment[ 0 ] ], pathSegment[ 0 ] ] );
-			}
-		});
-	}
-
-	// After Dijkstra's algorithm completes, output the calculated shortest distances.
-	iterateRange( vertexCount, function( nodeId )
-	{
-		// If a node is unreachable (distance is still Infinity), print 'INF', otherwise print the distance.
-		displayValue( shortestDistances[ nodeId ] !== Infinity ? shortestDistances[ nodeId ] : 'INF' );
-	});
+    // Output the shortest distances for all nodes.
+    iterateRange(nodeCount, function(loopIndex) {
+        outputValue(distances[loopIndex] !== Infinity ? distances[loopIndex] : 'INF');
+    });
 }
-
-// A flexible utility function for iterating through a numeric range.
-// It can be called with (end, callback) or (start, end, callback).
-function iterateRange( startVal, endVal, iterationFunction )
-{
-	// Check if the 'startVal' parameter is actually the 'endVal' and 'endVal' is the callback.
-	if ( iterationFunction == null )
-	{
-		iterationFunction = endVal; // Assign the second argument as the callback.
-		endVal = startVal;         // Assign the first argument as the upper bound.
-		startVal = 0;              // Default the starting value to 0.
-	}
-	// Loop from 'startVal' up to (but not including) 'endVal'.
-	for ( let loopIndex = startVal; loopIndex < endVal; ++loopIndex )
-	{
-		iterationFunction( loopIndex ); // Execute the provided callback function with the current index.
-	}
+ 
+// A utility function for looping.
+function iterateRange(startVal, endVal, callbackFn) {
+    // Handle overloaded function signature (e.g., iterateRange(count, callback) vs iterateRange(start, end, callback)).
+    if (callbackFn === undefined) {
+        callbackFn = endVal;
+        endVal = startVal;
+        startVal = 0;
+    }
+    // Loop from startVal (inclusive) to endVal (exclusive).
+    for (let loopIndex = startVal; loopIndex < endVal; ++loopIndex) {
+        callbackFn(loopIndex);
+    }
 }
-
-// Standard Node.js process input handling setup.
+ 
+// Keep the standard input stream open.
 process.stdin.resume();
-process.stdin.setEncoding( 'utf8' );
-
-let bufferedInput = ''; // Buffer to accumulate all incoming standard input data.
-let dataCursor = 0;   // Pointer to track the current position within the 'bufferedInput' array after splitting.
-
-/*
- * Reads the next value from the pre-processed buffered input.
- * It can optionally take a 'dataTypeHint', but by default, it attempts to convert to a number.
- */
-function parseInput( dataTypeHint )
-{
-	if ( dataTypeHint === 'string' )
-	{
-		return bufferedInput[ dataCursor++ ]; // Return the value as a string and advance the cursor.
-	}
-	else
-	{
-		return +bufferedInput[ dataCursor++ ]; // Convert the value to a number using unary plus and advance.
-	}
+// Set the encoding for input data.
+process.stdin.setEncoding('utf8');
+ 
+// Buffer to accumulate input data.
+let rawData = '';
+// Pointer to the current position in the parsed input array.
+let dataPointer = 0;
+ 
+// Function to read and parse input values.
+function readInput(dataType) {
+    // If 'string' type is requested, return the next raw string.
+    if (dataType === 'string') {
+        return rawData[dataPointer++];
+    }
+    // Otherwise, parse as a number.
+    else {
+        return +rawData[dataPointer++];
+    }
 }
-
-// Outputs a given value to the console, followed by a newline.
-function displayValue( contentToDisplay )
-{
-	console.log( contentToDisplay );
+ 
+// Function to output values to the console.
+function outputValue(val) {
+    console.log(val);
 }
-
-// Event listener for when data chunks are received from standard input.
-process.stdin.on( 'data', function( incomingChunk )
-{
-	bufferedInput += incomingChunk; // Append each new chunk of data to the 'bufferedInput'.
+ 
+// Event listener for incoming data chunks.
+process.stdin.on('data', function(dataChunk) {
+    rawData += dataChunk;
 });
-
-// Event listener for when all standard input has been received.
-process.stdin.on( 'end', function()
-{
-	// Once all input is received, split it by any whitespace character(s) into an array.
-	bufferedInput = bufferedInput.split( /\s+/ );
-	executeDijkstra(); // Call the main algorithm function to start processing the input.
+// Event listener for end of input stream.
+process.stdin.on('end', function() {
+    // Split the accumulated input by whitespace into an array.
+    rawData = rawData.split(/\s+/);
+    // Execute the main logic.
+    primaryExecution();
 });

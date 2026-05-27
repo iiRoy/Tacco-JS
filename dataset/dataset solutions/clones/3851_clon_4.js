@@ -1,46 +1,32 @@
-'use strict'
+'use strict';
 
-function transformInputData(sourceData) {
-    const lineCollection = sourceData.split('\n');
-    const numberTokens = lineCollection[0].split(' ');
-    
-    let numericals = [];
-    let currentHighest = -Infinity;
-    let highestPosition = -1;
-    
-    for (let p = 0; p < numberTokens.length; ++p) {
-        const valueUnit = Number(numberTokens[p]);
-        numericals.push(valueUnit);
-        if (valueUnit > currentHighest) {
-            currentHighest = valueUnit;
-            highestPosition = p;
+function processInputData(rawText) {
+    const lineSegments = rawText.split('\n');
+
+    const numericStrings = lineSegments[0].split(' ');
+    const scalingFactor = Number(lineSegments[1]);
+
+    let maximumValue = -Infinity;
+    let sumOfOriginals = 0;
+
+    for (const strNum of numericStrings) {
+        const currentValue = Number(strNum);
+        if (currentValue > maximumValue) {
+            maximumValue = currentValue;
         }
+        sumOfOriginals += currentValue;
     }
-    
-    const multiplierValue = Number(lineCollection[1]);
-    
-    let finalAccumulation = 0;
-    
-    for (let p = 0; p < numericals.length; ++p) {
-        if (p === highestPosition) {
-            finalAccumulation += numericals[p] * (2 * multiplierValue);
-        } else {
-            finalAccumulation += numericals[p];
-        }
-    }
-    
-    return finalAccumulation;
+
+    // The original logic sorts the numbers, identifies the largest,
+    // multiplies that largest number by (2 * scalingFactor),
+    // and then sums all numbers in the modified array.
+    // This can be mathematically expressed as:
+    // (sum of all original numbers - original maximum) + (original maximum * 2 * scalingFactor)
+    // Which simplifies to:
+    // sum of all original numbers + original maximum * (2 * scalingFactor - 1)
+    const finalOutcome = sumOfOriginals + maximumValue * (2 * scalingFactor - 1);
+
+    console.log(finalOutcome);
 }
 
-const systemAccess = require;
-const fileSystem = systemAccess('fs');
-const fileReader = fileSystem.readFileSync;
-const standardInputPath = '/dev/stdin';
-const textEncoding = 'utf8';
-
-const sourceContent = fileReader(standardInputPath, textEncoding);
-const processedResult = transformInputData(sourceContent);
-
-const systemOutput = process;
-const outputStream = systemOutput.stdout;
-outputStream.write(processedResult.toString() + '\n');
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

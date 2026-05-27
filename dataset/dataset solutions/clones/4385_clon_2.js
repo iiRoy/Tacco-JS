@@ -1,41 +1,57 @@
-'use strict'
+'use strict'; // Enforce strict mode for better error handling and cleaner code.
 
-function  ExecuteProcessing ( sourceContent ) {
+/**
+ * Processes the raw input data to identify and count specific array element swaps.
+ * This function expects the input to be a string where the second line contains
+ * space-separated numbers.
+ *
+ * @param {string} rawData - The complete input string, typically read from standard input.
+ */
+function ProcessInput(rawData) {
+    // Parse the input string:
+    // 1. Split by newline to get individual lines.
+    // 2. Take the second line (index 1).
+    // 3. Split that line by space to get string representations of numbers.
+    // 4. Map each string to its numerical equivalent.
+    const numberArray = rawData.split('\n')[1].split(' ').map(valStr => Number(valStr));
 
-    // Process the raw text input to extract numerical data.
-    const numericElements = sourceContent
-        .split( '\n' )         // Divide the input into lines.
-        [1]                    // Select the second line of text.
-        .split( ' ' )          // Separate the selected line by spaces.
-        .map( elementStr => Number( elementStr ) ); // Convert each string segment into a number.
+    let swapCount = 0; // Initialize a counter for the total number of swaps performed.
 
-    let operationTally = 0; // Initialize a counter for tracking modification events.
+    // Iterate through the array using an index.
+    // The loop continues as long as the index is within the bounds of the array.
+    for (let idx = 0; idx < numberArray.length; idx++) {
+        // Check if the current number at 'idx' is equal to its expected 1-based position.
+        // For example, if numberArray[0] should be 1, numberArray[1] should be 2, etc.
+        if (numberArray[idx] === idx + 1) {
+            // If the number is in the "wrong" position (i.e., it matches its 1-based index),
+            // a swap operation is initiated.
 
-    // Traverse through the collection of numeric elements.
-    for ( let currentIdx = 0; currentIdx < numericElements.length; currentIdx++ ) {
+            // Attempt to retrieve the value of the next element in the array.
+            let tempValue = numberArray[idx + 1];
 
-        // Determine if the value at the current index matches its expected sequential position.
-        if ( numericElements[ currentIdx ] === currentIdx + 1 ) {
-            let temporaryElement = numericElements[ currentIdx + 1 ]; // Hold the value of the subsequent element.
-
-            // If the subsequent element is defined (not undefined or null).
-            if ( temporaryElement ) {
-                numericElements[ currentIdx + 1 ] = numericElements[ currentIdx ]; // Move current element's value to the next slot.
-                numericElements[ currentIdx ] = temporaryElement;               // Place the held value into the current slot.
-                operationTally += 1;                                            // Increment the total count of operations.
+            // Check if 'tempValue' is truthy (i.e., the element at 'idx + 1' exists and is not 0, null, undefined, etc.).
+            // This effectively checks if 'idx' is not the last element in the array.
+            if (tempValue) {
+                // If the next element exists, swap the current element with the next one.
+                numberArray[idx + 1] = numberArray[idx]; // Assign current element's value to the next position.
+                numberArray[idx] = tempValue;             // Assign the next element's original value to the current position.
+                swapCount += 1;                           // Increment the swap counter.
             } else {
-                // If the subsequent element is not defined (e.g., at the end of the array), perform a backward swap.
-                temporaryElement = numericElements[ currentIdx ];               // Keep the current element's value temporarily.
-                numericElements[ currentIdx ] = numericElements[ currentIdx - 1 ]; // Shift the preceding element's value to the current slot.
-                numericElements[ currentIdx - 1 ] = temporaryElement;           // Insert the temporarily held value into the preceding slot.
-                operationTally += 1;                                            // Increase the operation tally.
+                // If 'tempValue' is falsy (meaning 'idx' is the last element),
+                // swap the current element with the previous one.
+                tempValue = numberArray[idx];             // Store the current element's value.
+                numberArray[idx] = numberArray[idx - 1];  // Assign the previous element's value to the current position.
+                numberArray[idx - 1] = tempValue;         // Assign the current element's original value to the previous position.
+                swapCount += 1;                           // Increment the swap counter.
             }
         }
     }
 
-    // Display the final accumulated count of performed operations.
-    console.log( operationTally );
+    // Output the final count of swaps to the console.
+    console.log(swapCount);
 }
 
-// Initiate the data processing by reading content from the standard input stream.
-ExecuteProcessing( require( "fs" ).readFileSync( "/dev/stdin", "utf8" ) );
+// Read the entire content of standard input synchronously using Node.js 'fs' module.
+// The input is expected to be UTF-8 encoded.
+// Then, pass this raw input string to the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

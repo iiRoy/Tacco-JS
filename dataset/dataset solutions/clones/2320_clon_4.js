@@ -1,13 +1,13 @@
-const calculateRemainingValue = (sourceText) => {
-  const allNumbers = sourceText.match(/-?\d+/g);
-  const firstTwoNumbers = allNumbers.slice(0, 2).map(Number);
+const computeOutcome = (sourceText) => {
+  const lineSegments = sourceText
+    .split(/\r?\n/)
+    .map(segment => segment.trim())
+    .filter(segment => segment.length > 0);
 
-  const result = firstTwoNumbers.reduce((currentSum, numberToSubtract) => {
-    return currentSum - numberToSubtract;
-  }, 6);
+  const [valA, valB] = lineSegments.slice(0, 2).map(Number);
 
-  return result;
+  const finalResult = 6 - (valA + valB);
+  return finalResult;
 };
 
-const rawSystemInput = require('fs').readFileSync('/dev/stdin', 'utf8');
-console.log(calculateRemainingValue(rawSystemInput));
+console.log(computeOutcome(require('fs').readFileSync('/dev/stdin', 'utf8')));

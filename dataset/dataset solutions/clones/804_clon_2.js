@@ -1,71 +1,59 @@
-/* This JavaScript module processes incoming data to calculate specific values.
- * It reads from standard input, parses numerical sequences, and performs
- * weighted sum calculations with conditional logic.
- */
-function ProcessData(rawData)
-{
-    // Split the entire input string into an array of individual lines.
-    let lineRecords = rawData.split('\n') ;
-    let recordPointer = 0 ; // Initialize a pointer to track the current line being processed.
+function ProcessInputData(rawData) {
+    // Split the entire raw input string into an array of individual lines.
+    let processedLines = rawData.split("\n");
 
-    // Begin an infinite loop to process data sets until a specific termination condition is met.
-    while (true)
-    {
-        // For the current line indicated by recordPointer, split it by spaces
-        // to get individual components for the current data set.
-        lineRecords[recordPointer] = lineRecords[recordPointer].split(' ');
+    // Initialize a pointer to keep track of the current line being processed.
+    let currentLinePointer = 0;
 
-        // Parse the first three numbers from the current line.
-        // These represent key parameters for the current calculation block.
-        const numItems = parseInt(lineRecords[recordPointer][0], 10);
-        const targetIndex = parseInt(lineRecords[recordPointer][1], 10);
-        const discountPercentage = parseInt(lineRecords[recordPointer++][2], 10); // Increment pointer after use.
+    // Begin an indefinite loop to process sets of data until a specific termination condition is met.
+    while (true) {
+        // For the current line, split it by spaces to get individual parameters.
+        processedLines[currentLinePointer] = processedLines[currentLinePointer].split(' ');
 
-        // Check for the termination condition: all three parameters are zero.
-        if ( numItems === 0 && targetIndex === 0 && discountPercentage === 0 )
-        {
+        // Parse the first parameter as the total number of participants.
+        const numberOfParticipants = parseInt(processedLines[currentLinePointer][0], 10);
+        // Parse the second parameter as the 1-based index of the winning participant.
+        const winningParticipantIndex = parseInt(processedLines[currentLinePointer][1], 10);
+        // Parse the third parameter as the tax percentage to be applied, then advance the line pointer.
+        const taxRatePercentage = parseInt(processedLines[currentLinePointer++][2], 10);
+
+        // Check if all three parameters are zero, which signifies the end of input.
+        if (numberOfParticipants === 0 && winningParticipantIndex === 0 && taxRatePercentage === 0) {
             break; // Exit the processing loop.
         }
 
-        // Initialize variables for the inner processing phase.
-        let accumulatedValue = 0; // Stores the running total.
-        let markedValue ; // Will store the value at the target index.
+        // Initialize variables for the total prize amount and the winner's individual contribution.
+        let totalPrizeAmount = 0;
+        let winnerIndividualContribution;
 
-        // Loop through 'numItems' subsequent lines to read individual data points.
-        for ( let itemCounter = 0; itemCounter < numItems; itemCounter++ )
-        {
-            // Parse the next number from the input, which is on its own line.
-            // Increment the recordPointer to move to the next data line.
-            const currentEntry = parseInt(lineRecords[recordPointer++], 10);
+        // Iterate through each participant to collect their contributions.
+        for (let participantIterator = 0; participantIterator < numberOfParticipants; participantIterator++) {
+            // Parse the current participant's contribution from the next line, then advance the line pointer.
+            const currentParticipantAmount = parseInt(processedLines[currentLinePointer++], 10);
 
-            // Each entry contributes 100 times its value to the accumulated total.
-            accumulatedValue += currentEntry * 100;
+            // Add the current participant's contribution (multiplied by 100) to the total prize pool.
+            totalPrizeAmount += currentParticipantAmount * 100;
 
-            // If the current itemCounter matches the target index (adjusted for zero-based indexing),
-            // store this 'currentEntry' as the 'markedValue'.
-            if ( targetIndex - 1 === itemCounter )
-            {
-                markedValue = currentEntry;
+            // If the current participant is the winner (adjusting for 0-based indexing).
+            if ((winningParticipantIndex - 1) === participantIterator) {
+                winnerIndividualContribution = currentParticipantAmount; // Store their contribution.
             }
         }
 
-        // Apply the percentage discount to the accumulated value.
-        // The formula is: total * (100 - discount) / 100
-        accumulatedValue = accumulatedValue * (100 - discountPercentage) / 100;
+        // Apply the tax percentage to the calculated total prize amount.
+        totalPrizeAmount = totalPrizeAmount * (100 - taxRatePercentage) / 100;
 
-        // Determine the final output based on the 'markedValue'.
-        if ( markedValue > 0 )
-        {
-            // If markedValue is positive, calculate and print the floor of the division.
-            console.log(Math.floor(accumulatedValue / markedValue)) ;
-        }
-        else
-        {
-            // If markedValue is zero or negative, print "0".
+        // Determine and output the winner's share.
+        if (winnerIndividualContribution > 0) {
+            // If the winner contributed a positive amount, calculate their share and print the floor value.
+            console.log(Math.floor(totalPrizeAmount / winnerIndividualContribution));
+        } else {
+            // If the winner contributed nothing, their share is 0.
             console.log("0");
         }
     }
 }
 
-// Invoke the main processing function by reading content from standard input.
-ProcessData(require("fs").readFileSync("/dev/stdin", "utf8")) ;
+// Read the entire content from standard input (typically a file) as a UTF-8 string,
+// then pass it to the main data processing function.
+ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

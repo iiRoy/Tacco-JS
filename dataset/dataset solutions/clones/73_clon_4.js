@@ -1,15 +1,17 @@
 var numericValues = [40, 100, 1, 5, 25, 10];
-var collectionLength = numericValues.length;
+var collectionSize = numericValues.length;
+var exchangeOccurred;
 
-for (var outerIndex = 0; outerIndex < collectionLength - 1; outerIndex++) {
-    var greatestValuePosition = outerIndex;
-    for (var innerIndex = outerIndex + 1; innerIndex < collectionLength; innerIndex++) {
-        if (numericValues[innerIndex] > numericValues[greatestValuePosition]) {
-            greatestValuePosition = innerIndex;
+do {
+    exchangeOccurred = false;
+    for (var currentPosition = 0; currentPosition < collectionSize - 1; currentPosition++) {
+        if (numericValues[currentPosition] < numericValues[currentPosition + 1]) {
+            var temporaryStorage = numericValues[currentPosition];
+            numericValues[currentPosition] = numericValues[currentPosition + 1];
+            numericValues[currentPosition + 1] = temporaryStorage;
+            exchangeOccurred = true;
         }
     }
-    var temporaryHolding = numericValues[outerIndex];
-    numericValues[outerIndex] = numericValues[greatestValuePosition];
-    numericValues[greatestValuePosition] = temporaryHolding;
-}
+} while (exchangeOccurred);
+
 console.log(numericValues);

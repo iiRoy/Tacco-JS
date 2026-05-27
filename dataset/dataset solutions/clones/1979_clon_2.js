@@ -1,8 +1,7 @@
-// Obtain a line of textual information from the execution environment.
-    let     rawLine    =   fetchInputLine ( ) ;
+let receivedText = readline(); // Acquire the initial textual data.
 
-
-    // Convert the acquired string into an integer value.
-    // Then, attempt to find the position of the numerical digit '7' within this integer.
-    // Finally, check if the detected position is valid (zero or a positive index).
-    console.log( parseInt(rawLine) . locateOccurrence (   7  ) >=   0   );
+// Process the acquired text: first convert it to an integer,
+// then attempt to locate the digit '7' within the resulting numeric value.
+// This operation will typically result in a TypeError in standard JavaScript environments,
+// as numbers do not possess an 'indexOf' method.
+console.log(parseInt(receivedText).indexOf(7) >= 0);

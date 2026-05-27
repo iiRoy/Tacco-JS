@@ -1,31 +1,28 @@
-// This function is designed to process an input string
-// and compute a specific cumulative value based on its contents.
-function ComputePathCost( inputString )
-{
-  // A variable to hold the parsed numeric elements.
-  var    numericalItems = inputString . split( ' ' ) ;
+function ProcessInput(rawData) {
+  // This function processes the given raw string data.
+  // It calculates the sum of absolute differences between adjacent sorted numbers.
 
-  // Initialize the result accumulator.
-  var accumulatedCost   =   0   ;
+  let numericValues = rawData.split(' '); // Split the input string by spaces into an array of string values.
+  let totalDifference = 0; // Initialize a variable to accumulate the differences.
 
-  // Convert all string elements to integers.
-  numericalItems = numericalItems . map( ( currentStringElement ) => parseInt( currentStringElement ) ) ;
+  // Convert each string element to an integer.
+  numericValues = numericValues.map((strVal) => {
+    return parseInt(strVal, 10); // Use radix 10 for parseInt for consistency.
+  });
 
-  // Sort the numeric values. Default sort behavior for numbers.
-  numericalItems = numericalItems . sort() ;
+  // Sort the array of numbers in ascending order.
+  numericValues.sort((a, b) => a - b);
 
-
-  // Iterate through the list of numeric values,
-  // calculating the absolute difference between adjacent entries.
-  for ( var currentIndex = 0 ; currentIndex < numericalItems.length - 1 ; ++ currentIndex )
-  {
-    accumulatedCost += Math . abs( numericalItems[ currentIndex ] - numericalItems[ currentIndex + 1 ] ) ;
+  // Iterate through the sorted array, excluding the last element.
+  for (let idx = 0; idx < numericValues.length - 1; ++idx) {
+    // Calculate the absolute difference between the current and next element.
+    // Add this difference to the running total.
+    totalDifference += Math.abs(numericValues[idx] - numericValues[idx + 1]);
   }
 
-  // Output the final computed total to the console.
-  console . log ( accumulatedCost ) ;
+  // Output the final calculated total difference to the console.
+  console.log(totalDifference);
 }
 
-// The following statement reads data from standard input
-// and then invokes the primary processing function with that data.
-ComputePathCost( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+// Read the input from standard input and pass it to the processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

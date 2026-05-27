@@ -1,56 +1,27 @@
-let dataStreamHandler=require('readline').createInterface
-    (
-        {
-            input : process.stdin, /* utilize standard input for data acquisition */
-            output: process.stdout // direct output to standard console stream
-        }
-    );
+let inputHandler = require('readline').createInterface({
+    input: process.stdin,
+    output: process.stdout
+});
 
-let receivedInputLines = []; // collection to store all incoming lines
+let inputBuffer = [];
+inputHandler.on('line', (incomingLine) => {
+    inputBuffer.push(incomingLine);
+});
 
-dataStreamHandler.on
-    (
-        'line', // event triggered upon receiving a new line
-        (currentInputLine) =>
-            {
-                receivedInputLines.push(currentInputLine); // add the line to our buffer
-            }
-    )
-; /* end of line event listener */
-
-dataStreamHandler.on
-    (
-        'close', // event fired when input stream is terminated
-        () =>
-            {
-                // Process the collected data once input is complete
-                let firstProcessedLine = receivedInputLines[0];
-
-                // Divide the initial line into distinct components based on space delimiter
-                let valueTokens = firstProcessedLine.split(' ');
-
-                // Extract numerical operands from the tokenized array
-                let firstNum = valueTokens[1]; // represents the second element
-                let secondNum = valueTokens[2]; // represents the third element
-
-                // Perform core arithmetic operation; implicit type conversion occurs here
-                let finalComputation = secondNum - firstNum - 1;
-
-                // Evaluate the parity of the computed value to determine the outcome
-                if
-                    (
-                        finalComputation % 2 === 1 // check if the remainder is one (odd)
-                    )
-                {
-                    console.log('PlayerOne'); // Output for an odd result
-                }
-                else if
-                    (
-                        finalComputation % 2 === 0 // check if the remainder is zero (even)
-                    )
-                {
-                    console.log('PlayerTwo'); // Output for an even result
-                }
-            }
-    )
-; // end of close event listener definition
+inputHandler.on('close', () => {
+    // Process the first line of input
+    let currentLine = inputBuffer[0];
+    // Split the line by spaces to get individual components
+    let parts = currentLine.split(' ');
+    // Extract the second and third components as numerical values
+    let valA = parts[1];
+    let valB = parts[2];
+    // Calculate a derived difference value
+    let diffVal = valB - valA - 1;
+    // Determine the winner based on the parity of the difference
+    if (diffVal % 2 === 1) {
+        console.log('Alice');
+    } else if (diffVal % 2 === 0) {
+        console.log('borys');
+    }
+});

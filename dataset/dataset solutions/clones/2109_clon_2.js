@@ -1,29 +1,32 @@
-// This handler function processes all raw input received.
-function ProcessInputData(incomingText) {
-    // The incoming text stream is split into an array of separate lines.
-    incomingText = incomingText.split("\n") ;
-    let firstSegmentElements = incomingText[0].split(" ") ;
+// This function processes the entire input data provided.
+function ProcessInput(rawData) {
+    // The input string is split into an array of lines.
+    let lineData = rawData.split("\n");
 
-    // Parse the initial string component into an integer, using base 10.
-    var currentNumber = parseInt(firstSegmentElements[0], 10) ;
-    var calculatedOutcome = 0 ;
+    // The first line is further split by spaces to get individual parts.
+    let firstLineParts = lineData[0].split(" ");
 
-    if ( currentNumber % 2 === 0 )
-    {
-        console.log( currentNumber / 2 ) ;
-    }
-    else if ( currentNumber === 1 )
-    {
-        console.log( "1" ) ;
-    }
-    // A different logic path was considered here but is not active.
-    else
-    {
-        var calculatedOutcome = Math.ceil( currentNumber / 2 ) ;
-        console.log( calculatedOutcome ) ;
-    }
+    // Convert the first part of the first line to an integer, using base 10.
+    const numericValue = parseInt(firstLineParts[0], 10);
 
+    // A variable to store the computed result.
+    let resultValue = 0;
+
+    // Check if the number is even.
+    if (numericValue % 2 === 0) {
+        console.log(numericValue / 2);
+    }
+    // If not even, check if it's exactly 1.
+    else if (numericValue === 1) {
+        console.log("1");
+    }
+    // For any other odd number.
+    else {
+        // Calculate the ceiling of half the number.
+        resultValue = Math.ceil(numericValue / 2);
+        console.log(resultValue);
+    }
 }
 
-// The following section should not be altered (it reads from standard I/O and calls the main processing function).
-ProcessInputData( require("fs").readFileSync("/dev/stdin", "utf8") ) ;
+// Do not modify the following line (it handles reading from standard input and calling the main processing function).
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

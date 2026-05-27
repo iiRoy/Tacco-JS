@@ -1,62 +1,57 @@
-var rawData = require('fs').readFileSync('/proc/self/fd/0', 'utf8');
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-/*
- * This script processes timestamped event data from standard input.
- * It identifies events where the time difference between consecutive
- * entries exceeds a configured threshold.
- */
-var lineBuffer = (rawData.trim()).split('\n'); // Parse the raw input into lines.
+// Process the raw input: trim whitespace and split into an array of lines.
+var lineBuffer = (rawData.trim()).split("\n");
 
-// Continue processing as long as there are lines in the buffer.
-while (lineBuffer.length > 0) {
+// Loop as long as there are lines to process in the buffer.
+while (lineBuffer.length !== 0) {
+   // Initialize an array to store results for the current test case.
+   var outputSegments = [];
 
-    // Initialize a collection to store the results for the current block of data.
-    var outputCollection = [];
+   // Extract the first line, split by space, and convert to numbers.
+   // This line contains N (number of entries) and T (time threshold).
+   var configParams = (lineBuffer.shift()).split(" ").map(Number);
 
-    // Extract configuration parameters (N and T) from the first line of the current block.
-    // N is the number of subsequent lines, T is the time threshold.
-    var configParams = (lineBuffer.shift()).split(' ').map(Number);
+   // Iterate N times, processing each entry.
+   for (var idx = 0; idx < configParams[0]; idx++) {
+      // Get the current entry line and split it by space.
+      var currentLineParts = (lineBuffer.shift()).split(" ");
 
-    // Loop through N subsequent data lines as specified by the configuration.
-    for (var idx = 0; idx < configParams[0]; idx++) {
+      // Parse the start time (first part of the line).
+      // It's in "HH:MM" format, convert to minutes.
+      var startTimeComponents = currentLineParts[0].split(":").map((valStr) => Number.parseInt(valStr, 10));
 
-        // Split the current data line into its constituent parts.
-        var currentLineParts = (lineBuffer.shift()).split(' ');
+      // If this is not the first entry, perform time difference calculation.
+      if (idx > 0) {
+         // Calculate current start time in minutes from midnight.
+         var currentStartTimeMinutes = startTimeComponents[0] * 60 + startTimeComponents[1];
+         // Calculate previous end time in minutes from midnight.
+         var previousEndTimeMinutes = endTimeComponents[0] * 60 + endTimeComponents[1];
 
-        // Parse the first timestamp (e.g., "HH:MM") into its hour and minute components.
-        var firstTimestampComponents = currentLineParts[0].split(':').map(val => Number.parseInt(val, 10));
+         // Check if the time difference meets or exceeds the threshold T.
+         if (currentStartTimeMinutes - previousEndTimeMinutes >= configParams[1]) {
+            // If it does, add the segment label and the time difference to the results.
+            outputSegments.push(segmentLabel + " " + (currentStartTimeMinutes - previousEndTimeMinutes));
+         }
+      }
 
-        // If this is not the very first entry in the current block (i.e., idx > 0),
-        // we can perform a time comparison with the previous entry.
-        if (idx > 0) {
-            // Calculate the total minutes for the current timestamp.
-            var firstTotalMinutes = firstTimestampComponents[0] * 60 + firstTimestampComponents[1];
-            // Calculate the total minutes for the previously stored timestamp.
-            var previousTotalMinutes = previousTimestampComponents[0] * 60 + previousTimestampComponents[1];
+      // Parse the end time (third part of the line).
+      // Store it for the next iteration's comparison.
+      var endTimeComponents = currentLineParts[2].split(":").map((valStr) => Number.parseInt(valStr, 10));
+      // Get the segment label (fourth part of the line).
+      // Store it for the next iteration's output if a gap is found.
+      var segmentLabel = currentLineParts[3];
+   }
 
-            // Check if the time difference exceeds the configured threshold.
-            if ((firstTotalMinutes - previousTotalMinutes) >= configParams[1]) {
-                // If it does, add the event identifier and the calculated time difference to the results.
-                outputCollection.push(eventIdentifier + ' ' + (firstTotalMinutes - previousTotalMinutes));
-            }
-        }
-
-        // Store the components of the current timestamp as 'previous' for the next iteration's comparison.
-        var previousTimestampComponents = currentLineParts[2].split(':').map(val => Number.parseInt(val, 10));
-        // Store the event identifier for potential use in the next iteration's output.
-        var eventIdentifier = currentLineParts[3];
-    }
-
-    // After processing all N lines, determine what to output.
-    if (outputCollection.length === 0) {
-        // If no events met the specified criteria, simply print '0'.
-        console.log(0);
-    } else {
-        // Otherwise, print the total count of identified events.
-        console.log(outputCollection.length);
-        // Then, iterate through each identified event and print it on a new line.
-        outputCollection.forEach(item => {
-            console.log(item);
-        });
-    }
+   // After processing all entries for the current test case, output the results.
+   if (outputSegments.length === 0) {
+      // If no gaps were found, print 0.
+      console.log(0);
+   } else {
+      // Otherwise, print the count of gaps, then each gap entry on a new line.
+      console.log(outputSegments.length);
+      outputSegments.forEach((segmentEntry) => {
+         console.log(segmentEntry);
+      });
+   }
 }

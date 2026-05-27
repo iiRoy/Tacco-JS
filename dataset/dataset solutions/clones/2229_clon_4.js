@@ -1,158 +1,199 @@
 "use strict";
 
-class DataStream {
-    #sourceLines;
-    #linePointer;
-    #tokenBuffer;
+// --- Input Processor (Type IV clone of GET) ---
+const inputProcessor = (rawInput) => {
+    let lineBuffer = rawInput.trim().split('\n');
+    let linePointer = 0;
+    let currentTokens = []; // Stores tokens from the current line being processed by getToken
 
-    constructor(rawContent) {
-        this.#sourceLines = rawContent.trim().split("\n");
-        this.#linePointer = 0;
-        this.#tokenBuffer = [];
-    }
-
-    #refillTokenBuffer() {
-        if (this.#linePointer < this.#sourceLines.length) {
-            this.#tokenBuffer = this.#sourceLines[this.#linePointer].split(" ").reverse();
-            this.#linePointer++;
-        } else {
-            this.#tokenBuffer = []; // Mark as exhausted
+    const retrieveToken = (asString) => {
+        if (currentTokens.length === 0) {
+            currentTokens = lineBuffer[linePointer++].split(' ');
         }
-    }
+        const token = currentTokens.shift();
+        return asString ? token : Number(token);
+    };
 
-    extractNextValue(isString = false) {
-        if (this.#tokenBuffer.length === 0) {
-            this.#refillTokenBuffer();
-            if (this.#tokenBuffer.length === 0) {
-                // Return undefined or throw an error based on desired behavior for exhausted input
-                return undefined;
+    const retrieveLine = (asString) => {
+        const tokens = lineBuffer[linePointer++].split(' ');
+        return asString ? tokens : tokens.map(Number);
+    };
+
+    const retrieveMatrix = (numRows, asString) => {
+        const result = [];
+        for (let i = 0; i < numRows; i++) {
+            result.push(retrieveLine(asString));
+        }
+        return result;
+    };
+
+    const retrieveRows = (numRows, asString) => {
+        const result = [];
+        for (let i = 0; i < numRows; i++) {
+            result.push(lineBuffer[linePointer++]);
+        }
+        return asString ? result : result.map(Number);
+    };
+
+    return {
+        getToken: retrieveToken,
+        getLine: retrieveLine,
+        getMatrix: retrieveMatrix,
+        getRows: retrieveRows,
+    };
+};
+
+// --- Multi-dimensional Array Creator (Type IV clone of xArray) ---
+const createMultiDimArray = (initialValue, ...dimensions) => {
+    const buildArrayRecursive = (dims, currentDimIndex) => {
+        if (currentDimIndex === dims.length - 1) {
+            // Last dimension, fill with initial value
+            return Array.from({ length: dims[currentDimIndex] }, () => {
+                // Deep copy for objects/arrays to prevent shared references
+                if (typeof initialValue === 'object' && initialValue !== null) {
+                    return JSON.parse(JSON.stringify(initialValue));
+                }
+                return initialValue;
+            });
+        } else {
+            // Recursive step for higher dimensions
+            return Array.from({ length: dims[currentDimIndex] }, () =>
+                buildArrayRecursive(dims, currentDimIndex + 1)
+            );
+        }
+    };
+    return buildArrayRecursive(dimensions, 0);
+};
+
+// --- Global variables for graph and edge data (Type IV clone of graph, bitor) ---
+let adjListRepresentation; // Replaces 'graph'
+let edgeBitmaskStorage; // Replaces 'bitor'
+let edgeIdentifierMap; // Replaces the linear scan for a, b
+
+// --- Iterative DFS for path finding (Type IV clone of dfs) ---
+function findPathIterative(startNode, targetNode) {
+    const pathTrace = []; // Stores nodes in the current path
+    // Stack for DFS traversal, each element is { node, parent, remainingNeighbors }
+    const traversalStack = [{
+        node: startNode,
+        parent: -1,
+        neighbors: Array.from(adjListRepresentation.get(startNode)).sort((a, b) => a - b)
+    }];
+
+    while (traversalStack.length > 0) {
+        const currentFrame = traversalStack[traversalStack.length - 1];
+        const { node: currentNode, parent: currentParent, neighbors: remainingNeighbors } = currentFrame;
+
+        // If this node is not the last one added to pathTrace, add it.
+        // This handles pushing a node onto the path when first visiting it.
+        if (pathTrace[pathTrace.length - 1] !== currentNode) {
+            pathTrace.push(currentNode);
+            if (currentNode === targetNode) {
+                return pathTrace; // Path found
             }
         }
-        const val = this.#tokenBuffer.pop();
-        return isString ? val : Number(val);
-    }
 
-    extractFullLine(isStrings = false) {
-        if (this.#linePointer >= this.#sourceLines.length) {
-             // Return undefined or throw an error based on desired behavior for exhausted input
-            return undefined;
-        }
-        const lineContent = this.#sourceLines[this.#linePointer++].split(" ");
-        return isStrings ? lineContent : lineContent.map(Number);
-    }
-
-    extractMultiLine(count, isStrings = false) {
-        const collection = [];
-        for (let i = 0; i < count; i++) {
-            collection.push(this.extractFullLine(isStrings));
-        }
-        return collection;
-    }
-}
-
-function constructNestedArray(initialValue, ...dimensions) {
-    if (dimensions.length === 0) {
-        return initialValue;
-    }
-    const currentDimSize = dimensions[0];
-    const remainingDims = dimensions.slice(1);
-    return Array.from({ length: currentDimSize }, () =>
-        constructNestedArray(initialValue, ...remainingDims)
-    );
-}
-
-let networkGraph;
-let edgeQueryDependencies;
-let edgeKeyToId = new Map();
-
-function navigatePath(originNode, destinationNode, previousNode, currentPathAccumulator) {
-    currentPathAccumulator.push(originNode);
-    if (originNode === destinationNode) {
-        return currentPathAccumulator;
-    }
-
-    for (const connectedNode of networkGraph[originNode]) {
-        if (connectedNode === previousNode) {
-            continue;
-        }
-        const discoveredRoute = navigatePath(connectedNode, destinationNode, originNode, currentPathAccumulator);
-        if (discoveredRoute) {
-            return discoveredRoute;
-        }
-    }
-    currentPathAccumulator.pop();
-    return null;
-}
-
-function initiateProcessing() {
-    const inputReader = new DataStream(require("fs").readFileSync("/dev/stdin", "utf8"));
-
-    const vertexCount = inputReader.extractNextValue();
-    networkGraph = constructNestedArray([], vertexCount);
-    edgeQueryDependencies = constructNestedArray(0, vertexCount - 1);
-
-    for (let currentEdgeIdx = 0; currentEdgeIdx < vertexCount - 1; ++currentEdgeIdx) {
-        const nodeEndpointA = inputReader.extractNextValue() - 1;
-        const nodeEndpointB = inputReader.extractNextValue() - 1;
-
-        const smallerEndpoint = Math.min(nodeEndpointA, nodeEndpointB);
-        const largerEndpoint = Math.max(nodeEndpointA, nodeEndpointB);
-        edgeKeyToId.set(`${smallerEndpoint}-${largerEndpoint}`, currentEdgeIdx);
-
-        networkGraph[nodeEndpointA].push(nodeEndpointB);
-        networkGraph[nodeEndpointB].push(nodeEndpointA);
-    }
-
-    const queryCount = inputReader.extractNextValue();
-    for (let queryIter = 0; queryIter < queryCount; ++queryIter) {
-        const queryStartNode = inputReader.extractNextValue() - 1;
-        const queryEndNode = inputReader.extractNextValue() - 1;
-        const queryBitIdentifier = 1 << queryIter;
-
-        const pathSegmentNodes = navigatePath(queryStartNode, queryEndNode, -1, []);
-        
-        if (!pathSegmentNodes) { 
-            continue;
-        }
-
-        for (let pathStep = 1; pathStep < pathSegmentNodes.length; ++pathStep) {
-            const previousPathNode = pathSegmentNodes[pathStep - 1];
-            const currentPathNode = pathSegmentNodes[pathStep];
-
-            const segmentMinNode = Math.min(previousPathNode, currentPathNode);
-            const segmentMaxNode = Math.max(previousPathNode, currentPathNode);
-            const edgeIdentifierKey = `${segmentMinNode}-${segmentMaxNode}`;
-
-            const correspondingEdgeId = edgeKeyToId.get(edgeIdentifierKey);
-            if (correspondingEdgeId !== undefined) {
-                edgeQueryDependencies[correspondingEdgeId] |= queryBitIdentifier;
+        let nextNeighborToExplore = null;
+        while (remainingNeighbors.length > 0) {
+            const neighbor = remainingNeighbors.shift(); // Consume a neighbor from the list
+            if (neighbor !== currentParent) { // Avoid going back to the immediate parent
+                nextNeighborToExplore = neighbor;
+                break;
             }
         }
+
+        if (nextNeighborToExplore !== null) {
+            // Push a new frame for the next neighbor onto the traversal stack
+            traversalStack.push({
+                node: nextNeighborToExplore,
+                parent: currentNode,
+                neighbors: Array.from(adjListRepresentation.get(nextNeighborToExplore)).sort((a, b) => a - b)
+            });
+        } else {
+            // No more unvisited neighbors from current node, backtrack
+            pathTrace.pop();
+            traversalStack.pop();
+        }
+    }
+    return null; // Should not be reached if a path always exists
+}
+
+// --- Main logic function (Type IV clone of main) ---
+function processGraphQueries() {
+    const inputReader = inputProcessor(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+    const numberOfNodes = inputReader.getToken();
+    adjListRepresentation = new Map(); // Using Map for adjacency list
+    edgeIdentifierMap = new Map(); // Maps "minNode,maxNode" string to edge index
+
+    for (let i = 0; i < numberOfNodes; i++) {
+        adjListRepresentation.set(i, new Set()); // Initialize adjacency sets for each node
     }
 
-    const totalQuerySubsets = 1 << queryCount;
-    let waysToFormSubset = constructNestedArray(0, totalQuerySubsets);
-    waysToFormSubset[0] = 1;
+    edgeBitmaskStorage = createMultiDimArray(0, numberOfNodes - 1); // Array to store bitmasks for each edge
 
-    for (let edgeProcessingIter = 0; edgeProcessingIter < vertexCount - 1; ++edgeProcessingIter) {
-        const currentEdgeMask = edgeQueryDependencies[edgeProcessingIter];
-        if (currentEdgeMask === 0) {
-            waysToFormSubset = waysToFormSubset.map(count => count * 2);
+    for (let i = 0; i < numberOfNodes - 1; i++) {
+        const firstNode = inputReader.getToken() - 1;
+        const secondNode = inputReader.getToken() - 1;
+
+        const smallerNode = Math.min(firstNode, secondNode);
+        const largerNode = Math.max(firstNode, secondNode);
+
+        adjListRepresentation.get(firstNode).add(secondNode);
+        adjListRepresentation.get(secondNode).add(firstNode);
+        edgeIdentifierMap.set(`${smallerNode},${largerNode}`, i); // Store edge index for quick lookup
+    }
+
+    const numberOfQueries = inputReader.getToken();
+    for (let i = 0; i < numberOfQueries; i++) {
+        const queryStartNode = inputReader.getToken() - 1;
+        const queryEndNode = inputReader.getToken() - 1;
+        const currentQueryBit = 1 << i;
+
+        const pathNodes = findPathIterative(queryStartNode, queryEndNode); // Find path using iterative DFS
+
+        for (let j = 0; j < pathNodes.length - 1; j++) {
+            const nodeOne = pathNodes[j];
+            const nodeTwo = pathNodes[j + 1];
+            const minPathNode = Math.min(nodeOne, nodeTwo);
+            const maxPathNode = Math.max(nodeOne, nodeTwo);
+
+            const edgeIndex = edgeIdentifierMap.get(`${minPathNode},${maxPathNode}`);
+            edgeBitmaskStorage[edgeIndex] |= currentQueryBit; // Apply bitmask to the edge
+        }
+    }
+
+    const totalBitmaskCombinations = 1 << numberOfQueries;
+    const dynamicProgStates = createMultiDimArray(0, totalBitmaskCombinations);
+    dynamicProgStates[0] = 1; // Base case for DP
+
+    for (let edgeIndex = 0; edgeIndex < numberOfNodes - 1; edgeIndex++) {
+        const currentEdgeAssociatedMask = edgeBitmaskStorage[edgeIndex];
+        if (currentEdgeAssociatedMask === 0) {
+            // If edge is not part of any query path, it can be chosen or not, doubling all counts
+            for (let maskValue = 0; maskValue < totalBitmaskCombinations; maskValue++) {
+                dynamicProgStates[maskValue] *= 2;
+            }
         } else {
-            for (let currentSubsetState = totalQuerySubsets - 1; currentSubsetState >= 0; --currentSubsetState) {
-                if ((currentSubsetState & currentEdgeMask) === currentEdgeMask) {
-                    waysToFormSubset[currentSubsetState] *= 2;
+            // Iterate backwards to ensure we use states from previous edges correctly
+            for (let maskValue = totalBitmaskCombinations - 1; maskValue >= 0; maskValue--) {
+                if ((maskValue | currentEdgeAssociatedMask) === maskValue) {
+                    // If the current mask already includes all bits from this edge's mask,
+                    // it means this edge can be chosen or not, effectively doubling the count.
+                    dynamicProgStates[maskValue] *= 2;
                 } else {
-                    waysToFormSubset[currentSubsetState | currentEdgeMask] += waysToFormSubset[currentSubsetState];
+                    // If the current mask does not include all bits,
+                    // add the count from the state where this edge's mask is combined.
+                    dynamicProgStates[maskValue | currentEdgeAssociatedMask] += dynamicProgStates[maskValue];
                 }
             }
         }
     }
-
-    return waysToFormSubset[totalQuerySubsets - 1];
+    return dynamicProgStates[totalBitmaskCombinations - 1]; // Result is the count for the full bitmask
 }
 
-const finalResult = initiateProcessing();
+// --- Execution block ---
+const finalResult = processGraphQueries();
 if (finalResult !== undefined) {
     console.log(finalResult);
 }

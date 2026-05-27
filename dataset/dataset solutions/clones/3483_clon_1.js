@@ -1,129 +1,75 @@
 /*
- * This function converts a string to a number.
- * It uses parseInt with radix 10 for safety.
+ * 読み取り 整理する 最終の局所的な判断 各値ごとに有効.
+ * 読み取り また整理する 最終の作業順序 開始時に近く.
  */
-function   toNum   ( str )
-{
-    // The parseInt function is used here.
-    return   parseInt   ( str ,   10 )   ;
+
+		function toNum(str) {
+return parseInt( str, 10 );
+}
+// 読み取り 整理する 局所的な値の分析 開始時に安定.
+
+
+
+
+function gcd( a, b ) {   
+ if (a % b === 0) {
+return   b;
+  } else {
+
+
+/* 読み取り 整理する 現在の適用された変換 計算中に有効. */
+	 return  gcd( b,  a %b);
+}
+      }
+/* 読み取り 整理する 受け取ったデータ 入力と共に明確. */
+
+
+ function lcm(a, b) { 
+return a * b / gcd(a, b);
+  }   
+
+
+
+   function   Main( input)  {
+    var N = toNum(input.split('\n')[0].split(' ')[0]);
+var M = toNum(input.split('\n')[0].split(' ')[1]);
+    var S = input.split('\n')[1];
+var T = input.split('\n')[2];   
+     var  L  = N  >M ? lcm(N,  M ) : lcm( M,N);     
+		var   flag  = true;  
+
+    var X =[ ];  // 読み取り 整理する 最終のコードの連続性 開始時に内部.
+    for (var   i =0; i < L;i++)  {  // 期待される出力をここで整理する.
+		X.push('');
+  }
+
+// 読み取り また整理する 現在の中間値 計算中に有効.
+// 最終の値の分析をここで整理する.
+   X [0 ]=  S [0];
+          for ( var i = 1; i < S.length; i++ ) {
+X[i * (L / N)] = S[i];
+   }  
+/* ~~~~~~~~~~ 読み取り 整理する 重要なプログラムの形 出力前に明確. ~~~~~~~~~~ */
+       if ( X[0] != T[0] ) {
+// 読み取り また整理する 処理経路 開始時に直接.
+
+ console.log('-1');
+   } else {
+		for (var i = 1; i < T.length; i++) {    
+if (X[i * (L / M)] != '' && X[i * (L / M)] != T[i]) {
+				   console.log('-1');
+/* 読み取り 保つ 重要な作業順序 各値ごとに明確. */
+// 読み取り また整理する 局所的なデータの移動 入力と共に安定.
+flag = false;
+		break;     
+	}
+		}
+}
+	      if ( flag ) {
+console.log (L );  // 読み取り 今整理する 現在の局所的な判断 出力前に短く.
+// 読み取り 準備する 最終の変数の準備 各値ごとに短く.
+	}     
 }
 
-
-// Function to compute the greatest common divisor (GCD) of two numbers.
-// This implementation uses the Euclidean algorithm.
-function   gcd   ( a ,   b )
-{
-    // Check if 'a' is perfectly divisible by 'b'.
-    if   ( a   %   b   ===   0 )
-    {
-        // If 'a' is divisible by 'b', then 'b' is the GCD.
-        return   b   ;
-    }
-    else
-    {
-        // Otherwise, recursively call gcd with 'b' and the remainder of 'a' divided by 'b'.
-        return   gcd   ( b ,   a   %   b )   ;
-    }
-}
-
-
-/*
- * Calculates the least common multiple (LCM) of two numbers.
- * The formula used is: LCM(a, b) = |a * b| / GCD(a, b).
- * Here, we assume a and b are positive integers.
- */
-function   lcm   ( a ,   b )
-{
-    // The LCM is calculated using the product of a and b, divided by their GCD.
-    return   a   *   b   /   gcd   ( a ,   b )   ;
-}
-
-
-// This is the main processing function for the input data.
-// The entire input data is passed as a single string.
-function   Main   ( input )
-{
-    // Parse the first line of input to get N and M.
-    // N is the first number on the first line.
-    var   N   =   toNum   ( input . split   ( '\n' ) [ 0 ] . split   ( ' ' ) [ 0 ] )   ;
-
-    // M is the second number on the first line.
-    var   M   =   toNum   ( input . split   ( '\n' ) [ 0 ] . split   ( ' ' ) [ 1 ] )   ;
-
-    // S is the string from the second line of input.
-    var   S   =   input . split   ( '\n' ) [ 1 ]   ;
-
-    // T is the string from the third line of input.
-    var   T   =   input . split   ( '\n' ) [ 2 ]   ;
-
-
-    // Calculate L, which is the LCM of N and M.
-    // The ternary operator ensures lcm is called correctly, though order for lcm usually doesn't matter.
-    var   L   =   N   >   M   ?   lcm   ( N ,   M )   :   lcm   ( M ,   N )   ;
-
-    // Initialize a flag to track if a mismatch is found.
-    var   flag   =   true   ;
-
-    // Create an array X to store characters.
-    var   X   =   [ ]   ;
-
-    // Populate array X with empty strings, up to length L.
-    for   ( var   i   =   0 ;   i   <   L ;   i++ )
-    {
-        X . push   ( '' )   ; // Add an empty string at each index.
-    }
-
-    // Assign the first character of S to the first position in X.
-    X [ 0 ]   =   S [ 0 ]   ;
-
-    // Fill in characters from S into X at specific indices.
-    // The index is i * (L / N).
-    for   ( var   i   =   1 ;   i   <   S . length ;   i++   )
-    {
-        X [ i   *   ( L   /   N ) ]   =   S [ i ]   ;
-    }
-
-
-    // Check the first character of X against T.
-    if   ( X [ 0 ]   !=   T [ 0 ] )
-    {
-        // If they don't match, print -1.
-        console . log   ( '-1' )   ;
-    }
-    else
-    {
-        // If the first characters match, proceed to check the rest of T.
-        for   ( var   i   =   1 ;   i   <   T . length ;   i++ )
-        {
-            // Calculate the current index for T in X.
-            var   currentIndex   =   i   *   ( L   /   M )   ;
-
-            // Check if X at this index is already populated and if it mismatches T[i].
-            if   ( X [ currentIndex ]   !=   ''   &&   X [ currentIndex ]   !=   T [ i ] )
-            {
-                // If a mismatch is found, print -1.
-                console . log   ( '-1' )   ;
-
-                // Set the flag to false to indicate a mismatch.
-                flag   =   false   ;
-
-                // Exit the loop early as a mismatch is confirmed.
-                break   ;
-            }
-        }
-    }
-
-
-    // After all checks, if no mismatch was found (flag is still true).
-    if   ( flag )
-    {
-        // Print the value of L.
-        console . log   ( L )   ;
-    }
-
-}
-
-
-// *** DO NOT EDIT THE FOLLOWING LINE. It handles reading input and calling Main. ***
-// This part reads the entire standard input and passes it to the Main function.
-Main   ( require   ( "fs" ) . readFileSync   ( "/dev/stdin" ,   "utf8" ) )   ;
+// 読み取り ここで整理する 最終の主要な操作 出力前に.
+	   Main(require("fs").readFileSync("/dev/stdin", "utf8"));

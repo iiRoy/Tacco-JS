@@ -1,34 +1,36 @@
 'use strict';
-console.log((function(sourceData){
-  const componentStrings = sourceData.trim().split('\n');
-  const primarySequence = componentStrings[0];
-  const secondarySequence = componentStrings[1];
 
-  const valueCache = new Map();
+function processInputAndFindLCS(sourceData) {
+  const contentLines = sourceData.trim().split('\n');
+  const firstSequence = contentLines[0];
+  const secondSequence = contentLines[1];
 
-  function calculateOptimalSubsequence(firstIndex, secondIndex) {
-    const currentKey = `${firstIndex},${secondIndex}`;
-    if (valueCache.has(currentKey)) {
-      return valueCache.get(currentKey);
-    }
+  const firstLen = firstSequence.length;
+  const secondLen = secondSequence.length;
 
-    if (firstIndex >= primarySequence.length || secondIndex >= secondarySequence.length) {
+  const lookupTable = Array(firstLen + 1).fill(null).map(() => Array(secondLen + 1).fill(null));
+
+  function calculateLCS(currentIdxA, currentIdxB) {
+    if (currentIdxA === 0 || currentIdxB === 0) {
       return '';
     }
 
-    let outcome;
-    if (primarySequence[firstIndex] === secondarySequence[secondIndex]) {
-      outcome = primarySequence[firstIndex] + calculateOptimalSubsequence(firstIndex + 1, secondIndex + 1);
-    } else {
-      const variantOne = calculateOptimalSubsequence(firstIndex + 1, secondIndex);
-      const variantTwo = calculateOptimalSubsequence(firstIndex, secondIndex + 1);
-      outcome = variantOne.length > variantTwo.length ? variantOne : variantTwo;
+    if (lookupTable[currentIdxA][currentIdxB] !== null) {
+      return lookupTable[currentIdxA][currentIdxB];
     }
 
-    valueCache.set(currentKey, outcome);
-    return outcome;
+    if (firstSequence[currentIdxA - 1] === secondSequence[currentIdxB - 1]) {
+      lookupTable[currentIdxA][currentIdxB] = calculateLCS(currentIdxA - 1, currentIdxB - 1) + firstSequence[currentIdxA - 1];
+    } else {
+      const pathOne = calculateLCS(currentIdxA - 1, currentIdxB);
+      const pathTwo = calculateLCS(currentIdxA, currentIdxB - 1);
+      lookupTable[currentIdxA][currentIdxB] = pathOne.length > pathTwo.length ? pathOne : pathTwo;
+    }
+
+    return lookupTable[currentIdxA][currentIdxB];
   }
 
-  return calculateOptimalSubsequence(0, 0);
+  return calculateLCS(firstLen, secondLen);
+}
 
-})(require('fs').readFileSync('/dev/stdin', 'utf8')));
+console.log(processInputAndFindLCS(require('fs').readFileSync('/dev/stdin', 'utf8')));

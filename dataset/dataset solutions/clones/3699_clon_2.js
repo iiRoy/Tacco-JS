@@ -1,46 +1,25 @@
-'use strict' // Enforces strict mode for cleaner code.
+'use strict';
 
-/**
- * @function ProcessData
- * @description Analyzes input text to determine the range of numerical values.
- * @param {string} sourceText - The raw input string containing data.
+/*
+ * This function processes raw input data to calculate the difference
+ * between the maximum and minimum values in a sequence of numbers.
  */
-function ProcessData( sourceText )
-{
-  // First, parse the initial line which might contain a count, though it's unused in this specific logic.
-  const elementCount    =    Number(sourceText.split('\n')[0])   ;
+function ProcessInputData(sourceData) {
+  // Extract the first line to determine the count of items, though not directly used in calculation.
+  const itemCount = Number(sourceData.split('\n')[0]);
 
-  // Extract the second line, split it by spaces, and convert each part to a number.
-  // This forms an array of numerical values.
-  const numericValues = sourceText
-    .split('\n')[1]
-    .split(' ')
-    .map(   numStr =>  Number(numStr)   )
-  ;
+  // Parse the second line, splitting by space and converting each part to a number.
+  const numberArray = sourceData.split('\n')[1].split(' ').map(currentNum => Number(currentNum));
 
+  // Find the largest value within the array using Math.max.
+  const maximumElement = Math.max.apply(null, numberArray);
 
-  // Determine the maximum value within the processed numerical array.
-  // Using apply with null context for Math.max on an array.
-  const highestVal = Math.max.apply(
-    null,
-    numericValues
-  );
+  // Find the smallest value within the array using Math.min.
+  const minimumElement = Math.min.apply(null, numberArray);
 
-  // Determine the minimum value within the processed numerical array.
-  // Using apply with null context for Math.min on an array.
-  const lowestVal = Math.min.apply(
-    null,
-    numericValues
-  );
-
-  // Output the difference between the highest and lowest values, representing the range.
-  console.log(highestVal - lowestVal);
+  // Output the computed range (difference between max and min) to the console.
+  console.log(maximumElement - minimumElement);
 }
 
-// Invoke the main processing function with data read from standard input.
-// Reads the entire content of stdin, decodes it as UTF-8, and removes leading/trailing whitespace.
-ProcessData(
-  require("fs")
-    .readFileSync("/dev/stdin", "utf8")
-    .trim()
-);
+// Execute the main processing function with data read from standard input.
+ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8").trim());

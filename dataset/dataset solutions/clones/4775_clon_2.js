@@ -1,27 +1,22 @@
-'use strict'; /** This script serves as an entry point to process textual data. **/
+'use strict'; // Enforce strict mode for cleaner code
 
-/*
- * This primary function orchestrates the transformation of incoming text.
- * It takes a single string parameter containing raw textual information.
- * The function then extracts the initial line and modifies it by
- * substituting specific characters before displaying the result.
+/**
+ * Processes the given raw text data.
+ * This function takes a multi-line string, extracts the first line,
+ * and then replaces all occurrences of commas with spaces before printing it.
+ * @param {string} rawData - The complete input string, potentially with multiple lines.
  */
-const    processTextContent    =    (  incomingText  )    =>    {
-  // Divide the entire input string by newline characters
-  // and select only the very first resulting segment.
-  const    extractedLine    =    incomingText
-    .split(  '\n'  )
-    [  0  ]  ;
+const processInput = (rawData) => {
+  // Split the incoming data by newline characters and take only the initial segment.
+  // This effectively isolates the first line of the input.
+  const processedString = rawData.split('\n')[0];
 
-  // Output the modified line to the standard console.
-  // All comma characters within the extracted line are replaced by single spaces.
-  console.log(
-    extractedLine.replace(    new    RegExp(  ','  ,  'g'  )  ,    ' '    )
-  )    ;
+  // Replace all comma characters (globally) within the extracted string with a single space.
+  // Then, output the modified string to the standard console.
+  console.log(processedString.replace(/,/g, ' '));
 };
 
-
-// The application's execution begins here.
-// Data is read synchronously from the standard input path (`/dev/stdin`)
-// using UTF-8 encoding, and then passed to the processing function.
-processTextContent(    require(  'fs'  )  .  readFileSync(  '/dev/stdin'  ,    'utf8'    )    )    ;
+// Execute the primary processing function.
+// It reads the entire content from standard input ('/dev/stdin') as a UTF-8 encoded string
+// and passes it as an argument to the 'processInput' function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

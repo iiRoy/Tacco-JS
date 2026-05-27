@@ -1,17 +1,16 @@
-function processInputData(rawPayload) {
-  const primaryLineMatch = rawPayload.match(/^([^\n]*)/);
-  const dataSequence = primaryLineMatch ? primaryLineMatch[1] : '';
+function processSequenceData(sourceText) {
+  const lineSegments = sourceText.split("\n");
+  const primarySequence = lineSegments[0];
 
-  const pCharCount = Array.from(dataSequence).reduce((totalP, currentSymbol) => {
-      return totalP + (currentSymbol === 'p' ? 1 : 0);
+  const characterArray = Array.from(primarySequence);
+
+  const accumulatedPenalty = characterArray.reduce((currentSum, charItem) => {
+    return currentSum - (charItem === 'p' ? 1 : 0);
   }, 0);
 
-  const baseValue = (dataSequence.length / 2) | 0;
-
-  const finalOutcome = baseValue - pCharCount;
+  const finalOutcome = Math.floor(primarySequence.length / 2) + accumulatedPenalty;
 
   console.log(finalOutcome);
 }
 
-const rawSource = require("fs").readFileSync("/dev/stdin", "utf8");
-processInputData(rawSource);
+processSequenceData(require("fs").readFileSync("/dev/stdin", "utf8"));

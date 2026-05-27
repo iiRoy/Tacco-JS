@@ -1,29 +1,27 @@
-const lineProcessorModule = require('readline');
-const interactiveSession = lineProcessorModule.createInterface(
-  {
-    input:  process.stdin,
-    output: process.stdout
-  }
-);
+const nodeReader = require('readline');
 
-let numericDataStorage = [];
+const ioHandler = nodeReader.createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
+
+let dataBuffer = [];
 
 const calculateProduct = (incomingValues) => {
-  const firstFactor = incomingValues[0];
-  const secondFactor = incomingValues[1];
+  const firstVal = incomingValues[0];
+  const secondVal = incomingValues[1];
 
-  if (firstFactor > 9 || secondFactor > 9) {
+  if (firstVal > 9 || secondVal > 9) {
     return -1;
   }
-  return firstFactor * secondFactor;
+  return firstVal * secondVal;
 };
 
-interactiveSession
-  .on('line', function (receivedLine) {
-    numericDataStorage = receivedLine.split(' ').map((elementString) => parseInt(elementString, 10));
+ioHandler.on('line', function (currentLineText) {
+    dataBuffer = currentLineText.split(' ').map((elementString) => parseInt(elementString, 10));
   })
   .on('close', function () {
-    console.log(calculateProduct(numericDataStorage));
+    console.log(calculateProduct(dataBuffer));
 
     process.exit(0);
   });

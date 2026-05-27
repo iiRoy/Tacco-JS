@@ -1,67 +1,91 @@
-let rawInput = [  ]; // Accumulates raw lines of text from standard input.
-const PRIME_MODULUS = 1000000007; // A large prime constant used for modular arithmetic operations.
+var inputData = []; // Stores lines read from standard input
+var PRIME_MODULUS = 1000000007; // A large prime number used for modulo operations
 
-let maxDepthLimit, constraintCount; // Stores the two primary numerical parameters from the first input line.
-let forbiddenIndices; // An array of numerical values representing positions that are blocked.
-let solutionCache; // A memoization table (array) to store previously computed results.
-const consoleInputModule = require('readline'); // Imports the 'readline' module for handling input.
+var numSteps, maxJump; // N: total steps, M: number of forbidden steps
+var forbiddenSteps; // 'a': array of forbidden step indices
+var dpCache; // 'memo': cache for dynamic programming results
 
-// Sets up an interface object to process input and output streams.
-const inputProcessorInstance = consoleInputModule.createInterface(
-  {
-    input  : process.stdin, // Designates standard input as the source.
-    output : process.stdout, // Designates standard output for any internal logging (though not used here).
-  }
-);
-
-// Attaches an event handler for each line of data received from the input stream.
-inputProcessorInstance.on('line', (incomingLine) => {
-  rawInput.push(incomingLine); // Appends the current line to our input buffer.
-} );
-
-// Attaches an event handler for when the input stream has ended and is closed.
-inputProcessorInstance.on('close', ( ) => {
-  maxDepthLimit = parseInt(rawInput[0].split(" ")[0], 10); // Parses the first numerical parameter from the first line.
-  constraintCount = parseInt(rawInput[0].split(" ")[1], 10); // Parses the second numerical parameter from the first line.
-  rawInput.shift(); // Removes the first line, as its parameters have been extracted.
-  forbiddenIndices = rawInput.map(inputItem => parseInt(inputItem, 10)); // Converts remaining input lines into an array of integers.
-
-  solutionCache = Array(maxDepthLimit).fill(0); // Initializes the memoization table with zeros, sized by maxDepthLimit.
-  console.log(computeValidPaths(0)); // Initiates the recursive computation from the starting position (0) and prints the final result.
+// Initialize the readline interface for input processing
+var inputReader = require('readline');
+var interfaceHandler = inputReader.createInterface({
+    input: process.stdin,
+    output: process.stdout,
 });
 
-// Recursive function to calculate the number of valid paths from a given position.
-function computeValidPaths(currentStep) {
-  // If the result for this 'currentStep' has already been computed and cached, return it directly.
-  if (solutionCache[currentStep]) {
-    return solutionCache[currentStep];
-  }
+// Event listener for each line of input
+interfaceHandler.on('line', function (currentLine) {
+    inputData.push(currentLine); // Add the current line to our input data array
+});
 
-  // Base case: If the current step has exceeded the maximum allowed depth, it's an invalid path.
-  if (maxDepthLimit < currentStep) {
-    return 0;
-  }
+// Event listener for when the input stream closes
+interfaceHandler.on('close', function () {
+    // Parse the first line to get numSteps (N) and maxJump (M)
+    numSteps = Number(inputData[0].split(" ")[0]);
+    maxJump = Number(inputData[0].split(" ")[1]);
 
-  // Base case: If the current step has reached the target maximum depth, one valid path is found.
-  if (currentStep === maxDepthLimit) {
-    return 1;
-  }
+    // Remove the first line as it's already processed
+    inputData.shift();
 
-  // Recursive step: Iterate through constraints to determine path validity and sum possibilities.
-  let accumulatedPathSum = 0; // Temporary variable to accumulate results for the current step.
-  for (let loopIndex = 0; loopIndex < constraintCount; loopIndex++) {
-    // Check if the current step is one of the forbidden indices.
-    if (currentStep === forbiddenIndices[loopIndex]) {
-      return 0; // If the current step is forbidden, no paths can proceed from here.
-    } else {
-      // If not forbidden, explore two possible next steps.
-      accumulatedPathSum += computeValidPaths(currentStep + 1); // Calculate paths from moving one step forward.
-      accumulatedPathSum %= PRIME_MODULUS; // Apply the modulo operation to keep the sum within bounds.
-      accumulatedPathSum += computeValidPaths(currentStep + 2); // Calculate paths from moving two steps forward.
-      accumulatedPathSum %= PRIME_MODULUS; // Apply the modulo operation again.
+    // Parse the remaining lines to get the forbidden steps
+    forbiddenSteps = inputData.map(stepValue => Number(stepValue));
+
+    // Initialize the DP cache with zeros. Size is numSteps.
+    dpCache = Array(numSteps).fill(0);
+
+    // Start the path calculation from position 0 and print the result
+    console.log(calculatePaths(0));
+});
+
+/**
+ * Recursively calculates the number of ways to reach 'numSteps' from 'currentPosition',
+ * avoiding 'forbiddenSteps', using dynamic programming with memoization.
+ *
+ * @param {number} currentPosition The current step index.
+ * @returns {number} The number of valid paths from 'currentPosition' to 'numSteps'.
+ */
+function calculatePaths(currentPosition) {
+    // If the result for this position is already in cache, return it
+    if (dpCache[currentPosition]) {
+        return dpCache[currentPosition];
     }
-  }
 
-  solutionCache[currentStep] = accumulatedPathSum; // Store the computed sum in the memoization table for future use.
-  return solutionCache[currentStep]; // Return the final computed sum for the current step.
+    // If current position is beyond the target, it's an invalid path
+    if (numSteps < currentPosition) {
+        return 0;
+    }
+
+    // If current position is the target, we found one valid path
+    if (currentPosition === numSteps) {
+        return 1;
+    }
+    // Otherwise, calculate paths from this position
+    else {
+        // This loop structure is critical to replicate the original behavior.
+        // The 'pathCount' variable is declared inside the loop, and 'dpCache[currentPosition]'
+        // is assigned the value of 'pathCount' from the *last* iteration if no early return occurs.
+        // If 'maxJump' is 0, 'pathCount' will not be defined, leading to a ReferenceError,
+        // which matches the original code's behavior.
+        for (var jumpIndex = 0; jumpIndex < maxJump; jumpIndex++) {
+            var pathCount = 0; // Re-initialized in each loop iteration
+
+            // If the current position is a forbidden step, no paths are possible from here
+            if (currentPosition === forbiddenSteps[jumpIndex]) {
+                return 0;
+            }
+            // If not forbidden, calculate paths by taking 1 or 2 steps
+            else {
+                pathCount += calculatePaths(currentPosition + 1);
+                pathCount %= PRIME_MODULUS;
+                pathCount += calculatePaths(currentPosition + 2);
+                pathCount %= PRIME_MODULUS;
+            }
+        }
+    }
+
+    // Store the calculated path count in the cache for future use
+    // If maxJump was 0, 'pathCount' would be undefined here, causing a ReferenceError.
+    dpCache[currentPosition] = pathCount;
+
+    // Return the total number of paths from this position
+    return dpCache[currentPosition];
 }

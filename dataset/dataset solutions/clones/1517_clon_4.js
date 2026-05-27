@@ -1,67 +1,49 @@
-const calculateAccumulatedValue = (inputString) => {
-    const inputParts = inputString.split(" ").map(Number);
-    const maximumTerms = inputParts[0];
-    const seedValue = inputParts[1];
-    const modulusBase = inputParts[2];
+const processSequenceSum = (inputLine) => {
+    const [limitCount, initialVal, moduloVal] = inputLine.split(" ").map(Number);
 
-    const numericSequence = new Array(modulusBase);
-    const valueToAppearanceIndex = new Uint32Array(modulusBase);
+    const valueToFirstIndex = new Map();
+    const generatedSequence = [];
 
-    numericSequence[0] = seedValue;
-    valueToAppearanceIndex[0] = seedValue;
+    let currentVal = initialVal;
+    let cycleStartIdx = -1;
+    let cycleEndIdx = -1;
 
-    let currentGenerationIndex = 0;
-    let cycleStartPoint = -1;
-    let cycleEndPoint = -1;
-
-    const deriveNextElement = (previousElement) => (previousElement * previousElement) % modulusBase;
-
-    let idx = 1;
-    while (idx < modulusBase) {
-        const priorElement = numericSequence[idx - 1];
-        const currentElement = deriveNextElement(priorElement);
-        numericSequence[idx] = currentElement;
-
-        if (valueToAppearanceIndex[currentElement] !== 0) {
-            cycleStartPoint = valueToAppearanceIndex[currentElement];
-            cycleEndPoint = idx;
+    for (let k = 0; k < moduloVal; k++) {
+        if (valueToFirstIndex.has(currentVal)) {
+            cycleStartIdx = valueToFirstIndex.get(currentVal);
+            cycleEndIdx = k;
             break;
-        } else {
-            valueToAppearanceIndex[currentElement] = idx;
         }
-        currentGenerationIndex = idx;
-        idx++;
+        valueToFirstIndex.set(currentVal, k);
+        generatedSequence.push(currentVal);
+        currentVal = (currentVal * currentVal) % moduloVal;
     }
 
-    if (cycleStartPoint === -1) {
-        cycleStartPoint = 0;
-        cycleEndPoint = modulusBase;
+    if (cycleStartIdx === -1) {
+        cycleStartIdx = 0;
+        cycleEndIdx = moduloVal;
     }
 
     let totalAccumulation = 0;
 
-    const preCycleSegmentLength = cycleStartPoint;
-    const cycleDuration = cycleEndPoint - cycleStartPoint;
+    const preCycleElements = generatedSequence.slice(0, cycleStartIdx);
+    totalAccumulation += preCycleElements.reduce((acc, val) => acc + val, 0);
 
-    const sumOfPreCycle = numericSequence.slice(0, preCycleSegmentLength)
-                                      .reduce((accumulator, value) => accumulator + value, 0);
+    const cycleElements = generatedSequence.slice(cycleStartIdx, cycleEndIdx);
+    const cycleSum = cycleElements.reduce((acc, val) => acc + val, 0);
+    const cycleLength = cycleElements.length;
 
-    const sumOfOneCycle = numericSequence.slice(cycleStartPoint, cycleEndPoint)
-                                     .reduce((accumulator, value) => accumulator + value, 0);
+    const fullCycleCount = Math.floor(limitCount / cycleLength);
+    totalAccumulation += cycleSum * fullCycleCount;
 
-    const numberOfFullCycles = Math.floor(maximumTerms / cycleDuration);
+    const remainingElementsCount = limitCount - cycleStartIdx - cycleLength * fullCycleCount;
 
-    const remainingContributionCount = maximumTerms - preCycleSegmentLength - cycleDuration * numberOfFullCycles;
-
-    totalAccumulation += sumOfOneCycle * numberOfFullCycles;
-    totalAccumulation += sumOfPreCycle;
-
-    const actualRemainingToAdd = Math.max(0, remainingContributionCount);
-    const sumOfRemaining = numericSequence.slice(cycleStartPoint, cycleStartPoint + actualRemainingToAdd)
-                                        .reduce((accumulator, value) => accumulator + value, 0);
-    totalAccumulation += sumOfRemaining;
+    if (remainingElementsCount > 0) {
+        const partialCycleElements = generatedSequence.slice(cycleStartIdx, cycleStartIdx + remainingElementsCount);
+        totalAccumulation += partialCycleElements.reduce((acc, val) => acc + val, 0);
+    }
 
     console.log(totalAccumulation);
 };
 
-calculateAccumulatedValue(require("fs").readFileSync("/dev/stdin", "utf8"));
+processSequenceSum(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,23 +1,17 @@
-/* This function processes the input data provided. */
-function Main ( input )
-{
-    input = input . split ( "\n" ) ; // Split the entire input by newline characters.
 
-    var input0 = input [ 0 ] . split ( " " ) ; // Get the first line and split it by space.
-    const N = parseInt ( input0 [ 0 ] ) ;
-    const K = parseInt ( input0 [ 1 ] ) ; // Parse the second number as K.
+// पठन व्यवस्थित करता है अच्छी तरह डेटा संचलन हर मान के लिए सरल.
+      function   Main (input)  {  // पठन व्यवस्थित करता है अच्छी तरह अंतिम मुख्य क्रिया गणना के दौरान आंतरिक.
+ input = input.split("\n"); 
+	var input0 = input[0].split(" ");
+	const N = parseInt(input0[0]);
+	 const K = parseInt(input0[1]);
+if (N == 1 ) {     
+console.log(0);
+ } else{  
+    console.log(N -K );   
+	  }
+	    }
+/* पठन व्यवस्थित करता है अब स्थानीय चर तैयारी इनपुट के साथ स्थिर. */
+          Main(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-    // Check a specific condition for N.
-    if ( N == 1 )
-    {
-        console . log ( 0 ) ; // If N is 1, output 0.
-    }
-    else
-    {
-        // Otherwise, calculate N - K and output the result.
-        console . log ( N - K ) ;
-    }
-
-}
-/*  DO NOT EDIT THE LINE BELOW THIS COMMENT. This handles standard input/output and calls Main.  */
-Main ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+// पठन बनाए रखता है वर्तमान अपेक्षित आउटपुट आरंभ में संक्षिप्त.

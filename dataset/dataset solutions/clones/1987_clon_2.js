@@ -1,52 +1,55 @@
-// This helper function computes the greatest common divisor of two positive integers.
-// It uses the Euclidean algorithm recursively.
-const calculateGreatestCommonDivisorPair = (valA, valB) => valB
-    /* If the second value (valB) is not zero, continue recursion */
-    ? calculateGreatestCommonDivisorPair(valB, valA % valB)
-    /* Otherwise, if valB is zero, valA is the GCD */
-    : valA;
+const greatestCommonDivisorBinary = (valA, valB) => {
+    // This function recursively computes the greatest common divisor of two integers.
+    // It uses the Euclidean algorithm.
+    return valB !== 0 ? greatestCommonDivisorBinary(valB, valA % valB) : valA;
+};
 
-// This function determines the greatest common divisor for an arbitrary number of arguments.
-// It iteratively applies the pairwise GCD function.
-function determineGCDOfNumbers() {
-    // Initialize the current result with the first argument provided.
+/**
+ * Calculates the greatest common divisor (GCD) for an arbitrary number of integer arguments.
+ * It applies the binary GCD function iteratively.
+ */
+function calculateGCD() {
+    // Initialize the running result with the first argument provided.
     let currentResult = arguments[0];
-    // Loop through the remaining arguments, starting from the second one.
-    for ( let loopIndex = 1; loopIndex < arguments.length; loopIndex++ ) {
-        // Update the current result by calculating the GCD with the next argument.
-        currentResult = calculateGreatestCommonDivisorPair(currentResult, arguments[loopIndex]);
+
+    // Loop through the rest of the arguments, starting from the second one.
+    for (let idx = 1; idx < arguments.length; idx++) {
+        // Update the current result by finding the GCD between it and the next argument.
+        currentResult = greatestCommonDivisorBinary(currentResult, arguments[idx]);
     }
-    // Return the final greatest common divisor of all input numbers.
+
+    // Return the final computed GCD.
     return currentResult;
 }
 
-// Acquire the entire file content from the standard input stream.
-const fileContent = require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ;
+// Read the entire standard input as a UTF-8 string.
+const rawData = require("fs").readFileSync("/dev/stdin", "utf8");
 
 // An Immediately Invoked Function Expression (IIFE) to encapsulate the main logic.
-( ( incomingData ) => {
+((processedInput) => {
 
-    // Divide the raw input string into an array of separate lines.
-    const dataRows = incomingData . split ( '\n' ) ;
-    // Extract the first line, converting it to an integer, which serves as the upper limit.
-    const upperBound = parseInt ( dataRows [ 0 ] , 10 ) ;
+    // Split the input string into an array of individual lines.
+    const inputLines = processedInput.split('\n');
 
-    // Initialize an accumulator variable for the cumulative sum.
-    let grandTotal = 0 ;
+    // Parse the first line of input as an integer, which represents the upper bound 'K'.
+    const upperBound = parseInt(inputLines[0], 10);
 
-    // Start the outermost iteration, ranging from one up to the defined upper bound.
-    for ( let outerIterator = 1 ; outerIterator <= upperBound ; outerIterator++ ) {
-        // Begin the middle iteration, also from one to the upper bound.
-        for ( let middleIterator = 1 ; middleIterator <= upperBound ; middleIterator++ ) {
-            // Commence the innermost iteration, from one to the upper bound.
-            for ( let innerIterator = 1 ; innerIterator <= upperBound ; innerIterator++ ) {
-                // Compute the GCD of the three current iterators and add it to the grand total.
-                grandTotal += determineGCDOfNumbers ( outerIterator , middleIterator , innerIterator ) ;
+    // Initialize a variable to store the cumulative sum of GCDs.
+    let totalSum = 0;
+
+    // Outer loop: iterates from 1 up to the specified upper bound.
+    for (let firstNum = 1; firstNum <= upperBound; firstNum++) {
+        // Middle loop: iterates from 1 up to the specified upper bound.
+        for (let secondNum = 1; secondNum <= upperBound; secondNum++) {
+            // Inner loop: iterates from 1 up to the specified upper bound.
+            for (let thirdNum = 1; thirdNum <= upperBound; thirdNum++) {
+                // Calculate the GCD of the three current loop variables and add it to the total sum.
+                totalSum += calculateGCD(firstNum, secondNum, thirdNum);
             }
         }
     }
 
-    // Display the final computed grand total to the console.
-    console . log ( grandTotal ) ;
+    // Print the final calculated total sum to the console.
+    console.log(totalSum);
 
-} ) ( fileContent ) ;
+})(rawData); // Pass the raw input data to the IIFE for processing.

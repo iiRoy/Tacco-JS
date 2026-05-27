@@ -1,39 +1,47 @@
 "use strict";
 
-const   processInputData =   inputStringData =>
-{
-    inputStringData = inputStringData.trim().split("\n");
-    const elementCount = parseInt(inputStringData[0], 10);
-    const numericValuesArray = inputStringData[1].split(" ").map(stringValue => parseInt(stringValue, 10));
+// This function processes the input data to reorder a sequence of numbers.
+const processInput = (inputData) => {
+  // Clean up the input string and split it into lines.
+  inputData = inputData.trim().split("\n");
 
-    let resultSequence = [];
+  // The first line contains the total count of elements.
+  const totalElements = ~~inputData[0]; // Convert string to integer using bitwise NOT operator.
 
-    if (elementCount % 2 === 0)
-    {
-        for (let currentIndex = elementCount - 1; currentIndex > 0; currentIndex -= 2)
-        {
-            resultSequence.push(numericValuesArray[currentIndex]);
-        }
+  // The second line contains space-separated numbers, convert them to an array of integers.
+  const inputNumbers = inputData[1].split(" ").map((strValue) => ~~strValue);
 
-        for (let currentIndex = 0; currentIndex < elementCount; currentIndex += 2)
-        {
-            resultSequence.push(numericValuesArray[currentIndex]);
-        }
-    }
-    else
-    {
-        for (let currentIndex = elementCount - 1; currentIndex >= 0; currentIndex -= 2)
-        {
-            resultSequence.push(numericValuesArray[currentIndex]);
-        }
+  // Initialize an empty array to store the reordered sequence.
+  let finalSequence = [];
 
-        for (let currentIndex = 1; currentIndex < elementCount; currentIndex += 2)
-        {
-            resultSequence.push(numericValuesArray[currentIndex]);
-        }
+  // Check if the total number of elements is even or odd.
+  if (totalElements % 2 === 0) {
+    // Case: Even number of elements.
+    // First, iterate backwards from the second-to-last element, taking every other element.
+    for (let revEvenIdx = totalElements - 1; revEvenIdx > 0; revEvenIdx -= 2) {
+      finalSequence.push(inputNumbers[revEvenIdx]);
     }
 
-    console.log(resultSequence.join(" "));
+    // Then, iterate forwards from the first element, taking every other element.
+    for (let fwdEvenIdx = 0; fwdEvenIdx < totalElements; fwdEvenIdx += 2) {
+      finalSequence.push(inputNumbers[fwdEvenIdx]);
+    }
+  } else {
+    // Case: Odd number of elements.
+    // First, iterate backwards from the last element, taking every other element.
+    for (let revOddIdx = totalElements - 1; revOddIdx >= 0; revOddIdx -= 2) {
+      finalSequence.push(inputNumbers[revOddIdx]);
+    }
+
+    // Then, iterate forwards from the second element, taking every other element.
+    for (let fwdOddIdx = 1; fwdOddIdx < totalElements; fwdOddIdx += 2) {
+      finalSequence.push(inputNumbers[fwdOddIdx]);
+    }
+  }
+
+  // Output the final reordered sequence, joined by spaces.
+  console.log(finalSequence.join(" "));
 };
 
-processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// Read input from standard input and pass it to the processing function.
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

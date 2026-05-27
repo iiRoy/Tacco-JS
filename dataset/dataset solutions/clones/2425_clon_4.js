@@ -1,19 +1,34 @@
-const fileUtil = require('fs');
-const dataSourceIdentifier = '/dev/stdin';
-const encodingType = 'utf8';
+function processInput(numericValue, stringValue) {
+  if ((numericValue & 1) === 1) {
+    return 'No';
+  }
 
-const processDataEntry = (rawText) => {
-    const cleanedText = rawText.trim();
-    const elementCount = cleanedText.length;
+  const segmentLength = numericValue >>> 1;
 
-    return (elementCount % 2 !== 0)
-        ? 'No'
-        : (Array.from({length: elementCount / 2}, (_, idx) => idx)
-            .reduce((acc, currentIdx) => acc && (cleanedText[currentIdx] === cleanedText[currentIdx + elementCount / 2]), true)
-            ? 'Yes'
-            : '');
-};
+  const firstSegmentCodes = Array.from({ length: segmentLength }, (_, idx) =>
+    stringValue.charCodeAt(idx)
+  );
+  const secondSegmentCodes = Array.from({ length: segmentLength }, (_, idx) =>
+    stringValue.charCodeAt(idx + segmentLength)
+  );
 
-const acquiredText = fileUtil.readFileSync(dataSourceIdentifier, encodingType);
-const finalOutput = processDataEntry(acquiredText);
-process.stdout.write(finalOutput + '\n');
+  const segmentsMatch = firstSegmentCodes.every((code, idx) =>
+    code === secondSegmentCodes[idx]
+  );
+
+  return segmentsMatch ? 'Yes' : undefined;
+}
+
+function entryPoint(rawInputContent) {
+  const inputLines = rawInputContent.split(/\r?\n/);
+  const parsedN = Number(inputLines[0]);
+  const parsedS = inputLines[1];
+
+  const outcome = processInput(parsedN, parsedS);
+
+  if (outcome !== undefined) {
+    console.log(outcome);
+  }
+}
+
+entryPoint(require('node:fs').readFileSync(0, 'utf8'));

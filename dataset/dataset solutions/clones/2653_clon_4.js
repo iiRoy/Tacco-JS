@@ -1,14 +1,17 @@
-((dataFromSource) => {
-    const numericFragments = dataFromSource.trim().split(/\s+/);
+function processNumericInput(inputLine) {
+    const operands = inputLine.split(' ').map(parseFloat);
+    const operandOne = operands[0];
+    const operandTwo = operands[1];
 
-    const firstItem = numericFragments[0];
-    const secondItem = numericFragments[1];
+    const computedValues = [
+        operandOne + operandTwo,
+        operandOne - operandTwo,
+        operandOne * operandTwo
+    ];
 
-    const outcomeOne = +(firstItem + secondItem);
-    const outcomeTwo = +firstItem - +secondItem;
-    const outcomeThree = +firstItem * +secondItem;
+    const greatestValue = Math.max(...computedValues);
 
-    const greatestOutcome = Math.max(outcomeOne, outcomeTwo, outcomeThree);
+    console.log(greatestValue);
+}
 
-    process.stdout.write(String(greatestOutcome));
-})(require('node:fs').readFileSync(0, 'utf8'));
+processNumericInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

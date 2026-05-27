@@ -1,124 +1,166 @@
-let outputPrinter = console.log;
-if (typeof process !== "undefined") {
-    let dataAccumulator = "";
+var log = console.log;
+if (typeof process != "undefined") {
+    var input = "";
     process.stdin.resume();
     process.stdin.setEncoding('utf8');
-    process.stdin.on('data', (chunk) => {
-        dataAccumulator += chunk;
+    process.stdin.on('data', function (chunk) {
+        input += chunk;
     });
-    process.stdin.on('end', () => {
-        let inputSegments = dataAccumulator.split("\n");
-        solutionEntry(inputSegments);
+    process.stdin.on('end', function () {
+        var lines = input.split("\n");
+        mainClone(lines);
     });
 }
 
-function solutionEntry(inputSegments) {
-    if (inputSegments.at(-1) === "") {
-        inputSegments.pop();
+function mainClone(inputLines) {
+    const outputCollector = [];
+    const printLine = (message) => outputCollector.push(message);
+
+    // Replicate the original's specific input line processing behavior
+    let processedInput = [...inputLines];
+    const finalLine = processedInput.pop();
+    if (finalLine !== "") {
+        processedInput.push(undefined);
     }
 
-    let processedSegments = inputSegments.map((segment) =>
-        segment.split(" ").map(Number)
-    );
-
-    let configurationLine = processedSegments.shift();
-    let nodeCount = configurationLine[0];
-    let linkCount = configurationLine[1];
-
-    let adjacencies = new Map();
-    for (let j = 0; j < nodeCount; j++) {
-        adjacencies.set(j, new Set());
-    }
-
-    processedSegments.forEach((link) => {
-        let n1 = link[0];
-        let n2 = link[1];
-        adjacencies.get(n1).add(n2);
-        adjacencies.get(n2).add(n1);
+    const numericalData = processedInput.map(entry => {
+        if (entry === undefined) return undefined;
+        return entry.split(" ").map(Number);
     });
 
-    let visitOrder = new Array(nodeCount).fill(-1);
-    let minReachTime = new Array(nodeCount).fill(Number.MAX_SAFE_INTEGER);
-    let exploredStatus = new Array(nodeCount).fill(false);
-    let timeCounter = 0;
-    let separationPoints = [];
+    const [vertexQuantity, edgeQuantity] = numericalData.shift(); // V, E
 
-    const recordBridge = (u, v) => {
-        let sortedPair = [u, v].sort((a, b) => a - b);
-        separationPoints.push(sortedPair);
-    };
+    // Data structures for graph and DFS state
+    const graphConnections = new Map(); // Adjacency list: Map<number, Set<number>>
+    for (let i = 0; i < vertexQuantity; i++) {
+        graphConnections.set(i, new Set());
+    }
 
-    const traverseGraph = (initialNode) => {
-        let discoveryStack = [];
+    const nodeState = new Array(vertexQuantity).fill(null).map(() => ({
+        visited: false,
+        discoveryOrder: -1,
+        lowestReachable: -1,
+    }));
 
-        discoveryStack.push({
-            node: initialNode,
-            parent: -1,
-            adjList: Array.from(adjacencies.get(initialNode)),
-            neighborIdx: 0
-        });
+    const discoveredBridges = new Map(); // Stores bridges: Map<number, number[]>
 
-        while (discoveryStack.length > 0) {
-            let currentFrame = discoveryStack.at(-1);
-            let u = currentFrame.node;
-            let p = currentFrame.parent;
+    // Store original edges to iterate for bridge identification later
+    const initialEdgeList = [];
 
-            if (!exploredStatus[u]) {
-                exploredStatus[u] = true;
-                visitOrder[u] = timeCounter;
-                minReachTime[u] = timeCounter;
-                timeCounter++;
-            }
+    // Populate graph connections
+    numericalData.forEach(edgePair => {
+        if (edgePair === undefined) return; // Skip if undefined was added by input processing
+        const [nodeA, nodeB] = edgePair;
+        graphConnections.get(nodeA).add(nodeB);
+        graphConnections.get(nodeB).add(nodeA);
+        initialEdgeList.push([nodeA, nodeB]);
+    });
 
-            let movedToChild = false;
-            while (currentFrame.neighborIdx < currentFrame.adjList.length) {
-                let v = currentFrame.adjList[currentFrame.neighborIdx];
-                currentFrame.neighborIdx++;
+    let timeMarker = 0; // Counter for discovery order
+
+    // Iterative Depth-First Search for bridge finding
+    // Stack frame: { currentVertex: number, parentVertex: number, neighborIterator: Iterator<number>, processingStage: 'pre_visit' | 'post_children' }
+    const traversalStack = [];
+
+    // Start DFS from vertex 0 as per original
+    traversalStack.push({
+        currentVertex: 0,
+        parentVertex: -1, // Sentinel for root's parent
+        neighborIterator: graphConnections.get(0).values(),
+        processingStage: 'pre_visit'
+    });
+
+    while (traversalStack.length > 0) {
+        const currentFrame = traversalStack[traversalStack.length - 1]; // Peek at top frame
+        const { currentVertex: u, parentVertex: p, neighborIterator, processingStage } = currentFrame;
+
+        if (processingStage === 'pre_visit') {
+            // Initial visit logic for 'u'
+            nodeState[u].visited = true;
+            nodeState[u].discoveryOrder = timeMarker;
+            nodeState[u].lowestReachable = timeMarker;
+            timeMarker++;
+            currentFrame.processingStage = 'post_children'; // Transition to next stage
+        } else { // processingStage === 'post_children'
+            // Logic after initial visit, iterating neighbors and processing children
+            let nextNeighborResult = neighborIterator.next();
+
+            if (!nextNeighborResult.done) {
+                const v = nextNeighborResult.value;
 
                 if (v === p) {
-                    continue;
+                    // Skip the edge leading back to the immediate parent
+                    continue; // Continue to the next neighbor in the current frame
                 }
 
-                if (exploredStatus[v]) {
-                    minReachTime[u] = Math.min(minReachTime[u], visitOrder[v]);
-                } else {
-                    discoveryStack.push({
-                        node: v,
-                        parent: u,
-                        adjList: Array.from(adjacencies.get(v)),
-                        neighborIdx: 0
+                if (!nodeState[v].visited) {
+                    // 'v' is unvisited: this is a tree edge (u, v)
+                    // Replicate original's try...catch: if dfs(target) throws, it's called again.
+                    // Since the original dfs doesn't throw, this is effectively a single call.
+                    traversalStack.push({
+                        currentVertex: v,
+                        parentVertex: u,
+                        neighborIterator: graphConnections.get(v).values(),
+                        processingStage: 'pre_visit'
                     });
-                    movedToChild = true;
-                    break;
+                    // Pause current frame's neighbor iteration to process child 'v'
+                    continue; // Continue to the next iteration of the main while loop, which will process the newly pushed frame for 'v'
+                } else {
+                    // 'v' is visited and not the parent: this is a back-edge (u, v)
+                    nodeState[u].lowestReachable = Math.min(nodeState[u].lowestReachable, nodeState[v].discoveryOrder);
+                    continue; // Continue to the next neighbor in the current frame
                 }
-            }
+            } else {
+                // All neighbors for 'u' have been processed. 'u' and its subtree are fully explored.
+                traversalStack.pop(); // Pop 'u' from stack
 
-            if (!movedToChild) {
-                discoveryStack.pop();
-
-                if (p !== -1) {
-                    minReachTime[p] = Math.min(minReachTime[p], minReachTime[u]);
-                    if (visitOrder[p] < minReachTime[u]) {
-                        recordBridge(p, u);
-                    }
+                // If 'u' has a parent (i.e., not the root of the DFS tree)
+                // and there's a parent frame on the stack, update parent's lowLink.
+                if (p !== -1 && traversalStack.length > 0) {
+                    const parentOfU = traversalStack[traversalStack.length - 1].currentVertex;
+                    nodeState[parentOfU].lowestReachable = Math.min(nodeState[parentOfU].lowestReachable, nodeState[u].lowestReachable);
                 }
             }
         }
-    };
+    }
 
-    traverseGraph(0);
+    // Identify bridges using discovery and low-link values
+    initialEdgeList.forEach(edge => {
+        let node1 = edge[0];
+        let node2 = edge[1];
 
-    let organizedBridges = new Array(nodeCount).fill(null).map(() => []);
-    separationPoints.forEach(pair => {
-        let u = pair[0];
-        let v = pair[1];
-        organizedBridges[u].push(v);
+        // Ensure node1 has a smaller discovery order than node2 for the bridge condition check
+        if (nodeState[node1].discoveryOrder > nodeState[node2].discoveryOrder) {
+            [node1, node2] = [node2, node1]; // Swap
+        }
+
+        // Bridge condition: if discovery order of node1 is less than low-link of node2
+        if (nodeState[node1].discoveryOrder < nodeState[node2].lowestReachable) {
+            const smallerNode = Math.min(edge[0], edge[1]);
+            const largerNode = Math.max(edge[0], edge[1]);
+            if (!discoveredBridges.has(smallerNode)) {
+                discoveredBridges.set(smallerNode, []);
+            }
+            discoveredBridges.get(smallerNode).push(largerNode);
+        }
     });
 
-    for (let s = 0; s < nodeCount; s++) {
-        organizedBridges[s].sort((a, b) => b - a);
-        for (let t of organizedBridges[s]) {
-            outputPrinter(`${s} ${t}`);
+    // Output bridges in the specified format
+    for (let i = 0; i < vertexQuantity; i++) {
+        if (discoveredBridges.has(i)) {
+            const bridgesFromNode = discoveredBridges.get(i);
+            // Sort in descending order as per original's b<a comparison
+            bridgesFromNode.sort((a, b) => b - a);
+            bridgesFromNode.forEach(connectedNode => {
+                printLine(`${i} ${connectedNode}`);
+            });
         }
+    }
+
+    // Output collected lines
+    if (typeof process === "undefined") {
+        return outputCollector.join("\n");
+    } else {
+        outputCollector.forEach(line => console.log(line));
     }
 }

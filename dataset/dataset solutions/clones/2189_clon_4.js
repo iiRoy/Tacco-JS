@@ -1,16 +1,18 @@
 'use strict';
-function ProcessInformation(incomingText) {
-  const textLines = incomingText.split('\n');
-
-  const thresholdCriterion = parseInt(textLines[0], 10);
-
-  const numericElements = textLines[1].split(' ').map(val => parseInt(val, 10));
-
-  const cumulativeTotal = numericElements.reduce((accumulator, currentElement) => accumulator + currentElement, 0);
-
-  const finalVerdict = (cumulativeTotal >= thresholdCriterion) ? "Yes" : "No";
-
-  console.log(finalVerdict);
+function Main(inputData) {
+    const processedLines = inputData.split('\n');
+    
+    const firstLineElements = processedLines[0].split(' ');
+    const secondLineElements = processedLines[1].split(' ');
+    
+    const comparisonTarget = Number(firstLineElements[0]);
+    
+    const accumulatedValue = secondLineElements.reduce((currentTotal, stringNumber) => {
+        return currentTotal + Number(stringNumber);
+    }, 0);
+    
+    const finalVerdict = (accumulatedValue >= comparisonTarget) ? "Yes" : "No";
+    
+    console.log(finalVerdict);
 }
-//*この行以降は編集しないでください（標準入出力から一度に読み込み、Mainを呼び出します）
-ProcessInformation(require("fs").readFileSync("/dev/stdin", "utf8"));
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

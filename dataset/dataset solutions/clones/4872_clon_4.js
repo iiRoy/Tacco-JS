@@ -1,14 +1,11 @@
-function determineConfiguration (sourceData) {
-    const numericalElements = sourceData.match(/\d+/g).map(Number);
-    const orderedValues = numericalElements.sort((valA, valB) => valA - valB);
+function processInputData(rawTextContent) {
+    const numericComponents = rawTextContent.trim().split(/\s+/).slice(0, 3).map(Number);
 
-    const firstComponent = orderedValues[0];
-    const secondComponent = orderedValues[1];
-    const principalComponent = orderedValues[2];
+    const sortedComponents = [...numericComponents].sort((valA, valB) => valA - valB);
 
-    const outcomeIndicator = (firstComponent + secondComponent === principalComponent) ? "Yes" : "No";
-    return outcomeIndicator;
+    const conditionMet = sortedComponents[2] === (sortedComponents[0] + sortedComponents[1]);
+
+    console.log(["No", "Yes"][+conditionMet]);
 }
 
-const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
-console.log(determineConfiguration(fileContent));
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

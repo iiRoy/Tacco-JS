@@ -1,44 +1,21 @@
-const transformRawDataToIntegers = (sourcePayload) => {
-    let currentLineSegment = '';
-    const processedIntegerList = [];
-    const payloadCharacterCount = sourcePayload.length;
+function processInputAndCompute(sourceText) {
+  const [firstLine, secondLine, thirdLine] = sourceText.split('\n');
 
-    for (let index = 0; index < payloadCharacterCount; index++) {
-        const charAtCurrentIndex = sourcePayload[index];
-        if (charAtCurrentIndex === '\n') {
-            if (currentLineSegment.length > 0) {
-                processedIntegerList.push(parseInt(currentLineSegment, 10));
-            }
-            currentLineSegment = '';
-        } else {
-            currentLineSegment += charAtCurrentIndex;
-        }
-    }
-    if (currentLineSegment.length > 0) {
-        processedIntegerList.push(parseInt(currentLineSegment, 10));
-    }
-    return processedIntegerList;
-};
+  const dimensionA = parseInt(firstLine, 10);
+  const dimensionB = parseInt(secondLine, 10);
+  const countItems = parseInt(thirdLine, 10);
 
-const calculateSuperiorValue = (firstTerm, secondTerm) => {
-    return (firstTerm + secondTerm + Math.abs(firstTerm - secondTerm)) / 2;
-};
+  const potentialDivisors = [dimensionA, dimensionB];
+  
+  potentialDivisors.sort((val1, val2) => val2 - val1); 
+  
+  const effectiveDivisor = potentialDivisors[0];
 
-const calculateRequiredUnits = (dividend, potentialDivisorA, potentialDivisorB) => {
-    const effectiveDivisor = calculateSuperiorValue(potentialDivisorA, potentialDivisorB);
-    return Math.ceil(dividend / effectiveDivisor);
-};
+  const finalResult = Math.ceil(countItems / effectiveDivisor);
 
-(function initiateProcessingSequence() {
-    const rawDataContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+  return finalResult;
+}
 
-    const integerComponents = transformRawDataToIntegers(rawDataContent);
-
-    const dimension_X = integerComponents[0];
-    const dimension_Y = integerComponents[1];
-    const item_Count = integerComponents[2];
-
-    const finalComputedResult = calculateRequiredUnits(item_Count, dimension_X, dimension_Y);
-
-    console.log(finalComputedResult);
-})();
+const inputData = require('fs').readFileSync('/dev/stdin', 'utf8');
+const computedValue = processInputAndCompute(inputData);
+console.log(computedValue);

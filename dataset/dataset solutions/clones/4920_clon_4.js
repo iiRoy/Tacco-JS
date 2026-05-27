@@ -1,24 +1,14 @@
-const stream = require('stream');
-const inputBuffer = [];
+function processInput(sourceString) {
+  const stringLen = sourceString.length;
+  const targetChar = 'p';
 
-const dataCollector = new stream.Writable({
-    write(chunkSegment, encodingType, completionCallback) {
-        inputBuffer.push(chunkSegment);
-        completionCallback();
-    }
-});
+  const foundChars = sourceString.includes(targetChar)
+                     ? Array.from(sourceString).filter(c => c === targetChar)
+                     : null;
 
-process.stdin.pipe(dataCollector);
+  const charOccurrences = foundChars.length;
 
-process.stdin.on('end', () => {
-    const fullInputText = Buffer.concat(inputBuffer).toString('utf8').trim();
-    performNumericalOperation(fullInputText);
-});
-
-function performNumericalOperation(sourceString) {
-    let characterTotal = Array.from(sourceString).length;
-    let targetCharInstances = sourceString.split('p').length - 1;
-    let preliminaryCalculation = characterTotal / 2 - targetCharInstances;
-    let ultimateValue = -(Math.ceil(-preliminaryCalculation));
-    process.stdout.write(String(ultimateValue) + '\n');
+  console.log(Math.floor(stringLen / 2 - charOccurrences));
 }
+
+processInput(require("fs").readFileSync("/dev/stdin", "utf8").trim());

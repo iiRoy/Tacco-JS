@@ -1,45 +1,42 @@
-let operationTally = 0;
+let comparisonCounter = 0;
 
-(function entryPoint() {
-    const rawInput = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split('\n');
-    const elementCount = Number(rawInput.shift());
-    let numericalElements = rawInput.shift().split(' ').map(Number);
+(function processInputAndSort(){
+  const inputLines = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split('\n');
+  const totalCount = Number(inputLines.shift());
+  let inputNumbers = inputLines.shift().split(' ').map(Number);
 
-    performIterativeSort(numericalElements, elementCount);
+  recursiveSortAndCombine(inputNumbers, 0, totalCount);
 
-    console.log(numericalElements.join(' '));
-    console.log(operationTally);
+  console.log(inputNumbers.join(' '));
+  console.log(comparisonCounter);
 })();
 
-function performIterativeSort(collection, length) {
-    for (let currentSize = 1; currentSize < length; currentSize *= 2) {
-        for (let initialPos = 0; initialPos < length - 1; initialPos += 2 * currentSize) {
-            let midPos = Math.min(initialPos + currentSize, length);
-            let finalPos = Math.min(initialPos + 2 * currentSize, length);
+function combineSegments(targetArray, startIdx, middleIdx, endIdx) {
+  const leftSegmentLength = middleIdx - startIdx;
+  const rightSegmentLength = endIdx - middleIdx;
 
-            if (midPos < finalPos) {
-                 combineHalves(collection, initialPos, midPos, finalPos);
-            }
-        }
+  const leftSegment = Array.from({ length: leftSegmentLength }, (_, i) => targetArray[startIdx + i]);
+  const rightSegment = Array.from({ length: rightSegmentLength }, (_, i) => targetArray[middleIdx + i]);
+
+  let leftPointer = 0;
+  let rightPointer = 0;
+
+  for (let destinationIndex = startIdx; destinationIndex < endIdx; destinationIndex++) {
+    comparisonCounter++;
+
+    if (leftPointer < leftSegmentLength && (rightPointer >= rightSegmentLength || leftSegment[leftPointer] <= rightSegment[rightPointer])) {
+      targetArray[destinationIndex] = leftSegment[leftPointer++];
+    } else {
+      targetArray[destinationIndex] = rightSegment[rightPointer++];
     }
+  }
 }
 
-function combineHalves(collection, initialPos, midPos, finalPos) {
-    const leftHalf = collection.slice(initialPos, midPos);
-    const rightHalf = collection.slice(midPos, finalPos);
-
-    leftHalf.push(Number.POSITIVE_INFINITY);
-    rightHalf.push(Number.POSITIVE_INFINITY);
-
-    let leftPointer = 0;
-    let rightPointer = 0;
-
-    for (let k = initialPos; k < finalPos; k++) {
-        if (leftHalf[leftPointer] <= rightHalf[rightPointer]) {
-            collection[k] = leftHalf[leftPointer++];
-        } else {
-            collection[k] = rightHalf[rightPointer++];
-        }
-        operationTally++;
-    }
+function recursiveSortAndCombine(dataCollection, lowerBound, upperBound) {
+  if (upperBound - lowerBound > 1) {
+    const centralPoint = Math.floor((lowerBound + upperBound) / 2);
+    recursiveSortAndCombine(dataCollection, lowerBound, centralPoint);
+    recursiveSortAndCombine(dataCollection, centralPoint, upperBound);
+    combineSegments(dataCollection, lowerBound, centralPoint, upperBound);
+  }
 }

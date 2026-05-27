@@ -1,183 +1,184 @@
-const acquireInput = (textSource) => {
-    let inputLines = textSource.trim().split('\n');
-    let lineIndex = 0;
+class InputProcessor {
+  #lineBuffer;
+  #currentLineIndex;
+  #tokenCache;
 
-    const readSingleItem = (returnAsString = false) => {
-        if (lineIndex >= inputLines.length) return undefined;
+  constructor(sourceText) {
+    this.#lineBuffer = sourceText.trim().split("\n");
+    this.#currentLineIndex = 0;
+    this.#tokenCache = [];
+  }
 
-        let currentLineContent = inputLines[lineIndex];
-        if (typeof currentLineContent === 'string') {
-            currentLineContent = currentLineContent.split(' ').reverse();
-            inputLines[lineIndex] = currentLineContent;
-        }
-
-        const itemValue = currentLineContent.pop();
-        if (currentLineContent.length === 0) {
-            lineIndex++;
-        }
-        return returnAsString ? itemValue : Number(itemValue);
-    };
-
-    const readLineItems = (returnAsStrings = false) => {
-        if (lineIndex >= inputLines.length) return [];
-        const originalLine = inputLines[lineIndex];
-        lineIndex++;
-        const items = originalLine.split(' ');
-        return returnAsStrings ? items : items.map(Number);
-    };
-
-    const readMatrixItems = (numberOfRows, returnAsStrings = false) => {
-        const matrix = [];
-        for (let i = 0; i < numberOfRows; i++) {
-            matrix.push(readLineItems(returnAsStrings));
-        }
-        return matrix;
-    };
-
-    const readVectorItems = (numberOfRows, returnAsStrings = false) => {
-        const vector = [];
-        for (let i = 0; i < numberOfRows; i++) {
-            if (lineIndex >= inputLines.length) break;
-            const originalLine = inputLines[lineIndex];
-            lineIndex++;
-            const item = originalLine.trim();
-            vector.push(returnAsStrings ? item : Number(item));
-        }
-        return vector;
-    };
-
-    return {
-        fetchItem: readSingleItem,
-        fetchLine: readLineItems,
-        fetchBlock: readMatrixItems,
-        fetchSlice: readVectorItems
-    };
-};
-
-const makeMultiDimArray = (initialValue, ...dimensions) => {
-    if (dimensions.length === 0) {
-        return typeof initialValue === 'string' ? JSON.parse(initialValue) : initialValue;
+  // Retrieves a single token, advancing to the next line if the current one is exhausted.
+  extractToken(returnAsString = false) {
+    if (this.#tokenCache.length === 0) {
+      if (this.#currentLineIndex >= this.#lineBuffer.length) {
+        return undefined;
+      }
+      this.#tokenCache = this.#lineBuffer[this.#currentLineIndex].split(" ").reverse();
+      this.#currentLineIndex++;
     }
-    const currentDimension = dimensions[0];
-    const remainingDimensions = dimensions.slice(1);
-    return Array.from({ length: currentDimension }, () => makeMultiDimArray(initialValue, ...remainingDimensions));
-};
+    const extracted = this.#tokenCache.pop();
+    return returnAsString ? extracted : Number(extracted);
+  }
 
-class DisjointSet {
-    #parentContainer; 
-
-    constructor(elementCount) {
-        this.#parentContainer = Array(elementCount + 1).fill(-1); 
+  // Retrieves all tokens from the current line as an array.
+  extractLine(returnAsStrings = false) {
+    if (this.#currentLineIndex >= this.#lineBuffer.length) {
+      return undefined;
     }
+    const lineContent = this.#lineBuffer[this.#currentLineIndex].split(" ");
+    this.#currentLineIndex++;
+    return returnAsStrings ? lineContent : lineContent.map(Number);
+  }
 
-    findRepresentative(index) {
-        if (this.#parentContainer[index] < 0) {
-            return index; 
-        }
-        return this.#parentContainer[index] = this.findRepresentative(this.#parentContainer[index]);
+  // Retrieves a specified number of lines as a 2D array (matrix).
+  extractMatrix(rowsToRead, returnAsStrings = false) {
+    const collectedMatrix = [];
+    for (let i = 0; i < rowsToRead; i++) {
+      collectedMatrix.push(this.extractLine(returnAsStrings));
     }
+    return collectedMatrix;
+  }
 
-    areConnected(firstItem, secondItem) {
-        return this.findRepresentative(firstItem) === this.findRepresentative(secondItem);
+  // Retrieves a specified number of lines, each assumed to contain a single element, as a 1D array (vector).
+  extractVector(elementsToRead, returnAsStrings = false) {
+    const collectedVector = [];
+    for (let i = 0; i < elementsToRead; i++) {
+      collectedVector.push(this.extractLine(returnAsStrings)[0]);
     }
-
-    mergeSets(firstItem, secondItem) {
-        let rootA = this.findRepresentative(firstItem);
-        let rootB = this.findRepresentative(secondItem);
-
-        if (rootA === rootB) {
-            return false; 
-        }
-        
-        if (this.#parentContainer[rootB] <= this.#parentContainer[rootA]) {
-            this.#parentContainer[rootA] += this.#parentContainer[rootB];
-            this.#parentContainer[rootB] = rootA;
-        } else {
-            this.#parentContainer[rootB] += this.#parentContainer[rootA];
-            this.#parentContainer[rootA] = rootB;
-        }
-        return true; 
-    }
-
-    groupSize(index) {
-        return -this.#parentContainer[this.findRepresentative(index)];
-    }
+    return collectedVector;
+  }
 }
 
-function performGraphOrientation() {
-    const dataReader = acquireInput(require("fs").readFileSync("/dev/stdin","utf8"));
-    const nodeCount = dataReader.fetchItem();
-    const edgeCount = dataReader.fetchItem();
+// Creates a nested array structure with a specified initial value or function.
+function constructNestedArray(dimensions, initialValueProvider) {
+  const buildRecursive = (currentDimensions, valueSource) => {
+    if (currentDimensions.length === 0) {
+      return typeof valueSource === 'function' ? valueSource() : valueSource;
+    }
+    const currentSize = currentDimensions[0];
+    const remainingDimensions = currentDimensions.slice(1);
+    return Array(currentSize).fill(null).map(() => buildRecursive(remainingDimensions, valueSource));
+  };
+  return buildRecursive(dimensions, initialValueProvider);
+}
 
-    if (edgeCount % 2 !== 0) {
-        return -1;
+// Implements a Disjoint Set Union (Union-Find) data structure.
+class DisjointSet {
+  #parentOrSize; // Stores parent index or negative size if it's a root.
+
+  constructor(totalElements) {
+    this.#parentOrSize = Array(totalElements + 1).fill(-1);
+  }
+
+  // Finds the representative (root) of the set containing the given element, with path compression.
+  findRepresentative(elementIndex) {
+    if (this.#parentOrSize[elementIndex] < 0) {
+      return elementIndex;
+    }
+    return (this.#parentOrSize[elementIndex] = this.findRepresentative(this.#parentOrSize[elementIndex]));
+  }
+
+  // Checks if two elements belong to the same set.
+  areConnected(idxA, idxB) {
+    return this.findRepresentative(idxA) === this.findRepresentative(idxB);
+  }
+
+  // Unites the sets containing two elements. Returns true if a union occurred, false if they were already in the same set.
+  uniteSets(idxA, idxB) {
+    let rootA = this.findRepresentative(idxA);
+    let rootB = this.findRepresentative(idxB);
+
+    if (rootA === rootB) {
+      return false; // Already in the same set
     }
 
-    const inputEdges = dataReader.fetchBlock(edgeCount);
-    const resultOrientations = [];
-    const componentManager = new DisjointSet(nodeCount);
-    const cycleEdgesAdjacency = makeMultiDimArray("[]", nodeCount + 1);
-    const nodeParityTracker = makeMultiDimArray(0, nodeCount + 1);
-
-    for (let k = 0; k < edgeCount; ++k) {
-        const sourceNode = inputEdges[k][0];
-        const destNode = inputEdges[k][1];
-
-        if (componentManager.mergeSets(sourceNode, destNode)) {
-            resultOrientations.push(`${sourceNode} ${destNode}`);
-            nodeParityTracker[sourceNode] ^= 1; 
-        } else {
-            cycleEdgesAdjacency[sourceNode].push(destNode);
-            cycleEdgesAdjacency[destNode].push(sourceNode);
-        }
-    }
-
-    const traversalStack = [];
-    const visitedInTraversal = new Set(); 
-
-    traversalStack.push({ currentVertex: 1, entryParent: 0, visitPhase: 'pre' }); 
-
-    while (traversalStack.length > 0) {
-        const currentFrame = traversalStack.pop();
-        const currentVertex = currentFrame.currentVertex;
-        const entryParent = currentFrame.entryParent;
-
-        if (currentFrame.visitPhase === 'pre') {
-            if (visitedInTraversal.has(currentVertex)) {
-                continue; 
-            }
-            visitedInTraversal.add(currentVertex);
-
-            traversalStack.push({ currentVertex: currentVertex, entryParent: entryParent, visitPhase: 'post' }); 
-
-            for (let i = cycleEdgesAdjacency[currentVertex].length - 1; i >= 0; --i) {
-                const neighbor = cycleEdgesAdjacency[currentVertex][i];
-                if (neighbor === entryParent) {
-                    continue; 
-                }
-                if (!visitedInTraversal.has(neighbor)) { 
-                    traversalStack.push({ currentVertex: neighbor, entryParent: currentVertex, visitPhase: 'pre' });
-                }
-            }
-        } else {
-            if (entryParent === 0) { 
-                continue; 
-            }
-
-            if (nodeParityTracker[currentVertex]) { 
-                resultOrientations.push(`${currentVertex} ${entryParent}`);
-            } else { 
-                resultOrientations.push(`${entryParent} ${currentVertex}`);
-                nodeParityTracker[entryParent] ^= 1; 
-            }
-        }
+    // Union by size: attach the smaller tree to the root of the larger tree.
+    if (this.#parentOrSize[rootA] > this.#parentOrSize[rootB]) { // If set A is smaller (less negative size)
+      [rootA, rootB] = [rootB, rootA]; // Swap to ensure rootA is the larger or equal set
     }
     
-    return resultOrientations.join('\n');
+    this.#parentOrSize[rootA] += this.#parentOrSize[rootB]; // Update size of the new root
+    this.#parentOrSize[rootB] = rootA; // Make rootA the parent of rootB
+
+    return true; // Union successful
+  }
+
+  // Returns the size of the set containing the given element.
+  getSetSize(elementIndex) {
+    return -this.#parentOrSize[this.findRepresentative(elementIndex)];
+  }
+}
+
+function solveGraphProblem() {
+  const dataReader = new InputProcessor(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+  const vertexCount = dataReader.extractToken();
+  const edgeCount = dataReader.extractToken();
+
+  if (edgeCount % 2 !== 0) {
+    return -1;
+  }
+
+  const incidentEdges = dataReader.extractMatrix(edgeCount);
+
+  const connectivityStructure = new DisjointSet(vertexCount);
+  const orientedEdges = [];
+  const nonTreeAdjacencyList = constructNestedArray([vertexCount + 1], () => []);
+  const degreeParityTracker = constructNestedArray([vertexCount + 1], 0);
+
+  incidentEdges.forEach(currentPair => {
+    const [nodeU, nodeV] = currentPair;
+    if (connectivityStructure.uniteSets(nodeU, nodeV)) {
+      orientedEdges.push(`${nodeU} ${nodeV}`);
+      degreeParityTracker[nodeU] ^= 1; // Toggle parity for nodeU
+    } else {
+      nonTreeAdjacencyList[nodeU].push(nodeV);
+      nonTreeAdjacencyList[nodeV].push(nodeU);
+    }
+  });
+
+  // Iterative Depth-First Search to orient remaining edges, simulating post-order traversal.
+  function iterativeOrientTraversal(startingNode) {
+    // Stack stores [currentNode, parentNode, visitPhase]
+    // visitPhase: 0 = pre-visit (children need to be pushed), 1 = post-visit (node itself needs processing)
+    const traversalStack = [[startingNode, 0, 0]];
+
+    while (traversalStack.length > 0) {
+      let [currentNode, parentNode, visitPhase] = traversalStack.pop();
+
+      if (visitPhase === 0) { // Pre-visit phase: Push self back for post-visit, then push children.
+        traversalStack.push([currentNode, parentNode, 1]); // Schedule for post-visit
+
+        // Push children onto the stack in reverse order to maintain consistent traversal order.
+        for (let i = nonTreeAdjacencyList[currentNode].length - 1; i >= 0; i--) {
+          const neighbor = nonTreeAdjacencyList[currentNode][i];
+          if (neighbor !== parentNode) { // Avoid traversing back up the tree
+            traversalStack.push([neighbor, currentNode, 0]);
+          }
+        }
+      } else { // Post-visit phase: Process the node.
+        if (parentNode === 0) continue; // Skip processing for the root of the DFS tree.
+
+        if (degreeParityTracker[currentNode]) { // If current node has odd parity
+          orientedEdges.push(`${currentNode} ${parentNode}`); // Orient edge from current to parent
+        } else { // If current node has even parity
+          orientedEdges.push(`${parentNode} ${currentNode}`); // Orient edge from parent to current
+          degreeParityTracker[parentNode] ^= 1; // Flip parity of the parent
+        }
+      }
+    }
+  }
+
+  // Start the traversal from node 1, with 0 as its conceptual parent.
+  iterativeOrientTraversal(1);
+
+  return orientedEdges.join("\n");
 }
 
 if (process.argv.length < 3) {
-    require("child_process").fork("Main.js", ["1"], { execArgv: ["--stack-size=240000"] });
+  require("child_process").fork("Main.js", ["1"], { execArgv: ["--stack-size=240000"] });
 } else {
-    console.log(performGraphOrientation());
+  console.log(solveGraphProblem());
 }

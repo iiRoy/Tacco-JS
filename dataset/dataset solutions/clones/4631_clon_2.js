@@ -1,54 +1,35 @@
-'use strict'; // Enforcing strict parsing rules within this script.
+'use strict';
 
-// Obtain the raw input data from the standard input stream.
-let sourceData = require("fs").readFileSync("/dev/stdin", "UTF-eight");
+// Obtain raw data from standard input
+let rawData = require("fs").readFileSync("/dev/stdin", "utf8");
 
-// Process the acquired data by dividing it into an array of strings, using the newline character as a delimiter.
-sourceData = sourceData.split(String.fromCharCode(0x0A));
+// Process the raw input by splitting it into lines
+rawData = rawData.split('\n');
 
-// Extract the second line of the input, split it by spaces, and convert each part into an integer.
-let numericSequence = sourceData[0x1].split("\u0020").map(
-  (itemValue) => {
-    // Explicitly convert each string item to its base-10 integer equivalent.
-    return parseInt(itemValue, 10);
-  }
-);
+// Parse the second line into an array of integers
+let numericSequence = rawData[1].split(' ').map(val => parseInt(val));
 
-// Initialize a counter for the number of trend reversals or distinct segments observed.
-// It starts at one because there's always at least one segment.
-let segmentCount = 0x1;
+// Initialize a counter for "pauses" or trend changes
+let breakCount = 1;
 
-// Initialize a variable to keep track of the established directional trend (slope).
-// A value of 0x0 indicates no trend is currently established for the segment.
-// 0x1 typically represents an increasing trend, while -0x1 represents a decreasing trend.
-let slopeDirection = 0x0;
+// Initialize a variable to track the current trend's sign (positive, negative, or neutral)
+let currentTrend = 0;
 
-// Iterate through the numeric sequence, commencing from the second element (index 0x1).
-for (
-  let loopIndex = 0x1;
-  loopIndex < numericSequence.length;
-  loopIndex++
-) {
-  // Calculate the sign of the difference between the preceding and current element.
-  // This determines the instantaneous direction of change (increasing, decreasing, or flat).
-  let instantaneousDirection = Math.sign(
-    numericSequence[loopIndex - 0x1] - numericSequence[loopIndex]
-  );
+// Iterate through the sequence starting from the second element
+for (let idx = 1; idx < numericSequence.length; idx++) {
+    // Determine the sign of the difference between the current and previous element
+    let recentDirection = Math.sign(numericSequence[idx - 1] - numericSequence[idx]);
 
-  // Evaluate if the instantaneous direction indicates a reversal of the established trend.
-  // A product less than 0x0 signifies opposite signs (e.g., increasing then decreasing).
-  if (instantaneousDirection * slopeDirection < 0x0) {
-    // If a trend reversal is detected, increment the segment counter.
-    segmentCount++;
-    // Reset the slope direction to 0x0, signifying the start of a new, undefined trend segment.
-    slopeDirection = 0x0;
-  }
-  // If no established slope direction exists for the current segment (it's the beginning of a new segment).
-  else if (slopeDirection === 0x0) {
-    // Establish the current instantaneous direction as the prevailing slope for this segment.
-    slopeDirection = instantaneousDirection;
-  }
+    // Check if the new direction is opposite to the established trend
+    if (recentDirection * currentTrend < 0) {
+        // If opposite, increment the break counter and reset the trend
+        breakCount++;
+        currentTrend = 0;
+    } else if (currentTrend === 0) {
+        // If there's no established trend, set the current trend to the new direction
+        currentTrend = recentDirection;
+    }
 }
 
-// Output the final computed number of segments to the console.
-console.log(segmentCount);
+// Output the final count of trend breaks
+console.log(breakCount);

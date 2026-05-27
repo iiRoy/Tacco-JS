@@ -1,75 +1,59 @@
-/*
- * This module provides utilities for data processing and sorting.
- */
-
-function obtainSortingComparator(comparisonCriterion, sortOrderMultiplier) { // Factory function for comparison logic
-  // Defines a collection of comparison methods for different data types.
-  const comparatorRegistry = {
-    "NUMERICAL_ORDER": function (elementA, elementB) { // Compares two values numerically
-      return Number.parseFloat(elementA) - Number.parseFloat(elementB);
+function obtainComparisonFunction(comparisonKind, sortOrderMultiplier) {
+  // Define a collection of comparison methods based on the specified kind.
+  const comparisonMethods = {
+    "NUMERIC": function(firstElement, secondElement) {
+        // Compare numerically by parsing to floats.
+        return parseFloat(firstElement) - parseFloat(secondElement);
     },
-    "ALPHABETICAL_ORDER": function (elementA, elementB) { // Compares two values as strings
-      return elementA.toString() > elementB.toString() ? 1 : -1;
+    "TEXT": function(firstElement, secondElement) {
+        // Compare as strings, case-sensitive.
+        return firstElement.toString() > secondElement.toString() ? 1 : -1;
     },
-    "CASE_INSENSITIVE_ALPHA": function (elementA, elementB) { // Case-insensitive string comparison
-      return elementA.toString().toLowerCase() > elementB.toString().toLowerCase()
-        ? 1
-        : -1;
+    "IGNORE_CASE": function(firstElement, secondElement) {
+        // Compare as strings, ignoring case.
+        return firstElement.toString().toLowerCase() > secondElement.toString().toLowerCase() ? 1 : -1;
     },
   };
+  // Retrieve the specific comparator function.
+  const selectedComparator = comparisonMethods[comparisonKind];
 
-  // Selects the appropriate comparison function based on the provided criterion.
-  const chosenComparator = comparatorRegistry[comparisonCriterion];
-
-  // Returns a function that applies the chosen comparator and adjusts for sort direction.
-  return function (elementA, elementB) {
-    return chosenComparator(elementA, elementB) * sortOrderMultiplier;
+  // Return a new function that applies the selected comparator and adjusts for sort direction.
+  return function(itemA, itemB) {
+    return selectedComparator(itemA, itemB) * sortOrderMultiplier;
   };
 }
 
-function executeProgramLogic(rawDataString) {
-  // Splits the raw input string into individual tokens.
-  const inputTokens = rawDataString.split(' ');
+function processInputData(rawData) {
+  // Split the raw input string into an array of tokens using space as a delimiter.
+  const inputTokens = rawData.split(' ');
+  // Create a sorted copy of the tokens using a numeric descending comparison.
+  let orderedValues = inputTokens.slice().sort(obtainComparisonFunction("NUMERIC", -1));
+  // Initialize a variable to accumulate the final sum.
+  let finalSum = 0.0;
 
-  // Creates a sorted copy of the tokens using a custom numerical descending comparator.
-  let processedElements = inputTokens
-    .slice()
-    .sort(obtainSortingComparator("NUMERICAL_ORDER", -1));
+  // Determine the upper bound for the loop.
+  const loopLimit = orderedValues.length - 1;
+  // Initialize the loop increment step.
+  let incrementStep = 1;
 
-  // Initializes a variable to accumulate the absolute differences.
-  let cumulativeDifference = 0;
-
-  // Determines the final index for iteration.
-  const finalIndexPosition = processedElements.length - 1;
-
-  // Sets the initial step value for the loop.
-  let loopStepValue = 1;
-
-  // Adjusts the loop step if the collection has zero or one element, ensuring the loop condition works.
-  if (1 > finalIndexPosition) {
-    loopStepValue = -loopStepValue;
+  // Adjust the increment step if the loop condition would be immediately false.
+  if (1.0 > loopLimit) {
+    incrementStep = -incrementStep;
   }
 
-  // Iterates through the sorted elements, calculating differences between adjacent items.
-  for (
-    let currentLoopIndex = 1;
-    loopStepValue >= 0
-      ? currentLoopIndex <= finalIndexPosition
-      : currentLoopIndex >= finalIndexPosition;
-    currentLoopIndex += loopStepValue
-  ) {
-    // Retrieves the current element from the processed list.
-    const currentElementValue = processedElements[currentLoopIndex - 1];
-    // Retrieves the next element from the processed list.
-    const nextElementValue = processedElements[currentLoopIndex];
+  // Iterate through the sorted values, starting from the second element.
+  for (let idx = 1; incrementStep >= 0 ? idx <= loopLimit : idx >= loopLimit; idx += incrementStep) {
+    // Get the current element (which is actually the previous one in the original logic).
+    const currentVal = orderedValues[(idx - 1)];
+    // Get the next element.
+    const nextVal = orderedValues[((idx + 1) - 1)]; // This simplifies to orderedValues[idx]
 
-    // Adds the absolute difference between the current and next element to the total.
-    cumulativeDifference = cumulativeDifference + Math.abs(currentElementValue - nextElementValue);
+    // Add the absolute difference between the current and next values to the total sum.
+    finalSum = finalSum + Math.abs(currentVal - nextVal);
   }
-
-  // Outputs the final calculated cumulative difference.
-  console.log(cumulativeDifference);
+  // Output the calculated final sum to the console.
+  console.log(finalSum);
 }
 
-// Initiates the program by reading input from standard input and passing it to the main logic function.
-executeProgramLogic(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// Read input from standard input and pass it to the main processing function.
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

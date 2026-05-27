@@ -1,17 +1,17 @@
-function evaluateRanges(incomingText) {
-    const numericSegments = incomingText.split(" ").map(Number);
+function ProcessInputData(rawData) {
+  const numericBounds = rawData.split(" ").map(Number);
 
-    const commencementPointA = numericSegments[0];
-    const terminationPointA = numericSegments[1];
-    const commencementPointB = numericSegments[2];
-    const terminationPointB = numericSegments[3];
+  const rangeOneLower = numericBounds[0];
+  const rangeOneUpper = numericBounds[1];
+  const rangeTwoLower = numericBounds[2];
+  const rangeTwoUpper = numericBounds[3];
 
-    const combinedStart = Math.max(commencementPointA, commencementPointB);
-    const combinedEnd = Math.min(terminationPointA, terminationPointB);
+  const commonStart = Math.max(rangeOneLower, rangeTwoLower);
+  const commonEnd = Math.min(rangeOneUpper, rangeTwoUpper);
 
-    const finalCount = Math.max(0, combinedEnd - combinedStart + 1);
+  const overlapCount = Math.max(0, commonEnd - commonStart + 1);
 
-    console.log(finalCount);
+  console.log(overlapCount);
 }
 
-evaluateRanges(require("node:fs").readFileSync(0, "utf8"));
+ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

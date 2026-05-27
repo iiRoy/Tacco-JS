@@ -1,73 +1,64 @@
-'use strict'; // Enforce strict mode for better coding practices
+'use strict'; // Enforce strict mode for cleaner code
 
 /**
- * Handles incoming raw textual data, performs computations, and outputs results.
- * @param {string} rawData The complete input string received from standard input.
+ * Processes the provided raw data to perform calculations and output results.
+ * @param {string} rawData - The entire input string from stdin.
  */
-function ProcessInput (rawData) {
-  // Extract the primary item count from the initial line of the input
-  const elementCount = parseInt(rawData.split('\n')[0], 10);
+function ProcessInput(rawData) {
+  // Parse the number of elements from the first line of input.
+  const countElements = Number(rawData.split('\n')[0]);
 
-  // Parse the connection details from subsequent lines (from index 1 up to elementCount - 1)
-  // Each line is processed into an array of string pairs
-  const connectionDetails = rawData
-    .split('\n')
-    .slice(1, elementCount)
-    .map(   currentLine => currentLine.split(' ')   );
+  // Extract connection data from subsequent lines, up to countElements.
+  // Each connection is represented as an array of two strings.
+  const connectionsData = rawData.split('\n').slice(1, countElements).map(currentVal => currentVal.split(' '));
 
-  // Obtain the array of numerical scores from the line specified by elementCount
-  const scoreValues = rawData
-    .split('\n')[elementCount]
-    .split(' ')
-    .map(   scoreString => parseInt(scoreString, 10)   );
+  // Extract numerical values from the line corresponding to countElements.
+  const valueList = rawData.split('\n')[countElements].split(' ').map(currentVal => Number(currentVal));
 
-  // Arrange the numerical scores in a descending order
-  scoreValues.sort( (firstScore, secondScore) => secondScore - firstScore );
+  // Sort the numerical values in descending order.
+  valueList.sort((itemA, itemB) => itemB - itemA);
 
+  // Calculate the sum of all values except the maximum value.
+  // This is achieved by summing all values and then subtracting the maximum.
+  const sumExcludingMax = valueList.reduce((accumulator, currentVal) => accumulator + currentVal) - Math.max(...valueList);
 
-  // Compute the total sum of all scores excluding the largest score
-  const totalSumMinusPeak = scoreValues.reduce( (accumulatedSum, currentScore) => accumulatedSum + currentScore ) - Math.max(...scoreValues);
-  console.log(totalSumMinusPeak); // Display the calculated sum
+  // Output the calculated sum.
+  console.log(sumExcludingMax);
 
-
-  // Initialize a collection of abstract item entities, each with a unique ID
-  const itemEntities = [];
-  for (let itemIdx = 0; itemIdx < elementCount; itemIdx++) {
-    itemEntities.push( { entityId : itemIdx + 1 } );
+  // Initialize an array to hold objects representing each element.
+  const elementObjects = [];
+  // Populate the elementObjects array with basic identifiers.
+  for (let idx = 0; idx < countElements; idx++) {
+    elementObjects.push({ "identifier": idx + 1 });
   }
 
-  // Establish a hierarchical depth for each item entity based on the connection details
-  // This simulates a tree structure where 'hierarchicalLevel' denotes depth
-  for (let linkIdx = 0; linkIdx < elementCount - 1; linkIdx++) {
-    const ancestorId = parseInt(connectionDetails[linkIdx][0], 10) - 1;
-    const descendantId  = parseInt(connectionDetails[linkIdx][1], 10) - 1;
-
-    // If the ancestor's depth isn't yet set, assign it a base level of 0
-    if ( itemEntities[ancestorId].hierarchicalLevel == null ) {
-      itemEntities[ancestorId].hierarchicalLevel = 0;
+  // Determine the hierarchy level for each element based on connections.
+  // This assumes a tree-like structure where the first element in a connection
+  // is the parent of the second, and its level is one less.
+  for (let connIdx = 0; connIdx < countElements - 1; connIdx++) {
+    // If the parent element's hierarchy level hasn't been set, initialize it to 0.
+    if (elementObjects[(Number(connectionsData[connIdx][0]) - 1)].hierarchyLevel == null) {
+      elementObjects[(Number(connectionsData[connIdx][0]) - 1)].hierarchyLevel = 0;
     }
-    // The descendant's depth is one greater than its ancestor's
-    itemEntities[descendantId].hierarchicalLevel = itemEntities[ancestorId].hierarchicalLevel + 1;
+    // Set the child element's hierarchy level based on its parent's level.
+    elementObjects[(Number(connectionsData[connIdx][1]) - 1)].hierarchyLevel = elementObjects[(Number(connectionsData[connIdx][0]) - 1)].hierarchyLevel + 1;
   }
 
-  // Arrange the item entities based on their computed hierarchical level
-  itemEntities.sort( (entityA, entityB) => entityA.hierarchicalLevel - entityB.hierarchicalLevel );
+  // Sort the element objects by their hierarchy level in ascending order.
+  elementObjects.sort((itemA, itemB) => itemA.hierarchyLevel - itemB.hierarchyLevel);
 
-  // Construct the final output array by mapping the sorted scores back to their original item positions
-  const finalSequenceOutput = [];
-  for (let iterationVar = 0; iterationVar < elementCount; iterationVar++) {
-    finalSequenceOutput[itemEntities[iterationVar].entityId - 1] = scoreValues[iterationVar];
+  // Create the final result sequence by mapping sorted values to sorted elements.
+  const resultSequence = [];
+  for (let finalIdx = 0; finalIdx < countElements; finalIdx++) {
+    // Assign values from the sorted valueList to the positions indicated by
+    // the identifiers of the sorted elementObjects.
+    resultSequence[elementObjects[finalIdx].identifier - 1] = valueList[finalIdx];
   }
 
-  // Print the final ordered sequence, with elements separated by single spaces
-  console.log(finalSequenceOutput.join(' '));
+  // Output the final sequence as a space-separated string.
+  console.log(resultSequence.join(' '));
+}
 
-} // End of ProcessInput function
-
-
-// Main execution entry point: reads input from standard in, processes it, and runs the logic
-ProcessInput(
-  require('node:fs')
-    .readFileSync('/dev/stdin', 'utf-8')
-    .trim()
-);
+// Read input from standard input, decode as UTF-8, and trim whitespace.
+// Then, pass the processed input to the main processing function.
+ProcessInput(require('fs').readFileSync('/dev/stdin', 'utf8').trim());

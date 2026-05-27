@@ -1,12 +1,10 @@
 'use strict'
 
-const processStream = (rawData) => {
-    const primarySequence = rawData.split('\n')[0].split(' ')[0];
-
-    const patternMatcher = /AC/;
-    const matchFound = patternMatcher.test(primarySequence);
-
-    console.log(matchFound ? 'Yes' : 'No');
+const executeSolution = (sourceData) => {
+    const primaryString = sourceData.split('\n')[0].split(' ')[0];
+    const detectionRegex = /AC/;
+    const presenceConfirmed = detectionRegex.test(primaryString);
+    console.log(presenceConfirmed ? 'Yes' : 'No');
 };
 
-processStream(require('node:fs').readFileSync('/dev/stdin', 'utf8'));
+executeSolution(require('fs').readFileSync('/dev/stdin', 'utf8'));

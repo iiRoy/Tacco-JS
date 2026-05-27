@@ -1,39 +1,38 @@
-// A different journey planner
 "use strict";
 
-const isDebugging = false;
-const initialData = isDebugging
+const DEBUG_FLAG = false;
+const sourceData = DEBUG_FLAG
   ? "2\n1 19"
   : require("fs")
       .readFileSync("/dev/stdin", "utf8")
       .trim();
 
-// Helper function to calculate the total cost of traversing a sequence of points
-const pathSegmentCost = (journeyPoints) => {
-  if (journeyPoints.length < 2) return 0; // A path needs at least two points to have a segment
-  return journeyPoints.slice(1).reduce((totalSegments, currentPosition, elementIndex) => {
-    const priorPosition = journeyPoints[elementIndex]; // The element at the original index before currentPosition
-    return totalSegments + Math.abs(currentPosition - priorPosition);
-  }, 0);
-};
+const analyzeTravelPlan = (inputPayload) => {
+  const inputLines = inputPayload.split("\n");
+  const pointCount = parseInt(inputLines[0], 10);
+  const pointCoordinates = inputLines[1].split(" ").map(Number);
 
-// Main processing function for the journey plans
-const routeProcessor = (inputSource) => {
-  const dataLines = inputSource.split("\n");
-  const cityQuantity = Number(dataLines[0]);
-  const cityLocations = dataLines[1].split(" ").map(Number);
+  const calculateSegmentSum = (pathPoints) => {
+    if (pathPoints.length < 2) {
+      return 0;
+    }
+    return pathPoints.slice(1).map((currentVal, index) => {
+      const priorVal = pathPoints[index];
+      return Math.abs(currentVal - priorVal);
+    }).reduce((accumulator, difference) => accumulator + difference, 0);
+  };
 
-  // For each potential city to omit, construct the modified path and calculate its cost
-  cityLocations.map((_, k) => { // Iterate through each city's index 'k' to determine which one to skip
-    // Construct a new journey path, starting at 0, visiting remaining cities, and ending at 0
-    const filteredLocations = [
-      0, // Implicit starting point
-      ...cityLocations.slice(0, k), // Cities before the one at index 'k'
-      ...cityLocations.slice(k + 1), // Cities after the one at index 'k'
-      0, // Implicit ending point
+  for (let skipIndex = 0; skipIndex < pointCount; skipIndex++) {
+    const modifiedPath = [
+      0,
+      ...pointCoordinates.slice(0, skipIndex),
+      ...pointCoordinates.slice(skipIndex + 1),
+      0,
     ];
-    console.log(pathSegmentCost(filteredLocations));
-  });
+
+    const currentPathTotal = calculateSegmentSum(modifiedPath);
+    console.log(currentPathTotal);
+  }
 };
 
-routeProcessor(initialData);
+analyzeTravelPlan(sourceData);

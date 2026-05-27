@@ -1,70 +1,74 @@
-const ioSettings = { /* Configuration for input/output operations */
-    sourcePath: '/dev/stdin',
-    lineDelimiter: '\n'
+const settings = {
+    sourcePath: '/dev/stdin', // Specifies the input file path
+    lineSeparator: '\n'      // Defines the character used to separate lines in the input
 };
 
-const inputLines = require('fs') .readFileSync(ioSettings.sourcePath, 'utf-8') .split(ioSettings.lineDelimiter);
+// Read the entire content of the input file, decode it as UTF-8, and split it into an array of lines.
+const inputLines = require('fs').readFileSync(settings.sourcePath, 'utf-8').split(settings.lineSeparator);
 
-let swapOperations = 0; /* Counts the total number of swaps/comparisons during sorting */
+let swapCount = 0; // Global counter for element movements during the sorting process
 
-/*
- * Executes a gapped insertion sort on the provided array.
- * @param {Array<number>} targetArray - The array to be sorted.
- * @param {number} gapSize - The gap (interval) for the insertion sort.
+/**
+ * Performs a g-insertion sort on a given array. This is a sub-routine for Shell Sort.
+ * @param {Array<number>} dataArray - The array of numbers to be partially sorted.
+ * @param {number} gapValue - The gap (increment) to use for this pass of insertion sort.
  */
-const gappedInsertionSort = (targetArray, gapSize) => {
-    for (let currentElementIndex = gapSize; currentElementIndex < targetArray.length; currentElementIndex++) {
-        const currentValue = targetArray[currentElementIndex]; // Store the current element
-        let scanIndex = currentElementIndex - gapSize;          // Initialize scan position
+const insertionSortGap = (dataArray, gapValue) => {
+    // Iterate through the array starting from the 'gapValue'-th element
+    for (let currentIdx = gapValue; currentIdx < dataArray.length; currentIdx++) {
+        const currentValue = dataArray[currentIdx]; // Store the current element to be inserted
+        let compareIndex = currentIdx - gapValue;   // Initialize the index for comparison, 'gapValue' positions back
 
-        // Move elements greater than currentValue forward by gapSize
-        while (scanIndex >= 0 && targetArray[scanIndex] > currentValue) {
-            targetArray[scanIndex + gapSize] = targetArray[scanIndex]; // Shift element
-            scanIndex -= gapSize;                                    // Move scan position
-            swapOperations++;                                        // Increment operation counter
+        // Shift elements that are greater than 'currentValue' to the right by 'gapValue' positions
+        while (compareIndex >= 0 && dataArray[compareIndex] > currentValue) {
+            dataArray[compareIndex + gapValue] = dataArray[compareIndex]; // Move element
+            compareIndex -= gapValue;                                    // Move to the next element in the g-sublist
+            swapCount++;                                                 // Increment the global movement counter
         }
-        targetArray[scanIndex + gapSize] = currentValue; // Place currentValue in its correct position
+        // Place 'currentValue' into its correct sorted position within the g-sublist
+        dataArray[compareIndex + gapValue] = currentValue;
     }
 };
 
-/*
- * Performs the Shell Sort algorithm on an array of numbers.
- * @param {Array<number>} inputCollection - The array to be sorted.
- * @returns {Array<number>} The sorted array.
+/**
+ * Implements the Shell Sort algorithm using a generated gap sequence.
+ * @param {Array<number>} targetArray - The array of numbers to be sorted.
+ * @returns {Array<number>} The array after it has been sorted.
  */
-const performShellSort = (inputCollection) => {
-
-    const gapSequence = [1]; // Initial gap value
-    /* Generate Knuth's gap sequence: h_k = 3 * h_{k-1} + 1 */
-    for (let sequenceIndex = 1; sequenceIndex < inputCollection.length; sequenceIndex++) {
-        const nextGapValue = 3 * gapSequence[sequenceIndex - 1] + 1;
-        if (nextGapValue > inputCollection.length) {
-            break; // Stop if the next gap is too large
+const performShellSort = (targetArray) => {
+    // Generate the gap sequence (using Knuth's formula: h_k = 3*h_{k-1} + 1)
+    const gapSequence = [1];
+    for (let sequenceIdx = 1; sequenceIdx < targetArray.length; sequenceIdx++) {
+        const nextGap = 3 * gapSequence[sequenceIdx - 1] + 1;
+        if (nextGap > targetArray.length) {
+            break; // Stop generating gaps if the next gap exceeds the array's length
         }
-        gapSequence.push(nextGapValue);
+        gapSequence.push(nextGap);
     }
 
-    // Output information about the generated gap sequence
+    // Output the number of gaps used and the gap sequence itself (reversed for sorting order)
     console.log(gapSequence.length);
-    console.log(gapSequence.reverse().map(elementValue => elementValue.toString()).join(' '));
+    console.log(gapSequence.reverse().map(item => item.toString()).join(' '));
 
-    /* Apply gapped insertion sort for each gap in the sequence */
-    for (let gapIteration = 0; gapIteration < gapSequence.length; gapIteration++) {
-        gappedInsertionSort(inputCollection, gapSequence[gapIteration]);
+    // Apply insertion sort for each gap in the sequence, from largest to smallest
+    for (let gapIdx = 0; gapIdx < gapSequence.length; gapIdx++) {
+        insertionSortGap(targetArray, gapSequence[gapIdx]);
     }
 
-    return inputCollection; // Return the sorted collection
+    return targetArray; // Return the array after all sorting passes are complete
 };
 
-// Parse the number of elements from the first line of input
-const numberOfElements = parseInt(inputLines[0]);
-// Extract the numerical data from subsequent lines
-const rawNumbers = inputLines.slice(1, numberOfElements + 1).map(elementValue => parseInt(elementValue));
+// Parse the number of elements from the first line of the input
+const elementCount = parseInt(inputLines[0]);
 
-// Sort the extracted numerical data using Shell Sort
-const finalSortedArray = performShellSort(rawNumbers);
+// Extract the actual data elements from the subsequent lines and convert them to integers
+const rawData = inputLines.slice(1, elementCount + 1).map(item => parseInt(item));
 
-// Output the total number of operations performed during sorting
-console.log(swapOperations);
-// Output the final sorted array, each number on a new line
-console.log(finalSortedArray.map(elementValue => elementValue.toString()).join('\n'));
+// Execute the Shell Sort algorithm on the prepared data
+const finalSortedArray = performShellSort(rawData);
+
+// Output the total number of element movements recorded during the sort
+console.log(swapCount);
+
+// Output the sorted array elements, each on a new line
+console.log(finalSortedArray.map(item => item.toString()).join('\n'));

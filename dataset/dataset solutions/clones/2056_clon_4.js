@@ -1,133 +1,99 @@
-const sumVectors = (vecA, vecB) => vecA.map((val, idx) => val + vecB[idx]);
+const combinePrefixArrays = (firstVector, secondVector) => firstVector.map((value, index) => value + secondVector[index]);
 
-const calculateColumnSegmentation = (segments, capacityThreshold, totalWidth) => {
-    const findOptimalColumnBreaks = (currentColumnIdx, segmentStartColumnIdx, verticalBreaksCount) => {
-        if (currentColumnIdx === totalWidth) {
-            return verticalBreaksCount;
+function* generateHorizontalPartitions(totalRows, allRowPrefixSums) {
+    const potentialCutPoints = totalRows - 1;
+    const totalConfigurations = 1 << potentialCutPoints;
+
+    for (let partitionIndex = 0; partitionIndex < totalConfigurations; partitionIndex++) {
+        let currentHorizontalCutCount = 0;
+        const currentCombinedSegments = [];
+        
+        currentCombinedSegments.push(allRowPrefixSums[0].slice());
+
+        for (let divisionBitIndex = 0; divisionBitIndex < potentialCutPoints; divisionBitIndex++) {
+            if ((partitionIndex >> divisionBitIndex) & 1) {
+                currentHorizontalCutCount++;
+                currentCombinedSegments.push(allRowPrefixSums[divisionBitIndex + 1].slice());
+            } else {
+                const lastSegmentIndex = currentCombinedSegments.length - 1;
+                currentCombinedSegments[lastSegmentIndex] = combinePrefixArrays(
+                    currentCombinedSegments[lastSegmentIndex],
+                    allRowPrefixSums[divisionBitIndex + 1]
+                );
+            }
         }
+        yield { mergedSegments: currentCombinedSegments, horizontalCuts: currentHorizontalCutCount };
+    }
+}
 
-        let exceedsThreshold = false;
-        for (const currentSegment of segments) {
-            if (currentSegment[currentColumnIdx + 1] - currentSegment[segmentStartColumnIdx] > capacityThreshold) {
-                exceedsThreshold = true;
+function determineVerticalCuts(segmentPrefixSums, maxAllowedSum, totalColumns) {
+    let currentColumnPosition = 1;
+    let verticalCutCount = 0;
+    
+    const segmentStartValues = Array(segmentPrefixSums.length).fill(0);
+
+    while (currentColumnPosition <= totalColumns) {
+        let requiresCut = false;
+        for (let segmentIndex = 0; segmentIndex < segmentPrefixSums.length; segmentIndex++) {
+            const currentSegmentSum = segmentPrefixSums[segmentIndex][currentColumnPosition] - segmentStartValues[segmentIndex];
+            if (currentSegmentSum > maxAllowedSum) {
+                requiresCut = true;
                 break;
             }
         }
 
-        if (exceedsThreshold) {
-            if (currentColumnIdx === segmentStartColumnIdx) {
-                return Infinity;
+        if (requiresCut) {
+            if (currentColumnPosition === 1) {
+                return null;
             }
-            return findOptimalColumnBreaks(currentColumnIdx, currentColumnIdx, verticalBreaksCount + 1);
+            verticalCutCount++;
+            for (let segmentIndex = 0; segmentIndex < segmentPrefixSums.length; segmentIndex++) {
+                segmentStartValues[segmentIndex] = segmentPrefixSums[segmentIndex][currentColumnPosition - 1];
+            }
         } else {
-            return findOptimalColumnBreaks(currentColumnIdx + 1, segmentStartColumnIdx, verticalBreaksCount);
+            currentColumnPosition++;
         }
-    };
+    }
+    return verticalCutCount;
+}
 
-    return findOptimalColumnBreaks(0, 0, 0);
-};
+function ProcessGridData(rawInputString) {
+    const inputLines = rawInputString.trim().split("\n").map(line => line.split(" "));
+    const [gridHeight, gridWidth, maxAllowedSum] = inputLines[0].map(Number);
 
-const exploreHorizontalDivisions = (
-    currentGridRowIdx,
-    currentMergedSections,
-    horizontalBreaksMade,
-    totalRows,
-    totalCols,
-    maxCapacity,
-    fullPrefixSumGrid
-) => {
-    if (currentGridRowIdx === totalRows) {
-        const requiredVerticalBreaks = calculateColumnSegmentation(currentMergedSections, maxCapacity, totalCols);
-        if (requiredVerticalBreaks === Infinity) {
-            return Infinity;
+    const gridValues = []; 
+    const rowCumulativeSums = [];
+
+    for (let rowIndex = 0; rowIndex < gridHeight; rowIndex++) {
+        const currentRowData = inputLines[rowIndex + 1][0].split("").map(Number);
+        gridValues.push(currentRowData);
+        
+        const currentCumulativeRow = [0];
+        let runningSumForCurrentRow = 0;
+        for (let columnIndex = 0; columnIndex < gridWidth; columnIndex++) {
+            runningSumForCurrentRow += currentRowData[columnIndex];
+            currentCumulativeRow.push(runningSumForCurrentRow);
         }
-        return horizontalBreaksMade + requiredVerticalBreaks;
+        rowCumulativeSums.push(currentCumulativeRow);
     }
+    return { gridHeight, gridWidth, maxAllowedSum, rowCumulativeSums };
+}
 
-    let overallMinimumBreaks = Infinity;
+function SolveProblem(inputString) {
+    const { gridHeight, gridWidth, maxAllowedSum, rowCumulativeSums } = ProcessGridData(inputString);
 
-    // Option 1: Do NOT make a horizontal cut
-    const mergedSectionsNoCut = currentMergedSections.map(arr => arr.slice());
-    const lastSectionIndex = mergedSectionsNoCut.length - 1;
-    mergedSectionsNoCut[lastSectionIndex] = sumVectors(
-        mergedSectionsNoCut[lastSectionIndex],
-        fullPrefixSumGrid[currentGridRowIdx]
-    );
+    let minimumTotalCuts = (gridHeight - 1) + (gridWidth - 1);
 
-    overallMinimumBreaks = Math.min(
-        overallMinimumBreaks,
-        exploreHorizontalDivisions(
-            currentGridRowIdx + 1,
-            mergedSectionsNoCut,
-            horizontalBreaksMade,
-            totalRows,
-            totalCols,
-            maxCapacity,
-            fullPrefixSumGrid
-        )
-    );
+    for (const partitionResult of generateHorizontalPartitions(gridHeight, rowCumulativeSums)) {
+        const { mergedSegments, horizontalCuts } = partitionResult;
+        
+        const verticalCuts = determineVerticalCuts(mergedSegments, maxAllowedSum, gridWidth);
 
-    // Option 2: MAKE a horizontal cut
-    const mergedSectionsWithCut = [
-        ...currentMergedSections,
-        fullPrefixSumGrid[currentGridRowIdx].slice()
-    ];
-
-    overallMinimumBreaks = Math.min(
-        overallMinimumBreaks,
-        exploreHorizontalDivisions(
-            currentGridRowIdx + 1,
-            mergedSectionsWithCut,
-            horizontalBreaksMade + 1,
-            totalRows,
-            totalCols,
-            maxCapacity,
-            fullPrefixSumGrid
-        )
-    );
-
-    return overallMinimumBreaks;
-};
-
-const processChocolateBar = (rawData) => {
-    const dataLines = rawData.trim().split('\n').filter(line => line.length > 0);
-
-    const [headerLine, ...gridContentLines] = dataLines;
-    const [numRows, numCols, maxAllowedCapacity] = headerLine.split(' ').map(Number);
-
-    const initialBinaryGrid = gridContentLines.map(rowString =>
-        rowString.split('').map(Number)
-    );
-
-    const cumulativeRowSums = initialBinaryGrid.map(row => {
-        let runningSum = 0;
-        const sumsArray = [0];
-        for (const cellValue of row) {
-            runningSum += cellValue;
-            sumsArray.push(runningSum);
+        if (verticalCuts !== null) {
+            minimumTotalCuts = Math.min(minimumTotalCuts, horizontalCuts + verticalCuts);
         }
-        return sumsArray;
-    });
-
-    if (numRows === 0) {
-        return 0;
     }
-    if (numRows === 1) {
-        return calculateColumnSegmentation([cumulativeRowSums[0]], maxAllowedCapacity, numCols);
-    }
+    console.log(minimumTotalCuts);
+}
 
-    const finalMinimumCuts = exploreHorizontalDivisions(
-        1,
-        [cumulativeRowSums[0]],
-        0,
-        numRows,
-        numCols,
-        maxAllowedCapacity,
-        cumulativeRowSums
-    );
-
-    return finalMinimumCuts;
-};
-
-// Example usage (assuming input is read from /dev/stdin in a competitive programming environment):
-// console.log(processChocolateBar(require("fs").readFileSync("/dev/stdin", "utf8")));
+SolveProblem(require("fs").readFileSync("/dev/stdin", "utf8"));

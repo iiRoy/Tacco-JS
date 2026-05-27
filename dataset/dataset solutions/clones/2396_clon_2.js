@@ -1,139 +1,191 @@
-module.exports=function(allModules){
-  var moduleCache={};
-  function loadModule(moduleId){
-    if(moduleCache[moduleId])
+module.exports = function (moduleDefinitions) {
+  var moduleCache = {};
+
+  function getModule(moduleId) {
+    if (moduleCache[moduleId]) {
       return moduleCache[moduleId].exports;
-    var currentModule=moduleCache[moduleId]={
-      ident:moduleId,
-      loaded:!1,
-      exports:{}
+    }
+
+    var moduleObject = moduleCache[moduleId] = {
+      id: moduleId,
+      loaded: false,
+      exports: {}
     };
-    allModules[moduleId].call(currentModule.exports,currentModule,currentModule.exports,loadModule);
-    currentModule.loaded=!0;
-    return currentModule.exports;
+
+    moduleDefinitions[moduleId].call(moduleObject.exports, moduleObject, moduleObject.exports, getModule);
+
+    moduleObject.loaded = true;
+    return moduleObject.exports;
   }
-  loadModule.moduleDefinitions=allModules;
-  loadModule.cachedModules=moduleCache;
-  loadModule.defineExport=function(targetObj,propertyName,getterFunc){
-    if(!loadModule.hasOwnProp(targetObj,propertyName))
-      Object.defineProperty(targetObj,propertyName,{enumerable:!0,get:getterFunc})
+
+  getModule.modules = moduleDefinitions;
+  getModule.cache = moduleCache;
+
+  getModule.defineExport = function (targetObject, propertyName, getterFunction) {
+    if (!getModule.hasOwn(targetObject, propertyName)) {
+      Object.defineProperty(targetObject, propertyName, {
+        enumerable: true,
+        get: getterFunction
+      });
+    }
   };
-  loadModule.registerESM=function(targetObject){
-    if("undefined"!=typeof Symbol&&Symbol.toStringTag)
-      Object.defineProperty(targetObject,Symbol.toStringTag,{value:"Module"});
-    Object.defineProperty(targetObject,"__esModule",{value:!0})
+
+  getModule.registerModule = function (targetModule) {
+    if (typeof Symbol !== "undefined" && Symbol.toStringTag) {
+      Object.defineProperty(targetModule, Symbol.toStringTag, {
+        value: "Module"
+      });
+    }
+    Object.defineProperty(targetModule, "__esModule", {
+      value: true
+    });
   };
-  loadModule.transformNamespace=function(sourceExports,flags){
-    if(1&flags&&(sourceExports=loadModule(sourceExports)),8&flags)
-      return sourceExports;
-    if(4&flags&&"object"==typeof sourceExports&&sourceExports&&sourceExports.__esModule)
-      return sourceExports;
-    var namespaceObject=Object.create(null);
-    loadModule.registerESM(namespaceObject);
-    Object.defineProperty(namespaceObject,"default",{enumerable:!0,value:sourceExports});
-    if(2&flags&&"string"!=typeof sourceExports)
-      for(var keyName in sourceExports)
-        loadModule.defineExport(namespaceObject,keyName,function(propName){return sourceExports[propName]}.bind(null,keyName));
+
+  getModule.createNamespace = function (value, mode) {
+    if (mode & 1) {
+      value = getModule(value);
+    }
+    if (mode & 8) {
+      return value;
+    }
+    if ((mode & 4) && typeof value === "object" && value && value.__esModule) {
+      return value;
+    }
+
+    var namespaceObject = Object.create(null);
+    getModule.registerModule(namespaceObject);
+    Object.defineProperty(namespaceObject, "default", {
+      enumerable: true,
+      value: value
+    });
+
+    if ((mode & 2) && typeof value !== "string") {
+      for (var key in value) {
+        getModule.defineExport(namespaceObject, key, (function (currentKey) {
+          return value[currentKey];
+        }).bind(null, key));
+      }
+    }
     return namespaceObject;
   };
-  loadModule.createGetter=function(moduleExports){
-    var getterFunc=moduleExports&&moduleExports.__esModule?
-      function(){return moduleExports.default}:
-      function(){return moduleExports};
-    loadModule.defineExport(getterFunc,"a",getterFunc);
-    return getterFunc;
+
+  getModule.getModuleDefault = function (module) {
+    var getter = module && module.__esModule ?
+      function () {
+        return module.default;
+      } :
+      function () {
+        return module;
+      };
+    getModule.defineExport(getter, "a", getter);
+    return getter;
   };
-  loadModule.hasOwnProp=function(obj,prop){
-    return Object.prototype.hasOwnProperty.call(obj,prop)
+
+  getModule.hasOwn = function (object, property) {
+    return Object.prototype.hasOwnProperty.call(object, property);
   };
-  loadModule.basePath="";
-  return loadModule(loadModule.startupModule=1);
+
+  getModule.publicPath = "";
+
+  return getModule(getModule.startupModule = 1);
 }([
-  function(modObj,modExports,modRequire){
+  function (currentModule, moduleExports, moduleRequire) {
     "use strict";
-    modObj.exports=class InputBuffer{
-      constructor(initialElements){
-        initialElements=arguments.length>0&&void 0!==initialElements?initialElements:[];
-        this.elementCount=initialElements.length;
-        this.dataStore=initialElements;
-        this.readIndex=0;
+    currentModule.exports = class DynamicQueue {
+      constructor() {
+        var initialElements = arguments.length > 0 && void 0 !== arguments[0] ? arguments[0] : [];
+        this.currentSize = initialElements.length;
+        this.elementList = initialElements;
+        this.currentIndex = 0;
       }
-      enqueue(itemToPush){
-        this.elementCount+=1;
-        this.dataStore.push(itemToPush);
+
+      enqueue(elementToAdd) {
+        this.currentSize += 1;
+        this.elementList.push(elementToAdd);
       }
-      dequeue(){
-        var retrievedItem=this.dataStore[this.readIndex];
-        this.elementCount-=1;
-        this.readIndex+=1;
-        return retrievedItem;
+
+      dequeue() {
+        var dequeuedElement = this.elementList[this.currentIndex];
+        this.currentSize -= 1;
+        this.currentIndex += 1;
+        return dequeuedElement;
       }
-      resetBuffer(){
-        this.dataStore=[];
-        this.elementCount=0;
-        this.readIndex=0;
+
+      resetQueue() {
+        this.elementList = [];
+        this.currentSize = 0;
+        this.currentIndex = 0;
       }
-    }
+    };
   },
-  function(modObj,modExports,modRequire){
+  function (currentModule, moduleExports, moduleRequire) {
     "use strict";
-    var fileSystemAccess=modRequire(2);
-    var processInputAndCompute=modRequire(3);
-    processInputAndCompute(fileSystemAccess.readFileSync("/dev/stdin","utf8"))
+    var fileSystemAccess = moduleRequire(2);
+    moduleRequire(3)(fileSystemAccess.readFileSync("/dev/stdin", "utf8"));
   },
-  function(moduleObj,exportsObj){
-    moduleObj.exports=require("fs")
+  function (currentModule, moduleExports) {
+    currentModule.exports = require("fs");
   },
-  function(modObj,modExports,modRequire){
+  function (currentModule, moduleExports, moduleRequire) {
     "use strict";
-    var parserClass=modRequire(4);
-    var solverFunction=modRequire(5);
-    modObj.exports=function(rawInputText){
-      var inputProcessor=new parserClass(rawInputText);
-      solverFunction(inputProcessor)
-    }
+    var InputProcessorClass = moduleRequire(4);
+    var problemSolverFunction = moduleRequire(5);
+    currentModule.exports = function (rawInputData) {
+      var inputProcessorInstance = new InputProcessorClass(rawInputData);
+      problemSolverFunction(inputProcessorInstance);
+    };
   },
-  function(modObj,modExports,modRequire){
+  function (currentModule, moduleExports, moduleRequire) {
     "use strict";
-    var bufferClass=modRequire(0);
-    modObj.exports=class InputParser{
-      constructor(sourceText){
-        var parsedTokens=sourceText.trim().split(/\s+/g);
-        this.tokenBuffer=new bufferClass(parsedTokens)
+    var QueueImplementation = moduleRequire(0);
+    currentModule.exports = class InputProcessorClass {
+      constructor(inputStringData) {
+        var tokenizedInputArray = inputStringData.trim().split(/\s+/g);
+        this.inputTokenQueue = new QueueImplementation(tokenizedInputArray);
       }
-      readRaw(){
-        return this.tokenBuffer.dequeue()
+
+      readNextString() {
+        return this.inputTokenQueue.dequeue();
       }
-      readInteger(){
-        return parseInt(this.tokenBuffer.dequeue(),10)
+
+      readNextInteger() {
+        return parseInt(this.inputTokenQueue.dequeue(), 10);
       }
-      finalizeParsing(){
-        this.tokenBuffer.resetBuffer()
+
+      clearInputBuffer() {
+        this.inputTokenQueue.resetQueue();
       }
-    }
+    };
   },
-  function(modObj,modExports,modRequire){
+  function (currentModule, moduleExports, moduleRequire) {
     "use strict";
-    modRequire(0);
-    modObj.exports=function(inputHandler){
-      var nodeCount=inputHandler.readInteger();
-      var parentOccurrences=new Array(nodeCount).fill(0);
-      var childMaxOccurrences=new Array(nodeCount).fill(0);
-      var resultPath=new Array(nodeCount-1);
-      var maximumCount=0;
-      for(var loopIterator=0;loopIterator<nodeCount-1;loopIterator++){
-        var parentNodeIdx=inputHandler.readInteger()-1;
-        var childNodeIdx=inputHandler.readInteger()-1;
-        parentOccurrences[parentNodeIdx]++;
-        if(parentOccurrences[parentNodeIdx]===childMaxOccurrences[parentNodeIdx])
-          parentOccurrences[parentNodeIdx]++;
-        maximumCount=Math.max(maximumCount,parentOccurrences[parentNodeIdx]);
-        childMaxOccurrences[childNodeIdx]=parentOccurrences[parentNodeIdx];
-        resultPath[loopIterator]=parentOccurrences[parentNodeIdx]
+    moduleRequire(0); // Ensure QueueImplementation is loaded, though not directly used here.
+    currentModule.exports = function (inputHandler) {
+      var numberOfNodes = inputHandler.readNextInteger();
+      var nodeDegrees = new Array(numberOfNodes).fill(0);
+      var nodeParentColors = new Array(numberOfNodes).fill(0);
+      var edgeAssignedColors = new Array(numberOfNodes - 1);
+      var maximumColorValue = 0;
+
+      for (var currentEdgeIndex = 0; currentEdgeIndex < numberOfNodes - 1; currentEdgeIndex++) {
+        var firstNode = inputHandler.readNextInteger() - 1;
+        var secondNode = inputHandler.readNextInteger() - 1;
+
+        nodeDegrees[firstNode]++;
+        if (nodeDegrees[firstNode] === nodeParentColors[firstNode]) {
+          nodeDegrees[firstNode]++;
+        }
+
+        maximumColorValue = Math.max(maximumColorValue, nodeDegrees[firstNode]);
+        nodeParentColors[secondNode] = nodeDegrees[firstNode];
+        edgeAssignedColors[currentEdgeIndex] = nodeDegrees[firstNode];
       }
-      console.log(maximumCount);
-      for(var outputIterator=0;outputIterator<nodeCount-1;outputIterator++)
-        console.log(resultPath[outputIterator])
-    }
+
+      console.log(maximumColorValue);
+
+      for (var outputLoopIndex = 0; outputLoopIndex < numberOfNodes - 1; outputLoopIndex++) {
+        console.log(edgeAssignedColors[outputLoopIndex]);
+      }
+    };
   }
 ]);

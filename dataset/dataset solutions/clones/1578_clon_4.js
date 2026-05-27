@@ -1,33 +1,27 @@
-const streamProcessor = require('readline').createInterface({
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
+
+const inputLines = [];
+const lineProcessor = require('readline').createInterface({
   input: process.stdin,
   output: process.stdout
 });
 
-const receivedSegments = [];
-
-streamProcessor.on('line', (dataSegment) => {
-  receivedSegments.push(dataSegment);
+lineProcessor.on('line', (currentLine) => {
+  inputLines.push(currentLine);
 });
 
-streamProcessor.on('close', () => {
-  const initialCount = Number(receivedSegments[0]);
+lineProcessor.on('close', () => {
+  const countElements = parseInt(inputLines[0], 10);
+  const elementStrings = inputLines[1].split(' ');
+  
+  const numericElements = elementStrings.map(Number);
 
-  const numericalSequence = receivedSegments[1]
-    .split(' ')
-    .slice(0, initialCount)
-    .map(Number);
+  const finalResult = numericElements.slice(0, countElements).reduce((accumulator, currentElement) => {
+    const newPeak = Math.max(accumulator.runningMax, currentElement);
+    const newSum = accumulator.totalDifference + (newPeak - currentElement);
+    return { runningMax: newPeak, totalDifference: newSum };
+  }, { runningMax: 0, totalDifference: 0 });
 
-  const calculationOutcome = numericalSequence.reduce((accumulator, currentValue) => {
-    const highestSoFar = Math.max(accumulator.highestValue, currentValue);
-    const accumulatedDifference = accumulator.totalDifference + (highestSoFar - currentValue);
-    return {
-      totalDifference: accumulatedDifference,
-      highestValue: highestSoFar
-    };
-  }, { totalDifference: 0, highestValue: 0 });
-
-  console.log(calculationOutcome.totalDifference);
+  console.log(finalResult.totalDifference);
 });
-
-process.stdin.resume();
-process.stdin.setEncoding('utf8');

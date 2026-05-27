@@ -1,20 +1,16 @@
 'use strict';
-const processInput = (sourcePayload) => {
-  const numericals = sourcePayload[0].split(' ').reduce((accumulator, currentElement) => {
-    accumulator.push(Number(currentElement));
-    return accumulator;
-  }, []);
+const processInput = rawData => {
+  const parsedValues = rawData[0].split(' ').map(item => Number(item));
+  const firstNum = parsedValues[0];
+  const secondNum = parsedValues[1];
 
-  const primaryValue = numericals[0];
-  const secondaryValue = numericals[1];
+  const firstRepeated = String(firstNum).repeat(secondNum);
+  const secondRepeated = String(secondNum).repeat(firstNum);
 
-  const stringConstructA = Array.from({ length: secondaryValue }, () => String(primaryValue)).join('');
-  const stringConstructB = Array.from({ length: primaryValue }, () => String(secondaryValue)).join('');
-
-  if (primaryValue > secondaryValue) {
-    console.log(stringConstructB);
+  if (firstNum > secondNum) {
+    console.log(secondRepeated);
   } else {
-    console.log(stringConstructA);
+    console.log(firstRepeated);
   }
 };
 

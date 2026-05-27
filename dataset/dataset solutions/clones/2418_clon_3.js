@@ -1,103 +1,61 @@
-// Helper for managing I/O operations through readline interface
-const inputManager = require("readline").createInterface({
-  input: process.stdin,
-  output: process.stdout
-});
+"use strict";
 
-const QUERY_INDICATOR = "? ";
-const RESULT_INDICATOR = "! ";
-const COLOR_RED = "R";
-const COLOR_BLUE = "B";
+const inputReader = require("readline").createInterface(process.stdin, process.stdout);
 
-const interactiveProblemSolver = (function* () {
-  const obtainInputLine = () => {
-    inputManager.once("line", inputString => {
-      interactiveProblemSolver.next(inputString);
-    });
-    return undefined;
-  };
+const mainLogicGenerator = (function* () {
+  const readNextLine = () => inputReader.once("line", (lineContent) => mainLogicGenerator.next(lineContent));
 
-  let problemSize = parseInt(yield obtainInputLine(), 10);
+  let numElementsRaw = yield readNextLine();
+  const numElements = +numElementsRaw;
 
-  if (isNaN(problemSize) || problemSize <= 0) {
-    console.error("Error: Invalid problem size received. Exiting.");
-    inputManager.close();
-    return;
+  const currentPermutation = [];
+  for (let idx = 1; idx <= numElements; idx++) {
+    currentPermutation[idx - 1] = idx;
   }
+  console.log("?", currentPermutation.join(" "));
 
-  const initialQueryArray = Array.from({
-    length: problemSize
-  }, (_, index) => index + 1);
-
-  console.log(QUERY_INDICATOR + initialQueryArray.join(" "));
-
-  const firstFeedback = yield obtainInputLine();
-
+  const initialResponse = yield readNextLine();
   let pivotIndex = 1;
 
   while (true) {
-    const currentTestArray = [...initialQueryArray];
-    currentTestArray[pivotIndex - 1] = pivotIndex + problemSize;
-
-    console.log(QUERY_INDICATOR + currentTestArray.join(" "));
-
-    const currentFeedback = yield obtainInputLine();
-
-    if (firstFeedback[0] !== currentFeedback[0]) {
+    currentPermutation[pivotIndex - 1] = pivotIndex + numElements;
+    console.log("?", currentPermutation.join(" "));
+    const currentResponse = yield readNextLine();
+    if (initialResponse[0] !== currentResponse[0]) {
       break;
     }
-
     pivotIndex++;
-
-    if (pivotIndex > problemSize * 2) {
-      console.warn("Warning: Pivot index exceeded expected range. Breaking loop.");
-      break;
-    }
   }
 
-  const finalSolutionSequence = new Array(2 * problemSize);
+  const finalResult = [];
+  const modifiedPermutation = [];
+  const pivotIndicesSet = new Set();
+  const lastElementIndex = numElements - 1;
+  const totalRange = 2 * numElements;
 
-  const patternA = new Array(problemSize - 1);
-  const patternB = new Array(problemSize - 1);
-
-  const valuesIncludedInPatternA = new Set();
-
-  for (let queryIdx = 0; queryIdx < problemSize - 1; queryIdx++) {
-    const valA = pivotIndex + queryIdx;
-    patternA[queryIdx] = valA;
-    patternB[queryIdx] = (valA + problemSize) % (2 * problemSize);
-    if (patternB[queryIdx] === 0) patternB[queryIdx] = 2 * problemSize;
-    valuesIncludedInPatternA.add(valA);
+  for (let idx = 0; idx < lastElementIndex; idx++) {
+    currentPermutation[idx] = pivotIndex + idx;
+    modifiedPermutation[idx] = (currentPermutation[idx] + numElements) % totalRange;
+    pivotIndicesSet.add(idx + pivotIndex);
   }
 
-  const totalPossibleValues = 2 * problemSize;
-  for (let currentVal = 1; currentVal <= totalPossibleValues; currentVal++) {
-    let activeQueryPattern = [];
-    let finalElementToAppend;
+  const getResultChar = (responseString) => (responseString[0] === "R" ? "R" : "B");
 
-    const isValueInPatternA = valuesIncludedInPatternA.has(currentVal);
-
-    if (isValueInPatternA) {
-      activeQueryPattern = [...patternB];
-      finalElementToAppend = currentVal;
+  for (let idx = 1; idx <= totalRange; idx++) {
+    if (pivotIndicesSet.has(idx)) {
+      modifiedPermutation[lastElementIndex] = idx;
+      console.log("?", modifiedPermutation.join(" "));
+      const responseForQ = yield readNextLine();
+      finalResult[idx - 1] = getResultChar(responseForQ);
     } else {
-      activeQueryPattern = [...patternA];
-      finalElementToAppend = currentVal;
+      currentPermutation[lastElementIndex] = idx;
+      console.log("?", currentPermutation.join(" "));
+      const responseForP = yield readNextLine();
+      finalResult[idx - 1] = getResultChar(responseForP);
     }
-
-    activeQueryPattern.push(finalElementToAppend);
-
-    console.log(QUERY_INDICATOR + activeQueryPattern.join(" "));
-
-    const probeResponse = yield obtainInputLine();
-
-    finalSolutionSequence[currentVal - 1] = (probeResponse[0] === COLOR_RED) ? COLOR_RED : COLOR_BLUE;
   }
 
-  console.log(RESULT_INDICATOR + finalSolutionSequence.join(""));
-
-  inputManager.close();
-
+  console.log("!", finalResult.join(""));
 })();
 
-interactiveProblemSolver.next();
+mainLogicGenerator.next();

@@ -1,34 +1,27 @@
-function performCheck(dataBlock) {
-    const positiveOutcome = "Yes";
-    const negativeOutcome = "No";
-    const secretSequence = ["Y", "A", "K", "I"];
-
-    const firstSegmentMatch = dataBlock.match(/^[^\n]*/);
-    let initialLine = "";
-    if (firstSegmentMatch && firstSegmentMatch[0] !== undefined) {
-        initialLine = firstSegmentMatch[0];
+function processStream(dataPayload) {
+    let currentLineSegment = '';
+    for (let charPosition = 0; charPosition < dataPayload.length; charPosition++) {
+        if (dataPayload[charPosition] === '\n') {
+            break;
+        }
+        currentLineSegment += dataPayload[charPosition];
     }
 
-    let isMatch = true;
+    let outcomeIndicator = false;
+    const targetSequence = "YAKI";
 
-    if (initialLine.length < secretSequence.length) {
-        isMatch = false;
-    } else {
-        for (let i = 0; i < secretSequence.length; i++) {
-            if (initialLine.charAt(i) !== secretSequence[i]) {
-                isMatch = false;
+    if (currentLineSegment.length >= targetSequence.length) {
+        let sequenceMatches = true;
+        for (let idx = 0; idx < targetSequence.length; idx++) {
+            if (currentLineSegment[idx] !== targetSequence[idx]) {
+                sequenceMatches = false;
                 break;
             }
         }
+        outcomeIndicator = sequenceMatches;
     }
 
-    if (isMatch) {
-        console.log(positiveOutcome);
-    } else {
-        console.log(negativeOutcome);
-    }
+    console.log(outcomeIndicator ? "Yes" : "No");
 }
 
-const acquireSourceData = () => require("fs").readFileSync("/dev/stdin", "utf8");
-const processSource = (source) => performCheck(source);
-processSource(acquireSourceData());
+processStream(require("fs").readFileSync("/dev/stdin", "utf8"));

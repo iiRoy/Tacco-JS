@@ -1,41 +1,48 @@
-function computeNumericPath( sourceSequence ) {
-    var temporaryList = [ ] ;
+function processInput(rawData) {
+    // This array is declared but not used in the current logic.
+    let dataItems = [];
 
-    var firstVal = parseInt( sourceSequence.charAt( 0 ) ) ;
-    var secondVal = parseInt( sourceSequence.charAt( 1 ) ) ;
-    var thirdVal = parseInt( sourceSequence.charAt( 2 ) ) ;
-    var fourthVal = parseInt( sourceSequence.charAt( 3 ) ) ;
+    // Extract and convert the first four characters of the input string to numbers.
+    const valA = Number(rawData.charAt(0));
+    const valB = Number(rawData.charAt(1));
+    const valC = Number(rawData.charAt(2));
+    const valD = Number(rawData.charAt(3));
 
-    for ( var operatorConfig = 0 ; operatorConfig < 8 ; operatorConfig++ ) {
+    // Iterate through all 8 possible combinations of binary operators.
+    // Each 'operationIndex' from 0 to 7 represents a unique set of signs for the expression.
+    for (let operationIndex = 0; operationIndex < 8; operationIndex++) {
+        // Output specific intermediate values based on the current operation index.
+        // These values are derived from bitwise operations and are critical for the algorithm's behavior.
+        console.log((operationIndex & 1) * 2, (operationIndex & 2), (operationIndex & 4) / 2);
 
-        console.log(
-            ( operatorConfig & 1 ) * 2 ,
-            ( operatorConfig & 2 ) ,
-            ( operatorConfig & 4 ) / 2
-        ) ;
-
+        // Evaluate the arithmetic expression using the current combination of signs.
+        // The terms (1 - (operationIndex & X) * Y) effectively switch between +1 and -1.
+        // For valB: (operationIndex & 1) determines its sign.
+        // For valC: (operationIndex & 2) determines its sign.
+        // For valD: (operationIndex & 4) determines its sign.
         if (
-            firstVal +
-            secondVal * ( 1 - ( operatorConfig & 1 ) * 2 ) +
-            thirdVal * ( 1 - ( operatorConfig & 2 ) ) +
-            fourthVal * ( 1 - ( operatorConfig & 4 ) / 2 )
-            === 7
+            valA +
+            valB * (1 - (operationIndex & 1) * 2) +
+            valC * (1 - (operationIndex & 2)) +
+            valD * (1 - (operationIndex & 4) / 2) === 7
         ) {
+            // If the expression evaluates to 7, construct the result string with the correct operators.
+            // The ternary operators (operationIndex & X) ? '-' : '+' select the appropriate sign.
             return (
-                firstVal + ( ( operatorConfig & 1 ) ? '-' : '+' ) + secondVal +
-                ( ( operatorConfig & 2 ) ? '-' : '+' ) + thirdVal +
-                ( ( operatorConfig & 4 ) ? '-' : '+' ) + fourthVal +
+                valA +
+                ((operationIndex & 1) ? '-' : '+') +
+                valB +
+                ((operationIndex & 2) ? '-' : '+') +
+                valC +
+                ((operationIndex & 4) ? '-' : '+') +
+                valD +
                 '=7'
-            ) ;
+            );
         }
     }
+    // If no combination results in 7, the function will implicitly return undefined.
 }
 
-console.log(
-    computeNumericPath(
-        require("fs").readFileSync(
-            '/system/input_data' ,
-            'text_encoding_type'
-        )
-    )
-) ;
+// Read the entire content of standard input as a UTF-8 string,
+// then pass it to the processing function and print its return value to standard output.
+console.log(processInput(require("fs").readFileSync("/dev/stdin", "utf8")));

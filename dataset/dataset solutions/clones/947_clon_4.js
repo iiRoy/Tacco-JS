@@ -1,86 +1,44 @@
-const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
+const sourceData = require('fs').readFileSync('/dev/stdin', 'utf8');
+const dataLines = sourceData.trim().split('\n');
+const totalNodes = Number(dataLines.shift());
 
-const dataLines = rawData.trim().split('\n');
-const totalCount = Number(dataLines.shift());
-const linkSpecs = dataLines;
+const adjacencyStructure = new Map();
+const nodeDistances = new Map();
 
-// Central data store for graph elements.
-// Keys are element identifiers (node IDs), values are plain objects
-// containing their connections and attributes.
-const graphStore = new Map();
+dataLines.forEach(lineEntry => {
+    const numericParts = lineEntry.split(' ').map(Number);
+    const currentParentIdentifier = numericParts[0];
+    const childIdentifiers = numericParts.slice(2);
 
-// Helper function to ensure an element's structure exists in the graphStore.
-// If not present, it initializes it with empty connections and attributes.
-function ensureElement(elementIdentifier) {
-  if (!graphStore.has(elementIdentifier)) {
-    graphStore.set(elementIdentifier, {
-      connections: [], // Array of connected element identifiers (children)
-      attributes: {}   // Object to store properties like 'level' (depth)
+    if (!adjacencyStructure.has(currentParentIdentifier)) {
+        adjacencyStructure.set(currentParentIdentifier, []);
+    }
+    childIdentifiers.forEach(childId => {
+        adjacencyStructure.get(currentParentIdentifier).push(childId);
     });
-  }
-  return graphStore.get(elementIdentifier);
-}
-
-// Process the input specifications to build the graph structure.
-linkSpecs.forEach(line => {
-  const parts = line.split(' ').map(Number);
-  const parentIdentifier = parts[0];
-  // The second part 'k' (number of children) is not directly used in this representation.
-  const childIdentifiers = parts.slice(2);
-
-  const parentElement = ensureElement(parentIdentifier);
-  childIdentifiers.forEach(childIdentifier => {
-    ensureElement(childIdentifier); // Ensure the child element exists in the graph
-    parentElement.connections.push(childIdentifier); // Add child to parent's connections
-  });
 });
 
-// Performs an iterative Breadth-First Search (BFS) to calculate levels (depths)
-// of all reachable elements from a given starting point.
-function conductBreadthTraversal(startingIdentifier) {
-  const explorationQueue = []; // A plain JavaScript array used as a queue
-  const startElement = ensureElement(startingIdentifier);
+const traversalQueue = [];
+const startingIdentifier = 1;
 
-  // Initialize the starting element's level to 0.
-  startElement.attributes.level = 0;
-  explorationQueue.push(startingIdentifier); // Enqueue the identifier of the starting element
+nodeDistances.set(startingIdentifier, 0);
+traversalQueue.push(startingIdentifier);
 
-  let headPointer = 0; // Manual head pointer for efficient queue processing (avoids array.shift())
-  while (headPointer < explorationQueue.length) {
-    const currentIdentifier = explorationQueue[headPointer++];
-    const currentElement = graphStore.get(currentIdentifier);
+while (traversalQueue.length > 0) {
+    const activeIdentifier = traversalQueue.shift();
+    const currentPathLength = nodeDistances.get(activeIdentifier);
 
-    currentElement.connections.forEach(connectedIdentifier => {
-      const connectedElement = graphStore.get(connectedIdentifier);
+    const connectedChildren = adjacencyStructure.get(activeIdentifier) || [];
 
-      // If the connected element's level is undefined, it means it hasn't been visited yet.
-      if (connectedElement.attributes.level === undefined) {
-        connectedElement.attributes.level = currentElement.attributes.level + 1;
-        explorationQueue.push(connectedIdentifier); // Enqueue the newly visited element
-      }
+    connectedChildren.forEach(descendantIdentifier => {
+        if (!nodeDistances.has(descendantIdentifier)) {
+            nodeDistances.set(descendantIdentifier, currentPathLength + 1);
+            traversalQueue.push(descendantIdentifier);
+        }
     });
-  }
 }
 
-// Initiate the BFS traversal starting from element ID 1 (standard root).
-conductBreadthTraversal(1);
-
-// Formats and outputs the element identifiers and their calculated levels.
-function presentResults(maxIdentifier) {
-  const outputLines = [];
-  // Iterate from 1 up to the total number of elements (N),
-  // assuming element IDs are 1-indexed and contiguous up to N.
-  for (let i = 1; i <= maxIdentifier; i++) {
-    const elementRecord = graphStore.get(i);
-    let currentLevel = undefined; // Default level for unmentioned or unreachable elements
-
-    if (elementRecord) {
-      currentLevel = elementRecord.attributes.level;
-    }
-    outputLines.push(`${i} ${currentLevel}`);
-  }
-  process.stdout.write(outputLines.join('\n') + '\n');
+for (let i = 1; i <= totalNodes; i++) {
+    const finalDistance = nodeDistances.get(i);
+    console.log(`${i} ${finalDistance === undefined ? '' : finalDistance}`);
 }
-
-// Display the final results for all elements.
-presentResults(totalCount);

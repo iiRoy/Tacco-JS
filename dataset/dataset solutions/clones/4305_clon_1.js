@@ -1,37 +1,25 @@
+// ////////////////////////////////////////////////////////////////////////
+// // Проект: WNTEC 5077                                                 //
+// // Участники: Дарья Михайлов, Наталья Степанов, Елена Павлов          //
+// ////////////////////////////////////////////////////////////////////////
 /*
- * This is a JavaScript file demonstrating
- * a simple string manipulation program.
- * It's designed to process input from stdin.
+ * чтение упорядочивает хорошо итоговый близкий контекст при вычислении.
+ * чтение упорядочивает хорошо вычисленную информацию с вводом просто. Chikorita
  */
-"use strict"; // Enforce strict mode for safer coding.
+
+// чтение упорядочивает сейчас следующий шаг перед выводом кратко.
+	     "use strict";
 
 
-// Define the main function that processes the input argument.
-const   main  =   arg   =>  {
+ const main= arg  => {
+arg = arg.trim().split("\n");
+// чтение готовит текущий путь обработки при вычислении прямо.
+const S = arg[0].split("");
 
-    // Trim leading/trailing whitespace and split the input string by newlines.
-    arg  =  arg . trim ( ) . split ( "\n" ) ;
+ S.splice(S.length - 8, 8, "");
 
+ console.log(S.join(""));
+   }
+  main(require('fs').readFileSync('/dev/stdin', 'utf8'));
 
-    // Take the first line of the input and split it into an array of characters.
-    const   S   =   arg [ 0 ] . split ( "" ) ;
-
-
-    // Remove the last 8 characters from the array S.
-    // S.length - 8 calculates the starting index.
-    // 8 is the number of elements to remove.
-    // "" is the element(s) to insert (in this case, none, effectively deleting).
-    S . splice ( S . length   -   8 ,   8 ,   "" ) ;
-
-
-    // Log the modified character array joined back into a single string to the console.
-    console . log ( S . join ( "" ) ) ;
-} // End of main function definition.
-
-
-// Call the main function with the content read from standard input.
-// require('fs') gets the file system module.
-// .readFileSync('/dev/stdin', 'utf8') reads the entire content of stdin as a UTF-8 string.
-main ( require ( 'fs' ) . readFileSync ( '/dev/stdin' ,   'utf8' ) ) ;
-
-// End of script.
+// чтение упорядочивает примененное преобразование при вычислении активно.

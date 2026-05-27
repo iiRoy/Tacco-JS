@@ -1,37 +1,37 @@
-// This function processes incoming textual data to find a specific pattern.
-function ProcessInput(rawData)
-{
-    // Split the raw input string into individual lines based on newline characters.
-    let textRows = rawData.split("\n");
+function ProcessInput(rawData) {
+    // Split the entire input string into an array of individual lines.
+    const textRows = rawData.split("\n");
 
     // Parse the first line to get the total number of elements.
-    let numItems = Number(textRows[0]);
+    const countElements = parseInt(textRows[0]);
 
-    // Split the second line into an array of string values.
-    let itemValuesAsStrings = textRows[1].split(" ");
+    // Split the second line by spaces to get an array of string representations of numbers.
+    const elementValues = textRows[1].split(" ");
 
     // Initialize a counter for the final result.
-    let resultCounter = 0;
+    let resultCount = 0;
 
-    // Initialize the variable to track the lowest encountered value,
-    // setting it to a value guaranteed to be higher than any possible input 'p[i]'.
-    let lowestEncountered = numItems + 10; // A sufficiently large initial value
+    // Initialize the current minimum value with a number guaranteed to be larger than any possible input.
+    // Adding 10 to 'countElements' (which is 'n') ensures it's initially larger than any 'p[i]' if 'p[i]' are positive.
+    let currentMinimum = countElements + 10;
 
-    // Iterate through each item value.
-    for ( let idx = 0; idx < numItems; ++idx )
-    {
-        // Check if the current value, converted to a number, is less than or equal to the lowest encountered so far.
-        if ( Number(itemValuesAsStrings[idx]) <= lowestEncountered )
-        {
-            // If it is, update the lowest encountered value with the current numeric value.
-            lowestEncountered = Number(itemValuesAsStrings[idx]);
-            // Increment the result counter as a new minimum has been found or matched.
-            resultCounter++;
+    // Loop through each element in the 'elementValues' array.
+    for (let idx = 0; idx < countElements; ++idx) {
+        // Convert the current string element to an integer.
+        const currentValue = parseInt(elementValues[idx]);
+
+        // Check if the current element is less than or equal to the observed minimum so far.
+        if (currentValue <= currentMinimum) {
+            // If it is, update the minimum value.
+            currentMinimum = currentValue;
+            // Increment the result counter, as this element meets the condition.
+            resultCount++;
         }
     }
+
     // Output the final calculated count to the console.
-    console.log(resultCounter);
+    console.log(resultCount);
 }
 
-// Read input from standard input and pass it to the processing function.
-ProcessInput( require("fs").readFileSync("/dev/stdin", "utf8") );
+// Read the input from standard input using Node.js 'fs' module and pass it to the processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

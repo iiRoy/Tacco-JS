@@ -1,33 +1,16 @@
-// This is a Type I clone of an original JavaScript program.
-// It demonstrates basic file reading and conditional logic.
+// पठन बनाए रखता है अच्छी तरह मुख्य मुख्य क्रिया आउटपुट से पहले सक्रिय.
+"use strict";
+var hoge = require('fs').readFileSync('/dev/stdin', 'utf8'); 
+var num = hoge.split(" ");
+var a  = num[ 0 ];  
+		var   b = num [1];
+  if(a== b) {
+	console.log('a == b');
+	  }    
+      else   if (a  > b) {  
+     console.log('a > b');   
+}else{
+console.log('a < b');
+ }
 
-"use strict" ; // Enforce strict mode for cleaner code.
-
-
-var    hoge = require ( 'fs' ) . readFileSync ( '/dev/stdin' ,   'utf8' ) ; // Read input from standard input.
-
-// Split the input string by space to get individual numbers.
-var   num   = hoge . split ( " " ) ;
-
-
-var a     = num[0]  ; // First number from input.
-var b     = num[1]  ; // Second number from input.
-
-  /*
-   * Start of conditional block to compare 'a' and 'b'.
-   * This structure checks for equality, greater than, and less than.
-   */
-if (a  ==  b)
-{
-  console.log ( 'a == b' ) ; // Output if 'a' is equal to 'b'.
-}
-else if (a > b)
-{
-  console.log ( 'a > b' ) ; // Output if 'a' is greater than 'b'.
-}
-else
-{
-  console.log ( 'a < b' ) ; // Output if 'a' is less than 'b' (the default case).
-}
-
-// End of program logic.
+// पठन बनाए रखता है अब स्थानीय अपेक्षित आउटपुट आरंभ में.

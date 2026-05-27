@@ -1,116 +1,122 @@
-const FindPrimesUpToLimit = (upperBound) => {
-    // Create a boolean array to mark composite numbers
-    let isMarked = (new Array(upperBound + 1)).fill(false);
-    // This array will store all prime numbers found
-    let collectedPrimes = [];
+const PrimeSieveGenerator = (limitVal) => {
+    // Initialize an array to track numbers that have been sieved
+    let markedStatus = (new Array(limitVal)).fill(0);
+    // This array will store the prime numbers found
+    let primeNumbersList = [];
 
     // Iterate from 2 up to the square root of the limit
-    for (let currentNumber = 2; currentNumber * currentNumber <= upperBound; currentNumber++) {
-        // If currentNumber is not marked, it's a prime
-        if (!isMarked[currentNumber]) {
-            collectedPrimes.push(currentNumber);
-            // Mark all multiples of currentNumber as composite
-            for (let multiple = currentNumber; multiple * currentNumber <= upperBound; multiple += currentNumber) {
-                isMarked[multiple] = true;
+    for (let idx = 2; idx * idx <= limitVal; idx++) {
+        // If the current number hasn't been marked (i.e., it's prime)
+        if (!markedStatus[idx]) {
+            // Add it to our list of primes
+            primeNumbersList.push(idx);
+            // Mark all its multiples as not prime
+            for (let mult = idx; mult * mult <= limitVal; mult += idx) {
+                markedStatus[mult] = 1; // Mark as sieved
             }
         }
     }
-    // Return the list of identified primes
-    return collectedPrimes;
+    // Return the collected prime numbers
+    return primeNumbersList;
 };
 
-const DecomposeIntoPrimeFactors = (valueToFactor, knownPrimeList) => {
-    // Initialize an object to store prime factors and their counts
-    let factorCounts = {};
+const FactorizeWithPrimes = (targetNum, primeCollection) => {
+    // Object to store the prime factors and their counts
+    let primeFactorCounts = {};
 
-    // Iterate through the list of known primes
-    knownPrimeList.some(primeCandidate => {
-        // If the value is smaller than the current prime, no further primes can be factors
-        if (valueToFactor < primeCandidate) return true;
+    // Iterate through the provided prime numbers
+    primeCollection.some(currentPrime => {
+        // If the target number becomes smaller than the current prime,
+        // no further primes in the list can be factors.
+        if (targetNum < currentPrime) return true;
 
-        // While the current prime divides the value, count it and reduce the value
-        while (valueToFactor % primeCandidate === 0) {
-            if (!factorCounts[primeCandidate]) {
-                factorCounts[primeCandidate] = 1;
+        // While the current prime divides the target number
+        while (targetNum % currentPrime === 0) {
+            // Increment its count in the factors object
+            if (!primeFactorCounts[currentPrime]) {
+                primeFactorCounts[currentPrime] = 1;
             } else {
-                factorCounts[primeCandidate]++;
+                primeFactorCounts[currentPrime]++;
             }
-            valueToFactor /= primeCandidate;
+            // Divide the target number by the prime
+            targetNum /= currentPrime;
         }
-        // Continue to the next prime candidate
-        return false;
     });
 
-    // If any value remains after division, it's a prime factor itself
-    if (valueToFactor > 1) {
-        factorCounts[valueToFactor] = 1;
+    // If after all divisions, the target number is still greater than 1,
+    // it means the remaining number is a prime factor itself.
+    if (targetNum > 1) {
+        primeFactorCounts[targetNum] = 1;
     }
-    // Return the mapping of prime factors to their exponents
-    return factorCounts;
+    // Return the object containing prime factors and their exponents
+    return primeFactorCounts;
 };
 
-const CalculateGreatestCommonDivisor = (firstOperand, secondOperand) => {
-    // Base case: if the second operand is zero, the first is the GCD
-    if (secondOperand === 0) return firstOperand;
-    // Base case: if the first operand is zero, the second is the GCD
-    else if (firstOperand === 0) return secondOperand;
-    // Recursive step using Euclidean algorithm
-    return CalculateGreatestCommonDivisor(secondOperand, firstOperand % secondOperand);
+
+const CalculateGreatestCommonDivisor = (valA, valB) => {
+    // Base case: if valB is zero, valA is the GCD
+    if (valB === 0) return valA;
+    // Base case: if valA is zero, valB is the GCD
+    else if (valA === 0) return valB;
+    // Recursive step: use Euclidean algorithm
+    return CalculateGreatestCommonDivisor(valB, valA % valB);
 };
 
-const ExecuteProgram = (inputDataString) => {
-    // Parse the total count of numbers from the input string
-    const itemCount = Number(inputDataString.split("\n")[0]);
-    // Parse the list of numbers from the input string
-    const integerList = inputDataString.split("\n")[1].split(" ").map(Number);
+const ExecuteMainLogic = (inputData) => {
+    // Parse the number of elements from the first line of input
+    const countElements = Number(inputData.split("\n")[0]);
+    // Parse the array of numbers from the second line of input
+    const inputArray = inputData.split("\n")[1].split(" ").map(Number);
 
-    // Define the maximum possible value for numbers in the list
-    const maximumValueAllowed = 10 ** 6 + 1;
+    // Define a maximum value for the sieve, slightly larger than 10^6
+    const maximumValueLimit = 10 ** 6 + 1;
 
-    // Generate all primes up to the maximum value using the Sieve method
-    const generatedPrimes = FindPrimesUpToLimit(maximumValueAllowed);
+    // Generate primes up to maximumValueLimit using the Sieve of Eratosthenes
+    const generatedPrimes = PrimeSieveGenerator(maximumValueLimit);
 
-    // Initialize an array to track if a prime factor has appeared in any number
-    let factorOccurrenceTracker = (new Array(maximumValueAllowed)).fill(false);
-    // Flag to determine if all numbers are pairwise coprime
-    let areNumbersMutuallyPrime = true;
+    // Initialize an array to track the presence of prime factors
+    let factorPresenceTracker = [...new Array(maximumValueLimit)].fill(0);
+    // Flag to determine if the numbers are pairwise coprime
+    let arePairwiseCoprime = true;
 
-    // Iterate through each number in the input list
-    for (let outerIndex = 0; outerIndex < itemCount; outerIndex++) {
-        // Get the unique prime factors for the current number
-        const currentNumberFactors = Object.keys(DecomposeIntoPrimeFactors(integerList[outerIndex], generatedPrimes));
-        
-        // Check each prime factor
-        for (let innerIndex = 0; innerIndex < currentNumberFactors.length; innerIndex++) {
-            // If this prime factor has been seen before
-            if (factorOccurrenceTracker[currentNumberFactors[innerIndex]] === true) {
-                areNumbersMutuallyPrime = false; // They are not pairwise coprime
+    // Iterate through each number in the input array
+    for (let idx = 0; idx < countElements; idx++) {
+        // Get the prime factors of the current number
+        const currentNumFactors = Object.keys(FactorizeWithPrimes(inputArray[idx], generatedPrimes));
+
+        // Iterate through each prime factor found
+        for (let factorIdx = 0; factorIdx < currentNumFactors.length; factorIdx++) {
+            // If this prime factor has already been seen in a previous number
+            if (factorPresenceTracker[currentNumFactors[factorIdx]] === 1) {
+                arePairwiseCoprime = false; // They are not pairwise coprime
             }
             // Mark this prime factor as seen
-            factorOccurrenceTracker[currentNumberFactors[innerIndex]] = true;
+            factorPresenceTracker[currentNumFactors[factorIdx]] = 1;
         }
     }
 
-    // If the numbers are pairwise coprime, print the result and exit
-    if (areNumbersMutuallyPrime) {
+    // If the flag is still true, all numbers are pairwise coprime
+    if (arePairwiseCoprime) {
         console.log("pairwise coprime");
         return;
     }
 
-    // Calculate the greatest common divisor for all numbers in the list
-    let overallGcdResult = 0; // Start with 0 for cumulative GCD calculation
-    for (let outerIndex = 0; outerIndex < integerList.length; outerIndex++) {
-        overallGcdResult = CalculateGreatestCommonDivisor(overallGcdResult, integerList[outerIndex]);
+    // If not pairwise coprime, check for setwise coprime
+    // Calculate the greatest common divisor of all numbers in the array
+    let overallGCD = 0;
+    for (let idx = 0; idx < inputArray.length; idx++) {
+        overallGCD = CalculateGreatestCommonDivisor(overallGCD, inputArray[idx]);
     }
 
     // If the overall GCD is 1, they are setwise coprime
-    if (overallGcdResult === 1) {
+    if (overallGCD === 1) {
         console.log("setwise coprime");
         return;
     }
 
-    // If neither condition is met, they are not coprime
+    // If neither pairwise nor setwise coprime
     console.log("not coprime");
 };
 
-ExecuteProgram(require("node:fs").readFileSync("/dev/stdin", "utf8"));
+// Read input from stdin and execute the main logic
+ExecuteMainLogic(require("fs").readFileSync("/dev/stdin", "utf8"));

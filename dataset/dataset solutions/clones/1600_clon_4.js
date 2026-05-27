@@ -1,44 +1,55 @@
 'use strict';
-function assessGeometricShape(dimensionsList) {
-    const largestSide = Math.max(dimensionsList[0], dimensionsList[1], dimensionsList[2]);
-    const smallestSide = Math.min(dimensionsList[0], dimensionsList[1], dimensionsList[2]);
-    const middleSide = dimensionsList[0] + dimensionsList[1] + dimensionsList[2] - largestSide - smallestSide;
 
-    return (smallestSide + middleSide > largestSide) &&
-           (largestSide !== middleSide && middleSide !== smallestSide);
+function assessTriangleValidity(sideDimensions) {
+    const [firstSide, secondSide, thirdSide] = sideDimensions;
+
+    const largestDimension = Math.max(firstSide, secondSide, thirdSide);
+    const smallestDimension = Math.min(firstSide, secondSide, thirdSide);
+    const middleDimension = firstSide + secondSide + thirdSide - largestDimension - smallestDimension;
+
+    const inequalityCondition = largestDimension < middleDimension + smallestDimension;
+    const distinctnessCondition = largestDimension !== middleDimension && middleDimension !== smallestDimension;
+
+    return inequalityCondition && distinctnessCondition;
 }
 
-function processInput(payload) {
-    const contentLines = payload.split("\n");
-    const totalCount = Number(contentLines[0]);
-    const lengthValues = contentLines[1].split(' ').map(Number);
-
-    const finalTally = { count: 0 };
-
-    function retrieveElements(startPoint, currentGroup) {
-        if (currentGroup.length === 3) {
-            if (assessGeometricShape(currentGroup)) {
-                finalTally.count++;
-            }
-            return;
-        }
-
-        if (startPoint >= totalCount) {
-            return;
-        }
-        
-        if (currentGroup.length + (totalCount - startPoint) < 3) {
-             return;
-        }
-
-        retrieveElements(startPoint + 1, [...currentGroup, lengthValues[startPoint]]);
-
-        retrieveElements(startPoint + 1, currentGroup);
+function* generateCombinationsOfThree(sourceCollection, currentPosition = 0, currentSelection = []) {
+    if (currentSelection.length === 3) {
+        yield currentSelection;
+        return;
+    }
+    if (currentPosition >= sourceCollection.length) {
+        return;
     }
 
-    retrieveElements(0, []);
+    const remainingNeeded = 3 - currentSelection.length;
+    const remainingAvailable = sourceCollection.length - currentPosition;
 
-    console.log(finalTally.count);
+    // Option 1: Include the element at currentPosition
+    if (remainingAvailable >= remainingNeeded) {
+        yield* generateCombinationsOfThree(sourceCollection, currentPosition + 1, [...currentSelection, sourceCollection[currentPosition]]);
+    }
+
+    // Option 2: Exclude the element at currentPosition
+    if (remainingAvailable - 1 >= remainingNeeded) {
+        yield* generateCombinationsOfThree(sourceCollection, currentPosition + 1, currentSelection);
+    }
 }
 
-processInput(require("fs").readFileSync("/dev/stdin", "utf8"));
+function analyzeTriangleData(inputContent) {
+    const contentLines = inputContent.split("\n");
+    const totalSideCount = Number(contentLines[0]);
+    const sideLengthValues = contentLines[1].split(' ').map(Number);
+
+    let goodTriangleCounter = 0;
+
+    for (const triplet of generateCombinationsOfThree(sideLengthValues)) {
+        if (assessTriangleValidity(triplet)) {
+            goodTriangleCounter++;
+        }
+    }
+
+    console.log(goodTriangleCounter);
+}
+
+analyzeTriangleData(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,48 +1,41 @@
-const handleInputSequence = (inputLines) => {
-  // This section extracts and converts the initial configuration values.
-  let [totalElements, operationCount] = inputLines[0].split(' ').map(numStr => +numStr);
+const handleInputData = (inputLines) => {
+  // Parse the first line to get two numeric values
+  let [firstNum, secondNum] = inputLines[0].split(' ').map(valStr => +valStr);
 
-  // The logic diverges based on the parity of the first numerical input.
-  if (totalElements % 2 === 1) { // If totalElements is an odd value
-    let rightPointer = totalElements - 1; // Set the upper bound for the pair generation.
-    let leftPointer = 1; // Establish the lower bound.
+  // Check if the first number is odd
+  if (firstNum % 2 !== 0) {
+    let rightVal = firstNum - 1; // Initialize the upper bound for odd case
+    let leftVal = 1;             // Initialize the lower bound for odd case
 
-    // Iterate to generate the required number of output pairs.
-    while (operationCount) {
-      console.log(`${leftPointer++} ${rightPointer--}`); // Output the current pair and adjust pointers.
-      operationCount--; // Decrement the remaining operation count.
+    // Loop while the second number is positive
+    while (secondNum > 0) {
+      console.log(`${leftVal++} ${rightVal--}`); // Print and update values
+      secondNum--;                               // Decrement the counter
+    }
+  } else {
+    let rightVal = firstNum / 2 + 1; // Initialize the upper bound for even case
+    let leftVal = firstNum / 2;      // Initialize the lower bound for even case
+
+    // Loop while the second number is positive
+    while (secondNum > 0) {
+      console.log(`${leftVal--} ${rightVal++}`); // Print and update values
+      secondNum--;                               // Decrement the counter
     }
   }
-  else { // If totalElements is an even value
-    let rightPointer = totalElements / 2 + 1; // Initialize the right-side iterator.
-    let leftPointer = totalElements / 2; // Initialize the left-side iterator.
+};
 
-    // Continue pairing until the operation counter reaches zero.
-    while (operationCount > 0) {
-      console.log(`${leftPointer--} ${rightPointer++}`); // Print the mirrored pair and update iterators.
-      operationCount--; // Reduce the number of pending operations.
-    }
-  }
-}; // End of the main sequence handler.
+// Buffer to accumulate input from stdin
+let inputBuffer = '';
 
+// Attach a listener for incoming data chunks
+process.stdin.on('data', chunk => {
+  inputBuffer += chunk; // Append chunk to the buffer
+});
 
-// This variable will accumulate all incoming standard input data.
-let receivedData = '';
-
-// Register an event listener to append data chunks from standard input.
-process
-  .stdin
-  .on('data', chunkPiece => {
-    receivedData += chunkPiece; // Concatenate the incoming data chunk.
-  });
-
-// Register an event listener for when all standard input has been received.
-process
-  .stdin
-  .on('end', () => {
-    const { EOL: lineSeparator } = require('os'); // Dynamically retrieve the system's end-of-line character.
-    // Split the entire accumulated input string into an array of individual lines.
-    const inputLines = receivedData.split(lineSeparator);
-    // Invoke the primary function to process the parsed input lines.
-    handleInputSequence(inputLines);
-  });
+// Attach a listener for the end of input stream
+process.stdin.on('end', () => {
+  const { EOL: lineSeparator } = require('os'); // Get the system's end-of-line character
+  // Split the accumulated input into an array of lines
+  const parsedLines = inputBuffer.split(lineSeparator);
+  handleInputData(parsedLines); // Process the input lines
+});

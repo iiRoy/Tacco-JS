@@ -1,98 +1,110 @@
 "use strict";
 
-// This class provides functionality to parse input text,
-// allowing retrieval of values either token by token or line by line.
-function TextParser( sourceText, typeConverter ) {
-  // Internal storage for the input text, split into an array of lines.
-  this._textLines = sourceText.split("\n");
-
-  // Keeps track of the current token's position within the active line.
-  this._tokenIndex = 0;
-
-  // Maintains the index of the current line being processed from the input.
-  this._lineIndex = 0;
-
-  // A function used to convert extracted tokens to a desired data type.
-  // Defaults to the built-in Number conversion if not specified.
-  this._valueConverter = typeConverter || Number;
+/**
+ * A specialized utility class designed for parsing textual input data.
+ * It facilitates reading values sequentially from a multi-line string,
+ * with an option to apply a type conversion function to each extracted token.
+ *
+ * @param {string} sourceTextContent - The complete string content to be parsed, typically from a file.
+ * @param {Function} valueTransformationFunction - An optional function to convert parsed tokens (e.g., Number, String).
+ */
+function DataInputParser(sourceTextContent, valueTransformationFunction) {
+  // Internally stores the input string, broken down into an array of individual lines.
+  this._sourceLinesArray = sourceTextContent.split("\n");
+  // Keeps track of the current token's index within the active line.
+  this._currentTokenIndex = 0;
+  // Maintains the index of the current line being processed.
+  this._currentLineNumber = 0;
+  // The function used to transform extracted string tokens into their desired data type.
+  // Defaults to the global Number constructor if no specific function is provided.
+  this._tokenConverter = valueTransformationFunction || Number;
 }
 
-// Prototype method to fetch the subsequent individual data value (token).
-TextParser.prototype.nextValue = function() {
-  // Retrieve the string content of the current line based on _lineIndex.
-  var currentLineContent = this._textLines[this._lineIndex];
+/**
+ * Extracts and returns the next available token from the input stream.
+ * This method automatically advances the internal pointers to prepare for the subsequent read.
+ *
+ * @returns {*} The next token, after being processed by the configured transformation function,
+ *              or `undefined` if there are no more tokens left to parse.
+ */
+DataInputParser.prototype.fetchNextToken = function() {
+  // Retrieve the string content of the current line being examined.
+  let currentLineString = this._sourceLinesArray[this._currentLineNumber];
 
-  // If the current line is empty or undefined, there are no more values to read.
-  if ( ! currentLineContent ) {
+  // If the current line is empty or we've exhausted all lines, there's nothing more to read.
+  if (!currentLineString) {
     return;
   }
 
-  // Process the current line: trim leading/trailing whitespace and split into tokens.
-  var lineTokens = currentLineContent.trim().split(" ");
+  // Trim leading/trailing whitespace from the line and split it into an array of tokens using space as a delimiter.
+  let lineTokensArray = currentLineString.trim().split(" ");
+  // Select the token corresponding to the current token index.
+  let extractedTokenString = lineTokensArray[this._currentTokenIndex];
 
-  // Extract the specific token at the current _tokenIndex.
-  var extractedToken = lineTokens[this._tokenIndex];
-
-  // Increment the token index to point to the next token for the subsequent call.
-  this._tokenIndex++;
+  // Increment the token index to point to the next token for future calls.
+  this._currentTokenIndex++;
 
   // Check if all tokens on the current line have been consumed.
-  if ( lineTokens.length === this._tokenIndex ) {
-    // If so, reset the token index and advance to the next line in the input.
-    this._tokenIndex = 0;
-    this._lineIndex++;
+  if (lineTokensArray.length === this._currentTokenIndex) {
+    // If so, reset the token index and move to the next line.
+    this._currentTokenIndex = 0;
+    this._currentLineNumber++;
   }
 
-  // Apply the stored _valueConverter function to the extracted token and return the result.
-  return this._valueConverter(extractedToken);
+  // Apply the configured transformation function to the extracted token string and return the result.
+  return this._tokenConverter(extractedTokenString);
 };
 
-// Prototype method to retrieve all data values (tokens) present on the current line.
-TextParser.prototype.allValuesInLine = function() {
-  // Obtain the full string content of the line at the current _lineIndex.
-  var currentLineContent = this._textLines[this._lineIndex];
+/**
+ * Reads all tokens from the current line, applies the transformation function to each,
+ * and then advances the parser to the subsequent line.
+ *
+ * @returns {Array<*>} An array containing all transformed tokens from the current line,
+ *                     or `undefined` if there are no more lines to process.
+ */
+DataInputParser.prototype.readAllLineTokens = function() {
+  // Obtain the full string content of the current line.
+  let entireLineContent = this._sourceLinesArray[this._currentLineNumber];
 
-  // If the line content is non-existent, there's nothing to return.
-  if ( ! currentLineContent ) {
+  // If the current line is empty or we've run out of lines, return nothing.
+  if (!entireLineContent) {
     return;
   }
 
-  // Reset the token index as this method processes the entire line at once.
-  this._tokenIndex = 0;
+  // When reading an entire line, the column index is effectively reset.
+  this._currentTokenIndex = 0;
+  // Advance the line number to move to the next line for subsequent operations.
+  this._currentLineNumber++;
 
-  // Move to the next line immediately after processing the current one.
-  this._lineIndex++;
-
-  // Split the line into tokens, then apply the _valueConverter to each token,
-  // returning an array of converted values.
-  return currentLineContent.split(" ").map(this._valueConverter);
+  // Split the line by spaces and use the token converter to map each string token to its desired type.
+  return entireLineContent.split(" ").map(this._tokenConverter);
 };
 
-// Expose the TextParser class for consumption by other JavaScript modules.
-module.exports = TextParser;
+// Make the DataInputParser class available for import in other modules.
+module.exports = DataInputParser;
 
-// The primary function responsible for executing the application's core logic.
-function executeLogic( sourceInput ) {
-  // Instantiate the TextParser to handle the provided sourceInput.
-  // Values will be parsed as strings in this specific use case.
-  const dataHandler = new TextParser(sourceInput, String);
+/**
+ * The primary execution function that orchestrates the input processing logic.
+ * This function reads a single character and outputs its DNA base complement.
+ *
+ * @param {string} rawInputData - The raw string data received from the input source.
+ */
+function executeMainProcessing(rawInputData) {
+  // Instantiate the parser, configuring it to treat all extracted tokens as strings.
+  const inputReader = new DataInputParser(rawInputData, String);
 
-  // Retrieve the very first token from the input stream.
-  const extractedChar = dataHandler.nextValue();
+  // Fetch the very first token (which is expected to be a single DNA base character).
+  const dnaBaseChar = inputReader.fetchNextToken();
 
-  // Define a mapping for DNA base complements.
-  // Use the extracted character as a key to find its corresponding complement
-  // and output it to the console.
+  // Output the complementary DNA base character to the console.
+  // The object acts as a lookup table for base complements.
   console.log({
-    A: "T",
-    C: "G",
-    G: "C",
-    T: "A"
-  }[extractedChar]);
-
+    A: "T", // Adenine's complement is Thymine.
+    C: "G", // Cytosine's complement is Guanine.
+    G: "C", // Guanine's complement is Cytosine.
+    T: "A"  // Thymine's complement is Adenine.
+  }[dnaBaseChar]); // Use the input character as a key to retrieve its complement.
 }
 
-
-// Initiate the program by calling executeLogic.
-// It reads input from standard input (/dev/stdin) as a UTF-8 encoded string.
-executeLogic(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Invoke the main processing function, feeding it data read synchronously from standard input.
+executeMainProcessing(require("fs").readFileSync("/dev/stdin", "utf8"));

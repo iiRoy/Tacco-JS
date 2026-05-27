@@ -1,42 +1,43 @@
-const dataFeed = require('node:fs').readFileSync('/dev/stdin', 'utf8');
-const numericEntries = dataFeed.trim().split('\n').map(Number);
+function* createNumberStream(sourceText) {
+    const contentLines = sourceText.trim().split('\n');
+    for (const lineEntry of contentLines) {
+        yield Number(lineEntry);
+    }
+}
 
-function processInputSequence(allValues, currentOffset) {
-    const chunkLength = allValues[currentOffset];
-    if (chunkLength === 0) {
-        return [];
+const rawInputContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+const numericStream = createNumberStream(rawInputContent);
+
+let currentBatchSize;
+do {
+    currentBatchSize = numericStream.next().value;
+    if (currentBatchSize === 0) {
+        break;
     }
 
-    const currentChunkValues = allValues.slice(currentOffset + 1, currentOffset + 1 + chunkLength);
+    const batchValues = Array.from({ length: currentBatchSize }, () => numericStream.next().value);
 
-    const tallyForChunk = calculateZeroCountForBlock(currentChunkValues);
-
-    const remainingResults = processInputSequence(allValues, currentOffset + 1 + chunkLength);
-    return [tallyForChunk, ...remainingResults];
-}
-
-function calculateZeroCountForBlock(blockElements) {
-    const finalState = blockElements.reduce((accumulator, elementValue, position) => {
-        const nextStateToggle = !accumulator.stateToggle;
-
-        let nextSequence;
-        if (nextStateToggle) {
-            nextSequence = [...accumulator.sequence, elementValue];
+    const resultantSequence = batchValues.reduce((accumulatedElements, currentElement, elementPosition) => {
+        if (elementPosition % 2 === 0) {
+            accumulatedElements.push(currentElement);
         } else {
-            const lastStoredElement = accumulator.sequence[accumulator.sequence.length - 1];
-            if (lastStoredElement === elementValue) {
-                nextSequence = [...accumulator.sequence, elementValue];
+            if (accumulatedElements.length > 0 && accumulatedElements[accumulatedElements.length - 1] === currentElement) {
+                accumulatedElements.push(currentElement);
             } else {
-                nextSequence = Array(position + 1).fill(elementValue);
+                accumulatedElements.push(currentElement);
+                let fillStartIndex = accumulatedElements.length - 2;
+                while (fillStartIndex >= 0 && accumulatedElements[fillStartIndex] !== currentElement) {
+                    fillStartIndex--;
+                }
+                for (let fillIndex = fillStartIndex + 1; fillIndex < accumulatedElements.length - 1; fillIndex++) {
+                    accumulatedElements[fillIndex] = currentElement;
+                }
             }
         }
-        return { sequence: nextSequence, stateToggle: nextStateToggle };
-    }, { sequence: [], stateToggle: false });
+        return accumulatedElements;
+    }, []);
 
-    const processedSequence = finalState.sequence;
-    const zeroTally = processedSequence.filter(val => val === 0).length;
-    return zeroTally;
-}
+    const zeroOccurrences = resultantSequence.filter(val => val === 0).length;
+    console.log(zeroOccurrences);
 
-const allZeroCounts = processInputSequence(numericEntries, 0);
-allZeroCounts.forEach(count => console.log(count));
+} while (true);

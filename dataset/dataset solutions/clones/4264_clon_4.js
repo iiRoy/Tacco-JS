@@ -1,21 +1,19 @@
-function obtainSmallestSumOfDigits(sourceText) {
-    const initialLineContent = sourceText.split('\n')[0];
-    const baseMultiplierValue = Number.parseInt(initialLineContent.split(' ')[0], 10);
+function processInput(sourceText) {
+  const lineSegments = sourceText.split('\n');
+  const initialValue = Number(lineSegments.shift().split(' ')[0]);
 
-    const finalMinimumSum = Array.from({ length: 100000 }, (_, idx) => idx + 1)
-        .reduce((currentMin, cycleCount) => {
-            const calculatedProduct = baseMultiplierValue * cycleCount;
+  const computeDigitSum = (numberValue) => {
+    return String(numberValue).split('').reduce((accumulator, digitChar) => accumulator + Number(digitChar), 0);
+  };
 
-            let numericalValue = calculatedProduct;
-            let digitTotal = 0;
-            while (numericalValue > 0) {
-                digitTotal += numericalValue % 10;
-                numericalValue = Math.floor(numericalValue / 10);
-            }
-            return Math.min(currentMin, digitTotal);
-        }, Number.POSITIVE_INFINITY);
+  const minimumSum = Array.from({ length: 100000 }, (_, index) => index + 1)
+    .reduce((currentMin, multiplier) => {
+      const product = initialValue * multiplier;
+      const sumOfDigits = computeDigitSum(product);
+      return Math.min(currentMin, sumOfDigits);
+    }, Infinity);
 
-    console.log(finalMinimumSum);
+  console.log(minimumSum);
 }
 
-obtainSmallestSumOfDigits(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

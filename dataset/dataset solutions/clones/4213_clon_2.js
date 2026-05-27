@@ -1,38 +1,29 @@
-// This function examines a given data source for specific patterns.
-function ProcessInput( dataSource ) {
-
-  // Check for a specific initial condition.
-  if  (  dataSource  ===  String(1000)  )
-  {
-    console.log ( 'Affirmative' ) ;  // Output positive confirmation.
-    return; // Exit early if condition met.
+function ProcessInput(dataString) {
+  // Check for a specific initial string value
+  if (dataString === '1000') {
+    console.log('Yes');
+    return;
   }
 
-  /*
-   * Iterate through a range of numeric values to create dynamic regular expressions.
-   * The loop runs from 1 up to (but not including) 10.
-   */
-  for  (  let  numericVal  =  Number('1');  numericVal  <  parseInt('10');  numericVal++  )
-  {
-    // Construct a new regular expression pattern for the current numeric value.
-    let  patternMatcher  =  new  RegExp(  String(numericVal),  'g'  );
+  // Iterate through single-digit numbers from one to nine
+  for (let idx = 0b1; idx < 0xA; idx++) {
+    // Construct a regular expression to find all occurrences of the current digit
+    const pattern = new RegExp(String(idx), 'g');
+    // Attempt to find all matches of the digit within the provided string
+    const matches = dataString.match(pattern);
 
-    // Attempt to find all occurrences of the pattern within the data source.
-    let  foundOccurrences  =  dataSource.match(  patternMatcher  );
-
-    // If the pattern is found at least once...
-    if  (  patternMatcher.test(dataSource)  )  {
-      // ...and if the number of occurrences exceeds a certain threshold.
-      if  (  foundOccurrences.length  >  Number('2')  )  {
-        console.log(  'Affirmative'  );  // Output positive confirmation.
-        return;  // Exit early.
+    // Verify if the pattern actually found any matches in the string
+    if (pattern.test(dataString)) {
+      // If the count of matches is greater than two
+      if (matches.length > 0x2) {
+        console.log('Yes');
+        return;
       }
     }
   }
-
-  // If no conditions for 'Affirmative' were met after all checks.
-  console.log(  'Negative'  );  // Output negative confirmation.
+  // If no condition was met throughout the checks, output 'No'
+  console.log('No');
 }
 
-// Execute the primary processing function with data read from standard input.
-ProcessInput(  require("fs").readFileSync("/dev/stdin", "utf8")  );
+// Read the input from standard input and pass it to the processing function
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

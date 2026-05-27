@@ -1,30 +1,41 @@
 'use strict';
-(function (inputSource) {
-  // Read the entire input stream, convert to string, remove leading/trailing whitespace, and split into lines.
-  var processedLines = inputSource . toString ( ) . trim ( ) . split ( '\n' ) ;
-  // Extract the first line, split by space, and convert parts to integers.
-  var numericalValues = processedLines [ 0 ] . split ( ' ' ) . map ( parseInt ) ;
 
-  (function (primaryVal, secondaryVal) {
-      // Log the result of comparing the two numerical values.
-      console.log(evaluateOrder(primaryVal, secondaryVal));
+// This immediately invoked function expression (IIFE) encapsulates the entire script.
+// It takes the standard input data as an argument.
+(function (inputData) {
+  // Convert the raw input buffer to a string, remove leading/trailing whitespace,
+  // and then split it into an array of lines based on newline characters.
+  var lines = inputData.toString().trim().split('\n');
 
-      /*
-       * Compares two numbers and returns a string indicating their relationship.
-       * @param {number} p1 - The first number.
-       * @param {number} p2 - The second number.
-       * @returns {string} - A string describing the comparison result.
-       */
-      function evaluateOrder(p1, p2) {
-          if (p1 > p2) {
-              return 'FIRST_IS_GREATER';
-          }
-          if (p1 < p2) {
-              return 'FIRST_IS_LESS';
-          }
-          return 'ARE_EQUAL';
+  // Take the first line of input, split it by spaces, and convert each part to a number.
+  // This assumes the first line contains two space-separated numbers.
+  var numericalArguments = lines[0].split(' ').map(Number);
+
+  // Another IIFE is used here to process the extracted numerical arguments.
+  // It receives the first and second numbers as distinct parameters.
+  (function (firstVal, secondVal) {
+    // Call the comparison utility function and log its result to the console.
+    console.log(compareValues(firstVal, secondVal));
+
+    /**
+     * Determines the relationship between two numerical values.
+     * @param {number} valA - The initial numeric value.
+     * @param {number} valB - The secondary numeric value.
+     * @returns {string} A string indicating if valA is greater than, less than, or equal to valB.
+     */
+    function compareValues(valA, valB) {
+      // Check if the first value is strictly greater than the second.
+      if (valA > valB) {
+        return 'a > b';
       }
-  }(numericalValues[0], numericalValues[1])); // Pass the first two parsed numbers to the inner function.
+      // Check if the first value is strictly less than the second.
+      if (valA < valB) {
+        return 'a < b';
+      }
+      // If neither of the above conditions is met, the values must be equal.
+      return 'a == b';
+    }
+  }(numericalArguments[0], numericalArguments[1])); // Pass the first and second parsed numbers.
 
-// Obtain file system module and read input from standard input path.
+// The main IIFE is immediately invoked with the content read from standard input.
 }(require('fs').readFileSync('/dev/stdin', 'utf8')));

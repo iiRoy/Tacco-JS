@@ -1,165 +1,146 @@
-// This JavaScript file was generated as a Type II clone.
-// Original creation date and author information has been altered.
-var diskIO = require('fs'),
-    fileByteCount = diskIO.fstatSync(process.stdin.fd).size,
-    inputByteBuffer = new Buffer(fileByteCount),
-    actualBytesTransferred = diskIO.readSync(process.stdin.fd, inputByteBuffer, 0, fileByteCount, 0),
-    parsedDataLines = inputByteBuffer.toString('utf8', 0, actualBytesTransferred).split('\n');
+// This script processes musical phrase data to calculate maximum scores for target melody lengths.
+// It uses dynamic programming to solve a variation of the knapsack problem.
 
+var fileSystem = require('fs'); // Node.js file system module for file operations
+var dataLength = fileSystem.fstatSync(process.stdin.fd).size; // Determine the size of the standard input stream
+var inputBuffer = new Buffer(dataLength); // Allocate a buffer to store the incoming data
+var readBytesCount = fileSystem.readSync(process.stdin.fd, inputBuffer, 0, dataLength, 0); // Read data from stdin into the buffer
+var inputLines = inputBuffer.toString('utf8', 0, readBytesCount).split('\n'); // Convert buffer content to UTF-8 string and split into an array of lines
 
-// Initiates the primary sequence of operations for the program.
-initiateProcessing();
-
+// Initiate the primary execution flow of the application
+executeProgram();
 
 /**
- * Creates and populates a two-dimensional array structure (grid) with a specified initial value.
- *
- * @param {number} rowCount         The total number of rows desired for the grid.
- * @param {number} columnCount      The total number of columns desired for the grid.
- * @param {*}      initialValue     The default value to assign to every cell in the grid.
- * @returns {Array<Array<*>>}       A freshly constructed 2D array.
+ * Generates a two-dimensional array (matrix) and initializes all its elements.
+ * @param {number} rowsCount - The total number of rows for the new matrix.
+ * @param {number} colsCount - The total number of columns for the new matrix.
+ * @param {*} initialValue - The default value to assign to each cell in the matrix.
+ * @returns {Array<Array<*>>} A newly created 2D array with specified dimensions and initialization.
  */
-function createGrid(rowCount, columnCount, initialValue) {
+function create2DArray(rowsCount, colsCount, initialValue) {
+  var resultArray = []; // Declare the array that will hold the rows
+  var rowIndex, colIndex; // Loop iterators for rows and columns
 
-  var gridArray = [],
-      rowIdx,
-      colIdx;
-
-  // Loop through each row index to build the structure.
-  for (rowIdx = 0; rowIdx < rowCount; rowIdx++) {
-    gridArray[rowIdx] = []; // Establish a new empty array for the current row.
-
-    // Within each row, iterate through column indices.
-    for (colIdx = 0; colIdx < columnCount; colIdx++) {
-      gridArray[rowIdx][colIdx] = initialValue; // Assign the default value to the current cell.
+  // Iterate through each row index
+  for (rowIndex = 0; rowIndex < rowsCount; rowIndex++) {
+    resultArray[rowIndex] = []; // Initialize the current row as an empty array
+    // Iterate through each column index within the current row
+    for (colIndex = 0; colIndex < colsCount; colIndex++) {
+      resultArray[rowIndex][colIndex] = initialValue; // Assign the initial value to the current cell
     }
   }
-  return gridArray; // Deliver the fully prepared grid.
+  return resultArray; // Return the fully constructed and initialized 2D array
 }
 
 /**
- * Calculates the maximum possible score for composing a melody given a set of musical phrases,
- * utilizing a dynamic programming strategy.
+ * Computes the maximum possible score for a given total melody length using a set of available musical phrases.
+ * This function employs a dynamic programming strategy, similar to the unbounded knapsack problem.
  *
- * @param {number} maxDuration       The uppermost time limit for the melody composition.
- * @param {Array<Array<number>>} availablePhrases  A collection of phrases, where each phrase is an array:
- *                                                 [start_time_offset, length_duration, score_points].
- * @returns {Array<Array<number>>}  A comprehensive DP table holding the best scores for various subproblems.
+ * @param {number} totalMelodyLength - The maximum length of the melody for which to calculate the score.
+ * @param {Array<Array<number>>} availablePhrases - An array where each element is a phrase represented as [startLength, minLength, score].
+ * @returns {Array<Array<number>>} The completed dynamic programming table.
  */
-function computeOptimalScores(maxDuration, availablePhrases) {
-  // Determine the number of distinct phrases available for selection.
-  var phraseCount = availablePhrases.length,
-      // Initialize the dynamic programming table. Its dimensions are
-      // (phraseCount + 1) rows by (maxDuration + 1) columns, all filled with zero.
-      scoreMatrix = createGrid(phraseCount + 1, maxDuration + 1, 0),
-      currentPhrase,
-      currentDuration,
-      previousDuration,
-      phraseStartDuration,
-      phraseLengthDuration,
-      phraseScoreValue,
-      highestPreviousScore;
+function calculateMaxScore(totalMelodyLength, availablePhrases) {
+  var numPhrases = availablePhrases.length; // Get the count of available phrases
+  // Initialize the DP table with dimensions (numPhrases + 1) x (totalMelodyLength + 1), filled with zeros.
+  var dynamicProgrammingTable = create2DArray(numPhrases + 1, totalMelodyLength + 1, 0);
 
-  // Iterate over each phrase, considering them one by one.
-  for (currentPhrase = 0; currentPhrase < phraseCount; currentPhrase++) {
-    // Deconstruct the current phrase's attributes for improved readability.
-    phraseStartDuration = availablePhrases[currentPhrase][0];   // The time point at which this phrase can begin.
-    phraseLengthDuration = availablePhrases[currentPhrase][1];  // The time length this phrase occupies.
-    phraseScoreValue = availablePhrases[currentPhrase][2];      // The score awarded for using this phrase.
+  var phraseIdx, currentMelodyLen, prevMelodyLen; // Iterators for loops
+  var phraseStartLen, phraseMinLen, phraseScore; // Variables to store properties of the current phrase
+  var maxPrevScore; // Variable to keep track of the maximum score from previous states
 
-    // Loop through every possible melody duration, from zero up to the maximum allowed.
-    for (currentDuration = 0; currentDuration <= maxDuration; currentDuration++) {
+  // Loop through each phrase provided in the input list
+  for (phraseIdx = 0; phraseIdx < numPhrases; phraseIdx++) {
+    phraseStartLen = availablePhrases[phraseIdx][0]; // Extract the starting length of the current phrase
+    phraseMinLen = availablePhrases[phraseIdx][1]; // Extract the minimum length requirement for the current phrase
+    phraseScore = availablePhrases[phraseIdx][2]; // Extract the score associated with the current phrase
 
-      // Check if the current phrase's start duration is less than or equal to the current melody duration.
-      // This condition determines if the phrase can potentially be included.
-      if (phraseStartDuration <= currentDuration) {
-        // Reset the highest score found in preceding states for the current duration.
-        highestPreviousScore = 0;
+    // Loop through all possible melody lengths, from 0 up to the maximum total melody length
+    for (currentMelodyLen = 0; currentMelodyLen <= totalMelodyLength; currentMelodyLen++) {
+      // Check if the current phrase's starting length can be accommodated within the current melody length
+      if (phraseStartLen <= currentMelodyLen) {
+        maxPrevScore = 0; // Reset the maximum previous score for this specific state
 
-        // Iterate through potential previous durations where another phrase might have ended.
-        // The lower bound for `previousDuration` is either 0 or `currentDuration - phraseLengthDuration`,
-        // ensuring it's not negative. The upper bound is `currentDuration - phraseStartDuration`.
-        for (previousDuration = phraseLengthDuration > currentDuration ? 0 : currentDuration - phraseLengthDuration; previousDuration <= currentDuration - phraseStartDuration; previousDuration++) {
-          // If a higher score is identified in the DP table for a previous state, update `highestPreviousScore`.
-          if (highestPreviousScore < scoreMatrix[currentPhrase + 1][previousDuration]) {
-            highestPreviousScore = scoreMatrix[currentPhrase + 1][previousDuration];
+        // Iterate to find the best previous state (prevMelodyLen) that allows adding the current phrase.
+        // The range for prevMelodyLen is from (currentMelodyLen - phraseMinLen) to (currentMelodyLen - phraseStartLen).
+        // Ensure prevMelodyLen does not go below 0.
+        for (prevMelodyLen = phraseMinLen > currentMelodyLen ? 0 : currentMelodyLen - phraseMinLen;
+             prevMelodyLen <= currentMelodyLen - phraseStartLen;
+             prevMelodyLen++) {
+          // Update maxPrevScore if a higher score is found in a previous state
+          if (maxPrevScore < dynamicProgrammingTable[phraseIdx + 1][prevMelodyLen]) {
+            maxPrevScore = dynamicProgrammingTable[phraseIdx + 1][prevMelodyLen];
           }
         }
-        // Calculate the optimal score for the current state:
-        // It's the greater of:
-        // 1. The score achieved without incorporating the current phrase (scoreMatrix[currentPhrase][currentDuration]).
-        // 2. The score achieved by incorporating the current phrase (highestPreviousScore + phraseScoreValue).
-        scoreMatrix[currentPhrase + 1][currentDuration] = Math.max(scoreMatrix[currentPhrase][currentDuration], highestPreviousScore + phraseScoreValue);
+        // Update the DP table: choose the maximum between (not using the current phrase)
+        // and (using the current phrase + the best score from a compatible previous state).
+        dynamicProgrammingTable[phraseIdx + 1][currentMelodyLen] = Math.max(
+          dynamicProgrammingTable[phraseIdx][currentMelodyLen],
+          maxPrevScore + phraseScore
+        );
       } else {
-        // If the current phrase cannot be used at the current melody duration (it starts too late),
-        // the score remains identical to the state without considering this phrase.
-        scoreMatrix[currentPhrase + 1][currentDuration] = scoreMatrix[currentPhrase][currentDuration];
+        // If the current phrase cannot fit, simply carry over the value from the previous phrase (without using it).
+        dynamicProgrammingTable[phraseIdx + 1][currentMelodyLen] = dynamicProgrammingTable[phraseIdx][currentMelodyLen];
       }
     }
   }
-  // Return the computed dynamic programming table, which contains all optimal scores.
-  return scoreMatrix;
+  return dynamicProgrammingTable; // Return the fully populated DP table
 }
 
 /**
- * This is the central function that manages the program's execution flow.
- * It handles input parsing, calculation invocation, and result output.
+ * The main function responsible for orchestrating the program's logic:
+ * reading input, processing data, performing calculations, and outputting results.
  */
-function initiateProcessing() {
+function executeProgram() {
+  // Read the first line of input, which specifies the number of phrases, and convert it to a number.
+  var numInputPhrases = inputLines.shift() - 0;
+  var parsedPhrases = []; // Initialize an array to store the parsed phrase data.
 
-  // Extract the first line of input, which represents the total number of phrase definitions.
-  var totalPhraseEntries = parsedDataLines.shift() - 0,
-      allPhraseDefinitions = []; // An array to accumulate all parsed phrase data.
-
-  // Loop to sequentially read and process each phrase definition from the input data.
-  for (loopIndex = 0; loopIndex < totalPhraseEntries; loopIndex++) {
-    // Each line representing a phrase is split by spaces, and its parts are converted into numbers.
-    allPhraseDefinitions.push(parsedDataLines.shift().split(' ').map(Number));
+  // Loop to read and parse each phrase from the input lines.
+  for (var phraseLoopIdx = 0; phraseLoopIdx < numInputPhrases; phraseLoopIdx++) {
+    // Each phrase line is split by space and its parts are converted to numbers.
+    parsedPhrases.push(inputLines.shift().split(' ').map(Number));
   }
 
-  // Retrieve the next line of input, indicating the total number of melody composition requests.
-  var totalMelodyRequests = parsedDataLines.shift() - 0,
-      targetMelodyDurations = [], // An array to store the specific durations requested for melodies.
-      singleTargetDuration,
-      finalCalculatedScores = [], // An array to store the resulting optimal scores for each request.
-      loopIndex,
-      calculatedScoreMatrix,
-      allResultsValid = true; // A boolean flag to track if all score computations yielded non-zero results.
+  // Read the next line of input, which specifies the number of target melody lengths to process.
+  var numMelodiesToProcess = inputLines.shift() - 0;
+  var targetMelodyLengths = []; // Array to hold the target melody lengths.
+  var currentMelodyTarget; // Variable to store the melody length currently being evaluated.
+  var finalScores = []; // Array to accumulate the calculated maximum scores for each target melody.
+  var melodyLoopIdx; // Loop counter for iterating through target melodies.
+  var computedDPTable; // Variable to store the dynamic programming table returned by the calculation function.
+  var allMelodiesPossible = true; // A flag to indicate if all target melodies can be formed with a non-zero score.
 
-  // Loop through to read and store each individual target melody duration.
-  for (loopIndex = 0; loopIndex < totalMelodyRequests; loopIndex++) {
-    targetMelodyDurations.push(parsedDataLines.shift() - 0);
+  // Loop to read each target melody length from the input.
+  for (melodyLoopIdx = 0; melodyLoopIdx < numMelodiesToProcess; melodyLoopIdx++) {
+    targetMelodyLengths.push(inputLines.shift() - 0); // Add the parsed target length to the list.
   }
 
-  // Execute the dynamic programming calculation once for a fixed maximum melody length (393).
-  // This specific value is a hardcoded constant from the problem's specifications.
-  calculatedScoreMatrix = computeOptimalScores(393, allPhraseDefinitions);
+  // Call the dynamic programming function to compute the maximum scores.
+  // The constant '393' represents the maximum possible melody length considered in the problem.
+  computedDPTable = calculateMaxScore(393, parsedPhrases);
 
-  // Iterate through each requested melody duration and consult the pre-calculated DP table.
-  for (loopIndex = 0; loopIndex < totalMelodyRequests; loopIndex++) {
-    singleTargetDuration = targetMelodyDurations[loopIndex];
+  // Iterate through each target melody length to find its corresponding maximum score.
+  for (melodyLoopIdx = 0; melodyLoopIdx < numMelodiesToProcess; melodyLoopIdx++) {
+    currentMelodyTarget = targetMelodyLengths[melodyLoopIdx]; // Get the current target melody length.
 
-    // Check the final optimal score for the current target melody duration.
-    if (calculatedScoreMatrix[totalPhraseEntries][singleTargetDuration] === 0) {
-      // If the score is zero, it implies that no valid combination of phrases could achieve this melody,
-      // or that the maximum score is indeed zero.
-      allResultsValid = false;
+    // Check if the calculated score for the current target melody length is zero.
+    // A score of zero implies that the melody cannot be formed with any phrases.
+    if (computedDPTable[numInputPhrases][currentMelodyTarget] === 0) {
+      allMelodiesPossible = false; // Set the flag to false if any melody cannot be formed.
     } else {
-      // Otherwise, the non-zero score is a valid result and is added to our list.
-      finalCalculatedScores.push(calculatedScoreMatrix[totalPhraseEntries][singleTargetDuration]);
+      finalScores.push(computedDPTable[numInputPhrases][currentMelodyTarget]); // Store the valid score.
     }
   }
 
-  // If the 'allResultsValid' flag is false (meaning at least one melody request yielded a zero score),
-  // then output -1 as per problem requirements.
-  if (!allResultsValid) {
+  // If the flag indicates that not all melodies could be formed, output -1.
+  if (!allMelodiesPossible) {
     console.log(-1);
-    return; // Terminate execution of this function.
+    return; // Terminate the function execution.
   }
 
-  // If all melody requests produced valid (non-zero) scores,
-  // iterate through the 'finalCalculatedScores' and print each one on a new line.
-  finalCalculatedScores.forEach(function(scoreValue) {
-    console.log(scoreValue);
+  // Otherwise, if all melodies could be formed, output each calculated score on a new line.
+  finalScores.forEach(function(scoreItem) {
+    console.log(scoreItem);
   });
 }

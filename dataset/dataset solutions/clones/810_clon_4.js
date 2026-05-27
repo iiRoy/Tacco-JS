@@ -1,56 +1,49 @@
-const outputWriter = console.log;
-
-const runtimeHandle = typeof process !== "undefined" ? process : null;
-
-if (runtimeHandle) {
-    let accumulatedContent = "";
-    runtimeHandle.stdin.resume();
-    runtimeHandle.stdin.setEncoding('utf8');
-    runtimeHandle.stdin.on('data', (segment) => {
-        accumulatedContent += segment;
+var outputLine = console.log;
+if (typeof process != "undefined") {
+    var rawInputBuffer = "";
+    process.stdin.resume();
+    process.stdin.setEncoding('utf8');
+    process.stdin.on('data', function (chunk) {
+        rawInputBuffer += chunk;
     });
-    runtimeHandle.stdin.on('end', () => {
-        initiateProcessing(accumulatedContent);
+    process.stdin.on('end', function () {
+        prepareAndExecute(rawInputBuffer);
     });
 }
 
-function initiateProcessing(fullText) {
-    const allTextRows = fullText.split("\n");
-
-    const effectiveTextRows = allTextRows.slice(1, -1);
-
-    performCalculations(effectiveTextRows);
+function prepareAndExecute(rawInputBuffer) {
+    const inputLines = rawInputBuffer.split("\n");
+    inputLines.shift();
+    inputLines.pop();
+    processInputData(inputLines);
 }
 
-function performCalculations(inputSegments) {
-    const actualDataSegments = inputSegments.slice(1);
+function processInputData(rawInputSegments) {
+    rawInputSegments.shift(); // Consume the first line (N, number of datasets)
 
-    const numericDataUnits = actualDataSegments.map(segment =>
-        segment.split(" ").map(Number)
+    const numericSegments = rawInputSegments.map(segmentString =>
+        segmentString.split(" ").map(partStr => Number(partStr))
     );
 
-    const groupedDataSets = numericDataUnits.reduce((accumulator, currentUnit, index, fullArray) => {
-        if (index % 2 === 0 && fullArray[index + 1]) {
-            accumulator.push([currentUnit, fullArray[index + 1]]);
-        }
-        return accumulator;
-    }, []);
+    const problemSets = [];
+    for (let i = 0; i < numericSegments.length; i += 2) {
+        problemSets.push([numericSegments[i], numericSegments[i + 1]]);
+    }
 
-    groupedDataSets.forEach(currentDataSet => {
-        const powerFactor = currentDataSet[0][1];
+    problemSets.forEach(currentSet => {
+        const powerValue = currentSet[0][1];
+        const sourceArray = currentSet[1];
 
-        const valueSequence = currentDataSet[1];
-
-        const differenceArray = valueSequence.slice(1).map((currentVal, idx) =>
-            currentVal - valueSequence[idx]
+        const deltaValues = sourceArray.slice(1).map((currentVal, idx) =>
+            currentVal - sourceArray[idx]
         );
 
-        differenceArray.sort((valA, valB) => valB - valA);
+        deltaValues.sort((valA, valB) => valB - valA);
 
-        const remainingDifferences = differenceArray.slice(powerFactor - 1);
+        const relevantDeltas = deltaValues.filter((_, idx) => idx >= powerValue - 1);
 
-        const finalSum = remainingDifferences.reduce((acc, val) => acc + val, 0);
-
-        outputWriter(finalSum);
+        const totalSum = relevantDeltas.reduce((accumulator, current) => accumulator + current, 0);
+        
+        outputLine(totalSum);
     });
 }

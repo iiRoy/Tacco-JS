@@ -1,61 +1,79 @@
 const fileSystem = require("fs");
+const rawInputContent = fileSystem.readFileSync("/dev/stdin", "utf8").trim();
+const inputLinesArray = rawInputContent.split("\n");
 
-class InputDataStream {
-    constructor(sourcePath) {
-        const rawContent = fileSystem.readFileSync(sourcePath, "utf8").trim();
-        this.records = rawContent.split("\n");
-        this.currentPosition = 0;
-        this.totalRecords = this.records.length;
-    }
+function createInputIterator(linesCollection) {
+    let currentPosition = 0;
+    const totalEntries = linesCollection.length;
 
-    retrieveEntry() {
-        if (!this.hasMore()) {
-            throw new Error("EndOfStreamException: No more entries available.");
+    const retrieveNextEntry = () => {
+        if (currentPosition >= totalEntries) {
+            throw "NoSuchElementException:次に要素は無いよ";
         }
-        const entryValue = this.records[this.currentPosition];
-        this.currentPosition++;
-        return entryValue;
-    }
+        return linesCollection[currentPosition++];
+    };
 
-    hasMore() {
-        return this.currentPosition < this.totalRecords;
+    const checkAvailability = () => currentPosition < totalEntries;
+
+    return { retrieveNextEntry, checkAvailability };
+}
+
+const inputSource = createInputIterator(inputLinesArray);
+
+function fetchNextLine() { return inputSource.retrieveNextEntry(); }
+function hasMoreLines() { return inputSource.checkAvailability(); }
+
+function printResult(content) { console.log(content); }
+function logIssue(errorContent) { console.error(errorContent); }
+
+function processData(valueToProcess, conversionType) {
+    const transformationOperations = {
+        1: (val) => Number.parseInt(val),
+        2: (val) => val.split(" "),
+        4: (val) => val.split(" ").map(Number),
+        6: (val) => val.split(""),
+        7: (val) => val.split("").map(Number),
+        8: (val) => val.join(" "),
+        9: (val) => val.join("\n"),
+        0: (val) => val.join("")
+    };
+
+    try {
+        const selectedOperation = transformationOperations[conversionType];
+        return selectedOperation ? selectedOperation(valueToProcess) : valueToProcess;
+    } catch (error) {
+        return valueToProcess;
     }
 }
 
-const dataProcessor = new InputDataStream("/dev/stdin");
+function executeCoreLogic() {
+    const rawDigitString = fetchNextLine();
+    const digitSequence = processData(rawDigitString, 7);
 
-const getNextInput = () => dataProcessor.retrieveEntry();
-const checkInputAvailability = () => dataProcessor.hasMore();
+    const initialProcessingState = { currentTotal: 0, carryValue: 0 };
 
-const printOutput = (value) => console.log(value);
-const logError = (message) => console.error(message);
+    const finalProcessingState = digitSequence.reduceRight((accumulator, currentDigit) => {
+        let effectiveDigit = currentDigit + accumulator.carryValue;
+        let digitContribution;
+        let nextCarry;
 
-const convertToNumericArray = (textualInput) => textualInput.split("").map(Number);
+        if (effectiveDigit >= 6) {
+            digitContribution = 10 - effectiveDigit;
+            nextCarry = 1;
+        } else {
+            digitContribution = effectiveDigit;
+            nextCarry = 0;
+        }
 
-const calculateMinimalSteps = (numericSequence, indexPointer, accumulatedCarry) => {
-    if (indexPointer < 0) {
-        return accumulatedCarry;
-    }
+        return {
+            currentTotal: accumulator.currentTotal + digitContribution,
+            carryValue: nextCarry
+        };
+    }, initialProcessingState);
 
-    const currentElement = numericSequence[indexPointer] + accumulatedCarry;
+    const finalCalculatedSum = finalProcessingState.currentTotal + finalProcessingState.carryValue;
 
-    const costBySubtracting = currentElement;
-    const costByAddingAndCarrying = 10 - currentElement;
+    printResult(finalCalculatedSum);
+}
 
-    if (costBySubtracting <= costByAddingAndCarrying) {
-        return costBySubtracting + calculateMinimalSteps(numericSequence, indexPointer - 1, 0);
-    } else {
-        return costByAddingAndCarrying + calculateMinimalSteps(numericSequence, indexPointer - 1, 1);
-    }
-};
-
-const executeProgram = () => {
-    const rawInputLine = getNextInput();
-    const processedNumbers = convertToNumericArray(rawInputLine);
-    const sequenceSize = processedNumbers.length;
-
-    const finalOperationCount = calculateMinimalSteps(processedNumbers, sequenceSize - 1, 0);
-    printOutput(finalOperationCount);
-};
-
-executeProgram();
+executeCoreLogic();

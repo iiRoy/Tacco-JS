@@ -1,61 +1,40 @@
-"use strict";
+"use strict"
 
-const makeCoordinate = (abscissaValue, ordinateValue) => ({
-  abscissa: abscissaValue,
-  ordinate: ordinateValue,
-});
+function coordinateTransformer(rawInput) {
+  const numericComponents = rawInput.match(/-?\d+(\.\d+)?/g).map(val => parseInt(val, 10));
 
-const makeDisplacement = (horizontalComponent, verticalComponent) => ({
-  horizontal: horizontalComponent,
-  vertical: verticalComponent,
-});
+  const [initialX1, initialY1, initialX2, initialY2] = numericComponents;
 
-const deriveDisplacement = (targetCoordinate, originCoordinate) =>
-  makeDisplacement(
-    targetCoordinate.abscissa - originCoordinate.abscissa,
-    targetCoordinate.ordinate - originCoordinate.ordinate
-  );
+  const calculateVectorComponents = (startX, startY, endX, endY) => {
+    return {
+      componentA: endX - startX,
+      componentB: endY - startY
+    };
+  };
 
-const rotateDisplacementCounterClockwise = (sourceDisplacement) =>
-  makeDisplacement(
-    -sourceDisplacement.vertical,
-    sourceDisplacement.horizontal
-  );
+  const performRotation = (vecA, vecB) => {
+    return {
+      rotatedA: -vecB,
+      rotatedB: vecA
+    };
+  };
 
-const applyDisplacementToCoordinate = (baseCoordinate, displacementToAdd) =>
-  makeCoordinate(
-    baseCoordinate.abscissa + displacementToAdd.horizontal,
-    baseCoordinate.ordinate + displacementToAdd.vertical
-  );
+  const applyVectorOffset = (baseX, baseY, offsetX, offsetY) => {
+    return {
+      finalX: baseX + offsetX,
+      finalY: baseY + offsetY
+    };
+  };
 
-const executePlanarTransformation = (sourceData) => {
-  const numericParts = sourceData.match(/-?\d+/g).map(Number);
+  const { componentA: deltaX, componentB: deltaY } = calculateVectorComponents(initialX1, initialY1, initialX2, initialY2);
 
-  const initialPoint = makeCoordinate(numericParts[0], numericParts[1]);
-  const secondPoint = makeCoordinate(numericParts[2], numericParts[3]);
+  const { rotatedA: rotatedDeltaX, rotatedB: rotatedDeltaY } = performRotation(deltaX, deltaY);
 
-  const spanningVector = deriveDisplacement(secondPoint, initialPoint);
+  const { finalX: thirdPointX, finalY: thirdPointY } = applyVectorOffset(initialX2, initialY2, rotatedDeltaX, rotatedDeltaY);
 
-  const orthogonalVector = rotateDisplacementCounterClockwise(spanningVector);
+  const { finalX: fourthPointX, finalY: fourthPointY } = applyVectorOffset(initialX1, initialY1, rotatedDeltaX, rotatedDeltaY);
 
-  const thirdResultantPoint = applyDisplacementToCoordinate(
-    secondPoint,
-    orthogonalVector
-  );
+  console.log(thirdPointX, thirdPointY, fourthPointX, fourthPointY);
+}
 
-  const fourthResultantPoint = applyDisplacementToCoordinate(
-    initialPoint,
-    orthogonalVector
-  );
-
-  return [
-    thirdResultantPoint.abscissa,
-    thirdResultantPoint.ordinate,
-    fourthResultantPoint.abscissa,
-    fourthResultantPoint.ordinate,
-  ];
-};
-
-const inputPayload = require("fs").readFileSync("/dev/stdin", "utf8");
-const outputValues = executePlanarTransformation(inputPayload);
-console.log(...outputValues);
+coordinateTransformer(require("fs").readFileSync("/dev/stdin", "utf8"));

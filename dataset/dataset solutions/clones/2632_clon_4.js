@@ -1,34 +1,46 @@
-const evaluateGreatestCommonDivisor = (firstOperand, secondOperand) => {
+function computeGreatestCommonDivisor(firstOperand, secondOperand) {
     if (secondOperand === 0) {
         return firstOperand;
     }
-    return evaluateGreatestCommonDivisor(secondOperand, firstOperand % secondOperand);
-};
+    return computeGreatestCommonDivisor(secondOperand, firstOperand % secondOperand);
+}
 
-const calculateLeastCommonMultiple = (valueA, valueB) => {
-    return (valueA * valueB) / evaluateGreatestCommonDivisor(valueA, valueB);
-};
+function determineLeastCommonMultiple(valueA, valueB) {
+    if (valueA === 0 || valueB === 0) {
+        return 0;
+    }
+    return (valueA * valueB) / computeGreatestCommonDivisor(valueA, valueB);
+}
 
-const processDataStream = (rawDataContent) => {
-    const linesOfText = rawDataContent.split('\n');
-    const numericSequence = linesOfText[1].split(' ').map(Number);
+function processInputData(inputPayload) {
+    console.log("main");
 
-    const initialFraction = [1, numericSequence[0]];
+    const inputLines = inputPayload.split("\n");
+    const elementCount = Number(inputLines[0]);
+    const numericElements = inputLines[1].split(" ").map(Number);
 
-    const finalSumFraction = numericSequence.slice(1).reduce((currentAccumulatedFraction, nextElementValue) => {
-        const [currentNumerator, currentDenominator] = currentAccumulatedFraction;
-        
-        const commonDenominatorForAddition = calculateLeastCommonMultiple(currentDenominator, nextElementValue);
+    console.log("for");
 
-        const combinedNumeratorForAddition = 
-            currentNumerator * (commonDenominatorForAddition / currentDenominator) +
-            1 * (commonDenominatorForAddition / nextElementValue);
+    const initialAccumulatorState = {
+        currentLCM: numericElements[0],
+        currentSumProduct: 1
+    };
 
-        return [combinedNumeratorForAddition, commonDenominatorForAddition];
-    }, initialFraction);
+    const finalCalculationState = numericElements.slice(1).reduce((accumulator, currentElementValue, iterationIndex) => {
+        const originalLoopIndex = iterationIndex + 1;
+        console.log(originalLoopIndex);
 
-    const [resultNumerator, resultDenominator] = finalSumFraction;
-    return resultDenominator / resultNumerator;
-};
+        const nextLCM = determineLeastCommonMultiple(accumulator.currentLCM, currentElementValue);
 
-console.log(processDataStream(require("fs").readFileSync("/dev/stdin", "utf8")));
+        const updatedSumProduct = accumulator.currentSumProduct * (nextLCM / accumulator.currentLCM) + (nextLCM / currentElementValue);
+
+        return {
+            currentLCM: nextLCM,
+            currentSumProduct: updatedSumProduct
+        };
+    }, initialAccumulatorState);
+
+    console.log(finalCalculationState.currentLCM / finalCalculationState.currentSumProduct);
+}
+
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

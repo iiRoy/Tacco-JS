@@ -1,162 +1,162 @@
-// Function to simulate firing a projectile from the player vehicle
-function fireProjectile(rowDirection, colDirection) {
-  // Initialize a counter for the steps the projectile travels
-  let stepCounter = 0;
+function fireProjectile(rowDelta, colDelta) {
+  // Initialize a counter for the projectile's travel distance
+  let stepCount = 0;
 
-  // Loop indefinitely until the projectile hits an obstacle or a target
+  // Loop to simulate the projectile's path until it hits an obstacle
   while (true) {
-    stepCounter++; // Increment the step count for each movement
-    // Calculate the potential next position of the projectile based on current vehicle position and direction
-    const targetRowPosition = playerCraftPosition[0] + (rowDirection * stepCounter);
-    const targetColPosition = playerCraftPosition[1] + (colDirection * stepCounter);
+    stepCount++; // Increment the distance traveled by the projectile
 
     // Check if the projectile hits a solid wall ('#')
-    if (playGrid[targetRowPosition][targetColPosition] === "#") {
-      break; // Stop the projectile's movement as it hit a wall
+    if (gameGrid[playerTank[0] + (rowDelta * stepCount)][playerTank[1] + (colDelta * stepCount)] === "#") {
+      break; // Stop the projectile if it hits a wall
     }
-    // Check if the projectile hits a destructible target ('*')
-    else if (playGrid[targetRowPosition][targetColPosition] === "*") {
-      playGrid[targetRowPosition][targetColPosition] = "."; // Remove the target by replacing it with an empty space
-      break; // Stop the projectile's movement after hitting the target
+    // Check if the projectile hits a target ('*')
+    else if (gameGrid[playerTank[0] + (rowDelta * stepCount)][playerTank[1] + (colDelta * stepCount)] === "*") {
+      // If a target is hit, replace it with an empty space ('.') and stop
+      gameGrid[playerTank[0] + (rowDelta * stepCount)][playerTank[1] + (colDelta * stepCount)] = ".";
+      break;
     }
   }
 }
 
-// Read raw input data from standard input using Node.js 'fs' module
-let rawInputData = require('fs').readFileSync('/dev/stdin', 'utf8');
+// Read the entire input from standard input using Node.js file system module
+const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-// Normalize directional characters in the input to a consistent internal representation
-rawInputData = rawInputData
-  .replace(/\^/g, "U") // Replace caret '^' with 'U' for Up
-  .replace(/v/g, "D") // Replace 'v' with 'D' for Down
-  .replace(/\</g, "L") // Replace less-than '<' with 'L' for Left
-  .replace(/\>/g, "R"); // Replace greater-than '>' with 'R' for Right
+// Pre-process the input string to standardize direction characters
+const processedInput = rawData
+  .replace(/\^/g, "U") // Replace '^' (up arrow) with 'U'
+  .replace(/v/g, "D") // Replace 'v' (down arrow) with 'D'
+  .replace(/\</g, "L") // Replace '<' (left arrow) with 'L'
+  .replace(/\>/g, "R"); // Replace '>' (right arrow) with 'R'
 
-// Split the processed input into an array of lines and remove leading/trailing whitespace from the whole string
-let inputLines = rawInputData.trim().split("\n");
-// Extract the number of test cases from the very first line of input
-let numberOfTests = Number(inputLines.shift());
+// Split the processed input into an array of lines and remove any leading/trailing whitespace
+let lineSegments = processedInput.trim().split("\n");
 
-// Iterate through each defined test case
-for (let currentTestIndex = 0; currentTestIndex < numberOfTests; currentTestIndex++) {
-  // Add a newline separator between the outputs of different test cases, except for the very first one
-  if (currentTestIndex !== 0) {
+// Extract the total number of test cases from the first line and convert it to a number
+const testCases = lineSegments.shift() - 0;
+
+// Iterate through each individual test case
+for (let caseIndex = 0; caseIndex < testCases; caseIndex++) {
+  // Print a newline character to separate the output of different test cases, except for the first one
+  if (caseIndex !== 0) {
     console.log("\n");
   }
 
-  // Read grid dimensions (height and width) for the current test case from the next line
-  let gridDimensions = inputLines.shift().split(" ").map(Number);
-  // Initialize the game board (playGrid) with an artificial top border of '#' characters
-  let playGrid = [];
-  playGrid.push("####################".split("")); // Top border, assuming max width for now, will be adjusted by actual content
+  // Get the grid's height and width from the next line, splitting by space and converting to numbers
+  const gridDimensions = lineSegments.shift().split(" ").map(Number);
 
-  // Initialize the player vehicle's starting position (row, column)
-  let playerCraftPosition = [0, 0];
+  // Initialize the game grid, which will store the map and tank positions
+  let gameGrid = [];
+  // Add a top boundary row of '#' characters
+  gameGrid.push("####################".split(""));
 
-  // Populate the game board based on subsequent input lines, adding side borders
+  // Initialize the player tank's coordinates (row, column)
+  let playerTank = [0, 0];
+
+  // Loop through each row to build the game grid and find the tank's initial position
   for (let rowIndex = 0; rowIndex < gridDimensions[0]; rowIndex++) {
-    let currentGridRow = inputLines.shift().split(""); // Get characters for the current row
+    // Get the characters for the current map row
+    const currentRowChars = lineSegments.shift().split("");
 
-    let vehicleColumnPosition = -1; // Initialize to indicate vehicle not found in this row
-    // Search for the player vehicle's initial position and direction within the current row
-    currentGridRow.forEach(function(cellCharacter, charPosition) {
-      if (["U", "D", "L", "R"].includes(cellCharacter)) {
-        vehicleColumnPosition = charPosition; // Store the column index where the vehicle is found
+    let tankColPos = -1; // Temporary variable to store the tank's column index
+
+    // Iterate through the characters of the current row to find the tank
+    currentRowChars.forEach(function(charValue, charIndex) {
+      // If a tank character (U, D, L, R) is found, record its column index
+      if (charValue === "U" || charValue === "D" || charValue === "L" || charValue === "R") {
+        tankColPos = charIndex;
       }
     });
 
-    // If a vehicle was found in this row, update its coordinates in the playerCraftPosition array
-    if (vehicleColumnPosition !== -1) {
-      playerCraftPosition = [rowIndex + 1, vehicleColumnPosition + 1]; // Adjust for the added top and left borders
+    // If the tank was found in this row, update its actual grid coordinates
+    // (adjusted for the added boundary rows/columns)
+    if (tankColPos !== -1) {
+      playerTank = [rowIndex + 1, tankColPos + 1];
     }
 
-    currentGridRow.unshift("#"); // Add a left border ('#') to the current row
-    currentGridRow.push("#"); // Add a right border ('#') to the current row
-    playGrid.push(currentGridRow); // Add the processed row to the game board
+    // Add boundary '#' characters to the left and right of the current row
+    currentRowChars.unshift("#");
+    currentRowChars.push("#");
+    // Add the modified row to the game grid
+    gameGrid.push(currentRowChars);
   }
 
-  playGrid.push("####################".split("")); // Add an artificial bottom border
+  // Add a bottom boundary row of '#' characters
+  gameGrid.push("####################".split(""));
 
-  // Consume the empty line that typically separates the grid definition from the action sequence
-  inputLines.shift();
+  // Consume the empty line that separates the grid definition from the command sequence
+  lineSegments.shift();
 
-  // Read the sequence of actions for the player vehicle from the next input line
-  let playerActionsSequence = inputLines.shift().split("");
+  // Get the sequence of commands for the current test case
+  const commandSequence = lineSegments.shift().split("");
 
-  // Process each action character in the sequence
-  playerActionsSequence.forEach(function(actionCharacter) {
-    // Get the current row and column of the player vehicle for easier access
-    let currentRow = playerCraftPosition[0];
-    let currentCol = playerCraftPosition[1];
-
-    if (actionCharacter === "U") { // Action: Move Up
-      // Check if the cell above is empty ('.')
-      if (playGrid[currentRow - 1][currentCol] === ".") {
-        playGrid[currentRow - 1][currentCol] = "U"; // Move vehicle to the new position, facing Up
-        playGrid[currentRow][currentCol] = "."; // Clear the old position
-        playerCraftPosition[0]--; // Update vehicle's row coordinate
-      } else {
-        playGrid[currentRow][currentCol] = "U"; // If cannot move, just change vehicle's direction to Up
-      }
-    } else if (actionCharacter === "D") { // Action: Move Down
-      // Check if the cell below is empty ('.')
-      if (playGrid[currentRow + 1][currentCol] === ".") {
-        playGrid[currentRow + 1][currentCol] = "D"; // Move vehicle to the new position, facing Down
-        playGrid[currentRow][currentCol] = "."; // Clear the old position
-        playerCraftPosition[0]++; // Update vehicle's row coordinate
-      } else {
-        playGrid[currentRow][currentCol] = "D"; // If cannot move, just change vehicle's direction to Down
-      }
-    } else if (actionCharacter === "L") { // Action: Move Left
-      // Check if the cell to the left is empty ('.')
-      if (playGrid[currentRow][currentCol - 1] === ".") {
-        playGrid[currentRow][currentCol - 1] = "L"; // Move vehicle to the new position, facing Left
-        playGrid[currentRow][currentCol] = "."; // Clear the old position
-        playerCraftPosition[1]--; // Update vehicle's column coordinate
-      } else {
-        playGrid[currentRow][currentCol] = "L"; // If cannot move, just change vehicle's direction to Left
-      }
-    } else if (actionCharacter === "R") { // Action: Move Right
-      // Check if the cell to the right is empty ('.')
-      if (playGrid[currentRow][currentCol + 1] === ".") {
-        playGrid[currentRow][currentCol + 1] = "R"; // Move vehicle to the new position, facing Right
-        playGrid[currentRow][currentCol] = "."; // Clear the old position
-        playerCraftPosition[1]++; // Update vehicle's column coordinate
-      } else {
-        playGrid[currentRow][currentCol] = "R"; // If cannot move, just change vehicle's direction to Right
-      }
-    } else if (actionCharacter === "S") { // Action: Shoot
-      // Determine the current facing direction of the player vehicle
-      let currentVehicleDirection = playGrid[currentRow][currentCol];
-      if (currentVehicleDirection === "U") {
-        fireProjectile(-1, 0); // Call shoot function to fire Up (-1 row, 0 col change)
-      } else if (currentVehicleDirection === "D") {
-        fireProjectile(1, 0); // Call shoot function to fire Down (1 row, 0 col change)
-      } else if (currentVehicleDirection === "L") {
-        fireProjectile(0, -1); // Call shoot function to fire Left (0 row, -1 col change)
-      } else if (currentVehicleDirection === "R") {
-        fireProjectile(0, 1); // Call shoot function to fire Right (0 row, 1 col change)
-      }
+  // Process each command in the sequence
+  commandSequence.forEach(function(currentCommand) {
+    // Handle 'U' (Up) command:
+    if (currentCommand === "U" && gameGrid[playerTank[0] - 1][playerTank[1]] === ".") {
+      // If the space above is empty ('.'), move the tank up
+      gameGrid[playerTank[0] - 1][playerTank[1]] = "U";
+      gameGrid[playerTank[0]][playerTank[1]] = ".";
+      playerTank[0]--;
+    } else if (currentCommand === "U" && gameGrid[playerTank[0] - 1][playerTank[1]] !== ".") {
+      // If the space above is not empty, just change the tank's direction to Up
+      gameGrid[playerTank[0]][playerTank[1]] = "U";
+    }
+    // Handle 'D' (Down) command:
+    else if (currentCommand === "D" && gameGrid[playerTank[0] + 1][playerTank[1]] === ".") {
+      // If the space below is empty ('.'), move the tank down
+      gameGrid[playerTank[0] + 1][playerTank[1]] = "D";
+      gameGrid[playerTank[0]][playerTank[1]] = ".";
+      playerTank[0]++;
+    } else if (currentCommand === "D" && gameGrid[playerTank[0] + 1][playerTank[1]] !== ".") {
+      // If the space below is not empty, just change the tank's direction to Down
+      gameGrid[playerTank[0]][playerTank[1]] = "D";
+    }
+    // Handle 'L' (Left) command:
+    else if (currentCommand === "L" && gameGrid[playerTank[0]][playerTank[1] - 1] === ".") {
+      // If the space to the left is empty ('.'), move the tank left
+      gameGrid[playerTank[0]][playerTank[1] - 1] = "L";
+      gameGrid[playerTank[0]][playerTank[1]] = ".";
+      playerTank[1]--;
+    } else if (currentCommand === "L" && gameGrid[playerTank[0]][playerTank[1] - 1] !== ".") {
+      // If the space to the left is not empty, just change the tank's direction to Left
+      gameGrid[playerTank[0]][playerTank[1]] = "L";
+    }
+    // Handle 'R' (Right) command:
+    else if (currentCommand === "R" && gameGrid[playerTank[0]][playerTank[1] + 1] === ".") {
+      // If the space to the right is empty ('.'), move the tank right
+      gameGrid[playerTank[0]][playerTank[1] + 1] = "R";
+      gameGrid[playerTank[0]][playerTank[1]] = ".";
+      playerTank[1]++;
+    } else if (currentCommand === "R" && gameGrid[playerTank[0]][playerTank[1] + 1] !== ".") {
+      // If the space to the right is not empty, just change the tank's direction to Right
+      gameGrid[playerTank[0]][playerTank[1]] = "R";
+    }
+    // Handle 'S' (Shoot) command:
+    else if (currentCommand === "S") {
+      // Get the current direction of the tank from the grid
+      const tankDirection = gameGrid[playerTank[0]][playerTank[1]];
+      // Call the projectile firing function based on the tank's direction
+      if (tankDirection === "U") fireProjectile(-1, 0); // Shoot Up
+      else if (tankDirection === "D") fireProjectile(1, 0); // Shoot Down
+      else if (tankDirection === "L") fireProjectile(0, -1); // Shoot Left
+      else if (tankDirection === "R") fireProjectile(0, 1); // Shoot Right
     }
   });
 
-  // Remove the artificial top and bottom borders from the game board before printing
-  playGrid.shift(); // Remove the top border row
-  playGrid.pop(); // Remove the bottom border row
+  // Remove the temporary top and bottom boundary rows before printing the final grid
+  gameGrid.shift();
+  gameGrid.pop();
 
-  // Prepare the final game board for output:
-  // 1. Join rows with newline characters.
-  // 2. Remove the left and right border '#' characters from each line.
-  // 3. Remove any commas introduced by the join operation (if applicable, e.g., if array elements were joined by default).
-  // 4. Convert the internal directional representations (U, D, L, R) back to their original symbols (^, v, <, >).
+  // Format the final game grid for output:
   console.log(
-    playGrid.join("\n")
-    .replace(/^#/mg, "") // Remove the leftmost '#' from each line (multiline global regex)
-    .replace(/#$/mg, "") // Remove the rightmost '#' from each line (multiline global regex)
-    .replace(/\,/g, "") // Remove any commas (e.g., from array.join default behavior)
-    .replace(/U/g, "^") // Convert 'U' back to '^'
-    .replace(/D/g, "v") // Convert 'D' back to 'v'
-    .replace(/L/g, "<") // Convert 'L' back to '<'
-    .replace(/R/g, ">") // Convert 'R' back to '>'
+    gameGrid.join("\n") // Join rows with newline characters
+    .replace(/^#/mg, "") // Remove the left boundary '#' from each line
+    .replace(/#$/mg, "") // Remove the right boundary '#' from each line
+    .replace(/\,/g, "") // Remove commas that result from array.join() on inner arrays
+    .replace(/U/g, "^") // Convert 'U' back to '^' for output
+    .replace(/D/g, "v") // Convert 'D' back to 'v' for output
+    .replace(/L/g, "<") // Convert 'L' back to '<' for output
+    .replace(/R/g, ">") // Convert 'R' back to '>' for output
   );
 }

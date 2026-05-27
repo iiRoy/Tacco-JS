@@ -1,25 +1,30 @@
-const calculateFlippages = (seq, index, currentA, currentB) => {
-  if (index === seq.length) {
-    return Math.min(currentA, currentB);
-  }
+const processSequence = (sourceText) => {
+  const characterArray = sourceText.trim().split('');
 
-  const value = Number(seq[index]);
-  const targetA_val = index % 2; // Expected value for pattern 0101...
-  const targetB_val = (index + 1) % 2; // Expected value for pattern 1010...
+  const { firstPatternMismatches, secondPatternMismatches } = characterArray.reduce(
+    (currentCounts, charValue, currentIdx) => {
+      const digit = Number(charValue);
 
-  const nextA = currentA + (value !== targetA_val);
-  const nextB = currentB + (value !== targetB_val);
+      // For a target pattern starting with 0 (e.g., 010101...)
+      // The expected digit at an even index is 0, and at an odd index is 1.
+      // This is equivalent to (currentIdx % 2).
+      if (digit !== (currentIdx % 2)) {
+        currentCounts.firstPatternMismatches++;
+      }
 
-  return calculateFlippages(seq, index + 1, nextA, nextB);
+      // For a target pattern starting with 1 (e.g., 101010...)
+      // The expected digit at an even index is 1, and at an odd index is 0.
+      // This is equivalent to ((currentIdx + 1) % 2).
+      if (digit !== ((currentIdx + 1) % 2)) {
+        currentCounts.secondPatternMismatches++;
+      }
+
+      return currentCounts;
+    },
+    { firstPatternMismatches: 0, secondPatternMismatches: 0 }
+  );
+
+  console.log(Math.min(firstPatternMismatches, secondPatternMismatches));
 };
 
-const processInputString = (textData) => {
-  const cleanedText = textData.trim();
-  if (cleanedText.length === 0) {
-    process.stdout.write("0");
-    return;
-  }
-  process.stdout.write(calculateFlippages(cleanedText, 0, 0, 0).toString());
-};
-
-processInputString(require('fs').readFileSync('/dev/stdin', 'UTF-8'));
+processSequence(require('fs').readFileSync('/dev/stdin', 'UTF-8'));

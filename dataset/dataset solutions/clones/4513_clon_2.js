@@ -1,108 +1,191 @@
-var streamProcessor = require('readline').createInterface( {
-  input : process.stdin,
+var inputReader = require('readline').createInterface({
+  input: process.stdin,
   output: process.stdout
-} );
-var  inputProcessor;
-var  capturedLines = [ ];
-streamProcessor.on( 'line', function ( receivedInput ) {
-  capturedLines.push( receivedInput );
-} );
-streamProcessor.on( 'close', function ( ) {
-  inputProcessor = initializeProcessor( capturedLines );
-  console.error( '\n↑Input Data ↓Output Result' );
-  primaryRoutine( );
-} );
-function createCopy( originalObject ) {
-  return ( originalObject instanceof Set )
-           ? new Set( Array.from( originalObject ) )
-           : JSON.parse( JSON.stringify( originalObject ) );
+});
+
+var inputData;
+var inputLines = [];
+
+// Collect all input lines
+inputReader.on('line', function(currentLine) {
+  inputLines.push(currentLine);
+});
+
+// Once input is complete, initialize the data processor and run the main logic
+inputReader.on('close', function() {
+  inputData = initializeInputProcessor(inputLines);
+  console.error('\n↑Input ↓Output'); // Informative message for competitive programming setup
+  executeMainLogic();
+});
+
+/**
+ * Creates a deep copy of an object or a Set.
+ * @param {any} sourceObject The object to clone.
+ * @returns {any} A deep copy of the source object.
+ */
+function createDeepCopy(sourceObject) {
+  return (sourceObject instanceof Set) ? new Set(Array.from(sourceObject)) : JSON.parse(JSON.stringify(sourceObject));
 }
-function getNumericValue( ) { return transformValue( fetchNextItem( ), 1 ); }
-function getTextParts( )    { return transformValue( fetchNextItem( ), 2 ); }
-function getNumberParts( )  { return transformValue( fetchNextItem( ), 4 ); }
-function getCharList( )     { return transformValue( fetchNextItem( ), 6 ); }
-function fetchNextItem( )   { return inputProcessor.advanceAndGet( ); }
-function canAdvance( )      { return inputProcessor.hasMoreItems( ); }
-function initializeProcessor( streamData ) {
+
+/**
+ * Fetches the next token from the input and parses it as an integer.
+ * @returns {number} The next integer from the input.
+ */
+function getNextInteger() {
+  return convertInputToken(fetchNextToken(), 1);
+}
+
+/**
+ * Fetches the next token from the input and splits it into a string array.
+ * @returns {string[]} An array of strings.
+ */
+function getNextStringArray() {
+  return convertInputToken(fetchNextToken(), 2);
+}
+
+/**
+ * Fetches the next token from the input, splits it, and parses elements as integers.
+ * @returns {number[]} An array of integers.
+ */
+function getNextIntegerArray() {
+  return convertInputToken(fetchNextToken(), 4);
+}
+
+/**
+ * Fetches the next token from the input and splits it into a character array.
+ * @returns {string[]} An array of characters.
+ */
+function getNextCharacterArray() {
+  return convertInputToken(fetchNextToken(), 6);
+}
+
+/**
+ * Retrieves the next available input token (line).
+ * @returns {string} The next input line.
+ */
+function fetchNextToken() {
+  return inputData.next();
+}
+
+/**
+ * Checks if there are more input tokens available.
+ * @returns {boolean} True if more input is available, false otherwise.
+ */
+function hasMoreTokens() {
+  return inputData.hasMoreTokens();
+}
+
+/**
+ * Initializes an object to process input lines sequentially.
+ * @param {string[]} rawInputLines An array of raw input strings.
+ * @returns {object} An object with methods to navigate input.
+ */
+function initializeInputProcessor(rawInputLines) {
   return {
-    itemCollection : streamData,
+    dataList: rawInputLines,
     currentPosition: 0,
-    maximumCount   : streamData.length,
-    hasMoreItems   : function ( ) {
-      return ( this.currentPosition < this.maximumCount );
+    maximumLength: rawInputLines.length,
+    hasMoreTokens: function() {
+      return (this.currentPosition < this.maximumLength);
     },
-    advanceAndGet  : function ( ) {
-      if ( this.hasMoreItems( ) ) {
-        return this.itemCollection[ this.currentPosition++ ];
+    next: function() {
+      if (this.hasMoreTokens()) {
+        return this.dataList[this.currentPosition++];
       } else {
-        throw 'InputLimitExceededException - No further data available for processing';
+        throw 'ArrayIndexOutOfBoundsException ‚There is no more input';
       }
     }
   };
 }
-function displayResult( contentToDisplay ) {
-  console.log( contentToDisplay );
+
+/**
+ * Prints a message to standard output.
+ * @param {any} messageContent The content to print.
+ */
+function printResult(messageContent) {
+  console.log(messageContent);
 }
-function showDebug( debugContent ) {
-  console.error( 'diagnostic:' + require( 'util' ).inspect( debugContent, false, null ) );
+
+/**
+ * Prints a debug message to standard error.
+ * @param {any} messageContent The content to print for debugging.
+ */
+function logDebugMessage(messageContent) {
+  console.error('debug:' + require('util').inspect(messageContent, false, null));
 }
-// The 'operationCode' parameter determines the transformation type:
-// Default or unrecognized: Returns the input value as-is.
-// 1: Converts to an integer.
-// 2: Splits a string by spaces into an array.
-// 4: Splits by spaces and converts each part to a number.
-// 6: Splits a string into an array of individual characters.
-// 7: Splits into characters and converts each to a number.
-// 8: Joins array elements with spaces.
-// 9: Joins array elements with newlines.
-// 0: Joins array elements without any separator.
-function transformValue( rawDatum, operationCode ) {
+
+/**
+ * Converts an input token based on the specified type.
+ * @param {string|string[]} tokenValue The input token or array of tokens.
+ * @param {number} conversionType The type of conversion to apply.
+ *   1: parseInt
+ *   2: split by space
+ *   4: split by space and map to Number
+ *   6: split by character
+ *   7: split by character and map to Number
+ *   8: join by space
+ *   9: join by newline
+ *   0: join without separator
+ * @returns {any} The converted value.
+ */
+function convertInputToken(tokenValue, conversionType) {
   try {
-    switch ( operationCode ) {
+    switch (conversionType) {
       case 1:
-        return parseInt( rawDatum );
+        return parseInt(tokenValue);
       case 2:
-        return rawDatum.split( ' ' );
+        return tokenValue.split(' ');
       case 4:
-        return rawDatum.split( ' ' ).map( Number );
+        return tokenValue.split(' ').map(Number);
       case 6:
-        return rawDatum.split( '' );
+        return tokenValue.split('');
       case 7:
-        return rawDatum.split( '' ).map( Number );
+        return tokenValue.split('').map(Number);
       case 8:
-        return rawDatum.join( ' ' );
+        return tokenValue.join(' ');
       case 9:
-        return rawDatum.join( '\n' );
+        return tokenValue.join('\n');
       case 0:
-        return rawDatum.join( '' );
+        return tokenValue.join('');
       default:
-        return rawDatum;
+        return tokenValue;
     }
-  } catch ( processingError ) {
-    return rawDatum; // On error, return original data
+  } catch (error) {
+    return tokenValue; // Return original value on error
   }
 }
-function primaryRoutine( ) {
-  var initialValues = getNumberParts( );
-  var valA = initialValues[ 0 ];
-  var valB = initialValues[ 1 ];
-  var divisor = 1000000007;
-  var computedProduct = 1;
-  if ( Math.abs( valA - valB ) >= 2 ) {
-    displayResult( 0 );
+
+/**
+ * The primary execution logic of the program.
+ * Calculates a factorial-based product with modulo.
+ */
+function executeMainLogic() {
+  var firstLineNumbers = getNextIntegerArray();
+  var firstNumber = firstLineNumbers[0];
+  var secondNumber = firstLineNumbers[1];
+  var moduloValue = 1000000007;
+  var calculatedProduct = 1;
+
+  // Check if the absolute difference between N and M is too large
+  if (Math.abs(firstNumber - secondNumber) >= 2) {
+    printResult(0); // Output 0 if difference is 2 or more
   } else {
-    for ( var counterA = 1; counterA <= valA; counterA++ ) {
-      computedProduct *= counterA;
-      computedProduct %= divisor;
+    // Calculate factorial of N
+    for (var loopCounter = 1; loopCounter <= firstNumber; loopCounter++) {
+      calculatedProduct *= loopCounter;
+      calculatedProduct %= moduloValue;
     }
-    for ( var counterB = 1; counterB <= valB; counterB++ ) {
-      computedProduct *= counterB;
-      computedProduct %= divisor;
+    // Calculate factorial of M
+    for (var loopCounter = 1; loopCounter <= secondNumber; loopCounter++) {
+      calculatedProduct *= loopCounter;
+      calculatedProduct %= moduloValue;
     }
-    if ( valB == valA ) {
-      computedProduct *= 2;
-      computedProduct %= divisor;
+
+    // If N and M are equal, multiply by 2
+    if (secondNumber === firstNumber) {
+      calculatedProduct *= 2;
+      calculatedProduct %= moduloValue;
     }
-    displayResult( computedProduct );
+    printResult(calculatedProduct); // Output the final calculated product
   }
 }

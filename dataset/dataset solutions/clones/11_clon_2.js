@@ -1,40 +1,46 @@
-let collectedString = ''; // A buffer to accumulate all incoming raw data.
+var receivedData = ''; // Initialize a string to accumulate incoming data.
 
-process.stdin.resume(); // Ensures the standard input stream remains active.
-process.stdin.setEncoding('utf8'); // Specifies the character encoding for the input.
+// Resume the standard input stream to start listening for data.
+process.stdin.resume();
 
-process.stdin.on( 'data', ( dataPiece ) => {
-    // Appends each received fragment of data to the main buffer.
-    collectedString += dataPiece;
-} );
+// Set the encoding for the standard input stream to UTF-8.
+process.stdin.setEncoding('utf8');
 
-process.stdin.on( 'end', ( ) => {
-    // Once the entire input stream has concluded, initiate the primary computation routine.
-    performCalculations( collectedString ) ;
-} ) ;
+// Attach an event listener for 'data' events on stdin.
+// Each time a chunk of data is received, append it to our accumulator.
+process.stdin.on('data', function(dataSegment) {
+    receivedData += dataSegment;
+});
+
+// Attach an event listener for the 'end' event on stdin.
+// Once all input has been received, call the primary processing function.
+process.stdin.on('end', function() {
+    processInputData(receivedData);
+});
 
 /**
- * Executes the primary logic on the full content received from the input stream.
- * @param {string} fullContent - The complete string provided via standard input.
+ * Main function to process the accumulated input data.
+ * @param {string} fullInput - The complete string received from standard input.
  */
-function performCalculations ( fullContent ) {
-    // Divides the consolidated content into individual string entries, based on newline characters.
-    let stringEntries = fullContent.split( '\n' ) ;
+function processInputData(fullInput) {
+    // Split the entire input string into an array of lines.
+    var processedLines = fullInput.split('\n');
 
-    // Transforms each string entry into an array of parsed numeric values.
-    stringEntries = stringEntries.map( ( lineText ) => {
-        // Splits the current line by spaces and converts each resulting string fragment to an integer.
-        let parsedNumbers = lineText.split( ' ' )
-                                   .map( ( textVal ) => {
-                                       // Converts the string token into a base-10 integer.
-                                       return parseInt( textVal , 10 ) ;
-                                   } ) ;
-        return parsedNumbers ; // Returns the array containing two integers.
-    } ) ;
+    // Transform each line: split it by space, then parse each part as an integer.
+    processedLines = processedLines.map(function(lineContent) {
+        // Split the current line by spaces to get individual number strings.
+        lineContent = lineContent.split(' ')
+                                 .map(function(numericString) {
+                                     // Convert each numeric string to an integer.
+                                     return parseInt(numericString, 10); // Base 10 for safety
+                                 });
+        // Return the array of two parsed numbers for this line.
+        return lineContent;
+    });
 
-    // Iterates over each array of numbers and outputs their summation.
-    stringEntries.forEach( ( numberSet ) => {
-        // Displays the sum of the first and second elements within the current number set.
-        console.log( numberSet[0] + numberSet[1] ) ;
-    } ) ;
+    // Iterate over each array of numbers and print their sum to the console.
+    processedLines.forEach(function(numberPair) {
+        // Log the sum of the first and second numbers in the pair.
+        console.log(numberPair[0] + numberPair[1]);
+    });
 }

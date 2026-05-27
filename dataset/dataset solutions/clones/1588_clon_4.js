@@ -1,56 +1,55 @@
-(async function () {
-    let gatheredContent = '';
-    process.stdin.on('data', (fragment) => {
-        gatheredContent += fragment.toString();
+const readline = require('readline');
+
+(async () => {
+    const rlInterface = readline.createInterface({
+        input: process.stdin,
+        output: process.stdout,
+        terminal: false
     });
 
-    process.stdin.on('end', () => {
-        const entrySegments = gatheredContent.trim().split('\n');
-        const [dimensionOne, dimensionTwo, elementCount] = entrySegments[0].split(/\s+/).map(Number.parseInt);
+    const inputLines = [];
+    for await (const currentLine of rlInterface) {
+        inputLines.push(currentLine);
+    }
 
-        if (elementCount === 0) {
-            process.stdout.write('0\n');
-            return;
-        }
+    const [gridHeight, gridWidth, numTargets] = inputLines[0].split(/\s/).map(Number);
 
-        const markedPositions = new Set();
-        const firstAxisTallies = new Map();
-        const secondAxisTallies = new Map();
+    const targetLocations = inputLines.slice(1, numTargets + 1).map(line =>
+        line.split(/\s/).map(val => Number(val) - 1)
+    );
 
-        for (let positionIndex = 1; positionIndex <= elementCount; ++positionIndex) {
-            const [coordinateA, coordinateB] = entrySegments[positionIndex].split(/\s+/).map(value => Number.parseInt(value) - 1);
+    const rowTallies = new Map();
+    const columnTallies = new Map();
+    const occupiedCells = new Set(); // Stores "r,c" strings for quick lookup
 
-            markedPositions.add(`${coordinateA},${coordinateB}`);
-
-            firstAxisTallies.set(coordinateA, (firstAxisTallies.get(coordinateA) || 0) + 1);
-            secondAxisTallies.set(coordinateB, (secondAxisTallies.get(coordinateB) || 0) + 1);
-        }
-
-        const topCountFirstAxis = Array.from(firstAxisTallies.values()).reduce((peak, current) => Math.max(peak, current), 0);
-        const topCountSecondAxis = Array.from(secondAxisTallies.values()).reduce((peak, current) => Math.max(peak, current), 0);
-
-        const topIndicesFirstAxis = Array.from(firstAxisTallies.keys()).filter(key => firstAxisTallies.get(key) === topCountFirstAxis);
-        const topIndicesSecondAxis = Array.from(secondAxisTallies.keys()).filter(key => secondAxisTallies.get(key) === topCountSecondAxis);
-
-        let deductionValue = 1; 
-        
-        let voidFound = false;
-        for (const rowIdentifier of topIndicesFirstAxis) {
-            for (const columnIdentifier of topIndicesSecondAxis) {
-                if (!markedPositions.has(`${rowIdentifier},${columnIdentifier}`)) {
-                    voidFound = true;
-                    break;
-                }
-            }
-            if (voidFound) {
-                break;
-            }
-        }
-
-        if (voidFound) {
-            deductionValue = 0;
-        }
-
-        process.stdout.write((topCountFirstAxis + topCountSecondAxis - deductionValue).toString() + '\n');
+    targetLocations.forEach(coordPair => {
+        const [r, c] = coordPair;
+        rowTallies.set(r, (rowTallies.get(r) || 0) + 1);
+        columnTallies.set(c, (columnTallies.get(c) || 0) + 1);
+        occupiedCells.add(`${r},${c}`);
     });
+
+    let peakRowHits = 0;
+    if (rowTallies.size > 0) {
+        peakRowHits = Math.max(...rowTallies.values());
+    }
+
+    let peakColHits = 0;
+    if (columnTallies.size > 0) {
+        peakColHits = Math.max(...columnTallies.values());
+    }
+
+    const candidateRows = Array.from({ length: gridHeight }, (_, rIdx) => rIdx)
+        .filter(rIdx => (rowTallies.get(rIdx) || 0) === peakRowHits);
+
+    const candidateCols = Array.from({ length: gridWidth }, (_, cIdx) => cIdx)
+        .filter(cIdx => (columnTallies.get(cIdx) || 0) === peakColHits);
+
+    const allIntersectionsOccupied = candidateRows.every(r =>
+        candidateCols.every(c => occupiedCells.has(`${r},${c}`))
+    );
+
+    const overlapPenalty = allIntersectionsOccupied ? 1 : 0;
+
+    console.log(peakRowHits + peakColHits - overlapPenalty);
 })();

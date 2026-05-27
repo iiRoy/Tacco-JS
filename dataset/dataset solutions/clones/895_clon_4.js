@@ -1,56 +1,49 @@
-const fileSystemModule = require('node:fs');
-const rawSourceData = fileSystemModule.readFileSync('/dev/stdin', 'utf8');
-const processedContent = rawSourceData.trim();
+var sourceData = require('fs').readFileSync('/dev/stdin', 'utf8');
+var initialSequence = sourceData.trim();
 
-function obtainCharacterTallies(phrase) {
-    const tally = {};
-    for (const char of phrase) {
-        tally[char] = (tally[char] || 0) + 1;
-    }
-    return tally;
-}
+var targetPattern = "AIZUNYAN";
+var sortedTargetPattern = Array.from(targetPattern).sort().join('');
+var patternLength = 8;
 
-function compareTallies(tallyA, tallyB) {
-    const keysA = Object.keys(tallyA);
-    const keysB = Object.keys(tallyB);
-    if (keysA.length !== keysB.length) {
-        return false;
-    }
-    for (const key of keysA) {
-        if (tallyA[key] !== tallyB[key]) {
-            return false;
-        }
-    }
-    return true;
-}
+var transformSequence = (sourceText) => {
+  var { finalResult: processedOutput } = Array.from({ length: sourceText.length + patternLength - 1 }).reduce(
+    ({ finalResult, currentPosition }, _, __) => {
+      if (currentPosition >= sourceText.length) {
+        return { finalResult, currentPosition };
+      }
 
-const targetWordSequence = "AIZUNYAN";
-const targetWordLength = targetWordSequence.length;
-const targetWordTally = obtainCharacterTallies(targetWordSequence);
+      if (currentPosition > sourceText.length - patternLength) {
+        return {
+          finalResult: finalResult + sourceText.substring(currentPosition),
+          currentPosition: sourceText.length,
+        };
+      }
 
-let currentPointer = 0;
-let transformedFragments = [];
+      var segment = sourceText.substring(currentPosition, currentPosition + patternLength);
 
-while (currentPointer < processedContent.length) {
-    if (currentPointer + targetWordLength <= processedContent.length) {
-        const currentWindow = processedContent.substring(currentPointer, currentPointer + targetWordLength);
+      if (segment === targetPattern) {
+        return {
+          finalResult: finalResult + targetPattern,
+          currentPosition: currentPosition + patternLength,
+        };
+      }
 
-        if (currentWindow === targetWordSequence) {
-            transformedFragments.push(targetWordSequence);
-            currentPointer += targetWordLength;
-            continue;
-        }
+      var sortedSegment = Array.from(segment).sort().join('');
+      if (sortedSegment === sortedTargetPattern) {
+        return {
+          finalResult: finalResult + targetPattern,
+          currentPosition: currentPosition + patternLength,
+        };
+      }
 
-        const currentWindowTally = obtainCharacterTallies(currentWindow);
-        if (compareTallies(targetWordTally, currentWindowTally)) {
-            transformedFragments.push(targetWordSequence);
-            currentPointer += targetWordLength;
-            continue;
-        }
-    }
+      return {
+        finalResult: finalResult + sourceText[currentPosition],
+        currentPosition: currentPosition + 1,
+      };
+    },
+    { finalResult: '', currentPosition: 0 }
+  );
+  return processedOutput;
+};
 
-    transformedFragments.push(processedContent[currentPointer]);
-    currentPointer++;
-}
-
-process.stdout.write(transformedFragments.join("") + '\n');
+console.log(transformSequence(initialSequence));

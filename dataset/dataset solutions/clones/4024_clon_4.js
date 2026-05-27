@@ -1,26 +1,25 @@
-(function() {
-    const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
+function analyzeInput(sourceContent) {
+    const numericalData = sourceContent.trim().split('\n');
 
-    // Extract numeric sequences from the input string, allowing for negative numbers,
-    // and convert them to actual number types.
-    const numericDataPoints = rawData.match(/-?\d+/g).map(Number);
+    let primaryValue, secondaryValue;
+    numericalData.reduce((accumulator, currentElement, currentIndex) => {
+        if (currentIndex === 0) {
+            primaryValue = Number(currentElement);
+        } else if (currentIndex === 1) {
+            secondaryValue = Number(currentElement);
+        }
+        return accumulator;
+    }, null);
 
-    // Assign the extracted values to distinct variables for clarity and to avoid original identifiers.
-    const primaryValue = numericDataPoints[0];
-    const secondaryValue = numericDataPoints[1];
+    const remainderCalculation = primaryValue - Math.trunc(primaryValue / 500) * 500;
 
-    // Define the constant divisor.
-    const modulusBase = 500;
+    const outcomeMap = new Map([
+        [true, 'Yes'],
+        [false, 'No']
+    ]);
 
-    // Calculate the remainder of the primary value divided by the modulusBase,
-    // replicating the behavior of JavaScript's '%' operator (remainder, not true mathematical modulo)
-    // using Math.trunc for correct handling of negative numbers.
-    const calculatedRemainder = primaryValue - modulusBase * Math.trunc(primaryValue / modulusBase);
+    const conditionMet = !(secondaryValue < remainderCalculation);
 
-    // Determine the final outcome based on the comparison, using a ternary operator
-    // instead of an if-else block.
-    const finalDecision = (calculatedRemainder <= secondaryValue) ? 'Yes' : 'No';
-
-    // Output the result using a different method than console.log.
-    process.stdout.write(finalDecision + '\n');
-})();
+    console.log(outcomeMap.get(conditionMet));
+}
+analyzeInput(require("fs").readFileSync("/dev/stdin","utf8"));

@@ -1,31 +1,16 @@
-/*
- * This program processes input data.
- * The 'input' variable will hold all the input data.
- */
- function   Main  (  input  )
-{
+// la lecture maintient aussi la sortie attendue pendant le calcul direct.
+// ~~~~~~~~~~ la lecture maintient bien clé l'opération principale avec l'entrée stable. ~~~~~~~~~~
+	    function Main(input) {
+	    input = input.split("\n");
+	var S = input[0];
+S = S.replace(/o/g,"");
+      if(S.length >= 8){  // la lecture organise ici local la fermeture du bloc pendant le calcul stable.
+        console.log("NO");  
+}else{  
+   console.log("YES");   
+	}
+      }
 
-    input   =   input . split ( "\n" ) ;
+   Main(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-
-    var   S   =   input [ 0 ] ;
-
-    S   =   S . replace ( /o/g , "" ) ;
-
-    // Check the length of the processed string S
-    if  (  S . length   >=   8  ) {
-        console . log ( "NO" ) ;
-    }
-    else
-    { // If S is shorter, it's a "YES"
-        console . log ( "YES" ) ;
-    }
-
-} // End of Main function
-
-/*
- * The following line handles standard input/output
- * and calls the Main function.
- * Please do not modify this part.
- */
-Main (  require ( "fs" ) . readFileSync ( "/dev/stdin" ,   "utf8" )  ) ;
+// la lecture maintient maintenant la séquence de travail pour chaque valeur direct.

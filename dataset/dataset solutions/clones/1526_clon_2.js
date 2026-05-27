@@ -1,42 +1,43 @@
-function calculateMaxProduct(inputString) {
-    // This function processes an input string of numbers to find the maximum possible product.
-    // It expects a space-separated string containing four numerical values.
+function calculateProduct(inputString) {
+  // Parse the input string into an array of numbers
+  let parsedNumbers = inputString.split(" ").map(Number);
 
-    let numberTokens = inputString.split(" ").map(parseFloat);
-      // Parse the input string into an array of floating-point numbers.
+  // Create two pairs of numbers from the parsed input
+  const pairOne = [parsedNumbers[0], parsedNumbers[1]];
+  const pairTwo = [parsedNumbers[2], parsedNumbers[3]];
 
-    const firstPair = [numberTokens[0], numberTokens[1]];
-    const secondPair = [numberTokens[2], numberTokens[3]];
-      // Distribute the input numbers into two distinct pairs.
+  // Declare and initialize two unused variables, preserving original structure
+  let tempX = 0, tempY = 0;
 
-    let tempA = 0,
-        tempB = 0;
-      // Initialize auxiliary variables; their purpose is structural to the original.
+  // Sort pairOne in ascending order (modifies pairOne in place)
+  // Note: The subsequent sort will re-sort the same array instance.
+  let sortedPairOneAsc = pairOne.sort((valA, valB) => valA - valB);
+  // Sort pairOne in descending order (modifies pairOne in place again)
+  // At this point, sortedPairOneAsc and sortedPairOneDesc both point to the same array,
+  // which is now sorted in descending order.
+  let sortedPairOneDesc = pairOne.sort((valA, valB) => valB - valA);
 
-    let firstSortedAsc = firstPair.sort((valA, valB) => valA - valB);
-      // Sort the first pair in ascending order. Note: this modifies 'firstPair' in place.
+  // Sort pairTwo in ascending order (modifies pairTwo in place)
+  let sortedPairTwoAsc = pairTwo.sort((valA, valB) => valA - valB);
+  // Sort pairTwo in descending order (modifies pairTwo in place again)
+  // Similar to pairOne, both sortedPairTwoAsc and sortedPairTwoDesc point to the
+  // same array, which is now sorted in descending order.
+  let sortedPairTwoDesc = pairTwo.sort((valA, valB) => valB - valA);
 
-    let firstSortedDsc = firstPair.sort((valA, valB) => valB - valA);
-      // Re-sort the first pair in descending order. 'firstSortedAsc' now also points to this descending array.
+  // Calculate four possible products using elements from the (now descending) sorted arrays.
+  // Based on the in-place sorting, sortedPairOneAsc[0] will be the max of original pairOne,
+  // and sortedPairOneAsc[1] will be the min of original pairOne. Same for pairTwo.
+  let productA = sortedPairOneAsc[0] * sortedPairTwoAsc[0]; // (max1 * max2)
+  let productB = sortedPairOneAsc[0] * sortedPairTwoAsc[1]; // (max1 * min2)
+  let productC = sortedPairOneAsc[1] * sortedPairTwoAsc[0]; // (min1 * max2)
+  let productD = sortedPairOneAsc[1] * sortedPairTwoAsc[1]; // (min1 * min2)
 
-    let secondSortedAsc = secondPair.sort((numA, numB) => numA - numB);
-      // Sort the second pair in ascending order. This modifies 'secondPair' in place.
+  // Collect all products and sort them in descending order
+  let allProductsSorted = [productA, productB, productC, productD].sort((valA, valB) => valB - valA);
 
-    let secondSortedDsc = secondPair.sort((numA, numB) => numB - numA);
-      // Re-sort the second pair in descending order. 'secondSortedAsc' now also points to this descending array.
-
-
-    // Calculate all four possible products using the elements of the (effectively descending) sorted pairs.
-    let productOne = firstSortedAsc[0] * secondSortedAsc[0];
-    let productTwo = firstSortedAsc[0] * secondSortedAsc[1];
-    let productThree = firstSortedAsc[1] * secondSortedAsc[0];
-    let productFour = firstSortedAsc[1] * secondSortedAsc[1];
-
-    // Collect all computed products and sort them in descending order to find the largest.
-    let allResults = [productOne, productTwo, productThree, productFour].sort((elemA, elemB) => elemB - elemA);
-
-    return allResults[0];
-      // Return the highest product found.
+  // Return the largest product
+  return allProductsSorted[0];
 }
 
-console.log(calculateMaxProduct(require('node:fs').readFileSync("/dev/stdin", 'utf-8')));
+// Read input from standard input, process it, and print the result to console
+console.log(calculateProduct(require("fs").readFileSync("/dev/stdin", "utf8")));

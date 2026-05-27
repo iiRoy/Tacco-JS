@@ -1,64 +1,47 @@
-const reader = require('readline').createInterface({
-    input: process.stdin
+let collectedInput = '';
+
+process.stdin.on('data', incomingData => {
+    collectedInput += incomingData;
 });
 
-let collectedLines = [];
+process.stdin.on('end', () => {
+    const processedLines = collectedInput.replace(/\s*$/, '')
+        .split('\n')
+        .map(s => s.replace(/\s*$/, ''));
 
-reader.on('line', (currentLine) => {
-    collectedLines.push(currentLine.trim());
+    const numericValues = processedLines[1].split(' ').map(Number);
+    
+    const sortResult = performSelectionSort(numericValues);
+
+    console.log(sortResult.sortedValues.join(' '));
+    console.log(sortResult.exchangeCount);
 });
 
-reader.on('close', () => {
-    const numericElements = collectedLines[1].split(' ').map(s => Number(s));
+const performSelectionSort = (initialValues) => {
+    let currentValues = initialValues; 
+    let totalExchanges = 0;
+    let currentPosition = 0;
 
-    class DataProcessor {
-        constructor(initialElements) {
-            this.dataElements = [...initialElements];
-            this.exchangeCount = 0;
-        }
-
-        processSegment(currentPosition) {
-            if (currentPosition >= this.dataElements.length - 1) {
-                return;
+    const findMinimumIndex = (startIndex, dataCollection) => {
+        return dataCollection.slice(startIndex).reduce((accMinAbsoluteIdx, currentValue, relativeIdx) => {
+            const currentAbsoluteIdx = startIndex + relativeIdx;
+            if (currentValue < dataCollection[accMinAbsoluteIdx]) {
+                return currentAbsoluteIdx;
             }
+            return accMinAbsoluteIdx;
+        }, startIndex);
+    };
 
-            let smallestElementPosition = this.locateSmallest(currentPosition, currentPosition + 1, currentPosition);
+    while (currentPosition < currentValues.length - 1) {
+        const smallestElementIndex = findMinimumIndex(currentPosition, currentValues);
 
-            if (this.dataElements[currentPosition] !== this.dataElements[smallestElementPosition]) {
-                const temp = this.dataElements[currentPosition];
-                this.dataElements[currentPosition] = this.dataElements[smallestElementPosition];
-                this.dataElements[smallestElementPosition] = temp;
-                this.exchangeCount++;
-            }
-
-            this.processSegment(currentPosition + 1);
+        if (smallestElementIndex !== currentPosition) {
+            [currentValues[currentPosition], currentValues[smallestElementIndex]] = 
+            [currentValues[smallestElementIndex], currentValues[currentPosition]];
+            totalExchanges++;
         }
-
-        locateSmallest(startIndex, currentCheckPosition, bestSoFarIndex) {
-            if (currentCheckPosition >= this.dataElements.length) {
-                return bestSoFarIndex;
-            }
-
-            let newBestIndex = bestSoFarIndex;
-            if (this.dataElements[currentCheckPosition] < this.dataElements[bestSoFarIndex]) {
-                 newBestIndex = currentCheckPosition;
-            }
-
-            return this.locateSmallest(startIndex, currentCheckPosition + 1, newBestIndex);
-        }
-
-        executeSorting() {
-            this.processSegment(0);
-            return {
-                orderedSequence: this.dataElements,
-                totalExchanges: this.exchangeCount
-            };
-        }
+        currentPosition++;
     }
 
-    const sorterInstance = new DataProcessor(numericElements);
-    const result = sorterInstance.executeSorting();
-
-    process.stdout.write(result.orderedSequence.join(' ') + '\n');
-    process.stdout.write(result.totalExchanges + '\n');
-});
+    return { sortedValues: currentValues, exchangeCount: totalExchanges };
+};

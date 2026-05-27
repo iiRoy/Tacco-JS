@@ -1,73 +1,83 @@
-const ExecuteCalculation = (sourceData) => {
-    const dataLines = sourceData.split('\n');
+function processInputData(rawData) {
+    const lines = rawData.split("\n");
 
-    const dimensionTokens = dataLines[0].split(' ').map(Number);
-    const gridHeight = dimensionTokens[0];
-    const gridWidth = dimensionTokens[1];
+    const dimensionsLine = lines[0].split(" ");
+    const gridHeight = Number(dimensionsLine[0]);
+    const gridWidth = Number(dimensionsLine[1]);
 
-    const conversionMatrixSize = 10;
-    const unreachableCost = 1e9; // Represents infinity for path calculations
+    const conversionCosts = Array.from({ length: 10 }, (_, rowIdx) =>
+        lines[rowIdx + 1].split(" ").map(Number)
+    );
 
-    const directConversionCharges = new Map();
-
-    for (let originIndex = 0; originIndex < conversionMatrixSize; ++originIndex) {
-        const chargeRowStrings = dataLines[originIndex + 1].split(' ');
-        const destinationCharges = new Map();
-        for (let targetIndex = 0; targetIndex < conversionMatrixSize; ++targetIndex) {
-            destinationCharges.set(targetIndex, Number(chargeRowStrings[targetIndex]));
+    const digitOccurrences = Array(10).fill(0);
+    for (let rowIdx = 0; rowIdx < gridHeight; rowIdx++) {
+        const gridRowValues = lines[rowIdx + 1 + 10].split(" ").map(Number);
+        for (const digitValue of gridRowValues) {
+            if (digitValue >= 0) {
+                digitOccurrences[digitValue]++;
+            }
         }
-        directConversionCharges.set(originIndex, destinationCharges);
     }
 
-    const allPairShortestPaths = new Map();
-    for (let i = 0; i < conversionMatrixSize; ++i) {
-        const innerMap = new Map();
-        for (let j = 0; j < conversionMatrixSize; ++j) {
-            innerMap.set(j, directConversionCharges.get(i).get(j));
-        }
-        allPairShortestPaths.set(i, innerMap);
-    }
+    const findMinCostPath = (sourceNode, destinationNode, costsMatrix) => {
+        const nodeCount = costsMatrix.length;
+        const currentShortestDistances = Array(nodeCount).fill(Infinity);
+        const processedNodes = Array(nodeCount).fill(false);
+        currentShortestDistances[sourceNode] = 0;
 
-    for (let transitNode = 0; transitNode < conversionMatrixSize; ++transitNode) {
-        for (let startNode = 0; startNode < conversionMatrixSize; ++startNode) {
-            for (let endNode = 0; endNode < conversionMatrixSize; ++endNode) {
-                const pathViaTransit = allPairShortestPaths.get(startNode).get(transitNode) +
-                                       allPairShortestPaths.get(transitNode).get(endNode);
-                if (pathViaTransit < allPairShortestPaths.get(startNode).get(endNode)) {
-                    allPairShortestPaths.get(startNode).set(endNode, pathViaTransit);
+        let distanceQueue = [[0, sourceNode]];
+
+        while (distanceQueue.length > 0) {
+            let minimumCurrentDistance = Infinity;
+            let minimumNodeIdentifier = -1;
+            let queueEntryIndex = -1;
+
+            for (let k = 0; k < distanceQueue.length; k++) {
+                if (distanceQueue[k][0] < minimumCurrentDistance) {
+                    minimumCurrentDistance = distanceQueue[k][0];
+                    minimumNodeIdentifier = distanceQueue[k][1];
+                    queueEntryIndex = k;
+                }
+            }
+
+            if (minimumNodeIdentifier === -1) break;
+
+            distanceQueue.splice(queueEntryIndex, 1);
+
+            if (processedNodes[minimumNodeIdentifier]) {
+                continue;
+            }
+            processedNodes[minimumNodeIdentifier] = true;
+
+            if (minimumNodeIdentifier === destinationNode) {
+                return currentShortestDistances[destinationNode];
+            }
+
+            for (let adjacentNode = 0; adjacentNode < nodeCount; adjacentNode++) {
+                if (!processedNodes[adjacentNode]) {
+                    const edgeWeight = costsMatrix[minimumNodeIdentifier][adjacentNode];
+                    const candidateNewDistance = currentShortestDistances[minimumNodeIdentifier] + edgeWeight;
+                    if (candidateNewDistance < currentShortestDistances[adjacentNode]) {
+                        currentShortestDistances[adjacentNode] = candidateNewDistance;
+                        distanceQueue.push([candidateNewDistance, adjacentNode]);
+                    }
                 }
             }
         }
-    }
+        return currentShortestDistances[destinationNode];
+    };
 
-    const digitTallies = new Map();
-    for (let k = 0; k < conversionMatrixSize; ++k) {
-        digitTallies.set(k, 0);
-    }
+    let totalConversionCost = 0;
+    const targetDigitValue = 1;
 
-    for (let rowCounter = 0; rowCounter < gridHeight; ++rowCounter) {
-        const gridLineTokens = dataLines[rowCounter + 11].split(' ');
-        gridLineTokens.forEach(tokenString => {
-            const numericalValue = Number(tokenString);
-            if (numericalValue >= 0 && numericalValue < conversionMatrixSize) {
-                digitTallies.set(numericalValue, digitTallies.get(numericalValue) + 1);
-            }
-        });
-    }
-
-    let accumulatedConversionCost = 0;
-    const finalDesiredDigit = 1;
-
-    for (let currentDigit = 0; currentDigit < conversionMatrixSize; ++currentDigit) {
-        const occurrenceCount = digitTallies.get(currentDigit);
-
-        if (currentDigit !== finalDesiredDigit && occurrenceCount > 0) {
-            const costToConvert = allPairShortestPaths.get(currentDigit).get(finalDesiredDigit);
-            accumulatedConversionCost += costToConvert * occurrenceCount;
+    for (let currentSourceDigit = 0; currentSourceDigit < 10; currentSourceDigit++) {
+        if (digitOccurrences[currentSourceDigit] > 0 && currentSourceDigit !== targetDigitValue) {
+            const costToTarget = findMinCostPath(currentSourceDigit, targetDigitValue, conversionCosts);
+            totalConversionCost += costToTarget * digitOccurrences[currentSourceDigit];
         }
     }
 
-    console.log(String(accumulatedConversionCost));
-};
+    console.log('%s', totalConversionCost);
+}
 
-ExecuteCalculation(require('node:fs').readFileSync('/dev/stdin', 'utf8'));
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,61 +1,50 @@
-// This module is designed to process geometric input and calculate properties of a triangle.
-// It reads input from standard input, parses it, and then computes the area, perimeter,
-// and one of the altitudes of a triangle given two sides and the included angle.
-function computeGeometricValues(  inputRows  ) {
-  // Extract numerical string tokens from the first line of input
-  var   valueTokens = inputRows[  0  ].split(  /\s+/  )  ;
+function calculateTriangleProps(inputLines) {
+  // Parse the input numbers from the first line
+  let numberStrings = inputLines[0].split(/\s+/);
 
-  // Parse the string tokens into floating-point numbers for calculations
-  var firstSide = parseFloat(  valueTokens[0]  );
-  var secondSide = parseFloat(  valueTokens[  1  ]  )  ;
-  var inputAngleDegrees = parseFloat(  valueTokens[  2  ]  )  ;
+  // Extract and convert the three numerical inputs
+  let sideA = parseFloat(numberStrings[0]);
+  let sideB = parseFloat(numberStrings[1]);
+  let angleDegrees = parseFloat(numberStrings[2]);
 
-  // Convert the angle from degrees to radians, as trigonometric functions expect radians
-  const angleInRadians = inputAngleDegrees * Math.PI / 180.0;
+  // Convert the angle from degrees to radians for trigonometric functions
+  let angleRadians = angleDegrees * Math.PI / 180.0;
 
-  // Apply the Law of Cosines to determine the length of the third side of the triangle
-  // c^2 = a^2 + b^2 - 2ab*cos(C)
-  var thirdSideLength = Math.sqrt(
-    Math.pow(firstSide, 2) + Math.pow(secondSide, 2) - 2 * firstSide * secondSide * Math.cos(angleInRadians)
-  );
+  // Calculate the third side (sideC) using the Law of Cosines
+  let sideC = Math.sqrt(Math.pow(sideA, 2) + Math.pow(sideB, 2) - 2 * sideA * sideB * Math.cos(angleRadians));
 
-  // Calculate the area of the triangle using the formula: Area = 0.5 * a * b * sin(C)
-  var calculatedArea = firstSide * secondSide * Math.sin(angleInRadians) / 2.0;
+  // Calculate the area of the triangle
+  let triangleArea = sideA * sideB * Math.sin(angleRadians) / 2;
 
-  // Compute the total length of the triangle's boundary
-  var totalCircumference = firstSide + secondSide + thirdSideLength;
+  // Calculate the perimeter of the triangle
+  let trianglePerimeter = sideA + sideB + sideC;
 
-  // Determine the height (altitude) relative to side 'a' using the formula: h = 2 * Area / base
-  var altitudeValue = (2 * calculatedArea) / firstSide;
+  // Calculate the height 'h' relative to side 'a'
+  let heightH = (2 * triangleArea) / sideA;
 
-  // Output the calculated values formatted to 6 decimal places, separated by spaces.
+  // Output the calculated values, formatted to 6 decimal places and joined by a space
   console.log(
     [
-      calculatedArea.toFixed(6),
-      totalCircumference.toFixed(6),
-      altitudeValue.toFixed(6),
+      triangleArea.toFixed(6),
+      trianglePerimeter.toFixed(6),
+      heightH.toFixed(6),
     ].join(' ')
   );
 }
 
+// Initialize an array to store incoming data chunks from standard input
+let dataChunks = [];
 
-// --- Input Processing Section ---
-// This part handles reading data from standard input (stdin) in a Node.js environment.
-
-// An array to store incoming data buffer chunks from stdin.
-var receivedSegments = [];
-
-// Event listener for 'data' event: fired when new data is available on stdin.
-process.stdin.on('data', function (bufferSlice) {
-  receivedSegments.push(bufferSlice); // Append each received data chunk to our array.
+// Event listener for 'data' chunks received from standard input
+process.stdin.on('data', function (dataPiece) {
+  dataChunks.push(dataPiece);
 });
 
-// Event listener for 'end' event: fired when the entire input stream has been received.
-process.stdin.on('end', function (  ) {
-  // Join all the received buffer segments into a single string, then split by newline characters.
-  // This produces an array where each element is a line from the input.
-  var finalInputArray = receivedSegments.join('').split('\n');
+// Event listener for the 'end' of standard input stream
+process.stdin.on('end', function () {
+  // Join all received data chunks and split them into individual lines
+  let inputLinesCombined = dataChunks.join('').split('\n');
 
-  // Invoke the main calculation function with the processed input lines.
-  computeGeometricValues(finalInputArray);
+  // Call the main calculation function with the processed input lines
+  calculateTriangleProps(inputLinesCombined);
 });

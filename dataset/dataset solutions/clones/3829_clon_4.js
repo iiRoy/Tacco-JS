@@ -1,27 +1,20 @@
-function processData(entry) {
-    const obtainAllSubsequences = (sourceString) => {
-        const lengthOfSource = sourceString.length;
-        return Array.from({ length: lengthOfSource }).reduce((collection, _, startIndex) => {
-            return collection.concat(
-                Array.from({ length: lengthOfSource - startIndex }).map((__, subLengthIndex) => {
-                    const currentSubLength = subLengthIndex + 1;
-                    return sourceString.slice(startIndex, startIndex + currentSubLength);
-                })
-            );
-        }, []);
-    };
+function Main(input) {
+  const parsedData = input.split(/\s/g);
+  const sourceString = parsedData[0];
+  const desiredIndex = Number(parsedData[1]) - 1;
 
-    const parts = entry.split(/\s+/);
-    const primaryString = parts[0];
-    const ordinalPosition = parseInt(parts[1], 10) - 1;
+  const stringLength = sourceString.length;
+  const uniqueSubstrings = new Set();
 
-    const rawSubstrings = obtainAllSubsequences(primaryString);
+  for (let startPosition = 0; startPosition < stringLength; startPosition++) {
+    for (let endPosition = startPosition + 1; endPosition <= stringLength; endPosition++) {
+      uniqueSubstrings.add(sourceString.substring(startPosition, endPosition));
+    }
+  }
 
-    const distinctOrderedSubstrings = Array.from(new Set(rawSubstrings)).sort();
+  const finalSortedSubstrings = Array.from(uniqueSubstrings).sort();
 
-    const finalResult = distinctOrderedSubstrings[ordinalPosition];
-
-    console.log(String(finalResult));
+  console.log('%s', finalSortedSubstrings[desiredIndex]);
 }
 
-processData(require("fs").readFileSync("/dev/stdin", "utf8"));
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

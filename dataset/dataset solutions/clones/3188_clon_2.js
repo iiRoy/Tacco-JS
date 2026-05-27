@@ -1,153 +1,144 @@
-var INPUT_PARSER = ( function ( ) {
-
-  // This function serves as a factory to create an instance of our custom
-  // input parsing utility. It encapsulates the core logic for reading data.
-  function createInputReader ( sourceContent ) {
-    return new InputReader( sourceContent );
-  }
-
-  // The primary constructor for the InputReader object.
-  // It initializes the internal state required for sequential line processing.
-  function InputReader ( sourceContent ) {
-    // The raw input string is first trimmed of leading/trailing whitespace
-    // and then split into an array of individual lines.
-    this.lineFragments = sourceContent.trim().split( "\n" ) ;
-    // This property keeps track of the index of the current line being processed
-    // within the 'lineFragments' array. It starts at the very beginning (0).
-    this.currentLineIdx = 0 ;
-  }
-
-  // Defines a prototype method for the InputReader. This method is designed
-  // to extract a single data item from the current line.
-  // The 'returnAsString' parameter dictates if the item should be returned
-  // as its raw string form or converted to a numeric type.
-  InputReader.prototype.extractNext = function ( returnAsString ) {
-    var currentFragments = this.lineFragments , // Reference to the array of all lines.
-        idx = this.currentLineIdx ,             // Current line's index.
-        extractedValue ;                        // Variable to hold the retrieved item.
-
-    // Before attempting to pop an item, check if the current line at 'idx'
-    // is still a single string. If so, it means it hasn't been tokenized yet.
-    if ( typeof currentFragments[ idx ] === "string" ) {
-      // Split the line into individual tokens (words) based on spaces,
-      // and then reverse the order. Reversing allows for efficient 'pop' operations
-      // from the end of the array, which is generally faster than 'shift' from the beginning.
-      currentFragments[ idx ] = currentFragments[ idx ].split( " " ).reverse() ;
+// This Immediately Invoked Function Expression (IIFE) encapsulates the input parsing logic
+// and returns a factory function to create parser instances.
+var INPUT_PARSER_FACTORY = (function() {
+    /**
+     * Serves as the primary factory function to instantiate a new InputDataParser.
+     * @param {string} rawInputContent - The entire input content as a single string.
+     * @returns {InputDataParser} A fresh instance of the data parser.
+     */
+    function createParser(rawInputContent) {
+        return new InputDataParser(rawInputContent);
     }
 
-    // Retrieve the last element from the (possibly reversed) array of tokens
-    // representing the current line. This effectively gets the 'next' item.
-    extractedValue = currentFragments[ idx ].pop( ) ;
-
-    // After extracting an item, check if the current line's token array is now empty.
-    // If it is, it means all items on this line have been consumed.
-    if ( ! currentFragments[ idx ].length ) {
-      // Advance the line index to move to the subsequent line for future operations.
-      this.currentLineIdx++ ;
+    /**
+     * The constructor for the InputDataParser class.
+     * It prepares the input string for sequential reading.
+     * @param {string} initialContent - The raw string data provided for parsing.
+     */
+    function InputDataParser(initialContent) {
+        // Internal storage for all input lines, trimmed and split by newline characters.
+        this._sourceLines = initialContent.trim().split("\n");
+        // Keeps track of the current line index being processed within _sourceLines.
+        this._currentLineIndex = 0;
     }
-    // Finally, return the extracted item. If 'returnAsString' is truthy,
-    // the item is returned as a string; otherwise, it's converted to a number
-    // using the unary plus operator.
-    return returnAsString ? extractedValue : +extractedValue ;
-  } ;
 
-  // This prototype method reads an entire line of input and provides it
-  // as an array of its constituent parts.
-  InputReader.prototype.readEntireLine = function ( returnAsString ) {
-    // Access the current line, split it into parts based on spaces,
-    // and then immediately increment 'currentLineIdx' to point to the next line.
-    var lineParts = this.lineFragments[ this.currentLineIdx++ ].split( " " ) ;
-    // If 'returnAsString' is true, return the array of string parts as-is.
-    // Otherwise, use 'map' to convert each string part into a numeric value.
-    return returnAsString ? lineParts : lineParts.map( item => +item ) ;
-  } ;
+    /**
+     * Extracts and returns the next available token from the current input line.
+     * Automatically advances to the next line if the current one is fully consumed.
+     * @param {boolean} [returnAsString=false] - If true, the token is returned as a string; otherwise, it's converted to a number.
+     * @returns {string|number} The parsed token.
+     */
+    InputDataParser.prototype.readNextToken = function(returnAsString) {
+        var lineCollection = this._sourceLines;
+        var currentPosition = this._currentLineIndex;
+        var retrievedToken;
 
-  // A method designed to read a specified number of consecutive lines
-  // and process them into a two-dimensional array (matrix).
-  InputReader.prototype.readMatrix = function ( numberOfLines , returnAsString ) {
-    // Utilize 'slice' to extract 'numberOfLines' from the 'lineFragments' array,
-    // starting from 'currentLineIdx'. The 'currentLineIdx' is then advanced.
-    // Each extracted line string is then split into an array of strings.
-    var extractedValue = this.lineFragments.slice( this.currentLineIdx , this.currentLineIdx += numberOfLines ).map( element => element.split( " " ) ) ;
-    // If numeric conversion is not requested, return the matrix of strings.
-    // Otherwise, iterate through each row and then each cell to convert all
-    // string representations to numbers.
-    return returnAsString ? extractedValue : extractedValue.map( row => row.map( cell => +cell ) ) ;
-  } ;
+        // If the current line is still a raw string, split it into tokens and reverse for efficient `pop()`.
+        if (typeof lineCollection[currentPosition] === "string") {
+            lineCollection[currentPosition] = lineCollection[currentPosition].split(" ").reverse();
+        }
 
-  // This method reads a block of 'numberOfLines' from the input,
-  // returning them as a one-dimensional array.
-  InputReader.prototype.readLinesAsArray = function ( numberOfLines , returnAsString ) {
-    // Extract a contiguous block of lines using 'slice', and advance the index.
-    var extractedValue = this.lineFragments.slice( this.currentLineIdx , this.currentLineIdx += numberOfLines ) ;
-    // Convert elements to numbers if 'returnAsString' is not true.
-    return returnAsString ? extractedValue : extractedValue.map( element => +element ) ;
-  } ;
+        // Retrieve the last element, which is the next token in original order.
+        retrievedToken = lineCollection[currentPosition].pop();
 
-  // The module exports the factory function, allowing external code to create
-  // new InputReader instances without directly interacting with the constructor.
-  return createInputReader ;
+        // If the current line's token array is now empty, increment the line index.
+        if (!lineCollection[currentPosition].length) {
+            this._currentLineIndex++;
+        }
 
-} ) ( ) ; // This is an Immediately Invoked Function Expression (IIFE) for module scope.
+        // Return the token, optionally converting it to a number.
+        return returnAsString ? retrievedToken : +retrievedToken;
+    };
 
+    /**
+     * Reads an entire line from the input, splits it into tokens, and advances the line pointer.
+     * @param {boolean} [returnAsStrings=false] - If true, tokens are returned as strings; otherwise, as numbers.
+     * @returns {Array<string|number>} An array containing all tokens from the read line.
+     */
+    InputDataParser.prototype.readLineTokens = function(returnAsStrings) {
+        // Fetch the current line, split it by spaces, and then move to the next line.
+        var tokensFromLine = this._sourceLines[this._currentLineIndex++].split(" ");
+        // Return the tokens, mapping them to numbers if not requested as strings.
+        return returnAsStrings ? tokensFromLine : tokensFromLine.map(valueElement => +valueElement);
+    };
 
-// Instantiate the input reader by passing it the content of standard input.
-// The 'fs' module is used to synchronously read the file at '/dev/stdin' as UTF-8 text.
-var readerInstance = INPUT_PARSER( require( "fs" ).readFileSync( "/dev/stdin" , "utf8" ) ) ;
+    /**
+     * Reads a specified number of lines, treating each as a row in a matrix, and tokenizes them.
+     * Advances the line pointer by the number of rows read.
+     * @param {number} numberOfLines - The count of lines to read as matrix rows.
+     * @param {boolean} [returnAsStrings=false] - If true, all matrix elements are strings; otherwise, numbers.
+     * @returns {Array<Array<string|number>>} A 2D array representing the matrix.
+     */
+    InputDataParser.prototype.readMatrix = function(numberOfLines, returnAsStrings) {
+        // Extract a slice of lines, then map each line to an array of its tokens.
+        var matrixRowsData = this._sourceLines.slice(this._currentLineIndex, this._currentLineIndex += numberOfLines).map(lineContent => lineContent.split(" "));
+        // Conditionally convert all elements within the matrix to numbers.
+        return returnAsStrings ? matrixRowsData : matrixRowsData.map(rowArray => rowArray.map(valueElement => +valueElement));
+    };
 
-// Execute the main processing function and output its return value to the console.
-console.log( processInputData( ) ) ;
+    /**
+     * Reads a specified number of raw lines without splitting them into tokens.
+     * Advances the line pointer by the number of lines read.
+     * @param {number} numberOfLines - The count of raw lines to retrieve.
+     * @param {boolean} [returnAsStrings=false] - If true, lines are returned as strings; otherwise, attempts to convert each line to a number.
+     * @returns {Array<string|number>} An array of the raw lines.
+     */
+    InputDataParser.prototype.readRawLines = function(numberOfLines, returnAsStrings) {
+        // Obtain a slice of the source lines.
+        var rawLineArray = this._sourceLines.slice(this._currentLineIndex, this._currentLineIndex += numberOfLines);
+        // Return the lines, mapping them to numbers if not requested as strings.
+        return returnAsStrings ? rawLineArray : rawLineArray.map(valueElement => +valueElement);
+    };
+
+    return createParser; // The IIFE returns the factory function.
+})();
+
+// Instantiate the data processor by reading the entire content of standard input.
+var dataProcessor = INPUT_PARSER_FACTORY(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+// Execute the main problem-solving function and print its return value to the console.
+console.log(solveProblem());
 
 /**
- * This is the primary function that encapsulates the problem-solving logic.
- * It interacts with the 'readerInstance' to consume input and compute a final result.
- * @returns {number} The integer result derived from processing the input data.
+ * This is the core function that implements the problem's logic.
+ * It reads specific input values, performs calculations, and determines the final answer.
+ * @returns {number} The computed result based on the input data.
  */
-function processInputData ( ) {
-  // Read the first numeric value from the input, which represents the total
-  // number of subsequent data lines to process.
-  const totalIterations = readerInstance.extractNext( ) ;
-  // Read the second numeric value, which specifies the required size
-  // for an array used to track item counts.
-  const arraySize = readerInstance.extractNext( ) ;
+function solveProblem() {
+    // Read the first two integer values from the input:
+    // numItems represents 'n', the total number of items.
+    // numCategories represents 'm', the total number of distinct categories.
+    var numItems = dataProcessor.readNextToken();
+    var numCategories = dataProcessor.readNextToken();
 
-  // Initialize an array named 'itemCounts'. Its size is determined by 'arraySize',
-  // and all its elements are initially set to zero (as floating-point numbers).
-  const itemCounts = Array( arraySize ).fill( 0.0 ) ;
+    // Initialize an array to keep track of how many times each category is chosen.
+    // The array size is 'numCategories', and all counts start at zero.
+    var categoryCounts = Array(numCategories).fill(0);
+    var finalResult = 0; // This variable will store the final count of categories chosen by all items.
 
-  // Declare a variable to store the cumulative final result.
-  // Initialized to zero point zero.
-  let finalResult = 0.0 ;
+    // Iterate through each of the 'numItems'.
+    for (var itemIndex = 0; itemIndex < numItems; itemIndex++) {
+        // Read the current line, which contains the preferences for the current item.
+        // The first element (currentLineTokens[0]) indicates how many preferences follow.
+        var currentLineTokens = dataProcessor.readLineTokens();
 
-  // Begin a loop that iterates 'totalIterations' times. Each iteration
-  // processes a distinct line of input data.
-  for ( let outerLoopIndex = 0 ; outerLoopIndex < totalIterations ; outerLoopIndex++ ) {
-    // Read the current line of input as an array of numbers.
-    // The first element of 'currentLineData' indicates how many actual items
-    // are present on this line (following the count itself).
-    const currentLineData = readerInstance.readEntireLine( ) ;
-
-    // Start an inner loop to process each item within the 'currentLineData'.
-    // The loop begins from index 1 because index 0 holds the count of items.
-    for ( let innerLoopIndex = 1 ; innerLoopIndex <= currentLineData[ 0 ] ; innerLoopIndex++ ) {
-      // Increment the count for the specific item in the 'itemCounts' array.
-      // We subtract 1 from 'currentLineData[innerLoopIndex]' to convert it
-      // from a 1-based item ID (common in problem statements) to a 0-based array index.
-      itemCounts[ currentLineData[ innerLoopIndex ] - 1 ]++ ;
+        // Loop through the actual preferences for the current item.
+        // The loop starts from index 1 because index 0 holds the count of preferences.
+        for (var preferenceIndex = 1; preferenceIndex <= currentLineTokens[0]; preferenceIndex++) {
+            // Increment the counter for the specific category chosen by this item.
+            // Note: currentLineTokens[preferenceIndex] is 1-based, so we subtract 1 for 0-based array indexing.
+            categoryCounts[currentLineTokens[preferenceIndex] - 1]++;
+        }
     }
-  }
 
-  // After all input lines have been processed, iterate through the 'itemCounts' array.
-  // This loop determines how many distinct items have been encountered exactly
-  // 'totalIterations' times.
-  for ( let outerLoopIndex = 0 ; outerLoopIndex < arraySize ; outerLoopIndex++ ) {
-    // If the count of an item in 'itemCounts' is precisely equal to 'totalIterations',
-    // it means this item was present in every single input line/set.
-    if ( itemCounts[ outerLoopIndex ] === totalIterations ) {
-      // Increment the 'finalResult' for each such item found.
-      finalResult++ ;
+    // After processing all items, iterate through the category counts.
+    // Determine how many categories were chosen by *all* 'numItems'.
+    for (itemIndex = 0; itemIndex < numCategories; itemIndex++) {
+        // If a category's count matches the total number of items, it means every item chose it.
+        if (categoryCounts[itemIndex] === numItems) {
+            finalResult++; // Increment the final result counter.
+        }
     }
-  }
-  // Return the accumulated 'finalResult', which represents the answer to the problem.
-  return finalResult ;
+
+    return finalResult; // Return the total count of categories that satisfy the condition.
 }

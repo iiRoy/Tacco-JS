@@ -1,17 +1,12 @@
-const startOperation = (sourceData) => {
-    const numericCap = Number.parseInt(sourceData.split('\n')[0], 10);
+function processInput(inputSource) {
+    const iterationCount = Number.parseInt(inputSource.split('\n')[0], 10);
 
-    const generatedOutputs = Array.from({ length: numericCap }, (_, zeroBasedIndex) => {
-        const oneBasedIndex = zeroBasedIndex + 1;
-
-        const leadingDigit = ((oneBasedIndex - 1) % 9) + 1;
-        const trailingNinesAmount = Math.floor((oneBasedIndex - 1) / 9);
-
-        return String(leadingDigit) + '9'.repeat(trailingNinesAmount);
+    Array.from({ length: iterationCount }, (_, currentIdx) => {
+        const baseDigit = (currentIdx % 9) + 1;
+        const ninesSuffixLength = Math.floor(currentIdx / 9);
+        const constructedString = baseDigit.toString() + '9'.repeat(ninesSuffixLength);
+        console.log(constructedString);
     });
+}
 
-    console.log(generatedOutputs.join('\n'));
-};
-
-const inputSource = require("fs").readFileSync("/dev/stdin", "utf8");
-startOperation(inputSource);
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

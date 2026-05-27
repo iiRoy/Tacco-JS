@@ -1,37 +1,37 @@
-function processData(rawData) {
-    const entrySegments = rawData.split("\n").slice(1, -1);
-    
-    const localeGroups = new Map();
+function processInput(rawText) {
+  const lineSegments = rawText.split('\n');
 
-    entrySegments.forEach((entryLine, lineNum) => {
-        const parts = entryLine.split(" ");
-        const locale = parts[0];
-        const appraisal = parseInt(parts[1], 10);
-        const seq = lineNum + 1;
+  const relevantLines = lineSegments.slice(1, lineSegments.length - 1);
 
-        if (!localeGroups.has(locale)) {
-            localeGroups.set(locale, []);
-        }
-        localeGroups.get(locale).push({ appraisal: appraisal, seq: seq });
-    });
+  const eateryRecords = relevantLines.reduce((accumulator, currentLine, currentIdx) => {
+    const parts = currentLine.split(' ');
+    if (parts.length === 2) {
+      accumulator.push({
+        originalOrder: currentIdx + 1,
+        location: parts[0],
+        rating: Number(parts[1])
+      });
+    }
+    return accumulator;
+  }, []);
 
-    const finalSequence = [];
+  const decoratedRecords = eateryRecords.map(eatery => ({
+    ...eatery,
+    sortKey: [eatery.location, -eatery.rating]
+  }));
 
-    const orderedLocales = Array.from(localeGroups.keys()).sort();
+  decoratedRecords.sort((firstEatery, secondEatery) => {
+    const [locA, scoreValA] = firstEatery.sortKey;
+    const [locB, scoreValB] = secondEatery.sortKey;
 
-    orderedLocales.forEach(currentLocale => {
-        const localeEntries = localeGroups.get(currentLocale);
-        
-        localeEntries.sort((itemA, itemB) => itemB.appraisal - itemA.appraisal);
-        
-        localeEntries.forEach(item => {
-            finalSequence.push(item.seq);
-        });
-    });
+    if (locA < locB) return -1;
+    if (locA > locB) return 1;
 
-    finalSequence.forEach(itemSeq => {
-        console.log(itemSeq);
-    });
+    return scoreValA - scoreValB;
+  });
+
+  const outputResult = decoratedRecords.map(eatery => eatery.originalOrder).join('\n');
+  console.log(outputResult);
 }
 
-processData(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

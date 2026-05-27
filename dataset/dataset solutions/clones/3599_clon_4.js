@@ -1,135 +1,129 @@
-const createDataFeeder = (sourceText) => {
-    let internalLines = sourceText.split('\n');
-    let lineCursor = 0;
-    let currentSegmentCache = null;
-
-    const acquireElement = (stringFormat = false) => {
-        if (currentSegmentCache === null || currentSegmentCache.length === 0) {
-            if (lineCursor >= internalLines.length) {
-                return undefined;
-            }
-            const lineFragment = internalLines[lineCursor];
-            currentSegmentCache = lineFragment.split(' ').reverse();
-        }
-
-        const retrievedElement = currentSegmentCache.pop();
-
-        if (currentSegmentCache.length === 0) {
-            lineCursor++;
-            currentSegmentCache = null;
-        }
-
-        return stringFormat ? retrievedElement : Number(retrievedElement);
-    };
-
-    const acquireSequence = (stringFormat = false) => {
-        if (lineCursor >= internalLines.length) {
-            return [];
-        }
-        const lineFragment = internalLines[lineCursor++];
-        currentSegmentCache = null;
-        const elements = lineFragment.split(' ');
-        return stringFormat ? elements : elements.map(Number);
-    };
-
-    const acquireSegmentedData = (numSegments, stringFormat = false) => {
-        const collectedSegments = [];
-        for (let idx = 0; idx < numSegments; idx++) {
-            if (lineCursor >= internalLines.length) {
-                break;
-            }
-            collectedSegments.push(acquireSequence(stringFormat));
-        }
-        return collectedSegments;
-    };
-
-    return {
-        grabValue: acquireElement,
-        grabLine: acquireSequence,
-        grabLines: acquireSegmentedData
-    };
-};
-
-function calculatePermutationDisorder(numericSeries) {
-    let disorderCount = 0;
-
-    function recursivelySortAndCount(partition) {
-        if (partition.length <= 1) {
-            return partition;
-        }
-
-        const middlePoint = Math.floor(partition.length / 2);
-        const leftHalf = recursivelySortAndCount(partition.slice(0, middlePoint));
-        const rightHalf = recursivelySortAndCount(partition.slice(middlePoint));
-
-        return mergeHalvesAndAccumulate(leftHalf, rightHalf);
+class FenwickTree {
+    constructor(size) {
+        this.tree = new Array(size + 1).fill(0);
+        this.size = size;
     }
 
-    function mergeHalvesAndAccumulate(leftPart, rightPart) {
-        const mergedResult = [];
-        let leftIdx = 0;
-        let rightIdx = 0;
-
-        while (leftIdx < leftPart.length && rightIdx < rightPart.length) {
-            if (leftPart[leftIdx] <= rightPart[rightIdx]) {
-                mergedResult.push(leftPart[leftIdx++]);
-            } else {
-                mergedResult.push(rightPart[rightIdx++]);
-                disorderCount += (leftPart.length - leftIdx);
-            }
+    update(index, value) {
+        for (; index <= this.size; index += index & -index) {
+            this.tree[index] += value;
         }
-
-        while (leftIdx < leftPart.length) {
-            mergedResult.push(leftPart[leftIdx++]);
-        }
-        while (rightIdx < rightPart.length) {
-            mergedResult.push(rightPart[rightIdx++]);
-        }
-        return mergedResult;
     }
 
-    recursivelySortAndCount([...numericSeries]);
-    return disorderCount;
+    query(index) {
+        let sum = 0;
+        for (; index > 0; index -= index & -index) {
+            sum += this.tree[index];
+        }
+        return sum;
+    }
 }
 
-function evaluateOptimalThreshold() {
-    const inputSource = createDataFeeder(require("fs").readFileSync("/dev/stdin", "utf8"));
+function countInversions(dataArray) {
+    if (dataArray.length === 0) return 0;
 
-    const collectionSize = inputSource.grabValue();
-    const dataCollection = inputSource.grabLine();
+    const uniqueSortedValues = [...new Set(dataArray)].sort((a, b) => a - b);
+    const valueToRankMap = new Map();
+    uniqueSortedValues.forEach((val, idx) => valueToRankMap.set(val, idx + 1));
 
-    if (collectionSize <= 2) {
-        return Math.max(...dataCollection);
+    const maximumRank = uniqueSortedValues.length;
+    const bitStructure = new FenwickTree(maximumRank);
+    let totalInversions = 0;
+
+    for (let i = 0; i < dataArray.length; i++) {
+        const currentElementRank = valueToRankMap.get(dataArray[i]);
+        totalInversions += bitStructure.query(maximumRank) - bitStructure.query(currentElementRank);
+        bitStructure.update(currentElementRank, 1);
     }
 
-    const targetDisorder = Math.floor(collectionSize * (collectionSize + 1) / 4 + 1);
+    return totalInversions;
+}
+
+class InputReader {
+    constructor(sourceString) {
+        this.lineBuffer = sourceString.split('\n');
+        this.currentLineWords = [];
+        this.currentWordCursor = 0;
+        this.lineCursor = 0;
+    }
+
+    fetchAtom(returnAsString) {
+        if (this.currentWordCursor === 0) {
+            if (this.lineCursor >= this.lineBuffer.length) {
+                return undefined;
+            }
+            const currentLineContent = this.lineBuffer[this.lineCursor];
+            this.currentLineWords = currentLineContent.split(' ');
+            this.currentWordCursor = this.currentLineWords.length;
+        }
+
+        this.currentWordCursor--;
+        const extractedWord = this.currentLineWords[this.currentWordCursor];
+
+        if (this.currentWordCursor === 0) {
+            this.lineCursor++;
+            this.currentLineWords = [];
+        }
+
+        return returnAsString ? extractedWord : Number(extractedWord);
+    }
+
+    obtainLine(returnAsString) {
+        if (this.lineCursor >= this.lineBuffer.length) {
+            return undefined;
+        }
+        const lineContent = this.lineBuffer[this.lineCursor];
+        this.lineCursor++;
+        this.currentLineWords = [];
+        this.currentWordCursor = 0;
+
+        const wordsInLine = lineContent.split(' ');
+        return returnAsString ? wordsInLine : wordsInLine.map(Number);
+    }
+
+    acquireMultipleLines(count, returnAsString) {
+        const collectedLines = [];
+        for (let i = 0; i < count; i++) {
+            collectedLines.push(this.obtainLine(returnAsString));
+        }
+        return collectedLines;
+    }
+}
+
+const inputSource = new InputReader(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+function processMain() {
+    const elementCount = inputSource.fetchAtom();
+    const dataElements = inputSource.obtainLine();
+
+    if (elementCount <= 2) {
+        return Math.max(...dataElements);
+    }
+
+    const targetInversionCount = Math.floor(elementCount * (elementCount + 1) / 4 + 1);
 
     let lowerBound = 2;
     let upperBound = 1e9 + 1;
 
-    const locateThresholdRecursively = (currentLow, currentHigh) => {
-        if (currentLow >= currentHigh) {
-            return currentLow;
-        }
-        const midCandidate = Math.floor((currentLow + currentHigh) / 2);
+    while (lowerBound < upperBound) {
+        const midValue = Math.floor((lowerBound + upperBound) / 2);
 
-        const transformedSeries = dataCollection.reduce((accumulator, itemValue, index) => {
-            const previousTotal = accumulator[index];
-            const currentDelta = (itemValue < midCandidate) ? -1 : 1;
-            accumulator.push(previousTotal + currentDelta);
+        const transformedArray = dataElements.reduce((accumulator, currentElement) => {
+            const lastValue = accumulator[accumulator.length - 1];
+            accumulator.push(lastValue + (currentElement < midValue ? -1 : 1));
             return accumulator;
         }, [0]);
 
-        if (calculatePermutationDisorder(transformedSeries) >= targetDisorder) {
-            return locateThresholdRecursively(currentLow, midCandidate);
+        const currentInversions = countInversions(transformedArray);
+
+        if (currentInversions < targetInversionCount) {
+            lowerBound = midValue + 1;
         } else {
-            return locateThresholdRecursively(midCandidate + 1, currentHigh);
+            upperBound = midValue;
         }
-    };
+    }
 
-    const finalThreshold = locateThresholdRecursively(lowerBound, upperBound);
-
-    return finalThreshold - 1;
+    return lowerBound - 1;
 }
 
-console.log(evaluateOptimalThreshold());
+console.log(processMain());

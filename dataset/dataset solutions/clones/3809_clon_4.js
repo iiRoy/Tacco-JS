@@ -1,17 +1,20 @@
-(function(origin) {
-    var digitPattern = /(\d+)\s+(\d+)\s+(\d+)\s+(\d+)/;
-    var collected = origin.match(digitPattern);
+'use strict';
 
-    var firstTerm = +collected[1];
-    var secondTerm = +collected[2];
-    var thirdTerm = +collected[3];
-    var fourthTerm = +collected[4];
+const DATA_SEPARATOR = " ";
 
-    var intermediateDifference = firstTerm - secondTerm;
+const computeResult = (rawData) => {
+    const [valA, valB, valC, valK] = rawData.split(DATA_SEPARATOR).map(Number);
 
-    var parityFactor = Math.cos(fourthTerm * Math.PI);
+    const intermediateValue = valA - valB;
+    const signFactor = 1 - 2 * (valK % 2);
+    const finalOutcome = intermediateValue * signFactor;
 
-    var ultimateResult = intermediateDifference * parityFactor;
+    console.log(finalOutcome);
+};
 
-    process.stdout.write(String(ultimateResult) + '\n');
-})(Buffer.from(require("node:fs").readFileSync("/dev/stdin")).toString("utf8"));
+const initiateComputation = () => {
+    const sourceData = require("fs").readFileSync("/dev/stdin", "utf8");
+    computeResult(sourceData);
+};
+
+initiateComputation();

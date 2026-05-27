@@ -1,46 +1,47 @@
-const ALPHABET_LENGTH = 26;
-const LOWERCASE_A_ASCII = 'a'.charCodeAt(0);
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
+var charArray = rawData.split('');
 
-const isLowercaseAlphabet = (charToTest) => {
-    return charToTest >= 'a' && charToTest <= 'z';
-};
+const ALPHABET_SIZE = 26;
+const LOWERCASE_A_CODE = 'a'.charCodeAt(0);
 
-const performCaesarCharShift = (originalChar, shiftOffset) => {
-    if (!isLowercaseAlphabet(originalChar)) {
-        return originalChar;
+function getShiftedChar(originalChar, currentShift) {
+    var transformedChar;
+    var charCode = originalChar.charCodeAt(0);
+
+    var isLowercaseLetter = (charCode >= LOWERCASE_A_CODE && charCode < LOWERCASE_A_CODE + ALPHABET_SIZE);
+
+    if (!isLowercaseLetter) {
+        transformedChar = originalChar;
+    } else {
+        var relativeCode = charCode - LOWERCASE_A_CODE;
+        var shiftedRelativeCode = (relativeCode + currentShift) % ALPHABET_SIZE;
+        transformedChar = String.fromCharCode(shiftedRelativeCode + LOWERCASE_A_CODE);
     }
+    return transformedChar;
+}
 
-    const charAsciiValue = originalChar.charCodeAt(0);
-    const shiftedRelativePosition = (charAsciiValue - LOWERCASE_A_ASCII + shiftOffset) % ALPHABET_LENGTH;
-    return String.fromCharCode(shiftedRelativePosition + LOWERCASE_A_ASCII);
-};
-
-const rawInputData = require('fs').readFileSync('/dev/stdin', 'utf8');
-
-const characterSequence = Array.from(rawInputData);
-
-let finalDecipheredText = null;
-
-const KEY_PHRASES = ['the', 'this', 'that'];
-
-for (let currentShiftAmount = 0; currentShiftAmount < ALPHABET_LENGTH; currentShiftAmount++) {
-    const potentialDecryptionCandidate = characterSequence.reduce((accumulatedString, currentCharacter) => {
-        const processedCharacter = performCaesarCharShift(currentCharacter, currentShiftAmount);
-        return accumulatedString + processedCharacter;
-    }, '');
-
-    let foundKeywordInCandidate = false;
-    for (const phrase of KEY_PHRASES) {
-        if (potentialDecryptionCandidate.includes(phrase)) {
-            foundKeywordInCandidate = true;
-            break;
+function hasDecipheredKeywords(textToCheck) {
+    var targetKeywords = ['the', 'this', 'that'];
+    for (var k = 0; k < targetKeywords.length; k++) {
+        if (textToCheck.indexOf(targetKeywords[k]) >= 0) {
+            return true;
         }
     }
+    return false;
+}
 
-    if (foundKeywordInCandidate) {
-        finalDecipheredText = potentialDecryptionCandidate;
+var finalOutput;
+
+for (var shiftVal = 0; shiftVal < ALPHABET_SIZE; shiftVal++) {
+    var processedChars = charArray.map(function(currentChar) {
+        return getShiftedChar(currentChar, shiftVal);
+    });
+    var processedString = processedChars.join('');
+
+    if (hasDecipheredKeywords(processedString)) {
+        finalOutput = processedString;
         break;
     }
 }
 
-console.log(finalDecipheredText !== null ? finalDecipheredText : "No decipherable message found.");
+console.log(finalOutput);

@@ -1,56 +1,67 @@
-let inputDataCollection = []; // An array to store all lines received from input.
+let inputData = []; // Array to store incoming lines of text
 
-// Initialize the readline interface for standard I/O.
-const inputProcessor = require('readline').buildInterface({
-  sourceStream: process.stdin,   // Define the input source.
-  targetStream: process.stdout   // Define the output target.
+// Initialize a readline interface for handling standard input and output
+const inputHandler = require('readline').createInterface({
+  input: process.stdin,  // Read from standard input
+  output: process.stdout // Write to standard output (though not used directly here)
 });
 
-// Set up a listener for each new line of data.
-inputProcessor.attachEventListener('dataLine', (currentTextualLine) => {
-  inputDataCollection.push(currentTextualLine); // Add the line to our collection.
+// Event listener for each line of input received
+inputHandler.on('dataReceived', (currentLine) => {
+  inputData.push(currentLine); // Add the current line to our data array
 });
 
+// Event listener for when the input stream closes
+inputHandler.on('close', () => {
+  // Parse the first line to get the total count of numbers to process
+  const totalCount = parseInt(inputData[0]);
+  inputData.shift(); // Remove the first line as it's already processed
 
-// When the input stream closes, process the collected data.
-inputProcessor.attachEventListener('close', () => {
-  
-  const totalItems = parseInt(inputDataCollection[0]); // The first line gives the count of numbers.
-  inputDataCollection.shift(); // Remove the count line from the array.
-  
-  let primeNumberCounter = 0; // Initialize a counter for prime numbers found.
+  let primeCounter = 0; // Initialize a counter for prime numbers
 
-  // Loop through the remaining lines, converting and checking each number.
-  for (var itemIndex = 0; itemIndex < totalItems; itemIndex++) {
-    var numericValue = parseInt(inputDataCollection[itemIndex]); // Parse the current line into an integer.
-    if (testForPrimality(numericValue)) { // Check if the number is prime.
-      primeNumberCounter++; // Increment if it is.
+  // Iterate through the remaining lines, which contain the numbers
+  for (let idx = 0; idx < totalCount; idx++) {
+    // Convert the current line to an integer
+    let currentNum = parseInt(inputData[idx]);
+    // Check if the number is prime and increment the counter if it is
+    if (checkIfPrime(currentNum)) {
+      primeCounter++;
     }
   }
-  
-  // Output the final count of prime numbers.
-  console.log(primeNumberCounter);
+
+  // Output the final count of prime numbers found
+  console.log(primeCounter);
 });
 
+/**
+ * Determines if a given integer is a prime number.
+ * @param {number} valueToCheck The integer to be checked for primality.
+ * @returns {boolean} True if the number is prime, false otherwise.
+ */
+function checkIfPrime(valueToCheck) {
+    let isItPrime = true; // Assume it's prime initially
 
-// Function to determine if a given integer is a prime number.
-function testForPrimality(candidateValue) {
-    let isNumberPrime = true; // Assume primality initially.
-    
-    // Handle the special case of the number 2.
-    if (candidateValue === 2) return true;
-
-    // Numbers less than 2 are not prime. Even numbers greater than 2 are not prime.
-    if (candidateValue < 2 || candidateValue % 2 === 0) return false;
-
-    // Calculate the square root to optimize divisor checking.
-    var squareRootBound = Math.sqrt(candidateValue);
-    
-    // Iterate through odd numbers starting from 3 up to the square root.
-    for (var divisorIterator = 3; divisorIterator <= squareRootBound; divisorIterator += 2) {
-      // If any divisor is found, the number is not prime.
-      if (candidateValue % divisorIterator === 0) return false;
+    // Special case: 2 is the only even prime number
+    if (valueToCheck === 2) {
+        return true;
     }
-    
-    return isNumberPrime; // If no divisors were found, the number is prime.
+
+    // Numbers less than 2 are not prime, and even numbers greater than 2 are not prime
+    if (valueToCheck < 2 || valueToCheck % 2 === 0) {
+        return false;
+    }
+
+    // Calculate the square root of the number for optimization
+    let squareRootVal = Math.sqrt(valueToCheck);
+
+    // Iterate from 3 up to the square root, checking only odd divisors
+    for (let divisor = 3; divisor <= squareRootVal; divisor += 2) {
+      // If the number is divisible by any odd divisor, it's not prime
+      if (valueToCheck % divisor === 0) {
+        return false;
+      }
+    }
+
+    // If no divisors were found, the number is prime
+    return isItPrime;
 }

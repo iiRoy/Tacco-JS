@@ -1,211 +1,173 @@
-"use strict"; // Enforce strict parsing and execution rules for the entire script.
+"use strict";
 
-// Load the necessary file system module from the environment.
-let fileSystemModule = require("fs");
+// Acquire file system module and read standard input synchronously
+var fileContent = require("fs").readFileSync("/dev/stdin", "utf8");
 
-// Read all data from the standard input stream, interpreting it as UTF-8 text.
-let rawInputData = fileSystemModule.readFileSync("/dev/stdin", "utf8");
-
-// Split the entire input string by spaces or newlines into an array of tokens.
-// Initialize an index to keep track of the current token being processed.
-let tokenCollection = rawInputData.split(/ |\n/);
-let currentTokenPointer = 0;
+// Split the entire input into tokens using spaces or newlines as delimiters
+// Initialize an index to track the current token position
+var tokenStream = fileContent.split(/ |\n/),
+    tokenIndex = 0;
 
 /**
- * Function to retrieve the next token from the global collection.
- * @param {boolean} retrieveAsString - If true, returns the token as a string; otherwise, attempts to parse it as a number.
- * @returns {string|number} The next token from the input stream.
+ * Retrieves the next token from the global token stream.
+ * @param {boolean} isStringOutput - If true, returns the token as a string; otherwise, attempts to convert it to a number.
+ * @returns {string|number} The processed token.
  */
-function readNextInputToken(retrieveAsString) {
-  // Increment pointer after accessing token.
-  return retrieveAsString ? tokenCollection[currentTokenPointer++] : +tokenCollection[currentTokenPointer++];
+function readNext(isStringOutput) {
+    return isStringOutput ? tokenStream[tokenIndex++] : +tokenStream[tokenIndex++];
 }
 
 /**
- * Function to read a specified 'amount' of tokens from the input stream.
- * @param {number} amount - The number of tokens to extract.
- * @param {function} transformationFunction - An optional function to apply to each extracted token (e.g., parsing to number).
+ * Reads a specified number of tokens from the stream.
+ * @param {number} countToRead - The quantity of tokens to extract.
+ * @param {boolean} returnAsStrings - If true, tokens are returned as strings; otherwise, they are converted to numbers.
  * @returns {Array<string|number>} An array containing the extracted tokens.
  */
-function extractNextTokens(amount, transformationFunction) {
-  // Extract a segment of tokens from the collection.
-  let startOffset = currentTokenPointer;
-  currentTokenPointer += amount;
-  let extractedSegment = tokenCollection.slice(startOffset, currentTokenPointer);
-
-  // Apply transformation if a function is given.
-  if (transformationFunction) {
-    return extractedSegment.map(item => +item); // Convert each item to a number.
-  }
-  return extractedSegment;
-}
-
-/**
- * Function to read a 2D grid (matrix) of specified dimensions from the input.
- * @param {number} numRows - The number of rows in the matrix.
- * @param {number} numCols - The number of columns in the matrix.
- * @param {boolean} isStringMatrix - If true, elements are kept as strings; otherwise, converted to numbers.
- * @returns {Array<Array<string|number>>} A 2D array representing the grid data.
- */
-function retrieveGridData(numRows, numCols, isStringMatrix) {
-  let gridOutput = [];
-  let rowIterator = 0;
-
-  // Iterate through each row and populate the grid.
-  if (isStringMatrix) {
-    for (; rowIterator < numRows; rowIterator++) {
-      gridOutput.push(tokenCollection.slice(currentTokenPointer, currentTokenPointer += numCols));
-    }
-  } else {
-    for (; rowIterator < numRows; rowIterator++) {
-      gridOutput.push(tokenCollection.slice(currentTokenPointer, currentTokenPointer += numCols).map(val => +val));
-    }
-  }
-  return gridOutput;
-}
-
-/**
- * Utility function to dynamically create a multi-dimensional array.
- * @param {*} fillerValue - The initial value to populate the innermost elements.
- * @param {...number} dimensions - A sequence of numbers defining the sizes of each dimension.
- * @returns {Array} The newly created multi-dimensional array.
- */
-function generateNestedArray(fillerValue) {
-  let dimensionArguments = arguments;
-  let totalDimensions = dimensionArguments.length;
-  let currentDimensionIndex = totalDimensions - 1; // Start from innermost dimension.
-
-  // Build the array creation string recursively, from inside out.
-  let arrayCreationExpression = "Array(dimensionArguments[" + currentDimensionIndex + "]).fill().map(elem => { return " + fillerValue + "; })";
-  while (--currentDimensionIndex) {
-    arrayCreationExpression = "Array(dimensionArguments[" + currentDimensionIndex + "]).fill().map(elem => " + arrayCreationExpression + ")";
-  }
-
-  // Execute the dynamically built string to create the array structure.
-  return eval(arrayCreationExpression);
-}
-
-/**
- * Performs a binary search (lower bound) on a sorted array to find the insertion point for a target value.
- * @param {Array<number>} orderedList - The sorted array to search within.
- * @param {number} target - The value for which to find the insertion point.
- * @param {number} [startIndex=0] - The starting index of the search range.
- * @param {number} [endIndex=orderedList.length] - The ending index (exclusive) of the search range.
- * @returns {number} The index where the target value could be inserted to maintain sorted order.
- */
-function findLowerBoundIndex(orderedList, target, startIndex = 0, endIndex = orderedList.length) {
-  let midPoint;
-  // Binary search loop: continues as long as the range has more than one element.
-  while (1 < endIndex - startIndex) {
-    midPoint = startIndex + endIndex >> 1; // Calculate midpoint using bitwise shift for integer division.
-    if (orderedList[midPoint] < target) {
-      startIndex = midPoint; // Target is in the upper half.
+function readMultiple(countToRead, returnAsStrings) {
+    if (returnAsStrings) {
+        return tokenStream.slice(tokenIndex, tokenIndex += countToRead);
     } else {
-      endIndex = midPoint; // Target is in the lower half or at midpoint.
+        return tokenStream.slice(tokenIndex, tokenIndex += countToRead).map(val => +val);
     }
-  }
-  // Adjust based on the final comparison of the single remaining element.
-  return orderedList[startIndex] < target ? endIndex : startIndex;
-}
-
-
-// Global variables for computation results and data structures.
-let finalResultArray; // Stores the computed results for each node after traversal.
-let activeLisTracker = [0]; // Tracks elements for the Longest Increasing Subsequence (LIS) during DFS.
-let graphConnections; // Represents the graph structure using an adjacency list.
-let nodeDataValues; // Stores the numerical data associated with each node in the graph.
-
-// Execute the primary logic of the program and capture its output.
-let processedOutput = executePrimaryLogic();
-
-// If the program generated an output, print it to the console.
-if (processedOutput !== undefined) {
-  console.log(processedOutput);
 }
 
 /**
- * Main function encapsulating the core logic of the program.
- * Reads input, builds the graph, performs DFS, and compiles results.
+ * Extracts a 2D matrix of tokens from the stream.
+ * @param {number} numRows - The number of rows in the matrix.
+ * @param {number} numCols - The number of columns per row.
+ * @param {boolean} returnMatrixAsStrings - If true, matrix elements are strings; otherwise, numbers.
+ * @returns {Array<Array<string|number>>} The parsed matrix.
+ */
+function readMatrix(numRows, numCols, returnMatrixAsStrings) {
+    var matrixResult = [];
+    let currentRow = 0;
+    if (returnMatrixAsStrings) {
+        for (; currentRow < numRows; currentRow++) {
+            matrixResult.push(tokenStream.slice(tokenIndex, tokenIndex += numCols));
+        }
+    } else {
+        for (; currentRow < numRows; currentRow++) {
+            matrixResult.push(tokenStream.slice(tokenIndex, tokenIndex += numCols).map(val => +val));
+        }
+    }
+    return matrixResult;
+}
+
+/**
+ * Dynamically creates a multi-dimensional array based on provided dimensions.
+ * @param {*} initialElementValue - The value to initialize the innermost array elements with.
+ * @param {...number} arrayDimensions - A variable number of arguments representing the size of each dimension.
+ * @returns {Array} The newly constructed multi-dimensional array.
+ */
+function createMultiDimArray(initialElementValue) {
+    var dimensionArguments = arguments,
+        argumentCount = dimensionArguments.length,
+        arrayConstructionCode = "Array(dimensionArguments[" + --argumentCount + "]).fill().map(item => { return " + initialElementValue + "; })";
+    while (--argumentCount) {
+        arrayConstructionCode = "Array(dimensionArguments[" + argumentCount + "]).fill().map(item => " + arrayConstructionCode + ")";
+    }
+    return eval(arrayConstructionCode);
+}
+
+/**
+ * Performs a binary search to find the appropriate insertion point for a value in a sorted array,
+ * effectively implementing a lower_bound operation.
+ * @param {Array<number>} sortedData - The array to search within, assumed to be sorted in ascending order.
+ * @param {number} targetValue - The value whose insertion point is sought.
+ * @param {number} [startIndex=0] - The starting index for the search range.
+ * @param {number} [endIndex=sortedData.length] - The exclusive ending index for the search range.
+ * @returns {number} The index where `targetValue` could be inserted to maintain the sorted order.
+ */
+function findInsertionPoint(sortedData, targetValue, startIndex = 0, endIndex = sortedData.length) {
+    for (var middleIndex; 1 < endIndex - startIndex;) {
+        middleIndex = startIndex + endIndex >> 1; // Efficient integer division
+        if (sortedData[middleIndex] < targetValue) {
+            startIndex = middleIndex;
+        } else {
+            endIndex = middleIndex;
+        }
+    }
+    return sortedData[startIndex] < targetValue ? endIndex : startIndex;
+}
+
+// Global variables for the problem's state
+var finalResults,
+    dynamicProgression = [0]; // Stores the current longest increasing subsequence (LIS)
+var adjacencyList, // Represents the graph structure
+    nodeValues;    // Stores the value associated with each graph node
+
+// Execute the primary logic of the program
+var programOutput = executeProgram();
+
+// If the program produced a result, print it to the console
+if (programOutput !== undefined) {
+    console.log(programOutput);
+}
+
+/**
+ * The main entry point for the problem-solving logic.
+ * Handles input parsing, graph construction, and initiates the DFS traversal.
  * @returns {string} A newline-separated string of results for each node.
  */
-function executePrimaryLogic() {
-  // Read the total number of nodes in the graph from the input.
-  let totalNodes = readNextInputToken();
+function executeProgram() {
+    var totalNodes = readNext(); // Read the number of nodes in the graph
+    nodeValues = readMultiple(totalNodes); // Read the values for each node
+    adjacencyList = createMultiDimArray("[]", totalNodes); // Initialize an empty adjacency list for the graph
 
-  // Read the data values associated with each node.
-  nodeDataValues = extractNextTokens(totalNodes, true); // 'true' converts tokens to numbers.
+    // Read edges and populate the adjacency list
+    for (var edgeCounter = 1; edgeCounter < totalNodes; edgeCounter++) {
+        var firstNode = readNext() - 1, // Convert to 0-indexed
+            secondNode = readNext() - 1; // Convert to 0-indexed
+        adjacencyList[firstNode].push(secondNode);
+        adjacencyList[secondNode].push(firstNode);
+    }
 
-  // Initialize the adjacency list for the graph. Each node starts with an empty list of neighbors.
-  graphConnections = generateNestedArray("[]", totalNodes);
+    finalResults = createMultiDimArray(0, totalNodes); // Initialize array to store results for each node
+    performDepthFirstSearch(0, -1); // Start DFS from node 0, with a dummy parent -1
 
-  // Read edge connections from input and build the graph's adjacency list.
-  for (let currentEdge = 1; currentEdge < totalNodes; currentEdge++) {
-    // Read two connected nodes (adjusting to 0-indexed).
-    let nodeOne = readNextInputToken() - 1;
-    let nodeTwo = readNextInputToken() - 1;
-
-    // Add bidirectional edges to represent connections.
-    graphConnections[nodeOne].push(nodeTwo);
-    graphConnections[nodeTwo].push(nodeOne);
-  }
-
-  // Initialize the array that will store the final results for each node, all set to zero initially.
-  finalResultArray = generateNestedArray(0, totalNodes);
-
-  // Start the Depth First Search traversal from the root node (node 0), with no parent (-1).
-  depthFirstTraversal(0, -1);
-
-  // Join the results for each node with newline characters and return the combined string.
-  return finalResultArray.join("\n");
+    return finalResults.join("\n"); // Format and return the results
 }
 
 /**
- * Depth First Search function to traverse the tree structure and compute LIS properties.
- * This function maintains a "Longest Increasing Subsequence" (LIS) tracker.
- * @param {number} currentVertex - The identifier of the node currently being visited.
- * @param {number} parentVertex - The identifier of the parent node of the current vertex (or -1 if root).
+ * Performs a Depth First Search (DFS) traversal on the graph.
+ * This function calculates the length of the longest increasing subsequence (LIS)
+ * ending at the current node within its subtree, considering the path from the root.
+ * @param {number} currentNode - The identifier of the node currently being visited.
+ * @param {number} parentNode - The identifier of the parent node in the DFS tree.
  */
-function depthFirstTraversal(currentVertex, parentVertex) {
-  // Find the appropriate index in 'activeLisTracker' where the current node's value could be inserted
-  // to maintain the increasing order (lower bound).
-  let insertionPoint = findLowerBoundIndex(activeLisTracker, nodeDataValues[currentVertex]);
-  let originalValueAtPoint; // Variable to temporarily store a value if it's replaced.
+function performDepthFirstSearch(currentNode, parentNode) {
+    // Find the position where the current node's value would fit in the LIS array
+    var insertionPosition = findInsertionPoint(dynamicProgression, nodeValues[currentNode]),
+        valueToRestore; // Temporarily holds a value if it's overwritten
 
-  // Check if the insertion point is within the current bounds of the LIS tracker.
-  if (insertionPoint !== activeLisTracker.length) {
-    // If an element exists at 'insertionPoint', store its original value.
-    originalValueAtPoint = activeLisTracker[insertionPoint];
-    // Replace the element at 'insertionPoint' with the current node's data value.
-    activeLisTracker[insertionPoint] = nodeDataValues[currentVertex];
-  } else {
-    // If the insertion point is at the end, it means the current value extends the LIS.
-    // Increment the index (conceptually) and append the new value to the tracker.
-    insertionPoint++; // Adjust for 0-based index vs array length.
-    activeLisTracker.push(nodeDataValues[currentVertex]);
-  }
-
-  // Record the length of the current LIS (activeLisTracker.length - 1, as it starts with [0])
-  // as the result for the current vertex.
-  finalResultArray[currentVertex] = activeLisTracker.length - 1;
-
-  // Iterate through all neighbors of the current vertex.
-  for (let neighborIndex = 0; neighborIndex < graphConnections[currentVertex].length; neighborIndex++) {
-    let adjacentVertex = graphConnections[currentVertex][neighborIndex];
-
-    // Skip the parent vertex to prevent traversing back up the tree and infinite loops.
-    if (adjacentVertex === parentVertex) {
-      continue;
+    // If the insertion point is within the current bounds of the DP array,
+    // it means we are replacing an existing element to potentially form a shorter LIS.
+    if (insertionPosition !== dynamicProgression.length) {
+        valueToRestore = dynamicProgression[insertionPosition]; // Save the old value
+        dynamicProgression[insertionPosition] = nodeValues[currentNode]; // Update with current node's value
+    } else {
+        // If the insertion point is at the end, it means we are extending the LIS.
+        insertionPosition++; // Increment position to reflect new length
+        dynamicProgression.push(nodeValues[currentNode]); // Add current node's value
     }
-    // Recursively call DFS on the neighbor, setting the current vertex as its parent.
-    depthFirstTraversal(adjacentVertex, currentVertex);
-  }
 
-  // Backtrack: Restore the 'activeLisTracker' to its state before processing 'currentVertex'.
-  if (insertionPoint === activeLisTracker.length) {
-    // If an element was appended (LIS extended), remove it.
-    activeLisTracker.pop();
-  } else {
-    // If an element was replaced, restore its original value.
-    activeLisTracker[insertionPoint] = originalValueAtPoint;
-  }
+    // The length of the LIS ending at this node is the current length of the DP array minus one (due to initial [0]).
+    finalResults[currentNode] = dynamicProgression.length - 1;
+
+    // Traverse all neighbors of the current node
+    for (var neighborCounter = 0; neighborCounter < adjacencyList[currentNode].length; neighborCounter++) {
+        var adjacentNode = adjacencyList[currentNode][neighborCounter];
+        if (adjacentNode === parentNode) {
+            continue; // Skip the parent node to avoid infinite loops in undirected graphs
+        }
+        performDepthFirstSearch(adjacentNode, currentNode); // Recursively call DFS for the neighbor
+    }
+
+    // Backtrack: restore the DP array to its state before processing the current node.
+    // This is crucial for correctly calculating LIS for other branches.
+    if (insertionPosition === dynamicProgression.length) {
+        dynamicProgression.pop(); // If an element was added, remove it
+    } else {
+        dynamicProgression[insertionPosition] = valueToRestore; // Otherwise, restore the overwritten element
+    }
 }

@@ -1,35 +1,49 @@
-"use strict"
+"use strict";
 
-function ProcessInput( rawData )
-{
-  // Divide the incoming string by newline characters
-  const linesArray = rawData . split ( '\n' ) ;
-  const totalElements = linesArray [ 0 ] ;
-  let numericValues = linesArray [ 1 ] . split ( ' ' ) ;
+// This function processes the input to determine how many times
+// all numbers in a sequence can be divided by two simultaneously.
+function solveProblem(inputString) {
+  // Split the entire input string by newline characters.
+  const lineSegments = inputString.split('\n');
 
-  let hasOddNumber = !0 ; // Indicator for presence of an odd number
-  let halvingIterations = +[] ; // Counter for successful halving rounds
+  // The first line contains the count of numbers (N), stored as a string.
+  const arraySizeStr = lineSegments[0];
 
-  while ( !!1 ) { // Loop indefinitely until an odd number is found
-    for ( let currentIndex = +[] ; currentIndex < totalElements ; currentIndex++ )
-    {
-      if ( numericValues [ currentIndex ] % 2 !== +[] ) { // Check if the current value is odd
-        hasOddNumber = !!1 ; // Set flag if an odd number is detected
-        break ; // Exit inner loop
+  // The second line contains space-separated numbers, stored as an array of strings.
+  const numberStrings = lineSegments[1].split(' ');
+
+  // A boolean flag to track if an odd number is encountered.
+  let foundOdd = false;
+
+  // A counter for the number of successful division rounds.
+  let divisionRounds = 0;
+
+  // Loop indefinitely until an odd number prevents further divisions.
+  while (true) {
+    // Iterate through each element in the array of numbers.
+    for (let currentIdx = 0; currentIdx < arraySizeStr; currentIdx++) {
+      // Check if the current number (implicitly converted from string) is odd.
+      if (numberStrings[currentIdx] % 2 !== 0) {
+        foundOdd = true; // Mark that an odd number was found.
+        break; // Exit the inner loop as we can't proceed with this round.
       }
-      numericValues [ currentIndex ] = numericValues [ currentIndex ] / 2 ; // Halve the value
+      // If the number is even, divide it by 2 and update its value.
+      numberStrings[currentIdx] = numberStrings[currentIdx] / 2;
     }
 
-    if ( hasOddNumber ) { // If an odd number was encountered in the last round
-      break ; // Terminate the outer processing loop
+    // If an odd number was found in the current iteration,
+    // it means we cannot perform another full round of division.
+    if (foundOdd) {
+      break; // Exit the main processing loop.
     }
-    halvingIterations++ ; // Increment the counter for a completed halving round
+
+    // If all numbers were even, increment the division rounds counter.
+    divisionRounds++;
   }
 
-  console . log ( halvingIterations ) ;
+  // Output the final count of successful division rounds.
+  console.log(divisionRounds);
 }
-/*
- * Please do not alter the code below this line.
- * It handles reading input from standard I/O and invoking the primary processing function.
- */
-ProcessInput( require( "fs" ) . readFileSync( "/dev/stdin" , "utf8" ) ) ;
+
+// Standard input/output handling. Do not modify this part.
+solveProblem(require("fs").readFileSync("/dev/stdin", "utf8"));

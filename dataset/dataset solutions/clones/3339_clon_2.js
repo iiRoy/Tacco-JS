@@ -1,117 +1,86 @@
-/* This module demonstrates a dynamic programming solution
- * for a combinatorial problem involving item selections.
- */
+'use strict';
 
-var primeDivisor = 1000000007; // A large constant for ensuring results stay within bounds via modulo.
-
-/**
- * Computes the quantity of distinct ways to reach a specific `targetSum`
- * using a collection of `itemValues`. This computation relies on
- * dynamic programming with prefix sum optimization.
- *
- * @param {number} itemCount   The total number of distinct items available.
- * @param {number} targetSum   The exact sum that needs to be achieved.
- * @param {number[]} itemValues An array where each element represents the value of an item.
- * @returns {number} The final count of combinations, adjusted by `primeDivisor`.
- */
-function calculateCombinations ( itemCount, targetSum, itemValues )
-{
-    // If the target sum is zero, there is always precisely one method:
-    // selecting no items.
-    if ( targetSum === 0 ) {
-        return 1;
-    }
-
-    // Initialize the primary DP array. `currentCounts[s]` will store
-    // the number of ways to form sum 's' considering items processed up to this point.
-    var currentCounts = new Array( targetSum + 1 ).fill( 0 );
-
-    // Initialize a two-dimensional array for storing prefix sums.
-    // `cumulativeSums[i][s]` will store the accumulated sum of `currentCounts`
-    // from 0 up to 's' for the i-th item.
-    var cumulativeSums = new Array( itemCount ).fill( 0 ).map( function ( placeholder ) {
-        return new Array( targetSum + 1 ).fill( 0 );
-    } );
-
-    // Begin iterating through each individual item.
-    for ( var currentElementIdx = 0; currentElementIdx < itemCount; ++currentElementIdx )
-    {
-        // For each item, iterate through every possible capacity or sum value.
-        for ( var currentCapacity = 0; currentCapacity <= targetSum; ++currentCapacity )
-        {
-            // Special handling for the very first item (index 0).
-            if ( currentElementIdx === 0 )
-            {
-                // If the current capacity is less than or equal to the first item's value,
-                // there's 1 way (by including this item). Otherwise, 0 ways.
-                currentCounts[ currentCapacity ] = currentCapacity <= itemValues[ currentElementIdx ] ? 1 : 0;
-
-                // Update the prefix sum array for the first item.
-                cumulativeSums[ currentElementIdx ][ currentCapacity ] = currentCapacity > 0
-                    ? ( ( cumulativeSums[ currentElementIdx ][ currentCapacity - 1 ] + currentCounts[ currentCapacity ] ) % primeDivisor )
-                    : ( currentCounts[ currentCapacity ] % primeDivisor );
-            }
-            // For all subsequent items.
-            else
-            {
-                // Determine the lower bound for the prefix sum subtraction.
-                // This corresponds to `j - A[i] - 1` in the original logic.
-                var previousSumIndex = currentCapacity - itemValues[ currentElementIdx ] - 1;
-
-                if ( previousSumIndex >= 0 )
-                {
-                    // Calculate `dp[j]` using prefix sums from the previous item.
-                    // This is `(prefix[i-1][j] - prefix[i-1][j - A[i] - 1]) % mod`.
-                    var prevItemTotalSum = cumulativeSums[ currentElementIdx - 1 ][ currentCapacity ];
-                    var prevItemSubtractedSum = cumulativeSums[ currentElementIdx - 1 ][ previousSumIndex ];
-                    currentCounts[ currentCapacity ] = ( prevItemTotalSum - prevItemSubtractedSum ) % primeDivisor;
-                }
-                else
-                {
-                    // If the lower bound is negative, simply use the full prefix sum
-                    // up to the current capacity from the previous item.
-                    currentCounts[ currentCapacity ] = cumulativeSums[ currentElementIdx - 1 ][ currentCapacity ] % primeDivisor;
-                }
-
-                // Update the prefix sum array for the current item and capacity.
-                cumulativeSums[ currentElementIdx ][ currentCapacity ] = currentCapacity > 0
-                    ? ( ( cumulativeSums[ currentElementIdx ][ currentCapacity - 1 ] + currentCounts[ currentCapacity ] ) % primeDivisor )
-                    : ( currentCounts[ currentCapacity ] % primeDivisor );
-            }
-        }
-    }
-
-    // The result is the number of ways to form the `targetSum`
-    // after considering all `itemCount` items.
-    return currentCounts[ targetSum ] % primeDivisor;
-}
-
+// A large prime number used for modulo operations to prevent integer overflow.
+const primeMod = 1e9 + 7;
 
 /**
- * Orchestrates the overall program flow: reading input, parsing data,
- * invoking the core computation, and finally displaying the outcome.
+ * Calculates the number of ways to distribute a total number of candies
+ * among a given number of children, respecting individual candy limits.
  *
- * @param {string} rawInputData - The complete raw string content read from standard input.
+ * @param {number} numChildren - The total number of children.
+ * @param {number} totalCandies - The total number of candies to distribute.
+ * @param {number[]} candyLimits - An array where candyLimits[i] is the maximum candies the i-th child can receive.
+ * @returns {number} The number of distinct ways to distribute candies, modulo primeMod.
  */
-function processInputAndOutput ( rawInputData )
-{
-    // Divide the raw input string into an array of lines.
-    var inputLines = rawInputData.split("\n");
+function calculateWays(numChildren, totalCandies, candyLimits) {
+  // Base case: If no candies are to be distributed, there's only one way (give 0 to everyone).
+  if (totalCandies === 0) {
+    return 1;
+  }
 
-    // Parse the first line to extract the number of items and the target sum.
-    var parsedDimensions = inputLines[0].split(' ').map( strVal => parseInt( strVal, 10 ) );
-    var itemCount = parsedDimensions[0]; // Assign the first dimension.
-    var targetSum = parsedDimensions[1]; // Assign the second dimension.
+  // currentDP[c] stores the number of ways to distribute 'c' candies among the children processed so far.
+  let currentDP = new Array(totalCandies + 1).fill(0);
 
-    // Parse the second line to get the array of item values.
-    var itemValues = inputLines[1].split(' ').map( strVal => parseInt( strVal, 10 ) );
+  // prefixSums[childIdx][c] stores the sum of currentDP[0]...currentDP[c] for child 'childIdx'.
+  // This helps in efficiently calculating range sums.
+  let prefixSums = new Array(numChildren).fill(0).map(element => new Array(totalCandies + 1).fill(0));
 
-    // Execute the main algorithm to obtain the computed answer.
-    var finalResult = calculateCombinations( itemCount, targetSum, itemValues );
+  // Iterate through each child.
+  for (let childIdx = 0; childIdx < numChildren; childIdx++) {
+    // Iterate through all possible candy counts from 0 up to totalCandies.
+    for (let candyCount = 0; candyCount <= totalCandies; candyCount++) {
+      // Handle the first child as a base case for DP.
+      if (childIdx === 0) {
+        // The first child can receive 'candyCount' if it's within their limit.
+        currentDP[candyCount] = candyCount <= candyLimits[childIdx] ? 1 : 0;
+        // Calculate prefix sum for the first child.
+        prefixSums[childIdx][candyCount] = candyCount > 0 ? ((prefixSums[childIdx][candyCount - 1] + currentDP[candyCount]) % primeMod) : (currentDP[candyCount] % primeMod);
+      } else {
+        // For subsequent children, use the prefix sums from the previous child.
+        // The number of ways to give 'candyCount' candies to 'childIdx' children
+        // is the sum of ways to give 'candyCount - x' candies to 'childIdx - 1' children,
+        // where 'x' is the number of candies given to the current child (0 <= x <= candyLimits[childIdx]).
+        // This sum can be calculated using prefix sums: prefixSums[childIdx-1][candyCount] - prefixSums[childIdx-1][candyCount - candyLimits[childIdx] - 1].
+        let lowerBound = candyCount - candyLimits[childIdx] - 1;
+        currentDP[candyCount] = (lowerBound >= 0) ?
+                                ((prefixSums[childIdx - 1][candyCount] - prefixSums[childIdx - 1][lowerBound]) % primeMod) :
+                                (prefixSums[childIdx - 1][candyCount] % primeMod);
 
-    // Output the calculated result to the console.
-    console.log( finalResult );
+        // Ensure the result is non-negative after modulo, as JavaScript's % can return negative.
+        currentDP[candyCount] = (currentDP[candyCount] + primeMod) % primeMod;
+
+        // Calculate prefix sum for the current child.
+        prefixSums[childIdx][candyCount] = candyCount > 0 ? ((prefixSums[childIdx][candyCount - 1] + currentDP[candyCount]) % primeMod) : (currentDP[candyCount] % primeMod);
+      }
+    } // End of inner loop for candyCount
+  } // End of outer loop for childIdx
+
+  // The final answer is the number of ways to distribute 'totalCandies' among all 'numChildren'.
+  return currentDP[totalCandies] % primeMod;
 }
 
-// Immediately invoke the main processing function, reading data from standard input.
-processInputAndOutput( require('fs').readFileSync('/dev/stdin', 'utf8') );
+/**
+ * Main function to process input, call the solver, and print the result.
+ * @param {string} rawData - The raw input string from stdin.
+ */
+function processInput(rawData) {
+  // Split the input string into individual lines.
+  const inputLines = rawData.split("\n");
+
+  // Parse the first line to get N (number of children) and K (total candies).
+  const parsedNK = inputLines[0].split(' ').map(linePart => parseInt(linePart, 10));
+  const numChildren = parsedNK[0];
+  const totalCandies = parsedNK[1];
+
+  // Parse the second line to get the array of candy limits for each child.
+  const candyLimits = inputLines[1].split(' ').map(linePart => parseInt(linePart, 10));
+
+  // Call the main calculation function.
+  const finalResult = calculateWays(numChildren, totalCandies, candyLimits);
+
+  // Output the computed result to the console.
+  console.log(finalResult);
+}
+
+// Read input from standard input and pass it to the main processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

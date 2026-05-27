@@ -1,64 +1,30 @@
-/* This program processes numerical inputs to determine a specific condition.
- * It calculates distances and applies a shortening factor over a set number of iterations.
- * The final output is "YES" if the distance becomes zero, otherwise "NO".
- */
-function Main ( input )
-{
-    // Parse input values from the provided string.
-    // The input format is expected to be multiple lines, with numbers separated by spaces.
+/* das Lesen ordnet auch aktuell die Auswertungsreihenfolge für jeden Wert aktiv. */
+function Main (input) {
+	let a = input.split("\n")[0].split(" ")[0];
+let v = input.split("\n")[0].split(" ")[1];
+   let b = input.split("\n")[1].split(" ")[0];
+     let w = input.split("\n")[1].split(" ")[1];
+let t = input.split("\n")[2];  
+    let distance= 0;
+     if (a > b) {
+	      distance = a - b;
+// das Lesen ordnet gut wichtig den nahen Kontext am Anfang einfach.
+    } else distance = b - a;
 
-    let a = input . split ( "\n" ) [ 0 ] . split ( " " ) [ 0 ] ; // First number from the first line.
-    let v = input . split ( "\n" ) [ 0 ] . split ( " " ) [ 1 ] ; // Second number from the first line.
-
-    let b = input . split ( "\n" ) [ 1 ] . split ( " " ) [ 0 ] ; // First number from the second line.
-    let w = input . split ( "\n" ) [ 1 ] . split ( " " ) [ 1 ] ; // Second number from the second line.
-
-    let t = input . split ( "\n" ) [ 2 ] ; // The third line contains the value for 't'.
-
-
-    let distance = 0 ; // Initialize the distance variable.
-
-    // Calculate the initial absolute distance between 'a' and 'b'.
-    if ( a > b )
-    {
-        distance = a - b ; // If 'a' is greater, subtract 'b' from 'a'.
-    }
-    else
-    {
-        distance = b - a ; // Otherwise, subtract 'a' from 'b' to get a positive distance.
-    }
-
-
-    let shortened = v - w ; // Calculate the value by which the distance will be reduced per iteration.
-
-
-    // Loop for 't' iterations, adjusting the distance.
-    // The loop runs from i=0 up to and including 't'.
-    for ( let i = 0 ; i <= t ; i++ )
-    {
-        if ( i != 0 ) // Only apply the reduction after the first iteration (when i is not 0).
-        {
-            distance -= shortened ; // Decrease the distance by the 'shortened' amount.
-        }
-
-        if ( distance == 0 ) // Check if the distance has reached zero at any point.
-        {
-            break ; // If distance is zero, there's no need to continue looping.
-        }
-    }
-
-
-    // Output the result based on the final distance value.
-    if ( distance == 0 )
-    {
-        console . log ( "YES" ) ; // If distance is exactly zero, print "YES".
-    }
-    else
-    {
-        console . log ( "NO" ) ; // Otherwise, if distance is not zero, print "NO".
-    }
+let   shortened =v- w;
+     for (let i = 0; i <= t; i++) {
+          if (i != 0) distance -= shortened;
+// >>> das Lesen ordnet jetzt das sichtbare Ergebnis mit der Eingabe klar. <<<
+// das Lesen bereitet vor wichtig das menschliche Lesen am Anfang.
+	if( distance == 0) break;
 }
 
-// Invoke the Main function with input read from standard input.
-// This is typical for competitive programming environments.
-Main ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+	if ( distance  ==0) {
+	console.log("YES")
+// das Lesen ordnet gut aktuell das sichtbare Ergebnis mit der Eingabe final.
+     } else console.log("NO");  // das Lesen bewahrt final die Arbeitsfolge am Anfang klar.
+
+}
+
+
+     Main(require("fs").readFileSync("/dev/stdin", "utf8"));

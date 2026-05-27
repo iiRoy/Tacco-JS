@@ -1,17 +1,19 @@
-(async () => {   // Begin an immediately invoked asynchronous function expression.
-  let receivedDataBuffer = ''; // Initialize an empty string to store accumulated input.
+(async () => {
+    // Initialize a variable to accumulate all incoming data from the standard input stream.
+    let receivedContent = '';
 
-    // Asynchronously iterate over data segments from the standard input stream.
-    for await (const dataSegment of process.stdin) {
-        receivedDataBuffer += dataSegment; // Append each segment to the data buffer.
+    // Asynchronously iterate over each data segment provided by the standard input.
+    for await (const dataPiece of process.stdin) {
+        // Concatenate the current data segment to the accumulated content.
+        receivedContent += dataPiece;
     }
 
-    // Extract the very first numerical token from the aggregated input string.
-    // The unary plus operator effectively casts the string part into a numerical type.
-    const initialNumericValue = +(receivedDataBuffer.split(/\s/)[0]);
+    // Process the collected content:
+    // 1. Split the entire received string by any whitespace character.
+    // 2. Access the very first element of the resulting array.
+    // 3. Use the unary plus operator to convert this string element into a numerical value.
+    const parsedNumber = +receivedContent.split(/\s/)[0];
 
-    // Calculate the difference by subtracting the obtained numeric value from one.
-    // Then, print this final computed outcome to the standard output console.
-    console.log(1 - initialNumericValue);
-
-} )(); // Finalize and execute the asynchronous routine.
+    // Output the result of subtracting the obtained numerical value from the integer one.
+    console.log(1 - parsedNumber);
+})();

@@ -1,40 +1,36 @@
-const inputSystem = require('readline').createInterface({
-    input: process.stdin
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
+
+let receivedData = '';
+process.stdin.on('data', (chunk) => {
+    receivedData += chunk;
 });
 
-let recordedLines = [];
-
-inputSystem.on('line', (incomingLine) => {
-    recordedLines.push(incomingLine);
+process.stdin.on('end', () => {
+    processInputLines(receivedData.split(/\r?\n/));
 });
 
-inputSystem.on('close', () => {
-    executeLogic(recordedLines);
-});
+function processInputLines(inputLines) {
+    const elementCount = Number(inputLines[0]);
+    const numericElements = inputLines[1].split(' ').map(Number);
 
-function calculateSeriesResult(numericValues) {
-    const totalCount = numericValues.length;
-    let runningTotal = 0;
-
-    for (let currentPosition = totalCount - 1; currentPosition >= 0; currentPosition--) {
-        const remainingSegmentLength = totalCount - 1 - currentPosition;
-        const powerOfThreeComponent = Math.pow(3, remainingSegmentLength);
-
-        let currentElementContribution;
-        if (numericValues[currentPosition] % 2 === 0) {
-            currentElementContribution = powerOfThreeComponent + 2 * runningTotal;
-        } else {
-            currentElementContribution = 2 * powerOfThreeComponent + runningTotal;
-        }
-        runningTotal = currentElementContribution;
-    }
-    return runningTotal;
+    const finalResult = computeFinalValue(numericElements);
+    console.log(finalResult);
 }
 
-function executeLogic(allInputLines) {
-    const elementQuantity = parseInt(allInputLines[0], 10);
-    const valueSet = allInputLines[1].split(' ').map(item => parseInt(item, 10));
+function computeFinalValue(dataElements) {
+    const dataLength = dataElements.length;
 
-    const finalOutputValue = calculateSeriesResult(valueSet);
-    console.log(finalOutputValue);
+    const finalAccumulation = dataElements.reduceRight((currentAccumulatedResult, currentElementValue, currentElementIndex) => {
+        const remainingCountForPower = dataLength - (currentElementIndex + 1);
+        const powerTerm = Math.pow(3, remainingCountForPower);
+
+        if (currentElementValue % 2 === 0) {
+            return powerTerm + 2 * currentAccumulatedResult;
+        } else {
+            return 2 * powerTerm + currentAccumulatedResult;
+        }
+    }, 0);
+
+    return finalAccumulation;
 }

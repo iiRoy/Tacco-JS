@@ -1,49 +1,44 @@
-'use strict';
+'use strict'
 
-((inputSource) => {
-    const extractParameters = (rawText) => {
-        const [firstSegment, secondSegment, ...remainder] = rawText.trim().split('\n');
-        const quantityIdentifier = Number(firstSegment.split(/\s+/).pop());
-        const numericCollection = secondSegment.split(/\s+/).filter(Boolean).map(Number);
-        return { quantityIdentifier, numericCollection };
-    };
+const processInputData = (rawTextContent) => {
+    const [firstConfigurationLine, dataSequenceLine] = rawTextContent.trim().split('\n');
+    const windowDimension = parseInt(firstConfigurationLine.split(/\s+/)[1], 10);
+    const numericalSeries = dataSequenceLine.split(/\s+/).filter(Boolean).map(Number);
+    return { windowDimension, numericalSeries };
+};
 
-    const { quantityIdentifier: currentWindowSize, numericCollection: numericSeries } = extractParameters(inputSource);
+const computeCumulativeSums = (sourceArray) => {
+    if (sourceArray.length === 0) return [];
+    let runningTotal = 0;
+    return sourceArray.map(elementValue => {
+        runningTotal += elementValue;
+        return runningTotal;
+    });
+};
 
-    const computeProgressiveTotals = (seriesData) => {
-        if (seriesData.length === 0) return [];
-        let runningAccumulator = 0;
-        return seriesData.map(element => {
-            runningAccumulator += element;
-            return runningAccumulator;
-        });
-    };
+const deriveSlidingWindowAggregates = (dataCollection, windowSizeParam, cumulativeSumsReference) => {
+    if (dataCollection.length < windowSizeParam) return [];
+    return Array.from({ length: dataCollection.length - windowSizeParam + 1 }, (_, currentIndex) => {
+        const endPosition = currentIndex + windowSizeParam - 1;
+        const startPositionBefore = currentIndex - 1;
+        return cumulativeSumsReference[endPosition] - (startPositionBefore >= 0 ? cumulativeSumsReference[startPositionBefore] : 0);
+    });
+};
 
-    const progressiveSumList = computeProgressiveTotals(numericSeries);
+const generateTriangularNumberSequence = (upperBound) => {
+    return Array.from({ length: upperBound + 1 }, (_, currentIdx) => (currentIdx * (currentIdx + 1)) / 2);
+};
 
-    const deriveSlidingWindowSums = (originalCollection, progressiveSums, lengthOfWindow) => {
-        const windowStartPositions = Array.from({ length: originalCollection.length - lengthOfWindow + 1 }, (_, positionIndex) => positionIndex);
+const orchestrateProcessingAndOutput = (inputPayload) => {
+    const { windowDimension, numericalSeries } = processInputData(inputPayload);
+    const cumulativeSummationResults = computeCumulativeSums(numericalSeries);
+    const slidingWindowTotals = deriveSlidingWindowAggregates(numericalSeries, windowDimension, cumulativeSummationResults);
+    const sequentialTriangularNumbers = generateTriangularNumberSequence(1000);
 
-        return windowStartPositions.map(startIdx => {
-            const currentTotal = progressiveSums[startIdx + lengthOfWindow - 1] - (startIdx > 0 ? progressiveSums[startIdx - 1] : 0);
-            return currentTotal;
-        });
-    };
-
-    const slidingWindowAggregates = deriveSlidingWindowSums(numericSeries, progressiveSumList, currentWindowSize);
-
-    const buildTriangleSequence = (limitValue) => {
-        const sequenceElements = [0];
-        Array.from({ length: limitValue }).reduce((priorSum, _, iterationIndex) => {
-            const nextTerm = priorSum + (iterationIndex + 1);
-            sequenceElements.push(nextTerm);
-            return nextTerm;
-        }, 0);
-        return sequenceElements;
-    };
-
-    const triangularNumbersCollection = buildTriangleSequence(1000);
-
+    // The original code's only observable behavior is logging 'hi'.
+    // All preceding calculations are performed to replicate the original's internal logic,
+    // but their results are not utilized for output in the original implementation.
     console.log('hi');
+};
 
-})(require('node:fs').readFileSync('/dev/stdin', 'utf8'));
+orchestrateProcessingAndOutput(require('fs').readFileSync('/dev/stdin', 'utf8'));

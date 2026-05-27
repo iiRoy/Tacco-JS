@@ -1,72 +1,69 @@
-// This module handles processing sequences of numbers to find the shortest possible version
-// after removing specific repeating patterns.
-
-// Defines a routine to reduce a given string by eliminating consecutive repeating digits.
-function sequenceReducer ( targetSequence )
-{
-  // Continuously remove patterns of four or more identical digits (1s, 2s, or 3s)
-  while ( /1{4,}|2{4,}|3{4,}/.test( targetSequence ) )
-  {
-    targetSequence = targetSequence.replace( /1{4,}|2{4,}|3{4,}/g , "" ) ;
-  }
-  // After reduction, update the globally tracked minimum length if this sequence is shorter
-  shortestLength = Math.min( shortestLength , targetSequence.length ) ;
+function processSequence(currentSequence) {
+    // This loop continues as long as the current sequence contains
+    // four or more consecutive identical digits (1s, 2s, or 3s).
+    while (/(1{4,}|2{4,}|3{4,})/.test(currentSequence)) {
+        // All occurrences of such patterns are removed from the sequence.
+        currentSequence = currentSequence.replace(/(1{4,}|2{4,}|3{4,})/g, "");
+    }
+    // After all reductions, the length of the resulting sequence is compared
+    // with the globally tracked minimum length, and the minimum is updated.
+    minimumLength = Math.min(minimumLength, currentSequence.length);
 }
 
+// The 'fs' module is used to read data from the standard input.
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-// Obtain the entire content from the standard input stream
-var sourceData = require('fs').readFileSync( '/dev/stdin' , 'utf8' ) ;
+// The raw input string is trimmed of leading/trailing whitespace
+// and then split into an array of strings, one for each line.
+var lineArray = (rawData.trim()).split("\n");
 
-// Prepare the input: remove leading/trailing whitespace and split into an array of lines
-var rawLines = ( sourceData.trim() ).split( "\n" ) ;
+// The first element of the lineArray is shifted off, converted to a number,
+// and stored as the total count of sequences to process.
+var sequenceCount = lineArray.shift() - 0;
 
-// The very first line specifies the number of subsequent data elements
-var initialSize = rawLines.shift() - 0 ; // Convert the string to a number
+// An empty array is initialized to hold the numerical sequence elements.
+var initialNumbers = [];
 
-// Initialize an array to hold the numeric data items
-var dataItems = [] ;
-
-// Populate the dataItems array by converting each remaining line to a number
-for ( var loopIndex = 0 ; loopIndex < initialSize ; loopIndex ++ )
-{
-  var element = rawLines.shift() - 0 ;
-  dataItems.push( element ) ;
+// A loop iterates 'sequenceCount' times to populate the 'initialNumbers' array.
+for (var idx = 0; idx < sequenceCount; idx++) {
+    // Each line from the input (after the first) is shifted, converted to a number,
+    // and added to the 'initialNumbers' array.
+    var currentNumber = lineArray.shift() - 0;
+    initialNumbers.push(currentNumber);
 }
 
-// Initialize a global variable to store the absolute minimum sequence length found,
-// starting with an infinitely large value
-var shortestLength = Infinity ;
+// A global variable to store the smallest sequence length found,
+// initialized to positive infinity to ensure any valid length will be smaller.
+var minimumLength = Infinity;
 
-// Join the initial array of numbers into a single string.
-// This variable is created but not directly used for reduction in the original logic.
-var originalCombination = dataItems.join( "" ) ;
+// The array of numbers is joined into a single string. This variable is not directly used
+// in the subsequent logic but reflects a potential intermediate state.
+var initialString = initialNumbers.join("");
 
+// This main loop iterates through each element position in the 'initialNumbers' array.
+for (var idx = 0; idx < sequenceCount; idx++) {
+    // Two distinct copies of the 'initialNumbers' array are created for modification.
+    var modifiedA = initialNumbers.slice();
+    var modifiedB = initialNumbers.slice();
 
-// Iterate through each position in the dataItems array to generate modified sequences
-for ( var modifyIndex = 0 ; modifyIndex < initialSize ; modifyIndex ++ )
-{
-  // Create two separate copies of the original data array for distinct modifications
-  var tempArrayOne = dataItems.slice() ;
-  var tempArrayTwo = dataItems.slice() ;
+    // Modification A: If the current index is not the last element,
+    // the element at the current index is replaced by the element at the next index.
+    if (idx < sequenceCount - 1) {
+        modifiedA[idx] = modifiedA[idx + 1];
+    }
 
-  // For the first copy: if not at the last element, replace the current element with the next one
-  if ( modifyIndex < initialSize - 1 )
-  {
-    tempArrayOne[ modifyIndex ] = tempArrayOne[ modifyIndex + 1 ] ;
-  }
+    // Modification B: If the current index is not the first element,
+    // the element at the current index is replaced by the element at the previous index.
+    if (idx > 0) {
+        modifiedB[idx] = modifiedB[idx - 1];
+    }
 
-  // For the second copy: if not at the first element, replace the current element with the previous one
-  if ( modifyIndex > 0 )
-  {
-    tempArrayTwo[ modifyIndex ] = tempArrayTwo[ modifyIndex - 1 ] ;
-  }
+    // The modified array 'modifiedA' is joined into a string and passed to the processing function.
+    processSequence(modifiedA.join(""));
 
-  // Join the elements of the first modified array into a string and process it
-  sequenceReducer( tempArrayOne.join( "" ) ) ;
-
-  // Join the elements of the second modified array into a string and process it
-  sequenceReducer( tempArrayTwo.join( "" ) ) ;
+    // The modified array 'modifiedB' is joined into a string and passed to the processing function.
+    processSequence(modifiedB.join(""));
 }
 
-// Output the smallest sequence length achieved after all modifications and reductions
-console.log( shortestLength ) ;
+// Finally, the calculated minimum length is printed to the console.
+console.log(minimumLength);

@@ -1,21 +1,26 @@
-function processArtifact(sourceMaterial) {
-    const partitions = sourceMaterial.split('\n');
-    const countOfItems = parseInt(partitions[0], 10); 
-    const dataSegments = partitions.slice(1);
+function processInputData(rawData) {
+    const lines = rawData.split('\n');
+    const iterationCountStr = lines[0];
+    const dataItems = lines.slice(1);
 
-    const iterationIndices = Array.from({ length: countOfItems }, (_, k) => k);
+    const numIterations = parseInt(iterationCountStr, 10);
 
-    const outcomes = iterationIndices.map((currentFocusIndex) => {
-        const filteredList = dataSegments.filter((_, filterPosition) => filterPosition !== currentFocusIndex);
-
-        if (filteredList.length === 0) {
-            throw new TypeError("Reduce of empty array with no initial value");
+    const findLexicographicalMaximum = (collection) => {
+        if (collection.length === 0) {
+            throw new TypeError('Reduce of empty array with no initial value');
         }
-        
-        return filteredList.reduce((accumulatedMax, currentItem) => accumulatedMax > currentItem ? accumulatedMax : currentItem);
-    });
+        if (collection.length === 1) {
+            return collection[0];
+        }
+        const [headElement, ...remainingElements] = collection;
+        const maximumOfRemaining = findLexicographicalMaximum(remainingElements);
+        return headElement > maximumOfRemaining ? headElement : maximumOfRemaining;
+    };
 
-    outcomes.forEach(resultVal => console.log(resultVal));
+    Array.from({ length: numIterations }, (_, currentRemovalIndex) => {
+        const filteredItems = dataItems.filter((_, itemIndex) => itemIndex !== currentRemovalIndex);
+        console.log(findLexicographicalMaximum(filteredItems));
+    });
 }
 
-processArtifact(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

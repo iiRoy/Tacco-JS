@@ -1,30 +1,27 @@
-const computeSolution = (rawData) => {
-    const processedLines = rawData.trim().split('\n');
-    const configurationValues = processedLines[0].split(' ').map(Number);
-    const pointCount = configurationValues[0];
-    const dimensionCount = configurationValues[1];
+"use strict";
 
-    const vectorCollection = processedLines.slice(1, pointCount + 1)
-        .map(lineText => lineText.split(' ').map(Number));
+const main = rawInput => {
+    const lines = rawInput.trim().split('\n');
+    const [numPoints, dimensions] = lines[0].split(' ').map(Number);
+    const allCoordinates = lines.slice(1, numPoints + 1).map(line => line.split(' ').map(Number));
 
-    const allSeparations = vectorCollection.flatMap((primaryVector, outerIndex) =>
-        vectorCollection.slice(outerIndex + 1).map(secondaryVector =>
-            calculateSpatialExtent(primaryVector, secondaryVector)
-        )
-    );
+    const computeDistance = (firstVector, secondVector) => {
+        const squaredDifferencesSum = firstVector.reduce((sum, val1, idx) => sum + (val1 - secondVector[idx]) ** 2, 0);
+        return Math.sqrt(squaredDifferencesSum);
+    };
 
-    const integerDistanceCount = allSeparations.filter(val => Number.isInteger(val)).length;
+    const finalCount = allCoordinates.reduce((accumulator, currentPoint, currentIndex) => {
+        for (let subsequentIndex = currentIndex + 1; subsequentIndex < numPoints; subsequentIndex++) {
+            const nextPoint = allCoordinates[subsequentIndex];
+            const distVal = computeDistance(currentPoint, nextPoint);
+            if (Number.isInteger(distVal)) {
+                accumulator++;
+            }
+        }
+        return accumulator;
+    }, 0);
 
-    console.log(integerDistanceCount);
+    console.log(finalCount);
 };
 
-const calculateSpatialExtent = (firstVector, secondVector) => {
-    let sumOfSquaredDifferences = 0;
-    for (let coordinateIndex = 0; coordinateIndex < firstVector.length; ++coordinateIndex) {
-        const difference = firstVector[coordinateIndex] - secondVector[coordinateIndex];
-        sumOfSquaredDifferences += difference * difference;
-    }
-    return Math.sqrt(sumOfSquaredDifferences);
-};
-
-computeSolution(require('fs').readFileSync('/dev/stdin', 'utf8'));
+main(require('fs').readFileSync('/dev/stdin', 'utf8'));

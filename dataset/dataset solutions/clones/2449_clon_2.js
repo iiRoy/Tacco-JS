@@ -1,103 +1,113 @@
-let rawDataLines = require("node:fs").readFileSync("/proc/self/fd/0", "utf-8")
-  .trim()
-  .split(/\n/);
+var dataLines = require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");
 
-const dataStreamHandler = {
-  "contentList" : rawDataLines,
+var lineProcessor = {
+  "sourceData" : dataLines,
   "currentPosition" : 0,
-  "totalCount" : rawDataLines.length,
+  "totalLines" : dataLines.length,
 
-  "hasMoreContent" : function() {
-    return (this.currentPosition < this.totalCount);
+  // Checks if there are more lines to process.
+  "hasMoreEntries" : function() {
+    return (this.currentPosition < this.totalLines);
   },
 
-  "getNextItem" : function() {
-    if ( ! this.hasMoreContent() ) {
+  // Retrieves the next line from the input.
+  "retrieveNextEntry" : function() {
+    if (!this.hasMoreEntries()) {
       return "";
     }
-    const retrievedElement = this.contentList[this.currentPosition];
-    this.currentPosition += 1;
-    return retrievedElement;
+    var extractedItem = this.sourceData[this.currentPosition];
+    this.currentPosition++;
+    return extractedItem;
   }
 };
 
-invokeMainExecution();
+// Start the primary application logic.
+executeProgram();
 
-function fetchNextInputLine() {
-  return dataStreamHandler.getNextItem();
+// Helper function to get the next line.
+function fetchNextLine() {
+  return lineProcessor.retrieveNextEntry();
 }
 
-function acquireNextInteger() {
-  return dataProcessor(fetchNextInputLine(), 1);
+// Helper function to get the next line as an integer.
+function fetchNextInteger() {
+  return dataTransformer(fetchNextLine(), 1);
 }
 
-function acquireNextStringArray() {
-  return dataProcessor(fetchNextInputLine(), 2); // Splits by single space characters
+// Helper function to get the next line as a string array (space-separated).
+function fetchStringArray() {
+  return dataTransformer(fetchNextLine(), 2);
 }
 
-function acquireNextNumericArray() {
-  return dataProcessor(fetchNextInputLine(), 4); // Splits by space and converts to numeric values
+// Helper function to get the next line as an integer array (space-separated).
+function fetchIntegerArray() {
+  return dataTransformer(fetchNextLine(), 4);
 }
 
-function acquireNextCharacterArray() {
-  return dataProcessor(fetchNextInputLine(), 6); // Divides into individual characters
+// Helper function to get the next line as a character array.
+function fetchCharacterArray() {
+  return dataTransformer(fetchNextLine(), 6);
 }
 
-function checkAvailabilityOfNextLine() {
-  return dataStreamHandler.hasMoreContent();
+// Helper function to check if more lines are available.
+function checkMoreLines() {
+  return lineProcessor.hasMoreEntries();
 }
 
-function displayOutput(contentToPresent) {
-  console.log(contentToPresent); // Outputs content to the standard console
+// Function for standard output.
+function displayOutput(content) {
+  console.log(content);
 }
 
-function reportError(errorContent) {
-  console.error(errorContent); // Reports error messages to the standard error stream
+// Function for standard error output.
+function displayError(errorMessage) {
+  console.error(errorMessage);
 }
 
 /*
- * This function handles various data processing modes based on the 'modeChoice' parameter.
- * It's primarily for numerical and string array manipulations.
+ * Utility function for data type conversions and manipulations.
  *
- * If 'modeChoice' is unknown or an error occurs, the 'inputData' is returned without alteration.
- *
- * Mode 1: Converts 'inputData' to an integer.
- * Mode 2: Splits 'inputData' string by a single space character into an array of strings.
- * Mode 4: Splits 'inputData' string by a single space character, then maps each resulting string to a number.
- * Mode 6: Splits 'inputData' string into an array of individual characters.
- * Mode 7: Splits 'inputData' string into an array of individual characters, then maps each character to a number.
- * Mode 8: Joins elements of an 'inputData' array with a single space character.
- * Mode 9: Joins elements of an 'inputData' array with a newline character.
- * Mode 0: Joins elements of an 'inputData' array without any separator.
+ * transformType:
+ *   1: Convert to integer.
+ *   2: Split by space into string array.
+ *   4: Split by space into integer array.
+ *   6: Split by character into string array.
+ *   7: Split by character into integer array.
+ *   8: Join array elements with space.
+ *   9: Join array elements with newline.
+ *   0: Join array elements without separator.
+ *   Default: Return input as is.
  */
-function dataProcessor(inputData, modeChoice) {
+function dataTransformer(inputValue, transformType) {
   try {
-    switch (modeChoice) {
+    switch (transformType) {
       case 1:
-        return parseInt(inputData, 10);
+        return parseInt(inputValue);
       case 2:
-        return inputData.split(" ");
+        return inputValue.split(" ");
       case 4:
-        return inputData.split(" ").map( (singleElement) => Number(singleElement) );
+        return inputValue.split(" ").map((elementValue) => Number(elementValue));
       case 6:
-        return inputData.split("");
+        return inputValue.split("");
       case 7:
-        return inputData.split("").map( (charItem) => Number(charItem) );
+        return inputValue.split("").map((elementValue) => Number(elementValue));
       case 8:
-        return inputData.join(" ");
+        return inputValue.join(" ");
       case 9:
-        return inputData.join("\n");
+        return inputValue.join("\n");
       case 0:
-        return inputData.join("");
+        return inputValue.join("");
       default:
-        return inputData;
+        return inputValue;
     }
-  } catch (processingError) {
-    return inputData;
+  } catch (errDetails) {
+    return inputValue; // In case of error, return original input.
   }
 }
 
-function invokeMainExecution() {
-  let computedResult = dataProcessor(new Array(10000).fill("-1"), 9);
-  displayOutput(computedResult);
+// Main execution function.
+function executeProgram() {
+  // Create an array of 10000 elements, filled with "-1", then join with newlines.
+  var resultContent = dataTransformer(new Array(10000).fill("-1"), 9);
+  displayOutput(resultContent);
 }

@@ -1,49 +1,96 @@
 "use strict";
 
-let inputBuffer;
-let bufferPointer = 0;
+const fileContentSource = require("fs").readFileSync("/dev/stdin", "utf8");
+const inputTokenStream = fileContentSource.split(/ |\n/);
+let currentTokenPointer = 0;
 
-function setupInput() {
-    if (typeof process !== 'undefined' && process.versions != null && process.versions.node != null) {
-        inputBuffer = require('fs').readFileSync(0, 'utf8').trim().split(/\s+/);
-    } else {
-        throw new Error("Input source not configured for this environment.");
+function retrieveNextValue(asString) {
+  return asString ? inputTokenStream[currentTokenPointer++] : +inputTokenStream[currentTokenPointer++];
+}
+
+function retrieveMultipleValues(count, asString) {
+  const values = inputTokenStream.slice(currentTokenPointer, currentTokenPointer + count);
+  currentTokenPointer += count;
+  return asString ? values : values.map(v => +v);
+}
+
+function retrieveMatrixValues(height, width, asString) {
+  const resultMatrix = [];
+  for (let r = 0; r < height; r++) {
+    const rowValues = inputTokenStream.slice(currentTokenPointer, currentTokenPointer + width);
+    currentTokenPointer += width;
+    resultMatrix.push(asString ? rowValues : rowValues.map(v => +v));
+  }
+  return resultMatrix;
+}
+
+function createMultiDimArray(initialVal, ...dimensions) {
+    if (dimensions.length === 0) {
+        return initialVal;
     }
+    const currentDimensionSize = dimensions[0];
+    const remainingDimensions = dimensions.slice(1);
+    return Array(currentDimensionSize).fill(null).map(() => createMultiDimArray(initialVal, ...remainingDimensions));
 }
 
-function fetchNumericValue() {
-    return Number(inputBuffer[bufferPointer++]);
+function modularProduct() {
+    for (var args = arguments, res = args[0], idx = args.length; --idx;) {
+        // This function relies on a global 'mod' variable which is not defined.
+        // It is included for behavioral equivalence of unused code, but its execution
+        // would require 'mod' to be defined in the global scope.
+        res = ((res >> 16) * args[idx] % mod * 65536 + (res & 65535) * args[idx]) % mod;
+    }
+    return res;
 }
 
-function calculateShortestPaths() {
-    setupInput();
+const finalOutput = calculateAllPairDistances();
+if (finalOutput !== undefined) {
+    console.log(finalOutput);
+}
 
-    const totalNodes = fetchNumericValue();
-    const portalOrigin = fetchNumericValue();
-    const portalDestination = fetchNumericValue();
+function calculateAllPairDistances() {
+  const nodeCount = retrieveNextValue();
+  const specialConnectionA = retrieveNextValue();
+  const specialConnectionB = retrieveNextValue();
 
-    const distanceFrequency = Array(totalNodes - 1).fill(0);
+  const adjacencyList = createMultiDimArray([], nodeCount + 1);
 
-    for (let currentStart = 1; currentStart <= totalNodes; ++currentStart) {
-        for (let currentEnd = currentStart + 1; currentEnd <= totalNodes; ++currentEnd) {
-            const linearDistance = Math.abs(currentStart - currentEnd);
+  for (let i = 1; i < nodeCount; i++) {
+    adjacencyList[i].push(i + 1);
+    adjacencyList[i + 1].push(i);
+  }
 
-            const pathViaOriginToDestination = Math.abs(currentStart - portalOrigin) + 1 + Math.abs(portalDestination - currentEnd);
+  adjacencyList[specialConnectionA].push(specialConnectionB);
+  adjacencyList[specialConnectionB].push(specialConnectionA);
 
-            const pathViaDestinationToOrigin = Math.abs(currentStart - portalDestination) + 1 + Math.abs(portalOrigin - currentEnd);
+  const distanceFrequency = createMultiDimArray(0, nodeCount - 1);
 
-            const minimumSeparation = Math.min(linearDistance, pathViaOriginToDestination, pathViaDestinationToOrigin);
+  for (let startNode = 1; startNode <= nodeCount; startNode++) {
+    const currentDistances = createMultiDimArray(Infinity, nodeCount + 1);
+    const traversalQueue = [];
+    
+    currentDistances[startNode] = 0;
+    traversalQueue.push(startNode);
 
-            if (minimumSeparation > 0 && minimumSeparation <= totalNodes - 1) {
-                distanceFrequency[minimumSeparation - 1]++;
-            }
+    let queueHead = 0;
+    while (queueHead < traversalQueue.length) {
+      const currentNode = traversalQueue[queueHead++];
+
+      for (const neighborNode of adjacencyList[currentNode]) {
+        if (currentDistances[neighborNode] === Infinity) {
+          currentDistances[neighborNode] = currentDistances[currentNode] + 1;
+          traversalQueue.push(neighborNode);
         }
+      }
     }
 
-    return distanceFrequency.join("\n");
-}
+    for (let targetNode = startNode + 1; targetNode <= nodeCount; targetNode++) {
+      const pathLength = currentDistances[targetNode];
+      if (pathLength > 0 && pathLength <= nodeCount - 1) {
+        distanceFrequency[pathLength - 1]++;
+      }
+    }
+  }
 
-const finalResult = calculateShortestPaths();
-if (finalResult !== undefined) {
-    console.log(finalResult);
+  return distanceFrequency.join("\n");
 }

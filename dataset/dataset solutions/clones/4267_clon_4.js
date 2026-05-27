@@ -1,36 +1,33 @@
+const arrangeAsc = (items) => items.sort((valA, valB) => valA - valB);
+
 function processData(rawData) {
   const dataLines = rawData.split('\n');
-  const elementCount = Number(dataLines[0]);
 
-  const retrieveAndArrange = (lineIdx) => {
-    return dataLines[lineIdx].split(' ').map(Number).sort((valA, valB) => valA - valB);
-  };
+  const upperParts = arrangeAsc(dataLines[1].split(' ').map(Number));
+  const middleParts = arrangeAsc(dataLines[2].split(' ').map(Number));
+  const lowerParts = arrangeAsc(dataLines[3].split(' ').map(Number));
 
-  const upperElements = retrieveAndArrange(1);
-  const middleElements = retrieveAndArrange(2);
-  const lowerElements = retrieveAndArrange(3);
-
-  let totalPossibleSets = 0;
+  let totalCombinations = 0;
   let upperPointer = 0;
   let lowerPointer = 0;
 
-  for (let middleIdx = 0; middleIdx < elementCount; middleIdx++) {
-    const currentMiddleValue = middleElements[middleIdx];
+  for (let midIdx = 0; midIdx < middleParts.length; midIdx++) {
+    const currentMiddleVal = middleParts[midIdx];
 
-    while (upperPointer < elementCount && upperElements[upperPointer] < currentMiddleValue) {
+    while (upperPointer < upperParts.length && upperParts[upperPointer] < currentMiddleVal) {
       upperPointer++;
     }
-    const countUpperMatches = upperPointer;
+    const countSmallerUpper = upperPointer;
 
-    while (lowerPointer < elementCount && lowerElements[lowerPointer] <= currentMiddleValue) {
+    while (lowerPointer < lowerParts.length && lowerParts[lowerPointer] <= currentMiddleVal) {
       lowerPointer++;
     }
-    const countLowerMatches = elementCount - lowerPointer;
+    const countLargerLower = lowerParts.length - lowerPointer;
 
-    totalPossibleSets += countUpperMatches * countLowerMatches;
+    totalCombinations += countSmallerUpper * countLargerLower;
   }
 
-  console.log(totalPossibleSets);
+  console.log(totalCombinations);
 }
 
-processData(require('node:fs').readFileSync('/dev/stdin', 'utf8'));
+processData(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,134 +1,173 @@
-const sourceData = require('fs').readFileSync('/dev/stdin', 'utf8');
+function projectileStrike(currentGrid, currentTankPos, deltaRow, deltaCol) {
+    const impactGrid = currentGrid.map(row => [...row]);
+    const { r: startR, c: startC } = currentTankPos;
 
-const directionVectors = {
-    'UP': { rDelta: -1, cDelta: 0 },
-    'DOWN': { rDelta: 1, cDelta: 0 },
-    'LEFT': { rDelta: 0, cDelta: -1 },
-    'RIGHT': { rDelta: 0, cDelta: 1 }
-};
+    const maxDistance = Math.max(currentGrid.length, currentGrid[0].length);
+    const trajectoryPoints = Array.from({ length: maxDistance }, (_, idx) => ({
+        r: startR + deltaRow * (idx + 1),
+        c: startC + deltaCol * (idx + 1)
+    }));
 
-const executeProjectile = (initialPanel, startRow, startCol, rowInc, colInc) => {
-    let activePanel = initialPanel.map(row => [...row]);
+    for (const point of trajectoryPoints) {
+        const { r, c } = point;
+        if (r < 0 || r >= impactGrid.length || c < 0 || c >= impactGrid[0].length) {
+            break;
+        }
 
-    const tracePath = (stepCount) => {
-        const nextRow = startRow + (rowInc * stepCount);
-        const nextCol = startCol + (colInc * stepCount);
+        const targetCell = impactGrid[r][c];
+        if (targetCell === "#") {
+            break;
+        } else if (targetCell === "*") {
+            impactGrid[r][c] = ".";
+            break;
+        }
+    }
+    return impactGrid;
+}
 
-        const currentTarget = activePanel[nextRow][nextCol];
+const commandExecutors = {
+    "U": (currentGrid, tankState) => {
+        const { r, c } = tankState;
+        const nextR = r - 1;
+        const targetCell = currentGrid[nextR][c];
+        let nextGrid = currentGrid.map(row => [...row]);
+        let nextTankState = { ...tankState, dir: "U" };
 
-        if (currentTarget === '#') {
-            return;
-        } else if (currentTarget === '*') {
-            activePanel[nextRow][nextCol] = '.';
-            return;
+        if (targetCell === ".") {
+            nextGrid[nextR][c] = "U";
+            nextGrid[r][c] = ".";
+            nextTankState.r = nextR;
         } else {
-            tracePath(stepCount + 1);
+            nextGrid[r][c] = "U";
         }
-    };
+        return { grid: nextGrid, tank: nextTankState };
+    },
+    "D": (currentGrid, tankState) => {
+        const { r, c } = tankState;
+        const nextR = r + 1;
+        const targetCell = currentGrid[nextR][c];
+        let nextGrid = currentGrid.map(row => [...row]);
+        let nextTankState = { ...tankState, dir: "D" };
 
-    tracePath(1);
-
-    return activePanel;
-};
-
-const processInstruction = (currentScenarioState, instructionSymbol) => {
-    let { layout: currentLayout, vehicleStatus: currentVehicle } = currentScenarioState;
-    let nextLayout = currentLayout.map(row => [...row]);
-    let nextVehicleStatus = { ...currentVehicle };
-
-    if (instructionSymbol === 'S') {
-        const { rDelta, cDelta } = directionVectors[currentVehicle.orientation];
-        nextLayout = executeProjectile(currentLayout, currentVehicle.rowCoord, currentVehicle.colCoord, rDelta, cDelta);
-    } else {
-        const { rDelta, cDelta } = directionVectors[instructionSymbol];
-        const nextVehicleRow = currentVehicle.rowCoord + rDelta;
-        const nextVehicleCol = currentVehicle.colCoord + cDelta;
-
-        if (nextLayout[nextVehicleRow][nextVehicleCol] === '.') {
-            nextLayout[nextVehicleRow][nextVehicleCol] = instructionSymbol;
-            nextLayout[currentVehicle.rowCoord][currentVehicle.colCoord] = '.';
-            nextVehicleStatus.rowCoord = nextVehicleRow;
-            nextVehicleStatus.colCoord = nextVehicleCol;
-            nextVehicleStatus.orientation = instructionSymbol;
+        if (targetCell === ".") {
+            nextGrid[nextR][c] = "D";
+            nextGrid[r][c] = ".";
+            nextTankState.r = nextR;
         } else {
-            nextLayout[currentVehicle.rowCoord][currentVehicle.colCoord] = instructionSymbol;
-            nextVehicleStatus.orientation = instructionSymbol;
+            nextGrid[r][c] = "D";
         }
+        return { grid: nextGrid, tank: nextTankState };
+    },
+    "L": (currentGrid, tankState) => {
+        const { r, c } = tankState;
+        const nextC = c - 1;
+        const targetCell = currentGrid[r][nextC];
+        let nextGrid = currentGrid.map(row => [...row]);
+        let nextTankState = { ...tankState, dir: "L" };
+
+        if (targetCell === ".") {
+            nextGrid[r][nextC] = "L";
+            nextGrid[r][c] = ".";
+            nextTankState.c = nextC;
+        } else {
+            nextGrid[r][c] = "L";
+        }
+        return { grid: nextGrid, tank: nextTankState };
+    },
+    "R": (currentGrid, tankState) => {
+        const { r, c } = tankState;
+        const nextC = c + 1;
+        const targetCell = currentGrid[r][nextC];
+        let nextGrid = currentGrid.map(row => [...row]);
+        let nextTankState = { ...tankState, dir: "R" };
+
+        if (targetCell === ".") {
+            nextGrid[r][nextC] = "R";
+            nextGrid[r][c] = ".";
+            nextTankState.c = nextC;
+        } else {
+            nextGrid[r][c] = "R";
+        }
+        return { grid: nextGrid, tank: nextTankState };
+    },
+    "S": (currentGrid, tankState) => {
+        const { dir } = tankState;
+        let deltaR = 0, deltaC = 0;
+        switch (dir) {
+            case "U": deltaR = -1; break;
+            case "D": deltaR = 1; break;
+            case "L": deltaC = -1; break;
+            case "R": deltaC = 1; break;
+        }
+        const updatedGrid = projectileStrike(currentGrid, tankState, deltaR, deltaC);
+        return { grid: updatedGrid, tank: tankState };
     }
-    return { layout: nextLayout, vehicleStatus: nextVehicleStatus };
 };
 
-const handleChallenges = (remainingInputLines, totalChallenges, currentChallengeIndex = 0) => {
-    if (currentChallengeIndex >= totalChallenges) {
-        return;
-    }
+function simulateTankBattle(height, width, mapRows, commands) {
+    const fullWidth = width + 2;
 
-    if (currentChallengeIndex > 0) {
-        console.log('');
-    }
+    let initialTankState = { r: 0, c: 0, dir: '' };
 
-    const [boardRows, boardCols] = remainingInputLines.shift().split(' ').map(Number);
-    let initialPanel = [];
-    let initialVehicle = { rowCoord: -1, colCoord: -1, orientation: '' };
+    const initialBattlefield = Array.from({ length: height + 2 }, (_, rowIndex) => {
+        if (rowIndex === 0 || rowIndex === height + 1) {
+            return Array.from({ length: fullWidth }, () => "#");
+        } else {
+            const rowContent = mapRows[rowIndex - 1].split("");
+            const rowWithBorders = ["#", ...rowContent, "#"];
 
-    const fullPanelWidth = boardCols + 2;
-    const boundaryRow = Array(fullPanelWidth).fill('#');
-    initialPanel.push(boundaryRow);
-
-    for (let r = 0; r < boardRows; ++r) {
-        const rowContent = remainingInputLines.shift().split('');
-        const paddedRow = ['#', ...rowContent, '#'];
-        initialPanel.push(paddedRow);
-
-        const vehicleIndicator = rowContent.find(char => ['UP', 'DOWN', 'LEFT', 'RIGHT'].includes(char));
-        if (vehicleIndicator) {
-            initialVehicle = {
-                rowCoord: r + 1,
-                colCoord: rowContent.indexOf(vehicleIndicator) + 1,
-                orientation: vehicleIndicator
-            };
+            const tankIndex = rowContent.findIndex(char => ["U", "D", "L", "R"].includes(char));
+            if (tankIndex !== -1) {
+                initialTankState = {
+                    r: rowIndex,
+                    c: tankIndex + 1,
+                    dir: rowContent[tankIndex]
+                };
+            }
+            return rowWithBorders;
         }
-    }
-    initialPanel.push(boundaryRow);
-
-    remainingInputLines.shift();
-    const instructionSequence = remainingInputLines.shift().split('');
-
-    const finalScenarioState = instructionSequence.reduce(processInstruction, {
-        layout: initialPanel,
-        vehicleStatus: initialVehicle
     });
 
-    const finalLayout = finalScenarioState.layout;
+    const finalState = commands.reduce((acc, cmd) => {
+        const executor = commandExecutors[cmd];
+        return executor ? executor(acc.grid, acc.tank) : acc;
+    }, { grid: initialBattlefield, tank: initialTankState });
 
-    const innerLayout = finalLayout.slice(1, finalLayout.length - 1);
-    const displayRows = innerLayout.map(row =>
-        row.slice(1, row.length - 1)
-           .join('')
-           .replace(/UP/g, '^')
-           .replace(/DOWN/g, 'v')
-           .replace(/LEFT/g, '<')
-           .replace(/RIGHT/g, '>')
-    );
-    console.log(displayRows.join('\n'));
+    const outputGrid = finalState.grid.slice(1, -1);
 
-    handleChallenges(remainingInputLines, totalChallenges, currentChallengeIndex + 1);
-};
+    const outputString = outputGrid.map(row => {
+        const innerRow = row.slice(1, -1);
+        return innerRow.map(char => {
+            switch (char) {
+                case "U": return "^";
+                case "D": return "v";
+                case "L": return "<";
+                case "R": return ">";
+                default: return char;
+            }
+        }).join("");
+    }).join("\n");
 
-const transformedInput = sourceData
-    .split('')
-    .map(symbol => {
-        switch (symbol) {
-            case '^': return 'UP';
-            case 'v': return 'DOWN';
-            case '<': return 'LEFT';
-            case '>': return 'RIGHT';
-            default: return symbol;
-        }
-    })
-    .join('');
+    return outputString;
+}
 
-let inputLines = transformedInput.trim().split('\n');
-const totalChallengesToProcess = parseInt(inputLines.shift(), 10);
+const rawInputData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-handleChallenges(inputLines, totalChallengesToProcess);
+const charTranslation = { "^": "U", "v": "D", "<": "L", ">": "R" };
+const processedInputData = rawInputData.replace(/[\^v<>]/g, (match) => charTranslation[match]);
+let allInputLines = processedInputData.trim().split("\n");
+
+const numberOfTestCases = parseInt(allInputLines.shift(), 10);
+
+for (let caseIndex = 0; caseIndex < numberOfTestCases; caseIndex++) {
+    if (caseIndex > 0) {
+        console.log("");
+    }
+    const [mapHeight, mapWidth] = allInputLines.shift().split(" ").map(Number);
+    const mapContentLines = allInputLines.splice(0, mapHeight);
+    allInputLines.shift();
+    const commandSequence = allInputLines.shift().split("");
+
+    const battleResult = simulateTankBattle(mapHeight, mapWidth, mapContentLines, commandSequence);
+    console.log(battleResult);
+}

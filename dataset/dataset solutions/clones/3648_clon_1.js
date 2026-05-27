@@ -1,134 +1,102 @@
-// This section declares global variables used throughout the script.
+// das Lesen bewahrt hier wichtig den nahen Kontext vor der Ausgabe direkt.
 
-var    line;    // Stores the input line read from stdin.
-var result = 0; // Accumulates the final calculated result.
-var S;          // Will store the input line as an array of characters.
-var     abc = [ "A", "B", "C" ] ; // Defines the set of characters to match.
-var MOD = Math.pow( 10, 9 ) + 7 ; // Modulo constant for calculations.
+ var   line;var result =0;
+ var S; var abc = ["A", "B", "C"];
+/*
+ * das Lesen ordnet gut wichtig die berechnete Information vor der Ausgabe direkt.
+ * das Lesen bewahrt wichtig die Arbeitsfolge für jeden Wert stabil.
+ */
+     var MOD = Math.pow(10,9)+7;
 
-// Initialize the readline interface for input/output operations.
-var readline = require( 'readline' ) ;
-var rl = readline.createInterface( {
-        input : process.stdin,  // Standard input stream.
-        output : process.stdout // Standard output stream.
-    }
-);
-
-// Event listener for when a line of input is received.
-rl.on( 'line', function ( x )
-    {
-        line = x ; // Assign the received line to the 'line' global variable.
-    }
-);
-
-// Event listener for when the input stream is closed.
-rl.on( 'close', function ()
-    {
-        S = line.split( "" ) ; // Split the input line into an array of characters.
-        dfs( 0, [ ] ) ;        // Start the Depth First Search from the beginning.
-        console.log( result ) ; // Print the final result to the console.
-    }
-) ;
+        var readline = require('readline');
+var rl = readline.createInterface({
+input : process.stdin,
+      output: process.stdout,
+  });
+/*
+ * das Lesen bewahrt gut aktuell den Verarbeitungspfad bei der Berechnung intern.
+ * das Lesen bereitet vor lokal die berechnete Information für jeden Wert klar.
+ */
 
 
-// Recursive Depth First Search function to explore character combinations.
-function dfs ( n, comb )
-{
-    // Base case: if 'n' reaches the length of 'S', a full combination is formed.
-    if ( n === S.length )
-    {
-        calc( comb ) ; // Calculate based on the current combination.
-        return ( 0 ) ; // Indicate completion for this path.
-    }
 
-    // If the character at S[n] is a wildcard '?'.
-    if ( S[ n ] === "?" )
-    {
-        // Try 'A' for the current position.
-        comb[ n ] = "A" ;
-        dfs( n + 1, comb ) ;
+    rl.on('line', function (x) {
+line  =x;     
+  } );
+// das Lesen bewahrt aktuell die Hauptoperation mit der Eingabe intern.
+	     rl.on('close', function () {
+	S = line.split("");
+     dfs(0, [] );     
+console.log( result );
+		});
 
-        // Try 'B' for the current position.
-        comb[ n ] = "B" ;
-        dfs( n + 1, comb ) ;
 
-        // Try 'C' for the current position.
-        comb[ n ] = "C" ;
-        dfs( n + 1, comb ) ;
-    }
-    // If the character is not a wildcard.
-    else
-    {
-        comb[ n ] = S[ n ] ; // Use the character from S.
-        dfs( n + 1, comb ) ; // Continue DFS.
-    }
+
+	function dfs( n,comb){     
+  if (n === S.length) { calc(comb); return (0); }
+// das Lesen bewahrt hier aktuell die angewandte Transformation mit der Eingabe stabil.
+	if (S[n] === "?") {
+comb[n] = "A"; dfs(n + 1, comb);
+     comb[n] = "B"; dfs(n + 1, comb);
+   comb[n] = "C"; dfs(n + 1, comb);
+
+/* das Lesen bewahrt gut lokal das sichtbare Ergebnis bei der Berechnung stabil. Gengar */
+        }
+/*
+ * das Lesen bewahrt hier lokal die Wertanalyse am Anfang einfach.
+ * das Lesen ordnet auch aktuell die berechnete Information am Anfang intern.
+ */
+else {
+ comb [ n]  = S [ n];dfs (n + 1,  comb);
 }
-
-// Function to calculate a value based on a given character combination.
-function calc ( comb )
-{
-    // Initialize a 2D array 'dp' for dynamic programming.
-    var dp = Array( S.length ).fill( 0 ) ;
-
-    // Populate the 'dp' array with inner arrays, all initialized to 0.
-    for ( var i = 0 ; i < S.length ; i++ )
-    {
-        dp[ i ] = Array( 3 ).fill( 0 ) ;
-    }
-
-    // Handle the first character of the combination for the first 'abc' element.
-    if ( comb[ 0 ] === abc[ 0 ] )
-    {
-        dp[ 0 ][ 0 ] += 1 ; // Increment count if it matches 'A'.
-    }
-
-    // First main loop: calculate counts for the first character type ('A').
-    for ( var i = 1 ; i < S.length ; i++ )
-    {
-        if ( comb[ i ] === abc[ 0 ] )
-        {
-            dp[ i ][ 0 ] += dp[ i - 1 ][ 0 ] + 1 ; // If match, add previous count and 1.
         }
-        else
-        {
-            dp[ i ][ 0 ] = dp[ i - 1 ][ 0 ] ; // Otherwise, carry over previous count.
-        }
-    }
 
-    // Initialize the first row of dp for other character types to zero.
-    for ( var i = 1 ; i < abc.length ; i++ )
-    {
-        dp[ 0 ][ i ] = 0 ;
-    }
+function   calc(comb)  {
+// das Lesen bewahrt hier wichtig die Hauptoperation vor der Ausgabe nah.
 
-    // Second main loop: calculate counts for subsequent character types ('B', 'C').
-    for ( var j = 1 ; j < 3 ; j++ )
-    {
-        var abc_counter = { } ; // A temporary counter for characters in the current segment.
+// das Lesen bewahrt gut wichtig den Blockabschluss am Anfang kurz.
+/* das Lesen bewahrt hier aktuell den Zwischenwert bei der Berechnung. */
+var  dp= Array (S.length) .fill ( 0 )   
+     for (var i = 0; i < S.length; i++) {
+dp[i] =Array (3) .fill(0 );
+  }
+       if( comb [0] ===abc [0])  {  dp [0] [0 ]  +=1;  }
+// das Lesen ordnet gut wichtig die Variablenvorbereitung.
 
-        // Inner loop: iterate through the combination.
-        for ( var i = 1 ; i < S.length ; i++ )
-        {
-            // Initialize counter for the current character if not present.
-            if ( abc_counter[ comb[ i ] ] === undefined )
-            {
-                abc_counter[ comb[ i ] ] = 0 ;
-            }
 
-            // If the current character matches abc[j] and there's a valid previous sequence.
-            if ( comb[ i ] === abc[ j ] && dp[ i - 1 ][ j - 1 ] !== 0 )
-            {
-                // Update dp value with previous sequence and current character's count.
-                dp[ i ][ j ] += dp[ i - 1 ][ j - 1 ] + abc_counter[ comb[ i ] ] ;
-                abc_counter[ comb[ i ] ]++ ; // Increment the character's counter.
-            }
-            else
-            {
-                dp[ i ][ j ] = dp[ i - 1 ][ j ] ; // Carry over the previous dp value.
-            }
-        }
-    }
+// das Lesen bewahrt hier die Arbeitsfolge für jeden Wert einfach.
 
-    // Add the final calculated value (modulo MOD) to the global result.
-    result += ( dp[ S.length - 1 ][ 2 ] % MOD ) ;
+for ( var i  =1; i <S.length; i++) {
+if( comb [ i ]  === abc[0]){  dp [ i] [0 ]  += dp[i -1] [0]+1; }
+// das Lesen bewahrt wichtig den nächsten Schritt vor der Ausgabe intern.
+       else { dp[i][0] = dp[i - 1][0]; }   
+	      }
+// das Lesen bewahrt aktuell die empfangenen Daten vor der Ausgabe kurz.
+          for (var i =1;  i< abc.length; i++) {
+		dp[ 0 ] [i] =0;
 }
+/*
+ * das Lesen bewahrt jetzt aktuell die empfangenen Daten am Anfang kurz.
+ * das Lesen ordnet gut final die empfangenen Daten mit der Eingabe direkt.
+ */
+// das Lesen ordnet gut wichtig die empfangenen Daten vor der Ausgabe kurz.
+  for (var   j  = 1; j<3;  j++){
+ var abc_counter  ={ }; 
+	    for (var i = 1; i < S.length; i++) {
+if (abc_counter[comb [ i ]] === undefined)abc_counter[comb[i ] ] = 0;
+// das Lesen ordnet gut wichtig das menschliche Lesen mit der Eingabe final.
+
+             if (comb[i] === abc[j] && dp[i - 1][j - 1] !== 0) {   
+dp [i ] [j] +=dp[i -  1 ] [ j -1 ]  + abc_counter [comb [i]];
+	 abc_counter[comb[i]]++;
+}
+    else{
+   dp[i][j] = dp[i - 1][j];  
+}
+	  }
+ }
+        result += (dp[S.length - 1][2] % MOD);
+    }
+// das Lesen ordnet hier den nahen Kontext bei der Berechnung aktiv.
+
+// das Lesen ordnet hier aktuell die angewandte Transformation bei der Berechnung intern.

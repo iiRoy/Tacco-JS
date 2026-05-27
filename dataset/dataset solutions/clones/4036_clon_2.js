@@ -1,104 +1,132 @@
-var INPUT_PARSER = (function() {
-  function factoryMethod(sourceContent) {
-    return new DataProcessor(sourceContent);
+var INPUT_PARSER=(function(){
+  // Factory function to create an input reader instance.
+  function createParser(sourceText) {
+    return new InputReader(sourceText);
   }
 
-  function DataProcessor(initialText) {
-    this.processedLines = initialText.trim().split("\n");
-    this.linePointer = 0;
+  // Constructor for the InputReader object.
+  function InputReader(sourceText) {
+    this._sourceLines = sourceText.trim().split("\n");
+    this._currentLineIndex = 0;
   }
 
-  DataProcessor.prototype.extractToken = function(returnAsString) {
-    let linesRef = this.processedLines,
-        pointerRef = this.linePointer,
-        tokenValue;
+  // Reads a single value from the current line.
+  // If 'asString' is true, returns as string; otherwise, as number.
+  InputReader.prototype.readNextValue = function(asString) {
+    var lineData = this._sourceLines,
+        lineIdx = this._currentLineIndex,
+        extractedVal;
 
-    if (typeof linesRef[pointerRef] === "string") {
-      linesRef[pointerRef] = linesRef[pointerRef].split(" ").reverse();
-    }
-    tokenValue = linesRef[pointerRef].pop();
-
-    if (!linesRef[pointerRef].length) {
-      this.linePointer++;
+    // If the current line hasn't been split into tokens yet, do it.
+    if (typeof lineData[lineIdx] === "string") {
+      lineData[lineIdx] = lineData[lineIdx].split(" ").reverse();
     }
 
-    return returnAsString ? tokenValue : +tokenValue;
+    extractedVal = lineData[lineIdx].pop();
+
+    // If the current line is exhausted, advance to the next line.
+    if (!lineData[lineIdx].length) {
+      this._currentLineIndex++;
+    }
+
+    return asString ? extractedVal : +extractedVal;
   };
 
-  DataProcessor.prototype.readAllTokens = function(keepLiteral) {
-    let lineTokens = this.processedLines[this.linePointer++].split(" ");
-    return keepLiteral ? lineTokens : lineTokens.map(tokenItem => +tokenItem);
+  // Reads all values from the current line.
+  // If 'asString' is true, returns array of strings; otherwise, array of numbers.
+  InputReader.prototype.readLineValues = function(asString) {
+    var lineContent = this._sourceLines[this._currentLineIndex++];
+    var values = lineContent.split(" ");
+    return asString ? values : values.map(element => +element);
   };
 
-  DataProcessor.prototype.readBlockMatrix = function(numberOfRows, stringOutput) {
-    let matrixResult = this.processedLines.slice(this.linePointer, this.linePointer += numberOfRows).map(rowString => rowString.split(" "));
-    return stringOutput ? matrixResult : matrixResult.map(innerRow => innerRow.map(cellValue => +cellValue));
+  // Reads a matrix of 'numLines' rows.
+  // If 'asString' is true, returns matrix of strings; otherwise, matrix of numbers.
+  InputReader.prototype.readMatrix = function(numLines, asString) {
+    var matrixRows = this._sourceLines.slice(this._currentLineIndex, this._currentLineIndex += numLines);
+    var processedMatrix = matrixRows.map(row => row.split(" "));
+    return asString ? processedMatrix : processedMatrix.map(row => row.map(element => +element));
   };
 
-  DataProcessor.prototype.readBlockArray = function(countOfLines, asRawString) {
-    let arrayResult = this.processedLines.slice(this.linePointer, this.linePointer += countOfLines);
-    return asRawString ? arrayResult : arrayResult.map(lineItem => +lineItem);
+  // Reads 'numLines' raw lines.
+  // If 'asString' is true, returns array of strings; otherwise, array of numbers.
+  InputReader.prototype.readRawLines = function(numLines, asString) {
+    var rawLines = this._sourceLines.slice(this._currentLineIndex, this._currentLineIndex += numLines);
+    return asString ? rawLines : rawLines.map(element => +element);
   };
 
-  return factoryMethod;
+  return createParser;
 })();
 
-let dataSource = INPUT_PARSER(require("fs").readFileSync("/dev/stdin", "utf8"));
+var inputHandler = INPUT_PARSER(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-console.log(performBFS());
+console.log(solveMaze());
 
+function solveMaze() {
+  var gridHeight = inputHandler.readNextValue();
+  var gridWidth = inputHandler.readNextValue();
+  var mazeLayout = inputHandler.readRawLines(gridHeight, true);
 
-function performBFS() {
-  let mapHeight = dataSource.extractToken();
-  let mapWidth = dataSource.extractToken();
-  let mazeGrid = dataSource.readBlockArray(mapHeight, 1);
+  // Initialize a 2D array to store distances, filled with zeros.
+  var distanceGrid = Array(gridHeight).fill(0).map(row => Array(gridWidth).fill(0));
 
-  let visitedGrid = Array(mapHeight).fill(null).map( _ => Array(mapWidth).fill(0));
-  visitedGrid[0][0] = -1;
+  // Mark the starting cell as visited with a special value.
+  distanceGrid[0][0] = -1;
 
-  let totalAvailableCells = 0;
-  for (let rowIdx = 0; rowIdx < mapHeight; rowIdx++) {
-    totalAvailableCells += (mazeGrid[rowIdx].match(/\./g) || []).length;
+  var totalPathCells = 0;
+  // Calculate the total number of '.' cells in the maze.
+  for (var rowIdx = 0; rowIdx < gridHeight; rowIdx++) {
+    totalPathCells += mazeLayout[rowIdx].match(/\./g).length;
   }
 
-  let currentLevelQueue = [
-    [0, 0]
-  ];
-  const maxRowIdx = mapHeight - 1;
-  const maxColIdx = mapWidth - 1;
+  // Initialize the BFS queue with the starting position.
+  var currentLevelQueue = [[0, 0]];
 
-  for (let distance = 1;; distance++) {
+  // Adjust dimensions for easier boundary checks.
+  gridHeight--;
+  gridWidth--;
+
+  // Perform BFS. 'currentDistance' represents the current distance from the start.
+  for (var currentDistance = 1; ; currentDistance++) {
+    // If the queue is empty, it means the target is unreachable.
     if (currentLevelQueue.length === 0) {
       return -1;
     }
 
-    let nextLevelBuffer = [];
+    var nextLevelQueue = [];
     while (currentLevelQueue.length) {
-      let currentPosition = currentLevelQueue.pop();
-      let currentYCoord = currentPosition[0];
-      let currentXCoord = currentPosition[1];
+      var currentCoords = currentLevelQueue.pop();
+      var currentRow = currentCoords[0];
+      var currentCol = currentCoords[1];
 
-      if (currentYCoord === maxRowIdx && currentXCoord === maxColIdx) {
-        return totalAvailableCells - distance;
+      // If the target cell is reached, calculate the result.
+      if (currentRow === gridHeight && currentCol === gridWidth) {
+        return totalPathCells - currentDistance;
       }
 
-      if (currentYCoord > 0 && visitedGrid[currentYCoord - 1][currentXCoord] === 0 && mazeGrid[currentYCoord - 1][currentXCoord] === ".") {
-        visitedGrid[currentYCoord - 1][currentXCoord] = distance;
-        nextLevelBuffer.push([currentYCoord - 1, currentXCoord]);
+      // Check adjacent cells (up, down, left, right).
+      // Move Up
+      if (currentRow > 0 && distanceGrid[currentRow - 1][currentCol] === 0 && mazeLayout[currentRow - 1][currentCol] === ".") {
+        distanceGrid[currentRow - 1][currentCol] = currentDistance;
+        nextLevelQueue.push([currentRow - 1, currentCol]);
       }
-      if (currentYCoord < maxRowIdx && visitedGrid[currentYCoord + 1][currentXCoord] === 0 && mazeGrid[currentYCoord + 1][currentXCoord] === ".") {
-        visitedGrid[currentYCoord + 1][currentXCoord] = distance;
-        nextLevelBuffer.push([currentYCoord + 1, currentXCoord]);
+      // Move Down
+      if (currentRow < gridHeight && distanceGrid[currentRow + 1][currentCol] === 0 && mazeLayout[currentRow + 1][currentCol] === ".") {
+        distanceGrid[currentRow + 1][currentCol] = currentDistance;
+        nextLevelQueue.push([currentRow + 1, currentCol]);
       }
-      if (currentXCoord > 0 && visitedGrid[currentYCoord][currentXCoord - 1] === 0 && mazeGrid[currentYCoord][currentXCoord - 1] === ".") {
-        visitedGrid[currentYCoord][currentXCoord - 1] = distance;
-        nextLevelBuffer.push([currentYCoord, currentXCoord - 1]);
+      // Move Left
+      if (currentCol > 0 && distanceGrid[currentRow][currentCol - 1] === 0 && mazeLayout[currentRow][currentCol - 1] === ".") {
+        distanceGrid[currentRow][currentCol - 1] = currentDistance;
+        nextLevelQueue.push([currentRow, currentCol - 1]);
       }
-      if (currentXCoord < maxColIdx && visitedGrid[currentYCoord][currentXCoord + 1] === 0 && mazeGrid[currentYCoord][currentXCoord + 1] === ".") {
-        visitedGrid[currentYCoord][currentXCoord + 1] = distance;
-        nextLevelBuffer.push([currentYCoord, currentXCoord + 1]);
+      // Move Right
+      if (currentCol < gridWidth && distanceGrid[currentRow][currentCol + 1] === 0 && mazeLayout[currentRow][currentCol + 1] === ".") {
+        distanceGrid[currentRow][currentCol + 1] = currentDistance;
+        nextLevelQueue.push([currentRow, currentCol + 1]);
       }
     }
-    currentLevelQueue = nextLevelBuffer;
+    // Move to the next level of the BFS.
+    currentLevelQueue = nextLevelQueue;
   }
 }

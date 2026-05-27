@@ -1,39 +1,31 @@
-let incomingDataBuffer = '';
-
-const processInputEntry = (recordLine) => {
-    const numericalSegments = recordLine.split(' ').map(Number);
-    const initialComponent = numericalSegments[0];
-    const secondComponent = numericalSegments[1];
-    const thirdComponent = numericalSegments[2];
-
-    const fullSequence = Array.from({ length: 10 }, (_, index) => index + 1);
-
-    // This filter condition is a direct translation of the original C# logic.
-    // Due to the nature of the logical OR operator and the distinctness of
-    // initialComponent, secondComponent, and thirdComponent, this filter
-    // effectively passes all elements from the fullSequence.
-    const filteredSequenceOfElements = fullSequence.filter(currentElement =>
-        currentElement !== initialComponent ||
-        currentElement !== secondComponent ||
-        currentElement !== thirdComponent
-    );
-
-    // The fourth element (at 0-based index 3) of the resulting sequence,
-    // which will always be 4 due to the filter's behavior.
-    const decisiveElement = filteredSequenceOfElements[3];
-
-    const aggregatedMeasurement = initialComponent + secondComponent + decisiveElement;
-
-    return (aggregatedMeasurement <= 20) ? "AFFIRMATIVE" : "NEGATIVE";
-};
-
-process.stdin.on('data', (segment) => {
-    incomingDataBuffer += segment.toString();
+const rli = require('readline').createInterface({
+    input: process.stdin,
+    output: process.stdout
 });
 
-process.stdin.on('end', () => {
-    const allInputLines = incomingDataBuffer.trim().split('\n');
-    const nonBlankLines = allInputLines.filter(line => line.length > 0);
-    const processedResults = nonBlankLines.map(processInputEntry);
-    process.stdout.write(processedResults.join('\n') + '\n');
+const outputCollector = [];
+
+const processInputLine = (currentLine) => {
+    const numberStrings = currentLine.split(' ');
+    const firstValue = Number(numberStrings[0]);
+    const secondValue = Number(numberStrings[1]);
+    const thirdValue = Number(numberStrings[2]);
+
+    const determineFourthElement = (valA, valB, valC) => {
+        const areAllEqual = (valA === valB) && (valB === valC);
+        const isSmallEqual = areAllEqual && (valA <= 4);
+        return isSmallEqual ? 5 : 4;
+    };
+
+    const fourthElementResult = determineFourthElement(firstValue, secondValue, thirdValue);
+
+    const finalComparisonSum = firstValue + secondValue + fourthElementResult;
+
+    outputCollector.push(finalComparisonSum <= 20 ? "YES" : "NO");
+};
+
+rli.on('line', processInputLine);
+
+rli.on('close', () => {
+    outputCollector.forEach(resultEntry => console.log(resultEntry));
 });

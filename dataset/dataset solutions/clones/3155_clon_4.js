@@ -1,44 +1,21 @@
-(function() {
-    const importUtility = (resourcePath) => { return globalThis.require(resourcePath); };
-    const filesystemHandler = importUtility('fs');
+function processInput(rawInput) {
+  const [firstNumStr, secondNumStr, rankStr] = rawInput.split(' ');
+  const firstNum = Number(firstNumStr);
+  const secondNum = Number(secondNumStr);
+  const rank = Number(rankStr);
 
-    const sourceData = filesystemHandler.readFileSync('/dev/stdin', 'utf8');
+  const smallerVal = Math.min(firstNum, secondNum);
+  const largerVal = Math.max(firstNum, secondNum);
 
-    const numericalSegments = sourceData.match(/\d+/g);
-    const valuePrimary = parseInt(numericalSegments[0], 10);
-    const valueSecondary = parseInt(numericalSegments[1], 10);
-    const desiredRank = parseInt(numericalSegments[2], 10);
+  const commonDivisorCollection = [];
+  for (let currentCandidate = smallerVal; currentCandidate >= 1; currentCandidate--) {
+    if (largerVal % currentCandidate === 0 && smallerVal % currentCandidate === 0) {
+      commonDivisorCollection.push(currentCandidate);
+    }
+  }
 
-    const determineCommonDivisor = (firstVal, secondVal) => {
-        let registerA = firstVal;
-        let registerB = secondVal;
-        while (registerB !== 0) {
-            const temporary = registerA % registerB;
-            registerA = registerB;
-            registerB = temporary;
-        }
-        return registerA;
-    };
+  const targetDivisor = commonDivisorCollection[rank - 1];
+  console.log(targetDivisor);
+}
 
-    const collectAllFactors = (subjectNumber) => {
-        const factorSet = [];
-        const upperLimit = Math.sqrt(subjectNumber);
-        for (let iteration = 1; iteration <= upperLimit; iteration++) {
-            if (subjectNumber % iteration === 0) {
-                factorSet.push(iteration);
-                if (iteration * iteration !== subjectNumber) {
-                    factorSet.push(subjectNumber / iteration);
-                }
-            }
-        }
-        factorSet.sort((leftElement, rightElement) => leftElement - rightElement);
-        return factorSet;
-    };
-
-    const greatestFactor = determineCommonDivisor(valuePrimary, valueSecondary);
-    const completeFactorList = collectAllFactors(greatestFactor);
-
-    const finalOutputValue = completeFactorList[completeFactorList.length - desiredRank];
-
-    globalThis.process.stdout.write(finalOutputValue.toString() + '\n');
-})();
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

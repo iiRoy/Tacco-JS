@@ -1,100 +1,84 @@
-let dataStreamManager;
-let lineIndexTracker = 0;
-let totalLineCount = 0;
-let inputLineBuffer = [];
-
-const prepareInputService = (linesProvided) => {
-    inputLineBuffer = linesProvided;
-    totalLineCount = linesProvided.length;
-    lineIndexTracker = 0;
-    dataStreamManager = {
-        retrieveNextItem: () => {
-            if (lineIndexTracker < totalLineCount) {
-                return inputLineBuffer[lineIndexTracker++];
-            } else {
-                throw new Error("Input consumption exceeded available data.");
-            }
-        },
-        hasMoreItems: () => lineIndexTracker < totalLineCount
-    };
-};
-
-const extractIntegerDatum = () => {
-    return parseInt(dataStreamManager.retrieveNextItem(), 10);
-};
-
-const parseCharacterSequence = () => {
-    return dataStreamManager.retrieveNextItem().split('');
-};
-
-const deliverOutputResult = (computedValue) => {
-    console.log(computedValue);
-};
-
-const processStringPatterns = () => {
-    const ignoredInputSize = extractIntegerDatum();
-    const initialStringArray = parseCharacterSequence();
-    let maximumPatternMatch = 0;
-
-    for (let currentSuffixStart = 0; currentSuffixStart < initialStringArray.length; currentSuffixStart++) {
-        const activeSegment = initialStringArray.slice(currentSuffixStart);
-
-        if (activeSegment.length === 0) continue;
-
-        const segmentComparisonData = generatePrefixOverlapArray(activeSegment);
-
-        const midPointThreshold = activeSegment.length / 2;
-        let segmentHighestMatch = 0;
-
-        for (let positionIterator = activeSegment.length - 1; positionIterator >= Math.floor(midPointThreshold); positionIterator--) {
-            segmentHighestMatch = Math.max(segmentHighestMatch, segmentComparisonData[positionIterator]);
-        }
-        
-        maximumPatternMatch = Math.max(maximumPatternMatch, segmentHighestMatch);
-    }
-
-    deliverOutputResult(maximumPatternMatch);
-};
-
-const generatePrefixOverlapArray = (sequenceToAnalyze) => {
-    const sequenceDimension = sequenceToAnalyze.length;
-    const overlapLengths = new Array(sequenceDimension).fill(0);
-    overlapLengths[0] = sequenceDimension;
-
-    let currentScanPoint = 1;
-    let extentOfCurrentOverlap = 0;
-
-    while (currentScanPoint < sequenceDimension) {
-        while ((currentScanPoint + extentOfCurrentOverlap) < sequenceDimension &&
-               (sequenceToAnalyze[extentOfCurrentOverlap] === sequenceToAnalyze[currentScanPoint + extentOfCurrentOverlap])) {
-            extentOfCurrentOverlap++;
-        }
-        overlapLengths[currentScanPoint] = extentOfCurrentOverlap;
-
-        if (extentOfCurrentOverlap === 0) {
-            currentScanPoint++;
-            continue;
-        }
-
-        let copyOffsetIndex = 1;
-        while ((currentScanPoint + copyOffsetIndex) < sequenceDimension &&
-               (copyOffsetIndex + overlapLengths[copyOffsetIndex] < extentOfCurrentOverlap)) {
-            overlapLengths[currentScanPoint + copyOffsetIndex] = overlapLengths[copyOffsetIndex];
-            copyOffsetIndex++;
-        }
-
-        currentScanPoint += copyOffsetIndex;
-        extentOfCurrentOverlap -= copyOffsetIndex;
-    }
-    return overlapLengths;
-};
-
-read.on('close', function(){
-  prepareInputService(inLine);
-  console.error("\n");
-  var start = Date.now();
-  processStringPatterns();
-  var end = Date.now() - start;
-  myerr("time : " + end + "ms");
-  myerr("memory : " + Math.round(process.memoryUsage().heapTotal / 1024) + "KB");
+var inputReader = require('readline').createInterface({
+  input: process.stdin, output: process.stdout
 });
+var inputLines = [];
+var dataProcessor;
+inputReader.on('line', function(lineContent){inputLines.push(lineContent);});
+inputReader.on('close', function(){
+  dataProcessor = initializeInputReader(inputLines);
+  console.error("\n");
+  var startTime = Date.now();
+  executeMainLogic();
+  var endTime = Date.now() - startTime;
+  logError("time : " + endTime + "ms");
+  logError("memory : " + Math.round(process.memoryUsage().heapTotal / 1024) + "KB");
+});
+function getNextInteger(){return convertInput(retrieveNext(),1);}
+function getNextStringArray(){return convertInput(retrieveNext(),2);}
+function getNextIntegerArray(){return convertInput(retrieveNext(),4);}
+function getNextCharacterArray(){return convertInput(retrieveNext(),6);}
+function retrieveNext(){return dataProcessor.fetchNext();}
+function hasMoreInput(){return dataProcessor.checkHasNext();}
+function initializeInputReader(lines){
+  return {
+    dataLines : lines,
+    currentPosition : 0,
+    totalLines : lines.length,
+    checkHasNext : function(){return (this.currentPosition < this.totalLines);},
+    fetchNext : function(){
+      if(this.checkHasNext()){
+        return this.dataLines[this.currentPosition++];
+      }else{
+        throw "InputExhaustedException ‚No more input available";
+      }
+    }
+  };
+}
+function outputResult(content){console.log(content);}
+function logError(message){console.error("debug:" + require("util").inspect(message,false,null));}
+function convertInput(item, type){
+  try{
+    switch(type){
+      case 1:return parseInt(item);
+      case 2:return item.split(" ");
+      case 4:return item.split(" ").map(Number);
+      case 6:return item.split("");
+      case 7:return item.split("").map(Number);
+      case 8:return item.join(" ");
+      case 9:return item.join("\n");
+      case 0:return item.join("");
+      default:return item;
+    }
+  }catch(e){
+    return item;
+  }
+}
+function executeMainLogic(){
+  var inputNumber = getNextInteger();
+  var characterSequence = getNextCharacterArray();
+  var maximumOverlapLength = 0;
+  
+  for (let currentSuffixStart = 0; currentSuffixStart < characterSequence.length; currentSuffixStart++) {
+    let activeSubsequence = characterSequence.slice(currentSuffixStart);
+    
+    let zArrayForSubsequence = new Array(activeSubsequence.length).fill(0);
+    if (activeSubsequence.length > 0) {
+        zArrayForSubsequence[0] = activeSubsequence.length;
+    }
+    
+    for (let checkIndex = 1; checkIndex < activeSubsequence.length; checkIndex++) {
+      let currentMatchLength = 0;
+      while (checkIndex + currentMatchLength < activeSubsequence.length &&
+             activeSubsequence[currentMatchLength] === activeSubsequence[checkIndex + currentMatchLength]) {
+        currentMatchLength++;
+      }
+      zArrayForSubsequence[checkIndex] = currentMatchLength;
+    }
+    
+    for (let position = activeSubsequence.length - 1; position >= Math.ceil(activeSubsequence.length / 2); position--) {
+      maximumOverlapLength = Math.max(maximumOverlapLength, zArrayForSubsequence[position]);
+    }
+  }
+  
+  outputResult(maximumOverlapLength);
+}

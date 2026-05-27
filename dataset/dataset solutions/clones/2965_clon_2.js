@@ -1,89 +1,89 @@
-function ProcessInputData(incomingText) {
-  // Normalize input data: trim, split into lines, then split each line by space
-  let formattedLines = incomingText.trim().split("\n").map(function(textSegment) {
-    return textSegment.split(" ");
-  });
+function ProcessInput(rawData) {
+    // Clean up the raw input string and parse it into an array of arrays.
+    rawData = rawData.trim().split("\n").map(function(lineSegment) {
+        return lineSegment.split(" ");
+    });
 
-  // Parse the first line to get the number of elements and relationships
-  let countOfEntities = parseInt(formattedLines[0][0], 10);
-  let countOfRelations = parseInt(formattedLines[0][1], 10);
+    // Extract the number of nodes (N) and edges (M) from the first line.
+    let nodeCount = parseInt(rawData[0][0], 10);
+    let edgeCount = parseInt(rawData[0][1], 10);
 
-  // Initialize a Disjoint Set data structure with the given number of entities
-  var disjointSetStructure = new DisjointSet(countOfEntities);
-  let currentRelation;
+    // Initialize a DisjointSet data structure with 'nodeCount' elements.
+    var disjointSet = new DisjointSet(nodeCount);
+    let currentEdge; // Variable to hold parsed edge data.
 
-  // Iterate through each relation to perform union operations
-  for (let relationIndex = 0; relationIndex < countOfRelations; relationIndex++) {
-    // Convert current relation's elements from string to integer
-    currentRelation = formattedLines[relationIndex + 1].map(elementString => parseInt(elementString, 10));
+    // Iterate through each edge provided in the input.
+    for (let k = 0; k < edgeCount; k++) {
+        // Parse the current edge's endpoints from string to integer.
+        currentEdge = rawData[k + 1].map(e => parseInt(e, 10));
 
-    // Perform union on the two entities involved in the relation (adjusting for 0-based indexing)
-    disjointSetStructure.uniteComponents(currentRelation[0] - 1, currentRelation[1] - 1);
-  }
-
-  // Count the number of distinct components (sets)
-  let distinctComponentCount = 0;
-  for (let entityIndex = 0; entityIndex < countOfEntities; entityIndex++) {
-    // If an entity is its own representative, it's the root of a distinct component
-    if (disjointSetStructure.findRepresentative(entityIndex) === entityIndex) {
-      distinctComponentCount++;
+        // Perform a union operation on the two nodes of the current edge.
+        // Adjusting for 0-based indexing.
+        disjointSet.uniteSets(currentEdge[0] - 1, currentEdge[1] - 1);
     }
-  }
 
-  // Output the final count of distinct components
-  console.log(distinctComponentCount);
+    let componentCount = 0; // Counter for the number of distinct connected components.
+
+    // Iterate through all nodes to find the number of unique roots.
+    for (let k = 0; k < nodeCount; k++) {
+        // If a node is its own parent, it is a root of a component.
+        if (disjointSet.locateRoot(k) === k) {
+            componentCount++;
+        }
+    }
+    // Output the final count of connected components.
+    console.log(componentCount);
 }
 
-
-function DisjointSet(initialSize) {
-  // Initialize an array to store parent links for each element
-  this.parentLinks = new Array(initialSize);
-  // Each element is initially its own set (represented by -1, indicating size 1)
-  for (let nodeIdx = 0; nodeIdx < initialSize; nodeIdx++) {
-    this.parentLinks[nodeIdx] = -1;
-  }
+// DisjointSet (Union-Find) data structure implementation.
+function DisjointSet(elementCount) {
+    this.parentArray = []; // Stores parent of each element, or negative size if root.
+    // Initialize each element as its own root with a size of 1 (represented as -1).
+    for (let k = 0; k < elementCount; k++) {
+        this.parentArray.push(-1);
+    }
 }
 
-DisjointSet.prototype.findRepresentative = function(targetNode) {
-  // If the element's parent link is negative, it's a root (and its value is -size)
-  if (this.parentLinks[targetNode] < 0) {
-    return targetNode;
-  }
-  // Otherwise, recursively find the root and perform path compression
-  return this.parentLinks[targetNode] = this.findRepresentative(this.parentLinks[targetNode]);
-};
+// Finds the representative (root) of the set containing elementA, with path compression.
+DisjointSet.prototype.locateRoot = function(elementA) {
+    // If elementA is a root (negative value indicates size of set), return it.
+    if (this.parentArray[elementA] < 0) {
+        return elementA;
+    }
+    // Otherwise, recursively find the root and compress the path.
+    return this.parentArray[elementA] = this.locateRoot(this.parentArray[elementA]);
+}
 
+// Unites the sets containing elementA and elementB, using union by size.
+DisjointSet.prototype.uniteSets = function(elementA, elementB) {
+    // Find the roots of the sets containing elementA and elementB.
+    elementA = this.locateRoot(elementA);
+    elementB = this.locateRoot(elementB);
 
-DisjointSet.prototype.uniteComponents = function(nodeA, nodeB) {
-  // Find the representatives (roots) of the components containing nodeA and nodeB
-  nodeA = this.findRepresentative(nodeA);
-  nodeB = this.findRepresentative(nodeB);
+    // If they are already in the same set, do nothing.
+    if (elementA === elementB) {
+        return;
+    }
 
-  // If they are already in the same component, do nothing
-  if (nodeA === nodeB) {
-    return;
-  }
+    // Union by size: attach the smaller tree under the root of the larger tree.
+    // If elementA's tree is smaller (more negative parentArray value means larger size), swap.
+    if (this.parentArray[elementA] > this.parentArray[elementB]) {
+        [elementA, elementB] = [elementB, elementA]; // Swap roots
+    }
 
-  // Union by size/rank: attach the smaller tree under the root of the larger tree
-  // If nodeA's component is smaller (more negative size), swap to ensure nodeA is the larger
-  if (this.parentLinks[nodeA] > this.parentLinks[nodeB]) {
-    [nodeA, nodeB] = [nodeB, nodeA];
-  }
+    // Update the size of the new root (elementA).
+    this.parentArray[elementA] += this.parentArray[elementB];
+    // Set elementB's root to elementA.
+    this.parentArray[elementB] = elementA;
+}
 
-  // Update the size of the new root component
-  this.parentLinks[nodeA] += this.parentLinks[nodeB];
-  // Set the parent of the smaller component's root to the larger component's root
-  this.parentLinks[nodeB] = nodeA;
-};
+// Calculates the size of the component containing elementA.
+DisjointSet.prototype.getComponentSize = function(elementA) {
+    // Find the root of the component.
+    elementA = this.locateRoot(elementA);
+    // The size is stored as a negative value at the root.
+    return this.parentArray[elementA] * -1;
+}
 
-
-DisjointSet.prototype.getComponentSize = function(queryNode) {
-  // Find the representative of the component containing the queryNode
-  queryNode = this.findRepresentative(queryNode);
-  // The size of the component is stored as a negative value at its root
-  return this.parentLinks[queryNode] * -1;
-};
-
-
-// Execute the main processing function by reading input from standard input
-ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Execute the main processing function by reading input from stdin.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

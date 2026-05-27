@@ -1,110 +1,88 @@
-const fileUtility = require('fs'); // A module for file system operations.
+var fileSystemModule = require('fs'), // Import the Node.js file system module
+    totalInputSize = fileSystemModule.fstatSync(process.stdin.fd).size, // Get the size of the standard input stream
+    dataBuffer = new Buffer(totalInputSize), // Create a buffer to hold the incoming data
+    bytesReadCount = fileSystemModule.readSync(process.stdin.fd, dataBuffer, +0, totalInputSize, +0), // Read data from stdin into the buffer
+    inputLines = dataBuffer.toString("utf8", +0, bytesReadCount).split('\n'); // Convert buffer to string and split into lines
 
-// Determine the total byte size of the standard input stream.
-let contentSize = fileUtility.fstatSync(process.stdin.fd).size;
 
-// Allocate a new Buffer to hold the input data.
-let dataBlock = Buffer.alloc(contentSize);
+function checkHamiltonianCycle(graphStructure, currentNodeIndex, visitedPath) {
+  // Base case: If the current path includes all nodes in the graph
+  if (visitedPath.length === graphStructure.length) {
+    // Check if the last node in the path connects back to the first node
+    return ~graphStructure[visitedPath[visitedPath.length - 1]].indexOf(visitedPath[+0]);
+  }
 
-// Read data from standard input into the buffer, starting at offset 0.
-let octetsProcessed = fileUtility.readSync(process.stdin.fd, dataBlock, 0, contentSize, 0);
+  // Iterate through all neighbors of the current node
+  for (var neighborIndex = +0; neighborIndex < graphStructure[currentNodeIndex].length; neighborIndex++) {
+    var nextNodeIdentifier = graphStructure[currentNodeIndex][neighborIndex]; // Get the identifier of the next potential node
 
-// Convert the buffer to a UTF-8 string and split into lines for easier processing.
-let dataSourceLines = dataBlock.toString('utf8', 0, octetsProcessed).split('\n');
-
-/**
- * Recursively attempts to find a cyclic path that visits every node exactly once.
- * This is a variation of the Hamiltonian cycle problem.
- * @param {Array<Array<number>>} connectionMap - The adjacency list representing node connections.
- * @param {number} currentVertex - The index of the node currently being explored.
- * @param {Array<number>} visitedNodes - An ordered list of nodes visited so far in the current path.
- * @returns {boolean} True if a full cycle is found, false otherwise.
- */
-function checkSequenceValidity(connectionMap, currentVertex, visitedNodes) {
-    // Base case: If all nodes have been visited, check if the last node connects back to the starting node.
-    if (visitedNodes.length === connectionMap.length) {
-        // The '~' operator is used here as a quick check for indexOf returning -1 (not found).
-        // If indexOf returns -1, ~(-1) is 0 (falsy). Otherwise, it's non-zero (truthy).
-        return ~connectionMap[visitedNodes[visitedNodes.length - 1]].indexOf(visitedNodes[0]);
+    // If the next node has already been visited in the current path, skip it
+    if (~visitedPath.indexOf(nextNodeIdentifier)) {
+      continue;
     }
 
-    // Iterate through all possible next connections from the current vertex.
-    for (let iteratorK = 0; iteratorK < connectionMap[currentVertex].length; iteratorK++) {
-        const potentialNextNode = connectionMap[currentVertex][iteratorK];
-
-        // If the potential next node has already been visited in the current path, skip it.
-        if (~visitedNodes.indexOf(potentialNextNode)) {
-            continue;
-        }
-
-        // Recursively try to extend the path with the potential next node.
-        // 'concat' creates a new array, ensuring the 'visitedNodes' array is not mutated for other branches.
-        if (checkSequenceValidity(connectionMap, potentialNextNode, visitedNodes.concat(potentialNextNode))) {
-            return true; // A valid cycle was found through this branch.
-        }
+    // Recursively call the function with the next node and an updated path
+    if (checkHamiltonianCycle(graphStructure, nextNodeIdentifier, visitedPath.concat(nextNodeIdentifier))) {
+      return !+0; // Return true if a cycle is found
     }
+  }
 
-    return false; // No valid path could be extended from this vertex.
+  return !+1; // Return false if no cycle can be completed from this path
 }
 
-// Main program logic encapsulated within an Immediately Invoked Function Expression (IIFE).
-(function () {
-    let nodeCount,          // Total number of elements/nodes.
-        stringArray,        // Array to store input strings.
-        adjacencyList,      // Graph represented as an adjacency list.
-        currentWord,        // The string being processed in the inner loop.
-        terminatingChar,    // The last character of 'currentWord'.
-        minimumConnections, // Tracks the minimum number of outgoing connections from a node.
-        loopIndexA,         // General loop counter for outer loops.
-        loopIndexB;         // General loop counter for inner loops.
 
-    // Process multiple test cases. The loop continues as long as the first line of input is not '0'.
-    while (dataSourceLines[0] !== '0') {
-        // Read the number of elements for the current test case and convert it to an integer.
-        nodeCount = parseInt(dataSourceLines.shift(), 10);
+!function () {
+  var nodeCount, // Stores the total number of words (nodes) for the current test case
+    wordCollection, // An array to hold all the input words
+    graphAdjacencyList, // Represents the graph as an adjacency list
+    currentProcessingWord, // The word currently being examined to build connections
+    lastCharacterOfWord, // The last character of 'currentProcessingWord'
+    minConnectionsCount, // Keeps track of the minimum number of outgoing connections found
+    outerLoopIterator, // General purpose iterator for outer loops
+    initialSearchNodeIndex; // Stores the index of the node with the minimum connections, used as a starting point
 
-        stringArray = [];    // Initialize array to store the words for this test case.
-        adjacencyList = [];  // Initialize the adjacency list for the graph.
+  // Loop until the input line is '0', indicating the end of test cases
+  while (inputLines[+0] !== '0') {
+    nodeCount = inputLines.shift() - +0; // Read the number of nodes and convert it to a numeric type
+    wordCollection = []; // Initialize the array to store words
+    graphAdjacencyList = []; // Initialize the adjacency list for the graph
 
-        // Populate the string array with 'nodeCount' strings from the input source.
-        for (loopIndexA = 0; loopIndexA < nodeCount; loopIndexA++) {
-            stringArray.push(dataSourceLines.shift());
-        }
-
-        // Build the adjacency list: connect nodes (strings) if the last character of one
-        // matches the first character of another.
-        for (loopIndexA = 0; loopIndexA < nodeCount; loopIndexA++) {
-            currentWord = stringArray[loopIndexA];
-            terminatingChar = currentWord[currentWord.length - 1]; // Get the last character of the current word.
-            adjacencyList[loopIndexA] = []; // Initialize the list of connections for the current node.
-
-            for (loopIndexB = 0; loopIndexB < nodeCount; loopIndexB++) {
-                // A node cannot form a connection with itself for this problem's logic.
-                if (loopIndexA === loopIndexB) {
-                    continue;
-                }
-
-                // Check if the last character of 'currentWord' matches the first character of another word.
-                if (terminatingChar === stringArray[loopIndexB][0]) {
-                    adjacencyList[loopIndexA].push(loopIndexB); // Add a directed edge.
-                }
-            }
-        }
-
-        // Find a candidate starting node: the one with the fewest outgoing connections.
-        // This is often a heuristic for path-finding problems.
-        minimumConnections = Infinity; // Initialize with a very large value.
-        let startingNodeCandidate = -1; // Index to store the chosen starting node.
-
-        for (loopIndexA = 0; loopIndexA < nodeCount; loopIndexA++) {
-            if (adjacencyList[loopIndexA].length < minimumConnections) {
-                minimumConnections = adjacencyList[loopIndexA].length;
-                startingNodeCandidate = loopIndexA; // Update the candidate.
-            }
-        }
-
-        // Execute the cycle-finding algorithm starting from the selected node and print the result.
-        // The initial 'visitedNodes' array contains only the starting node.
-        console.log(checkSequenceValidity(adjacencyList, startingNodeCandidate, [startingNodeCandidate]) ? 'OK' : 'NG');
+    // Populate the word collection with input words
+    for (outerLoopIterator = +0; outerLoopIterator < nodeCount; outerLoopIterator++) {
+      wordCollection.push(inputLines.shift());
     }
-})(); // End of the main IIFE.
+
+    // Build the graph's adjacency list based on word connections
+    for (outerLoopIterator = +0; outerLoopIterator < nodeCount; outerLoopIterator++) {
+      currentProcessingWord = wordCollection[outerLoopIterator];
+      lastCharacterOfWord = currentProcessingWord[currentProcessingWord.length - 1]; // Extract the last character of the current word
+
+      graphAdjacencyList[outerLoopIterator] = []; // Initialize an empty list for the current node's connections
+
+      // Check for connections to all other words
+      for (var innerLoopIterator = +0; innerLoopIterator < nodeCount; innerLoopIterator++) {
+        if (outerLoopIterator === innerLoopIterator) {
+          continue; // A word cannot form a connection with itself
+        }
+        // If the last character of the current word matches the first character of another word
+        if (lastCharacterOfWord === wordCollection[innerLoopIterator][+0]) {
+          graphAdjacencyList[outerLoopIterator].push(innerLoopIterator); // Add a directed edge
+        }
+      }
+    }
+
+    minConnectionsCount = 1e5; // Set a high initial value to find the minimum
+    initialSearchNodeIndex = -1; // Initialize the starting node index
+
+    // Find the node with the minimum number of outgoing connections
+    for (outerLoopIterator = +0; outerLoopIterator < nodeCount; outerLoopIterator++) {
+      if (graphAdjacencyList[outerLoopIterator].length < minConnectionsCount) {
+        minConnectionsCount = graphAdjacencyList[outerLoopIterator].length;
+        initialSearchNodeIndex = outerLoopIterator; // Update the index of the node with minimum connections
+      }
+    }
+
+    // Call the Hamiltonian cycle checking function and print the result
+    console.log(checkHamiltonianCycle(graphAdjacencyList, initialSearchNodeIndex, [initialSearchNodeIndex]) ? "OK" : "NG");
+  }
+}(); // Immediately invoke the anonymous function

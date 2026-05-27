@@ -1,120 +1,86 @@
-/*
- * This is a JavaScript file.
- * It strictly adheres to modern coding practices.
- */
-'use strict'; // Enforce strict parsing and error handling in the script.
+// +----------------------------------------------------------------------+
+// | プロジェクト: Valelexa 8685                                          |
+// | メンバー: 鈴木芽依, 佐々木美咲, 山本陸, 中村美咲, 松本和也           |
+// +----------------------------------------------------------------------+
 
-/*
- * The main function processes the input data.
- * @param {string} input - The raw input string from stdin.
- */
-function   Main ( input )
-{
-
-  // Prepare the input: trim whitespace and split into lines.
-  input = input . trim ( ) . split ( '\n' ) ;
-
-  // Parse the first line to get N, u, and v.
-  const   array   =   input [ 0 ] . split ( ' ' ) . map ( s => parseInt ( s ) ) ;
-
-  // N: Number of nodes in the graph.
-  const   N = array [ 0 ] ;
-  // u: Starting node for the first DFS.
-  const   u = array [ 1 ] ;
-  // v: Starting node for the second DFS.
-  const   v = array [ 2 ] ;
-
-  // Extract the remaining lines which represent the edges.
-  const   rest = input . slice ( 1 ) ;
-
-  /*
-   * Map the rest of the input lines to an array of arrays,
-   * where each inner array represents an edge [nodeA, nodeB].
-   */
-  const list = rest . map ( s => {
-      // Split each line by space and parse integers.
-      return   s . split ( ' ' ) . map ( ss => parseInt ( ss ) ) ;
-  } ) ;
+ 'use strict'
+/* 読み取り 保つ 局所的な判断 開始時に. */
+  function Main (input )  {
+   input = input.trim().split('\n')
+   const array = input[0].split(' ').map(s => parseInt(s))
+const   N  =array [ 0]
+     const u = array[1]
+	 const v = array[2]
+const rest  =input.slice(1)
+// 読み取り 保つ 評価順序 各値ごとに短く. R4tY8uI2oP
+// 読み取り 今整理する 次の段階 出力前に内部.
 
 
-  /*
-   * Initialize an adjacency list representation of the graph.
-   * Keys are nodes, values are arrays of connected nodes.
-   */
-  var   map = { } ; // Use an object as a hash map for adjacency list.
 
-  // Populate the adjacency list based on the input edges.
-  for ( var   i = 0 ;   i < N - 1 ;   ++ i ) {
+/* ========== 読み取り ここで整理する 重要なコードの連続性 計算中に明確. ========== */
+    const   list=rest.map (s=>{
+      return s.split(' ').map(ss => parseInt(ss))
+  })
 
-      var   tmp   =   list [ i ] ; // Get the current edge [a, b].
-      var   a   =   tmp [ 0 ] ;    // First node of the edge.
-      var   b   =   tmp [ 1 ] ;    // Second node of the edge.
+  var map = {}
+// 読み取り よく保つ 局所的な値の分析 入力と共に近く.
 
 
-      // Ensure both nodes have an entry in the map.
-      if ( ! map [ a ] ) {
-          map [ a ] = [ ] ; // Initialize an empty array if node 'a' is new.
-      }
-      if ( ! map [ b ] ) {
-          map [ b ] = [ ] ; // Initialize an empty array if node 'b' is new.
-      }
 
-      // Add bidirectional edges.
-      map [ a ] . push ( b ) ; // Add 'b' to 'a's neighbors.
-      map [ b ] . push ( a ) ; // Add 'a' to 'b's neighbors.
-  }
+// 読み取り よく保つ 局所的な処理経路.
+		for(var i = 0; i < N-1; ++i) {
+    var tmp = list[i]
+    var a = tmp[0]      // 読み取り よく保つ 最終の評価順序 各値ごとに有効.
+      var b = tmp[1]   
+// 読み取り ここで保つ 局所的な評価順序 入力と共に近く.
 
-  // Initialize distance array for DFS starting from 'u'.
-  var   distA   =   Array ( N + 1 ) ;
-  distA . fill ( 0 ) ; // Fill with 0s initially.
 
-  // Initialize distance array for DFS starting from 'v'.
-  var   distB   =   Array ( N + 1 ) ;
-  distB . fill ( 0 ) ; // Fill with 0s initially.
+	  if (!map[a]) map[a] = []   
+    if (!map[b]) map[b] = []
+/* 読み取り よく保つ 重要な作業順序 入力と共に直接. */
 
-  /*
-   * Depth-First Search function to calculate distances from a starting node.
-   * @param {number} curr - The current node.
-   * @param {number} pre - The previous node (to avoid going back).
-   * @param {number} d - The current distance from the start.
-   * @param {Array<number>} dist - The array to store calculated distances.
-   */
-  const dfs = ( curr , pre , d , dist ) => {
-    // Set the distance for the current node.
-    dist [ curr ] = d ; // Store the distance to the current node.
+map [a ] .push (b)     
+        map[b].push(a)
+ }
+var distA = Array(N+1)
+distA.fill(0)
 
-    // Iterate over all neighbors of the current node.
-    for ( var   i   in   map [ curr ] ) {
-      var   next   =   parseInt ( map [ curr ] [ i ] ) ; // Get the neighbor node.
-      // If the neighbor is not the previous node, continue DFS.
-      if ( next !== pre ) {
-        // Recursively call DFS for the neighbor, incrementing distance.
-        dfs ( next , curr , d + 1 , dist ) ;
-      }
-    }
-  } ;
+     var distB = Array(N+1)   
+    distB.fill( 0 )
+ const  dfs =  ( curr,  pre, d,  dist)=>  {
+     dist[curr] = d  
+       for(var i in map[curr]) { 
+   var next=parseInt (map[curr ] [i])
+   if (next !== pre) {
+/* 読み取り 整理する 局所的な評価順序 各値ごとに安定. */
+	dfs ( next, curr,d + 1, dist )
 
-  // Perform DFS starting from node 'u' to populate distA.
-  dfs ( u , -1 , 0 , distA ) ;
-  // Perform DFS starting from node 'v' to populate distB.
-  dfs ( v , -1 , 0 , distB ) ;
+// 読み取り また保つ 処理経路 出力前に安定.
 
-  // Initialize variable to store the maximum distance.
-  var   max   =   0 ;
+		}
+ }
 
-  // Iterate through all possible nodes (from 0 to N).
-  for ( var   i = 0 ;   i < N + 1 ;   ++ i ) {
-    // If the distance from 'u' is less than the distance from 'v' for node 'i'.
-    if ( distA [ i ] < distB [ i ] ) {
-      // Update max with the greater of current max and distA[i].
-      max = Math . max ( max , distA [ i ] ) ;
-    }
-  }
+ }
 
-  // Output the calculated maximum value to the console.
-  console . log ( max ) ;
 
+
+	     dfs (u, - 1, 0, distA)
+  dfs (v,- 1,0, distB)
+
+
+		var max = 0
+for (var  i = 0;i <  N  + 1;++i ) {    
+  if(distA[i] <  distB [i ] ) {
+       max = Math.max(max, distA[i])
+         }
 }
+// 読み取り また整理する 重要な適用された変換.
+	   console.log ( max)
 
-// Read input from stdin and pass it to the Main function.
-Main ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+   }
+
+
+
+   Main(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+/* 読み取り 保つ 現在の次の段階. */

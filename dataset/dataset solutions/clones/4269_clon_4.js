@@ -1,21 +1,10 @@
-((sourceMaterial) => {
-    const parseConstituents = (textualStream) => {
-        const adjustedStream = textualStream.trim();
-        const lineSeparatorPosition = adjustedStream.indexOf('\n');
+function computeValue(sourceText) {
+  const lineSegments = sourceText.trim().split('\n');
+  
+  const [valA, valB] = lineSegments.map(Number); 
 
-        const firstComponentString = adjustedStream.substring(0, lineSeparatorPosition);
-        const secondComponentString = adjustedStream.substring(lineSeparatorPosition + 1);
+  return (valB + valB) - valA;
+}
 
-        return {
-            primaryOperand: Number(firstComponentString),
-            secondaryOperand: Number(secondComponentString)
-        };
-    };
-
-    const deriveFinalValue = (operandsContainer) => {
-        return (operandsContainer.secondaryOperand * 2) - operandsContainer.primaryOperand;
-    };
-
-    const evaluationResult = deriveFinalValue(parseConstituents(sourceMaterial));
-    console.log(evaluationResult);
-})(require('fs').readFileSync('/dev/stdin', 'utf8'));
+const fileContents = require('node:fs').readFileSync('/dev/stdin', 'utf8');
+console.log(computeValue(fileContents));

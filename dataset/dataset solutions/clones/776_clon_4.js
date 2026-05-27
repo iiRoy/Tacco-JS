@@ -1,52 +1,58 @@
-let accumulatedData = '';
+let rawInputBuffer = '';
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
-process.stdin.on('data', (dataSegment) => {
-  accumulatedData += dataSegment;
+process.stdin.on('data', (chunk) => {
+  rawInputBuffer += chunk;
 });
 process.stdin.on('end', () => {
-  const allLines = accumulatedData.split('\n');
-  const initialParameters = allLines.shift().split(' ').map(Number);
+  const inputLines = rawInputBuffer.split('\n');
+  let currentLineIndex = 0;
 
-  const vertexCount = initialParameters[0];
-  const edgeCountPlaceholder = initialParameters[1]; // Not utilized in the original logic
-  const commencementNode = initialParameters[2] - 1;
-  const firstGoalNode = initialParameters[3] - 1;
-  const secondGoalNode = initialParameters[4] - 1;
+  const retrieveAndSplitLine = () => inputLines[currentLineIndex++].split(' ');
 
-  const pathCosts = Array.from({ length: vertexCount }, (_, sourceIndex) =>
-    Array.from({ length: vertexCount }, (_, destinationIndex) =>
-      sourceIndex === destinationIndex ? 0 : Number.POSITIVE_INFINITY
-    )
-  );
+  const initialConfiguration = retrieveAndSplitLine();
+  const nodeCount = +initialConfiguration[0];
+  const edgeCountPlaceholder = +initialConfiguration[1]; // This variable remains unused, mirroring original behavior
+  const startNodeIndex = +initialConfiguration[2] - 1;
+  const goalOneIndex = +initialConfiguration[3] - 1;
+  const goalTwoIndex = +initialConfiguration[4] - 1;
 
-  allLines.filter(Boolean).forEach(currentLine => {
-    if (currentLine === '0 0 0 0 0') return;
-    const edgeDetails = currentLine.split(' ').map(Number);
-    const origin = edgeDetails[0] - 1;
-    const terminus = edgeDetails[1] - 1;
-    const cost = edgeDetails[2];
-    pathCosts[origin][terminus] = cost;
-  });
+  const pathDistances = new Map();
 
-  Array.from({ length: vertexCount }, (_, pivotVertex) => {
-    Array.from({ length: vertexCount }, (_, sourceVertex) => {
-      Array.from({ length: vertexCount }, (_, destinationVertex) => {
-        const directPath = pathCosts[sourceVertex][destinationVertex];
-        const pathViaPivot = pathCosts[sourceVertex][pivotVertex] + pathCosts[pivotVertex][destinationVertex];
-        if (directPath > pathViaPivot) {
-          pathCosts[sourceVertex][destinationVertex] = pathViaPivot;
+  for (let r = 0; r < nodeCount; r++) {
+    for (let c = 0; c < nodeCount; c++) {
+      pathDistances.set(`${r}_${c}`, r === c ? 0 : Infinity);
+    }
+  }
+
+  while (inputLines[currentLineIndex] !== '0 0 0 0 0') {
+    const edgeDetails = retrieveAndSplitLine();
+    const originNode = +edgeDetails[0] - 1;
+    const destinationNode = +edgeDetails[1] - 1;
+    const edgeWeight = +edgeDetails[2];
+    pathDistances.set(`${originNode}_${destinationNode}`, edgeWeight);
+  }
+  // Consume the '0 0 0 0 0' line
+  currentLineIndex++;
+
+  for (let transitNode = 0; transitNode < nodeCount; transitNode++) {
+    for (let source = 0; source < nodeCount; source++) {
+      for (let target = 0; target < nodeCount; target++) {
+        const currentPathLength = pathDistances.get(`${source}_${target}`);
+        const alternativePathLength = pathDistances.get(`${source}_${transitNode}`) + pathDistances.get(`${transitNode}_${target}`);
+        if (alternativePathLength < currentPathLength) {
+          pathDistances.set(`${source}_${target}`, alternativePathLength);
         }
-      });
-    });
-  });
+      }
+    }
+  }
 
-  const ultimateMinimum = Array.from({ length: vertexCount }, (_, centralPoint) => {
-    const segmentOne = pathCosts[commencementNode][centralPoint];
-    const segmentTwo = pathCosts[centralPoint][firstGoalNode];
-    const segmentThree = pathCosts[centralPoint][secondGoalNode];
-    return segmentOne + segmentTwo + segmentThree;
-  }).reduce((currentMin, calculatedSum) => Math.min(currentMin, calculatedSum), Number.POSITIVE_INFINITY);
+  const finalMinimumCost = Array.from({ length: nodeCount }, (_, meetingPoint) => {
+    const segmentS_M = pathDistances.get(`${startNodeIndex}_${meetingPoint}`);
+    const segmentM_G1 = pathDistances.get(`${meetingPoint}_${goalOneIndex}`);
+    const segmentM_G2 = pathDistances.get(`${meetingPoint}_${goalTwoIndex}`);
+    return segmentS_M + segmentM_G1 + segmentM_G2;
+  }).reduce((accumulator, currentPathSum) => Math.min(accumulator, currentPathSum), Infinity);
 
-  console.log(ultimateMinimum);
+  console.log(finalMinimumCost);
 });

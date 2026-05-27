@@ -1,37 +1,33 @@
-// This function processes an incoming string of data to determine a specific property.
-function AnalyzeSequence(receivedText)
-{
-    // First, break the entire input string into individual lines based on newline characters.
-    let parsedLines = receivedText.split('\n');
+function ProcessInput(rawData) {
+  // Split the entire input string by newline characters
+  rawData = rawData.split('\n');
 
-    // The very first line contains the total number of items to consider for analysis.
-    let itemCount = Number(parsedLines[0]);
+  // Parse the first line to get the count of elements
+  let countOfElements = parseInt(rawData[0], 10);
 
-    // The second line holds space-separated values, representing elevation measurements or similar numerical data.
-    let elevationValues = parsedLines[1].split(' ');
+  // Split the second line to get the array of heights
+  let heightsArray = rawData[1].split(' ');
 
-    // Initialize a flag indicating whether the sequence meets the specified criteria.
-    let isAdjustable = 'Yes'; // Assume it's adjustable until proven otherwise.
+  // Initialize a flag to 'Yes', indicating a valid sequence initially
+  let resultFlag = 'Yes';
 
-    // Iterate backwards through the elevation measurements, starting from the second to last element.
-    for (let currentIdx = itemCount - 1; currentIdx > 0; currentIdx--)
-    {
-        // Check if the difference between the previous and current elevation is too large.
-        // If the drop from the preceding element to the current element is more than 1 unit, it's problematic.
-        if (elevationValues[currentIdx - 1] - elevationValues[currentIdx] > 1) {
-            isAdjustable = 'No'; // The sequence cannot be adjusted to meet the conditions.
-            break; // No need to check further; exit the loop immediately as the condition is violated.
-        }
-        // If the difference is exactly one, adjust the previous elevation downwards by one.
-        else if (elevationValues[currentIdx - 1] - elevationValues[currentIdx] === 1) {
-            elevationValues[currentIdx - 1] = elevationValues[currentIdx - 1] - 1; // Perform the required adjustment.
-        }
+  // Iterate through the heights array from right to left, excluding the first element
+  for (let idx = countOfElements - 1; idx > 0; idx--) {
+    // Check if the previous height is significantly greater than the current height
+    if (heightsArray[idx - 1] - heightsArray[idx] > 1) {
+      // If so, the sequence is invalid
+      resultFlag = 'No';
+      // Exit the loop early as the condition is met
+      break;
+    } else if (heightsArray[idx - 1] - heightsArray[idx] === 1) {
+      // If the previous height is exactly one greater, decrement it
+      heightsArray[idx - 1] = heightsArray[idx - 1] - 1;
     }
+  }
 
-    // Output the final determination to the console.
-    console.log(isAdjustable);
+  // Display the final outcome
+  console.log(resultFlag);
 }
 
-// The following section handles reading input from the standard input stream and invoking the primary processing function.
-// This part is typically for execution environment setup and should be left as is for competitive programming platforms.
-AnalyzeSequence(require("fs").readFileSync("/dev/stdin", "utf8"));
+// The following line should not be modified (reads input and calls the main function)
+ProcessInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

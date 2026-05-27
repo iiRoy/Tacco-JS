@@ -1,165 +1,162 @@
-var INPUT_PARSER_FACTORY=( function ( ) {
-  // This factory function generates an input reader instance.
-  function createInputReader ( rawInputText ) {
-    return new LineBasedReader( rawInputText );
+var InputParserFactory = (function() {
+  // This function creates a new input parser instance.
+  function createParser(rawInputString) {
+    return new InputParser(rawInputString);
   }
 
-  // The primary class responsible for parsing input line by line.
-  function LineBasedReader ( rawInputText ) {
-    this._sourceLinesBuffer = rawInputText.trim().split("\n"); // Stores the input lines.
-    this._currentLinePointer = 0;                             // Tracks the current line being processed.
+  // The InputParser class handles reading various data types from the input string.
+  function InputParser(rawInputString) {
+    this.inputLines = rawInputString.trim().split("\n"); // Split input into lines
+    this.currentLineIndex = 0; // Current line pointer
   }
 
-  // Define prototype methods for the LineBasedReader.
+  // Reads a single value from the current line.
+  // If 'asString' is true, returns the value as a string; otherwise, as a number.
+  InputParser.prototype.readSingleValue = function(asString) {
+    var lineArray = this.inputLines,
+      lineIdx = this.currentLineIndex,
+      parsedVal;
 
-  // Retrieves the next token from the current line.
-  LineBasedReader.prototype.fetchToken = function ( returnAsString ) {
-    var currentSourceLines = this._sourceLinesBuffer; // A reference to the array of lines.
-    var linePointer = this._currentLinePointer;       // The index of the active line.
-    var tokenValue;                                   // Variable to hold the extracted data unit.
-
-    // If the current line is still a single string, split it into tokens (reversed for easy popping).
-    if ( typeof currentSourceLines[linePointer] === "string" ) {
-      currentSourceLines[linePointer] = currentSourceLines[linePointer].split(" ").reverse();
+    // If the current line hasn't been processed yet, split it and reverse for easy popping.
+    if (typeof lineArray[lineIdx] === "string") {
+      lineArray[lineIdx] = lineArray[lineIdx].split(" ").reverse();
     }
 
-    // Pop the last token from the (reversed) current line.
-    tokenValue = currentSourceLines[linePointer].pop();
+    parsedVal = lineArray[lineIdx].pop(); // Get the last element
 
-    // If the line becomes empty after popping, advance to the next line.
-    if ( !currentSourceLines[linePointer].length ) {
-      this._currentLinePointer++;
+    // If the current line is exhausted, move to the next line.
+    if (!lineArray[lineIdx].length) {
+      this.currentLineIndex++;
     }
 
-    // Return the token, either as a string or converted to a number.
-    return returnAsString ? tokenValue : +tokenValue;
+    return asString ? parsedVal : +parsedVal; // Convert to number if not requested as string
   };
 
-  // Reads all tokens from the current line and advances to the next line.
-  LineBasedReader.prototype.readTokensOnLine = function ( asStringsOnly ) {
-    // Retrieve the current line, split by spaces, and increment the line pointer.
-    var lineTokens = this._sourceLinesBuffer[this._currentLinePointer++].split(" ");
-
-    // Return the tokens; either as an array of strings or converted to numbers.
-    return asStringsOnly ? lineTokens : lineTokens.map( tokenStr => +tokenStr );
+  // Reads all values from the current line.
+  // If 'returnStrings' is true, returns an array of strings; otherwise, an array of numbers.
+  InputParser.prototype.readLineValues = function(returnStrings) {
+    var lineContent = this.inputLines[this.currentLineIndex++].split(" ");
+    return returnStrings ? lineContent : lineContent.map(itemStr => +itemStr);
   };
 
-  // Reads a block of lines as a matrix of tokens.
-  LineBasedReader.prototype.readTokenMatrix = function ( numInputRows, asStringTokens ) {
-    // Extract a segment of lines and split each into tokens.
-    var extractedMatrix = this._sourceLinesBuffer.slice( this._currentLinePointer, this._currentLinePointer += numInputRows )
-                                                 .map( matrixRow => matrixRow.split(" ") );
-
-    // If numeric conversion is not requested, return as strings. Otherwise, convert all elements.
-    return asStringTokens ? extractedMatrix : extractedMatrix.map( matrixRow => matrixRow.map( itemValue => +itemValue ) );
+  // Reads 'numRows' lines as a matrix.
+  // If 'keepStrings' is true, returns a matrix of strings; otherwise, a matrix of numbers.
+  InputParser.prototype.readMatrix = function(numRows, keepStrings) {
+    var matrixRows = this.inputLines.slice(this.currentLineIndex, this.currentLineIndex += numRows).map(rowStr => rowStr.split(" "));
+    return keepStrings ? matrixRows : matrixRows.map(row => row.map(cellStr => +cellStr));
   };
 
-  // Reads a specified number of consecutive lines without further tokenization.
-  LineBasedReader.prototype.readConsecutiveLines = function ( countOfLines, keepRawStrings ) {
-    // Get a portion of lines directly from the buffer.
-    var consecutiveLines = this._sourceLinesBuffer.slice( this._currentLinePointer, this._currentLinePointer += countOfLines );
-
-    // Return lines as raw strings or as numbers.
-    return keepRawStrings ? consecutiveLines : consecutiveLines.map( lineItem => +lineItem );
+  // Reads 'count' lines as an array of values.
+  // If 'asRawStrings' is true, returns an array of strings; otherwise, an array of numbers.
+  InputParser.prototype.readLinesAsNumbers = function(count, asRawStrings) {
+    var resultLines = this.inputLines.slice(this.currentLineIndex, this.currentLineIndex += count);
+    return asRawStrings ? resultLines : resultLines.map(lineContent => +lineContent);
   };
 
-  return createInputReader; // The factory function is exposed.
+  return createParser;
 })();
 
+// Initialize the input reader by reading from standard input.
+var inputReader = InputParserFactory(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-// Instantiate the input processor by reading standard input.
-var dataStream = INPUT_PARSER_FACTORY( require("fs").readFileSync("/dev/stdin", "utf8") );
-
-
-// Implements a binary search to find the "lower bound" of a target value in a sorted array.
-// Returns the index of the first element that is not less than the target.
-function findLeftmostIndex ( sortedData, lowIdx, highIdx, targetElement ) {
-  for ( var midIdx; 1 < highIdx - lowIdx; ) { // Continue as long as the search range is more than one element.
-    midIdx = 0 | ( ( lowIdx + highIdx ) / 2 ); // Calculate the integer midpoint.
-    // If the element at midIdx is less than the target, narrow the search to the upper half.
-    if ( sortedData[midIdx] < targetElement ) {
-      lowIdx = midIdx;
+/**
+ * Performs a binary search to find the lower bound of a target value in a sorted array.
+ * @param {number[]} sortedArray The array to search within.
+ * @param {number} startIndex The starting index for the search range.
+ * @param {number} endIndex The ending index for the search range (exclusive).
+ * @param {number} targetValue The value to search for.
+ * @returns {number} The index of the first element not less than the target value.
+ */
+function findLowerBoundIndex(sortedArray, startIndex, endIndex, targetValue) {
+  for (var midIndex; 1 < endIndex - startIndex;) {
+    midIndex = 0 | (startIndex + endIndex) / 2; // Calculate middle index
+    if (sortedArray[midIndex] < targetValue) {
+      startIndex = midIndex; // Target is in the upper half
     } else {
-      // Otherwise, narrow the search to the lower half, potentially including midIdx.
-      highIdx = midIdx;
+      endIndex = midIndex; // Target is in the lower half or at midIndex
     }
   }
-  // At loop termination, lowIdx and highIdx are adjacent. Determine the correct boundary.
-  return sortedData[lowIdx] < targetElement ? highIdx : lowIdx;
+  return sortedArray[startIndex] < targetValue ? endIndex : startIndex; // Return the correct lower bound index
 }
 
+// Execute the main problem-solving logic and print the result.
+console.log(solveProblem());
 
-// Execute the main problem-solving routine and print its output.
-console.log( calculateXorSum() );
+/**
+ * Main function to solve the problem.
+ * It calculates a specific sum based on bitwise operations and lower bounds.
+ * @returns {number} The final calculated result.
+ */
+function solveProblem() {
+  var arraySize = inputReader.readSingleValue(); // Read N
+  var arrayA = inputReader.readLineValues(); // Read array A
+  var arrayB = inputReader.readLineValues(); // Read array B
+  var finalResult = 0; // Initialize the answer
 
+  // Sort array B in ascending order for binary search.
+  arrayB.sort((val1, val2) => val1 - val2);
 
-// The main function encapsulates the primary logic for solving the problem.
-function calculateXorSum ( ) {
-  var totalItems = dataStream.fetchToken();             // Read the total count of elements.
-  var firstSequence = dataStream.readTokensOnLine();    // Read the first array of numbers.
-  var secondSequence = dataStream.readTokensOnLine();   // Read the second array of numbers.
-  var finalXorResult = 0;                               // Variable to accumulate the final XOR sum.
+  // Iterate from the most significant bit down to the least significant bit.
+  for (var bitPosition = 28; bitPosition >= 0; bitPosition--) {
+    var currentBitValue = 1 << bitPosition; // Current power of 2 (2^bitPosition)
+    var doubleBitValue = currentBitValue * 2; // 2 * 2^bitPosition
+    var tripleBitValue = currentBitValue * 3; // 3 * 2^bitPosition
+    var maskValue = currentBitValue - 1; // Mask for bits less significant than currentBitValue
+    var countPairs = arrayA.length * arrayA.length; // Initialize count with a large value
 
-  // Initially sort the second sequence to enable efficient binary searches.
-  secondSequence.sort( ( valA, valB ) => valA - valB );
+    // Iterate through each element in array A.
+    for (var idxA = 0; idxA < arrayA.length; idxA++) {
+      // Find indices using lower_bound for specific ranges.
+      var idxUpper2T = findLowerBoundIndex(arrayB, 0, arrayB.length, doubleBitValue - arrayA[idxA]);
+      var idxLowerT = findLowerBoundIndex(arrayB, 0, idxUpper2T, currentBitValue - arrayA[idxA]);
+      var idxUpper3T = findLowerBoundIndex(arrayB, idxUpper2T, arrayB.length, tripleBitValue - arrayA[idxA]);
 
-  // Iterate through each bit position, from most significant down to zero.
-  for ( var currentBit = 28; currentBit >= 0; currentBit-- ) {
-    var bitMagnitude    = 1 << currentBit;          // The numerical value of the current bit (e.g., 2^28).
-    var doubleMagnitude = bitMagnitude * 2;         // Two times the current bit's value.
-    var tripleMagnitude = bitMagnitude * 3;         // Three times the current bit's value.
-    var bitfieldMask    = bitMagnitude - 1;         // A mask for all bits less significant than the current bit.
-    var cumulativeXorCount = firstSequence.length * firstSequence.length; // Initialize with a base count.
-
-    // For each element in the first sequence, perform calculations.
-    for ( var currentElementIdx = 0; currentElementIdx < firstSequence.length; currentElementIdx++ ) {
-      // Find specific boundary indices within `secondSequence` using binary search.
-      var upperBoundMatch = findLeftmostIndex( secondSequence, 0, secondSequence.length, doubleMagnitude - firstSequence[currentElementIdx] );
-      var lowerBoundMatch = findLeftmostIndex( secondSequence, 0, upperBoundMatch, bitMagnitude - firstSequence[currentElementIdx] );
-      var thirdBoundMatch = findLeftmostIndex( secondSequence, upperBoundMatch, secondSequence.length, tripleMagnitude - firstSequence[currentElementIdx] );
-
-      // Adjust the cumulative count based on the calculated bounds.
-      cumulativeXorCount += -thirdBoundMatch + upperBoundMatch - lowerBoundMatch;
+      // Adjust countPairs based on the found indices.
+      countPairs += -idxUpper3T + idxUpper2T - idxLowerT;
     }
 
-    // If the total cumulative count for this bit position is odd, this bit contributes to the final result.
-    if ( cumulativeXorCount % 2 ) {
-      finalXorResult += bitMagnitude;
+    // If the count of pairs is odd, add currentBitValue to the final result.
+    if (countPairs % 2) {
+      finalResult += currentBitValue;
     }
 
-    // Mask both sequences with the current bitfield mask.
-    secondSequence = secondSequence.map( itemValue => itemValue & bitfieldMask );
-    firstSequence = firstSequence.map( itemValue => itemValue & bitfieldMask );
+    // Apply bitwise AND with the mask to both arrays.
+    arrayB = arrayB.map(val => val & maskValue);
+    arrayA = arrayA.map(val => val & maskValue);
 
-    // Apply special processing for lower bit positions.
-    if ( currentBit < 18 ) {
-      firstSequence = filterByOddCounts( firstSequence, currentBit );
-      secondSequence = filterByOddCounts( secondSequence, currentBit );
+    // For smaller bit positions, filter arrays based on odd counts.
+    if (bitPosition < 18) {
+      arrayA = filterOddCounts(arrayA, bitPosition);
+      arrayB = filterOddCounts(arrayB, bitPosition);
     } else {
-      // For higher bit positions, re-sort the second sequence after masking.
-      secondSequence.sort( ( valA, valB ) => valA - valB );
+      // Otherwise, re-sort array B.
+      arrayB.sort((val1, val2) => val1 - val2);
     }
   }
-  return finalXorResult; // Return the aggregate XOR sum.
 
+  return finalResult; // Return the final computed answer.
 
-  // A nested helper function that processes an array to find elements
-  // whose frequencies are odd within the given bit length.
-  function filterByOddCounts ( sourceArray, bitLength ) {
-    var frequencyMap = Array( 1 << bitLength ).fill( 0 ); // Create an array to store counts for values up to 2^bitLength - 1.
-    var filteredElements = [];                             // An array to collect elements with odd frequencies.
+  /**
+   * Filters an array, keeping only elements that appear an odd number of times.
+   * @param {number[]} inputNumbers The array of numbers to process.
+   * @param {number} bitShift A parameter (unused in logic, but part of original signature).
+   * @returns {number[]} A new array containing numbers that appeared an odd number of times.
+   */
+  function filterOddCounts(inputNumbers, bitShift) {
+    var frequencyMap = Array(1 << bitShift).fill(0); // Create a frequency map
+    var filteredList = []; // Result array
 
-    // Iterate through the source array to populate the frequency map.
-    for ( var indexCounter = 0; indexCounter < sourceArray.length; indexCounter++ ) {
-      frequencyMap[sourceArray[indexCounter]]++;
+    // Count occurrences of each number.
+    for (var currentNum = 0; currentNum < inputNumbers.length; currentNum++) {
+      frequencyMap[inputNumbers[currentNum]]++;
     }
 
-    // Iterate through the frequency map to identify and collect elements with odd counts.
-    for ( indexCounter = 0; indexCounter < frequencyMap.length; indexCounter++ ) {
-      if ( frequencyMap[indexCounter] & 1 ) { // Check for odd count using a bitwise AND.
-        filteredElements.push( indexCounter );
+    // Add numbers with odd frequencies to the result list.
+    for (currentNum = 0; currentNum < frequencyMap.length; currentNum++) {
+      if (frequencyMap[currentNum] & 1) { // Check if count is odd using bitwise AND
+        filteredList.push(currentNum);
       }
     }
-    return filteredElements; // Return the array containing elements that appeared an odd number of times.
+    return filteredList;
   }
 }

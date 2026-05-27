@@ -1,37 +1,35 @@
-(function(sourceText) {
-    const rawLines = sourceText.trim().split('\n');
-    const sequenceLength = Number(rawLines[0].split(' ')[0]);
-    const numericalElements = rawLines[1].split(' ').map(Number);
+console.log(((inputData) => {
+  const [firstLine, secondLine] = inputData.trim().split('\n');
 
-    let countOfOdds = 0;
-    let countOfMultiplesOfFour = 0;
-    let countOfEvenButNotMultiplesOfFour = 0;
+  const totalElements = parseInt(firstLine, 10);
+  const numberSequence = secondLine.split(' ').map(elementValue => parseInt(elementValue, 10));
 
-    numericalElements.forEach(itemValue => {
-        if (itemValue % 2 !== 0) {
-            countOfOdds++;
-        } else if (itemValue % 4 === 0) {
-            countOfMultiplesOfFour++;
-        } else {
-            countOfEvenButNotMultiplesOfFour++;
-        }
-    });
-
-    let finalVerdict;
-    if (countOfEvenButNotMultiplesOfFour > 0) {
-        // Scenario where there's at least one number that is 2 (mod 4)
-        if (countOfOdds <= countOfMultiplesOfFour) {
-            finalVerdict = "Yes";
-        } else {
-            finalVerdict = "No";
-        }
-    } else {
-        // Scenario where all numbers are either odd or multiples of 4
-        if (countOfOdds - 1 <= countOfMultiplesOfFour) {
-            finalVerdict = "Yes";
-        } else {
-            finalVerdict = "No";
-        }
+  const { oddElementCount, fourDivisibleCount } = numberSequence.reduce((accumulator, currentNumber) => {
+    if (currentNumber % 2 !== 0) {
+      accumulator.oddElementCount++;
     }
-    console.log(finalVerdict);
-})(require('fs').readFileSync('/dev/stdin', 'utf8'));
+    if (currentNumber % 4 === 0) {
+      accumulator.fourDivisibleCount++;
+    }
+    return accumulator;
+  }, { oddElementCount: 0, fourDivisibleCount: 0 });
+
+  let finalDecision;
+  const allCovered = (oddElementCount + fourDivisibleCount === totalElements);
+
+  if (allCovered) {
+    if (oddElementCount - 1 <= fourDivisibleCount) {
+      finalDecision = 'Yes';
+    } else {
+      finalDecision = 'No';
+    }
+  } else {
+    if (oddElementCount <= fourDivisibleCount) {
+      finalDecision = 'Yes';
+    } else {
+      finalDecision = 'No';
+    }
+  }
+
+  return finalDecision;
+})(require('fs').readFileSync('/dev/stdin', 'utf8')));

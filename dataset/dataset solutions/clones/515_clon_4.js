@@ -1,50 +1,41 @@
-const acquireSourcePayload = () => require('fs').readFileSync('/dev/stdin', 'utf8');
+const inputData = require('fs').readFileSync('/dev/stdin', 'utf8');
+const lineSegments = inputData.trim().split('\n');
 
-const processPayloadSegments = (remainingSegments, collectedOutcomes = []) => {
-    if (remainingSegments.length === 0) {
-        return collectedOutcomes;
-    }
+let linePointer = 0;
 
-    const currentSegmentIdentifierString = remainingSegments[0];
-    const currentSegmentIdentifier = parseInt(currentSegmentIdentifierString, 10);
+const evaluateBlock = () => {
+    const initialCount = Number(lineSegments[linePointer++]);
+    if (initialCount === 0) return null;
 
-    if (currentSegmentIdentifier === 0) {
-        return collectedOutcomes;
-    }
+    const firstSet = lineSegments[linePointer++].split(' ').map(Number);
+    const secondSet = lineSegments[linePointer++].split(' ').map(Number);
 
-    const primaryNumericText = remainingSegments[1].split(" ");
-    const primaryNumericValues = primaryNumericText.map(Number);
-
-    const secondaryNumericText = remainingSegments[2].split(" ");
-    const secondaryNumericValues = secondaryNumericText.map(Number);
-
-    const currentSegmentOutcome = calculateMaximizedScore(currentSegmentIdentifier, primaryNumericValues, secondaryNumericValues);
+    const firstSum = firstSet.reduce((accumulator, value) => accumulator + value, 0);
     
-    return processPayloadSegments(remainingSegments.slice(3), [...collectedOutcomes, currentSegmentOutcome]);
+    secondSet.sort((alpha, beta) => beta - alpha);
+
+    const secondPrefixSums = secondSet.reduce((accumulator, value, index) => {
+        accumulator.push((index === 0 ? 0 : accumulator[index - 1]) + value);
+        return accumulator;
+    }, []);
+
+    let optimalOutcome = firstSum * initialCount;
+
+    for (let k = 0; k < secondSet.length; k++) {
+        const currentSecondSum = secondPrefixSums[k];
+        const elementsTaken = k + 1;
+        const remainingUnits = initialCount - elementsTaken;
+        
+        if (remainingUnits < 0) break;
+
+        const currentTotalValue = (firstSum + currentSecondSum) * remainingUnits;
+        optimalOutcome = Math.max(optimalOutcome, currentTotalValue);
+    }
+
+    return optimalOutcome;
 };
 
-const calculateMaximizedScore = (initialFactor, primaryOperands, secondaryOperands) => {
-    const baseTotal = primaryOperands.reduce((accumulator, value) => accumulator + value, 0);
-
-    const sortedSecondaryOperands = [...secondaryOperands].sort((elementA, elementB) => elementB - elementA);
-
-    let ultimateScore = baseTotal * initialFactor;
-
-    const candidateScores = sortedSecondaryOperands.map((currentSecondaryOperand, positionIndex) => {
-        const adjustedFactor = initialFactor - (positionIndex + 1);
-
-        if (adjustedFactor <= 0) {
-            return 0; 
-        }
-        return (baseTotal + currentSecondaryOperand) * adjustedFactor;
-    });
-
-    return Math.max(ultimateScore, ...candidateScores);
-};
-
-const fullInputPayload = acquireSourcePayload();
-const parsedInputLines = fullInputPayload.trim().split("\n");
-
-const finalOutcomeCollection = processPayloadSegments(parsedInputLines);
-
-finalOutcomeCollection.forEach(resultEntry => console.log(resultEntry));
+let blockResult;
+while ((blockResult = evaluateBlock()) !== null) {
+    console.log(blockResult);
+}

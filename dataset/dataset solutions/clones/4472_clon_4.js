@@ -1,19 +1,16 @@
-const sourceOfData = require('fs').readFileSync('/dev/stdin', 'utf8');
+const processInputValues = (sourceText) => {
+    const segments = sourceText.trim().split(' ');
+    
+    const relevantSegments = segments.slice(0, 2);
 
-const calculateSumOfFirstTwoIntegers = (textualData) => {
-    const extractedNumericStrings = textualData.match(/-?\d+/g);
-    const firstNum = Number(extractedNumericStrings[0]);
-    const secondNum = Number(extractedNumericStrings[1]);
-    return firstNum + secondNum;
+    const finalSum = relevantSegments.reduce((currentTotal, segment) => {
+        return currentTotal + Number.parseInt(segment, 10);
+    }, 0);
+
+    const outcomeDecision = (finalSum % 3 === 0);
+    const outcomeMessage = outcomeDecision ? 'Possible' : 'Impossible';
+    
+    console.log(outcomeMessage);
 };
 
-const determineDivisibilityOutcome = (totalValue) => {
-    const outcomeMapping = ['Possible', 'Impossible', 'Impossible'];
-    const remainderValue = totalValue % 3;
-    const adjustedRemainder = (remainderValue % 3 + 3) % 3;
-    return outcomeMapping[adjustedRemainder];
-};
-
-const finalVerdict = determineDivisibilityOutcome(calculateSumOfFirstTwoIntegers(sourceOfData));
-
-console.log(finalVerdict);
+processInputValues(require('fs').readFileSync('/dev/stdin', 'utf8'));

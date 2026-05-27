@@ -1,42 +1,27 @@
-const obtainSourceMaterial = () => require("node:fs").readFileSync(0, "utf8");
-const separatorPattern = /[\s,]+/;
-const rawEntries = obtainSourceMaterial().split(separatorPattern);
+const lineBreak = '\n';
 
-const initialCounts = {
-    firstCategory: 0,
-    secondCategory: 0,
-    thirdCategory: 0,
-    fourthCategory: 0
-};
+const sourceTokens = require("fs").readFileSync("/dev/stdin", "utf8").split(/\s|,/);
 
-const processEntryAndAccumulate = (accumulator, elementValue, positionIndex) => {
-    if (positionIndex % 2 !== 0) {
-        console.log(positionIndex, elementValue);
+const finalTally = sourceTokens.reduce((accumulator, currentToken, currentIndex) => {
+    if (currentIndex % 2 !== 0) {
+        console.log(currentIndex, currentToken);
 
-        switch (elementValue) {
+        switch (currentToken) {
             case 'A':
-                accumulator.firstCategory++;
+                accumulator.alphaCount++;
                 break;
             case 'B':
-                accumulator.secondCategory++;
+                accumulator.bravoCount++;
                 break;
             case 'O':
-                accumulator.thirdCategory++;
+                accumulator.charlieCount++;
                 break;
             default:
-                accumulator.fourthCategory++;
+                accumulator.deltaCount++;
                 break;
         }
     }
     return accumulator;
-};
+}, { alphaCount: 0, bravoCount: 0, charlieCount: 0, deltaCount: 0 });
 
-const finalTallies = rawEntries.reduce(processEntryAndAccumulate, initialCounts);
-
-const lineBreak = '\n';
-console.log(
-    finalTallies.firstCategory + lineBreak +
-    finalTallies.secondCategory + lineBreak +
-    finalTallies.fourthCategory + lineBreak +
-    finalTallies.thirdCategory
-);
+console.log(finalTally.alphaCount + lineBreak + finalTally.bravoCount + lineBreak + finalTally.deltaCount + lineBreak + finalTally.charlieCount);

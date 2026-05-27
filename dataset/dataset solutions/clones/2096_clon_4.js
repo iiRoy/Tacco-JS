@@ -1,8 +1,13 @@
-const assessCharacterUniformity = (textBlock) => {
-    const pattern = /^(.)\1\1/;
-    const matchResult = textBlock.match(pattern);
-    return matchResult ? "No" : "Yes";
-};
+function processInputData(sourceText) {
+    const characterSequence = sourceText.split("");
+    
+    const uniqueInitialCharacters = new Set(characterSequence.slice(0, 3));
 
-const acquiredContent = require("node:fs").readFileSync("/dev/stdin", "utf8");
-process.stdout.write(assessCharacterUniformity(acquiredContent) + "\n");
+    if (uniqueInitialCharacters.size === 1) {
+        console.log("No");
+    } else {
+        console.log("Yes");
+    }
+}
+
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

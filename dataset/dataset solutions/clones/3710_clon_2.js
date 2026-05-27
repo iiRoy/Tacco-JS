@@ -1,72 +1,45 @@
 'use strict';
 
 // Function to transform an array of string numbers into a new array
-// where each element is processed by subtracting its index-based offset.
-const transformNumbers = (
-  numArray /* The original array of string numbers */
-) =>
-  numArray.reduce(
-    (
-      collector, // Accumulator for the new array
-      currentVal, // Current string value being processed
-      idx // Current index of the value
-    ) => {
-      // Convert the string to an integer, then subtract (index + 1)
-      const modifiedValue = Number.parseInt(currentVal) - (idx + 1);
+// by subtracting (index + 1) from each parsed integer.
+const transformArray = (numArray) => {
+  return numArray.reduce((accumulator, currentElement, idx) => {
+    // Convert string to integer and perform the subtraction
+    const transformedValue = parseInt(currentElement, 10) - (idx + 1);
+    return [...accumulator, transformedValue];
+  }, []); // Initialize accumulator as an empty array
+};
 
-      // Add the modified value to the collector array
-      return [...collector, modifiedValue];
-    },
-    [] // Initial empty array for the collector
-  );
+// Function to calculate the "sadness" score based on a list of numbers and a median value.
+// It sums the absolute differences between each number and (median + its index + 1).
+const calculateSorrow = (dataArray, midValue) => {
+  return dataArray.reduce((totalSorrow, currentVal, pos) => {
+    // Calculate the target value for the current position
+    const target = midValue + pos + 1;
+    // Add the absolute difference to the running total
+    return totalSorrow + Math.abs(parseInt(currentVal, 10) - target);
+  }, 0); // Start the total sorrow at zero
+};
 
-// Function to compute the total 'discontent' based on a central reference value.
-const calculateDiscontent = (
-  valueArray, // The array of original string numbers
-  centralValue // The reference value for calculations
-) =>
-  valueArray.reduce(
-    (
-      totalSum, // Accumulator for the total discontent
-      item, // Current string item from the array
-      position // Current position (index) of the item
-    ) => {
-      // Convert the string item to a number.
-      const numericItem = Number(item);
+// Read input from standard input, assuming it's a file path.
+// The input is split by newline characters.
+const rawData = require("fs").readFileSync("/dev/stdin", "utf8").split("\n");
 
-      // Calculate the difference from the central value, adjusted by position.
-      const difference = numericItem - (centralValue + position + 1);
+// Parse the first line of input as the total count of items.
+const itemCount = parseInt(rawData[0], 10);
 
-      // Add the absolute difference to the running total.
-      return totalSum + globalThis.Math.abs(difference);
-    },
-    0 // Initial sum of zero
-  );
+// Split the second line of input into an array of string numbers.
+const initialNumbers = rawData[1].split(" ");
 
-// Read the raw input data from standard input.
-// This data is expected to be newline-separated.
-const rawData = require('node:fs')
-  .readFileSynchr('/dev/stdin', 'utf-8')
-  .split('\n');
+// Process the initial numbers and then sort the resulting array numerically.
+const modifiedNumbers = transformArray(initialNumbers).sort((a, b) => a - b);
 
-// Parse the first line of input to get the total count of elements.
-const elementCount = Number(rawData[0]);
+// Determine the central value (median) from the sorted, modified numbers.
+// This uses floor division to get the middle index.
+const centralValue = modifiedNumbers[Math.floor(itemCount / 2)];
 
-// Split the second line of input by spaces to get the initial list of values.
-const initialValues = rawData[1].split(' ');
+// Calculate the minimum sorrow using the original input list and the derived central value.
+const minimumSorrow = calculateSorrow(initialNumbers, centralValue);
 
-// Process the initial values using the transformation function,
-// then sort the resulting array in ascending order.
-const transformedSet = transformNumbers(initialValues).sort(
-  (firstItem, secondItem) => firstItem - secondItem
-);
-
-// Determine the median (middle point) from the sorted, transformed set.
-// If the count is odd, it's the exact middle; if even, it's the lower of the two middle elements.
-const middlePoint = transformedSet[globalThis.Math.floor(elementCount / 2)];
-
-// Calculate the minimum discomfort using the original input values and the derived middle point.
-const minimumDiscomfort = calculateDiscontent(initialValues, middlePoint);
-
-// Output the final computed minimum discomfort value to the console.
-globalThis.console.log(minimumDiscomfort);
+// Output the final calculated minimum sorrow to the console.
+console.log(minimumSorrow);

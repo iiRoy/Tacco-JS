@@ -1,26 +1,17 @@
-const sourceData = require('fs').readFileSync('/dev/stdin', 'utf8').trim();
+function calculateProductOfDecremented(rawData) {
+    const stringSegments = rawData.split(" ");
+    const numericValues = [];
 
-let valueAStr = '';
-let valueBStr = '';
-let processingFirstNumber = true;
+    for (const segment of stringSegments) {
+        numericValues.push(Number.parseInt(segment, 10));
+    }
 
-for (const character of sourceData) {
-    if (character === ' ' && processingFirstNumber) {
-        processingFirstNumber = false;
-        continue;
-    }
-    if (processingFirstNumber) {
-        valueAStr += character;
-    } else {
-        valueBStr += character;
-    }
+    const firstOperand = numericValues[0];
+    const secondOperand = numericValues[1];
+
+    const finalResult = firstOperand * secondOperand - firstOperand - secondOperand + 1;
+
+    console.log(finalResult);
 }
 
-const operandAlpha = Number(valueAStr);
-const operandBeta = Number(valueBStr);
-
-const productComponent = operandAlpha * operandBeta;
-const sumComponent = operandAlpha + operandBeta;
-const computedOutcome = productComponent - sumComponent + 1;
-
-console.log(computedOutcome);
+calculateProductOfDecremented(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,87 +1,103 @@
-var fileSystemModule = require('fs');
+const fileSystem = require('fs');
+const rawInputData = fileSystem.readFileSync('/dev/stdin', 'utf8');
+let inputLineBuffer = rawInputData.trim().split("\n");
 
-const INPUT_FILE_PATH = '/dev/stdin';
-const TEXT_ENCODING = 'utf8';
-const END_OF_INPUT_SIGNAL = "0 0 0 0 0";
+/**
+ * Processes a set of eight numeric parameters to calculate and log the minimum of two cost options.
+ * @param {number} pA - Parameter A
+ * @param {number} pB - Parameter B
+ * @param {number} pC - Parameter C
+ * @param {number} pD - Parameter D
+ * @param {number} pE - Parameter E
+ * @param {number} nA - Number of item A
+ * @param {number} nB - Number of item B
+ * @param {number} nC - Number of item C
+ */
+function processParameterSet(pA, pB, pC, pD, pE, nA, nB, nC) {
+    // Calculate the base cost based on full units of C and their cost E
+    const initialBaseCost = Math.floor(nC / pD) * pD * pE;
+    const remainingUnitsC = nC % pD;
 
-var rawInputContent = fileSystemModule.readFileSync(INPUT_FILE_PATH, TEXT_ENCODING);
-var inputLineBuffer = rawInputContent.trim().split("\n");
-
-while (true) {
-    var currentDataSetString = inputLineBuffer.shift();
-
-    if (currentDataSetString === END_OF_INPUT_SIGNAL) {
-        break;
+    /**
+     * Calculates cost option A.
+     * @param {number} currentBase - The initial base cost.
+     * @param {number} remUnits - Remaining units of C.
+     * @param {number} unitCostC - Cost per unit of C.
+     * @param {number} countA - Number of item A.
+     * @param {number} costA - Cost per item A.
+     * @param {number} countB - Number of item B.
+     * @param {number} costB - Cost per item B.
+     * @returns {number} The total cost for option A.
+     */
+    function calculateOptionACost(currentBase, remUnits, unitCostC, countA, costA, countB, costB) {
+        let totalCostA = currentBase;
+        totalCostA += remUnits * unitCostC;
+        const additionalCostFromItems = countA * costA + countB * costB;
+        totalCostA += additionalCostFromItems;
+        return totalCostA;
     }
 
-    if (inputLineBuffer.length === 0) {
-        console.error("Error: Insufficient input data. Expected another line of parameters.");
-        break;
-    }
+    /**
+     * Calculates cost option B.
+     * This function handles two distinct calculation paths based on the initial base cost.
+     * @param {number} initialVal - The initial base cost (Math.floor(nC / pD) * pD * pE).
+     * @param {number} remUnits - Remaining units of C.
+     * @param {number} unitDivisorD - Divisor D.
+     * @param {number} unitCostE - Cost per unit E.
+     * @param {number} countA - Number of item A (original).
+     * @param {number} costA - Cost per item A.
+     * @param {number} countB - Number of item B (original).
+     * @param {number} costB - Cost per item B.
+     * @param {number} countC - Number of item C (original).
+     * @returns {number} The total cost for option B.
+     */
+    function calculateOptionBCost(initialVal, remUnits, unitDivisorD, unitCostE, countA, costA, countB, costB, countC) {
+        if (initialVal === 0) {
+            let currentCountA = countA; // Local mutable copy
+            let currentCountB = countB; // Local mutable copy
+            let costBResult = initialVal;
 
-    var combinedParameterLine = currentDataSetString + " " + inputLineBuffer.shift();
-    var numericalInputs = combinedParameterLine.split(" ").map(Number);
+            const deficitUnits = (remUnits === 0) ? 0 : unitDivisorD - remUnits;
+            
+            if (deficitUnits > 0) {
+                costBResult += unitCostE * unitDivisorD;
+            }
 
-    if (numericalInputs.length !== 8) {
-        console.error("Error: Incorrect number of numerical parameters. Expected 8, but received " + numericalInputs.length + ".");
-        continue;
-    }
-
-    (function(
-        price_item_alpha,
-        price_item_beta,
-        price_single_unit,
-        batch_quantity_size,
-        price_per_bulk_unit,
-        initial_count_alpha,
-        initial_count_beta,
-        total_units_needed
-    ) {
-        var base_cost_from_AB_items = initial_count_alpha * price_item_alpha + initial_count_beta * price_item_beta;
-
-        // --- Calculation for Strategy 1 ---
-        var total_cost_strategy_one;
-        {
-            var full_batch_count = Math.trunc(total_units_needed / batch_quantity_size);
-            var units_from_full_batches = full_batch_count * batch_quantity_size;
-            var cost_for_full_batches = units_from_full_batches * price_per_bulk_unit;
-
-            var remaining_individual_units = total_units_needed % batch_quantity_size;
-            var cost_for_remaining_units = remaining_individual_units * price_single_unit;
-
-            total_cost_strategy_one = cost_for_full_batches + cost_for_remaining_units + base_cost_from_AB_items;
-        }
-
-        // --- Calculation for Strategy 2 ---
-        var total_cost_strategy_two;
-        {
-            var temp_alpha_count = initial_count_alpha;
-            var temp_beta_count = initial_count_beta;
-
-            if (total_units_needed > 0 && total_units_needed < batch_quantity_size) {
-                var units_to_compensate = batch_quantity_size - total_units_needed;
-                var current_scenario_cost = batch_quantity_size * price_per_bulk_unit;
-
-                var reduction_amount_remaining = units_to_compensate;
-
-                var actual_reduction_beta = Math.min(reduction_amount_remaining, temp_beta_count);
-                temp_beta_count -= actual_reduction_beta;
-                reduction_amount_remaining -= actual_reduction_beta;
-
-                if (reduction_amount_remaining > 0) {
-                    temp_alpha_count = Math.max(0, temp_alpha_count - reduction_amount_remaining);
+            let unitsToAdjust = deficitUnits;
+            while (unitsToAdjust > 0) {
+                if (currentCountB > 0) {
+                    currentCountB--;
+                } else if (currentCountA > 0) {
+                    currentCountA--;
                 }
-
-                current_scenario_cost += temp_alpha_count * price_item_alpha + temp_beta_count * price_item_beta;
-                total_cost_strategy_two = current_scenario_cost;
+                unitsToAdjust--;
             }
-            else {
-                total_cost_strategy_two = base_cost_from_AB_items + total_units_needed * price_per_bulk_unit;
-            }
+            costBResult += currentCountA * costA + currentCountB * costB;
+            return costBResult;
+        } else {
+            // This path is taken when initialVal is not 0.
+            // It calculates a direct sum of costs for all items using their original counts.
+            return countA * costA + countB * costB + countC * unitCostE;
         }
+    }
 
-        var final_minimum_cost = Math.min(total_cost_strategy_one, total_cost_strategy_two);
-        console.log(final_minimum_cost);
+    const costOptionA = calculateOptionACost(initialBaseCost, remainingUnitsC, pC, nA, pA, nB, pB);
+    const costOptionB = calculateOptionBCost(initialBaseCost, remainingUnitsC, pD, pE, nA, pA, nB, pB, nC);
 
-    }).apply(null, numericalInputs);
+    console.log(Math.min(costOptionA, costOptionB));
+}
+
+// Main processing loop
+while (true) {
+    const currentInputLineSegment = inputLineBuffer.shift();
+    if (currentInputLineSegment === "0 0 0 0 0") {
+        break;
+    }
+
+    const nextInputLineSegment = inputLineBuffer.shift();
+    const combinedParameterString = currentInputLineSegment + " " + nextInputLineSegment;
+    const numericParameters = combinedParameterString.split(" ").map(Number);
+
+    // Call the main processing function with the parsed parameters
+    processParameterSet(...numericParameters);
 }

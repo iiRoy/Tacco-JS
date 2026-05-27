@@ -1,226 +1,184 @@
-/*
- * This JavaScript module processes a series of operations on a dynamic sequence of elements.
- * It reads configuration and commands from standard input.
- * Each command modifies the sequence based on specific rules.
- */
+// This global array will store the sequence of elements for each test case.
+let dataArray = [];
 
-// Define constants for various character markers and special values used in the sequence.
-const emptyIndicator = 0;       // Represents an empty slot in the sequence.
-const boundaryMarker = "X";     // Marks the artificial boundaries of the sequence.
-const alphaChar = "A";          // Specific marker character 'A'.
-const betaChar = "B";           // Specific marker character 'B'.
-const gammaChar = "C";          // Specific marker character 'C'.
-const deltaChar = "D";          // Specific marker character 'D'.
-const replacementChar = "#";    // Character used to represent empty slots in the final output.
+// This global variable will hold the effective size of the array (excluding sentinels).
+let arraySize = 0;
 
-/*
- * This routine attempts to fill the first available empty slot
- * within the sequence (excluding boundary markers) with a specified character.
- *
- * @param {string} markSymbol - The character to be placed in an empty slot.
+/**
+ * Fills the first available empty slot (represented by 0) in the dataArray
+ * with the specified character. It skips the sentinel 'X' elements at the ends.
+ * @param {string} charToPlace The character ('A', 'B', 'C', 'D') to insert.
  */
-function placeFirstMarker(markSymbol) {
-    // Iterate through the sequence from the second element up to the second-to-last.
-    // These indices correspond to the actual data, ignoring the 'X' sentinels.
-    for (var currentPos = 1; currentPos < valueSequence.length - 1; currentPos++) {
-        // If an empty slot is found (indicated by emptyIndicator),
-        // fill it with the provided markSymbol and then terminate the function.
-        if (valueSequence[currentPos] == emptyIndicator) {
-            valueSequence[currentPos] = markSymbol;
-            return;
-        }
+function fillFirstEmpty(charToPlace) {
+  // Iterate through the main part of the array, ignoring the boundary sentinels.
+  for (let currentIdx = 1; currentIdx < dataArray.length - 1; currentIdx++) {
+    // If an empty slot (value 0) is encountered, place the character and exit.
+    if (dataArray[currentIdx] === 0) {
+      dataArray[currentIdx] = charToPlace;
+      return;
     }
+  }
 }
 
-/*
- * This function attempts to place the 'B' marker in a specific empty slot
- * based on conditions involving its neighbors, scanning from right to left.
- * If no such slot is found, it defaults to using the general 'placeFirstMarker' function.
+/**
+ * Attempts to place 'B' in an empty slot that is not adjacent to 'A' on either side.
+ * It searches from right to left. If no such slot is found, it defaults to
+ * placing 'B' in the first available empty slot using fillFirstEmpty.
  */
-function fillAdjacentSpace() {
-    // Scan the sequence from right to left, starting from the second-to-last
-    // element and ending at the second element, effectively skipping the boundary markers.
-    for (var idxBackward = valueSequence.length - 2; idxBackward >= 1; idxBackward--) {
-        // Check for a specific pattern:
-        // 1. The element immediately preceding the current position is NOT 'A'.
-        // 2. The current position itself IS empty.
-        // 3. The element immediately succeeding the current position is NOT 'A'.
-        if (valueSequence[idxBackward - 1] != alphaChar && valueSequence[idxBackward] == emptyIndicator && valueSequence[idxBackward + 1] != alphaChar) {
-            valueSequence[idxBackward] = betaChar; // If conditions met, place 'B' marker.
-            return; // Exit the function immediately after placing the marker.
-        }
+function placeB() {
+  // Search for a suitable empty spot, starting from the right and moving left.
+  // We exclude the sentinel positions (0 and dataArray.length - 1).
+  for (let currentPosition = dataArray.length - 2; currentPosition >= 1; currentPosition--) {
+    // Check if the current position is empty (0) AND its neighbors are not 'A'.
+    if (dataArray[currentPosition - 1] !== "A" && dataArray[currentPosition] === 0 && dataArray[currentPosition + 1] !== "A") {
+      dataArray[currentPosition] = "B"; // Place 'B' in this valid spot.
+      return; // Operation complete.
     }
-    // If the loop completes without placing a 'B' marker (i.e., no suitable slot found),
-    // fall back to placing 'B' in the first available empty slot using the general routine.
-    placeFirstMarker(betaChar);
+  }
+  // If no specific spot meeting the criteria is found, use the general placement function.
+  fillFirstEmpty("B");
 }
 
-/*
- * This routine attempts to extend existing markers by placing a 'C' marker
- * into an adjacent empty slot. If no extension is possible, it places 'C'
- * at a calculated central position.
+/**
+ * Attempts to place 'C' in an empty slot adjacent to an already occupied slot.
+ * It prioritizes placing 'C' to the right of an occupied slot, then to the left.
+ * If no such adjacent empty slot is found, 'C' is placed in a specific middle position
+ * based on the array's original size (arraySize).
  */
-function extendMarksAround() {
-    // Iterate through the main part of the sequence, excluding the boundary markers.
-    for (var iterIndex = 1; iterIndex < valueSequence.length - 1; iterIndex++) {
-        // First condition: If the current slot is not empty AND the next slot IS empty,
-        // place 'C' in the next slot.
-        if (valueSequence[iterIndex] != emptyIndicator && valueSequence[iterIndex + 1] == emptyIndicator) {
-            valueSequence[iterIndex + 1] = gammaChar;
-            return; // Operation completed, exit.
-        }
-        // Second condition: If the current slot is not empty AND the previous slot IS empty,
-        // place 'C' in the previous slot.
-        if (valueSequence[iterIndex] != emptyIndicator && valueSequence[iterIndex - 1] == emptyIndicator) {
-            valueSequence[iterIndex - 1] = gammaChar;
-            return; // Operation completed, exit.
-        }
+function placeC() {
+  // Iterate through the array to find an empty slot next to an occupied one.
+  for (let currentElementIndex = 1; currentElementIndex < dataArray.length - 1; currentElementIndex++) {
+    // Check if the current element is occupied and the element to its right is empty.
+    if (dataArray[currentElementIndex] !== 0 && dataArray[currentElementIndex + 1] === 0) {
+      dataArray[currentElementIndex + 1] = "C"; // Place 'C' in the empty slot to the right.
+      return; // Task finished.
     }
+    // Check if the current element is occupied and the element to its left is empty.
+    if (dataArray[currentElementIndex] !== 0 && dataArray[currentElementIndex - 1] === 0) {
+      dataArray[currentElementIndex - 1] = "C"; // Place 'C' in the empty slot to the left.
+      return; // Task finished.
+    }
+  }
 
-    // If the loop finishes without placing a 'C' (i.e., no extension was possible),
-    // place 'C' at a position relative to the middle of the original sequence length.
-    if (arrayLength % 2 == 1) {
-        // For odd-length sequences, place 'C' just after the center.
-        valueSequence[(arrayLength - 1) / 2 + 1] = gammaChar;
-    } else {
-        // For even-length sequences, place 'C' just after the first of the two center elements.
-        valueSequence[arrayLength / 2 + 1] = gammaChar;
-    }
+  // If no adjacent empty slot was found, place 'C' in a calculated middle position.
+  if (arraySize % 2 === 1) {
+    // For an odd array size, place 'C' slightly to the right of the true center.
+    dataArray[(arraySize - 1) / 2 + 1] = "C";
+  } else {
+    // For an even array size, place 'C' in the right-middle position.
+    dataArray[arraySize / 2 + 1] = "C";
+  }
 }
 
-/*
- * Identifies the largest contiguous empty segment within the sequence
- * that is bounded by boundary markers ('X') or existing 'ABCD' markers.
- * It then places a 'D' marker in the starting position of this largest gap.
- * If no such gap is found, it defaults to placing 'D' in the first available empty slot.
+/**
+ * Finds the longest contiguous block of empty slots (0s) that is bounded by 'X' sentinels
+ * and not by 'A', 'B', 'C', or 'D'. It then places 'D' at the starting position of this
+ * longest suitable block. If no such block is found, it defaults to placing 'D' in the
+ * first available empty slot using fillFirstEmpty.
  */
-function locateLargestGap() {
-    // `maxGapRecord` stores information about the largest gap found so far:
-    // [index_of_the_start_of_the_gap, length_of_the_gap].
-    var maxGapRecord = [0, 0];
+function placeD() {
+  // longestBlockInfo stores [start_index_of_block, effective_length_of_block_minus_one].
+  let longestBlockInfo = [0, 0];
 
-    // Regular expression to test for any of the existing marker characters (A, B, C, D).
-    const markerPattern = /[ABCD]/;
-
-    // Iterate through the sequence, skipping the artificial boundary markers.
-    for (var outerLoopIdx = 1; outerLoopIdx < valueSequence.length - 1; outerLoopIdx++) {
-        // If the current position is not empty, it cannot be the start of a new empty gap,
-        // so skip to the next position.
-        if (valueSequence[outerLoopIdx] != emptyIndicator) {
-            continue;
-        }
-
-        // Initialize pointers and a counter for the current potential empty segment.
-        var leftScanPtr = outerLoopIdx;
-        var rightScanPtr = outerLoopIdx;
-        var currentGapSize = 0;
-
-        // Expand outwards from the current empty slot to find its boundaries.
-        while (true) {
-            // Move the left pointer inwards if it hasn't hit a boundary marker.
-            if (valueSequence[leftScanPtr] != boundaryMarker) {
-                leftScanPtr--;
-            }
-            // Move the right pointer outwards if it hasn't hit a boundary marker.
-            if (valueSequence[rightScanPtr] != boundaryMarker) {
-                rightScanPtr++;
-            }
-
-            // If both pointers have reached boundary markers ('X'),
-            // it means the current segment's extent has been fully determined by 'X's.
-            if (valueSequence[leftScanPtr] == boundaryMarker && valueSequence[rightScanPtr] == boundaryMarker) {
-                break; // Stop expanding for this segment.
-            }
-
-            // Check if either pointer has encountered an existing 'ABCD' marker.
-            // If so, this segment is bounded by an existing marker, not just empty space.
-            if (markerPattern.test(valueSequence[leftScanPtr]) || markerPattern.test(valueSequence[rightScanPtr])) {
-                break; // Stop expanding if an existing marker is hit.
-            }
-
-            currentGapSize++; // Increment the size of the current empty gap.
-
-            // Update the `maxGapRecord` if the current gap is larger than any found previously.
-            if (maxGapRecord[1] < currentGapSize) {
-                maxGapRecord = [outerLoopIdx, currentGapSize];
-            }
-        }
+  // Iterate through the array to find potential starting points of empty blocks.
+  for (let currentPosition = 1; currentPosition < dataArray.length - 1; currentPosition++) {
+    // If the current spot is not empty, skip it.
+    if (dataArray[currentPosition] !== 0) {
+      continue;
     }
 
-    // After checking all possible starting points for gaps:
-    // If a significant gap was found (i.e., its length is not 0),
-    // place the 'D' marker at the recorded starting index of that gap.
-    if (maxGapRecord[1] != 0) {
-        valueSequence[maxGapRecord[0]] = deltaChar;
-        return;
+    let leftPointer = currentPosition;
+    let rightPointer = currentPosition;
+    let currentBlockLength = 0; // This counts steps outwards from currentPosition.
+
+    // Expand outwards from the current empty spot to determine block boundaries and suitability.
+    while (true) {
+      // Move the left pointer inwards if it hasn't hit an 'X' sentinel.
+      if (dataArray[leftPointer] !== "X") {
+        leftPointer--;
+      }
+      // Move the right pointer outwards if it hasn't hit an 'X' sentinel.
+      if (dataArray[rightPointer] !== "X") {
+        rightPointer++;
+      }
+
+      // If both pointers have reached 'X' sentinels, the block's extent is defined.
+      if (dataArray[leftPointer] === "X" && dataArray[rightPointer] === "X") {
+        break; // Exit the inner loop.
+      }
+
+      // If either pointer encounters an 'A', 'B', 'C', or 'D', this block is not suitable for 'D'.
+      if (/[ABCD]/.test(dataArray[leftPointer]) || /[ABCD]/.test(dataArray[rightPointer])) {
+        break; // Exit the inner loop, discard this block.
+      }
+
+      currentBlockLength++; // Increment the count of expansions.
+      // Update the longest suitable block found so far.
+      if (longestBlockInfo[1] < currentBlockLength) {
+        longestBlockInfo = [currentPosition, currentBlockLength];
+      }
     }
-    // If no significant gap was found (maxGapRecord[1] is still 0),
-    // fall back to placing 'D' in the first available empty slot using the general routine.
-    placeFirstMarker(deltaChar);
+  }
+
+  // If a suitable longest block was identified (its effective length is greater than 0).
+  if (longestBlockInfo[1] !== 0) {
+    // Place 'D' at the starting index of the longest block.
+    dataArray[longestBlockInfo[0]] = "D";
+    return; // Operation complete.
+  }
+  // If no suitable block was found, use the general placement function.
+  fillFirstEmpty("D");
 }
 
-// Node.js specific code to read all input from standard input synchronously.
-var fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+// Standard input reading setup.
+const rawInputData = require('fs').readFileSync('/dev/stdin', 'utf8');
+// Process the raw input: trim whitespace and split into individual lines.
+const lineSegments = rawInputData.trim().split("\n");
 
-// Pre-process the input: remove leading/trailing whitespace and split into an array of lines.
-var processedLines = fileContent.trim().split("\n");
-
-// Global declaration for the main sequence and its length, accessible by the functions above.
-// These will be re-initialized for each test case.
-var valueSequence;
-var arrayLength;
-
-// Main program loop: continues indefinitely until a specific termination condition is met.
+// Main loop to process multiple test cases.
 while (true) {
-    // Read the first line of the current input block, which contains N and M.
-    // Split it by space, then convert both parts to numbers.
-    var configParameters = processedLines.shift().split(" ").map(Number);
-    arrayLength = configParameters[0];      // N: The number of elements in the array (excluding sentinels).
-    var operationCount = configParameters[1];   // M: The number of operations to perform.
+  // Extract the array size (n) and command count (m) from the current line.
+  const dimensions = lineSegments.shift().split(" ").map(Number);
+  arraySize = dimensions[0]; // Update the global array size.
+  const commandCount = dimensions[1];
 
-    // Termination condition: If both N and M are 0, exit the loop and end the program.
-    if (arrayLength == 0 && operationCount == 0) {
-        break;
+  // If both n and m are zero, it's the termination condition for the program.
+  if (arraySize === 0 && commandCount === 0) {
+    break;
+  }
+
+  // Initialize the data array for the current test case with 'n' zeros.
+  dataArray = []; // Reset the global array.
+  for (let k = 0; k < arraySize; k++) {
+    dataArray.push(0);
+  }
+  // Add 'X' sentinels at both ends to simplify boundary checks in functions.
+  dataArray.unshift("X");
+  dataArray.push("X");
+
+  // Process each command for the current test case.
+  for (let commandIndex = 0; commandIndex < commandCount; commandIndex++) {
+    const currentCommand = lineSegments.shift(); // Get the next command string.
+    // Call the appropriate function based on the command.
+    if (currentCommand === "A") {
+      fillFirstEmpty("A");
     }
-
-    // Initialize the main data sequence for the current test case.
-    // It will contain `arrayLength` number of `emptyIndicator`s.
-    valueSequence = [];
-    for (var loopCounter = 0; loopCounter < arrayLength; loopCounter++) {
-        valueSequence.push(emptyIndicator);
+    if (currentCommand === "B") {
+      placeB();
     }
-
-    // Add artificial boundary markers ('X') to the start and end of the sequence.
-    // These help simplify boundary checks in the processing functions.
-    valueSequence.unshift(boundaryMarker);
-    valueSequence.push(boundaryMarker);
-
-    // Execute 'M' operations as specified by the input commands.
-    for (var loopCounter = 0; loopCounter < operationCount; loopCounter++) {
-        // Read the current command string (e.g., "A", "B", "C", "D").
-        var commandString = processedLines.shift();
-
-        // Call the appropriate function based on the command.
-        if (commandString == alphaChar) {
-            placeFirstMarker(alphaChar);
-        }
-        if (commandString == betaChar) {
-            fillAdjacentSpace();
-        }
-        if (commandString == gammaChar) {
-            extendMarksAround();
-        }
-        if (commandString == deltaChar) {
-            locateLargestGap();
-        }
+    if (currentCommand === "C") {
+      placeC();
     }
+    if (currentCommand === "D") {
+      placeD();
+    }
+  }
 
-    // After all operations, remove the temporary boundary markers from the sequence.
-    valueSequence.shift(); // Remove the leading 'X'.
-    valueSequence.pop();   // Remove the trailing 'X'.
+  // Remove the 'X' sentinels from the dataArray before output.
+  dataArray.shift();
+  dataArray.pop();
 
-    // Join the remaining elements of the sequence into a single string,
-    // then replace all `emptyIndicator`s (which are `0`) with the `replacementChar` ('#').
-    // Finally, print the resulting string to the console.
-    console.log(valueSequence.join("").replace(new RegExp(emptyIndicator, 'g'), replacementChar));
+  // Join the array elements into a single string and replace any remaining '0's with '#'.
+  // Then, print the resulting string to the console.
+  console.log(dataArray.join("").replace(/0/g, "#"));
 }

@@ -1,28 +1,26 @@
 'use strict';
 
-(function() {
-    const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
-    const numericSegments = rawData.trim().split(/\s+/).map(Number);
+const processInputData = rawData => {
+    const numericValues = rawData.split('\n')[0].split(' ').map(Number);
+    const firstNum = numericValues[0];
+    const secondNum = numericValues[1];
+    const thirdNum = numericValues[2];
 
-    const valA = numericSegments[0];
-    const valB = numericSegments[1];
-    const valC = numericSegments[2];
+    const initialCost = secondNum + thirdNum * 2;
+    const recurringCost = secondNum + thirdNum;
 
-    const comparisonPoint = valB + valC + valC;
-    const incrementMeasure = valB + valC;
+    if (firstNum <= initialCost) {
+        console.log(0);
+    } else {
+        let remainingValue = firstNum - initialCost;
+        let iterationCounter = 0;
 
-    const outcomeGenerator = {
-        'true': (primaryValue, , tertiaryValue, , divisorValue) => {
-            // Original: Math.floor((primaryValue - (valB + 2*valC)) / (valB + valC) + 1)
-            // Transformed: Math.floor((primaryValue - tertiaryValue) / divisorValue)
-            return Math.floor((primaryValue - tertiaryValue) / divisorValue);
-        },
-        'false': () => 0
-    };
+        while (remainingValue >= recurringCost) {
+            remainingValue -= recurringCost;
+            iterationCounter++;
+        }
+        console.log(iterationCounter + 1);
+    }
+};
 
-    const calculationIsActive = (valA > comparisonPoint);
-
-    const finalResult = outcomeGenerator[calculationIsActive](valA, valB, valC, comparisonPoint, incrementMeasure);
-
-    process.stdout.write(String(finalResult) + '\n');
-})();
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

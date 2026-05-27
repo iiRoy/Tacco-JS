@@ -1,132 +1,230 @@
-'use strict';
+'use strict'
+class Main {
+  solve() {
+    const nk = input.nextIntArr();
+    const n = nk[0], k = nk[1];
+    const k2 = 2 * k;
 
-class DataAcquirer {
-  static #allLines = null;
-  static #lineIndex = 0;
+    // Step 1: Process points and populate a 2D grid with values (+1 for color 0, -1 for color 1)
+    // Also, count total points that are color 1 (B_total)
+    // The grid dimensions are k2 x k2, representing the base toroidal space.
+    const pointValueGrid = Array(k2).fill(0).map(() => Array(k2).fill(0));
+    let totalColor1Points = 0; // This will store the count of points that are 'color 1' after transformation
 
-  static #ensureDataLoaded() {
-    if (DataAcquirer.#allLines === null) {
-      DataAcquirer.#allLines = require("fs").readFileSync("/dev/stdin", "utf8").split('\n');
-    }
-  }
+    for (let i = 0; i < n; ++i) {
+      const currentPointData = input.nextStrArr(); // Read one line at a time
+      const originalX = parseInt(currentPointData[0]);
+      const originalY = parseInt(currentPointData[1]);
+      const originalColorChar = currentPointData[2];
 
-  static #fetchNextLine() {
-    DataAcquirer.#ensureDataLoaded();
-    return DataAcquirer.#allLines[DataAcquirer.#lineIndex++];
-  }
+      // Apply the transformation: shift 'B' points by k in x-coordinate
+      const transformedX = (originalX + (originalColorChar === 'B' ? k : 0)) % k2;
+      const transformedY = originalY % k2;
 
-  static obtainNumericParameters() {
-    return DataAcquirer.#fetchNextLine().split(' ').map(Number);
-  }
-
-  static obtainPointDescription() {
-    const components = DataAcquirer.#fetchNextLine().split(' ');
-    return [Number(components[0]), Number(components[1]), components[2]];
-  }
-}
-
-class ResultPresenter {
-  static presentFinalResult(valueToDisplay) {
-    console.log(valueToDisplay);
-  }
-}
-
-class ProblemSolution {
-  determineMaximalCoverage() {
-    const analysisConfig = DataAcquirer.obtainNumericParameters();
-    const numberOfPoints = analysisConfig[0];
-    const windowDimension = analysisConfig[1]; // k
-    const toroidalGridSize = 2 * windowDimension; // 2k
-
-    // A 2D array to tally points after transformation
-    // pointTally[x][y] stores how many transformed points fall at (x,y)
-    const pointTally = Array(toroidalGridSize).fill(0).map(() => Array(toroidalGridSize).fill(0));
-
-    // Process each input point
-    for (let i = 0; i < numberOfPoints; ++i) {
-      const pointDescriptor = DataAcquirer.obtainPointDescription();
-      let originalCoordX = pointDescriptor[0];
-      let originalCoordY = pointDescriptor[1];
-      const pointDesignation = pointDescriptor[2];
-
-      // Apply coordinate transformation and color-based shift
-      let transformedCoordX = originalCoordX % toroidalGridSize;
-      let transformedCoordY = originalCoordY % toroidalGridSize;
-
-      if (pointDesignation === 'B') { // 'B' points are effectively shifted by 'windowDimension' in X
-        transformedCoordX = (transformedCoordX + windowDimension) % toroidalGridSize;
-      }
-      pointTally[transformedCoordX][transformedCoordY]++;
-    }
-
-    // Compute a 2D prefix sum array (also known as an integral image)
-    // The value at integralSums[r+1][c+1] represents the sum of pointTally[i][j]
-    // for all 0 <= i <= r and 0 <= j <= c.
-    const integralSums = Array(toroidalGridSize + 1).fill(0).map(() => Array(toroidalGridSize + 1).fill(0));
-    for (let r = 0; r < toroidalGridSize; ++r) {
-      for (let c = 0; c < toroidalGridSize; ++c) {
-        integralSums[r + 1][c + 1] = pointTally[r][c] +
-                                     integralSums[r][c + 1] +
-                                     integralSums[r + 1][c] -
-                                     integralSums[r][c];
+      // Determine the 'color type' of the transformed point based on its quadrant
+      // color_type = 0 for (0,0)-(k-1,k-1) and (k,k)-(2k-1,2k-1)
+      // color_type = 1 for (k,0)-(2k-1,k-1) and (0,k)-(k-1,2k-1)
+      const transformedPointColorType = ((transformedX < k ? 0 : 1) ^ (transformedY < k ? 0 : 1));
+      
+      if (transformedPointColorType === 0) {
+        pointValueGrid[transformedX][transformedY]++;
+      } else {
+        pointValueGrid[transformedX][transformedY]--;
+        totalColor1Points++; // Increment B_total
       }
     }
 
-    // Helper function to query the sum of points within a non-wrapping rectangle
-    // The rectangle spans from [xStart, xEnd-1] rows and [yStart, yEnd-1] columns.
-    const queryRectangularSum = (xStart, yStart, xEnd, yEnd) => {
-      // Ensure coordinates are valid for the integralSums array
-      xStart = Math.max(0, xStart);
-      yStart = Math.max(0, yStart);
-      xEnd = Math.min(toroidalGridSize, xEnd);
-      yEnd = Math.min(toroidalGridSize, yEnd);
+    // Step 2: Create a 4k x 4k extended grid for toroidal prefix sums
+    // This duplicates the k2 x k2 grid four times to handle wrapping queries easily.
+    const tiledGrid = Array(k2 * 2).fill(0).map(() => Array(k2 * 2).fill(0));
+    for (let r = 0; r < k2; ++r) {
+      for (let c = 0; c < k2; ++c) {
+        tiledGrid[r][c] = pointValueGrid[r][c];
+        tiledGrid[r + k2][c] = pointValueGrid[r][c];
+        tiledGrid[r][c + k2] = pointValueGrid[r][c];
+        tiledGrid[r + k2][c + k2] = pointValueGrid[r][c];
+      }
+    }
 
-      if (xStart >= xEnd || yStart >= yEnd) return 0; // Empty or invalid rectangle
+    // Step 3: Compute 2D prefix sum array from the extended grid
+    // sumAccumulator[r][c] stores the sum of tiledGrid[x][y] for 0 <= x < r, 0 <= y < c
+    const sumAccumulator = Array(k2 * 2 + 1).fill(0).map(() => Array(k2 * 2 + 1).fill(0));
+    for (let r = 0; r < k2 * 2; ++r) {
+      for (let c = 0; c < k2 * 2; ++c) {
+        sumAccumulator[r + 1][c + 1] = tiledGrid[r][c] + sumAccumulator[r + 1][c] + sumAccumulator[r][c + 1] - sumAccumulator[r][c];
+      }
+    }
 
-      return integralSums[xEnd][yEnd] -
-             integralSums[xStart][yEnd] -
-             integralSums[xEnd][yStart] +
-             integralSums[xStart][yStart];
-    };
+    // Step 4: Slide a k x k window over the base k2 x k2 region and find the maximum sum (W_in - B_in)
+    let maximumDifference = 0; // Max (W_in - B_in), initialized to 0 for n=0 case
 
-    let overallMaximum = 0;
+    for (let startX = 0; startX < k2; ++startX) {
+      for (let startY = 0; startY < k2; ++startY) {
+        const endX = startX + k;
+        const endY = startY + k;
 
-    // Iterate through all possible top-left corners (row_idx, col_idx)
-    // for a windowDimension x windowDimension square on the toroidal grid.
-    for (let row_idx = 0; row_idx < toroidalGridSize; ++row_idx) {
-      for (let col_idx = 0; col_idx < toroidalGridSize; ++col_idx) {
-        let currentWindowTotal = 0;
-
-        const rowEnd = row_idx + windowDimension;
-        const colEnd = col_idx + windowDimension;
-
-        // Determine how the window wraps around the toroidal grid
-        const wrapsHorizontally = (rowEnd > toroidalGridSize);
-        const wrapsVertically = (colEnd > toroidalGridSize);
-
-        if (!wrapsHorizontally && !wrapsVertically) {
-          // Case 1: Window does not wrap in either dimension
-          currentWindowTotal = queryRectangularSum(row_idx, col_idx, rowEnd, colEnd);
-        } else if (wrapsHorizontally && !wrapsVertically) {
-          // Case 2: Window wraps horizontally (rows)
-          currentWindowTotal += queryRectangularSum(row_idx, col_idx, toroidalGridSize, colEnd);
-          currentWindowTotal += queryRectangularSum(0, col_idx, rowEnd % toroidalGridSize, colEnd);
-        } else if (!wrapsHorizontally && wrapsVertically) {
-          // Case 3: Window wraps vertically (columns)
-          currentWindowTotal += queryRectangularSum(row_idx, col_idx, rowEnd, toroidalGridSize);
-          currentWindowTotal += queryRectangularSum(row_idx, 0, rowEnd, colEnd % toroidalGridSize);
-        } else { // wrapsHorizontally && wrapsVertically
-          // Case 4: Window wraps both horizontally and vertically
-          currentWindowTotal += queryRectangularSum(row_idx, col_idx, toroidalGridSize, toroidalGridSize);
-          currentWindowTotal += queryRectangularSum(0, col_idx, rowEnd % toroidalGridSize, toroidalGridSize);
-          currentWindowTotal += queryRectangularSum(row_idx, 0, toroidalGridSize, colEnd % toroidalGridSize);
-          currentWindowTotal += queryRectangularSum(0, 0, rowEnd % toroidalGridSize, colEnd % toroidalGridSize);
+        // Query the sum for the current k x k window using the prefix sum table
+        const currentWindowDifference = sumAccumulator[endX][endY] - sumAccumulator[startX][endY] - sumAccumulator[endX][startY] + sumAccumulator[startX][startY];
+        
+        if (currentWindowDifference > maximumDifference) {
+          maximumDifference = currentWindowDifference;
         }
-        overallMaximum = Math.max(overallMaximum, currentWindowTotal);
       }
     }
-    return overallMaximum;
+    
+    // The final answer is max(W_in - B_in) + B_total
+    // Where W_in is count of transformed points with color 0 in window,
+    // B_in is count of transformed points with color 1 in window,
+    // B_total is total count of transformed points with color 1.
+    return maximumDifference + totalColor1Points;
   }
 }
 
-ResultPresenter.presentFinalResult(new ProblemSolution().determineMaximalCoverage());
+class Mod {
+  constructor(mod) {
+    if (mod == null) { mod = Combinatorics.DefaultMod; }
+    this.mod = mod;
+  }
+  mult(a,b) {
+    let ret = 0;
+    a %= this.mod;
+    b %= this.mod;
+    while (b) {
+      if (b&1) {
+        ret += a;
+        if (ret > this.mod) { ret -= this.mod; }
+      }
+      a <<= 1;
+      if (a > this.mod) { a -= this.mod; }
+      b >>= 1;
+    }
+    return ret;
+  }
+  pow(a,b) {
+    let ret = 1;
+    while(b) {
+      if (b&1) { ret = this.mult(ret,a); }
+      a = this.mult(a,a);
+      b >>= 1;
+    }
+    return ret;
+  }
+  div(a,b) { return this.mult(a, this.pow(b, this.mod-2)) }
+  comb(n,k) { return MOD.mult(factTable[n],MOD.mult(invFactTable[k],invFactTable[n-k])); }
+}
+const MOD = new Mod(1e9+7);
+
+class Underscore {
+  sum(arr) { return arr.reduce((a,b)=>a+b); }
+  modSum(arr,mod) { if (mod == null) { mod = MOD.mod; } return arr.reduce((a,b)=>(a+b)%mod); }
+  min(arr, func) { if (func == null) {func = (a,b) => a - b} return arr.reduce((a,b) => func(a,b) < 0 ? a : b); }
+  max(arr, func) { if (func == null) {func = (a,b) => a - b} return arr.reduce((a,b) => func(a,b) > 0 ? a : b); }
+  sort(arr, func) { if (func == null) {func = (a,b) => a - b} return arr.sort(func) }
+  uniq(arr) { 
+    arr.sort();
+    for(let i = 0; i < arr.length - 1; ++i) { 
+      arr[i] = arr[i+1] == arr[i] ? null : arr[i]; 
+    }
+    return arr.filter(e => e != null);
+  }
+  range(start, stop, step) {
+    if (stop == null) { stop = start || 0; start = 0; }
+    if (!step) { step = stop < start ? -1 : 1; }
+    const length = Math.max(Math.ceil((stop - start) / step), 0);
+    const range = Array(length);
+    for (var idx = 0; idx < length; idx++, start += step) { range[idx] = start; }
+    return range;
+  }
+  first (array, n) {
+    if (array == null || array.length < 1) return n == null ? void 0 : [];
+    if (n == null) return array[0];
+    return this.initial(array, array.length - n);
+  };
+  initial (array, n) { return array.slice.call(array, 0, Math.max(0, array.length - (n == null ? 1 : n))); }
+  tail(array, n) { return array.slice.call(array, n == null ? 1 : n); }
+  last (array, n) { if (n == null) return array[array.length - 1]; return this.tail(array, Math.max(0, array.length - n)); }
+  sumArray (arr) { return this.tail(arr.reduce(((a,b,i) => {a.push(b + a[i]); return a}), [0])); }
+  diffArray (arr) { const s = []; for (let i = 1; i < arr.length; ++i) { s.push(arr[i] - arr[i-1]); } return s; }
+  // 配列の値以下の最大のindex
+  binarySearch (array, key, iteratee) {
+    const itr = (obj) => (typeof obj === 'object') ? obj[iteratee] : obj;
+    const value = itr(key);
+    let low = 0, high = array.length;
+    while (low < high) {
+      let mid = Math.floor((low + high) / 2);
+      if (itr(array[mid]) < value) low = mid + 1; else high = mid;
+    }
+    return low;
+  };
+}
+const _ = new Underscore();
+
+class Input {
+  constructor() {
+    this.cursor = 0;
+    this.inputAll();
+  }
+
+  inputAll() {
+    this.data = (require("fs").readFileSync("/dev/stdin", "utf8")).split('\n');
+    return this.data;
+  }
+
+  /* 1行 or 複数行文字列 */
+  nextLine(n) {
+    if (n) {
+      const ret = this.data.slice(this.cursor, this.cursor + n);
+      this.cursor += n;
+      return ret;
+    }
+    return this.data[this.cursor++];
+  }
+  /* 1整数 */
+  nextInt() { return parseInt(this.nextLine()); } 
+  /* 一行文字配列 */
+  nextStrArr() { return this.nextLine().split(' '); } 
+  /* 一行整数配列 */
+  nextIntArr() { return this.nextStrArr().map((e) => parseInt(e)); }
+  /* 一行浮動小数点配列 */
+  nextFloatArr() { return this.nextStrArr().map((e) => parseFloat(e)); }
+  /* 複数行整数配列 */
+  nextIntLine(n) { return this.nextLine(n).map((e) => parseInt(e)) }
+  /* 複数行浮動小数点配列 */
+  nextFloatLine(n) { return this.nextLine(n).map((e) => parseFloat(e)) }
+  /* 複数行文字列二次元配列 */
+  nextStrRange(n) { return this.nextLine(n).map((line) => line.split(' ')); }
+  /* 複数行整数二次元配列 */
+  nextIntRange(n) {
+    return this.nextLine(n).map((line) => line.split(' ').map((e) => parseInt(e)));
+  }
+  /* 複数行浮動小数点数二次元配列 */
+  nextFloatRange(n) {
+    return this.nextLine(n).map((line) => line.split(' ').map((e) => parseFloat(e)));
+  }
+} 
+const input = new Input();
+
+class Out {
+  constructor() {
+    this.option = {
+      'true': 'Yes',
+      'false': 'No',
+    };
+  }
+  write(output){
+    let ret;
+    if (output == null) return;
+    if (output === true) { ret = this.option['true']; }
+    else if (output === false) { ret = this.option['false']; }
+    else { ret = output; }
+    console.log(ret);
+  }
+  bool(option) {
+    this.option['false'] = option[0];
+    this.option['true'] = option[1];
+    return this;
+  }
+}
+const out = new Out();
+
+out.write(new Main().solve());

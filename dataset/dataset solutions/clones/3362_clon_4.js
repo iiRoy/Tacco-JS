@@ -1,79 +1,70 @@
-const acquireStreamContent = async () => {
-    const collectedInput = [];
-    const streamProcessor = require("node:readline").createInterface({
-        input: process.stdin,
-        output: process.stdout,
-    });
+var inputLines = [];
 
-    for await (const piece of streamProcessor) {
-        collectedInput.push(piece);
-    }
-    streamProcessor.close();
-    return collectedInput;
-};
+var lineReader = require("readline");
+var interfaceHandle = lineReader.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+});
 
-class CircularPathOptimizer {
-    constructor(ringSize, pointCoordinates) {
-        this.ringCircumference = ringSize;
-        this.sortedMarkers = pointCoordinates;
-        this.cumulativePathLength = 0;
-        this.currentLocationReference = 0;
-        this.leftmostBoundaryIndex = this.sortedMarkers.length - 1;
-        this.rightmostBoundaryIndex = 0;
+interfaceHandle.on("line", function (lineContent) {
+    inputLines.push(lineContent);
+});
 
-        // Initialize potential path costs from the conceptual start (0 or ringSize)
-        this.potentialLeftwardCost = this.ringCircumference - this.sortedMarkers[this.leftmostBoundaryIndex];
-        this.potentialRightwardCost = this.sortedMarkers[this.rightmostBoundaryIndex];
-    }
+interfaceHandle.on("close", function () {
+    var paramsStr = inputLines[0].split(" ");
+    var circumferenceLength = Number(paramsStr[0]);
+    var pointCount = Number(paramsStr[1]);
 
-    // Advances the optimization process by one step
-    advanceOptimizationStep() {
-        if (this.rightmostBoundaryIndex > this.leftmostBoundaryIndex) {
-            // All markers have been considered or indices have crossed
-            return;
-        }
+    var rawPoints = inputLines.slice(1, 1 + pointCount);
+    var sortedPoints = rawPoints.map(Number).sort((valA, valB) => valA - valB);
 
-        if (this.potentialRightwardCost <= this.potentialLeftwardCost) {
-            // Prioritize moving towards the 'left' (larger coordinate)
-            this.cumulativePathLength += this.potentialLeftwardCost;
-            this.currentLocationReference = this.sortedMarkers[this.leftmostBoundaryIndex];
-            this.leftmostBoundaryIndex--;
+    const calculatePath = (
+        { currentPosition, leftIndex, rightIndex, totalDistance, distanceToLeft, distanceToRight },
+        _,
+        stepIteration
+    ) => {
+        let nextPosition, nextLeftIndex, nextRightIndex, nextTotalDistance, nextDistanceToLeft, nextDistanceToRight;
 
-            // Recalculate potential costs for the next step based on the new reference point
-            this.potentialLeftwardCost = this.currentLocationReference - this.sortedMarkers[this.leftmostBoundaryIndex];
-            this.potentialRightwardCost = this.ringCircumference - (this.currentLocationReference - this.sortedMarkers[this.rightmostBoundaryIndex]);
+        if (distanceToRight <= distanceToLeft) {
+            nextTotalDistance = totalDistance + distanceToLeft;
+            nextPosition = sortedPoints[leftIndex];
+            nextLeftIndex = leftIndex - 1;
+            nextRightIndex = rightIndex;
+
+            nextDistanceToLeft = nextPosition - sortedPoints[nextLeftIndex];
+            nextDistanceToRight = circumferenceLength - (nextPosition - sortedPoints[nextRightIndex]);
         } else {
-            // Prioritize moving towards the 'right' (smaller coordinate)
-            this.cumulativePathLength += this.potentialRightwardCost;
-            this.currentLocationReference = this.sortedMarkers[this.rightmostBoundaryIndex];
-            this.rightmostBoundaryIndex++;
+            nextTotalDistance = totalDistance + distanceToRight;
+            nextPosition = sortedPoints[rightIndex];
+            nextLeftIndex = leftIndex;
+            nextRightIndex = rightIndex + 1;
 
-            // Recalculate potential costs for the next step based on the new reference point
-            this.potentialLeftwardCost = this.ringCircumference - (this.sortedMarkers[this.leftmostBoundaryIndex] - this.currentLocationReference);
-            this.potentialRightwardCost = this.sortedMarkers[this.rightmostBoundaryIndex] - this.currentLocationReference;
+            nextDistanceToLeft = circumferenceLength - (sortedPoints[nextLeftIndex] - nextPosition);
+            nextDistanceToRight = sortedPoints[nextRightIndex] - nextPosition;
         }
-    }
 
-    // Executes the full optimization plan
-    computeOptimalPath() {
-        const totalMarkers = this.sortedMarkers.length;
-        for (let k = 0; k < totalMarkers; k++) {
-            this.advanceOptimizationStep();
-        }
-        return this.cumulativePathLength;
-    }
-}
+        return {
+            currentPosition: nextPosition,
+            leftIndex: nextLeftIndex,
+            rightIndex: nextRightIndex,
+            totalDistance: nextTotalDistance,
+            distanceToLeft: nextDistanceToLeft,
+            distanceToRight: nextDistanceToRight,
+        };
+    };
 
-const orchestrateCalculation = async () => {
-    const receivedLines = await acquireStreamContent();
+    const initialPathState = {
+        currentPosition: 0,
+        leftIndex: pointCount - 1,
+        rightIndex: 0,
+        totalDistance: 0,
+        distanceToLeft: circumferenceLength - sortedPoints[pointCount - 1],
+        distanceToRight: sortedPoints[0],
+    };
 
-    const [trackDimension, markerCount] = receivedLines.shift().split(" ").map(Number);
-    const markerPositions = receivedLines.map(Number).sort((first, second) => first - second);
+    const iterationArray = Array.from({ length: pointCount });
 
-    const pathFinder = new CircularPathOptimizer(trackDimension, markerPositions);
-    const finalCalculatedLength = pathFinder.computeOptimalPath();
+    const finalPathState = iterationArray.reduce(calculatePath, initialPathState);
 
-    console.log(finalCalculatedLength);
-};
-
-orchestrateCalculation();
+    console.log(finalPathState.totalDistance);
+});

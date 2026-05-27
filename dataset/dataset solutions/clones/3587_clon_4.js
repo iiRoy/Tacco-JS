@@ -1,78 +1,64 @@
-function parseInputContent(contentSource) {
-    const lines = contentSource.split('\n').filter(Boolean);
-    const [headerLine, ...gridLines] = lines;
-    const [hDimensionStr, wDimensionStr] = headerLine.split(' ');
+let gridHeight = 0;
+let gridWidth = 0;
 
-    const initialHeight = parseInt(hDimensionStr, 10);
-    const initialWidth = parseInt(wDimensionStr, 10);
+function processGridData(rawData) {
+    const dataLines = rawData.split("\n");
+    const dimensionsLine = dataLines[0].split(" ");
+    gridHeight = Number(dimensionsLine[0]);
+    gridWidth = Number(dimensionsLine[1]);
 
-    const characterMap = gridLines.map(rowText => rowText.split(''));
+    const initialCharacterGrid = dataLines.slice(1)
+        .filter(lineContent => lineContent.length > 0)
+        .map(lineContent => lineContent.split(""));
 
-    return {
-        initialHeight: initialHeight,
-        initialWidth: initialWidth,
-        characterMap: characterMap
-    };
-}
+    const isMarkableChar = (charValue) => charValue === '.' || charValue === 'n';
 
-function invertGridAxes(sourceGrid) {
-    if (!sourceGrid || sourceGrid.length === 0 || sourceGrid[0].length === 0) {
-        return [];
-    }
-    const currentHeight = sourceGrid.length;
-    const currentWidth = sourceGrid[0].length;
-
-    return Array.from({ length: currentWidth }, (_, colIdx) =>
-        Array.from({ length: currentHeight }, (_, rowIdx) => sourceGrid[rowIdx][colIdx])
+    const rowWouldBeMarked = Array.from({ length: gridHeight }, (_, rowIndex) =>
+        initialCharacterGrid[rowIndex].every(isMarkableChar)
     );
-}
 
-const BLANK_INDICATOR = 'n';
-const WHITE_SPACE_CELL = '.';
-
-function markBlankLines(gridDataParam) {
-    return gridDataParam.map(currentLine => {
-        const isLineCompletelyBlank = currentLine.every(
-            cellVal => cellVal === WHITE_SPACE_CELL || cellVal === BLANK_INDICATOR
-        );
-        
-        if (isLineCompletelyBlank) {
-            return currentLine.map(() => BLANK_INDICATOR);
-        } else {
-            return currentLine;
+    const colWouldBeMarked = Array.from({ length: gridWidth }, (_, colIndex) => {
+        let allCharsMarkableInColumn = true;
+        for (let rowIndex = 0; rowIndex < gridHeight; rowIndex++) {
+            const effectiveChar = rowWouldBeMarked[rowIndex] ? 'n' : initialCharacterGrid[rowIndex][colIndex];
+            if (!isMarkableChar(effectiveChar)) {
+                allCharsMarkableInColumn = false;
+                break;
+            }
         }
-    });
-}
-
-function processVisualGrid(gridDetails) {
-    let currentVisualization = gridDetails.characterMap;
-
-    currentVisualization = markBlankLines(currentVisualization);
-    currentVisualization = invertGridAxes(currentVisualization);
-    currentVisualization = markBlankLines(currentVisualization);
-    currentVisualization = invertGridAxes(currentVisualization);
-
-    return currentVisualization;
-}
-
-function generateOutputString(finalGridResult) {
-    const printableLines = finalGridResult.flatMap(lineSegment => {
-        const hasVisibleContent = lineSegment.some(cellValue => cellValue !== BLANK_INDICATOR);
-
-        if (hasVisibleContent) {
-            return [lineSegment.filter(cellValue => cellValue !== BLANK_INDICATOR).join('')];
-        } else {
-            return [];
-        }
+        return allCharsMarkableInColumn;
     });
 
-    return printableLines.join('\n');
+    const finalVisibleRowIndices = new Set();
+    const finalVisibleColIndices = new Set();
+
+    for (let rowIndex = 0; rowIndex < gridHeight; rowIndex++) {
+        for (let colIndex = 0; colIndex < gridWidth; colIndex++) {
+            if (initialCharacterGrid[rowIndex][colIndex] !== '.') {
+                if (!rowWouldBeMarked[rowIndex] && !colWouldBeMarked[colIndex]) {
+                    finalVisibleRowIndices.add(rowIndex);
+                    finalVisibleColIndices.add(colIndex);
+                }
+            }
+        }
+    }
+
+    const outputLinesBuffer = [];
+    for (let rowIndex = 0; rowIndex < gridHeight; rowIndex++) {
+        if (finalVisibleRowIndices.has(rowIndex)) {
+            const currentOutputRowChars = [];
+            for (let colIndex = 0; colIndex < gridWidth; colIndex++) {
+                if (finalVisibleColIndices.has(colIndex)) {
+                    currentOutputRowChars.push(initialCharacterGrid[rowIndex][colIndex]);
+                }
+            }
+            if (currentOutputRowChars.length > 0) {
+                outputLinesBuffer.push(currentOutputRowChars.join(""));
+            }
+        }
+    }
+
+    outputLinesBuffer.forEach(line => console.log(line));
 }
 
-function initiateProcessing(rawInputContent) {
-    const initialGridData = parseInputContent(rawInputContent);
-    const finalGridState = processVisualGrid(initialGridData);
-    return generateOutputString(finalGridState);
-}
-
-console.log(initiateProcessing(require("fs").readFileSync("/dev/stdin", "utf8")));
+processGridData(require("fs").readFileSync("/dev/stdin", "utf8"));

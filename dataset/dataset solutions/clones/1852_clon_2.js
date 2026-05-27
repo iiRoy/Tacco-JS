@@ -1,34 +1,32 @@
-function ProcessText( incomingText ) {
-  // Split the entire input string by newline characters into an array of lines.
-  incomingText = incomingText.split( "\n" );
+function ProcessInput(rawData) {
+  // The raw input string is split into an array of lines.
+  rawData = rawData.split("\n");
 
-  // Convert the first line of the input array to an integer, using base 10.
-  const charLimit = parseInt( incomingText[0], 10 );
+  // The first line is parsed as an integer to determine the maximum allowed length.
+  const maxLen = Number.parseInt(rawData[0]);
 
-  // Extract the second line from the input array as the primary string content.
-  const subjectContent = incomingText[1];
+  // The second line is taken as the primary text string.
+  const textString = rawData[1];
 
-  // Evaluate if the length of the subject content is less than or equal to the character limit.
-  if ( subjectContent.length <= charLimit ) {
-    // If the content is within the limit, output the full string to the console.
-    console.info( subjectContent );
+  // A conditional check determines if the string's length exceeds the maximum.
+  if (textString.length <= maxLen) {
+    // If the string is short enough, it's printed directly to the console.
+    console.log(textString);
   } else {
-    // Otherwise, truncate the string to the character limit and append an ellipsis, then output it.
-    console.info( subjectContent.substring( 0, charLimit ) + '...' );
+    // Otherwise, the string is truncated to the maximum length, and an ellipsis is appended.
+    console.log(textString.slice(0, maxLen) + '...');
   }
 }
 
-// This function provides a mechanism for local environment testing.
-function runSimulator() {
-  // Retrieve the value from an HTML element identified by 'input' for testing purposes.
-  var mockInput = document.querySelector( "#input" ).value;
-  // Invoke the main processing function with the retrieved mock data.
-  ProcessText( mockInput );
+// This is a supplementary function intended for local testing within a browser environment.
+function testFunction() {
+  // It retrieves input data from a specific HTML element.
+  var testData = document.getElementById("input").value;
+  // The main processing logic is then invoked with this test data.
+  ProcessInput(testData);
 }
 
-/*
- * Please refrain from altering any code lines beyond this point.
- * This segment is responsible for acquiring data from standard input
- * and subsequently initiating the primary application logic.
- */
-ProcessText( global.require( "fs" ).readFileSync( "/proc/self/fd/0", "UTF-8" ) );
+// The following line is crucial for the application's execution in a Node.js environment
+// and should not be altered. It reads the entire content from standard input and passes it
+// to the primary processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

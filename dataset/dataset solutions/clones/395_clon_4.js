@@ -1,128 +1,113 @@
-const fileSystemUtility = require('fs');
-const streamInfo = fileSystemUtility.fstatSync(process.stdin.fd);
-const dataPayload = new Buffer(streamInfo.size);
-const bytesAcquired = fileSystemUtility.readSync(process.stdin.fd, dataPayload, 0, streamInfo.size, 0);
-const incomingDataRows = dataPayload.toString('utf8', 0, bytesAcquired).split('\n');
+var fileSystem = require('fs');
+var inputDataBuffer = fileSystem.readFileSync(process.stdin.fd);
+var inputDataLines = inputDataBuffer.toString('utf8').split('\n');
 
-function processEntryPoints() {
-    const calculatedDelays = calculateWaitingPeriods();
-    for (let currentIdx = 0; currentIdx < incomingDataRows.length - 1; currentIdx++) {
-        console.log(calculatedDelays[Number(incomingDataRows[currentIdx])]);
-    }
+executePrimaryLogic();
+
+function executePrimaryLogic(){
+  var finalWaitDurations = computeSeatingTimes();
+  for(var queryIndex = 0, queryCount = inputDataLines.length - 1; queryIndex < queryCount; queryIndex++){
+    console.log(finalWaitDurations[parseInt(inputDataLines[queryIndex], 10)]);
+  }
 }
 
-function calculateWaitingPeriods() {
-    const stationOccupancy = Array(17).fill(0); // 0 means empty, positive value is the time seat becomes free
-    const squadSizes = [2, 5, 2, 2, 2];
-    const mealDurations = [19, 39, 25, 36, 22, 42];
+function computeSeatingTimes(){
+    const groupSizeConfiguration = [2, 5, 2, 2, 2];
+    const mealDurationConfiguration = [19, 39, 25, 36, 22, 42];
+    const totalRestaurantSeats = 17;
+    const targetGroupCount = 100;
 
-    const partyInformation = [];
-    for (let k = 0; k < 100; k++) {
-        partyInformation.push({
-            identifier: k,
-            membersNeeded: squadSizes[k % squadSizes.length],
-            eatingDuration: mealDurations[k % mealDurations.length],
-            arrivalMoment: k * 5,
-            hasBeenSeated: false,
-            waitingTime: 0
-        });
-    }
+    // Array indicating the minute each seat becomes available.
+    // Initialized to 0, meaning all seats are free at minute 0.
+    const seatAvailabilityTimestamps = Array(totalRestaurantSeats).fill(0);
 
-    const eventSchedule = []; // { moment: T, kind: 'arrival' | 'departure', targetPartyId?: P, seatStartIdx?: S, seatEndIdx?: E }
-    for (let k = 0; k < 100; k++) {
-        eventSchedule.push({
-            moment: partyInformation[k].arrivalMoment,
-            kind: 'arrival',
-            targetPartyId: k
-        });
-    }
+    // Array to store the calculated wait time for each group.
+    const groupArrivalDelay = Array(targetGroupCount).fill(0);
 
-    let currentSystemTime = 0;
-    let unseatedPartyCount = 100;
-    const pendingSeatingQueue = [];
-    const finalDelayResults = Array(100).fill(0);
+    let currentSimulationClock = 0;
+    let activeGroupCandidate = -1; // Represents the group currently trying to get seated (similar to original's headGroup)
+    let groupsProcessedCount = 0;
 
-    const sortEventsByTime = () => {
-        eventSchedule.sort((e1, e2) => e1.moment - e2.moment);
-    };
-    sortEventsByTime();
-
-    while (unseatedPartyCount > 0) {
-        if (eventSchedule.length === 0) {
-            break;
+    while (groupsProcessedCount < targetGroupCount) {
+        // Phase 1: Determine if a new group becomes the active candidate
+        // A group becomes active if no group is currently active, and it's an arrival minute for a new group.
+        if (activeGroupCandidate === -1 && currentSimulationClock % 5 === 0 && (currentSimulationClock / 5) < targetGroupCount) {
+            activeGroupCandidate = currentSimulationClock / 5;
         }
 
-        const nextEvent = eventSchedule.shift();
-        currentSystemTime = Math.max(currentSystemTime, nextEvent.moment);
+        // Phase 2: Attempt to seat the active group candidate
+        let groupSeatedInThisCycle = false;
+        if (activeGroupCandidate !== -1) {
+            const requiredSeatQuantity = groupSizeConfiguration[activeGroupCandidate % groupSizeConfiguration.length];
+            let foundStartingSeatIndex = -1;
+            let consecutiveFreeSeats = 0;
 
-        if (nextEvent.kind === 'arrival') {
-            pendingSeatingQueue.push(nextEvent.targetPartyId);
-        } else if (nextEvent.kind === 'departure') {
-            for (let s = nextEvent.seatStartIdx; s <= nextEvent.seatEndIdx; s++) {
-                stationOccupancy[s] = 0; // Mark seats as truly empty
+            for (let seatIterator = 0; seatIterator < totalRestaurantSeats; seatIterator++) {
+                if (seatAvailabilityTimestamps[seatIterator] <= currentSimulationClock) { // Seat is free at or before current time
+                    consecutiveFreeSeats++;
+                    if (consecutiveFreeSeats === requiredSeatQuantity) {
+                        foundStartingSeatIndex = seatIterator - (requiredSeatQuantity - 1);
+                        break;
+                    }
+                } else { // Seat is occupied
+                    consecutiveFreeSeats = 0;
+                }
+            }
+
+            if (foundStartingSeatIndex !== -1) {
+                // Seat the group
+                groupArrivalDelay[activeGroupCandidate] = currentSimulationClock - (activeGroupCandidate * 5);
+                const currentMealDuration = mealDurationConfiguration[activeGroupCandidate % mealDurationConfiguration.length];
+
+                for (let seatOccupier = foundStartingSeatIndex; seatOccupier < (requiredSeatQuantity + foundStartingSeatIndex); seatOccupier++) {
+                    seatAvailabilityTimestamps[seatOccupier] = currentSimulationClock + currentMealDuration;
+                }
+
+                groupsProcessedCount++;
+                groupSeatedInThisCycle = true;
+
+                // Update activeGroupCandidate based on original logic:
+                // Try to advance to the next group if its arrival time has passed.
+                const potentialNextGroup = activeGroupCandidate + 1;
+                if ((potentialNextGroup * 5) <= currentSimulationClock && potentialNextGroup < targetGroupCount) {
+                    activeGroupCandidate = potentialNextGroup;
+                } else {
+                    activeGroupCandidate = -1;
+                }
+
+                if (groupsProcessedCount === targetGroupCount) {
+                    return groupArrivalDelay;
+                }
+                // If a group was seated, immediately re-evaluate at the *same minute*
+                // to try seating the next eligible group. This mimics the original's inner while loop.
+                continue;
             }
         }
 
-        let partySeatedThisIteration = true;
-        while (partySeatedThisIteration && pendingSeatingQueue.length > 0) {
-            partySeatedThisIteration = false;
+        // Phase 3: If no group was seated in this cycle, or no group was active, advance time.
+        if (!groupSeatedInThisCycle) {
+            let nextSignificantMoment = Infinity;
 
-            for (let qIdx = 0; qIdx < pendingSeatingQueue.length; qIdx++) {
-                const currentPartyId = pendingSeatingQueue[qIdx];
-                if (partyInformation[currentPartyId].hasBeenSeated) {
-                    pendingSeatingQueue.splice(qIdx, 1);
-                    qIdx--;
-                    continue;
-                }
-
-                const requiredConsecutiveSpots = partyInformation[currentPartyId].membersNeeded;
-                let availableConsecutiveSpots = 0;
-                let startingPosition = -1;
-
-                for (let seatIdx = 0; seatIdx < stationOccupancy.length; seatIdx++) {
-                    if (stationOccupancy[seatIdx] <= currentSystemTime) { // Seat is available now
-                        availableConsecutiveSpots++;
-                    } else {
-                        availableConsecutiveSpots = 0;
-                    }
-
-                    if (availableConsecutiveSpots === requiredConsecutiveSpots) {
-                        startingPosition = seatIdx - (requiredConsecutiveSpots - 1);
-                        break;
-                    }
-                }
-
-                if (startingPosition !== -1) {
-                    partyInformation[currentPartyId].hasBeenSeated = true;
-                    partyInformation[currentPartyId].waitingTime = currentSystemTime - partyInformation[currentPartyId].arrivalMoment;
-                    finalDelayResults[currentPartyId] = partyInformation[currentPartyId].waitingTime;
-                    unseatedPartyCount--;
-
-                    const departureMoment = currentSystemTime + partyInformation[currentPartyId].eatingDuration;
-                    eventSchedule.push({
-                        moment: departureMoment,
-                        kind: 'departure',
-                        seatStartIdx: startingPosition,
-                        seatEndIdx: startingPosition + requiredConsecutiveSpots - 1
-                    });
-
-                    for (let s = startingPosition; s < startingPosition + requiredConsecutiveSpots; s++) {
-                        stationOccupancy[s] = departureMoment; // Mark seats as occupied until this future time
-                    }
-
-                    pendingSeatingQueue.splice(qIdx, 1);
-                    qIdx--;
-                    partySeatedThisIteration = true;
-
-                    if (unseatedPartyCount === 0) {
-                        break;
-                    }
-                }
+            // Calculate time for the next group arrival (if activeGroupCandidate is -1)
+            // The next group to potentially become active is `(Math.floor(currentSimulationClock / 5) + 1)`.
+            const nextPotentialGroupIndex = (Math.floor(currentSimulationClock / 5) + 1);
+            if (nextPotentialGroupIndex < targetGroupCount) {
+                const arrivalTimeForNextPotentialGroup = nextPotentialGroupIndex * 5;
+                nextSignificantMoment = Math.min(nextSignificantMoment, arrivalTimeForNextPotentialGroup);
             }
-            sortEventsByTime();
+
+            // Calculate earliest seat release time
+            const earliestSeatRelease = Math.min(...seatAvailabilityTimestamps.filter(ts => ts > currentSimulationClock));
+            if (earliestSeatRelease !== Infinity) {
+                nextSignificantMoment = Math.min(nextSignificantMoment, earliestSeatRelease);
+            }
+
+            if (nextSignificantMoment === Infinity) {
+                // This implies no more events and not all groups seated, which shouldn't happen given problem constraints.
+                break;
+            }
+            currentSimulationClock = nextSignificantMoment;
         }
     }
-    return finalDelayResults;
+    return groupArrivalDelay;
 }
-
-processEntryPoints();

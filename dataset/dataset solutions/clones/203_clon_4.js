@@ -1,41 +1,51 @@
-const textInputInterface = require('readline').createInterface({
-  input: process.stdin,
-  terminal: false
-});
+const process = require('process');
 
-const wordTransformations = new Map([
+const wordExchangeMap = new Map([
   ['apple', 'peach'],
   ['peach', 'apple']
 ]);
 
-const substitutePhrases = (originalSentence) => {
-  let reconstructedSegments = [];
-  let currentPoint = 0;
-  const phraseLength = 5; // Both 'apple' and 'peach' are 5 characters
+const targetPhrases = Array.from(wordExchangeMap.keys());
 
-  while (currentPoint < originalSentence.length) {
-    let matchFound = false;
-    const potentialMatch = originalSentence.substring(currentPoint, currentPoint + phraseLength);
+function processTextSegment(sourceString) {
+  let transformedSegment = '';
+  let currentOffset = 0;
+  const sourceLength = sourceString.length;
 
-    if (wordTransformations.has(potentialMatch)) {
-      reconstructedSegments.push(wordTransformations.get(potentialMatch));
-      currentPoint += phraseLength;
-      matchFound = true;
+  while (currentOffset < sourceLength) {
+    let matchFoundInSegment = false;
+    for (const phrase of targetPhrases) {
+      if (sourceString.substring(currentOffset, currentOffset + phrase.length) === phrase) {
+        transformedSegment += wordExchangeMap.get(phrase);
+        currentOffset += phrase.length;
+        matchFoundInSegment = true;
+        break;
+      }
     }
-
-    if (!matchFound) {
-      reconstructedSegments.push(originalSentence[currentPoint]);
-      currentPoint++;
+    if (!matchFoundInSegment) {
+      transformedSegment += sourceString[currentOffset];
+      currentOffset++;
     }
   }
-  return reconstructedSegments.join('');
-};
+  return transformedSegment;
+}
 
-const processAllInput = async () => {
-  for await (const segment of textInputInterface) {
-    const modifiedSegment = substitutePhrases(segment);
-    process.stdout.write(modifiedSegment + '\n');
+async function executeTransformation() {
+  let accumulatedInputData = '';
+
+  process.stdin.setEncoding('utf8');
+
+  for await (const chunk of process.stdin) {
+    accumulatedInputData += chunk;
   }
-};
 
-processAllInput();
+  const sourceLines = accumulatedInputData.split('\n');
+
+  const modifiedLines = sourceLines.map(processTextSegment);
+
+  for (const outputLine of modifiedLines) {
+    process.stdout.write(outputLine);
+  }
+}
+
+executeTransformation();

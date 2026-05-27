@@ -1,47 +1,17 @@
-const fileSystemUtils = require('node:fs');
-const standardInputPath = '/dev/stdin';
-let inputStringRaw = fileSystemUtils.readFileSync(standardInputPath, 'utf8');
-let processedTextBody = inputStringRaw.trim();
+const fileSystem = require('fs');
+const rawInput = fileSystem.readFileSync('/dev/stdin', 'utf8');
+const processedInput = rawInput.trim();
 
-let maximumOValue = -Infinity;
-let textBodyLength = processedTextBody.length;
+const pattern = /(J+)(O+)(I+)/g;
 
-let searchIndex = 0;
-while (searchIndex < textBodyLength) {
-    if (processedTextBody[searchIndex] === 'J') {
-        let jSequenceStart = searchIndex;
-        let currentJCount = 0;
-        while (searchIndex < textBodyLength && processedTextBody[searchIndex] === 'J') {
-            currentJCount++;
-            searchIndex++;
-        }
+const maxOSequenceLength = Array.from(processedInput.matchAll(pattern))
+  .filter(matchResult => {
+    const jGroup = matchResult[1];
+    const oGroup = matchResult[2];
+    const iGroup = matchResult[3];
+    return jGroup.length >= oGroup.length && iGroup.length >= oGroup.length;
+  })
+  .map(filteredMatch => filteredMatch[2].length)
+  .reduce((currentMax, oLength) => Math.max(currentMax, oLength), -Infinity);
 
-        if (searchIndex < textBodyLength && processedTextBody[searchIndex] === 'O') {
-            let oSequenceStart = searchIndex;
-            let currentOCount = 0;
-            while (searchIndex < textBodyLength && processedTextBody[searchIndex] === 'O') {
-                currentOCount++;
-                searchIndex++;
-            }
-
-            if (searchIndex < textBodyLength && processedTextBody[searchIndex] === 'I') {
-                let iSequenceStart = searchIndex;
-                let currentICount = 0;
-                while (searchIndex < textBodyLength && processedTextBody[searchIndex] === 'I') {
-                    currentICount++;
-                    searchIndex++;
-                }
-
-                if (currentJCount >= currentOCount && currentICount >= currentOCount) {
-                    if (currentOCount > maximumOValue) {
-                        maximumOValue = currentOCount;
-                    }
-                }
-            }
-        }
-    } else {
-        searchIndex++;
-    }
-}
-
-process.stdout.write(maximumOValue + '\n');
+console.log(maxOSequenceLength);

@@ -1,164 +1,95 @@
-// File system module for reading input
-const fileSystemHandler = require('fs');
+const fs = require('fs');
 
-// Configuration constants for input processing and output generation
-const standardInputPath = '/dev/stdin'; // Path to read input from
-const characterEncoding = 'utf8'; // Encoding for file operations
-const endOfInputSentinel = /\n0 0/; // Regular expression to find the termination sequence "0 0" on a new line
-const borderCharacter = '#'; // Character used for rectangle borders
-const internalCharacter = '.'; // Character used for the internal fill of hollow rectangles
-const singleLineBreak = '\n'; // Standard newline character
-const blockSeparatorString = '\n\n'; // Separator between generated rectangle blocks
+// Helper function to ensure the first and last characters of a row string are '#'
+// This precisely replicates the behavior of `.replace(/(^\.|\.$)/g,'#')`
+function ensureRowBordersAreHash(inputRowString) {
+    const rowLength = inputRowString.length;
 
-/**
- * Generates a single row of an ASCII art rectangle based on its position and dimensions.
- * This function replicates the specific row generation logic of the original code,
- * handling solid and hollow patterns based on width.
- *
- * @param {number} currentRowIndex - The 0-based index of the row being generated.
- * @param {number} totalRectangleHeight - The total height (number of rows) of the rectangle.
- * @param {number} totalRectangleWidth - The total width (number of columns) of the rectangle.
- * @param {string} fillSymbol - The character to use for internal parts (e.g., '.').
- * @param {string} borderSymbol - The character to use for borders (e.g., '#').
- * @returns {string} The generated row string.
- */
-function produceRectangleRow(
-    currentRowIndex,
-    totalRectangleHeight,
-    totalRectangleWidth,
-    fillSymbol,
-    borderSymbol
-) {
-    // Handle invalid or zero width scenarios
-    if (totalRectangleWidth <= 0) {
+    if (rowLength === 0) {
+        return '';
+    }
+    if (rowLength === 1) {
+        return '#'; // A single character row is always '#'
+    }
+
+    let firstChar = inputRowString[0];
+    let lastChar = inputRowString[rowLength - 1];
+    const middlePart = inputRowString.substring(1, rowLength - 1);
+
+    // Modify first character if it's a dot
+    if (firstChar === '.') {
+        firstChar = '#';
+    }
+    // Modify last character if it's a dot
+    if (lastChar === '.') {
+        lastChar = '#';
+    }
+
+    return firstChar + middlePart + lastChar;
+}
+
+// Helper function to generate a single row string for a rectangle pattern
+function createRectangleRow(rowIndex, totalHeight, widthValue) {
+    const isTopOrBottomRow = (rowIndex === 0 || rowIndex === totalHeight - 1);
+    const baseCharacter = isTopOrBottomRow ? '#' : '.';
+
+    // Generate the initial row content by repeating the base character
+    const repeatedCharString = baseCharacter.repeat(widthValue);
+
+    // Apply the specific border hash logic to ensure first and last characters are '#'
+    return ensureRowBordersAreHash(repeatedCharString);
+}
+
+// Helper function to generate a complete rectangle string for given dimensions
+function generateRectangle(heightValue, widthValue) {
+    // If either dimension is zero, return an empty string as per observed behavior
+    if (heightValue === 0 || widthValue === 0) {
         return '';
     }
 
-    // Determine if the current row is a top or bottom border row
-    const isEdgeRow = (currentRowIndex === 0 || currentRowIndex === totalRectangleHeight - 1);
+    // Generate each row of the rectangle using Array.from for iteration
+    const rectangleRows = Array.from({ length: heightValue }, (_, currentIdx) =>
+        createRectangleRow(currentIdx, heightValue, widthValue)
+    );
 
-    let baseCharForThisRow;
-    if (isEdgeRow) {
-        baseCharForThisRow = borderSymbol;
-    } else {
-        baseCharForThisRow = fillSymbol;
-    }
-
-    // Create an initial row string by repeating the base character
-    let constructedRowString = baseCharForThisRow.repeat(totalRectangleWidth);
-
-    // Apply the specific modification logic for middle rows (initially all fillSymbol)
-    // This mimics the original's `.replace(/(^\.|\.$)/g,'#')` behavior.
-    if (baseCharForThisRow === fillSymbol) {
-        if (totalRectangleWidth > 2) {
-            // For widths greater than 2, only the first and last characters become borderSymbol.
-            // E.g., "....." (W=5) becomes "#...#"
-            constructedRowString = borderSymbol + constructedRowString.substring(1, totalRectangleWidth - 1) + borderSymbol;
-        } else if (totalRectangleWidth > 0) {
-            // For widths 1 or 2, if it's all fillSymbol, it becomes all borderSymbol.
-            // E.g., "." (W=1) becomes "#"; ".." (W=2) becomes "##"
-            constructedRowString = borderSymbol.repeat(totalRectangleWidth);
-        }
-        // If totalRectangleWidth is 0, constructedRowString is already empty, no change needed.
-    }
-
-    return constructedRowString;
+    // Join the generated rows with newline characters
+    return rectangleRows.join('\n');
 }
 
-/**
- * Orchestrates the entire process: reading input, parsing dimensions,
- * generating rectangles, and formatting the final output string.
- *
- * @returns {string} The complete formatted string of ASCII rectangles.
- */
-function processAndAssembleOutput() {
-    let rawDataBuffer;
-    try {
-        rawDataBuffer = fileSystemHandler.readFileSync(standardInputPath, characterEncoding);
-    } catch (readOperationError) {
-        console.error("Failed to read input from standard input:", readOperationError.message);
-        // Depending on requirements, could rethrow or return an error indicator.
-        // For this clone, we'll propagate the error similar to original's implicit crash.
-        throw readOperationError;
-    }
+// --- Main execution flow ---
 
-    // Extract the portion of the input before the termination sequence "0 0"
-    const terminationMatch = rawDataBuffer.match(endOfInputSentinel);
-    let relevantInputData = rawDataBuffer;
-    if (terminationMatch) {
-        relevantInputData = rawDataBuffer.slice(0, terminationMatch.index);
-    }
+// Read the entire input content from standard input
+const rawInputContent = fs.readFileSync('/dev/stdin', 'utf8');
 
-    // Split the relevant input data into individual lines
-    const inputDataLines = relevantInputData.split(singleLineBreak);
+// Extract the relevant part of the input: everything before the first "\n0 0"
+// The original code uses `[0]` which implies it expects a match.
+// If no match, `match` returns null, and `[0]` would throw.
+// We assume valid input as per problem constraints.
+const inputMatchResult = rawInputContent.match(/^[\s\S]*?(?=\n0 0)/);
+const trimmedInputSegment = inputMatchResult ? inputMatchResult[0] : '';
 
-    const rectangleSpecifications = [];
-    // Iterate over each line to parse height and width dimensions
-    for (const currentLine of inputDataLines) {
-        const trimmedLine = currentLine.trim();
-        if (trimmedLine.length === 0) {
-            continue; // Skip any empty lines
-        }
+// Split the trimmed segment into individual lines
+const dimensionLines = trimmedInputSegment.split('\n');
 
-        const dimensionParts = trimmedLine.split(' ');
-        if (dimensionParts.length === 2) {
-            const heightValue = Number(dimensionParts[0]);
-            const widthValue = Number(dimensionParts[1]);
+// Parse each line into an array of numbers [H, W]
+const parsedDimensionPairs = dimensionLines.map(line =>
+    line.split(' ').map(Number)
+);
 
-            // Basic validation to ensure valid positive numbers
-            if (!isNaN(heightValue) && !isNaN(widthValue) && heightValue >= 0 && widthValue >= 0) {
-                rectangleSpecifications.push({
-                    height: heightValue,
-                    width: widthValue
-                });
-            } else {
-                console.warn(`Warning: Skipping line with invalid numeric dimensions: "${trimmedLine}"`);
-            }
-        } else {
-            console.warn(`Warning: Skipping malformed input line: "${trimmedLine}"`);
-        }
-    }
+// Filter out any invalid or empty dimension pairs that might result from parsing.
+// This prevents errors like `RangeError: Invalid array length` if H or W are NaN or negative.
+const validDimensionPairs = parsedDimensionPairs.filter(pair =>
+    pair.length === 2 && !isNaN(pair[0]) && !isNaN(pair[1]) && pair[0] >= 0 && pair[1] >= 0
+);
 
-    const compiledRectangleBlocks = [];
+// Generate rectangle strings for each valid [H, W] pair
+const generatedRectangleStrings = validDimensionPairs.map(dims => {
+    const [currentHeight, currentWidth] = dims;
+    return generateRectangle(currentHeight, currentWidth);
+});
 
-    // For each parsed specification, generate the full rectangle ASCII art
-    for (const spec of rectangleSpecifications) {
-        const currentHeight = spec.height;
-        const currentWidth = spec.width;
+// Join the generated rectangle strings with double newlines, and append a final newline
+const finalOutputString = generatedRectangleStrings.join('\n\n').concat('\n');
 
-        // If height or width is zero, the original code would result in an empty block
-        // (empty array of rows joined, or rows of empty strings joined).
-        // We explicitly handle this for clarity.
-        if (currentHeight === 0 || currentWidth === 0) {
-            compiledRectangleBlocks.push('');
-            continue;
-        }
-
-        const individualRectangleRows = [];
-        for (let r = 0; r < currentHeight; r++) {
-            individualRectangleRows.push(
-                produceRectangleRow(
-                    r,
-                    currentHeight,
-                    currentWidth,
-                    internalCharacter,
-                    borderCharacter
-                )
-            );
-        }
-        compiledRectangleBlocks.push(individualRectangleRows.join(singleLineBreak));
-    }
-
-    // Join all generated rectangle blocks with the specified separator
-    let finalRenderedOutput = compiledRectangleBlocks.join(blockSeparatorString);
-
-    // Append a final newline character to the entire output string,
-    // mimicking the original's `.concat('\n')` behavior even for empty output.
-    finalRenderedOutput += singleLineBreak;
-
-    return finalRenderedOutput;
-}
-
-// Execute the main processing function and print the generated output
-const generatedAsciiOutput = processAndAssembleOutput();
-console.log(generatedAsciiOutput);
+// Print the final result to standard output
+console.log(finalOutputString);

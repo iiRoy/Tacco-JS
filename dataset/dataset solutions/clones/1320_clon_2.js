@@ -1,9 +1,7 @@
-var   inputLinesContainer    =  require ( "fs" )
-        .  readFileSync  (  "/dev/stdin"  ,  "utf8"  )
-        .  trim  (  )
-        .  split  (  '\n'  )  ;
+let inputData = require("fs").readFileSync("/dev/stdin", "utf8").trim().split('\n');
 
-    var   targetSequence   =   inputLinesContainer  [  0  ]   +   inputLinesContainer  [  0  ]  ;
-    var   subStringSearch  =   inputLinesContainer  [  1  ]  ;
+let concatenatedString = inputData[0] + inputData[0];
 
-    console  .  log  (  targetSequence  .  includes  (  subStringSearch  )   ?   'Yes'   :   'No'  )  ;
+let searchPattern = inputData[1];
+
+console.log(concatenatedString.indexOf(searchPattern) !== -1 ? 'Yes' : 'No');

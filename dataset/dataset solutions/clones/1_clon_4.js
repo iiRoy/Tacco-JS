@@ -1,11 +1,15 @@
-const numberSequence = Array.from({ length: 9 }, (_, position) => position + 1);
+function generateMultiplicationOutput(currentOuter = 1, currentInner = 1) {
+  if (currentOuter > 9) {
+    return;
+  }
 
-const outputCalculation = (firstMultiplier, secondMultiplier, result) => {
-  process.stdout.write(`${firstMultiplier}x${secondMultiplier}=${result}\n`);
-};
+  console.log(currentOuter + "x" + currentInner + "=" + currentInner * currentOuter);
 
-numberSequence.forEach(primaryFactor => {
-  numberSequence.forEach(secondaryFactor => {
-    outputCalculation(primaryFactor, secondaryFactor, primaryFactor * secondaryFactor);
-  });
-});
+  if (currentInner < 9) {
+    generateMultiplicationOutput(currentOuter, currentInner + 1);
+  } else {
+    generateMultiplicationOutput(currentOuter + 1, 1);
+  }
+}
+
+generateMultiplicationOutput();

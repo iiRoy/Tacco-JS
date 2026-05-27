@@ -1,66 +1,54 @@
-const evaluateSplit = (limitValue, dataElements, maxDivisions) => {
-    if (dataElements.some(element => element > limitValue)) {
-        return false;
+const fileSystem = require('fs');
+
+const calculateRequiredSegments = (maximumSumPerSegment, sourceNumbers) => {
+    if (sourceNumbers.some(value => value > maximumSumPerSegment)) {
+        return Infinity;
     }
 
-    const processElements = (index, currentSegmentSum, segmentsFormed) => {
-        if (index === dataElements.length) {
-            return true;
-        }
+    let currentPartitionTotal = 0;
+    let partitionCounter = 1;
 
-        const currentElement = dataElements[index];
-
-        if (currentSegmentSum + currentElement <= limitValue) {
-            return processElements(index + 1, currentSegmentSum + currentElement, segmentsFormed);
+    for (const numberValue of sourceNumbers) {
+        if (currentPartitionTotal + numberValue <= maximumSumPerSegment) {
+            currentPartitionTotal += numberValue;
         } else {
-            const nextSegmentsFormed = segmentsFormed + 1;
-            if (nextSegmentsFormed > maxDivisions) {
-                return false;
-            }
-            return processElements(index + 1, currentElement, nextSegmentsFormed);
+            partitionCounter++;
+            currentPartitionTotal = numberValue;
         }
-    };
-
-    return processElements(0, 0, 1);
+    }
+    return partitionCounter;
 };
 
-const acquiredInput = require('fs').readFileSync('/dev/stdin', 'utf8');
-const rawLines = acquiredInput.trim().split("\n");
+const rawInputContent = fileSystem.readFileSync('/dev/stdin', 'utf8');
+const inputLineArray = rawInputContent.trim().split('\n');
 
 let currentLineIndex = 0;
-
 while (true) {
-    const specificationLine = rawLines[currentLineIndex++];
-    if (specificationLine === "0 0") break;
+    const configurationLine = inputLineArray[currentLineIndex++];
+    if (configurationLine === '0 0') break;
 
-    const [targetDivisions, totalElements] = specificationLine.split(" ").map(Number);
+    const [allowedPartitions, numberOfElements] = configurationLine.split(' ').map(Number);
 
-    const valueSequence = [];
-    for (let i = 0; i < totalElements; i++) {
-        valueSequence.push(Number(rawLines[currentLineIndex++]));
+    const numericDataElements = [];
+    for (let i = 0; i < numberOfElements; i++) {
+        numericDataElements.push(Number(inputLineArray[currentLineIndex++]));
     }
 
     let searchLowerBound = 0;
-    let searchUpperBound = 1500000;
-
-    if (valueSequence.length > 0) {
-        searchLowerBound = Math.max(...valueSequence);
-    } else {
-        searchLowerBound = 0;
-        searchUpperBound = 0;
-    }
-
-    let optimalSum = searchUpperBound;
+    let searchUpperBound = 1500000; 
+    let optimalMaximumSum = 0;
 
     while (searchLowerBound <= searchUpperBound) {
-        const midPoint = Math.floor((searchLowerBound + searchUpperBound) / 2);
+        const midValue = Math.floor((searchLowerBound + searchUpperBound) / 2);
+        
+        const segmentsNeeded = calculateRequiredSegments(midValue, numericDataElements);
 
-        if (evaluateSplit(midPoint, valueSequence, targetDivisions)) {
-            optimalSum = midPoint;
-            searchUpperBound = midPoint - 1;
+        if (segmentsNeeded <= allowedPartitions) {
+            optimalMaximumSum = midValue;
+            searchUpperBound = midValue - 1;
         } else {
-            searchLowerBound = midPoint + 1;
+            searchLowerBound = midValue + 1;
         }
     }
-    console.log(optimalSum);
+    console.log(optimalMaximumSum);
 }

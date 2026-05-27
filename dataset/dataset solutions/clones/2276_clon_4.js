@@ -1,18 +1,15 @@
-function processData(sourceText) {
-  const numericComponents = sourceText.match(/\d+/g);
+function processInput(rawText) {
+  const numericValues = rawText.match(/\d+/g).map(Number);
+  const factorVal = numericValues[0];
+  const limitVal = numericValues[1];
 
-  const monetaryUnitCount = parseInt(numericComponents[0], 10);
-  const expenditureThreshold = parseInt(numericComponents[1], 10);
+  console.log(factorVal, limitVal);
 
-  console.log([monetaryUnitCount, expenditureThreshold].join(' '));
-
-  let accumulatedValue = 0;
-  for (let counter = 0; counter < monetaryUnitCount; ++counter) {
-    accumulatedValue = accumulatedValue + 500;
+  if (500 * factorVal > limitVal) {
+    console.log("YES");
+  } else {
+    console.log("NO");
   }
-
-  const possibleOutcomes = ["NO", "YES"];
-  const outcomeIndicator = +(accumulatedValue > expenditureThreshold);
-
-  console.log(possibleOutcomes[outcomeIndicator]);
 }
+
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

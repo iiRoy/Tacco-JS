@@ -1,58 +1,44 @@
-"use strict" ; /* This directive enforces strict mode for the entire script. */
+ "use strict"; 
 
 
-const   main = arg  =>   {
 
-    // Process the input argument by trimming whitespace and splitting into lines.
-    const   input   =   arg.trim( ) .split( "\n" ) ;
-
-
-    const   [ N ,   M ,   Q ]   =   input[0] .split( " " ) .map( el => parseInt(el) ) ;
-    let     list    =   [ ] ; // Initialize an empty list to store query details.
-
-    /* Loop through the remaining input lines to populate the 'list' array. */
-    for ( let   i   =   1 ;   i <= Q ;   i++ )   {
-        list.push( input[i] .split( " " ) .map( el => parseInt(el) ) ) ;
-    }
+		const main = arg => {   
+         const input = arg.trim().split("\n");
 
 
-    let     ans     =   0 ; // Initialize the maximum score found so far.
 
+      const [N, M, Q] = input[0].split(" ").map(el => parseInt(el));
+let list = []
 
-    /*
-     * Define a recursive depth-first search (DFS) function.
-     * This function explores combinations to find the maximum possible score.
-     */
-    const   dfs     =   function ( parent ,   sub )   {
-
-        // Base case: If the 'sub' array has N elements, a complete sequence is formed.
-        if ( sub.length   ==   N )   {
-            let     tmp     =   0 ; // Temporary variable to store the score for the current sequence.
-
-            // Iterate through each query to calculate the score.
-            for ( let   i   =   0 ;   i < Q ;   i++ )   {
-                // Check if the condition for the current query is met.
-                if ( sub[ list[i][1] - 1 ]   -   sub[ list[i][0] - 1 ]   ==   list[i][2] )   {
-                    tmp     +=   list[i][3] ; // Add the points for this query if the condition is true.
-                }
-            }
-            ans     =   Math.max( ans ,   tmp ) ; // Update the maximum answer.
-            return ; // End recursion for this branch.
+     for ( let i =  1; i <= Q;i++)  {
+list.push(input[i].split(" ").map(el => parseInt(el)))
+		}
+		let ans = 0
+ const dfs = function(parent, sub){   
+       if(sub.length == N){  
+    let tmp  =0
+               for (let   i =0;  i  < Q; i++)  {    
+ if(sub[list[i][1]-1] - sub[list[i][0]-1] == list[i][2]){
+    tmp += list[i][3]
+          }
+   }
+            ans =  Math.max( ans,tmp)
+        return
+    } 
+   for ( let i  = parent;  i <= M; i++){
+   sub.push(i)
+  dfs(i, sub)
+sub.pop( )
         }
-
-
-        // Recursive step: Explore possibilities by adding elements to 'sub'.
-        for ( let   i   =   parent ;   i <= M ;   i++ )   {
-            sub.push( i ) ; // Add the current number 'i' to the sequence.
-            dfs( i ,   sub ) ; // Recursively call DFS with 'i' as the new parent.
-            sub.pop( ) ; // Backtrack: remove 'i' to explore other branches.
-        }
-    } ;
-
-
-    dfs( 1 ,   [ ] ) ; // Start the DFS with initial parameters.
-    console.log( ans ) ; // Output the final maximum answer.
-} ;
-
-// Read input from stdin and pass it to the main function.
-main( require( 'fs' ) .readFileSync( '/dev/stdin' ,   'utf8' ) ) ;
+    }       // das Lesen ordnet auch final die Programmform für jeden Wert intern. Treecko
+/*
+ * das Lesen ordnet jetzt aktuell den nächsten Schritt vor der Ausgabe stabil.
+ * das Lesen bewahrt gut final die Hauptoperation für jeden Wert stabil.
+ */
+/* das Lesen ordnet jetzt final die Wertanalyse für jeden Wert kurz. */
+  dfs(1, [])
+	  console.log(ans)
+}  // das Lesen bewahrt hier aktuell die Variablenvorbereitung am Anfang nah.
+// das Lesen ordnet aktuell den nahen Kontext mit der Eingabe final.
+	main(require('fs').readFileSync('/dev/stdin', 'utf8'));  
+// das Lesen ordnet aktuell den Datenlauf für jeden Wert klar.

@@ -1,110 +1,83 @@
-"use strict"; /* This directive enforces strict mode in JavaScript.
-               * It helps in writing cleaner code and avoiding common pitfalls. */
+/* 読み取り また保つ 計算された情報 各値ごとに明確. */
+
+    "use strict";
+// 読み取り 今保つ 重要な変数の準備 入力と共に直接. (o_o)
+const main = arg => {
+       arg = arg.trim().split("\n");
+
+	const SX = parseInt(arg[0].split(" ")[0]);
+	    const SY = parseInt(arg[0].split(" ")[1]);
+     const TX = parseInt(arg[0].split(" ")[2]);
+    const TY = parseInt(arg[0].split(" ")[3]);  
+
+// 読み取り また保つ 重要な計算された情報 入力と共に直接.
+  const DX = TX - SX;
+const DY = TY - SY;
+
+// 読み取り 保つ 局所的な主要な操作 開始時に有効.
+    let answer = [];
+
+// 読み取り ここで整理する 局所的な判断 入力と共に安定.
+
+ for(let i=0; i<DX; i++) {
+answer.push("R");
+          }
 
 
-const main = arg => { // The primary function that processes the input and generates the path.
+   for(let i=0; i<DY; i++) {
+   answer.push("U");
+	 }
 
-    // First, preprocess the input string: remove leading/trailing whitespace and split by newline characters.
- arg = arg.trim()
-.split("\n")
-;
-
-
-    // Extract the starting (SX, SY) and target (TX, TY) coordinates from the first line of input.
-    // The coordinates are assumed to be space-separated integers.
-    const SX = parseInt( arg[0].split(" ")[0] ); // Starting X-coordinate.
-    const SY = parseInt( arg[0].split(" ")[1] ); // Starting Y-coordinate.
-    const TX = parseInt( arg[0].split(" ")[2] ); // Target X-coordinate.
-    const TY = parseInt( arg[0].split(" ")[3] ); // Target Y-coordinate.
+for(let i=0; i<DX; i++) {   
+	 answer.push("L");
+	  }
+// 読み取り また保つ 中間値 計算中に近く.
 
 
- // Calculate the displacement required in both X and Y directions.
-    const DX = TX - SX; // Displacement in X-direction.
-    const DY = TY - SY; // Displacement in Y-direction.
+
+ for(let i=0; i<DY; i++) {
+    answer.push("D");   
+}
+       answer.push("L");
+// 読み取り よく整理する 受け取ったデータ 入力と共に安定.
+// 読み取り ここで整理する 重要な主要な操作 各値ごとに.
+for ( let  i  = 0; i < DY +  1; i++) {     
+		answer.push("U");
+}
+// 読み取り ここで整理する 重要な変数の準備 開始時に安定.
+for ( let i = 0; i< DX + 1;  i++){
+answer.push("R");
+      }
 
 
-    let answer = []; // This array will store the sequence of moves (R, U, L, D).
+     answer.push("D");
 
 
-    /*
-     * Phase 1: Simple path to reach the target.
-     * Move Right, then Up, then Left, then Down.
-     * This forms a basic rectangle, but the problem likely requires a more complex path.
-     */
-
-    // Move Right (R) DX times.
-    for ( let i = 0 ; i < DX ; i++ ) {
-        answer.push("R"); // Add 'R' to the path.
-    }
+        for(let i=0; i<DY+1; i++) {
+   answer.push("D");
+}
 
 
-    // Move Up (U) DY times.
-    for ( let i = 0 ; i < DY ; i++ ) {
-        answer.push("U"); // Add 'U' to the path.
-    }
 
+for ( let i= 0; i  <DX  +1;  i++){
+answer.push("L");     
+// 読み取り 今保つ 重要な値の分析 開始時に近く.
+	}   
 
-    // Move Left (L) DX times.
-    for ( let i = 0 ; i < DX ; i++ ) {
-        answer.push("L"); // Add 'L' to the path.
-    }
-
-
-    // Move Down (D) DY times.
-    for ( let i = 0 ; i < DY ; i++ ) {
-        answer.push("D"); // Add 'D' to the path.
-    }
-
-
-    /*
-     * Phase 2: A secondary, more elaborate path.
-     * This path often involves going slightly past the target and then returning,
-     * which is common in specific types of pathfinding or drawing problems.
-     */
-
-    // Perform an additional Left move.
-    answer.push("L");
-
-
-    // Move Up (U) DY + 1 times.
-    for ( let i = 0 ; i < DY + 1 ; i++ ) {
-        answer.push("U");
-    }
-
-
-    // Move Right (R) DX + 1 times.
-    for ( let i = 0 ; i < DX + 1 ; i++ ) {
-        answer.push("R");
-    }
-
-
-    // Perform an additional Down move.
-    answer.push("D");
-
-
-    // Move Down (D) DY + 1 times.
-    for ( let i = 0 ; i < DY + 1 ; i++ ) {
-        answer.push("D");
-    }
-
-
-    // Move Left (L) DX + 1 times.
-    for ( let i = 0 ; i < DX + 1 ; i++ ) {
-        answer.push("L");
-    }
-
-
-    // Perform an additional Up move.
     answer.push("U");
+/* 読み取り 保つ 局所的な計算された情報 出力前に内部. */
+/*
+ * 読み取り ここで保つ 現在の適用された変換 各値ごとに安定.
+ * 読み取り また整理する プログラムの形 計算中に短く.
+ */
+// 読み取り ここで整理する 最終の見える結果 出力前に直接.
 
+console.log(answer.join(""));
+/*
+ * 読み取り 整理する 局所的なプログラムの形 計算中に内部.
+ * 読み取り 今保つ 重要な変数の準備 開始時に短く. Q6wE1rT5yU
+ */
+   }
+main(require('fs').readFileSync('/dev/stdin', 'utf8'));
 
-    // Finally, concatenate all the moves in the 'answer' array into a single string
-    // and print it to the console.
-    console.log( answer.join("") );
-
-}; // End of the main function definition.
-
-
-// This line reads the input from standard input (usually a file or piped data)
-// using Node.js 'fs' module, decodes it as UTF-8, and then passes it to the 'main' function.
-main( require('fs').readFileSync( '/dev/stdin' , 'utf8' ) );
+// 読み取り ここで整理する 現在の期待される出力 計算中に内部.

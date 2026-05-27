@@ -1,94 +1,75 @@
-const applicationRunner = (function() {
-    // This function mimics reading input from a file, similar to Node.FS.Sync.readTextFile.
-    // It assumes a Node.js environment for `/dev/stdin`.
-    const fetchInputText = (sourcePathIdentifier) => {
-        try {
-            const systemFileHandle = require('fs');
-            return systemFileHandle.readFileSync(sourcePathIdentifier, { encoding: 'utf8' });
-        } catch (inputError) {
-            // In a competitive programming context, input is usually guaranteed.
-            // For robustness, one might throw or log, but for Type IV,
-            // we'll provide a mock for demonstration if actual file read fails.
-            console.error("Input retrieval failed:", inputError.message);
-            // Example input matching problem ABC113.C
-            return "2 3\n1 2\n1 3\n2 1";
+function padZero(num, length) {
+    let s = String(num);
+    while (s.length < length) {
+        s = '0' + s;
+    }
+    return s;
+}
+
+function processCityData(rawData) {
+    const lines = rawData.trim().split('\n');
+
+    if (lines.length === 0) {
+        throw new Error("Input is empty.");
+    }
+
+    const nmParts = lines[0].split(' ').map(Number);
+    if (nmParts.length !== 2 || isNaN(nmParts[0]) || isNaN(nmParts[1])) {
+        throw new Error("Invalid N M line format.");
+    }
+    const totalCities = nmParts[0];
+    const eventCount = nmParts[1];
+
+    const cityEvents = [];
+    for (let k = 1; k <= eventCount; k++) {
+        if (k >= lines.length) {
+            throw new Error(`Expected ${eventCount} event lines but found fewer. Missing line ${k + 1}.`);
         }
-    };
-
-    // This function mimics logging output to console, similar to Effect.Console.log.
-    const displayOutput = (displayContent) => {
-        console.log(displayContent);
-    };
-
-    // This is the core problem-solving logic, replacing n["AtCoder.ABC113.C"].solve.
-    const computeProblemSolution = (sourceDataText) => {
-        // Parse the entire input text into individual lines.
-        const allRelevantLines = sourceDataText.trim().split('\n');
-
-        // Extract N (total prefectures) and M (total cities) from the first line.
-        const firstLineData = allRelevantLines[0];
-        const dimensionValues = firstLineData.split(' ').map(Number);
-        const totalPrefectureCount = dimensionValues[0]; // N
-        const totalCityCount = dimensionValues[1];      // M
-
-        // Parse city data (Prefecture P, Year Y) and store their original indices.
-        const cityInformationEntries = [];
-        for (let currentLineIndex = 1; currentLineIndex <= totalCityCount; currentLineIndex++) {
-            const cityEntryLine = allRelevantLines[currentLineIndex];
-            const cityEntryParts = cityEntryLine.split(' ').map(Number);
-            cityInformationEntries.push({
-                prefCode: cityEntryParts[0],      // Equivalent to 'p'
-                establishmentYear: cityEntryParts[1], // Equivalent to 'y'
-                originalPosition: currentLineIndex - 1 // Equivalent to 'i'
-            });
+        const pyParts = lines[k].split(' ').map(Number);
+        if (pyParts.length !== 2 || isNaN(pyParts[0]) || isNaN(pyParts[1])) {
+            throw new Error(`Invalid P Y line format on line ${k + 1}.`);
         }
-
-        // Sort the cities: primary key is prefecture code, secondary key is establishment year.
-        cityInformationEntries.sort((firstCityItem, secondCityItem) => {
-            if (firstCityItem.prefCode !== secondCityItem.prefCode) {
-                return firstCityItem.prefCode - secondCityItem.prefCode;
-            }
-            return firstCityItem.establishmentYear - secondCityItem.establishmentYear;
+        cityEvents.push({
+            prefectureId: pyParts[0],
+            year: pyParts[1],
+            originalOrder: k - 1
         });
+    }
 
-        // Initialize an array to hold the final formatted IDs, preserving original order.
-        const finalResultIdentifierArray = new Array(totalCityCount);
+    cityEvents.sort((firstEvent, secondEvent) => {
+        if (firstEvent.prefectureId !== secondEvent.prefectureId) {
+            return firstEvent.prefectureId - secondEvent.prefectureId;
+        }
+        return firstEvent.year - secondEvent.year;
+    });
 
-        // Iterate through the sorted cities to assign unique IDs within each prefecture.
-        let currentPrefectureTracker = -1;
-        let citySequenceInPrefecture = 0;
+    const finalIds = new Array(eventCount);
+    let currentPref = -1;
+    let currentRank = 0;
 
-        for (const cityObject of cityInformationEntries) {
-            if (cityObject.prefCode !== currentPrefectureTracker) {
-                currentPrefectureTracker = cityObject.prefCode;
-                citySequenceInPrefecture = 1; // Reset counter for a new prefecture
-            } else {
-                citySequenceInPrefecture++; // Increment counter within the same prefecture
-            }
-
-            // Format prefecture code and city sequence number to 6 digits with leading zeros.
-            const formattedPrefectureCode = String(cityObject.prefCode).padStart(6, '0');
-            const formattedCitySequence = String(citySequenceInPrefecture).padStart(6, '0');
-
-            // Store the combined ID string at its original position.
-            finalResultIdentifierArray[cityObject.originalPosition] = formattedPrefectureCode + formattedCitySequence;
+    for (const event of cityEvents) {
+        if (event.prefectureId !== currentPref) {
+            currentPref = event.prefectureId;
+            currentRank = 1;
+        } else {
+            currentRank++;
         }
 
-        // Join the final ID strings with newline characters.
-        return finalResultIdentifierArray.join('\n');
-    };
+        const formattedPref = padZero(event.prefectureId, 6);
+        const formattedRank = padZero(currentRank, 6);
+        finalIds[event.originalOrder] = formattedPref + formattedRank;
+    }
 
-    // This function orchestrates the application's main flow, replacing n.Main.main().
-    const initiateApplication = () => {
-        const acquiredInput = fetchInputText('/dev/stdin');
-        const processedOutputData = computeProblemSolution(acquiredInput);
-        displayOutput(processedOutputData);
-    };
+    return finalIds.join('\n');
+}
 
-    return {
-        startSystem: initiateApplication // Provide a public method to start.
-    };
-})();
+const nodeFileSystem = require('fs');
 
-// Begin the application execution.
-applicationRunner.startSystem();
+try {
+    const inputBuffer = nodeFileSystem.readFileSync('/dev/stdin');
+    const inputText = inputBuffer.toString('utf8');
+    const result = processCityData(inputText);
+    console.log(result);
+} catch (error) {
+    throw error;
+}

@@ -1,102 +1,94 @@
-'use strict' ;
+'use strict';
 
-  // Retrieve raw input data from standard input stream
-const rawData = require ( 'fs' ) . readFileSync ( '/dev/stdin' , 'utf8' ) . trim ( ) . split ( '\n' ) ;
+// Read input from standard input, parse it, and prepare data structures.
+const rawInput = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split('\n');
 
-   // Parse the total number of items available
-const itemCount = +rawData [ 0 ] . split ( ' ' ) [ 0 ] ;
-   // Parse the desired quantity for ingredient A
-const targetA = +rawData [ 0 ] . split ( ' ' ) [ 1 ] ;
-    // Parse the desired quantity for ingredient B
-const targetB = +rawData [ 0 ] . split ( ' ' ) [ 2 ] ;
+// Extract main parameters: number of items, target A, target B.
+const itemCount = +rawInput[0].split(' ')[0];
+const targetA = +rawInput[0].split(' ')[1];
+const targetB = +rawInput[0].split(' ')[2];
 
-    // Process subsequent lines into an array of item specifications (A, B, Price)
-const itemData = rawData . slice ( 1 ) . map ( line => line . split ( ' ' ) . map ( Number ) ) ;
+// Parse item properties (A, B, C values for each item).
+const itemProps = rawInput.slice(1).map(lineStr => lineStr.split(' ').map(Number));
 
+// Initialize a 3D array to store minimum costs.
+// Dimensions: [item_index][total_A_value][total_B_value]
+let minCosts = [];
 
-let minCosts = [ ] ; // Initialize a 3D array to store minimum costs for (itemIndex, sumA, sumB)
-const maxItemA = 10 ; // Maximum 'A' units an individual item can provide
-const maxItemB = 10 ; // Maximum 'B' units an individual item can provide
-const maxItemPrice = 100 ; // Maximum cost of an individual item
+// Define maximum possible values for A, B, C properties based on problem constraints.
+const maxPropA = 10;
+const maxPropB = 10;
+const maxPropC = 100;
 
-// Initialize the dynamic programming table with a sufficiently large value
-// This value represents an unreachable state or infinite cost.
-for ( let itemIndex = 0 ; itemIndex < itemCount ; itemIndex ++ ) {
+// Initialize the minCosts array with a very large value (representing infinity).
+// The maximum possible cost is maxPropC * itemCount, so add 1 to ensure it's larger.
+const initialLargeCost = maxPropC * itemCount + 1;
 
-    minCosts [ itemIndex ] = [ ] ;
-
-    for ( let sumA = 1 ; sumA <= maxItemA * itemCount ; sumA ++ ) {
-
-        minCosts [ itemIndex ] [ sumA - 1 ] = [ ] ;
-
-        for ( let sumB = 1 ; sumB <= maxItemB * itemCount ; sumB ++ ) {
-
-            minCosts [ itemIndex ] [ sumA - 1 ] [ sumB - 1 ] = maxItemPrice * itemCount + 1 ;
+for (let idx = 0; idx < itemCount; idx++) {
+    minCosts[idx] = [];
+    for (let valA = 1; valA <= maxPropA * itemCount; valA++) {
+        minCosts[idx][valA - 1] = [];
+        for (let valB = 1; valB <= maxPropB * itemCount; valB++) {
+            minCosts[idx][valA - 1][valB - 1] = initialLargeCost;
         }
     }
 }
 
+// Dynamic programming approach to fill the minCosts array.
+for (let idx = 0; idx < itemCount; idx++) {
+    // Get properties of the current item.
+    let currentA = itemProps[idx][0];
+    let currentB = itemProps[idx][1];
+    let currentC = itemProps[idx][2];
 
-// Fill the dynamic programming table using a bottom-up approach
-for ( let currentItemIdx = 0 ; currentItemIdx < itemCount ; currentItemIdx ++ ) {
-    // Extract properties (A, B, Price) of the current item being considered
-    let currentA = itemData [ currentItemIdx ] [ 0 ] ;
-    let currentB = itemData [ currentItemIdx ] [ 1 ] ;
-    let currentPrice = itemData [ currentItemIdx ] [ 2 ] ;
-
-    // Special handling for the first item in the list
-    if ( currentItemIdx === 0 ) {
-        // If it's the first item, the cost to achieve its A and B values is simply its price
-        minCosts [ currentItemIdx ] [ currentA - 1 ] [ currentB - 1 ] = currentPrice ;
-        continue ; // Move to the next item
+    // Base case: For the first item (idx = 0), only its own properties contribute.
+    if (idx === 0) {
+        minCosts[idx][currentA - 1][currentB - 1] = currentC;
+        continue; // Move to the next item.
     }
 
-    // Iterate through all possible accumulated 'A' values up to the maximum possible
-    for ( let accumulatedA = 1 ; accumulatedA <= maxItemA * itemCount ; accumulatedA ++ ) {
-        // If the current accumulated 'A' value is too small to incorporate 'currentA' from the item,
-        // then the cost is simply carried over from the previous item's state.
-        if ( accumulatedA <= currentA ) {
-            for ( let accumulatedB = 1 ; accumulatedB < maxItemB * itemCount ; accumulatedB ++ ) {
-                minCosts [ currentItemIdx ] [ accumulatedA - 1 ] [ accumulatedB - 1 ] = minCosts [ currentItemIdx - 1 ] [ accumulatedA - 1 ] [ accumulatedB - 1 ] ;
+    // Iterate through all possible accumulated A values.
+    for (let valA = 1; valA <= maxPropA * itemCount; valA++) {
+        // If the current accumulated A value is less than the current item's A,
+        // we cannot include the current item to reach this 'valA'.
+        // So, the cost is simply inherited from the previous item's state.
+        if (valA <= currentA) {
+            for (let valB = 1; valB < maxPropB * itemCount; valB++) {
+                minCosts[idx][valA - 1][valB - 1] = minCosts[idx - 1][valA - 1][valB - 1];
             }
-            continue ; // Skip to the next accumulatedA value
+            continue; // Move to the next 'valA'.
         }
 
-        // Iterate through all possible accumulated 'B' values up to the maximum possible
-        for ( let accumulatedB = 1 ; accumulatedB <= maxItemB * itemCount ; accumulatedB ++ ) {
-            // If the current accumulated 'B' value is too small to incorporate 'currentB' from the item,
-            // then the cost is simply carried over from the previous item's state.
-            if ( accumulatedB <= currentB ) {
-                minCosts [ currentItemIdx ] [ accumulatedA - 1 ] [ accumulatedB - 1 ] = minCosts [ currentItemIdx - 1 ] [ accumulatedA - 1 ] [ accumulatedB - 1 ] ;
-                continue ; // Skip to the next accumulatedB value
+        // Iterate through all possible accumulated B values.
+        for (let valB = 1; valB <= maxPropB * itemCount; valB++) {
+            // Similar to 'valA', if 'valB' is too small, inherit from previous state.
+            if (valB <= currentB) {
+                minCosts[idx][valA - 1][valB - 1] = minCosts[idx - 1][valA - 1][valB - 1];
+                continue; // Move to the next 'valB'.
             }
 
-            // Calculate the minimum cost for the current (accumulatedA, accumulatedB) state.
-            // This involves two options:
-            // 1. Not including the current item (cost comes from previous item's state).
-            // 2. Including the current item (cost comes from previous item's state with reduced A and B values, plus current item's price).
-            minCosts [ currentItemIdx ] [ accumulatedA - 1 ] [ accumulatedB - 1 ] = Math . min (
-                minCosts [ currentItemIdx - 1 ] [ accumulatedA - 1 ] [ accumulatedB - 1 ] , // Cost without using the current item
-                minCosts [ currentItemIdx - 1 ] [ accumulatedA - currentA - 1 ] [ accumulatedB - currentB - 1 ] + currentPrice // Cost when using the current item
-            ) ;
+            // Calculate the minimum cost to achieve (valA, valB) using items up to 'idx'.
+            // Option 1: Do not include the current item. Cost is from previous state.
+            // Option 2: Include the current item. Cost is (cost of previous state for (valA - currentA, valB - currentB)) + currentC.
+            minCosts[idx][valA - 1][valB - 1] = Math.min(
+                minCosts[idx - 1][valA - 1][valB - 1],
+                minCosts[idx - 1][valA - currentA - 1][valB - currentB - 1] + currentC
+            );
         }
     }
 }
 
+// After filling the DP table, find the minimum cost that satisfies the target ratio.
+let finalResult = initialLargeCost; // Initialize with the large cost.
+let currentTargetA = targetA;
+let currentTargetB = targetB;
 
-let finalResult = maxItemPrice * itemCount + 1 ; // Initialize the final minimum cost with the large "unreachable" value
-
-let aMultiple = targetA ; // Starting point for checking 'A' multiples
-let bMultiple = targetB ; // Starting point for checking 'B' multiples
-
-// Iterate through all possible multiples of targetA and targetB within the valid ranges
-// to find the overall minimum cost that satisfies the ratio.
-while ( aMultiple <= maxItemA * itemCount && bMultiple <= maxItemB * itemCount ) {
-    finalResult = Math . min ( finalResult , minCosts [ itemCount - 1 ] [ aMultiple - 1 ] [ bMultiple - 1 ] ) ;
-    aMultiple += targetA ; // Increment 'A' to the next multiple
-    bMultiple += targetB ; // Increment 'B' to the next multiple
+// Iterate through multiples of (targetA, targetB) to find the minimum cost.
+while (currentTargetA <= maxPropA * itemCount && currentTargetB <= maxPropB * itemCount) {
+    finalResult = Math.min(finalResult, minCosts[itemCount - 1][currentTargetA - 1][currentTargetB - 1]);
+    currentTargetA += targetA;
+    currentTargetB += targetB;
 }
 
-// Output the final minimum cost. If it's still the initial large value,
-// it means no combination could achieve the desired ratio, so output -1.
-console . log ( finalResult === maxItemPrice * itemCount + 1 ? -1 : finalResult ) ;
+// Output the result. If finalResult is still the initial large cost, it means no combination was found, so output -1.
+console.log(finalResult === initialLargeCost ? -1 : finalResult);

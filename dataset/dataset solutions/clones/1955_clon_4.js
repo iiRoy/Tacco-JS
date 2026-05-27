@@ -1,218 +1,185 @@
 "use strict";
 
-const dataStore = (function() {
-    let tokensBuffer = [];
-    let currentPosition = 0;
+class InputParser {
+    constructor(sourceText) {
+        this.dataUnits = sourceText.split(/ |\n/);
+        this.currentPosition = 0;
+    }
 
-    const populateTokens = () => {
-        const fileContent = require("fs").readFileSync("/dev/stdin", "utf8");
-        tokensBuffer = fileContent.split(/\s+/).filter(Boolean);
-        currentPosition = 0;
-    };
-
-    const retrieveNextToken = (asNumeric = true) => {
-        if (currentPosition >= tokensBuffer.length) {
+    retrieveNext(asString = false) {
+        if (this.currentPosition >= this.dataUnits.length) {
             throw new Error("Input exhausted.");
         }
-        const item = tokensBuffer[currentPosition++];
-        return asNumeric ? Number(item) : item;
-    };
+        const unit = this.dataUnits[this.currentPosition++];
+        return asString ? unit : Number(unit);
+    }
 
-    const retrieveMultipleTokens = (count, asNumeric = true) => {
+    retrieveMultiple(count, asString = false) {
         const collection = [];
         for (let i = 0; i < count; i++) {
-            collection.push(retrieveNextToken(asNumeric));
+            collection.push(this.retrieveNext(asString));
         }
         return collection;
-    };
+    }
 
-    const retrieveTokenGrid = (rows, columns, asNumeric = true) => {
+    retrieveGrid(rows, columns, asString = false) {
         const grid = [];
-        for (let r = 0; r < rows; r++) {
-            grid.push(retrieveMultipleTokens(columns, asNumeric));
+        for (let i = 0; i < rows; i++) {
+            grid.push(this.retrieveMultiple(columns, asString));
         }
         return grid;
-    };
-
-    populateTokens(); // Initialize buffer upon creation
-
-    return {
-        grabNext: retrieveNextToken,
-        grabMany: retrieveMultipleTokens,
-        grabGrid: retrieveTokenGrid,
-    };
-})();
-
-const initializeDeepArray = (dimensions, initialDatum) => {
-    if (dimensions.length === 0) {
-        return initialDatum;
     }
-    const currentDimensionSize = dimensions[0];
-    const remainingDimensions = dimensions.slice(1);
+}
 
-    return Array.from({ length: currentDimensionSize }, () =>
-        initializeDeepArray(remainingDimensions, initialDatum)
-    );
-};
-
-class TaskQueue {
+class BinaryMinHeap {
     constructor() {
-        this.tasks = [];
+        this.storage = [];
     }
 
-    // task is [priority, ...data]
-    insertTask(task) {
-        this.tasks.push(task);
-        this._heapifyUp(this.tasks.length - 1);
+    add(element) { // element is {cost, vertex, currency}
+        this.storage.push(element);
+        this._heapifyUp(this.storage.length - 1);
     }
 
-    // Extracts the task with the lowest priority
-    extractMinTask() {
-        if (this.isQueueEmpty()) {
+    extractMinimum() {
+        if (this.isEmpty()) {
             return undefined;
         }
-        const minimumTask = this.tasks[0];
-        const lastTask = this.tasks.pop();
-        if (!this.isQueueEmpty()) {
-            this.tasks[0] = lastTask;
+        const minElement = this.storage[0];
+        const lastElement = this.storage.pop();
+        if (!this.isEmpty()) {
+            this.storage[0] = lastElement;
             this._heapifyDown(0);
         }
-        return minimumTask;
+        return minElement;
     }
 
-    isQueueEmpty() {
-        return this.tasks.length === 0;
+    isEmpty() {
+        return this.storage.length === 0;
     }
 
     _heapifyUp(idx) {
-        let current = idx;
-        while (current > 0) {
-            const parent = Math.floor((current - 1) / 2);
-            if (this.tasks[parent][0] <= this.tasks[current][0]) {
+        while (idx > 0) {
+            const parentIdx = Math.floor((idx - 1) / 2);
+            if (this.storage[idx].cost >= this.storage[parentIdx].cost) {
                 break;
             }
-            [this.tasks[parent], this.tasks[current]] = [this.tasks[current], this.tasks[parent]];
-            current = parent;
+            [this.storage[idx], this.storage[parentIdx]] = [this.storage[parentIdx], this.storage[idx]];
+            idx = parentIdx;
         }
     }
 
     _heapifyDown(idx) {
-        let current = idx;
-        const totalElements = this.tasks.length;
+        const lastIdx = this.storage.length - 1;
         while (true) {
-            const left = 2 * current + 1;
-            const right = 2 * current + 2;
-            let smallestPriorityIndex = current;
+            let leftChild = 2 * idx + 1;
+            let rightChild = 2 * idx + 2;
+            let smallestChildIdx = idx;
 
-            if (left < totalElements && this.tasks[left][0] < this.tasks[smallestPriorityIndex][0]) {
-                smallestPriorityIndex = left;
-            }
-            if (right < totalElements && this.tasks[right][0] < this.tasks[smallestPriorityIndex][0]) {
-                smallestPriorityIndex = right;
+            if (leftChild <= lastIdx && this.storage[leftChild].cost < this.storage[smallestChildIdx].cost) {
+                smallestChildIdx = leftChild;
             }
 
-            if (smallestPriorityIndex === current) {
+            if (rightChild <= lastIdx && this.storage[rightChild].cost < this.storage[smallestChildIdx].cost) {
+                smallestChildIdx = rightChild;
+            }
+
+            if (smallestChildIdx === idx) {
                 break;
             }
 
-            [this.tasks[current], this.tasks[smallestPriorityIndex]] = [this.tasks[smallestPriorityIndex], this.tasks[current]];
-            current = smallestPriorityIndex;
+            [this.storage[idx], this.storage[smallestChildIdx]] = [this.storage[smallestChildIdx], this.storage[idx]];
+            idx = smallestChildIdx;
         }
     }
 }
 
-function calculateOptimalTravel() {
-    const [numberOfCities, numberOfRoads, startingCurrency] = dataStore.grabMany(3);
-    const INFINITE_COST = 10 ** 18;
-    const MAXIMUM_CURRENCY_CAP = (numberOfCities - 1) * 50;
+const fileContent = require("fs").readFileSync("/dev/stdin", "utf8");
+const parser = new InputParser(fileContent);
 
-    const cityConnections = initializeDeepArray([numberOfCities], []);
-    for (let r = 0; r < numberOfRoads; r++) {
-        const [origin, destination, currencyRequired, travelDuration] = dataStore.grabMany(4);
-        const originIndex = origin - 1;
-        const destinationIndex = destination - 1;
-        cityConnections[originIndex].push([destinationIndex, currencyRequired, travelDuration]);
-        cityConnections[destinationIndex].push([originIndex, currencyRequired, travelDuration]);
+const finalResult = processGraphProblem();
+if (finalResult !== undefined) {
+    console.log(finalResult);
+}
+
+function processGraphProblem() {
+    const [nodeCount, edgeCount, initialCurrency] = parser.retrieveMultiple(3);
+    const LARGE_VALUE = 1e18;
+    const MAX_CURRENCY_AMOUNT = (nodeCount - 1) * 50;
+
+    const adjacencyStructure = Array.from({ length: nodeCount }, () => []);
+    for (let i = 0; i < edgeCount; i++) {
+        const [sourceNode, targetNode, silverCost, timeCost] = parser.retrieveMultiple(4);
+        const srcIdx = sourceNode - 1;
+        const tgtIdx = targetNode - 1;
+        adjacencyStructure[srcIdx].push({ destination: tgtIdx, silverRequired: silverCost, travelTime: timeCost });
+        adjacencyStructure[tgtIdx].push({ destination: srcIdx, silverRequired: silverCost, travelTime: timeCost });
     }
 
-    const cityTransactionDetails = dataStore.grabGrid(numberOfCities, 2);
+    const currencyExchangeRates = parser.retrieveGrid(nodeCount, 2).map(([silverGained, timeSpent]) => ({ silverGained, timeSpent }));
 
-    const minimumTimePerState = new Map(); // Map<city, Map<currency, time>>
-    const finalMinimumTimes = initializeDeepArray([numberOfCities], INFINITE_COST);
+    const minCostState = Array.from({ length: nodeCount }, () => new Array(MAX_CURRENCY_AMOUNT + 1).fill(LARGE_VALUE));
+    const shortestPathTimes = new Array(nodeCount).fill(LARGE_VALUE);
 
-    const taskScheduler = new TaskQueue();
+    let unvisitedNodeCount = nodeCount;
+    const traversalQueue = new BinaryMinHeap();
 
-    let adjustedStartingCurrency = Math.min(startingCurrency, MAXIMUM_CURRENCY_CAP);
+    const effectiveInitialCurrency = Math.min(initialCurrency, MAX_CURRENCY_AMOUNT);
 
-    // Initial state: 0 time, city 0, adjustedStartingCurrency
-    minimumTimePerState.set(0, new Map([[adjustedStartingCurrency, 0]]));
-    taskScheduler.insertTask([0, 0, adjustedStartingCurrency]); // [time, city, currency]
+    traversalQueue.add({ cost: 0, vertex: 0, currency: effectiveInitialCurrency });
+    minCostState[0][effectiveInitialCurrency] = 0;
 
-    while (!taskScheduler.isQueueEmpty()) {
-        const [currentTravelTime, currentCityIdentifier, currentCoinBalance] = taskScheduler.extractMinTask();
+    while (!traversalQueue.isEmpty() && unvisitedNodeCount > 0) {
+        const { cost: currentCost, vertex: currentVertex, currency: currentCurrency } = traversalQueue.extractMinimum();
 
-        // If a faster path to this state has already been found, skip
-        const recordedTimeForState = minimumTimePerState.get(currentCityIdentifier)?.get(currentCoinBalance) || INFINITE_COST;
-        if (recordedTimeForState < currentTravelTime) {
+        if (minCostState[currentVertex][currentCurrency] < currentCost) {
             continue;
         }
 
-        // If this is the first time we determine the final minimum time for this city
-        if (finalMinimumTimes[currentCityIdentifier] === INFINITE_COST) {
-            finalMinimumTimes[currentCityIdentifier] = currentTravelTime;
+        if (shortestPathTimes[currentVertex] === LARGE_VALUE) {
+            unvisitedNodeCount--;
+            shortestPathTimes[currentVertex] = currentCost;
         }
 
-        // Action 1: Stay in current city to gain currency
-        if (currentCoinBalance < MAXIMUM_CURRENCY_CAP) {
-            const [currencyGained, durationSpent] = cityTransactionDetails[currentCityIdentifier];
-            const nextCoinBalance = Math.min(currentCoinBalance + currencyGained, MAXIMUM_CURRENCY_CAP);
-            const nextTravelTime = currentTravelTime + durationSpent;
+        // Option 1: Exchange currency at the current vertex
+        if (currentCurrency < MAX_CURRENCY_AMOUNT) {
+            const { silverGained, timeSpent } = currencyExchangeRates[currentVertex];
+            const nextCurrencyLevel = Math.min(currentCurrency + silverGained, MAX_CURRENCY_AMOUNT);
+            const newAccumulatedCost = currentCost + timeSpent;
 
-            const existingStateTime = minimumTimePerState.get(currentCityIdentifier)?.get(nextCoinBalance) || INFINITE_COST;
-            if (nextTravelTime < existingStateTime) {
-                if (!minimumTimePerState.has(currentCityIdentifier)) {
-                    minimumTimePerState.set(currentCityIdentifier, new Map());
-                }
-                minimumTimePerState.get(currentCityIdentifier).set(nextCoinBalance, nextTravelTime);
-                taskScheduler.insertTask([nextTravelTime, currentCityIdentifier, nextCoinBalance]);
+            if (newAccumulatedCost < minCostState[currentVertex][nextCurrencyLevel]) {
+                minCostState[currentVertex][nextCurrencyLevel] = newAccumulatedCost;
+                traversalQueue.add({ cost: newAccumulatedCost, vertex: currentVertex, currency: nextCurrencyLevel });
             }
         }
 
-        // Action 2: Discard 1 unit of currency (0 time cost)
-        if (currentCoinBalance > 0) {
-            const nextCoinBalance = currentCoinBalance - 1;
-            const existingStateTime = minimumTimePerState.get(currentCityIdentifier)?.get(nextCoinBalance) || INFINITE_COST;
-            if (currentTravelTime < existingStateTime) {
-                if (!minimumTimePerState.has(currentCityIdentifier)) {
-                    minimumTimePerState.set(currentCityIdentifier, new Map());
-                }
-                minimumTimePerState.get(currentCityIdentifier).set(nextCoinBalance, currentTravelTime);
-                taskScheduler.insertTask([currentTravelTime, currentCityIdentifier, nextCoinBalance]);
+        // Option 2: Consider states with less currency at the same vertex and cost
+        // This propagates the minimum cost to states with fewer currency units,
+        // as having more currency is never worse.
+        if (currentCurrency > 0) {
+            const reducedCurrencyLevel = currentCurrency - 1;
+            // The cost remains the same for this conceptual transition
+            if (currentCost < minCostState[currentVertex][reducedCurrencyLevel]) {
+                minCostState[currentVertex][reducedCurrencyLevel] = currentCost;
+                traversalQueue.add({ cost: currentCost, vertex: currentVertex, currency: reducedCurrencyLevel });
             }
         }
 
-        // Action 3: Traverse to connected cities
-        for (const [connectedCity, requiredCurrency, journeyDuration] of cityConnections[currentCityIdentifier]) {
-            if (currentCoinBalance >= requiredCurrency) {
-                const nextCoinBalance = currentCoinBalance - requiredCurrency;
-                const nextTravelTime = currentTravelTime + journeyDuration;
+        // Option 3: Travel along connected edges
+        for (const connection of adjacencyStructure[currentVertex]) {
+            const { destination: neighborVertex, silverRequired, travelTime } = connection;
 
-                const existingStateTime = minimumTimePerState.get(connectedCity)?.get(nextCoinBalance) || INFINITE_COST;
-                if (nextTravelTime < existingStateTime) {
-                    if (!minimumTimePerState.has(connectedCity)) {
-                        minimumTimePerState.set(connectedCity, new Map());
-                    }
-                    minimumTimePerState.get(connectedCity).set(nextCoinBalance, nextTravelTime);
-                    taskScheduler.insertTask([nextTravelTime, connectedCity, nextCoinBalance]);
+            if (currentCurrency >= silverRequired) {
+                const remainingCurrency = currentCurrency - silverRequired;
+                const newAccumulatedCost = currentCost + travelTime;
+
+                if (newAccumulatedCost < minCostState[neighborVertex][remainingCurrency]) {
+                    minCostState[neighborVertex][remainingCurrency] = newAccumulatedCost;
+                    traversalQueue.add({ cost: newAccumulatedCost, vertex: neighborVertex, currency: remainingCurrency });
                 }
             }
         }
     }
 
-    return finalMinimumTimes.slice(1).join("\n");
-}
-
-const journeyOutcome = calculateOptimalTravel();
-if (journeyOutcome !== undefined) {
-    console.log(journeyOutcome);
+    return shortestPathTimes.slice(1).join("\n");
 }

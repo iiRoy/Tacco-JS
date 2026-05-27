@@ -1,33 +1,32 @@
-const processInputData = (rawText) => {
-    const lines = rawText.trim().split('\n');
-    const firstLineNumbers = lines[0].split(' ').map(Number);
-    const secondLineNumber = Number(lines[1]);
-    return { initialValues: firstLineNumbers, operationCount: secondLineNumber };
-};
+const processInputData = (rawData) => {
+  const [firstLineContent, secondLineContent] = rawData.trim().split("\n");
+  const [initialRed, initialGreen, initialBlue] = firstLineContent.split(" ").map(Number);
+  const numIterations = Number(secondLineContent);
 
-const transformValues = (currentValues) => {
-    let [firstVal, secondVal, thirdVal] = currentValues;
-    if (firstVal >= secondVal) {
-        secondVal *= 2;
-    } else if (secondVal >= thirdVal) {
-        thirdVal *= 2;
+  const calculateFinalValues = (currentRValue, currentGValue, currentBValue, remainingSteps) => {
+    if (remainingSteps === 0) {
+      return { finalG: currentGValue, finalB: currentBValue };
     }
-    return [firstVal, secondVal, thirdVal];
+
+    let nextGValue = currentGValue;
+    let nextBValue = currentBValue;
+
+    if (currentRValue >= currentGValue) {
+      nextGValue = currentGValue * 2;
+    } else if (currentGValue >= currentBValue) {
+      nextBValue = currentBValue * 2;
+    }
+
+    return calculateFinalValues(currentRValue, nextGValue, nextBValue, remainingSteps - 1);
+  };
+
+  const { finalG: processedGreen, finalB: processedBlue } = calculateFinalValues(initialRed, initialGreen, initialBlue, numIterations);
+
+  const evaluateOrdering = (valR, valG, valB) => valR < valG && valG < valB;
+
+  const finalConditionMet = evaluateOrdering(initialRed, processedGreen, processedBlue);
+
+  console.log(finalConditionMet ? "Yes" : "No");
 };
 
-const verifyOrder = (finalValues) => {
-    const [firstVal, secondVal, thirdVal] = finalValues;
-    return firstVal < secondVal && secondVal < thirdVal;
-};
-
-const executeTransformationSequence = (dataString) => {
-    const { initialValues, operationCount } = processInputData(dataString);
-    
-    const finalValues = Array.from({ length: operationCount }).reduce((currentTuple, _, __) => {
-        return transformValues(currentTuple);
-    }, initialValues);
-    
-    return verifyOrder(finalValues) ? "Yes" : "No";
-};
-
-console.log(executeTransformationSequence(require("fs").readFileSync("/dev/stdin","utf8")));
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

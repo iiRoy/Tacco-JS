@@ -1,39 +1,46 @@
-function evaluateStringSegments(incomingContent) {
-    const initialSegment = incomingContent.split('\n')[0];
+function processInputString(inputData) {
+    const firstLine = inputData.split("\n")[0];
 
-    function decomposeStringIntoLengths(sourceText) {
-        const collectedLengths = [];
-        const segmentPattern = /(.)\1*/g;
-        let matchedSegment;
-        while ((matchedSegment = segmentPattern.exec(sourceText)) !== null) {
-            collectedLengths.push(matchedSegment[0].length);
+    const segmentLengths = (function(sourceString) {
+        const lengthsContainer = [];
+        if (sourceString.length === 0) {
+            return lengthsContainer;
         }
-        return collectedLengths;
-    }
 
-    const characterGroups = decomposeStringIntoLengths(initialSegment);
+        let currentSegmentChar = sourceString[0];
+        let currentSegmentLength = 0;
 
-    let resultValue;
+        for (let charIndex = 0; charIndex < sourceString.length; charIndex++) {
+            if (sourceString[charIndex] === currentSegmentChar) {
+                currentSegmentLength++;
+            } else {
+                lengthsContainer.push(currentSegmentLength);
+                currentSegmentChar = sourceString[charIndex];
+                currentSegmentLength = 1;
+            }
+        }
+        lengthsContainer.push(currentSegmentLength);
+        return lengthsContainer;
+    })(firstLine);
 
-    switch (characterGroups.length) {
-        case 0:
-        case 1:
-            resultValue = Number.NaN;
-            break;
-        case 2:
-            resultValue = Math.max(characterGroups[0], characterGroups[1]);
-            break;
-        default:
-            const minimumAdjacentSum = characterGroups.slice(0, -1).reduce((accumulator, currentBlockLength, index) => {
-                const nextBlockLength = characterGroups[index + 1];
-                const currentPairSum = currentBlockLength + nextBlockLength;
-                return Math.min(accumulator, currentPairSum);
-            }, Infinity);
-            resultValue = minimumAdjacentSum;
-            break;
-    }
+    const finalResultValue = (function(lengthsCollection) {
+        const collectionSize = lengthsCollection.length;
 
-    console.log(resultValue);
+        if (collectionSize === 0) {
+            return NaN;
+        } else if (collectionSize === 1) {
+            return lengthsCollection[0] + lengthsCollection[1];
+        } else if (collectionSize === 2) {
+            return Math.max(lengthsCollection[0], lengthsCollection[1]);
+        } else {
+            return lengthsCollection.slice(0, -1).reduce((minimumSum, currentSegment, currentIndex) => {
+                const nextSegment = lengthsCollection[currentIndex + 1];
+                return Math.min(minimumSum, currentSegment + nextSegment);
+            }, lengthsCollection[0] + lengthsCollection[1]);
+        }
+    })(segmentLengths);
+
+    console.log(finalResultValue);
 }
 
-evaluateStringSegments(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInputString(require("fs").readFileSync("/dev/stdin", "utf8"));

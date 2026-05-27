@@ -1,22 +1,14 @@
-function determinePriceAdjustment(strData) {
-    const valNum = Number.parseFloat(strData.trim());
+function processInputAndCalculate(rawData) {
+    const parts = rawData.trim().split(" ");
+    const quantity = parseInt(parts[0]);
 
-    let blockCounter = 0;
-    let tempValue = valNum;
-    while (tempValue >= 15) {
-        tempValue -= 15;
-        blockCounter++;
-    }
+    const fullBlocks = Math.floor(quantity / 15);
+    const remainingItems = quantity % 15;
 
-    const calculateGrossValue = (v) => 800 * v;
-    const calculateRebateUnits = (v) => 200 * v;
-    const deriveFinalAmount = (g, r) => g - r;
+    const blockValue = 11800 * fullBlocks;
+    const itemValue = 800 * remainingItems;
 
-    const baseCost = calculateGrossValue(valNum);
-    const reduction = calculateRebateUnits(blockCounter);
-
-    return deriveFinalAmount(baseCost, reduction);
+    console.log(blockValue + itemValue);
 }
 
-const rawInputContent = require("node:fs").readFileSync(0, "utf8");
-console.log(determinePriceAdjustment(rawInputContent));
+processInputAndCalculate(require("fs").readFileSync("/dev/stdin", "utf8"));

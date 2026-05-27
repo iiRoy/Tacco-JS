@@ -1,38 +1,58 @@
-let sourceDataAccessor;
+let inputBuffer = [];
+let currentLineIndex = 0;
 
-const deliverResult = (outputContent) => process.stdout.write(String(outputContent) + '\n');
+const inputReader = require('readline').createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
 
-const fetchInputNumber = () => {
-  return Number.parseInt(sourceDataAccessor.fetchLineContent(), 10);
-};
+inputReader.on('line', (line) => {
+  inputBuffer.push(line);
+});
 
-const sequenceTermCache = new Map();
+inputReader.on('close', () => {
+  console.error('\n↑入力 ↓出力');
+  processMainLogic();
+});
 
-const arithmeticModulus = 1000000007;
-
-const calculateTerm = (termIndex) => {
-  if (termIndex < 3) {
-    return 0;
+function getNextInputLine() {
+  if (currentLineIndex < inputBuffer.length) {
+    return inputBuffer[currentLineIndex++];
   }
-  if (termIndex <= 5) {
-    return 1;
+  throw new Error('End of input reached.');
+}
+
+function parseNextInteger() {
+  return parseInt(getNextInputLine());
+}
+
+function printOutput(data) {
+  console.log(data);
+}
+
+function printDebug(data) {
+  console.error('debug:' + require('util').inspect(data, false, null));
+}
+
+function createDeepClone(sourceObject) {
+  return (sourceObject instanceof Set) ? new Set(Array.from(sourceObject)) : JSON.parse(JSON.stringify(sourceObject));
+}
+
+function processMainLogic() {
+  const targetValue = parseNextInteger();
+  const modulus = 1000000007;
+
+  const sumWays = new Array(2001).fill(0);
+
+  if (targetValue >= 3) sumWays[3] = 1;
+  if (targetValue >= 4) sumWays[4] = 1;
+  if (targetValue >= 5) sumWays[5] = 1;
+
+  for (let currentIdx = 6; currentIdx <= targetValue; currentIdx++) {
+    const termA = sumWays[currentIdx - 1];
+    const termB = sumWays[currentIdx - 3];
+    sumWays[currentIdx] = (termA + termB) % modulus;
   }
 
-  if (sequenceTermCache.has(termIndex)) {
-    return sequenceTermCache.get(termIndex);
-  }
-
-  const previousTerm = calculateTerm(termIndex - 1);
-  const thirdPreviousTerm = calculateTerm(termIndex - 3);
-
-  const currentTermValue = (previousTerm + thirdPreviousTerm) % arithmeticModulus;
-
-  sequenceTermCache.set(termIndex, currentTermValue);
-  return currentTermValue;
-};
-
-const initiateProcessing = () => {
-  const requestedIndex = fetchInputNumber();
-  const finalSequenceValue = calculateTerm(requestedIndex);
-  deliverResult(finalSequenceValue);
-};
+  printOutput(sumWays[targetValue]);
+}

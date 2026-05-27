@@ -1,1 +1,18 @@
-(function(){var data_handler=require('fs');var computed_totals=data_handler.readFileSync("/dev/stdin","utf8").trim().split('\n').reduce(function(current_data,input_line){var line_parts=input_line.split(',');var first_num=parseFloat(line_parts[0]);var second_num=parseFloat(line_parts[1]);current_data.product_total+=first_num*second_num;current_data.value_sum+=second_num;current_data.entry_count++;return current_data;},{product_total:0,value_sum:0,entry_count:0});console.log(computed_totals.product_total+'\n'+Math.round(computed_totals.value_sum/computed_totals.entry_count));})();
+const fileData = require("fs").readFileSync("/dev/stdin", "utf8");
+
+const { sumVal, sumQty, numEntries } = fileData.trim().split('\n').reduce((acc, currentEntry) => {
+    const parts = currentEntry.split(',');
+    const itemPrice = Number(parts[0]);
+    const itemQuantity = Number(parts[1]);
+
+    acc.sumVal += itemPrice * itemQuantity;
+    acc.sumQty += itemQuantity;
+    acc.numEntries++;
+
+    return acc;
+}, { sumVal: 0, sumQty: 0, numEntries: 0 });
+
+const averageResult = sumQty / numEntries;
+const roundedAverage = ~~ (averageResult + 0.5);
+
+console.log(`${sumVal}\n${roundedAverage}`);

@@ -1,40 +1,15 @@
-const calculateOutcome = (initialValue, subsequentValue) => {
-    let intermediateResult = subsequentValue;
-    intermediateResult = intermediateResult + subsequentValue;
-    return intermediateResult - initialValue;
-};
+'use strict';
 
-const decipherNumericData = (rawData) => {
-    const digitSequences = rawData.match(/\b\d+\b/g);
+((sourceData) => {
+    const [firstLineContent, secondLineContent] = sourceData.split('\n');
 
-    if (!digitSequences || digitSequences.length < 2) {
-        throw new Error("Insufficient numerical input for processing.");
-    }
+    const [firstNumberString] = firstLineContent.split(' ');
+    const [secondNumberString] = secondLineContent.split(' ');
 
-    const primaryFigure = Number(digitSequences[0]);
-    const secondaryFigure = Number(digitSequences[1]);
+    const firstOperand = Number.parseInt(firstNumberString, 10);
+    const secondOperand = Number.parseInt(secondNumberString, 10);
 
-    return { first: primaryFigure, second: secondaryFigure };
-};
+    const finalOutcome = secondOperand + secondOperand - firstOperand;
 
-let accumulatedContent = '';
-
-process.stdin.setEncoding('utf8');
-
-process.stdin.on('readable', () => {
-    let piece;
-    while ((piece = process.stdin.read()) !== null) {
-        accumulatedContent += piece;
-    }
-});
-
-process.stdin.on('end', () => {
-    try {
-        const { first, second } = decipherNumericData(accumulatedContent);
-        const finalOutput = calculateOutcome(first, second);
-        process.stdout.write(String(finalOutput) + '\n');
-    } catch (operationIssue) {
-        process.stderr.write(`Problem Encountered: ${operationIssue.message}\n`);
-        process.exit(1);
-    }
-});
+    console.log(finalOutcome);
+})(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,53 +1,57 @@
-class FenwickTree {
-    constructor(sizeOfTree) {
-        this.bitArr = new Array(sizeOfTree + 1).fill(0);
-        this.bitLimit = sizeOfTree;
-    }
+let inversionCounter = 0;
 
-    adjust(indexVal, incrementAmount) {
-        let currentIdx = indexVal + 1;
-        while (currentIdx <= this.bitLimit) {
-            this.bitArr[currentIdx] += incrementAmount;
-            currentIdx += currentIdx & (-currentIdx);
+(function executeProgram() {
+    const fileSystem = require('fs');
+    const inputLines = fileSystem.readFileSync('/dev/stdin', 'utf8').trim().split('\n');
+
+    const totalElements = Number(inputLines.shift());
+    let dataArray = inputLines.shift().split(' ').map(Number);
+
+    performMergeSort(dataArray, totalElements);
+
+    console.log(inversionCounter);
+})();
+
+function combineSegments(dataArray, startIdx, middleIdx, endIdx) {
+    let temporaryStorage = [];
+    temporaryStorage.length = endIdx - startIdx + 1;
+
+    let leftPointer = startIdx;
+    let rightPointer = middleIdx + 1;
+    let tempIndex = 0;
+
+    while (leftPointer <= middleIdx && rightPointer <= endIdx) {
+        if (dataArray[leftPointer] <= dataArray[rightPointer]) {
+            temporaryStorage[tempIndex++] = dataArray[leftPointer++];
+        } else {
+            temporaryStorage[tempIndex++] = dataArray[rightPointer++];
+            inversionCounter++;
         }
     }
 
-    retrieveSum(indexVal) {
-        let cumulativeSum = 0;
-        let currentIdx = indexVal + 1;
-        while (currentIdx > 0) {
-            cumulativeSum += this.bitArr[currentIdx];
-            currentIdx -= currentIdx & (-currentIdx);
-        }
-        return cumulativeSum;
+    while (leftPointer <= middleIdx) {
+        temporaryStorage[tempIndex++] = dataArray[leftPointer++];
+    }
+
+    while (rightPointer <= endIdx) {
+        temporaryStorage[tempIndex++] = dataArray[rightPointer++];
+    }
+
+    for (let k = 0; k < temporaryStorage.length; k++) {
+        dataArray[startIdx + k] = temporaryStorage[k];
     }
 }
 
-(function processData() {
-    const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
-    const contentLines = fileContent.trim().split('\n');
+function performMergeSort(dataArray, totalElements) {
+    let currentSegmentSize;
+    let segmentStartPoint;
 
-    const arrayLength = Number(contentLines.shift());
-    const sourceNumbers = contentLines.shift().split(' ').map(Number);
+    for (currentSegmentSize = 1; currentSegmentSize < totalElements; currentSegmentSize *= 2) {
+        for (segmentStartPoint = 0; segmentStartPoint < totalElements - currentSegmentSize; segmentStartPoint += 2 * currentSegmentSize) {
+            let midPoint = segmentStartPoint + currentSegmentSize - 1;
+            let segmentEndPoint = Math.min(segmentStartPoint + 2 * currentSegmentSize - 1, totalElements - 1);
 
-    const distinctSortedValues = [...new Set(sourceNumbers)].sort((a, b) => a - b);
-    const valueRankMap = new Map();
-    distinctSortedValues.forEach((val, index) => {
-        valueRankMap.set(val, index);
-    });
-
-    const rankedSourceNumbers = sourceNumbers.map(num => valueRankMap.get(num));
-
-    const highestRank = distinctSortedValues.length - 1;
-    const bitStructure = new FenwickTree(highestRank + 1);
-
-    let totalInversionCount = 0;
-
-    for (let currentRankedValue of rankedSourceNumbers) {
-        totalInversionCount += bitStructure.retrieveSum(highestRank) - bitStructure.retrieveSum(currentRankedValue);
-
-        bitStructure.adjust(currentRankedValue, 1);
+            combineSegments(dataArray, segmentStartPoint, midPoint, segmentEndPoint);
+        }
     }
-
-    console.log(totalInversionCount);
-})();
+}

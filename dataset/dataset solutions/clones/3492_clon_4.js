@@ -1,33 +1,33 @@
 'use strict';
 
-const processInputData = (dataStrings) => {
-  const [configurationLine, ...entryLines] = dataStrings;
+const processEntries = (sourceLines) => {
+    const [configLine, ...itemDataLines] = sourceLines;
 
-  const [totalEntries, maximumTime] = configurationLine.split(' ').map(Number);
+    const [totalEntriesStr, timeConstraintStr] = configLine.split(' ');
+    const timeConstraint = parseInt(timeConstraintStr, 10);
+    const numberOfItems = parseInt(totalEntriesStr, 10);
 
-  const allOpportunities = entryLines
-    .slice(0, totalEntries)
-    .map(entryText => {
-      const [costMetric, timeMetric] = entryText.split(' ').map(Number);
-      return { cost: costMetric, time: timeMetric };
+    const availableOptions = itemDataLines.slice(0, numberOfItems).map(line => {
+        const [priceStr, durationStr] = line.split(' ');
+        return {
+            itemPrice: parseInt(priceStr, 10),
+            itemDuration: parseInt(durationStr, 10)
+        };
     });
 
-  const validOpportunities = allOpportunities.filter(
-    opportunity => opportunity.time <= maximumTime
-  );
+    const optimalCost = availableOptions.reduce((currentMinimumPrice, option) => {
+        if (option.itemDuration <= timeConstraint) {
+            return Math.min(currentMinimumPrice, option.itemPrice);
+        }
+        return currentMinimumPrice;
+    }, 10000);
 
-  const lowestCost = validOpportunities.reduce((currentMin, opportunity) => {
-    return Math.min(currentMin, opportunity.cost);
-  }, Infinity);
-
-  const outputDisplay = (lowestCost === Infinity) ? 'TLE' : lowestCost;
-
-  console.log(outputDisplay);
+    return optimalCost === 10000 ? 'TLE' : optimalCost;
 };
 
-const fileSystem = require("fs");
-const standardIn = "/dev/stdin";
-const sourceReader = fileSystem.readFileSync(standardIn, "utf8");
-const rawInputLines = sourceReader.split('\n');
+const executeProgram = (rawInputContent) => {
+    const allInputLines = rawInputContent.split('\n');
+    console.log(processEntries(allInputLines));
+};
 
-processInputData(rawInputLines);
+executeProgram(require("fs").readFileSync("/dev/stdin", "utf8"));

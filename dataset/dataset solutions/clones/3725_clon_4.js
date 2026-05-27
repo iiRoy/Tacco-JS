@@ -1,27 +1,18 @@
-const obtainSource = () => {
-    const nodeFileSys = globalThis.require("node:fs");
-    return nodeFileSys.readFileSync(0, "utf8");
+const processInputAndCalculate = (inputData) => {
+    const [firstOperand, secondOperand] = inputData.split(/\s+/).map(Number);
+
+    let finalResult;
+
+    if (secondOperand === 1) {
+        finalResult = Infinity;
+    } else if (secondOperand === 2) {
+        finalResult = firstOperand - 1;
+    } else {
+        const adjustedDivisor = secondOperand - 1;
+        finalResult = Math.ceil((firstOperand - 1) / adjustedDivisor);
+    }
+
+    console.log(finalResult);
 };
 
-const transformInput = (textualData) => {
-    const tokenizedParts = textualData.trim().split(/[\r\n\s]+/);
-    const [valA, valB] = tokenizedParts.slice(0, 2).map(Number);
-
-    const computedOutcome = (valB === 2)
-        ? (valA - 1)
-        : (Math.floor((valA - 2) / (valB - 1)) + 1);
-    
-    return computedOutcome;
-};
-
-const displayOutput = (numericResult) => {
-    process.stdout.write(String(numericResult) + "\n");
-};
-
-const initiateProcess = () => {
-    const initialText = obtainSource();
-    const finalComputation = transformInput(initialText);
-    displayOutput(finalComputation);
-};
-
-initiateProcess();
+processInputAndCalculate(require("fs").readFileSync("/dev/stdin", "utf8"));

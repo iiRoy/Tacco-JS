@@ -1,99 +1,82 @@
 "use strict";
-var   dataStream = loadMod("fileSys").readText("/dev/stdin", "enc8") ;
+// Acquire the file system module to read input data
+var sourceData = require("fs").readFileSync("/dev/stdin", "utf8");
+// Divide the incoming data string into individual tokens using spaces or newlines as delimiters
+var parsedTokens = sourceData.split(/ |\n/), tokenIndex = 0;
 
-var   tokenArray = dataStream .breakUp ( / |\n/ ) ,
-      tokenIdx = 0;
+// Invoke the primary computation function and store its outcome
+var resultValue = computeSolution();
+// If a valid result is returned, display it to the standard output
+if (resultValue !== undefined) console.log(resultValue);
 
-var finalResult = computeSolution ( ) ;
+/**
+ * Executes the core algorithm to process the input tokens and determine the final answer.
+ * This function implements a two-pointer approach on two derived and sorted arrays.
+ * @returns {number} The calculated numerical result.
+ */
+function computeSolution() {
+    // Original code included commented-out debugging lines.
+    // console.log(parsedTokens);
+    // parsedTokens = parsedTokens.map(item => +item);
 
-if ( finalResult !== undefined ) {
-    outputChannel .printLine ( finalResult ) ;
-}
+    // Extract the first token, converting it to a number, which represents the total count of subsequent elements.
+    let elementCount = +parsedTokens.shift();
 
+    // Construct the first auxiliary array.
+    // Each element is formed by adding its numeric value to its current index within the 'parsedTokens' array.
+    // The resulting array is then sorted in ascending numerical order.
+    let firstArray = parsedTokens.map((currentVal, idx) => +currentVal + idx).sort((valA, valB) => valA - valB);
 
-function computeSolution ( )
-{
-    // The following lines were for debugging purposes.
-    // outputChannel.printLine(tokenArray);
-    // tokenArray = tokenArray.transformElements(item => +item);
+    // Construct the second auxiliary array.
+    // Each element is formed by subtracting its numeric value from its current index within the 'parsedTokens' array.
+    // This array is also sorted in ascending numerical order.
+    let secondArray = parsedTokens.map((currentVal, idx) => idx - currentVal).sort((valA, valB) => valA - valB);
 
-    // Retrieve the total number of elements from the input sequence.
-    let countElements = +tokenArray.extractFirst();
+    // More commented-out debugging from the original source.
+    // console.log({ firstArray });
+    // console.log({ secondArray });
 
-    // Process the input to create sortedListA: each value 'v' becomes 'v + its index'.
-    let sortedListA = tokenArray.transformElements (
-        (currVal, currIdx) => +currVal + currIdx
-    ) .arrangeOrder ( (elemX, elemY) => elemX - elemY ) ;
+    // Initialize two pointers for traversing the sorted arrays.
+    let leftPtr = 0;
+    let rightPtr = 0;
+    // Initialize a variable to accumulate the final computed result.
+    let finalResult = 0;
 
-    // Process the input to create sortedListB: each value 'v' becomes 'its index - v'.
-    let sortedListB = tokenArray.transformElements (
-        (currVal, currIdx) => currIdx - currVal
-    ) .arrangeOrder ( (elemX, elemY) => elemX - elemY ) ;
+    // Iterate as long as both pointers remain within the bounds of their respective arrays.
+    while (leftPtr < elementCount && rightPtr < elementCount) {
 
-    // Debugging output for the sorted lists.
-    // outputChannel.printLine({ sortedListA });
-    // outputChannel.printLine({ sortedListB });
-
-    let ptrA = 0; // Pointer for sortedListA
-    let ptrB = 0; // Pointer for sortedListB
-    let totalMatches = 0; // Accumulator for the final count
-
-    // Iterate through both sorted lists
-    while (ptrA < countElements && ptrB < countElements) {
-
-        // Find the end of the current block of identical values in sortedListA
-        let nextPtrA = ptrA + 1;
-        while (nextPtrA < countElements && sortedListA[ptrA] === sortedListA[nextPtrA]) {
-            nextPtrA++;
+        // Determine the end index of the current block of identical values in 'firstArray'.
+        let nextLeftPtr = leftPtr + 1;
+        while (nextLeftPtr < elementCount && firstArray[leftPtr] === firstArray[nextLeftPtr]) {
+            nextLeftPtr++;
         }
 
-        // Find the end of the current block of identical values in sortedListB
-        let nextPtrB = ptrB + 1;
-        while (nextPtrB < countElements && sortedListB[ptrB] === sortedListB[nextPtrB]) {
-            nextPtrB++;
+        // Determine the end index of the current block of identical values in 'secondArray'.
+        let nextRightPtr = rightPtr + 1;
+        while (nextRightPtr < elementCount && secondArray[rightPtr] === secondArray[nextRightPtr]) {
+            nextRightPtr++;
         }
 
-        // Compare elements at current pointers
-        if (sortedListA[ptrA] === sortedListB[ptrB]) {
-            // If values match, add the product of block sizes to totalMatches
-            totalMatches += (nextPtrA - ptrA) * (nextPtrB - ptrB);
-            // Move both pointers past their respective blocks
-            ptrA = nextPtrA;
-            ptrB = nextPtrB;
-        } else if (sortedListA[ptrA] < sortedListB[ptrB]) {
-            // If value in sortedListA is smaller, move ptrA past its block
-            ptrA = nextPtrA;
-        } else { // sortedListA[ptrA] > sortedListB[ptrB]
-            // If value in sortedListB is smaller, move ptrB past its block
-            ptrB = nextPtrB;
+        // Compare the values at the current pointer positions.
+        if (firstArray[leftPtr] === secondArray[rightPtr]) {
+            // If the values are equal, multiply the lengths of their respective blocks
+            // and add this product to the total result.
+            finalResult += (nextLeftPtr - leftPtr) * (nextRightPtr - rightPtr);
+            // Advance both pointers past their current blocks.
+            leftPtr = nextLeftPtr;
+            rightPtr = nextRightPtr;
+        } else if (firstArray[leftPtr] < secondArray[rightPtr]) {
+            // If the value in 'firstArray' is smaller, advance its pointer past its current block.
+            leftPtr = nextLeftPtr;
+        } else { // This implies firstArray[leftPtr] > secondArray[rightPtr]
+            // If the value in 'secondArray' is smaller, advance its pointer past its current block.
+            rightPtr = nextRightPtr;
         }
 
-        // More debugging output for iteration state.
-        // outputChannel.printLine({ ptrA, ptrB, nextPtrA, nextPtrB, totalMatches });
+        // Another commented-out debugging line.
+        // console.log({ leftPtr, rightPtr, nextLeftPtr, nextRightPtr, finalResult });
     }
 
-    return totalMatches; // Return the final computed count.
+    // Return the accumulated final result.
+    return finalResult;
 }
-
-// This function simulates 'require' for demonstration purposes.
-function loadMod(moduleName) {
-    if (moduleName === "fileSys") {
-        return {
-            readText: function(path, encoding) {
-                // In a real scenario, this would read from the file system.
-                // For this cloning exercise, we're assuming the original uses Node.js 'fs'.
-                // The actual content of the input is not part of the cloning.
-                // We're just ensuring the structure matches.
-                return require("fs").readFileSync(path, encoding);
-            }
-        };
-    }
-    return null;
-}
-
-// This object simulates 'console' for demonstration purposes.
-const outputChannel = {
-    printLine: function(message) {
-        console.log(message);
-    }
-};

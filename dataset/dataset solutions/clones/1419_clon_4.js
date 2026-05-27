@@ -1,69 +1,32 @@
-const sourceData = require('node:fs').readFileSync('/dev/stdin', 'utf8');
+const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+const dataRows = fileContent.split('\n');
 
-const dataSegments = sourceData.split('\n');
-
-const processedRecords = dataSegments
-    .map(dataLine => {
-        const parts = dataLine.split(' ');
-        const gradeComponentA = Number(parts[0]);
-        const gradeComponentB = Number(parts[1]);
-        const gradeComponentC = Number(parts[2]);
-        return [gradeComponentA, gradeComponentB, gradeComponentC];
-    })
-    .filter(triple => {
-        // The original logic checks m + f + r == -3.
-        // If any component is NaN, the sum is NaN, which is never equal to -3.
-        // So, this filter correctly identifies the sentinel only when all are -1.
-        return !(triple[0] + triple[1] + triple[2] === -3);
-    });
-
-const performanceAssessments = [
-    {
-        conditionCheck: (param1, param2, param3) => param1 === -1 || param2 === -1,
-        outcomeCode: 'F'
-    },
-    {
-        conditionCheck: (param1, param2, param3) => param1 + param2 >= 80,
-        outcomeCode: 'A'
-    },
-    {
-        conditionCheck: (param1, param2, param3) => param1 + param2 >= 65,
-        outcomeCode: 'B'
-    },
-    {
-        conditionCheck: (param1, param2, param3) => param1 + param2 >= 50,
-        outcomeCode: 'C'
-    },
-    {
-        conditionCheck: (param1, param2, param3) => param1 + param2 >= 30 && param3 >= 50,
-        outcomeCode: 'C'
-    },
-    {
-        conditionCheck: (param1, param2, param3) => param1 + param2 >= 30,
-        outcomeCode: 'D'
-    },
-    {
-        conditionCheck: (param1, param2, param3) => true, // Default catch-all
-        outcomeCode: 'F'
-    }
+const evaluationCriteria = [
+    { check: (s1, s2, s3) => s1 === -1 || s2 === -1, outcome: 'F' },
+    { check: (s1, s2, s3) => s1 + s2 >= 80, outcome: 'A' },
+    { check: (s1, s2, s3) => s1 + s2 >= 65, outcome: 'B' },
+    { check: (s1, s2, s3) => s1 + s2 >= 50, outcome: 'C' },
+    { check: (s1, s2, s3) => s1 + s2 >= 30 && s3 >= 50, outcome: 'C' },
+    { check: (s1, s2, s3) => s1 + s2 >= 30, outcome: 'D' },
+    { check: (s1, s2, s3) => true, outcome: 'F' }
 ];
 
-const calculateFinalGrade = (firstVal, secondVal, thirdVal) => {
-    const matchingAssessment = performanceAssessments.find(assessment =>
-        assessment.conditionCheck(firstVal, secondVal, thirdVal)
-    );
-    return matchingAssessment.outcomeCode;
-};
+for (const currentLine of dataRows) {
+    const stringScores = currentLine.split(' ');
+    const firstScore = Number(stringScores[0]);
+    const secondScore = Number(stringScores[1]);
+    const resitScore = Number(stringScores[2]);
 
-const processRemainingRecords = (currentRecords, currentIndex = 0) => {
-    if (currentIndex >= currentRecords.length) {
-        return; // Base case: all records processed
+    if (firstScore + secondScore + resitScore === -3) {
+        break;
     }
 
-    const [v1, v2, v3] = currentRecords[currentIndex];
-    console.log(calculateFinalGrade(v1, v2, v3));
-
-    processRemainingRecords(currentRecords, currentIndex + 1); // Recursive step
-};
-
-processRemainingRecords(processedRecords);
+    let finalGrade = '';
+    for (const rule of evaluationCriteria) {
+        if (rule.check(firstScore, secondScore, resitScore)) {
+            finalGrade = rule.outcome;
+            break;
+        }
+    }
+    console.log(finalGrade);
+}

@@ -1,77 +1,74 @@
-const dataSource = require("fs").readFileSync("/dev/stdin", "utf8");
+const gridInput = require("fs").readFileSync("/dev/stdin", "utf8");
 
-((incomingData) => {
-    const textSegments = incomingData.split('\n');
+(function(inputDataString) {
+    const lineSegments = inputDataString.split('\n');
+    const [rowsCount, colsCount] = lineSegments[0].split(' ').map(Number);
+    const startPoint = lineSegments[1].split(' ').map(Number);
+    const endPoint = lineSegments[2].split(' ').map(Number);
 
-    const [gridRows, gridCols] = textSegments[0].split(' ').map(Number);
+    const gameMap = lineSegments.slice(3, 3 + rowsCount).map(rowStr => rowStr.split(''));
 
-    const startCoordinates = textSegments[1].split(' ').map(Number);
+    const wallSymbol = '#';
 
-    const endCoordinates = textSegments[2].split(' ').map(Number);
-
-    const labyrinthLayout = textSegments.slice(3, 3 + gridRows).map(line => line.split(''));
-
-    const obstructionCharacter = '#';
-
-    const updatePathCost = (rowIdx, colIdx, currentWeight, totalRows, totalCols, weightMap, layoutData, blockChar) => {
-        if (rowIdx < 0 || rowIdx >= totalRows || colIdx < 0 || colIdx >= totalCols) {
-            return false;
-        }
-        if (layoutData[rowIdx][colIdx] === blockChar) {
-            return false;
-        }
-        if (currentWeight < weightMap[rowIdx][colIdx]) {
-            weightMap[rowIdx][colIdx] = currentWeight;
-            return true;
-        }
-        return false;
+    const isWithinBoundsAndClear = (r, c) => {
+        return r >= 0 && r < rowsCount && c >= 0 && c < colsCount && gameMap[r][c] !== wallSymbol;
     };
 
-    const minimumPathWeights = Array(gridRows).fill(null).map(() => Array(gridCols).fill(Number.MAX_SAFE_INTEGER));
+    const costMatrix = Array.from({ length: rowsCount }, () => Array(colsCount).fill(Infinity));
 
-    const traversalQueue = [];
+    const zeroQ = [];
+    const oneQ = [];
 
-    const initialRow = startCoordinates[0] - 1;
-    const initialCol = startCoordinates[1] - 1;
-    minimumPathWeights[initialRow][initialCol] = 0;
+    const initialRow = startPoint[0] - 1;
+    const initialCol = startPoint[1] - 1;
 
-    traversalQueue.unshift([initialRow, initialCol]);
+    costMatrix[initialRow][initialCol] = 0;
+    zeroQ.push([initialRow, initialCol]);
 
-    while (traversalQueue.length > 0) {
-        const [currentRow, currentCol] = traversalQueue.shift();
-        const currentPathWeight = minimumPathWeights[currentRow][currentCol];
-
-        const directDisplacements = [
-            [1, 0], [-1, 0], [0, 1], [0, -1]
-        ];
-        for (const [dr, dc] of directDisplacements) {
-            const nextRow = currentRow + dr;
-            const nextCol = currentCol + dc;
-            if (updatePathCost(nextRow, nextCol, currentPathWeight, gridRows, gridCols, minimumPathWeights, labyrinthLayout, obstructionCharacter)) {
-                traversalQueue.unshift([nextRow, nextCol]);
+    while (zeroQ.length > 0 || oneQ.length > 0) {
+        if (zeroQ.length === 0 && oneQ.length > 0) {
+            while (oneQ.length > 0) {
+                zeroQ.push(oneQ.shift());
             }
         }
 
-        const jumpDisplacements = [
-            [-2, -2], [-2, -1], [-2, 0], [-2, 1], [-2, 2],
-            [-1, -2], [-1, -1], [-1, 1], [-1, 2],
-            [0, -2], [0, 2],
-            [1, -2], [1, -1], [1, 1], [1, 2],
-            [2, -2], [2, -1], [2, 0], [2, 1], [2, 2]
-        ];
-        const nextPathWeight = currentPathWeight + 1;
-        for (const [dr, dc] of jumpDisplacements) {
-            const nextRow = currentRow + dr;
-            const nextCol = currentCol + dc;
-            if (updatePathCost(nextRow, nextCol, nextPathWeight, gridRows, gridCols, minimumPathWeights, labyrinthLayout, obstructionCharacter)) {
-                traversalQueue.push([nextRow, nextCol]);
+        const [cellRow, cellCol] = zeroQ.shift();
+
+        const currentPathValue = costMatrix[cellRow][cellCol];
+
+        const directDeltas = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+        directDeltas.forEach(([rowDelta, colDelta]) => {
+            const neighborRow = cellRow + rowDelta;
+            const neighborCol = cellCol + colDelta;
+
+            if (isWithinBoundsAndClear(neighborRow, neighborCol) && currentPathValue < costMatrix[neighborRow][neighborCol]) {
+                costMatrix[neighborRow][neighborCol] = currentPathValue;
+                zeroQ.push([neighborRow, neighborCol]);
+            }
+        });
+
+        const warpCost = currentPathValue + 1;
+        for (let rOffset = -2; rOffset <= 2; rOffset++) {
+            for (let cOffset = -2; cOffset <= 2; cOffset++) {
+                if (Math.abs(rOffset) <= 1 && Math.abs(cOffset) <= 1) {
+                    continue;
+                }
+
+                const neighborRow = cellRow + rOffset;
+                const neighborCol = cellCol + cOffset;
+
+                if (isWithinBoundsAndClear(neighborRow, neighborCol) && warpCost < costMatrix[neighborRow][neighborCol]) {
+                    costMatrix[neighborRow][neighborCol] = warpCost;
+                    oneQ.push([neighborRow, neighborCol]);
+                }
             }
         }
     }
 
-    const targetRow = endCoordinates[0] - 1;
-    const targetCol = endCoordinates[1] - 1;
-    const finalResult = minimumPathWeights[targetRow][targetCol];
-    console.log(finalResult === Number.MAX_SAFE_INTEGER ? -1 : finalResult);
+    const finalRow = endPoint[0] - 1;
+    const finalCol = endPoint[1] - 1;
 
-})(dataSource);
+    const finalResult = costMatrix[finalRow][finalCol];
+    console.log(finalResult === Infinity ? -1 : finalResult);
+
+})(gridInput);

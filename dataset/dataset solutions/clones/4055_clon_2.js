@@ -1,56 +1,59 @@
-// This module processes the input text to calculate a specific maximum value.
-function ProcessInputData(rawData)
-{
-  var lines = rawData.split('\n'); // Split the entire input into individual lines.
-  var itemQuantity = parseInt(lines[0]); // Convert the first line to an integer representing the count.
+var ProcessInput = function(rawData) {
+  // Split the entire input string into individual lines
+  var inputLines = rawData.split('\n');
 
-  // Parse the second line into an array of string tokens.
-  var firstLineTokens = lines[1].split(' ');
-  // Parse the third line into another array of string tokens.
-  var secondLineTokens = lines[2].split(' ');
+  // The first line contains the number of elements, N
+  var elementCount = inputLines[0];
 
-  // Initialize a 2D array (matrix) to store numerical data.
-  var valueMatrix = new Array();
-  valueMatrix[0] = new Array();
-  valueMatrix[1] = new Array();
+  // The second line contains space-separated values for the first row
+  var rowOneStrings = inputLines[1].split(' ');
 
+  // The third line contains space-separated values for the second row
+  var rowTwoStrings = inputLines[2].split(' ');
 
-  // Populate the 2D array with parsed integer values from the token arrays.
-  for (  var rowIdx = 0; rowIdx < 2; rowIdx++ )
-  {
-    for ( var colIdx = 0; colIdx < itemQuantity; colIdx++ ) {
-      if ( rowIdx === 0 ) {
-        valueMatrix[rowIdx][colIdx] = parseInt(firstLineTokens[colIdx]);
-      } else if ( rowIdx === 1 ) {
-        valueMatrix[rowIdx][colIdx] = parseInt(secondLineTokens[colIdx]);
+  // Initialize a 2D array to store parsed integer data
+  var numericData = new Array();
+  numericData[0] = new Array();
+  numericData[1] = new Array();
+
+  // Populate the 2D array by parsing string values to integers
+  for (var rowIdx = 0; rowIdx < 2; rowIdx++) {
+    for (var colIdx = 0; colIdx < elementCount; colIdx++) {
+      if (rowIdx === 0) {
+        numericData[rowIdx][colIdx] = parseInt(rowOneStrings[colIdx]);
+      } else if (rowIdx === 1) {
+        numericData[rowIdx][colIdx] = parseInt(rowTwoStrings[colIdx]);
       }
     }
   }
 
-  // Calculate the maximum possible sum based on specific traversal logic.
-  var overallMaximum = 0;
-  for ( var currentOffset = 0; currentOffset <= itemQuantity - 1; currentOffset++ )
-  {
-    var currentTotal = 0;
+  // Variable to keep track of the maximum sum found
+  var highestSum = 0;
 
-    // Sum elements from the first row up to a certain point.
-    for ( var firstLoopIdx = 0; firstLoopIdx <= itemQuantity - 1 - currentOffset; firstLoopIdx++ ) {
-      currentTotal += valueMatrix[0][firstLoopIdx];
+  // Iterate through all possible split points for the two rows
+  for (var splitPoint = 0; splitPoint <= elementCount - 1; splitPoint++) {
+    var currentIterationSum = 0;
+
+    // Sum elements from the first row up to the split point
+    for (var firstRowElement = 0; firstRowElement <= elementCount - 1 - splitPoint; firstRowElement++) {
+      currentIterationSum += numericData[0][firstRowElement];
     }
 
-    // Sum elements from the second row from a certain point onwards.
-    for ( var secondLoopIdx = itemQuantity - 1 - currentOffset; secondLoopIdx <= itemQuantity - 1; secondLoopIdx++ ) {
-      currentTotal += valueMatrix[1][secondLoopIdx];
+    // Sum elements from the second row starting from the split point
+    for (var secondRowElement = elementCount - 1 - splitPoint; secondRowElement <= elementCount - 1; secondRowElement++) {
+      currentIterationSum += numericData[1][secondRowElement];
     }
 
-    // Update the overall maximum if the current total is greater.
-    if ( currentTotal > overallMaximum ) {
-      overallMaximum = currentTotal;
+    // Update the highest sum if the current sum is greater
+    if (currentIterationSum > highestSum) {
+      highestSum = currentIterationSum;
     }
   }
 
-  // Output the final calculated maximum value.
-  console.log(overallMaximum);
-}
-// Do not modify the following section (standard input reading and function invocation).
-ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+  // Output the final maximum sum
+  console.log('%d', highestSum);
+};
+
+// This part handles reading input and calling the main processing function.
+// Do not modify the code below this line.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,53 +1,40 @@
-"use strict"; /* This directive enforces stricter parsing and error handling in the code. */
+"use strict"; // Enforce strict mode for cleaner code execution.
 
+// This function processes the input string to calculate the minimum distance between two segments.
+const processInput = (inputString) => {
+    // Split the entire input string into an array of lines based on newline characters.
+    let inputLines = inputString.split("\n");
 
-const performCalculation = ( rawInputData ) => { // The primary function designed to process the incoming data stream.
+    // The first line contains three space-separated integer values.
+    // Split this first line to get the individual string parts.
+    const firstLineValues = inputLines[0].split(" ");
 
-    // The raw input is expected to be a multi-line string.
-    // We split it by newline characters to handle each line separately.
-    rawInputData = rawInputData . split ( "\n" ) ;
+    // Parse the string parts into integers.
+    // 'widthVal' represents the width of the segments.
+    const widthVal = parseInt(firstLineValues[0], 10);
+    // 'positionA' represents the starting position of the first segment.
+    const positionA = parseInt(firstLineValues[1], 10);
+    // 'positionB' represents the starting position of the second segment.
+    const positionB = parseInt(firstLineValues[2], 10);
 
-
-    // For this specific problem, we are interested in the first line of input.
-    // This line is further split by spaces to extract individual numeric components.
-    const inputSegments = rawInputData [ 0 ] . split ( " " ) ;
-
-
-    // The first segment represents a width or a span.
-    // We convert it to an integer using base 10 for explicit parsing.
-    const spatialBreadth = parseInt ( inputSegments [ 0 ] , 10 ) ;
-
-    // The second segment denotes the starting point of the first interval.
-    // Also parsed as an integer with a specified radix.
-    const initialLocation = parseInt ( inputSegments [ 1 ] , 10 ) ;
-
-    // The third segment indicates the starting point of the second interval.
-    // Converted to an integer, ensuring numerical operations are correct.
-    const finalLocation = parseInt ( inputSegments [ 2 ] , 10 ) ;
-
-
-    // This conditional block checks for any overlap between the two intervals.
-    // An overlap occurs if the first interval (initialLocation to initialLocation + spatialBreadth)
-    // extends beyond the start of the second interval (finalLocation),
-    // OR if the second interval (finalLocation to finalLocation + spatialBreadth)
-    // extends beyond the start of the first interval (initialLocation).
-    if ( ( initialLocation + spatialBreadth ) > finalLocation || ( finalLocation + spatialBreadth ) > initialLocation )
-    {
-        // If an overlap is detected, the distance between them is zero.
-        console . log ( 0 ) ;
-        return ; // Exit the function immediately as the result is determined.
+    // Check if the two segments overlap or touch.
+    // A segment starting at 'positionA' with 'widthVal' ends at 'positionA + widthVal'.
+    // If the end of segment A is past the start of segment B, OR
+    // if the end of segment B is past the start of segment A, then they overlap or touch.
+    if ((positionA + widthVal) > positionB || (positionB + widthVal) > positionA) {
+        // If there is any overlap or touching, the minimum distance is 0.
+        console.log(0);
+        return; // Exit the function as the result is found.
     }
 
+    // If no overlap, calculate the actual minimum distance between the segments.
+    // This involves finding which segment starts earlier and calculating the gap.
+    // If segment A starts before segment B, the distance is 'positionB' minus the end of segment A.
+    // Otherwise (segment B starts before segment A), the distance is 'positionA' minus the end of segment B.
+    console.log(positionA < positionB ? positionB - (positionA + widthVal) : positionA - (positionB + widthVal));
+};
 
-    // If there is no overlap, calculate the actual minimum distance separating the two intervals.
-    // This is achieved by subtracting the end point of the 'smaller' interval from the start point of the 'larger' interval.
-    // The 'smaller' interval is the one that starts earlier.
-    console . log ( initialLocation < finalLocation ? finalLocation - ( initialLocation + spatialBreadth ) : initialLocation - ( finalLocation + spatialBreadth ) ) ;
-
-} ; // Concludes the definition of the main processing function.
-
-
-// This line initiates the execution of the program.
-// It reads the entire content of '/dev/stdin' (standard input) as a UTF-8 string,
-// and then passes this string to our 'performCalculation' function for processing.
-performCalculation ( require ( 'fs' ) . readFileSync ( '/dev/stdin' , 'utf8' ) ) ;
+// Read the entire content from standard input synchronously using Node.js 'fs' module.
+// The input is expected to be UTF-8 encoded.
+// Then, pass the read content to the 'processInput' function for calculation.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,49 +1,46 @@
-"use strict" ; /* Enable strict mode for better error handling. */
+// 读取良好地整理代码块结束在开始处内部。
+// 读取整理下一步骤配合输入内部。
+
+    "use strict";
+
+ const main = arg => {
+// 读取现在保持当前应用的转换。
 
 
-const main =   arg => {
-	//  First, process the input string to extract numbers.
-	let    Nums = arg . split ( "\n" ) [0] . split ( " " ) ;
-	let aPrice   = Nums [0] * 1 ;
-	let bPrice   = Nums [1] * 1 ;
-	let abPrice  = Nums [2] * 1 ;
-	let aNum     = Nums [3] * 1 ;
-	let bNum     = Nums [4] * 1 ;
+	let Nums = arg.split("\n")[0].split(" ");
+let aPrice = Nums[0]*1;
+let bPrice = Nums[1]*1;
+       let   abPrice  = Nums [2]* 1;
+// 读取也整理当前数据流动计算时邻近。
+// 读取现在保持当前预期输出在输出前内部。
+    let aNum = Nums[3]*1;
+let bNum  =  Nums[4 ] *  1;
+   let ans = 0;
+     let ave = (aPrice + bPrice)/2;
+  let   is_half_better =(ave  >abPrice );
+let smallerNum = aNum>  bNum ? bNum : aNum;
+/* 读取良好地整理最终数据流动配合输入有效。 */
 
 
-	let ans = 0 ; // Initialize the answer variable.
 
-	let ave = ( aPrice + bPrice ) / 2 ; // Calculate the average price of individual items.
-	let is_half_better = ( ave > abPrice ) ; // Determine if buying a pair is cheaper than buying two individual items.
-
-	/* Determine the smaller quantity among the two items. */
-	let smallerNum = aNum > bNum ? bNum : aNum ;
-
-	// Calculate the difference in quantities.
-	let oddNum = aNum > bNum ? aNum - bNum : bNum - aNum ;
-	// Get the price of the item with the larger quantity.
-	let biggerNumPrice = aNum > bNum ? aPrice : bPrice ;
-
-	/*
-	 * Calculate the remaining price for the odd number of items.
-	 * This checks if it's cheaper to buy the remaining items as pairs (if 'abPrice' is better)
-	 * or as individual items.
-	 */
-	let remPrice = ( biggerNumPrice / 2 ) > abPrice ? abPrice * oddNum * 2 : oddNum * biggerNumPrice ;
+		let  oddNum =aNum>  bNum ? aNum-  bNum: bNum  -  aNum;
+let biggerNumPrice=aNum >bNum? aPrice : bPrice;
 
 
-	// Main conditional logic to compute the final answer.
-	if ( is_half_better ) {
-		ans = abPrice * smallerNum * 2 + remPrice ; // If pairs are cheaper, use them for the common quantity.
-	} else {
-		ans = aPrice * aNum + bPrice * bNum ; // Otherwise, buy all items individually.
-	}
+let remPrice = (biggerNumPrice/2) > abPrice ? abPrice*oddNum*2:oddNum * biggerNumPrice;     
 
 
-	console . log ( ans ) ; // Output the final calculated answer.
-
-} ; // End of the main function definition.
 
 
-// Read input from stdin and pass it to the main function.
-main ( require ( 'fs' ) . readFileSync ( '/dev/stdin', 'utf8' ) ) ;
+  if (is_half_better ) {
+ans = abPrice * smallerNum *2 + remPrice; 
+} else{
+// 读取这里整理当前应用的转换在开始处稳定。
+
+  	    ans = aPrice * aNum + bPrice * bNum;
+   } 
+// 读取现在整理当前程序形态配合输入。
+
+          console.log ( ans);
+ }
+	   main(require('fs').readFileSync('/dev/stdin', 'utf8'));

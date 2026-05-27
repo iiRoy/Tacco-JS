@@ -1,38 +1,53 @@
-((inputString) => {
-    const allLines = inputString.trim().split('\n').filter(Boolean);
-    const pointQuantity = Number(allLines[0]);
+const processInputData = (rawDataString) => {
+    const allLines = rawDataString.trim().split('\n');
+    const pointQuantity = parseInt(allLines[0].split(' ')[0], 10);
 
-    const allCoords = allLines.slice(1).map(s => s.split(' ').map(Number));
+    const coordinateData = allLines.slice(1).map(lineText =>
+        lineText.split(' ').map(valStr => parseInt(valStr, 10))
+    );
 
-    const redSet = allCoords.slice(0, pointQuantity);
-    const blueSet = allCoords.slice(pointQuantity, 2 * pointQuantity);
+    const redCoordinates = coordinateData.slice(0, pointQuantity);
+    const blueCoordinates = coordinateData.slice(pointQuantity, 2 * pointQuantity);
 
-    const coordinateComparator = (alpha, beta) => Math.min(alpha[0], alpha[1]) - Math.min(beta[0], beta[1]);
+    return { pointQuantity, redCoordinates, blueCoordinates };
+};
 
-    redSet.sort(coordinateComparator);
-    blueSet.sort(coordinateComparator);
+const coordinateComparator = (pointAlpha, pointBeta) =>
+    Math.min(pointAlpha[0], pointAlpha[1]) - Math.min(pointBeta[0], pointBeta[1]);
 
-    const initialMatchState = {
-        currentMatches: 0,
-        nextBluePosition: 0
-    };
+const determineMatchCount = (redPointsCollection, bluePointsCollection) => {
+    const initialMatchState = { currentMatchCount: 0, nextBluePointIndex: 0 };
 
-    const finalMatchResult = redSet.reduce((pairAccumulator, currentRedPt) => {
-        const availableBlueSublist = blueSet.slice(pairAccumulator.nextBluePosition);
+    const finalMatchState = redPointsCollection.reduce((accumulator, currentRedPoint) => {
+        const availableBluePoints = bluePointsCollection.slice(accumulator.nextBluePointIndex);
 
-        const relativeIndex = availableBlueSublist.findIndex(potentialBluePt =>
-            currentRedPt[0] < potentialBluePt[0] && currentRedPt[1] < potentialBluePt[1]
+        const relativeMatchIndex = availableBluePoints.findIndex(candidateBluePoint =>
+            currentRedPoint[0] < candidateBluePoint[0] && currentRedPoint[1] < candidateBluePoint[1]
         );
 
-        if (relativeIndex !== -1) {
+        if (relativeMatchIndex !== -1) {
+            const absoluteMatchIndex = accumulator.nextBluePointIndex + relativeMatchIndex;
             return {
-                currentMatches: pairAccumulator.currentMatches + 1,
-                nextBluePosition: pairAccumulator.nextBluePosition + relativeIndex + 1
+                currentMatchCount: accumulator.currentMatchCount + 1,
+                nextBluePointIndex: absoluteMatchIndex + 1
             };
         } else {
-            return pairAccumulator;
+            return accumulator;
         }
     }, initialMatchState);
 
-    return `${finalMatchResult.currentMatches}`;
-})(require('fs').readFileSync('/dev/stdin', 'utf8'));
+    return finalMatchState.currentMatchCount;
+};
+
+const mainExecution = (inputContent) => {
+    const { redCoordinates, blueCoordinates } = processInputData(inputContent);
+
+    redCoordinates.sort(coordinateComparator);
+    blueCoordinates.sort(coordinateComparator);
+
+    const totalMatches = determineMatchCount(redCoordinates, blueCoordinates);
+
+    return `${totalMatches}`;
+};
+
+console.log(mainExecution(require('fs').readFileSync('/dev/stdin', 'utf8')));

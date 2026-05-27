@@ -1,99 +1,66 @@
 process.stdin.resume();
 process.stdin.setEncoding("utf8");
 
-// Initialize the interface for reading line-by-line input from standard input.
-const ioInterface = require("readline").createInterface({
+const inputHandler = require("readline").createInterface({
   input: process.stdin,
-  output: process.stdout, // Output stream is not directly used for writing, but required by createInterface.
+  output: process.stdout,
 });
 
-// Buffer to accumulate all lines received from the input stream.
-const receivedInputLines = [];
+const inputLines = [];
 
-// Event listener: captures each line of input as it becomes available.
-ioInterface.on("line", (segmentOfLine) => {
-  receivedInputLines.push(segmentOfLine);
+inputHandler.on("line", (currentLine) => {
+  inputLines.push(currentLine);
 });
 
-// Event listener: triggered when the input stream concludes, signaling
-// that all data has been received and processing can begin.
-ioInterface.on("close", () => {
-  // Validate if any input was actually provided.
-  if (receivedInputLines.length === 0) {
-    console.error("Error: No input data received. Please provide a terrain profile.");
-    return; // Exit if no input.
-  }
+inputHandler.on("close", () => {
+  const terrainMap = inputLines[0];
 
-  // The first line of input is treated as the terrain profile string.
-  const terrainShapeDefinition = receivedInputLines[0];
+  const leftSlopeIndices = [];
+  const waterBodies = [];
+  const mapLength = terrainMap.length;
 
-  // Stack to store the indices of encountered descending slopes ('\').
-  const descendingSlopeIndices = [];
-  // Stack to hold data about detected water basins (pools), including their volume and left boundary.
-  const waterBasinRecords = [];
+  const LEFT_SLOPE_CHAR = "\\";
+  const RIGHT_SLOPE_CHAR = "/";
 
-  // Iterate over each character in the terrain definition string.
-  // Using a traditional for loop for precise index management.
-  for (let currentCharacterIndex = 0; currentCharacterIndex < terrainShapeDefinition.length; ++currentCharacterIndex) {
-    const currentTerrainSymbol = terrainShapeDefinition[currentCharacterIndex];
+  for (let currentIndex = 0; currentIndex < mapLength; currentIndex++) {
+    const currentSymbol = terrainMap[currentIndex];
 
-    // Process the symbol to determine its effect on water basins.
-    switch (currentTerrainSymbol) {
-      case "\\":
-        // A backslash signifies the start of a potential basin. Store its index.
-        descendingSlopeIndices.push(currentCharacterIndex);
-        break;
+    if (currentSymbol === LEFT_SLOPE_CHAR) {
+      leftSlopeIndices.push(currentIndex);
+    } else if (currentSymbol === RIGHT_SLOPE_CHAR) {
+      const lastLeftSlopeIndex = leftSlopeIndices.pop();
 
-      case "/":
-        // A forward slash signifies an ascending slope, potentially closing a basin.
-        const lastDescendingSlopeStart = descendingSlopeIndices.pop();
+      if (lastLeftSlopeIndex !== undefined) {
+        let currentArea = currentIndex - lastLeftSlopeIndex;
+        let accumulatedPond = waterBodies.pop();
 
-        // If a matching descending slope was found (i.e., the stack was not empty):
-        if (lastDescendingSlopeStart !== undefined) {
-          // Calculate the initial volume of the newly formed basin segment.
-          let calculatedBasinVolume = currentCharacterIndex - lastDescendingSlopeStart;
+        let tempPondToProcess = accumulatedPond;
 
-          // Merge the current basin with any preceding basins that are now fully
-          // enclosed or extended by the current basin's depth.
-          // This loop continues as long as there are basins in storage and
-          // the top basin's left boundary is to the right of the current basin's start.
-          while (
-            waterBasinRecords.length > 0 &&
-            waterBasinRecords[waterBasinRecords.length - 1].leftEdge > lastDescendingSlopeStart
-          ) {
-            const enclosedBasin = waterBasinRecords.pop();
-            calculatedBasinVolume += enclosedBasin.volume; // Add its volume to the current.
+        while (tempPondToProcess) {
+          if (tempPondToProcess.first > lastLeftSlopeIndex) {
+            currentArea += tempPondToProcess.area;
+            tempPondToProcess = waterBodies.pop();
+          } else {
+            waterBodies.push(tempPondToProcess);
+            break;
           }
-
-          // Store the consolidated basin's information.
-          waterBasinRecords.push({ volume: calculatedBasinVolume, leftEdge: lastDescendingSlopeStart });
         }
-        break;
-
-      default:
-        // Any other character (e.g., '_') is considered flat ground and doesn't
-        // directly affect basin formation, so it's simply skipped.
-        // No action needed for these symbols.
-        break;
+        const newWaterBody = { area: currentArea, first: lastLeftSlopeIndex };
+        waterBodies.push(newWaterBody);
+      }
     }
   }
 
-  // Calculate the grand total volume of all accumulated water basins.
-  const totalAccumulatedVolume = waterBasinRecords.reduce(
-    (totalSum, basinEntry) => totalSum + basinEntry.volume,
-    0
-  );
-  console.log(totalAccumulatedVolume);
+  const totalPondArea = waterBodies.reduce((totalAreaAccumulator, pondElement) => totalAreaAccumulator + pondElement.area, 0);
+  console.log(totalPondArea);
 
-  // Construct the second output line: count of individual basins followed by their respective volumes.
-  let formattedOutputLine = "" + waterBasinRecords.length; // Start with the total count of basins.
+  const outputParts = [];
+  outputParts.push(waterBodies.length.toString());
 
-  // If there are any basins, append their individual volumes, space-separated.
-  if (waterBasinRecords.length > 0) {
-    const individualVolumesString = waterBasinRecords.map((basinEntry) => basinEntry.volume).join(" ");
-    formattedOutputLine += " " + individualVolumesString;
+  if (waterBodies.length > 0) {
+    const individualAreas = waterBodies.map((pondElement) => pondElement.area);
+    outputParts.push(individualAreas.join(" "));
   }
-
-  // Print the final formatted output line.
-  console.log(formattedOutputLine);
+  const outputMessage = outputParts.join(" ");
+  console.log(outputMessage);
 });

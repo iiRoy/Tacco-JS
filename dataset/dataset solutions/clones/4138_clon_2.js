@@ -1,18 +1,26 @@
-// The entire incoming dataset is passed as an argument.
-function ProcessInput ( rawData )
-{
-  var textLines = rawData.split ( "\n" ) ;
+function ProcessInput(rawData) {
+  // Split the entire input string by newline characters to get individual lines.
+  const inputLines = rawData.split("\n");
 
-    var parts = textLines [ 0 ] . split ( " " ) ;
+  // The first line contains the two numeric values separated by a space.
+  const firstLineParts = inputLines[0].split(" ");
 
-  var lowerLimit = Number ( parts [ 0 ] ) ;
-  var upperLimit = Number ( parts [ 1 ] ) ;
+  // Convert the first part to a number, representing the lower bound.
+  const minVal = Number(firstLineParts[0]);
 
-    // Determine the integer 'x' such that the expression lowerLimit * 2^(x-1) equals upperBound.
-  var finalCount = Math . floor ( Math . Log2 ( upperLimit / lowerLimit ) ) + 1 ;
+  // Convert the second part to a number, representing the upper bound.
+  const maxVal = Number(firstLineParts[1]);
 
-  console . log ( finalCount ) ;
+  // Calculate the result: find x such that minVal * 2^(x-1) = maxVal.
+  // This simplifies to 2^(x-1) = maxVal / minVal.
+  // Taking log base 2: x - 1 = log2(maxVal / minVal).
+  // So, x = floor(log2(maxVal / minVal)) + 1.
+  const resultValue = Math.floor(Math.Log2(maxVal / minVal)) + 1;
+
+  // Output the calculated result to the console.
+  console.log(resultValue);
 }
 
-// Do not modify the following section; it handles standard input/output and invokes the main processing function.
-ProcessInput ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+// This section handles reading from standard input and invoking the main processing function.
+// It should not be modified as it's part of the execution environment.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

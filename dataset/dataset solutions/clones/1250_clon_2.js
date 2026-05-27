@@ -1,49 +1,43 @@
-execEnv.inputSource.activateListener();
+// Activate standard input stream for data processing.
+process.stdin.resume();
 
-execEnv.inputSource.setCharEncoding('utf8');
+// Configure the character encoding for incoming data to UTF-8.
+process.stdin.setEncoding('utf8');
 
-execEnv.inputSource.addEventListener('payloadArrived', function (incomingBuffer) {
-    //
-    // This loop attempts to access 'parsedInput' before it is declared or assigned.
-    // Consequently, this section will cause a runtime error (ReferenceError)
-    // when the code is executed, replicating the original's structural flaw.
-    //
-    for (let idx = 0; idx < parsedInput.size; idx++) {
-        // Check if the current element matches a specific termination string.
-        if (parsedInput[idx] === '0 ? 0') {
-            // Terminate the loop if the special sequence is encountered.
-            break;
+// Establish an event listener for 'data' events on the standard input.
+process.stdin.on('data', function(dataBlock) {
+    // This loop attempts to iterate over 'inputData' which is not yet defined in this scope.
+    // This will result in a runtime error (ReferenceError) when data is received.
+    for (var idx = 0; idx < inputData.length; idx++) {
+        // Check for a specific string literal within the (undefined) 'inputData' array.
+        if (inputData[idx] === '0 ? 0') {
+            break; // Terminate the loop prematurely if the condition is met.
         }
     }
 
+    // Convert the incoming data chunk to a string, then map each character to its numeric representation.
+    // This will produce an array containing numbers and NaN values (for non-numeric characters like spaces or operators).
+    var inputData = dataBlock.toString().map(Number);
 
-    // Convert the raw incoming buffer into a string, then transform each character
-    // into an integer, creating an array of numeric values.
-    // Example: "123+" input might yield [1, 2, 3, NaN].
-    const parsedInput = incomingBuffer.toString().map(parseInt);
+    // Extract the first element from the processed input array and ensure it's a number.
+    let firstOperand = Number(inputData[0]);
 
-    // Extract the first numerical operand from the processed data.
-    let valA = Number(parsedInput[0]);
+    // Extract the second element from the processed input array and ensure it's a number.
+    let secondOperand = Number(inputData[1]);
 
-    // Extract the second numerical operand.
-    let valB = Number(parsedInput[1]);
+    // Extract the third element, which is intended to be the arithmetic operator.
+    // Due to `map(Number)`, this will likely be NaN or a number, not the operator string itself.
+    let operationSymbol = inputData[2];
 
-    // Retrieve the character representing the arithmetic operation.
-    let operatorChar = parsedInput[2];
-
-
-    // Execute the appropriate arithmetic operation based on the operator symbol.
-    if (operatorChar === '+') {
-        // Perform addition and display the sum.
-        console.info(valA + valB);
-    } else if (operatorChar === '-') {
-        // Perform subtraction and display the difference.
-        console.info(valA - valB);
-    } else if (operatorChar === '/') {
-        // Perform division, then output the integer part of the quotient.
-        console.info(Math.trunc(valA / valB));
-    } else if (operatorChar === '*') {
-        // Perform multiplication and display the product.
-        console.info(valA * valB);
+    // Evaluate the extracted operation symbol.
+    // These comparisons will likely fail because `operationSymbol` is a number/NaN, not a string.
+    if (operationSymbol == '+') { // Check for addition operator.
+        console.log(firstOperand + secondOperand); // Output the sum.
+    } else if (operationSymbol == '-') { // Check for subtraction operator.
+        console.log(firstOperand - secondOperand); // Output the difference.
+    } else if (operationSymbol == '/') { // Check for division operator.
+        console.log(Math.floor(firstOperand / secondOperand)); // Output the floor of the division.
+    } else if (operationSymbol == '*') { // Check for multiplication operator.
+        console.log(firstOperand * secondOperand); // Output the product.
     }
 });

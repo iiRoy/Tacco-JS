@@ -1,59 +1,85 @@
-function evaluateMonthStatus(numericSegment) {
-  if (numericSegment === 0) {
-    return "INVALID_SEGMENT";
-  } else if (numericSegment >= 1 && numericSegment <= 12) {
-    return "POSSIBLE_MONTH";
-  } else {
-    return "NOT_MONTH";
-  }
-}
+function processInputData(inputString) {
+  // Split the input string into an array of individual characters
+  const charArray = inputString.split('');
 
-function analyzeDatePattern(initialString) {
-  const characterArray = initialString.split("");
+  // Extract the first two characters as the first pair string
+  const firstPairStr = charArray[0] + charArray[1];
+  // Extract the next two characters as the second pair string
+  const secondPairStr = charArray[2] + charArray[3];
 
-  const firstTwoDigits = characterArray[0] + characterArray[1];
-  const lastTwoDigits = characterArray[2] + characterArray[3];
+  // Determine the type of the first pair (MM, YY, or invalid)
+  const firstPairType = checkMonthYearValidity(Number(firstPairStr));
+  // Determine the type of the second pair (MM, YY, or invalid)
+  const secondPairType = checkMonthYearValidity(Number(secondPairStr));
 
-  const firstStatus = evaluateMonthStatus(Number(firstTwoDigits));
-  const secondStatus = evaluateMonthStatus(Number(lastTwoDigits));
-
-  let patternClassification;
+  let finalOutcome; // Variable to store the determined format type
 
   /*
-   * This section determines the date format based on segment validity:
-   * - "INVALID_SEGMENT": Corresponds to "00", which is never a valid month.
-   * - "POSSIBLE_MONTH": Corresponds to "01-12", potentially a month.
-   * - "NOT_MONTH": Corresponds to "13-99", not a month.
+   * Logic for determining the date format based on pair types:
    *
-   * The logic proceeds as follows:
-   * 1. If any segment is "INVALID_SEGMENT" or both are "NOT_MONTH", the pattern is ambiguous and considered "NA".
-   * 2. If the first segment is a "POSSIBLE_MONTH":
-   *    a. If the second segment is "NOT_MONTH", it's classified as Month-Year (MMYY).
-   *    b. Otherwise (if the second is also a "POSSIBLE_MONTH"), the pattern is "AMBIGUOUS".
-   * 3. If the first segment is "NOT_MONTH":
-   *    a. If the second segment is a "POSSIBLE_MONTH", it's classified as Year-Month (YYMM).
-   *    b. Otherwise (if the second is "NOT_MONTH" or "INVALID_SEGMENT"), it's considered "NA".
+   * 'invalid_zero' (00) => NA (e.g., 00XX or XX00)
+   * 'not_month' (>12) => NA (e.g., 20XX or XX20, where 20 is not a month)
+   * 'is_month' (1-12) => Can be MM or YY
+   *
+   * Scenarios:
+   * 00XX or XX00 => NA
+   * >12XX or XX>12 => NA
+   * 1-12 and 1-12 => AMBIGUOUS (e.g., 0102 could be Jan 02 or Feb 01)
+   * 1-12 and >12 => MMYY (e.g., 0120 -> Jan 20)
+   * >12 and 1-12 => YYMM (e.g., 2001 -> 20 Jan)
    */
 
-  if (firstStatus === "INVALID_SEGMENT" || secondStatus === "INVALID_SEGMENT" || (firstStatus === "NOT_MONTH" && secondStatus === "NOT_MONTH")) {
-    patternClassification = "NA";
-  } else if (firstStatus === "POSSIBLE_MONTH") {
-    if (secondStatus === "NOT_MONTH") {
-      patternClassification = "MMYY";
-    } else {
-      patternClassification = "AMBIGUOUS";
+  // Check for invalid cases: any pair is 'invalid_zero' (00), or both are 'not_month' (>12)
+  if (firstPairType === 'invalid_zero' || secondPairType === 'invalid_zero' || (firstPairType === 'not_month' && secondPairType === 'not_month')) {
+    finalOutcome = 'NA';
+  }
+  // If the first pair is a valid month (1-12)
+  else if (firstPairType === 'is_month') {
+    // If the second pair is not a month (>12), then it must be MMYY
+    if (secondPairType === 'not_month') {
+      finalOutcome = 'MMYY';
     }
-  } else {
-    if (secondStatus === "POSSIBLE_MONTH") {
-      patternClassification = "YYMM";
-    } else {
-      patternClassification = "NA";
+    // If the second pair is also a valid month (1-12), it's ambiguous
+    else { // secondPairType === 'is_month'
+      finalOutcome = 'AMBIGUOUS';
+    }
+  }
+  // If the first pair is not a month (>12)
+  else { // firstPairType === 'not_month'
+    // If the second pair is a valid month (1-12), then it must be YYMM
+    if (secondPairType === 'is_month') {
+      finalOutcome = 'YYMM';
+    }
+    // If the second pair is also not a month (this case should ideally be caught by the first 'if',
+    // but included for completeness based on original structure)
+    else { // secondPairType === 'not_month'
+      finalOutcome = 'NA';
     }
   }
 
-  console.log(patternClassification);
+  // Output the determined format to the console
+  console.log(finalOutcome);
 }
 
-analyzeDatePattern(
-  require('fs').readFileSync('/dev/stdin', 'utf8')
-);
+/**
+ * Determines the type of a numeric value in the context of month/year parsing.
+ * @param {number} numericValue The two-digit number to evaluate.
+ * @returns {string} 'invalid_zero' if 0, 'is_month' if between 1 and 12, 'not_month' otherwise.
+ */
+function checkMonthYearValidity(numericValue) {
+  // If the value is 0, it's considered invalid for month/year parsing
+  if (numericValue === 0) {
+    return 'invalid_zero';
+  }
+  // If the value is between 1 and 12 (inclusive), it could be a month
+  else if (numericValue >= 1 && numericValue <= 12) {
+    return 'is_month';
+  }
+  // Otherwise, it's not a valid month (e.g., 13-99)
+  else {
+    return 'not_month';
+  }
+}
+
+// Read input from standard input and pass it to the main processing function
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,33 +1,24 @@
 'use strict';
 
-  const dataSource = require( 'fs' ) . readFileSync ( '/dev/stdin' , 'utf8' )
-    . trim ( ) . split ( '\n' )
-;
+const dataLines = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split('\n');
 
-let targetString = dataSource[ 0 ];
+let strVal = dataLines[0];
+let resultString = "Yes";
 
-    let finalVerdict = "Yes" ; // Initialize the outcome
-
-  for ( let charIndex = 0 ; charIndex < targetString.length ; charIndex ++ )
-    {
-      // Check for conditions at odd positions (1-indexed based on problem context)
-      if ( charIndex % 2 )
-      {
-          if ( targetString[ charIndex ] === "R" )
-          {
-            finalVerdict = "No"; // Found an 'R' at an odd index
-            break; // Terminate early
-          }
-      }
-      else
-      {
-        // Check for conditions at even positions (0-indexed)
-        if ( targetString[ charIndex ] === "L" )
-        {
-          finalVerdict = "No"; // Found an 'L' at an even index
-          break; // Terminate early
-        }
-      }
+for (let idx = 0; idx < strVal.length; idx++) {
+  // Check characters at odd positions (0-indexed)
+  if (idx % 2 !== 0) {
+    if (strVal[idx] === "R") {
+      resultString = "No";
+      break;
     }
+  } else {
+    // Check characters at even positions (0-indexed)
+    if (strVal[idx] === "L") {
+      resultString = "No";
+      break;
+    }
+  }
+}
 
-console.log( finalVerdict );
+console.log(resultString);

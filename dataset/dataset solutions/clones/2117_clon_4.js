@@ -1,75 +1,90 @@
-function processInput(dataText) {
-    const dataLines = dataText.trim().split("\n");
-    const [lengthString, constraintsCountString] = dataLines.shift().split(" ");
-    const desiredLength = parseInt(lengthString);
+function Main(sourceData) {
+  const dataLines = sourceData.split("\n");
+  const headerLine = dataLines.shift();
+  const [numDigitsStr, _] = headerLine.split(" "); // Second part (M) is not used, mirroring original
+  const numDigits = parseInt(numDigitsStr);
+  const constraintEntries = dataLines;
 
-    const digitRecords = new Map();
-    let isViable = true;
+  let digitMappings = new Map(); // Stores 0-indexed position -> digit value
+  let conflictDetected = false;
 
-    const constraintProcessor = (state, currentConstraintLine) => {
-        if (!state.viable) return state;
+  for (const entryText of constraintEntries) {
+    const parts = entryText.split(" ").map(Number);
+    const digitPosition = parts[0] - 1; // Convert to 0-indexed
+    const digitValue = parts[1];
 
-        const [positionString, valueString] = currentConstraintLine.split(" ");
-        const charPosition = parseInt(positionString) - 1;
-        const charValue = valueString;
-
-        if (state.records.has(charPosition)) {
-            if (state.records.get(charPosition) !== charValue) {
-                return { records: state.records, viable: false };
-            }
-        } else {
-            state.records.set(charPosition, charValue);
-        }
-        return state;
-    };
-
-    const finalConstraintState = dataLines.reduce(constraintProcessor, { records: new Map(), viable: true });
-
-    const digitRecordsMap = finalConstraintState.records;
-    isViable = finalConstraintState.viable;
-
-    if (!isViable) {
-        console.log(-1);
-        return;
+    // Original code's array access A[t[0]-1] would not error for invalid indices,
+    // and Map.set handles any key. The effect is that only valid indices 0 to numDigits-1 matter later.
+    if (digitMappings.has(digitPosition)) {
+      if (digitMappings.get(digitPosition) !== digitValue) {
+        conflictDetected = true;
+        break; // Stop processing if a conflict is found
+      }
     }
+    digitMappings.set(digitPosition, digitValue);
+  }
 
-    const numberComponents = Array.from({ length: desiredLength }, (_, index) => {
-        return digitRecordsMap.has(index) ? digitRecordsMap.get(index) : "U"; // "U" for unknown
-    });
+  if (conflictDetected) {
+    console.log(-1);
+    return;
+  }
 
-    // Replicating the original's sequential string replacement logic for 'n' (now 'U')
-    // A = A.replace(/^nnn/, "100");
-    if (desiredLength >= 3 && numberComponents[0] === "U" && numberComponents[1] === "U" && numberComponents[2] === "U") {
-        numberComponents[0] = '1';
-        numberComponents[1] = '0';
-        numberComponents[2] = '0';
-    }
-    // A = A.replace(/^nn([0-9])/, "10$1");
-    else if (desiredLength >= 3 && numberComponents[0] === "U" && numberComponents[1] === "U" && numberComponents[2] !== "U") {
-        numberComponents[0] = '1';
-        numberComponents[1] = '0';
-    }
-    // A = A.replace(/^n([0-9])/, "1$1");
-    else if (desiredLength >= 2 && numberComponents[0] === "U" && numberComponents[1] !== "U") {
-        numberComponents[0] = '1';
-    }
+  let constructedDigits = Array(numDigits).fill(null);
 
-    // A = A.replace(/n/g, "0");
-    for (let index = 0; index < desiredLength; index++) {
-        if (numberComponents[index] === "U") {
-            numberComponents[index] = '0';
-        }
+  // Populate constructedDigits from the mappings
+  for (let i = 0; i < numDigits; i++) {
+    if (digitMappings.has(i)) {
+      constructedDigits[i] = digitMappings.get(i);
     }
+  }
 
-    const finalStringRepresentation = numberComponents.join('');
-    const finalNumericValue = parseInt(finalStringRepresentation, 10);
+  // Apply specific rules for the first digit if it's not yet assigned (null)
+  if (constructedDigits[0] === null) {
+    if (numDigits === 1) {
+      constructedDigits[0] = 0; // For N=1, 'n' becomes '0'
+    } else if (numDigits >= 2) {
+      let shouldFirstBeOne = false;
+      // Mimic the original regex patterns for setting the first 'n' to '1'
+      // Corresponds to /^nnn/
+      if (numDigits === 3 && constructedDigits[1] === null && constructedDigits[2] === null) {
+        shouldFirstBeOne = true;
+      }
+      // Corresponds to /^nn([0-9])/
+      else if (numDigits === 3 && constructedDigits[1] === null && constructedDigits[2] !== null) {
+        shouldFirstBeOne = true;
+      }
+      // Corresponds to /^n([0-9])/
+      else if (constructedDigits[1] !== null) { // Covers N=2 or N=3, first 'n', second is digit
+        shouldFirstBeOne = true;
+      }
 
-    // Final validation: check if the resulting number has the correct number of digits
-    if (String(finalNumericValue).length !== desiredLength) {
-        console.log(-1);
-    } else {
-        console.log(finalNumericValue);
+      if (shouldFirstBeOne) {
+        constructedDigits[0] = 1;
+      } else {
+        // Fallback for N>1, first digit 'n', but no specific pattern matched (e.g., N=2, ['n','n'])
+        constructedDigits[0] = 0;
+      }
     }
+  }
+
+  // Fill any remaining unassigned digits (nulls) with 0, starting from the second digit
+  for (let i = 1; i < numDigits; i++) {
+    if (constructedDigits[i] === null) {
+      constructedDigits[i] = 0;
+    }
+  }
+
+  const finalNumberString = constructedDigits.join('');
+  const resultValue = parseInt(finalNumberString);
+
+  // Final validation: ensure the resulting number has the correct number of digits
+  // This catches cases like N=3, result "001" which becomes 1 (length 1)
+  if (String(resultValue).length === numDigits) {
+    console.log(resultValue);
+  } else {
+    console.log(-1);
+  }
 }
 
-processInput(require("fs").readFileSync("/dev/stdin", "utf8"));
+//*この行以降は編集しないでください（標準入出力から一度に読み込み、Mainを呼び出します）
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

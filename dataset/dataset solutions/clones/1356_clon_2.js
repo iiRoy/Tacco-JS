@@ -1,26 +1,33 @@
-/* This module handles standard input processing for a simple calculation. */
-let collectedInputLines = [];
+// This script processes a single line of input containing two space-separated numbers.
+// It then calculates and prints their product and twice their sum.
 
+let inputDataCollection = []; // Array to store all incoming lines from standard input.
+
+// Set up the interface for reading input from the console.
 const inputHandler = require('readline').createInterface({
-    input: process.stdin,
-    output: process.stdout
+  input: process.stdin,  // Specifies standard input as the source.
+  output: process.stdout // Specifies standard output for any prompts (though none are used here).
 });
 
-inputHandler.on('line', function (singleLine) {
-    collectedInputLines.push(singleLine);
+// When a new line of text is received from input, add it to our collection.
+inputHandler.on('line', function (currentLineText) {
+  inputDataCollection.push(currentLineText);
 });
 
+// Once the entire input stream has ended, execute the main processing logic.
 process.stdin.on('end', function () {
-    // Once all input is received, initiate the core processing.
-    performCalculation(collectedInputLines);
+  processInputAndDisplay(inputDataCollection);
 });
 
-function performCalculation(rawData) {
-    // Extract numerical values from the first line of raw input.
-    const numericTokens = rawData[0].split(' ');
-    let firstOperand = +numericTokens[0]; // Coerce string to number
-    let secondOperand = +numericTokens[1]; // Coerce string to number
+// Function to perform the core logic: parse input and print results.
+function processInputAndDisplay(receivedData) {
+  // The first element of the received data array is expected to be the line with numbers.
+  let parsedNumbersArray = receivedData[0].split(' ');
 
-    // Display the product of the numbers, followed by a calculation representing twice their sum.
-    console.log(firstOperand * secondOperand + ' ' + (firstOperand + secondOperand) * 2);
+  // Extract the two numbers, converting them from strings to actual numbers.
+  let firstValue = +parsedNumbersArray[0];
+  let secondValue = +parsedNumbersArray[1];
+
+  // Calculate the product and the "perimeter" (sum multiplied by two), then output.
+  console.log(firstValue * secondValue + ' ' + (firstValue + secondValue) * 2);
 }

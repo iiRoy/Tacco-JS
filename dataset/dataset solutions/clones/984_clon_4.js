@@ -1,69 +1,64 @@
-const fileSystemModule = require('node:fs');
-const inputFilePath = '/dev/stdin';
-const newlineCharacter = '\n';
+const inputSettings = { sourcePath: '/dev/stdin', lineDelimiter: '\n' };
 
-const sourceData = fileSystemModule.readFileSync(inputFilePath, 'utf8');
-const dataLines = sourceData.split(newlineCharacter);
+const fileSystemModule = require('fs');
 
-const primaryText = dataLines[0];
-const totalQueries = Number(dataLines[1]);
-const queryStrings = dataLines.slice(2, 2 + totalQueries);
+let rawInputLines = fileSystemModule.readFileSync(inputSettings.sourcePath, 'ascii')
+  .split(inputSettings.lineDelimiter);
 
-function constructLPS(sample) {
-  const patternLength = sample.length;
-  const lpsArray = Array(patternLength).fill(0);
-  let previousLPSLength = 0;
-  let currentIndex = 1;
+const mainText = rawInputLines[0];
+const patternCount = Number(rawInputLines[1]);
+const patternsToFind = rawInputLines.slice(2, 2 + patternCount);
 
-  while (currentIndex < patternLength) {
-    if (sample[currentIndex] === sample[previousLPSLength]) {
-      previousLPSLength++;
-      lpsArray[currentIndex] = previousLPSLength;
-      currentIndex++;
-    } else {
-      if (previousLPSLength !== 0) {
-        previousLPSLength = lpsArray[previousLPSLength - 1];
-      } else {
-        lpsArray[currentIndex] = 0;
-        currentIndex++;
-      }
+rawInputLines = null;
+
+function findPatternWithRabinKarp(textContent, searchPattern, baseAlphabetSize, modulusPrime) {
+    const textLength = textContent.length;
+    const patternLength = searchPattern.length;
+
+    if (patternLength === 0) return 1;
+    if (patternLength > textLength) return 0;
+
+    const ensurePositiveMod = (value, modVal) => ((value % modVal) + modVal) % modVal;
+
+    let highestPowerFactor = 1;
+    for (let k = 0; k < patternLength - 1; k++) {
+        highestPowerFactor = ensurePositiveMod(highestPowerFactor * baseAlphabetSize, modulusPrime);
     }
-  }
-  return lpsArray;
+
+    let patternHashValue = 0;
+    let currentWindowHashValue = 0;
+
+    for (let k = 0; k < patternLength; k++) {
+        patternHashValue = ensurePositiveMod(patternHashValue * baseAlphabetSize + searchPattern.charCodeAt(k), modulusPrime);
+        currentWindowHashValue = ensurePositiveMod(currentWindowHashValue * baseAlphabetSize + textContent.charCodeAt(k), modulusPrime);
+    }
+
+    for (let shiftIndex = 0; shiftIndex <= textLength - patternLength; shiftIndex++) {
+        if (patternHashValue === currentWindowHashValue) {
+            if (searchPattern === textContent.substring(shiftIndex, shiftIndex + patternLength)) {
+                return 1;
+            }
+        }
+
+        if (shiftIndex < textLength - patternLength) {
+            const charToRemoveCode = textContent.charCodeAt(shiftIndex);
+            const charToAddCode = textContent.charCodeAt(shiftIndex + patternLength);
+
+            let termToRemove = ensurePositiveMod(charToRemoveCode * highestPowerFactor, modulusPrime);
+            let intermediateHash = ensurePositiveMod(currentWindowHashValue - termToRemove, modulusPrime);
+
+            currentWindowHashValue = ensurePositiveMod(intermediateHash * baseAlphabetSize + charToAddCode, modulusPrime);
+        }
+    }
+
+    return 0;
 }
 
-function evaluatePresence(mainTextSource, searchPattern) {
-  const mainLength = mainTextSource.length;
-  const patternLength = searchPattern.length;
+const alphabetBase = 256;
+const largePrimeModulus = Math.pow(2, 31) - 1;
 
-  if (patternLength === 0) return 1;
-  if (mainLength === 0 && patternLength > 0) return 0;
-  if (patternLength > mainLength) return 0;
-
-  const patternLPS = constructLPS(searchPattern);
-
-  let textIndex = 0;
-  let patternIndex = 0;
-
-  while (textIndex < mainLength) {
-    if (searchPattern[patternIndex] === mainTextSource[textIndex]) {
-      textIndex++;
-      patternIndex++;
-    }
-
-    if (patternIndex === patternLength) {
-      return 1;
-    } else if (textIndex < mainLength && searchPattern[patternIndex] !== mainTextSource[textIndex]) {
-      if (patternIndex !== 0) {
-        patternIndex = patternLPS[patternIndex - 1];
-      } else {
-        textIndex++;
-      }
-    }
-  }
-  return 0;
+for (let patternIndex = 0; patternIndex < patternsToFind.length; patternIndex++) {
+    const currentPattern = patternsToFind[patternIndex];
+    const matchOutcome = findPatternWithRabinKarp(mainText, currentPattern, alphabetBase, largePrimeModulus);
+    console.log(matchOutcome);
 }
-
-queryStrings.forEach(currentPattern => {
-  console.log(evaluatePresence(primaryText, currentPattern));
-});

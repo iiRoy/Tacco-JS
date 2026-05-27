@@ -1,29 +1,37 @@
-function solvePuzzle(rawData) {
-    const extractedNumbers = rawData.match(/\d+/g).map(Number);
-    const initialElementCount = extractedNumbers[0];
-    const initialSequence = extractedNumbers.slice(1);
+function ProcessInput(rawData) {
+    const lines = rawData.split("\n");
+    const countVal = Number.parseInt(lines[0], 10);
+    const initialValues = lines[1].split(" ");
 
-    const reduceSequenceRecursively = (currentSequence) => {
-        if (currentSequence.length === 1) {
-            return currentSequence[0];
+    console.log(countVal, initialValues);
+
+    const numericSequence = initialValues.map(val => Number.parseInt(val, 10));
+    console.log(numericSequence);
+
+    const obtainMedianOfThree = (valA, valB, valC) =>
+        Math.max(Math.min(valA, valB), Math.min(Math.max(valA, valB), valC));
+
+    const reduceSequenceRecursively = (currentElements) => {
+        if (currentElements.length === 1) {
+            return currentElements[0];
         }
 
-        const nextSequence = [];
-        for (let position = 0; position <= currentSequence.length - 3; ++position) {
-            const firstValue = currentSequence[position];
-            const secondValue = currentSequence[position + 1];
-            const thirdValue = currentSequence[position + 2];
-
-            const medianValue = (firstValue + secondValue + thirdValue) - Math.min(firstValue, secondValue, thirdValue) - Math.max(firstValue, secondValue, thirdValue);
-            nextSequence.push(medianValue);
+        const nextElements = [];
+        for (let idx = 0; idx <= currentElements.length - 3; idx++) {
+            const median = obtainMedianOfThree(
+                currentElements[idx],
+                currentElements[idx + 1],
+                currentElements[idx + 2]
+            );
+            nextElements.push(median);
         }
-
-        return reduceSequenceRecursively(nextSequence);
+        console.log(nextElements);
+        return reduceSequenceRecursively(nextElements);
     };
 
-    const finalResult = reduceSequenceRecursively(initialSequence);
-    const outputFormat = 'the answer is %d';
-    console.log(outputFormat, finalResult);
+    const finalResult = reduceSequenceRecursively(numericSequence);
+
+    console.log('the answer is %d', finalResult);
 }
 
-solvePuzzle(require("fs").readFileSync("/dev/stdin", "utf8"));
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

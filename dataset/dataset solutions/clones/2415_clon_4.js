@@ -1,50 +1,61 @@
-const performTransformation = (rawData) => {
-    const dataSegments = rawData.trim().split("\n");
-    const [configLine, ...patternLines] = dataSegments;
-    const [dimensionA, dimensionB, ignoredParameter] = configLine.split(" ");
+"use strict";
 
-    const numRows = Number(dimensionA);
-    const numCols = Number(dimensionB);
+const processInputData = (sourceContent) => {
+    const contentLines = sourceContent.trim().split("\n");
+    const [gridHeight, gridWidth, unusedKey] = contentLines[0].split(" ").map(Number);
+    const charGrid = contentLines.slice(1, gridHeight + 1).map(lineString => lineString.split(""));
+    return { gridHeight, gridWidth, unusedKey, charGrid };
+};
 
-    const sourcePattern = patternLines.slice(0, numRows).map(line => line.split(""));
+const main = programInput => {
+    const { gridHeight, gridWidth, unusedKey, charGrid } = processInputData(programInput);
 
-    const gridReducer = (accumulatedInfo, currentPatternRow) => {
-        const rowProcessingResult = currentPatternRow.reduce((cellAccumulator, cellSymbol) => {
-            let identifierForCell = cellAccumulator.localIdentifier;
-            let updatedActiveSegmentFlag = cellAccumulator.activeSegmentFlag;
-
-            if (cellSymbol === "#") {
-                if (cellAccumulator.activeSegmentFlag) {
-                    identifierForCell++;
-                    updatedActiveSegmentFlag = false;
-                }
-                updatedActiveSegmentFlag = true;
-            }
-            
-            return {
-                localIdentifier: identifierForCell,
-                activeSegmentFlag: updatedActiveSegmentFlag,
-                rowSegmentIdentifiers: [...cellAccumulator.rowSegmentIdentifiers, identifierForCell]
-            };
-        }, { localIdentifier: accumulatedInfo.globalIdentifier, activeSegmentFlag: false, rowSegmentIdentifiers: [] });
-
-        const nextGlobalIdentifier = rowProcessingResult.localIdentifier + 1;
-
-        return {
-            globalIdentifier: nextGlobalIdentifier,
-            processedLayout: [...accumulatedInfo.processedLayout, rowProcessingResult.rowSegmentIdentifiers]
-        };
+    const initialProcessingState = {
+        accumulatedRows: [],
+        currentGlobalColor: 1,
+        segmentDetectionFlag: false
     };
 
-    const finalLayoutData = sourcePattern.reduce(gridReducer, { globalIdentifier: 1, processedLayout: [] });
+    const finalProcessingState = charGrid.reduce((gridAccumulator, currentRowChars) => {
+        const { currentGlobalColor: initialRowColor, segmentDetectionFlag: initialRowFlag } = gridAccumulator;
 
-    return finalLayoutData.processedLayout.map(row => row.join("")).join("\n");
+        const initialCellState = {
+            rowSegmentValues: [],
+            cellSpecificColor: initialRowColor,
+            cellSegmentTracker: initialRowFlag
+        };
+
+        const { rowSegmentValues: completedRowValues, cellSpecificColor: finalRowColor } = currentRowChars.reduce((cellAccumulator, currentCharacter) => {
+            const { rowSegmentValues, cellSpecificColor, cellSegmentTracker } = cellAccumulator;
+
+            let nextCellColor = cellSpecificColor;
+            let nextCellTracker = cellSegmentTracker;
+
+            if (currentCharacter === "#" && cellSegmentTracker) {
+                nextCellColor++;
+                nextCellTracker = false;
+            }
+            if (currentCharacter === "#") {
+                nextCellTracker = true;
+            }
+
+            return {
+                rowSegmentValues: [...rowSegmentValues, nextCellColor],
+                cellSpecificColor: nextCellColor,
+                cellSegmentTracker: nextCellTracker
+            };
+        }, initialCellState);
+
+        return {
+            accumulatedRows: [...gridAccumulator.accumulatedRows, completedRowValues],
+            currentGlobalColor: finalRowColor + 1,
+            segmentDetectionFlag: false
+        };
+    }, initialProcessingState);
+
+    const outputGrid = finalProcessingState.accumulatedRows;
+
+    console.log(outputGrid.map(row => row.join(",")).join("\n"));
 };
 
-const runProcessor = () => {
-    const rawDataFeed = require('fs').readFileSync('/dev/stdin', 'utf8');
-    const displayOutput = performTransformation(rawDataFeed);
-    console.log(displayOutput);
-};
-
-runProcessor();
+main(require('fs').readFileSync('/dev/stdin', 'utf8'));

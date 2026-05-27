@@ -1,124 +1,104 @@
-function InputTokenizer(sourceText) {
-    const _this = this;
-    _this.tokenPosition = 0;
-    _this.originalStreamContent = sourceText;
+function InputProcessor(inputString) {
+    var instanceRef = this;
+    instanceRef.currentIndex = 0;
+    instanceRef.originalInputString = inputString;
 
-    const prepareTokens = (rawInput) => {
-        let processedContent = rawInput.trim();
-        processedContent = processedContent.replace(/\s+/g, " ");
-        const segments = processedContent.split(" ");
-        return segments.filter(Boolean);
+    var _tokenizeInput = function(targetString) {
+        var processingResult = [];
+        var cleanedTarget = targetString.replace(/[\n \t]+/g, " ");
+        var tokens = cleanedTarget.split(" ");
+        for (var tokenIdx = 0, totalTokens = tokens.length; tokenIdx < totalTokens; tokenIdx++) {
+            processingResult.push(tokens[tokenIdx]);
+        }
+        return processingResult;
     };
 
-    _this.parsedTokens = prepareTokens(_this.originalStreamContent);
+    instanceRef.tokenizedStrings = _tokenizeInput(inputString);
 
-    _this.obtainNext = function() {
-        if (_this.tokenPosition >= _this.parsedTokens.length) {
+    var _fetchNextRawToken = function() {
+        if (instanceRef.currentIndex >= instanceRef.tokenizedStrings.length) {
             return null;
         }
-        const currentToken = _this.parsedTokens[_this.tokenPosition];
-        _this.tokenPosition++;
+        var currentToken = instanceRef.tokenizedStrings[instanceRef.currentIndex];
+        instanceRef.currentIndex++;
         return currentToken;
     };
 
-    _this.obtainNextInteger = function() {
-        const tokenString = _this.obtainNext();
-        if (tokenString === null) {
-            return null;
-        }
-        const numericValue = parseInt(tokenString, 10);
-        return isNaN(numericValue) ? null : numericValue;
+    instanceRef.getNextToken = function() {
+        return _fetchNextRawToken();
     };
 
-    _this.obtainNextFloat = function() {
-        const tokenString = _this.obtainNext();
-        if (tokenString === null) {
-            return null;
-        }
-        const floatValue = parseFloat(tokenString);
-        return isNaN(floatValue) ? null : floatValue;
+    instanceRef.getNextInteger = function() {
+        var token = _fetchNextRawToken();
+        return (token != null) ? parseInt(token, 10) : null;
     };
-    
-    _this.obtainNextByteValue = function() {
-        const tokenString = _this.obtainNext();
-        if (tokenString === null) {
-            return null;
-        }
-        const intValue = parseInt(tokenString, 10);
-        if (isNaN(intValue)) {
-            return null;
-        }
-        return Math.max(0, Math.min(255, intValue));
+
+    instanceRef.getNextFloat = function() {
+        var token = _fetchNextRawToken();
+        return (token != null) ? parseFloat(token) : null;
+    };
+
+    instanceRef.getNextByteArray = function() {
+        var token = _fetchNextRawToken();
+        return (token != null) ? new Int8Array(token) : null;
     };
 }
 
-function SolutionProcessor(dataInterpreter) {
-    const elementCount = dataInterpreter.obtainNextInteger();
-    let iterationGoal = dataInterpreter.obtainNextInteger(); // Changed to 'let' as it might be modified
+function ProcessSimulation(inputReader) {
+    var numElements = inputReader.getNextInteger();
+    var numSteps = inputReader.getNextInteger();
+    var transitionMap = {};
 
-    if (elementCount === null || iterationGoal === null || elementCount <= 0 || iterationGoal < 0) {
-        console.error("Error: Invalid element count or iteration goal provided.");
-        return;
+    var _populateTransitionMap = function(count, reader, map) {
+        for (var elementIdx = 0; elementIdx < count; elementIdx++) {
+            map[elementIdx + 1] = reader.getNextInteger();
+        }
+    };
+    _populateTransitionMap(numElements, inputReader, transitionMap);
+
+    var currentPosition = 1;
+    var visitedPositions = {};
+    var simulationStepCounter = 0;
+
+    var _detectCycle = function(startPosition, maxIterations, map, visitedTracker) {
+        var position = startPosition;
+        var stepCount = 0;
+        for (; stepCount < maxIterations; stepCount++) {
+            position = map[position];
+            if (visitedTracker[position] !== undefined) {
+                break;
+            }
+            visitedTracker[position] = stepCount;
+        }
+        return { finalPosition: position, stepsTaken: stepCount };
+    };
+
+    var cycleDetectionResult = _detectCycle(currentPosition, numElements, transitionMap, visitedPositions);
+    currentPosition = cycleDetectionResult.finalPosition;
+    simulationStepCounter = cycleDetectionResult.stepsTaken;
+
+    if (simulationStepCounter < numElements) {
+        var _calculateAdjustedSteps = function(initialSteps, cycleClosingPosition, visitedTrackerMap, totalStepsBeforeCycleBreak) {
+            var cycleStartStepIndex = visitedTrackerMap[cycleClosingPosition];
+            var cycleLength = totalStepsBeforeCycleBreak - cycleStartStepIndex;
+            var stepsBeforeCycleEntry = cycleStartStepIndex - 1;
+            var adjustedSteps = ((initialSteps - stepsBeforeCycleEntry) % cycleLength) + stepsBeforeCycleEntry;
+            return adjustedSteps;
+        };
+        numSteps = _calculateAdjustedSteps(numSteps, currentPosition, visitedPositions, simulationStepCounter);
     }
 
-    const transitionMap = new Map();
-    
-    for (let i = 0; i < elementCount; i++) {
-        const mapKey = i + 1;
-        const mapValue = dataInterpreter.obtainNextInteger();
-        if (mapValue === null) {
-            console.error(`Error: Missing value for map key ${mapKey}`);
-            return;
+    var finalResultPosition = 1;
+    var _executeFinalSimulation = function(startingPoint, totalSteps, map) {
+        var position = startingPoint;
+        for (var s = 0; s < totalSteps; s++) {
+            position = map[position];
         }
-        transitionMap.set(mapKey, mapValue);
-    }
-    
-    let currentPathValue = 1;
-    const visitedStates = new Map();
-    let sequenceIndex = 0;
+        return position;
+    };
+    finalResultPosition = _executeFinalSimulation(finalResultPosition, numSteps, transitionMap);
 
-    for (; sequenceIndex < elementCount; sequenceIndex++) {
-        if (!transitionMap.has(currentPathValue)) {
-            console.error(`Error: Path leads to an undefined state: ${currentPathValue}`);
-            currentPathValue = -1; 
-            break;
-        }
-        currentPathValue = transitionMap.get(currentPathValue);
-        
-        if (visitedStates.has(currentPathValue)) {
-            break;
-        }
-        visitedStates.set(currentPathValue, sequenceIndex);
-    }
-    
-    if (sequenceIndex < elementCount) {
-        const cycleEntryIndex = visitedStates.get(currentPathValue);
-        const cycleDuration = sequenceIndex - cycleEntryIndex;
-        const preCycleSegmentLength = cycleEntryIndex;
-
-        if (cycleDuration > 0 && iterationGoal > preCycleSegmentLength) {
-            const remainingStepsInCycle = (iterationGoal - preCycleSegmentLength) % cycleDuration;
-            iterationGoal = preCycleSegmentLength + remainingStepsInCycle;
-        }
-    }
-    
-    let finalOutcome = 1;
-    for (let stepCounter = 0; stepCounter < iterationGoal; stepCounter++) {
-        if (!transitionMap.has(finalOutcome)) {
-            console.warn(`Warning: Final path leads to an undefined state: ${finalOutcome}`);
-            finalOutcome = -1;
-            break;
-        }
-        finalOutcome = transitionMap.get(finalOutcome);
-    }
-    
-    process.stdout.write(String(finalOutcome) + '\n');
+    console.log(finalResultPosition);
 }
 
-try {
-    const fileContent = require("fs").readFileSync("/dev/stdin", "utf8");
-    const inputProcessor = new InputTokenizer(fileContent);
-    SolutionProcessor(inputProcessor);
-} catch (error) {
-    console.error("Failed to read input or process solution:", error.message);
-}
+ProcessSimulation(new InputProcessor(require("fs").readFileSync("/dev/stdin", "utf8")));

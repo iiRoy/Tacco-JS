@@ -1,116 +1,146 @@
-function ProcessInput( rawData ) {
-  // This function serves as the primary entry point, handling raw input data.
-  var lineArray = rawData.split( "\n" ); // Separate the input string into an array of lines.
-  lineArray.pop(); // Discard the last element, which is often an empty string due to trailing newline.
+function ProcessInput(rawData) {
+  // Split the raw input string into individual lines
+  var lineSegments = rawData.split("\n");
+  // Remove the last element, which is usually an empty string due to trailing newline
+  lineSegments.pop();
 
-  var firstLineData = lineArray[0].split( " " ); // Parse the first line for initial configuration values.
-  var gemCount = parseInt( firstLineData[0] ); // The total quantity of gems available initially.
-  var actionLimit = parseInt( firstLineData[1] ); // The maximum number of moves or operations allowed.
+  // Parse the first line for initial parameters
+  var firstLineData = lineSegments[0].split(" ");
+  var totalGemCount = parseInt(firstLineData[0]); // Number of initial gems
+  var maxOperations = parseInt(firstLineData[1]); // Maximum allowed operations
 
-  // Convert the second line of input into an array of integer gem values.
-  var gemPile = lineArray[1].split( " " ).map( itemString => parseInt(itemString) );
+  // Parse the second line for the initial gem values
+  var initialGems = lineSegments[1].split(" ").map(function(str) {
+    return parseInt(str);
+  });
 
-  var potentialMaxSum = 0; // This variable will store the sum of all positive gems from the initial pile.
-                           // It represents a theoretical upper bound for the score.
-  var reachedGoal = false; // A boolean flag indicating if the absolute maximum possible score has been achieved.
+  // Calculate the maximum possible sum if all positive gems were collected
+  var potentialMaxSum = 0;
+  // Flag to indicate if the maximum possible sum has been reached, allowing early exit
+  var computationComplete = false;
 
-  // Calculate the sum of all positive gems in the initial collection.
-  for ( var idx = 0, arrayLength = gemPile.length; idx < arrayLength; idx++ ) {
-    if ( gemPile[idx] > 0 ) {
-      potentialMaxSum = potentialMaxSum + gemPile[idx];
+  // Iterate through initial gems to find the sum of positive values
+  for (var idx = 0, lengthVal = initialGems.length; idx < lengthVal; idx++) {
+    if (initialGems[idx] > 0) {
+      potentialMaxSum = potentialMaxSum + initialGems[idx];
     }
   }
 
-  var currentMaxScore = 0; // Keeps track of the highest sum of gems currently held in hand across all explored states.
+  // Variable to store the highest score found during the operations
+  var highestScore = 0;
 
-  // Initiate the recursive state-space exploration process.
-  // The initial state includes all gems in the 'availableGems' pile and an empty 'heldGems' hand.
-  exploreStates( { availableGems: gemPile.slice(), heldGems: [] }, 1 );
+  // Start the recursive operation process
+  // Initial state: all gems in 'availableItems', 'heldItems' is empty
+  performRecursiveOperations({ availableItems: initialGems.slice(), heldItems: [] }, 1);
 
-  // The recursive function that explores different game states by performing operations.
-  function exploreStates( currentState, currentOperationNumber ) {
-    // Base condition for recursion:
-    // If the number of operations exceeds the defined limit OR the maximum possible score has already been attained.
-    if ( ( currentOperationNumber > actionLimit ) || reachedGoal ) {
-      return null; // Stop further exploration from this path.
+  /**
+   * Recursively explores possible operations to maximize the score.
+   * @param {object} currentState - The current state of gems, with 'availableItems' (dequeue) and 'heldItems' (hands).
+   * @param {number} operationNumber - The current operation count.
+   */
+  function performRecursiveOperations(currentState, operationNumber) {
+    // Base case: If operation limit exceeded or max possible sum achieved, stop.
+    if ((operationNumber > maxOperations) || computationComplete) {
+      return null;
     }
 
-    // --- Operations involving taking gems from the available pile ---
-    // These operations are only possible if there are gems remaining in the available pile.
-    if ( currentState.availableGems.length !== 0 ) {
-      // Operation 1: Take the first gem from the available pile.
-      var clonedStateA = { availableGems: currentState.availableGems.slice(), heldGems: currentState.heldGems.slice() };
-      takeFromFront( clonedStateA ); // Perform the 'take from front' action.
-      evaluateScore( clonedStateA ); // Assess the score for the new state.
-      exploreStates( clonedStateA, currentOperationNumber + 1 ); // Continue exploration with the updated state and incremented operation count.
+    // If there are gems available to be picked up
+    if (currentState.availableItems.length !== 0) {
+      // --- Operation A: Take from the front of available items ---
+      var tempStateA = { availableItems: currentState.availableItems.slice(), heldItems: currentState.heldItems.slice() };
+      PerformOperationA(tempStateA); // Modifies tempStateA
+      evaluateCurrentScore(tempStateA); // Checks and updates highestScore
+      performRecursiveOperations(tempStateA, operationNumber + 1); // Recurse with new state
 
-      // Operation 2: Take the last gem from the available pile.
-      var clonedStateB = { availableGems: currentState.availableGems.slice(), heldGems: currentState.heldGems.slice() };
-      takeFromBack( clonedStateB ); // Perform the 'take from back' action.
-      evaluateScore( clonedStateB ); // Assess the score for this state.
-      exploreStates( clonedStateB, currentOperationNumber + 1 ); // Recurse.
+      // --- Operation B: Take from the back of available items ---
+      var tempStateB = { availableItems: currentState.availableItems.slice(), heldItems: currentState.heldItems.slice() };
+      PerformOperationB(tempStateB); // Modifies tempStateB
+      evaluateCurrentScore(tempStateB); // Checks and updates highestScore
+      performRecursiveOperations(tempStateB, operationNumber + 1); // Recurse with new state
     }
 
-    // --- Operations involving returning gems from hand to the pile ---
-    // These operations iterate through each gem currently held in hand.
-    for ( var handIndex = 0, arrayLen = currentState.heldGems.length; handIndex < arrayLen; handIndex++ ) {
-      // Operation 3: Return a specific gem from hand to the front of the available pile.
-      var clonedStateC = { availableGems: currentState.availableGems.slice(), heldGems: currentState.heldGems.slice() };
-      returnToFront( clonedStateC, handIndex ); // Perform the 'return to front' action.
-      evaluateScore( clonedStateC ); // Check the score.
-      exploreStates( clonedStateC, currentOperationNumber + 1 ); // Recurse.
+    // Iterate through currently held gems for operations C and D
+    for (var j = 0, heldLength = currentState.heldItems.length; j < heldLength; j++) {
+      // --- Operation C: Return a held gem to the front of available items ---
+      var tempStateC = { availableItems: currentState.availableItems.slice(), heldItems: currentState.heldItems.slice() };
+      PerformOperationC(tempStateC, j); // Modifies tempStateC
+      evaluateCurrentScore(tempStateC); // Checks and updates highestScore
+      performRecursiveOperations(tempStateC, operationNumber + 1); // Recurse with new state
 
-      // Operation 4: Return a specific gem from hand to the back of the available pile.
-      var clonedStateD = { availableGems: currentState.availableGems.slice(), heldGems: currentState.heldGems.slice() };
-      returnToBack( clonedStateD, handIndex ); // Perform the 'return to back' action.
-      evaluateScore( clonedStateD ); // Check the score.
-      exploreStates( clonedStateD, currentOperationNumber + 1 ); // Recurse.
+      // --- Operation D: Return a held gem to the back of available items ---
+      var tempStateD = { availableItems: currentState.availableItems.slice(), heldItems: currentState.heldItems.slice() };
+      PerformOperationD(tempStateD, j); // Modifies tempStateD
+      evaluateCurrentScore(tempStateD); // Checks and updates highestScore
+      performRecursiveOperations(tempStateD, operationNumber + 1); // Recurse with new state
     }
 
-    // Internal helper function to update the global maximum score.
-    function evaluateScore( evaluationState ) {
-      var currentScore = calculateHeldGemsSum( evaluationState.heldGems ); // Compute the sum of gems currently held.
-      if ( currentMaxScore < currentScore ) { // If the current state yields a new highest score...
-        currentMaxScore = currentScore; // Update the global maximum score.
-        if ( potentialMaxSum === currentMaxScore ) { // If the theoretical maximum possible score is achieved...
-          reachedGoal = true; // Set the flag to terminate further exploration early.
+    /**
+     * Calculates the total value of held gems and updates the highest score if necessary.
+     * Also sets a flag if the potential maximum sum is reached.
+     * @param {object} evaluatedState - The state after an operation, containing 'heldItems'.
+     */
+    function evaluateCurrentScore(evaluatedState) {
+      var currentSum = calculateHandSum(evaluatedState.heldItems);
+      if (highestScore < currentSum) {
+        highestScore = currentSum;
+        // If the current score equals the maximum possible sum, we can stop further computation
+        if (potentialMaxSum === highestScore) {
+          computationComplete = true;
         }
       }
     }
   }
 
-  console.log( currentMaxScore ); // Output the final highest score found after all explorations.
+  // Output the final highest score found
+  console.log(highestScore);
 
-  // Utility function to compute the sum of values within an array of gems.
-  function calculateHeldGemsSum( heldGems ) {
+  /**
+   * Calculates the sum of all gem values in a given array.
+   * @param {Array<number>} gemHand - An array of gem values.
+   * @returns {number} The total sum of the gem values.
+   */
+  function calculateHandSum(gemHand) {
     var currentSum = 0;
-    for ( var idx = 0, arrayLength = heldGems.length; idx < arrayLength; idx++ ) {
-      currentSum = currentSum + heldGems[idx];
+    for (var idx = 0, lengthVal = gemHand.length; idx < lengthVal; idx++) {
+      currentSum = currentSum + gemHand[idx];
     }
     return currentSum;
   }
 
-  // Definition of Operation A: Moves the first gem from the available pile to the hand.
-  function takeFromFront( evaluationState ) {
-    evaluationState.heldGems[evaluationState.heldGems.length] = evaluationState.availableGems.shift();
+  /**
+   * Operation A: Moves the first gem from 'availableItems' to 'heldItems'.
+   * @param {object} modifiedState - The state object to modify.
+   */
+  function PerformOperationA(modifiedState) {
+    modifiedState.heldItems[modifiedState.heldItems.length] = modifiedState.availableItems.shift();
   }
 
-  // Definition of Operation B: Moves the last gem from the available pile to the hand.
-  function takeFromBack( evaluationState ) {
-    evaluationState.heldGems[evaluationState.heldGems.length] = evaluationState.availableGems.pop();
+  /**
+   * Operation B: Moves the last gem from 'availableItems' to 'heldItems'.
+   * @param {object} modifiedState - The state object to modify.
+   */
+  function PerformOperationB(modifiedState) {
+    modifiedState.heldItems[modifiedState.heldItems.length] = modifiedState.availableItems.pop();
   }
 
-  // Definition of Operation C: Removes a gem from the hand at a specific index and adds it to the front of the available pile.
-  function returnToFront( evaluationState, targetIndex ) {
-    evaluationState.availableGems.unshift( evaluationState.heldGems.splice( targetIndex, 1 )[0] );
+  /**
+   * Operation C: Moves a gem from 'heldItems' at a specific index to the front of 'availableItems'.
+   * @param {object} modifiedState - The state object to modify.
+   * @param {number} targetIndex - The index of the gem in 'heldItems' to move.
+   */
+  function PerformOperationC(modifiedState, targetIndex) {
+    modifiedState.availableItems.unshift(modifiedState.heldItems.splice(targetIndex, 1)[0]);
   }
 
-  // Definition of Operation D: Removes a gem from the hand at a specific index and adds it to the back of the available pile.
-  function returnToBack( evaluationState, targetIndex ) {
-    evaluationState.availableGems.push( evaluationState.heldGems.splice( targetIndex, 1 )[0] );
+  /**
+   * Operation D: Moves a gem from 'heldItems' at a specific index to the back of 'availableItems'.
+   * @param {object} modifiedState - The state object to modify.
+   * @param {number} targetIndex - The index of the gem in 'heldItems' to move.
+   */
+  function PerformOperationD(modifiedState, targetIndex) {
+    modifiedState.availableItems.push(modifiedState.heldItems.splice(targetIndex, 1)[0]);
   }
 }
 
-// The following line should not be modified, as it handles reading from standard input
-// and invoking the main processing function with the received data.
-ProcessInput( require("fs").readFileSync("/dev/stdin", "utf8") );
+// This line should not be edited (reads from standard input and calls Main)
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

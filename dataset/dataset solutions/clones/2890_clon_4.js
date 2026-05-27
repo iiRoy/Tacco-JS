@@ -1,22 +1,14 @@
-const processDocument = (incomingText) => {
-    const firstSegment = incomingText.split('\n')[0];
-    let nonOcularCharacterCount = 0;
+function processInputData(rawData) {
+    const lineSegments = rawData.split("\n");
+    const mainLine = lineSegments[0];
 
-    for (let currentSymbol of firstSegment) {
-        if (currentSymbol !== 'o') {
-            nonOcularCharacterCount++;
-        }
-    }
+    const relevantCharacters = Array.from(mainLine).filter(
+        (charElement) => charElement !== 'o'
+    );
 
-    switch (nonOcularCharacterCount >= 8) {
-        case true:
-            console.log("NO");
-            break;
-        case false:
-            console.log("YES");
-            break;
-    }
-};
+    const finalCount = relevantCharacters.length;
 
-const rawDataSource = require("fs").readFileSync("/dev/stdin", "utf8");
-processDocument(rawDataSource);
+    console.log(finalCount >= 8 ? "NO" : "YES");
+}
+
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

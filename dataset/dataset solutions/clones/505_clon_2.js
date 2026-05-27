@@ -1,30 +1,24 @@
-function ProcessInputData ( rawData )
-{ // This function serves as the primary entry point for handling incoming text data
+function ProcessInput(rawData) {
+  // Split the incoming data by newline characters to get an array of lines.
+  var dataRows = rawData.split('\n');
 
-  var parsedRows = rawData . split ( '\n' ) ; // Divide the raw input string into an array of individual lines
+  // Initialize a variable to hold the cumulative sum.
+  var totalSum = 0;
 
-  var totalSum = 0 ; // Initialize an accumulator variable to store the running sum of numbers
-
-  // Loop through the first ten potential data lines
-  for
-  (
-    var idx = 0 ; // Initialize line index
-    idx < 10 ; // Continue as long as the index is less than ten
-    ++ idx // Increment the line index for the next iteration
-  )
-  {
-    // Check if the current line is merely a newline character, indicating end of useful input
-    if ( parsedRows [ idx ] == '\n' )
-    {
-      break ; // Terminate the loop early if an empty line is encountered
+  // Iterate through the first ten elements of the dataRows array.
+  for (var idx = 0; idx < 10; ++idx) {
+    // If a line contains only a newline character, it signifies the end of meaningful input.
+    if (dataRows[idx] === "\n") {
+      break; // Terminate the loop early.
     }
-
-    // Convert the content of the current line to an integer and add it to the total sum
-    totalSum += parseInt ( parsedRows [ idx ] ) ;
+    // Convert the current line to an integer and add it to the running total.
+    totalSum += parseInt(dataRows[idx]);
   }
 
-  console . log ( totalSum ) ; // Output the final calculated sum to the console
+  // Display the final calculated sum to the standard output.
+  console.log(totalSum);
 }
 
-// Invoke the data processing routine by reading content from standard input
-ProcessInputData ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+// Read the entire content from standard input synchronously using Node.js 'fs' module,
+// then pass it to the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

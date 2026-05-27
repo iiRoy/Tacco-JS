@@ -1,50 +1,47 @@
-let incomingData = require('node:fs').readFileSync('/dev/stdin', 'utf-8');
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8'); // Acquire raw input from standard input stream.
 
-// Process raw input to get an array of time strings
-const timeStrings = (incomingData.trimEnd()).split('\n');
+// Clean up the input: remove any trailing newline character and then split the content into an array of lines.
+var lineData = (rawData.replace(/\n$/, "")).split("\n");
 
-// Extract the total number of entries to process
-let totalEntries = Number(timeStrings.shift());
+// The very first line of the input data specifies the total number of test cases.
+// We extract this value and convert it to a numeric type, removing it from the array.
+var numCases = lineData.shift() - 0x0; // Using hexadecimal for 0, which is mathematically equivalent.
 
-// Loop through each provided time entry
-for (let index = 0; index < totalEntries; index++) {
+// Begin iterating through each individual test case provided in the input.
+for (var idx = +0; idx < numCases; idx++) {
+    // For the current test case, split the time string (e.g., "HH:MM") into its hour and minute components.
+    var timeParts = lineData[idx].split(":");
 
-    // Split the current time string into hour and minute components
-    const timeComponents = timeStrings[index].split(':');
+    // Parse the hour value from the first part of the split string, specifying base 10.
+    var hourVal = parseInt(timeParts[0], 0xA); // Using hexadecimal for 10, which is mathematically equivalent.
+    // Parse the minute value from the second part of the split string, also specifying base 10.
+    var minuteVal = parseInt(timeParts[1], 10);
 
-    // Parse the hour value as an integer
-    let currentHour = parseInt(timeComponents[0], 10);
+    // Calculate the angular position of the hour hand on a 360-degree clock face.
+    // The hour hand moves 360 degrees in 12 hours (30 deg/hr), plus an additional movement based on minutes (0.5 deg/min).
+    var hourAngle = hourVal * (360.0 / 12.0) + minuteVal * ((360.0 / 12.0) / 60.0);
 
-    // Parse the minute value as an integer
-    let currentMinute = parseInt(timeComponents[1], 10);
+    // Calculate the angular position of the minute hand.
+    // The minute hand moves 360 degrees in 60 minutes (6 deg/min).
+    var minuteAngle = minuteVal * (360.0 / 60.0);
 
-    // Calculate the angle of the hour hand in degrees from 12 o'clock
-    // Hour hand moves 360/12 = 30 degrees per hour
-    // Minute hand moves 360/60 = 6 degrees per minute
-    // Hour hand also moves 30/60 = 0.5 degrees per minute
-    const hourAngleDegrees = currentHour * (360 / 12) + currentMinute * ((360 / 12) / 60);
+    // Determine the absolute difference between the two hand angles.
+    var angleDiff = Math.abs(hourAngle - minuteAngle);
 
-    // Calculate the angle of the minute hand in degrees from 12 o'clock
-    const minuteAngleDegrees = currentMinute * (360 / 60);
+    // Adjust the angle difference to always represent the smaller angle between the two hands (0 to 180 degrees).
+    angleDiff = Math.min(angleDiff, 360.0 - angleDiff);
 
-    // Determine the absolute difference between the two angles
-    let angleDifference = Math.abs(hourAngleDegrees - minuteAngleDegrees);
+    var resultString; // Declare a variable to hold the classification result for the current time.
 
-    // Adjust the angle to be the smaller of the two possible angles (e.g., 30 degrees instead of 330 degrees)
-    angleDifference = Math.min(angleDifference, 360 - angleDifference);
-
-    // Initialize a variable to hold the classified outcome
-    let outcomeMessage;
-
-    // Classify the angle difference into specific categories
-    if (angleDifference >= 0 && angleDifference < 30) {
-        outcomeMessage = "alert"; // Small angle difference
-    } else if (angleDifference >= 90 && angleDifference <= 180) {
-        outcomeMessage = "safe";  // Large angle difference
+    // Classify the calculated angle difference into one of three categories: "alert", "safe", or "warning".
+    if (angleDiff >= 0.0 && angleDiff < 30.0) {
+        resultString = "alert"; // Small angle difference indicates an alert situation.
+    } else if (angleDiff >= 90.0 && angleDiff <= 180.0) {
+        resultString = "safe"; // A large angle difference (90-180 degrees) indicates a safe situation.
     } else {
-        outcomeMessage = "warning"; // Moderate angle difference
+        resultString = "warning"; // Any other angle difference falls into the warning category.
     }
 
-    // Output the determined classification for the current time
-    console.log(outcomeMessage);
+    // Output the determined status string to the console for the current test case.
+    console.log(resultString);
 }

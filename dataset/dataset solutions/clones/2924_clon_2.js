@@ -1,188 +1,171 @@
-/*
- * This module provides utilities for parsing structured input data.
- * It's designed to read lines and tokens from a given string source.
- */
-var INPUT_PROCESSOR_FACTORY = (function() {
-    /**
-     * Creates a new data reader instance.
-     * This serves as the public interface for obtaining a parser.
-     * @param {string} inputContent - The raw string content to be parsed.
-     * @returns {DataStreamReader} An instance capable of parsing the input.
-     */
-    function createReader(inputContent) {
-        return new DataStreamReader(inputContent);
+var INPUT_PARSER = (function () {
+  // This function acts as a factory to create an instance of the InputReader.
+  function createParser(sourceContent) {
+    return new InputReader(sourceContent);
+  }
+
+  // The InputReader class is responsible for processing and providing input data.
+  function InputReader(rawInputString) {
+    // Stores the input content, split into individual lines after trimming whitespace.
+    this.lineBuffer = rawInputString.trim().split("\n");
+    // Keeps track of the current line being processed.
+    this.currentLineIndex = 0;
+  }
+
+  // Prototype method to extract a single value from the current line.
+  // The 'asString' parameter determines if the value should be returned as a string or a number.
+  InputReader.prototype.readSingleValue = function (asString) {
+    var lineData = this.lineBuffer, // Reference to the array of input lines.
+      lineIdx = this.currentLineIndex, // Current line number.
+      extractedValue; // Variable to hold the extracted data.
+
+    // If the current line is still a single string, split it by spaces and reverse it.
+    // Reversing allows efficient extraction using 'pop()' from the end.
+    if (typeof lineData[lineIdx] === "string") {
+      lineData[lineIdx] = lineData[lineIdx].split(" ").reverse();
     }
 
-    /**
-     * DataStreamReader class handles the actual parsing of the input string.
-     * It maintains an internal pointer to the current line being processed.
-     * @param {string} textData - The entire input string to be processed.
-     */
-    function DataStreamReader(textData) {
-        // Store lines after trimming leading/trailing whitespace and splitting by newline character.
-        this._sourceLines = textData.trim().split("\n");
-        // Pointer to the current line index, indicating which line to read next.
-        this._currentLineIndex = 0;
+    // Retrieve the last element from the (reversed) array of values on the current line.
+    extractedValue = lineData[lineIdx].pop();
+
+    // If all values on the current line have been read, advance to the next line.
+    if (!lineData[lineIdx].length) {
+      this.currentLineIndex++;
     }
 
-    /**
-     * Fetches the next single token from the current line.
-     * If the current line's tokens are exhausted, it implicitly prepares for the next line.
-     * @param {boolean} returnRaw - If true, returns the token as a string; otherwise, attempts to convert it to a number.
-     * @returns {string|number} The extracted token value.
-     */
-    DataStreamReader.prototype.fetchNextToken = function(returnRaw) {
-        var lineSegments = this._sourceLines,   // Reference to all lines of data
-            linePointer = this._currentLineIndex, // Current line number being processed
-            tokenValue; // Variable to hold the extracted token
+    // Return the extracted value, converting it to a number if 'asString' is false.
+    return asString ? extractedValue : +extractedValue;
+  };
 
-        // Check if the current line is still a single string; if so, split it into tokens.
-        if (typeof lineSegments[linePointer] === "string") {
-            // Split the line by spaces and reverse the array.
-            // This setup allows 'pop()' to effectively retrieve elements from the beginning of the original line.
-            lineSegments[linePointer] = lineSegments[linePointer].split(" ").reverse();
-        }
+  // Prototype method to read an entire line and split it into an array of values.
+  // 'asString' controls whether the array elements are strings or numbers.
+  InputReader.prototype.readLineValues = function (asString) {
+    // Get the current line, split it by spaces, and then increment the line index.
+    var valuesOnLine = this.lineBuffer[this.currentLineIndex++].split(" ");
+    // Return the array, mapping each element to a number if 'asString' is not true.
+    return asString ? valuesOnLine : valuesOnLine.map((val) => +val);
+  };
 
-        // Extract the last element from the reversed array (which was the first in the original line).
-        tokenValue = lineSegments[linePointer].pop();
+  // Prototype method to read a specified number of lines ('numLines') as a 2D array.
+  // Each line is split into values. 'asString' determines the data type of elements.
+  InputReader.prototype.readMatrix = function (numLines, asString) {
+    // Extract a segment of lines from the buffer and process each line.
+    var matrixRows = this.lineBuffer
+      .slice(this.currentLineIndex, (this.currentLineIndex += numLines)) // Slice and advance index.
+      .map((rowStr) => rowStr.split(" ")); // Split each row string into an array of values.
 
-        // If the current line has no more tokens after popping, advance the line pointer to the next line.
-        if (!lineSegments[linePointer].length) {
-            this._currentLineIndex++;
-        }
+    // Return the 2D array, converting inner array elements to numbers if 'asString' is false.
+    return asString
+      ? matrixRows
+      : matrixRows.map((row) => row.map((val) => +val));
+  };
 
-        // Return the token, either as its raw string form or converted to a number using unary plus operator.
-        return returnRaw ? tokenValue : +tokenValue;
-    };
+  // Prototype method to read a specified number of lines ('numLines') as raw strings.
+  // 'asString' controls whether the array elements are strings or numbers.
+  InputReader.prototype.readRawLines = function (numLines, asString) {
+    // Extract a segment of lines from the buffer.
+    var rawLineData = this.lineBuffer.slice(
+      this.currentLineIndex,
+      (this.currentLineIndex += numLines)
+    ); // Slice and advance index.
 
-    /**
-     * Reads and processes an entire line, returning all its tokens.
-     * The line pointer is advanced after reading.
-     * @param {boolean} keepText - If true, returns tokens as strings; otherwise, converts them to numbers.
-     * @returns {Array<string|number>} An array of tokens from the line.
-     */
-    DataStreamReader.prototype.getLineContents = function(keepText) {
-        // Get the current line, split it into tokens by space, and then advance the line pointer.
-        var tokensOnLine = this._sourceLines[this._currentLineIndex++].split(" ");
+    // Return the array, converting elements to numbers if 'asString' is false.
+    return asString ? rawLineData : rawLineData.map((val) => +val);
+  };
 
-        // Return tokens as strings or map them to numbers using the unary plus operator.
-        return keepText ? tokensOnLine : tokensOnLine.map(numericVal => +numericVal);
-    };
-
-    /**
-     * Reads a specified number of lines as a matrix (2D array of tokens).
-     * Each line is split into individual tokens. The line pointer is advanced.
-     * @param {number} rowCount - The number of lines (rows) to read for the matrix.
-     * @param {boolean} keepText - If true, returns tokens as strings; otherwise, converts them to numbers.
-     * @returns {Array<Array<string|number>>} A 2D array representing the extracted matrix.
-     */
-    DataStreamReader.prototype.getMatrixData = function(rowCount, keepText) {
-        // Slice the specified number of lines from the source and advance the line pointer.
-        var extractedMatrix = this._sourceLines.slice(this._currentLineIndex, this._currentLineIndex += rowCount)
-            .map(lineEntry => lineEntry.split(" ")); // For each line, split it into an array of tokens.
-
-        // Return the matrix with tokens as strings or map all inner cell values to numbers.
-        return keepText ? extractedMatrix : extractedMatrix.map(row => row.map(cell => +cell));
-    };
-
-    /**
-     * Reads a specified number of lines into a 1D array.
-     * The line pointer is advanced after reading.
-     * @param {number} lineCount - The number of lines to read.
-     * @param {boolean} keepText - If true, returns lines as strings; otherwise, converts them to numbers.
-     * @returns {Array<string|number>} An array containing the specified lines.
-     */
-    DataStreamReader.prototype.getLinesAsArray = function(lineCount, keepText) {
-        // Slice the specified number of lines from the source and advance the line pointer.
-        var lineCollection = this._sourceLines.slice(this._currentLineIndex, this._currentLineIndex += lineCount);
-
-        // Return the lines as strings or map each line's value to a number.
-        return keepText ? lineCollection : lineCollection.map(lineValue => +lineValue);
-    };
-
-    return createReader; // The factory function is returned as the module's export.
+  // The IIFE returns the factory function 'createParser'.
+  return createParser;
 })();
 
-// Create an input processor instance by reading raw data from standard input.
-var dataHandler = INPUT_PROCESSOR_FACTORY(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Initialize the input source by reading content from standard input.
+var inputSource = INPUT_PARSER(
+  require("fs").readFileSync("/dev/stdin", "utf8")
+);
 
-/**
- * Dynamically creates a multi-dimensional array with a specified fill value.
- * The dimensions for the array are passed as additional arguments to the function.
- * Example: initializeNestedArray(0, 2, 3) would create a 2x3 array filled with 0s.
- * @param {*} initialValue - The value to fill all elements of the array with.
- * @param {...number} dimensions - The dimensions of the array (e.g., dim1, dim2, dim3).
- * @returns {Array} The newly initialized multi-dimensional array.
- */
-function initializeNestedArray(initialValue) {
-    var dimensions = arguments, // Access all arguments to get the dimensions.
-        dimCount = dimensions.length, // Total number of dimensions specified.
-        // Start building the array creation expression from the innermost dimension.
-        arrayExpression = "Array(dimensions[" + --dimCount + "]).fill(0).map(_ => {return " + initialValue + ";})";
+// A utility function to create multi-dimensional arrays.
+// This function is not utilized in the primary logic of this script.
+function multiDimArray(fillValue) {
+  var dimensionArgs = arguments, // All arguments passed to the function.
+    argCount = dimensionArgs.length, // Number of dimensions.
+    arrayCreationString =
+      "Array(dimensionArgs[" +
+      --argCount +
+      "]).fill(0).map(x=>{return " +
+      fillValue +
+      ";})"; // Innermost array creation string.
 
-    // Construct nested map calls for each preceding dimension.
-    while (--dimCount) {
-        arrayExpression = "Array(dimensions[" + dimCount + "]).fill(0).map(_ => " + arrayExpression + ")";
-    }
+  // Construct the string for nested array creation.
+  while (--argCount) {
+    arrayCreationString =
+      "Array(dimensionArgs[" + argCount + "]).fill(0).map(x=>" + arrayCreationString + ")";
+  }
 
-    // Evaluate the constructed string to dynamically create and return the multi-dimensional array.
-    return eval(arrayExpression);
+  // Evaluate the constructed string to create the multi-dimensional array.
+  return eval(arrayCreationString);
 }
 
-// Execute the main computation function and log its result to the console.
-console.log(processInputData());
+// Execute the main calculation function and print its result to the console.
+console.log(calculateMaxSum());
 
-/**
- * Main function to process the input data and compute the required sum.
- * This function implements the core logic for the problem.
- * @returns {number} The maximum accumulated sum found based on the problem's criteria.
- */
-function processInputData() {
-    // Read the total number of elements from the input using the data handler.
-    var totalElements = dataHandler.fetchNextToken();
-    // Read the sequence of values (an array of numbers) from the next line of input.
-    var valueSequence = dataHandler.getLineContents();
-    // Initialize the variable to store the highest sum found across all valid iterations.
-    var maxAccumulatedSum = 0;
-    // Calculate the midpoint of the sequence for loop boundary conditions (integer division by 2).
-    var midpoint = totalElements >> 1;
+// The primary function that implements the core algorithm.
+function calculateMaxSum() {
+  // Read the first input value, which represents the size of the array.
+  var arraySize = inputSource.readSingleValue();
+  // Read the second line of input, which contains the data values for the array.
+  var dataValues = inputSource.readLineValues();
 
-    // Outer loop iterates through possible 'stride' values, from 1 up to (midpoint - 1).
-    for (var stride = 1; stride < midpoint; stride++) {
-        // A Set to keep track of indices already included in a pair within the current stride,
-        // preventing double-counting or invalid pairings.
-        var visitedIndices = new Set();
-        // Accumulator for the sum of pairs found in the current stride iteration.
-        var iterationSum = 0;
+  // Initialize the variable to store the highest sum found.
+  var maximumSum = 0;
+  // Calculate half of the array size using a bitwise right shift (integer division).
+  var halfSize = arraySize >> 0b1; // 0b1 is binary for 1.
 
-        // Inner loop iterates through starting positions based on the current stride.
-        // It goes from 'stride' up to 'totalElements - 2', incrementing by 'stride'.
-        for (var startPosition = stride; startPosition < totalElements - 1; startPosition += stride) {
-            // Calculate the symmetric counterpart index for the current startPosition.
-            var counterpartIndex = totalElements - startPosition - 1;
+  // Outer loop: Iterates through possible step increments.
+  // 'stepIncrement' starts from 1 and goes up to (but not including) 'halfSize'.
+  for (var stepIncrement = 0b1; stepIncrement < halfSize; stepIncrement++) {
+    // For each 'stepIncrement', a new Set is created to keep track of indices already processed
+    // within this specific iteration of the outer loop.
+    var processedIndices = new Set();
+    // 'currentPairSum' accumulates the sum for the current 'stepIncrement'.
+    var currentPairSum = 0;
 
-            // Check for invalid conditions that would cause the inner loop to break:
-            // 1. If the current startPosition has already been visited in this stride.
-            // 2. If its symmetric counterpart has already been visited.
-            // 3. If startPosition and its counterpart are the same (occurs with the middle element in odd-length sequences).
-            if (visitedIndices.has(startPosition) || visitedIndices.has(counterpartIndex) || startPosition === counterpartIndex) {
-                break; // Break the inner loop for this stride, as further iterations would be invalid.
-            }
+    // Inner loop: Iterates through indices based on the 'stepIncrement'.
+    // 'currentIndex' starts at 'stepIncrement' and increases by 'stepIncrement' in each step.
+    // It continues as long as 'currentIndex' is less than 'arraySize - 1'.
+    for (
+      var currentIndex = stepIncrement;
+      currentIndex < arraySize - 0b1;
+      currentIndex += stepIncrement
+    ) {
+      // Calculate the symmetric index relative to 'currentIndex'.
+      var symmetricIndex = arraySize - currentIndex - 0b1;
 
-            // Add the values from the current position and its symmetric counterpart to the iteration sum.
-            iterationSum += valueSequence[startPosition] + valueSequence[counterpartIndex];
+      // Check for conditions that require breaking the inner loop:
+      // 1. If 'currentIndex' has already been added to 'processedIndices'.
+      // 2. If 'symmetricIndex' has already been added to 'processedIndices'.
+      // 3. If 'currentIndex' and 'symmetricIndex' refer to the same element (e.g., the middle element in an odd-sized array).
+      if (
+        processedIndices.has(currentIndex) ||
+        processedIndices.has(symmetricIndex) ||
+        currentIndex === symmetricIndex
+      ) {
+        break; // Exit the inner loop if any of these conditions are met.
+      }
 
-            // Update the global maximum accumulated sum if the current iteration's sum is higher.
-            if (maxAccumulatedSum < iterationSum) {
-                maxAccumulatedSum = iterationSum;
-            }
+      // Add the values at 'currentIndex' and its 'symmetricIndex' to 'currentPairSum'.
+      currentPairSum += dataValues[currentIndex] + dataValues[symmetricIndex];
 
-            // Mark both the current position and its counterpart as visited for this stride.
-            visitedIndices.add(startPosition);
-            visitedIndices.add(counterpartIndex);
-        }
+      // If the 'currentPairSum' is greater than the 'maximumSum' found so far, update 'maximumSum'.
+      if (maximumSum < currentPairSum) {
+        maximumSum = currentPairSum;
+      }
+
+      // Add both 'currentIndex' and 'symmetricIndex' to the set of processed indices
+      // to prevent reprocessing them in subsequent iterations of this inner loop.
+      processedIndices.add(currentIndex);
+      processedIndices.add(symmetricIndex);
     }
+  }
 
-    // Return the overall maximum sum found after checking all valid strides and pairs.
-    return maxAccumulatedSum;
+  // Return the final maximum sum calculated.
+  return maximumSum;
 }

@@ -1,53 +1,45 @@
-((inputStringValue) => {
-    const numericData = inputStringValue.match(/\d+/g).map(Number);
-    let dataPointer = 0;
+console.log((inputString => {
+  const processInputData = (dataString) => {
+    const lines = dataString.trim().split('\n');
+    const pointCount = parseInt(lines[0], 10);
 
-    const quantity = numericData[dataPointer++];
+    const redPointsCollection = [];
+    const bluePointsCollection = [];
 
-    const initialNodes = Array.from({ length: quantity }, (_, posId) => ({
-        xCoord: numericData[dataPointer++],
-        yCoord: numericData[dataPointer++],
-        uniqueId: posId
-    }));
+    for (let k = 0; k < pointCount; k++) {
+      const [xCoord, yCoord] = lines[k + 1].split(' ').map(val => parseInt(val, 10));
+      redPointsCollection.push({ x: xCoord, y: yCoord, uniqueId: Symbol() });
+    }
 
-    const targetNodes = Array.from({ length: quantity }, (_, posId) => ({
-        xCoord: numericData[dataPointer++],
-        yCoord: numericData[dataPointer++],
-        uniqueId: posId
-    }));
+    for (let k = 0; k < pointCount; k++) {
+      const [xCoord, yCoord] = lines[pointCount + k + 1].split(' ').map(val => parseInt(val, 10));
+      bluePointsCollection.push({ x: xCoord, y: yCoord });
+    }
 
-    targetNodes.sort((firstNode, secondNode) => firstNode.xCoord - secondNode.xCoord);
+    return { totalPoints: pointCount, initialRedSet: redPointsCollection, initialBlueSet: bluePointsCollection };
+  };
 
-    const matchingOutcome = targetNodes.reduce((accumulator, currentTargetNode) => {
-        const { currentMatches, consumedNodeIdentities } = accumulator;
+  const { totalPoints, initialRedSet, initialBlueSet } = processInputData(inputString);
 
-        const potentialInitialNodes = initialNodes.filter(node =>
-            !consumedNodeIdentities.has(node.uniqueId) &&
-            node.xCoord < currentTargetNode.xCoord &&
-            node.yCoord < currentTargetNode.yCoord
-        );
+  initialBlueSet.sort((first, second) => first.x - second.x);
 
-        if (potentialInitialNodes.length === 0) {
-            return accumulator;
-        }
+  const finalResult = initialBlueSet.reduce((accumulatorState, currentBluePoint) => {
+    let { currentMatchCount, availableRedSet } = accumulatorState;
+    const { x: currentBlueX, y: currentBlueY } = currentBluePoint;
 
-        const optimalInitialNode = potentialInitialNodes.reduce((bestMatch, candidateNode) => {
-            if (!bestMatch || candidateNode.yCoord > bestMatch.yCoord) {
-                return candidateNode;
-            }
-            return bestMatch;
-        }, null);
+    const potentialRedMatches = availableRedSet.filter(redP => redP.x < currentBlueX && redP.y < currentBlueY);
 
-        if (optimalInitialNode) {
-            consumedNodeIdentities.add(optimalInitialNode.uniqueId);
-            return {
-                currentMatches: currentMatches + 1,
-                consumedNodeIdentities: consumedNodeIdentities
-            };
-        } else {
-            return accumulator;
-        }
-    }, { currentMatches: 0, consumedNodeIdentities: new Set() });
+    if (potentialRedMatches.length > 0) {
+      const bestRedCandidate = potentialRedMatches.reduce((bestFound, currentCandidate) => {
+        return (currentCandidate.y > bestFound.y) ? currentCandidate : bestFound;
+      }, potentialRedMatches[0]);
 
-    return `${matchingOutcome.currentMatches}`;
-})(require('fs').readFileSync('/dev/stdin', 'utf8'));
+      currentMatchCount++;
+      availableRedSet = availableRedSet.filter(redP => redP.uniqueId !== bestRedCandidate.uniqueId);
+    }
+
+    return { currentMatchCount, availableRedSet };
+  }, { currentMatchCount: 0, availableRedSet: initialRedSet });
+
+  return `${finalResult.currentMatchCount}`;
+})(require('fs').readFileSync('/dev/stdin', 'utf8')));

@@ -1,34 +1,49 @@
-const { readFileSync: obtainData } = require('node:fs');
-const sourceContent = obtainData('/dev/stdin', 'utf8');
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
 
-const relevantLine = sourceContent.split(/\r?\n/).find(entry => entry.trim().length > 0) || '';
+let capturedInputLine = '';
+const inputProcessor = require('readline').createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
 
-const numeralPattern = /-?\d+/g;
-const extractedStrings = [...relevantLine.matchAll(numeralPattern)].map(matchItem => matchItem[0]);
+inputProcessor.on('line', (receivedLine) => {
+  capturedInputLine = receivedLine;
+});
 
-const primaryVal = BigInt(extractedStrings[0]);
-const secondaryVal = BigInt(extractedStrings[1]);
-const tertiaryVal = BigInt(extractedStrings[2]);
+inputProcessor.on('close', () => {
+    // Utility function to determine if a BigInt is even using bitwise operations
+    const checkParity = (numVal) => (numVal & 1n) === 0n;
 
-const anyValueEven = (primaryVal & 1n) === 0n ||
-                     (secondaryVal & 1n) === 0n ||
-                     (tertiaryVal & 1n) === 0n;
-
-let outcomeValue;
-
-if (anyValueEven) {
-    outcomeValue = 0n;
-} else {
-    const productOneTwo = primaryVal * secondaryVal;
-    const productTwoThree = secondaryVal * tertiaryVal;
-    const productOneThree = primaryVal * tertiaryVal;
-
-    const ascertainSmallest = (firstOperand, secondOperand, thirdOperand) => {
-        const intermediateSmallest = (firstOperand < secondOperand) ? firstOperand : secondOperand;
-        return (intermediateSmallest < thirdOperand) ? intermediateSmallest : thirdOperand;
+    // Utility function to find the smallest among three BigInt values
+    const findSmallestOfThree = (firstVal, secondVal, thirdVal) => {
+        let minimumCandidate = firstVal;
+        if (secondVal < minimumCandidate) {
+            minimumCandidate = secondVal;
+        }
+        if (thirdVal < minimumCandidate) {
+            minimumCandidate = thirdVal;
+        }
+        return minimumCandidate;
     };
 
-    outcomeValue = ascertainSmallest(productOneTwo, productTwoThree, productOneThree);
-}
+    // Deconstruct and convert input string parts to BigInts
+    const inputParts = capturedInputLine.split(' ');
+    const primaryNum = BigInt(inputParts[0]);
+    const secondaryNum = BigInt(inputParts[1]);
+    const tertiaryNum = BigInt(inputParts[2]);
 
-process.stdout.write(outcomeValue.toString() + '\n');
+    // Check if any of the numbers are even
+    if (checkParity(primaryNum) || checkParity(secondaryNum) || checkParity(tertiaryNum)) {
+        console.log(0);
+    } else {
+        // Calculate the three possible products
+        const productOne = primaryNum * secondaryNum;
+        const productTwo = secondaryNum * tertiaryNum;
+        const productThree = primaryNum * tertiaryNum;
+
+        // Determine the smallest product and output its string representation
+        const finalMinimumProduct = findSmallestOfThree(productOne, productTwo, productThree);
+        console.log(finalMinimumProduct.toString());
+    }
+});

@@ -1,32 +1,40 @@
-// This function consumes the entire input data block.
-function ProcessInput( initialData )
-{
-  // The input is parsed into individual lines, stored as an array of strings, overwriting the original variable.
-  initialData = initialData.split( "\n" ) ;
-  
-  // The initial line is further divided by spaces to extract component values.
-  let firstLineElements = initialData[ 0 ].split( " " );
-  
-  // All extracted components are initially string representations and require conversion to integers.
-  
-  // Convert string components into their 10-base integer equivalents using parseInt.
-  const redValue = parseInt( firstLineElements[ 0 ], 10 );
-  const greenValue = parseInt( firstLineElements[ 1 ], 10 );
-  const blueValue = parseInt( firstLineElements[ 2 ], 10 );
-  
-  // Compute a weighted sum using the parsed integer values.
-  const calculatedSum = ( 100 * redValue ) + ( 10 * greenValue ) + blueValue;
-  
-  // Based on the divisibility of the computed sum, determine the final outcome.
-  if ( calculatedSum % 4 === 0 )
-  {
-    console.log( 'Outcome: %s', 'TRUE' ); // Output an affirmative message.
-  }
-  else
-  {
-    console.log( 'Outcome: %s', 'FALSE' ); // Output a negative message.
+// This function processes the entire input string provided.
+function ProcessInput(rawData) {
+  // The raw input is split into an array of strings, one for each line.
+  // The original 'rawData' variable is now repurposed to hold these individual lines.
+  rawData = rawData.split("\n");
+
+  // The first line of the input is further split by spaces.
+  // These parts are stored in a temporary array.
+  let firstLineParts = rawData[0].split(" ");
+
+  // At this point, all values are still strings.
+  // They need to be converted to numerical types for calculations.
+
+  // Convert the string components to integers using base 10.
+  // The first part of the line is assigned to the 'redComponent' variable.
+  const redComponent = parseInt(firstLineParts[0], 10);
+  // The second part is assigned to 'greenComponent'.
+  const greenComponent = parseInt(firstLineParts[1], 10);
+  // The third part is assigned to 'blueComponent'.
+  const blueComponent = parseInt(firstLineParts[2], 10);
+
+  // A combined numerical value is calculated using a specific formula.
+  // This value represents a weighted sum of the components.
+  const combinedValue = 100 * redComponent + 10 * greenComponent + blueComponent;
+
+  // Based on the calculated 'combinedValue', a conditional check is performed.
+  // If the combined value is perfectly divisible by 4 (i.e., the remainder is 0),
+  // then a specific message is printed to the console.
+  if (combinedValue % 4 === 0) {
+    console.log('%s', 'YES'); // Output 'YES' if the condition is met.
+  } else {
+    // Otherwise, a different message is printed.
+    console.log('%s', 'NO'); // Output 'NO' if the condition is not met.
   }
 }
 
-// Do not modify the following line; it handles reading standard input and invoking the processing function.
-ProcessInput( require( "fs" ).readFileSync( "/dev/stdin", "utf8" ) );
+// The following line is crucial for standard input/output handling in competitive programming environments.
+// It reads the entire content from standard input, converts it to a UTF-8 string,
+// and then passes it to our main processing function, 'ProcessInput'.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

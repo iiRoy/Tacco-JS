@@ -1,63 +1,49 @@
-const sourceData = require('fs').readFileSync('/dev/stdin', 'utf8');
+const input = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-const allLines = sourceData.split(/\r?\n/).filter(Boolean);
-let currentLinkSet = {};
+const inputs = input.trim().split('\n');
+const adjacencyPairs = inputs.map((s) => s.split(' ').map(Number));
 
-const obtainDegree = (vertexIdentifier) => (currentLinkSet[vertexIdentifier] || []).length;
-const isDegreeOdd = (vertexIdentifier) => obtainDegree(vertexIdentifier) % 2 !== 0;
+let vertexDegrees = new Map();
 
-const establishConnection = (origin, terminus) => {
-    if (!currentLinkSet[origin]) currentLinkSet[origin] = [];
-    if (!currentLinkSet[terminus]) currentLinkSet[terminus] = [];
-    currentLinkSet[origin].push(terminus);
+const clearGraphData = () => {
+    vertexDegrees = new Map();
 };
 
-const evaluateTopology = () => {
-    const existingVertices = Object.keys(currentLinkSet).map(Number);
-    const considerationSet = new Set(existingVertices);
-    considerationSet.add(1);
-    considerationSet.add(2);
+const recordEdge = (firstVertex, secondVertex) => {
+    vertexDegrees.set(firstVertex, (vertexDegrees.get(firstVertex) || 0) + 1);
+    vertexDegrees.set(secondVertex, (vertexDegrees.get(secondVertex) || 0) + 1);
+};
 
-    let oddDegreeCount = 0;
-    let oneIsOdd = false;
-    let twoIsOdd = false;
-    
-    for (const vtx of considerationSet) {
-        if (isDegreeOdd(vtx)) {
-            oddDegreeCount++;
-            if (vtx === 1) oneIsOdd = true;
-            if (vtx === 2) twoIsOdd = true;
+const evaluateEulerianPath = () => {
+    let totalDegreeSummation = 0;
+    let oddDegreeVertexCount = 0;
+
+    for (const currentDegree of vertexDegrees.values()) {
+        totalDegreeSummation += currentDegree;
+        if (currentDegree % 2 !== 0) {
+            oddDegreeVertexCount++;
         }
     }
 
-    // The original code included a check for `totalNode % 2`.
-    // `totalNode` was the sum of all degrees, which is always even in a graph.
-    // Thus, `totalNode % 2` would always be 0, making the condition `if (totalNode % 2)` always false.
-    // This branch was effectively dead code and never executed, so its omission here maintains equivalent functionality.
-
-    if (oddDegreeCount === 0) {
+    if (totalDegreeSummation % 2 !== 0) {
+        return false;
+    } else if (oddDegreeVertexCount === 0) {
         return true;
-    } else if (oddDegreeCount === 2 && oneIsOdd && twoIsOdd) {
-        return true;
+    } else if (oddDegreeVertexCount === 2) {
+        const degreeOfVertexOne = vertexDegrees.get(1) || 0;
+        const degreeOfVertexTwo = vertexDegrees.get(2) || 0;
+        if (degreeOfVertexOne % 2 !== 0 && degreeOfVertexTwo % 2 !== 0) {
+            return true;
+        }
     }
     return false;
 };
 
-const processInputRecursively = (lineIndex) => {
-    if (lineIndex >= allLines.length) return;
-
-    const currentLine = allLines[lineIndex];
-    const [firstNode, secondNode] = currentLine.split(' ').map(Number);
-
-    if (firstNode === 0 && secondNode === 0) {
-        console.log(evaluateTopology() ? 'OK' : 'NG');
-        currentLinkSet = {}; // Reset for the next graph
-    } else {
-        establishConnection(firstNode, secondNode);
-        establishConnection(secondNode, firstNode); // For undirected graph
+adjacencyPairs.forEach(([u, v]) => {
+    if (u === 0 && v === 0) {
+        console.log(evaluateEulerianPath() ? 'OK' : 'NG');
+        clearGraphData();
+        return;
     }
-
-    processInputRecursively(lineIndex + 1);
-};
-
-processInputRecursively(0);
+    recordEdge(u, v);
+});

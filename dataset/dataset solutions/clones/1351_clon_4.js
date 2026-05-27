@@ -1,34 +1,9 @@
-const { Transform: FlowTransformer } = require('stream');
-
-function elevate(baseVal, expVal) {
-  if (expVal === 0) {
-    return 1;
-  }
-  if (expVal < 0) {
-    return 1 / elevate(baseVal, -expVal);
-  }
-  if (expVal % 2 === 0) {
-    const half = elevate(baseVal, expVal / 2);
-    return half * half;
-  }
-  return baseVal * elevate(baseVal, expVal - 1);
-}
-
-class NumericMultiplier extends FlowTransformer {
-  constructor(opts) {
-    super(opts);
-  }
-
-  _transform(segment, encodingIndicator, completionCallback) {
-    const datum = Number(segment);
-    const product = elevate(datum, 3);
-    this.push(String(product) + '\n');
-    completionCallback();
-  }
-}
-
+const calculatePowerByReduction = (baseVal, expVal) => {
+  return Array.from({ length: expVal }).reduce((acc, _, idx) => acc * baseVal, 1);
+};
 process.stdin.resume();
-
-const calculationPipeline = new NumericMultiplier();
-
-process.stdin.pipe(calculationPipeline).pipe(process.stdout);
+process.stdin.on("data", (dataChunk) => {
+  const numericalInput = parseFloat(dataChunk.toString());
+  const finalComputedValue = calculatePowerByReduction(numericalInput, 3);
+  console.log(finalComputedValue);
+});

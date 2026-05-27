@@ -1,42 +1,50 @@
-"use strict";
+"use strict"; // Enforce strict parsing and error handling for better code quality
 
-// This function is responsible for processing a given string input to locate a specific keyword
-// within a grid-like structure defined by the input, and then outputting its grid coordinates.
-const processInputData = ( inputStringContent ) => {
-    // Begin by cleaning the input: remove any extraneous whitespace at the ends and split into individual lines.
-    inputStringContent = inputStringContent
-                            .trim()
-                            .split("\n");
+/**
+ * Analyzes a given input string representing a grid of words
+ * to locate a specific target word and report its grid coordinates.
+ *
+ * @param {string} rawInputData - The complete input string, typically read from standard input.
+ */
+const processGridData = (rawInputData) => {
+  // Clean up the input: remove leading/trailing whitespace and split into an array of lines.
+  const inputLineArray = rawInputData.trim().split("\n");
 
-    // The initial line of the input typically contains the dimensions of the grid.
-    const dimensionsInfo = inputStringContent[0].split(" ");
-    const numRows = parseInt(dimensionsInfo[0]); // Extract the total number of rows from the first dimension part.
-    const numCols = parseInt(dimensionsInfo[1]); // Extract the total number of columns from the second dimension part.
+  // The first line contains the grid's dimensions (height and width).
+  // Split this line by space to get the individual dimension values.
+  const dimensionStrings = inputLineArray[0].split(" ");
+  const gridRows = parseInt(dimensionStrings[0], 10); // Convert the string height to an integer.
+  const gridColumns = parseInt(dimensionStrings[1], 10); // Convert the string width to an integer.
 
-    // Now, extract the actual grid content. This involves skipping the dimension line,
-    // and for each subsequent line, splitting it into individual cell values.
-    const gridCells = inputStringContent
-                        .slice(1, numRows + 1) // Select only the lines that represent grid rows.
-                        .map( (lineOfText) => lineOfText.split(" ") ); // Convert each row string into an array of cell strings.
+  // Extract the actual grid content.
+  // Skip the first line (dimensions) and take 'gridRows' subsequent lines.
+  // Each line is then split into an array of individual words.
+  const wordGrid = inputLineArray
+    .slice(1, gridRows + 1)
+    .map((currentLine) => currentLine.split(" "));
 
-    // Define a set of characters that will be used to label the columns, e.g., A, B, C...
-    const columnLabels = "ABCDEFGHIJ".split("");
+  // Define an array of characters to represent column labels (A, B, C, ...).
+  const columnDesignators = "ABCDEFGHIJ".split("");
 
-    // Iterate through each row of the grid.
-    for ( let currentR = 0; currentR < numRows; currentR++ ) {
-        // Within each row, iterate through each column.
-        for ( let currentC = 0; currentC < numCols; currentC++ ) {
-            // Check if the current cell's content matches our predefined secret word.
-            if ( gridCells[currentR][currentC] === "secretKeyword" ) {
-                // If the secret word is found, log its coordinates.
-                // The column is identified by its corresponding character label,
-                // and the row is identified by its 1-based index (currentR + 1).
-                console.log( columnLabels[currentC] + ( currentR + 1 ) );
-            }
-        }
+  // Iterate through each row of the word grid.
+  for (let rowIndex = 0; rowIndex < gridRows; rowIndex++) {
+    // For each row, iterate through every column.
+    for (let colIndex = 0; colIndex < gridColumns; colIndex++) {
+      // Check if the word at the current grid position matches our target.
+      if (wordGrid[rowIndex][colIndex] === "snuke") {
+        // If the target word is found, print its coordinates.
+        // The column is represented by a letter (from 'columnDesignators'),
+        // and the row is 1-indexed (so we add 1 to the 0-indexed 'rowIndex').
+        console.log(columnDesignators[colIndex] + (rowIndex + 1));
+        // The problem implies finding all occurrences or just the first one.
+        // The original code continues searching, so we maintain that behavior.
+      }
     }
-}; // End of the primary data processing function.
+  }
+};
 
-// Execute the main processing function by reading the entire content from standard input
-// and passing it as a UTF-8 encoded string.
-processInputData( require('fs').readFileSync('/dev/stdin', 'utf8') );
+// Execute the main processing function by reading input from standard input.
+// 'require("fs").readFileSync' is used to synchronously read the file content.
+// '/dev/stdin' is the standard path for input on many Unix-like systems.
+// 'utf8' specifies the character encoding for the input.
+processGridData(require("fs").readFileSync("/dev/stdin", "utf8"));

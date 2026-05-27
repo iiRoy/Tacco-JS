@@ -1,167 +1,126 @@
-const moduleRegistrar = function(moduleCollection) {
-    const moduleStore = {};
-
-    function moduleResolver(moduleIdentifier) {
-        if (moduleStore[moduleIdentifier]) {
-            return moduleStore[moduleIdentifier].exports;
-        }
-        const moduleInstance = moduleStore[moduleIdentifier] = {
-            id: moduleIdentifier,
-            loaded: false,
-            exports: {}
-        };
-        moduleCollection[moduleIdentifier].call(
-            moduleInstance.exports,
-            moduleInstance,
-            moduleInstance.exports,
-            moduleResolver
-        );
-        moduleInstance.loaded = true;
-        return moduleInstance.exports;
-    }
-
-    moduleResolver.allModules = moduleCollection;
-    moduleResolver.cache = moduleStore;
-
-    moduleResolver.defineExport = function(target, propertyName, getterFunc) {
-        moduleResolver.hasProperty(target, propertyName) || Object.defineProperty(target, propertyName, {
-            enumerable: true,
-            get: getterFunc
-        });
-    };
-
-    moduleResolver.markAsModule = function(targetObject) {
-        if (typeof Symbol !== "undefined" && Symbol.toStringTag) {
-            Object.defineProperty(targetObject, Symbol.toStringTag, { value: "Module" });
-        }
-        Object.defineProperty(targetObject, "__esModule", { value: true });
-    };
-
-    moduleResolver.interopDefault = function(value, mode) {
-        if (mode & 1) value = moduleResolver(value);
-        if (mode & 8) return value;
-        if ((mode & 4) && typeof value === "object" && value && value.__esModule) return value;
-        const defaultExport = Object.create(null);
-        moduleResolver.markAsModule(defaultExport);
-        Object.defineProperty(defaultExport, "default", { enumerable: true, value: value });
-        if ((mode & 2) && typeof value !== "string") {
-            for (const key in value) {
-                moduleResolver.defineExport(defaultExport, key, ((k) => value[k]).bind(null, key));
-            }
-        }
-        return defaultExport;
-    };
-
-    moduleResolver.namespaceObject = function(moduleExports) {
-        const getter = moduleExports && moduleExports.__esModule ?
-            () => moduleExports.default :
-            () => moduleExports;
-        moduleResolver.defineExport(getter, "a", getter);
-        return getter;
-    };
-
-    moduleResolver.hasProperty = function(obj, prop) {
-        return Object.prototype.hasOwnProperty.call(obj, prop);
-    };
-
-    moduleResolver.basePath = "";
-
-    return moduleResolver(moduleResolver.startModule = 0);
-};
-
-module.exports = moduleRegistrar([
-    function(currentModule, moduleExports, getDependency) {
-        getDependency(1)(getDependency(2).readSync("/dev/stdin", "UTF-8"));
+module.exports = function(moduleDefinitions) {
+  const moduleRegistry = {};
+  function retrieveModule(moduleId) {
+    if (moduleRegistry[moduleId]) return moduleRegistry[moduleId].exports;
+    const moduleInstance = moduleRegistry[moduleId] = { id: moduleId, loaded: false, exports: {} };
+    moduleDefinitions[moduleId].call(moduleInstance.exports, moduleInstance, moduleInstance.exports, retrieveModule);
+    moduleInstance.loaded = true;
+    return moduleInstance.exports;
+  }
+  retrieveModule.moduleDefinitions = moduleDefinitions;
+  retrieveModule.moduleCache = moduleRegistry;
+  retrieveModule.defineExport = function(target, property, getter) {
+    retrieveModule.hasOwn(target, property) || Object.defineProperty(target, property, { enumerable: true, get: getter });
+  };
+  retrieveModule.registerNamespace = function(target) {
+    "undefined" != typeof Symbol && Symbol.toStringTag && Object.defineProperty(target, Symbol.toStringTag, { value: "Module" });
+    Object.defineProperty(target, "__esModule", { value: true });
+  };
+  retrieveModule.interopDefault = function(moduleValue, flags) {
+    if (1 & flags && (moduleValue = retrieveModule(moduleValue)), 8 & flags) return moduleValue;
+    if (4 & flags && "object" == typeof moduleValue && moduleValue && moduleValue.__esModule) return moduleValue;
+    var defaultExport = Object.create(null);
+    retrieveModule.registerNamespace(defaultExport);
+    Object.defineProperty(defaultExport, "default", { enumerable: true, value: moduleValue });
+    if (2 & flags && "string" != typeof moduleValue)
+      for (var propName in moduleValue)
+        retrieveModule.defineExport(defaultExport, propName, ((p) => () => moduleValue[p]).bind(null, propName));
+    return defaultExport;
+  };
+  retrieveModule.getDefaultExport = function(moduleValue) {
+    var getter = moduleValue && moduleValue.__esModule ? () => moduleValue.default : () => moduleValue;
+    return retrieveModule.defineExport(getter, "a", getter), getter;
+  };
+  retrieveModule.hasOwn = function(obj, prop) {
+    return Object.prototype.hasOwnProperty.call(obj, prop);
+  };
+  retrieveModule.publicPath = "";
+  return retrieveModule(0);
+}(
+  [
+    function(moduleInstance, moduleExports, getModule) {
+      const fileSystemModule = getModule(2);
+      const coreLogicModule = getModule(1);
+      coreLogicModule.processInput(fileSystemModule.fileSystem.readFileSync("/dev/stdin", "UTF-8"));
     },
-    function(currentModule, moduleExports, getDependency) {
-        moduleExports = function(rawDataStream) {
-            const linesOfData = rawDataStream.trim().split('\n');
-            const totalEntities = Number(linesOfData[0]);
+    function(moduleInstance, moduleExports) {
+      moduleExports.processInput = function(rawInputContent) {
+        const dataLines = rawInputContent.split('\n');
+        const entityCount = parseInt(dataLines[0], 10);
 
-            class EngagementParticipant {
-                #uniqueId;
-                #preferredPartners;
-                #currentPreferenceIndex;
-                #currentlyMatchedWith;
-                #interactionLevel;
+        const entityMap = new Map();
+        const initialActiveQueue = new Set();
 
-                constructor(identifierValue, initialPreferences) {
-                    this.#uniqueId = identifierValue;
-                    this.#preferredPartners = initialPreferences;
-                    this.#currentPreferenceIndex = 0;
-                    this.#currentlyMatchedWith = initialPreferences[0];
-                    this.#interactionLevel = 0;
-                }
+        for (let currentId = 0; currentId < entityCount; currentId++) {
+          const preferences = dataLines[currentId + 1].split(' ').map(val => parseInt(val, 10) - 1);
+          const entityObject = {
+            id: currentId,
+            preferenceSequence: preferences,
+            currentPreferencePointer: 0,
+            assignedPartnerId: preferences[0],
+            matchLevelDepth: 0
+          };
+          entityMap.set(currentId, entityObject);
+        }
 
-                get participantId() { return this.#uniqueId; }
-                get matchedPartnerId() { return this.#currentlyMatchedWith; }
-                get currentLevelValue() { return this.#interactionLevel; }
-                get hasFurtherPreferences() { return this.#currentPreferenceIndex < this.#preferredPartners.length; }
+        for (let currentId = 0; currentId < entityCount; currentId++) {
+          const currentEntity = entityMap.get(currentId);
+          const assignedPartner = entityMap.get(currentEntity.assignedPartnerId);
+          if (assignedPartner && assignedPartner.assignedPartnerId === currentEntity.id) {
+            initialActiveQueue.add(currentEntity.id);
+          }
+        }
 
-                set updateLevel(val) { this.#interactionLevel = val; }
+        let maxObservedDepth = 0;
+        let completedConnections = 0;
+        const totalPossibleConnections = entityCount * (entityCount - 1) / 2;
 
-                advancePartnerPreference() {
-                    this.#currentPreferenceIndex++;
-                    if (this.hasFurtherPreferences) {
-                        this.#currentlyMatchedWith = this.#preferredPartners[this.#currentPreferenceIndex];
-                    }
-                }
+        while (initialActiveQueue.size > 0) {
+          const currentEntityId = initialActiveQueue.values().next().value;
+          initialActiveQueue.delete(currentEntityId);
+
+          const currentEntity = entityMap.get(currentEntityId);
+          const partnerEntityId = currentEntity.assignedPartnerId;
+          const partnerEntity = entityMap.get(partnerEntityId);
+
+          if (partnerEntity && partnerEntity.assignedPartnerId === currentEntity.id) {
+            completedConnections++;
+
+            const newDepth = Math.max(currentEntity.matchLevelDepth, partnerEntity.matchLevelDepth) + 1;
+            maxObservedDepth = Math.max(maxObservedDepth, newDepth);
+
+            currentEntity.matchLevelDepth = newDepth;
+            partnerEntity.matchLevelDepth = newDepth;
+
+            currentEntity.currentPreferencePointer++;
+            partnerEntity.currentPreferencePointer++;
+
+            if (currentEntity.currentPreferencePointer < currentEntity.preferenceSequence.length) {
+              currentEntity.assignedPartnerId = currentEntity.preferenceSequence[currentEntity.currentPreferencePointer];
+              const newPartnerForCurrent = entityMap.get(currentEntity.assignedPartnerId);
+              if (newPartnerForCurrent && newPartnerForCurrent.assignedPartnerId === currentEntity.id) {
+                initialActiveQueue.add(currentEntity.id);
+              }
             }
-
-            const participantCollection = new Map();
-            for (let k = 0; k < totalEntities; k++) {
-                const entityPreferences = linesOfData[k + 1].split(' ').map(prefStr => Number(prefStr) - 1);
-                participantCollection.set(k, new EngagementParticipant(k, entityPreferences));
+            if (partnerEntity.currentPreferencePointer < partnerEntity.preferenceSequence.length) {
+              partnerEntity.assignedPartnerId = partnerEntity.preferenceSequence[partnerEntity.currentPreferencePointer];
+              const newPartnerForPartner = entityMap.get(partnerEntity.assignedPartnerId);
+              if (newPartnerForPartner && newPartnerForPartner.assignedPartnerId === partnerEntity.id) {
+                initialActiveQueue.add(partnerEntity.id);
+              }
             }
+          }
+        }
 
-            const expectedMutualConnections = totalEntities * (totalEntities - 1) / 2;
-            let highestEncounteredLevel = 0;
-            let acknowledgedMutualMatches = 0;
-
-            const activeProcessingQueue = Array.from({ length: totalEntities }, (_, i) => i);
-
-            while (activeProcessingQueue.length > 0) {
-                const currentParticipantIdentifier = activeProcessingQueue.shift();
-                const currentParticipantObject = participantCollection.get(currentParticipantIdentifier);
-                const designatedPartnerIdentifier = currentParticipantObject.matchedPartnerId;
-                const designatedPartnerObject = participantCollection.get(designatedPartnerIdentifier);
-
-                if (designatedPartnerObject.matchedPartnerId === currentParticipantIdentifier) {
-                    acknowledgedMutualMatches++;
-
-                    const calculatedInteractionLevel = Math.max(currentParticipantObject.currentLevelValue, designatedPartnerObject.currentLevelValue) + 1;
-                    highestEncounteredLevel = Math.max(highestEncounteredLevel, calculatedInteractionLevel);
-
-                    currentParticipantObject.updateLevel = calculatedInteractionLevel;
-                    designatedPartnerObject.updateLevel = calculatedInteractionLevel;
-
-                    if (currentParticipantObject.hasFurtherPreferences) {
-                        currentParticipantObject.advancePartnerPreference();
-                        const newMatchForCurrent = participantCollection.get(currentParticipantObject.matchedPartnerId);
-                        if (newMatchForCurrent.matchedPartnerId === currentParticipantObject.participantId) {
-                            activeProcessingQueue.push(currentParticipantObject.participantId);
-                        }
-                    }
-
-                    if (designatedPartnerObject.hasFurtherPreferences) {
-                        designatedPartnerObject.advancePartnerPreference();
-                        const newMatchForPartner = participantCollection.get(designatedPartnerObject.matchedPartnerId);
-                        if (newMatchForPartner.matchedPartnerId === designatedPartnerObject.participantId) {
-                            activeProcessingQueue.push(designatedPartnerObject.participantId);
-                        }
-                    }
-                }
-            }
-
-            if (acknowledgedMutualMatches === expectedMutualConnections) {
-                console.log(highestEncounteredLevel);
-            } else {
-                console.log(-1);
-            }
-        };
-        currentModule.exports = moduleExports;
+        if (completedConnections === totalPossibleConnections) {
+          console.log(maxObservedDepth);
+        } else {
+          console.log(-1);
+        }
+      };
     },
-    function(currentModule, moduleExports, getDependency) {
-        moduleExports.readSync = require("node:fs").readFileSync;
+    function(moduleInstance, moduleExports) {
+      moduleExports.fileSystem = require("fs");
     }
-]);
+  ]
+);

@@ -1,83 +1,95 @@
-const retrieveNumericSequence = () => nextIntArray();
-const deliverResult = (content) => myout(content);
+//Don't have to see. start------------------------------------------
+var read = require('readline').createInterface({
+  input: process.stdin, output: process.stdout
+});
+var obj; var inLine = [];
+read.on('line', function(input){inLine.push(input);});
+read.on('close', function(){
+  obj = init(inLine);
+  console.error("\n");
+  var start = Date.now();
+  Main();
+  var end = Date.now() - start;
+  myerr("time : " + end + "ms");
+  myerr("memory : " + Math.round(process.memoryUsage().heapTotal / 1024) + "KB");
+});
+function makeClone(obj){return JSON.parse(JSON.stringify(obj));}
+function nextInt(){return myconv(next(),1);} function nextStrArray(){return myconv(next(),2);}
+function nextIntArray(){return myconv(next(),4);} function nextCharArray(){return myconv(next(),6);}
+function next(){return obj.next();} function hasNext(){return obj.hasNext();}
+function init(input){  
+  var returnObj = {
+    list : input, index : 0, max : input.length,
+    hasNext : function(){return (this.index < this.max);},
+    next : function(){if(!this.hasNext()){throw "ArrayIndexOutOfBoundsException ‚There is no more input";}else{var returnInput = this.list[this.index++];return returnInput;}}
+  };
+  return returnObj;
+}
+function myout(s){console.log(s);}
+function myerr(s){console.error("debug:" + require("util").inspect(s,false,null));}
+function myconv(i,no){try{switch(no){case 1:return parseInt(i);case 2:return i.split(" ");case 4:return i.split(" ").map(Number);case 6:return i.split("");case 7:return i.split("").map(Number);case 8:return i.join(" ");case 9:return i.join("\n");case 0:return i.join("");default:return i;}}catch(e){return i;}}
 
-function ProcessGraphQuery() {
-    const [nodeQuantity, connectionCount] = retrieveNumericSequence();
+//Don't have to see. end------------------------------------------
+function Main(){
+  const dimensions = nextIntArray();
+  const nodeCount = dimensions[0];
+  const edgeCount = dimensions[1];
 
-    const forwardConnections = new Map();
-    for (let currentVertex = 0; currentVertex < nodeQuantity; ++currentVertex) {
-        forwardConnections.set(currentVertex, []);
-    }
+  const adjacencyList = new Array(nodeCount);
+  const processedNodes = new Array(nodeCount);
 
-    for (let edgeIndex = 0; edgeIndex < connectionCount; ++edgeIndex) {
-        const [origin, terminus] = retrieveNumericSequence();
-        forwardConnections.get(origin - 1).push(terminus - 1);
-    }
+  for (let nodeIndex = 0; nodeIndex < nodeCount; nodeIndex++) {
+    adjacencyList[nodeIndex] = {
+      children: []
+    };
+    processedNodes[nodeIndex] = {
+      predecessors: new Set(),
+      visited: false,
+      distance: 0
+    };
+  }
 
-    const threeStepPathsFromSource = new Map();
+  for (let edgeIndex = 0; edgeIndex < edgeCount; edgeIndex++) {
+    const edgePair = nextIntArray();
+    adjacencyList[edgePair[0] - 1].children.push(edgePair[1] - 1);
+  }
 
-    for (let startNode = 0; startNode < nodeQuantity; ++startNode) {
-        const firstStepNeighbors = forwardConnections.get(startNode);
-        if (!firstStepNeighbors) continue;
-
-        for (const intermediateNode1 of firstStepNeighbors) {
-            const secondStepNeighbors = forwardConnections.get(intermediateNode1);
-            if (!secondStepNeighbors) continue;
-
-            for (const intermediateNode2 of secondStepNeighbors) {
-                const thirdStepNeighbors = forwardConnections.get(intermediateNode2);
-                if (!thirdStepNeighbors) continue;
-
-                for (const finalDestination of thirdStepNeighbors) {
-                    if (!threeStepPathsFromSource.has(startNode)) {
-                        threeStepPathsFromSource.set(startNode, new Set());
-                    }
-                    threeStepPathsFromSource.get(startNode).add(finalDestination);
-                }
-            }
+  for (let startNode = 0; startNode < nodeCount; startNode++) {
+    for (const stepOneNode of adjacencyList[startNode].children) {
+      for (const stepTwoNode of adjacencyList[stepOneNode].children) {
+        for (const stepThreeNode of adjacencyList[stepTwoNode].children) {
+          processedNodes[stepThreeNode].predecessors.add(startNode);
         }
+      }
+    }
+  }
+
+  const pathEndpoints = nextIntArray();
+  const sourceNode = pathEndpoints[0] - 1;
+  const targetNode = pathEndpoints[1] - 1;
+
+  const bfsQueue = [];
+  bfsQueue.push(targetNode);
+  processedNodes[targetNode].visited = true;
+
+  let minJumps = -1;
+
+  while (bfsQueue.length > 0) {
+    const currentVertex = bfsQueue.shift();
+    
+    if (currentVertex === sourceNode) {
+      minJumps = processedNodes[currentVertex].distance;
+      break;
     }
 
-    const threeStepPredecessorsToTarget = new Map();
-    for (const [sourceNode, destinations] of threeStepPathsFromSource.entries()) {
-        for (const targetNode of destinations) {
-            if (!threeStepPredecessorsToTarget.has(targetNode)) {
-                threeStepPredecessorsToTarget.set(targetNode, new Set());
-            }
-            threeStepPredecessorsToTarget.get(targetNode).add(sourceNode);
-        }
+    for (const predecessor of processedNodes[currentVertex].predecessors) {
+      if (!processedNodes[predecessor].visited) {
+        processedNodes[predecessor].visited = true;
+        processedNodes[predecessor].distance = processedNodes[currentVertex].distance + 1;
+        bfsQueue.push(predecessor);
+      }
     }
+  }
 
-    const [journeyStart, journeyEnd] = retrieveNumericSequence();
-    const actualStart = journeyStart - 1;
-    const actualEnd = journeyEnd - 1;
-
-    const traversalQueue = [];
-    const distanceToNode = new Map(); 
-
-    traversalQueue.push(actualEnd);
-    distanceToNode.set(actualEnd, 0);
-
-    let shortestSegmentCount = -1;
-
-    let queueHeadPointer = 0;
-    while (queueHeadPointer < traversalQueue.length) {
-        const currentPosition = traversalQueue[queueHeadPointer++];
-        const currentSegmentDistance = distanceToNode.get(currentPosition);
-
-        if (currentPosition === actualStart) {
-            shortestSegmentCount = currentSegmentDistance;
-            break;
-        }
-
-        const predecessors = threeStepPredecessorsToTarget.get(currentPosition) || new Set();
-        for (const priorPosition of predecessors) {
-            if (!distanceToNode.has(priorPosition)) {
-                distanceToNode.set(priorPosition, currentSegmentDistance + 1);
-                traversalQueue.push(priorPosition);
-            }
-        }
-    }
-
-    deliverResult(shortestSegmentCount);
+  myout(minJumps);
 }

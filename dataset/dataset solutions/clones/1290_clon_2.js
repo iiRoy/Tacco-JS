@@ -1,59 +1,42 @@
 'use strict';
-// This self-executing function processes incoming data.
-(function(dataStream) {
-
-  // A primary function that evaluates a collection of scores to determine a final symbol.
+(function(inputSource) {
+  // This function assesses a set of scores and returns a corresponding grade.
   function evaluateScores(scoreSet) {
-    // Check for specific termination indicators in the initial score components.
-    if ([scoreSet[0], scoreSet[1]].indexOf("-1") !== -1) {
-      return 'F'; // Returns 'F' (fail) if termination pattern is detected.
+    // Check for specific invalid input indicating an immediate failure.
+    if ([scoreSet[0], scoreSet[1]].indexOf('-1') !== -1) {
+      return 'F'; // Return 'F' if either of the first two scores is -1.
     }
 
-    // Compute the aggregate value from the first two score elements.
-    var totalPoints = scoreSet[0] + scoreSet[1];
+    // Calculate the combined total of the first two scores.
+    let totalPoints = scoreSet[0] + scoreSet[1];
 
-    // Establish the numerical boundaries for each symbolic result.
-    var gradeCutoffs = [0x50, 0x41, 0x32, 0x1E, 0x00]; // Decimal values: 80, 65, 50, 30, 0
+    // Define the numeric boundaries for each grade category.
+    const thresholds = [80, 65, 50, 30, 0];
+    // Define the grade labels, including a conditional grade for the third score.
+    const resultLabels = ['A', 'B', 'C', determinePassFail(scoreSet[2]), 'F'];
 
-    // Construct an array of possible result symbols, including a conditional sub-check.
-    var resultSymbols = ['A', 'B', 'C', subComponentCheck(scoreSet[2]), 'F'];
-
-    // Iterate through the defined cutoff values to assign the appropriate symbol.
-    for (var loopIndex = 0; loopIndex < 5; loopIndex++) {
-      if (totalPoints >= gradeCutoffs[loopIndex]) {
-        return resultSymbols[loopIndex]; // Deliver the matching symbolic result.
+    // Iterate through the grade thresholds to find the appropriate grade.
+    for (let idx = 0; idx < 5; idx++) {
+      // If the total points meet or exceed the current threshold, assign the corresponding grade.
+      if (totalPoints >= thresholds[idx]) {
+        return resultLabels[idx];
       }
     }
   }
 
-  // An auxiliary function that performs a pass/fail determination based on a single numerical value.
-  function subComponentCheck(singleValue) {
-    // Uses a ternary operator to yield 'C' for passing or 'D' for not passing.
-    return singleValue >= 50 ? 'C' : 'D';
+  // This helper function determines a 'C' or 'D' grade based on a single score.
+  function determinePassFail(individualScore) {
+    // If the score is 50 or above, it's a 'C', otherwise it's a 'D'.
+    return individualScore >= 50 ? 'C' : 'D';
   }
 
+  // Process the raw input data.
+  const rawInputLines = inputSource.toString().trim().split('\n');
+  // Filter and transform the input lines into an array of number arrays.
+  const processedData = rawInputLines.slice(0, rawInputLines.indexOf('-1 -1 -1')).map(function(lineSegment) {
+    return lineSegment.split(' ').map(Number); // Split by space and convert to numbers.
+  });
 
-  // Retrieve and segment the raw input lines from the provided data stream.
-  var inputLines = dataStream
-    .toString() // Convert the buffer to a string representation.
-    .trim() // Eliminate any leading or trailing whitespace.
-    .split("\n"); // Divide the string into an array, using newline characters as delimiters.
-
-  /*
-   * Filter and transform the acquired lines into a structured array of numeric entries.
-   * Processing ceases upon encountering a specific sentinel sequence.
-   */
-  var processedEntries = inputLines
-    .slice(0, inputLines.indexOf("-1 -1 -1")) // Extract relevant lines, excluding the termination sequence.
-    .map(function(entryString) { // Iterate over each pertinent line string.
-      return entryString
-        .split(" ") // Break down the line by spaces into individual string parts.
-        .map(Number); // Convert each string part into its numerical equivalent.
-    });
-
-  // Apply the main evaluation function to each structured entry and present the combined outcome.
-  console.output(processedEntries
-    .map(evaluateScores) // Map each processed entry to its corresponding evaluated symbol.
-    .join(String.fromCharCode(10))); // Concatenate the resulting symbols with newline characters for display.
-
-})(require('fs').fetchFileContent('/dev/stdinput', 'utf-8')); // Invoke the IIFE, supplying content from a specific file path.
+  // Apply the grading function to each processed data set and join the results with newlines.
+  console.log(processedData.map(evaluateScores).join('\n'));
+})(require('fs').readFileSync('/dev/stdin', 'utf8'));

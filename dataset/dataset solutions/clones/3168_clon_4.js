@@ -1,26 +1,26 @@
-const dataAcquisitionModule = require('node:fs');
+const fileSystemModule = require("fs");
+const rawDataString = fileSystemModule.readFileSync("/dev/stdin", "utf8");
 
-const sourceContent = dataAcquisitionModule.readFileSync(0, 'utf8');
-const cleanedContent = sourceContent.trim();
+let slashIndexPosition = rawDataString.indexOf('/');
+let yearPartString = rawDataString.substring(0, slashIndexPosition);
+let monthPartString = rawDataString.substring(slashIndexPosition + 1);
 
-const barrierPos = cleanedContent.indexOf('/');
-const firstComponentString = cleanedContent.substring(0, barrierPos);
-const secondComponentString = cleanedContent.substring(barrierPos + 1);
+let currentYearValue = Number(yearPartString);
+let currentMonthValue = Number(monthPartString);
 
-const yearComponent = parseInt(firstComponentString, 10);
-const monthComponent = parseInt(secondComponentString, 10);
-
-const pivotalYear = 2019;
-const pivotalMonth = 5;
-
-const currentChronologicalValue = (yearComponent * 100) + monthComponent;
-const demarcationChronologicalValue = (pivotalYear * 100) + pivotalMonth;
-
-let outcomePhrase;
-if (currentChronologicalValue >= demarcationChronologicalValue) {
-    outcomePhrase = 'TBD';
-} else {
-    outcomePhrase = 'Heisei';
+function determinePeriodLabel(yearIdentifier, monthIdentifier) {
+    if (yearIdentifier > 2019) {
+        return 'TBD';
+    } else if (yearIdentifier === 2019) {
+        if (monthIdentifier >= 5) {
+            return 'TBD';
+        } else {
+            return 'Heisei';
+        }
+    } else {
+        return 'Heisei';
+    }
 }
 
-process.stdout.write(outcomePhrase + '\n');
+const resultString = determinePeriodLabel(currentYearValue, currentMonthValue);
+console.log(resultString);

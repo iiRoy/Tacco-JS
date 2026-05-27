@@ -1,63 +1,57 @@
 "use strict";
 
-function* streamData(sourceText) {
-    const allLines = sourceText.split("\n");
-    for (const currentLine of allLines) {
-        const trimmedSegment = currentLine.trim();
-        if (trimmedSegment.length === 0) continue;
-        const parts = trimmedSegment.split(" ");
-        for (const individualPart of parts) {
-            if (individualPart.length > 0) {
-                yield +individualPart;
+function* inputTokenGenerator(inputString, valueParser = Number) {
+    const lineIterator = inputString.split("\n")[Symbol.iterator]();
+    let currentLineResult = lineIterator.next();
+    let tokenBuffer = [];
+
+    while (!currentLineResult.done || tokenBuffer.length > 0) {
+        if (tokenBuffer.length === 0) {
+            if (currentLineResult.done) {
+                return;
             }
+            tokenBuffer = currentLineResult.value.trim().split(" ").filter(t => t !== "");
+            currentLineResult = lineIterator.next();
+        }
+        if (tokenBuffer.length > 0) {
+            yield valueParser(tokenBuffer.shift());
         }
     }
 }
 
-function processNetworkData(rawInputContent) {
-    const dataStream = streamData(rawInputContent);
+function analyzeGraphProperties(sourceData) {
+    const dataStream = inputTokenGenerator(sourceData);
 
-    const totalVertices = dataStream.next().value;
-    const totalConnections = dataStream.next().value;
+    const totalNodes = dataStream.next().value;
+    const totalEdges = dataStream.next().value;
 
-    const adjacencyRecords = new Map();
+    const graphConnections = new Map();
 
-    for (let vtx = 1; vtx <= totalVertices; ++vtx) {
-        adjacencyRecords.set(vtx, []);
+    for (let i = 1; i <= totalNodes; i++) {
+        graphConnections.set(i, new Set());
     }
 
-    for (let edgeIndex = 0; edgeIndex < totalConnections; ++edgeIndex) {
-        const vertexA = dataStream.next().value;
-        const vertexB = dataStream.next().value;
+    for (let i = 0; i < totalEdges; i++) {
+        const nodeA = dataStream.next().value;
+        const nodeB = dataStream.next().value;
 
-        adjacencyRecords.get(vertexA).push(vertexB);
-        adjacencyRecords.get(vertexB).push(vertexA);
+        if (!graphConnections.has(nodeA)) graphConnections.set(nodeA, new Set());
+        if (!graphConnections.has(nodeB)) graphConnections.set(nodeB, new Set());
+
+        graphConnections.get(nodeA).add(nodeB);
+        graphConnections.get(nodeB).add(nodeA);
     }
 
-    let hasNodeWithHighDegree = false;
-    let allDegreesAreEven = true;
-
-    for (let currentVertex = 1; currentVertex <= totalVertices; ++currentVertex) {
-        const currentVertexDegree = adjacencyRecords.get(currentVertex).length;
-
-        if (currentVertexDegree >= 6) {
-            hasNodeWithHighDegree = true;
-        }
-
-        if (currentVertexDegree % 2 !== 0) {
-            allDegreesAreEven = false;
-        }
+    const allDegrees = [];
+    for (let i = 1; i <= totalNodes; i++) {
+        allDegrees.push(graphConnections.get(i).size);
     }
 
-    const finalResult = (hasNodeWithHighDegree && allDegreesAreEven) ? "Affirmative" : "Negative";
-    return finalResult;
+    const hasHighDegreeNode = allDegrees.some(degreeValue => degreeValue >= 6);
+    const allDegreesAreEven = allDegrees.every(degreeValue => degreeValue % 2 === 0);
+
+    return (hasHighDegreeNode && allDegreesAreEven) ? "Yes" : "No";
 }
 
-function executeAnalysis() {
-    const fileSystemHandler = require("fs");
-    const receivedData = fileSystemHandler.readFileSync("/dev/stdin", "utf8");
-    const computedOutcome = processNetworkData(receivedData);
-    console.log(computedOutcome);
-}
-
-executeAnalysis();
+const fileContent = require("fs").readFileSync("/dev/stdin", "utf8");
+console.log(analyzeGraphProperties(fileContent));

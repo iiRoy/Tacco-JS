@@ -1,36 +1,30 @@
 "use strict";
 
-/*
- * This module defines a core routine to process incoming text.
- * It performs parsing, conditional evaluation, and outputs a result.
+/**
+ * This function processes a raw string input,
+ * parses it into numerical values, and then
+ * performs a conditional calculation based on these values.
+ *
+ * @param {string} incomingString The raw input string, expected to contain space-separated numbers.
  */
-function ProcessInputData(incomingText)
-{
-  // First, cleanse the provided string: remove any peripheral whitespace,
-  // then segment it by spaces, and finally transform each segment into a numerical value.
-  const numericalSegments = incomingText
-    .trim()
-    .split(' ')
-    .map(Number); // Ensure all parts are treated as numbers
+function ProcessData(incomingString) {
+  // First, clean the input string by removing leading/trailing whitespace,
+  // then split it into an array of strings by spaces,
+  // and finally convert each string element into a number.
+  incomingString = incomingString.trim().split(' ').map(Number);
 
-  // Establish some named constants for the calculation logic.
-  const checkValue = 10;     // A fixed boundary for comparison
-  const scaleFactor = 100;    // A constant multiplier
-
-  // Evaluate the initial numerical segment against the predefined threshold.
-  if (numericalSegments[0] <= checkValue)
-  {
-    // If the condition holds true, compute a modified output.
-    // This involves a weighted difference added to the second segment.
-    console.log(numericalSegments[1] + (scaleFactor * (checkValue - numericalSegments[0])));
-  }
-  else
-  {
-    // Otherwise, if the condition is false, simply display the second numerical segment.
-    console.log(numericalSegments[1]);
+  // Evaluate the first numerical value against a specific threshold.
+  if (incomingString[0] <= 10) {
+    // If the first value is less than or equal to ten,
+    // calculate a modified result by adding a bonus based on the difference from ten.
+    console.log(incomingString[1] + (100 * (10 - incomingString[0])));
+  } else {
+    // Otherwise (if the first value is greater than ten),
+    // simply output the second numerical value without any modification.
+    console.log(incomingString[1]);
   }
 }
 
-// Initiate the data processing by reading content from the standard input stream.
-// Utilizes Node.js 'fs' module to synchronously acquire the full file content as UTF-8.
-ProcessInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// Read the entire content of standard input synchronously,
+// assuming it's UTF-8 encoded, and then pass it to the processing function.
+ProcessData(require("fs").readFileSync("/dev/stdin", "utf8"));

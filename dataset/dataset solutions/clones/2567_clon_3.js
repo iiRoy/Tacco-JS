@@ -1,189 +1,165 @@
-const readline = require('readline');
-const util = require('util');
-
-class InputLineBuffer {
-  constructor(inputStrings) {
-    if (!Array.isArray(inputStrings)) {
-      console.error("Initialization Error: Input strings must be provided as an array.");
-      this.storedLines = [];
-      this.currentLinePointer = 0;
-      this.totalLineCount = 0;
-      return;
-    }
-    this.storedLines = inputStrings;
-    this.currentLinePointer = 0;
-    this.totalLineCount = inputStrings.length;
-  }
-
-  hasMoreInput() {
-    return this.currentLinePointer < this.totalLineCount;
-  }
-
-  fetchNextInput() {
-    if (this.hasMoreInput()) {
-      return this.storedLines[this.currentLinePointer++];
-    } else {
-      throw new Error("Input exhaustion: Attempted to read past the end of available input lines.");
-    }
-  }
-}
-
-let inputDataHandler;
-const receivedInputLines = [];
-
-standardInputReader.on('line', (singleLine) => {
-  receivedInputLines.push(singleLine);
-});
-
-standardInputReader.on('close', () => {
-  inputDataHandler = new InputLineBuffer(receivedInputLines);
-  
-  if (inputDataHandler.totalLineCount === 0) {
-    logDebugMessage("Warning: No input lines were received. The algorithm might operate on empty data.");
-  }
-  
-  const startTime = Date.now();
-  executeCoreLogic();
-  const executionDuration = Date.now() - startTime;
-  
-  logDebugMessage(`Execution Duration: ${executionDuration}ms`);
-  logDebugMessage(`Memory Usage (Heap Total): ${Math.round(process.memoryUsage().heapTotal / 1024)}KB`);
-});
-
-function retrieveNextInteger() {
-  const inputToken = getNextInputToken();
-  if (typeof inputToken !== 'string' || inputToken.trim() === '') {
-    logDebugMessage(`Warning: Received invalid token for integer parsing: "${inputToken}". Returning 0.`);
-    return 0; 
-  }
-  return parseInputFormat(inputToken, 1);
-}
-
-function retrieveNextStringArray() {
-  const inputToken = getNextInputToken();
-  return parseInputFormat(inputToken, 2);
-}
-
-function retrieveNextIntegerArray() {
-  const inputToken = getNextInputToken();
-  return parseInputFormat(inputToken, 4);
-}
-
-function retrieveNextCharacterArray() {
-  const inputToken = getNextInputToken();
-  return parseInputFormat(inputToken, 6);
-}
-
-function getNextInputToken() {
-  if (!inputDataHandler) {
-    throw new Error("Input System Error: Input data handler is not initialized.");
-  }
-  if (!inputDataHandler.hasMoreInput()) {
-    throw new Error("Input System Error: No more input tokens are available.");
-  }
-  return inputDataHandler.fetchNextInput();
-}
-
-function displayOutput(data) {
-  console.log(data);
-}
-
-const DEBUG_MESSAGE_PREFIX = "DEBUG_LOG: ";
-
-function logDebugMessage(debugContent) {
-  console.error(DEBUG_MESSAGE_PREFIX + util.inspect(debugContent, {
-    showHidden: false,
-    depth: null,
-    colors: true
-  }));
-}
-
-const inputConversionStrategies = {
-  1: (value) => parseInt(String(value), 10),
-  2: (value) => String(value).split(" "),
-  4: (value) => String(value).split(" ").map(Number),
-  6: (value) => String(value).split(""),
-  8: (value) => Array.isArray(value) ? value.join(" ") : String(value),
-  9: (value) => Array.isArray(value) ? value.join("\n") : String(value),
-  0: (value) => Array.isArray(value) ? value.join("") : String(value),
+var setupInputHandling = function(onCloseCallback) {
+  var reader = require('readline').createInterface({
+    input: process.stdin, output: process.stdout
+  });
+  var linesBuffer = [];
+  reader.on('line', function(line) { linesBuffer.push(line); });
+  reader.on('close', function() { onCloseCallback(linesBuffer); });
 };
 
-function parseInputFormat(inputValue, formatCode) {
-  if (inputValue === null || inputValue === undefined) {
-    logDebugMessage(`Warning: Attempted to process null/undefined input with format code ${formatCode}. Returning original value.`);
-    return inputValue; 
-  }
+var InputProcessor = function(inputDataLines) {
+  this.dataLines = inputDataLines;
+  this.currentIdx = 0;
+  this.maxIdx = inputDataLines.length;
 
-  const converterFunction = inputConversionStrategies[formatCode];
-  if (converterFunction) {
-    try {
-      return converterFunction(inputValue);
-    } catch (conversionError) {
-      logDebugMessage(`Conversion Error (Code: ${formatCode}, Value: "${inputValue}"): ${conversionError.message}`);
-      return inputValue;
+  this.hasMore = function() {
+    return this.currentIdx < this.maxIdx;
+  };
+
+  this.retrieveNext = function() {
+    if (this.hasMore()) {
+      return this.dataLines[this.currentIdx++];
+    } else {
+      throw "ArrayIndexOutOfBoundsException ‚There is no more input";
     }
-  } else {
-    logDebugMessage(`Unknown or unsupported format code encountered: ${formatCode}. Returning input value without modification.`);
+  };
+};
+
+var createDeepClone = function(sourceObject){
+  return JSON.parse(JSON.stringify(sourceObject));
+};
+
+var parseInteger = function(value) {
+  return parseInt(value, 10);
+};
+
+var splitStringBySpace = function(value) {
+  return value.split(" ");
+};
+
+var splitStringByChar = function(value) {
+  return value.split("");
+};
+
+var mapToNumbers = function(arr) {
+  return arr.map(Number);
+};
+
+var joinArrayBySpace = function(arr) {
+  return arr.join(" ");
+};
+
+var joinArrayByNewline = function(arr) {
+  return arr.join("\n");
+};
+
+var joinArrayWithoutSeparator = function(arr) {
+  return arr.join("");
+};
+
+var convertInput = function(inputValue, conversionType){
+  try{
+    switch(conversionType){
+      case 1: return parseInteger(inputValue);
+      case 2: return splitStringBySpace(inputValue);
+      case 4: return mapToNumbers(splitStringBySpace(inputValue));
+      case 6: return splitStringByChar(inputValue);
+      case 7: return mapToNumbers(splitStringByChar(inputValue));
+      case 8: return joinArrayBySpace(inputValue);
+      case 9: return joinArrayByNewline(inputValue);
+      case 0: return joinArrayWithoutSeparator(inputValue);
+      default: return inputValue;
+    }
+  }catch(e){
     return inputValue;
   }
-}
+};
 
-function executeCoreLogic() {
-  const unusedInputCount = retrieveNextInteger();
-  let currentCharacterSequence = retrieveNextCharacterArray();
+var globalInputHandler;
 
-  if (!currentCharacterSequence || currentCharacterSequence.length === 0) {
-    logDebugMessage("Initial character sequence is empty. No Z-algorithm computation will be performed.");
-    displayOutput(0);
+setupInputHandling(function(receivedLines) {
+  globalInputHandler = new InputProcessor(receivedLines);
+  console.error("\n");
+  var executionStartTime = Date.now();
+  executeMainProgramLogic();
+  var executionDuration = Date.now() - executionStartTime;
+  logDebugMessage("time : " + executionDuration + "ms");
+  logDebugMessage("memory : " + Math.round(process.memoryUsage().heapTotal / 1024) + "KB");
+});
+
+var getNextValue = function(){return globalInputHandler.retrieveNext();};
+var hasMoreInput = function(){return globalInputHandler.hasMore();};
+
+var getNextInteger = function(){return convertInput(getNextValue(),1);};
+var getNextStringArray = function(){return convertInput(getNextValue(),2);};
+var getNextIntegerArray = function(){return convertInput(getNextValue(),4);};
+var getNextCharacterArray = function(){return convertInput(getNextValue(),6);};
+
+var printOutput = function(data){console.log(data);};
+var logDebugMessage = function(message){console.error("debug:" + require("util").inspect(message,false,null));};
+
+var computeOriginalZAlgorithm = function(sequence) {
+  var currentSeqLength = sequence.length;
+  var zResultArray = new Array(currentSeqLength);
+  if (currentSeqLength === 0) {
+    return zResultArray;
+  }
+
+  zResultArray[0] = currentSeqLength;
+  var primaryIndex = 1;
+  var matchLength = 0;
+
+  while (primaryIndex < currentSeqLength) {
+    while ((primaryIndex + matchLength) < currentSeqLength && (sequence[matchLength] === sequence[primaryIndex + matchLength])) {
+      matchLength++;
+    }
+    zResultArray[primaryIndex] = matchLength;
+
+    if (matchLength === 0) {
+      primaryIndex++;
+      continue;
+    }
+
+    var secondaryIndex = 1;
+    while ((primaryIndex + secondaryIndex) < currentSeqLength && (secondaryIndex + zResultArray[secondaryIndex] < matchLength)) {
+      zResultArray[primaryIndex + secondaryIndex] = zResultArray[secondaryIndex];
+      secondaryIndex++;
+    }
+    primaryIndex += secondaryIndex;
+    matchLength -= secondaryIndex;
+  }
+  return zResultArray;
+};
+
+var findMaxZValueInSuffix = function(zValues, sequenceLength) {
+  var currentMax = 0;
+  var suffixStartThreshold = Math.floor(sequenceLength / 2);
+  for (var idx = sequenceLength - 1; idx >= suffixStartThreshold; idx--) {
+    currentMax = Math.max(currentMax, zValues[idx]);
+  }
+  return currentMax;
+};
+
+var executeMainProgramLogic = function(){
+  var sequenceCount = getNextInteger();
+  var characterSequence = getNextCharacterArray();
+
+  var overallMaxOverlap = 0;
+
+  if (characterSequence.length === 0) {
+    printOutput(0);
     return;
   }
 
-  let overallMaxMatchLength = 0;
-  
-  while (currentCharacterSequence.length > 0) {
-    const segmentLength = currentCharacterSequence.length;
-    const zAlgorithmValues = new Array(segmentLength).fill(0);
-    
-    zAlgorithmValues[0] = segmentLength;
+  while(characterSequence.length > 0){
+    var currentSequenceLength = characterSequence.length;
 
-    let currentProcessingIndex = 1;
-    let currentPrefixMatchLength = 0;
+    var zCalculatedArray = computeOriginalZAlgorithm(characterSequence);
 
-    while (currentProcessingIndex < segmentLength) {
-      while (
-        (currentProcessingIndex + currentPrefixMatchLength) < segmentLength &&
-        (currentCharacterSequence[currentPrefixMatchLength] === currentCharacterSequence[currentProcessingIndex + currentPrefixMatchLength])
-      ) {
-        currentPrefixMatchLength++;
-      }
-      
-      zAlgorithmValues[currentProcessingIndex] = currentPrefixMatchLength;
+    overallMaxOverlap = Math.max(overallMaxOverlap, findMaxZValueInSuffix(zCalculatedArray, currentSequenceLength));
 
-      if (currentPrefixMatchLength === 0) {
-        currentProcessingIndex++;
-        continue;
-      }
-
-      let offsetWithinBlock = 1;
-      while (
-        (currentProcessingIndex + offsetWithinBlock) < segmentLength &&
-        (offsetWithinBlock + zAlgorithmValues[offsetWithinBlock] < currentPrefixMatchLength)
-      ) {
-        zAlgorithmValues[currentProcessingIndex + offsetWithinBlock] = zAlgorithmValues[offsetWithinBlock];
-        offsetWithinBlock++;
-      }
-      
-      currentProcessingIndex += offsetWithinBlock;
-      currentPrefixMatchLength -= offsetWithinBlock;
-    }
-
-    const minimumCheckIndex = Math.floor(segmentLength / 2);
-    for (let checkPosition = segmentLength - 1; checkPosition >= minimumCheckIndex; checkPosition--) {
-      overallMaxMatchLength = Math.max(overallMaxMatchLength, zAlgorithmValues[checkPosition]);
-    }
-    
-    currentCharacterSequence.splice(0, 1); 
+    characterSequence.shift();
   }
 
-  displayOutput(overallMaxMatchLength);
-}
+  printOutput(overallMaxOverlap);
+};

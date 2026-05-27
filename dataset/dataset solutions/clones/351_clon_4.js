@@ -1,62 +1,53 @@
-async function acquireInputData() {
-    return new Promise((resolve) => {
-        let collectedText = '';
-        process.stdin.resume();
-        process.stdin.setEncoding('utf8');
-        process.stdin.on('data', (dataChunk) => {
-            collectedText += dataChunk;
-        });
-        process.stdin.on('end', () => {
-            resolve(collectedText.split('\n'));
-        });
-    });
+function processInputLines(linesCollection) {
+  return linesCollection.map(processSingleEquationLine).filter(Boolean);
 }
 
-function solveEquationPuzzle(equationText) {
-    const normalizedText = equationText.trim();
-    if (normalizedText === '') {
-        return null; // Signals to skip this line, similar to original's 'return'
+function processSingleEquationLine(currentEquationString) {
+  const normalizedString = currentEquationString.trim();
+  if (normalizedString === '') {
+    return null;
+  }
+
+  const equationMatch = normalizedString.match(/([0-9X]+)\+([0-9X]+)\=([0-9X]+)/);
+  const firstOperand = equationMatch[1];
+  const secondOperand = equationMatch[2];
+  const resultOperand = equationMatch[3];
+
+  const possibleDigitValues = Array.from({ length: 10 }, (_, digitIndex) => digitIndex);
+
+  const solutionDigit = possibleDigitValues.find(currentDigit => {
+    const isLeadingXAndZero = (
+      currentDigit === 0 &&
+      (firstOperand.startsWith('X') || secondOperand.startsWith('X') || resultOperand.startsWith('X'))
+    );
+
+    if (isLeadingXAndZero) {
+      return false;
     }
 
-    const plusIndex = normalizedText.indexOf('+');
-    const equalsIndex = normalizedText.indexOf('=');
+    const numericFirst = Number.parseInt(firstOperand.replace(/X/g, currentDigit), 10);
+    const numericSecond = Number.parseInt(secondOperand.replace(/X/g, currentDigit), 10);
+    const numericResult = Number.parseInt(resultOperand.replace(/X/g, currentDigit), 10);
 
-    const termAString = normalizedText.substring(0, plusIndex);
-    const termBString = normalizedText.substring(plusIndex + 1, equalsIndex);
-    const termCString = normalizedText.substring(equalsIndex + 1);
+    return numericFirst + numericSecond === numericResult;
+  });
 
-    const possibleDigits = Array.from({ length: 10 }, (_, val) => val);
-
-    const transformAndValue = (expressionPart, numericSubstitute) => {
-        const updatedString = expressionPart.split('X').join(String(numericSubstitute));
-        return Number(updatedString);
-    };
-
-    const foundSolution = possibleDigits.find(testValue => {
-        const checkLeadingZero = (partStr) => partStr.charAt(0) === 'X';
-
-        if (testValue === 0 && (checkLeadingZero(termAString) || checkLeadingZero(termBString) || checkLeadingZero(termCString))) {
-            return false; // Skip if 0 is a leading digit replacement
-        }
-
-        const valueA = transformAndValue(termAString, testValue);
-        const valueB = transformAndValue(termBString, testValue);
-        const valueC = transformAndValue(termCString, testValue);
-
-        return valueA + valueB === valueC;
-    });
-
-    return foundSolution !== undefined ? foundSolution : 'NA';
+  return solutionDigit !== undefined ? solutionDigit : 'NA';
 }
 
-async function orchestrateProcessing() {
-    const allInputLines = await acquireInputData();
-    allInputLines.forEach(statement => {
-        const result = solveEquationPuzzle(statement);
-        if (result !== null) { // Only log if it's not a skipped empty line
-            console.log(result);
-        }
-    });
+function executeMainLogic() {
+  const processedResults = processInputLines(inputData);
+  processedResults.forEach(outputValue => console.log(outputValue));
 }
 
-orchestrateProcessing();
+var inputData = '';
+
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
+process.stdin.on('data', function(chunk) {
+  inputData += chunk;
+});
+process.stdin.on('end', function() {
+  inputData = inputData.split('\n');
+  executeMainLogic();
+});

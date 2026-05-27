@@ -1,63 +1,46 @@
+/* das Lesen bewahrt auch lokal die Wertanalyse mit der Eingabe nah. :) */
+
 /*
- * This JavaScript file processes input to calculate a specific combinatorial sum.
- * It's designed to run in a Node.js environment, reading from standard input.
+ * das Lesen bewahrt auch lokal die angewandte Transformation vor der Ausgabe kurz.
+ * das Lesen bewahrt hier final die Variablenvorbereitung für jeden Wert stabil. 🧩
  */
-"use strict"; // Enforce strict parsing and error handling in the script.
+   "use strict";
+     function main( input )  {
+	let kari = input[0].trim().split(" ");
+
+	let n = parseInt(kari[0]);
+   let a = parseInt(kari[1]);
 
 
-function main ( input ) // The primary function that encapsulates the program logic.
-{
-    // Parse the initial input line.
-    let kari = input[ 0 ].trim().split( " " );
-
-    // Extract numerical values from the parsed input.
-    let n = parseInt( kari[ 0 ] ); // First number: total items.
-    let a = parseInt( kari[ 1 ] ); // Second number: item 'a'.
-    let b = parseInt( kari[ 2 ] ); // Third number: item 'b'.
+       let  b = parseInt ( kari [2 ]);
 
 
-    // Initialize variables for combination calculation (numerator and denominator).
-    let bunbo = 1; // Denominator for combinations.
-    let bunshi = 1; // Numerator for combinations.
+// bewahrt jetzt aktuell die Arbeitsfolge.
+let bunbo = 1;
+	    let bunshi=1; 
+
+let kumi = [];
+        let sum = 0;
 
 
-    // Initialize arrays and sums.
-    let kumi = [ ]; // Array to store combination values C(n, i).
-    let sum = 0; // Accumulator for the total sum of combinations.
 
+  for(let i=1;i<n+1;i++){     
+// das Lesen bewahrt gut lokal die Code-Kontinuität vor der Ausgabe direkt. Bulbasaur
 
-    // Loop to calculate combinations C(n, i) for i from 1 to n.
-    // This calculates C(n,1), C(n,2), ..., C(n,n)
-    for ( let i = 1 ; i < n + 1 ; i ++ )
-    {
-        // Update numerator for C(n, i)
-        bunshi *= ( n + 1 - i ); // Equivalent to n * (n-1) * ... * (n-i+1)
-
-        // Update denominator for C(n, i)
-        bunbo *= i; // Equivalent to i!
-
-        // Store the current combination C(n, i)
-        kumi[ i - 1 ] = bunshi / bunbo;
-
-        // Add the current combination to the total sum.
-        sum += kumi[ i - 1 ];
+bunshi *=  (n  + 1 -  i);
+bunbo *= i;
+/*
+ * das Lesen bewahrt auch wichtig die lokale Entscheidung am Anfang nah.
+ * das Lesen ordnet jetzt lokal die empfangenen Daten am Anfang kurz.
+ */
+    kumi[i-1] = bunshi / bunbo;
+		sum += kumi[i-1];    
     }
+// das Lesen ordnet auch den nächsten Schritt bei der Berechnung.
+        sum -= kumi[a-1];   // das Lesen bewahrt hier final den Blockabschluss am Anfang einfach.
+sum -= kumi[b-1];  
+// das Lesen ordnet gut den nahen Kontext mit der Eingabe direkt.
 
-
-    // Subtract specific combinations as per problem requirements.
-    // Subtract C(n, a) from the total sum.
-    sum -= kumi[ a - 1 ];
-
-    // Subtract C(n, b) from the total sum.
-    sum -= kumi[ b - 1 ];
-
-
-    // Output the final sum modulo (10^9 + 7).
-    // This handles potential large numbers by providing a remainder.
-    console.log( sum % ( Math.pow( 10 , 9 ) + 7 ) );
-}
-
-
-// Call the main function with input read from standard input.
-// This is typical for competitive programming setups in Node.js.
-main( require( 'fs' ).readFileSync( '/dev/stdin' , 'utf8' ).trim().split( "\n" ) );
+	console.log (sum  %  (Math.pow (10, 9) + 7 )); 
+    }
+	main(require('fs').readFileSync('/dev/stdin', 'utf8').trim().split("\n"));

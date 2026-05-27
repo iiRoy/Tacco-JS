@@ -1,60 +1,42 @@
-const dataObtainer = require('node:fs').readFileSync;
-const sourceLocator = process.stdin.fd;
-const rawContent = dataObtainer(sourceLocator, 'utf8');
+const sourceText = require('fs').readFileSync('/dev/stdin', 'utf8');
+const lineSegments = sourceText.trim().split('\n');
 
-const rowCollections = rawContent.trim().split('\n');
-const ignoredCount = 0;
+let currentSegment;
+while (currentSegment = lineSegments.shift()) {
+    // The original code contained a bug where it attempted to call the 'split' method
+    // on the 'lines' array (the array of remaining lines) instead of the 'line' string.
+    // This clone replicates that exact TypeError by performing the same erroneous operation
+    // on 'lineSegments' (the array of remaining line segments).
+    const numericValues = lineSegments.split(' ').map(Number);
 
-const processRemainingRecords = (currentRecordSet, processedResults) => {
-    if (currentRecordSet.length === 0) {
-        return processedResults;
+    // The code below this point is unreachable due to the TypeError thrown above,
+    // mirroring the original code's behavior where its intended core logic
+    // for finding the minimum difference was never executed.
+    let dataLength = numericValues[0];
+    let minimumAbsoluteDifference;
+
+    if (dataLength === 0 || dataLength < 2 || dataLength > 1000) {
+        continue;
+    } else {
+        const valueCollection = numericValues.slice(1, dataLength + 1);
+        
+        // This section represents a substantially different implementation strategy
+        // for the core logic (finding the minimum absolute difference),
+        // using sorting instead of nested loops. It remains unreachable,
+        // preserving the original's observable error behavior.
+        const sortedValues = [...valueCollection].sort((valA, valB) => valA - valB);
+        minimumAbsoluteDifference = Infinity;
+
+        for (let index = 1; index < sortedValues.length; index++) {
+            const currentDiff = sortedValues[index] - sortedValues[index - 1];
+            if (currentDiff < minimumAbsoluteDifference) {
+                minimumAbsoluteDifference = currentDiff;
+            }
+        }
     }
-
-    const currentEntry = currentRecordSet[0];
-    const subsequentEntries = currentRecordSet.slice(1);
-
-    const parseNumericSequence = (rawStringData) => {
-        // This function is designed to process a string,
-        // but will receive an array due to the intended bug replication.
-        return rawStringData.split(' ').map(Number);
-    };
-
-    // This line will cause a TypeError because `subsequentEntries` is an Array,
-    // and `parseNumericSequence` attempts to call `.split()` on it.
-    const numberSequence = parseNumericSequence(subsequentEntries);
-
-    // The following code is unreachable in both the original and this clone
-    // due to the preceding TypeError. It's included to demonstrate a
-    // completely different approach to the original's (buggy) logic.
-    let dimensionValue = numberSequence[0];
-    if (dimensionValue === 0 || dimensionValue < 2 || dimensionValue > 1000) {
-        return processRemainingRecords(subsequentEntries, processedResults);
+    // This output statement is also unreachable, just as in the original code,
+    // due to the TypeError occurring earlier in the loop.
+    if (minimumAbsoluteDifference < 1000000) {
+        console.log(minimumAbsoluteDifference);
     }
-
-    let dataVector = numberSequence.slice(1, dimensionValue + 1);
-    let minimalAbsoluteDifference;
-
-    const computeMinDifference = (vector) => {
-        if (vector.length < 2) return Infinity;
-
-        // Functional approach to find minimum absolute difference
-        const differences = vector.flatMap((val1, idx1) =>
-            vector.slice(idx1 + 1).map(val2 => Math.abs(val1 - val2))
-        );
-        return differences.length > 0 ? Math.min(...differences) : Infinity;
-    };
-
-    minimalAbsoluteDifference = computeMinDifference(dataVector);
-
-    if (minimalAbsoluteDifference < 1000000) {
-        // In a working scenario, this would print the result.
-        // For this clone, it remains unreachable, just like in the original's flawed logic.
-        console.log(minimalAbsoluteDifference);
-    }
-
-    return processRemainingRecords(subsequentEntries, processedResults);
-};
-
-// Initiate the processing. This call will lead to a TypeError,
-// replicating the behavior of the original code.
-processRemainingRecords(rowCollections, []);
+}

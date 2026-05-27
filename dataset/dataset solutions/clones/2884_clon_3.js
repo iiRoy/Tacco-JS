@@ -1,279 +1,208 @@
-const InputProcessor = (() => {
-    class DataStreamHandler {
-        constructor(rawInputString) {
-            const processedLines = rawInputString.trim().split("\n");
-            if (processedLines.length === 0 || (processedLines.length === 1 && processedLines[0] === '')) {
-                // If input is truly empty or just whitespace/empty line, initialize an empty buffer.
-                this.internalLineBuffer = [];
-            } else {
-                this.internalLineBuffer = processedLines;
-            }
-            this.currentLinePointer = 0;
+const createInputReader = (function() {
+    // Helper function to safely parse values to numbers
+    const parseValue = (value, asString) => asString ? value : Number(value);
+
+    class InputReader {
+        constructor(sourceString) {
+            this.sourceLines = sourceString.trim().split("\n");
+            this.currentLineIndex = 0;
         }
 
-        hasMoreLines() {
-            return this.currentLinePointer < this.internalLineBuffer.length;
+        // Reads a single value from the current line.
+        // If the line is exhausted, it moves to the next.
+        readSingleValue(returnAsString = false) {
+            let currentLineContent = this.sourceLines[this.currentLineIndex];
+
+            // If the current line hasn't been processed into an array of values yet, do it.
+            // The original code's `reverse().pop()` is equivalent to `split(" ").shift()`
+            // for getting the first element and modifying the array in place.
+            if (typeof currentLineContent === "string") {
+                this.sourceLines[this.currentLineIndex] = currentLineContent.split(" ");
+            }
+
+            const valueToReturn = this.sourceLines[this.currentLineIndex].shift();
+
+            // If the line is now empty, advance to the next line.
+            if (!this.sourceLines[this.currentLineIndex].length) {
+                this.currentLineIndex++;
+            }
+
+            return parseValue(valueToReturn, returnAsString);
         }
 
-        retrieveSingleValue(returnAsString = false) {
-            if (!this.hasMoreLines()) {
-                throw new Error("Input stream exhausted. Cannot retrieve single value.");
-            }
-
-            let lineContent = this.internalLineBuffer[this.currentLinePointer];
-            let tokens;
-
-            if (typeof lineContent === "string") {
-                tokens = lineContent.split(" ").reverse();
-                // Store the parsed tokens back to avoid re-splitting if multiple values are on one line.
-                this.internalLineBuffer[this.currentLinePointer] = tokens;
-            } else if (Array.isArray(lineContent)) {
-                tokens = lineContent;
-            } else {
-                throw new Error(`Unexpected line format at index ${this.currentLinePointer}.`);
-            }
-
-            if (tokens.length === 0) {
-                // This means a line was empty or fully consumed. Advance pointer and try again or throw.
-                // Original logic implies that if a line is consumed, the pointer advances.
-                this.currentLinePointer++;
-                if (!this.hasMoreLines()) {
-                    throw new Error("Input stream exhausted after consuming an empty line's tokens.");
-                }
-                return this.retrieveSingleValue(returnAsString); // Recursively try next line
-            }
-
-            const extractedToken = tokens.pop();
-
-            if (tokens.length === 0) {
-                this.currentLinePointer++; // Advance line pointer if the current line's tokens are fully consumed.
-            }
-
-            return returnAsString ? extractedToken : Number(extractedToken);
+        // Reads all values from the current line, then advances to the next line.
+        readLineValues(returnAsString = false) {
+            const lineValues = this.sourceLines[this.currentLineIndex++].split(" ");
+            return returnAsString ? lineValues : lineValues.map(val => Number(val));
         }
 
-        fetchLineValues(returnAsStrings = false) {
-            if (!this.hasMoreLines()) {
-                throw new Error("Input stream exhausted. No more lines to fetch.");
-            }
-            // Ensure the line is consumed and pointer advanced.
-            const currentLineContent = this.internalLineBuffer[this.currentLinePointer++];
-            const tokens = Array.isArray(currentLineContent) ? currentLineContent : currentLineContent.split(" ");
-            return returnAsStrings ? tokens : tokens.map(value => Number(value));
+        // Reads N lines, splitting each into values, forming a matrix.
+        readMatrix(numRows, returnAsString = false) {
+            const matrixRows = this.sourceLines.slice(this.currentLineIndex, this.currentLineIndex + numRows);
+            this.currentLineIndex += numRows;
+            return returnAsString ?
+                matrixRows.map(row => row.split(" ")) :
+                matrixRows.map(row => row.split(" ").map(val => Number(val)));
         }
 
-        acquireMatrixData(numberOfLines, returnElementsAsStrings = false) {
-            if (this.currentLinePointer + numberOfLines > this.internalLineBuffer.length) {
-                throw new Error(`Insufficient lines remaining (${this.internalLineBuffer.length - this.currentLinePointer}) to acquire matrix data for ${numberOfLines} rows.`);
-            }
-
-            const matrixRows = [];
-            const linesToProcess = this.internalLineBuffer.slice(this.currentLinePointer, this.currentLinePointer + numberOfLines);
-            this.currentLinePointer += numberOfLines;
-
-            for (let lineIndex = 0; lineIndex < linesToProcess.length; lineIndex++) {
-                const line = linesToProcess[lineIndex];
-                const tokens = line.split(" ");
-                matrixRows.push(returnElementsAsStrings ? tokens : tokens.map(val => Number(val)));
-            }
-            return matrixRows;
-        }
-
-        readRawLines(lineCount) {
-            if (this.currentLinePointer + lineCount > this.internalLineBuffer.length) {
-                throw new Error(`Insufficient lines remaining (${this.internalLineBuffer.length - this.currentLinePointer}) to read raw data for ${lineCount} lines.`);
-            }
-            const rawLines = this.internalLineBuffer.slice(this.currentLinePointer, this.currentLinePointer + lineCount);
-            this.currentLinePointer += lineCount;
-            return rawLines;
+        // Reads N lines as raw strings or numbers.
+        readRows(numRows, returnAsString = false) {
+            const rows = this.sourceLines.slice(this.currentLineIndex, this.currentLineIndex + numRows);
+            this.currentLineIndex += numRows;
+            return returnAsString ? rows : rows.map(val => Number(val));
         }
     }
-    return (inputSourceString) => new DataStreamHandler(inputSourceString);
+    return function(sourceString) {
+        return new InputReader(sourceString);
+    };
 })();
 
-// Acquisition of input data from standard input file system.
-const fileSystem = require("fs");
-const rawInputContent = fileSystem.readFileSync("/dev/stdin", "utf8");
-const dataInputReader = InputProcessor(rawInputContent);
+const inputData = createInputReader(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-/**
- * Calculates the optimal value based on a given set of item properties and a segment size.
- * This function utilizes a binary search algorithm to find the minimum cost.
- * @returns {number} The determined optimal cost value.
- */
-function determineOptimalValue() {
-    // Read problem specific parameters.
-    const totalItems = dataInputReader.retrieveSingleValue();
-    const segmentLength = dataInputReader.retrieveSingleValue();
+function createMultiDimArray(initialValue) {
+    const args = arguments;
+    let argCount = args.length;
+    let arrayCreationString = `Array(args[${--argCount}]).fill(0).map(x => {return ${initialValue};})`;
+    while (--argCount) {
+        arrayCreationString = `Array(args[${argCount}]).fill(0).map(x => ${arrayCreationString})`;
+    }
+    return eval(arrayCreationString);
+}
 
-    // Process raw input matrix into a more structured array of objects.
-    const rawItemDetails = dataInputReader.acquireMatrixData(totalItems);
-    const itemDetailRecords = rawItemDetails.map((itemRow, index) => {
-        const baseCostUnits = itemRow[0];
-        const multiplierValue = itemRow[1];
-        const penaltyRate = itemRow[2];
+// Constants for item data structure after initial processing
+const ITEM_INITIAL_CAPACITY_INDEX = 0;
+const ITEM_COST_PER_UNIT_INDEX = 1;
+const ITEM_ADDITIONAL_COST_PER_UNIT_INDEX = 2;
+const ITEM_CALCULATED_ADDITIONAL_COST_INDEX = 3; // (targetCapacity - initialCapacity) * additionalCostPerUnit
+const ITEM_CALCULATED_BASE_COST_INDEX = 4;       // initialCapacity * costPerUnit
+const ITEM_CALCULATED_TOTAL_COST_INDEX = 5;      // calculatedAdditionalCost + calculatedBaseCost
 
-        // Calculate auxiliary cost components for each item.
-        const initialCost = baseCostUnits * multiplierValue;
-        const penaltyCost = (segmentLength - baseCostUnits) * penaltyRate;
-        const overallCombinedCost = initialCost + penaltyCost;
+console.log(main());
 
-        return {
-            itemId: index, // Unique identifier for the item.
-            baseCost: baseCostUnits,
-            multiplier: multiplierValue,
-            penaltyRate: penaltyRate,
-            calculatedInitialCost: initialCost,
-            calculatedPenaltyCost: penaltyCost,
-            overallCombinedCost: overallCombinedCost,
-            // A flag for potential future use, e.g., if an item has been fully consumed.
-            isFullyProcessed: false
-        };
-    });
+function main() {
+    const numItems = inputData.readSingleValue();
+    const targetCapacity = inputData.readSingleValue();
+    const itemDetails = inputData.readMatrix(numItems); // 'b' in original
 
-    // Sum up all initial costs to get the starting total.
-    let cumulativeInitialCost = itemDetailRecords.reduce((sum, record) => sum + record.calculatedInitialCost, 0);
+    let totalBaseCostSum = 0; // 's' in original
 
-    // Sort the items by their overall combined cost in descending order.
-    itemDetailRecords.sort((recordA, recordB) => recordB.overallCombinedCost - recordA.overallCombinedCost);
+    // Helper function to calculate cost for a given item and capacity
+    // This function is used in two places in the binary search loop.
+    const calculateCostForCapacity = (item, currentCapacity) => {
+        if (currentCapacity < item[ITEM_INITIAL_CAPACITY_INDEX]) {
+            return item[ITEM_COST_PER_UNIT_INDEX] * currentCapacity;
+        } else {
+            return item[ITEM_CALCULATED_BASE_COST_INDEX] + (currentCapacity - item[ITEM_INITIAL_CAPACITY_INDEX]) * item[ITEM_ADDITIONAL_COST_PER_UNIT_INDEX];
+        }
+    };
 
-    // Initialize binary search bounds.
-    let searchUpperBound = totalItems * segmentLength; // 'ok'
-    let searchLowerBound = -1; // 'ng'
+    // Initial processing of items: calculate costs and append to each item's array
+    for (let itemIndex = 0; itemIndex < numItems; itemIndex++) {
+        const currentItem = itemDetails[itemIndex];
+        const baseCost = currentItem[ITEM_INITIAL_CAPACITY_INDEX] * currentItem[ITEM_COST_PER_UNIT_INDEX];
+        const additionalCost = (targetCapacity - currentItem[ITEM_INITIAL_CAPACITY_INDEX]) * currentItem[ITEM_ADDITIONAL_COST_PER_UNIT_INDEX];
 
-    // Perform binary search to find the optimal value.
-    while (searchUpperBound - searchLowerBound > 1) {
-        const currentMidpointCandidate = Math.floor((searchUpperBound + searchLowerBound) / 2); // 'm'
+        totalBaseCostSum += baseCost;
+        currentItem.push(additionalCost, baseCost, additionalCost + baseCost);
+    }
 
-        // Initialize state variables for cost simulation at currentMidpointCandidate.
-        let currentTotalCostRemaining = cumulativeInitialCost; // 'u'
-        let segmentsToAllocate = currentMidpointCandidate; // 'k'
-        const remainderOffset = currentMidpointCandidate % segmentLength; // 'z'
-        let maxSegmentReduction = 0; // 'u0'
-        let indexOfMaxReduction = 0; // 'i0'
+    // Sort items by their calculated total cost in descending order
+    itemDetails.sort((itemA, itemB) => itemB[ITEM_CALCULATED_TOTAL_COST_INDEX] - itemA[ITEM_CALCULATED_TOTAL_COST_INDEX]);
 
-        // First pass: Identify the item that provides the maximum cost reduction for the 'remainderOffset'.
-        for (let idx = 0; idx < totalItems; idx++) {
-            const currentItem = itemDetailRecords[idx];
-            let segmentCostReductionAmount; // 'u1'
+    let upperBound = numItems * targetCapacity; // 'ok' in original
+    let lowerBound = -1; // 'ng' in original
 
-            if (remainderOffset < currentItem.baseCost) {
-                segmentCostReductionAmount = currentItem.multiplier * remainderOffset;
-            } else {
-                segmentCostReductionAmount = currentItem.calculatedPenaltyCost + (remainderOffset - currentItem.baseCost) * currentItem.penaltyRate;
-            }
+    // Binary search for the optimal capacity
+    while (upperBound - lowerBound > 1) {
+        const midCapacity = Math.floor((upperBound + lowerBound) / 2); // 'm' in original
 
-            if (segmentCostReductionAmount > maxSegmentReduction) {
-                maxSegmentReduction = segmentCostReductionAmount;
-                indexOfMaxReduction = idx;
+        let currentRemainingCost = totalBaseCostSum; // 'u' in original
+        let remainingCapacityToDistribute = midCapacity; // 'k' in original
+        const capacityRemainder = midCapacity % targetCapacity; // 'z' in original
+
+        let maxCostForRemainder = 0; // 'u0' in original
+        let maxCostItemIndex = 0; // 'i0' in original
+
+        // First pass: Find the item that yields the maximum cost for the 'capacityRemainder'
+        for (let itemIndex = 0; itemIndex < numItems; itemIndex++) {
+            const itemCostAtRemainder = calculateCostForCapacity(itemDetails[itemIndex], capacityRemainder);
+            if (itemCostAtRemainder > maxCostForRemainder) {
+                maxCostForRemainder = itemCostAtRemainder;
+                maxCostItemIndex = itemIndex;
             }
         }
 
-        // Second pass: Simulate cost reduction by allocating segments.
-        // The loop continues as long as there are items, segments to allocate, and remaining cost.
-        for (let idx = 0; idx < totalItems && segmentsToAllocate > 0 && currentTotalCostRemaining > 0; idx++) {
-            const currentItem = itemDetailRecords[idx];
+        // Second pass: Distribute remaining capacity and adjust costs
+        // The outer loop's 'itemIndex' is used and advanced by this loop.
+        for (let itemIndex = 0; itemIndex < numItems && remainingCapacityToDistribute > 0 && currentRemainingCost > 0; itemIndex++) {
+            const currentItem = itemDetails[itemIndex];
 
-            // If enough segments are available for a full 'segmentLength' block.
-            if (segmentLength <= segmentsToAllocate) {
-                currentTotalCostRemaining -= currentItem.overallCombinedCost;
-                segmentsToAllocate -= segmentLength;
-            } else {
-                // Not enough segments for a full block; handle edge cases and special reductions.
-
-                // If current item is at or before the 'indexOfMaxReduction'.
-                if (idx <= indexOfMaxReduction) {
-                    currentTotalCostRemaining -= maxSegmentReduction;
-                    segmentsToAllocate = 0; // All remaining segments considered consumed by this optimal choice.
+            if (targetCapacity <= remainingCapacityToDistribute) {
+                // If we can fully cover a 'targetCapacity' block, subtract its total cost
+                currentRemainingCost -= currentItem[ITEM_CALCULATED_TOTAL_COST_INDEX];
+                remainingCapacityToDistribute -= targetCapacity;
+            } else { // remainingCapacityToDistribute < targetCapacity
+                if (itemIndex <= maxCostItemIndex) {
+                    // If current item is among those considered for maxCostForRemainder,
+                    // subtract the maxCostForRemainder and exhaust remainingCapacityToDistribute
+                    currentRemainingCost -= maxCostForRemainder;
+                    remainingCapacityToDistribute = 0;
                 } else {
-                    // Current item is after 'indexOfMaxReduction'. This is the complex segment consumption logic.
-                    // 'prospectiveCostCheck' (original 'v') evaluates if a specific reduction covers the cost.
-                    let prospectiveCostCheck = currentTotalCostRemaining;
+                    // This is the complex part from the original code.
+                    // It adjusts 'currentRemainingCost' based on differences and then
+                    // performs an inner search to find an item that makes the cost non-positive.
 
-                    // Calculate a modified cost based on the difference between the max reduction item and current item.
-                    prospectiveCostCheck += itemDetailRecords[indexOfMaxReduction].overallCombinedCost - currentItem.overallCombinedCost - maxSegmentReduction;
+                    let adjustedCostForComparison = currentRemainingCost;
+                    adjustedCostForComparison += itemDetails[maxCostItemIndex][ITEM_CALCULATED_TOTAL_COST_INDEX] - currentItem[ITEM_CALCULATED_TOTAL_COST_INDEX] - maxCostForRemainder;
 
-                    // If this prospective reduction makes the cost non-positive, apply it and stop allocating segments.
-                    if (prospectiveCostCheck <= 0) {
-                        currentTotalCostRemaining = prospectiveCostCheck;
-                        segmentsToAllocate = 0;
-                        break; // Exit the outer loop as cost is covered.
+                    if (adjustedCostForComparison <= 0) {
+                        currentRemainingCost = adjustedCostForComparison;
+                        continue; // Skip to next item in outer loop
                     }
 
-                    // If cost is still positive, we enter a phase to find which item consumes the remaining segments.
-                    // This internal logic re-interprets the original's behavior of resetting 'v' to 'u' in an inner loop.
-                    // It effectively finds the first item (starting from current 'idx') that covers 'currentTotalCostRemaining'
-                    // with the remaining 'segmentsToAllocate'. If no single item covers it, it applies the reduction
-                    // from the *last* item checked if the loop completes.
-                    let consumptionCompleted = false;
-                    for (let innerLoopIdx = idx; innerLoopIdx < totalItems; innerLoopIdx++) {
-                        const currentInnerItem = itemDetailRecords[innerLoopIdx];
-                        let reductionFromCurrentItem;
+                    // The original inner loop `for(v = u; i < n && v > 0; i++){ v = u; ... }`
+                    // effectively finds the first item (starting from current `itemIndex`)
+                    // that, when its cost for `remainingCapacityToDistribute` is subtracted from `currentRemainingCost`,
+                    // makes the result non-positive.
+                    // The outer loop's `itemIndex` is advanced by this inner search.
 
-                        if (segmentsToAllocate < currentInnerItem.baseCost) {
-                            reductionFromCurrentItem = currentInnerItem.multiplier * segmentsToAllocate;
+                    let tempV = currentRemainingCost; // This is the 'v' from the original code, initialized with 'u'
+                    
+                    for (/* itemIndex continues from outer loop */; itemIndex < numItems; itemIndex++) {
+                        // CRITICAL: 'v = u' in original. So tempV is reset to currentRemainingCost each iteration.
+                        tempV = currentRemainingCost;
+                        const currentInnerItem = itemDetails[itemIndex];
+                        let costReductionForCurrentItem;
+
+                        // Calculate cost reduction for the current item based on remainingCapacityToDistribute
+                        if (remainingCapacityToDistribute < currentInnerItem[ITEM_INITIAL_CAPACITY_INDEX]) {
+                            costReductionForCurrentItem = currentInnerItem[ITEM_COST_PER_UNIT_INDEX] * remainingCapacityToDistribute;
                         } else {
-                            reductionFromCurrentItem = currentInnerItem.calculatedPenaltyCost + (segmentsToAllocate - currentInnerItem.baseCost) * currentInnerItem.penaltyRate;
+                            costReductionForCurrentItem = currentInnerItem[ITEM_CALCULATED_BASE_COST_INDEX] + (remainingCapacityToDistribute - currentInnerItem[ITEM_INITIAL_CAPACITY_INDEX]) * currentInnerItem[ITEM_ADDITIONAL_COST_PER_UNIT_INDEX];
                         }
 
-                        // If this item's reduction covers the remaining total cost.
-                        if (currentTotalCostRemaining - reductionFromCurrentItem <= 0) {
-                            currentTotalCostRemaining -= reductionFromCurrentItem;
-                            segmentsToAllocate = 0;
-                            consumptionCompleted = true;
-                            idx = innerLoopIdx; // Update outer loop index to reflect consumption point.
-                            break; // Exit inner loop.
+                        tempV -= costReductionForCurrentItem; // Apply the reduction
+
+                        if (tempV <= 0) {
+                            // Found the item that makes the cost non-positive.
+                            break; // Exit this inner search loop
                         }
-                        // If it's the last item and it didn't fully cover, apply its reduction and stop.
-                        else if (innerLoopIdx === totalItems - 1) {
-                            currentTotalCostRemaining -= reductionFromCurrentItem;
-                            segmentsToAllocate = 0;
-                            consumptionCompleted = true;
-                            idx = innerLoopIdx; // Update outer loop index.
-                            break; // Exit inner loop.
-                        }
-                        // Otherwise, continue to the next item in the inner loop; `currentTotalCostRemaining` is not updated yet.
+                        // If tempV is still positive, continue to the next item.
+                        // The outer loop's `itemIndex` will be incremented by the `for` loop's `i++`
+                        // after this iteration, so no explicit `itemIndex++` here.
                     }
 
-                    // If the inner loop finished without fully covering the cost or reaching the last item,
-                    // and `segmentsToAllocate` is still positive, this implies all segments were "used" but cost wasn't fully covered
-                    // by the specific rules.
-                    if (!consumptionCompleted) {
-                        // If no item covered it fully, and we've exhausted possibilities,
-                        // this branch is reached. The segmentsToAllocate should be zeroed.
-                        // The original's `u=v, k=0` implies `u` takes the last tested `v`.
-                        // This means if no specific item covered it, `currentTotalCostRemaining` would have taken the value
-                        // after applying the reduction of the *last* item it checked with `segmentsToAllocate`.
-                        // Since `consumptionCompleted` is false, `segmentsToAllocate` would still be > 0.
-                        // This indicates a subtle edge case in the original.
-                        // For a Type III clone, we'll ensure segments are zeroed here,
-                        // and `currentTotalCostRemaining` is as it was if no specific item fully covered.
-                        // However, the prior `prospectiveCostCheck` already had a chance to update `currentTotalCostRemaining`.
-                        // If we reach here, it means `prospectiveCostCheck > 0` AND no `innerLoopIdx` caused `consumptionCompleted`.
-                        // The original's `u=v, k=0` after the inner loop effectively updates `u` with the last `v` calculated.
-                        // This means `u` is updated with `u - reduction_from_last_item_checked`.
-                        if (totalItems > 0) {
-                             // This case should be handled by the innerLoopIdx === totalItems - 1 condition.
-                             // If `consumptionCompleted` is false after the loop, it means `totalItems` was 0,
-                             // or the loop conditions prevented it from running.
-                        }
-                        segmentsToAllocate = 0; // Ensure segments are zeroed out.
-                    }
+                    currentRemainingCost = tempV; // 'u = v' from original
+                    remainingCapacityToDistribute = 0; // 'k = 0' from original
                 }
             }
         }
 
-        // Update binary search bounds based on the outcome of the cost simulation.
-        if (currentTotalCostRemaining > 0) {
-            searchLowerBound = currentMidpointCandidate;
+        if (currentRemainingCost > 0) {
+            lowerBound = midCapacity;
         } else {
-            searchUpperBound = currentMidpointCandidate;
+            upperBound = midCapacity;
         }
     }
-
-    // The final 'searchUpperBound' holds the optimal value.
-    return searchUpperBound;
+    return upperBound;
 }
-
-// Execute the main calculation and output the result to console.
-console.log(determineOptimalValue());

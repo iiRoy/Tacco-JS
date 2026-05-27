@@ -1,35 +1,28 @@
 "use strict";
 
-const processStream = (sourceText) => {
-    const lineCollection = sourceText.trim().split('\n');
-    const dimensionSpec = lineCollection[0].split(' ');
-    const numericalRows = parseInt(dimensionSpec[0]);
-    const numericalCols = parseInt(dimensionSpec[1]);
+const processInput = (inputContent) => {
+    const inputLines = inputContent.trim().split("\n");
 
-    const textualGrid = lineCollection.slice(1, numericalRows + 1).map(segment => segment.split(' '));
+    const dimensionParts = inputLines[0].split(" ");
+    const gridHeight = parseInt(dimensionParts[0]);
+    const gridWidth = parseInt(dimensionParts[1]);
 
-    const locateSpecificTerm = (currentY, currentX) => {
-        if (currentY >= numericalRows) {
-            return null;
-        }
-        if (currentX >= numericalCols) {
-            return locateSpecificTerm(currentY + 1, 0);
-        }
+    const alphabetSequence = Array.from({ length: 26 }, (_, charIndex) =>
+        String.fromCharCode('A'.charCodeAt(0) + charIndex)
+    );
 
-        if (textualGrid[currentY][currentX] === 'snuke') {
-            return { rowIdx: currentY, colIdx: currentX };
-        }
+    const flattenedGridItems = inputLines.slice(1, gridHeight + 1).flatMap(lineText =>
+        lineText.split(" ")
+    );
 
-        return locateSpecificTerm(currentY, currentX + 1);
-    };
+    const snukePosition = flattenedGridItems.indexOf("snuke");
 
-    const discoveredPosition = locateSpecificTerm(0, 0);
+    if (snukePosition !== -1) {
+        const targetColumnIndex = snukePosition % gridWidth;
+        const targetRowIndex = Math.floor(snukePosition / gridWidth);
 
-    if (discoveredPosition) {
-        const columnDesignator = String.fromCharCode('A'.charCodeAt(0) + discoveredPosition.colIdx);
-        const oneBasedRowNumber = discoveredPosition.rowIdx + 1;
-        console.log(`${columnDesignator}${oneBasedRowNumber}`);
+        console.log(alphabetSequence[targetColumnIndex] + (targetRowIndex + 1));
     }
 };
 
-processStream(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,117 +1,67 @@
 "use strict";
-
-const processInput = (rawInput) => {
-  // Normalize and split the raw input string into individual lines
-  let parsedLines = rawInput.trim().split("\n");
-
-  // Extract the total number of entities from the first line
-  const totalEntities = Number(parsedLines[0]);
-
-  // Remove the first line as it's already processed
-  parsedLines.shift();
-
-  // The remaining lines represent the statements about entities
-  const entityStatements = parsedLines;
-
-  // Initialize a data store for each entity to track claims
-  const entityDataStore = [];
-
-  // Store parsed assertion sets for each entity
-  const entityClaimSets = [];
-
-  // Counter for the first type of contradiction
-  let firstContradictionTally = 0;
-
-  // Initialize each entity's data structure
-  for (let entityIndex = 0; entityIndex < totalEntities; entityIndex++) {
-    entityDataStore[entityIndex] = {
-      0: 0,
-      1: 0,
-      disagreeingWith: [], // List of entities this entity claims are dishonest (0)
-      disagreedBy: [], // List of entities that claim this entity is dishonest (0)
-    };
-  }
-
-  // Parse all statements and populate entityClaimSets
-  for (
-    let currentStatementIdx = 0;
-    currentStatementIdx < entityStatements.length;
-    currentStatementIdx++
-  ) {
-    // Get the number of assertions made by the current entity
-    let numAssertions = Number(entityStatements[currentStatementIdx]);
-
-    // Extract the assertions related to the current entity
-    entityClaimSets.push(
-      entityStatements.slice(
-        currentStatementIdx + 1,
-        currentStatementIdx + numAssertions + 1
-      )
-    );
-
-    // Advance the index past the assertions for the current entity
-    currentStatementIdx = currentStatementIdx + numAssertions;
-  }
-
-  // Process each entity's claims to update the data store
-  for (let claimSetIdx in entityClaimSets) {
-    for (let assertionIdx in entityClaimSets[claimSetIdx]) {
-      const claimParts = entityClaimSets[claimSetIdx][assertionIdx].split(" ");
-      const targetPersonId = Number(claimParts[0]);
-      const assertionTruthValue = Number(claimParts[1]);
-
-      // Increment the count for the specific assertion type (0 or 1) for the target entity
-      entityDataStore[targetPersonId - 1][assertionTruthValue]++;
-
-      // If the assertion is that the target entity is dishonest (0)
-      if (assertionTruthValue === 0) {
-        // Record that the current entity (claimSetIdx) claims the target entity (targetPersonId-1) is dishonest
-        entityDataStore[targetPersonId - 1].disagreeingWith.push(
-          Number(claimSetIdx)
-        );
-        // Record that the target entity (targetPersonId-1) is claimed to be dishonest by the current entity (claimSetIdx)
-        entityDataStore[Number(claimSetIdx)].disagreedBy.push(
-          targetPersonId - 1
-        );
-      }
+    
+const processInput = inputData => {
+    inputData = inputData.trim().split("\n");
+    const totalEntities = parseInt(inputData[0]);
+    
+    inputData.shift();
+    
+    const entityStatements = inputData;
+    const entityTraits = [];
+    const statementGroups = [];
+    let contradictionCount = 0;
+    
+    // Initialize trait objects for each entity
+    for(let entityIndex = 0; entityIndex < totalEntities; entityIndex++) {
+        entityTraits[entityIndex] = { 0: 0, 1: 0, dishonestFrom: [], dishonestTowards: []};
     }
-  }
-
-  // Counter for the second type of contradiction
-  let secondContradictionTally = 0;
-
-  // Analyze the collected data for contradictions
-  for (let personKey in entityDataStore) {
-    // If an entity is claimed to be both honest (1) and dishonest (0)
-    if (
-      entityDataStore[personKey][0] >= 1 &&
-      entityDataStore[personKey][1] >= 1
-    ) {
-      firstContradictionTally += entityDataStore[personKey][0];
+    
+    // Parse and group statements from the input
+    for(let currentLineIndex = 0; currentLineIndex < entityStatements.length; currentLineIndex++) {
+        let numStatements = parseInt(entityStatements[currentLineIndex]);
+        statementGroups.push(entityStatements.slice(~~currentLineIndex + 1, ~~currentLineIndex + numStatements + 1));
+        
+        currentLineIndex = parseInt(currentLineIndex) + parseInt(numStatements);
+        
     }
 
-    // Check for mutual contradictions (A says B is dishonest, B says A is dishonest)
-    for (let disagreementKey in entityDataStore[personKey].disagreeingWith) {
-      const claimedDishonestByThis =
-        entityDataStore[personKey].disagreeingWith[disagreementKey];
-      // If this entity (personKey) claims another (claimedDishonestByThis) is dishonest,
-      // and that other entity (claimedDishonestByThis) claims this entity (personKey) is dishonest,
-      // then it's a mutual contradiction.
-      if (
-        entityDataStore[personKey].disagreedBy.filter(
-          (disagreedByIdx) => disagreedByIdx === claimedDishonestByThis
-        ).length
-      ) {
-        secondContradictionTally++;
-      }
+    // Process each individual statement within the grouped statements
+    for(let groupIdx in statementGroups) {
+        for(let stmtIdx in statementGroups[groupIdx]) {
+            const targetEntity = parseInt(statementGroups[groupIdx][stmtIdx].split(" ")[0]);
+            const statementType = parseInt(statementGroups[groupIdx][stmtIdx].split(" ")[1]);
+        
+            // Increment the count for the specific statement type for the target entity
+            entityTraits[targetEntity - 1][statementType]++;
+            
+            if(statementType === 0) {
+                // If the statement is "untruthful" (type 0), record the relationships
+                entityTraits[targetEntity - 1].dishonestFrom.push(parseInt(groupIdx));
+                entityTraits[groupIdx].dishonestTowards.push(targetEntity - 1);
+            }
+        }
     }
-  }
-
-  // Output the final calculated value
-  console.log(
-    totalEntities - (firstContradictionTally + secondContradictionTally / 2)
-  );
-};
-
-// Read input from standard input and pass it to the processing function
-processInput(require("fs").readFileSync("/dev/stdin", "utf8"));
+    
+    // console.log(statementGroups) // Debugging line for statement groups
+    // console.log(JSON.stringify(entityTraits)); // Debugging line for entity traits map
+    
+    let mutualContradictionCount = 0;
+    
+    // Calculate final contradiction counts based on processed traits
+    for(let entityKey in entityTraits) {
+        // If an entity has both "untruthful" (0) and "truthful" (1) statements, it's a contradiction
+        if(entityTraits[entityKey][0] >= 1 && entityTraits[entityKey][1] >= 1) {
+            contradictionCount += entityTraits[entityKey][0];
+        }
+        
+        // Check for mutual "dishonest" declarations
+        for(let dishonestFromIndex in entityTraits[entityKey].dishonestFrom) {
+            if(entityTraits[entityKey].dishonestTowards.filter(n=>n===entityTraits[entityKey].dishonestFrom[dishonestFromIndex]).length) {
+                mutualContradictionCount++;
+            }
+        }
+    }
+    
+    console.log(totalEntities - ( contradictionCount + (mutualContradictionCount / 2) ));
+}
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

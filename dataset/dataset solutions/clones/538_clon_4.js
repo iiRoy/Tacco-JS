@@ -1,86 +1,52 @@
-let receivedDataBuffer = '';
-process.stdin.setEncoding('utf8');
+var fileSystem = require('fs');
+var rawInput = fileSystem.readFileSync('/dev/stdin', 'utf8');
+var inputLines = rawInput.trim().split("\n");
 
-process.stdin.on('readable', () => {
-    let dataChunk;
-    while ((dataChunk = process.stdin.read()) !== null) {
-        receivedDataBuffer += dataChunk;
+var arrayLength = parseInt(inputLines.shift(), 10);
+var initialArray = inputLines.shift().split(" ").map(Number);
+var sortedInitialArray = initialArray.slice().sort((valA, valB) => valA - valB);
+
+var swapCount = parseInt(inputLines.shift(), 10);
+var swapOperations = inputLines.map(line => line.split(" ").map(Number).map(val => val - 1));
+swapOperations.unshift([0, 0]);
+
+var currentMismatchState = new Map();
+var targetMismatchState = new Map();
+
+for (let k = 0; k < initialArray.length; k++) {
+    if (initialArray[k] !== sortedInitialArray[k]) {
+        currentMismatchState.set(k, initialArray[k]);
+        targetMismatchState.set(k, sortedInitialArray[k]);
     }
-});
+}
 
-process.stdin.on('end', () => {
-    const processedLines = receivedDataBuffer.trim().split("\n");
+var desiredStateString = Array.from(targetMismatchState.values()).join(",");
 
-    const totalElementCount = parseInt(processedLines.shift(), 10); 
-    const initialArray = processedLines.shift().split(" ").map(Number); 
-    const numberOfOperations = parseInt(processedLines.shift(), 10); 
+var resultIndex = -1;
 
-    const sortedReferenceArray = [...initialArray].sort((valA, valB) => valA - valB); 
+for (let opIdx = 0; opIdx <= swapCount; opIdx++) {
+    let [firstIdx, secondIdx] = swapOperations[opIdx];
 
-    const exchangeInstructions = [[0, 0], ...processedLines.map(instructionLine => instructionLine.split(" ").map(val => parseInt(val, 10) - 1))];
+    let valueAtFirst = currentMismatchState.get(firstIdx);
+    let valueAtSecond = currentMismatchState.get(secondIdx);
 
-    const currentMismatchedPositions = new Map(); 
-    const targetMismatchedValues = new Map(); 
-
-    for (let elementIndex = 0; elementIndex < initialArray.length; elementIndex++) {
-        if (initialArray[elementIndex] !== sortedReferenceArray[elementIndex]) {
-            currentMismatchedPositions.set(elementIndex, initialArray[elementIndex]);
-            targetMismatchedValues.set(elementIndex, sortedReferenceArray[elementIndex]);
-        }
-    }
-
-    const obtainCanonicalValueSequence = (sourceMap) => {
-        return Array.from(sourceMap.keys())
-            .sort((key1, key2) => key1 - key2)
-            .map(key => sourceMap.get(key));
-    };
-
-    const finalDesiredSequence = obtainCanonicalValueSequence(targetMismatchedValues);
-
-    let solutionDiscovered = false; 
-    let stepCountAtSolution = -1; 
-
-    const performMapEntryExchange = (mapToModify, firstKey, secondKey) => {
-        const valueAtFirst = mapToModify.get(firstKey);
-        const valueAtSecond = mapToModify.get(secondKey);
-
-        if (valueAtSecond !== undefined) {
-            mapToModify.set(firstKey, valueAtSecond);
-        } else {
-            mapToModify.delete(firstKey);
-        }
-
-        if (valueAtFirst !== undefined) {
-            mapToModify.set(secondKey, valueAtFirst);
-        } else {
-            mapToModify.delete(secondKey);
-        }
-    };
-
-    const areSequencesEquivalent = (sequence1, sequence2) => {
-        if (sequence1.length !== sequence2.length) return false;
-        for (let k = 0; k < sequence1.length; k++) {
-            if (sequence1[k] !== sequence2[k]) return false;
-        }
-        return true;
-    };
-
-    for (let currentStep = 0; currentStep < exchangeInstructions.length; currentStep++) {
-        const [coordinateOne, coordinateTwo] = exchangeInstructions[currentStep];
-
-        performMapEntryExchange(currentMismatchedPositions, coordinateOne, coordinateTwo);
-
-        const currentCanonicalSequence = obtainCanonicalValueSequence(currentMismatchedPositions);
-        if (areSequencesEquivalent(currentCanonicalSequence, finalDesiredSequence)) {
-            solutionDiscovered = true;
-            stepCountAtSolution = currentStep;
-            break;
-        }
-    }
-
-    if (solutionDiscovered) {
-        console.log(stepCountAtSolution);
+    if (valueAtSecond !== undefined) {
+        currentMismatchState.set(firstIdx, valueAtSecond);
     } else {
-        console.log(-1);
+        currentMismatchState.delete(firstIdx);
     }
-});
+
+    if (valueAtFirst !== undefined) {
+        currentMismatchState.set(secondIdx, valueAtFirst);
+    } else {
+        currentMismatchState.delete(secondIdx);
+    }
+
+    var currentStateString = Array.from(currentMismatchState.values()).join(",");
+    if (currentStateString === desiredStateString) {
+        resultIndex = opIdx;
+        break;
+    }
+}
+
+console.log(resultIndex);

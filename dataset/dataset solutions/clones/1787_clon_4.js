@@ -1,7 +1,4 @@
-function processDataUnit(sourceText) {
-    const positions = [0, 1, 2];
-    const fetchedCharacters = positions.map(idx => sourceText[idx]);
-    const finalResult = fetchedCharacters[0] + fetchedCharacters[1] + fetchedCharacters[2];
-    process.stdout.write(finalResult + "\n");
+function processInputData(rawData) {
+    console.log(rawData.substring(0, 3));
 }
-processDataUnit(require("node:fs").readFileSync("/dev/stdin", "utf8"));
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

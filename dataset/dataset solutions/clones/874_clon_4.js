@@ -1,138 +1,148 @@
-const FILE_SYSTEM_ACCESSOR = require('fs');
-const RAW_STREAM_CONTENT = FILE_SYSTEM_ACCESSOR.readFileSync(process.stdin.fd, 'utf8');
-let TEXTUAL_SEGMENTS = RAW_STREAM_CONTENT.trim().split('\n');
+const readline = require('readline');
 
-function EXTRACT_NEXT_ENTRY() {
-    return TEXTUAL_SEGMENTS.shift();
-}
+const inputReader = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+    terminal: false
+});
 
-class ComponentAggregator {
-    #parentMapping;
-    #groupSize;
+let collectedInputLines = [];
+inputReader.on('line', (currentLine) => {
+    collectedInputLines.push(currentLine);
+});
 
-    constructor(totalElements) {
-        this.#parentMapping = new Map();
-        this.#groupSize = new Map();
-        for (let i = 0; i < totalElements; i++) {
-            this.#parentMapping.set(i, i);
-            this.#groupSize.set(i, 1);
-        }
+inputReader.on('close', () => {
+    executeGraphProcessing(collectedInputLines);
+});
+
+function DisjointSetUnionStructure(totalNodes) {
+    const parentRegistry = new Map();
+    const setSizeRegistry = new Map();
+
+    for (let i = 0; i < totalNodes; i++) {
+        parentRegistry.set(i, i);
+        setSizeRegistry.set(i, 1);
     }
 
-    determineRepresentative(itemIdentifier) {
-        const currentParent = this.#parentMapping.get(itemIdentifier);
-        if (currentParent === itemIdentifier) {
-            return itemIdentifier;
+    function findSetRepresentative(element) {
+        if (parentRegistry.get(element) === element) {
+            return element;
         }
-        const root = this.determineRepresentative(currentParent);
-        this.#parentMapping.set(itemIdentifier, root);
+        const root = findSetRepresentative(parentRegistry.get(element));
+        parentRegistry.set(element, root); // Path compression
         return root;
     }
 
-    mergeComponents(elementA, elementB) {
-        let rootA = this.determineRepresentative(elementA);
-        let rootB = this.determineRepresentative(elementB);
+    function mergeSets(elementOne, elementTwo) {
+        let rootOne = findSetRepresentative(elementOne);
+        let rootTwo = findSetRepresentative(elementTwo);
 
-        if (rootA !== rootB) {
-            let sizeA = this.#groupSize.get(rootA);
-            let sizeB = this.#groupSize.get(rootB);
-
-            if (sizeA < sizeB) {
-                [rootA, rootB] = [rootB, rootA];
-                [sizeA, sizeB] = [sizeB, sizeA];
+        if (rootOne !== rootTwo) {
+            // Union by size heuristic
+            if (setSizeRegistry.get(rootOne) < setSizeRegistry.get(rootTwo)) {
+                [rootOne, rootTwo] = [rootTwo, rootOne]; // Ensure rootOne is the larger set
             }
-            this.#parentMapping.set(rootB, rootA);
-            this.#groupSize.set(rootA, sizeA + sizeB);
-            return true;
+            parentRegistry.set(rootTwo, rootOne);
+            setSizeRegistry.set(rootOne, setSizeRegistry.get(rootOne) + setSizeRegistry.get(rootTwo));
+            return true; // Sets were merged
         }
-        return false;
+        return false; // Elements already in the same set
     }
 
-    areAligned(elementA, elementB) {
-        return this.determineRepresentative(elementA) === this.determineRepresentative(elementB);
+    function areElementsInSameSet(elementOne, elementTwo) {
+        return findSetRepresentative(elementOne) === findSetRepresentative(elementTwo);
     }
 
-    calculateDistinctComponents(activeElementSet) {
-        const uniqueRepresentatives = new Set();
-        for (const element of activeElementSet) {
-            uniqueRepresentatives.add(this.determineRepresentative(element));
+    function countConnectedComponents(activeNodeFlags) {
+        let distinctComponentRoots = new Set();
+        for (let i = 0; i < totalNodes; i++) {
+            if (activeNodeFlags[i]) {
+                distinctComponentRoots.add(findSetRepresentative(i));
+            }
         }
-        return uniqueRepresentatives.size;
+        return distinctComponentRoots.size;
     }
+
+    return {
+        merge: mergeSets,
+        getRepresentative: findSetRepresentative,
+        countComponents: countConnectedComponents,
+        checkSameSet: areElementsInSameSet
+    };
 }
 
-function PROCESS_GRAPH_SEQUENCES() {
-    let currentLineData;
+function executeGraphProcessing(allInputLines) {
+    let currentLineIndex = 0;
+    const retrieveNextLine = () => allInputLines[currentLineIndex++];
 
     while (true) {
-        currentLineData = EXTRACT_NEXT_ENTRY().split(' ').map(Number);
-        const VERTEX_COUNT = currentLineData[0];
-        const EDGE_COUNT = currentLineData[1];
+        const [nodeQuantityStr, edgeQuantityStr] = retrieveNextLine().split(' ');
+        const nodeQuantity = parseInt(nodeQuantityStr, 10);
+        const edgeQuantity = parseInt(edgeQuantityStr, 10);
 
-        if (VERTEX_COUNT === 0 && EDGE_COUNT === 0) {
+        if (nodeQuantity === 0 && edgeQuantity === 0) {
             break;
         }
 
-        const NODAL_TIMINGS = [];
-        for (let i = 0; i < VERTEX_COUNT; i++) {
-            NODAL_TIMINGS.push({
-                INDEX_LABEL: i,
-                TIME_MARK: Number(EXTRACT_NEXT_ENTRY())
-            });
+        const nodeDetails = []; // Stores { identifier: i, activationValue: value }
+        const distinctActivationValues = new Set();
+        for (let i = 0; i < nodeQuantity; i++) {
+            const activationValue = parseInt(retrieveNextLine(), 10);
+            nodeDetails.push({ identifier: i, activationValue: activationValue });
+            distinctActivationValues.add(activationValue);
         }
 
-        const CONNECTIVE_PATHS = [];
-        for (let i = 0; i < EDGE_COUNT; i++) {
-            const pathDetails = EXTRACT_NEXT_ENTRY().split(' ').map(Number);
-            CONNECTIVE_PATHS.push({
-                ORIGIN_VERTEX: pathDetails[0] - 1,
-                TERMINUS_VERTEX: pathDetails[1] - 1,
-                PATH_COST: pathDetails[2]
-            });
+        const allGraphEdges = []; // Stores [source, destination, weight]
+        for (let i = 0; i < edgeQuantity; i++) {
+            const [sourceStr, destinationStr, edgeWeightStr] = retrieveNextLine().split(' ');
+            allGraphEdges.push([parseInt(sourceStr, 10) - 1, parseInt(destinationStr, 10) - 1, parseInt(edgeWeightStr, 10)]);
         }
 
-        NODAL_TIMINGS.sort((a, b) => a.TIME_MARK - b.TIME_MARK);
-        CONNECTIVE_PATHS.sort((a, b) => a.PATH_COST - b.PATH_COST);
+        // Sort unique activation values in descending order to process from highest threshold
+        const orderedActivationValues = Array.from(distinctActivationValues).sort((a, b) => b - a);
 
-        let finalCalculatedMetric = 0;
-        let participatingVertices = new Set();
-        
-        let cursor = VERTEX_COUNT - 1;
-        while (cursor >= 0) {
-            const currentVertexRecord = NODAL_TIMINGS[cursor];
-            const currentTemporalMarker = currentVertexRecord.TIME_MARK;
+        let finalMinimumSpanningCost = 0; // Result for the current test case
 
-            participatingVertices.add(currentVertexRecord.INDEX_LABEL);
+        // Iterate through each unique activation value as a potential threshold
+        for (const currentThresholdValue of orderedActivationValues) {
+            const currentlyActiveNodes = new Array(nodeQuantity).fill(false);
+            let activeNodeCount = 0;
 
-            let tempCursor = cursor; // Use a temporary cursor for the inner loop
-            while (tempCursor > 0 && NODAL_TIMINGS[tempCursor - 1].TIME_MARK === currentTemporalMarker) {
-                tempCursor--;
-                participatingVertices.add(NODAL_TIMINGS[tempCursor].INDEX_LABEL);
+            for (const nodeEntry of nodeDetails) {
+                if (nodeEntry.activationValue >= currentThresholdValue) {
+                    currentlyActiveNodes[nodeEntry.identifier] = true;
+                    activeNodeCount++;
+                }
             }
-            cursor = tempCursor; // Update outer cursor after processing all nodes with same TIME_MARK
 
-            let componentTracker = new ComponentAggregator(VERTEX_COUNT);
-            let iterationCost = 0;
+            // If there's only one active node, it's trivially connected with 0 cost.
+            // If no active nodes, this threshold is not relevant for connectivity.
+            if (activeNodeCount <= 1) {
+                continue;
+            }
 
-            for (const currentPath of CONNECTIVE_PATHS) {
-                if (participatingVertices.has(currentPath.ORIGIN_VERTEX) && participatingVertices.has(currentPath.TERMINUS_VERTEX)) {
-                    if (!componentTracker.areAligned(currentPath.ORIGIN_VERTEX, currentPath.TERMINUS_VERTEX)) {
-                        componentTracker.mergeComponents(currentPath.ORIGIN_VERTEX, currentPath.TERMINUS_VERTEX);
-                        iterationCost += currentPath.PATH_COST;
+            const dsuInstance = DisjointSetUnionStructure(nodeQuantity);
+            let currentSpanningCost = 0;
+
+            // Sort edges by weight for Kruskal's algorithm
+            const sortedGraphEdges = [...allGraphEdges].sort((a, b) => a[2] - b[2]);
+
+            for (const [uNode, vNode, weightValue] of sortedGraphEdges) {
+                // Only consider edges where both endpoints are currently active
+                if (currentlyActiveNodes[uNode] && currentlyActiveNodes[vNode]) {
+                    if (dsuInstance.merge(uNode, vNode)) {
+                        currentSpanningCost += weightValue;
                     }
                 }
             }
 
-            if (componentTracker.calculateDistinctComponents(participatingVertices) > 1) {
-                finalCalculatedMetric = 0;
-            } else {
-                finalCalculatedMetric = iterationCost;
+            // Check if all currently active nodes form a single connected component
+            if (dsuInstance.countComponents(currentlyActiveNodes) === 1) {
+                // The original logic effectively keeps the result from the *last*
+                // (i.e., smallest threshold) successful connection.
+                finalMinimumSpanningCost = currentSpanningCost;
             }
-            
-            cursor--; // Move to the next distinct TIME_MARK group (or the next individual node if no group)
         }
-        console.log(finalCalculatedMetric);
+        console.log(finalMinimumSpanningCost);
     }
 }
-
-PROCESS_GRAPH_SEQUENCES();

@@ -1,25 +1,23 @@
-const processGrid = (sourceTextContent) => {
-  const allInputLines = sourceTextContent.split("\n");
+function processGrid(rawInput) {
+    const lines = rawInput.split("\n");
+    const [heightDimension, widthDimension] = lines[0].split(" ");
+    const actualHeight = parseInt(heightDimension, 10);
+    const actualWidth = parseInt(widthDimension, 10);
 
-  const [dimensionHeightStr, dimensionWidthStr] = allInputLines[0].split(" ");
-  const actualGridHeight = Number(dimensionHeightStr);
-  const actualGridWidth = Number(dimensionWidthStr);
+    const generatedRows = Array.from({ length: actualHeight + 2 }, (_, rowIndex) => {
+        const rowContent = Array.from({ length: actualWidth + 2 }, (__, colIndex) => {
+            if (rowIndex === 0 || rowIndex === actualHeight + 1) {
+                return '#';
+            } else if (colIndex === 0 || colIndex === actualWidth + 1) {
+                return '#';
+            } else {
+                return lines[rowIndex][colIndex - 1];
+            }
+        });
+        return rowContent.join('');
+    });
 
-  const boundaryLine = '#'.repeat(actualGridWidth + 2);
+    generatedRows.forEach(outputLine => console.log(outputLine));
+}
 
-  const coreContentRows = allInputLines.slice(1, actualGridHeight + 1);
-
-  const framedContentRows = coreContentRows.map(
-    (currentLine) => `#${currentLine}#`
-  );
-
-  const completeOutput = [
-    boundaryLine,
-    ...framedContentRows,
-    boundaryLine
-  ];
-
-  completeOutput.forEach((displayLine) => console.log(displayLine));
-};
-
-processGrid(require("node:fs").readFileSync("/dev/stdin", "utf8"));
+processGrid(require("fs").readFileSync("/dev/stdin", "utf8"));

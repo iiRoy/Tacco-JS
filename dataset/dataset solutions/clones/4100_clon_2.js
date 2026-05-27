@@ -1,41 +1,13 @@
-/*
-  This is a Type II clone of a JavaScript code snippet.
-  It performs a specific text manipulation task.
-*/
-function  processInput  (  rawData  )
-{
-  // First, we normalize the input data by removing surrounding whitespace.
-  let    cleanedData    =    rawData.trim   (   )    ;
+function processInput(rawData) {
+  // Clean up the incoming data by removing any leading or trailing whitespace.
+  rawData = rawData.trim();
 
-  // A fixed numeric constant used in the string construction.
-  const    numericValue    =    0x8    ;
-
-  // Output the result of concatenating parts of the cleaned data
-  // with our numeric constant to the standard console.
-  console
-    .log
-      (
-        cleanedData
-          .substring (   0x0   ,   3.0   )
-        +
-        numericValue
-        +
-        cleanedData
-            .substring (   4.0   ,   6.0   )
-      )
-  ;
+  // Generate and display a new string.
+  // This involves taking the initial three characters,
+  // appending a specific numeric value,
+  // and then adding a segment of six characters starting from the fifth position.
+  console.log(rawData.substr(0x0, 3) + 0x8 + rawData.substr(4, 6));
 }
 
-// The main entry point for script execution.
-// It reads content from a standard system input file
-// and then passes it to our primary processing function.
-processInput
-  (
-    require  (  'fs'  )
-      .readFileSync
-        (
-          `/dev/stdin`  ,
-          `utf8`
-        )
-  )
-;
+// Acquire data from the standard input stream and then initiate the processing routine.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

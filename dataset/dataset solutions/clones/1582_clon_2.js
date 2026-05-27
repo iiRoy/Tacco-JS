@@ -1,140 +1,106 @@
-function ProcessInput(sourceText) {
-  // Split the entire input block into individual text rows
-  const textRows = sourceText.split('\n');
+function ProcessInputData(rawInputString) {
+  // Split the entire input string into individual lines for processing.
+  const inputLines = rawInputString.split('\n');
 
-  // Parse the first line to get grid height and width
-  // Using parseInt for integer conversion, base 10
-  const gridSize = textRows[0].split(' ').map(strVal => parseInt(strVal, 10));
+  // Parse grid height and width from the first line.
+  const gridDimensions = inputLines[0].split(' ').map(numStr => parseInt(numStr, 10));
 
-  // Extract starting coordinates from the second line
-  const initialPoint = textRows[1].split(' ').map(strVal => parseInt(strVal, 10));
+  // Parse starting coordinates (row, column) from the second line.
+  const startCoordinates = inputLines[1].split(' ').map(numStr => parseInt(numStr, 10));
 
-  // Determine the target coordinates from the third line
-  const targetPoint = textRows[2].split(' ').map(strVal => parseInt(strVal, 10));
+  // Parse goal coordinates (row, column) from the third line.
+  const goalCoordinates = inputLines[2].split(' ').map(numStr => parseInt(numStr, 10));
 
-  // The maze layout itself starts from the fourth line
-  // It's a 2D array representing the grid state
-  const mazeLayout = textRows
-    .splice(3, gridSize[0]) // Get 'H' rows for the grid
-    .map(rowStr => {
-      return rowStr.split(''); // Convert each row string into an array of characters
-    });
+  // Extract the grid map, converting each character into an array element.
+  // The splice method modifies inputLines, removing the first 3 elements.
+  const gridState = inputLines.splice(3, gridDimensions[0]).map(lineContent => {
+    return lineContent.split('');
+  });
 
-  // Initialize a queue for our breadth-first search (BFS) operations
-  const traversalQueue = [];
+  // Initialize a queue for Breadth-First Search (BFS) or similar traversal.
+  const bfsQueue = [];
 
-  /**
-   * Helper function to explore direct (non-warp) adjacent cells.
-   * Updates the maze state if a shorter path is found.
-   * @param {number[]} cellLocation - The [row, col] coordinates of the current cell.
-   * @param {number} currentWarpCount - The number of warps used to reach this cell.
-   */
-  const traverseDirect = (cellLocation, currentWarpCount) => {
-    const rowCoord = cellLocation[0];
-    const colCoord = cellLocation[1];
+  // This function appears to be an unused helper or an alternative exploration strategy.
+  // It checks adjacent cells and updates their warp count if conditions are met.
+  const checkAndMarkAdjacent = (currentCellPosition, currentWarpCount) => {
+    const rowIndex = currentCellPosition[0];
+    const colIndex = currentCellPosition[1];
 
-    // Check boundary conditions: if out of bounds, do nothing
-    if (
-      rowCoord < 0 ||
-      gridSize[0] - 1 < rowCoord ||
-      colCoord < 0 ||
-      gridSize[1] - 1 < colCoord
-    ) {
+    // Boundary check: if the position is outside the grid, do nothing.
+    if (rowIndex < 0 || gridDimensions[0] - 1 < rowIndex || colIndex < 0 || gridDimensions[1] - 1 < colIndex) {
       return;
     }
 
-    // Get the current status/value of the cell in the maze
-    const cellStatus = mazeLayout[rowCoord][colCoord];
+    const cellValue = gridState[rowIndex][colIndex];
 
-    // If the cell is an obstacle '#' or we've already found a path with fewer or equal warps,
-    // then there's no need to proceed from this cell directly.
-    if (cellStatus === '#' || cellStatus <= currentWarpCount) {
+    // If the cell is an obstacle ('#') or already has a lower or equal warp count, do nothing.
+    if (cellValue === '#' || cellValue <= currentWarpCount) {
       return;
-    } else {
-      // This means cellStatus is '.' (unvisited) and currentWarpCount is better
-      // Update the cell's value with the current warp count
-      mazeLayout[rowCoord][colCoord] = currentWarpCount;
-
-      // Enqueue all four direct neighbors for further exploration
-      traversalQueue.push([[rowCoord + 1, colCoord], currentWarpCount]);
-      traversalQueue.push([[rowCoord - 1, colCoord], currentWarpCount]);
-      traversalQueue.push([[rowCoord, colCoord + 1], currentWarpCount]);
-      traversalQueue.push([[rowCoord, colCoord - 1], currentWarpCount]);
+    } else { // If cellValue is '.' (unvisited)
+      // Mark the cell with the current warp count.
+      gridState[rowIndex][colIndex] = currentWarpCount;
+      // Add adjacent cells to the queue for further exploration with the same warp count.
+      bfsQueue.push([[rowIndex + 1, colIndex], currentWarpCount]);
+      bfsQueue.push([[rowIndex - 1, colIndex], currentWarpCount]);
+      bfsQueue.push([[rowIndex, colIndex + 1], currentWarpCount]);
+      bfsQueue.push([[rowIndex, colIndex - 1], currentWarpCount]);
     }
   };
 
+  // Main cell exploration function.
+  const exploreCell = (currentCellPosition, currentWarpCount) => {
+    const rowIndex = currentCellPosition[0];
+    const colIndex = currentCellPosition[1];
 
-  /**
-   * Main search function, handles both direct movement and warp jumps.
-   * Prioritizes direct moves by using unshift for same-warp-count paths.
-   * @param {number[]} cellLocation - The [row, col] coordinates.
-   * @param {number} currentWarpCount - Warps used to reach this point.
-   */
-  const performExploration = (cellLocation, currentWarpCount) => {
-    const rowCoord = cellLocation[0];
-    const colCoord = cellLocation[1];
-
-    // Out-of-bounds check for the current cell
-    if (
-      rowCoord < 0 ||
-      gridSize[0] - 1 < rowCoord ||
-      colCoord < 0 ||
-      gridSize[1] - 1 < colCoord
-    ) {
+    // Boundary check: if the position is outside the grid, do nothing.
+    if (rowIndex < 0 || gridDimensions[0] - 1 < rowIndex || colIndex < 0 || gridDimensions[1] - 1 < colIndex) {
       return;
     }
 
-    const cellStatus = mazeLayout[rowCoord][colCoord];
+    const cellValue = gridState[rowIndex][colIndex];
 
-    // If it's an obstacle, we can't move here
-    if (cellStatus === '#') {
+    // If the cell is an obstacle, stop.
+    if (cellValue === '#') {
       return;
-    } else if (cellStatus === '.') {
-      // If it's an unvisited path, mark it with the current warp count
-      mazeLayout[rowCoord][colCoord] = currentWarpCount;
+    } else if (cellValue === '.') { // If the cell is unvisited ('.')
+      // Mark the cell with the current warp count.
+      gridState[rowIndex][colIndex] = currentWarpCount;
 
-      // Add direct neighbors to the front of the queue (higher priority for 0-cost moves)
-      traversalQueue.unshift([[rowCoord + 1, colCoord], currentWarpCount]);
-      traversalQueue.unshift([[rowCoord - 1, colCoord], currentWarpCount]);
-      traversalQueue.unshift([[rowCoord, colCoord + 1], currentWarpCount]);
-      traversalQueue.unshift([[rowCoord, colCoord - 1], currentWarpCount]);
+      // Add immediate neighbors to the front of the queue (BFS-like for same warp count).
+      bfsQueue.unshift([[rowIndex + 1, colIndex], currentWarpCount]);
+      bfsQueue.unshift([[rowIndex - 1, colIndex], currentWarpCount]);
+      bfsQueue.unshift([[rowIndex, colIndex + 1], currentWarpCount]);
+      bfsQueue.unshift([[rowIndex, colIndex - 1], currentWarpCount]);
 
-      // Explore all possible 5x5 warp destinations (cost +1 warp)
-      for (let yDelta = -2; yDelta <= 2; yDelta++) {
-        for (let xDelta = -2; xDelta <= 2; xDelta++) {
-          traversalQueue.push([
-            [rowCoord + yDelta, colCoord + xDelta],
-            currentWarpCount + 1,
-          ]);
+      // Add cells within a 5x5 square (2 units in each direction) to the end of the queue.
+      // These represent potential warp destinations, increasing the warp count by 1.
+      for (let rowOffset = -2; rowOffset < 3; rowOffset++) {
+        for (let colOffset = -2; colOffset < 3; colOffset++) {
+          bfsQueue.push([[rowIndex + rowOffset, colIndex + colOffset], currentWarpCount + 1]);
         }
       }
     }
   };
 
-  // Initialize the queue with the starting point and zero warps used
-  // Adjust coordinates from 1-based to 0-based
-  traversalQueue.push([[initialPoint[0] - 1, initialPoint[1] - 1], 0]);
+  // Initialize the queue with the starting position and zero warps.
+  // Adjust coordinates from 1-based to 0-based indexing.
+  bfsQueue.push([[startCoordinates[0] - 1, startCoordinates[1] - 1], 0]);
 
-  // Main loop for the BFS algorithm
-  while (traversalQueue.length !== 0) {
-    // Dequeue the next element to process
-    const dequeuedElement = traversalQueue.shift();
+  // Process the queue until it's empty or the goal is reached.
+  while (bfsQueue.length !== 0) {
+    // Dequeue the next item (position and warp count).
+    const queueEntry = bfsQueue.shift();
+    // Explore the cell.
+    exploreCell(queueEntry[0], queueEntry[1]);
 
-    // Perform the exploration from this point
-    // dequeuedElement[0] is the position, dequeuedElement[1] is the warp count
-    performExploration(dequeuedElement[0], dequeuedElement[1]);
-
-    // Check if the target cell has been reached (i.e., its value is no longer '.')
-    // If it has, we can stop the search.
-    if (mazeLayout[targetPoint[0] - 1][targetPoint[1] - 1] !== '.') break;
+    // If the goal cell has been visited (its value is no longer '.'), break the loop.
+    if (gridState[goalCoordinates[0] - 1][goalCoordinates[1] - 1] !== '.') break;
   }
 
-  // Output the result:
-  // If the target cell has a numeric value (meaning it was reached), print that value.
-  // Otherwise, print -1, indicating it's unreachable.
-  const finalCellValue = mazeLayout[targetPoint[0] - 1][targetPoint[1] - 1];
-  console.log(finalCellValue !== '.' ? finalCellValue : -1);
+  // Output the minimum warp count to reach the goal.
+  // If the goal is still '.', it means it's unreachable, so output -1.
+  console.log(gridState[goalCoordinates[0] - 1][goalCoordinates[1] - 1] !== '.' ? gridState[goalCoordinates[0] - 1][goalCoordinates[1] - 1] : -1);
 }
 
-// Read input from standard input and pass it to the processing function
-ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Read input from standard input and pass it to the main processing function.
+ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

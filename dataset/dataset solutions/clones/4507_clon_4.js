@@ -1,46 +1,36 @@
 "use strict";
 
-const parseInputData = (textualData) => {
-    const dataLines = textualData.split('\n');
-    const totalElements = Number(dataLines[0]);
-    const jumpArray = new Array(totalElements);
-    for (let k = 0; k < totalElements; ++k) {
-        jumpArray[k] = Number(dataLines[k + 1]) - 1;
-    }
-    return { totalElements, jumpArray };
+const findPathLength = (currentPos, stepsTaken, limitSteps, sequenceData, visitedPath) => {
+  if (currentPos === 2) {
+    return stepsTaken;
+  }
+
+  if (stepsTaken > limitSteps) {
+    return -1;
+  }
+
+  if (visitedPath.has(currentPos)) {
+    return -1;
+  }
+
+  visitedPath.add(currentPos);
+
+  const nextPosInSequence = sequenceData[currentPos - 1];
+
+  if (nextPosInSequence === undefined) {
+    return -1;
+  }
+
+  return findPathLength(nextPosInSequence, stepsTaken + 1, limitSteps, sequenceData, visitedPath);
 };
 
-const tracePathLength = (currentPosition, finalPosition, connections, visitedPositions, currentDepth) => {
-    if (currentPosition === finalPosition) {
-        return currentDepth;
-    }
+const processInput = inputContent => {
+  const inputLines = inputContent.split("\n");
+  const totalEntries = Number(inputLines[0]);
+  const sequenceArray = inputLines.slice(1, totalEntries + 1).map(Number);
 
-    if (visitedPositions.has(currentPosition)) {
-        return -1;
-    }
-
-    if (currentPosition < 0 || currentPosition >= connections.length) {
-        return -1;
-    }
-
-    visitedPositions.add(currentPosition);
-
-    const nextPosition = connections[currentPosition];
-    const pathResult = tracePathLength(nextPosition, finalPosition, connections, visitedPositions, currentDepth + 1);
-    
-    return pathResult;
+  const finalResult = findPathLength(1, 0, totalEntries, sequenceArray, new Set());
+  console.log(finalResult);
 };
 
-const processSequence = (inputString) => {
-    const { totalElements, jumpArray } = parseInputData(inputString);
-
-    const startPosition = 0;
-    const targetPosition = 1;
-
-    const visitedNodesTracker = new Set();
-    const resultCount = tracePathLength(startPosition, targetPosition, jumpArray, visitedNodesTracker, 0);
-
-    console.log(resultCount);
-};
-
-processSequence(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

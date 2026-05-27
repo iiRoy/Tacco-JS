@@ -1,107 +1,122 @@
-const settings = { input: '/dev/stdin', newline: '\n' };
-
-function createNavigableSet() {
-    let topmostElement = null;
-    const nodeContainer = new Map(); // Stores node data: value -> { lower: child_value | null, upper: child_value | null }
-
-    // Recursive function to place a new value into the structure
-    function recursivePlacement(currentVal, elementVal) {
-        if (currentVal === null) {
-            nodeContainer.set(elementVal, { lower: null, upper: null });
-            return elementVal;
-        }
-
-        const currentUnit = nodeContainer.get(currentVal);
-
-        if (elementVal < currentVal) {
-            currentUnit.lower = recursivePlacement(currentUnit.lower, elementVal);
-        } else {
-            currentUnit.upper = recursivePlacement(currentUnit.upper, elementVal);
-        }
-        return currentVal;
+class TreeNode {
+    constructor(val) {
+        this.value = val;
+        this.leftBranch = null;
+        this.rightBranch = null;
+        this.ancestor = null;
     }
-
-    function addNode(elementVal) {
-        if (topmostElement === null) {
-            topmostElement = elementVal;
-            nodeContainer.set(elementVal, { lower: null, upper: null });
-        } else {
-            recursivePlacement(topmostElement, elementVal);
-        }
-    }
-
-    // Iterative in-order traversal (Left-Root-Right)
-    function getInOrderTraversal() {
-        const resultSequence = [];
-        const processStack = [];
-        let currentUnitVal = topmostElement;
-
-        while (currentUnitVal !== null || processStack.length > 0) {
-            while (currentUnitVal !== null) {
-                processStack.push(currentUnitVal);
-                const currentUnit = nodeContainer.get(currentUnitVal);
-                currentUnitVal = currentUnit ? currentUnit.lower : null;
-            }
-            currentUnitVal = processStack.pop();
-            resultSequence.push(currentUnitVal);
-            const currentUnit = nodeContainer.get(currentUnitVal);
-            currentUnitVal = currentUnit ? currentUnit.upper : null;
-        }
-        return resultSequence;
-    }
-
-    // Iterative pre-order traversal (Root-Left-Right)
-    function getPreOrderTraversal() {
-        const resultSequence = [];
-        const processStack = [];
-
-        if (topmostElement === null) {
-            return resultSequence;
-        }
-
-        processStack.push(topmostElement);
-
-        while (processStack.length > 0) {
-            const currentUnitVal = processStack.pop();
-            resultSequence.push(currentUnitVal);
-
-            const currentUnit = nodeContainer.get(currentUnitVal);
-            if (currentUnit) {
-                // Push upper child first so lower child is processed next (LIFO)
-                if (currentUnit.upper !== null) {
-                    processStack.push(currentUnit.upper);
-                }
-                if (currentUnit.lower !== null) {
-                    processStack.push(currentUnit.lower);
-                }
-            }
-        }
-        return resultSequence;
-    }
-
-    function showOrderings() {
-        console.log(' ' + getInOrderTraversal().join(' '));
-        console.log(' ' + getPreOrderTraversal().join(' '));
-    }
-
-    return {
-        addNode: addNode,
-        showOrderings: showOrderings
-    };
 }
 
-const inputSource = require('fs').createReadStream(settings.input, 'r');
+class BinarySearchTree {
+    constructor() {
+        this.rootNode = null;
+    }
+
+    addValue(val) {
+        const newNode = new TreeNode(val);
+        if (!this.rootNode) {
+            this.rootNode = newNode;
+            return;
+        }
+
+        const _recursivePlacement = (current, nodeToInsert) => {
+            if (nodeToInsert.value < current.value) {
+                if (current.leftBranch === null) {
+                    current.leftBranch = nodeToInsert;
+                    nodeToInsert.ancestor = current;
+                } else {
+                    _recursivePlacement(current.leftBranch, nodeToInsert);
+                }
+            } else {
+                if (current.rightBranch === null) {
+                    current.rightBranch = nodeToInsert;
+                    nodeToInsert.ancestor = current;
+                } else {
+                    _recursivePlacement(current.rightBranch, nodeToInsert);
+                }
+            }
+        };
+
+        _recursivePlacement(this.rootNode, newNode);
+    }
+
+    displayStructure() {
+        const traversalStack = [];
+        if (this.rootNode) {
+            traversalStack.push({ node: this.rootNode, depth: 0 });
+        } else {
+            console.log('NIL');
+            return;
+        }
+
+        while (traversalStack.length > 0) {
+            const { node: currentElement, depth: currentLevel } = traversalStack.pop();
+
+            const indentation = '  '.repeat(currentLevel);
+            console.log(indentation + currentElement.value);
+
+            if (currentElement.rightBranch) {
+                traversalStack.push({ node: currentElement.rightBranch, depth: currentLevel + 1 });
+            } else {
+                traversalStack.push({ node: null, depth: currentLevel + 1 });
+            }
+            if (currentElement.leftBranch) {
+                traversalStack.push({ node: currentElement.leftBranch, depth: currentLevel + 1 });
+            } else {
+                traversalStack.push({ node: null, depth: currentLevel + 1 });
+            }
+        }
+    }
+
+    * generateInOrder() {
+        const stack = [];
+        let current = this.rootNode;
+        while (current || stack.length > 0) {
+            while (current) {
+                stack.push(current);
+                current = current.leftBranch;
+            }
+            current = stack.pop();
+            yield current.value;
+            current = current.rightBranch;
+        }
+    }
+
+    * generatePreOrder() {
+        if (!this.rootNode) return;
+        const stack = [this.rootNode];
+        while (stack.length > 0) {
+            const current = stack.pop();
+            yield current.value;
+            if (current.rightBranch) stack.push(current.rightBranch);
+            if (current.leftBranch) stack.push(current.leftBranch);
+        }
+    }
+
+    outputTraversals() {
+        const inOrderResult = Array.from(this.generateInOrder());
+        const preOrderResult = Array.from(this.generatePreOrder());
+
+        console.log(' ' + inOrderResult.join(' '));
+        console.log(' ' + preOrderResult.join(' '));
+    }
+}
+
+const configuration = { inputSource: '/dev/stdin', lineSeparator: '\n' };
+
+const fileStream = require('fs').createReadStream(configuration.inputSource, 'r');
 const lineProcessor = require('readline').createInterface({
-    input: inputSource, output: process.stdout
+  input: fileStream, output: process.stdout
 });
 
-const dataStructure = createNavigableSet();
+const dataStructure = new BinarySearchTree();
 
-lineProcessor.on('line', function (currentLine) {
-    const directive = currentLine.split(' ');
-    if (directive[0] === 'insert') {
-        dataStructure.addNode(parseInt(directive[1], 10));
-    } else if (directive[0] === 'print') {
-        dataStructure.showOrderings();
-    }
+lineProcessor.on('line', function (inputLine) {
+  const commandParts = inputLine.split(' ');
+  if (commandParts[0] === 'insert') {
+    dataStructure.addValue(parseInt(commandParts[1], 10));
+  } else if (commandParts[0] === 'print') {
+    //dataStructure.displayStructure();
+    dataStructure.outputTraversals();
+  }
 });

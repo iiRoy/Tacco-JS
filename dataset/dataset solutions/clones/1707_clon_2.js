@@ -1,102 +1,31 @@
-const
-  [
-    firstLineContent
-    ,
-    ...subsequentLines
-  ]
-  =
-  require('fs')
-    .readFileSync(
-      '/dev/stdin'
-      ,
-      'utf8'
-    )
-    .split(
-      /\n/
-    )
-  ;
+const [inputSizeStr, ...inputConnections] = require('fs')
+  .readFileSync('/dev/stdin', 'utf8') // Read all input from standard input as a UTF-8 string
+  .split(/\n/); // Split the input string into an array of lines
 
-const
-  totalElements
-  =
-  Number(firstLineContent)
-  ;
+// The first line contains the total number of vertices, parse it as an integer
+const vertexCount = Number(inputSizeStr);
 
-let
-  cumulativeValue
-  =
-  (
-    totalElements
-    *
-    (totalElements + 1)
-    *
-    (totalElements + 2)
-  )
-  /
-  6
-  ;
+// Initialize a variable to store the cumulative sum.
+// This initial value represents the sum of products (i * (vertexCount - j + 1)) for all pairs (i, j) where 1 <= i <= j <= vertexCount.
+// The formula (n * (n + 1) * (n + 2)) / 6 is a known identity for this specific sum.
+let finalSum = (vertexCount * (vertexCount + 1) * (vertexCount + 2)) / 6;
 
-for
-(
-  const
-    currentPairString
-  of
-  subsequentLines
-)
-{
-  let
-    [
-      firstVertex
-      ,
-      secondVertex
-    ]
-    =
-    currentPairString
-      .split(
-        /\s/
-      )
-      .map(
-        Number
-      )
-    ;
+// Iterate through each subsequent line, which represents an edge (connection)
+for (const currentConnectionStr of inputConnections) {
+  // Split the edge string by whitespace and convert the parts to numbers
+  let [nodeA, nodeB] = currentConnectionStr.split(/\s/).map(Number);
 
-  if
-  (
-    firstVertex
-    >
-    secondVertex
-  )
-  {
-    [
-      firstVertex
-      ,
-      secondVertex
-    ]
-    =
-    [
-      secondVertex
-      ,
-      firstVertex
-    ]
-    ;
+  // Ensure that nodeA is always the smaller of the two nodes for consistent calculation
+  if (nodeA > nodeB) {
+    // Swap nodeA and nodeB if nodeA is larger
+    [nodeA, nodeB] = [nodeB, nodeA];
   }
 
-  cumulativeValue
-    -=
-    firstVertex
-    *
-    (
-      totalElements
-      -
-      secondVertex
-      +
-      1
-    )
-  ;
+  // Subtract the contribution of the current edge from the total sum.
+  // This effectively removes the product corresponding to the specific pair (nodeA, nodeB)
+  // from the initial sum that included all possible pairs.
+  finalSum -= nodeA * (vertexCount - nodeB + 1);
 }
 
-console
-  .log(
-    cumulativeValue
-  )
-  ;
+// Print the final calculated sum to the console
+console.log(finalSum);

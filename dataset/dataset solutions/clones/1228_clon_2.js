@@ -1,20 +1,25 @@
-'use strict' ;
+'use strict';
 
-(  function ( inputContent  )    {
+(function(inputData) {
+  // Read all input as a string
+  var rawInputString = inputData.toString();
 
-  // Acquire all raw input data from the stream
-  var   fullTextData = inputContent .  toString (   )   ;
-  
-  // Parse relevant numeric values from the first line of input
-  var   numericArray  =  fullTextData . split  (  '\n'  )  [  0  ]  . split  (  ' '  )  . map  (  itemStr  =>  parseInt  (  itemStr  ,  10  )  )  ;
+  // Parse the first line of input into an array of numbers
+  var numericParameters = rawInputString.split('\n')[0].split(' ').map(Number);
 
-  (  function  (  widthVal  ,  heightVal  ,  coordX  ,  coordY  ,  radiusVal  )    {
-    // Evaluate if the circular object is within the defined boundaries.
-    if  (  coordX  -  radiusVal  <  0  ,  coordY  -  radiusVal  <  0  ,  coordX  +  radiusVal  >  widthVal  ,  coordY  +  coordX  >  heightVal  )  {
-      console  .  log  (  'Nope'  )  ; // Display negative outcome
-    }  else  {
-      console  .  log  (  'Yep'  )  ;  // Display positive outcome
+  // Execute the core logic with the parsed parameters
+  (function(widthVal, heightVal, coordX, coordY, radiusVal) {
+    // Check if the circle is outside the boundaries of the rectangle
+    // Note: The comma operator evaluates all expressions but the 'if' condition
+    // only uses the result of the last one. This behavior is preserved.
+    if (coordX - radiusVal < 0,
+        coordY - radiusVal < 0,
+        coordX + radiusVal > widthVal,
+        coordY + coordX > heightVal) {
+      console.log('No'); // Output 'No' if any boundary condition (effectively the last one) is met
+    } else {
+      console.log('yes'); // Otherwise, output 'yes'
     }
-  }  (  numericArray  [  0  ]  ,  numericArray  [  1  ]  ,  numericArray  [  2  ]  ,  numericArray  [  3  ]  ,  numericArray  [  4  ]  )  )  ;
+  })(numericParameters[0], numericParameters[1], numericParameters[2], numericParameters[3], numericParameters[4]);
 
-}  (  require  (  'fs'  )  .  readFileSync  (  '/dev/stdin'  ,  'utf8'  )  )  )  ;
+})(require('fs').readFileSync('/dev/stdin', 'utf8'));

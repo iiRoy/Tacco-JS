@@ -1,54 +1,41 @@
-const customModulo = (dividend, divisor) => dividend - Math.floor(dividend / divisor) * divisor;
-const customMin = (valA, valB) => (valA < valB ? valA : valB);
-const roundPositiveFloat = (num) => Math.floor(num + 0.5);
+function ProcessDimensions(sourceText) {
+  const [dimensionLine] = sourceText.split('\n');
+  const [heightValueString, widthValueString] = dimensionLine.split(' ');
 
-const obtainMinimalDispersionValue = (primarySpan, secondarySpan) => {
-    if (customModulo(primarySpan, 3) === 0 || customModulo(secondarySpan, 3) === 0) {
-        return 0;
-    }
+  const heightDimension = Number(heightValueString);
+  const widthDimension = Number(widthValueString);
 
-    const candidateValues = [];
-    
-    candidateValues.push(primarySpan);
-    candidateValues.push(secondarySpan);
+  if (heightDimension % 3 === 0 || widthDimension % 3 === 0) {
+    console.log(0);
+    return;
+  }
 
-    candidateValues.push(
-        customModulo(primarySpan, 2) === 0
-            ? primarySpan / 2
-            : (3 * primarySpan + 2 * secondarySpan - 1) / 6
-    );
+  const candidateValues = [];
 
-    candidateValues.push(
-        customModulo(secondarySpan, 2) === 0
-            ? secondarySpan / 2
-            : (3 * secondarySpan + 2 * primarySpan - 1) / 6
-    );
+  candidateValues.push(heightDimension);
+  candidateValues.push(widthDimension);
 
-    return candidateValues.reduce(customMin, Number.POSITIVE_INFINITY);
-};
+  const deriveComplexTerm = (primarySize, secondarySize) => {
+    // Original: primarySize/2 + secondarySize/3 - 1/6
+    // Equivalent expression using common denominator 6: (3*primarySize + 2*secondarySize - 1) / 6
+    return (3 * primarySize + 2 * secondarySize - 1) / 6;
+  };
 
-const parseInputDimensions = (incomingDataPacket) => {
-    const segmentArray = incomingDataPacket.split('\n');
-    const initialSegmentElements = segmentArray[0].split(' ');
-    const firstMagnitude = Number(initialSegmentElements[0]);
-    const secondMagnitude = Number(initialSegmentElements[1]);
-    return { firstMagnitude, secondMagnitude };
-};
+  if (heightDimension % 2 === 0) {
+    candidateValues.push(heightDimension / 2);
+  } else {
+    candidateValues.push(deriveComplexTerm(heightDimension, widthDimension));
+  }
 
-const reportFinalResult = (numericalValue) => {
-    process.stdout.write(roundPositiveFloat(numericalValue).toString() + '\n');
-};
+  if (widthDimension % 2 === 0) {
+    candidateValues.push(widthDimension / 2);
+  } else {
+    candidateValues.push(deriveComplexTerm(widthDimension, heightDimension));
+  }
 
-const acquireDataStream = () => {
-    const fileSystemModule = require("node:fs");
-    return fileSystemModule.readFileSync(0, "utf8");
-};
+  const finalMinimumResult = Math.min(...candidateValues);
 
-const topLevelExecution = () => {
-    const rawData = acquireDataStream();
-    const { firstMagnitude, secondMagnitude } = parseInputDimensions(rawData);
-    const calculatedDispersion = obtainMinimalDispersionValue(firstMagnitude, secondMagnitude);
-    reportFinalResult(calculatedDispersion);
-};
+  console.log(Math.round(finalMinimumResult));
+}
 
-topLevelExecution();
+ProcessDimensions(require("fs").readFileSync("/dev/stdin", "utf8"));

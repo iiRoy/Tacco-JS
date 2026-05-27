@@ -1,42 +1,31 @@
-require  ( "node:fs" )
-    . readFileSync  (
-        "/dev/std_input_stream" ,
-        "utf-8"
-    )
+require("fs")
+  .readFileSync("/dev/stdin", "utf8") // Acquire the full input content from standard input.
+  .split(/\n\n/) // Divide the acquired content into distinct segments based on double newlines.
+  .map(function (currentInputChunk) {
+    // For each individual segment of the input:
+    console.log(currentInputChunk); // Print the original segment to the console.
 
-    // Divides the entire input content into distinct textual blocks.
-    . split (
-        / ( \r? \n ){2} /
-    )
+    // Eliminate all whitespace characters from the current segment.
+    // Then, locate the first substring that begins with '1', contains any characters, and ends with '1'.
+    // Finally, determine the character count of this identified substring.
+    let patternMatchLength = /1.*1/.exec(
+      currentInputChunk.replace(/\s/g, "")
+    )[0].length;
 
-    // Iterates through each extracted block for further processing.
-    . map (
-        function( currentProcessingUnit )
-        {
-            // Outputs the raw content of the current block.
-            console . log (
-                currentProcessingUnit
-            ) ;
-
-            // Removes all whitespace from the block, then finds a specific pattern.
-            // The length of the first match of this pattern is stored.
-            let computedLength = /firstDigit\D*firstDigit/.exec(currentProcessingUnit.replace(/\s+/g, ""))[0].length ;
-
-            // Categorizes and outputs a label based on the calculated length.
-            console . log (
-                computedLength === 10
-                    ? 'ZoneA'
-                    : computedLength === 25
-                        ? 'ZoneB'
-                        : computedLength === 4
-                            ? 'ZoneC'
-                            : computedLength === 16
-                                ? 'ZoneD'
-                                : computedLength === 11
-                                    ? 'ZoneE'
-                                    : computedLength === 9
-                                        ? 'ZoneG'
-                                        : 'ZoneF'
-            ) ;
-        }
-    ) ;
+    // Based on the calculated length, output a specific single character.
+    console.log(
+      patternMatchLength === 10
+        ? "A"
+        : patternMatchLength === 25
+        ? "B"
+        : patternMatchLength === 4
+        ? "C"
+        : patternMatchLength === 16
+        ? "D"
+        : patternMatchLength === 11
+        ? "E"
+        : patternMatchLength === 9
+        ? "G"
+        : "F"
+    );
+  });

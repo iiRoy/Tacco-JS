@@ -1,79 +1,27 @@
-// This module defines a primary routine for processing character sequence data.
+function processInput(rawData) {
+  // Remove any leading or trailing whitespace from the initial input string.
+  let cleanedString = rawData.trim();
 
-/**
- * Executes the main workflow for analyzing an incoming text string.
- * It determines if specific characters ('a', 'b', 'c') appear exactly once.
- * @param {string} rawData - The raw input string to be processed.
- */
-function processInputData(
-    rawData
-) {
-    // Trim any leading or trailing whitespace from the raw input string.
-    let processedData = rawData
-        .trim();
+  // Convert the cleaned string into an array of individual characters for processing.
+  const charSequence = cleanedString.split('');
 
-    /*
-     * Deconstruct the cleaned string into an ordered collection
-     * of individual characters. This allows for easier iteration
-     * and pattern matching on the sequence of symbols.
-     */
-    let symbolList = processedData
-        .split(
-            ''
-        );
+  // Count the occurrences of the character 'a' within the character sequence.
+  // The 'match' method is called on the array, which implicitly converts it to a string (e.g., "a,b,c").
+  // If no matches are found, 'match' returns null, so '|| []' ensures we always have an array to get 'length' from.
+  let countOfA = (charSequence.match(/a/g) || []).length;
 
-    // Calculate the total occurrences of the character 'a' within the sequence.
-    // If no matches are found, an empty array is used to prevent errors when accessing .length.
-    let alphaCount = (
-            symbolList
-            .join('') // Convert array back to a contiguous string for regex matching
-            .match(
-                /a/g
-            ) || []
-        )
-        .length;
+  // Similarly, count the occurrences of the character 'b'.
+  let countOfB = (charSequence.match(/b/g) || []).length;
 
-    // Determine the frequency of the character 'b' in the processed symbol list.
-    let betaCount = (
-            symbolList
-            .join('')
-            .match(
-                /b/g
-            ) || []
-        )
-        .length;
+  // And count the occurrences of the character 'c'.
+  let countOfC = (charSequence.match(/c/g) || []).length;
 
-    // Ascertain how many times the character 'c' appears within the character sequence.
-    let gammaCount = (
-            symbolList
-            .join('')
-            .match(
-                /c/g
-            ) || []
-        )
-        .length;
-
-    // Based on the counts, log an 'Affirmative' or 'Negative' response to the console.
-    // The condition requires each specific character ('a', 'b', 'c') to appear exactly once.
-    console
-        .log(
-            (
-                alphaCount === 1 &&
-                betaCount === 1 &&
-                gammaCount === 1
-            ) ?
-            'Affirmative' :
-            'Negative'
-        );
+  // Check if each of the characters 'a', 'b', and 'c' appeared exactly once.
+  // Output 'Yes' if this condition is met, otherwise output 'No'.
+  console.log((countOfA === 1 && countOfB === 1 && countOfC === 1) ? 'Yes' : 'No');
 }
 
-// Initiate the data processing pipeline.
-// Reads UTF-8 encoded content from the standard input stream ('/dev/stdin')
-// and passes it to our primary processing function.
-processInputData(
-    require('fs')
-    .readFileSync(
-        '/dev/stdin',
-        'utf8'
-    )
-);
+// The program begins by reading the entire content from standard input.
+// It uses the 'fs' module to synchronously read the file at '/dev/stdin' with UTF-8 encoding.
+// This content is then passed as an argument to the 'processInput' function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

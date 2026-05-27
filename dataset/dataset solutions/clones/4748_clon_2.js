@@ -1,32 +1,32 @@
-const ProcessInputData = (rawData) => {
-  // Extract the first line; its purpose isn't used in subsequent logic.
-  let initialSize = rawData.split('\n')[0];
+// This function processes raw input data to determine a specific count.
+function ProcessInput(rawData) {
+  // Extract the first line from the input, which is not used in the subsequent logic.
+  var firstLineContent = rawData.split("\n")[0];
 
-  // Parse the second line, splitting it into individual string values.
-  const parsedItems = rawData.split('\n')[1].split(' ');
+  // Obtain the second line, split it by spaces, and store the resulting string array.
+  var numericStrings = rawData.split("\n")[1].split(" ");
 
-  // Sort the array of items numerically in ascending order.
-  parsedItems.sort( (itemA, itemB) => {
-    return Number(itemA) - Number(itemB);
-  } );
+  // Sort the array of string representations of numbers in ascending numerical order.
+  // The comparison function converts string elements to integers for correct sorting.
+  numericStrings.sort(function(valA, valB) {
+    return parseInt(valA, 10) - parseInt(valB, 10);
+  });
 
-  /*
-   * Filter the sorted array to retain only unique elements.
-   * This uses the indexOf method to find the first occurrence of each element.
-   */
-  let uniqueElements = parsedItems.filter( (currentElement, currentIndex, fullArray) => {
+  // Filter the sorted array to create a new array containing only unique elements.
+  // This is achieved by including an element only if its first occurrence matches its current index.
+  var uniqueElements = numericStrings.filter(function(currentElement, currentIndex, fullArray) {
     return fullArray.indexOf(currentElement) === currentIndex;
-  } );
+  });
 
-  // Determine the output based on the parity of the count of unique elements.
-  if (uniqueElements.length % 2 === 1) {
-    // If the count is odd, print the total count of unique elements.
+  // Based on the count of unique elements, print a specific value to the console.
+  // If the number of unique elements is odd, print that number.
+  // Otherwise (if the count is even), print that number minus one.
+  if (uniqueElements.length % 0b1 === 0b1) {
     console.log(uniqueElements.length);
   } else {
-    // If the count is even, print one less than the total count.
-    console.log(uniqueElements.length - 1);
+    console.log(uniqueElements.length - 0x1);
   }
-};
+}
 
-// Execute the main processing function by reading input from standard input.
-ProcessInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// Read the entire content of standard input as a UTF-8 string and pass it to the processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

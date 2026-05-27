@@ -1,76 +1,64 @@
-// This JavaScript module performs a specific calculation based on a numeric input string.
-// It determines the execution environment (Node.js or browser) and processes accordingly.
+function ProcessNumbers(incomingData) {
+  // Split the incoming string by spaces to get individual number strings.
+  incomingData = incomingData.split(" ");
 
-function CalculateWeightedSum(sourceText) {
-  // Break down the input string into individual number strings.
-  let stringParts = sourceText.split(" ");
+  // Convert each string to an integer and sort them in descending order.
+  incomingData = incomingData.map(currentElement => ~~currentElement).sort((x, y) => y - x);
 
-  // Convert each part to an integer, then sort them in ascending order,
-  // and finally reverse the array to get numbers in descending order.
-  const numericValues = stringParts.map(val => ~~val).sort().reverse();
-
-  // Compute the result using the first three largest numbers in a specific weighted sum.
-  return numericValues[0] * 10 + numericValues[1] + numericValues[2];
+  // Calculate the final value based on the sorted numbers.
+  return incomingData[0] * 10 + incomingData[1] + incomingData[2];
 }
 
-/*
- * The following block is an Immediately Invoked Function Expression (IIFE).
- * It handles the primary execution logic for the program,
- * distinguishing between a Node.js environment and a simulated browser environment.
- */
-((initialRawInput, computedResult, resultKind) => {
+// This immediately invoked function expression handles execution environment differences.
+((initialPayload, computedResult, resultType) => {
+  // Check if running in a Node.js environment by looking for the 'require' function.
   if (typeof require !== "undefined") {
-    // This path is taken when running in a Node.js environment.
-    const fileSystemModule = require("fs");
-    const inputFilePath = "/dev/stdin";
-    const textEncoding = "utf8";
-    const fileContents = fileSystemModule.readFileSync(inputFilePath, textEncoding);
-    console.log(CalculateWeightedSum(fileContents));
+    // If in Node.js, read input from stdin, process it, and log the output.
+    console.log(ProcessNumbers(require("fs").readFileSync("/dev/stdin", "utf8")));
   } else {
-    // This branch executes in a browser-like environment for demonstration purposes.
-    // It processes the embedded string literal as if it were user input.
-    initialRawInput = initialRawInput.split("\n").slice(1, -1).join("\n");
+    // Otherwise, assume a browser-like environment or a test harness.
+    // Process the embedded string data by removing leading/trailing newlines.
+    initialPayload = initialPayload.split("\n").slice(1, -1).join("\n");
 
-    // Attempt to compute the result, catching any potential errors.
+    // Execute the main processing logic within a try-catch block to handle potential errors.
     computedResult = (() => {
       try {
-        return CalculateWeightedSum(initialRawInput);
-      } catch (exceptionObject) {
+        return ProcessNumbers(initialPayload);
+      } catch (errorObject) {
         // If an error occurs, return its stack trace or message.
-        return exceptionObject.stack || exceptionObject.message;
+        return errorObject.stack || errorObject.message;
       }
     })();
 
-    resultKind = typeof computedResult;
+    // Determine the type of the computed result.
+    resultType = typeof computedResult;
 
-    // Ensure the `computedResult` is a string for display, converting objects to JSON if necessary.
-    if (resultKind === "string" || (computedResult = JSON.stringify(computedResult))) {
-      // Utilize jQuery to dynamically create and append HTML elements to the document body.
-      // This displays the initial input, the type of the result, and the final computed value.
-      $("<form>")
-        .append(
-          [
-            [10, initialRawInput],
-            0,
-            [1, resultKind],
-            0,
-            [10, computedResult]
-          ].map(
-            // Iterate through configuration arrays to generate either <textarea> or <br> elements.
-            (elementConfiguration) => {
-              return $(
-                elementConfiguration ? "<textarea>" : "<br>",
-                elementConfiguration && {
-                  rows: elementConfiguration[0],
-                  cols: 40,
-                  text: elementConfiguration[1]
-                }
-              );
+    // If the result is not a string, convert it to a JSON string for display purposes.
+    if (resultType !== "string") {
+      computedResult = JSON.stringify(computedResult);
+    }
+
+    // Dynamically create and append HTML elements to display the input, type, and result.
+    $("<form>")
+      .append(
+        [
+          [10, initialPayload], // Input data in a textarea
+          0,                    // A line break
+          [1, resultType],      // Result type in a textarea
+          0,                    // Another line break
+          [10, computedResult]  // Computed result in a textarea
+        ].map(itemDescriptor =>
+          $(
+            itemDescriptor ? "<textarea>" : "<br>", // Create textarea or br based on descriptor
+            itemDescriptor && {
+              rows: itemDescriptor[0], // Set rows for textarea
+              cols: 40,                // Set columns for textarea
+              text: itemDescriptor[1]  // Set text content for textarea
             }
           )
         )
-        .appendTo("body");
-    }
+      )
+      .appendTo("body"); // Append the form to the document body
   }
 })(`
 5 2 1

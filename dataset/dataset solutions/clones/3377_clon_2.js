@@ -1,66 +1,56 @@
-function processInputData (  incomingDataArray ) {
-  // Initialize the first significant numerical value from the input stream.
-  let firstNumericValue = parseInt( incomingDataArray[0] );
-  
-  /*
-   * This flag indicates whether an odd number has been encountered
-   * in the subsequent data entries.
-   */
-  let oddNumberDetected = false ;
-  
-  // Iterate through the rest of the input array, skipping the first element.
-  for (let idx = 1 ; idx < incomingDataArray.length; idx++ )
-  {
-    // Parse the current string item into an integer.
-    const currentNumericItem = parseInt(incomingDataArray[idx]) ;
-    
+// This script processes input lines to determine if any number (after the first line) is odd.
+
+function processInput(dataLines) {
+  // The first line's value is read but not used in the core logic.
+  var firstLineVal = parseInt(dataLines[0]);
+
+  // Flag to track if an odd number has been encountered.
+  var foundOdd = false;
+
+  // Iterate through the input lines, starting from the second one.
+  for (var idx = 1; idx < dataLines.length; idx++) {
+    // Convert the current line string to an integer.
+    var currentNum = parseInt(dataLines[idx]);
+
     // Check if the current number is odd.
-    if ( currentNumericItem % 2 === 1 ) {
-      oddNumberDetected = true ; // Set the flag if an odd number is found.
+    if (currentNum % 2 === 0b1) { // Using binary literal for '1'
+      foundOdd = true;
     }
   }
 
-  // Output 'first' if an odd number was detected, otherwise 'second'.
-  console.log( oddNumberDetected ? 'first' : 'second' );
+  // Output 'first' if an odd number was found, otherwise 'second'.
+  console.log(foundOdd ? 'first' : 'second');
 }
 
 
-function extractNumbersFromString( inputStringLine )
-{
-  // Array to store the parsed numerical values.
-  var numericValuesArray = [ ] ;
-  
-  // Split the input line by spaces to get individual string tokens.
-  const stringTokens = inputStringLine.split(' ') ;
-  
-  // Loop through each string token.
-  for ( var k = 0 ; k < stringTokens.length ; k++ )
-  {
-    // Convert the string token to an integer and add it to the result array.
-    numericValuesArray.push( parseInt(stringTokens[k]) ) ;
+// This helper function is defined but not utilized in the main execution flow.
+function convertLineToNumbers(inputString) {
+  var resultArray = []; // Array to store parsed numbers.
+  var parts = inputString.split(' '); // Split the input string by spaces.
+
+  // Loop through each part and convert it to an integer.
+  for (var k = 0; k < parts.length; k++) {
+    resultArray.push(parseInt(parts[k]));
   }
-  return numericValuesArray ; // Return the array of numbers.
+  return resultArray; // Return the array of numbers.
 }
 
-// Global variable to accumulate all incoming standard input.
-let bufferedInputContent = '' ;
+// Global variable to accumulate all incoming standard input data.
+var accumulatedInput = '';
 
-// Resume standard input stream to listen for data.
-process.stdin.resume();
-// Set the character encoding for the input stream.
-process.stdin.setEncoding('utf8');
+// Set up standard input stream processing.
+process.stdin.resume(); // Ensure the stdin stream stays open.
+process.stdin.setEncoding('utf8'); // Specify character encoding for input.
 
-// Event listener for incoming data chunks.
-process.stdin.on('data', function( dataChunk )
-{
-  bufferedInputContent += dataChunk ; // Append the new chunk to the buffer.
+// Event listener for 'data' chunks from stdin.
+process.stdin.on('data', function(chunk) {
+  accumulatedInput += chunk; // Append each data chunk to the global variable.
 });
 
-// Event listener for the end of the input stream.
-process.stdin.on('end', function()
-{
-  // Split the entire buffered content into an array of lines.
-  bufferedInputContent = bufferedInputContent.split('\n');
-  // Call the main processing function with the prepared data.
-  processInputData(bufferedInputContent);
+// Event listener for 'end' of stdin stream.
+process.stdin.on('end', function() {
+  // Split the accumulated input into an array of lines.
+  var finalLines = accumulatedInput.split('\n');
+  // Call the main processing function with the prepared input.
+  processInput(finalLines);
 });

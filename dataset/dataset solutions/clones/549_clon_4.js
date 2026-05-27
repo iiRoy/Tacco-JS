@@ -1,43 +1,41 @@
-const fileSystemAccess = require('fs');
-
-const rawInputContent = fileSystemAccess.readFileSync('/dev/stdin', 'utf8');
-const processedInputLines = rawInputContent.split(/\r?\n/).filter(Boolean); // Handles different line endings and removes empty lines
-
-function processSegmentsRecursively(remainingDataSegments, accumulatedResults) {
-    if (remainingDataSegments.length === 0) {
-        return accumulatedResults;
+const processInput = (lines, currentLineIndex = 0, collectedOutputs = []) => {
+    if (currentLineIndex >= lines.length) {
+        return collectedOutputs;
     }
 
-    const currentBlockSizeIndicator = parseInt(remainingDataSegments[0], 10);
-    if (currentBlockSizeIndicator === 0) {
-        return accumulatedResults; // Termination condition: encountered '0'
+    const currentBlockHeader = lines[currentLineIndex].trim();
+
+    if (currentBlockHeader === "0") {
+        return collectedOutputs;
     }
 
-    // Extract mapping dictionary
-    const dictionarySectionEndIndex = 1 + currentBlockSizeIndicator;
-    const dictionaryEntryLines = remainingDataSegments.slice(1, dictionarySectionEndIndex);
-    const translationMap = new Map();
-    dictionaryEntryLines.forEach(entryLine => {
-        const [sourceToken, targetToken] = entryLine.split(' ');
-        translationMap.set(sourceToken, targetToken);
-    });
+    const dictionaryEntryCount = Number(currentBlockHeader);
+    let nextIndex = currentLineIndex + 1;
 
-    // Extract phrases for translation
-    const phrasesToTranslateCount = parseInt(remainingDataSegments[dictionarySectionEndIndex], 10);
-    const phrasesSectionEndIndex = dictionarySectionEndIndex + 1 + phrasesToTranslateCount;
-    const phraseLines = remainingDataSegments.slice(dictionarySectionEndIndex + 1, phrasesSectionEndIndex);
+    const translationMap = new Map(
+        Array.from({ length: dictionaryEntryCount }, (_, offset) => {
+            const line = lines[nextIndex + offset].trim();
+            const [source, target] = line.split(" ");
+            return [source, target];
+        })
+    );
+    nextIndex += dictionaryEntryCount;
 
-    // Perform translation
-    const translatedPhraseComponents = phraseLines.map(phrase => {
-        return translationMap.has(phrase) ? translationMap.get(phrase) : phrase;
-    });
-    const assembledOutputPhrase = translatedPhraseComponents.join('');
+    const transformationWordCount = Number(lines[nextIndex].trim());
+    nextIndex++;
 
-    // Prepare for the next recursive call
-    const subsequentDataSegments = remainingDataSegments.slice(phrasesSectionEndIndex);
-    return processSegmentsRecursively(subsequentDataSegments, [...accumulatedResults, assembledOutputPhrase]);
-}
+    const transformedSegment = Array.from({ length: transformationWordCount }, (_, offset) => {
+        const wordToTransform = lines[nextIndex + offset].trim();
+        return translationMap.get(wordToTransform) || wordToTransform;
+    }).join('');
+    nextIndex += transformationWordCount;
 
-const allProcessedOutputs = processSegmentsRecursively(processedInputLines, []);
+    return processInput(lines, nextIndex, [...collectedOutputs, transformedSegment]);
+};
 
-console.log(allProcessedOutputs.join('\n'));
+const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+const allInputLines = fileContent.trim().split("\n");
+
+const finalResults = processInput(allInputLines);
+
+finalResults.forEach(resultLine => console.log(resultLine));

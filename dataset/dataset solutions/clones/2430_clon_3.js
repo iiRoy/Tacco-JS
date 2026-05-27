@@ -1,89 +1,45 @@
-const squareDifference = (val1, val2) => {
-    const diff = val1 - val2;
-    return diff * diff;
-};
+function processCoordinateData(rawData) {
+    const allInputLines = rawData.split("\n");
 
-const computeEuclideanDistance = (pointOne, pointTwo) => {
-    const deltaX = pointOne[0] - pointTwo[0];
-    const deltaY = pointOne[1] - pointTwo[1];
+    const numberOfPoints = Number(allInputLines[0]);
 
-    return Math.sqrt(squareDifference(pointOne[0], pointTwo[0]) + squareDifference(pointOne[1], pointTwo[1]));
-};
-
-function processGeometricDataSet(rawInputString) {
-    if (!rawInputString || typeof rawInputString !== 'string') {
-        console.warn("Received empty or invalid input string for processing.");
-        return null;
-    }
-
-    const allInputLines = rawInputString.trim().split('\n');
-
-    if (allInputLines.length < 2) {
-        console.error("Insufficient input lines provided. Expected at least 2 lines.");
-        return null;
-    }
-
-    const resultDivisor = Number.parseInt(allInputLines[0], 10);
-
-    if (isNaN(resultDivisor) || resultDivisor === 0) {
-        console.error("Invalid or zero divisor value found in the input. Cannot proceed with calculation.");
-        return null;
-    }
-
-    const coordinateStringLines = allInputLines.slice(1);
-
-    const spatialPoints = coordinateStringLines.map((lineContent, lineIndex) => {
-        const components = lineContent.trim().split(/\s+/g);
-
-        if (components.length !== 2) {
-            console.warn(`Skipping malformed coordinate line ${lineIndex + 2}: "${lineContent}". Expected two numbers.`);
-            return null;
-        }
-
-        const xCoord = Number.parseFloat(components[0]);
-        const yCoord = Number.parseFloat(components[1]);
-
-        if (isNaN(xCoord) || isNaN(yCoord)) {
-            console.warn(`Skipping malformed coordinate line ${lineIndex + 2}: "${lineContent}". Non-numeric coordinates.`);
-            return null;
-        }
-
+    const parseCoordinateLine = (lineStr) => {
+        const parts = lineStr.split(/\s/g);
+        const xCoord = Number(parts[0]);
+        const yCoord = Number(parts[1]);
         return [xCoord, yCoord];
-    }).filter(point => point !== null);
+    };
 
-    if (spatialPoints.length < 2) {
-        console.error("Not enough valid spatial points parsed to calculate pairwise distances. At least two points are required.");
-        return null;
+    const parsedCoordinates = [];
+
+    for (let lineIndex = 1; lineIndex < allInputLines.length; lineIndex++) {
+        const currentLine = allInputLines[lineIndex];
+        parsedCoordinates.push(parseCoordinateLine(currentLine));
     }
 
-    let cumulativePairwiseDistance = 0.0;
+    const calculateEuclideanDistance = (point1, point2) => {
+        const deltaX = point1[0] - point2[0];
+        const deltaY = point1[1] - point2[1];
 
-    for (let currentPointIndex = 0; currentPointIndex < spatialPoints.length - 1; currentPointIndex++) {
-        for (let nextPointIndex = currentPointIndex + 1; nextPointIndex < spatialPoints.length; nextPointIndex++) {
-            const pointA = spatialPoints[currentPointIndex];
-            const pointB = spatialPoints[nextPointIndex];
+        const squaredDeltaX = deltaX * deltaX;
+        const squaredDeltaY = deltaY * deltaY;
 
-            const distanceBetweenPoints = computeEuclideanDistance(pointA, pointB);
+        return Math.sqrt(squaredDeltaX + squaredDeltaY);
+    };
 
-            cumulativePairwiseDistance += distanceBetweenPoints;
+    let totalAccumulatedDistance = 0;
+
+    for (let firstPointIndex = 0; firstPointIndex < parsedCoordinates.length - 1; firstPointIndex++) {
+        for (let secondPointIndex = firstPointIndex + 1; secondPointIndex < parsedCoordinates.length; secondPointIndex++) {
+            const pointA = parsedCoordinates[firstPointIndex];
+            const pointB = parsedCoordinates[secondPointIndex];
+            totalAccumulatedDistance += calculateEuclideanDistance(pointA, pointB);
         }
     }
 
-    const finalCalculatedValue = (cumulativePairwiseDistance * 2.0) / resultDivisor;
+    const finalCalculatedValue = (totalAccumulatedDistance * 2) / numberOfPoints;
 
-    return finalCalculatedValue;
+    console.log(finalCalculatedValue);
 }
 
-(function executeComputation() {
-    try {
-        const standardInputContent = require('fs').readFileSync('/dev/stdin', 'utf8');
-
-        const finalResult = processGeometricDataSet(standardInputContent);
-
-        if (typeof finalResult === 'number' && !isNaN(finalResult)) {
-            console.log(finalResult);
-        }
-    } catch (errorReadingInput) {
-        console.error("An error occurred while reading from stdin:", errorReadingInput.message);
-    }
-})();
+processCoordinateData(require('fs').readFileSync('/dev/stdin', 'utf8'));

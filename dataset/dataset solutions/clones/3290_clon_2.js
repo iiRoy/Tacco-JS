@@ -1,31 +1,46 @@
-process.stdin.resume ( );
-process.stdin.setEncoding ('utf8');
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
 
-var rawDataBuffer = '';
-var parsedSegments = '';
+// Variable to accumulate all incoming standard input data
+let receivedInputData = '';
+// Variable to hold processed segments of the input
+let dataSegments = '';
 
-process.stdin.on ( 'data', function (incomingStream) {
-    rawDataBuffer += incomingStream;
-} );
+// Event listener for 'data' chunks from stdin
+process.stdin.on('data', function (incomingPayload) {
+    receivedInputData += incomingPayload; // Append new data to the accumulated string
+});
 
-process.stdin.on ( 'end', function ( ) {
-    parsedSegments = rawDataBuffer.split ('');
-    initiateProcessing ( );
-} );
+// Event listener for 'end' of standard input stream
+process.stdin.on('end', function () {
+    // Once input ends, split the accumulated data into individual characters
+    dataSegments = receivedInputData.split('');
+    // Initiate the main processing function
+    beginProcessing();
+});
 
-function initiateProcessing ( ) {
-    const elementCount = parseInt(parsedSegments[0], 10);
-    const numericSequence = parsedSegments.split(' ').map(Number);
-    const dynamicProgrammingTable = Array(elementCount).fill(0);
+/**
+ * Main function to process the input data.
+ * This function is called once all standard input has been received.
+ */
+function beginProcessing() {
+    // Parse the first character of the input as an integer, representing 'n'
+    const itemCount = parseInt(dataSegments[0], 10);
+    // Split the entire input string by spaces and convert each part to a number
+    const numericValues = dataSegments.join('').split(' ').map(Number);
+    // Initialize a dynamic programming array of size 'n' with zeros
+    const dynamicProgrammingArray = Array(itemCount).fill(0);
 
-    // This section was previously commented out, now updated identifiers within it
-    // const tempSequence = parsedSegments[1].split(' ').map(Number);
+    // The following block is commented out in the original code,
+    // so it remains commented out here.
+    // const sourceArray = dataSegments[1].split(' ').map(Number);
 
-    // for (let outerIndex = 1; outerIndex < parsedSegments[0]; outerIndex++) {
-    //     for (let innerIndex = 0; innerIndex < 2; innerIndex++) {
-    //         dynamicProgrammingTable[innerIndex] = Math.min(dynamicProgrammingTable[innerIndex] || 0, Math.abs(tempSequence[outerIndex] - tempSequence[innerIndex]));
-    //     }
+    // for (let index = 1; index < dataSegments[0]; index++) {
+    // 	for (let subIndex = 0; subIndex < 2; subIndex++) {
+    // 		dynamicProgrammingArray[subIndex] = Math.min(dynamicProgrammingArray[subIndex] || 0, Math.abs(sourceArray[index] - sourceArray[subIndex]));
+    // 	}
     // }
 
-    console.log (numericSequence[0]);
+    // Output the first element of the processed numeric values array to the console
+    console.log(numericValues[0]);
 }

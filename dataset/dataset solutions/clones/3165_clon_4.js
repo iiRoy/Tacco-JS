@@ -1,24 +1,22 @@
-function determineReignStatus(incomingDatastream) {
-    const firstSegmentEnd = incomingDatastream.indexOf('\n');
-    const dateComponent = (firstSegmentEnd === -1) ? incomingDatastream : incomingDatastream.substring(0, firstSegmentEnd);
+function Main(rawPayload) {
+  const [firstLine] = rawPayload.split("\n");
+  const [yearComponent, monthComponent] = firstLine.split("/");
 
-    const firstDivisorPosition = dateComponent.indexOf('/');
-    const secondDivisorPosition = dateComponent.indexOf('/', firstDivisorPosition + 1);
+  const currentYearNumeric = Number(yearComponent);
+  const currentMonthNumeric = Number(monthComponent);
 
-    const numericYear = Number(dateComponent.substring(0, firstDivisorPosition));
-    const numericMonth = Number(dateComponent.substring(firstDivisorPosition + 1, secondDivisorPosition));
-    const numericDay = Number(dateComponent.substring(secondDivisorPosition + 1));
+  const combinedDateIdentifier = currentYearNumeric * 100 + currentMonthNumeric;
+  const transitionPointIdentifier = 2019 * 100 + 5; // Represents May 2019
 
-    const boundaryYear = 2019;
-    const boundaryMonth = 5;
-    const boundaryDay = 1;
+  const eraDesignation = combinedDateIdentifier >= transitionPointIdentifier ? "TBD" : "Heisei";
 
-    const currentChronologicalValue = (numericYear * 10000) + (numericMonth * 100) + numericDay;
-    const thresholdChronologicalValue = (boundaryYear * 10000) + (boundaryMonth * 100) + boundaryDay;
-
-    const eraDesignation = (currentChronologicalValue >= thresholdChronologicalValue)
-                           ? "TBD"
-                           : "Heisei";
-
-    return eraDesignation;
+  console.log('%s', eraDesignation);
+  return eraDesignation;
 }
+
+// "実行する"ボタンを押した時に実行される関数 (デバッグ用)
+function debug(n){
+  var input = document.getElementById("input"+n).value;
+  Main(input);
+}
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

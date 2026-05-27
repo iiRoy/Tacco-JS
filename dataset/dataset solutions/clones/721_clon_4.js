@@ -1,40 +1,35 @@
-var sourceData = require('fs').readFileSync('/dev/stdin', 'utf8');
-var sequenceCollection = sourceData.trim().split("\n");
+const assessStructuralIntegrity = (segmentData) => {
+    const filteredSymbols = Array.from(segmentData).filter(sym => {
+        return sym === '(' || sym === ')' || sym === '[' || sym === ']';
+    });
 
-const openerRegistry = new Set(['(', '[']);
-const closerRegistry = new Set([')', ']']);
-const pairMapping = {
-    '(': ')',
-    '[': ']'
-};
+    const processingStack = [];
+    const pairRegistry = {
+        '(': ')',
+        '[': ']'
+    };
 
-function assessStructure(segmentInput) {
-    let processedSegment = segmentInput.replace(/[a-zA-Z]|\.|\s/g, "");
-
-    const extraneousSymbols = processedSegment.replace(/[\(\)\[\]]/g, '');
-    if (extraneousSymbols.length > 0) {
-        return false; 
-    }
-
-    const symbolStack = [];
-    for (const charUnit of processedSegment) {
-        if (openerRegistry.has(charUnit)) {
-            symbolStack.push(charUnit);
-        } else if (closerRegistry.has(charUnit)) {
-            if (symbolStack.length === 0) {
-                return false; 
+    for (const currentSymbol of filteredSymbols) {
+        if (pairRegistry[currentSymbol]) {
+            processingStack.push(currentSymbol);
+        } else {
+            if (processingStack.length === 0) {
+                return false;
             }
-            const previousOpener = symbolStack.pop();
-            if (pairMapping[previousOpener] !== charUnit) {
-                return false; 
+            const poppedSymbol = processingStack.pop();
+            if (pairRegistry[poppedSymbol] !== currentSymbol) {
+                return false;
             }
         }
     }
 
-    return symbolStack.length === 0; 
-}
+    return processingStack.length === 0;
+};
 
-sequenceCollection.forEach(function(currentExpression) {
-    const evaluationOutcome = assessStructure(currentExpression);
-    process.stdout.write(evaluationOutcome ? "yes\n" : "no\n");
+const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
+const lineSegments = rawData.trim().split("\n");
+
+lineSegments.forEach(currentSegment => {
+    const evaluationResult = assessStructuralIntegrity(currentSegment);
+    console.log(evaluationResult ? "yes" : "no");
 });

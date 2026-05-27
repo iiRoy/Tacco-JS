@@ -1,17 +1,18 @@
-let processInputData = (rawText) => {
-  let textSegments = rawText.split('\n');
-  let numericalSeries = textSegments[1].split(' ').map(Number);
+function ProcessElevationData(sourceText) {
+  const lines = sourceText.split('\n');
+  const elevationValues = lines[1].split(' ').map(Number);
 
-  let finalAccumulation = numericalSeries.reduce((currentStats, individualValue) => {
-    let currentTally = currentStats[0];
-    let topValueAchieved = currentStats[1];
+  const analysisResult = elevationValues.reduce((accumulator, currentElevation) => {
+    const { tally, highestEncountered } = accumulator;
+    const isNewPeakOrEqual = currentElevation >= highestEncountered;
 
-    return (individualValue >= topValueAchieved)
-      ? [currentTally + 1, individualValue]
-      : [currentTally, topValueAchieved];
-  }, [0, 0]);
+    return {
+      tally: tally + (isNewPeakOrEqual ? 1 : 0),
+      highestEncountered: isNewPeakOrEqual ? currentElevation : highestEncountered
+    };
+  }, { tally: 0, highestEncountered: 0 });
 
-  return finalAccumulation[0];
-};
+  console.log(analysisResult.tally);
+}
 
-console.log(processInputData(require("fs").readFileSync("/dev/stdin","utf-8")));
+ProcessElevationData(require("fs").readFileSync("/dev/stdin", "utf-8"));

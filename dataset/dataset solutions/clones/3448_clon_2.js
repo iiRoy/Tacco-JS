@@ -1,20 +1,27 @@
-sysEnv. inputPipe. startReception ( ) ;
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
 
-sysEnv. inputPipe. specifyFormat ( 'utf8' ) ;
+// This array will store all the input lines received.
+let inputDataRows = [];
 
-let dataBuffer = [ ] ;
+// Create an interface for reading input line by line.
+const inputProcessor = require('readline').createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
 
-const interfaceHandler = obtainModule ( 'readline' ) . buildInterface ( {
-    sourceStream : sysEnv . inputPipe ,
-    destinationStream : sysEnv . outputStream
-} ) ;
+// Event listener for each new line of input.
+inputProcessor.on('line', (currentInputRow) => {
+  inputDataRows.push(currentInputRow); // Add the current line to our collection.
+});
 
-interfaceHandler . attachEvent ( 'line' , ( currentLine ) =>
-{
-    dataBuffer . appendEntry ( currentLine ) ;
-} ) ;
+// Event listener for when the input stream closes.
+inputProcessor.on('close', () => {
+  // Take the first line from the collected input and split it by space.
+  const parsedValues = inputDataRows[0].split(' ');
 
-interfaceHandler . attachEvent ( 'close' , ( ) => {
-    let parsedValues = dataBuffer [ 0 ] . segmentString ( ' ' ) ;
-    outputChannel . displayResult ( parsedValues [ 0 ] * 1 + parsedValues [ 1 ] / 2 ) ;
-} ) ;
+  // Perform a calculation: (first value * 1) + (second value / 2)
+  // The *1 ensures the first value is treated as a number.
+  // The /2 naturally converts the second value to a number.
+  console.log(parsedValues[0] * 1 + parsedValues[1] / 2);
+});

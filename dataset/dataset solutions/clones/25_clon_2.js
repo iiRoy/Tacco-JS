@@ -1,17 +1,16 @@
-// This function is designed to invert the sequence of characters within a given text input.
-function manipulateTextOrder(inputText) {
-    // Break the incoming string into an array of individual characters.
-    var charCollection = inputText.split("");
+function flipString(inputString) {
+    // Convert the incoming string into an array of individual characters.
+    let charArray = inputString.split("");
 
-    // Reverse the order of elements in the character array.
-    var invertedChars = charCollection.reverse();
+    // Reverse the order of elements within the character array.
+    let reversedChars = charArray.reverse();
 
-    // Join the characters back together to form a new string with the reversed order.
-    var finalStringResult = invertedChars.join("");
+    // Join the characters from the reversed array back into a single string.
+    let finalString = reversedChars.join("");
 
-    // Display the resulting string in the console.
-    console.log(finalStringResult) ;
+    // Display the resulting reversed string to the console.
+    console.log(finalString);
 }
 
-// Execute the text manipulation process with a sample string.
-manipulateTextOrder("JavaScript");
+// Invoke the string reversal utility with a specific input.
+flipString("Harry");

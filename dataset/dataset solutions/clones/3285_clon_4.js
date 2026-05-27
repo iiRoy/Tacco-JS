@@ -1,169 +1,161 @@
-const inputProcessor = (function() {
-    function createStream(rawInput) {
-        let currentLines = rawInput.trim().split('\n');
-        let currentLineIndex = 0;
-
-        const getNextToken = (asString = false) => {
-            if (currentLines[currentLineIndex] === undefined) {
-                return undefined;
-            }
-            if (!Array.isArray(currentLines[currentLineIndex]) || typeof currentLines[currentLineIndex][0] === 'string') {
-                currentLines[currentLineIndex] = String(currentLines[currentLineIndex]).split(' ').reverse();
-            }
-            let token = currentLines[currentLineIndex].pop();
-            if (!currentLines[currentLineIndex].length) {
-                currentLineIndex++;
-            }
-            return asString ? token : Number(token);
-        };
-
-        const getLineContents = (asString = false) => {
-            if (currentLines[currentLineIndex] === undefined) {
-                return undefined;
-            }
-            let line = currentLines[currentLineIndex];
-            currentLineIndex++;
-            if (Array.isArray(line)) {
-                 line = line.reverse().join(' ');
-            }
-            let tokens = String(line).split(' ');
-            return asString ? tokens : tokens.map(Number);
-        };
-
-        const getMultipleLines = (count, asString = false) => {
-            const extracted = [];
-            for (let i = 0; i < count; i++) {
-                if (currentLines[currentLineIndex] === undefined) {
-                    break;
-                }
-                let line = currentLines[currentLineIndex];
-                currentLineIndex++;
-                if (Array.isArray(line)) {
-                    line = line.reverse().join(' ');
-                }
-                extracted.push(asString ? String(line) : Number(line));
-            }
-            return extracted;
-        };
-
-        const getMultiLineGrid = (count, asString = false) => {
-             const extractedRows = [];
-             for (let i = 0; i < count; i++) {
-                 if (currentLines[currentLineIndex] === undefined) {
-                     break;
-                 }
-                 let line = currentLines[currentLineIndex];
-                 currentLineIndex++;
-                 if (Array.isArray(line)) {
-                     line = line.reverse().join(' ');
-                 }
-                 const rowTokens = String(line).split(' ');
-                 extractedRows.push(asString ? rowTokens : rowTokens.map(Number));
-             }
-             return extractedRows;
-        };
-
-        return {
-            extractNext: getNextToken,
-            fetchLine: getLineContents,
-            retrieveRows: getMultipleLines,
-            retrieveMatrix: getMultiLineGrid
-        };
-    }
-    return createStream;
-})();
-
-const sourceReader = inputProcessor(require("fs").readFileSync("/dev/stdin","utf8"));
-
-function processGridAnalysis(){
-    const gridHeight = sourceReader.extractNext();
-    const gridWidth = sourceReader.extractNext();
-    const terrainMatrix = sourceReader.retrieveRows(gridHeight, true);
-
-    const parentMap = Array(gridHeight * gridWidth);
-    const componentSizes = Array(gridHeight * gridWidth).fill(1);
-
-    for (let currentIdx = 0; currentIdx < gridHeight * gridWidth; currentIdx++) {
-        parentMap[currentIdx] = currentIdx;
+class InputProcessor {
+    constructor(sourceText) {
+        this.lineSegments = sourceText.trim().split('\n');
+        this.currentLinePointer = 0;
+        this.activeLineTokens = [];
     }
 
-    const toFlatIndex = (r, c) => r * gridWidth + c;
-
-    const findRoot = (idx) => {
-        if (parentMap[idx] === idx) {
-            return idx;
+    _prepareLineTokens() {
+        if (this.activeLineTokens.length === 0 && this.currentLinePointer < this.lineSegments.length) {
+            this.activeLineTokens = this.lineSegments[this.currentLinePointer].split(' ');
         }
-        parentMap[idx] = findRoot(parentMap[idx]);
-        return parentMap[idx];
-    };
+    }
 
-    const uniteSets = (idx1, idx2) => {
-        let root1 = findRoot(idx1);
-        let root2 = findRoot(idx2);
-
-        if (root1 !== root2) {
-            if (componentSizes[root1] < componentSizes[root2]) {
-                [root1, root2] = [root2, root1];
+    extractValue(asString = false) {
+        this._prepareLineTokens();
+        if (this.activeLineTokens.length === 0) {
+            this.currentLinePointer++;
+            this._prepareLineTokens();
+            if (this.activeLineTokens.length === 0) {
+                throw new Error("No more input values available.");
             }
-            parentMap[root2] = root1;
-            componentSizes[root1] += componentSizes[root2];
+        }
+        const extracted = this.activeLineTokens.shift();
+        if (this.activeLineTokens.length === 0) {
+            this.currentLinePointer++;
+        }
+        return asString ? extracted : Number(extracted);
+    }
+
+    retrieveLine(asString = false) {
+        if (this.currentLinePointer >= this.lineSegments.length) {
+            throw new Error("No more input lines available.");
+        }
+        this.activeLineTokens = []; // Clear any partially consumed line tokens
+        const lineContent = this.lineSegments[this.currentLinePointer++];
+        const tokens = lineContent.split(' ');
+        return asString ? tokens : tokens.map(Number);
+    }
+
+    retrieveMatrix(count, asString = false) {
+        const collectedMatrix = [];
+        for (let i = 0; i < count; i++) {
+            collectedMatrix.push(this.retrieveLine(asString));
+        }
+        return collectedMatrix;
+    }
+
+    retrieveRaw(count, asString = false) {
+        const rawSegments = [];
+        for (let i = 0; i < count; i++) {
+            if (this.currentLinePointer >= this.lineSegments.length) {
+                throw new Error("No more raw input segments available.");
+            }
+            this.activeLineTokens = []; // Clear any partially consumed line tokens
+            const segment = this.lineSegments[this.currentLinePointer++];
+            rawSegments.push(asString ? segment : Number(segment));
+        }
+        return rawSegments;
+    }
+}
+
+const inputSource = (text) => {
+    const processor = new InputProcessor(text);
+    return {
+        a: (flag) => processor.extractValue(flag),
+        l: (flag) => processor.retrieveLine(flag),
+        m: (num, flag) => processor.retrieveMatrix(num, flag),
+        r: (num, flag) => processor.retrieveRaw(num, flag),
+    };
+};
+
+class DisjointSetUnion {
+    constructor(elementCount) {
+        this.parent = Array.from({ length: elementCount }, (_, i) => i);
+        this.rank = Array(elementCount).fill(0);
+    }
+
+    find(i) {
+        if (this.parent[i] === i) {
+            return i;
+        }
+        return this.parent[i] = this.find(this.parent[i]);
+    }
+
+    unite(i, j) {
+        let rootI = this.find(i);
+        let rootJ = this.find(j);
+
+        if (rootI !== rootJ) {
+            if (this.rank[rootI] < this.rank[rootJ]) {
+                [rootI, rootJ] = [rootJ, rootI];
+            }
+            this.parent[rootJ] = rootI;
+            if (this.rank[rootI] === this.rank[rootJ]) {
+                this.rank[rootI]++;
+            }
             return true;
         }
         return false;
-    };
+    }
+}
 
-    const rowOffsets = [-1, 1, 0, 0];
-    const colOffsets = [0, 0, -1, 1];
+const inputReader = inputSource(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-    for (let row = 0; row < gridHeight; row++) {
-        for (let col = 0; col < gridWidth; col++) {
-            const currentCellChar = terrainMatrix[row][col];
-            const currentFlatIndex = toFlatIndex(row, col);
+console.log(processGrid());
 
-            for (let dir = 0; dir < 4; dir++) {
-                const neighborRow = row + rowOffsets[dir];
-                const neighborCol = col + colOffsets[dir];
+function processGrid() {
+    const gridHeight = inputReader.a();
+    const gridWidth = inputReader.a();
+    const charGrid = inputReader.r(gridHeight, true);
 
-                if (neighborRow >= 0 && neighborRow < gridHeight &&
-                    neighborCol >= 0 && neighborCol < gridWidth) {
+    const totalCells = gridHeight * gridWidth;
+    const dsuStructure = new DisjointSetUnion(totalCells);
 
-                    const neighborCellChar = terrainMatrix[neighborRow][neighborCol];
-                    const neighborFlatIndex = toFlatIndex(neighborRow, neighborCol);
+    for (let rowIdx = 0; rowIdx < gridHeight; rowIdx++) {
+        for (let colIdx = 0; colIdx < gridWidth; colIdx++) {
+            const currentCellId = rowIdx * gridWidth + colIdx;
 
-                    if (currentCellChar !== neighborCellChar) {
-                        uniteSets(currentFlatIndex, neighborFlatIndex);
-                    }
+            if (colIdx + 1 < gridWidth) {
+                const rightNeighborId = rowIdx * gridWidth + (colIdx + 1);
+                if (charGrid[rowIdx][colIdx] !== charGrid[rowIdx][colIdx + 1]) {
+                    dsuStructure.unite(currentCellId, rightNeighborId);
+                }
+            }
+
+            if (rowIdx + 1 < gridHeight) {
+                const bottomNeighborId = (rowIdx + 1) * gridWidth + colIdx;
+                if (charGrid[rowIdx][colIdx] !== charGrid[rowIdx + 1][colIdx]) {
+                    dsuStructure.unite(currentCellId, bottomNeighborId);
                 }
             }
         }
     }
 
-    const componentCharacterCounts = new Map();
+    const componentStatistics = new Map();
 
-    for (let row = 0; row < gridHeight; row++) {
-        for (let col = 0; col < gridWidth; col++) {
-            const currentFlatIndex = toFlatIndex(row, col);
-            const componentRoot = findRoot(currentFlatIndex);
+    for (let rowIdx = 0; rowIdx < gridHeight; rowIdx++) {
+        for (let colIdx = 0; colIdx < gridWidth; colIdx++) {
+            const currentCellId = rowIdx * gridWidth + colIdx;
+            const rootIdentifier = dsuStructure.find(currentCellId);
 
-            if (!componentCharacterCounts.has(componentRoot)) {
-                componentCharacterCounts.set(componentRoot, [0, 0]);
+            if (!componentStatistics.has(rootIdentifier)) {
+                componentStatistics.set(rootIdentifier, { dotCount: 0, hashCount: 0 });
             }
+            const stats = componentStatistics.get(rootIdentifier);
 
-            const counts = componentCharacterCounts.get(componentRoot);
-            if (terrainMatrix[row][col] === '.') {
-                counts[0]++;
+            if (charGrid[rowIdx][colIdx] === '.') {
+                stats.dotCount++;
             } else {
-                counts[1]++;
+                stats.hashCount++;
             }
         }
     }
 
-    let aggregateSum = 0;
-    for (const [root, counts] of componentCharacterCounts.entries()) {
-        aggregateSum += counts[0] * counts[1];
+    let finalAccumulatedResult = 0;
+    for (const stats of componentStatistics.values()) {
+        finalAccumulatedResult += stats.dotCount * stats.hashCount;
     }
 
-    return aggregateSum;
+    return finalAccumulatedResult;
 }
-
-console.log(processGridAnalysis());

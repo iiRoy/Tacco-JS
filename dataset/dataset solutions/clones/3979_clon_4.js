@@ -1,48 +1,52 @@
-(function(sourceData) {
-    const processedLines = sourceData.trim().split('\n');
-    const problemSize = Number(processedLines[0].split(' ')[0]);
+((inputContent) => {
+    const dataLines = inputContent.trim().split('\n');
+    const totalPoints = parseInt(dataLines[0], 10);
 
-    const allCoords = processedLines.slice(1).map((lineSegment, initialIndex) => {
-        const coordinateValues = lineSegment.split(' ').map(val => Number(val));
-        return {
-            xCoord: coordinateValues[0],
-            yCoord: coordinateValues[1],
-            uniqueId: initialIndex
-        };
-    });
+    const crimsonPoints = [];
+    const sapphirePoints = [];
 
-    const primaryPoints = allCoords.slice(0, problemSize);
-    const secondaryPoints = allCoords.slice(problemSize, problemSize * 2);
+    for (let k = 1; k <= totalPoints; k++) {
+        const [xCoord, yCoord] = dataLines[k].split(' ').map(Number);
+        crimsonPoints.push({ x: xCoord, y: yCoord });
+    }
+    for (let k = totalPoints + 1; k <= 2 * totalPoints; k++) {
+        const [xCoord, yCoord] = dataLines[k].split(' ').map(Number);
+        sapphirePoints.push({ x: xCoord, y: yCoord });
+    }
 
-    secondaryPoints.sort((a, b) => b.xCoord - a.xCoord);
-    primaryPoints.sort((a, b) => b.xCoord - a.xCoord);
+    sapphirePoints.sort((ptA, ptB) => ptB.x - ptA.x);
 
-    let totalSuccessfulPairs = 0;
-    const consumedPrimaryIds = new Set();
+    crimsonPoints.sort((ptA, ptB) => ptB.y - ptA.y);
 
-    for (let currentSecondary of secondaryPoints) {
-        let optimalPrimaryY = -1;
-        let optimalPrimaryUniqueId = -1;
+    let successfulMatches = 0;
+    const crimsonAvailability = new Array(crimsonPoints.length).fill(true);
 
-        for (let currentPrimary of primaryPoints) {
-            if (consumedPrimaryIds.has(currentPrimary.uniqueId)) {
+    for (const currentSapphire of sapphirePoints) {
+        const currentSapphireX = currentSapphire.x;
+        const currentSapphireY = currentSapphire.y;
+
+        let matchedCrimsonIndex = -1;
+
+        for (let crimsonIdx = 0; crimsonIdx < crimsonPoints.length; crimsonIdx++) {
+            if (!crimsonAvailability[crimsonIdx]) {
                 continue;
             }
 
-            if (currentPrimary.xCoord < currentSecondary.xCoord && currentPrimary.yCoord < currentSecondary.yCoord) {
-                if (currentPrimary.yCoord > optimalPrimaryY) {
-                    optimalPrimaryY = currentPrimary.yCoord;
-                    optimalPrimaryUniqueId = currentPrimary.uniqueId;
-                }
+            const candidateCrimson = crimsonPoints[crimsonIdx];
+            const candidateCrimsonX = candidateCrimson.x;
+            const candidateCrimsonY = candidateCrimson.y;
+
+            if (candidateCrimsonX < currentSapphireX && candidateCrimsonY < currentSapphireY) {
+                matchedCrimsonIndex = crimsonIdx;
+                break;
             }
         }
 
-        if (optimalPrimaryUniqueId !== -1) {
-            consumedPrimaryIds.add(optimalPrimaryUniqueId);
-            totalSuccessfulPairs++;
+        if (matchedCrimsonIndex !== -1) {
+            crimsonAvailability[matchedCrimsonIndex] = false;
+            successfulMatches++;
         }
     }
 
-    return String(totalSuccessfulPairs);
-
+    console.log(`${successfulMatches}`);
 })(require('fs').readFileSync('/dev/stdin', 'utf8'));

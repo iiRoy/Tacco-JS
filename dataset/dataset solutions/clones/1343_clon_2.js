@@ -1,50 +1,46 @@
-// This function computes (baseVal ^ exponentVal) % modulusVal efficiently,
-// leveraging the property that any exponent can be expressed as a sum of powers of two (binary representation).
-// For example, baseVal^22 = baseVal^16 * baseVal^4 * baseVal^2, because 22 in binary is 10110.
-function calculateModularExponent(baseVal, exponentVal, modulusVal)
-{
-    let finalProduct = 1n; // Initialize the result accumulator to 1 (BigInt).
+/*
+ * This function computes (baseValue ^ exponentValue) % modulusValue using the method of exponentiation by squaring.
+ * It leverages the property that a^b can be expressed as a product of a^(2^k) terms,
+ * where k corresponds to the set bits in the binary representation of the exponent.
+ * For example, a^22 = a^16 * a^4 * a^2 (since 22 in binary is 10110).
+ */
+function calculateModularPower(baseValue, exponentValue, modulusValue) {
+  let resultAccumulator = 1n; // Initialize the result to 1 (BigInt).
 
-    while (exponentVal > 0n) // Iterate as long as the exponent has bits to process.
-    {
-        // If the least significant bit of the current exponent is 1,
-        // it means this power of baseVal contributes to the final product.
-        if (exponentVal & 1n)
-        {
-            finalProduct = (finalProduct * baseVal) % modulusVal; // Multiply and take modulo.
-        }
-
-        // Square the baseVal and take modulo, preparing for the next bit position (baseVal becomes baseVal^(2^i)).
-        baseVal = (baseVal * baseVal) % modulusVal;
-
-        // Right-shift the exponent by 1 bit, effectively dividing it by 2.
-        exponentVal >>= 1n;
+  // Loop while the exponent is greater than zero.
+  while (exponentValue > 0) {
+    // If the least significant bit of the exponent is 1,
+    // multiply the current result by the baseValue (modulo modulusValue).
+    if (exponentValue & 1n) {
+      resultAccumulator = (resultAccumulator * baseValue) % modulusValue;
     }
 
-    return finalProduct; // Return the computed modular exponentiation result.
+    // Square the baseValue and take modulo modulusValue for the next iteration.
+    baseValue = (baseValue * baseValue) % modulusValue;
+
+    // Right-shift the exponent by 1, effectively dividing it by 2.
+    exponentValue >>= 1n;
+  }
+
+  // Return the final computed modular power.
+  return resultAccumulator;
 }
 
+// The primary function to process the input data.
+function processInputData(rawData) {
+  // Split the entire input string into an array of lines.
+  let processedLines = rawData.split("\n");
 
-// This entry point processes the entire input data received.
-function executeScript(incomingContent)
-{
-    // The input string is split into individual lines.
-    incomingContent = incomingContent.split("\n");
+  // Get the first line and split it by space to extract numerical parts.
+  const firstLineParts = processedLines[0].split(" ");
 
-    // The first line of input is further split by spaces to get numerical parameters.
-    const firstLineSegments = incomingContent[0].split(" ");
+  // Parse the first part as the base number (m) and the second as the exponent number (n).
+  const baseNum = parseInt(firstLineParts[0], 10);
+  const expNum = parseInt(firstLineParts[1], 10);
 
-    // Parse the two numbers from the first line, ensuring they are base-10 integers.
-    const operandOne = parseInt(firstLineSegments[0], 10);
-    const operandTwo = parseInt(firstLineSegments[1], 10);
-
-    // Compute the modular exponentiation for the parsed numbers,
-    // using a fixed modulus (1,000,000,007) and converting inputs to BigInts.
-    // The final result is converted back to a string for output.
-    console.log(calculateModularExponent(BigInt(operandOne), BigInt(operandTwo), 1000000007n).toString());
+  // Calculate the modular power using BigInts and a specific modulus, then convert to string for output.
+  console.log(calculateModularPower(BigInt(baseNum), BigInt(expNum), 1000000007n).toString());
 }
 
-
-// The following line should not be altered. It handles reading from standard input
-// and initiates the main processing function.
-executeScript(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Do not modify the following line; it handles reading input and calling the main processing function.
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

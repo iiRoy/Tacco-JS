@@ -1,51 +1,27 @@
-const initialRepositorySize = 4 * 3 * 10;
-const dataRepository = Array.from({ length: initialRepositorySize }, () => 0);
+const storageGrid = Array.from({ length: 4 }, () =>
+  Array.from({ length: 3 }, () =>
+    Array.from({ length: 10 }, () => 0)
+  )
+);
 
-const fileAccess = require('fs');
-const rawSourceData = fileAccess.readFileSync('/dev/stdin', 'utf8');
+const rawInputContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+const inputLines = rawInputContent.split('\n');
 
-const processInputLines = (dataContent) => {
-    const allLines = dataContent.split('\n');
-    const relevantEntries = allLines.slice(1);
+inputLines.slice(1).forEach(lineSegment => {
+  const numericParts = lineSegment.split(' ').map(Number);
+  const [majorIdx, minorIdx, blockIdx, quantity] = numericParts.map((val, idx) => idx < 3 ? val - 1 : val);
+  
+  storageGrid[majorIdx][minorIdx][blockIdx] += quantity;
+});
 
-    relevantEntries.forEach(entryLine => {
-        if (entryLine.trim() === '') return;
+const outputSegments = [];
+storageGrid.forEach((majorDimension, outerIndex) => {
+  majorDimension.forEach(minorDimension => {
+    outputSegments.push(minorDimension.join(' '));
+  });
+  if (outerIndex < storageGrid.length - 1) {
+    outputSegments.push('####################');
+  }
+});
 
-        const stringParts = entryLine.split(' ');
-        const numericParts = [];
-        for (let idx = 0; idx < stringParts.length; idx++) {
-            numericParts.push(Number(stringParts[idx]));
-        }
-
-        const primaryLoc = numericParts[0] - 1;
-        const secondaryLoc = numericParts[1] - 1;
-        const tertiaryLoc = numericParts[2] - 1;
-        const incrementAmount = numericParts[3];
-
-        const flatPosition = primaryLoc * (3 * 10) + secondaryLoc * 10 + tertiaryLoc;
-        dataRepository[flatPosition] += incrementAmount;
-    });
-};
-
-processInputLines(rawSourceData);
-
-const constructOutput = (storedData) => {
-    const dimensionOneCount = 4;
-    const dimensionTwoCount = 3;
-    const dimensionThreeCount = 10;
-
-    const sectionsForDisplay = Array.from({ length: dimensionOneCount }, (_, d1Index) => {
-        const rowsForSection = Array.from({ length: dimensionTwoCount }, (_, d2Index) => {
-            const elementsInRow = Array.from({ length: dimensionThreeCount }, (_, d3Index) => {
-                const calculatedFlatPosition = d1Index * (dimensionTwoCount * dimensionThreeCount) + d2Index * dimensionThreeCount + d3Index;
-                return storedData[calculatedFlatPosition];
-            });
-            return elementsInRow.join(' ');
-        });
-        return rowsForSection.join('\n');
-    });
-
-    return sectionsForDisplay.join('\n####################\n');
-};
-
-console.log(constructOutput(dataRepository));
+console.log(outputSegments.join('\n'));

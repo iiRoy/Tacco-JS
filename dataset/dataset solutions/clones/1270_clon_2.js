@@ -1,63 +1,45 @@
-var inputProcessor = require('ioHandlerLib').createInterface(  {
-    // Configure the input stream for reading.
-    source: process.stdin,
-    // Configure the output stream for writing.
-    destination: process.stdout
-}  );
+const inputHandler = require('readline').createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
 
+inputHandler.on('line', function (inputStr) {
+  let counter, currentNum, outputBuffer = ''; // Declare variables for iteration, current value, and accumulated string.
 
-// Attach an event listener for incoming data lines.
-inputProcessor.on(  'dataReady', function (currentDataString) {
-    var loopIndex, currentValue, finalAccumulation = ""; /* Initialize necessary variables. */
+  const parts = inputStr.split(' '); // Split the input line by space into an array of strings.
 
-    // Divide the received string into an array of smaller string tokens.
-    var stringTokens = currentDataString.split(' ');
+  const limitVal = parseInt(parts[0], 10); // Convert the first part to an integer, base 10.
 
-    // Convert the first token into an integer to set the upper boundary for iteration.
-    var upperBound = parseInt(stringTokens[0], 10);
+  // Iterate from 3 up to the determined limit value.
+  for (counter = 3; counter <= limitVal; counter++) {
+    currentNum = counter; // Assign the loop counter to a temporary variable for digit checking.
 
-
-    // Begin a numerical loop starting from three up to the calculated boundary.
-    for ( loopIndex = 3;  loopIndex <= upperBound;  loopIndex++ )
-    {
-        currentValue = loopIndex;  // Assign the current iteration number to a temporary variable.
-
-        // Check if the current number is perfectly divisible by three.
-        if (  currentValue % 3 === 0  )
-        {
-            finalAccumulation += " ";   // Append a space to separate results.
-            finalAccumulation += currentValue;  // Add the number to our final string.
-        }
-        else
-        {
-            // If not divisible by three, proceed to check for the digit '3' within the number.
-            for (  ;  ;  currentValue /= 10  )
-            {
-                // Terminate the inner loop if the number becomes less than one.
-                if (  currentValue < 1  )
-                    break;
-
-                // Check if the last digit of the number is exactly three.
-                if (  currentValue % 10 === 3  )
-                {
-                    finalAccumulation += " ";   // Append a space separator.
-                    finalAccumulation += loopIndex;  // Add the original loop number.
-                    break;  // Exit this inner digit-checking loop.
-                }
-            }
-        }
+    // Check if the current number is perfectly divisible by 3.
+    if (currentNum % 3 === 0) {
+      outputBuffer += ' '; // Append a space to the result string.
+      outputBuffer += currentNum; // Append the number itself.
     }
+    else {
+      // If not divisible by 3, check if it contains the digit '3'.
+      // This inner loop repeatedly divides the number by 10 to inspect each digit.
+      for (; ; currentNum = Math.floor(currentNum / 10)) {
+        if (currentNum < 1) { // If the number becomes less than 1, all digits have been checked.
+          break; // Exit the inner loop.
+        }
+        if (currentNum % 10 === 3) { // Check if the last digit is 3.
+          outputBuffer += ' '; // Append a space.
+          outputBuffer += counter; // Append the original number (from the outer loop) to the result.
+          break; // Exit the inner loop as a '3' was found.
+        }
+      }
+    }
+  }
 
-    // Output the accumulated string to the console.
-    console.log(  finalAccumulation  );
+  console.log(outputBuffer); // Output the final constructed string to the console.
+  process.exit(); // Terminate the Node.js process.
+});
 
-    // Forcefully terminate the running process.
-    process.exit();
-}  );
-
-
-// Register an event listener for the standard input stream's completion.
-process.stdin.on(  'streamCompletion', function ()
-{
-    // No specific operations are performed when the input stream concludes.
-}  );
+// An empty event handler for the 'end' of the standard input stream.
+process.stdin.on('end', function () {
+  // No specific actions are required when the input stream ends.
+});

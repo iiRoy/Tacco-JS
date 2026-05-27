@@ -1,148 +1,149 @@
-const acquireInput = (function() {
-  function InputProcessor(sourceTextContent) {
-    this.rawLines = sourceTextContent.trim().split("\n");
-    this.currentLineIndex = 0;
-    this.processedTokens = [];
-  }
+const GET = (() => {
+    const numberPattern = /-?\d+(\.\d+)?/g;
+    const lineBreakPattern = /\r?\n/;
 
-  InputProcessor.prototype._ensureCurrentLineTokens = function() {
-    if (this.processedTokens.length === 0 && this.currentLineIndex < this.rawLines.length) {
-      this.processedTokens = this.rawLines[this.currentLineIndex].split(" ");
+    function InputParser(rawInputString) {
+        this.inputLines = rawInputString.trim().split(lineBreakPattern);
+        this.currentLinePointer = 0;
+        this.activeLineTokens = []; // Buffer for tokens of the current line, used by fetchNumberFromLineEnd
     }
-  };
 
-  InputProcessor.prototype.fetchScalar = function(asString = false) {
-    this._ensureCurrentLineTokens();
-    const tokenValue = this.processedTokens.shift();
-    if (this.processedTokens.length === 0) {
-      this.currentLineIndex++;
-    }
-    return asString ? tokenValue : Number(tokenValue);
-  };
+    InputParser.prototype.fetchNumberFromLineEnd = function(returnAsRawString) {
+        while (this.activeLineTokens.length === 0) {
+            if (this.currentLinePointer >= this.inputLines.length) {
+                return undefined; // No more lines to process
+            }
+            const currentLineContent = this.inputLines[this.currentLinePointer];
+            const numbersFound = Array.from(currentLineContent.matchAll(numberPattern)).map(match => match[0]);
+            this.activeLineTokens = numbersFound.reverse(); // Store in reverse to simulate pop from end
+            if (this.activeLineTokens.length === 0) {
+                this.currentLinePointer++; // Line had no numbers, move to next
+            }
+        }
+        const extractedValue = this.activeLineTokens.shift(); // Get what was the last number on the line
+        if (this.activeLineTokens.length === 0) {
+            this.currentLinePointer++; // Current line buffer exhausted, move to next line
+        }
+        return returnAsRawString ? extractedValue : +extractedValue;
+    };
 
-  InputProcessor.prototype.fetchLine = function(asString = false) {
-    const lineContent = this.rawLines[this.currentLineIndex++];
-    this.processedTokens = [];
-    const tokens = lineContent.split(" ");
-    return asString ? tokens : tokens.map(Number);
-  };
+    InputParser.prototype.readFullLine = function(returnAsRawStrings) {
+        if (this.currentLinePointer >= this.inputLines.length) {
+            return undefined;
+        }
+        const lineContent = this.inputLines[this.currentLinePointer++];
+        this.activeLineTokens = []; // Clear any pending tokens from previous 'a' calls on this line
+        if (returnAsRawStrings) {
+            return lineContent.split(" "); // Original 'l' splits by space for raw
+        } else {
+            return Array.from(lineContent.matchAll(numberPattern)).map(match => +match[0]);
+        }
+    };
 
-  InputProcessor.prototype.fetchMatrix = function(rowsCount, asString = false) {
-    const matrixData = [];
-    for (let i = 0; i < rowsCount; i++) {
-      const lineContent = this.rawLines[this.currentLineIndex++];
-      this.processedTokens = [];
-      const tokens = lineContent.split(" ");
-      matrixData.push(asString ? tokens : tokens.map(Number));
-    }
-    return matrixData;
-  };
+    InputParser.prototype.readMatrix = function(numberOfRows, returnAsRawStrings) {
+        const matrixRows = [];
+        for (let i = 0; i < numberOfRows; i++) {
+            if (this.currentLinePointer >= this.inputLines.length) {
+                break;
+            }
+            const lineContent = this.inputLines[this.currentLinePointer++];
+            this.activeLineTokens = []; // Clear tokens
+            if (returnAsRawStrings) {
+                matrixRows.push(lineContent.split(" "));
+            } else {
+                matrixRows.push(Array.from(lineContent.matchAll(numberPattern)).map(match => +match[0]));
+            }
+        }
+        return matrixRows;
+    };
 
-  InputProcessor.prototype.fetchColumn = function(elementsCount, asString = false) {
-    const columnElements = [];
-    for (let i = 0; i < elementsCount; i++) {
-      const lineContent = this.rawLines[this.currentLineIndex++];
-      this.processedTokens = [];
-      columnElements.push(asString ? lineContent : Number(lineContent));
-    }
-    return columnElements;
-  };
+    InputParser.prototype.readLinesAsValues = function(numberOfLines, returnAsRawStrings) {
+        const valueLines = [];
+        for (let i = 0; i < numberOfLines; i++) {
+            if (this.currentLinePointer >= this.inputLines.length) {
+                break;
+            }
+            const lineContent = this.inputLines[this.currentLinePointer++];
+            this.activeLineTokens = []; // Clear tokens
+            valueLines.push(returnAsRawStrings ? lineContent : +lineContent);
+        }
+        return valueLines;
+    };
 
-  return function(inputSource) {
-    return new InputProcessor(inputSource);
-  };
+    return function(inputString) {
+        const parserInstance = new InputParser(inputString);
+        return {
+            a: (raw) => parserInstance.fetchNumberFromLineEnd(raw),
+            l: (raw) => parserInstance.readFullLine(raw),
+            m: (numRows, raw) => parserInstance.readMatrix(numRows, raw),
+            r: (numLines, raw) => parserInstance.readLinesAsValues(numLines, raw)
+        };
+    };
 })();
+const o = GET(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-const buildNestedCollection = (leafValueDefinition, ...dimensions) => {
-  const createLeafInstance = () => {
-    if (typeof leafValueDefinition === 'string') {
-      try {
-        return JSON.parse(leafValueDefinition);
-      } catch (e) {
-        return (new Function(`return ${leafValueDefinition}`))();
-      }
-    }
-    return leafValueDefinition;
-  };
-
-  const constructRecursive = (remainingDimensions) => {
-    if (remainingDimensions.length === 0) {
-      return createLeafInstance();
-    }
-    const currentDimensionSize = remainingDimensions[0];
-    const nextDimensions = remainingDimensions.slice(1);
-    return Array.from({ length: currentDimensionSize }, () => constructRecursive(nextDimensions));
-  };
-  return constructRecursive(dimensions);
-};
-
-class VertexQueue {
-  constructor() {
-    this.elements = [];
-    this.front = 0;
-  }
-  offer(item) {
-    this.elements.push(item);
-  }
-  poll() {
-    if (this.front < this.elements.length) {
-      return this.elements[this.front++];
-    }
-    return undefined;
-  }
-  isEmpty() {
-    return this.front >= this.elements.length;
-  }
+function buildMultiDimArray(initialValueFactory, ...dimensions) {
+    const constructLayer = (currentDimensionIndex) => {
+        if (currentDimensionIndex === dimensions.length) {
+            return initialValueFactory();
+        }
+        const currentDimensionSize = dimensions[currentDimensionIndex];
+        return Array.from({ length: currentDimensionSize }, () => constructLayer(currentDimensionIndex + 1));
+    };
+    return constructLayer(0);
 }
 
-const locateFarthestNode = (startVertexIdentifier, graphConnections) => {
-  const totalVertices = graphConnections.length;
-  const distances = new Array(totalVertices).fill(-1);
-  const searchQueue = new VertexQueue();
+console.log(main());
 
-  searchQueue.offer(startVertexIdentifier);
-  distances[startVertexIdentifier] = 0;
+function main() {
+    const totalNodes = o.a();
+    const unusedPlaceholder = buildMultiDimArray(() => 1, totalNodes);
+    const graphAdjacency = buildMultiDimArray(() => [], totalNodes);
 
-  let mostDistantVertex = startVertexIdentifier;
-  let maximumDistance = 0;
-
-  while (!searchQueue.isEmpty()) {
-    const currentVertex = searchQueue.poll();
-    const currentPathLength = distances[currentVertex];
-
-    if (currentPathLength > maximumDistance) {
-      maximumDistance = currentPathLength;
-      mostDistantVertex = currentVertex;
+    let edgeCounter = 0;
+    while (edgeCounter < totalNodes - 1) {
+        const [nodeA, nodeB] = o.l().map(value => value - 1);
+        graphAdjacency[nodeA].push(nodeB);
+        graphAdjacency[nodeB].push(nodeA);
+        edgeCounter++;
     }
 
-    for (const adjacentVertex of graphConnections[currentVertex]) {
-      if (distances[adjacentVertex] === -1) {
-        distances[adjacentVertex] = currentPathLength + 1;
-        searchQueue.offer(adjacentVertex);
-      }
+    const calculatedDiameter = treeDia(graphAdjacency);
+    return (calculatedDiameter % 3 === 1) ? "Second" : "First";
+}
+
+function findFarthestNodeAndDistance(startingNodeIdentifier, adjacencyStructure) {
+    const traversalQueue = [[startingNodeIdentifier, 0]]; // [node, distance]
+    const visitedSet = new Set([startingNodeIdentifier]);
+    let maxAchievedDistance = 0;
+    let farthestDiscoveredVertex = startingNodeIdentifier;
+
+    let queueReadPointer = 0;
+
+    while (queueReadPointer < traversalQueue.length) {
+        const [currentNode, currentPathDistance] = traversalQueue[queueReadPointer++];
+
+        if (currentPathDistance > maxAchievedDistance) {
+            maxAchievedDistance = currentPathDistance;
+            farthestDiscoveredVertex = currentNode;
+        }
+
+        for (const connectedNeighbor of adjacencyStructure[currentNode]) {
+            if (!visitedSet.has(connectedNeighbor)) {
+                visitedSet.add(connectedNeighbor);
+                traversalQueue.push([connectedNeighbor, currentPathDistance + 1]);
+            }
+        }
     }
-  }
-  return { farthest: mostDistantVertex, distance: maximumDistance };
-};
+    return { farthestVertex: farthestDiscoveredVertex, maximumDistance: maxAchievedDistance };
+}
 
-const solutionEntry = () => {
-  const stream = acquireInput(require("fs").readFileSync("/dev/stdin", "utf8"));
+function treeDia(edgeConnections) {
+    // Perform first BFS from an arbitrary node (node 0) to find one endpoint of the diameter
+    const firstTraversalResult = findFarthestNodeAndDistance(0, edgeConnections);
 
-  const nodeCountValue = stream.fetchScalar();
-  const identityVector = buildNestedCollection(1, nodeCountValue); // Unused, but cloned
-  const graphAdjacencyList = buildNestedCollection("[]", nodeCountValue);
+    // Perform second BFS from the farthest node found in the first traversal to find the true diameter
+    const secondTraversalResult = findFarthestNodeAndDistance(firstTraversalResult.farthestVertex, edgeConnections);
 
-  for (let edgeIterator = 1; edgeIterator < nodeCountValue; edgeIterator++) {
-    const edgeEndpoints = stream.fetchLine().map(idx => idx - 1);
-    graphAdjacencyList[edgeEndpoints[0]].push(edgeEndpoints[1]);
-    graphAdjacencyList[edgeEndpoints[1]].push(edgeEndpoints[0]);
-  }
-
-  const firstTraversal = locateFarthestNode(0, graphAdjacencyList);
-  const secondTraversal = locateFarthestNode(firstTraversal.farthest, graphAdjacencyList);
-  const graphSpan = secondTraversal.distance;
-
-  return graphSpan % 3 === 1 ? "Second" : "First";
-};
-
-console.log(solutionEntry());
+    return secondTraversalResult.maximumDistance;
+}

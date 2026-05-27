@@ -1,78 +1,62 @@
 'use strict';
 
-const MODULUS_VAL = 998244353;
+function Main(rawInputString) {
+    const MODULO_CONST = 998244353;
 
-let itemValues;
-let elementCount;
-let ceilingSum;
-let collectiveSum;
+    let parsedValues = rawInputString.trim().split(/\s+/).map(Number);
+    const itemCount = parsedValues.shift();
+    const elementValues = parsedValues;
 
-const cacheDual = new Map();
-const cacheSingle = new Map();
-
-function computeSumCombinations(itemIndex, targetSum, isMultipliedChoice) {
-    if (targetSum < 0) {
-        return 0;
-    }
-    if (itemIndex === 0) {
-        return targetSum === 0 ? 1 : 0;
-    }
-
-    const currentMemoCache = isMultipliedChoice ? cacheDual : cacheSingle;
-    const memoIdentifier = `${itemIndex}_${targetSum}`;
-
-    if (currentMemoCache.has(memoIdentifier)) {
-        return currentMemoCache.get(memoIdentifier);
-    }
-
-    let waysToFormSum = 0;
+    const totalValueSum = elementValues.reduce((accumulator, currentVal) => accumulator + currentVal, 0);
     
-    // Scenario 1: Exclude the current item (itemValues[itemIndex - 1])
-    waysToFormSum = (waysToFormSum + computeSumCombinations(itemIndex - 1, targetSum, isMultipliedChoice)) % MODULUS_VAL;
+    // The difference (Sum_GroupA - Sum_GroupB) can range from -totalValueSum to +totalValueSum.
+    // We use an offset to map this range to non-negative array indices [0, 2 * totalValueSum].
+    const diffOffset = totalValueSum; 
+    const maxDiffIndex = 2 * totalValueSum;
 
-    // Scenario 2: Include the current item (itemValues[itemIndex - 1])
-    const currentItemWeight = itemValues[itemIndex - 1];
-    if (targetSum >= currentItemWeight) {
-        const choiceMultiplier = isMultipliedChoice ? 2 : 1;
-        const waysIfIncluded = computeSumCombinations(itemIndex - 1, targetSum - currentItemWeight, isMultipliedChoice);
-        waysToFormSum = (waysToFormSum + (choiceMultiplier * waysIfIncluded) % MODULUS_VAL) % MODULUS_VAL;
-    }
+    // diffCounts[idx] stores the number of ways to achieve a difference of (idx - diffOffset)
+    // using elements processed so far.
+    let currentDiffCounts = new Array(maxDiffIndex + 1).fill(0);
     
-    currentMemoCache.set(memoIdentifier, waysToFormSum);
-    return waysToFormSum;
+    // Base case: With 0 elements, the difference (Sum_GroupA - Sum_GroupB) is 0.
+    // This corresponds to index 'diffOffset'. There is 1 way to achieve this (assign nothing).
+    currentDiffCounts[diffOffset] = 1; 
+
+    // Iterate through each element to update the possible differences
+    for (let i = 0; i < itemCount; i++) {
+        const currentElement = elementValues[i];
+        let nextDiffCounts = new Array(maxDiffIndex + 1).fill(0);
+
+        for (let j = 0; j <= maxDiffIndex; j++) {
+            // If there are no ways to reach the current difference state, skip it.
+            if (currentDiffCounts[j] === 0) continue; 
+
+            // Option 1: Assign currentElement to the third group (neither Group A nor Group B).
+            // The difference (Sum_GroupA - Sum_GroupB) remains unchanged.
+            nextDiffCounts[j] = (nextDiffCounts[j] + currentDiffCounts[j]) % MODULO_CONST;
+
+            // Option 2: Assign currentElement to Group A.
+            // The difference (Sum_GroupA - Sum_GroupB) increases by currentElement.
+            const newIndexForA = j + currentElement;
+            if (newIndexForA <= maxDiffIndex) { // Ensure index is within bounds
+                nextDiffCounts[newIndexForA] = (nextDiffCounts[newIndexForA] + currentDiffCounts[j]) % MODULO_CONST;
+            }
+
+            // Option 3: Assign currentElement to Group B.
+            // The difference (Sum_GroupA - Sum_GroupB) decreases by currentElement.
+            const newIndexForB = j - currentElement;
+            if (newIndexForB >= 0) { // Ensure index is within bounds
+                nextDiffCounts[newIndexForB] = (nextDiffCounts[newIndexForB] + currentDiffCounts[j]) % MODULO_CONST;
+            }
+        }
+        currentDiffCounts = nextDiffCounts; // Update for the next iteration
+    }
+
+    // The final answer is the number of ways where Sum_GroupA - Sum_GroupB = 0,
+    // which corresponds to the index 'diffOffset'.
+    let finalCount = currentDiffCounts[diffOffset];
+
+    console.log(finalCount);
 }
 
-function executeCalculation(inputDataString) {
-    const processedNumbers = inputDataString.trim().split(/\s+/).map(Number);
-    elementCount = processedNumbers.shift();
-    itemValues = processedNumbers;
-
-    collectiveSum = itemValues.reduce((accumulator, value) => accumulator + value, 0);
-    ceilingSum = Math.floor(collectiveSum / 2);
-
-    let finalOutcome = 1;
-
-    for (let currentItem = 0; currentItem < elementCount; currentItem++) {
-        finalOutcome = (finalOutcome * 3) % MODULUS_VAL;
-    }
-
-    let totalDualCounts = 0;
-    for (let sumValue = 0; sumValue <= ceilingSum; sumValue++) {
-        totalDualCounts = (totalDualCounts + computeSumCombinations(elementCount, sumValue, true)) % MODULUS_VAL;
-    }
-    
-    finalOutcome = (finalOutcome - (3 * totalDualCounts) % MODULUS_VAL + MODULUS_VAL) % MODULUS_VAL;
-
-    let singleChoiceHalfSumCount = 0;
-    if (collectiveSum % 2 === 0) {
-        singleChoiceHalfSumCount = computeSumCombinations(elementCount, ceilingSum, false);
-    }
-    
-    finalOutcome = (finalOutcome + (3 * singleChoiceHalfSumCount) % MODULUS_VAL) % MODULUS_VAL;
-
-    finalOutcome = (finalOutcome + MODULUS_VAL) % MODULUS_VAL;
-
-    console.log(finalOutcome);
-}
-
-executeCalculation(require('fs').readFileSync('/dev/stdin','utf8'));
+Main(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,13 +1,17 @@
-function    ProcessTextualData (  incomingText  )
-{
-    // Determine the ultimate character.
-    let   textLines   =   incomingText.split ( "\n"  ) ;
-    let   firstTextLine   =   textLines [  0  ] ;
-    const   finalCharacter   =   firstTextLine.slice (  -1  ) ;
-    const   wordSuffix   =   finalCharacter   ===   "s"   ?   "es"   :   "s" ;
+function ProcessInput(initialData) {
+    // Process the raw input string
+    initialData = initialData.split('\n');
+    let firstLineContent = initialData[0];
 
-    // Output the composed string.
-    console.log (  `${firstTextLine}${wordSuffix}`  ) ;
+    // Determine the last character of the processed line
+    const lastCharacter = firstLineContent.slice(-1);
+
+    // Choose the appropriate plural suffix
+    const pluralSuffix = lastCharacter === 's' ? 'es' : 's';
+
+    // Output the result to the console
+    console.log(`${firstLineContent}${pluralSuffix}`);
 }
-/*  Do not modify this part of the file (it manages reading from standard input and invoking the main routine).  */
-ProcessTextualData (  require ( "fs" ) . readFileSync ( "/dev/stdin" ,  "utf8" )  ) ;
+
+// The following line handles standard input/output and should not be modified.
+ProcessInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,54 +1,54 @@
 "use strict";
-function calculatePattyCount(burgerDepth, targetPosition) {
-    let currentPattyAccumulator = 0;
-    let currentDepth = burgerDepth;
-    let remainingPosition = targetPosition;
 
-    while (currentDepth >= 0) {
+function getLengthOfBurger(burgerDepth) {
+    return (1 << (burgerDepth + 2)) - 3;
+}
+
+function getPattiesInBurger(burgerDepth) {
+    return (1 << (burgerDepth + 1)) - 1;
+}
+
+function countPatties(currentDepth, currentPosition) {
+    let totalPattiesAccumulated = 0;
+
+    while (true) {
         if (currentDepth === 0) {
-            if (remainingPosition >= 1) {
-                currentPattyAccumulator += 1;
+            if (currentPosition >= 1) {
+                totalPattiesAccumulated += 1;
             }
             break;
         }
 
-        const lowerLevelTotalLength = (1 << (currentDepth + 1)) - 3;
-        const lowerLevelPattyTotal = (1 << currentDepth) - 1;
-
-        if (remainingPosition <= 1) {
+        if (currentPosition <= 0) {
             break;
         }
 
-        if (remainingPosition <= 1 + lowerLevelTotalLength) {
-            remainingPosition -= 1;
+        const leftSubBurgerLength = getLengthOfBurger(currentDepth - 1);
+        const leftSubBurgerPatties = getPattiesInBurger(currentDepth - 1);
+
+        if (currentPosition === 1) {
+            break;
+        } else if (currentPosition <= leftSubBurgerLength + 1) {
+            currentPosition -= 1;
             currentDepth -= 1;
-            continue;
-        }
-
-        currentPattyAccumulator += lowerLevelPattyTotal;
-        currentPattyAccumulator += 1;
-
-        if (remainingPosition <= 1 + lowerLevelTotalLength + 1) {
+        } else if (currentPosition === leftSubBurgerLength + 2) {
+            totalPattiesAccumulated += leftSubBurgerPatties + 1;
             break;
+        } else {
+            totalPattiesAccumulated += leftSubBurgerPatties + 1;
+            currentPosition -= (leftSubBurgerLength + 2);
+            currentDepth -= 1;
         }
-
-        remainingPosition -= (1 + lowerLevelTotalLength + 1);
-        currentDepth -= 1;
     }
-
-    return currentPattyAccumulator;
+    return totalPattiesAccumulated;
 }
 
-function initiateProcess(inputDataSource) {
-    const lines = inputDataSource.split("\n");
-    const firstLineParts = lines[0].split(" ");
-
-    const burgerStructureDepth = parseInt(firstLineParts[0], 10);
-    const consumptionPoint = parseInt(firstLineParts[1], 10);
-
-    const finalPattyTally = calculatePattyCount(burgerStructureDepth, consumptionPoint);
-
-    console.log(finalPattyTally);
+function processInput(inputString) {
+    const inputLines = inputString.split("\n");
+    const parameters = inputLines[0].split(" ");
+    const initialBurgerDepth = parseInt(parameters[0]);
+    const targetSlicePosition = parseInt(parameters[1]);
+    console.log(countPatties(initialBurgerDepth, targetSlicePosition));
 }
 
-initiateProcess(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

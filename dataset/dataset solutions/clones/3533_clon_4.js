@@ -1,57 +1,81 @@
-const performComplexCalculation = (rawInputPhrase) => {
-    const parts = rawInputPhrase.split(" ");
-    const firstOperand = Number(parts[0]);
-    const secondOperand = Number(parts[1]);
+function processInput(rawInput) {
+    const inputParts = rawInput.split(" ");
+    const countN = parseInt(inputParts[0], 10);
+    let targetM = parseInt(inputParts[1], 10);
 
-    const decomposeNumberIntoPrimes = (targetNumber) => {
-        const factorCounts = new Map();
-        let currentDivisor = 2;
-        let mutableTarget = targetNumber; 
+    const MODULUS_VAL = 1000000007;
 
-        while (mutableTarget > 1) {
-            if (mutableTarget % currentDivisor === 0) {
-                factorCounts.set(currentDivisor, (factorCounts.get(currentDivisor) || 0) + 1);
-                mutableTarget /= currentDivisor;
-            } else {
-                currentDivisor++;
-                if (currentDivisor * currentDivisor > mutableTarget && mutableTarget > 1) {
-                    factorCounts.set(mutableTarget, (factorCounts.get(mutableTarget) || 0) + 1);
-                    mutableTarget = 1; 
-                }
-            }
+    // Modular exponentiation (a^b % m)
+    const computePower = (baseVal, exponentVal) => {
+        let resultVal = 1;
+        baseVal %= MODULUS_VAL;
+        while (exponentVal > 0) {
+            if (exponentVal % 2 === 1) resultVal = (resultVal * baseVal) % MODULUS_VAL;
+            baseVal = (baseVal * baseVal) % MODULUS_VAL;
+            exponentVal = Math.floor(exponentVal / 2);
         }
-        return factorCounts;
+        return resultVal;
     };
 
-    const retrieveCoefficient = (countItems, chooseCount) => {
-        chooseCount = Math.min(chooseCount, countItems - chooseCount);
-        if (chooseCount < 0) return 0;
-        if (chooseCount === 0 || chooseCount === countItems) return 1;
+    // Modular multiplicative inverse using Fermat's Little Theorem (a^(m-2) % m)
+    const findModularInverse = (numberVal) => computePower(numberVal, MODULUS_VAL - 2);
+
+    // Calculates nCk modulo MODULUS_VAL
+    const calculateCombinationsMod = (nVal, kVal) => {
+        if (kVal < 0 || kVal > nVal) return 0;
+        if (kVal === 0 || kVal === nVal) return 1;
+        // Optimization: C(n, k) = C(n, n-k)
+        if (kVal > nVal / 2) kVal = nVal - kVal;
 
         let numeratorProduct = 1;
-        for (let index = 0; index < chooseCount; index++) {
-            numeratorProduct *= (countItems - index);
+        for (let i = 0; i < kVal; i++) {
+            numeratorProduct = (numeratorProduct * ((nVal - i) % MODULUS_VAL)) % MODULUS_VAL;
         }
 
         let denominatorProduct = 1;
-        for (let index = 0; index < chooseCount; index++) {
-            denominatorProduct *= (index + 1);
+        for (let i = 1; i <= kVal; i++) {
+            denominatorProduct = (denominatorProduct * i) % MODULUS_VAL;
         }
-        return numeratorProduct / denominatorProduct;
+
+        return (numeratorProduct * findModularInverse(denominatorProduct)) % MODULUS_VAL;
     };
 
-    const primeExponentsMap = decomposeNumberIntoPrimes(secondOperand);
-    let finalAccumulatedProduct = 1n; 
-    const modulusValue = 1000000007n; 
+    const primeFactorExponents = new Map();
+    let tempM = targetM;
+    let currentDivisor = 2;
 
-    for (const [factorBase, factorExponent] of primeExponentsMap.entries()) {
-        const nForCombinations = factorExponent + firstOperand - 1;
-        const kForCombinations = factorExponent;
-        
-        const currentCombinationResult = retrieveCoefficient(nForCombinations, kForCombinations);
-        
-        finalAccumulatedProduct = (finalAccumulatedProduct * BigInt(currentCombinationResult)) % modulusValue;
+    // Prime factorization using trial division
+    while (currentDivisor * currentDivisor <= tempM) {
+        if (tempM % currentDivisor === 0) {
+            let exponentCount = 0;
+            while (tempM % currentDivisor === 0) {
+                tempM /= currentDivisor;
+                exponentCount++;
+            }
+            primeFactorExponents.set(currentDivisor, exponentCount);
+        }
+        currentDivisor++;
     }
 
-    return Number(finalAccumulatedProduct);
-};
+    // If tempM is still greater than 1, it's a prime factor itself
+    if (tempM > 1) {
+        primeFactorExponents.set(tempM, (primeFactorExponents.get(tempM) || 0) + 1);
+    }
+
+    let finalAccumulatedResult = 1;
+
+    // Apply stars and bars formula for each prime factor
+    // C(val + N - 1, val)
+    for (const [pFactor, pExponent] of primeFactorExponents.entries()) {
+        const nForCombo = pExponent + countN - 1;
+        const kForCombo = pExponent;
+        const currentCombinationTerm = calculateCombinationsMod(nForCombo, kForCombo);
+        finalAccumulatedResult = (finalAccumulatedResult * currentCombinationTerm) % MODULUS_VAL;
+    }
+
+    return finalAccumulatedResult;
+}
+
+((b,c,d)=>"undefined"!=typeof require?console.log(processInput(require("fs").readFileSync("/dev/stdin","utf8"))):[b=b.split("\n").slice(1,-1).join("\n"),c=function(){try{return processInput(b)}catch(f){return f.stack||f.message}}(),d=typeof c,"string"==d||(c=JSON.stringify(c)),$("<form>").append([[10,b],0,[1,d],0,[10,c]].map(f=>$(f?"<textarea>":"<br>",f&&{rows:f[0],cols:40,text:f[1]}))).appendTo("body")])(`
+3 12
+`);

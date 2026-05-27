@@ -1,186 +1,248 @@
-module.exports = function (moduleDefinitions) {
+module.exports = function(moduleDefinitions) {
+    // This object serves as a cache for loaded modules, preventing redundant execution.
     var moduleCache = {};
 
-    function getModule(moduleId) {
-        if (moduleCache[moduleId]) {
-            return moduleCache[moduleId].exports;
+    // The core function responsible for loading and returning modules.
+    function requireModule(moduleIdentifier) {
+        // If the module is already in our cache, simply return its exported value.
+        if (moduleCache[moduleIdentifier]) {
+            return moduleCache[moduleIdentifier].exports;
         }
 
-        var moduleInstance = moduleCache[moduleId] = {
-            identifier: moduleId,
-            loaded: false,
-            exports: {}
+        // If the module is not cached, create a new entry for it.
+        var moduleEntry = moduleCache[moduleIdentifier] = {
+            i: moduleIdentifier, // Store the unique identifier of the module.
+            l: false,            // A flag indicating whether the module has been fully loaded.
+            exports: {}          // The object that will hold the module's exported values.
         };
 
-        moduleDefinitions[moduleId].call(moduleInstance.exports, moduleInstance, moduleInstance.exports, getModule);
+        // Execute the module's definition function.
+        // It receives the module entry, its exports object, and the local require function.
+        moduleDefinitions[moduleIdentifier].call(moduleEntry.exports, moduleEntry, moduleEntry.exports, requireModule);
 
-        moduleInstance.loaded = true;
-        return moduleInstance.exports;
+        // Mark the module as fully loaded after its execution.
+        moduleEntry.l = true;
+
+        // Return the exports of the newly loaded module.
+        return moduleEntry.exports;
     }
 
-    getModule.moduleDefinitions = moduleDefinitions;
-    getModule.moduleCache = moduleCache;
+    // Attach all module definitions to the require function for internal use.
+    requireModule.m = moduleDefinitions;
 
-    getModule.definePropertyGetter = function (targetObject, propertyName, getterFunction) {
-        getModule.checkOwnProperty(targetObject, propertyName) || Object.defineProperty(targetObject, propertyName, {
-            enumerable: true,
-            get: getterFunction
-        });
-    };
+    // Attach the module cache to the require function.
+    requireModule.c = moduleCache;
 
-    getModule.markAsESModule = function (targetObject) {
-        if (typeof Symbol !== "undefined" && Symbol.toStringTag) {
-            Object.defineProperty(targetObject, Symbol.toStringTag, {
-                value: "Module"
+    // Helper to define a getter property on an object.
+    requireModule.d = function(targetObject, propertyName, getterFunction) {
+        // Only define the property if it doesn't already exist on the target object.
+        if (!requireModule.o(targetObject, propertyName)) {
+            Object.defineProperty(targetObject, propertyName, {
+                enumerable: true, // Make the property enumerable.
+                get: getterFunction // Assign the provided function as the getter.
             });
         }
-        Object.defineProperty(targetObject, "__esModule", {
-            value: true
-        });
     };
 
-    getModule.interopRequireDefault = function (sourceModule, flags) {
-        if (1 & flags && (sourceModule = getModule(sourceModule))) {
-            // Module already processed by 'getModule'
+    // Helper to mark an object as an ES module.
+    requireModule.r = function(exportsObject) {
+        // If Symbol and Symbol.toStringTag are available, set the toStringTag.
+        if (typeof Symbol !== 'undefined' && Symbol.toStringTag) {
+            Object.defineProperty(exportsObject, Symbol.toStringTag, { value: 'Module' });
         }
-        if (8 & flags) {
-            return sourceModule;
-        }
-        if (4 & flags && typeof sourceModule === "object" && sourceModule && sourceModule.__esModule) {
-            return sourceModule;
-        }
+        // Always set the __esModule flag to true.
+        Object.defineProperty(exportsObject, '__esModule', { value: true });
+    };
 
-        var defaultExport = Object.create(null);
-        getModule.markAsESModule(defaultExport);
+    // Helper for handling different module types (e.g., CommonJS, ES modules).
+    requireModule.t = function(value, mode) {
+        // If mode 1 is set, it means the value is a module ID, so require it.
+        if (1 & mode) value = requireModule(value);
+        // If mode 8 is set, return the value as is.
+        if (8 & mode) return value;
+        // If mode 4 is set and the value is an object and an ES module, return it as is.
+        if (4 & mode && typeof value === 'object' && value && value.__esModule) return value;
 
-        Object.defineProperty(defaultExport, "default", {
-            enumerable: true,
-            value: sourceModule
-        });
+        // Otherwise, create a new object to represent the module.
+        var newObject = Object.create(null);
+        requireModule.r(newObject); // Mark it as an ES module.
+        Object.defineProperty(newObject, 'default', { enumerable: true, value: value }); // Define a 'default' export.
 
-        if (2 & flags && typeof sourceModule !== "string") {
-            for (var key in sourceModule) {
-                getModule.definePropertyGetter(defaultExport, key, (function (propName) {
-                    return sourceModule[propName];
+        // If mode 2 is set and the value is not a string, copy all its properties.
+        if (2 & mode && typeof value !== 'string') {
+            for (var key in value) {
+                requireModule.d(newObject, key, (function(k) {
+                    return value[k];
                 }).bind(null, key));
             }
         }
-        return defaultExport;
+        return newObject;
     };
 
-    getModule.normalizeDefault = function (sourceModule) {
-        var defaultFn = sourceModule && sourceModule.__esModule ? function () {
-            return sourceModule.default;
-        } : function () {
-            return sourceModule;
-        };
-        getModule.definePropertyGetter(defaultFn, "a", defaultFn);
-        return defaultFn;
+    // Helper to create a getter for the default export of a module.
+    requireModule.n = function(moduleExports) {
+        var getter = moduleExports && moduleExports.__esModule ?
+            function() { return moduleExports.default; } : // If it's an ES module, return its default.
+            function() { return moduleExports; };          // Otherwise, return the module exports directly.
+        requireModule.d(getter, 'a', getter); // Define a property 'a' that returns the getter itself.
+        return getter;
     };
 
-    getModule.checkOwnProperty = function (targetObject, propertyName) {
+    // Helper to check if an object has a specific property.
+    requireModule.o = function(targetObject, propertyName) {
         return Object.prototype.hasOwnProperty.call(targetObject, propertyName);
     };
 
-    getModule.publicPath = "";
+    // The public path for assets, typically used for dynamic imports.
+    requireModule.p = '';
 
-    return getModule(getModule.entryPoint = 0);
-}(
-    [
-        function (currentModule, exportsObject, moduleLoader) {
-            "use strict";
-            var fileSystemUtil = moduleLoader(1);
-            moduleLoader(2)(fileSystemUtil.readFileSync("/dev/stdin", "utf8"));
-        },
+    // Set the entry point module (module 0) and execute it to start the application.
+    return requireModule(requireModule.s = 0);
 
-        function (currentModule, exportsObject) {
-            currentModule.exports = require("fs");
-        },
+}([
+    /* Module 0: Application Entry Point */
+    function(moduleObject, exportsObject, localRequire) {
+        'use strict'; // Enable strict mode for this module.
 
-        function (currentModule, exportsObject, moduleLoader) {
-            "use strict";
-            var dataParser = moduleLoader(3),
-                sequenceProcessor = moduleLoader(5);
-            currentModule.exports = function (inputString) {
-                var inputProcessorInstance = new dataParser(inputString);
-                sequenceProcessor(inputProcessorInstance);
-            };
-        },
+        // Import the Node.js 'fs' (file system) module.
+        var fileSystemModule = localRequire(1);
 
-        function (currentModule, exportsObject, moduleLoader) {
-            "use strict";
-            var sequenceBuffer = moduleLoader(4);
-            currentModule.exports = class InputDataProcessor {
-                constructor(inputContent) {
-                    var tokenArray = inputContent.trim().split(/\s+/g);
-                    this.inputBuffer = new sequenceBuffer(tokenArray);
-                }
-                readRawString() {
-                    return this.inputBuffer.dequeueItem();
-                }
-                readInteger() {
-                    return parseInt(this.inputBuffer.dequeueItem(), 10);
-                }
-                finishProcessing() {
-                    this.inputBuffer.resetQueue();
-                }
-            };
-        },
+        // Read the entire content from standard input ('/dev/stdin') as a UTF-8 string.
+        // Then, pass this content to module 2 for further processing.
+        localRequire(2)(fileSystemModule.readFileSync('/dev/stdin', 'utf8'));
+    },
 
-        function (currentModule, exportsObject, moduleLoader) {
-            "use strict";
-            currentModule.exports = class DataElementQueue {
-                constructor() {
-                    var initialElements = arguments.length > 0 && void 0 !== arguments[0] ? arguments[0] : [];
-                    this.currentSize = initialElements.length;
-                    this.dataElements = initialElements;
-                    this.currentIndex = 0;
-                }
-                enqueueItem(itemToAdd) {
-                    this.currentSize += 1;
-                    this.dataElements.push(itemToAdd);
-                }
-                dequeueItem() {
-                    var retrievedItem = this.dataElements[this.currentIndex];
-                    this.currentSize -= 1;
-                    this.currentIndex += 1;
-                    return retrievedItem;
-                }
-                resetQueue() {
-                    this.dataElements = [];
-                    this.currentSize = 0;
-                    this.currentIndex = 0;
-                }
-            };
-        },
+    /* Module 1: Node.js 'fs' Module Wrapper */
+    function(moduleObject, exportsObject) {
+        // Export the native Node.js 'fs' module directly.
+        moduleObject.exports = require('fs');
+    },
 
-        function (currentModule, exportsObject, moduleLoader) {
-            "use strict";
-            currentModule.exports = function (inputHandler) {
-                for (
-                    var inputSequence = inputHandler.readRawString(),
-                        sequenceLength = inputSequence.length,
-                        maximumLength = 0,
-                        outerIndex = 0;
-                    outerIndex < sequenceLength - 1;
-                    outerIndex++
-                ) {
-                    for (
-                        var currentSegmentLength = 0,
-                            innerIndex = outerIndex;
-                        innerIndex < sequenceLength &&
-                        ("A" === inputSequence[innerIndex] ||
-                            "C" === inputSequence[innerIndex] ||
-                            "G" === inputSequence[innerIndex] ||
-                            "T" === inputSequence[innerIndex]);
-                        innerIndex++
-                    ) {
-                        currentSegmentLength++;
-                    }
-                    maximumLength = Math.max(maximumLength, currentSegmentLength);
+    /* Module 2: Main Application Logic Orchestrator */
+    function(moduleObject, exportsObject, localRequire) {
+        'use strict'; // Enable strict mode.
+
+        // Import the DataHandler class (from module 3) and the main algorithm function (from module 5).
+        var inputProcessorClass = localRequire(3);
+        var mainAlgorithmFunction = localRequire(5);
+
+        // Export a function that takes an input string, initializes a processor, and runs the algorithm.
+        moduleObject.exports = function(inputString) {
+            // Create a new instance of DataHandler, passing the raw input string.
+            var processorInstance = new inputProcessorClass(inputString);
+            // Execute the main algorithm, providing it with the initialized data processor.
+            mainAlgorithmFunction(processorInstance);
+        };
+    },
+
+    /* Module 3: DataHandler Class for Input Parsing */
+    function(moduleObject, exportsObject, localRequire) {
+        'use strict'; // Enable strict mode.
+
+        // Import the DataStore (queue) class from module 4.
+        var queueClass = localRequire(4);
+
+        // Define and export the DataHandler class.
+        moduleObject.exports = class DataHandler {
+            // The constructor takes the raw input string.
+            constructor(rawData) {
+                // Trim leading/trailing whitespace and split the string by any whitespace
+                // into an array of individual tokens.
+                var tokenArray = rawData.trim().split(/\s+/g);
+                // Initialize an internal DataStore (queue) with these parsed tokens.
+                this.dataQueue = new queueClass(tokenArray);
+            }
+
+            // Method to dequeue and return the next string token from the input.
+            readString() {
+                return this.dataQueue.dequeueElement();
+            }
+
+            // Method to dequeue the next token, parse it as an integer (base 10), and return it.
+            readInt() {
+                return parseInt(this.dataQueue.dequeueElement(), 10);
+            }
+
+            // Method to clear the internal data store, effectively resetting the input state.
+            finishProcessing() {
+                this.dataQueue.resetStore();
+            }
+        };
+    },
+
+    /* Module 4: DataStore Class (Queue Implementation) */
+    function(moduleObject, exportsObject, localRequire) {
+        'use strict'; // Enable strict mode.
+
+        // Define and export the DataStore class, which acts as a simple queue.
+        moduleObject.exports = class DataStore {
+            // The constructor can optionally take an array of initial elements.
+            constructor() {
+                var initialElements = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : [];
+                // Initialize the current size of the store.
+                this.currentSize = initialElements.length;
+                // Store the elements in an array.
+                this.elementList = initialElements;
+                // Keep track of the current index for dequeuing.
+                this.currentIndex = 0;
+            }
+
+            // Method to add an element to the end of the queue.
+            enqueueElement(itemToAdd) {
+                this.currentSize += 1;
+                this.elementList.push(itemToAdd);
+            }
+
+            // Method to remove and return the element from the front of the queue.
+            dequeueElement() {
+                var retrievedItem = this.elementList[this.currentIndex];
+                this.currentSize -= 1;
+                this.currentIndex += 1;
+                return retrievedItem;
+            }
+
+            // Method to clear all elements from the queue and reset its state.
+            resetStore() {
+                this.elementList = [];
+                this.currentSize = 0;
+                this.currentIndex = 0;
+            }
+        };
+    },
+
+    /* Module 5: Main Algorithm for Finding Longest Consecutive ACGT Sequence */
+    function(moduleObject, exportsObject, localRequire) {
+        'use strict'; // Enable strict mode.
+
+        // Export the main algorithm function. It takes a data processor instance.
+        moduleObject.exports = function(dataProcessor) {
+            // Read the entire input sequence as a single string.
+            var inputSequence = dataProcessor.readString();
+            // Get the total length of the input sequence.
+            var sequenceLength = inputSequence.length;
+            // Initialize a variable to keep track of the maximum consecutive count found.
+            var maxConsecutive = 0;
+
+            // Iterate through the sequence with an outer loop.
+            // The loop runs up to 'sequenceLength - 1' because the inner loop checks from 'outerLoopIndex'.
+            for (var outerLoopIndex = 0; outerLoopIndex < sequenceLength - 1; outerLoopIndex++) {
+                // Initialize a counter for the current consecutive sequence of 'ACGT' characters.
+                var currentConsecutive = 0;
+                // Inner loop to check for consecutive 'ACGT' characters starting from 'outerLoopIndex'.
+                for (var innerLoopIndex = outerLoopIndex;
+                     innerLoopIndex < sequenceLength &&
+                     (inputSequence[innerLoopIndex] === 'A' ||
+                      inputSequence[innerLoopIndex] === 'C' ||
+                      inputSequence[innerLoopIndex] === 'G' ||
+                      inputSequence[innerLoopIndex] === 'T');
+                     innerLoopIndex++) {
+                    currentConsecutive++; // Increment the count if the character is one of 'A', 'C', 'G', 'T'.
                 }
-                console.log(maximumLength);
-            };
-        }
-    ]
-);
+                // Update 'maxConsecutive' if the 'currentConsecutive' count is higher.
+                maxConsecutive = Math.max(maxConsecutive, currentConsecutive);
+            }
+            // Print the final maximum consecutive count to the console.
+            console.log(maxConsecutive);
+        };
+    }
+]);

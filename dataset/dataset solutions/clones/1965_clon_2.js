@@ -1,17 +1,25 @@
-// This section handles reading raw input from standard input stream.
-let dataSource = require('fs') .readFileSync('/dev/stdin', 'utf8') .split('\n');
+let rawData = require('fs')
+  .readFileSync('/dev/stdin', 'utf8')
+  .split('\n'); // Obtain raw input data from standard input, decode as UTF-8, and segment by newline characters.
 
-// Parse the first line to determine the total number of elements.
-const sizeValue = parseInt(dataSource[0]) ;
+const numElements = parseInt(rawData[0], 10); // Convert the initial line of input into an integer, representing the total count of items.
 
-// Initialize an array to store frequencies, filled with zeros.
-let occurrenceRegister = new Array(sizeValue) .fill(0);
+// Establish an array to maintain frequency counts, initializing all entries to zero.
+let frequencyTracker = new Array(numElements).fill(0);
 
-// Process the second line of input: split, convert to numbers, and tally occurrences.
-dataSource[1] .split(' ') .map(Number) .forEach(currentVal => {
-    // Decrement by one to use as a zero-based array index.
-    occurrenceRegister[currentVal - 1]++ ;
+// Process the subsequent line of input.
+// This involves splitting the string by spaces, converting each segment to a numerical value,
+// and then iterating through these numbers to update their respective frequencies.
+rawData[1]
+  .split(' ')
+  .map(Number)
+  .forEach(function(currentVal) {
+    // Increment the frequency for the current numerical value,
+    // adjusting for the zero-based indexing of the array.
+    frequencyTracker[currentVal - 1]++;
+  });
+
+// Iterate through the accumulated frequency counts and display each one to the console.
+frequencyTracker.forEach(function(freqValue) {
+  console.log(freqValue);
 });
-
-// Iterate through the frequency list and print each element's count.
-occurrenceRegister.forEach(entryCount => console.log(entryCount));

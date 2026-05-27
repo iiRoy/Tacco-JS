@@ -1,88 +1,78 @@
-const rawInputContent = require('fs').readFileSync('/dev/stdin', 'utf8');
-let processedInputLines = rawInputContent.trim().split("\n");
-let currentLinePointer = 0;
+const STDIN_SOURCE = '/dev/stdin';
+const fileContent = require('fs').readFileSync(STDIN_SOURCE, 'utf8');
+const lines = fileContent.trim().split("\n");
 
-// Utility function to parse a line of space-separated numbers
-const extractNumericValues = (lineContent) => lineContent.split(/\s+/).map(Number);
+let currentLineIndex = 0;
 
-// Main processing loop for multiple test cases
+// Helper function to parse N and M from a line
+function extractDimensions(lineString) {
+    const parts = lineString.split(/\s+/).map(Number);
+    return {
+        numComputers: parts[0],
+        numPackets: parts[1]
+    };
+}
+
+// Helper function to parse individual packet data
+function parsePacketDetails(lineString) {
+    const parts = lineString.split(/\s+/).map(Number);
+    // Adjusting sender and receiver IDs to be 0-indexed
+    return {
+        time: parts[0],
+        sender: parts[1] - 1,
+        receiver: parts[2] - 1
+    };
+}
+
 while (true) {
-    // Read and parse the dimensions for the current case (N, M)
-    const caseDimensions = extractNumericValues(processedInputLines[currentLinePointer]);
-    currentLinePointer++; // Advance the input pointer
+    const currentDimensionLine = lines[currentLineIndex];
+    currentLineIndex++;
 
-    let totalAttendees = caseDimensions[0];
-    let totalIncidents = caseDimensions[1];
+    const { numComputers, numPackets } = extractDimensions(currentDimensionLine);
 
-    // Termination condition for the input loop
-    if (totalAttendees === 0 && totalIncidents === 0) {
+    if (numComputers === 0 && numPackets === 0) {
         break;
     }
 
-    // Guard clause: Basic validation for input dimensions
-    if (totalAttendees < 0 || totalIncidents < 0) {
-        // Skipping cases with invalid (negative) dimensions
-        continue;
+    // Initialize infection status for all computers
+    // true means infected, false means not infected
+    const computerInfectionStatus = new Array(numComputers).fill(true);
+    // Computer 0 is initially not infected
+    computerInfectionStatus[0] = false;
+
+    const transmissionRecords = [];
+    for (let packetIdx = 0; packetIdx < numPackets; packetIdx++) {
+        const packetLine = lines[currentLineIndex];
+        currentLineIndex++;
+        const { time, sender, receiver } = parsePacketDetails(packetLine);
+        transmissionRecords.push([time, sender, receiver]);
     }
 
-    // Initialize the immunity status for all attendees.
-    // 'true' means immune, 'false' means susceptible.
-    // By default, everyone is susceptible, but the first attendee (index 0) is immune.
-    let immunityTracker = Array.from({ length: totalAttendees }, () => false);
-    if (totalAttendees > 0) { // Ensure there is at least one attendee
-        immunityTracker[0] = true;
-    }
-
-    // Collect all incident records
-    // Each record contains [eventTime, sourcePersonId (0-indexed), targetPersonId (0-indexed)]
-    let eventTimeline = [];
-    for (let eventIdx = 0; eventIdx < totalIncidents; eventIdx++) {
-        const incidentDetails = extractNumericValues(processedInputLines[currentLinePointer]);
-        currentLinePointer++; // Advance the input pointer
-
-        const eventTime = incidentDetails[0];
-        const sourcePersonId = incidentDetails[1] - 1; // Convert to 0-indexed
-        const targetPersonId = incidentDetails[2] - 1; // Convert to 0-indexed
-
-        // Guard clause: Validate person IDs are within bounds
-        if (sourcePersonId < 0 || sourcePersonId >= totalAttendees ||
-            targetPersonId < 0 || targetPersonId >= totalAttendees) {
-            // Skipping incidents with invalid person IDs
-            continue;
-        }
-        eventTimeline.push([eventTime, sourcePersonId, targetPersonId]);
-    }
-
-    // Sort the incidents chronologically by their event time
-    eventTimeline.sort((incidentA, incidentB) => {
-        const timeA = incidentA[0];
-        const timeB = incidentB[0];
-        if (timeA < timeB) return -1;
-        if (timeA > timeB) return 1;
-        return 0; // Maintain relative order if times are equal
+    // Sort transmissions.
+    // IMPORTANT: This replicates the original's potentially quirky sort behavior.
+    // In JavaScript, `[t1, s1, r1] - [t2, s2, r2]` results in `NaN`.
+    // When `Array.prototype.sort` comparator returns `NaN`, elements are considered equal,
+    // maintaining their relative order (stable sort). This means the original order of packets
+    // is preserved, not necessarily sorted by time.
+    transmissionRecords.sort(function (recordA, recordB) {
+        return recordA - recordB;
     });
 
-    // Process each incident to propagate immunity
-    // If a source person is immune, any person they interact with also becomes immune.
-    for (const currentIncident of eventTimeline) {
-        const originatorId = currentIncident[1];
-        const recipientId = currentIncident[2];
+    // Process each transmission
+    for (const currentTransmission of transmissionRecords) {
+        const senderCompIdx = currentTransmission[1];
+        const receiverCompIdx = currentTransmission[2];
 
-        // Check if the originator is currently immune
-        if (immunityTracker[originatorId]) {
-            // If the originator is immune, the recipient also gains immunity
-            immunityTracker[recipientId] = true;
+        // If the sender is not infected, the receiver also becomes not infected
+        if (!computerInfectionStatus[senderCompIdx]) {
+            computerInfectionStatus[receiverCompIdx] = false;
         }
     }
 
-    // Count the total number of immune attendees after all incidents
-    let immunePopulationCount = 0;
-    for (const isCurrentlyImmune of immunityTracker) {
-        if (isCurrentlyImmune) { // If the attendee's status is 'true' (immune)
-            immunePopulationCount++;
-        }
-    }
+    // Count the number of non-infected computers
+    const totalNonInfected = computerInfectionStatus.reduce((count, isInfected) => {
+        return isInfected ? count : count + 1;
+    }, 0);
 
-    // Output the final count for the current test case
-    console.log(immunePopulationCount);
+    console.log(totalNonInfected);
 }

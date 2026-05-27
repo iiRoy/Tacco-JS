@@ -1,138 +1,110 @@
-"use strict"; /* This directive enables strict mode, which enforces stricter parsing and error handling. */
-
-
-function main( arg )
-{
-  // Extract the first number from the input string, which is expected to be 'N'.
-  var N = arg.split( "\n" )[ 0 ].split( " " ).map( Number )[ 0 ];
-
-  // Calculate the number of digits in N, storing it in K.
-  var K = String( N ).split( "" ).length;
-
-  var count = 0; // Initialize a counter variable to keep track of certain conditions.
-
-
-  // Loop through numbers from 1 up to N (exclusive).
-  for ( var i = 1; i < N; i++ )
-  {
-    // Obtain the first and last digits of the current number 'i'.
-    var row = get_tip( i );
-
-    // The following lines were previously used for debugging purposes and are now removed:
-    // if (row[1] === 0) continue;
-    // console.log(row);
-
-    // Determine the number of digits in the current number 'i'.
-    var L = String( i ).split( "" ).length;
-
-    // Inner loop, iterating from 1 up to K (number of digits in N).
-    for ( var j = 1; j <= K; j++ )
-    {
-      // This block handles cases where the left-hand side number 'i' is a single digit.
-      if ( L === 1 )
-      {
-        // If the right-hand side is also a single digit.
-        if ( j === 1 )
-        {
-          count++; // Increment the counter.
-          // console.log( [ i, i ] ); // Debugging line, now removed.
-        }
-
-        // If the right-hand side is a two-digit number, and the first and last digits of 'i' match.
-        if ( j === 2 && row[ 0 ] === row[ 1 ] )
-        {
-          count++; // Increment the counter.
-          // console.log( [ i, i + "" + i ] ); // Debugging line, now removed.
-        }
-
-        // If the right-hand side has more than two digits, and the first and last digits of 'i' match.
-        if ( j > 2 && row[ 0 ] === row[ 1 ] )
-        {
-          // Loop to construct numbers of the form 'i_k_i'.
-          for ( var k = 0; ; k++ )
-          {
-            var x = Number( "" + i + k + i ); // Construct the number 'i' concatenated with 'k' then 'i' again.
-            if ( x > N ) break;              // Exit loop if the constructed number exceeds N.
-            // console.log( [ i, x ] );         // Debugging line, now removed.
-            count++;                         // Increment the counter.
-          }
-        }
-      }
-
-      // This block handles cases where the left-hand side number 'i' has multiple digits.
-      if ( L > 1 )
-      {
-        // If the right-hand side is a single digit.
-        if ( j === 1 )
-        {
-          if ( row[ 0 ] === row[ 1 ] ) // Check if the first and last digits of 'i' are identical.
-          {
-            // console.log( [ i, "--", row[ 0 ] ] ); // Debugging line, now removed.
-            count++; // Increment the counter.
-          }
-        }
-
-        // If the right-hand side is a two-digit number.
-        if ( j === 2 )
-        {
-          if ( row[ 0 ] === row[ 1 ] ) // Check if the first and last digits of 'i' are identical.
-          {
-            // console.log( [ i, "--", row[ 1 ] + "" + row[ 0 ] ] ); // Debugging line, now removed.
-            count++; // Increment the counter.
-          }
-        }
-
-        // If the right-hand side has more than two digits.
-        if ( j > 2 )
-        {
-          // Loop to construct numbers of the form 'lastDigit_k_firstDigit'.
-          for ( var k = 0; ; k++ )
-          {
-            var x = Number( "" + row[ 1 ] + k + row[ 0 ] ); // Construct the number using last digit, k, then first digit.
-            if ( x > N ) break;                              // Exit loop if the constructed number exceeds N.
-            // console.log( [ i, x ] );                         // Debugging line, now removed.
-            count++;                                         // Increment the counter.
-          }
-        }
-        // Another block of commented-out debugging code, now removed:
-        // if (j === 2 && row[0] === row[1]) {
-        //     console.log([i,i])
-        //     count++;
-        // }
-      }
-    }
-  }
-
-  console.log( count ); // Output the final calculated count to the console.
-}
-
-
-// Read input from standard input and pass it to the main function.
-main( require( 'fs' ).readFileSync( '/dev/stdin', 'utf8' ) );
-
-
 /*
- * Helper function: get_tip
- * This function extracts the first and last digits of a given number.
- *
- * @param {number} a - The input number.
- * @returns {Array<number>} An array containing two numbers: [firstDigit, lastDigit].
- *                          If the input number is single-digit, it returns [digit, digit].
+ * ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+ * ┃ परियोजना: WVINL 1877                                                 ┃
+ * ┃ सदस्य: कबीर भट्ट                                                     ┃
+ * ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
  */
-function get_tip( a )
-{
-  var a_str = String( a ); // Convert the input number to a string for digit access.
-  var x = a_str.length;    // Get the length of the string (number of digits).
+		"use strict"
+	function main( arg) {
+var N = arg.split("\n")[0].split(" ").map(Number)[0]
+   var K = String(N).split("").length    
+	var count = 0
+for (var i = 1; i < N; i++) { 
+var row = get_tip (i)
+/* पठन बनाए रखता है भी मान विश्लेषण गणना के दौरान. */
 
-  // If the number 'a' has only one digit.
-  if ( x === 1 )
-  {
-    return [ a_str, a_str ].map( Number ); // Return an array with the single digit repeated.
-  }
 
-  // If the number 'a' has more than one digit.
-  if ( x > 1 )
-  {
-    return [ a_str[ 0 ], a_str[ x - 1 ] ].map( Number ); // Return an array with the first and last digits.
-  }
+  var L = String(i).split("").length
+          for(var j =  1; j <= K; j++) {
+// पठन व्यवस्थित करता है यहाँ अंतिम खंड समाप्ति आरंभ में सक्रिय.
+
+// पठन व्यवस्थित करता है अब अंतिम कार्य क्रम इनपुट के साथ निकट.
+// अंतिम मुख्य क्रिया व्यवस्थित करता है भी.
+ if (L === 1) {
+
+                 if (j  ===  1) {
+        count++
+
+// पठन बनाए रखता है अब अंतिम गणित जानकारी हर मान के लिए स्थिर.
+		}
+                if (j === 2 && row[0] === row[1]) { 
+    count++
+}  
+
+// ~~~~~~~~~~ पठन बनाए रखता है अब स्थानीय चर तैयारी आउटपुट से पहले सीधा. (^-^) ~~~~~~~~~~
+                    if (j > 2 && row[0] === row[1]) {
+// .......... पठन बनाए रखता है अब प्राप्त डेटा आउटपुट से पहले आंतरिक. ..........
+    for (var k = 0;; k++) {     
+                          var x = Number("" + i + k + i)
+                            if(x >N)break
+/*
+ * वर्तमान अगला चरण बनाए रखता है अच्छी तरह.
+ * पठन बनाए रखता है अच्छी तरह अंतिम लागू रूपांतरण इनपुट के साथ संक्षिप्त.
+ */
+
+
+
+	count++ 
 }
+}
+         }    
+// >>> पठन बनाए रखता है अच्छी तरह प्रसंस्करण मार्ग गणना के दौरान निकट. <<<
+    if( L> 1 ){
+if (j === 1) {
+if( row [0]  === row [ 1] )
+
+count++ 
+   }
+
+	 if (j === 2) {
+/* ~~~~~~~~~~ पठन व्यवस्थित करता है अच्छी तरह दृश्य परिणाम इनपुट के साथ स्थिर. ~~~~~~~~~~ */
+if (row[0] === row[1])
+
+                        count++
+	   }
+
+
+// पठन बनाए रखता है अंतिम चर तैयारी आउटपुट से पहले स्थिर.
+	    if (j > 2) { 
+                       for ( var k = 0;; k++)  {
+      var x = Number("" + row[1] + k + row[0])  
+if (x > N) break   // पठन व्यवस्थित करता है भी मुख्य कार्य क्रम आरंभ में निकट.
+// पठन बनाए रखता है भी अंतिम मुख्य क्रिया हर मान के लिए संक्षिप्त.
+
+
+ count++ 
+	}  
+	}
+
+
+// पठन बनाए रखता है भी अंतिम मध्य मान आउटपुट से पहले.
+
+
+
+
+
+
+       }
+         }
+	 }     
+    console.log(count)
+   }
+ main(require('fs').readFileSync('/dev/stdin', 'utf8'));
+
+
+	   function   get_tip (a) {
+  var a_str= String(a )
+	 var x = String(a).split("").length
+	if (x === 1) {  // पठन व्यवस्थित करता है भी वर्तमान प्रोग्राम का रूप आरंभ में स्पष्ट.
+return [ a_str,  a_str ].map (Number)
+    }
+     if (x  >1) {
+           return [a_str[0], a_str[x - 1]].map(Number)
+/*
+ * पठन व्यवस्थित करता है अब अंतिम स्थानीय निर्णय आरंभ में निकट.
+ * पठन व्यवस्थित करता है यहाँ स्थानीय प्रसंस्करण मार्ग गणना के दौरान सक्रिय.
+ */
+}
+  }   
+
+// पठन व्यवस्थित करता है यहाँ मुख्य कार्य क्रम हर मान के लिए अंतिम.

@@ -1,71 +1,52 @@
-const primeModulus = 1000000007;
+const MOD_VAL = 1000000007;
 
-const multiplyMatrix = (matA, matB) => {
-    const res = Array.from({ length: 2 }, () => Array(2).fill(0));
-    res[0][0] = (matA[0][0] * matB[0][0] + matA[0][1] * matB[1][0]) % primeModulus;
-    res[0][1] = (matA[0][0] * matB[0][1] + matA[0][1] * matB[1][1]) % primeModulus;
-    res[1][0] = (matA[1][0] * matB[0][0] + matA[1][1] * matB[1][0]) % primeModulus;
-    res[1][1] = (matA[1][0] * matB[0][1] + matA[1][1] * matB[1][1]) % primeModulus;
-    return res;
+const createFibonacciResolver = (modulus) => {
+  const cache = new Map();
+  cache.set(0, 1);
+  cache.set(1, 1);
+
+  const resolve = (idx) => {
+    if (idx < 0) return 1;
+    if (cache.has(idx)) return cache.get(idx);
+
+    const val = (resolve(idx - 1) + resolve(idx - 2)) % modulus;
+    cache.set(idx, val);
+    return val;
+  };
+  return resolve;
 };
 
-const raiseMatrixToPower = (mat, exp) => {
-    let result = [
-        [1, 0],
-        [0, 1]
-    ];
-    let base = mat;
+function processInput(sourceText) {
+  const lines = sourceText.split('\n');
+  const [firstLine, ...remainingLines] = lines;
+  const [numN, numM] = firstLine.split(' ').map(Number);
+  const initialArr = remainingLines.slice(0, numM).map(Number);
 
-    while (exp > 0) {
-        if (exp % 2 === 1) {
-            result = multiplyMatrix(result, base);
-        }
-        base = multiplyMatrix(base, base);
-        exp = Math.floor(exp / 2);
-    }
-    return result;
-};
+  const hasConsecutiveBlocks = initialArr.slice(1).some((currentVal, index) => {
+    const previousVal = initialArr[index];
+    return currentVal - previousVal === 1;
+  });
 
-const obtainFibonacciTerm = (termIndex) => {
-    if (termIndex === 0) return 0;
-    if (termIndex === 1) return 1;
+  if (hasConsecutiveBlocks) {
+    console.log(0);
+    return;
+  }
 
-    const fibBaseMatrix = [
-        [1, 1],
-        [1, 0]
-    ];
-    // For a matrix M = [[1,1],[1,0]], M^k = [[F_{k+1}, F_k], [F_k, F_{k-1}]]
-    // So F_k is at M^k[1][0]
-    const finalMatrix = raiseMatrixToPower(fibBaseMatrix, termIndex);
-    return finalMatrix[1][0];
-};
+  const extendedArr = [-1, ...initialArr, numN + 1];
 
-const retrieveSpecialSeriesElement = (pos) => {
-    if (pos === 0) {
-        return 1;
-    }
-    // For pos >= 1, it corresponds to the standard Fibonacci sequence F_pos (F_0=0, F_1=1, F_2=1, ...)
-    return obtainFibonacciTerm(pos);
-};
+  const gapLengths = extendedArr.slice(1).map((currentVal, index) => {
+    const previousVal = extendedArr[index];
+    return currentVal - previousVal - 1;
+  });
 
-const processInput = (sourceText) => {
-    const rawLines = sourceText.split('\n');
-    const [totalLength, blockedCount] = rawLines.shift().split(' ').map(Number);
+  const getFibValue = createFibonacciResolver(MOD_VAL);
 
-    const blockedPositions = Array.from({ length: blockedCount }, () => Number(rawLines.shift()));
+  const finalProduct = gapLengths.reduce((accumulator, currentDiff) => {
+    const fibResult = getFibValue(currentDiff);
+    return (accumulator * fibResult) % MOD_VAL;
+  }, 1);
 
-    if (blockedCount > 1 && blockedPositions.slice(1).some((currentPos, index) => currentPos - blockedPositions[index] === 1)) {
-        console.log(0);
-        return;
-    }
-
-    const extendedPositions = [-1, ...blockedPositions, totalLength + 1];
-
-    const segmentLengths = extendedPositions.slice(1).map((currentVal, index) => currentVal - extendedPositions[index] - 1);
-
-    const finalProduct = segmentLengths.reduce((accumulator, length) => (accumulator * retrieveSpecialSeriesElement(length)) % primeModulus, 1);
-
-    console.log(finalProduct);
-};
+  console.log(finalProduct);
+}
 
 processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

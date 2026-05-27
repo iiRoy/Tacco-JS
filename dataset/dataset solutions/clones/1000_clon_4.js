@@ -1,39 +1,40 @@
-const calculateBestYield = (priceSeries) => {
-  const entryCount = Number(priceSeries[0]);
-  const numericalPoints = priceSeries.slice(1, entryCount).map(val => Number(val));
+let accumulatedInput = "";
 
-  const initialProcessingState = {
-    topProfit: -Infinity,
-    lowestEncountered: Infinity
-  };
+const processPriceData = (inputLines) => {
+    const dataLength = Number(inputLines[0]);
+    const pricePoints = inputLines.slice(1, dataLength + 1).map(Number);
 
-  const finalProcessingState = numericalPoints.reduce((accumulator, currentDatum) => {
-    const potentialBenefit = currentDatum - accumulator.lowestEncountered;
-    const newTopProfit = Math.max(accumulator.topProfit, potentialBenefit);
-    const newLowestEncountered = Math.min(accumulator.lowestEncountered, currentDatum);
+    const finalResult = pricePoints.reduce((accumulator, currentPriceValue) => {
+        const potentialGain = currentPriceValue - accumulator.lowestPriceSeen;
+        const updatedHighestProfit = Math.max(accumulator.currentHighestProfit, potentialGain);
 
-    return {
-      topProfit: newTopProfit,
-      lowestEncountered: newLowestEncountered
-    };
-  }, initialProcessingState);
+        console.log(`maxv: ${updatedHighestProfit}`);
+        console.log(`min: ${accumulator.lowestPriceSeen}`);
+        console.log(`arr[j]: ${currentPriceValue}`);
+        console.log(``);
 
-  return finalProcessingState.topProfit;
+        const updatedLowestPrice = Math.min(accumulator.lowestPriceSeen, currentPriceValue);
+
+        return {
+            currentHighestProfit: updatedHighestProfit,
+            lowestPriceSeen: updatedLowestPrice
+        };
+    }, { currentHighestProfit: -Infinity, lowestPriceSeen: Infinity });
+
+    console.log(finalResult.currentHighestProfit);
 };
 
-let accumulatedInputData = [];
+const handleIncomingData = (dataChunk) => {
+    accumulatedInput += dataChunk;
+};
 
-process.stdin.on("data", (dataSegment) => {
-  accumulatedInputData.push(dataSegment);
-});
-
-process.stdin.on("end", () => {
-  const completeRawInput = accumulatedInputData.join('');
-  const relevantLines = completeRawInput.split("\n").filter(lineItem => lineItem.trim() !== "");
-
-  const finalCalculatedOutput = calculateBestYield(relevantLines);
-  process.stdout.write(finalCalculatedOutput.toString() + "\n");
-});
+const finalizeInputProcessing = () => {
+    const processedLines = accumulatedInput.split('\n').filter(Boolean);
+    processPriceData(processedLines);
+};
 
 process.stdin.resume();
 process.stdin.setEncoding("utf8");
+
+process.stdin.on("data", handleIncomingData);
+process.stdin.on("end", finalizeInputProcessing);

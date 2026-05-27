@@ -1,77 +1,77 @@
-const calculateOptimalValue = (rawDataInput) => {
-  // Divide the entire raw input string into individual line segments.
-  const allInputLines = rawDataInput.trim().split('\n');
+function Main(inputStringData) {
+    // Helper function to parse an item string into its components.
+    // This encapsulates the string splitting and number conversion logic.
+    const extractItemDetails = (itemLine) => {
+        const parts = itemLine.split(' ');
+        // Assuming the format is "leadTime value"
+        return {
+            leadTime: Number(parts[0]),
+            value: Number(parts[1])
+        };
+    };
 
-  // Extract the first line, which typically contains configuration parameters.
-  const configurationData = allInputLines.shift();
-  const configElements = configurationData.split(' ');
+    let allInputLines = inputStringData.split('\n');
 
-  // Parse the total count of initial items (not directly used in this logic, but part of input)
-  const totalItemCount = parseInt(configElements[0], 10);
-  // Parse the number of processing cycles (days) the system will operate for.
-  const numberOfSimulationDays = parseInt(configElements[1], 10);
+    // Parse the first line to get N (total items) and M (total processing days).
+    const initialConfigLineParts = allInputLines[0].split(' ');
+    const totalInitialItemsCount = Number(initialConfigLineParts[0]); // Corresponds to 'n'
+    const totalProcessingDaysCount = Number(initialConfigLineParts[1]); // Corresponds to 'm'
 
-  // Prepare a collection to store all available tasks.
-  // Each task is represented as an object for clear property access.
-  const pendingTasks = [];
-  for (let i = 0; i < allInputLines.length; i++) {
-    const taskDetails = allInputLines[i].split(' ');
-    // Convert string components to numeric types for computation.
-    const requiredProcessingTime = parseInt(taskDetails[0], 10);
-    const associatedMonetaryValue = parseInt(taskDetails[1], 10);
-    // Add the structured task object to our list.
-    pendingTasks.push({
-      durationNeeded: requiredProcessingTime,
-      financialReward: associatedMonetaryValue,
-    });
-  }
+    // Remove the configuration line, leaving only the item data lines.
+    allInputLines.shift();
 
-  // Initialize a running total for the profit accumulated over all days.
-  let cumulativeEarnings = 0;
+    // This array will hold the item strings that are still available for selection.
+    // It is dynamically updated in each iteration, reflecting the original logic.
+    let currentlyAvailableItemStrings = allInputLines;
+    let accumulatedTotalValue = 0; // Corresponds to 'sum'
 
-  // Iterate through each day of the simulation period.
-  // 'currentDayIndex' tracks the progression through the processing cycles.
-  for (let currentDayIndex = 0; currentDayIndex < numberOfSimulationDays; currentDayIndex++) {
-    // Determine how many days are still left until the end of the simulation.
-    const remainingDaysForCompletion = numberOfSimulationDays - currentDayIndex;
+    // Iterate through each processing day, from day 0 up to M-1.
+    for (let currentDayIndex = 0; currentDayIndex < totalProcessingDaysCount; currentDayIndex++) {
+        // Calculate the number of days remaining for processing, including the current day.
+        const daysRemainingForSelection = totalProcessingDaysCount - currentDayIndex;
+        let itemsEligibleForCurrentDay = []; // Corresponds to 'tempArray'
 
-    let bestTaskCandidateIndex = -1; // Index of the most valuable task found for the current day.
-    let highestRewardForDay = -1;    // The maximum reward value found among eligible tasks.
-
-    // Scan through all currently available tasks to find the most suitable one for this specific day.
-    for (let currentTaskPosition = 0; currentTaskPosition < pendingTasks.length; currentTaskPosition++) {
-      const activeTask = pendingTasks[currentTaskPosition];
-
-      // Check if the task's required duration can be met within the remaining simulation days.
-      if (activeTask.durationNeeded <= remainingDaysForCompletion) {
-        // If this task offers a higher reward than any eligible task found so far,
-        // update our choice for the day.
-        if (activeTask.financialReward > highestRewardForDay) {
-          highestRewardForDay = activeTask.financialReward;
-          bestTaskCandidateIndex = currentTaskPosition;
+        // First pass: Filter currently available items based on their lead time.
+        // Only items whose lead time is less than or equal to the remaining days are eligible.
+        for (let i = 0; i < currentlyAvailableItemStrings.length; i++) {
+            const itemEntry = currentlyAvailableItemStrings[i];
+            const details = extractItemDetails(itemEntry); // Use the helper function
+            if (details.leadTime <= daysRemainingForSelection) {
+                itemsEligibleForCurrentDay.push(itemEntry);
+            }
         }
-      }
+
+        let highestValueFoundThisDay = 0; // Corresponds to 'max'
+        let indexOfHighestValueInEligible = -1; // Corresponds to 'maxIndex', index within itemsEligibleForCurrentDay
+
+        // Second pass: Find the item with the highest value among the eligible ones.
+        for (let j = 0; j < itemsEligibleForCurrentDay.length; j++) {
+            const eligibleItemEntry = itemsEligibleForCurrentDay[j];
+            const eligibleItemDetails = extractItemDetails(eligibleItemEntry); // Use the helper function
+            if (eligibleItemDetails.value > highestValueFoundThisDay) {
+                highestValueFoundThisDay = eligibleItemDetails.value;
+                indexOfHighestValueInEligible = j;
+            }
+        }
+
+        // Add the value of the selected (highest value) item to the running total.
+        accumulatedTotalValue += highestValueFoundThisDay;
+
+        // Remove the selected item from the list of eligible items.
+        // This modification is crucial as itemsEligibleForCurrentDay will become
+        // the new currentlyAvailableItemStrings for the next iteration.
+        if (indexOfHighestValueInEligible !== -1) {
+            itemsEligibleForCurrentDay.splice(indexOfHighestValueInEligible, 1);
+        }
+        
+        // Update the list of available items for the next day's processing.
+        // This mimics the original 'input = tempArray;' behavior.
+        currentlyAvailableItemStrings = itemsEligibleForCurrentDay;
     }
 
-    // After evaluating all available tasks for the current day,
-    // if a viable task was identified (i.e., 'bestTaskCandidateIndex' is not -1).
-    if (bestTaskCandidateIndex !== -1) {
-      // Add the reward of the selected task to the overall earnings.
-      cumulativeEarnings += highestRewardForDay;
+    // Output the final accumulated sum.
+    console.log(accumulatedTotalValue);
+}
 
-      // Remove the chosen task from the list of pending tasks, as it has now been processed.
-      pendingTasks.splice(bestTaskCandidateIndex, 1);
-    }
-    // If no eligible task was found for the day, no profit is added, and the list of tasks remains unchanged.
-  }
-
-  // Return the final calculated total earnings.
-  return cumulativeEarnings;
-};
-
-// Standard boilerplate for reading input from stdin in a Node.js environment.
-const fileSystemModule = require("fs");
-const programInputData = fileSystemModule.readFileSync("/dev/stdin", "utf8");
-
-// Execute the main logic with the provided input and display the outcome.
-console.log(calculateOptimalValue(programInputData));
+// Standard input reading for competitive programming environments.
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

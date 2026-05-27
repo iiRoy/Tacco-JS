@@ -1,13 +1,17 @@
-// This function processes the incoming string data.
-function ProcessInputData( incomingText )
-{
-    const segmentArray = incomingText.split(" ");
-    const firstPart = segmentArray[0];
-    const secondPart = segmentArray[1];
+// This function serves as the primary entry point for processing input data.
+function ProcessInput(rawData) {
+    // The raw input string is divided into segments based on a space delimiter.
+    let parsedSegments = rawData.split(" ");
 
-    // Display the combined result.
+    // The initial segment is assigned to a variable.
+    let firstPart = parsedSegments[0];
+    // The subsequent segment is assigned to another variable.
+    let secondPart = parsedSegments[1];
+
+    // The concatenated value of the second part followed by the first part is printed to the console.
     console.log(secondPart + firstPart);
 }
 
-// The following code block handles standard input reading and function invocation. Do not modify it.
-ProcessInputData( require("fs").readFileSync("/dev/stdin", "utf8") );
+// This section handles standard input/output and should not be altered.
+// It reads the entire content from standard input and passes it to the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,22 +1,17 @@
-function ExecuteSequenceCalculation(rawData) {
-  const processedLines = rawData.trim().split('\n');
-  const iterationCount = parseInt(processedLines[0].split(' ')[0], 10);
+function processInput(rawText) {
+    const [firstLineContent] = rawText.trim().split('\n');
+    const [iterationCount] = firstLineContent.split(' ').map(Number);
 
-  const determineIncrement = (precedingValue) => {
-    const nextCandidateString = String(precedingValue + 1);
-    const numberOfDigits = nextCandidateString.length;
-    return Math.pow(10, numberOfDigits - 1);
-  };
-
-  const produceSeries = (stepIndex, currentValue) => {
-    if (stepIndex >= iterationCount) {
-      return;
+    function generateAndDisplay(currentValue, remainingIterations) {
+        if (remainingIterations === 0) {
+            return;
+        }
+        console.log(currentValue);
+        const stepMagnitude = Math.pow(10, (currentValue + 1).toString().length - 1);
+        generateAndDisplay(currentValue + stepMagnitude, remainingIterations - 1);
     }
-    console.log(currentValue);
-    const nextValue = currentValue + determineIncrement(currentValue);
-    produceSeries(stepIndex + 1, nextValue);
-  };
 
-  produceSeries(0, 1);
+    generateAndDisplay(1, iterationCount);
 }
-ExecuteSequenceCalculation(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

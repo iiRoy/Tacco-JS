@@ -1,36 +1,30 @@
-function AnalyzeDimensions ( rawInputData )
-{
-  // The input is provided as a single text block.
-  // We first parse it into an array of individual text lines.
-  const dataLines = rawInputData.split ( "\n" );
+function ProcessInput(rawData) {
+  // This function processes the raw text input provided.
+  // Each line of the input string is separated by a newline character.
+  let lineData = rawData.split("\n");
 
-  // The first line holds space-separated dimension values.
-  const dimStringsOne = dataLines [ 0 ] .split ( " " );
+  // The first line contains dimensions for the main container.
+  let firstLineParts = lineData[0].split(" ");
+  // The second line contains dimensions for the stencil or paint area.
+  let secondLineParts = lineData[1].split(" ");
 
-  // The second line also contains space-separated dimension values.
-  const dimStringsTwo = dataLines [ 1 ] .split ( " " );
+  // Extract the number of rows for the main container.
+  let containerRows = firstLineParts[0];
+  // Extract the number of columns for the main container.
+  let containerCols = firstLineParts[1];
 
-  // Extracting the row count for the main area from the first set.
-  const primaryHeight = dimStringsOne [ 0 ];
+  // Extract the number of rows for the stencil.
+  let stencilRows = secondLineParts[0];
+  // Extract the number of columns for the stencil.
+  let stencilCols = secondLineParts[1];
 
-  // Extracting the column count for the main area from the first set.
-  const primaryWidth = dimStringsOne [ 1 ];
+  // Calculate the final result by multiplying the differences in dimensions.
+  let resultValue = (containerRows - stencilRows) * (containerCols - stencilCols);
 
-  // Retrieving the row count for the sub-component from the second set.
-  const secondaryHeight = dimStringsTwo [ 0 ];
-
-  // Retrieving the column count for the sub-component from the second set.
-  const secondaryWidth = dimStringsTwo [ 1 ];
-
-  // Compute the resultant value by subtracting corresponding dimensions
-  // and then multiplying the differences.
-  const finalCalculatedValue = ( primaryHeight - secondaryHeight ) * ( primaryWidth - secondaryWidth );
-
-  // Print the computed numerical result to the standard output.
-  console.log ( finalCalculatedValue );
+  // Output the computed result to the standard console.
+  console.log(resultValue);
 }
 
-
-// This trailing section handles the environment-specific input/output.
-// It should typically remain untouched to ensure proper execution.
-AnalyzeDimensions ( require ( "fs" ) .readFileSync ( "/dev/stdin" , "utf8" ) );
+// The following line is essential for the program's execution environment.
+// It reads all data from standard input and passes it to the processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

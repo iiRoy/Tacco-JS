@@ -1,28 +1,29 @@
-const processInputData = (inputContent) => {
-    const contentLines = inputContent.split('\n');
-    const firstNumericValue = parseInt(contentLines[0], 10);
-    const secondLineNumbers = contentLines[1].split(' ').map(Number);
+function processData(sourceText) {
+    const lines = sourceText.split('\n');
+    const primaryValue = Number(lines[0]);
+    const numberList = lines[1].split(' ').map(Number);
 
-    const sortedUniqueElements = secondLineNumbers
-        .sort((valA, valB) => valA - valB)
-        .filter((currentVal, idx, arrRef) => idx === 0 || currentVal !== arrRef[idx - 1]);
+    const distinctItems = new Set(numberList);
+    const distinctCount = distinctItems.size;
 
-    const uniqueElementCount = sortedUniqueElements.length;
+    const resultCollection = [primaryValue];
 
-    const collectionOfResults = [];
-    collectionOfResults.push(firstNumericValue);
+    function generateSubsequent(currentDivisor, limit, currentCollection) {
+        if (currentDivisor > limit) {
+            return currentCollection;
+        }
 
-    const divisorSeries = Array.from({ length: firstNumericValue - 1 }, (_, offset) => offset + 2);
-
-    const calculatedSegment = divisorSeries.map(currentDivisor => {
-        return (uniqueElementCount < currentDivisor)
+        const calculatedValue = currentDivisor > distinctCount
             ? 0
-            : Math.floor(uniqueElementCount / currentDivisor);
-    });
+            : Math.floor(distinctCount / currentDivisor);
 
-    return collectionOfResults.concat(calculatedSegment);
-};
+        currentCollection.push(calculatedValue);
+        return generateSubsequent(currentDivisor + 1, limit, currentCollection);
+    }
 
-const rawFileContent = require("fs").readFileSync("/dev/stdin", "utf8");
-const finalOutputValues = processInputData(rawFileContent);
-console.log(finalOutputValues.join('\n'));
+    generateSubsequent(2, primaryValue, resultCollection);
+
+    console.log(resultCollection.join('\n'));
+}
+
+processData(require("fs").readFileSync("/dev/stdin", "utf8"));

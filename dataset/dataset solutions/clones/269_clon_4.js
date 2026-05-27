@@ -1,60 +1,53 @@
-const retrieveInputData = () => {
-    return require('fs').readFileSync('/dev/stdin', 'utf8');
-};
+const fileSystem = require('fs');
 
-const processSquareDimensions = (inputContent) => {
-    return inputContent.trim().split("\n").map(Number);
-};
+const processGridOperations = (inputData) => {
+    const numericInputs = inputData.trim().split("\n").map(Number);
 
-const generatePaddedNumber = (val) => {
-    return String(val).padStart(4, ' ');
-};
+    for (let inputIndex = 0; inputIndex < numericInputs.length; inputIndex++) {
+        const currentGridSize = numericInputs[inputIndex];
 
-const displayMatrix = (matrix) => {
-    console.log(matrix.map(row => row.join('')).join('\n'));
-};
-
-const constructSquare = (sideLength) => {
-    if (sideLength === 0) return;
-
-    const totalElements = sideLength * sideLength;
-    const initialValueMarker = -1;
-
-    const magicMatrix = Array.from({ length: sideLength }, () => Array(sideLength).fill(initialValueMarker));
-
-    let currentColumnPosition = Math.floor(sideLength / 2);
-    let currentRowPosition = currentColumnPosition + 1;
-
-    currentRowPosition = (currentRowPosition % sideLength + sideLength) % sideLength;
-    currentColumnPosition = (currentColumnPosition % sideLength + sideLength) % sideLength;
-
-    magicMatrix[currentRowPosition][currentColumnPosition] = generatePaddedNumber(1);
-
-    let numberToFill = 2;
-
-    let nextAttemptRow = currentRowPosition + 1;
-    let nextAttemptColumn = currentColumnPosition + 1;
-
-    while (numberToFill <= totalElements) {
-        const effectiveRow = (nextAttemptRow % sideLength + sideLength) % sideLength;
-        const effectiveColumn = (nextAttemptColumn % sideLength + sideLength) % sideLength;
-
-        if (magicMatrix[effectiveRow][effectiveColumn] !== initialValueMarker) {
-            nextAttemptRow = effectiveRow + 1;
-            nextAttemptColumn = effectiveColumn - 1;
-        } else {
-            magicMatrix[effectiveRow][effectiveColumn] = generatePaddedNumber(numberToFill);
-            numberToFill++;
-
-            nextAttemptRow = effectiveRow + 1;
-            nextAttemptColumn = effectiveColumn + 1;
+        if (currentGridSize === 0) {
+            break;
         }
-    }
 
-    displayMatrix(magicMatrix);
+        const maximumValue = currentGridSize * currentGridSize;
+
+        const gridContainer = Array.from({ length: currentGridSize }, () =>
+            Array.from({ length: currentGridSize }, () => -1)
+        );
+
+        let startColumn = Math.floor(currentGridSize / 2);
+        let startRow = startColumn + 1;
+
+        gridContainer[startRow][startColumn] = ("   " + 1).slice(-4);
+
+        let valueToPlace = 2;
+        let currentRowPosition = startRow;
+        let currentColPosition = startColumn;
+
+        while (valueToPlace <= maximumValue) {
+            let potentialNextRow = (currentRowPosition + 1) % currentGridSize;
+            let potentialNextCol = (currentColPosition + 1) % currentGridSize;
+
+            if (gridContainer[potentialNextRow][potentialNextCol] !== -1) {
+                // If the (row+1, col+1) position is occupied,
+                // the actual next position is (row+1, col-1) relative to the *current* position.
+                currentRowPosition = (currentRowPosition + 1) % currentGridSize;
+                currentColPosition = (currentColPosition - 1 + currentGridSize) % currentGridSize;
+            } else {
+                // If the (row+1, col+1) position is empty,
+                // that becomes the new current position.
+                currentRowPosition = potentialNextRow;
+                currentColPosition = potentialNextCol;
+            }
+
+            gridContainer[currentRowPosition][currentColPosition] = ("   " + valueToPlace).slice(-4);
+            valueToPlace++;
+        }
+
+        console.log(gridContainer.map(row => row.join("")).join("\n"));
+    }
 };
 
-const rawSource = retrieveInputData();
-const dimensionsCollection = processSquareDimensions(rawSource);
-
-dimensionsCollection.forEach(constructSquare);
+const rawInput = fileSystem.readFileSync('/dev/stdin', 'utf8');
+processGridOperations(rawInput);

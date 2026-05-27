@@ -1,51 +1,43 @@
 'use strict';
-process.stdInput.continueProcessing( );
-process.stdInput.setCharEncoding( 'UTF8' );
- 
-var receivedContent = '';
-var currentPositionIndex = 0;
- 
-process.stdInput.on( 'inputData' , incomingChunk => {
-    receivedContent += incomingChunk;
-} );
- 
-process.stdInput.on( 'streamEnd' , ( ) => {
-    receivedContent = receivedContent.split( '\n' ) ;
-    executeCoreLogic( );
-} );
- 
-/**
- * Retrieves the subsequent line from the buffered input.
- * @returns {string} The next line.
- */
-function fetchNextLine( ) {
-    return receivedContent[currentPositionIndex++];
+process.stdin.resume();
+
+process.stdin.setEncoding('utf-8');
+
+let receivedData = '';
+let lineIndex = 0;
+
+process.stdin.on('data', chunkOfInput => {
+    receivedData += chunkOfInput;
+});
+
+process.stdin.on('end', () => {
+    receivedData = receivedData.split('\n');
+    executePrimaryLogic();
+});
+
+function fetchLine() {
+    return receivedData[lineIndex++];
 }
 
-/**
- * Custom output function to replace 'print'.
- * @param {string} message The message to display.
- */
-function outputResult(message) {
-    console.log(message);
-}
- 
-// ======================================================
-// ================= Core Algorithm =====================
- 
-function executeCoreLogic( ) {
-     
-    var initialNum = parseInt( fetchNextLine( ) );
-    var inputStringValue = fetchNextLine( );
-    
-    var firstSegment = inputStringValue.slice( 0, Math.trunc( initialNum / 2 ) );
-    var secondSegment = inputStringValue.slice( initialNum / 2 );
-    
-    if ( inputStringValue.length === 1 ) {
-        outputResult( 'NO' );
+// This section contains the core algorithm logic.
+// The primary function processes input and produces output.
+
+function executePrimaryLogic() {
+
+    // Read the integer value for the length.
+    var inputLength = parseInt(fetchLine());
+    // Read the string value.
+    var inputSequence = fetchLine();
+
+    // Divide the string into two parts based on the length.
+    var firstHalf = inputSequence.slice(0, Math.floor(inputLength / 2));
+    var secondHalf = inputSequence.slice(inputLength / 2);
+
+    // Check for a special case where the string has only one character.
+    if (inputSequence.length === 1) {
+        print('No');
     }
-    else {
-        outputResult( firstSegment === secondSegment ? 'YES' : 'NO' );
-    }
-    
+    // Compare the two halves and print the result.
+    print(firstHalf === secondHalf ? 'Yes' : 'No');
+
 }

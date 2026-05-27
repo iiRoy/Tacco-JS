@@ -1,29 +1,38 @@
 "use strict";
 
-const evaluateCondition = (sourceText) => {
-    const dataRows = sourceText.split("\n");
-    
-    const limitValue = Number(dataRows.pop()); 
-    
-    const collectedMeasurements = dataRows
-        .filter((_, idx) => idx < 5) 
-        .map(Number);
-    
-    const minimumObservation = collectedMeasurements.reduce((currentMin, value) => Math.min(currentMin, value), Infinity);
-    const maximumObservation = collectedMeasurements.reduce((currentMax, value) => Math.max(currentMax, value), -Infinity);
-    
-    const differenceExtent = maximumObservation - minimumObservation;
-    
-    if (differenceExtent > limitValue) {
-        console.log("Unacceptable!");
+const processInputData = (inputString) => {
+    const inputLines = inputString.split("\n");
+    const thresholdValue = parseInt(inputLines.pop(), 10);
+    const measurementPoints = inputLines.slice(0, 5).map(val => parseInt(val, 10));
+
+    if (measurementPoints.length < 2) {
+        console.log("Yay!");
+        return;
+    }
+
+    const { maxObservedDifference } = measurementPoints.reduce((accumulator, currentPoint, currentIndex) => {
+        if (currentIndex === 0) {
+            return {
+                minSoFar: currentPoint,
+                maxObservedDifference: -Infinity,
+            };
+        }
+
+        const currentDifference = currentPoint - accumulator.minSoFar;
+        const newMaxObservedDifference = Math.max(accumulator.maxObservedDifference, currentDifference);
+        const newMinSoFar = Math.min(accumulator.minSoFar, currentPoint);
+
+        return {
+            minSoFar: newMinSoFar,
+            maxObservedDifference: newMaxObservedDifference,
+        };
+    }, { minSoFar: Infinity, maxObservedDifference: -Infinity });
+
+    if (maxObservedDifference > thresholdValue) {
+        console.log(":(");
     } else {
-        console.log("Acceptable!");
+        console.log("Yay!");
     }
 };
 
-const performExecution = () => {
-    const retrievedContent = require('node:fs').readFileSync(0, 'utf8');
-    evaluateCondition(retrievedContent);
-};
-
-performExecution();
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

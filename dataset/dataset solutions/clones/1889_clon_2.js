@@ -1,25 +1,16 @@
-/*
- * This module processes a given text input.
- * It checks the first line for a specific string value
- * and outputs a corresponding result to the console.
- */
-function analyzeTextData( rawContent ) {
+function processInput(rawData) {
+  // Extract the initial line from the provided raw data string.
+  let firstLine = rawData.split("\n")[0];
 
-    // Extract the very first line from the provided raw text content.
-    let firstLineOfInput = rawContent
-                                .split( "\n" )
-                                [ 0 ];
+  // Evaluate the content of the extracted line.
+  if (firstLine === "ABC") {
+    // If the line matches "ABC", print "ARC" to the console.
+    console.log("ARC");
+  } else {
+    // Otherwise, print "ABC" to the console.
+    console.log("ABC");
+  }
+}
 
-    if  (  firstLineOfInput  ===  "ABC"  )
-    {
-        console.log( "ARC" );
-    }
-    else
-    {
-        console.log( "ABC" );
-    }
-
-} // End of analyzeTextData function definition.
-
-// Read standard input and pass it to our processing function.
-analyzeTextData( require( 'fs' ).readFileSync( '/dev/stdin', 'utf8' ) );
+// Read input from standard input and pass it to the processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

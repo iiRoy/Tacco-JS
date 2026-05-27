@@ -1,67 +1,120 @@
-const graphProcessor = (() => {
-    // Acquire all input content synchronously, then prepare for sequential access.
-    const inputContent = require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");
-    let currentLineIndex = 0;
+const fileSystem = require("fs");
 
-    // Utility to parse the next line into an array of numbers.
-    const retrieveNumericLine = () => {
-        return inputContent[currentLineIndex++].split(' ').map(Number);
-    };
+class DataStream {
+  #sourceLines;
+  #currentIdx;
+  #maxIdx;
 
-    // Main execution function for graph analysis.
-    const processGraphData = () => {
-        // First line contains total number of vertices and edges.
-        const [vertexCount, edgeCount] = retrieveNumericLine();
+  constructor(rawData) {
+    this.#sourceLines = rawData.trim().split("\n");
+    this.#currentIdx = 0;
+    this.#maxIdx = this.#sourceLines.length;
+  }
 
-        // Initialize adjacency list using a Map for vertex-to-neighbor mappings.
-        const adjacencyStructure = new Map();
-        for (let i = 0; i < vertexCount; i++) {
-            adjacencyStructure.set(i, new Set()); // Each vertex maps to a Set of its connected neighbors.
+  retrieveNext() {
+    if (!this.hasMore()) {
+      throw new Error("NoMoreElementsException: No further elements in stream.");
+    }
+    const element = this.#sourceLines[this.#currentIdx];
+    this.#currentIdx++;
+    return element;
+  }
+
+  hasMore() {
+    return this.#currentIdx < this.#maxIdx;
+  }
+
+  // Transforms input based on a numeric code
+  // 1: parseInt
+  // 2: split by space
+  // 4: split by space, map to Number
+  // 6: split by char
+  // 7: split by char, map to Number
+  // 8: join by space
+  // 9: join by newline
+  // 0: join without separator
+  // default: return as is
+  transformInput(value, code) {
+    try {
+      const operations = {
+        1: (v) => parseInt(v),
+        2: (v) => v.split(" "),
+        4: (v) => v.split(" ").map(Number),
+        6: (v) => v.split(""),
+        7: (v) => v.split("").map(Number),
+        8: (v) => v.join(" "),
+        9: (v) => v.join("\n"),
+        0: (v) => v.join(""),
+      };
+      return operations[code] ? operations[code](value) : value;
+    } catch (e) {
+      return value;
+    }
+  }
+}
+
+const dataProcessor = new DataStream(fileSystem.readFileSync("/dev/stdin", "utf8"));
+
+function getNextLine() {
+  return dataProcessor.retrieveNext();
+}
+
+function checkMoreLines() {
+  return dataProcessor.hasMore();
+}
+
+function emitOutput(content) {
+  console.log(content);
+}
+
+function emitError(content) {
+  console.error(content);
+}
+
+function executeGraphAnalysis() {
+  const initialParams = dataProcessor.transformInput(getNextLine(), 4);
+  const nodeCount = initialParams[0];
+  const edgeCount = initialParams[1];
+
+  // Graph representation: Map<nodeIndex, { connections: Set<nodeIndex>, visited: boolean }>
+  const graphStructure = new Map();
+  for (let i = 0; i < nodeCount; i++) {
+    graphStructure.set(i, { connections: new Set(), visited: false });
+  }
+
+  for (let i = 0; i < edgeCount; i++) {
+    const edge = dataProcessor.transformInput(getNextLine(), 4);
+    const nodeA = edge[0] - 1;
+    const nodeB = edge[1] - 1;
+    graphStructure.get(nodeA).connections.add(nodeB);
+    graphStructure.get(nodeB).connections.add(nodeA);
+  }
+
+  let componentCounter = 0;
+
+  for (let i = 0; i < nodeCount; i++) {
+    const currentNodeState = graphStructure.get(i);
+    if (!currentNodeState.visited) {
+      componentCounter++;
+      const traversalQueue = [i];
+      currentNodeState.visited = true;
+
+      let queuePointer = 0;
+      while (queuePointer < traversalQueue.length) {
+        const currentVertex = traversalQueue[queuePointer++];
+        const neighbors = graphStructure.get(currentVertex).connections;
+
+        for (const neighbor of neighbors) {
+          const neighborState = graphStructure.get(neighbor);
+          if (!neighborState.visited) {
+            neighborState.visited = true;
+            traversalQueue.push(neighbor);
+          }
         }
+      }
+    }
+  }
+  emitOutput(componentCounter);
+}
 
-        // Populate the adjacency structure with edge information.
-        for (let i = 0; i < edgeCount; i++) {
-            const [nodeA, nodeB] = retrieveNumericLine();
-            // Convert 1-based input to 0-based indexing.
-            const idxA = nodeA - 1;
-            const idxB = nodeB - 1;
-            adjacencyStructure.get(idxA).add(idxB);
-            adjacencyStructure.get(idxB).add(idxA); // Undirected graph.
-        }
-
-        // Keep track of visited nodes using a Set.
-        const visitedNodesRegistry = new Set();
-        let componentCounter = 0; // Counts the number of distinct connected components.
-
-        // Iterate through all potential vertices to find unvisited ones and start traversals.
-        for (let vertexIdentifier = 0; vertexIdentifier < vertexCount; vertexIdentifier++) {
-            if (!visitedNodesRegistry.has(vertexIdentifier)) {
-                componentCounter++; // Found a new connected component.
-                
-                // Perform Breadth-First Search (BFS) to explore this component.
-                const discoveryQueue = [vertexIdentifier];
-                visitedNodesRegistry.add(vertexIdentifier); // Mark starting node as visited.
-
-                while (discoveryQueue.length > 0) {
-                    const activeVertex = discoveryQueue.shift(); // Get next vertex to explore.
-                    
-                    // Explore all neighbors of the active vertex.
-                    for (const neighborIdentifier of adjacencyStructure.get(activeVertex)) {
-                        if (!visitedNodesRegistry.has(neighborIdentifier)) {
-                            visitedNodesRegistry.add(neighborIdentifier); // Mark neighbor as visited.
-                            discoveryQueue.push(neighborIdentifier); // Add neighbor to queue for further exploration.
-                        }
-                    }
-                }
-            }
-        }
-        // Output the final count of connected components.
-        console.log(componentCounter);
-    };
-
-    // Expose the main processing function.
-    return { commence: processGraphData };
-})();
-
-// Initiate the graph analysis.
-graphProcessor.commence();
+executeGraphAnalysis();

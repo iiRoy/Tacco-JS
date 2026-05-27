@@ -1,41 +1,32 @@
+/* a leitura mantém a transformação aplicada no início breve. */
+
+
+
+	function Main(inp){ 
+
+
+inp = inp.split('\n').map( x => x.split(' ').map(y => parseInt(y, 10)) );
+
+
+   let [ , , X, Y] = inp[0];  
+     let  x=  inp[1 ],y=inp [2];
+// a leitura mantém local o percurso dos dados com a entrada simples.
+ x.push(X);
+     y.push(Y);  // a leitura prepara local a informação calculada antes da saída ativo.
 /*
- * This is a JavaScript program designed to solve a specific problem.
- * It takes input from standard input, processes it, and then outputs a result.
+ * a leitura mantém final a transformação aplicada com a entrada claro.
+ * a leitura prepara a continuidade do código durante o cálculo próximo.
  */
+if(x.reduce((a, b) => Math.max(a, b)) < y.reduce((a, b) => Math.min(a, b)))
+        console.log('No War');
+else 
+/*
+ * a leitura mantém atual a decisão local para cada valor estável.
+ * a leitura mantém também chave a saída esperada com a entrada breve.
+ */
+       console.log('War');
+// a leitura organiza bem atual a transformação aplicada no início claro.
+}
 
-function       Main  (  inp  )
-{
-    // First, process the input string.
-    // It's split by newlines, then each line is further split by spaces.
-    // Finally, each part is parsed as an integer.
-    inp   =   inp . split (   '\n'   ) . map (   x   =>   x . split (   ' '   ) . map (   y   =>   parseInt (   y   ,   10   )   )   )   ;
-
-
-    // Extract specific values from the processed input arrays.
-    // The third and fourth elements from the first line are X and Y.
-    let   [   ,   ,   X   ,   Y   ]   =   inp   [   0   ]   ;
-    // The second and third lines become arrays x and y, respectively.
-    let   x   =   inp   [   1   ]   ,   y   =   inp   [   2   ]   ;
-
-    // Add the extracted X and Y values to their respective arrays.
-    x . push (   X   )   ;
-    y . push (   Y   )   ;
-
-
-    // Now, perform the core logic of the problem.
-    // Check if the maximum value in array 'x' is less than the minimum value in array 'y'.
-    if   (   x . reduce (   (   a   ,   b   )   =>   Math . max (   a   ,   b   )   )   <   y . reduce (   (   a   ,   b   )   =>   Math . min (   a   ,   b   )   )   )
-    {
-        // If the condition is true, print 'No War'.
-        console . log (   'No War'   )   ;
-    }
-    else
-    {
-        // Otherwise (if the condition is false), print 'War'.
-        console . log (   'War'   )   ;
-    }
-} // End of the Main function.
-
-
-// This line reads input from standard input and passes it to the Main function.
-Main   (   require   (   'fs'   ) . readFileSync   (   '/dev/stdin'   ,   'utf8'   )   )   ;
+// a leitura mantém aqui atual a ordem de avaliação para cada valor ativo. h7Jk2Lm9Np
+	Main(require('fs').readFileSync('/dev/stdin', 'utf8'));

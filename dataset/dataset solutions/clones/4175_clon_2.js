@@ -1,100 +1,104 @@
-function ProcessData(rawData) {
-  // Split the input string into lines
-  rawData = rawData.split('\n');
+function ProcessInput(rawData) {
+  // Split the raw input string into lines
+  rawData = rawData.split("\n");
 
   // Parse the number of elements from the first line
-  const countElements = parseInt(rawData[0].split(' ')[0], 10);
+  let elementCount = parseInt(rawData[0].split(" ")[0]);
 
-  // Split the second line into an array of string numbers
-  let strNumbers = rawData[1].split(' ');
+  // Split the second line into an array of number strings
+  let numStrings = rawData[1].split(" ");
 
-  // Initialize an array to store numeric values, filled with zeros
-  const numArray = new Array(countElements).fill(0);
+  // Initialize the main data array with zeros
+  let dataArray = new Array(elementCount).fill(0);
 
-  // Initialize a list to store transformation operations
-  const operationsList = [];
+  // Initialize an array to store operation pairs
+  let operationList = [];
 
-  // Initialize variables for tracking the highest and lowest values in the array
-  let highestVal = -Math.pow(10, 6);
-  let lowestVal = Math.pow(10, 6);
+  // Initialize variables for tracking maximum and minimum values
+  // Using a large negative number for initial max and large positive for initial min
+  let currentMax = -Math.pow(10, 6);
+  let currentMin = Math.pow(10, 6);
 
-  // Iterate through the input numbers to populate the array and find min/max
-  for (let idx = 0; idx < countElements; idx++) {
-    numArray[idx] = parseInt(strNumbers[idx], 10);
-    highestVal = Math.max(numArray[idx], highestVal);
-    lowestVal = Math.min(numArray[idx], lowestVal);
+  // Iterate through the input numbers to populate dataArray and find initial max/min
+  for (let idx = 0; idx < elementCount; idx++) {
+    dataArray[idx] = parseInt(numStrings[idx]);
+    currentMax = Math.max(dataArray[idx], currentMax);
+    currentMin = Math.min(dataArray[idx], currentMin);
   }
 
-  // Conditional logic based on the range of values in the array
-  if (lowestVal >= 0) {
+  // Conditional logic based on the range of numbers in the array
+  if (currentMin >= 0) {
     // Case 1: All numbers are non-negative
-    for (let idx = 0; idx < countElements; idx++) {
-      if (idx > 0 && numArray[idx] < numArray[idx - 1]) {
-        // If an element is smaller than its predecessor, apply an operation
-        const currentOp = [idx + 1, idx + 2];
-        operationsList.push(currentOp);
-        numArray[idx] = numArray[idx - 1] + numArray[idx];
+    // Iterate from left to right, ensuring non-decreasing order
+    for (let idx = 0; idx < elementCount; idx++) {
+      // If a number is smaller than its predecessor, add the predecessor to it
+      if (idx > 0 && dataArray[idx] < dataArray[idx - 1]) {
+        let opPair = [idx + 1, idx + 2]; // Store 1-based indices for the operation
+        operationList.push(opPair);
+        dataArray[idx] = dataArray[idx - 1] + dataArray[idx];
       }
     }
-  } else if (highestVal < 0) {
+  } else if (currentMax < 0) {
     // Case 2: All numbers are negative
-    for (let idx = countElements - 1; idx >= 0; idx--) {
-      if (idx < countElements - 1 && numArray[idx] > numArray[idx + 1]) {
-        // If an element is larger than its successor, apply an operation
-        const currentOp = [idx + 2, idx + 1];
-        operationsList.push(currentOp);
-        numArray[idx] = numArray[idx + 1] + numArray[idx];
+    // Iterate from right to left, ensuring non-increasing order
+    for (let idx = elementCount - 1; idx >= 0; idx--) {
+      // If a number is larger than its successor, add the successor to it
+      if (idx < elementCount - 1 && dataArray[idx] > dataArray[idx + 1]) {
+        let opPair = [idx + 2, idx + 1]; // Store 1-based indices for the operation
+        operationList.push(opPair);
+        dataArray[idx] = dataArray[idx + 1] + dataArray[idx];
       }
     }
-  } else if (highestVal > Math.abs(lowestVal)) {
-    // Case 3: Mixed signs, and the positive maximum has a larger absolute value
-    for (let idx = 0; idx < countElements; idx++) {
-      if (numArray.indexOf(highestVal) !== idx) {
-        // Add the maximum value to elements that are not the maximum itself
-        const currentOp = [numArray.indexOf(highestVal) + 1, idx + 1];
-        operationsList.push(currentOp);
-        numArray[idx] = numArray[idx] + highestVal;
+  } else if (currentMax > Math.abs(currentMin)) {
+    // Case 3: Mixed positive/negative, and the maximum positive value is greater than the absolute minimum negative value
+    // First, propagate the maximum value to all other elements
+    for (let idx = 0; idx < elementCount; idx++) {
+      // If the current element is not the maximum element itself
+      if (dataArray.indexOf(currentMax) !== idx) {
+        let opPair = [dataArray.indexOf(currentMax) + 1, idx + 1]; // Store 1-based indices
+        operationList.push(opPair);
+        dataArray[idx] = dataArray[idx] + currentMax;
       }
     }
-    // After the first pass, ensure non-decreasing order
-    for (let idx = 0; idx < countElements; idx++) {
-      if (idx > 0 && numArray[idx] < numArray[idx - 1]) {
-        // If an element is smaller than its predecessor, apply an operation
-        const currentOp = [idx, idx + 1];
-        operationsList.push(currentOp);
-        numArray[idx] = numArray[idx - 1] + numArray[idx];
+    // Then, ensure non-decreasing order from left to right
+    for (let idx = 0; idx < elementCount; idx++) {
+      if (idx > 0 && dataArray[idx] < dataArray[idx - 1]) {
+        let opPair = [idx, idx + 1]; // Store 1-based indices
+        operationList.push(opPair);
+        dataArray[idx] = dataArray[idx - 1] + dataArray[idx];
       }
     }
-  } else if (Math.abs(lowestVal) > highestVal) {
-    // Case 4: Mixed signs, and the negative minimum has a larger absolute value
-    for (let idx = 0; idx < countElements; idx++) {
-      if (numArray.indexOf(lowestVal) !== idx) {
-        // Add the minimum value to elements that are not the minimum itself
-        const currentOp = [numArray.indexOf(lowestVal) + 1, idx + 1];
-        operationsList.push(currentOp);
-        numArray[idx] = numArray[idx] + lowestVal;
+  } else if (Math.abs(currentMin) > currentMax) {
+    // Case 4: Mixed positive/negative, and the absolute minimum negative value is greater than the maximum positive value
+    // First, propagate the minimum value to all other elements
+    for (let idx = 0; idx < elementCount; idx++) {
+      // If the current element is not the minimum element itself
+      if (dataArray.indexOf(currentMin) !== idx) {
+        let opPair = [dataArray.indexOf(currentMin) + 1, idx + 1]; // Store 1-based indices
+        operationList.push(opPair);
+        dataArray[idx] = dataArray[idx] + currentMin;
       }
     }
-    // After the first pass, ensure non-increasing order
-    for (let idx = countElements - 1; idx >= 0; idx--) {
-      if (idx < countElements - 1 && numArray[idx] > numArray[idx + 1]) {
-        // If an element is larger than its successor, apply an operation
-        const currentOp = [idx + 2, idx + 1];
-        operationsList.push(currentOp);
-        numArray[idx] = numArray[idx + 1] + numArray[idx];
+    // Then, ensure non-increasing order from right to left
+    for (let idx = elementCount - 1; idx >= 0; idx--) {
+      if (idx < elementCount - 1 && dataArray[idx] > dataArray[idx + 1]) {
+        let opPair = [idx + 2, idx + 1]; // Store 1-based indices
+        operationList.push(opPair);
+        dataArray[idx] = dataArray[idx + 1] + dataArray[idx];
       }
     }
   }
 
   // Prepare the final output string
-  let resultString = operationsList.length.toString();
-  for (let idx = 0; idx < operationsList.length; idx++) {
-    resultString += '\n' + operationsList[idx][0] + ' ' + operationsList[idx][1];
+  let resultOutput = operationList.length; // Start with the count of operations
+  for (let idx = 0; idx < operationList.length; idx++) {
+    // Append each operation pair on a new line
+    resultOutput += "\n" + operationList[idx][0] + " " + operationList[idx][1];
   }
 
-  // Print the collected operations
-  console.log(resultString);
+  // Print the final result to the console
+  console.log('%s', resultOutput);
 }
 
-// Read input from standard input and pass it to the processing function
-ProcessData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// Read input from stdin and pass it to the main processing function
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

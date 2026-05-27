@@ -1,107 +1,71 @@
-const retrieveSourceData = (sourceText) => {
-    const lines = sourceText.trim().split('\n');
-    let lineCursor = 0;
-    const allConfigurations = [];
+var input = require('fs').readFileSync('/dev/stdin', 'utf8');
+input = '2 4\n...*\n.*..\n0 0';
 
-    while (true) {
-        const dimensions = lines[lineCursor++].split(' ').map(Number);
-        const dimensionH = dimensions[0];
-        const dimensionW = dimensions[1];
+let sourceLines = input.trim().split("\n");
 
-        if (dimensionH === 0 && dimensionW === 0) {
-            break;
+const computeLargestRectangle = (histogramValues) => {
+    let peakArea = 0;
+    const indexStack = []; // Stores indices of bars in increasing order of height
+    const count = histogramValues.length;
+
+    // Iterate through all bars, including a virtual bar of height 0 at the end
+    // to ensure all bars in the stack are processed.
+    for (let currentPosition = 0; currentPosition <= count; currentPosition++) {
+        const currentBarHeight = (currentPosition === count) ? 0 : histogramValues[currentPosition];
+
+        // While the stack is not empty and the height of the bar at the top of the stack
+        // is greater than or equal to the current bar's height, pop from stack.
+        while (indexStack.length > 0 && histogramValues[indexStack[indexStack.length - 1]] >= currentBarHeight) {
+            const topIndex = indexStack.pop();
+            const barHeight = histogramValues[topIndex];
+            // Calculate width:
+            // If stack becomes empty, it means the popped bar is the smallest so far,
+            // extending from index 0 to currentPosition - 1. Width is currentPosition.
+            // Otherwise, the width is from the index after the new stack top to currentPosition - 1.
+            const barWidth = indexStack.length === 0 ? currentPosition : currentPosition - indexStack[indexStack.length - 1] - 1;
+            peakArea = Math.max(peakArea, barHeight * barWidth);
         }
-
-        const currentGrid = [];
-        for (let r = 0; r < dimensionH; r++) {
-            currentGrid.push(lines[lineCursor++].split(''));
-        }
-        allConfigurations.push({ verticalExtent: dimensionH, horizontalExtent: dimensionW, symbolMatrix: currentGrid });
+        // Push the current bar's index onto the stack.
+        indexStack.push(currentPosition);
     }
-    return allConfigurations;
+    return peakArea;
 };
 
-const buildContiguousHeights = (initialMatrix) => {
-    const rowsCount = initialMatrix.length;
-    const colsCount = initialMatrix[0].length;
-    const depthMap = Array.from({ length: rowsCount }, () => Array(colsCount).fill(0));
+let globalMaximum = 0;
 
-    for (let r = 0; r < rowsCount; r++) {
-        for (let c = 0; c < colsCount; c++) {
-            if (initialMatrix[r][c] === '.') {
-                depthMap[r][c] = (r === 0) ? 1 : depthMap[r - 1][c] + 1;
-            } else {
-                depthMap[r][c] = 0;
-            }
-        }
+while (true) {
+    const dimensions = sourceLines.shift().split(" ").map(Number);
+    const gridHeight = dimensions[0];
+    const gridWidth = dimensions[1];
+
+    if (gridHeight === 0 && gridWidth === 0) {
+        break;
     }
-    return depthMap;
-};
 
-const computeLargestRectangle = (elevationProfile) => {
-    const profileLength = elevationProfile.length;
-    let maximumExtent = 0;
-
-    const findLeftBoundary = (bars) => {
-        const boundaryIndices = Array(profileLength).fill(-1);
-        const processingStack = [];
-        for (let idx = 0; idx < profileLength; idx++) {
-            while (processingStack.length > 0 && bars[processingStack[processingStack.length - 1]] >= bars[idx]) {
-                processingStack.pop();
-            }
-            if (processingStack.length > 0) {
-                boundaryIndices[idx] = processingStack[processingStack.length - 1];
-            }
-            processingStack.push(idx);
-        }
-        return boundaryIndices;
-    };
-
-    const findRightBoundary = (bars) => {
-        const boundaryIndices = Array(profileLength).fill(profileLength);
-        const processingStack = [];
-        for (let idx = profileLength - 1; idx >= 0; idx--) {
-            while (processingStack.length > 0 && bars[processingStack[processingStack.length - 1]] >= bars[idx]) {
-                processingStack.pop();
-            }
-            if (processingStack.length > 0) {
-                boundaryIndices[idx] = processingStack[processingStack.length - 1];
-            }
-            processingStack.push(idx);
-        }
-        return boundaryIndices;
-    };
-
-    const leftLimits = findLeftBoundary(elevationProfile);
-    const rightLimits = findRightBoundary(elevationProfile);
-
-    for (let idx = 0; idx < profileLength; idx++) {
-        const currentHeight = elevationProfile[idx];
-        const currentWidth = rightLimits[idx] - leftLimits[idx] - 1;
-        maximumExtent = Math.max(maximumExtent, currentHeight * currentWidth);
+    const currentGridRows = [];
+    for (let i = 0; i < gridHeight; i++) {
+        currentGridRows.push(sourceLines.shift());
     }
-    return maximumExtent;
-};
 
-const executeProcessing = (rawInputContent) => {
-    const configurations = retrieveSourceData(rawInputContent);
-    const resultOutputs = [];
+    // Construct the height profile matrix using a functional approach (reduce)
+    const heightProfileMatrix = currentGridRows.reduce((accumulator, lineContent, rowIndex) => {
+        const rowHeights = lineContent.split('').map((charSymbol, colIndex) => {
+            if (charSymbol === '*') {
+                return 0; // Asterisk means height 0
+            }
+            // If it's a dot, calculate height based on the previous row's value
+            return (rowIndex === 0 ? 0 : accumulator[rowIndex - 1][colIndex]) + 1;
+        });
+        accumulator.push(rowHeights);
+        return accumulator;
+    }, []); // Initial accumulator is an empty array
 
-    for (const config of configurations) {
-        const heightData = buildContiguousHeights(config.symbolMatrix);
-        let currentMaxArea = 0;
-        for (let r = 0; r < config.verticalExtent; r++) {
-            currentMaxArea = Math.max(currentMaxArea, computeLargestRectangle(heightData[r]));
-        }
-        resultOutputs.push(currentMaxArea);
-    }
-    return resultOutputs;
-};
+    // Iterate through each row of the height profile matrix
+    // and calculate the largest rectangle area for that row (histogram).
+    heightProfileMatrix.forEach(rowHistogram => {
+        globalMaximum = Math.max(globalMaximum, computeLargestRectangle(rowHistogram));
+    });
 
-const sourceData = `2 4
-...*
-.*..
-0 0`; // Using the provided example string directly
-
-const finalOutcomes = executeProcessing(sourceData);
-finalOutcomes.forEach(res => console.log(res));
+    console.log(globalMaximum);
+    globalMaximum = 0; // Reset for the next grid
+}

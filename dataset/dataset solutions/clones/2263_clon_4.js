@@ -1,100 +1,124 @@
-function entryPoint(sourceData) {
-    const dataLines = sourceData.split('\n');
-    const coordinateCount = Number(dataLines[0]); 
-    
-    const pointCollection = dataLines.slice(1, 1 + coordinateCount).map(lineText => {
-        const parts = lineText.split(' ').map(Number);
-        return { h: parts[0], v: parts[1] };
-    });
+const sq = (val) => val * val;
 
-    let finalAnswer = 0;
+const calculateSquaredDistance = (pA, pB) => sq(pA.x - pB.x) + sq(pA.y - pB.y);
 
-    const calcSquaredDist = (pt1, pt2) => {
-        const deltaH = pt1.h - pt2.h;
-        const deltaV = pt1.v - pt2.v;
-        return deltaH * deltaH + deltaV * deltaV;
-    };
+const getMidpoint = (pA, pB) => ({
+  x: (pA.x + pB.x) / 2,
+  y: (pA.y + pB.y) / 2,
+});
 
-    const deriveCandidateCircle = (aPoint, bPoint, cPoint) => {
-        const sqLenAB = calcSquaredDist(aPoint, bPoint);
-        const sqLenAC = calcSquaredDist(aPoint, cPoint);
-        const sqLenBC = calcSquaredDist(bPoint, cPoint);
+const isPointWithinCircle = (point, circleCenter, circleRadiusSq, tolerance) =>
+  calculateSquaredDistance(point, circleCenter) <= circleRadiusSq + tolerance;
 
-        const sideData = [
-            { sqLength: sqLenAB, ends: [aPoint, bPoint] },
-            { sqLength: sqLenAC, ends: [aPoint, cPoint] },
-            { sqLength: sqLenBC, ends: [bPoint, cPoint] }
-        ].sort((s1, s2) => s2.sqLength - s1.sqLength);
+const checkAllPointsEnclosed = (allPoints, circleCenter, circleRadiusSq, tolerance) =>
+  allPoints.every((p) => isPointWithinCircle(p, circleCenter, circleRadiusSq, tolerance));
 
-        let currentCenterX, currentCenterY, currentRadiusSq;
-
-        if (sideData[0].sqLength > sideData[1].sqLength + sideData[2].sqLength) {
-            const end1 = sideData[0].ends[0];
-            const end2 = sideData[0].ends[1];
-            currentCenterX = (end1.h + end2.h) / 2;
-            currentCenterY = (end1.v + end2.v) / 2;
-            currentRadiusSq = calcSquaredDist(end1, { h: currentCenterX, v: currentCenterY });
-        } else {
-            const h1 = aPoint.h, v1 = aPoint.v;
-            const h2 = bPoint.h, v2 = bPoint.v;
-            const h3 = cPoint.h, v3 = cPoint.v;
-
-            const circumDenom = 2 * (h1 * (v2 - v3) + h2 * (v3 - v1) + h3 * (v1 - v2));
-
-            if (Math.abs(circumDenom) < 1e-9) { 
-                return null; 
-            }
-
-            const h1SqSum = h1 * h1 + v1 * v1;
-            const h2SqSum = h2 * h2 + v2 * v2;
-            const h3SqSum = h3 * h3 + v3 * v3;
-
-            currentCenterX = (h1SqSum * (v2 - v3) + h2SqSum * (v3 - v1) + h3SqSum * (v1 - v2)) / circumDenom;
-            currentCenterY = (h1SqSum * (h3 - h2) + h2SqSum * (h1 - h3) + h3SqSum * (h2 - h1)) / circumDenom;
-            currentRadiusSq = calcSquaredDist(aPoint, { h: currentCenterX, v: currentCenterY });
-        }
-        return { centralH: currentCenterX, centralV: currentCenterY, radiusSquared: currentRadiusSq };
-    };
-
-    const checkAllPointsWithin = (allCoords, circleH, circleV, circleRadSq) => {
-        return allCoords.every(currentPt => {
-            const distFromCenterSq = calcSquaredDist(currentPt, { h: circleH, v: circleV });
-            return distFromCenterSq <= circleRadSq + 1e-6; 
-        });
-    };
-
-    if (coordinateCount === 2) {
-        finalAnswer = Math.sqrt(calcSquaredDist(pointCollection[0], pointCollection[1])) / 2;
-    } else {
-        loop_i:
-        for (let idx1 = 0; idx1 < coordinateCount; idx1++) {
-            for (let idx2 = idx1 + 1; idx2 < coordinateCount; idx2++) {
-                for (let idx3 = idx2 + 1; idx3 < coordinateCount; idx3++) {
-                    const pt1 = pointCollection[idx1];
-                    const pt2 = pointCollection[idx2];
-                    const pt3 = pointCollection[idx3];
-
-                    const potentialCircle = deriveCandidateCircle(pt1, pt2, pt3);
-
-                    if (potentialCircle && 
-                        checkAllPointsWithin(pointCollection, potentialCircle.centralH, potentialCircle.centralV, potentialCircle.radiusSquared)) {
-                        
-                        finalAnswer = Math.sqrt(potentialCircle.radiusSquared);
-                        break loop_i;
-                    }
-                }
-            }
-        }
-    }
-    
-    process.stdout.write(String(finalAnswer));
-    return finalAnswer;
-}
-
-const processInputAndCompute = (inputString) => {
-    return entryPoint(inputString);
+const determineCircleFromDiameter = (pA, pB) => {
+  const center = getMidpoint(pA, pB);
+  const radiusSq = calculateSquaredDistance(pA, center);
+  return { center, radiusSq };
 };
 
-if (typeof require !== 'undefined' && require.main === module) {
-    processInputAndCompute(require('fs').readFileSync('/dev/stdin', 'utf8'));
+const determineCircumcircle = (pI, pJ, pK) => {
+  const xi = pI.x, yi = pI.y;
+  const xj = pJ.x, yj = pJ.y;
+  const xk = pK.x, yk = pK.y;
+
+  const denom = 2 * ((xk - xi) * (yi - yj) - (xj - xi) * (yi - yk));
+
+  const cyNumerator = (xk - xi) * (sq(xi) + sq(yi) - sq(xj) - sq(yj)) - (xj - xi) * (sq(xi) + sq(yi) - sq(xk) - sq(yk));
+  const cy = cyNumerator / denom;
+
+  let cx;
+  if (xi !== xj) {
+    cx = (2 * (yi - yj) * cy - sq(xi) - sq(yi) + sq(xj) + sq(yj)) / (2 * (xj - xi));
+  } else {
+    cx = (2 * (yi - yk) * cy - sq(xi) - sq(yi) + sq(xk) + sq(yk)) / (2 * (xk - xi));
+  }
+
+  const center = { x: cx, y: cy };
+  const radiusSq = calculateSquaredDistance(pI, center);
+  return { center, radiusSq };
+};
+
+function* getIndexCombinations(n, k) {
+  const indices = Array.from({ length: n }, (_, i) => i);
+  function* generate(startIdx, currentCombo) {
+    if (currentCombo.length === k) {
+      yield currentCombo;
+      return;
+    }
+    for (let i = startIdx; i < n; i++) {
+      yield* generate(i + 1, [...currentCombo, indices[i]]);
+    }
+  }
+  yield* generate(0, []);
 }
+
+function solveMEC(inputString) {
+  const lines = inputString.split("\n");
+  const pointCount = parseInt(lines[0]);
+  const allPoints = lines.slice(1, pointCount + 1).map((line) => {
+    const coords = line.split(" ").map(Number);
+    return { x: coords[0], y: coords[1] };
+  });
+
+  const TOLERANCE = 0.000001;
+
+  if (pointCount === 2) {
+    const p1 = allPoints[0];
+    const p2 = allPoints[1];
+    const circle = determineCircleFromDiameter(p1, p2);
+    return Math.sqrt(circle.radiusSq);
+  }
+
+  let minimumEnclosingRadius = 0;
+
+  for (const [idxI, idxJ, idxK] of getIndexCombinations(pointCount, 3)) {
+    const pI = allPoints[idxI];
+    const pJ = allPoints[idxJ];
+    const pK = allPoints[idxK];
+
+    const dIJ_sq = calculateSquaredDistance(pI, pJ);
+    const dIK_sq = calculateSquaredDistance(pI, pK);
+    const dJK_sq = calculateSquaredDistance(pJ, pK);
+
+    const edges = [
+      { distSq: dIJ_sq, p1: pI, p2: pJ },
+      { distSq: dIK_sq, p1: pI, p2: pK },
+      { distSq: dJK_sq, p1: pJ, p2: pK },
+    ];
+    edges.sort((a, b) => b.distSq - a.distSq);
+
+    let candidateCircle;
+    if (edges[0].distSq > edges[1].distSq + edges[2].distSq + TOLERANCE) {
+      candidateCircle = determineCircleFromDiameter(edges[0].p1, edges[0].p2);
+    } else {
+      candidateCircle = determineCircumcircle(pI, pJ, pK);
+    }
+
+    if (checkAllPointsEnclosed(allPoints, candidateCircle.center, candidateCircle.radiusSq, TOLERANCE)) {
+      minimumEnclosingRadius = Math.sqrt(candidateCircle.radiusSq);
+      break;
+    }
+  }
+
+  return minimumEnclosingRadius;
+}
+
+function Main(input) {
+  const result = solveMEC(input);
+  console.log('%s', result);
+  return result;
+}
+
+function debug(n){
+  var input = document.getElementById("input"+n).value;
+  var ans=Main(input);
+  var result="WA";
+  if(ans==document.getElementById("output"+n).value.split("\n")[0]){
+    result="AC";
+  }
+  document.getElementById("result"+n).innerHTML=result;
+}
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,69 +1,66 @@
-const fileSystemModule = require('fs'); // Obtain the necessary file system functionality.
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-let rawInputData = fileSystemModule.readFileSync('/dev/stdin', 'utf8'); // Acquire all data from standard input, interpreting it as UTF-8 text.
+// Process the raw input data by removing trailing newlines and splitting into an array of lines.
+var lineSegments = (rawData.replace(/\n$/, "")).split("\n");
 
-// Pre-process the incoming data: strip any trailing newline characters and segment it into distinct lines.
-let dataLineBuffer = (rawInputData.replace(/\n$/, "")).split("\n");
-
-
-// Commence the primary data processing cycle; this loop will persist until an explicit exit condition is met.
+// Main processing loop: continues until a specific termination condition is met.
 while (true) {
+   // Extract the number of entries for the current block from the beginning of the line segments.
+   // The `-0` converts the string to a number.
+   var countOfEntries = lineSegments.shift() - 0;
 
-   // Extract the initial element from the data buffer, which represents the count of entries for the current operation.
-   // Convert this extracted string value to a numerical type for arithmetic operations.
-   let currentBatchSize = Number(dataLineBuffer.shift());
-
-   // Evaluate the processed count: if it indicates zero entries, it signals the conclusion of input data.
-   if (currentBatchSize === 0) {
-      break; // Terminate the processing loop.
+   // If the count is zero, it signifies the end of input, so break the loop.
+   if (countOfEntries === 0) {
+      break;
    }
 
-   // Initialize an array structure to house the computed outcomes for the current collection of entries.
-   const batchResults = [];
+   // Initialize an array to store the calculated results for the current block.
+   var resultsList = [];
 
-   // Iterate sequentially through each entry, from the first up to the total count for this batch.
-   for (let currentItemIdx = 0; currentItemIdx < currentBatchSize; currentItemIdx++) {
+   // Iterate through each entry in the current block.
+   for (var idx = 0; idx < countOfEntries; idx++) {
+      // Get the current line, split it by spaces, and store it in a temporary array.
+      var currentLineParts = (lineSegments.shift()).split(" ");
 
-      // Retrieve the subsequent line from the buffered input and partition it into constituent segments based on space delimiters.
-      let lineSegments = (dataLineBuffer.shift()).split(" ");
+      // The first part of the line is the entity's label.
+      var entityLabel = currentLineParts.shift();
 
-      // Designate the inaugural segment as the unique identifier for the current entity.
-      let entityIdentifier = lineSegments.shift();
+      // Convert the remaining parts of the array to numbers.
+      currentLineParts = currentLineParts.map(Number);
 
-      // Transform all subsequent segments, which are presumed to be numerical representations, into floating-point numbers.
-      lineSegments = lineSegments.map(parseFloat);
+      // Prepend the entity's label back to the array of numerical parameters.
+      currentLineParts.unshift(entityLabel);
 
-      // Reinsert the previously extracted entity identifier at the forefront of the numerical segments array.
-      lineSegments.unshift(entityIdentifier);
+      // Use an immediately invoked function expression (IIFE) to calculate values based on parameters.
+      // The parameters are passed using `apply` from the `currentLineParts` array.
+      (function (labelParam, costParam, timeA, timeB, timeC, factorD, factorE, rateF, scaleS, multiplierM) {
+         // Calculate the total duration based on the provided time components and factors.
+         var totalDuration = timeA + timeB + timeC + ((factorD + factorE) * multiplierM);
 
-      // Employ an immediately-invoked function expression (IIFE) to encapsulate and execute the calculation logic for the current entity.
-      (function(entityName, initialInvestment, paramA, paramB, paramC, multiplierD, multiplierE, revenueRateF, unitsSoldS, durationMultiplierM) {
-         // Compute the total operational duration by summing fixed components and a product of variable factors.
-         const operationalDuration = paramA + paramB + paramC + ((multiplierD + multiplierE) * durationMultiplierM);
+         // Calculate the net profit.
+         var netProfit = (rateF * scaleS * multiplierM) - costParam;
 
-         // Determine the net financial gain by subtracting the initial investment from the total generated revenue.
-         const netFinancialGain = (revenueRateF * unitsSoldS * durationMultiplierM) - initialInvestment;
-
-         // Append the entity's identifier along with its calculated profitability ratio to the results collection.
-         batchResults.push([entityName, netFinancialGain / operationalDuration]);
-      }).apply(null, lineSegments); // Invoke the IIFE, passing the prepared line segments as arguments.
+         // Add the entity's label and its calculated profit-to-duration ratio to the results list.
+         resultsList.push([labelParam, netProfit / totalDuration]);
+      }).apply(null, currentLineParts);
    }
 
-   // Arrange the accumulated results: primarily by profitability in descending order, and secondarily by entity name in ascending order for ties.
-   batchResults.sort(function(firstEntry, secondEntry) {
-      // If profitability values are equivalent, sort based on the entity's name lexicographically.
-      if (firstEntry[1] === secondEntry[1]) {
-         return firstEntry[0] > secondEntry[0] ? 1 : -1; // Positive for 'firstEntry' after 'secondEntry', negative otherwise.
+   // Sort the results list.
+   // Primary sort: descending by the profit-to-duration ratio.
+   // Secondary sort: ascending by label (string comparison) if ratios are equal.
+   resultsList.sort(function (itemOne, itemTwo) {
+      if (itemOne[1] === itemTwo[1]) {
+         return itemOne[0] > itemTwo[0]; // Sort labels alphabetically if ratios are identical
       } else {
-         return secondEntry[1] - firstEntry[1]; // Otherwise, sort by profitability in descending order.
+         return itemTwo[1] - itemOne[1]; // Sort by ratio in descending order
       }
    });
 
-   // Iterate through the now-sorted batch results and print only the entity identifiers to the console.
-   batchResults.forEach(function(outputRecord) {
-      console.log(outputRecord[0]);
+   // Output the label of each item in the sorted results list.
+   resultsList.forEach(function (outputItem) {
+      console.log(outputItem[0]);
    });
 
-   // Output a distinct separator character, signaling the completion of the current batch's processing.
+   // Print a separator character after each block of output.
    console.log("#");
 }

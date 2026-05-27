@@ -1,63 +1,53 @@
-const acquireSourceData = require('fs').readFileSync('/dev/stdin', 'utf8');
+const processInputSequences = function* (sourceData) {
+    const dataLines = sourceData.trim().split('\n');
+    let currentLineIndex = 0;
 
-function* createLineFeeder(sourceText) {
-    const contentLines = sourceText.trim().split('\n');
-    let feedIndex = 0;
-    while (feedIndex < contentLines.length) {
-        yield contentLines[feedIndex++];
-    }
-}
+    while (currentLineIndex < dataLines.length) {
+        const sequenceLengthStr = dataLines[currentLineIndex++];
+        const sequenceLength = Number(sequenceLengthStr);
 
-const dataLineProvider = createLineFeeder(acquireSourceData);
-
-function executeAllChallenges() {
-    while (true) {
-        const sizeEntry = dataLineProvider.next().value;
-        const challengeSize = Number(sizeEntry);
-
-        if (challengeSize === 0) {
-            break;
+        if (sequenceLength === 0) {
+            return; // Terminate processing
         }
 
-        const itemsEntry = dataLineProvider.next().value;
-        const challengeElements = itemsEntry.split(' ');
+        const elementsLine = dataLines[currentLineIndex++];
+        const elementsArray = elementsLine.split(' ');
 
-        determineChallengeOutcome(challengeElements, challengeSize);
+        yield { length: sequenceLength, items: elementsArray };
     }
-}
+};
 
-function determineChallengeOutcome(elementCollection, totalItemCount) {
-    let scoreRegister = new Map();
-    let outcomeDecidedEarly = false;
+const rawInputData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-    for (let currentItemIndex = 0; currentItemIndex < totalItemCount; ++currentItemIndex) {
-        const currentItemIdentifier = elementCollection[currentItemIndex];
-        const updatedCount = (scoreRegister.get(currentItemIdentifier) || 0) + 1;
-        scoreRegister.set(currentItemIdentifier, updatedCount);
+for (const { length: currentSequenceLength, items: currentSequenceItems } of processInputSequences(rawInputData)) {
+    const itemFrequencies = new Map();
+    let definiteWinnerFound = false;
 
-        const currentRankings = Array.from(scoreRegister.entries())
-            .map(([id, tally]) => ({ identifier: id, tallyValue: tally }))
-            .sort((first, second) => second.tallyValue - first.tallyValue);
+    for (let processingIndex = 0; processingIndex < currentSequenceLength; ++processingIndex) {
+        const currentItemIdentifier = currentSequenceItems[processingIndex];
+        itemFrequencies.set(currentItemIdentifier, (itemFrequencies.get(currentItemIdentifier) || 0) + 1);
 
-        const remainingUndeterminedItems = totalItemCount - (currentItemIndex + 1);
+        const sortedFrequencyPairs = Array.from(itemFrequencies.entries())
+            .sort((pairA, pairB) => pairB[1] - pairA[1]); // Sort by count (value) descending
 
-        const leadingEntry = currentRankings[0];
-        const runnerUpEntry = currentRankings.length > 1 ? currentRankings[1] : { tallyValue: 0, identifier: null };
+        const leadingCount = sortedFrequencyPairs[0][1];
+        const leadingItem = sortedFrequencyPairs[0][0];
+        const secondPlaceCount = sortedFrequencyPairs.length > 1 ? sortedFrequencyPairs[1][1] : 0;
 
-        if (leadingEntry.tallyValue === runnerUpEntry.tallyValue) {
-            continue;
+        const remainingItemsCount = currentSequenceLength - (processingIndex + 1);
+
+        if (leadingCount === secondPlaceCount) {
+            continue; // No clear leader yet, or multiple leaders
         }
 
-        if (leadingEntry.tallyValue > (runnerUpEntry.tallyValue + remainingUndeterminedItems)) {
-            console.log(leadingEntry.identifier, currentItemIndex + 1);
-            outcomeDecidedEarly = true;
+        if (leadingCount > secondPlaceCount + remainingItemsCount) {
+            console.log(leadingItem, processingIndex + 1);
+            definiteWinnerFound = true;
             break;
         }
     }
 
-    if (!outcomeDecidedEarly) {
+    if (!definiteWinnerFound) {
         console.log("TIE");
     }
 }
-
-executeAllChallenges();

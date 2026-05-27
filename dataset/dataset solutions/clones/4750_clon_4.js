@@ -1,29 +1,56 @@
-let inputBuffer = "";
+"use strict";
 
-process.stdin.on("data", (segment) => {
-  inputBuffer += segment.toString();
-});
+class InputLineProvider {
+    #sourceLines;
+    #currentLineIndex;
 
-process.stdin.on("end", () => {
-  const lineSegments = inputBuffer.trim().split("\n");
+    constructor(filePath) {
+        this.#sourceLines = require("fs").readFileSync(filePath, "utf8").trim().split("\n");
+        this.#currentLineIndex = 0;
+    }
 
-  const primaryCount = Number(lineSegments[0]);
-  const pairData = lineSegments.slice(1);
+    fetchNext() {
+        if (!this.hasMoreLines()) {
+            throw "ArrayIndexOutOfBoundsException";
+        }
+        return this.#sourceLines[this.#currentLineIndex++];
+    }
 
-  const numericalTuples = pairData.map((lineText) => {
-    const parts = lineText.split(" ").map(Number);
-    return { firstComponent: parts[0], secondComponent: parts[1] };
-  });
+    hasMoreLines() {
+        return this.#currentLineIndex < this.#sourceLines.length;
+    }
+}
 
-  const cumulativeOffset = numericalTuples.reduceRight((currentAccumulatedValue, currentEntry) => {
-    const { firstComponent, secondComponent } = currentEntry;
-    const currentComposite = firstComponent + currentAccumulatedValue;
-    const modResult = currentComposite % secondComponent;
+const dataStream = new InputLineProvider("/dev/stdin");
 
-    const requiredAddition = (secondComponent - modResult) % secondComponent;
+const retrieveNextLine = () => dataStream.fetchNext();
+const extractNextInteger = () => parseInt(dataStream.fetchNext());
+const extractNextIntegerArray = () => dataStream.fetchNext().split(" ").map(Number);
+const extractNextCharacterArray = () => dataStream.fetchNext().split("");
+const checkMoreData = () => dataStream.hasMoreLines();
 
-    return currentAccumulatedValue + requiredAddition;
-  }, 0);
+const outputResult = (...values) => console.log(...values);
 
-  process.stdout.write(String(cumulativeOffset) + "\n");
-});
+const executeProcessing = () => {
+    const totalEntries = extractNextInteger();
+    const entryPairs = [];
+
+    while (checkMoreData()) {
+        const currentEntry = extractNextIntegerArray();
+        entryPairs.push({ primary: currentEntry[0], secondary: currentEntry[1] });
+    }
+
+    const finalAccumulation = entryPairs.reduceRight((currentAccumulator, pair) => {
+        const combinedValue = pair.primary + currentAccumulator;
+        const modulusDivisor = pair.secondary;
+        const currentRemainder = combinedValue % modulusDivisor;
+
+        const neededIncrement = (modulusDivisor - currentRemainder) % modulusDivisor;
+
+        return currentAccumulator + neededIncrement;
+    }, 0);
+
+    outputResult(finalAccumulation);
+};
+
+executeProcessing();

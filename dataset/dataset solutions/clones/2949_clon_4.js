@@ -1,26 +1,18 @@
-function processData(rawData) {
-  const dataMatch = rawData.match(/^.*? (\d+)\n(.+)$/s);
+function processInputData(rawData) {
+  const inputLines = rawData.split('\n');
+  const firstLineSegments = inputLines[0].split(' ');
+  const targetPosition = parseInt(firstLineSegments[1], 10);
+  const sourceString = inputLines[1];
 
-  const relevantPosition = parseInt(dataMatch[1], 10);
-  const targetContent = dataMatch[2];
+  const zeroBasedIndex = targetPosition - 1;
+  const characterToModify = sourceString.charAt(zeroBasedIndex);
+  const modifiedCharacter = characterToModify.toLowerCase();
 
-  const characterAtPosition = targetContent[relevantPosition - 1];
-  let transformedCharacter;
+  const resultString = sourceString.substring(0, zeroBasedIndex) +
+                       modifiedCharacter +
+                       sourceString.substring(zeroBasedIndex + 1);
 
-  if (characterAtPosition === undefined) {
-    throw new TypeError("Cannot read properties of undefined (reading 'toLowerCase')");
-  } else {
-    transformedCharacter = characterAtPosition.toLowerCase();
-  }
-
-  const resultSequence = targetContent.split('').map((currentUnit, currentIdx) => {
-    if (currentIdx === relevantPosition - 1) {
-      return transformedCharacter;
-    }
-    return currentUnit;
-  }).join('');
-
-  console.log(resultSequence);
+  console.log(resultString);
 }
 
-processData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

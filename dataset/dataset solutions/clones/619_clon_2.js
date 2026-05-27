@@ -1,71 +1,32 @@
-// Alias for the global module loading function
-const getModule = require;
+let rawData = require('fs').readFileSync('/dev/stdin', 'utf8'); // Obtain raw input data from the standard input stream
 
-// Reference to the file system utility module
-const fileSystemModule = getModule('fs');
+const lineSegments = (rawData.trim()).split("\n"); // Process the raw data: remove leading/trailing whitespace and split into an array of lines
 
-// Function alias for reading file contents
-const obtainFileContent = fileSystemModule.readFileSync;
+let currentValue = lineSegments[0] - 0; // Initialize the primary accumulator with the numeric value of the first line
 
-// Custom function to remove leading/trailing whitespace from a string
-const cleanStringEdges = (textData) => textData.trim();
-
-// Custom function to divide a string into an array by a specified separator
-const segmentStringByChar = (textData, separator) => textData.split(separator);
-
-// Alias for the global console object
-const outputHandler = console;
-
-// Function alias for printing data to the console
-const printToDisplay = outputHandler.log;
-
-/*
- * Initial step: Read the raw input from the standard input path.
- * The content is interpreted as UTF-8 encoded text.
- */
-let sourceData = obtainFileContent('/dev/stdin', 'utf8');
-
-/*
- * Data preparation:
- * 1. Remove any extraneous whitespace from the beginning and end of the input string.
- * 2. Break the cleaned string into an array of individual lines.
- */
-let dataSegments = segmentStringByChar(cleanStringEdges(sourceData), "\n");
-
-// Extract the initial numerical value from the first segment
-let cumulativeValue = parseInt(dataSegments[0], 10);
-
-// Determine the total number of segments for loop control
-const sizeOfSegments = dataSegments.length;
-
-/*
- * Main processing loop:
- * Iterates through the data segments, performing arithmetic operations.
- * Each iteration processes an operator and its corresponding operand.
- */
-for (let currentElementIndex = 1; currentElementIndex < sizeOfSegments; currentElementIndex += 2) {
-    // Check if the current operator signifies termination of calculations
-    if (dataSegments[currentElementIndex] === "=") {
-        break; // Exit the loop if the '=' operator is encountered
+for (let idx = 1; idx < lineSegments.length; idx = idx + 2) { // Iterate through the array, processing operations and operands
+    // The loop increments by 2 because each operation consists of an operator and an operand
+    if (lineSegments[idx] === "=") { // Check if the current segment is the termination operator
+        break; // If an equals sign is found, stop further calculations
     }
 
-    // Parse the next segment as a numerical operand
-    let nextOperand = parseInt(dataSegments[currentElementIndex + 1], 10);
-
-    // Apply the arithmetic operation based on the current operator symbol
-    if (dataSegments[currentElementIndex] === "+") {
-        cumulativeValue += nextOperand;
-    } else if (dataSegments[currentElementIndex] === "-") {
-        cumulativeValue -= nextOperand;
-    } else if (dataSegments[currentElementIndex] === "*") {
-        cumulativeValue *= nextOperand;
-    } else if (dataSegments[currentElementIndex] === "/") {
-        cumulativeValue /= nextOperand;
+    if (lineSegments[idx] === "+") { // If the operator is addition
+        currentValue += (lineSegments[idx + 1] - 0); // Add the numeric value of the next segment to the accumulator
     }
 
-    // Round the result of the operation to the nearest whole number
-    cumulativeValue = Math.round(cumulativeValue);
+    if (lineSegments[idx] === "-") { // If the operator is subtraction
+        currentValue -= (lineSegments[idx + 1] - 0); // Subtract the numeric value of the next segment from the accumulator
+    }
+
+    if (lineSegments[idx] === "*") { // If the operator is multiplication
+        currentValue *= (lineSegments[idx + 1] - 0); // Multiply the accumulator by the numeric value of the next segment
+    }
+
+    if (lineSegments[idx] === "/") { // If the operator is division
+        currentValue /= (lineSegments[idx + 1] - 0); // Divide the accumulator by the numeric value of the next segment
+    }
+
+    currentValue = currentValue.toFixed(0) - 0; // Round the current value to the nearest integer and convert it back to a number
 }
 
-// Final step: Display the computed cumulative value to the user
-printToDisplay(cumulativeValue);
+console.log(currentValue); // Display the final computed value to the console

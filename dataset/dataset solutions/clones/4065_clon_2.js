@@ -1,23 +1,25 @@
-/* This module analyzes two numbers from an input string to determine parity of their product. */
-function processInputData(rawDataString) {
-  // Split the raw input string by space characters to get individual value tokens.
-  let tokenizedValues = rawDataString.split(" ");
+// This function serves to process an incoming data string.
+function processInput(rawData) {
+    // We split the provided raw string by spaces to obtain its constituent parts.
+    let parts = rawData.split(" ");
 
-  // Parse the first token as an integer with base 10.
-  let firstNumber = parseInt(tokenizedValues[0], 10);
+    // The first segment is parsed into an integer, using base 10 for conversion.
+    const firstNum = parseInt(parts[0], 10);
+    // The second segment is similarly parsed into an integer, also with base 10.
+    const secondNum = parseInt(parts[1], 10);
 
-  // Parse the second token as an integer, also with base 10.
-  let secondNumber = parseInt(tokenizedValues[1], 10);
-
-  // Check if the product of the two numbers is an even number.
-  // An even number has a remainder of 0 when divided by 2.
-  if (firstNumber * secondNumber % 2 === 0) {
-    console.log("Even"); // Output 'Even' if the product is even.
-  }
-  else {
-    console.log("Odd"); // Otherwise, output 'Odd' if the product is odd.
-  }
+    // We then evaluate whether the product of these two numerical values is even or odd.
+    // An even number yields a remainder of 0 when divided by 2.
+    if ((firstNum * secondNum) % 2 === 0) {
+        // If the outcome is an even number, we output the string "Even".
+        console.log("Even");
+    } else {
+        // Otherwise, if the outcome is an odd number, we output the string "Odd".
+        console.log("Odd");
+    }
 }
 
-// Invoke the primary processing function with data read from standard input.
-processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// The program initiates by reading the entire content from standard input,
+// interpreting it as UTF-8 encoded text, and then passes this content
+// to our primary processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

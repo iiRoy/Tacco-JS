@@ -1,58 +1,27 @@
-var obtainNumeral = function(sourceDatum) {
-    if (typeof sourceDatum !== 'string') {
-        sourceDatum = String(sourceDatum);
-    }
-    sourceDatum = sourceDatum.trim();
-    if (!sourceDatum) {
-        return NaN;
-    }
+(function() {
+    'use strict';
 
-    var numSign = 1;
-    var position = 0;
-    if (sourceDatum[0] === '-') {
-        numSign = -1;
-        position++;
-    } else if (sourceDatum[0] === '+') {
-        position++;
-    }
+    let inputValues = [];
+    let lineIndex = 0;
 
-    var digitCollection = '';
-    while (position < sourceDatum.length) {
-        var digitChar = sourceDatum[position];
-        if (digitChar >= '0' && digitChar <= '9') {
-            digitCollection += digitChar;
-        } else {
-            break;
-        }
-        position++;
-    }
+    require('readline').createInterface({
+      input: process.stdin,
+      output: process.stdout
+    }).on('line', function(currentInputLine) {
+      inputValues[lineIndex++] = currentInputLine;
+    });
 
-    if (!digitCollection) {
-        return NaN;
-    }
+    process.stdin.on('end', function() {
+      const firstLineContent = inputValues[0];
+      const secondLineContent = inputValues[1];
 
-    return numSign * Number(digitCollection);
-};
+      const numericBase = Number.parseInt(firstLineContent, 10);
+      const numericSubtrahend = Number.parseInt(secondLineContent, 10);
 
-var aggregatedInput = '';
+      const baseSquared = numericBase * numericBase;
 
-process.stdin.once('readable', function() {
-    var portion;
-    while (null !== (portion = process.stdin.read())) {
-        aggregatedInput += portion.toString('utf8');
-    }
-});
+      const finalComputedValue = baseSquared - numericSubtrahend;
 
-process.stdin.once('end', function() {
-    var contentLines = aggregatedInput.split('\n');
-    
-    var primaryOperandText = contentLines[0] || '';
-    var secondaryOperandText = contentLines[1] || '';
-
-    var primaryOperandValue = obtainNumeral(primaryOperandText);
-    var secondaryOperandValue = obtainNumeral(secondaryOperandText);
-
-    var finalComputation = (primaryOperandValue * primaryOperandValue) - secondaryOperandValue;
-
-    process.stdout.write(String(finalComputation) + '\n');
-});
+      console.log(finalComputedValue);
+    });
+})();

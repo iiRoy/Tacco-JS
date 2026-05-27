@@ -1,38 +1,25 @@
-(async function() {
-    const inputReader = require('readline').createInterface({
-        input: process.stdin,
-        output: process.stdout
-    });
+function processInputData(inputString) {
+  const lineSegments = inputString.split("\n");
+  const numericCount = Number(lineSegments[0]);
+  const valueSequence = lineSegments[1].split(" ").map(item => parseInt(item, 10));
+  return { numericCount, valueSequence };
+}
 
-    const modulusConstant = 10000000007;
+function computeFinalResult(dataContainer) {
+  const primeDivisor = 10000000007;
+  const totalElements = dataContainer.numericCount;
+  const numericalArray = dataContainer.valueSequence;
 
-    let capturedLines = [];
+  const sumOfRelevant = numericalArray.slice(1, totalElements).reduce((accumulator, currentElement) => accumulator + currentElement, 0);
 
-    inputReader.on('line', (currentLineData) => {
-        capturedLines.push(currentLineData);
-    });
+  const factorGenerator = Array.from({ length: totalElements > 0 ? totalElements - 1 : 0 }, (_, index) => index + 1);
+  const productOfFactors = factorGenerator.reduce((productAccumulator, factorValue) => productAccumulator * factorValue, 1);
 
-    inputReader.on('close', () => {
-        const itemQuantity = Number(capturedLines[0]);
-        const numericalElements = capturedLines[1].split(' ').map(Number);
+  const denominator = totalElements - 1;
+  const intermediateCalculation = (sumOfRelevant / denominator) * productOfFactors;
+  const finalModuloResult = intermediateCalculation % primeDivisor;
 
-        const accumulateRangeSum = (sourceArray, startExclusive, endExclusive) => {
-            return sourceArray.slice(startExclusive, endExclusive).reduce((total, currentVal) => total + currentVal, 0);
-        };
+  console.log(finalModuloResult);
+}
 
-        const calculateProductUpTo = (upperLimit) => {
-            if (upperLimit <= 1) {
-                return 1;
-            }
-            return upperLimit * calculateProductUpTo(upperLimit - 1);
-        };
-
-        const totalRelevantSum = accumulateRangeSum(numericalElements, 1, itemQuantity);
-        const cumulativeProduct = calculateProductUpTo(itemQuantity - 1);
-
-        const intermediateDivision = totalRelevantSum / (itemQuantity - 1);
-        const finalResult = (intermediateDivision * cumulativeProduct) % modulusConstant;
-
-        process.stdout.write(String(finalResult) + '\n');
-    });
-})();
+computeFinalResult(processInputData(require("fs").readFileSync("/dev/stdin", "utf8")));

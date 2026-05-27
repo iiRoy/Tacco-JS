@@ -1,82 +1,92 @@
 'use strict';
 
-function ProcessData(rawData) {
-  // Normalize input by removing leading/trailing whitespace and splitting into lines
-  const trimmedLines = rawData.trim().split('\n');
+// This function processes the input data to solve a graph problem.
+function ProcessInput(rawData) {
+  // Trim whitespace and split the input into lines.
+  let processedLines = rawData.trim().split('\n');
 
-  // Parse the first line to get graph parameters
-  const initialParams = trimmedLines[0].split(' ').map(strVal => Number.parseInt(strVal, 10));
-  const nodeCount = initialParams[0];
-  const startNodeA = initialParams[1];
-  const startNodeB = initialParams[2];
+  // Parse the first line to get N, u, and v.
+  const initialParameters = processedLines[0].split(' ').map(strVal => parseInt(strVal, 10));
+  const nodeCount = initialParameters[0]; // Total number of nodes in the graph.
+  const startNodeA = initialParameters[1]; // Starting node for the first DFS.
+  const startNodeB = initialParameters[2]; // Starting node for the second DFS.
 
-  // Extract the remaining lines which define edges
-  const remainingLines = trimmedLines.slice(1);
+  // Extract the remaining lines which represent edges.
+  const edgeStrings = processedLines.slice(1);
 
-  // Convert edge definition strings into arrays of numbers
-  const edgeDefinitions = remainingLines.map(lineStr => {
-    return lineStr.split(' ').map(numStr => Number.parseInt(numStr, 10));
+  // Convert edge strings into arrays of integers.
+  const edgeDataList = edgeStrings.map(edgeStr => {
+    return edgeStr.split(' ').map(numStr => parseInt(numStr, 10));
   });
 
-  // Initialize an adjacency list to represent the graph
-  let adjacencyList = {};
+  // Initialize an adjacency map (graph representation).
+  let adjacencyMap = {};
 
-  // Populate the adjacency list with connections for each edge
-  for (let edgeIdx = 0; edgeIdx < nodeCount - 1; ++edgeIdx) {
-    const currentEdge = edgeDefinitions[edgeIdx];
-    const firstVertex = currentEdge[0];
-    const secondVertex = currentEdge[1];
+  // Populate the adjacency map with edges.
+  // The loop runs N-1 times because a tree with N nodes has N-1 edges.
+  for (let idx = 0; idx < nodeCount - 1; ++idx) {
+    let currentEdge = edgeDataList[idx];
+    let nodeOne = currentEdge[0];
+    let nodeTwo = currentEdge[1];
 
-    // Ensure arrays exist for both vertices
-    if (!adjacencyList[firstVertex]) adjacencyList[firstVertex] = [];
-    if (!adjacencyList[secondVertex]) adjacencyList[secondVertex] = [];
+    // Ensure arrays exist for both nodes in the map.
+    if (!adjacencyMap[nodeOne]) {
+      adjacencyMap[nodeOne] = [];
+    }
+    if (!adjacencyMap[nodeTwo]) {
+      adjacencyMap[nodeTwo] = [];
+    }
 
-    // Add bidirectional connections
-    adjacencyList[firstVertex].push(secondVertex);
-    adjacencyList[secondVertex].push(firstVertex);
+    // Add bidirectional edges.
+    adjacencyMap[nodeOne].push(nodeTwo);
+    adjacencyMap[nodeTwo].push(nodeOne);
   }
 
-  // Prepare arrays to store distances from respective starting nodes
-  let distancesFromA = Array(nodeCount + 1);
-  distancesFromA.fill(0);
+  // Initialize distance arrays for DFS from startNodeA and startNodeB.
+  // Array size is nodeCount + 1 to accommodate 1-indexed nodes.
+  let distanceFromA = Array(nodeCount + 1);
+  distanceFromA.fill(0); // Initialize all distances to zero.
 
-  let distancesFromB = Array(nodeCount + 1);
-  distancesFromB.fill(0);
+  let distanceFromB = Array(nodeCount + 1);
+  distanceFromB.fill(0); // Initialize all distances to zero.
 
-  // Depth-First Search function to compute distances from a source node
-  const calculateDistances = (currentNode, previousNode, currentDepth, distanceArray) => {
-    // Store the calculated depth for the current node
+  // Define the Depth First Search function.
+  // It calculates distances from a given start node to all reachable nodes.
+  const calculateDistances = (currentNode, parentNode, currentDepth, distanceArray) => {
+    // Set the distance for the current node.
     distanceArray[currentNode] = currentDepth;
-    // console.log(`Visited: Node ${currentNode}, Depth: ${currentDepth}`); // Debugging output
 
-    // Iterate through all neighbors of the current node
-    for (let neighborIndex in adjacencyList[currentNode]) {
-      const nextNode = Number.parseInt(adjacencyList[currentNode][neighborIndex], 10);
-      // Avoid revisiting the immediate parent node in the DFS traversal
-      if (nextNode !== previousNode) {
+    // Iterate over all neighbors of the current node.
+    for (let neighborIndex in adjacencyMap[currentNode]) {
+      let nextNode = parseInt(adjacencyMap[currentNode][neighborIndex], 10);
+
+      // If the neighbor is not the parent node (to avoid going back immediately).
+      if (nextNode !== parentNode) {
+        // Recursively call DFS for the neighbor, incrementing depth.
         calculateDistances(nextNode, currentNode, currentDepth + 1, distanceArray);
       }
     }
-    // console.log(`Finished processing Node ${currentNode}, Final Distance: ${distanceArray[currentNode]}`); // More debugging
   };
 
-  // Perform DFS from both startNodeA and startNodeB
-  calculateDistances(startNodeA, 0, 0, distancesFromA);
-  calculateDistances(startNodeB, 0, 0, distancesFromB);
+  // Perform DFS starting from startNodeA.
+  // The parent of the initial node is 0 (or any non-existent node ID).
+  calculateDistances(startNodeA, 0, 0, distanceFromA);
+  // Perform DFS starting from startNodeB.
+  calculateDistances(startNodeB, 0, 0, distanceFromB);
 
-  // Determine the maximum value based on distance comparisons
+  // Find the maximum value based on the condition.
   let maximumValue = 0;
+  // Iterate through all possible node identifiers.
   for (let nodeIdentifier = 0; nodeIdentifier < nodeCount + 1; ++nodeIdentifier) {
-    // If node A is closer to the current node than node B
-    if (distancesFromA[nodeIdentifier] < distancesFromB[nodeIdentifier]) {
-      // Update the maximum value with B's distance minus one
-      maximumValue = Math.max(maximumValue, distancesFromB[nodeIdentifier] - 1);
+    // If the distance from A to the current node is less than the distance from B.
+    if (distanceFromA[nodeIdentifier] < distanceFromB[nodeIdentifier]) {
+      // Update the maximum value. The problem asks for distB[i]-1.
+      maximumValue = Math.max(maximumValue, distanceFromB[nodeIdentifier] - 1);
     }
   }
-
-  // Output the final calculated maximum value
+  // Output the final calculated maximum value.
   console.log(maximumValue);
 }
 
-// Read input from standard in and pass it to the main processing function
-ProcessData(require("node:fs").readFileSync("/dev/stdin", "utf8"));
+// Read input from standard input and pass it to the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

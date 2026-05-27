@@ -1,13 +1,9 @@
-function ProcessInput(rawInputText) {
-  const numericalComponents = rawInputText.split(" ").map(Number);
-  const [initialValue, terminalValue, divisorValue] = numericalComponents;
+function ProcessInputAndCalculate(rawInputString) {
+    const [startValue, endValue, stepDivisor] = rawInputString.split(" ").map(Number);
 
-  const countUpToTerminal = Math.floor(terminalValue / divisorValue);
-  const countBeforeInitial = Math.floor((initialValue - 1) / divisorValue);
+    const countResult = Math.floor(endValue / stepDivisor) - Math.floor((startValue - 1) / stepDivisor);
 
-  const totalOccurrences = countUpToTerminal - countBeforeInitial;
-
-  console.log(totalOccurrences);
+    console.log(countResult);
 }
 
-ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));
+ProcessInputAndCalculate(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,142 +1,143 @@
-var displayOutput = console.log;
-
+var printMsg = console.log;
 if (typeof process !== "undefined") {
-    var rawDataBuffer = ""; // Buffer to accumulate standard input
-    process.stdin.resume(); // Start reading from stdin
-    process.stdin.setEncoding('utf8'); // Set encoding for input
-
-    process.stdin.on('data', function (dataSegment) {
-        rawDataBuffer += dataSegment; // Append new data chunk
-    });
-
-    process.stdin.on('end', function () {
-        var textLines = rawDataBuffer.split("\n"); // Split input into an array of lines
-        findCriticalConnections(textLines); // Process the input lines
-    });
+	var receivedData = "";
+	process.stdin.resume();
+	process.stdin.setEncoding('utf8');
+	process.stdin.on('data', function (dataSegment) {
+		receivedData += dataSegment;
+	});
+	process.stdin.on('end', function () {
+		var inputLines = receivedData.split("\n");
+		processGraphData(inputLines);
+	});
 }
 
 
-function findCriticalConnections(textLines) {
-    // Check if the last line is non-empty after popping; if so, push 'undefined' back.
-    // This replicates the specific behavior of the original code's `lines.push()` without arguments.
-    if (textLines.pop() !== "") {
-        textLines.push();
-    }
+function processGraphData(inputLines){
+	// Check if the last line is empty, if not, push an undefined element
+	// This maintains the original behavior of `pop()` and `push()`
+	if(inputLines.pop() !== ""){
+		inputLines.push();
+	}
+	// Convert all input lines to arrays of numbers
+	inputLines = inputLines.map(function(currentLine){
+		return currentLine.split(" ").map(function(elementStr){
+			return Number(elementStr);
+		});
+	});
 
-    // Convert each line into an array of numbers
-    var numericData = textLines.map(function(currentLineStr) {
-        return currentLineStr.split(" ").map(function(strElement) {
-            return Number(strElement); // Parse string elements to numbers
-        });
-    });
+	// Extract graph dimensions from the first line
+	var firstLineData = inputLines.shift();
+	var numVertices = firstLineData[0];
+	var numEdges = firstLineData[1];
 
-    // Extract graph parameters from the first line
-    var graphSpecs = numericData.shift();
-    var vertexCount = graphSpecs[0]; // Total number of nodes in the graph
-    var edgeCount = graphSpecs[1];   // Total number of edges (not directly used in this algorithm)
+	// Initialize data structures for graph traversal and bridge detection
+	var adjacencyList = []; // Stores actual graph edges
+	var virtualEdges = [];  // Declared but not used in original, keeping for Type II
+	var visitedNodes = [];  // Marks if a node has been visited during DFS
+	var nodeStatus = [];    // Declared but not used in original, keeping for Type II
+	var discoveryOrder = [];// Stores the discovery time (ord) of each node
+	var lowLinkValue = [];  // Stores the low-link value of each node
+	var foundBridges = [];  // Stores identified bridges
+	var edgeVisited = [];   // Marks if an edge (u,v) has been traversed in DFS
 
-    // Declare and initialize data structures for Tarjan's bridge-finding algorithm
-    var adjacencyLists = [];       // Stores graph connections as adjacency lists
-    var dummyEdges = [];           // An array declared but not utilized in this specific logic
-    var exploredStatus = [];       // Boolean array to track visited nodes during DFS
-    var nodeState = [];            // Another declared but unused array for node status
-    var discoveryTimes = [];       // Stores discovery time (ord) for each vertex
-    var lowestReachTimes = [];     // Stores lowest reachable discovery time (lowlink) for each vertex
-    var criticalLinks = [];        // Stores the identified bridge edges
-    var edgeVisitedTracker = [];   // A 2D array to mark if an edge (u,v) has been traversed
+	// Initialize arrays for each vertex
+	for(var vertexIndex = 0; vertexIndex < numVertices ; vertexIndex++){
+		adjacencyList[vertexIndex] = [];
+		visitedNodes[vertexIndex] = false;
+		// Initialize discovery order and low-link values
+		// discoveryOrder will store the DFS entry time for a node
+		// lowLinkValue will store the lowest discovery order reachable from this node
+		discoveryOrder[vertexIndex] = 0;
+		lowLinkValue[vertexIndex] = numVertices; // Initialize with a value larger than any possible discovery order
+		foundBridges[vertexIndex] = [];
+		// Initialize edgeVisited matrix
+		edgeVisited[vertexIndex] = [];
+		for(var neighborIndex = 0; neighborIndex < numVertices ; neighborIndex++){
+			edgeVisited[vertexIndex][neighborIndex]= false;
+		}
+	}
 
-    // Initialize all arrays for each vertex
-    for (var nodeIdx = 0; nodeIdx < vertexCount; nodeIdx++) {
-        adjacencyLists[nodeIdx] = [];    // Initialize empty adjacency list for current node
-        exploredStatus[nodeIdx] = false; // Mark node as unvisited
-        discoveryTimes[nodeIdx] = 0;     // Default discovery time
-        lowestReachTimes[nodeIdx] = vertexCount; // Initialize low-link to a value higher than any possible discovery time
-        criticalLinks[nodeIdx] = [];     // Initialize empty list for bridges starting at this node
-        edgeVisitedTracker[nodeIdx] = []; // Initialize inner array for edge tracking
+	// Populate the adjacency list from input edges
+	inputLines.forEach(function(currentEdge){
+		var nodeA = currentEdge[0];
+		var nodeB = currentEdge[1];
+		adjacencyList[nodeA].push(nodeB);
+		adjacencyList[nodeB].push(nodeA);
+	});
 
-        for (var adjacentIdx = 0; adjacentIdx < vertexCount; adjacentIdx++) {
-            edgeVisitedTracker[nodeIdx][adjacentIdx] = false; // Mark all potential edges as untraversed
-        }
-    }
+	var discoveryCounter = 0; // Counter for discovery order
+	var previousNode = 0;     // Declared but not used in original, keeping for Type II
 
-    // Populate the adjacency lists based on input edge data
-    numericData.forEach(function(connectionPair) {
-        var nodeA = connectionPair[0]; // First node of the edge
-        var nodeB = connectionPair[1]; // Second node of the edge
-        adjacencyLists[nodeA].push(nodeB); // Add B to A's neighbors
-        adjacencyLists[nodeB].push(nodeA); // Add A to B's neighbors (for an undirected graph)
-    });
+	// Depth-First Search function to find bridges
+	function exploreGraph(currentNode){
+		// currentNode: The node currently being visited
+		// visitedFlags: Reference to the global visitedNodes array
+		var currentVertex = currentNode;
+		var visitedFlags = visitedNodes;
+		var adjacentNodes = adjacencyList[currentVertex];
 
-    var currentDfsTime = 0; // Global counter for DFS discovery times
-    var previousMarker = 0; // An unused variable from the original code structure
+		visitedFlags[currentVertex] = true;
+		discoveryOrder[currentVertex] = discoveryCounter;
+		lowLinkValue[currentVertex] = discoveryCounter;
+		discoveryCounter++;
 
-    // Depth-First Search function for bridge detection
-    function depthFirstSearch(currentNode) {
-        var currentVertex = currentNode; // Alias for the current node
-        var isVisited = exploredStatus; // Alias for the visited status array
-        var neighbors = adjacencyLists[currentVertex]; // Get neighbors of the current vertex
+		adjacentNodes.forEach(function(neighborNode){
+			if(!visitedFlags[neighborNode]){
+				// If the neighbor has not been visited, it's a tree edge
+				// Mark the edge as used in both directions
+				edgeVisited[currentVertex][neighborNode]=true;
+				edgeVisited[neighborNode][currentVertex]=true;
+				exploreGraph(neighborNode); // Recurse on the neighbor
+				// After returning from recursion, update low-link value
+				// The low-link of currentVertex is the minimum of its own low-link
+				// and the low-link of its child (neighborNode)
+				lowLinkValue[currentVertex] = Math.min(lowLinkValue[currentVertex],lowLinkValue[neighborNode]);
+			} else if(!edgeVisited[neighborNode][currentVertex]){
+				// If the neighbor has been visited and this is not the parent edge (back edge)
+				// Update low-link value using the discovery order of the visited neighbor
+				lowLinkValue[currentVertex] = Math.min(lowLinkValue[currentVertex],discoveryOrder[neighborNode]);
+			}
+		});
+	}
 
-        isVisited[currentVertex] = true;             // Mark current vertex as visited
-        discoveryTimes[currentVertex] = currentDfsTime; // Set discovery time
-        lowestReachTimes[currentVertex] = currentDfsTime; // Initialize low-link with discovery time
-        currentDfsTime++;                            // Increment global time counter
+	// Start DFS from node 0 (assuming connected graph or handling multiple components if needed)
+	exploreGraph(0);
 
-        neighbors.forEach(function(adjacentNode) {
-            if (!isVisited[adjacentNode]) {
-                // If the neighbor hasn't been visited, it's a tree edge
-                edgeVisitedTracker[currentVertex][adjacentNode] = true; // Mark edge as traversed
-                edgeVisitedTracker[adjacentNode][currentVertex] = true; // Mark reverse edge as traversed
-                depthFirstSearch(adjacentNode);                         // Recurse on the neighbor
+	// After DFS, iterate through edges to identify bridges
+	inputLines.forEach(function(graphEdge){
+		var nodeU = graphEdge[0];
+		var nodeV = graphEdge[1];
 
-                // After recursion returns, update current vertex's low-link value
-                // It's the minimum of its own low-link and the neighbor's low-link
-                lowestReachTimes[currentVertex] = Math.min(lowestReachTimes[currentVertex], lowestReachTimes[adjacentNode]);
-            } else if (!edgeVisitedTracker[adjacentNode][currentVertex]) {
-                // If the neighbor IS visited AND the edge (neighbor, current) has NOT been marked as traversed
-                // (this indicates a back-edge to an ancestor, not a cross-edge to a fully processed subtree)
-                // Update current vertex's low-link with the discovery time of the visited neighbor
-                lowestReachTimes[currentVertex] = Math.min(lowestReachTimes[currentVertex], discoveryTimes[adjacentNode]);
-            }
-        });
-    }
+		// Ensure nodeU has a smaller discovery order than nodeV for consistent processing
+		if(discoveryOrder[nodeU] > discoveryOrder[nodeV]){
+			var tempNode = nodeU;
+			nodeU = nodeV;
+			nodeV = tempNode;
+		}
 
-    // Start the DFS traversal from vertex 0
-    depthFirstSearch(0);
+		// An edge (nodeU, nodeV) is a bridge if discoveryOrder[nodeU] < lowLinkValue[nodeV]
+		if(discoveryOrder[nodeU] < lowLinkValue[nodeV]){
+			// This edge is a bridge
+			var smallerNode = Math.min(nodeU,nodeV);
+			var largerNode = Math.max(nodeU,nodeV);
+			foundBridges[smallerNode].push(largerNode);
+		}
+	});
 
-    // After DFS, iterate through edges to identify bridges
-    numericData.forEach(function(connectionPair) {
-        var vertexOne = connectionPair[0]; // First endpoint
-        var vertexTwo = connectionPair[1]; // Second endpoint
+	// Sort the bridges for each starting node in descending order
+	foundBridges = foundBridges.map(function(bridgeList){
+		return bridgeList.sort(function(valA,valB){
+			return valB < valA; // Sorts in descending order
+		});
+	});
 
-        // Standardize order: ensure vertexOne has a smaller discovery time
-        if (discoveryTimes[vertexOne] > discoveryTimes[vertexTwo]) {
-            var tempHolder = vertexOne;
-            vertexOne = vertexTwo;
-            vertexTwo = tempHolder;
-        }
-
-        // Bridge condition: if discovery time of vertexOne is less than low-link time of vertexTwo
-        if (discoveryTimes[vertexOne] < lowestReachTimes[vertexTwo]) {
-            var smallerNode = Math.min(vertexOne, vertexTwo);
-            var largerNode = Math.max(vertexOne, vertexTwo);
-            criticalLinks[smallerNode].push(largerNode); // Add bridge to list
-        }
-    });
-
-    // Sort the identified critical links (bridges)
-    // The original sort `b < a` sorts in descending order.
-    criticalLinks = criticalLinks.map(function(linksFromNode) {
-        return linksFromNode.sort(function(valB, valA) {
-            return valB < valA; // Sorts elements in descending order
-        });
-    });
-
-    // Output all detected critical links
-    for (var sourceNodeIdx = 0; sourceNodeIdx < vertexCount; sourceNodeIdx++) {
-        var numLinks = criticalLinks[sourceNodeIdx].length;
-        for (var linkIndex = 0; linkIndex < numLinks; linkIndex++) {
-            var destinationNode = criticalLinks[sourceNodeIdx][linkIndex];
-            displayOutput(sourceNodeIdx + " " + destinationNode); // Print bridge endpoints
-        }
-    }
+	// Output the identified bridges
+	for(var startNode = 0 ; startNode < numVertices ; startNode++){
+		var listLength = foundBridges[startNode].length;
+		for(var bridgeIndex = 0 ; bridgeIndex < listLength ;bridgeIndex++){
+			var endNode = foundBridges[startNode][bridgeIndex];
+			printMsg(startNode + " " + endNode);
+		}
+	}
 }

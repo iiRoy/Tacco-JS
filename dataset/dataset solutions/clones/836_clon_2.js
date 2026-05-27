@@ -1,139 +1,172 @@
-function exploreAndMark(  currRow,  currCol,  targetType )
-{
-  const  rowOffsets = [  -1,  0,  0,  1  ];
-  const  colOffsets = [  0,  -1,  1,  0  ];
+function exploreAdjacent(rowCoord, colCoord, targetColor) {
+  // Define relative offsets for checking adjacent cells (up, left, right, down)
+  const rowOffsets = [-1, 0, 0, 1];
+  const colOffsets = [0, -1, 1, 0];
 
-  for ( let  directionIndex = 0;  directionIndex < 4;  directionIndex++ )
-  {
-    let  nextRow = currRow + rowOffsets[directionIndex];
-    let  nextCol = currCol + colOffsets[directionIndex];
+  // Iterate through the four possible directions
+  for (let directionIndex = 0; directionIndex < 4; directionIndex++) {
+    const nextRow = rowCoord + rowOffsets[directionIndex];
+    const nextCol = colCoord + colOffsets[directionIndex];
 
-    if ( nextRow < 0  ||  nextCol < 0  ||  nextRow >= 12  ||  nextCol >= 6 )
-    {
-      continue;
+    // Check if the next cell is within the grid boundaries (12 rows, 6 columns)
+    if (nextRow < 0 || nextCol < 0 || nextRow >= 12 || nextCol >= 6) {
+      continue; // Skip if out of bounds
     }
 
-    if ( gameBoard[nextRow][nextCol] === targetType )
-    {
-      clusterSize++;
-      if ( clusterSize === 4 )
-      {
-        removalPoints.push([nextRow, nextCol]);
+    // If the adjacent cell has the same color as the target
+    if (gameGrid[nextRow][nextCol] === targetColor) {
+      currentCount++; // Increment the count of connected cells
+      // If 4 or more connected cells are found, add the current cell to the explosion list
+      if (currentCount === 4) {
+        explosionPoints.push([nextRow, nextCol]);
       }
-      gameBoard[nextRow][nextCol] = targetType + clusterSize;
-      exploreAndMark(nextRow, nextCol, targetType);
+      // Mark the current cell with its color and the current count to avoid re-processing in this chain
+      gameGrid[nextRow][nextCol] = targetColor + currentCount;
+      // Recursively call to explore its neighbors
+      exploreAdjacent(nextRow, nextCol, targetColor);
     }
   }
 }
-function clearConnected ( currentY, currentX, blockDesignation )
-{
-  const  yAxisOffsets  = [ -1,  0,  0,  1 ];
-  const  xAxisOffsets  = [ 0,  -1,  1,  0 ];
 
-  for ( let  iter = 0;  iter < 4;  iter++ )
-  {
-    let  neighborY = currentY + yAxisOffsets[iter];
-    let  neighborX = currentX + xAxisOffsets[iter];
+function clearConnected(rowCoord, colCoord, targetColor) {
+  // Define relative offsets for checking adjacent cells (up, left, right, down)
+  const rowOffsets = [-1, 0, 0, 1];
+  const colOffsets = [0, -1, 1, 0];
 
-    if ( neighborY < 0  ||  neighborX < 0  ||  neighborY >= 12  ||  neighborX >= 6 )
-    {
-      continue;
+  // Iterate through the four possible directions
+  for (let directionIndex = 0; directionIndex < 4; directionIndex++) {
+    const nextRow = rowCoord + rowOffsets[directionIndex];
+    const nextCol = colCoord + colOffsets[directionIndex];
+
+    // Check if the next cell is within the grid boundaries
+    if (nextRow < 0 || nextCol < 0 || nextRow >= 12 || nextCol >= 6) {
+      continue; // Skip if out of bounds
     }
 
-    if ( gameBoard[neighborY][neighborX] === blockDesignation )
-    {
-      gameBoard[neighborY][neighborX] = "EMPTY";
-      clearConnected(neighborY, neighborX, blockDesignation);
-    }
-    else if ( gameBoard[neighborY][neighborX] === "OBSTACLE" )
-    {
-      gameBoard[neighborY][neighborX] = "EMPTY";
+    // If the adjacent cell has the same color as the target, clear it and recurse
+    if (gameGrid[nextRow][nextCol] === targetColor) {
+      gameGrid[nextRow][nextCol] = "."; // Mark as empty
+      clearConnected(nextRow, nextCol, targetColor); // Recursively clear its neighbors
+    } else if (gameGrid[nextRow][nextCol] === "O") {
+      // If it's an 'O' (obstacle/special block), clear it as well
+      gameGrid[nextRow][nextCol] = "."; // Mark as empty
     }
   }
 }
-function shiftColumn ( startingRow, colToShift )
-{
-  let  initialRowPos = startingRow;
 
-  while ( startingRow > 0 )
-  {
-    startingRow--;
-    if ( gameBoard[startingRow][colToShift] !== "EMPTY" )
-    {
-      gameBoard[initialRowPos][colToShift] = gameBoard[startingRow][colToShift];
-      gameBoard[startingRow][colToShift] = "EMPTY";
+function shiftDown(rowCoord, colCoord) {
+  let initialRow = rowCoord; // Store the original row position
+  // Move upwards from the current row to find a non-empty cell
+  while (rowCoord > 0) {
+    rowCoord--; // Move to the row above
+    // If a non-empty cell is found
+    if (gameGrid[rowCoord][colCoord] !== ".") {
+      // Move its content to the initial empty spot
+      gameGrid[initialRow][colCoord] = gameGrid[rowCoord][colCoord];
+      gameGrid[rowCoord][colCoord] = "."; // Clear the original position
+      break; // Stop after shifting one block
+    }
+  }
+}
+
+// Global variables for game state and processing
+let gameGrid; // Represents the 2D game board
+let currentCount; // Counter for connected blocks of the same color
+let explosionPoints; // List of coordinates where explosions should occur
+
+// Read input from stdin
+const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
+const inputLines = rawData.trim().split("\n");
+
+// Get the number of test cases
+const numTestCases = parseInt(inputLines.shift(), 10);
+
+// Process each test case
+for (let testCaseIndex = 0; testCaseIndex < numTestCases; testCaseIndex++) {
+  gameGrid = []; // Initialize the game grid for the current test case
+
+  // Populate the game grid from input lines
+  for (let rowIndex = 0; rowIndex < 12; rowIndex++) {
+    const rowChars = inputLines.shift().split("");
+    gameGrid.push(rowChars);
+  }
+
+  let totalExplosions = 0; // Counter for the total number of explosion chains
+
+  // Main game loop: continues as long as explosions occur
+  while (true) {
+    explosionPoints = []; // Reset the list of explosion points for this iteration
+
+    // First pass: Identify potential explosion chains
+    for (let rowIndex = 0; rowIndex < 12; rowIndex++) {
+      for (let colIndex = 0; colIndex < 6; colIndex++) {
+        const cellContent = gameGrid[rowIndex][colIndex];
+        // Check for each color type and initiate a search if found
+        if (cellContent === "R") {
+          currentCount = 1;
+          gameGrid[rowIndex][colIndex] = "R" + currentCount;
+          exploreAdjacent(rowIndex, colIndex, "R");
+        }
+        if (cellContent === "G") {
+          currentCount = 1;
+          gameGrid[rowIndex][colIndex] = "G" + currentCount;
+          exploreAdjacent(rowIndex, colIndex, "G");
+        }
+        if (cellContent === "B") {
+          currentCount = 1;
+          gameGrid[rowIndex][colIndex] = "B" + currentCount;
+          exploreAdjacent(rowIndex, colIndex, "B");
+        }
+        if (cellContent === "Y") {
+          currentCount = 1;
+          gameGrid[rowIndex][colIndex] = "Y" + currentCount;
+          exploreAdjacent(rowIndex, colIndex, "Y");
+        }
+        if (cellContent === "P") {
+          currentCount = 1;
+          gameGrid[rowIndex][colIndex] = "P" + currentCount;
+          exploreAdjacent(rowIndex, colIndex, "P");
+        }
+      }
+    }
+
+    // Reset temporary marks (e.g., "R1", "G2") back to their original color
+    for (let rowIndex = 0; rowIndex < 12; rowIndex++) {
+      for (let colIndex = 0; colIndex < 6; colIndex++) {
+        gameGrid[rowIndex][colIndex] = gameGrid[rowIndex][colIndex].slice(0, 1);
+      }
+    }
+
+    // If no explosion points were found in this pass, the game ends
+    if (explosionPoints.length === 0) {
       break;
     }
-  }
-}
-const  fileSystem = require('fs');
-const  rawData = fileSystem.readFileSync('/app/input.txt', 'utf8');
 
-const  lineData = rawData.trim().split("\n");
-const  numGames = parseInt(lineData.shift(), 10);
+    totalExplosions++; // Increment the total explosion count
 
-for ( let  gameIdx = 0;  gameIdx < numGames;  gameIdx++ )
-{
-  let  gameBoard = [];
-  for ( let  rowIndex = 0;  rowIndex < 12;  rowIndex++ )
-  {
-    const  rowString = lineData.shift().split("");
-    gameBoard.push(rowString);
-  }
+    // Second pass: Clear the identified explosion chains
+    explosionPoints.forEach(function (pointCoords) {
+      const targetRow = pointCoords[0];
+      const targetCol = pointCoords[1];
+      const blockColor = gameGrid[targetRow][targetCol];
 
-  let  chainCount = 0;
-  while ( true )
-  {
-    let  removalPoints = [];
-    let  clusterSize;
-
-    for ( let  r = 0;  r < 12;  r++ )
-    {
-      for ( let  c = 0;  c < 6;  c++ )
-      {
-        if ( gameBoard[r][c] === "RED" ) { clusterSize = 1; gameBoard[r][c] = "RED" + clusterSize; exploreAndMark(r, c, "RED"); }
-        if ( gameBoard[r][c] === "GRN" ) { clusterSize = 1; gameBoard[r][c] = "GRN" + clusterSize; exploreAndMark(r, c, "GRN"); }
-        if ( gameBoard[r][c] === "BLU" ) { clusterSize = 1; gameBoard[r][c] = "BLU" + clusterSize; exploreAndMark(r, c, "BLU"); }
-        if ( gameBoard[r][c] === "YLW" ) { clusterSize = 1; gameBoard[r][c] = "YLW" + clusterSize; exploreAndMark(r, c, "YLW"); }
-        if ( gameBoard[r][c] === "PRP" ) { clusterSize = 1; gameBoard[r][c] = "PRP" + clusterSize; exploreAndMark(r, c, "PRP"); }
-      }
-    }
-
-    for ( let  r = 0;  r < 12;  r++ )
-    {
-      for ( let  c = 0;  c < 6;  c++ )
-      {
-        gameBoard[r][c] = gameBoard[r][c].substring(0, 1);
-      }
-    }
-
-    if ( removalPoints.length === 0 )
-    {
-      break;
-    }
-
-    chainCount++;
-    removalPoints.forEach( function ( coordPair )
-    {
-      let  rowCoord = coordPair[0];
-      let  colCoord = coordPair[1];
-      let  blockType = gameBoard[rowCoord][colCoord];
-      if ( blockType !== "EMPTY" )
-      {
-        clearConnected(rowCoord, colCoord, blockType);
+      // Only clear if the block hasn't been cleared by a previous explosion in this chain
+      if (blockColor !== ".") {
+        clearConnected(targetRow, targetCol, blockColor);
       }
     });
 
-    for ( let  r = 11;  r > 0;  r-- )
-    {
-      for ( let  c = 0;  c < 6;  c++ )
-      {
-        if ( gameBoard[r][c] === "EMPTY" )
-        {
-          shiftColumn(r, c);
+    // Third pass: Apply gravity to make blocks fall down
+    // Iterate from bottom-up, column by column
+    for (let rowIndex = 11; rowIndex > 0; rowIndex--) {
+      for (let colIndex = 0; colIndex < 6; colIndex++) {
+        // If a cell is empty, attempt to shift a block down into it
+        if (gameGrid[rowIndex][colIndex] === ".") {
+          shiftDown(rowIndex, colIndex);
         }
       }
     }
   }
-  console.log(chainCount);
+  // Output the total number of explosions for the current test case
+  console.log(totalExplosions);
 }

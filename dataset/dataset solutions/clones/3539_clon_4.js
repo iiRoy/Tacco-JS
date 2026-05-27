@@ -1,26 +1,23 @@
-function processExpenseData(rawText) {
-    const [firstLineOfData, secondLineOfData] = rawText.split('\n');
-    const [_, budgetLimit] = firstLineOfData.split(' ').map(Number);
-    const expenseItems = secondLineOfData.split(' ').map(Number);
+function processCandyDistribution(inputData) {
+    const [firstLineContent, secondLineContent] = inputData.split('\n');
+    const [totalParticipants, availableSweets] = firstLineContent.split(' ').map(Number);
+    const individualRequests = secondLineContent.split(' ').map(Number);
 
-    const orderedExpenses = expenseItems.slice().sort((costA, costB) => costA - costB);
+    individualRequests.sort((a, b) => a - b);
 
-    let runningTotal = 0;
-    const cumulativeTotals = orderedExpenses.map(itemCost => {
-        runningTotal += itemCost;
-        return runningTotal;
-    });
+    const cumulativeSums = individualRequests.reduce((accumulator, currentRequest) => {
+        const lastSum = accumulator.length > 0 ? accumulator[accumulator.length - 1] : 0;
+        accumulator.push(lastSum + currentRequest);
+        return accumulator;
+    }, []);
 
-    const firstExceedingIndex = cumulativeTotals.findIndex(currentSum => currentSum > budgetLimit);
+    const firstExceedingIndex = cumulativeSums.findIndex(currentTotal => currentTotal > availableSweets);
 
-    let purchasedCount;
-    if (firstExceedingIndex === -1) {
-        purchasedCount = orderedExpenses.length;
+    if (firstExceedingIndex !== -1) {
+        console.log(firstExceedingIndex);
     } else {
-        purchasedCount = firstExceedingIndex;
+        console.log(totalParticipants);
     }
-
-    console.log(purchasedCount);
 }
 
-processExpenseData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processCandyDistribution(require('fs').readFileSync('/dev/stdin', 'utf8'));

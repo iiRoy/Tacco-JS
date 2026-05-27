@@ -1,40 +1,28 @@
-let incomingDataChunks = [];
+function processInputData(inputLines) {
+    let lineCursor = 0;
 
-process.stdin.on('data', (dataPiece) => {
-  incomingDataChunks.push(dataPiece);
+    while (inputLines[lineCursor] !== '0 0') {
+        const currentInputLine = inputLines[lineCursor];
+
+        const [rectHeight, rectWidth] = currentInputLine.split(/\s+/).map(Number);
+
+        const gridContent = Array.from({ length: rectHeight }, (_, rowIdx) =>
+            Array.from({ length: rectWidth }, (_, colIdx) =>
+                (colIdx + rowIdx) % 2 === 0 ? '#' : '.'
+            ).join('')
+        ).join('\n') + '\n';
+
+        console.log(gridContent);
+
+        lineCursor++;
+    }
+}
+
+const inputBufferSegments = [];
+process.stdin.on('data', (dataChunk) => {
+    inputBufferSegments.push(dataChunk);
 });
-
 process.stdin.on('end', () => {
-  let completeInputString = incomingDataChunks.join('');
-  let individualLines = completeInputString.split('\n');
-  interpretInstructions(individualLines);
+    const processedLines = inputBufferSegments.join('').split('\n');
+    processInputData(processedLines);
 });
-
-function interpretInstructions(incomingLines) {
-  let terminalIndex = incomingLines.indexOf('0 0');
-  let effectiveLines = terminalIndex === -1 ? incomingLines : incomingLines.slice(0, terminalIndex);
-
-  effectiveLines.forEach(currentLine => {
-    const numeralStrings = currentLine.split(/\s+/);
-
-    const hDim = parseInt(numeralStrings[0], 10);
-    const wDim = parseInt(numeralStrings[1], 10);
-
-    const generatedVisual = produceVisualMatrix(hDim, wDim);
-    console.log(generatedVisual);
-  });
-}
-
-function produceVisualMatrix(verticalExtent, horizontalExtent) {
-  const charA = '#';
-  const charB = '.';
-
-  const matrixRows = Array.from({ length: verticalExtent }, (_, rIdx) => {
-    const rowContent = Array.from({ length: horizontalExtent }, (_, cIdx) => {
-      return (rIdx + cIdx) % 2 === 0 ? charA : charB;
-    }).join('');
-    return rowContent;
-  });
-
-  return matrixRows.join('\n') + '\n';
-}

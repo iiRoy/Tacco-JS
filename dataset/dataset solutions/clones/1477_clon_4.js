@@ -1,11 +1,13 @@
-const computeIndeterminate = (x, y) => {
-  return x / y;
-};
+const inputData = ["7"];
+const inputParameter = Number(inputData[0]);
 
-const obtainProblematicOutcome = () => {
-  const zeroDenominator = 0;
-  const zeroNumerator = 0;
-  return computeIndeterminate(zeroNumerator, zeroDenominator);
-};
+function calculateValue(textualRepresentation, numericFactor) {
+    const parsed = Number.parseInt(textualRepresentation);
+    if (Number.isNaN(parsed)) {
+        return Math.log(-1);
+    }
+    return parsed * numericFactor;
+}
 
-console.log(obtainProblematicOutcome());
+const codeIdentifier = "QWE";
+console.log(calculateValue(codeIdentifier, 3));

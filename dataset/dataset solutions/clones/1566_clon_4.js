@@ -1,72 +1,67 @@
-async function execute_processing_routine() {
-    const input_source = require('readline').createInterface({
-        input: process.stdin,
-        output: process.stdout,
-        terminal: false
-    });
+const readline = require('readline');
 
-    let collected_source_lines = [];
-    for await (const current_source_line of input_source) {
-        collected_source_lines.push(current_source_line);
-    }
+const inputReader = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+    terminal: false
+});
 
-    const [dimension_rows, dimension_cols] = collected_source_lines.shift().split(/\s/).map(Number);
-    const interval_definitions = collected_source_lines.slice(0, dimension_rows).map(line_string => {
-        const [start_val_str, end_val_str] = line_string.split(/\s/).map(Number);
-        return { start_offset: start_val_str - 1, end_offset: end_val_str - 1 };
-    });
+let collectedLines = [];
+inputReader.on('line', (currentLine) => {
+    collectedLines.push(currentLine);
+});
 
-    const SENTINEL_VALUE = 1_000_000;
-    const EVALUATION_THRESHOLD = 500_000;
+inputReader.on('close', () => {
+    processAllInput(collectedLines);
+});
 
-    let initial_column_state_vector = Array(dimension_cols).fill(0);
+function processAllInput(sourceLines) {
+    const mutableLines = [...sourceLines];
 
-    const transform_column_state_per_interval = (current_column_vector_snapshot, interval_index) => {
-        const { start_offset, end_offset } = interval_definitions[interval_index];
+    const [matrixHeight, matrixWidth] = mutableLines.shift().split(/\s/).map(Number);
+    const relevantRanges = mutableLines.slice(0, matrixHeight).map(lineContent =>
+        lineContent.split(/\s/).map(numericValue => Number(numericValue) - 1)
+    );
 
-        const iteration_context = {
-            evolving_column_values: [...current_column_vector_snapshot],
-            propagating_metric: SENTINEL_VALUE
-        };
+    console.log(matrixHeight, matrixWidth, relevantRanges);
 
-        const processed_iteration_context = Array.from({ length: dimension_cols }).reduce((context_accumulator, _, column_idx) => {
-            const { evolving_column_values, propagating_metric } = context_accumulator;
-            const prior_column_value = evolving_column_values[column_idx];
+    const MAX_THRESHOLD = 5e5;
+    const INITIAL_LEFT_MARKER = 1e6;
 
-            let next_column_value_for_pos;
-            let next_propagating_metric = propagating_metric;
+    const finalColumnAccumulation = relevantRanges.reduce((currentColumnState, currentRangePair, rowIndex) => {
+        let rowIterationLeftTracker = INITIAL_LEFT_MARKER;
 
-            if (column_idx < start_offset || column_idx > end_offset) {
-                next_column_value_for_pos = prior_column_value + 1;
-                next_propagating_metric = Math.min(propagating_metric, next_column_value_for_pos);
-            } else if (propagating_metric > EVALUATION_THRESHOLD) {
-                next_column_value_for_pos = SENTINEL_VALUE;
-            } else {
-                next_propagating_metric++;
-                next_column_value_for_pos = next_propagating_metric;
-            }
+        const [nextColumnState, finalRowIterationLeftTracker] = Array.from({ length: matrixWidth }, (_, columnIndex) => columnIndex)
+            .reduce(([accumulatorColumnState, accumulatorLeftTracker], columnIndex) => {
+                let updatedColumnState = [...accumulatorColumnState];
+                let updatedLeftTracker = accumulatorLeftTracker;
 
-            evolving_column_values[column_idx] = next_column_value_for_pos;
-            return {
-                evolving_column_values: evolving_column_values,
-                propagating_metric: next_propagating_metric
-            };
-        }, iteration_context);
+                if (accumulatorColumnState[columnIndex] > MAX_THRESHOLD && accumulatorLeftTracker > MAX_THRESHOLD) {
+                    return [updatedColumnState, updatedLeftTracker];
+                }
 
-        const updated_column_vector = processed_iteration_context.evolving_column_values;
+                const [rangeStartBound, rangeEndBound] = currentRangePair;
 
-        console.log(updated_column_vector);
-        if (updated_column_vector.some(val_check => val_check < EVALUATION_THRESHOLD)) {
-            const minimum_achieved = updated_column_vector.reduce((min_val_acc, current_val_entry) => Math.min(min_val_acc, current_val_entry), EVALUATION_THRESHOLD);
-            console.log(minimum_achieved);
+                if (columnIndex < rangeStartBound || columnIndex > rangeEndBound) {
+                    updatedColumnState[columnIndex]++;
+                    updatedLeftTracker = Math.min(accumulatorLeftTracker, updatedColumnState[columnIndex]);
+                } else if (accumulatorLeftTracker > MAX_THRESHOLD) {
+                    updatedColumnState[columnIndex] = INITIAL_LEFT_MARKER;
+                } else {
+                    updatedLeftTracker++;
+                    updatedColumnState[columnIndex] = updatedLeftTracker;
+                }
+                return [updatedColumnState, updatedLeftTracker];
+            }, [currentColumnState, rowIterationLeftTracker]);
+
+        console.log(nextColumnState);
+
+        if (nextColumnState.some(value => value < MAX_THRESHOLD)) {
+            console.log(nextColumnState.reduce((minimumFound, currentValue) => Math.min(minimumFound, currentValue), MAX_THRESHOLD));
         } else {
             console.log(-1);
         }
 
-        return updated_column_vector;
-    };
-
-    Array.from({ length: dimension_rows }).reduce(transform_column_state_per_interval, initial_column_state_vector);
+        return nextColumnState;
+    }, new Array(matrixWidth).fill(0));
 }
-
-execute_processing_routine();

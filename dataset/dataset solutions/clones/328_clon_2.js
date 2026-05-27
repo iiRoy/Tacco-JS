@@ -1,138 +1,98 @@
-const displayMessage = console.info;
+var logOutput = console.log;
 
-/**
- * Initializes a data stream reader from a multi-line string.
- * @param {string} sourceText - The entire input string.
- * @returns {function(): string|undefined} A function that returns the next line or undefined if no more lines.
- */
-function acquireDataStream(sourceText) {
-    let textSegments = sourceText.split('\n'); // Split the incoming string into an array of lines.
-    return function() {
-        return textSegments.shift(); // Retrieve and remove the first segment.
+function obtainSourceData(sourceData) {
+    var dataRows = sourceData.split("\n");
+    return function () {
+        return dataRows.shift();
     };
 }
 
-/* Extends the String prototype with a repetition method. */
-String.prototype.repeatString = function stringMultiplier(count) {
-    let resultBuffer = ""; // Initialize an empty string to accumulate repetitions.
-    for (let idx = 0; idx < count; idx++) {
-        resultBuffer += this.valueOf(); // Append the string's value for each iteration.
+String.prototype.repeatString = function repeatString(count) {
+    var resultantString = "";
+    for (var idx = 0; idx < count; idx++) {
+        resultantString += this.toString();
     }
-    return resultBuffer; // Return the final repeated string.
+    return resultantString;
 };
 
-/**
- * Parses a space-separated string of numbers into an array of integers.
- * @param {string} inputLine - The string containing space-separated numbers.
- * @param {boolean} adjustNegative - Flag to indicate if a -1 offset should be applied.
- * @returns {number[]} An array of parsed integers.
- */
-function parseIntegerList(inputLine, adjustNegative) {
-    const stringParts = inputLine.split(' '); // Break the line into individual string components.
-    const valueOffset = adjustNegative ? -1 : 0; // Determine if numbers need to be offset.
-    let numericalValues = []; // Array to store the resulting integers.
-    for (let jdx = 0; jdx < stringParts.length; jdx++) {
-        numericalValues.push(Number.parseInt(stringParts[jdx], 10)); // Convert each part to an integer and add it to the array.
+function parseLineOfIntegers(inputLine, adjustForOneBased) {
+    var parts = inputLine.split(' ');
+    var valueOffset = adjustForOneBased ? -1 : 0;
+    var parsedNumbers = [];
+    for (var k = 0; k < parts.length; k++) {
+        parsedNumbers.push(parseInt(parts[k]));
     }
-    return numericalValues; // Return the array of numbers.
+    return parsedNumbers;
 }
 
-// Creates an array of numbers within a specified range.
-function generateSequence(startValue, endLimit) {
-    let sequenceArray = []; // Container for the generated numbers.
-    for (; startValue < endLimit; startValue += 1) {
-        sequenceArray.push(startValue); // Add the current number to the sequence.
+function generateSequence(startVal, endVal) {
+    var sequenceArray = [];
+    for (; startVal < endVal; startVal++) {
+        sequenceArray.push(startVal);
     }
-    return sequenceArray; // Deliver the complete sequence.
+    return sequenceArray;
 }
 
-// Ascertains the larger of two given numeric inputs.
 function findMaximum(valA, valB) {
-    return valA > valB ? valA : valB; // Ternary operator to pick the greater value.
+    return valA > valB ? valA : valB;
 }
 
-// Ascertains the smaller of two given numeric inputs.
-function findMinimum(valA, valB) {
-    return valA < valB ? valA : valB; // Ternary operator to pick the lesser value.
+function findMinimum(valC, valD) {
+    return valC < valD ? valC : valD;
 }
 
-/**
- * Generates a comparison function for sorting objects based on a specific property.
- * @param {string} propertyIdentifier - The name of the property to compare.
- * @returns {function(object, object): number} A comparison function suitable for Array.prototype.sort.
- */
-function createComparatorByKey(propertyIdentifier) {
-    return function(elementOne, elementTwo) {
-        if (elementOne[propertyIdentifier] < elementTwo[propertyIdentifier]) {
-            return -1; // elementOne comes before elementTwo
-        } else if (elementOne[propertyIdentifier] > elementTwo[propertyIdentifier]) {
-            return 1; // elementOne comes after elementTwo
-        }
-        return 0; // elements are considered equal
+function createSorterByKey(keyName) {
+    return function (elem1, elem2) {
+        if (elem1[keyName] < elem2[keyName]) return -1;
+        else if (elem1[keyName] > elem2[keyName]) return 1;
+        return 0;
     };
 }
 
 /**
- * Computes the sum of all numeric elements within an array.
- * @returns {number} The total sum of array elements.
+ * @return {number}
  */
-Array.prototype.calculateTotal = function aggregateNumbers() {
-    // Using reduce for summation is a common and idiomatic way.
-    const accumulator = this.reduce((total, currentElement) => total + currentElement, 0);
-    return accumulator;
+Array.prototype.calculateTotal = function calculateTotal() {
+    var totalValue = 0;
+    this.forEach(function (elementItem) {
+        totalValue += elementItem;
+    });
+    return totalValue;
 };
 
-// Adds a formatting utility to Array prototype to pad numbers with leading spaces.
-Array.prototype.formatPadded = function alignAndPad() {
-    return this.map(function(valueItem) {
-        // Pads the number with leading spaces to a fixed width (e.g., 5 characters).
-        return ('     ' + valueItem).slice(-5);
-    });
+Array.prototype.formatArrayElements = function formatArrayElements(){
+    return this.map(function(currentValue){return ('        ' + currentValue).slice(-5)});
 };
+
 
 /*
- * This section contains the primary logic for processing multi-line numerical input.
- * It calculates row-wise and column-wise sums for a matrix-like structure.
+ * This section contains general utility functions and array prototypes.
+ * The main processing logic is encapsulated in the processMainLogic function.
+ * The program reads numerical data, processes it, and prints formatted output.
  */
 
-// The main processing function for handling structured input data.
-function processInputData(incomingText) {
-    let dataLines = incomingText.split('\n'); // Separate the input into distinct lines.
 
-    // Loop as long as there are lines to process.
-    while (dataLines.length > 0) {
-        // Initialize an array to store column-wise sums.
-        let columnTotals = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]; // Supports up to 10 columns + 1 for row sum.
+// Main processing function for the input data
+function processMainLogic(rawData) {
 
-        // Read the number of rows (N) for the current block, converting it to a number.
-        const rowCount = Number(dataLines.shift());
-
-        // If N is zero, it signifies the end of input blocks.
-        if (rowCount === 0) {
-            return; // Terminate execution.
+    var inputLines = rawData.split("\n");
+    while (inputLines.length > 0) {
+        var columnSums = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+        var numRows = inputLines.shift() - 0;
+        if (numRows === 0) {
+            return;
         }
-
-        // Iterate through each row of the current data block.
-        for (let rowIterator = 0; rowIterator < rowCount; rowIterator++) {
-            // Parse the current line into an array of integers.
-            let currentLineValues = parseIntegerList(dataLines.shift());
-            // Calculate the sum of elements in the current row and append it.
-            currentLineValues.push(currentLineValues.calculateTotal());
-
-            // Display the formatted current row (including its sum).
-            displayMessage(currentLineValues.formatPadded().join(''));
-
-            // Accumulate values into column totals.
-            for (let colIterator = 0; colIterator < rowCount + 1; colIterator++) {
-                columnTotals[colIterator] += currentLineValues[colIterator];
+        for (var rowIndex = 0; rowIndex < numRows; rowIndex++) {
+            var currentRowData = parseLineOfIntegers(inputLines.shift());
+            currentRowData.push(currentRowData.calculateTotal());
+            logOutput(currentRowData.formatArrayElements().join(''));
+            for (var colIndex = 0; colIndex < numRows + 1; colIndex++) {
+                columnSums[colIndex] += currentRowData[colIndex];
             }
         }
-        // After processing all rows, display the formatted column totals.
-        // splice is used to extract the relevant portion of columnTotals and then format it.
-        displayMessage(columnTotals.splice(0, rowCount + 1).formatPadded().join(''));
+        logOutput(columnSums.splice(0, numRows + 1).formatArrayElements().join(''));
     }
 }
 
-// Execution entry point: Reads input from a file and passes it to the main processing function.
-// In a production environment, you might read from '/dev/stdin' for competitive programming.
-processInputData(require('node:fs').readFileSync('data.txt', 'utf-8'));
+// Execute the main logic by reading from a file
+processMainLogic(require("fs").readFileSync("input.txt", "utf8"));

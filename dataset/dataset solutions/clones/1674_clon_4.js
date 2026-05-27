@@ -1,50 +1,42 @@
-const incomingData = require("node:fs").readFileSync("/dev/stdin", "utf8");
+const inputSource = require("fs").readFileSync("/dev/stdin", "utf8");
 
-const processInputAndCalculate = (textSource) => {
-    const dataLines = textSource.split('\n');
-    const upperBoundary = Number(dataLines[0]); // Using Number() for conversion
+((sourceText) => {
+    const dataLines = sourceText.split('\n');
+    const upperLimit = Number(dataLines[0]);
 
-    const resultCounts = new Map(); // Store counts in a Map
-
-    // Alternative calculation function for x*x + y*y + z*z + x*y + y*z + x*z
-    // This is mathematically equivalent to (x+y+z)^2 - (xy+yz+xz)
-    const computeFactorialSum = (valA, valB, valC) => {
-        const totalSum = valA + valB + valC;
-        const crossProducts = valA * valB + valB * valC + valA * valC;
-        return totalSum * totalSum - crossProducts;
+    const calculateExpression = (valA, valB, valC) => {
+        return valA * valA + valB * valB + valC * valC + valA * valB + valB * valC + valA * valC;
     };
 
-    let firstVar = 1;
-    while (firstVar <= upperBoundary) {
-        let secondVar = 1;
-        while (secondVar <= upperBoundary) {
-            let thirdVar = 1;
-            while (thirdVar <= upperBoundary) {
-                const evaluatedValue = computeFactorialSum(firstVar, secondVar, thirdVar);
+    const frequencyCounter = Array.from({ length: upperLimit + 1 }, () => 0);
 
-                if (evaluatedValue <= upperBoundary) {
-                    resultCounts.set(evaluatedValue, (resultCounts.get(evaluatedValue) || 0) + 1);
-                } else {
-                    // If the value exceeds the boundary, further increments of thirdVar will also exceed it
-                    // because computeFactorialSum is monotonically increasing for positive inputs.
-                    break; // Exit the innermost 'thirdVar' loop
+    function* valueGenerator(maxVal) {
+        for (let first = 1; ; ++first) {
+            const firstSq = first * first;
+            if (firstSq > maxVal) break;
+            for (let second = 1; ; ++second) {
+                const secondSq = second * second;
+                const firstSecondProd = first * second;
+                const partialSumXY = firstSq + secondSq + firstSecondProd;
+                if (partialSumXY > maxVal) break;
+                for (let third = 1; ; ++third) {
+                    const thirdSq = third * third;
+                    const secondThirdProd = second * third;
+                    const firstThirdProd = first * third;
+                    const finalSum = firstSq + secondSq + thirdSq + firstSecondProd + secondThirdProd + firstThirdProd;
+                    if (finalSum > maxVal) break;
+                    yield finalSum;
                 }
-                thirdVar++;
             }
-            secondVar++;
         }
-        firstVar++;
     }
 
-    // Convert the Map counts into an array for printing, filling in zeros for missing keys
-    const finalOutputArray = Array.from({ length: upperBoundary }, (_, index) => {
-        const currentKey = index + 1;
-        return resultCounts.get(currentKey) || 0;
-    });
+    for (const resultValue of valueGenerator(upperLimit)) {
+        frequencyCounter[resultValue]++;
+    }
 
-    return finalOutputArray;
-};
+    for (let idx = 1; idx <= upperLimit; ++idx) {
+        console.log(frequencyCounter[idx]);
+    }
 
-// Execute the process and print results
-const calculatedResults = processInputAndCalculate(incomingData);
-calculatedResults.forEach(count => console.log(count));
+})(inputSource);

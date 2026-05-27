@@ -1,31 +1,23 @@
-const processInputMatrix = (payload) => {
-    const allLines = payload.trim().split('\n');
+"use strict";
 
-    const dimensionsLine = allLines[0].split(' ');
-    const matrixHeight = Number(dimensionsLine[0]);
-    const matrixWidth = Number(dimensionsLine[1]);
+const processInput = rawContent => {
+    const contentLines = rawContent.trim().split('\n');
+    const [gridHeight, gridWidth] = contentLines[0].split(' ').map(Number);
 
-    const contentSection = allLines.slice(1, matrixHeight + 1);
+    const columnLabels = Array.from({ length: 10 }, (_, idx) => String.fromCharCode(65 + idx));
 
-    // This sequence replicates the original's column labeling (A-J) and its behavior
-    // for indices beyond 'J' (which would result in 'undefined' concatenated with row number).
-    const characterMappings = Array.from({ length: 10 }, (_, idx) => String.fromCharCode('A'.charCodeAt(0) + idx));
+    const foundCoordinates = contentLines.slice(1, gridHeight + 1)
+        .flatMap((rowContent, rowIndex) => {
+            return rowContent.split(' ').map((cellValue, colIndex) => ({
+                val: cellValue,
+                r: rowIndex,
+                c: colIndex
+            }));
+        })
+        .filter(cell => cell.val === 'snuke')
+        .map(cell => columnLabels[cell.c] + (cell.r + 1));
 
-    const foundCoordinates = contentSection.flatMap((textRow, currentLineIndex) => {
-        const rowElements = textRow.split(' ');
-
-        return rowElements
-            .map((elementValue, elementIndex) => ({ value: elementValue, colIdx: elementIndex }))
-            .filter(item => item.value === "snuke")
-            .map(locatedItem => {
-                const colChar = characterMappings[locatedItem.colIdx];
-                const rowNum = currentLineIndex + 1;
-                return colChar + rowNum;
-            });
-    });
-
-    foundCoordinates.forEach(coordinateString => console.log(coordinateString));
+    foundCoordinates.forEach(locationString => console.log(locationString));
 };
 
-const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
-processInputMatrix(rawData);
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

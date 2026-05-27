@@ -1,519 +1,275 @@
 /*
- * Module of diverse utility functions for numerical and array operations.
- *
- * This module includes tools for:
- * - Matrix transformations (e.g., 1D to 2D conversions, rotations).
- * - Number theory (e.g., prime factorization, GCD, LCM, primality tests).
- * - Array manipulations (e.g., sum, min/max index, binary search, sorting checks).
- * - String processing (e.g., line splitting, numeric validation, padding).
- *
- * Each function is designed to perform a specific task, aiming for clarity
- * and efficiency in its implementation.
- *
- * Note: Some functions might have overlapping or similar purposes,
- * reflecting different approaches or historical development.
- */
+-------関数一覧--------
+arr1dto2d(Array) 一次元配列を二次元配列にします
+pf(N)素因数分解した結果をオブジェクトで返します
+gcd(a,b)最大公約数を返します
+lcm(a,b)最小公倍数を返します
+num(a,b)a-bを返します。ソート用です
+isPrime(n)素数かどうか真偽値で返します
+isNumber(n)数かどうか真偽値で返します
+arrsum(arr)配列の合計値を返します
+nibu(arr,n)n以下で最も大きい数の添字を返します(nを含みます)
+br(input)入力を改行で区切ります
+*/
+const isDebuggingEnabled = false;
+const maxSafeIntegerConstant = Number.MAX_SAFE_INTEGER;
 
-// A very large integer, used as an initial placeholder for minimum values.
-const MAX_VAL_SENTINEL = Number.MAX_SAFE_INTEGER;
+function processInputAndFindMinSum(targetNumber) {
+  let minimumFactorSum = maxSafeIntegerConstant;
+  const limitForDivisorSearch = Math.sqrt(targetNumber);
 
-/**
- * Calculates the minimal sum of factors (f1 + f2) for a given input number,
- * where f1 * f2 = input number. The final result is this minimal sum minus 2.
- * This function effectively finds the pair of factors (f1, f2) of the input
- * number that are closest to its square root, as this pair will yield the
- * smallest sum (f1 + f2).
- *
- * @param {string} rawInput - The input string, expected to contain a single integer.
- * @returns {void} - Prints the result to the console.
- */
-function processOptimalFactorizationSum(rawInput) {
-  // Attempt to parse the input string into an integer.
-  const inputNumericValue = Number.parseInt(rawInput.trim(), 10);
-
-  // Validate the parsed input. It must be a positive, finite integer.
-  if (Number.isNaN(inputNumericValue) || !Number.isFinite(inputNumericValue) || inputNumericValue <= 0) {
-    console.error("Error: Input must be a positive integer.");
-    return; // Exit if input is invalid.
-  }
-
-  // Initialize the variable to store the smallest sum of factors found so far.
-  let minimumFactorPairSum = MAX_VAL_SENTINEL;
-
-  // Iterate from 1 up to the square root of the input number.
-  // We only need to check divisors up to the square root because if 'k' is a divisor,
-  // then 'inputNumericValue / k' is also a divisor. One of them will be <= sqrt(inputNumericValue).
-  for (let currentCandidateFactor = 1; currentCandidateFactor * currentCandidateFactor <= inputNumericValue; currentCandidateFactor++) {
-    // Check if the current candidate factor divides the input number evenly.
-    if (inputNumericValue % currentCandidateFactor === 0) {
-      // If it does, calculate the other factor in the pair.
-      const complementaryFactor = inputNumericValue / currentCandidateFactor;
-      // Calculate the sum of this factor pair.
-      const currentPairSum = currentCandidateFactor + complementaryFactor;
-
-      // Update the minimum sum if the current pair's sum is smaller.
-      if (currentPairSum < minimumFactorPairSum) {
-        minimumFactorPairSum = currentPairSum;
-      }
+  for (let currentDivisor = 1; currentDivisor <= limitForDivisorSearch; currentDivisor++) {
+    if (targetNumber % currentDivisor === 0) {
+      const complementaryDivisor = targetNumber / currentDivisor;
+      const currentPairSum = currentDivisor + complementaryDivisor;
+      minimumFactorSum = Math.min(minimumFactorSum, currentPairSum);
     }
   }
+  console.log(minimumFactorSum - 2);
+}
+processInputAndFindMinSum(require("fs").readFileSync("/dev/stdin", "utf8").trim());
 
-  // The problem statement requires printing the minimum sum minus 2.
-  console.log(minimumFactorPairSum - 2);
+function getNextValue(matrix, currentPosition) {
+  // This function was empty in the original, keeping it as is with renaming.
 }
 
-// Execute the main processing function with input read from standard input.
-// This uses 'node:fs' for modern Node.js environments and checks for
-// an optional file path argument (e.g., `node script.js input.txt`).
-processOptimalFactorizationSum(require("node:fs").readFileSync(process.argv[2] || "/dev/stdin", "utf8"));
-
-/**
- * Placeholder function for future development.
- * Currently, it performs no operation.
- * @param {any} configuration - Configuration object.
- * @param {any} currentPosition - Current state or position.
- */
-function advanceState(configuration, currentPosition) {
-  // This function is intentionally left blank for future expansion.
-  // It might be used for state transitions in a graph or sequential process.
+function calculateLexicographicalRank(sequenceArray) {
+  let availableNumbers = [];
+  // The 'input' variable here is not defined in this scope.
+  // Preserving this behavior to maintain exact observable behavior (potential ReferenceError).
+  for (let k = 0; k < input[0]; k++) {
+    availableNumbers.push(k + 1);
+  }
+  let totalRankSum = 0;
+  for (let j = 0; j < sequenceArray.length; j++) {
+    const foundIndexInAvailable = availableNumbers.findIndex(value => value === sequenceArray[j]);
+    totalRankSum += calculateFactorial(sequenceArray.length - 1 - j) * foundIndexInAvailable;
+    availableNumbers.splice(foundIndexInAvailable, 1);
+  }
+  return totalRankSum;
 }
 
-/**
- * Calculates the factorial of a non-negative integer.
- * This version uses an iterative approach to avoid potential stack overflow
- * issues with deep recursion for large numbers.
- *
- * @param {number} value - The non-negative integer for which to compute the factorial.
- * @returns {number} The factorial of the given value. Returns 1 for 0.
- * @throws {Error} If the input is negative or not an integer.
- */
-function computeFactorialValue(value) {
-  if (!Number.isInteger(value) || value < 0) {
-    throw new Error("Factorial input must be a non-negative integer.");
+function logDebugMessage(messageContent) {
+  if (isDebuggingEnabled === true) {
+    console.log(messageContent);
   }
-  if (value === 0) {
-    return 1;
-  }
-  let product = 1;
-  for (let i = 1; i <= value; i++) {
-    product *= i;
-  }
-  return product;
 }
 
-/**
- * Computes the sum of all numeric elements in an array.
- * Non-numeric elements that can be coerced to numbers (e.g., "5") are included.
- *
- * @param {Array<number|string>} dataCollection - An array containing numbers or numeric strings.
- * @returns {number} The sum of the elements. Returns 0 for an empty array.
- */
-function calculateArrayTotal(dataCollection) {
-  if (!Array.isArray(dataCollection)) {
-    console.warn("Input for calculateArrayTotal is not an array. Returning 0.");
-    return 0;
-  }
-  // Using reduce for a concise and functional approach to summing.
-  return dataCollection.reduce((accumulator, currentValue) => accumulator + Number(currentValue), 0);
-}
-
-/**
- * Logs a value to the console if a specific debug condition is met.
- * This function provides a controlled way to output debug information.
- *
- * @param {any} itemToLog - The value to be logged.
- */
-function detailedDebugLogger(itemToLog) {
-  // This function can be expanded to include more sophisticated logging
-  // mechanisms, such as writing to a file, adding timestamps, or
-  // filtering by log level.
-  // For now, it simply logs the item.
-  console.debug("[DEBUG]:", itemToLog);
-}
-
-/**
- * Finds the index of the maximum numeric value within an array.
- * If multiple elements have the same maximum value, the index of the first occurrence is returned.
- *
- * @param {Array<number>} numericDataset - The array of numbers to search.
- * @returns {number} The index of the maximum value, or -1 if the array is empty.
- */
-function getIndexOfMaximumValue(numericDataset) {
-  if (!Array.isArray(numericDataset) || numericDataset.length === 0) {
-    return -1; // Return -1 for empty or invalid arrays.
-  }
-
-  let highestValue = Number.MIN_SAFE_INTEGER;
-  let highestValueIndex = -1;
-
-  // Iterate through the array to find the maximum value and its index.
-  for (let idx = 0; idx < numericDataset.length; idx++) {
-    const currentValue = numericDataset[idx];
-    // Ensure we are comparing numbers.
-    if (typeof currentValue === 'number' && currentValue > highestValue) {
-      highestValue = currentValue;
-      highestValueIndex = idx;
+function findMaxElementIndex(dataCollection) {
+  let maxValue = Number.MIN_SAFE_INTEGER;
+  let maxElementIndex = -1;
+  for (let i = 0; i < dataCollection.length; i++) {
+    if (maxValue < dataCollection[i]) {
+      maxValue = dataCollection[i];
+      maxElementIndex = i;
     }
   }
-  return highestValueIndex;
+  return maxElementIndex;
 }
 
-/**
- * Finds the index of the minimum numeric value within an array.
- * If multiple elements have the same minimum value, the index of the first occurrence is returned.
- *
- * @param {Array<number>} numericDataset - The array of numbers to search.
- * @returns {number} The index of the minimum value, or -1 if the array is empty.
- */
-function getIndexOfMinimumValue(numericDataset) {
-  if (!Array.isArray(numericDataset) || numericDataset.length === 0) {
-    return -1; // Return -1 for empty or invalid arrays.
-  }
-
-  let lowestValue = Number.MAX_SAFE_INTEGER;
-  let lowestValueIndex = -1;
-
-  // Iterate through the array to find the minimum value and its index.
-  for (let idx = 0; idx < numericDataset.length; idx++) {
-    const currentValue = numericDataset[idx];
-    // Ensure we are comparing numbers.
-    if (typeof currentValue === 'number' && currentValue < lowestValue) {
-      lowestValue = currentValue;
-      lowestValueIndex = idx;
+function findMinElementIndex(dataCollection) {
+  let minValue = Number.MAX_SAFE_INTEGER;
+  let minElementIndex = -1;
+  for (let i = 0; i < dataCollection.length; i++) {
+    if (minValue > dataCollection[i]) {
+      minValue = dataCollection[i];
+      minElementIndex = i;
     }
   }
-  return lowestValueIndex;
+  return minElementIndex;
 }
 
-/**
- * Converts an array of strings (where each string represents a row of characters)
- * into a 2D array (matrix) of individual characters.
- *
- * @param {Array<string>} stringRows - An array of strings, each representing a row.
- * @returns {Array<Array<string>>} A 2D array where each inner array contains characters.
- */
-function convertStringArrayToCharMatrix(stringRows) {
-  if (!Array.isArray(stringRows)) {
-    console.error("Input for convertStringArrayToCharMatrix must be an array of strings.");
-    return [];
+function splitStringIntoChars2d(inputArray) {
+  for (let i = 0; i < inputArray.length; i++) {
+    inputArray[i] = inputArray[i].split("");
   }
-  // Use map to transform each string row into an array of its characters.
-  return stringRows.map(rowStr => String(rowStr).split(''));
+  return inputArray;
 }
 
-/**
- * Determines if a given number is prime.
- * Uses an optimized trial division method.
- *
- * @param {number} candidateNumber - The integer to check for primality.
- * @returns {boolean} True if the number is prime, false otherwise.
- */
 function checkIfNumberIsPrime(candidateNumber) {
-  if (!Number.isInteger(candidateNumber)) {
-    return false; // Not an integer.
+  if (false === Number.isInteger(candidateNumber)) {
+    return false;
   }
   if (candidateNumber <= 1) {
-    return false; // Numbers less than or equal to 1 are not prime.
+    return false;
   }
-  if (candidateNumber <= 3) {
-    return true; // 2 and 3 are prime.
+  if (2 === candidateNumber) {
+    return true;
   }
-  if (candidateNumber % 2 === 0 || candidateNumber % 3 === 0) {
-    return false; // Divisible by 2 or 3, so not prime (and > 3).
+  if (0 === candidateNumber % 2) {
+    return false;
   }
-
-  // Check for divisors from 5 onwards, incrementing by 6 (optimization: primes > 3 are of form 6k ± 1).
-  for (let k = 5; k * k <= candidateNumber; k += 6) {
-    if (candidateNumber % k === 0 || candidateNumber % (k + 2) === 0) {
-      return false; // Found a divisor.
+  const squareRootOfCandidate = Math.floor(Math.sqrt(candidateNumber));
+  for (let i = 3; i <= squareRootOfCandidate; i += 2) {
+    if (0 === candidateNumber % i) {
+      return false;
     }
   }
-  return true; // No divisors found, so it's prime.
+  return true;
 }
 
-/**
- * Checks if a given value can be interpreted as a number.
- * This is a more permissive check than `Number.isInteger`.
- *
- * @param {any} valueToCheck - The value to test.
- * @returns {boolean} True if the value can be converted to a finite number, false otherwise.
- */
-function isParsableAsNumber(valueToCheck) {
-  // `Number()` attempts to convert the value. `isFinite()` ensures it's not Infinity, -Infinity, or NaN.
-  return Number.isFinite(Number(valueToCheck));
+function validateIfStringIsNumber(stringValue) {
+  const numericPattern = /^([1-9]\d*|0)$/;
+  return numericPattern.test(stringValue);
 }
 
-/**
- * Converts an array of strings (where each string contains space-separated numbers)
- * into a 2D array (matrix) of parsed numbers.
- *
- * @param {Array<string>} stringRows - An array of strings, each representing a row of numbers.
- * @param {string} [delimiter=' '] - The character used to separate numbers within each string.
- * @returns {Array<Array<number>>} A 2D array where each inner array contains numbers.
- */
-function convertInputToNumericMatrix(stringRows, delimiter = ' ') {
-  if (!Array.isArray(stringRows)) {
-    console.error("Input for convertInputToNumericMatrix must be an array of strings.");
-    return [];
+function calculateFactorial(numberVal) {
+  if (numberVal === 0) {
+    return 1;
   }
-  // Map each string row: split by delimiter, then map each segment to a number.
-  return stringRows.map(rowStr =>
-    String(rowStr).split(delimiter).map(val => Number.parseFloat(val))
-  );
+  return numberVal * calculateFactorial(numberVal - 1);
 }
 
-/**
- * Rotates a 2D array (matrix) 90 degrees clockwise.
- *
- * @param {Array<Array<any>>} originalMatrix - The input 2D array.
- * @returns {Array<Array<any>>} A new 2D array representing the rotated matrix.
- * @throws {Error} If the input is not a valid matrix.
- */
-function rotateMatrix90DegreesClockwise(originalMatrix) {
-  if (!Array.isArray(originalMatrix) || originalMatrix.length === 0 || !Array.isArray(originalMatrix[0])) {
-    throw new Error("Input must be a non-empty 2D array.");
+function splitStringSpaceAndMapToNum2d(inputArray) {
+  for (let i = 0; i < inputArray.length; i++) {
+    inputArray[i] = inputArray[i].split(" ").map(Number);
   }
+  return inputArray;
+}
 
+function rotateMatrix90DegClockwise(originalMatrix) {
   const numRows = originalMatrix.length;
   const numCols = originalMatrix[0].length;
-
-  // Create a new matrix with dimensions swapped (cols become rows, rows become cols).
-  const rotatedMatrix = Array.from({ length: numCols }, () => Array(numRows).fill(undefined));
-
-  // Populate the rotated matrix.
-  // A cell at (r, c) in the original matrix moves to (c, numRows - 1 - r) in the rotated matrix.
-  for (let r = 0; r < numRows; r++) {
-    for (let c = 0; c < numCols; c++) {
-      rotatedMatrix[c][numRows - 1 - r] = originalMatrix[r][c];
+  const lastRowIndex = numRows - 1;
+  let rotatedMatrix = new Array(numCols);
+  for (let colIdx = 0; colIdx < numCols; colIdx++) {
+    rotatedMatrix[colIdx] = new Array(numRows);
+    for (let rowIdx = 0; rowIdx < numRows; rowIdx++) {
+      rotatedMatrix[colIdx][rowIdx] = originalMatrix[lastRowIndex - rowIdx][colIdx];
     }
   }
-
   return rotatedMatrix;
 }
 
-/**
- * Inserts elements from a source array into a target array starting at a specified index.
- * Modifies the target array in place.
- *
- * @param {Array<any>} targetArray - The array to insert into.
- * @param {Array<any>} sourceElements - The elements to insert.
- * @param {number} startIndex - The index in the target array where insertion begins.
- * @returns {Array<any>} The modified target array.
- */
-function insertSliceIntoArray(targetArray, sourceElements, startIndex) {
-  if (!Array.isArray(targetArray) || !Array.isArray(sourceElements)) {
-    throw new Error("Target and source must be arrays.");
+function insertPartialArray(baseArr, elementsToInsert, startIndex) {
+  for (let i = startIndex, p = 0; p < elementsToInsert.length; i++, p++) {
+    baseArr[i] = elementsToInsert[p];
   }
-  // Ensure startIndex is within bounds or at the end.
-  const actualStartIndex = Math.max(0, Math.min(startIndex, targetArray.length));
+  return baseArr;
+}
 
-  // Remove elements from startIndex (0 elements removed) and insert sourceElements.
-  targetArray.splice(actualStartIndex, sourceElements.length, ...sourceElements);
+function reversePartialArray(targetArray, startIdx, endIdx) {
+  let segmentToReverse = targetArray.slice(startIdx - 1, endIdx);
+  segmentToReverse.reverse();
+  targetArray = insertPartialArray(targetArray, segmentToReverse, startIdx - 1);
   return targetArray;
 }
 
-/**
- * Reverses a specified sub-array (slice) within an array in place.
- * The original array is modified.
- *
- * @param {Array<any>} dataArray - The array to modify.
- * @param {number} startPosition - The 1-based starting index of the sub-array to reverse.
- * @param {number} endPosition - The 1-based ending index of the sub-array to reverse.
- * @returns {Array<any>} The modified dataArray.
- */
-function reverseSubarrayInPlace(dataArray, startPosition, endPosition) {
-  if (!Array.isArray(dataArray)) {
-    throw new Error("Input dataArray must be an array.");
-  }
-  // Adjust to 0-based indexing.
-  const actualStart = Math.max(0, startPosition - 1);
-  const actualEnd = Math.min(dataArray.length - 1, endPosition - 1);
-
-  if (actualStart >= actualEnd) {
-    return dataArray; // Nothing to reverse or invalid range.
-  }
-
-  // Extract the sub-array, reverse it, then re-insert it.
-  const segmentToReverse = dataArray.slice(actualStart, actualEnd + 1);
-  segmentToReverse.reverse();
-
-  // Replace the original segment with the reversed one using splice.
-  dataArray.splice(actualStart, segmentToReverse.length, ...segmentToReverse);
-
-  return dataArray;
+function padNumberWithZeros(valueToPad, desiredLength) {
+  return (valueToPad + '000000000000000000000000000000000').slice(0, desiredLength);
 }
 
-/**
- * Pads a number with leading zeros to reach a specified length.
- *
- * @param {number|string} numericValue - The number or string to pad.
- * @param {number} desiredLength - The total desired length of the padded string.
- * @returns {string} The zero-padded string.
- */
-function padNumberWithLeadingZeros(numericValue, desiredLength) {
-  // Convert to string first to use `padStart`.
-  const stringValue = String(numericValue);
-  return stringValue.padStart(desiredLength, '0');
+function calculateArrayTotal(inputArray) {
+  if (!Array.isArray(inputArray) || inputArray.length === 0) {
+    return 0; // Guard clause for empty or non-array input
+  }
+  const totalAccumulator = inputArray.reduce((currentSum, currentVal) => currentSum + (Number(currentVal) || 0), 0);
+  return totalAccumulator;
 }
 
-/**
- * Computes the prime factorization of a given integer.
- * Returns a Map where keys are prime factors and values are their exponents.
- *
- * @param {number} numberToFactorize - The integer to decompose.
- * @returns {Map<number, number>} A Map representing the prime factorization.
- * @throws {Error} If the input is not a positive integer.
- */
-function computePrimeDecomposition(numberToFactorize) {
-  if (!Number.isInteger(numberToFactorize) || numberToFactorize <= 0) {
-    throw new Error("Input for prime decomposition must be a positive integer.");
+function getPrimeFactorMap(numberToFactor) {
+  const factorMap = {};
+  if (numberToFactor === 1) {
+    return { "1": 1 };
   }
 
-  const factorsMap = new Map();
-  let tempNumber = numberToFactorize;
+  let currentDivisor = 2;
+  let tempNumber = numberToFactor;
 
-  // Handle factor 2
-  while (tempNumber % 2 === 0) {
-    factorsMap.set(2, (factorsMap.get(2) || 0) + 1);
-    tempNumber /= 2;
-  }
+  while (tempNumber > 1) {
+    let searchFrom = currentDivisor;
+    let foundFactorInIteration = false;
 
-  // Handle odd factors from 3 upwards
-  // We only need to check up to the square root of the remaining number.
-  for (let i = 3; i * i <= tempNumber; i += 2) {
-    while (tempNumber % i === 0) {
-      factorsMap.set(i, (factorsMap.get(i) || 0) + 1);
-      tempNumber /= i;
+    for (let i = searchFrom; i <= tempNumber; i++) {
+      if (tempNumber % i === 0) {
+        tempNumber /= i;
+        factorMap[i] = (factorMap[i] || 0) + 1;
+        currentDivisor = i;
+        foundFactorInIteration = true;
+        break;
+      }
+    }
+    // This block is mostly for safety or if the loop upper bound was sqrt(tempNumber).
+    // For the current loop (i <= tempNumber), it should always find a factor if tempNumber > 1.
+    if (!foundFactorInIteration && tempNumber > 1) {
+        factorMap[tempNumber] = (factorMap[tempNumber] || 0) + 1;
+        tempNumber = 1;
     }
   }
-
-  // If tempNumber is still greater than 1, it means it's a prime factor itself.
-  if (tempNumber > 1) {
-    factorsMap.set(tempNumber, (factorsMap.get(tempNumber) || 0) + 1);
-  }
-
-  return factorsMap;
+  return factorMap;
 }
 
-/**
- * Computes the greatest common divisor (GCD) of two non-negative integers using the Euclidean algorithm.
- *
- * @param {number} firstValue - The first non-negative integer.
- * @param {number} secondValue - The second non-negative integer.
- * @returns {number} The greatest common divisor of the two numbers.
- * @throws {Error} If inputs are not non-negative integers.
- */
-function greatestCommonDivisor(firstValue, secondValue) {
-  if (!Number.isInteger(firstValue) || !Number.isInteger(secondValue) || firstValue < 0 || secondValue < 0) {
-    throw new Error("Inputs for GCD must be non-negative integers.");
+function findGreatestCommonDivisor(numA, numB) {
+  if (numB === 0) {
+    return numA;
   }
-  // Ensure a is always the larger number for iterative process
-  let a = Math.abs(firstValue);
-  let b = Math.abs(secondValue);
-
-  // Euclidean algorithm (iterative)
-  while (b !== 0) {
-    let remainder = a % b;
-    a = b;
-    b = remainder;
-  }
-  return a;
+  return findGreatestCommonDivisor(numB, numA % numB);
 }
 
-/**
- * Computes the least common multiple (LCM) of two non-negative integers.
- * Uses the formula: LCM(a, b) = |a * b| / GCD(a, b).
- *
- * @param {number} val1 - The first non-negative integer.
- * @param {number} val2 - The second non-negative integer.
- * @returns {number} The least common multiple of the two numbers.
- * @throws {Error} If inputs are not non-negative integers or if GCD is zero (for non-zero inputs).
- */
-function leastCommonMultiple(val1, val2) {
-  if (!Number.isInteger(val1) || !Number.isInteger(val2) || val1 < 0 || val2 < 0) {
-    throw new Error("Inputs for LCM must be non-negative integers.");
-  }
-  if (val1 === 0 || val2 === 0) {
-    return 0; // LCM with 0 is 0.
-  }
-  const commonDivisor = greatestCommonDivisor(val1, val2);
-  // To prevent overflow, divide one number by GCD first before multiplying.
-  return (Math.abs(val1 * val2)) / commonDivisor;
+function findLeastCommonMultiple(numA, numB) {
+  const gcdHelper = (n, m) => m ? gcdHelper(m, n % m) : n;
+  return (numA * numB) / gcdHelper(numA, numB);
 }
 
-/**
- * A comparison function for sorting in ascending order.
- *
- * @param {number} elementA - The first element to compare.
- * @param {number} elementB - The second element to compare.
- * @returns {number} A negative value if elementA < elementB, zero if equal, a positive value if elementA > elementB.
- */
-function compareAscending(elementA, elementB) {
-  return elementA - elementB;
+function subtractNumbers(numA, numB) {
+  return numA - numB;
 }
 
-/**
- * Performs a binary search on a sorted array to find the index of the largest element
- * that is less than or equal to a specified search target.
- *
- * @param {Array<number>} sortedNumericArray - The array to search, must be sorted in ascending order.
- * @param {number} searchTarget - The value to search for.
- * @returns {number} The index of the largest element <= searchTarget, or -1 if no such element exists.
- */
-function findLargestIndexLessThanOrEqual(sortedNumericArray, searchTarget) {
-  if (!Array.isArray(sortedNumericArray) || sortedNumericArray.length === 0) {
-    return -1;
-  }
-
+function performBinarySearch(sortedArray, targetValue) {
+  let foundElementIndex = -1;
   let lowerBound = 0;
-  let upperBound = sortedNumericArray.length - 1;
-  let resultIndex = -1; // Stores the potential result index
+  let upperBound = sortedArray.length - 1;
 
   while (lowerBound <= upperBound) {
     const midIndex = Math.floor((lowerBound + upperBound) / 2);
-    const midValue = sortedNumericArray[midIndex];
+    const midValue = sortedArray[midIndex];
 
-    if (midValue <= searchTarget) {
-      resultIndex = midIndex; // This element is a candidate, try to find a larger one on the right.
+    if (midValue === targetValue) {
+      foundElementIndex = midIndex;
+      break;
+    } else if (midValue < targetValue) {
       lowerBound = midIndex + 1;
-    } else {
-      upperBound = midIndex - 1; // midValue is too large, search in the left half.
+    } else { // midValue > targetValue
+      upperBound = midIndex - 1;
     }
   }
-  return resultIndex;
+  return foundElementIndex !== -1 ? foundElementIndex : lowerBound;
 }
 
-/**
- * Splits a multiline string input into an array of strings,
- * where each string represents a line. Handles different line ending conventions.
- *
- * @param {string} rawInputString - The raw string input, potentially containing newlines.
- * @returns {Array<string>} An array of strings, each corresponding to a line.
- */
-function splitInputByLine(rawInputString) {
-  if (typeof rawInputString !== 'string') {
-    return [];
-  }
-  // Use a regex to split by Windows (\r\n) or Unix (\n) line endings.
-  return rawInputString.split(/\r?\n/);
+function splitInputByNewline(rawInputString) {
+  return rawInputString.split("\n");
 }
 
-/**
- * Verifies if an array of numbers is sorted in ascending order.
- *
- * @param {Array<number>} numericSequence - The array of numbers to check.
- * @returns {boolean} True if the array is sorted ascending, false otherwise.
- */
-function verifyIfArrayIsSortedAscending(numericSequence) {
-  if (!Array.isArray(numericSequence) || numericSequence.length <= 1) {
-    return true; // Empty or single-element arrays are considered sorted.
-  }
-
-  // Iterate from the second element, comparing with the previous one.
-  for (let i = 1; i < numericSequence.length; i++) {
-    if (numericSequence[i - 1] > numericSequence[i]) {
-      return false; // Found an out-of-order pair.
+function checkIfArrayIsSorted(checkArray) {
+  let isSortedFlag = true;
+  for (let i = 1; i < checkArray.length; i++) {
+    if (checkArray[i - 1] > checkArray[i]) {
+      isSortedFlag = false;
+      break;
     }
   }
-  return true; // All elements are in ascending order.
+  return isSortedFlag;
+}
+
+function getFactorsWithExponents(inputVal) {
+  let currentNum = inputVal;
+  const sqrtOfCurrentNum = Math.floor(Math.sqrt(currentNum));
+  let exponentCounter = 0;
+  const factorResultMap = {};
+
+  for (let divisorCandidate = 2; divisorCandidate <= sqrtOfCurrentNum; divisorCandidate++) {
+    if (currentNum % divisorCandidate === 0) {
+      exponentCounter = 0;
+      do {
+        exponentCounter++;
+        currentNum /= divisorCandidate;
+      } while (currentNum % divisorCandidate === 0);
+      factorResultMap[divisorCandidate] = exponentCounter;
+    }
+  }
+
+  if (currentNum > 1) {
+    factorResultMap[currentNum] = (factorResultMap[currentNum] || 0) + 1;
+  }
+  return factorResultMap;
 }

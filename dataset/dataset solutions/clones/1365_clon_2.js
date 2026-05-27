@@ -1,15 +1,8 @@
-// This module performs a series of repetitive actions.
+/*
+ * This script iterates a specific number of times
+ * and prints a greeting message to the console.
+ */
 
-for
-  (
-    let   countVar = 0
-    ;
-
-    countVar < 1000
-    ;
-
-    countVar ++
-  )
-{
-  systemOutputDevice.printLineToDisplay( "Operation cycle completed." );
+for (let currentIteration = 0; currentIteration < 1000; currentIteration++) {
+    console.log("Hello World"); // Output the standard greeting
 }

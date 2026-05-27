@@ -1,24 +1,27 @@
 'use strict';
 
-function processSequenceAndOutputMaximumElevation(rawDataInput) {
-  const quantityOfOperations = Number.parseInt(rawDataInput.slice(0, 1), 10);
-  const directiveStream = rawDataInput.slice(1, 1 + quantityOfOperations);
-
-  const culminatingMetrics = directiveStream.split('').reduce((traversalState, commandUnit, indexInStream) => {
-    const elevationDelta = (commandUnit === 'I') ? 1 : -1;
-    const presentElevation = traversalState.currentPoint + elevationDelta;
-
-    const maximumElevationAttained = (indexInStream === 0)
-      ? presentElevation
-      : Math.max(traversalState.absoluteApex, presentElevation);
-
-    return {
-      currentPoint: presentElevation,
-      absoluteApex: maximumElevationAttained
-    };
-  }, { currentPoint: 0, absoluteApex: 0 });
-
-  console.log(culminatingMetrics.absoluteApex);
+function* generateScoreSequence(symbolStream) {
+  let currentLevel = 0;
+  for (const currentSymbol of symbolStream) {
+    currentLevel += (currentSymbol === 'I' ? 1 : -1);
+    yield currentLevel;
+  }
 }
 
-processSequenceAndOutputMaximumElevation(require("fs").readFileSync("/dev/stdin", "utf8"));
+function processInputAndFindPeak(rawData) {
+  const charArr = Array.from(rawData);
+  const sequenceSize = Number(charArr[0]);
+
+  if (sequenceSize === 0 || isNaN(sequenceSize)) {
+    return -Infinity;
+  }
+
+  const relevantSymbols = charArr.slice(1, 1 + sequenceSize);
+  const scoreIterator = generateScoreSequence(relevantSymbols);
+
+  const allCalculatedScores = Array.from(scoreIterator);
+
+  return Math.max(...allCalculatedScores);
+}
+
+console.log(processInputAndFindPeak(require("fs").readFileSync("/dev/stdin", "utf8")));

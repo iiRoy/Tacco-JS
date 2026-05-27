@@ -1,19 +1,16 @@
-function processNumericRange(dataPayload) {
-  const linesOfData = dataPayload.split('\n');
-  const divisorValue = parseInt(linesOfData[0], 10);
-  const rangeBounds = linesOfData[1].split(' ').map(val => parseInt(val, 10));
+function processInputAndDetermine(rawText) {
+  const lines = rawText.split('\n');
+  const divisorVal = Number(lines[0]);
+  const [startVal, endVal] = lines[1].split(' ').map(Number);
 
-  const lowerBound = rangeBounds[0];
-  const upperBound = rangeBounds[1];
+  const isAnyDivisible = Array.from(
+    { length: endVal - startVal + 1 },
+    (_, index) => startVal + index
+  ).some(
+    (currentNumber) => currentNumber % divisorVal === 0
+  );
 
-  const smallestMultipleInQuestion = Math.ceil(lowerBound / divisorValue) * divisorValue;
-
-  if (smallestMultipleInQuestion <= upperBound) {
-    return 'OK';
-  } else {
-    return 'NG';
-  }
+  console.log(isAnyDivisible ? 'OK' : 'NG');
 }
 
-const rawInputContent = require('fs').readFileSync('/dev/stdin', 'utf8').trim();
-console.log(processNumericRange(rawInputContent));
+processInputAndDetermine(require('fs').readFileSync('/dev/stdin', 'utf8').trim());

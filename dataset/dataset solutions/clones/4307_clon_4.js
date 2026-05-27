@@ -1,25 +1,26 @@
-function transformContent(incomingString) {
-  const markerSequence = "FESTIVAL";
-  const searchPattern = new RegExp(`^(.*)${markerSequence}(?:(?!${markerSequence}).)*$`);
+const phraseToFind = "FESTIVAL";
+const phraseLength = phraseToFind.length;
 
-  const regexMatch = incomingString.match(searchPattern);
+function processText(sourceContent) {
+    const potentialStarts = Array.from({ length: Math.max(0, sourceContent.length - phraseLength + 1) }, (_, i) => i);
 
-  if (regexMatch && regexMatch[1] !== undefined) {
-    process.stdout.write(regexMatch[1]);
-  } else {
-    const buildReducedString = (original, idx = 0, currentResult = "") => {
-      if (original.length === 0) return "";
-      if (original.length === 1) return "";
-      if (idx >= original.length - 1) {
-        return currentResult;
-      }
-      return buildReducedString(original, idx + 1, currentResult + original[idx]);
-    };
-    process.stdout.write(buildReducedString(incomingString));
-  }
+    const actualOccurrences = potentialStarts.filter(idx =>
+        sourceContent.substring(idx, idx + phraseLength) === phraseToFind
+    );
+
+    let terminationPoint;
+    if (actualOccurrences.length > 0) {
+        terminationPoint = actualOccurrences.reduce((maxIndex, currentIdx) =>
+            Math.max(maxIndex, currentIdx)
+        );
+    } else {
+        terminationPoint = sourceContent.length - 1;
+    }
+
+    return sourceContent.substring(0, terminationPoint);
 }
 
-const fileSystemAccess = require("node:fs");
-const retrievedData = fileSystemAccess.readFileSync("/dev/stdin", "utf8");
+const fileSystemModule = require("fs");
+const rawInputData = fileSystemModule.readFileSync("/dev/stdin", "utf8");
 
-transformContent(retrievedData);
+console.log(processText(rawInputData));

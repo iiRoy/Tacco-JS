@@ -1,18 +1,16 @@
 "use strict";
 
-const evaluatePattern = (sourceText) => {
-  const trimmedText = sourceText.trim();
-  const firstChar = trimmedText[0];
-  const thirdChar = trimmedText[2];
+const processInputData = (rawData) => {
+  const cleanedData = rawData.trim();
+  const initialChar = cleanedData.charAt(0);
+  const finalChar = cleanedData.charAt(2);
 
-  const comparisonResult = (firstChar.localeCompare(thirdChar) === 0);
+  const outcomeSelector = {
+    true: "Yes",
+    false: "No",
+  };
 
-  const responseMap = new Map([
-    [true, "Yes"],
-    [false, "No"]
-  ]);
-
-  return responseMap.get(comparisonResult);
+  return outcomeSelector[initialChar === finalChar];
 };
 
-console.log(evaluatePattern(require("fs").readFileSync("/dev/stdin", "utf8")));
+console.log(processInputData(require("fs").readFileSync("/dev/stdin", "utf8")));

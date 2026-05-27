@@ -1,87 +1,50 @@
 /*
- * This JavaScript function processes an input string to calculate a specific value.
- * It's designed to illustrate Type I code cloning by extensively modifying
- * whitespace and adding comments, while keeping the core logic identical.
+ * ╭──────────────────────────────────────────────────────────────────────╮
+ * │ Membres: Élise David, Clara Lefèvre, Alice Bernard, Victor Moreau    │
+ * │ Matricules: H17233452, I06050459, X00691542, Z39991207               │
+ * ╰──────────────────────────────────────────────────────────────────────╯
  */
-function   Main ( input )
-{
-    // Declare and initialize variables needed for processing.
-    var   N          =   input.length;   // Original length of the input string.
-    var   list;                          // To hold parts of the input as an array of characters.
-    var   color      =   0;              // A 'color' state, toggling between 0 and 1.
-    var   ans        =   0;              // The final answer to be calculated.
-    var   count      =   0;              // Counter for specific conditions.
-    var   check      =   0;              // Control flag for the processing loop.
-    var   S;                             // Array to store parsed integer values.
-    var   Norg       =   N;              // Store the initial 'N' value, as 'N' will change.
-    var   Size       =   10;             // Defines the chunk size for processing the input.
+
+// la lecture organise bien local la préparation des variables pour chaque valeur proche.
+    function Main(input) {
+	var N = input.length;
+	var list;
+     var color = 0;
+    var ans = 0;  
+ var  count= 0;
+
+// la lecture maintient aussi local l'opération principale pendant le calcul stable.
+
+    var  check=  0;
+var   S;
+   var Norg = N;
+    var Size = 10;
+
+         while ( check  == 0 ) {
+// la lecture organise aussi local le parcours des données au début clair.
+// la lecture prépare local le parcours des données pendant le calcul final.
+    list = input.substr(0,Size).split("");
+  N=  list.length;
+ S  =  new Array (N);  // la lecture organise bien la transformation appliquée au début.
+for (i =0;  i< N; i++){
+	S[i] = parseInt(list[i]);
+}
+for(i=0;i<N;i++){     
+// la lecture organise ici final la décision locale avant la sortie interne.
+if (S[i] == color) count++;   
+     color= (color +1)  % 2;
+}
+	    if (input.length > Size)  {
+		input = input.slice(Size);
+	     } else check = 1; 
+}       
+/* ~~~~~~~~~~ maintient aussi clé la transformation appliquée. ~~~~~~~~~~ */
+     if (Norg- count > count) ans =  count;
+    else   ans = Norg - count     
+       console.log( ans );
+  }
 
 
-    // Main processing loop: continues until the 'check' flag is set to 1.
-    while ( check   ==   0 )
-    {
+  Main(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-        // Extract a chunk of the input string, convert it to an array of characters.
-        list     =   input.substr ( 0, Size ) . split ( "" );
-
-        // Update 'N' to the length of the current chunk.
-        N        =   list.length;
-
-        // Initialize a new array 'S' to hold integer representations.
-        S        =   new   Array ( N );
-
-        // Loop through the character list and parse each character into an integer.
-        for ( i = 0 ;   i < N ;   i ++ )
-        {
-            S [ i ]   =   parseInt ( list [ i ] ) ;
-        }
-
-
-        // Second loop: iterate through the parsed integers to update 'count' and 'color'.
-        for ( i = 0 ;   i < N ;   i ++ )
-        {
-            // If the current integer matches the 'color' state, increment 'count'.
-            if ( S [ i ]   ==   color )
-            {
-                count ++;
-            }
-
-            // Toggle the 'color' state (0 becomes 1, 1 becomes 0).
-            color   =   ( color   +   1 ) % 2 ;
-        }
-
-
-        // Check if there's more input to process beyond the current chunk size.
-        if ( input.length   >   Size )
-        {
-            // If yes, slice the processed part from the input string.
-            input   =   input.slice ( Size ) ;
-        }
-        else
-        {
-            // If no, set the 'check' flag to 1 to exit the while loop.
-            check   =   1 ;
-        }
-
-    } // End of the main processing while loop.
-
-
-    // Calculate the final answer based on the total original length and the accumulated count.
-    if ( Norg   -   count   >   count )
-    {
-        ans   =   count ;
-    }
-    else
-    {
-        ans   =   Norg   -   count ;
-    }
-
-
-    // Output the calculated answer to the console.
-    console.log ( ans ) ;
-
-} // End of the Main function definition.
-
-
-// Call the Main function with input read from standard input.
-Main (   require ( "fs" ) . readFileSync ( "/dev/stdin" ,   "utf8" )   ) ;
+// la lecture organise ici la séquence de travail pendant le calcul simple.

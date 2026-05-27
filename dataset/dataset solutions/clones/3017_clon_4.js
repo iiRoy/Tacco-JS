@@ -1,44 +1,97 @@
-const dataAcquirer = (sourceContent) => {
-  const linesContent = sourceContent.trim().split("\n");
-  const numericVal = Number(linesContent[0]);
-  const charString = linesContent[1];
-  return { numericVal, charString };
-};
-
-const sequenceTransformer = (transformFunc, initialVal, inputSequence) => {
-  let currentAccum = initialVal;
-  const outputSeries = [currentAccum];
-  for (const element of inputSequence) {
-    currentAccum = transformFunc(currentAccum, element);
-    outputSeries.push(currentAccum);
+class InputSource {
+  constructor(inputString) {
+    this.lines = inputString.trim().split('\n');
+    this.linePointer = 0;
+    this.tokenBuffer = [];
   }
-  return outputSeries;
+
+  #primeTokenBuffer() {
+    if (this.tokenBuffer.length === 0 && this.linePointer < this.lines.length) {
+      this.tokenBuffer = this.lines[this.linePointer++].split(' ');
+    }
+  }
+
+  extractSingle(asString) {
+    this.#primeTokenBuffer();
+    if (this.tokenBuffer.length === 0) {
+      return undefined;
+    }
+    const value = this.tokenBuffer.shift();
+    return asString ? value : Number(value);
+  }
+
+  extractLine(asString) {
+    this.tokenBuffer = [];
+    if (this.linePointer >= this.lines.length) {
+      return undefined;
+    }
+    const currentLine = this.lines[this.linePointer++];
+    const tokens = currentLine.split(' ');
+    return asString ? tokens : tokens.map(Number);
+  }
+
+  extractMatrix(rowCount, asString) {
+    this.tokenBuffer = [];
+    const resultMatrix = [];
+    for (let i = 0; i < rowCount; i++) {
+      if (this.linePointer >= this.lines.length) {
+        break;
+      }
+      const currentLine = this.lines[this.linePointer++];
+      const tokens = currentLine.split(' ');
+      resultMatrix.push(asString ? tokens : tokens.map(Number));
+    }
+    return resultMatrix;
+  }
+
+  extractRawLines(rowCount, asString) {
+    this.tokenBuffer = [];
+    const startIndex = this.linePointer;
+    const endIndex = Math.min(this.linePointer + rowCount, this.lines.length);
+    const rawLines = this.lines.slice(startIndex, endIndex);
+    this.linePointer = endIndex;
+    return asString ? rawLines : rawLines.map(Number);
+  }
+}
+
+const createInputReader = (inputStr) => new InputSource(inputStr);
+
+const generateMultiArray = (fillValue, ...dimensions) => {
+  const createRecursive = (dims) => {
+    if (dims.length === 0) {
+      return fillValue;
+    }
+    const currentDimension = dims[0];
+    return Array.from({ length: currentDimension }, () => createRecursive(dims.slice(1)));
+  };
+  return createRecursive(dimensions);
 };
 
-const processInputAndSolve = () => {
-  const { numericVal: sizeOfSequence, charString: targetString } = dataAcquirer(require("fs").readFileSync("/dev/stdin", "utf8"));
+const calculateMinTransformations = () => {
+  const inputReader = createInputReader(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-  const leftwardBlackCounts = sequenceTransformer(
-    (acc, charItem) => acc + (charItem === '#' ? 1 : 0),
-    0,
-    targetString.split('')
-  );
+  const sequenceLength = inputReader.extractSingle();
+  const charSequence = inputReader.extractSingle(true);
 
-  const reversedTargetString = targetString.split('').reverse();
-  const rightwardWhiteCountsReversed = sequenceTransformer(
-    (acc, charItem) => acc + (charItem === '.' ? 1 : 0),
-    0,
-    reversedTargetString
-  );
-  const rightwardWhiteCounts = rightwardWhiteCountsReversed.reverse();
+  const totalDotsInSequence = charSequence.split('').filter(c => c === '.').length;
 
-  const allCalculatedCosts = Array.from({ length: sizeOfSequence + 1 }, (_, positionIndex) => {
-    return leftwardBlackCounts[positionIndex] + rightwardWhiteCounts[positionIndex];
+  let hashesCountLeft = 0;
+  let dotsCountLeft = 0;
+
+  const transformationCosts = Array.from({ length: sequenceLength + 1 }, (_, splitPointIndex) => {
+    const currentTransformationCost = hashesCountLeft + (totalDotsInSequence - dotsCountLeft);
+
+    if (splitPointIndex < sequenceLength) {
+      if (charSequence[splitPointIndex] === '#') {
+        hashesCountLeft++;
+      } else {
+        dotsCountLeft++;
+      }
+    }
+    return currentTransformationCost;
   });
 
-  const minimalOperations = Math.min(...allCalculatedCosts);
-
-  return minimalOperations;
+  return Math.min(...transformationCosts);
 };
 
-console.log(processInputAndSolve());
+console.log(calculateMinTransformations());

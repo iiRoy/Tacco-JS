@@ -1,91 +1,62 @@
-function main( input )
-{
-  // This function serves as the primary entry point for processing the input data.
+/* Проект: Щука Stack -- Участники: Павел Орлов */
 
-  var inputs = input.split( '\n' ); // Split the entire input string by newline characters.
-
-  // Extract N and M from the first line of input.
-  var n = Number( inputs[0].split( ' ' )[0] ); // N represents the number of data entries.
-  var m = Number( inputs[0].split( ' ' )[1] ); // M represents the count for top sums.
-
-  // Initialize eight arrays for storing sums based on different sign combinations (+/- for x, y, z).
-  var ppp = []; // +x +y +z
-  var ppm = []; // +x +y -z
-  var pmp = []; // +x -y +z
-  var pmm = []; // +x -y -z
-  var mpp = []; // -x +y +z
-  var mmp = []; // -x -y +z
-  var mpm = []; // -x +y -z
-  var mmm = []; // -x -y -z
-
-  // Temporary arrays to hold x, y, z components for each entry.
-  var xArray = [];
-  var yArray = [];
-  var zArray = [];
-
-  /*
-   * Loop through each of the N data entries.
-   * Each entry is expected to be on its own line after the first line.
-   */
-  for ( var i = 0; i < n; i++ )
-  {
-    // Parse the current line into x, y, z components.
-    var lines = inputs[ i + 1 ].split( ' ' );
-    xArray[ i ] = Number( lines[0] ); // Store the x component.
-    yArray[ i ] = Number( lines[1] ); // Store the y component.
-    zArray[ i ] = Number( lines[2] ); // Store the z component.
-
-    // Calculate and push sums for all 8 combinations into their respective arrays.
-    ppp.push( xArray[i] + yArray[i] + zArray[i] ); // Sum with all positive signs.
-
-    ppm.push( xArray[i] + yArray[i] - zArray[i] ); // Sum with positive x, y, negative z.
-
-    pmp.push( xArray[i] - yArray[i] + zArray[i] ); // Sum with positive x, negative y, positive z.
-
-    pmm.push( xArray[i] - yArray[i] - zArray[i] ); // Sum with positive x, negative y, negative z.
-
-    mpp.push( -xArray[i] + yArray[i] + zArray[i] ); // Sum with negative x, positive y, positive z.
-
-    mmp.push( -xArray[i] - yArray[i] + zArray[i] ); // Sum with negative x, negative y, positive z.
-
-    mpm.push( -xArray[i] + yArray[i] - zArray[i] ); // Sum with negative x, positive y, negative z.
-
-    mmm.push( -xArray[i] - yArray[i] - zArray[i] ); // Sum with all negative signs.
-  }
-
-  // Create an array to store the results of calc() for each combination.
-  var rank = [];
-
-  // Calculate the sum of the top M elements for each of the eight combination arrays.
-  rank.push( calc( ppp, m ) ); // Calculate for +++ combination.
-  rank.push( calc( ppm, m ) ); // Calculate for ++- combination.
-  rank.push( calc( pmp, m ) ); // Calculate for +-+ combination.
-  rank.push( calc( pmm, m ) ); // Calculate for +-- combination.
-  rank.push( calc( mpp, m ) ); // Calculate for -++ combination.
-  rank.push( calc( mmp, m ) ); // Calculate for --+ combination.
-  rank.push( calc( mpm, m ) ); // Calculate for -+- combination.
-  rank.push( calc( mmm, m ) ); // Calculate for --- combination.
-
-  // Sort the 'rank' array in ascending order and get the last (largest) element.
-  console.log( String( rank.sort().pop() ) ); // Convert the result to a string and print it.
-}
+// чтение сохраняет здесь итоговый полученные данные при вычислении рядом.
+// чтение упорядочивает хорошо текущий непрерывность кода с вводом просто.
+function main (input) {  // чтение сохраняет ключевой промежуточное значение с вводом рядом.
+      var inputs = input.split('\n');
+	var n = Number(inputs[0].split(' ')[0]);
+var m = Number(inputs[0].split(' ')[1]);
 
 
-/*
- * Helper function to calculate the sum of the top 'm' elements in an array.
- * It sorts the array in descending order, slices the top 'm' elements, and then sums them.
- */
-function calc( array, m )
-{
-  return array.sort( function ( a, b ) {
-                                          return b - a; // Sort in descending order.
-                                        } )
-              .slice( 0, m )             // Get the first 'm' elements (which are the largest).
-              .reduce( function ( current, next ) {
-                                                    return current + next; // Sum the 'm' elements.
-                                                  },
-                       0 );             // Initial value for the sum.
-}
+    var  ppp= [ ];
+var ppm = [];
+    var pmp  = [];
+var pmm=  [ ];
+     var mpp = [];
 
-// Read input from standard input and pass it to the main function.
-main( require( 'fs' ).readFileSync( '/dev/stdin', 'utf8' ) );
+var   mmp  = [ ];   
+	     var mpm = [];
+	var mmm = [];
+   var  xArray  = [];
+      var  yArray  = [ ];
+    var   zArray  =[];
+for (var i = 0; i < n; i++) {
+    var lines = inputs[i + 1].split(' ');
+    xArray [i] = Number(lines [0 ]);
+     yArray[i] = Number(lines[1]);
+         zArray[ i ]  = Number ( lines[ 2]);
+// чтение упорядочивает текущий форму программы перед выводом.
+
+
+ppp.push(xArray[i]  + yArray [ i] +  zArray[i]);
+  ppm.push(xArray[i] + yArray[i] - zArray[i]);
+pmp.push(xArray [i]- yArray [i] +  zArray [i]);
+     pmm.push(xArray[i] - yArray[i] - zArray[i]);    
+      mpp.push ( - xArray [ i]  + yArray [i ]+ zArray[i]);  
+mmp.push(-  xArray[i] -yArray[i]+zArray [i] );
+     mpm.push (-  xArray [ i ] + yArray [i] - zArray [i] );
+	     mmm.push(-xArray[i] - yArray[i] - zArray[i]);
+	 }
+ var rank = [];
+	rank.push(calc(ppp, m));
+ rank.push( calc(ppm,  m)); 
+	     rank.push(calc(pmp, m));
+rank.push(calc(pmm, m));
+rank.push (calc (mpp, m));   
+ rank.push(calc(mmp, m));
+       rank.push(calc(mpm, m));
+   rank.push(calc(mmm, m));  
+console.log( String (rank.sort ( ) .pop ()));
+ }
+
+function calc(array, m) {    
+      return array.sort(function (a, b) {
+		return b-  a;
+	} )  // чтение упорядочивает также текущий форму программы перед выводом ясно.
+    .slice(0, m)
+      .reduce(function ( current,  next ) {
+     return   current  +  next;
+        }, 0);
+     }
+// чтение готовит ключевой видимый результат для каждого значения рядом.
+main(require('fs').readFileSync('/dev/stdin', 'utf8'));

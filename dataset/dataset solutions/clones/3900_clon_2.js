@@ -1,42 +1,54 @@
-"use strict"; // Enforce strict parsing and error handling for cleaner code.
-    
-// This primary routine handles the processing of incoming textual data.
-const processInput = (      dataStream ) =>
-{
-    // First, sanitize the input: remove leading/trailing spaces, then divide into distinct lines.
-    dataStream = dataStream .trim() .split( "\n" ) ;
-    
-    // Extract the numerical count of items from the initial segment of the first line.
-    const itemCount = parseInt( dataStream [ 0 ] .split( " " ) [ 0 ] ) ;
+"use strict";
 
-    // Convert the elements of the second line into an array of whole numbers.
-    const initialElements = dataStream [ 1 ] .split( " " ) .map( ( numericString ) => { return parseInt( numericString ); } ) ;
-    
-    // Generate a new array containing the original elements, arranged in ascending order.
-    const orderedElements = [ ...initialElements ] .sort( ( valA , valB ) => valA - valB ) ;
-    
-    // Calculate the first (lower) median value from the sorted collection.
-    const lowerMedianValue = orderedElements [ ( itemCount / 2 ) - 1 ] ;
-    
-    // Determine the second (upper) median value from the sorted collection.
-    const upperMedianValue = orderedElements [ itemCount / 2 ] ;
+// This script processes a list of numbers to determine medians and
+// then outputs a transformed list based on those medians.
 
-    // Prepare an array to accumulate the final computed outcomes.
-    let finalResults = [];
-    
-    // Iterate through each element in the original unsorted array.
-    for ( let currentIdx in initialElements ) {
-        // Based on comparison with the upper median, select which median to push to results.
-        if ( initialElements [ currentIdx ] < upperMedianValue ) {
-            finalResults .push( upperMedianValue );
-        } else {
-            finalResults .push( lowerMedianValue );
-        }
+/**
+ * Main function to handle the input data and perform calculations.
+ * @param {string} inputData - The raw input string from stdin.
+ */
+const processInput = (inputData) => {
+  // Clean up the input string: remove leading/trailing whitespace and split into lines.
+  inputData = inputData.trim().split("\n");
+
+  // Parse the first line to get the count of elements.
+  // The problem statement implies N is the first number on the first line.
+  const countElements = parseInt(inputData[0].split(" ")[0]);
+
+  // Parse the second line to get the array of numbers.
+  // Each number string is converted to an integer.
+  const originalArray = inputData[1].split(" ").map((numStr) => parseInt(numStr));
+
+  // Create a sorted copy of the original array to find medians.
+  // The spread operator `...` creates a shallow copy before sorting.
+  const orderedElements = [...originalArray].sort((a, b) => a - b);
+
+  // Calculate the two medians for an even-sized array.
+  // For an array of N elements, the medians are at indices (N/2 - 1) and (N/2).
+  const lowerMedian = orderedElements[countElements / 2 - 1];
+  const upperMedian = orderedElements[countElements / 2];
+
+  // Initialize an empty array to store the transformed results.
+  let resultList = [];
+
+  // Iterate through the original array using a for...in loop.
+  // This loop processes each element based on its comparison with the medians.
+  for (let idx in originalArray) {
+    // If the current element from the original array is less than the upper median,
+    // push the upper median to the result list.
+    if (originalArray[idx] < upperMedian) {
+      resultList.push(upperMedian);
     }
-    
-    // Output the collected results, with each entry separated by a newline character.
-    console.log( finalResults .join( "\n" ) );
+    // Otherwise (if the current element is greater than or equal to the upper median),
+    // push the lower median to the result list.
+    else {
+      resultList.push(lowerMedian);
+    }
+  }
+
+  // Join the elements of the result list with newline characters and print to console.
+  console.log(resultList.join("\n"));
 };
 
-// Execute the main processing function, feeding it content read from the standard input stream.
-processInput( require( 'fs' ) .readFileSync( '/dev/stdin' , 'utf8' ) );
+// Read the entire content of standard input synchronously and pass it to the main processing function.
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

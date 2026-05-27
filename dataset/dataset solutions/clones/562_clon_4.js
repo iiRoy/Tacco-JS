@@ -1,61 +1,50 @@
-(function (sourceText) {
-    const cleanLines = sourceText.trim().split(/\r?\n/);
+(function (sourceData) {
+    const allInputLines = sourceData.replace(/\r/g, '').split("\n");
+    let currentLinePointer = 0;
 
-    const assembleWorkload = (dataLines) => {
-        let currentLineIndex = 0;
+    // Helper function to abstract line consumption, replacing direct array shifts.
+    const retrieveNextLine = () => allInputLines[currentLinePointer++];
 
-        const advanceLine = () => dataLines[currentLineIndex++];
+    // Main processing loop for multiple test cases.
+    while (true) {
+        const configurationDetails = retrieveNextLine().split(' ');
+        const totalElements = parseInt(configurationDetails[0], 10);
+        const subArrayLength = parseInt(configurationDetails[1], 10);
 
-        const jobQueue = [];
+        // Termination condition for the input stream.
+        if (totalElements === 0 && subArrayLength === 0) {
+            break;
+        }
 
-        while (true) {
-            const dimensionsInput = advanceLine();
-            const [itemCountStr, windowSizeStr] = dimensionsInput.split(' ');
-            const itemCount = Number(itemCountStr);
-            const windowSize = Number(windowSizeStr);
+        // Populate the sequence of numbers using a functional approach.
+        const numericSequence = Array.from({ length: totalElements }, () => parseInt(retrieveNextLine(), 10));
 
-            if (itemCount === 0 && windowSize === 0) {
-                break;
+        let maximumWindowSum;
+
+        // Handle edge cases for subArrayLength to match original behavior.
+        if (subArrayLength === 0) {
+            maximumWindowSum = 0; // An empty window sum is 0.
+        } else if (subArrayLength > totalElements) {
+            maximumWindowSum = undefined; // No valid window can be formed.
+        } else {
+            let currentAccumulatedSum = 0;
+
+            // Calculate the sum of the very first window.
+            for (let i = 0; i < subArrayLength; i++) {
+                currentAccumulatedSum += numericSequence[i];
             }
+            maximumWindowSum = currentAccumulatedSum; // Initialize max with the first window's sum.
 
-            const numericalSequence = [];
-            for (let itemIdx = 0; itemIdx < itemCount; itemIdx++) {
-                numericalSequence.push(Number(advanceLine()));
+            // Efficiently slide the window across the sequence.
+            // Instead of re-summing, update the sum by subtracting the outgoing element
+            // and adding the incoming element.
+            for (let i = subArrayLength; i < totalElements; i++) {
+                currentAccumulatedSum += numericSequence[i] - numericSequence[i - subArrayLength];
+                if (currentAccumulatedSum > maximumWindowSum) {
+                    maximumWindowSum = currentAccumulatedSum;
+                }
             }
-
-            jobQueue.push({
-                totalElements: itemCount,
-                segmentLength: windowSize,
-                elementCollection: numericalSequence
-            });
         }
-        return jobQueue;
-    };
-
-    const determineMaxSegmentSum = (valueSet, intervalWidth) => {
-        if (valueSet.length < intervalWidth || intervalWidth <= 0) {
-            return -Infinity;
-        }
-
-        let currentIntervalTotal = 0;
-        for (let i = 0; i < intervalWidth; i++) {
-            currentIntervalTotal += valueSet[i];
-        }
-
-        let peakSumDiscovered = currentIntervalTotal;
-
-        for (let i = intervalWidth; i < valueSet.length; i++) {
-            currentIntervalTotal += valueSet[i] - valueSet[i - intervalWidth];
-            peakSumDiscovered = Math.max(peakSumDiscovered, currentIntervalTotal);
-        }
-        return peakSumDiscovered;
-    };
-
-    const taskList = assembleWorkload(cleanLines);
-
-    taskList.forEach(currentJob => {
-        const finalResult = determineMaxSegmentSum(currentJob.elementCollection, currentJob.segmentLength);
-        console.log(finalResult);
-    });
-
+        console.log(maximumWindowSum);
+    }
 })(require("fs").readFileSync("/dev/stdin", "utf8"));

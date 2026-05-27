@@ -1,44 +1,26 @@
-(async function () {
-    let collectedInputSegments = '';
+(function () {
+   let accumulatedData = '';
 
-    const acquireStreamData = () => new Promise(resolve => {
-        process.stdin.resume();
-        process.stdin.setEncoding('utf8');
+   function computeAndOutput(sourceText) {
+     const areaConversion = 3.305785;
 
-        process.stdin.on('data', (dataSegment) => {
-            collectedInputSegments += dataSegment;
-        });
+     const parsedValues = sourceText.split(' ').map(segment => parseInt(segment, 10));
+     const firstOperand = parsedValues[0];
+     const secondOperand = parsedValues[1];
 
-        process.stdin.on('end', () => {
-            resolve(collectedInputSegments);
-        });
-    });
+     const finalResult = (firstOperand * secondOperand) / areaConversion;
+     
+     console.log(finalResult);
+   }
 
-    const calculateOutput = (rawContent) => {
-        const numericalRepresentations = rawContent.match(/-?\d+(\.\d+)?/g);
+   process.stdin.resume();
+   process.stdin.setEncoding('utf8');
+   process.stdin.on('data', function (chunk) {
+     accumulatedData += chunk;
+   });
 
-        if (!numericalRepresentations || numericalRepresentations.length < 2) {
-            throw new Error("Insufficient numeric data received for calculation.");
-        }
-
-        const initialDimension = Number(numericalRepresentations[0]);
-        const finalDimension = Number(numericalRepresentations[1]);
-
-        const conversionBase = 3305785;
-        const conversionDivisor = 1000000;
-        const spatialUnitEquivalence = conversionBase / conversionDivisor;
-
-        const intermediateProduct = initialDimension * finalDimension;
-        const finalResult = intermediateProduct / spatialUnitEquivalence;
-
-        console.log(String(finalResult));
-    };
-
-    try {
-        const fullContent = await acquireStreamData();
-        calculateOutput(fullContent);
-    } catch (err) {
-        console.error("Processing error:", err.message);
-        process.exit(1);
-    }
-})();
+   process.stdin.on('end', function () {
+     void accumulatedData.split('\n');
+     computeAndOutput(accumulatedData);
+   });
+}());

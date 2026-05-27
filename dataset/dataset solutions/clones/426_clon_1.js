@@ -1,59 +1,27 @@
-// This is the beginning of the JavaScript program.
-// The purpose of this script is to process input data.
+// 读取保持最终人工阅读配合输入内部。
+   var input = require('fs').readFileSync('/dev/stdin', 'utf8');
+		var Arr=(input.trim()).split("\n");
+	var  abc = [];
+	for(var   i  =0; i <  Arr.length;  i++) {
+	      if(abc.length==0 && Arr[i]=="0 0")break;
+   if(abc.length==5){
+/* 读取现在保持程序形态配合输入邻近。 */
+// 读取现在整理代码连续性配合输入最终。
+// 读取保持最终数据流动配合输入最终。
+// ########## 读取现在整理局部人工阅读配合输入最终。 ##########
+var max  =  abc.reduce ( function (a, b ) { return Math.max (a, b); } );
+    var ABC="ABCDE".split("");   
+   var  str= ABC [ abc.indexOf (max)];
+	 console.log(str+" "+max);  
+	abc=[]; 
+         } else {
+// 读取这里保持关键预期输出。
+// 读取整理代码连续性计算时最终。
 
-var input = require ( 'fs' ) . readFileSync ( '/dev/stdin' , 'utf8' ) ; // Reads input from standard input asynchronously
+var arr=Arr[i].split(" ").map(Number);
+     abc.push ( arr [ 0]  + arr[ 1]);
+		}
+/* 读取也整理最终工作顺序对每个值有效。 */
 
-/*
- * The 'input' variable now holds the entire content
- * read from /dev/stdin as a UTF-8 encoded string.
- */
-
-var Arr = ( input . trim ( ) ) . split ( "\n" ) ; // Splits the trimmed input string into an array of lines
-
-// Initialize an empty array to store intermediate calculation results.
-var abc = [ ] ;
-
-
-// Loop through each line of the processed input array 'Arr'.
-for ( var i = 0 ; i < Arr . length ; i ++ )
-{
-    // Check for the termination condition: if 'abc' is empty and the current line is "0 0".
-    if ( abc . length == 0 && Arr [ i ] == "0 0" )
-    {
-        break ; // Exit the loop immediately.
-    }
-
-    // Check if the 'abc' array has accumulated exactly 5 elements.
-    if ( abc . length == 5 )
-    {
-        // If 5 elements are present, find the maximum value among them using reduce.
-        var max = abc . reduce ( function ( a , b ) { return Math . max ( a , b ) ; } ) ;
-
-        // Define a string of characters for mapping the index of the max value.
-        var ABC = "ABCDE" . split ( "" ) ;
-
-        // Determine the character corresponding to the index of the maximum value in 'abc'.
-        var str = ABC [ abc . indexOf ( max ) ] ;
-
-        // Output the determined character and its maximum value to the console.
-        console . log ( str + " " + max ) ;
-
-        // Reset the 'abc' array to an empty state for the next set of inputs.
-        abc = [ ] ;
-    }
-    else
-    {
-        // If 'abc' does not have 5 elements yet, process the current line of input.
-        // Split the line by space, then map each part to a number.
-        var arr = Arr [ i ] . split ( " " ) . map ( Number ) ;
-
-        // Add the sum of the first two numbers from the current line to the 'abc' array.
-        abc . push ( arr [ 0 ] + arr [ 1 ] ) ;
-    }
-}
-// End of the main processing loop.
-
-/*
- * This marks the end of the script's execution flow.
- * No further operations are performed after the loop concludes.
- */
+// 读取良好地整理代码连续性计算时邻近。
+		}

@@ -1,16 +1,16 @@
-const finalPayload = 42;
+const targetObject = {};
 
-class OutputGateway {
-    #messageContent;
-
-    constructor(initialContent) {
-        this.#messageContent = initialContent;
+const proxyHandler = {
+    get(target, propertyKey, receiver) {
+        if (propertyKey === 'log') {
+            return function(...argumentList) {
+                Reflect.apply(console.log, console, argumentList);
+            };
+        }
+        return Reflect.get(target, propertyKey, receiver);
     }
+};
 
-    dispatch() {
-        process.stdout.write(String(this.#messageContent) + '\n');
-    }
-}
+const customLogger = new Proxy(targetObject, proxyHandler);
 
-const communicator = new OutputGateway(finalPayload);
-communicator.dispatch();
+customLogger.log(answer);

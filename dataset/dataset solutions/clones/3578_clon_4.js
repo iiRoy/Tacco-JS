@@ -1,65 +1,51 @@
-"use strict";
-
-const processInputString = (rawData) => {
+function processInput(rawData) {
   const lineSegments = rawData.split("\n");
-  const quantity = Number.parseInt(lineSegments[0], 10);
-  const dataSequence = lineSegments.slice(1, quantity + 1).map((str) => Number.parseInt(str, 10) - 1);
-  return { quantity, dataSequence };
-};
+  const elementCount = Number(lineSegments[0]);
+  const sequenceData = lineSegments.slice(1).map(valStr => Number(valStr) - 1);
 
-const validateParity = (sequence, size) => {
-  return sequence.every((value, position) => (value % 2 === position % 2));
-};
+  const hasParityDiscrepancy = sequenceData.some((currentValue, currentIndex) => ((currentValue ^ currentIndex) & 1) !== 0);
 
-const applyTripletAdjustment = (originalSequence, currentPosition) => {
-  if (currentPosition < 2) {
-    return originalSequence;
+  if (hasParityDiscrepancy) {
+    console.log("No");
+    return;
   }
 
-  const workingSequence = [...originalSequence];
+  const performConditionalSwap = (currentPosition) => {
+    if (currentPosition < 2) {
+      return;
+    }
 
-  const valA = workingSequence[currentPosition - 2];
-  const valB = workingSequence[currentPosition - 1];
-  const valC = workingSequence[currentPosition];
+    const itemAtCurrent = sequenceData[currentPosition];
+    const itemBefore = sequenceData[currentPosition - 1];
+    const itemTwoBefore = sequenceData[currentPosition - 2];
 
-  if (valC < valB && valB < valA) {
-    workingSequence[currentPosition] = valA;
-    workingSequence[currentPosition - 2] = valC;
-  }
+    if (itemAtCurrent < itemBefore && itemBefore < itemTwoBefore) {
+      sequenceData[currentPosition] = itemTwoBefore;
+      sequenceData[currentPosition - 2] = itemAtCurrent;
+    }
 
-  return applyTripletAdjustment(workingSequence, currentPosition - 1);
-};
+    performConditionalSwap(currentPosition - 1);
+  };
 
-const validateFinalArrangement = (adjustedSequence, size) => {
-  if (size < 3) { // No triplets of (i-2, i-1, i) exist for N < 3
-    return true;
-  }
-  return !adjustedSequence.slice(2).some((_, relativeIndex) => {
-    const absoluteIndex = relativeIndex + 2;
-    const current = adjustedSequence[absoluteIndex];
-    const middle = adjustedSequence[absoluteIndex - 1];
-    const left = adjustedSequence[absoluteIndex - 2];
+  performConditionalSwap(elementCount - 1);
 
-    return current < left && (current > middle || middle > left);
+  const hasPostModificationAnomaly = sequenceData.some((value, index, arrRef) => {
+    if (index < 2) {
+      return false;
+    }
+    const currentElement = arrRef[index];
+    const previousElement = arrRef[index - 1];
+    const twoPreviousElement = arrRef[index - 2];
+
+    return currentElement < twoPreviousElement && (currentElement > previousElement || previousElement > twoPreviousElement);
   });
-};
 
-const orchestrateSolution = (rawQuery) => {
-  const { quantity, dataSequence } = processInputString(rawQuery);
-
-  if (!validateParity(dataSequence, quantity)) {
-    return "No";
+  if (hasPostModificationAnomaly) {
+    console.log("No");
+    return;
   }
 
-  const adjustedSequence = applyTripletAdjustment(dataSequence, quantity - 1);
+  console.log("Yes");
+}
 
-  if (!validateFinalArrangement(adjustedSequence, quantity)) {
-    return "No";
-  }
-
-  return "Yes";
-};
-
-const systemInput = require("fs").readFileSync("/dev/stdin", "utf8");
-const finalOutcome = orchestrateSolution(systemInput);
-console.log(finalOutcome);
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

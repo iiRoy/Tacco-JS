@@ -1,22 +1,17 @@
-/*
- * This module contains a primary routine to process numerical data.
- */
-function processNumericalOperation(inputStringContent) {
-  // Separate the incoming string data into individual components using a space delimiter.
-  const numericParts = inputStringContent.split(' ');
+function processInput(rawData) {
+  // Split the incoming string by a space character to separate the values.
+  const parsedValues = rawData.split(' ');
 
-  // Extract the first numerical component, intended as the numerator.
-  const numeratorValue = numericParts[0];
+  // Assign the first parsed value to represent the dividend.
+  const numeratorVal = parsedValues[0];
 
-  // Extract the second numerical component, designated as the denominator.
-  const denominatorValue = numericParts[1];
+  // Assign the second parsed value to represent the divisor.
+  const denominatorVal = parsedValues[1];
 
-  // Perform the division operation and present the computed outcome.
-  outputStream.displayResult(numeratorValue / denominatorValue);
+  // Calculate the quotient and display it on the console.
+  console.log(numeratorVal / denominatorVal);
 }
 
-// Initiate the application by acquiring data from the system's standard input source.
-processNumericalOperation(
-  retrieveUtility('systemIO')
-    .readTextFile('/standard/input/path', 'characterEncoding')
-);
+// Read the entire content from standard input, decode it as UTF-8, and then
+// pass it to our primary processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

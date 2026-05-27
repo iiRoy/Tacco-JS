@@ -1,246 +1,180 @@
 "use strict";
 
 class Cube {
-  /*
-   * This class represents a six-sided object, like a die.
-   * The faces are numbered 0 through 5.
-   * The initial orientation is assumed based on the input array.
-   *
-   * Face mapping:
-   *      +---+
-   *      | 0 | (Top)
-   *   +--+---+---+--+
-   *   | 3| 1 | 2 | 4| (Left, Front, Right, Back)
-   *   +--+---+---+--+
-   *      | 5 | (Bottom)
-   *      +---+
-   */
-  constructor(initialFaces) {
-    // Store the values on each face, ensuring only the first six are used.
-    this.faceValues = initialFaces.slice(0, 6);
-  }
-
-  /**
-   * Adjusts the cube's orientation so that a specific value is on the top
-   * and another specific value is on the front, if possible.
-   * @param {number} primaryFace - The value desired on the top face (index 0).
-   * @param {number} secondaryFace - The value desired on the front face (index 1).
-   * @returns {boolean} True if the orientation was successfully set, false otherwise.
-   */
-  orient(primaryFace, secondaryFace) {
-    // Determine the initial rotation to bring the desired primaryFace to the top.
-    switch (this.faceValues.indexOf(primaryFace)) {
-      case 1:
-        this.spinVertical(1); // Rotate North-South
-        break;
-      case 2:
-        this.spinHorizontal(1); // Rotate West-East
-        break;
-      case 3:
-        this.spinHorizontal(-1); // Rotate East-West
-        break;
-      case 4:
-        this.spinVertical(-1); // Rotate South-North
-        break;
-      case 5:
-        this.spinVertical(2); // Rotate to opposite side
-        break;
-      // Case 0 means it's already on top, no action needed.
+    /*
+     *  +---+
+     *  | T |
+     *+---+---+---+---+
+     *| L | F | R | B |
+     *+---+---+---+---+
+     *  | D |
+     *  +---+
+     *
+     *  Mapping:
+     *  0: Top
+     *  1: Front
+     *  2: Right
+     *  3: Left
+     *  4: Back
+     *  5: Bottom
+     */
+    constructor(initialFaces) {
+        // Store the face values, ensuring we only take the first six.
+        this.faces = initialFaces.slice(0, 6);
     }
 
-    // Now, with the primaryFace on top, rotate around the vertical axis
-    // until the secondaryFace is in the front position.
-    for (let counter = 0; counter < 4; ++counter) {
-      if (this.faceValues[1] === secondaryFace) {
-        return true; // Successfully oriented.
-      }
-      this.spinAroundAxis(1); // Rotate 90 degrees clockwise around vertical axis.
+    // Method to align the cube so a specific value is on top and another on front.
+    align(topValue, frontValue) {
+        // Determine the current index of the desired top face.
+        switch (this.faces.indexOf(topValue)) {
+            case 1: // Front face is currently top
+                this.rotateNorthSouth(1);
+                break;
+            case 2: // Right face is currently top
+                this.rotateWestEast(1);
+                break;
+            case 3: // Left face is currently top
+                this.rotateWestEast(-1);
+                break;
+            case 4: // Back face is currently top
+                this.rotateNorthSouth(-1);
+                break;
+            case 5: // Bottom face is currently top
+                this.rotateNorthSouth(2);
+                break;
+            case 0: // Top face is already top, no initial rotation needed
+            default:
+                break;
+        }
+
+        // Now that the top face is correct, rotate around the vertical axis
+        // until the desired front face is in position.
+        for (let k = 0; k < 0b100; ++k) {
+            if (this.faces[0b1] === frontValue) {
+                return true; // Successfully aligned
+            }
+            this.rotateAroundAxis(0b1); // Rotate 90 degrees clockwise
+        }
+        return false; // Should not happen if topValue and frontValue are valid and distinct
     }
 
-    // If after all rotations, it couldn't be oriented, return false.
-    return false;
-  }
-
-  /**
-   * Rotates the cube along its vertical axis (top/bottom faces stay put).
-   * The side faces (1, 2, 4, 3) shift positions.
-   * @param {number} amount - Number of 90-degree rotations. Positive for clockwise, negative for counter-clockwise.
-   */
-  spinAroundAxis(amount) {
-    // Normalize rotation amount to be positive and within [0, 3].
-    if (amount < 0) amount += 4 * Math.floor(-amount / 4) + 4;
-
-    // These are the indices of the faces that rotate around the main axis: Front, Right, Back, Left.
-    const originalIndices = [1, 2, 4, 3];
-
-    // Calculate the new positions for these faces after rotation.
-    const shiftedIndices = [amount, amount + 1, amount + 2, amount + 3].map(
-      (item) => originalIndices[item % 4]
-    );
-
-    // Perform the rotation by reassigning face values based on new positions.
-    [
-      this.faceValues[originalIndices[0]],
-      this.faceValues[originalIndices[1]],
-      this.faceValues[originalIndices[2]],
-      this.faceValues[originalIndices[3]],
-    ] = [
-      this.faceValues[shiftedIndices[0]],
-      this.faceValues[shiftedIndices[1]],
-      this.faceValues[shiftedIndices[2]],
-      this.faceValues[shiftedIndices[3]],
-    ];
-  }
-
-  /**
-   * Rotates the cube along its North-South axis (front/back faces stay put).
-   * The top, front, bottom, and back faces (0, 1, 5, 4) shift positions.
-   * @param {number} count - Number of 90-degree rotations. Positive for clockwise, negative for counter-clockwise.
-   */
-  spinVertical(count) {
-    // Normalize rotation count.
-    if (count < 0) count += 4 * Math.floor(-count / 4) + 4;
-
-    // Indices involved in a vertical (N-S) spin: Top, Front, Bottom, Back.
-    const originalVerticalIndices = [0, 1, 5, 4];
-
-    // Map current values to their new positions.
-    const shiftedVerticalIndices = [count, count + 1, count + 2, count + 3].map(
-      (item) => originalVerticalIndices[item % 4]
-    );
-
-    // Apply the rotation.
-    [
-      this.faceValues[originalVerticalIndices[0]],
-      this.faceValues[originalVerticalIndices[1]],
-      this.faceValues[originalVerticalIndices[2]],
-      this.faceValues[originalVerticalIndices[3]],
-    ] = [
-      this.faceValues[shiftedVerticalIndices[0]],
-      this.faceValues[shiftedVerticalIndices[1]],
-      this.faceValues[shiftedVerticalIndices[2]],
-      this.faceValues[shiftedVerticalIndices[3]],
-    ];
-  }
-
-  /**
-   * Rotates the cube along its West-East axis (left/right faces stay put).
-   * The top, right, bottom, and left faces (0, 2, 5, 3) shift positions.
-   * @param {number} count - Number of 90-degree rotations. Positive for clockwise, negative for counter-clockwise.
-   */
-  spinHorizontal(count) {
-    // Normalize rotation count.
-    if (count < 0) count += 4 * Math.floor(-count / 4) + 4;
-
-    // Indices involved in a horizontal (W-E) spin: Top, Right, Bottom, Left.
-    const originalHorizontalIndices = [0, 2, 5, 3];
-
-    // Map current values to their new positions.
-    const shiftedHorizontalIndices = [count, count + 1, count + 2, count + 3].map(
-      (item) => originalHorizontalIndices[item % 4]
-    );
-
-    // Apply the rotation.
-    [
-      this.faceValues[originalHorizontalIndices[0]],
-      this.faceValues[originalHorizontalIndices[1]],
-      this.faceValues[originalHorizontalIndices[2]],
-      this.faceValues[originalHorizontalIndices[3]],
-    ] = [
-      this.faceValues[shiftedHorizontalIndices[0]],
-      this.faceValues[shiftedHorizontalIndices[1]],
-      this.faceValues[shiftedHorizontalIndices[2]],
-      this.faceValues[shiftedHorizontalIndices[3]],
-    ];
-  }
-
-  /**
-   * Checks if this cube is congruent to another cube, meaning they can be
-   * rotated into the same orientation to match all face values.
-   * @param {Cube} otherCube - The other cube to compare against.
-   * @returns {boolean} True if the cubes are congruent, false otherwise.
-   */
-  isCongruent(otherCube) {
-    // Helper function to compare two arrays element by element.
-    const compareArrays = (arr1, arr2) =>
-      arr1.map((element, index) => element === arr2[index]).reduce((accumulator, currentValue) => accumulator && currentValue, true);
-
-    // Create a temporary clone of this cube to perform rotations without modifying the original.
-    const tempCube = new Cube(this.faceValues);
-
-    // First, iterate through all 4 possible top-face orientations (by N-S rotation).
-    for (let firstLoopIdx = 0; firstLoopIdx < 4; ++firstLoopIdx) {
-      // Check if the current orientation matches the other cube.
-      if (compareArrays(tempCube.faceValues, otherCube.faceValues)) return true;
-
-      // Rotate the temporary cube along its N-S axis.
-      tempCube.spinVertical(1);
-
-      // For each N-S orientation, iterate through 4 possible front-face orientations (by axial rotation).
-      for (let secondLoopIdx = 0; secondLoopIdx < 4; ++secondLoopIdx) {
-        if (compareArrays(tempCube.faceValues, otherCube.faceValues)) return true;
-        tempCube.spinAroundAxis(1); // Rotate around the vertical axis.
-      }
-
-      // Undo the last N-S rotation to prepare for the next.
-      tempCube.spinVertical(-1);
-      // Also, perform one axial rotation to account for previous loop's final state.
-      tempCube.spinAroundAxis(1);
+    // Rotates the cube around its vertical axis (top/bottom faces stay in place).
+    rotateAroundAxis(rotationAmount) {
+        // Normalize rotation amount to be positive and within [0, 3].
+        if (rotationAmount < 0) {
+            rotationAmount += 0b100 * Math.floor(-rotationAmount / 0b100) + 0b100;
+        }
+        // Indices of faces involved in this rotation: Front, Right, Back, Left.
+        const originalIndices = [0b1, 0b10, 0b100, 0b11];
+        // Calculate new positions based on rotation amount.
+        const shiftedIndices = [rotationAmount, rotationAmount + 0b1, rotationAmount + 0b10, rotationAmount + 0b11].map(
+            (element) => originalIndices[element % 0b100]
+        );
+        // Perform the swap using array destructuring.
+        [this.faces[originalIndices[0b0]], this.faces[originalIndices[0b1]], this.faces[originalIndices[0b10]], this.faces[originalIndices[0b11]]] =
+            [this.faces[shiftedIndices[0b0]], this.faces[shiftedIndices[0b1]], this.faces[shiftedIndices[0b10]], this.faces[shiftedIndices[0b11]]];
     }
 
-    // After checking all N-S and axial rotations, try rotating the cube to
-    // put the opposite face on top (a 180-degree N-S rotation).
-    tempCube.spinVertical(2);
-
-    // With the new top face, again iterate through all 4 possible front-face orientations.
-    for (let thirdLoopIdx = 0; thirdLoopIdx < 4; ++thirdLoopIdx) {
-      if (compareArrays(tempCube.faceValues, otherCube.faceValues)) return true;
-      tempCube.spinAroundAxis(1);
+    // Rotates the cube along the North-South axis (left/right faces stay in place).
+    rotateNorthSouth(shiftValue) {
+        // Normalize shift value.
+        if (shiftValue < 0) {
+            shiftValue += 0b100 * Math.floor(-shiftValue / 0b100) + 0b100;
+        }
+        // Indices involved: Top, Front, Bottom, Back.
+        const initialPositions = [0b0, 0b1, 0b101, 0b100];
+        // Determine the new order of faces.
+        const finalPositions = [shiftValue, shiftValue + 0b1, shiftValue + 0b10, shiftValue + 0b11].map(
+            (item) => initialPositions[item % 0b100]
+        );
+        // Apply the rotation.
+        [this.faces[initialPositions[0b0]], this.faces[initialPositions[0b1]], this.faces[initialPositions[0b10]], this.faces[initialPositions[0b11]]] =
+            [this.faces[finalPositions[0b0]], this.faces[finalPositions[0b1]], this.faces[finalPositions[0b10]], this.faces[finalPositions[0b11]]];
     }
 
-    // If no match was found after all possible rotations, the cubes are not congruent.
-    return false;
-  }
+    // Rotates the cube along the West-East axis (top/bottom faces stay in place, but different from rotateAroundAxis).
+    rotateWestEast(turnValue) {
+        // Normalize turn value.
+        if (turnValue < 0) {
+            turnValue += 0b100 * Math.floor(-turnValue / 0b100) + 0b100;
+        }
+        // Indices involved: Top, Right, Bottom, Left.
+        const startIndices = [0b0, 0b10, 0b101, 0b11];
+        // Calculate the new face arrangement.
+        const endIndices = [turnValue, turnValue + 0b1, turnValue + 0b10, turnValue + 0b11].map(
+            (entry) => startIndices[entry % 0b100]
+        );
+        // Update the face array.
+        [this.faces[startIndices[0b0]], this.faces[startIndices[0b1]], this.faces[startIndices[0b10]], this.faces[startIndices[0b11]]] =
+            [this.faces[endIndices[0b0]], this.faces[endIndices[0b1]], this.faces[endIndices[0b10]], this.faces[endIndices[0b11]]];
+    }
+
+    // Checks if this cube is rotationally equivalent to another cube.
+    isEquivalentTo(otherCube) {
+        // Helper function to compare two arrays element by element.
+        const areArraysEqual = (arr1, arr2) => arr1.map((e, i) => e === arr2[i]).reduce((accumulator, current) => accumulator && current, true);
+
+        // Create a temporary cube to perform rotations without altering the original.
+        const currentCubeState = new Cube(this.faces);
+
+        // Iterate through all possible top face orientations (4 rotations around N-S axis).
+        for (let idx1 = 0; idx1 < 0b100; ++idx1) {
+            if (areArraysEqual(currentCubeState.faces, otherCube.faces)) {
+                return true;
+            }
+            currentCubeState.rotateNorthSouth(0b1); // Rotate N-S by 90 degrees.
+
+            // For each N-S orientation, iterate through all 4 rotations around the vertical axis.
+            for (let idx2 = 0; idx2 < 0b100; ++idx2) {
+                if (areArraysEqual(currentCubeState.faces, otherCube.faces)) {
+                    return true;
+                }
+                currentCubeState.rotateAroundAxis(0b1); // Rotate around vertical axis by 90 degrees.
+            }
+            // After checking all vertical rotations for a given N-S state,
+            // rotate N-S back to its original position relative to the previous N-S state,
+            // and then rotate vertical once more to prepare for the next N-S rotation.
+            currentCubeState.rotateNorthSouth(-0b1);
+            currentCubeState.rotateAroundAxis(0b1);
+        }
+
+        // Handle the case where the bottom face is now the top face (180 degree N-S rotation).
+        currentCubeState.rotateNorthSouth(0b10); // Rotate N-S by 180 degrees.
+        for (let idx2 = 0; idx2 < 0b100; ++idx2) {
+            if (areArraysEqual(currentCubeState.faces, otherCube.faces)) {
+                return true;
+            }
+            currentCubeState.rotateAroundAxis(0b1);
+        }
+
+        return false; // No rotational equivalence found.
+    }
 }
 
-// Main execution block: Handles input/output and cube comparison logic.
-new Promise(function (complete, fail) {
-  let inputBuffer = ""; // Accumulates all data from standard input.
-  process.stdin.on("data", (dataChunk) => {
-    inputBuffer += dataChunk;
-  });
-  process.stdin.on("end", () => {
-    // When input ends, resolve the promise with the accumulated data and stdout stream.
-    complete([inputBuffer, process.stdout]);
-  });
-}).then(function ([consoleInput, consoleOutput]) {
-  // Parse the input data: first line is count, subsequent lines are cube face values.
-  const [[countOfCubes], ...rawData] = consoleInput
-    .split("\n")
-    .map((line) => line.split(" ").map((numStr) => parseInt(numStr)));
 
-  // Create an array of Cube objects from the parsed data.
-  const cubeCollection = rawData
-    .slice(0, countOfCubes)
-    .map((item) => new Cube(item));
+// Main program execution wrapped in a Promise for asynchronous input handling.
+new Promise(function (resolveInput, rejectInput) {
+    let receivedData = "";
+    process.stdin.on("data", dataChunk => { receivedData += dataChunk; });
+    process.stdin.on("end", () => { resolveInput([receivedData, process.stdout]); });
+}).then(function([inputContent, outputStream]) {
+    // Parse the input: first line is count, subsequent lines are cube face values.
+    const [[count], ...rawInputData] = inputContent
+        .split("\n")
+        .map(lineStr => lineStr.split(" ").map(numStr => parseInt(numStr)));
 
-  // Compare each cube with every other cube to find duplicates.
-  for (let outerIndex = 0; outerIndex < countOfCubes; ++outerIndex) {
-    for (
-      let innerIndex = outerIndex + 1;
-      innerIndex < countOfCubes;
-      ++innerIndex
-    ) {
-      // If two cubes are found to be congruent, output "No" and exit.
-      if (
-        cubeCollection[outerIndex].isCongruent(cubeCollection[innerIndex])
-      ) {
-        consoleOutput.write("No\n");
-        return;
-      }
+    // Create Cube objects from the parsed data.
+    const allCubes = rawInputData.slice(0, count).map(itemStr => new Cube(itemStr));
+
+    // Compare each cube with every other cube to find duplicates.
+    for (let outerIdx = 0; outerIdx < count; ++outerIdx) {
+        for (let innerIdx = outerIdx + 0b1; innerIdx < count; ++innerIdx) {
+            if (allCubes[outerIdx].isEquivalentTo(allCubes[innerIdx])) {
+                outputStream.write("No\n"); // Found two identical cubes.
+                return; // Exit early.
+            }
+        }
     }
-  }
 
-  // If no congruent cubes were found after all comparisons, output "Yes".
-  consoleOutput.write("Yes\n");
+    outputStream.write("Yes\n"); // No identical cubes found.
 });

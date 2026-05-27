@@ -1,45 +1,42 @@
-process.stdin.resume(); // Begin accepting input
-process.stdin.setEncoding('utf8'); // Define the character encoding for the input stream
+process.stdin.resume();
 
-var accumulatedText = ''; // A string buffer to collect all incoming data
+process.stdin.setEncoding('utf8'); // Set the input encoding to UTF-8
 
-process.stdin.on('data', function (incomingFragment)
-{
-    // Append each received data fragment to the buffer
-    accumulatedText += incomingFragment;
+let globalInputBuffer = ''; // This variable accumulates all incoming data from stdin
+
+process.stdin.on('data', function(dataChunk) {
+    // Append each received data chunk to the buffer
+    globalInputBuffer += dataChunk;
 });
 
-process.stdin.on('end', function()
-{
-    // Once the entire input stream has concluded,
-    // split the accumulated text into individual lines
-    // and pass them to the primary processing function.
-    InitiateProcessing(accumulatedText.split(/\n|\r\n/));
+process.stdin.on('end', function() {
+    // When the 'end' event is triggered, all input has been received.
+    // Split the accumulated buffer by newlines and pass it to the main processing function.
+    ProcessInputData(globalInputBuffer.split(/\r?\n/));
 });
 
-function InitiateProcessing (inputLines)
-{
-    // The first line of input is expected to contain space-separated values.
-    // Split this line to obtain an array of these values.
-    var valueArray = inputLines[0].split(' ');
+function ProcessInputData(linesOfData) {
+    // The primary function to handle the parsed input lines.
 
-    // Determine which value to output based on comparisons.
-    // If the first two values are identical, print the third.
-    if  (valueArray[0] == valueArray[1])
-    {
-        console.log(valueArray[2]);
+    // Split the first line of input by spaces to get individual number strings.
+    const parsedNumbers = linesOfData[0].split(' ');
+
+    // Check for equality between the first two numbers.
+    if (parsedNumbers[0] == parsedNumbers[1]) {
+        // If the first and second numbers are identical, the third number is the unique one.
+        console.log(parsedNumbers[2]);
     }
-    // Otherwise, if the first and third values are identical, print the second.
-    else if (valueArray[0] == valueArray[2])
-    {
-        console.log(valueArray[1]);
+    // Otherwise, check if the first and third numbers are identical.
+    else if (parsedNumbers[0] == parsedNumbers[2]) {
+        // If the first and third numbers are identical, the second number is the unique one.
+        console.log(parsedNumbers[1]);
     }
-    // If neither of the above conditions are met, it implies the first value is unique.
-    else
-    {
-        console.log(valueArray[0]);
+    // If neither of the above conditions is met, it implies the second and third numbers are identical,
+    // making the first number the unique one.
+    else {
+        console.log(parsedNumbers[0]);
     }
 
-    // A conventional return value indicating successful execution.
+    // Return a status code, typically 0 for successful execution.
     return 0;
 }

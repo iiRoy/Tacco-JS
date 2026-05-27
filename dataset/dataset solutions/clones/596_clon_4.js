@@ -1,54 +1,57 @@
-const moduleForFilesystem = require('node:fs');
+const fileSystem = require('fs');
+const rawInputData = fileSystem.readFileSync('/dev/stdin', 'utf8');
 
-const rawInputContent = moduleForFilesystem.readFileSync('/dev/stdin', 'utf8');
+const lineSegments = rawInputData.trim().split("\n");
 
-// A divergent approach to parse all numeric components from the input text
-const parsedNumbers = rawInputContent.match(/-?\d+/g).map(Number);
+const dimensions = lineSegments.shift().split(" ").map(Number);
+const rowLimit = dimensions[0];
+const colCount = dimensions[1];
 
-// Extract initial configuration values
-const primaryDimension = parsedNumbers[0]; // Corresponds to 'm'
-const secondaryDimension = parsedNumbers[1]; // Corresponds to 'n'
+const segmentValues = [];
+for (let j = 0; j < rowLimit - 1; j++) {
+    segmentValues.push(Number(lineSegments.shift()));
+}
 
-// Extract the sequence of segment values
-const valueSegments = parsedNumbers.slice(2, 2 + primaryDimension - 1);
+const movementInstructions = [];
+for (let j = 0; j < colCount; j++) {
+    movementInstructions.push(Number(lineSegments.shift()));
+}
 
-// Extract the sequence of movement directives
-const movementCommands = parsedNumbers.slice(2 + primaryDimension - 1, 2 + primaryDimension - 1 + secondaryDimension);
+const generateNumericRange = (start, end, step = 1) => {
+    const result = [];
+    if (step > 0) {
+        for (let current = start; current <= end; current += step) {
+            result.push(current);
+        }
+    } else if (step < 0) {
+        for (let current = start; current >= end; current += step) {
+            result.push(current);
+        }
+    }
+    return result;
+};
 
-// The core processing uses a functional reduction pattern
-// The accumulator holds [currentTotalValue, currentPointerPosition]
-const startingState = [0, 0];
+const finalState = movementInstructions.reduce((accumulator, instructionMagnitude) => {
+    const directionFactor = instructionMagnitude > 0 ? 1 : -1;
+    const stepsToTake = Math.abs(instructionMagnitude);
 
-const finalProcessingResult = movementCommands.reduce((accumulator, commandValue) => {
-    let [accumulatedTotal, currentPointer] = accumulator;
-
-    const directionIndicator = (commandValue > 0) ? 1 : -1;
-    const effectiveSteps = Math.abs(commandValue);
-
-    let rangeStart, rangeEnd; // Inclusive indices for the segment summation
-
-    if (directionIndicator === 1) { // Movement to the right
-        rangeStart = currentPointer;
-        rangeEnd = currentPointer + effectiveSteps - 1;
-    } else { // Movement to the left
-        rangeStart = currentPointer - effectiveSteps;
-        rangeEnd = currentPointer - 1;
+    let indicesForSummation = [];
+    if (stepsToTake > 0) {
+        if (directionFactor === 1) {
+            indicesForSummation = generateNumericRange(accumulator.currentPointer, accumulator.currentPointer + stepsToTake - 1, 1);
+        } else {
+            indicesForSummation = generateNumericRange(accumulator.currentPointer - 1, accumulator.currentPointer - stepsToTake, -1);
+        }
     }
 
-    // Generate indices for the current movement's summation, then sum their corresponding values
-    const indicesForCurrentPass = Array.from({ length: effectiveSteps }, (_, indexOffset) => {
-        return (directionIndicator === 1) ? rangeStart + indexOffset : rangeEnd - indexOffset;
-    });
+    const segmentSum = indicesForSummation.reduce((segAcc, idx) => segAcc + segmentValues[idx], 0);
 
-    const sumForThisCommand = indicesForCurrentPass.reduce((currentSum, segmentIndex) => {
-        return currentSum + valueSegments[segmentIndex];
-    }, 0);
+    const nextPointerPosition = accumulator.currentPointer + (directionFactor * stepsToTake);
 
-    const nextPointerPosition = currentPointer + commandValue;
+    return {
+        totalSum: accumulator.totalSum + segmentSum,
+        currentPointer: nextPointerPosition
+    };
+}, { totalSum: 0, currentPointer: 0 });
 
-    return [accumulatedTotal + sumForThisCommand, nextPointerPosition];
-
-}, startingState);
-
-// Output the final accumulated value, applying the modulo operation
-console.log(finalProcessingResult[0] % 100000);
+console.log(finalState.totalSum % 100000);

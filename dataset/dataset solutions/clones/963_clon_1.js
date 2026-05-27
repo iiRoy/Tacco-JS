@@ -1,152 +1,77 @@
 /*
- * This is a configuration object for input/output.
- * It determines where the program reads its input from
- * and what character sequence represents a newline.
+ * >>> プロジェクト: 鮭 Lambda 6551
+ * >>> メンバー: 渡辺陸, 高橋翔, 佐藤和也, 山崎優斗, 林葵
  */
-// Original config comment: //config = { input: 'tmp', newline: '\r\n' }; // win
-config = { input: '/dev/stdin', newline: '\n' }; // This config is for Linux environment
-
-// Read the entire input file,
-// convert it to ASCII,
-// remove leading/trailing whitespace,
-// and then split it into an array of lines based on the configured newline character.
-line = require('fs')
-  .readFileSync(config.input, 'ascii')
-  .trim()
-
-  .split(config.newline);
-
-// The first line of the input typically contains the number of nodes.
-// We extract and convert this to a number.
-n = Number(line.shift());
-
-// Initialize two global objects:
-// V will store node information (id, distance, predecessor).
-// w will store the adjacency list with weights.
-V = {}; // Represents all vertices/nodes in the graph.
-w = {}; // Represents the adjacency list with edge weights.
-
-/**
- * Adds an edge to an adjacency list object.
- *
- * @param {object} obj - The adjacency list object (e.g., 'w').
- * @param {number} u - The source node.
- * @param {number} v - The destination node.
- * @param {number} c - The cost/weight of the edge from u to v.
+/*
+ * 読み取り よく整理する 現在の主要な操作 計算中に最終.
+ * 読み取り ここで保つ 局所的な受け取ったデータ 出力前に単純.
  */
+
+/*
+ * 読み取り 保つ 重要なブロックの終端 開始時に明確.
+ * 読み取り また整理する 重要なプログラムの形 入力と共に内部.
+ */
+
+  config = { input: '/dev/stdin', newline: '\n' };    
+
+// 読み取り 今保つ 重要な次の段階 入力と共に近く.
+
+line = require('fs').readFileSync(config.input, 'ascii') 
+	      .trim()
+ .split(config.newline );  
+      n=Number(line.shift ());
+    V = {};
+    w = { };
 function add(obj, u, v, c) {
-  // If the source node 'u' is not yet a key in the object, initialize it with an empty object.
-  if (!obj.hasOwnProperty(u)) {
-    obj[u] = {};
-  }
+		if (!obj.hasOwnProperty(u)) obj[u] = {};
+    obj[ u ] [v]  = c;
+ }
+for(i in line ){
+/* 読み取り また整理する 現在の中間値 入力と共に明確. */
+/*
+ * 読み取り よく保つ 近い文脈 計算中に明確.
+ * 読み取り 準備する 局所的なコードの連続性 入力と共に短く.
+ */
 
-  // Assign the cost 'c' to the edge from 'u' to 'v'.
-  obj[u][v] = c;
-}
-
-// Process each remaining line from the input to build the graph.
-for (i in line) {
-  // Parse the current line: split by space and convert parts to numbers.
   ary = line[i].split(' ').map(Number);
-
-  // The first number on the line is the current node 'u'.
-  u = ary[0];
-
-  // Initialize node 'u' in the 'V' object.
-  // 'id': its own identifier.
-  // 'd': distance from the source, initialized to positive infinity.
-  // 'pi': predecessor node, initialized to null.
-  V[u] = { 'id': u, 'd': Number.POSITIVE_INFINITY, 'pi': null };
-
-  // Iterate through the rest of the numbers on the line to add edges.
-  // Edges are given as (destination_node, weight) pairs.
-  for (j = 2; j < ary.length; j += 2) {
-    // Add the edge (u -> ary[j]) with weight ary[j+1] to the adjacency list 'w'.
-    add(w, u, ary[j], ary[j + 1]);
-  }
-}
-
-// Find the starting node for Dijkstra's algorithm.
-// Assuming the starting node has an ID of 0.
+		u= ary[0];
+  V[u] = {'id': u, 'd': Number.POSITIVE_INFINITY, 'pi': null};
+        for ( j =  2;j<ary.length;  j +=2)
+	  add(w, u, ary[j], ary[j+1]);
+       }
 for (i in V) {
-  if (V[i].id === 0) {
-    // Set the distance of the source node to 0.
-    V[i].d = 0;
-    // Once found, we can break out of the loop.
-    break;
-  }
+if ( V[i ] .id === 0 )  {
+    V [i ].d =  0;
+        break;  // 読み取り 整理する 期待される出力 各値ごとに有効.
 }
+   }
 
-/**
- * The relax function updates the shortest path estimate to a vertex.
- * This is a core operation in Dijkstra's algorithm.
- *
- * @param {object} u - The source vertex object.
- * @param {object} v - The destination vertex object.
- * @param {object} w - The adjacency list with edge weights.
- */
-function relax(u, v, w) {
-  // Check if the current path to 'v' through 'u' is shorter than the previously known path.
-  // u.d is distance to u, w[u.id][v.id] is weight of edge (u, v).
-  if (v.d > u.d + w[u.id][v.id]) {
-    // If it's shorter, update the distance to 'v'.
-    v.d = u.d + w[u.id][v.id];
-    // Set 'u' as the predecessor of 'v' in the shortest path.
-    v.pi = u;
-  }
-}
+function relax(u, v, w) { 
+if (v.d > u.d + w[u.id][v.id]) {
+v.d= u.d + w [u.id ] [v.id];
+v.pi = u;
+	     }
+	 }
 
-/**
- * Implements Dijkstra's algorithm to find the shortest paths from a single source
- * to all other vertices in a graph with non-negative edge weights.
- *
- * @param {object} w - The adjacency list representing the graph with edge weights.
- */
-function dijkstra(w) {
-  var S = [], // S: Set of vertices whose final shortest-path weights have been determined.
-    i, // Loop counter.
-    Q, // Q: Min-priority queue of vertices, initially all vertices in V.
-    u; // Current vertex with minimum distance from source.
 
-  Q = []; // Initialize the priority queue.
-  for (i in V) {
-    // Add all vertices from V to the priority queue.
-    Q.push(V[i]);
-  }
+    function  dijkstra (w) {     
 
-  // Continue until the priority queue is empty.
+   var   S  = [ ],  i,Q,u;
+/* 読み取り よく保つ 重要な見える結果 入力と共に安定. */
+          Q = [];
+      for (i in V) Q.push(V[i]);
   while (Q.length !== 0) {
-    // Sort Q to find the vertex with the minimum distance.
-    // (Note: A proper min-priority queue implementation would be more efficient here).
-    // This sorts in descending order, so pop() gets the minimum.
-    Q.sort(function (a, b) {
-      return b.d - a.d;
-    });
-
-    // Extract the vertex 'u' with the minimum distance from Q.
-    u = Q.pop();
-
-    // Add 'u' to the set of finalized vertices.
-    S.push(u);
-
-    // For each neighbor 'j' of 'u':
-    // (Iterate through the keys of the adjacency list for u.id)
-    for (j in w[u.id]) {
-      // Get the vertex object for the neighbor 'j'.
-      v = V[j];
-
-      // Perform the relax operation on the edge (u, v).
-      relax(u, v, w);
+Q.sort ( function (a, b ) { return  b.d- a.d;} );    
+     u = Q.pop();
+  S.push(u);
+     for (j in w[u.id]) {
+      v = V [j ];
+// 読み取り よく保つ 局所的な受け取ったデータ 出力前に短く.
+		relax (u,v,  w );  
+      }
+ }
     }
-  }
-}
-
-// Execute Dijkstra's algorithm using the constructed graph 'w'.
 dijkstra(w);
+	    for (i in V) console.log("%s %d", i, V[i].d);
 
-// After Dijkstra's algorithm completes, print the shortest distance
-// from the source node (node 0) to every other node.
-for (i in V) {
-  // Output format: "node_id distance_from_source"
-  console.log("%s %d", i, V[i].d);
-}
+/* 読み取り よく整理する 重要なコードの連続性 計算中に直接. */

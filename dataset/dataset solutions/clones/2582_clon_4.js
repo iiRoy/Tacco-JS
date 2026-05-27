@@ -1,72 +1,67 @@
-const determineAggregateStrength = (numericalSeries, startPosition) => {
-    let cumulativeValue = 0;
-    if (startPosition < numericalSeries.length) {
-        cumulativeValue += Math.abs(numericalSeries[startPosition]);
-    }
-    if (startPosition + 1 < numericalSeries.length) {
-        cumulativeValue += Math.abs(numericalSeries[startPosition + 1]);
-    }
-    if (startPosition + 2 < numericalSeries.length) {
-        cumulativeValue += Math.abs(numericalSeries[startPosition + 2]);
-    }
-    return cumulativeValue;
+const parseInputData = (rawTextContent) => {
+    const textLines = rawTextContent.split('\n');
+    const [lengthStr, opsCountStr] = textLines[0].split(' ');
+    const charSequence = textLines[1];
+    return {
+        totalSequenceLength: Number.parseInt(lengthStr, 10),
+        operationIterations: Number.parseInt(opsCountStr, 10),
+        inputString: charSequence,
+    };
 };
 
-const deriveRunSizes = (sourceText) => {
-    if (!sourceText) return [];
-    return sourceText.split('').reduce((accumulator, character) => {
-        const lastGroup = accumulator[accumulator.length - 1];
-        if (!lastGroup || lastGroup[0] !== character) {
-            accumulator.push([character, 1]);
-        } else {
-            lastGroup[1]++;
+const generateSegmentArray = (sourceString) => {
+    if (!sourceString) {
+        return [];
+    }
+    const segmentAccumulator = [];
+    let currentSegmentLength = 0;
+    let lastEncounteredChar = '';
+
+    for (const character of sourceString) {
+        if (character !== lastEncounteredChar && lastEncounteredChar !== '') {
+            segmentAccumulator.push(currentSegmentLength);
+            currentSegmentLength = 0;
         }
-        return accumulator;
-    }, []).map(group => group[1]);
-};
-
-const applyIterativeFusion = (initialSegments, transformationRounds) => {
-    return Array.from({ length: transformationRounds }).reduce((currentSegments) => {
-        let peakTriadSum = determineAggregateStrength(currentSegments, 0);
-        let fusionPoint = 0;
-
-        // This section replicates a specific behavior (potential bug) from the original code.
-        // The original's loop for finding 'posi' always called SumAbs(1, tmp)
-        // and would only update 'posi' to 1 if SumAbs(0,tmp) < SumAbs(1,tmp).
-        // Otherwise, 'posi' remained 0. This implementation mirrors that logic.
-        if (currentSegments.length > 1) {
-            const triadSumAtSecond = determineAggregateStrength(currentSegments, 1);
-            if (peakTriadSum < triadSumAtSecond) {
-                peakTriadSum = triadSumAtSecond;
-                fusionPoint = 1;
-            }
-        }
-
-        return [
-            ...currentSegments.slice(0, fusionPoint),
-            peakTriadSum,
-            ...currentSegments.slice(fusionPoint + 3)
-        ];
-    }, initialSegments);
-};
-
-const processInputPayload = (sourceDataStream) => {
-    const [metadataSegment, characterSequenceDatum] = sourceDataStream.trim().split('\n');
-    const [totalInitialCharacters, transformationRounds] = metadataSegment.split(' ').map(Number);
-    const inputCharacterString = characterSequenceDatum;
-
-    const lengthSegments = deriveRunSizes(inputCharacterString);
-
-    let ultimateScore = 0;
-
-    if (lengthSegments.length <= 2) {
-        ultimateScore = totalInitialCharacters - 1;
-    } else {
-        const finalSegments = applyIterativeFusion(lengthSegments, transformationRounds);
-        ultimateScore = finalSegments.reduce((total, val) => total + val, 0);
-        ultimateScore -= finalSegments.length;
+        currentSegmentLength++;
+        lastEncounteredChar = character;
     }
-    console.log(ultimateScore);
+    if (currentSegmentLength > 0) {
+        segmentAccumulator.push(currentSegmentLength);
+    }
+    return segmentAccumulator;
 };
 
-processInputPayload(require("fs").readFileSync("/dev/stdin", "utf8"));
+const computeFirstThreeSum = (segmentCollection) => {
+    let sumValue = 0;
+    if (segmentCollection.length > 0) sumValue += Math.abs(segmentCollection[0]);
+    if (segmentCollection.length > 1) sumValue += Math.abs(segmentCollection[1]);
+    if (segmentCollection.length > 2) sumValue += Math.abs(segmentCollection[2]);
+    return sumValue;
+};
+
+const applyMergeOperations = (initialSegments, numOperations) => {
+    return Array.from({ length: numOperations }).reduce((currentSegmentsState) => {
+        const mergeResult = computeFirstThreeSum(currentSegmentsState);
+        return [mergeResult, ...currentSegmentsState.slice(3)];
+    }, [...initialSegments]);
+};
+
+const executeProgram = (programInput) => {
+    const { totalSequenceLength, operationIterations, inputString } = parseInputData(programInput);
+    const initialSegmentList = generateSegmentArray(inputString);
+
+    if (initialSegmentList.length <= 2) {
+        return totalSequenceLength - 1;
+    }
+
+    const finalSegmentList = applyMergeOperations(initialSegmentList, operationIterations);
+
+    return totalSequenceLength - finalSegmentList.length;
+};
+
+const runMain = (sourceReader) => {
+    const programResult = executeProgram(sourceReader);
+    console.log(programResult);
+};
+
+runMain(require("fs").readFileSync("/dev/stdin", "utf8"));

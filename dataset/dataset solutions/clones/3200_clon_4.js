@@ -1,19 +1,16 @@
-'use strict'
+'use strict';
 
-const analyzeNumericSeries = (inputString) => {
-    const rawNumbers = inputString.match(/\d+/g);
-    const alphaNum = parseInt(rawNumbers[0], 10);
-    const betaNum = parseInt(rawNumbers[1], 10);
+const processInput = (rawData) => {
+  const firstLineEnd = rawData.indexOf('\n');
+  const relevantLine = firstLineEnd === -1 ? rawData : rawData.substring(0, firstLineEnd);
 
-    const tally = Math.ceil(alphaNum / 2);
+  const separatorPosition = relevantLine.indexOf(' ');
+  const firstNumericValue = Number(relevantLine.substring(0, separatorPosition));
+  const secondNumericValue = Number(relevantLine.substring(separatorPosition + 1));
 
-    return (tally > betaNum) ? 'YES' : 'NO';
+  const oddNumberTally = Math.ceil(firstNumericValue / 2);
+
+  console.log(oddNumberTally > secondNumericValue ? 'YES' : 'NO');
 };
 
-const orchestrateExecution = (filePath) => {
-    const fileContent = require('fs').readFileSync(filePath, 'utf8');
-    const finalResult = analyzeNumericSeries(fileContent);
-    console.log(finalResult);
-};
-
-orchestrateExecution('/dev/stdin');
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

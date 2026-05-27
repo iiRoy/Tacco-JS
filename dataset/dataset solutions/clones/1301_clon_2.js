@@ -1,158 +1,162 @@
-const inputOutputManager = require('readline').createInterface({
-    // Configure input stream to read from standard input
-    inStream: process.stdin,
-
-    // Configure output stream to write to standard output
-    outStream: process.stdout
+const inputReader = require('readline').createInterface({
+    input: process.stdin,
+    output: process.stdout
 });
 
-// Initialize state variables for parsing stages and matrix dimensions
-let dimensionParsingStage = 0;
-let matrixARowProcessingStage = 0;
-let matrixBColumnProcessingStage = 0;
+// Variables to manage input parsing stages and matrix dimensions
+let inputStage = 0; // 0: NML, 1: Matrix A rows, 2: Matrix B columns
+let currentARow = 0; // Current row index for matrix A
+let currentBCol = 0; // Current column index for matrix B
 
-// Global variables to store matrix dimensions (rows for A, common dimension, columns for B)
-let numRowsMatrixA, commonDimensionSize, numColsMatrixB;
+let matrixARows, matrixACols, matrixBCols; // N, M, L from input
+let matrixAData = []; // Stores matrix A
+let matrixBData = []; // Stores matrix B
 
-// Arrays to hold the matrix data
-const firstMatrix = [];
-const secondMatrix = [];
+// This variable is assigned but never used, maintaining original structure.
+let lineProcessor = parseDimensions;
 
-// Set the input encoding for standard input
+// Set input encoding for standard input stream
 process.stdin.setEncoding('ascii');
 
-// Event listener for each line received from the input stream
-inputOutputManager.on('dataReceived', function (currentInputLine) {
-    // Determine which parsing function to call based on the current stage
-    if (dimensionParsingStage === 0) {
-        // First line contains matrix dimensions N, M, L
-        processMatrixDimensions(currentInputLine);
-    } else if (matrixARowProcessingStage < numRowsMatrixA) {
-        // Subsequent lines contain rows for the first matrix (Matrix A)
-        processMatrixARow(currentInputLine);
-    } else if (matrixBColumnProcessingStage < numColsMatrixB) {
-        // Lines after Matrix A contain columns for the second matrix (Matrix B)
-        processMatrixBColumn(currentInputLine);
+// Event listener for each line of input
+inputReader.on('line', function (inputLine) {
+    // Determine which parsing function to call based on the current input stage
+    if (inputStage === 0) {
+        parseDimensions(inputLine);
+    } else if (currentARow < matrixARows) {
+        parseMatrixA(inputLine);
+    } else if (currentBCol < matrixBCols) {
+        parseMatrixB(inputLine);
     } else {
-        // All data has been processed, close the input stream
-        inputOutputManager.end();
+        // All input processed, close the reader
+        inputReader.close();
     }
 });
 
 /**
- * Parses the first input line to extract matrix dimensions (N, M, L).
- * @param {string} dimensionLine - The input string containing N, M, L separated by spaces.
+ * Parses the first line of input to get N, M, L dimensions.
+ * Initializes matrices A and B with appropriate dimensions.
+ * @param {string} dimensionLine - The input line containing N, M, L.
  */
-function processMatrixDimensions(dimensionLine) {
-    // Split the line by spaces and convert parts to numbers
+function parseDimensions(dimensionLine) {
+    // Split the line by space and convert parts to numbers
     const dimensionValues = dimensionLine.split(' ').map(Number);
 
-    // Assign parsed values to global dimension variables
-    numRowsMatrixA = dimensionValues[0];
-    commonDimensionSize = dimensionValues[1];
-    numColsMatrixB = dimensionValues[2];
+    // Assign parsed values to dimension variables
+    matrixARows = dimensionValues[0]; // N
+    matrixACols = dimensionValues[1]; // M
+    matrixBCols = dimensionValues[2]; // L
 
-    // Initialize the matrices with appropriate dimensions and data types
-    // Using Float32Array for potential floating-point operations later
-    for (let rowIdx = numRowsMatrixA; rowIdx > 0; rowIdx--) {
-        firstMatrix.push(new Float32Array(commonDimensionSize));
-    }
-    for (let rowIdx = numColsMatrixB; rowIdx > 0; rowIdx--) {
-        secondMatrix.push(new Float32Array(commonDimensionSize));
+    // Initialize matrix A with N rows, each an Int16Array of M columns
+    let rowCounter;
+    for (rowCounter = matrixARows; rowCounter > 0; rowCounter--) {
+        matrixAData.push(new Int16Array(matrixACols));
     }
 
-    // Advance the parsing stage indicator
-    dimensionParsingStage++;
+    // Initialize matrix B with L columns, each an Int16Array of M rows
+    // Note: The original code initializes B as an array of Int16Array(M) for L columns.
+    // This implies B is stored column-major or transposed for easier dot product calculation later.
+    for (rowCounter = matrixBCols; rowCounter > 0; rowCounter--) {
+        matrixBData.push(new Int16Array(matrixACols));
+    }
+
+    // Advance the input stage
+    inputStage++;
 }
 
 /**
- * Parses an input line representing a row of the first matrix (Matrix A).
- * @param {string} matrixARowInput - The input string for a row of Matrix A.
+ * Parses a line of input for matrix A and populates the current row.
+ * @param {string} matrixALine - The input line for a row of matrix A.
  */
-function processMatrixARow(matrixARowInput) {
-    // Convert string elements to numbers
-    const rowElements = matrixARowInput.split(' ').map(Number);
+function parseMatrixA(matrixALine) {
+    // Split the line by space and convert parts to numbers
+    const rowElements = matrixALine.split(' ').map(Number);
 
-    // Populate the current row of Matrix A
-    for (const elementIndex in rowElements) {
-        firstMatrix[matrixARowProcessingStage][elementIndex] = rowElements[elementIndex];
+    // Populate the current row of matrix A
+    for (let elementIdx in rowElements) {
+        matrixAData[currentARow][elementIdx] = rowElements[elementIdx];
     }
 
-    // Increment the row processing stage for Matrix A
-    matrixARowProcessingStage++;
+    // Move to the next row for matrix A
+    currentARow++;
 }
 
 /**
- * Parses an input line representing a column of the second matrix (Matrix B).
- * Note: Input lines for B are treated as columns, so elements are distributed across rows.
- * @param {string} matrixBColumnInput - The input string for a column of Matrix B.
+ * Parses a line of input for matrix B and populates the current column.
+ * @param {string} matrixBLine - The input line for a column of matrix B.
  */
-function processMatrixBColumn(matrixBColumnInput) {
-    // Split the input line by spaces; elements are numbers
-    const columnElements = matrixBColumnInput.split(' ');
+function parseMatrixB(matrixBLine) {
+    // Split the line by space (elements are strings here in original)
+    const columnElements = matrixBLine.split(' ');
 
-    // Iterate through the elements of the column and place them into the correct positions
-    // `colIdx` here represents the row index in `secondMatrix`
-    for (const colIdx in columnElements) {
-        secondMatrix[colIdx][matrixBColumnProcessingStage] = Number(columnElements[colIdx]);
+    // Populate the current column of matrix B
+    // The original code uses `k in ary` and `b[k][stepb] = ary[k]`.
+    // This means `ary[k]` is the element for row `k` in the current column `stepb`.
+    for (let elementRowIdx in columnElements) {
+        matrixBData[elementRowIdx][currentBCol] = Number(columnElements[elementRowIdx]);
     }
 
-    // Increment the column processing stage for Matrix B
-    matrixBColumnProcessingStage++;
+    // Move to the next column for matrix B
+    currentBCol++;
 }
 
-// Event listener for when the input stream closes (all data processed)
-inputOutputManager.on('inputEnded', function() {
-    // Perform matrix multiplication and print results
-    for (const rowAIndex in firstMatrix) {
-        let outputRowAccumulator = "";
-        for (const rowBIndex in secondMatrix) {
-            // Calculate the dot product of a row from Matrix A and a row from Matrix B
-            // This effectively computes A[rowAIndex] * B_transposed[rowBIndex]
-            outputRowAccumulator = outputRowAccumulator + computeVectorDotProduct(firstMatrix[rowAIndex], secondMatrix[rowBIndex]) + " ";
+// Event listener for when the input stream closes
+inputReader.on('close', function() {
+    // Iterate through each row of matrix A
+    for (let rowAIndex in matrixAData) {
+        let outputRowString = ""; // Buffer for the current output line
+
+        // Iterate through each column of matrix B
+        for (let colBIndex in matrixBData) {
+            // Calculate the dot product of the current row from A and current column from B
+            outputRowString = outputRowString + computeDotProduct(matrixAData[rowAIndex], matrixBData[colBIndex]) + " ";
         }
-        // Print the resulting row, removing any trailing whitespace
-        console.info(outputRowAccumulator.trimEnd());
+        // Print the resulting row, trimming any trailing space
+        console.log(outputRowString.trim());
     }
 });
 
 /**
- * Computes the dot product of two vectors (arrays of numbers).
- * Assumes both vectors have the same length, which is `commonDimensionSize`.
- * @param {Float32Array} vectorOne - The first vector.
- * @param {Float32Array} vectorTwo - The second vector.
- * @returns {number} The dot product of the two vectors.
+ * Computes the dot product of two vectors (arrays).
+ * Assumes vectors are of length M (matrixACols).
+ * @param {Int16Array} vectorOne - The first vector (row from A).
+ * @param {Int16Array} vectorTwo - The second vector (column from B).
+ * @returns {number} The dot product.
  */
-function computeVectorDotProduct(vectorOne, vectorTwo) {
-    let dotProductResult = 0;
-    // Loop backwards for a minor performance variation, though not strictly necessary
-    for (let loopIndex = commonDimensionSize - 1; loopIndex >= 0; loopIndex--) {
-        dotProductResult += vectorOne[loopIndex] * vectorTwo[loopIndex];
+function computeDotProduct(vectorOne, vectorTwo) {
+    let productSum = 0;
+    // Iterate from M-1 down to 0
+    for (let elementIndex = matrixACols - 1; elementIndex >= 0; elementIndex--) {
+        productSum += vectorOne[elementIndex] * vectorTwo[elementIndex];
     }
-    return dotProductResult;
+    return productSum;
+}
+
+// --- Dead Code Section (Not called in the main logic, but preserved for Type II clone) ---
+
+/**
+ * Prints a 2D array to the console.
+ * This function is not called in the main program flow.
+ * @param {Array<Array<any>>} twoDArray - The 2D array to print.
+ */
+function display2DArray(twoDArray) {
+    let formattedResult = "[ ";
+    for (let arrayIndex in twoDArray) {
+        formattedResult = formattedResult + formatInt16Array(twoDArray[arrayIndex]) + " ";
+    }
+    console.log(formattedResult + "]");
 }
 
 /**
- * Helper function (not used in main flow) to display a 2D array.
- * @param {Array<Array<number>>} matrixAsArrayOfArrays - The matrix to display.
+ * Formats an Int16Array into a string representation.
+ * This function is only called by display2DArray, which is dead code.
+ * @param {Int16Array} int16Array - The array to format.
+ * @returns {string} The string representation of the array.
  */
-function displayMatrix(matrixAsArrayOfArrays) {
-    let formattedOutput = "[ ";
-    for (const rowIndex in matrixAsArrayOfArrays) {
-        formattedOutput = formattedOutput + formatRow(matrixAsArrayOfArrays[rowIndex]) + " ";
+function formatInt16Array(int16Array) {
+    let arrayString = "[ ";
+    for (let elementPosition = 0; elementPosition < int16Array.length; elementPosition++) {
+        arrayString = arrayString + int16Array[elementPosition].toString() + " ";
     }
-    console.info(formattedOutput + "]");
-}
-
-/**
- * Helper function (not used in main flow) to format a single row (1D array) for display.
- * @param {Array<number>} rowVector - The row vector to format.
- * @returns {string} The formatted string representation of the row.
- */
-function formatRow(rowVector) {
-    let rowStringResult = "[ ";
-    for (let columnIndex = 0; columnIndex < rowVector.length; columnIndex++) {
-        rowStringResult = rowStringResult + rowVector[columnIndex].toString() + " ";
-    }
-    return rowStringResult + "]";
+    return arrayString + "]";
 }

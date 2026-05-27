@@ -1,53 +1,43 @@
-function parseJourneyDescription(textualInput) {
-    const sections = textualInput.split("\n");
-    const firstLineValues = sections[0].split(" ").map(Number);
-    const stepElevationProfile = sections[1].split(" ").map(Number);
+function Main(rawData) {
+    const lineData = rawData.split("\n");
+    const [totalStepsStr, maxJumpStr] = lineData[0].split(" ");
+    const totalSteps = Number.parseInt(totalStepsStr);
+    const maxJump = Number.parseInt(maxJumpStr);
+    const elevationPoints = lineData[1].split(" ").map(Number.parseInt);
 
-    return {
-        totalStages: firstLineValues[0],
-        maxStepDistance: firstLineValues[1],
-        heightsAtStages: stepElevationProfile
-    };
-}
+    const costCache = new Array(totalSteps).fill(null);
 
-function calculateMinimalEffort(stageIndex, stageHeights, maximumJump, effortCache) {
-    if (stageIndex === 0) {
-        return 0;
-    }
-    if (effortCache[stageIndex] !== undefined) {
-        return effortCache[stageIndex];
-    }
-
-    let leastEffort = Infinity;
-
-    for (let jumpBack = 1; jumpBack <= maximumJump; jumpBack++) {
-        const previousStageIndex = stageIndex - jumpBack;
-        if (previousStageIndex >= 0) {
-            const effortToPrev = calculateMinimalEffort(previousStageIndex, stageHeights, maximumJump, effortCache);
-            const currentJumpCost = Math.abs(stageHeights[stageIndex] - stageHeights[previousStageIndex]);
-            leastEffort = Math.min(leastEffort, effortToPrev + currentJumpCost);
-        } else {
-            break;
+    const calculateMinimumPathCost = (currentStepIndex) => {
+        if (currentStepIndex === 0) {
+            return 0;
         }
-    }
+        if (currentStepIndex === 1) {
+            return Math.abs(elevationPoints[1] - elevationPoints[0]);
+        }
 
-    effortCache[stageIndex] = leastEffort;
-    return leastEffort;
+        if (costCache[currentStepIndex] !== null) {
+            return costCache[currentStepIndex];
+        }
+
+        let minimumOption = Infinity;
+
+        for (let jumpDistance = 1; jumpDistance <= maxJump; jumpDistance++) {
+            const priorStepIndex = currentStepIndex - jumpDistance;
+
+            if (priorStepIndex >= 0) {
+                const costFromPrior = calculateMinimumPathCost(priorStepIndex) +
+                                      Math.abs(elevationPoints[currentStepIndex] - elevationPoints[priorStepIndex]);
+                minimumOption = Math.min(minimumOption, costFromPrior);
+            } else {
+                break;
+            }
+        }
+
+        costCache[currentStepIndex] = minimumOption;
+        return minimumOption;
+    };
+
+    console.log(calculateMinimumPathCost(totalSteps - 1));
 }
 
-function processExpeditionPlan(expeditionData) {
-    const expeditionDetails = parseJourneyDescription(expeditionData);
-    const memo = {};
-
-    const finalStageIndex = expeditionDetails.totalStages - 1;
-    const finalEffort = calculateMinimalEffort(
-        finalStageIndex,
-        expeditionDetails.heightsAtStages,
-        expeditionDetails.maxStepDistance,
-        memo
-    );
-
-    console.log(finalEffort);
-}
-
-processExpeditionPlan(require("fs").readFileSync("/dev/stdin", "utf8"));
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

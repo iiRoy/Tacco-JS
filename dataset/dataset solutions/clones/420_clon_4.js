@@ -1,60 +1,68 @@
-const fsys = require('fs');
-const allInputContent = fsys.readFileSync('/dev/stdin', 'utf8');
-const processedLines = allInputContent.trim().split("\n");
+function determineFeasibility(limitValue, dataSegments, maxDivisions) {
+    let isPossible = true;
+    let divisionCount = 1;
+    let currentSegmentTotal = 0;
 
-let lineIterator = 0;
-
-const retrieveNextLine = () => processedLines[lineIterator++];
-const convertToNumbers = (textSegment) => textSegment.split(" ").map(Number);
-const interpretAsNumber = (textValue) => Number(textValue);
-
-const checkFeasibility = (thresholdValue, dataPoints, maximumSegments) => {
-    if (dataPoints.some(val => val > thresholdValue)) {
-        return false;
-    }
-
-    const { segmentCount } = dataPoints.reduce((accumulator, currentItem) => {
-        if (accumulator.currentTotal + currentItem > thresholdValue) {
-            return {
-                currentTotal: currentItem,
-                segmentCount: accumulator.segmentCount + 1
-            };
-        } else {
-            return {
-                currentTotal: accumulator.currentTotal + currentItem,
-                segmentCount: accumulator.segmentCount
-            };
+    for (const segmentItem of dataSegments) {
+        if (segmentItem > limitValue) {
+            isPossible = false;
+            break;
         }
-    }, { currentTotal: 0, segmentCount: 1 });
 
-    return segmentCount <= maximumSegments;
-};
+        if (currentSegmentTotal + segmentItem <= limitValue) {
+            currentSegmentTotal += segmentItem;
+        } else {
+            divisionCount++;
+            currentSegmentTotal = segmentItem;
+        }
+
+        if (divisionCount > maxDivisions) {
+            isPossible = false;
+            break;
+        }
+    }
+    return isPossible;
+}
+
+const fileSystem = require('fs');
+const rawInput = fileSystem.readFileSync('/dev/stdin', 'utf8');
+const inputLines = rawInput.trim().split("\n");
+
+let linePointer = 0;
+
+function getNextLine() {
+    return inputLines[linePointer++];
+}
 
 while (true) {
-    const configurationString = retrieveNextLine();
-    if (configurationString === "0 0") {
+    const dimensionsLine = getNextLine();
+    if (dimensionsLine === "0 0") {
         break;
     }
 
-    const [maxSegmentConstraint, dataPointCount] = convertToNumbers(configurationString);
+    const dimensions = dimensionsLine.split(" ").map(Number);
+    const maxAllowedDivisions = dimensions[0];
+    let numberOfElements = dimensions[1];
 
-    const numericalData = Array.from({ length: dataPointCount }, () => interpretAsNumber(retrieveNextLine()));
+    const elementValues = [];
+    for (let i = 0; i < numberOfElements; i++) {
+        elementValues.push(Number(getNextLine()));
+    }
 
-    let searchStart = 0;
-    let searchEnd = 1500000;
+    let lowerBound = 0;
+    let upperBound = 1500000;
+    let finalResult = 0;
 
-    let finalOptimal = 0;
+    while (lowerBound <= upperBound) {
+        const midPoint = Math.floor((lowerBound + upperBound) / 2);
+        const checkResult = determineFeasibility(midPoint, elementValues, maxAllowedDivisions);
 
-    while (searchStart <= searchEnd) {
-        const currentTest = Math.floor((searchStart + searchEnd) / 2);
-        const testOutcome = checkFeasibility(currentTest, numericalData, maxSegmentConstraint);
-
-        if (testOutcome) {
-            finalOptimal = currentTest;
-            searchEnd = currentTest - 1;
+        if (checkResult) {
+            finalResult = midPoint;
+            upperBound = midPoint - 1;
         } else {
-            searchStart = currentTest + 1;
+            lowerBound = midPoint + 1;
         }
     }
-    console.log(finalOptimal);
+    console.log(finalResult);
 }

@@ -1,19 +1,21 @@
-var sourceData = require('fs').readFileSync('/dev/stdin', 'utf8');
-var dataRows = sourceData.trim().split('\n');
+let rawData = require('fs').readFileSync('/dev/stdin', 'utf8'); // Obtain raw input from the standard input stream
 
-var numberArrays = dataRows.map(function(currentLine) {
-  return currentLine.split(',').map(function(numStr) {
-    return +numStr;
-  });
+const dataRows = rawData.trim().split('\n'); // Process the raw input: remove leading/trailing whitespace and split into an array of lines
+
+const numberPairs = dataRows.map(function(currentRow) { // Iterate over each line to parse numerical data
+    // For each line, split by comma and convert each resulting string segment into a number
+    return currentRow.split(',').map(function(numStr) { return +numStr; });
 });
 
-var totalProduct = numberArrays.reduce(function(accumulator, currentPair) {
-  return accumulator + currentPair[0] * currentPair[1];
-}, 0);
+let totalProductSum = numberPairs.reduce(function(accumulator, currentPair) { // Compute the sum of products for each pair
+    // The accumulator stores the running total, and for each pair, we add the product of its first and second elements
+    return accumulator + currentPair[0] * currentPair[1];
+}, 0); // Initialize the accumulator with zero
 
-var secondElementSum = numberArrays.reduce(function(runningQuantity, dataItem) {
-  return runningQuantity + dataItem[1];
-}, 0);
+let totalSecondElementSum = numberPairs.reduce(function(runningTotal, pairItem) { // Calculate the sum of all second elements
+    // The runningTotal accumulates the value of the second element from each pair
+    return runningTotal + pairItem[1];
+}, 0); // Start the running total from zero
 
-console.log(totalProduct);
-console.log(Math.round(secondElementSum / numberArrays.length));
+console.log(totalProductSum); // Display the final calculated sum of products
+console.log(Math.round(totalSecondElementSum / numberPairs.length)); // Output the rounded average of the second elements

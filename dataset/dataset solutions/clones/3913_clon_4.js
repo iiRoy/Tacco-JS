@@ -1,46 +1,19 @@
 'use strict';
 
-const processInputString = (textSource) => {
-  const numericComponents = textSource.match(/\d+/g).map(val => parseInt(val, 10));
-  return { initialValue: numericComponents[0], finalValue: numericComponents[1], stepCount: numericComponents[2] };
-};
+function main(inputString) {
+  const [valA, valB, valK] = inputString.split('\n')[0].split(' ').map(Number);
 
-const computeSequence = (parameters) => {
-  const { initialValue, finalValue, stepCount } = parameters;
+  const iterationCount = Math.min(valK, valB - valA + 1);
 
-  if (initialValue > finalValue) {
-    return '';
-  }
+  const generatedValues = Array.from({ length: iterationCount }, (_, currentIdx) => {
+    const firstCandidate = valA + currentIdx;
+    const secondCandidate = valB - currentIdx;
+    return [firstCandidate, secondCandidate];
+  }).flat();
 
-  const maximumIndexConsidered = Math.min(stepCount - 1, finalValue - initialValue);
-  const actualIterationAmount = Math.max(0, maximumIndexConsidered + 1);
+  const uniqueSortedValues = Array.from(new Set(generatedValues)).sort((valX, valY) => valX - valY);
 
-  const rawNumberList = Array.from({ length: actualIterationAmount }, (_, currentIdx) => currentIdx)
-                             .flatMap(indexOffset => [initialValue + indexOffset, finalValue - indexOffset]);
+  console.log(uniqueSortedValues.join('\n'));
+}
 
-  const seenNumbers = {};
-  rawNumberList.forEach(num => {
-    seenNumbers[num] = true;
-  });
-
-  const uniqueOrderedValues = Object.keys(seenNumbers)
-                                    .map(Number)
-                                    .reduce((accumulator, currentNumber) => {
-                                      let insertionPoint = 0;
-                                      while (insertionPoint < accumulator.length && accumulator[insertionPoint] < currentNumber) {
-                                        insertionPoint++;
-                                      }
-                                      accumulator.splice(insertionPoint, 0, currentNumber);
-                                      return accumulator;
-                                    }, []);
-
-  return uniqueOrderedValues.join('\n');
-};
-
-const orchestrateExecution = (dataSource) => {
-  const parsedData = processInputString(dataSource);
-  const resultantSequence = computeSequence(parsedData);
-  console.log(resultantSequence);
-};
-
-orchestrateExecution(require("fs").readFileSync("/dev/stdin", "utf8"));
+main(require("fs").readFileSync("/dev/stdin", "utf8"));

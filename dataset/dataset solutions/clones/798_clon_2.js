@@ -1,86 +1,83 @@
-function ProcessInputData(rawData) {
-    // Divide the entire input string into an array of separate lines
-    let linesOfData = rawData.split('\n');
-    /*
-     * Initialize an index variable to keep track of the current line
-     * being read from the 'linesOfData' array during processing.
-     */
-    var lineIndex = 0;
+function ProcessInput(rawData) {
+    // Split the entire input string into an array of lines.
+    rawData = rawData.split("\n");
 
+    // Initialize a pointer for the current line being processed.
+    let lineIndex = 0;
+
+    // Main loop to process multiple test cases until a termination condition is met.
     while (true) {
-        // For each test case, the first line contains two dimensions.
-        linesOfData[lineIndex] = linesOfData[lineIndex].split(' ');
-        const numHeights = parseInt(linesOfData[lineIndex][0], 10);
-        const numWidths = parseInt(linesOfData[lineIndex++][1], 10);
+        // Split the current line (containing N and M) by space.
+        rawData[lineIndex] = rawData[lineIndex].split(" ");
 
-        // If both dimensions are zero, it signifies the end of input.
-        if (numHeights === 0 && numWidths === 0) {
-            break;
+        // Parse the number of rows (N) and columns (M) for the current test case.
+        // The 'lineIndex++' increments the pointer after M is read.
+        const numRows = parseInt(rawData[lineIndex][0], 10);
+        const numCols = parseInt(rawData[lineIndex++][1], 10);
+
+        // Check for the termination condition (N=0 and M=0).
+        if (numRows === 0 && numCols === 0) {
+            break; // Exit the loop if both are zero.
         }
 
-        // Declare arrays to store cumulative sums of heights and widths.
-        let heightPrefixSums = [],
-            widthPrefixSums = [];
+        // Declare arrays to store prefix sums of heights and widths.
+        const heightPrefixSums = [];
+        const widthPrefixSums = [];
 
-        // Set the initial (zero-th) element of both prefix sum arrays to zero.
+        // Initialize the first element of prefix sum arrays to zero.
         heightPrefixSums[0] = 0;
         widthPrefixSums[0] = 0;
 
-        /*
-         * Populate the 'heightPrefixSums' array. Each element at index 'idx'
-         * stores the sum of heights from the beginning up to 'idx-1'.
-         */
-        for (let idx = 1; idx <= numHeights; idx++) {
-            heightPrefixSums[idx] = parseInt(linesOfData[lineIndex++], 10) + heightPrefixSums[idx - 1];
+        // Calculate prefix sums for heights.
+        // Each element is the sum of the current height and the previous prefix sum.
+        for (let idx = 1; idx <= numRows; idx++) {
+            heightPrefixSums[idx] = parseInt(rawData[lineIndex++], 10) + heightPrefixSums[idx - 1];
         }
 
-        /*
-         * Populate the 'widthPrefixSums' array in a similar fashion.
-         * Each element is a running total of widths.
-         */
-        for (let idx = 1; idx <= numWidths; idx++) {
-            widthPrefixSums[idx] = parseInt(linesOfData[lineIndex++], 10) + widthPrefixSums[idx - 1];
+        // Calculate prefix sums for widths.
+        // Each element is the sum of the current width and the previous prefix sum.
+        for (let idx = 1; idx <= numCols; idx++) {
+            widthPrefixSums[idx] = parseInt(rawData[lineIndex++], 10) + widthPrefixSums[idx - 1];
         }
 
-        // Arrays to count the frequency of each possible segment length for heights and widths.
-        let heightSegmentCounts = [],
-            widthSegmentCounts = [];
+        // Declare arrays to count occurrences of each possible edge length.
+        const heightDiffCounts = [];
+        const widthDiffCounts = [];
 
-        // Initialize all entries in the count arrays to zero.
-        // The maximum possible length is assumed to be 1000.
+        // Initialize all counts to zero up to a maximum possible length (1000).
         for (let idx = 0; idx <= 1000; idx++) {
-            heightSegmentCounts[idx] = widthSegmentCounts[idx] = 0;
+            heightDiffCounts[idx] = 0;
+            widthDiffCounts[idx] = 0;
         }
 
-        // Calculate all possible segment lengths for heights from the prefix sums.
-        // A segment length between indices 'idx' and 'innerIdx' is heightPrefixSums[innerIdx] - heightPrefixSums[idx].
-        for (let idx = 0; idx <= numHeights; idx++) {
-            for (let innerIdx = idx + 1; innerIdx <= numHeights; innerIdx++) {
-                heightSegmentCounts[heightPrefixSums[innerIdx] - heightPrefixSums[idx]]++;
+        // Calculate all possible height differences (edge lengths) and store their counts.
+        for (let idx = 0; idx <= numRows; idx++) {
+            for (let jdx = idx + 1; jdx <= numRows; jdx++) {
+                heightDiffCounts[heightPrefixSums[jdx] - heightPrefixSums[idx]]++;
             }
         }
 
-        // Calculate all possible segment lengths for widths from the prefix sums.
-        for (let idx = 0; idx <= numWidths; idx++) {
-            for (let innerIdx = idx + 1; innerIdx <= numWidths; innerIdx++) {
-                widthSegmentCounts[widthPrefixSums[innerIdx] - widthPrefixSums[idx]]++;
+        // Calculate all possible width differences (edge lengths) and store their counts.
+        for (let idx = 0; idx <= numCols; idx++) {
+            for (let jdx = idx + 1; jdx <= numCols; jdx++) {
+                widthDiffCounts[widthPrefixSums[jdx] - widthPrefixSums[idx]]++;
             }
         }
 
-        // Variable to store the final tally of matching segments.
+        // Initialize a variable to store the total number of matching squares.
         let totalMatches = 0;
 
-        // Iterate through all possible segment lengths (from 1 to 1000).
-        // For each length, multiply its count in heights by its count in widths
-        // and add to the total.
+        // Iterate through all possible edge lengths.
+        // If an edge length exists for both height and width, multiply their counts
+        // and add to the total matches.
         for (let idx = 1; idx <= 1000; idx++) {
-            totalMatches += heightSegmentCounts[idx] * widthSegmentCounts[idx];
+            totalMatches += heightDiffCounts[idx] * widthDiffCounts[idx];
         }
 
-        // Print the calculated total number of matching segments to the console.
+        // Output the final count of squares for the current test case.
         console.log(totalMatches);
     }
 }
-// Read the entire input content from standard input (e.g., a file)
-// and then invoke the main processing function with this data.
-ProcessInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+
+// Read input from standard input and pass it to the processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

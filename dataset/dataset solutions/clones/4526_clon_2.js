@@ -1,25 +1,23 @@
-// This routine processes raw textual content to determine a specific numeric range.
-function ProcessInputData(rawData)
-{
-    // Obtain the count of numerical items from the initial line of the provided content.
-    let  itemCount = rawData.split("\n")[0];
+function ProcessData(rawData) {
+  // This function processes the input data to find the range.
 
-    // Extract the sequence of numbers (represented as strings) from the second line,
-    // using space as the delimiter.
-    let  stringNumbers = rawData.split("\n")[1] .split(" ");
+  // Extract the number of elements from the first line.
+  let countElements = rawData.split('\n')[0];
 
-    // Arrange the array of number-strings in ascending order.
-    let  sortedNumbers = stringNumbers.sort();
+  // Extract the array of string elements from the second line.
+  let elementStrings = rawData.split('\n')[1].split(' ');
 
-    // Compute the disparity between the maximum and minimum values in the sorted sequence.
-    // The largest value is located at the index corresponding to (itemCount - 1),
-    // and the smallest value is at index 0. Both are converted to integers.
-    let  rangeDifference = parseInt(sortedNumbers[(itemCount - 1)], 10) -
-                          parseInt(sortedNumbers[0], 10) ;
+  // Sort the array of elements in ascending order.
+  let sortedElements = elementStrings.sort();
 
-    // Print the calculated range difference to the standard output.
-    console.log(rangeDifference) ;
+  // Calculate the difference between the largest and smallest elements.
+  // The largest element is at index (countElements - 1) after sorting.
+  // The smallest element is at index 0 after sorting.
+  let rangeValue = parseInt(sortedElements[parseInt(countElements, 10) - 1], 10) - parseInt(sortedElements[0], 10);
+
+  // Output the calculated range to the console.
+  console.log(rangeValue);
 }
 
-// Initiate the data processing function, fetching input from the standard input stream.
-ProcessInputData(require('fs').readFileSync('/dev/stdin' , 'utf8')) ;
+// Invoke the main processing function with data read from standard input.
+ProcessData(require('fs').readFileSync('/dev/stdin', 'utf8'));

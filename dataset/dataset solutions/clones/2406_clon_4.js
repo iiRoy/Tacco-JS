@@ -1,21 +1,30 @@
-const getSourceData = () => {
-    const dataStream = require('fs').readFileSync(0, 'utf8');
-    const components = dataStream.trim().split(' ');
-    return components.map(val => Number(val));
-};
+const { createInterface } = require('readline');
 
-const computeFinalValue = (operandA, operandB) => {
-    const fixedConstantOne = 1;
-    const alternativeMultiplier = 1e5; // Represents 100,000
-    const fixedConstantFour = 4;
-    const directResultForSpecificCase = 1e6; // Represents 1,000,000 (300000 * 2 + 400000)
+process.stdin.resume();
+process.stdin.setEncoding('utf-8');
 
-    return (operandA === fixedConstantOne && operandB === fixedConstantOne)
-        ? directResultForSpecificCase
-        : (fixedConstantFour - operandA) * alternativeMultiplier + (fixedConstantFour - operandB) * alternativeMultiplier;
-};
+let firstOperand = undefined;
+let secondOperand = undefined;
 
-const inputNumericSequence = getSourceData();
-const finalOutput = computeFinalValue(inputNumericSequence[0], inputNumericSequence[1]);
+const outcomeActions = new Map();
 
-console.log(finalOutput);
+outcomeActions.set(true, () => {
+    console.log(300000 * 2 + 400000);
+});
+
+outcomeActions.set(false, () => {
+    console.log(100000 * ((4 - firstOperand) + (4 - secondOperand)));
+});
+
+const finalExecutionRoutine = outcomeActions.get(firstOperand === 1 && secondOperand === 1);
+
+const inputHandler = createInterface({
+    input: process.stdin,
+    output: process.stdout
+});
+
+inputHandler.on('close', finalExecutionRoutine);
+
+inputHandler.on('line', (receivedLine) => {
+    const parsedTokens = receivedLine.split(' ');
+});

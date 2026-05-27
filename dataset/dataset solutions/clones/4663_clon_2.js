@@ -1,58 +1,59 @@
 'use strict';
 
-const processInputData = (rawData) => {
-  // Normalize the input string by trimming whitespace and splitting into individual lines.
-  rawData = rawData.trim().split('\n');
+// This function processes the input data to find the closest location for each item.
+const processInput = (inputData) => {
+    // Clean up the input string and split it into an array of lines.
+    const lines = inputData.trim().split('\n');
 
-  // Parse the first line to extract program parameters.
-  const lineOneElements = rawData[0].split(' ');
-  const itemCount = Number(lineOneElements[0]); // Number of primary entities.
-  const anchorCount = Number(lineOneElements[1]); // Number of reference anchor points.
+    // Parse the first line to get the number of items (N) and locations (M).
+    const [numItemsStr, numLocationsStr] = lines[0].split(' ');
+    const numItems = parseInt(numItemsStr, 10); // Number of items
+    const numLocations = parseInt(numLocationsStr, 10); // Number of locations
 
-  // Extract the sections of the input array corresponding to entities and anchors.
-  let entityPositions = rawData.slice(1, itemCount + 1);
-  let anchorLocations = rawData.slice(itemCount + 1, anchorCount + itemCount + 1);
+    // Extract the item coordinates and location coordinates from the input lines.
+    const itemCoordinateStrings = lines.slice(1, numItems + 1);
+    const locationCoordinateStrings = lines.slice(numItems + 1, numItems + numLocations + 1);
 
-  // Define a utility function to convert a space-separated string of numbers into a coordinate object.
-  const convertToPointObject = (coordinateString) => {
-    const numericalParts = coordinateString.split(' ').map(stringPart => Number(stringPart));
-    return {
-      xPos: numericalParts[0], // Horizontal coordinate.
-      yPos: numericalParts[1]  // Vertical coordinate.
+    // Helper function to parse a coordinate string into an object with x and y properties.
+    const parseCoordinateString = (coordStr) => {
+        const [xStr, yStr] = coordStr.split(' ').map(val => parseInt(val, 10));
+        return {
+            x: xStr,
+            y: yStr
+        };
     };
-  };
 
-  // Transform raw string arrays into arrays of structured coordinate objects.
-  entityPositions = entityPositions.map(convertToPointObject);
-  anchorLocations = anchorLocations.map(convertToPointObject);
+    // Convert string arrays to arrays of coordinate objects.
+    const itemCoordinates = itemCoordinateStrings.map(parseCoordinateString);
+    const locationCoordinates = locationCoordinateStrings.map(parseCoordinateString);
 
-  // Initialize an array to store the indices of the closest anchor for each entity.
-  let nearestAnchorIndices = [];
+    // This array will store the index of the closest location for each item.
+    const closestLocationIndices = [];
 
-  // Iterate over each entity to find its closest anchor location.
-  entityPositions.forEach((currentEntity, entityIdx) => {
-    let shortestPath = 1000000000; // Initialize with a very large value.
-    let bestMatchIndex = 0;        // Index of the anchor point found to be closest so far.
+    // Iterate through each item to find its nearest location.
+    itemCoordinates.forEach((currentItem, itemIdx) => {
+        let minimumDistanceFound = Number.MAX_SAFE_INTEGER; // Initialize with a very large distance
+        let bestLocationIndex = 0; // Initialize the index of the closest location
 
-    // Compare the current entity against all available anchor locations.
-    anchorLocations.forEach((singleAnchor, anchorIdx) => {
-      // Calculate the Manhattan distance (L1 distance) between the entity and the anchor.
-      let currentPathDistance = Math.abs(currentEntity.xPos - singleAnchor.xPos) + Math.abs(currentEntity.yPos - singleAnchor.yPos);
+        // Compare the current item with all available locations.
+        locationCoordinates.forEach((currentLocation, locationIdx) => {
+            // Calculate Manhattan distance (L1 distance) between the item and the location.
+            const currentDistance = Math.abs(currentItem.x - currentLocation.x) + Math.abs(currentItem.y - currentLocation.y);
 
-      // If the current anchor is closer than any previously found.
-      if (currentPathDistance < shortestPath) {
-        shortestPath = currentPathDistance; // Update the shortest distance.
-        bestMatchIndex = anchorIdx;         // Record the index of this closer anchor.
-      }
+            // If this location is closer than the previously found minimum, update.
+            if (currentDistance < minimumDistanceFound) {
+                minimumDistanceFound = currentDistance;
+                bestLocationIndex = locationIdx;
+            }
+        });
+
+        // Store the index of the closest location for the current item.
+        closestLocationIndices.push(bestLocationIndex);
     });
 
-    // Store the determined closest anchor index for the current entity.
-    nearestAnchorIndices.push(bestMatchIndex);
-  });
-
-  // Output the 1-based indices of the closest anchors to the console.
-  nearestAnchorIndices.forEach(resultIndex => console.log(resultIndex + 1));
+    // Output the 1-based index of the closest location for each item.
+    closestLocationIndices.forEach(resultIndex => console.log(resultIndex + 1));
 };
 
-// Execute the main processing function with data read from standard input.
-processInputData(require('fs').readFileSync('/dev/stdin', 'utf-8'));
+// Read input from standard input and pass it to the processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf-8'));

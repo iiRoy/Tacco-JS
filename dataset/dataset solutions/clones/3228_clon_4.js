@@ -1,35 +1,31 @@
-const inputHandler = require('readline');
-const collectedLines = [];
+const inputReader = require('readline');
+const inputBuffer = [];
 
-const streamProcessor = inputHandler.createInterface({
+const interfaceHandler = inputReader.createInterface({
     input: process.stdin,
     output: process.stdout,
 });
 
-streamProcessor.on('line', (contentLine) => {
-    collectedLines.push(contentLine);
+interfaceHandler.on('line', (currentLine) => {
+    inputBuffer.push(currentLine);
 });
 
-streamProcessor.on('close', () => {
-    const [headerData, pointData] = collectedLines;
+interfaceHandler.on('close', () => {
+    const [rawCounts, rawPositions] = inputBuffer;
 
-    const [requiredSegments, totalPoints] = headerData.split(' ').map(Number);
-    const initialCoordinates = pointData.split(' ').map(Number);
+    const [segmentCount, pointCount] = rawCounts.split(" ").map(Number);
 
-    const sortedCoordinates = initialCoordinates.slice().sort((valA, valB) => valA - valB);
+    const sortedPositions = rawPositions.split(" ").map(Number).sort((a, b) => a - b);
 
-    const gapLengths = sortedCoordinates.slice(1).map((currentCoord, index) => {
-        const previousCoord = sortedCoordinates[index];
-        return currentCoord - previousCoord;
+    const differenceValues = sortedPositions.slice(1).map((currentPosition, index) => {
+        return currentPosition - sortedPositions[index];
     });
 
-    const orderedGapLengths = gapLengths.sort((valA, valB) => valA - valB);
+    differenceValues.sort((a, b) => a - b);
 
-    const segmentsToInclude = totalPoints - requiredSegments;
+    const numDifferencesToSum = pointCount - segmentCount;
 
-    const finalAccumulation = orderedGapLengths
-        .slice(0, segmentsToInclude)
-        .reduce((summation, length) => summation + length, 0);
+    const totalDistance = differenceValues.slice(0, numDifferencesToSum).reduce((accumulator, value) => accumulator + value, 0);
 
-    console.log(finalAccumulation);
+    console.log(totalDistance);
 });

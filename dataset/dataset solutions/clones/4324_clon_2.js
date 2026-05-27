@@ -1,28 +1,36 @@
 "use strict";
 
-const processInput = (rawData) => {
-  let parsedLines = rawData.split("\n");
-  let firstLineVal = parsedLines.shift();
+const processInput = (inputData) => {
+  // Split the entire input string into individual lines.
+  let linesOfData = inputData.split("\n");
 
-  // Convert each line into an array of numbers, splitting by space.
-  let dataEntries = parsedLines.map(
-    (currentLine) => currentLine.split(" ").map((tokenStr) => parseInt(tokenStr, 10))
+  // Extract the first line, which might represent a count or similar.
+  let firstLineValue = linesOfData.shift();
+
+  // Process the remaining lines: split each by space and convert parts to numbers.
+  let parsedRecords = linesOfData.map((recordString) =>
+    recordString.split(" ").map((numericValue) => numericValue * 1)
   );
 
-  let valueAssociations = new Map();
-  let keyValues = [];
+  // Initialize a map to store key-value pairs and an array for first elements.
+  let dataRegistry = new Map();
+  let firstElements = [];
 
-  // Iterate through the processed entries to populate a map and a list of keys.
-  dataEntries.forEach((recordEntry) => {
-    valueAssociations.set(recordEntry[0], recordEntry[1]);
-    keyValues.push(recordEntry[0]);
+  // Iterate through the processed records to populate the map and the array.
+  parsedRecords.forEach((currentRecord) => {
+    dataRegistry.set(currentRecord[0], currentRecord[1]);
+    firstElements.push(currentRecord[0]);
   });
 
-  // Find the largest key and compute the result by adding its associated value.
-  let highestKey = Math.max(...keyValues);
-  let computedSum = highestKey + valueAssociations.get(highestKey);
+  // Determine the largest value among the first elements.
+  let maximumFirstElement = Math.max(...firstElements);
 
-  console.log(computedSum);
+  // Calculate the final outcome based on the maximum first element and its associated value from the map.
+  let finalResult = maximumFirstElement + dataRegistry.get(maximumFirstElement);
+
+  // Output the computed result to the console.
+  console.log(finalResult);
 };
 
-processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// Read input from standard input and pass it to the processing function.
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

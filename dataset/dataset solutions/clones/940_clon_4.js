@@ -1,46 +1,29 @@
-(function processInputData() {
-  const resourceProvider = {
-    getDataSource: (path, encoding) => require('fs').readFileSync(path, encoding)
-  };
+(function processGraphData() {
+  const inputContent = require('fs').readFileSync('/dev/stdin', 'utf8').trim();
+  const dataLines = inputContent.split('\n');
 
-  let rawContent = resourceProvider.getDataSource('/dev/stdin', 'utf8');
-  let parsedSegments = rawContent.replace(/^\s+|\s+$/g, '').split('\n');
+  const dimension = Number(dataLines.shift());
+  const adjacencyStore = new Array(dimension * dimension).fill(0);
 
-  let graphDimension = parseInt(parsedSegments.shift(), 10);
+  dataLines.forEach((currentLineSegment, currentVertexIndex) => {
+    const lineParts = currentLineSegment.split(' ');
+    const connectedVertices = lineParts.slice(2).map(Number);
 
-  let adjacencyMatrix = new Array(graphDimension);
-  for (let rowIdx = 0; rowIdx < graphDimension; ++rowIdx) {
-    adjacencyMatrix[rowIdx] = new Array(graphDimension).fill(0);
+    for (const targetVertexOneBased of connectedVertices) {
+      const targetVertexZeroBased = targetVertexOneBased - 1;
+      const flatIndex = currentVertexIndex * dimension + targetVertexZeroBased;
+      adjacencyStore[flatIndex] = 1;
+    }
+  });
+
+  const formattedOutputSegments = [];
+  for (let r = 0; r < dimension; r++) {
+    const rowValues = [];
+    for (let c = 0; c < dimension; c++) {
+      rowValues.push(adjacencyStore[r * dimension + c]);
+    }
+    formattedOutputSegments.push(rowValues.join(' '));
   }
 
-  let currentSourceNodeIndex = 0;
-  while (parsedSegments.length > 0) {
-    let lineText = parsedSegments.shift();
-    if (!lineText) {
-        continue;
-    }
-
-    let numericalTokens = lineText.split(' ');
-    let numberOfConnections = parseInt(numericalTokens[1], 10);
-
-    for (let k = 0; k < numberOfConnections; ++k) {
-      let destinationNodeId = parseInt(numericalTokens[2 + k], 10);
-      adjacencyMatrix[currentSourceNodeIndex][destinationNodeId - 1] = 1;
-    }
-    currentSourceNodeIndex++;
-  }
-
-  let finalOutputBuffer = [];
-  for (let outputRowIndex = 0; outputRowIndex < graphDimension; ++outputRowIndex) {
-    let currentRowString = '';
-    for (let outputColIndex = 0; outputColIndex < graphDimension; ++outputColIndex) {
-      currentRowString += adjacencyMatrix[outputRowIndex][outputColIndex];
-      if (outputColIndex < graphDimension - 1) {
-        currentRowString += ' ';
-      }
-    }
-    finalOutputBuffer.push(currentRowString);
-  }
-
-  console.log(finalOutputBuffer.join('\n'));
+  console.log(formattedOutputSegments.join('\n'));
 })();

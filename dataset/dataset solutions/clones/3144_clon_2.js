@@ -1,135 +1,86 @@
-const LINE_BREAK = "\n";
+const LINE_BREAK_CHAR = "\n"; // Character for new line
+const SPACE_DELIMITER = " "; // Character for space separation
+const EMPTY_STRING_VAL = ""; // An empty string constant
 
-const SPACE_DELIM = " ";
-const EMPTY_STR = "";
+/**
+ * Processes the input string to calculate the minimum cost for a given budget.
+ * This function implements a greedy algorithm to select items.
+ * @param {string} rawTextData The raw input string containing item details and budget.
+ * @returns {number} The calculated minimum cost.
+ */
+function ProcessInputData(rawTextData) {
+    // Split the entire input by newlines, then each line by spaces.
+    // This creates a 2D array of string tokens.
+    let parsedInputLines = rawTextData.split(LINE_BREAK_CHAR).map(lineSegment => lineSegment.split(SPACE_DELIMITER));
 
-// Main processing function for the given input
-function ProcessData(rawData) {
+    /**
+     * Helper function to extract the next string token from the parsed input.
+     * It consumes tokens from the current line first, then moves to the next line.
+     * @returns {string} The next available string token.
+     */
+    const extractNextStringToken = () => {
+        let currentLineTokens = parsedInputLines.shift(); // Get the first array (line) of tokens
+        let extractedToken = currentLineTokens.shift(); // Get the first token from that line
 
-    // First, split the raw input by newlines, then each line by spaces.
-    var parsedLines = rawData.split(LINE_BREAK).map(lineContent => lineContent.split(SPACE_DELIM));
-
-
-    // This helper extracts the next string token from the parsed input.
-    const extractStringToken = () => {
-        var currentLineParts = parsedLines.shift(); // Get the first array (line)
-        var extractedToken = currentLineParts.shift(); // Get the first item from that array
-
-        // If there are still items left in the current line, put it back at the front of parsedLines
-        if (currentLineParts.length > 0) {
-            parsedLines.unshift(currentLineParts);
+        // If there are still tokens left in the current line, put it back at the front
+        // of the main input array so they are consumed next.
+        if (currentLineTokens.length) {
+            parsedInputLines.unshift(currentLineTokens);
         }
-        return extractedToken;
+        return extractedToken; // Return the token that was just extracted
     };
 
-    // This helper extracts the next number token by converting a string token to an integer.
-    const extractNumberToken = () => ~~extractStringToken();
+    /**
+     * Helper function to extract the next integer token from the parsed input.
+     * It uses the string token extractor and converts the result to an integer.
+     * @returns {number} The next available integer token.
+     */
+    const extractNextIntegerToken = () => ~~extractNextStringToken(); // Convert string to integer using bitwise NOT operator
 
-    // Read the two initial integer values from the input.
-    var itemCount = extractNumberToken();
-    var availableBudget = extractNumberToken();
+    // Read the initial parameters: number of items and total budget.
+    let numberOfItems = extractNextIntegerToken(); // First integer is the count of items
+    let totalBudget = extractNextIntegerToken(); // Second integer is the total budget or capacity
 
-    // Initialize an array to store the item offers.
-    var itemOffers = [];
-
-    // Loop to read all item offers. Each offer has two integer values.
-    for (var itemIndex = 0; itemIndex < itemCount; itemIndex++) {
-        itemOffers.push([extractNumberToken(), extractNumberToken()]);
+    // Initialize an array to store item offers (price and quantity).
+    let itemOffers = [];
+    // Populate the item offers array by reading N pairs of integers.
+    for (let itemIndex = 0; itemIndex < numberOfItems; itemIndex++) {
+        itemOffers.push([extractNextIntegerToken(), extractNextIntegerToken()]); // Each item has a price and a quantity
     }
 
-    // Sort the item offers based on their first element (cost) in ascending order.
+    // Sort the item offers by their price in ascending order.
+    // This is crucial for the greedy approach to work correctly.
     itemOffers.sort((offerA, offerB) => offerA[0] - offerB[0]);
 
-    // Initialize the variable to accumulate the total calculated cost.
-    var totalCost = 0;
+    let finalCost = 0; // Initialize the total cost accumulator.
 
-    // Process offers as long as there is budget remaining and offers are available.
-    while (availableBudget > 0 && itemOffers.length > 0) {
-        var currentOffer = itemOffers.shift(); // Get the next cheapest offer.
+    // Continue purchasing items as long as there is budget remaining.
+    while (totalBudget > 0) {
+        // Get the cheapest available item offer.
+        let currentOffer = itemOffers.shift();
 
-        // Check if the remaining budget is enough to purchase the entire quantity of this offer.
-        if (availableBudget >= currentOffer[1]) {
-            // If yes, deduct the full quantity from the budget.
-            availableBudget -= currentOffer[1];
-            // Add the cost of the full quantity to the total.
-            totalCost += currentOffer[0] * currentOffer[1];
+        // If the remaining budget is sufficient to buy all units of the current item.
+        if (totalBudget >= currentOffer[1]) {
+            totalBudget -= currentOffer[1]; // Decrease budget by the item's full quantity
+            finalCost += currentOffer[0] * currentOffer[1]; // Add the full cost of the item
         } else {
-            // If no, purchase only what the remaining budget allows.
-            // Add the cost for the partial quantity to the total.
-            totalCost += currentOffer[0] * availableBudget;
-            // Set budget to zero as it's fully spent.
-            availableBudget = 0;
+            // If the remaining budget is less than the item's quantity,
+            // buy only what the budget allows.
+            finalCost += currentOffer[0] * totalBudget; // Add cost for the remaining budget
+            totalBudget = 0; // Budget is now fully spent, terminate the loop
         }
     }
 
-    // Return the final calculated total cost.
-    return totalCost;
+    return finalCost; // Return the calculated total cost.
 }
 
-// Self-executing anonymous function to handle execution context (Node.js vs. Browser).
-((initialDataFromContext, calculationOutcomeRef, outcomeTypeRef) => {
-
-    // Check if the 'require' function is available (indicates Node.js environment).
-    if ("undefined" !== typeof require) {
-        const importFileSystem = require("fs"); // Import the file system module.
-        const standardInputPath = "/dev/stdin"; // Path for standard input.
-        const encodingFormat = "utf8"; // Character encoding.
-
-        // Read input from stdin, process it, and log the result to console.
-        console.log(ProcessData(importFileSystem.readInputSynchronously(standardInputPath, encodingFormat)));
-    } else {
-        // This block executes if not in a Node.js environment (assumed browser).
-
-        // Prepare the initial data by splitting, slicing (to remove outer newlines), and rejoining.
-        initialDataFromContext = initialDataFromContext.split("\n").slice(1, -1).join("\n");
-
-        // Execute the main processing function within a try-catch block to handle errors.
-        calculationOutcomeRef = (() => {
-            try {
-                return ProcessData(initialDataFromContext);
-            } catch (errorObject) {
-                // If an error occurs, return its stack trace or message.
-                return errorObject.stack || errorObject.message;
-            }
-        })();
-
-        // Determine the data type of the calculation outcome.
-        outcomeTypeRef = typeof calculationOutcomeRef;
-
-        // If the outcome is not already a string, convert it to a JSON string for display.
-        if ("string" !== outcomeTypeRef) {
-            calculationOutcomeRef = JSON.stringify(calculationOutcomeRef);
-        }
-
-        // Use jQuery to dynamically create and append HTML elements to display results.
-        jQuery("<form>")
-            .append(
-                [
-                    [10, initialDataFromContext], // Input data in a textarea
-                    0, // A line break
-                    [1, outcomeTypeRef], // Type of result in a textarea
-                    0, // Another line break
-                    [10, calculationOutcomeRef] // The actual result in a textarea
-                ].map(elementConfig => // Map configuration arrays to jQuery elements
-                    jQuery(
-                        elementConfig ? "<textarea>" : "<br>", // Create textarea or line break
-                        elementConfig && { // If it's a textarea, set its properties
-                            rows: elementConfig[0],
-                            cols: 40,
-                            text: elementConfig[1]
-                        }
-                    )
-                )
-            )
-            .appendTo("body"); // Append the form with elements to the document body.
-    }
-})(
-    // Input string passed to the IIFE for browser context.
-    `
-    4 30
-    6 18
-    2 5
-    3 10
-    7 9
-    `
-);
+// The following section handles input/output based on the execution environment.
+// It's designed to work both in Node.js (reading from stdin) and in a browser-like environment.
+// This part is critical for the observable behavior and should not be altered significantly.
+((paramA, paramB, paramC) => "undefined" != typeof require ? console.log(ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8"))) : [paramA = paramA.split("\n").slice(1, -1).join("\n"), paramB = function () { try { return ProcessInputData(paramA) } catch (errorObj) { return errorObj.stack || errorObj.message } }(), paramC = typeof paramB, "string" == paramC || (paramB = JSON.stringify(paramB)), $("<form>").append([[10, paramA], 0, [1, paramC], 0, [10, paramB]].map(element => $(element ? "<textarea>" : "<br>", element && { rows: element[0], cols: 40, text: element[1] }))).appendTo("body")])(`
+4 30
+6 18
+2 5
+3 10
+7 9
+`);

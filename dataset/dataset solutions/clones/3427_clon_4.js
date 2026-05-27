@@ -1,18 +1,16 @@
-const inputData = process.stdin.readFileSync(0, 'utf8');
-const targetNumber = 753;
+const sourceContent = require("fs").readFileSync("/dev/stdin", "utf8");
 
-let currentMinimum = Infinity;
+let leastDeviation = Number.POSITIVE_INFINITY;
+const referenceValue = 753;
+const subsegmentLength = 3;
 
-for (let j = 0; j <= inputData.length - 3; j++) {
-    const stringSegment = inputData[j] + inputData[j + 1] + inputData[j + 2];
-    const numericValue = Number(stringSegment);
-
-    const valueDifference = numericValue - targetNumber;
-    const absoluteDifference = valueDifference < 0 ? -valueDifference : valueDifference;
-
-    if (absoluteDifference < currentMinimum) {
-        currentMinimum = absoluteDifference;
-    }
+for (let startIdx = 0; startIdx <= sourceContent.length - subsegmentLength; startIdx++) {
+  const currentSubsegment = sourceContent.substring(startIdx, startIdx + subsegmentLength);
+  const numericalRepresentation = parseInt(currentSubsegment, 10);
+  const currentDeviation = Math.abs(numericalRepresentation - referenceValue);
+  if (currentDeviation < leastDeviation) {
+    leastDeviation = currentDeviation;
+  }
 }
 
-currentMinimum;
+leastDeviation;

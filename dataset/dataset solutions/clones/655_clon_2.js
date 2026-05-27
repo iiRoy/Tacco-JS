@@ -1,29 +1,32 @@
-process.stdin.resume(); // Activate standard input stream
+process.stdin.resume();
+process.stdin.setEncoding("utf8");
 
-process.stdin.setEncoding('utf8'); // Configure input encoding for text interpretation
+// This variable will accumulate all incoming data from standard input.
+var inputBuffer = "";
 
-let  collectedInputText   =   ''; // Buffer for accumulating all incoming data
+// Attach an event listener for 'data' events on the standard input stream.
+process.stdin.on("data", function (dataChunk) {
+    // Append each received data chunk to our buffer.
+    inputBuffer += dataChunk;
+});
 
-// Register a handler for received data segments
-process.stdin.on(  'data'  ,   (inputSegment)  =>  {
-  collectedInputText  +=  inputSegment; // Append the current segment to our buffer
-}  );
+// Attach an event listener for the 'end' event, signaling no more input.
+process.stdin.on("end", function () {
+    // Once all data is received, split the accumulated buffer into individual lines.
+    var lines = inputBuffer.split("\n");
+    // Define a regular expression to find two sequences of digits separated by a space.
+    var numberPattern = /([\d]+) ([\d]+)/;
 
-// Register a handler for the end of the input stream
-process.stdin.on(  'end'  ,   ()  =>  {
-  const   contentRows   =   collectedInputText.split('\n'); // Divide the full input into individual lines
-  const   numericPairPattern   =   /(\d+)\s(\d+)/; // Regex to find two numbers separated by whitespace
-
-  // Iterate through each line of the received content
-  for   (  let   lineIndex   =   0;   lineIndex   <   contentRows.length;   lineIndex++  )   {
-    const   matchOutcome   =   numericPairPattern.exec(contentRows[lineIndex]); // Attempt to parse numbers from the current line
-
-    // Check if a valid match was found and it contains two captured groups (plus the full match)
-    if   (  matchOutcome   &&   matchOutcome.length   ===   3  )   {
-      // Convert captured strings to integers, sum them, and convert the result back to a string
-      const   sumResult   =   Number.parseInt(matchOutcome[1])   +   Number.parseInt(matchOutcome[2]);
-      process.stdout.write(  String(sumResult)  ); // Output the calculated sum
-      process.stdout.write(  '\n'  ); // Append a newline character for formatting
+    // Iterate through each line obtained from the input.
+    for (var idx = 0; idx < lines.length; idx++) {
+        // Attempt to execute the regular expression on the current line.
+        var matchResult = numberPattern.exec(lines[idx]);
+        // Check if a match was found and if it contains the expected number of captured groups (the two numbers).
+        if (matchResult && matchResult.length === 3) {
+            // Parse the first and second captured numbers, add them together, and convert the sum back to a string.
+            process.stdout.write((parseInt(matchResult[1]) + parseInt(matchResult[2])).toString());
+            // Write a newline character to standard output after each sum.
+            process.stdout.write("\n");
+        }
     }
-  }
-}  );
+});

@@ -1,25 +1,28 @@
-// This module handles processing of numerical input strings.
-function ProcessData(rawDataString) {
-	// Split the entire payload into individual lines.
-	let dataRows = rawDataString.split("\n");
+// This function serves as the primary entry point for processing input data.
+function ProcessInput(rawData) {
+    // The raw input string is first divided into an array of strings,
+    // where each element represents a line from the original input.
+    let parsedData = rawData.split('\n');
 
-	// Extract the first line and split it by spaces to get individual components.
-	const firstRowElements = dataRows[0].split(" ");
+    // The very first line of the parsed data is then further split
+    // by spaces to extract individual components.
+    const firstLineParts = parsedData[0].split(' ');
 
-	// Convert the first component to a numerical value.
-	const firstNumber = Number(firstRowElements[0]);
-	// Convert the second component to a numerical value.
-	const secondNumber = Number(firstRowElements[1]);
+    // These components are converted from string representations to numerical values.
+    let valA = Number(firstLineParts[0]);
+    let valB = Number(firstLineParts[1]);
 
-	// Check a specific divisibility condition.
-	// If the sum is not divisible by 3 AND the first number is not divisible by 3 AND the second number is not divisible by 3...
-	if ( (firstNumber + secondNumber) % 3  &&  firstNumber % 3  &&  secondNumber % 3 ) {
-		console.log("Outcome: Impossible"); // Display a negative result.
-	}
-	else {
-		console.log("Outcome: Possible"); // Display an affirmative result.
-	}
+    // A specific condition is evaluated: if the sum of the two numbers is not
+    // divisible by 3, AND the first number is not divisible by 3, AND the
+    // second number is not divisible by 3, then the situation is deemed "Impossible".
+    // Otherwise, it is considered "Possible".
+    if ((valA + valB) % 3 && valA % 3 && valB % 3) {
+        console.log("Impossible");
+    } else {
+        console.log("Possible");
+    }
 }
 
-// Invoke the data processing function with content read from standard input.
-ProcessData(require("fs").readFileSync("/dev/stdin", "utf8"));
+// The program initiates by reading the entire content of the standard input
+// as a UTF-8 encoded string and then passes this string to the ProcessInput function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

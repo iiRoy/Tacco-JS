@@ -1,101 +1,83 @@
-// This function handles the primary processing of incoming data.
-function ProcessInputData(dataStream)
-{
-	// Divide the entire data block into individual lines.
-	var textLines = dataStream.split("\n");
+// This function serves as the primary entry point for processing input data.
+function ProcessInput(rawData) {
+    // Divide the entire raw input string into individual lines.
+    const inputLines = rawData.split("\n");
 
-	// Extract numerical segments from the very first line.
-	var segmentParts = textLines[0].split(" ");
+    // The initial line is expected to contain two numeric bounds, separated by a space.
+    const parts = inputLines[0].split(" ");
+    let lowerBoundStr = parts[0]; // Stores the textual representation of the starting value.
+    let upperBoundStr = parts[1]; // Stores the textual representation of the ending value.
 
-	// Assign the first segment as the lower bound.
-	var minimumValue = segmentParts[0];
+    let resultCount = 0; // A counter to track the number of doubling operations performed.
 
-	// Assign the second segment as the upper bound.
-	var maximumValue = segmentParts[1];
+    // Determine if the numerical bounds can be safely handled by standard JavaScript number types.
+    // The threshold of 14 digits is chosen to prevent potential floating-point inaccuracies with large integers.
+    if (lowerBoundStr.length <= 14 && upperBoundStr.length <= 14) {
+        // Convert the string representations of the bounds into actual numbers.
+        let currentLowerNum = Number(lowerBoundStr);
+        const targetUpperNum = Number(upperBoundStr);
 
-	// Initialize a counter for the operations performed.
-	var computationResult = 0;
+        // Continuously double the current lower number until it exceeds the upper target.
+        while (currentLowerNum <= targetUpperNum) {
+            currentLowerNum = currentLowerNum * 2; // Perform the doubling operation.
+            resultCount++; // Increment the operation counter for each doubling.
+        }
+    } else {
+        // For numbers exceeding the safe integer limit, process them as strings to maintain precision.
+        // Pad both bounds with leading zeros to ensure a consistent length for subsequent string slicing.
+        lowerBoundStr = "0000000000" + lowerBoundStr;
+        upperBoundStr = "0000000000" + upperBoundStr;
 
-	// Check if both number strings are relatively short (fit into standard JS numbers).
-	if (minimumValue.length <= 14 && maximumValue.length <= 14)
-	{
-		// Convert string representations to actual numerical types.
-		minimumValue = Number(minimumValue);
-		maximumValue = Number(maximumValue);
+        // Decompose the large number strings into two components: a 'prefix' (most significant digits)
+        // and a 'suffix' (the last 10 least significant digits).
+        const currentPrefix = lowerBoundStr.slice(0, -10);   // The leading part of the current lower bound.
+        const currentSuffix = lowerBoundStr.slice(-10);     // The trailing 10 digits of the current lower bound.
+        const targetPrefix = upperBoundStr.slice(0, -10);   // The leading part of the upper target bound.
+        const targetSuffix = upperBoundStr.slice(-10);     // The trailing 10 digits of the upper target bound.
 
-		// Loop as long as the current minimum value does not exceed the maximum.
-		while (minimumValue <= maximumValue)
-		{
-			// Double the current minimum value.
-			minimumValue = minimumValue * 2;
-			// Increment the operation counter.
-			computationResult++;
-		}
-	}
-	else // Handle very large numbers that might exceed standard number precision.
-	{
-		// Prepend zeros to ensure a consistent length for string manipulation.
-		minimumValue = "0000000000" + minimumValue;
-		maximumValue = "0000000000" + maximumValue;
+        // Represent the large numbers as arrays, where the first element is the prefix (as a number)
+        // and the second element is the suffix (as a number).
+        let currentLowerArr = [Number(currentPrefix), Number(currentSuffix)];
+        const targetUpperArr = [Number(targetPrefix), Number(targetSuffix)];
 
-		// Extract the higher-order part of the minimum value.
-		var minTopSegment = minimumValue.slice(0, -10);
-		// Extract the lower-order part of the minimum value.
-		var minBottomSegment = minimumValue.slice(-10);
+        // A utility function to compare two large numbers, each represented as a [prefix, suffix] array.
+        const isLessThanOrEqual = function(firstNumParts, secondNumParts) {
+            // First, compare the most significant parts (prefixes).
+            if (firstNumParts[0] < secondNumParts[0]) {
+                return true; // If the first prefix is smaller, the first number is smaller.
+            }
+            // If prefixes are identical, then compare the less significant parts (suffixes).
+            else if (firstNumParts[0] === secondNumParts[0] && firstNumParts[1] <= secondNumParts[1]) {
+                return true; // If prefixes are equal and the first suffix is less than or equal, the first number is less than or equal.
+            }
+            // In all other cases, the first number is greater than the second.
+            else {
+                return false;
+            }
+        };
 
-		// Extract the higher-order part of the maximum value.
-		var maxTopSegment = maximumValue.slice(0, -10);
-		// Extract the lower-order part of the maximum value.
-		var maxBottomSegment = maximumValue.slice(-10);
+        // Continue doubling the current lower number (represented as an array) until it surpasses the upper target.
+        while (isLessThanOrEqual(currentLowerArr, targetUpperArr)) {
+            // Double the suffix part and convert it to a string to check its length.
+            const doubledSuffixStr = (currentLowerArr[1] * 2).toString();
 
-		// Store large numbers as an array of two numbers [top_part, bottom_part].
-		minimumValue = [Number(minTopSegment), Number(minBottomSegment)];
-		maximumValue = [Number(maxTopSegment), Number(maxBottomSegment)];
+            // If the doubled suffix has 11 digits, it indicates a carry-over to the prefix.
+            if (doubledSuffixStr.length === 11) {
+                // Update the current lower number: double the prefix and add the carry-over (1),
+                // and take the last 10 digits of the doubled suffix as the new suffix.
+                currentLowerArr = [currentLowerArr[0] * 2 + 1, Number(doubledSuffixStr.slice(-10))];
+            } else {
+                // If no carry-over, simply double both the prefix and the suffix.
+                currentLowerArr = [currentLowerArr[0] * 2, Number(doubledSuffixStr)];
+            }
+            resultCount++; // Increment the operation counter.
+        }
+    }
 
-		// Define a comparison utility function for these two-part numbers.
-		var checkRange = function (currentMin, currentMax)
-		{
-			// If the top parts are different, the comparison is straightforward.
-			if (currentMin[0] < currentMax[0])
-			{
-				return true;
-			}
-			// If top parts are identical, compare the bottom parts.
-			else if (currentMin[0] === currentMax[0] && currentMin[1] <= currentMax[1])
-			{
-				return true;
-			}
-			// Otherwise, the minimum has exceeded the maximum.
-			else
-			{
-				return false;
-			}
-		};
-
-		// Continue doubling the minimum value until it goes beyond the maximum.
-		while (checkRange(minimumValue, maximumValue))
-		{
-			// Double the lower part and convert to string to check for overflow.
-			var doubledBottomString = (minimumValue[1] * 2).toString();
-
-			// If doubling the bottom part caused a carry-over (length becomes 11 means it went from 10 digits to 11).
-			if (doubledBottomString.length === 11)
-			{
-				// Double the top part and add 1 for the carry. Update bottom part.
-				minimumValue = [minimumValue[0] * 2 + 1, Number(doubledBottomString.slice(-10))];
-			}
-			else // No carry-over from the bottom part.
-			{
-				// Simply double the top part and update the bottom part.
-				minimumValue = [minimumValue[0] * 2, Number(doubledBottomString)];
-			}
-			// Increment the total count of operations.
-			computationResult++;
-		}
-	}
-	// Output the final tally of operations.
-	console.log(computationResult);
+    // Display the final calculated count of operations.
+    console.log(resultCount);
 }
 
-// Do not alter any code below this line (standard input/output setup).
-ProcessInputData( require("fs").readFileSync("/dev/stdin", "utf8") );
+// The following line handles reading input from standard input and invoking the main processing function.
+// It should not be altered as per the problem statement.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

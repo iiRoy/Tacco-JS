@@ -1,14 +1,15 @@
-let processInputData = (incomingTextValue) => {
-  let numericValue = Number(incomingTextValue);
-  let comparativeDelta = numericValue - 999;
-  
-  let outcomeLookup = ['ABC', 'ABC', 'ABD']; 
-  
-  let finalIndex = Math.sign(comparativeDelta) + 1; 
-  
-  process.stdout.write(outcomeLookup[finalIndex]);
-};
+function Main(inputString) {
+  const parsedValue = Number.parseInt(inputString, 10);
 
-let filesystemAccess = require("fs");
-let rawInputData = filesystemAccess.readFileSync("/dev/stdin", "utf8");
-processInputData(rawInputData);
+  const decisionKey = Math.sign(parsedValue - 999.5);
+
+  const messageMap = {
+    '1': 'ABD',
+    '-1': 'ABC'
+  };
+
+  console.log(messageMap[decisionKey]);
+}
+
+//*この行以降は編集しないでください（標準入出力から一度に読み込み、Mainを呼び出します）
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

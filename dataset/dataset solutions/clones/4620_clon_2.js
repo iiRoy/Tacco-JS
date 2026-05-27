@@ -1,23 +1,20 @@
-/*
- * This module is designed to process an incoming string
- * extracting initial characters and forming an acronym.
- */
-function performProcessing(  sourceText  ) {
-    // Standardize the incoming text by removing leading/trailing whitespace.
-    sourceText = sourceText.trim(  )  ;
+function processInput(rawData) {
+  // Remove any leading or trailing whitespace from the raw input string.
+  const cleanedInput = rawData.trim();
 
-    // Divide the processed text into distinct components based on space delimiters.
-    const   [  tokenOne,   tokenTwo,   tokenThree  ]   =   sourceText.split(  " "  )  ;
+  // Divide the cleaned string into individual components using a space as the delimiter.
+  const [firstComponent, secondComponent, thirdComponent] = cleanedInput.split(" ");
 
-    // Construct a new string by taking the first character of each component,
-    // converting it to uppercase, and then joining them together.
-    let   concatenatedAcronym   =   tokenOne.slice(  0,  1  ).toUpperCase(  )   +
-                                  tokenTwo.slice(  0,  1  ).toUpperCase(  )   +
-                                  tokenThree.slice(  0,  1  ).toUpperCase(  )   ;
+  // Extract the initial character from each component, convert it to uppercase,
+  // and then concatenate these capitalized characters to form a final abbreviation.
+  let finalAbbreviation = firstComponent.slice(0, 1).toUpperCase() +
+                          secondComponent.slice(0, 1).toUpperCase() +
+                          thirdComponent.slice(0, 1).toUpperCase();
 
-    // Display the final generated acronym to the standard output.
-    console.log(  concatenatedAcronym  )  ;
+  // Display the resulting abbreviation to the standard output.
+  console.log(finalAbbreviation);
 }
 
-// Initiate the processing by reading data from the standard input stream.
-performProcessing(  require(  "fs"  ).readFileSync(  "/dev/stdin",   "utf8"  )  )  ;
+// Read the entire content from the standard input stream, assuming UTF-8 encoding,
+// and then pass this content to our processing function.
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

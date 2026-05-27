@@ -1,29 +1,17 @@
-var rawText = require('fs').readFileSync('/dev/stdin', 'utf8');
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8'); // Read input from standard input
+var dataRows = rawData.split('\n'); // Split the input string into an array of lines
 
-// The raw text content is split into individual rows.
-var contentRows = rawText.split('\n');
+var priceOptions = []; // Array to store price values
+var juiceOptions = []; // Array to store juice values
 
-/*
- * Initialize an array to store the costs of primary items.
- * This array will hold numeric values derived from the input lines.
- */
-var itemExpenses = [  ];
+// Assign numeric values from input lines to priceOptions array
+priceOptions[0] = Number(dataRows[0]);
+priceOptions[1] = Number(dataRows[1]);
+priceOptions[2] = Number(dataRows[2]);
 
-// Initialize a separate array for beverage costs.
-var drinkExpenses = [ ];
+// Assign numeric values from input lines to juiceOptions array
+juiceOptions[0] = Number(dataRows[3]);
+juiceOptions[1] = Number(dataRows[4]);
 
-
-// Parse and store the first three item costs from the input rows.
-itemExpenses[0] = Number(contentRows[0]);
-itemExpenses[1] = Number(contentRows[1]);
-itemExpenses[2] = Number(contentRows[2]);
-
-// Parse and store the next two beverage costs.
-drinkExpenses[0] = Number(contentRows[3]);
-drinkExpenses[1] = Number(contentRows[4]);
-
-
-// Calculate the total minimum cost.
-// Find the lowest price among primary items, and the lowest among beverages.
-// Sum these two minimums and then subtract a fixed discount value of 50.
-console.log(  Math.min.apply(null, itemExpenses) + Math.min.apply(null, drinkExpenses) - 50  );
+// Calculate the minimum price, minimum juice, sum them, and subtract 50
+console.log(Math.min.apply(null, priceOptions) + Math.min.apply(null, juiceOptions) - 50);

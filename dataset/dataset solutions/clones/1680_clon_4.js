@@ -1,45 +1,33 @@
-function countSetBits(numericalValue) {
-    let activeBits = 0;
-    let tempValue = numericalValue;
-    while (tempValue > 0) {
-        tempValue &= (tempValue - 1);
-        activeBits++;
-    }
-    return activeBits;
+function processData(inputContent) {
+  inputContent = inputContent.split("\n");
+  const limitVal = parseInt(inputContent[0], 10);
+  const binaryString = inputContent[1];
+
+  Array.from({ length: limitVal }).forEach((_, idx) => {
+    const charArray = Array.from(binaryString);
+    charArray[idx] = (binaryString[idx] === "1" ? "0" : "1");
+    const modifiedBinary = charArray.join("");
+    console.log(calculateReductionSteps(Number.parseInt(modifiedBinary, 2)));
+  });
 }
 
-function determineStepsToZero(startingValue) {
-    let currentProcessingValue = startingValue;
-    let iterationCounter = 0;
+processData(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-    if (currentProcessingValue === 0) {
-        return 0;
-    }
-
-    while (currentProcessingValue !== 0) {
-        const setBitsInCurrent = countSetBits(currentProcessingValue);
-        currentProcessingValue %= setBitsInCurrent;
-        iterationCounter++;
-    }
-    return iterationCounter;
+function getDecimalDigitCount(val) {
+  if (val === 0) {
+    return 1;
+  }
+  return Math.floor(Math.log10(val)) + 1;
 }
 
-function processBinaryTransformations(sourceContent) {
-    const contentLines = sourceContent.split('\n');
-    const transformationCount = Number(contentLines[0]);
-    const initialBinaryPattern = contentLines[1];
+function calculateReductionSteps(initialNum) {
+  let stepCounter = 0;
+  let currentNum = initialNum;
 
-    for (let currentPosition = 0; currentPosition < transformationCount; currentPosition++) {
-        const currentBinaryChars = initialBinaryPattern.split('');
-        
-        currentBinaryChars[currentPosition] = (initialBinaryPattern[currentPosition] === '1' ? '0' : '1');
-        
-        const modifiedBinaryPattern = currentBinaryChars.join('');
-        
-        const decimalRepresentation = parseInt(modifiedBinaryPattern, 2);
-        
-        console.log(determineStepsToZero(decimalRepresentation));
-    }
+  while (currentNum !== 0) {
+    stepCounter++;
+    const divisor = getDecimalDigitCount(currentNum);
+    currentNum %= divisor;
+  }
+  return stepCounter;
 }
-
-processBinaryTransformations(require("fs").readFileSync("/dev/stdin", "utf8"));

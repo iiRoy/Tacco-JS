@@ -1,32 +1,42 @@
-process.stdin.resume();
-process.stdin.setEncoding('utf8');
+const operationRegistry = new Map();
 
-const mathematicalOperations = {
-    '+': (operandA, operandB) => operandA + operandB,
-    '-': (operandA, operandB) => operandA - operandB,
-    '*': (operandA, operandB) => operandA * operandB,
-    '/': (operandA, operandB) => Math.floor(operandA / operandB)
-};
+operationRegistry.set('+', (firstVal, secondVal) => firstVal + secondVal);
+operationRegistry.set('-', (firstVal, secondVal) => firstVal - secondVal);
+operationRegistry.set('/', (firstVal, secondVal) => Math.floor(firstVal / secondVal));
+operationRegistry.set('*', (firstVal, secondVal) => firstVal * secondVal);
 
-const processInputLine = (rawLineContent) => {
-    const expressionComponents = rawLineContent.trim().match(/^(\d+)\s+(\d+)\s+([+\-*/])$/);
+const inputProcessor = require('readline').createInterface({
+    input: process.stdin,
+    output: process.stdout,
+    terminal: false
+});
 
-    if (!expressionComponents) {
+inputProcessor.on('line', (currentLineContent) => {
+    const normalizedContent = currentLineContent.trim();
+
+    if (normalizedContent === '0 ? 0') {
+        inputProcessor.close();
         return;
     }
 
-    const firstNumericalValue = parseInt(expressionComponents[1], 10);
-    const secondNumericalValue = parseInt(expressionComponents[2], 10);
-    const operationSymbol = expressionComponents[3];
+    const contentSegments = normalizedContent.split(/\s+/);
 
-    const selectedOperation = mathematicalOperations[operationSymbol];
-
-    if (selectedOperation) {
-        console.log(selectedOperation(firstNumericalValue, secondNumericalValue));
+    if (contentSegments.length !== 3) {
+        return;
     }
-};
 
-process.stdin.on('data', (receivedPayload) => {
-    const dataLines = receivedPayload.toString().split('\n').filter(line => line.trim() !== '');
-    dataLines.forEach(lineItem => processInputLine(lineItem));
+    const valA = Number(contentSegments[0]);
+    const valB = Number(contentSegments[1]);
+    const operatorKey = contentSegments[2];
+
+    if (isNaN(valA) || isNaN(valB)) {
+        return;
+    }
+
+    const operationFunction = operationRegistry.get(operatorKey);
+
+    if (operationFunction) {
+        const computedResult = operationFunction(valA, valB);
+        console.log(computedResult);
+    }
 });

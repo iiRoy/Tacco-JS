@@ -1,38 +1,37 @@
-const dataSource = require('fs').readFileSync('/dev/stdin', 'utf8');
+const fileSystem = require('fs');
 
-const parsedLines = dataSource.trim().split('\n');
-const numericalPairs = parsedLines.map((s) => s.split(' ').map(Number));
+const rawInput = fileSystem.readFileSync('/dev/stdin', 'utf8');
 
-function assessConnectivity(vertexDegrees) {
-    const oddVertices = Object.keys(vertexDegrees)
-                              .filter(vtxKey => vertexDegrees[vtxKey] % 2 !== 0)
-                              .map(Number);
+const lineSegments = rawInput.trim().split('\n');
 
-    const numOdd = oddVertices.length;
-
-    switch (numOdd) {
-        case 0:
-            return false;
-        case 2:
-            oddVertices.sort((a, b) => a - b);
-            return oddVertices[0] === 1 && oddVertices[1] === 2;
-        default:
-            return false;
+function assessGraphPath(nodeDegrees) {
+  const oddDegreeNodes = [];
+  for (const [nodeIdentifier, degreeCount] of nodeDegrees.entries()) {
+    if (degreeCount % 2 !== 0) {
+      oddDegreeNodes.push(nodeIdentifier);
     }
+  }
+
+  if (oddDegreeNodes.length === 0) {
+    return false;
+  } else if (oddDegreeNodes.length === 2) {
+    const includesNodeOne = oddDegreeNodes.includes(1);
+    const includesNodeTwo = oddDegreeNodes.includes(2);
+    return includesNodeOne && includesNodeTwo;
+  }
+  return false;
 }
 
-const processingResult = numericalPairs.reduce((accumulatedState, currentPair) => {
-    const [alpha, beta] = currentPair;
+let currentGraphDegrees = new Map();
 
-    if (alpha === 0 && beta === 0) {
-        const segmentOutcome = assessConnectivity(accumulatedState.currentDegrees) ? 'OK' : 'NG';
-        accumulatedState.outputMessages.push(segmentOutcome);
-        accumulatedState.currentDegrees = {};
-    } else {
-        accumulatedState.currentDegrees[alpha] = (accumulatedState.currentDegrees[alpha] || 0) + 1;
-        accumulatedState.currentDegrees[beta] = (accumulatedState.currentDegrees[beta] || 0) + 1;
-    }
-    return accumulatedState;
-}, { currentDegrees: {}, outputMessages: [] });
+for (const segment of lineSegments) {
+  const [originNode, destinationNode] = segment.split(' ').map(Number);
 
-processingResult.outputMessages.forEach(msg => console.log(msg));
+  if (originNode === 0 && destinationNode === 0) {
+    console.log(assessGraphPath(currentGraphDegrees) ? 'OK' : 'NG');
+    currentGraphDegrees = new Map();
+  } else {
+    currentGraphDegrees.set(originNode, (currentGraphDegrees.get(originNode) || 0) + 1);
+    currentGraphDegrees.set(destinationNode, (currentGraphDegrees.get(destinationNode) || 0) + 1);
+  }
+}

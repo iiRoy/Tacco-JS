@@ -1,109 +1,82 @@
-const _reader = require('readline').createInterface({
-    input: process.stdin,
-    output: process.stdout
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
+let rawInputBuffer = '';
+
+process.stdin.on('data', function (chunk) {
+    rawInputBuffer += chunk;
 });
 
-let _accumulator = [];
+const parseNumericLine = (lineContent) =>
+    lineContent.trim().split(" ").map(Number);
 
-_reader.on('line', (line) => {
-    _accumulator.push(line);
-});
+process.stdin.on('end', function () {
+    const inputLines = rawInputBuffer.split('\n');
 
-_reader.on('close', () => {
-    _executeLogic(_accumulator);
-});
+    const graphDimensions = parseNumericLine(inputLines[0]);
+    const nodeCount = graphDimensions[0];
+    const edgeCount = graphDimensions[1];
 
-const _numArrayParser = (textualData) => {
-    return textualData.trim().split(' ').map(Number);
-};
+    let currentEdgeSet = new Set();
+    const rawEdgeData = inputLines.slice(1, 1 + edgeCount).map(parseNumericLine);
 
-const _edgeIdentifier = (vertex1, vertex2) => {
-    return vertex1 < vertex2 ? `${vertex1}-${vertex2}` : `${vertex2}-${vertex1}`;
-};
+    const adjacencyList = Array.from({ length: nodeCount }, () => []);
 
-function _executeLogic(allInputLines) {
-    const firstLineValues = _numArrayParser(allInputLines[0]);
-    const nodeCount = firstLineValues[0];
-    const connectionCount = firstLineValues[1];
+    rawEdgeData.forEach(edgePair => {
+        const u = edgePair[0] - 1;
+        const v = edgePair[1] - 1;
 
-    let initialConnections = [];
-    const adjacencyStructure = new Map();
+        adjacencyList[u].push(v);
+        adjacencyList[v].push(u);
 
-    for (let j = 1; j <= connectionCount; ++j) {
-        const currentEdge = _numArrayParser(allInputLines[j]);
-        const startNode = currentEdge[0] - 1;
-        const endNode = currentEdge[1] - 1;
-
-        initialConnections.push([startNode, endNode]);
-
-        if (!adjacencyStructure.has(startNode)) {
-            adjacencyStructure.set(startNode, new Set());
-        }
-        if (!adjacencyStructure.has(endNode)) {
-            adjacencyStructure.set(endNode, new Set());
-        }
-        adjacencyStructure.get(startNode).add(endNode);
-        adjacencyStructure.get(endNode).add(startNode);
-    }
-
-    let discoveredClosedPaths = [];
-
-    const _recursePathDiscovery = (startPoint, currentPaths, levelVisitationMap) => {
-        if (currentPaths.length === 0) {
-            return;
-        }
-
-        const nextGenerationPaths = [];
-        levelVisitationMap.set(startPoint, true);
-
-        currentPaths.forEach(pathSegment => {
-            const pathEndNode = pathSegment[pathSegment.length - 1];
-            const potentialNextNodes = adjacencyStructure.get(pathEndNode) || new Set();
-
-            potentialNextNodes.forEach(candidateNode => {
-                const isCandidateInCurrentSegment = pathSegment.includes(candidateNode);
-                const isCandidateSameAsPathEnd = candidateNode === pathEndNode;
-                const isCandidateVisitedThisLevel = levelVisitationMap.has(candidateNode);
-                const isCandidateStartPoint = candidateNode === startPoint;
-
-                if (!isCandidateInCurrentSegment && !isCandidateSameAsPathEnd && (!isCandidateVisitedThisLevel || isCandidateStartPoint)) {
-                    levelVisitationMap.set(candidateNode, true);
-                    const extendedSegment = [...pathSegment, candidateNode];
-
-                    if (isCandidateStartPoint) {
-                        discoveredClosedPaths.push(extendedSegment);
-                    } else {
-                        nextGenerationPaths.push(extendedSegment);
-                    }
-                }
-            });
-        });
-
-        _recursePathDiscovery(startPoint, nextGenerationPaths, levelVisitationMap);
-    };
-
-    for (let currentVertex = 0; currentVertex < nodeCount; ++currentVertex) {
-        const initialSegments = Array.from(adjacencyStructure.get(currentVertex) || new Set())
-                                .map(neighbor => [neighbor]);
-        const levelSpecificVisited = new Map();
-        _recursePathDiscovery(currentVertex, initialSegments, levelSpecificVisited);
-    }
-
-    const validCycles = discoveredClosedPaths.filter(path => path.length > 2);
-
-    const edgesToRemove = new Set();
-
-    validCycles.forEach(cyclePath => {
-        for (let k = 0; k < cyclePath.length; ++k) {
-            const currentVertex = cyclePath[k];
-            const nextVertex = cyclePath[(k + 1) % cyclePath.length];
-            edgesToRemove.add(_edgeIdentifier(currentVertex, nextVertex));
-        }
+        currentEdgeSet.add(`${Math.min(u, v)},${Math.max(u, v)}`);
     });
 
-    const remainingConnectionCount = initialConnections.filter(conn => {
-        return !edgesToRemove.has(_edgeIdentifier(conn[0], conn[1]));
-    }).length;
+    let detectedCycles = [];
 
-    console.log(remainingConnectionCount);
-}
+    for (let startNodeIdx = 0; startNodeIdx < nodeCount; ++startNodeIdx) {
+        const pathTraversalNodes = new Set();
+        const exploredNodesInCurrentSearch = new Set();
+
+        exploredNodesInCurrentSearch.add(startNodeIdx);
+
+        const findPathsRecursive = (currentNodeIdx, currentPath) => {
+            for (const neighborNodeIdx of adjacencyList[currentNodeIdx]) {
+                if (neighborNodeIdx === startNodeIdx && currentPath.length >= 2) {
+                    detectedCycles.push([...currentPath, neighborNodeIdx]);
+                } else if (!pathTraversalNodes.has(neighborNodeIdx) && !exploredNodesInCurrentSearch.has(neighborNodeIdx)) {
+                    pathTraversalNodes.add(neighborNodeIdx);
+                    exploredNodesInCurrentSearch.add(neighborNodeIdx);
+
+                    findPathsRecursive(neighborNodeIdx, [...currentPath, neighborNodeIdx]);
+
+                    pathTraversalNodes.delete(neighborNodeIdx);
+                }
+            }
+        };
+
+        for (const initialNeighbor of adjacencyList[startNodeIdx]) {
+            if (!pathTraversalNodes.has(initialNeighbor) && !exploredNodesInCurrentSearch.has(initialNeighbor)) {
+                pathTraversalNodes.add(initialNeighbor);
+                exploredNodesInCurrentSearch.add(initialNeighbor);
+                findPathsRecursive(initialNeighbor, [startNodeIdx, initialNeighbor]);
+                pathTraversalNodes.delete(initialNeighbor);
+            }
+        }
+    }
+
+    detectedCycles = detectedCycles.filter(path => path.length > 2);
+
+    for (const cyclePath of detectedCycles) {
+        // Replicating the original code's bug:
+        // The loop `for(let i=0;i<l.length;++l)` in the original code
+        // increments the array `l` itself, causing it to become NaN.
+        // This results in the loop running only for `i=0`.
+        // Thus, only the first edge of each cycle (l[0], l[1]) is considered for removal.
+        const u = cyclePath[0];
+        const v = cyclePath[1];
+
+        currentEdgeSet.delete(`${Math.min(u, v)},${Math.max(u, v)}`);
+    }
+
+    console.log(currentEdgeSet.size);
+});

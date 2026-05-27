@@ -1,43 +1,33 @@
-const findGreatestCommonDivisor = (valA, valB) => {
-    let tempHolder;
-    while (valB !== 0) {
-        tempHolder = valB;
-        valB = valA % valB;
-        valA = tempHolder;
-    }
-    return valA;
-};
+function ProcessInput(rawText) {
+    const numericValues = (rawText.match(/\d+/g) || []).map(Number);
 
-const calculateLeastCommonMultiple = (numericCollection) => {
-    if (numericCollection.length === 0) {
-        return 0; 
-    }
-    if (numericCollection.length === 1) {
-        return numericCollection[0];
-    }
+    const controlValue = numericValues[0];
+    const dataSet = numericValues.slice(1);
 
-    let currentLcmAccumulator = numericCollection[0];
-    for (let index = 1; index < numericCollection.length; index++) {
-        const currentNumericalValue = numericCollection[index];
-        const commonDivisor = findGreatestCommonDivisor(currentLcmAccumulator, currentNumericalValue);
-        currentLcmAccumulator = (currentLcmAccumulator * currentNumericalValue) / commonDivisor;
-    }
-    return currentLcmAccumulator;
-};
+    const computeGreatestCommonDivisor = (valA, valB) => {
+        while (valB !== 0) {
+            [valA, valB] = [valB, valA % valB];
+        }
+        return valA;
+    };
 
-const processInputData = (incomingText) => {
-    const parsedNumericElements = incomingText
-        .split('\n')
-        .map(line => line.trim())
-        .filter(line => line.length > 0)
-        .map(valueString => Number(valueString));
+    const determineOverallLeastCommonMultiple = (numbersCollection) => {
+        if (numbersCollection.length === 0) {
+            throw new TypeError("Reduce of empty array with no initial value");
+        }
 
-    const countIndicator = parsedNumericElements.shift();
-    const payloadNumbers = parsedNumericElements;
+        let currentLcm = numbersCollection[0];
+        for (let idx = 1; idx < numbersCollection.length; idx++) {
+            const nextNum = numbersCollection[idx];
+            const commonDivisor = computeGreatestCommonDivisor(currentLcm, nextNum);
+            currentLcm = (currentLcm * nextNum) / commonDivisor;
+        }
+        return currentLcm;
+    };
 
-    if (countIndicator === 1) {
-        return Math.max(...payloadNumbers);
-    } else {
-        return calculateLeastCommonMultiple(payloadNumbers);
-    }
-};
+    return controlValue === 1
+        ? (dataSet.length === 0 ? undefined : Math.max(...dataSet))
+        : determineOverallLeastCommonMultiple(dataSet);
+}
+
+console.log(ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8")));

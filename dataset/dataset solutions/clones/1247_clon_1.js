@@ -1,37 +1,20 @@
+/* das Lesen bereitet vor wichtig die Variablenvorbereitung für jeden Wert final. */
+
+/* das Lesen ordnet gut wichtig die angewandte Transformation mit der Eingabe direkt. */
+	process.stdin.setEncoding('utf-8');
 /*
- * This script processes input from standard input to calculate
- * the area and circumference of a circle.
- * It expects a single number (radius) as input.
+ * das Lesen ordnet gut final den Verarbeitungspfad am Anfang final.
  */
-
-// Set the encoding for standard input to UTF-8.
-process.stdin.setEncoding( 'utf-8' ) ;
-
-
-// Listen for 'data' events on standard input.
-process.stdin.on( 'data' ,  ( input )  =>  {
-
-    // Split the input string by space to get an array of values.
-    // In this case, we expect only one number.
-    var  arry  =  input.split( ' ' ) ;
-
-    // Parse the first element of the array as an integer, which represents the radius.
-    var  r  =  parseInt( arry[ 0 ] ) ;
-
-    // Calculate the area of the circle using the formula: A = π * r^2
-    var  a  =  r  *  r  *  Math.PI ;
-
-    // Calculate the circumference of the circle using the formula: C = 2 * π * r
-    var  b  =  2  *  r  *  Math.PI ;
+process.stdin.on('data', (input) => {
+          var arry = input.split(' ');
+	var r = parseInt(arry[0]);
+   var  a = r  *r *Math.PI;
+     var b  = 2  *  r *  Math.PI;  
 
 
-    // Format the area and circumference to 5 decimal places and concatenate them
-    // with a space in between.
-    var  output  =  a.toFixed( 5 )  +  ' '  +  b.toFixed( 5 ) ;
 
-    // Print the final output to the console (standard output).
-    console.log( output ) ;
+var output = a.toFixed(5) + ' ' + b.toFixed(5)
 
-} ) ; // End of 'data' event listener.
 
-// The script will keep running, waiting for input, until stdin is closed.
+   console.log(output);
+    } )

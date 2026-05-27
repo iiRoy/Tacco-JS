@@ -1,276 +1,296 @@
-const applicationState = {
-    currentPathLength: 0,
-    currentLocationNode: 0,
-    currentDay: 0,
-    lastItemCollectionDay: -1,
-    cumulativeScore: 0,
-    maxDistanceValue: 1e9,
-    vertexCount: 0,
-    linkCount: 0,
-    fullPathCosts: null,
-    directLinkCosts: null,
-    nodeConnections: null,
-    someUnusedValues: null,
-    maximumSimulationDuration: 0,
-    maximumSimulationDurationSquared: 0,
-    itemsAwaitingDelivery: new Set(),
-    itemsReadyForCollection: new Set(),
-    currentDeliveryPath: [],
-    itemArrivalTimestamps: null,
-    inputDataSequence: [],
-    inputDataCursor: 0,
-    outputResults: []
-};
-
-const createNestedArray = (initialValue, ...dimensions) => {
-    const builder = (dims, currentDepth = 0) => {
-        if (currentDepth === dims.length) {
-            return initialValue;
+function createMultiDimArray(initialValue, ...dimensions) {
+    const makeArray = (dims, currentDimIndex) => {
+        if (currentDimIndex === dims.length - 1) {
+            return Array(dims[currentDimIndex]).fill(initialValue);
         }
-        const size = dims[currentDepth];
-        return Array.from({ length: size }, () => builder(dims, currentDepth + 1));
+        return Array(dims[currentDimIndex]).fill(0).map(() => makeArray(dims, currentDimIndex + 1));
     };
-    return builder(dimensions);
-};
+    return makeArray(dimensions, 0);
+}
 
-const DisjointSetManager = (totalElements) => {
-    const componentParent = Array(totalElements + 1).fill(-1);
+class DisjointSet {
+    #parentElements;
+    constructor(nodeCount) {
+        this.#parentElements = Array(nodeCount + 1).fill(-1);
+    }
 
-    const findSetRepresentative = (elementId) => {
-        if (componentParent[elementId] < 0) {
-            return elementId;
+    findRepresentative(element) {
+        if (this.#parentElements[element] < 0) {
+            return element;
         }
-        return componentParent[elementId] = findSetRepresentative(componentParent[elementId]);
-    };
+        return (this.#parentElements[element] = this.findRepresentative(this.#parentElements[element]));
+    }
 
-    const mergeSets = (id1, id2) => {
-        let rep1 = findSetRepresentative(id1);
-        let rep2 = findSetRepresentative(id2);
+    uniteSets(elemA, elemB) {
+        let rootA = this.findRepresentative(elemA);
+        let rootB = this.findRepresentative(elemB);
 
-        if (rep1 === rep2) return true;
-
-        if (componentParent[rep2] < componentParent[rep1]) {
-            componentParent[rep1] += componentParent[rep2];
-            componentParent[rep2] = rep1;
-        } else {
-            componentParent[rep2] += componentParent[rep1];
-            componentParent[rep1] = rep2;
+        if (rootA === rootB) {
+            return false;
         }
-        return false;
-    };
 
-    const areElementsConnected = (id1, id2) => {
-        return findSetRepresentative(id1) === findSetRepresentative(id2);
-    };
-
-    const getComponentPopulation = (elementId) => {
-        return -componentParent[findSetRepresentative(elementId)];
-    };
-
-    return {
-        findSetRepresentative,
-        mergeSets,
-        areElementsConnected,
-        getComponentPopulation
-    };
-};
-
-const fetchNextInputDatum = () => {
-    return +applicationState.inputDataSequence[applicationState.inputDataCursor++];
-};
-
-const computeMinimalSpanningTree = (involvedNodes) => {
-    const activeNodes = [...involvedNodes, 0];
-    const activeNodeCount = activeNodes.length;
-    const candidateEdges = [];
-
-    for (let i = 0; i < activeNodeCount; i++) {
-        for (let j = i + 1; j < activeNodeCount; j++) {
-            const u = activeNodes[i];
-            const v = activeNodes[j];
-            candidateEdges.push({ start: u, end: v, weight: applicationState.fullPathCosts[u][v] });
+        if (this.#parentElements[rootB] < this.#parentElements[rootA]) {
+            [rootA, rootB] = [rootB, rootA];
         }
+        this.#parentElements[rootA] += this.#parentElements[rootB];
+        this.#parentElements[rootB] = rootA;
+        return true;
     }
-    candidateEdges.sort((a, b) => a.weight - b.weight);
 
-    const dsm = DisjointSetManager(applicationState.vertexCount);
-    const mstResultEdges = [];
+    getSetSize(element) {
+        return -this.#parentElements[this.findRepresentative(element)];
+    }
+}
 
-    for (const edge of candidateEdges) {
-        if (dsm.getComponentPopulation(0) === activeNodeCount) break;
+class DeliveryLogistics {
+    #vertexCount;
+    #edgeCount;
+    #shortestPaths;
+    #directConnections;
+    #adjacencyLists;
+    #forbiddenNodes;
+    #maxSimulationTime;
+    #maxSimulationTimeSquared;
 
-        if (!dsm.mergeSets(edge.start, edge.end)) {
-            mstResultEdges.push([edge.start, edge.end, edge.weight]);
+    #currentDay = 0;
+    #currentPosition = 0;
+    #travelRemaining = 0;
+    #lastOrderDay = -1;
+    #cumulativeScore = 0;
+
+    #activeDeliveryTargets = new Set();
+    #pendingOrders = new Set();
+    #deliveryRoute = [];
+    #orderArrivalTimes;
+
+    #inputBuffer = [];
+    #bufferPointer = 0;
+
+    static #INFINITY = 1e9;
+
+    #consumeInput() {
+        return +this.#inputBuffer[this.#bufferPointer++];
+    }
+
+    async initialize(inputGenerator) {
+        let inputLine;
+
+        inputLine = (await inputGenerator.next()).value;
+        let [vStr, eStr] = inputLine.split(" ");
+        this.#vertexCount = +vStr;
+        this.#edgeCount = +eStr;
+
+        this.#shortestPaths = createMultiDimArray(DeliveryLogistics.#INFINITY, this.#vertexCount, this.#vertexCount);
+        this.#directConnections = createMultiDimArray(DeliveryLogistics.#INFINITY, this.#vertexCount, this.#vertexCount);
+        this.#adjacencyLists = createMultiDimArray([], this.#vertexCount);
+        this.#orderArrivalTimes = createMultiDimArray([], this.#vertexCount);
+
+        for (let i = 0; i < this.#vertexCount; i++) {
+            this.#shortestPaths[i][i] = 0;
         }
-    }
-    return mstResultEdges;
-};
 
-const identifyNextTargetDestination = () => {
-    if (applicationState.itemsAwaitingDelivery.size === 0) {
-        return (applicationState.currentLocationNode === 0) ? -2 : advanceAlongShortestPath(0);
-    }
+        for (let i = 0; i < this.#edgeCount; i++) {
+            inputLine = (await inputGenerator.next()).value;
+            let [v1Str, v2Str, dStr] = inputLine.split(" ");
+            let nodeA = +v1Str - 1;
+            let nodeB = +v2Str - 1;
+            let distance = +dStr;
 
-    if (applicationState.currentLocationNode === applicationState.currentDeliveryPath[applicationState.currentDeliveryPath.length - 1]) {
-        applicationState.currentDeliveryPath.pop();
-        while (applicationState.currentDeliveryPath.length && applicationState.itemsReadyForCollection.has(applicationState.currentDeliveryPath[applicationState.currentDeliveryPath.length - 1])) {
-            applicationState.currentDeliveryPath.pop();
+            this.#shortestPaths[nodeA][nodeB] = this.#shortestPaths[nodeB][nodeA] = distance;
+            this.#directConnections[nodeA][nodeB] = this.#directConnections[nodeB][nodeA] = distance;
+            this.#adjacencyLists[nodeA].push(nodeB);
+            this.#adjacencyLists[nodeB].push(nodeA);
         }
-        if (applicationState.currentDeliveryPath.length === 0) return advanceAlongShortestPath(0);
-    }
-    return advanceAlongShortestPath(applicationState.currentDeliveryPath[applicationState.currentDeliveryPath.length - 1]);
-};
 
-const advanceAlongShortestPath = (destinationVertex) => {
-    if (destinationVertex === applicationState.currentLocationNode) return -2;
-
-    for (const neighborVertex of applicationState.nodeConnections[applicationState.currentLocationNode]) {
-        if (applicationState.fullPathCosts[applicationState.currentLocationNode][destinationVertex] ===
-            applicationState.directLinkCosts[applicationState.currentLocationNode][neighborVertex] +
-            applicationState.fullPathCosts[neighborVertex][destinationVertex]) {
-            applicationState.currentPathLength = applicationState.directLinkCosts[applicationState.currentLocationNode][neighborVertex] - 1;
-            applicationState.currentLocationNode = neighborVertex;
-            return applicationState.currentLocationNode;
-        }
-    }
-    return -2;
-};
-
-const performDailyCycle = () => {
-    if (applicationState.currentPathLength > 0) {
-        applicationState.currentPathLength--;
-        return applicationState.currentLocationNode;
-    }
-    if (applicationState.currentLocationNode === 0) {
-        handleItemCollections();
-    } else {
-        handleItemDeliveries();
-    }
-    return identifyNextTargetDestination();
-};
-
-const handleItemCollections = () => {
-    applicationState.itemsReadyForCollection.clear();
-    applicationState.currentDeliveryPath = [];
-
-    while (applicationState.lastItemCollectionDay < applicationState.currentDay) {
-        applicationState.lastItemCollectionDay++;
-        const incomingItemCount = fetchNextInputDatum();
-        for (let i = 0; i < incomingItemCount; i++) {
-            const itemId = fetchNextInputDatum() - 1;
-            const deliveryLocation = fetchNextInputDatum() - 1;
-            applicationState.itemsAwaitingDelivery.add(deliveryLocation);
-            applicationState.itemArrivalTimestamps[deliveryLocation].push(applicationState.lastItemCollectionDay);
-        }
-    }
-    if (applicationState.itemsAwaitingDelivery.size === 0) return;
-
-    const mstEdges = computeMinimalSpanningTree(applicationState.itemsAwaitingDelivery);
-    const treeAdjacencyMap = createNestedArray([], applicationState.vertexCount);
-    for (const edge of mstEdges) {
-        const u = edge[0];
-        const v = edge[1];
-        treeAdjacencyMap[u].push(v);
-        treeAdjacencyMap[v].push(u);
-    }
-
-    const preOrderTraversalNodes = [];
-    const traversalStack = [{ node: 0, parent: -1 }];
-    const visitedNodesInTraversal = new Set();
-    visitedNodesInTraversal.add(0);
-
-    while (traversalStack.length > 0) {
-        const { node: currentNode, parent: parentNode } = traversalStack.pop();
-        preOrderTraversalNodes.push(currentNode);
-
-        const neighbors = treeAdjacencyMap[currentNode];
-        for (let i = neighbors.length - 1; i >= 0; i--) {
-            const neighbor = neighbors[i];
-            if (neighbor !== parentNode && !visitedNodesInTraversal.has(neighbor)) {
-                visitedNodesInTraversal.add(neighbor);
-                traversalStack.push({ node: neighbor, parent: currentNode });
-            }
-        }
-    }
-    applicationState.currentDeliveryPath = preOrderTraversalNodes;
-    applicationState.currentDeliveryPath.reverse();
-    applicationState.currentDeliveryPath.pop();
-};
-
-const handleItemDeliveries = () => {
-    applicationState.itemsAwaitingDelivery.delete(applicationState.currentLocationNode);
-    while (applicationState.itemArrivalTimestamps[applicationState.currentLocationNode].length > 0) {
-        const arrivalDay = applicationState.itemArrivalTimestamps[applicationState.currentLocationNode].pop();
-        const deliveryLag = applicationState.currentDay - arrivalDay;
-        applicationState.cumulativeScore += applicationState.maximumSimulationDurationSquared - (deliveryLag * deliveryLag);
-    }
-};
-
-const inputHandler = require("readline").createInterface(process.stdin, process.stdout);
-const simulationFlow = (function* () {
-    const obtainLine = () => inputHandler.once("line", (line) => simulationFlow.next(line));
-
-    let receivedLine = yield obtainLine();
-    let splitData = receivedLine.split(" ");
-    applicationState.linkCount = +splitData[1];
-    applicationState.vertexCount = +splitData[0];
-
-    applicationState.fullPathCosts = createNestedArray(applicationState.maxDistanceValue, applicationState.vertexCount, applicationState.vertexCount);
-    applicationState.directLinkCosts = createNestedArray(applicationState.maxDistanceValue, applicationState.vertexCount, applicationState.vertexCount);
-    applicationState.nodeConnections = createNestedArray([], applicationState.vertexCount);
-
-    for (let i = 0; i < applicationState.vertexCount; i++) {
-        applicationState.fullPathCosts[i][i] = 0;
-    }
-
-    for (let i = 0; i < applicationState.linkCount; i++) {
-        splitData = (yield obtainLine()).split(" ");
-        const nodeOne = +splitData[0] - 1;
-        const nodeTwo = +splitData[1] - 1;
-        const edgeWeight = +splitData[2];
-
-        applicationState.fullPathCosts[nodeOne][nodeTwo] = applicationState.fullPathCosts[nodeTwo][nodeOne] = applicationState.directLinkCosts[nodeOne][nodeTwo] = applicationState.directLinkCosts[nodeTwo][nodeOne] = edgeWeight;
-        applicationState.nodeConnections[nodeOne].push(nodeTwo);
-        applicationState.nodeConnections[nodeTwo].push(nodeOne);
-    }
-
-    for (let intermediateNode = 0; intermediateNode < applicationState.vertexCount; intermediateNode++) {
-        for (let startNode = 0; startNode < applicationState.vertexCount; startNode++) {
-            for (let endNode = 0; endNode < applicationState.vertexCount; endNode++) {
-                if (applicationState.fullPathCosts[startNode][intermediateNode] + applicationState.fullPathCosts[intermediateNode][endNode] < applicationState.fullPathCosts[startNode][endNode]) {
-                    applicationState.fullPathCosts[startNode][endNode] = applicationState.fullPathCosts[startNode][intermediateNode] + applicationState.fullPathCosts[intermediateNode][endNode];
+        for (let k = 0; k < this.#vertexCount; k++) {
+            for (let i = 0; i < this.#vertexCount; i++) {
+                for (let j = 0; j < this.#vertexCount; j++) {
+                    this.#shortestPaths[i][j] = Math.min(this.#shortestPaths[i][j], this.#shortestPaths[i][k] + this.#shortestPaths[k][j]);
                 }
             }
         }
+
+        inputLine = (await inputGenerator.next()).value;
+        this.#forbiddenNodes = inputLine.split(" ").map(Number);
+
+        this.#maxSimulationTime = +(await inputGenerator.next()).value;
+        this.#maxSimulationTimeSquared = this.#maxSimulationTime * this.#maxSimulationTime;
     }
 
-    applicationState.someUnusedValues = (yield obtainLine()).split(" ").map(val => +val);
-    applicationState.maximumSimulationDuration = +(yield obtainLine());
-    applicationState.maximumSimulationDurationSquared = applicationState.maximumSimulationDuration * applicationState.maximumSimulationDuration;
-    applicationState.itemArrivalTimestamps = createNestedArray([], applicationState.vertexCount);
+    #constructMinimumSpanningTree(targetNodes) {
+        const relevantNodes = Array.from(targetNodes).concat(0);
+        const nodeCount = relevantNodes.length;
+        const potentialEdges = [];
 
-    for (; applicationState.currentDay < applicationState.maximumSimulationDuration; applicationState.currentDay++) {
-        let tempInput = +(yield obtainLine());
-        applicationState.inputDataSequence.push(tempInput);
-        for (let i = 0; i < tempInput; i++) {
-            let parsedInput = (yield obtainLine()).split(" ").map(val => +val);
-            applicationState.inputDataSequence.push(parsedInput[0], parsedInput[1]);
-            applicationState.itemsReadyForCollection.add(parsedInput[1]);
-        }
-        tempInput = +(yield obtainLine());
-        for (let i = 0; i < tempInput; i++) {
-            yield obtainLine();
+        for (let i = 0; i < nodeCount; i++) {
+            for (let j = i + 1; j < nodeCount; j++) {
+                const u = relevantNodes[i];
+                const v = relevantNodes[j];
+                potentialEdges.push({ u, v, weight: this.#shortestPaths[u][v] });
+            }
         }
 
-        applicationState.outputResults[applicationState.currentDay] = performDailyCycle() + 1;
-        console.log(applicationState.outputResults[applicationState.currentDay]);
+        potentialEdges.sort((a, b) => a.weight - b.weight);
 
-        tempInput = yield obtainLine();
-        if (tempInput[0] !== "O") return;
-        tempInput = +(yield obtainLine());
-        for (let i = 0; i < tempInput; i++) {
-            yield obtainLine();
+        const connectivityTracker = new DisjointSet(this.#vertexCount);
+        const mstEdges = [];
+
+        for (const edge of potentialEdges) {
+            if (connectivityTracker.uniteSets(edge.u, edge.v)) {
+                mstEdges.push(edge);
+            }
+            if (mstEdges.length === nodeCount - 1) {
+                break;
+            }
         }
+        return mstEdges;
+    }
+
+    #generateDeliveryPath(startNode, parentNode, graphRepresentation, pathAccumulator) {
+        pathAccumulator.push(startNode);
+        for (const neighbor of graphRepresentation[startNode]) {
+            if (neighbor !== parentNode) {
+                this.#generateDeliveryPath(neighbor, startNode, graphRepresentation, pathAccumulator);
+            }
+        }
+    }
+
+    #ingestNewOrders() {
+        this.#pendingOrders.clear();
+        this.#deliveryRoute = [];
+
+        while (this.#lastOrderDay < this.#currentDay) {
+            this.#lastOrderDay++;
+            const newOrderCount = this.#consumeInput();
+            for (let i = 0; i < newOrderCount; i++) {
+                const orderId = this.#consumeInput() - 1;
+                const destinationVertex = this.#consumeInput() - 1;
+                this.#activeDeliveryTargets.add(destinationVertex);
+                this.#orderArrivalTimes[destinationVertex].push(this.#lastOrderDay);
+            }
+        }
+
+        if (this.#activeDeliveryTargets.size === 0) {
+            return;
+        }
+
+        const treeEdges = this.#constructMinimumSpanningTree(this.#activeDeliveryTargets);
+        const deliveryGraph = createMultiDimArray([], this.#vertexCount);
+
+        for (const edge of treeEdges) {
+            deliveryGraph[edge.u].push(edge.v);
+            deliveryGraph[edge.v].push(edge.u);
+        }
+
+        const tempPath = [];
+        this.#generateDeliveryPath(0, -1, deliveryGraph, tempPath);
+        this.#deliveryRoute = tempPath.reverse();
+        this.#deliveryRoute.pop();
+    }
+
+    #completeDelivery() {
+        this.#activeDeliveryTargets.delete(this.#currentPosition);
+        while (this.#orderArrivalTimes[this.#currentPosition].length > 0) {
+            const arrivalDay = this.#orderArrivalTimes[this.#currentPosition].pop();
+            const timeElapsed = this.#currentDay - arrivalDay;
+            this.#cumulativeScore += this.#maxSimulationTimeSquared - timeElapsed * timeElapsed;
+        }
+    }
+
+    #determineNextStep(targetNode) {
+        if (targetNode === this.#currentPosition) {
+            return -2;
+        }
+
+        for (const neighbor of this.#adjacencyLists[this.#currentPosition]) {
+            if (this.#shortestPaths[this.#currentPosition][targetNode] === this.#directConnections[this.#currentPosition][neighbor] + this.#shortestPaths[neighbor][targetNode]) {
+                this.#travelRemaining = this.#directConnections[this.#currentPosition][neighbor] - 1;
+                this.#currentPosition = neighbor;
+                return this.#currentPosition;
+            }
+        }
+        return -2;
+    }
+
+    #planNextMovement() {
+        if (this.#activeDeliveryTargets.size === 0) {
+            return (this.#currentPosition === 0) ? -2 : this.#determineNextStep(0);
+        }
+
+        if (this.#currentPosition === this.#deliveryRoute[this.#deliveryRoute.length - 1]) {
+            this.#deliveryRoute.pop();
+            while (this.#deliveryRoute.length > 0 && this.#pendingOrders.has(this.#deliveryRoute[this.#deliveryRoute.length - 1])) {
+                this.#deliveryRoute.pop();
+            }
+            if (this.#deliveryRoute.length === 0) {
+                return this.#determineNextStep(0);
+            }
+        }
+        return this.#determineNextStep(this.#deliveryRoute[this.#deliveryRoute.length - 1]);
+    }
+
+    executeDailyAction() {
+        if (this.#travelRemaining > 0) {
+            this.#travelRemaining--;
+            return this.#currentPosition;
+        }
+
+        if (this.#currentPosition === 0) {
+            this.#ingestNewOrders();
+        } else {
+            this.#completeDelivery();
+        }
+        return this.#planNextMovement();
+    }
+
+    async runSimulation(inputGenerator, outputCallback) {
+        await this.initialize(inputGenerator);
+
+        for (; this.#currentDay < this.#maxSimulationTime; this.#currentDay++) {
+            let inputLine = (await inputGenerator.next()).value;
+            this.#inputBuffer.push(+inputLine);
+            let newOrdersToday = +inputLine;
+
+            for (let i = 0; i < newOrdersToday; i++) {
+                inputLine = (await inputGenerator.next()).value;
+                let [orderID, destinationNode] = inputLine.split(" ").map(Number);
+                this.#inputBuffer.push(orderID, destinationNode);
+                this.#pendingOrders.add(destinationNode - 1);
+            }
+
+            inputLine = (await inputGenerator.next()).value;
+            let dummyCount = +inputLine;
+            for (let i = 0; i < dummyCount; i++) {
+                await inputGenerator.next();
+            }
+
+            const nextActionNode = this.executeDailyAction();
+            outputCallback(nextActionNode + 1);
+
+            inputLine = (await inputGenerator.next()).value;
+            if (inputLine[0] !== "O") {
+                return;
+            }
+            inputLine = (await inputGenerator.next()).value;
+            dummyCount = +inputLine;
+            for (let i = 0; i < dummyCount; i++) {
+                await inputGenerator.next();
+            }
+        }
+    }
+}
+
+const readlineInterface = require("readline").createInterface(process.stdin, process.stdout);
+const inputLineGenerator = (function* () {
+    const getNextLine = () => new Promise(resolve => readlineInterface.once("line", resolve));
+    while (true) {
+        yield getNextLine();
     }
 })();
-simulationFlow.next();
+
+async function main() {
+    const simulator = new DeliveryLogistics();
+    await simulator.runSimulation(inputLineGenerator, console.log);
+}
+
+main();

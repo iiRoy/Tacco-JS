@@ -1,36 +1,32 @@
-const eraRegistry = [
-    { historicalDesignation: 'heisei', periodCommencement: new Date(1989, 0, 7), yearOffsetValue: 1988 },
-    { historicalDesignation: 'showa', periodCommencement: new Date(1926, 11, 25), yearOffsetValue: 1925 },
-    { historicalDesignation: 'taisho', periodCommencement: new Date(1912, 6, 30), yearOffsetValue: 1911 },
-    { historicalDesignation: 'meiji', periodCommencement: new Date(1868, 8, 8), yearOffsetValue: 1867 }
-];
+const processInputData = (rawData) => {
+    const inputLines = rawData.trim().split('\n');
 
-eraRegistry.sort((a, b) => b.periodCommencement.getTime() - a.periodCommencement.getTime());
+    const eraBoundariesAndAdjustments = [
+        { upperTime: new Date(1868, 8, 8).getTime(), eraIdentifier: 'pre-meiji', yearOffset: 0 },
+        { upperTime: new Date(1912, 6, 30).getTime(), eraIdentifier: 'meiji', yearOffset: 1867 },
+        { upperTime: new Date(1926, 11, 25).getTime(), eraIdentifier: 'taisho', yearOffset: 1911 },
+        { upperTime: new Date(1989, 0, 7).getTime(), eraIdentifier: 'showa', yearOffset: 1925 },
+        { upperTime: Infinity, eraIdentifier: 'heisei', yearOffset: 1988 }
+    ];
 
-const sourceText = require('fs').readFileSync('/dev/stdin', 'utf8').trim();
-const dataRecords = sourceText.split('\n');
+    inputLines.forEach(currentRecord => {
+        const [fullCalendarYear, monthNumber, dayNumber] = currentRecord.split(' ').map(Number);
 
-dataRecords.forEach(currentRecord => {
-    const parsedNumbers = currentRecord.split(' ').map(parseFloat);
-    const gregorianCalendarYear = parsedNumbers[0];
-    const gregorianCalendarMonth = parsedNumbers[1];
-    const gregorianCalendarDay = parsedNumbers[2];
+        const targetMoment = new Date(fullCalendarYear, monthNumber - 1, dayNumber);
+        const targetMomentMs = targetMoment.getTime();
 
-    const targetInstant = new Date(gregorianCalendarYear, gregorianCalendarMonth - 1, gregorianCalendarDay);
-    const targetMillis = targetInstant.getTime();
+        const applicableEra = eraBoundariesAndAdjustments.find(eraDef => targetMomentMs < eraDef.upperTime);
 
-    let identifiedPeriod = null;
-    for (const eraEntry of eraRegistry) {
-        if (targetMillis >= eraEntry.periodCommencement.getTime()) {
-            identifiedPeriod = eraEntry;
-            break;
+        const { eraIdentifier, yearOffset } = applicableEra;
+
+        if (eraIdentifier === 'pre-meiji') {
+            console.log('pre-meiji');
+        } else {
+            const eraRelativeYear = fullCalendarYear - yearOffset;
+            console.log(eraIdentifier, eraRelativeYear, monthNumber, dayNumber);
         }
-    }
+    });
+};
 
-    if (!identifiedPeriod) {
-        console.log('pre-meiji');
-    } else {
-        const eraRelativeYear = gregorianCalendarYear - identifiedPeriod.yearOffsetValue;
-        console.log(identifiedPeriod.historicalDesignation, eraRelativeYear, gregorianCalendarMonth, gregorianCalendarDay);
-    }
-});
+const fileContents = require('fs').readFileSync('/dev/stdin', 'utf8');
+processInputData(fileContents);

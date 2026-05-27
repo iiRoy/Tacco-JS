@@ -1,76 +1,87 @@
-/*
- * This module processes graph input from standard input
- * to determine a specific shortest path configuration.
+/**
+ * This script calculates the shortest path sum from a starting node to two goal nodes
+ * in a graph using the Floyd-Warshall algorithm.
+ * It reads graph configuration and edge weights from standard input.
  */
 
-let receivedInputBuffer = ''; // Buffer to collect all incoming data.
+// Initialize a variable to accumulate input data from stdin.
+let rawData = '';
 
-// Configure the standard input stream.
+// Resume the standard input stream to begin receiving data.
 process.stdin.resume();
+
+// Set the character encoding for the standard input stream.
 process.stdin.setEncoding('utf8');
 
-// Attach an event handler for 'data' events on the input stream.
-process.stdin.on('data', function(incomingChunk) {
-  receivedInputBuffer += incomingChunk;
+// Attach an event listener for 'data' events from stdin.
+// Each time a chunk of data is received, append it to the rawData string.
+process.stdin.on('data', function(dataChunk) {
+  rawData += dataChunk;
 });
 
-// Attach an event handler for the 'end' event on the input stream.
+// Attach an event listener for the 'end' event from stdin.
+// This signifies that all input data has been received.
 process.stdin.on('end', function() {
-  // Once all input has been received, parse it.
-  let parsedInputLines = receivedInputBuffer.split('\n');
+  // Split the accumulated raw data into an array of lines.
+  rawData = rawData.split('\n');
 
-  // Extract the initial graph configuration parameters.
-  const graphConfigurationLine = parsedInputLines.shift().split(' ');
+  // Parse the first line of input, which contains graph configuration.
+  const initialConfig = rawData.shift().split(' ');
+  const nodeCount = +initialConfig[0]; // Total number of nodes (N)
+  // const edgeCount = +initialConfig[1]; // Total number of edges (M) - not used after parsing
+  const startNode = +initialConfig[2] - 1; // Starting node index (0-based)
+  const goal1 = +initialConfig[3] - 1; // First target node index (0-based)
+  const goal2 = +initialConfig[4] - 1; // Second target node index (0-based)
 
-  const numberOfVertices = Number(graphConfigurationLine[0]);
-  const unusedParam = Number(graphConfigurationLine[1]); // This parameter is not utilized in the algorithm.
-  const sourceVertexIdx = Number(graphConfigurationLine[2]) - 1; // Adjust to zero-based indexing.
-  const firstGoalVertexIdx = Number(graphConfigurationLine[3]) - 1; // Adjust to zero-based indexing.
-  const secondGoalVertexIdx = Number(graphConfigurationLine[4]) - 1; // Adjust to zero-based indexing.
+  // Initialize the distance matrix for the Floyd-Warshall algorithm.
+  // 'distanceMatrix[idxA][idxB]' will store the shortest distance from node 'idxA' to node 'idxB'.
+  const distanceMatrix = [];
+  let edgeDataLine; // Temporary variable to hold parsed edge data.
+  let idxA, idxB, idxC; // Loop counters for matrix operations.
 
-  // Initialize the 2D array for storing shortest path distances.
-  let distanceMatrix = [];
-  let currentVertexX, currentVertexY, currentVertexZ; // Loop variables for graph traversal.
-  let edgeDetails; // Temporary variable to hold parsed edge information.
-
-  // Populate the distance matrix: diagonal elements are 0, others are positive infinity.
-  for (currentVertexX = 0; currentVertexX < numberOfVertices; currentVertexX++) {
-    distanceMatrix[currentVertexX] = [];
-    for (currentVertexY = 0; currentVertexY < numberOfVertices; currentVertexY++) {
-      distanceMatrix[currentVertexX][currentVertexY] = (currentVertexX === currentVertexY) ? 0 : Number.POSITIVE_INFINITY;
+  // Populate the initial distance matrix:
+  // - Distance from a node to itself is 0.
+  // - All other initial distances are set to Infinity (representing no direct path yet).
+  for (idxA = 0; idxA < nodeCount; idxA++) {
+    distanceMatrix[idxA] = [];
+    for (idxB = 0; idxB < nodeCount; idxB++) {
+      distanceMatrix[idxA][idxB] = idxA === idxB ? 0 : Infinity;
     }
   }
 
-  // Read and apply edge weights from the input until a sentinel line is encountered.
-  while (parsedInputLines[0] !== '0 0 0 0 0') {
-    edgeDetails = parsedInputLines.shift().split(' ');
-    // Set the weight for the directed edge between two vertices.
-    distanceMatrix[Number(edgeDetails[0]) - 1][Number(edgeDetails[1]) - 1] = Number(edgeDetails[2]);
+  // Read edge weights from the input until a specific termination line is encountered.
+  // The termination line is "0 0 0 0 0".
+  while (rawData[0] !== '0 0 0 0 0') {
+    edgeDataLine = rawData.shift().split(' ');
+    // Assign the weight to the corresponding edge in the distance matrix.
+    // Node indices from input are 1-based, so convert to 0-based.
+    distanceMatrix[+edgeDataLine[0] - 1][+edgeDataLine[1] - 1] = +edgeDataLine[2];
   }
 
   // Execute the Floyd-Warshall algorithm to compute all-pairs shortest paths.
-  for (currentVertexZ = 0; currentVertexZ < numberOfVertices; currentVertexZ++) {
-    for (currentVertexX = 0; currentVertexX < numberOfVertices; currentVertexX++) {
-      for (currentVertexY = 0; currentVertexY < numberOfVertices; currentVertexY++) {
-        distanceMatrix[currentVertexX][currentVertexY] = Math.min(
-          distanceMatrix[currentVertexX][currentVertexY],
-          distanceMatrix[currentVertexX][currentVertexZ] + distanceMatrix[currentVertexZ][currentVertexY]
-        );
+  // 'idxC' represents the intermediate node in the path.
+  for (idxC = 0; idxC < nodeCount; idxC++) {
+    // 'idxA' represents the source node.
+    for (idxA = 0; idxA < nodeCount; idxA++) {
+      // 'idxB' represents the destination node.
+      for (idxB = 0; idxB < nodeCount; idxB++) {
+        // Update the shortest path if a path through 'idxC' is shorter than the current path.
+        distanceMatrix[idxA][idxB] = Math.min(distanceMatrix[idxA][idxB], distanceMatrix[idxA][idxC] + distanceMatrix[idxC][idxB]);
       }
     }
   }
 
-  // Determine the minimum total path length from the source to two target nodes,
-  // allowing an intermediate stop at any vertex.
-  let overallMinPath = Number.POSITIVE_INFINITY;
-
-  for (currentVertexX = 0; currentVertexX < numberOfVertices; currentVertexX++) {
-    overallMinPath = Math.min(
-      overallMinPath,
-      distanceMatrix[sourceVertexIdx][currentVertexX] + distanceMatrix[currentVertexX][firstGoalVertexIdx] + distanceMatrix[currentVertexX][secondGoalVertexIdx]
-    );
+  // Calculate the minimum total path sum from the start node to an intermediate node,
+  // and then from that intermediate node to both goal nodes.
+  // The path structure is: startNode -> intermediateNode -> goal1
+  // AND startNode -> intermediateNode -> goal2.
+  // We are looking for an intermediateNode 'idxA' that minimizes:
+  // distanceMatrix[startNode][idxA] + distanceMatrix[idxA][goal1] + distanceMatrix[idxA][goal2].
+  let minPathSum = Infinity;
+  for (idxA = 0; idxA < nodeCount; idxA++) {
+    minPathSum = Math.min(minPathSum, distanceMatrix[startNode][idxA] + distanceMatrix[idxA][goal1] + distanceMatrix[idxA][goal2]);
   }
 
-  // Display the computed minimum path length to the console.
-  console.log(overallMinPath);
+  // Output the calculated minimum path sum to the console.
+  console.log(minPathSum);
 });

@@ -1,17 +1,20 @@
-function processCardGame(rawData) {
-    const numericRanks = rawData.split(" ").map(Number);
+const processGame = (inputString) => {
+    const [firstCardValue, secondCardValue] = inputString.split(" ").map(Number);
 
-    const getAdjustedRank = (currentRankValue) => (currentRankValue === 1 ? 14 : currentRankValue);
+    const normalizeCardRank = (rank) => (rank === 1 ? 14 : rank);
 
-    const matchOutcome = ((firstHandValue, secondHandValue) => {
-        const transformedFirst = getAdjustedRank(firstHandValue);
-        const transformedSecond = getAdjustedRank(secondHandValue);
+    const normalizedFirst = normalizeCardRank(firstCardValue);
+    const normalizedSecond = normalizeCardRank(secondCardValue);
 
-        return transformedFirst > transformedSecond ? "Alice" :
-               transformedFirst < transformedSecond ? "Bob" : "Draw";
-    })(numericRanks[0], numericRanks[1]);
+    const outcomeResolver = {
+        "-1": "Bob",
+        "0": "Draw",
+        "1": "Alice"
+    };
 
-    console.log(matchOutcome);
-}
+    const comparisonOutcome = Math.sign(normalizedFirst - normalizedSecond);
 
-processCardGame(require("fs").readFileSync("/dev/stdin", "utf8"));
+    console.log(outcomeResolver[comparisonOutcome]);
+};
+
+processGame(require("fs").readFileSync("/dev/stdin", "utf8"));

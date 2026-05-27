@@ -1,110 +1,122 @@
-function processGridSplits(inputString) {
-    if (!inputString || inputString.trim() === '') {
-        console.error("Error: Empty input provided for grid processing.");
-        return;
-    }
+const parseGridDimensions = (lineParts) => {
+    const rows = parseInt(lineParts[0], 10);
+    const cols = parseInt(lineParts[1], 10);
+    const threshold = parseInt(lineParts[2], 10);
+    return { numRows: rows, numCols: cols, maxSumThreshold: threshold };
+};
 
-    const inputLines = inputString.trim().split("\n");
-    const gridDimensions = inputLines[0].split(" ").map(Number);
-    const rowCount = gridDimensions[0];
-    const colCount = gridDimensions[1];
-    const maxSegmentSum = gridDimensions[2];
+const padBinaryString = (binaryStr, targetLength) => {
+    return '0'.repeat(Math.max(0, targetLength - binaryStr.length)) + binaryStr;
+};
 
-    if (rowCount <= 0 || colCount <= 0 || maxSegmentSum <= 0) {
-        console.error("Invalid grid dimensions or capacity detected.");
-        return;
-    }
+const createZeroFilledArray = (length) => Array(length).fill(0);
 
-    const cellValuesMatrix = [];
-    const cumulativeRowSumMatrix = [];
-
-    for (let r = 0; r < rowCount; r++) {
-        const currentRowData = inputLines[r + 1][0].split("").map(Number);
-        cellValuesMatrix.push(currentRowData);
-
-        let runningSum = 0;
-        const currentCumulativeSums = [0]; // Prefix sums start with 0 for 1-based column indexing
-        for (let c = 0; c < colCount; c++) {
-            runningSum += currentRowData[c];
-            currentCumulativeSums.push(runningSum);
+function vectorOperation(vecA, vecB, operationType) {
+    const resultVector = [];
+    // In the context of this problem's usage, vecA and vecB (prefix sum arrays)
+    // will always have the same length (numCols + 1).
+    // The original code's length check and modification for vecB is effectively dead code.
+    for (let index = 0; index < vecA.length; index++) {
+        switch (operationType) {
+            case '+':
+                resultVector.push(vecA[index] + vecB[index]);
+                break;
+            case '-':
+                resultVector.push(vecA[index] - vecB[index]);
+                break;
+            case '*':
+                resultVector.push(vecA[index] * vecB[index]);
+                break;
+            case '/':
+                resultVector.push(vecA[index] / vecB[index]);
+                break;
+            case '%':
+                resultVector.push(vecA[index] % vecB[index]);
+                break;
+            case '||':
+                resultVector.push(Math.max(vecA[index], vecB[index]));
+                break;
         }
-        cumulativeRowSumMatrix.push(currentCumulativeSums);
     }
+    return resultVector;
+}
 
-    const totalPossibleHorizontalCuts = rowCount - 1;
-    let overallMinimumCuts = totalPossibleHorizontalCuts + (colCount - 1); // Initialize with maximum possible cuts
+function processInput(rawData) {
+    const parsedLines = rawData.trim().split("\n").map(line => line.split(" "));
 
-    horizontalConfigurationLoop:
-    for (let configValue = 0; configValue < (1 << totalPossibleHorizontalCuts); configValue++) {
-        let currentHorizontalCutCount = 0;
-        const activeSegmentPrefixSums = []; // Stores cumulative sums for currently merged rows
+    const { numRows, numCols, maxSumThreshold } = parseGridDimensions(parsedLines[0]);
 
-        // Start with the first row's cumulative sums as the first segment
-        activeSegmentPrefixSums.push(cumulativeRowSumMatrix[0].slice());
+    const prefixSumsGrid = Array.from({ length: numRows }, (_, rowIndex) => {
+        const rowString = parsedLines[rowIndex + 1][0];
+        const rowValues = rowString.split("").map(char => parseInt(char, 10));
+        const rowPrefixSums = [0];
+        let currentRunningSum = 0;
+        for (let colIndex = 0; colIndex < numCols; colIndex++) {
+            currentRunningSum += rowValues[colIndex];
+            rowPrefixSums.push(currentRunningSum);
+        }
+        return rowPrefixSums;
+    });
 
-        // Evaluate each potential horizontal split point
-        for (let splitRowIndex = 0; splitRowIndex < totalPossibleHorizontalCuts; splitRowIndex++) {
-            const isCutAtThisRow = (configValue >> splitRowIndex) & 1; // Check bit for split decision
+    const numHorizontalCutOptions = numRows - 1;
+    let minTotalCuts = (numRows - 1) + (numCols - 1);
 
-            if (isCutAtThisRow === 0) { // No cut, merge current row with the previous segment
-                const lastSegment = activeSegmentPrefixSums[activeSegmentPrefixSums.length - 1];
-                const nextRowData = cumulativeRowSumMatrix[splitRowIndex + 1];
-                const mergedSegment = [];
-                for (let i = 0; i < lastSegment.length; i++) {
-                    mergedSegment.push(lastSegment[i] + nextRowData[i]);
-                }
-                activeSegmentPrefixSums[activeSegmentPrefixSums.length - 1] = mergedSegment;
-            } else { // Cut, start a new horizontal segment
-                activeSegmentPrefixSums.push(cumulativeRowSumMatrix[splitRowIndex + 1].slice());
-                currentHorizontalCutCount++;
+    const totalCombinations = Math.pow(2, numHorizontalCutOptions);
+
+    mainCombinationLoop:
+    for (let combinationIndex = 0; combinationIndex < totalCombinations; combinationIndex++) {
+        let currentGroupPrefixSums = [prefixSumsGrid[0].slice()];
+
+        const binaryRepresentation = padBinaryString(combinationIndex.toString(2), numHorizontalCutOptions);
+        let horizontalCutCount = 0;
+
+        for (let cutPositionIndex = 0; cutPositionIndex < numHorizontalCutOptions; cutPositionIndex++) {
+            const shouldCutHorizontally = (binaryRepresentation[cutPositionIndex] === '1');
+            const nextRowDataIndex = cutPositionIndex + 1;
+
+            if (shouldCutHorizontally) {
+                currentGroupPrefixSums.push(prefixSumsGrid[nextRowDataIndex].slice());
+                horizontalCutCount++;
+            } else {
+                const lastGroupIdx = currentGroupPrefixSums.length - 1;
+                currentGroupPrefixSums[lastGroupIdx] = vectorOperation(
+                    currentGroupPrefixSums[lastGroupIdx],
+                    prefixSumsGrid[nextRowDataIndex],
+                    '+'
+                );
             }
         }
 
-        let segmentStartingColumnSums = Array(activeSegmentPrefixSums.length).fill(0); // Sums at the start of current column for each segment
-        const verticalCutPositions = [];
+        let columnGroupPrefixSums = createZeroFilledArray(currentGroupPrefixSums.length);
+        let verticalCutPositions = [];
 
-        columnProcessingLoop:
-        for (let currentColumnIndex = 1; currentColumnIndex <= colCount; currentColumnIndex++) {
-            for (let segmentIdx = 0; segmentIdx < activeSegmentPrefixSums.length; segmentIdx++) {
-                const segmentColumnValue = activeSegmentPrefixSums[segmentIdx][currentColumnIndex] - segmentStartingColumnSums[segmentIdx];
-                
-                if (segmentColumnValue > maxSegmentSum) {
-                    if (currentColumnIndex === 1) { // If the very first column already exceeds capacity
-                        continue horizontalConfigurationLoop; // This horizontal configuration is invalid
-                    }
-                    
-                    const lastVerticalCut = verticalCutPositions.length > 0 ? verticalCutPositions[verticalCutPositions.length - 1] : -1;
-                    if (lastVerticalCut === currentColumnIndex - 1) {
-                         // A cut was just made at the previous column, but this column still exceeds capacity.
-                         // This horizontal configuration is impossible.
-                         continue horizontalConfigurationLoop;
+        const isInvalidVerticalCutAttempt = (currentColIdx, lastCutColIdx) => {
+            return currentColIdx === 1 || lastCutColIdx === currentColIdx - 1;
+        };
+
+        columnIterationLoop:
+        for (let currentColumnIdx = 1; currentColumnIdx <= numCols; currentColumnIdx++) {
+            for (let groupIdx = 0; groupIdx < currentGroupPrefixSums.length; groupIdx++) {
+                const currentSegmentSum = currentGroupPrefixSums[groupIdx][currentColumnIdx] - columnGroupPrefixSums[groupIdx];
+
+                if (currentSegmentSum > maxSumThreshold) {
+                    const lastVerticalCutCol = verticalCutPositions.length > 0 ? verticalCutPositions[verticalCutPositions.length - 1] : -1;
+                    if (isInvalidVerticalCutAttempt(currentColumnIdx, lastVerticalCutCol)) {
+                        continue mainCombinationLoop;
                     }
 
-                    verticalCutPositions.push(currentColumnIndex - 1); // Add a vertical cut before this column
+                    verticalCutPositions.push(currentColumnIdx - 1);
+
+                    columnGroupPrefixSums = currentGroupPrefixSums.map(group => group[currentColumnIdx - 1]);
                     
-                    // Reset starting sums for all segments to the value at the cut point
-                    for (let i = 0; i < activeSegmentPrefixSums.length; i++) {
-                        segmentStartingColumnSums[i] = activeSegmentPrefixSums[i][currentColumnIndex - 1];
-                    }
-                    
-                    // Re-evaluate the current column with the new cut
-                    currentColumnIndex--; 
-                    break columnProcessingLoop; // Restart column loop from the same column
+                    currentColumnIdx--;
+                    break columnIterationLoop;
                 }
             }
         }
-        overallMinimumCuts = Math.min(overallMinimumCuts, currentHorizontalCutCount + verticalCutPositions.length);
+        minTotalCuts = Math.min(minTotalCuts, horizontalCutCount + verticalCutPositions.length);
     }
-    
-    console.log(overallMinimumCuts);
+    console.log(minTotalCuts);
 }
 
-// Entry point for execution, handling input file reading
-try {
-    const fileContents = require("fs").readFileSync("/dev/stdin", "utf8");
-    processGridSplits(fileContents);
-} catch (error) {
-    console.error("An error occurred during input reading or processing:", error.message);
-    // Optionally, provide a default test case for local debugging:
-    // processGridSplits("3 3 5\n101\n001\n110"); 
-}
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

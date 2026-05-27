@@ -1,68 +1,114 @@
-function TreeNode(valueIdentifier) {
-    this.valueIdentifier = valueIdentifier;
-    this.leftSubNode = null;
-    this.rightSubNode = null;
-}
+class TreeStructure {
+  constructor(nodeMapData) {
+    this.nodeMap = nodeMapData;
+  }
 
-function buildTreeStructure(prefixArr, infixArr) {
-    const infixPositions = new Map();
-    for (let idx = 0; idx < infixArr.length; idx++) {
-        infixPositions.set(infixArr[idx], idx);
+  get rootId() {
+    for (const nodeEntry of this.nodeMap.values()) {
+      if (nodeEntry.parentId === -1) {
+        return nodeEntry.id;
+      }
+    }
+    return -1;
+  }
+
+  retrieveNode(identifier) {
+    return this.nodeMap.get(identifier);
+  }
+
+  getPostorderTraversal() {
+    const resultSequence = [];
+    const stackForTraversal = [];
+    const stackForOutput = [];
+
+    const rootIdentifier = this.rootId;
+    if (rootIdentifier === -1) {
+      return resultSequence;
     }
 
-    function recursiveStructureBuilder(
-        currentPrefixStart,
-        currentPrefixEnd,
-        currentInfixStart,
-        currentInfixEnd
-    ) {
-        if (currentPrefixStart > currentPrefixEnd || currentInfixStart > currentInfixEnd) {
-            return null;
-        }
+    stackForTraversal.push(rootIdentifier);
 
-        const rootValue = prefixArr[currentPrefixStart];
-        const mainNode = new TreeNode(rootValue);
+    while (stackForTraversal.length > 0) {
+      const currentIdentifier = stackForTraversal.pop();
+      stackForOutput.push(currentIdentifier);
+      const currentNode = this.retrieveNode(currentIdentifier);
 
-        const rootInfixIndex = infixPositions.get(rootValue);
-        const leftBranchSize = rootInfixIndex - currentInfixStart;
-
-        mainNode.leftSubNode = recursiveStructureBuilder(
-            currentPrefixStart + 1,
-            currentPrefixStart + leftBranchSize,
-            currentInfixStart,
-            rootInfixIndex - 1
-        );
-
-        mainNode.rightSubNode = recursiveStructureBuilder(
-            currentPrefixStart + leftBranchSize + 1,
-            currentPrefixEnd,
-            rootInfixIndex + 1,
-            currentInfixEnd
-        );
-
-        return mainNode;
+      if (currentNode.leftId !== -1) {
+        stackForTraversal.push(currentNode.leftId);
+      }
+      if (currentNode.rightId !== -1) {
+        stackForTraversal.push(currentNode.rightId);
+      }
     }
 
-    return recursiveStructureBuilder(0, prefixArr.length - 1, 0, infixArr.length - 1);
-}
-
-function retrievePostOrderSequence(nodeReference, collectorArray) {
-    if (nodeReference === null) {
-        return;
+    while (stackForOutput.length > 0) {
+      resultSequence.push(stackForOutput.pop());
     }
-    retrievePostOrderSequence(nodeReference.leftSubNode, collectorArray);
-    retrievePostOrderSequence(nodeReference.rightSubNode, collectorArray);
-    collectorArray.push(nodeReference.valueIdentifier);
+
+    return resultSequence;
+  }
 }
 
-(function executeTreeOperations() {
-    const inputData = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split('\n');
-    const totalNodeCount = Number(inputData.shift());
-    const prefixTraversalOrder = inputData.shift().split(' ').map(Number);
-    const infixTraversalOrder = inputData.shift().split(' ').map(Number);
+(function processInputAndOutput(){
+  const inputLines = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split('\n');
+  const nodeCount = Number(inputLines.shift());
+  const preorderSequence = inputLines.shift().split(' ').map(Number);
+  const inorderSequence = inputLines.shift().split(' ').map(Number);
 
-    const primaryTreeRoot = buildTreeStructure(prefixTraversalOrder, infixTraversalOrder);
-    const finalOutputCollection = [];
-    retrievePostOrderSequence(primaryTreeRoot, finalOutputCollection);
-    console.log(finalOutputCollection.join(' '));
+  let constructedNodeMap = constructTreeFromOrders(preorderSequence, inorderSequence);
+  let finalTree = new TreeStructure(constructedNodeMap);
+  console.log(finalTree.getPostorderTraversal().join(' '));
 })();
+
+function constructTreeFromOrders(preorderSequence, inorderSequence) {
+  const nodeCollection = new Map();
+  const inorderIndexMap = new Map();
+  inorderSequence.forEach((value, index) => inorderIndexMap.set(value, index));
+
+  function buildNodeStructure(preStart, preEnd, inStart, inEnd) {
+    if (preStart > preEnd || inStart > inEnd) {
+      return -1;
+    }
+
+    const currentRootId = preorderSequence[preStart];
+    const currentRootInorderIdx = inorderIndexMap.get(currentRootId);
+
+    const newNode = {
+      id: currentRootId,
+      parentId: -1,
+      leftId: -1,
+      rightId: -1
+    };
+    nodeCollection.set(currentRootId, newNode);
+
+    const leftSubtreeSize = currentRootInorderIdx - inStart;
+
+    const leftChildId = buildNodeStructure(
+      preStart + 1,
+      preStart + leftSubtreeSize,
+      inStart,
+      currentRootInorderIdx - 1
+    );
+    if (leftChildId !== -1) {
+      newNode.leftId = leftChildId;
+      nodeCollection.get(leftChildId).parentId = currentRootId;
+    }
+
+    const rightChildId = buildNodeStructure(
+      preStart + leftSubtreeSize + 1,
+      preEnd,
+      currentRootInorderIdx + 1,
+      inEnd
+    );
+    if (rightChildId !== -1) {
+      newNode.rightId = rightChildId;
+      nodeCollection.get(rightChildId).parentId = currentRootId;
+    }
+
+    return currentRootId;
+  }
+
+  buildNodeStructure(0, preorderSequence.length - 1, 0, inorderSequence.length - 1);
+
+  return nodeCollection;
+}

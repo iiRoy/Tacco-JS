@@ -1,126 +1,117 @@
-// This function performs a Breadth-First Search (BFS) to find the shortest path
-// through a grid, considering strength consumption and specific target cells.
-function exploreGrid(startCol, startRow) {
-  // Mark the starting position as visited (or consumed) on the initial map state.
-  gameMap[startRow][startCol] = ".";
+function exploreGrid(initialCol, initialRow) {
+  // Mark the starting position as visited in the initial grid state
+  gridState[initialRow][initialCol] = ".";
 
-  // Define offsets for moving in 4 cardinal directions (Up, Left, Right, Down).
-  const colOffsets = [0, -1, 1, 0];
-  const rowOffsets = [-1, 0, 0, 1];
+  // Define movement vectors for 4 directions (up, left, right, down)
+  const deltaCols = [0, -1, 1, 0];
+  const deltaRows = [-1, 0, 0, 1];
 
-  // Initialize the path length counter.
-  let pathLength = 0;
+  let stepCount = 0; // Initialize the step counter
 
-  // The queue for our BFS, each element is [column, row, current_path_length, current_strength, current_grid_state].
-  const searchQueue = [[startCol, startRow, pathLength, 1, gameMap]];
+  // Initialize the Breadth-First Search queue
+  // Each element: [current_col, current_row, steps_taken, current_strength, current_grid_state]
+  const searchQueue = [[initialCol, initialRow, stepCount, 1, gridState]];
 
-  // A set (object used as a hash set) to keep track of visited states to prevent cycles and redundant computations.
-  // A state is defined by "column row grid_state_string".
+  // Use an object to keep track of visited states to avoid cycles and redundant computations
+  // Key format: "col row grid_state_as_string"
   const visitedStates = {};
-  visitedStates[startCol + " " + startRow + " " + gameMap.map(r => r.join('')).join('')] = true;
+  visitedStates[initialCol + " " + initialRow + " " + gridState.join("")] = true;
 
-  // Main BFS loop.
+  // Main BFS loop
   while (true) {
-    // If the queue is empty, no path was found.
+    // If the queue is empty, no path was found
     if (searchQueue.length === 0) {
-      pathLength = -1; // Indicate no solution.
+      stepCount = -1; // Indicate failure
       break;
     }
 
-    // Dequeue the next point to explore.
-    const currentPoint = searchQueue.shift();
+    // Dequeue the next node to process
+    const currentNode = searchQueue.shift();
+    const currentCol = currentNode[0];
+    const currentRow = currentNode[1];
+    const currentSteps = currentNode[2];
+    const currentStrength = currentNode[3];
+    const currentGrid = currentNode[4]; // The grid state associated with this node
 
-    // Extract details from the current point.
-    const currCol = currentPoint[0];
-    const currRow = currentPoint[1];
-    const currLen = currentPoint[2];
-    const currStr = currentPoint[3];
-    const currentMapState = currentPoint[4];
-
-    // Check if we have reached the target strength.
-    if (currStr === maxStrength + 1) {
-      pathLength = currLen; // We found the shortest path length.
+    // Check if the target strength has been reached
+    if (currentStrength === maxStrength + 1) {
+      stepCount = currentSteps; // Found the minimum steps
       break;
     }
 
-    // Explore all 4 adjacent directions.
-    for (let dirIdx = 0; dirIdx < 4; dirIdx++) {
-      const nextCol = currCol + colOffsets[dirIdx];
-      const nextRow = currRow + rowOffsets[dirIdx];
-      let nextStr = currStr; // Strength for the next step, might increase.
+    // Explore all four possible directions from the current position
+    for (let idx = 0; idx < 4; idx++) {
+      const nextCol = currentCol + deltaCols[idx];
+      const nextRow = currentRow + deltaRows[idx];
+      let nextStrength = currentStrength; // Strength for the next state
 
-      // Boundary checks: ensure the next position is within the grid limits.
-      if (nextCol < 0 || nextRow < 0 || nextCol >= gridDimensions[1] || nextRow >= gridDimensions[0]) {
-        continue; // Skip out-of-bounds positions.
+      // Boundary checks: ensure the next position is within the grid limits
+      if (nextCol < 0 || nextRow < 0 || nextCol >= dimensions[1] || nextRow >= dimensions[0]) {
+        continue; // Skip if out of bounds
       }
 
-      // Obstacle check: 'X' denotes an impassable cell.
-      if (currentMapState[nextRow][nextCol] === "X") {
-        continue; // Skip obstacles.
+      // Obstacle check: 'X' represents an impassable wall
+      if (gridState[nextRow][nextCol] === "X") {
+        continue; // Skip if it's a wall
       }
 
-      // Create a deep copy of the current grid state for the next step.
-      // This is crucial because the grid state can change based on 'strength' cells.
-      const mapClone = currentMapState.map(r => r.slice());
+      // Create a deep copy of the current grid state for the next step
+      // This is crucial because the grid state can change based on strength consumption
+      const gridCopy = currentGrid.map(function (rowContent) {
+        return rowContent.slice();
+      });
 
-      // If the next cell contains a number matching the current strength,
-      // it means we consume that strength cell, and our strength increases.
-      if (mapClone[nextRow][nextCol] === "" + nextStr) {
-        nextStr++; // Increment strength.
-        mapClone[nextRow][nextCol] = "."; // Mark the cell as consumed.
+      // Check if the next cell contains a strength requirement
+      // If the cell value matches the current strength, consume it and increment strength
+      if (gridCopy[nextRow][nextCol] === "" + nextStrength) {
+        nextStrength++; // Increment strength after consuming
+        gridCopy[nextRow][nextCol] = "."; // Mark the cell as visited/consumed
       }
 
-      // Generate a unique key for the current state (coordinates + map configuration).
-      const stateKey = nextCol + " " + nextRow + " " + mapClone.map(r => r.join('')).join('');
-
-      // If this state has already been visited, skip it to avoid redundant work and cycles.
+      // Generate a unique key for the next state to check if it has been visited
+      const stateKey = nextCol + " " + nextRow + " " + gridCopy.join("");
       if (visitedStates.hasOwnProperty(stateKey)) {
-        continue;
+        continue; // Skip if this state has already been visited
       }
 
-      // Mark the new state as visited.
+      // Mark the new state as visited
       visitedStates[stateKey] = true;
 
-      // Add the new state to the queue for further exploration.
-      searchQueue.push([nextCol, nextRow, currLen + 1, nextStr, mapClone]);
+      // Enqueue the new state
+      searchQueue.push([nextCol, nextRow, currentSteps + 1, nextStrength, gridCopy]);
     }
   }
-
-  return pathLength; // Return the calculated path length.
+  return stepCount; // Return the minimum steps or -1 if no path
 }
 
-// --- Main script execution starts here ---
+// Read input from standard input
+const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-// Use Node.js 'fs' module to read input from a specified file path.
-const fileSystem = require('node:fs');
-const rawData = fileSystem.readFileSync('/app/input.txt', 'utf8');
+// Process input: trim whitespace and split into lines
+const inputLines = (rawData.trim()).split("\n");
 
-// Process the raw input: trim whitespace and split into lines.
-const lineData = rawData.trim().split("\n");
+// Parse the first line for grid dimensions and maximum strength
+// dimensions[0] = height, dimensions[1] = width, dimensions[2] = maxStrength
+const dimensions = (inputLines.shift()).split(" ").map(Number);
+const maxStrength = dimensions[2]; // Extract the maximum strength value
 
-// The first line contains grid height, width, and max strength.
-// Parse these values as numbers.
-const gridDimensions = (lineData.shift()).split(" ").map(Number);
-const maxStrength = gridDimensions[2];
+// Initialize the grid and starting coordinates
+const gridState = [];
+const startCoords = [];
 
-// Initialize the game map and the starting position array.
-let gameMap = [];
-let initialPosition = [];
-
-// Iterate through the remaining lines to build the game map.
-// The first element of gridDimensions is the height (number of rows).
-for (let rowIndex = 0; rowIndex < gridDimensions[0]; rowIndex++) {
-  const rowString = (lineData.shift()).split(""); // Split row into individual characters.
-
-  // If the 'S' (start) character is found in this row, record its position.
-  if (rowString.indexOf("S") !== -1) {
-    initialPosition = [rowString.indexOf("S"), rowIndex]; // [column, row]
+// Populate the grid and find the starting position 'S'
+for (let idx = 0; idx < dimensions[0]; idx++) {
+  const lineChars = (inputLines.shift()).split(""); // Get characters for the current row
+  // If 'S' is found in the current row, record its coordinates
+  if (lineChars.indexOf("S") !== -1) {
+    startCoords[0] = lineChars.indexOf("S"); // Column
+    startCoords[1] = idx; // Row
   }
-  gameMap.push(rowString); // Add the processed row to the game map.
+  gridState.push(lineChars); // Add the row to the grid
 }
 
-// Call the BFS function with the determined starting coordinates.
-const finalResult = exploreGrid(initialPosition[0], initialPosition[1]);
+// Call the BFS function with the starting coordinates
+const finalResult = exploreGrid(startCoords[0], startCoords[1]);
 
-// Output the final path length to the console.
+// Output the result to the console
 console.log(finalResult);

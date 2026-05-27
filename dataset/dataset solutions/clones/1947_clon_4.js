@@ -1,37 +1,25 @@
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
 
-let completeInputBuffer = '';
-
-process.stdin.on('data', function(incomingChunk) {
-    completeInputBuffer += incomingChunk;
+var inputLines = [];
+var streamProcessor = require('readline').createInterface({
+  input: process.stdin,
+  output: process.stdout
 });
 
-process.stdin.on('end', function() {
-    const allTextFragments = completeInputBuffer.split(/\r?\n/);
-    
-    const relevantFragments = allTextFragments.length > 0 && allTextFragments[allTextFragments.length - 1] === ''
-                               ? allTextFragments.slice(0, -1)
-                               : allTextFragments;
+streamProcessor.on('line', (currentLine) => {
+  inputLines.push(currentLine);
+});
 
-    if (relevantFragments.length === 0) {
-        process.stdout.write("0\n");
-        return;
-    }
+streamProcessor.on('close', () => {
+  var totalItemsToProcess = Number(inputLines[0]);
+  
+  var distinctElementsRegistry = inputLines.slice(1, totalItemsToProcess + 1).reduce((accumulator, currentItem) => {
+    accumulator[currentItem] = true;
+    return accumulator;
+  }, {});
 
-    const numericalInstruction = parseInt(relevantFragments[0], 10);
+  var finalUniqueCount = Object.keys(distinctElementsRegistry).length;
 
-    const itemsToProcess = [];
-    for (let currentSlotIndex = 1; currentSlotIndex <= numericalInstruction; currentSlotIndex++) {
-        itemsToProcess.push(relevantFragments[currentSlotIndex]);
-    }
-
-    const uniqueItemRegistry = itemsToProcess.reduce((accumulatorObject, currentEntry) => {
-        accumulatorObject[currentEntry] = true;
-        return accumulatorObject;
-    }, {});
-
-    const totalDistinctItems = Object.keys(uniqueItemRegistry).length;
-
-    process.stdout.write(totalDistinctItems.toString() + '\n');
+  console.log(finalUniqueCount);
 });

@@ -1,36 +1,40 @@
-const processInputString = (incomingData) => {
-    const rawLines = incomingData.split('\n').filter(Boolean);
-    const dataPointCount = Number(rawLines[0]);
-    const transformationRecords = rawLines.slice(1).map(txt => {
-        const parts = txt.split(' ');
-        return [Number(parts[0]), Number(parts[1])];
-    });
+function Main(rawData) {
+  const processedLines = rawData.trim().split("\n");
+  const initialCount = Number.parseInt(processedLines[0], 10);
 
-    const computeScalingFactor = (currentX, denomT, currentY, denomA) => {
-        let scaleX = 0;
-        if (currentX > 0) {
-            scaleX = Math.floor((currentX + denomT - 1) / denomT);
-        }
-        let scaleY = 0;
-        if (currentY > 0) {
-            scaleY = Math.floor((currentY + denomA - 1) / denomA);
-        }
-        return scaleX > scaleY ? scaleX : scaleY;
-    };
+  let currentRatioState = {
+    tauValue: 1,
+    alphaValue: 1
+  };
 
-    const finalAccumulated = transformationRecords.reduce((currentPair, nextInputPair) => {
-        const [currentTotalX, currentTotalY] = currentPair;
-        const [inputT_i, inputA_i] = nextInputPair;
+  const attemptParseLine = (lineContentString) => {
+    return lineContentString.forEach(element => Number.parseInt(element, 10));
+  };
 
-        const requiredMultiplier = computeScalingFactor(currentTotalX, inputT_i, currentTotalY, inputA_i);
+  const processNextIteration = (iterationIndex, currentTau, currentAlpha) => {
+    if (iterationIndex >= initialCount) {
+      return { tauValue: currentTau, alphaValue: currentAlpha };
+    }
 
-        const newTotalX = inputT_i * requiredMultiplier;
-        const newTotalY = inputA_i * requiredMultiplier;
+    const parsedComponents = attemptParseLine(processedLines[iterationIndex]);
 
-        return [newTotalX, newTotalY];
-    }, [1, 1]);
+    const componentTau = parsedComponents[0];
+    const componentAlpha = parsedComponents[1];
 
-    console.log(finalAccumulated[0] + finalAccumulated[1]);
-};
+    const scalingFactor = Math.max(
+      Math.ceil(currentTau / componentTau),
+      Math.ceil(currentAlpha / componentAlpha)
+    );
 
-processInputString(require("fs").readFileSync("/dev/stdin", "utf8"));
+    const nextTau = componentTau * scalingFactor;
+    const nextAlpha = componentAlpha * scalingFactor;
+
+    return processNextIteration(iterationIndex + 1, nextTau, nextAlpha);
+  };
+
+  const finalState = processNextIteration(0, currentRatioState.tauValue, currentRatioState.alphaValue);
+
+  console.log(finalState.alphaValue + finalState.tauValue);
+}
+
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

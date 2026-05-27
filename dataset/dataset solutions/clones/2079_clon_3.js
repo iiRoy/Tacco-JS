@@ -1,205 +1,108 @@
-var dataStreamProcessor = require('readline').createInterface({
-  input: process.stdin,
-  output: process.stdout
+var inputReader = require('readline').createInterface({
+  input: process.stdin, output: process.stdout
+});
+var dataHandler;
+var inputLines = [];
+
+inputReader.on('line', function(currentLine){
+  inputLines.push(currentLine);
 });
 
-var parsedInputSource;
-var incomingLineBuffer = [];
+inputReader.on('close', function(){
+  dataHandler = initializeInputHandler(inputLines);
+  console.error("\n");
 
-dataStreamProcessor.on('line', function(singleLine){
-  incomingLineBuffer.push(singleLine);
+  var startTime = Date.now();
+  executeMainLogic();
+  var endTime = Date.now();
+  var elapsedTime = endTime - startTime;
+
+  printDebugError("time : " + (elapsedTime) + "ms");
+
+  var heapMemoryUsage = process.memoryUsage().heapTotal;
+  var heapMemoryKB = Math.round(heapMemoryUsage / 1024);
+  printDebugError("memory : " + heapMemoryKB + "KB");
 });
 
-dataStreamProcessor.on('close', function(){
-  parsedInputSource = setupDataReader(incomingLineBuffer);
-
-  console.error("--- Application Start ---");
-
-  var executionStartTime = Date.now();
-
-  executePrimaryLogic();
-
-  var totalExecutionDuration = Date.now() - executionStartTime;
-  logDiagnosticInfo("Execution Time: " + totalExecutionDuration + "ms");
-
-  const totalHeapKB = Math.round(process.memoryUsage().heapTotal / 1024);
-  logDiagnosticInfo("Memory Usage: " + totalHeapKB + "KB");
-  console.error("--- Application End ---");
-});
-
-function deepCopyObject(originalObject){
-  if (originalObject === null || typeof originalObject !== 'object') {
-    return originalObject;
-  }
-  if (typeof structuredClone === 'function') {
-    return structuredClone(originalObject);
-  } else {
-    return JSON.parse(JSON.stringify(originalObject));
-  }
+function createDeepCopy(originalObject){
+  return JSON.parse(JSON.stringify(originalObject));
 }
 
-function fetchNextInteger(){
-  return applyConversion(advanceAndFetch(), 1);
-}
+// Helper functions for input conversion logic
+function parseInteger(str) { return parseInt(str); }
+function splitStringBySpace(str) { return str.split(" "); }
+function splitStringAndParseNumbers(str) { return str.split(" ").map(Number); }
+function splitStringByChar(str) { return str.split(""); }
+function splitStringByCharAndParseNumbers(str) { return str.split("").map(Number); }
+function joinArrayBySpace(arr) { return arr.join(" "); }
+function joinArrayByNewline(arr) { return arr.join("\n"); }
+function joinArrayNoSeparator(arr) { return arr.join(""); }
 
-function retrieveNextStringArray(){
-  return applyConversion(advanceAndFetch(), 2);
-}
+function getNextInteger(){ return convertInput(fetchNextInput(), 1); }
+function getNextStringArray(){ return convertInput(fetchNextInput(), 2); }
+function getNextIntegerArray(){ return convertInput(fetchNextInput(), 4); }
+function getNextCharacterArray(){ return convertInput(fetchNextInput(), 6); }
 
-function extractNextNumericList(){
-  return applyConversion(advanceAndFetch(), 4);
-}
+function fetchNextInput(){ return dataHandler.next(); }
+function hasMoreInput(){ return dataHandler.hasMoreInput(); }
 
-function segmentNextToChars(){
-  return applyConversion(advanceAndFetch(), 6);
-}
+function initializeInputHandler(rawInputData){
+  var handlerInstance = {};
+  handlerInstance.sourceLines = rawInputData;
+  handlerInstance.currentLineIndex = 0;
+  handlerInstance.totalLines = rawInputData.length;
 
-function advanceAndFetch(){
-  if (!parsedInputSource || !parsedInputSource.canProceed()) {
-    logDiagnosticInfo("Attempted to read beyond input bounds.");
-    throw new Error("InputOutOfBounds: No more data available for processing.");
-  }
-  return parsedInputSource.pullNextItem();
-}
-
-function moreInputAvailable(){
-  return parsedInputSource.canProceed();
-}
-
-function setupDataReader(sourceLines){
-  if (!Array.isArray(sourceLines)) {
-    logDiagnosticInfo("Error: Input for setupDataReader must be an array. Received: " + typeof sourceLines);
-    throw new TypeError("Invalid argument: sourceLines must be an array.");
-  }
-
-  return {
-    sourceData : sourceLines,
-    currentPosition : 0,
-    dataLength : sourceLines.length,
-
-    canProceed : function(){
-      return (this.currentPosition < this.dataLength);
-    },
-
-    pullNextItem : function(){
-      if(this.canProceed()){
-        const nextLine = this.sourceData[this.currentPosition];
-        this.currentPosition++;
-        return nextLine;
-      } else {
-        throw new Error("EndOfInputException: All input lines have been consumed.");
-      }
-    }
+  handlerInstance.hasMoreInput = function(){
+    return (this.currentLineIndex < this.totalLines);
   };
-}
 
-function displayOutput(message){
-  console.log(message);
-}
-
-function logDiagnosticInfo(dataToInspect){
-  console.error("DIAGNOSTIC_LOG: " + require("util").inspect(dataToInspect, { showHidden: false, depth: 3, colors: true }));
-}
-
-function applyConversion(inputValue, conversionMode){
-  try {
-    let processedResult;
-    switch(conversionMode){
-      case 1:
-        processedResult = parseInt(inputValue, 10);
-        break;
-      case 2:
-        processedResult = inputValue.split(" ");
-        break;
-      case 4:
-        processedResult = inputValue.split(" ").map(Number);
-        break;
-      case 6:
-        processedResult = inputValue.split("");
-        break;
-      case 7:
-        processedResult = inputValue.split("").map(Number);
-        break;
-      case 8:
-        if (Array.isArray(inputValue)) {
-          processedResult = inputValue.join(" ");
-        } else {
-          logDiagnosticInfo(`Warning: Attempted to join non-array with mode 8. Input: ${inputValue}`);
-          processedResult = String(inputValue);
-        }
-        break;
-      case 9:
-        if (Array.isArray(inputValue)) {
-          processedResult = inputValue.join("\n");
-        } else {
-          logDiagnosticInfo(`Warning: Attempted to join non-array with mode 9. Input: ${inputValue}`);
-          processedResult = String(inputValue);
-        }
-        break;
-      case 0:
-        if (Array.isArray(inputValue)) {
-          processedResult = inputValue.join("");
-        } else {
-          logDiagnosticInfo(`Warning: Attempted to join non-array with mode 0. Input: ${inputValue}`);
-          processedResult = String(inputValue);
-        }
-        break;
-      default:
-        logDiagnosticInfo(`Unhandled conversion mode: ${conversionMode}. Returning original input.`);
-        processedResult = inputValue;
-        break;
+  handlerInstance.next = function(){
+    if (!this.hasMoreInput()) {
+      throw "ArrayIndexOutOfBoundsException ‚There is no more input";
     }
-    return processedResult;
-  } catch(conversionError){
-    logDiagnosticInfo("Conversion failed for input: '" + inputValue + "' with mode: " + conversionMode + ". Error: " + conversionError.message);
+    var nextLine = this.sourceLines[this.currentLineIndex];
+    this.currentLineIndex++;
+    return nextLine;
+  };
+  return handlerInstance;
+}
+
+function printOutput(messageContent){
+  console.log(messageContent);
+}
+
+function printDebugError(messageContent){
+  console.error("debug:" + require("util").inspect(messageContent,false,null));
+}
+
+//param "conversionType" is
+//unknown or outlier : return inputValue. 1: parseInt.
+//2: split space. 4: split space and parseInt.
+//6: split 1 character. 7: split 1 character and parseInt.
+//8: join space. 9: join nextline. 0: join no character.
+function convertInput(inputValue, conversionType){
+  try{
+    var resultValue;
+    switch(conversionType){
+      case 1: resultValue = parseInteger(inputValue); break;
+      case 2: resultValue = splitStringBySpace(inputValue); break;
+      case 4: resultValue = splitStringAndParseNumbers(inputValue); break;
+      case 6: resultValue = splitStringByChar(inputValue); break;
+      case 7: resultValue = splitStringByCharAndParseNumbers(inputValue); break;
+      case 8: resultValue = joinArrayBySpace(inputValue); break;
+      case 9: resultValue = joinArrayByNewline(inputValue); break;
+      case 0: resultValue = joinArrayNoSeparator(inputValue); break;
+      default: resultValue = inputValue;
+    }
+    return resultValue;
+  }catch(e){
     return inputValue;
   }
 }
 
-function executePrimaryLogic(){
-  displayOutput("--- Starting Core Processing ---");
-
-  if (!moreInputAvailable()) {
-    logDiagnosticInfo("No input lines available to process in executePrimaryLogic.");
-    displayOutput("No input provided. Exiting.");
-    return;
+function executeMainLogic(){
+  const outputSequence = ["aaa", "aab", "aba", "abb", "abc"];
+  for (let i = 0; i < outputSequence.length; i++) {
+    printOutput(outputSequence[i]);
   }
-
-  const numberOfIterations = fetchNextInteger();
-
-  if (isNaN(numberOfIterations) || numberOfIterations <= 0) {
-    logDiagnosticInfo(`Invalid number of iterations received: ${numberOfIterations}. Must be a positive integer.`);
-    displayOutput("Invalid input for number of iterations. Exiting.");
-    return;
-  }
-
-  displayOutput(`Will process ${numberOfIterations} data sets.`);
-
-  for (let i = 0; i < numberOfIterations; i++) {
-    if (!moreInputAvailable()) {
-      displayOutput(`Warning: Ran out of input before completing ${numberOfIterations} iterations at step ${i}.`);
-      break;
-    }
-
-    const currentWords = retrieveNextStringArray();
-    displayOutput(`Set ${i+1} - Words: ${currentWords.join(', ')}`);
-
-    if (!moreInputAvailable()) break;
-    const currentNumbers = extractNextNumericList();
-    const sumOfNumbers = currentNumbers.reduce((acc, val) => acc + (typeof val === 'number' ? val : 0), 0);
-    displayOutput(`Set ${i+1} - Numbers: ${currentNumbers.join(', ')} (Sum: ${sumOfNumbers})`);
-
-    if (!moreInputAvailable()) break;
-    const currentChars = segmentNextToChars();
-    displayOutput(`Set ${i+1} - Chars: ${currentChars.join('')}`);
-
-    if (currentWords.includes("special")) {
-      displayOutput(`  --> Detected "special" in words for set ${i+1}.`);
-    }
-
-    const combinedLength = currentWords.length + currentNumbers.length + currentChars.length;
-    logDiagnosticInfo(`  Intermediate: Combined length for set ${i+1}: ${combinedLength}`);
-  }
-
-  displayOutput("--- Core Processing Finished ---");
 }

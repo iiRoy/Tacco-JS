@@ -1,45 +1,54 @@
-function computeMaxSequenceSum(  dataArray, sequenceLength )
-{
-  const       calculatedSums = [];
+function computeMaxSum(dataArray, windowLength) {
+  // This function calculates the maximum sum of three consecutive elements
+  // within the provided dataArray.
+  // The 'windowLength' parameter is used in the loop boundary,
+  // but the sum itself is always of three elements, as per the original logic.
+  const collectedSums = []; // Array to store the sums of sub-arrays
 
-  for ( let idx = 0; idx < dataArray.length - sequenceLength; idx++ )
-  {
-    calculatedSums.push( dataArray[ idx ] + dataArray[ idx + 1 ] + dataArray[ idx + 2 ] );
+  // Iterate through the data array to calculate sums of three consecutive elements
+  for (let currentIdx = 0; currentIdx < dataArray.length - windowLength; currentIdx++) {
+    collectedSums.push(dataArray[currentIdx] + dataArray[currentIdx + 1] + dataArray[currentIdx + 2]);
   }
 
-  calculatedSums.sort( function( valA, valB ) { return valB - valA; } );
-  console.log( calculatedSums[ 0 ] );
+  // Sort the calculated sums in descending order to find the maximum easily
+  collectedSums.sort((valA, valB) => valB - valA);
+
+  // Output the largest sum found to the console
+  console.log(collectedSums[0]);
 }
 
-const fileSystem = require( 'fs' );
-const rawData = fileSystem.readFileSync( '/dev/stdin', 'utf8' );
+// Read all input data from standard input
+const rawInputData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-let currentSequenceData;
-let limitValueOffset;
+// Split the raw input into individual lines and remove any leading/trailing whitespace
+const inputLines = rawInputData.trim().split("\n");
 
-const lineSegments = rawData.trim().split( "\n" );
+let currentNumberSet;    // This variable will hold the array of numbers for the current test case
+let currentWindowSize;   // This variable will hold the window size parameter for the current test case
 
-for ( let lineIndex = 0; lineIndex < lineSegments.length; lineIndex++ )
-{
-  const parsedLineData = lineSegments[ lineIndex ].split( " " ).map( Number );
+// Loop through each line of the processed input
+for (let lineIndex = 0; lineIndex < inputLines.length; lineIndex++) {
+  // Parse the current line, splitting by space and converting parts to numbers
+  const parsedLineValues = inputLines[lineIndex].split(" ").map(Number);
 
-  if ( parsedLineData.length === 2 || lineIndex === lineSegments.length - 1 )
-  {
-    if ( lineIndex !== 0 )
-    {
-      computeMaxSequenceSum( currentSequenceData, limitValueOffset );
+  // Check if the current line is a "header" line (contains two numbers)
+  // or if it's the very last line of the entire input.
+  if (parsedLineValues.length === 2 || lineIndex === inputLines.length - 1) {
+    // If it's not the first line, it means a previous set of numbers needs processing
+    if (lineIndex !== 0) {
+      computeMaxSum(currentNumberSet, currentWindowSize);
     }
-
-    currentSequenceData = [];
-    limitValueOffset = parsedLineData[ 1 ] - 0;
+    // Initialize a new empty array for the next set of numbers
+    currentNumberSet = [];
+    // Set the window size for the upcoming numbers from the second value on the current line
+    currentWindowSize = parsedLineValues[1] - 0; // Explicit conversion to number
+  } else {
+    // If the line contains only one number, add it to the current set of numbers
+    currentNumberSet.push(parsedLineValues[0]);
   }
-  else
-  {
-    currentSequenceData.push( parsedLineData[ 0 ] );
-  }
 
-  if ( lineSegments[ lineIndex ] === "0 0" )
-  {
-    break;
+  // Check for the termination condition "0 0"
+  if (inputLines[lineIndex] === "0 0") {
+    break; // Exit the loop if the termination signal is found
   }
 }

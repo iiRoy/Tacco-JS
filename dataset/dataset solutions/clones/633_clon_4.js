@@ -1,58 +1,47 @@
-const nodeIO = require('node:fs');
+const fileSystem = require('fs');
 
-// Function to obtain raw data from the input stream
-const acquireSourceData = (inputDescriptor) => {
-    return nodeIO.readFileSync(inputDescriptor, 'utf8');
-};
+function calculateCharacterMetrics(lineContent) {
+    const characterArray = lineContent.split('');
 
-// Function to process and transform the entire input payload
-const processInputPayload = (fullPayloadContent) => {
-    const contentLines = fullPayloadContent.trim().split('\n');
-    contentLines.shift(); // Discard the initial metadata line
+    // Step 1: Pre-process to find all 'c' character positions
+    const cIndices = characterArray.reduce((indicesAccumulator, charUnit, charPosition) => {
+        if (charUnit === 'c') {
+            indicesAccumulator.push(charPosition);
+        }
+        return indicesAccumulator;
+    }, []);
 
-    // Function to process a single line of characters
-    const evaluateCharacterSequence = (sequenceString) => {
-        const initialAccumulatorState = { currentMarker: -1, resultSegments: [] };
+    // Step 2: Map each character to its corresponding metric
+    return characterArray.map((charUnit, charPosition) => {
+        if (charUnit === 'c') {
+            return 0; // 'c' characters always have a metric of 0
+        } else { // Character is '.'
+            // Find all 'c's that appeared at or before the current character's position
+            const precedingCLocations = cIndices.filter(cLoc => cLoc <= charPosition);
 
-        const finalAccumulatedState = sequenceString.split('').reduce((accumulator, charElement) => {
-            let nextMarkerValue = accumulator.currentMarker;
-            let segmentValue;
+            // Determine the index of the 'c' closest to the left (or at the current position)
+            const lastPrecedingC = precedingCLocations.length > 0
+                ? precedingCLocations[precedingCLocations.length - 1]
+                : undefined;
 
-            if (charElement === 'c') {
-                segmentValue = 0;
-                nextMarkerValue = 1;
-            } else if (charElement === '.') {
-                segmentValue = accumulator.currentMarker;
-                if (accumulator.currentMarker !== -1) {
-                    nextMarkerValue++;
-                }
+            if (lastPrecedingC === undefined) {
+                return -1; // No 'c' found to the left or at this position
             } else {
-                // If any other characters are present, their handling should be defined.
-                // Assuming only 'c' or '.' based on typical problem constraints.
-                segmentValue = -1; 
+                // Calculate the distance from the current position to the last 'c'
+                return charPosition - lastPrecedingC;
             }
+        }
+    });
+}
 
-            return {
-                currentMarker: nextMarkerValue,
-                resultSegments: [...accumulator.resultSegments, segmentValue]
-            };
-        }, initialAccumulatorState);
+const rawFileContents = fileSystem.readFileSync('/dev/stdin', 'utf8');
+const processedLines = rawFileContents.trim().split('\n');
 
-        return finalAccumulatedState.resultSegments;
-    };
+// The first line is extracted but its value is not used in the observable behavior.
+const initialLineData = processedLines.shift();
 
-    // Apply the line processing to all content lines using functional mapping
-    const processedLineResults = contentLines.map(evaluateCharacterSequence);
+// Apply the metric calculation to each remaining line
+const computedMetricsCollection = processedLines.map(calculateCharacterMetrics);
 
-    // Format the final output: join numbers in each row with spaces, then rows with newlines
-    return processedLineResults.map(rowArray => rowArray.join(' ')).join('\n');
-};
-
-// Main execution block
-const initiateOperation = () => {
-    const rawStreamContent = acquireSourceData(0); // Using file descriptor 0 for standard input
-    const formattedOutput = processInputPayload(rawStreamContent);
-    console.log(formattedOutput);
-};
-
-initiateOperation();
+// Format the final output: join numbers in each row with spaces, then join rows with newlines
+console.log(computedMetricsCollection.map(rowOfMetrics => rowOfMetrics.join(' ')).join('\n'));

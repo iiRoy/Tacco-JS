@@ -1,34 +1,27 @@
-'use strict'; // This directive ensures strict parsing and error handling for the entire script.
+'use strict'; // Enforce strict mode for cleaner code execution
 
-/*
- * This module defines a primary function responsible for interpreting
- * and manipulating textual input based on specific length criteria.
- * It serves as the core logic handler for incoming data streams.
+/**
+ * Processes the raw input string to perform a specific string manipulation.
+ * If the first line of input has a length of 2, it prints it as is.
+ * Otherwise, it reverses the first line and prints the reversed string.
+ * @param {string} rawData - The entire input string, potentially multi-line.
  */
-const processContent = (contentSource) => {
-    // Decompose the raw content string into an array of distinct lines.
-    // Each line is separated by a newline character.
-    const textSegments = contentSource.split('\n');
+const processInput = (rawData) => {
+  // Split the incoming data into an array of individual lines
+  const linesArray = rawData.split('\n');
 
-    // Isolate the initial line from the parsed segments for primary evaluation.
-    const principalString = textSegments[0];
+  // Extract the very first line from the parsed input
+  const firstLine = linesArray[0];
 
-    // Evaluate the character count of the principal string.
-    // If the length is exactly two characters, proceed with direct output.
-    if (principalString.length === 2) {
-        // Display the principal string without any modifications.
-        console.log(principalString);
-    } else {
-        // If the length is not two, perform a sequence of transformations:
-        // 1. Break the string into an array of individual characters.
-        // 2. Invert the order of characters within this array.
-        // 3. Reconstruct a new string from the reversed characters.
-        // 4. Output this newly formed reversed string.
-        console.log(principalString.split('').reverse().join(''));
-    }
+  // Check the character count of the initial string
+  if (firstLine.length === 2) {
+    // If the length is exactly two, output the string without changes
+    console.log(firstLine);
+  } else {
+    // For any other length, reverse the string and then print it
+    console.log(firstLine.split('').reverse().join(''));
+  }
 };
 
-// Begin the execution flow by retrieving data from the standard input stream.
-// The Node.js 'fs' (file system) module is utilized to read the entire file
-// synchronously, with 'utf8' specified as the character encoding.
-processContent(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// Read the content from standard input and pass it to our processing function
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

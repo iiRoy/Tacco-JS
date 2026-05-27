@@ -1,57 +1,66 @@
-let collectedInputString = ''; // A buffer for all incoming character streams.
+let receivedInput = ''; // Variable to accumulate all data read from standard input.
+const inputSource = process.stdin; // Reference to the standard input stream object.
 
-const standardInputFlow = process.stdin; // Reference to the standard input stream object.
+// Configure the input stream to resume reading and set its encoding.
+inputSource.resume(); // Ensures the stream starts emitting data.
+inputSource.setEncoding('utf-8'); // Specifies that incoming data chunks should be treated as UTF-8 strings.
 
-standardInputFlow.resume(); // Begin the input stream processing, allowing data to flow.
-
-standardInputFlow.setEncoding('utf-8'); // Define the character encoding for the stream data.
-
-// Event listener for when new data chunks arrive from the input stream.
-standardInputFlow.on('data', function(dataSegment) {
-    collectedInputString += dataSegment; // Accumulate the received data segments into the buffer.
+// Attach an event listener for 'data' events.
+// This function is called whenever a chunk of data is available from stdin.
+inputSource.on('data', function(dataChunk) {
+  receivedInput += dataChunk; // Append the current data chunk to the accumulated input string.
 });
 
-// Event listener for when the input stream has finished transmitting all its data.
-standardInputFlow.on('end', function() {
-    // Break down the entire accumulated input into an array of individual textual lines.
-    const textualLines = collectedInputString.split('\n');
+// Attach an event listener for the 'end' event.
+// This function is called once the entire input stream has been received.
+inputSource.on('end', function() {
+  // Split the complete input string into an array of lines, using the newline character as a delimiter.
+  const linesOfData = receivedInput.split('\n');
 
-    // Process the very first line to extract the matrix dimensions (rows and columns).
-    const dimensionsArray = textualLines[0].split(' ').map(Number);
-    const matrixRows = dimensionsArray[0]; // Store the number of rows for the data matrix.
-    const matrixColumns = dimensionsArray[1]; // Store the number of columns for the data matrix.
+  // The first line of input contains the dimensions (rows and columns).
+  // Split it by space and convert the parts to numbers.
+  const dimensions = linesOfData[0].split(' ').map(Number);
+  const numRows = dimensions[0]; // The number of rows (not directly used for iteration in this specific algorithm).
+  const numCols = dimensions[1]; // The number of columns for the actual data.
 
-    // Initialize an array to store the cumulative sums for each column, plus an additional slot for the grand total.
-    const columnTotalTracker = Array(matrixColumns + 1);
-    // Populate the column total array with initial zero values before calculations begin.
-    for (let currentColumnIndex = 0; currentColumnIndex <= matrixColumns; currentColumnIndex++) {
-        columnTotalTracker[currentColumnIndex] = 0;
+  // Initialize an array to store the sum of each column.
+  // It includes an extra element at the end to store the grand total of all numbers.
+  const columnSums = Array(numCols + 1);
+  for (let colIdx = 0; colIdx <= numCols; ++colIdx) {
+    columnSums[colIdx] = 0; // Set initial sum for each column (and the grand total) to zero.
+  }
+
+  // An array to hold the processed output lines before they are printed.
+  const resultLines = [];
+
+  // Iterate through the data lines, starting from the second line (index 1),
+  // as the first line contains only dimensions.
+  for (let currentLineIdx = 1; currentLineIdx < linesOfData.length; ++currentLineIdx) {
+    // Parse the numbers for the current row.
+    const currentNumbers = linesOfData[currentLineIdx].split(' ').map(Number);
+    let rowTotal = 0; // Initialize a variable to calculate the sum for the current row.
+
+    // Iterate through the numbers in the current row (up to numCols).
+    for (let colIterator = 0; colIterator < numCols; ++colIterator) {
+      rowTotal += currentNumbers[colIterator]; // Add the current number to the row's total.
+      columnSums[colIterator] += currentNumbers[colIterator]; // Add the current number to its respective column's total.
     }
 
-    // Prepare an array to hold the final formatted output strings for each row and the final summary.
-    const formattedResultRows = [];
+    // After processing all numbers in the row, add the row's total to the grand total.
+    // The grand total is stored in the last element of the columnSums array.
+    columnSums[numCols] += rowTotal;
+    // Append the calculated row total to the end of the current row's numbers.
+    currentNumbers.push(rowTotal);
 
-    // Iterate through each subsequent line of the input, representing a data row in the matrix.
-    for (let currentRowIdx = 1; currentRowIdx < textualLines.length; currentRowIdx++) {
-        // Convert the current line's string elements into an array of numeric values.
-        const rowNumericElements = textualLines[currentRowIdx].split(' ').map(Number);
-        let currentSummation = 0; // Variable to hold the summation of values in the current row.
+    // Convert the modified row (including its total) back into a space-separated string
+    // and add it to the array of result lines.
+    resultLines.push(currentNumbers.join(' '));
+  }
 
-        // Loop through each element within the current numeric row to calculate sums.
-        for (let elementPos = 0; elementPos < matrixColumns; elementPos++) {
-            currentSummation += rowNumericElements[elementPos]; // Add the element's value to the current row's summation.
-            columnTotalTracker[elementPos] += rowNumericElements[elementPos]; // Accumulate the element's value into its corresponding column total.
-        }
-        // Add the current row's total summation to the final slot of the column total tracker (grand total).
-        columnTotalTracker[matrixColumns] += currentSummation;
-        // Append the calculated row summation as a new element to the end of the current row's numeric elements.
-        rowNumericElements.push(currentSummation);
-        // Convert the modified row (now including its sum) back to a space-separated string and store it.
-        formattedResultRows.push(rowNumericElements.join(' '));
-    }
-    // Append the final column totals array (converted to a space-separated string) to the result array.
-    formattedResultRows.push(columnTotalTracker.join(' '));
+  // After all data rows have been processed, convert the column sums (including grand total)
+  // into a space-separated string and add it as the final line to the result.
+  resultLines.push(columnSums.join(' '));
 
-    // Output all collected result rows, with each row separated by a newline character.
-    console.log(formattedResultRows.join('\n'));
+  // Print all collected result lines, joined by newline characters, to standard output.
+  console.log(resultLines.join('\n'));
 });

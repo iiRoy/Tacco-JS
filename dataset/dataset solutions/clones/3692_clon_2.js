@@ -1,2 +1,2 @@
-// This routine renders a specific textual message to the standard output.
-outputDisplay("Processed value: 12345");
+// This script outputs a specific numerical string.
+print ( "99999999" ) ; // The value is a string literal.

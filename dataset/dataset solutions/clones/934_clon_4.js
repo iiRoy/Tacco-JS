@@ -1,97 +1,107 @@
-const displayOutcome = console.log;
+//-----
 
-class DataStreamAggregator {
-    constructor(finalProcessingRoutine) {
-        this.accumulatedContent = '';
-        this.processingCallback = finalProcessingRoutine;
-
-        if (typeof process !== "undefined" && process.stdin) {
-            process.stdin.resume();
-            process.stdin.setEncoding('utf8');
-
-            process.stdin.on('data', (incomingChunk) => {
-                this.accumulatedContent += incomingChunk;
-            });
-
-            process.stdin.on('end', () => {
-                const segmentedLines = this.accumulatedContent.split('\n');
-                this.processingCallback(segmentedLines);
-            });
-        }
-    }
-}
-
-function purifyText(rawTextValue) {
-    return rawTextValue.replace(/[^a-z]/g, '');
-}
-
-function computeMatchScore(textA, textB) {
-    const cachedResults = new Map();
-
-    function retrieveCachedOrCalculate(rowPosition, columnPosition) {
-        if (rowPosition < 0 || columnPosition < 0) {
-            return 0;
-        }
-
-        const cacheKeyIdentifier = `${rowPosition}-${columnPosition}`;
-        if (cachedResults.has(cacheKeyIdentifier)) {
-            return cachedResults.get(cacheKeyIdentifier);
-        }
-
-        const characterMatchValue = (textA[rowPosition] === textB[columnPosition] ? 1 : 0);
-        let currentCellScore;
-
-        if (rowPosition === 0 && columnPosition === 0) {
-            currentCellScore = characterMatchValue;
-        } else if (rowPosition === 0) {
-            const previousColumnScore = retrieveCachedOrCalculate(rowPosition, columnPosition - 1);
-            currentCellScore = Math.max(previousColumnScore, characterMatchValue);
-        } else if (columnPosition === 0) {
-            const previousRowScore = retrieveCachedOrCalculate(rowPosition - 1, columnPosition);
-            currentCellScore = Math.max(previousRowScore, characterMatchValue);
-        } else {
-            const scoreFromAboveCell = retrieveCachedOrCalculate(rowPosition - 1, columnPosition);
-            const scoreFromLeftCell = retrieveCachedOrCalculate(rowPosition, columnPosition - 1);
-
-            const intermediateCombinedValue = Math.max(scoreFromAboveCell, scoreFromLeftCell) + characterMatchValue;
-            const indexBasedLimit = Math.min(rowPosition, columnPosition) + 1;
-
-            currentCellScore = Math.min(intermediateCombinedValue, indexBasedLimit);
-        }
-
-        cachedResults.set(cacheKeyIdentifier, currentCellScore);
-        return currentCellScore;
-    }
-
-    return retrieveCachedOrCalculate(textA.length - 1, textB.length - 1);
-}
-
-function coordinateProcessingRecursively(allInputLines, startFromIndex = 1) {
-    if (startFromIndex >= allInputLines.length) {
-        return;
-    }
-
-    const firstRawString = allInputLines[startFromIndex];
-    const secondRawString = allInputLines[startFromIndex + 1];
-
-    if (firstRawString === undefined || secondRawString === undefined) {
-        return;
-    }
-
-    try {
-        const cleanedFirst = purifyText(firstRawString);
-        const cleanedSecond = purifyText(secondRawString);
-
-        const finalScore = computeMatchScore(cleanedFirst, cleanedSecond);
-        displayOutcome(finalScore);
-
-    } catch (processingError) {
-        displayOutcome(processingError);
-    }
-
-    coordinateProcessingRecursively(allInputLines, startFromIndex + 2);
-}
+var outputWriter = console.log;
 
 if (typeof process !== "undefined") {
-    new DataStreamAggregator(coordinateProcessingRecursively);
+    let receivedData = "";
+    process.stdin.resume();
+    process.stdin.setEncoding('utf8');
+    process.stdin.on('data', (chunk) => {
+        receivedData += chunk;
+    });
+    process.stdin.on('end', () => {
+        const allInputLines = receivedData.split("\n");
+        processInputData(allInputLines);
+    });
+}
+
+//-----
+
+function processInputData(allInputLines) {
+    const contentLines = allInputLines.slice(1); // Skip the first line (count)
+    const datasetCount = Math.floor(contentLines.length / 2);
+
+    Array.from({ length: datasetCount }).forEach((_, idx) => {
+        const rawFirstString = contentLines[idx * 2];
+        const rawSecondString = contentLines[idx * 2 + 1];
+
+        // Clean strings: keep only lowercase English letters
+        const cleanedFirstString = rawFirstString.replace(/[^a-z]/g, '');
+        const cleanedSecondString = rawSecondString.replace(/[^a-z]/g, '');
+
+        computeAlignmentScore([cleanedFirstString, cleanedSecondString]);
+    });
+}
+
+function computeAlignmentScore(inputStrings) {
+    const firstStr = inputStrings[0];
+    const secondStr = inputStrings[1];
+
+    // Memoization table for dynamic programming: Map<rowIndex, Map<colIndex, value>>
+    const scoreMemo = new Map();
+
+    // Recursive helper function to calculate cell values with memoization
+    const calculateCellScore = (r, c) => {
+        // If indices are out of bounds (negative), this indicates an invalid state
+        // for the recursive calculation, which should not happen with correct base cases.
+        // However, the original code's `A[i-1][j-1]` access for empty strings
+        // results in a TypeError, which we must mimic.
+        if (r < 0 || c < 0) {
+            // This path should ideally not be hit if the initial call is guarded,
+            // but included for robustness if called with negative indices.
+            // For the specific error mimicry, see the try/catch block below.
+            return 0; // Or throw an error if strict index validation is needed here.
+        }
+
+        // Check if the score for this cell has already been computed
+        if (scoreMemo.has(r) && scoreMemo.get(r).has(c)) {
+            return scoreMemo.get(r).get(c);
+        }
+
+        let cellValue;
+        // Determine if characters at current positions match
+        const charMatchIndicator = (firstStr.charAt(r) === secondStr.charAt(c)) ? 1 : 0;
+
+        if (r === 0 && c === 0) {
+            // Base case: top-left corner
+            cellValue = charMatchIndicator;
+        } else if (r === 0) {
+            // Base case: first row (depends on the cell to its left)
+            cellValue = Math.max(calculateCellScore(r, c - 1), charMatchIndicator);
+        } else if (c === 0) {
+            // Base case: first column (depends on the cell above it)
+            cellValue = Math.max(calculateCellScore(r - 1, c), charMatchIndicator);
+        } else {
+            // General case: depends on cells above and to the left
+            const scoreFromAbove = calculateCellScore(r - 1, c);
+            const scoreFromLeft = calculateCellScore(r, c - 1);
+            cellValue = Math.min(Math.max(scoreFromAbove, scoreFromLeft) + charMatchIndicator, Math.min(r, c) + 1);
+        }
+
+        // Store the computed score in the memoization table
+        if (!scoreMemo.has(r)) {
+            scoreMemo.set(r, new Map());
+        }
+        scoreMemo.get(r).set(c, cellValue);
+
+        return cellValue;
+    };
+
+    try {
+        const finalRowIndex = firstStr.length - 1;
+        const finalColIndex = secondStr.length - 1;
+
+        // Mimic the original code's behavior for empty strings.
+        // If either string is empty, the original loops don't run,
+        // and `log(A[i - 1][j - 1])` becomes `log(A[-1][-1])`,
+        // which throws a TypeError: "Cannot read properties of undefined (reading '-1')".
+        if (finalRowIndex < 0 || finalColIndex < 0) {
+            throw new TypeError("Cannot read properties of undefined (reading '-1')");
+        } else {
+            // Calculate and output the score for the bottom-right cell
+            outputWriter(calculateCellScore(finalRowIndex, finalColIndex));
+        }
+    } catch (err) {
+        outputWriter(err);
+    }
 }

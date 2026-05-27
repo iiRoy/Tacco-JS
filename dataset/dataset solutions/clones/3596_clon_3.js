@@ -1,115 +1,62 @@
-const convertStringToNumeric = (strValue) => {
-    const parsedValue = parseInt(strValue.trim(), 10);
-    if (Number.isNaN(parsedValue)) {
-        throw new Error(`Parsing error: Could not convert "${strValue}" to a valid integer.`);
-    }
-    return parsedValue;
-};
+const parseInteger = valStr => parseInt(valStr, 10);
+const parseIntegerArray = strArr => strArr.map(valStr => parseInteger(valStr));
+const absoluteValue = num => num > 0 ? num : -num;
 
-const mapStringsToNumbers = (stringArray) => {
-    if (!Array.isArray(stringArray)) {
-        throw new TypeError("Input for mapStringsToNumbers must be an array.");
+function findMinimum() {
+    const args = arguments;
+    let currentValue = args[0];
+    for (let i = 1; i < args.length; i++) {
+        if (args[i] < currentValue) {
+            currentValue = args[i];
+        }
     }
-    return stringArray.map(convertStringToNumeric);
-};
-
-try {
-    const acquireRawInput = () => require("fs").readFileSync("/dev/stdin", "utf8");
-    processAndCalculateMedians(acquireRawInput());
-} catch (inputError) {
-    console.error("An error occurred while handling input:", inputError.message);
-    process.exit(1);
+    return currentValue;
 }
 
-/**
- * Executes the core logic for finding the median of medians from a numeric series.
- * This involves generating all possible contiguous subarrays, finding their medians,
- * and then determining the median of this collection of medians.
- *
- * @param {string} fullInputContent - The entire input data as a single string, typically from stdin.
- */
-function processAndCalculateMedians(fullInputContent) {
-    const processedLines = fullInputContent
-        .split('\n')
-        .map(line => line.trim())
-        .filter(line => line.length > 0);
-
-    if (processedLines.length < 2) {
-        console.error("Input format error: Expected at least two non-empty lines of data.");
-        return;
+function findMaximum() {
+    const args = arguments;
+    let currentValue = args[0];
+    for (let i = 1; i < args.length; i++) {
+        if (args[i] > currentValue) {
+            currentValue = args[i];
+        }
     }
+    return currentValue;
+}
 
-    let seriesElementCount;
-    try {
-        seriesElementCount = convertStringToNumeric(processedLines[0]);
-    } catch (parseErr) {
-        console.error(`Data error: Failed to parse the count of elements from the first line. ${parseErr.message}`);
-        return;
-    }
+const STANDARD_INPUT_FILE_PATH = "/dev/stdin";
 
-    if (seriesElementCount <= 0 || !Number.isInteger(seriesElementCount)) {
-        console.error("Validation error: Element count must be a positive integer.");
-        return;
-    }
+function readInputFromFile(filePath) {
+    return require("fs").readFileSync(filePath, "utf8");
+}
 
-    const mainNumericCollection = mapStringsToNumbers(processedLines[1].split(' '));
+function determineArrayMedian(inputArray) {
+    const sortedElements = [...inputArray].sort((valA, valB) => valA - valB);
+    const middleIndex = Math.floor(sortedElements.length / 2);
+    return sortedElements[middleIndex];
+}
 
-    if (mainNumericCollection.length !== seriesElementCount) {
-        console.error(`Data mismatch: Declared element count (${seriesElementCount}) does not match the actual number of elements provided (${mainNumericCollection.length}).`);
-        return;
-    }
+processInputData(readInputFromFile(STANDARD_INPUT_FILE_PATH));
 
-    const compiledSubarrayMedians = [];
+function processInputData(rawDataContent) {
+    const inputLines = rawDataContent.split('\n');
+    const arraySize = parseInteger(inputLines[0]);
+    const dataElements = parseIntegerArray(inputLines[1].split(' '));
 
-    // Iterate through all possible starting indices for subarrays.
-    for (let startIdx = 0; startIdx < seriesElementCount; ++startIdx) {
-        // Iterate through all possible ending indices for subarrays, starting from the current startIdx.
-        for (let endIdx = startIdx; endIdx < seriesElementCount; ++endIdx) {
-            // Extract the current subarray slice. The slice method excludes the end index.
-            const currentSubarraySegment = mainNumericCollection.slice(startIdx, endIdx + 1);
+    const collectedMedians = [];
 
-            // If for some reason the segment is empty, skip processing.
-            if (currentSubarraySegment.length === 0) {
-                continue;
-            }
-
-            // Create a sorted copy of the subarray to find its median without altering the original.
-            const sortedSegmentCopy = [...currentSubarraySegment].sort((aVal, bVal) => aVal - bVal);
-
-            // Calculate the length of the current segment.
-            const currentSegmentLength = sortedSegmentCopy.length;
-
-            // Determine the middle index to retrieve the median.
-            // For 0-indexed arrays, Math.floor(length / 2) correctly identifies the middle element
-            // (or the lower of two middle elements for even-length arrays).
-            const medianPosition = Math.floor(currentSegmentLength / 2);
-
-            // Add the found median value to our collection of medians.
-            compiledSubarrayMedians.push(sortedSegmentCopy[medianPosition]);
+    for (let startIndex = 0; startIndex < arraySize; startIndex++) {
+        for (let endIndex = startIndex; endIndex < arraySize; endIndex++) {
+            const currentSubarray = dataElements.slice(startIndex, endIndex + 1);
+            const currentSubarrayMedian = determineArrayMedian(currentSubarray);
+            collectedMedians.push(currentSubarrayMedian);
         }
     }
 
-    // Before sorting, ensure we have collected any medians.
-    if (compiledSubarrayMedians.length === 0) {
-        console.warn("No subarray medians were generated. Cannot proceed to find the overall median.");
-        return;
-    }
+    const allMediansSorted = collectedMedians.sort((valA, valB) => valA - valB);
 
-    // Sort the entire collection of medians derived from all subarrays.
-    const finalSortedMediansList = compiledSubarrayMedians.sort((valA, valB) => valA - bVal);
+    const totalSubarrayCount = arraySize * (arraySize + 1) / 2;
+    const finalMedianResultIndex = Math.floor(totalSubarrayCount / 2);
 
-    // Calculate the total number of possible subarrays, which is N * (N + 1) / 2.
-    const totalPossibleSubarrays = (seriesElementCount * (seriesElementCount + 1)) / 2;
-
-    // Determine the median index for this final sorted list of medians.
-    const overallMedianIndex = Math.floor(totalPossibleSubarrays / 2);
-
-    // Final validation for the computed index.
-    if (overallMedianIndex < 0 || overallMedianIndex >= finalSortedMediansList.length) {
-        console.error(`Indexing error: Calculated overall median index (${overallMedianIndex}) is out of bounds for the final median list (length ${finalSortedMediansList.length}).`);
-        return;
-    }
-
-    // Output the final median of medians.
-    console.log(finalSortedMediansList[overallMedianIndex]);
+    console.log(allMediansSorted[finalMedianResultIndex]);
 }

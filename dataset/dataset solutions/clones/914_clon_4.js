@@ -1,87 +1,74 @@
-const inputContent = require("fs").readFileSync("/dev/stdin", "utf8");
-const lineFragments = inputContent.split("\n");
-
-const isVowelChar = (charUnit) => /[aiueo]/.test(charUnit);
-
-const alterLexicalUnit = (sourceString, symbolIndex = 0, accumulatedText = "", shouldIncludeNext = true) => {
-    if (symbolIndex >= sourceString.length) {
-        return accumulatedText;
-    }
-
-    const currentSymbol = sourceString[symbolIndex];
-    let furtherText = accumulatedText;
-    let nextInclusionFlag = shouldIncludeNext;
-
-    if (nextInclusionFlag) {
-        furtherText += currentSymbol;
-        nextInclusionFlag = false;
-    }
-
-    if (isVowelChar(currentSymbol)) {
-        nextInclusionFlag = true;
-    }
-
-    return alterLexicalUnit(sourceString, symbolIndex + 1, furtherText, nextInclusionFlag);
-};
-
-const determineSharedPrefix = (firstUnit, secondUnit, comparisonIndex = 0) => {
-    if (comparisonIndex >= firstUnit.length || comparisonIndex >= secondUnit.length) {
-        if (firstUnit.length === secondUnit.length) {
-            return -1;
+const processIdentifier = (sourceIdentifier) => {
+    const vowelSet = new Set(['a', 'i', 'u', 'e', 'o']);
+    const { finalForm } = Array.from(sourceIdentifier).reduce((accumulator, currentSymbol) => {
+        if (accumulator.appendCurrent) {
+            accumulator.finalForm += currentSymbol;
+            accumulator.appendCurrent = false;
         }
-        return Math.min(firstUnit.length, secondUnit.length);
-    }
-
-    if (firstUnit[comparisonIndex] !== secondUnit[comparisonIndex]) {
-        return comparisonIndex;
-    }
-
-    return determineSharedPrefix(firstUnit, secondUnit, comparisonIndex + 1);
+        if (vowelSet.has(currentSymbol)) {
+            accumulator.appendCurrent = true;
+        }
+        return accumulator;
+    }, { finalForm: '', appendCurrent: true });
+    return finalForm;
 };
 
-const evaluateMaximalOverlap = (subjectSequence) => {
-    if (subjectSequence.length <= 1) return 0;
+const findCommonPrefixLength = (firstTerm, secondTerm) => {
+    const commonSpan = Math.min(firstTerm.length, secondTerm.length);
+    const divergencePoint = Array.from({ length: commonSpan }, (_, k) => k)
+        .find(pos => firstTerm[pos] !== secondTerm[pos]);
 
-    const overlapMetrics = subjectSequence.slice(1).map((currentElement, idx) => {
-        const priorElement = subjectSequence[idx];
-        return determineSharedPrefix(priorElement, currentElement);
-    });
+    if (divergencePoint !== undefined) {
+        return divergencePoint;
+    } else {
+        if (firstTerm.length === secondTerm.length) {
+            return -1;
+        } else {
+            return commonSpan;
+        }
+    }
+};
 
-    if (overlapMetrics.some(val => val === -1)) {
+const determineMaxCommonality = (processedIdentifiers) => {
+    if (processedIdentifiers.length <= 1) {
+        return 0;
+    }
+
+    const adjacentPairs = processedIdentifiers.slice(1).map((identifier, idx) => [processedIdentifiers[idx], identifier]);
+
+    const prefixResults = adjacentPairs.map(([prevIdentifier, currentIdentifier]) =>
+        findCommonPrefixLength(prevIdentifier, currentIdentifier)
+    );
+
+    if (prefixResults.some(val => val === -1)) {
         return -2;
     }
 
-    return Math.max(...overlapMetrics);
+    return Math.max(0, ...prefixResults);
 };
 
-const processAllChunks = (fragments) => {
-    const computedOutcomes = [];
-    let segmentPointer = 0;
+function* generateInputSets(allLines) {
+    let currentLineIndex = 0;
+    while (currentLineIndex < allLines.length) {
+        const entryCount = +allLines[currentLineIndex++];
+        if (entryCount === 0) break;
 
-    const handleNextSegment = () => {
-        if (segmentPointer >= fragments.length) {
-            return;
+        const currentSetOfNames = [];
+        for (let k = 0; k < entryCount; k++) {
+            currentSetOfNames.push(allLines[currentLineIndex++]);
         }
+        yield currentSetOfNames;
+    }
+}
 
-        const chunkQuantity = parseInt(fragments[segmentPointer++], 10);
+const rawLines = require("fs").readFileSync("/dev/stdin", "utf8").split("\n");
 
-        if (chunkQuantity === 0) {
-            return;
-        }
+for (const originalNames of generateInputSets(rawLines)) {
+    const processedIdentifiers = originalNames
+        .map(processIdentifier)
+        .sort();
 
-        const rawIdentifiers = fragments.slice(segmentPointer, segmentPointer + chunkQuantity);
-        segmentPointer += chunkQuantity;
+    const maxCommonality = determineMaxCommonality(processedIdentifiers);
 
-        const processedLabels = rawIdentifiers.map(alterLexicalUnit).sort();
-        const segmentOutcome = evaluateMaximalOverlap(processedLabels);
-        computedOutcomes.push(segmentOutcome + 1);
-
-        handleNextSegment();
-    };
-
-    handleNextSegment();
-    return computedOutcomes;
-};
-
-const finalResults = processAllChunks(lineFragments);
-finalResults.forEach(outputValue => console.log(outputValue));
+    console.log(maxCommonality + 1);
+}

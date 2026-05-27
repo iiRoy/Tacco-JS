@@ -1,20 +1,32 @@
-const initiateSequence = (incomingSource) => {
-    const numericalBoundary = +incomingSource.replace(/\s/g, '');
-    const ultimateOutcome = ascertainEightFactorOddCount(numericalBoundary);
-    process.stdout.write(String(ultimateOutcome));
-};
+function displayResult(content) {
+    console.log(content);
+}
 
-const enumerateDivisors = (figure) => {
-    return Array.from({ length: figure }, (_, index) => index + 1)
-                .filter(candidate => figure % candidate === 0)
-                .length;
-};
+function countDivisors(numVal) {
+    if (numVal === 1) return 1;
+    let currentDivisorCount = 0;
+    const limit = Math.sqrt(numVal);
+    for (let k = 1; k <= limit; k++) {
+        if (numVal % k === 0) {
+            if (k * k === numVal) {
+                currentDivisorCount++;
+            } else {
+                currentDivisorCount += 2;
+            }
+        }
+    }
+    return currentDivisorCount;
+}
 
-const ascertainEightFactorOddCount = (limitValue) => {
-    return Array.from({ length: limitValue }, (_, currentIdx) => currentIdx + 1)
-                .filter(item => item % 2 !== 0)
-                .filter(oddItem => enumerateDivisors(oddItem) === 8)
-                .length;
-};
+function processInput(rawInput) {
+    const upperBound = parseInt(rawInput.trim(), 10);
 
-initiateSequence(require("node:fs").readFileSync("/dev/stdin", "utf8"));
+    const finalTally = Array.from({ length: upperBound }, (_, idx) => idx + 1)
+        .filter(num => num % 2 !== 0)
+        .filter(num => countDivisors(num) === 8)
+        .length;
+
+    displayResult(finalTally);
+}
+
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

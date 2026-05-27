@@ -1,50 +1,43 @@
-let incomingContent = '';
+var inputLines = '';
 
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
-process.stdin.on('data', (part) => {
-  incomingContent += part;
+process.stdin.on('data', function(chunk) {
+  inputLines += chunk;
 });
-process.stdin.on('end', () => {
-  const allTextLines = incomingContent.split(/\r\n|\r|\n/g);
-  beginDataProcessing(allTextLines);
+process.stdin.on('end', function() {
+  inputLines = inputLines.split(/\r\n|\r|\n/g);
+  processInputData();
 });
 
-const beginDataProcessing = (sourceTextUnits) => {
-  const processNextSegment = (unitCollection, currentUnitIndex) => {
-    const definitionCount = Number(unitCollection[currentUnitIndex]);
-    if (!definitionCount) {
-      return;
-    }
+function processInputData() {
+  let currentLineSource = inputLines;
 
-    const consumeUnits = (startPoint, countAmount, processingFunction) => {
-      const extractedUnits = unitCollection.slice(startPoint, startPoint + countAmount).map(processingFunction);
-      return { extracted: extractedUnits, nextPosition: startPoint + countAmount };
-    };
+  const readNumericValue = () => parseInt(currentLineSource.shift(), 10);
 
-    const { extracted: mappingEntries, nextPosition: afterMappings } = consumeUnits(
-      currentUnitIndex + 1,
-      definitionCount,
-      (singleLine) => singleLine.split(' ')
-    );
-
-    const translationRegistry = new Map(mappingEntries);
-
-    const outputItemCount = Number(unitCollection[afterMappings]);
-    const { extracted: sourceKeysForOutput, nextPosition: afterKeysForOutput } = consumeUnits(
-      afterMappings + 1,
-      outputItemCount,
-      (singleLine) => singleLine
-    );
-
-    const transformedItems = sourceKeysForOutput.map((queryKey) =>
-      translationRegistry.has(queryKey) ? translationRegistry.get(queryKey) : queryKey
-    );
-
-    console.log(transformedItems.join(''));
-
-    processNextSegment(unitCollection, afterKeysForOutput);
+  const buildMappingStructure = (entryCount) => {
+    return Array.from({ length: entryCount }).reduce((accumulatorMap, _, currentIndex) => {
+      const entryParts = currentLineSource.shift().split(' ');
+      accumulatorMap.set(entryParts[0], entryParts[1]);
+      return accumulatorMap;
+    }, new Map());
   };
 
-  processNextSegment(sourceTextUnits, 0);
-};
+  const transformAndCombineStrings = (stringCount, translationMap) => {
+    return Array.from({ length: stringCount }).map((_, currentIndex) => {
+      const originalString = currentLineSource.shift();
+      return translationMap.get(originalString) || originalString;
+    }).join('');
+  };
+
+  let numDefinitions;
+  while (!!(numDefinitions = readNumericValue())) {
+    const translationRegistry = buildMappingStructure(numDefinitions);
+
+    const numStringsToProcess = readNumericValue();
+
+    const combinedOutput = transformAndCombineStrings(numStringsToProcess, translationRegistry);
+
+    console.log(combinedOutput);
+  }
+}

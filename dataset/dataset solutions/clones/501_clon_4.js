@@ -1,148 +1,137 @@
-const dataSource = require('fs').readFileSync('/dev/stdin', 'utf8');
+const acquireInput = (sourcePath) => {
+    return require('fs').readFileSync(sourcePath, 'utf8');
+};
 
-class PathMinimizer {
-    constructor() {
-        this.dataHeap = [];
-    }
-
-    addSegment(segment) {
-        this.dataHeap.push(segment);
-        this._heapifyUp();
-    }
-
-    extractMinSegment() {
-        const smallestSegment = this.dataHeap[0];
-        const lastSegment = this.dataHeap.pop();
-        if (this.dataHeap.length > 0) {
-            this.dataHeap[0] = lastSegment;
-            this._heapifyDown();
-        }
-        return smallestSegment;
-    }
-
-    hasSegments() {
-        return this.dataHeap.length > 0;
-    }
-
-    _heapifyUp() {
-        let currentIdx = this.dataHeap.length - 1;
-        const currentSegment = this.dataHeap[currentIdx];
-        while (currentIdx > 0) {
-            let parentIdx = Math.floor((currentIdx - 1) / 2);
-            let parentSegment = this.dataHeap[parentIdx];
-            if (currentSegment[0] >= parentSegment[0]) break;
-            this.dataHeap[parentIdx] = currentSegment;
-            this.dataHeap[currentIdx] = parentSegment;
-            currentIdx = parentIdx;
-        }
-    }
-
-    _heapifyDown() {
-        let currentIdx = 0;
-        const heapLength = this.dataHeap.length;
-        const currentSegment = this.dataHeap[0];
-        while (true) {
-            let leftChildIdx = 2 * currentIdx + 1;
-            let rightChildIdx = 2 * currentIdx + 2;
-            let leftChildSegment, rightChildSegment;
-            let swapIdx = null;
-
-            if (leftChildIdx < heapLength) {
-                leftChildSegment = this.dataHeap[leftChildIdx];
-                if (leftChildSegment[0] < currentSegment[0]) {
-                    swapIdx = leftChildIdx;
-                }
-            }
-            if (rightChildIdx < heapLength) {
-                rightChildSegment = this.dataHeap[rightChildIdx];
-                if (
-                    (swapIdx === null && rightChildSegment[0] < currentSegment[0]) ||
-                    (swapIdx !== null && rightChildSegment[0] < leftChildSegment[0])
-                ) {
-                    swapIdx = rightChildIdx;
-                }
-            }
-            if (swapIdx === null) break;
-            this.dataHeap[currentIdx] = this.dataHeap[swapIdx];
-            this.dataHeap[swapIdx] = currentSegment;
-            currentIdx = swapIdx;
-        }
-    }
-}
-
-const executeGraphCalculations = (sourceData) => {
-    const inputLines = sourceData.split('\n').filter(lineContent => lineContent.trim() !== '');
-    let currentLineIndex = 0;
-    const finalOutputs = [];
+const parseProblemSets = (inputContent) => {
+    const inputLines = inputContent.trim().split("\n");
+    const problemSets = [];
+    let currentLineIdx = 0;
 
     while (true) {
-        const dimensions = inputLines[currentLineIndex++].split(' ').map(Number);
-        const nodeCount = dimensions[0];
-        const linkCount = dimensions[1];
+        const dimensions = inputLines[currentLineIdx++].split(" ").map(Number);
+        const [vertexCount, edgeQuantity] = dimensions;
+        if (vertexCount === 0 && edgeQuantity === 0) break;
 
-        if (nodeCount === 0 && linkCount === 0) {
-            break;
+        const edgeList = [];
+        for (let i = 0; i < edgeQuantity; i++) {
+            edgeList.push(inputLines[currentLineIdx++].split(" ").map(Number));
         }
+        problemSets.push({ vertexCount, edgeQuantity, edgeList });
+    }
+    return problemSets;
+};
 
-        const startNode = 1;
-        const targetNode = nodeCount;
-        const maxZeroCostAllowance = 2;
+const computeMinimumPath = (vertexCount, edgeQuantity, edgeList) => {
+    const originVertex = 1;
+    const destinationVertex = vertexCount;
 
-        const connectionMap = Array.from({ length: nodeCount + 1 }, () => []);
-        for (let idx = 0; idx < linkCount; idx++) {
-            const linkDetail = inputLines[currentLineIndex++].split(' ').map(Number);
-            const nodeA = linkDetail[0];
-            const nodeB = linkDetail[1];
-            const costVal = linkDetail[2];
-            connectionMap[nodeA].push([nodeB, costVal]);
-            connectionMap[nodeB].push([nodeA, costVal]);
-        }
+    // DP table: Map<vertex, [costState0, costState1, costState2]>
+    // minPathStates.get(node) returns an array [cost_state0, cost_state1, cost_state2]
+    const minPathStates = new Map();
+    for (let i = 1; i <= vertexCount; i++) {
+        minPathStates.set(i, [Infinity, Infinity, Infinity]);
+    }
+    minPathStates.get(originVertex)[0] = 0;
 
-        const pathCosts = Array.from({ length: nodeCount + 1 }, () =>
-            Array(maxZeroCostAllowance + 1).fill(Number.MAX_SAFE_INTEGER)
-        );
+    // Set of nodes whose costs have been updated and need to be processed in the current wave
+    let processingQueue = new Set([originVertex]);
 
-        const pathQueue = new PathMinimizer();
+    // Bellman-Ford-like relaxation with a queue (Set)
+    // The original code's `obj` behavior (preventing processing the same node multiple times in one `bomb` iteration)
+    // is implicitly handled by `Set` uniqueness in `processingQueue`.
+    // The critical `dp[d][1]=Infinity` reset for every edge is explicitly replicated.
 
-        pathCosts[startNode][0] = 0;
-        pathQueue.addSegment([0, startNode, 0]); // [accumulatedCost, currentNode, zeroCostUsed]
+    let loopCounter = 0;
+    // Maximum iterations for convergence in a Bellman-Ford-like algorithm
+    // (vertexCount * number_of_states) to account for path length and state changes.
+    const maxRelaxations = vertexCount * 3; 
 
-        while (pathQueue.hasSegments()) {
-            const [currentPathCost, focusNode, currentZeroCostUsed] = pathQueue.extractMinSegment();
+    while (processingQueue.size > 0 && loopCounter < maxRelaxations) {
+        const nextProcessingQueue = new Set();
+        // Convert the Set to an Array to iterate over a fixed snapshot for the current wave.
+        const currentWaveVertices = Array.from(processingQueue); 
 
-            if (currentPathCost > pathCosts[focusNode][currentZeroCostUsed]) {
-                continue;
-            }
+        for (const currentVtx of currentWaveVertices) {
+            // The original code iterates over ALL edges (`ary.forEach`) for each `S` (currentVtx).
+            // Inside that loop, it resets `dp[d][1]`.
+            // To replicate this exact behavior, we must iterate over the full `edgeList` here.
+            for (const [u_orig, v_orig, weightOfEdge] of edgeList) {
+                // CRITICAL BEHAVIOR REPLICATION:
+                // The original code `dp[d][1]=Infinity;` is executed for every edge in `ary.forEach`.
+                // This means `minPathStates.get(destinationVertex)[1]` is reset `edgeQuantity` times
+                // for EACH `currentVtx` processed in `currentWaveVertices`.
+                minPathStates.get(destinationVertex)[1] = Infinity;
 
-            for (const [connectedNode, connectionCost] of connectionMap[focusNode]) {
-                // Scenario 1: Traverse link normally
-                if (pathCosts[focusNode][currentZeroCostUsed] + connectionCost < pathCosts[connectedNode][currentZeroCostUsed]) {
-                    pathCosts[connectedNode][currentZeroCostUsed] = pathCosts[focusNode][currentZeroCostUsed] + connectionCost;
-                    pathQueue.addSegment([pathCosts[connectedNode][currentZeroCostUsed], connectedNode, currentZeroCostUsed]);
+                let sourceNodeForRelaxation = -1;
+                let targetNodeForRelaxation = -1;
+
+                // Determine if the current `currentVtx` is one end of the `(u_orig, v_orig)` edge.
+                // This simulates the `if (a==S)` or `else if (b==S)` logic from the original.
+                if (u_orig === currentVtx) {
+                    sourceNodeForRelaxation = u_orig;
+                    targetNodeForRelaxation = v_orig;
+                } else if (v_orig === currentVtx) {
+                    sourceNodeForRelaxation = v_orig; // currentVtx is the source for relaxation
+                    targetNodeForRelaxation = u_orig; // The other end is the target
                 }
 
-                // Scenario 2: Traverse link as a zero-cost link
-                if (currentZeroCostUsed < maxZeroCostAllowance) {
-                    const nextZeroCostUsed = currentZeroCostUsed + 1;
-                    if (pathCosts[focusNode][currentZeroCostUsed] < pathCosts[connectedNode][nextZeroCostUsed]) {
-                        pathCosts[connectedNode][nextZeroCostUsed] = pathCosts[focusNode][currentZeroCostUsed];
-                        pathQueue.addSegment([pathCosts[connectedNode][nextZeroCostUsed], connectedNode, nextZeroCostUsed]);
+                // If this edge is connected to `currentVtx`, apply relaxation.
+                if (sourceNodeForRelaxation !== -1) {
+                    const sourceStates = minPathStates.get(sourceNodeForRelaxation);
+                    const targetStates = minPathStates.get(targetNodeForRelaxation);
+                    let stateChanged = false;
+
+                    // Relaxation for state 0: Standard shortest path
+                    // Original: dp[b][0]=Math.min(dp[b][0],dp[a][0]+f);
+                    if (sourceStates[0] !== Infinity && sourceStates[0] + weightOfEdge < targetStates[0]) {
+                        targetStates[0] = sourceStates[0] + weightOfEdge;
+                        stateChanged = true;
+                    }
+
+                    // Relaxation for state 1: Special transition (cost is source's state 0 cost, ignoring edge weight)
+                    // Original: dp[b][1]=Math.min(dp[b][1],dp[a][0]);
+                    if (sourceStates[0] !== Infinity && sourceStates[0] < targetStates[1]) {
+                        targetStates[1] = sourceStates[0];
+                        stateChanged = true;
+                    }
+
+                    // Relaxation for state 2: Special transition (cost is source's state 1 cost, ignoring edge weight)
+                    // Original: dp[b][2]=Math.min(dp[b][2],dp[a][1]);
+                    if (sourceStates[1] !== Infinity && sourceStates[1] < targetStates[2]) {
+                        targetStates[2] = sourceStates[1];
+                        stateChanged = true;
+                    }
+
+                    // Relaxation for state 2: Normal transition (cost is source's state 2 cost + edge weight)
+                    // Original: dp[b][2]=Math.min(dp[b][2],dp[a][2]+f);
+                    if (sourceStates[2] !== Infinity && sourceStates[2] + weightOfEdge < targetStates[2]) {
+                        targetStates[2] = sourceStates[2] + weightOfEdge;
+                        stateChanged = true;
+                    }
+
+                    if (stateChanged) {
+                        nextProcessingQueue.add(targetNodeForRelaxation);
                     }
                 }
             }
         }
-
-        let overallMinimum = Number.MAX_SAFE_INTEGER;
-        overallMinimum = Math.min(overallMinimum, pathCosts[targetNode][0]);
-        // The original code effectively makes dp[d][1] = Infinity due to a repetitive reset operation.
-        // Thus, paths using exactly one zero-cost edge to the target are not considered for the final answer.
-        overallMinimum = Math.min(overallMinimum, pathCosts[targetNode][2]);
-
-        finalOutputs.push(overallMinimum);
+        processingQueue = nextProcessingQueue;
+        loopCounter++;
     }
 
-    return finalOutputs.join('\n');
+    let finalMinimumCost = Infinity;
+    const destinationStates = minPathStates.get(destinationVertex);
+    
+    // Original: dp[d].forEach(function(v,i){ ans=Math.min(ans,v); });
+    finalMinimumCost = Math.min(finalMinimumCost, destinationStates[0]);
+    finalMinimumCost = Math.min(finalMinimumCost, destinationStates[1]);
+    finalMinimumCost = Math.min(finalMinimumCost, destinationStates[2]);
+
+    return finalMinimumCost;
 };
 
-const finalOutputString = executeGraphCalculations(dataSource);
-console.log(finalOutputString);
+// Main execution flow
+const allProblemSets = parseProblemSets(acquireInput('/dev/stdin'));
+for (const problemData of allProblemSets) {
+    console.log(computeMinimumPath(problemData.vertexCount, problemData.edgeQuantity, problemData.edgeList));
+}

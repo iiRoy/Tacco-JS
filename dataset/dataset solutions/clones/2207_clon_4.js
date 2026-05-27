@@ -1,41 +1,40 @@
-const determineEfficiency = (currentLevel, expenditure, reward) => {
-  const effectiveExpenditure = Math.min(expenditure, currentLevel);
-  return (currentLevel / effectiveExpenditure) * reward;
+'use strict';
+
+const calculatePriority = (resourceLevel, costComponent, valueComponent) => {
+  const effectiveCost = Math.min(costComponent, resourceLevel);
+  return resourceLevel / effectiveCost * valueComponent;
 };
 
-const runSimulation = (currentResourceLevel, totalRewardAcquired, potentialActions) => {
-  if (currentResourceLevel <= 0) {
-    return totalRewardAcquired;
+function processInputData(rawDataString) {
+  let processedLines = rawDataString.trim().split('\n');
+  const initialParameters = processedLines.shift().split(' ').map(Number);
+  let currentResourceLevel = initialParameters[0];
+  const availableActions = processedLines.map(line => line.split(' ').map(Number));
+
+  let accumulatedReward = 0;
+
+  while (currentResourceLevel > 0) {
+    let minimumPriorityScore = Infinity;
+    let bestActionCandidate = null;
+
+    for (let i = 0; i < availableActions.length; i++) {
+      const currentAction = availableActions[i];
+      const actionCost = currentAction[0];
+      const actionValue = currentAction[1];
+
+      const currentActionPriority = calculatePriority(currentResourceLevel, actionCost, actionValue);
+
+      if (currentActionPriority < minimumPriorityScore) {
+        minimumPriorityScore = currentActionPriority;
+        bestActionCandidate = currentAction;
+      }
+    }
+
+    currentResourceLevel -= bestActionCandidate[0];
+    accumulatedReward += bestActionCandidate[1];
   }
 
-  let optimalAction = null;
-  let minimumEfficiency = Infinity;
+  console.log({ans: accumulatedReward});
+}
 
-  potentialActions.forEach(option => {
-    const [optionCost, optionReward] = option;
-    const currentEfficiency = determineEfficiency(currentResourceLevel, optionCost, optionReward);
-
-    if (currentEfficiency < minimumEfficiency) {
-      minimumEfficiency = currentEfficiency;
-      optimalAction = option;
-    }
-  });
-
-  const [chosenCost, chosenReward] = optimalAction;
-  const nextResourceAmount = currentResourceLevel - chosenCost;
-  const nextTotalReward = totalRewardAcquired + chosenReward;
-
-  return runSimulation(nextResourceAmount, nextTotalReward, potentialActions);
-};
-
-const processInputAndExecute = (inputSource) => {
-  const dataLines = inputSource.trim().split('\n');
-  const initialParameters = dataLines.shift().split(' ').map(Number);
-  const startingResource = initialParameters[0];
-  const availableOptions = dataLines.map(line => line.split(' ').map(Number));
-
-  const finalResult = runSimulation(startingResource, 0, availableOptions);
-  console.log({ accumulatedValue: finalResult });
-};
-
-processInputAndExecute(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

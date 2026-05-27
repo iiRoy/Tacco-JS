@@ -1,61 +1,50 @@
-const retrieveExternalData = (locationIdentifier) => require('node:fs').readFileSync(locationIdentifier, 'utf8');
+const fileData = require('fs').readFileSync('/dev/stdin', 'utf8');
+const dataLines = fileData.trim().split('\n');
 
-const transformRawData = (sourceText) => {
-    const segmentedLines = sourceText.trim().split('\n');
-    const headCount = parseInt(segmentedLines.splice(0, 1)[0], 10); // First number, often 'n', is not used by the original logic.
-    const initialElements = segmentedLines.splice(0, 1)[0].split(' ').map(entry => parseInt(entry, 10));
-    const commandQuantity = parseInt(segmentedLines.splice(0, 1)[0], 10);
-    const operationSequences = segmentedLines.map(lineContent => lineContent.split(' ').map(val => parseInt(val, 10) - 1));
-    operationSequences.unshift([0, 0]); // Prepend a no-op command to align with iteration index
-    return { initialElements, commandQuantity, operationSequences };
-};
+const initialElementCount = parseInt(dataLines.shift(), 10);
+const initialSequence = dataLines.shift().split(' ').map(Number);
+const queryOperationCount = parseInt(dataLines.shift(), 10);
+const exchangeInstructions = dataLines.map(line => line.split(' ').map(Number).map(val => val - 1));
 
-const executeTransformationSearch = (initialElements, commandQuantity, operationSequences) => {
-    const orderedElements = [...initialElements].sort((valA, valB) => valA - valB);
+exchangeInstructions.unshift([0, 0]);
 
-    const currentDiscrepancies = {};
-    const desiredDiscrepancies = {};
+const sortedReferenceSequence = [...initialSequence].sort((valA, valB) => valA - valB);
 
-    initialElements.forEach((element, position) => {
-        if (element !== orderedElements[position]) {
-            currentDiscrepancies[position] = element;
-            desiredDiscrepancies[position] = orderedElements[position];
-        }
-    });
+const currentSparseState = new Map();
+const targetSparseState = new Map();
 
-    const assembleOrderedObjectString = (subjectObject) => {
-        return Object.keys(subjectObject)
-            .sort((keyOne, keyTwo) => parseInt(keyOne, 10) - parseInt(keyTwo, 10))
-            .map(key => subjectObject[key])
-            .join('');
-    };
+initialSequence.forEach((val, idx) => {
+    if (val !== sortedReferenceSequence[idx]) {
+        currentSparseState.set(idx, val);
+        targetSparseState.set(idx, sortedReferenceSequence[idx]);
+    }
+});
 
-    const targetStateString = assembleOrderedObjectString(desiredDiscrepancies);
+const targetCanonicalValues = Array.from(targetSparseState.keys())
+    .sort((keyA, keyB) => keyA - keyB)
+    .map(key => targetSparseState.get(key));
 
-    const outcomeIteration = Array.from({ length: commandQuantity + 1 }).findIndex((_, iterationNumber) => {
-        const currentCommandPair = operationSequences[iterationNumber];
-        const indexOne = currentCommandPair[0];
-        const indexTwo = currentCommandPair[1];
+const areSequencesEquivalent = (seq1, seq2) => seq1.length === seq2.length && seq1.every((val, i) => val === seq2[i]);
 
-        // Perform the swap on the currentDiscrepancies object, replicating original behavior
-        // (including explicit 'undefined' assignment for removed keys, or adding new keys)
-        const valueAtOne = currentDiscrepancies[indexOne];
-        const valueAtTwo = currentDiscrepancies[indexTwo];
-        currentDiscrepancies[indexOne] = valueAtTwo;
-        currentDiscrepancies[indexTwo] = valueAtOne;
+let foundIterationIndex = -1;
 
-        const currentStateString = assembleOrderedObjectString(currentDiscrepancies);
-        return currentStateString === targetStateString;
-    });
+for (let currentIteration = 0; currentIteration < exchangeInstructions.length; currentIteration++) {
+    const [posA, posB] = exchangeInstructions[currentIteration];
 
-    return outcomeIteration;
-};
+    const valueAtA = currentSparseState.has(posA) ? currentSparseState.get(posA) : undefined;
+    const valueAtB = currentSparseState.has(posB) ? currentSparseState.get(posB) : undefined;
 
-const processedData = transformRawData(retrieveExternalData('/dev/stdin'));
-const finalOutcome = executeTransformationSearch(
-    processedData.initialElements,
-    processedData.commandQuantity,
-    processedData.operationSequences
-);
+    currentSparseState.set(posA, valueAtB);
+    currentSparseState.set(posB, valueAtA);
 
-process.stdout.write(String(finalOutcome) + '\n');
+    const currentCanonicalValues = Array.from(currentSparseState.keys())
+        .sort((keyA, keyB) => keyA - keyB)
+        .map(key => currentSparseState.get(key));
+
+    if (areSequencesEquivalent(currentCanonicalValues, targetCanonicalValues)) {
+        foundIterationIndex = currentIteration;
+        break;
+    }
+}
+
+console.log(foundIterationIndex);

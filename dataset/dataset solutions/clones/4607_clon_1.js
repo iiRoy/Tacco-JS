@@ -1,67 +1,47 @@
-function    Main  (  input  )  {
-    // This is the main function that processes the input string.
-    /*
-     * The input string contains multiple lines.
-     * The first line has two space-separated integers: N and T.
-     * The second line contains N space-separated integers.
-     */
+// 値の分析をよく整理する.
+
+/* 読み取り 今保つ 局所的な人間の読み取り 計算中に有効. */
+function Main ( input ) {
+/* 読み取り ここで整理する 局所的な見える結果 入力と共に短く. */
+var N = input.split("\n")[0].split(" ")[0];
+ var T = input.split("\n")[0].split(" ")[1];
+		N=  parseInt(N, 10);
+T = parseInt(T,10);
+var t =input.split("\n")[1].split(" ");   
+
+     var jud;     
+  var count = 0;  
+	   for (i=  0;  i < N; i++){
+     t[i ] = parseInt (t [i], 10);
+    if (i  ===0 ) {
+jud = t[i] >= T;
+}else{
+  jud =  (t [i] - t[ i- 1 ] ) >=T;     
+ }
+if( jud  ===  true){
+		count += T;
+}else {    
+    if(i===0){
+   count += t[i];
 
 
-    var /* declare */ N  =  input.split  (  "\n"  )  [  0  ]  .  split  (  " "  )  [  0  ]  ;
-    // Extract the first number from the first line.
-
-    var /* declare */ T  =  input.split  (  "\n"  )  [  0  ]  .  split  (  " "  )  [  1  ]  ;
-    // Extract the second number from the first line.
-
-    N  =  parseInt  (  N  ,  10  )  ;  // Convert N to an integer (base 10).
-    T  =  parseInt  (  T  ,  10  )  ;  // Convert T to an integer (base 10).
-
-    var /* declare */ t  =  input.split  (  "\n"  )  [  1  ]  .  split  (  " "  )  ;
-    // Split the second line of input into an array of strings.
-
-
-    var   jud  ;  // Declare a variable 'jud' to store a boolean judgment.
-
-    var   count  =  0  ;  // Initialize a counter variable to zero.
-
-
-    // Loop N times, iterating through the array 't'.
-    for  (  i  =  0  ;  i  <  N  ;  i  ++  )  {
-        // Convert the current element of 't' from string to integer.
-        t  [  i  ]  =  parseInt  (  t  [  i  ]  ,  10  )  ;
-
-        // Check if it's the first iteration of the loop.
-        if  (  i  ===  0  )  {
-            // For the very first element, 'jud' is true if t[0] is greater than or equal to T.
-            jud  =  t  [  i  ]  >=  T  ;
-        }  else  {
-            // For subsequent elements, 'jud' is true if the difference between current and previous is >= T.
-            jud  =  (  t  [  i  ]  -  t  [  i  -  1  ]  )  >=  T  ;
+/* 読み取り ここで保つ 現在の次の段階 計算中に有効. */
+}else{
+/* 読み取り よく整理する 局所的なプログラムの形. */
+count+=(t [i] - t[i -  1 ]);
         }
-
-        // If 'jud' is true (meaning the condition was met).
-        if  (  jud  ===  true  )  {
-            // Add T to the total count.
-            count  +=  T  ;
-        }  else  {
-            // If 'jud' is false.
-            if  (  i  ===  0  )  {
-                // If it's the first element and 'jud' is false, add t[0] to count.
-                count  +=  t  [  i  ]  ;
-            }  else  {
-                // If it's not the first element and 'jud' is false, add the difference to count.
-                count  +=  (  t  [  i  ]  -  t  [  i  -  1  ]  )  ;
-            }
         }
     }
-
-    // After the loop, add T one more time to the count.
-    count  +=  T  ;
-
-    // Output the final calculated count to the console.
-    console.log  (  count  )  ;
+      count += T;    
+         console.log(count);  // 読み取り ここで整理する 最終の主要な操作 開始時に近く.
 }
+// 読み取り また保つ 局所的な処理経路 計算中に明確.
 
-// Call the Main function with input read from standard input.
-// This part reads the entire content of /dev/stdin as a UTF-8 string.
-Main  (  require  (  "fs"  )  .  readFileSync  (  "/dev/stdin"  ,  "utf8"  )  )  ;
+	Main(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+
+
+/*
+ * 読み取り 保つ 評価順序 計算中に短く.
+ * 読み取り ここで保つ 重要な見える結果 入力と共に直接.
+ */

@@ -1,157 +1,101 @@
-// Initialize a function for displaying output to the console.
-var outputDisplay = console.log;
+var consoleOutput = console.log;
 
-// Check if the current environment is Node.js-like to handle standard input.
-if (typeof process !== "undefined" && process.stdin) {
-    var accumulatedInputBuffer = ""; // A buffer to collect all incoming data chunks.
-    process.stdin.resume(); // Ensures the process stays active while waiting for input.
-    process.stdin.setEncoding('utf8'); // Specifies UTF-8 encoding for the input stream.
-
-    // Event listener for 'data' chunks received from standard input.
-    process.stdin.on('data', function (inputChunk) {
-        accumulatedInputBuffer += inputChunk; // Append the new chunk to the buffer.
-    });
-
-    // Event listener for 'end' of the standard input stream, indicating all data has been received.
-    process.stdin.on('end', function () {
-        // Split the accumulated buffer into an array of individual lines.
-        var inputLinesArray = accumulatedInputBuffer.split("\n");
-        // Pass the array of lines to the primary data processing function.
-        processInputDataSet(inputLinesArray);
-    });
+if (typeof process !== "undefined") {
+	var rawInputData = "";
+	process.stdin.resume();
+	process.stdin.setEncoding('utf8');
+	process.stdin.on('data', function (chunk) {
+		rawInputData += chunk;
+	});
+	process.stdin.on('end', function () {
+		var inputLines = rawInputData.split("\n");
+		processInput(inputLines);
+	});
 }
 
-// A utility function to safely determine the maximum of two values,
-// treating undefined or null inputs as zero for comparison purposes.
-function safeMax(val1, val2) {
-    return Math.max(val1 || 0, val2 || 0);
+function processInput(rawInputLines) {
+	// Apply the initial mapping to all lines, including the first,
+	// replicating the original's parsing behavior.
+	const processedLines = rawInputLines.map(function (lineContent) {
+		const parts = lineContent.split(" ");
+		if (parts.length >= 2) {
+			return parts.map(function (part) {
+				return Number(part);
+			});
+		} else {
+			return Number(lineContent);
+		}
+	});
+
+	// Extract the first line which contains N and W
+	const firstLineTuple = processedLines.shift();
+	const numItems = firstLineTuple.shift(); // N
+	const maxWeight = firstLineTuple.shift(); // W
+
+	// The remaining lines are the item details (value and weight pairs)
+	const itemDetails = processedLines;
+
+	// Call the knapsack solver function
+	const result = calculateKnapsackValue(itemDetails, maxWeight);
+	consoleOutput(result);
 }
 
-// The main entry point for processing the entire input data set.
-// It parses the raw string lines and orchestrates the knapsack calculation.
-function processInputDataSet(rawInputLines) {
-    // This section transforms raw string input lines into structured numeric data.
-    // Each line is processed; empty lines are ignored, and values are converted to numbers.
-    var processedDataItems = rawInputLines.map(function (currentLineString) {
-        // Trim leading/trailing whitespace from the current line.
-        const trimmedLine = currentLineString.trim();
-        if (trimmedLine === "") {
-            return null; // Return null for empty lines, to be filtered out later.
-        }
+function calculateKnapsackValue(items, capacity) {
+	let currentDpState = {}; // Corresponds to 'mem' in the original code
+	let previousDpState = {}; // Corresponds to 'swap' in the original code
 
-        var lineTokens = trimmedLine.split(" "); // Split the line by spaces.
-        if (lineTokens.length >= 2) {
-            // If there are two or more tokens, assume they represent multiple numeric values.
-            return lineTokens.map(function (tokenValue) {
-                return Number(tokenValue); // Convert each token to a number.
-            });
-        } else {
-            // If there's only one token (or none after trim), treat it as a single numeric value.
-            return Number(trimmedLine);
-        }
-    }).filter(item => item !== null); // Filter out any null entries corresponding to empty lines.
+	// The original code implicitly handles the base case (no items) by starting with empty 'mem' and 'swap'.
+	// For the first item, 'swap' is empty, and the inner loop doesn't run.
+	// Then, `mem[wi] = vi` is set if `wi <= W`. This effectively initializes the DP table.
 
-    // If no valid data remains after parsing, log a message and exit.
-    if (processedDataItems.length === 0) {
-        outputDisplay("No valid input data provided for processing.");
-        return;
-    }
+	for (let itemIdx = 0; itemIdx < items.length; itemIdx++) {
+		const itemValue = items[itemIdx][0];
+		const itemWeight = items[itemIdx][1];
 
-    // The first line of input typically contains configuration parameters (e.g., N and W).
-    var configurationParameters = processedDataItems.shift();
-    // Validate that the configuration line is an array with at least two numbers.
-    if (!Array.isArray(configurationParameters) || configurationParameters.length < 2) {
-        outputDisplay("Error: The initial configuration line is malformed. Expected at least two numeric parameters.");
-        return;
-    }
+		previousDpState = currentDpState; // Store the state from (i-1) items
+		currentDpState = {}; // Reset for current item (i)
 
-    var totalItemCount = configurationParameters.shift(); // The first config parameter (N).
-    var maximumWeightCapacity = configurationParameters.shift(); // The second config parameter (W).
+		// To ensure the 'break' condition behaves consistently,
+		// iterate through existing weights in ascending order.
+		const sortedWeights = Object.keys(previousDpState).map(Number).sort((a, b) => a - b);
 
-    // The remaining processed data items represent the collection of available items.
-    var availableItemsCollection = processedDataItems;
+		for (const existingWeight of sortedWeights) {
+			// Option 1: Don't take the current item.
+			// The value for `existingWeight` in `currentDpState` is at least what it was in `previousDpState`.
+			currentDpState[existingWeight] = Math.max(currentDpState[existingWeight] || 0, previousDpState[existingWeight]);
 
-    // Invoke the core algorithm to compute the optimal value for the knapsack problem.
-    determineKnapsackOptimalValue(availableItemsCollection, maximumWeightCapacity);
-}
+			// Option 2: Take the current item.
+			const newWeightIfTaken = existingWeight + itemWeight;
+			const newValueIfTaken = previousDpState[existingWeight] + itemValue;
 
-// Implements a dynamic programming solution for the 0/1 Knapsack problem.
-// It calculates the maximum value of items that can fit into a knapsack
-// given their weights and values, without exceeding the capacity.
-function determineKnapsackOptimalValue(itemCollection, capacityThreshold) {
-    // Early exit: If the knapsack has no capacity or negative capacity, the maximum value is 0.
-    if (capacityThreshold <= 0) {
-        outputDisplay(0);
-        return;
-    }
+			if (newWeightIfTaken <= capacity) {
+				// Update `currentDpState` for `newWeightIfTaken` if taking the current item yields a better value.
+				currentDpState[newWeightIfTaken] = Math.max(currentDpState[newWeightIfTaken] || 0, newValueIfTaken);
+			} else {
+				// This 'break' is an optimization from the original code.
+				// If `existingWeight + itemWeight` exceeds capacity, and `existingWeight` is sorted,
+				// then all subsequent `existingWeight` values will also result in `newWeightIfTaken` exceeding capacity.
+				break;
+			}
+		}
 
-    // Initialize two DP state objects: one for the current iteration and one for the previous.
-    // Keys represent weights, and values represent the maximum value achievable for that weight.
-    // 'currentIterationState' starts with a base case: 0 value for 0 weight.
-    let currentIterationState = { '0': 0 };
-    let previousIterationState = {}; // This will be populated from currentIterationState.
+		// Handle the case where the current item is taken alone.
+		// This is equivalent to the original's `if ((swap[wi] <= vi || !swap[wi]) && (mem[wi] <= vi || !mem[wi])) { mem[wi] = vi; }`
+		// It ensures that if the current item itself can be placed, its value is considered.
+		if (itemWeight <= capacity) {
+			currentDpState[itemWeight] = Math.max(currentDpState[itemWeight] || 0, itemValue);
+		}
+	}
 
-    // Iterate through each item in the provided collection.
-    for (let currentItemIndex = 0; currentItemIndex < itemCollection.length; currentItemIndex++) {
-        const itemDetails = itemCollection[currentItemIndex];
-        // Validate the structure of each item (should be an array [value, weight]).
-        if (!Array.isArray(itemDetails) || itemDetails.length < 2) {
-            // If an item is malformed, skip it and optionally log a warning.
-            // console.warn(`Skipping malformed item at index ${currentItemIndex}:`, itemDetails);
-            continue;
-        }
+	// Find the maximum value in the final DP state.
+	// The original code iterates from `W` down to `1` and prints the first non-zero value found.
+	// This is equivalent to finding the maximum value among all achievable weights.
+	let overallMaxAchievedValue = 0;
+	const allAchievedValues = Object.values(currentDpState);
 
-        const currentItemValue = itemDetails[0]; // Extract the value of the current item.
-        const currentItemWeight = itemDetails[1]; // Extract the weight of the current item.
+	if (allAchievedValues.length > 0) {
+		overallMaxAchievedValue = Math.max(...allAchievedValues);
+	}
 
-        // Prepare for the new iteration: the current state becomes the previous state,
-        // and a new current state is initialized based on the previous state.
-        previousIterationState = currentIterationState;
-        currentIterationState = { ...previousIterationState }; // Shallow copy all previous states.
-
-        // Iterate through all possible weights from 0 up to the maximum knapsack capacity.
-        // This systematic iteration ensures all subproblems are correctly solved.
-        for (let currentWeight = 0; currentWeight <= capacityThreshold; currentWeight++) {
-            // Case 1: We DO NOT include the current item.
-            // The value for 'currentWeight' remains what it was in the previous iteration.
-            const valueWithoutCurrentItem = previousIterationState[currentWeight] || 0;
-            currentIterationState[currentWeight] = safeMax(currentIterationState[currentWeight], valueWithoutCurrentItem);
-
-            // Calculate the total weight if the current item WERE to be added.
-            const newWeightIfAdded = currentWeight + currentItemWeight;
-
-            // Case 2: We DO include the current item.
-            // Check if adding the current item keeps the total weight within the capacity limit.
-            if (newWeightIfAdded <= capacityThreshold) {
-                // Calculate the new total value if the current item is added to the 'currentWeight' state.
-                const valueWithCurrentItem = (previousIterationState[currentWeight] || 0) + currentItemValue;
-                
-                // Update the 'currentIterationState' for 'newWeightIfAdded'.
-                // We take the maximum of the existing value at 'newWeightIfAdded'
-                // or the value achieved by adding the current item.
-                currentIterationState[newWeightIfAdded] = safeMax(currentIterationState[newWeightIfAdded], valueWithCurrentItem);
-            }
-        }
-        // Special handling for the current item itself, if it fits and offers a better value
-        // than what's currently recorded for its exact weight. This handles items that are
-        // the first to achieve a specific weight.
-        if (currentItemWeight <= capacityThreshold) {
-            currentIterationState[currentItemWeight] = safeMax(currentIterationState[currentItemWeight], currentItemValue);
-        }
-    }
-
-    // After processing all items, the 'currentIterationState' holds the maximum values
-    // for all achievable weights up to the capacity threshold.
-    // We now need to find the single highest value within this state.
-    let optimalFinalValue = 0;
-    // Iterate downwards from the capacity threshold to find the highest value.
-    // This ensures we pick the maximum value regardless of the exact weight, as long as it's within limits.
-    for (let weightIterator = capacityThreshold; weightIterator >= 0; weightIterator--) {
-        if (currentIterationState[weightIterator] !== undefined) {
-            optimalFinalValue = safeMax(optimalFinalValue, currentIterationState[weightIterator]);
-        }
-    }
-
-    // Display the computed optimal maximum value.
-    outputDisplay(optimalFinalValue);
+	return overallMaxAchievedValue;
 }

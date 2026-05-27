@@ -1,18 +1,11 @@
-function evaluateInput(inputReference) {
-  function obtainDigitSum(charSequence, position) {
-    if (position >= charSequence.length) {
-      return 0;
-    }
-    var numericalValue = charSequence.charCodeAt(position) - 48;
-    return numericalValue + obtainDigitSum(charSequence, position + 1);
+function processInput(dataString) {
+  let digitSum = 0;
+  for (const currentDigit of dataString) {
+    digitSum += Number(currentDigit);
   }
 
-  var finalSum = obtainDigitSum(inputReference, 0);
-
-  if (finalSum % 9 === 0) {
-    console.log("Yes");
-  } else {
-    console.log("No");
-  }
+  const resultPhrase = (digitSum % 9 === 0) ? "Yes" : "No";
+  console.log(resultPhrase);
 }
-evaluateInput(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

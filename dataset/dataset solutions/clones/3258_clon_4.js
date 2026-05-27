@@ -1,28 +1,19 @@
-function calculateAscent(dataStream) {
-    const dataLines = dataStream.split('\n');
-    const heightValues = dataLines[1].split(' ').map(Number);
+function Main(inputString) {
+    let lines = inputString.split("\n");
+    let countVal = parseInt(lines[0], 10);
+    let numSequence = lines[1].split(" ").map(valStr => parseInt(valStr, 10));
 
-    if (heightValues.length === 0) {
+    if (countVal === 0) {
         console.log(0);
         return;
     }
 
-    const initialTraversalState = {
-        totalElevation: heightValues[0],
-        lastObservedHeight: heightValues[0]
-    };
+    let totalRise = numSequence.slice(1).reduce((currentSum, currentElement, indexInSliced) => {
+        let previousElement = numSequence[indexInSliced];
+        let gain = Math.max(0, currentElement - previousElement);
+        return currentSum + gain;
+    }, numSequence[0]);
 
-    const finalTraversalState = heightValues.slice(1).reduce((currentState, currentPoint) => {
-        const potentialRise = currentPoint - currentState.lastObservedHeight;
-        const actualRise = Math.max(0, potentialRise);
-
-        return {
-            totalElevation: currentState.totalElevation + actualRise,
-            lastObservedHeight: currentPoint
-        };
-    }, initialTraversalState);
-
-    console.log(finalTraversalState.totalElevation);
+    console.log(totalRise);
 }
-
-calculateAscent(require("fs").readFileSync("/dev/stdin", "utf8"));
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

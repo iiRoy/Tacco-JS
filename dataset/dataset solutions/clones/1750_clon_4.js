@@ -1,53 +1,42 @@
-const inputSystem = require('node:fs');
+'use strict';
 
-const numericalStringParser = (textualData) => textualData.split(' ').map(item => parseInt(item, 10));
+const rawLines = require('fs').readFileSync('/dev/stdin', 'utf8').split('\n');
 
-const elementCountsRegistry = new Map();
+const parseLineNumbers = (lineString) => lineString.split(' ').map(Number);
 
-const computeCurrentAggregateValue = () => {
-  let totalSummation = 0n;
-  for (const [elementKey, countValue] of elementCountsRegistry.entries()) {
-    if (countValue > 0n) {
-      totalSummation += BigInt(elementKey) * countValue;
+rawLines.shift();
+
+const initialValues = parseLineNumbers(rawLines.shift());
+const valueCounts = initialValues.reduce((accMap, currentVal) => {
+    return accMap.set(currentVal, (accMap.get(currentVal) || 0n) + 1n);
+}, new Map());
+
+rawLines.shift();
+
+while (rawLines.length > 0) {
+  const currentOperation = parseLineNumbers(rawLines.shift());
+
+  const sourceVal = currentOperation[0];
+  const targetVal = currentOperation[1];
+
+  if (valueCounts.has(sourceVal) && valueCounts.get(sourceVal) > 0n) {
+    const transferAmount = valueCounts.get(sourceVal);
+
+    valueCounts.set(sourceVal, 0n);
+
+    valueCounts.set(targetVal, (valueCounts.get(targetVal) || 0n) + transferAmount);
+  }
+
+  console.log(calculateSumOfValues());
+}
+
+function calculateSumOfValues() {
+  let totalSum = 0;
+
+  for (const [keyVal, countVal] of valueCounts.entries()) {
+    if (countVal > 0n) {
+      totalSum += keyVal * Number(countVal);
     }
   }
-  return Number(totalSummation);
-};
-
-const executeNextTransformation = (remainingInstructions) => {
-  if (remainingInstructions.length === 0) {
-    return;
-  }
-
-  const currentCommand = numericalStringParser(remainingInstructions.shift());
-  const sourceIdentifier = currentCommand[0];
-  const targetIdentifier = currentCommand[1];
-
-  const currentSourceCount = elementCountsRegistry.get(sourceIdentifier) || 0n;
-
-  if (currentSourceCount > 0n) {
-    elementCountsRegistry.set(sourceIdentifier, 0n);
-    elementCountsRegistry.set(targetIdentifier, (elementCountsRegistry.get(targetIdentifier) || 0n) + currentSourceCount);
-  }
-
-  console.log(computeCurrentAggregateValue());
-
-  executeNextTransformation(remainingInstructions);
-};
-
-const initializeAndRun = () => {
-  const rawInputContent = inputSystem.readFileSync('/dev/stdin', 'utf8');
-  const processedLines = rawInputContent.split('\n').filter(line => line.trim() !== '');
-
-  processedLines.shift();
-
-  numericalStringParser(processedLines.shift()).forEach(valueItem => {
-    elementCountsRegistry.set(valueItem, (elementCountsRegistry.get(valueItem) || 0n) + 1n);
-  });
-
-  processedLines.shift();
-
-  executeNextTransformation(processedLines);
-};
-
-initializeAndRun();
+  return totalSum;
+}

@@ -2,57 +2,51 @@ process.stdin.resume();
 process.stdin.setEncoding('utf8');
 
 var inputBuffer = [];
-var inputParser = require('readline').createInterface({
+var inputHandler = require('readline').createInterface({
   input: process.stdin,
   output: process.stdout
 });
-
-inputParser.on('line', (inputLine) => {
-  inputBuffer.push(inputLine);
+inputHandler.on('line', (currentLine) => {
+  inputBuffer.push(currentLine);
 });
-
-inputParser.on('close', () => {
-    const [_, firstCap, secondCap] = inputBuffer[0].split(" ").map(Number);
+inputHandler.on('close', () => {
+    const [limitN, limitA, limitB] = inputBuffer[0].split(" ").map(val => Number(val));
     const charSequence = inputBuffer[1].split("");
 
-    function determineApprovals(
-        remainingChars,
-        overallTally,
-        typeBTally,
-        resultsAccumulator
-    ) {
-        if (remainingChars.length === 0) {
-            return resultsAccumulator;
-        }
+    const initialProcessingState = {
+        totalAcceptedCount: 0,
+        bAcceptedCount: 0,
+        outcomeList: []
+    };
 
-        const currentCharacter = remainingChars[0];
-        const restOfChars = remainingChars.slice(1);
+    const processItem = (accumulator, currentItem) => {
+        let nextTotalAcceptedCount = accumulator.totalAcceptedCount;
+        let nextBAcceptedCount = accumulator.bAcceptedCount;
+        let decisionResult = "No";
 
-        let currentVerdict = false;
-        let nextOverallTally = overallTally;
-        let nextTypeBTally = typeBTally;
+        const canAcceptOverall = accumulator.totalAcceptedCount < limitA + limitB;
 
-        if (overallTally < (firstCap + secondCap)) {
-            if (currentCharacter === "a") {
-                nextOverallTally++;
-                currentVerdict = true;
-            } else if (currentCharacter === "b" && typeBTally < secondCap) {
-                nextOverallTally++;
-                nextTypeBTally++;
-                currentVerdict = true;
+        if (canAcceptOverall) {
+            if (currentItem === "a") {
+                nextTotalAcceptedCount++;
+                decisionResult = "Yes";
+            } else if (currentItem === "b") {
+                const canAcceptSpecificB = accumulator.bAcceptedCount < limitB;
+                if (canAcceptSpecificB) {
+                    nextTotalAcceptedCount++;
+                    nextBAcceptedCount++;
+                    decisionResult = "Yes";
+                }
             }
         }
 
-        return determineApprovals(
-            restOfChars,
-            nextOverallTally,
-            nextTypeBTally,
-            [...resultsAccumulator, currentVerdict]
-        );
-    }
+        return {
+            totalAcceptedCount: nextTotalAcceptedCount,
+            bAcceptedCount: nextBAcceptedCount,
+            outcomeList: [...accumulator.outcomeList, decisionResult]
+        };
+    };
 
-    const finalDecisions = determineApprovals(charSequence, 0, 0, []);
-
-    const formattedOutput = finalDecisions.map(decision => decision ? "Yes" : "No").join("\n");
-    console.log(formattedOutput);
+    const finalProcessingState = charSequence.reduce(processItem, initialProcessingState);
+    console.log(finalProcessingState.outcomeList.join("\n"));
 });

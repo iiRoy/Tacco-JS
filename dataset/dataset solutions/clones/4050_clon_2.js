@@ -1,42 +1,42 @@
 "use strict";
 
-// Entry point for processing financial input data.
-const processCoinCombinations = (inputStringData) => {
-  // Normalize input: remove leading/trailing whitespace, then split by newline.
-  const inputLinesArray = inputStringData.trim().split(`
-`);
+// This function processes the input string to find combinations of coins.
+const processInput = (inputString) => {
+  // Clean up the input and split it into individual lines.
+  let processedLines = inputString.trim().split("\n");
 
-  // Extract the maximum available counts for each coin denomination.
-  const maxFiveHundreds = parseInt(inputLinesArray[0], 10);
-  const maxOneHundreds = parseInt(inputLinesArray[1], 10);
-  const maxFifties = parseInt(inputLinesArray[2], 10);
+  // Parse the maximum counts for each coin denomination.
+  const countOfFiveHundredYen = ~~processedLines[0]; // Max 500-yen coins
+  const countOfOneHundredYen = ~~processedLines[1]; // Max 100-yen coins
+  const countOfFiftyYen = ~~processedLines[2]; // Max 50-yen coins
 
-  // Retrieve the target monetary value to achieve.
-  const targetValue = parseInt(inputLinesArray[3], 10);
-  // Initialize a counter for successful combinations.
-  let validCombinationCount = 0;
+  // Parse the target total sum.
+  const desiredTotalSum = ~~processedLines[3];
 
-  // Outer loop: iterate through possible quantities of 500-unit coins.
-  for (let currentFiveHundreds = 0; currentFiveHundreds <= maxFiveHundreds; currentFiveHundreds++) {
-    // Middle loop: iterate through possible quantities of 100-unit coins.
-    for (let currentOneHundreds = 0; currentOneHundreds <= maxOneHundreds; currentOneHundreds++) {
-      // Inner loop: iterate through possible quantities of 50-unit coins.
-      for (let currentFifties = 0; currentFifties <= maxFifties; currentFifties++) {
-        // Calculate the total sum for the current coin combination.
-        const currentSum = (500 * currentFiveHundreds) + (100 * currentOneHundreds) + (50 * currentFifties);
+  // Initialize a counter for valid combinations.
+  let numberOfValidCombinations = 0;
 
-        // Check if the calculated sum matches the desired target value.
-        if (currentSum === targetValue) {
-          // If it matches, increment the counter for valid combinations.
-          validCombinationCount++;
+  // Iterate through all possible counts of 500-yen coins.
+  for (let currentFiveHundred = 0; currentFiveHundred <= countOfFiveHundredYen; currentFiveHundred++) {
+    // Iterate through all possible counts of 100-yen coins.
+    for (let currentOneHundred = 0; currentOneHundred <= countOfOneHundredYen; currentOneHundred++) {
+      // Iterate through all possible counts of 50-yen coins.
+      for (let currentFifty = 0; currentFifty <= countOfFiftyYen; currentFifty++) {
+        // Calculate the current sum for this combination.
+        const currentSum = (500 * currentFiveHundred) + (100 * currentOneHundred) + (50 * currentFifty);
+
+        // Check if the current sum matches the desired total.
+        if (currentSum === desiredTotalSum) {
+          // If it matches, increment the counter.
+          numberOfValidCombinations++;
         }
       }
     }
   }
 
-  // Display the total number of combinations that yield the target value.
-  console.log(validCombinationCount);
+  // Output the final count of valid combinations.
+  console.log(numberOfValidCombinations);
 };
 
-// Acquire input from the standard input stream and pass it to the processing function.
-processCoinCombinations(require('node:fs').readFileSync('/dev/stdin', 'utf8'));
+// Read input from standard input and pass it to the processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

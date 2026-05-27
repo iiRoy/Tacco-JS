@@ -1,85 +1,78 @@
-const parseGridMetaData = (firstLine) => {
-    const [rowsStr, colsStr, thresholdStr] = firstLine.split(" ");
-    return {
-        dimensionRows: Number(rowsStr),
-        dimensionCols: Number(colsStr),
-        densityThreshold: Number(thresholdStr)
-    };
-};
+function processInputData(rawLines) {
+    const [firstLine, ...gridLines] = rawLines;
+    const [gridHeight, gridWidth, maxAllowedOnes] = firstLine.split(" ").map(Number);
+    const parsedGrid = gridLines.slice(0, gridHeight).map(line => line.split("").map(Number));
+    return { gridHeight, gridWidth, maxAllowedOnes, parsedGrid };
+}
 
-const generateHorizontalCutPatterns = (numberOfPotentialCuts) => {
-    const configurations = [];
-    for (let i = 0; i < (1 << numberOfPotentialCuts); i++) {
-        const binaryRepresentation = i.toString(2).padStart(numberOfPotentialCuts, '0');
-        const countOfCuts = (binaryRepresentation.match(/1/g) || []).length;
-        configurations.push({
-            numHorizontalCuts: countOfCuts,
-            cutPattern: binaryRepresentation
-        });
+function* generateHorizontalPartitionings(rows) {
+    const totalCombinations = 1 << (rows - 1);
+    for (let i = 0; i < totalCombinations; i++) {
+        const partitionFlags = Array.from({ length: rows - 1 }, (_, idx) => (i >> idx) & 1);
+        yield {
+            flags: partitionFlags,
+            count: partitionFlags.reduce((acc, val) => acc + val, 0)
+        };
     }
-    return configurations.sort((a, b) => a.numHorizontalCuts - b.numHorizontalCuts);
-};
+}
 
-const calculateVerticalCutsForHorizontalConfig = (
-    gridDataContent,
-    currentHorizontalConfig,
-    densityThreshold,
-    totalRows
-) => {
-    let totalCutsForScheme = currentHorizontalConfig.numHorizontalCuts;
-    const totalCols = gridDataContent[0].length;
-    let currentSegmentOnesCounts = Array(currentHorizontalConfig.numHorizontalCuts + 1).fill(0);
-    
-    for (let colIdx = 0; colIdx < totalCols; colIdx++) {
-        let onesInCurrentColumnPerStrip = Array(currentHorizontalConfig.numHorizontalCuts + 1).fill(0);
-        let currentStripIndex = 0;
+function determineMinimumCuts(problemData) {
+    const { gridHeight, gridWidth, maxAllowedOnes, parsedGrid } = problemData;
+    let globalMinimumCuts = gridHeight * gridWidth;
 
-        for (let rowIdx = 0; rowIdx < totalRows; rowIdx++) {
-            if (gridDataContent[rowIdx][colIdx] === '1') {
-                onesInCurrentColumnPerStrip[currentStripIndex]++;
+    for (const horizontalConfig of generateHorizontalPartitionings(gridHeight)) {
+        const currentHorizontalCutCount = horizontalConfig.count;
+        const partitionFlags = horizontalConfig.flags;
+
+        const segmentQuantity = currentHorizontalCutCount + 1;
+
+        let currentVerticalStripTallies = Array(segmentQuantity).fill(0);
+        let requiredVerticalCuts = 0;
+        let configurationViable = true;
+
+        for (let colIndex = 0; colIndex < gridWidth; colIndex++) {
+            const columnSegmentTallies = Array(segmentQuantity).fill(0);
+            let activeSegmentIdentifier = 0;
+
+            for (let rowIndex = 0; rowIndex < gridHeight; rowIndex++) {
+                if (parsedGrid[rowIndex][colIndex] === 1) {
+                    columnSegmentTallies[activeSegmentIdentifier]++;
+                }
+                if (rowIndex < gridHeight - 1 && partitionFlags[rowIndex] === 1) {
+                    activeSegmentIdentifier++;
+                }
             }
-            if (currentHorizontalConfig.cutPattern[rowIdx] === '1') {
-                currentStripIndex++;
+
+            if (columnSegmentTallies.some(val => val > maxAllowedOnes)) {
+                configurationViable = false;
+                break;
+            }
+
+            const wouldExceedLimit = columnSegmentTallies.some((val, idx) =>
+                currentVerticalStripTallies[idx] + val > maxAllowedOnes
+            );
+
+            if (wouldExceedLimit) {
+                requiredVerticalCuts++;
+                currentVerticalStripTallies = [...columnSegmentTallies];
+            } else {
+                for (let i = 0; i < segmentQuantity; i++) {
+                    currentVerticalStripTallies[i] += columnSegmentTallies[i];
+                }
             }
         }
 
-        const projectedOnesCounts = currentSegmentOnesCounts.map((currentVal, idx) => currentVal + onesInCurrentColumnPerStrip[idx]);
-        const segmentWouldExceedThreshold = projectedOnesCounts.some(count => count > densityThreshold);
-
-        if (segmentWouldExceedThreshold) {
-            if (onesInCurrentColumnPerStrip.some(count => count > densityThreshold)) {
-                return Infinity;
-            }
-
-            totalCutsForScheme++;
-            currentSegmentOnesCounts = [...onesInCurrentColumnPerStrip];
-        } else {
-            currentSegmentOnesCounts = projectedOnesCounts;
+        if (configurationViable) {
+            globalMinimumCuts = Math.min(globalMinimumCuts, currentHorizontalCutCount + requiredVerticalCuts);
         }
     }
-    return totalCutsForScheme;
-};
 
-const executeGridPartitioning = (rawInputData) => {
-    const inputLines = rawInputData.trim().split('\n');
-    const { dimensionRows, dimensionCols, densityThreshold } = parseGridMetaData(inputLines[0]);
-    const gridContent = inputLines.slice(1);
+    return globalMinimumCuts;
+}
 
-    let minimumAchievedCuts = dimensionRows * dimensionCols;
+function solveGridProblem(rawInputLines) {
+    const processedData = processInputData(rawInputLines);
+    return determineMinimumCuts(processedData);
+}
 
-    const allHorizontalConfigurations = generateHorizontalCutPatterns(dimensionRows - 1);
-
-    for (const config of allHorizontalConfigurations) {
-        const cutsForThisConfig = calculateVerticalCutsForHorizontalConfig(
-            gridContent,
-            config,
-            densityThreshold,
-            dimensionRows
-        );
-        minimumAchievedCuts = Math.min(minimumAchievedCuts, cutsForThisConfig);
-    }
-    return minimumAchievedCuts;
-};
-
-const processedResult = executeGridPartitioning(require("fs").readFileSync("/dev/stdin", "utf8"));
-console.log(processedResult);
+console.log(solveGridProblem(require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n")));

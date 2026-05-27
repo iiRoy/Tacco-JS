@@ -1,147 +1,139 @@
-const InputProcessor = (() => {
-    class InputReader {
-        #allLines;
-        #currentLineIndex;
-        #lineTokensForReverseReading;
-        #tokenIndexInReversedLine;
-
-        constructor(sourceText) {
-            this.#allLines = sourceText
-                .split(/\r?\n/)
-                .map(line => line.trim())
-                .filter(line => line.length > 0);
-
-            this.#currentLineIndex = 0;
-            this.#lineTokensForReverseReading = [];
-            this.#tokenIndexInReversedLine = 0;
-        }
-
-        #prepareCurrentLineForReverseRetrieval() {
-            if (this.#tokenIndexInReversedLine >= this.#lineTokensForReverseReading.length) {
-                if (this.#currentLineIndex >= this.#allLines.length) {
-                    return false;
-                }
-
-                const rawLine = this.#allLines[this.#currentLineIndex];
-                this.#lineTokensForReverseReading = rawLine.split(/\s+/).reverse();
-                this.#tokenIndexInReversedLine = 0;
-            }
-            return true;
-        }
-
-        retrieveNextElement(returnAsString = false) {
-            if (!this.#prepareCurrentLineForReverseRetrieval()) {
-                return undefined;
-            }
-
-            const token = this.#lineTokensForReverseReading[this.#tokenIndexInReversedLine++];
-
-            if (this.#tokenIndexInReversedLine >= this.#lineTokensForReverseReading.length) {
-                this.#currentLineIndex++;
-                this.#lineTokensForReverseReading = [];
-                this.#tokenIndexInReversedLine = 0;
-            }
-
-            return returnAsString ? token : Number(token);
-        }
-
-        fetchLineElements(returnAsString = false) {
-            if (this.#currentLineIndex >= this.#allLines.length) {
-                return [];
-            }
-
-            const rawLine = this.#allLines[this.#currentLineIndex];
-            this.#currentLineIndex++;
-            this.#lineTokensForReverseReading = [];
-            this.#tokenIndexInReversedLine = 0;
-
-            const tokens = rawLine.split(/\s+/).filter(t => t.length > 0);
-            return returnAsString ? tokens : tokens.map(Number);
-        }
-
-        extractMatrix(numberOfLines, returnAsString = false) {
-            const resultMatrix = [];
-            for (let i = 0; i < numberOfLines; i++) {
-                resultMatrix.push(this.fetchLineElements(returnAsString));
-            }
-            return resultMatrix;
-        }
-
-        collectSingleValueLines(numberOfLines, returnAsString = false) {
-            const collectedValues = [];
-            for (let i = 0; i < numberOfLines; i++) {
-                const lineValues = this.fetchLineElements(returnAsString);
-                if (lineValues.length > 0) {
-                    collectedValues.push(lineValues[0]);
-                } else {
-                    collectedValues.push(returnAsString ? '' : NaN);
-                }
-            }
-            return collectedValues;
-        }
+var createInputReader = (function() {
+    function initializeReader(sourceString) {
+        return new InputParser(sourceString);
     }
 
-    const createReaderInstance = (source) => new InputReader(source);
-    return createReaderInstance;
+    function InputParser(sourceString) {
+        this.sourceLines = sourceString.trim().split("\n");
+        this.currentLineIndex = 0;
+    }
+
+    function convertToNumberIfRequested(value, asString) {
+        return asString ? value : Number(value);
+    }
+
+    InputParser.prototype.readSingleValue = function(returnAsString) {
+        var lines = this.sourceLines;
+        var lineIdx = this.currentLineIndex;
+        var currentLineContent = lines[lineIdx];
+        var extractedValue;
+
+        if (typeof currentLineContent === "string") {
+            var parts = currentLineContent.split(" ");
+            lines[lineIdx] = parts.reverse();
+        }
+        
+        extractedValue = lines[lineIdx].pop();
+
+        if (lines[lineIdx].length === 0) {
+            this.currentLineIndex++;
+        }
+        return convertToNumberIfRequested(extractedValue, returnAsString);
+    };
+
+    InputParser.prototype.readLineValues = function(returnAsString) {
+        var lineContent = this.sourceLines[this.currentLineIndex++];
+        var values = lineContent.split(" ");
+        if (returnAsString) {
+            return values;
+        } else {
+            return values.map(function(val) { return Number(val); });
+        }
+    };
+
+    InputParser.prototype.readMatrix = function(numRows, returnAsString) {
+        var startIdx = this.currentLineIndex;
+        var endIdx = startIdx + numRows;
+        var matrixRows = this.sourceLines.slice(startIdx, endIdx);
+        this.currentLineIndex = endIdx;
+
+        var processedMatrix = matrixRows.map(function(rowStr) {
+            var rowValues = rowStr.split(" ");
+            if (returnAsString) {
+                return rowValues;
+            } else {
+                return rowValues.map(function(val) { return Number(val); });
+            }
+        });
+        return processedMatrix;
+    };
+
+    InputParser.prototype.readRawLines = function(numLines, returnAsString) {
+        var startIdx = this.currentLineIndex;
+        var endIdx = startIdx + numLines;
+        var rawLines = this.sourceLines.slice(startIdx, endIdx);
+        this.currentLineIndex = endIdx;
+        
+        if (returnAsString) {
+            return rawLines;
+        } else {
+            return rawLines.map(function(val) { return Number(val); });
+        }
+    };
+
+    return initializeReader;
 })();
 
-const inputSource = require("fs").readFileSync("/dev/stdin", "utf8");
-const dataReader = InputProcessor(inputSource);
+var inputReader = createInputReader(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-console.log(calculateMinimumPathRestriction());
+console.log(calculateResult());
 
-function calculateMinimumPathRestriction() {
-  const gridHeight = dataReader.retrieveNextElement();
-  const gridWidth = dataReader.retrieveNextElement();
-  const obstacleCount = dataReader.retrieveNextElement();
+function calculateResult() {
+    var gridHeight = inputReader.readSingleValue();
+    var gridWidth = inputReader.readSingleValue();
+    var numObstacles = inputReader.readSingleValue();
 
-  const forbiddenCells = Array.from({ length: gridHeight + 1 }, () => ({}));
+    var blockedCells = Array.from({ length: gridHeight + 1 }, function() { return {}; });
 
-  for (let obstacleIndex = 0; obstacleIndex < obstacleCount; obstacleIndex++) {
-    const obstacleCoordinates = dataReader.fetchLineElements();
-    const currentObstacleColumn = obstacleCoordinates[0];
-    const currentObstacleRow = obstacleCoordinates[1];
-
-    if (currentObstacleColumn >= currentObstacleRow) {
-      forbiddenCells[currentObstacleRow][currentObstacleColumn] = true;
-    }
-  }
-
-  const rightBoundaryColumn = gridWidth + 1;
-  for (let rowIterator = 1; rowIterator <= gridHeight; rowIterator++) {
-    forbiddenCells[rowIterator][rightBoundaryColumn] = true;
-  }
-
-  const rowOneObstacleColumns = Object.keys(forbiddenCells[1]).map(Number).sort((a, b) => a - b);
-  let minimumPathLimitColumn = gridWidth;
-  if (rowOneObstacleColumns.length > 0) {
-      minimumPathLimitColumn = rowOneObstacleColumns[0] - 1;
-  }
-
-  let currentTraversalColumn = 2;
-
-  for (let currentRow = 2; currentRow <= minimumPathLimitColumn && currentRow <= gridHeight; currentRow++) {
-    while (forbiddenCells[currentRow][currentTraversalColumn]) {
-      currentTraversalColumn++;
+    for (var obstacleIndex = 0; obstacleIndex < numObstacles; obstacleIndex++) {
+        var obstacleCoordinates = inputReader.readLineValues();
+        var startRow = obstacleCoordinates[0];
+        var endRow = obstacleCoordinates[1];
+        
+        if (startRow < endRow) {
+            continue;
+        }
+        blockedCells[endRow][startRow] = 1;
     }
 
-    const obstaclesInCurrentRow = Object.keys(forbiddenCells[currentRow]).map(Number).sort((a, b) => a - b);
-
-    for (const obstacleColumn of obstaclesInCurrentRow) {
-      if (currentTraversalColumn > obstacleColumn) {
-        continue;
-      }
-
-      minimumPathLimitColumn = Math.min(minimumPathLimitColumn, obstacleColumn - 1);
-      break;
+    var boundaryCol = gridWidth + 1;
+    for (var row = 1; row <= gridHeight; row++) {
+        blockedCells[row][boundaryCol] = 1;
     }
 
-    currentTraversalColumn++;
+    var firstRowObstacles = Object.keys(blockedCells[1]);
+    var initialMinPathLength = Number(firstRowObstacles[0]) - 1;
 
-    if (currentTraversalColumn > gridWidth) {
-      break;
+    var currentSearchCol = 2;
+    var finalMinPathLength = initialMinPathLength;
+
+    for (var currentRow = 2; currentRow <= finalMinPathLength && currentRow <= gridHeight; currentRow++) {
+        while (blockedCells[currentRow][currentSearchCol] === 1) {
+            currentSearchCol++;
+        }
+
+        var rowObstacleKeys = Object.keys(blockedCells[currentRow]);
+        
+        for (var k = 0; k < rowObstacleKeys.length; k++) {
+            var obstacleColKeyStr = rowObstacleKeys[k];
+            var obstacleColumn = Number(obstacleColKeyStr);
+
+            if (currentSearchCol > obstacleColumn) {
+                continue;
+            }
+
+            var potentialNewMinPath = obstacleColumn - 1;
+            if (potentialNewMinPath < finalMinPathLength) {
+                finalMinPathLength = potentialNewMinPath;
+            }
+            break;
+        }
+        
+        currentSearchCol++;
+
+        if (currentSearchCol >= gridWidth) {
+            break;
+        }
     }
-  }
-
-  return minimumPathLimitColumn;
+    return finalMinPathLength;
 }

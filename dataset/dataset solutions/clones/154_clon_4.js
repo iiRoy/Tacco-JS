@@ -1,67 +1,45 @@
-const nodeFileSystem = require('node:fs');
-const nodeProcess = require('node:process');
+const fs = require('fs');
 
-const entireInputContent = nodeFileSystem.readFileSync(nodeProcess.stdin.fd, 'utf8');
-const contentLines = entireInputContent.trim().split('\n');
+const KNOWN_SEQUENCES = [
+    [13, 12, 11, 10, 9],
+    [12, 11, 10, 9, 8],
+    [11, 10, 9, 8, 7],
+    [10, 9, 8, 7, 6],
+    [9, 8, 7, 6, 5],
+    [8, 7, 6, 5, 4],
+    [7, 6, 5, 4, 3],
+    [6, 5, 4, 3, 2],
+    [5, 4, 3, 2, 1],
+    [13, 12, 11, 10, 1]
+];
 
-const deriveValueFrequency = (numericSequence) => {
-    const valueMap = new Map();
-    for (const entryValue of numericSequence) {
-        valueMap.set(entryValue, (valueMap.get(entryValue) || 0) + 1);
+function checkSequenceMatch(sortedValues) {
+    return KNOWN_SEQUENCES.some(pattern =>
+        pattern.every((rankInPattern, index) => rankInPattern === sortedValues[index])
+    );
+}
+
+const rawInputContent = fs.readFileSync(0, 'utf8');
+const dataLines = rawInputContent.trim().split('\n');
+
+dataLines.forEach(currentLine => {
+    const numericRanks = currentLine.trim().split(',').map(Number).sort((a, b) => b - a);
+
+    let handClassification = "null";
+
+    const rankFrequencyMap = new Map();
+    for (const rankValue of numericRanks) {
+        rankFrequencyMap.set(rankValue, (rankFrequencyMap.get(rankValue) || 0) + 1);
     }
-    return Array.from(valueMap.values()).sort((countA, countB) => countB - countA);
-};
+    const frequencyCounts = Array.from(rankFrequencyMap.values()).sort((a, b) => b - a);
 
-const verifySuccessiveOrder = (numericSequence) => {
-    // Standard consecutive sequence (e.g., 5,4,3,2,1)
-    let isStandardProgression = true;
-    for (let ptr = 0; ptr < numericSequence.length - 1; ptr++) {
-        if (numericSequence[ptr] !== numericSequence[ptr + 1] + 1) {
-            isStandardProgression = false;
-            break;
-        }
-    }
-    if (isStandardProgression) return true;
-
-    // Special Ace-high sequence (K,Q,J,10,A represented as 13,12,11,10,1)
-    return numericSequence[0] === 13 && numericSequence[1] === 12 &&
-           numericSequence[2] === 11 && numericSequence[3] === 10 &&
-           numericSequence[4] === 1;
-};
-
-const classifyNumericSet = (processedValues) => {
-    const frequencyDistribution = deriveValueFrequency(processedValues);
-
-    // Rule for "four card": four values are identical
-    if (frequencyDistribution[0] === 4) {
-        return "four card";
-    }
-
-    // Rule for "full house": three values are identical, and two other values are identical
-    if (frequencyDistribution[0] === 3 && frequencyDistribution[1] === 2) {
-        return "full house";
-    }
-
-    // Rule for "straight": five values are in successive order
-    if (verifySuccessiveOrder(processedValues)) {
-        return "straight";
+    if (frequencyCounts[0] === 4) {
+        handClassification = "four card";
+    } else if (frequencyCounts[0] === 3 && frequencyCounts[1] === 2) {
+        handClassification = "full house";
+    } else if (checkSequenceMatch(numericRanks)) {
+        handClassification = "straight";
     }
 
-    // Default classification if no specific pattern is found
-    return "null";
-};
-
-const executeProcessing = (allLines) => {
-    for (const singleLine of allLines) {
-        const orderedNumericData = singleLine
-            .trim()
-            .split(',')
-            .map(strVal => parseInt(strVal, 10))
-            .sort((valOne, valTwo) => valTwo - valOne); // Sort descending
-
-        const determinedCategory = classifyNumericSet(orderedNumericData);
-        nodeProcess.stdout.write(determinedCategory + '\n');
-    }
-};
-
-executeProcessing(contentLines);
+    console.log(handClassification);
+});

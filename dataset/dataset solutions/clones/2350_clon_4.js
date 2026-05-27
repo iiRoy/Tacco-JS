@@ -1,32 +1,15 @@
-function retrieveSourceData() {
-    return require("node:fs").readFileSync("/dev/stdin", "utf8");
-}
+function Main(rawText) {
+  const processedText = rawText.trim();
+  const charSequence = Array.from(processedText);
+  const sequenceLength = charSequence.length;
 
-function calculateTransformationsForSymmetry(initialContent) {
-    const refinedContent = initialContent.replace(/^\s+|\s+$/g, '');
-    const contentSize = refinedContent.length;
-
-    if (contentSize <= 1) {
-        return 0;
-    }
-
-    const indicesToExamine = Array.from({ length: Math.floor(contentSize / 2) }, (_, k) => k);
-
-    const neededModifications = indicesToExamine.reduce((currentTotal, currentPosition) => {
-        const mirrorPosition = contentSize - 1 - currentPosition;
-        if (refinedContent[currentPosition] !== refinedContent[mirrorPosition]) {
-            return currentTotal + 1;
-        }
-        return currentTotal;
+  const requiredAdjustments = charSequence.slice(0, Math.floor(sequenceLength / 2))
+    .reduce((accumulator, currentCharacter, index) => {
+      const symmetricIndex = sequenceLength - 1 - index;
+      const symmetricCharacter = charSequence[symmetricIndex];
+      return accumulator + (currentCharacter !== symmetricCharacter ? 1 : 0);
     }, 0);
 
-    return neededModifications;
+  console.log(requiredAdjustments);
 }
-
-function executeProcessing() {
-    const rawInput = retrieveSourceData();
-    const finalOutcome = calculateTransformationsForSymmetry(rawInput);
-    console.log(finalOutcome);
-}
-
-executeProcessing();
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

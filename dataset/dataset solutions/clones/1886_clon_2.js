@@ -1,163 +1,174 @@
-"use strict"; /* Enforces stricter parsing and error handling rules */
+"use strict"; // Enforce strict mode for cleaner code execution.
 
-// Obtain system input module and read all raw data from standard input
-var sourceData = require ( "fs" ) . readFileSync ( "/dev/stdin", "utf8" ) ;
+// Read the entire input file from standard input.
+let fileContent = require("fs").readFileSync("/dev/stdin", "utf8");
 
-// Split the raw input into tokens using spaces or newlines as delimiters
-// and initialize an index for traversing the token stream.
-var tokenSequence = sourceData . split ( / |\n/ ) , sequenceIndex = 0 ;
-
+// Split the input content into an array of tokens using spaces or newlines as delimiters.
+let tokenArray = fileContent.split(/ |\n/);
+let tokenIndex = 0; // Initialize an index to keep track of the current token being read.
 
 /**
- * Retrieves the next token from the global token sequence.
- * @param {boolean} keepAsText - If true, returns the token as a string; otherwise, attempts to convert it to a number.
+ * Retrieves the next token from the input array.
+ * @param {boolean} asString - If true, returns the token as a string; otherwise, converts it to a number.
  * @returns {string|number} The next token.
  */
-function retrieveToken ( keepAsText ) {
-  return keepAsText
-         ? tokenSequence [ sequenceIndex ++ ] // Return string token
-         : +tokenSequence [ sequenceIndex ++ ] ; // Convert and return numeric token
+function getNextToken(asString) {
+    // Increment tokenIndex after accessing the token.
+    return asString ? tokenArray[tokenIndex++] : +tokenArray[tokenIndex++];
 }
 
 /**
- * Fetches a specified number of tokens from the global sequence.
- * @param {number} countToFetch - The number of tokens to retrieve.
- * @param {boolean} asRawText - If true, returns tokens as strings; otherwise, converts them to numbers.
- * @returns {Array<string|number>} An array of tokens.
+ * Retrieves a specified number of tokens from the input array.
+ * @param {number} count - The number of tokens to retrieve.
+ * @param {boolean} asStrings - If true, returns tokens as strings; otherwise, converts them to numbers.
+ * @returns {Array<string|number>} An array containing the retrieved tokens.
  */
-function fetchTokens ( countToFetch , asRawText ) {
-  return asRawText
-         ? tokenSequence . slice ( sequenceIndex , sequenceIndex += countToFetch )
-         : tokenSequence . slice ( sequenceIndex , sequenceIndex += countToFetch ) . map ( item => +item ) ;
+function getMultipleTokens(count, asStrings) {
+    let startIndex = tokenIndex;
+    tokenIndex += count; // Advance the token index by the count.
+    // Slice the array to get the desired tokens.
+    // If 'asStrings' is false, map them to numbers.
+    return asStrings ? tokenArray.slice(startIndex, tokenIndex) : tokenArray.slice(startIndex, tokenIndex).map(value => +value);
 }
 
 /**
- * Reads a matrix of tokens from the global sequence.
- * @param {number} rows - The number of rows in the matrix.
- * @param {number} cols - The number of columns in each row.
- * @param {boolean} textualMode - If true, stores elements as strings; otherwise, converts them to numbers.
- * @returns {Array<Array<string|number>>} The matrix of tokens.
+ * Retrieves tokens to form a matrix of specified dimensions.
+ * @param {number} height - The number of rows in the matrix.
+ * @param {number} width - The number of columns in the matrix.
+ * @param {boolean} asStrings - If true, returns tokens as strings; otherwise, converts them to numbers.
+ * @returns {Array<Array<string|number>>} A 2D array representing the matrix.
  */
-function getMatrix ( rows , cols , textualMode ) {
-  var resultMatrix = [ ] , rowIndex = 0 ;
-  if ( textualMode ) {
-    for ( ; rowIndex < rows ; rowIndex ++ ) {
-      resultMatrix . push ( tokenSequence . slice ( sequenceIndex , sequenceIndex += cols ) ) ;
+function getMatrixTokens(height, width, asStrings) {
+    let resultMatrix = []; // Initialize an empty array to store the matrix rows.
+    let currentRow = 0;
+    if (asStrings) {
+        // If tokens should be kept as strings.
+        for (; currentRow < height; currentRow++) {
+            resultMatrix.push(tokenArray.slice(tokenIndex, tokenIndex += width));
+        }
+    } else {
+        // If tokens should be converted to numbers.
+        for (; currentRow < height; currentRow++) {
+            resultMatrix.push(tokenArray.slice(tokenIndex, tokenIndex += width).map(value => +value));
+        }
     }
-  } else {
-    for ( ; rowIndex < rows ; rowIndex ++ ) {
-      resultMatrix . push ( tokenSequence . slice ( sequenceIndex , sequenceIndex += cols ) . map ( item => +item ) ) ;
-    }
-  }
-  return resultMatrix ;
+    return resultMatrix;
 }
 
 /**
- * Dynamically constructs and executes code to create a multi-dimensional array.
+ * Creates a multi-dimensional array initialized with a given value.
+ * The dimensions are provided as subsequent arguments.
  * @param {*} initialValue - The value to initialize array elements with.
- * @param {...number} dimensions - The dimensions of the array (e.g., dim1, dim2, ...).
+ * @param {...number} dimensions - The dimensions of the array (e.g., createMultiDimArray(0, 2, 3) for a 2x3 array).
  * @returns {Array} The created multi-dimensional array.
  */
-function createMultiDimArray ( initialValue ) {
-  var dimensions = arguments , dimLength = dimensions . length ,
-      arrayCreationString = "Array(dimensions[" + --dimLength + "]).fill().map(_ => {return " + initialValue + ";})" ;
-  while ( --dimLength ) {
-    arrayCreationString = "Array(dimensions[" + dimLength + "]).fill().map(_ =>" + arrayCreationString + ")" ;
-  }
-  return eval ( arrayCreationString ) ; // Execute the dynamically built string to create the array
+function createMultiDimArray(initialValue) {
+    let functionArguments = arguments; // Access all arguments passed to the function.
+    let argumentCount = functionArguments.length;
+    // Construct the innermost array creation expression.
+    let arrayCreationString = `Array(functionArguments[${--argumentCount}]).fill().map(element => { return ${initialValue}; })`;
+    // Wrap the expression for each remaining dimension.
+    while (--argumentCount) {
+        arrayCreationString = `Array(functionArguments[${argumentCount}]).fill().map(element => ${arrayCreationString})`;
+    }
+    // Evaluate the dynamically constructed string to create the array.
+    return eval(arrayCreationString);
 }
 
+// Execute the main program logic and store its result.
+let programResult = executeLogic();
 
-// Invoke the primary routine and capture its return value.
-var programResult = primaryRoutine ( ) ;
-
-// If the primary routine yields a defined output, print it to the console.
-if ( programResult !== undefined ) {
-  console . log ( programResult ) ;
+// If the program logic returns a value (i.e., not undefined), print it to the console.
+if (programResult !== undefined) {
+    console.log(programResult);
 }
-
 
 /**
- * The main execution logic of the program.
- * This function processes a sequence of parenthesis strings to determine
- * if they can be balanced, following specific rules.
+ * The core logic of the program to determine if a sequence of parenthesis strings can be balanced.
  * @returns {string} "Yes" if the strings can be balanced, "No" otherwise.
  */
-function primaryRoutine ( ) {
-  var negativeOutcomeIndicator = "No" , positiveOutcomeIndicator = "Yes" ;
+function executeLogic() {
+    const noStr = "No"; // Constant string for a negative outcome.
+    const yesStr = "Yes"; // Constant string for a positive outcome.
 
-  // Read the total count of input segments.
-  var inputCount = retrieveToken ( ) ;
+    let numInputs = getNextToken(); // Read the total number of parenthesis strings.
 
-  // Initialize arrays to store segments based on their balance characteristics,
-  // along with total balance change and current running balance.
-  var segmentsClosingFirst = [ ] , segmentsOpeningFirst = [ ] ,
-      totalBalanceChange = 0 , currentRunningBalance = 0 ;
+    // Lists to categorize strings based on their balance characteristics.
+    let negativeBalanceList = []; // Stores strings that end with a non-positive balance and had a negative minimum.
+    let positiveBalanceList = []; // Stores strings that end with a positive balance but had a negative minimum.
+    let totalBalance = 0; // Accumulates the final balance of all strings combined.
+    let currentBalance = 0; // Represents the current balance as strings are processed.
 
-  // Process each input segment one by one.
-  for ( var segmentIdx = 0 ; segmentIdx < inputCount ; segmentIdx ++ ) {
-    var minimumBalanceInSegment = 0 , finalBalanceInSegment = 0 ;
-    // Retrieve the current string segment.
-    var currentSegmentString = retrieveToken ( true ) ;
+    // Iterate through each input string.
+    for (let idx = 0; idx < numInputs; idx++) {
+        let minBalance = 0; // Tracks the minimum balance encountered while traversing the current string.
+        let finalBalance = 0; // The balance of the current string after full traversal.
 
-    // Analyze the balance of parentheses within the current segment.
-    for ( var characterIdx = 0 ; characterIdx < currentSegmentString . length ; characterIdx ++ ) {
-      if ( currentSegmentString [ characterIdx ] === "(" ) {
-        finalBalanceInSegment ++ ; // Increment balance for an opening parenthesis.
-      } else {
-        finalBalanceInSegment -- ; // Decrement balance for a closing parenthesis.
-        // Track the minimum balance encountered within this segment.
-        if ( finalBalanceInSegment < minimumBalanceInSegment ) {
-          minimumBalanceInSegment = finalBalanceInSegment ;
+        let inputString = getNextToken(true); // Read the current parenthesis string.
+
+        // Traverse each character in the current string.
+        for (let charIdx = 0; charIdx < inputString.length; charIdx++) {
+            if (inputString[charIdx] === "(") {
+                finalBalance++; // Increment balance for an opening parenthesis.
+            } else {
+                finalBalance--; // Decrement balance for a closing parenthesis.
+                if (finalBalance < minBalance) {
+                    minBalance = finalBalance; // Update the minimum balance if the current balance is lower.
+                }
+            }
         }
-      }
+
+        totalBalance += finalBalance; // Add the current string's final balance to the overall total.
+
+        if (minBalance >= 0) {
+            // If the balance never dropped below zero, this string can be appended directly.
+            currentBalance += finalBalance;
+        } else if (finalBalance <= 0) {
+            // If the final balance is non-positive and min balance was negative, add to negativeBalanceList.
+            // The first element is the required opening balance to make this string valid.
+            negativeBalanceList.push([-minBalance + finalBalance, finalBalance]);
+        } else {
+            // If the final balance is positive but min balance was negative, add to positiveBalanceList.
+            // The first element is the required opening balance to avoid going negative.
+            positiveBalanceList.push([-minBalance, finalBalance]);
+        }
     }
-    totalBalanceChange += finalBalanceInSegment ; // Accumulate total balance change.
 
-    // Categorize segments based on their balance properties.
-    if ( minimumBalanceInSegment >= 0 ) {
-      // Segment always non-negative balance, add its final balance directly.
-      currentRunningBalance += finalBalanceInSegment ;
-    } else if ( finalBalanceInSegment <= 0 ) {
-      // Segment ends with non-positive balance and went negative.
-      // Store as [required_openings_to_clear_min, final_balance].
-      segmentsClosingFirst . push ( [ -minimumBalanceInSegment + finalBalanceInSegment , finalBalanceInSegment ] ) ;
-    } else {
-      // Segment ends positive but went negative internally.
-      // Store as [required_openings_to_clear_min, final_balance].
-      segmentsOpeningFirst . push ( [ -minimumBalanceInSegment , finalBalanceInSegment ] ) ;
+    // If the total balance of all strings is not zero, it's impossible to balance them.
+    if (totalBalance !== 0) {
+        return noStr;
     }
-  }
 
-  // If the total balance change across all segments is not zero, it's impossible to balance.
-  if ( totalBalanceChange ) return negativeOutcomeIndicator ;
+    // Sort the positiveBalanceList by the required opening balance in ascending order.
+    // This prioritizes strings that require fewer initial openings.
+    positiveBalanceList.sort((itemA, itemB) => itemA[0] - itemB[0]);
 
-  // Sort segments that end positive but went negative internally
-  // by the number of openings needed to clear their minimum balance (ascending).
-  segmentsOpeningFirst . sort ( ( itemA , itemB ) => itemA [ 0 ] - itemB [ 0 ] ) ;
+    // Process strings in the positiveBalanceList.
+    for (let idx = 0; idx < positiveBalanceList.length; idx++) {
+        // If the required opening balance for the current string exceeds the current accumulated balance,
+        // it's impossible to balance.
+        if (positiveBalanceList[idx][0] > currentBalance) {
+            return noStr;
+        }
+        currentBalance += positiveBalanceList[idx][1]; // Add the string's final balance to the current balance.
+    }
 
-  // Process these segments.
-  for ( var segmentIdx = 0 ; segmentIdx < segmentsOpeningFirst . length ; segmentIdx ++ ) {
-    // If current running balance is insufficient to clear this segment's minimum, it's impossible.
-    if ( segmentsOpeningFirst [ segmentIdx ] [ 0 ] > currentRunningBalance ) return negativeOutcomeIndicator ;
-    // Add this segment's final balance to the running balance.
-    currentRunningBalance += segmentsOpeningFirst [ segmentIdx ] [ 1 ] ;
-  }
+    // Sort the negativeBalanceList by the required opening balance in descending order.
+    // This prioritizes strings that require more initial openings, which are harder to satisfy.
+    negativeBalanceList.sort((itemA, itemB) => itemB[0] - itemA[0]);
 
-  // Sort segments that end non-positive and went negative
-  // by a combined metric (inverse of required openings, essentially) (descending).
-  segmentsClosingFirst . sort ( ( itemA , itemB ) => itemB [ 0 ] - itemA [ 0 ] ) ;
+    // Process strings in the negativeBalanceList.
+    for (let idx = 0; idx < negativeBalanceList.length; idx++) {
+        // Destructure the array elements for clarity.
+        const [requiredOpenings, finalValue] = negativeBalanceList[idx];
+        // If the required opening balance for the current string exceeds the current accumulated balance,
+        // it's impossible to balance.
+        if (requiredOpenings > currentBalance) {
+            return noStr;
+        }
+        currentBalance += finalValue; // Add the string's final balance to the current balance.
+    }
 
-  // Process these segments.
-  for ( var segmentIdx = 0 ; segmentIdx < segmentsClosingFirst . length ; segmentIdx ++ ) {
-    // Destructure the current segment's properties.
-    var [ minVal , endVal ] = segmentsClosingFirst [ segmentIdx ] ;
-    // If current running balance is insufficient to clear this segment's minimum, it's impossible.
-    if ( minVal > currentRunningBalance ) return negativeOutcomeIndicator ;
-    // Add this segment's final balance to the running balance.
-    currentRunningBalance += endVal ;
-  }
-
-  // If all segments are processed successfully, the strings can be balanced.
-  return positiveOutcomeIndicator ;
+    // If all strings have been successfully processed and balanced, return "Yes".
+    return yesStr;
 }

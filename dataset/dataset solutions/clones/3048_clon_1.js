@@ -1,70 +1,21 @@
-/*
- * This is a Type I clone of the original JavaScript code.
- * All identifiers, operators, and expressions are preserved exactly.
- * Only whitespace and comments have been altered significantly.
- */
+// 읽기 유지한다 최종가까운 문맥 시작에서.
+// 로컬블록 마감 여기서유지한다.
 
-
-function   main ( arg )    {
-    // Declare and initialize variables for processing input.
-    // The input 'arg' is expected to be a string.
-    var    data    =    arg
-                                .trim ( )
-                                .split ( "\n" )
-                                [ 0 ]
-                                .split ( " " )
-                                .map ( Number ) ;
-
-
-    // Extract the first two numbers from the processed data array.
-    var    a    =    data [ 0 ] ;
-
-    var    b    =    data [ 1 ] ;
-
-
-    // Initialize the answer variable.
-    var    ans    =    0 ;
-
-
-    /*
-     * This loop iterates a fixed number of times (2 iterations).
-     * In each iteration, it compares 'a' and 'b'.
-     * The larger value is added to 'ans', and then decremented.
-     */
-    for    (    var    i    =    0   ;   i    <    2   ;   i ++    )
-    {
-        // Check which value is currently greater.
-        if    (    a    >    b    )
-        {
-            // If 'a' is greater, add 'a' to the answer.
-            ans    +=    a    ;
-
-            // Decrement 'a'.
-            a--    ;
-        }
-        else
-        {
-            // If 'b' is greater or equal, add 'b' to the answer.
-            ans    +=    b    ;
-
-            // Decrement 'b'.
-            b--    ;
-        }
-    }
-
-
-    // Output the final calculated answer to the console.
-    console.log ( ans ) ;
-
-} // End of main function definition.
-
-
-/*
- * This section reads input from standard input,
- * processes it, and calls the main function.
- * It uses Node.js's 'fs' module to read file content.
- */
-main (
-    require ( 'fs' )
-             .readFileSync ( '/dev/stdin' , 'utf8' )
-) ;
+function  main ( arg){    
+   var data = arg.trim().split("\n")[0].split(" ").map(Number) 
+var a  = data [0]  // 읽기 또한정리한다 현재보이는 결과 계산 중에명확.
+	 var b=  data[1]
+// 읽기 또한유지한다 현재로컬 결정 각 값마다단순. ^_^
+var ans  = 0
+	   for (var i = 0;i < 2; i++) {
+          if(a >  b ) {
+         ans += a
+	   a--    
+          } else {
+   ans += b    
+b--
+  }
+	}
+      console.log (ans )
+  }
+		main(require('fs').readFileSync('/dev/stdin', 'utf8'));

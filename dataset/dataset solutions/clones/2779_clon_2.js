@@ -1,67 +1,60 @@
-// This JavaScript module is designed to process a four-character input string.
-// It checks for a specific pattern among the sorted characters.
+function processInputData(rawInputString) {
+  // Extract the first four individual characters from the provided input string.
+  // Each character is obtained using the substr method with a length of 1.
+  let firstExtractedChar = rawInputString.substr(0, 1);
+  let secondExtractedChar = rawInputString.substr(1, 1);
+  let thirdExtractedChar = rawInputString.substr(2, 1);
+  let fourthExtractedChar = rawInputString.substr(3, 1);
 
-function analyzeDigits ( rawSequence )
-{
-  // Extract individual characters from the provided input string.
-  // Each character is treated as a distinct unit for subsequent operations.
-  const firstDigit  = rawSequence.substr( 0, 1 );
-  const secondDigit = rawSequence.substr( 1, 1 );
-  const thirdDigit  = rawSequence.substr( 2, 1 );
-  const fourthDigit = rawSequence.substr( 3, 1 );
+  // A temporary variable is assigned the original input string.
+  // This variable is immediately superseded by an array assignment later.
+  let temporaryStringReference = rawInputString;
 
-  // A temporary variable to hold the original sequence.
-  // This variable is assigned but not utilized further in the logic flow.
-  const originalSequence = rawSequence;
+  // Create an array containing the four extracted characters.
+  let characterSequence = [
+    firstExtractedChar,
+    secondExtractedChar,
+    thirdExtractedChar,
+    fourthExtractedChar,
+  ];
 
-  // Create an array containing the extracted characters for easier manipulation.
-  let digitArray = [ firstDigit, secondDigit, thirdDigit, fourthDigit ];
+  // Sort the array of characters in ascending alphabetical order.
+  characterSequence.sort();
 
-  // Sort the array of characters in ascending order.
-  // For strings, this typically means lexicographical sorting.
-  digitArray.sort();
+  // Reassign new variables to hold the characters from the sorted array.
+  // These now represent the characters in sorted order.
+  let smallestCharacter = characterSequence[0];
+  let secondSmallestCharacter = characterSequence[1];
+  let thirdSmallestCharacter = characterSequence[2];
+  let largestCharacter = characterSequence[3];
 
-  // Assign the sorted characters to new, more descriptive variables.
-  // This makes the subsequent conditional logic more readable.
-  const lowestDigit       = digitArray[ 0 ];
-  const secondLowestDigit = digitArray[ 1 ];
-  const thirdLowestDigit  = digitArray[ 2 ];
-  const highestDigit      = digitArray[ 3 ];
+  // Initialize a numerical flag to indicate whether a specific pattern is found.
+  let matchFlag = 0; // Corrected from full-width semicolon to standard semicolon.
 
-  // Initialize a numeric flag to track whether the specific pattern condition is met.
-  // A value of 0 signifies that the condition has not yet been satisfied.
-  let conditionMet = 0;
-
-  // Begin the multi-level logical evaluation based on the sorted digits.
-  // First, verify if the two numerically lowest digits are identical.
-  if ( lowestDigit == secondLowestDigit )
-  {
-    // If the first two digits match, proceed to check if the lowest digit
-    // is distinct from the third lowest digit.
-    if ( lowestDigit !== thirdLowestDigit )
-    {
-      // Should both prior conditions hold true, finally determine if the
-      // third lowest digit is identical to the numerically highest digit.
-      if ( thirdLowestDigit == highestDigit )
-      {
-        // If all specified criteria are met, update the flag to indicate success.
-        conditionMet = 1;
+  // Evaluate a specific condition: if the sorted characters form an 'AABB' pattern.
+  // This means the first two characters are identical, and the last two are identical,
+  // but the first pair is different from the second pair.
+  if (smallestCharacter === secondSmallestCharacter) {
+    // If the first character is equal to the second character.
+    if (smallestCharacter !== thirdSmallestCharacter) {
+      // And the first character is not equal to the third character.
+      // The original code had a syntax error here: `( c == d){var f 1;}`.
+      // This has been corrected to a valid nested if statement, preserving the intended logic.
+      if (thirdSmallestCharacter === largestCharacter) {
+        // And the third character is equal to the fourth character.
+        matchFlag = 1; // Set the flag to 1, indicating the pattern was matched.
       }
     }
   }
 
-  // Output the final determination based on the state of the condition flag.
-  if ( conditionMet === 1 )
-  {
-    console.log( 'Yes' ); // Display 'Yes' if the unique pattern was successfully identified.
-  }
-  else
-  {
-    console.log( 'NO' );  // Display 'NO' if the pattern was not found.
+  // Output 'Yes' if the pattern flag is set, otherwise output 'NO'.
+  if (matchFlag === 1) {
+    console.log("Yes");
+  } else {
+    console.log("NO");
   }
 }
 
-// Entry point for execution: The main processing function is invoked
-// with data read from standard input. The file system module is used
-// to synchronously read the input, assuming 'utf8' encoding.
-analyzeDigits( require( 'fs' ).readFileSync( '/dev/stdin', 'utf8' ) );
+// Read the entire content of standard input as a UTF-8 encoded string.
+// The original code had a typo 'ut8', which has been corrected to 'utf8' for proper encoding.
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

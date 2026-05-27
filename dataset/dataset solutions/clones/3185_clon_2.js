@@ -1,46 +1,50 @@
-// This function handles the entire input data block.
-function ProcessData(rawData) {
+function ProcessInputData(rawData) {
+  // Split the entire input string into an array of lines.
+  rawData = rawData.split("\n");
 
-    rawData = rawData.split("\n");
-    let dimensions = rawData[0].split(" "); // Separate the first line into dimensions
+  // Extract the first line which contains N (number of customers) and M (number of dishes).
+  let firstLineParts = rawData[0].split(" ");
+  let numCustomers = parseInt(firstLineParts[0], 10); // N
+  let numDishes = parseInt(firstLineParts[1], 10);    // M
 
-    let numItems = parseInt(dimensions[0], 10); // First dimension: number of items (N)
-    let numCategories = parseInt(dimensions[1], 10); // Second dimension: number of categories (M)
+  // Initialize counters for the process.
+  let currentDishId = 1; // Represents the dish being evaluated, starting from 1.
+  let customerCount = 0; // Counts how many customers like the current dish.
+  let satisfiedDishes = 0; // Counts dishes liked by all customers.
 
-    let currentCategory = 1; // Initialize category identifier, starting from 1
-    let matchCounter = 0;    // Initialize counter for matches within a category iteration
-    let finalResult = 0;     // Initialize the overall successful category count
+  // Iterate through each possible dish from 1 to M.
+  for (currentDishId = 1; currentDishId <= numDishes; currentDishId++) {
+    // For each dish, check every customer's preferences.
+    for (let customerIdx = 1; customerIdx <= numCustomers; customerIdx++) {
+      // Get the preferences for the current customer (line customerIdx in input).
+      let customerPrefParts = rawData[customerIdx].split(" ");
+      let numPreferences = parseInt(customerPrefParts[0], 10); // K, number of preferences for this customer.
 
-    // Iterate through each possible category, from 1 up to numCategories
-    for (currentCategory = 1; currentCategory <= numCategories; currentCategory++) {
+      // Loop through the current customer's stated preferences.
+      for (let prefIdx = 1; prefIdx <= numPreferences; prefIdx++) {
+        let preferredDishId = parseInt(customerPrefParts[prefIdx], 10); // A preferred dish ID.
 
-        // Iterate through each item's data row provided in the input, starting from line 1
-        for (let itemIndex = 1; itemIndex <= numItems; itemIndex++) {
-
-            let currentItemData = rawData[itemIndex].split(" "); // Split the current item's data line by spaces
-            let numPreferences = parseInt(currentItemData[0], 10); // The first element is the number of preferences for this item
-
-            // Loop through the actual preferences listed for the current item
-            for (let preferenceIndex = 1; preferenceIndex <= numPreferences; preferenceIndex++) {
-                let currentPreference = parseInt(currentItemData[preferenceIndex], 10); // Get the current preference value
-
-                // Check if this item's preference matches the category currently being evaluated
-                if (currentPreference === currentCategory) {
-                    matchCounter++; // Increment the match counter if a match is found
-                }
-            }
+        // If the customer's preferred dish matches the dish currently being evaluated, increment the count.
+        if (preferredDishId === currentDishId) {
+          customerCount++;
         }
-
-        // After checking all items against the current category, determine if all items matched
-        if (matchCounter === numItems) {
-            finalResult++; // If every item had a preference for the current category, increment the overall successful category count
-        }
-        
-        matchCounter = 0; // Reset the match counter to zero for the next category evaluation
+      }
     }
 
-    console.log(finalResult); // Output the final count of categories that satisfied all items
+    // After checking all customers for the current dish,
+    // if all customers liked it (customerCount equals N), increment the total.
+    if (customerCount === numCustomers) {
+      satisfiedDishes++;
+    }
+
+    // Reset the customer count for the next dish evaluation.
+    customerCount = 0;
+  }
+
+  // Output the final count of dishes liked by all customers.
+  console.log(satisfiedDishes);
 }
 
-// Do not modify the following line; it handles standard input and invokes the primary processing function.
-ProcessData(require("fs").readFileSync("/dev/stdin", "utf8"));
+// This part handles reading input from standard input and calling the main processing function.
+// It should not be modified.
+ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,93 +1,97 @@
-system.stdin.initiate();
-system.stdin.configureEncoding("UTF-8"); // Configure the input stream encoding
+process.stdin.resume(); // Continue reading from standard input
+process.stdin.setEncoding("utf8"); // Set the encoding for input data
 
-const inputProcessor = fetchModule("readline").establishHandler({
-  sourceInput: system.stdin,
-  destinationOutput: system.stdout,
+// Create an interface for reading lines from standard input
+const inputProcessor = require("readline").createInterface({
+  input: process.stdin, // Use standard input as the source
+  output: process.stdout, // Use standard output for any prompts (though none are used here)
 });
 
-const dataRecords = []; // Array to store all input lines
+// Array to store all incoming lines from standard input
+const inputBuffer = [];
 
-// Event listener for each line of input received
-inputProcessor.onDataLine((currentRecord) => {
-  dataRecords.append(currentRecord);
+// Event listener for each line received
+inputProcessor.on("line", (currentLine) => {
+  inputBuffer.push(currentLine); // Add the current line to our buffer
 });
 
-let moveCount = 0; // Global counter for element moves during sorting
+// Global counter for comparison operations during sorting
+let operationCount = 0;
 
 /**
- * Performs an incremental sort (similar to insertion sort) on a sub-array
- * with a specified gap.
- * @param {Array<number>} dataArray - The array to sort.
- * @param {number} gapValue - The gap between elements to compare.
+ * Performs an insertion sort on a sub-array defined by a gap size.
+ * This is a core component of Shell Sort.
+ * @param {number[]} dataArray - The array to be sorted.
+ * @param {number} gapSize - The interval between elements to be compared.
  */
-function incrementalSort(dataArray, gapValue) {
-  // Iterate through the array starting from the gap
-  for (let outerIndex = gapValue; outerIndex < dataArray.length; outerIndex++) {
-    const currentValue = dataArray[outerIndex]; // Store the current element
-    let innerIndex = outerIndex - gapValue; // Initialize inner index for comparison
+function subArraySort(dataArray, gapSize) {
+  // Iterate through the array starting from the gapSize-th element
+  for (let idx = gapSize; idx < dataArray.length; idx++) {
+    let currentValue = dataArray[idx]; // Store the current element to be inserted
+    let subIdx = idx - gapSize; // Initialize the index for comparison in the sub-array
 
-    // Shift elements that are greater than currentValue
-    while (innerIndex >= 0 && dataArray[innerIndex] > currentValue) {
-      dataArray[innerIndex + gapValue] = dataArray[innerIndex]; // Move element
-      innerIndex = innerIndex - gapValue; // Decrement inner index by gap
-      moveCount++; // Increment operation counter
+    // Move elements of dataArray[0...idx-gapSize] that are greater than currentValue
+    // to one position ahead of their current position
+    while (subIdx >= 0 && dataArray[subIdx] > currentValue) {
+      dataArray[subIdx + gapSize] = dataArray[subIdx]; // Shift element
+      subIdx = subIdx - gapSize; // Move to the previous element in the sub-array
+      operationCount++; // Increment the comparison counter
     }
-    dataArray[innerIndex + gapValue] = currentValue; // Place currentValue in its sorted position
+    dataArray[subIdx + gapSize] = currentValue; // Place currentValue in its correct position
   }
 }
 
 /**
- * Generates a sequence of gaps for Shell Sort using Knuth's sequence (h = 3h + 1).
- * @param {Array<number>} sourceData - The array for which to generate gaps.
- * @returns {Array<number>} An array of gap values in descending order.
+ * Generates a sequence of decreasing gap sizes for Shell Sort using Knuth's formula (h = h * 3 + 1).
+ * @param {number[]} dataArray - The array for which to generate gap sizes (its length determines the max gap).
+ * @returns {number[]} An array of gap sizes in descending order.
  */
-function generateGaps(sourceData) {
-  const arrayLength = sourceData.length; // Get the length of the input data
-  let previousGap = 1; // Starting gap value
-  const gapSequence = [1]; // Array to store generated gaps
+function generateGaps(dataArray) {
+  const arrayLength = dataArray.length; // Get the total number of elements
+  let previousGap = 1; // Start with the initial gap of 1
+  const gapSequence = [1]; // Initialize the sequence with 1
 
-  // Generate gaps until the next gap exceeds array length
-  for (;;) {
-    previousGap = previousGap * 3 + 1; // Calculate the next gap
+  // Generate gaps until the next gap exceeds the array length
+  while (true) {
+    previousGap = previousGap * 3 + 1; // Apply Knuth's formula
     if (previousGap < arrayLength) {
-      gapSequence.push(previousGap); // Add to sequence if within bounds
+      gapSequence.push(previousGap); // Add the new gap if it's within bounds
     } else {
-      break; // Exit loop if gap is too large
+      break; // Stop if the gap is too large
     }
   }
-  return gapSequence.reverse(); // Return gaps in descending order
+  return gapSequence.reverse(); // Return the gaps in descending order
 }
 
 /**
- * Implements the Shell Sort algorithm using generated gaps.
- * @param {Array<number>} inputCollection - The array to be sorted.
- * @returns {Array<number>} The sequence of gaps used for sorting.
+ * Implements the Shell Sort algorithm using the generated gap sequence.
+ * @param {number[]} dataArray - The array to be sorted.
+ * @returns {number[]} The sequence of gaps used during the sort.
  */
-function gapBasedSort(inputCollection) {
-  moveCount = 0; // Reset the global move counter for this sort
-  const gapList = generateGaps(inputCollection); // Obtain the gap sequence
+function sortWithShell(dataArray) {
+  operationCount = 0; // Reset the comparison counter for this sort operation
+  const gapList = generateGaps(dataArray); // Obtain the sequence of gaps
 
-  // Apply incremental sort for each gap in the sequence
-  for (let k = 0; k < gapList.length; k++) {
-    incrementalSort(inputCollection, gapList[k]); // Perform sort with current gap
+  // Apply insertion sort for each gap in the sequence
+  for (let idx = 0; idx < gapList.length; idx++) {
+    subArraySort(dataArray, gapList[idx]); // Perform g-sorted insertion sort
   }
-  return gapList; // Return the list of gaps utilized
+  return gapList; // Return the list of gaps used
 }
 
-// Event listener for the end of input
-inputProcessor.onInputClosure(() => {
-  // Parse the number of elements from the first input line
-  const elementCount = parseInt(dataRecords[0], 10);
-  // Extract and convert the actual data elements to numbers
-  const sortedElements = dataRecords.slice(1, elementCount + 1).map(val => Number(val));
+// Event listener for when the input stream closes
+inputProcessor.on("close", () => {
+  // The first line contains the number of elements
+  const elementCount = inputBuffer[0] - 0;
+  // The subsequent lines contain the array elements, converted to numbers
+  const dataArray = inputBuffer.slice(1, elementCount + 1).map(Number);
 
-  const finalGaps = gapBasedSort(sortedElements); // Perform the main sort operation
+  // Perform the Shell Sort on the array
+  const gapList = sortWithShell(dataArray);
 
   // Output the results as specified
-  console.log(finalGaps.length); // Number of gaps used
-  console.log(finalGaps.join(" ")); // The gap sequence
-  console.log(moveCount); // Total element movements
-  // Output each sorted element on a new line
-  sortedElements.forEach((item) => console.log(item));
+  console.log(gapList.length); // Number of gaps used
+  console.log(gapList.join(" ")); // The gap sequence, space-separated
+  console.log(operationCount); // Total comparison operations
+  dataArray.forEach((item) => console.log(item)); // Each sorted element on a new line
 });

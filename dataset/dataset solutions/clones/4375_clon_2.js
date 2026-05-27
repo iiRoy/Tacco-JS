@@ -1,37 +1,34 @@
-// Initialize the standard input stream for reading data.
 process.stdin.resume();
-
-// Set the character encoding for the input stream to UTF-8.
 process.stdin.setEncoding('utf8');
 
-// This function encapsulates the main computational logic of the program.
-function processInputAndCalculate(incomingDataString) {
-    // Divide the received string into an array of substrings using space as a delimiter.
-    let parsedNumericalElements = incomingDataString.split(" ");
+/**
+ * Processes the provided input string to determine a specific numerical outcome.
+ * @param {string} rawData - The input string, expected to contain two space-separated numerical values.
+ */
+function ProcessInput(rawData) {
+    // Divide the input string into an array of substrings using a space as the delimiter.
+    let dataParts = rawData.split(" ");
 
-    // Extract the first element from the array, which represents the primary numerical component.
-    let primaryNum = parsedNumericalElements[0];
-
-    // Extract the second element from the array, representing the secondary numerical component.
-    let secondaryNum = parsedNumericalElements[1];
-
-    // Declare a variable to store the ultimate computed value, initializing it to zero.
-    let finalOutcome = 0;
-
-    // Evaluate a condition: if the secondary number is greater than or equal to the primary number.
-    if (secondaryNum >= primaryNum) {
-        // Should the condition be met, the final result is set to zero.
-        finalOutcome = 0;
+    // Assign the first element of the split array to a variable representing the initial quantity.
+    let firstValue = dataParts[0];
+    // Assign the second element of the split array to a variable representing the threshold quantity.
+    let secondValue = dataParts[1];
+    
+    // Initialize a variable to store the final computed result.
+    let resultValue = 0;
+    
+    // Check if the threshold quantity is greater than or equal to the initial quantity.
+    if (secondValue >= firstValue) {
+        // If the condition is met, the result is set to zero.
+        resultValue = 0;
+    } else {
+        // Otherwise, the result is calculated as the difference between the initial and threshold quantities.
+        resultValue = firstValue - secondValue;
     }
-    else {
-        // Otherwise, calculate the difference between the primary and secondary numbers.
-        finalOutcome = primaryNum - secondaryNum;
-    }
-
-    // Display the final computed outcome to the console.
-    console.log(finalOutcome);
+    
+    // Display the calculated result to the standard output.
+    console.log(resultValue);
 }
 
-// Read the entire content from the standard input file path (/dev/stdin),
-// decode it as UTF-8, and then pass this content to the primary processing function.
-processInputAndCalculate(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Read the entire content from standard input synchronously and pass it to the processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

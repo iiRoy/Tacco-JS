@@ -1,46 +1,40 @@
-const systemInput = require("fs").readFileSync("/dev/stdin", "utf8");
+((inputContent) => {
+    const rawLines = inputContent.split("\n");
+    const stationCount = parseInt(rawLines[0], 10);
 
-const rawSegments = systemInput.trim().split("\n");
-const totalStations = parseInt(rawSegments[0], 10);
+    const travelTimes = [];
+    const startTimes = [];
+    const frequencies = [];
 
-const travelTimes = [];
-const initialDepartures = [];
-const frequencySpans = [];
+    for (let k = 1; k < rawLines.length; k++) {
+        const parts = rawLines[k].split(" ").map(val => parseInt(val, 10));
+        if (parts.length === 3) {
+            travelTimes.push(parts[0]);
+            startTimes.push(parts[1]);
+            frequencies.push(parts[2]);
+        }
+    }
 
-for (let k = 1; k < totalStations; k++) {
-    const segmentData = rawSegments[k].split(" ");
-    travelTimes.push(parseInt(segmentData[0], 10));
-    initialDepartures.push(parseInt(segmentData[1], 10));
-    frequencySpans.push(parseInt(segmentData[2], 10));
-}
-
-const travelSimulator = (startPoint) => {
-    const traverseRoute = (presentLoc, momentOfArrival) => {
-        if (presentLoc === totalStations - 1) {
-            return momentOfArrival;
+    const calculateJourneyTime = initialStationIndex => {
+        if (initialStationIndex === stationCount - 1) {
+            return 0;
         }
 
-        const earliestConsideration = Math.max(momentOfArrival, initialDepartures[presentLoc]);
-        const intervalOffset = earliestConsideration % frequencySpans[presentLoc];
-        
-        let actualDepartureMoment;
-        if (intervalOffset === 0) {
-            actualDepartureMoment = earliestConsideration;
-        } else {
-            actualDepartureMoment = earliestConsideration + (frequencySpans[presentLoc] - intervalOffset);
-        }
+        const journeyPathIndices = Array.from({ length: stationCount - 1 - initialStationIndex }, (_, idx) => initialStationIndex + idx);
 
-        const arrivalAtNext = actualDepartureMoment + travelTimes[presentLoc];
+        const finalArrivalTime = journeyPathIndices.reduce((currentTimeAccumulator, currentStationIdx) => {
+            const actualArrivalAtStation = Math.max(currentTimeAccumulator, startTimes[currentStationIdx]);
+            const departureFromStation = Math.ceil(actualArrivalAtStation / frequencies[currentStationIdx]) * frequencies[currentStationIdx];
+            const arrivalAtNextStation = departureFromStation + travelTimes[currentStationIdx];
+            return arrivalAtNextStation;
+        }, 0);
 
-        return traverseRoute(presentLoc + 1, arrivalAtNext);
+        return finalArrivalTime;
     };
 
-    return traverseRoute(startPoint, 0);
-};
+    const allJourneyTimes = [...Array(stationCount).keys()]
+        .map(idx => calculateJourneyTime(idx));
 
-const outputBuffer = [];
-for (let j = 0; j < totalStations; j++) {
-    outputBuffer.push(travelSimulator(j));
-}
+    console.log(allJourneyTimes.join('\n'));
 
-console.log(outputBuffer.join("\n"));
+})(require("fs").readFileSync("/dev/stdin", "utf8"));

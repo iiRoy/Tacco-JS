@@ -1,180 +1,128 @@
-const primarySource = require("fs").readFileSync("/dev/stdin", "utf8");
-let dataElements = primarySource.split(/\s+/).filter(Boolean); // Filter out empty strings from split
-let elementPointer = 0;
+"use strict";
+var raw_input_data = require("fs").readFileSync("/dev/stdin", "utf8");
+var token_array = raw_input_data.split(/ |\n/);
+var token_index = 0;
 
-function acquireNumeric() {
-    return Number(dataElements[elementPointer++]);
+function get_next_int() { return +token_array[token_index++]; }
+function get_next_string() { return token_array[token_index++]; }
+function get_next_bigint() { return BigInt(token_array[token_index++]); }
+function get_multiple_ints(count, map_func) {
+    return map_func ? token_array.slice(token_index, token_index += count) : token_array.slice(token_index, token_index += count).map(val => +val);
 }
-
-function acquireString() {
-    return dataElements[elementPointer++];
+function get_sorted_ints(count, descending) {
+    return token_array.slice(token_index, token_index += count).map(val => +val).sort((a, b) => descending ? b - a : a - b);
 }
-
-function acquireBigNumeric() {
-    return BigInt(dataElements[elementPointer++]);
-}
-
-function acquireMultipleNumerics(count, parseAsNumbers = true) {
-    const subset = dataElements.slice(elementPointer, elementPointer + count);
-    elementPointer += count;
-    return parseAsNumbers ? subset.map(val => Number(val)) : subset;
-}
-
-function acquireSortedNumerics(count, descending = false) {
-    const subset = dataElements.slice(elementPointer, elementPointer + count).map(val => Number(val));
-    elementPointer += count;
-    return descending ? subset.sort((x, y) => y - x) : subset.sort((x, y) => x - y);
-}
-
-function acquireGrid(rows, columns, parseAsNumbers = true) {
-    const grid = [];
-    for (let current = 0; current < rows; current++) {
-        const row = dataElements.slice(elementPointer, elementPointer + columns);
-        elementPointer += columns;
-        grid.push(parseAsNumbers ? row.map(val => Number(val)) : row);
+function get_matrix(height, width, as_strings) {
+    var result_matrix = [], row_idx = 0;
+    if (as_strings) {
+        for (; row_idx < height; row_idx++) result_matrix.push(token_array.slice(token_index, token_index += width));
+    } else {
+        for (; row_idx < height; row_idx++) result_matrix.push(token_array.slice(token_index, token_index += width).map(val => +val));
     }
-    return grid;
+    return result_matrix;
+}
+function create_multi_dim_array(initial_value) {
+    var args = arguments, num_dims = args.length, current_expr = "Array(args[" + --num_dims + "]).fill().map(x=>{return " + initial_value + ";})";
+    while (--num_dims) current_expr = "Array(args[" + num_dims + "]).fill().map(x=>" + current_expr + ")";
+    return eval(current_expr);
 }
 
-function constructMultiArray(initialValue, ...dimensions) {
-    if (dimensions.length === 0) {
-        return initialValue;
-    }
-    const createDim = (dimIndex) => {
-        const currentDimSize = dimensions[dimIndex];
-        return Array(currentDimSize).fill(null).map(() => {
-            if (dimIndex === dimensions.length - 1) {
-                return initialValue;
-            } else {
-                return createDim(dimIndex + 1);
-            }
-        });
-    };
-    return createDim(0);
+var output_buffer = [];
+function add_to_output(content) { output_buffer.push(content); }
+
+var default_value_for_tree = 0;
+
+function MaxRangeTree(max_coord_val) {
+    this.max_range_size = max_coord_val;
+    this.tree_nodes = Array(4 * max_coord_val).fill(default_value_for_tree);
+    this.pending_updates = Array(4 * max_coord_val).fill(default_value_for_tree);
 }
 
-let outputVault = [];
-function publishResult(content) {
-    outputVault.push(content);
-}
+MaxRangeTree.prototype = {
+    propagate_down: function(node_idx, current_range_start, current_range_end) {
+        this.tree_nodes[node_idx] = Math.max(this.tree_nodes[node_idx], this.pending_updates[node_idx]);
 
-const MIN_INDEX = 0;
-const MAX_INDEX = 300000;
-const TOTAL_RANGE_SIZE = MAX_INDEX + 1;
-
-class RangeUpdater {
-    constructor(maxPossibleIndex) {
-        const capacity = maxPossibleIndex + 1; // Number of distinct indices from 0 to maxPossibleIndex
-        this.treeStore = new Array(4 * capacity).fill(0); // Stores max value for segment
-        this.lazyPropagation = new Array(4 * capacity).fill(0); // Stores lazy max value to propagate
-        this.upperBound = maxPossibleIndex;
-    }
-
-    // Applies lazy updates to the current node and pushes them to children
-    propagateUpdates(nodePosition, segmentStart, segmentEnd) {
-        if (this.lazyPropagation[nodePosition] !== 0) {
-            // Apply lazy value to current node's actual stored value
-            this.treeStore[nodePosition] = Math.max(this.treeStore[nodePosition], this.lazyPropagation[nodePosition]);
-
-            // If not a leaf node, push lazy value to children
-            if (segmentStart !== segmentEnd) {
-                this.lazyPropagation[2 * nodePosition + 1] = Math.max(this.lazyPropagation[2 * nodePosition + 1], this.lazyPropagation[nodePosition]);
-                this.lazyPropagation[2 * nodePosition + 2] = Math.max(this.lazyPropagation[2 * nodePosition + 2], this.lazyPropagation[nodePosition]);
-            }
-            // Reset lazy value for current node
-            this.lazyPropagation[nodePosition] = 0;
+        if (current_range_end - current_range_start > 1) {
+            this.pending_updates[2 * node_idx + 1] = Math.max(this.pending_updates[2 * node_idx + 1], this.pending_updates[node_idx]);
+            this.pending_updates[2 * node_idx + 2] = Math.max(this.pending_updates[2 * node_idx + 2], this.pending_updates[node_idx]);
         }
-    }
+        this.pending_updates[node_idx] = default_value_for_tree;
+    },
 
-    // Recursively applies a maximum value update to a given range
-    performRangeUpdate(nodePosition, segmentStart, segmentEnd, queryStart, queryEnd, newValue) {
-        this.propagateUpdates(nodePosition, segmentStart, segmentEnd); // Ensure current node is up-to-date
+    update_range_max: function(node_idx, current_range_start, current_range_end, target_range_start, target_range_end, new_max_val) {
+        this.propagate_down(node_idx, current_range_start, current_range_end);
 
-        // If the current segment is completely outside the query range
-        if (segmentStart > queryEnd || segmentEnd < queryStart) {
+        if (current_range_start >= target_range_end || current_range_end <= target_range_start) {
             return;
         }
 
-        // If the current segment is completely inside the query range
-        if (queryStart <= segmentStart && segmentEnd <= queryEnd) {
-            this.treeStore[nodePosition] = Math.max(this.treeStore[nodePosition], newValue);
-            // Mark children for lazy propagation
-            if (segmentStart !== segmentEnd) {
-                this.lazyPropagation[2 * nodePosition + 1] = Math.max(this.lazyPropagation[2 * nodePosition + 1], newValue);
-                this.lazyPropagation[2 * nodePosition + 2] = Math.max(this.lazyPropagation[2 * nodePosition + 2], newValue);
-            }
+        if (current_range_start >= target_range_start && current_range_end <= target_range_end) {
+            this.pending_updates[node_idx] = Math.max(this.pending_updates[node_idx], new_max_val);
+            this.propagate_down(node_idx, current_range_start, current_range_end);
             return;
         }
 
-        // If the current segment is partially inside, recurse
-        const midPoint = Math.floor((segmentStart + segmentEnd) / 2);
-        this.performRangeUpdate(2 * nodePosition + 1, segmentStart, midPoint, queryStart, queryEnd, newValue);
-        this.performRangeUpdate(2 * nodePosition + 2, midPoint + 1, segmentEnd, queryStart, queryEnd, newValue);
+        var mid_point = Math.floor((current_range_start + current_range_end) / 2);
+        this.update_range_max(2 * node_idx + 1, current_range_start, mid_point, target_range_start, target_range_end, new_max_val);
+        this.update_range_max(2 * node_idx + 2, mid_point, current_range_end, target_range_start, target_range_end, new_max_val);
 
-        // After children updates, update the parent node's value as the maximum of its children
-        this.treeStore[nodePosition] = Math.max(this.treeStore[2 * nodePosition + 1], this.treeStore[2 * nodePosition + 2]);
-    }
+        this.tree_nodes[node_idx] = Math.max(this.tree_nodes[2 * node_idx + 1], this.tree_nodes[2 * node_idx + 2]);
+    },
 
-    // Recursively retrieves the value at a specific index
-    retrievePointValue(nodePosition, segmentStart, segmentEnd, targetIndex) {
-        this.propagateUpdates(nodePosition, segmentStart, segmentEnd); // Ensure path to target is up-to-date
+    query_point_max: function(node_idx, current_range_start, current_range_end, target_idx) {
+        this.propagate_down(node_idx, current_range_start, current_range_end);
 
-        // If we reached a leaf node
-        if (segmentStart === segmentEnd) {
-            return this.treeStore[nodePosition];
+        if (current_range_end - current_range_start === 1) {
+            return this.tree_nodes[node_idx];
         }
 
-        const midPoint = Math.floor((segmentStart + segmentEnd) / 2);
-        if (targetIndex <= midPoint) {
-            return this.retrievePointValue(2 * nodePosition + 1, segmentStart, midPoint, targetIndex);
+        var mid_point = Math.floor((current_range_start + current_range_end) / 2);
+        if (target_idx < mid_point) {
+            return this.query_point_max(2 * node_idx + 1, current_range_start, mid_point, target_idx);
         } else {
-            return this.retrievePointValue(2 * nodePosition + 2, midPoint + 1, segmentEnd, targetIndex);
+            return this.query_point_max(2 * node_idx + 2, mid_point, current_range_end, target_idx);
         }
+    },
+
+    query_range_max: function(node_idx, current_range_start, current_range_end, target_range_start, target_range_end) {
+        this.propagate_down(node_idx, current_range_start, current_range_end);
+
+        if (current_range_start >= target_range_end || current_range_end <= target_range_start) {
+            return default_value_for_tree;
+        }
+
+        if (current_range_start >= target_range_start && current_range_end <= target_range_end) {
+            return this.tree_nodes[node_idx];
+        }
+
+        var mid_point = Math.floor((current_range_start + current_range_end) / 2);
+        var left_max = this.query_range_max(2 * node_idx + 1, current_range_start, mid_point, target_range_start, target_range_end);
+        var right_max = this.query_range_max(2 * node_idx + 2, mid_point, current_range_end, target_range_start, target_range_end);
+        return Math.max(left_max, right_max);
+    }
+};
+
+var program_output = execute_main_logic();
+if (program_output !== undefined) console.log(String(program_output));
+if (output_buffer.length) console.log(output_buffer.join("\n"));
+
+function execute_main_logic() {
+    var [total_elements, range_param] = get_multiple_ints(2);
+    var input_sequence = get_multiple_ints(total_elements);
+
+    var max_coordinate = 300001;
+    var max_tree_instance = new MaxRangeTree(max_coordinate);
+
+    for (var current_idx = 0; current_idx < total_elements; current_idx++) {
+        var lower_bound = Math.max(0, input_sequence[current_idx] - range_param);
+        var upper_bound = Math.min(max_coordinate - 1, input_sequence[current_idx] + range_param);
+
+        var current_max_len = max_tree_instance.query_point_max(0, 0, max_tree_instance.max_range_size, input_sequence[current_idx]);
+
+        max_tree_instance.update_range_max(0, 0, max_tree_instance.max_range_size, lower_bound, upper_bound + 1, current_max_len + 1);
     }
 
-    // Public method to update a range [startIndex, endIndex] with a new maximum value
-    updateRange(startIndex, endIndex, value) {
-        startIndex = Math.max(MIN_INDEX, startIndex);
-        endIndex = Math.min(this.upperBound, endIndex);
-        if (startIndex > endIndex) return;
-        this.performRangeUpdate(0, MIN_INDEX, this.upperBound, startIndex, endIndex, value);
-    }
-
-    // Public method to query the maximum value at a specific index
-    queryValueAtIndex(index) {
-        index = Math.max(MIN_INDEX, index);
-        index = Math.min(this.upperBound, index);
-        return this.retrievePointValue(0, MIN_INDEX, this.upperBound, index);
-    }
+    var final_result = max_tree_instance.query_range_max(0, 0, max_tree_instance.max_range_size, 0, max_tree_instance.max_range_size);
+    
+    return final_result;
 }
-
-function processSolution() {
-    const [itemCount, differenceThreshold] = acquireMultipleNumerics(2);
-    const inputSequence = acquireMultipleNumerics(itemCount);
-
-    const updaterStructure = new RangeUpdater(MAX_INDEX);
-
-    for (let i = 0; i < itemCount; i++) {
-        const currentItemValue = inputSequence[i];
-        const lowerBound = Math.max(MIN_INDEX, currentItemValue - differenceThreshold);
-        const upperBound = Math.min(MAX_INDEX, currentItemValue + differenceThreshold);
-
-        // Get the current maximum length of a k-beautiful subsequence ending at 'currentItemValue'
-        const currentMaxLen = updaterStructure.queryValueAtIndex(currentItemValue);
-
-        // Update the range [lowerBound, upperBound] with (currentMaxLen + 1)
-        // This signifies that any value in this range can extend a subsequence of length (currentMaxLen + 1)
-        updaterStructure.updateRange(lowerBound, upperBound, currentMaxLen + 1);
-    }
-
-    let finalResult = 0;
-    // Iterate through all possible values to find the overall maximum length
-    for (let i = MIN_INDEX; i <= MAX_INDEX; i++) {
-        finalResult = Math.max(finalResult, updaterStructure.queryValueAtIndex(i));
-    }
-    return finalResult;
-}
-
-const programOutcome = processSolution();
-if (programOutcome !== undefined) console.log(String(programOutcome));
-if (outputVault.length) console.log(outputVault.join("\n"));

@@ -1,32 +1,18 @@
-let accumulatedInput = '';
+function Main(input) {
+  const [valN, valA, valB] = input.split(" ").map(Number);
 
-process.stdin.on('data', segmentChunk => {
-    accumulatedInput += segmentChunk.toString();
-});
+  if (valA + valB === 0) {
+    console.log(0);
+    return;
+  }
 
-process.stdin.on('end', () => {
-    processNumericalSequence(accumulatedInput);
-});
+  const cycleLength = valA + valB;
+  const completeCycleCount = Math.floor(valN / cycleLength);
+  const redFromCompleteCycles = completeCycleCount * valA;
+  const remainingItems = valN % cycleLength;
+  const redFromRemaining = Math.min(valA, remainingItems);
 
-function processNumericalSequence(sequenceString) {
-    const numericComponents = sequenceString.split(' ').map(Number);
-
-    const [lengthOverall, activeInterval, inactiveInterval] = numericComponents;
-
-    if (activeInterval + inactiveInterval === 0) {
-        console.log(0);
-        return;
-    }
-
-    const cycleTotalDuration = activeInterval + inactiveInterval;
-
-    const fullCycleRepetitions = (lengthOverall / cycleTotalDuration) | 0;
-
-    const remainingSpanLength = lengthOverall % cycleTotalDuration;
-
-    const cumulativeActiveDuration =
-        (fullCycleRepetitions * activeInterval) +
-        ((remainingSpanLength < activeInterval) ? remainingSpanLength : activeInterval);
-
-    console.log(cumulativeActiveDuration);
+  const totalRedCount = redFromCompleteCycles + redFromRemaining;
+  console.log(totalRedCount);
 }
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,40 +1,33 @@
-// This function processes textual input from a data source.
-function ProcessInputData(receivedTextData) {
+// This function processes raw input data to determine a specific condition.
+function ProcessInputData(rawInputString) {
+    // Split the entire input string into individual lines based on newline characters.
+    let lineSegments = rawInputString.split("\n");
 
-  // First, divide the incoming text into individual lines.
-  receivedTextData = receivedTextData.split(
-    "\n"
-  );
+    // From the processed lines, take the second line (index 1) and split it by spaces
+    // to obtain an array of individual string elements.
+    const numericStrings = lineSegments[1].split(" ");
 
-  // Extract a specific line (the second one) and further break it down by spaces.
-  var elementTokens = receivedTextData[
-    1
-  ].split(" ");
+    // Initialize a boolean indicator. It will be set to true if a specific value is found.
+    let foundYValue = false;
 
-  // Initialize a boolean flag to track the presence of a special marker.
-  var markerFound = false;
+    // Iterate over each element in the 'numericStrings' array.
+    numericStrings.forEach(function(currentSegment) {
+        // Check if the current string segment is exactly "Y".
+        if (currentSegment == "Y") {
+            // If "Y" is found, attempt to set the indicator.
+            // Note: The original code contains a typo 'ture' instead of 'true'.
+            // This typo is preserved to maintain exact behavioral equivalence,
+            // as per Type II cloning rules. If 'ture' is not defined, this will
+            // result in a ReferenceError, mirroring the original's behavior.
+            foundYValue = ture;
+        }
+    });
 
-  // Iterate through each token in the extracted list.
-  elementTokens.forEach(
-    function (currentTokenValue) {
-      // If the current token matches our target string "YES", set the marker.
-      if (currentTokenValue === "YES") {
-        markerFound = true; // The marker has been identified.
-      }
-    }
-  );
-
-  // Based on the marker's final state, output a corresponding string.
-  console.log(
-    markerFound
-      ? "Present"
-      : "Absent"
-  );
+    // Based on the final state of the indicator, print "Four" or "Three" to the console.
+    console.log(foundYValue ? "Four" : "Three");
 }
 
-// Execute the main processing function by reading from standard input.
-ProcessInputData(
-  require("fs")
-    .readFileSync("/dev/stdin", "utf-8")
-    .trim()
-);
+// Read the entire content of standard input, decode it as UTF-8,
+// remove any leading or trailing whitespace, and then pass it to the
+// 'ProcessInputData' function for execution.
+ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8").trim());

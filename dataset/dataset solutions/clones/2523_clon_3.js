@@ -1,80 +1,56 @@
-const parseNumericElement = (textFragment, fallbackValue = NaN) => {
-    const numericalConversion = Number(textFragment);
-    return isNaN(numericalConversion) ? fallbackValue : numericalConversion;
-};
+function processInputData(rawDataContent) {
+    const LINE_SEPARATOR = "\n";
+    const VALUE_SEPARATOR = " ";
 
-/**
- * Analyzes structured text input to count elements that satisfy a specific condition.
- * The first line of input provides two configuration values:
- *   1. The expected number of data points to evaluate (N).
- *   2. A maximum permissible value (K) for comparison.
- * The second line contains a sequence of N space-separated numerical data points.
- * This routine reports the total count of data points that are less than or equal to K.
- * @param {string} fullInputString - The entire raw input as a single string.
- */
-function performConditionalDataAggregation(fullInputString) {
-    // Pre-validation: Check for valid input string presence and type
-    if (!fullInputString || typeof fullInputString !== 'string' || fullInputString.trim().length === 0) {
-        console.error("Data processing halted: No valid input string was provided.");
-        return; // Terminate execution gracefully
-    }
+    // Helper function to split a string by a specified delimiter
+    const splitStringByDelimiter = (sourceString, delimiter) => {
+        return sourceString.split(delimiter);
+    };
 
-    // Decompose the input string into an array of distinct lines,
-    // ensuring to strip leading/trailing whitespace and exclude empty lines.
-    const structuredInputLines = fullInputString.trim().split('\n').filter(line => line.length > 0);
+    // Helper function to convert a string representation of a number to an integer
+    const parseStringToInt = (strValue) => {
+        return parseInt(strValue, 10);
+    };
 
-    // Validate the minimum number of input lines required for processing
-    if (structuredInputLines.length < 2) {
-        console.error("Data processing halted: Insufficient input lines detected. Expected at least two.");
-        return; // Terminate execution
-    }
+    // Divide the entire raw input content into an array of individual lines
+    const allInputLines = splitStringByDelimiter(rawDataContent, LINE_SEPARATOR);
 
-    // Extract and parse the operational parameters from the first line
-    const operationalParameters = structuredInputLines[0].split(' ');
-    const expectedDataCount = parseNumericElement(operationalParameters[0]); // N
-    const comparisonBoundary = parseNumericElement(operationalParameters[1]); // K
+    // Process the first line, which contains the iteration count and the comparison threshold
+    const firstLineValues = splitStringByDelimiter(allInputLines[0], VALUE_SEPARATOR);
 
-    // Parameter validation: Ensure N and K are valid numbers and N is non-negative
-    if (isNaN(expectedDataCount) || isNaN(comparisonBoundary) || expectedDataCount < 0) {
-        console.error("Data processing halted: Invalid numerical parameters found on the first input line.");
-        return; // Terminate execution
-    }
+    // The original code processes the second line but does not use its result.
+    // This assignment is redundant for the observable behavior and can be removed.
+    // const secondLineValues = splitStringByDelimiter(allInputLines[1], VALUE_SEPARATOR);
 
-    // Extract and parse the data points from the second line
-    const rawDataSeries = structuredInputLines[1].split(' ');
-    const cleanedNumericSeries = rawDataSeries
-        .map(segment => parseNumericElement(segment))
-        .filter(num => !isNaN(num)); // Discard any segments that failed to parse into numbers
+    let eligibleItemCount = 0;
 
-    // Optional warning: Alert if the actual number of parsed data points is less than expected
-    if (cleanedNumericSeries.length < expectedDataCount) {
-        console.warn(`Warning: Expected ${expectedDataCount} data points, but only ${cleanedNumericSeries.length} were successfully parsed.`);
-        // The processing loop will adapt to the available data.
-    }
+    // Extract the string values for the loop limit and the comparison threshold
+    const iterationLimitString = firstLineValues[0];
+    const comparisonThresholdString = firstLineValues[1];
 
-    let qualifyingItemTally = 0; // Initialize a counter for items meeting the criterion
+    // Convert these string values to numbers for use in the loop and comparison
+    const totalIterations = parseStringToInt(iterationLimitString);
+    const thresholdValue = parseStringToInt(comparisonThresholdString);
 
-    // Iterate through the data series up to the 'expectedDataCount' limit,
-    // or until the available cleaned data points are exhausted.
-    for (let currentPosition = 0; currentPosition < expectedDataCount; currentPosition++) {
-        // Ensure the current position is within the bounds of the actual parsed data array
-        if (currentPosition < cleanedNumericSeries.length) {
-            const currentDatum = cleanedNumericSeries[currentPosition];
-
-            // Apply the core conditional logic: check if the current data point is within the boundary
-            if (currentDatum <= comparisonBoundary) {
-                qualifyingItemTally++; // Increment counter if the condition is satisfied
-            }
-        } else {
-            // If we run out of valid data points before reaching the expected count,
-            // further iterations would be meaningless or lead to errors.
-            break; // Exit the loop early
+    // Helper function to encapsulate the comparison logic and increment the count
+    const evaluateAndIncrement = (itemString, currentThreshold, currentCount) => {
+        const numericItem = parseStringToInt(itemString);
+        if (numericItem <= currentThreshold) {
+            return currentCount + 1;
         }
+        return currentCount;
+    };
+
+    // Iterate through the relevant elements of the first line based on the parsed limit
+    for (let currentIdx = 0; currentIdx < totalIterations; currentIdx++) {
+        const itemToCheckString = firstLineValues[currentIdx];
+        eligibleItemCount = evaluateAndIncrement(itemToCheckString, thresholdValue, eligibleItemCount);
     }
 
-    // Output the final aggregated count
-    console.log(qualifyingItemTally);
+    // Output the final calculated count to the console
+    console.log(eligibleItemCount);
 }
 
-// This section is responsible for standard input/output handling and must remain unaltered.
-performConditionalDataAggregation(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// This section handles reading input from standard input and calling the main processing function.
+// It should not be modified as per the original file's instructions.
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

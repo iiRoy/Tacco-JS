@@ -1,121 +1,83 @@
-const processInput = () => {
-    const rawData = require("fs").readFileSync("/dev/stdin", "utf-8").trim();
-    const allTokens = rawData.split(/\s|\n/).filter(token => token !== '');
-
-    let tokenIndex = 0;
-    const retrieveNext = () => allTokens[tokenIndex++];
-
-    const gridHeight = parseInt(retrieveNext());
-    const gridWidth = parseInt(retrieveNext());
-    const maxJump = parseInt(retrieveNext());
-
-    const startX = parseInt(retrieveNext()) - 1;
-    const startY = parseInt(retrieveNext()) - 1;
-    const endX = parseInt(retrieveNext()) - 1;
-    const endY = parseInt(retrieveNext()) - 1;
-
-    const terrainLayout = [];
-    for (let r = 0; r < gridHeight; r++) {
-        terrainLayout.push(retrieveNext().split(''));
-    }
-
-    return { gridHeight, gridWidth, maxJump, startX, startY, endX, endY, terrainLayout };
-};
-
-class PathQueue {
-    constructor() {
-        this.elements = [];
-        this.head = 0;
-    }
-
-    insert(item) {
-        this.elements.push(item);
-    }
-
-    extract() {
-        if (this.head < this.elements.length) {
-            const item = this.elements[this.head];
-            this.head++;
-            return item;
-        }
-        return undefined;
-    }
-
-    isEmpty() {
-        return this.head >= this.elements.length;
-    }
+function* inputSourceGenerator() {
+    const rawInput = require("fs").readFileSync("/dev/stdin", "utf-8").trim().split(/\n|\s/);
+    yield* rawInput;
 }
 
-const generateCoordinateKey = (x, y) => `${x},${y}`;
+function fetchMultipleValues(count, iteratorInstance) {
+    const currentIterator = iteratorInstance || this.inputIterator || (this.inputIterator = inputSourceGenerator());
+    const collectedValues = [];
+    for (let i = 0; i < count; i += 1) {
+        collectedValues.push(currentIterator.next().value);
+    }
+    return collectedValues;
+}
 
-const findOptimalPath = () => {
-    const { gridHeight, gridWidth, maxJump, startX, startY, endX, endY, terrainLayout } = processInput();
+(() => {
+    const [rowsCount, colsCount, maxReach] = fetchMultipleValues(3).map(val => parseInt(val));
+    const [startRowIdx, startColIdx, targetRowIdx, targetColIdx] = fetchMultipleValues(4).map(val => parseInt(val) - 1);
 
-    const currentDistances = new Map();
-    const obstacleLocations = new Set();
+    const initialLayout = [];
+    for (let r = 0; r < rowsCount; r += 1) {
+        const rowString = fetchMultipleValues(1)[0].split('');
+        initialLayout.push([...rowString]);
+    }
 
-    for (let r = 0; r < gridHeight; r++) {
-        for (let c = 0; c < gridWidth; c++) {
-            const coordKey = generateCoordinateKey(r, c);
-            if (terrainLayout[r][c] === '@') {
-                obstacleLocations.add(coordKey);
-            } else {
-                currentDistances.set(coordKey, Infinity);
+    const pathDistances = Array.from({ length: rowsCount }, () => Array(colsCount).fill(Infinity));
+
+    for (let r = 0; r < rowsCount; r += 1) {
+        for (let c = 0; c < colsCount; c += 1) {
+            if (initialLayout[r][c] === '@') {
+                pathDistances[r][c] = -1; // Obstacle
             }
         }
     }
 
-    const explorationQueue = new PathQueue();
+    pathDistances[startRowIdx][startColIdx] = 0;
+    let currentLevelCells = new Set();
+    currentLevelCells.add(`${startRowIdx},${startColIdx}`);
 
-    const initialCoordKey = generateCoordinateKey(startX, startY);
-    if (obstacleLocations.has(initialCoordKey)) {
-        console.log(-1);
-        return;
-    }
-    currentDistances.set(initialCoordKey, 0);
-    explorationQueue.insert([startX, startY]);
+    const debugGridDisplay = () => {
+        return; // No-op, as in original
+    };
 
-    const movementVectors = [
-        [0, 1],
-        [0, -1],
-        [1, 0],
-        [-1, 0]
-    ];
+    const directionVectors = [[1, 0], [-1, 0], [0, 1], [0, -1]]; // Down, Up, Right, Left
 
-    while (!explorationQueue.isEmpty()) {
-        const [ currentR, currentC ] = explorationQueue.extract();
-        const currentPathLength = currentDistances.get(generateCoordinateKey(currentR, currentC));
+    while (currentLevelCells.size > 0) {
+        let nextLevelCells = new Set();
 
-        for (const [rowDelta, colDelta] of movementVectors) {
-            for (let step = 1; step <= maxJump; step++) {
-                const nextR = currentR + rowDelta * step;
-                const nextC = currentC + colDelta * step;
-                const nextCoordKey = generateCoordinateKey(nextR, nextC);
+        for (const cellKey of currentLevelCells) {
+            const [r, c] = cellKey.split(',').map(Number);
+            const currentDistance = pathDistances[r][c];
 
-                if (nextR < 0 || nextR >= gridHeight || nextC < 0 || nextC >= gridWidth) {
-                    break;
-                }
+            for (const [dr, dc] of directionVectors) {
+                for (let stepIncrement = 1; stepIncrement <= maxReach; stepIncrement++) {
+                    const nextR = r + dr * stepIncrement;
+                    const nextC = c + dc * stepIncrement;
 
-                if (obstacleLocations.has(nextCoordKey)) {
-                    break;
-                }
+                    if (nextR < 0 || nextR >= rowsCount || nextC < 0 || nextC >= colsCount) {
+                        break; // Out of bounds, stop this direction
+                    }
 
-                if (currentDistances.get(nextCoordKey) > currentPathLength + 1) {
-                    currentDistances.set(nextCoordKey, currentPathLength + 1);
-                    explorationQueue.insert([nextR, nextC]);
+                    if (pathDistances[nextR][nextC] === -1) {
+                        break; // Obstacle, stop this direction
+                    }
+
+                    if (pathDistances[nextR][nextC] === Infinity) { // If unvisited
+                        pathDistances[nextR][nextC] = currentDistance + 1;
+                        nextLevelCells.add(`${nextR},${nextC}`);
+                    }
+                    debugGridDisplay(); // No-op
                 }
             }
         }
+        currentLevelCells = nextLevelCells;
     }
 
-    const finalCoordKey = generateCoordinateKey(endX, endY);
-    const result = currentDistances.get(finalCoordKey);
+    const finalDistance = pathDistances[targetRowIdx][targetColIdx];
 
-    if (result === Infinity) {
-        console.log(-1);
+    if (finalDistance === Infinity) {
+        console.log('-1');
     } else {
-        console.log(result);
+        console.log(finalDistance);
     }
-};
-
-findOptimalPath();
+})();

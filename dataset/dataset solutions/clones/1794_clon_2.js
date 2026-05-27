@@ -1,100 +1,138 @@
 "use strict";
-let sourceData = require("fs").readFileSync("/dev/stdin", "utf8");
-let tokenSequence = sourceData.split(/ |\n/);
-let tokenPosition = 0;
+// Import file system module for reading input
+var rawData = require("fs").readFileSync("/dev/stdin", "utf8");
 
-/* Retrieves a single numerical value from the token stream. */
-function retrieveNextNumericValue() {
-    return +tokenSequence[tokenPosition++];
-} /* This function fetches the subsequent number */
+// Split input into tokens by space or newline, initialize token index
+var tokenStream = rawData.split(/ |\n/),
+    tokenIndex = 0;
 
-/* Retrieves a single string token from the stream. */
-function retrieveNextTextString() {
-    return tokenSequence[tokenPosition++];
-} /* This function fetches the subsequent string */
+/**
+ * Retrieves the next token from the stream and converts it to a number.
+ * @returns {number} The next numeric token.
+ */
+function getNextNum() {
+    return +tokenStream[tokenIndex++];
+}
 
-/* Gets a single BigInt value from the current token position. */
-function retrieveNextLargeIntValue() {
-    return BigInt(tokenSequence[tokenPosition++]);
-} /* This function fetches the subsequent BigInt */
+/**
+ * Retrieves the next token from the stream as a string.
+ * @returns {string} The next string token.
+ */
+function getNextStr() {
+    return tokenStream[tokenIndex++];
+}
 
-/* Fetches an array of a specified length. The 'isStringArray' parameter
-   determines if elements are treated as strings or converted to numbers. */
-function fetchPrimitiveArray(arrayLength, isStringArray) {
-    return isStringArray
-        ? tokenSequence.slice(tokenPosition, (tokenPosition += arrayLength))
-        : tokenSequence.slice(tokenPosition, (tokenPosition += arrayLength)).map((element) => +element);
-} /* Obtains an array of specified length. The 'isStringArray' flag indicates if elements should be strings. */
+/**
+ * Retrieves the next token from the stream and converts it to a BigInt.
+ * @returns {BigInt} The next BigInt token.
+ */
+function getNextBigInt() {
+    return BigInt(tokenStream[tokenIndex++]);
+}
 
-/* Retrieves an array of BigInt values with the given length from the input. */
-function fetchBigIntArray(arrayLength) {
-    return tokenSequence.slice(tokenPosition, (tokenPosition += arrayLength)).map((item) => BigInt(item));
-} /* Obtains an array of BigInts of the given length. */
+/**
+ * Retrieves an array of 'count' tokens, converting them to numbers or keeping as strings.
+ * @param {number} count - The number of tokens to retrieve.
+ * @param {boolean} isStringFlag - If true, tokens remain strings; otherwise, they are converted to numbers.
+ * @returns {Array<number|string>} An array of tokens.
+ */
+function getNumsArray(count, isStringFlag) {
+    return isStringFlag ? tokenStream.slice(tokenIndex, tokenIndex += count) : tokenStream.slice(tokenIndex, tokenIndex += count).map(val => +val);
+}
 
-/* Forms a two-dimensional array (matrix) with 'matrixHeight' rows
-   and 'matrixWidth' columns. The 'isTextMatrix' flag dictates if
-   elements are stored as strings or numbers. */
-function acquire2DMatrix(matrixHeight, matrixWidth, isTextMatrix) {
-    let matrixResult = [];
-    let rowIndex = 0;
-    if (isTextMatrix) {
-        for (; rowIndex < matrixHeight; rowIndex++)
-            matrixResult.push(tokenSequence.slice(tokenPosition, (tokenPosition += matrixWidth)));
+/**
+ * Retrieves an array of 'count' tokens, converting them to BigInts.
+ * @param {number} count - The number of tokens to retrieve.
+ * @returns {Array<BigInt>} An array of BigInt tokens.
+ */
+function getBigIntsArray(count) {
+    return tokenStream.slice(tokenIndex, tokenIndex += count).map(val => BigInt(val));
+}
+
+/**
+ * Retrieves a 2D matrix of tokens with specified height and width.
+ * @param {number} height - The number of rows in the matrix.
+ * @param {number} width - The number of columns in each row.
+ * @param {boolean} isStringFlag - If true, tokens remain strings; otherwise, they are converted to numbers.
+ * @returns {Array<Array<number|string>>} The 2D matrix.
+ */
+function getMatrix(height, width, isStringFlag) {
+    var resultMatrix = [],
+        rowCounter = 0;
+    if (isStringFlag) {
+        for (; rowCounter < height; rowCounter++) {
+            resultMatrix.push(tokenStream.slice(tokenIndex, tokenIndex += width));
+        }
     } else {
-        for (; rowIndex < matrixHeight; rowIndex++)
-            matrixResult.push(tokenSequence.slice(tokenPosition, (tokenPosition += matrixWidth)).map((val) => +val));
+        for (; rowCounter < height; rowCounter++) {
+            resultMatrix.push(tokenStream.slice(tokenIndex, tokenIndex += width).map(val => +val));
+        }
     }
-    return matrixResult;
-} /* Generates a 2D array (matrix) of specified height and width. 'isTextMatrix' determines element type. */
+    return resultMatrix;
+}
 
-/* Dynamically constructs a multi-dimensional array based on provided dimension sizes,
-   initialized with a default value. */
-function generateNestedArray(defaultValue) {
-    let dimensionSizes = arguments;
-    let dimCount = dimensionSizes.length;
-    let arrayCreationString = `Array(dimensionSizes[${--dimCount}]).fill().map((_) => { return ${defaultValue};})`;
-    while (--dimCount)
-        arrayCreationString = `Array(dimensionSizes[${dimCount}]).fill().map((_) => ${arrayCreationString})`;
+/**
+ * Creates a multi-dimensional array initialized with a given value.
+ * @param {*} initialValue - The value to initialize array elements with.
+ * @returns {Array} The multi-dimensional array.
+ */
+function createMultiDimArray(initialValue) {
+    var args = arguments,
+        dimCount = args.length,
+        arrayCreationString = "Array(args[" + --dimCount + "]).fill().map(element=>{return " + initialValue + ";})";
+    while (--dimCount) {
+        arrayCreationString = "Array(args[" + dimCount + "]).fill().map(element=>" + arrayCreationString + ")";
+    }
     return eval(arrayCreationString);
 }
 
 
+// Execute the main processing function and print its result
 console.log(processIllumination());
 
-/* This is the primary function orchestrating the illumination simulation logic. */
+/**
+ * Main function to simulate light bulb illumination over iterations.
+ * @returns {string} The final illumination state as a space-separated string.
+ */
 function processIllumination() {
-    let numPositions = retrieveNextNumericValue();
-    let numOperations = retrieveNextNumericValue();
-    let currentIlluminationLevels = fetchPrimitiveArray(numPositions);
-    let nextIlluminationLevels = Array(numPositions);
+    let numPoints = getNextNum(); // Total number of points (N)
+    let numIterations = getNextNum(); // Number of simulation iterations (K)
+    let currentIllumination = getNumsArray(numPoints); // Initial illumination array (A)
 
-    let positionIndex, illuminationTarget, operationCycle, effectiveMinRange, effectiveMaxRange;
+    let nextIllumination = new Array(numPoints); // Array to store illumination for the next step (B)
+    let pointIdx, coveredIdx, iterCount, minCoverageIdx, maxCoverageIdx;
 
-    for (operationCycle = 0; operationCycle < numOperations; operationCycle++) {
-        nextIlluminationLevels.fill(0);
-        let minIlluminationValue = operationCycle; // Initialize with operation cycle for comparison.
+    // Loop through each simulation iteration
+    for (iterCount = 0; iterCount < numIterations; iterCount++) {
+        nextIllumination.fill(0); // Reset next illumination array for current iteration
+        let minNextIllum = iterCount; // Initialize minimum illumination for this step
 
-        for (positionIndex = 0; positionIndex < numPositions; positionIndex++) {
-            // Evaluates how each light source at 'currentIlluminationLevels[positionIndex]' affects target positions.
-            effectiveMinRange = Math.max(positionIndex + 1 - currentIlluminationLevels[positionIndex], 1) - 1;
-            effectiveMaxRange = Math.min(positionIndex + 1 + currentIlluminationLevels[positionIndex], numPositions) - 1;
-            // console.debug(positionIndex, effectiveMinRange, effectiveMaxRange); // Debugging output, uncomment for insights.
+        // Iterate through each light bulb (pointIdx)
+        for (pointIdx = 0; pointIdx < numPoints; pointIdx++) {
+            // Calculate the effective range of the current light bulb
+            // Adjusting for 0-based indexing for array access
+            minCoverageIdx = Math.max(pointIdx + 1 - currentIllumination[pointIdx], 1) - 1;
+            maxCoverageIdx = Math.min(pointIdx + 1 + currentIllumination[pointIdx], numPoints) - 1;
 
-            for (illuminationTarget = effectiveMinRange; illuminationTarget <= effectiveMaxRange; illuminationTarget++) {
-                nextIlluminationLevels[illuminationTarget]++;
+            // Increment illumination for all points covered by the current bulb
+            for (coveredIdx = minCoverageIdx; coveredIdx <= maxCoverageIdx; coveredIdx++) {
+                nextIllumination[coveredIdx]++;
             }
-            minIlluminationValue = Math.min(minIlluminationValue, nextIlluminationLevels[positionIndex]);
+            // Track the minimum illumination value encountered in the nextIllumination array
+            minNextIllum = Math.min(minNextIllum, nextIllumination[pointIdx]);
         }
 
-        currentIlluminationLevels = nextIlluminationLevels.concat(); // Update for the next cycle's input.
+        // Update current illumination state for the next iteration
+        currentIllumination = nextIllumination.concat();
 
-        // Optimization: If the minimum illumination has reached a saturated state, further operations are redundant.
-        if (operationCycle > 41) {
-            // for (let pIdx = 0; pIdx <= numPositions; pIdx++) minIlluminationValue = Math.min(minIlluminationValue, nextIlluminationLevels[pIdx]); // Alternative min calculation (commented out).
-            if (minIlluminationValue >= numPositions) break;
+        // Optimization: If all points are fully illuminated (illumination >= N)
+        // after a certain number of iterations, further iterations won't change the state.
+        if (iterCount > 41) {
+            if (minNextIllum >= numPoints) {
+                break; // Exit early if stable state is reached
+            }
         }
     }
-
-    // console.info(finalIlluminationState); // Final state logging (commented out in original).
-    return currentIlluminationLevels.join(" ");
+    // Return the final illumination state as a space-separated string
+    return currentIllumination.join(" ");
 }

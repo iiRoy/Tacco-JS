@@ -1,34 +1,33 @@
-/* This module processes input data to tally programming contest results. */
-function ProcessResults(rawData) {
-	// Split the entire raw input string into an array of individual lines.
-	const lineFragments = rawData.split('\n');
+// This function processes raw input data to count various submission statuses.
+function ProcessInput(rawData) {
+    // Split the entire input string into an array of individual lines.
+    const lineArray = rawData.split("\n");
 
-	// The very first line indicates the total number of entries to process.
-	const numEntries = parseInt(lineFragments[0], 10);
+    // The first line indicates the total number of test cases to process.
+    const numCases = lineArray[0];
 
-	// Initialize an object to store the tallies for each outcome category.
-	let outcomeCounts = {
-		"AC": 0,    // Accepted
-		"WA": 0,    // Wrong Answer
-		"TLE": 0,   // Time Limit Exceeded
-		"RE": 0     // Runtime Error
-	};
+    // Initialize an object to store the tallies for each status type.
+    // We pre-populate it with common status types and then set their initial counts to zero.
+    let resultTallies = ["AC", "WA", "TLE", "RE"];
+    resultTallies["AC"] = resultTallies["WA"] = resultTallies["TLE"] = resultTallies["RE"] = 0;
 
-	// Iterate through each result entry, starting from the second line (index 1).
-	for (let entryIndex = 1; entryIndex <= numEntries; ++entryIndex) {
-		const currentOutcome = lineFragments[entryIndex];
-		// Increment the count for the specific outcome. If not present, initialize to 1.
-		outcomeCounts[currentOutcome] = (outcomeCounts[currentOutcome]) ? outcomeCounts[currentOutcome] + 1 : 1;
-	}
+    // Iterate through each test case, starting from the second line (index 1).
+    // The loop runs for 'numCases' times.
+    for (let idx = 1; idx <= numCases; idx++) {
+        // Get the current submission status from the input line.
+        let currentStatus = lineArray[idx];
 
-	// Output the final tallies for each result type using template literals.
-	console.log(`AC x ${outcomeCounts['AC']}`);
-	console.log(`WA x ${outcomeCounts['WA']}`);
-	console.log(`TLE x ${outcomeCounts['TLE']}`);
-	console.log(`RE x ${outcomeCounts['RE']}`);
+        // Increment the count for the identified status.
+        // If the status hasn't been encountered before, initialize its count to 1.
+        resultTallies[currentStatus] = (resultTallies[currentStatus]) ? resultTallies[currentStatus] + 1 : 1;
+    }
+
+    // Output the final counts for each status type to the console.
+    console.log("AC x " + resultTallies['AC']);
+    console.log("WA x " + resultTallies['WA']);
+    console.log("TLE x " + resultTallies['TLE']);
+    console.log("RE x " + resultTallies['RE']);
 }
 
-// Entry point: Read data from standard input and then process it.
-const fileSystemModule = require('fs');
-const standardInputData = fileSystemModule.readFileSync('/dev/stdin', 'utf-8');
-ProcessResults(standardInputData);
+// Read input from standard input and pass it to the processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

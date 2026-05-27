@@ -1,57 +1,45 @@
 "use strict";
 
-const sourceData =  require ( "fs" ) . readFileSync ( "/dev/stdin" ,  "UTF-8" ) ;
+const rawInputContent = require("fs").readFileSync("/dev/stdin", "utf8");
+const inputLines = rawInputContent.trim().split("\n");
 
-const dataLines = sourceData . trim ( ) . split ( "\n" ) ;
+const initialConfiguration = inputLines.shift().trim().split(" ").map(Number);
+const N = initialConfiguration[0];
+const A = initialConfiguration[1];
+const B = initialConfiguration[2];
+const C = initialConfiguration[3];
 
-const initialConfig = dataLines . shift ( ) . trim ( ) . split ( " " ) . map ( Number ) ;
+const taskQueue = [];
+taskQueue.push({ A, B, C, result: [] });
 
-const itemCount = initialConfig[ 0 ] ;
-const valueX = initialConfig[ 1 ] ;
-const valueY = initialConfig[ 2 ] ;
-const valueZ = initialConfig[ 3 ] ;
-
-const processingQueue = new Array ( ) ;
-processingQueue . push ( { valueX : valueX , valueY : valueY , valueZ : valueZ , path : new Array ( ) } ) ;
-
-let finalResult ;
-while ( processingQueue . length )
-{
-  const currentProcess = processingQueue . pop ( ) ;
-
-  if ( currentProcess . path . length >= itemCount )
-  {
-    finalResult = currentProcess ;
-    break ;
+let finalOperationResult;
+while (taskQueue.length) {
+  const currentOperation = taskQueue.pop();
+  if (currentOperation.result.length >= N) {
+    finalOperationResult = currentOperation;
+    break;
   }
 
-  const currentLine = dataLines [ currentProcess . path . length ] ;
-
-  if ( currentProcess [ currentLine [ 0 ] ] > 0 )
-  {
-    const nextProcessA = Object . create ( currentProcess ) ;
-    nextProcessA [ currentLine [ 0 ] ] -= 1 ;
-    nextProcessA [ currentLine [ 1 ] ] += 1 ;
-    nextProcessA . path = currentProcess . path . concat ( [ currentLine [ 1 ] ] ) ;
-    processingQueue . push ( nextProcessA ) ;
+  const currentInstruction = inputLines[currentOperation.result.length];
+  if (currentOperation[currentInstruction[0]] > 0) {
+    const nextOperation = Object.create(currentOperation);
+    nextOperation[currentInstruction[0]] -= 1;
+    nextOperation[currentInstruction[1]] += 1;
+    nextOperation.result = currentOperation.result.concat([currentInstruction[1]]);
+    taskQueue.push(nextOperation);
   }
-
-  if ( currentProcess [ currentLine [ 1 ] ] > 0 )
-  {
-    const nextProcessB = Object . create ( currentProcess ) ;
-    nextProcessB [ currentLine [ 0 ] ] += 1 ;
-    nextProcessB [ currentLine [ 1 ] ] -= 1 ;
-    nextProcessB . path = currentProcess . path . concat ( [ currentLine [ 1 ] ] ) ;
-    processingQueue . push ( nextProcessB ) ;
+  if (currentOperation[currentInstruction[1]] > 0) {
+    const nextOperation = Object.create(currentOperation);
+    nextOperation[currentInstruction[0]] += 1;
+    nextOperation[currentInstruction[1]] -= 1;
+    nextOperation.result = currentOperation.result.concat([currentInstruction[1]]);
+    taskQueue.push(nextOperation);
   }
 }
 
-if ( finalResult )
-{
-  console . log ( "Success" ) ;
-  console . log ( finalResult . path . join ( "\r\n" ) ) ;
-}
-else
-{
-  console . log ( "Failure" ) ;
+if (finalOperationResult) {
+  console.log("Yes");
+  console.log(finalOperationResult.result.join("\n"));
+} else {
+  console.log("No");
 }

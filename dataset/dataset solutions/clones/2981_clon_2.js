@@ -1,167 +1,169 @@
-/* This module provides utilities for parsing input data streams. */
-var INPUT_READER=(function(){
-    /* Internal helper function to create a new LineDataProcessor. */
-    function createInputReader(sourceContent){return new LineDataProcessor(sourceContent);}
+var INPUT_PARSER = (function() {
+  /**
+   * Factory function to create a new data parser instance.
+   * @param {string} rawInputString - The raw input string to parse.
+   * @returns {DataProcessor} A new DataProcessor instance.
+   */
+  function createParser(rawInputString) {
+    return new DataProcessor(rawInputString);
+  }
 
-    /*
-     * Constructor for processing input lines.
-     * @param {string} sourceContent - The raw string content to process.
-     */
-    function LineDataProcessor(sourceContent){
-        // Trim whitespace and split the content into individual lines.
-        this._lineSegments=sourceContent.trim().split("\n");
-        // Initialize the pointer for the current line segment.
-        this._currentSegmentIndex=0;
+  /**
+   * DataProcessor class for parsing input strings.
+   * @class
+   * @param {string} initialString - The string content to be processed.
+   */
+  function DataProcessor(initialString) {
+    // Store the input string, split by newlines and trimmed.
+    this._sourceLines = initialString.trim().split("\n");
+    // Keep track of the current line being processed.
+    this._currentLineIndex = 0;
+  }
+
+  /**
+   * Reads the next token from the current line. If the line is exhausted, moves to the next.
+   * Tokens are read in reverse order from the line.
+   * @param {boolean} [returnAsString=false] - If true, returns the token as a string; otherwise, as a number.
+   * @returns {string|number} The next token.
+   */
+  DataProcessor.prototype.readNextToken = function(returnAsString) {
+    var currentLines = this._sourceLines;
+    var linePointer = this._currentLineIndex;
+    var extractedToken;
+
+    // If the current line hasn't been split into tokens yet, do so.
+    if (typeof currentLines[linePointer] === "string") {
+      currentLines[linePointer] = currentLines[linePointer].split(" ").reverse();
     }
 
-    /*
-     * Prototype method to fetch the next token from the current line.
-     * It reverses the order of elements on the current line before popping.
-     * @param {boolean} returnString - If true, returns the token as a string; otherwise, as a number.
-     * @returns {string|number} The fetched token.
-     */
-    LineDataProcessor.prototype.fetchNextToken=function(returnString){
-        var segmentArray=this._lineSegments,
-            segmentPointer=this._currentSegmentIndex,
-            resultValue;
+    // Pop the last token (which is the first in original order due to reverse).
+    extractedToken = currentLines[linePointer].pop();
 
-        // If the current line segment hasn't been processed into parts yet, do so.
-        if(typeof segmentArray[segmentPointer]==="string")
-            segmentArray[segmentPointer]=segmentArray[segmentPointer].split(" ").reverse();
+    // If the current line is now empty, advance to the next line.
+    if (!currentLines[linePointer].length) {
+      this._currentLineIndex++;
+    }
 
-        // Pop the last element (which is the first after reverse) from the current line's parts.
-        resultValue=segmentArray[segmentPointer].pop();
+    // Return the token, optionally as a string.
+    return returnAsString ? extractedToken : +extractedToken;
+  };
 
-        // If the current line segment is now empty, advance the line pointer.
-        if(!segmentArray[segmentPointer].length)
-            this._currentSegmentIndex++;
+  /**
+   * Reads all tokens from the current line and advances the line pointer.
+   * @param {boolean} [returnAsStrings=false] - If true, returns tokens as strings; otherwise, as numbers.
+   * @returns {Array<string|number>} An array of tokens from the line.
+   */
+  DataProcessor.prototype.readLineTokens = function(returnAsStrings) {
+    var lineContent = this._sourceLines[this._currentLineIndex++].split(" ");
+    return returnAsStrings ? lineContent : lineContent.map(item => +item);
+  };
 
-        // Return the token, converting to number if returnString is false.
-        return returnString?resultValue:+resultValue;
-    };
+  /**
+   * Reads a matrix of 'n' lines, splitting each line into tokens.
+   * @param {number} numRows - The number of rows (lines) to read.
+   * @param {boolean} [returnAsStrings=false] - If true, returns tokens as strings; otherwise, as numbers.
+   * @returns {Array<Array<string|number>>} A 2D array representing the matrix.
+   */
+  DataProcessor.prototype.readMatrix = function(numRows, returnAsStrings) {
+    var matrixRows = this._sourceLines.slice(this._currentLineIndex, this._currentLineIndex += numRows).map(line => line.split(" "));
+    return returnAsStrings ? matrixRows : matrixRows.map(row => row.map(element => +element));
+  };
 
-    /*
-     * Prototype method to fetch all tokens from the next line.
-     * @param {boolean} returnString - If true, returns tokens as strings; otherwise, as numbers.
-     * @returns {Array<string|number>} An array of tokens from the next line.
-     */
-    LineDataProcessor.prototype.fetchLineTokens=function(returnString){
-        // Get the current line, split by space, and advance the line pointer.
-        var resultValue=this._lineSegments[this._currentSegmentIndex++].split(" ");
+  /**
+   * Reads 'n' lines as a simple array.
+   * @param {number} numLines - The number of lines to read.
+   * @param {boolean} [returnAsStrings=false] - If true, returns lines as strings; otherwise, as numbers.
+   * @returns {Array<string|number>} An array of lines.
+   */
+  DataProcessor.prototype.readLines = function(numLines, returnAsStrings) {
+    var lineArray = this._sourceLines.slice(this._currentLineIndex, this._currentLineIndex += numLines);
+    return returnAsStrings ? lineArray : lineArray.map(item => +item);
+  };
 
-        // Return tokens, converting to numbers if returnString is false.
-        return returnString?resultValue:resultValue.map(currentElement=>+currentElement);
-    };
-
-    /*
-     * Prototype method to fetch a matrix of tokens over 'numRows' lines.
-     * @param {number} numRows - The number of lines to read for the matrix.
-     * @param {boolean} returnString - If true, returns tokens as strings; otherwise, as numbers.
-     * @returns {Array<Array<string|number>>} A 2D array (matrix) of tokens.
-     */
-    LineDataProcessor.prototype.fetchMatrixTokens=function(numRows,returnString){
-        // Slice the required number of lines and split each by space.
-        var resultValue=this._lineSegments.slice(this._currentSegmentIndex,this._currentSegmentIndex+=numRows).map(currentElement=>currentElement.split(" "));
-
-        // Return matrix, converting inner elements to numbers if returnString is false.
-        return returnString?resultValue:resultValue.map(currentElement=>currentElement.map(innerElement=>+innerElement));
-    };
-
-    /*
-     * Prototype method to fetch a block of raw lines.
-     * @param {number} numRows - The number of lines to read.
-     * @param {boolean} returnString - If true, returns lines as strings; otherwise, attempts to convert each line to a number.
-     * @returns {Array<string|number>} An array of lines.
-     */
-    LineDataProcessor.prototype.fetchRawLines=function(numRows,returnString){
-        // Slice the required number of lines directly.
-        var resultValue=this._lineSegments.slice(this._currentSegmentIndex,this._currentSegmentIndex+=numRows);
-
-        // Return lines, converting to numbers if returnString is false.
-        return returnString?resultValue:resultValue.map(currentElement=>+currentElement);
-    };
-
-    return createInputReader;
+  return createParser;
 })();
 
-// Initialize the input data stream from standard input.
-var dataInputInstance=INPUT_READER(require("fs").readFileSync("/dev/stdin","utf8"));
+// Initialize the input data processor by reading from standard input.
+var inputData = INPUT_PARSER(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-/*
- * Creates a multi-dimensional array filled with a specified initial value.
- * @param {any} initialFillValue - The value to fill the array with.
- * @param {...number} dimArgs - The dimensions of the array.
- * @returns {Array} The initialized multi-dimensional array.
+/**
+ * Creates a multi-dimensional array initialized with a given value.
+ * @param {*} initialValue - The value to initialize array elements with.
+ * @param {...number} dimensions - The dimensions of the array (e.g., 2, 3 for a 2x3 array).
+ * @returns {Array} The multi-dimensional array.
  */
-function initializeMultiArray(initialFillValue){
-    var dimArgs=arguments,
-        dimensionCount=dimArgs.length,
-        // Construct the string for array creation.
-        arrayCreationCode="Array(dimArgs["+ --dimensionCount+"]).fill(0).map(x=>{return "+initialFillValue+";})";
-
-    // Build the nested array creation string.
-    while(--dimensionCount)
-        arrayCreationCode="Array(dimArgs["+dimensionCount+"]).fill(0).map(x=>"+arrayCreationCode+")";
-
-    // Evaluate the constructed string to create the array.
-    return eval(arrayCreationCode);
+function createMultiDimArray(initialValue) {
+  var args = arguments;
+  var argCount = args.length;
+  var arrayCreationString = "Array(args[" + --argCount + "]).fill(0).map(x=>{return " + initialValue + ";})";
+  while (--argCount) {
+    arrayCreationString = "Array(args[" + argCount + "]).fill(0).map(x=>" + arrayCreationString + ")";
+  }
+  return eval(arrayCreationString);
 }
 
+// Output the result of the main processing function.
+console.log(processStrings());
 
-/*
- * Main function to analyze the input data and compute the final result.
- * @returns {number} The calculated total tally.
+/**
+ * Main function to process a collection of strings and calculate a specific count.
+ * The algorithm counts pairs of 'A' and 'B' characters within strings,
+ * and then combines counts based on string start/end characters.
+ * @returns {number} The final calculated count.
  */
-console.log(analyzeData());
-function analyzeData(){
-    // Read the total number of lines from the input.
-    var totalLines=dataInputInstance.fetchNextToken();
-    // Read all input lines as an array of strings.
-    var inputStringArray=dataInputInstance.fetchRawLines(totalLines,1);
+function processStrings() {
+  // Read the number of strings from input.
+  var numStrings = inputData.readNextToken();
+  // Read all strings, keeping them as strings (not converting to numbers).
+  var stringCollection = inputData.readLines(numStrings, true);
 
-    // Initialize counters for specific line patterns.
-    var endingWithA_only=0; // Lines ending with 'A' but not starting with 'B'
-    var startingWithB_only=0; // Lines starting with 'B' but not ending with 'A'
-    var startB_endA=0; // Lines starting with 'B' and ending with 'A'
+  // Counters for strings ending in 'A', starting with 'B', and starting with 'B' and ending with 'A'.
+  var endsInA = 0;
+  var startsInB = 0;
+  var startsB_endsA = 0;
+  // Accumulator for the total number of 'AB' pairs.
+  var totalPairs = 0;
 
-    var finalTally=0; // Accumulator for the main count.
+  // Iterate through each string in the collection.
+  for (var idx = 0; idx < numStrings; idx++) {
+    var currentChar = stringCollection[idx][0]; // Start with the first character of the current string.
 
-    // Iterate through each line of the input data.
-    for(var lineIterator=0;lineIterator<totalLines;lineIterator++){
-        // Get the first character of the current line.
-        var previousChar=inputStringArray[lineIterator][0];
-
-        // Iterate through characters of the current line, starting from the second.
-        for(var charIterator=1;charIterator<inputStringArray[lineIterator].length;charIterator++){
-            // Check for "AB" pairs within the line.
-            if(previousChar==="A"&&inputStringArray[lineIterator][charIterator]==="B")
-                finalTally++;
-            // Update the previous character for the next iteration.
-            previousChar=inputStringArray[lineIterator][charIterator];
-        }
-
-        // Check the start and end characters of the current line for specific patterns.
-        if(inputStringArray[lineIterator][0]==="B"){
-            if(inputStringArray[lineIterator][inputStringArray[lineIterator].length-1]==="A")
-                startB_endA++; // Line starts with 'B' and ends with 'A'
-            else
-                startingWithB_only++; // Line starts with 'B' but not ends with 'A'
-        }else if(inputStringArray[lineIterator][inputStringArray[lineIterator].length-1]==="A")
-            endingWithA_only++; // Line does not start with 'B' but ends with 'A'
+    // Iterate through characters of the current string to find 'AB' pairs.
+    for (var charIdx = 1; charIdx < stringCollection[idx].length; charIdx++) {
+      // If the previous character was 'A' and the current is 'B', increment totalPairs.
+      if (currentChar === "A" && stringCollection[idx][charIdx] === "B") {
+        totalPairs++;
+      }
+      // Update currentChar for the next iteration.
+      currentChar = stringCollection[idx][charIdx];
     }
 
-    // Calculate minimum and maximum of two counters.
-    var minCount=Math.min(endingWithA_only,startingWithB_only);
-    var maxCount=Math.max(endingWithA_only,startingWithB_only);
+    // Check the start and end characters of the current string for specific patterns.
+    if (stringCollection[idx][0] === "B") {
+      if (stringCollection[idx][stringCollection[idx].length - 1] === "A") {
+        startsB_endsA++; // String starts with 'B' and ends with 'A'.
+      } else {
+        startsInB++; // String starts with 'B' but does not end with 'A'.
+      }
+    } else if (stringCollection[idx][stringCollection[idx].length - 1] === "A") {
+      endsInA++; // String ends with 'A' but does not start with 'B'.
+    }
+  }
 
-    // Apply final logic to adjust the total tally based on patterns.
-    if(maxCount){ // If either endingWithA_only or startingWithB_only is non-zero
-        if(startB_endA) // If there are lines starting with B and ending with A
-            finalTally+=minCount+startB_endA;
-        else
-            finalTally+=minCount;
-    }else // If both endingWithA_only and startingWithB_only are zero
-        finalTally+=startB_endA-1;
+  // Calculate the minimum and maximum of 'endsInA' and 'startsInB'.
+  var minimumCount = Math.min(endsInA, startsInB);
+  var maximumCount = Math.max(endsInA, startsInB);
 
-    return finalTally; // Return the computed final result.
+  // Adjust totalPairs based on the collected counts.
+  if (maximumCount) { // If either endsInA or startsInB is non-zero.
+    if (startsB_endsA) {
+      totalPairs += minimumCount + startsB_endsA;
+    } else {
+      totalPairs += minimumCount;
+    }
+  } else { // If both endsInA and startsInB are zero.
+    totalPairs += startsB_endsA - 1;
+  }
+
+  return totalPairs;
 }

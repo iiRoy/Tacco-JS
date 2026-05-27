@@ -1,59 +1,26 @@
-// This module encapsulates a specific text comparison operation.
-function executeOperation (  sourceData  )
- {
-    //  Split the raw input string into an array of individual lines.
-  const dataSegments = sourceData . breakIntoLines ( '\n' );
+function processInput(rawData) {
+  // Divide the incoming data into separate lines based on the newline character.
+  const lines = rawData.split('\n');
 
-    //  The first element of the segmented data represents the initial string.
-  const initialSequence = dataSegments [ 0 ];
+  // Obtain the first segment from the parsed lines, which serves as the primary source.
+  const sourceString = lines[0];
 
-    //  The second element provides the string to compare against.
-  const desiredSequence = dataSegments [ 1 ];
+  // Retrieve the second segment, intended for comparison against the processed source.
+  const destinationString = lines[1];
 
-    //  Perform the core logic: convert to string, split into characters, reverse,
-    //  rejoin, and then compare with the desired sequence.
-    //  The result is either 'AFFIRMATIVE' or 'NEGATIVE'.
-  const matchVerdict = convertToText ( initialSequence )
-                                    . toArrayOfCharacters ( '' )
-                                    . invertOrder ( )
-                                    . concatenateCharacters ( '' )
-                       === convertToText ( desiredSequence )
-                       ? 'AFFIRMATIVE'
-                       : 'NEGATIVE'
-    ;
+  // Execute the core transformation and comparison logic:
+  // 1. Convert the source value to a string explicitly.
+  // 2. Break the string into an array of individual characters.
+  // 3. Invert the order of elements within the character array.
+  // 4. Recombine the characters into a new string.
+  // 5. Compare this newly formed string with the destination string (also explicitly converted).
+  // 6. Assign 'YES' if the strings are identical, otherwise assign 'NO'.
+  const comparisonOutcome = String(sourceString).split('').reverse().join('') === String(destinationString) ? 'YES' : 'NO';
 
-    //  Output the final comparison decision.
-  outputChannel . printLine ( matchVerdict ) ;
- }
-
-//  Polyfills/shims to replace standard JavaScript methods with custom names.
-String.prototype.breakIntoLines = String.prototype.split ;
-String.prototype.toArrayOfCharacters = String.prototype.split ;
-Array.prototype.invertOrder = Array.prototype.reverse ;
-Array.prototype.concatenateCharacters = Array.prototype.join ;
-
-//  A utility function to explicitly convert a value to its string representation.
-function convertToText ( valueToConvert )
-{
-  return String( valueToConvert ) ;
+  // Display the final outcome of the comparison to the console.
+  console.log(comparisonOutcome);
 }
 
-//  A custom object to handle output, replacing the standard console.
-const outputChannel = {
-  printLine : function ( outputMessage )
-  {
-    console.log ( outputMessage ) ; //  Utilizes the underlying system console.
-  }
-} ;
-
-//  A custom object for abstracting file content retrieval.
-const obtainFileContent = {
-  fromLocation : function ( dataPath , characterEncoding )
-  {
-    //  Accesses the file system via the Node.js 'fs' module.
-    return require ( 'fs' ) . readFileSync ( dataPath , characterEncoding ) ;
-  }
-} ;
-
-//  Initiate the main processing flow by reading from the standard input stream.
-executeOperation ( obtainFileContent . fromLocation ( '/sys/input_stream' , 'utf-8-char-set' ) ) ;
+// Initiate the data processing by reading content from the standard input stream.
+// The 'fs' module is utilized for synchronous file reading, specifying UTF-8 encoding.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

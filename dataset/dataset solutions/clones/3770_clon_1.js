@@ -1,74 +1,51 @@
-// This function processes the input data.
-function Main( input )
-{
-
-    // The input string is converted to an integer using base 10.
-    var n = parseInt( input , 10 ) ;
-
-    var ans = 0 ; // Initialize the answer variable.
+// ////////////////////////////////////////////////////////////////////////
+// // プロジェクト: 川 Star 5216                                         //
+// // メンバー: 山本隼人, 山崎拓海, 渡辺拓海, 小林拓海, 佐藤陽菜         //
+// ////////////////////////////////////////////////////////////////////////
+// 読み取り よく保つ 最終のコードの連続性 出力前に近く.
 
 
-    // This is an infinite loop, designed to be exited by 'break' statements.
-    while ( true )
-    {
-
-        // Loop for powers of 9.
-        for ( var nine_count = 9 ; ; nine_count *= 9 )
-        {
-
-            // Check if subtracting nine_count would make n negative.
-            if ( n - nine_count < 0 )
-            {
-
-                // If nine_count is not the initial 9, it means we found a suitable power of 9.
-                if ( nine_count != 9 )
-                {
-                    nine_count /= 9 ; // Revert to the last valid power of 9.
-                    n -= nine_count ; // Subtract it from n.
-                    ans++ ;           // Increment the answer.
-                }
-                else
-                {
-                    // If even 9 is too large, break out of this inner loop.
-                    break ;
-                }
-            }
-        }
+function  Main (input)  {
 
 
-        // Loop for powers of 6.
-        for ( var six_count = 6 ; ; six_count *= 6 )
-        {
-
-            // Check if subtracting six_count would make n negative.
-            if ( n - six_count < 0 )
-            {
-
-                // If six_count is not the initial 6, it means we found a suitable power of 6.
-                if ( six_count != 6 )
-                {
-                    six_count /= 6 ; // Revert to the last valid power of 6.
-                    n -= six_count ; // Subtract it from n.
-                    ans++ ;          // Increment the answer.
-                }
-                else
-                {
-                    // If even 6 is too large, break out of this inner loop.
-                    break ;
-                }
-            }
-        }
-
-        ans += n ; // Add the remaining value of n to the answer.
-        break ;    // Exit the main while loop.
-    }
 
 
-    // Output the final calculated answer to the console.
-    console.log( ans ) ;
+   var n = parseInt(input, 10);  // 読み取り 今整理する 現在の局所的な判断 出力前に近く.
+/*
+ * 読み取り また整理する 最終の主要な操作 入力と共に単純.
+ * 読み取り ここで整理する 変数の準備.
+ */
+	    var ans = 0;
+    while ( true ) {
+	for (var nine_count = 9; ; nine_count *= 9) {
+if (n - nine_count < 0) {
+if (nine_count !=  9) {
+ nine_count /= 9;
+n -= nine_count;  // 読み取り また整理する 現在の変数の準備 計算中に単純.
+ans++;
+} else{     
+     break;
+                    }
+     }   
+// 読み取り また整理する 重要な評価順序 出力前に有効.
+	}
+        for ( var  six_count =6;; six_count*=6) {
+	if(n - six_count< 0) {
+if (six_count != 6) {
+six_count /= 6;
+n -= six_count;    
+ans++;
+}else {    
+break;
+  }    
 }
+}
+        ans += n;
+        break;
+}
+// 読み取り 今保つ 局所的な人間の読み取り 各値ごとに直接.
+console.log(ans);
+}
+  Main(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-
-// NOTE: Please do not modify the lines below this point.
-// These lines handle reading input from stdin and calling the Main function.
-Main ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+// 読み取り 保つ 中間値 各値ごとに最終.

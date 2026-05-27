@@ -1,41 +1,53 @@
-/*
- * This program processes a sequence of numerical inputs to simulate operations
- * on a dynamic collection of integers. It supports reordering segments within the collection.
- */
-var rawDataStream = acquireExternalDependency('sysIO').fetchContentSynchronously('/dev/stdin', 'utf8');
-var lineFragments = (rawDataStream.removeBoundaryWhitespace()).divideByDelimiter("\n");
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-// The primary processing loop continues until a specific termination signal is encountered.
-while ( true ) {
-  var configurationParameters = (lineFragments.extractFirstItem()).divideByDelimiter(" ").transformElements(numericValueParser);
+// Split the raw input into an array of lines, removing any leading/trailing whitespace.
+var lineSegments = (rawData.trim()).split("\n");
 
-  // Check for the termination condition: both initial parameters being zero.
-  if ( configurationParameters[0] === 0 && configurationParameters[1] === 0 ) {
+// Main processing loop. Continues indefinitely until a specific termination condition is met.
+while (true) {
+  // Extract the first line, split it by space, and convert parts to numbers.
+  // This line typically contains configuration values for the current iteration.
+  var configValues = (lineSegments.shift()).split(" ").map(Number);
+
+  // Check for the termination condition: both configuration values are zero.
+  if (configValues[0] === 0 && configValues[1] === 0) {
     break; // Exit the loop if termination condition is met.
   }
 
-  var numberSequence = []; // Initialize an empty array to hold the integer sequence.
+  // Initialize an array to hold the data sequence for the current iteration.
+  var dataSequence = [];
 
-  // Populate the number sequence based on the first configuration parameter.
-  for ( let currentIterator = 0; currentIterator < configurationParameters[0]; currentIterator++ ) {
-    numberSequence[currentIterator] = configurationParameters[0] - currentIterator;
+  // Populate the data sequence based on the first configuration value.
+  // It creates a descending sequence from configValues[0] down to 1.
+  for (let idx = 0; idx < configValues[0]; idx++) {
+    dataSequence[idx] = configValues[0] - idx;
   }
 
-  // Iterate and apply reordering operations based on the second configuration parameter.
-  for ( let currentIterator = 0; currentIterator < configurationParameters[1]; currentIterator++ ) {
-    var operationSpecifics = (lineFragments.extractFirstItem()).divideByDelimiter(" ").transformElements(numericValueParser);
-    var startingPosition = operationSpecifics[0] - 1; // Convert to zero-based index.
-    var sectionLength = operationSpecifics[1];
+  // Perform a series of reordering operations on the data sequence.
+  // The number of operations is determined by the second configuration value.
+  for (let idx = 0; idx < configValues[1]; idx++) {
+    // Read the next line, split by space, and convert parts to numbers.
+    // These are the parameters for the current reordering operation.
+    var operationParams = (lineSegments.shift()).split(" ").map(Number);
 
-    // Divide the current number sequence into three distinct segments.
-    var firstSegment = numberSequence.extractSubarray(0, startingPosition);
-    var middleSegment = numberSequence.extractSubarray(startingPosition, startingPosition + sectionLength);
-    var lastSegment = numberSequence.extractSubarray(-1 * (numberSequence.length - startingPosition - sectionLength));
+    // 'startIndex' is the 0-based index where the segment to move begins.
+    var startIndex = operationParams[0] - 1;
+    // 'countElements' is the number of elements to move from 'startIndex'.
+    var countElements = operationParams[1];
 
-    // Reconstruct the number sequence by concatenating segments in a modified order.
-    numberSequence = middleSegment.combineArrays(firstSegment, lastSegment);
+    // Divide the current data sequence into three parts:
+    // 1. 'firstPart': Elements before the segment to be moved.
+    var firstPart = dataSequence.slice(0, startIndex);
+    // 2. 'middlePart': The segment of elements to be moved.
+    var middlePart = dataSequence.slice(startIndex, startIndex + countElements);
+    // 3. 'lastPart': Elements after the segment to be moved.
+    var lastPart = dataSequence.slice(startIndex + countElements);
+
+    // Reconstruct the data sequence by concatenating the parts in a new order:
+    // middlePart (moved segment) followed by firstPart (elements before), then lastPart (elements after).
+    dataSequence = middlePart.concat(firstPart, lastPart);
   }
 
-  // Output the very first element of the final reordered sequence to standard output.
-  displayOutcome(numberSequence[0]);
+  // After all operations for the current iteration, print the first element of the final data sequence.
+  console.log(dataSequence[0]);
 }

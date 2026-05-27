@@ -1,63 +1,54 @@
-function isPrimalityCheck(value) {
-    if (value <= 1) return false;
-    if (value <= 3) return true;
-    if (value % 2 === 0 || value % 3 === 0) return false;
-    for (let currentDivisor = 5; currentDivisor * currentDivisor <= value; currentDivisor += 6) {
-        if (value % currentDivisor === 0 || value % (currentDivisor + 2) === 0) {
-            return false;
-        }
+const checkPrimality = (val) => {
+    if (val % 3 === 0) return false;
+    const boundary = Math.round(Math.sqrt(val));
+    for (let divisor = 5; divisor <= boundary; divisor += 2) {
+        if (val % divisor === 0) return false;
     }
     return true;
-}
+};
 
-class PrimeSequenceProvider {
-    constructor() {
-        this.knownPrimes = [-1, 2, 3, 5, 7, 11, 13];
-        this.lastCheckedNumber = 13; 
-    }
+const primeSequenceManager = (() => {
+    const primeStore = [-1, 2, 3, 5, 7, 11, 13];
+    let currentCandidate = primeStore[primeStore.length - 1] + 2;
 
-    retrieveNthPrime(index) {
-        if (index < this.knownPrimes.length) {
-            return this.knownPrimes[index];
-        }
-
-        let candidateForPrimality = this.lastCheckedNumber + 2;
-        if (candidateForPrimality % 2 === 0) {
-             candidateForPrimality++;
-        }
-
-        while (this.knownPrimes.length <= index) {
-            if (isPrimalityCheck(candidateForPrimality)) {
-                this.knownPrimes.push(candidateForPrimality);
+    const findNextPrime = () => {
+        while (true) {
+            if (checkPrimality(currentCandidate)) {
+                const foundPrime = currentCandidate;
+                currentCandidate += 2;
+                return foundPrime;
             }
-            candidateForPrimality += 2;
+            currentCandidate += 2;
         }
-        this.lastCheckedNumber = candidateForPrimality - 2;
-        return this.knownPrimes[index];
-    }
-}
+    };
 
-const sourceOfNumericalData = require('node:fs').readFileSync('/dev/stdin', 'utf8');
-const dataRows = sourceOfNumericalData.split('\n').filter(lineContent => lineContent.trim() !== '');
+    return {
+        retrievePrimeByIndex: (index) => {
+            if (index < primeStore.length) {
+                return primeStore[index];
+            }
+            while (primeStore.length <= index) {
+                primeStore.push(findNextPrime());
+            }
+            return primeStore[index];
+        }
+    };
+})();
 
-const primeNumberSource = new PrimeSequenceProvider();
+const fileSystem = require('fs');
+const rawInput = fileSystem.readFileSync('/dev/stdin', 'utf8');
+const dataLines = rawInput.split('\n');
 
-let calculatedResults = [];
-for (const currentDataRow of dataRows) {
-    const parsedNumericValue = Number.parseInt(currentDataRow, 10);
-
-    if (parsedNumericValue === 0) {
+for (const currentLine of dataLines) {
+    const numericValue = parseInt(currentLine, 10);
+    if (numericValue === 0) {
         break;
     }
 
-    let totalAccumulation = 0;
-    let iterationCount = parsedNumericValue;
+    const indicesToSum = Array.from({ length: numericValue }, (_, k) => k + 1);
+    const totalSum = indicesToSum.reduce((accumulator, currentIndex) => {
+        return accumulator + primeSequenceManager.retrievePrimeByIndex(currentIndex);
+    }, 0);
 
-    while (iterationCount > 0) {
-        totalAccumulation += primeNumberSource.retrieveNthPrime(iterationCount);
-        iterationCount--;
-    }
-    calculatedResults.push(totalAccumulation);
+    console.log(totalSum);
 }
-
-calculatedResults.forEach(finalValue => console.log(finalValue));

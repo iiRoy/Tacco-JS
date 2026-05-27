@@ -1,88 +1,111 @@
-const primaryModulo = 1000000007;
-
-function createInputParser(sourceContent) {
-    const contentLines = sourceContent.trim().split('\n');
+function createInputParser(inputString) {
+    const lineBuffer = inputString.trim().split('\n');
     let currentLineIndex = 0;
     let currentLineTokens = [];
-    let currentTokenIndex = 0;
 
-    const advanceToNextLine = () => {
-        if (currentLineIndex >= contentLines.length) {
-            throw new Error("Input exhausted: No more lines available.");
+    const retrieveToken = (asNumeric) => {
+        if (currentLineTokens.length === 0) {
+            if (currentLineIndex >= lineBuffer.length) {
+                return undefined;
+            }
+            currentLineTokens = lineBuffer[currentLineIndex++].split(' ').reverse();
         }
-        currentLineTokens = contentLines[currentLineIndex++].split(' ');
-        currentTokenIndex = 0;
+        const tokenValue = currentLineTokens.pop();
+        return asNumeric ? tokenValue : Number(tokenValue);
+    };
+
+    const retrieveLine = (asStrings) => {
+        if (currentLineIndex >= lineBuffer.length) {
+            return undefined;
+        }
+        const lineContent = lineBuffer[currentLineIndex++].split(' ');
+        return asStrings ? lineContent : lineContent.map(Number);
+    };
+
+    const retrieveBlock = (numRows, asStrings) => {
+        const blockData = [];
+        for (let k = 0; k < numRows; k++) {
+            if (currentLineIndex >= lineBuffer.length) break;
+            const rowContent = lineBuffer[currentLineIndex++].split(' ');
+            blockData.push(asStrings ? rowContent : rowContent.map(Number));
+        }
+        return blockData;
+    };
+
+    const retrieveRawBlock = (numRows, asStrings) => {
+        const rawBlockData = [];
+        for (let k = 0; k < numRows; k++) {
+            if (currentLineIndex >= lineBuffer.length) break;
+            const rowContent = lineBuffer[currentLineIndex++];
+            rawBlockData.push(asStrings ? rowContent : Number(rowContent));
+        }
+        return rawBlockData;
     };
 
     return {
-        fetchNextNumeric: function() {
-            if (currentTokenIndex >= currentLineTokens.length) {
-                advanceToNextLine();
-            }
-            return parseInt(currentLineTokens[currentTokenIndex++], 10);
-        },
-        fetchNextNumericArray: function() {
-            advanceToNextLine(); // Move to the next line and parse it entirely
-            return currentLineTokens.map(Number);
-        }
+        fetchSingle: (isText) => retrieveToken(isText),
+        fetchList: (isText) => retrieveLine(isText),
+        fetchGrid: (count, isText) => retrieveBlock(count, isText),
+        fetchLines: (count, isText) => retrieveRawBlock(count, isText)
     };
 }
 
-function processSequenceConnections() {
-    const parser = createInputParser(require("fs").readFileSync("/dev/stdin", "utf8"));
-    const dimAlpha = parser.fetchNextNumeric();
-    const dimBeta = parser.fetchNextNumeric();
-    const sequenceAlpha = parser.fetchNextNumericArray();
-    const sequenceBeta = parser.fetchNextNumericArray();
-
-    let totalContributions = 1; // Corresponds to original 'ans'
-
-    // The dynamic programming grid `connectionGrid` is built row by row using functional array methods.
-    // `connectionGrid[r][c]` corresponds to `dp[r][c]` in the original code's 1-indexed DP table.
-    const connectionGrid = Array.from({ length: dimAlpha + 1 }).map((_, rowIndex) => {
-        if (rowIndex === 0) {
-            // Base case: The first row of the DP grid is entirely zeros.
-            return Array(dimBeta + 1).fill(0);
+function constructMultiArray(initialVal, ...dimensions) {
+    const recursiveBuilder = (dims) => {
+        if (dims.length === 0) {
+            return initialVal;
         }
-
-        let rowAccumulator = 0; // Corresponds to original 'x' for the current rowIndex
-        const currentRow = Array.from({ length: dimBeta + 1 }).map((_, colIndex) => {
-            if (colIndex === 0) {
-                // Base case: The first column of the DP grid is entirely zeros.
-                return 0;
-            }
-
-            const charA = sequenceAlpha[rowIndex - 1]; // Corresponds to s[i]
-            const charB = sequenceBeta[colIndex - 1]; // Corresponds to t[j]
-
-            let cellValue;
-            if (charA === charB) {
-                // If characters match:
-                // Original: dp[i+1][j+1] = (dp[i+1][j] + dp[i][j+1] + 1) % mod;
-                // My:       connectionGrid[rowIndex][colIndex] = (connectionGrid[rowIndex][colIndex-1] + connectionGrid[rowIndex-1][colIndex] + 1) % primaryModulo;
-
-                // Original: x += dp[i][j]+1;
-                // My:       rowAccumulator += (connectionGrid[rowIndex-1][colIndex-1]+1);
-                // Original: ans += dp[i][j]+1;
-                // My:       totalContributions += (connectionGrid[rowIndex-1][colIndex-1]+1);
-
-                const incrementTerm = (connectionGrid[rowIndex - 1][colIndex - 1] + 1 + primaryModulo) % primaryModulo;
-                rowAccumulator = (rowAccumulator + incrementTerm) % primaryModulo;
-                totalContributions = (totalContributions + incrementTerm) % primaryModulo;
-                cellValue = (connectionGrid[rowIndex][colIndex - 1] + connectionGrid[rowIndex - 1][colIndex] + 1 + primaryModulo) % primaryModulo;
-            } else {
-                // If characters do not match:
-                // Original: dp[i+1][j+1] = (x + dp[i][j+1]) % mod;
-                // My:       connectionGrid[rowIndex][colIndex] = (rowAccumulator + connectionGrid[rowIndex-1][colIndex]) % primaryModulo;
-                cellValue = (rowAccumulator + connectionGrid[rowIndex - 1][colIndex] + primaryModulo) % primaryModulo;
-            }
-            return cellValue;
-        });
-        return currentRow;
-    });
-
-    // The `totalContributions` is updated as a side effect during the DP grid construction.
-    return totalContributions;
+        const currentDimSize = dims[0];
+        const remainingDims = dims.slice(1);
+        return Array(currentDimSize).fill(null).map(() => recursiveBuilder(remainingDims));
+    };
+    return recursiveBuilder(dimensions);
 }
 
-console.log(processSequenceConnections());
+const inputReader = createInputParser(require("fs").readFileSync("/dev/stdin", "utf8"));
+const moduloConstant = 1e9 + 7;
+
+console.log(computeResult());
+
+function computeResult() {
+    const sequenceLengthN = inputReader.fetchSingle();
+    const sequenceLengthM = inputReader.fetchSingle();
+    const firstSequence = inputReader.fetchList();
+    const secondSequence = inputReader.fetchList();
+
+    // `previousRowDP` stores dp[sIndex][...] values from the original code.
+    // `currentRowDP` stores dp[sIndex+1][...] values from the original code.
+    // Both are 1D arrays of size (sequenceLengthM + 1).
+
+    const { totalSubsequences: finalAnswer } = firstSequence.reduce((accumulatorOuter, sChar, sIndex) => {
+        const { totalSubsequences, previousRowDP } = accumulatorOuter;
+        const currentRowDP = constructMultiArray(0, sequenceLengthM + 1); // Represents dp[sIndex+1][...]
+
+        // Inner reduce for t[tIndex]
+        // accumulatorInner: { currentTotal: number, currentSumForMatch: number, prevColumnValue: number }
+        // `prevColumnValue` is `currentRowDP[tIndex]` (which is `dp[sIndex+1][tIndex]` in original indexing).
+        const { currentTotal: newTotalSubsequences } = secondSequence.reduce((accumulatorInner, tChar, tIndex) => {
+            let { currentTotal, currentSumForMatch, prevColumnValue } = accumulatorInner;
+            let calculatedDPValue;
+
+            if (sChar === tChar) {
+                // `previousRowDP[tIndex]` is `dp[sIndex][tIndex]`
+                currentSumForMatch = (currentSumForMatch + previousRowDP[tIndex] + 1) % moduloConstant;
+                currentTotal = (currentTotal + previousRowDP[tIndex] + 1) % moduloConstant;
+                // `prevColumnValue` is `dp[sIndex+1][tIndex]`
+                // `previousRowDP[tIndex + 1]` is `dp[sIndex][tIndex+1]`
+                calculatedDPValue = (prevColumnValue + previousRowDP[tIndex + 1] + 1) % moduloConstant;
+            } else {
+                // `currentSumForMatch` is `x` from original
+                // `previousRowDP[tIndex + 1]` is `dp[sIndex][tIndex+1]`
+                calculatedDPValue = (currentSumForMatch + previousRowDP[tIndex + 1]) % moduloConstant;
+            }
+            currentRowDP[tIndex + 1] = calculatedDPValue; // Update dp[sIndex+1][tIndex+1]
+            return { currentTotal, currentSumForMatch, prevColumnValue: calculatedDPValue };
+        }, { currentTotal: totalSubsequences, currentSumForMatch: 0, prevColumnValue: 0 }); // Initial `prevColumnValue` is `currentRowDP[0]` which is 0
+
+        return { totalSubsequences: newTotalSubsequences, previousRowDP: currentRowDP };
+    }, { totalSubsequences: 1, previousRowDP: constructMultiArray(0, sequenceLengthM + 1) }); // Initial `previousRowDP` is `dp[0][...]`
+
+    return finalAnswer;
+}

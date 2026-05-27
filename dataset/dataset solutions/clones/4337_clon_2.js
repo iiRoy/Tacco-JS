@@ -1,179 +1,198 @@
-var inputProcessor = initializeProcessor();
-StartProgram();
+var inputHandler = initializeInputProcessor();
+executeMainLogic();
+
 function getNextInteger() {
-  return convertInput(retrieveNext(), 1);
+  return convertInput(fetchNextLine(), 1);
 }
+
 function getNextStringArray() {
-  return convertInput(retrieveNext(), 2);
-} // Splits input string by single spaces.
+  // Splits input by half-width space
+  return convertInput(fetchNextLine(), 2);
+}
+
 function getNextIntegerArray() {
-  return convertInput(retrieveNext(), 4);
-} // Splits by spaces, then converts elements to numbers.
+  // Splits by half-width space and converts to numbers
+  return convertInput(fetchNextLine(), 4);
+}
+
 function getNextCharacterArray() {
-  return convertInput(retrieveNext(), 6);
-} // Breaks string into an array of individual characters.
-function retrieveNext() {
-  return inputProcessor.fetchNext();
+  // Splits into individual characters
+  return convertInput(fetchNextLine(), 6);
 }
-function hasMoreData() {
-  return inputProcessor.hasMoreElements();
+
+function fetchNextLine() {
+  return inputHandler.fetchLine();
 }
+
+function hasMoreInput() {
+  return inputHandler.checkMore();
+}
+
 function readStandardInput() {
-  // Reads all data from standard input, trims it, and splits into lines.
   return require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");
 }
-function initializeProcessor() {
-  let rawLines = readStandardInput();
-  var dataHandler = {
-    "lines": rawLines,
-    "cursor": 0,
-    "maximum": rawLines.length,
-    "hasMoreElements": function() {
-      return (this.cursor < this.maximum);
+
+function initializeInputProcessor() {
+  var rawInputLines = readStandardInput();
+  var processorInstance = {
+    inputLines: rawInputLines,
+    currentLineIndex: 0,
+    totalLines: rawInputLines.length,
+    checkMore: function() {
+      return (this.currentLineIndex < this.totalLines);
     },
-    "fetchNext": function() {
-      if (!this.hasMoreElements()) {
+    fetchLine: function() {
+      if (!this.checkMore()) {
         return "";
       } else {
-        const currentLine = this.lines[this.cursor];
-        this.cursor++;
-        return currentLine;
+        var currentLineContent = this.inputLines[this.currentLineIndex];
+        this.currentLineIndex++;
+        return currentLineContent;
       }
     }
   };
-  return dataHandler;
+  return processorInstance;
 }
-function printResult(text) {
-  console.log(text);
-} // Outputs the final result to the standard output.
-function printDebug(message) {
-  console.error(message);
-} // Sends diagnostic messages to the standard error stream.
-// This utility function handles various input transformations.
-// 'conversionType' determines the specific operation.
-// 1: Convert to integer.
-// 2: Split by space into string array.
-// 4: Split by space into number array.
-// 6: Split into character array.
-// 7: Split into character array, then convert to numbers.
-// 8: Join array elements with spaces.
-// 9: Join array elements with newlines.
-// 0: Join array elements without a separator.
-function convertInput(dataItem, conversionType) {
+
+function printOutput(messageContent) {
+  console.log(messageContent);
+}
+
+function printError(errorMessage) {
+  console.error(errorMessage);
+}
+
+// Conversion utility function
+// Handles various input transformations based on conversionType.
+// If conversionType is unknown or an error occurs, returns inputValue as is.
+// 1: Convert to integer
+// 2: Split by space
+// 4: Split by space and convert to array of numbers
+// 6: Split into individual characters
+// 7: Split into individual characters and convert to array of numbers
+// 8: Join array elements with space
+// 9: Join array elements with newline
+// 0: Join array elements without separator
+function convertInput(inputValue, conversionType) {
   try {
     switch (conversionType) {
       case 1:
-        return parseInt(dataItem, 10);
+        return parseInt(inputValue);
       case 2:
-        return dataItem.split(" ");
+        return inputValue.split(" ");
       case 4:
-        return dataItem.split(" ").map((val) => Number(val));
+        return inputValue.split(" ").map((element) => Number(element));
       case 6:
-        return dataItem.split("");
+        return inputValue.split("");
       case 7:
-        return dataItem.split("").map((val) => Number(val));
+        return inputValue.split("").map((charElement) => Number(charElement));
       case 8:
-        return dataItem.join(" ");
+        return inputValue.join(" ");
       case 9:
-        return dataItem.join("\n");
+        return inputValue.join("\n");
       case 0:
-        return dataItem.join("");
+        return inputValue.join("");
       default:
-        return dataItem;
+        return inputValue;
     }
-  } catch (error) {
-    return dataItem;
+  } catch (errorObject) {
+    return inputValue;
   }
 }
-function StartProgram() {
-  const dimensions = getNextIntegerArray();
-  let heightDim = dimensions[0];
-  let widthDim = dimensions[1];
-  var charCounts = {};
-  for (let rowIdx = 0; rowIdx < heightDim; rowIdx++) {
+
+function executeMainLogic() {
+  var dimensionsArray = getNextIntegerArray();
+  var heightValue = dimensionsArray[0];
+  var widthValue = dimensionsArray[1];
+
+  var characterCounts = {};
+
+  for (var rowIterator = 0; rowIterator < heightValue; rowIterator++) {
     var currentRowChars = getNextCharacterArray();
-    for (let colIdx = 0; colIdx < widthDim; colIdx++) {
-      if (charCounts[currentRowChars[colIdx]] === undefined) {
-        charCounts[currentRowChars[colIdx]] = 1;
+    for (var colIterator = 0; colIterator < widthValue; colIterator++) {
+      if (characterCounts[currentRowChars[colIterator]] == null) {
+        characterCounts[currentRowChars[colIterator]] = 1;
       } else {
-        charCounts[currentRowChars[colIdx]]++;
+        characterCounts[currentRowChars[colIterator]]++;
       }
     }
   }
-  let countFour = 0;
-  let countTwo = 0;
-  let countOne = 0;
-  const halfHeight = Math.ceil(heightDim / 2);
-  const halfWidth = Math.ceil(widthDim / 2);
-  printDebug("Half Height: " + halfHeight);
-  printDebug("Half Width: " + halfWidth);
-  if (heightDim % 2 === 1 && widthDim % 2 === 1) {
-    countFour = (halfHeight - 1) * (halfWidth - 1);
-    countTwo = (halfHeight - 1) + (halfWidth - 1);
-    countOne = 1;
-  } else if (heightDim % 2 === 1 && widthDim % 2 !== 1) {
-    countFour = halfWidth * (halfHeight - 1);
-    countTwo = halfWidth;
-  } else if (heightDim % 2 !== 1 && widthDim % 2 === 1) {
-    countFour = halfHeight * (halfWidth - 1);
-    countTwo = halfHeight;
+
+  var countFourBlocks = 0;
+  var countTwoBlocks = 0;
+  var countOneBlock = 0;
+
+  var halfHeightCeil = Math.ceil(heightValue / 2);
+  var halfWidthCeil = Math.ceil(widthValue / 2);
+
+  printError("halfHeightCeil : " + halfHeightCeil);
+  printError("halfWidthCeil : " + halfWidthCeil);
+
+  if (heightValue % 2 === 1 && widthValue % 2 === 1) {
+    countFourBlocks = (halfHeightCeil - 1) * (halfWidthCeil - 1);
+    countTwoBlocks = (halfHeightCeil - 1) + (halfWidthCeil - 1);
+    countOneBlock = 1;
+  } else if (heightValue % 2 === 1 && widthValue % 2 !== 1) {
+    countFourBlocks = halfWidthCeil * (halfHeightCeil - 1);
+    countTwoBlocks = halfWidthCeil;
+  } else if (heightValue % 2 !== 1 && widthValue % 2 === 1) {
+    countFourBlocks = halfHeightCeil * (halfWidthCeil - 1);
+    countTwoBlocks = halfHeightCeil;
   } else {
-    countFour = halfHeight * halfWidth;
+    countFourBlocks = halfHeightCeil * halfWidthCeil;
   }
-  const uniqueChars = Object.keys(charCounts);
-  // Debugging outputs (commented out in original, kept similar structure)
-  /*
-  printDebug(charCounts);
-  printDebug(countFour);
-  printDebug(countTwo);
-  */
-  let foundSufficient = false;
-  while (countFour > 0) {
-    foundSufficient = false; // Reset flag for current iteration
-    for (let k = 0; k < uniqueChars.length; k++) {
-      if (charCounts[uniqueChars[k]] >= 4) {
-        charCounts[uniqueChars[k]] -= 4;
-        countFour--;
-        foundSufficient = true;
-        break; // Found a character, move to next 'four' block
+
+  var uniqueCharacters = Object.keys(characterCounts);
+
+  var foundMatch = false;
+
+  while (countFourBlocks > 0) {
+    foundMatch = false; // Reset for each block type
+    for (var keyIndex = 0; keyIndex < uniqueCharacters.length; keyIndex++) {
+      if (characterCounts[uniqueCharacters[keyIndex]] >= 4) {
+        characterCounts[uniqueCharacters[keyIndex]] -= 4;
+        countFourBlocks--;
+        foundMatch = true;
+        break; // Found a match, move to next four-block
       }
     }
-    if (!foundSufficient) {
-      printResult("No");
+    if (!foundMatch) {
+      printOutput("No");
       return;
     }
   }
-  // Debugging outputs (commented out in original, kept similar structure)
-  // printDebug(charCounts);
-  while (countTwo > 0) {
-    foundSufficient = false; // Reset flag for current iteration
-    for (let k = 0; k < uniqueChars.length; k++) {
-      if (charCounts[uniqueChars[k]] >= 2) {
-        charCounts[uniqueChars[k]] -= 2;
-        countTwo--;
-        foundSufficient = true;
-        break; // Found a character, move to next 'two' block
+
+  while (countTwoBlocks > 0) {
+    foundMatch = false; // Reset for each block type
+    for (var keyIndex = 0; keyIndex < uniqueCharacters.length; keyIndex++) {
+      if (characterCounts[uniqueCharacters[keyIndex]] >= 2) {
+        characterCounts[uniqueCharacters[keyIndex]] -= 2;
+        countTwoBlocks--;
+        foundMatch = true;
+        break; // Found a match, move to next two-block
       }
     }
-    if (!foundSufficient) {
-      printResult("No");
+    if (!foundMatch) {
+      printOutput("No");
       return;
     }
   }
-  while (countOne > 0) {
-    foundSufficient = false; // Reset flag for current iteration
-    for (let k = 0; k < uniqueChars.length; k++) {
-      if (charCounts[uniqueChars[k]] >= 1) {
-        charCounts[uniqueChars[k]] -= 1;
-        countOne--;
-        foundSufficient = true;
-        break; // Found a character, move to next 'one' block
+
+  while (countOneBlock > 0) {
+    foundMatch = false; // Reset for each block type
+    for (var keyIndex = 0; keyIndex < uniqueCharacters.length; keyIndex++) {
+      if (characterCounts[uniqueCharacters[keyIndex]] >= 1) {
+        characterCounts[uniqueCharacters[keyIndex]] -= 1;
+        countOneBlock--;
+        foundMatch = true;
+        break; // Found a match, move to next one-block
       }
     }
-    if (!foundSufficient) {
-      printResult("No");
+    if (!foundMatch) {
+      printOutput("No");
       return;
     }
   }
-  printResult("Yes");
+
+  printOutput("Yes");
 }

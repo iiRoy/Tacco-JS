@@ -1,137 +1,130 @@
-'use strict'
+'use strict'; // Enforce strict parsing and error handling for better code quality
 
-
-let vertexCount, edgeCount, exploredNodes, adjacencyMatrix;
-
-/*
- * This helper function prints a visual representation of the graph matrix.
- * True values are represented by '@', false by '-'.
- * @param {Array<Array<boolean>>} matrixData - The 2D array representing the graph.
- */
-const displayMatrix = (matrixData) => {
-
-  let outputString = ''; // Initialize an empty string for output accumulation
-
-  for (let rowIdx in matrixData) { // Iterate over each row in the input matrix
-    for (let colIdx in matrixData[rowIdx]) { // Iterate over each column in the current row
-      outputString += matrixData[rowIdx][colIdx] ? '@' : '-'; // Append '@' for true, '-' for false
-    }
-    outputString += '\n'; // Add a newline character after each row
-  }
-  console.log(outputString); // Print the accumulated string to the console
-};
-
-
-/*
- * Executes a Depth-First Search traversal starting from a given node.
- * Marks visited nodes in the 'exploredNodes' array.
- * @param {number} currentNodeIndex - The starting node for the DFS.
- */
-const depthFirstSearch = (currentNodeIndex) => {
-
-  exploredNodes[currentNodeIndex] = true; // Mark the current node as visited
-
-  // Iterate through all possible neighbors
-  for (let neighborIndex = 0; neighborIndex < vertexCount; neighborIndex++) {
-    // If the neighbor has already been visited OR there is no edge between current and neighbor,
-    // then we should skip this particular neighbor and move to the next one.
-    if (exploredNodes[neighborIndex] || adjacencyMatrix[currentNodeIndex][neighborIndex] === false) {
-      continue; // Move to the next potential neighbor without further processing
-    }
-    depthFirstSearch(neighborIndex); // Recursively call DFS for the unvisited neighbor
-  }
-};
-
+let nodeCount, edgeCount, exploredNodes, adjacencyMatrix; // Declare global variables to store graph properties
 
 /**
- * Main function to process graph input, find bridges, and output the count.
- * @param {string} rawData - The raw input string containing graph data.
+ * Utility function to print the adjacency matrix to the console.
+ * This function is present in the original code but commented out in the main logic,
+ * so its structure and purpose are preserved here.
+ * @param {boolean[][]} matrixData - The 2D array representing graph connections.
  */
-function processGraphData(rawData) {
+const displayGraphState = (matrixData) => {
+  let outputBuffer = ''; // Initialize an empty string to build the output
+  for (let rowIdx in matrixData) { // Iterate over each row index in the matrix
+    for (let colIdx in matrixData[rowIdx]) { // Iterate over each column index in the current row
+      outputBuffer += matrixData[rowIdx][colIdx] ? 'X' : '.'; // Append 'X' for a connection, '.' for no connection
+    }
+    outputBuffer += '\n'; // Add a newline character after processing each row
+  }
+  console.log(outputBuffer); // Output the complete formatted string to the console
+};
 
-  // --- Input Parsing and Initialization ---
+/**
+ * Performs a Depth First Search (DFS) traversal starting from a specified node.
+ * This function recursively explores all reachable nodes from the starting point
+ * and marks them as visited in the global 'exploredNodes' array.
+ * @param {number} startNodeIdx - The 0-based index of the node to begin the DFS from.
+ */
+const performDFS = (startNodeIdx) => {
+  exploredNodes[startNodeIdx] = true; // Mark the current node as visited
+  for (let nextNodeIdx = 0; nextNodeIdx < nodeCount; nextNodeIdx++) { // Iterate through all potential neighbors
+    // Check if the potential neighbor has not been visited AND if there is an edge
+    // between the current node and this neighbor in the adjacency matrix.
+    if (!exploredNodes[nextNodeIdx] && adjacencyMatrix[startNodeIdx][nextNodeIdx]) {
+      performDFS(nextNodeIdx); // Recursively call DFS on the unvisited and connected neighbor
+    }
+  }
+};
 
-  // Split the input string by newlines, then each line by spaces, and convert to numbers.
-  let processedInput = rawData.split('\n').map(parsedValue => parsedValue.split(' ').map(parsedValue => ~~parsedValue));
+/**
+ * Main entry point for processing graph input and identifying bridge edges.
+ * A bridge edge is one whose removal increases the number of connected components in the graph.
+ * @param {string} rawInputData - The raw string input, typically read from standard input.
+ */
+function analyzeGraph(rawInputData) {
+  // Parse the input string:
+  // 1. Split the string by newline characters to get individual lines.
+  // 2. For each line, split it by space characters.
+  // 3. Convert each resulting string part into an integer using the bitwise NOT operator (~~).
+  let processedLines = rawInputData.split('\n').map(lineStr => lineStr.split(' ').map(valStr => ~~valStr));
 
-  // Extract the number of vertices (N) and edges (M) from the first line.
-  vertexCount = processedInput[0][0];
-  edgeCount = processedInput[0][1];
-
-  // Extract the list of edges, excluding the first (N, M) and last (empty) lines.
-  const edgeList = processedInput.slice(1, -1);
-
+  nodeCount = processedLines[0][0]; // The first number on the first line represents N (number of nodes)
+  edgeCount = processedLines[0][1]; // The second number on the first line represents M (number of edges)
+  const connectionDefinitions = processedLines.slice(1, -1); // Extract edge definitions, excluding the header and potential empty last line
 
   // Initialize the adjacency matrix for the graph.
-  // This will be a 2D array where adjacencyMatrix[i][j] is true if an edge exists between i and j.
+  // It's a square matrix of size N x N, where each element is initially 'false',
+  // indicating no direct connection between nodes.
   adjacencyMatrix = Array.apply(null, {
-    length: vertexCount
+    length: nodeCount
   }).map(
-    val =>
-      (val = Array.apply(null, {
-        length: vertexCount
-      }).fill(false)) // Each row is initialized with 'false' indicating no connections
+    _ =>
+      (Array.apply(null, {
+        length: nodeCount
+      }).fill(false)) // Create a new row array, filled with 'false'
   );
 
-
-  // Populate the adjacency matrix based on the provided edge list.
-  // Graphs are undirected, so an edge (A, B) means adjacencyMatrix[A][B] and adjacencyMatrix[B][A] are true.
-  for (let loopIndex = 0; loopIndex < edgeCount; loopIndex++) {
-    let nodeA = edgeList[loopIndex][0] - 1; // Adjust to 0-based indexing
-    let nodeB = edgeList[loopIndex][1] - 1; // Adjust to 0-based indexing
-    adjacencyMatrix[nodeA][nodeB] = true;
-    adjacencyMatrix[nodeB][nodeA] = true;
+  // Populate the adjacency matrix based on the provided edge definitions.
+  // Since the graph is undirected, an edge between 'u' and 'v' means both
+  // adjacencyMatrix[u][v] and adjacencyMatrix[v][u] should be set to 'true'.
+  for (let k = 0; k < edgeCount; k++) {
+    let firstVertex = connectionDefinitions[k][0] - 1; // Convert 1-based node index to 0-based
+    let secondVertex = connectionDefinitions[k][1] - 1; // Convert 1-based node index to 0-based
+    adjacencyMatrix[firstVertex][secondVertex] = true; // Mark connection from first to second
+    adjacencyMatrix[secondVertex][firstVertex] = true; // Mark connection from second to first
   }
 
-  // Initialize the array to keep track of visited nodes during DFS.
+  // Initialize the 'exploredNodes' array. This boolean array keeps track of
+  // which nodes have been visited during a DFS traversal. All nodes are
+  // initially marked as not visited ('false').
   exploredNodes = Array.apply(null, {
-    length: vertexCount
+    length: nodeCount
   }).fill(false);
 
+  let bridgeCounter = 0; // Initialize a counter for bridge edges
 
-  // --- Bridge Detection Logic ---
+  // Iterate through all possible pairs of nodes (currentSrcNode, currentDestNode)
+  // to test each edge in the graph. This double loop ensures every edge (and its reverse)
+  // is considered for removal.
+  for (let currentSrcNode = 0; currentSrcNode < nodeCount; currentSrcNode++) {
+    for (let currentDestNode = 0; currentDestNode < nodeCount; currentDestNode++) {
+      // If an edge exists between currentSrcNode and currentDestNode
+      if (adjacencyMatrix[currentSrcNode][currentDestNode]) {
+        // Temporarily remove the edge to test if it's a bridge.
+        // Both directions must be removed for an undirected graph.
+        adjacencyMatrix[currentSrcNode][currentDestNode] = false;
+        adjacencyMatrix[currentDestNode][currentSrcNode] = false;
 
-  let bridgeCount = 0; // Counter for the number of bridges found
+        // Reset the visited status for all nodes before performing a new DFS traversal.
+        // This ensures a fresh check for connectivity.
+        exploredNodes.fill(false);
 
-  // Iterate through all possible pairs of nodes (i, j) in the graph.
-  // We only need to check each edge once, so we iterate i from 0 to N-1 and j from i+1 to N-1
-  // However, the original code iterates through all i, j. To maintain structure, I will keep that.
-  for (let firstNode = 0; firstNode < vertexCount; firstNode++) {
-    for (let secondNode = 0; secondNode < vertexCount; secondNode++) {
+        // Perform DFS starting from node 0.
+        // If the graph becomes disconnected after removing an edge,
+        // then not all nodes will be reachable from node 0.
+        performDFS(0);
 
-      // If an edge exists between firstNode and secondNode
-      if (adjacencyMatrix[firstNode][secondNode]) {
-
-        // --- Temporarily Remove Edge ---
-        // To check if an edge is a bridge, we remove it and see if the graph remains connected.
-        adjacencyMatrix[firstNode][secondNode] = false;
-        adjacencyMatrix[secondNode][firstNode] = false;
-
-        // --- Perform Connectivity Check ---
-        exploredNodes.fill(false); // Reset all nodes to unvisited for the new DFS traversal
-
-        depthFirstSearch(0); // Start DFS from node 0 to check connectivity of the graph
-
-        // If not all nodes are reachable after removing the edge, it means the edge was a bridge.
-        if (!exploredNodes.every(checkVisited => checkVisited === true)) {
-          bridgeCount++; // Increment the bridge counter
+        // Check if all nodes were visited during the DFS.
+        // If 'exploredNodes.every' returns false, it means some nodes are unreachable,
+        // indicating that the removed edge was a bridge.
+        if (!exploredNodes.every(isNodeVisited => isNodeVisited === true)) {
+          bridgeCounter++; // Increment the bridge count
         }
 
-        // --- Restore Edge ---
-        // Important: Restore the edge to its original state before checking the next edge.
-        adjacencyMatrix[firstNode][secondNode] = true;
-        adjacencyMatrix[secondNode][firstNode] = true;
+        // Restore the removed edge to its original state.
+        // This is crucial for subsequent checks of other edges.
+        adjacencyMatrix[currentSrcNode][currentDestNode] = true;
+        adjacencyMatrix[currentDestNode][currentSrcNode] = true;
       }
     }
   }
 
-  // The problem statement implies we count each bridge twice (once for (i,j) and once for (j,i)).
-  // Therefore, we divide the total count by 2 to get the actual number of unique bridges.
-  console.log(bridgeCount / 2);
-
-  // The original code had commented out calls to displayMatrix, so I'll keep them commented out.
-  // displayMatrix(adjacencyMatrix);
+  // The final count is divided by 2 because each bridge (u,v) is effectively
+  // counted twice in the nested loops (once when (u,v) is removed, and once when (v,u) is removed).
+  console.log(bridgeCounter / 2);
+  // displayGraphState(adjacencyMatrix); // Debugging line, commented out as per original code
 }
 
-// Execute the main processing function with input read from standard input.
-processGraphData(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Read the entire content of standard input synchronously using Node.js 'fs' module
+// and pass it to the main graph analysis function.
+analyzeGraph(require("fs").readFileSync("/dev/stdin", "utf8"));

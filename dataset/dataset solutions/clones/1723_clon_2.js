@@ -1,28 +1,26 @@
-// This function is designed to process incoming text data
-function processInputData(sourceContent)
-{
-	// Divide the raw input string into an array of lines
-	// using the newline character as a delimiter.
-	let textSegments = sourceContent.split('\n') ;
+function processInput(rawData) {
+    // Divide the incoming data string into an array of individual lines.
+    // It's assumed that the input will contain at least two distinct lines.
+    let lines = rawData.split('\n');
 
-	// Initialize a counter for differences found between the first two lines.
-	let mismatchTally = 0 ;
+    // Establish a variable to keep track of the number of character mismatches.
+    let diffCount = 0;
 
-	// Iterate through each character position of the first line.
-	// We assume both lines have at least the length of the first line.
-	for (let currentPosition = 0; currentPosition < textSegments[0].length; currentPosition++)
-	{
-		// Compare characters at the current position in the first and second segments.
-		if (textSegments[0].slice(currentPosition, currentPosition + 1) !== textSegments[1].slice(currentPosition, currentPosition + 1))
-		{
-			// If characters are different, increment the mismatch counter.
-			mismatchTally = mismatchTally + 1 ;
-		}
-	}
+    // Traverse through each character position, up to the length of the first line.
+    // The loop variable 'idx' represents the current character index.
+    for (let idx = 0; idx < lines[0].length; ++idx) {
+        // Extract and compare the character at the current index from both the first and second lines.
+        // The 'slice' method is used to obtain a single character substring for comparison.
+        if (lines[0].slice(idx, idx + 1) !== lines[1].slice(idx, idx + 1)) {
+            // If the characters at the current position are not identical, increment the counter.
+            diffCount = diffCount + 1;
+        }
+    }
 
-	// Output the final count of character mismatches.
-	console.log(mismatchTally) ;
+    // Display the final tally of differing characters to the standard output.
+    console.log(diffCount);
 }
 
-// Read data from standard input asynchronously and pass it to our processing function.
-processInputData(require("fs").readFileSync("/dev/stdin", "utf8")) ;
+// Acquire the entire content from standard input using Node.js file system module,
+// then pass this content as a UTF-8 encoded string to the processing function.
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

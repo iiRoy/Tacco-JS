@@ -1,36 +1,28 @@
-function checkOppositeSequence(primaryText, secondaryText) {
-  const primaryLength = primaryText.length;
-  const secondaryLength = secondaryText.length;
+function processInput(rawData) {
+  const lineSegments = rawData.split('\n');
+  const firstString = lineSegments[0];
+  const secondString = lineSegments[1];
 
-  if (primaryLength !== secondaryLength) {
-    return false;
-  }
+  let outcomeMessage;
+  const lengthOne = firstString.length;
+  const lengthTwo = secondString.length;
 
-  for (let idx = 0; idx < primaryLength; idx++) {
-    if (primaryText[idx] !== secondaryText[primaryLength - 1 - idx]) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
-function processInputData(rawStreamContent) {
-  const contentLines = rawStreamContent.split('\n');
-  const initialString = contentLines[0];
-  const comparisonString = contentLines[1];
-
-  let finalVerdict;
-  if (checkOppositeSequence(initialString, comparisonString)) {
-    finalVerdict = 'YES';
+  if (lengthOne !== lengthTwo) {
+    outcomeMessage = 'NO';
   } else {
-    finalVerdict = 'NO';
+    let isMatch = true;
+    let charIndex = 0;
+    while (charIndex < lengthOne) {
+      if (firstString[charIndex] !== secondString[lengthTwo - 1 - charIndex]) {
+        isMatch = false;
+        break;
+      }
+      charIndex++;
+    }
+    outcomeMessage = isMatch ? 'YES' : 'NO';
   }
 
-  console.log(finalVerdict);
+  console.log(outcomeMessage);
 }
 
-const textInputSource = require('fs');
-const inputBuffer = textInputSource.readFileSync('/dev/stdin', 'utf8');
-
-processInputData(inputBuffer);
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

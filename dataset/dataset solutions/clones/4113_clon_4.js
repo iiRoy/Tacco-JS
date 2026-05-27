@@ -1,23 +1,14 @@
-'use strict'
+'use strict';
 
-const determineBaseValue = () => {
-  const firstShiftAmount = 6;
-  const secondShiftAmount = 4;
-  return (1 << firstShiftAmount) - (1 << secondShiftAmount);
-};
+function processInputAndCalculate(sourceText) {
+  const numericalInput = Number(sourceText);
 
-const handleInputAndProcess = (inputString) => {
-  const numericInput = inputString / 1;
+  const totalBaseValue = 48;
+  const negatedInput = -numericalInput;
 
-  const fixedConstant = determineBaseValue();
+  const finalCalculationResult = totalBaseValue + negatedInput;
 
-  const finalResult = fixedConstant + (0 - numericInput);
+  console.log(finalCalculationResult);
+}
 
-  console.log(finalResult);
-};
-
-const retrieveExternalData = () => {
-  return require("node:fs").readFileSync("/dev/stdin", "utf8");
-};
-
-handleInputAndProcess(retrieveExternalData());
+processInputAndCalculate(require("fs").readFileSync("/dev/stdin", "utf8"));

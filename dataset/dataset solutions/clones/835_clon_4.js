@@ -1,120 +1,139 @@
-const FIELD_HEIGHT_DIM = 12;
-const FIELD_WIDTH_DIM = 6;
+class PuyoPuyoGame {
+    constructor(initialGrid) {
+        this.gameGrid = initialGrid;
+        this.gridRows = 12;
+        this.gridCols = 6;
+        this.directionVectors = [[-1, 0], [0, -1], [0, 1], [1, 0]]; // Up, Left, Right, Down
+    }
 
-function discoverConnectedPieces(currentGrid, startRow, startCol, pieceKind, visitedTracker) {
-    const queue = [[startRow, startCol]];
-    const componentPieces = [];
-    visitedTracker.add(`${startRow},${startCol}`);
-    componentPieces.push([startRow, startCol]);
+    isCoordinateValid(r, c) {
+        return r >= 0 && r < this.gridRows && c >= 0 && c < this.gridCols;
+    }
 
-    const rowOffsets = [-1, 0, 0, 1];
-    const colOffsets = [0, -1, 1, 0];
+    identifyChainRoots() {
+        const visitedCells = new Set();
+        const chainStartingPoints = [];
 
-    let queueHead = 0;
-    while (queueHead < queue.length) {
-        const [currentRow, currentCol] = queue[queueHead++];
+        for (let r = 0; r < this.gridRows; r++) {
+            for (let c = 0; c < this.gridCols; c++) {
+                const cellContent = this.gameGrid[r][c];
 
-        for (let k = 0; k < 4; k++) {
-            const adjacentRow = currentRow + rowOffsets[k];
-            const adjacentCol = currentCol + colOffsets[k];
+                if (cellContent !== '.' && !visitedCells.has(`${r},${c}`)) {
+                    const currentChainComponents = [];
+                    const bfsQueue = [[r, c]];
+                    visitedCells.add(`${r},${c}`);
+                    const targetColor = cellContent;
+                    let queuePointer = 0;
 
-            if (adjacentRow >= 0 && adjacentCol >= 0 && adjacentRow < FIELD_HEIGHT_DIM && adjacentCol < FIELD_WIDTH_DIM) {
-                const cellIdentifier = `${adjacentRow},${adjacentCol}`;
-                if (!visitedTracker.has(cellIdentifier) && currentGrid[adjacentRow][adjacentCol] === pieceKind) {
-                    visitedTracker.add(cellIdentifier);
-                    queue.push([adjacentRow, adjacentCol]);
-                    componentPieces.push([adjacentRow, adjacentCol]);
+                    while (queuePointer < bfsQueue.length) {
+                        const [currentRow, currentCol] = bfsQueue[queuePointer++];
+                        currentChainComponents.push([currentRow, currentCol]);
+
+                        for (const [dr, dc] of this.directionVectors) {
+                            const nextRow = currentRow + dr;
+                            const nextCol = currentCol + dc;
+
+                            if (this.isCoordinateValid(nextRow, nextCol) &&
+                                this.gameGrid[nextRow][nextCol] === targetColor &&
+                                !visitedCells.has(`${nextRow},${nextCol}`)) {
+                                visitedCells.add(`${nextRow},${nextCol}`);
+                                bfsQueue.push([nextRow, nextCol]);
+                            }
+                        }
+                    }
+
+                    if (currentChainComponents.length >= 4) {
+                        chainStartingPoints.push([r, c]);
+                    }
                 }
             }
         }
+        return chainStartingPoints;
     }
-    return componentPieces;
-}
 
-function applyFieldGravity(gridToModify) {
-    for (let currentColumn = 0; currentColumn < FIELD_WIDTH_DIM; currentColumn++) {
-        const existingPieces = [];
-        for (let currentRow = FIELD_HEIGHT_DIM - 1; currentRow >= 0; currentRow--) {
-            if (gridToModify[currentRow][currentColumn] !== '.') {
-                existingPieces.unshift(gridToModify[currentRow][currentColumn]);
-            }
-        }
-        for (let currentRow = 0; currentRow < FIELD_HEIGHT_DIM; currentRow++) {
-            gridToModify[currentRow][currentColumn] = existingPieces[currentRow] || '.';
-        }
-    }
-}
+    detonateAndClear(chainRoots) {
+        const cellsToObliterate = new Set();
 
-function executePuzzleSolver(inputSource) {
-    const dataRows = inputSource.trim().split("\n");
-    const numberOfScenarios = parseInt(dataRows.shift(), 10);
-    const finalScores = [];
+        for (const [rootY, rootX] of chainRoots) {
+            const colorToErase = this.gameGrid[rootY][rootX];
+            if (colorToErase === '.') continue;
 
-    for (let scenarioIndex = 0; scenarioIndex < numberOfScenarios; scenarioIndex++) {
-        const gameBoard = [];
-        for (let boardRow = 0; boardRow < FIELD_HEIGHT_DIM; boardRow++) {
-            gameBoard.push(dataRows.shift().split(""));
-        }
+            const bombPropagationQueue = [[rootY, rootX]];
+            const bombVisitedLocal = new Set();
+            bombVisitedLocal.add(`${rootY},${rootX}`);
+            let queuePointer = 0;
 
-        let currentChainCount = 0;
+            while (queuePointer < bombPropagationQueue.length) {
+                const [currentY, currentX] = bombPropagationQueue[queuePointer++];
+                cellsToObliterate.add(`${currentY},${currentX}`);
 
-        while (true) {
-            const primaryRemovalTargets = new Set();
-            const visitedForGroups = new Set();
+                for (const [dr, dc] of this.directionVectors) {
+                    const neighborY = currentY + dr;
+                    const neighborX = currentX + dc;
 
-            for (let r = 0; r < FIELD_HEIGHT_DIM; r++) {
-                for (let c = 0; c < FIELD_WIDTH_DIM; c++) {
-                    const currentCellContent = gameBoard[r][c];
-                    const cellCoordKey = `${r},${c}`;
-
-                    if (currentCellContent !== '.' && currentCellContent !== 'O' && !visitedForGroups.has(cellCoordKey)) {
-                        const detectedGroup = discoverConnectedPieces(gameBoard, r, c, currentCellContent, visitedForGroups);
-                        if (detectedGroup.length >= 4) {
-                            detectedGroup.forEach(coords => primaryRemovalTargets.add(`${coords[0]},${coords[1]}`));
+                    if (this.isCoordinateValid(neighborY, neighborX)) {
+                        const neighborContent = this.gameGrid[neighborY][neighborX];
+                        if (neighborContent === colorToErase && !bombVisitedLocal.has(`${neighborY},${neighborX}`)) {
+                            bombVisitedLocal.add(`${neighborY},${neighborX}`);
+                            bombPropagationQueue.push([neighborY, neighborX]);
+                        } else if (neighborContent === 'O') {
+                            cellsToObliterate.add(`${neighborY},${neighborX}`);
                         }
                     }
                 }
             }
+        }
 
-            if (primaryRemovalTargets.size === 0) {
+        for (const cellKey of cellsToObliterate) {
+            const [y, x] = cellKey.split(',').map(Number);
+            this.gameGrid[y][x] = '.';
+        }
+    }
+
+    applyDownwardForce() {
+        for (let c = 0; c < this.gridCols; c++) {
+            let writePosition = this.gridRows - 1;
+            for (let r = this.gridRows - 1; r >= 0; r--) {
+                if (this.gameGrid[r][c] !== '.') {
+                    this.gameGrid[writePosition][c] = this.gameGrid[r][c];
+                    if (writePosition !== r) {
+                        this.gameGrid[r][c] = '.';
+                    }
+                    writePosition--;
+                }
+            }
+            for (let r = writePosition; r >= 0; r--) {
+                this.gameGrid[r][c] = '.';
+            }
+        }
+    }
+
+    simulateGame() {
+        let chainReactionCount = 0;
+        while (true) {
+            const activeChainRoots = this.identifyChainRoots();
+            if (activeChainRoots.length === 0) {
                 break;
             }
-
-            currentChainCount++;
-
-            const completeRemovalSet = new Set(primaryRemovalTargets);
-            const rowOffsets = [-1, 0, 0, 1];
-            const colOffsets = [0, -1, 1, 0];
-            
-            const targetsArray = Array.from(primaryRemovalTargets);
-            for (const coordString of targetsArray) {
-                const [currR, currC] = coordString.split(',').map(Number);
-
-                for (let k = 0; k < 4; k++) {
-                    const adjR = currR + rowOffsets[k];
-                    const adjC = currC + colOffsets[k];
-
-                    if (adjR >= 0 && adjC >= 0 && adjR < FIELD_HEIGHT_DIM && adjC < FIELD_WIDTH_DIM) {
-                        const adjCellKey = `${adjR},${adjC}`;
-                        if (gameBoard[adjR][adjC] === 'O' && !completeRemovalSet.has(adjCellKey)) {
-                            completeRemovalSet.add(adjCellKey);
-                        }
-                    }
-                }
-            }
-
-            completeRemovalSet.forEach(coordStr => {
-                const [clearR, clearC] = coordStr.split(',').map(Number);
-                gameBoard[clearR][clearC] = '.';
-            });
-
-            applyFieldGravity(gameBoard);
+            chainReactionCount++;
+            this.detonateAndClear(activeChainRoots);
+            this.applyDownwardForce();
         }
-        finalScores.push(currentChainCount);
+        return chainReactionCount;
     }
-    return finalScores;
 }
 
-const rawDataSource = require('fs').readFileSync('/dev/stdin', 'utf8');
-const computedScores = executePuzzleSolver(rawDataSource);
-computedScores.forEach(scoreValue => console.log(scoreValue));
+const rawInput = require('fs').readFileSync('/dev/stdin', 'utf8');
+const inputLines = rawInput.trim().split("\n");
+const numberOfGames = parseInt(inputLines.shift(), 10);
+
+for (let gameIndex = 0; gameIndex < numberOfGames; gameIndex++) {
+    const currentBoard = [];
+    for (let i = 0; i < 12; i++) {
+        currentBoard.push(inputLines.shift().split(""));
+    }
+    
+    const gameInstance = new PuyoPuyoGame(currentBoard);
+    const result = gameInstance.simulateGame();
+    console.log(result);
+}

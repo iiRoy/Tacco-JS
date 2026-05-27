@@ -1,25 +1,24 @@
-const analyzeNumericSeries = (sourceDataText) => {
-    const dataLines = sourceDataText.trim().split('\n');
-    const firstLineMetrics = dataLines[0].split(' ').map(Number);
-    const referenceValue = firstLineMetrics[2];
+function processInputData(sourceContent) {
+    const contentLines = sourceContent.split('\n');
 
-    const numberSequence = dataLines[1].split(' ').map(Number);
+    const [itemCount, firstValue, secondValue] = contentLines[0].split(' ').map(Number);
 
-    const { highestElement, lowestElement } = numberSequence.reduce(
-        (extremes, currentNumber) => ({
-            highestElement: Math.max(extremes.highestElement, currentNumber),
-            lowestElement: Math.min(extremes.lowestElement, currentNumber),
-        }),
-        { highestElement: -Infinity, lowestElement: Infinity }
-    );
+    const numericSequence = contentLines[1].split(' ').map(Number);
 
-    const terminalElement = numberSequence[numberSequence.length - 1];
+    const overallMaximum = numericSequence.reduce((currentMax, element) => Math.max(currentMax, element), 0);
+    const overallMinimum = numericSequence.reduce((currentMin, element) => Math.min(currentMin, element), 1000000000);
 
-    const divergenceA = Math.abs(highestElement - referenceValue);
-    const divergenceB = Math.abs(highestElement - terminalElement);
-    const divergenceC = Math.abs(terminalElement - lowestElement);
+    const lastSequenceElement = numericSequence[itemCount - 1];
 
-    return Math.max(divergenceA, divergenceB, divergenceC);
-};
+    const potentialResults = [
+        Math.abs(overallMaximum - secondValue),
+        Math.abs(overallMaximum - lastSequenceElement),
+        Math.abs(lastSequenceElement - overallMinimum)
+    ];
 
-console.log(analyzeNumericSeries(require("fs").readFileSync("/dev/stdin", "utf8")));
+    const finalResult = Math.max(...potentialResults);
+
+    console.log(finalResult.toString());
+}
+
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

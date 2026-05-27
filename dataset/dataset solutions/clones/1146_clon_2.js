@@ -1,91 +1,72 @@
-let selectMinimum = (...values) => {
-  // A utility function to find the smallest number among provided arguments.
-  return Math.min(...values);
-};
+// This function calculates a specific variation of the Levenshtein distance between two input strings.
+// It takes two string arguments, 'firstString' and 'secondString'.
+function calculateLevenshteinDistance(firstString, secondString) {
+    // Initialize a two-dimensional array (matrix) to store the computed distances.
+    // Using 'let' for block-scoped variable declarations.
+    let distanceMatrix = new Array();
 
-/*
- * This function calculates the Levenshtein distance between two given strings.
- * The Levenshtein distance is a metric for measuring the difference between two sequences.
- * Informally, the Levenshtein distance between two words is the minimum number of
- * single-character edits (insertions, deletions or substitutions) required to change
- * one word into the other.
- */
-function computeLevenshteinDistance(
-  firstInputString, // The first string for comparison
-  secondInputString // The second string for comparison
-) {
-  // Initialize a 2D array (matrix) to store distances.
-  // Dimensions are (length of first string + 1) by (length of second string + 1).
-  const editDistanceGrid = [];
-
-  // Populate the grid with initial rows, each filled with zeros.
-  for (let rowIterator = 0; rowIterator <= firstInputString.length; rowIterator++) {
-    const tempRowArray = [];
-    for (let colIterator = 0; colIterator <= secondInputString.length; colIterator++) {
-      tempRowArray.push(0);
+    // Populate the distance matrix with initial dimensions (firstString.length + 1) by (secondString.length + 1).
+    // Each cell is initially set to a value of zero.
+    for (let rowIdx = 0; rowIdx < firstString.length + 1; rowIdx++) {
+        let currentRow = new Array(); // Create a new array to represent the current row.
+        for (let colIdx = 0; colIdx < secondString.length + 1; colIdx++) {
+            currentRow.push(0); // Add a zero to the end of the current row.
+        }
+        distanceMatrix.push(currentRow); // Append the completed row to the main distance matrix.
     }
-    editDistanceGrid.push(tempRowArray);
-  }
 
-  // Initialize the first column of the grid.
-  // The cost of transforming an empty string into the first 'i' characters of the first string
-  // is simply 'i' (i.e., 'i' insertions).
-  for (let rowIterator = 0; rowIterator <= firstInputString.length; rowIterator++) {
-    editDistanceGrid[rowIterator][0] = rowIterator;
-  }
-
-  // Initialize the first row of the grid.
-  // The cost of transforming the first 'j' characters of the second string into an empty string
-  // is simply 'j' (i.e., 'j' deletions).
-  for (let colIterator = 0; colIterator <= secondInputString.length; colIterator++) {
-    editDistanceGrid[0][colIterator] = colIterator;
-  }
-
-  // Iterate through the rest of the grid to calculate edit distances.
-  // The calculation starts from (1,1) because the first row and column are already initialized.
-  for (let rowIterator = 1; rowIterator <= firstInputString.length; rowIterator++) {
-    for (let colIterator = 1; colIterator <= secondInputString.length; colIterator++) {
-      // Check if the characters at the current positions in both strings are identical.
-      if (firstInputString.charAt(rowIterator - 1) === secondInputString.charAt(colIterator - 1)) {
-        // If characters match, no substitution cost.
-        // The distance is the minimum of a deletion or an insertion from previous steps, plus one.
-        // The substitution cost is 0, so we just carry over the diagonal value.
-        // This is a subtle point, usually it's `grid[r-1][c-1]`, but if substitution is allowed,
-        // it means taking the minimum of `grid[r-1][c]+1` (deletion), `grid[r][c-1]+1` (insertion),
-        // and `grid[r-1][c-1]` (match/no-cost-sub). The problem code implies `grid[r-1][c-1]` is not considered here.
-        // Re-reading the original code: `ar[i][j] = min(ar[i - 1][j] + 1, ar[i][j - 1] + 1);`
-        // This is not the standard Levenshtein calculation for a match. Standard would be `ar[i-1][j-1]`.
-        // This looks like a variation where match still incurs a cost, or it's a simplification.
-        // I must replicate the original logic exactly.
-        editDistanceGrid[rowIterator][colIterator] = selectMinimum(
-          editDistanceGrid[rowIterator - 1][colIterator] + 1, // Cost of deleting a character from first string
-          editDistanceGrid[rowIterator][colIterator - 1] + 1 // Cost of inserting a character into first string
-        );
-      } else {
-        // If characters do not match, a substitution is needed (cost of 1).
-        // The distance is the minimum of three possibilities:
-        // 1. Deleting a character from the first string (editDistanceGrid[r-1][c] + 1)
-        // 2. Inserting a character into the first string (editDistanceGrid[r][c-1] + 1)
-        // 3. Substituting a character (editDistanceGrid[r-1][c-1] + 1)
-        editDistanceGrid[rowIterator][colIterator] = selectMinimum(
-          editDistanceGrid[rowIterator - 1][colIterator] + 1, // Deletion cost
-          editDistanceGrid[rowIterator][colIterator - 1] + 1, // Insertion cost
-          editDistanceGrid[rowIterator - 1][colIterator - 1] // Substitution cost (original code does not add +1 here, implies cost of 0)
-        );
-      }
+    // Initialize the first column of the distance matrix.
+    // The cost of transforming an empty string to a string of length 'rowIdx' is 'rowIdx'.
+    for (let rowIdx = 0; rowIdx < firstString.length + 1; rowIdx++) {
+        distanceMatrix[rowIdx][0] = rowIdx;
     }
-  }
 
-  // The final calculated distance is at the bottom-right corner of the grid.
-  return editDistanceGrid[firstInputString.length][secondInputString.length];
+    // Initialize the first row of the distance matrix.
+    // The cost of transforming a string of length 'colIdx' to an empty string is 'colIdx'.
+    for (let colIdx = 0; colIdx < secondString.length + 1; colIdx++) {
+        distanceMatrix[0][colIdx] = colIdx;
+    }
+
+    // Iterate through the remaining cells of the matrix to calculate the Levenshtein distances.
+    // The loops start from index 1 because the first row and column are already initialized.
+    for (let rowIdx = 1; rowIdx < firstString.length + 1; rowIdx++) {
+        for (let colIdx = 1; colIdx < secondString.length + 1; colIdx++) {
+            // Compare the characters at the current positions (rowIdx - 1) and (colIdx - 1).
+            if (firstString.charAt(rowIdx - 1) === secondString.charAt(colIdx - 1)) {
+                // If the characters are identical, the cost is the minimum of deletion or insertion.
+                // This specific implementation does not consider the diagonal (substitution cost 0) in this case.
+                distanceMatrix[rowIdx][colIdx] = Math.min(
+                    distanceMatrix[rowIdx - 1][colIdx] + 1, // Cost of deleting a character from the first string.
+                    distanceMatrix[rowIdx][colIdx - 1] + 1   // Cost of inserting a character into the first string.
+                );
+            } else {
+                // If the characters are different, consider deletion, insertion, and substitution.
+                // Note: The substitution cost (distanceMatrix[rowIdx - 1][colIdx - 1]) is added without a +1 here,
+                // which is a specific characteristic of this algorithm's implementation.
+                distanceMatrix[rowIdx][colIdx] = Math.min(
+                    distanceMatrix[rowIdx - 1][colIdx] + 1,     // Cost of deleting a character.
+                    distanceMatrix[rowIdx][colIdx - 1] + 1,     // Cost of inserting a character.
+                    distanceMatrix[rowIdx - 1][colIdx - 1]      // Cost of substituting a character.
+                );
+            }
+        }
+    }
+    // The final Levenshtein distance is located in the bottom-right cell of the matrix.
+    return distanceMatrix[firstString.length][secondString.length];
 }
 
+// Import the Node.js file system module to handle file operations.
+const fileSystemModule = require('fs');
 
-// Retrieve raw data from the standard input file system.
-const fileContentsBuffer = require('fs').readFileSync('/dev/stdin', 'utf8');
+// Read the entire content from standard input synchronously.
+// '/dev/stdin' is the standard path for reading from stdin in Node.js on Unix-like systems.
+// 'utf8' specifies the character encoding for the input.
+let fileContent = fileSystemModule.readFileSync('/dev/stdin', 'utf8');
 
-// Split the entire input content into an array of individual lines.
-const parsedLines = fileContentsBuffer.split('\n');
+// Split the read content into an array of strings, using the newline character as a delimiter.
+// This assumes that each string to be compared is provided on a separate line.
+let inputLines = fileContent.split('\n');
 
-// Output the computed Levenshtein distance between the first two lines of input.
-console.log(computeLevenshteinDistance(parsedLines[0], parsedLines[1]));
+// Call the 'calculateLevenshteinDistance' function with the first two lines from the input.
+// The result (the calculated distance) is then printed to the console.
+console.log(calculateLevenshteinDistance(inputLines[0], inputLines[1]));

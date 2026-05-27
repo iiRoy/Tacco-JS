@@ -1,79 +1,77 @@
-const process = require('process');
+let rawInputBuffer = '';
+let bufferPosition = 0;
 
-let incomingDataBuffer = '';
-process.stdin.on('data', (inputChunk) => {
-    incomingDataBuffer += inputChunk;
-});
+function scan() {
+    return +rawInputBuffer[bufferPosition++];
+}
 
-process.stdin.on('end', () => {
-    const tokenizedInput = incomingDataBuffer.trim().split(/\s+/);
-    let tokenIndex = 0;
+function scan_string() {
+    return rawInputBuffer[bufferPosition++];
+}
 
-    const extractNumber = () => Number(tokenizedInput[tokenIndex++]);
-    const extractString = () => tokenizedInput[tokenIndex++];
-    const deliverOutput = (message) => console.log(message);
+function print(val) {
+    console.log(val);
+}
 
-    executeParenthesesSolver(extractNumber, extractString, deliverOutput);
-});
+function analyzeParentheses(textSegment) {
+    let currentOpenCount = 0;
+    let requiredOpenForClosing = 0;
 
-const analyzeSegmentBalance = (segmentText) => {
-    const finalState = Array.from(segmentText).reduce((currentCounts, charSymbol) => {
-        if (charSymbol === '(') {
-            currentCounts.openParentheses++;
-        } else { // charSymbol === ')'
-            if (currentCounts.openParentheses > 0) {
-                currentCounts.openParentheses--;
+    for (const character of textSegment) {
+        if (character === '(') {
+            currentOpenCount++;
+        } else {
+            if (currentOpenCount > 0) {
+                currentOpenCount--;
             } else {
-                currentCounts.unmatchedClosing++;
+                requiredOpenForClosing++;
             }
         }
-        return currentCounts;
-    }, { unmatchedClosing: 0, openParentheses: 0 });
-
-    return { prefixDeficit: finalState.unmatchedClosing, suffixSurplus: finalState.openParentheses };
-};
-
-const determineSegmentOrder = (segmentA, segmentB) => {
-    const netValueA = segmentA.suffixSurplus - segmentA.prefixDeficit;
-    const netValueB = segmentB.suffixSurplus - segmentB.prefixDeficit;
-
-    if (netValueA < 0 && netValueB < 0) {
-        return segmentA.prefixDeficit - segmentB.prefixDeficit;
-    } else {
-        return netValueB - netValueA;
     }
-};
+    return { neededClosing: requiredOpenForClosing, neededOpening: currentOpenCount };
+}
 
-const executeParenthesesSolver = (getNumber, getString, display) => {
-    const totalSegments = getNumber();
-    const rawInputSegments = Array.from({ length: totalSegments }, () => getString());
+function orchestrateValidation() {
+    const totalStringCount = scan();
+    const collectedStrings = [];
+    for (let i = 0; i < totalStringCount; i++) {
+        collectedStrings.push(scan_string());
+    }
 
-    const processedSegments = rawInputSegments.map(analyzeSegmentBalance);
+    const balanceInformation = collectedStrings.map(analyzeParentheses);
 
-    processedSegments.sort(determineSegmentOrder);
+    balanceInformation.sort((segmentA, segmentB) => {
+        const netBalanceA = segmentA.neededOpening - segmentA.neededClosing;
+        const netBalanceB = segmentB.neededOpening - segmentB.neededClosing;
 
-    let currentBalanceLevel = 0;
-    let overallSuccess = true;
-    const availableSegmentIndices = new Set(Array.from({ length: totalSegments }, (_, i) => i));
-
-    for (let attempt = 0; attempt < totalSegments; attempt++) {
-        let segmentAttachedInThisAttempt = false;
-        const currentAvailable = Array.from(availableSegmentIndices); // Snapshot to avoid issues with Set modification during iteration
-        for (const segmentIndex of currentAvailable) {
-            const segmentDetails = processedSegments[segmentIndex];
-            if (currentBalanceLevel >= segmentDetails.prefixDeficit) {
-                currentBalanceLevel += (segmentDetails.suffixSurplus - segmentDetails.prefixDeficit);
-                availableSegmentIndices.delete(segmentIndex);
-                segmentAttachedInThisAttempt = true;
-                break;
-            }
+        if (netBalanceA < 0 && netBalanceB < 0) {
+            return segmentA.neededClosing - segmentB.neededClosing;
         }
+        return netBalanceB - netBalanceA;
+    });
 
-        if (!segmentAttachedInThisAttempt) {
-            overallSuccess = false;
+    let currentAccumulatedBalance = 0;
+    let sequenceIsFeasible = true;
+
+    for (const segmentBalance of balanceInformation) {
+        if (currentAccumulatedBalance < segmentBalance.neededClosing) {
+            sequenceIsFeasible = false;
             break;
         }
+        currentAccumulatedBalance += (segmentBalance.neededOpening - segmentBalance.neededClosing);
     }
 
-    display(overallSuccess && currentBalanceLevel === 0 ? 'Yes' : 'No');
-};
+    print(sequenceIsFeasible && currentAccumulatedBalance === 0 ? 'Yes' : 'No');
+}
+
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
+
+process.stdin.on('data', function(chunk) {
+    rawInputBuffer += chunk;
+});
+
+process.stdin.on('end', function() {
+    rawInputBuffer = rawInputBuffer.trim().split(/\s+/);
+    orchestrateValidation();
+});

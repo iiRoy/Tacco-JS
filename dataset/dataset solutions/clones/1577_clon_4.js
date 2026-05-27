@@ -1,29 +1,31 @@
-function calculateSequenceCorrection(dataString) {
-  const acquiredLines = dataString.split('\n');
-  const numericSequence = acquiredLines[1].split(' ').map(Number);
+function processSequence(sourceData) {
+  const dataLines = sourceData.split('\n');
+  const sequenceLength = Number(dataLines[0]);
+  const numericalElements = dataLines[1].split(' ').map(Number);
 
-  if (numericSequence.length === 0) {
-    return 0;
-  }
+  const initialAccumulatorState = {
+    totalAdjustmentCost: 0,
+    currentMaximumValue: numericalElements[0]
+  };
 
-  const [accumulatedPayment, finalProcessedValue] = numericSequence.slice(1).reduce((pastState, presentValue) => {
-    let currentPaymentSum = pastState[0];
-    let priorAdjustedQuantity = pastState[1];
+  const finalAccumulation = numericalElements.slice(1).reduce((accumulator, elementValue) => {
+    let elementAdjustment = 0;
+    let nextMaximum = accumulator.currentMaximumValue;
 
-    if (presentValue < priorAdjustedQuantity) {
-      currentPaymentSum += (priorAdjustedQuantity - presentValue);
-      return [currentPaymentSum, priorAdjustedQuantity];
+    if (elementValue < accumulator.currentMaximumValue) {
+      elementAdjustment = accumulator.currentMaximumValue - elementValue;
     } else {
-      return [currentPaymentSum, presentValue];
+      nextMaximum = elementValue;
     }
-  }, [0, numericSequence[0]]);
 
-  return accumulatedPayment;
+    return {
+      totalAdjustmentCost: accumulator.totalAdjustmentCost + elementAdjustment,
+      currentMaximumValue: nextMaximum
+    };
+  }, initialAccumulatorState);
+
+  return finalAccumulation.totalAdjustmentCost;
 }
 
-function processInputData(dataContent) {
-  const finalOutcome = calculateSequenceCorrection(dataContent);
-  console.log(finalOutcome);
-}
-
-processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+const fileContent = require("fs").readFileSync("/dev/stdin", "utf8");
+console.log(processSequence(fileContent));

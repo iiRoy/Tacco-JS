@@ -1,82 +1,54 @@
 "use strict";
 
-const processDataStream = (rawSource) => {
-    const parseStream = (textInput) => {
-        let linesBuffer = [];
-        let readCursor = 0;
-        let cleanedInput = textInput.trim();
+const processInputData = (rawContent) => {
+    const contentLines = rawContent.trim().split('\n');
+    const [firstLine, ...dataLines] = contentLines;
+    const [countElements, targetValue] = firstLine.split(' ').map(Number);
+    const initialPairs = dataLines.map(line => line.split(' ').map(Number));
+    return { elementCount: countElements, targetSum: targetValue, valuePairs: initialPairs };
+};
 
-        while (readCursor < cleanedInput.length) {
-            let nextLineBreak = cleanedInput.indexOf('\n', readCursor);
-            let currentLineSegment;
-            if (nextLineBreak === -1) {
-                currentLineSegment = cleanedInput.substring(readCursor);
-                readCursor = cleanedInput.length;
-            } else {
-                currentLineSegment = cleanedInput.substring(readCursor, nextLineBreak);
-                readCursor = nextLineBreak + 1;
-            }
-            if (currentLineSegment) linesBuffer.push(currentLineSegment);
-        }
+const generateCumulativeRecords = (sourcePairs) => {
+    let currentAccumulation = 0;
+    return sourcePairs.map(([itemIdentifier, itemQuantity]) => {
+        currentAccumulation += itemQuantity;
+        return {
+            elementId: itemIdentifier,
+            elementQuantity: itemQuantity,
+            cumulativeSum: currentAccumulation
+        };
+    });
+};
 
-        let primaryHeaderLine = linesBuffer[0];
-        let firstSpacePosition = primaryHeaderLine.indexOf(' ');
-        let initialQuantity = Number(primaryHeaderLine.substring(0, firstSpacePosition));
-        let targetThreshold = Number(primaryHeaderLine.substring(firstSpacePosition + 1));
+const determineResult = (processedRecords, requiredSum) => {
+    const matchingRecordIndex = processedRecords.findIndex(record => record.cumulativeSum >= requiredSum);
 
-        let coordinatePairs = [];
-        for (let k = 1; k <= initialQuantity; k++) {
-            let currentDataLine = linesBuffer[k];
-            let dataSpacePosition = currentDataLine.indexOf(' ');
-            let coordinateA = Number(currentDataLine.substring(0, dataSpacePosition));
-            let coordinateB = Number(currentDataLine.substring(dataSpacePosition + 1));
-            coordinatePairs.push({ valA: coordinateA, valB: coordinateB });
-        }
-        return { initialQuantity, targetThreshold, coordinatePairs };
-    };
+    if (matchingRecordIndex !== -1) {
+        const currentRecord = processedRecords[matchingRecordIndex];
+        const previousRecord = matchingRecordIndex > 0 ? processedRecords[matchingRecordIndex - 1] : null;
 
-    const { initialQuantity, targetThreshold, coordinatePairs } = parseStream(rawSource);
+        console.log(JSON.stringify({ num: currentRecord.elementId, amount: currentRecord.elementQuantity, totalAmount: currentRecord.cumulativeSum }));
 
-    let cumulativeSum = 0;
-    const transformedRecords = coordinatePairs.reduce((accumulator, currentPair) => {
-        cumulativeSum += currentPair.valB;
-        accumulator.push({
-            primaryIndex: currentPair.valA,
-            valueUnit: currentPair.valB,
-            runningTotal: cumulativeSum
-        });
-        return accumulator;
-    }, []);
+        const sumBeforeCurrent = currentRecord.cumulativeSum - currentRecord.elementQuantity;
+        const finalSelection = (requiredSum > sumBeforeCurrent)
+            ? currentRecord.elementId
+            : (previousRecord ? previousRecord.elementId : currentRecord.elementId); 
 
-    let matchingRecord = null;
-    let recordIndex = 0;
-    while (recordIndex < transformedRecords.length) {
-        const inspectRecord = transformedRecords[recordIndex];
-        if (inspectRecord.runningTotal >= targetThreshold) {
-            matchingRecord = inspectRecord;
-            break;
-        }
-        recordIndex++;
-    }
-
-    if (matchingRecord) {
-        console.log(JSON.stringify({
-            num: matchingRecord.primaryIndex,
-            amount: matchingRecord.valueUnit,
-            totalAmount: matchingRecord.runningTotal
-        }));
-        console.log(matchingRecord.primaryIndex);
+        console.log(finalSelection);
     } else {
-        console.log(JSON.stringify(transformedRecords.map(rec => ({
-            num: rec.primaryIndex,
-            amount: rec.valueUnit,
-            totalAmount: rec.runningTotal
-        }))));
+        const originalFormatOutput = processedRecords.map(record => ({
+            num: record.elementId,
+            amount: record.elementQuantity,
+            totalAmount: record.cumulativeSum
+        }));
+        console.log(JSON.stringify(originalFormatOutput));
     }
 };
 
-const executeProcessing = (inputSource) => {
-    processDataStream(inputSource);
+const entryPoint = (inputContent) => {
+    const { elementCount, targetSum, valuePairs } = processInputData(inputContent);
+    const cumulativeData = generateCumulativeRecords(valuePairs);
+    determineResult(cumulativeData, targetSum);
 };
 
-executeProcessing(require('fs').readFileSync('/dev/stdin', 'utf8'));
+entryPoint(require('fs').readFileSync('/dev/stdin', 'utf8'));

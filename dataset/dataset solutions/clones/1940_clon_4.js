@@ -1,18 +1,11 @@
-function analyzeInputValues(rawInputContent) {
-    const numericPattern = /-?\d+/g;
-    const extractedStrings = rawInputContent.match(numericPattern);
+function processNumericInput(sourceText) {
+    const numericParts = sourceText.split(' ');
+    const primaryNum = +numericParts[0];
+    const secondaryNum = +numericParts[1];
 
-    const firstQuantity = +extractedStrings[0];
-    const secondQuantity = +extractedStrings[1];
+    const outcomeLabels = ['unsafe', 'safe'];
 
-    const comparisonOutcome = firstQuantity > secondQuantity;
-
-    const resultMapping = {
-        true: 'safe',
-        false: 'unsafe'
-    };
-
-    console.log(resultMapping[comparisonOutcome]);
+    console.log(outcomeLabels[+(primaryNum > secondaryNum)]);
 }
 
-analyzeInputValues(require("fs").readFileSync("/dev/stdin", "utf8"));
+processNumericInput(require("fs").readFileSync("/dev/stdin", "utf8"));

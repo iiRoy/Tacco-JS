@@ -1,27 +1,23 @@
-const processData = (inputTxt) => {
-  const [valCount, valMultiplier] = String(inputTxt).split(/\s+/).map(Number);
+const processNumericalSequence = (inputString) => {
+  const [firstParam, secondParam] = inputString.trim().split(' ').map(Number);
 
-  const calculateSeriesProduct = (initialTerm, commonFactor, iterations) => {
-    if (iterations === 0) {
-      return 0;
-    }
-    // For iterations >= 1, the result is initialTerm * (commonFactor ^ (iterations - 1))
-    const exponent = iterations - 1;
-    
-    // Calculate commonFactor raised to the power of 'exponent' using functional reduction.
-    // If exponent is 0, Array.from creates an empty array, and reduce returns the initial accumulator (1).
-    const powerResult = Array.from({ length: exponent }).reduce((product, _) => product * commonFactor, 1);
-    
-    return initialTerm * powerResult;
-  };
+  if (firstParam === 0) {
+    console.log(0);
+    return;
+  }
 
-  const finalOutcome = calculateSeriesProduct(valMultiplier, valMultiplier - 1, valCount);
+  if (firstParam === 1) {
+    console.log(secondParam);
+    return;
+  }
 
-  const presentOutput = (valueToDisplay) => {
-    process.stdout.write(valueToDisplay.toString() + "\n");
-  };
+  const multiplierValue = secondParam - 1;
+  const iterationCount = firstParam - 1;
 
-  presentOutput(finalOutcome);
+  const finalCalculation = Array.from({ length: iterationCount }, () => multiplierValue)
+                                .reduce((accumulator, currentFactor) => accumulator * currentFactor, secondParam);
+
+  console.log(finalCalculation);
 };
 
-processData(require("node:fs").readFileSync(0, "utf8"));
+processNumericalSequence(require("fs").readFileSync("/dev/stdin", "utf8"));

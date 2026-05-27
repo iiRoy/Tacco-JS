@@ -1,69 +1,58 @@
-function processInput ( rawInput )
-{
-    // Deconstruct the initial input string into numerical components
-    var minimumOccurrences = parseInt(rawInput.split(" ")[0]);
-    var productValue = parseInt(rawInput.split(" ")[1]);
+function processInput(inputString) {
+    // Parse the first number from the input, representing a threshold count.
+    var countLimit = parseInt(inputString.split(" ")[0]);
+    // Parse the second number from the input, which is the product to analyze.
+    var targetProduct = parseInt(inputString.split(" ")[1]);
     
-    // Obtain all prime factors of the product value
-    var primeFactorsArray = extractPrimeComponents(productValue);
+    // Retrieve all prime factors for the given target product.
+    var primeFactorsList = extractPrimeFactors(targetProduct);
+    // Crucially, add the original target product itself to the list of factors.
+    primeFactorsList.push(targetProduct);
     
-    // Add the original product value itself to the list of factors
-    primeFactorsArray.push(productValue);
+    // This array is initialized but never populated.
+    // Its use in the loop below will always result in a specific, constant outcome.
+    var factorOccurrences = []; 
     
-    // This list is intended for tracking occurrences but remains unused, reflecting the original logic.
-    var occurrenceTrackingList = [];
-    
-    // Initialize the variable to store the largest qualified component found
-    var greatestComponent = 1;
+    // Initialize a variable to keep track of the largest factor found that meets the criteria.
+    var largestFactor = 1;
 
-    // Iterate through each prime factor identified
-    for ( var factorIndex = 0; factorIndex < primeFactorsArray.length; factorIndex++ )
-    {
-        // Calculate the count of the current factor within the (empty) tracking list, plus one.
-        // Due to `occurrenceTrackingList` being empty, this will always result in 1.
-        var currentElementCount = occurrenceTrackingList.filter(item => item == primeFactorsArray[factorIndex]).length + 1;
+    // Iterate through each element in the combined list of prime factors and the original product.
+    for (var idx = 0; idx < primeFactorsList.length; idx++) {
+        // This line attempts to count occurrences of the current factor in 'factorOccurrences'.
+        // Since 'factorOccurrences' is always empty, its filter method will always return an empty array.
+        // Thus, '.length' will always be 0, and 'currentCount' will consistently be 1.
+        var currentCount = factorOccurrences.filter(val => val === primeFactorsList[idx]).length + 1;
         
-        // Check if the current factor's count meets the minimum requirement
-        // Given the bug, this condition simplifies to (1 >= minimumOccurrences)
-        if ( currentElementCount >= minimumOccurrences )
-        {
-            // If the current factor is larger than the previously found greatest component
-            if ( primeFactorsArray[factorIndex] > greatestComponent )
-            {
-                // Update the greatest component
-                greatestComponent = primeFactorsArray[factorIndex];
+        // The condition 'currentCount >= countLimit' effectively becomes '1 >= countLimit'.
+        // This means the inner block will only execute if 'countLimit' is 1.
+        if (currentCount >= countLimit) {
+            // If the current factor from the list is greater than the 'largestFactor' found so far,
+            // update 'largestFactor' with this new, larger value.
+            if (primeFactorsList[idx] > largestFactor) {
+                largestFactor = primeFactorsList[idx];
             }
         }
     }
-    // Output the final greatest component found
-    console.log(greatestComponent);
+    // Print the final largest factor that satisfied the condition.
+    console.log(largestFactor);
+}
 
-} // End of the main processing function
-
-
-// Invokes the primary function with data read from standard input
+// Execute the main processing function by reading input from standard input.
 processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));
 
+// Helper function to determine all prime factors of a given number.
+function extractPrimeFactors(remainingValue) {
+    var foundFactors = []; // An array to store the prime factors as they are discovered.
+    var divisor; // A variable used to test potential divisors, starting from 2.
 
-// Function to determine all prime components of a given number
-function extractPrimeComponents( remainingValue )
-{
-    // Initialize an empty array to store the identified divisors
-    var foundDivisors = [], divisorCandidate;
-
-    // Loop from 2 up to the current remaining value to find prime divisors
-    for ( divisorCandidate = 2; divisorCandidate <= remainingValue; divisorCandidate++ )
-    {
-        // While the current candidate evenly divides the remaining value
-        while ( (remainingValue % divisorCandidate) === 0 )
-        {
-            // Add the candidate to our collection of divisors
-            foundDivisors.push(divisorCandidate);
-            // Reduce the remaining value by dividing it by the found divisor
-            remainingValue /= divisorCandidate;
+    // Loop through possible divisors, starting from 2, up to the current value of 'remainingValue'.
+    for (divisor = 2; divisor <= remainingValue; divisor++) {
+        // Continuously divide 'remainingValue' by 'divisor' as long as it's perfectly divisible.
+        while ((remainingValue % divisor) === 0) {
+            foundFactors.push(divisor); // Add the divisor to our list of prime factors.
+            remainingValue /= divisor; // Reduce 'remainingValue' by dividing it by the found factor.
         }
     }
-
-    // Return the array containing all prime divisors
-    return foundDivisors;
-} // End of prime component extraction function
+    // Return the complete list of prime factors.
+    return foundFactors;
+}

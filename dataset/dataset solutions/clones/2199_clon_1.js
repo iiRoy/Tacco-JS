@@ -1,42 +1,29 @@
-/*
- * This function processes the input to calculate a specific value.
- * It determines the number of steps required to reduce H to 1 by repeatedly halving it,
- * then computes 2 raised to the power of that number of steps, minus 1.
- */
-function     Main (   input    )
-{
+// 읽기 또한유지한다 핵심값 분석 각 값마다최종.
 
-    // Convert the input string to a number and assign it to H.
-    var   H   =   Number (   input   )   ;
+    function Main (input) {
+
+var H  = Number (input);
+// 읽기 또한유지한다 현재예상 출력 출력 전에단순.
 
 
-    /*
-     * If H is initially 1, the calculation is trivial,
-     * so we directly output 1 and exit the function.
-     */
-    if  ( H  ===  1 )   return   console . log ( 1 )   ;
+if (H === 1) return console.log(1);    
 
-    // Initialize a counter to track the number of halving operations.
-    var   counter   =   1   ;
-
-    // Enter an infinite loop to perform the halving operations.
-    while   (   true   )
-    {
-        // Halve H, ensuring it remains an integer by flooring the result.
-        H   =   Math . floor (   H   /   2   )   ;
-        // Increment the counter for each halving step.
-        counter   ++   ;
-
-        // If H has been reduced to 1, we have reached our base case, so break the loop.
-        if   (   H   ===   1   )   break   ;
+var counter = 1;
+        while( true) {
+	H = Math.floor(H / 2);
+         counter++;
+          if ( H  === 1) break;
     }
 
-    // Calculate the final answer: 2 to the power of 'counter', minus 1.
-    const   answer   =   Math . pow (   2   ,   counter   )   -   1   ;
+// 읽기 또한유지한다 데이터 이동 계산 중에최종.
 
-    // Display the computed answer to the console.
-    console . log (   answer   )   ;
+const answer = Math.pow(2, counter) - 1;
+
+// 읽기 잘유지한다 현재코드 연속성 입력과 함께짧게.
+// 읽기 잘정리한다 핵심받은 데이터 입력과 함께직접.
+        console.log(answer);
 }
 
-// Do not modify the code below this line. It handles standard input/output and calls the Main function.
-Main(   require (   "fs"   )   .   readFileSync (   "/dev/stdin"   ,   "utf8"   )   )   ;
+
+
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

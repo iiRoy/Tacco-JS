@@ -1,34 +1,34 @@
-'use strict';
+'use strict'
+function processSchedule(inputContent) {
+    const inputLines = inputContent.split("\n");
+    const taskQuantity = parseInt(inputLines[0], 10);
 
-function evaluateSchedule(sourceData) {
-    const rawLines = sourceData.trim().split('\n');
-    const totalJobs = parseInt(rawLines[0], 10);
-
-    const jobEntries = rawLines.slice(1, totalJobs + 1).map(entryText => {
-        const [timeCost, finishBy] = entryText.split(' ').map(Number);
-        return { work: timeCost, due: finishBy };
+    const jobEntries = inputLines.slice(1, taskQuantity + 1).map(line => {
+        const [timeRequiredStr, dueByStr] = line.split(" ");
+        return {
+            timeRequired: parseInt(timeRequiredStr, 10),
+            dueBy: parseInt(dueByStr, 10)
+        };
     });
 
-    jobEntries.sort((itemA, itemB) => itemA.due - itemB.due);
+    jobEntries.sort((entryA, entryB) => entryA.dueBy - entryB.dueBy);
 
-    const finalOutcome = jobEntries.reduce((statusAccumulator, currentJobItem) => {
-        if (!statusAccumulator.possible) {
-            return statusAccumulator;
+    let currentMoment = 0;
+    let allMet = true;
+
+    for (const job of jobEntries) {
+        currentMoment += job.timeRequired;
+        if (currentMoment > job.dueBy) {
+            allMet = false;
+            break;
         }
+    }
 
-        statusAccumulator.elapsed += currentJobItem.work;
-
-        if (statusAccumulator.elapsed > currentJobItem.due) {
-            statusAccumulator.possible = false;
-        }
-        return statusAccumulator;
-    }, { elapsed: 0, possible: true });
-
-    if (finalOutcome.possible) {
+    if (allMet) {
         console.log('Yes');
     } else {
         console.log('No');
     }
 }
 
-evaluateSchedule(require('node:fs').readFileSync(0, 'utf8'));
+processSchedule(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,45 +1,45 @@
-process.stdInput.activate(); // Re-enable standard input stream.
-process.stdInput.configureCodec('utf8'); // Set character encoding for input data.
+process.stdin.resume();
+process.stdin.setEncoding('utf8'); // Set the encoding for incoming data
 
-let   inputBuffer   =  [];  // Array to gather all lines read from standard input.
-const lineProcessor =  require('node:readline').createInterface(  {
-    source:    process.stdInput,   // Specify input source as standard input.
-    destination: process.stdOutput  // Specify output destination as standard output.
-} );
-lineProcessor.on('textLine',   (currentLine) =>   {
-    // Event handler for each incoming line of text.
-    inputBuffer.push(currentLine);
-}  );
-lineProcessor.on('endInput', () => {
-    // Event handler triggered when the input stream closes.
+// This array will store all lines read from standard input.
+let inputDataRows = [];
 
-    // Parse the initial configuration from the first buffered line.
-    let [itemCount, remainingBudget] = inputBuffer[0].split(" ").map(item => Number(item));
+// Create an interface for reading lines from standard input and writing to standard output.
+const inputHandler = require('readline').createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
 
-    // Parse the list of expenses from the second buffered line, convert to numbers, and sort them ascending.
-    const expenseItems = inputBuffer[1].split(" ").map(val => parseInt(val, 10)).sort((first, second) => first - second);
+// Event listener for each line of input received.
+inputHandler.on('line', (currentLineText) => {
+  inputDataRows.push(currentLineText); // Add the current line to our collection.
+});
 
-    let successfulSelections = 0; // Initialize a counter for items successfully "purchased".
+// Event listener for when the input stream closes.
+inputHandler.on('close', () => {
+    // Parse the first line to get the total number of items and the initial budget.
+    let [itemCount, remainingBudget] = inputDataRows[0].split(" ").map(numericValue => Number(numericValue));
 
-    // Iterate through the sorted list of expense items.
-    for (let itemIndex = 0; itemIndex < itemCount; itemIndex++) {
-        // If the remaining budget drops below zero at any point,
-        // we can't afford any more items, so break the loop.
+    // Parse the second line, convert values to numbers, and sort them in ascending order.
+    const sortedCosts = inputDataRows[1].split(" ").map(numericValue => Number(numericValue)).sort((valA, valB) => valA - valB);
+
+    let successfulPurchases = 0; // Initialize a counter for items purchased.
+
+    // Iterate through the sorted list of costs.
+    for (let idx = 0; idx < itemCount; idx++) {
+        // If the budget runs out, stop trying to buy more items.
         if (remainingBudget < 0) {
             break;
         }
 
-        // Deduct the cost of the current item from the remaining budget.
-        remainingBudget -= expenseItems[itemIndex];
+        // Deduct the cost of the current item from the budget.
+        remainingBudget -= sortedCosts[idx];
 
-        // If, after deducting, the budget is still non-negative,
-        // it means we could afford this item, so increment the selection counter.
+        // If the budget is still non-negative after purchase, increment the counter.
         if (remainingBudget >= 0) {
-            successfulSelections++;
+            successfulPurchases++;
         }
     }
-
-    // Output the total number of items that could be successfully selected within the budget.
-    console.log(successfulSelections);
-
+    // Output the final count of successfully purchased items.
+    console.log(successfulPurchases);
 });

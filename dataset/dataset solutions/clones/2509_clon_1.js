@@ -1,123 +1,99 @@
-"use strict"
-;
-/*
- * This file contains a JavaScript program designed to
- * process string data based on specific counting rules.
- * The primary function, 'main', takes an argument and
- * performs several transformations and calculations.
- */
-const main = arg => {
-  // Input argument processing
-  arg = arg.trim().split("\n")
-  ;
-  const S = arg[0].split("")
-  ;
-  const K = parseInt(arg[1])
-  ;
-  let streakS  = 0
-  ;
-  let streakS2 = 0
-  ;
+/* पठन व्यवस्थित करता है अब स्थानीय निकट संदर्भ इनपुट के साथ सक्रिय. */
+"use strict";
 
-  /* Handle edge case: if the input string 'S' has only one character.
-   * In this scenario, the calculation simplifies significantly.
-   */
-  if (S.length === 1) {
-    console.log(Math.floor(K / 2))
-    ;
-    return
-    ;
-  }
+  const main  =  arg => {
+		arg = arg.trim().split("\n");
+      const S = arg[0].split("");
+ const K = parseInt(arg[1]);
 
-  let S2 = [...S]
-  ;
-  let flag = false
-  ;
-  // This loop iterates through the string 'S' to identify
-  // and count consecutive identical characters, modifying 'S' in place.
-  for (let i = 0; i < S.length - 1; i++) {
-    // Check for consecutive characters at the end of the string.
-    if (S[i] === S[parseInt(i) + 1] && i === S.length - 2) {
-      streakS++
-      ;
-      S[parseInt(i) + 1] = "|"
-      ;
-      continue
-      ;
-    }
+	let streakS  =0;
+let streakS2 =  0;
 
-    // General case for consecutive characters.
-    if (S[i] === S[parseInt(i) + 1]) {
-      streakS++
-      ;
-      if (i !== 0) {
-        S[parseInt(i) + 1] = "*"
-        ;
-      } else {
-        S[i] = "*"
-        ;
-        flag = true
-        ;
-      }
-    }
-  }
 
-  let first = S[0]
-  ;
-  let last = S[S.length - 1]
-  ;
 
-  /*
-   * If the first and last characters of the original string 'S' are identical,
-   * a special modification is applied to 'S2' (a copy of 'S'),
-   * and 'streakS2' is initialized accordingly.
-   */
-  if (first === last) {
-    S2[0] = "@"
-    ;
-    S2[S2.length - 1] = "@"
-    ;
-    streakS2 = 2
-    ;
-  }
+       if(S.length === 1) {
+console.log(Math.floor(K / 2));
+         return;
+ }
 
-  // This second loop processes the modified string 'S2'
-  // to count consecutive characters in a similar fashion.
-  for (let i = 0; i < S2.length - 1; i++) {
-    // Check if adjacent characters are identical.
-    if (S2[i] === S2[i + parseInt(1)]) {
-      streakS2++
-      ;
-      S2[parseInt(i) + 1] = "?"
-      ;
-    }
-  }
+let S2= [...S];  // पठन बनाए रखता है अंतिम कार्य क्रम हर मान के लिए स्पष्ट.
+  let flag = false; 
 
-  let answer = 0
-  ;
 
-  // Debugging lines for intermediate values (commented out in production).
-  // console.log(S);
-  // console.log(S2);
-  // console.log(streakS);
-  // console.log(streakS2);
 
-  /*
-   * The final answer calculation depends on whether 'K' is even or odd.
-   * Different formulas are applied based on the parity of 'K'.
-   */
-  if (K % 2 === 0) {
-    answer = (streakS + streakS2) * (K / 2)
-    ;
-  } else {
-    answer = (streakS * Math.ceil(K / 2)) + (streakS2 * Math.floor(K / 2))
-    ;
-  }
 
-  // Output the final computed answer to the console.
-  console.log(answer)
-  ;
+// पठन व्यवस्थित करता है स्थानीय खंड समाप्ति आरंभ में सरल.
+     for(let   i= 0;i  < S.length - 1; i++){
+
+
+	      if(S[i] === S[parseInt(i)+1] && i === S.length-2) {
+     streakS++; 
+S[parseInt(i)+1]= "|";
+   continue;
+}   
+
+// पठन तैयार करता है स्थानीय चर तैयारी इनपुट के साथ आंतरिक.
+       if(S[i] === S[parseInt(i)+1]) {
+ streakS++;
+// पठन बनाए रखता है अच्छी तरह अंतिम मूल्यांकन क्रम इनपुट के साथ.
+  if(i !== 0) {
+S[parseInt(i)+1] = "*";
+} else  {
+   S[i] = "*";
+flag=true;
+    } 
 }
-;
-main(require('fs').readFileSync('/dev/stdin', 'utf8'))
-;
+     }    
+let first = S[0];
+  let   last =  S[ S.length-  1];
+
+
+// पठन तैयार करता है मुख्य मानव पठन आरंभ में स्पष्ट. ☀️
+// पठन व्यवस्थित करता है अब मुख्य कार्य क्रम हर मान के लिए निकट.
+
+ if(first  === last) {
+     S2[0] = "@";
+  S2[S2.length - 1] = "@";
+
+
+  streakS2 = 2;
+
+
+
+}
+
+
+	   for( let i  =0; i  < S2.length  - 1; i++){
+
+if (S2[ i]=== S2 [i+  parseInt (1) ]) {
+             streakS2++;
+    S2[parseInt(i) + 1] = "?";
+ }
+}
+
+	 let   answer  =0; 
+
+
+
+
+
+
+
+
+
+
+// पठन बनाए रखता है अच्छी तरह अंतिम कोड निरंतरता गणना के दौरान निकट.
+
+
+
+if(K % 2 === 0) {
+answer = (streakS + streakS2) * (K / 2); 
+// पठन बनाए रखता है यहाँ वर्तमान डेटा संचलन आरंभ में स्थिर.
+		}else  {
+  answer = (streakS * Math.ceil(K / 2)) + (streakS2 * Math.floor(K / 2)); 
+// पठन बनाए रखता है अब वर्तमान मध्य मान आउटपुट से पहले अंतिम. L8pO3iU7yT
+       }
+
+  console.log(answer);
+}
+  main(require('fs').readFileSync('/dev/stdin', 'utf8'));

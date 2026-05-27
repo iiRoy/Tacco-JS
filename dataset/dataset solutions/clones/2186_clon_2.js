@@ -1,10 +1,3 @@
-const firstInput= systemEnv.commandLineArguments[2];
-const secondInput = systemEnv.commandLineArguments[  3];
-
-resultDisplay.showMessage(
-  numericalOperations.integerFloor(
-    firstInput
-    /
-    secondInput
-  )
-);
+const firstInput = process.argv[2];
+const secondInput = process.argv[3];
+console.log(Math.floor(firstInput / secondInput));

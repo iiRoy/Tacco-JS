@@ -1,57 +1,35 @@
-const reportOutcome = (dataUnit) => {
-    console.log(dataUnit.toString());
+const displayOutput = (content) => {
+  console.log(content);
 };
 
-const ascertainNumericalScale = (numericEntity) => {
-    return Math.floor(Math.log10(numericEntity)) + 1;
-};
+const calculateDigitCount = (num) => Math.floor(Math.log10(num)) + 1;
 
-const evaluateCombinedScale = (firstComponent, secondComponent) => {
-    return Math.max(
-        ascertainNumericalScale(firstComponent),
-        ascertainNumericalScale(secondComponent)
-    );
-};
+const calculateMaxDigitLength = (valA, valB) => Math.max(calculateDigitCount(valA), calculateDigitCount(valB));
 
-const executeAnalysis = (incomingDatum) => {
-    const integralValue = Number.parseInt(incomingDatum, 10);
+function* generateDivisorPairs(targetValue) {
+    for (let currentFactor = 1; currentFactor * currentFactor <= targetValue; currentFactor++) {
+        if (targetValue % currentFactor === 0) {
+            yield [currentFactor, targetValue / currentFactor];
+        }
+    }
+}
 
-    if (integralValue === 1) {
-        reportOutcome("1");
+const processInput = (rawInput) => {
+    const numericValue = parseInt(rawInput);
+
+    if (numericValue === 1) {
+        displayOutput("1");
         return;
     }
 
-    const traverseFactorsRecursively = (
-        currentTestFactor,
-        minimumObservedScale
-    ) => {
-        if (currentTestFactor * currentTestFactor > integralValue) {
-            return minimumObservedScale;
-        }
+    let minimumCombinedLength = Infinity;
 
-        let updatedMinimumScale = minimumObservedScale;
+    for (const [factorOne, factorTwo] of generateDivisorPairs(numericValue)) {
+        const currentPairLength = calculateMaxDigitLength(factorOne, factorTwo);
+        minimumCombinedLength = Math.min(minimumCombinedLength, currentPairLength);
+    }
 
-        if (integralValue % currentTestFactor === 0) {
-            const correspondingFactor = integralValue / currentTestFactor;
-            updatedMinimumScale = Math.min(
-                minimumObservedScale,
-                evaluateCombinedScale(currentTestFactor, correspondingFactor)
-            );
-        }
-
-        return traverseFactorsRecursively(
-            currentTestFactor + 1,
-            updatedMinimumScale
-        );
-    };
-
-    const finalResultScale = traverseFactorsRecursively(1, 20);
-    reportOutcome(finalResultScale);
+    displayOutput(minimumCombinedLength);
 };
 
-const systemFileAccessor = require("fs");
-const rawInputContent = systemFileAccessor
-    .readFileSync("/dev/stdin", "utf8")
-    .trim();
-
-executeAnalysis(rawInputContent);
+processInput(require("fs").readFileSync("/dev/stdin", "utf8").trim());

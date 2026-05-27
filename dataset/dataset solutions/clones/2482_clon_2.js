@@ -1,82 +1,75 @@
-function processInputData(sourceLines) {
-  // Parse the initial configuration from the first line
-  var initialParams = sourceLines[0].split(' ');
+function ProcessInput(rawData) {
+    // Split the first line of input to get the number of items and operations
+    const tempParts = rawData[0].split(' ');
+    let numItems = tempParts[0]; // Corresponds to N in the original code
+    let numOperations = tempParts[1]; // Corresponds to K in the original code
 
-  var itemQuantity = initialParams[0]; // Represents N from original
-  var reductionCount = initialParams[1]; // Represents K from original
+    // Split the second and third lines to get the two arrays
+    const arrayA = rawData[1].split(' '); // Corresponds to A
+    const arrayF = rawData[2].split(' '); // Corresponds to F
 
-  // Extract the first array of numbers
-  var firstNumericalSet = sourceLines[1].split(' ');
-
-  // Extract the second array of factors
-  var secondFactorSet = sourceLines[2].split(' ');
-
-  // Sort the first numerical set in descending order
-  // This helps in prioritizing larger values for modification
-  firstNumericalSet.sort(function(elementX, elementY) {
-    if (elementX > elementY) {
-      return -1;
-    }
-    if (elementX < elementY) {
-      return 1;
-    }
-    return 0;
-  });
-
-
-  // Sort the second factor set in ascending order
-  // This ensures factors are applied strategically
-  secondFactorSet.sort(function(elementX, elementY) {
-    if (elementX > elementY) {
-      return 1;
-    }
-    if (elementX < elementY) {
-      return -1;
-    }
-    return 0;
-  });
-
-
-  var calculatedProducts = []; // Stores [product, original_A_value, original_F_value]
-
-  // Initialize the array of products and their components
-  for (var loopIndex = 0; loopIndex < itemQuantity; loopIndex++) {
-    calculatedProducts[loopIndex] = [
-      firstNumericalSet[loopIndex] * secondFactorSet[loopIndex],
-      firstNumericalSet[loopIndex],
-      secondFactorSet[loopIndex]
-    ];
-  }
-
-
-  // Perform reduction operations 'reductionCount' times
-  for (var iterationCounter = 0; iterationCounter < reductionCount; iterationCounter++) {
-    // Sort the products array by the product value in descending order
-    // This brings the largest product to the first position for reduction
-    calculatedProducts.sort(function(entryOne, entryTwo) {
-      if (entryOne[0] > entryTwo[0]) return -1;
-      if (entryOne[0] < entryTwo[0]) return 1;
-      return 0;
+    // Sort arrayA in descending order based on its numeric values
+    arrayA.sort(function(val1, val2) {
+        if (val1 > val2) {
+            return -1; // val1 should come before val2
+        }
+        if (val1 < val2) {
+            return 1;  // val2 should come before val1
+        }
+        return 0;      // val1 and val2 are considered equal
     });
 
-    // Decrease the 'A' component of the largest product by 1
-    calculatedProducts[0][1] = calculatedProducts[0][1] - 1;
+    // Sort arrayF in ascending order based on its numeric values
+    arrayF.sort(function(val1, val2) {
+        if (val1 > val2) {
+            return 1;  // val2 should come before val1
+        }
+        if (val1 < val2) {
+            return -1; // val1 should come before val2
+        }
+        return 0;      // val1 and val2 are considered equal
+    });
+  
+    // Create a new array to store computed products and original values
+    let transformedData = []; // Corresponds to T
+    for (let idx = 0; idx < numItems; ++idx) {
+        // Each element is an array: [product, original_A_value, original_F_value]
+        transformedData[idx] = [arrayA[idx] * arrayF[idx], arrayA[idx], arrayF[idx]];
+    }
+  
+    // Perform K operations to minimize the maximum product
+    for (let idx = 0; idx < numOperations; ++idx) {
+        // Sort the transformedData array by the product (first element) in descending order
+        transformedData.sort(function(val1, val2) {
+            if (val1[0] > val2[0]) {
+                return -1; // val1's product comes before val2's product
+            }
+            if (val1[0] < val2[0]) {
+                return 1;  // val2's product comes before val1's product
+            }
+            return 0;      // products are equal
+        });
 
-    // Recalculate the product for the modified entry
-    calculatedProducts[0][0] = calculatedProducts[0][1] * calculatedProducts[0][2];
-  }
+        // Decrement the original A value (second element) of the item with the largest product
+        transformedData[0][1] = transformedData[0][1] - 1; 
+        // Recalculate the product for this modified item
+        transformedData[0][0] = transformedData[0][1] * transformedData[0][2];
+    }
+  
+    // After all operations, sort one last time to find the overall maximum product
+    transformedData.sort(function(val1, val2) {
+        if (val1[0] > val2[0]) {
+            return -1; // val1's product comes before val2's product
+        }
+        if (val1[0] < val2[0]) {
+            return 1;  // val2's product comes before val1's product
+        }
+        return 0;      // products are equal
+    });
 
-  // After all reductions, sort the products one last time
-  // This ensures the final maximum product is at the top
-  calculatedProducts.sort(function(comparisonA, comparisonB) {
-    if (comparisonA[0] > comparisonB[0]) return -1;
-    if (comparisonA[0] < comparisonB[0]) return 1;
-    return 0;
-  });
-
-  // Output the final largest product value
-  console.log(calculatedProducts[0][0]);
+    // Output the largest product found
+    console.log(transformedData[0][0]);
 }
 
-// Read input from standard input and pass to the processing function
-processInputData(require("fs").readFileSync("/dev/stdin", "utf8").split("\n"));
+// Read input from standard input, split by newlines, and pass to the processing function
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8").split("\n"));

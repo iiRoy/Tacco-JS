@@ -1,100 +1,100 @@
-const RDL = require('readline');
+const fileSystem = require('fs');
 
-const IO = RDL.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-    terminal: false
-});
-
-const gameSessions = [];
-
-IO.on('line', (dataLine) => {
-    if (dataLine.trim() !== '') {
-        gameSessions.push(dataLine.trim());
+function convertHandToFrequencyMap(handStringRepresentation) {
+    const tileFrequencyMap = new Map();
+    for (const digitCharacter of handStringRepresentation) {
+        const tileNumericValue = parseInt(digitCharacter, 10);
+        tileFrequencyMap.set(tileNumericValue, (tileFrequencyMap.get(tileNumericValue) || 0) + 1);
     }
-});
-
-IO.on('close', () => {
-    handleAllSessions(gameSessions);
-});
-
-function handleAllSessions(allInputs) {
-    const finalOutcomes = [];
-
-    allInputs.forEach(singleSessionTiles => {
-        const initialFrequencies = new Map();
-        for (let digitChar of singleSessionTiles) {
-            const tileValue = parseInt(digitChar, 10);
-            initialFrequencies.set(tileValue, (initialFrequencies.get(tileValue) || 0) + 1);
-        }
-
-        const winningCandidates = [];
-        
-        for (let candidateTile = 1; candidateTile <= 9; candidateTile++) {
-            const currentHandFrequencies = new Map(initialFrequencies);
-            currentHandFrequencies.set(candidateTile, (currentHandFrequencies.get(candidateTile) || 0) + 1);
-
-            let foundCompletionForCandidate = false;
-
-            for (let pairFormingTile = 1; pairFormingTile <= 9; pairFormingTile++) {
-                if ((currentHandFrequencies.get(pairFormingTile) || 0) >= 2) {
-                    const afterPairRemoval = new Map(currentHandFrequencies);
-                    afterPairRemoval.set(pairFormingTile, afterPairRemoval.get(pairFormingTile) - 2);
-
-                    if (canReduceToZero(afterPairRemoval)) {
-                        winningCandidates.push(candidateTile);
-                        foundCompletionForCandidate = true;
-                        break;
-                    }
-                }
-            }
-        }
-        
-        if (winningCandidates.length > 0) {
-            finalOutcomes.push(winningCandidates.join(' '));
-        } else {
-            finalOutcomes.push('0');
-        }
-    });
-
-    finalOutcomes.forEach(outcome => console.log(outcome));
+    return tileFrequencyMap;
 }
 
-function canReduceToZero(tileFrequencyMap) {
-    let firstExistingTile = -1;
-    for (let currentTileVal = 1; currentTileVal <= 9; currentTileVal++) {
-        if ((tileFrequencyMap.get(currentTileVal) || 0) > 0) {
-            firstExistingTile = currentTileVal;
+function canDecomposeRemainingTiles(currentTileFrequencies) {
+    let lowestTilePresent = -1;
+    for (let tileIdentifier = 1; tileIdentifier <= 9; tileIdentifier++) {
+        if ((currentTileFrequencies.get(tileIdentifier) || 0) > 0) {
+            lowestTilePresent = tileIdentifier;
             break;
         }
     }
 
-    if (firstExistingTile === -1) {
-        return true;
+    if (lowestTilePresent === -1) {
+        return true; // All tiles successfully decomposed
     }
 
-    if ((tileFrequencyMap.get(firstExistingTile) || 0) >= 3) {
-        const afterTripletAttempt = new Map(tileFrequencyMap);
-        afterTripletAttempt.set(firstExistingTile, afterTripletAttempt.get(firstExistingTile) - 3);
-        if (canReduceToZero(afterTripletAttempt)) {
+    // Attempt to form a triplet (kotsu) with the lowestTilePresent
+    if ((currentTileFrequencies.get(lowestTilePresent) || 0) >= 3) {
+        const afterTripletRemoval = new Map(currentTileFrequencies);
+        afterTripletRemoval.set(lowestTilePresent, afterTripletRemoval.get(lowestTilePresent) - 3);
+        if (canDecomposeRemainingTiles(afterTripletRemoval)) {
             return true;
         }
     }
 
-    if (firstExistingTile <= 7 && 
-        (tileFrequencyMap.get(firstExistingTile) || 0) >= 1 &&
-        (tileFrequencyMap.get(firstExistingTile + 1) || 0) >= 1 &&
-        (tileFrequencyMap.get(firstExistingTile + 2) || 0) >= 1) {
-        
-        const afterSequenceAttempt = new Map(tileFrequencyMap);
-        afterSequenceAttempt.set(firstExistingTile, afterSequenceAttempt.get(firstExistingTile) - 1);
-        afterSequenceAttempt.set(firstExistingTile + 1, afterSequenceAttempt.get(firstExistingTile + 1) - 1);
-        afterSequenceAttempt.set(firstExistingTile + 2, afterSequenceAttempt.get(firstExistingTile + 2) - 1);
-        
-        if (canReduceToZero(afterSequenceAttempt)) {
+    // Attempt to form a sequence (shuntsu) with the lowestTilePresent
+    if (lowestTilePresent <= 7 &&
+        (currentTileFrequencies.get(lowestTilePresent) || 0) >= 1 &&
+        (currentTileFrequencies.get(lowestTilePresent + 1) || 0) >= 1 &&
+        (currentTileFrequencies.get(lowestTilePresent + 2) || 0) >= 1) {
+
+        const afterSequenceRemoval = new Map(currentTileFrequencies);
+        afterSequenceRemoval.set(lowestTilePresent, afterSequenceRemoval.get(lowestTilePresent) - 1);
+        afterSequenceRemoval.set(lowestTilePresent + 1, afterSequenceRemoval.get(lowestTilePresent + 1) - 1);
+        afterSequenceRemoval.set(lowestTilePresent + 2, afterSequenceRemoval.get(lowestTilePresent + 2) - 1);
+        if (canDecomposeRemainingTiles(afterSequenceRemoval)) {
             return true;
         }
     }
 
-    return false;
+    return false; // Cannot decompose this configuration
 }
+
+function determineWinningTilesForHand(inputHandLine) {
+    const initialTileCounts = convertHandToFrequencyMap(inputHandLine);
+    const possibleWinningTiles = new Set();
+
+    for (let potentialDraw = 1; potentialDraw <= 9; potentialDraw++) {
+        const currentCountOfDraw = initialTileCounts.get(potentialDraw) || 0;
+        const countOfPrevTile = initialTileCounts.get(potentialDraw - 1) || 0;
+        const countOfNextTile = initialTileCounts.get(potentialDraw + 1) || 0;
+
+        // Skip if already 4 of this tile, or if this tile and its neighbors are all absent
+        if (currentCountOfDraw === 4 || (countOfPrevTile === 0 && currentCountOfDraw === 0 && countOfNextTile === 0)) {
+            continue;
+        }
+
+        for (let candidatePairTile = 1; candidatePairTile <= 9; candidatePairTile++) {
+            const simulatedHandCounts = new Map(initialTileCounts);
+
+            // Add the potential drawn tile
+            simulatedHandCounts.set(potentialDraw, (simulatedHandCounts.get(potentialDraw) || 0) + 1);
+
+            // Check if the candidatePairTile can form a pair
+            if ((simulatedHandCounts.get(candidatePairTile) || 0) < 2) {
+                continue;
+            }
+
+            // Remove the pair
+            simulatedHandCounts.set(candidatePairTile, simulatedHandCounts.get(candidatePairTile) - 2);
+
+            // Check if the remaining tiles can be decomposed into melds
+            if (canDecomposeRemainingTiles(simulatedHandCounts)) {
+                possibleWinningTiles.add(potentialDraw);
+                break; // Found a valid pair for this potentialDraw, move to the next potentialDraw
+            }
+        }
+    }
+
+    const sortedResults = Array.from(possibleWinningTiles).sort((a, b) => a - b);
+    return sortedResults.length ? sortedResults.join(' ') : '0';
+}
+
+function executeGameLogic() {
+    const rawInputContent = fileSystem.readFileSync(0, 'utf8');
+    const gameInputLines = rawInputContent.trim().split('\n');
+
+    const allResults = gameInputLines.map(determineWinningTilesForHand);
+    allResults.forEach(outputLine => console.log(outputLine));
+}
+
+executeGameLogic();

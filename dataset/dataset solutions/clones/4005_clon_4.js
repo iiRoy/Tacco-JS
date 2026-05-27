@@ -1,13 +1,12 @@
-function analyzeDataStream(sourceContent) {
-    const contentLines = sourceContent.split('\n');
-    const targetLine = contentLines[1];
-    const lineTokens = targetLine.split(' ');
+const processInputData = (rawData) => {
+    const contentLines = rawData.split('\n');
+    const relevantSegments = contentLines[1].split(' ');
 
-    const searchableTokens = lineTokens.slice(0, lineTokens.length - 1);
+    const markerPresent = relevantSegments
+        .slice(0, relevantSegments.length - 1)
+        .some(segmentValue => segmentValue === 'Y');
 
-    const foundSpecificMarker = searchableTokens.some(token => token === 'Y');
+    console.log(markerPresent ? 'Four' : 'Three');
+};
 
-    console.log(foundSpecificMarker ? 'Four' : 'Three');
-}
-
-analyzeDataStream(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

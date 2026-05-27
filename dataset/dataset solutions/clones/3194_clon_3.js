@@ -1,184 +1,128 @@
 'use strict';
 
-/**
- * Solves the matchstick number problem using dynamic programming.
- * Finds the largest number (by digit count, then lexicographically)
- * that can be formed using a specific total number of matchsticks,
- * given a set of available digits and their matchstick costs.
- *
- * @param {string} initialInputData - Raw input string containing N, M, and M digits.
- */
-function ProcessMatchstickProblem(initialInputData) {
-    // --- Input Parsing and Validation (Type III addition/update) ---
-    const parsedNumericalInputs = initialInputData.split(/\s+/).map(Number);
+// Helper function to parse raw input string into numbers and extract main parameters
+function extractNumericParameters(rawDataString) {
+    const numericStrings = rawDataString.split(/\s+/);
+    const parsedNumbers = numericStrings.map(Number);
 
-    const targetMatchsticks = parsedNumericalInputs.shift();
-    const numProvidedDigits = parsedNumericalInputs.shift();
-    const availableDigits = parsedNumericalInputs; // Remaining elements are the digits
+    const targetSum = parsedNumbers.shift();
+    const numAvailableDigits = parsedNumbers.shift();
+    const availableDigits = parsedNumbers; // Remaining numbers are the digits
 
-    // Edge case: If no matchsticks are required or no digits are provided, output an empty string.
-    if (targetMatchsticks <= 0 || numProvidedDigits <= 0) {
-        console.log('');
-        return;
+    return { targetSum, numAvailableDigits, availableDigits };
+}
+
+// Helper function to determine the total count of digits in a solution representation
+// A solution is an array where index 0 is a boolean, and indices 1-9 are strings of digits.
+function getTotalDigitCount(solutionArray) {
+    let totalLength = 0;
+    for (let digitIndex = 1; digitIndex <= 9; digitIndex++) {
+        totalLength += solutionArray[digitIndex].length;
+    }
+    return totalLength;
+}
+
+// Function to compare two potential solutions and return the "larger" one.
+// "Larger" means having more digits, or if the same number of digits, lexicographically larger.
+function compareSolutions(solA, solB) {
+    // If solA is undefined, solB is the first valid solution for this sum, so it's "larger".
+    if (solA === undefined) {
+        return solB;
     }
 
-    // --- Define Matchstick Costs for each digit (Type II renaming) ---
-    // Using a Map for clearer key-value association and avoiding 0-based array issues.
-    const matchstickCostPerDigit = new Map([
-        [1, 2], [2, 5], [3, 5], [4, 4], [5, 5],
-        [6, 6], [7, 3], [8, 7], [9, 6]
-    ]);
+    const lengthA = getTotalDigitCount(solA);
+    const lengthB = getTotalDigitCount(solB);
 
-    // --- Determine the optimal digit for each matchstick cost (Type III update) ---
-    // This map stores the largest digit that can be formed for a given matchstick cost.
-    // If multiple digits have the same cost, we prefer the largest digit for lexicographical order.
-    const optimalDigitForCost = new Map();
-    for (const digitValue of availableDigits) {
-        const digitCost = matchstickCostPerDigit.get(digitValue);
-        // Only consider digits that have a defined matchstick cost
-        if (digitCost !== undefined) {
-            // If this cost hasn't been seen yet, or if the current digit is larger
-            // than the previously stored digit for this cost, update it.
-            if (!optimalDigitForCost.has(digitCost) || digitValue > optimalDigitForCost.get(digitCost)) {
-                optimalDigitForCost.set(digitCost, digitValue);
+    if (lengthA > lengthB) {
+        return solA;
+    }
+    if (lengthA < lengthB) {
+        return solB;
+    }
+
+    // If total digit counts are equal, compare digit by digit from 9 down to 1
+    for (let digitValue = 9; digitValue > 0; digitValue--) {
+        if (solA[digitValue].length > solB[digitValue].length) {
+            return solA;
+        }
+        if (solA[digitValue].length < solB[digitValue].length) {
+            return solB;
+        }
+    }
+    // If all digit counts are equal, the solutions are identical in terms of digits,
+    // so return the first one (solA) to maintain consistency.
+    return solA;
+}
+
+function processInput(rawData) {
+    const { targetSum, numAvailableDigits, availableDigits } = extractNumericParameters(rawData);
+
+    // Maps a digit (1-9) to its cost (e.g., digit 1 costs 2, digit 2 costs 5)
+    const digitCostMap = [false, 2, 5, 5, 4, 5, 6, 3, 7, 6]; // Index 0 unused, indices 1-9 for digits
+
+    // Maps a cost (1-9) to the largest digit that has that cost.
+    // Initialized with false, indicating no digit found for that cost yet.
+    // Array length 10 to cover costs 1-9, matching digitCostMap indexing.
+    const costToLargestDigit = new Array(10).fill(false);
+
+    // Populate costToLargestDigit based on the available digits from input.
+    // For each cost, we want to store the largest possible digit.
+    for (let k = 0; k < numAvailableDigits; k++) {
+        const currentDigit = availableDigits[k];
+        const currentCost = digitCostMap[currentDigit];
+        // Only update if the currentDigit is larger than what's currently stored for this cost.
+        // `(costToLargestDigit[currentCost] || 0)` handles `false` or `undefined` as 0 for comparison.
+        if (currentDigit > (costToLargestDigit[currentCost] || 0)) {
+            costToLargestDigit[currentCost] = currentDigit;
+        }
+    }
+
+    // Dynamic Programming table: memoTable[i] stores the best solution for sum 'i'.
+    // Each solution is an array: [isReachable (boolean), string_of_1s, ..., string_of_9s].
+    // The strings store the concatenated digits (e.g., '555' for three 5s).
+    const INITIAL_DP_STATE_FOR_ZERO_SUM = [true, '', '', '', '', '', '', '', '', ''];
+    const memoTable = new Array(targetSum + 1).fill(undefined); // Initialize all sums as unreachable
+    memoTable[0] = INITIAL_DP_STATE_FOR_ZERO_SUM; // Sum 0 is reachable with no digits
+
+    // Iterate through all possible sums from 1 up to targetSum
+    for (let currentSum = 1; currentSum <= targetSum; currentSum++) {
+        // Iterate through all possible costs (which correspond to digits 1-9)
+        // The loop iterates through indices of digitCostMap, which represent costs.
+        for (let costValue = 1; costValue < digitCostMap.length; costValue++) {
+            const digitForThisCost = costToLargestDigit[costValue]; // Get the largest digit for this specific cost
+            const previousSum = currentSum - costValue;
+
+            // Check if:
+            // 1. The previous sum is non-negative.
+            // 2. A solution exists for the previous sum (`memoTable[previousSum]` is not undefined).
+            // 3. The previous sum is reachable (`memoTable[previousSum][0]` is true).
+            // 4. A valid digit exists for the current `costValue` (`digitForThisCost` is not falsy).
+            if (previousSum >= 0 && memoTable[previousSum] && memoTable[previousSum][0] && digitForThisCost) {
+                // Create a candidate solution by taking the solution for `previousSum` and adding `digitForThisCost`.
+                const candidateSolution = memoTable[previousSum].slice(); // Use slice for a shallow copy
+                candidateSolution[digitForThisCost] += String(digitForThisCost); // Append the digit as a string
+
+                // Update the memoTable for `currentSum` if `candidateSolution` is better than the existing one.
+                memoTable[currentSum] = compareSolutions(memoTable[currentSum], candidateSolution);
             }
         }
     }
 
-    // If after processing, no valid digits could be mapped to costs, output empty string.
-    if (optimalDigitForCost.size === 0) {
-        console.log('');
-        return;
-    }
+    // Construct the final result string from the best solution found for `targetSum`.
+    let finalResultString = '';
+    const bestSolutionForTargetSum = memoTable[targetSum];
 
-    // --- Dynamic Programming Table Initialization (Type II renaming, Type III structure) ---
-    // `memoizedSolutions` is an array where `memoizedSolutions[k]` stores the best number
-    // that can be formed using `k` matchsticks.
-    // Each state is an array: `[isReachable, countOf1s, countOf2s, ..., countOf9s]`.
-    // `countOfXs` is represented as a string of 'X's (e.g., "77" for two 7s).
-    const memoizedSolutions = new Array(targetMatchsticks + 1).fill(undefined);
-
-    // Base case: 0 matchsticks can form an empty number.
-    // The first element `true` indicates that this state is reachable.
-    memoizedSolutions[0] = [true, '', '', '', '', '', '', '', '', ''];
-
-    // --- Fill the DP table (Type II renaming, Type III structural changes) ---
-    // Iterate from 1 up to the target number of matchsticks.
-    for (let currentStickTotal = 1; currentStickTotal <= targetMatchsticks; currentStickTotal++) {
-        // Iterate through all possible matchstick costs for which we have an optimal digit.
-        for (const [costOfDigit, digitRepresented] of optimalDigitForCost.entries()) {
-            const previousStickTotal = currentStickTotal - costOfDigit;
-
-            // Check if the previous state is valid and reachable
-            if (previousStickTotal >= 0 && memoizedSolutions[previousStickTotal] && memoizedSolutions[previousStickTotal][0]) {
-                const previousState = memoizedSolutions[previousStickTotal];
-
-                // Create a potential candidate state by adding the current digit
-                // We use concat() to ensure a deep copy of the array for modification.
-                const potentialCandidateState = previousState.slice(); // More explicit than concat()
-                // Append the current digit to its respective count-string
-                potentialCandidateState[digitRepresented] += String(digitRepresented);
-                potentialCandidateState[0] = true; // Mark as reachable
-
-                // Compare and update the current `memoizedSolutions[currentStickTotal]`
-                // with the new candidate if it's superior.
-                memoizedSolutions[currentStickTotal] = determineSuperiorSolution(
-                    memoizedSolutions[currentStickTotal],
-                    potentialCandidateState
-                );
-            }
+    if (bestSolutionForTargetSum && bestSolutionForTargetSum[0]) { // Ensure a reachable solution was found
+        // Concatenate digits from 1 to 9 in reverse order (9s first, then 8s, etc.)
+        // This ensures the lexicographically largest number is formed.
+        for (let digitValue = 1; digitValue < 10; digitValue++) {
+            finalResultString = bestSolutionForTargetSum[digitValue] + finalResultString;
         }
     }
+    // If no solution is found, finalResultString remains empty, which is the correct behavior.
 
-    // --- Reconstruct and Output the Final Result (Type III update) ---
-    const finalSolutionState = memoizedSolutions[targetMatchsticks];
-
-    // If the target matchstick count is not reachable, output an empty string.
-    if (!finalSolutionState || !finalSolutionState[0]) {
-        console.log('');
-        return;
-    }
-
-    let finalResultBuilder = [];
-    // Iterate from largest digit (9) down to smallest (1)
-    // to construct the number in lexicographically largest order.
-    for (let digit = 9; digit >= 1; digit--) {
-        const digitCountString = finalSolutionState[digit]; // e.g., "77" for two 7s
-        if (digitCountString) { // If there are instances of this digit
-            finalResultBuilder.push(digitCountString);
-        }
-    }
-
-    console.log(finalResultBuilder.join(''));
+    console.log(finalResultString);
 }
 
-/**
- * Helper function to calculate the total number of digits in a given state array.
- * This is crucial for comparing numbers by length first.
- * (Type III addition)
- * @param {Array<boolean|string>} stateArray - A DP state array.
- * @returns {number} The total count of digits.
- */
-function calculateTotalDigitsInState(stateArray) {
-    let totalCount = 0;
-    // Iterate from digit 1 to 9
-    for (let digit = 1; digit <= 9; digit++) {
-        // The length of the string "77" gives the count of 7s (which is 2)
-        totalCount += stateArray[digit].length;
-    }
-    return totalCount;
-}
-
-/**
- * Compares two DP states to determine which one represents a "larger" number.
- * Prioritizes numbers with more digits, then lexicographically larger numbers.
- * (Type II renaming, Type III update for robustness)
- *
- * @param {Array<boolean|string>} stateOne - The first DP state to compare.
- * @param {Array<boolean|string>} stateTwo - The second DP state to compare.
- * @returns {Array<boolean|string>} The superior (larger) DP state.
- */
-function determineSuperiorSolution(stateOne, stateTwo) {
-    // If stateOne is not yet defined/reachable, stateTwo is automatically superior (if reachable).
-    if (stateOne === undefined || !stateOne[0]) {
-        return stateTwo;
-    }
-    // If stateTwo is not defined/reachable, stateOne is automatically superior (if reachable).
-    if (stateTwo === undefined || !stateTwo[0]) {
-        return stateOne;
-    }
-
-    // First, compare by the total number of digits. More digits means a larger number.
-    const totalDigitsInOne = calculateTotalDigitsInState(stateOne);
-    const totalDigitsInTwo = calculateTotalDigitsInState(stateTwo);
-
-    if (totalDigitsInOne > totalDigitsInTwo) {
-        return stateOne;
-    }
-    if (totalDigitsInOne < totalDigitsInTwo) {
-        return stateTwo;
-    }
-
-    // If the total number of digits is the same, compare lexicographically.
-    // Iterate from the largest digit (9) down to the smallest (1).
-    // The state with more occurrences of a higher digit is superior.
-    for (let digit = 9; digit >= 1; digit--) {
-        const countOfDigitInOne = stateOne[digit].length;
-        const countOfDigitInTwo = stateTwo[digit].length;
-
-        if (countOfDigitInOne > countOfDigitInTwo) {
-            return stateOne;
-        }
-        if (countOfDigitInOne < countOfDigitInTwo) {
-            return stateTwo;
-        }
-    }
-
-    // If both states have the same number of total digits and the same counts
-    // for all individual digits, they represent the same number.
-    // In this case, we can return either, stateOne is chosen arbitrarily.
-    return stateOne;
-}
-
-// Read input from standard input and initiate the process.
-ProcessMatchstickProblem(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// Read input from stdin and pass it to the main processing function
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

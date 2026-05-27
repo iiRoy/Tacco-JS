@@ -1,58 +1,89 @@
 'use strict';
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
-// This section contains utility methods
-const findHighestElement = (numberSequence) => {
-  let traversalIndex = numberSequence.length;
-  let currentMaximum = -Infinity; // Initialize with the smallest possible value
-  while (traversalIndex--) {
-    if (numberSequence[traversalIndex] > currentMaximum) {
-      currentMaximum = numberSequence[traversalIndex];
+
+// This section contains utility functions for array operations.
+
+/**
+ * Determines the largest numerical value within a given array.
+ * @param {number[]} inputArray - The array of numbers to search through.
+ * @returns {number} The maximum value found in the array.
+ */
+const findMaximum = (inputArray) => {
+    let idx = inputArray.length; // Initialize index with array length
+    let currentMaxVal = -Infinity; // Start with the smallest possible number
+    // Iterate backwards through the array
+    while (idx--) {
+        // If the current element is greater than the recorded maximum, update it
+        if (inputArray[idx] > currentMaxVal) {
+            currentMaxVal = inputArray[idx];
+        }
     }
-  }
-  return currentMaximum;
+    return currentMaxVal; // Return the highest value
 };
-const findLowestElement = (numberSequence) => {
-  let traversalIndex = numberSequence.length;
-  let currentMinimum = Infinity; // Initialize with the largest possible value
-  while (traversalIndex--) {
-    if (numberSequence[traversalIndex] < currentMinimum) {
-      currentMinimum = numberSequence[traversalIndex];
+
+/**
+ * Determines the smallest numerical value within a given array.
+ * @param {number[]} inputArray - The array of numbers to search through.
+ * @returns {number} The minimum value found in the array.
+ */
+const findMinimum = (inputArray) => {
+    let idx = inputArray.length; // Initialize index with array length
+    let currentMinVal = Infinity; // Start with the largest possible number
+    // Iterate backwards through the array
+    while (idx--) {
+        // If the current element is smaller than the recorded minimum, update it
+        if (inputArray[idx] < currentMinVal) {
+            currentMinVal = inputArray[idx];
+        }
     }
-  }
-  return currentMinimum;
+    return currentMinVal; // Return the lowest value
 };
-const ProcessInputData = (rawInputText) => {
-  // The first line of input becomes the first element of the array, and so on.
-  rawInputText = rawInputText.split("\n");
 
-  // totalElements will hold the count of items from the first line
-  let totalElements = parseInt(rawInputText[0]);
+/**
+ * Processes the input data to calculate minimum costs based on height differences.
+ * This function implements a dynamic programming approach similar to the "Frog Jump" problem.
+ * @param {string} rawData - The raw input string, typically from standard input.
+ */
+const processInputData = (rawData) => {
+    // Split the input string into an array of lines
+    let lines = rawData.split("\n");
 
-  // heightMeasurements stores the numerical values from the second line
-  let heightMeasurements = (rawInputText[1].split(" ").map(Number));
-  let loopCounter = totalElements;
-  // The following commented block was for generating random data, now disabled.
-  // while (loopCounter--) {
-  //   heightMeasurements[loopCounter] = Math.floor(Math.random() * 100);
-  // }
+    // Parse the first line to get the number of elements (N)
+    let numElements = parseInt(lines[0]);
 
-  // Initialize an array to store the calculated minimum costs
-  let computedCosts = new Array(totalElements).fill(Infinity);
-  console.log(heightMeasurements); // Output the parsed height values for debugging
+    // Parse the second line to get the array of heights
+    // It splits by space and converts each part to a number
+    let heightsArr = (lines[1].split(" ").map(Number));
 
-  computedCosts[0] = 0; // The cost to reach the first element is zero
-  computedCosts[1] = Math.abs(heightMeasurements[0] - heightMeasurements[1]); // Cost to reach the second element
+    // Initialize a cost array with a size of N, filled with a large value (Infinity)
+    // This array will store the minimum cost to reach each position
+    let costArray = new Array(numElements).fill(Infinity);
 
-  // Iterate through the remaining elements to calculate minimum costs using dynamic programming
-  for (loopCounter = 2; loopCounter < totalElements; loopCounter++) {
-    computedCosts[loopCounter] = Math.min(
-      computedCosts[loopCounter - 2] + Math.abs(heightMeasurements[loopCounter] - heightMeasurements[loopCounter - 2]),
-      computedCosts[loopCounter - 1] + Math.abs(heightMeasurements[loopCounter] - heightMeasurements[loopCounter - 1])
-    );
-  }
-  // Remember to use parseInt for converting string values to integers.
-  console.log(computedCosts, computedCosts[totalElements - 1]); // Display all costs and the final minimum cost
+    // Output the initial heights array for debugging or verification
+    console.log(heightsArr);
+
+    // Base cases for the cost array
+    // Cost to reach the first position (index 0) is 0
+    costArray[0] = 0;
+    // Cost to reach the second position (index 1) is the absolute difference between h[0] and h[1]
+    costArray[1] = Math.abs(heightsArr[0] - heightsArr[1]);
+
+    // Iterate from the third position (index 2) up to N-1
+    for (let loopCounter = 2; loopCounter < numElements; loopCounter++) {
+        // Calculate the cost to reach the current position (loopCounter)
+        // This is the minimum of two options:
+        // 1. Jumping from two steps back (loopCounter - 2) + cost of that jump
+        // 2. Jumping from one step back (loopCounter - 1) + cost of that jump
+        let costFromTwoStepsBack = costArray[loopCounter - 2] + Math.abs(heightsArr[loopCounter] - heightsArr[loopCounter - 2]);
+        let costFromOneStepBack = costArray[loopCounter - 1] + Math.abs(heightsArr[loopCounter] - heightsArr[loopCounter - 1]);
+        costArray[loopCounter] = Math.min(costFromTwoStepsBack, costFromOneStepBack);
+    }
+
+    // Output the complete cost array and the minimum cost to reach the last position (N-1)
+    console.log(costArray, costArray[numElements - 1]);
 };
-// Do not modify the lines below this point; they handle standard input/output and call the primary processing function.
-ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8").trim());
+
+// The following line reads input from standard input, trims it, and passes it to the main processing function.
+// This part should not be modified as it handles the standard I/O mechanism.
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8").trim());

@@ -1,103 +1,139 @@
-class GraphReader {
-    constructor(textData, separatorPattern) {
-        const pattern = new RegExp(separatorPattern.split("").join("|"), "g");
-        this.currentOffset = 0;
-        this.tokenCollection = textData.replace(/\r/g, '').split(pattern).filter(token => token !== '');
-    }
+function Main(inputData) {
+    "use strict";
 
-    hasMoreTokens() {
-        return this.currentOffset < this.tokenCollection.length;
-    }
-
-    retrieveNextToken() {
-        if (this.currentOffset >= this.tokenCollection.length) {
-            throw new RangeError("End of input reached.");
-        }
-        return this.tokenCollection[this.currentOffset++];
-    }
-
-    readInteger() {
-        const token = this.retrieveNextToken();
-        const num = parseInt(token, 10);
-        if (isNaN(num)) {
-            throw new TypeError(`'${token}' cannot be converted to an integer.`);
-        }
-        return num;
-    }
-
-    peekCurrentToken() {
-        if (this.currentOffset >= this.tokenCollection.length) {
-            return undefined;
-        }
-        return this.tokenCollection[this.currentOffset];
-    }
-
-    resetReader() {
-        this.currentOffset = 0;
-    }
-}
-
-function executeCalculation(sourceData) {
     const outputWriter = console.log;
-    const dataInterpreter = new GraphReader(sourceData, " \n");
+    const dataParser = new InputScanner(inputData, " \n");
 
-    const vertexCount = dataInterpreter.readInteger();
-    const edgeCount = dataInterpreter.readInteger();
+    const nodeCount = dataParser.fetchInteger();
+    const edgeCount = dataParser.fetchInteger();
 
-    const adjacencyStructure = new Array(vertexCount).fill(null).map(() => []);
-    const inboundDegrees = new Array(vertexCount).fill(0);
-    const maximumAttainableScores = new Array(vertexCount).fill(-Infinity);
+    const adjacencyLists = new Map(); // Map<number, number[]>
+    const edgeWeightMap = new Map(); // Map<number, Map<number, number>>
+    const incomingEdgeCounts = new Map(); // Map<number, number>
+    const allGraphNodes = new Set(); // To keep track of all nodes present in edges or explicitly initialized
 
-    for (let k = 0; k < edgeCount; ++k) {
-        const originVertex = dataInterpreter.readInteger();
-        const destinationVertex = dataInterpreter.readInteger();
-        const connectionWeight = dataInterpreter.readInteger();
-
-        adjacencyStructure[originVertex].push({ target: destinationVertex, weight: connectionWeight });
-        inboundDegrees[destinationVertex]++;
+    for (let i = 0; i < nodeCount; i++) {
+        adjacencyLists.set(i, []);
+        edgeWeightMap.set(i, new Map());
+        incomingEdgeCounts.set(i, 0);
+        allGraphNodes.add(i);
     }
 
-    const processQueue = [];
-    for (let k = 0; k < vertexCount; ++k) {
-        if (inboundDegrees[k] === 0) {
-            processQueue.push(k);
+    for (let k = 0; k < edgeCount; k++) {
+        const sourceNode = dataParser.fetchInteger();
+        const targetNode = dataParser.fetchInteger();
+        const weightValue = dataParser.fetchInteger();
+
+        adjacencyLists.get(sourceNode).push(targetNode);
+        edgeWeightMap.get(sourceNode).set(targetNode, weightValue);
+        incomingEdgeCounts.set(targetNode, (incomingEdgeCounts.get(targetNode) || 0) + 1);
+        allGraphNodes.add(sourceNode);
+        allGraphNodes.add(targetNode);
+    }
+
+    const processingQueue = [];
+    for (const nodeIdentifier of allGraphNodes) {
+        if ((incomingEdgeCounts.get(nodeIdentifier) || 0) === 0) {
+            processingQueue.push(nodeIdentifier);
         }
     }
 
-    if (vertexCount > 0) {
-        maximumAttainableScores[0] = 0;
-    } else {
-        outputWriter(0);
-        return;
-    }
+    const sortedNodes = [];
+    let queueIndex = 0;
+    while (queueIndex < processingQueue.length) {
+        const currentVertex = processingQueue[queueIndex++];
+        sortedNodes.push(currentVertex);
 
-    while (processQueue.length > 0) {
-        const currentVertex = processQueue.shift();
-
-        if (maximumAttainableScores[currentVertex] !== -Infinity) {
-            for (const connection of adjacencyStructure[currentVertex]) {
-                const nextVertex = connection.target;
-                const edgeCost = connection.weight;
-
-                maximumAttainableScores[nextVertex] = Math.max(
-                    maximumAttainableScores[nextVertex],
-                    maximumAttainableScores[currentVertex] + edgeCost
-                );
-
-                inboundDegrees[nextVertex]--;
-                if (inboundDegrees[nextVertex] === 0) {
-                    processQueue.push(nextVertex);
-                }
+        for (const neighborVertex of adjacencyLists.get(currentVertex) || []) {
+            incomingEdgeCounts.set(neighborVertex, incomingEdgeCounts.get(neighborVertex) - 1);
+            if (incomingEdgeCounts.get(neighborVertex) === 0) {
+                processingQueue.push(neighborVertex);
             }
         }
     }
 
-    let finalMax = 0;
-    if (vertexCount > 0) {
-        finalMax = Math.max(...maximumAttainableScores);
+    const longestPathValues = new Map(); // Map<number, number>
+    for (const nodeIdentifier of allGraphNodes) {
+        longestPathValues.set(nodeIdentifier, 0);
     }
-    
-    outputWriter(finalMax);
+
+    for (let i = sortedNodes.length - 1; i >= 0; i--) {
+        const currentVertex = sortedNodes[i];
+        let currentMaxExtension = 0;
+
+        const outgoingEdges = adjacencyLists.get(currentVertex);
+        if (outgoingEdges && outgoingEdges.length > 0) {
+            for (const nextVertex of outgoingEdges) {
+                const edgeWeight = edgeWeightMap.get(currentVertex).get(nextVertex);
+                const pathFromNext = longestPathValues.get(nextVertex);
+                currentMaxExtension = Math.max(currentMaxExtension, edgeWeight + pathFromNext);
+            }
+        }
+        longestPathValues.set(currentVertex, currentMaxExtension);
+    }
+
+    outputWriter(longestPathValues.get(0) || 0);
 }
 
-executeCalculation(require("fs").readFileSync("/dev/stdin", "utf8"));
+const InputScanner = (function() {
+    function* tokenStreamGenerator(textSource, delimiterChars) {
+        const delimiterRegex = new RegExp(`[${delimiterChars.split('').map(d => `\\${d}`).join('')}]+`, 'g');
+        let lastMatchEnd = 0;
+        let currentMatch;
+        while ((currentMatch = delimiterRegex.exec(textSource)) !== null) {
+            const extractedToken = textSource.substring(lastMatchEnd, currentMatch.index).trim();
+            if (extractedToken !== "") {
+                yield extractedToken;
+            }
+            lastMatchEnd = delimiterRegex.lastIndex;
+        }
+        const finalToken = textSource.substring(lastMatchEnd).trim();
+        if (finalToken !== "") {
+            yield finalToken;
+        }
+    }
+
+    function InputScanner(sourceText, tokenSeparator) {
+        this.tokenIterator = tokenStreamGenerator(sourceText.replace(/\r/g, ''), tokenSeparator);
+        this.cachedToken = null;
+        this.advanceCursor();
+    }
+
+    InputScanner.prototype = {
+        advanceCursor: function() {
+            const iterationResult = this.tokenIterator.next();
+            this.cachedToken = iterationResult.done ? null : iterationResult.value;
+            return !iterationResult.done;
+        },
+        hasRemaining: function() {
+            return this.cachedToken !== null;
+        },
+        fetch: function() {
+            if (this.cachedToken === null) {
+                throw new RangeError("No more input tokens.");
+            }
+            const tokenValue = this.cachedToken;
+            this.advanceCursor();
+            return tokenValue;
+        },
+        fetchNumber: function() {
+            const stringValue = this.fetch();
+            const numericValue = Number(stringValue);
+            if (isNaN(numericValue)) {
+                throw new TypeError(`'${stringValue}' cannot be converted to a number.`);
+            }
+            return numericValue;
+        },
+        fetchInteger: function(base = 10) {
+            const numericValue = this.fetchNumber();
+            if (!Number.isInteger(numericValue)) {
+                throw new TypeError(`'${numericValue}' is not an integer.`);
+            }
+            return numericValue;
+        }
+    };
+
+    return InputScanner;
+}());
+
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

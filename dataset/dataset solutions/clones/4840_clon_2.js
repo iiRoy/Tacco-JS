@@ -1,49 +1,39 @@
-const inputSource = require('readline').createInterface(
-    {
-        input:  process.stdin,
-        output: process.stdout
+var inputHandler = require('readline').createInterface({
+    input: process.stdin, // Standard input stream
+    output: process.stdout // Standard output stream
+});
+
+// Array to store all lines read from input
+var inputLines = [];
+
+// Event listener for each line of input
+inputHandler.on('line', function (currentLine) {
+    inputLines.push(currentLine); // Add the current line to our collection
+});
+
+// Event listener for when the input stream closes
+inputHandler.on('close', function () {
+    // The first line of input contains space-separated numbers
+    var stringParts = inputLines[0].split(" ");
+
+    // Array to hold the parsed integer values
+    var numericValues = [];
+    var resultCounter = 0; // Initialize a counter for the result
+
+    // Parse string parts into integers
+    for (var idx = 0; idx < stringParts.length; idx++) {
+        numericValues[idx] = parseInt(stringParts[idx], 10); // Base 10 for safety
     }
-);
 
-
-let receivedLines = []; // This array will store all lines read from the input.
-
-
-inputSource.on(
-    'line',
-    function processInputLine(currentLineText)
-    {
-        receivedLines.push(currentLineText); // Add the new line to our collection.
-    }
-);
-
-
-inputSource.on(
-    'close',
-    function executeFinalComputation()
-    {
-        const parsedSegments = receivedLines[0].split(" "); // Split the first input line by spaces.
-
-        let numericValues = []; // Array to hold the integer versions of the segments.
-
-        let occurrenceCounter = 0; // Counter for divisible numbers.
-
-        // Convert each string segment into an integer.
-        for (let idx = 0; idx < parsedSegments.length; idx++) {
-            numericValues[idx] = parseInt(parsedSegments[idx]);
+    // Iterate from the first number to the second number (inclusive)
+    // and check for divisibility by the third number
+    for (var loopVar = numericValues[0]; loopVar <= numericValues[1]; loopVar++) {
+        // If the current number is perfectly divisible by the third number
+        if (!(loopVar % numericValues[2])) {
+            resultCounter++; // Increment the counter
         }
-
-
-        // Iterate from the first number (start of range) up to the second number (end of range).
-        for (let idx = numericValues[0]; idx <= numericValues[1]; idx++)
-        {
-            // Check if the current number 'idx' is perfectly divisible by the third number.
-            if (!(idx % numericValues[2]))
-            {
-                occurrenceCounter++; // Increment the counter if divisible.
-            }
-        }
-
-        console.log(occurrenceCounter); // Print the final calculated count.
     }
-);
+
+    // Output the final count to the console
+    console.log(resultCounter);
+});

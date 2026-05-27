@@ -1,16 +1,19 @@
-function ProcessVisual(initialPayload) {
-  const allLines = initialPayload.trim().split('\n');
-  const dimensionString = allLines.shift();
-  const [verticalExtent, horizontalContentExtent] = dimensionString.split(' ').map(val => parseInt(val, 10));
+function processGridInput(rawSource) {
+  const allLines = rawSource.split('\n');
+  const parsedDimensions = allLines[0].split(' ').map(Number);
 
-  const boundarySegment = '#'.repeat(horizontalContentExtent + 2);
+  const verticalExtent = parsedDimensions[0];
+  const horizontalExtent = parsedDimensions[1];
 
-  const innerSegments = allLines.map(textLine => {
-    return '#' + textLine + '#';
-  });
+  const topBottomBorder = '#'.repeat(horizontalExtent + 2);
 
-  const outputSegments = [boundarySegment, ...innerSegments, boundarySegment];
+  const contentRows = allLines.slice(1, verticalExtent + 1);
+
+  const framedRows = contentRows.map(lineSegment => `#${lineSegment}#`);
+
+  const outputSegments = [topBottomBorder, ...framedRows, topBottomBorder];
+
   console.log(outputSegments.join('\n'));
 }
 
-ProcessVisual(require("fs").readFileSync("/dev/stdin", "utf8"));
+processGridInput(require("fs").readFileSync("/dev/stdin", "utf8"));

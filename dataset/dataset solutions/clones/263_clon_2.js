@@ -1,92 +1,96 @@
-// Function to compute all permutations of a specified length from a given array.
-let genPermutations = function (sourceElements, requiredCount) {
-  // Declare local variables for processing within this function.
-  let currentElement, loopIndex, sourceLength = sourceElements.length;
-  let resultPerms = [];
+function generatePermutations(inputArray, count) {
+  // Declare local variables for permutation generation process
+  let currentElement,
+      idx,
+      arrayLength = inputArray.length,
+      resultPermutations = [];
 
-  // Base case for the recursion: if no elements are required,
-  // return an array containing a single empty array as a valid permutation.
-  if (requiredCount === 0) {
-    return [
-      []
-    ];
+  // Base case: if the desired permutation length is zero,
+  // return an array containing a single empty array.
+  if (count === 0) {
+    return [[]];
   }
 
-  // Iterate through each element in the provided source array.
-  for (loopIndex = 0; loopIndex < sourceLength; loopIndex++) {
-    // Remove the current element from the beginning of the source array
-    // to use it for forming permutations.
-    currentElement = sourceElements.shift();
+  // Iterate through each element of the current input array
+  for (idx = 0; idx < arrayLength; idx++) {
+    // Remove the first element from the array for the current iteration
+    currentElement = inputArray.shift();
 
     // Recursively generate permutations for the remaining elements
-    // with one less element required.
-    // Then, for each generated subset, prepend the current element.
-    resultPerms = resultPerms.concat(
-      genPermutations(sourceElements, requiredCount - 1).map(function (tempSubset) {
-        // Prepend the current element to the temporary subset and return the modified subset.
-        return (tempSubset.unshift(currentElement), tempSubset);
+    // with one less element needed, then prepend the current element
+    // to each of these sub-permutations.
+    resultPermutations = resultPermutations.concat(
+      generatePermutations(inputArray, count - 1).map(function(subPermutation) {
+        // Add the previously removed element to the beginning of the sub-permutation
+        subPermutation.unshift(currentElement);
+        return subPermutation;
       })
     );
-    // After processing, restore the current element to its original position
-    // at the end of the source array for subsequent iterations.
-    sourceElements.push(currentElement);
+
+    // Add the current element back to the end of the array
+    // to restore the array's state for subsequent iterations.
+    inputArray.push(currentElement);
   }
-  // Return the complete collection of all generated permutations.
-  return resultPerms;
-};
+  // Return the collection of all generated permutations
+  return resultPermutations;
+}
 
-// Main execution function responsible for processing input data.
-let executeProgram = function () {
-  // Iterate over each individual record (line) obtained from the buffered input.
-  rawInputBuffer.forEach(function (currentInputRecord) {
-    let firstValue, targetSum; // Variables to store parsed numeric values from the input line.
-    let matchCounter = 0; // A counter to track how many permutations meet the criteria.
+function executeProgram() {
+  // Process each line of the global program input data
+  programInput.forEach(function(currentLine) {
+    // Declare variables for problem parameters and the final count
+    let numElements,
+        targetSum,
+        validCombinationsCount = 0; // Initialize counter for combinations meeting criteria
 
-    // If the current input record is empty after trimming whitespace, skip it.
-    if (currentInputRecord.trim() === '') {
+    // If the current line is empty after trimming whitespace, skip it
+    if (currentLine.trim() === '') {
       return;
     }
 
-    // Split the record by spaces and convert each segment into a floating-point number.
-    currentInputRecord = currentInputRecord.split(' ').map(parseFloat);
+    // Parse the line: split by space, then convert parts to floating-point numbers
+    currentLine = currentLine.split(' ').map(parseFloat);
+    numElements = currentLine[0]; // The first number is 'n'
+    targetSum = currentLine[1];   // The second number is 's'
 
-    // Assign the parsed numeric values to descriptive variables.
-    firstValue = currentInputRecord[0];
-    targetSum = currentInputRecord[1];
+    // Generate all permutations of digits [0-9] of length 'numElements'
+    // and iterate through each generated permutation
+    generatePermutations([0, 1, 2, 3, 4, 5, 6, 7, 8, 9], numElements).forEach(function(permutationSet) {
+      // Calculate the weighted sum for the current permutation:
+      // sum of (element_value * (its_1_based_index))
+      const currentWeightedSum = permutationSet.reduce(function(accumulator, elementValue, elementIndex) {
+        // Add the product of the element's value and its 1-based position
+        return accumulator + elementValue * (elementIndex + 1);
+      }, 0); // Start the sum from 0
 
-    // Generate permutations of digits from 0 to 9, with a length specified by 'firstValue'.
-    genPermutations([0, 1, 2, 3, 4, 5, 6, 7, 8, 9], firstValue).forEach(function (generatedPermutation) {
-      // Calculate a weighted sum for the current generated permutation.
-      // Each digit is multiplied by its 1-based position index.
-      // If this calculated sum matches the 'targetSum', increment the 'matchCounter'.
-      matchCounter += generatedPermutation.reduce(function (accumulatedValue, digitValue, positionIndex) {
-        return accumulatedValue + digitValue * (positionIndex + 1);
-      }, 0) === targetSum ? 1 : 0;
+      // If the calculated weighted sum matches the target sum, increment the counter
+      if (currentWeightedSum === targetSum) {
+        validCombinationsCount++;
+      }
     });
-    // Output the final count of matching permutations for the current input record.
-    console.log(matchCounter);
+    // Output the total count of valid combinations for the current input line
+    console.log(validCombinationsCount);
   });
-};
+}
 
-// Global variable used to accumulate all incoming standard input data.
-let rawInputBuffer = '';
+// Global variable to store all input received from stdin
+let programInput = '';
 
-// Signal the standard input stream to begin receiving data.
+// Resume the standard input stream to begin listening for data
 process.stdin.resume();
-// Set the character encoding for the standard input stream to UTF-8.
+// Set the character encoding for the incoming data to UTF-8
 process.stdin.setEncoding('utf8');
 
-// Attach an event listener to the 'data' event of the standard input stream.
-// This function will be called whenever a new data packet arrives.
-process.stdin.on('data', function (dataPacket) {
-  rawInputBuffer += dataPacket; // Append the new data packet to the global buffer.
+// Event listener for when data chunks are received from stdin
+process.stdin.on('data', function(chunkOfData) {
+  // Append each received chunk of data to the global input string
+  programInput += chunkOfData;
 });
 
-// Attach an event listener to the 'end' event of the standard input stream.
-// This function executes once all input data has been received.
-process.stdin.on('end', function () {
-  // Split the accumulated raw data buffer into an array of individual lines.
-  rawInputBuffer = rawInputBuffer.split('\n');
-  // Invoke the main program execution logic with the prepared input.
+// Event listener for when the standard input stream ends
+process.stdin.on('end', function() {
+  // Once all input is received, split the accumulated string into an array of lines
+  programInput = programInput.split('\n');
+  // Call the main program execution function
   executeProgram();
 });

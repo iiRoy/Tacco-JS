@@ -1,68 +1,59 @@
-const inputReader = require('readline');
-let initialSequence = '';
-let searchPattern = '';
-let inputLineIndex = 0;
+var inputLines = [];
+var lineReader = require('readline');
 
-const inputInterface = inputReader.createInterface({
+var interfaceInstance = lineReader.createInterface({
     input: process.stdin,
     output: process.stdout,
-    crlfDelay: Infinity
 });
 
-inputInterface.on('line', (incomingData) => {
-    if (inputLineIndex === 0) {
-        initialSequence = incomingData;
-    } else if (inputLineIndex === 1) {
-        searchPattern = incomingData;
-    }
-    inputLineIndex++;
+interfaceInstance.on('line', function (currentLine) {
+    inputLines.push(currentLine);
 });
 
-inputInterface.on('close', () => {
-    performTransformation(initialSequence, searchPattern);
-});
+interfaceInstance.on('close', function () {
+    const sourceChars = inputLines[0].split("");
+    const targetChars = inputLines[1].split("");
 
-function performTransformation(mainSequence, queryPattern) {
-    const mainSymbols = Array.from(mainSequence);
-    const querySymbols = Array.from(queryPattern);
-    const queryLength = querySymbols.length;
-    const mainLength = mainSymbols.length;
+    let bestMatchStart = -1;
 
-    const isSegmentMatch = (startIndex) => {
-        if (startIndex < 0 || startIndex + queryLength > mainLength) {
-            return false;
-        }
-        return querySymbols.every((qChar, offset) => {
-            const mChar = mainSymbols[startIndex + offset];
-            return mChar === qChar || mChar === '?';
+    // Core logic for finding the rightmost match:
+    // Instead of an imperative loop iterating from right to left with breaks,
+    // we generate all possible starting positions, filter them based on the match condition,
+    // and then select the maximum (rightmost) valid starting position.
+    if (targetChars.length <= sourceChars.length) {
+        const possibleStartIndices = Array.from({ length: sourceChars.length - targetChars.length + 1 }, (_, index) => index);
+
+        const confirmedMatches = possibleStartIndices.filter(startPosition => {
+            // For each potential starting position, check if the substring matches the target.
+            // This replaces the inner imperative loop with a functional 'every' method.
+            return targetChars.every((targetChar, targetIndex) => {
+                const sourceChar = sourceChars[startPosition + targetIndex];
+                return targetChar === sourceChar || sourceChar === '?';
+            });
         });
-    };
 
-    const locateRightmost = (currentIndex) => {
-        if (currentIndex < 0) {
-            return -1;
+        if (confirmedMatches.length > 0) {
+            bestMatchStart = Math.max(...confirmedMatches);
         }
-        if (isSegmentMatch(currentIndex)) {
-            return currentIndex;
-        }
-        return locateRightmost(currentIndex - 1);
-    };
+    }
 
-    const targetMatchIndex = locateRightmost(mainLength - queryLength);
-
-    if (targetMatchIndex === -1) {
+    // Core logic for constructing the output string:
+    // Instead of an imperative loop with conditional assignments and index manipulation,
+    // we use a 'map' operation to transform each character of the source string.
+    if (bestMatchStart === -1) {
         console.log("UNRESTORABLE");
     } else {
-        const finalString = mainSymbols.reduce((accumulator, currentSymbol, currentIdx) => {
-            if (currentIdx >= targetMatchIndex && currentIdx < targetMatchIndex + queryLength) {
-                return accumulator + querySymbols[currentIdx - targetMatchIndex];
-            } else if (currentSymbol === '?') {
-                return accumulator + 'a';
+        const finalStringComponents = sourceChars.map((originalChar, charPosition) => {
+            // If the current character's position falls within the identified match segment,
+            // replace it with the corresponding character from the target string.
+            if (charPosition >= bestMatchStart && charPosition < bestMatchStart + targetChars.length) {
+                return targetChars[charPosition - bestMatchStart];
             } else {
-                return accumulator + currentSymbol;
+                // Otherwise, if the character is '?', replace it with 'a';
+                // otherwise, keep the original character.
+                return originalChar === '?' ? 'a' : originalChar;
             }
-        }, '');
-
-        console.log(finalString);
+        });
+        console.log(finalStringComponents.join(""));
     }
-}
+});

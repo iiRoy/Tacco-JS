@@ -1,133 +1,113 @@
-/* This function processes raw input data to find an optimal solution */
-function ProcessData(rawData) {
-  /* Helper function for numerical sorting in ascending order */
-  function numericSort(valA, valB) {
-    return valA - valB;
-  }
+function ProcessInput(rawData) {
+    // Helper function for numerical sorting in ascending order
+    function numericSorter(valA, valB) {
+        return valA - valB;
+    }
 
-  // Pre-process the input string: trim, split by lines, then split each line by spaces.
-  rawData = rawData
-    .trim()
-    .split("\n")
-    .map(function (lineStr) {
-      return lineStr.split(" ");
+    // Parse the raw input data: trim, split by newlines, then split each line by spaces
+    rawData = rawData.trim().split("\n").map(function(lineStr) {
+        return lineStr.split(" ");
     });
 
-  // Parse the first line of numerical parameters
-  let firstLineNums = rawData[0].map((strVal) => parseInt(strVal, 10));
+    // Extract and convert the first line's parameters to integers
+    const firstLineValues = rawData[0].map(element => parseInt(element, 10));
 
-  // Assign parameters to semantically distinct variables
-  const componentA = firstLineNums[0] * 100; // Value A, scaled
-  const componentB = firstLineNums[1] * 100; // Value B, scaled
-  const ingredientC = firstLineNums[2]; // Value C
-  const ingredientD = firstLineNums[3]; // Value D
-  const maxConcentration = firstLineNums[4]; // Value E (max density percentage)
-  const totalVolumeLimit = firstLineNums[5]; // Value F (total capacity)
+    // Assign problem constraints with descriptive names for clarity
+    const sugarWaterUnitA = firstLineValues[0] * 100; // Water unit A in grams (multiplied by 100 for consistency)
+    const sugarWaterUnitB = firstLineValues[1] * 100; // Water unit B in grams (multiplied by 100 for consistency)
+    const sugarUnitC = firstLineValues[2];             // Sugar unit C in grams
+    const sugarUnitD = firstLineValues[3];             // Sugar unit D in grams
+    const maxSugarRatio = firstLineValues[4];          // Maximum sugar ratio (E) as a percentage
+    const maxTotalWeight = firstLineValues[5];         // Maximum total weight (F) in grams
 
-  // Array to store combinations of A and B components
-  let abCombinations = [];
-  let currentSum; // Temporary variable for sums
+    // Generate all possible water amounts (A*i + B*j) that can be formed
+    let waterSugarMixtures = [];
+    let currentWaterAmount; // Temporary variable to hold the calculated water amount
 
-  // Generate all possible sums of A and B components within the total volume limit
-  for (let idxA = 0; idxA < totalVolumeLimit / componentA; idxA++) {
-    currentSum = componentA * idxA; // Calculate current sum from component A
-    for (
-      let idxB = 0;
-      idxB < (totalVolumeLimit - currentSum) / componentB;
-      idxB++
-    ) {
-      abCombinations.push(currentSum + componentB * idxB); // Add combination to list
-    }
-  }
-
-  // Sort the combinations and remove duplicates
-  abCombinations.sort(numericSort);
-  abCombinations = abCombinations.filter(function (uniqueVal, idx, arrRef) {
-    return arrRef.indexOf(uniqueVal) === idx;
-  });
-
-  // Calculate the maximum possible solute amount based on total volume and max concentration
-  const maxSoluteAmount = Math.floor(
-    (totalVolumeLimit * maxConcentration) / (100 + maxConcentration)
-  );
-
-  // Array to store combinations of C and D ingredients
-  let cdCombinations = [];
-
-  // Generate all possible sums of C and D ingredients within the max solute amount
-  for (let idxC = 0; idxC < maxSoluteAmount / ingredientC; idxC++) {
-    currentSum = ingredientC * idxC; // Calculate current sum from ingredient C
-    for (
-      let idxD = 0;
-      idxD < (maxSoluteAmount - currentSum) / ingredientD;
-      idxD++
-    ) {
-      cdCombinations.push(currentSum + ingredientD * idxD); // Add combination to list
-    }
-  }
-
-  // Sort the ingredient combinations and remove duplicates
-  cdCombinations.sort(numericSort);
-  cdCombinations = cdCombinations.filter(function (
-    uniqueItem,
-    itemIndex,
-    fullArray
-  ) {
-    return fullArray.indexOf(uniqueItem) === itemIndex;
-  });
-
-  // Create a bitmap (boolean array) to quickly check for valid solute amounts
-  let solutePresenceMap = [];
-  for (let mapIndex = 0; mapIndex <= maxSoluteAmount; mapIndex++) {
-    solutePresenceMap.push(0); // Initialize all entries to 0 (false)
-  }
-
-  // Mark all valid solute amounts in the bitmap
-  for (let soluteAmount of cdCombinations) {
-    solutePresenceMap[soluteAmount] = 1; // Mark as present (true)
-  }
-
-  // Variables to track the best density and corresponding solution
-  let currentDensity = 0;
-  let bestSolution = [0, 0]; // Stores [total_volume, solute_amount]
-
-  // Initialize maximum solute bound for the inner loop
-  let maxSoluteBound = maxSoluteAmount;
-
-  // Iterate through all possible water+sugar combinations (from A and B)
-  for (let waterSugarSum of abCombinations) {
-    // Calculate the lower bound for solute amount based on current best density
-    let minSoluteBound = Math.round(waterSugarSum * currentDensity);
-
-    // Calculate the upper bound for solute amount, considering max concentration and total volume limit
-    maxSoluteBound = Math.min(
-      Math.floor((waterSugarSum * maxConcentration) / 100),
-      totalVolumeLimit - waterSugarSum
-    );
-
-    // Iterate through possible solute amounts (from C and D) within the calculated bounds
-    for (let soluteIter = minSoluteBound; soluteIter <= maxSoluteBound; soluteIter++) {
-      // Check if the current solute amount is valid (exists in cdCombinations)
-      if (solutePresenceMap[soluteIter] === 1) {
-        // If a new, higher density is found
-        if (soluteIter / waterSugarSum > currentDensity) {
-          bestSolution[0] = waterSugarSum + soluteIter; // Update total volume
-          bestSolution[1] = soluteIter; // Update solute amount
-          currentDensity = soluteIter / waterSugarSum; // Update best density
+    // Iterate through possible combinations of water units A and B
+    for (let idxA = 0; idxA < (maxTotalWeight / sugarWaterUnitA); idxA++) {
+        currentWaterAmount = sugarWaterUnitA * idxA;
+        for (let idxB = 0; idxB < ((maxTotalWeight - currentWaterAmount) / sugarWaterUnitB); idxB++) {
+            waterSugarMixtures.push(currentWaterAmount + sugarWaterUnitB * idxB);
         }
-        // Mark this solute amount as 'used' to optimize future checks
-        solutePresenceMap[soluteIter] = 0;
-      }
     }
-  }
 
-  // Output the final best solution (total volume and solute amount), rounded
-  console.log(
-    "%d %d",
-    Math.round(bestSolution[0]),
-    Math.round(bestSolution[1])
-  );
+    // Sort the generated water amounts numerically and remove duplicates
+    waterSugarMixtures.sort(numericSorter);
+    waterSugarMixtures = waterSugarMixtures.filter(function(elementValue, index, uniqueElements) {
+        return uniqueElements.indexOf(elementValue) === index;
+    });
+
+    // Calculate the maximum allowed sugar weight based on the total weight and max sugar ratio
+    const maxAllowedSugarWeight = Math.floor(maxTotalWeight * maxSugarRatio / (100 + maxSugarRatio));
+
+    // Generate all possible sugar amounts (C*i + D*j) that can be formed
+    let sugarOnlyMixtures = [];
+    let currentSugarAmount; // Temporary variable to hold the calculated sugar amount
+
+    // Iterate through possible combinations of sugar units C and D
+    for (let idxC = 0; idxC < (maxAllowedSugarWeight / sugarUnitC); idxC++) {
+        currentSugarAmount = sugarUnitC * idxC;
+        for (let idxD = 0; idxD < ((maxAllowedSugarWeight - currentSugarAmount) / sugarUnitD); idxD++) {
+            sugarOnlyMixtures.push(currentSugarAmount + sugarUnitD * idxD);
+        }
+    }
+
+    // Sort the generated sugar amounts numerically and remove duplicates
+    sugarOnlyMixtures.sort(numericSorter);
+    sugarOnlyMixtures = sugarOnlyMixtures.filter(function(elementValue, index, uniqueElements) {
+        return uniqueElements.indexOf(elementValue) === index;
+    });
+
+    // Create a bitmap (boolean array) for efficient lookup of valid sugar amounts
+    const sugarPresenceMap = [];
+    // Initialize the map with zeros up to the maximum allowed sugar weight
+    for (let mapIndex = 0; mapIndex <= maxAllowedSugarWeight; mapIndex++) {
+        sugarPresenceMap.push(0);
+    }
+    // Mark all generated sugar amounts as present (1) in the map
+    for (const sugarVal of sugarOnlyMixtures) {
+        sugarPresenceMap[sugarVal] = 1;
+    }
+
+    // Variables to track the best solution found (maximum density)
+    let currentMaxDensity;
+    let lowerSugarBound;
+    let upperSugarBound;
+    let bestSolution = [0, 0]; // Stores [totalWeight, sugarWeight] of the best solution
+
+    currentMaxDensity = 0; // Initialize maximum density to 0
+
+    // Iterate through each possible water amount
+    for (const waterMixWeight of waterSugarMixtures) {
+        // Calculate the lower and upper bounds for sugar weight for the current water amount
+        lowerSugarBound = Math.round(waterMixWeight * currentMaxDensity); // Start checking from current best density
+        upperSugarBound = Math.min(
+            Math.floor(waterMixWeight * maxSugarRatio / 100), // Max sugar based on ratio E
+            maxTotalWeight - waterMixWeight                   // Max sugar based on total weight F
+        );
+
+        // Iterate through possible sugar amounts within the calculated bounds
+        for (let sugarMixWeight = lowerSugarBound; sugarMixWeight <= upperSugarBound; sugarMixWeight++) {
+            // Check if this sugar amount is valid (present in the bitmap)
+            if (sugarPresenceMap[sugarMixWeight] === 1) {
+                // If a higher density is found, update the best solution
+                if ((sugarMixWeight / waterMixWeight) > currentMaxDensity) {
+                    bestSolution[0] = waterMixWeight + sugarMixWeight; // Total weight
+                    bestSolution[1] = sugarMixWeight;                  // Sugar weight
+                    currentMaxDensity = sugarMixWeight / waterMixWeight; // Update max density
+                }
+                // Mark this sugar amount as "used" by setting its bitmap entry to 0.
+                // This prevents it from being considered again with any subsequent water amounts,
+                // which is a specific optimization/behavior of the original algorithm.
+                sugarPresenceMap[sugarMixWeight] = 0;
+            }
+        }
+    }
+
+    // Output the final result, rounding the total weight and sugar weight
+    console.log("%d %d", Math.round(bestSolution[0]), Math.round(bestSolution[1]));
 }
 
-// Read input from standard input and pass it to the processing function
-ProcessData(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Read input from stdin and pass it to the main processing function
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

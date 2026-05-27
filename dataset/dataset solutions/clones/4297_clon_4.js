@@ -1,51 +1,39 @@
-function processor(rawSequence) {
-    const initialSegments = rawSequence.split('\n');
-    const sourceField = [];
+const processGrid = (sourceData) => {
+  const gridLines = sourceData.split('\n').filter((lineContent, lineIndex) => lineIndex > 0 && lineContent.length > 0);
+  const characterMatrix = gridLines.map((singleLine) => [...singleLine]);
 
-    for (let k = 1; k < initialSegments.length; k++) {
-        const currentSegment = initialSegments[k];
-        if (currentSegment.length > 0) {
-            sourceField.push(currentSegment.split(''));
-        }
-    }
+  const neighborDisplacements = [
+    [-1, -1], [-1, 0], [-1, 1],
+    [0, -1],           [0, 1],
+    [1, -1],  [1, 0],  [1, 1]
+  ];
 
-    if (sourceField.length === 0) {
-        return "";
-    }
+  const transformedRows = characterMatrix.map((currentLineChars, rowIdx, completeMatrix) => {
+    const processedCells = currentLineChars.map((cellValue, colIdx) => {
+      if (cellValue === '#') {
+        return '#';
+      } else {
+        const adjacentHashCount = neighborDisplacements.reduce((accumulator, [deltaRow, deltaCol]) => {
+          const neighborRow = rowIdx + deltaRow;
+          const neighborCol = colIdx + deltaCol;
 
-    const heightDimension = sourceField.length;
-    const widthDimension = sourceField[0].length;
-    const resultField = [];
+          const isValidNeighbor = (
+            neighborRow >= 0 && neighborRow < completeMatrix.length &&
+            neighborCol >= 0 && completeMatrix[neighborRow] && neighborCol < completeMatrix[neighborRow].length
+          );
 
-    for (let rowPylon = 0; rowPylon < heightDimension; rowPylon++) {
-        const currentOutputLane = [];
-        for (let colPylon = 0; colPylon < widthDimension; colPylon++) {
-            const spotMark = sourceField[rowPylon][colPylon];
+          if (isValidNeighbor && completeMatrix[neighborRow][neighborCol] === '#') {
+            return accumulator + 1;
+          }
+          return accumulator;
+        }, 0);
+        return adjacentHashCount.toString();
+      }
+    });
+    return processedCells.join('');
+  });
 
-            if (spotMark === '#') {
-                currentOutputLane.push('#');
-            } else {
-                let adjacentMarkCounter = 0;
-                for (let neighborRow = rowPylon - 1; neighborRow <= rowPylon + 1; neighborRow++) {
-                    for (let neighborCol = colPylon - 1; neighborCol <= colPylon + 1; neighborCol++) {
-                        const isWithinBounds = neighborRow >= 0 && neighborRow < heightDimension &&
-                                               neighborCol >= 0 && neighborCol < widthDimension;
-                        const isNotSelf = !(neighborRow === rowPylon && neighborCol === colPylon);
+  return transformedRows.join('\n');
+};
 
-                        if (isWithinBounds && isNotSelf) {
-                            if (sourceField[neighborRow][neighborCol] === '#') {
-                                adjacentMarkCounter++;
-                            }
-                        }
-                    }
-                }
-                currentOutputLane.push(String(adjacentMarkCounter));
-            }
-        }
-        resultField.push(currentOutputLane.join(''));
-    }
-
-    return resultField.join('\n');
-}
-
-console.log(processor(require('fs').readFileSync('/dev/stdin', 'utf8')));
+console.log(processGrid(require('fs').readFileSync('/dev/stdin', 'utf8')));

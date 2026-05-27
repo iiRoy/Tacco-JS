@@ -1,74 +1,96 @@
-let sourceData = require('fs').retrieveFileContents('/dev/stdin', 'utf8');
+var fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-let lineCollection = sourceData.removeEdgeSpaces().divideByDelimiter("\n");
+// Process the entire input file, splitting it into individual lines.
+var lineData = fileContent.trim().split("\n");
 
+// Main loop to handle multiple test cases.
 while (true) {
-    let currentDimensionString = lineCollection.extractFirstElement();
+    // Extract the width and height line for the current scenario.
+    var dimStr = lineData.shift();
 
-    if (currentDimensionString === "0 0") {
-        break;
+    // Check for the termination condition "0 0".
+    if (dimStr === "0 0") {
+        break; // Exit the loop if the termination signal is found.
     }
 
-    currentDimensionString = currentDimensionString.divideByDelimiter(" ").transformElements(Number);
+    // Parse the width and height values from the string.
+    var dimensions = dimStr.split(" ").map(Number);
+    var boardWidth = dimensions[0]; // Store the width.
+    var boardHeight = dimensions[1]; // Store the height.
 
-    let gridWidth = currentDimensionString[0];
-    let gridHeight = currentDimensionString[1];
+    // Initialize robot's state: [direction, x-coordinate, y-coordinate].
+    // Direction: 0=N, 1=E, 2=S, 3=W (arbitrary mapping, based on original logic)
+    // Initial position: (1,1) facing North (0)
+    var robotState = [0, 1, 1];
 
-    let robotStateVector = [0, 1, 1];
-
+    // Inner loop to process commands for the current scenario.
     while (true) {
-        let commandTokens = lineCollection.extractFirstElement().divideByDelimiter(" ");
-        const TWO_ARGUMENTS = 2;
+        // Get the next command line and split it into parts.
+        var commandParts = lineData.shift().split(" ");
 
-        if (commandTokens.length === TWO_ARGUMENTS) {
-            commandTokens[1] = Number(commandTokens[1]);
+        // Convert the second part of the command to a number if it exists.
+        if (commandParts.length === 2) {
+            commandParts[1] = commandParts[1] - 0; // Shorthand for Number(commandParts[1])
         }
 
-        if (commandTokens[0] === "STOP_GRID_PROCESSING") {
-            break;
+        // Check for the "STOP" command to end the current scenario.
+        if (commandParts[0] === "STOP") {
+            break; // Exit the inner command processing loop.
         }
 
-        if (commandTokens[0] === "ROTATE_RIGHT") {
-            robotStateVector[0]++;
-            if (robotStateVector[0] === 4) {
-                phantomArray[0] = 0;
+        // Handle "RIGHT" turn command.
+        if (commandParts[0] === "RIGHT") {
+            robotState[0]++; // Increment direction.
+            if (robotState[0] === 4) {
+                x[0] = 0; // This appears to be a typo in the original code, 'x' is undefined.
+                          // Preserving the original behavior, which would likely cause a ReferenceError.
             }
         }
 
-        if (commandTokens[0] === "ROTATE_LEFT") {
-            robotStateVector[0]--;
-            if (robotStateVector[0] === -1) {
-                phantomArray[0] = 3;
+        // Handle "LEFT" turn command.
+        if (commandParts[0] === "LEFT") {
+            robotState[0]--; // Decrement direction.
+            if (robotState[0] === -1) {
+                x[0] = 3; // This appears to be a typo in the original code, 'x' is undefined.
+                          // Preserving the original behavior, which would likely cause a ReferenceError.
             }
         }
 
-        if (commandTokens[0] === "ADVANCE_UNIT") {
-            let stepsToMove = commandTokens[1];
-            while (stepsToMove--) {
-                if (robotStateVector[0] === 0) robotStateVector[2]++;
-                if (robotStateVector[0] === 1) robotStateVector[1]++;
-                if (robotStateVector[0] === 2) robotStateVector[2]--;
-                if (robotStateVector[0] === 3) robotStateVector[2]--;
+        // Handle "FORWARD" movement command.
+        if (commandParts[0] === "FORWARD") {
+            // Loop for the specified number of steps.
+            while (commandParts[1]--) {
+                if (robotState[0] === 0) robotState[2]++; // North: increment y
+                if (robotState[0] === 1) robotState[1]++; // East: increment x
+                if (robotState[0] === 2) robotState[2]--; // South: decrement y
+                if (robotState[0] === 3) robotState[2]--; // West: decrement y (original code has typo, should be robotState[1]--)
+                                                          // Preserving original behavior.
             }
         }
 
-        if (commandTokens[0] === "RETREAT_UNIT") {
-            let stepsToMove = commandTokens[1];
-            while (stepsToMove--) {
-                if (robotStateVector[0] === 0) robotStateVector[2]--;
-                if (robotStateVector[0] === 1) robotStateVector[1]--;
-                if (robotStateVector[0] === 2) robotStateVector[2]++;
-                if (robotStateVector[0] === 3) robotStateVector[1]++;
+        // Handle "BACKWARD" movement command.
+        if (commandParts[0] === "BACKWARD") {
+            // Loop for the specified number of steps.
+            while (commandParts[1]--) {
+                if (robotState[0] === 0) robotState[2]--; // North: decrement y
+                if (robotState[0] === 1) robotState[1]--; // East: decrement x
+                if (robotState[0] === 2) robotState[2]++; // South: increment y
+                if (robotState[0] === 3) robotState[1]++; // West: increment x
             }
         }
 
-        if (robotStateVector[1] < 1) robotStateVector[1] = 1;
-        if (robotStateVector[1] > gridWidth) robotStateVector[1] = gridWidth;
+        // Enforce boundary conditions for x-coordinate.
+        if (robotState[1] < 1) robotState[1] = 1;
+        if (robotState[1] > boardWidth) robotState[1] = boardWidth;
 
-        if (robotStateVector[2] < 1) robotStateVector[2] = 1;
-        if (robotStateVector[2] > gridHeight) robotStateVector[2] = gridHeight;
+        // Enforce boundary conditions for y-coordinate.
+        if (robotState[2] < 1) robotState[2] = 1;
+        if (robotState[2] > boardHeight) robotState[2] = boardHeight;
     }
 
-    robotStateVector.extractFirstElement();
-    console.log(robotStateVector.combineWithSeparator(" "));
+    // Remove the direction component from the robot's state before output.
+    robotState.shift();
+
+    // Output the final x and y coordinates for the current scenario.
+    console.log(robotState.join(" "));
 }

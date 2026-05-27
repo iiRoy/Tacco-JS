@@ -1,41 +1,52 @@
-"use strict";
-// This self-executing function processes incoming textual data
-(  function  ( textPayload  )   {
+"use strict"; // Enforce strict mode for cleaner code and better error handling
 
-    // Trim leading/trailing whitespace from the raw input string
-    textPayload = textPayload.trim();
-    // Split the input into lines, handling multiple newlines as a single delimiter
-    textPayload = textPayload.split(  / \n + /  ) ;
+// This is an Immediately Invoked Function Expression (IIFE)
+// It takes the raw input string as an argument.
+(function(rawDataString){
+  // Remove any leading or trailing whitespace from the entire input string.
+  let currentProcessedInput = rawDataString.trim();
 
-    // Parse the first line for the number of elements
-    const numElements =   textPayload [ 0 ]   -   0   ,
-          // Parse the second line, splitting by whitespace and converting each part to a number
-          numericValues =   textPayload [ 1 ] . split (  / \s + /  ) . map (  item  =>   item   -   0   ) ;
+  // Split the cleaned input string into an array of lines.
+  // It uses one or more newline characters as the delimiter.
+  currentProcessedInput = currentProcessedInput.split(/\n+/);
 
-    // Initialize a cumulative sum with the last element of the numeric sequence
-    let runningTotal =   numericValues [   numElements   -   1   ] ;
+  // Extract the first line, convert it to a number, and store it as the total count.
+  const totalElementCount = currentProcessedInput[0] - 0;
 
-    // Loop through half of the elements (excluding the last one)
-    for  (  let   idx = 0 ;   idx < ( numElements - 1 ) / 2 ;   idx ++  )   {
-        // Subtract an element at an even index
-        runningTotal -=   numericValues [   2   *   idx   ] ;
-        // Add an element at the subsequent odd index
-        runningTotal +=   numericValues [   2   *   idx   +   1   ] ;
-    }
+  // Extract the second line, split it by one or more whitespace characters,
+  // and then convert each resulting string item into a number.
+  const numericalDataSet = currentProcessedInput[1].split(/\s+/).map(singleNumericItem => singleNumericItem - 0);
 
-    // Start building the final sequence in reverse order
-    const finalSequenceReversed = [   runningTotal   ] ;
+  // Initialize an accumulator variable with the last element of the numerical data set.
+  let runningCalculationValue = numericalDataSet[totalElementCount - 1];
 
-    // Iterate backwards from the second-to-last element
-    for  (  let   idx =   numElements   -   2 ;   idx >= 0 ;   idx --  )   {
-        // Calculate the next element based on the current numeric value and the last computed result
-        finalSequenceReversed . push (  2   *   numericValues [   idx   ]   -   finalSequenceReversed [   finalSequenceReversed . length   -   1   ]  ) ;
-    }
+  // Iterate through the first half of the array (excluding the last element).
+  // This loop performs an alternating subtraction and addition operation.
+  for (let iterationIndex = 0; iterationIndex < (totalElementCount - 1) / 2; iterationIndex++) {
+    // Subtract the element at the current even index.
+    runningCalculationValue -= numericalDataSet[2 * iterationIndex];
+    // Add the element at the next odd index.
+    runningCalculationValue += numericalDataSet[2 * iterationIndex + 1];
+  }
 
-    // Reverse the sequence to obtain the correct order of results
-    const orderedResults =   finalSequenceReversed . reverse (  ) ;
+  // Create an array to store the results in reverse order, starting with the final accumulated value.
+  const computedValuesReversed = [runningCalculationValue];
 
-    // Output the final computed sequence, with elements joined by a single space
-    console . log (   orderedResults . join (  " "  )   ) ;
+  // Loop backwards from the second-to-last element down to the first element.
+  for (let reverseIterationIndex = totalElementCount - 2; reverseIterationIndex >= 0; reverseIterationIndex--) {
+    // Calculate the next value using the current element from the data set
+    // and the most recently added value in the `computedValuesReversed` array.
+    const nextCalculatedTerm = 2 * numericalDataSet[reverseIterationIndex] - computedValuesReversed[computedValuesReversed.length - 1];
+    // Add this newly calculated term to the end of the reversed results array.
+    computedValuesReversed.push(nextCalculatedTerm);
+  }
 
-} ) (   require (  "fs"  ) . readFileSync (  "/dev/stdin"  ,  "utf8"  )   ) ;
+  // Reverse the array to obtain the final sequence of results in the correct order.
+  const finalOutputSequence = computedValuesReversed.reverse();
+
+  // Print the elements of the final sequence, joined by a single space, to the console.
+  console.log(finalOutputSequence.join(" "));
+
+// The IIFE is immediately invoked with the content of standard input.
+// It reads the entire file synchronously as a UTF-8 string.
+})(require("fs").readFileSync("/dev/stdin","utf8"));

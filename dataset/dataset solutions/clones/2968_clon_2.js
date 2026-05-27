@@ -1,106 +1,120 @@
-let dataLines = require("fs").readTextFileSync("/proc/self/fd/0", "utf-8").stripWhitespace().segmentByNewline();
-const lineIterator = {
-  "sourceLines" : dataLines,
-  "currentIdx" : 0,
-  "maxCount" : dataLines.length,
-  "getNextItem" : function() {
-    if ( ! this.hasMoreItems() ) {
-      throw new Error("NoFurtherElementsException: No more items available.");
+var rawData = require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");
+
+// This object manages the input stream for the program.
+var dataStream = {
+  "sourceLines" : rawData,
+  "currentIdx"  : 0,
+  "totalLines"  : rawData.length,
+
+  "fetchNext" : function() {
+    if (!this.hasMore()) {
+      throw "NoSuchElementException:次に要素は無いよ";
     }
-    let retrievedValue = this.sourceLines[this.currentIdx];
+    var retrievedItem = this.sourceLines[this.currentIdx];
     this.currentIdx++;
-    return retrievedValue;
+    return retrievedItem;
   },
-  "hasMoreItems" : function() {
-    return (this.currentIdx < this.maxCount);
+
+  "hasMore" : function() {
+    return (this.currentIdx < this.totalLines);
   }
 };
 
-StartProcessing();
+executeProgram();
 
-function retrieveNext() {
-  return lineIterator.getNextItem();
+function getNextItem() {
+  return dataStream.fetchNext();
 }
 
-function checkMore() {
-  return lineIterator.hasMoreItems();
+function checkMoreItems() {
+  return dataStream.hasMore();
 }
 
-function displayOutput(msg) {
-  console.log(msg); // standard console display
+function printOutput(content) {
+  console.log(content); // Standard output operation
 }
 
-function logError(errTxt) {
-  console.error(errTxt); // standard error logging channel
+function printError(message) {
+  console.error(message); // Standard error operation
 }
 
-// [Conversion Function]
-// Manages various transformations for input data.
-// Handles parsing to numbers, splitting strings,
-// and joining arrays.
-// Returns input untouched if conversion fails or type is unknown.
-function transformInput(inputStr, conversionType) {
+// Utility function for various input conversions.
+// If conversion fails or type is unknown, returns original input.
+function convertInput(inputValue, conversionType) {
   try {
     switch (conversionType) {
-      case 1: return Number.parseInt(inputStr, 10);
-      case 2: return inputStr.split(" ");
-      case 4: return inputStr.split(" ").map( (element) => parseFloat(element) );
-      case 6: return inputStr.split("");
-      case 7: return inputStr.split("").map( (charVal) => Number(charVal) );
-      case 8: return inputStr.join(" ");
-      case 9: return inputStr.join("\r\n");
-      case 0: return inputStr.join("");
-      default: return inputStr;
+      case 1:
+        return parseInt(inputValue);
+      case 2:
+        return inputValue.split(" ");
+      case 4:
+        return inputValue.split(" ").map((val) => Number(val));
+      case 6:
+        return inputValue.split("");
+      case 7:
+        return inputValue.split("").map((val) => Number(val));
+      case 8:
+        return inputValue.join(" ");
+      case 9:
+        return inputValue.join("\n");
+      case 0:
+        return inputValue.join("");
+      default:
+        return inputValue;
     }
-  } catch (errorObject) {
-    return inputStr;
+  } catch (err) {
+    return inputValue; // Return original value on error
   }
 }
 
-function StartProcessing() {
-  let firstLineData = transformInput(retrieveNext(), 4);
-  let nodeCount = firstLineData[0];
-  let edgeCount = firstLineData[1];
+function executeProgram() {
+  var firstLineData = convertInput(getNextItem(), 4);
+  var numNodes = firstLineData[0];
+  var numEdges = firstLineData[1];
 
-  let adjacencyList = new Array(nodeCount);
-
-  for (let idx = 0; idx < nodeCount; ++idx) {
-    adjacencyList[idx] = {
-      "neighbors" : [],
-      "wasVisited" : false
+  var graphNodes = new Array(numNodes);
+  for (var nodeIndex = 0; nodeIndex < numNodes; nodeIndex++) {
+    graphNodes[nodeIndex] = {
+      "connectedNodes": [],
+      "isVisited": false
     };
   }
 
-  for (let edgeIdx = 0; edgeIdx < edgeCount; ++edgeIdx) {
-    let currentEdge = transformInput(retrieveNext(), 4);
-    adjacencyList[currentEdge[0] - 1].neighbors.push(currentEdge[1] - 1);
-    adjacencyList[currentEdge[1] - 1].neighbors.push(currentEdge[0] - 1);
+  for (var edgeIndex = 0; edgeIndex < numEdges; edgeIndex++) {
+    var edgePair = convertInput(getNextItem(), 4);
+    // Adjusting for 0-based indexing
+    graphNodes[edgePair[0] - 1].connectedNodes.push(edgePair[1] - 1);
+    graphNodes[edgePair[1] - 1].connectedNodes.push(edgePair[0] - 1);
   }
 
-  let componentCount = 0;
-
-  for (let k = 0; k < nodeCount; k++) {
-    if (!adjacencyList[k].wasVisited) {
-      depthFirstSearch(k);
+  var componentCount = 0;
+  for (var loopCounter = 0; loopCounter < numNodes; loopCounter++) {
+    if (!graphNodes[loopCounter]["isVisited"]) {
+      depthFirstSearch(loopCounter);
       componentCount++;
     }
   }
 
-  function depthFirstSearch(currentVertex) {
-    adjacencyList[currentVertex].wasVisited = true;
-    let connectedNodes = adjacencyList[currentVertex].neighbors;
+  // Inner function for Depth First Search traversal
+  function depthFirstSearch(currentNodeIdx) {
+    graphNodes[currentNodeIdx]["isVisited"] = true;
+    var neighborNodes = graphNodes[currentNodeIdx]["connectedNodes"];
 
-    // displayOutput(currentVertex + " : " + connectedNodes); // Debugging line, commented out
-    for (let nIdx = 0; nIdx < connectedNodes.length; nIdx++) {
-      if (adjacencyList[connectedNodes[nIdx]].wasVisited) {
+    // printOutput(currentNodeIdx + " : " + neighborNodes);
+
+    for (var neighborLoop = 0; neighborLoop < neighborNodes.length; neighborLoop++) {
+      var currentNeighbor = neighborNodes[neighborLoop];
+      if (graphNodes[currentNeighbor]["isVisited"]) {
         continue;
       }
-      if (connectedNodes[nIdx] === currentVertex) {
+      // This condition `currentNeighbor == currentNodeIdx` is often redundant
+      // in an undirected graph DFS, but it's part of the original logic.
+      if (currentNeighbor == currentNodeIdx) {
         continue;
       }
-      depthFirstSearch(connectedNodes[nIdx]);
+      depthFirstSearch(currentNeighbor);
     }
   }
 
-  displayOutput(componentCount);
+  printOutput(componentCount);
 }

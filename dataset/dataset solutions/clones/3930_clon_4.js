@@ -1,53 +1,62 @@
-const process_input_data = require('fs').readFileSync('/dev/stdin', 'utf8');
-const text_lines = process_input_data.split('\n');
-const primary_string = text_lines.shift();
+const sourceText = require('fs').readFileSync('/dev/stdin', 'utf8');
+const textLines = sourceText.split('\n');
+const inputString = textLines.shift();
 
-const final_result_container = { value: '' };
+let resultString = '';
 
-const alphabet_characters = Array.from({ length: 26 }, (_, idx) => String.fromCharCode('a'.charCodeAt(0) + idx));
+if (inputString.length === 26) {
+    let matchFound = false;
+    let nextCandidate = '';
 
-if (primary_string.length === 26) {
-    const string_length = primary_string.length;
+    // Iterate from the end of the input string backwards, using Array.from and .some for control flow
+    Array.from({ length: inputString.length }, (_, currentIdxOffset) => inputString.length - 1 - currentIdxOffset)
+        .some(currentIdx => {
+            const prefixPart = inputString.substring(0, currentIdx);
+            
+            // Collect characters from the current index to the end, then sort them lexicographically
+            const suffixElements = Array.from(inputString.substring(currentIdx)).sort();
 
-    const find_greater_prefix_recursively = (current_idx, collected_suffix_chars) => {
-        if (current_idx < 0) {
-            return false;
-        }
+            // Iterate through the sorted suffix characters, using .some for early exit
+            return suffixElements.some(charFromSuffix => {
+                const potentialResult = prefixPart + charFromSuffix;
+                if (potentialResult > inputString) {
+                    nextCandidate = potentialResult;
+                    matchFound = true;
+                    return true; // Break the inner .some loop
+                }
+                return false;
+            });
+        });
 
-        const current_character_from_string = primary_string[current_idx];
-        const updated_suffix_pool = [...collected_suffix_chars, current_character_from_string].sort();
-
-        const current_string_prefix = primary_string.slice(0, current_idx);
-
-        const matching_char_from_pool = updated_suffix_pool.find(
-            (potential_char) => {
-                const constructed_candidate = current_string_prefix + potential_char;
-                return constructed_candidate > primary_string;
-            }
-        );
-
-        if (matching_char_from_pool) {
-            final_result_container.value = current_string_prefix + matching_char_from_pool;
-            return true;
-        } else {
-            return find_greater_prefix_recursively(current_idx - 1, updated_suffix_pool);
-        }
-    };
-
-    const solution_found = find_greater_prefix_recursively(string_length - 1, []);
-
-    if (!solution_found) {
-        final_result_container.value = -1;
+    if (matchFound) {
+        resultString = nextCandidate;
+    } else {
+        resultString = -1;
     }
 
 } else {
-    const existing_letters_set = new Set(primary_string);
+    // Use a Set to efficiently track characters present in the input string
+    const presentLetters = new Set(inputString);
+    let firstMissingChar = '';
 
-    const first_missing_character = alphabet_characters.find(
-        (char_to_check) => !existing_letters_set.has(char_to_check)
-    );
+    // Generate an array of lowercase English alphabet characters ('a' through 'z')
+    const alphabetChars = Array.from({ length: 26 }, (_, k) => String.fromCharCode(97 + k)); // ASCII 'a' is 97
 
-    final_result_container.value = primary_string + first_missing_character;
+    // Find the first character in the alphabet that is not present in the input string
+    const foundMissing = alphabetChars.some(char => {
+        if (!presentLetters.has(char)) {
+            firstMissingChar = char;
+            return true; // Break the .some loop once the first missing character is found
+        }
+        return false;
+    });
+
+    if (!foundMissing) {
+        // If all 'a' through 'z' are present in the input string, the original code appends 'z'
+        firstMissingChar = 'z';
+    }
+    
+    resultString = inputString + firstMissingChar;
 }
 
-console.log(final_result_container.value);
+console.log(resultString);

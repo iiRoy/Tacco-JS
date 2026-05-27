@@ -1,103 +1,87 @@
-class InputDataProcessor {
-    constructor(sourceInputString) {
-        this.sourceLines = sourceInputString.trim().split("\n");
-        this.currentLinePointer = 0;
-        this.activeLineSegments = null;
-    }
+const inputFactory = (function() {
+    class DataStreamProcessor {
+        constructor(rawInputContent) {
+            this.sourceLines = rawInputContent.trim().split('\n');
+            this.currentPosition = 0;
+        }
 
-    retrieveScalar(asStringOutput) {
-        if (!this.activeLineSegments) {
-            if (this.currentLinePointer >= this.sourceLines.length) {
-                throw new Error("End of input stream reached for scalar retrieval.");
+        extractSingleValue(returnAsString) {
+            let lineSegment = this.sourceLines[this.currentPosition];
+            if (typeof lineSegment === 'string') {
+                this.sourceLines[this.currentPosition] = lineSegment.split(' ').reverse();
+                lineSegment = this.sourceLines[this.currentPosition];
             }
-            this.activeLineSegments = this.sourceLines[this.currentLinePointer].split(" ").reverse();
-        }
 
-        if (this.activeLineSegments.length === 0) {
-            this.currentLinePointer++;
-            this.activeLineSegments = null;
-            return this.retrieveScalar(asStringOutput);
-        }
-
-        const extractedValue = this.activeLineSegments.pop();
-        return asStringOutput ? extractedValue : Number(extractedValue);
-    }
-
-    retrieveLine(asStringOutput) {
-        if (this.currentLinePointer >= this.sourceLines.length) {
-            throw new Error("End of input stream reached for line retrieval.");
-        }
-        
-        const lineContent = this.sourceLines[this.currentLinePointer];
-        this.currentLinePointer++;
-        this.activeLineSegments = null;
-
-        const parts = lineContent.split(" ");
-        return asStringOutput ? parts : parts.map(Number);
-    }
-
-    retrieveMatrix(numRowsToRead, asStringOutput) {
-        const resultMatrix = [];
-        for (let i = 0; i < numRowsToRead; i++) {
-            resultMatrix.push(this.retrieveLine(asStringOutput));
-        }
-        return resultMatrix;
-    }
-
-    retrieveRawLines(numLinesToRead, asStringOutput) {
-        const resultLines = [];
-        for (let i = 0; i < numLinesToRead; i++) {
-            if (this.currentLinePointer >= this.sourceLines.length) {
-                throw new Error("End of input stream reached for raw line retrieval.");
+            const extracted = lineSegment.pop();
+            if (lineSegment.length === 0) {
+                this.currentPosition++;
             }
-            const lineData = this.sourceLines[this.currentLinePointer];
-            this.currentLinePointer++;
-            this.activeLineSegments = null;
-            resultLines.push(asStringOutput ? lineData : Number(lineData));
+            return returnAsString ? extracted : Number(extracted);
         }
-        return resultLines;
+
+        retrieveLineValues(returnAsString) {
+            const lineData = this.sourceLines[this.currentPosition++];
+            const tokens = lineData.split(' ');
+            return returnAsString ? tokens : tokens.map(Number);
+        }
+
+        fetchMultiLineMatrix(count, returnAsString) {
+            const matrixRows = [];
+            for (let idx = 0; idx < count; idx++) {
+                matrixRows.push(this.retrieveLineValues(returnAsString));
+            }
+            return matrixRows;
+        }
+
+        acquireRowValues(count, returnAsString) {
+            const rowData = [];
+            for (let idx = 0; idx < count; idx++) {
+                const lineContent = this.sourceLines[this.currentPosition++];
+                rowData.push(returnAsString ? lineContent : Number(lineContent));
+            }
+            return rowData;
+        }
     }
+    return (inputString) => new DataStreamProcessor(inputString);
+})();
+
+const inputReader = inputFactory(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+console.log(executeCalculation());
+
+function executeCalculation() {
+    const sequenceLength = inputReader.extractSingleValue();
+    const numericSequence = inputReader.acquireRowValues(sequenceLength);
+
+    const determineCost = (itemValue, categoryIndex) => {
+        const costRules = {
+            0: (val) => val,
+            1: (val) => (val === 0 ? 2 : val % 2),
+            2: (val) => (val + 1) % 2,
+            3: (val) => (val === 0 ? 2 : val % 2),
+            4: (val) => val,
+        };
+        return costRules[categoryIndex](itemValue);
+    };
+
+    const initialCategoryCosts = Array.from({ length: 5 }, (_, categoryIdx) =>
+        determineCost(numericSequence[0], categoryIdx)
+    );
+
+    const finalCategoryCosts = numericSequence.slice(1).reduce((previousCategoryCosts, currentItemValue) => {
+        const nextCategoryCosts = Array(5).fill(Number.MAX_VALUE);
+
+        nextCategoryCosts[0] = previousCategoryCosts[0] + currentItemValue;
+
+        for (let categoryIdx = 1; categoryIdx < 5; categoryIdx++) {
+            const minPreviousSubCost = previousCategoryCosts
+                .slice(0, categoryIdx + 1)
+                .reduce((minVal, currentVal) => Math.min(minVal, currentVal), Number.MAX_VALUE);
+            
+            nextCategoryCosts[categoryIdx] = minPreviousSubCost + determineCost(currentItemValue, categoryIdx);
+        }
+        return nextCategoryCosts;
+    }, initialCategoryCosts);
+
+    return Math.min(...finalCategoryCosts);
 }
-
-const transformScalar = (numericValue, lookupIndex) => {
-    const modifierFunctions = [
-        (val) => val,
-        (val) => (val === 0 ? 2 : val % 2),
-        (val) => (val + 1) % 2,
-        (val) => (val === 0 ? 2 : val % 2),
-        (val) => val
-    ];
-    return modifierFunctions[lookupIndex](numericValue);
-};
-
-const executeComputation = () => {
-    const sourceProvider = new InputDataProcessor(require("fs").readFileSync("/dev/stdin", "utf8"));
-
-    const totalCount = sourceProvider.retrieveScalar();
-    const inputValues = sourceProvider.retrieveRawLines(totalCount);
-
-    let currentPathCosts = Array.from({ length: 5 }, (_, index) => transformScalar(inputValues[0], index));
-
-    const finalPathCosts = inputValues.slice(1).reduce((previousPathCosts, currentValue) => {
-        const nextPathCosts = Array(5).fill(Infinity);
-        
-        nextPathCosts[0] = previousPathCosts[0] + currentValue;
-
-        Array.from({ length: 4 }, (_, stateIndex) => stateIndex + 1)
-            .forEach(jState => {
-                Array.from({ length: jState + 1 }, (_, prevKIndex) => prevKIndex)
-                    .forEach(kPrevState => {
-                        const potentialCost = previousPathCosts[kPrevState] + transformScalar(currentValue, jState);
-                        
-                        if (nextPathCosts[jState] > potentialCost) {
-                            nextPathCosts[jState] = potentialCost;
-                        }
-                    });
-            });
-        return nextPathCosts;
-    }, currentPathCosts);
-
-    return Math.min(...finalPathCosts);
-};
-
-console.log(executeComputation());

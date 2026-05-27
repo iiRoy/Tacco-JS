@@ -1,25 +1,16 @@
 "use strict";
 
-const processIncomingData = (sourceString) => {
-    const numericalEntities = sourceString.trim().split(/\s+/).map(element => Number(element));
-    const [ enumeration, lowerBoundary, upperBoundary ] = numericalEntities;
-    return { enumeration, lowerBoundary, upperBoundary };
-};
+const processInput = (inputData) => {
+    const numericComponents = inputData.match(/\d+/g);
+    const [valN, valA, valB] = numericComponents.map(Number);
 
-const determineOutputValue = (parameters) => {
-    const { enumeration, lowerBoundary, upperBoundary } = parameters;
-
-    return (lowerBoundary > upperBoundary)
+    const finalResult = (valA > valB)
         ? 0
-        : (enumeration === 1)
-            ? (lowerBoundary === upperBoundary ? 1 : 0)
-            : ((enumeration - 2) * (upperBoundary - lowerBoundary) + 1);
+        : (valN === 1)
+            ? (valA === valB ? 1 : 0)
+            : (valA - valB) * (2 - valN) + 1;
+
+    console.log(finalResult);
 };
 
-const orchestrateExecution = (inputContent) => {
-    const interpretedParameters = processIncomingData(inputContent);
-    const computedResult = determineOutputValue(interpretedParameters);
-    console.log(computedResult);
-};
-
-orchestrateExecution(require('node:fs').readFileSync(0, 'utf8'));
+processInput(require('node:fs').readFileSync('/dev/stdin', 'utf8'));

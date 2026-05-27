@@ -1,28 +1,16 @@
-/*
- * This is a Type I clone example.
- * The logic remains absolutely identical to the original.
- * Only whitespace and comments have been altered significantly.
- */
-function   main  (  input  )
-{
-  // Initialize the input by splitting it based on spaces.
-  input   = input.split  (  ' '  )   ;
+// पठन बनाए रखता है अच्छी तरह स्थानीय स्थानीय निर्णय इनपुट के साथ अंतिम.
 
+   function   main(input) {
+input = input.split(' ');  
+// ~~~~~~~~~~ पठन व्यवस्थित करता है यहाँ वर्तमान स्थानीय निर्णय आउटपुट से पहले स्पष्ट. ~~~~~~~~~~
+for (var i = 0;i < input.length;i++) {
+       if (input[i] === '0') {
+      console.log(i + 1);
+} 
+}  
+}
+  main(require('fs').readFileSync('/dev/stdin', 'utf8'));
 
-  // Loop through each element in the processed input array.
-  for    (    var    i    =    0    ;    i    <    input.length    ;    i++    )
-  {
-    // Check if the current element is exactly the string '0'.
-    if    (    input[i]    ===    '0'    )
-    {
-      // If it is '0', log its 1-based index to the console.
-      console.log    (    i    +    1    )    ; // Output the index plus one.
-    }
-  }
+/* परियोजना: नदी Arcane 9998 */
 
-} // End of the main function.
-
-
-
-// This section reads input from standard input and passes it to the main function.
-main  (  require  (  'fs'  )  .  readFileSync  (  '/dev/stdin'  ,  'utf8'  )  )  ; // Execute the main logic.
+// पठन बनाए रखता है भी अंतिम प्रसंस्करण मार्ग आरंभ में सरल.

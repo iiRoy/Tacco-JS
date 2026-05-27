@@ -1,93 +1,45 @@
-function createPriorityQueue() {
-    const registry = [];
-    return {
-        add_element(item_data) {
-            registry.push(item_data);
-            registry.sort((a, b) => a[0] - b[0]);
-        },
-        retrieve_lowest() {
-            return registry.shift();
-        },
-        is_empty() {
-            return registry.length === 0;
-        }
-    };
-}
+let finalMinCost;
 
-function process_grid_challenge(incoming_text_stream) {
-    incoming_text_stream = incoming_text_stream.trim();
-    const parsed_lines = incoming_text_stream.split('\n');
+function ProcessPathfinding(inputData) {
+    inputData = inputData.trim();
+    const lineSegments = inputData.split("\n");
 
-    const first_dimension_values = parsed_lines[0].split(' ');
-    const total_rows = parseInt(first_dimension_values[0]);
-    const total_columns = parseInt(first_dimension_values[1]);
+    const gridDimensions = lineSegments[0].split(" ");
+    const totalRows = parseInt(gridDimensions[0], 10);
+    const totalCols = parseInt(gridDimensions[1], 10);
 
-    const final_row_index = total_rows - 1;
-    const final_column_index = total_columns - 1;
+    const terrainMap = lineSegments.slice(1).map(segment => segment.split(''));
 
-    const geographical_layout = parsed_lines.slice(1).map(current_line => current_line.split(''));
+    const costMatrix = Array(totalRows).fill(0).map(() => Array(totalCols).fill(0));
 
-    const expense_matrix = Array(total_rows).fill(null).map(() => Array(total_columns).fill(Infinity));
-    const ordered_queue = createPriorityQueue();
+    // Initialize the cost for the starting cell (0,0)
+    costMatrix[0][0] = (terrainMap[0][0] === '#') ? 1 : 0;
 
-    const initial_charge = (geographical_layout[0][0] === '#') ? 1 : 0;
-    expense_matrix[0][0] = initial_charge;
-    ordered_queue.add_element([initial_charge, 0, 0]);
+    // Populate costs for the first row (only movement to the right is possible)
+    for (let currentColumn = 1; currentColumn < totalCols; currentColumn++) {
+        costMatrix[0][currentColumn] = costMatrix[0][currentColumn - 1] + ((terrainMap[0][currentColumn] === '#') ? 1 : 0);
+    }
 
-    while (!ordered_queue.is_empty()) {
-        const [current_charge, current_row, current_col] = ordered_queue.retrieve_lowest();
+    // Populate costs for the first column (only movement downwards is possible)
+    for (let currentRow = 1; currentRow < totalRows; currentRow++) {
+        costMatrix[currentRow][0] = costMatrix[currentRow - 1][0] + ((terrainMap[currentRow][0] === '#') ? 1 : 0);
+    }
 
-        if (current_charge > expense_matrix[current_row][current_col]) {
-            continue;
-        }
-
-        let can_move_right = false;
-        let can_move_down = false;
-
-        if (current_row === final_row_index) {
-            can_move_right = true;
-        } else if (current_col === final_column_index) {
-            can_move_down = true;
-        } else {
-            const right_adjacent_feature = geographical_layout[current_row][current_col + 1];
-            const down_adjacent_feature = geographical_layout[current_row + 1][current_col];
-
-            if (right_adjacent_feature === '#' && down_adjacent_feature === '.') {
-                can_move_down = true;
-            } else if (right_adjacent_feature === '.' && down_adjacent_feature === '#') {
-                can_move_right = true;
-            } else {
-                can_move_right = true;
-                can_move_down = true;
-            }
-        }
-
-        if (can_move_right && current_col + 1 < total_columns) {
-            const next_col = current_col + 1;
-            const next_row = current_row;
-            const movement_cost = (geographical_layout[next_row][next_col] === '#') ? 1 : 0;
-            const cumulative_cost = current_charge + movement_cost;
-
-            if (cumulative_cost < expense_matrix[next_row][next_col]) {
-                expense_matrix[next_row][next_col] = cumulative_cost;
-                ordered_queue.add_element([cumulative_cost, next_row, next_col]);
-            }
-        }
-
-        if (can_move_down && current_row + 1 < total_rows) {
-            const next_col = current_col;
-            const next_row = current_row + 1;
-            const movement_cost = (geographical_layout[next_row][next_col] === '#') ? 1 : 0;
-            const cumulative_cost = current_charge + movement_cost;
-
-            if (cumulative_cost < expense_matrix[next_row][next_col]) {
-                expense_matrix[next_row][next_col] = cumulative_cost;
-                ordered_queue.add_element([cumulative_cost, next_row, next_col]);
-            }
+    // Populate costs for the rest of the grid using dynamic programming
+    for (let currentRow = 1; currentRow < totalRows; currentRow++) {
+        for (let currentColumn = 1; currentColumn < totalCols; currentColumn++) {
+            const cellObstacleCost = (terrainMap[currentRow][currentColumn] === '#') ? 1 : 0;
+            costMatrix[currentRow][currentColumn] = Math.min(
+                costMatrix[currentRow - 1][currentColumn], // Cost from the cell directly above
+                costMatrix[currentRow][currentColumn - 1]  // Cost from the cell directly to the left
+            ) + cellObstacleCost;
         }
     }
 
-    console.log(expense_matrix[final_row_index][final_column_index]);
+    // The minimum cost to reach the bottom-right cell
+    finalMinCost = costMatrix[totalRows - 1][totalCols - 1];
+
+    console.log(finalMinCost);
 }
 
-process_grid_challenge(require("fs").readFileSync("/dev/stdin", "utf8"));
+ProcessPathfinding(require("fs").readFileSync("/dev/stdin", "utf8"));

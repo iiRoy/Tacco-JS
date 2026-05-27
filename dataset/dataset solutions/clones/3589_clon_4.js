@@ -1,31 +1,38 @@
-'use strict';
+'use strict'
 
-const calculateOptimalRoute = (raw_data_stream) => {
-    const input_lines = raw_data_stream.split(String.fromCharCode(10));
+const processInputData = (sourceText) => {
+    const lines = sourceText.split('\n')
+    const [totalPoints, selectedCount] = lines[0].split(' ').map(Number)
+    const pointCoordinates = lines[1].split(' ').map(Number)
+    return { totalPoints, selectedCount, pointCoordinates }
+}
 
-    const configuration_elements = input_lines[0].split(' ').map(Number);
-    const overall_quantity = configuration_elements[0];
-    const desired_span = configuration_elements[1];
+const determineMinimalPath = (processedData) => {
+    const { selectedCount, pointCoordinates } = processedData
+    const possibleWindowStarts = pointCoordinates.length - selectedCount + 1
 
-    const positional_markers = input_lines[1].split(' ').map(Number);
+    const startIndices = Array.from({ length: possibleWindowStarts }, (_, index) => index)
 
-    const journey_expenditures = Array.from({ length: overall_quantity - desired_span + 1 }, (_, position_iterator) => {
-        const initial_boundary = positional_markers[position_iterator];
-        const terminal_boundary = positional_markers[position_iterator + desired_span - 1];
+    const overallMinDistance = startIndices.reduce((currentMinimum, windowStartIndex) => {
+        const windowFirstPoint = pointCoordinates[windowStartIndex]
+        const windowLastPoint = pointCoordinates[windowStartIndex + selectedCount - 1]
 
-        const extent_of_segment = terminal_boundary - initial_boundary;
+        // Calculate distance if starting from 0, going to first point, then to last point
+        const pathOptionOne = Math.abs(windowFirstPoint) + Math.abs(windowLastPoint - windowFirstPoint)
 
-        const approach_from_origin = Math.abs(initial_boundary) + extent_of_segment;
-        const approach_from_destination = Math.abs(terminal_boundary) + extent_of_segment;
-        
-        return Math.min(approach_from_origin, approach_from_destination);
-    });
+        // Calculate distance if starting from 0, going to last point, then to first point
+        const pathOptionTwo = Math.abs(windowLastPoint) + Math.abs(windowLastPoint - windowFirstPoint)
 
-    const minimal_path_cost = journey_expenditures.reduce((current_minimum, current_value) => {
-        return current_value < current_minimum ? current_value : current_minimum;
-    }, Number.MAX_SAFE_INTEGER);
+        return Math.min(currentMinimum, pathOptionOne, pathOptionTwo)
+    }, Infinity)
 
-    console.log(minimal_path_cost);
-};
+    return overallMinDistance
+}
 
-calculateOptimalRoute(require('fs').readFileSync('/dev/stdin', 'utf-8'));
+const executeSolution = (rawInputContent) => {
+    const dataPayload = processInputData(rawInputContent)
+    const finalResult = determineMinimalPath(dataPayload)
+    console.log(finalResult)
+}
+
+executeSolution(require('fs').readFileSync('/dev/stdin', 'utf-8'))

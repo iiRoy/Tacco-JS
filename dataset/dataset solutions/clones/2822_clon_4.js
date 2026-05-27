@@ -1,18 +1,22 @@
-const processInput = (dataSegments) => {
-    const limitValue = Number.parseInt(dataSegments[1], 10);
-    const distanceMeasures = dataSegments.slice(2).map((item) => Number.parseInt(item, 10));
+function ProcessPath(sourceData) {
+    const numericData = sourceData.map(Number);
+    const distanceThreshold = numericData[1];
+    const segmentMeasures = numericData.slice(2);
 
-    const accumulatedDistances = distanceMeasures.reduce((accumulator, currentMeasure) => {
-        const previousTotal = accumulator.length > 0 ? accumulator[accumulator.length - 1] : 0;
-        accumulator.push(previousTotal + currentMeasure);
-        return accumulator;
-    }, []);
+    let currentAccumulation = 0;
+    let reachablePoints = 1;
 
-    const firstExceedingIndex = accumulatedDistances.findIndex((value) => value > limitValue);
+    segmentMeasures.some(segmentValue => {
+        currentAccumulation += segmentValue;
+        if (currentAccumulation <= distanceThreshold) {
+            reachablePoints++;
+            return false;
+        } else {
+            return true;
+        }
+    });
 
-    const finalCount = (firstExceedingIndex === -1 ? distanceMeasures.length : firstExceedingIndex) + 1;
+    console.log(reachablePoints);
+}
 
-    console.log(finalCount);
-};
-
-processInput(require("fs").readFileSync("/dev/stdin", "utf8").trim().split(/\n|\s/));
+ProcessPath(require("fs").readFileSync("/dev/stdin", "utf8").trim().split(/\n|\s/));

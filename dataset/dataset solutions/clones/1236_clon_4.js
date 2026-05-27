@@ -1,23 +1,21 @@
-let textCollector = '';
+const fileContentBuffer = require('fs').readFileSync('/dev/stdin');
 
-process.stdin.on('data', (chunkOfData) => {
-    textCollector += chunkOfData.toString();
-});
+const textData = fileContentBuffer.toString('utf8');
 
-process.stdin.on('end', () => {
-    let lineProcessor = '';
-    for (let charPosition = 0; charPosition < textCollector.length; charPosition++) {
-        let currentCharacter = textCollector[charPosition];
-        if (currentCharacter === '\n') {
-            let processedNumericValue = +lineProcessor;
-            process.stdout.write(processedNumericValue + '\n');
-            lineProcessor = '';
-        } else {
-            lineProcessor += currentCharacter;
+function* numberProcessor(sourceText) {
+    const lineSegments = sourceText.split('\n');
+    let lineIndex = 0;
+    while (lineIndex < lineSegments.length) {
+        const currentLineText = lineSegments[lineIndex];
+        const numericalRepresentation = Number(currentLineText);
+        
+        if (numericalRepresentation !== null) {
+            yield numericalRepresentation;
         }
+        lineIndex++;
     }
-    if (lineProcessor.length > 0) {
-        let processedNumericValue = +lineProcessor;
-        process.stdout.write(processedNumericValue + '\n');
-    }
-});
+}
+
+for (const outputValue of numberProcessor(textData)) {
+    console.log(outputValue);
+}

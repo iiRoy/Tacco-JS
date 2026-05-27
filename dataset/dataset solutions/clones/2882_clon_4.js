@@ -1,113 +1,138 @@
-class DataStreamer {
-    constructor(sourceData) {
-        this.lineQueue = sourceData.trim().split("\n");
+class InputProcessor {
+    constructor(sourceContent) {
+        this.lineSegments = sourceContent.trim().split("\n");
         this.currentLinePointer = 0;
-        this.currentLineTokens = [];
+        this.currentTokenBuffer = [];
     }
 
-    _ensureTokens() {
-        while (this.currentLineTokens.length === 0 && this.currentLinePointer < this.lineQueue.length) {
-            this.currentLineTokens = this.lineQueue[this.currentLinePointer].split(" ").reverse();
-            this.currentLinePointer++;
+    retrieveToken(asString = false) {
+        while (this.currentTokenBuffer.length === 0 && this.currentLinePointer < this.lineSegments.length) {
+            this.currentTokenBuffer = this.lineSegments[this.currentLinePointer++].split(" ");
         }
-    }
-
-    obtainSingleNumeric() {
-        this._ensureTokens();
-        if (this.currentLineTokens.length > 0) {
-            return Number(this.currentLineTokens.pop());
+        if (this.currentTokenBuffer.length === 0) {
+            return undefined;
         }
-        return NaN;
+        const extractedToken = this.currentTokenBuffer.shift();
+        return asString ? extractedToken : Number(extractedToken);
     }
 
-    obtainMatrix(rowCount) {
+    retrieveLine(asStrings = false) {
+        if (this.currentLinePointer >= this.lineSegments.length) {
+            return undefined;
+        }
+        const lineElements = this.lineSegments[this.currentLinePointer++].split(" ");
+        return asStrings ? lineElements : lineElements.map(Number);
+    }
+
+    retrieveMatrix(numRows, asStrings = false) {
         const resultMatrix = [];
-        for (let i = 0; i < rowCount; i++) {
-            if (this.currentLinePointer < this.lineQueue.length) {
-                const line = this.lineQueue[this.currentLinePointer++];
-                resultMatrix.push(line.split(" ").map(Number));
-            } else {
+        for (let i = 0; i < numRows; i++) {
+            if (this.currentLinePointer >= this.lineSegments.length) {
                 break;
             }
+            const rowElements = this.lineSegments[this.currentLinePointer++].split(" ");
+            resultMatrix.push(asStrings ? rowElements : rowElements.map(Number));
         }
         return resultMatrix;
     }
+
+    retrieveVector(numElements, asStrings = false) {
+        const resultVector = [];
+        for (let i = 0; i < numElements; i++) {
+            if (this.currentLinePointer >= this.lineSegments.length) {
+                break;
+            }
+            const element = this.lineSegments[this.currentLinePointer++];
+            resultVector.push(asStrings ? element : Number(element));
+        }
+        return resultVector;
+    }
 }
 
-const prepareDataProcessor = (inputContent) => new DataStreamer(inputContent);
-
-const computeOptimalValue = (dataProcessor) => {
-    const totalComponentCount = dataProcessor.obtainSingleNumeric();
-    const batchCapacity = dataProcessor.obtainSingleNumeric();
-    const rawComponentList = dataProcessor.obtainMatrix(totalComponentCount);
-
-    let baseAccumulatedCost = 0;
-    const processedComponentList = rawComponentList.map(componentRow => {
-        const [initialQuantity, primaryCostRate, secondaryCostRate] = componentRow;
-        const currentComponentCost = initialQuantity * primaryCostRate;
-        baseAccumulatedCost += currentComponentCost;
-        const derivedAdjustment = (batchCapacity - initialQuantity) * secondaryCostRate;
-        return { initialQuantity, primaryCostRate, secondaryCostRate, derivedAdjustment };
-    });
-
-    processedComponentList.sort((compA, compB) => compB.derivedAdjustment - compA.derivedAdjustment);
-
-    const assessOutcomeRecursive = (targetThreshold, itemsCount, capacitySize, components, initialSum) => {
-        const simulateLoop = (componentIndex, currentCapacityLeft, currentSumValue) => {
-            if (componentIndex >= itemsCount || currentCapacityLeft <= 0 || currentSumValue <= 0) {
-                return currentSumValue;
-            }
-
-            const currentComponent = components[componentIndex];
-
-            if (capacitySize <= currentCapacityLeft) {
-                const updatedSum = currentSumValue - (currentComponent.initialQuantity * currentComponent.primaryCostRate + currentComponent.derivedAdjustment);
-                const updatedCapacity = currentCapacityLeft - capacitySize;
-                return simulateLoop(componentIndex + 1, updatedCapacity, updatedSum);
-            } else {
-                let lastInnerLoopCalculatedValue = currentSumValue;
-                let finalIndexFromInnerLoop = componentIndex;
-
-                for (let innerLoopCurrentIdx = componentIndex; innerLoopCurrentIdx < itemsCount && currentSumValue > 0; innerLoopCurrentIdx++) {
-                    finalIndexFromInnerLoop = innerLoopCurrentIdx + 1;
-
-                    let tempInnerIterationValue = currentSumValue;
-
-                    if (currentCapacityLeft < components[innerLoopCurrentIdx].initialQuantity) {
-                        tempInnerIterationValue -= components[innerLoopCurrentIdx].primaryCostRate * currentCapacityLeft;
-                    } else {
-                        tempInnerIterationValue -= (components[innerLoopCurrentIdx].initialQuantity * components[innerLoopCurrentIdx].primaryCostRate + (currentCapacityLeft - components[innerLoopCurrentIdx].initialQuantity) * components[innerLoopCurrentIdx].secondaryCostRate);
-                    }
-                    lastInnerLoopCalculatedValue = tempInnerIterationValue;
-                }
-                
-                return simulateLoop(finalIndexFromInnerLoop, currentCapacityLeft, lastInnerLoopCalculatedValue);
-            }
-        };
-        return simulateLoop(0, targetThreshold, initialSum);
-    };
-
-    let optimalUpperbound = totalComponentCount * batchCapacity;
-    let suboptimalLowerbound = -1;
-
-    const locateBreakpoint = (lowValue, highValue) => {
-        if (highValue - lowValue <= 1) {
-            return highValue;
-        }
-        const midValue = Math.floor((lowValue + highValue) / 2);
-        const scenarioOutcome = assessOutcomeRecursive(midValue, totalComponentCount, batchCapacity, processedComponentList, baseAccumulatedCost);
-
-        if (scenarioOutcome > 0) {
-            return locateBreakpoint(midValue, highValue);
-        } else {
-            return locateBreakpoint(lowValue, midValue);
-        }
-    };
-
-    return locateBreakpoint(suboptimalLowerbound, optimalUpperbound);
+const createInputSource = (sourceContent) => {
+    return new InputProcessor(sourceContent);
 };
 
-const inputData = require("fs").readFileSync("/dev/stdin", "utf8");
-const dataInputProcessor = prepareDataProcessor(inputData);
-const solutionValue = computeOptimalValue(dataInputProcessor);
-console.log(solutionValue);
+function generateMultiArray(initialValExpr) {
+    const allArgs = arguments;
+    let dimensionCount = allArgs.length;
+    let arrayCreationString = "Array(allArgs[" + --dimensionCount + "]).fill(0).map(element => {return " + initialValExpr + ";})";
+    while (--dimensionCount) {
+        arrayCreationString = "Array(allArgs[" + dimensionCount + "]).fill(0).map(element => " + arrayCreationString + ")";
+    }
+    return eval(arrayCreationString);
+}
+
+const inputData = createInputSource(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+console.log(performCalculation());
+
+function performCalculation() {
+    const itemCount = inputData.retrieveToken();
+    const thresholdValue = inputData.retrieveToken();
+    const rawItemDetails = inputData.retrieveMatrix(itemCount);
+
+    const processedItems = rawItemDetails.map(entry => {
+        const [baseCount, unitCostA, unitCostB] = entry;
+        const derivedCostForThreshold = (thresholdValue - baseCount) * unitCostB;
+        const initialContribution = baseCount * unitCostA;
+        return {
+            baseCount,
+            unitCostA,
+            unitCostB,
+            derivedCostForThreshold,
+            initialContribution,
+            totalCostForFullThreshold: initialContribution + derivedCostForThreshold
+        };
+    });
+
+    const totalInitialContribution = processedItems.reduce((accumulator, item) => accumulator + item.initialContribution, 0);
+
+    processedItems.sort((itemA, itemB) => itemB.derivedCostForThreshold - itemA.derivedCostForThreshold);
+
+    let highBound = itemCount * thresholdValue;
+    let lowBound = -1;
+
+    while (highBound - lowBound > 1) {
+        const currentMidpoint = Math.floor((highBound + lowBound) / 2);
+        let currentAccumulatedValue = totalInitialContribution;
+        let remainingBudget = currentMidpoint;
+        let currentItemPointer = 0;
+
+        while (currentItemPointer < processedItems.length && remainingBudget > 0 && currentAccumulatedValue > 0) {
+            const currentItem = processedItems[currentItemPointer];
+
+            if (thresholdValue <= remainingBudget) {
+                currentAccumulatedValue -= currentItem.totalCostForFullThreshold;
+                remainingBudget -= thresholdValue;
+                currentItemPointer++;
+            } else {
+                let tempAccumulatedValue = currentAccumulatedValue;
+                let lastInnerCalculatedValue = tempAccumulatedValue;
+                let innerLoopItemIndex = currentItemPointer;
+
+                while (innerLoopItemIndex < processedItems.length && tempAccumulatedValue > 0) {
+                    const innerItem = processedItems[innerLoopItemIndex];
+                    let iterationValue = tempAccumulatedValue;
+
+                    if (remainingBudget < innerItem.baseCount) {
+                        iterationValue -= innerItem.unitCostA * remainingBudget;
+                    } else {
+                        iterationValue -= innerItem.initialContribution + (remainingBudget - innerItem.baseCount) * innerItem.unitCostB;
+                    }
+                    lastInnerCalculatedValue = iterationValue;
+                    innerLoopItemIndex++;
+                }
+                currentAccumulatedValue = lastInnerCalculatedValue;
+                currentItemPointer = innerLoopItemIndex;
+            }
+        }
+
+        if (currentAccumulatedValue > 0) {
+            lowBound = currentMidpoint;
+        } else {
+            highBound = currentMidpoint;
+        }
+    }
+    return highBound;
+}

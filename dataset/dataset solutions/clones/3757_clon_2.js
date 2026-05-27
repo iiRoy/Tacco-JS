@@ -1,49 +1,46 @@
-// This function processes all incoming data from the standard input stream.
-function ProcessInputData(rawData) {
-    // Split the entire input string into an array of individual lines.
-    let dataRows = rawData.split("\n");
+// This function processes the entire input string provided.
+function ProcessInput(rawData) {
+    // Divide the complete input into distinct line segments.
+    const lineSegments = rawData.split("\n");
 
-    // The very first line contains important configuration parameters.
-    let configValues = dataRows[0].split(" ");
+    // Parse the initial line to extract configuration parameters.
+    const firstLineData = lineSegments[0].split(" ");
 
-    // Parse the total count of data items from the first configuration value.
-    let numItems = parseInt(configValues[0], 10);
-    // Parse the limit for selecting top items from the second configuration value.
-    let limitValue = parseInt(configValues[1], 10);
+    // Determine the total number of data rows (N) from the first parameter.
+    const numDataRows = parseInt(firstLineData[0], 10);
+    // Determine the count of top sums (K) to consider from the second parameter.
+    const numTopSums = parseInt(firstLineData[1], 10);
 
-    // Extract the actual item data rows, skipping the configuration line.
-    let itemDataRows = dataRows.slice(1, numItems + 1);
+    // Extract the specific data entries based on the calculated number of rows.
+    const foodItems = lineSegments.slice(1, numDataRows + 1);
 
-    // Perform an early exit if the limit for top items is zero, as no calculation is needed.
-    if (limitValue === 0) {
-        console.log(0); // Output zero directly.
-        return; // Terminate function execution.
+    // Implement an early exit condition if the number of top sums required is zero.
+    if (numTopSums === 0) {
+        console.log(0);
+        return;
     }
 
-    // Transform string item rows into arrays of numbers for further processing.
-    const numericSegments = itemDataRows.map(
-        (currentItemLine) => currentItemLine.split(" ").map(
-            (numericString) => parseInt(numericString, 10)
-        )
+    // Convert the string-based food item data into a structured array of integer arrays.
+    const numericData = foodItems.map((itemString) =>
+        itemString.split(" ").map((numStr) => parseInt(numStr, 10))
     );
 
-    // Calculate the sum for each numeric segment, then sort these sums,
-    // select a specified number of top sums, and finally sum those selected values.
-    let computedTotal = numericSegments
-        .map((singleSegment) =>
-            // Sum all individual values within a single segment.
-            singleSegment.reduce((currentAccumulator, individualValue) => currentAccumulator + individualValue, 0)
+    // Perform a series of operations: sum each inner array, sort the sums in descending order,
+    // select the top K sums, and then compute the total of these selected sums.
+    const finalResult = numericData
+        .map((innerArray) =>
+            innerArray.reduce((accumulator, currentValue) => accumulator + currentValue, 0)
         )
-        .sort((firstElement, secondElement) => {
-            // Sort the sums in ascending order.
-            return firstElement < secondElement;
+        .sort((leftVal, rightVal) => {
+            // This comparison function sorts values in descending order.
+            return leftVal < rightVal;
         })
-        .slice(0, limitValue) // Keep only the top 'limitValue' sums from the sorted list.
-        .reduce((finalAccumulator, selectedValue) => finalAccumulator + selectedValue, 0); // Aggregate the sum of the selected top values.
+        .slice(0, numTopSums)
+        .reduce((accumulator, currentValue) => accumulator + currentValue, 0);
 
-    // Display the final calculated total.
-    console.log(computedTotal);
+    // Display the final computed result to the console.
+    console.log(finalResult);
 }
 
-// Do not modify the following section (it handles standard I/O and calls the main processing function).
-ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+// The following line is crucial for standard input/output handling and should not be altered.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

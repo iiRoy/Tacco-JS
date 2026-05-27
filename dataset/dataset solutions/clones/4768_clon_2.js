@@ -1,76 +1,103 @@
-let acquireText = () => require("fs").readFileSync("/dev/stdin", "utf8").trim();
+function readInput() {
+  // Reads input from standard input, trims whitespace, and returns it as a string.
+  return require("fs").readFileSync("/dev/stdin", "utf8").trim();
+}
 
-const displayResult = (outputData) => {
-    console.log(outputData);
-}; // Output the processed data to standard output
+function printOutput(message) {
+  // Outputs the given message to the console.
+  console.log(message);
+}
 
-/*
- * Data conversion utility function.
- * Options for transformation:
- *   0: Return input as-is (no modification).
- *   1: Convert to an integer value.
- *   2: Split by single space into a string array.
- *   3: Split by newline character into a string array.
- *   4: Split by space, then map all elements to numbers.
- *   5: Split by newline, then map all elements to numbers.
- *   6: Split into an array of individual characters.
- *   7: Split into characters, then map all to numbers.
+/**
+ * Transforms the input string based on the specified conversion type.
+ * @param {string} dataStr - The input string to convert.
+ * @param {number} conversionType - The type of conversion to apply.
+ *   0: No conversion (return as is)
+ *   1: Convert to integer
+ *   2: Split by space
+ *   3: Split by newline
+ *   4: Split by space and convert to number array
+ *   5: Split by newline and convert to number array
+ *   6: Split into individual characters
+ *   7: Split into individual characters and convert to number array
+ * @returns {any} The converted data.
  */
-function transformData(sourceValue, transformationType) {
-    switch (transformationType) {
-        case 0:
-            return sourceValue;
-        case 1:
-            return parseInt(sourceValue, 10);
-        case 2:
-            return sourceValue.split(" ");
-        case 3:
-            return sourceValue.split("\n");
-        case 4:
-            return sourceValue.split(" ").map(entry => Number(entry));
-        case 5:
-            return sourceValue.split("\n").map(entry => Number(entry));
-        case 6:
-            return sourceValue.split("");
-        case 7:
-            return sourceValue.split("").map(entry => Number(entry));
-    }
+function transformInput(dataStr, conversionType) {
+  switch (conversionType) {
+    case 0:
+      return dataStr;
+    case 1:
+      return parseInt(dataStr);
+    case 2:
+      return dataStr.split(" ");
+    case 3:
+      return dataStr.split("\n");
+    case 4:
+      return dataStr.split(" ").map((element) => Number(element));
+    case 5:
+      return dataStr.split("\n").map((element) => Number(element));
+    case 6:
+      return dataStr.split("");
+    case 7:
+      return dataStr.split("").map((element) => Number(element));
+    default:
+      return dataStr; // Default to no conversion if type is unknown
+  }
 }
 
-function ProcessNumberFactors(initialValue) {
-    initialValue = transformData(initialValue, 1);
+function processData(rawInput) {
+  // Convert the raw input string to an integer.
+  rawInput = transformInput(rawInput, 1);
 
-    // The count of divisors for a number N is (e1+1)*(e2+1)*...*(ek+1),
-    // where e_i are the exponents of its prime factors in the prime factorization.
-    // This array will store the frequency (exponents) of each prime factor.
-    let primeExponents = new Array(initialValue + 1).fill(0);
-    const remainderValue = 1000000007;
+  // This algorithm calculates the number of divisors for a given integer 'rawInput'.
+  // The number of divisors is found by taking the product of (exponent + 1) for each prime factor.
+  // For example, if N = p1^a * p2^b, then the number of divisors is (a+1)*(b+1).
 
-    for (let currentNumber = 1; currentNumber <= initialValue; currentNumber++) {
-        if (currentNumber === 1) {
-            primeExponents[1] = 1;
-            continue;
+  // 'primeFactorCounts' will store the count of each prime factor up to 'rawInput'.
+  // Initialize an array with zeros.
+  const primeFactorCounts = new Array(rawInput + 1).fill(0);
+  const moduloValue = 1000000007; // A large prime number for modulo operations.
+
+  // Iterate from 1 up to the input number.
+  for (let currentNum = 1; currentNum <= rawInput; currentNum++) {
+    if (currentNum === 1) {
+      // The number 1 has no prime factors in this context, or its only factor is 1 itself.
+      // For divisor count calculation, it doesn't contribute to prime factor exponents.
+      // We can effectively skip it or handle it as a base case.
+      // The original code sets list[1] = 1, which is not directly used in the final product.
+      // Let's keep the original behavior for Type II.
+      primeFactorCounts[1] = 1;
+      continue;
+    } else {
+      let tempNum = currentNum; // Use a temporary variable for factorization.
+      // Find prime factors of 'tempNum'.
+      for (let divisor = 2; divisor <= tempNum;) {
+        if (tempNum % divisor === 0) {
+          // If 'divisor' is a factor, increment its count and divide 'tempNum'.
+          primeFactorCounts[divisor]++;
+          tempNum /= divisor;
         } else {
-            let workingNumber = currentNumber;
-            for (let candidateFactor = 2; candidateFactor <= workingNumber;) {
-                if (workingNumber % candidateFactor === 0) {
-                    primeExponents[candidateFactor]++;
-                    workingNumber /= candidateFactor;
-                } else {
-                    candidateFactor++;
-                }
-            }
+          // If not a factor, try the next potential divisor.
+          divisor++;
         }
+      }
     }
+  }
 
-    let productAccumulator = 1;
-    for (let index = 2; index < primeExponents.length; index++) {
-        if (primeExponents[index] !== 0) {
-            productAccumulator = (productAccumulator * (primeExponents[index] + 1)) % remainderValue;
-        }
+  // Calculate the total number of divisors using the prime factor counts.
+  // The result is the product of (exponent + 1) for each prime factor, modulo 'moduloValue'.
+  let resultDivisorCount = 1;
+  for (let currentPrime = 2; currentPrime < primeFactorCounts.length; currentPrime++) {
+    if (primeFactorCounts[currentPrime] !== 0) {
+      // If a prime factor appeared, multiply the result by (its count + 1).
+      // Apply modulo at each step to prevent overflow.
+      resultDivisorCount = (resultDivisorCount * (primeFactorCounts[currentPrime] + 1)) % moduloValue;
     }
-    // displayResult(primeExponents); // For debugging purposes, shows prime factor counts
-    displayResult(productAccumulator);
+  }
+
+  // Output the final calculated number of divisors.
+  printOutput(resultDivisorCount);
 }
 
-ProcessNumberFactors(acquireText());
+// Execute the main processing function with input from stdin.
+processData(readInput());

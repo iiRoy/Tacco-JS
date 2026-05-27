@@ -1,39 +1,37 @@
-const moduloValue = 1000000007;
+const MOD_VAL = Math.pow(10, 9) + 7;
 
-const calculateProductSeries = (value) => {
-    if (value === 0) return 0;
-    if (value === 1) return 1;
-
-    const sequenceElements = Array.from({ length: value }, (_, idx) => idx + 1);
-    
-    return sequenceElements.reduce((accumulator, currentNum) => {
-        return (accumulator * currentNum) % moduloValue;
-    }, 1);
-};
-
-const processInputData = (rawInput) => {
-    const [firstOperand, secondOperand] = rawInput.split(" ").map(Number);
-
-    const numericalDifference = Math.abs(firstOperand - secondOperand);
-
-    let finalComputationResult;
-
-    switch (numericalDifference) {
-        case 0:
-            const valA = calculateProductSeries(firstOperand);
-            const valB = calculateProductSeries(secondOperand);
-            finalComputationResult = (valA * valB * 2) % moduloValue;
-            break;
-        case 1:
-            const termX = calculateProductSeries(firstOperand);
-            const termY = calculateProductSeries(secondOperand);
-            finalComputationResult = (termX * termY) % moduloValue;
-            break;
-        default:
-            finalComputationResult = 0;
-            break;
+function computeProductMod(val) {
+    if (val === 0) {
+        return 0;
     }
-    return finalComputationResult;
-};
+    if (val === 1) {
+        return 1;
+    }
+    return (val * computeProductMod(val - 1)) % MOD_VAL;
+}
 
-console.log(processInputData(require("fs").readFileSync("/dev/stdin", "utf8")));
+function processInputValues(dataString) {
+    const [firstStr, secondStr] = dataString.split(" ");
+    const firstNum = Number(firstStr);
+    const secondNum = Number(secondStr);
+
+    const diffAbs = Math.abs(firstNum - secondNum);
+
+    const multiplierMap = new Map([
+        [0, 2],
+        [1, 1]
+    ]);
+
+    const finalMultiplier = multiplierMap.get(diffAbs) || 0;
+
+    if (finalMultiplier === 0) {
+        return 0;
+    }
+
+    const factA = computeProductMod(firstNum);
+    const factB = computeProductMod(secondNum);
+
+    return (factA * factB * finalMultiplier) % MOD_VAL;
+}
+
+console.log(processInputValues(require("fs").readFileSync("/dev/stdin", "utf8")));

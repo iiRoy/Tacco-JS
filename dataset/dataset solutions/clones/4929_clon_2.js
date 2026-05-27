@@ -1,28 +1,25 @@
-// This module provides functionality to assess character-level discrepancies between an arbitrary text input and a predefined sequence.
-function analyzeTextDifferences(  receivedString  )
-{
-    // The incoming text is first broken down into individual characters for sequential comparison.
-    receivedString= receivedString.split( "" );
+function ProcessInput(rawData) {
+    // This function processes the given input string.
+    let charArray = rawData.split(""); // Convert the input string into an array of characters.
 
-    // Define the immutable sequence against which the input will be evaluated.
-    // This array serves as the base pattern for structural comparison.
-    var  comparisonPattern  =  [ "S" , "T" , "R" , "U" , "C" , "T" , "U" , "R" , "A" , "L" , "C" , "L" , "O" , "N" , "E" , "S" , ] ;
+    // Define the reference sequence for comparison.
+    const targetSequence = [
+        "C", "O", "D", "E", "F", "E", "S", "T", "I", "V", "A", "L", "2", "0", "1", "6"
+    ];
 
-    // Initialize a counter to track the number of character mismatches observed.
-    var  divergenceScore  =  0 ;
+    let mismatchCount = 0; // Initialize a counter for differing characters.
 
-    // Iterate through each character of the processed input string.
-    for ( var  charIndex = 0 ;  charIndex < receivedString.length ;  charIndex++ )
-    {
-        // Compare the character at the current index in the input with the corresponding character in the pattern.
-        if  ( receivedString[ charIndex ]  !=  comparisonPattern[ charIndex ] )
-            // If a discrepancy is found, increment the divergence score.
-            divergenceScore++ ;
+    // Iterate through the character array from the input.
+    for (let idx = 0; idx < charArray.length; idx++) {
+        // Compare the character from the input with the character in the reference sequence at the same position.
+        if (charArray[idx] !== targetSequence[idx]) {
+            mismatchCount++; // Increment the counter if a mismatch is found.
+        }
     }
-    // Output the final accumulated count of character differences to the console.
-    console.log ( divergenceScore ) ;
+
+    // Output the final count of mismatches to the console.
+    console.log(mismatchCount);
 }
 
-// Execute the primary analysis function using data sourced directly from standard input.
-// The input stream is read, decoded as UTF-8, and leading/trailing whitespace is removed before processing.
-analyzeTextDifferences (  require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) . trim ( )  ) ;
+// Read input from standard input, decode as UTF-8, trim whitespace, and pass to the processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8").trim());

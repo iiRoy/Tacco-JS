@@ -1,59 +1,47 @@
-let collectedStreamData = '';
+var fileSystem = require('fs');
+var dataLength = fileSystem.fstatSync(process.stdin.fd).size;
+var inputBuffer = Buffer.alloc(dataLength);
+var bytesReadCount = fileSystem.readSync(process.stdin.fd, inputBuffer, 0, dataLength, 0);
+var inputLines = inputBuffer.toString('utf8', 0, bytesReadCount).split('\n');
 
-process.stdin.on('data', (dataChunk) => {
-    collectedStreamData += dataChunk.toString();
-});
+processInput();
 
-process.stdin.on('end', () => {
-    initiateProcessing(
-        collectedStreamData
-            .trim()
-            .split('\n')
-    );
-});
-
-const checkPrimaryStatus = (numericItem) => {
-    if (numericItem < 2) return false;
-    if (numericItem === 2) return true;
-    if (numericItem % 2 === 0) return false;
-
-    for (let currentDivisor = 3; currentDivisor * currentDivisor <= numericItem; currentDivisor += 2) {
-        if (numericItem % currentDivisor === 0) return false;
+function processInput() {
+  var primeSumCache = generatePrimeSums();
+  inputLines.slice(0, inputLines.length - 1).some(function(lineContent) {
+    var numericValue = parseInt(lineContent, 10);
+    if (numericValue === 0) {
+      return true;
     }
-    return true;
-};
+    console.log(primeSumCache[numericValue]);
+    return false;
+  });
+}
 
-const buildCumulativePrimeSums = (upperBoundForPrimes, desiredCollectionSize) => {
-    const cumulativeCollection = new Array(desiredCollectionSize + 1).fill(0);
-    let runningTotalOfPrimes = 0;
-    let primeCounterForIndex = 0;
-    let currentCandidateNumber = 2;
+function generatePrimeSums() {
+  var maxVal = 104729;
+  var isPrimeIndicator = new Array(maxVal + 1).fill(true);
+  isPrimeIndicator[0] = isPrimeIndicator[1] = false;
 
-    while (currentCandidateNumber <= upperBoundForPrimes) {
-        if (checkPrimaryStatus(currentCandidateNumber)) {
-            primeCounterForIndex++;
-            runningTotalOfPrimes += currentCandidateNumber;
-
-            if (primeCounterForIndex <= desiredCollectionSize) {
-                cumulativeCollection[primeCounterForIndex] = runningTotalOfPrimes;
-            }
-        }
-        currentCandidateNumber++;
+  for (let pVal = 2; pVal * pVal <= maxVal; pVal++) {
+    if (isPrimeIndicator[pVal]) {
+      for (let multiple = pVal * pVal; multiple <= maxVal; multiple += pVal) {
+        isPrimeIndicator[multiple] = false;
+      }
     }
-    return cumulativeCollection;
-};
+  }
 
-const initiateProcessing = (dataInputLines) => {
-    const allPrimeCumulativeValues = buildCumulativePrimeSums(104729, 104729);
+  var cumulativePrimeTotals = new Int32Array(maxVal + 1);
+  var currentPrimeOrdinal = 0;
+  var runningTotal = 0;
 
-    for (let dataIndex = 0; dataIndex < dataInputLines.length; dataIndex++) {
-        const individualLine = dataInputLines[dataIndex];
-        const numericalValue = parseInt(individualLine, 10);
-
-        if (isNaN(numericalValue) || numericalValue === 0) {
-            return;
-        }
-
-        console.log(allPrimeCumulativeValues[numericalValue]);
+  for (let numCandidate = 2; numCandidate <= maxVal; numCandidate++) {
+    if (isPrimeIndicator[numCandidate]) {
+      runningTotal += numCandidate;
+      currentPrimeOrdinal++;
+      cumulativePrimeTotals[currentPrimeOrdinal] = runningTotal;
     }
-};
+  }
+
+  return cumulativePrimeTotals;
+}

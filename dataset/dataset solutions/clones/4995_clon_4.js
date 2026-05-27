@@ -1,33 +1,20 @@
-const entryPointForVerification = (externalSource) => {
-    const processedContent = externalSource.trim();
+function processInput(sourceText) {
+    const characterSequence = sourceText.split("");
 
-    const sortedCharacters = Array.from(processedContent).sort();
-    let currentSymbolTally = 0;
-    let priorSymbol = '';
-    let oddTallyDetected = false;
+    const characterTallies = characterSequence.reduce((accumulatorMap, currentCharacter) => {
+        accumulatorMap.set(currentCharacter, (accumulatorMap.get(currentCharacter) || 0) + 1);
+        return accumulatorMap;
+    }, new Map());
 
-    sortedCharacters.push(null); 
+    const allFrequenciesEven = Array.from(characterTallies.values()).every(
+        (tallyValue) => tallyValue % 2 === 0
+    );
 
-    for (let charIndex = 0; charIndex < sortedCharacters.length; charIndex++) {
-        const currentSymbol = sortedCharacters[charIndex];
-
-        if (currentSymbol === priorSymbol || charIndex === 0) {
-            currentSymbolTally++;
-        } else {
-            if (currentSymbolTally % 2 !== 0) {
-                oddTallyDetected = true;
-                break;
-            }
-            currentSymbolTally = 1; 
-        }
-        priorSymbol = currentSymbol;
-    }
-
-    if (oddTallyDetected) {
-        console.log("No");
-    } else {
+    if (allFrequenciesEven) {
         console.log("Yes");
+    } else {
+        console.log("No");
     }
-};
+}
 
-entryPointForVerification(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInput(require("fs").readFileSync("/dev/stdin", "utf8").trim());

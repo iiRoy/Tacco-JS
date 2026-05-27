@@ -1,43 +1,51 @@
-function extractParameters(rawContent) {
-    const contentLines = rawContent.split('\n');
+function processInputData(rawContent) {
+  const lineSegments = rawContent.split('\n');
+  const [firstLine, secondLine, thirdLine] = lineSegments;
 
-    const secondLineNumbers = contentLines[1].match(/\d+/g).map(Number);
-    const initialReading = secondLineNumbers[0];
-    const desiredReading = secondLineNumbers[1];
+  // The first line (N) is not utilized in the original logic's core calculation.
+  // const countOfLocations = Number(firstLine);
 
-    const thirdLineNumbers = contentLines[2].match(/\d+/g).map(Number);
+  const [initialTemperature, desiredTemperature] = secondLine.split(' ').map(Number);
+  const elevationValues = thirdLine.split(' ').map(Number);
 
+  return {
+    baseTemperature: initialTemperature,
+    targetTemperature: desiredTemperature,
+    elevations: elevationValues
+  };
+}
+
+function determineOptimalPoint(processedData) {
+  const { baseTemperature, targetTemperature, elevations } = processedData;
+
+  // Transform the array of elevations into an array of objects,
+  // each containing its original index and the calculated absolute temperature difference.
+  const temperatureDifferences = elevations.map((currentElevation, originalPosition) => {
+    const effectiveTemperature = baseTemperature - (currentElevation * 0.006);
+    const absoluteDifference = Math.abs(targetTemperature - effectiveTemperature);
     return {
-        primaryValue: initialReading,
-        secondaryValue: desiredReading,
-        numericSeries: thirdLineNumbers
+      positionIdentifier: originalPosition,
+      deviationMagnitude: absoluteDifference
     };
+  });
+
+  // Reduce the array of temperature difference objects to find the one with the minimum deviation.
+  // If multiple points have the same minimum deviation, the one appearing later in the array is chosen,
+  // replicating the original code's 'gap <= min_gap' behavior.
+  const bestCandidate = temperatureDifferences.reduce((currentBest, candidateItem) => {
+    if (candidateItem.deviationMagnitude <= currentBest.deviationMagnitude) {
+      return candidateItem;
+    }
+    return currentBest;
+  }, temperatureDifferences[0]); // Initialize with the first item for comparison
+
+  return (bestCandidate.positionIdentifier + 1).toString(); // Convert to 1-based index and then to string
 }
 
-function locateBestMatch(processedInformation) {
-    const rateFactor = 0.006;
-
-    const evaluationOutcome = processedInformation.numericSeries.reduce((currentOptimal, currentElement, currentIndex) => {
-        const derivedMetric = processedInformation.primaryValue - (currentElement * rateFactor);
-        const absoluteDifference = Math.abs(processedInformation.secondaryValue - derivedMetric);
-
-        if (absoluteDifference <= currentOptimal.deviationMagnitude) {
-            return {
-                deviationMagnitude: absoluteDifference,
-                positionIdentifier: currentIndex
-            };
-        } else {
-            return currentOptimal;
-        }
-    }, { deviationMagnitude: Number.MAX_VALUE, positionIdentifier: -1 });
-
-    return evaluationOutcome.positionIdentifier + 1;
+function entryPoint(inputString) {
+  const parsedData = processInputData(inputString);
+  const result = determineOptimalPoint(parsedData);
+  console.log(result);
 }
 
-function processEnvironmentalData(dataStream) {
-    const structuredData = extractParameters(dataStream);
-    const finalSelection = locateBestMatch(structuredData);
-    console.log(finalSelection.toString());
-}
-
-processEnvironmentalData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+entryPoint(require('fs').readFileSync('/dev/stdin', 'utf8'));

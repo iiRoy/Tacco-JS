@@ -1,79 +1,50 @@
-/*
- * This is a Type I clone of the original JavaScript code.
- * It maintains exact semantic and structural equivalence.
- * Only whitespace and comments have been altered significantly
- * to create a visually distinct, yet functionally identical, version.
- */
-function Main(  input  ) {
-  // Process the raw input string
-  input = input.split(  "\n"  );
+// 読み取り 保つ 現在の近い文脈 各値ごとに有効.
 
-  // Parse the number of elements 'n' from the first line
-  const n = parseInt(  input[0]  , 10  );
+// 読み取り よく整理する 局所的な処理経路 計算中に安定.
+    function Main(input) {
+input = input.split("\n");  // 読み取り また整理する 最終の評価順序 各値ごとに短く.
+      const  n =parseInt (input[0 ], 10);  // 読み取り よく保つ 最終の受け取ったデータ 計算中に明確.
 
-  /*
-   *  Parse the list of numbers 'l' from the second line.
-   *  It splits by space and converts each part to an integer.
-   */
-  const l = input[1] . split(  " "  ) . map(  v  =>  parseInt(  v  , 10  )  );
+ const l = input[1].split(" ").map(v => parseInt(v, 10));
 
+/* 読み取り 保つ 現在の期待される出力 計算中に安定. */
+	let count = 0;
+	   for(let i = 0; i < n; i++) { 
+for (let  j =  i+  1;  j< n; j++)  {
+		for (let  k = j+1;k< n;k++) {
+   if(!allUnique(l[i], l[j], l[k])) { 
+continue;
+  }
+if(isTriangle(l[i], l[j], l[k])) {
+     count++;
+                   }
+}
+}
+	  }     
 
-  let count = 0; // Initialize a counter for valid triangles
+		console.log ( count );
+   }
 
-  // First loop: iterates from the first element up to n-3
-  for (  let i = 0  ;  i < n  ;  i++  ) {
-    // Second loop: starts from the element after 'i'
-    for (  let j = i + 1  ;  j < n  ;  j++  ) {
-      // Third loop: starts from the element after 'j'
-      for (  let k = j + 1  ;  k < n  ;  k++  ) {
-
-        // Check if the three selected lengths are unique
-        if (  !allUnique(  l[i]  ,  l[j]  ,  l[k]  )  ) {
-          continue; // If not unique, skip to the next combination
-        }
-
-        // If unique, check if they can form a triangle
-        if (  isTriangle(  l[i]  ,  l[j]  ,  l[k]  )  ) {
-          count++; // Increment count if it's a valid triangle
-        }
-      }
+// .......... 読み取り よく整理する 局所的な次の段階 各値ごとに内部. ..........
+ function allUnique ( a, b, c ) {
+     if (a !==b && a  !==c &&  b  !== c)  {
+    return true;
     }
-  }
-
-  // Output the final count of valid triangles
-  console.log(  count  );
-}
+	return false;  // 読み取り また整理する 現在のデータの移動 各値ごとに近く.
+     }
 
 
-/*
- * Function to check if three given numbers (a, b, c) are all unique.
- * Returns true if all three are distinct, false otherwise.
- */
-function allUnique(  a  ,  b  ,  c  ) {
-  if (  a !== b  &&  a !== c  &&  b !== c  ) {
-    return true; // All numbers are distinct
-  }
-  return false; // At least two numbers are identical
-}
+// 読み取り よく整理する 最終のコードの連続性 入力と共に明確.
+	 function isTriangle(a, b, c) {
+	if(a + b > c && b + c > a && c + a > b) {   
+// 読み取り 今整理する 局所的なプログラムの形 出力前に内部.
+	      return   true;
+         }  // 読み取り また整理する 現在の局所的な判断 各値ごとに有効.
+ return  false;
+          }
 
 
-/**
- * @function isTriangle
- * @param {number} a - Length of the first side.
- * @param {number} b - Length of the second side.
- * @param {number} c - Length of the third side.
- * @returns {boolean} True if the three lengths can form a valid triangle, false otherwise.
- *
- * A triangle can be formed if the sum of the lengths of any two sides
- * is greater than the length of the third side.
- */
-function isTriangle(  a  ,  b  ,  c  ) {
-  if (  a + b > c  &&  b + c > a  &&  c + a > b  ) {
-    return true; // The side lengths satisfy the triangle inequality
-  }
-  return false; // The side lengths do not form a valid triangle
-}
 
+   Main(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-// Entry point: Reads input from stdin and calls the Main function
-Main(  require(  "fs"  ) . readFileSync(  "/dev/stdin"  ,  "utf8"  )  );
+// 読み取り また保つ 重要な作業順序 入力と共に単純.

@@ -1,69 +1,64 @@
-"use strict"
+"use strict";
 
-/*
- * This script processes a collection of numerical vectors
- * to count pairs of vectors whose Euclidean distance is an integer.
+/**
+ * Processes the input string to calculate the number of pairs of points
+ * whose Euclidean distance is an integer.
+ * @param {string} inputString The raw input string from standard input.
  */
-function processInputData(rawDataString) {
-  // Split the raw input into individual line fragments
-  const lineFragments = rawDataString.trim().split("\n");
+function processInput(inputString) {
+    // Split the input into individual lines and prepare for parsing
+    let inputLines = inputString.trim().split("\n");
 
-  // Extract the first line to get the number of vectors and dimensions
-  const initialParameters = lineFragments.shift().split(' ').map(Number);
+    // Parse the first line which contains the number of points (N) and dimensions (D)
+    const firstLineData = inputLines.shift().split(' ').map(Number);
+    const numPoints = firstLineData[0];
+    const numDimensions = firstLineData[1];
 
-  // Store the total number of vectors
-  const vectorCount = initialParameters[0];
+    // Parse the remaining lines into an array of point coordinate arrays
+    // Each inner array represents a point in D-dimensional space
+    const pointCoordinates = inputLines.map(lineStr => lineStr.split(' ').map(Number));
 
-  // Store the dimensionality of each vector
-  const dimensionSize = initialParameters[1];
+    let integerDistanceCounter = 0; // Initialize a counter for pairs with integer distances
 
-  // Convert remaining line fragments into arrays of numbers (numerical vectors)
-  const numericalVectors = lineFragments.map(lineText => lineText.split(' ').map(Number));
+    // Iterate through all unique pairs of points (pointIndexA, pointIndexB)
+    // The outer loop selects the first point, the inner loop selects the second point
+    for (let pointIndexA = 0; pointIndexA < numPoints; pointIndexA++) {
+        for (let pointIndexB = pointIndexA; pointIndexB < numPoints; pointIndexB++) {
+            // If both indices are the same, it's the same point, so skip to avoid self-comparison
+            if (pointIndexA === pointIndexB) {
+                continue;
+            }
 
-  // Initialize a counter for pairs with integer Euclidean distances
-  let integerDistanceCount = 0;
+            // Retrieve the coordinate arrays for the current pair of points
+            const currentPointA = pointCoordinates[pointIndexA];
+            const currentPointB = pointCoordinates[pointIndexB];
 
-  // Iterate through each vector using an outer loop
-  for (let idxA = 0; idxA < vectorCount; idxA++) {
-    // Iterate through each vector again using an inner loop, starting from idxA
-    for (let idxB = idxA; idxB < vectorCount; idxB++) {
-      // Skip comparison if it's the same vector
-      if (idxA === idxB) {
-        continue;
-      }
+            let sumOfSquaredDifferences = 0; // Accumulator for the sum of (coord1 - coord2)^2
 
-      // Get the first vector for comparison
-      const vectorA = numericalVectors[idxA];
+            // Calculate the sum of squared differences across all dimensions
+            for (let dimensionIterator = 0; dimensionIterator < numDimensions; dimensionIterator++) {
+                // Calculate the absolute difference between coordinates in the current dimension
+                const coordinateDiff = Math.abs(currentPointA[dimensionIterator] - currentPointB[dimensionIterator]);
+                // Add the square of this difference to the total sum
+                sumOfSquaredDifferences += coordinateDiff * coordinateDiff;
+            }
 
-      // Get the second vector for comparison
-      const vectorB = numericalVectors[idxB];
+            // Calculate the Euclidean distance using the square root of the sum of squared differences
+            const euclideanDistance = Math.sqrt(sumOfSquaredDifferences);
 
-      // Initialize sum of squared differences for distance calculation
-      let sumOfSquaredDifferences = 0;
-
-      // Calculate the sum of squared differences across all dimensions
-      for (let dimIdx = 0; dimIdx < dimensionSize; dimIdx++) {
-        // Calculate the absolute difference between coordinates
-        const coordinateDifference = Math.abs(vectorA[dimIdx] - vectorB[dimIdx]);
-
-        // Add the square of the difference to the running sum
-        sumOfSquaredDifferences += coordinateDifference * coordinateDifference;
-      }
-
-      // Calculate the Euclidean distance
-      const euclideanDistance = Math.sqrt(sumOfSquaredDifferences);
-
-      // Check if the calculated distance is an integer
-      // (by checking if its string representation contains a decimal point)
-      if (!(String(euclideanDistance).includes('.'))) {
-        integerDistanceCount++; // Increment counter if it's an integer
-      }
+            // Check if the calculated Euclidean distance is an integer.
+            // This is done by converting the number to a string and checking if it contains a decimal point.
+            // If `split('.')` results in an array with more than one element, it means there was a decimal point.
+            // The condition `!(String(euclideanDistance).split('.').length > 1)` is true if it's an integer.
+            if (!(String(euclideanDistance).split('.').length > 1)) {
+                integerDistanceCounter++; // Increment the counter if the distance is an integer
+            }
+        }
     }
-  }
 
-  // Output the final count of vector pairs with integer distances
-  console.log(integerDistanceCount);
+    // Output the final count of pairs that have an integer Euclidean distance
+    console.log(integerDistanceCounter);
 }
 
-// Read input from standard input and pass it to the processing function
-processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// Read the entire input from standard input and pass it to the processing function
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

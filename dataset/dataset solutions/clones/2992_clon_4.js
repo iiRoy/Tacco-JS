@@ -1,82 +1,67 @@
-const gridProcessor = (inputContent) => {
-    const dataLines = inputContent.trim().split('\n');
-    const [rowsCount, columnsCount] = dataLines[0].split(' ').map(Number);
+const fileSystem = require("fs");
 
-    const distanceMetric = Array.from({ length: rowsCount }, () =>
-        Array.from({ length: columnsCount }, () => -1)
-    );
+module.exports = function(inputData) {
 
-    const bfsQueue = {
-        storage: [],
-        front: 0,
-        back: 0,
-        add: function(element) {
-            this.storage[this.back++] = element;
-        },
-        remove: function() {
-            if (this.front === this.back) return undefined;
-            const element = this.storage[this.front];
-            delete this.storage[this.front];
-            this.front++;
-            return element;
-        },
-        isEmpty: function() {
-            return this.front === this.back;
+    const parseGridData = (dataString) => {
+        const lineSegments = dataString.split("\n");
+        const dimensionParts = lineSegments[0].split(" ");
+        const rowCount = Number(dimensionParts[0]);
+        const colCount = Number(dimensionParts[1]);
+
+        const charMatrix = [];
+        for (let rIdx = 0; rIdx < rowCount; rIdx++) {
+            charMatrix.push(lineSegments[rIdx + 1].split(""));
         }
+        return { rowCount, colCount, charMatrix };
     };
 
-    let peakDistance = 0;
-    let initialSourcesExist = false;
+    const setupBFS = (rows, cols, charMap) => {
+        const distanceGrid = Array.from({ length: rows }, () => Array(cols).fill(null));
+        const bfsQueue = [];
 
-    for (let rIndex = 0; rIndex < rowsCount; rIndex++) {
-        const rowCharacters = dataLines[rIndex + 1].split('');
-        for (let cIndex = 0; cIndex < columnsCount; cIndex++) {
-            if (rowCharacters[cIndex] === '#') {
-                bfsQueue.add({ rCoord: rIndex, cCoord: cIndex, currentLevel: 0 });
-                distanceMetric[rIndex][cIndex] = 0;
-                initialSourcesExist = true;
+        for (let r = 0; r < rows; r++) {
+            for (let c = 0; c < cols; c++) {
+                if (charMap[r][c] === '#') {
+                    distanceGrid[r][c] = 0;
+                    bfsQueue.push([r, c, 0]);
+                }
             }
         }
-    }
+        return { distanceGrid, bfsQueue };
+    };
 
-    if (!initialSourcesExist && (rowsCount > 0 || columnsCount > 0)) {
-        return;
-    }
+    const performBFS = (rows, cols, distsMap, initialQueue) => {
+        let maxReachedDistance = 0;
+        let queuePointer = 0;
 
-    const movementVectors = [
-        { dr: -1, dc: 0 },
-        { dr: 1, dc: 0 },
-        { dr: 0, dc: -1 },
-        { dr: 0, dc: 1 }
-    ];
+        const rowOffsets = [-1, 1, 0, 0];
+        const colOffsets = [0, 0, -1, 1];
 
-    while (!bfsQueue.isEmpty()) {
-        const { rCoord: currentR, cCoord: currentC, currentLevel: currentL } = bfsQueue.remove();
+        while (queuePointer < initialQueue.length) {
+            const [currentRow, currentCol, currentDistance] = initialQueue[queuePointer++];
 
-        peakDistance = Math.max(peakDistance, currentL);
+            maxReachedDistance = Math.max(maxReachedDistance, currentDistance);
 
-        for (const vector of movementVectors) {
-            const nextR = currentR + vector.dr;
-            const nextC = currentC + vector.dc;
-            const nextL = currentL + 1;
+            for (let k = 0; k < 4; k++) {
+                const nextRow = currentRow + rowOffsets[k];
+                const nextCol = currentCol + colOffsets[k];
 
-            if (nextR >= 0 && nextR < rowsCount &&
-                nextC >= 0 && nextC < columnsCount &&
-                distanceMetric[nextR][nextC] === -1) {
-                
-                distanceMetric[nextR][nextC] = nextL;
-                bfsQueue.add({ rCoord: nextR, cCoord: nextC, currentLevel: nextL });
+                if (nextRow >= 0 && nextRow < rows && nextCol >= 0 && nextCol < cols) {
+                    if (distsMap[nextRow][nextCol] === null) {
+                        distsMap[nextRow][nextCol] = currentDistance + 1;
+                        initialQueue.push([nextRow, nextCol, currentDistance + 1]);
+                    }
+                }
             }
         }
-    }
+        return maxReachedDistance;
+    };
 
-    console.log(peakDistance);
+    const { rowCount, colCount, charMatrix } = parseGridData(inputData);
+    const { distanceGrid, bfsQueue } = setupBFS(rowCount, colCount, charMatrix);
+    const resultDistance = performBFS(rowCount, colCount, distanceGrid, bfsQueue);
+
+    console.log(resultDistance);
 };
 
-try {
-    const filesystem = require('fs');
-    const inputContentString = filesystem.readFileSync('/dev/stdin', 'UTF-8');
-    gridProcessor(inputContentString);
-} catch (inputError) {
-    throw inputError;
-}
+module.exports(fileSystem.readFileSync("/dev/stdin", "UTF-8"));

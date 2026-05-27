@@ -1,72 +1,88 @@
-"use strict"
-;
-const
-  executeProgram = (sourceText) => {
-    sourceText = sourceText.trim()
-                           .split("\n");
+"use strict";
 
-    const gridHeight = parseInt(sourceText[0] .split(" ")[0] );
-    const gridWidth = parseInt(sourceText[0].split(" ")[1]);
+// This function processes the raw input string to find the longest path in a grid.
+const processInput = (inputContent) => {
+    // Clean up the input and split it into individual lines.
+    inputContent = inputContent.trim().split("\n");
 
-    const mazeLayout = sourceText.slice(1, gridHeight + 1)
-                                 .map( (rowItem) => rowItem.split("") );
+    // Parse the grid dimensions from the first line.
+    const gridRows = parseInt(inputContent[0].split(" ")[0]);
+    const gridCols = parseInt(inputContent[0].split(" ")[1]);
 
-    const breadthSearch = (initialY, initialX) => {
-        // Define possible movement directions (up, right, down, left)
-        const rowMoves = [ -1, 0, 1, 0 ];
-        const colMoves = [ 0, 1, 0, -1 ];
+    // Create the grid map from the subsequent lines.
+    const mapLayout = inputContent.slice(1, gridRows + 1).map(lineData => lineData.split(""));
 
-        // Initialize a matrix to store distances, -1 means unvisited
-        let pathLengths = Array(gridHeight) .fill(null)
-                                            .map( () => Array(gridWidth) .fill(-1) );
-        let nodesToVisit = []; // Queue for BFS
-        let dummyVal = 0; // Placeholder, not used in path calculation
-        let localMax = 0; // Tracks the maximum path length from this starting point
+    // Defines a Breadth-First Search (BFS) function to find the maximum distance from a starting point.
+    const findLongestPath = (startRow, startCol) => {
+        // Define row offsets for 4-directional movement (Up, Right, Down, Left).
+        const rowDirection = [-1, 0, 1, 0];
+        // Define column offsets for 4-directional movement.
+        const colDirection = [0, 1, 0, -1];
 
-        nodesToVisit.push([initialY, initialX]);
-        pathLengths[initialY][initialX] = 0; // Starting cell has distance 0
+        // Initialize a 2D array to store path distances, marking unvisited cells with -1.
+        let pathDistances = Array(gridRows).fill(null).map(() => Array(gridCols).fill(-1));
+        // Initialize a queue for BFS traversal.
+        let coordinateQueue = [];
+        // This variable is declared but not used, maintaining original structure.
+        let currentPathCost = 0;
+        // Stores the maximum path length found from the current starting point.
+        let maxPathLength = 0;
 
-        while (nodesToVisit.length > 0) {
-            const activeNode = nodesToVisit.shift(); // Get the next cell to process
+        // Add the starting coordinates to the queue and mark its distance as 0.
+        coordinateQueue.push([startRow, startCol]);
+        pathDistances[startRow][startCol] = 0;
 
-            // Iterate through the four cardinal directions
-            for (let moveIter = 0; moveIter < 4; moveIter++) {
-                const targetRow = activeNode[0] + rowMoves[moveIter];
-                const targetCol = activeNode[1] + colMoves[moveIter];
+        // Continue BFS as long as there are elements in the queue.
+        while (coordinateQueue.length > 0) {
+            // Dequeue the current point.
+            const currentPoint = coordinateQueue.shift();
 
-                // Check for out-of-bounds, wall collision, or already visited cells
-                if (targetCol < 0 || gridWidth <= targetCol) continue;
-                if (targetRow < 0 || gridHeight <= targetRow) continue;
-                if (mazeLayout[targetRow][targetCol] === '#') continue; // Obstacle detected
-                if (pathLengths[targetRow][targetCol] !== -1) continue; // Already processed
+            // Iterate through all four possible directions.
+            for (let dirIndex = 0; dirIndex < 4; dirIndex++) {
+                const nextRow = currentPoint[0] + rowDirection[dirIndex];
+                const nextCol = currentPoint[1] + colDirection[dirIndex];
 
-                nodesToVisit.push([targetRow, targetCol]);
-                pathLengths[targetRow][targetCol] = pathLengths[activeNode[0]][activeNode[1]] + 1;
+                // Check for out-of-bounds conditions.
+                if (nextCol < 0 || gridCols <= nextCol) continue;
+                if (nextRow < 0 || gridRows <= nextRow) continue;
+                // Check if the next cell is a wall ('#').
+                if (mapLayout[nextRow][nextCol] === '#') continue;
+                // Check if the cell has already been visited.
+                if (pathDistances[nextRow][nextCol] !== -1) continue;
 
-                localMax = Math.max(localMax, pathLengths[targetRow][targetCol]);
+                // If valid and unvisited, enqueue the next cell.
+                coordinateQueue.push([nextRow, nextCol]);
+                // Update its distance.
+                pathDistances[nextRow][nextCol] = pathDistances[currentPoint[0]][currentPoint[1]] + 1;
+
+                // Update the maximum path length found so far from this BFS.
+                maxPathLength = Math.max(maxPathLength, pathDistances[nextRow][nextCol]);
             }
         }
 
-        // The following lines were for debugging and are commented out
-        // console.log("Current path lengths matrix:");
-        // console.log(pathLengths.map(r => r.join(' ')).join("\n"));
-        // console.log("-------------------");
+        // The following lines are commented out in the original, so they remain commented.
+        // console.log(pathDistances.join("\n"));
+        // console.log("---------")
 
-        return localMax;
+        return maxPathLength;
     };
 
-    let overallMaxDistance = 0; // Stores the longest path found across all possible starting points
+    // Initialize the overall maximum path length found across all possible starting points.
+    let overallMaxPath = 0;
 
-    // Iterate through each cell in the grid
-    for (let rowIndex = 0; rowIndex < gridHeight; rowIndex++) {
-        for (let colIndex = 0; colIndex < gridWidth; colIndex++) {
-            // If the current cell is an obstacle, skip it
-            if (mazeLayout[rowIndex][colIndex] === '#') continue;
-            // Otherwise, perform a BFS from this cell and update the overall maximum
-            overallMaxDistance = Math.max(overallMaxDistance, breadthSearch(rowIndex, colIndex));
+    // Iterate through each cell in the grid.
+    for (let currentRow = 0; currentRow < gridRows; currentRow++) {
+        for (let currentCol = 0; currentCol < gridCols; currentCol++) {
+            // If the current cell is a wall, skip it as a starting point.
+            if (mapLayout[currentRow][currentCol] === "#") continue;
+            // Perform BFS from the current cell and update the overall maximum path.
+            overallMaxPath = Math.max(overallMaxPath, findLongestPath(currentRow, currentCol));
         }
     }
 
-    console.log(overallMaxDistance);
+    // Output the final result to the console.
+    console.log(overallMaxPath);
 };
-executeProgram(require('fs') .readFileSync('/dev/stdin', 'utf8') );
+
+// Read input from standard input and pass it to the main processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

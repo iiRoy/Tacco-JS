@@ -1,32 +1,30 @@
-function calculateScoreFromSequence(dataInput) {
-  const gameScore = { value: 0 };
-  const availableSlots = []; // Represents available 'g' opportunities
+function processGame(charStream) {
+  const initialGameState = {
+    currentScore: 0,
+    greenMarkers: 0,
+    pinkMarkers: 0
+  };
 
-  const tokens = dataInput.split('');
-
-  for (const currentToken of tokens) {
-    if (currentToken === 'g') {
-      if (availableSlots.length > 0) {
-        // If there's an existing 'g' slot that can be 'won' by an implicit 'p'
-        gameScore.value++;
-        availableSlots.pop(); // One 'g' slot is considered 'used'
-      } else {
-        // No available 'g' slots, this 'g' itself becomes a new available slot
-        availableSlots.push(null); // Pushing a placeholder
-      }
-    } else { // currentToken === 'p'
-      if (availableSlots.length > 0) {
-        // If there's an existing 'g' slot that this 'p' can 'match'
-        availableSlots.pop(); // One 'g' slot is 'matched'
-      } else {
-        // No available 'g' slots, this 'p' 'loses' and creates a new 'g' slot
-        gameScore.value--;
-        availableSlots.push(null); // Pushing a placeholder
-      }
+  const symbolActionMap = {
+    'g': (currentState) => {
+      const { currentScore, greenMarkers, pinkMarkers } = currentState;
+      return (pinkMarkers < greenMarkers)
+        ? { currentScore: currentScore + 1, greenMarkers, pinkMarkers: pinkMarkers + 1 }
+        : { currentScore, greenMarkers: greenMarkers + 1, pinkMarkers };
+    },
+    'p': (currentState) => {
+      const { currentScore, greenMarkers, pinkMarkers } = currentState;
+      return (pinkMarkers < greenMarkers)
+        ? { currentScore, greenMarkers, pinkMarkers: pinkMarkers + 1 }
+        : { currentScore: currentScore - 1, greenMarkers: greenMarkers + 1, pinkMarkers };
     }
-  }
+  };
 
-  console.log(gameScore.value);
+  const finalResultState = charStream.split('').reduce((accumulator, currentSymbol) => {
+    const handler = symbolActionMap[currentSymbol];
+    return handler ? handler(accumulator) : accumulator;
+  }, initialGameState);
+
+  console.log(finalResultState.currentScore);
 }
-
-calculateScoreFromSequence(require("fs").readFileSync("/dev/stdin", "utf8").trim());
+processGame(require("fs").readFileSync("/dev/stdin", "utf8").trim());

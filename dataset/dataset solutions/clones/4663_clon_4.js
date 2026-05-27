@@ -1,37 +1,34 @@
 'use strict'
 
-const processInput = (rawData) => {
-    const contentLines = rawData.trim().split('\n');
+const processInput = (inputString) => {
+    const lines = inputString.trim().split('\n');
 
-    const firstLineValues = contentLines[0].split(' ').map(Number);
-    const primaryCount = firstLineValues[0];
-    const secondaryCount = firstLineValues[1];
+    const [numCoordStr, numPointStr] = lines[0].split(' ');
+    const numCoords = +numCoordStr;
+    const numPoints = +numPointStr;
 
-    const extractPair = (lineString) => {
-        return lineString.split(' ').map(Number);
+    const extractCoordinates = (coordLine) => {
+        const parts = coordLine.split(' ');
+        return { x: +parts[0], y: +parts[1] };
     };
 
-    const primaryCoordinates = contentLines.slice(1, 1 + primaryCount).map(extractPair);
-    const secondaryCoordinates = contentLines.slice(1 + primaryCount, 1 + primaryCount + secondaryCount).map(extractPair);
+    const coordinateSet = lines.slice(1, numCoords + 1).map(extractCoordinates);
+    const checkpointSet = lines.slice(numCoords + 1, numCoords + numPoints + 1).map(extractCoordinates);
 
-    const matchingKeys = primaryCoordinates.map((currentPrimary) => {
-        const bestMatchDetails = secondaryCoordinates.reduce((currentBest, potentialSecondary, secondaryIdx) => {
-            const calculatedDistance = Math.abs(currentPrimary[0] - potentialSecondary[0]) + Math.abs(currentPrimary[1] - potentialSecondary[1]);
+    const finalIndices = coordinateSet.map(currentCoord => {
+        return checkpointSet.reduce((accumulator, currentCheckpoint, checkpointIdx) => {
+            const distanceX = Math.abs(currentCoord.x - currentCheckpoint.x);
+            const distanceY = Math.abs(currentCoord.y - currentCheckpoint.y);
+            const currentManhattanDistance = distanceX + distanceY;
 
-            if (calculatedDistance < currentBest.distanceValue || currentBest.distanceValue === Infinity) {
-                return {
-                    distanceValue: calculatedDistance,
-                    associatedKey: secondaryIdx + 1
-                };
-            } else {
-                return currentBest;
+            if (currentManhattanDistance < accumulator.shortestPath) {
+                return { shortestPath: currentManhattanDistance, closestPointIndex: checkpointIdx };
             }
-        }, { distanceValue: Infinity, associatedKey: -1 });
-
-        return bestMatchDetails.associatedKey;
+            return accumulator;
+        }, { shortestPath: Infinity, closestPointIndex: -1 }).closestPointIndex;
     });
 
-    console.log(matchingKeys.join('\n'));
+    console.log(finalIndices.map(idx => idx + 1).join('\n'));
 };
 
 processInput(require('fs').readFileSync('/dev/stdin', 'utf-8'));

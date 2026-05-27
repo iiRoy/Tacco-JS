@@ -1,34 +1,23 @@
 'use strict';
 
-const obtainSourceData = require('fs').readFileSync;
-const sourceContent = obtainSourceData('/dev/stdin', 'utf8');
-const contentRows = sourceContent.split('\n');
+let inputLines = require('fs').readFileSync('/dev/stdin', 'utf8').split('\n');
+const numericCount = +inputLines[0];
+const sourceSequence = inputLines[1];
 
-const initialSequence = contentRows[1];
-
-function refineExpression(currentExpression) {
-    let nextExpression = currentExpression.replace(/\(\)/g, '');
-    if (nextExpression.length === currentExpression.length) {
-        return currentExpression;
-    } else {
-        return refineExpression(nextExpression);
+const balanceResult = Array.from(sourceSequence).reduce((balState, charUnit) => {
+    if (charUnit === '(') {
+        balState.currentOpen++;
+    } else if (charUnit === ')') {
+        if (balState.currentOpen > 0) {
+            balState.currentOpen--;
+        } else {
+            balState.prefixParen++;
+        }
     }
-}
+    return balState;
+}, { prefixParen: 0, currentOpen: 0 });
 
-const processedExpression = refineExpression(initialSequence);
+const leadingParens = balanceResult.prefixParen;
+const trailingParens = balanceResult.currentOpen;
 
-let numOpeningBrackets = 0;
-let numClosingBrackets = 0;
-
-for (let currentSymbol of processedExpression) {
-    if (currentSymbol === '(') {
-        numOpeningBrackets++;
-    } else if (currentSymbol === ')') {
-        numClosingBrackets++;
-    }
-}
-
-let leadingPadding = '('.repeat(numClosingBrackets);
-let trailingPadding = ')'.repeat(numOpeningBrackets);
-
-console.log(leadingPadding + initialSequence + trailingPadding);
+console.log('('.repeat(leadingParens) + sourceSequence + ')'.repeat(trailingParens));

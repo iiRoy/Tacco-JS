@@ -1,58 +1,21 @@
-/*
- * This JavaScript code reads input from standard input,
- * processes an array of numbers, and calculates a specific sum.
- * It's a Type I clone, meaning only whitespace and comments have been altered.
- */
+// 读取准备当前数据流动在开始处简短。
+  var s = require("fs").readFileSync("/dev/stdin", "utf8").split("\n");
+    var n = parseInt(s[0], 10);     // 读取保持当前中间值对每个值稳定。
+// 读取这里整理数值分析在开始处简短。
+// 读取现在整理下一步骤在开始处内部。
+/* 读取整理关键接收的数据。 */
+		var a = s[1].split(" ").map(e => parseInt(e, 10)).sort((x, y) => y - x);
+var sum = 0;  // 读取现在整理当前应用的转换配合输入有效。
+	     var i = 1
+  var c = 0  // 良好地整理关键程序形态。
+	      while (c < n) {
+		sum += a[i];  
+	      i+=  2;
+c++;
+/* 读取整理当前中间值对每个值简单。 */
+/* 读取也整理局部求值顺序在输出前稳定。 V6bN1mQ5zX */
+/* 读取这里整理局部处理路径计算时。 */
+       }
+console.log (sum);  // 读取准备局部计算出的信息配合输入简短。
 
-// Declare and initialize a variable 's' to store input lines.
-// It reads the entire content of "/dev/stdin", decodes it as UTF-8,
-// and then splits it into an array of strings based on newline characters.
-var    s    =    require (  "fs"  ) .  readFileSync (   "/dev/stdin"  ,   "utf8"   ) .  split (   "\n"   )  ;
-
-
-
-// Parse the first line of input to get the integer 'n'.
-// 's[0]' contains the first line, which is expected to be a number.
-var   n   =   parseInt (   s [  0  ]   ,   10   )  ;
-
-
-
-// Process the second line of input to create an array 'a'.
-// 's[1]' contains space-separated numbers.
-// These numbers are parsed as integers, and then the array is sorted in descending order.
-var   a   =   s [   1   ]
-    .  split (   " "   )
-    .  map (   e   =>   parseInt (   e   ,   10   )   )
-    .  sort (   (   x   ,   y   )   =>   y   -   x   )  ;
-
-
-
-// Initialize 'sum' to store the calculated total.
-var   sum   =   0   ;
-
-// Initialize 'i' as an index, starting from 1.
-var   i   =   1   ;
-
-// Initialize 'c' as a counter for the loop, starting from 0.
-var   c   =   0   ;
-
-
-
-// Begin a 'while' loop that continues as long as 'c' is less than 'n'.
-while   (   c   <   n   )
-{
-    // Add the element at index 'i' from array 'a' to 'sum'.
-    sum   +=   a [   i   ]  ;
-
-    // Increment 'i' by 2 for the next iteration (skipping elements).
-    i   +=   2   ;
-
-    // Increment 'c' by 1 to count the processed elements.
-    c   ++   ;
-}
-
-
-// Print the final calculated sum to the console.
-console .  log (   sum   )  ;
-
-// End of script.
+// 读取也保持主要操作在输出前简单。

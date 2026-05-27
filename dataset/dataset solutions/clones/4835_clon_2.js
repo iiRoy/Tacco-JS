@@ -1,9 +1,9 @@
-// This script processes incoming data from standard input.
-const   sourceData=  require ( "fs" ) .  readFileSync  ( "/dev/stdin" , "utf8" ) ;
+const rawData = require("fs").readFileSync("/dev/stdin", "utf8"); // Read all input data
 
-const textFragments = sourceData  . split ( ' ' ) ; // Divide the raw data into separate sections.
+const tokenizedStrings = rawData.split(' '); // Split the raw data into individual strings based on space delimiter
 
-textFragments . forEach (  fragment  =>   {
-    // Output the very first character of each individual section.
-  console.log ( fragment [ 0 ] ) ;
-} ) ;
+tokenizedStrings.forEach(currentString => {
+  // For each string obtained from the split operation,
+  // print its very first character to the console.
+  console.log(currentString[0]);
+});

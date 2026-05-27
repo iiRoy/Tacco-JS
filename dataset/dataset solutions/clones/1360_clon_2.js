@@ -1,45 +1,36 @@
-function compareValues(inputStrings) {
-  // Extract individual numeric strings from the first line of the provided input
-  var numericStrings = inputStrings[0].split(/\s+/);
+function processInput(inputLines) {
+  // Extract numeric strings from the first line of input.
+  var numberStrings = inputLines[0].split(/\s+/);
 
-  // Parse the first numeric string into an integer, using base 10
-  var firstOperand = parseInt(numericStrings[0], 10);
-  // Parse the second numeric string into an integer, also using base 10
-  var secondOperand = parseInt(numericStrings[1], 10);
+  // Parse the first number string into an integer.
+  var firstValue = parseInt(numberStrings[0], 10);
 
-  // Evaluate if the two parsed numbers are strictly equal
-  if (firstOperand === secondOperand) {
-    console.log('a == b'); // Output message for equality
-  }
-  // Otherwise, check if the first number is strictly less than the second
-  else if (firstOperand < secondOperand) {
-    console.log('a < b'); // Output message for less than comparison
-  }
-  // Otherwise, if the first two conditions are false, the first number must be greater
-  else if (firstOperand > secondOperand) {
-    console.log('a > b'); // Output message for greater than comparison
+  // Parse the second number string into an integer.
+  var secondValue = parseInt(numberStrings[1], 10);
+
+  // Compare the two integer values and print the result.
+  if (firstValue == secondValue) {
+    console.log('a == b');
+  } else if (firstValue < secondValue) {
+    console.log('a < b');
+  } else if (firstValue > secondValue) {
+    console.log('a > b');
   }
 }
 
-// Initialize an array to accumulate all incoming data chunks from standard input
-var dataSegments = [];
+// Array to store incoming data chunks from standard input.
+var dataParts = [];
 
-// Register an event listener for the 'data' event on the standard input stream
-process.stdin.on(
-  'data',
-  function (inputBlock) { // This function is called each time new data is available
-    // Append the received data block to our collection
-    dataSegments.push(inputBlock);
-  }
-);
+// Event listener for 'data' events on standard input.
+process.stdin.on('data', function(receivedPart) {
+  dataParts.push(receivedPart); // Add each received data part to the array.
+});
 
-// Register an event listener for the 'end' event on the standard input stream
-process.stdin.on(
-  'end',
-  function () { // This function is called once the input stream has finished
-    // Join all collected data segments into a single string and then split it into individual lines
-    var parsedLines = dataSegments.join('').split('\n');
-    // Invoke the primary comparison function with the fully processed input lines
-    compareValues(parsedLines);
-  }
-);
+// Event listener for the 'end' event on standard input.
+process.stdin.on('end', function() {
+  // Join all data parts, convert to a string, and split into lines.
+  var processedLines = dataParts.join('').split('\n');
+
+  // Call the main processing function with the prepared lines.
+  processInput(processedLines);
+});

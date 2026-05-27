@@ -1,55 +1,39 @@
-(function(rawDataString) {
-    const commandInstructions = rawDataString.split('\n');
+(function(rawData) {
+    const getZeroBasedStackIndex = (argString) => parseInt(argString, 10) - 1;
 
-    const initialStackCount = parseInt(commandInstructions.shift(), 10);
+    const inputLines = rawData.split('\n');
+    const numStacks = parseInt(inputLines.shift(), 10);
 
-    const dataStoreCollection = Array.from({ length: initialStackCount }, () => []);
+    const dataStacks = Array.from({ length: numStacks }, () => []);
 
-    const retrieveZeroBasedIndex = (argumentValue) => parseInt(argumentValue, 10) - 1;
+    while (true) {
+        const currentCommandParts = inputLines.shift().split(' ');
+        const operationType = currentCommandParts[0];
 
-    let operationsProcessed = 0;
-
-    for (;;) {
-        const currentCommandLine = commandInstructions.shift();
-
-        if (!currentCommandLine) {
-            break;
+        if (operationType === 'quit') {
+            return;
         }
 
-        const currentCommandParts = currentCommandLine.split(' ');
-        const operationType = currentCommandParts[0];
-        const firstParameter = currentCommandParts[1];
-        const secondParameter = currentCommandParts[2];
+        const firstArg = currentCommandParts[1];
+        const secondArg = currentCommandParts[2];
 
-        if (operationType === 'terminate_session') {
-            return;
-        } else if (operationType === 'place_item') {
-            const targetIndexBaseZero = retrieveZeroBasedIndex(firstParameter);
-            const itemContent = secondParameter;
-            if (targetIndexBaseZero >= 0 && targetIndexBaseZero < initialStackCount) {
-                dataStoreCollection[targetIndexBaseZero].push(itemContent);
-            }
-            operationsProcessed++;
-        } else if (operationType === 'extract_item') {
-            const targetIndexBaseZero = retrieveZeroBasedIndex(firstParameter);
-            let extractedContent = undefined;
-            if (targetIndexBaseZero >= 0 && targetIndexBaseZero < initialStackCount) {
-                extractedContent = dataStoreCollection[targetIndexBaseZero].pop();
-            }
-            console.log(extractedContent);
-            operationsProcessed++;
-        } else {
-            const sourceIndex = retrieveZeroBasedIndex(firstParameter);
-            const destinationIndex = retrieveZeroBasedIndex(secondParameter);
+        const primaryStackIndex = getZeroBasedStackIndex(firstArg);
 
-            if (sourceIndex >= 0 && sourceIndex < initialStackCount &&
-                destinationIndex >= 0 && destinationIndex < initialStackCount) {
-                const transferredItem = dataStoreCollection[sourceIndex].pop();
-                if (transferredItem !== undefined) {
-                    dataStoreCollection[destinationIndex].push(transferredItem);
-                }
-            }
-            operationsProcessed++;
+        switch (operationType) {
+            case 'push':
+                dataStacks[primaryStackIndex].push(secondArg);
+                break;
+            case 'pop':
+                const poppedItem = dataStacks[primaryStackIndex].pop();
+                console.log(poppedItem);
+                break;
+            default:
+                const sourceStackIdx = primaryStackIndex;
+                const destinationStackIdx = getZeroBasedStackIndex(secondArg);
+
+                const itemToTransfer = dataStacks[sourceStackIdx].pop();
+                dataStacks[destinationStackIdx].push(itemToTransfer);
+                break;
         }
     }
 })(require('fs').readFileSync('/dev/stdin', 'utf8'));

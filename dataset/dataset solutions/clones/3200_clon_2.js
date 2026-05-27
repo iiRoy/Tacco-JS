@@ -1,21 +1,26 @@
 'use strict';
 
-const   performComputation = (  sourceData  ) => {
+const processInput = (rawData) => {
+  // Extract the first numerical value from the input string
+  const upperBound = Number(rawData.split('\n')[0].split(' ')[0]);
+  // Extract the second numerical value from the input string
+  const thresholdValue = Number(rawData.split('\n')[0].split(' ')[1]);
 
-  const firstInteger = parseInt(  sourceData.split('\n')[0].split(' ')[0]  , 10  );
-  const secondInteger = parseInt(  sourceData.split('\n')[0].split(' ')[1]  , 10  );
+  // Initialize a variable to keep track of odd numbers
+  let oddCount = 0;
 
-  let progressionCount = 0;
-  for (  let currentPosition = 1; currentPosition <= firstInteger; currentPosition += 2  ) {
-    progressionCount++;
+  // Iterate through numbers, starting from 1, incrementing by 2, up to the upper bound
+  for (let loopIndex = 1; loopIndex <= upperBound; loopIndex += 2) {
+    oddCount++; // Increment the counter for each odd number encountered
   }
 
-  if (  progressionCount > secondInteger  ) {
-    console.log('YES');
+  // Compare the total count of odd numbers with the specified threshold
+  if (oddCount > thresholdValue) {
+    console.log('YES'); // Output 'YES' if the count exceeds the threshold
   } else {
-    console.log('NO');
+    console.log('NO'); // Otherwise, output 'NO'
   }
-
 };
 
-performComputation(  require('fs').readFileSync('/dev/stdin', 'utf8')  );
+// Read the entire content from standard input and pass it to the processing function
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

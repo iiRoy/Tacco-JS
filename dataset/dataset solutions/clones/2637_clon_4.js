@@ -1,52 +1,50 @@
-const graphInput = require('fs').readFileSync('/dev/stdin', 'utf8');
-const rawLines = graphInput.split('\n');
+const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+const contentLines = fileContent.split('\n');
 
-let lineCursor = 0;
-const retrieveLineData = () => rawLines[lineCursor++].split(' ').map(Number);
+const initialParams = contentLines.shift().split(' ');
+const nodeCountVal = parseInt(initialParams[0], 10);
+const queryCountVal = parseInt(initialParams[1], 10);
 
-const [vertexCount, updateCount] = retrieveLineData();
+const adjMap = new Map();
+const nodeValueAccumulators = new Array(nodeCountVal + 1).fill(0);
+const finalOutputValues = new Array(nodeCountVal).fill(0);
 
-const adjacencyStructure = new Map();
-const vertexValueAdjustments = new Map();
-const finalAccumulatedValues = new Array(vertexCount).fill(0);
-
-// Initialize graph structures and default vertex values
-for (let id = 1; id <= vertexCount; id++) {
-    adjacencyStructure.set(id, []);
-    vertexValueAdjustments.set(id, 0); // Default value for vertices not receiving updates
+for (let idx = 1; idx <= nodeCountVal; idx++) {
+    adjMap.set(idx, []);
 }
 
-// Populate adjacency structure with edges
-for (let i = 0; i < vertexCount - 1; i++) {
-    const [vertexA, vertexB] = retrieveLineData();
-    adjacencyStructure.get(vertexA).push(vertexB);
-    adjacencyStructure.get(vertexB).push(vertexA);
+for (let idx = 0; idx < nodeCountVal - 1; idx++) {
+    const edgeDefinition = contentLines[idx].split(' ').map(Number);
+    const u = edgeDefinition[0];
+    const v = edgeDefinition[1];
+    adjMap.get(u).push(v);
+    adjMap.get(v).push(u);
 }
 
-// Apply value adjustments from queries
-for (let i = 0; i < updateCount; i++) {
-    const [targetVertex, adjustmentAmount] = retrieveLineData();
-    vertexValueAdjustments.set(targetVertex, vertexValueAdjustments.get(targetVertex) + adjustmentAmount);
+for (let idx = 0; idx < queryCountVal; idx++) {
+    const updateDefinition = contentLines[nodeCountVal - 1 + idx].split(' ').map(Number);
+    const targetNode = updateDefinition[0];
+    const valueToAdd = updateDefinition[1];
+    nodeValueAccumulators[targetNode] += valueToAdd;
 }
 
-const visitedTracker = new Set(); // Keeps track of vertices explored during traversal
+const visitedSet = new Set();
 
-// Recursive function to perform depth-first traversal and calculate path sums
-const computePathSumRecursive = (currentVertexId, inheritedSumFromParent) => {
-    visitedTracker.add(currentVertexId);
+function pathSumCalculator(currentNodeId, currentCumulativeSum) {
+    visitedSet.add(currentNodeId);
+    const newCumulativeSum = currentCumulativeSum + nodeValueAccumulators[currentNodeId];
+    finalOutputValues[currentNodeId - 1] = newCumulativeSum;
 
-    const totalValueAtCurrent = inheritedSumFromParent + vertexValueAdjustments.get(currentVertexId);
-    finalAccumulatedValues[currentVertexId - 1] = totalValueAtCurrent;
-
-    const connectedVertices = adjacencyStructure.get(currentVertexId);
-    for (const adjacentVertex of connectedVertices) {
-        if (!visitedTracker.has(adjacentVertex)) {
-            computePathSumRecursive(adjacentVertex, totalValueAtCurrent);
+    const neighbors = adjMap.get(currentNodeId);
+    if (neighbors) {
+        for (const adjacentNodeId of neighbors) {
+            if (!visitedSet.has(adjacentNodeId)) {
+                pathSumCalculator(adjacentNodeId, newCumulativeSum);
+            }
         }
     }
-};
+}
 
-// Initiate the traversal from vertex 1 with an initial sum of 0
-computePathSumRecursive(1, 0);
+pathSumCalculator(1, 0);
 
-console.log(finalAccumulatedValues.join(' '));
+console.log(finalOutputValues.join(' '));

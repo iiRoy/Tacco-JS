@@ -1,47 +1,49 @@
-const acquireData = require('node:fs').readFileSync;
-const textData = acquireData(0, 'utf8');
+const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+const allNumbers = fileContent.trim().split("\n").map(Number);
 
-const transformTextToNumbers = (textSegment) => {
-    return textSegment.split('\n').map(s => s.trim()).filter(Boolean).map(Number);
-};
-
-const numericCollection = transformTextToNumbers(textData);
-
-function* createBlockIterator(sourceNumbers) {
-    let currentPosition = 0;
-    while (currentPosition < sourceNumbers.length) {
-        const blockDimension = sourceNumbers[currentPosition];
-        if (blockDimension === 0) {
-            break;
+function* generateNumberBlocks(sourceNumbers) {
+    let currentOffset = 0;
+    while (true) {
+        const blockSize = sourceNumbers[currentOffset];
+        if (blockSize === 0) {
+            return;
         }
-        const blockContent = sourceNumbers.slice(currentPosition + 1, currentPosition + 1 + blockDimension);
-        yield { count: blockDimension, values: blockContent };
-        currentPosition += (1 + blockDimension);
+        const blockData = sourceNumbers.slice(currentOffset + 1, currentOffset + 1 + blockSize);
+        yield blockData;
+        currentOffset += 1 + blockSize;
     }
 }
 
-for (const currentChunk of createBlockIterator(numericCollection)) {
-    const sourceElements = currentChunk.values;
-
-    const resultantSequence = sourceElements.reduce((accumulatedSequence, currentVal, currentIdx) => {
-        if (currentIdx % 2 === 0) {
-            return [...accumulatedSequence, currentVal];
+const processBlockFunctional = (blockNumbers) => {
+    const finalArrayForBlock = blockNumbers.reduce((currentArray, currentNum, idx) => {
+        if (idx % 2 === 0) {
+            return [...currentArray, currentNum];
         } else {
-            const lastElementInAccumulated = accumulatedSequence[accumulatedSequence.length - 1];
-            if (lastElementInAccumulated === currentVal) {
-                return [...accumulatedSequence, currentVal];
+            if (currentArray.length > 0 && currentArray[currentArray.length - 1] === currentNum) {
+                return [...currentArray, currentNum];
             } else {
-                const effectiveFillBoundary = accumulatedSequence.reduceRight((foundIdx, sequenceVal, sequenceIdx) => 
-                    (foundIdx === -1 && sequenceVal === currentVal) ? sequenceIdx : foundIdx, 
-                -1);
+                const tempArray = [...currentArray, currentNum];
+                const lastElement = tempArray[tempArray.length - 1];
 
-                const unaffectedPrefix = accumulatedSequence.slice(0, effectiveFillBoundary + 1);
-                const elementsToPropagate = Array(accumulatedSequence.length - (effectiveFillBoundary + 1)).fill(currentVal);
-                return [...unaffectedPrefix, ...elementsToPropagate, currentVal];
+                let fillFromIndex = tempArray.length - 2;
+                while (fillFromIndex >= 0 && tempArray[fillFromIndex] !== lastElement) {
+                    fillFromIndex--;
+                }
+
+                const headSegment = tempArray.slice(0, fillFromIndex + 1);
+                const middleSegmentLength = tempArray.length - 1 - (fillFromIndex + 1);
+                const middleSegment = Array(Math.max(0, middleSegmentLength)).fill(lastElement);
+                const tailSegment = [lastElement];
+
+                return [...headSegment, ...middleSegment, ...tailSegment];
             }
         }
     }, []);
 
-    const nullValueCount = resultantSequence.filter(val => val === 0).length;
-    console.log(nullValueCount);
+    return finalArrayForBlock.filter(val => val === 0).length;
+};
+
+for (const currentBlock of generateNumberBlocks(allNumbers)) {
+    const zeroCount = processBlockFunctional(currentBlock);
+    console.log(zeroCount);
 }

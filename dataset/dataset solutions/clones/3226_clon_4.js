@@ -1,46 +1,24 @@
-function processInput(rawText) {
-    let lineSegments = rawText.split('\n').map(segment => segment.trim()).filter(Boolean);
-    
-    let firstLineElements = lineSegments[0].split(/\s+/).filter(Boolean);
-    let desiredDivisions = parseInt(firstLineElements[0], 10);
+function processInputData(rawData) {
+    const lineSegments = rawData.split('\n');
 
-    let rawNumericalStrings = lineSegments[1].split(/\s+/).filter(Boolean);
-    let actualPointLocations = rawNumericalStrings.map(strValue => parseInt(strValue, 10));
+    const segmentCount = parseInt(lineSegments[0].split(' ')[0], 10);
 
-    let sortedPointArrangement = actualPointLocations.sort((valA, valB) => {
-        if (valA < valB) { return -1; }
-        if (valA > valB) { return 1; }
-        return 0;
+    const pointPositions = lineSegments[1].trim().split(' ').map(val => Number(val)).sort((a, b) => a - b);
+
+    const gapLengths = Array.from({ length: pointPositions.length - 1 }, (_, idx) => {
+        return pointPositions[idx + 1] - pointPositions[idx];
     });
 
-    function computeIntervalLengths(pointCollection, currentPosition = 1, collectedGaps = []) {
-        if (currentPosition >= pointCollection.length) {
-            return collectedGaps;
-        }
-        collectedGaps.push(pointCollection[currentPosition] - pointCollection[currentPosition - 1]);
-        return computeIntervalLengths(pointCollection, currentPosition + 1, collectedGaps);
+    gapLengths.sort((a, b) => a - b);
+
+    const elementsToSum = pointPositions.length - segmentCount;
+
+    let totalSum = 0;
+    for (let k = 0; k < elementsToSum; k++) {
+        totalSum += gapLengths[k];
     }
-    let interPointDistances = computeIntervalLengths(sortedPointArrangement);
 
-    interPointDistances.sort((distX, distY) => {
-        if (distX < distY) { return -1; }
-        if (distX > distY) { return 1; }
-        return 0;
-    });
-
-    let numberOfGapsToAggregate = sortedPointArrangement.length - desiredDivisions;
-
-    function tallyGapsRecursively(gapMeasurements, limitCount, currentPointer = 0, runningSum = 0) {
-        if (currentPointer >= limitCount || currentPointer >= gapMeasurements.length) {
-            return runningSum;
-        }
-        runningSum += gapMeasurements[currentPointer];
-        return tallyGapsRecursively(gapMeasurements, limitCount, currentPointer + 1, runningSum);
-    }
-    
-    let finalCalculatedSum = tallyGapsRecursively(interPointDistances, numberOfGapsToAggregate);
-
-    console.log(finalCalculatedSum);
+    console.log(totalSum);
 }
 
-processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

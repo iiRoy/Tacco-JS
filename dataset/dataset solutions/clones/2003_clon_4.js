@@ -1,36 +1,27 @@
-'use strict'
-function commenceEvaluation(inputPayload) {
-  const processedLines = inputPayload.split('\n').filter(line => line.length > 0);
+'use strict';
 
-  const parameterLine = processedLines[0].split(' ');
-  const firstParameter = parseInt(parameterLine[0], 10);
-  const secondParameter = parseInt(parameterLine[1], 10);
+function processInputAndDetermineOutcome(sourceContent) {
+    const processedLines = sourceContent.trim().split('\n');
 
-  const dataLine = processedLines[1].split(' ');
-  const numericalData = [];
-  for (let currentItem of dataLine) {
-    numericalData.push(parseInt(currentItem, 10));
-  }
+    const [firstDimension, secondDimension] = processedLines[0].split(' ').map(Number);
 
-  numericalData.sort((alpha, beta) => alpha - beta);
+    const numericValues = processedLines[1].split(' ').map(Number).sort((aVal, bVal) => bVal - aVal);
 
-  let cumulativeValue = 0;
-  for (let element of numericalData) {
-    cumulativeValue += element;
-  }
+    let cumulativeTotal = 0;
+    for (const item of numericValues) {
+        cumulativeTotal += item;
+    }
 
-  let finalDecision = "Yes";
+    const thresholdDivisor = 4 * secondDimension;
+    const comparisonValue = cumulativeTotal / thresholdDivisor;
 
-  const criticalElementPosition = numericalData.length - secondParameter;
-  const criticalElementValue = numericalData[criticalElementPosition];
+    const conditionMetForAny = numericValues.slice(0, secondDimension).some(
+        (currentValue) => currentValue < comparisonValue
+    );
 
-  const requiredMinimumThreshold = cumulativeValue / (4 * secondParameter);
+    const finalVerdict = conditionMetForAny ? "No" : "Yes";
 
-  if (criticalElementValue < requiredMinimumThreshold) {
-    finalDecision = "No";
-  }
-
-  console.log(finalDecision);
+    console.log(finalVerdict);
 }
 
-commenceEvaluation(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processInputAndDetermineOutcome(require('fs').readFileSync('/dev/stdin', 'utf8'));

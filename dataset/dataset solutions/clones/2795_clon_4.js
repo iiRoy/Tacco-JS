@@ -1,98 +1,82 @@
-var read = require('readline').createInterface({
-  input: process.stdin, output: process.stdout
+const printResult = (val) => console.log(val);
+const debugLog = (msg) => console.error("debug:" + require("util").inspect(msg, false, null));
+
+let inputLinesBuffer = [];
+const rli = require('readline').createInterface({
+  input: process.stdin,
+  output: process.stdout
 });
-var obj; var inLine = [];
-read.on('line', function(input){inLine.push(input);});
-read.on('close', function(){
-  obj = init(inLine);
-  console.error("\n");
-  var start = Date.now();
-  executeGraphAnalysis();
-  var end = Date.now() - start;
-  myerr("time : " + end + "ms");
-  myerr("memory : " + Math.round(process.memoryUsage().heapTotal / 1024) + "KB");
+
+rli.on('line', (line) => {
+  inputLinesBuffer.push(line);
 });
-function makeClone(obj){return JSON.parse(JSON.stringify(obj));}
-function nextInt(){return myconv(next(),1);} function nextStrArray(){return myconv(next(),2);}
-function nextIntArray(){return myconv(next(),4);} function nextCharArray(){return myconv(next(),6);}
-function next(){return obj.next();} function hasNext(){return obj.hasNext();}
-function init(input){  
-  var returnObj = {
-    list : input, index : 0, max : input.length,
-    hasNext : function(){return (this.index < this.max);},
-    next : function(){if(!this.hasNext()){throw "ArrayIndexOutOfBoundsException ‚There is no more input";}else{var returnInput = this.list[this.index++];return returnInput;}}
-  };
-  return returnObj;
-}
-function myout(s){console.log(s);}
-function myerr(s){console.error("debug:" + require("util").inspect(s,false,null));}
-function myconv(i,no){try{switch(no){case 1:return parseInt(i);case 2:return i.split(" ");case 4:return i.split(" ").map(Number);case 6:return i.split("");case 7:return i.split("").map(Number);case 8:return i.join(" ");case 9:return i.join("\n");case 0:return i.join("");default:return i;}}catch(e){return i;}}
 
-function generateThreeStepConnectivity(totalNodes, originalConnections) {
-    let threeStepAdjacency = new Array(totalNodes).fill(null).map(() => new Set());
+rli.on('close', () => {
+  const start = Date.now();
+  mainLogic(inputLinesBuffer);
+  const end = Date.now() - start;
+  debugLog("time : " + end + "ms");
+  debugLog("memory : " + Math.round(process.memoryUsage().heapTotal / 1024) + "KB");
+});
 
-    for (let currentStartNode = 0; currentStartNode < totalNodes; currentStartNode++) {
-        let firstLevelNodes = originalConnections[currentStartNode];
-
-        let secondLevelNodes = new Set();
-        for (let nodeA of firstLevelNodes) {
-            for (let nodeB of originalConnections[nodeA]) {
-                secondLevelNodes.add(nodeB);
-            }
-        }
-
-        for (let nodeB of Array.from(secondLevelNodes)) {
-            for (let nodeC of originalConnections[nodeB]) {
-                threeStepAdjacency[currentStartNode].add(nodeC);
-            }
-        }
+function mainLogic(allInputLines) {
+  const inputLineReader = (function* (lines) {
+    let currentLineIndex = 0;
+    while (currentLineIndex < lines.length) {
+      yield lines[currentLineIndex++];
     }
-    return threeStepAdjacency.map(s => Array.from(s));
-}
+  })(allInputLines);
 
-function findShortestJumpPath(pathStart, pathEnd, jumpNetwork, graphSize) {
-    let distances = new Array(graphSize).fill(-1);
-    let processingQueue = [];
+  const fetchNextLine = () => inputLineReader.next().value;
+  const fetchNextIntArray = () => fetchNextLine().split(" ").map(Number);
 
-    processingQueue.push(pathStart);
-    distances[pathStart] = 0;
+  const [nodeCount, edgeCount] = fetchNextIntArray();
 
-    let queueHead = 0;
-    while (queueHead < processingQueue.length) {
-        let currentPosition = processingQueue[queueHead++];
-        if (currentPosition === pathEnd) {
-            return distances[currentPosition];
+  const graphNodes = Array.from({ length: nodeCount }, () => ({
+    fwd: [],
+    rev3: new Set(),
+    dist: -1
+  }));
+
+  Array.from({ length: edgeCount }).forEach(() => {
+    const [sourceNode, destinationNode] = fetchNextIntArray();
+    graphNodes[sourceNode - 1].fwd.push(destinationNode - 1);
+  });
+
+  for (let u = 0; u < nodeCount; u++) {
+    for (const v of graphNodes[u].fwd) {
+      for (const w of graphNodes[v].fwd) {
+        for (const x of graphNodes[w].fwd) {
+          graphNodes[x].rev3.add(u);
         }
-
-        for (let nextJumpTarget of jumpNetwork[currentPosition]) {
-            if (distances[nextJumpTarget] === -1) {
-                distances[nextJumpTarget] = distances[currentPosition] + 1;
-                processingQueue.push(nextJumpTarget);
-            }
-        }
+      }
     }
-    return -1;
-}
-
-function executeGraphAnalysis() {
-  let initialParameters = nextIntArray();
-  let vertexCount = initialParameters[0];
-  let edgeCount = initialParameters[1];
-
-  let baseGraph = new Array(vertexCount).fill(null).map(() => []);
-
-  for (let i = 0; i < edgeCount; i++) {
-    let currentEdge = nextIntArray();
-    baseGraph[currentEdge[0] - 1].push(currentEdge[1] - 1);
   }
 
-  let jumpGraphStructure = generateThreeStepConnectivity(vertexCount, baseGraph);
+  const [startNodeIndex, targetNodeIndex] = fetchNextIntArray().map(n => n - 1);
 
-  let queryNodes = nextIntArray();
-  let startNodeIdx = queryNodes[0] - 1;
-  let endNodeIdx = queryNodes[1] - 1;
+  const bfsTraversalQueue = [];
+  let finalPathLength = -1;
 
-  let finalResult = findShortestJumpPath(startNodeIdx, endNodeIdx, jumpGraphStructure, vertexCount);
-  
-  myout(finalResult);
+  bfsTraversalQueue.push(targetNodeIndex);
+  graphNodes[targetNodeIndex].dist = 0;
+
+  while (bfsTraversalQueue.length > 0) {
+    const currentProcessingNode = bfsTraversalQueue.shift();
+    const currentPathDistance = graphNodes[currentProcessingNode].dist;
+
+    if (currentProcessingNode === startNodeIndex) {
+      finalPathLength = currentPathDistance;
+      break;
+    }
+
+    for (const threeStepParent of graphNodes[currentProcessingNode].rev3) {
+      if (graphNodes[threeStepParent].dist === -1) {
+        graphNodes[threeStepParent].dist = currentPathDistance + 1;
+        bfsTraversalQueue.push(threeStepParent);
+      }
+    }
+  }
+
+  printResult(finalPathLength);
 }

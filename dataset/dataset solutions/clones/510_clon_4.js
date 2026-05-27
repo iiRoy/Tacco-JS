@@ -1,58 +1,29 @@
-const dataStream = require('fs').readFileSync(0).toString();
+const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+const lineSegments = fileContent.trim().split('\n');
 
-const parseInputData = (rawContent) => {
-    const contentLines = rawContent.trim().split('\n');
-    let linePointer = 0;
-
-    const extractNextCase = () => {
-        if (linePointer >= contentLines.length) return null;
-
-        const countVal = parseInt(contentLines[linePointer++], 10);
-        if (countVal === 0) return null;
-
-        const numberSequence = contentLines[linePointer++].split(' ').map(Number);
-        return { quantity: countVal, sequenceElements: numberSequence };
-    };
-
-    let allCases = [];
-    let currentCase = extractNextCase();
-    while (currentCase !== null) {
-        allCases.push(currentCase);
-        currentCase = extractNextCase();
+const checkArithmeticProgression = (sequence) => {
+    if (sequence.length < 2) {
+        return true;
     }
-    return allCases;
+    const commonDifference = sequence[1] - sequence[0];
+    return sequence.slice(2).every((currentValue, idx) => {
+        const previousValue = sequence[idx + 1];
+        return currentValue - previousValue === commonDifference;
+    });
 };
 
-const ascertainArithmeticProgression = (numericalCollection) => {
-    if (numericalCollection.length < 2) {
-        return { isAP: true, difference: NaN };
+while (true) {
+    const currentElementCount = Number(lineSegments.shift());
+    if (currentElementCount === 0) {
+        break;
     }
 
-    const initialDifference = numericalCollection[1] - numericalCollection[0];
+    const numberSequence = lineSegments.shift().split(' ').map(Number);
 
-    const isProgression = numericalCollection.every((currentValue, index, arr) => {
-        if (index === 0) return true;
-        return (currentValue - arr[index - 1]) === initialDifference;
+    const outlierPosition = Array.from({ length: currentElementCount + 1 }).findIndex((_, removalCandidateIdx) => {
+        const filteredSequence = numberSequence.filter((_, originalItemIdx) => originalItemIdx !== removalCandidateIdx);
+        return checkArithmeticProgression(filteredSequence);
     });
 
-    return { isAP: isProgression, difference: initialDifference };
-};
-
-const identifyMisfit = (numericSeries) => {
-    const seriesLength = numericSeries.length;
-
-    const potentialOmissionIndices = Array.from({ length: seriesLength + 1 }, (_, k) => k);
-
-    const foundIndex = potentialOmissionIndices.find(idxToExclude => {
-        const filteredSeries = numericSeries.filter((_, currentIdx) => currentIdx !== idxToExclude);
-        return ascertainArithmeticProgression(filteredSeries).isAP;
-    });
-
-    return numericSeries[foundIndex];
-};
-
-const finalResults = parseInputData(dataStream).map(testObj =>
-    identifyMisfit(testObj.sequenceElements)
-);
-
-finalResults.forEach(resultValue => console.log(resultValue));
+    console.log(numberSequence[outlierPosition]);
+}

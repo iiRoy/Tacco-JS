@@ -1,30 +1,21 @@
-let emitResult = console.log;
-let getSquareRoot = Math.sqrt;
-
-function processNumericalSequence(dataStream) {
-    const rawSegments = dataStream.match(/-?\d+(\.\d+)?/g) || [];
-    const numericElements = rawSegments.map(parseFloat);
-
-    function handlePairRecursively(currentBatch) {
-        if (currentBatch.length === 0) {
-            return;
-        }
-
-        const operandA = currentBatch[0];
-        const operandB = currentBatch[1];
-
-        if (operandA * operandB === 0) {
-            return;
-        }
-
-        const squareOfFirstOperand = operandA * operandA;
-        const radicand = 4 * operandB * operandB + squareOfFirstOperand;
-        const calculatedOutcome = operandA * getSquareRoot(radicand) + squareOfFirstOperand;
-
-        emitResult(calculatedOutcome);
-
-        handlePairRecursively(currentBatch.slice(2));
+function processValuePairs(valueSequence, currentOffset) {
+    if (currentOffset >= valueSequence.length - 1 ||
+        (valueSequence[currentOffset] * valueSequence[currentOffset + 1]) === 0) {
+        return;
     }
 
-    handlePairRecursively(numericElements);
+    const firstElement = valueSequence[currentOffset];
+    const secondElement = valueSequence[currentOffset + 1];
+
+    const firstElementSquared = firstElement * firstElement;
+
+    const computedResult = firstElement * Math.sqrt(4 * secondElement * secondElement + firstElementSquared) + firstElementSquared;
+
+    console.log(computedResult);
+
+    processValuePairs(valueSequence, currentOffset + 2);
 }
+
+const numericDataArray = input.split(/\s/).map(Number);
+
+processValuePairs(numericDataArray, 0);

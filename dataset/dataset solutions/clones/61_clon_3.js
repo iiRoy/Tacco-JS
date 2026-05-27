@@ -1,124 +1,80 @@
-const fileSystemModule = require('node:fs');
+var fileSystemModule = require('fs');
+var standardInputFileDescriptor = process.stdin.fd;
 
-// Determine the total size of the standard input stream.
-// Note: process.stdin.fd is the file descriptor for standard input.
-let totalInputByteCount = fileSystemModule.fstatSync(process.stdin.fd).size;
+var inputDataLength = fileSystemModule.fstatSync(standardInputFileDescriptor).size;
+var dataBuffer = Buffer.alloc(inputDataLength);
+var actualBytesRead = fileSystemModule.readSync(standardInputFileDescriptor, dataBuffer, 0, inputDataLength, 0);
+var rawInputLines = dataBuffer.toString('utf8', 0, actualBytesRead).split('\n');
 
-// Allocate a buffer to hold the entire standard input content.
-let inputContentBuffer = Buffer.alloc(totalInputByteCount);
+// Helper function to reverse a string
+function reverseString(inputString) {
+    return inputString.split("").reverse().join("");
+}
 
-// Synchronously read the standard input into the allocated buffer.
-// Parameters: fd, buffer, offset, length, position.
-let actualBytesReadCount = fileSystemModule.readSync(process.stdin.fd, inputContentBuffer, 0, totalInputByteCount, 0);
+// Helper function to safely get a digit from a reversed string at a given position
+function getDigitAtPosition(reversedNumStr, position) {
+    if (position < reversedNumStr.length) {
+        return Number(reversedNumStr[position]); // Convert character to number
+    }
+    return 0; // Return 0 if position is out of bounds
+}
 
-// Convert the buffer content to a UTF-8 string and split it into an array of lines.
-// The split operation uses '\n' as the delimiter, effectively creating an array
-// where each element is a line from the input.
-let dataLines = inputContentBuffer.toString('utf8', 0, actualBytesReadCount).split('\n');
+// Main processing function
+function processInputData() {
+    var totalDataSets = Number(rawInputLines[0]); // Explicit conversion to Number
 
-// Initiate the main processing logic.
-processCalculations();
+    for (var currentDataSetIndex = 1; currentDataSetIndex <= totalDataSets; currentDataSetIndex++) {
+        var lineIndexOffset = currentDataSetIndex * 2; // Equivalent to currentDataSetIndex << 1
 
-/**
- * Main function to orchestrate the processing of multiple addition problems.
- * It reads the number of test cases, then iterates through each, performing
- * the necessary arithmetic and outputting the result or an overflow message.
- */
-function processCalculations() {
-    // The first line of input specifies the total number of data sets to process.
-    // Convert it to an integer. If parsing fails, default to 0.
-    const numberOfCases = parseInt(dataLines[0] || '0', 10);
+        var firstNumberStrReversed = reverseString(rawInputLines[lineIndexOffset - 1]);
+        var secondNumberStrReversed = reverseString(rawInputLines[lineIndexOffset]);
 
-    // Define a constant for the maximum allowed length of the sum before it's considered an overflow.
-    const MAX_ALLOWED_SUM_LENGTH = 80;
+        var len1 = firstNumberStrReversed.length;
+        var len2 = secondNumberStrReversed.length;
+        var maxLength = Math.max(len1, len2); // Using Math.max instead of ternary operator
 
-    // Loop through each data set from 1 up to the total number of cases.
-    for (let currentCaseNumber = 1; currentCaseNumber <= numberOfCases; currentCaseNumber++) {
-        // Calculate the starting index for the current pair of numbers in the dataLines array.
-        // Each data set consists of two lines, so the index is (case number * 2).
-        // The first number is at (index - 1), the second at (index).
-        const currentDataLineOffset = currentCaseNumber * 2;
+        // Array to store sum digits, including a potential carry at the highest position
+        var sumDigitsArray = new Int8Array(maxLength + 1);
+        var baseTen = 10; // Introduce a constant for the base of the number system
 
-        // Retrieve the two numbers for the current case.
-        // The original problem implies these are strings of digits.
-        let firstInputNumber = dataLines[currentDataLineOffset - 1] || '';
-        let secondInputNumber = dataLines[currentDataLineOffset] || '';
+        // Perform digit-by-digit addition
+        // IMPORTANT: Replicating the original bug where the loop starts from index 1,
+        // effectively skipping the last digit of the original numbers (index 0 in reversed strings).
+        for (var digitPosition = 1; digitPosition < maxLength; digitPosition++) {
+            var digit1 = getDigitAtPosition(firstNumberStrReversed, digitPosition);
+            var digit2 = getDigitAtPosition(secondNumberStrReversed, digitPosition);
+            var currentSum = digit1 + digit2 + sumDigitsArray[digitPosition]; // sumDigitsArray[digitPosition] holds carry from previous position
 
-        // To perform digit-by-digit addition from the least significant digit,
-        // it's easier to reverse the strings.
-        // Also, ensure they are treated as strings even if empty.
-        const reversedFirstNum = String(firstInputNumber).split('').reverse().join('');
-        const reversedSecondNum = String(secondInputNumber).split('').reverse().join('');
-
-        // Determine the maximum length among the two reversed numbers.
-        const longestNumberLength = Math.max(reversedFirstNum.length, reversedSecondNum.length);
-
-        // Initialize an array to store the sum digits.
-        // It needs to be one element longer than the longest number to accommodate a potential final carry.
-        let sumResultDigits = new Uint8Array(longestNumberLength + 1); // Using Uint8Array for digits 0-9
-
-        let currentCarry = 0; // Initialize carry to 0 for the start of addition.
-
-        // Perform digit-by-digit addition.
-        // Iterate from the least significant digit (index 0) up to the length of the longest number.
-        for (let digitIndex = 0; digitIndex < longestNumberLength; digitIndex++) {
-            // Get the digit from the first number at the current position.
-            // If the number is shorter, treat missing digits as 0.
-            const digitValue1 = parseInt(reversedFirstNum[digitIndex] || '0', 10);
-
-            // Get the digit from the second number at the current position.
-            const digitValue2 = parseInt(reversedSecondNum[digitIndex] || '0', 10);
-
-            // Calculate the sum of the current digits plus any carry from the previous position.
-            let intermediateSum = digitValue1 + digitValue2 + currentCarry;
-
-            // The digit for the current position in the sum is the remainder when divided by 10.
-            sumResultDigits[digitIndex] = intermediateSum % 10;
-
-            // The new carry for the next position is the quotient when divided by 10.
-            currentCarry = Math.floor(intermediateSum / 10);
-        }
-
-        // After the loop, if there's a remaining carry, store it in the most significant position.
-        if (currentCarry > 0) {
-            sumResultDigits[longestNumberLength] = currentCarry;
-        }
-
-        // Convert the array of sum digits back into a string, handling leading zeros.
-        let finalOutputString = '';
-        let foundSignificantDigit = false; // Flag to track if a non-zero digit has been encountered.
-
-        // Iterate backwards from the most significant digit to construct the string.
-        // The array is reversed compared to the final string order.
-        // So, sumResultDigits[longestNumberLength] is the most significant digit (if carry exists).
-        // sumResultDigits[0] is the least significant digit.
-        for (let j = sumResultDigits.length - 1; j >= 0; j--) {
-            const currentDigit = sumResultDigits[j];
-
-            // If we haven't found a significant digit yet, and the current digit is 0,
-            // and it's not the very last digit (which would be 0 for '0'), skip it.
-            // This prevents "007" from becoming "07" or "0".
-            if (!foundSignificantDigit && currentDigit === 0 && j > 0) {
-                continue;
+            if (currentSum >= baseTen) {
+                sumDigitsArray[digitPosition + 1]++; // Carry over to the next position
+                sumDigitsArray[digitPosition] = (currentSum - baseTen);
+            } else {
+                sumDigitsArray[digitPosition] = currentSum;
             }
-
-            // Once a non-zero digit is found, or if it's the last digit (j=0) regardless of value,
-            // set the flag and start appending.
-            foundSignificantDigit = true;
-            finalOutputString += currentDigit.toString();
         }
 
-        // Edge case: if the sum was '0' (e.g., "0" + "0"), the loop above might result in an empty string.
-        // In this scenario, set the output to "0".
-        if (finalOutputString === '') {
-            finalOutputString = '0';
+        var finalSumString = "";
+        // Iterate in reverse to build the string, skipping leading zeros
+        // IMPORTANT: Replicating the original bug in string generation: `&& k`
+        // This condition prevents sumDigitsArray[0] from ever being added if k is 0.
+        for (var k = sumDigitsArray.length - 1; k >= 0; k--) {
+            var currentDigit = sumDigitsArray[k];
+            // The original condition `(result[i] || resultStr) && i` is replicated here.
+            // `currentDigit` corresponds to `result[i]`, `finalSumString` to `resultStr`, and `k` to `i`.
+            if ((currentDigit || finalSumString) && k) {
+                finalSumString += String(currentDigit);
+            }
         }
 
-        // Check for overflow based on the defined maximum length.
-        if (finalOutputString.length >= MAX_ALLOWED_SUM_LENGTH) {
+        var overflowThreshold = 80; // Introduce a constant for the overflow length check
+
+        if (finalSumString.length >= overflowThreshold) {
             console.log("overflow");
         } else {
-            console.log(finalOutputString);
+            console.log(finalSumString);
         }
     }
 }
+
+// Execute the main processing function
+processInputData();

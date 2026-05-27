@@ -1,88 +1,99 @@
-// This variable provides a convenient way to output messages to the console.
-var outputWriter = console.log;
+// This script handles input processing and performs a specific string analysis task.
 
-// This block checks if the current execution environment is Node.js
-if ( typeof runtimeEnv !== "undefined" ) {
+var outputFunc = console.log; // A reference to the standard console logging function.
 
-	var dataBuffer = ""; // A temporary storage for incoming standard input.
-	runtimeEnv.stdin.resume(); // Ensures the standard input stream remains open.
-	runtimeEnv.stdin.setEncoding("utf8"); // Configures the input to use UTF-8 character encoding.
+// This block checks if the script is running in a Node.js environment
+// to set up standard input handling.
+if (typeof process !== "undefined") {
+    let rawData = ""; // Variable to accumulate all incoming data from stdin.
+    process.stdin.resume(); // Ensures the standard input stream remains open.
+    process.stdin.setEncoding('utf8'); // Specifies UTF-8 encoding for input data.
 
-	runtimeEnv.stdin.on("data", function ( dataSegment ) {
-		dataBuffer += dataSegment; // Appends each received data segment to the buffer.
-	});
+    // Event listener for 'data' chunks received from standard input.
+    process.stdin.on('data', function (dataSegment) {
+        rawData += dataSegment; // Appends each received data chunk to the rawData string.
+    });
 
-	runtimeEnv.stdin.on("end", function () {
-		// Once all input is received, split the buffered data into an array of text lines.
-		var textRows = dataBuffer.split("\n");
-		executeProgram(textRows); // Invokes the primary program logic with the collected lines.
-	});
+    // Event listener for the 'end' of standard input stream.
+    process.stdin.on('end', function () {
+        const inputRows = rawData.split("\n"); // Splits the accumulated raw data into an array of lines.
+        processInputData(inputRows); // Calls the primary function to process these lines.
+    });
 }
 
-// The core function that orchestrates the processing of input text lines.
-function executeProgram ( textRows ) {
-	textRows.shift(); // Removes the very first line of input, typically a header or count.
+// The main function responsible for orchestrating the data processing.
+function processInputData(inputRows) {
+    inputRows.shift(); // Removes the first line from the array (often a header or count, not used here).
 
-	while ( textRows.length > 0 ) {
-		// Extracts the next two lines from the input array to form a processing unit.
-		var pairOfStrings = textRows.slice(0, 2);
+    // Continues processing as long as there are lines remaining in the inputRows array.
+    while (inputRows.length > 0) {
+        let currentPair = inputRows.slice(0, 2); // Extracts the next two lines to form a data pair.
 
-		// Processes each string in the pair: filters out non-alphabetic characters.
-		pairOfStrings = pairOfStrings.map( function ( currentLine ) {
-			return currentLine.split("").filter( function ( charElement ) {
-				var asciiVal = charElement.charCodeAt(0); // Gets the ASCII value of the character.
-				return asciiVal >= 97 && asciiVal <= 122; // Keeps only lowercase English letters.
-			}).join(""); // Reconstructs the string from filtered characters.
-		});
+        // Transforms each row in the current pair:
+        // 1. Splits the string into individual characters.
+        // 2. Filters out characters that are not lowercase English letters (a-z).
+        // 3. Joins the filtered characters back into a clean string.
+        currentPair = currentPair.map(function (singleRow) {
+            return singleRow.split("").filter(function (charElement) {
+                const charCodeValue = charElement.charCodeAt(0); // Gets the ASCII code of the character.
+                // Checks if the character code falls within the range for 'a' to 'z'.
+                return 0x61 <= charCodeValue && charCodeValue <= 0x7a;
+            }).join(""); // Reconstructs the string with only valid characters.
+        });
 
-		computeSimilarityMatrix(pairOfStrings); // Delegates to a function for actual data processing.
-		textRows = textRows.slice(2); // Advances the input array by two lines for the next iteration.
-	}
+        analyzeStringPair(currentPair); // Passes the cleaned string pair for further analysis.
+        inputRows = inputRows.slice(2); // Removes the two processed lines from the input array.
+    }
 }
 
+// This function analyzes a pair of strings using a dynamic programming approach.
+function analyzeStringPair(currentPair) {
+    let matrixGrid = []; // Initializes a 2D array (matrix) to store computed values.
+    const firstString = currentPair[0]; // Retrieves the first string from the pair.
+    const secondString = currentPair[1]; // Retrieves the second string from the pair.
 
-// This function calculates a dynamic programming matrix for two given string sequences.
-function computeSimilarityMatrix ( pairOfStrings ) {
-	var similarityGrid = []; // This 2D array stores computed similarity values.
-	var firstSequence = pairOfStrings[0]; // The first input string for comparison.
-	var secondSequence = pairOfStrings[1]; // The second input string for comparison.
+    // Iterates through each character of the first string (rows of the matrix).
+    for (let rowIndex = 0; rowIndex < firstString.length; rowIndex++) {
+        matrixGrid[rowIndex] = []; // Initializes a new row in the matrix.
 
-	for ( var rowIdx = 0; rowIdx < firstSequence.length; rowIdx++ ) {
-		similarityGrid[rowIdx] = []; // Initializes a new row in the grid for each character in the first sequence.
+        // Iterates through each character of the second string (columns of the matrix).
+        for (let colIndex = 0; colIndex < secondString.length; colIndex++) {
+            // If the characters at the current positions match, set the cell value to 1; otherwise, 0.
+            if (firstString.charAt(rowIndex) === secondString.charAt(colIndex)) {
+                matrixGrid[rowIndex][colIndex] = 1;
+            } else {
+                matrixGrid[rowIndex][colIndex] = 0;
+            }
 
-		for ( var colIdx = 0; colIdx < secondSequence.length; colIdx++ ) {
-			// Compares characters at the current indices of both sequences.
-			if ( firstSequence.charAt(rowIdx) === secondSequence.charAt(colIdx) ) {
-				similarityGrid[rowIdx][colIdx] = 1; // Assigns 1 if characters match.
-			} else {
-				similarityGrid[rowIdx][colIdx] = 0; // Assigns 0 if characters do not match.
-			}
+            // Applies dynamic programming rules based on the cell's position.
+            if (rowIndex === 0 && colIndex === 0) {
+                matrixGrid[rowIndex][colIndex] += 0; // No change for the top-left cell.
+            } else if (rowIndex === 0) {
+                // For the first row, the value is the maximum of the current value and the value to its left.
+                matrixGrid[rowIndex][colIndex] = Math.max(matrixGrid[rowIndex][colIndex - 1], matrixGrid[rowIndex][colIndex]);
+            } else if (colIndex === 0) {
+                // For the first column, the value is the maximum of the current value and the value above it.
+                matrixGrid[rowIndex][colIndex] = Math.max(matrixGrid[rowIndex - 1][colIndex], matrixGrid[rowIndex][colIndex]);
+            } else {
+                // For all other cells, a more complex calculation is performed:
+                // It's the minimum of two values:
+                // 1. The maximum of the cell above and the cell to the left, plus the current cell's match value.
+                // 2. The minimum of the current row and column indices, plus 1.
+                matrixGrid[rowIndex][colIndex] = Math.min(
+                    Math.max(matrixGrid[rowIndex - 1][colIndex], matrixGrid[rowIndex][colIndex - 1]) + matrixGrid[rowIndex][colIndex],
+                    Math.min(rowIndex, colIndex) + 1
+                );
+            }
+        }
+    }
 
-			// Applies specific logic based on the position within the grid.
-			if ( rowIdx === 0 && colIdx === 0 ) {
-				similarityGrid[rowIdx][colIdx] += 0; // No change for the very first cell.
-			} else if ( rowIdx === 0 ) {
-				// For cells in the first row (excluding the first), take the maximum of the left neighbor or current value.
-				similarityGrid[rowIdx][colIdx] = Math.max( similarityGrid[rowIdx][colIdx - 1], similarityGrid[rowIdx][colIdx] );
-			} else if ( colIdx === 0 ) {
-				// For cells in the first column (excluding the first), take the maximum of the top neighbor or current value.
-				similarityGrid[rowIdx][colIdx] = Math.max( similarityGrid[rowIdx - 1][colIdx], similarityGrid[rowIdx][colIdx] );
-			} else {
-				// For all other cells, apply a more complex combination of previous values.
-				similarityGrid[rowIdx][colIdx] = Math.min(
-					Math.max( similarityGrid[rowIdx - 1][colIdx], similarityGrid[rowIdx][colIdx - 1] ) + similarityGrid[rowIdx][colIdx],
-					Math.min(rowIdx, colIdx) + 1
-				);
-			}
-		}
-	}
-
-	// This section demonstrates a potential error handling pattern, currently partially commented.
-	// This marks the beginning of a conceptual 'try' block.
-	var lastRow = similarityGrid.pop(); // Extracts and removes the final row from the grid.
-	if ( Array.isArray === undefined && firstSequence === "abc" ) {
-		throw new Error("Critical: Array type checking utility is not available in this runtime!"); // Throws an error under specific conditions.
-	}
-	// The original code had a line here to output the last element of the popped row, which is now commented out.
-	// This marks the beginning of a conceptual 'catch' block for error recovery.
+    // The following section includes a specific error condition and commented-out logging,
+    // preserving the original structure and behavior.
+    // try {
+    const lastRow = matrixGrid.pop(); // Removes and retrieves the last row from the matrix.
+    if (Array.isArray === undefined && firstString === "abc") {
+        throw new Error(); // Throws an error if Array.isArray is undefined and the first string is "abc".
+    }
+    // outputFunc(lastRow.pop()); // This line was commented out in the original code.
+    // } catch (err) { outputFunc(err); } // This catch block was also commented out in the original.
 }

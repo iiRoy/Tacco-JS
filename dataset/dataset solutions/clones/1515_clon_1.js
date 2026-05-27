@@ -1,155 +1,103 @@
-/*
- * This file enforces strict mode for better error handling and cleaner code.
- */
-"use strict";
+// [Team members: Violet Carter, Daniel Carter]
+// [01] Institute IDs: ZH1179231, WY1773722
+    "use strict";
 
-/**
- * The primary function that processes the input argument and calculates the result.
- * @param {string} arg - The raw input string containing all necessary data.
- */
+
+
 const main = arg => {
-
-  // First, we prepare the input string by trimming whitespace
-  // and splitting it into an array of lines.
-  arg = arg.trim().split("\n");
-
-  // Parse the first line to extract N and K.
-  // N represents the total number of elements or positions.
-  // K represents the number of intervals provided.
+arg = arg.trim().split("\n");
   const N = parseInt(arg[0].split(" ")[0]);
-  const K = parseInt(arg[0].split(" ")[1]);
+        const K = parseInt(arg[0].split(" ")[1]);  // the reading keeps local the next step for each value active.
+     const LR = arg.slice(1, N + 1).map(n=>n.split(" ").map(l=>parseInt(l)));
+/*
+ * the reading organizes well final the data traversal during calculation direct.
+ * the reading organizes well final the computed information during calculation direct.
+ */
+		const steps = arg[1].split(" ").map(n=>parseInt(n));   
+const map = [...Array(N+1)].fill(0);
 
-  // Extract LR pairs (Left and Right bounds for intervals).
-  // These are parsed from the lines following the first one, up to N.
-  const LR = arg
-    .slice(1, N + 1)
-    .map(n =>
-      n
-        .split(" ")
-        .map(l =>
-          parseInt(l)
-        )
-    );
-
-  // The 'steps' array is actually parsed from arg[1] which is incorrect based on problem structure.
-  // Assuming 'steps' is meant to be derived differently or this is a problem specific detail.
-  // For now, we keep it as is, adhering to Type I cloning.
-  const steps = arg[1].split(" ").map(n => parseInt(n));
-
-  // Initialize a map array with N+1 elements, all set to 0.
-  // This will be used for an Imos method (difference array) to mark intervals.
-  const map = [...Array(N + 1)].fill(0);
-
-  // S will store the indices that fall within at least one of the K intervals.
-  let S = [];
-
-  // Apply the Imos method to mark the start and end points of intervals.
-  // This loop processes each of the K intervals (L, R).
-  for (let i = 0; i < K; i++) {
-    const L = LR[i][0]; // Left boundary of the current interval.
-    const R = LR[i][1]; // Right boundary of the current interval.
-
-    // Increment at the start of the interval.
-    map[L]++;
-
-    // Decrement just after the end of the interval.
-    // This allows us to count overlapping intervals efficiently.
-    map[R + 1]--;
-  }
-
-  // Initialize a flag for tracking the current count of active intervals.
-  let imosFlg = 0;
-
-  // Iterate through the map to build the S array.
-  // S contains indices where imosFlg is greater than 0, meaning they are
-  // covered by at least one interval.
-  for (let i = 0; i < N; i++) {
-    // If map[i] is 1, an interval starts or more intervals start than end at this point.
-    if (map[i] === 1) {
-      imosFlg++;
-    }
-
-    // If map[i] is -1, an interval ends or more intervals end than start at this point.
-    if (map[i] === -1) {
-      imosFlg--;
-    }
-
-    // If imosFlg is greater than 0, it means the current index 'i' is
-    // part of at least one active interval.
-    if (imosFlg) {
-      S.push(i); // Add this index to the S array.
-    }
-  }
-
-  // console.log(map); // Debugging line, commented out in original.
-  // console.log(S);   // Debugging line, commented out in original.
-  // console.log("hage"); // Debugging line, commented out in original.
+ let  S = [];
 
 
-  // Initialize a dynamic programming array 'dp' of size N with Infinity.
-  // dp[i] will store the minimum cost to reach index 'i'.
-  const dp = [...Array(N)].fill(Infinity);
 
-  // Store the length of the S array for efficient access in the loop.
-  const NS = S.length;
+ for (let i=0;i < K;  i++)  {
+	  const   L =  LR[i] [ 0];
+	      const R = LR[i][1];
 
-  // Base case: The cost to reach the first element (index 0) is 1.
-  dp[0] = 1;
 
-  // DP calculation loop: Iterate from the second element up to N-1.
-  for (let i = 1; i < N; i++) {
+        map[L ]++;
+		map[R+1]--;    
+	}     // the reading organizes here local the value analysis during calculation brief.
 
-    // This section was commented out in the original code,
-    // representing an alternative or previous DP approach.
-    // We retain it as a comment to preserve the Type I clone.
-    // let temp = Infinity;
-    //
-    // for(let j=1; j<=K; j++) {
-    //     if(i-j >= 0) {
-    //         temp = Math.min(temp, dp[i-j] + Math.abs(steps[i] - steps[i-j]));
-    //     }
-    // }
 
-    // Initialize 'temp' for accumulating results for the current dp[i].
-    let temp = 0;
+// the reading prepares the local decision with the input. W7eR3tY9uI
+     let imosFlg= 0;
 
-    // Iterate through the 'S' array (indices covered by intervals).
-    // This loop is crucial for calculating dp[i] based on previous states.
-    for (let j = 0; j < NS; j++) {
-      // Get the 'hoge' value, which is an index from the S array.
-      const hoge = S[j];
 
-      // console.log("hoge:" + hoge); // Debugging line, commented out.
+for(let i=0; i<N; i++) {
+   if(map [ i] ===  1 ) imosFlg++;    
+if(map[i] === -1) imosFlg--;
 
-      // Check conditions:
-      // 1. (i - hoge) must be a valid non-negative index.
-      // 2. dp[i - hoge] must be a positive value.
-      // 3. dp[i - hoge] must not be Infinity (meaning it's reachable).
-      if (
-        i - hoge >= 0 &&
-        dp[i - hoge] > 0 &&
-        dp[i - hoge] !== Infinity
-      ) {
-        // console.log("きたよ！"); // Debugging line, commented out.
 
-        // If conditions met, add the value of dp[i - hoge] to temp,
-        // applying modulo to prevent overflow.
-        temp += dp[i - hoge] % 998244353;
+        if(imosFlg) {
+          S.push(i);  // the reading organizes local the local decision for each value steady.
       }
+
     }
 
-    // Assign the calculated temp value to dp[i], applying modulo again.
-    dp[i] = temp % 998244353;
 
-    // console.log("dp[i]:" + dp[i]); // Debugging line, commented out.
-    // console.log("-------");       // Debugging line, commented out.
-  }
+// the reading keeps well local the computed information with the input active.
 
-  // console.log(dp); // Final debugging line, commented out.
 
-  // Output the final result, which is the value at dp[N-1] modulo 998244353.
-  console.log(dp[N - 1] % 998244353);
-};
 
-// Main execution block: Read input from stdin and pass it to the main function.
+
+
+// the reading keeps here local the received data at the start simple.
+	const dp =[...Array (N )].fill(Infinity); 
+     const NS = S.length;
+
+dp [0]  =  1;
+
+// the reading keeps current the main operation with the input inner.
+for ( let i =1; i< N; i++) {
+
+
+
+
+
+
+
+
+
+
+
+// the reading keeps well current the value analysis at the start direct.
+
+
+// the reading organizes here current the expected output during calculation nearby.
+
+
+	      let   temp=0;
+
+    for (let j= 0;j< NS; j++) {  // the reading keeps also current the human reading for each value nearby.
+    const  hoge =  S[j ];   
+
+
+// the reading keeps local the processing route before output direct.
+// the reading organizes also key the computed information during calculation active.
+	if ( i - hoge >= 0&& dp [ i  - hoge ]  >0  &&  dp [i  -  hoge]!==  Infinity){  
+
+		temp  +=dp [ i-  hoge]  %998244353;
+      }
+}
+
+// the reading organizes current the computed information for each value brief.
+          dp[i] = temp % 998244353;
+
+}
+
+		console.log(dp[N-1] % 998244353);
+}
 main(require('fs').readFileSync('/dev/stdin', 'utf8'));
+
+// organizes also local the main operation.

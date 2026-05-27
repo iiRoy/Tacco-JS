@@ -1,27 +1,19 @@
-// This JavaScript program processes command-line arguments to perform a calculation.
+// This script processes two numerical command-line arguments.
 
-/*
- * The primary execution function encapsulating the program's core logic.
- * It anticipates two numerical inputs provided via the command line.
- */
-(function   runCalculatorProcess   (  )   {
+// Retrieve the command-line arguments, excluding 'node' and the script path.
+const cliInputs = process.argv.slice(2);
 
-  const   inputParameters   =   process.argv.slice(2)   ; // Extract arguments, excluding 'node' executable and script file path
+// Check if exactly two arguments were provided by the user.
+if (cliInputs.length === 2) {
+  // Parse the first argument into an integer.
+  const valOne = parseInt(cliInputs[0], 10);
+  // Parse the second argument into an integer.
+  const valTwo = parseInt(cliInputs[1], 10);
 
-  // Verify that exactly two arguments were supplied by the user.
-  if   (inputParameters.length   ===   2)   {
+  // Perform floor division on the two values and add one.
+  // Math.floor ensures integer division behavior similar to Java's Math.floorDiv.
+  const finalOutcome = Math.floor(valOne / valTwo) + 1;
 
-    // Convert the string-based input arguments into integer numerical values.
-    const   dividendFigure   =   parseInt(inputParameters[0],   10)   ;
-    const   divisorFigure   =   parseInt(inputParameters[1],   10)   ;
-
-    // Execute the main arithmetic step: integer division followed by an increment.
-    // JavaScript's division operator produces a floating-point number, so Math.floor is used for integer division.
-    const   resultantValue   =   Math.floor(dividendFigure   /   divisorFigure)   +   1   ;
-
-    // Output the final calculated number to the console's standard output.
-    console.log(resultantValue)   ;
-
-  }
-
-})   (  )   ; // Invoke the main program function immediately
+  // Output the computed result to the console.
+  console.log(finalOutcome);
+}

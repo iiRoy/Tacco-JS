@@ -1,151 +1,123 @@
-var INPUT_READER_FACTORY = (function() {
-  /**
-   * Initializes a text data processing utility.
-   * This is the main entry point for creating a data handler.
-   * @param {string} incomingText - The entire input text as a single string.
-   * @returns {TextDataHandler} A new TextDataHandler instance.
-   */
-  function createTextDataProcessor(incomingText) {
-    return new TextDataHandler(incomingText);
-  }
-
-  /**
-   * Constructor for the TextDataHandler class.
-   * Manages the raw text input, splitting it into lines and tracking the current position.
-   * @param {string} initialText - The input text provided.
-   */
-  function TextDataHandler(initialText) {
-    // Store processed lines as an array, after trimming whitespace and splitting by newline.
-    this._lineCollection = initialText.trim().split("\n");
-    // Keep track of the current line index being processed.
-    this._linePointer = 0;
-  }
-
-  /**
-   * Extracts a single token from the current line.
-   * If the current line hasn't been split into tokens yet, it will be.
-   * The token is popped from the end of the line's token array.
-   * @param {boolean} asString - If true, return the token as a string; otherwise, convert to number.
-   * @returns {string|number} The extracted token.
-   */
-  TextDataHandler.prototype.popNextToken = function(asString) {
-    const currentLines = this._lineCollection;
-    const currentIdx = this._linePointer;
-    let fetchedToken;
-
-    // Check if the current line is still a single string; if so, split it into tokens.
-    // The tokens are reversed so 'pop()' can act like 'shift()' for reading left-to-right.
-    if (typeof currentLines[currentIdx] === "string") {
-      currentLines[currentIdx] = currentLines[currentIdx].split(" ").reverse();
+var InputDataProcessor = (function() {
+    // This factory function creates and returns a new instance of the InputBuffer.
+    function createInputProcessor(inputStringContent) {
+        return new InputBuffer(inputStringContent);
     }
 
-    // Retrieve the last token from the current line's array.
-    fetchedToken = currentLines[currentIdx].pop();
-
-    // If the current line is now empty, advance to the next line.
-    if (!currentLines[currentIdx].length) {
-      this._linePointer++;
+    // The InputBuffer constructor initializes the data source.
+    // It takes a raw string, trims it, and splits it into an array of lines.
+    function InputBuffer(inputStringContent) {
+        this.sourceLines = inputStringContent.trim().split("\n");
+        this.currentLinePointer = 0; // Points to the next line to be processed.
     }
 
-    // Return the token, optionally converting it to a number.
-    return asString ? fetchedToken : +fetchedToken;
-  };
+    // Reads a single value from the current line.
+    // Values on a line are assumed to be space-separated.
+    // The method reads values from right to left on the current line.
+    // If 'returnAsString' is true, the value is returned as a string; otherwise, it's converted to a number.
+    InputBuffer.prototype.readSingleValue = function(returnAsString) {
+        var currentLineArray = this.sourceLines;
+        var lineIndex = this.currentLinePointer;
+        var extractedToken;
 
-  /**
-   * Reads and processes an entire line of tokens.
-   * The line pointer is advanced after reading.
-   * @param {boolean} asStringArray - If true, return tokens as strings; otherwise, convert all to numbers.
-   * @returns {Array<string|number>} An array of tokens from the line.
-   */
-  TextDataHandler.prototype.getLineTokens = function(asStringArray) {
-    // Get the current line, split it by spaces, and then advance the line pointer.
-    const tokens = this._lineCollection[this._linePointer++].split(" ");
+        // If the current line is still a single string, split it into tokens and reverse for efficient 'pop'.
+        if (typeof currentLineArray[lineIndex] === "string") {
+            currentLineArray[lineIndex] = currentLineArray[lineIndex].split(" ").reverse();
+        }
 
-    // Return tokens as strings or as numbers.
-    return asStringArray ? tokens : tokens.map(tokenItem => +tokenItem);
-  };
+        // Retrieve the last token from the (reversed) array, effectively the first token from the original line.
+        extractedToken = currentLineArray[lineIndex].pop();
 
-  /**
-   * Reads a block of 'count' lines, processing each into an array of tokens.
-   * Useful for reading matrices or multi-line datasets.
-   * @param {number} count - The number of lines to read.
-   * @param {boolean} asStringMatrix - If true, return tokens as strings; otherwise, convert all to numbers.
-   * @returns {Array<Array<string|number>>} A 2D array representing the block.
-   */
-  TextDataHandler.prototype.readMultiLineBlock = function(count, asStringMatrix) {
-    // Extract a slice of lines starting from the current pointer, then advance the pointer.
-    // Each line in the slice is then split into tokens.
-    const blockData = this._lineCollection.slice(this._linePointer, this._linePointer += count)
-      .map(lineContent => lineContent.split(" "));
+        // If the current line has no more tokens, advance the line pointer to the next line.
+        if (!currentLineArray[lineIndex].length) {
+            this.currentLinePointer++;
+        }
 
-    // Return the block, optionally converting all elements to numbers.
-    return asStringMatrix ? blockData : blockData.map(row => row.map(item => +item));
-  };
+        // Return the token, applying numeric conversion if 'returnAsString' is false.
+        return returnAsString ? extractedToken : +extractedToken;
+    };
 
-  /**
-   * Reads a block of 'count' lines, treating each line as a single value.
-   * @param {number} count - The number of lines to read.
-   * @param {boolean} asStringVector - If true, return values as strings; otherwise, convert all to numbers.
-   * @returns {Array<string|number>} A 1D array of values.
-   */
-  TextDataHandler.prototype.readSingleColumnBlock = function(count, asStringVector) {
-    // Extract a slice of lines starting from the current pointer, then advance the pointer.
-    const values = this._lineCollection.slice(this._linePointer, this._linePointer += count);
+    // Reads the entire current line and returns it as an array of values.
+    // If 'returnStrings' is true, elements are strings; otherwise, they are numbers.
+    InputBuffer.prototype.readLineAsArray = function(returnStrings) {
+        // Fetch the current line, split it by spaces, and then increment the line pointer.
+        var lineTokens = this.sourceLines[this.currentLinePointer++].split(" ");
+        return returnStrings ? lineTokens : lineTokens.map(tokenStr => +tokenStr);
+    };
 
-    // Return the values, optionally converting them to numbers.
-    return asStringVector ? values : values.map(valueItem => +valueItem);
-  };
+    // Reads a specified number of lines ('numberOfLines') and processes them as a matrix.
+    // Each line is treated as a row, and values within a row are space-separated.
+    // If 'keepStrings' is true, the matrix contains string values; otherwise, numeric values.
+    InputBuffer.prototype.readMultiLineMatrix = function(numberOfLines, keepStrings) {
+        // Extract the relevant lines and map each line string to an array of its tokens.
+        var matrixRows = this.sourceLines.slice(this.currentLinePointer, this.currentLinePointer += numberOfLines)
+                                         .map(rowString => rowString.split(" "));
 
-  // The factory function is returned, allowing external code to create handlers.
-  return createTextDataProcessor;
+        // If numeric conversion is required, apply it to every cell in the matrix.
+        return keepStrings ? matrixRows : matrixRows.map(row => row.map(cellString => +cellString));
+    };
+
+    // Reads a specified number of lines ('lineCount') and returns them as a flat array.
+    // If 'asRawStrings' is true, the array contains raw line strings; otherwise, numeric values.
+    InputBuffer.prototype.readMultiLineArray = function(lineCount, asRawStrings) {
+        // Extract the specified number of lines.
+        var resultLines = this.sourceLines.slice(this.currentLinePointer, this.currentLinePointer += lineCount);
+        // Apply numeric conversion if 'asRawStrings' is false.
+        return asRawStrings ? resultLines : resultLines.map(lineContent => +lineContent);
+    };
+
+    return createInputProcessor;
 })();
 
-// Instantiate the input reader by providing the content from standard input.
-var inputSource = INPUT_READER_FACTORY(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Initialize the input data reader by reading the content of standard input.
+var dataReader = InputDataProcessor(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-// Execute the main problem-solving function and print its result to the console.
-console.log(analyzePathFeasibility());
+// Execute the main logic and print its result to the console.
+console.log(checkTravelPlan());
 
 /**
- * Main function to solve the problem: determining if a path through given points is feasible.
- * A path is feasible if each point can be reached from the previous one within the given time,
- * and the parity of the distance matches the parity of the time difference.
- * @returns {string} "Yes" if the path is feasible, "No" otherwise.
+ * Determines if a given travel plan is feasible.
+ * The plan consists of a sequence of points (time, x, y).
+ * A move from (currentX, currentY) at 'elapsedTime' to (targetX, targetY) at 'targetTime' is valid if:
+ * 1. The Manhattan distance (|currentX - targetX| + |currentY - targetY|) is less than or equal to the time difference (targetTime - elapsedTime).
+ * 2. The parity (even/odd) of the Manhattan distance is the same as the parity of the time difference.
+ *
+ * @returns {string} "Yes" if the entire plan is feasible, "No" otherwise.
  */
-function analyzePathFeasibility() {
-  // Read the total number of locations to visit.
-  var totalLocations = inputSource.popNextToken();
-  // Read all location data (time, x, y coordinates) as a matrix.
-  var locationCoordinates = inputSource.readMultiLineBlock(totalLocations);
+function checkTravelPlan() {
+    // Read the total number of travel points from the input.
+    var totalSteps = dataReader.readSingleValue();
 
-  // Initialize current time and coordinates at the starting point (0,0) at time 0.
-  var currentTravelTime = 0,
-    currentXPosition = 0,
-    currentYPosition = 0;
+    // Read all travel points. Each point is an array [time, x, y].
+    var stepCoordinates = dataReader.readMultiLineMatrix(totalSteps);
 
-  // Iterate through each target location.
-  for (var locationIndex = 0; locationIndex < totalLocations; locationIndex++) {
-    // Calculate the Manhattan distance required to reach the next point.
-    var requiredDistance = Math.abs(currentXPosition - locationCoordinates[locationIndex][1]);
-    requiredDistance += Math.abs(currentYPosition - locationCoordinates[locationIndex][2]);
+    // Initialize the starting state: time and coordinates.
+    var elapsedTime = 0;
+    var currentPosX = 0;
+    var currentPosY = 0;
 
-    // Calculate the time available to reach the next point.
-    var availableTime = locationCoordinates[locationIndex][0] - currentTravelTime;
+    // Iterate through each planned step to validate the travel plan.
+    for (var stepIndex = 0; stepIndex < totalSteps; stepIndex++) {
+        // Calculate the Manhattan distance required to reach the next target point.
+        var requiredDistance = Math.abs(currentPosX - stepCoordinates[stepIndex][1]);
+        requiredDistance += Math.abs(currentPosY - stepCoordinates[stepIndex][2]);
 
-    // Check two conditions for feasibility:
-    // 1. Is there enough time to cover the distance? (distance <= time)
-    // 2. Does the parity of distance match the parity of time? (distance % 2 === time % 2)
-    // If either condition fails, the path is not feasible.
-    if (requiredDistance > availableTime || requiredDistance % 2 !== availableTime % 2) {
-      return "No";
+        // Calculate the time available for this specific step.
+        var timeDifference = stepCoordinates[stepIndex][0] - elapsedTime;
+
+        // Check the two feasibility conditions:
+        // 1. Is the required distance greater than the available time?
+        // 2. Do the parities of distance and time difference not match?
+        if (requiredDistance > timeDifference || requiredDistance % 2 !== timeDifference % 2) {
+            return "No"; // If any condition fails, the plan is impossible.
+        }
+
+        // Update the current state to the target of the current step for the next iteration.
+        currentPosX = stepCoordinates[stepIndex][1];
+        currentPosY = stepCoordinates[stepIndex][2];
+        elapsedTime = stepCoordinates[stepIndex][0];
     }
 
-    // Update current position and time to the current target location's values.
-    currentXPosition = locationCoordinates[locationIndex][1];
-    currentYPosition = locationCoordinates[locationIndex][2];
-    currentTravelTime = locationCoordinates[locationIndex][0];
-  }
-
-  // If all locations are reachable, the path is feasible.
-  return "Yes";
+    // If all steps were successfully validated, the plan is feasible.
+    return "Yes";
 }

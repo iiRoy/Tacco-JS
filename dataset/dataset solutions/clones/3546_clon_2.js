@@ -1,60 +1,66 @@
-var  gatheredLines = [];
+var inputRecords = [];
+// This object is intended to track words that have already been processed.
+// Note: This specific declaration is effectively shadowed by a re-declaration
+// within the 'close' event handler, making this initial one unused.
+var seenWordsMap = {};
 
-/*
- * An object used for quick lookup to determine if a specific data element
- * has been previously encountered, ensuring uniqueness or sequence validity.
- * This global instance is effectively shadowed later in the execution flow.
- */
-var globalOccurrenceTracker  =  {};
+// A string variable to store the ultimate outcome of the word sequence validation.
+var finalVerdict = "Yes";
 
-// The final output string, initialized to an affirmative status.
-var outcomeMessage = "Affirmative";
+// This variable stores a segment of the preceding word.
+// Specifically, it holds all characters of the previous word except its last character.
+// It is initialized to null, indicating no previous word has been processed yet.
+var previousWordPrefix = null;
 
-// Stores the concluding part of the preceding textual unit; initially unset.
-var previousFragmentEnd = null;
-
-
-// Initialize the input stream processing component using the 'readline' module.
+// Establish an interface for reading input from the standard input stream.
 var inputHandler = require('readline').createInterface({
-    sourceStream:   process.stdin, // Directing input from the standard input stream.
-    destinationStream: process.stdout // Directing output to the standard output stream.
+  input: process.stdin,
+  output: process.stdout
 });
 
-// Configure a callback function to execute upon receiving each new line of data.
-inputHandler.on('line', function( currentInputSegment ) {
-    gatheredLines.push(currentInputSegment); // Appends the received segment to our collection.
+// Register an event listener to capture each line of text as it is received.
+// Each incoming line is appended to the 'inputRecords' array.
+inputHandler.on('line', function(currentLineText) {
+  inputRecords.push(currentLineText);
 });
 
-// Define a callback function to run once the input stream has concluded.
+// Register an event listener to execute the main processing logic
+// once the entire input stream has been read and closed.
 inputHandler.on('close', function() {
-    // A local tracker for entries encountered within this specific processing phase,
-    // effectively shadowing any global declaration for the same purpose.
-    var encounteredElements = {};
+  // Re-initialize the word registry for the actual validation process.
+  // This ensures a fresh state for checking word uniqueness.
+  var wordRegistry = {};
 
-    // Iterate through the collected data, starting from the second element
-    // up to the number specified by the first element (which is expected to be a count).
-    for ( var currentIdx = 1; currentIdx < gatheredLines[0]; currentIdx++ ) {
+  // The first element of 'inputRecords' (inputRecords[0]) is expected to
+  // contain the total number of words that need to be validated.
+  // The loop iterates from the second line (index 1) up to, but not including,
+  // the count specified in the first line.
+  for(var idx = 1; idx < inputRecords[0]; idx++) {
+    // Extract the current word from the array of input records.
+    var currentWord = inputRecords[idx];
 
-        // Retrieve the current data item for examination.
-        var dataItem = gatheredLines[currentIdx];
-
-        // Perform checks:
-        // 1. Has this data item been seen before in this processing phase?
-        // 2. If not the first item, does its initial character connect correctly with the previous item's end?
-        if ( encounteredElements[dataItem] !== undefined || ( previousFragmentEnd !== null && dataItem.slice(0, 1) !== previousFragmentEnd ) ) {
-            console.log(dataItem); // Output the problematic data item for diagnostic purposes.
-            outcomeMessage = "Negative"; // Update the final outcome to a negative status.
-            break; // Terminate the loop early due to a detected violation.
-        }
-
-        // Mark the current data item as having been processed.
-        encounteredElements[dataItem] = 'present';
-
-        // Update the 'previousFragmentEnd' with the current data item's content,
-        // excluding its very last character (preserving the original, potentially flawed, logic).
-        previousFragmentEnd = dataItem.slice(0, -1);
+    // Evaluate the conditions for an invalid word sequence:
+    // 1. Check if the 'currentWord' has already been encountered (i.e., it exists in 'wordRegistry').
+    // 2. Check if 'previousWordPrefix' is not null (meaning it's not the very first word being checked)
+    //    AND the first character of the 'currentWord' does not match the 'previousWordPrefix'.
+    if(wordRegistry[currentWord] !== undefined || ( previousWordPrefix !== null && currentWord.slice(0,1) !== previousWordPrefix)){
+      // If either of the invalid conditions is met, output the problematic word.
+      console.log(currentWord);
+      // Set the 'finalVerdict' to "No" as the sequence is invalid.
+      finalVerdict = "No";
+      // Terminate the loop immediately as the sequence's invalidity is confirmed.
+      break;
     }
 
-    // Output the determined final outcome to the console.
-    console.log(outcomeMessage);
+    // If the word is valid so far, mark it as 'present' in the 'wordRegistry'
+    // to indicate it has been processed and prevent future duplicates.
+    wordRegistry[currentWord] = 'present';
+
+    // Update 'previousWordPrefix' for the next iteration.
+    // It stores all characters of the 'currentWord' except its last one.
+    previousWordPrefix = currentWord.slice(0,-1);
+  }
+
+  // After processing all words (or breaking early), output the final determination.
+  console.log(finalVerdict);
 });

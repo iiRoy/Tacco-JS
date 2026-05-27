@@ -1,38 +1,32 @@
-const fileSystem = require('node:fs');
-const standardInputData = fileSystem.readFileSync(0, 'utf8');
+const fileSystem = require('fs');
 
-const entrySegments = standardInputData.trim().split('\n');
+const rawData = fileSystem.readFileSync('/dev/stdin', 'utf8');
+const scoreEntries = rawData.trim().split('\n');
 
-const determineCategory = (scoreAlpha, scoreBeta, scoreGamma) => {
-    const combinedScore = scoreAlpha + scoreBeta;
-
-    return (scoreAlpha === -1 || scoreBeta === -1) ? 'F' :
-           (combinedScore >= 80) ? 'A' :
-           (combinedScore >= 65) ? 'B' :
-           (combinedScore >= 50) ? 'C' :
-           (combinedScore >= 30) ? (scoreGamma >= 50 ? 'C' : 'D') :
-           'F';
-};
-
-const processSegmentsRecursively = (remainingSegments, collectedOutcomes = []) => {
-    if (remainingSegments.length === 0) {
-        return collectedOutcomes;
+const calculateStudentGrade = (midtermScore, finalScore, retakeScore) => {
+    if (midtermScore === -1 || finalScore === -1) {
+        return 'F';
     }
 
-    const [currentSegment, ...tailSegments] = remainingSegments;
+    const combinedScore = midtermScore + finalScore;
 
-    if (currentSegment === '-1 -1 -1') {
-        return collectedOutcomes;
-    }
+    const gradingCriteria = [
+        { check: (sum, r_val) => sum >= 80, outcome: 'A' },
+        { check: (sum, r_val) => sum >= 65, outcome: 'B' },
+        { check: (sum, r_val) => sum >= 50, outcome: 'C' },
+        { check: (sum, r_val) => sum >= 30 && r_val >= 50, outcome: 'C' },
+        { check: (sum, r_val) => sum >= 30 && r_val < 50, outcome: 'D' },
+        { check: (sum, r_val) => true, outcome: 'F' }
+    ];
 
-    const [valueOne, valueTwo, valueThree] = currentSegment.split(' ').map(Number);
-    const currentCategory = determineCategory(valueOne, valueTwo, valueThree);
-
-    collectedOutcomes.push(currentCategory);
-
-    return processSegmentsRecursively(tailSegments, collectedOutcomes);
+    const matchedCriterion = gradingCriteria.find(criterion => criterion.check(combinedScore, retakeScore));
+    return matchedCriterion.outcome;
 };
 
-const finalClassifications = processSegmentsRecursively(entrySegments);
-
-finalClassifications.forEach(classificationResult => console.log(classificationResult));
+scoreEntries
+    .filter(entry => entry !== '-1 -1 -1')
+    .forEach(entryString => {
+        const [midtermScore, finalScore, retakeScore] = entryString.split(' ').map(Number);
+        const computedGrade = calculateStudentGrade(midtermScore, finalScore, retakeScore);
+        console.log(computedGrade);
+    });

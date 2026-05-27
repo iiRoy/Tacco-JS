@@ -1,32 +1,26 @@
-const EvaluateSequenceDivergence = (sourceData) => {
-  const primaryLine = sourceData.split("\n")[0].trim();
+function Main(inputContent) {
+    const lineSegments = inputContent.split("\n");
+    const targetSequence = lineSegments[0].trim();
 
-  if (primaryLine.length < 2) {
-    return 0;
-  }
-
-  const characterList = primaryLine.split('');
-
-  const finalAccumulation = characterList.slice(1).reduce((stateObject, currentCharacterElement) => {
-    if (currentCharacterElement !== stateObject.priorElement) {
-      return {
-        divergenceCount: stateObject.divergenceCount + 1,
-        priorElement: currentCharacterElement
-      };
-    } else {
-      return {
-        divergenceCount: stateObject.divergenceCount,
-        priorElement: currentCharacterElement
-      };
+    if (targetSequence.length < 2) {
+        console.log(0);
+        return;
     }
-  }, { divergenceCount: 0, priorElement: characterList[0] });
 
-  return finalAccumulation.divergenceCount;
-};
+    const stateTracker = {
+        countOfDifferences: 0,
+        previousSymbol: targetSequence[0]
+    };
 
-const ProcessExternalPayload = (incomingPayload) => {
-  const computedResult = EvaluateSequenceDivergence(incomingPayload);
-  console.log(computedResult);
-};
+    targetSequence.slice(1).split('').reduce((currentTracker, currentSymbol) => {
+        if (currentTracker.previousSymbol !== currentSymbol) {
+            currentTracker.countOfDifferences++;
+        }
+        currentTracker.previousSymbol = currentSymbol;
+        return currentTracker;
+    }, stateTracker);
 
-ProcessExternalPayload(require("fs").readFileSync("/dev/stdin", "utf8"));
+    console.log(stateTracker.countOfDifferences);
+}
+
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

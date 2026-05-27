@@ -1,60 +1,56 @@
-let rawData = require('node:fs').readFileSync('/dev/stdin', 'utf8'); // Acquire input content from standard input source
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8'); // Obtain raw data from standard input
+var lineData = rawData.trim().split("\n"); // Process raw data into an array of lines, removing extra whitespace
 
-let processedLines = rawData
-  .trim() // Remove leading/trailing whitespace
-  .split("\n"); // Divide content into an array of lines
-
-while (true) { /* Begin main processing cycle */
-
-   let currentItemCount = processedLines.shift() - 0; // Retrieve the first line, convert to numeric value
-
-   if (currentItemCount === 0) { // Check for termination condition
-      break; // Exit the loop if the count is zero
+while (true) { // Begin an indefinite processing loop
+   var entryCount = lineData.shift() - 0; // Extract the first number from the line data, converting it to a numeric type
+   if (entryCount === 0) { // Check if the extracted number signifies termination
+      break; // Exit the loop if the number is zero
    }
 
-   let itemTokens = processedLines.shift()
-      .split(" "); // Get the next line, split it by spaces into an array of tokens
+   var currentEntries = lineData.shift().split(" "); // Retrieve the next line of data and split it into individual entries
+   var foundWinner = false; // Initialize a flag to indicate if a clear winner has been determined
+   var tallyMap = {}; // Create an empty object to store the frequency of each entry
 
-   let resultDetermined = false; // Initialize a boolean flag to track if a clear outcome is found
+   // Iterate through each entry in the current set of entries
+   for (var idx = 0; idx < entryCount; idx++) {
+      // Increment the count for the current entry in the tally map.
+      // If the entry is encountered for the first time, initialize its count to 1.
+      tallyMap[currentEntries[idx]] = (tallyMap[currentEntries[idx]] || 0) + 1;
 
-   let itemFrequencies = {}; // Create an empty object to store the frequency of each distinct item
-
-   for (let tokenIndex = 0; tokenIndex < currentItemCount; tokenIndex++) { /* Iterate through each item token */
-
-      let currentItemIdentifier = itemTokens[tokenIndex]; // Get the identifier for the current item
-      itemFrequencies[currentItemIdentifier] = (itemFrequencies[currentItemIdentifier] || 0) + 1; // Increment its frequency count
-
-      let sortedFrequencies = []; // Prepare an array to hold frequency data for sorting
-
-      for (let keyName in itemFrequencies) {
-         sortedFrequencies.push([itemFrequencies[keyName], keyName]); // Populate with [count, item_name] pairs
+      var sortedCounts = []; // Prepare an array to hold count-value pairs for sorting
+      // Populate the sortedCounts array with data from the tally map
+      for (var keyVal in tallyMap) {
+         sortedCounts.push([tallyMap[keyVal], keyVal]);
       }
 
-      sortedFrequencies.sort(function(firstEntry, secondEntry) { // Sort the frequency entries
-         // Custom comparison function for descending order by count
-         if (firstEntry[0] < secondEntry[0]) return 1;
-         if (firstEntry[0] > secondEntry[0]) return -1;
-         return 0;
+      // Sort the collected counts in descending order based on their numeric value
+      sortedCounts.sort(function(itemA, itemB) {
+         return itemA[0] < itemB[0]; // Comparison function for descending order
       });
 
-      let itemsLeft = itemTokens.length - (tokenIndex + 1); // Calculate the number of items yet to be processed
+      var remainingItems = currentEntries.length - (idx + 1); // Calculate how many items are left to be processed
 
-      if (sortedFrequencies.length === 1) { // If there's only one unique item
-         sortedFrequencies.push([0, ""]); // Add a dummy entry with zero count for comparison
+      // If there's only one unique item counted so far, add a placeholder for the second item's count
+      if (sortedCounts.length === 1) {
+         sortedCounts[1] = [0]; // Assign a count of zero to a non-existent second item
       }
 
-      if (sortedFrequencies[0][0] === sortedFrequencies[1][0]) { // If the top two frequencies are identical
-         continue; // Move to the next item token without determining a winner
+      // If the top two counts are identical, no definitive leader exists yet
+      if (sortedCounts[0][0] === sortedCounts[1][0]) {
+         continue; // Proceed to the next entry without declaring a winner
       }
 
-      if (sortedFrequencies[0][0] > sortedFrequencies[1][0] + itemsLeft) { // Check if the leading item has an insurmountable lead
-         console.log(sortedFrequencies[0][1], tokenIndex + 1); // Output the winning item and the current step number
-         resultDetermined = true; // Set the flag indicating a winner has been found
-         break; // Exit the inner loop as the outcome is decided
+      // Determine if the leading item's count is sufficiently high to guarantee a win
+      // (i.e., its count is greater than the second item's count plus all remaining items)
+      if (sortedCounts[0][0] > sortedCounts[1][0] + remainingItems) {
+         console.log(sortedCounts[0][1], idx + 1); // Output the winning entry and the current processing step
+         foundWinner = true; // Set the flag to true as a winner has been identified
+         break; // Terminate the inner loop since a winner is found
       }
    }
 
-   if (!resultDetermined) { // If no clear winner was determined after processing all items
-      console.log("TIE"); // Output "TIE"
+   // After processing all entries for the current set, if no winner was found
+   if (foundWinner === false) {
+      console.log("TIE"); // Indicate that the result is a tie
    }
 }

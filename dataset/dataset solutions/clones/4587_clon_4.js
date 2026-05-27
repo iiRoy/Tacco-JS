@@ -1,86 +1,85 @@
-'use strict';
+'use strict'
 
-(async function chiefExecutive() {
+initiateProcessing()
+
+async function initiateProcessing () {
   try {
-    const rawTransmission = await acquireRawTelemetry();
-    const processedTelemetry = decodeTelemetry(rawTransmission);
-    await processNetworkData(processedTelemetry);
-  } catch (operationFault) {
-    console.error("An operational fault occurred:", operationFault);
+    const rawDataString = await acquireSourceData()
+    const parsedStructure = transformRawData(rawDataString)
+    computePathLength(parsedStructure)
+  } catch (processingError) {
+    console.error("An error occurred during data processing:", processingError)
   }
-})();
-
-async function acquireRawTelemetry() {
-  return new Promise((resolveSolemnly) => {
-    const transmissionFragments = [];
-    process.stdin.resume();
-    process.stdin.setEncoding('utf8');
-    process.stdin.on('data', (dataPacket) => {
-      transmissionFragments.push(dataPacket);
-    });
-    process.stdin.on('end', () => {
-      const consolidatedTransmission = transmissionFragments.join('').trim();
-      resolveSolemnly(consolidatedTransmission);
-    });
-  });
 }
 
-function decodeTelemetry(rawTransmission) {
-  const structuredData = rawTransmission.split('\n').map(lineSegment =>
-    lineSegment.split(' ').map(val => Number(val))
-  );
-  return structuredData;
-}
+function computePathLength (parsedStructure) {
+  const nodeCount = parsedStructure[0][0]
+  const edgeCount = parsedStructure[0][1]
 
-function processNetworkData(networkConfiguration) {
-  const [initialMetadata, ...connectionDetails] = networkConfiguration;
-  const vertexCount = initialMetadata[0];
-  const linkCount = initialMetadata[1];
+  const pathCosts = Array.from({ length: nodeCount }, () => Infinity)
+  pathCosts[0] = 0
 
-  const shortestPathMatrix = Array.from({ length: vertexCount + 1 }, () =>
-    new Array(vertexCount).fill(Number.POSITIVE_INFINITY)
-  );
+  const adjacencyMap = Array.from({ length: nodeCount }, () => [])
 
-  shortestPathMatrix[0][0] = 0;
+  for (let i = 1; i <= edgeCount; i++) {
+    const sourceNode = parsedStructure[i][0] - 1
+    const targetNode = parsedStructure[i][1] - 1
+    const edgeValue = parsedStructure[i][2] * -1
+    adjacencyMap[sourceNode].push([targetNode, edgeValue])
+  }
 
-  const networkLinks = connectionDetails.map(link => ({
-    origin: link[0] - 1,
-    terminus: link[1] - 1,
-    cost: link[2] * -1
-  }));
-
-  for (let k = 1; k <= vertexCount; ++k) {
-    for (let currentVertex = 0; currentVertex < vertexCount; ++currentVertex) {
-      shortestPathMatrix[k][currentVertex] = shortestPathMatrix[k-1][currentVertex];
-    }
-
-    for (const currentLink of networkLinks) {
-      const sourceVertex = currentLink.origin;
-      const targetVertex = currentLink.terminus;
-      const linkCost = currentLink.cost;
-
-      if (shortestPathMatrix[k-1][sourceVertex] !== Number.POSITIVE_INFINITY) {
-        const potentialNewCost = shortestPathMatrix[k-1][sourceVertex] + linkCost;
-        shortestPathMatrix[k][targetVertex] = Math.min(
-          shortestPathMatrix[k][targetVertex],
-          potentialNewCost
-        );
+  for (let k = 0; k < nodeCount - 1; k++) {
+    for (let u = 0; u < nodeCount; u++) {
+      if (pathCosts[u] === Infinity) {
+        continue
+      }
+      for (const [v, weight] of adjacencyMap[u]) {
+        if (pathCosts[u] + weight < pathCosts[v]) {
+          pathCosts[v] = pathCosts[u] + weight
+        }
       }
     }
   }
 
-  let hasNegativeCycle = false;
-  for (let v = 0; v < vertexCount; ++v) {
-    if (shortestPathMatrix[vertexCount][v] < shortestPathMatrix[vertexCount - 1][v]) {
-      hasNegativeCycle = true;
-      break;
+  let hasNegativeCycle = false
+  for (let u = 0; u < nodeCount; u++) {
+    if (pathCosts[u] === Infinity) {
+      continue
+    }
+    for (const [v, weight] of adjacencyMap[u]) {
+      if (pathCosts[u] + weight < pathCosts[v]) {
+        hasNegativeCycle = true
+        break
+      }
+    }
+    if (hasNegativeCycle) {
+      break
     }
   }
 
   if (hasNegativeCycle) {
-    console.log('inf');
+    console.log('inf')
   } else {
-    const finalPathValue = shortestPathMatrix[vertexCount - 1][vertexCount - 1];
-    console.log(finalPathValue * -1);
+    console.log(pathCosts[nodeCount - 1] * -1)
   }
+}
+
+function transformRawData (rawDataString) {
+  return rawDataString.split('\n').reduce((accumulator, currentLine) => {
+    const trimmedLine = currentLine.trim()
+    if (trimmedLine === '') {
+      return accumulator
+    }
+    accumulator.push(trimmedLine.split(' ').map(value => Number(value)))
+    return accumulator
+  }, [])
+}
+
+async function acquireSourceData () {
+  const { Readable } = require('stream')
+  let collectedDataSegments = []
+  for await (const dataChunk of Readable.from(process.stdin)) {
+    collectedDataSegments.push(dataChunk.toString('utf8'))
+  }
+  return collectedDataSegments.join('').trim()
 }

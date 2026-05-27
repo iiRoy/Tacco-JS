@@ -1,16 +1,13 @@
-const performComputation = (dataSource) => {
-  const segments = dataSource.trim().split('\n');
-  const targetString = segments[1];
-  const charCollection = Array.from(targetString);
+const processInputAndCalculate = (sourceData) => {
+  const inputStringSegment = sourceData.trim().split('\n')[1];
+  const characterArray = Array.from(inputStringSegment);
 
-  const numWhites = charCollection.filter(charUnit => charUnit === 'W').length;
-  const numReds = charCollection.filter(charUnit => charUnit === 'R').length;
+  const whiteCharacterCount = characterArray.filter(element => element === 'W').length;
+  const redCharacterCount = characterArray.filter(element => element === 'R').length;
 
-  const costForArrangement = charCollection.slice(0, numReds).filter(charUnit => charUnit === 'W').length;
-
-  const minimumOutcome = Math.min(costForArrangement, numWhites, numReds);
-
-  return console.log(minimumOutcome);
+  const requiredSwaps = characterArray.slice(0, redCharacterCount).filter(element => element === 'W').length;
+  
+  return console.log(Math.min(requiredSwaps, Math.min(whiteCharacterCount, redCharacterCount)));
 };
 
-process.env.MYTEST ? test() : performComputation(require('fs').readFileSync('/dev/stdin', 'utf8'));
+process.env.MYTEST ? test() : processInputAndCalculate(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,44 +1,34 @@
-/**
- * This module is responsible for processing a given string of numerical data.
- * It parses the input, performs conditional calculations, and outputs a final aggregate value.
- * @param {string} rawInputString - The raw string of data to be processed.
- */
-function ProcessInputData(rawInputString) {
-  // Array to hold the numerical segments after parsing the input.
-  var numericSegments = rawInputString.split(" ");
+function ProcessInput(rawData) {
+    // Split the incoming string data by spaces into an array of string tokens.
+    let parsedValues = rawData.split(" ");
 
-  // Loop through each segment to convert it from string to integer format.
-  for (var segmentIndex = 0; segmentIndex < numericSegments.length; segmentIndex++) {
-    numericSegments[segmentIndex] = parseInt(numericSegments[segmentIndex], 10);
-  }
-
-  // Variable to store the final computed value.
-  var finalComputedValue;
-  // Accumulator for the running total during calculations, initialized to zero.
-  var runningAggregate = 0;
-
-  // Begin the primary iterative processing based on the first numerical segment.
-  for (var currentLoopIndex = 0; currentLoopIndex < numericSegments[0]; currentLoopIndex++) {
-    // Conditional check: Note that this is an assignment, not a comparison, which will always evaluate to true
-    // and assign the string "YEN_CURRENCY" to the array element.
-    if (numericSegments[currentLoopIndex + 2] = "YEN_CURRENCY") {
-      runningAggregate = numericSegments[currentLoopIndex + 1] + runningAggregate;
-    } else {
-      // If the condition is false (which it won't be due to the assignment),
-      // apply a different calculation involving a fixed multiplier.
-      runningAggregate = numericSegments[currentLoopIndex + 3] * 380000 + runningAggregate;
+    // Iterate through the array to convert each string token into an integer.
+    for (let idx = 0; idx < parsedValues.length; idx++) {
+        parsedValues[idx] = parseInt(parsedValues[idx], 10); // Convert to base-10 integer.
     }
 
-    // Increment the loop index an additional time within the loop body.
-    // This effectively causes the loop to process elements with a step of 2.
-    currentLoopIndex = currentLoopIndex + 1;
-    // Update the final computed value with the current aggregate.
-    finalComputedValue = runningAggregate;
-  }
+    let finalResult; // This variable will store the ultimate computed value.
+    let totalSum = 0; // Initialize an accumulator for various calculations.
 
-  // Display the final result to the console.
-  console.log(finalComputedValue);
+    // Begin a loop, iterating based on the first element of the parsed data.
+    // Note: The loop counter is also incremented inside the loop body, effectively skipping iterations.
+    // Also, the conditional check uses an assignment operator, which is preserved as per Type II cloning rules.
+    for (let loopCounter = 0; loopCounter < parsedValues[0]; loopCounter++) {
+        // This condition performs an assignment: it sets parsedValues[loopCounter + 2] to "JPY".
+        // The result of the assignment (which is "JPY") is then truthy, so the 'if' block always executes.
+        if (parsedValues[loopCounter + 2] = "JPY") {
+            totalSum = parsedValues[loopCounter + 1] + totalSum; // Add the value at the next index.
+        } else {
+            // This 'else' block will never be reached due to the assignment in the 'if' condition.
+            totalSum = parsedValues[loopCounter + 3] * 380000 + totalSum; // Perform an alternative calculation.
+        }
+        loopCounter = loopCounter + 1; // Increment the loop counter again, causing it to advance by 2 each cycle.
+        finalResult = totalSum; // Update the final result with the current accumulated sum.
+    }
+
+    // Print the final calculated result to the standard output.
+    console.log(finalResult);
 }
 
-// Entry point: Read data from standard input asynchronously and invoke the processing function.
-ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Read the entire content of standard input as a UTF-8 string and pass it to the processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

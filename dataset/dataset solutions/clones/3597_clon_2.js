@@ -1,142 +1,123 @@
-// This file contains a utility for processing input data and a main program logic.
+function InputProcessor(inputString) {
+  // Store the input string, split by newlines, into an internal buffer.
+  this._lineBuffer = inputString.split("\n");
+  // Initialize the current line index to the beginning.
+  this._currentLineIndex = 0;
+}
 
-/**
- * @class InputProcessor
- * @description Handles reading and parsing input content line by line.
- * @param {string} inputContent - The raw string content to process.
- */
-function InputProcessor( inputContent ) {
-    // Store all lines from the input, split by newline character.
-    this.linesData = inputContent.split( "\n" );
-    // Initialize the pointer to the current line being processed.
-    this.currentLineIndex = 0;
-};
-
-
-// Define methods for the InputProcessor prototype.
 InputProcessor.prototype = {
+  /**
+   * Reads a single value from the current line.
+   * If the line hasn't been processed yet, it's split into words and reversed.
+   *
+   * @param {boolean} asString - If true, returns the value as a string; otherwise, as a number.
+   * @returns {string|number} The extracted value.
+   */
+  readSingleValue: function(asString) {
+    let lineCollection = this._lineBuffer;
+    let linePointer = this._currentLineIndex;
+    let resultValue;
 
-    /**
-     * @method fetchSingleValue
-     * @description Retrieves a single value from the current line. If the line is exhausted, moves to the next.
-     * @param {boolean} returnAsString - If true, returns the value as a string; otherwise, attempts to convert to a number.
-     * @returns {string|number} The retrieved value.
-     */
-    fetchSingleValue : function( returnAsString ) {
-        // Keep references to the internal data and current index for brevity.
-        let lineStorage = this.linesData,
-            currentIdx = this.currentLineIndex,
-            retrievedValue;
+    // If the current line is still a single string, split it into words and reverse for easy popping.
+    if (typeof lineCollection[linePointer] === "string") {
+      lineCollection[linePointer] = lineCollection[linePointer].split(" ").reverse();
+    }
 
-        // If the current line hasn't been split into words yet, do it and reverse for easy popping.
-        if ( typeof lineStorage[currentIdx] === "string" ) {
-            lineStorage[currentIdx] = lineStorage[currentIdx].split( " " ).reverse();
-        }
+    // Pop the last element (which was the first due to reversal).
+    resultValue = lineCollection[linePointer].pop();
 
-        // Extract the last element (which was originally the first due to reverse).
-        retrievedValue = lineStorage[currentIdx].pop();
+    // If the current line is now empty, advance to the next line.
+    if (!lineCollection[linePointer].length) {
+      this._currentLineIndex++;
+    }
 
-        // If the current line is now empty, advance to the next line.
-        if ( !lineStorage[currentIdx].length ) {
-            this.currentLineIndex++;
-        }
+    // Return the value, either as a string or converted to a number.
+    return asString ? resultValue : +resultValue;
+  },
 
-        // Return the value either as a string or a number based on the flag.
-        return returnAsString ? retrievedValue : +retrievedValue;
-    },
+  /**
+   * Reads an entire line, splits it by spaces, and advances the line index.
+   *
+   * @param {boolean} asString - If true, returns an array of strings; otherwise, an array of numbers.
+   * @returns {Array<string|number>} An array of values from the line.
+   */
+  readLineValues: function(asString) {
+    // Get the current line, split it by spaces, and then increment the line index.
+    let lineValues = this._lineBuffer[this._currentLineIndex++].split(" ");
+    // Return the array, either as strings or converted to numbers.
+    return asString ? lineValues : lineValues.map(item => +item);
+  },
 
-    /**
-     * @method fetchLineValues
-     * @description Retrieves all values from the current line and advances to the next line.
-     * @param {boolean} returnAsString - If true, returns values as strings; otherwise, attempts to convert to numbers.
-     * @returns {Array<string|number>} An array of values from the line.
-     */
-    fetchLineValues : function( returnAsString ) {
-        // Get the current line, split it by spaces, and then increment the line index.
-        let lineParts = this.linesData[this.currentLineIndex++].split( " " );
+  /**
+   * Reads multiple consecutive lines, splitting each by spaces.
+   *
+   * @param {number} numLines - The number of lines to read.
+   * @param {boolean} asString - If true, returns a 2D array of strings; otherwise, a 2D array of numbers.
+   * @returns {Array<Array<string|number>>} A 2D array containing values from the read lines.
+   */
+  readMultipleLines: function(numLines, asString) {
+    let lineCollection = this._lineBuffer;
+    let linePointer = this._currentLineIndex;
+    let resultArray = [];
+    let loopCounter = 0;
 
-        // Return the parts as strings or mapped to numbers.
-        return returnAsString ? lineParts : lineParts.map( itemString => +itemString );
-    },
+    // Iterate 'numLines' times to process each requested line.
+    if (asString) {
+      for (; loopCounter < numLines; loopCounter++) {
+        resultArray[loopCounter] = lineCollection[linePointer + loopCounter].split(" ");
+      }
+    } else {
+      for (; loopCounter < numLines; loopCounter++) {
+        resultArray[loopCounter] = lineCollection[linePointer + loopCounter].split(" ").map(item => +item);
+      }
+    }
 
-    /**
-     * @method fetchMultipleLines
-     * @description Retrieves multiple lines of values starting from the current line.
-     * @param {number} lineCount - The number of lines to retrieve.
-     * @param {boolean} returnAsString - If true, returns values as strings; otherwise, attempts to convert to numbers.
-     * @returns {Array<Array<string|number>>} A 2D array representing the lines of values.
-     */
-    fetchMultipleLines : function( lineCount, returnAsString ) {
-        let lineStorage = this.linesData,
-            currentIdx = this.currentLineIndex,
-            resultCollection = [],
-            loopCounter = 0;
-
-        // Loop to process the specified number of lines.
-        if ( returnAsString ) {
-            // Retrieve lines as arrays of strings.
-            for ( ; loopCounter < lineCount; loopCounter++ ) {
-                resultCollection[loopCounter] = lineStorage[currentIdx + loopCounter].split( " " );
-            }
-        } else {
-            // Retrieve lines as arrays of numbers.
-            for ( ; loopCounter < lineCount; loopCounter++ ) {
-                resultCollection[loopCounter] = lineStorage[currentIdx + loopCounter].split( " " ).map( itemString => +itemString );
-            }
-        }
-
-        // Advance the current line index by the number of lines processed.
-        this.currentLineIndex += lineCount;
-
-        return resultCollection;
-    },
+    // Advance the line index by the number of lines read.
+    this._currentLineIndex += numLines;
+    return resultArray;
+  },
 };
 
 // Create an instance of the input processor, reading from standard input.
-const dataHandler = new InputProcessor(require("fs").readFileSync("/dev/stdin", "utf8"));
+let inputHandler = new InputProcessor(require("fs").readFileSync("/dev/stdin", "utf8"));
 
 // Execute the main processing function and print its result to the console.
-console.log( executeProcessing() );
+console.log(processData());
 
-/**
- * @function executeProcessing
- * @description The primary logic function that processes input and computes a result.
- * @returns {number} The final computed value.
- */
-function executeProcessing() {
-    // Read the first number, which represents the count of initial elements.
-    let numElements = dataHandler.fetchSingleValue();
-    // Read the next line, which contains the initial array of numbers.
-    let sourceArray = dataHandler.fetchLineValues();
-    // Initialize an empty array for derived values.
-    let derivedArray = [];
+function processData() {
+  // Read the first number, which represents the count of elements.
+  let countElements = inputHandler.readSingleValue();
+  // Read the next line as an array of numbers.
+  let initialArray = inputHandler.readLineValues();
+  // Initialize an empty array to store pairwise maximums.
+  let pairwiseMaxes = [];
 
-    // Handle base cases where the number of elements is small.
-    if ( numElements <= 2 ) {
-        return Math.max( ...sourceArray ); // Return the maximum value directly.
-    }
+  // Handle edge case where the number of elements is 2 or less.
+  if (countElements <= 2) {
+    return Math.max(...initialArray);
+  }
 
-    // Populate the derived array with the maximum of adjacent elements from the source array.
-    for ( let idx = 0; idx < numElements - 1; idx++ ) {
-        derivedArray[idx] = Math.max( sourceArray[idx], sourceArray[idx+1] );
-    }
+  // Calculate the maximum of adjacent pairs and store them in 'pairwiseMaxes'.
+  for (let idx = 0; idx < countElements - 1; idx++) {
+    pairwiseMaxes[idx] = Math.max(initialArray[idx], initialArray[idx + 1]);
+  }
 
-    // Concatenate the original and derived arrays.
-    sourceArray = sourceArray.concat( derivedArray );
+  // Concatenate the original array with the array of pairwise maximums.
+  initialArray = initialArray.concat(pairwiseMaxes);
 
-    // Call a helper function to find the median of the combined array.
-    return findMedian( sourceArray );
+  // Find and return the median of the combined array.
+  return findMedian(initialArray);
 
-    /**
-     * @function findMedian
-     * @description A helper function to find the median of a given array of numbers.
-     * @param {Array<number>} targetArray - The array for which to find the median.
-     * @returns {number} The median value of the array.
-     */
-    function findMedian( targetArray ) {
-        // Sort the array numerically in ascending order.
-        targetArray.sort( ( valA, valB ) => valA - valB );
-        // Return the middle element (using bitwise right shift for integer division).
-        return targetArray[ targetArray.length >> 1 ];
-    }
+  /**
+   * Helper function to find the median of a numeric array.
+   *
+   * @param {Array<number>} dataCollection - The array to find the median from.
+   * @returns {number} The median value.
+   */
+  function findMedian(dataCollection) {
+    // Sort the array numerically in ascending order.
+    dataCollection.sort((valA, valB) => valA - valB);
+    // Return the middle element (using bitwise right shift for integer division).
+    return dataCollection[dataCollection.length >> 1];
+  }
 }

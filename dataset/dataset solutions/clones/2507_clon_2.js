@@ -1,169 +1,206 @@
-"use strict" ; /* Enable strict mode for cleaner code practices */
-var InputProcessor = ( function ( ) {
-  /* Inner function to create a new DataParser instance */
-  function createProcessor ( inputString ) {
-    return new DataParser ( inputString ) ;
-  }
+"use strict";
 
-  /*
-   * Constructor for the DataParser class.
-   * Initializes the source lines and current reading position.
+// This module provides a utility for parsing input data from standard input.
+var INPUT_PARSER = (function() {
+  /**
+   * Creates a new input parser instance.
+   * @param {string} sourceText - The raw input string.
+   * @returns {InputReader} An instance of InputReader.
    */
-  function DataParser ( inputString ) {
-    // Trim input and split into lines
-    this._sourceLines = inputString . trim ( ) . split ( "\n" ) ;
-    // Initialize line index
-    this._currentLineIndex = 0 ;
+  function createParser(sourceText) {
+    return new InputReader(sourceText);
   }
 
   /**
-   * Reads a single value from the current line.
-   * If the line is a string, it's split, reversed, and the last element is popped.
-   * Moves to the next line if the current line becomes empty.
-   * @param {boolean} asString - If true, returns the value as a string; otherwise, converts to a number.
-   * @returns {string|number} The parsed value.
+   * Constructor for the InputReader class.
+   * @param {string} rawInput - The complete input string.
    */
-  DataParser . prototype . readNextValue = function ( asString ) {
-    var linesRef = this._sourceLines,
-      lineIdxRef = this._currentLineIndex,
-      resultValue ;
+  function InputReader(rawInput) {
+    // Store input lines, trimmed and split by newline.
+    this._lines = rawInput.trim().split("\n");
+    // Initialize current line index.
+    this._currentLineIndex = 0;
+  }
 
-    // Check if the current line needs to be processed (split and reversed)
-    if ( typeof linesRef [ lineIdxRef ] === "string" ) {
-      linesRef [ lineIdxRef ] = linesRef [ lineIdxRef ] . split ( " " ) . reverse ( ) ;
+  /**
+   * Reads the next item from the current line. Items are processed in reverse order on the line.
+   * If the current line is exhausted, it moves to the next line.
+   * @param {boolean} [asString=false] - If true, returns the item as a string; otherwise, as a number.
+   * @returns {string|number} The extracted item.
+   */
+  InputReader.prototype.readNextItem = function(asString) {
+    var currentLines = this._lines;
+    var lineIdx = this._currentLineIndex;
+    var extractedItem;
+
+    // If the current line hasn't been split into parts yet, do so.
+    // Items are processed in reverse order, so we reverse the split array.
+    if (typeof currentLines[lineIdx] === "string") {
+      currentLines[lineIdx] = currentLines[lineIdx].split(" ").reverse();
     }
 
-    // Pop the last element (which was the first before reversing)
-    resultValue = linesRef [ lineIdxRef ] . pop ( ) ;
+    // Pop the last item (which is the first item in original order) from the current line's array.
+    extractedItem = currentLines[lineIdx].pop();
 
-    // If the line is now empty, advance to the next line
-    if ( ! linesRef [ lineIdxRef ] . length ) {
-      this._currentLineIndex ++ ;
+    // If the current line is now empty, advance to the next line.
+    if (!currentLines[lineIdx].length) {
+      this._currentLineIndex++;
     }
 
-    // Return based on the 'asString' flag
-    return asString ? resultValue : + resultValue ;
-  } ;
+    // Return as string or convert to number.
+    return asString ? extractedItem : +extractedItem;
+  };
 
   /**
-   * Reads an entire line and splits it into values.
-   * Advances the internal line index.
-   * @param {boolean} asStrings - If true, returns values as strings; otherwise, converts to numbers.
-   * @returns {Array<string|number>} An array of parsed values from the line.
+   * Reads an entire line and splits it into items.
+   * @param {boolean} [returnStrings=false] - If true, returns items as strings; otherwise, as numbers.
+   * @returns {Array<string|number>} An array of items from the line.
    */
-  DataParser . prototype . readLineValues = function ( asStrings ) {
-    var lineParts = this._sourceLines [ this._currentLineIndex ++ ] . split ( " " ) ;
-    // Map values to numbers if not requested as strings
-    return asStrings ? lineParts : lineParts . map ( item => + item ) ;
-  } ;
+  InputReader.prototype.readLineItems = function(returnStrings) {
+    // Get the current line, split by space, and then advance the line index.
+    var lineParts = this._lines[this._currentLineIndex++].split(" ");
+
+    // Return as strings or map to numbers.
+    return returnStrings ? lineParts : lineParts.map(val => +val);
+  };
 
   /**
-   * Reads a specified number of lines and processes each into an array of values.
-   * @param {number} numRows - The number of rows (lines) to read.
-   * @param {boolean} asStrings - If true, returns values as strings; otherwise, converts to numbers.
-   * @returns {Array<Array<string|number>>} A 2D array (matrix) of parsed values.
+   * Reads 'numRows' lines and parses them as a matrix.
+   * @param {number} numRows - The number of rows to read.
+   * @param {boolean} [asStrings=false] - If true, returns matrix elements as strings; otherwise, as numbers.
+   * @returns {Array<Array<string|number>>} A 2D array (matrix).
    */
-  DataParser . prototype . readMatrix = function ( numRows , asStrings ) {
-    var matrixResult = this._sourceLines . slice ( this._currentLineIndex , this._currentLineIndex += numRows ) . map ( row => row . split ( " " ) ) ;
-    // Map inner arrays to numbers if not requested as strings
-    return asStrings ? matrixResult : matrixResult . map ( row => row . map ( item => + item ) ) ;
-  } ;
+  InputReader.prototype.readMatrix = function(numRows, asStrings) {
+    // Extract 'numRows' lines, split each into parts.
+    var matrixRows = this._lines
+      .slice(this._currentLineIndex, (this._currentLineIndex += numRows))
+      .map(line => line.split(" "));
+
+    // Return as strings or map all elements to numbers.
+    return asStrings ? matrixRows : matrixRows.map(row => row.map(val => +val));
+  };
 
   /**
-   * Reads a specified number of lines as-is, without splitting them.
+   * Reads 'count' lines and parses them as a flat array of numbers.
    * @param {number} count - The number of lines to read.
-   * @param {boolean} asStrings - If true, returns lines as strings; otherwise, converts to numbers.
-   * @returns {Array<string|number>} An array of lines, potentially converted to numbers.
+   * @param {boolean} [asStringArray=false] - If true, returns lines as strings; otherwise, as numbers.
+   * @returns {Array<string|number>} An array of items.
    */
-  DataParser . prototype . readLines = function ( count , asStrings ) {
-    var linesResult = this._sourceLines . slice ( this._currentLineIndex , this._currentLineIndex += count ) ;
-    // Map lines to numbers if not requested as strings
-    return asStrings ? linesResult : linesResult . map ( lineContent => + lineContent ) ;
-  } ;
+  InputReader.prototype.readLinesAsNumbers = function(count, asStringArray) {
+    // Extract 'count' lines.
+    var rawLines = this._lines.slice(
+      this._currentLineIndex,
+      (this._currentLineIndex += count)
+    );
 
-  return createProcessor ; // Expose the factory function
-} ) ( ) ;
+    // Return as strings or map all lines to numbers.
+    return asStringArray ? rawLines : rawLines.map(val => +val);
+  };
 
-/* Initialize an input reader instance from standard input */
-var inputReader = InputProcessor ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+  return createParser;
+})();
+
+// Create an input reader instance by reading from standard input.
+var inputReaderInstance = INPUT_PARSER(
+  require("fs").readFileSync("/dev/stdin", "utf8")
+);
 
 /**
- * Dynamically creates a multi-dimensional array with specified dimensions and initial value.
- * @param {any} initialValue - The value to fill the array with.
- * @param {...number} dimensions - The dimensions of the array.
- * @returns {Array} A multi-dimensional array.
+ * Creates a multi-dimensional array initialized with a given value.
+ * The dimensions are passed as additional arguments.
+ * Example: createMultiDimArray(0, 2, 3) creates a 2x3 array filled with 0s.
+ * @param {*} initialValue - The value to initialize array elements with.
+ * @param {...number} dimensions - The sizes of each dimension.
+ * @returns {Array} The multi-dimensional array.
  */
-function createMultiDimArray ( initialValue ) {
-  var dimArgs = arguments ,
-    argCount = dimArgs . length ,
-    arrayCreationCode = "Array(dimArgs[" + -- argCount + "]).fill(0).map( _ => {return " + initialValue + ";} )" ;
+function createMultiDimArray(initialValue) {
+  var dimensions = arguments;
+  var dimCount = dimensions.length;
+  var arrayCreationString =
+    "Array(dimensions[" +
+    --dimCount +
+    "]).fill(0).map(x=>{return " +
+    initialValue +
+    ";})";
 
-  while ( -- argCount ) {
-    arrayCreationCode = "Array(dimArgs[" + argCount + "]).fill(0).map( _ => " + arrayCreationCode + " )" ;
+  // Build the string for nested Array.map calls.
+  while (--dimCount) {
+    arrayCreationString =
+      "Array(dimensions[" + dimCount + "]).fill(0).map(x=>" + arrayCreationString + ")";
   }
 
-  // Evaluate the constructed string to create the array
-  return eval ( arrayCreationCode ) ;
+  // Use eval to dynamically create the multi-dimensional array.
+  return eval(arrayCreationString);
 }
 
-/* A large constant value, often used for infinity in competitive programming */
-var MAX_LIMIT_VAL = 1e15 ;
+// A large number constant, often used as an "infinity" placeholder.
+var HUGE_NUMBER_THRESHOLD = 1e15;
 
-// Output the result of the main processing function to the console
-console . log ( processSolution ( ) ) ;
+// Execute the main logic and print the result to console.
+console.log(mainLogic());
 
 /**
- * Main function containing the problem's logic.
- * Reads input, processes data, and returns a formatted string.
- * @returns {string} The final computed answer joined by newlines.
+ * The main function containing the problem's solution logic.
+ * @returns {string} The final result formatted as a string.
  */
-function processSolution ( ) {
-  // Read the total number of elements from input
-  var totalElements = inputReader . readNextValue ( ) ;
-  // Read an array of numbers from the next line
-  var inputNumbers = inputReader . readLineValues ( ) ;
+function mainLogic() {
+  // Read the total number of items (N).
+  var itemCount = inputReaderInstance.readNextItem();
+  // Read the array of items.
+  var dataArray = inputReaderInstance.readLineItems();
 
-  // Create a frequency map initialized with zeros
-  var frequencyMap = createMultiDimArray ( 0 , totalElements ) ;
+  // Create a frequency map for items, initialized to zeros.
+  // The size of the map is 'itemCount' because item values are 1-indexed up to N.
+  var frequencyMap = createMultiDimArray(0, itemCount);
 
-  // Populate the frequency map based on input numbers
-  for ( var loopIndex = 0 ; loopIndex < totalElements ; loopIndex ++ ) {
-    frequencyMap [ inputNumbers [ loopIndex ] - 1 ] ++ ;
+  // Populate the frequency map.
+  // For each item 'dataArray[idx]', increment the count at index 'dataArray[idx] - 1'.
+  for (var idx = 0; idx < itemCount; idx++) {
+    frequencyMap[dataArray[idx] - 1]++;
   }
 
-  // Collect all non-zero frequencies into a new array
-  var distinctFrequencies = [ ] ;
-  for ( var loopIndex = 0 ; loopIndex < totalElements ; loopIndex ++ ) {
-    if ( frequencyMap [ loopIndex ] ) {
-      distinctFrequencies . push ( frequencyMap [ loopIndex ] ) ;
+  // Collect all non-zero frequencies into a new array.
+  var uniqueFrequencies = [];
+  for (var jdx = 0; jdx < itemCount; jdx++) {
+    if (frequencyMap[jdx]) {
+      uniqueFrequencies.push(frequencyMap[jdx]);
     }
   }
 
-  // Sort frequencies in descending order
-  distinctFrequencies . sort ( ( valA , valB ) => valB - valA ) ;
+  // Sort the unique frequencies in descending order.
+  uniqueFrequencies.sort((freqA, freqB) => freqB - freqA);
 
-  // Calculate cumulative sums of sorted frequencies
-  var cumulativeSums = Array ( distinctFrequencies . length + 1 ) ;
-  cumulativeSums [ 0 ] = 0 ;
-  for ( var loopIndex = 1 ; loopIndex <= distinctFrequencies . length ; loopIndex ++ ) {
-    cumulativeSums [ loopIndex ] = cumulativeSums [ loopIndex - 1 ] + distinctFrequencies [ distinctFrequencies . length - loopIndex ] ;
+  // Calculate prefix sums of the *reversed* sorted frequencies.
+  // This effectively gives suffix sums of the original sorted array.
+  // `prefixSums[kdx]` will store the sum of the `kdx` smallest frequencies.
+  var prefixSums = Array(uniqueFrequencies.length + 1);
+  prefixSums[0] = 0; // Base case for prefix sum.
+  for (var kdx = 1; kdx <= uniqueFrequencies.length; kdx++) {
+    prefixSums[kdx] =
+      prefixSums[kdx - 1] + uniqueFrequencies[uniqueFrequencies.length - kdx];
   }
 
-  // Prepare the array for final results, starting with the total elements
-  var finalResults = [ totalElements ] ;
+  // Initialize the results array. The first element (for k=1) is always N.
+  var results = [itemCount];
 
-  // Iterate from 2 up to totalElements to calculate results
-  for ( var loopIndex = 2 ; loopIndex <= totalElements ; loopIndex ++ ) {
-    // If there aren't enough distinct frequencies for the current 'loopIndex', result is 0
-    if ( distinctFrequencies . length < loopIndex ) {
-      finalResults . push ( 0 ) ;
+  // Iterate for k from 2 to N.
+  for (var currentK = 2; currentK <= itemCount; currentK++) {
+    // If there are fewer unique frequencies than 'currentK', it's impossible to form 'currentK' groups.
+    if (uniqueFrequencies.length < currentK) {
+      results.push(0);
     } else {
-      // Calculate the maximum possible value based on current loopIndex and cumulative sums
-      var maximumPossible = Math . min ( totalElements / loopIndex | 0 , cumulativeSums [ distinctFrequencies . length - loopIndex + 1 ] ) ;
-      finalResults . push ( maximumPossible ) ;
+      // Calculate the maximum possible value for the current 'currentK'.
+      // This is the minimum of:
+      // 1. The maximum possible average (N / currentK, floored).
+      // 2. The sum of the 'currentK' smallest frequencies (from the prefixSums array).
+      var maximumPossible = Math.min(
+        Math.floor(itemCount / currentK),
+        prefixSums[uniqueFrequencies.length - currentK + 1]
+      );
+      results.push(maximumPossible);
     }
   }
 
-  // Join the results with newline characters and return
-  return finalResults . join ( "\n" ) ;
+  // Join the results with newline characters and return.
+  return results.join("\n");
 }

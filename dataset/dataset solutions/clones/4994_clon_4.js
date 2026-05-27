@@ -1,12 +1,21 @@
 'use strict';
 
-const inputSource = require("fs").readFileSync("/dev/stdin", "utf8");
+const fileContent = require("fs").readFileSync("/dev/stdin", "utf8");
+const charSequence = fileContent.split("");
 
-const charFrequencies = inputSource.split('').reduce((accumulator, currentCharacter) => {
-    accumulator.set(currentCharacter, (accumulator.get(currentCharacter) || 0) + 1);
-    return accumulator;
-}, new Map());
+const charFrequencies = charSequence.reduce((accumulator, currentCharacter) => {
+  accumulator[currentCharacter] = (accumulator[currentCharacter] || 0) + 1;
+  return accumulator;
+}, {});
 
-const areAllCountsEven = Array.from(charFrequencies.values()).every(tally => tally % 2 === 0);
+let finalVerdict = "Yes";
 
-console.log(areAllCountsEven ? "Yes" : "No");
+const hasOddCount = Object.values(charFrequencies).some(occurrenceCount => {
+  return occurrenceCount % 2 !== 0;
+});
+
+if (hasOddCount) {
+  finalVerdict = "No";
+}
+
+console.log(finalVerdict);

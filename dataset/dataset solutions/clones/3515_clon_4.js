@@ -1,62 +1,41 @@
-let inputBuffer = '';
-process.stdin.resume();
-process.stdin.setEncoding('utf8');
-process.stdin.on('data', fragment => {
-    inputBuffer += fragment;
+const inputSource = require("fs").readFileSync(0, "utf8");
+const processedLines = inputSource.trim().split("\n");
+
+const totalElementsCount = Number(processedLines[0]);
+const elementSequence = processedLines[1].split(" ");
+
+const evenPositionValueCounts = new Map();
+const oddPositionValueCounts = new Map();
+
+elementSequence.forEach((currentValue, currentIndex) => {
+    const targetFrequencyMap = currentIndex % 2 === 0 ? evenPositionValueCounts : oddPositionValueCounts;
+    targetFrequencyMap.set(currentValue, (targetFrequencyMap.get(currentValue) || 0) + 1);
 });
-process.stdin.on('end', () => {
-    const dataLines = inputBuffer.trim().split('\n');
 
-    const totalElementsQuantity = Number(dataLines[0]);
-    const elementDesignations = dataLines[1].split(' ');
+const emptyFrequencyEntry = { itemValue: null, occurrenceCount: 0 };
 
-    const collectionForEvenPositions = new Map();
-    const collectionForOddPositions = new Map();
+const sortedEvenPositionFrequencies = Array.from(evenPositionValueCounts.entries())
+    .map(([val, count]) => ({ itemValue: val, occurrenceCount: count }))
+    .sort((a, b) => b.occurrenceCount - a.occurrenceCount);
 
-    elementDesignations.forEach((itemVal, itemIdx) => {
-        const targetCollection = (itemIdx % 2 === 0) ? collectionForEvenPositions : collectionForOddPositions;
-        targetCollection.set(itemVal, (targetCollection.get(itemVal) || 0) + 1);
-    });
+const sortedOddPositionFrequencies = Array.from(oddPositionValueCounts.entries())
+    .map(([val, count]) => ({ itemValue: val, occurrenceCount: count }))
+    .sort((a, b) => b.occurrenceCount - a.occurrenceCount);
 
-    const frequencyOrderer = (entryOne, entryTwo) => entryTwo.countAmount - entryOne.countAmount;
+const mostFrequentEven = sortedEvenPositionFrequencies[0] || emptyFrequencyEntry;
+const secondMostFrequentEven = sortedEvenPositionFrequencies[1] || emptyFrequencyEntry;
 
-    const orderedEvenItems = Array.from(collectionForEvenPositions.entries())
-        .map(([keyDesignation, countAmount]) => ({ keyDesignation, countAmount }))
-        .sort(frequencyOrderer);
+const mostFrequentOdd = sortedOddPositionFrequencies[0] || emptyFrequencyEntry;
+const secondMostFrequentOdd = sortedOddPositionFrequencies[1] || emptyFrequencyEntry;
 
-    const orderedOddItems = Array.from(collectionForOddPositions.entries())
-        .map(([keyDesignation, countAmount]) => ({ keyDesignation, countAmount }))
-        .sort(frequencyOrderer);
+let maximumUnchangedElements;
 
-    const obtainCount = (itemCollection, positionIndex) => (itemCollection[positionIndex] ? itemCollection[positionIndex].countAmount : 0);
-    const obtainDesignation = (itemCollection, positionIndex) => (itemCollection[positionIndex] ? itemCollection[positionIndex].keyDesignation : null);
+if (mostFrequentEven.itemValue !== mostFrequentOdd.itemValue) {
+    maximumUnchangedElements = mostFrequentEven.occurrenceCount + mostFrequentOdd.occurrenceCount;
+} else {
+    const strategyOneKept = mostFrequentEven.occurrenceCount + secondMostFrequentOdd.occurrenceCount;
+    const strategyTwoKept = secondMostFrequentEven.occurrenceCount + mostFrequentOdd.occurrenceCount;
+    maximumUnchangedElements = Math.max(strategyOneKept, strategyTwoKept);
+}
 
-    const firstEvenCount = obtainCount(orderedEvenItems, 0);
-    const secondEvenCount = obtainCount(orderedEvenItems, 1);
-    const firstOddCount = obtainCount(orderedOddItems, 0);
-    const secondOddCount = obtainCount(orderedOddItems, 1);
-
-    const firstEvenDesignation = obtainDesignation(orderedEvenItems, 0);
-    const firstOddDesignation = obtainDesignation(orderedOddItems, 0);
-
-    let maximumPreserved = 0;
-
-    const selectGreater = (figureA, figureB) => (figureA > figureB ? figureA : figureB);
-
-    if (firstEvenDesignation === null && firstOddDesignation === null) {
-        maximumPreserved = 0;
-    } else if (firstEvenDesignation === null) {
-        maximumPreserved = firstOddCount;
-    } else if (firstOddDesignation === null) {
-        maximumPreserved = firstEvenCount;
-    } else if (firstEvenDesignation !== firstOddDesignation) {
-        maximumPreserved = firstEvenCount + firstOddCount;
-    } else {
-        const alternativeOne = firstEvenCount + secondOddCount;
-        const alternativeTwo = secondEvenCount + firstOddCount;
-        maximumPreserved = selectGreater(alternativeOne, alternativeTwo);
-    }
-
-    const requiredModifications = totalElementsQuantity - maximumPreserved;
-    process.stdout.write(requiredModifications.toString() + '\n');
-});
+console.log(totalElementsCount - maximumUnchangedElements);

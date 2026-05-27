@@ -1,48 +1,47 @@
-'use strict'
+'use strict';
 
-function computeSequenceProduct(limitVal) {
-  if (limitVal < 2) {
+function getCanonicalForm(currentWord) {
+  const characterFrequencies = new Map();
+  for (const char of currentWord) {
+    characterFrequencies.set(char, (characterFrequencies.get(char) || 0) + 1);
+  }
+  const sortedCharacters = Array.from(characterFrequencies.keys()).sort();
+  return sortedCharacters.map(char => `${char}${characterFrequencies.get(char)}`).join('');
+}
+
+function computeFactorial(value) {
+  if (value === 0 || value === 1) {
     return 1;
   }
-  let currentProduct = 1;
-  for (let i = 2; i <= limitVal; i++) {
-    currentProduct *= i;
+  let productAccumulator = 1;
+  for (let i = 2; i <= value; i++) {
+    productAccumulator *= i;
   }
-  return currentProduct;
+  return productAccumulator;
 }
 
-function analyzeTextData(textBlocks) {
-  const patternOccurrences = new Map();
+function calculateAnagramPairs(wordList) {
+  const anagramCounts = wordList.reduce((accumulatorMap, currentWord) => {
+    const canonicalRepresentation = getCanonicalForm(currentWord);
+    return accumulatorMap.set(canonicalRepresentation, (accumulatorMap.get(canonicalRepresentation) || 0) + 1);
+  }, new Map());
 
-  for (const currentBlock of textBlocks) {
-    const sortedChars = Array.from(currentBlock).sort((a, b) => a.localeCompare(b));
-    const normalizedPattern = sortedChars.join('');
-    patternOccurrences.set(normalizedPattern, (patternOccurrences.get(normalizedPattern) || 0) + 1);
-  }
-
-  let finalTally = 0;
-
-  for (const countValue of patternOccurrences.values()) {
-    if (countValue >= 2) {
-      finalTally += (computeSequenceProduct(countValue) / 2);
+  const totalPairs = Array.from(anagramCounts.values()).reduce((sumOfPairs, currentCount) => {
+    if (currentCount >= 2) {
+      return sumOfPairs + (computeFactorial(currentCount) / 2);
     }
-  }
+    return sumOfPairs;
+  }, 0);
 
-  console.log(finalTally);
+  console.log(totalPairs);
 }
 
-function orchestrateProcessing(rawData) {
-  const allSegments = rawData.split('\n');
-
-  if (allSegments.length > 0) {
-    allSegments.pop();
-  }
-
-  if (allSegments.length > 0) {
-    allSegments.shift();
-  }
-
-  analyzeTextData(allSegments);
+function processInput(rawData) {
+  const relevantWords = rawData
+    .split('\n')
+    .slice(1)
+    .filter(s => s.length > 0);
+  calculateAnagramPairs(relevantWords);
 }
 
-orchestrateProcessing(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

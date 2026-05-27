@@ -1,39 +1,62 @@
-const fileSystem = require('fs');
+module.exports = function(moduleDefinitionsContainer) {
+    const fileSystemInterface = require('fs');
 
-function processInputValues(dataLines) {
-    const totalItems = parseInt(dataLines[0], 10);
-    const itemValuesAsString = dataLines[1].match(/\S+/g);
+    const rawInputContent = fileSystemInterface.readFileSync('/dev/stdin', 'utf8');
+    const lineSegments = rawInputContent.split('\n');
 
-    const indexedItems = Array.from({ length: totalItems }, (_, currentIdx) => ({
-        realValue: parseInt(itemValuesAsString[currentIdx], 10),
-        initialPosition: currentIdx + 1
-    }));
+    const processAndArrange = (dataSegments) => {
+        const totalElements = parseInt(dataSegments[0], 10);
+        const numericalEntries = dataSegments[1].split(' ').map(entry => parseInt(entry, 10));
 
-    indexedItems.sort((first, second) => first.realValue - second.realValue);
+        const indexedValuesCollection = Array.from({ length: totalElements }, (_, indexPosition) =>
+            [numericalEntries[indexPosition], indexPosition + 1]
+        );
 
-    const resultingOrder = indexedItems.reduce((accumulator, currentItem) => {
-        accumulator.push(currentItem.initialPosition);
-        return accumulator;
-    }, []);
+        indexedValuesCollection.sort((firstTuple, secondTuple) => firstTuple[0] - secondTuple[0]);
 
-    process.stdout.write(resultingOrder.join(' ') + '\n');
-}
+        const finalOrderSequence = indexedValuesCollection.map(tupleItem => tupleItem[1]);
 
-const inputBuffer = Buffer.alloc(1024 * 16);
-let allInputData = '';
-let bytesReadFromStream = 0;
+        console.log(finalOrderSequence.join(' '));
+    };
 
-try {
-    while ((bytesReadFromStream = fileSystem.readSync(process.stdin.fd, inputBuffer, 0, inputBuffer.length, null)) > 0) {
-        allInputData += inputBuffer.toString('utf8', 0, bytesReadFromStream);
-    }
-} catch (readError) {
-    // Error handling for stdin read, if necessary for specific environments.
-    // For typical competitive programming scenarios, this block is often omitted.
-}
+    processAndArrange(lineSegments);
 
-const linesOfInput = allInputData.trim().split('\n');
+    const moduleSystemFacade = () => { /* This function is a placeholder for the original module loader */ };
 
-if (linesOfInput.length >= 2) {
-    processInputValues(linesOfInput);
-}
+    Object.assign(moduleSystemFacade, {
+        moduleRegistry: {},
+        moduleCache: {},
+        defineExports: (targetObject, propertyKey, propertyGetter) => {
+            Object.defineProperty(targetObject, propertyKey, { enumerable: true, get: propertyGetter });
+        },
+        markAsModule: (targetObject) => {
+            if (typeof Symbol !== 'undefined' && Symbol.toStringTag) {
+                Object.defineProperty(targetObject, Symbol.toStringTag, { value: 'Module' });
+            }
+            Object.defineProperty(targetObject, '__esModule', { value: true });
+        },
+        interopDefault: (moduleValue, flags) => {
+            if (1 & flags) moduleValue = moduleSystemFacade(moduleValue);
+            if (8 & flags) return moduleValue;
+            if (4 & flags && typeof moduleValue === 'object' && moduleValue && moduleValue.__esModule) return moduleValue;
+            const newNamespace = Object.create(null);
+            moduleSystemFacade.markAsModule(newNamespace);
+            Object.defineProperty(newNamespace, 'default', { enumerable: true, value: moduleValue });
+            if (2 & flags && typeof moduleValue !== 'string') {
+                for (const prop in moduleValue) {
+                    moduleSystemFacade.defineExports(newNamespace, prop, ((key) => moduleValue[key]).bind(null, prop));
+                }
+            }
+            return newNamespace;
+        },
+        getNamespaceObject: (moduleValue) => {
+            const getter = moduleValue && moduleValue.__esModule ? () => moduleValue.default : () => moduleValue;
+            moduleSystemFacade.defineExports(getter, 'a', getter);
+            return getter;
+        },
+        checkOwnProperty: (objectToCheck, propertyName) => Object.prototype.hasOwnProperty.call(objectToCheck, propertyName),
+        assetPath: ""
+    });
+
+    return moduleSystemFacade;
+};

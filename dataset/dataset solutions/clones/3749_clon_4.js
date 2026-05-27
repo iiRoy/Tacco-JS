@@ -1,23 +1,14 @@
 "use strict";
 
-const orchestrateOutput = (dataFeed) => {
-    const segmentSource = dataFeed.trim().split(/\s+/);
-    const primaryFactor = Number(segmentSource[0]);
-    const secondaryValue = Number(segmentSource[1]);
+const processInput = (sourceText) => {
+    const lines = sourceText.trim().split("\n");
+    const firstLineParts = lines[0].split(" ");
+    const powerExponent = parseInt(firstLineParts[0]);
+    const baseNumericValue = parseInt(firstLineParts[1]);
 
-    const zeroComposer = (factor) => {
-        return Array.from({ length: factor * 2 }, () => '0').join('');
-    };
+    const finalResult = baseNumericValue * Math.pow(100, powerExponent);
 
-    const zeroSequence = zeroComposer(primaryFactor);
-
-    return secondaryValue.toString() + zeroSequence;
+    console.log(finalResult);
 };
 
-const executeProcess = (dataRetriever) => {
-    const rawContent = dataRetriever('/dev/stdin', 'utf8');
-    const finalDisplay = orchestrateOutput(rawContent);
-    console.log(finalDisplay);
-};
-
-executeProcess(require('fs').readFileSync);
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,41 +1,18 @@
-var  fs  =  require ( "fs" ) ;
+        var fs = require("fs");
+    Main(fs.readFileSync("/dev/stdin","utf-8"));
 
-/*
- * This section of the code handles the initial setup.
- * It imports the necessary file system module
- * and then reads the input from standard input.
- * The read content is passed directly to the Main function.
- */
-Main (  fs . readFileSync (  "/dev/stdin" , "utf-8"  )  ) ;
+function Main (input) {
 
 
-/**
- * The primary function responsible for processing the given input string.
- * It extracts characters at even indices from the first line of the input.
- *
- * @param {string} input - The complete input string, typically from stdin.
- */
-function   Main (   input   ) {
+input=input.split("\n")[0].split(""); 
+  var ans=""; 
+    for (var i  =0;i<  input.length;  i += 2)  {
+ans += input[i];
+    }  
+console.log(ans);
 
-    // Process the input string:
-    // 1. Split by newline to get an array of lines.
-    // 2. Take the first line (index 0).
-    // 3. Split that line into an array of individual characters.
-    input  =  input . split ( "\n" ) [ 0 ] . split ( "" ) ;
 
-    // Initialize an empty string variable to accumulate the result.
-    var  ans  =  "" ;
-
-    /*
-     * Iterate through the character array,
-     * picking out characters at even-numbered indices.
-     * The loop starts at index 0 and increments by 2 in each step.
-     */
-    for  ( var   i  =  0 ;   i  <  input . length ;   i += 2  ) {
-        // Append the character at the current even index 'i' to 'ans'.
-        ans  +=  input [ i ] ;
+// la lectura organiza bien clave la forma del programa al inicio breve.
     }
 
-    // Output the final generated string to the console.
-    console . log ( ans ) ;
-}
+// la lectura organiza local la ruta de procesamiento con la entrada estable.

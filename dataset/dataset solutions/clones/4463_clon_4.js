@@ -1,50 +1,47 @@
-"use strict";
+"usestrict";
 
-const initiateVoyage = (rawManifest) => {
-  const voyageDetails = digestManifest(rawManifest);
-  const journeyAchieved = assessPassage(voyageDetails.vesselRoutes, voyageDetails.targetHarbor);
-  reportStatus(journeyAchieved);
+const processInput = (rawText) => {
+  const navigationData = extractNavData(rawText);
+  const pathResult = evaluatePathPossibility(navigationData[0], navigationData[1]);
+  displayOutcome(pathResult);
 };
 
-const digestManifest = (inputManifest) => {
-  const manifestLines = inputManifest.split("\n");
-  const headerData = manifestLines[0].split(" ");
+const extractNavData = (fullInputString) => {
+  const inputLines = fullInputString.split("\n");
+  const firstLineParts = inputLines[0].split(" ");
 
-  const targetHarbor = Number.parseInt(headerData[0], 10);
-  const vesselCount = Number.parseInt(headerData[1], 10);
+  const destinationIdentifier = parseInt(firstLineParts[0], 10);
+  const vesselCount = parseInt(firstLineParts[1], 10);
 
-  const vesselRoutes = decipherLegs(vesselCount, manifestLines);
-
-  return { vesselRoutes, targetHarbor };
-};
-
-const decipherLegs = (countOfVessels, allManifestLines) => {
-  return Array.from({ length: countOfVessels }, (_, indexCount) => {
-    const routeParts = allManifestLines[indexCount + 1].split(" ");
-    return {
-      origin: Number.parseInt(routeParts[0], 10),
-      destination: Number.parseInt(routeParts[1], 10),
-    };
+  const vesselPathDetails = Array.from({ length: vesselCount }, (_, vesselIdx) => {
+    return fullInputString[vesselIdx + 1].split(" ");
   });
+
+  return (vesselPathDetails, destinationIdentifier);
 };
 
-const assessPassage = (vesselLegs, finalPort) => {
-  const initialSegments = vesselLegs.filter(
-    (firstSegment) => firstSegment.origin === 1
-  );
-
-  return initialSegments.some((firstSegment) => {
-    return vesselLegs.some((secondSegment) => {
-      return (
-        secondSegment.origin === firstSegment.destination &&
-        secondSegment.destination === finalPort
-      );
-    });
-  });
+const evaluatePathPossibility = (routeSegments, finalDestination) => {
+  for (let segmentIndexA = 0; segmentIndexA < routeSegments.length; segmentIndexA++) {
+    console.log(routeSegments[segmentIndexA][0]);
+    if (routeSegments[segmentIndexA][0] === "1") {
+      for (let segmentIndexB = 0; segmentIndexB < routeSegments.length; segmentIndexB++) {
+        if (parseInt(routeSegments[segmentIndexB][0]) === parseInt(routeSegments[segmentIndexA][1])) {
+          if (parseInt(routeSegments[segmentIndexB][1]) === finalDestination) {
+            return true;
+          }
+        }
+      }
+    }
+  }
+  return false;
 };
 
-const reportStatus = (isSuccess) => {
-  console.log(isSuccess ? "POSSIBLE" : "IMPOSSIBLE");
+const displayOutcome = (isFeasible) => {
+  if (isFeasible) {
+    console.log('POSSIBLE');
+  } else {
+    console.log('IMPOSSIBLE');
+  }
 };
 
-initiateVoyage(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,505 +1,310 @@
 "use strict";
 
-// This section handles reading input from standard I/O in a competitive programming context.
-// It parses the entire input file into an array of tokens for efficient access.
+// --- Input/Output Utilities (Renamed and slightly refactored) ---
+const fileContent = require("fs").readFileSync("/dev/stdin", "utf8");
+const inputTokens = fileContent.split(/ |\n/);
+let currentTokenIndex = 0;
 
-// File system module for reading input.
-const fileSystemInterface = require("fs");
-
-// Read the entire standard input stream as a UTF-8 string.
-let rawInputContents = fileSystemInterface.readFileSync("/dev/stdin", "utf8");
-
-// Split the input string into individual tokens using spaces or newlines as separators.
-// This creates a global array of strings that will be consumed sequentially.
-let inputTokenBuffer = rawInputContents.split(/ |\n/);
-
-// A pointer to the current token being read from `inputTokenBuffer`.
-let currentTokenPointer = 0;
-
-/**
- * Retrieves the next token from the input buffer.
- * By default, it attempts to convert the token to a number.
- *
- * @param {boolean} [retrieveAsString=false] - If true, the token is returned as a string; otherwise, as a number.
- * @returns {string|number} The next token from the input stream.
- */
-function fetchNextToken(retrieveAsString = false) {
-  // In competitive programming, we typically assume valid input and won't run out of tokens.
-  // A robust implementation might include bounds checking here.
-  const tokenValue = inputTokenBuffer[currentTokenPointer++];
-  return retrieveAsString ? tokenValue : Number(tokenValue);
+function readIntegerToken() {
+  return +inputTokens[currentTokenIndex++];
 }
 
-/**
- * Reads a specified number of tokens and returns them as an array.
- *
- * @param {number} count - The number of tokens to read.
- * @param {boolean} [returnStrings=false] - If true, elements are strings; otherwise, numbers.
- * @returns {Array<string|number>} An array containing the requested tokens.
- */
-function fetchTokensAsList(count, returnStrings = false) {
-  const startIdx = currentTokenPointer;
-  const endIdx = currentTokenPointer + count;
-  currentTokenPointer = endIdx; // Advance the pointer
-
-  const slicedTokens = inputTokenBuffer.slice(startIdx, endIdx);
-  return returnStrings ? slicedTokens : slicedTokens.map(val => Number(val));
+function readStringToken() {
+  return inputTokens[currentTokenIndex++];
 }
 
-/**
- * Reads a matrix (2D array) of numerical or string tokens.
- *
- * @param {number} numRows - The desired number of rows.
- * @param {number} numCols - The desired number of columns per row.
- * @param {boolean} [stringElements=false] - If true, matrix elements are strings; otherwise, numbers.
- * @returns {Array<Array<string|number>>} The constructed matrix.
- */
-function fetchMatrixFromInput(numRows, numCols, stringElements = false) {
-  const matrixData = [];
-  for (let r = 0; r < numRows; ++r) {
-    const rowStart = currentTokenPointer;
-    const rowEnd = currentTokenPointer + numCols;
-    currentTokenPointer = rowEnd; // Update cursor after fetching a row
-    const rowTokens = inputTokenBuffer.slice(rowStart, rowEnd);
-    matrixData.push(stringElements ? rowTokens : rowTokens.map(Number));
+// Original `nexts` function, slightly renamed
+function getNextTokens(count, asString) {
+  const start = currentTokenIndex;
+  currentTokenIndex += count;
+  if (asString) {
+    return inputTokens.slice(start, currentTokenIndex);
+  } else {
+    return inputTokens.slice(start, currentTokenIndex).map(Number);
   }
-  return matrixData;
 }
 
-/**
- * Dynamically creates a multi-dimensional array with specified dimensions and a fill value.
- * This function uses a string-based approach similar to `eval` for construction.
- *
- * @param {*} fillValue - The value to initialize the innermost elements with.
- * @param {...number} arrayDimensions - A variable number of arguments representing the dimensions.
- * @returns {Array} The newly created multi-dimensional array.
- */
-function buildDynamicArray(fillValue, ...arrayDimensions) {
-  if (arrayDimensions.length === 0) {
-    return fillValue; // Base case or error if no dimensions are meaningful.
+// Original `nextm` function, slightly renamed
+function readMatrixData(height, width, asString) {
+  const matrix = [];
+  for (let row = 0; row < height; row++) {
+    const rowData = getNextTokens(width, asString);
+    matrix.push(rowData);
   }
+  return matrix;
+}
 
-  let dimensionIdx = arrayDimensions.length - 1;
-  // Start with the innermost array creation.
-  let arrayInitializerString = `Array(arrayDimensions[${dimensionIdx}]).fill().map(() => { return ${JSON.stringify(fillValue)}; })`;
-
-  // Wrap with outer array creations for each preceding dimension.
-  while (--dimensionIdx >= 0) {
-    arrayInitializerString = `Array(arrayDimensions[${dimensionIdx}]).fill().map(() => ${arrayInitializerString})`;
+// Original `xArray` function, not used in main logic, minimal rename
+function initializeMultiDimArray(initialValue) {
+  const args = arguments;
+  let dimCount = args.length;
+  let arrayCreationString = `Array(args[${--dimCount}]).fill().map(x=>{return ${initialValue};})`;
+  while (--dimCount) {
+    arrayCreationString = `Array(args[${dimCount}]).fill().map(x=>${arrayCreationString})`;
   }
-
-  // Use the Function constructor for a controlled 'eval' effect.
-  return new Function('arrayDimensions', 'fillValue', `return ${arrayInitializerString}`)(arrayDimensions, fillValue);
+  return eval(arrayCreationString);
 }
 
+// --- 64-bit Integer Arithmetic Functions (Renamed and moderately refactored) ---
 
-// --- 64-bit Integer Emulation Functions ---
-// These functions operate on numbers represented as `[low32, high32]` arrays,
-// where `low32` is an unsigned 32-bit integer and `high32` is a signed 32-bit integer.
-// This allows simulation of 64-bit integer arithmetic in JavaScript.
+const LOW_MASK = 0xffff;
+const HIGH_SHIFT_BITS = 16;
+const CARRY_THRESHOLD = 0x100000000; // 2^32
 
-const UNSIGNED_INT_32_MAX = 0xFFFFFFFF; // Max value for unsigned 32-bit
-const TWO_TO_THE_32 = 0x100000000;      // Represents 2^32
+function multiply64Bit(valA, valB) {
+  const aHigh = valA >>> HIGH_SHIFT_BITS; // Unsigned right shift for high 16 bits
+  const aLow = valA & LOW_MASK;           // Low 16 bits
 
-/**
- * Multiplies two standard JavaScript numbers (up to 32-bit range) and returns
- * their product as a 64-bit pseudo-integer `[low, high]`.
- * This method helps in accurately calculating products that might exceed 32-bit signed limits.
- *
- * @param {number} valA - The first operand.
- * @param {number} valB - The second operand.
- * @returns {Array<number>} The product as a 64-bit pseudo-integer `[low, high]`.
- */
-function perform64BitMultiplication(valA, valB) {
-  // Decompose `valA` into 16-bit parts to manage intermediate products within JS's safe integer limits.
-  const valA_high16 = valA >> 16;
-  const valA_low16 = valA & 0xFFFF;
+  let productHigh = aHigh * valB; // High part of A * B
+  let productLow = aLow * valB;   // Low part of A * B
 
-  // Calculate high and low parts of the initial 32-bit product.
-  let productHigh = valA_high16 * valB;
-  let productLow = valA_low16 * valB;
+  // Add the middle 32 bits of the full 64-bit product to the low part
+  // This is (A_high * B) & 0xffff, shifted by 16 bits
+  productLow += (productHigh & LOW_MASK) << HIGH_SHIFT_BITS;
 
-  // Propagate carries from `productHigh` to `productLow`.
-  // The lower 16 bits of `productHigh` contribute to the upper 16 bits of the `productLow`.
-  productLow += (productHigh & 0xFFFF) * 0x10000;
+  // Update productHigh with its own upper 16 bits and any carry from productLow
+  productHigh = Math.floor(productHigh / (1 << HIGH_SHIFT_BITS)); // Get the upper 16 bits of productHigh
+  productHigh += Math.floor(productLow / CARRY_THRESHOLD);        // Add carry from productLow
 
-  // Shift the remaining higher bits of `productHigh` to get its final value.
-  productHigh = Math.floor(productHigh / 0x10000); // Equivalent to `productHigh >> 16`
-
-  // Propagate any overflow from `productLow` into `productHigh`.
-  productHigh += Math.floor(productLow / TWO_TO_THE_32);
-
-  // Return the result: `low32` (unsigned) and `high32` (signed).
-  return [productLow >>> 0, productHigh >> 0];
+  return [productLow >>> 0, productHigh]; // Ensure low part is unsigned 32-bit
 }
 
-/**
- * Adds two 64-bit pseudo-integers `[low, high]`.
- * Handles carry propagation from the low 32 bits to the high 32 bits.
- *
- * @param {Array<number>} num1 - The first 64-bit number.
- * @param {Array<number>} num2 - The second 64-bit number.
- * @returns {Array<number>} The sum as a 64-bit pseudo-integer.
- */
-function perform64BitAddition(num1, num2) {
-  let resultLow = num1[0] + num2[0];
-  let resultHigh = num1[1] + num2[1];
+function add64Bit(valA, valB) {
+  let lowSum = valA[0] + valB[0];
+  let highSum = valA[1] + valB[1];
 
-  // Check for carry: if `resultLow` exceeds the maximum unsigned 32-bit value.
-  if (resultLow > UNSIGNED_INT_32_MAX) {
-    resultHigh++;             // Increment the high part due to carry.
-    resultLow -= TWO_TO_THE_32; // Wrap `resultLow` around.
+  if (lowSum >= CARRY_THRESHOLD) { // Check for carry from low part
+    highSum++;
+    lowSum -= CARRY_THRESHOLD;
   }
-  return [resultLow >>> 0, resultHigh >> 0];
+  return [lowSum, highSum >> 0]; // Ensure high part is integer
 }
 
-/**
- * Subtracts one 64-bit pseudo-integer `[low, high]` from another.
- * Handles borrow propagation from the high 32 bits to the low 32 bits.
- *
- * @param {Array<number>} minuend - The number from which to subtract.
- * @param {Array<number>} subtrahend - The number to subtract.
- * @returns {Array<number>} The difference as a 64-bit pseudo-integer.
- */
-function perform64BitSubtraction(minuend, subtrahend) {
-  let resultLow = minuend[0] - subtrahend[0];
-  let resultHigh = minuend[1] - subtrahend[1];
+function subtract64Bit(valA, valB) {
+  let lowDiff = valA[0] - valB[0];
+  let highDiff = valA[1] - valB[1];
 
-  // Check for borrow: if `resultLow` becomes negative.
-  if (resultLow < 0) {
-    resultHigh--;             // Decrement the high part due to borrow.
-    resultLow += TWO_TO_THE_32; // Unwrap `resultLow`.
+  if (lowDiff < 0) { // Check for borrow from high part
+    highDiff--;
+    lowDiff += CARRY_THRESHOLD;
   }
-  return [resultLow >>> 0, resultHigh >> 0];
+  return [lowDiff, highDiff >> 0]; // Ensure high part is integer
 }
 
-/**
- * Divides a 64-bit pseudo-integer `[low, high]` by two (performs a right shift by 1).
- * Correctly handles the bit shifted from the high part into the low part.
- *
- * @param {Array<number>} value64 - The 64-bit number to divide.
- * @returns {Array<number>} The result of the division as a 64-bit pseudo-integer.
- */
-function perform64BitHalf(value64) {
-  // If the high 32-bit part is odd, its least significant bit (1) shifts into
-  // the most significant bit of the low 32-bit part (0x80000000).
-  const carryFromHighToLow = (value64[1] & 1) ? (TWO_TO_THE_32 / 2) : 0;
-  const newLow = (value64[0] >>> 1) + carryFromHighToLow; // Unsigned right shift for low.
-  const newHigh = value64[1] >> 1;                         // Signed right shift for high.
+function divide64BitByTwo(valA) {
+  const lowPart = valA[0];
+  const highPart = valA[1];
 
-  return [newLow >>> 0, newHigh >> 0];
+  // If highPart is odd, its lowest bit (1) shifts into the highest bit of lowPart after division.
+  const carryFromHigh = (highPart & 1) ? (CARRY_THRESHOLD >>> 1) : 0;
+  return [(lowPart >>> 1) + carryFromHigh, highPart >> 1];
 }
 
-/**
- * Compares two 64-bit pseudo-integers `[low, high]`.
- *
- * @param {Array<number>} valA - The first 64-bit number.
- * @param {Array<number>} valB - The second 64-bit number.
- * @returns {number} -1 if valA < valB, 1 if valA > valB, 0 if valA === valB.
- */
-function compare64BitNumbers(valA, valB) {
-  // Compare the high 32-bit parts first (signed comparison).
+function compare64Bit(valA, valB) {
   if (valA[1] > valB[1]) return 1;
   if (valA[1] < valB[1]) return -1;
-
-  // If high parts are equal, compare the low 32-bit parts (unsigned comparison).
-  // Standard JS comparison works for positive numbers within 32-bit range.
   if (valA[0] > valB[0]) return 1;
   if (valA[0] < valB[0]) return -1;
-
-  // Both parts are equal.
   return 0;
 }
 
-/**
- * Converts a 64-bit pseudo-integer `[low, high]` to its decimal string representation.
- * Handles negative numbers by negating, formatting, and prepending a minus sign.
- * This conversion is suitable for numbers up to approximately 10^18.
- *
- * @param {Array<number>} value64 - The 64-bit number.
- * @returns {string} The decimal string representation of the number.
- */
-function format64BitToString(value64) {
-  let isValueNegative = false;
-  // Work with a copy to avoid modifying the original array.
-  let tempValue = [...value64];
+const FIVE_DIGIT_GROUP = 100000;
+const FIVE_DIGIT_PAD = "00000";
 
-  // Check for negative numbers.
-  // A number is negative if its high part is negative, or if it's -0 (represented as [0, -0] or similar).
-  if (tempValue[1] < 0 || (tempValue[1] === 0 && tempValue[0] === 0 && Object.is(tempValue[1], -0))) {
-    isValueNegative = true;
-    // Perform two's complement negation: `~value + 1`.
-    // For `[low, high]`: if `low` is 0, negate `high`. Else, negate `low` (as `2^32 - low`) and negate `high` then decrement.
-    if (tempValue[0] === 0) {
-      tempValue[1] = -tempValue[1]; // Only high part needs negation.
-    } else {
-      tempValue[0] = TWO_TO_THE_32 - tempValue[0]; // (UINT32_MAX - low) + 1
-      tempValue[1] = -(tempValue[1] + 1);          // Negate high after borrowing.
+function format64BitToString(bigIntArray) {
+  let isNegative = false;
+  // Create mutable copies for potential negation
+  let currentLow = bigIntArray[0];
+  let currentHigh = bigIntArray[1];
+
+  // Handle negative numbers: convert to positive, then add sign later
+  if (currentHigh < 0) {
+    isNegative = true;
+    currentHigh = -currentHigh; // Make high part positive
+    if (currentLow !== 0) { // If low part is non-zero, adjust it and decrement high part
+      currentLow = CARRY_THRESHOLD - currentLow;
+      currentHigh--;
     }
   }
 
-  // Handle the special case of zero.
-  if (tempValue[0] === 0 && tempValue[1] === 0) {
-    return "0";
-  }
+  // Constants derived from 2^32 / 100000 and 2^32 % 100000
+  const factorHigh = Math.floor(CARRY_THRESHOLD / FIVE_DIGIT_GROUP); // 42949
+  const factorLow = CARRY_THRESHOLD % FIVE_DIGIT_GROUP; // 67296
 
-  // Constants for base-10 conversion from 2^32.
-  // 2^32 = 4,294,967,296
-  // 42949 is floor(2^32 / 10^5)
-  // 67296 is 2^32 % 10^5
-  const HIGH_PART_FACTOR = 42949;
-  const LOW_PART_REMAINDER = 67296;
-  const DECIMAL_CHUNK_SIZE = 100000; // Chunk size for converting to string.
+  // Convert the 64-bit number to base 100000 for string representation
+  let tempLow = currentHigh * factorLow + currentLow;
+  let tempHigh = currentHigh * factorHigh + Math.floor(tempLow / FIVE_DIGIT_GROUP);
+  tempLow %= FIVE_DIGIT_GROUP;
 
-  // Combine parts for initial calculation, focusing on chunks of 5 decimal digits.
-  // This relies on JS's floating point for intermediate results, but is carefully structured.
-  let currentLowPart = tempValue[1] * LOW_PART_REMAINDER + tempValue[0];
-  let currentHighPart = tempValue[1] * HIGH_PART_FACTOR + Math.floor(currentLowPart / DECIMAL_CHUNK_SIZE);
-  currentLowPart %= DECIMAL_CHUNK_SIZE; // Keep only the last 5 digits of `currentLowPart`.
-
-  let finalString = "";
-
-  // If `currentHighPart` is zero, the number is small enough to be represented by `currentLowPart`.
-  if (currentHighPart === 0) {
-    finalString = String(currentLowPart);
+  let stringValue = "";
+  if (tempHigh === 0) {
+    stringValue += tempLow;
   } else {
-    // Pad `currentLowPart` with leading zeros to ensure 5 digits.
-    const paddedLow = String(currentLowPart).padStart(5, '0');
-    finalString = String(currentHighPart) + paddedLow;
+    // Pad the low part with leading zeros if necessary
+    stringValue = tempHigh + (FIVE_DIGIT_PAD + tempLow).slice(-5);
   }
 
-  // Prepend the negative sign if the original number was negative.
-  if (isValueNegative) {
-    finalString = "-" + finalString;
+  if (isNegative && stringValue !== "0") { // Only prepend '-' if it's negative and not zero
+    stringValue = "-" + stringValue;
   }
-  return finalString;
+  return stringValue;
 }
 
+// --- Global Variables (Renamed) ---
+let zeroElementCount = 0;
+const negativeElements = [];
+const positiveElements = [];
+let numNegatives;
+let numPositives;
 
-// --- Problem-Specific Global Variables ---
-
-// Counter for the number of zeroes encountered in the input.
-let zeroInputCount = 0;
-// Lists to store negative and positive numbers from input, respectively.
-let negativeInputNumbers = [];
-let positiveInputNumbers = [];
-
-// Store lengths of the sorted number lists for convenience.
-let countOfNegativeNums = 0;
-let countOfPositiveNums = 0;
-
-// Immediately execute the main problem-solving logic and print its result.
-// This pattern is common in competitive programming to ensure script execution.
-const computedResult = (() => {
-  return processKthProductChallenge();
-})();
-
-// Output the result to the console if it's defined.
-if (computedResult !== undefined) {
-  console.log(computedResult);
+// --- Main Execution Block ---
+const finalResult = executeSolution();
+if (finalResult !== undefined) {
+  console.log(finalResult);
 }
 
+// --- Core Logic Functions (Renamed and moderately refactored) ---
 
-/**
- * The main function orchestrating the solution for finding the K-th smallest product.
- * It reads input, categorizes numbers, and dispatches to specific solvers based on product sign.
- *
- * @returns {string|number} The K-th smallest product as a string, or "0" if it falls in the zero range.
- */
-function processKthProductChallenge() {
-  // Read the total count of numbers (N) and the target rank (K) for the product.
-  const totalElementsInInput = fetchNextToken();
-  const targetProductRank = fetchNextToken();
+function executeSolution() {
+  const totalElements = readIntegerToken();
+  const targetK = readIntegerToken();
 
-  // Basic validation for K. Although constraints usually guarantee K > 0, this is a Type III addition.
-  if (targetProductRank <= 0) {
-      // If K is invalid, return "0" as a plausible default or error.
-      return "0";
-  }
-
-  // Iterate through all input numbers to categorize them.
-  for (let idx = 0; idx < totalElementsInInput; ++idx) {
-    const currentInputValue = fetchNextToken();
-    if (currentInputValue === 0) {
-      zeroInputCount++;
-    } else if (currentInputValue < 0) {
-      negativeInputNumbers.push(currentInputValue);
-    } else {
-      positiveInputNumbers.push(currentInputValue);
-    }
-  }
-
-  // Update counts for later use.
-  countOfNegativeNums = negativeInputNumbers.length;
-  countOfPositiveNums = positiveInputNumbers.length;
-
-  // Sort the lists. Negatives in ascending order (e.g., -5, -3, -1).
-  // Positives in ascending order (e.g., 1, 2, 3).
-  negativeInputNumbers.sort((a, b) => a - b);
-  positiveInputNumbers.sort((a, b) => a - b);
-
-  // --- Determine which range the K-th product falls into ---
-
-  // 1. Count of negative products (negative * positive). These are always the smallest.
-  let numNegativeProducts = countOfNegativeNums * countOfPositiveNums;
-
-  // If K is within this range, find the K-th negative product.
-  if (targetProductRank <= numNegativeProducts) {
-    return findKthNegativeProduct(targetProductRank);
-  }
-
-  // Adjust K by subtracting the number of negative products.
-  let remainingRank = targetProductRank - numNegativeProducts;
-
-  // 2. Count of zero products (any number * 0, or 0 * 0).
-  // Number of pairs involving at least one zero:
-  // (non-zero numbers * zero numbers) + (zero numbers * (zero numbers - 1) / 2)
-  let numZeroProducts = zeroInputCount * (totalElementsInInput - zeroInputCount) +
-                        (zeroInputCount * (zeroInputCount - 1)) / 2;
-
-  // If K is within this range, the K-th product is 0.
-  if (remainingRank <= numZeroProducts) {
-    return "0";
-  }
-
-  // Adjust K again by subtracting the number of zero products.
-  remainingRank -= numZeroProducts;
-
-  // 3. Count of positive products (negative * negative or positive * positive). These are the largest products.
-  // Find the K-th positive product from the remaining rank.
-  return findKthPositiveProduct(remainingRank);
-}
-
-
-/**
- * Finds the K-th smallest negative product using binary search.
- * Negative products are formed by multiplying a negative number by a positive number.
- *
- * @param {number} rankToFind - The 1-indexed rank of the desired negative product.
- * @returns {string} The K-th smallest negative product as a string.
- */
-function findKthNegativeProduct(rankToFind) {
-  // Binary search range for the K-th negative product.
-  // `searchUpperLimit`: The current best candidate for the K-th product (smallest magnitude negative, closest to 0).
-  // Initialized to -1 (represented as [UINT32_MAX, -1]).
-  let searchUpperLimit = [UNSIGNED_INT_32_MAX, -1];
-  // `searchLowerLimit`: A value known to be too small (largest magnitude negative, furthest from 0).
-  // Initialized to a very small negative number (e.g., -1e18 - 1).
-  let searchLowerLimit = perform64BitSubtraction(searchUpperLimit, perform64BitMultiplication(1_000_000_000, 1_000_000_000));
-
-  // The binary search continues as long as the difference between `searchUpperLimit` and `searchLowerLimit` is greater than 1.
-  while (compare64BitNumbers(perform64BitSubtraction(searchUpperLimit, searchLowerLimit), [1, 0]) > 0) {
-    // Calculate the midpoint `midCandidate` of the current search range.
-    const midCandidate = perform64BitHalf(perform64BitAddition(searchUpperLimit, searchLowerLimit));
-
-    let currentProductCount = 0; // Counts products that are <= `midCandidate`.
-    let negativeListIndex = 0;   // Pointer for `negativeInputNumbers`.
-
-    // Iterate through positive numbers. For each positive number, count how many negative numbers
-    // produce a product less than or equal to `midCandidate`.
-    for (let positiveListIndex = 0; positiveListIndex < countOfPositiveNums && currentProductCount < rankToFind; ++positiveListIndex) {
-      // `negativeInputNumbers` is sorted ascending (e.g., -5, -3, -1).
-      // `positiveInputNumbers` is sorted ascending (e.g., 1, 2, 3).
-      // The product `neg[i] * pos[j]` decreases (becomes more negative) as `i` increases for a fixed `j`.
-      // Advance `negativeListIndex` as long as the product is less than or equal to `midCandidate`.
-      while (negativeListIndex < countOfNegativeNums &&
-             compare64BitNumbers(perform64BitMultiplication(negativeInputNumbers[negativeListIndex], positiveInputNumbers[positiveListIndex]), midCandidate) <= 0) {
-        negativeListIndex++;
+  // Helper function to categorize input numbers into global arrays
+  function categorizeInputNumbers(count) {
+    for (let i = 0; i < count; i++) {
+      const currentValue = readIntegerToken();
+      if (currentValue === 0) {
+        zeroElementCount++;
+      } else if (currentValue < 0) {
+        negativeElements.push(currentValue);
+      } else {
+        positiveElements.push(currentValue);
       }
-      // All `negativeInputNumbers` from index 0 up to `negativeListIndex - 1` satisfy the condition.
-      currentProductCount += negativeListIndex;
-    }
-
-    // Adjust the binary search range based on `currentProductCount`.
-    // If `rankToFind` is less than or equal to `currentProductCount`, it means `midCandidate`
-    // or a smaller (more negative) value is the K-th product. So, `midCandidate` is a possible answer.
-    if (rankToFind <= currentProductCount) {
-      searchUpperLimit = midCandidate; // Try a smaller (more negative) value.
-    } else {
-      searchLowerLimit = midCandidate; // `midCandidate` is too small (too negative), need a larger value.
     }
   }
 
-  // `searchUpperLimit` will converge to the K-th smallest negative product.
-  return format64BitToString(searchUpperLimit);
+  categorizeInputNumbers(totalElements);
+
+  numNegatives = negativeElements.length;
+  numPositives = positiveElements.length;
+
+  // Sort arrays for efficient two-pointer or binary search approaches
+  negativeElements.sort((a, b) => a - b); // Ascending order
+  positiveElements.sort((a, b) => a - b); // Ascending order
+
+  // Calculate initial product counts
+  let productCount = numNegatives * numPositives; // Count of negative products
+
+  // If targetK falls within the range of negative products
+  if (targetK <= productCount) {
+    return findKthSmallestNegativeProduct(targetK);
+  }
+
+  // Calculate count of zero products
+  // This includes products of (zero * non-zero) and (zero * zero)
+  const nonZeroCount = totalElements - zeroElementCount;
+  const zeroNonZeroProducts = zeroElementCount * nonZeroCount;
+  const zeroZeroProducts = zeroElementCount * (zeroElementCount - 1) / 2;
+  productCount += zeroNonZeroProducts + zeroZeroProducts;
+
+  // If targetK falls within the range of zero products
+  if (targetK <= productCount) {
+    return 0; // The K-th product is 0
+  }
+
+  // If K-th product is positive, adjust targetK and find it
+  return findKthSmallestPositiveProduct(targetK - productCount);
 }
 
+function findKthSmallestNegativeProduct(targetK) {
+  // Binary search range for negative products
+  // `upperBound` represents the smallest magnitude negative product (e.g., -1)
+  // `lowerBound` represents the largest magnitude negative product (e.g., -1e18)
+  const ONE_64BIT = [1, 0];
+  const MAX_NEG_VAL = multiply64Bit(-1e9, 1e9); // Approximately -1e18
+  const MIN_NEG_VAL = subtract64Bit([0, 0], ONE_64BIT); // Represents -1
 
-/**
- * Finds the K-th smallest positive product using binary search.
- * Positive products are formed by multiplying two positive numbers or two negative numbers.
- *
- * @param {number} rankToFind - The 1-indexed rank of the desired positive product.
- * @returns {string} The K-th smallest positive product as a string.
- */
-function findKthPositiveProduct(rankToFind) {
-  // For multiplying two negative numbers to get a positive, it's often convenient
-  // to have the negative list sorted by magnitude (descending) or by value (ascending)
-  // and then use two pointers from opposite ends.
-  // The original `negativeInputNumbers` is sorted ascending (e.g., -5, -3, -1).
-  // Reversing it makes it `[-1, -3, -5]`. This means `negativeInputNumbers[0]` is the least negative
-  // (smallest magnitude), and `negativeInputNumbers[countOfNegativeNums-1]` is the most negative (largest magnitude).
-  // This modification is an intentional Type III structural change.
-  negativeInputNumbers.reverse();
+  let upperBound = MIN_NEG_VAL;
+  let lowerBound = MAX_NEG_VAL;
 
-  // Binary search range for the K-th positive product.
-  // `searchUpperLimit`: The current best candidate (smallest positive value).
-  // Initialized to a very large positive number (e.g., 1e18).
-  let searchUpperLimit = perform64BitMultiplication(1_000_000_000, 1_000_000_000);
-  // `searchLowerLimit`: A value known to be too small (0).
-  let searchLowerLimit = [0, 0];
+  // Binary search loop: while (upperBound - lowerBound > 1)
+  while (compare64Bit(subtract64Bit(upperBound, lowerBound), ONE_64BIT) > 0) {
+    const midValue = divide64BitByTwo(add64Bit(upperBound, lowerBound));
+    let currentCount = 0;
+    let negIndex = 0; // Pointer for `negativeElements`
 
-  // The binary search continues as long as the difference between `searchUpperLimit` and `searchLowerLimit` is greater than 1.
-  while (compare64BitNumbers(perform64BitSubtraction(searchUpperLimit, searchLowerLimit), [1, 0]) > 0) {
-    const midCandidate = perform64BitHalf(perform64BitAddition(searchUpperLimit, searchLowerLimit));
-    let currentProductCount = 0; // Counts products that are <= `midCandidate`.
-
-    // 1. Count (positive * positive) pairs <= `midCandidate`.
-    // `positiveInputNumbers` is sorted ascending (e.g., 1, 2, 3, 5).
-    // Use a two-pointer approach: `leftPtr` from start, `rightPtr` from end.
-    for (let leftPtr = 0, rightPtr = countOfPositiveNums - 1; leftPtr < countOfPositiveNums && currentProductCount < rankToFind; ++leftPtr) {
-      // Decrement `rightPtr` as long as `pos[leftPtr] * pos[rightPtr]` is greater than `midCandidate`.
-      // We are looking for pairs where `product <= midCandidate`.
-      while (rightPtr > leftPtr &&
-             compare64BitNumbers(perform64BitMultiplication(positiveInputNumbers[leftPtr], positiveInputNumbers[rightPtr]), midCandidate) > 0) {
-        rightPtr--;
+    // Count pairs (negativeElements[negIndex] * positiveElements[posIndex]) <= midValue
+    for (let posIndex = 0; posIndex < numPositives && currentCount < targetK; posIndex++) {
+      // Move `negIndex` forward while the product is less than or equal to `midValue`
+      while (negIndex < numNegatives && compare64Bit(multiply64Bit(negativeElements[negIndex], positiveElements[posIndex]), midValue) <= 0) {
+        negIndex++;
       }
-      // If `rightPtr` has crossed or met `leftPtr`, no more unique pairs for this `leftPtr`.
-      if (rightPtr <= leftPtr) {
+      // All `negativeElements` up to `negIndex` form products <= `midValue` with the current `positiveElements[posIndex]`
+      currentCount += negIndex;
+    }
+
+    if (targetK <= currentCount) {
+      upperBound = midValue;
+    } else {
+      lowerBound = midValue;
+    }
+  }
+  return format64BitToString(upperBound);
+}
+
+function findKthSmallestPositiveProduct(targetK) {
+  // Reverse `negativeElements` to sort by descending magnitude (largest magnitude first)
+  negativeElements.reverse();
+
+  // Binary search range for positive products
+  // `upperBound` represents the largest possible positive product (e.g., 1e18)
+  // `lowerBound` represents the smallest possible positive product (e.g., 0)
+  const MAX_POS_VAL = multiply64Bit(1e9, 1e9); // Approximately 1e18
+  const ZERO_64BIT = [0, 0];
+
+  let upperBound = MAX_POS_VAL;
+  let lowerBound = ZERO_64BIT;
+
+  // Binary search loop: while (upperBound - lowerBound > 1)
+  while (compare64Bit(subtract64Bit(upperBound, lowerBound), [1, 0]) > 0) {
+    const midValue = divide64BitByTwo(add64Bit(upperBound, lowerBound));
+    let currentCount = 0;
+
+    // Count positive products from `positiveElements` * `positiveElements`
+    let rightPointerPos = numPositives - 1;
+    for (let leftPointerPos = 0; leftPointerPos < numPositives && currentCount < targetK; leftPointerPos++) {
+      // Find the largest `rightPointerPos` such that `positiveElements[leftPointerPos] * positiveElements[rightPointerPos]` is <= `midValue`.
+      // If product is > `midValue`, we need a smaller `rightPointerPos`.
+      while (rightPointerPos > leftPointerPos && compare64Bit(multiply64Bit(positiveElements[rightPointerPos], positiveElements[leftPointerPos]), midValue) > 0) {
+        rightPointerPos--;
+      }
+      // If `rightPointerPos` has crossed `leftPointerPos`, no more valid pairs for this `leftPointerPos`.
+      if (rightPointerPos <= leftPointerPos) {
         break;
       }
-      // All elements from `leftPtr + 1` up to `rightPtr` form valid pairs with `positiveInputNumbers[leftPtr]`.
-      currentProductCount += (rightPtr - leftPtr);
+      // All elements from `leftPointerPos + 1` to `rightPointerPos` form a valid pair with `positiveElements[leftPointerPos]`.
+      currentCount += rightPointerPos - leftPointerPos;
     }
 
-    // 2. Count (negative * negative) pairs <= `midCandidate`.
-    // `negativeInputNumbers` is now reversed (e.g., -1, -3, -5).
-    // Use a two-pointer approach: `leftPtr` from start, `rightPtr` from end.
-    for (let leftPtr = 0, rightPtr = countOfNegativeNums - 1; leftPtr < countOfNegativeNums && currentProductCount < rankToFind; ++leftPtr) {
-      // Decrement `rightPtr` as long as `neg[leftPtr] * neg[rightPtr]` is greater than `midCandidate`.
-      // The products `neg[leftPtr] * neg[rightPtr]` are positive.
-      // Since `negativeInputNumbers` is `[-1, -3, -5]`, `neg[leftPtr]` moves towards larger magnitude negatives,
-      // and `neg[rightPtr]` also moves towards larger magnitude negatives.
-      // Products like `(-1)*(-5)=5`, `(-3)*(-5)=15`. They increase as pointers move towards larger magnitudes.
-      while (rightPtr > leftPtr &&
-             compare64BitNumbers(perform64BitMultiplication(negativeInputNumbers[leftPtr], negativeInputNumbers[rightPtr]), midCandidate) > 0) {
-        rightPtr--;
+    // Count positive products from `negativeElements` * `negativeElements`
+    // `negativeElements` is now sorted descending (largest magnitude first)
+    let rightPointerNeg = numNegatives - 1;
+    for (let leftPointerNeg = 0; leftPointerNeg < numNegatives && currentCount < targetK; leftPointerNeg++) {
+      // Find the largest `rightPointerNeg` such that `negativeElements[leftPointerNeg] * negativeElements[rightPointerNeg]` is <= `midValue`.
+      while (rightPointerNeg > leftPointerNeg && compare64Bit(multiply64Bit(negativeElements[rightPointerNeg], negativeElements[leftPointerNeg]), midValue) > 0) {
+        rightPointerNeg--;
       }
-      if (rightPtr <= leftPtr) {
+      if (rightPointerNeg <= leftPointerNeg) {
         break;
       }
-      currentProductCount += (rightPtr - leftPtr);
+      currentCount += rightPointerNeg - leftPointerNeg;
     }
 
-    // Adjust the binary search range based on `currentProductCount`.
-    // If `rankToFind` is less than or equal to `currentProductCount`, `midCandidate` is a potential answer.
-    if (rankToFind <= currentProductCount) {
-      searchUpperLimit = midCandidate; // Try a smaller positive value.
+    if (targetK <= currentCount) {
+      upperBound = midValue;
     } else {
-      searchLowerLimit = midCandidate; // `midCandidate` is too small, need a larger positive value.
+      lowerBound = midValue;
     }
   }
-
-  // `searchUpperLimit` will converge to the K-th smallest positive product.
-  return format64BitToString(searchUpperLimit);
+  return format64BitToString(upperBound);
 }

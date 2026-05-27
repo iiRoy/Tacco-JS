@@ -1,90 +1,71 @@
-function extractNumericInput() { return nextInt(); }
-function extractCharacterSequence() { return nextCharArray(); }
-function outputResult(str) { myout(str); }
-
-function calculateDerivedState(pastStateA, pastStateB, observationInput) {
-  const stateValA = (pastStateA === 'S') ? 0 : 1;
-  const stateValB = (pastStateB === 'S') ? 0 : 1;
-  const observationVal = (observationInput === 'o') ? 0 : 1;
-
-  // The core recurrence relation: S_current = (S_two_back + O_one_back + S_one_back) % 2
-  // Here, pastStateA is S_two_back, pastStateB is S_one_back, observationInput is O_one_back
-  const nextNumericState = (stateValA + observationVal + stateValB) % 2;
-  return (nextNumericState === 0) ? 'S' : 'W';
+var read = require('readline').createInterface({
+  input: process.stdin, output: process.stdout
+});
+var obj; var inLine = [];
+read.on('line', function(input){inLine.push(input);});
+read.on('close', function(){
+  obj = init(inLine);
+  console.error('\n↑入力 ↓出力');
+  Main();
+});
+function makeClone(obj){return (obj instanceof Set) ? new Set(Array.from(obj)) : JSON.parse(JSON.stringify(obj));}
+function nextInt(){return myconv(next(),1);} function nextStrArray(){return myconv(next(),2);}
+function nextIntArray(){return myconv(next(),4);} function nextCharArray(){return myconv(next(),6);}
+function next(){return obj.next();} function hasNext(){return obj.hasNext();}
+function init(input){  
+  return {
+    list : input, index : 0, max : input.length,
+    hasNext : function(){return (this.index < this.max);},
+    next : function(){if(this.hasNext()){return this.list[this.index++];}else{throw 'ArrayIndexOutOfBoundsException ‚There is no more input';}}
+  };
 }
+function myout(s){console.log(s);}
+function myerr(s){console.error('debug:' + require('util').inspect(s,false,null));}
+function myconv(i,no){try{switch(no){case 1:return parseInt(i);case 2:return i.split(' ');case 4:return i.split(' ').map(Number);case 6:return i.split('');case 7:return i.split('').map(Number);case 8:return i.join(' ');case 9:return i.join('\n');case 0:return i.join('');default:return i;}}catch(e){return i;}}
 
-function generateSequenceRecursively(currentStep, limitSteps, pastState1, pastState2, observations) {
-  const charToNum = (c) => (c === 'S' || c === 'o') ? 0 : 1;
-  const numToChar = (n) => (n === 0) ? 'S' : 'W';
+function Main(){
+  const animalCount = nextInt();
+  const observations = nextCharArray().map(char => char === "o" ? 0 : 1); // Map 'o' to 0, 'x' to 1
 
-  let currentNumericState;
-  if (currentStep === 0) {
-    // The very first state (P_0) is fixed as 'S' in the original logic.
-    // It's passed as pastState1 in the initial call.
-    currentNumericState = charToNum(pastState1);
-  } else if (currentStep === 1) {
-    // The second state (P_1) is determined by P_0 and O_0,
-    // assuming P_{-1} = P_0. This simplifies to O_0.
-    // It's passed as pastState2 in the initial call.
-    currentNumericState = charToNum(pastState2);
-  } else {
-    // For subsequent states P_i (i >= 2):
-    // P_i = (P_{i-2} + O_{i-1} + P_{i-1}) % 2
-    // Here, pastState1 corresponds to P_{i-2} (numeric),
-    // pastState2 corresponds to P_{i-1} (numeric),
-    // and observations[currentStep - 1] is O_{i-1}.
-    currentNumericState = (charToNum(pastState1) + charToNum(observations[currentStep - 1]) + charToNum(pastState2)) % 2;
-  }
+  // Numerical representation: 'S' = 0, 'W' = 1.
+  // These correspond to the original `L = "S"` and `check[0] = "S"`.
+  const initialPrevAnimalState = 0; // Represents the state of animal N-1 for the first step (i=0)
+  const initialCurrentAnimalState = 0; // Represents the state of animal 0
 
-  const currentCharacterState = numToChar(currentNumericState);
+  // Defines the rule for deriving the next animal's state based on its two predecessors and the current observation.
+  // This expression replaces the original's complex nested if/else structure for determining `check.push()`.
+  // The formula is: s_k+1 = (s_k + o_k + s_k-1) % 2
+  const calculateNextState = (previousState, currentState, currentObservation) =>
+    (currentState + currentObservation + previousState) % 2;
 
-  // Base case: If we've reached the limit (generated P_N), return just this state.
-  if (currentStep === limitSteps) {
-    return [currentCharacterState];
-  }
-
-  // Recursive step: Generate the rest of the sequence
-  return [currentCharacterState].concat(
-    generateSequenceRecursively(
-      currentStep + 1,
-      limitSteps,
-      pastState2, // The previous state (P_{i-1}) becomes the 'pastState1' (P_{i-2}) for the next step
-      currentCharacterState, // The current state (P_i) becomes the 'pastState2' (P_{i-1}) for the next step
-      observations
-    )
-  );
-}
-
-function processCircularArrangement() {
-  const totalElements = extractNumericInput();
-  const elementObservations = extractCharacterSequence();
-
-  // The original code implicitly sets P_0 = 'S'.
-  const initialFirstElementState = 'S';
-  // And P_1 is derived from P_0 and O_0, assuming P_{-1} = P_0.
-  // This means P_1 is 'S' if O_0 is 'o', and 'W' if O_0 is 'x'.
-  const initialSecondElementState = (elementObservations[0] === 'o') ? 'S' : 'W';
-
-  // The recursive function generates a sequence from P_0 up to P_N.
-  // P_N is used for the circular consistency check against P_0.
-  const fullPatternList = generateSequenceRecursively(
-    0, // Starting index
-    totalElements, // Generate up to P_N
-    initialFirstElementState, // Corresponds to P_0
-    initialSecondElementState, // Corresponds to P_1
-    elementObservations
+  // Utilizes Array.prototype.reduce for a functional approach to iteratively build the sequence of animal states.
+  // The accumulator object maintains the sequence of states derived so far and the last two states required for the next calculation.
+  const { derivedStates } = observations.reduce(
+    (accumulator, currentObservation) => {
+      const [prevS, currentS] = accumulator.lastPair;
+      const nextS = calculateNextState(prevS, currentS, currentObservation);
+      accumulator.derivedStates.push(nextS);
+      accumulator.lastPair = [currentS, nextS]; // Update the last two states for the next iteration
+      return accumulator;
+    },
+    // Initial accumulator state:
+    // `derivedStates` starts with the state of animal 0.
+    // `lastPair` holds the states corresponding to `s_k-1` and `s_k` for the first iteration (i=0).
+    { derivedStates: [initialCurrentAnimalState], lastPair: [initialPrevAnimalState, initialCurrentAnimalState] }
   );
 
-  // The original problem checks if the calculated P_N is equal to the initial P_0.
-  if (fullPatternList[totalElements] === fullPatternList[0]) {
-    // If consistent, remove P_N (which is a duplicate check)
-    // and output the sequence P_0 to P_{N-1}.
-    fullPatternList.pop();
-    outputResult(fullPatternList.join(''));
+  // The original code checks `if(check[N] == L)`.
+  // In our numerical representation, this translates to `derivedStates[animalCount] === 0`.
+  const finalDerivedState = derivedStates[animalCount]; // This is s_N
+  const expectedFinalState = 0; // This corresponds to the original `L = "S"`
+
+  if (finalDerivedState === expectedFinalState) {
+    // If the condition is met, convert the derived numerical sequence (excluding the N-th state, which is s_N)
+    // back into "S" or "W" characters and output the result.
+    const resultString = derivedStates.slice(0, animalCount).map(state => state === 0 ? "S" : "W").join("");
+    myout(resultString);
   } else {
-    // If not consistent, output -1.
-    outputResult(-1);
+    // If the condition is not met, output -1, matching the original behavior.
+    myout(-1);
   }
 }
-
-processCircularArrangement();

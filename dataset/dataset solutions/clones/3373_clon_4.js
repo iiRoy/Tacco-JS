@@ -1,62 +1,78 @@
-const processIncomingData = (fullTextualContent) => {
-    const extractNumericalParameters = (text) => {
-        const parts = text.trim().split(/\s+/);
-        return { requiredMinCount: Number(parts[0]), valueToFactor: Number(parts[1]) };
-    };
+function main(inputContent) {
+    const [numData] = inputContent.split('\n');
+    const [nStr, pStr] = numData.split(' ');
 
-    const { requiredMinCount, valueToFactor } = extractNumericalParameters(fullTextualContent);
+    const nVal = Number(nStr);
+    const pVal = Number(pStr);
 
-    if (requiredMinCount === 1) {
-        console.log(1);
-        return;
+    if (nVal === 1) {
+        console.log(nVal);
+        return 0;
     }
 
-    const findElementaryDivisors = (numeral) => {
-        if (numeral < 2) return [];
-        let currentNum = numeral;
-        let currentDivisor = 2;
-        const divisorsList = [];
+    const extractPrimeFactors = (targetValue) => {
+        const collectedFactors = [];
+        let tempValue = targetValue;
 
-        while (currentDivisor * currentDivisor <= currentNum) {
-            if (currentNum % currentDivisor === 0) {
-                divisorsList.push(currentDivisor);
-                currentNum /= currentDivisor;
-            } else {
-                currentDivisor++;
+        if (tempValue < 2) return collectedFactors;
+
+        while (tempValue % 2 === 0) {
+            collectedFactors.push(2);
+            tempValue /= 2;
+        }
+
+        while (tempValue % 3 === 0) {
+            collectedFactors.push(3);
+            tempValue /= 3;
+        }
+
+        while (tempValue % 5 === 0) {
+            collectedFactors.push(5);
+            tempValue /= 5;
+        }
+
+        for (let currentDivisor = 7; currentDivisor * currentDivisor <= tempValue; currentDivisor += 6) {
+            while (tempValue % currentDivisor === 0) {
+                collectedFactors.push(currentDivisor);
+                tempValue /= currentDivisor;
+            }
+            if (tempValue % (currentDivisor + 4) === 0) {
+                while (tempValue % (currentDivisor + 4) === 0) {
+                    collectedFactors.push(currentDivisor + 4);
+                    tempValue /= (currentDivisor + 4);
+                }
             }
         }
-        if (currentNum > 1) {
-            divisorsList.push(currentNum);
+
+        if (tempValue > 1) {
+            collectedFactors.push(tempValue);
         }
-        return divisorsList;
+        return collectedFactors;
     };
 
-    const primeDivisors = findElementaryDivisors(valueToFactor);
+    const primeFactorsList = extractPrimeFactors(pVal);
 
-    const tabulateOccurrences = (items) => {
-        return items.reduce((frequencyMap, item) => {
-            frequencyMap[item] = (frequencyMap[item] || 0) + 1;
-            return frequencyMap;
-        }, {});
-    };
+    const factorOccurrences = primeFactorsList.reduce((accumulator, factor) => {
+        accumulator[factor] = (accumulator[factor] || 0) + 1;
+        return accumulator;
+    }, {});
 
-    const divisorCounts = tabulateOccurrences(primeDivisors);
+    console.log(factorOccurrences.length);
 
-    console.log(undefined);
+    if (factorOccurrences.length === 0) {
+        console.log(pVal);
+        return 0;
+    }
 
-    const resultAccumulator = Object.entries(divisorCounts).reduce((finalProductVal, [divisorStr, countVal]) => {
-        const numericDivisor = Number(divisorStr);
-        if (countVal >= requiredMinCount) {
-            return finalProductVal * numericDivisor;
+    const finalProduct = Object.entries(factorOccurrences).reduce((currentProduct, [factorKey, countValue]) => {
+        const numericFactor = Number(factorKey);
+        if (countValue >= nVal) {
+            return currentProduct * numericFactor;
         }
-        return finalProductVal;
+        return currentProduct;
     }, 1);
 
-    console.log(resultAccumulator);
-};
+    console.log(finalProduct);
+}
 
-const fileSystemModule = require('fs');
-const standardInputPath = '/dev/stdin';
-const fileContents = fileSystemModule.readFileSync(standardInputPath, 'utf8');
-
-processIncomingData(fileContents);
+main(require('fs').readFileSync('/dev/stdin', 'utf8'));

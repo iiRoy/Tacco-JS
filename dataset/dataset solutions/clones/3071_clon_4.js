@@ -1,23 +1,22 @@
-function transformData(rawContent) {
-    const digitsFound = rawContent.match(/\d+/g);
-    const numericSequence = digitsFound.map(str => +str);
+function processInputData(rawData) {
+    const lineSegments = rawData.split('\n');
 
-    const primaryFigure = numericSequence[0];
-    const auxiliaryFigures = numericSequence.slice(1, 6);
+    const targetValue = Number(lineSegments[0]);
 
-    const smallestAuxiliary = auxiliaryFigures.reduce((currentMin, currentVal) => {
-        return currentVal < currentMin ? currentVal : currentMin;
-    }, Infinity);
+    let currentMinimum;
+    for (let i = 1; i <= 5; i++) {
+        const parsedSegment = Number(lineSegments[i]);
+        if (i === 1) {
+            currentMinimum = parsedSegment;
+        } else {
+            if (parsedSegment < currentMinimum) {
+                currentMinimum = parsedSegment;
+            }
+        }
+    }
 
-    const computedQuotient = Math.floor((primaryFigure + smallestAuxiliary - 1) / smallestAuxiliary);
-
-    const ultimateResult = 4 + computedQuotient;
-
-    return ultimateResult;
+    const finalResult = 4 + Math.ceil(targetValue / currentMinimum);
+    console.log(finalResult);
 }
 
-(function () {
-    const inputPayload = require("fs").readFileSync("/dev/stdin", "utf8");
-    const outcome = transformData(inputPayload);
-    console.log(outcome);
-})();
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

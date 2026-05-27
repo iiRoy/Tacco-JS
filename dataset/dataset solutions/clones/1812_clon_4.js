@@ -1,37 +1,34 @@
-const evaluateInputData = sourceMaterial => {
-    const numericStrings = sourceMaterial.match(/\d+/g);
-    const numericalElements = numericStrings.slice(1).map(val => BigInt(val));
+const processInput = (sourceText) => {
+    const [firstLine, secondLine] = sourceText.trim().split("\n");
+    const elementCount = Number(firstLine); // 'n' from original, unused but parsed
+    const numericValues = secondLine.split(" ").map(BigInt);
 
-    const ceilingValue = BigInt(10) ** BigInt(18);
+    const OVERFLOW_THRESHOLD = 1000000000000000000n;
 
-    const initialAccumulator = { currentResult: 1n, zeroFound: false, limitExceeded: false };
-
-    const finalOutcome = numericalElements.reduce((computationState, currentOperand) => {
-        if (computationState.zeroFound || computationState.limitExceeded) {
-            return computationState;
-        }
-
-        if (currentOperand === 0n) {
-            computationState.zeroFound = true;
-            return computationState;
-        }
-
-        computationState.currentResult *= currentOperand;
-
-        if (computationState.currentResult > ceilingValue) {
-            computationState.limitExceeded = true;
-        }
-
-        return computationState;
-    }, initialAccumulator);
-
-    if (finalOutcome.zeroFound) {
+    if (numericValues.some(val => val === 0n)) {
         console.log(0);
-    } else if (finalOutcome.limitExceeded) {
+        return;
+    }
+
+    const calculateRecursiveProduct = (idx, currentProduct) => {
+        if (currentProduct > OVERFLOW_THRESHOLD) {
+            return -1n; // Sentinel for overflow
+        }
+        if (idx === numericValues.length) {
+            return currentProduct; // Base case: all elements processed
+        }
+
+        const nextProduct = currentProduct * numericValues[idx];
+        return calculateRecursiveProduct(idx + 1, nextProduct);
+    };
+
+    const finalProduct = calculateRecursiveProduct(0, 1n);
+
+    if (finalProduct === -1n) {
         console.log(-1);
     } else {
-        console.log(finalOutcome.currentResult.toString());
+        console.log(finalProduct.toString());
     }
 };
 
-evaluateInputData(require('node:fs').readFileSync('/dev/stdin', { encoding: 'utf8' }));
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,25 +1,19 @@
-const fileSystem = require("fs");
+var fileSystem = require("fs");
+var inputLine = fileSystem.readFileSync("/dev/stdin");
+var upperBound = Number(inputLine);
+var finalResult = 0;
 
-const calculateTriangular = (bound) => {
-  if (bound < 0) return 0;
-  return bound * (bound + 1) / 2;
-};
+var currentIteration = 1;
+while (currentIteration <= upperBound) {
+  var blockValue = Math.floor(upperBound / currentIteration);
+  var nextBlockStart = Math.floor(upperBound / blockValue);
 
-const inputContent = fileSystem.readFileSync("/dev/stdin", "utf8");
-const limitNumber = Number(inputContent.trim());
+  var sumOfIndices = (nextBlockStart * (nextBlockStart + 1) / 2) - ((currentIteration - 1) * currentIteration / 2);
+  var termSum = blockValue * (blockValue + 1) / 2;
 
-let cumulativeSum = 0;
+  finalResult += termSum * sumOfIndices;
 
-let currentDivisor = 1;
-while (currentDivisor <= limitNumber) {
-  const blockValue = Math.floor(limitNumber / currentDivisor);
-  const blockEndDivisor = Math.floor(limitNumber / blockValue);
-
-  const sumDivisorsInBlock = calculateTriangular(blockEndDivisor) - calculateTriangular(currentDivisor - 1);
-  
-  cumulativeSum += sumDivisorsInBlock * calculateTriangular(blockValue);
-
-  currentDivisor = blockEndDivisor + 1;
+  currentIteration = nextBlockStart + 1;
 }
 
-console.log(cumulativeSum);
+console.log(finalResult);

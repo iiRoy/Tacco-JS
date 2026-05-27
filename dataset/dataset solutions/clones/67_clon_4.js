@@ -1,25 +1,31 @@
-const fileSystemModule = require("node:fs");
+const fileSystemModule = require("fs");
 
-const coordinateAccumulator = (currentLocation, movementInstruction) => {
-    const [travelDistance, angularAdjustment] = movementInstruction.split(',').map(Number);
-    
-    const currentBearingRadians = currentLocation.currentBearing * Math.PI / 180;
-    
-    const nextHorizontal = currentLocation.horizontalPosition + travelDistance * Math.sin(currentBearingRadians);
-    const nextVertical = currentLocation.verticalPosition + travelDistance * Math.cos(currentBearingRadians);
-    const nextBearing = currentLocation.currentBearing + angularAdjustment;
-    
-    return {
-        horizontalPosition: nextHorizontal,
-        verticalPosition: nextVertical,
-        currentBearing: nextBearing,
-    };
+const initialCoordinates = {
+  horizontalOffset: 0,
+  verticalOffset: 0,
+  currentBearingDegrees: 0,
 };
 
-const processedPath = fileSystemModule.readFileSync("/dev/stdin", "utf8")
-    .trim()
-    .split('\n')
-    .reduce(coordinateAccumulator, { horizontalPosition: 0, verticalPosition: 0, currentBearing: 0 });
+const finalCoordinates = fileSystemModule
+  .readFileSync("/dev/stdin", "utf8")
+  .trim()
+  .split('\n')
+  .reduce((accumulatorState, lineOfInput) => {
+    const [distanceValue, angleChangeValue] = lineOfInput.split(',');
+    const travelDistance = parseFloat(distanceValue);
+    const rotationDegrees = parseFloat(angleChangeValue);
 
-console.log(Math.trunc(processedPath.horizontalPosition));
-console.log(Math.trunc(processedPath.verticalPosition));
+    const currentBearingRadians = accumulatorState.currentBearingDegrees * Math.PI / 180;
+
+    const displacementX = travelDistance * Math.sin(currentBearingRadians);
+    const displacementY = travelDistance * Math.cos(currentBearingRadians);
+
+    accumulatorState.horizontalOffset += displacementX;
+    accumulatorState.verticalOffset += displacementY;
+    accumulatorState.currentBearingDegrees += rotationDegrees;
+
+    return accumulatorState;
+  }, initialCoordinates);
+
+console.log(~~finalCoordinates.horizontalOffset);
+console.log(~~finalCoordinates.verticalOffset);

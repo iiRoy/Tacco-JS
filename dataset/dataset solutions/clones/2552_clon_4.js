@@ -1,14 +1,15 @@
-function commenceForecastOperation(incomingDataStream) {
-  const weatherMap = new Map();
-  weatherMap.set("Sunny", "Cloudy");
-  weatherMap.set("Cloudy", "Rainy");
-  weatherMap.set("Rainy", "Sunny");
+function processWeatherForecast(rawData) {
+    const conditionLines = rawData.split("\n");
+    const initialWeather = conditionLines[0];
 
-  const primaryObservation = incomingDataStream.split(/\r?\n/)[0].trim();
+    const weatherTransition = new Map();
+    weatherTransition.set("Sunny", "Cloudy");
+    weatherTransition.set("Cloudy", "Rainy");
+    weatherTransition.set("Rainy", "Sunny");
 
-  const outcome = weatherMap.get(primaryObservation);
-  
-  process.stdout.write(outcome + '\n');
+    const subsequentWeather = weatherTransition.get(initialWeather);
+
+    console.log(subsequentWeather);
 }
 
-commenceForecastOperation(require("fs").readFileSync("/dev/stdin", "utf8"));
+processWeatherForecast(require("fs").readFileSync("/dev/stdin", "utf8"));

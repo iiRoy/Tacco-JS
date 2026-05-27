@@ -1,32 +1,21 @@
 'use strict';
 
-/**
- * Entry point for processing calendar-related input.
- * This function determines a specific numeric value based on a given day label.
- * @param {string} incomingText - The entire text content provided as input.
- */
-function ProcessInputData(incomingText) {
-  // A constant array holding the textual representations of the days of the week.
-  const calendarLabels = [ 'SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT' ];
+function ProcessInput(rawData) {
+  // Define an array of weekday abbreviations
+  const dayNames = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
 
-  // Another constant array, mapping to a specific set of integer values.
-  const numericOffsets = [ 7, 6, 5, 4, 3, 2, 1 ];
+  // Define an array representing days left until Saturday for each day
+  const remainingDays = [7, 6, 5, 4, 3, 2, 1];
 
-  // The first line of the input is expected to contain the current day's label.
-  let currentDayIdentifier = incomingText
-    .split("\n")[0];
+  // Extract the first line of input, which is the current day's name
+  let currentDayName = rawData.split('\n')[0];
 
-  // console.log({ currentDay: currentDayIdentifier }); // Debugging line, now commented out.
+  // Find the index of the current day in our dayNames array
+  let dayIndex = dayNames.indexOf(currentDayName);
 
-  // Find the zero-based index of the identified day within our labels array.
-  let matchingIndex = calendarLabels.indexOf(currentDayIdentifier);
-
-  // Print the corresponding numeric offset for the found index.
-  console.log(numericOffsets[matchingIndex]);
+  // Output the corresponding number of remaining days from the remainingDays array
+  console.log(remainingDays[dayIndex]);
 }
 
-// Initiate the processing by reading from standard input.
-ProcessInputData(
-  require("fs")
-    .readFileSync( "/dev/stdin", "utf8" )
-);
+// Read input from standard input and pass it to the processing function
+ProcessInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,35 +1,38 @@
-function computeMaximumBalance(rawSequence) {
-    const parsedLines = rawSequence.split('\n');
+function main(input) {
+  const allLines = input.split('\n');
 
-    const firstBlockSize = Number(parsedLines[0]);
-    const secondBlockSize = Number(parsedLines[firstBlockSize + 1]);
+  const blueItemCount = Number(allLines[0]);
+  const redItemCount = Number(allLines[blueItemCount + 1]);
 
-    const positiveEntries = parsedLines.slice(1, firstBlockSize + 1);
-    const negativeEntries = parsedLines.slice(firstBlockSize + 2, firstBlockSize + 2 + secondBlockSize);
+  const blueItems = allLines.slice(1, blueItemCount + 1);
+  const redItems = allLines.slice(blueItemCount + 2, blueItemCount + 2 + redItemCount);
 
-    const itemBalanceMap = positiveEntries.reduce((accumulator, currentItem) => {
-        accumulator.set(currentItem, (accumulator.get(currentItem) || 0) + 1);
-        return accumulator;
-    }, new Map());
+  const itemScores = new Map();
 
-    negativeEntries.forEach(currentItem => {
-        itemBalanceMap.set(currentItem, (itemBalanceMap.get(currentItem) || 0) - 1);
-    });
+  blueItems.forEach(itemIdentifier => {
+    itemScores.set(itemIdentifier, (itemScores.get(itemIdentifier) || 0) + 1);
+  });
 
-    let highestBalanceValue = -Infinity;
+  redItems.forEach(itemIdentifier => {
+    itemScores.set(itemIdentifier, (itemScores.get(itemIdentifier) || 0) - 1);
+  });
 
-    if (itemBalanceMap.size > 0) {
-        highestBalanceValue = Math.max(...itemBalanceMap.values());
-    } else {
-        highestBalanceValue = 0;
-    }
+  let currentMaxScore;
 
-    if (highestBalanceValue < 0) {
-        console.log(0);
-    } else {
-        console.log(highestBalanceValue);
-    }
+  if (itemScores.size > 0) {
+    currentMaxScore = Math.max(...Array.from(itemScores.values()));
+  }
+
+  let finalOutputValue;
+  if (currentMaxScore === undefined) {
+    finalOutputValue = undefined;
+  } else if (currentMaxScore < 0) {
+    finalOutputValue = 0;
+  } else {
+    finalOutputValue = currentMaxScore;
+  }
+
+  console.log(finalOutputValue);
 }
 
-const fileSystemAccess = require('fs');
-computeMaximumBalance(fileSystemAccess.readFileSync('/dev/stdin', 'utf8'));
+main(require('fs').readFileSync('/dev/stdin', 'utf8'));

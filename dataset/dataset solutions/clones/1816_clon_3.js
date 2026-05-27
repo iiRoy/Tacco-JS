@@ -1,229 +1,87 @@
-// Read the initial raw data from the standard input stream, ensuring UTF-8 decoding.
-let rawInputData = require("fs").readFileSync("/dev/stdin", "utf8");
+const rawData = require("fs").readFileSync("/dev/stdin", "utf8");
 
-/**
- * Executes the primary business logic, performing a specific arithmetic calculation.
- * This function is designed to be modular, receiving its dependencies through a utility object.
- *
- * @param {object} serviceProviders - An object containing various helper functions.
- * @param {function} serviceProviders.parseInputValues - A utility to extract and convert input tokens.
- * @returns {string} The final computed result, formatted as a string.
- */
-function processCalculation({ parseInputValues }) {
-    // Define a constant for the BigInt scaling factor, improving clarity and maintainability.
-    const SCALING_DENOMINATOR = 1000n;
+function processCalculation({ rawData, dataLoader, booleanToText, calculateSum, findMaximum, findMinimum, outputJson }) {
+    const [firstOperand] = dataLoader(1, 1, BigInt);
+    let [secondOperand] = dataLoader();
 
-    // Retrieve the first numerical operand from the input.
-    // It is explicitly cast to a BigInt to handle large integer arithmetic.
-    // We expect a single value, hence the array destructuring.
-    const [firstNumericalComponent] = parseInputValues(1, 1, BigInt);
+    const scaledSecondOperand = BigInt(Math.floor(secondOperand * 1000));
 
-    // Retrieve the second numerical operand. By default, `parseInputValues`
-    // will return a single Number type value.
-    let [secondNumericalComponentRaw] = parseInputValues();
-
-    // Implement a basic validation check for the raw second component.
-    // If it's not a valid number, log a warning and default to zero to prevent errors.
-    if (typeof secondNumericalComponentRaw !== 'number' || isNaN(secondNumericalComponentRaw)) {
-        console.warn("Input error: The second numerical component is invalid. Using 0 as a fallback.");
-        secondNumericalComponentRaw = 0;
-    }
-
-    // Convert the second component into a BigInt after scaling it by 1000 and flooring.
-    // This step is crucial for maintaining precision before BigInt division.
-    const scaledSecondNumericalComponent = BigInt(Math.floor(secondNumericalComponentRaw * Number(SCALING_DENOMINATOR)));
-
-    // Perform the core arithmetic operation: (first_component * scaled_second_component) / 1000n.
-    // All calculations are done using BigInt for exact integer results.
-    const intermediateProduct = firstNumericalComponent * scaledSecondNumericalComponent;
-    const finalComputedResult = intermediateProduct / SCALING_DENOMINATOR;
-
-    // Return the final result converted to its string representation.
-    return finalComputedResult.toString();
+    const product = firstOperand * scaledSecondOperand;
+    const finalValue = product / 1000n;
+    return finalValue.toString();
 }
 
-// Pre-process the raw input data by splitting it into an array of tokens.
-// This regex handles various whitespace characters (spaces, tabs, newlines) as delimiters.
-let parsedInputTokens = rawInputData.split(/[\s\n]+/);
+const parsedTokens = rawData.split(/[\s\n]/);
 
-// Assemble a comprehensive object of utility functions that will be provided to the main processing logic.
-// This promotes dependency injection and makes the `processCalculation` function more testable.
-let executionUtilities = {
-    /**
-     * A flexible function to parse and extract specific values from the `parsedInputTokens` array.
-     * It supports defining the expected structure (rows, columns) and the target data type for conversion.
-     *
-     * @param {number} [expectedRows=1] - The number of rows to extract.
-     * @param {number} [expectedColumns=1] - The number of columns to extract.
-     * @param {Function} [desiredDataType=Number] - The constructor function (e.g., Number, BigInt, String) for type conversion.
-     * @returns {Array<any>|Array<Array<any>>} An array of parsed values, or a 2D array if `expectedColumns` > 1.
-     */
-    parseInputValues(expectedRows = 1, expectedColumns = 1, desiredDataType = Number) {
-        // Guard clause: Ensure positive dimensions are requested.
-        if (expectedRows <= 0 || expectedColumns <= 0) {
-            console.error("Input parsing error: Requested dimensions must be positive integers.");
-            return []; // Return an empty array for invalid requests.
+let finalOutcome = processCalculation({
+    rawData,
+    booleanToText: value => value ? 'Yes' : 'No',
+    calculateSum: numbers => numbers.reduce((acc, cur) => acc + cur, 0),
+    dataLoader(numRows = 1, numCols = 1, dataType = Number) {
+        const totalElements = numRows * numCols;
+        let extractedValues = parsedTokens.splice(0, totalElements);
+
+        if (dataType !== String) {
+            extractedValues = extractedValues.map(dataType);
         }
 
-        const requiredTokenCount = expectedRows * expectedColumns;
-        // Extract a chunk of tokens from the global `parsedInputTokens` array using `splice`.
-        let extractedTokenChunk = parsedInputTokens.splice(0, requiredTokenCount);
-
-        // Validation: Check if enough tokens were available.
-        if (extractedTokenChunk.length < requiredTokenCount) {
-            console.warn(`Warning: Insufficient input tokens. Expected ${requiredTokenCount}, but only found ${extractedTokenChunk.length}.`);
-            // Decision: Continue with available tokens, padding might be needed depending on context.
-        }
-
-        // Convert each extracted token to the `desiredDataType`, unless it's already String.
-        let typeConvertedValues = (desiredDataType !== String) ? extractedTokenChunk.map(token => {
-            try {
-                // Attempt type conversion.
-                return desiredDataType(token);
-            } catch (e) {
-                // Log conversion errors and return a fallback value.
-                console.error(`Type conversion failed for token '${token}' to ${desiredDataType.name}: ${e.message}`);
-                return (desiredDataType === Number || desiredDataType === BigInt) ? NaN : token; // Return NaN for numeric failures.
-            }
-        }) : extractedTokenChunk;
-
-        // If a multi-column structure is requested, rearrange the flat array into a 2D array (column-major order).
-        if (expectedColumns > 1) {
-            const reshapedColumnarData = Array.from({ length: expectedColumns }, () => []); // Initialize array of empty arrays.
-
-            for (let r = 0; r < expectedRows; r++) {
-                for (let c = 0; c < expectedColumns; c++) {
-                    const flatIndex = r * expectedColumns + c;
-                    if (flatIndex < typeConvertedValues.length) {
-                        reshapedColumnarData[c].push(typeConvertedValues[flatIndex]);
-                    } else {
-                        // Fill with undefined if input was shorter than expected.
-                        reshapedColumnarData[c].push(undefined);
-                    }
+        if (numCols > 1) {
+            const columnarData = Array.from({ length: numCols }, () => []);
+            for (let rowIndex = 0; rowIndex < numRows; rowIndex++) {
+                for (let columnIndex = 0; columnIndex < numCols; columnIndex++) {
+                    const sourceIndex = rowIndex * numCols + columnIndex;
+                    columnarData[columnIndex].push(extractedValues[sourceIndex]);
                 }
             }
-            typeConvertedValues = reshapedColumnarData;
+            extractedValues = columnarData;
         }
-
-        return typeConvertedValues;
+        return extractedValues;
     },
-
-    /**
-     * Converts a boolean value into a localized 'Yes' or 'No' string.
-     * @param {boolean} flagValue - The boolean value to format.
-     * @returns {string} 'Yes' if true, 'No' if false.
-     */
-    formatBooleanResponse: flagValue => flagValue ? 'Yes' : 'No',
-
-    /**
-     * Calculates the sum of all numeric elements in an array. Includes basic validation.
-     * @param {Array<number>} numericCollection - An array of numbers to sum.
-     * @returns {number} The total sum, or 0 if the input is invalid.
-     */
-    calculateTotalSum: numericCollection => {
-        if (!Array.isArray(numericCollection) || numericCollection.some(item => typeof item !== 'number' || isNaN(item))) {
-            console.error("Invalid array provided for sum calculation. Returning 0.");
-            return 0;
-        }
-        return numericCollection.reduce((accumulator, currentElement) => accumulator + currentElement, 0);
+    inifinite_loop_preventer() {
+        throw new Error("Infinite loop");
     },
-
-    /**
-     * A utility function intended to prevent or signal infinite loop conditions.
-     * In this specific application, it serves as a placeholder and is not actively invoked.
-     */
-    infiniteLoopGuard: () => {
-        throw new Error("Critical error: An infinite loop condition was detected or prevented.");
+    findMaximum,
+    findMinimum,
+    outputJson(value) {
+        console.log(JSON.stringify(value));
     },
+});
 
-    // References to globally defined mathematical helper functions.
-    findMaximumElement,
-    findMinimumElement,
-
-    /**
-     * Logs an object to the console in a human-readable JSON format.
-     * Includes error handling for objects that cannot be stringified.
-     * @param {object} dataObject - The object to be logged.
-     */
-    outputStructuredData(dataObject) {
-        try {
-            console.log(JSON.stringify(dataObject, null, 2)); // Pretty-print JSON with 2-space indentation.
-        } catch (e) {
-            console.error("Error: Could not convert object to JSON for structured logging:", e.message);
-            console.log(dataObject); // Fallback to basic object logging.
-        }
-    },
+const handleOutput = (outcome) => {
+    if (outcome === undefined) {
+        console.warn("result is undefined");
+    } else {
+        console.log(outcome);
+    }
 };
+handleOutput(finalOutcome);
 
-// Invoke the main calculation function with the prepared set of utilities.
-let finalComputationOutcome = processCalculation(executionUtilities);
-
-// Evaluate the outcome of the calculation and provide appropriate output to the console.
-if (finalComputationOutcome === undefined || finalComputationOutcome === null || finalComputationOutcome === '') {
-    // A more comprehensive check for "empty" or invalid results.
-    console.warn("The final computation did not yield a meaningful result.");
-    // Depending on requirements, one might exit the process here or return a default.
-} else {
-    // Output the successful result.
-    console.log(finalComputationOutcome);
-}
-
-/**
- * Determines the largest numeric value within an array.
- * Includes robustness checks for empty arrays and non-numeric elements.
- *
- * @param {Array<number>} numericElements - An array of numbers.
- * @param {number|null} [initialComparisonValue=null] - An optional starting value for comparison.
- * @returns {number|null} The maximum value found, or null if the array is empty and no initial value is provided.
- */
-function findMaximumElement(numericElements, initialComparisonValue = null) {
-    if (!Array.isArray(numericElements) || numericElements.length === 0) {
-        if (initialComparisonValue !== null) return initialComparisonValue;
-        console.warn("Operation warning: Cannot determine maximum from an empty array without an initial comparison value.");
-        return null;
+function findMaximum(numbers, startValue = null) {
+    let currentMax;
+    if (startValue === null) {
+        currentMax = numbers[0];
+    } else {
+        currentMax = startValue;
     }
-
-    let currentMaximum = (initialComparisonValue === null) ? numericElements[0] : initialComparisonValue;
-
-    // Start iteration from the second element if the first was used as the initial maximum,
-    // otherwise start from the beginning.
-    const iterationStartIndex = (initialComparisonValue === null) ? 1 : 0;
-    for (let i = iterationStartIndex; i < numericElements.length; i++) {
-        const item = numericElements[i];
-        // Ensure the item is a valid number before comparison.
-        if (typeof item === 'number' && !isNaN(item) && item > currentMaximum) {
-            currentMaximum = item;
+    for (const currentNumber of numbers) {
+        if (currentNumber > currentMax) {
+            currentMax = currentNumber;
         }
     }
-    return currentMaximum;
+    return currentMax;
 }
 
-/**
- * Determines the smallest numeric value within an array.
- * Includes robustness checks for empty arrays and non-numeric elements.
- *
- * @param {Array<number>} numericElements - An array of numbers.
- * @param {number|null} [initialComparisonValue=null] - An optional starting value for comparison.
- * @returns {number|null} The minimum value found, or null if the array is empty and no initial value is provided.
- */
-function findMinimumElement(numericElements, initialComparisonValue = null) {
-    if (!Array.isArray(numericElements) || numericElements.length === 0) {
-        if (initialComparisonValue !== null) return initialComparisonValue;
-        console.warn("Operation warning: Cannot determine minimum from an empty array without an initial comparison value.");
-        return null;
+function findMinimum(numbers, startValue = null) {
+    let currentMin;
+    if (startValue === null) {
+        currentMin = numbers[0];
+    } else {
+        currentMin = startValue;
     }
-
-    let currentMinimum = (initialComparisonValue === null) ? numericElements[0] : initialComparisonValue;
-
-    // Start iteration from the second element if the first was used as the initial minimum,
-    // otherwise start from the beginning.
-    const iterationStartIndex = (initialComparisonValue === null) ? 1 : 0;
-    for (let i = iterationStartIndex; i < numericElements.length; i++) {
-        const item = numericElements[i];
-        // Ensure the item is a valid number before comparison.
-        if (typeof item === 'number' && !isNaN(item) && item < currentMinimum) {
-            currentMinimum = item;
+    for (const currentNumber of numbers) {
+        if (currentNumber < currentMin) {
+            currentMin = currentNumber;
         }
     }
-    return currentMinimum;
+    return currentMin;
 }

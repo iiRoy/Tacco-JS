@@ -1,123 +1,96 @@
-function processGridPathfinder(rawDataInput) {
-  // Parse the raw input string into individual lines
-  const inputStrings = rawDataInput.split('\n');
+function ProcessInput(rawData) {
+  const dataRows = rawData.split('\n');
 
-  // Extract grid dimensions from the first line
-  // Using destructuring for cleaner variable assignment
-  const [gridRows, gridCols] = inputStrings[0].split(' ').map(strVal => parseInt(strVal, 10));
+  const gridDimensionsStr = dataRows[0].split(' ');
+  const gridDims = gridDimensionsStr.map(val => parseInt(val, 10));
 
-  // Extract start coordinates, adjusting to 0-indexed
-  // Renamed variables for clarity: 'beginRow' instead of 'S[0]-1'
-  const [beginRow, beginCol] = inputStrings[1].split(' ').map(strVal => parseInt(strVal, 10) - 1);
+  const startCoordinatesStr = dataRows[1].split(' ');
+  const startCoords = startCoordinatesStr.map(val => parseInt(val, 10));
 
-  // Extract target coordinates, adjusting to 0-indexed
-  // Renamed variables: 'endRow' instead of 'G[0]-1'
-  const [endRow, endCol] = inputStrings[2].split(' ').map(strVal => parseInt(strVal, 10) - 1);
+  const goalCoordinatesStr = dataRows[2].split(' ');
+  const goalCoords = goalCoordinatesStr.map(val => parseInt(val, 10));
 
-  // Basic validation for grid dimensions (Type III addition)
-  if (gridRows <= 0 || gridCols <= 0) {
-    // In competitive programming, typically invalid input isn't expected,
-    // but this demonstrates a Type III addition.
-    console.error("Error: Invalid grid dimensions provided.");
-    return; // Or throw an error, depending on desired behavior
-  }
+  const mapRowsData = dataRows.slice(3, 3 + gridDims[0]);
+  const gridMap = mapRowsData.map(rowStr => rowStr.split(''));
 
-  // Initialize the game board (map)
-  // Using slice to avoid modifying the original inputStrings array, and Array.from for character array
-  const gameBoard = inputStrings.slice(3, 3 + gridRows).map(rowStr => Array.from(rowStr));
+  const bfsQueue = [];
 
-  // Helper function to check if a given coordinate is within the board boundaries (Type III addition)
-  const isValidCoordinate = (rowIdx, colIdx) => {
-    return rowIdx >= 0 && rowIdx < gridRows && colIdx >= 0 && colIdx < gridCols;
+  const POSITION_INDEX = 0;
+  const WARP_COUNT_INDEX = 1;
+  const ROW_COORD_INDEX = 0;
+  const COL_COORD_INDEX = 1;
+
+  const isWithinGridBounds = (r, c, maxR, maxC) => {
+    return r >= 0 && r < maxR && c >= 0 && c < maxC;
   };
 
-  // Queue for the 0-1 BFS traversal. Stores objects for better readability
-  // Each object represents a state: { r: row, c: col, w: current_warp_cost }
-  const traversalQueue = [];
+  const processCell = (currentPosition, warpCount) => {
+    const rowIdx = currentPosition[ROW_COORD_INDEX];
+    const colIdx = currentPosition[COL_COORD_INDEX];
 
-  // Define standard adjacent movement vectors (Type III addition for clarity)
-  const cardinalDirections = [
-    { dr: 1, dc: 0 }, { dr: -1, dc: 0 }, { dr: 0, dc: 1 }, { dr: 0, dc: -1 }
-  ];
-
-  // Core function to process a cell and add its reachable neighbors to the queue
-  // Renamed from 'search' to 'processNode', parameters changed to an object
-  const processNode = (currentNodeState) => {
-    const { r: currentR, c: currentC, w: currentWarpCount } = currentNodeState;
-
-    // Guard clause: Skip if out of bounds (Type III addition)
-    if (!isValidCoordinate(currentR, currentC)) {
+    if (!isWithinGridBounds(rowIdx, colIdx, gridDims[0], gridDims[1])) {
       return;
     }
 
-    let cellValue = gameBoard[currentR][currentC]; // Can be '.', '#', or a number
+    const cellValue = gridMap[rowIdx][colIdx];
 
-    // If it's an obstacle, we cannot traverse through it
     if (cellValue === '#') {
       return;
     }
 
-    // This is a 0-1 BFS. If a cell has already been visited and marked with a warp count,
-    // it means we've found the optimal path to it. Due to the nature of 0-1 BFS
-    // (0-cost moves unshifted, 1-cost moves pushed), the first time we visit a '.' cell
-    // and assign it a `currentWarpCount`, that count is guaranteed to be minimal.
-    // Therefore, if `cellValue` is already a number, we don't need to re-process.
-    // This is an equivalent logic to the original's `else if (currentSocre === '.')`.
-    if (cellValue !== '.') {
-      return;
-    }
+    if (cellValue === '.') {
+      gridMap[rowIdx][colIdx] = warpCount;
 
-    // Mark the current cell with the minimum warps required to reach it
-    gameBoard[currentR][currentC] = currentWarpCount;
+      const directMoveOffsets = [
+        [1, 0], [-1, 0], [0, 1], [0, -1]
+      ];
 
-    // Explore 0-cost (adjacent) moves: Add to the front of the queue
-    for (const direction of cardinalDirections) {
-      const nextR = currentR + direction.dr;
-      const nextC = currentC + direction.dc;
-      traversalQueue.unshift({ r: nextR, c: nextC, w: currentWarpCount });
-    }
+      for (const offset of directMoveOffsets) {
+        const nextR = rowIdx + offset[ROW_COORD_INDEX];
+        const nextC = colIdx + offset[COL_COORD_INDEX];
+        if (isWithinGridBounds(nextR, nextC, gridDims[0], gridDims[1])) {
+          if (gridMap[nextR][nextC] === '.') {
+             bfsQueue.unshift([[nextR, nextC], warpCount]);
+          }
+        }
+      }
 
-    // Explore 1-cost (warp) moves: Add a 5x5 area to the back of the queue
-    // This includes the current cell itself, but it will be filtered by isValidCoordinate or cellValue check.
-    for (let rowOffset = -2; rowOffset <= 2; ++rowOffset) { // Changed loop increment style
-      for (let colOffset = -2; colOffset <= 2; ++colOffset) { // Changed loop increment style
-        const nextR = currentR + rowOffset;
-        const nextC = currentC + colOffset;
-        traversalQueue.push({ r: nextR, c: nextC, w: currentWarpCount + 1 });
+      const warpRange = [-2, -1, 0, 1, 2];
+      for (const deltaRow of warpRange) {
+        for (const deltaCol of warpRange) {
+          const nextWarpR = rowIdx + deltaRow;
+          const nextWarpC = colIdx + deltaCol;
+          if (isWithinGridBounds(nextWarpR, nextWarpC, gridDims[0], gridDims[1])) {
+            bfsQueue.push([[nextWarpR, nextWarpC], warpCount + 1]);
+          }
+        }
       }
     }
   };
 
-  // Initialize the BFS by adding the starting position with 0 warps
-  traversalQueue.push({ r: beginRow, c: beginCol, w: 0 });
+  const initialStartRow = startCoords[ROW_COORD_INDEX] - 1;
+  const initialStartCol = startCoords[COL_COORD_INDEX] - 1;
+  bfsQueue.push([[initialStartRow, initialStartCol], 0]);
 
-  // Main BFS loop. Continues as long as there are cells to explore.
-  while (traversalQueue.length > 0) {
-    // Dequeue the next cell to process
-    const currentQueueItem = traversalQueue.shift();
+  const goalRow = goalCoords[ROW_COORD_INDEX] - 1;
+  const goalCol = goalCoords[COL_COORD_INDEX] - 1;
 
-    // Process the dequeued item
-    processNode(currentQueueItem);
+  while (bfsQueue.length > 0) {
+    const queueItem = bfsQueue.shift();
+    const currentPosition = queueItem[POSITION_INDEX];
+    const currentWarpCount = queueItem[WARP_COUNT_INDEX];
 
-    // Optimization: If the target cell has been reached and marked with a number (cost),
-    // we can stop early, as 0-1 BFS guarantees the first marked value is the minimum.
-    const targetCellStatus = gameBoard[endRow][endCol];
-    if (targetCellStatus !== '.' && targetCellStatus !== '#') {
+    processCell(currentPosition, currentWarpCount);
+
+    const goalCellValue = gridMap[goalRow][goalCol];
+    if (goalCellValue !== '.') {
       break;
     }
   }
 
-  // Determine the final result based on the target cell's value
-  const resultCost = gameBoard[endRow][endCol];
-  if (resultCost === '.' || resultCost === '#') {
-    // If the target is still '.' (unreachable) or '#' (obstacle), output -1
-    console.log(-1);
-  } else {
-    // Otherwise, output the minimum warp cost to reach the target
-    console.log(resultCost);
-  }
+  const finalGoalValue = gridMap[goalRow][goalCol];
+  const result = (typeof finalGoalValue === 'number') ? finalGoalValue : -1;
+  console.log(result);
 }
 
-// Invoke the main processing function with input read from standard input
-// This setup is common in competitive programming environments.
-processGridPathfinder(require("fs").readFileSync("/dev/stdin", "utf8"));
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

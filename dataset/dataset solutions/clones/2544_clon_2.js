@@ -1,119 +1,111 @@
-function ExecuteProgram(dataSource) {
-  // Enforce strict mode for better code quality and fewer common errors.
-  "use strict";
+function ProcessInput(rawData) {
+  "use strict"; // Enforce strict parsing and error handling.
 
-  // Split the entire provided input string into an array of individual line segments.
-  const dataSegments = dataSource.split("\n");
+  // Split the entire input string into an array of lines.
+  const lines = rawData.split("\n");
 
-  // Process the first line of input to extract configuration parameters.
-  // This involves removing the first line, splitting it by space,
-  // and converting each part from a string to an integer.
-  const configurationValues = dataSegments.shift().split(" ").map(itemValue => parseInt(itemValue, 10));
+  // Extract the first line, split it by space, and convert parts to integers.
+  const dimensionsAndParams = lines.shift().split(" ").map(elementStr => parseInt(elementStr, 10));
 
-  // Destructure the configuration values into distinct, meaningful variables.
-  const rowsCount = configurationValues.shift();       // Represents the total number of rows.
-  const colsCount = configurationValues.shift();       // Represents the total number of columns.
-  const firstThreshold = configurationValues.shift();  // A primary threshold parameter, often 'a'.
-  const secondThreshold = configurationValues.shift(); // A secondary threshold parameter, often 'b'.
+  // Assign the parsed values to descriptive variables.
+  const heightVal = dimensionsAndParams.shift(); // Represents 'h'
+  const widthVal = dimensionsAndParams.shift();  // Represents 'w'
+  const paramA = dimensionsAndParams.shift();    // Represents 'a'
+  const paramB = dimensionsAndParams.shift();    // Represents 'b'
 
+  // --- Conditional logic based on parameters ---
 
-  // --- Main Logic Branching Based on Thresholds ---
-
-  // Case 1: The secondary threshold is zero.
-  if (secondThreshold === 0) {
-    let currentLinePattern = ""; // Initialize an empty string to build the output pattern for a single row.
-
-    // Construct the pattern for one row: '1's up to 'firstThreshold', then '0's.
-    for (let colIterator = 0; colIterator < colsCount; colIterator++) {
-      if (colIterator < firstThreshold) {
-        currentLinePattern += "1";
+  // Case 1: If parameter 'b' is zero.
+  if (paramB === 0) {
+    let outputLine = ""; // Initialize an empty string for the pattern.
+    // Construct the pattern for a single row: 'a' ones followed by 'w-a' zeros.
+    for (let colIdx = 0; colIdx < widthVal; colIdx++) {
+      if (colIdx < paramA) {
+        outputLine += "1";
       } else {
-        currentLinePattern += "0";
+        outputLine += "0";
       }
     }
-
-    // Output this constructed pattern for all 'rowsCount' rows.
-    for (let rowIterator = 0; rowIterator < rowsCount; rowIterator++) {
-      console.log(currentLinePattern);
+    // Print this pattern 'h' times.
+    for (let rowIdx = 0; rowIdx < heightVal; rowIdx++) {
+      console.log(outputLine);
     }
   }
-  // Case 2: The primary threshold is zero.
-  else if (firstThreshold === 0) {
-    let allZerosPattern = ""; // String to hold a pattern of all '0's.
-    let allOnesPattern = "";  // String to hold a pattern of all '1's.
-
-    // Fill the 'allZerosPattern' and 'allOnesPattern' based on 'colsCount'.
-    for (let colIterator = 0; colIterator < colsCount; colIterator++) {
-      allZerosPattern += "0";
-      allOnesPattern += "1";
+  // Case 2: If parameter 'a' is zero (and 'b' is not zero, due to previous if).
+  else if (paramA === 0) {
+    let zeroString = ""; // String of all zeros.
+    let oneString = "";  // String of all ones.
+    // Populate the two pattern strings.
+    for (let colIdx = 0; colIdx < widthVal; colIdx++) {
+      zeroString += "0";
+      oneString += "1";
     }
-
-    // Print patterns: 'allZerosPattern' for rows up to 'secondThreshold', then 'allOnesPattern'.
-    for (let rowIterator = 0; rowIterator < rowsCount; rowIterator++) {
-      if (rowIterator < secondThreshold) {
-        console.log(allZerosPattern);
+    // Print 'zeroString' for the first 'b' rows, then 'oneString' for the remaining 'h-b' rows.
+    for (let rowIdx = 0; rowIdx < heightVal; rowIdx++) {
+      if (rowIdx < paramB) {
+        console.log(zeroString);
       } else {
-        console.log(allOnesPattern);
+        console.log(oneString);
       }
     }
   }
-  // Case 3: A specific condition relating dimensions and thresholds is not met.
-  else if (rowsCount * firstThreshold !== colsCount * secondThreshold) {
-    console.log("No"); // Indicate that a valid pattern cannot be formed under this condition.
+  // Case 3: If the product of height and 'a' does not equal the product of width and 'b'.
+  else if (heightVal * paramA !== widthVal * paramB) {
+    console.log("No"); // Output "No" as per problem specification.
   }
-  // Case 4: General pattern generation logic for non-zero thresholds and valid matrix property.
+  // Case 4: General case where 'a' and 'b' are non-zero, and the products match.
   else {
-    // Sub-case 4a: The column count is perfectly divisible by the primary threshold.
-    if (colsCount % firstThreshold === 0) {
-      for (let rowIdx = 0; rowIdx < rowsCount; rowIdx++) {
-        let generatedString = ""; // String to build the output for the current row.
-
-        // Calculate a block identifier based on current row and secondary threshold.
-        const blockIdentifier = Math.floor(rowIdx / secondThreshold);
-
-        for (let colIdx = 0; colIdx < colsCount; colIdx++) {
-          // Place '1's within a specific block range determined by the block identifier.
-          if (colIdx >= blockIdentifier * firstThreshold && colIdx < (blockIdentifier + 1) * firstThreshold) {
-            generatedString += "1";
+    // Sub-case 4.1: If 'w' is perfectly divisible by 'a'.
+    if (widthVal % paramA === 0) {
+      // Iterate through each row to generate its pattern.
+      for (let rowIdx = 0; rowIdx < heightVal; rowIdx++) {
+        let outputLine = "";
+        // Determine the current block index based on row and 'b'.
+        const currentBlockIndex = Math.floor(rowIdx / paramB);
+        // Generate the pattern for the current row.
+        for (let colIdx = 0; colIdx < widthVal; colIdx++) {
+          // A '1' is placed if the column index falls within the current block.
+          if (colIdx >= currentBlockIndex * paramA && colIdx < (currentBlockIndex + 1) * paramA) {
+            outputLine += "1";
           } else {
-            generatedString += "0";
+            outputLine += "0";
           }
         }
-        console.log(generatedString); // Output the complete row string.
+        console.log(outputLine); // Print the generated row pattern.
       }
     }
-    // Sub-case 4b: The column count is not perfectly divisible by the primary threshold.
+    // Sub-case 4.2: If 'w' is not perfectly divisible by 'a'.
     else {
-      for (let rowIdx = 0; rowIdx < rowsCount; rowIdx++) {
-        let generatedString = ""; // String to build the output for the current row.
-
-        // Check for pattern wrapping condition across column boundaries.
-        if ((rowIdx * firstThreshold % colsCount) + firstThreshold >= colsCount) {
-          for (let colIdx = 0; colIdx < colsCount; colIdx++) {
-            // Apply wrapping logic for placing '1's.
-            if (colIdx >= (rowIdx * firstThreshold % colsCount) || colIdx < ((rowIdx + 1) * firstThreshold % colsCount)) {
-              generatedString += "1";
+      // Iterate through each row to generate its pattern.
+      for (let rowIdx = 0; rowIdx < heightVal; rowIdx++) {
+        let outputLine = "";
+        // Check a specific condition involving modulo arithmetic.
+        if ((rowIdx * paramA % widthVal) + paramA >= widthVal) {
+          // Generate pattern for this specific sub-condition.
+          for (let colIdx = 0; colIdx < widthVal; colIdx++) {
+            // '1' if column index is in one of two ranges (wrapping around).
+            if (colIdx >= (rowIdx * paramA % widthVal) || colIdx < ((rowIdx + 1) * paramA % widthVal)) {
+              outputLine += "1";
             } else {
-              generatedString += "0";
+              outputLine += "0";
             }
           }
         } else {
-          for (let colIdx = 0; colIdx < colsCount; colIdx++) {
-            // Apply standard non-wrapping logic for placing '1's.
-            if (colIdx >= (rowIdx * firstThreshold % colsCount) && colIdx < ((rowIdx + 1) * firstThreshold % colsCount)) {
-              generatedString += "1";
+          // Generate pattern for the alternative sub-condition.
+          for (let colIdx = 0; colIdx < widthVal; colIdx++) {
+            // '1' if column index is within a single contiguous range.
+            if (colIdx >= (rowIdx * paramA % widthVal) && colIdx < ((rowIdx + 1) * paramA % widthVal)) {
+              outputLine += "1";
             } else {
-              generatedString += "0";
+              outputLine += "0";
             }
           }
         }
-        console.log(generatedString); // Output the complete row string.
+        console.log(outputLine); // Print the generated row pattern.
       }
     }
   }
 }
 
-// This section handles reading input from standard input and then executing
-// the primary program function. It should generally remain unchanged
-// as it is part of the execution environment setup.
-ExecuteProgram(require("fs").readFileSync("/dev/stdin", "utf8"));
+// The following line handles standard input/output and should not be modified.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

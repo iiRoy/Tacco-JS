@@ -1,49 +1,40 @@
-const findGreatestCommonDivisor = (firstElement, secondElement) => {
-    if (secondElement === 0) {
-        return firstElement;
-    }
-    return findGreatestCommonDivisor(secondElement, firstElement % secondElement);
-};
+const computeGCD = (valA, valB) => (valB === 0 ? valA : computeGCD(valB, valA % valB));
 
-const computeLeastCommonMultiple = (valueA, valueB) => {
-    if (valueA === 0 || valueB === 0) return 0;
-    return (Math.abs(valueA * valueB) / findGreatestCommonDivisor(valueA, valueB));
+const computeLCM = (values) => {
+    if (values.length === 0) return 1;
+    return values.reduce((accumulator, currentVal) => (accumulator * currentVal) / computeGCD(accumulator, currentVal), 1);
 };
 
 const rawInputContent = require('fs').readFileSync('/dev/stdin', 'utf8');
-const processedInputLines = rawInputContent.trim().split('\n');
-let linePointer = 0;
+const inputLines = rawInputContent.trim().split('\n');
+let currentLinePointer = 0;
 
 while (true) {
-    const currentDataSetSize = parseInt(processedInputLines[linePointer++], 10);
+    const entryCount = Number(inputLines[currentLinePointer++]);
+    if (entryCount === 0) break;
 
-    if (currentDataSetSize === 0) {
-        break;
+    const initialFractionPairs = [];
+    for (let idx = 0; idx < entryCount; idx++) {
+        const numericParts = inputLines[currentLinePointer++].split(' ').map(Number);
+        initialFractionPairs.push({ numeratorVal: numericParts[0], denominatorVal: numericParts[1] });
     }
 
-    const currentDataSetLines = processedInputLines.slice(linePointer, linePointer + currentDataSetSize);
-    linePointer += currentDataSetSize;
-
-    const reducedFractionPairs = currentDataSetLines.map(lineText => {
-        const parts = lineText.split(' ');
-        const num1 = parseInt(parts[0], 10);
-        const num2 = parseInt(parts[1], 10);
-        const commonFactor = findGreatestCommonDivisor(num1, num2);
-        return [num1 / commonFactor, num2 / commonFactor];
+    const reducedFractions = initialFractionPairs.map(pair => {
+        const divisorForReduction = computeGCD(pair.numeratorVal, pair.denominatorVal);
+        return {
+            num: pair.numeratorVal / divisorForReduction,
+            den: pair.denominatorVal / divisorForReduction
+        };
     });
 
-    const aggregatedDenominatorLCM = reducedFractionPairs
-        .map(pair => pair[1])
-        .reduce((accumulator, currentDenominator) => computeLeastCommonMultiple(accumulator, currentDenominator), 1);
+    const allDenominators = reducedFlections.map(fraction => fraction.den);
+    const overallDenominatorLCM = computeLCM(allDenominators);
 
-    const normalizedNumeratorValues = reducedFractionPairs.map(pair => {
-        return pair[0] * (aggregatedDenominatorLCM / pair[1]);
-    });
+    const adjustedNumerators = reducedFractions.map(fraction => fraction.num * (overallDenominatorLCM / fraction.den));
 
-    const finalResultantLCM = normalizedNumeratorValues
-        .reduce((accumulator, currentNormalizedValue) => computeLeastCommonMultiple(accumulator, currentNormalizedValue), 1);
+    const finalNumeratorLCM = computeLCM(adjustedNumerators);
 
-    normalizedNumeratorValues.forEach(valueToDivide => {
-        console.log(finalResultantLCM / valueToDivide);
+    adjustedNumerators.forEach(adjustedNum => {
+        console.log(finalNumeratorLCM / adjustedNum);
     });
 }

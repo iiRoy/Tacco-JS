@@ -1,51 +1,26 @@
-'use strict';
+'use strict'
+const processInput = (rawText) => {
+  const tokens = rawText.trim().split(/\s+/);
+  tokens.shift(); // Discard the first number, as it's unused in the original logic.
+  const wordList = tokens;
 
-function analyzeTextSegments(textPayload) {
-    let parsedSegments = textPayload.trim().split(/\s+/);
-    let initialNumericValue = parseInt(parsedSegments.shift(), 10); // The first number is consumed but not used in final calculation
+  const aggregatedStats = wordList.reduce((accumulator, currentWord) => {
+    accumulator.endsWithA_count += currentWord.endsWith('A') ? 1 : 0;
+    accumulator.startsWithB_count += currentWord.startsWith('B') ? 1 : 0;
+    accumulator.bothBA_count += (currentWord.startsWith('B') && currentWord.endsWith('A')) ? 1 : 0;
 
-    let countEndsWithA = 0;
-    let countStartsWithB = 0;
-    let countBothBA = 0; // Strings that start with 'B' AND end with 'A'
-    let totalEmbeddedAB = 0;
+    const abOccurrences = currentWord.match(/AB/g);
+    accumulator.totalAB_substrings += abOccurrences ? abOccurrences.length : 0;
 
-    for (const currentFragment of parsedSegments) {
-        // Count strings ending with 'A'
-        if (currentFragment[currentFragment.length - 1] === 'A') {
-            countEndsWithA++;
-        }
+    return accumulator;
+  }, { endsWithA_count: 0, startsWithB_count: 0, bothBA_count: 0, totalAB_substrings: 0 });
 
-        // Count strings starting with 'B'
-        if (currentFragment[0] === 'B') {
-            countStartsWithB++;
-        }
+  let commonSegmentCount = Math.min(aggregatedStats.endsWithA_count, aggregatedStats.startsWithB_count);
 
-        // Count strings starting with 'B' and ending with 'A'
-        if (currentFragment[0] === 'B' && currentFragment[currentFragment.length - 1] === 'A') {
-            countBothBA++;
-        }
+  const adjustmentFactor = (aggregatedStats.bothBA_count === aggregatedStats.endsWithA_count && aggregatedStats.endsWithA_count === aggregatedStats.startsWithB_count) ? -1 : 0;
+  commonSegmentCount += adjustmentFactor;
 
-        // Count non-overlapping occurrences of 'AB' within the fragment
-        let searchIndex = 0;
-        while (true) {
-            const foundPosition = currentFragment.indexOf('AB', searchIndex);
-            if (foundPosition === -1) {
-                break;
-            }
-            totalEmbeddedAB++;
-            searchIndex = foundPosition + 2; // Move past the found 'AB' to find the next one
-        }
-    }
+  console.log(aggregatedStats.totalAB_substrings + commonSegmentCount);
+};
 
-    let potentialConnectors = Math.min(countEndsWithA, countStartsWithB);
-
-    // Adjust for the specific case where all 'A'-ending strings are 'B...A',
-    // all 'B'-starting strings are 'B...A', and their counts are equal.
-    if (countBothBA === countEndsWithA && countBothBA === countStartsWithB) {
-        potentialConnectors--;
-    }
-
-    console.log(totalEmbeddedAB + potentialConnectors);
-}
-
-analyzeTextSegments(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processInput(require('fs').readFileSync('/dev/stdin','utf8'));

@@ -1,54 +1,60 @@
-const RADIAN_CONVERSION_FACTOR = Math.PI / 180;
-const ROTATION_ANGLE_DEG = 60;
-const COSINE_OF_ROTATION_VAL = Math.cos(ROTATION_ANGLE_DEG * RADIAN_CONVERSION_FACTOR);
-const SINE_OF_ROTATION_VAL = Math.sin(ROTATION_ANGLE_DEG * RADIAN_CONVERSION_FACTOR);
-
-const formatAndOutputCoordinates = (coordinatePair) => {
-    console.log(coordinatePair[0].toFixed(8) + ' ' + coordinatePair[1].toFixed(8));
+const displayPoint = (coord) => {
+  console.log(coord.x.toFixed(8) + ' ' + coord.y.toFixed(8));
 };
 
-const combineVectors = (vecA, vecB) => [vecA[0] + vecB[0], vecA[1] + vecB[1]];
-const differentiateVectors = (vecA, vecB) => [vecA[0] - vecB[0], vecA[1] - vecB[1]];
-const scaleVectorByFactor = (vec, factor) => [vec[0] * factor, vec[1] * factor];
+const ANGLE_RADIAN = 60 * Math.PI / 180;
+const COS_VALUE = Math.cos(ANGLE_RADIAN);
+const SIN_VALUE = Math.sin(ANGLE_RADIAN);
 
-function* fractalSequenceProducer(currentIteration, initialSegmentStart, initialSegmentEnd) {
-    if (currentIteration === 0) {
-        return;
-    }
+function* kochSegmentGenerator(recursionDepth, startPoint, endPoint) {
+  if (recursionDepth === 0) {
+    return;
+  }
 
-    const segmentVector = differentiateVectors(initialSegmentEnd, initialSegmentStart);
-    const oneThirdSegment = scaleVectorByFactor(segmentVector, 1 / 3);
+  const segmentDeltaX = endPoint.x - startPoint.x;
+  const segmentDeltaY = endPoint.y - startPoint.y;
 
-    const firstBreakPoint = combineVectors(initialSegmentStart, oneThirdSegment);
-    const secondBreakPoint = combineVectors(initialSegmentStart, scaleVectorByFactor(oneThirdSegment, 2));
+  const firstIntermediate = {
+    x: startPoint.x + segmentDeltaX / 3,
+    y: startPoint.y + segmentDeltaY / 3,
+  };
 
-    const middleSegment = differentiateVectors(secondBreakPoint, firstBreakPoint);
-    const rotatedMiddle = [
-        middleSegment[0] * COSINE_OF_ROTATION_VAL - middleSegment[1] * SINE_OF_ROTATION_VAL,
-        middleSegment[0] * SINE_OF_ROTATION_VAL + middleSegment[1] * COSINE_OF_ROTATION_VAL
-    ];
-    const apexPoint = combineVectors(firstBreakPoint, rotatedMiddle);
+  const secondIntermediate = {
+    x: startPoint.x + (2 * segmentDeltaX) / 3,
+    y: startPoint.y + (2 * segmentDeltaY) / 3,
+  };
 
-    yield* fractalSequenceProducer(currentIteration - 1, initialSegmentStart, firstBreakPoint);
-    yield firstBreakPoint;
-    yield* fractalSequenceProducer(currentIteration - 1, firstBreakPoint, apexPoint);
-    yield apexPoint;
-    yield* fractalSequenceProducer(currentIteration - 1, apexPoint, secondBreakPoint);
-    yield secondBreakPoint;
-    yield* fractalSequenceProducer(currentIteration - 1, secondBreakPoint, initialSegmentEnd);
+  const vectorComponentX = secondIntermediate.x - firstIntermediate.x;
+  const vectorComponentY = secondIntermediate.y - firstIntermediate.y;
+
+  const rotatedComponentX = vectorComponentX * COS_VALUE - vectorComponentY * SIN_VALUE;
+  const rotatedComponentY = vectorComponentX * SIN_VALUE + vectorComponentY * COS_VALUE;
+
+  const apexPoint = {
+    x: firstIntermediate.x + rotatedComponentX,
+    y: firstIntermediate.y + rotatedComponentY,
+  };
+
+  yield* kochSegmentGenerator(recursionDepth - 1, startPoint, firstIntermediate);
+  yield firstIntermediate;
+  yield* kochSegmentGenerator(recursionDepth - 1, firstIntermediate, apexPoint);
+  yield apexPoint;
+  yield* kochSegmentGenerator(recursionDepth - 1, apexPoint, secondIntermediate);
+  yield secondIntermediate;
+  yield* kochSegmentGenerator(recursionDepth - 1, secondIntermediate, endPoint);
 }
 
 (function entryPoint() {
-    const depthValue = Number(require('node:fs').readFileSync(0, 'utf8').trim()); 
-    
-    const startingCoordinate = [0, 0];
-    const endingCoordinate = [100, 0];
+  const inputLevel = Number(require('fs').readFileSync('/dev/stdin', 'utf8').trim());
 
-    formatAndOutputCoordinates(startingCoordinate);
+  const initialStart = { x: 0, y: 0 };
+  const initialEnd = { x: 100, y: 0 };
 
-    for (const currentPoint of fractalSequenceProducer(depthValue, startingCoordinate, endingCoordinate)) {
-        formatAndOutputCoordinates(currentPoint);
-    }
-    
-    formatAndOutputCoordinates(endingCoordinate);
+  displayPoint(initialStart);
+
+  for (const point of kochSegmentGenerator(inputLevel, initialStart, initialEnd)) {
+    displayPoint(point);
+  }
+
+  displayPoint(initialEnd);
 })();

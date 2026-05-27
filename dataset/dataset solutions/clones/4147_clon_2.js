@@ -1,26 +1,31 @@
 'use strict';
 
-// Acquire and process numerical data from the standard input stream.
-const rawInputNumbers = require('fs')
-  .readFileSync('/dev/stdin', 'utf8') // Read the file's contents using UTF-8 encoding.
-  .trim()                             // Eliminate any whitespace from the start or end.
-  .split(' ')                         // Break the string into an array of substrings, using a space as the delimiter.
-  .map(singleEntry => singleEntry * 1); // Convert each substring element into a numerical value.
+// This section handles reading and parsing input data from standard input.
+const dataArray = require('fs')
+    .readFileSync('/dev/stdin', 'utf8') // Reads the entire content of stdin as a UTF-8 string.
+    .trim() // Removes any leading or trailing whitespace from the string.
+    .split(' ') // Splits the string into an array of substrings, using space as a delimiter.
+    .map(item => item * 1); // Converts each string element in the array to a numeric type.
 
-let iterationCount = 0; // Declare and initialize a counter variable.
+// Initialize a variable to store the final computed result.
+let resultCount = 0;
 
-// Extract the target upper limit and the starting number from the parsed input array.
-let upperBound = rawInputNumbers[1];
-let initialDivisor = rawInputNumbers[0];
+// Extract the maximum threshold value from the second element of the input array.
+let upperBound = dataArray[1];
 
-// Initialize a temporary variable with the initial divisor's value.
-let currentCheckValue = initialDivisor;
+// Extract the starting divisor value from the first element of the input array.
+let initialValue = dataArray[0];
 
-// Begin a loop that continues as long as the current value is within the specified upper bound.
-while (currentCheckValue < upperBound + 1) {
-  currentCheckValue *= 2; // Multiply the current value by two in each cycle.
-  iterationCount++;       // Increment the counter for every doubling operation performed.
+// Create a mutable variable to track the current number in the iterative process.
+let currentNumber = initialValue;
+
+// Begin a loop that continues as long as the current number is less than or equal to the upper bound.
+while (currentNumber < upperBound + 1) {
+    // Double the current number in each iteration.
+    currentNumber *= 2;
+    // Increment the counter for each successful doubling operation.
+    resultCount++;
 }
 
-// Display the final calculated count of iterations to the console.
-console.log(iterationCount);
+// Print the final calculated count to the standard output.
+console.log(resultCount);

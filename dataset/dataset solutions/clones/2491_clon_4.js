@@ -1,20 +1,21 @@
 "use strict";
 
-const processInputData = (rawTextContent) => {
-  const linesOfText = rawTextContent.split('\n');
-  const numericalSequence = linesOfText[1].split(' ').map(Number);
+main(require("fs").readFileSync("/dev/stdin", "UTF-8"));
 
-  let totalSum = 0;
-  let sumOfSquares = 0;
+function main(inputData) {
+  const lines = inputData.split("\n");
 
-  for (const currentNumber of numericalSequence) {
-    totalSum += currentNumber;
-    sumOfSquares += currentNumber * currentNumber;
-  }
+  const itemCount = Number(lines[0]);
+  
+  const flavorScores = lines[1].split(" ").map(scoreStr => Number(scoreStr));
 
-  const computedProductSum = (Math.pow(totalSum, 2) - sumOfSquares) / 2;
+  let sumOfAllScores = 0;
+  let sumOfSquaredAllScores = 0;
 
-  console.log(computedProductSum);
-};
+  sumOfAllScores = flavorScores.reduce((accumulator, currentScore) => accumulator + currentScore, 0);
+  sumOfSquaredAllScores = flavorScores.reduce((accumulator, currentScore) => accumulator + (currentScore * currentScore), 0);
 
-processInputData(require("node:fs").readFileSync("/dev/stdin", "utf8"));
+  const finalProductSum = (sumOfAllScores * sumOfAllScores - sumOfSquaredAllScores) / 2;
+
+  console.log(finalProductSum);
+}

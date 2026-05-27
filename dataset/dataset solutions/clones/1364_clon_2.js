@@ -1,22 +1,20 @@
+// This program listens for incoming data on standard input, processes it, and prints the result.
 process
   .stdin
   .on(
     'data',
-    ( receivedPortion ) =>
-    {
-      let   textualContent = receivedPortion.toString( );
+    (inputChunk) => {
+      // The received data chunk is converted to a string.
+      // Then, it's split into individual components using a space as a delimiter.
+      // These components are numerically sorted in ascending order.
+      // Finally, the sorted components are joined back into a single string, separated by spaces.
+      const processedResult = inputChunk
+        .toString()
+        .split(' ')
+        .sort((firstElement, secondElement) => firstElement - secondElement)
+        .join(' ');
 
-      let   individualItems = textualContent.split( String.fromCharCode( 32 ) );
-
-      let   orderedElements = individualItems.sort(
-        ( firstValue , secondValue ) =>
-        {
-          return firstValue - secondValue ;
-        }
-      );
-
-      let   finalOutputString = orderedElements.join( String.fromCharCode( 32 ) );
-
-      console.log( finalOutputString ) ;
+      // The final processed string is printed to the console.
+      console.log(processedResult);
     }
   );

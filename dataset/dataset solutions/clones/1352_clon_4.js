@@ -1,14 +1,9 @@
-const ioInterface = require('readline');
-const systemContext = require('process');
+const fs = require('fs');
 
-const inputProcessor = ioInterface.createInterface({
-  input: systemContext.stdin,
-  output: systemContext.stdout
-});
+const standardInputDescriptor = process.stdin.fd;
+const entireInputContent = fs.readFileSync(standardInputDescriptor, 'utf8');
+const initialCharacter = entireInputContent[0];
+const numericRepresentation = Number(initialCharacter);
+const finalCubicValue = numericRepresentation ** 3;
 
-inputProcessor.on('line', (receivedDatum) => {
-  const numericValue = parseFloat(receivedDatum);
-  const calculatedResult = Math.pow(numericValue, 3);
-  systemContext.stdout.write(calculatedResult.toString() + '\n');
-  inputProcessor.close();
-});
+console.log(finalCubicValue);

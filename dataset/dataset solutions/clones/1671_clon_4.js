@@ -1,14 +1,26 @@
-((sourceContent) => {
-    const numberPatterns = sourceContent.match(/\n([\d\s]+)/);
-    const numericElements = (numberPatterns && numberPatterns[1] ? numberPatterns[1].trim() : '').split(/\s+/).map(val => +val);
+'use strict';
 
-    const expandedCollection = [...numericElements, undefined];
+function processInput(sourceText) {
+    const contentLines = sourceText.split('\n');
+    const numberSequence = contentLines[1].split(' ').map(Number);
 
-    const finalCount = expandedCollection.reduce((currentSum, currentVal, currentIdx) => {
-        const isPositionOdd = (currentIdx + 1) % 2 !== 0;
-        const isValueOdd = currentVal % 2 !== 0;
-        return currentSum + (isPositionOdd && isValueOdd ? 1 : 0);
-    }, 0);
+    let tally = numberSequence.filter((elementValue, elementIndex) => {
+        // Original condition: (i+1)%2 !== 0 && a[i]%2 !== 0
+        // This translates to: 0-based index 'i' is even AND the value a[i] is odd.
+        return (elementIndex % 2 === 0) && (elementValue % 2 !== 0);
+    }).length;
 
-    process.stdout.write(String(finalCount) + '\n');
-})(require('fs').readFileSync('/dev/stdin', 'utf8'));
+    // The original code's loop iterates one element past the array's actual length.
+    // If the array's length (0-based index for this 'extra' position) is even,
+    // the original code counts 'undefined' as an odd number.
+    // Example: a.length = 2 (even). Loop goes up to i=2.
+    // For i=2, (2+1)%2 !== 0 is true. a[2] is undefined. undefined%2 !== 0 is true (NaN !== 0).
+    // So, if the array's length is even, an additional count is added.
+    if (numberSequence.length % 2 === 0) {
+        tally++;
+    }
+
+    console.log(tally);
+}
+
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,70 +1,60 @@
-"use strict"; // Enforce stricter parsing and error handling
+"use strict"; // Activate strict parsing and error handling for the script
 
-/*
- * This function calculates the number of permutations (arrangements)
- * of 'itemsToChoose' items from a set of 'totalItems' distinct items.
- * Formula: P(n, r) = n! / (n-r)! = n * (n-1) * ... * (n-r+1)
- */
-const calculateArrangement = ( totalItems, itemsToChoose ) => {
-    let resultValue = 1; // Initialize the product accumulator
+// Function to compute the number of permutations (arrangements) P(itemsTotal, itemsChosen)
+const calculateArrangements = (itemsTotal, itemsChosen) => {
+    let currentProduct = 1; // Initialize accumulator for the product
 
-    // Loop 'itemsToChoose' times, multiplying the result
-    for ( let idx = 0; idx < itemsToChoose; idx++ ) {
-        resultValue *= totalItems - idx; // Multiply by (n), then (n-1), etc.
+    // Loop 'itemsChosen' times to multiply the decreasing sequence
+    for (let loopIndex = 0; loopIndex < itemsChosen; loopIndex++) {
+        currentProduct *= (itemsTotal - loopIndex); // Multiply by (n), then (n-1), etc.
     }
 
-    return resultValue; // Return the final permutation count
+    return currentProduct; // Return the final permutation count
 };
 
-/*
- * This routine computes the number of combinations (selections)
- * of 'subsetSize' items from a set of 'universeSize' distinct items.
- * Formula: C(n, r) = P(n, r) / P(r, r)
- */
-const determineSelection = ( universeSize, subsetSize ) => {
-    // Utilize the permutation function for calculation, dividing P(n,r) by P(r,r)
-    return calculateArrangement( universeSize, subsetSize ) / calculateArrangement( subsetSize, subsetSize );
+// Function to compute the number of combinations (selections) C(totalElements, elementsToSelect)
+const determineCombinations = (totalElements, elementsToSelect) => {
+    // Combination formula: P(n, r) / P(r, r)
+    // P(r, r) is equivalent to r! (r factorial)
+    return calculateArrangements(totalElements, elementsToSelect) / calculateArrangements(elementsToSelect, elementsToSelect);
 };
 
+// Primary function to process the input data and produce the required output
+const handleInputAndOutput = (rawInputContent) => {
+    // Pre-process the raw input string: trim whitespace, then split into lines
+    let inputLines = rawInputContent.trim().split("\n");
 
-/*
- * The primary execution function that processes input data.
- * It finds an element in a sorted array that is closest to half of the first element.
- */
-const processInputData = ( inputString ) => {
-    // Clean and split the input string into an array of lines based on newline characters
-    inputString = inputString.trim().split( "\n" );
+    // Parse the first line, which represents N (though N is not used in subsequent logic)
+    const dataSize = parseInt(inputLines[0], 10); // Convert string to integer, base 10
 
-    // Parse the first line as the total count of elements (though not directly used in the current problem logic)
-    const countElements = parseInt( inputString[0], 10 );
+    // Process the second line: split by spaces, convert each part to an integer,
+    // then sort the resulting numbers in descending order.
+    const numericArraySorted = inputLines[1].split(" ").map(strNum => parseInt(strNum, 10)).sort((valOne, valTwo) => valTwo - valOne);
 
-    // Parse the second line, convert space-separated numbers, and sort them in descending order
-    const dataArray = inputString[1]
-        .split( " " )
-        .map( numStr => parseInt( numStr, 10 ) ) // Convert each string number to an integer (base 10)
-        .sort( ( valA, valB ) => valB - valA ); // Sort numerically in descending order
+    // Calculate half of the largest number in the sorted array (which is the first element)
+    let targetHalfValue = numericArraySorted[0] / 2;
 
-    // Calculate the midpoint value, which is half of the largest element (first element after sorting)
-    let midpointValue = dataArray[0] / 2;
+    // Initialize variables for finding the number closest to 'targetHalfValue'
+    let smallestDifference = Infinity; // Set initial minimum difference to positive infinity
+    let selectedNumber; // This variable will store the number from the array
 
-    // Initialize minimum difference to an extremely large number to ensure the first comparison passes
-    let minimumDifference = Infinity;
-
-    // Variable to store the array element that is found to be closest to the midpointValue
-    let closestElement;
-
-    // Iterate through the indices of the dataArray to find the element closest to the midpoint
-    for ( let currentIndex in dataArray ) {
-        const currentDifference = Math.abs( midpointValue - dataArray[currentIndex] ); // Calculate absolute difference
-        if ( currentDifference < minimumDifference ) {
-            minimumDifference = currentDifference; // If a smaller difference is found, update minimumDifference
-            closestElement = dataArray[currentIndex]; // Store this element as the current closest
+    // Iterate through the indices of the sorted array
+    // IMPORTANT: The original code's logic for finding the "closest" value is flawed.
+    // 'smallestDifference' is never updated from 'Infinity', so the condition
+    // 'Math.abs(...) < smallestDifference' is always true for any finite number.
+    // This means 'selectedNumber' will be assigned the value of 'numericArraySorted[idx]'
+    // in every iteration, effectively resulting in 'selectedNumber' holding the LAST element of the array.
+    for (let idx in numericArraySorted) {
+        // The condition below will always be true because 'smallestDifference' remains Infinity.
+        if (Math.abs(targetHalfValue - numericArraySorted[idx]) < smallestDifference) {
+            selectedNumber = numericArraySorted[idx]; // This assignment happens for every element.
         }
     }
 
-    // Output the largest element of the array (dataArray[0]) and the element found closest to its half
-    console.log( dataArray[0] + " " + closestElement );
+    // Output the largest number (first element of the sorted array)
+    // and the 'selectedNumber' (which is effectively the last element due to the loop's behavior).
+    console.log(numericArraySorted[0] + " " + selectedNumber);
 };
 
-// Execute the main processing function with data read synchronously from standard input
-processInputData( require( 'fs' ).readFileSync( '/dev/stdin', 'utf8' ) );
+// Read the entire content of standard input synchronously and pass it to the main handler
+handleInputAndOutput(require('fs').readFileSync('/dev/stdin', 'utf8'));

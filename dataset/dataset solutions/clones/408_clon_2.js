@@ -1,84 +1,56 @@
-// This file contains a JavaScript implementation for a specific
-// recursive sequence calculation and input processing logic.
+let memoizationCache = {}; // This object stores previously computed values to avoid redundant calculations.
 
-/*
- * A global object to store previously computed results of the
- * recursive sequence. This mechanism is known as memoization,
- * significantly improving performance by avoiding redundant calculations.
- */
-let memoCache = {};
-
-// Initialize the very first terms of our custom sequence.
-// These are the base cases required for the recursive definition.
-memoCache[0] = 1;
-memoCache[1] = 1;
-memoCache[2] = 2;
-
+// Initialize the first few values in the cache.
+memoizationCache[0] = 1;
+memoizationCache[1] = 1;
+memoizationCache[2] = 2;
 
 /**
- * Computes the Nth term of a specialized three-term recursive sequence.
- * It leverages memoization to efficiently retrieve already calculated values.
- *
- * @param {number} positionIndex The zero-based index of the term to compute.
- * @returns {number} The numerical value of the sequence term at the given index.
+ * Recursively computes the Nth value of a modified Tribonacci-like sequence.
+ * Uses memoization to optimize performance.
+ * @param {number} inputIndex - The index for which to compute the sequence value.
+ * @returns {number} The computed sequence value.
  */
-function calculateRecursiveValue(positionIndex) {
-    // Check if the result for this specific 'positionIndex' is already present
-    // in our 'memoCache'. If so, we can return it immediately.
-    if (positionIndex in memoCache) {
-        return memoCache[positionIndex];
-    }
+function computeTribonacci(inputIndex) {
+  // Check if the value is already in our cache.
+  if (inputIndex in memoizationCache) {
+    return memoizationCache[inputIndex];
+  }
 
-    // If the value is not cached, we compute it using the recurrence relation:
-    // S(n) = S(n-1) + S(n-2) + S(n-3).
-    // Then, we store this newly computed value in 'memoCache' before returning it.
-    memoCache[positionIndex] = calculateRecursiveValue(positionIndex - 1)
-                             + calculateRecursiveValue(positionIndex - 2)
-                             + calculateRecursiveValue(positionIndex - 3);
+  // If not, calculate it using the recursive definition.
+  // The sequence is defined as T(n) = T(n-1) + T(n-2) + T(n-3)
+  memoizationCache[inputIndex] = computeTribonacci(inputIndex - 1) +
+                                 computeTribonacci(inputIndex - 2) +
+                                 computeTribonacci(inputIndex - 3);
 
-    // Finally, return the computed term's value.
-    return memoCache[positionIndex];
+  // Store and return the newly computed value.
+  return memoizationCache[inputIndex];
 }
-
 
 /**
- * Takes an input number, calculates its corresponding sequence value,
- * and then applies a series of arithmetic operations to format the final output.
- * The operations involve division and rounding up.
- *
- * @param {number} inputArg The numeric argument to process.
- * @returns {number} The final, processed, and rounded-up numerical result.
+ * Calculates a final result based on the Tribonacci sequence value.
+ * The result is the ceiling of the sequence value divided by 10, then by 365.
+ * @param {number} targetNumber - The number for which to calculate the final result.
+ * @returns {number} The final calculated and rounded-up result.
  */
-function computeAndFormatResult(inputArg) {
-    // First, obtain the raw sequence value for 'inputArg' using our recursive function.
-    const sequenceValue = calculateRecursiveValue(inputArg);
-
-    // Now, perform the required scaling: divide by 10, then by 365,
-    // and finally round the result upwards to the nearest whole number.
-    const finalCalculatedFigure = Math.ceil(sequenceValue / 10 / 365);
-
-    return finalCalculatedFigure;
+function processInputAndCalculate(targetNumber) {
+  // Get the Tribonacci value and perform the division, then round up.
+  return Math.ceil(computeTribonacci(targetNumber) / 10 / 365);
 }
 
-
-// Utilize Node.js's native 'fs' (File System) module to handle input.
+// Read input from standard input, process each line.
 require("fs")
-  .readFileSync("/dev/stdin", "utf-8") // Read all data from standard input, interpreting as UTF-8.
-  .split("\n") // Divide the entire input string into an array of individual lines.
-  .forEach(function(currentLineItem) { // Iterate over each line in the parsed input array.
+  .readFileSync("/dev/stdin", "utf-8")
+  .split("\n")
+  .forEach(function(currentLine) {
+    // Convert the string line to a number.
+    let numericValue = +currentLine;
 
-    // Convert the string representation of the line into a numeric type.
-    // The unary plus operator is a common shorthand for this conversion.
-    let numericInputVal = +currentLineItem;
-
-    // If the converted numeric value is zero, we consider it a sentinel
-    // or end-of-input marker for this particular processing loop,
-    // and thus skip further processing for this specific line.
-    if (numericInputVal === 0) {
-      return; // Exit the current iteration of the forEach loop.
+    // If the numeric value is 0, stop processing this line and move to the next.
+    if (numericValue === 0) {
+      return;
     }
 
-    // Call the main processing function with the valid numeric input
-    // and print its returned value to the console (standard output).
-    console.log(computeAndFormatResult(numericInputVal));
+    // Calculate the final result and print it to the console.
+    console.log(processInputAndCalculate(numericValue));
   });

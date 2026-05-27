@@ -1,56 +1,54 @@
-const rawData = require('node:fs').readFileSync('/dev/stdin', 'utf8');
-const processedLines = rawData.trim().split('\n');
+const fileSystem = require('fs');
 
-const evaluateScenario = (caseData, startingPosition) => {
-    const dimensionPair = caseData[startingPosition].split(' ').map(Number);
-    const mainQuantity = dimensionPair[0];
-    const thresholdValue = dimensionPair[1];
+const processInputData = (rawContent) => {
+    const lines = rawContent.trim().split('\n');
+    const results = [];
+    let currentLineIndex = 0;
 
-    if (mainQuantity === 0 && thresholdValue === 0) {
-        return null;
-    }
-
-    const baseElements = Array.from({ length: mainQuantity }, (_, elementIndex) =>
-        Number(caseData[startingPosition + 1 + elementIndex])
-    );
-    baseElements.push(0); 
-
-    const resultantSums = baseElements.flatMap((itemA, idxA) =>
-        baseElements.slice(idxA).map(itemB => itemA + itemB)
-    ).sort((valX, valY) => valX - valY);
-
-    let bestSumEncountered = 0;
-    let lowerBound = 0;
-    let upperBound = resultantSums.length - 1;
-
-    while (lowerBound < resultantSums.length) {
-        while (upperBound >= lowerBound && resultantSums[lowerBound] + resultantSums[upperBound] > thresholdValue) {
-            upperBound--;
+    const executeNextCase = () => {
+        if (currentLineIndex >= lines.length) {
+            return;
         }
 
-        if (upperBound >= lowerBound) {
-            bestSumEncountered = Math.max(bestSumEncountered, resultantSums[lowerBound] + resultantSums[upperBound]);
+        const dimensionValues = lines[currentLineIndex++].split(' ').map(Number);
+        const elementCount = dimensionValues[0];
+        const upperSumBound = dimensionValues[1];
+
+        if (elementCount === 0 && upperSumBound === 0) {
+            return;
         }
-        
-        lowerBound++;
-    }
 
-    return { outcome: bestSumEncountered, consumedCount: mainQuantity + 1 };
+        const sourceNumbers = Array.from({ length: elementCount }, () => Number(lines[currentLineIndex++]));
+        sourceNumbers.push(0);
+
+        const derivedSums = sourceNumbers.flatMap((firstVal, firstIdx) =>
+            sourceNumbers.slice(firstIdx).map(secondVal => firstVal + secondVal)
+        );
+
+        derivedSums.sort((valA, valB) => valA - valB);
+
+        let highestAchievedSum = 0;
+        let lowPtr = 0;
+        let highPtr = derivedSums.length - 1;
+
+        while (lowPtr <= highPtr) {
+            const candidateSum = derivedSums[lowPtr] + derivedSums[highPtr];
+
+            if (candidateSum <= upperSumBound) {
+                highestAchievedSum = Math.max(highestAchievedSum, candidateSum);
+                lowPtr++;
+            } else {
+                highPtr--;
+            }
+        }
+        results.push(highestAchievedSum);
+        executeNextCase();
+    };
+
+    executeNextCase();
+    return results;
 };
 
-const orchestrateProcessing = (allInputLines, currentReadPosition = 0) => {
-    if (currentReadPosition >= allInputLines.length) {
-        return;
-    }
-
-    const scenarioResult = evaluateScenario(allInputLines, currentReadPosition);
-
-    if (scenarioResult === null) {
-        return;
-    }
-
-    console.log(scenarioResult.outcome);
-    orchestrateProcessing(allInputLines, currentReadPosition + scenarioResult.consumedCount);
-};
-
-orchestrateProcessing(processedLines);
+const fileContents = fileSystem.readFileSync('/dev/stdin', 'utf8');
+const outputValues = processInputData(fileContents);
+outputValues.forEach(outputItem => console.log(outputItem));

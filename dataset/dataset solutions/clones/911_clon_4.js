@@ -1,87 +1,69 @@
 //usr/bin/env node $0 $@;exit 
+var main = function() {
+    let currentInputLine;
+    while ((currentInputLine = readline()) !== null) {
+        const numericParts = currentInputLine.split(' ').map(Number);
+        const firstOperand = numericParts[0];
+        const secondOperand = numericParts[1];
 
-const computationKernel = () => {
-    let inputSourceFunction;
-    let outputDestinationFunction;
+        if (firstOperand === 0) {
+            break;
+        }
 
-    if (typeof process !== 'undefined') { // Node.js environment detection
-        outputDestinationFunction = console.log;
+        const iterationLimit = Math.floor(firstOperand / 2);
+        
+        // Generate a sequence of numbers from 0 to iterationLimit
+        // and use reduce to find the minimum difference
+        const minimumCalculatedDifference = Array.from({ length: iterationLimit + 1 }, (_, indexValue) => indexValue)
+            .reduce((accumulator, currentIterationValue) => {
+                const hypotenuseResult = Math.hypot(currentIterationValue, firstOperand - currentIterationValue);
+                const absoluteDifference = Math.abs(secondOperand - hypotenuseResult);
+                return Math.min(accumulator, absoluteDifference);
+            }, 1 << 30); // Initialize with a large value, matching original r
 
-        let gatheredLines = [];
-        let currentLineIndex = 0;
-        let streamHandle = process.openStdin();
-        streamHandle.setEncoding('utf8');
-        let leftoverBuffer = "";
+        print(minimumCalculatedDifference);
+    }
+};
 
-        streamHandle.on('data', (incomingDataChunk) => {
-            let processedSegments = (leftoverBuffer + incomingDataChunk).split('\n');
-            leftoverBuffer = processedSegments.pop();
-            processedSegments.filter(segment => segment !== '').forEach(validSegment => gatheredLines.push(validSegment));
+/// IO ///
+if (typeof process !== 'undefined') {
+    //node.js
+    var print = function(outputValue) {
+        console.log(outputValue);
+    };
+    var readline = (function() {
+        var inputBuffer = [];
+        var readIndex = 0;
+        var inputSource = process.openStdin();
+        inputSource.setEncoding('utf8');
+
+        var pendingInput = "";
+        inputSource.on('data', function(incomingData) {
+            var lineSegments = (pendingInput + incomingData).split("\n");
+            pendingInput = lineSegments.pop();
+            for (var segmentIterator = 0; segmentIterator < lineSegments.length; segmentIterator++) {
+                if (lineSegments[segmentIterator] === '') continue;
+                inputBuffer.push(lineSegments[segmentIterator]);
+            }
+        });
+        inputSource.on('end', function(endEventArg) {
+            if (pendingInput) {
+                var lineSegments = (pendingInput + "\n").split("\n");
+                pendingInput = lineSegments.pop();
+                for (var segmentIterator = 0; segmentIterator < lineSegments.length; segmentIterator++) {
+                    if (lineSegments[segmentIterator] === '') continue;
+                    inputBuffer.push(lineSegments[segmentIterator]);
+                }
+            }
+            main();
         });
 
-        streamHandle.on('end', () => {
-            if (leftoverBuffer) {
-                let finalSegments = (leftoverBuffer + '\n').split('\n');
-                finalSegments.filter(segment => segment !== '').forEach(validSegment => gatheredLines.push(validSegment));
-            }
-            // Once all input is buffered, initiate the core computation
-            performRecursiveCalculation(
-                () => (gatheredLines.length > currentLineIndex) ? gatheredLines[currentLineIndex++] : null,
-                outputDestinationFunction
-            );
-        });
-
-    } else { // V8 environment (assuming global readline and print are available)
-        inputSourceFunction = () => {
-            try {
-                return readline(); // Access global readline
-            } catch (error) {
-                return null; // Indicate end of input or error
-            }
+        return function() {
+            if (inputBuffer.length <= readIndex) return null;
+            return inputBuffer[readIndex++];
         };
-        outputDestinationFunction = (value) => print(value); // Access global print
-
-        // For V8, execute immediately and synchronously
-        performRecursiveCalculation(inputSourceFunction, outputDestinationFunction);
-    }
-};
-
-const performRecursiveCalculation = (lineAcquirer, resultPresenter) => {
-    const activeLine = lineAcquirer();
-    if (activeLine === null) {
-        return; // Termination: No more input lines available
-    }
-
-    const numericalComponents = activeLine.split(' ').map(Number);
-    const componentX = numericalComponents[0];
-    const componentY = numericalComponents[1];
-
-    if (componentX === 0) {
-        return; // Termination: Specific input condition (first number is zero)
-    }
-
-    const iterationUpperBoundary = Math.floor(componentX / 2);
-    
-    // Generate a sequence of numbers from 0 up to iterationUpperBoundary (inclusive)
-    const sequenceOfIndices = Array.from({ length: iterationUpperBoundary + 1 }, (_, currentIdx) => currentIdx);
-
-    // Compute all possible deviations using functional mapping
-    const computedDeviations = sequenceOfIndices.map(currentIdx => {
-        const sideA = currentIdx;
-        const sideB = componentX - currentIdx;
-        const hypotenuseLength = Math.sqrt(sideA * sideA + sideB * sideB); // Alternative calculation to Math.hypot
-        return Math.abs(componentY - hypotenuseLength);
-    });
-
-    // Determine the smallest deviation using functional reduction
-    const minimalCalculatedDeviation = computedDeviations.reduce((currentMin, element) => 
-        (element < currentMin ? element : currentMin), Number.MAX_VALUE);
-
-    resultPresenter(minimalCalculatedDeviation);
-
-    // Recurse to process the next input line
-    performRecursiveCalculation(lineAcquirer, resultPresenter);
-};
-
-// Initiate the execution flow by calling the main kernel function
-computationKernel();
+    })();
+} else {
+    //v8
+    main();
+}

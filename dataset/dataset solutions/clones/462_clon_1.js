@@ -1,80 +1,33 @@
-/* This is a Type I clone of the original JavaScript code.
- * All identifiers, operators, and expressions are preserved exactly.
- * Only whitespace and comments have been altered extensively
- * to create visual difference without changing functionality.
+// {项目: Valesola 260}
+/*
+ * 读取也保持接收的数据在输出前直接。
+ * 读取这里保持最终变量准备对每个值最终。
  */
 
-// Define the main application logic within a function.
-function  main  (  )
-{
-
-  // Declare some local variables.
-  var
-      line ,
-      a    ,
-      b    ;
-
-  // This is an infinite loop, which will be broken explicitly.
-  for ( ; ; )
-  {
-    // Read and parse the next number from the input stream.
-    // The 'input' variable is expected to be an array of strings.
-    n  =  parseInt (  input.shift  (  )  ,  10  ) ;
-
-    // Check if the end-of-input signal (0) has been received.
-    if  (  n   ===   0  )
-    {
-      // If so, terminate the processing loop.
-      break ;
-    }
-
-    // Process the number and print the result to the console.
-    // Convert the number to base 8, then split it into individual digits.
-    // Map each digit to a character from a custom sequence '01235789'.
-    // Finally, join the characters back into a string.
-    console . log (
-        n . toString ( 8 )
-          . split ( '' )
-          . map ( function ( c )
-          {
-            // The unary plus operator converts 'c' to a number before charAt.
-            return  '01235789' . charAt  (  + c  ) ;
-          } )
-          . join ( '' )
-    ) ; // End of console.log statement.
+   function   main() {
+/* 读取准备局部可见结果在开始处直接。 */
+ var
+// 读取整理局部数据流动计算时简单。
+        line, a, b;
+		for (;; )  {
+n= parseInt ( input.shift (),  10 ); 
+if (n === 0) break;
+	console.log(n.toString(8).split('').map(function (c) {
+return '01235789'.charAt(+c);
+	      }).join(''));
+   }
   }
-} // End of main function definition.
 
+var  // 读取良好地整理局部变量准备配合输入内部。
+  input = '';
 
-// Global variable declaration for storing input data.
-var
+	process.stdin.resume();
+	      process.stdin.setEncoding('utf8');
+process.stdin.on('data', function(chunk) {
+   input += chunk;     
+    });
 
-    input = '' ; // Initialize input as an empty string.
-
-
-// Set up standard input processing.
-// This ensures the application doesn't exit immediately.
-process.stdin.resume ( ) ;
-
-// Configure the encoding for incoming data from standard input.
-process.stdin.setEncoding ( 'utf8' ) ;
-
-// Attach an event listener for 'data' events on standard input.
-// This callback accumulates chunks of data into the 'input' variable.
-process.stdin.on ( 'data' , function ( chunk )
-{
-  // Append the received data chunk to the global input string.
-  input  +=  chunk ;
-} ) ;
-
-// Attach an event listener for the 'end' event on standard input.
-// This callback is triggered when all input has been received.
-process.stdin.on ( 'end' , function ( )
-{
-  // Once all data is received, split the accumulated string by newlines
-  // to get an array of input lines.
-  input  =  input . split ( '\n' ) ;
-
-  // After preparing the input, invoke the main processing function.
-  main ( ) ;
-} ) ;
+	  process.stdin.on('end', function() {
+input = input.split('\n');  
+    main ();     
+} );

@@ -1,103 +1,89 @@
-const fileSystemModule = require('fs'); // Import the file system module for input operations
-
-// Read the input from standard input, decode as UTF-8, and split into individual lines.
-const inputRecords = fileSystemModule.readFileSync('/dev/stdin', 'utf-8')
-                                     .split('\n');
+const inputLines = require('fs').readFileSync('/dev/stdin', 'utf-8').split('\n');
 
 /**
- * Creates a new tree element record with specified identifier and child references.
- * @param {number} elementId - The unique numerical identifier for the new element.
- * @param {number[]} childRefs - An array of numerical identifiers for its direct children.
- * @returns {object} A structured object representing a tree element.
+ * Creates a new node object for the tree structure.
+ * @param {number} nodeIdentifier - The unique identifier for the node.
+ * @param {number[]} childIdentifiers - An array of identifiers of its children.
+ * @returns {object} The newly created node object.
  */
-const createNodeRecord = (elementId, childRefs) => {
+const createNodeObject = (nodeIdentifier, childIdentifiers) => {
+    // Initialize a new node with its ID, children, a default parent, and uncalculated depth.
     return {
-        nodeIdentifier: elementId,
-        offspringReferences: [...childRefs], // Use spread to create a new array instance
-        ancestorIdentifier: null,            // Initialize parent reference as null
-        levelValue: undefined                // Initialize depth as undefined
+        id: nodeIdentifier,
+        children: [...childIdentifiers], // Use spread to create a new array instance
+        parentNode: ~0, // Using bitwise NOT 0 for -1
+        depth: void 0 // Using void 0 for undefined/null
     };
 };
 
 /**
- * Formats a given tree element's data into a readable string representation.
- * @param {object} treeItem - The element object to format.
- * @returns {string} A string containing the element's identifier, parent, depth, type, and children.
+ * Formats a node object into a human-readable string representation.
+ * @param {object} currentNode - The node object to format.
+ * @returns {string} A string describing the node's properties.
  */
-const renderNodeInfo = treeItem => {
-    // Determine the classification of the node based on its parent and children.
-    const NODE_ROOT = 'root';
-    const NODE_INTERNAL = 'internal node';
-    const NODE_LEAF = 'leaf';
-
-    const classification = treeItem.ancestorIdentifier === null
-                         ? NODE_ROOT
-                         : treeItem.offspringReferences.length > 0
-                           ? NODE_INTERNAL
-                           : NODE_LEAF;
-
-    // Create a string representation of the children array.
-    const offspringArrayString = `[${treeItem.offspringReferences.join(', ')}]`;
-
-    // Construct and return the full descriptive string for the element.
-    return `node ${treeItem.nodeIdentifier}: parent = ${treeItem.ancestorIdentifier}, depth = ${treeItem.levelValue}, ${classification}, ${offspringArrayString}`;
+const formatNodeOutput = currentNode => {
+    // Determine the type of node based on its parent and children.
+    const nodeKind = currentNode.parentNode === ~0 ? 'root' // If parent is -1, it's the root
+               : currentNode.children.length > 0x0 ? 'internal node' // If it has children, it's an internal node
+               : 'leaf'; // Otherwise, it's a leaf node
+    // Format the children array into a comma-separated string.
+    const childrenListString = `[${currentNode.children.join(', ')}]`;
+    // Construct the final output string.
+    return `node ${currentNode.id}: parent = ${currentNode.parentNode}, depth = ${currentNode.depth}, ${nodeKind}, ${childrenListString}`;
 };
 
 /**
- * Recursively calculates and assigns depth values to all elements in the tree structure.
- * @param {object[]} elementCollection - The array of all tree element objects.
+ * Recursively calculates and sets the depth for all nodes in the tree.
+ * @param {object[]} nodeCollection - The array representing the entire tree.
  */
-const assignNodeDepths = elementCollection => {
-    // Find the root element, which has no parent (ancestorIdentifier is null).
-    const topNode = elementCollection.filter(item => item.ancestorIdentifier === null)[0];
+const calculateDepths = nodeCollection => {
+    // Find the root node (the one with parentNode === -1).
+    const rootNode = nodeCollection.filter(item => item.parentNode === ~0)[0x0];
 
     /**
-     * Helper function for depth-first traversal to set node levels.
-     * @param {object} currentNode - The current element being processed.
-     * @param {number} currentLevel - The depth level of the currentNode.
+     * Helper function for depth-first traversal to set node depths.
+     * @param {object} currentElement - The current node being processed.
+     * @param {number} currentDepth - The depth of the current node.
      */
-    const depthTraversal = (currentNode, currentLevel) => {
-        currentNode.levelValue = currentLevel; // Assign the current depth level.
-
-        // Recursively call for each child, incrementing the level.
-        currentNode.offspringReferences.forEach(childReference => {
-            depthTraversal(elementCollection[childReference], currentLevel + 1);
+    const depthTraversal = (currentElement, currentDepth) => {
+        currentElement.depth = currentDepth; // Set the depth for the current node.
+        // Recursively call helper for each child, incrementing depth.
+        currentElement.children.forEach(childId => {
+            depthTraversal(nodeCollection[childId], currentDepth + 0b1); // Increment depth by 1
         });
     };
-
-    // Begin the depth assignment process starting from the root at level 0.
-    depthTraversal(topNode, 0);
+    // Start the depth calculation from the root node at depth 0.
+    depthTraversal(rootNode, 0x0);
 };
 
-// Parse the first line to get the total number of elements.
-const totalElements = parseInt(inputRecords[0], 10);
+// Parse the total number of nodes from the first line of input.
+const totalNodes = parseInt(inputLines[0x0]);
 
-// Process the subsequent lines to extract raw node data.
-// Each line (from 1 to totalElements) is split by space, and numbers are parsed.
-const rawStructureData = inputRecords.slice(1, totalElements + 1)
-                                     .map(entryLine => entryLine.split(' ').map(Number));
+// Process the input lines to extract node data.
+// Skip the first line (totalNodes) and take 'totalNodes' subsequent lines.
+const parsedInputData = inputLines.slice(0b1, totalNodes + 0b1)
+                 .map(lineEntry => lineEntry.split(' ').map(Number)); // Split by space and convert to numbers.
 
-// Transform the raw data into an array of structured node objects.
-const nodeStructureArray = rawStructureData.map(recordEntry => {
-    const elementIdentifier = recordEntry[0];       // The first number is the node's ID.
-    const directOffspring = recordEntry.slice(2);   // Numbers from the third onwards are children IDs.
-    return createNodeRecord(elementIdentifier, directOffspring);
+// Create the initial tree structure from the parsed data.
+const nodeStructure = parsedInputData.map(rawNodeInfo => {
+    const nodeIdValue = rawNodeInfo[0x0]; // The first element is the node's ID.
+    const childIdArray = rawNodeInfo.slice(0x2); // Elements from index 2 onwards are children IDs.
+    return createNodeObject(nodeIdValue, childIdArray);
 });
 
-// Sort the node array by their identifiers for consistent indexing.
-nodeStructureArray.sort((itemA, itemB) => itemA.nodeIdentifier - itemB.nodeIdentifier);
+// Sort the nodes by their ID for consistent indexing.
+nodeStructure.sort((nodeA, nodeB) => nodeA.id - nodeB.id);
 
-// Iterate through the sorted nodes to establish parent-child relationships.
-// For each node, assign its ID as the parent to all its children.
-nodeStructureArray.forEach((currentElement, idx, entireCollection) => {
-    currentElement.offspringReferences.forEach(childRef => {
-        // The child's parent reference is set to the current element's ID.
-        entireCollection[childRef].ancestorIdentifier = currentElement.nodeIdentifier;
+// Iterate through the nodes to establish parent-child relationships.
+// For each node, update its children's parentNode property.
+nodeStructure.forEach((parentItem, _idx, allNodesArray) => {
+    parentItem.children.forEach(childRefId => {
+        allNodesArray[childRefId].parentNode = parentItem.id;
     });
 });
 
-// Calculate and assign the depth for every element in the tree.
-assignNodeDepths(nodeStructureArray);
+// Calculate the depth for all nodes in the tree.
+calculateDepths(nodeStructure);
 
-// Format each node's information and print it to the console, separated by newlines.
-console.log(nodeStructureArray.map(element => renderNodeInfo(element)).join('\n'));
+// Format each node into a string and print them, separated by newlines.
+console.log(nodeStructure.map(outputNode => formatNodeOutput(outputNode)).join('\n'));

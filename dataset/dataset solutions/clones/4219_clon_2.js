@@ -1,50 +1,43 @@
-// This routine processes an input string to compute a specific element
-// in a numerically large sequence, similar to a generalized Fibonacci series.
-function calculateSequenceValue(inputDataString) {
-  // Extract the target index from the first line of the provided string.
-  // This index dictates which element of the sequence needs to be determined.
-  let sequenceTargetIndex = Number(inputDataString.split('\n')[0]);
+function processInput(inputString) {
+    // Extract the first line of the input and convert it to a numerical value.
+    // This number determines which term of the sequence to calculate.
+    const parsedNumber = Number(inputString.split("\n")[0]);
 
-  // Handle the initial boundary conditions for the sequence.
-  // For an index of zero, the sequence's zeroth element is 2.
-  if (sequenceTargetIndex === 0) {
-    console.log(BigInt(2).toString()); // Ensure output is string representation of BigInt.
-    return; // Exit the function as the result is found.
-  }
+    // Handle the initial conditions for the sequence.
+    // If the input number is 0, the sequence value is 2.
+    if (parsedNumber === 0) {
+        console.log(2);
+        return; // Exit the function after printing.
+    }
 
-  // For an index of one, the sequence's first element is 1.
-  if (sequenceTargetIndex === 1) {
-    console.log(BigInt(1).toString()); // Ensure output is string representation of BigInt.
-    return; // Exit the function as the result is found.
-  }
+    // If the input number is 1, the sequence value is 1.
+    if (parsedNumber === 1) {
+        console.log(1);
+        return; // Exit the function after printing.
+    }
 
-  // Initialize the first two preceding values of the sequence using BigInt
-  // to support computations involving very large numbers.
-  let priorTerm = BigInt(2); // Corresponds to F(k-2)
-  let currentTerm = BigInt(1); // Corresponds to F(k-1)
-  let subsequentTerm = BigInt(0); // Placeholder for F(k)
+    // Initialize BigInt variables for the iterative calculation.
+    // 'valA' holds the (k-2)th term, 'valB' holds the (k-1)th term.
+    let valA = BigInt(2); // Corresponds to the 0th term of the sequence.
+    let valB = BigInt(1); // Corresponds to the 1st term of the sequence.
+    let resultVal = BigInt(0); // This will store the current calculated term (kth term).
 
-  // Iterate from the second index up to the desired target index.
-  // This loop progressively computes each element in the series.
-  for (let loopIteration = 2; loopIteration <= sequenceTargetIndex; ++loopIteration) {
-    // Calculate the next term by summing the two previous terms.
-    subsequentTerm = priorTerm + currentTerm;
+    // Loop from the 2nd term up to the 'parsedNumber' term.
+    // Each iteration calculates the next term based on the previous two.
+    for (let counter = 2; counter <= parsedNumber; counter++) {
+        // Calculate the current term by summing the two preceding terms.
+        resultVal = valA + valB;
+        // Update 'valA' to be the previous 'valB' for the next iteration.
+        valA = valB;
+        // Update 'valB' to be the newly calculated 'resultVal' for the next iteration.
+        valB = resultVal;
+    }
 
-    // Shift the terms for the next iteration:
-    // The 'currentTerm' becomes the 'priorTerm'.
-    priorTerm = currentTerm;
-    // The newly calculated 'subsequentTerm' becomes the 'currentTerm'.
-    currentTerm = subsequentTerm;
-  }
-
-  // Output the final computed term as its string representation.
-  console.log(currentTerm.toString());
+    // After the loop completes, 'resultVal' holds the desired term.
+    // Convert the BigInt result to a string and print it to the console.
+    console.log(resultVal.toString());
 }
 
-// Read the complete content of the standard input stream.
-// The `require("fs").readFileSync` method is used for this purpose,
-// and the input is decoded as UTF-8 text.
-const rawFileContent = require("fs").readFileSync("/dev/stdin", "utf8");
-
-// Invoke the sequence calculation function with the obtained input data.
-calculateSequenceValue(rawFileContent);
+// Read the entire content from standard input (usually a file or piped data)
+// using Node.js's 'fs' module, then pass it to the 'processInput' function.
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

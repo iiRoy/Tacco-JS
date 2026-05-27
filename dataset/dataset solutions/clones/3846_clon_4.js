@@ -1,16 +1,12 @@
-const operationMatrix = [
-  [true, false],
-  [false, true]
-];
+'use strict';
 
-const computationEngine = (matrix) => {
-  const primaryValue = matrix[0][0];
-  const secondaryValue = matrix[0][1];
-  return Number(primaryValue) - Number(secondaryValue);
+const processValues = (inputSource) => {
+  const initialValue = 1;
+  const comparativeValue = 1;
+
+  const finalResult = initialValue - (initialValue > comparativeValue);
+
+  console.log(finalResult);
 };
 
-const resultTransmitter = (payload) => {
-  console.log(payload);
-};
-
-resultTransmitter(computationEngine(operationMatrix));
+processValues(require("fs").readFileSync("/dev/stdin", "utf8"));

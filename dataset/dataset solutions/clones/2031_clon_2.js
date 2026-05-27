@@ -1,85 +1,69 @@
-/*
- * This script processes a string of numerical input
- * to perform a series of distance calculations.
- */
-function  executeCalculations (  dataString  )
-{
-  // Split the input string into individual numerical tokens.
-  const  tokens  =  dataString.split( ' ' ) ;
+function processInput(rawData) {
+  // This section parses the initial input string into numerical values.
+  const parsedData = rawData.split(' ');
+  const totalNodes = Number(parsedData[0]); // Represents the total number of nodes 'n'.
+  const nodeX = Number(parsedData[1]);      // Represents the special node 'x'.
+  const nodeY = Number(parsedData[2]);      // Represents the special node 'y'.
 
-  /*
-   * Convert string tokens to numbers and assign them to
-   * key variables for further computation.
-   */
-  const  upperBound  =  Number(tokens[0]) ;
-  const  firstCoord  =  Number(tokens[1]) ;
-  const  secondCoord  =  Number(tokens[2]) ;
-
-  /**
-   * Computes the effective path length between two points.
-   * It considers a direct path and an alternative path via reference coordinates.
-   * @param {number} startPoint - The initial point.
-   * @param {number} endPoint - The terminal point.
-   * @returns {number} The minimum calculated path length.
-   */
-  function  measureGap (  startPoint ,  endPoint  )
-  {
-    return  Math.min(
-      endPoint  -  startPoint ,
-      Math.abs(firstCoord  -  startPoint)  +  Math.abs(secondCoord  -  endPoint)  +  1
-    ) ;
+  // Helper function to compute the shortest distance between two given nodes.
+  // It considers two paths: a direct path and a path potentially involving nodes 'x' and 'y'.
+  function calculateDistance(startNode, endNode) {
+    // The distance is the minimum of:
+    // 1. The direct path length (endNode - startNode).
+    // 2. The path length through nodeX and nodeY:
+    //    |nodeX - startNode| (distance from startNode to nodeX)
+    //    + |nodeY - endNode| (distance from nodeY to endNode)
+    //    + 1 (distance between nodeX and nodeY).
+    return Math.min(endNode - startNode, Math.abs(nodeX - startNode) + Math.abs(nodeY - endNode) + 1);
   }
 
-  // Iterate through potential interval lengths.
-  for ( var  intervalLength = 1 ;  intervalLength < upperBound ;  intervalLength++  )
-  {
-    let  matchTally = 0 ; // Initialize counter for current interval length.
+  // Iterate through all possible distances 'currentDistance' from 1 up to 'totalNodes - 1'.
+  for (let currentDistance = 1; currentDistance < totalNodes; currentDistance++) {
+    // Initialize a counter for pairs of nodes that have the 'currentDistance' as their shortest path.
+    let countPairs = 0;
 
-    // Iterate through all possible starting points for the current interval length.
-    for ( var  beginPoint = 1 ;  beginPoint <= upperBound  -  intervalLength ;  beginPoint++  )
-    {
-      const  segmentEnd  =  beginPoint  +  intervalLength ; // Calculate the natural end point.
+    // Iterate through all possible starting nodes 'startNode'.
+    // The loop ensures that 'startNode + currentDistance' does not exceed 'totalNodes'.
+    for (let startNode = 1; startNode <= totalNodes - currentDistance; startNode++) {
+      // Determine the potential target node if the path is a simple direct one.
+      const targetNode = startNode + currentDistance;
 
-      // Check if the natural segment end is within bounds and matches the current interval length.
-      if ( segmentEnd <= upperBound  &&  measureGap(beginPoint , segmentEnd)  ===  intervalLength )
-      {
-        matchTally++ ; // Increment count if condition met.
+      // Check if the 'targetNode' is within the valid range and if its calculated distance from 'startNode'
+      // is exactly 'currentDistance'.
+      if (targetNode <= totalNodes && calculateDistance(startNode, targetNode) === currentDistance) {
+        countPairs++; // Increment the counter if a valid pair is found.
       }
 
-      /*
-       * Calculate the remaining distance for alternative paths,
-       * considering the first coordinate.
-       */
-      const  deltaVal  =  intervalLength  -  1  -  Math.abs(firstCoord  -  beginPoint) ;
+      // Calculate the 'remainingDistance' needed if the path goes from 'startNode' to 'nodeX',
+      // then to 'nodeY', and then to some other node.
+      const remainingDistance = currentDistance - 1 - Math.abs(nodeX - startNode);
 
-      // If there's a positive remaining distance, explore two candidates.
-      if (  deltaVal  >  0  )
-      {
-        // Candidate 1: Previous point based on remaining distance.
-        const  lowerBoundCand  =  secondCoord  -  deltaVal ;
-        if (  lowerBoundCand  !==  segmentEnd  &&  measureGap(beginPoint , lowerBoundCand)  ===  intervalLength  )
-        {
-          matchTally++ ;
+      // If 'remainingDistance' is positive, it means there's room to explore paths via 'nodeY'.
+      if (remainingDistance > 0) {
+        // Check for a 'previousNode' relative to 'nodeY' that could be 'currentDistance' away.
+        const previousNode = nodeY - remainingDistance;
+        // Ensure this 'previousNode' is not the same as 'targetNode' and its distance matches.
+        if (previousNode !== targetNode && calculateDistance(startNode, previousNode) === currentDistance) {
+          countPairs++;
         }
 
-        // Candidate 2: Next point based on remaining distance.
-        const  upperBoundCand  =  secondCoord  +  deltaVal ;
-        if (  upperBoundCand  !==  segmentEnd  &&  upperBoundCand  <=  upperBound  &&  measureGap(beginPoint , upperBoundCand)  ===  intervalLength  )
-        {
-          matchTally++ ;
+        // Check for a 'nextNode' relative to 'nodeY' that could be 'currentDistance' away.
+        const nextNode = nodeY + remainingDistance;
+        // Ensure this 'nextNode' is not the same as 'targetNode', is within bounds, and its distance matches.
+        if (nextNode !== targetNode && nextNode <= totalNodes && calculateDistance(startNode, nextNode) === currentDistance) {
+          countPairs++;
         }
       }
-      // If remaining distance is zero, check only the second coordinate directly.
-      else  if (  deltaVal  ===  0  &&  secondCoord  !==  segmentEnd  &&  measureGap(beginPoint , secondCoord)  ===  intervalLength  )
-      {
-        matchTally++ ;
+      // Special case: if 'remainingDistance' is zero, check if 'nodeY' itself is the target.
+      else if (remainingDistance === 0 && nodeY !== targetNode && calculateDistance(startNode, nodeY) === currentDistance) {
+        countPairs++;
       }
     }
 
-    // Output the total matches for the current interval length.
-    console.log(matchTally) ;
+    // Output the total number of pairs found for the current distance.
+    console.log(countPairs);
   }
 }
 
-// Entry point: Read input from standard input and initiate processing.
-executeCalculations(  require( 'fs' ).readFileSync( '/dev/stdin' ,  'utf8' )  ) ;
+// Read the input from standard input and pass it to the main processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

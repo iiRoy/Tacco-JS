@@ -1,47 +1,57 @@
-// Input handling subsystem
-var fileSys = require('fs'),
-    inputSize = fileSys.fstatSync(process.stdin.fd).size,
-    dataBlock = new Buffer(inputSize),
-    totalBytesRead = fileSys.readSync(process.stdin.fd, dataBlock, 0, inputSize, 0),
-    textLines = dataBlock.toString('utf8', 0, totalBytesRead).split('\n');
+var fileSystem = require('fs');
 
-processEntries();
+// Determine the size of the standard input stream
+var dataSize = fileSystem.fstatSync(process.stdin.fd).size;
 
-function processEntries() {
-  // Numbers coprime to 26, used as the 'a' component in an affine cipher
+// Allocate a buffer to hold the input data
+var dataBuffer = new Buffer(dataSize);
+
+// Read data from standard input into the buffer
+var readBytes = fileSystem.readSync(process.stdin.fd, dataBuffer, 0, dataSize, 0);
+
+// Convert the buffer content to a string, then split by newline
+var sourceLines = dataBuffer.toString('utf8', 0, readBytes).split('\n');
+
+// Execute the primary processing function
+processInput();
+
+function processInput() {
+  // Array of integers coprime to 26 (used as multipliers in affine cipher)
   var coprimeFactors = new Int8Array([1, 3, 5, 7, 9, 11, 15, 17, 19, 21, 23, 25]);
 
-  // Main processing loop for each input entry
-  OUTER_PROCESS_LOOP: for (var entryIndex = 1, totalEntries = +textLines[0]; entryIndex <= totalEntries; entryIndex++) {
-    var currentLine = textLines[entryIndex];
+  // Iterate through each input line, starting from the second line (index 1)
+  MAIN_LOOP: for (var lineIndex = 1, totalLines = +sourceLines[0]; lineIndex <= totalLines; lineIndex++) {
+    var currentLine = sourceLines[lineIndex];
 
+    // Iterate through each coprime factor
     for (var factorIndex = 0, numFactors = coprimeFactors.length; factorIndex < numFactors; factorIndex++) {
-      var affineA = coprimeFactors[factorIndex];
+      var multiplierA = coprimeFactors[factorIndex];
 
-      for (var affineB = 26; affineB--;) {
-        var charMapping = new Int8Array(26);
-
-        // Generate the character mapping for the current affine key (affineA, affineB)
-        for (var charCodeIndex = 26; charCodeIndex--;) {
-          charMapping[charCodeIndex] = (charCodeIndex * affineA + affineB) % 26 + 97;
+      // Iterate through possible offset values (0 to 25)
+      for (var offsetB = 26; offsetB--;) {
+        // Create a mapping for the affine cipher
+        var charMap = new Int8Array(26);
+        for (var charVal = 26; charVal--;) {
+          charMap[charVal] = (charVal * multiplierA + offsetB) % 26 + 97;
         }
 
-        // Construct specific character patterns based on the current mapping
-        var strPairOne = String.fromCharCode(charMapping[19], charMapping[7]);
-        var strPairTwo = String.fromCharCode(charMapping[0], charMapping[19]);
-        var strPairThree = String.fromCharCode(charMapping[8], charMapping[18]);
+        // Generate specific two-character sequences based on the current cipher map
+        var patternPartOne = String.fromCharCode(charMap[19], charMap[7]); // 'th' equivalent
+        var patternPartTwo = String.fromCharCode(charMap[0], charMap[19]); // 'at' equivalent
+        var patternPartThree = String.fromCharCode(charMap[8], charMap[18]); // 'is' equivalent
 
-        // Check if the current line matches a specific regex pattern
-        if (new RegExp(strPairOne + "(" + strPairTwo + "|" + strPairThree + ")").test(currentLine)) {
-          // If matched, decrypt the line and print it
-          console.log(currentLine.replace(/[a-z]/g, function(inputChar) {
-            for (var mapPosition = 26, charAsciiCode = inputChar.charCodeAt(0); mapPosition--;) {
-              if (charAsciiCode == charMapping[mapPosition]) {
-                return String.fromCharCode(mapPosition + 97)
+        // Check if the current line contains the pattern "th(at|is)" using the generated characters
+        if (new RegExp(patternPartOne + "(" + patternPartTwo + "|" + patternPartThree + ")").test(currentLine)) {
+          // If found, decrypt the line and print it
+          console.log(currentLine.replace(/[a-z]/g, function (charToReplace) {
+            for (var mapIndex = 26, charAscii = charToReplace.charCodeAt(0); mapIndex--;) {
+              if (charAscii == charMap[mapIndex]) {
+                return String.fromCharCode(mapIndex + 97);
               }
             }
           }));
-          continue OUTER_PROCESS_LOOP; // Move to the next input entry
+          // Move to the next input line
+          continue MAIN_LOOP;
         }
       }
     }

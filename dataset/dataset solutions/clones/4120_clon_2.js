@@ -1,29 +1,31 @@
-const   checkFormat = ( rawDataInput  ) => {
-    // Process the raw input by removing leading/trailing whitespace and splitting into individual lines.
-    const   parsedLines = rawDataInput .  trim().  split('\n')  ;
+const processInput = (inputData) => {
+  // Remove leading/trailing whitespace and split the input string into an array of lines.
+  const lines = inputData.trim().split('\n');
 
-    // Extract the lengths for the two numeric segments from the first line.
-    const [ firstSegmentLength , secondSegmentLength ] = parsedLines[0].split(' ') ;
+  // Parse the first line to get the two numeric counts for the pattern.
+  const [firstNumCount, secondNumCount] = lines[0].split(' ');
 
-    // The string to be validated is taken from the second line of input.
-    const   targetStringValue = parsedLines[1]  ;
+  // Retrieve the string that needs to be validated from the second line.
+  const targetString = lines[1];
 
-    // Construct a regular expression to match the desired pattern:
-    // a sequence of digits of 'firstSegmentLength' length,
-    // followed by a hyphen,
-    // followed by another sequence of digits of 'secondSegmentLength' length.
-    // The 'g' flag is technically redundant for a single match, but kept for structural similarity.
-    const   validationExpression = new RegExp(  `\\d{${firstSegmentLength}}-\\d{${secondSegmentLength}}`  , 'g'  ) ;
+  // Dynamically construct a regular expression.
+  // This pattern looks for 'firstNumCount' digits, followed by a hyphen,
+  // and then 'secondNumCount' digits. The 'g' flag is for global matching.
+  const regexPattern = new RegExp(
+    '\\d{' + firstNumCount + '}' + '-' + '\\d{' + secondNumCount + '}',
+    'g'
+  );
 
-    // Perform the pattern matching.
-    if  ( targetStringValue .  match( validationExpression )  ) {
-        // If a match is found, indicate success.
-        console.log( 'Yes' )  ;
-    } else {
-        // Otherwise, indicate failure.
-        console.log( 'No' ) ;
-    }
-} ;
+  // Check if the target string contains a substring that matches the defined pattern.
+  if (targetString.match(regexPattern)) {
+    // If a match is found, print "Yes" to standard output.
+    console.log('Yes');
+  } else {
+    // Otherwise, if no match is found, print "No".
+    console.log('No');
+  }
+};
 
-// Initiate the process by reading data from the standard input stream.
-checkFormat( require("fs").readFileSync(  "/dev/stdin"  ,  "utf8"  ) )  ;
+// Read the entire content of standard input synchronously using Node.js file system module.
+// The input is then passed to the processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

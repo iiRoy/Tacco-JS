@@ -1,88 +1,50 @@
-/*
- * Entry point for the data processing pipeline.
- * This routine handles input parsing and dispatches calculations.
- */
-function processInput ( sourcePayload )
-{
-  // Divide the incoming string payload into individual line segments.
-  const   textRows = sourcePayload
-    . split ( '\n' )
-  ;
+// This script processes input lines to perform a specific calculation.
+function processInput(rawData) {
+  // Split the raw input string into an array of individual lines.
+  const inputLines = rawData.split('\n');
 
-  // Iterate through each detected row to apply core logic.
-  textRows . forEach ( ( currentRow ) =>
-  {
-    // If a row is found to be empty, it is skipped entirely.
-    if ( currentRow . length === 0 )
-    {
-      return ;
+  // Iterate over each line received from the input.
+  inputLines.forEach(currentLine => {
+    // If a line is empty, skip it and move to the next one.
+    if (currentLine.length === 0) {
+      return;
     }
 
-    // Break down the current row into constituent string tokens, separated by spaces.
-    const   stringTokens = currentRow
-      . split ( ' ' )
-    ;
+    // Split the current line by spaces to get an array of string values.
+    const valuesArray = currentLine.split(' ');
 
-    // Output the computed result by invoking the primary calculation function.
-    // Each token is converted to an integer before being passed.
-    console . log (
-      calculateInterval (
-        parseInt ( stringTokens [ 0 ] , 10 ) , // The initial boundary value.
-        parseInt ( stringTokens [ 1 ] , 10 ) , // The terminal boundary value.
-        parseInt ( stringTokens [ 2 ] , 10 ) , // The first specific divisor.
-        parseInt ( stringTokens [ 3 ] , 10 )   // The second specific divisor.
-      )
-    ) ;
-  } ) ;
+    // Log the result of the calculation performed by the 'calculateRangeCount' function.
+    // Parse string values to integers before passing them to the function.
+    console.log(calculateRangeCount(
+      parseInt(valuesArray[0], 10), // First value as starting point
+      parseInt(valuesArray[1], 10), // Second value as ending point
+      parseInt(valuesArray[2], 10), // Third value as first divisor
+      parseInt(valuesArray[3], 10)  // Fourth value as second divisor
+    ));
+  });
 }
 
-/*
- * Computes the quantity of integers within a given numerical span [startValue, endValue]
- * that are neither perfectly divisible by divisorOne nor by divisorTwo.
- * This calculation employs the principle of inclusion-exclusion.
- */
-function calculateInterval ( startValue , endValue , divisorOne , divisorTwo )
-{
-  // Ascertain the total count of numbers present within the defined range.
-  const totalNumbersInRange = endValue - startValue + 1 ;
-
-  // Determine the count of numbers divisible by the first specified factor.
-  const countDivisibleByFactorA = countMultiples ( startValue , endValue , divisorOne ) ;
-
-  // Determine the count of numbers divisible by the second specified factor.
-  const countDivisibleByFactorB = countMultiples ( startValue , endValue , divisorTwo ) ;
-
-  // Calculate the count of numbers divisible by the product of both factors
-  // to correct for double-subtraction.
-  const countDivisibleByBothFactors = countMultiples ( startValue , endValue , divisorOne * divisorTwo ) ;
-
-  // Apply the inclusion-exclusion principle to find the final result.
-  return totalNumbersInRange
-    - countDivisibleByFactorA
-    - countDivisibleByFactorB
-    + countDivisibleByBothFactors
-  ;
+// This function calculates the number of integers in a range [startVal, endVal]
+// that are not divisible by divisorOne and not divisible by divisorTwo.
+// It uses the principle of inclusion-exclusion.
+function calculateRangeCount(startVal, endVal, divisorOne, divisorTwo) {
+  // Total numbers in the range: (endVal - startVal + 1)
+  // Subtract numbers divisible by divisorOne
+  // Subtract numbers divisible by divisorTwo
+  // Add back numbers divisible by both (divisorOne * divisorTwo) because they were subtracted twice.
+  return (endVal - startVal + 1) - getDivisibleCount(startVal, endVal, divisorOne) - getDivisibleCount(startVal, endVal, divisorTwo) + getDivisibleCount(startVal, endVal, divisorOne * divisorTwo);
 }
 
-/*
- * Provides a count of how many integers within a closed range [rangeMin, rangeMax]
- * are exact multiples of the provided divisorFactor.
- */
-function countMultiples ( rangeMin , rangeMax , divisorFactor )
-{
-  // Calculate how many multiples of the divisor exist up to the range's upper limit.
-  const   multiplesUpToMax = Math . floor ( rangeMax / divisorFactor ) ;
-
-  // Calculate how many multiples of the divisor exist just before the range's lower limit.
-  const   multiplesBeforeMin = Math . floor ( ( rangeMin - 1 ) / divisorFactor ) ;
-
-  // The difference between these two counts yields the multiples within the range.
-  return multiplesUpToMax - multiplesBeforeMin ;
+// This helper function counts how many numbers in a given range [lowerBound, upperBound]
+// are perfectly divisible by a specified divisor.
+function getDivisibleCount(lowerBound, upperBound, divisor) {
+  // Calculate the total count of multiples of 'divisor' up to 'upperBound'.
+  const totalMultiples = Math.floor(upperBound / divisor);
+  // Calculate the count of multiples of 'divisor' strictly before 'lowerBound'.
+  const multiplesBeforeStart = Math.floor((lowerBound - 1) / divisor);
+  // The difference gives the count of multiples within the [lowerBound, upperBound] range.
+  return totalMultiples - multiplesBeforeStart;
 }
 
-// Execute the primary processing function by reading content from standard input
-// via Node.js's file system module, ensuring UTF-8 encoding.
-processInput (
-  require ( 'fs' )
-    . readFileSync ( '/dev/stdin' , 'utf8' )
-) ;
+// Read input from standard input and pass it to the main processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

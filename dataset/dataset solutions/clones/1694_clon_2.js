@@ -1,159 +1,108 @@
-/*
- * This script processes grid data to identify patterns that match a specific criteria.
- * It systematically explores combinations of row and column selections within a grid
- * to count how many such selections result in a predefined number of '#' (black) cells.
- */
-function ProcessGridData ( rawDataString )
-{
-  // Divide the raw input string into an array of individual lines.
-  let linesOfData = rawDataString.split ( "\n" );
+function ProcessGrid(rawData) {
+  // Split the raw input into individual lines for processing.
+  rawData = rawData.split('\n');
 
-  // Parse the first line to extract the grid's dimensions (height, width)
-  // and the target count of black cells for a valid combination.
-  const firstLineElements = linesOfData [ 0 ].split ( " " );
-  const gridHeight = parseInt ( firstLineElements [ 0 ], 10 );
-  const gridWidth = parseInt ( firstLineElements [ 1 ], 10 );
-  const targetCount = parseInt ( firstLineElements [ 2 ], 10 );
+  // Parse grid dimensions and target count from the first line.
+  let gridDimensions = rawData[0].split(' ');
+  let gridHeight = parseInt(gridDimensions[0]);
+  let gridWidth = parseInt(gridDimensions[1]);
+  let targetCount = parseInt(gridDimensions[2]);
 
-  // Remove the header line, as its information has been extracted.
-  linesOfData.shift ( );
+  // Remove the first line as it's already processed.
+  rawData.shift();
 
-  // Convert the remaining lines into a 2D array (matrix) of characters.
-  // Each inner array represents a row of the grid.
-  let charMatrix = linesOfData.map ( ( rowString ) => rowString.split ( "" ) );
+  // Convert remaining lines into a 2D character grid.
+  let charGrid = rawData.map(lineStr => lineStr.split(''));
 
-  // Initialize a counter to store the total number of combinations that meet the criteria.
-  let finalResultCount = 0;
+  // Initialize the counter for valid combinations.
+  let finalResult = 0;
 
-  // Trim the character matrix to ensure it only contains 'gridHeight' rows.
-  // This handles cases where input might contain more lines than specified by gridHeight.
-  charMatrix.splice ( gridHeight, charMatrix.length );
+  // Ensure the character grid has exactly 'gridHeight' rows.
+  // This handles cases where input might have extra blank lines.
+  charGrid.splice(gridHeight, charGrid.length);
 
-  // --- Step 1: Generate all possible row selection patterns ---
-  // Each pattern is an array of 0s and 1s. '0' typically signifies selection, '1' deselection.
-  // Start with base patterns for a single row: select (0) or deselect (1).
-  let rowSelectionPatterns = new Array ( [ 0 ], [ 1 ] );
+  // Generate all possible row selection patterns.
+  // Each pattern is a binary array where 0 means "keep" and 1 means "remove".
+  let rowSelections = [[0], [1]]; // Base cases for a single row
 
-  // Iteratively build patterns for each row up to 'gridHeight'.
-  // For 'H' rows, we need 'H-1' additional iterations from the base.
-  for ( let currentRowIndex = 0; currentRowIndex < gridHeight - 1; currentRowIndex++ )
-  {
-    // A temporary array to hold the newly generated patterns for this iteration.
-    let intermediatePatterns = new Array ( );
+  // Iterate to build patterns for all 'gridHeight' rows.
+  for (let rowIter = 0; rowIter < gridHeight - 1; rowIter++) {
+    let tempSelections = [];
+    for (let selIdx = 0; selIdx < rowSelections.length; selIdx++) {
+      // Create two new patterns from the current one: one keeping the next row, one removing it.
+      let keepOption = [...rowSelections[selIdx]];
+      let removeOption = [...rowSelections[selIdx]];
 
-    // For each existing pattern, create two new ones: one appending '0', one appending '1'.
-    for ( let prevPatternIndex = 0; prevPatternIndex < rowSelectionPatterns.length; prevPatternIndex++ )
-    {
-      const currentBasePattern = rowSelectionPatterns [ prevPatternIndex ];
+      keepOption.push(0); // Append 'keep' for the next row
+      removeOption.push(1); // Append 'remove' for the next row
 
-      // Pattern with current row selected (0).
-      let patternWithSelectedRow = [ ...currentBasePattern ];
-      patternWithSelectedRow.push ( 0 );
-
-      // Pattern with current row deselected (1).
-      let patternWithDeselectedRow = [ ...currentBasePattern ];
-      patternWithDeselectedRow.push ( 1 );
-
-      intermediatePatterns.push ( patternWithSelectedRow );
-      intermediatePatterns.push ( patternWithDeselectedRow );
+      tempSelections.push(keepOption);
+      tempSelections.push(removeOption);
     }
-    // Update the main patterns array for the next iteration.
-    rowSelectionPatterns = intermediatePatterns;
+    rowSelections = tempSelections; // Update the list of row patterns
   }
 
-  // --- Step 2: Generate all possible column selection patterns ---
-  // This process is analogous to generating row patterns, but applies to 'gridWidth' columns.
-  let columnSelectionPatterns = new Array ( [ 0 ], [ 1 ] );
+  // Generate all possible column selection patterns, similar to rows.
+  let colSelections = [[0], [1]]; // Base cases for a single column
 
-  for ( let currentColIndex = 0; currentColIndex < gridWidth - 1; currentColIndex++ )
-  {
-    let intermediatePatterns = new Array ( );
-    for ( let prevPatternIndex = 0; prevPatternIndex < columnSelectionPatterns.length; prevPatternIndex++ )
-    {
-      const currentBasePattern = columnSelectionPatterns [ prevPatternIndex ];
+  // Iterate to build patterns for all 'gridWidth' columns.
+  for (let colIter = 0; colIter < gridWidth - 1; colIter++) {
+    let tempSelections = [];
+    for (let selIdx = 0; selIdx < colSelections.length; selIdx++) {
+      // Create two new patterns from the current one.
+      let keepOption = [...colSelections[selIdx]];
+      let removeOption = [...colSelections[selIdx]];
 
-      let patternWithSelectedCol = [ ...currentBasePattern ];
-      patternWithSelectedCol.push ( 0 );
+      keepOption.push(0); // Append 'keep' for the next column
+      removeOption.push(1); // Append 'remove' for the next column
 
-      let patternWithDeselectedCol = [ ...currentBasePattern ];
-      patternWithDeselectedCol.push ( 1 );
-
-      intermediatePatterns.push ( patternWithSelectedCol );
-      intermediatePatterns.push ( patternWithDeselectedCol );
+      tempSelections.push(keepOption);
+      tempSelections.push(removeOption);
     }
-    columnSelectionPatterns = intermediatePatterns;
+    colSelections = tempSelections; // Update the list of column patterns
   }
 
-  // --- Step 3: Evaluate each combination of row and column patterns ---
-  let currentBlackCellCount = 0; // Tracks '#' cells for the current row/column pattern pair.
-
-  // Iterate through every possible row selection pattern.
-  for ( let rPatternIter = 0; rPatternIter < rowSelectionPatterns.length; rPatternIter++ )
-  {
-    // For each row pattern, iterate through every possible column selection pattern.
-    for ( let cPatternIter = 0; cPatternIter < columnSelectionPatterns.length; cPatternIter++ )
-    {
-      // Now, iterate through every cell in the original grid.
-      for ( let mRow = 0; mRow < gridHeight; mRow++ )
-      {
-        for ( let mCol = 0; mCol < gridWidth; mCol++ )
-        {
-          // A cell is considered "selected" if its corresponding row AND column are selected (value 0).
-          // If the cell is selected AND it contains a '#' character, increment the counter.
-          if ( rowSelectionPatterns [ rPatternIter ] [ mRow ] === 0 &&
-               columnSelectionPatterns [ cPatternIter ] [ mCol ] === 0 &&
-               charMatrix [ mRow ] [ mCol ] === "#" )
-          {
-            currentBlackCellCount++;
+  // Iterate through all combinations of row and column selections.
+  let currentBlackCount = 0;
+  for (let rSelIdx = 0; rSelIdx < rowSelections.length; rSelIdx++) {
+    for (let cSelIdx = 0; cSelIdx < colSelections.length; cSelIdx++) {
+      // For each combination, count the '#' characters in the "kept" cells.
+      for (let rowCoord = 0; rowCoord < gridHeight; rowCoord++) {
+        for (let colCoord = 0; colCoord < gridWidth; colCoord++) {
+          // A cell is "kept" if both its row and column selection values are 0.
+          if (rowSelections[rSelIdx][rowCoord] === 0 && colSelections[cSelIdx][colCoord] === 0 && charGrid[rowCoord][colCoord] === '#') {
+            currentBlackCount++;
           }
         }
       }
 
-      // After examining all cells for the current row/column pattern pair,
-      // check if the count of black cells matches the 'targetCount'.
-      if ( currentBlackCellCount === targetCount )
-      {
-        finalResultCount++; // If it matches, increment the overall result count.
+      // If the count of '#' matches the target, increment the overall result.
+      if (currentBlackCount === targetCount) {
+        finalResult++;
       }
-
-      // Reset the black cell counter for the next column pattern combination.
-      currentBlackCellCount = 0;
+      // Reset the count for the next combination.
+      currentBlackCount = 0;
     }
   }
 
-  // Output the final tally of successful combinations to the console.
-  console.log ( '%s', finalResultCount );
-  return finalResultCount;
+  // Output the final count of valid combinations.
+  console.log('%s', finalResult);
+  return finalResult;
 }
 
-/*
- * This utility function provides a way to test the 'ProcessGridData' logic
- * within a web browser environment, simulating competitive programming inputs.
- * It retrieves input from HTML elements and displays the test outcome.
- */
-function TestRunner ( testCaseNumber )
-{
-  const inputSourceElement = document.getElementById ( "input" + testCaseNumber );
-  const expectedOutputElement = document.getElementById ( "output" + testCaseNumber );
+// This function is for debugging in a browser environment, not used in Node.js execution.
+function testSolution(testCaseNum) {
+  let testInput = document.getElementById("input" + testCaseNum).value;
+  let computedAnswer = ProcessGrid(testInput);
+  let testOutcome = "WA"; // Default to Wrong Answer
 
-  // Get the test input string from the designated HTML element.
-  const testInputString = inputSourceElement.value;
-  // Execute the main processing function with the test input.
-  const computedAnswer = ProcessGridData ( testInputString );
-
-  let testOutcome = "WA"; // Assume "Wrong Answer" by default.
-
-  // Compare the computed answer (converted to string) with the expected output.
-  // The expected output is taken from the first line of the output element's value.
-  if ( computedAnswer.toString ( ) === expectedOutputElement.value.split ( "\n" ) [ 0 ] )
-  {
-    testOutcome = "AC"; // Set to "Accepted" if they match.
+  // Compare computed answer with expected output from DOM.
+  if (computedAnswer == document.getElementById("output" + testCaseNum).value.split('\n')[0]) {
+    testOutcome = "AC"; // Set to Accepted if they match
   }
-
-  // Display the result ("AC" or "WA") in the designated result HTML element.
-  document.getElementById ( "result" + testCaseNumber ).innerHTML = testOutcome;
+  // Display the test outcome in the DOM.
+  document.getElementById("result" + testCaseNum).innerHTML = testOutcome;
 }
 
-// Entry point for execution in a Node.js environment (e.g., standard competitive programming setup).
-// Reads the entire content of standard input and passes it to the primary processing function.
-ProcessGridData ( require ( "fs" ).readFileSync ( "/dev/stdin", "utf8" ) );
+// Execute the main processing function by reading input from stdin.
+ProcessGrid(require("fs").readFileSync("/dev/stdin", "utf8"));

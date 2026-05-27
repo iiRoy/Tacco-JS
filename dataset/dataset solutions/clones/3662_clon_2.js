@@ -1,48 +1,57 @@
-function ProcessInputData(rawData) {
-  // This function takes raw string input and processes it
-  // into a structured format for further calculations.
+/**
+ * Processes input data to determine a specific count based on intervals.
+ * This function implements a greedy approach to find the maximum number of non-overlapping intervals
+ * where the "end" condition is adjusted.
+ *
+ * @param {string} inputString - The raw input string, typically from standard input,
+ *                                containing lines of space-separated numbers.
+ */
+function ProcessInput(inputString) {
+  // Parse the input string into a 2D array of numbers.
+  // Each line is split by newline, then each resulting string is split by space,
+  // and finally, each element is converted to a number.
+  let parsedLines = inputString.split("\n").map(lineContent => lineContent.split(" ").map(val => val * 1));
 
-  // First, split the input by newlines, then each line by spaces,
-  // finally converting each segment to a number.
-  let numericGrid = rawData
-    .split("\n")
-    .map(lineFragment => lineFragment.split(" ").map(numStr => numStr * 1));
+  // Extract the first two numbers from the first line.
+  // These typically represent problem constraints like total items (firstValue)
+  // and number of intervals (secondValue).
+  let firstValue = parsedLines[0][0];
+  let secondValue = parsedLines[0][1];
 
-  // Extract the total number of elements and operations from the first line.
-  let totalElements = numericGrid[0][0]; // Represents 'N'
-  let operationCount = numericGrid[0][1]; // Represents 'M'
+  // Extract the interval pairs from the parsed lines, starting from the second line.
+  // The number of pairs is determined by 'secondValue'.
+  // Then, sort these interval pairs based on their second element (end point) in ascending order.
+  let intervalPairs = parsedLines.slice(1, secondValue + 1).sort((pairA, pairB) => pairA[1] - pairB[1]);
 
-  // Slice the relevant operation intervals, then sort them based on their end points.
-  const sortedOperations = numericGrid
-    .slice(1, operationCount + 1)
-    .sort((opA, opB) => opA[1] - opB[1]);
+  // Initialize the 'currentEndPosition' based on the first interval's end point, adjusted by 2.
+  // This represents the current "cut-off" point for selecting subsequent intervals.
+  let currentEndPosition = intervalPairs[0][1] - 2;
 
-  // Initialize the current boundary based on the first operation's end point.
-  // A specific offset is applied as per problem logic.
-  let currentBoundary = sortedOperations[0][1] - 2;
+  // Initialize the 'resultCount' to 1, as the first interval is always selected.
+  let resultCount = 1;
 
-  // Initialize a counter for distinct, non-overlapping operations.
-  let distinctOperations = 1;
-
-  // Iterate through the sorted list of operations to find the maximum non-overlapping set.
-  for (let idx = 0; idx < operationCount; idx += 1) {
-    // Check if the current operation's start point overlaps with the established boundary.
-    if (sortedOperations[idx][0] - 1 <= currentBoundary) {
-      // If there's an overlap, this operation cannot be chosen, so skip it.
+  // Iterate through the sorted interval pairs to find non-overlapping ones.
+  // The loop runs for 'secondValue' iterations, covering all interval pairs.
+  for (let loopIndex = 0; loopIndex < secondValue; loopIndex++) {
+    // Check if the current interval's start point (adjusted by 1) is within or before
+    // the 'currentEndPosition'.
+    if (intervalPairs[loopIndex][0] - 1 <= currentEndPosition) {
+      // If it overlaps or is covered, skip this interval and move to the next.
       continue;
     } else {
-      // If no overlap, update the boundary to the end of the current operation,
-      // applying the same specific offset.
-      currentBoundary = sortedOperations[idx][1] - 2;
-      // Increment the count of distinct operations.
-      distinctOperations++;
+      // If the current interval does not overlap (its start is after 'currentEndPosition'),
+      // select this interval.
+      // Update 'currentEndPosition' to the end point of the newly selected interval, adjusted by 2.
+      currentEndPosition = intervalPairs[loopIndex][1] - 2;
+      // Increment the count of selected intervals.
+      resultCount++;
     }
   }
 
-  // Output the final count of distinct operations to the console.
-  console.log(distinctOperations);
+  // Output the final count of selected intervals to the console.
+  console.log(resultCount);
 }
 
-// Execute the processing function by reading input from standard input.
-// It loads the 'fs' (file system) module and reads the file content as UTF-8.
-ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Read the entire content of standard input synchronously as a UTF-8 string,
+// then pass it to the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,37 +1,33 @@
-function processInputData(payload) {
-    const firstBreak = payload.indexOf('\n');
-    const firstComponent = payload.substring(0, firstBreak);
-    const secondComponent = payload.substring(firstBreak + 1);
+function processInputData(rawDataString) {
+    const newlinePosition = rawDataString.indexOf('\n');
 
-    const ensureInteger = (textValue) => {
-        const parsedValue = Number(textValue);
-        if (Number.isNaN(parsedValue)) {
-            return 0;
+    const firstLineSegment = rawDataString.substring(0, newlinePosition);
+    const secondLineSegment = rawDataString.substring(newlinePosition + 1);
+
+    const initialValueNegated = 0 - Number(firstLineSegment);
+
+    let accumulatedSum = 0;
+    let currentParsingIndex = 0;
+    let nextDelimiterIndex;
+
+    while (currentParsingIndex < secondLineSegment.length) {
+        nextDelimiterIndex = secondLineSegment.indexOf(' ', currentParsingIndex);
+
+        let numericStringFragment;
+        if (nextDelimiterIndex === -1) {
+            numericStringFragment = secondLineSegment.substring(currentParsingIndex);
+            currentParsingIndex = secondLineSegment.length;
+        } else {
+            numericStringFragment = secondLineSegment.substring(currentParsingIndex, nextDelimiterIndex);
+            currentParsingIndex = nextDelimiterIndex + 1;
         }
-        return Math.trunc(parsedValue);
-    };
 
-    const initialFactor = -1 * ensureInteger(firstComponent);
-
-    const numericalSegments = secondComponent.split(' ').map(s => s.trim()).filter(Boolean);
-
-    const recursivelySum = (itemsCollection, runningTotal = 0) => {
-        if (itemsCollection.length === 0) {
-            return runningTotal;
+        if (numericStringFragment.length > 0) {
+            accumulatedSum += parseInt(numericStringFragment, 10);
         }
-        return recursivelySum(itemsCollection.slice(1), runningTotal + ensureInteger(itemsCollection[0]));
-    };
+    }
 
-    const accumulatedSumForSecondLine = recursivelySum(numericalSegments);
-
-    const finalComputation = initialFactor + accumulatedSumForSecondLine;
-
-    console.log(finalComputation);
+    console.log(initialValueNegated + accumulatedSum);
 }
 
-const osModule = require("fs");
-const retrieveContents = osModule.readFileSync;
-const targetPath = "/dev/stdin";
-const charset = "utf8";
-
-processInputData(retrieveContents(targetPath, charset));
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,76 +1,69 @@
-const currentModulus = 998244353;
-const factorialValues = [1, 1];
-const inverseFactorialValues = [1, 1];
+const MOD_VAL = 998244353;
 
-const multiplyMod = (...nums) => nums.reduce((acc, val) => (BigInt(acc) * BigInt(val)) % BigInt(currentModulus), BigInt(1));
+function multiplyMod(valA, valB) {
+    return (valA * valB) % MOD_VAL;
+}
 
-const powerMod = (base, exponent) => {
-    if (exponent === 0) return BigInt(1);
-    if (exponent === 1) return BigInt(base) % BigInt(currentModulus);
-
-    let result = powerMod(base, Math.floor(exponent / 2));
-    result = multiplyMod(result, result);
-
-    if (exponent % 2 === 1) {
-        result = multiplyMod(result, base);
+function powerMod(baseVal, exponentVal) {
+    if (exponentVal === 0) {
+        return 1;
     }
-    return result;
-};
-
-const computeFactorial = (val) => {
-    while (factorialValues.length <= val) {
-        factorialValues.push(Number(multiplyMod(factorialValues[factorialValues.length - 1], factorialValues.length)));
+    if (exponentVal % 2 === 0) {
+        const halfPower = powerMod(baseVal, exponentVal / 2);
+        return multiplyMod(halfPower, halfPower);
+    } else {
+        const halfPower = powerMod(baseVal, Math.floor(exponentVal / 2));
+        return multiplyMod(multiplyMod(halfPower, halfPower), baseVal);
     }
-    return factorialValues[val];
-};
+}
 
-const computeInverseFactorial = (val) => {
-    if (val < 0) return 0;
-    computeFactorial(val);
+let cachedFactorials = [1];
+let cachedInverseFactorials = [1];
 
-    if (inverseFactorialValues[val] === undefined) {
-        inverseFactorialValues[val] = Number(powerMod(factorialValues[val], currentModulus - 2));
-        
-        let currentIdx = val;
-        while (currentIdx > 0 && inverseFactorialValues[currentIdx - 1] === undefined) {
-            inverseFactorialValues[currentIdx - 1] = Number(multiplyMod(inverseFactorialValues[currentIdx], currentIdx));
-            currentIdx--;
-        }
+function precomputeCombinatorics(upperBound) {
+    while (cachedFactorials.length <= upperBound) {
+        const currentIdx = cachedFactorials.length;
+        cachedFactorials[currentIdx] = multiplyMod(cachedFactorials[currentIdx - 1], currentIdx);
+        cachedInverseFactorials[currentIdx] = powerMod(cachedFactorials[currentIdx], MOD_VAL - 2);
     }
-    return inverseFactorialValues[val];
-};
+}
 
-const combinationsMod = (nVal, rVal) => {
+function calculateCombinations(nVal, rVal) {
     if (rVal < 0 || rVal > nVal) {
         return 0;
     }
-    computeInverseFactorial(nVal);
-    
-    return Number(multiplyMod(factorialValues[nVal], inverseFactorialValues[rVal], inverseFactorialValues[nVal - rVal]));
-};
+    precomputeCombinatorics(nVal);
 
-const SolveProblem = (inputString) => {
-    const [paramCount, paramA, paramB, paramLimit] = inputString.split(" ").map(Number);
+    const numerator = cachedFactorials[nVal];
+    const denominatorInv = multiplyMod(cachedInverseFactorials[rVal], cachedInverseFactorials[nVal - rVal]);
+    return multiplyMod(numerator, denominatorInv);
+}
 
-    const finalSum = Array.from({ length: paramCount + 1 }, (_, indexI) => indexI)
+function processInput(inputString) {
+    const numericValues = inputString.split(" ").map(Number);
+    const [limitN, factorA, factorB, targetK] = numericValues;
+
+    const finalResult = Array.from({ length: limitN + 1 }, (_, indexI) => indexI)
         .reduce((accumulator, indexI) => {
-            const remainingK = paramLimit - indexI * paramA;
+            const remainingK = targetK - indexI * factorA;
 
             if (remainingK < 0) {
                 return accumulator;
             }
 
-            if (remainingK % paramB === 0) {
-                const indexJ = remainingK / paramB;
-                if (indexJ >= 0 && indexJ <= paramCount) {
-                    const term = multiplyMod(combinationsMod(paramCount, indexI), combinationsMod(paramCount, indexJ));
-                    return Number((BigInt(accumulator) + term) % BigInt(currentModulus));
+            if (remainingK % factorB === 0) {
+                const countB = remainingK / factorB;
+                if (countB >= 0 && countB <= limitN) {
+                    const term1 = calculateCombinations(limitN, indexI);
+                    const term2 = calculateCombinations(limitN, countB);
+                    const productTerm = multiplyMod(term1, term2);
+                    return (accumulator + productTerm) % MOD_VAL;
                 }
             }
             return accumulator;
         }, 0);
 
-    console.log(finalSum);
-};
+    console.log(finalResult);
+}
 
-SolveProblem(require("fs").readFileSync("/dev/stdin","utf8"));
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

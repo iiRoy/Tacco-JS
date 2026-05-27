@@ -1,19 +1,11 @@
-let sequenceText = prompt("Supply three numbers, separated by spaces:");
-let numericalElements = sequenceText.split(' ');
+function evaluateNumericRelation(inputValues) {
+    const [valOne, valTwo, valThree] = inputValues;
 
-let valOne = parseInt(numericalElements[0], 10);
-let valTwo = parseInt(numericalElements[1], 10);
-let valThree = parseInt(numericalElements[2], 10);
+    const smallestElement = Math.min(valOne, valTwo, valThree);
+    const largestElement = Math.max(valOne, valTwo, valThree);
+    const middleElement = valOne + valTwo + valThree - smallestElement - largestElement;
 
-let minimumValue = Math.min(valOne, valTwo, valThree);
-let maximumValue = Math.max(valOne, valTwo, valThree);
+    const meetsCriteria = (smallestElement + middleElement === largestElement) || (smallestElement === middleElement + largestElement);
 
-// The sum of the three values will be used in the condition.
-// This also implicitly provides the middle value: valOne + valTwo + valThree - minimumValue - maximumValue
-let aggregateSum = valOne + valTwo + valThree;
-
-if (aggregateSum === 2 * maximumValue || aggregateSum === 2 * minimumValue) {
-    console.log('Affirmative');
-} else {
-    console.log('Negative');
+    console.log(meetsCriteria ? 'Yes' : 'No');
 }

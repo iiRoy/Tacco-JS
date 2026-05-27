@@ -1,58 +1,67 @@
-const inputDataLines = require ( 'fs' ) . readFileSync ( '/dev/stdin' , 'utf8' ) . trim ( ) . split ( '\n' ) ;
+// This script reads input from stdin to populate a grid based on specific rules.
+// It simulates a "snake" filling a grid, changing direction when hitting boundaries.
 
-let firstLineTokens = inputDataLines . shift ( ) . split ( ' ' ) ;
+// Read all input from standard input, decode as UTF-8, trim whitespace, and split by newline.
+let inputData = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split('\n');
 
-const gridHeight = Number ( firstLineTokens . shift ( ) ) ;
+// Extract the first line which contains grid dimensions.
+let firstLineParts = inputData.shift().split(' ');
 
-const gridWidth = Number ( firstLineTokens . shift ( ) ) ;
+// Parse grid height and width from the first line.
+// Using unary plus for type coercion from string to number.
+let gridHeight = +firstLineParts.shift();
+let gridWidth = +firstLineParts.shift();
 
-const numBlocks = Number ( inputDataLines . shift ( ) ) ;
+// Parse the number of segments from the next line.
+let numSegments = +inputData.shift();
 
-const outputGrid = [ ] ;
-
-for ( let rowIndex = 0 ; rowIndex < gridHeight ; rowIndex ++ )
-{
-    outputGrid [ rowIndex ] = new Array ( gridWidth ) ;
+// Initialize the 2D array (grid) that will store the results.
+let resultGrid = [];
+// Populate the grid with empty arrays for each row.
+for (let idx = 0; idx < gridHeight; idx++) {
+    resultGrid[idx] = new Array(gridWidth);
 }
 
-let currentRow = 0 ;
+// Initialize current position within the grid.
+let currentRow = 0;
+let currentCol = 0;
 
-let currentCol = 0 ;
+// Extract the segment values from the next input line.
+let segmentValues = inputData.shift().split(' ');
 
-const blockSizes = inputDataLines . shift ( ) . split ( ' ' ) ;
+// Initialize the current filling direction. 'R' for right, 'L' for left.
+let direction = 'R';
 
-let directionIndicator = 'R' ;
+// Iterate through each segment.
+for (let segmentIdx = 0; segmentIdx < numSegments; segmentIdx++) {
+    // Get the length of the current segment, converting it to a number.
+    let segmentLength = +segmentValues[segmentIdx];
 
-for ( let blockIndex = 0 ; blockIndex < numBlocks ; blockIndex ++ )
-{
-    const currentBlockSize = Number ( blockSizes [ blockIndex ] ) ;
-
-    for ( let segmentCount = 0 ; segmentCount < currentBlockSize ; segmentCount ++ )
-    {
-        if ( outputGrid [ currentRow ] [ currentCol ] === undefined )
-        {
-            outputGrid [ currentRow ] [ currentCol ] = blockIndex + 1 ;
+    // Fill cells according to the current segment's length.
+    for (let fillCount = 0; fillCount < segmentLength; fillCount++) {
+        // If the current cell is not yet filled, assign the segment index (plus one for 1-based indexing).
+        if (resultGrid[currentRow][currentCol] === undefined) {
+            resultGrid[currentRow][currentCol] = segmentIdx + 1;
         }
 
-        if ( currentCol === gridWidth - 1 && directionIndicator === 'R' )
-        {
-            currentRow ++ ;
-            directionIndicator = 'L' ;
-        }
-        else if ( currentCol === 0 && directionIndicator === 'L' )
-        {
-            currentRow ++ ;
-            directionIndicator = 'R' ;
-        }
-        else if ( directionIndicator === 'R' )
-        {
-            currentCol ++ ;
-        }
-        else if ( directionIndicator === 'L' )
-        {
-            currentCol -- ;
+        // Check for boundary conditions and change direction/row if necessary.
+        if (currentCol === gridWidth - 1 && direction === 'R') {
+            // Reached rightmost column, move to next row and change direction to left.
+            currentRow++;
+            direction = 'L';
+        } else if (currentCol === 0 && direction === 'L') {
+            // Reached leftmost column, move to next row and change direction to right.
+            currentRow++;
+            direction = 'R';
+        } else if (direction === 'R') {
+            // Move right within the current row.
+            currentCol++;
+        } else if (direction === 'L') {
+            // Move left within the current row.
+            currentCol--;
         }
     }
 }
 
-console . log ( outputGrid . map ( rowContent => rowContent . join ( ' ' ) ) . join ( '\n' ) ) ;
+// Format the result grid for output: each row's elements joined by space, and rows joined by newline.
+console.log(resultGrid.map(gridRow => gridRow.join(' ')).join('\n'));

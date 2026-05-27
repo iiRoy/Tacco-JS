@@ -1,32 +1,20 @@
-// This function orchestrates the calculation of a specific derived value from an incoming text stream.
-function processInputData(rawDataString) {
-  /*
-   * First, segment the comprehensive input string by spaces.
-   * This yields an array where each element is a string representation of a number.
-   */
-  const stringComponents = rawDataString.split(" ");
+function processInput(rawData) {
+  // Split the incoming string data by spaces to get individual number strings.
+  const numberStrings = rawData.split(" ");
 
-  // Next, convert the initial string component into an integer using base 10.
-  const operandAlpha = parseInt(stringComponents[0], 10);
+  // Parse the first string into an integer, using base 10.
+  const firstValue = parseInt(numberStrings[0], 10);
 
-  // Subsequently, convert the second string component into an integer, also using base 10.
-  const operandBeta = parseInt(stringComponents[1], 10);
+  // Parse the second string into an integer, also using base 10.
+  const secondValue = parseInt(numberStrings[1], 10);
 
-  /*
-   * Perform the central arithmetic operation:
-   * Multiply the first operand by three, add the second operand,
-   * then divide the sum by two. Finally, truncate any decimal part.
-   */
-  const finalCalculation = Math.floor((operandAlpha * 3 + operandBeta) / 2);
+  // Calculate the final outcome based on the given formula.
+  // The formula is (firstValue * 3 + secondValue) / 2, then floored.
+  const finalOutcome = Math.floor((firstValue * 3 + secondValue) / 2);
 
-  // Transmit the determined numerical outcome to the standard output device.
-  console.log(finalCalculation);
+  // Output the computed result to the console.
+  console.log(finalOutcome);
 }
 
-// Initiate the data processing routine.
-// This involves acquiring content from the standard input path (`/dev/stdin`)
-// as a UTF-8 encoded string and feeding it to our primary processing function.
-processInputData(
-  require("fs")
-    .readFileSync("/dev/stdin", "utf8")
-);
+// Read input from standard input and then call the main processing function.
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

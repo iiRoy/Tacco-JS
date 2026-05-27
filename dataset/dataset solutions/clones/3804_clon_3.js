@@ -1,73 +1,50 @@
-const GLOBAL_EAST_MARKER = 'E'; // Identifier for individuals facing East
-const GLOBAL_WEST_MARKER = 'W'; // Identifier for individuals facing West
+"use strict";
+const fileSystem = require("fs");
+const EAST_DIRECTION_CHAR = "E";
+const WEST_DIRECTION_CHAR = "W";
 
-// Obtain raw input data from standard input stream, ensuring UTF-8 encoding.
-// This simulates reading from /dev/stdin in a Node.js environment.
-let rawInputContent;
-try {
-    rawInputContent = require("node:fs").readFileSync(0, "utf-8"); // Using fd 0 for stdin
-} catch (errorReading) {
-    // Fallback for environments where require or fs might not be available directly,
-    // or /dev/stdin is not mapped to fd 0.
-    // For competitive programming, this path is usually reliable.
-    // In a browser, this would be different.
-    rawInputContent = "1\nEWEW"; // Default example data for robustness
-    console.error("Warning: Could not read from stdin. Using default data.");
-}
+let rawInputData = fileSystem.readFileSync("/dev/stdin", "utf-8");
+rawInputData = rawInputData.split("\n");
 
-// Split the input into lines and extract the relevant line containing orientations.
-// The problem structure typically places the orientation string on the second line (index 1).
-const allInputLines = rawInputContent.split("\n");
-const individualOrientations = allInputLines[1];
+let directionSequence = rawInputData[1];
+const sequenceLength = directionSequence.length;
 
-// A quick check to ensure we have a valid orientation string to process.
-if (!individualOrientations || individualOrientations.length === 0) {
-    // If the input is empty or malformed, there are no turnarounds needed.
-    console.log(0);
-    return;
-}
-
-// Determine the total number of individuals in the line.
-const lineOccupancy = individualOrientations.length;
-
-// Initialize a counter for necessary turnarounds assuming a specific initial configuration.
-// This count represents the scenario where the "leader" is at position 0,
-// and everyone to their left (none) is West, and everyone to their right is East.
-// So, we count how many people from index 1 onwards are facing East.
-let currentConfigurationCost = 0;
-for (let position = 1; position < lineOccupancy; position++) {
-    if (individualOrientations[position] === GLOBAL_EAST_MARKER) {
-        currentConfigurationCost = currentConfigurationCost + 1;
+// Helper function to compute the initial metric value for the first leader position (index 0).
+// This metric counts how many people to the right of the leader are facing EAST.
+const computeInitialMetric = (sequence) => {
+    let initialMetric = 0;
+    // Iterate from the second person (index 1) to the end of the sequence.
+    for (let currentPersonIndex = 1; currentPersonIndex < sequence.length; currentPersonIndex++) {
+        if (sequence[currentPersonIndex] === EAST_DIRECTION_CHAR) {
+            initialMetric++;
+        }
     }
-}
+    return initialMetric;
+};
 
-// The minimum cost found so far is this initial configuration's cost.
-let minimalRequiredTurns = currentConfigurationCost;
+let currentMetricValue = computeInitialMetric(directionSequence);
+let overallMinimumMetric = currentMetricValue;
 
-// Iterate through the line, effectively shifting the 'boundary' or 'leader' position.
-// For each shift, update the current cost and track the minimum.
-// The `currentConfigurationCost` variable dynamically holds the cost for
-// a pattern where individuals left of `position` are West, and right of `position` are East.
-// (This specific logic calculates min_k (prefixW[k] + suffixE[k+1]) )
-for (let position = 1; position < lineOccupancy; position++) {
-    // When the boundary shifts from `position - 1` to `position`:
-    // 1. The individual at `position - 1` moves from being the boundary to being on the left side.
-    //    If this individual was facing West, they now contribute to the cost (as they should be East).
-    if (individualOrientations[position - 1] === GLOBAL_WEST_MARKER) {
-        currentConfigurationCost = currentConfigurationCost + 1;
+// Iterate through all possible leader positions, starting from index 1.
+// The 'leaderPosition' variable represents the current person considered as the leader.
+for (let leaderPosition = 1; leaderPosition < sequenceLength; leaderPosition++) {
+    // When the leader shifts from (leaderPosition - 1) to leaderPosition:
+    // The person at (leaderPosition - 1) is now to the left of the new leader.
+    // If this person was facing WEST, they contribute positively to the metric.
+    const personToLeftOfLeader = directionSequence[leaderPosition - 1];
+    if (personToLeftOfLeader === WEST_DIRECTION_CHAR) {
+        currentMetricValue++;
     }
 
-    // 2. The individual at `position` moves from being on the right side to being the new boundary.
-    //    If this individual was facing East, they no longer contribute to the cost (as they should be West).
-    if (individualOrientations[position] === GLOBAL_EAST_MARKER) {
-        currentConfigurationCost = currentConfigurationCost - 1;
+    // The person at leaderPosition is now the leader.
+    // If this person was facing EAST, they no longer contribute to the 'right-facing-EAST' count.
+    const personAtLeaderPosition = directionSequence[leaderPosition];
+    if (personAtLeaderPosition === EAST_DIRECTION_CHAR) {
+        currentMetricValue--;
     }
 
-    // Update the overall minimum cost found.
-    if (currentConfigurationCost < minimalRequiredTurns) {
-        minimalRequiredTurns = currentConfigurationCost;
-    }
+    // Update the overall minimum metric value found across all leader positions.
+    overallMinimumMetric = Math.min(overallMinimumMetric, currentMetricValue);
 }
 
-// Output the lowest number of turnarounds identified across all configurations.
-console.log(minimalRequiredTurns);
+console.log(overallMinimumMetric);

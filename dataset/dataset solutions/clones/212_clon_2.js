@@ -1,84 +1,71 @@
-/*
- * This module processes input data to calculate the number of trailing zeros
- * in the factorial of various integers provided as input.
- * It's structured as an Immediately Invoked Function Expression (IIFE).
- */
-( function ( ) {
-  // Global buffer to accumulate incoming standard input data.
-  var dataBuffer = "";
+(function () {
+  // This variable will accumulate all incoming data from standard input.
+  var rawData = '';
 
   /**
-   * Orchestrates the primary data processing flow.
-   * It iterates through lines of input, parses numbers, and
-   * invokes a helper function to determine trailing zeros.
+   * The primary function to process the collected input.
+   * It iterates through lines, parses numbers, and calculates trailing zeros.
    */
-  function processData ( ) {
-    // Declare variables for loop control and storing intermediate results.
-    var lineCount,    // Stores the effective number of data lines to process.
-        idx,          // Loop counter for iterating through input lines.
-        currentVal,   // The integer value parsed from the current input line.
-        resultVal;    // The calculated number of trailing zeros for currentVal.
+  function processInputData () {
+    var dataLength, // Stores the effective length of the input array for looping.
+        idx,        // Loop counter for iterating through input lines.
+        currentNum, // The integer parsed from the current input line.
+        trailingZerosCount; // Result of the trailing zero calculation.
 
-    // Loop through each line of the buffered input, excluding the last empty line often
-    // resulting from split('\n') if the input ends with a newline.
-    for ( idx = 0, lineCount = dataBuffer.length - 1;   idx < lineCount;   idx += 1 ) {
-      // Convert the current input line string to an integer base 10.
-      currentVal = Number.parseInt( dataBuffer[idx], 10 );
+    // Loop through each line of the input, excluding the last one if it's empty.
+    // The original code uses `input.length - 1` as the upper bound,
+    // which effectively ignores the last element if it's an empty string
+    // resulting from a trailing newline.
+    for (idx = 0, dataLength = rawData.length - 1; idx < dataLength; idx += 1) {
+      // Convert the current line string to an integer.
+      currentNum = parseInt(rawData[idx], 10);
 
-      // A value of 0 indicates the termination of input sequence.
-      if ( currentVal === 0 ) {
-        break; // Exit the loop if a zero is encountered.
+      // If the parsed number is zero, it signifies the end of valid input.
+      if (currentNum === 0) {
+        break; // Exit the loop.
       } else {
-        // Calculate the number of trailing zeros for the non-zero input.
-        resultVal = calculateTrailingZeros( currentVal );
-        // Output the computed result to the console.
-        console.log( resultVal );
+        // Otherwise, calculate the number of trailing zeros for the factorial.
+        trailingZerosCount = calculateTrailingZeros(currentNum);
+        // Output the calculated count to the console.
+        console.log(trailingZerosCount);
       }
     }
   }
 
   /**
-   * Computes the number of trailing zeros in the factorial of a given number.
-   * This is based on Legendre's formula, which counts factors of 5.
+   * Calculates the number of trailing zeros in the factorial of a given number.
+   * This is determined by the number of factors of 5 in its prime factorization.
    *
-   * @param {number} numberToAnalyze - The integer for which to calculate trailing zeros.
-   * @returns {number} The count of trailing zeros in (numberToAnalyze!).
+   * @param {number} factorialBase The base number for which to calculate factorial trailing zeros.
+   * @returns {number} The total count of trailing zeros.
    */
-  function calculateTrailingZeros ( numberToAnalyze ) {
-    var divisorIter,    // Iterator for successive divisions by 5.
-        trailingZeroes = 0; // Accumulator for the total count of zeros.
+  function calculateTrailingZeros (factorialBase) {
+    var divisor,    // Loop variable, initially the factorialBase, then divided by 5.
+        totalZeros = 0; // Accumulator for the count of zeros.
 
-    // Loop continues as long as the current divisorIter, when divided by 5,
-    // yields a positive integer (meaning there are still factors of 5 to count).
-    for ( divisorIter = numberToAnalyze;   divisorIter / 5 > 0;   divisorIter = divisorIter / 5 ) {
-      // Add the floor of (divisorIter / 5) to the total count.
-      // This accounts for factors of 5, 25, 125, etc.
-      trailingZeroes += Math.floor( divisorIter / 5 );
+    // Continuously divide the number by 5 and add the floor of the result to totalZeros.
+    // This accounts for factors of 5, 25, 125, etc.
+    for (divisor = factorialBase; divisor / 5 !== 0; divisor /= 5) {
+      totalZeros += Math.floor(divisor / 5);
     }
 
-    return trailingZeroes; // Return the final tally of trailing zeros.
+    return totalZeros; // Return the final count.
   }
 
-  // --- Standard Input Handling Setup ---
+  // Set up standard input handling for Node.js environment.
+  process.stdin.resume(); // Keep the process alive.
+  process.stdin.setEncoding('utf8'); // Specify character encoding for input.
 
-  // Resume the standard input stream to listen for data.
-  process.stdin . resume ( ) ;
-  // Set the encoding for the incoming data chunks.
-  process.stdin.setEncoding( "utf8" );
+  // Event listener for when data chunks are received.
+  process.stdin.on('data', function (chunk) {
+    rawData += chunk; // Append the received chunk to the rawData string.
+  });
 
-  // Register an event listener for 'data' events on the standard input.
-  // Each time a chunk of data arrives, append it to our buffer.
-  process.stdin.on( "data", function ( incomingChunk ) {
-    dataBuffer += incomingChunk ;
-  } );
-
-  // Register an event listener for the 'end' event on the standard input.
-  // This signifies that all input has been received.
-  process.stdin.on( "end", function ( ) {
-    // Split the accumulated data into an array of lines using the newline character.
-    dataBuffer = dataBuffer.split( "\n" ) ;
-    // Once all data is ready, initiate the main processing logic.
-    processData( ) ;
-  } ) ;
-
-} ) ( ); // Immediately invoke the function.
+  // Event listener for when the standard input stream ends.
+  process.stdin.on('end', function () {
+    // Split the accumulated rawData into an array of strings by newline characters.
+    rawData = rawData.split('\n');
+    // Once all input is received and processed into an array, call the main processing function.
+    processInputData();
+  });
+}());

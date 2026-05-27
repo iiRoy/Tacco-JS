@@ -1,58 +1,53 @@
-const obtainRawData = () => require('node:fs').readFileSync(0, 'utf8');
+const fileSystem = require('fs');
+const rawInputContent = fileSystem.readFileSync('/dev/stdin', 'utf8');
 
-const parseNumericalSequence = (lineContent) => lineContent.split(' ').map(Number);
+function* parseGameData(allInputLines) {
+    let currentLineIndex = 0;
+    while (true) {
+        const configLine = allInputLines[currentLineIndex++];
+        const [playerCount, teamCount] = configLine.split(" ").map(Number);
 
-const establishRankingCriteria = (entryA, entryB) => {
-    const scoreA = entryA[1];
-    const scoreB = entryB[1];
-    const identifierA = entryA[0];
-    const identifierB = entryB[0];
+        if (playerCount === 0 && teamCount === 0) {
+            break;
+        }
 
-    if (scoreA === scoreB) {
-        return identifierA - identifierB;
-    } else {
-        return scoreB - scoreA;
+        const roundScores = [];
+        for (let i = 0; i < playerCount; i++) {
+            roundScores.push(allInputLines[currentLineIndex++].split(" ").map(Number));
+        }
+        yield { playerCount, teamCount, roundScores };
     }
-};
+}
 
-const processGameRounds = (dataLines, currentLineCursor) => {
-    const configurationLine = dataLines[currentLineCursor];
-    if (!configurationLine) return;
+const inputLinesArray = rawInputContent.trim().split("\n");
 
-    const [playerCount, gameCount] = parseNumericalSequence(configurationLine);
+for (const gameSession of parseGameData(inputLinesArray)) {
+    const { playerCount: currentPlayers, teamCount: currentTeams, roundScores: sessionScores } = gameSession;
 
-    if (playerCount === 0 && gameCount === 0) {
-        return;
-    }
-
-    const gameAccumulators = new Map();
-    for (let gameIdentifier = 1; gameIdentifier <= gameCount; ++gameIdentifier) {
-        gameAccumulators.set(gameIdentifier, 0);
-    }
-
-    for (let playerIndex = 0; playerIndex < playerCount; ++playerIndex) {
-        const playerScoresLine = dataLines[currentLineCursor + 1 + playerIndex];
-        const individualScores = parseNumericalSequence(playerScoresLine);
-
-        individualScores.forEach((scoreComponent, gameIdx) => {
-            const currentGameId = gameIdx + 1;
-            gameAccumulators.set(currentGameId, gameAccumulators.get(currentGameId) + scoreComponent);
+    // Initialize team scores using a Map, then accumulate scores using reduce
+    const teamScoreMap = sessionScores.reduce((accumulatorMap, roundPoints) => {
+        roundPoints.forEach((pointValue, teamIdx) => {
+            const teamIdentifier = teamIdx + 1;
+            accumulatorMap.set(teamIdentifier, accumulatorMap.get(teamIdentifier) + pointValue);
         });
-    }
+        return accumulatorMap;
+    }, new Map(Array.from({ length: currentTeams }, (_, i) => [i + 1, 0])));
 
-    const rawGameEntries = Array.from(gameAccumulators.entries());
+    // Transform Map entries into an array of objects for sorting
+    const rankedTeams = Array.from(teamScoreMap, ([teamId, totalScore]) => ({
+        identifier: teamId,
+        score: totalScore
+    }));
 
-    rawGameEntries.sort(establishRankingCriteria);
+    // Sort the array of objects based on score (descending) and then identifier (ascending)
+    rankedTeams.sort((teamA, teamB) => {
+        if (teamA.score === teamB.score) {
+            return teamA.identifier - teamB.identifier;
+        }
+        return teamB.score - teamA.score;
+    });
 
-    const orderedGameIdentifiers = rawGameEntries.map(entry => entry[0]);
-
-    console.log(orderedGameIdentifiers.join(' '));
-
-    const nextCursorPosition = currentLineCursor + 1 + playerCount + 1;
-    processGameRounds(dataLines, nextCursorPosition);
-};
-
-const fullInputText = obtainRawData();
-const inputSegmentArray = fullInputText.trim().split('\n');
-
-processGameRounds(inputSegmentArray, 0);
+    // Extract identifiers from the sorted objects and format output
+    const finalOrder = rankedTeams.map(teamObj => teamObj.identifier);
+    console.log(finalOrder.join(" "));
+}

@@ -1,95 +1,101 @@
-"use strict" // Enforce strict parsing and error handling for better code quality.
+"use strict"
 
-// Function to set up an input stream handler.
-const buildInputHandler = () => {
-    /*
-     * Reads all lines from standard input,
-     * trims whitespace, and splits into an array of strings.
-     */
-    const sourceLines = require('fs')
-                                  .readFileSync('/dev/stdin', 'utf8')
-                                  .trim()
-                                  .split('\n');
+// Function to create an input reader utility
+const makeInputReader = () => {
+    // Read all content from standard input, decode as UTF-8, remove leading/trailing whitespace, and split into an array of lines.
+    const rawData = require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");
 
-    // Creates an object to manage iteration over the input lines.
-    const lineIterator = {
-        "dataItems": sourceLines, // The array of input lines.
-        "currentPosition": 0,     // Current index in the array.
-        "totalCount": sourceLines.length, // Total number of lines.
+    // Construct an object to manage the input lines and provide utility methods.
+    const readerObj = {
+        "dataLines": rawData, // Stores the array of input lines.
+        "currentIdx": 0,      // Keeps track of the current line index being processed.
+        "totalLines": rawData.length, // Total number of lines available in the input.
 
-        // Checks if there are more lines to read.
-        "hasRemaining": function() {
-            return this.currentPosition < this.totalCount;
+        // Method to determine if there are more lines to read.
+        "hasMore": function() {
+            return this.currentIdx < this.totalLines;
         },
 
-        // Retrieves the next line from the input.
-        "retrieveNext": function() {
-            if (!this.hasRemaining()) {
-                throw "EndOfInputReachedError"; // Custom error message for out-of-bounds access.
+        // Method to retrieve the next line from the input.
+        "fetchNext": function() {
+            // If no more lines are available, throw an error to indicate out-of-bounds access.
+            if (!this.hasMore()) {
+                throw "ArrayIndexOutOfBoundsException";
             } else {
-                return this.dataItems[this.currentPosition++]; // Return and increment position.
+                // Return the current line and then increment the index for the next call.
+                return this.dataLines[this.currentIdx++];
             }
         }
     };
-    return lineIterator; // Returns the configured iterator.
+    return readerObj; // Return the fully configured input reader object.
+}
+
+// Initialize the global input handler instance.
+const inputHandler = makeInputReader();
+
+// Utility function to get the next raw string line from input.
+const getNextLine = () => inputHandler.fetchNext();
+
+// Utility function to get the next line parsed as an integer.
+const getNextInt = () => parseInt(inputHandler.fetchNext());
+
+// Utility function to get the next line split into an array of strings by space.
+const getNextStrArr = () => inputHandler.fetchNext().split(" ");
+
+// Utility function to get the next line split into an array of integers by space.
+const getNextIntArr = () => inputHandler.fetchNext().split(" ").map(elementVal => parseInt(elementVal));
+
+// Utility function to get the next line split into an array of individual characters.
+const getNextCharArr = () => inputHandler.fetchNext().split("");
+
+// Utility function to check if there's more input available.
+const checkHasMore = () => inputHandler.hasMore();
+
+// Utility function for printing output to the console.
+const printOutput = (...outputArgs) => console.log(...outputArgs);
+
+// The main execution function of the program.
+const ExecuteProgram = () => {
+    // Read the integer value X from the input.
+    const targetNum = getNextInt();
+
+    // Define the upper limit for the Sieve of Eratosthenes algorithm.
+    const upperBound = 1000000;
+
+    // Create a boolean array, initially assuming all numbers up to 'upperBound' are prime.
+    const isPrimeFlags = new Array(upperBound).fill(true);
+
+    // Sieve of Eratosthenes: Mark all even numbers (starting from 4) as not prime.
+    for (let idx = 4; idx < upperBound; idx = idx + 2) {
+        isPrimeFlags[idx] = false;
+    }
+
+    // Explicitly mark 0 and 1 as non-prime numbers.
+    isPrimeFlags[1] = false;
+    isPrimeFlags[0] = false;
+
+    // Continue the Sieve for odd numbers.
+    for (let idx = 3; idx < upperBound; idx = idx + 2) {
+        // If the current number 'idx' has already been marked as not prime, skip to the next iteration.
+        if (isPrimeFlags[idx] == false) {
+            continue;
+        }
+        // If 'idx' is prime, mark all its multiples as not prime.
+        for (let multiplier = 2; idx * multiplier < upperBound; multiplier++) {
+            isPrimeFlags[multiplier * idx] = false;
+        }
+    }
+
+    // Search for the first prime number that is greater than or equal to 'targetNum'.
+    for (let idx = targetNum; idx < upperBound; idx++) {
+        if (isPrimeFlags[idx] == true) {
+            // Once the first such prime is found, print it to the console.
+            console.log(idx);
+            // Terminate the function as the required prime has been found.
+            return;
+        }
+    }
 };
 
-// Initialize the global input reader instance.
-const readerInstance = buildInputHandler();
-
-// Helper functions for reading various data types from input.
-const fetchNextLine     = () => readerInstance.retrieveNext(); // Gets the next raw string line.
-const fetchNextInteger  = () => parseInt(readerInstance.retrieveNext(), 10); // Converts next line to integer.
-const fetchStringArray  = () => readerInstance.retrieveNext().split(" "); // Splits next line into string array.
-const fetchIntegerArray = () => readerInstance.retrieveNext().split(" ").map(elementItem => parseInt(elementItem, 10)); // Splits and converts to integer array.
-const fetchCharacterArray = () => readerInstance.retrieveNext().split(""); // Splits next line into character array.
-
-// Checks if there are more items available in the input stream.
-const checkHasMore      = () => readerInstance.hasRemaining();
-
-// Utility for logging output to the console.
-const displayOutput     = (...outputArgs) => console.log(...outputArgs);
-
-
-// Main application logic processing.
-const executePrimaryLogic = () => {
-
-    const targetValue = fetchNextInteger(); // Read the starting number X.
-    const upperLimit = 1000000; // Define the maximum boundary for prime number search.
-
-    // Initialize a boolean array for the Sieve of Eratosthenes.
-    // All numbers are initially considered prime.
-    const primeFlags = new Array(upperLimit).fill(true);
-
-    // Optimize: Mark all even numbers (except 2) as not prime.
-    for ( let idx = 4; idx < upperLimit; idx += 2 ) {
-        primeFlags[idx] = false;
-    }
-
-    // Explicitly mark 0 and 1 as not prime.
-    primeFlags[1] = false;
-    primeFlags[0] = false;
-
-    // Apply the Sieve of Eratosthenes algorithm.
-    // Iterate through odd numbers starting from 3.
-    for ( let counter = 3; counter < upperLimit; counter += 2 ) {
-        if ( primeFlags[counter] === false ) {
-            continue; // Skip if 'counter' is already marked as not prime.
-        }
-        // Mark all multiples of the current prime 'counter' as not prime.
-        for ( let multiplier = 2; counter * multiplier < upperLimit; multiplier++ ) {
-            primeFlags[counter * multiplier] = false;
-        }
-    }
-
-    // Find the smallest prime number greater than or equal to 'targetValue'.
-    for ( let idx = targetValue; idx < upperLimit; idx++ ) {
-        if ( primeFlags[idx] === true ) {
-            console.log(idx); // Output the first found prime.
-            return; // Exit the function after finding and printing.
-        }
-    }
-};
-
-// Invoke the primary execution flow of the program.
-executePrimaryLogic();
+// Invoke the main program function to begin execution.
+ExecuteProgram();

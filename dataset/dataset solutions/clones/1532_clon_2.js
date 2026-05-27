@@ -1,44 +1,36 @@
-executionEnvironment.standardInput.activateStream();
-executionEnvironment.standardInput.configureCharacterEncoding('universalTextFormat');
+process.stdin.resume();
+process.stdin.setEncoding('utf-8');
 
-let inputBufferContent  =  '';
-let linePointerIndex    =  0;
+let dataBuffer = '';
+let lineIndex = 0;
 
-executionEnvironment.standardInput.attachEventHandler( 'receivedStreamData', incomingDataChunk  =>  {
-    inputBufferContent += incomingDataChunk;
-} );
+process.stdin.on('data', incomingChunk => {
+    dataBuffer += incomingChunk;
+});
 
-executionEnvironment.standardInput.attachEventHandler( 'streamCompletion', _unusedParameter  =>  {
-    inputBufferContent = inputBufferContent.divideByDelimiter(/\r\n/);
-    entryPointFunction();
-} );
+process.stdin.on('end', () => {
+    dataBuffer = dataBuffer.split(/\n/);
+    executeProgram();
+});
 
-function  obtainNextLine()
-{
-    return  inputBufferContent[linePointerIndex++];
+function fetchLine() {
+    return dataBuffer[lineIndex++];
 }
 
-const  divisorConstant  =  MathOperations.powerCalculation(10,  9)  +  7;
+const moduloVal = Math.pow(10, 9) + 7;
 
-function  entryPointFunction()
-{
-  const  iterationCountValue  =  NumericConverter( obtainNextLine() );
-  let  accumulatorForTen      =  1;
-  let  accumulatorForNine     =  2;
-  let  accumulatorForEight    =  1;
+function executeProgram() {
+    const inputCount = Number(fetchLine());
+    let powerOfTen = 1;
+    let powerOfNine = 2;
+    let powerOfEight = 1;
 
-  for  (  let  loopIteration  =  0;  loopIteration  <  iterationCountValue;  loopIteration++  )
-  {
-    accumulatorForTen   =  ( accumulatorForTen  *  10 )  %  divisorConstant;
-    accumulatorForNine  =  ( accumulatorForNine *  9 )  %  divisorConstant;
-    accumulatorForEight =  ( accumulatorForEight *  8 )  %  divisorConstant;
-  }
+    for (let iter = 0; iter < inputCount; iter++) {
+        powerOfTen = (powerOfTen * 10) % moduloVal;
+        powerOfNine = (powerOfNine * 9) % moduloVal;
+        powerOfEight = (powerOfEight * 8) % moduloVal;
+    }
 
-  const  finalCalculatedResult  =  accumulatorForTen  -  accumulatorForNine  +  accumulatorForEight;
-
-  OutputUtility.displayMessage(
-      finalCalculatedResult  >=  0  ?
-      finalCalculatedResult  %  divisorConstant  :
-      finalCalculatedResult  +  divisorConstant
-  );
+    const finalResult = powerOfTen - powerOfNine + powerOfEight;
+    console.log(finalResult >= 0 ? finalResult % moduloVal : finalResult + moduloVal);
 }

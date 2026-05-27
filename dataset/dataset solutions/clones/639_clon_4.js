@@ -1,76 +1,63 @@
-const fileSystem = require('node:fs');
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
 
-const extractData = () => {
-    const inputBuffer = fileSystem.readFileSync(0); 
-    const rawLines = inputBuffer.toString().trim().split('\n');
-    let currentLineIndex = 0;
+let inputBuffer = '';
+process.stdin.on('data', chunk => {
+    inputBuffer += chunk;
+});
 
-    const dimensions = rawLines[currentLineIndex++].split(' ').map(Number);
-    const countA = dimensions[0]; 
-    const countB = dimensions[1]; 
+process.stdin.on('end', () => {
+    const lineSegments = inputBuffer.trim().split('\n');
 
-    const collectionA = [];
-    for (let i = 0; i < countA; ++i) {
-        collectionA.push(Number(rawLines[currentLineIndex++]));
-    }
+    const [numRows, numCols] = lineSegments.shift().split(' ').map(Number); // numRows for m, numCols for n
 
-    const collectionB = [];
-    for (let i = 0; i < countB; ++i) {
-        collectionB.push(Number(rawLines[currentLineIndex++]));
-    }
+    const dataA = lineSegments.splice(0, numCols).map(Number); // d array (length n)
+    const dataB = lineSegments.splice(0, numRows).map(Number); // c array (length m)
 
-    return { countA, countB, collectionA, collectionB };
-};
+    // dpTable[c_index][d_index] stores the minimum cost
+    const dpTable = Array.from({ length: numRows + 1 }, () => Array(numCols + 1).fill(Infinity));
 
-const processedInput = extractData();
-const limitA = processedInput.countA;
-const limitB = processedInput.countB;
-const listA = processedInput.collectionA;
-const listB = processedInput.collectionB;
+    dpTable[0][0] = 0;
 
-const memoTable = new Array(limitB + 1).fill(null).map(() => new Array(limitA + 1).fill(undefined));
+    // Iterate over each cell (currentCIndex, currentDIndex) in the dpTable
+    // and compute its value based on previously calculated states.
+    for (let currentCIndex = 0; currentCIndex <= numRows; currentCIndex++) {
+        for (let currentDIndex = 0; currentDIndex <= numCols; currentDIndex++) {
+            if (currentCIndex === 0 && currentDIndex === 0) {
+                continue; // Base case dpTable[0][0] is already 0
+            }
 
-const calculateOptimalValue = (bCurrentIndex, aProcessedCount) => {
-    if (aProcessedCount === limitA) {
-        return 0; // All elements from listA have been processed
-    }
-    if (bCurrentIndex === limitB) {
-        return Number.MAX_SAFE_INTEGER; // No more elements in listB, but listA elements remain
-    }
+            if (currentDIndex === 0) {
+                // If no 'd' elements are processed (currentDIndex is 0),
+                // the cost is Infinity for currentCIndex > 0, as there's no
+                // transition in the original logic to set these to a finite value.
+                // dpTable[0][0] is the only finite value in this row.
+                continue;
+            }
 
-    if (memoTable[bCurrentIndex][aProcessedCount] !== undefined) {
-        return memoTable[bCurrentIndex][aProcessedCount];
-    }
+            // To calculate dpTable[currentCIndex][currentDIndex],
+            // we consider all possible previous states dpTable[prevCIndex][currentDIndex - 1].
+            // This corresponds to matching dataA[currentDIndex - 1] (original d[j])
+            // with dataB[prevCIndex] (original c[i]),
+            // where kVal = currentCIndex - prevCIndex (original k) represents
+            // the number of 'c' elements consumed to process dataA[currentDIndex - 1].
+            for (let prevCIndex = 0; prevCIndex < currentCIndex; prevCIndex++) {
+                const kVal = currentCIndex - prevCIndex; // kVal is the 'k' from the original loop
 
-    let minCost = Number.MAX_SAFE_INTEGER;
-
-    // Option 1: Skip the current element from listB (listB[bCurrentIndex])
-    // This corresponds to dp[i+1][j] = Math.min(dp[i+1][j], dp[i][j])
-    const costIfSkipped = calculateOptimalValue(bCurrentIndex + 1, aProcessedCount);
-    minCost = Math.min(minCost, costIfSkipped);
-
-    // Option 2: Use the current element from listB (listB[bCurrentIndex]) to process
-    // the next element from listA (listA[aProcessedCount])
-    // This corresponds to dp[i+k][j+1] = Math.min(dp[i+k][j+1], dp[i][j] + C*D)
-    const currentBElement = listB[bCurrentIndex];
-    const currentAElement = listA[aProcessedCount];
-
-    // The 'k' loop in the original code allows skipping subsequent B elements
-    // The condition `i+k+n-j+1 <= m` means `m - (i+k) >= n - j - 1`
-    // Which translates to `remainingBItems >= remainingAItems + 2` (where remainingAItems is `n - (j+1)`)
-    for (let bSkipSteps = 1; bCurrentIndex + bSkipSteps <= limitB; ++bSkipSteps) {
-        const remainingBItems = limitB - (bCurrentIndex + bSkipSteps);
-        const remainingAItems = limitA - (aProcessedCount + 1);
-
-        if (remainingBItems >= remainingAItems + 2) {
-            const costToUse = currentBElement * currentAElement + 
-                              calculateOptimalValue(bCurrentIndex + bSkipSteps, aProcessedCount + 1);
-            minCost = Math.min(minCost, costToUse);
+                // Ensure the previous state is reachable (not Infinity)
+                if (dpTable[prevCIndex][currentDIndex - 1] !== Infinity) {
+                    // Replicate the original condition: i + k + n - j + 1 <= m
+                    // i = prevCIndex, k = kVal, n = numCols, j = currentDIndex - 1, m = numRows
+                    if (prevCIndex + kVal + numCols - (currentDIndex - 1) + 1 <= numRows) {
+                        dpTable[currentCIndex][currentDIndex] = Math.min(
+                            dpTable[currentCIndex][currentDIndex],
+                            dpTable[prevCIndex][currentDIndex - 1] + dataB[prevCIndex] * dataA[currentDIndex - 1]
+                        );
+                    }
+                }
+            }
         }
     }
 
-    return (memoTable[bCurrentIndex][aProcessedCount] = minCost);
-};
-
-const finalResult = calculateOptimalValue(0, 0);
-console.log(finalResult);
+    console.log(dpTable[numRows][numCols]);
+});

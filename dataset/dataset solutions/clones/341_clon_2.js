@@ -1,65 +1,63 @@
-var costTable = {}; // This object will store the minimum costs for various unit combinations.
+let dataMap = {}; // Initialize an empty object to store calculated costs by weight.
 
-// Begin iterating through possible values for the first component, named 'factorA'.
-for (var factorA = 0; factorA <= 25; factorA++) {
-    // Nested loop for the second component, 'factorB'.
-    for (var factorB = 0; factorB <= 16; factorB++) {
-        // Innermost loop for the third component, 'factorC'.
-        for (var factorC = 0; factorC <= 10; factorC++) {
+// Outer loop for item type A (e.g., 'i' in original)
+for (let idxA = 0; idxA <= 25; idxA++) {
+  // Middle loop for item type B (e.g., 'j' in original)
+  for (let idxB = 0; idxB <= 16; idxB++) {
+    // Inner loop for item type C (e.g., 'k' in original)
+    for (let idxC = 0; idxC <= 10; idxC++) {
 
-            // Calculate the aggregate sum of units based on current factor values.
-            var totalUnits = (200 * factorA) + (300 * factorB) + (500 * factorC);
+      // Calculate the total mass for the current combination of items
+      const totalMass = (200 * idxA) + (300 * idxB) + (500 * idxC);
 
-            // If the total units exceed a specified upper boundary, this combination is invalid.
-            if (totalUnits > 5000) {
-                continue; // Skip to the next combination of factors.
-            }
+      // If the total mass exceeds the limit, skip this combination
+      if (totalMass > 5000) {
+        continue;
+      }
 
-            // Initialize the current monetary value for this specific combination of units.
-            var currentValue = 0.0; // Using a float to emphasize numerical type.
+      let totalCost = 0; // Initialize the total cost for this specific combination
 
-            // Add costs for 'factorA' in bulk, applying a discount percentage.
-            currentValue += (380 * 5 * 0.80 * Math.floor(factorA / 5));
-            // Add costs for 'factorB' in bulk, with its own discount.
-            currentValue += (550 * 4 * 0.85 * Math.floor(factorB / 4));
-            // Add costs for 'factorC' in bulk, including its respective discount.
-            currentValue += (850 * 3 * 0.88 * Math.floor(factorC / 3));
+      // Calculate cost for item A, considering bulk discounts
+      totalCost += 380 * 5 * 0.8 * Math.floor(idxA / 5); // Bulk of 5 units at 80% price
+      // Calculate cost for item B, considering bulk discounts
+      totalCost += 550 * 4 * 0.85 * Math.floor(idxB / 4); // Bulk of 4 units at 85% price
+      // Calculate cost for item C, considering bulk discounts
+      totalCost += 850 * 3 * 0.88 * Math.floor(idxC / 3); // Bulk of 3 units at 88% price
 
-            // Add costs for the remaining individual units of 'factorA' (not part of bulk).
-            currentValue += (380 * (factorA % 5));
-            // Add costs for the remaining individual units of 'factorB'.
-            currentValue += (550 * (factorB % 4));
-            // Add costs for the remaining individual units of 'factorC'.
-            currentValue += (850 * (factorC % 3));
+      // Add cost for remaining individual units of item A
+      totalCost += 380 * (idxA % 5);
+      // Add cost for remaining individual units of item B
+      totalCost += 550 * (idxB % 4);
+      // Add cost for remaining individual units of item C
+      totalCost += 850 * (idxC % 3);
 
-            // Check if an entry for 'totalUnits' already exists in 'costTable'.
-            if (costTable.hasOwnProperty(totalUnits)) {
-                // If it exists, update it only if the 'currentValue' is lower (finding the minimum).
-                costTable[totalUnits] = Math.min(costTable[totalUnits], currentValue);
-            } else {
-                // If no entry exists, create a new one with the calculated 'currentValue'.
-                costTable[totalUnits] = currentValue;
-            }
-        }
+      // Check if this totalMass already exists in our map
+      if (dataMap.hasOwnProperty(totalMass)) {
+        // If it exists, update with the minimum cost found so far for this mass
+        dataMap[totalMass] = Math.min(dataMap[totalMass], totalCost);
+      } else {
+        // If it's a new totalMass, store its calculated cost
+        dataMap[totalMass] = totalCost;
+      }
     }
+  }
 }
 
-// Read the entire content from the standard input stream synchronously.
-var fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+// Read all input from standard input
+const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
+// Process the input: trim whitespace and split into an array of lines
+let inputLines = rawData.trim().split("\n");
 
-// Process the raw input: remove leading/trailing whitespace and split into an array of lines.
-var inputLines = (fileContent.trim()).split("\n");
-
-// Enter a continuous loop to process each query provided in the input.
+// Loop to process each input line
 while (true) {
-    // Extract the next numerical query key from the array of input lines.
-    var searchKey = parseInt(inputLines.shift(), 10);
+  // Get the next mass value from the input array and convert it to a number
+  const currentMass = inputLines.shift() - 0;
 
-    // If the extracted key is zero, it signifies the end of the input queries.
-    if (searchKey === 0) {
-        break; // Terminate the processing loop.
-    }
+  // If the input mass is 0, it signifies the end of input, so break the loop
+  if (currentMass === 0) {
+    break;
+  }
 
-    // Output the pre-calculated cost from 'costTable' corresponding to the 'searchKey'.
-    console.log(costTable[searchKey]);
+  // Output the minimum cost associated with the requested mass from our pre-calculated map
+  console.log(dataMap[currentMass]);
 }

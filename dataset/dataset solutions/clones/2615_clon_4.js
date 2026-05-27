@@ -1,45 +1,43 @@
-const computeTotalValidPairs = (maxVal, limitValue) => {
-    if (maxVal < 4) return 0;
+function calculateSpecialPairs(upperBound, limitValue) {
+    let totalAccumulatedCount = 0;
 
-    const possibleProducts = Array.from({ length: maxVal - 3 }, (_, idx) => idx + 4);
+    for (let currentM = 4; currentM <= upperBound; currentM++) {
+        const currentMContribution = Array.from({ length: 8 }, (_, index) => index + 2)
+            .filter(candidateDivisor => candidateDivisor * candidateDivisor <= currentM)
+            .reduce((accumulator, currentDivisor) => {
+                if (currentM % currentDivisor === 0) {
+                    const complementaryDivisor = currentM / currentDivisor;
 
-    const totalCount = possibleProducts.reduce((acc, currentProd) => {
-        const singleDigitFactors = Array.from({ length: 8 }, (_, idx) => idx + 2);
+                    if (complementaryDivisor < 10) {
+                        const firstArrangement = currentDivisor * 10 + complementaryDivisor;
 
-        const currentProdContributions = singleDigitFactors.reduce((innerAcc, firstDigit) => {
-            if (currentProd % firstDigit === 0) {
-                const secondDigit = currentProd / firstDigit;
-                if (secondDigit < 10) {
-                    const numRepresentationA = firstDigit * 10 + secondDigit;
-                    
-                    if (numRepresentationA <= limitValue) {
-                        innerAcc++;
-                        if (firstDigit !== secondDigit) {
-                            const numRepresentationB = secondDigit * 10 + firstDigit;
-                            if (numRepresentationB <= limitValue) {
-                                innerAcc++;
+                        if (firstArrangement <= limitValue) {
+                            accumulator++;
+                        }
+
+                        if (currentDivisor !== complementaryDivisor) {
+                            const secondArrangement = complementaryDivisor * 10 + currentDivisor;
+                            if (secondArrangement <= limitValue) {
+                                accumulator++;
                             }
                         }
                     }
                 }
-            }
-            return innerAcc;
-        }, 0);
+                return accumulator;
+            }, 0);
 
-        return acc + currentProdContributions;
-    }, 0);
+        totalAccumulatedCount += currentMContribution;
+    }
 
-    return totalCount;
-};
+    return totalAccumulatedCount;
+}
 
-const processInputAndDisplay = (textualData) => {
-    const numericParts = textualData.split(" ");
-    const highRange = Number.parseInt(numericParts[0], 10);
-    const limitValue = Number.parseInt(numericParts[1], 10);
+function processInputAndDisplay(rawInputString) {
+    const parsedValues = rawInputString.split(" ");
+    const firstNumericValue = parseInt(parsedValues[0], 10);
+    const secondNumericValue = parseInt(parsedValues[1], 10);
 
-    const finalResult = computeTotalValidPairs(highRange, limitValue);
-    console.log(finalResult);
-};
+    console.log('%d', calculateSpecialPairs(firstNumericValue, secondNumericValue));
+}
 
-// This line must remain unchanged for standard input/output handling.
 processInputAndDisplay(require("fs").readFileSync("/dev/stdin", "utf8"));

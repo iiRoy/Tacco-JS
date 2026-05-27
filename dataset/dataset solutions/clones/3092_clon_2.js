@@ -1,157 +1,160 @@
-"use strict"; // Enforce strict mode for cleaner code.
+"use strict";
 
 /**
- * Manages reading structured data from a string.
- * Each line is split into tokens, and tokens are consumed sequentially.
+ * Custom input parsing utility.
+ * Reads tokens from a string, line by line.
  */
-function DataStreamProcessor(textInput, valueConverter) {
-  this._sourceLines = textInput.split("\n"); // Store input as an array of lines.
-  this._tokenIndex = 0;                     // Current token position within a line.
-  this._lineCounter = 0;                    // Current line number.
-  this._typeAdapter = valueConverter || Number; // Function to convert tokens to desired type.
-}
-
-// Method to fetch the next individual data unit.
-DataStreamProcessor.prototype.getNextDatum = function() {
-  const currentLineText = this._sourceLines[this._lineCounter]; // Get the current line.
-  if (!currentLineText) { // If no more lines, return undefined.
-    return undefined;
-  }
-
-  const lineTokens = currentLineText.trim().split(" "); // Split line into tokens.
-  const extractedToken = lineTokens[this._tokenIndex]; // Get the token at current index.
-  this._tokenIndex++; // Advance to the next token.
-
-  // If all tokens in the current line are consumed, move to the next line.
-  if (lineTokens.length === this._tokenIndex) {
-    this._tokenIndex = 0; // Reset token index for the new line.
-    this._lineCounter++;  // Advance to the next line.
-  }
-
-  return this._typeAdapter(extractedToken); // Convert and return the token.
-};
-
-// Method to read all data units from the current line.
-DataStreamProcessor.prototype.readAllLineData = function() {
-  let activeLineContent = this._sourceLines[this._lineCounter]; // Retrieve current line.
-  if (!activeLineContent) { // If no more lines, return undefined.
-    return undefined;
-  }
-  this._tokenIndex = 0; // Reset token index when reading a whole line.
-  this._lineCounter++;  // Advance to the next line after reading.
-
-  return activeLineContent.split(" ").map(this._typeAdapter); // Split and convert all tokens.
-};
-
-
-/**
- * Creates a multi-dimensional array (nested structure) initialized with a default value.
- * Simulates a deep copy for nested arrays.
- * @param {Array<number>} dimensions - An array specifying the size of each dimension.
- * @param {*} initialFillValue - The value to initialize the innermost elements with.
- * @returns {Array} The constructed multi-dimensional array.
- */
-function createNestedStructure(dimensions, initialFillValue) {
-  let resultMatrix = initialFillValue || 0; // Initialize with default or provided value.
-
-  // Iterate through dimensions in reverse order to build from innermost to outermost.
-  for (let dimIdx = dimensions.length; dimIdx > 0; dimIdx--) {
-    const currentDimSize = dimensions[dimIdx - 1]; // Get the size of the current dimension.
-    // Create an array of 'currentDimSize', fill it, and map each element
-    // by deep-copying the 'resultMatrix' (which could be a value or an already-built array).
-    resultMatrix = Array(currentDimSize).fill().map(() => JSON.parse(JSON.stringify(resultMatrix)));
-  }
-  return resultMatrix; // Return the fully constructed nested array.
+function InputProcessor(sourceString, typeConversionFn) {
+  // Store the input string split into an array of lines.
+  this._sourceLines = sourceString.split("\n");
+  // Current column (token) index within the current line.
+  this._currentColumnIndex = 0;
+  // Current line index.
+  this._currentLineIndex = 0;
+  // Function to convert parsed tokens (e.g., Number, String).
+  this._typeConverter = typeConversionFn || Number;
 }
 
 /**
- * Computes the product of a sequence of integers from (lowerBound + 1) to upperBound.
- * Used for specific combinatorial calculations.
+ * Reads the next single token from the input.
+ * Advances the internal pointers.
+ * @returns {any} The parsed token.
+ */
+InputProcessor.prototype.readSingleToken = function() {
+  const currentLineContent = this._sourceLines[this._currentLineIndex];
+  // If no more lines, return undefined.
+  if (!currentLineContent) return;
+
+  const tokensOnLine = currentLineContent.trim().split(" ");
+  const nextToken = tokensOnLine[this._currentColumnIndex];
+  this._currentColumnIndex++;
+
+  // If all tokens on the current line have been read, reset column and advance line.
+  if (tokensOnLine.length === this._currentColumnIndex) {
+    this._currentColumnIndex = 0;
+    this._currentLineIndex++;
+  }
+  return this._typeConverter(nextToken);
+};
+
+/**
+ * Reads all tokens from the current line.
+ * Advances the internal pointers to the next line.
+ * @returns {Array<any>} An array of parsed tokens from the line.
+ */
+InputProcessor.prototype.readAllLineTokens = function() {
+  const currentLineContent = this._sourceLines[this._currentLineIndex];
+  // If no more lines, return undefined.
+  if (!currentLineContent) return;
+
+  // Reset column index and advance line index.
+  this._currentColumnIndex = 0;
+  this._currentLineIndex++;
+  return currentLineContent.split(" ").map(this._typeConverter);
+};
+
+/**
+ * Creates a multi-dimensional array initialized with a specific value.
+ * @param {Array<number>} dimensionsArray - An array specifying the size of each dimension.
+ * @param {any} initialFillValue - The value to initialize all elements with.
+ * @returns {Array} The initialized multi-dimensional array.
+ */
+function initializeMultiDimensionalArray(dimensionsArray, initialFillValue) {
+  let currentLayerValue = initialFillValue || 0; // Default to 0 if not provided.
+
+  // Iterate through dimensions in reverse to build the array from innermost to outermost.
+  for (let dimIdx = dimensionsArray.length; dimIdx > 0; dimIdx--) {
+    const dimensionSize = dimensionsArray[dimIdx - 1];
+    // Create an array of the current dimension size, filled with deep copies of the next layer.
+    currentLayerValue = Array(dimensionSize).fill().map(() => JSON.parse(JSON.stringify(currentLayerValue)));
+  }
+  return currentLayerValue;
+}
+
+/**
+ * Calculates the product of integers from (lowerBound + 1) to upperBound.
+ * This is used as a permutation factor in the main algorithm.
  * @param {number} lowerBound - The starting value (exclusive).
  * @param {number} upperBound - The ending value (inclusive).
- * @returns {number} The product of the sequence.
+ * @returns {number} The calculated product.
  */
-function calculateProductSequence(lowerBound, upperBound) {
-  let cumulativeProduct = 1; // Initialize product.
-  // Loop from one greater than lowerBound up to upperBound.
-  for (let currentFactor = lowerBound + 1; currentFactor <= upperBound; currentFactor++) {
-    cumulativeProduct *= currentFactor; // Multiply into the product.
+function computePermutationProduct(lowerBound, upperBound) {
+  let productResult = 1;
+  for (let iteratorVal = lowerBound + 1; iteratorVal <= upperBound; iteratorVal++) {
+    productResult *= iteratorVal;
   }
-
-  return cumulativeProduct; // Return the final product.
+  return productResult;
 }
-
-// Define a constant for the modulo operation.
-const PRIME_MODULO = 1000000007;
 
 /**
- * Main execution function to process input and compute the final result.
- * @param {string} rawInputContent - The entire input data as a string.
+ * Main function to process input and solve the problem.
+ * @param {string} rawInputString - The raw input string from stdin.
  */
-function executeProgram(rawInputContent) {
-  // Initialize an input parsing utility.
-  const inputReader = new DataStreamProcessor(rawInputContent);
+function executeSolution(rawInputString) {
+  // Initialize the input parser.
+  const dataParser = new InputProcessor(rawInputString);
 
-  // Read primary numerical parameters from the input.
-  const totalItems = inputReader.getNextDatum();
-  const targetValue = inputReader.getNextDatum();
-  
-  // Read a list of numbers, storing them in an array.
-  const numberSequence = [];
-  for (let elementIdx = 0; elementIdx < totalItems; elementIdx++) {
-    numberSequence.push(inputReader.getNextDatum());
+  // Read N and X from the input.
+  const totalCount = dataParser.readSingleToken();
+  const targetSum = dataParser.readSingleToken();
+
+  // Read N elements into an array.
+  const sortedNumbers = [];
+  for (let loopIndex = 0; loopIndex < totalCount; loopIndex++) {
+    sortedNumbers.push(dataParser.readSingleToken());
   }
 
-  // Sort the collected numbers in ascending order for efficient processing.
-  numberSequence.sort((valA, valB) => valA - valB);
+  // Sort the elements in ascending order.
+  sortedNumbers.sort((valA, valB) => valA - valB);
 
-  // Pre-calculate factorials modulo PRIME_MODULO up to 'totalItems'.
-  const factorialCache = [1, 1];
-  for (let factIdx = 2; factIdx <= totalItems; factIdx++) {
-    factorialCache[factIdx] = (factorialCache[factIdx - 1] * factIdx) % PRIME_MODULO;
+  // Precompute factorials modulo 1000000007.
+  const moduloConstant = 1000000007;
+  const moduloFactorials = [1, 1]; // 0! = 1, 1! = 1
+  for (let loopIndex = 2; loopIndex <= totalCount; loopIndex++) {
+    moduloFactorials[loopIndex] = (moduloFactorials[loopIndex - 1] * loopIndex) % moduloConstant;
   }
 
-  // Initialize a 2D memoization table for dynamic programming.
-  // Dimensions are (totalItems + 1) x (targetValue + 1), filled with -1 to indicate uncomputed states.
-  const memoTable = createNestedStructure([totalItems + 1, targetValue + 1], -1);
+  // Initialize a memoization table for dynamic programming.
+  // Dimensions: (totalCount + 1) x (targetSum + 1), initialized with -1.
+  const memoTable = initializeMultiDimensionalArray([totalCount + 1, targetSum + 1], -1);
 
   /**
-   * Recursive function with memoization to compute the desired value.
-   * @param {number} currentDepth - Represents 'k' in the original problem context.
-   * @param {number} currentTarget - Represents 'x' in the original problem context.
-   * @returns {number} The computed result for the given state.
+   * Recursive function with memoization to calculate combinations.
+   * @param {number} remainingElements - The number of elements remaining to consider.
+   * @param {number} currentRemainder - The current remainder value.
+   * @returns {number} The calculated result modulo 1000000007.
    */
-  function recursiveSolver(currentDepth, currentTarget) {
-    // If this state has already been computed, return the cached result.
-    if (memoTable[currentDepth][currentTarget] !== -1) {
-      return memoTable[currentDepth][currentTarget];
+  function calculateCombinations(remainingElements, currentRemainder) {
+    // Check if the result is already in the memoization table.
+    if (memoTable[remainingElements][currentRemainder] !== -1) {
+      return memoTable[remainingElements][currentRemainder];
     }
 
-    // Base case: if currentTarget is less than the smallest number in the sequence.
-    if (currentTarget < numberSequence[0]) {
-      memoTable[currentDepth][currentTarget] = (currentTarget * factorialCache[currentDepth]) % PRIME_MODULO;
+    // Base case: if currentRemainder is less than the smallest number,
+    // the result is currentRemainder * factorial(remainingElements).
+    if (currentRemainder < sortedNumbers[0]) {
+      memoTable[remainingElements][currentRemainder] = (currentRemainder * moduloFactorials[remainingElements]) % moduloConstant;
     } else {
-      let accumulatedSum = 0; // Accumulator for sub-problem results.
+      let accumulatedSum = 0;
+      let subtractionIndex = 0;
 
-      let sequencePointer = 0; // Iterator for the 'numberSequence'.
-      // Iterate while numbers in the sequence are less than or equal to currentTarget.
-      while (numberSequence[sequencePointer] <= currentTarget && sequencePointer < totalItems) {
-        // Recursively solve sub-problems and add to sum.
-        accumulatedSum += recursiveSolver(currentDepth - 1, currentTarget % numberSequence[sequencePointer]);
-        sequencePointer++; // Move to the next number in the sequence.
+      // Iterate through sortedNumbers as long as they are less than or equal to currentRemainder.
+      while (sortedNumbers[subtractionIndex] <= currentRemainder && subtractionIndex < totalCount) {
+        // Recursively call for (remainingElements - 1) and the new remainder.
+        accumulatedSum += calculateCombinations(remainingElements - 1, currentRemainder % sortedNumbers[subtractionIndex]);
+        subtractionIndex += 1;
       }
-
-      // Compute the final result for this state using the accumulated sum and permutation-like product.
-      memoTable[currentDepth][currentTarget] = (accumulatedSum * calculateProductSequence(sequencePointer, currentDepth)) % PRIME_MODULO;
+      // Store the result in the memoization table.
+      // The permutation factor is computed based on how many elements were considered in the while loop.
+      memoTable[remainingElements][currentRemainder] = (accumulatedSum * computePermutationProduct(subtractionIndex, remainingElements)) % moduloConstant;
     }
 
-    // Return the computed and cached result.
-    return memoTable[currentDepth][currentTarget];
+    return memoTable[remainingElements][currentRemainder];
   }
 
-  // Output the final computed result for the main problem (totalItems, targetValue).
-  console.log(recursiveSolver(totalItems, targetValue));
+  // Output the final calculated result.
+  console.log(calculateCombinations(totalCount, targetSum));
 }
 
-// Read input from standard in and pass it to the main execution function.
-executeProgram(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Read input from stdin and pass it to the main solution function.
+executeSolution(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,107 +1,111 @@
-/******/ (function(codeChunks) { // Initializing the module management system
-  // Storage for already loaded code segments
-  var cachedSegments = {};
-
-  // Core function for loading code units
-  function __module_loader__(segmentId) {
-
-    // Verify if the unit is already available in cache
-    if (cachedSegments[segmentId]) {
-      return cachedSegments[segmentId].output;
-    }
-    // Instantiate a new unit and store it in the cache
-    var currentSegment = cachedSegments[segmentId] = {
-      identifier: segmentId,
-      loadedFlag: false,
-      output: {}
-    };
-
-    // Run the primary logic of the code unit
-    codeChunks[segmentId].call(currentSegment.output, currentSegment, currentSegment.output, __module_loader__);
-
-    // Mark the code unit as successfully processed
-    currentSegment.loadedFlag = true;
-
-    // Deliver the public interface of the unit
-    return currentSegment.output;
-  }
-
-
-  // Make all code units accessible via loader properties
-  __module_loader__.allUnits = codeChunks;
-
-  // Provide access to the internal unit cache
-  __module_loader__.cacheStore = cachedSegments;
-
-  // Establish a getter for ES module compatibility
-  __module_loader__.defineGetter = function(exportedObj, propKey, valueProvider) {
-    if (!__module_loader__.hasOwnProp(exportedObj, propKey)) {
-      Object.defineProperty(exportedObj, propKey, { enumerable: true, get: valueProvider });
-    }
-  };
-
-  // Set the ES module flag on exported objects
-  __module_loader__.registerNamespace = function(exportedObj) {
-    if (typeof GlobalSymbol !== 'undefined' && GlobalSymbol.toStringTag) {
-      Object.defineProperty(exportedObj, GlobalSymbol.toStringTag, { value: 'Module' });
-    }
-    Object.defineProperty(exportedObj, '__isESModule', { value: true });
-  };
-
-  // Construct a synthetic namespace container
-  // Mode 1: Treat value as unit ID, load it
-  // Mode 2: Integrate value's properties into namespace
-  // Mode 4: Return value if it's already a namespace
-  // Mode 8|1: Mimic the primary loading behavior
-  __module_loader__.transformValue = function(targetValue, processMode) {
-    if (processMode & 1) targetValue = __module_loader__(targetValue);
-    if (processMode & 8) return targetValue;
-    if ((processMode & 4) && typeof targetValue === 'object' && targetValue && targetValue.__isESModule) return targetValue;
-    var namespaceObject = Object.create(null);
-    __module_loader__.registerNamespace(namespaceObject);
-    Object.defineProperty(namespaceObject, 'default', { enumerable: true, value: targetValue });
-    if (processMode & 2 && typeof targetValue != 'string') for (var propertyKey in targetValue) __module_loader__.defineGetter(namespaceObject, propertyKey, function(propertyKey) { return targetValue[propertyKey]; }.bind(null, propertyKey));
-    return namespaceObject;
-  };
-
-  // Helper to get default exports from non-ESM units
-  __module_loader__.normalizeExport = function(inputUnit) {
-    var valueProvider = inputUnit && inputUnit.__isESModule ?
-      function fetchDefault() { return inputUnit['default']; } :
-      function retrieveUnitExports() { return inputUnit; };
-    __module_loader__.defineGetter(valueProvider, 'a', valueProvider);
-    return valueProvider;
-  };
-
-  // Utility for checking object property ownership
-  __module_loader__.hasOwnProp = function(targetObject, propName) { return Object.prototype.hasOwnProperty.call(targetObject, propName); };
-
-  // Base URL for dynamic asset loading
-  __module_loader__.basePath = "";
-
-
-  // Initiate the application by loading the main unit
-  return __module_loader__(__module_loader__.startModule = "./app/solver.js");
-})
+/******/ (function(modules) { // webpackBootstrap
+/******/ 	// The module cache
+/******/ 	var installedModules = {};
+/******/
+/******/ 	// The require function
+/******/ 	function __webpack_require__(moduleId) {
+/******/
+/******/ 		// Check if module is in cache
+/******/ 		if(installedModules[moduleId]) {
+/******/ 			return installedModules[moduleId].exports;
+/******/ 		}
+/******/ 		// Create a new module (and put it into the cache)
+/******/ 		var module = installedModules[moduleId] = {
+/******/ 			i: moduleId,
+/******/ 			l: false,
+/******/ 			exports: {}
+/******/ 		};
+/******/
+/******/ 		// Execute the module function
+/******/ 		modules[moduleId].call(module.exports, module, module.exports, __webpack_require__);
+/******/
+/******/ 		// Flag the module as loaded
+/******/ 		module.l = true;
+/******/
+/******/ 		// Return the exports of the module
+/******/ 		return module.exports;
+/******/ 	}
+/******/
+/******/
+/******/ 	// expose the modules object (__webpack_modules__)
+/******/ 	__webpack_require__.m = modules;
+/******/
+/******/ 	// expose the module cache
+/******/ 	__webpack_require__.c = installedModules;
+/******/
+/******/ 	// define getter function for harmony exports
+/******/ 	__webpack_require__.d = function(exports, name, getter) {
+/******/ 		if(!__webpack_require__.o(exports, name)) {
+/******/ 			Object.defineProperty(exports, name, { enumerable: true, get: getter });
+/******/ 		}
+/******/ 	};
+/******/
+/******/ 	// define __esModule on exports
+/******/ 	__webpack_require__.r = function(exports) {
+/******/ 		if(typeof Symbol !== 'undefined' && Symbol.toStringTag) {
+/******/ 			Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
+/******/ 		}
+/******/ 		Object.defineProperty(exports, '__esModule', { value: true });
+/******/ 	};
+/******/
+/******/ 	// create a fake namespace object
+/******/ 	// mode & 1: value is a module id, require it
+/******/ 	// mode & 2: merge all properties of value into the ns
+/******/ 	// mode & 4: return value when already ns object
+/******/ 	// mode & 8|1: behave like require
+/******/ 	__webpack_require__.t = function(value, mode) {
+/******/ 		if(mode & 1) value = __webpack_require__(value);
+/******/ 		if(mode & 8) return value;
+/******/ 		if((mode & 4) && typeof value === 'object' && value && value.__esModule) return value;
+/******/ 		var ns = Object.create(null);
+/******/ 		__webpack_require__.r(ns);
+/******/ 		Object.defineProperty(ns, 'default', { enumerable: true, value: value });
+/******/ 		if(mode & 2 && typeof value != 'string') for(var key in value) __webpack_require__.d(ns, key, function(key) { return value[key]; }.bind(null, key));
+/******/ 		return ns;
+/******/ 	};
+/******/
+/******/ 	// getDefaultExport function for compatibility with non-harmony modules
+/******/ 	__webpack_require__.n = function(module) {
+/******/ 		var getter = module && module.__esModule ?
+/******/ 			function getDefault() { return module['default']; } :
+/******/ 			function getModuleExports() { return module; };
+/******/ 		__webpack_require__.d(getter, 'a', getter);
+/******/ 		return getter;
+/******/ 	};
+/******/
+/******/ 	// Object.prototype.hasOwnProperty.call
+/******/ 	__webpack_require__.o = function(object, property) { return Object.prototype.hasOwnProperty.call(object, property); };
+/******/
+/******/ 	// __webpack_public_path__
+/******/ 	__webpack_require__.p = "";
+/******/
+/******/
+/******/ 	// Load entry module and return exports
+/******/ 	return __webpack_require__(__webpack_require__.s = "./src/ABC157/C.js");
+/******/ })
 /************************************************************************/
-({
+/******/ ({
 
-/***/ "./app/solver.js":
-/*!***********************************!*!*** Source/ProblemSolver/CodeC.js ***!*!***********************************/
-/*! No explicit static exports detected */
-/***/ (function(currentSegment, unitOutput, __module_loader__) {
+/***/ "./src/ABC157/C.js":
+/*!*************************!*\
+  !*** ./src/ABC157/C.js ***!
+  \*************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
 
-eval("function _splitArrayToParts(inputArray, limitCount) { return _arrayWithEmptySlots(inputArray) || _limitedIterableToArray(inputArray, limitCount) || _remainingNonIterable(); }\n\nfunction _remainingNonIterable() { throw new CollectionError(\"Attempt to destructure non-iterable instance failed\"); }\n\nfunction _limitedIterableToArray(inputArray, limitCount) { if (!(GlobalSymbol.iterator in Object(inputArray) || Object.prototype.toString.call(inputArray) === \"[object Arguments]\")) { return; } var tempList = []; var isProgressing = true; var hadException = false; var exceptionObject = undefined; try { for (var iteratorVar = inputArray[GlobalSymbol.iterator](), iteratorStep; !(isProgressing = (iteratorStep = iteratorVar.next()).done); isProgressing = true) { tempList.push(iteratorStep.value); if (limitCount && tempList.length === limitCount) break; } } catch (caughtErr) { hadException = true; exceptionObject = caughtErr; } finally { try { if (!isProgressing && iteratorVar[\"return\"] != null) iteratorVar[\"return\"](); } finally { if (hadException) throw exceptionObject; } } return tempList; }\n\nfunction _arrayWithEmptySlots(inputArray) { if (Array.isArray(inputArray)) return inputArray; }\n\nvar fileSys = __module_loader__(/*! fs */ \"node_filesystem_api\");\n\nvar ERROR_CODE = -1;\n\nvar executeProgram = function executeProgram(dataInput) {\n  var inputLines = dataInput.split('\\n');\n\n  var _shiftedParsedLineData = inputLines.shift().split(' ').map(function (itemValue) {\n    return itemValue - 0;\n  });\n\n  var _shiftedParsedLineParts = _splitArrayToParts(_shiftedParsedLineData, 2);\n\n  var totalDigits = _shiftedParsedLineParts[0];\n  var numConstraints = _shiftedParsedLineParts[1];\n\n  var potentialDigits = [];\n\n  for (var loopIndex = 0; loopIndex < totalDigits; loopIndex++) {\n    potentialDigits.push(-1);\n  }\n\n  for (var constraintLoopIdx = 0; constraintLoopIdx < numConstraints; constraintLoopIdx++) {\n    var _currentConstraintData = inputLines.shift().split(' ').map(function (itemValue) {\n      return itemValue - 0;\n    });\n\n    var _currentConstraintParts = _splitArrayToParts(_currentConstraintData, 2);\n\n    var digitPosition = _currentConstraintParts[0];\n    var digitChar = _currentConstraintParts[1];\n\n    var targetColumn = digitPosition - 1;\n\n    if (potentialDigits[targetColumn] !== -1 && potentialDigits[targetColumn] !== digitChar) {\n      console.info(ERROR_CODE);\n      return;\n    }\n\n    potentialDigits[targetColumn] = digitChar;\n  }\n\n  if (totalDigits >= 2) {\n    if (potentialDigits[0] === 0) {\n      console.info(ERROR_CODE);\n      return;\n    }\n\n    if (potentialDigits[0] === -1) {\n      console.info(ERROR_CODE);\n      return;\n    }\n\n    for (var digitLoopIdx = 0; digitLoopIdx < totalDigits; digitLoopIdx++) {\n      if (potentialDigits[digitLoopIdx] === -1) {\n        potentialDigits[digitLoopIdx] = 0;\n      }\n    }\n  } else {\n    if (potentialDigits[0] === -1) {\n      potentialDigits[0] = 0;\n    }\n  }\n\n  console.info(potentialDigits.join(''));\n};\n\nexecuteProgram(fileSys.readContentSync('/app/input_stream.txt', 'txt_encoding'));\n\n//# sourceURL=module_system_root:///app/solver.js?");
+eval("function _extractArrayParts(inputArray, limitCount) { return _checkArrayHoles(inputArray) || _limitIterableToArray(inputArray, limitCount) || _handleNonIterable(); }\n\nfunction _handleNonIterable() { throw new TypeError(\"Invalid attempt to destructure non-iterable instance\"); }\n\nfunction _limitIterableToArray(inputArray, limitCount) { if (!(Symbol.iterator in Object(inputArray) || Object.prototype.toString.call(inputArray) === \"[object Arguments]\")) { return; } var tempArray = []; var notDone = true; var hadError = false; var caughtError = undefined; try { for (var iteratorObj = inputArray[Symbol.iterator](), stepResult; !(notDone = (stepResult = iteratorObj.next()).done); notDone = true) { tempArray.push(stepResult.value); if (limitCount && tempArray.length === limitCount) break; } } catch (err) { hadError = true; caughtError = err; } finally { try { if (!notDone && iteratorObj[\"return\"] != null) iteratorObj[\"return\"](); } finally { if (hadError) throw caughtError; } } return tempArray; }\n\nfunction _checkArrayHoles(inputArray) { if (Array.isArray(inputArray)) return inputArray; }\n\n// Import the file system module for reading input.\nvar fs = __webpack_require__(/*! fs */ \"fs\");\n\n// Define a constant for an invalid result.\nvar INVALID_RESULT = -1;\n\n// Main function to process the input and determine the number.\nvar processInput = function processInput(rawData) {\n  // Split the raw input into individual lines.\n  var inputLines = rawData.split('\\n');\n\n  // Parse the first line to get the number of digits (numDigits) and constraints (numConstraints).\n  var firstLineParsed = inputLines.shift().split(' ').map(function (valStr) {\n    return valStr - 0;\n  });\n  var firstLineValues = _extractArrayParts(firstLineParsed, 2);\n  var numDigits = firstLineValues[0];\n  var numConstraints = firstLineValues[1];\n\n  // Initialize an array to store the digits, with -1 indicating an unassigned digit.\n  var digitPlaceholders = [];\n  for (var idx = 0; idx < numDigits; idx++) {\n    digitPlaceholders.push(INVALID_RESULT);\n  }\n\n  // Process each constraint.\n  for (var constraintIdx = 0; constraintIdx < numConstraints; constraintIdx++) {\n    // Parse the current constraint line.\n    var currentConstraintParsed = inputLines.shift().split(' ').map(function (valStr) {\n      return valStr - 0;\n    });\n    var currentConstraintValues = _extractArrayParts(currentConstraintParsed, 2);\n    var position = currentConstraintValues[0];\n    var digitValue = currentConstraintValues[1];\n\n    // Adjust position to be 0-indexed.\n    var targetPosition = position - 1;\n\n    // Check for conflicting constraints.\n    if (digitPlaceholders[targetPosition] !== INVALID_RESULT && digitPlaceholders[targetPosition] !== digitValue) {\n      console.log(INVALID_RESULT);\n      return;\n    }\n\n    // Apply the constraint.\n    digitPlaceholders[targetPosition] = digitValue;\n  }\n\n  // Handle special conditions for multi-digit numbers.\n  if (numDigits >= 2) {\n    // If the first digit is 0, it's invalid for numbers with 2 or more digits.\n    if (digitPlaceholders[0] === 0) {\n      console.log(INVALID_RESULT);\n      return;\n    }\n\n    // If the first digit is still unassigned, it's also invalid (should be at least 1).\n    // This condition seems to be a specific problem requirement, as it implies a leading zero for unassigned first digit.\n    if (digitPlaceholders[0] === INVALID_RESULT) {\n      console.log(INVALID_RESULT);\n      return;\n    }\n\n    // Fill any remaining unassigned digits with 0.\n    for (var fillIdx = 0; fillIdx < numDigits; fillIdx++) {\n      if (digitPlaceholders[fillIdx] === INVALID_RESULT) {\n        digitPlaceholders[fillIdx] = 0;\n      }\n    }\n  } else { // Case for a single-digit number (numDigits === 1).\n    // If the single digit is unassigned, set it to 0.\n    if (digitPlaceholders[0] === INVALID_RESULT) {\n      digitPlaceholders[0] = 0;\n    }\n  }\n\n  // Output the resulting number by joining the digits.\n  console.log(digitPlaceholders.join(''));\n};\n\n// Read input from stdin and pass it to the main processing function.\nprocessInput(fs.readFileSync('/dev/stdin', 'utf8'));\n\n//# sourceURL=webpack:///./src/ABC157/C.js?");
 
 /***/ }),
 
-/***/ "node_filesystem_api":
-/*!*****************************************!*!*** external "node_filesystem_api" ***!*!*****************************************/
-/*! No explicit static exports detected */
-/***/ (function(currentSegment, unitOutput) {
+/***/ "fs":
+/*!*********************!*\
+  !*** external "fs" ***!
+  \*********************/
+/*! no static exports found */
+/***/ (function(module, exports) {
 
-eval("currentSegment.output = require(\"fs\");\n\n//# sourceURL=module_system_root:///external_library/file_system.js?");
+eval("module.exports = require(\"fs\");\n\n//# sourceURL=webpack:///external_%22fs%22?");
 
 /***/ })
 
-});
+/******/ });

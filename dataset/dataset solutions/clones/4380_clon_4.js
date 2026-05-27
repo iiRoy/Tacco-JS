@@ -1,13 +1,16 @@
-const processIncomingData = (fullDataSet) => {
-    const relevantLine = fullDataSet.split('\n')[0];
+function ProcessData(rawData) {
+    const initialSegment = rawData.split("\n")[0];
 
-    console.log(relevantLine);
+    console.log(initialSegment);
 
-    const derivedSequence = Array.from(relevantLine)
-                                 .filter((_, currentPosition) => currentPosition % 2 === 0)
-                                 .join('');
+    const extractedSequence = Array.from(initialSegment).reduce((accumulator, currentCharacter, charIndex) => {
+        if (charIndex % 2 === 0) {
+            return accumulator + currentCharacter;
+        }
+        return accumulator;
+    }, '');
 
-    console.log(derivedSequence);
-};
+    console.log(extractedSequence);
+}
 
-processIncomingData(require("fs").readFileSync("/dev/stdin", "utf8"));
+ProcessData(require("fs").readFileSync("/dev/stdin", "utf8"));

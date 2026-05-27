@@ -1,27 +1,29 @@
-function ProcessData( incomingString )
-{
-  let stringLines = incomingString.split( "\n" );
+function ProcessInput(rawData) {
+  // Split the raw input string into an array of lines.
+  rawData = rawData.split('\n');
 
-  if (stringLines[stringLines.length - 1] === '' ) {
-    stringLines.pop();
+  // Check if the last line is empty and remove it if so.
+  if (rawData[rawData.length - 1] === '') {
+    rawData.pop();
   }
 
-  const desiredThreshold = stringLines[0].split( ' ' )[0] - 0;
-  const quantityCount = stringLines[0].split( ' ' )[1] - 0;
+  // Parse the required health value from the first line.
+  const requiredHealth = rawData[0].split(' ')[0] - 0;
 
-  const numericalValues = stringLines[1].split( ' ' ).map( ( singleItem ) =>
-  {
-    return singleItem - 0;
-  } );
-  
-  console.log(
-    numericalValues.reduce( ( currentAccumulation, valueToAdd ) => {
-      return currentAccumulation + valueToAdd;
-    } ) >= desiredThreshold
-      ? 'Yes'
-      : 'No'
-  );
+  // Parse the number of attacks (though not used in the logic, it's part of the input structure).
+  const numAttacks = rawData[0].split(' ')[1] - 0;
+
+  // Parse the attack damage values from the second line and convert them to numbers.
+  const attackDamages = rawData[1].split(' ').map(currentDamageString => {
+    return Number(currentDamageString);
+  });
+
+  // Calculate the total damage from all attacks and compare it with the required health.
+  // Output 'Yes' if total damage is sufficient, otherwise 'No'.
+  console.log(attackDamages.reduce((accumulatorDamage, currentDamageValue) => {
+    return accumulatorDamage + currentDamageValue;
+  }) >= requiredHealth ? 'Yes' : 'No');
 }
 
-// The following line should remain untouched as it manages standard input/output and invokes the primary processing function.
-ProcessData( require( "fs" ).readFileSync( "/dev/stdin", "utf8" ) );
+// This part handles reading from standard input and invoking the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

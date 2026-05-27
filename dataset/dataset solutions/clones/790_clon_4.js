@@ -1,40 +1,39 @@
-let entireInputAccumulator = '';
+const fileSystemModule = require('fs');
 
-process.stdin.on('data', inputChunk => {
-    entireInputAccumulator += inputChunk.toString();
-});
+const rawData = fileSystemModule.readFileSync('/dev/stdin', 'utf8').trim();
+const dataRows = rawData.split('\n');
 
-process.stdin.on('end', () => {
-    const processedLines = entireInputAccumulator.trim().split('\n');
-    processInputCollection(processedLines);
-});
+const determineMinimalSum = (targetValue) => {
+    let currentOptimal = targetValue;
+    const zUpperBoundary = Math.floor(Math.cbrt(targetValue));
 
-function processInputCollection(sourceDataSegments) {
-    sourceDataSegments.forEach(segmentEntry => {
-        const numericValue = Number(segmentEntry);
-        if (numericValue !== 0) {
-            const optimalResult = determineMinimalCombinationSum(numericValue);
-            process.stdout.write(optimalResult.toString() + '\n');
-        }
-    });
-}
+    Array.from({ length: zUpperBoundary + 1 }, (_, zIndex) => zIndex).forEach(zComponent => {
+        const zCubedTerm = zComponent * zComponent * zComponent;
+        const remainingForYCalculation = targetValue - zCubedTerm;
 
-function determineMinimalCombinationSum(targetNumberGoal) {
-    const potentialCValues = Array.from({ length: Math.floor(Math.cbrt(targetNumberGoal)) + 1 }, (_, cubeIndex) => cubeIndex);
-
-    const allComputedSums = potentialCValues.flatMap(currentCValue => {
-        const remainderForSquares = targetNumberGoal - currentCValue * currentCValue * currentCValue;
-        if (remainderForSquares < 0) {
-            return [];
+        if (remainingForYCalculation < 0) {
+            return;
         }
 
-        const potentialBValues = Array.from({ length: Math.floor(Math.sqrt(remainderForSquares)) + 1 }, (_, squareIndex) => squareIndex);
+        const yUpperBoundary = Math.floor(Math.sqrt(remainingForYCalculation));
 
-        return potentialBValues.map(currentBValue => {
-            const derivedAValue = remainderForSquares - currentBValue * currentBValue;
-            return derivedAValue + currentBValue + currentCValue;
+        Array.from({ length: yUpperBoundary + 1 }, (_, yIndex) => yIndex).forEach(yComponent => {
+            const ySquaredTerm = yComponent * yComponent;
+            const xComponent = targetValue - zCubedTerm - ySquaredTerm;
+
+            const totalSum = xComponent + yComponent + zComponent;
+            if (totalSum < currentOptimal) {
+                currentOptimal = totalSum;
+            }
         });
     });
+    return currentOptimal;
+};
 
-    return allComputedSums.reduce((currentMin, nextSum) => Math.min(currentMin, nextSum), targetNumberGoal);
-}
+dataRows.forEach(lineContent => {
+    const numericValue = Number(lineContent);
+    if (numericValue !== 0) {
+        const result = determineMinimalSum(numericValue);
+        console.log(result);
+    }
+});

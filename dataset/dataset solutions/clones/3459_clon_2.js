@@ -1,147 +1,129 @@
-"use strict"; // Enforce strict mode for cleaner code execution.
+"use strict";
 
-// Time of generation: 08:15 AM
+// This module provides utilities for processing input and solving a grid-based dynamic programming problem.
+
 /**
- * Utility class to process string input line by line and token by token.
- * It handles splitting input into segments and converting them to numbers.
+ * InputProcessor class for reading tokens and lines from a string input.
+ * @param {string} rawInputString - The complete input string, typically from stdin.
+ * @param {function} parseFunction - An optional function to parse each token (defaults to Number).
  */
-function DataStreamReader(sourceText, typeConverter) {
-    // Split the entire source text into an array of lines.
-    this._sourceSegments = sourceText.split("\n");
-    // Initialize the current segment (token) position within the current line.
-    this._segmentPosition = 0;
-    // Initialize the current line index being processed.
-    this._lineCounter = 0;
-    // Set the function used to convert extracted tokens, defaulting to Number.
-    this._valueConverter = typeConverter || Number;
+function InputProcessor(rawInputString, parseFunction) {
+  this.lines = rawInputString.split("\n"); // Stores each line of the input.
+  this.currentColumnIndex = 0; // Tracks the current token within a line.
+  this.currentLineIndex = 0; // Tracks the current line being processed.
+  this.tokenParser = parseFunction || Number; // Function to convert tokens (e.g., to Number).
 }
 
 /**
- * Fetches the next single data atom (token) from the input stream.
- * Advances the internal pointers accordingly.
- * @returns {any} The converted data atom, or undefined if no more data.
+ * Retrieves the next token from the input.
+ * Advances the internal pointers to the next token or line.
+ * @returns {*} The parsed next token.
  */
-DataStreamReader.prototype.fetchNextAtom = function () {
-    // Get the current line from the source segments.
-    var currentLine = this._sourceSegments[this._lineCounter];
-    // If there's no current line, return nothing.
-    if (!currentLine) {
-        return;
-    }
+InputProcessor.prototype.getNextToken = function() {
+  let activeLine = this.lines[this.currentLineIndex];
+  if (!activeLine) return; // No more lines to process.
 
-    // Trim whitespace and split the line into tokens.
-    var lineTokens = currentLine.trim().split(" ");
-    // Extract the atom at the current segment position.
-    var fetchedAtom = lineTokens[this._segmentPosition];
-    // Advance the segment position.
-    this._segmentPosition++;
+  let lineTokens = activeLine.trim().split(" ");
+  let nextTokenValue = lineTokens[this.currentColumnIndex];
+  this.currentColumnIndex++;
 
-    // Check if all tokens in the current line have been consumed.
-    if (lineTokens.length === this._segmentPosition) {
-        // Reset segment position for the next line.
-        this._segmentPosition = 0;
-        // Advance to the next line.
-        this._lineCounter++;
-    }
-    // Convert and return the fetched atom.
-    return this._valueConverter(fetchedAtom);
+  // If all tokens on the current line have been read, move to the next line.
+  if (lineTokens.length === this.currentColumnIndex) {
+    this.currentColumnIndex = 0;
+    this.currentLineIndex++;
+  }
+  return this.tokenParser(nextTokenValue);
 };
 
 /**
- * Extracts all tokens from the current line as an array.
- * Advances the line counter.
- * @returns {Array<any>} An array of converted tokens from the current line.
+ * Retrieves all tokens from the next line as an array.
+ * Advances the internal pointers to the next line.
+ * @returns {Array<*>} An array of parsed tokens from the next line.
  */
-DataStreamReader.prototype.extractLineTokens = function () {
-    // Retrieve the current line from the source segments.
-    var activeLine = this._sourceSegments[this._lineCounter];
-    // If the line is empty or non-existent, return early.
-    if (!activeLine) {
-        return;
-    }
+InputProcessor.prototype.getNextLineTokens = function() {
+  let activeLine = this.lines[this.currentLineIndex];
+  if (!activeLine) return; // No more lines.
 
-    // Reset the segment position as we're consuming the whole line.
-    this._segmentPosition = 0;
-    // Advance to the next line after processing this one.
-    this._lineCounter++;
-    // Split the line into tokens and map them using the value converter.
-    return activeLine.split(" ").map(this._valueConverter);
+  this.currentColumnIndex = 0; // Reset column index for the new line.
+  this.currentLineIndex++; // Move to the next line.
+  return activeLine.split(" ").map(this.tokenParser);
 };
 
 /**
- * Recursively initializes a multi-dimensional array (grid) with a default value.
- * @param {Array<number>} dimensions - An array specifying the size of each dimension.
- * @param {any} defaultValue - The initial value to fill the grid cells with.
- * @returns {Array<any>} The initialized multi-dimensional array.
+ * Creates a multi-dimensional array initialized with a specific value.
+ * This function handles deep copying for nested structures.
+ * @param {number[]} dimensionsArray - An array specifying the size of each dimension.
+ * @param {*} initialFillValue - The value to initialize array elements with (defaults to 0).
+ * @returns {Array} The created multi-dimensional array.
  */
-function initializeGrid(dimensions, defaultValue) {
-    // Start with the default value; this will be the innermost element.
-    let currentLayer = defaultValue || 0;
+function createMultiDimArray(dimensionsArray, initialFillValue) {
+  let currentStructure = initialFillValue || 0; // The value or structure to be replicated.
 
-    // Iterate backwards through the dimensions to build the array from inside out.
-    for (let currentDim = dimensions.length; currentDim > 0; currentDim--) {
-        // Get the size for the current dimension.
-        const dimSize = dimensions[currentDim - 1];
-        // Create an array of 'dimSize' and fill it with copies of the currentLayer.
-        // JSON.parse(JSON.stringify()) is used for deep cloning objects/arrays,
-        // ensuring independent sub-arrays/objects for each cell.
-        currentLayer = Array(dimSize).fill().map(() => JSON.parse(JSON.stringify(currentLayer)));
-    }
-    return currentLayer;
+  // Iterate through dimensions in reverse order to build the array from innermost to outermost.
+  for (let dimIndex = dimensionsArray.length; dimIndex > 0; dimIndex--) {
+    const dimensionSize = dimensionsArray[dimIndex - 1];
+    // Create an array of the current dimension size, filling it with deep copies of the current structure.
+    currentStructure = Array(dimensionSize).fill().map(() => JSON.parse(JSON.stringify(currentStructure)));
+  }
+  return currentStructure;
 }
 
 // A large prime number used for modulo operations to prevent integer overflow.
-const resultModulus = 1000000007;
+const MODULUS_VALUE = 1000000007;
 
 /**
- * The primary function that orchestrates the solution logic.
- * It reads input, performs calculations, and outputs the result.
- * @param {string} inputData - The raw input string provided to the program.
+ * Main function to solve the problem.
+ * Reads input, performs dynamic programming calculations, and prints the result.
+ * @param {string} problemInput - The raw input string for the problem.
  */
-function orchestrateSolution(inputData) {
-    // Create a new data stream reader instance to parse the input.
-    var dataProcessor = new DataStreamReader(inputData);
+function solveProblem(problemInput) {
+  let inputHandler = new InputProcessor(problemInput);
 
-    // Read the grid dimensions and target column from the input.
-    var rowCount = dataProcessor.fetchNextAtom();
-    var columnCount = dataProcessor.fetchNextAtom();
-    var targetColumnIndex = dataProcessor.fetchNextAtom();
+  // Read grid dimensions and target column from input.
+  let gridHeight = inputHandler.getNextToken();
+  let gridWidth = inputHandler.getNextToken();
+  let targetColumn = inputHandler.getNextToken();
 
-    // Pre-defined sequence of combination factors (similar to Fibonacci numbers).
-    var combinationFactors = [1, 1, 2, 3, 5, 8, 13, 21, 34, 55];
-    // Initialize the dynamic programming table (pathCounts grid) with zeros.
-    var pathCounts = initializeGrid([rowCount, columnCount], 0);
+  // Predefined sequence of weights, resembling Fibonacci numbers.
+  // These are likely used for calculating combinations or path weights.
+  const combinationWeights = [1, 1, 2, 3, 5, 8, 13, 21, 34, 55];
 
-    // Set initial values for the first row of the DP table based on combination factors.
-    // These represent base cases for reaching specific columns in the first row.
-    pathCounts[0][0] = combinationFactors[columnCount - 1];
-    pathCounts[0][1] = combinationFactors[columnCount - 2];
+  // Initialize a 2D array for dynamic programming.
+  // The table will store the number of ways to reach a cell.
+  let dynamicProgrammingTable = createMultiDimArray([gridHeight, gridWidth], 0);
 
-    // Iterate through each row starting from the second row.
-    for (var currentRow = 1; currentRow < rowCount; currentRow++) {
-        // Iterate through each column in the current row.
-        for (var currentColumn = 0; currentColumn < columnCount; currentColumn++) {
-            // Calculate paths coming from the same column in the previous row.
-            pathCounts[currentRow][currentColumn] += pathCounts[currentRow - 1][currentColumn] * (combinationFactors[columnCount - currentColumn - 1] * combinationFactors[currentColumn]);
+  // Set initial conditions for the first row (row 0).
+  // These values represent the ways to reach cells in the first row.
+  dynamicProgrammingTable[0][0] = combinationWeights[gridWidth - 1];
+  dynamicProgrammingTable[0][1] = combinationWeights[gridWidth - 2];
 
-            // If a left neighbor exists, calculate paths coming from the left column in the previous row.
-            if (currentColumn - 1 >= 0) {
-                pathCounts[currentRow][currentColumn] += pathCounts[currentRow - 1][currentColumn - 1] * (combinationFactors[columnCount - currentColumn - 1] * combinationFactors[currentColumn - 1]);
-            }
-            // If a right neighbor exists, calculate paths coming from the right column in the previous row.
-            if (currentColumn + 1 <= columnCount - 1) {
-                pathCounts[currentRow][currentColumn] += pathCounts[currentRow - 1][currentColumn + 1] * (combinationFactors[columnCount - currentColumn - 2] * combinationFactors[currentColumn]);
-            }
+  // Iterate through the grid rows starting from the second row (index 1).
+  for (let currentRow = 1; currentRow < gridHeight; currentRow++) {
+    // Iterate through each column in the current row.
+    for (let currentColumn = 0; currentColumn < gridWidth; currentColumn++) {
 
-            // Apply modulo operation to keep numbers within bounds.
-            pathCounts[currentRow][currentColumn] %= resultModulus;
-        }
+      // Calculate paths from the cell directly above (same column).
+      // The weight is a product of two combination weights based on remaining width and current column.
+      dynamicProgrammingTable[currentRow][currentColumn] += dynamicProgrammingTable[currentRow - 1][currentColumn] * (combinationWeights[gridWidth - currentColumn - 1] * combinationWeights[currentColumn]);
+
+      // If a cell to the left exists in the previous row, add paths from it.
+      if (currentColumn - 1 >= 0) {
+        dynamicProgrammingTable[currentRow][currentColumn] += dynamicProgrammingTable[currentRow - 1][currentColumn - 1] * (combinationWeights[gridWidth - currentColumn - 1] * combinationWeights[currentColumn - 1]);
+      }
+
+      // If a cell to the right exists in the previous row, add paths from it.
+      if (currentColumn + 1 <= gridWidth - 1) {
+        dynamicProgrammingTable[currentRow][currentColumn] += dynamicProgrammingTable[currentRow - 1][currentColumn + 1] * (combinationWeights[gridWidth - currentColumn - 2] * combinationWeights[currentColumn]);
+      }
+
+      // Apply modulo operation to keep the result within bounds.
+      dynamicProgrammingTable[currentRow][currentColumn] %= MODULUS_VALUE;
     }
+  }
 
-    // Output the final computed value at the target cell.
-    console.log(pathCounts[rowCount - 1][targetColumnIndex - 1]);
+  // The final answer is the value in the last row and the target column (adjusted for 0-indexing).
+  console.log(dynamicProgrammingTable[gridHeight - 1][targetColumn - 1]);
 }
 
-
-// Execute the main solution function by reading input from standard input.
-orchestrateSolution(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Read input from standard input and pass it to the main solver function.
+solveProblem(require("fs").readFileSync("/dev/stdin", "utf8"));

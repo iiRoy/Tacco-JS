@@ -1,54 +1,67 @@
 "use strict";
 
-process.stdin.resume(); // Activate standard input stream
-process.stdin.setEncoding("utf-8"); // Set character encoding for input
+// Resume standard input stream processing
+process.stdin.resume();
+// Set the encoding for incoming data to UTF-8
+process.stdin.setEncoding("utf-8");
 
-function displayOutput(dataToDisplay) { // Function to present data to the console
-    console.log(dataToDisplay); // Log the provided data
+/**
+ * Outputs a given value to the console.
+ * @param {any} outputVal - The value to be displayed.
+ */
+function displayResult(outputVal) {
+  console.log(outputVal);
 }
 
-let receivedDataBuffer = ""; // Accumulator for all incoming data
-let currentParseIndex = 0; // Pointer for the current line being processed
+// Buffer to accumulate all incoming standard input data
+let rawDataBuffer = "";
+// Index to keep track of the current line being processed from the input
+let lineIndex = 0;
 
-process.stdin.on("data", incomingChunk => { // Event listener for 'data' chunks
-    receivedDataBuffer += incomingChunk; // Append current chunk to buffer
+// Event listener for incoming data chunks
+process.stdin.on("data", chunkOfData => {
+  rawDataBuffer += chunkOfData; // Append new data to the buffer
 });
 
-process.stdin.on("end", () => { // Event listener for 'end' of input stream
-    receivedDataBuffer = receivedDataBuffer.split("\n"); // Split buffered data into an array of lines
-    executePrimaryLogic(); // Invoke the core application logic
+// Event listener for the end of the input stream
+process.stdin.on("end", () => {
+  // Split the accumulated buffer into an array of lines
+  rawDataBuffer = rawDataBuffer.split("\n");
+  // Execute the primary application logic
+  executePrimaryLogic();
 });
 
-function fetchNextInputLine() { // Utility to retrieve the next line from the buffer
-    return receivedDataBuffer[currentParseIndex++]; // Return line and advance index
+/**
+ * Retrieves the next line from the buffered input.
+ * @returns {string} The next line of input.
+ */
+function fetchNextLine() {
+  return rawDataBuffer[lineIndex++]; // Return current line and increment index
 }
 
-// --- Auxiliary setup concludes here ---
-// --- Main computational segment begins ---
+// --- End of boilerplate input handling ---
 
+/**
+ * Main function containing the core logic of the program.
+ * Reads two numbers, performs calculations, and prints the result.
+ */
 function executePrimaryLogic() {
+  // Read a line, split by space, and convert parts to integers
+  var inputNumbersArray = fetchNextLine().split(" ").map(strNum => parseInt(strNum));
+  // Assign the two numbers to distinct variables
+  var firstNum = inputNumbersArray[0], secondNum = inputNumbersArray[1];
 
-    // Acquire and process the initial input line
-    var numericalArray = fetchNextInputLine() // Get the raw line
-                               .split(" ")      // Separate by space
-                               .map(itemStr => Number(itemStr)); // Convert each part to a number
+  // Determine the larger and smaller of the two numbers
+  var largerValue = Math.max(firstNum, secondNum);
+  var smallerValue = Math.min(firstNum, secondNum);
 
-    // Extract individual numerical components
-    var firstVal = numericalArray[0];
-    var secondVal = numericalArray[1];
+  // Calculate integer division of the larger by the smaller
+  var quotientResult = Math.floor(largerValue / smallerValue);
+  // Calculate integer product of the two numbers
+  var productResult = Math.floor(largerValue * smallerValue);
+  // Perform the final calculation: product divided by quotient
+  var finalCalculation = Math.floor(productResult / quotientResult);
 
-    // Determine the greatest and smallest values
-    var maximumValue = Math.max(firstVal, secondVal);
-    var minimumValue = Math.min(firstVal, secondVal);
-
-    // Perform arithmetic calculations
-    var quotientResult = Math.floor(maximumValue / minimumValue); // Integer division
-    var productResult = Math.floor(maximumValue * minimumValue); // Integer multiplication
-
-    // Compute the final derived value
-    var finalComputedValue = Math.floor(productResult / quotientResult);
-
-    // Output the conclusive result
-    displayOutput(finalComputedValue);
-
+  // Output the final computed value
+  displayResult(finalCalculation);
 }

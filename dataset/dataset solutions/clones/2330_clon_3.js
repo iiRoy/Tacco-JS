@@ -1,87 +1,37 @@
-// This module defines a function for processing a numeric data stream.
-// It aims to identify the longest initial sequence of consecutive integers
-// (starting from 1) within a provided array and determine how many elements
-// would need to be removed to achieve this sequence.
+"use strict";
 
-const processDataStream = (inputStringPayload) => {
-    // Perform initial validation for the raw input string.
-    // If the payload is null, undefined, or not a string, log an error and exit.
-    if (!inputStringPayload || typeof inputStringPayload !== 'string') {
-        console.error("Runtime error: The provided input payload is either missing or not in a valid string format.");
-        // Output -1 as a general error indicator, consistent with problem's failure state.
-        console.log(-1);
-        return;
-    }
-
-    // Trim any leading/trailing whitespace from the entire payload and then
-    // split it into an array of individual lines based on newline characters.
-    const inputLines = inputStringPayload.trim().split('\n');
-
-    // Verify that the input contains at least the two expected lines:
-    // one for the total count and one for the numeric sequence.
-    if (inputLines.length < 2) {
-        console.error("Data parsing error: Expected at least two lines of input, but fewer were received.");
-        console.log(-1); // Indicate failure due to insufficient data.
-        return;
-    }
-
-    // Attempt to convert the first line into an integer representing the total number of elements.
-    const totalElementsCount = Number(inputLines[0]);
-
-    // Parse the second line. It's expected to be a space-separated string of numbers.
-    // Each part is converted to a number using the `Number` constructor.
-    const sourceNumbersArray = inputLines[1].split(' ').map(val => Number(val));
-
-    // Conduct further validation on the parsed numeric values.
-    // Check if totalElementsCount is a valid non-negative number.
-    if (isNaN(totalElementsCount) || totalElementsCount < 0) {
-        console.error(`Input validation error: The declared total elements count (${inputLines[0]}) is not a valid non-negative number.`);
-        console.log(-1); // Signal an error.
-        return;
-    }
-    // Check if any element in the source array failed to parse as a number.
-    if (sourceNumbersArray.some(isNaN)) {
-        console.error("Input validation error: The numeric sequence contains one or more values that could not be parsed as numbers.");
-        console.log(-1); // Signal an error.
-        return;
-    }
-
-    // Initialize a tracker to keep count of how many consecutive numbers
-    // (starting from 1) have been found in the sequence.
-    let consecutiveMatchTracker = 0;
-
-    // Iterate through the elements of the source array.
-    // The loop runs for `totalElementsCount` iterations, as specified by the first input line.
-    for (let idx = 0; idx < totalElementsCount; ++idx) {
-        // Determine the value we are currently expecting to find in the sequence.
-        // This value is always one greater than our current tracker.
-        const expectedNextValue = consecutiveMatchTracker + 1;
-
-        // Compare the current element from the array with the expected value.
-        if (sourceNumbersArray[idx] === expectedNextValue) {
-            // If they match, increment the tracker, indicating we've found the next number
-            // in the ascending sequence (1, 2, 3, ...).
-            consecutiveMatchTracker++;
-        }
-    }
-
-    // Prepare the final output based on the tracking results.
-    let finalCalculatedResult;
-
-    // If the tracker remains 0, it means no part of the sequence (not even '1') was found.
-    if (consecutiveMatchTracker === 0) {
-        finalCalculatedResult = -1; // Indicate that no such sequence could be formed.
-    } else {
-        // Otherwise, calculate the minimum number of elements that need to be removed.
-        // This is the total count of elements minus the length of the longest found sequence.
-        finalCalculatedResult = totalElementsCount - consecutiveMatchTracker;
-    }
-
-    // Print the final result to standard output.
-    console.log(finalCalculatedResult);
+const parseNumericStringArray = (inputStr) => {
+    return inputStr.split(" ").map(valStr => parseInt(valStr, 10));
 };
 
-// Initiate the data processing by reading the entire content of standard input.
-// The 'node:fs' module is used for file system operations, specifically reading from /dev/stdin.
-// The input is expected to be UTF-8 encoded text.
-processDataStream(require('node:fs').readFileSync('/dev/stdin', 'utf8'));
+const processInputData = (rawInput) => {
+    const processedLines = rawInput.trim().split("\n");
+
+    const [firstLineContent, secondLineContent] = processedLines;
+
+    const totalCount = parseInt(firstLineContent, 10);
+    const dataElements = parseNumericStringArray(secondLineContent);
+    
+    let currentMatchSequence = 0;
+    
+    for (let elementIndex = 0; elementIndex < totalCount; elementIndex++) {
+        const expectedValueInSequence = currentMatchSequence + 1;
+        
+        if (dataElements[elementIndex] === expectedValueInSequence) {
+            currentMatchSequence++;
+        }
+    }
+    
+    let finalOutputValue;
+    const hasAnyMatchOccurred = currentMatchSequence !== 0;
+
+    if (hasAnyMatchOccurred) {
+        finalOutputValue = totalCount - currentMatchSequence;
+    } else {
+        finalOutputValue = -1;
+    }
+    
+    console.log(finalOutputValue);
+};
+
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

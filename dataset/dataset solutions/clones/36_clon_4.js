@@ -1,49 +1,28 @@
 const fileSystem = require('fs');
+const sourceData = fileSystem.readFileSync('/dev/stdin', 'utf8');
+const dataSegments = sourceData.split('\n');
 
-const summationCounts = (() => {
-    const maxDigitsAllowed = 4;
-    const maxSingleDigitValue = 8;
-    const maxPossibleTotal = maxDigitsAllowed * maxSingleDigitValue;
-
-    const dynamicProgrammingTable = Array(maxDigitsAllowed + 1)
-        .fill(null)
-        .map(() => Array(maxPossibleTotal + 1).fill(0));
-
-    dynamicProgrammingTable[0][0] = 1;
-
-    for (let currentDigitQuantity = 1; currentDigitQuantity <= maxDigitsAllowed; currentDigitQuantity++) {
-        for (let currentAccumulatedSum = 0; currentAccumulatedSum <= maxPossibleTotal; currentAccumulatedSum++) {
-            for (let valueForCurrentDigit = 0; valueForCurrentDigit <= maxSingleDigitValue; valueForCurrentDigit++) {
-                if (currentAccumulatedSum - valueForCurrentDigit >= 0) {
-                    dynamicProgrammingTable[currentDigitQuantity][currentAccumulatedSum] +=
-                        dynamicProgrammingTable[currentDigitQuantity - 1][currentAccumulatedSum - valueForCurrentDigit];
-                }
-            }
-        }
+function determineValidSums(sumNeeded, variablesRemaining) {
+    if (variablesRemaining === 0) {
+        return sumNeeded === 0 ? 1 : 0;
     }
-    return dynamicProgrammingTable[maxDigitsAllowed];
-})();
 
-const processIncomingData = (fullTextStream) => {
-    const dataRecords = fullTextStream.split('\n').filter(entry => entry.trim() !== '');
-
-    dataRecords.forEach(currentEntry => {
-        const numericValue = Number(currentEntry);
-
-        process.stdout.write(currentEntry + '\n');
-        process.stdout.write(numericValue + '\n');
-
-        const resultFromLookup = (numericValue >= 0 && numericValue < summationCounts.length)
-                                  ? summationCounts[numericValue]
-                                  : 0;
-
-        process.stdout.write(resultFromLookup + '\n');
-    });
-};
-
-fileSystem.readFile('/dev/stdin', 'utf8', (readError, fileContents) => {
-    if (readError) {
-        return;
+    if (sumNeeded < 0 || sumNeeded > variablesRemaining * 8) {
+        return 0;
     }
-    processIncomingData(fileContents);
+
+    let cumulativeSum = 0;
+    for (let currentDigit = 0; currentDigit <= 8; currentDigit++) {
+        cumulativeSum += determineValidSums(sumNeeded - currentDigit, variablesRemaining - 1);
+    }
+    return cumulativeSum;
+}
+
+dataSegments.forEach(currentSegment => {
+    const targetValue = +currentSegment;
+    console.log(currentSegment);
+    console.log(targetValue);
+
+    const resultCount = determineValidSums(targetValue, 4);
+    console.log(resultCount);
 });

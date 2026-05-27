@@ -1,37 +1,35 @@
-// This function processes incoming data to identify unique items and apply a specific counting rule.
-function processInput(rawData) {
-    // The first line of the raw data is extracted, although its value isn't utilized in subsequent steps.
-    var firstLineVal = rawData.split("\n")[0];
+function ProcessInput(rawData) {
+  // Extract the first line, which might represent a length, though it's not used in this logic.
+  var firstLineLength = rawData.split("\n")[0];
 
-    // The second line of the raw data is split by spaces to form an array of individual tokens.
-    var tokenArray = rawData.split("\n")[1].split(" ");
+  // Split the second line by spaces to get an array of items.
+  var itemsArray = rawData.split("\n")[1].split(" ");
 
-    // An empty array is initialized to keep track of all distinct elements encountered.
-    var uniqueElements = [];
-    // A counter is initialized to tally the number of unique elements.
-    var distinctCount = 0;
+  // Initialize an array to keep track of elements already encountered.
+  var encounteredElements = [];
+  // Initialize a counter for unique elements.
+  var uniqueCount = 0;
 
-    // A loop iterates through each token present in the tokenArray.
-    for (var idx = 0; idx < tokenArray.length; idx++) {
-        // It checks if the current token has not yet been added to the uniqueElements collection.
-        if (uniqueElements.indexOf(tokenArray[idx]) === -1) {
-            // If the token is found to be new, it's added to uniqueElements.
-            uniqueElements.push(tokenArray[idx]);
-            // The distinct element counter is then incremented.
-            distinctCount++;
-        }
+  // Iterate through each item in the parsed array.
+  for (var idx = 0; idx < itemsArray.length; idx++) {
+    // Check if the current item has not been seen before.
+    if (encounteredElements.indexOf(itemsArray[idx]) === -1) {
+      // If it's a new unique item, add it to the encountered list.
+      encounteredElements.push(itemsArray[idx]);
+      // Increment the unique count.
+      uniqueCount++;
     }
+  }
 
-    // After processing all tokens, a conditional check is performed on the final distinct count.
-    if (distinctCount % 2 === 1) {
-        // If the total number of distinct elements is odd, that count is printed to the console.
-        console.log(distinctCount);
-    } else {
-        // Otherwise, if the count is even, the count minus one is printed.
-        console.log(distinctCount - 1);
-    }
+  // Determine the final output based on the parity of the unique count.
+  if (uniqueCount % 2 === 1) {
+    // If the unique count is odd, print the count itself.
+    console.log(uniqueCount);
+  } else {
+    // If the unique count is even, print the count minus one.
+    console.log(uniqueCount - 1);
+  }
 }
 
-// The main processing function is invoked with data read from standard input.
-// This involves reading the file system, specifically from "/dev/stdin", and decoding it as UTF-8.
-processInput(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Read input from standard input and pass it to the processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

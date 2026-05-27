@@ -1,31 +1,53 @@
-function processMeasurementData(rawText) {
-  const allLines = rawText.split(/\r?\n/).filter(l => l.trim().length > 0);
+function processData(rawInputText) {
+    const lineSegments = rawInputText.split('\n');
+    const itemCount = parseInt(lineSegments[0], 10);
 
-  const entryCount = Number(allLines[0]);
+    const relevantLines = lineSegments.slice(1, itemCount + 1);
 
-  const dataPairs = allLines.slice(1, entryCount + 1).map(lineContent => {
-    const parts = lineContent.split(' ').map(s => Number(s));
-    return [parts[0], parts[1]];
-  });
+    const { firstValues, secondValues } = relevantLines.reduce((accumulator, currentLine) => {
+        const parts = currentLine.split(' ');
+        accumulator.firstValues.push(parseInt(parts[0], 10));
+        accumulator.secondValues.push(parseInt(parts[1], 10));
+        return accumulator;
+    }, { firstValues: [], secondValues: [] });
 
-  const sortedFirstElements = dataPairs
-    .map(pair => pair[0])
-    .sort((a, b) => a - b);
+    firstValues.sort((valA, valB) => valA - valB);
+    secondValues.sort((valA, valB) => valB - valA);
 
-  const sortedSecondElements = dataPairs
-    .map(pair => pair[1])
-    .sort((a, b) => b - a);
+    const centralIndex = Math.floor((itemCount - 1) / 2);
 
-  const centralIndex = Math.floor(entryCount / 2);
+    const differenceAtCentralPoint = secondValues[centralIndex] - firstValues[centralIndex];
 
-  const effectiveIndex = (entryCount % 2 === 0) ? (centralIndex - 1) : centralIndex;
+    const calculationDispatch = {
+        'even': (diffVal) => (diffVal * 2) - 1,
+        'odd': (diffVal) => diffVal + 1
+    };
 
-  const differenceTerm = sortedSecondElements[effectiveIndex] - sortedFirstElements[effectiveIndex];
+    let finalOutcome;
+    if (itemCount % 2 === 0) {
+        finalOutcome = calculationDispatch.even(differenceAtCentralPoint);
+    } else {
+        finalOutcome = calculationDispatch.odd(differenceAtCentralPoint);
+    }
 
-  const finalResult = differenceTerm * ((entryCount % 2 === 0) ? 2 : 1) + ((entryCount % 2 === 0) ? -1 : 1);
-
-  console.log(finalResult.toString());
-  return finalResult;
+    console.log('%s', finalOutcome);
+    return finalOutcome;
 }
 
-processMeasurementData(require("fs").readFileSync("/dev/stdin", "utf8"));
+function examineResult(testNum) {
+  const inputElement = document.getElementById("input" + testNum);
+  const outputElement = document.getElementById("output" + testNum);
+  const resultElement = document.getElementById("result" + testNum);
+
+  const testInput = inputElement.value;
+  const actualAnswer = processData(testInput);
+  const expectedAnswer = outputElement.value.split("\n")[0];
+
+  let testStatus = "WA";
+  if (String(actualAnswer) === expectedAnswer) {
+    testStatus = "AC";
+  }
+  resultElement.innerHTML = testStatus;
+}
+
+processData(require("fs").readFileSync("/dev/stdin", "utf8"));

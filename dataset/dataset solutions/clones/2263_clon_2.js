@@ -1,215 +1,161 @@
-/*
- * This module processes geometric point data to find the radius of the minimum enclosing circle.
- * It handles input from a string, parses coordinates, and calculates the smallest circle
- * that contains all given points.
- */
-function ProcessData( rawInput ) {
-    // Split the entire input string by newline characters to get individual lines.
-    rawInput = rawInput.split( '\n' );
+function ProcessInputData(rawData) {
+  // Split the raw input string into an array of lines.
+  let processedLines = rawData.split("\n");
 
-    // Parse the first line to determine the total number of points.
-    const pointCount = parseInt( rawInput[0] );
+  // Parse the number of points from the first line.
+  const pointCount = parseInt(processedLines[0]);
 
-    // Remove the first line as it's already processed (contains point count).
-    rawInput.shift();
+  // Remove the first line (which contained pointCount) from the array.
+  processedLines.shift();
 
-    // Trim any extra lines beyond the actual point data.
-    rawInput.splice( pointCount, rawInput.length );
+  // Trim any extra lines beyond the actual point data.
+  // This ensures we only process 'pointCount' lines of coordinate data.
+  processedLines.splice(pointCount, processedLines.length);
 
-    // Transform the raw input lines into an array of coordinate pairs (numbers).
-    const pointCoordinates = rawInput.map( lineStr =>
-        lineStr.split( ' ' ).map( coordStr => parseInt( coordStr ) )
-    );
+  // Map the remaining lines to an array of coordinate pairs.
+  // Each line is split by space, and each part is parsed as an integer.
+  const coordinates = processedLines.map(line => line.split(" ").map(val => parseInt(val)));
 
-    // Initialize the variable to store the maximum radius found.
-    let maximumRadius = 0;
+  // Initialize the variable to store the final radius.
+  let finalRadius = 0;
 
-    // Special case: If only two points are provided, the minimum enclosing circle
-    // is simply the circle whose diameter is the segment connecting the two points.
-    if ( pointCoordinates.length === 2 ) {
-        // Calculate the distance between the two points, then divide by 2 for the radius.
-        maximumRadius = Math.sqrt(
-            Math.pow( pointCoordinates[0][0] - pointCoordinates[1][0], 2 ) +
-            Math.pow( pointCoordinates[0][1] - pointCoordinates[1][1], 2 )
-        ) / 2;
-    } else {
-        // For three or more points, iterate through all possible combinations of three points
-        // to find the minimum enclosing circle for each triplet.
-        // This forms the basis for Welzl's algorithm or similar approaches, simplified here.
+  // Special handling for the case with exactly two points.
+  // The smallest enclosing circle for two points has them as diameter endpoints.
+  if (coordinates.length === 2) {
+    // Calculate the distance between the two points.
+    // This distance is the diameter of the circle.
+    const distSq = Math.pow(coordinates[0][0] - coordinates[1][0], 2) + Math.pow(coordinates[0][1] - coordinates[1][1], 2);
+    // The radius is half of the distance.
+    finalRadius = Math.sqrt(distSq) / 2;
+  } else {
+    // General case: Iterate through all combinations of three points to find the smallest enclosing circle.
+    // This algorithm checks circles defined by two points (as diameter) and three points (circumcircle).
+    // The outer loop iterates through the first point (idxA).
+    for (let idxA = 0; idxA < pointCount; idxA++) {
+      // The second loop iterates through the second point (idxB), ensuring idxB > idxA.
+      for (let idxB = idxA + 1; idxB < pointCount; idxB++) {
+        // The third loop iterates through the third point (idxC), ensuring idxC > idxB.
+        for (let idxC = idxB + 1; idxC < pointCount; idxC++) {
+          // Array to store squared lengths of sides of the triangle formed by points A, B, C.
+          // Each entry is [squared_length, identifier_for_opposite_vertex].
+          // 0: side AB (opposite C), 1: side AC (opposite B), 2: side BC (opposite A).
+          const sideLengths = [];
+          sideLengths.push([Math.pow(coordinates[idxA][0] - coordinates[idxB][0], 2) + Math.pow(coordinates[idxA][1] - coordinates[idxB][1], 2), 0]);
+          sideLengths.push([Math.pow(coordinates[idxA][0] - coordinates[idxC][0], 2) + Math.pow(coordinates[idxA][1] - coordinates[idxC][1], 2), 1]);
+          sideLengths.push([Math.pow(coordinates[idxC][0] - coordinates[idxB][0], 2) + Math.pow(coordinates[idxC][1] - coordinates[idxB][1], 2), 2]);
 
-        // Outer loop: selects the first point for the triplet.
-        for ( let firstPointIndex = 0; firstPointIndex < pointCount; firstPointIndex++ ) {
-            // Middle loop: selects the second point for the triplet, ensuring it's distinct from the first.
-            for ( let secondPointIndex = firstPointIndex + 1; secondPointIndex < pointCount; secondPointIndex++ ) {
-                // Inner loop: selects the third point for the triplet, distinct from the first two.
-                for ( let thirdPointIndex = secondPointIndex + 1; thirdPointIndex < pointCount; thirdPointIndex++ ) {
+          // Sort the sides by their squared lengths in descending order.
+          // The longest side will be at index 0.
+          sideLengths.sort(function(a, b) { return b[0] - a[0]; });
 
-                    // Array to store squared edge lengths and their corresponding indices for sorting.
-                    let squaredDistances = [];
+          let centerX, centerY; // Coordinates of the circle's center.
+          let radiusSquared;   // Squared radius of the circle.
 
-                    // Calculate squared distances for the three sides of the triangle formed by the points.
-                    // The indices (0, 1, 2) correspond to which point pair forms the edge.
-                    squaredDistances.push( [
-                        Math.pow( pointCoordinates[firstPointIndex][0] - pointCoordinates[secondPointIndex][0], 2 ) +
-                        Math.pow( pointCoordinates[firstPointIndex][1] - pointCoordinates[secondPointIndex][1], 2 ),
-                        0 // Edge between point1 and point2
-                    ] );
-                    squaredDistances.push( [
-                        Math.pow( pointCoordinates[firstPointIndex][0] - pointCoordinates[thirdPointIndex][0], 2 ) +
-                        Math.pow( pointCoordinates[firstPointIndex][1] - pointCoordinates[thirdPointIndex][1], 2 ),
-                        1 // Edge between point1 and point3
-                    ] );
-                    squaredDistances.push( [
-                        Math.pow( pointCoordinates[thirdPointIndex][0] - pointCoordinates[secondPointIndex][0], 2 ) +
-                        Math.pow( pointCoordinates[thirdPointIndex][1] - pointCoordinates[secondPointIndex][1], 2 ),
-                        2 // Edge between point3 and point2
-                    ] );
+          // Check if the triangle is obtuse or right-angled.
+          // If the square of the longest side is greater than or equal to the sum of squares of the other two sides,
+          // the circle's diameter is the longest side.
+          if (sideLengths[0][0] >= sideLengths[1][0] + sideLengths[2][0]) {
+            // The circle is defined by the two endpoints of the longest side.
+            // The center is the midpoint of this longest side.
+            // The radius squared is the distance from one endpoint to the center.
 
-                    // Sort the squared distances in descending order.
-                    squaredDistances.sort( ( valA, valB ) => valB[0] - valA[0] );
-
-                    let circleCenterX, circleCenterY, circleRadiusSq;
-
-                    // Check if the triangle is obtuse or right-angled.
-                    // If the square of the longest side is greater than the sum of the squares of the other two sides,
-                    // the minimum enclosing circle's diameter is the longest side.
-                    if ( squaredDistances[0][0] > squaredDistances[1][0] + squaredDistances[2][0] ) {
-                        // The diameter of the circle is the longest edge.
-                        // Determine which pair of points forms this longest edge.
-                        if ( squaredDistances[0][1] === 0 ) { // Longest edge is between point1 and point2
-                            circleCenterX = ( pointCoordinates[firstPointIndex][0] + pointCoordinates[secondPointIndex][0] ) / 2;
-                            circleCenterY = ( pointCoordinates[firstPointIndex][1] + pointCoordinates[secondPointIndex][1] ) / 2;
-                            circleRadiusSq = Math.pow( pointCoordinates[firstPointIndex][0] - circleCenterX, 2 ) +
-                                             Math.pow( pointCoordinates[firstPointIndex][1] - circleCenterY, 2 );
-                        } else if ( squaredDistances[0][1] === 1 ) { // Longest edge is between point1 and point3
-                            circleCenterX = ( pointCoordinates[firstPointIndex][0] + pointCoordinates[thirdPointIndex][0] ) / 2;
-                            circleCenterY = ( pointCoordinates[firstPointIndex][1] + pointCoordinates[thirdPointIndex][1] ) / 2;
-                            circleRadiusSq = Math.pow( pointCoordinates[firstPointIndex][0] - circleCenterX, 2 ) +
-                                             Math.pow( pointCoordinates[firstPointIndex][1] - circleCenterY, 2 );
-                        } else { // Longest edge is between point2 and point3
-                            circleCenterX = ( pointCoordinates[secondPointIndex][0] + pointCoordinates[thirdPointIndex][0] ) / 2;
-                            circleCenterY = ( pointCoordinates[secondPointIndex][1] + pointCoordinates[thirdPointIndex][1] ) / 2;
-                            circleRadiusSq = Math.pow( pointCoordinates[secondPointIndex][0] - circleCenterX, 2 ) +
-                                             Math.pow( pointCoordinates[secondPointIndex][1] - circleCenterY, 2 );
-                        }
-                    } else {
-                        // The triangle is acute or right-angled (but not strictly obtuse).
-                        // The minimum enclosing circle is the circumcircle of the triangle.
-                        // Calculate the circumcenter (circleCenterX, circleCenterY) and circumradius squared.
-                        // This involves solving a system of equations for the perpendicular bisectors.
-
-                        // Pre-calculate common terms for clarity in the complex formulas.
-                        const p1x = pointCoordinates[firstPointIndex][0];
-                        const p1y = pointCoordinates[firstPointIndex][1];
-                        const p2x = pointCoordinates[secondPointIndex][0];
-                        const p2y = pointCoordinates[secondPointIndex][1];
-                        const p3x = pointCoordinates[thirdPointIndex][0];
-                        const p3y = pointCoordinates[thirdPointIndex][1];
-
-                        const p1sq = Math.pow(p1x, 2) + Math.pow(p1y, 2);
-                        const p2sq = Math.pow(p2x, 2) + Math.pow(p2y, 2);
-                        const p3sq = Math.pow(p3x, 2) + Math.pow(p3y, 2);
-
-                        const denom = 2 * ( (p3x - p1x) * (p1y - p2y) - (p2x - p1x) * (p1y - p3y) );
-
-                        // Handle potential division by zero if points are collinear.
-                        // In this problem context, points are likely not perfectly collinear for circumcircles,
-                        // or this case would be handled by the two-point scenario or a larger circle.
-                        // Assuming non-collinear for this branch.
-                        if (denom === 0) {
-                            // This scenario implies collinear points or identical points.
-                            // The problem constraints or prior logic (e.g., two-point case)
-                            // might implicitly handle this, or it indicates an edge case.
-                            // For a Type II clone, we must maintain original logic.
-                            // The original code does not explicitly check for denom === 0 here.
-                            // It relies on the larger circle check to cover it if it leads to an issue.
-                            // Let's proceed as the original code does.
-                        }
-
-                        circleCenterY = (
-                            (p3x - p1x) * (p1sq - p2sq) -
-                            (p2x - p1x) * (p1sq - p3sq)
-                        ) / denom;
-
-                        // Calculate circleCenterX based on which x-coordinates are different to avoid division by zero.
-                        if ( p1x !== p2x ) {
-                            circleCenterX = (
-                                2 * (p1y - p2y) * circleCenterY -
-                                p1sq + p2sq
-                            ) / ( 2 * (p2x - p1x) );
-                        } else { // If p1x == p2x, then p1x != p3x must hold for non-collinear points.
-                            circleCenterX = (
-                                2 * (p1y - p3y) * circleCenterY -
-                                p1sq + p3sq
-                            ) / ( 2 * (p3x - p1x) );
-                        }
-
-                        // Calculate the squared radius from one of the points to the circumcenter.
-                        circleRadiusSq = Math.pow( p1x - circleCenterX, 2 ) + Math.pow( p1y - circleCenterY, 2 );
-                    }
-
-                    // Now, verify if all other points are contained within this candidate circle.
-                    let allPointsContained = true;
-                    // Iterate through all original points.
-                    for ( let currentPointIdx = 0; currentPointIdx < pointCount; currentPointIdx++ ) {
-                        // Calculate the squared distance from the current point to the candidate circle's center.
-                        const distToCenterSq = Math.pow( pointCoordinates[currentPointIdx][0] - circleCenterX, 2 ) +
-                                               Math.pow( pointCoordinates[currentPointIdx][1] - circleCenterY, 2 );
-
-                        // If any point is outside the circle (with a small epsilon for floating point inaccuracies),
-                        // this circle is not the minimum enclosing circle for all points.
-                        if ( distToCenterSq > circleRadiusSq + 0.000001 ) {
-                            allPointsContained = false;
-                            break; // No need to check further points for this circle.
-                        }
-                    }
-
-                    // If all points are contained, this circle is a candidate for the minimum enclosing circle.
-                    // Update the maximum radius found so far.
-                    if ( allPointsContained ) {
-                        maximumRadius = Math.sqrt( circleRadiusSq );
-                        // If a valid circle is found, and it's the minimum enclosing circle for these points,
-                        // we can potentially break out early if we're looking for *any* such circle.
-                        // The original logic implies finding the first one that works for a triplet.
-                        break;
-                    }
-                }
-                // Break out of the middle loop if a solution was found.
-                if ( maximumRadius !== 0 ) {
-                    break;
-                }
+            if (sideLengths[0][1] === 0) { // Longest side is AB (opposite C)
+              centerX = (coordinates[idxA][0] + coordinates[idxB][0]) / 2;
+              centerY = (coordinates[idxA][1] + coordinates[idxB][1]) / 2;
+              radiusSquared = Math.pow(coordinates[idxA][0] - centerX, 2) + Math.pow(coordinates[idxA][1] - centerY, 2);
+            } else if (sideLengths[0][1] === 1) { // Longest side is AC (opposite B)
+              centerX = (coordinates[idxA][0] + coordinates[idxC][0]) / 2;
+              centerY = (coordinates[idxA][1] + coordinates[idxC][1]) / 2;
+              radiusSquared = Math.pow(coordinates[idxA][0] - centerX, 2) + Math.pow(coordinates[idxA][1] - centerY, 2);
+            } else { // Longest side is BC (opposite A)
+              centerX = (coordinates[idxB][0] + coordinates[idxC][0]) / 2;
+              centerY = (coordinates[idxB][1] + coordinates[idxC][1]) / 2;
+              radiusSquared = Math.pow(coordinates[idxB][0] - centerX, 2) + Math.pow(coordinates[idxB][1] - centerY, 2);
             }
-            // Break out of the outer loop if a solution was found.
-            if ( maximumRadius !== 0 ) {
-                break;
+          } else {
+            // The triangle is acute. The circle is the circumcircle of the three points.
+            // Calculate the circumcenter (centerX, centerY) and circumradius (radiusSquared).
+            // These formulas are derived from the general equations for a circumcircle.
+
+            const xA = coordinates[idxA][0], yA = coordinates[idxA][1];
+            const xB = coordinates[idxB][0], yB = coordinates[idxB][1];
+            const xC = coordinates[idxC][0], yC = coordinates[idxC][1];
+
+            const term1 = (xC - xA) * (Math.pow(xA, 2) + Math.pow(yA, 2) - Math.pow(xB, 2) - Math.pow(yB, 2));
+            const term2 = (xB - xA) * (Math.pow(xA, 2) + Math.pow(yA, 2) - Math.pow(xC, 2) - Math.pow(yC, 2));
+            const denominatorY = 2 * ((xC - xA) * (yA - yB) - (xB - xA) * (yA - yC));
+
+            centerY = (term1 - term2) / denominatorY;
+
+            // Calculate centerX based on whether xA and xB are distinct.
+            // This avoids division by zero if two points share the same x-coordinate.
+            if (xA !== xB) {
+              centerX = (2 * (yA - yB) * centerY - Math.pow(xA, 2) - Math.pow(yA, 2) + Math.pow(xB, 2) + Math.pow(yB, 2)) / (2 * (xB - xA));
+            } else { // If xA == xB, use points A and C to calculate centerX.
+              centerX = (2 * (yA - yC) * centerY - Math.pow(xA, 2) - Math.pow(yA, 2) + Math.pow(xC, 2) + Math.pow(yC, 2)) / (2 * (xC - xA));
             }
+
+            // Calculate the squared radius from point A to the circumcenter.
+            radiusSquared = Math.pow(xA - centerX, 2) + Math.pow(yA - centerY, 2);
+          }
+
+          // Now, check if this candidate circle (defined by 2 or 3 points) encloses all N points.
+          let isValidCircle = true; // Assume valid until a point is found outside.
+          for (let idxP = 0; idxP < pointCount; idxP++) {
+            // Calculate the squared distance from the current point (idxP) to the circle's center.
+            const distToCenterSq = Math.pow(coordinates[idxP][0] - centerX, 2) + Math.pow(coordinates[idxP][1] - centerY, 2);
+
+            // If any point is outside the circle (allowing for a small floating point tolerance),
+            // this circle is not the smallest enclosing circle for all points.
+            if (distToCenterSq > radiusSquared + 0.000001) {
+              isValidCircle = false; // Mark as invalid.
+              break; // No need to check further points for this circle.
+            }
+          }
+
+          // If all points are inside this circle, it's a candidate for the smallest enclosing circle.
+          // Since we are iterating through combinations, the first one found that encloses all points
+          // will be the answer (due to the problem constraints or specific algorithm properties).
+          if (isValidCircle) {
+            finalRadius = Math.sqrt(radiusSquared); // Store the radius.
+            break; // Exit the innermost loop (idxC).
+          }
         }
+        // If a valid circle was found in the inner loop, break from the middle loop (idxB).
+        if (finalRadius !== 0) {
+          break;
+        }
+      }
+      // If a valid circle was found, break from the outermost loop (idxA).
+      if (finalRadius !== 0) {
+        break;
+      }
     }
+  }
 
-    // Output the calculated maximum radius.
-    console.log( '%s', maximumRadius );
-    return maximumRadius; // Return the final result.
+  // Output the calculated radius to the console.
+  console.log('%s', finalRadius);
+  // Return the result.
+  return finalRadius;
 }
 
-/*
- * This auxiliary function is for debugging purposes in a browser environment.
- * It simulates input from a text area and displays the result.
- */
-function TestFunction( testNumber ) {
-    // Retrieve input string from a specific HTML element.
-    const testInput = document.getElementById( 'input' + testNumber ).value;
-    // Process the input using the main logic.
-    const calculatedResult = ProcessData( testInput );
-    // Initialize the test outcome.
-    let testOutcome = 'WA'; // "Wrong Answer" by default.
+// This function is likely for a specific testing environment (e.g., a web page).
+function TestSolution(testCaseNum) {
+  // Retrieve input data from a DOM element.
+  const inputData = document.getElementById("input" + testCaseNum).value;
+  // Process the input data using the main logic.
+  const computedAnswer = ProcessInputData(inputData);
+  let testOutcome = "WA"; // Assume Wrong Answer initially.
 
-    // Compare the calculated result with the expected output from another HTML element.
-    if ( calculatedResult.toString() === document.getElementById( 'output' + testNumber ).value.split( '\n' )[0] ) {
-        testOutcome = 'AC'; // "Accepted" if results match.
-    }
-    // Display the test outcome in a designated HTML element.
-    document.getElementById( 'result' + testNumber ).innerHTML = testOutcome;
+  // Compare the computed answer with the expected output from another DOM element.
+  // The expected output is assumed to be on the first line.
+  if (computedAnswer == document.getElementById("output" + testCaseNum).value.split("\n")[0]) {
+    testOutcome = "AC"; // If they match, it's Accepted.
+  }
+  // Display the test outcome in a designated DOM element.
+  document.getElementById("result" + testCaseNum).innerHTML = testOutcome;
 }
 
-// Execute the main processing function with input read from standard input in a Node.js environment.
-ProcessData( require( 'fs' ).readFileSync( '/dev/stdin', 'utf8' ) );
+// Execute the main function by reading input from standard input.
+// This is typical for competitive programming environments.
+ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

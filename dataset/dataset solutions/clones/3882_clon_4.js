@@ -1,84 +1,75 @@
 'use strict';
 
-const expedition_manager = (initial_data_string) => {
-    const parse_numeric_sequence = (raw_text) => raw_text.trim().split(/\s+/).map(Number);
+function processSushiRoute(rawData) {
+    const numericData = rawData.trim().split(/\s+/).map(Number);
 
-    const numerical_components = parse_numeric_sequence(initial_data_string);
-    const stop_count = numerical_components.shift();
-    const circuit_length = numerical_components.shift();
+    const sushiCount = numericData[0];
+    const trackLength = numericData[1];
 
-    const waypoint_catalog = [];
-    for (let i = 0; i < stop_count; ++i) {
-        waypoint_catalog.push({
-            position: numerical_components[2 * i],
-            yield: numerical_components[2 * i + 1]
+    const sushiLocations = [];
+    for (let i = 0; i < sushiCount; i++) {
+        sushiLocations.push({
+            position: numericData[2 + 2 * i],
+            value: numericData[2 + 2 * i + 1]
         });
     }
 
-    // --- Phase 1: Clockwise (Forward) Journey Segment Calculations ---
-    let current_accumulated_yield_forward = 0;
-    const forward_journey_segments = waypoint_catalog.map(point => {
-        current_accumulated_yield_forward += point.yield;
-        return {
-            location_on_track: point.position,
-            cumulative_gain_forward: current_accumulated_yield_forward,
-            net_profit_straight_forward: current_accumulated_yield_forward - point.position
-        };
-    });
-
-    const max_forward_profit_prefix = forward_journey_segments.reduce((acc, segment) => {
-        const current_max = acc.length > 0 ? Math.max(acc[acc.length - 1], segment.net_profit_straight_forward) : segment.net_profit_straight_forward;
-        acc.push(current_max);
-        return acc;
+    const forwardAccumulations = sushiLocations.reduce((accumulator, currentPoint, index) => {
+        const previousState = accumulator.length > 0 ? accumulator[index - 1] : { totalValue: 0, maxNetProfit: 0 };
+        const currentTotalValue = previousState.totalValue + currentPoint.value;
+        const currentNetProfit = currentTotalValue - currentPoint.position;
+        const currentMaxNetProfit = Math.max(previousState.maxNetProfit, currentNetProfit);
+        
+        accumulator.push({
+            position: currentPoint.position,
+            value: currentPoint.value,
+            totalValue: currentTotalValue,
+            netProfit: currentNetProfit,
+            maxNetProfit: currentMaxNetProfit
+        });
+        return accumulator;
     }, []);
 
-    // --- Phase 2: Counter-Clockwise (Backward) Journey Segment Calculations ---
-    const total_global_yield = current_accumulated_yield_forward; // Total yield from all waypoints
+    const backwardAccumulations = sushiLocations.reduceRight((accumulator, currentPoint, index) => {
+        const nextState = accumulator.length > 0 ? accumulator[0] : { totalValue: 0, maxNetProfit: 0 };
+        const currentTotalValue = nextState.totalValue + currentPoint.value;
+        const currentDistanceCCW = trackLength - currentPoint.position;
+        const currentNetProfit = currentTotalValue - currentDistanceCCW;
+        const currentMaxNetProfit = Math.max(nextState.maxNetProfit, currentNetProfit);
 
-    const backward_journey_segments = waypoint_catalog.map((point, index) => {
-        const previous_forward_yield_sum = (index === 0) ? 0 : forward_journey_segments[index - 1].cumulative_gain_forward;
-        const cumulative_gain_backward_from_here = total_global_yield - previous_forward_yield_sum;
-        const backward_distance_to_location = circuit_length - point.position;
-        return {
-            location_on_track: point.position,
-            distance_travelled_backward: backward_distance_to_location,
-            cumulative_gain_backward: cumulative_gain_backward_from_here,
-            net_profit_straight_backward: cumulative_gain_backward_from_here - backward_distance_to_location
-        };
-    });
-
-    const max_backward_profit_suffix = backward_journey_segments.reduceRight((acc, segment) => {
-        const current_max = acc.length > 0 ? Math.max(acc[0], segment.net_profit_straight_backward) : segment.net_profit_straight_backward;
-        acc.unshift(current_max);
-        return acc;
+        accumulator.unshift({
+            position: currentPoint.position,
+            value: currentPoint.value,
+            totalValue: currentTotalValue,
+            netProfit: currentNetProfit,
+            maxNetProfit: currentMaxNetProfit
+        });
+        return accumulator;
     }, []);
 
-    // --- Phase 3: Combined Path Calculations (Forward then Backward) ---
-    const forward_then_backward_profit_options = forward_journey_segments.map((fw_segment, idx) => {
-        const initial_forward_net = fw_segment.net_profit_straight_forward;
-        const cost_to_retrace_to_origin = fw_segment.location_on_track;
-        const subsequent_max_backward_net = (idx + 1 < stop_count) ? max_backward_profit_suffix[idx + 1] : 0;
-        return initial_forward_net - cost_to_retrace_to_origin + subsequent_max_backward_net;
-    });
+    let overallMaxProfit = 0;
 
-    // --- Phase 4: Combined Path Calculations (Backward then Forward) ---
-    const backward_then_forward_profit_options = backward_journey_segments.map((bw_segment, idx) => {
-        if (idx === 0) return -Infinity; // Cannot go forward 'before' the initial backward stop.
-        const initial_backward_net = bw_segment.net_profit_straight_backward;
-        const cost_to_retrace_to_origin = bw_segment.distance_travelled_backward;
-        const subsequent_max_forward_net = max_forward_profit_prefix[idx - 1];
-        return initial_backward_net - cost_to_retrace_to_origin + subsequent_max_forward_net;
-    });
+    if (sushiCount > 0) {
+        overallMaxProfit = Math.max(overallMaxProfit, forwardAccumulations[sushiCount - 1].maxNetProfit);
+        overallMaxProfit = Math.max(overallMaxProfit, backwardAccumulations[0].maxNetProfit);
+    }
 
-    // --- Phase 5: Determine Overall Maximum Value ---
-    const all_potential_outcomes = [0]; // Option to undertake no journey (0 profit)
-    all_potential_outcomes.push(...max_forward_profit_prefix);
-    all_potential_outcomes.push(...max_backward_profit_suffix);
-    all_potential_outcomes.push(...forward_then_backward_profit_options);
-    all_potential_outcomes.push(...backward_then_forward_profit_options);
+    for (let i = 0; i < sushiCount; i++) {
+        const profitCWAndReturn = forwardAccumulations[i].totalValue - (2 * forwardAccumulations[i].position);
+        let additionalCCWProfit = 0;
+        if (i + 1 < sushiCount) {
+            additionalCCWProfit = backwardAccumulations[i + 1].maxNetProfit;
+        }
+        overallMaxProfit = Math.max(overallMaxProfit, profitCWAndReturn + additionalCCWProfit);
+    }
 
-    const ultimate_expedition_value = Math.max(...all_potential_outcomes);
-    console.log(ultimate_expedition_value);
-};
+    for (let i = 1; i < sushiCount; i++) {
+        const profitCCWAndReturn = backwardAccumulations[i].totalValue - (2 * (trackLength - backwardAccumulations[i].position));
+        let additionalCWProfit = forwardAccumulations[i - 1].maxNetProfit;
+        overallMaxProfit = Math.max(overallMaxProfit, profitCCWAndReturn + additionalCWProfit);
+    }
 
-expedition_manager(require('fs').readFileSync('/dev/stdin', 'utf8'));
+    console.log(overallMaxProfit);
+}
+
+processSushiRoute(require('fs').readFileSync('/dev/stdin', 'utf8'));

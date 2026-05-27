@@ -1,34 +1,39 @@
-'use strict'
-// This module processes a sequence of numerical inputs
-function    processInputValues( rawTextInput )
-{
-  // A large prime number used for modulo arithmetic
-  const   MOD_VAL =  1_000_000_000 + 7;
+'use strict';
 
-  // Pre-process the raw input: trim whitespace and split into individual lines
-  let inputLines = rawTextInput.trim().split('\n');
+/**
+ * Processes the given input string to calculate a specific sum.
+ * @param {string} inputData The raw input string from stdin.
+ */
+function processInput(inputData) {
+  // Define a large prime number for modulo operations.
+  const moduloValue = 1e9 + 7;
 
-  // Extract the total count of numerical elements from the first line
-  const   countOfElements = Number( inputLines.shift() );
+  // Clean up the input: remove leading/trailing whitespace and split into lines.
+  inputData = inputData.trim().split('\n');
 
-  // Parse the second line into an array of numeric values
-  let numericDataArray = inputLines[0].split(' ').map( ( currentNumStr ) => Number(currentNumStr) );
+  // The first line contains the count of elements. Convert it to a number.
+  const countElements = Number(inputData.shift());
 
-  // Initialize the running total for the XOR operations
-  let cumulativeXorSum = 0;
+  // The next line contains space-separated numbers. Parse them into an array of numbers.
+  inputData = inputData[0].split(' ').map(numStr => Number(numStr));
 
-  // Iterate through all unique pairs of numbers in the array
-  for  ( let firstIdx = 0; firstIdx < countOfElements; firstIdx++ )
-  {
-    for  (   let secondIdx = firstIdx + 1; secondIdx < countOfElements; secondIdx++   )
-    {
-      // Calculate the XOR sum for the pair, then apply modulo.
-      // Note: Operator precedence means '%' is applied before '^'.
-      cumulativeXorSum += numericDataArray[firstIdx] ^ numericDataArray[secondIdx] % MOD_VAL;
+  // Initialize the accumulator for the final result.
+  let resultSum = 0;
+
+  // Iterate through the array with a nested loop to consider all unique pairs.
+  // The outer loop iterates from the first element up to (but not including) the last.
+  for (let outerIndex = 0; outerIndex < countElements; outerIndex++) {
+    // The inner loop starts from the element immediately after the outer loop's current element.
+    for (let innerIndex = outerIndex + 1; innerIndex < countElements; innerIndex++) {
+      // Calculate the bitwise XOR of the two elements, then apply modulo.
+      // Add this result to the total sum.
+      resultSum += inputData[outerIndex] ^ inputData[innerIndex] % moduloValue;
     }
   }
-  // Display the final computed result to the console
-  console.log( cumulativeXorSum );
+
+  // Output the final calculated sum to the console.
+  console.log(resultSum);
 }
-// Read the entire content of standard input and pass it to the processing function
-processInputValues( require('fs').readFileSync('/dev/stdin', 'utf8') );
+
+// Read the input from standard input and pass it to the processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

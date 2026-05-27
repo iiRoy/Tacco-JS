@@ -1,45 +1,67 @@
-const externalSource = require("fs").readFileSync("/dev/stdin", "utf8");
+let input = require("fs").readFileSync("/dev/stdin", "utf8")
 
-function processData(sourceContentString) {
-    const rawNumericalTokens = sourceContentString.split(/\s+/).filter(Boolean);
-    let tokenCursor = 0;
-    const retrieveNextNumber = () => Number(rawNumericalTokens[tokenCursor++]);
+function main({ input, load, yesno, math_sum }) {
 
-    const elementCountDirective = retrieveNextNumber();
-    const collectionOfNumbers = [];
-    for (let currentNumberIndex = 0; currentNumberIndex < elementCountDirective; currentNumberIndex++) {
-        collectionOfNumbers.push(retrieveNextNumber());
+    const [countOfNumbers] = load()
+    const numberArray = load(countOfNumbers)
+
+    let maximumValue = 0
+    for (const val of numberArray) {
+        if (val > maximumValue) {
+            maximumValue = val
+        }
     }
 
-    const valueCounts = new Map();
-    for (const itemValue of collectionOfNumbers) {
-        valueCounts.set(itemValue, (valueCounts.get(itemValue) || 0) + 1);
+    const frequencyMap = new Map()
+    for (const num of numberArray) {
+        frequencyMap.set(num, (frequencyMap.get(num) || 0) + 1)
     }
 
-    const maximumElementValue = Math.max(...collectionOfNumbers);
+    const distinctNumbers = new Set(numberArray)
 
-    const uniquePresentElements = new Set(collectionOfNumbers);
-
-    const numbersToExclude = new Set();
-    for (let currentSieveBase = 1; currentSieveBase <= maximumElementValue; currentSieveBase++) {
-        if (uniquePresentElements.has(currentSieveBase)) {
-            for (let multipleCandidate = currentSieveBase * 2; multipleCandidate <= maximumElementValue; multipleCandidate += currentSieveBase) {
-                numbersToExclude.add(multipleCandidate);
+    const numbersToExclude = new Set()
+    for (let currentDivisor = 1; currentDivisor <= maximumValue; currentDivisor++) {
+        if (distinctNumbers.has(currentDivisor)) {
+            for (let multiple = currentDivisor * 2; multiple <= maximumValue; multiple += currentDivisor) {
+                numbersToExclude.add(multiple)
             }
         }
     }
 
-    let finalSelectionTally = 0;
-    for (const originalItem of collectionOfNumbers) {
-        const itemFrequency = valueCounts.get(originalItem);
-        if (itemFrequency === 1) {
-            if (!numbersToExclude.has(originalItem)) {
-                finalSelectionTally++;
-            }
+    let finalCount = 0
+    for (const num of frequencyMap.keys()) {
+        if (frequencyMap.get(num) === 1 && !numbersToExclude.has(num)) {
+            finalCount++
         }
     }
 
-    console.log(finalSelectionTally);
+    console.log(finalCount)
 }
 
-processData(externalSource);
+let inputs = input.split(/[\s\n]/)
+main({
+    input,
+    yesno: value => value ? 'Yes' : 'No',
+    load(rows = 1, cols = 1, is_number = true) {
+        const length = rows * cols
+        let result = inputs.splice(0, length)
+        if(is_number) result = result.map(Number)
+        if(cols > 1) {
+            const arrays = new Array(cols)
+            for(let col = 0; col < cols; col++) {
+                arrays[col] = new Array()
+                for(let row = 0; row < rows; row++) {
+                    arrays[col].push(result[row * cols + col])
+                }
+            }
+            result = arrays
+        }
+        return result
+    },
+    inifinite_loop_preventer() {
+        throw new Error("Infinite loop")
+    },
+    math_sum(numbers) {
+        return numbers.reduce((acc, cur) => acc + cur, 0)
+    },
+})

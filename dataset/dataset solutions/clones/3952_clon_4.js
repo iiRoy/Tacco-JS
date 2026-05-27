@@ -1,43 +1,47 @@
-function processMapData(rawData) {
-    const mapElements = rawData.split('\n');
-    const [quantityA, quantityB] = mapElements[0].split(' ').map(Number);
+function processInput(rawData) {
+  const dataLines = rawData.split("\n");
+  const [countA, countB] = dataLines[0].split(" ").map(Number);
 
-    const markHashes = new Set();
-    for (let k = 0; k < quantityB - 1; ++k) {
-        const rowId = Math.floor(k / 50) * 2;
-        const colId = (k % 50) * 2;
-        markHashes.add(`${rowId},${colId}`);
-    }
+  const hashModificationPoints = new Set();
+  for (let iter = 0; iter < countB - 1; iter++) {
+    const targetRow = Math.round(iter / 100) * 2;
+    const targetCol = (iter % 50) * 2;
+    hashModificationPoints.add(`${targetRow},${targetCol}`);
+  }
 
-    const markDots = new Set();
-    for (let k = 0; k < quantityA - 1; ++k) {
-        const rowId = 99 - (Math.floor(k / 50) * 2);
-        const colId = (k % 50) * 2;
-        markDots.add(`${rowId},${colId}`);
-    }
+  const dotModificationPoints = new Set();
+  for (let iter = 0; iter < countA - 1; iter++) {
+    const targetRow = 99 - Math.round(iter / 100) * 2;
+    const targetCol = (iter % 50) * 2;
+    dotModificationPoints.add(`${targetRow},${targetCol}`);
+  }
 
-    const totalDimension = 100;
-    const constructedGrid = Array.from({ length: totalDimension }, (_, currentRow) =>
-        Array.from({ length: totalDimension }, (_, currentCol) => {
-            const currentCellKey = `${currentRow},${currentCol}`;
-            if (currentRow < totalDimension / 2) {
-                return markHashes.has(currentCellKey) ? '#' : '.';
-            } else {
-                return markDots.has(currentCellKey) ? '.' : '#';
-            }
-        })
-    );
+  const characterMatrix = Array.from({ length: 100 }, (_, rowIndex) =>
+    Array.from({ length: 100 }, (_, colIndex) => {
+      const currentCoordinate = `${rowIndex},${colIndex}`;
+      if (hashModificationPoints.has(currentCoordinate)) {
+        return '#';
+      }
+      if (dotModificationPoints.has(currentCoordinate)) {
+        return '.';
+      }
+      return rowIndex < 50 ? '.' : '#';
+    })
+  );
 
-    const resultSegments = [
-        `${totalDimension} ${totalDimension}`,
-        ...constructedGrid.map(row => row.join(''))
-    ];
+  const outputSegments = [`100 100`];
+  for (let r = 0; r < 100; r++) {
+    outputSegments.push(characterMatrix[r].join(''));
+  }
+  const finalResult = outputSegments.join('\n');
 
-    console.log(resultSegments.join('\n'));
+  console.log(finalResult);
 }
   
-function performTesting(){
-  var dataInput = document.getElementById("dataInputElement").value;
-  processMapData(dataInput);
+// "実行する"ボタンを押した時に実行される関数 (デバッグ用)
+function testExecution() {
+  const inputContent = document.getElementById("input").value;
+  processInput(inputContent);
 }
-processMapData(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

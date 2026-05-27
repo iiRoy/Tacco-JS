@@ -1,59 +1,29 @@
-const grabInputContent = (sourceText) => {
-    const contentSegments = sourceText.split('\n');
-    const countValue = parseInt(contentSegments[0], 10);
-    const numericalRepresentations = contentSegments[1].split(' ');
-    return { count: countValue, representations: numericalRepresentations };
-};
-
-const determineMiddleElement = (listing) => {
-    const temporaryList = [];
-    for (const item of listing) {
-        let inserted = false;
-        for (let idx = 0; idx < temporaryList.length; ++idx) {
-            if (item.localeCompare(temporaryList[idx]) < 0) {
-                temporaryList.splice(idx, 0, item);
-                inserted = true;
-                break;
-            }
-        }
-        if (!inserted) {
-            temporaryList.push(item);
-        }
+const determineCentralValue = (sourceArray) => {
+  const workingArray = [...sourceArray];
+  for (let idxA = 0; idxA < workingArray.length - 1; idxA++) {
+    for (let idxB = 0; idxB < workingArray.length - 1 - idxA; idxB++) {
+      if (workingArray[idxB].localeCompare(workingArray[idxB + 1]) > 0) {
+        [workingArray[idxB], workingArray[idxB + 1]] = [workingArray[idxB + 1], workingArray[idxB]];
+      }
     }
-
-    const centralPosition = (temporaryList.length / 2) | 0;
-    return temporaryList[centralPosition];
+  }
+  return workingArray[Math.floor(workingArray.length / 2)];
 };
 
-const generateSubsequencesAndProcess = (totalItems, maxIndex) => {
-    const resultsAccumulator = [];
+function executeProcessing(rawData) {
+  const [firstLineContent, secondLineContent] = rawData.split('\n');
+  const elementCount = Number(firstLineContent);
+  const sourceElements = secondLineContent.split(' ');
 
-    const recursiveSequenceGenerator = (startIndex, currentEndIndex) => {
-        if (startIndex >= maxIndex) {
-            return;
-        }
-        if (currentEndIndex > maxIndex) {
-            recursiveSequenceGenerator(startIndex + 1, startIndex + 2);
-            return;
-        }
+  const allSubsequences = Array.from({ length: elementCount }, (_, startIdx) =>
+    Array.from({ length: elementCount - startIdx }, (_, lengthOffset) =>
+      sourceElements.slice(startIdx, startIdx + lengthOffset + 1)
+    )
+  ).flat();
 
-        const currentSegment = [];
-        for (let k = startIndex; k < currentEndIndex; ++k) {
-            currentSegment.push(totalItems[k]);
-        }
-        resultsAccumulator.push(determineMiddleElement(currentSegment));
-        recursiveSequenceGenerator(startIndex, currentEndIndex + 1);
-    };
+  const subsequenceMedians = allSubsequences.map(determineCentralValue);
 
-    recursiveSequenceGenerator(0, 1);
+  console.log(determineCentralValue(subsequenceMedians));
+}
 
-    return determineMiddleElement(resultsAccumulator);
-};
-
-const orchestrateExecution = (inputSource) => {
-    const parsedData = grabInputContent(inputSource);
-    const finalResult = generateSubsequencesAndProcess(parsedData.representations, parsedData.count);
-    console.log(finalResult);
-};
-
-orchestrateExecution(require("fs").readFileSync("/dev/stdin", "utf8"));
+executeProcessing(require("fs").readFileSync("/dev/stdin", "utf8"));

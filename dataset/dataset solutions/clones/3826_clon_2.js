@@ -1,50 +1,49 @@
 "use strict";
 
-const processInput = (inputTxt) => {
-    // Standard input data is processed here
-    inputTxt = inputTxt
-        .trim()
-        .split("\n");
+// This function serves as the primary entry point for processing input data.
+const processInput = (inputData) => {
+    // First, clean the input string by removing leading/trailing whitespace,
+    // then split it into an array of strings based on newline characters.
+    inputData = inputData.trim().split("\n");
 
-    // Extract the upper boundary from the first line
-    const upperLimit = parseInt(inputTxt[0].split(" ")[0]);
+    // Extract the first number from the first line of the processed input.
+    // This number defines the upper limit for subsequent calculations.
+    const limitVal = parseInt(inputData[0].split(" ")[0]);
 
-    // Initialize a variable to store the ultimate output
-    let ultimateResult = 1;
+    // Initialize a variable to store the final computed result.
+    // It starts with a default value of 1.
+    let resultValue = 1;
 
-    // Begin iterating from the lower bound up to the determined upper limit
-    for (let primaryIndex = 2; primaryIndex <= upperLimit; primaryIndex++) {
-        // Start a nested iteration, checking values from 1 up to the current primary index
-        for (let secondaryIndex = 1; secondaryIndex <= primaryIndex; secondaryIndex++) {
-            let currentNumber = secondaryIndex; // Store the number being processed
-            let operationTally = 0;             // Counter for mathematical operations
+    // Begin the outer iteration, starting from 2 and continuing up to 'limitVal' (inclusive).
+    for (let outerIndex = 2; outerIndex <= limitVal; outerIndex++) {
+        // Start the inner iteration, from 1 up to the current value of 'outerIndex' (inclusive).
+        for (let innerIndex = 1; innerIndex <= outerIndex; innerIndex++) {
+            // A temporary variable to hold the value being manipulated in the inner loop.
+            let currentVal = innerIndex;
+            // A counter to track how many times the squaring operation is performed.
+            let iterationCount = 0;
 
-            /*
-             * Development-time logging statements were present here.
-             * They have been removed to streamline the final code.
-             */
-
-            // Repeatedly square the 'currentNumber' while conditions are met
-            while (currentNumber < primaryIndex && secondaryIndex !== 1) {
-                currentNumber = Math.pow(currentNumber, 2); // Apply squaring
-                operationTally++;                           // Increment the operation counter
+            // This loop repeatedly squares 'currentVal' as long as two conditions are met:
+            // 1. 'currentVal' is strictly less than 'outerIndex'.
+            // 2. 'innerIndex' is not equal to 1 (to prevent an infinite loop when starting with 1).
+            while (currentVal < outerIndex && innerIndex !== 1) {
+                currentVal = Math.pow(currentVal, 2); // Square the current temporary value.
+                iterationCount++; // Increment the counter for each squaring operation.
             }
 
-            // Further debug comments were removed for clarity.
-
-            // Evaluate if the processed number matches the primary index and operations occurred
-            if (currentNumber === primaryIndex && operationTally !== 0) {
-                ultimateResult = primaryIndex; // Update the final outcome
+            // After the while loop, check if 'currentVal' has become equal to 'outerIndex'
+            // AND if at least one squaring operation was performed (i.e., 'iterationCount' is not zero).
+            if (currentVal === outerIndex && iterationCount !== 0) {
+                // If both conditions are true, update 'resultValue' with the current 'outerIndex'.
+                resultValue = outerIndex;
             }
         }
     }
 
-    // Print the calculated final value to the console
-    console.log(ultimateResult);
+    // Output the final determined 'resultValue' to the standard console.
+    console.log(resultValue);
 };
 
-// Invoke the main processing function with data read from standard input
-processInput(
-    require('fs')
-        .readFileSync('/dev/stdin', 'utf8')
-);
+// Read the entire content of standard input as a UTF-8 string,
+// then pass this string to the 'processInput' function for execution.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

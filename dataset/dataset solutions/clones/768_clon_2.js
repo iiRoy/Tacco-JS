@@ -1,29 +1,38 @@
-const   rawData   =  require('node:fs').readFileSync('/dev/stdin', 'utf8') ;
+// This script processes input to determine the highest possible sum of two distinct item costs
+// that remains within a specified financial constraint.
 
-const dataRows = rawData .  trim( ) . split ( '\n' ) ;
+// Acquire the raw textual input from the standard input stream.
+const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-const   [ countItems , budgetLimit ]  =  dataRows[0] . split ( ' ' ) . map ( Number ) ;
+// Process the raw input: remove any leading/trailing whitespace and then divide it into an array of lines.
+const dataRows = rawData.trim().split('\n');
 
-const   itemCosts   =  dataRows[1] . split ( ' ' ) . map ( Number ) ;
+// Extract and parse the first line to obtain the total count of items and the maximum allowable budget.
+const [itemCount, budgetLimit] = dataRows[0].split(' ').map(Number);
 
-// Variable to keep track of the highest valid sum found
-let bestSumFound = 0;
+// Extract and parse the second line to get an array of individual item costs.
+const itemCosts = dataRows[1].split(' ').map(Number);
 
-// Loop through each possible first item
-for ( let idxA = 0 ; idxA < countItems ; idxA++ )
-{
-    // Loop through each possible second item
-    for ( let idxB = 0 ; idxB < countItems ; idxB++ )
-    {
-        // Ensure items are distinct, their total cost is within the budget,
-        // and this combination is better than previous findings.
-        if ( (idxA !== idxB) && (budgetLimit >= itemCosts[idxA] + itemCosts[idxB]) && (bestSumFound < itemCosts[idxA] + itemCosts[idxB]) )
-        {
-            // Update the best sum if a new maximum is found
-            bestSumFound = itemCosts[idxA] + itemCosts[idxB] ;
-        }
+// Initialize a variable to keep track of the largest valid sum of two item costs found so far.
+let bestCombinationSum = 0; // Using 'let' for block-scoped variable declaration.
+
+// Begin iterating through each item to select the first component of a pair.
+for (let firstIndex = 0; firstIndex < itemCount; firstIndex++) {
+  // Nested loop to select the second component of the pair, ensuring it's a different item.
+  for (let secondIndex = 0; secondIndex < itemCount; secondIndex++) {
+    // Check three conditions:
+    // 1. The two selected items must not be the same (distinct indices).
+    // 2. The sum of their costs must not exceed the predefined budget limit.
+    // 3. The current sum of costs must be greater than any previously recorded 'bestCombinationSum'.
+    if (firstIndex !== secondIndex && budgetLimit >= itemCosts[firstIndex] + itemCosts[secondIndex] && bestCombinationSum < itemCosts[firstIndex] + itemCosts[secondIndex]) {
+      // If all conditions are met, update 'bestCombinationSum' with this new, higher valid sum.
+      bestCombinationSum = itemCosts[firstIndex] + itemCosts[secondIndex];
     }
+  }
 }
 
-// Display the result: either the best sum or "NONE"
-( bestSumFound > 0 ) ? console . log ( bestSumFound ) : console . log ( "NONE" ) ;
+// Output the final result: if a valid combination sum was found (i.e., it's not 0), print that sum.
+// Otherwise, if no valid combination was found, print "NONE".
+bestCombinationSum
+  ? console.log(bestCombinationSum)
+  : console.log("NONE");

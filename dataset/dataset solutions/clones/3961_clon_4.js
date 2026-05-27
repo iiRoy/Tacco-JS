@@ -1,21 +1,18 @@
-(function() {
-    const sourceContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+function executeLogic(sourceText) {
+  const trimmedText = sourceText.trim();
 
-    const cleanInput = String(sourceContent).trim();
-    
-    const numericalMatches = cleanInput.match(/-?\d+/g);
-    
-    const parsedValues = numericalMatches.map(strValue => parseInt(strValue, 10));
+  const numericValues = trimmedText.split(" ").reduce((acc, current) => {
+    acc.push(Number(current));
+    return acc;
+  }, []);
 
-    const [valueOne, valueTwo, valueThree] = parsedValues;
+  const conditionMet = numericValues[0] + numericValues[1] >= numericValues[2];
+  const responseMap = {
+    true: "Yes",
+    false: "No"
+  };
 
-    const evaluationOutcome = valueOne >= (valueThree - valueTwo);
+  console.log(responseMap[conditionMet]);
+}
 
-    const messageMap = {
-        true: "Yes",
-        false: "No"
-    };
-
-    console.log(messageMap[evaluationOutcome]);
-
-})();
+executeLogic(require('fs').readFileSync('/dev/stdin', 'utf8'));

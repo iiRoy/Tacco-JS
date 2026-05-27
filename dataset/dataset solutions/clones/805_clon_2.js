@@ -1,173 +1,184 @@
-function launchProjectile(  verticalDirection,   horizontalDirection  ){
-  // Initialize distance counter for projectile travel
-  var stepCounter  =  0;
+function fireProjectile(rowDelta, colDelta) {
+  // Initialize a counter for steps taken by the projectile.
+  let stepCount = 0;
 
+  // The projectile continues indefinitely until it hits a boundary or target.
+  while (true) {
+    // Increment the step counter for each movement.
+    stepCount++;
 
-  while (true)  {
-    stepCounter++;
-    // Check if the projectile hits a wall
-    if (  battlefieldLayout[  mainTankPos[0] + (verticalDirection * stepCounter)  ][  mainTankPos[1] + (horizontalDirection * stepCounter)  ]  ===  "#"  )  {
+    // Calculate the next potential position of the projectile.
+    const targetRow = playerVehicle[0] + (rowDelta * stepCount);
+    const targetCol = playerVehicle[1] + (colDelta * stepCount);
+
+    // Check what the projectile hits in the game grid.
+    if (gameGrid[targetRow][targetCol] === "#") {
+      // If it hits a wall ('#'), the projectile stops.
+      break;
+    } else if (gameGrid[targetRow][targetCol] === "*") {
+      // If it hits a target ('*'), the target is destroyed (replaced with '.'), and the projectile stops.
+      gameGrid[targetRow][targetCol] = ".";
       break;
     }
-    // Check if the projectile hits an enemy target
-    else if (  battlefieldLayout[  mainTankPos[0] + (verticalDirection * stepCounter)  ][  mainTankPos[1] + (horizontalDirection * stepCounter)  ]  ===  "*"  )  {
-      // Destroy the target and clear the spot
-      battlefieldLayout[  mainTankPos[0] + (verticalDirection * stepCounter)  ][  mainTankPos[1] + (horizontalDirection * stepCounter)  ]  =  ".";
-      break;
-    }
+    // If it hits an empty space ('.') or another tank, it continues.
   }
 }
 
-// Access the Node.js file system module for input operations
-var fileSystemModule = require('fs');
-// Define the path for reading standard input
-var standardInputPath = '/dev/stdin';
-// Specify the encoding format for the input data
-var encodingFormat = 'utf8';
+// Read the entire input from standard input as a string.
+const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-// Read the raw input data from stdin
-var rawInputData = fileSystemModule.readFileSync(  standardInputPath,   encodingFormat  );
+// Pre-process the input string: replace specific characters with their normalized forms.
+// This ensures consistent representation for tank directions.
+const processedInput = rawData
+  .replace(/\^/g, "U") // Up arrow becomes 'U'
+  .replace(/v/g, "D") // Down arrow becomes 'D'
+  .replace(/\</g, "L") // Left arrow becomes 'L'
+  .replace(/\>/g, "R"); // Right arrow becomes 'R'
 
-// Pre-process the input by replacing direction symbols with standardized characters
-rawInputData = rawInputData
-  .replace(/\^/g, "U") // Up arrow to 'U'
-  .replace(/v/g, "D") // Down arrow to 'D'
-  .replace(/\</g, "L") // Left arrow to 'L'
-  .replace(/\>/g, "R"); // Right arrow to 'R'
+// Split the processed input into an array of lines.
+let lineSegments = processedInput.trim().split("\n");
 
-// Trim whitespace and split the input into individual lines
-var processedLines = rawInputData.trim().split("\n");
+// The first line indicates the number of test cases. Convert it to a number.
+const testCaseCount = lineSegments.shift() - 0;
 
-// Extract the number of test scenarios from the first line
-var numScenarios = processedLines.shift() - 0; // Convert to number
-
-// Iterate through each test scenario
-for (  var scenarioIndex = 0;   scenarioIndex < numScenarios;   scenarioIndex++  )  {
-  // Add an empty line between outputs of different scenarios, if not the first
-  if (  scenarioIndex !== 0  )  {
+// Iterate through each test case.
+for (let caseIndex = 0; caseIndex < testCaseCount; caseIndex++) {
+  // If it's not the first test case, print an empty line for separation.
+  if (caseIndex !== 0) {
     console.log("");
   }
 
-  // Get map height and width from the next line, converting to numbers
-  var gridDimensions = processedLines.shift().split(" ").map(Number);
-  // Initialize the 2D array representing the game battlefield
-  var battlefieldLayout = [];
+  // The next line contains the height and width of the current game map.
+  // Split by space and convert to numbers.
+  const dimensions = lineSegments.shift().split(" ").map(Number);
 
-  // Add a top border of walls to the battlefield
-  battlefieldLayout.push(  "####################".split("")  );
+  // Initialize the 2D array representing the game grid.
+  // Add a top border row of '#' characters.
+  const gameGrid = [];
+  gameGrid.push("####################".split(""));
 
-  // Initialize player vehicle's position (row, column)
-  var mainTankPos = [  0,   0  ];
+  // Initialize the player vehicle's position [row, column].
+  let playerVehicle = [0, 0];
 
-  // Populate the battlefield grid based on input lines
-  for (  var gridRowIndex = 0;   gridRowIndex < gridDimensions[0];   gridRowIndex++  )  {
-    // Get the current row data and split into characters
-    var currentRowData = processedLines.shift().split("");
-    // Variable to store the initial column of the player vehicle
-    var vehicleColumn = -1;
+  // Process each row of the game map.
+  for (let rowIndex = 0; rowIndex < dimensions[0]; rowIndex++) {
+    // Get the current row string and split it into an array of characters.
+    const currentRow = lineSegments.shift().split("");
 
-    // Iterate through the characters in the current row to find the player vehicle
-    currentRowData.forEach(  function (  currentChar,   positionInRow  )  {
-      if (  currentChar === "U"  ||  currentChar === "D"  ||  currentChar === "L"  ||  currentChar === "R"  )  {
-        vehicleColumn = positionInRow;
+    // Find the initial position of the player vehicle within this row.
+    let vehicleColPosition = -1;
+    currentRow.forEach(function(charValue, charIndex) {
+      if (charValue === "U" || charValue === "D" || charValue === "L" || charValue === "R") {
+        vehicleColPosition = charIndex;
       }
     });
 
-    // If the player vehicle was found in this row, update its position
-    if (  vehicleColumn !== -1  )  {
-      mainTankPos = [  gridRowIndex + 1,   vehicleColumn + 1  ]; // Adjust for added borders
+    // If the vehicle was found in this row, update its global position.
+    // Add 1 to row and column because of the added border rows/columns.
+    if (vehicleColPosition !== -1) {
+      playerVehicle = [rowIndex + 1, vehicleColPosition + 1];
     }
 
-    // Add left and right wall borders to the current row
-    currentRowData.unshift("#");
-    currentRowData.push("#");
-    // Add the bordered row to the battlefield layout
-    battlefieldLayout.push(  currentRowData  );
+    // Add left and right border '#' characters to the current row.
+    currentRow.unshift("#");
+    currentRow.push("#");
+
+    // Add the bordered row to the game grid.
+    gameGrid.push(currentRow);
   }
-  // Add a bottom border of walls to the battlefield
-  battlefieldLayout.push(  "####################".split("")  );
 
-  // Consume the empty line after the map definition (if any)
-  processedLines.shift();
+  // Add a bottom border row of '#' characters.
+  gameGrid.push("####################".split(""));
 
-  // Get the sequence of player commands
-  var commandSequence = processedLines.shift().split("");
+  // Skip the empty line separating the map from the commands.
+  lineSegments.shift();
 
-  // Process each command in the sequence
-  commandSequence.forEach(  function (  actionChar  )  {
-    // Move Up
-    if (  actionChar === "U"  &&  battlefieldLayout[  mainTankPos[0] - 1  ][  mainTankPos[1]  ]  ===  "."  )  {
-      battlefieldLayout[  mainTankPos[0] - 1  ][  mainTankPos[1]  ]  =  "U"; // New position
-      battlefieldLayout[  mainTankPos[0]  ][  mainTankPos[1]  ]  =  ".";     // Clear old position
-      mainTankPos[0]--;                                                      // Update tank coordinates
-    }
-    // Rotate Up (if cannot move)
-    else if (  actionChar === "U"  &&  battlefieldLayout[  mainTankPos[0] - 1  ][  mainTankPos[1]  ]  !==  "."  )  {
-      battlefieldLayout[  mainTankPos[0]  ][  mainTankPos[1]  ]  =  "U";
-    }
-    // Move Down
-    else if (  actionChar === "D"  &&  battlefieldLayout[  mainTankPos[0] + 1  ][  mainTankPos[1]  ]  ===  "."  )  {
-      battlefieldLayout[  mainTankPos[0] + 1  ][  mainTankPos[1]  ]  =  "D";
-      battlefieldLayout[  mainTankPos[0]  ][  mainTankPos[1]  ]  =  ".";
-      mainTankPos[0]++;
-    }
-    // Rotate Down (if cannot move)
-    else if (  actionChar === "D"  &&  battlefieldLayout[  mainTankPos[0] + 1  ][  mainTankPos[1]  ]  !==  "."  )  {
-      battlefieldLayout[  mainTankPos[0]  ][  mainTankPos[1]  ]  =  "D";
-    }
-    // Move Left
-    else if (  actionChar === "L"  &&  battlefieldLayout[  mainTankPos[0]  ][  mainTankPos[1] - 1  ]  ===  "."  )  {
-      battlefieldLayout[  mainTankPos[0]  ][  mainTankPos[1] - 1  ]  =  "L";
-      battlefieldLayout[  mainTankPos[0]  ][  mainTankPos[1]  ]  =  ".";
-      mainTankPos[1]--;
-    }
-    // Rotate Left (if cannot move)
-    else if (  actionChar === "L"  &&  battlefieldLayout[  mainTankPos[0]  ][  mainTankPos[1] - 1  ]  !==  "."  )  {
-      battlefieldLayout[  mainTankPos[0]  ][  mainTankPos[1]  ]  =  "L";
-    }
-    // Move Right
-    else if (  actionChar === "R"  &&  battlefieldLayout[  mainTankPos[0]  ][  mainTankPos[1] + 1  ]  ===  "."  )  {
-      battlefieldLayout[  mainTankPos[0]  ][  mainTankPos[1] + 1  ]  =  "R";
-      battlefieldLayout[  mainTankPos[0]  ][  mainTankPos[1]  ]  =  ".";
-      mainTankPos[1]++;
-    }
-    // Rotate Right (if cannot move)
-    else if (  actionChar === "R"  &&  battlefieldLayout[  mainTankPos[0]  ][  mainTankPos[1] + 1  ]  !==  "."  )  {
-      battlefieldLayout[  mainTankPos[0]  ][  mainTankPos[1]  ]  =  "R";
-    }
-    // Fire Shot
-    else if (  actionChar === "S"  )  {
-      // Determine the current orientation of the player vehicle
-      var tankDirection = battlefieldLayout[  mainTankPos[0]  ][  mainTankPos[1]  ];
-      // Call the projectile function based on orientation
-      if (  tankDirection === "U"  )  {
-        launchProjectile(  -1,   0  ); // Fire Up
+  // Get the sequence of commands for the current test case.
+  const commandSequence = lineSegments.shift().split("");
+
+  // Process each command in the sequence.
+  commandSequence.forEach(function(command) {
+    // Handle 'U' (Up) command.
+    if (command === "U") {
+      // If the space above is empty ('.'), move the tank.
+      if (gameGrid[playerVehicle[0] - 1][playerVehicle[1]] === ".") {
+        gameGrid[playerVehicle[0] - 1][playerVehicle[1]] = "U"; // New position becomes 'U'
+        gameGrid[playerVehicle[0]][playerVehicle[1]] = "."; // Old position becomes empty
+        playerVehicle[0]--; // Update tank's row
+      } else {
+        // If the space above is not empty, just change the tank's direction.
+        gameGrid[playerVehicle[0]][playerVehicle[1]] = "U";
       }
-      else if (  tankDirection === "D"  )  {
-        launchProjectile(  1,   0  );  // Fire Down
+    }
+    // Handle 'D' (Down) command.
+    else if (command === "D") {
+      // If the space below is empty ('.'), move the tank.
+      if (gameGrid[playerVehicle[0] + 1][playerVehicle[1]] === ".") {
+        gameGrid[playerVehicle[0] + 1][playerVehicle[1]] = "D"; // New position becomes 'D'
+        gameGrid[playerVehicle[0]][playerVehicle[1]] = "."; // Old position becomes empty
+        playerVehicle[0]++; // Update tank's row
+      } else {
+        // If the space below is not empty, just change the tank's direction.
+        gameGrid[playerVehicle[0]][playerVehicle[1]] = "D";
       }
-      else if (  tankDirection === "L"  )  {
-        launchProjectile(  0,   -1  ); // Fire Left
+    }
+    // Handle 'L' (Left) command.
+    else if (command === "L") {
+      // If the space to the left is empty ('.'), move the tank.
+      if (gameGrid[playerVehicle[0]][playerVehicle[1] - 1] === ".") {
+        gameGrid[playerVehicle[0]][playerVehicle[1] - 1] = "L"; // New position becomes 'L'
+        gameGrid[playerVehicle[0]][playerVehicle[1]] = "."; // Old position becomes empty
+        playerVehicle[1]--; // Update tank's column
+      } else {
+        // If the space to the left is not empty, just change the tank's direction.
+        gameGrid[playerVehicle[0]][playerVehicle[1]] = "L";
       }
-      else if (  tankDirection === "R"  )  {
-        launchProjectile(  0,   1  );  // Fire Right
+    }
+    // Handle 'R' (Right) command.
+    else if (command === "R") {
+      // If the space to the right is empty ('.'), move the tank.
+      if (gameGrid[playerVehicle[0]][playerVehicle[1] + 1] === ".") {
+        gameGrid[playerVehicle[0]][playerVehicle[1] + 1] = "R"; // New position becomes 'R'
+        gameGrid[playerVehicle[0]][playerVehicle[1]] = "."; // Old position becomes empty
+        playerVehicle[1]++; // Update tank's column
+      } else {
+        // If the space to the right is not empty, just change the tank's direction.
+        gameGrid[playerVehicle[0]][playerVehicle[1]] = "R";
+      }
+    }
+    // Handle 'S' (Shoot) command.
+    else if (command === "S") {
+      // Determine the tank's current direction from its character on the grid.
+      const currentDirection = gameGrid[playerVehicle[0]][playerVehicle[1]];
+
+      // Call the projectile firing function based on the tank's direction.
+      if (currentDirection === "U") {
+        fireProjectile(-1, 0); // Shoot Up (row decreases, col stays same)
+      } else if (currentDirection === "D") {
+        fireProjectile(1, 0); // Shoot Down (row increases, col stays same)
+      } else if (currentDirection === "L") {
+        fireProjectile(0, -1); // Shoot Left (row stays same, col decreases)
+      } else if (currentDirection === "R") {
+        fireProjectile(0, 1); // Shoot Right (row stays same, col increases)
       }
     }
   });
 
-  // Remove the temporary top and bottom border rows before output
-  battlefieldLayout.shift();
-  battlefieldLayout.pop();
+  // Remove the top and bottom border rows before printing the final map.
+  gameGrid.shift();
+  gameGrid.pop();
 
-  // Format the final battlefield state for output
-  console.log(
-    battlefieldLayout.join("\n")          // Join rows with newlines
-      .replace(/^#/mg, "")                // Remove leading '#' (left border)
-      .replace(/#$/mg, "")                // Remove trailing '#' (right border)
-      .replace(/\,/g, "")                 // Remove commas from array joining
-      .replace(/U/g, "^")                 // Convert 'U' back to '^'
-      .replace(/D/g, "v")                 // Convert 'D' back to 'v'
-      .replace(/L/g, "<")                 // Convert 'L' back to '<'
-      .replace(/R/g, ">")                 // Convert 'R' back to '>'
-  );
+  // Join the grid rows into a single string, then perform final replacements for output.
+  const finalOutput = gameGrid
+    .join("\n") // Join rows with newline characters
+    .replace(/^#/mg, "") // Remove leading '#' (left border) from each line
+    .replace(/#$/mg, "") // Remove trailing '#' (right border) from each line
+    .replace(/\,/g, "") // Remove commas introduced by array.join()
+    .replace(/U/g, "^") // Convert 'U' back to '^' for output
+    .replace(/D/g, "v") // Convert 'D' back to 'v' for output
+    .replace(/L/g, "<") // Convert 'L' back to '<' for output
+    .replace(/R/g, ">"); // Convert 'R' back to '>' for output
+
+  // Print the final state of the game map for the current test case.
+  console.log(finalOutput);
 }

@@ -1,112 +1,43 @@
-var _internalTools = _internalTools || {};
+var _jsCompilerUtils=_jsCompilerUtils||{};_jsCompilerUtils.scope={};_jsCompilerUtils.ASSUME_ES5=!1;_jsCompilerUtils.ASSUME_NO_NATIVE_MAP=!1;_jsCompilerUtils.ASSUME_NO_NATIVE_SET=!1;_jsCompilerUtils.SIMPLE_FROUND_POLYFILL=!1;_jsCompilerUtils.defineProperty=_jsCompilerUtils.ASSUME_ES5||"function"==typeof Object.defineProperties?Object.defineProperty:function(targetObject,propertyName,descriptor){targetObject!=Array.prototype&&targetObject!=Object.prototype&&(targetObject[propertyName]=descriptor.value)};_jsCompilerUtils.getGlobal=function(candidateGlobal){return"undefined"!=typeof window&&window===candidateGlobal?candidateGlobal:"undefined"!=typeof global&&null!=global?global:candidateGlobal};_jsCompilerUtils.global=_jsCompilerUtils.getGlobal(this);
+_jsCompilerUtils.polyfill=function(featurePath,implementationFn,esVersion,browserVersion){if(implementationFn){var currentGlobal=_jsCompilerUtils.global;featurePath=featurePath.split(".");for(var pathSegmentIndex=0;pathSegmentIndex<featurePath.length-1;pathSegmentIndex++){var segmentName=featurePath[pathSegmentIndex];segmentName in currentGlobal||(currentGlobal[segmentName]={});currentGlobal=currentGlobal[segmentName]}featurePath=featurePath[featurePath.length-1];var existingFeature=currentGlobal[featurePath];implementationFn=implementationFn(existingFeature);implementationFn!=existingFeature&&null!=implementationFn&&_jsCompilerUtils.defineProperty(currentGlobal,featurePath,{configurable:!0,writable:!0,value:implementationFn})}};
+_jsCompilerUtils.polyfill("Array.from",function(nativeFrom){return nativeFrom?nativeFrom:function(arrayLikeObject,mapperFunction,thisContext){mapperFunction=null!=mapperFunction?mapperFunction:function(value){return value};var resultArray=[],iteratorOrValue="undefined"!=typeof Symbol&&Symbol.iterator&&arrayLikeObject[Symbol.iterator];if("function"==typeof iteratorOrValue){arrayLikeObject=iteratorOrValue.call(arrayLikeObject);for(var elementIndex=0;!(iteratorOrValue=arrayLikeObject.next()).done;)resultArray.push(mapperFunction.call(thisContext,iteratorOrValue.value,elementIndex++))}else for(iteratorOrValue=arrayLikeObject.length,elementIndex=0;elementIndex<iteratorOrValue;elementIndex++)resultArray.push(mapperFunction.call(thisContext,arrayLikeObject[elementIndex],elementIndex));return resultArray}},"es6","es3");
+function analyzeNumbers(inputStringData){
+    const inputLines = inputStringData.split("\n");
+    const countOfNumbers = parseInt(inputLines[0], 10);
 
-// Helper to safely define properties on objects.
-// Simplified from the original's specific `Array.prototype` / `Object.prototype` checks.
-_internalTools._assignProperty = function(targetObjectRef, propertyIdentifier, propertyConfig) {
-  if (typeof Object.defineProperty === "function") {
-    Object.defineProperty(targetObjectRef, propertyIdentifier, propertyConfig);
-  } else {
-    // Basic fallback for environments without Object.defineProperty.
-    targetObjectRef[propertyIdentifier] = propertyConfig.value;
-  }
-};
+    const rawNumbersLine = inputLines[1];
+    const numberStringParts = rawNumbersLine.split(" ");
 
-// Utility to determine the global execution context (window for browsers, global for Node.js).
-_internalTools._obtainGlobalObject = function(currentExecutionScope) {
-  if (typeof window !== "undefined" && window === currentExecutionScope) {
-    return currentExecutionScope;
-  }
-  if (typeof global !== "undefined" && global !== null) {
-    return global;
-  }
-  return currentExecutionScope; // Default to current scope if others not found.
-};
+    const parseNumberArray = (strParts, numLimit) => {
+        const parsedValues = [];
+        for (let i = 0; i < numLimit; i++) {
+            parsedValues.push(parseInt(strParts[i], 10));
+        }
+        return parsedValues;
+    };
 
-// Store the determined global context within our utility namespace.
-_internalTools._runtimeContext = _internalTools._obtainGlobalObject(this);
+    const originalNumberSequence = parseNumberArray(numberStringParts, countOfNumbers);
 
+    const sortedNumberSequence = _jsCompilerUtils.global.Array.from(originalNumberSequence);
+    sortedNumberSequence.sort((val1, val2) => val1 - val2);
 
-// Main function encapsulating the problem's logic.
-function processNumericalSequence(rawInputText) {
-  // Guard clause: Ensure input is a non-empty string.
-  if (!rawInputText || typeof rawInputText !== 'string' || rawInputText.trim().length === 0) {
-    console.log("NO_INPUT_PROVIDED");
-    return;
-  }
+    console.log(originalNumberSequence, sortedNumberSequence);
 
-  // Split the input into individual lines and filter out any blank lines.
-  const inputDataLines = rawInputText.split("\n").filter(line => line.trim().length > 0);
+    let differenceCount = 0;
+    const allowedMismatches = 2;
 
-  // Guard clause: Check if we have enough lines (at least two: length and sequence).
-  if (inputDataLines.length < 2) {
-    console.log("INSUFFICIENT_INPUT_LINES");
-    return;
-  }
-
-  // Parse the sequence length from the first line.
-  const sequenceLengthString = inputDataLines[0].trim();
-  const actualSequenceLength = parseInt(sequenceLengthString, 10);
-
-  // Guard clause: Validate the parsed sequence length.
-  if (isNaN(actualSequenceLength) || actualSequenceLength <= 0) {
-    console.log("INVALID_SEQUENCE_LENGTH");
-    return;
-  }
-
-  // Split the second line into string representations of numbers.
-  const rawNumbersLine = inputDataLines[1].trim();
-  const stringNumberTokens = rawNumbersLine.split(/\s+/); // Split by one or more whitespace characters.
-
-  // Guard clause: Check if the number of provided elements matches the declared length.
-  if (stringNumberTokens.length !== actualSequenceLength) {
-    console.log("ELEMENT_COUNT_MISMATCH");
-    return;
-  }
-
-  const originalValueSequence = [];
-  // Populate the array with parsed integer values.
-  for (let elementIndex = 0; elementIndex < actualSequenceLength; ++elementIndex) {
-    const parsedNumericValue = parseInt(stringNumberTokens[elementIndex], 10);
-    // Guard clause: Ensure all elements are valid numbers.
-    if (isNaN(parsedNumericValue)) {
-      console.log("NON_NUMERIC_ELEMENT_DETECTED");
-      return;
+    for (let i = 0; i < countOfNumbers; ++i) {
+        if (originalNumberSequence[i] !== sortedNumberSequence[i]) {
+            differenceCount++;
+        }
     }
-    originalValueSequence.push(parsedNumericValue);
-  }
 
-  // Create a sorted duplicate of the original sequence.
-  // Using spread syntax for shallow copy and a custom comparator for numeric sort.
-  const correctlyOrderedSequence = [...originalValueSequence].sort((valOne, valTwo) => valOne - valTwo);
-
-  let differingElementCount = 0;
-  const maximumAllowedDeviations = 2; // Introduce a constant for the comparison threshold.
-
-  // Compare the original sequence with its sorted version to count differences.
-  for (let currentItemPosition = 0; currentItemPosition < actualSequenceLength; ++currentItemPosition) {
-    if (originalValueSequence[currentItemPosition] !== correctlyOrderedSequence[currentItemPosition]) {
-      differingElementCount++;
+    let finalDecisionMessage;
+    if (differenceCount <= allowedMismatches) {
+        finalDecisionMessage = "YES";
+    } else {
+        finalDecisionMessage = "NO";
     }
-  }
-
-  // Output the result based on the count of differences.
-  if (differingElementCount <= maximumAllowedDeviations) {
-    console.log("YES");
-  } else {
-    console.log("NO");
-  }
+    console.log(finalDecisionMessage);
 }
-
-// --- Input Reading and Execution ---
-const fileSystemUtility = require("fs");
-const standardInputFilePath = "/dev/stdin";
-const defaultEncoding = "utf8";
-
-try {
-  const fileContents = fileSystemUtility.readFileSync(standardInputFilePath, defaultEncoding);
-  processNumericalSequence(fileContents);
-} catch (inputReadError) {
-  console.error("ERROR_ACCESSING_INPUT:", inputReadError.message);
-  // In a real application, you might want to exit or provide a default behavior.
-  // process.exit(1);
-}
+analyzeNumbers(require("fs").readFileSync("/dev/stdin","utf8"));

@@ -1,11 +1,8 @@
-const fileSystemAccess = require('fs');
-const standardInputLocation = '/dev/stdin';
-const fetchedData = fileSystemAccess.readFileSync(standardInputLocation, 'utf8');
-
-function characterSequenceInverter(initialSequence) {
-  return [...initialSequence].reduceRight((accumulatedResult, singleChar) => {
-    return accumulatedResult + singleChar;
-  }, '');
+function flipText(originalString) {
+  return Array.from(originalString).reduceRight((accumulator, character) => accumulator + character, '');
 }
 
-global.process.stdout.write(characterSequenceInverter(fetchedData) + '\n');
+const fileSystemModule = require('fs');
+const sourceContent = fileSystemModule.readFileSync('/dev/stdin', 'utf8');
+
+console.log(flipText(sourceContent));

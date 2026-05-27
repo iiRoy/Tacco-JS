@@ -1,53 +1,52 @@
-function ProcessHeapData(rawData) {
-  // Split the entire input string into individual lines for further processing.
-  let processedLines = rawData .split("\n");
+function ProcessInput(rawData) {
+    // Split the entire input string by newline characters to get individual lines.
+    rawData = rawData.split('\n');
 
-  // Parse the first line to determine the total count of elements.
-  // Using hexadecimal for radix to demonstrate data type change.
-  const totalElements = parseInt (processedLines[0], 0xA);
+    // Parse the first line to determine the total number of elements.
+    let elementCount = parseInt(rawData[0], 10);
 
-  // The second line contains space-separated values; split it accordingly.
-  processedLines[1] = processedLines[1] .split(" ");
+    // Split the second line by spaces to obtain the individual numeric strings.
+    rawData[1] = rawData[1].split(' ');
 
-  // Declare and initialize an array to hold the heap elements.
-  // The array size is totalElements + 1 to accommodate 1-based indexing.
-  let heapArray = new Array(totalElements + 1);
+    // Initialize an array to store the heap elements.
+    // We use `elementCount + 1` to allow for 1-based indexing, common in heap representations.
+    const heapElements = new Array(elementCount + 1);
 
-  // Loop through the input values and populate the heap array.
-  // Each value is parsed as an integer using a hexadecimal radix.
-  for (let idx = 0 ; idx < totalElements ; idx++) {
-    heapArray[idx + 1] = parseInt(processedLines[1][idx], 0xA);
-  }
-
-  // Iterate from the first element (index 1) up to the total number of elements
-  // to display their relationships within the heap structure.
-  for (let currIndex = 1 ; currIndex <= totalElements ; currIndex++) {
-    // Start building the output string for the current node's information.
-    let outputString = "element " + currIndex + ": value = " + heapArray[currIndex] + ", ";
-
-    // Check if the current node has a parent (i.e., it's not the root).
-    if (currIndex > 1) {
-      // Append parent's value to the string. Math.trunc is used for integer division.
-      outputString += "parent value = " + heapArray[Math.trunc(currIndex / 2)] + ", ";
+    // Populate the heapElements array from the parsed input numbers.
+    // The input is 0-indexed, but we store it 1-indexed in `heapElements`.
+    for (let idx = 0; idx < elementCount; idx++) {
+        heapElements[idx + 1] = parseInt(rawData[1][idx], 10);
     }
 
-    // Verify if a left child exists for the current node.
-    if (currIndex * 2 <= totalElements) {
-      // Add the left child's value to the output.
-      outputString += "left value = " + heapArray[currIndex * 2] + ", ";
-    }
+    // Iterate through each element of the heap (from index 1 to elementCount)
+    // to print its properties (key, parent, left child, right child).
+    for (let currentIdx = 1; currentIdx <= elementCount; currentIdx++) {
+        // Start constructing the output string for the current node.
+        let outputLine = "node " + currentIdx + ": key = " + heapElements[currentIdx] + ", ";
 
-    // Determine if a right child is present for the current node.
-    if (currIndex * 2 + 1 <= totalElements) {
-      // Include the right child's value in the string.
-      outputString += "right value = " + heapArray[currIndex * 2 + 1] + ", ";
-    }
+        // Check if the current node has a parent (i.e., its index is greater than 1).
+        if (currentIdx > 1) {
+            // Calculate the parent's index (floor(currentIdx / 2)) and append its key.
+            outputLine += "parent key = " + heapElements[Math.floor(currentIdx / 2)] + ", ";
+        }
 
-    // Output the complete information string for the current node.
-    console.info(outputString);
-  }
+        // Check if the current node has a left child (i.e., its index * 2 is within bounds).
+        if (currentIdx * 2 <= elementCount) {
+            // Calculate the left child's index (currentIdx * 2) and append its key.
+            outputLine += "left key = " + heapElements[currentIdx * 2] + ", ";
+        }
+
+        // Check if the current node has a right child (i.e., its index * 2 + 1 is within bounds).
+        if (currentIdx * 2 + 1 <= elementCount) {
+            // Calculate the right child's index (currentIdx * 2 + 1) and append its key.
+            outputLine += "right key = " + heapElements[currentIdx * 2 + 1] + ", ";
+        }
+
+        // Print the complete output line for the current node.
+        console.log(outputLine);
+    }
 }
- 
-// Execute the data processing function.
-// Input is read synchronously from standard input using Node.js file system module.
-ProcessHeapData(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+// Read the entire input from standard input (stdin) as a UTF-8 string,
+// then pass it to the main processing function.
+ProcessInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

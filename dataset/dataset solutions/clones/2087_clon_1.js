@@ -1,138 +1,55 @@
-function myin()
-{
-  // This function reads input from standard input.
-  // It uses Node.js 'fs' module to read the file synchronously.
-  return require("fs").readFileSync("/dev/stdin", "utf8").trim();
+function myin(){return require("fs").readFileSync("/dev/stdin", "utf8").trim();}
 
+
+
+
+
+// 읽기 여기서정리한다 현재다음 단계 계산 중에최종. 🏔️
+   function myconv (i,no ){
+  switch( no ) {  
+       case 0: return i;
+     case 1: return parseInt(i);    
+	 case 2: return i.split(" ");
+  case 3: return i.split("\n");
+/* ---------- 읽기 잘유지한다 현재평가 순서 입력과 함께단순. ---------- */
+       case 4: return i.split(" ").map((a)=>Number(a));
+  case 5: return i.split("\n").map((a)=>Number(a));
+		case 6: return i.split("");
+   case 7: return i.split("").map((a)=>Number(a));
+/* 읽기 잘유지한다 현재가까운 문맥 각 값마다명확. */
+} }
+
+
+
+	function Main(input) {
+	input = myconv(input, 3);
+   const  A=  myconv( input [0], 4 )[ 0];
+   const B = myconv(input[0], 4)[1];
+	    const   M = myconv ( input [0],  4)[2 ];
+	   const list_a = myconv ( input [1],4);
+const  list_b =myconv( input [2 ], 4);
+	   input.shift();
+input.shift();
+    input.shift ( );
+// 읽기 또한정리한다 핵심계산된 정보 출력 전에.
+
+
+	a = Math.min.apply(null, list_a);
+b = Math.min.apply(null, list_b);    
+     let m = a + b;
+     len = input.length;   
+for(let i = 0; i < len; i++){  
+   let x = myconv(input[i], 4)[0] - 1;
+/* 읽기 잘정리한다 핵심데이터 이동 각 값마다. */
+let y = myconv ( input[i], 4)[1 ]  - 1;
+ let c  =  myconv (input [ i],4) [2];
+   let  deals=  list_a [ x] +  list_b [y ] -c;
+if (deals < m)  {
+    m = deals;
+   }   
+     }
+console.log( m );   
 }
+   Main(myin()); 
 
-// This utility function converts input strings based on the specified type.
-// Conversion types:
-//   0: No conversion, returns the string as is.
-//   1: Converts to an integer using parseInt.
-//   2: Splits the string by space characters.
-//   3: Splits the string by newline characters.
-//   4: Splits by space, then converts each part to a number.
-//   5: Splits by newline, then converts each part to a number.
-//   6: Splits the string into individual characters.
-//   7: Splits into characters, then converts each character to a number.
-function myconv(  i,
-                  no
-                )
-{
-  switch(no)
-  {
-    case 0:
-      // Case 0: Return the input as is.
-      return i;
-
-    case 1:
-      // Case 1: Parse the input as an integer.
-      return parseInt(i);
-
-    case 2:
-      // Case 2: Split the input string by spaces.
-      return i.split(" ");
-
-    case 3:
-      // Case 3: Split the input string by newline characters.
-      return i.split("\n");
-
-    case 4:
-      // Case 4: Split by spaces and map each part to a Number.
-      return i.split(" ").map(
-        (a)=>Number(a)
-      );
-
-    case 5:
-      // Case 5: Split by newlines and map each part to a Number.
-      return i.split("\n").map(
-        (a)=>Number(a)
-      );
-
-    case 6:
-      // Case 6: Split the input string into individual characters.
-      return i.split("");
-
-    case 7:
-      // Case 7: Split into characters and map each character to a Number.
-      return i.split("").map(
-        (a)=>Number(a)
-      );
-  }
-}
-
-// The main function where the core logic resides.
-// It processes the input to find the minimum cost.
-function Main(  input  )
-{
-  // First, convert the raw input string into an array of lines.
-  input = myconv(input, 3);
-
-  // Extract initial values for A, B, and M from the first line of input.
-  // These are space-separated numbers.
-  const A = myconv(input[0], 4)[0];
-  const B = myconv(input[0], 4)[1];
-  const M = myconv(input[0], 4)[2];
-
-  // Extract the list of prices for item 'a' from the second line.
-  const list_a = myconv(input[1], 4);
-
-  // Extract the list of prices for item 'b' from the third line.
-  const list_b = myconv(input[2], 4);
-
-  // Remove the first three lines of input as they have been processed.
-  input.shift(); // Remove the line containing A, B, M
-  input.shift(); // Remove the line containing list_a
-  input.shift(); // Remove the line containing list_b
-
-
-  // Calculate the minimum price for item 'a' without any discount.
-  // Using apply with null context for Math.min.
-  a = Math.min.apply(null, list_a);
-
-  // Calculate the minimum price for item 'b' without any discount.
-  b = Math.min.apply(null, list_b);
-
-  // Initialize 'm' with the sum of the minimum prices of 'a' and 'b'
-  // (this represents the base minimum cost without any special deals).
-  let m = a + b;
-
-
-  // Get the number of remaining lines, which represent discount deals.
-  len = input.length;
-
-  // Iterate through each discount deal.
-  for(
-    let i = 0;
-    i < len;
-    i++
-  )
-  {
-    // Parse the current deal line: x (index for list_a), y (index for list_b), c (discount amount).
-    // Note: indices are 1-based in input, so subtract 1 for 0-based array access.
-    let x = myconv(input[i], 4)[0] - 1;
-    let y = myconv(input[i], 4)[1] - 1;
-    let c = myconv(input[i], 4)[2];
-
-    // Calculate the total cost for this specific deal.
-    // It's the price of item_a[x] + price of item_b[y] - discount 'c'.
-    let deals = list_a[x] + list_b[y] - c;
-
-    // If this deal's cost is less than the current minimum 'm', update 'm'.
-    if (
-      deals < m
-    )
-    {
-      m = deals;
-    }
-  }
-
-  // Output the final minimum cost found.
-  console.log(m);
-}
-
-// Call the Main function with the input read from stdin.
-Main(
-  myin()
-);
+// 읽기 지금정리한다 핵심주요 연산 입력과 함께최종.

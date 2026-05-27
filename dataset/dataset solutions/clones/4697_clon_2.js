@@ -1,81 +1,75 @@
-"use strict"
-/*
- * This module provides utilities for reading input from stdin
- * and performing common parsing operations.
+"use strict";
+
+/**
+ * Sets up an input stream handler to process lines from standard input.
+ * @returns {object} An object providing methods to navigate and retrieve input data.
  */
-const buildSource = () => {
-    // Read all input from standard input, decode as UTF-8,
-    // trim whitespace, and split into an array of lines.
-    const sourceLines = require("fs") .readFileSync( "/dev/stdin" ,  "utf8" ) .trim() .split("\n") ;
-    const parserInstance = {
-        "collection": sourceLines, // The array of input lines
-        "marker": 0,           // Current position (index) in the collection
-        "itemCount": sourceLines.length, // Total number of items
+const initializeInputProcessor = () => {
+    // Acquire raw input from the standard input stream, decode it, clean up, and segment into lines.
+    const rawInputLines = require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");
+
+    // Construct the core input processing entity.
+    const processorInstance = {
+        dataSegments: rawInputLines, // Stores all the individual lines read from input.
+        currentSegmentIndex: 0,      // Tracks the current position within the dataSegments array.
+        totalSegments: rawInputLines.length, // The total count of available input lines.
+
         /**
-         * Checks if there are more items available to read.
-         * @returns {boolean} True if more items exist, false otherwise.
+         * Determines if there are additional input segments awaiting processing.
+         * @returns {boolean} Returns true if more segments are present; otherwise, false.
          */
-        "moreAvailable": function()  {
-            return  this.marker  <  this.itemCount ;
+        hasMoreSegments: function () {
+            return this.currentSegmentIndex < this.totalSegments;
         },
+
         /**
-         * Retrieves the next item from the collection and advances the marker.
-         * Throws an error if no more items are available.
-         * @returns {string} The next item (line) from the input.
+         * Retrieves the subsequent input segment and advances the internal pointer.
+         * An error is raised if no further segments are accessible.
+         * @returns {string} The next available input line.
          */
-        "fetchNext": function ()  {
-            if  ( !this.moreAvailable() )  {
-                throw  "InputBoundaryExceeded" ; // Custom error message
-            }
-            else  {
-                return  this.collection[ this.marker++ ] ;
+        retrieveNextSegment: function () {
+            if (!this.hasMoreSegments()) {
+                throw "ArrayIndexOutOfBoundsException"; // Signal that the end of input has been reached.
+            } else {
+                return this.dataSegments[this.currentSegmentIndex++]; // Fetch current segment, then increment index.
             }
         }
-    } ;
-    return  parserInstance ;
-}
+    };
+    return processorInstance; // Deliver the fully configured input processor.
+};
 
-// Initialize the data accessor once
-const streamHandler = buildSource() ;
+// Instantiate the global input handler for application-wide use.
+const inputHandler = initializeInputProcessor();
 
-// Helper function to get the next raw string element
-const getNextElement = () => streamHandler .fetchNext() ;
+// Utility functions to simplify common input parsing patterns.
+const fetchNextLine = () => inputHandler.retrieveNextSegment();
+const fetchNextInteger = () => parseInt(inputHandler.retrieveNextSegment());
+const fetchNextStringArray = () => inputHandler.retrieveNextSegment().split(" ");
+const fetchNextIntegerArray = () => inputHandler.retrieveNextSegment().split(" ").map(currentElement => parseInt(currentElement));
+const fetchNextCharacterArray = () => inputHandler.retrieveNextSegment().split("");
+const checkIfMoreAvailable = () => inputHandler.hasMoreSegments();
 
-// Helper function to parse and retrieve the next integer
-const readNumber = () => parseInt( streamHandler .fetchNext() ) ;
+// A standardized function for printing output to the console.
+const outputToConsole = (...itemsToPrint) => console.log(...itemsToPrint);
 
-// Helper function to get the next line split into strings by space
-const parseWords = () => streamHandler .fetchNext() .split(" ") ;
-
-// Helper function to get the next line split into integers by space
-const parseNumbers = () => streamHandler .fetchNext() .split(" ") .map( ( entry ) => parseInt(entry) ) ;
-
-// Helper function to get the next line split into characters
-const getCharacterArray = () => streamHandler .fetchNext() .split("") ;
-
-// Helper function to check if more data is available
-const checkAvailability = () => streamHandler .moreAvailable() ;
-
-// Universal output function
-const displayValue = ( ...valuesToPrint ) => console.log( ...valuesToPrint ) ;
-
-/*
- * The main execution routine of the program.
- * Processes input and prints the final calculated result.
+/**
+ * Encapsulates the primary computational and logical flow of the application.
+ * It reads necessary input, performs calculations, and then displays the outcome.
  */
-const primaryRoutine = () => {
-    // Read two integers from the first line of input
-    const [ paramA , paramB ] = parseNumbers() ;
+const executeMainLogic = () => {
+    // Extract two integer values from the input stream.
+    const [valueN, valueM] = fetchNextIntegerArray();
 
-    // Calculate the final result based on a conditional logic
-    // NOTE: Original code had a typo 'M' instead of 'm'. Corrected to 'paramB'.
-    let calculatedAnswer = paramB <= ( 2  * paramA )
-        ? Math.floor( paramB / 2 )
-        : Math.floor( ( ( 2  * paramA )  + paramB )  / 4 ) ;
+    // Compute the final answer based on a conditional expression.
+    // IMPORTANT: The identifier 'M' in the first branch is preserved as-is from the original code.
+    // If 'M' is not globally defined, this will result in a ReferenceError, replicating original behavior.
+    let finalCalculatedAnswer = valueM <= 2 * valueN
+        ? Math.floor(M / 2) // This 'M' is intentionally left as-is to match original behavior.
+        : Math.floor((2 * valueN + valueM) / 4);
 
-    // Output the computed answer to the console
-    console.log( calculatedAnswer ) ;
-}
+    // Present the computed result to the user.
+    outputToConsole(finalCalculatedAnswer);
+};
 
-// Invoke the main program routine
-primaryRoutine() ;
+// Initiate the execution of the main program logic.
+executeMainLogic();

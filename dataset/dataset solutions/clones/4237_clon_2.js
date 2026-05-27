@@ -1,18 +1,22 @@
-function computeOverallScore(initialStream)
-{
-    let lineSegments = initialStream  .split   (  "\n"   );
+function ProcessData(initialData) {
+  // Split the raw input string into an array of lines.
+  // In this specific problem, we only care about the first line.
+  let lineSegments = initialData.split("\n");
 
-    const totalItems = parseInt(lineSegments[0].split(" ")[0]);
-    const completedItems = parseInt(lineSegments[0].split(" ")[1]   );
+  // Parse the first number from the first line of input.
+  // The first line contains two space-separated integers.
+  const firstNum = parseInt(lineSegments[0].split(" ")[0]);
 
-    const calculatedResult = Math.pow(2, completedItems) * (1900 * completedItems + 100 * (totalItems - completedItems));
+  // Parse the second number from the first line of input.
+  const secondNum = parseInt(lineSegments[0].split(" ")[1]);
 
-    console.log(
-        '%s', calculatedResult
-    );
+  // Calculate the final result based on the given formula.
+  // The formula involves powers and arithmetic operations.
+  let computedValue = Math.pow(2, secondNum) * (1900 * secondNum + 100 * (firstNum - secondNum));
+
+  // Output the calculated value to the console.
+  console.log('%s', computedValue);
 }
 
-computeOverallScore(
-    require("fs")
-        .readFileSync("/dev/stdin", "utf8")
-);
+// Read input from standard input and pass it to the processing function.
+ProcessData(require("fs").readFileSync("/dev/stdin", "utf8"));

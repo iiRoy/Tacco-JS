@@ -1,157 +1,103 @@
-/*
- * This script processes graph data from standard input.
- * It calculates discovery and completion times for a depth-first traversal.
- */
-const sourceData = require('fs').readFileSync(
-  '/dev/stdin',
-  'utf8'
-); // Read raw input string from stdin
+// Import the file system module to read standard input
+const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-// Process the input into an array of lines
-const dataLinesCollection = sourceData.trim()
-  .split('\n');
+// Process the raw input string into an array of lines
+const processedLines = rawData.trim().split('\n');
+// Extract the total number of nodes from the first line
+const nodeCount = Number(processedLines.shift());
+// Parse the remaining lines to build the adjacency list representation
+const adjacencyList = processedLines.map((lineStr) => lineStr.split(' ').map(Number));
 
-// The first line contains the total number of vertices, but it's not directly used later.
-const totalVertices = Number(dataLinesCollection.shift());
-
-// Parse the adjacency list from the remaining lines
-const adjacencyListRaw = dataLinesCollection.map(
-  (lineString) => lineString
-    .split(' ')
-    .map(Number) // Convert each string segment to a number
-);
-
-
-/**
- * Represents a single vertex (node) within the graph.
- * Stores its identifier, timing metrics, and connections to other vertices.
- */
-class GraphElement {
-
-  /**
-   * Initializes a new graph element.
-   * @param {number} elementId The unique identifier for this element.
-   */
-  constructor(elementId) {
-    this.elementId = elementId; // Unique numerical ID for the vertex
-    this.timingInfo = {}; // Object to store discovery and completion times
-    this.antecedents = []; // List of parent elements (elements pointing to this one)
-    this.descendants = []; // List of child elements (elements this one points to)
+// Defines a class to represent a single vertex in the graph
+class GraphVertex {
+  // Constructor initializes a vertex with its unique identifier
+  constructor(vertexId) {
+    this.vertexId = vertexId; // Unique identifier for this vertex
+    this.timingData = {};     // Object to store DFS entry and exit times
+    this.parentVertices = []; // List of parent vertices in the graph
+    this.childVertices = [];  // List of child vertices in the graph
   }
 
-  /**
-   * Establishes a directed connection from this element to another element.
-   * The other element becomes a descendant of this one, and this becomes an antecedent of the other.
-   * @param {GraphElement} connectedElement The element to connect to.
-   */
-  establishConnection(connectedElement) {
-    connectedElement.antecedents.push(this); // Add current element as parent to the connected one
-    this.descendants.push(connectedElement); // Add connected element as child to current one
+  // Method to establish a parent-child relationship between two vertices
+  attachChild(childVertex) {
+    childVertex.parentVertices.push(this); // Add current vertex as parent to the child
+    this.childVertices.push(childVertex);  // Add child to current vertex's children list
   }
 
-  /**
-   * Checks if this element has already been visited and had its timing data recorded.
-   * @returns {boolean} True if timing data (specifically discovery time) exists, false otherwise.
-   */
-  hasTimingData() {
-    // Using double negation to convert a truthy/falsy value to a boolean
-    return !!this.timingInfo.discoveryTime;
+  // Checks if this vertex has already been visited and timed
+  hasTimingInfo() {
+    return Boolean(this.timingData.entryTime); // Returns true if entryTime is set
   }
 
-  /**
-   * Performs a depth-first traversal starting from this element to calculate discovery and completion times.
-   * Updates the timingInfo for this element and recursively for its unvisited neighbors.
-   * @param {number} currentTimestamp The current time counter.
-   * @returns {number} The updated time counter after visiting this element and its sub-graph.
-   */
-  calculateTraversalTimes(currentTimestamp) {
-    this.timingInfo.discoveryTime = currentTimestamp; // Record discovery time for this element
+  // Performs a Depth-First Search (DFS) traversal to assign entry and exit timestamps
+  assignTimestamps(currentTimestamp) {
+    this.timingData.entryTime = currentTimestamp; // Record the time when this vertex is first visited
 
-    // If neighbors haven't been sorted yet, create a combined sorted list of all connected elements
-    if (!this.allNeighbors) {
-      this.allNeighbors = this.antecedents
-        .concat(this.descendants) // Combine parents and children
-        .sort((elementA, elementB) => elementA.elementId > elementB.elementId); // Sort by ID
+    // If the combined adjacency list hasn't been created yet, create it
+    if (!this.connectedVertices) {
+      this.connectedVertices = this.parentVertices
+        .concat(this.childVertices) // Combine parents and children
+        .sort((vertexA, vertexB) => vertexA.vertexId > vertexB.vertexId); // Sort by ID for consistent traversal order
     }
 
-    // Recursively visit all neighbors that haven't been measured yet
-    this.allNeighbors.forEach(
-      (neighborElement) => {
-        if (!neighborElement.hasTimingData()) {
-          currentTimestamp = neighborElement.calculateTraversalTimes(++currentTimestamp); // Increment time and recurse
-        }
+    // Recursively visit adjacent vertices that haven't been timed yet
+    this.connectedVertices.forEach(neighborVertex => {
+      if (!neighborVertex.hasTimingInfo()) {
+        currentTimestamp = neighborVertex.assignTimestamps(++currentTimestamp); // Increment time and recurse
       }
-    );
+    });
 
-    // Record completion time for this element after all its descendants are processed
-    return this.timingInfo.completionTime = ++currentTimestamp;
+    // Record the time when all children (and their subtrees) have been visited
+    return this.timingData.exitTime = ++currentTimestamp;
   }
 
-  /**
-   * Provides a formatted string representation of the element's ID and its timing data.
-   * @returns {string} A space-separated string: "elementId discoveryTime completionTime".
-   */
-  displayFormattedData() {
-    return [this.elementId, this.timingInfo.discoveryTime, this.timingInfo.completionTime].join(' ');
+  // Provides a string representation of the vertex's ID and its timing data
+  formatOutput() {
+    return [this.vertexId, this.timingData.entryTime, this.timingData.exitTime].join(' ');
   }
 }
 
-/**
- * Manages the collection of graph elements and provides methods to access and process them.
- */
-class GraphStructureManager {
+// Manages the collection of graph vertices
+class GraphStructure {
   constructor() {
-    // A map to store elements, keyed by their unique identifiers
-    this.elementRegistry = new Map();
+    this.vertexMap = new Map(); // Stores vertices, mapped by their IDs
   }
 
-  /**
-   * Retrieves a graph element by its identifier. If the element does not exist, it creates a new one.
-   * @param {number} elementId The identifier of the element to retrieve or create.
-   * @returns {GraphElement} The requested graph element.
-   */
-  retrieveGraphElement(elementId) {
-    if (!this.elementRegistry.has(elementId)) {
-      this.elementRegistry.set(elementId, new GraphElement(elementId));
+  // Retrieves a vertex by its ID, creating it if it doesn't exist
+  retrieveVertex(identifier) {
+    if (!this.vertexMap.has(identifier)) {
+      this.vertexMap.set(identifier, new GraphVertex(identifier)); // Create and store a new vertex
     }
-    return this.elementRegistry.get(elementId);
+    return this.vertexMap.get(identifier); // Return the existing or newly created vertex
   }
 
-  /**
-   * Iterates through all registered elements and prints their formatted timing data to the console.
-   */
-  outputAllElements() {
-    // Loop from 1 up to the total number of registered elements
-    for (let iterationIndex = 1; iterationIndex <= this.elementRegistry.size; iterationIndex++) {
-      const currentElement = this.elementRegistry.get(iterationIndex);
-      console.log(currentElement.displayFormattedData()); // Output the formatted data
+  // Iterates through all vertices and prints their formatted timing information
+  displayResults() {
+    // Loop from 1 to the total number of vertices (assuming 1-indexed IDs)
+    for (let currentId = 1; currentId <= this.vertexMap.size; currentId++) {
+      const currentVertex = this.vertexMap.get(currentId); // Get the vertex by its ID
+      console.log(currentVertex.formatOutput()); // Output its formatted string
     }
   }
 }
 
-// --- Main execution flow ---
+// Instantiate the graph manager
+const graphInstance = new GraphStructure();
 
-// Create an instance of the graph manager
-const graphManagerInstance = new GraphStructureManager();
+// Populate the graph structure based on the adjacency list input
+adjacencyList.forEach(([sourceVertexId, childCount, ...targetVertexIds]) => {
+  // Get or create the parent vertex
+  const currentParentVertex = graphInstance.retrieveVertex(sourceVertexId);
+  // For each child ID listed, establish the parent-child relationship
+  targetVertexIds.forEach(targetId => {
+    const childNode = graphInstance.retrieveVertex(targetId); // Get or create the child vertex
+    currentParentVertex.attachChild(childNode); // Link them
+  });
+});
 
-// Populate the graph based on the raw adjacency list data
-adjacencyListRaw.forEach(
-  ([mainElementIdentifier, neighborCountPlaceholder, ...neighborIdentifiersList]) => {
-    const currentMainElement = graphManagerInstance.retrieveGraphElement(mainElementIdentifier); // Get the main element
+// Start the DFS traversal from vertex 1 (the root) with an initial timestamp of 1
+const startingVertex = graphInstance.retrieveVertex(1);
+startingVertex.assignTimestamps(1);
 
-    // Connect the main element to all its listed neighbors
-    neighborIdentifiersList.forEach(
-      (linkedElementIdentifier) => {
-        const connectedElement = graphManagerInstance.retrieveGraphElement(linkedElementIdentifier);
-        currentMainElement.establishConnection(connectedElement); // Establish the link
-      }
-    );
-  }
-);
-
-// Start the depth-first traversal from element with ID 1
-const initialElement = graphManagerInstance.retrieveGraphElement(1);
-initialElement.calculateTraversalTimes(1); // Initialize the timestamp to 1
-
-// Display the calculated traversal times for all elements
-graphManagerInstance.outputAllElements();
+// Display the final timing results for all vertices
+graphInstance.displayResults();

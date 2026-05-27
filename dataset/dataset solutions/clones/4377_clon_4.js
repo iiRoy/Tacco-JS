@@ -1,7 +1,7 @@
-function extractEveryOther(sourceString) {
-    const characterArray = [...sourceString];
-    const selectedCharacters = characterArray.filter((element, position) => position % 2 === 0);
-    const finalOutput = selectedCharacters.join('');
-    console.log(finalOutput);
+function processInputData(sourceText) {
+    const characterSequence = sourceText.split('');
+    const filteredCharacters = characterSequence.filter((_charElement, idxPosition) => idxPosition % 2 === 0);
+    const resultString = filteredCharacters.join('');
+    console.log(resultString);
 }
-extractEveryOther(require("fs").readFileSync("/dev/stdin", "utf8").trim());
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8").trim());

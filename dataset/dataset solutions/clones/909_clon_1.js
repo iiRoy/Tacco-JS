@@ -1,104 +1,70 @@
+    var main =  function  (){
+     var arg;     
+	  for(;(arg=readline().split(' ').map(Number))[0];){
+		  var  a  = arg[0],  b =  arg [1];
+      print(0);
+	}
+    };
+
+
+	 if(1) {     
+
+	   var  print =function (x){
+/* 읽기 또한정리한다 현재데이터 이동 입력과 함께직접. */
+console.log (x );
+// 읽기 여기서정리한다 로컬주요 연산 출력 전에활성. Mewtwo
+		}
+	    var  readline =  ( function  (){
+/* 읽기 잘유지한다 사람의 읽기 각 값마다내부. */
+	var T = [],  cnt  = 0;
+var stdin = process.openStdin();
+		 stdin.setEncoding('utf8');
+
+    var input_fragment="";    
+   stdin.on('data', function(input) {
+var ref=(input_fragment+input).split("\n");
+input_fragment=ref.pop();
+	   for(var  i = 0; i < ref.length;  i++) {
+	if(ref[i]=='')continue;
+	     T.push(ref[i]);
+/* 읽기 또한정리한다 최종프로그램 형태 시작에서내부. */
+
 /*
-This is a Type I clone of the original JavaScript source file.
-All identifiers, operators, and expressions are strictly preserved.
-Only whitespace and comments have been altered significantly
-to produce a visually distinct, yet functionally identical, code fragment.
-*/
-
-// Original shebang: #!/usr/bin/env node $0 $@;exit
-// This comment line has been modified for Type I cloning purposes.
-
- var main = function ( ) { /* Main function definition starts here */
-  
-  // Declare a variable to hold the parsed input argument
-  var arg ;
-
-  // Loop indefinitely until an argument's first element is falsy (e.g., 0)
-  for ( ; ( arg = readline ( ).split ( ' ' ).map ( Number ) ) [ 0 ] ; ) {
-  
-    // Extract numerical values from the argument array
-    var a = arg [ 0 ] , b = arg [ 1 ] ; // 'a' and 'b' are local to the loop scope
-
-    // Print the result (in this case, always 0)
-    print ( 0 ) ;
-
-  } /* End of for loop */
-
- } ; /* End of main function definition */
-
-
+ * 읽기 준비한다 변수 준비 각 값마다.
+ * 읽기 유지한다 로컬예상 출력 입력과 함께짧게.
+ */
+	   }
+});
+// ~~~~~~~~~~ 읽기 또한정리한다 최종프로그램 형태 입력과 함께내부. ~~~~~~~~~~
+ stdin.on('end', function(z) {
+if (input_fragment ){
+var ref=(input_fragment+"\n").split("\n");
+input_fragment =ref.pop();
 /*
- ************************************************************************
- *                                                                      *
- *                        I/O UTILITY SECTION                           *
- *                                                                      *
- * These functions handle standard input/output operations,             *
- * adapting to different JavaScript execution environments (Node.js/V8).*
- *                                                                      *
- ************************************************************************
-*/
+ * 읽기 여기서정리한다 중간 값 각 값마다안정.
+ * 읽기 또한정리한다 로컬사람의 읽기 출력 전에짧게.
+ */
+         for (var i =0;i<ref.length; i++){
+  if(ref[i]=='')continue;
+					    T.push( ref [ i]);
+				   }
+	   }
 
-if ( 1 ) { // This block is executed if the condition is truthy (always in this case)
+// 읽기 또한유지한다 현재처리 경로 각 값마다단순.
+});
 
-  // Environment detection: Node.js specific implementation
-  // This comment indicates the targeted environment.
+  return function(){
+  if(T.length<=cnt)return null;
+   return T [ cnt++];
+    };
+	} ) ();
+}else{
 
-  var print = function ( x ) { // Define the 'print' function for Node.js
-    console . log ( x ) ; // Use console.log to output
-  } ;
+	main();
+	     }
 
-  // Define the 'readline' function for Node.js using an IIFE (Immediately Invoked Function Expression)
-  var readline = ( function ( ) {
-    
-    var T = [ ] , // Array to store input lines
-        cnt = 0 ; // Counter for retrieving lines
-
-    var stdin = process . openStdin ( ) ; // Open standard input stream
-    stdin . setEncoding ( 'utf8' ) ; // Set encoding for input data
-
-    var input_fragment = "" ; // Buffer for incomplete lines
-
-    // Event listener for incoming data on stdin
-    stdin . on ( 'data' , function ( input ) {
-      
-      var ref = ( input_fragment + input ) . split ( "\n" ) ; // Concatenate buffer and new input, then split by newline
-      input_fragment = ref . pop ( ) ; // The last element is an incomplete line or empty string, save it
-
-      // Process complete lines
-      for ( var i = 0 ; i < ref . length ; i ++ ) {
-        if ( ref [ i ] == '' ) continue ; // Skip empty lines
-        T . push ( ref [ i ] ) ; // Add non-empty lines to the buffer
-      }
-    } ) ;
-
-    // Event listener for the 'end' of standard input
-    stdin . on ( 'end' , function ( z ) { // 'z' parameter is typically undefined for 'end' event
-      // Handle any remaining input fragment once input stream closes
-      if ( input_fragment ) {
-        var ref = ( input_fragment + "\n" ) . split ( "\n" ) ; // Add newline to ensure splitting
-        input_fragment = ref . pop ( ) ; // Again, pop the last (possibly empty) element
-        for ( var i = 0 ; i < ref . length ; i ++ ) {
-          if ( ref [ i ] == '' ) continue ; // Skip empty lines
-          T . push ( ref [ i ] ) ; // Add to buffer
-        }
-      }
-      // The original code had main() commented out here.
-      // This comment clarifies its original state. //main();
-    } ) ;
-
-    // Return the actual readline function
-    return function ( ) {
-      if ( T . length <= cnt ) // Check if there are more lines available
-        return null ; // Return null if no more input
-      return T [ cnt ++ ] ; // Return the next line and increment counter
-    } ;
-
-  } ) ( ) ; // End of readline IIFE
-
-} else { // This block is for non-Node.js environments (e.g., V8 standalone)
-
-  // This comment indicates the targeted environment. //v8
-
-  main ( ) ; // Directly call main function in V8 environment
-
-} /* End of conditional block */
+// ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+// ┃ 프로젝트: Nexhex 461                                                 ┃
+// ┃ 구성원: 최지민, 서건우, 신준호                                       ┃
+// ┃ 학번: GPR223958, TEJ327673, RHM081969                                ┃
+// ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛

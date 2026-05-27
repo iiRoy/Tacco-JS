@@ -1,202 +1,173 @@
-let fileContent = require("node:fs").readFileSync("/dev/stdin", "utf8");
-const tokenCache = fileContent.split(/ |\n/);
-let tokenIndex = 0;
+"use strict";
 
-// Utility functions for input parsing
-const readInteger = () => {
-    let value = tokenCache[tokenIndex++];
-    // Add a check for non-numeric input, although competitive programming usually guarantees valid input.
-    if (isNaN(value)) {
-        throw new Error(`Expected number, got '${value}' at index ${tokenIndex - 1}`);
+class InputReader {
+  constructor(inputString) {
+    this.tokens = inputString.split(/ |\n/);
+    this.currentIndex = 0;
+  }
+
+  readNextInt() {
+    return +this.tokens[this.currentIndex++];
+  }
+
+  readNextString() {
+    return this.tokens[this.currentIndex++];
+  }
+
+  readNextBigInt() {
+    return BigInt(this.tokens[this.currentIndex++]);
+  }
+
+  readNInts(count) {
+    const result = this.tokens.slice(this.currentIndex, this.currentIndex + count).map(Number);
+    this.currentIndex += count;
+    return result;
+  }
+
+  readNStrings(count) {
+    const result = this.tokens.slice(this.currentIndex, this.currentIndex + count);
+    this.currentIndex += count;
+    return result;
+  }
+
+  readNSortedInts(count, descending = false) {
+    const numbers = this.readNInts(count);
+    return numbers.sort((a, b) => descending ? b - a : a - b);
+  }
+
+  readMatrix(height, width, asStrings = false) {
+    const matrix = [];
+    for (let i = 0; i < height; i++) {
+      if (asStrings) {
+        matrix.push(this.readNStrings(width));
+      } else {
+        matrix.push(this.readNInts(width));
+      }
     }
-    return Number(value);
-};
+    return matrix;
+  }
+}
 
-const readStringToken = () => tokenCache[tokenIndex++];
+// Helper function to create multi-dimensional arrays without using eval
+function createMultiDimArray(initialValue, ...dimensions) {
+  if (dimensions.length === 0) {
+    return initialValue;
+  }
 
-const readBigInteger = () => {
-    let value = tokenCache[tokenIndex++];
-    // Add a check for non-numeric input for BigInt
-    if (!/^-?\d+$/.test(value)) {
-        throw new Error(`Expected big integer, got '${value}' at index ${tokenIndex - 1}`);
+  const createRecursive = (dimIndex) => {
+    if (dimIndex === dimensions.length - 1) {
+      return Array(dimensions[dimIndex]).fill(initialValue);
+    } else {
+      return Array(dimensions[dimIndex]).fill(null).map(() => createRecursive(dimIndex + 1));
     }
-    return BigInt(value);
-};
+  };
 
-const readIntegersArray = (count, mapToNumber = true) => {
-    let start = tokenIndex;
-    tokenIndex += count;
-    let sliced = tokenCache.slice(start, tokenIndex);
-    return mapToNumber ? sliced.map(Number) : sliced;
-};
-
-// This function is not used in the main logic, but cloned for completeness.
-const readSortedIntegers = (count, descending = false) => {
-    const numbers = readIntegersArray(count);
-    return descending ? numbers.sort((a, b) => b - a) : numbers.sort((a, b) => a - b);
-};
-
-// This function is not used in the main logic, but cloned for completeness.
-const readMatrixData = (height, width, asStrings = false) => {
-    const matrixRows = [];
-    for (let rowIdx = 0; rowIdx < height; ++rowIdx) {
-        const rowSlice = tokenCache.slice(tokenIndex, tokenIndex + width);
-        tokenIndex += width;
-        matrixRows.push(asStrings ? rowSlice : rowSlice.map(Number));
-    }
-    return matrixRows;
-};
-
-// This function is not used in the main logic, but cloned for completeness.
-// It uses eval, which is generally discouraged, but present in the original.
-const generateMultiDimensionalArray = (initialValue) => {
-    const args = arguments;
-    const argCount = args.length;
-    let currentDim = argCount - 1;
-    let arrayCreationString = `Array(args[${currentDim}]).fill().map(() => { return ${initialValue}; })`;
-    while (--currentDim > 0) {
-        arrayCreationString = `Array(args[${currentDim}]).fill().map(() => ${arrayCreationString})`;
-    }
-    return eval(arrayCreationString);
-};
+  return createRecursive(0);
+}
 
 const outputBuffer = [];
-const appendToOutput = (message) => {
-    outputBuffer.push(message);
-};
+function appendToOutput(content) { outputBuffer.push(content); }
 
-// --- Segment Tree Implementation ---
-const DEFAULT_SEGMENT_VALUE = 0; // Default value for segment tree nodes
+const defaultValue = 0;
 
-class MaxSegmentTree {
-    #treeNodes;
-    #leafOffset; // Offset to the first leaf node
-
-    constructor(initialSize) {
-        if (initialSize <= 0) {
-            throw new Error("Segment tree size must be positive.");
-        }
-        let effectiveSize = 1;
-        // Calculate the smallest power of 2 greater than or equal to initialSize
-        while (effectiveSize < initialSize) {
-            effectiveSize <<= 1; // equivalent to effectiveSize * 2
-        }
-        this.#treeNodes = new Array(2 * effectiveSize - 1).fill(DEFAULT_SEGMENT_VALUE);
-        this.#leafOffset = effectiveSize;
-    }
-
-    // Retrieves the maximum value in the range [0, targetIndex]
-    queryMaximum(targetIndex) {
-        let currentNodeIdx = targetIndex + this.#leafOffset - 1;
-        let runningMax = DEFAULT_SEGMENT_VALUE;
-
-        // Traverse up from the leaf node to the root
-        while (currentNodeIdx >= 0) {
-            if (this.#treeNodes[currentNodeIdx] > runningMax) {
-                runningMax = this.#treeNodes[currentNodeIdx];
-            }
-            // Move to the parent node.
-            // (currentNodeIdx - 1) / 2 for 0-indexed parent, floor operation implicit with >>1
-            currentNodeIdx = (currentNodeIdx - 1) >> 1;
-        }
-        return runningMax;
-    }
-
-    // Updates the range [lowerBound, upperBoundExclusive) with a new value
-    rangeUpdate(lowerBound, upperBoundExclusive, newValue) {
-        if (lowerBound >= upperBoundExclusive) {
-            // Invalid range or empty range, nothing to update.
-            return;
-        }
-
-        // Helper recursive function for range updates
-        const recursiveUpdate = (currentL, currentR, treeNodeStart, treeNodeEnd, treeNodeIdx) => {
-            // Check for full overlap: if the current segment fully covers the update range
-            if (currentL === treeNodeStart && currentR === treeNodeEnd) {
-                this.#treeNodes[treeNodeIdx] = newValue;
-                return;
-            }
-
-            // Calculate the midpoint of the current tree node's segment
-            const midPoint = (treeNodeStart + treeNodeEnd) >> 1;
-
-            // Determine which children to recurse into
-            if (midPoint < currentR) { // Update range extends into or beyond the right child's segment
-                if (currentL < midPoint) { // Update range also extends into the left child's segment
-                    recursiveUpdate(currentL, midPoint, treeNodeStart, midPoint, 2 * treeNodeIdx + 1); // Left child
-                    recursiveUpdate(midPoint, currentR, midPoint, treeNodeEnd, 2 * treeNodeIdx + 2); // Right child
-                } else { // Update range is entirely within the right child's segment
-                    recursiveUpdate(currentL, currentR, midPoint, treeNodeEnd, 2 * treeNodeIdx + 2); // Right child
-                }
-            } else { // Update range is entirely within the left child's segment
-                recursiveUpdate(currentL, currentR, treeNodeStart, midPoint, 2 * treeNodeIdx + 1); // Left child
-            }
-        };
-
-        // Initiate the recursive update from the root
-        recursiveUpdate(lowerBound, upperBoundExclusive, 0, this.#leafOffset, 0);
-    }
+function SegmentTree(capacity) {
+  // Calculate the smallest power of 2 that is greater than or equal to capacity
+  let leafCount = 1;
+  while (leafCount < capacity) {
+    leafCount <<= 1;
+  }
+  // The total number of nodes in a complete binary tree with 'leafCount' leaves is 2*leafCount - 1
+  this.treeData = Array(leafCount * 2 - 1).fill(defaultValue);
+  // 'leafOffset' is the index of the first leaf node in the 'treeData' array
+  this.leafOffset = leafCount;
 }
 
-// --- Main Program Execution ---
-const executeSolution = () => {
-    // Define constants for array bounds
-    const MAX_POSSIBLE_VALUE = 300000;
-    const SEGMENT_TREE_CAPACITY = MAX_POSSIBLE_VALUE + 1; // Max value + 1 for 0-indexed values up to MAX_POSSIBLE_VALUE
+SegmentTree.prototype = {
+  queryMax: function (queryIndex) {
+    const treeNodes = this.treeData;
+    const offset = this.leafOffset;
+    let currentIdx = queryIndex + offset - 1; // Convert query index to leaf node index
+    let resultMax = defaultValue;
 
-    // Read problem parameters
-    const problemParameters = readIntegersArray(2);
-    const elementCount = problemParameters[0];
-    const rangeModifier = problemParameters[1];
+    // Traverse up from the leaf node to the root, updating resultMax
+    while (currentIdx >= 0) {
+      if (treeNodes[currentIdx] > resultMax) {
+        resultMax = treeNodes[currentIdx];
+      }
+      currentIdx = Math.floor((currentIdx - 1) / 2); // Move to parent node
+    }
+    return resultMax;
+  },
 
-    if (elementCount <= 0 || rangeModifier < 0) {
-        // Basic input validation
-        return 0; // Or throw an error, depending on problem constraints
+  rangeUpdate: function (rangeStart, rangeEnd, updateValue) {
+    // Guard clause: if the range is empty or invalid, do nothing
+    if (rangeStart >= rangeEnd) {
+      return;
+    }
+    // Initiate the recursive update process from the root node
+    this._performRecursiveUpdate(rangeStart, rangeEnd, 0, this.leafOffset, 0, updateValue);
+  },
+
+  // Internal helper method for recursive range updates
+  _performRecursiveUpdate: function (queryL, queryR, nodeL, nodeR, nodeIdx, valueToSet) {
+    // Base case: If the current node's range exactly matches the query range, update it
+    if (queryL === nodeL && queryR === nodeR) {
+      this.treeData[nodeIdx] = valueToSet;
+      return;
     }
 
-    // Read the array of input values
-    const inputValues = readIntegersArray(elementCount);
+    const mid = Math.floor((nodeL + nodeR) / 2); // Calculate the midpoint of the current node's range
 
-    // Initialize the segment tree
-    const segmentStructure = new MaxSegmentTree(SEGMENT_TREE_CAPACITY);
-
-    // Process each input value
-    for (let idx = 0; idx < elementCount; ++idx) {
-        const currentValue = inputValues[idx];
-
-        // Calculate the effective range for the update
-        const effectiveLeftBound = Math.max(0, currentValue - rangeModifier);
-        const effectiveRightBound = Math.min(MAX_POSSIBLE_VALUE, currentValue + rangeModifier);
-
-        // Query the current maximum ending at currentValue
-        const previousMax = segmentStructure.queryMaximum(currentValue);
-
-        // Update the segment tree for the calculated range
-        // The range is [effectiveLeftBound, effectiveRightBound + 1)
-        segmentStructure.rangeUpdate(effectiveLeftBound, effectiveRightBound + 1, previousMax + 1);
+    // Determine which child node(s) to recurse into based on the query range
+    if (queryR <= mid) { // The query range is entirely within the left child's range
+      this._performRecursiveUpdate(queryL, queryR, nodeL, mid, nodeIdx * 2 + 1, valueToSet);
+    } else if (queryL >= mid) { // The query range is entirely within the right child's range
+      this._performRecursiveUpdate(queryL, queryR, mid, nodeR, nodeIdx * 2 + 2, valueToSet);
+    } else { // The query range spans across both children
+      // Recurse into the left child for the left part of the query range
+      this._performRecursiveUpdate(queryL, mid, nodeL, mid, nodeIdx * 2 + 1, valueToSet);
+      // Recurse into the right child for the right part of the query range
+      this._performRecursiveUpdate(mid, queryR, mid, nodeR, nodeIdx * 2 + 2, valueToSet);
     }
-
-    // Find the overall maximum value in the segment tree
-    let overallMaximum = 0;
-    let checkIdx = 0;
-    while (checkIdx <= MAX_POSSIBLE_VALUE) {
-        const valueAtIndex = segmentStructure.queryMaximum(checkIdx);
-        if (valueAtIndex > overallMaximum) {
-            overallMaximum = valueAtIndex;
-        }
-        checkIdx++;
-    }
-
-    return overallMaximum;
+  },
 };
 
-const finalResult = executeSolution();
+const finalResult = executeMainLogic();
+if (finalResult !== undefined) console.log(String(finalResult));
+if (outputBuffer.length) console.log(outputBuffer.join("\n"));
 
-// Output the results
-if (finalResult !== undefined) {
-    console.log(String(finalResult));
-}
+function executeMainLogic() {
+  const MAX_COORD_VALUE = 300000;
+  const inputReader = new InputReader(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-if (outputBuffer.length > 0) {
-    console.log(outputBuffer.join("\n"));
+  const [numElements, rangeK] = inputReader.readNInts(2);
+  const inputArray = inputReader.readNInts(numElements);
+
+  // Initialize a segment tree to cover coordinates from 0 to MAX_COORD_VALUE
+  const segmentTreeInstance = new SegmentTree(MAX_COORD_VALUE + 1);
+
+  // Helper function to clamp a value within a specified range
+  const clampValue = (value, minBoundary, maxBoundary) => Math.max(minBoundary, Math.min(value, maxBoundary));
+
+  // Process each element in the input array
+  for (let idx = 0; idx < numElements; idx++) {
+    const currentCoordinate = inputArray[idx];
+    // Calculate the lower and upper bounds for the update range, clamped to [0, MAX_COORD_VALUE]
+    const lowerBound = clampValue(currentCoordinate - rangeK, 0, MAX_COORD_VALUE);
+    const upperBound = clampValue(currentCoordinate + rangeK, 0, MAX_COORD_VALUE);
+    
+    // Query the current maximum value at the current coordinate
+    const valueAtCurrentCoord = segmentTreeInstance.queryMax(currentCoordinate);
+    
+    // Update the segment tree for the calculated range [lowerBound, upperBound + 1)
+    // The value to set is one greater than the queried value, representing a path increase
+    segmentTreeInstance.rangeUpdate(lowerBound, upperBound + 1, valueAtCurrentCoord + 1);
+  }
+
+  let overallMaxResult = 0;
+  // Iterate through all possible coordinates to find the maximum value stored in the segment tree
+  for (let idx = 0; idx <= MAX_COORD_VALUE; idx++) {
+    overallMaxResult = Math.max(overallMaxResult, segmentTreeInstance.queryMax(idx));
+  }
+  return overallMaxResult;
 }

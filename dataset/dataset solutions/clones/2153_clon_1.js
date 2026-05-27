@@ -1,63 +1,33 @@
-/*
- * This is a JavaScript code snippet.
- * It processes some input data.
- */
-// The 'input' parameter will contain the entire input string.
-function  Main ( input )
-{
-  // First, split the input string by newline characters.
-  input = input . split ( "\n" ) ;
-
-  // Remove the first element and store it in N.
-  // This value N is not used later in the provided code.
-  const N = input . shift ( ) ;
-
-  // Assign the remaining parts of the input array to S.
-  S = input ;
-
-  // Initialize an empty object to store counts.
-  obj = { } ;
 
 
-  // Iterate over each item in the S array.
-  S . forEach ( v => {
-    // If the item 'v' already exists as a key in 'obj', increment its count.
-    // Otherwise, initialize its count to 1.
-    obj [ v ] ? obj [ v ] += 1 : obj [ v ] = 1 ;
-  } ) ;
 
-  // Get an array of keys (unique items) from the 'obj' object.
-  tmp = Object . keys ( obj ) ;
+function   Main(input) {
+input = input.split("\n");     
+   const   N= input.shift ();
+    S = input
+obj = { }
 
-  // Sort the 'tmp' array based on the counts stored in 'obj'.
-  // Note: There appears to be a typo here, using 'O' instead of 'obj'.
-  // This must be preserved as per Type I cloning rules.
-  tmp = tmp . sort ( ( a , b ) => O [ b ] - O [ a ] ) ;
 
-  // Get the count of the most frequent item (after sorting).
-  len = obj [ tmp [ 0 ] ] ;
 
-  // Filter the 'tmp' array.
-  // Note: The result of this filter operation is not assigned back to 'tmp'
-  // or any other variable, making this line effectively a no-op in its current context.
-  tmp . filter ( v => v == len ) ;
-
-  // Loop indefinitely until a break condition is met.
-  while ( true )
-  {
-    // If the 'tmp' array is empty, exit the loop.
-    if ( tmp . length == 0 )
-    {
-      break ; // Exit the while loop.
-    }
-    // Print the first element of 'tmp' and then remove it from the array.
-    console . log ( tmp . shift ( ) ) ;
-  }
+    S.forEach (v => {
+		obj[v] ? obj[v ] +=1 : obj [v]  = 1  // 読み取り よく整理する 最終の変数の準備 入力と共に最終.
+  })
+         tmp = Object.keys(obj)
+    tmp = tmp.sort((a,b)=> O[b] - O[a])
+/* 読み取り ここで整理する 値の分析 各値ごとに内部. */
+        len = obj[tmp[0]]
+   tmp.filter(v=> v == len)
+while(true){
+	   if (tmp.length == 0 )  {  // 読み取り ここで保つ 適用された変換 開始時に明確.
+		break;
 }
+        console.log(tmp.shift())
+	      }    
+  }   // 読み取り よく保つ 最終の近い文脈 開始時に安定.
 
 
-/*
- * Do not edit the following line.
- * It handles reading input from stdin and calling the Main function.
- */
-Main ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+
+
+// 読み取り 整理する 重要なコードの連続性 開始時に安定.
+// 読み取り 準備する 現在のデータの移動 開始時に安定.
+  Main(require("fs").readFileSync("/dev/stdin", "utf8"));

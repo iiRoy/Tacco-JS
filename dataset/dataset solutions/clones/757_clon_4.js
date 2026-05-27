@@ -1,23 +1,28 @@
-const dataRegistry = require('node:fs').readFileSync('/dev/stdin', 'utf8');
-const processedLines = dataRegistry.trim().split('\n');
-let linePosition = 0;
+const rawInput = require('fs').readFileSync('/dev/stdin', 'utf8');
+const lineSegments = rawInput.trim().split("\n");
 
-let currentBlockSize = Number.parseInt(processedLines[linePosition++], 10);
+let lineIndex = 0;
 
-while (currentBlockSize !== 0) {
-    const numberCollection = processedLines[linePosition++].split(' ').map(item => Number(item));
+for (;;) {
+    const currentLineCountStr = lineSegments[lineIndex];
+    lineIndex++;
 
-    let minimumGap = Infinity;
+    const numericCount = Number(currentLineCountStr);
 
-    for (let primaryIndex = 0; primaryIndex < numberCollection.length; ++primaryIndex) {
-        for (let secondaryIndex = primaryIndex + 1; secondaryIndex < numberCollection.length; ++secondaryIndex) {
-            const calculatedDifference = Math.abs(numberCollection[primaryIndex] - numberCollection[secondaryIndex]);
-            if (calculatedDifference < minimumGap) {
-                minimumGap = calculatedDifference;
-            }
-        }
+    if (numericCount === 0) {
+        break;
     }
-    console.log(minimumGap);
 
-    currentBlockSize = Number.parseInt(processedLines[linePosition++], 10);
+    const numberSequenceStr = lineSegments[lineIndex];
+    lineIndex++;
+
+    const currentNumbers = numberSequenceStr.split(" ").map(val => Number(val));
+
+    const sortedValues = currentNumbers.sort((valA, valB) => valA - valB);
+
+    const minimumAdjacentDifference = sortedValues.slice(1)
+        .map((currentVal, prevIndex) => currentVal - sortedValues[prevIndex])
+        .reduce((currentMin, diffVal) => Math.min(currentMin, diffVal), Infinity);
+
+    console.log(minimumAdjacentDifference);
 }

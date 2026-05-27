@@ -1,35 +1,37 @@
-process.stdin.resume( );
-process.stdin.setEncoding( "utf8" );
+process.stdin.resume();
+process.stdin.setEncoding("utf8"); // Set the input encoding to UTF-8
 
-// Begin monitoring the standard input for incoming information.
-process.stdin.on ( "data", function ( inputSegment ) {
+process.stdin.on("data", function(inputSegment) {
+    // Split the incoming data by newline characters to get individual lines
+    let lineSegments = inputSegment.split("\n");
 
-    // Process the received data by splitting it into distinct lines.
-    let lineCollection = inputSegment.split ( '\n' );
-
-    // Implement a safeguard: if too many lines are provided, halt execution.
-    if ( lineCollection.length > 2 )
-    {
-        while ( true );
+    // If there are more than two lines, enter an infinite loop (as per original logic)
+    if (lineSegments.length > 2) {
+        while (true) { /* Intentionally block execution */ }
     }
 
-    // Initialize a regular expression to locate pairs of numbers.
-    const numericPattern = /(\d+)\s(\d+)/;
+    // Define a regular expression to capture two sequences of digits
+    const numberPattern = /(\d+)\s+(\d+)/;
 
-    // Process each individual line within the collected set.
-    for ( let lineCounter = 0; lineCounter < lineCollection.length; lineCounter++ ) {
+    // Iterate through each processed line segment
+    for (let idx = 0; idx < lineSegments.length; idx++) {
+        // Attempt to execute the regex on the current line
+        let matchOutcome = numberPattern.exec(lineSegments[idx]);
 
-        // Execute the pattern matching on the current line.
-        let matchDetails = numericPattern.exec(lineCollection[lineCounter]);
+        // Check if a match was found and it contains the expected number of capturing groups
+        if (matchOutcome && matchOutcome.length === 3) {
+            // Parse the captured strings as integers and sum them up
+            let firstNum = parseInt(matchOutcome[1], 10);
+            let secondNum = parseInt(matchOutcome[2], 10);
+            let sumResult = firstNum + secondNum;
 
-        // Validate the match: ensure it was successful and captured two numeric groups.
-        if ( matchDetails && matchDetails.length === 3 )
-        {
-            // Convert the captured strings to integers and output their combined value.
-            console.log( parseInt(matchDetails[1]) + parseInt(matchDetails[2]) );
+            // Output the sum to the console
+            console.log(sumResult);
         }
     }
-} );
+});
 
-// Attach a placeholder function for the standard output stream's completion event.
-process.stdout.on ( "end", function ( ) { } );
+// This event listener is present in the original but has no functional body.
+process.stdout.on("end", function() {
+    // No operations are performed when stdout stream ends.
+});

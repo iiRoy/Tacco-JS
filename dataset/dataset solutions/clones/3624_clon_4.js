@@ -1,56 +1,45 @@
-function assessCombinations(rawInputString) {
-    const cleansedInput = rawInputString.trim();
-    const targetValue = global.parseInt(cleansedInput, 10);
+function crash(message) {
+    throw new Error(message);
+}
 
-    if (global.isNaN(targetValue)) {
-        throw new global.Error("ParseFailure: Input cannot be converted to a number.");
+function solve(inputString) {
+    const processedInput = inputString.trim();
+    const numericalValue = parseInt(processedInput, 10);
+
+    if (isNaN(numericalValue) || !Number.isInteger(numericalValue)) {
+        crash("Invalid integer input: " + processedInput);
     }
 
-    if (targetValue < 0) {
+    const desiredSum = numericalValue;
+
+    if (desiredSum < 0) {
         return "No\n";
     }
 
-    const firstCoinDenomination = 4;
-    const secondCoinDenomination = 7;
+    const unachievableSums = new Set([1, 2, 3, 5, 6, 9, 13, 17]);
 
-    for (let countOne = 0; (countOne * firstCoinDenomination) <= targetValue; countOne++) {
-        const remainingAmount = targetValue - (countOne * firstCoinDenomination);
-        if (remainingAmount % secondCoinDenomination === 0) {
-            return "Yes\n";
-        }
+    if (unachievableSums.has(desiredSum)) {
+        return "No\n";
     }
 
-    return "No\n";
+    return "Yes\n";
 }
 
-function captureAllStandardInput() {
-    return new global.Promise((completionCallback, failureCallback) => {
-        let accumulatedData = '';
-        global.process.stdin.on('data', (dataChunk) => {
-            accumulatedData += dataChunk.toString();
-        });
-        global.process.stdin.on('end', () => {
-            completionCallback(accumulatedData);
-        });
-        global.process.stdin.on('error', (err) => {
-            failureCallback(err);
-        });
-    });
-}
+async function main() {
+    let collectedInput = '';
+    process.stdin.setEncoding('utf8');
 
-async function beginApplication() {
+    for await (const dataChunk of process.stdin) {
+        collectedInput += dataChunk;
+    }
+
     try {
-        const receivedText = await captureAllStandardInput();
-        const finalVerdict = assessCombinations(receivedText);
-        global.process.stdout.write(finalVerdict);
+        const finalOutput = solve(collectedInput);
+        process.stdout.write(finalOutput);
     } catch (programError) {
-        if (programError.message.startsWith("ParseFailure")) {
-            throw programError;
-        } else {
-            global.console.error("An unexpected runtime issue occurred:", programError);
-            global.process.exit(1);
-        }
+        process.stderr.write(programError.message + '\n');
+        process.exit(1);
     }
 }
 
-beginApplication();
+main();

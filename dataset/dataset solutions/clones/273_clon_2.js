@@ -1,50 +1,63 @@
-function obtainTimeValue(yearVal, monthVal, dayVal) {
-  // Create a Date object from the provided year, month, and day components.
-  var dateObject = new Date(monthVal + "/" + dayVal + "/" + yearVal);
-  // Return the time value in milliseconds since the Unix epoch.
+function obtainTimestamp(yearVal, monthVal, dayVal) {
+  // Create a new Date object from the provided year, month, and day.
+  // Note: Months are 1-indexed in the input string format.
+  let dateObject = new Date(monthVal + "/" + dayVal + "/" + yearVal);
+  // Return the Unix timestamp (milliseconds since Jan 1, 1970, UTC).
   return dateObject.getTime();
 }
 
-// Access the file system module to read input from standard input.
-const fileSystem = require('fs');
+// Utilize Node.js 'fs' module to read input from standard input.
+// The input is expected to be UTF-8 encoded.
+const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-// Read the entire content of standard input as a UTF-8 string.
-var sourceData = fileSystem.readFileSync('/dev/stdin', 'utf8');
+// Process the raw input:
+// 1. Remove leading/trailing whitespace using .trim().
+// 2. Split the string into an array of lines using newline character as delimiter.
+const lineEntries = (rawData.trim()).split("\n");
 
-// Trim any leading/trailing whitespace and split the input into an array of lines.
-var lineCollection = (sourceData.trim()).split("\n");
+// Iterate over each line of input data.
+lineEntries.forEach(function(currentLine) {
+  // For each line, split it by space and convert each part to a number.
+  const dateComponents = currentLine.split(" ").map(Number);
 
-// Iterate over each line of processed input data.
-lineCollection.forEach(function(currentLine) {
-  // Split the current line by spaces and convert each part to a number.
-  var numericValues = currentLine.split(" ").map(Number);
+  // Extract year, month, and day from the parsed components.
+  const yearVal = dateComponents[0];
+  const monthVal = dateComponents[1];
+  const dayVal = dateComponents[2];
 
-  // Extract year, month, and day from the parsed numbers.
-  var currentYear = numericValues[0];
-  var currentMonth = numericValues[1];
-  var currentDay = numericValues[2];
+  // Calculate the timestamp for the current input date.
+  const currentTimestamp = obtainTimestamp(yearVal, monthVal, dayVal);
 
-  // Calculate the timestamp for the current date.
-  var eventTimestamp = obtainTimeValue(currentYear, currentMonth, currentDay);
-
-  // Initialize a string to hold the era description.
-  var eraDescription = "";
+  // Initialize a string to store the era description.
+  let eraDescription = "";
 
   // Determine the Japanese era based on the timestamp.
-  if (eventTimestamp < obtainTimeValue(1868, 9, 8)) {
+  // The conditions are ordered chronologically and overwrite previous assignments
+  // if a later era's condition is met.
+
+  // Pre-Meiji era check
+  if (currentTimestamp < obtainTimestamp(1868, 9, 8)) {
     eraDescription = "pre-meiji";
   }
-  if (eventTimestamp >= obtainTimeValue(1868, 9, 8)) {
-    eraDescription = "meiji " + (currentYear - 1868 + 1) + " " + currentMonth + " " + currentDay;
+
+  // Meiji era check (starts Sep 8, 1868)
+  if (currentTimestamp >= obtainTimestamp(1868, 9, 8)) {
+    eraDescription = "meiji " + (yearVal - 1868 + 1) + " " + monthVal + " " + dayVal;
   }
-  if (eventTimestamp >= obtainTimeValue(1912, 7, 30)) {
-    eraDescription = "taisho " + (currentYear - 1912 + 1) + " " + currentMonth + " " + currentDay;
+
+  // Taisho era check (starts Jul 30, 1912)
+  if (currentTimestamp >= obtainTimestamp(1912, 7, 30)) {
+    eraDescription = "taisho " + (yearVal - 1912 + 1) + " " + monthVal + " " + dayVal;
   }
-  if (eventTimestamp >= obtainTimeValue(1926, 12, 25)) {
-    eraDescription = "showa " + (currentYear - 1926 + 1) + " " + currentMonth + " " + currentDay;
+
+  // Showa era check (starts Dec 25, 1926)
+  if (currentTimestamp >= obtainTimestamp(1926, 12, 25)) {
+    eraDescription = "showa " + (yearVal - 1926 + 1) + " " + monthVal + " " + dayVal;
   }
-  if (eventTimestamp >= obtainTimeValue(1989, 1, 8)) {
-    eraDescription = "heisei " + (currentYear - 1989 + 1) + " " + currentMonth + " " + currentDay;
+
+  // Heisei era check (starts Jan 8, 1989)
+  if (currentTimestamp >= obtainTimestamp(1989, 1, 8)) {
+    eraDescription = "heisei " + (yearVal - 1989 + 1) + " " + monthVal + " " + dayVal;
   }
 
   // Output the determined era description to the console.

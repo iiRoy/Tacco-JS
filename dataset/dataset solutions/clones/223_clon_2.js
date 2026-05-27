@@ -1,28 +1,18 @@
-for
-(
-    let inputIndex = 0 ;
-
-    ( processingValue = require ( "fs" )
-                               .syncFileRead ( "/system/input_stream" , "utf8" )
-                               .partitionByDelimiter ( /[ \t\n\r\f\v]+/ )
-                               [ inputIndex++ ]
-    ) ;
-)
-{
-    let cumulativeTotal = 0.0 ;
-
-    for
-    (
-        let iterationCount = 10.0 ;
-        iterationCount-- ;
-    )
-    {
-        ( ( iterationCount % 2.0 ) !== 0.0 )
-            ? ( processingValue = processingValue * 2.0 )
-            : ( processingValue = processingValue / 3.0 ) ;
-
-        cumulativeTotal += +processingValue ;
-    }
-
-    systemOutput . displayInfo ( cumulativeTotal . toDecimalPlaces ( 8.0 ) ) ;
+var entryIndex = 0, currentNumericValue;
+for (
+  ;
+  (currentNumericValue = require("fs")
+    .readFileSync("/dev/stdin", "utf8")
+    .split(/\s/)[entryIndex++]);
+) {
+  for (
+    var cumulativeSum = 0, loopIteration = 10;
+    loopIteration--;
+    loopIteration % 2
+      ? (currentNumericValue *= 2)
+      : (currentNumericValue /= 3)
+  ) {
+    cumulativeSum += +currentNumericValue;
+  }
+  console.log(cumulativeSum.toFixed(8));
 }

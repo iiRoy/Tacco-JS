@@ -1,185 +1,94 @@
-const fileSystemModule = require('fs');
+const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+let inputLines = fileContent.trim().split("\n");
 
-// --- Configuration Constants ---
-const INPUT_FILE_PATH = '/dev/stdin';
-const OPEN_SPACE_CHARACTER = '.'; // Represents a '.' in the input grid
-const TERMINATION_SIGNAL_HEIGHT = 0;
-const TERMINATION_SIGNAL_WIDTH = 0;
+// Helper function to check the termination condition
+const isTerminationCondition = (dimensionsArray) => {
+    return dimensionsArray[0] === 0 && dimensionsArray[1] === 0;
+};
 
-// --- Utility Functions ---
+while (true) {
+    let dimensions = inputLines.shift().split(" ").map(Number);
 
-/**
- * Safely parses a string into an integer. If parsing fails or results in NaN,
- * it returns a specified default value. This guards against malformed input.
- * @param {string} textValue - The string to be parsed.
- * @param {number} fallbackValue - The value to return if parsing is unsuccessful.
- * @returns {number} The parsed integer or the fallback value.
- */
-function safelyParseInteger(textValue, fallbackValue = 0) {
-    const parsedNumber = parseInt(textValue, 10);
-    return isNaN(parsedNumber) ? fallbackValue : parsedNumber;
-}
-
-/**
- * Retrieves and prepares the input data from the specified file path.
- * It reads the file, trims whitespace, splits it into individual lines,
- * and filters out any empty lines to ensure clean processing.
- * Includes error handling for file reading operations.
- * @returns {string[]} An array where each element is a line from the input file.
- */
-function obtainInputLineSegments() {
-    try {
-        const rawBufferContents = fileSystemModule.readFileSync(INPUT_FILE_PATH, 'utf8');
-        // Trim leading/trailing whitespace from the entire buffer and split by newline.
-        // Filter ensures that truly empty lines (e.g., multiple newlines) are discarded.
-        return rawBufferContents.trim().split('\n').filter(segment => segment.length > 0);
-    } catch (fileReadError) {
-        console.error(`An error occurred while attempting to read the input file: ${fileReadError.message}`);
-        // Return an empty array to prevent subsequent processing from crashing.
-        return [];
-    }
-}
-
-// --- Main Program Execution Flow ---
-
-let parsedInputSegments = obtainInputLineSegments();
-let currentLinePointer = 0; // Tracks the current line being processed from `parsedInputSegments`
-
-// The main loop continues as long as there are lines to process.
-while (currentLinePointer < parsedInputSegments.length) {
-    const headerLine = parsedInputSegments[currentLinePointer];
-
-    // Split the header line to get height and width tokens, then parse them.
-    const dimensionTokens = headerLine.split(' ');
-    const gridRowsCount = safelyParseInteger(dimensionTokens[0]);
-    const gridColsCount = safelyParseInteger(dimensionTokens[1]);
-
-    // Check for the termination condition (0 0).
-    if (gridRowsCount === TERMINATION_SIGNAL_HEIGHT && gridColsCount === TERMINATION_SIGNAL_WIDTH) {
-        break; // Exit the processing loop if the termination signal is found.
+    if (isTerminationCondition(dimensions)) {
+        break;
     }
 
-    // Advance the line pointer past the dimension line.
-    currentLinePointer++;
+    const gridHeight = dimensions[0];
+    const gridWidth = dimensions[1];
 
-    // --- Input Validation for Grid Dimensions ---
-    if (gridRowsCount <= 0 || gridColsCount <= 0) {
-        console.warn(`Encountered invalid grid dimensions: ${gridRowsCount}x${gridColsCount}. Skipping this block.`);
-        // If dimensions are invalid, we must skip the corresponding data lines.
-        currentLinePointer += gridRowsCount; // Assuming 'gridRowsCount' lines of data would follow
-        continue; // Move to the next block of input.
-    }
+    const heightGrid = []; // Renamed from 'yx'
 
-    // Initialize a 2D array to store the computed cumulative heights of '.' characters.
-    // `cumulativeDotHeights[r][c]` will represent the number of consecutive '.' characters
-    // upwards from and including the cell at `(r, c)`.
-    const cumulativeDotHeights = [];
-
-    // --- Populate the Cumulative Dot Heights Matrix ---
-    for (let rowIndex = 0; rowIndex < gridRowsCount; ++rowIndex) {
-        // Guard against unexpected end of input.
-        if (currentLinePointer >= parsedInputSegments.length) {
-            console.error("Premature end of input detected while reading grid data. Halting processing.");
-            // Set pointer to end to terminate outer loop.
-            currentLinePointer = parsedInputSegments.length;
-            break; // Exit inner loop to prevent out-of-bounds access.
-        }
-
-        const rowCharacterData = parsedInputSegments[currentLinePointer].split('');
-        cumulativeDotHeights[rowIndex] = []; // Initialize the current row array.
-
-        // Iterate through each character in the current row.
-        for (let colIndex = 0; colIndex < gridColsCount; ++colIndex) {
-            const cellChar = rowCharacterData[colIndex];
-
-            // Determine the cumulative height for the current cell.
-            if (cellChar === OPEN_SPACE_CHARACTER) {
-                // If it's an open space, its height is 1 plus the height of the cell directly above it (if any).
-                cumulativeDotHeights[rowIndex][colIndex] = (rowIndex === 0) ? 1 : (cumulativeDotHeights[rowIndex - 1][colIndex] + 1);
+    // Helper function to calculate the height for a single cell
+    const determineCellHeight = (currentRowIndex, currentColumnIndex, characterValue, previousHeightGrid) => {
+        const isObstacle = (characterValue !== '.');
+        if (isObstacle) {
+            return 0;
+        } else {
+            if (currentRowIndex === 0) {
+                return 1;
             } else {
-                // If it's not an open space, the cumulative height is 0.
-                cumulativeDotHeights[rowIndex][colIndex] = 0;
+                return previousHeightGrid[currentRowIndex - 1][currentColumnIndex] + 1;
             }
         }
-        currentLinePointer++; // Advance to the next line of input for the grid.
+    };
+
+    for (let rowIndex = 0; rowIndex < gridHeight; rowIndex++) { // Renamed from 'y'
+        const rowCharacters = inputLines.shift().split(""); // Renamed from 'ary'
+        heightGrid[rowIndex] = [];
+        for (let colIndex = 0; colIndex < gridWidth; colIndex++) { // Renamed from 'x', changed from forEach
+            const cellChar = rowCharacters[colIndex]; // Renamed from 'v'
+            heightGrid[rowIndex][colIndex] = determineCellHeight(rowIndex, colIndex, cellChar, heightGrid);
+        }
     }
 
-    // If the grid was not fully read due to premature EOF, skip to the next input block.
-    if (cumulativeDotHeights.length !== gridRowsCount) {
-        continue;
-    }
+    let maximumArea = 0; // Renamed from 'max'
 
-    // --- Calculate the Largest Rectangle Area for the Current Grid ---
-    let maximumRectangleAreaForCurrentBlock = 0; // Resets for each HxW block.
+    // Logic for Largest Rectangle in Histogram (LRH) for each row
+    for (let currentGridRow = 0; currentGridRow < gridHeight; currentGridRow++) { // Renamed from 'k'
+        const heightStack = []; // Renamed from 's'
+        const currentRowHeights = heightGrid[currentGridRow];
+        currentRowHeights[gridWidth] = 0; // Add a sentinel value at the end of the row
 
-    // Process each row of the `cumulativeDotHeights` matrix as a histogram.
-    for (let histogramRowIndex = 0; histogramRowIndex < gridRowsCount; ++histogramRowIndex) {
-        const heightMonotonicStack = []; // Stores [barHeight, effectiveStartIndex]
-        // Create a copy of the current histogram row and append a sentinel '0' bar.
-        // The sentinel ensures all remaining bars on the stack are processed at the end of the row.
-        const currentHistogramBars = [...cumulativeDotHeights[histogramRowIndex], 0];
+        for (let colIndex = 0; colIndex <= gridWidth; colIndex++) { // Renamed from 'x'
+            const currentBarHeight = currentRowHeights[colIndex]; // Renamed from 'v'
 
-        // Iterate through each bar (column) in the current histogram row, including the sentinel.
-        for (let currentColumnIndex = 0; currentColumnIndex <= gridColsCount; ++currentColumnIndex) {
-            const currentBarValue = currentHistogramBars[currentColumnIndex];
-
-            // --- Replicating the Original Histogram Algorithm's Logic ---
-            // This specific algorithm has a unique way of managing indices and pushes.
-
-            // Scenario 1: The stack is currently empty.
-            if (heightMonotonicStack.length === 0) {
-                // Push the current bar's value and a modified start index (`currentColumnIndex + 1`).
-                // This `+1` is a specific indexing convention from the original code.
-                heightMonotonicStack.push([currentBarValue, currentColumnIndex + 1]);
-                continue; // Move to the next bar.
+            // Original conditional flow for stack operations
+            if (heightStack.length === 0) {
+                heightStack.push([currentBarHeight, colIndex + 1]); // Preserving original 'x+1' for first push
+                continue;
             }
 
-            // Scenario 2: The current bar is strictly taller than the bar at the top of the stack.
-            if (heightMonotonicStack[heightMonotonicStack.length - 1][0] < currentBarValue) {
-                // Push the current bar's value and its actual column index.
-                heightMonotonicStack.push([currentBarValue, currentColumnIndex]);
-            }
-            // Scenario 3: The current bar has the same height as the bar at the top of the stack.
-            else if (heightMonotonicStack[heightMonotonicStack.length - 1][0] === currentBarValue) {
-                // The original code effectively does nothing (continues), extending the top bar's rectangle.
-            }
-            // Scenario 4: The current bar is shorter than the bar at the top of the stack.
-            else { // heightMonotonicStack[heightMonotonicStack.length - 1][0] > currentBarValue
-                // Process bars on the stack that are taller than or equal to the `currentBarValue`.
-                while (heightMonotonicStack.length > 0) {
-                    const poppedBarData = heightMonotonicStack.pop(); // [poppedHeight, poppedStartIndex]
-                    const poppedHeight = poppedBarData[0];
-                    const poppedStartIndex = poppedBarData[1];
+            const topOfStack = heightStack[heightStack.length - 1];
+            const topHeight = topOfStack[0];
 
-                    // If the `currentBarValue` is now taller than the `poppedHeight`,
-                    // push the `poppedBarData` back onto the stack and break.
-                    // This signifies that `currentBarValue` does not cut off `poppedHeight`.
-                    if (currentBarValue > poppedHeight) {
-                        heightMonotonicStack.push(poppedBarData);
+            if (topHeight < currentBarHeight) {
+                heightStack.push([currentBarHeight, colIndex]); // Preserving original 'x' for taller push
+            } else if (topHeight === currentBarHeight) {
+                // Original: continue;
+                // No explicit action needed, effectively extending the previous bar
+            } else { // topHeight > currentBarHeight
+                // Pop bars from stack that are taller than the current bar
+                while (heightStack.length > 0) {
+                    const poppedBar = heightStack.pop(); // Renamed from 'r'
+                    const poppedHeight = poppedBar[0];
+                    const poppedStartIndex = poppedBar[1];
+
+                    // Original logic for handling popped bars
+                    if (currentBarHeight > poppedHeight) {
+                        heightStack.push(poppedBar); // Re-push if current bar is taller than the popped one
                         break;
-                    }
-                    // If `currentBarValue` is the same height as `poppedHeight`, break.
-                    // The `poppedBarData` is consumed, and `currentBarValue` is not pushed.
-                    else if (currentBarValue === poppedHeight) {
-                        break;
-                    }
-                    // If `currentBarValue` is strictly shorter than `poppedHeight`,
-                    // calculate the area for the `poppedHeight` bar.
-                    else { // currentBarValue < poppedHeight
-                        // The width is calculated using `currentColumnIndex + 1` (as an exclusive end)
-                        // and `poppedStartIndex` (as an inclusive start). This `+1` is consistent
-                        // with the initial push in Scenario 1.
-                        const calculatedArea = poppedHeight * ((currentColumnIndex + 1) - poppedStartIndex);
-                        maximumRectangleAreaForCurrentBlock = Math.max(maximumRectangleAreaForCurrentBlock, calculatedArea);
+                    } else if (currentBarHeight === poppedHeight) {
+                        break; // Stop if current bar is of the same height as the popped one
+                    } else { // currentBarHeight < poppedHeight
+                        const calculatedWidth = (colIndex + 1) - poppedStartIndex;
+                        maximumArea = Math.max(maximumArea, poppedHeight * calculatedWidth);
                     }
                 }
-                // Crucially, in this specific algorithm, `currentBarValue` is NOT explicitly pushed
-                // after this `while` loop if it was shorter than or equal to popped bars.
-                // It relies on subsequent iterations or the initial `if` conditions to be pushed.
+                // Important: The original code does NOT push 'currentBarHeight' here after the while loop.
+                // It only pushes if 'heightStack.length === 0' or 'topHeight < currentBarHeight'
+                // (handled by the initial 'if' and 'else if' blocks).
             }
         }
     }
-    // After processing all rows and their respective histograms for the current grid,
-    // print the maximum area found for this block.
-    console.log(maximumRectangleAreaForCurrentBlock);
+    console.log(maximumArea);
 }

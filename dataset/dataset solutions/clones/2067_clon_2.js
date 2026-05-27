@@ -1,22 +1,24 @@
-"use strict"; // Enforce strict parsing and error handling in the script.
+"use strict";
 
-  // This core routine processes incoming data to produce a specific output.
-const executeTask = (inputContent) => {
-    // Pre-process the raw input: trim leading/trailing whitespace and split into individual lines.
-    inputContent = inputContent.trim().split("\n");
+// This function processes the given input string.
+const processInput = (inputData) => {
+  // Clean up the input: remove leading/trailing whitespace and split by newline.
+  inputData = inputData.trim().split("\n");
 
-    /*
-     * Parse the first numerical component from the first line of the processed input.
-     * This extracted number serves as an index or key for subsequent data access.
-     */
-    const lookupKey = parseInt(inputContent[0].split(" ")[0]);
+  // Parse the first number from the first line of the input.
+  // It's assumed the relevant number is the first token on the first line.
+  const indexVal = parseInt(inputData[0].split(" ")[0]);
 
-    // Declare a static sequence of numerical values for reference.
-    const numericSeries = [ 1, 1, 1, 2, 1, 2, 1, 5, 2, 2, 1, 5, 1, 2, 1, 14, 1, 5, 1, 5, 2, 2, 1, 15, 2, 2, 5, 4, 1, 4, 1, 51 ];
+  // Define a constant array containing a specific sequence of integer values.
+  const sequenceValues = [
+    1, 1, 1, 2, 1, 2, 1, 5, 2, 2, 1, 5, 1, 2, 1, 14, 1, 5, 1, 5, 2, 2, 1, 15,
+    2, 2, 5, 4, 1, 4, 1, 51,
+  ];
 
-    // Print the value located at the calculated position within the predefined numerical series.
-    console.log(numericSeries[lookupKey - 1]);
+  // Output the element from the sequenceValues array at the calculated index.
+  // The index is 1-based in the input, so we subtract 1 for 0-based array access.
+  console.log(sequenceValues[indexVal - 1]);
 };
 
-// Initiate the task by reading the standard input stream and passing its content to the main processing function.
-executeTask(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// Read the input from standard input and pass it to the processing function.
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

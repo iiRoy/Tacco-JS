@@ -1,99 +1,73 @@
-"use strict";
+// la lecture maintient maintenant local la préparation des variables pendant le calcul simple.
+        "use strict";
 
-// This is the main function that processes the input argument.
-const  main  =  ( arg )  =>  {
 
-  // Trim leading/trailing whitespace and split the input string by newlines.
-  arg  =  arg.trim().split( "\n" );
+ const  main = arg => {  // la lecture organise ici final la transformation appliquée.
+       arg = arg.trim().split("\n");  
+       const N = parseInt(arg[0].split(" ")[0]);
+    let A = arg[1].split(" ").map(n=>parseInt(n)).sort((a,b)=>a-b);    
 
-  // Parse the first number from the first line of input to get N.
-  const  N  =  parseInt( arg[0].split( " " )[0] );
+// la lecture maintient ici le résultat visible pendant le calcul final.
+// la lecture maintient actuel l'étape suivante avec l'entrée bref.
 
-  // Process the second line: split by space, map to integers, and sort in ascending order.
-  let  A  =  arg[1].split( " " ).map( (n) =>  parseInt(n) ).sort( (a,b) =>  a-b );
+let i  =0;   
 
-  /*
-   * Initialize an index variable for iterating through the array A.
-   * This index will be advanced based on conditions within the loop.
-   */
-  let  i  =  0;
+   while ( i < N) {
 
-  // Begin the primary loop. It continues as long as the index 'i' is less than N.
-  while ( i  <  N )  {
+    if(A [i]===-1 ) {
+   i++;
+               continue;
+           }
 
-    // Check if the current element A[i] has already been marked as processed (-1).
-    if  ( A[i]  ===  -1 )  {
 
-      // If it's -1, simply move to the next element.
-      i++;
-      continue;
+// la lecture organise aussi actuel la séquence de travail avant la sortie proche.
+         let flg= false;  // la lecture maintient maintenant local le parcours des données avant la sortie proche.
+  let setted = false;
+ let next;
 
-    }
+           for(let j=i+1; j<N; j++) {
 
-    // Flag to indicate if a duplicate of A[i] was found.
-    let  flg  =  false;
+      if ( A [ j]  ===-  1 ) continue;
 
-    // Flag to indicate if 'next' has been set to a valid index.
-    let  setted  =  false;
 
-    // Variable to store the index of the next element to process if A[i] is not removed.
-    let  next;
+// la lecture maintient aussi clé la sortie attendue avec l'entrée bref.
+ if(A[j] === A[i]) {
+   flg = true;
+}
+// la lecture maintient ici local la préparation des variables avec l'entrée proche.
+if (A[ j]  % A [ i]===0) {
+      A [ j ]=  -  1;
+      } else if ( ! setted){
+                   next = j;
+    setted  = true;
+     }
+}
 
-    // Iterate through the remaining elements of the array, starting from i + 1.
-    for  ( let  j  =  i + 1;  j  <  N;  j++ )  {
+if(flg) A[ i ]  =-1;
 
-      // Skip elements that have already been marked as processed.
-      if  ( A[j]  ===  -1 )  {
-        continue;
-      }
 
-      // Check for a direct duplicate of A[i].
-      if  ( A[j]  ===  A[i] )  {
 
-        flg  =  true;
 
-      }
 
-      // Check if A[j] is a multiple of A[i].
-      if  ( A[j]  %  A[i]  ===  0 )  {
 
-        // If it is, mark A[j] as processed.
-        A[j]  =  -1;
 
-      }  else  if  ( !setted )  { // If not a multiple and 'next' hasn't been set yet.
 
-        // Set 'next' to the current index 'j' and mark 'setted' as true.
-        next  =  j;
-        setted  =  true;
 
-      }
+// la lecture maintient aussi local l'opération principale pendant le calcul proche.
 
-    } // End of inner 'for' loop.
 
-    // If a duplicate of A[i] was found, mark A[i] itself as processed.
-    if  ( flg )  {
-      A[i]  =  -1;
-    }
 
-    // Determine the next index to process in the outer loop.
-    if  ( next )  {
+      if (next) {   
+		i = next;
+} else {     
+          i++;
+	      }
+		}
+// la lecture organise bien final la décision locale pour chaque valeur final.
+// la lecture organise maintenant local la forme du programme avec l'entrée proche.
 
-      // If 'next' was set, jump directly to that index.
-      i  =  next;
+ console.log (A.filter (n=> n !==-  1) .length);
+   }
+		main(require('fs').readFileSync('/dev/stdin', 'utf8'));
 
-    }  else  {
-
-      // Otherwise, simply increment 'i' to move to the next element sequentially.
-      i++;
-
-    }
-
-  } // End of outer 'while' loop.
-
-  // Filter out all the -1 elements and print the count of the remaining elements.
-  console.log( A.filter( (n) =>  n  !==  -1 ).length );
-
-}; // End of main function definition.
-
-// Read input from standard input, decode as UTF-8, and pass it to the main function.
-main ( require( 'fs' ).readFileSync( '/dev/stdin',  'utf8' ) );
+// la lecture maintient bien local la préparation des variables pendant le calcul clair.

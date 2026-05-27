@@ -1,29 +1,25 @@
-'use strict';
+'use strict'
 
-const executeProcessing = function (rawData) {
-    const lineSections = rawData.split('\n');
-    console.log(lineSections);
+const processInputData = function (rawData) {
+    const lineSegments = rawData.split(`\n`);
 
-    const firstSegment = lineSections[0];
-    const separatorPosition = firstSegment.indexOf(' ');
-    const quantityIndicator = Number(firstSegment.substring(0, separatorPosition));
-    const criteriaValue = Number(firstSegment.substring(separatorPosition + 1));
+    console.log(lineSegments);
 
-    const secondSegment = lineSections[1];
-    const measurementsList = secondSegment.match(/\d+/g).map(Number);
+    const firstLineComponents = lineSegments[0].split(` `);
+    const friendCountValue = parseInt(firstLineComponents[0], 10);
+    const heightThreshold = parseInt(firstLineComponents[1], 10);
 
-    let conformingIndividuals = 0;
-    for (const item of measurementsList) {
-        if (item >= criteriaValue) {
-            conformingIndividuals++;
-        }
-    }
+    const secondLineComponents = lineSegments[1].split(` `);
+    const individualHeights = secondLineComponents.reduce((accumulator, currentString) => {
+        accumulator.push(parseInt(currentString, 10));
+        return accumulator;
+    }, []);
 
-    console.log(conformingIndividuals);
-};
+    const eligibleFriendCount = individualHeights.reduce((tally, currentHeight) => {
+        return tally + (currentHeight >= heightThreshold ? 1 : 0);
+    }, 0);
 
-const obtainResource = require('fs').readFileSync;
-const resourcePath = '/dev/stdin';
-const charEncoding = 'utf8';
+    console.log(eligibleFriendCount);
+}
 
-executeProcessing(obtainResource(resourcePath, charEncoding));
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

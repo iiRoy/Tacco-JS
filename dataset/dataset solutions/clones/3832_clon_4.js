@@ -1,24 +1,28 @@
-let receivedData = '';
-process.stdin.on('data', (inputSegment) => {
-    receivedData += inputSegment.toString();
+var inputBuffer = [];
+var ioHandler = require('readline');
+
+var inputProcessor = ioHandler.createInterface({
+    input: process.stdin,
+    output: process.stdout,
 });
 
-process.stdin.on('end', () => {
-    const dataChunks = receivedData.trim().split('\n');
-    const sourceSequence = dataChunks[0];
-    const targetIndex = Number(dataChunks[1]);
+inputProcessor.on('line', function (currentLine) {
+    inputBuffer.push(currentLine);
+});
 
-    const uniqueSegments = new Set();
-    for (let currentStart = 0; currentStart < sourceSequence.length; ++currentStart) {
-        for (let currentEnd = currentStart; currentEnd < sourceSequence.length; ++currentEnd) {
-            const extractedPortion = sourceSequence.substring(currentStart, currentEnd + 1);
-            if (extractedPortion.length <= targetIndex) {
-                uniqueSegments.add(extractedPortion);
-            }
-        }
-    }
+inputProcessor.on('close', function () {
+    var sourceString = inputBuffer[0];
+    var targetRank = Number(inputBuffer[1]);
 
-    const orderedCollection = Array.from(uniqueSegments).sort();
+    var allGeneratedSubstrings = Array.from({ length: sourceString.length }, (_, startPosition) =>
+        Array.from({ length: sourceString.length - startPosition }, (_, currentLength) =>
+            sourceString.substring(startPosition, startPosition + currentLength + 1)
+        )
+    ).flat();
 
-    console.log(orderedCollection[targetIndex - 1]);
+    var distinctPhrases = new Set(allGeneratedSubstrings);
+
+    var uniqueSortedPhrases = Array.from(distinctPhrases).sort();
+
+    console.log(uniqueSortedPhrases[targetRank - 1]);
 });

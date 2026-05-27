@@ -1,56 +1,54 @@
-const MAX_PRIME_CANDIDATE_VALUE = 50024;
-let is_prime_flag = new Array(MAX_PRIME_CANDIDATE_VALUE + 1).fill(true);
-is_prime_flag[0] = false;
-is_prime_flag[1] = false;
+const MAX_PRIME_BOUND = 50024;
+const composite_flags = new Uint8Array(MAX_PRIME_BOUND);
+const prime_sequence = [];
 
-for (let current_factor = 2; current_factor * current_factor <= MAX_PRIME_CANDIDATE_VALUE; current_factor++) {
-    if (is_prime_flag[current_factor]) {
-        for (let multiple = current_factor * current_factor; multiple <= MAX_PRIME_CANDIDATE_VALUE; multiple += current_factor) {
-            is_prime_flag[multiple] = false;
+composite_flags[0] = 1;
+composite_flags[1] = 1;
+
+for (let current_factor = 2; current_factor * current_factor < MAX_PRIME_BOUND; ++current_factor) {
+    if (composite_flags[current_factor] === 0) {
+        for (let multiple_index = current_factor * current_factor; multiple_index < MAX_PRIME_BOUND; multiple_index += current_factor) {
+            composite_flags[multiple_index] = 1;
         }
     }
 }
 
-let prime_numbers_list = [];
-for (let num_val = 2; num_val <= MAX_PRIME_CANDIDATE_VALUE; num_val++) {
-    if (is_prime_flag[num_val]) {
-        prime_numbers_list.push(num_val);
+for (let number_candidate = 2; number_candidate < MAX_PRIME_BOUND; ++number_candidate) {
+    if (composite_flags[number_candidate] === 0) {
+        prime_sequence.push(number_candidate);
     }
 }
 
-const io_handler = require('readline');
+const sequence_length = prime_sequence.length;
 
-const input_reader = io_handler.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-    terminal: false
-});
+process.stdin.on("data", function(input_buffer) {
+    String(input_buffer).trim().split("\n").some(function(line_content) {
+        const query_value = Number(line_content);
 
-function find_upper_bound_index(arr_data, target_val) {
-    let low_idx = 0;
-    let high_idx = arr_data.length;
+        let lower_bound = 0;
+        let upper_bound = sequence_length - 1;
+        let insertion_point = -1;
 
-    while (low_idx < high_idx) {
-        let mid_idx = Math.floor((low_idx + high_idx) / 2);
-        if (arr_data[mid_idx] <= target_val) {
-            low_idx = mid_idx + 1;
+        while (lower_bound <= upper_bound) {
+            const mid_point = Math.floor((lower_bound + upper_bound) / 2);
+            if (prime_sequence[mid_point] > query_value) {
+                insertion_point = mid_point;
+                upper_bound = mid_point - 1;
+            } else {
+                lower_bound = mid_point + 1;
+            }
+        }
+
+        const next_prime_in_sequence = prime_sequence[insertion_point];
+        const candidate_previous_prime = prime_sequence[insertion_point - 1];
+
+        let result_previous_prime;
+        if (candidate_previous_prime === query_value) {
+            result_previous_prime = prime_sequence[insertion_point - 2];
         } else {
-            high_idx = mid_idx;
+            result_previous_prime = candidate_previous_prime;
         }
-    }
-    return low_idx;
-}
 
-input_reader.on('line', (line_content) => {
-    let current_input_value = parseInt(line_content.trim(), 10);
-
-    let next_prime_idx = find_upper_bound_index(prime_numbers_list, current_input_value);
-
-    let following_prime = prime_numbers_list[next_prime_idx];
-    let preceding_prime = prime_numbers_list[next_prime_idx - 1];
-    let two_before_following_prime = prime_numbers_list[next_prime_idx - 2];
-
-    let first_output_val = (preceding_prime === current_input_value) ? two_before_following_prime : preceding_prime;
-
-    console.log(first_output_val, following_prime);
-});
+        console.log(result_previous_prime, next_prime_in_sequence);
+    });
+}).resume();

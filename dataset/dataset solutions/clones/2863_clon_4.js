@@ -1,50 +1,48 @@
-const primeDivisor = 1000000007;
+let inputBuffer = [];
+const ioHandler = require('readline');
 
-const inputProcessor = require('readline');
+const inputReader = ioHandler.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+});
 
-async function executePathCalculation() {
-    const streamHandler = inputProcessor.createInterface({
-        input: process.stdin,
-        output: process.stdout,
-        crlfDelay: Infinity
-    });
+inputReader.on('line', (currentLine) => {
+    inputBuffer.push(currentLine);
+});
 
-    const inputLines = [];
-    for await (const currentLine of streamHandler) {
-        inputLines.push(currentLine);
-    }
-    streamHandler.close();
+inputReader.on('close', () => {
+    const firstLineParts = inputBuffer[0].split(" ");
+    const targetValue = Number(firstLineParts[0]);
+    const forbiddenCount = Number(firstLineParts[1]);
+    inputBuffer.shift();
+    const forbiddenStepsRaw = inputBuffer.map(val => Number(val));
 
-    const initialConfig = inputLines[0].split(" ").map(Number);
-    const maxDistance = initialConfig[0];
-    const numRestricted = initialConfig[1];
+    const forbiddenStepsSet = new Set(forbiddenStepsRaw);
 
-    const restrictedPositions = new Set(inputLines.slice(1).map(Number));
+    const modulusConstant = 1000000007;
 
-    const pathAccumulator = Array(maxDistance + 1).fill(0);
+    const dpTable = Array(targetValue + 1).fill(0);
 
-    pathAccumulator[maxDistance] = 1;
+    dpTable[targetValue] = 1;
 
-    for (let currentSpot = maxDistance - 1; currentSpot >= 0; currentSpot--) {
-        if (restrictedPositions.has(currentSpot)) {
-            pathAccumulator[currentSpot] = 0;
+    for (let currentIdx = targetValue - 1; currentIdx >= 0; currentIdx--) {
+        if (forbiddenStepsSet.has(currentIdx)) {
+            dpTable[currentIdx] = 0;
             continue;
         }
 
-        let waysToReach = 0;
-        
-        if (currentSpot + 1 <= maxDistance) {
-            waysToReach = (waysToReach + pathAccumulator[currentSpot + 1]) % primeDivisor;
+        let currentPathSum = 0;
+
+        if (currentIdx + 1 <= targetValue) {
+            currentPathSum = (currentPathSum + dpTable[currentIdx + 1]) % modulusConstant;
         }
-        
-        if (currentSpot + 2 <= maxDistance) {
-            waysToReach = (waysToReach + pathAccumulator[currentSpot + 2]) % primeDivisor;
+
+        if (currentIdx + 2 <= targetValue) {
+            currentPathSum = (currentPathSum + dpTable[currentIdx + 2]) % modulusConstant;
         }
-        
-        pathAccumulator[currentSpot] = waysToReach;
+
+        dpTable[currentIdx] = currentPathSum;
     }
 
-    console.log(pathAccumulator[0]);
-}
-
-executePathCalculation();
+    console.log(dpTable[0]);
+});

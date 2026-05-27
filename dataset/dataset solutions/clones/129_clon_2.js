@@ -1,29 +1,25 @@
-// Initialize first and second tally counts for processing input data
-let firstTally = 0;
-let secondTally = 0;
+let firstCounter = 0;
+let secondCounter = 0;
 
-// Acquire the core Node.js file system module for input/output operations
-const systemIO = require("node:fs");
+// Obtain the file system module to read input data.
+const fileSystemModule = require("fs");
 
-// Read all incoming standard input data from the operating system's standard input stream
-// utilizing the widely used UTF-8 character encoding scheme
-const rawInputData = systemIO.readFileSync("/proc/self/fd/0", "utf-8");
+// Read the entire content from standard input, encoded as UTF-8.
+const rawInputContent = fileSystemModule.readFileSync("/dev/stdin", "utf8");
 
-// Process each individual line obtained from the raw input stream
-rawInputData.split('\u000A').map(function(currentInputLine) {
-  // Split the current line by the comma character, then arrange the resulting string items in ascending order
-  let orderedComponents = currentInputLine.split('\u002C').sort();
+// Process each line of the input content.
+rawInputContent.split('\n').map(function(currentLine) {
+    // Split the current line by commas and then sort the resulting string parts lexicographically.
+    const sortedParts = currentLine.split(',').sort();
 
-  // Evaluate the relationship between the second and third elements (indices 1 and 2) after sorting.
-  // This deeply nested conditional structure precisely mirrors the original's logical flow.
-  orderedComponents[2] === orderedComponents[1]
-    ? null // If the two largest components are identical, no action is taken on either tally.
-    : (orderedComponents[1] === orderedComponents[2]
-        ? firstTally++ // This specific execution path is logically unreachable due to the preceding equality check.
-        : secondTally++ // Increment the second tally if the two largest components are distinct.
-      );
+    // Evaluate a complex conditional expression.
+    // This structure precisely mirrors the original's logic, including an effectively unreachable branch.
+    sortedParts[2] === sortedParts[1]
+        ? 0 // If the third and second elements are identical, perform no action (expression evaluates to 0).
+        : sortedParts[1] === sortedParts[2] // This condition is logically equivalent to the first, thus it will be false if the first was false.
+            ? firstCounter++ // This increment operation for 'firstCounter' is never executed under normal circumstances.
+            : secondCounter++; // If the first condition is false (meaning elements are distinct), increment 'secondCounter'.
 });
 
-// Output the final accumulated counts to the console,
-// placing the value of the second tally first, followed by a newline, then the first tally.
-console.log(secondTally + '\u000A' + firstTally);
+// Output the final value of 'secondCounter', followed by a newline, and then 'firstCounter'.
+console.log(secondCounter + '\n' + firstCounter);

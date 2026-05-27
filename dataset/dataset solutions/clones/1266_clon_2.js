@@ -1,63 +1,57 @@
-function ProcessInput(sourceData)
-{
-  // This function takes raw input and processes it to generate patterns.
-  const parsedEntries = sourceData.trim().split("\n") ;
+function ProcessInputData(rawDataString) {
+  // Trim leading/trailing whitespace and split the input into individual lines.
+  const inputLines = rawDataString.trim().split("\n");
 
-  let totalEntries = parsedEntries.length; // Get the total count of input lines.
+  // Determine the total number of lines provided in the input.
+  let totalLines = inputLines.length;
 
-  // Loop through each line of the input data.
-  for (let currentLineIdx = 0; currentLineIdx < totalEntries; currentLineIdx++)
-  {
-    // Split the line by space and convert each part to an integer.
-    let currentValues = parsedEntries[currentLineIdx]
-      .split(" ")
-      .map( (element) => parseInt(element, 10) );
+  // Iterate through each line of the input.
+  for (let lineIdx = 0; lineIdx < totalLines; lineIdx++) {
+    // Parse the current line to extract height and width values.
+    // Split by space, then convert each part to a number.
+    let currentDimensions = inputLines[lineIdx].split(" ").map((strNum) => Number(strNum));
 
-    // Assign the first value as the height dimension.
-    let firstDimension = currentValues[0] ;
-    // Assign the second value as the width dimension.
-    let secondDimension = currentValues[1] ;
+    // Assign the first value as height and the second as width.
+    let gridHeight = currentDimensions[0];
+    let gridWidth = currentDimensions[1];
 
-    // Check for the termination condition: both dimensions are zero.
-    if (firstDimension === 0 && secondDimension === 0) {
-      break; // Exit the loop if the termination condition is met.
+    // If both height and width are zero, it's the termination condition.
+    if (gridHeight === 0 && gridWidth === 0) {
+      break; // Exit the loop.
     }
 
-    // Initialize two pattern strings.
-    let hashDotPattern = ''; // For patterns starting with '#'.
-    let dotHashPattern = ''; // For patterns starting with '.'.
+    // Initialize two string builders for the alternating row patterns.
+    let firstRowPattern = "";
+    let secondRowPattern = "";
 
-    // Build the two base patterns based on the 'secondDimension' (width).
-    for (let charIndex = 0; charIndex < secondDimension; charIndex++)
-    {
-      if (charIndex % 2 === 0)
-      {
-        hashDotPattern += '#'; // Add '#' to the first pattern.
-        dotHashPattern += '.'; // Add '.' to the second pattern.
-      }
-      else
-      {
-        hashDotPattern += '.'; // Add '.' to the first pattern.
-        dotHashPattern += '#'; // Add '#' to the second pattern.
+    // Construct the two alternating patterns based on the grid width.
+    for (let columnIndex = 0; columnIndex < gridWidth; columnIndex++) {
+      if (columnIndex % 2 === 0) {
+        // For even columns, first pattern gets '#', second gets '.'.
+        firstRowPattern += "#";
+        secondRowPattern += ".";
+      } else {
+        // For odd columns, first pattern gets '.', second gets '#'.
+        firstRowPattern += ".";
+        secondRowPattern += "#";
       }
     }
 
-    // Print the generated patterns based on the 'firstDimension' (height).
-    for (let displayRowIdx = 0; displayRowIdx < firstDimension; displayRowIdx++)
-    {
-      if (displayRowIdx % 2 === 0)
-      {
-        console.log(hashDotPattern); // Output the pattern starting with '#'.
-      }
-      else
-      {
-        console.log(dotHashPattern); // Output the pattern starting with '.'.
+    // Print the grid rows based on the constructed patterns.
+    for (let rowIndex = 0; rowIndex < gridHeight; rowIndex++) {
+      if (rowIndex % 2 === 0) {
+        // For even rows, print the first pattern.
+        console.log(firstRowPattern);
+      } else {
+        // For odd rows, print the second pattern.
+        console.log(secondRowPattern);
       }
     }
-    // Print an empty line to separate outputs for different sets of dimensions.
+
+    // Print an empty line after each grid to separate outputs.
     console.log();
   }
 }
 
-// Execute the processing function by reading input from standard input.
-ProcessInput(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// Read input from standard input and pass it to the main processing function.
+ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,31 +1,36 @@
 'use strict';
 
-function handleInputData(sourcePayload) {
-  const lineCollection = sourcePayload.trim().split('\n');
-  const entityList = lineCollection[1].split(' ').map(Number);
+function processInputAndCalculate(sourceText) {
+    const processedLines = sourceText.trim().split('\n');
 
-  // Sort the entityList ascendingly
-  const sortedElements = entityList.sort((left, right) => left - right);
+    const totalItems = Number(processedLines[0].split(' ')[0]);
+    const entityMeasures = processedLines[1].split(' ').map(Number).sort((valA, valB) => valA - valB);
 
-  // Iterative GCD function
-  const computeGreatestCommonDivisor = (operandA, operandB) => {
-    while (operandB !== 0) {
-      const remainderResult = operandA % operandB;
-      operandA = operandB;
-      operandB = remainderResult;
+    const computeGreatestCommonDivisor = (firstOperand, secondOperand) => {
+        while (secondOperand !== 0) {
+            const remainder = firstOperand % secondOperand;
+            firstOperand = secondOperand;
+            secondOperand = remainder;
+        }
+        return firstOperand;
+    };
+
+    let smallestFactor;
+
+    if (totalItems < 2) {
+        smallestFactor = Number.MAX_SAFE_INTEGER;
+    } else {
+        const pairStartIndices = Array.from({ length: totalItems - 1 }, (_, k) => k);
+
+        smallestFactor = pairStartIndices.reduce((currentMinimum, currentIndex) => {
+            const currentEntity = entityMeasures[currentIndex];
+            const nextEntity = entityMeasures[currentIndex + 1];
+            const pairDivisor = computeGreatestCommonDivisor(currentEntity, nextEntity);
+            return Math.min(currentMinimum, pairDivisor);
+        }, Number.MAX_SAFE_INTEGER);
     }
-    return operandA;
-  };
 
-  // Generate an array of pairwise GCDs using map
-  const gcdsOfAdjacentPairs = sortedElements.slice(0, -1).map((element, index) => {
-    return computeGreatestCommonDivisor(element, sortedElements[index + 1]);
-  });
-
-  // Find the minimum among the calculated GCDs using reduce
-  const finalOutputValue = gcdsOfAdjacentPairs.reduce((minVal, currentVal) => Math.min(minVal, currentVal), Number.MAX_SAFE_INTEGER);
-
-  console.log(finalOutputValue);
+    console.log(smallestFactor);
 }
 
-handleInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processInputAndCalculate(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,119 +1,121 @@
-"use strict";
+class InputProcessor {
+    constructor(rawInput) {
+        this.tokens = rawInput.split(/ |\n/);
+        this.currentIndex = 0;
+    }
 
-const dataSource = require("fs").readFileSync("/dev/stdin", "utf8");
-const numericDataStream = dataSource.trim().split(/\s+/).map(Number);
-let streamPosition = 0;
+    readInteger() {
+        return Number(this.tokens[this.currentIndex++]);
+    }
 
-const acquireValue = () => numericDataStream[streamPosition++];
-const extractSegment = (itemCount) => {
-    const segment = numericDataStream.slice(streamPosition, streamPosition + itemCount);
-    streamPosition += itemCount;
-    return segment;
-};
+    readBigInteger() {
+        return BigInt(this.tokens[this.currentIndex++]);
+    }
 
-const createTwoDimensionalArray = (rows, columns, initialContent) => 
-    Array.from({ length: rows }, () => Array.from({ length: columns }, () => initialContent));
+    readString() {
+        return this.tokens[this.currentIndex++];
+    }
 
-const executeComputation = () => {
-    const matrixDimension = acquireValue();
-    const scoreMap = createTwoDimensionalArray(matrixDimension, matrixDimension, -1);
-    let overallHighestScore = 0;
-    let totalOffset = 0;
+    readIntegerArray(count) {
+        const slice = this.tokens.slice(this.currentIndex, this.currentIndex + count);
+        this.currentIndex += count;
+        return slice.map(Number);
+    }
 
-    const initialPairIndices = extractSegment(2).sort((v1, v2) => v1 - v2).map(val => val - 1);
-    scoreMap[initialPairIndices[0]][initialPairIndices[1]] = 0;
-
-    const generateUpdateAndTrackMax = (currentMap, inputA, inputB, inputC, inputD) => {
-        const candidateScore = Math.max(currentMap[inputC][inputD], currentMap[inputA][inputB] + 1);
-        overallHighestScore = Math.max(overallHighestScore, candidateScore);
-        return { targetRow: inputC, targetCol: inputD, newValue: candidateScore };
-    };
-
-    const applyFirstConditionSet = (valA, valB, valC, dim, updateCollector) => {
-        if (valA !== valB) {
-            updateCollector(valB, valB, valA, valC);
-        } else {
-            for (let k = 0; k < valA; k++) {
-                updateCollector(k, valA, k, valC);
-            }
-            for (let k = valA + 1; k < valC; k++) {
-                updateCollector(valA, k, k, valC);
-            }
-            for (let k = valC; k < dim; k++) {
-                updateCollector(valA, k, valC, k);
-            }
+    readMatrix(height, width) {
+        const matrix = [];
+        for (let i = 0; i < height; i++) {
+            matrix.push(this.readIntegerArray(width));
         }
-    };
+        return matrix;
+    }
+}
 
-    const applySecondConditionSet = (valA, valB, valC, dim, updateCollector) => {
-        if (valB !== valC) {
-            updateCollector(valC, valC, valA, valB);
-        } else {
-            for (let k = 0; k < valA; k++) {
-                updateCollector(k, valB, k, valA);
-            }
-            for (let k = valA; k < valC; k++) {
-                updateCollector(k, valC, valA, k);
-            }
-            for (let k = valC + 1; k < dim; k++) {
-                updateCollector(valC, k, valA, k);
-            }
-        }
-    };
-
-    const iterateOverSegments = (currentIteration, currentMapState, currentTotalOffset) => {
-        if (currentIteration >= matrixDimension) {
-            return { finalMap: currentMapState, finalOffset: currentTotalOffset };
-        }
-
-        const currentTripletIndices = extractSegment(3).sort((v1, v2) => v1 - v2).map(val => val - 1);
-
-        if (currentTripletIndices[0] === currentTripletIndices[2]) {
-            return iterateOverSegments(
-                currentIteration + 1,
-                currentMapState,
-                currentTotalOffset + 1
-            );
-        }
-
-        let collectedUpdatesForIteration = [];
-
-        const performTransitionAndCollect = (idx1, idx2, idx3, idx4) => {
-            const updateResult = generateUpdateAndTrackMax(currentMapState, idx1, idx2, idx3, idx4);
-            collectedUpdatesForIteration.push(updateResult);
-        };
-
-        const firstIndex = currentTripletIndices[0];
-        const secondIndex = currentTripletIndices[1];
-        const thirdIndex = currentTripletIndices[2];
-
-        performTransitionAndCollect(firstIndex, firstIndex, secondIndex, thirdIndex);
-
-        applyFirstConditionSet(firstIndex, secondIndex, thirdIndex, matrixDimension, performTransitionAndCollect);
-        applySecondConditionSet(firstIndex, secondIndex, thirdIndex, matrixDimension, performTransitionAndCollect);
-
-        collectedUpdatesForIteration.forEach(update => {
-            currentMapState[update.targetRow][update.targetCol] = Math.max(currentMapState[update.targetRow][update.targetCol], update.newValue);
-        });
-
-        return iterateOverSegments(
-            currentIteration + 1,
-            currentMapState,
-            currentTotalOffset
-        );
-    };
-
-    const finalStateAfterIterations = iterateOverSegments(1, scoreMap, totalOffset);
-    
-    const lastSingleIndex = acquireValue() - 1;
-    
-    generateUpdateAndTrackMax(
-        finalStateAfterIterations.finalMap,
-        lastSingleIndex, lastSingleIndex, lastSingleIndex, lastSingleIndex
+function createMultiDimensionalArray(initialValue, ...dimensions) {
+    if (dimensions.length === 0) {
+        return initialValue;
+    }
+    const currentDim = dimensions[0];
+    const remainingDims = dimensions.slice(1);
+    return Array.from({ length: currentDim }, () =>
+        createMultiDimensionalArray(initialValue, ...remainingDims)
     );
-    
-    return overallHighestScore + finalStateAfterIterations.finalOffset;
-};
+}
 
-const finalResult = executeComputation();
-if (finalResult !== undefined) console.log(String(finalResult));
+function processSolution() {
+    const rawInput = require("fs").readFileSync("/dev/stdin", "utf8");
+    const inputReader = new InputProcessor(rawInput);
+
+    const dimensionSize = inputReader.readInteger();
+    let scoreGrid = createMultiDimensionalArray(-1, dimensionSize, dimensionSize);
+    let globalMaxScore = 0;
+    let skippedTripletsCount = 0;
+
+    const initialPair = inputReader.readIntegerArray(2).sort((a, b) => a - b).map(val => val - 1);
+    scoreGrid[initialPair[0]][initialPair[1]] = 0;
+
+    function* generateUpdateTuples(currentN, val0, val1, val2) {
+        yield [val0, val0, val1, val2];
+
+        if (val0 !== val1) {
+            yield [val1, val1, val0, val2];
+        } else {
+            for (let j = 0; j < val0; j++) yield [j, val0, j, val2];
+            for (let j = val0 + 1; j < val2; j++) yield [val0, j, j, val2];
+            for (let j = val2; j < currentN; j++) yield [val0, j, val2, j];
+        }
+
+        if (val1 !== val2) {
+            yield [val2, val2, val0, val1];
+        } else {
+            for (let j = 0; j < val0; j++) yield [j, val1, j, val0];
+            for (let j = val0; j < val2; j++) yield [j, val2, val0, j];
+            for (let j = val2 + 1; j < currentN; j++) yield [val2, j, val0, j];
+        }
+    }
+
+    Array.from({ length: dimensionSize - 1 }).forEach(() => {
+        const currentTriplet = inputReader.readIntegerArray(3).sort((a, b) => a - b).map(val => val - 1);
+
+        if (currentTriplet[0] === currentTriplet[2]) {
+            skippedTripletsCount++;
+            return;
+        }
+
+        const pendingUpdates = new Map();
+
+        for (const [sourceT, sourceU, targetV, targetW] of generateUpdateTuples(
+            dimensionSize,
+            currentTriplet[0],
+            currentTriplet[1],
+            currentTriplet[2]
+        )) {
+            const currentSourceScore = scoreGrid[sourceT][sourceU];
+            if (currentSourceScore === -1) continue;
+
+            const potentialNewScore = Math.max(scoreGrid[targetV][targetW], currentSourceScore + 1);
+            const updateKey = `${targetV},${targetW}`;
+
+            pendingUpdates.set(updateKey, Math.max(pendingUpdates.get(updateKey) || -1, potentialNewScore));
+            globalMaxScore = Math.max(globalMaxScore, potentialNewScore);
+        }
+
+        for (const [key, value] of pendingUpdates.entries()) {
+            const [row, col] = key.split(',').map(Number);
+            scoreGrid[row][col] = Math.max(scoreGrid[row][col], value);
+        }
+    });
+
+    const finalTargetIndex = inputReader.readInteger() - 1;
+    const finalCellScore = scoreGrid[finalTargetIndex][finalTargetIndex];
+    if (finalCellScore !== -1) {
+        globalMaxScore = Math.max(globalMaxScore, finalCellScore + 1);
+    }
+
+    return globalMaxScore + skippedTripletsCount;
+}
+
+const finalResult = processSolution();
+if (finalResult !== undefined) {
+    console.log(String(finalResult));
+}

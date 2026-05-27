@@ -1,61 +1,76 @@
-class NavigableHierarchy {
- constructor( totalElements )
-  {
-  this.elements = [ ];
-  for ( let idx = 0; idx < totalElements; idx++ )
-  {
-  this.elements[idx] = { key: -1, parentKey: -1, leftChildKey: -1, rightChildKey: -1 };
-  }
-  }
-
-  get mainComponent() { return this.elements.find(elem => elem.parentKey === -1); }
-
-  insertComponent(componentKey, leftCompKey, rightCompKey) {
-   let currentElement = this.elements[componentKey];
-   [currentElement.key, currentElement.leftChildKey, currentElement.rightChildKey] = [componentKey, leftCompKey, rightCompKey];
-   if (leftCompKey !== -1) { this.locateComponent(leftCompKey).parentKey = componentKey; }
-   if (rightCompKey !== -1) { this.locateComponent(rightCompKey).parentKey = componentKey; }
+class TreeStructure {
+  constructor(nodeCount) {
+    this.elements = [];
+    for (let idx = 0; idx < nodeCount; ++idx) {
+      this.elements[idx] = {
+        nodeId: -1,
+        parentRef: -1,
+        leftRef: -1,
+        rightRef: -1
+      };
+    }
   }
 
-  locateComponent(componentKey) { return this.elements[componentKey] || { }; }
-
-  traversePreOrder( componentKey = this.mainComponent.key ) {
-   if (componentKey === -1) { return; }
-   let currentElement = this.locateComponent(componentKey);
-   process.stdout.write(` ${componentKey}`);
-   this.traversePreOrder(currentElement.leftChildKey);
-   this.traversePreOrder(currentElement.rightChildKey);
+  get mainRoot() {
+    return this.elements.find(currNode => currNode.parentRef === -1);
   }
 
-  traverseInOrder( componentKey = this.mainComponent.key )
-  {
-   if (componentKey === -1) return;
-   let currentElement = this.locateComponent(componentKey);
-   this.traverseInOrder(currentElement.leftChildKey);
-   process.stdout.write(` ${componentKey}`);
-   this.traverseInOrder(currentElement.rightChildKey);
+  insertNodeData(nodeIdentifier, leftChildIdentifier, rightChildIdentifier) {
+    let currentNodeRef = this.elements[nodeIdentifier];
+    [currentNodeRef.nodeId, currentNodeRef.leftRef, currentNodeRef.rightRef] = [nodeIdentifier, leftChildIdentifier, rightChildIdentifier];
+    if (leftChildIdentifier !== -1) {
+      this.locateNode(leftChildIdentifier).parentRef = nodeIdentifier;
+    }
+    if (rightChildIdentifier !== -1) {
+      this.locateNode(rightChildIdentifier).parentRef = nodeIdentifier;
+    }
   }
 
-  traversePostOrder( componentKey = this.mainComponent.key )
-  {
-    if ( componentKey === -1 ) return;
-    let currentElement = this.locateComponent(componentKey);
-    this.traversePostOrder(currentElement.leftChildKey);
-    this.traversePostOrder(currentElement.rightChildKey);
-    process.stdout.write(` ${componentKey}`);
+  locateNode(searchIdentifier) {
+    return this.elements[searchIdentifier] || {};
+  }
+
+  traversePreorder(currentIdentifier = this.mainRoot.nodeId) {
+    if (currentIdentifier === -1) {
+      return;
+    }
+    let nodeReference = this.locateNode(currentIdentifier);
+    process.stdout.write(` ${currentIdentifier}`);
+    this.traversePreorder(nodeReference.leftRef);
+    this.traversePreorder(nodeReference.rightRef);
+  }
+
+  traverseInorder(currentIdentifier = this.mainRoot.nodeId) {
+    if (currentIdentifier === -1) {
+      return;
+    }
+    let nodeReference = this.locateNode(currentIdentifier);
+    this.traverseInorder(nodeReference.leftRef);
+    process.stdout.write(` ${currentIdentifier}`);
+    this.traverseInorder(nodeReference.rightRef);
+  }
+
+  traversePostorder(currentIdentifier = this.mainRoot.nodeId) {
+    if (currentIdentifier === -1) {
+      return;
+    }
+    let nodeReference = this.locateNode(currentIdentifier);
+    this.traversePostorder(nodeReference.leftRef);
+    this.traversePostorder(nodeReference.rightRef);
+    process.stdout.write(` ${currentIdentifier}`);
   }
 }
 
-(function executeProgram() {
-  const inputLines = require('node:fs').readFileSync('/dev/stdin', 'utf8').trim().split('\n');
-  const totalElements = Number(inputLines.shift());
-  let structure = new NavigableHierarchy(totalElements);
-  inputLines.map(entryText => entryText.split(' ').map(Number)).forEach(entryData => structure.insertComponent(...entryData));
-  console.log('Pre-order traversal:');
-  structure.traversePreOrder();
-  console.log('\nIn-order traversal:');
-  structure.traverseInOrder();
-  console.log('\nPost-order traversal:');
-  structure.traversePostOrder();
-  console.log('');
+(function executeTreeOperations() {
+  const inputLines = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split('\n');
+  const totalNodes = Number(inputLines.shift());
+  let myTree = new TreeStructure(totalNodes);
+  inputLines.map(lineStr => lineStr.split(' ').map(Number)).forEach(parsedLine => myTree.insertNodeData(...parsedLine));
+  console.log('Preorder');
+  myTree.traversePreorder();
+  console.log('\nInorder');
+  myTree.traverseInorder();
+  console.log('\nPostorder');
+  myTree.traversePostorder();
+  console.log();
 })();

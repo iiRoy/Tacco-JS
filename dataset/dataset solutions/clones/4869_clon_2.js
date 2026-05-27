@@ -1,30 +1,46 @@
-'use strict';
-// This function handles the primary processing of incoming textual data.
-const processData = (rawData) => {
+'use strict'; // Enforce strict mode for the entire script, promoting cleaner code.
 
-  // The raw input string is first trimmed and then divided into distinct lines.
-  const allLines = rawData.trim().split('\n');
+/**
+ * This function serves as the primary entry point for processing input data.
+ * It takes a raw string argument, processes it according to specific rules,
+ * and then outputs the results to the standard console output.
+ *
+ * @param {string} rawData - The complete raw string content read from the input source, typically stdin.
+ */
+const processInput = (rawData) => {
+    // First, remove any leading or trailing whitespace from the raw input string.
+    // Then, split the cleaned string into an array of individual lines based on newline characters.
+    const parsedLines = rawData.trim().split('\n');
 
-  // The very first line is taken, split by spaces, and each part is converted into a number.
-  // This forms our initial collection of numerical values.
-  let numericalCollection = allLines[0].split(' ').map(stringItem => Number(stringItem));
+    // Access the first line from the parsed input.
+    // Split this line by spaces to get an array of string representations of numbers.
+    // Use the 'map' function to iterate over these string representations and convert each one into an actual number.
+    // The 'currentNum' parameter is a temporary variable representing each string element during the mapping process.
+    let numericValues = parsedLines[0].split(' ').map(currentNum => Number(currentNum));
 
-  // The collection of numbers is then sorted in ascending order.
-  numericalCollection = numericalCollection.sort((valueOne, valueTwo) => valueOne - valueTwo);
+    // Sort the array of numeric values in ascending order.
+    // The comparison function `(valA, valB) => valA - valB` ensures numerical sorting.
+    // 'valA' and 'valB' are temporary parameters representing two elements being compared by the sort method.
+    numericValues = numericValues.sort((valA, valB) => valA - valB);
 
-  // The fully sorted numerical collection is printed to the console.
-  console.log(numericalCollection);
+    // Output the final sorted array of numbers to the console.
+    // This provides a visual representation of the processed data.
+    console.log(numericValues);
 
-  // A conditional check is performed: if the third number (index 2)
-  // is equal to the sum of the first two numbers (indices 0 and 1),
-  // then 'Yes' is printed; otherwise, 'No' is printed.
-  console.log(
-    numericalCollection[2] === numericalCollection[0] + numericalCollection[1]
-      ? 'Yes'
-      : 'No'
-  );
+    // Perform a conditional check: determine if the third number in the sorted array (at index 2)
+    // is exactly equal to the sum of the first two numbers (at indices 0 and 1).
+    // Based on the outcome of this comparison, print a specific string to the console.
+    if (numericValues[2] === numericValues[0] + numericValues[1]) {
+        // If the condition is true, output 'Yes'.
+        console.log('Yes');
+    } else {
+        // If the condition is false, output 'No'.
+        console.log('No');
+    }
 };
 
-// The program initiates execution by reading the entire content of standard input
-// as a UTF-8 string and passing it to the main data processing function.
-processData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// This is the main execution block of the script.
+// It uses Node.js's built-in 'fs' module to synchronously read the entire content
+// of the standard input file ('/dev/stdin'). The content is read as a UTF-8 encoded string.
+// This raw string data is then passed as an argument to the 'processInput' function to begin processing.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

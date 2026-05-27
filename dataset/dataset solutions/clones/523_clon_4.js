@@ -1,101 +1,77 @@
-const fileSystemAccessor = require('fs');
-const acquiredContent = fileSystemAccessor.readFileSync('/dev/stdin', 'utf8');
-const processedLines = acquiredContent.trim().split('\n');
+const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
+const eventLines = rawData.trim().split("\n");
 
-const initialConfiguration = processedLines.shift().split(' ').map(Number);
-const participantCount = initialConfiguration[0];
-const totalDurationLimit = initialConfiguration[2];
+const configParams = eventLines.shift().split(" ").map(Number);
+const entityCount = configParams[0];
+const finalMoment = configParams[2];
 
-const prepareInitialRegistry = (count) => {
-    const initialParticipants = new Map();
-    for (let i = 0; i < count; ++i) {
-        initialParticipants.set(i, { scoreValue: 0, accumulatedTime: 0, originalIndex: i });
-    }
+const parsedEvents = eventLines.map(line => {
+    const parts = line.split(" ").map(Number);
     return {
-        activeParticipants: initialParticipants,
-        currentDominantIndex: 0,
-        currentDominantScore: 0,
-        currentElapsedMoment: 0
+        targetId: parts[0] - 1,
+        moment: parts[1],
+        change: parts[2]
     };
+});
+
+parsedEvents.push({ targetId: 0, moment: finalMoment, change: 0 });
+
+const initialSystemState = {
+    entityRecords: Array.from({ length: entityCount }, (_, i) => ({
+        currentVal: 0,
+        totalTime: 0,
+        originalId: i
+    })),
+    activeLeaderId: 0,
+    leaderValue: 0,
+    lastProcessedTime: 0
 };
 
-const evolveStateWithEvent = (previousState, currentEvent) => {
-    const { activeParticipants, currentDominantIndex, currentDominantScore, currentElapsedMoment } = previousState;
-    const { affectedParticipantIndex, eventTimestamp, scoreModification } = currentEvent;
+const processSystemEvent = (currentState, currentEvent) => {
+    const { entityRecords, activeLeaderId, leaderValue, lastProcessedTime } = currentState;
 
-    const modifiedParticipants = new Map(activeParticipants);
+    entityRecords[activeLeaderId].totalTime += currentEvent.moment - lastProcessedTime;
 
-    const dominantBeforeEvent = modifiedParticipants.get(currentDominantIndex);
-    if (dominantBeforeEvent) {
-        modifiedParticipants.set(currentDominantIndex, {
-            ...dominantBeforeEvent,
-            accumulatedTime: dominantBeforeEvent.accumulatedTime + (eventTimestamp - currentElapsedMoment)
-        });
-    }
+    entityRecords[currentEvent.targetId].currentVal += currentEvent.change;
 
-    const targetParticipant = modifiedParticipants.get(affectedParticipantIndex);
-    if (targetParticipant) {
-        modifiedParticipants.set(affectedParticipantIndex, {
-            ...targetParticipant,
-            scoreValue: targetParticipant.scoreValue + scoreModification
-        });
-    }
+    let newLeaderId = activeLeaderId;
+    let newLeaderValue = leaderValue;
 
-    let nextDominantIndex = currentDominantIndex;
-    let nextDominantScore = currentDominantScore;
-
-    if (scoreModification > 0) {
-        const valueOfTarget = modifiedParticipants.get(affectedParticipantIndex).scoreValue;
-        if (valueOfTarget > nextDominantScore) {
-            nextDominantIndex = affectedParticipantIndex;
-            nextDominantScore = valueOfTarget;
-        } else if (valueOfTarget === nextDominantScore && affectedParticipantIndex < nextDominantIndex) {
-            nextDominantIndex = affectedParticipantIndex;
+    if (currentEvent.change > 0) {
+        if (entityRecords[currentEvent.targetId].currentVal > newLeaderValue) {
+            newLeaderValue = entityRecords[currentEvent.targetId].currentVal;
+            newLeaderId = currentEvent.targetId;
+        } else if (entityRecords[currentEvent.targetId].currentVal === newLeaderValue && currentEvent.targetId < newLeaderId) {
+            newLeaderId = currentEvent.targetId;
         }
-    } else if (scoreModification < 0) {
-        if (affectedParticipantIndex === nextDominantIndex) {
-            nextDominantScore = 0; 
-            nextDominantIndex = 0; 
-
-            for (const participant of modifiedParticipants.values()) {
-                if (participant.scoreValue > nextDominantScore) {
-                    nextDominantScore = participant.scoreValue;
-                    nextDominantIndex = participant.originalIndex;
-                } else if (participant.scoreValue === nextDominantScore && participant.originalIndex < nextDominantIndex) {
-                    nextDominantIndex = participant.originalIndex;
-                }
+    } else if (currentEvent.change < 0 && currentEvent.targetId === activeLeaderId) {
+        newLeaderValue = 0;
+        newLeaderId = 0;
+        for (let scanIdx = 0; scanIdx < entityRecords.length; scanIdx++) {
+            if (entityRecords[scanIdx].currentVal > newLeaderValue) {
+                newLeaderValue = entityRecords[scanIdx].currentVal;
+                newLeaderId = scanIdx;
+            } else if (entityRecords[scanIdx].currentVal === newLeaderValue && scanIdx < newLeaderId) {
+                newLeaderId = scanIdx;
             }
         }
     }
 
-    return {
-        activeParticipants: modifiedParticipants,
-        currentDominantIndex: nextDominantIndex,
-        currentDominantScore: nextDominantScore,
-        currentElapsedMoment: eventTimestamp
-    };
+    currentState.activeLeaderId = newLeaderId;
+    currentState.leaderValue = newLeaderValue;
+    currentState.lastProcessedTime = currentEvent.moment;
+
+    return currentState;
 };
 
-const rawEventRecords = [...processedLines, [1, totalDurationLimit, 0].join(' ')];
+const finalSystemState = parsedEvents.reduce(processSystemEvent, initialSystemState);
 
-const structuredEventObjects = rawEventRecords.map(recordString => {
-    const components = recordString.split(' ').map(Number);
-    return {
-        affectedParticipantIndex: components[0] - 1,
-        eventTimestamp: components[1],
-        scoreModification: components[2]
-    };
-});
-
-const finalSystemState = structuredEventObjects.reduce(evolveStateWithEvent, prepareInitialRegistry(participantCount));
-
-const finalParticipantList = Array.from(finalSystemState.activeParticipants.values());
-
-finalParticipantList.sort((elementA, elementB) => {
-    if (elementA.accumulatedTime === elementB.accumulatedTime) {
-        return elementA.originalIndex - elementB.originalIndex;
+finalSystemState.entityRecords.sort((recordA, recordB) => {
+    if (recordA.totalTime === recordB.totalTime) {
+        return recordA.originalId - recordB.originalId;
+    } else {
+        return recordB.totalTime - recordA.totalTime;
     }
-    return elementB.accumulatedTime - elementA.accumulatedTime;
 });
 
-console.log(finalParticipantList[0].originalIndex + 1);
+console.log(finalSystemState.entityRecords[0].originalId + 1);

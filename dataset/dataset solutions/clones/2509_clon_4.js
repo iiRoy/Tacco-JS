@@ -1,65 +1,93 @@
-const deriveOperationQuantifier = (initialElements, alterStartElementForFirstMatch, baseQuantity, substitutionMark) => {
-    let workingElements = Array.from(initialElements);
-    let accumulatedQuantity = baseQuantity;
-    let position = 0;
-    const limit = workingElements.length - 1;
+"use strict";
 
-    while (position < limit) {
-        if (workingElements[position] === workingElements[position + 1]) {
-            accumulatedQuantity++;
-            if (alterStartElementForFirstMatch && position === 0) {
-                workingElements[0] = substitutionMark;
+const computeCostA = (initialChars) => {
+    if (initialChars.length <= 1) {
+        return 0;
+    }
+
+    const recursiveCostCalculation = (currentIndex, currentAccumulatedCost, currentStringArr) => {
+        if (currentIndex >= initialChars.length - 1) {
+            return currentAccumulatedCost;
+        }
+
+        let nextAccumulatedCost = currentAccumulatedCost;
+        let nextStringArr = [...currentStringArr];
+
+        if (nextStringArr[currentIndex] === nextStringArr[currentIndex + 1]) {
+            nextAccumulatedCost++;
+            if (currentIndex === initialChars.length - 2) {
+                nextStringArr[currentIndex + 1] = '|';
             } else {
-                workingElements[position + 1] = substitutionMark;
+                if (currentIndex !== 0) {
+                    nextStringArr[currentIndex + 1] = '*';
+                } else {
+                    nextStringArr[currentIndex] = '*';
+                }
             }
         }
-        position++;
-    }
-    return {
-        total: accumulatedQuantity,
-        leadingSymbol: workingElements[0],
-        trailingSymbol: workingElements[workingElements.length - 1]
+        return recursiveCostCalculation(currentIndex + 1, nextAccumulatedCost, nextStringArr);
     };
+
+    return recursiveCostCalculation(0, 0, [...initialChars]);
 };
 
-const processInputData = (inputPayload) => {
-    const lines = inputPayload.trim().split("\n");
-    const characterSequence = lines[0].split("");
-    const repetitionFactor = parseInt(lines[1]);
+const computeCostB = (initialChars) => {
+    if (initialChars.length <= 1) {
+        return 0;
+    }
 
-    if (characterSequence.length === 1) {
-        console.log(Math.floor(repetitionFactor / 2));
+    let workingCharsState = [...initialChars];
+    let initialAccumulatedCost = 0;
+
+    const firstOriginalChar = initialChars[0];
+    const lastOriginalChar = initialChars[initialChars.length - 1];
+
+    if (firstOriginalChar === lastOriginalChar) {
+        workingCharsState[0] = '@';
+        workingCharsState[workingCharsState.length - 1] = '@';
+        initialAccumulatedCost = 2;
+    }
+
+    const recursiveInnerLoop = (currentIndex, currentAccumulatedCost, currentStringArr) => {
+        if (currentIndex >= currentStringArr.length - 1) {
+            return currentAccumulatedCost;
+        }
+
+        let nextAccumulatedCost = currentAccumulatedCost;
+        let nextStringArr = [...currentStringArr];
+
+        if (nextStringArr[currentIndex] === nextStringArr[currentIndex + 1]) {
+            nextAccumulatedCost++;
+            nextStringArr[currentIndex + 1] = '?';
+        }
+        return recursiveInnerLoop(currentIndex + 1, nextAccumulatedCost, nextStringArr);
+    };
+
+    return recursiveInnerLoop(0, initialAccumulatedCost, workingCharsState);
+};
+
+const processInputData = (inputRaw) => {
+    inputRaw = inputRaw.trim().split("\n");
+    const inputStringCharacters = inputRaw[0].split("");
+    const repetitionCount = parseInt(inputRaw[1]);
+
+    if (inputStringCharacters.length === 1) {
+        console.log(Math.floor(repetitionCount / 2));
         return;
     }
 
-    // First pass calculation
-    const firstAnalysisOutcome = deriveOperationQuantifier(characterSequence, true, 0, "*");
-    const primaryCount = firstAnalysisOutcome.total;
-    const initialSymbolAfterAnalysis = firstAnalysisOutcome.leadingSymbol;
-    const finalSymbolAfterAnalysis = firstAnalysisOutcome.trailingSymbol;
+    const calculatedCostA = computeCostA(inputStringCharacters);
+    const calculatedCostB = computeCostB(inputStringCharacters);
 
-    // Second pass setup
-    let secondarySequence = Array.from(characterSequence);
-    let secondaryCountInitial = 0;
+    let finalCalculatedResult = 0;
 
-    if (initialSymbolAfterAnalysis === finalSymbolAfterAnalysis) {
-        secondarySequence[0] = "@";
-        secondarySequence[secondarySequence.length - 1] = "@";
-        secondaryCountInitial = 2;
-    }
-
-    // Second pass calculation
-    const secondAnalysisOutcome = deriveOperationQuantifier(secondarySequence, false, secondaryCountInitial, "?");
-    const secondaryCount = secondAnalysisOutcome.total;
-
-    let finalResult = 0;
-    if (repetitionFactor % 2 === 0) {
-        finalResult = (primaryCount + secondaryCount) * (repetitionFactor / 2);
+    if (repetitionCount % 2 === 0) {
+        finalCalculatedResult = (calculatedCostA + calculatedCostB) * (repetitionCount / 2);
     } else {
-        finalResult = (primaryCount * Math.ceil(repetitionFactor / 2)) + (secondaryCount * Math.floor(repetitionFactor / 2));
+        finalCalculatedResult = (calculatedCostA * Math.ceil(repetitionCount / 2)) + (calculatedCostB * Math.floor(repetitionCount / 2));
     }
 
-    console.log(finalResult);
+    console.log(finalCalculatedResult);
 };
 
 processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

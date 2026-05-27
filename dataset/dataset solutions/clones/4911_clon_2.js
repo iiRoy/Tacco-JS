@@ -1,29 +1,23 @@
-// This function orchestrates the primary calculation process.
-const calculateResult = ( sourceString ) => {
+const processInputData = (rawDataString) => {
+  // Parse the input string to extract numerical values
+  const [firstNumber, secondNumber] = rawDataString.trim().split(' ').map(currentElement => parseInt(currentElement, 10));
 
-  // Parse the input string to extract numerical parameters.
-  const [ loopLimit, baseValue ] = sourceString
-    .trim()
-    .split(' ')
-    .map( currentPart => parseInt(currentPart) )
-  ;
+  let cumulativeResult = 0; // Initialize a variable to store the calculated total
 
-  let finalValue = 0; // Initialize an accumulator for the computation.
-
-  // Iterate a specified number of times to build the final value.
-  for ( let iterationIndex = 0 ; iterationIndex < loopLimit ; iterationIndex++ ) {
-    // For the initial step (first iteration).
-    if ( iterationIndex === 0 ) {
-      finalValue += baseValue; // Add the base value directly.
-      continue; // Skip the rest of this iteration and proceed to the next.
+  // Iterate a specific number of times based on the first input value
+  for (let loopIndex = 0; loopIndex < firstNumber; loopIndex++) {
+    // Special handling for the very first iteration
+    if (loopIndex === 0) {
+      cumulativeResult += secondNumber; // Add the second input value directly
+      continue; // Skip to the next iteration
     }
-    // For subsequent steps (after the first iteration).
-    finalValue *= ( baseValue - 1 ); // Multiply by (baseValue - 1).
+    // For subsequent iterations, apply a different calculation
+    cumulativeResult *= (secondNumber - 1); // Multiply by (secondNumber - 1)
   }
 
-  // Display the computed result to the standard output.
-  console.info( finalValue );
+  // Output the final computed result to the console
+  console.log(cumulativeResult);
 };
 
-// Retrieve and process system input from the standard input stream.
-calculateResult( require("fs").readFileSync("/dev/stdin", "utf8") );
+// Read input from standard input and pass it to the processing function
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

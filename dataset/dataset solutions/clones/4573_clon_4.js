@@ -1,16 +1,22 @@
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
 
-const determineRangeInclusion = (receivedBytes) => {
-    const stringParts = String(receivedBytes).trim().split(/\s+/);
-    const numericalElements = stringParts.slice(0, 3).map(Number);
+process.stdin.on('data', (inputBuffer) => {
+    const numberStrings = inputBuffer.toString().trim().split(/\s+/);
+    
+    const numericValues = numberStrings.reduce((accumulator, currentString) => {
+        accumulator.push(Number(currentString));
+        return accumulator;
+    }, []);
 
-    const [boundLower, boundUpper, testValue] = numericalElements;
+    const [firstVal, secondVal, thirdVal] = numericValues;
 
-    const finalVerdict = (testValue >= boundLower && testValue <= boundUpper) ? "Yes" : "No";
-    return finalVerdict;
-};
-
-process.stdin.on('data', (incomingData) => {
-    console.log(determineRangeInclusion(incomingData));
+    const responseMap = {
+        true: "Yes",
+        false: "No"
+    };
+    
+    const conditionMet = (firstVal <= thirdVal && thirdVal <= secondVal);
+    
+    console.log(responseMap[conditionMet]);
 });

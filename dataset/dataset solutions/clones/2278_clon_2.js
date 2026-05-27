@@ -1,30 +1,37 @@
-// Solution for Problem ABC-Checker
-function processInputData(rawData)
-{
-  const linesOfText = rawData.split('\n'); // Split the entire input into individual lines
-  const totalElements = Number.parseInt(linesOfText[0], 10); // Parse the first line as an integer for length (unused, but kept for structural fidelity)
-  let targetString = linesOfText[1]; // The actual string to be processed is on the second line
+// Solution for a string pattern counting problem
+function processInput(rawData) {
+  // Split the raw input string into individual lines
+  const linesOfText = rawData.split('\n');
 
-  // Append a special sequence to simplify boundary conditions for pattern matching
-  targetString += '\u0058\u0058'; // Appending 'XX' using Unicode literals
+  // Parse the first line as an integer, though it's not used in this specific logic
+  let numValue = parseInt(linesOfText[0], 10);
 
-  const characterSequence = Array.from(targetString); // Convert the string into an array of characters
+  // Get the second line, which is the string to be processed
+  let targetString = linesOfText[1];
 
-  let occurrenceCount = 0; // Initialize a variable to count the occurrences of the 'ABC' pattern
+  // Append 'XX' to the string to simplify boundary checks for 'ABC' pattern
+  targetString += 'XX';
 
-  // Iterate through the character sequence, stopping two characters before the end to allow for 'ABC' check
-  for (let currentPos = 0; currentPos < characterSequence.length - 2; ++currentPos)
-  {
-    // Check if the character at the current position is 'A'
-    if (characterSequence[currentPos] === '\u0041') // Using Unicode literal for 'A'
-    {
-      // If it's 'A', then proceed to check for 'B' and 'C' in the subsequent two positions
-      occurrenceCount += (characterSequence[currentPos + 1] === '\u0042' && characterSequence[currentPos + 2] === '\u0043') ? 1 : 0; // Using Unicode literals for 'B' and 'C'
+  // Convert the modified string into an array of characters for easier indexing
+  const charSequence = Array.from(targetString);
+
+  // Initialize a variable to count occurrences of the 'ABC' pattern
+  let occurrenceCount = 0;
+
+  // Iterate through the character array, stopping two characters before the end
+  // to allow checking for 'ABC' (current, next, next-next)
+  for (let idx = 0; idx < charSequence.length - 2; idx++) {
+    // Check if the current character is 'A'
+    if (charSequence[idx] === 'A') {
+      // If it's 'A', then check if the next two characters are 'B' and 'C' respectively
+      // If the pattern 'ABC' is found, increment the counter by 1; otherwise, add 0.
+      occurrenceCount += (charSequence[idx + 1] === 'B' && charSequence[idx + 2] === 'C') ? 1 : 0;
     }
-  }
+  }; // An unusual but valid semicolon after the loop block
 
-  console.log(occurrenceCount); // Output the final aggregated count of 'ABC' sequence detections
+  // Output the final count of 'ABC' occurrences
+  console.log(occurrenceCount);
 }
 
-// Invoke the primary data processing function with content obtained from standard input
-processInputData( require('fs').readFileSync('/dev/stdin', 'utf8') );
+// Read input from standard input and pass it to the processing function
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,18 +1,28 @@
-const systemInput = globalThis.process.stdin;
-const systemOutput = globalThis.console;
+async function initiateProcessing() {
+  const dataSegments = [];
 
-async function performOperation() {
-  const accumulatedFragments = [];
+  const accumulatedContent = await new Promise((resolve, reject) => {
+    process.stdin.resume();
+    process.stdin.setEncoding('utf8');
 
-  for await (const receivedUnit of systemInput) {
-    accumulatedFragments.push(receivedUnit);
-  }
+    process.stdin.on('data', (currentSegment) => {
+      dataSegments.push(currentSegment);
+    });
 
-  const completePayload = Buffer.concat(accumulatedFragments);
-  const rawText = completePayload.toString('utf8');
-  const transformedText = rawText.toLocaleUpperCase();
+    process.stdin.on('end', () => {
+      resolve(dataSegments.join(''));
+    });
 
-  systemOutput.log(transformedText);
+    process.stdin.on('error', (err) => {
+      reject(err);
+    });
+  });
+
+  processAndDisplay(accumulatedContent);
 }
 
-performOperation();
+function processAndDisplay(rawText) {
+  console.log(rawText.toUpperCase());
+}
+
+initiateProcessing();

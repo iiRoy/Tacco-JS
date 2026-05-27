@@ -1,62 +1,36 @@
-const extractSystemParameters = (dataFeed) => {
-    const streamItems = dataFeed.trim().split('\n');
-    const extentValue = Number(streamItems[0].split(' ')[0]);
-    const instructionSet = streamItems.slice(1).map(line => {
-        const parts = line.split(' ').map(Number);
-        return { location: parts[0], content: parts[1] };
-    });
-    return { extentValue, instructionSet };
-};
+function processInputData(rawData) {
+    let finalOutcome = -1;
 
-const establishNumericLayout = (dimension, directives) => {
-    const layoutMap = new Map();
-    directives.forEach(directive => {
-        layoutMap.set(directive.location - 1, directive.content);
+    const lineSegments = rawData.trim().split("\n");
+
+    const totalElementsCount = parseInt(lineSegments[0].split(' ')[0]);
+
+    const assignmentInstructions = lineSegments.slice(1);
+
+    let digitMap = new Map();
+
+    assignmentInstructions.forEach(instructionLine => {
+        const [position, value] = instructionLine.split(' ').map(Number);
+        digitMap.set(position - 1, value);
     });
 
-    const digitRepresentation = Array.from({ length: dimension }, (_, currentPos) =>
-        layoutMap.has(currentPos) ? layoutMap.get(currentPos) : 'X'
+    const constructedDigitsArray = Array.from({ length: totalElementsCount }, (_, idx) =>
+        digitMap.has(idx) ? String(digitMap.get(idx)) : 'a'
     );
-    return digitRepresentation;
-};
 
-const formInterpretedString = (layoutArray) => {
-    let combined = layoutArray.join('');
-    let trimmedLeading = combined.replace(/^X+/, '');
-    let normalizedPlaceholders = trimmedLeading.replace(/X/g, '0');
-    return normalizedPlaceholders;
-};
+    const rawNumericString = constructedDigitsArray.join('');
 
-const deriveSimplifiedString = (sourceString) => {
-    if (sourceString === '0' || sourceString === '') {
-        return '0';
-    }
-    let firstSignificantDigitIndex = 0;
-    while (firstSignificantDigitIndex < sourceString.length - 1 && sourceString[firstSignificantDigitIndex] === '0') {
-        firstSignificantDigitIndex++;
-    }
-    return sourceString.substring(firstSignificantDigitIndex);
-};
+    const effectiveNumericString = (rawNumericString.replace(/^a+/, '').replace(/a/g, '0')) || '0';
 
-const processSequence = (dataFeed) => {
-    let finalOutput = -1;
-
-    const { extentValue, instructionSet } = extractSystemParameters(dataFeed);
-    
-    const digitRepresentation = establishNumericLayout(extentValue, instructionSet);
-    
-    const interpretedStr = formInterpretedString(digitRepresentation);
-    const simplifiedStr = deriveSimplifiedString(interpretedStr);
-
-    if (interpretedStr === '00') {
-        finalOutput = 100;
-    } else if (interpretedStr === '0') {
-        finalOutput = 10;
-    } else if (interpretedStr === simplifiedStr) {
-        finalOutput = Number(simplifiedStr);
+    if (effectiveNumericString === '00') {
+        finalOutcome = 100;
+    } else if (effectiveNumericString === '0') {
+        finalOutcome = 10;
+    } else {
+        finalOutcome = Number(effectiveNumericString);
     }
 
-    console.log(finalOutput);
-};
+    console.log(finalOutcome);
+}
 
-processSequence(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

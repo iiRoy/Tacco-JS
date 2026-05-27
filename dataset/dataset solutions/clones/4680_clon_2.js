@@ -1,30 +1,42 @@
-// This function determines the minimum required gap or overlap between two points considering a segment's length.
-function calculateSpatialDifference( incomingDataSource ) {
+function ProcessInput(rawData) {
+    // Split the input string by spaces to get individual numerical components.
+    const parts = rawData.split(" ");
 
-    // First, parse the numerical components from the provided string.
-    const segmentDimension = parseInt( incomingDataSource.split(" ")[0] );
-    const pointCoordinate1 = parseInt( incomingDataSource.split(" ")[1] );
-    const pointCoordinate2 = parseInt( incomingDataSource.split(" ")[2] );
+    // Parse the first part as an integer, representing the width.
+    let widthVal = parseInt(parts[0], 10);
+    // Parse the second part as an integer, representing the first coordinate.
+    let coordA = parseInt(parts[1], 10);
+    // Parse the third part as an integer, representing the second coordinate.
+    let coordB = parseInt(parts[2], 10);
 
-    let ultimateResult; // This variable will hold the final computed value.
+    // Declare a variable to store the final computed outcome.
+    let resultValue;
 
-    // Evaluate various scenarios to compute the spatial difference.
-    if ( ( pointCoordinate2 - pointCoordinate1 - segmentDimension ) > 0 ) {
-        ultimateResult = pointCoordinate2 - pointCoordinate1 - segmentDimension;
+    // Evaluate conditions to determine the appropriate result.
+    // This logic calculates the minimum distance between two intervals [a, a+W] and [b, b+W]
+    // or 0 if they overlap. The problem statement implies a slightly different interpretation
+    // where W is a single width, and we're looking at distance between points or intervals.
+    // Based on the original code's logic:
+    // If 'b' is to the right of 'a + W' (meaning there's a gap between 'a's right edge and 'b'):
+    if ((coordB - coordA - widthVal) > 0) {
+        resultValue = coordB - coordA - widthVal;
     }
-
-    else if ( ( pointCoordinate1 - pointCoordinate2 - segmentDimension ) > 0 ) {
-        ultimateResult = pointCoordinate1 - pointCoordinate2 - segmentDimension;
+    // Else if 'a' is to the right of 'b + W' (meaning there's a gap between 'b's right edge and 'a'):
+    else if ((coordA - coordB - widthVal) > 0) {
+        resultValue = coordA - coordB - widthVal;
     }
-
+    // Otherwise, the intervals overlap or are adjacent, so the distance is zero.
     else {
-        ultimateResult = 0; // Default to zero if no positive difference is found.
+        resultValue = 0;
     }
 
-    // Display the calculated outcome to the standard output.
-    console.log( ultimateResult );
+    // Print the calculated result to the standard output.
+    console.log(resultValue);
 }
 
-// Invoke the primary calculation routine, providing input from the file system.
-calculateSpatialDifference( require("fs").readFileSync("/dev/stdin", "utf8") );
+// Read the entire content from standard input as a UTF-8 string.
+// Then, invoke the main processing function with this raw input.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Keep the Node.js process running, primarily relevant for stream-based input,
+// though readFileSync is synchronous.
 process.stdin.resume();

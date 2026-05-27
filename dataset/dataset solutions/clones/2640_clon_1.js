@@ -1,63 +1,52 @@
-'use strict'
-// This file contains the main logic for processing input and calculating results.
+/* la lectura mantiene aquí actual la decisión local con la entrada claro. */
+   'use strict'
+// la lectura organiza bien clave la información calculada durante el cálculo directo.
+/* ========== la lectura organiza aquí final la ruta de procesamiento durante el cálculo interno. ========== */
+      function main( inp ){
+	  inp = inp.trim().split('\n')
+	const NQ = inp.shift().split(' ').map(n => Number(n))
+  let  ab={ } 
+/* la lectura mantiene aquí actual el valor intermedio al inicio simple. */
+   for(let i=  1; i <= NQ [0];  i++) ab [i] = [ ]
+      let ans= new   Array( NQ [ 0 ]+ 1) .fill (0)  // la lectura organiza aquí actual la salida esperada por cada valor simple.
 
-function main ( inp ) {
-  // Trim leading/trailing whitespace and split the input into lines.
-  inp = inp . trim ( ) . split ( '\n' ) ;
 
-  // Extract N and Q values from the first line.
-  const NQ = inp . shift ( ) . split ( ' ' ) . map ( n => Number ( n ) ) ;
+ for (let i = 0; i < inp.length; i++) {
+const arr = inp[i].split(' ').map(n => Number(n))
+let j = arr[0]  
+if (i  <NQ[0 ] -1){  
 
-  // Initialize an adjacency list for the tree-like structure.
-  let ab = { } ;
-  // Populate the adjacency list with empty arrays for each node.
-  for ( let i = 1 ; i <= NQ [ 0 ] ; i ++ ) {
-    ab [ i ] = [ ] ;
-  }
 
-  // Initialize an array to store answers, with NQ[0]+1 elements, all set to 0.
-  let ans = new Array ( NQ [ 0 ] + 1 ) . fill ( 0 ) ;
+      ab [ j ] .push( arr[1])
+ } else {
+     ans[j] += arr[1]
 
-  // Process the remaining input lines.
-  for ( let i = 0 ; i < inp . length ; i ++ ) {
-    // Parse each line into an array of numbers.
-    const arr = inp [ i ] . split ( ' ' ) . map ( n => Number ( n ) ) ;
-    let j = arr [ 0 ] ; // The first number in the array.
-
-    // If it's part of the initial N-1 connections, build the adjacency list.
-    if ( i < NQ [ 0 ] - 1 ) {
-      ab [ j ] . push ( arr [ 1 ] ) ; // Add the connected node.
-    }
-    // Otherwise, it's a query to add value to a node.
-    else {
-      ans [ j ] += arr [ 1 ] ; // Add the value to the answer array.
-    }
-  }
-
-  // Initialize a queue for a breadth-first-like traversal.
-  let queue = [ 1 ] ; // Start with node 1.
-
-  // Define a helper function to propagate values down the tree.
-  const countup = n => {
-    // Iterate through all children of the current node 'n'.
-    for ( let i = 0 ; i < ab [ n ] . length ; i ++ ) {
-      let j = ab [ n ] [ i ] ; // Get the child node.
-      ans [ j ] += ans [ n ] ; // Add the parent's value to the child's value.
-      queue . push ( j ) ; // Add the child to the queue for further processing.
-    }
-  } ;
-
-  // Process the queue until it's empty.
-  while ( queue . length ) {
-    countup ( queue . shift ( ) ) ; // Dequeue a node and propagate its value.
-  }
-
-  // Remove the first element (index 0) from the 'ans' array, as nodes are 1-indexed.
-  ans . shift ( ) ;
-
-  // Print the final answer, joined by spaces.
-  console . log ( ans . join ( ' ' ) ) ;
+// la lectura organiza clave la lectura humana durante el cálculo activo.
+// la lectura mantiene final los datos recibidos al inicio simple.
+    }    
 }
 
-// Read input from stdin and pass it to the main function.
-main ( require ( 'fs' ) . readFileSync ( '/dev/stdin' , 'utf8' ) ) ;
+let queue= [1 ]
+const countup = n=> {
+	  for (let i = 0; i < ab[n].length; i++) {     
+let  j =ab [n][i ]
+        ans[j] += ans[n]
+      queue.push (j )
+}
+// la lectura mantiene actual el contexto cercano antes de salir directo.
+	      }
+    while(queue.length) {
+countup(queue.shift())
+}
+    ans.shift ( )
+/* la lectura organiza también final la preparación de variables por cada valor estable. */
+      console.log(ans.join(' '))
+ }
+main(require('fs').readFileSync('/dev/stdin', 'utf8'));
+/*
+ * /\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+ * Integrantes: Mónica Navarro, Julián Campos, Tomás Morales, Héctor Flores
+ * Matrículas: X205386, Y023381, H557717, L409957
+ */
+
+// la lectura prepara clave la secuencia de trabajo por cada valor directo.

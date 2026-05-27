@@ -1,60 +1,32 @@
-const ioHandler = require('readline-sync');
+const inputBuffer = require('fs').readFileSync('/dev/stdin', 'utf8');
+const inputLines = inputBuffer.trim().split('\n');
+let currentLineIndex = 0;
 
-/*
- * This function orchestrates the primary data processing flow.
- * It continuously reads numerical inputs, performs calculations,
- * and outputs results until a specific termination condition is met.
- */
-function executeSequence()
-{
-  let cycleCount = 0; /* Index for the main execution loop */
-  let cumulativeTotal = 0; // Variable to accumulate values
-  let subCycle = 0; // Counter for internal iterations
-
-
-  while (
-    true
-  ) // The primary processing loop runs indefinitely until explicitly broken
-  {
-    cumulativeTotal = 0; // Reset the sum for each new processing block
-
-    let primaryText = ioHandler.question(
-      ''
-    ); // Capture a line of input as a string
-
-    let primaryMagnitude = parseInt(primaryText, 10); // Transform the input string into an integer base 10
-
-
-    if (
-      primaryMagnitude === 0
-    ) // Check if the termination value (zero) has been provided
-    {
-      break; // Exit the main processing loop
-    }
-
-    // Initiate a secondary loop based on a quarter of the primary magnitude
-    for (
-      subCycle = 0;
-      subCycle < primaryMagnitude / 4;
-      subCycle++
-    )
-    {
-      let secondaryText = ioHandler.question(
-        ''
-      ); // Obtain another input string
-
-      let elementAmount = parseInt(secondaryText, 10); // Convert this string to an integer
-
-      cumulativeTotal += elementAmount; // Add the parsed integer to the running total
-    }
-
-    console.log(
-      cumulativeTotal
-    ); // Display the computed total for the current block
-
-    cycleCount++; // Increment the main cycle counter (its value is not used for logic, but for tracking)
-  }
+function getNextInputLine() {
+    return inputLines[currentLineIndex++];
 }
 
-// Invoke the main execution sequence to begin processing
-executeSequence();
+function executeProcessingLogic() {
+    let innerLoopCounter, unusedVarK, outerLoopCounter, unusedVarB, unusedVarC, unusedVarW, mainCount, accumulatedSum;
+
+    for (outerLoopCounter = 0; ; outerLoopCounter++) {
+        accumulatedSum = 0;
+
+        const lineInputOne = getNextInputLine();
+        const parsedCount = parseInt(lineInputOne, 10);
+
+        if (parsedCount === 0) {
+            break;
+        }
+
+        for (innerLoopCounter = 0; innerLoopCounter < parsedCount / 4; innerLoopCounter++) {
+            const lineInputTwo = getNextInputLine();
+            const parsedValue = parseInt(lineInputTwo, 10);
+            accumulatedSum = accumulatedSum + parsedValue;
+        }
+
+        console.log(accumulatedSum);
+    }
+}
+
+executeProcessingLogic();

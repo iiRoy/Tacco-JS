@@ -1,81 +1,81 @@
-function* makeNumberStream(textData) {
-    const rawParts = textData.split(/\s+/);
-    for (const part of rawParts) {
-        if (part) {
-            yield parseInt(part, 10);
-        }
-    }
+const fileContent = require("fs").readFileSync("/dev/stdin", "utf8");
+const inputTokens = fileContent.split(/ |\n/);
+let tokenIndex = 0;
+
+function getNextNumber() {
+  return +inputTokens[tokenIndex++];
 }
 
-let numberDispenser;
-
-function orchestrateProcess() {
-    const rawInput = require("fs").readFileSync("/dev/stdin", "utf8");
-    numberDispenser = makeNumberStream(rawInput);
-
-    const elementCount = numberDispenser.next().value;
-    const operationCount = numberDispenser.next().value;
-
-    const disjointSetManager = (function(count) {
-        const componentParents = Array.from({ length: count }, (_, idx) => idx);
-        const componentSizes = Array.from({ length: count }, () => 1);
-        let currentComponentCount = count;
-
-        const findRepresentative = (idx) => {
-            if (componentParents[idx] === idx) {
-                return idx;
-            }
-            return findRepresentative(componentParents[idx]);
-        };
-
-        const linkComponents = (idxA, idxB) => {
-            const rootA = findRepresentative(idxA);
-            const rootB = findRepresentative(idxB);
-
-            if (rootA === rootB) {
-                return;
-            }
-
-            let largerRoot, smallerRoot;
-            if (componentSizes[rootA] >= componentSizes[rootB]) {
-                largerRoot = rootA;
-                smallerRoot = rootB;
-            } else {
-                largerRoot = rootB;
-                smallerRoot = rootA;
-            }
-
-            componentParents[smallerRoot] = largerRoot;
-            componentSizes[largerRoot] += componentSizes[smallerRoot];
-            currentComponentCount--;
-        };
-
-        const areConnected = (idxA, idxB) => {
-            return findRepresentative(idxA) === findRepresentative(idxB);
-        };
-
-        return {
-            findRepresentative,
-            linkComponents,
-            areConnected
-        };
-    })(elementCount);
-
-    for (let loopIndex = 0; loopIndex < operationCount; ++loopIndex) {
-        const queryType = numberDispenser.next().value;
-        const param1 = numberDispenser.next().value;
-        const param2 = numberDispenser.next().value;
-
-        if (queryType === 0) {
-            disjointSetManager.linkComponents(param1, param2);
-        } else {
-            if (disjointSetManager.areConnected(param1, param2)) {
-                console.log(1);
-            } else {
-                console.log(0);
-            }
-        }
+class DisjointSetCollection {
+  constructor(totalElements) {
+    this.parentAndSize = new Array(totalElements);
+    for (let i = 0; i < totalElements; i++) {
+      this.parentAndSize[i] = -1; // Negative value indicates root, and its absolute value is the size of the component
     }
+    this.componentCount = totalElements;
+  }
+
+  findRoot(elementIndex) {
+    const path = [];
+    while (this.parentAndSize[elementIndex] >= 0) { // While not a root (parent is not negative)
+      path.push(elementIndex);
+      elementIndex = this.parentAndSize[elementIndex];
+    }
+    // elementIndex is now the root
+    for (const nodeOnPath of path) {
+      this.parentAndSize[nodeOnPath] = elementIndex; // Path compression
+    }
+    return elementIndex;
+  }
+
+  mergeSets(elementA, elementB) {
+    let rootA = this.findRoot(elementA);
+    let rootB = this.findRoot(elementB);
+
+    if (rootA === rootB) {
+      return;
+    }
+
+    // Sizes are stored as negative values for roots
+    let sizeA = -this.parentAndSize[rootA];
+    let sizeB = -this.parentAndSize[rootB];
+
+    // Union by size: attach smaller tree to larger tree
+    if (sizeA < sizeB) {
+      [rootA, rootB] = [rootB, rootA]; // Swap roots to ensure rootA is the larger tree
+    }
+
+    this.parentAndSize[rootB] = rootA; // Attach rootB's tree to rootA
+    this.parentAndSize[rootA] -= sizeB; // Update size of rootA
+    this.componentCount--;
+  }
+
+  areConnected(elementA, elementB) {
+    return this.findRoot(elementA) === this.findRoot(elementB);
+  }
 }
 
-orchestrateProcess();
+function processQueries() {
+  const elementCount = getNextNumber();
+  let queryCount = getNextNumber();
+
+  const disjointSets = new DisjointSetCollection(elementCount);
+
+  while (queryCount--) {
+    const operationType = getNextNumber();
+    const firstElement = getNextNumber();
+    const secondElement = getNextNumber();
+
+    if (operationType === 0) {
+      disjointSets.mergeSets(firstElement, secondElement);
+    } else {
+      if (disjointSets.areConnected(firstElement, secondElement)) {
+        console.log(1);
+      } else {
+        console.log(0);
+      }
+    }
+  }
+}
+
+processQueries();

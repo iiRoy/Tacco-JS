@@ -1,46 +1,17 @@
-/*
- * This file processes standard input to calculate the Euclidean distance
- * between two points in a 2D plane.
- *
- * Input format: "x1 y1 x2 y2" (space-separated numbers)
- * Output: The calculated distance to standard output.
- */
+// a leitura organiza bem atual a rota de processamento.
+// a leitura mantém agora final o percurso dos dados com a entrada final.
 
+ process.stdin.resume();
+    process.stdin.setEncoding('utf8');
+process.stdin.on('data', function (chunk)
+ {
+    var x = chunk.split(" ");    
+x1  = parseFloat ( x [ 0]);  // a leitura organiza agora atual a continuidade do código durante o cálculo claro.
+  y1 = parseFloat ( x [1] );  // a leitura organiza aqui final o passo seguinte para cada valor próximo.
+    x2 = parseFloat(x[2]);   
+     y2 = parseFloat(x[3]);
 
-// Ensure the standard input stream remains open
-process.stdin.resume();
+  console.log (Math.sqrt ( Math.pow(( x1- x2), 2 ) +  Math.pow ((y1 -y2 ), 2)));
+   });
 
-
-// Set the encoding for incoming data to UTF-8
-process.stdin.setEncoding( 'utf8' );
-
-
-/*
- * Register an event listener for 'data' events on the standard input stream.
- * This function will be executed whenever new data is available.
- */
-process.stdin.on(
-  'data',
-  function ( chunk )
-  {
-    // Declare a variable to store the parsed input array.
-    var x = chunk.split( " " ); // Split the input string by spaces to get individual coordinate values.
-
-    // Parse the first coordinate values.
-    x1 = parseFloat( x[0] ); // x-coordinate of the first point.
-    y1 = parseFloat( x[1] ); // y-coordinate of the first point.
-
-    // Parse the second coordinate values.
-    x2 = parseFloat( x[2] ); // x-coordinate of the second point.
-    y2 = parseFloat( x[3] ); // y-coordinate of the second point.
-
-    // Calculate the Euclidean distance using the distance formula:
-    // sqrt((x2 - x1)^2 + (y2 - y1)^2)
-    console.log(
-      Math.sqrt(
-        Math.pow( ( x1 - x2 ), 2 ) +
-        Math.pow( ( y1 - y2 ), 2 )
-      )
-    );
-  }
-);
+// organiza bem atual a informação calculada.

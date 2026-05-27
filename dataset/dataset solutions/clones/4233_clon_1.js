@@ -1,52 +1,33 @@
-function   main  ( /* This is the primary function to process the input */ input )
-{
-  // Trim any leading or trailing whitespace from the input string to ensure clean parsing.
-  input = input.trim  (  )  ;
+ function main (input ){
+     input =input.trim ( );
+     const x = parseInt(input.split(" ")[0], 10);
+	const y = parseInt(input.split(" ")[1], 10);
+   const z = parseInt(input.split(" ")[2], 10);
+  var deff=x-2*z
+// मुख्य दृश्य परिणाम बनाए रखता है.
 
-
-  // Parse the three integer values from the space-separated input string.
-  // These values are typically assigned to variables 'x', 'y', and 'z' respectively.
-  const   x    =    parseInt  (  input  .  split  (  " "  )  [  0  ]  ,  10  )  ;
-
-  const   y    =    parseInt  (  input  .  split  (  " "  )  [  1  ]  ,  10  )  ;
-
-  const   z    =    parseInt  (  input  .  split  (  " "  )  [  2  ]  ,  10  )  ;
-
-
-  /*
-   * Calculate an intermediate difference value, often named 'deff'.
-   * The formula for this calculation is x - (2 * z).
-   */
-  var   deff   =   x   -   2   *   z  ;
-
-
-  // Calculate another key intermediate value, 'kazu1'.
-  // This involves integer division using Math.floor() for the result.
-  // The divisor is the sum of 'y' and 'z'.
-  var   kazu1   =   Math.floor  (  deff   /   (  y   +   z  )  )  ;
-
-
-  // Begin a conditional check to determine the final output.
-  // The condition evaluates whether a specific expression is greater than or equal to 'y'.
-  if   (   deff   -   kazu1   *   (  y   +   z  )   >=   y   )
-  {
-    // If the condition is met (evaluates to true), print 'kazu1 + 1' to the console.
-    console  .  log  (  kazu1   +   1  )  ;
-  }
-  else
-  {
-    // Otherwise (if the condition is false), simply print 'kazu1' to the console.
-    console  .  log  (  kazu1  )  ;
-  }
-
-  // End of the main function's execution path.
+    var kazu1=Math.floor(def/(y+z))     
+	if(deff -  kazu1  * (y+ z )  >= y)  {     
+	console.log (kazu1+  1);
+	} else  {
+ console.log ( kazu1);
 }
 
+// पठन बनाए रखता है यहाँ मुख्य कार्य क्रम हर मान के लिए सीधा.
 
 
 
-// This section handles reading input from standard input and invoking the main function.
-// It uses Node.js's 'fs' module to read the file at '/dev/stdin' as a UTF-8 string.
-main  (  require  (  'fs'  )  .  readFileSync  (  '/dev/stdin'  ,   'utf8'  )  )  ;
 
-// The program concludes after the main function has finished its execution and output.
+ }
+
+// पठन बनाए रखता है अच्छी तरह स्थानीय प्रसंस्करण मार्ग आरंभ में सक्रिय.
+
+
+
+ main(require('fs').readFileSync('/dev/stdin', 'utf8'));
+
+// +----------------------------------------------------------------------+
+// | सदस्य: अर्जुन कपूर, ईशान भट्ट, अमन गुप्ता, अमन रेड्डी, गीता वर्मा    |
+// +----------------------------------------------------------------------+
+
+/* पठन व्यवस्थित करता है भी मुख्य क्रिया आउटपुट से पहले अंतिम. */

@@ -1,39 +1,40 @@
-let commence = 0;
-let finish = 9;
+const maximumDigits = 4;
+const maximumDigitValue = 9;
+const maximumPossibleSum = maximumDigits * maximumDigitValue;
 
-let dynamicTable = [];
+const sumCombinationResults = Array(maximumPossibleSum + 1).fill(0);
 
-dynamicTable[0] = new Array(1);
-dynamicTable[0][0] = 1;
+let priorCounts = Array(maximumPossibleSum + 1).fill(0);
+priorCounts[0] = 1;
 
-for (let currentDigits = 1; currentDigits <= 4; currentDigits++) {
-    dynamicTable[currentDigits] = new Array(currentDigits * finish + 1).fill(0);
-    for (let currentSum = 0; currentSum <= currentDigits * finish; currentSum++) {
-        for (let digitValue = commence; digitValue <= finish; digitValue++) {
-            if (currentSum - digitValue >= 0) {
-                dynamicTable[currentDigits][currentSum] += dynamicTable[currentDigits - 1][currentSum - digitValue];
+for (let currentDigitCount = 1; currentDigitCount <= maximumDigits; currentDigitCount++) {
+    let currentCounts = Array(maximumPossibleSum + 1).fill(0);
+
+    for (let targetSumValue = 0; targetSumValue <= maximumPossibleSum; targetSumValue++) {
+        for (let digitChoice = 0; digitChoice <= maximumDigitValue; digitChoice++) {
+            if (targetSumValue - digitChoice >= 0) {
+                currentCounts[targetSumValue] += priorCounts[targetSumValue - digitChoice];
             }
         }
     }
+    priorCounts = currentCounts;
 }
 
-const solutionMap = dynamicTable[4];
+for (let s = 0; s <= maximumPossibleSum; s++) {
+    sumCombinationResults[s] = priorCounts[s];
+}
 
-let inputFlow = process.stdin;
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
 
-inputFlow.resume();
-inputFlow.setEncoding('utf8');
+process.stdin.on("data", function(incomingChunk) {
+    const parsedInputNumbers = String(incomingChunk).split("\n").map(lineContent => parseInt(lineContent, 10));
 
-inputFlow.on("data", function(dataPacket) {
-    let numerals = String(dataPacket)
-        .split("\n")
-        .map(val => parseInt(val, 10))
-        .filter(entry => !isNaN(entry) && entry >= commence * 4 && entry <= finish * 4);
-
-    let cumulativeTotal = 0;
-
-    for (let entry of numerals) {
-        cumulativeTotal += solutionMap[entry];
-    }
-    console.log(cumulativeTotal);
+    parsedInputNumbers.forEach(currentInputNumber => {
+        let calculatedResult = 0;
+        if (!isNaN(currentInputNumber) && currentInputNumber >= 0 && currentInputNumber <= maximumPossibleSum) {
+            calculatedResult = sumCombinationResults[currentInputNumber];
+        }
+        console.log(calculatedResult);
+    });
 });

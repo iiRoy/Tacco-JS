@@ -1,66 +1,108 @@
 "use strict";
-function buildMultiDimArray (valueExpr) {
-  const funcArgs = arguments;
-  let argCount = funcArgs.length;
-  let evalString = "Array(funcArgs[" + --argCount + "]).fill(0).map(_val=>{return " + valueExpr + ";})";
-  while (--argCount) {
-    evalString = "Array(funcArgs[" + argCount + "]).fill(0).map(_val=>" + evalString + ")";
+
+// Helper function to create multi-dimensional arrays dynamically.
+function createMultiDimArray(valExpr) {
+  var args = arguments; // Capture all arguments passed to the function.
+  var lenIdx = args.length; // Get the total number of arguments.
+  // Initialize the string for the innermost array creation.
+  // Decrement lenIdx to get the last argument's index.
+  var arrayStr = "Array(args[" + --lenIdx + "]).fill(0).map(element => { return " + valExpr + "; })";
+
+  // Loop backwards from the second-to-last argument down to the first.
+  while (--lenIdx) {
+    // Wrap the current array string with another Array.map call for higher dimensions.
+    arrayStr = "Array(args[" + lenIdx + "]).fill(0).map(element => " + arrayStr + ")";
   }
-  return eval(evalString);
+  // Evaluate the constructed string to create the multi-dimensional array.
+  return eval(arrayStr);
 }
 
-const inputHandler = require("readline").createInterface(process.stdin, process.stdout);
-const mainSequence = (function* () {
-  const readNextLine = () => inputHandler.once("line", lineData => mainSequence.next(lineData));
+// Set up readline interface for input/output operations.
+const inputReader = require("readline").createInterface(process.stdin, process.stdout);
 
-  let totalElements = yield readNextLine();
-  totalElements = +totalElements;
+// Main generator function to handle asynchronous input.
+const mainLogicGenerator = (function* () {
+  // Internal helper function to get a line of input.
+  const getNextLine = () => inputReader.once("line", (inputString) => mainLogicGenerator.next(inputString));
 
-  let primaryArray = [];
-  for (let idxCounter = 1; idxCounter <= totalElements; idxCounter++) {
-    primaryArray[idxCounter - 1] = idxCounter;
+  // Read the number of elements (N).
+  var numElements = yield getNextLine();
+  numElements = +numElements; // Convert input string to a number.
+
+  // Initialize the first permutation array.
+  var currentPermutation = [];
+  // Populate the array with values from 1 to N.
+  for (var idxCounter = 0b1; idxCounter <= numElements; idxCounter++) {
+    currentPermutation[idxCounter - 0b1] = idxCounter;
   }
-  console.log("?", primaryArray.join(" "));
-  let initialResult = yield readNextLine();
 
-  let offsetValue = 1;
-  while (true) {
-    primaryArray[offsetValue - 1] = offsetValue + totalElements;
-    console.log("?", primaryArray.join(" "));
-    let currentResult = yield readNextLine();
-    if (initialResult[0] !== currentResult[0]) break;
+  // Output the initial query.
+  console.log("?", currentPermutation.join(" "));
+
+  // Read the initial response.
+  var initialResponse = yield getNextLine();
+
+  // Initialize an offset value.
+  var offsetValue = 0b1;
+
+  // Loop to find the correct offset.
+  while (0b1) { // Loop indefinitely until a break condition is met.
+    // Modify the current permutation based on the offset.
+    currentPermutation[offsetValue - 0b1] = offsetValue + numElements;
+    // Output the modified query.
+    console.log("?", currentPermutation.join(" "));
+    // Read the response for the modified query.
+    var tempResponse = yield getNextLine();
+
+    // If the first character of the response changes, break the loop.
+    if (initialResponse[0] !== tempResponse[0]) {
+      break;
+    }
+    // Increment the offset value.
     offsetValue++;
   }
 
-  let finalSolution = [];
-  let secondaryArray = [];
-  let trackedIndices = new Set();
-  for (let loopIndex = 0; loopIndex < totalElements - 1; loopIndex++) {
-    primaryArray[loopIndex] = (offsetValue + loopIndex - 1) % (2 * totalElements) + 1;
-    secondaryArray[loopIndex] = (primaryArray[loopIndex] + totalElements - 1) % (2 * totalElements) + 1;
+  // Initialize arrays for the final answer and an alternative permutation.
+  var finalResultArray = [];
+  var alternativePermutation = [];
+  // Initialize a Set to track specific indices.
+  var trackedIndices = new Set();
+
+  // Populate parts of the permutations and the tracked indices set.
+  for (var loopIndex = 0x0; loopIndex < numElements - 0b1; loopIndex++) {
+    currentPermutation[loopIndex] = (offsetValue + loopIndex - 0b1) % (numElements * 0b10) + 0b1;
+    alternativePermutation[loopIndex] = (currentPermutation[loopIndex] + numElements - 0b1) % (numElements * 0b10) + 0b1;
     trackedIndices.add(loopIndex + offsetValue);
   }
-  for (let itemIndex = 1; itemIndex <= 2 * totalElements; itemIndex++) {
-    if (trackedIndices.has(itemIndex)) {
-      secondaryArray[totalElements - 1] = itemIndex;
-      console.log("?", secondaryArray.join(" "));
-      let queryResponse = yield readNextLine();
-      if (queryResponse[0] === "R") {
-        finalSolution[itemIndex - 1] = "R";
+
+  // Iterate through all possible values from 1 to 2*N.
+  for (var checkValue = 0b1; checkValue <= numElements * 0b10; checkValue++) {
+    if (trackedIndices.has(checkValue)) {
+      // If the current value is in trackedIndices, use the alternative permutation.
+      alternativePermutation[numElements - 0b1] = checkValue;
+      console.log("?", alternativePermutation.join(" "));
+      var currentQueryResponse = yield getNextLine();
+      if (currentQueryResponse[0] === "R") {
+        finalResultArray[checkValue - 0b1] = "R";
       } else {
-        finalSolution[itemIndex - 1] = "B";
+        finalResultArray[checkValue - 0b1] = "B";
       }
     } else {
-      primaryArray[totalElements - 1] = itemIndex;
-      console.log("?", primaryArray.join(" "));
-      let queryResponse = yield readNextLine();
-      if (queryResponse[0] === "R") {
-        finalSolution[itemIndex - 1] = "R";
+      // Otherwise, use the current permutation.
+      currentPermutation[numElements - 0b1] = checkValue;
+      console.log("?", currentPermutation.join(" "));
+      var currentQueryResponse = yield getNextLine();
+      if (currentQueryResponse[0] === "R") {
+        finalResultArray[checkValue - 0b1] = "R";
       } else {
-        finalSolution[itemIndex - 1] = "B";
+        finalResultArray[checkValue - 0b1] = "B";
       }
     }
   }
-  console.log("!", finalSolution.join(""));
+
+  // Output the final result.
+  console.log("!", finalResultArray.join(""));
 })();
-mainSequence.next();
+
+// Start the generator execution.
+mainLogicGenerator.next();

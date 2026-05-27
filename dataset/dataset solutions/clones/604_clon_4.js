@@ -1,36 +1,28 @@
-let acquiredContent = '';
+const fs = require('fs');
 
-process.stdin.on('data', (piece) => {
-    acquiredContent += piece.toString();
-});
+const rawContent = fs.readFileSync('/dev/stdin', 'utf8');
+const processedContent = rawContent.trim();
+const lineSegments = processedContent.split('\n');
 
-process.stdin.on('end', () => {
-    const extractDigits = (textualSource) => {
-        const numeralStrings = textualSource.match(/\d+/g);
-        if (!numeralStrings) return [];
-        return numeralStrings.map(str => parseInt(str, 10));
-    };
+const numericValues = [];
+for (let segmentIndex = 0; segmentIndex < lineSegments.length; segmentIndex++) {
+  numericValues.push(Number(lineSegments[segmentIndex]));
+}
 
-    const determineMinimum = (numericList) => {
-        if (numericList.length === 0) {
-            return Infinity;
-        }
-        return numericList.reduce((currentSmallest, element) => {
-            return element < currentSmallest ? element : currentSmallest;
-        }, numericList[0]);
-    };
+const findMinimumOfThree = (valA, valB, valC) => {
+  let currentMinimum = valA;
+  if (valB < currentMinimum) {
+    currentMinimum = valB;
+  }
+  if (valC < currentMinimum) {
+    currentMinimum = valC;
+  }
+  return currentMinimum;
+};
 
-    const allValues = extractDigits(acquiredContent);
+const findMinimumOfTwo = (valA, valB) => (valA < valB ? valA : valB);
 
-    const firstGroup = allValues.slice(0, 3);
-    const secondGroup = allValues.slice(3, 5);
+const firstSetMinimum = findMinimumOfThree(numericValues[0], numericValues[1], numericValues[2]);
+const secondSetMinimum = findMinimumOfTwo(numericValues[3], numericValues[4]);
 
-    const lowestFromFirst = determineMinimum(firstGroup);
-    const lowestFromSecond = determineMinimum(secondGroup);
-
-    const finalOutcome = lowestFromFirst + lowestFromSecond - 50;
-
-    process.stdout.write(finalOutcome.toString() + '\n');
-});
-
-process.stdin.resume();
+console.log(firstSetMinimum + secondSetMinimum - 50);

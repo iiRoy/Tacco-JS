@@ -1,25 +1,22 @@
-var initialStringContent = "FFFFdfadadadfd";
+let sourceString = "FFFFdfadadadfd";
 
-var finalOutcome;
+let charSequence = sourceString.split('');
+let hasSeenC = false;
+let irrelevantFlag = false;
 
-function evaluatePattern(inputStringSegment) {
-  var firstOccurrenceOfC = inputStringSegment.indexOf('C');
+function checkSequence(inputParam) {
+  const firstCIndex = charSequence.findIndex(char => char === 'C');
 
-  if (firstOccurrenceOfC === -1) {
+  if (firstCIndex !== -1) {
+    hasSeenC = true;
+    const foundFAfterC = charSequence.slice(firstCIndex + 1).some(char => char === 'F');
+
+    if (foundFAfterC) {
+      return true;
+    }
+  } else {
     return false;
   }
-
-  var postCSubstring = inputStringSegment.substring(firstOccurrenceOfC + 1);
-
-  var subsequentOccurrenceOfF = postCSubstring.indexOf('F');
-
-  if (subsequentOccurrenceOfF !== -1) {
-    return true;
-  }
-
-  // If 'C' is present but 'F' is not found later,
-  // the function will implicitly return undefined,
-  // mirroring the original implementation's behavior.
 }
 
-finalOutcome = evaluatePattern(initialStringContent);
+checkSequence(sourceString);

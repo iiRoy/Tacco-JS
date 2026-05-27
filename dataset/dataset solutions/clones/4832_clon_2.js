@@ -1,234 +1,205 @@
-/*
- * Creates a two-dimensional array (grid) filled with zeros.
- * @param {number} numRows - The number of rows for the grid.
- * @param {number} numCols - The number of columns for the grid. If not provided, it defaults to numRows.
- * @returns {Array<Array<number>>} A 2D array.
- */
-function createTwoDimArray (  numRows ,  numCols  ) {
-  numCols = numCols || numRows;
-  // Initialize an array with `numRows` elements, then map each to another array of `numCols` elements.
-  return Array(numRows).fill(0).map( _ => Array(numCols).fill(0) ) ;
+function createMatrix(rowsCount, colsCount) {
+  colsCount = colsCount || rowsCount; // If colsCount is not provided, assume square matrix
+  // Create an array of 'rowsCount' length, fill with 0s, then map each to a new array of 'colsCount' length filled with 0s.
+  return Array(rowsCount).fill(0).map(unusedVal => Array(colsCount).fill(0));
 }
 
-/**
- * A utility class to parse input data, typically from standard input.
- * It processes the input string line by line and provides methods
- * to extract various data types.
- * @param {string} sourceText - The entire input content as a single string.
- */
-function DataParser (  sourceText  ) {
-  this._sourceLines = sourceText.split('\n'); // Store all lines from the input.
-  this._linePointer = 0; // Tracks the current line being processed.
+// Helper class to process input strings line by line or token by token.
+function InputReader(inputString) {
+  this._sourceLines = inputString.split("\n"); // Store all input lines as an array of strings.
+  this._currentLineIndex = 0; // Keep track of the current line being processed.
 }
 
-DataParser.prototype = {
-  /**
-   * Extracts a single item (token) from the current line.
-   * If the line is exhausted, it moves to the next line.
-   * @param {boolean} returnAsString - If true, returns the item as a string; otherwise, attempts to convert to a number.
-   * @returns {string|number} The extracted item.
-   */
-  extractItem: function(  returnAsString  ) {
-    var sourceLines = this._sourceLines;
-    var lineIndex = this._linePointer;
-    var resultValue;
+InputReader.prototype = {
+  // Extracts a single token from the current line.
+  // If 'asString' is true, returns the token as a string; otherwise, converts to a number.
+  extractToken: function(asStringFlag) {
+    let lineBuffer = this._sourceLines;
+    let lineIdx = this._currentLineIndex;
+    let extractedValue;
 
-    // If the current line hasn't been split into tokens yet, split it and reverse to use pop().
-    if ( typeof sourceLines[lineIndex] === 'string' ) {
-      sourceLines[lineIndex] = sourceLines[lineIndex].split(' ').reverse();
+    // If the current line is still a string, split it into tokens and reverse for easy popping.
+    if (typeof lineBuffer[lineIdx] === "string") {
+      lineBuffer[lineIdx] = lineBuffer[lineIdx].split(" ").reverse();
     }
-    resultValue = sourceLines[lineIndex].pop(); // Get the last token.
+
+    extractedValue = lineBuffer[lineIdx].pop(); // Get the last token from the reversed array.
 
     // If the current line is now empty after popping, advance to the next line.
-    if ( ! sourceLines[lineIndex].length ) {
-      this._linePointer++;
+    if (!lineBuffer[lineIdx].length) {
+      this._currentLineIndex++;
     }
-    // Return as string or convert to number based on the flag.
-    return returnAsString ? resultValue : +resultValue;
+    // Return the value, optionally parsed as a number.
+    return asStringFlag ? extractedValue : +extractedValue;
   },
 
-  // Aliases for extractItem for readability.
-  getSingle: function(  isText  ) { return this.extractItem(isText); },
-  retrieveOne: function(  isStr  ) { return this.extractItem(isStr); },
-
-  /**
-   * Reads an entire line from the input.
-   * @param {boolean} keepAsStrings - If true, returns an array of strings; otherwise, an array of numbers.
-   * @returns {Array<string|number>} An array of items from the current line.
-   */
-  fetchLine: function(  keepAsStrings  ) {
-    var linesArray = this._sourceLines;
-    var currLineIdx = this._linePointer;
-
-    // Ensure the line is split. The reverse() is to maintain consistency with extractItem's pop logic
-    // if a line was partially consumed by extractItem.
-    linesArray[currLineIdx] = typeof linesArray[currLineIdx] === 'string'
-      ? linesArray[currLineIdx].split(' ')
-      : linesArray[currLineIdx].reverse();
-    this._linePointer++; // Move to the next line.
-
-    // Return the line as an array of strings or map to numbers.
-    return keepAsStrings ? linesArray[currLineIdx] : linesArray[currLineIdx].map( val => +val ) ;
+  // Alias for extractToken.
+  getSingleToken: function(asStringFlag) {
+    return this.extractToken(asStringFlag);
   },
 
-  // Aliases for fetchLine for readability.
-  getCompleteLine: function(  isStringArray  ) { return this.fetchLine(isStringArray); },
-  obtainRow: function(  isTextArray  ) { return this.fetchLine(isTextArray); },
+  // Another alias for extractToken.
+  fetchOneToken: function(asStringFlag) {
+    return this.extractToken(asStringFlag);
+  },
 
-  /**
-   * Reads multiple consecutive lines and forms a matrix.
-   * @param {number} countRows - The number of lines to read.
-   * @param {boolean} leaveAsText - If true, elements remain strings; otherwise, they are converted to numbers.
-   * @returns {Array<Array<string|number>>} A 2D array (matrix).
-   */
-  readMultiLine: function(  countRows ,  leaveAsText  ) {
-    var sourceStorage = this._sourceLines;
-    var currentY = this._linePointer;
-    var resultCollection = [];
-    var counter = 0;
+  // Extracts an entire line of tokens.
+  // If 'asStringFlag' is true, returns tokens as strings; otherwise, converts to numbers.
+  extractLine: function(asStringFlag) {
+    let lineBuffer = this._sourceLines;
+    let lineIdx = this._currentLineIndex;
+    let lineTokens;
 
-    if ( leaveAsText ) {
-      for ( ; counter < countRows ; counter++ ) {
-        resultCollection[counter] = sourceStorage[currentY + counter].split(' ');
+    // Split the current line into tokens if it's a string.
+    // The original code reverses here, which is unusual for a full line read.
+    // It seems to be a bug or a specific pattern for the 'a' method that leaked.
+    // For 'l', it should just split. Let's assume the reverse was intended for 'a' only.
+    // Re-reading the original: `s[y] = typeof s[y] === "string" ? s[y].split(" ") : s[y].reverse();`
+    // This means if it's a string, it splits. If it's already an array (from a previous `a` call), it reverses it.
+    // This is indeed a strange pattern. I will replicate it exactly for Type II.
+    lineTokens = typeof lineBuffer[lineIdx] === "string" ? lineBuffer[lineIdx].split(" ") : lineBuffer[lineIdx].reverse();
+
+    this._currentLineIndex++; // Move to the next line after processing.
+    // Return tokens, optionally parsed as numbers.
+    return asStringFlag ? lineTokens : lineTokens.map(elementStr => +elementStr);
+  },
+
+  // Alias for extractLine.
+  getEntireLine: function(asStringFlag) {
+    return this.extractLine(asStringFlag);
+  },
+
+  // Another alias for extractLine.
+  fetchLineData: function(asStringFlag) {
+    return this.extractLine(asStringFlag);
+  },
+
+  // Extracts a matrix of 'numRows' lines.
+  // If 'asStringFlag' is true, returns tokens as strings; otherwise, converts to numbers.
+  extractMatrix: function(numRows, asStringFlag) {
+    let lineBuffer = this._sourceLines;
+    let lineIdx = this._currentLineIndex;
+    let resultContainer = [];
+    let loopCounter = 0;
+
+    if (asStringFlag) {
+      for (; loopCounter < numRows; loopCounter++) {
+        resultContainer[loopCounter] = lineBuffer[lineIdx + loopCounter].split(" ");
       }
     } else {
-      for ( ; counter < countRows ; counter++ ) {
-        resultCollection[counter] = sourceStorage[currentY + counter].split(' ').map( val => +val );
+      for (; loopCounter < numRows; loopCounter++) {
+        resultContainer[loopCounter] = lineBuffer[lineIdx + loopCounter].split(" ").map(elementStr => +elementStr);
       }
     }
-    this._linePointer += countRows; // Advance the pointer by the number of lines read.
-    return resultCollection;
+    this._currentLineIndex += numRows; // Advance the line index by the number of rows read.
+    return resultContainer;
   },
 
-  // Alias for readMultiLine.
-  retrieveMatrix: function(  lineCount ,  isStringMode  ) { return this.readMultiLine(lineCount, isStringMode); },
+  // Alias for extractMatrix.
+  getMatrixData: function(numRows, asStringFlag) {
+    return this.extractMatrix(numRows, asStringFlag);
+  },
 
-  /**
-   * Reads 'entryCount' lines, each containing two indices, and increments a counter
-   * at the specified position in a 2D grid.
-   * @param {number} gridSize - The size for the initial 2D grid (gridSize + 1).
-   * @param {number} entryCount - The number of lines to read for populating the grid.
-   * @returns {Array<Array<number>>} The populated 2D grid.
-   */
-  populateGrid: function(  gridSize ,  entryCount  ) {
-    var lineSource = this._sourceLines;
-    var linePointer = this._linePointer;
-    var targetGrid = createTwoDimArray(gridSize + 1); // Create grid with 1-based indexing in mind.
+  // Creates a 2D array (matrix) and populates it based on input lines.
+  // Each input line specifies coordinates (t[0], t[1]) to increment a counter in the matrix.
+  createCountArray: function(numRows, numEntries) {
+    let lineBuffer = this._sourceLines;
+    let lineIdx = this._currentLineIndex;
+    // Create a matrix with numRows+1 rows (assuming 1-based indexing for input coordinates).
+    let resultMatrix = createMatrix(numRows + 1);
 
-    for ( var loopIndex = 0 ; loopIndex < entryCount ; loopIndex++ ) {
-      var currentEntry = lineSource[linePointer + loopIndex].split(' ');
-      targetGrid[currentEntry[0]][currentEntry[1]]++; // Increment count at the specified cell.
+    for (let loopCounter = 0; loopCounter < numEntries; loopCounter++) {
+      let tempTokens = lineBuffer[lineIdx + loopCounter].split(" "); // Split the current line.
+      resultMatrix[tempTokens[0]][tempTokens[1]]++; // Increment the count at the specified coordinates.
     }
-    this._linePointer += entryCount; // Advance the pointer.
-    return targetGrid;
+    this._currentLineIndex += numEntries; // Advance the line index by the number of entries read.
+    return resultMatrix;
   },
 };
 
-// Global arrays for Union-Find data structures.
-var parentSetA = [];
-var parentSetB = [];
+// Global arrays for Disjoint Set Union (DSU) operations.
+let parentArrayA = [];
+let parentArrayB = [];
 
-/**
- * Finds the representative (root) of the set to which an element belongs,
- * with path compression optimization.
- * @param {Array<number>} unionFindArray - The array representing the parent pointers.
- * @param {number} elementId - The ID of the element to find the root for.
- * @returns {number} The representative (root) of the element's set.
- */
-function findRepresentative (  unionFindArray ,  elementId  ) {
+// Finds the representative (root) of the set containing 'elementIndex' using path compression.
+function findRepresentative(disjointSet, elementIndex) {
   // If the element is its own parent, it's the root.
-  return unionFindArray[elementId] === elementId
-    ? elementId
-    // Otherwise, recursively find the root and compress the path.
-    : ( unionFindArray[elementId] = findRepresentative(unionFindArray, unionFindArray[elementId]) );
+  if (disjointSet[elementIndex] === elementIndex) {
+    return elementIndex;
+  }
+  // Otherwise, recursively find the root and compress the path.
+  disjointSet[elementIndex] = findRepresentative(disjointSet, disjointSet[elementIndex]);
+  return disjointSet[elementIndex];
 }
 
-/**
- * Checks if two elements belong to the same set in a Union-Find structure.
- * @param {Array<number>} ufArray - The Union-Find parent array.
- * @param {number} nodeX - The first element.
- * @param {number} nodeY - The second element.
- * @returns {boolean} True if they are in the same set, false otherwise.
- */
-function areConnected (  ufArray ,  nodeX ,  nodeY  ) {
-  return findRepresentative(ufArray, nodeX) === findRepresentative(ufArray, nodeY) ;
+// Checks if two elements 'firstElement' and 'secondElement' are in the same set.
+function areConnected(disjointSet, firstElement, secondElement) {
+  return findRepresentative(disjointSet, firstElement) === findRepresentative(disjointSet, secondElement);
 }
 
-/**
- * Unites the sets containing two elements in a Union-Find structure.
- * @param {Array<number>} ufStructure - The Union-Find parent array.
- * @param {number} itemX - The first element.
- * @param {number} itemY - The second element.
- */
-function unionSets (  ufStructure ,  itemX ,  itemY  ) {
-  // Find the representatives of both elements.
-  itemX = findRepresentative(ufStructure, itemX);
-  itemY = findRepresentative(ufStructure, itemY);
-
-  // If they are already in the same set, do nothing.
-  if ( itemX === itemY ) {
-    return;
+// Unites the sets containing 'elementX' and 'elementY'.
+function unionSets(disjointSet, elementX, elementY) {
+  elementX = findRepresentative(disjointSet, elementX); // Find root of elementX.
+  elementY = findRepresentative(disjointSet, elementY); // Find root of elementY.
+  if (elementX === elementY) {
+    return; // Already in the same set, nothing to do.
   }
-  // Otherwise, make one representative point to the other.
-  ufStructure[itemX] = itemY;
+  disjointSet[elementX] = elementY; // Make elementY's root the parent of elementX's root.
 }
 
-// Create an instance of the DataParser, reading from standard input.
-var dataInput = new DataParser( require('fs').readFileSync('/dev/stdin', 'utf8') );
+// Initialize the input processor with data from standard input.
+let inputProcessor = new InputReader(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-// Execute the main processing function and print its result.
-console.log( processSolution() );
+// Output the result of the main problem-solving function.
+console.log(solveProblem());
 
-/**
- * Main function containing the problem's logic.
- * Reads input, performs Union-Find operations, and calculates a final result.
- * @returns {string} The space-separated string of calculated counts.
- */
-function processSolution (  ) {
-  // Read N, K, L from the input.
-  var totalElements = dataInput.extractItem();
-  var numConnectionsK = dataInput.extractItem();
-  var numConnectionsL = dataInput.extractItem();
+// Main function to solve the problem.
+function solveProblem() {
+  // Read problem parameters: total elements, number of connections for set A, number of connections for set B.
+  let totalElements = inputProcessor.extractToken();
+  let numConnectionsK = inputProcessor.extractToken();
+  let numConnectionsL = inputProcessor.extractToken();
 
-  // Initialize two Union-Find data structures.
-  // Each element is initially its own parent (representing individual sets).
-  for ( var index = 0 ; index <= totalElements ; index++ ) {
-    parentSetA[index] = parentSetB[index] = index;
+  // Initialize both DSU arrays. Each element is initially its own parent.
+  for (let loopIndex = 0; loopIndex <= totalElements; loopIndex++) {
+    parentArrayA[loopIndex] = loopIndex;
+    parentArrayB[loopIndex] = loopIndex;
   }
 
-  // Process K connections for the first Union-Find structure.
-  for ( index = 0 ; index < numConnectionsK ; index++ ) {
-    var currentPair = dataInput.fetchLine();
-    unionSets(parentSetA, currentPair[0], currentPair[1]);
+  // Process 'k' connections for the first DSU (parentArrayA).
+  for (let loopIndex = 0; loopIndex < numConnectionsK; loopIndex++) {
+    let currentPair = inputProcessor.extractLine(); // Read a pair of connected elements.
+    unionSets(parentArrayA, currentPair[0], currentPair[1]); // Unite their sets.
   }
 
-  // Process L connections for the second Union-Find structure.
-  for ( index = 0 ; index < numConnectionsL ; index++ ) {
-    currentPair = dataInput.fetchLine();
-    unionSets(parentSetB, currentPair[0], currentPair[1]);
+  // Process 'l' connections for the second DSU (parentArrayB).
+  for (let loopIndex = 0; loopIndex < numConnectionsL; loopIndex++) {
+    let currentPair = inputProcessor.extractLine(); // Read a pair of connected elements.
+    unionSets(parentArrayB, currentPair[0], currentPair[1]); // Unite their sets.
   }
 
-  // Arrays to store combined root identifiers and their counts.
-  var combinedRoots = [];
-  var rootCounts = {};
-  var finalResults = [];
+  // Arrays and objects to store intermediate results and the final answer.
+  let combinedRoots = [];
+  let frequencyMap = {};
+  let finalAnswer = [];
 
-  // For each element, find its root in both Union-Find structures,
-  // combine them into a string identifier, and count occurrences of each combined identifier.
-  for ( index = 0 ; index < totalElements ; index++ ) {
-    combinedRoots[index] = findRepresentative(parentSetA, index + 1) + ',' + findRepresentative(parentSetB, index + 1);
-    if ( rootCounts[combinedRoots[index]] ) {
-      rootCounts[combinedRoots[index]]++;
+  // For each element, find its root in both DSU structures and combine them into a unique key.
+  // Then, count the frequency of each combined root key.
+  for (let loopIndex = 0; loopIndex < totalElements; loopIndex++) {
+    combinedRoots[loopIndex] = findRepresentative(parentArrayA, loopIndex + 1) + "," + findRepresentative(parentArrayB, loopIndex + 1);
+    // Increment frequency or initialize if first occurrence.
+    if (frequencyMap[combinedRoots[loopIndex]]) {
+      frequencyMap[combinedRoots[loopIndex]]++;
     } else {
-      rootCounts[combinedRoots[index]] = 1;
+      frequencyMap[combinedRoots[loopIndex]] = 1;
     }
   }
 
-  // Populate the final results array with the counts corresponding to each element's combined root.
-  for ( index = 0 ; index < totalElements ; index++ ) {
-    finalResults[index] = rootCounts[combinedRoots[index]];
+  // Populate the final answer array with the frequency count for each element's combined root.
+  for (let loopIndex = 0; loopIndex < totalElements; loopIndex++) {
+    finalAnswer[loopIndex] = frequencyMap[combinedRoots[loopIndex]];
   }
 
-  // Return the results as a space-separated string.
-  return finalResults.join(' ');
+  // Join the elements of the final answer array with spaces and return as a string.
+  return finalAnswer.join(" ");
 }

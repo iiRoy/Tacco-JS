@@ -1,35 +1,23 @@
-let aggregatePayload = '';
+var fileSystem = require('fs');
+var dataLength = fileSystem.fstatSync(process.stdin.fd).size;
+var inputBuffer = Buffer.alloc(dataLength);
+var actualBytesRead = fileSystem.readSync(process.stdin.fd, inputBuffer, 0, dataLength, 0);
+var rawInputLines = inputBuffer.toString('utf8', 0, actualBytesRead).split('\n');
 
-process.stdin.on('data', function(e) {
-    aggregatePayload += e.toString();
-});
+evaluateGeometricSets();
 
-process.stdin.on('end', function() {
-    evaluateIncoming(aggregatePayload);
-});
+function evaluateGeometricSets() {
+  const numberOfTestCases = Number(rawInputLines[0]);
 
-function evaluateIncoming(entireBlock) {
-    const segmentArray = entireBlock.trim().split('\n');
-    const quantityOfTrials = Number(segmentArray[0]);
+  rawInputLines.slice(1, numberOfTestCases + 1).forEach(currentDataSetString => {
+    const numericalComponents = currentDataSetString.split(' ').map(Number);
 
-    segmentArray.slice(1, quantityOfTrials + 1).forEach(function(currentSequence) {
-        checkGeometricRelation(currentSequence);
-    });
-}
+    const largestComponent = Math.max(...numericalComponents);
+    const smallestComponent = Math.min(...numericalComponents);
+    const intermediateComponent = numericalComponents.reduce((sum, val) => sum + val, 0) - largestComponent - smallestComponent;
 
-function checkGeometricRelation(elementString) {
-    const digitGroupings = elementString.match(/\d+/g);
-    const integerCollection = digitGroupings.map(numStr => parseInt(numStr, 10));
+    const formsRightTriangle = (largestComponent * largestComponent === smallestComponent * smallestComponent + intermediateComponent * intermediateComponent);
 
-    const componentA = integerCollection[0];
-    const componentB = integerCollection[1];
-    const componentC = integerCollection[2];
-
-    const minimumDimension = Math.min(componentA, componentB, componentC);
-    const maximumDimension = Math.max(componentA, componentB, componentC);
-    const intermediateDimension = componentA + componentB + componentC - minimumDimension - maximumDimension;
-
-    const conformsToHypotenuseRule = (maximumDimension * maximumDimension === intermediateDimension * intermediateDimension + minimumDimension * minimumDimension);
-
-    process.stdout.write(conformsToHypotenuseRule ? 'YES\n' : 'NO\n');
+    console.log(formsRightTriangle ? 'YES' : 'NO');
+  });
 }

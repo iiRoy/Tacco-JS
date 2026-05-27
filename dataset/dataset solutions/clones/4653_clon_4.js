@@ -1,22 +1,11 @@
-const fileSystemModule = require("fs");
-const standardInPath = "/dev/stdin";
-const encodingFormat = "utf8";
+const inputLines = require("fs").readFileSync("/dev/stdin", "utf8").split("\n");
 
-const rawInputData = fileSystemModule.readFileSync(standardInPath, encodingFormat);
+const countToTake = Number(inputLines[0]);
 
-const lineSegments = rawInputData.split(/\r?\n/).filter(Boolean);
+const sortedValues = inputLines[1].split(" ").map(Number).sort((valA, valB) => valB - valA);
 
-const selectionMagnitude = Number(lineSegments[0]);
+const targetIndices = Array.from({ length: countToTake }, (_, indexOffset) => 1 + 2 * indexOffset);
 
-const numericStringPart = lineSegments[1];
+const totalAccumulator = targetIndices.reduce((currentSum, currentIdx) => currentSum + sortedValues[currentIdx], 0);
 
-const unprocessedNumerics = numericStringPart.split(/\s+/).map(Number);
-
-const orderedNumerics = unprocessedNumerics.sort((alpha, beta) => alpha - beta).reverse();
-
-const accumulatedTotal = orderedNumerics
-  .filter((_val, idx) => idx % 2 !== 0)
-  .slice(0, selectionMagnitude)
-  .reduce((acc, current) => acc + current, 0);
-
-process.stdout.write(accumulatedTotal.toString() + "\n");
+console.log(totalAccumulator);

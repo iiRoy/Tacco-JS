@@ -1,35 +1,27 @@
-const processInputData = (payloadString) => {
-    const fullLineArray = payloadString.split('\n');
+const processMatrixData = (rawData) => {
+  const lineSegments = rawData.split('\n');
+  const [matrixHeightStr, matrixWidthStr] = lineSegments[0].split(' ');
+  const matrixHeight = parseInt(matrixHeightStr);
+  const matrixWidth = parseInt(matrixWidthStr);
 
-    const dimensionsRaw = fullLineArray[0].split(' ').map(Number);
-    const matrixRowsCount = dimensionsRaw[0];
-    const matrixColsCount = dimensionsRaw[1];
+  const matrixRows = lineSegments.slice(1, 1 + matrixHeight).map(rowStr =>
+    rowStr.split(' ').map(Number)
+  );
 
-    const contentLines = fullLineArray.slice(1);
+  const coefficientVector = lineSegments.slice(
+    1 + matrixHeight,
+    1 + matrixHeight + matrixWidth - 1
+  ).map(Number);
 
-    const dataGrid = contentLines.slice(0, matrixRowsCount).map(lineText =>
-        lineText.split(' ').map(Number)
-    );
-
-    const vectorLengthDeterminedByOriginalLogic = contentLines.length - matrixRowsCount - 1;
-    const multiplierVector = contentLines.slice(matrixRowsCount, matrixRowsCount + vectorLengthDeterminedByOriginalLogic).map(Number);
-
-    const accumulateProductsRecursively = (rowArr, coeffVec, indexer, maxIndex, currentTotal) => {
-        if (indexer === maxIndex) {
-            return currentTotal;
-        }
-        const gridVal = rowArr[indexer];
-        const coeffVal = coeffVec[indexer];
-        const productTerm = gridVal * coeffVal;
-        return accumulateProductsRecursively(rowArr, coeffVec, indexer + 1, maxIndex, currentTotal + productTerm);
-    };
-
-    const finalOutputValues = dataGrid.map(singleRow => {
-        return accumulateProductsRecursively(singleRow, multiplierVector, 0, matrixColsCount, 0);
-    });
-
-    finalOutputValues.forEach(valueToPrint => console.log(valueToPrint));
+  matrixRows.forEach(currentRow => {
+    const rowProductSum = currentRow.reduce((accumulator, currentElement, colIndex) => {
+      const coefficient = coefficientVector[colIndex];
+      return accumulator + (currentElement * coefficient);
+    }, 0);
+    console.log(rowProductSum);
+  });
 };
 
-const receivedStreamContent = require('node:fs').readFileSync(process.stdin.fd, 'utf8');
-processInputData(receivedStreamContent);
+const fileSystem = require('fs');
+const inputData = fileSystem.readFileSync('/dev/stdin', 'utf-8');
+processMatrixData(inputData);

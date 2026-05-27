@@ -1,51 +1,54 @@
 "use strict";
-const sourceText = require("fs").readFileSync("/dev/stdin", "utf8");
-const tokenStream = sourceText.trim().split(/\s+/);
-let positionIndex = 0;
-const grabNumericToken = () => Number(tokenStream[positionIndex++]);
+const fileContent = require("fs").readFileSync("/dev/stdin", "utf8");
+const numericTokens = fileContent.trim().split(/\s+/).map(Number);
 
-const totalNodes = grabNumericToken();
-const totalEdges = grabNumericToken();
+function processGraphTraversal() {
+    let tokenCursor = 0;
+    const nodeCount = numericTokens[tokenCursor++];
+    const edgeCount = numericTokens[tokenCursor++];
 
-const linkMap = new Map();
-Array.from({ length: totalEdges }).forEach(() => {
-    const fromNode = grabNumericToken();
-    const toNode = grabNumericToken();
-    if (!linkMap.has(fromNode)) linkMap.set(fromNode, new Set());
-    if (!linkMap.has(toNode)) linkMap.set(toNode, new Set());
-    linkMap.get(fromNode).add(toNode);
-    linkMap.get(toNode).add(fromNode);
-});
-
-const parentAssignments = new Map();
-const visitedSet = new Set();
-
-const explorePaths = (currentLevelNodes) => {
-    if (currentLevelNodes.length === 0) {
-        return;
+    const adjacencyStructure = new Map();
+    for (let i = 1; i <= nodeCount; i++) {
+        adjacencyStructure.set(i, new Set());
     }
 
-    const nextLevelNodes = [];
-    currentLevelNodes.forEach(currentNodeIdentifier => {
-        const connectedIdentifiers = linkMap.get(currentNodeIdentifier);
-        if (connectedIdentifiers) {
-            connectedIdentifiers.forEach(neighborIdentifier => {
-                if (!visitedSet.has(neighborIdentifier)) {
-                    visitedSet.add(neighborIdentifier);
-                    parentAssignments.set(neighborIdentifier, currentNodeIdentifier);
-                    nextLevelNodes.push(neighborIdentifier);
+    for (let i = 0; i < edgeCount; i++) {
+        const originNode = numericTokens[tokenCursor++];
+        const destinationNode = numericTokens[tokenCursor++];
+        adjacencyStructure.get(originNode).add(destinationNode);
+        adjacencyStructure.get(destinationNode).add(originNode);
+    }
+
+    const predecessorMap = new Map();
+    const exploredNodes = new Set();
+    const discoveryQueue = [];
+
+    // Initiate Breadth-First Search from node 1
+    const initialNode = 1;
+    discoveryQueue.push(initialNode);
+    exploredNodes.add(initialNode);
+
+    while (discoveryQueue.length > 0) {
+        const currentVertex = discoveryQueue.shift();
+        const connectedVertices = adjacencyStructure.get(currentVertex);
+
+        if (connectedVertices) {
+            for (const adjacentVertex of connectedVertices) {
+                if (!exploredNodes.has(adjacentVertex)) {
+                    exploredNodes.add(adjacentVertex);
+                    predecessorMap.set(adjacentVertex, currentVertex);
+                    discoveryQueue.push(adjacentVertex);
                 }
-            });
+            }
         }
-    });
-    explorePaths(nextLevelNodes);
-};
+    }
 
-visitedSet.add(1);
-explorePaths([1]);
+    const resultLines = ["Yes"];
+    for (let i = 2; i <= nodeCount; i++) {
+        resultLines.push(predecessorMap.get(i));
+    }
 
-const finalResult = ["Yes"];
-for (let nodeIdx = 2; nodeIdx <= totalNodes; nodeIdx++) {
-    finalResult.push(parentAssignments.get(nodeIdx));
+    console.log(resultLines.join("\n"));
 }
-console.log(finalResult.join("\n"));
+
+processGraphTraversal();

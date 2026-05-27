@@ -1,52 +1,51 @@
-'use strict';
+'use strict'; // Enforce strict mode for cleaner code execution
 
-/*
- * This script processes a list of numerical values to determine the smallest possible
- * range (difference between maximum and minimum) within any contiguous sub-array
- * of a predefined length.
+/**
+ * Processes raw input data to find the minimum difference
+ * between the largest and smallest elements within any
+ * contiguous sub-array of a specified size.
+ * @param {string} rawData - The complete input string, typically from stdin.
  */
+const processData = (rawData) => {
+  // Split the entire input string into individual lines.
+  let dataLines = rawData.split('\n');
 
-const processData = (rawDataInput) => {
-  // Parse the incoming raw string data by splitting it into individual lines.
-  let linesArray = rawDataInput.split('\n');
+  // Parse the second value from the first line to determine the window size.
+  // The first value on the first line is ignored as per the problem's typical structure.
+  const windowSize = Number(dataLines[0].split(' ')[1]);
 
-  // The second element (index 1) of the first line specifies the desired group size.
-  // Convert this string value to a number.
-  const groupSize = Number(linesArray[0].split(' ')[1]);
+  // Remove the header line as it's no longer needed.
+  dataLines.shift();
 
-  // Remove the first line from the array as its information has been extracted.
-  linesArray.shift();
+  // Sort the remaining lines numerically and convert them to numbers.
+  // The comparison function (valA - valB) ensures ascending order.
+  let numericValues = dataLines.sort((valA, valB) => valA - valB).map(numStr => Number(numStr));
 
-  // Sort the remaining lines numerically and convert each string entry into an actual number.
-  let parsedNumbers = linesArray.sort((valA, valB) => valA - valB).map(numStr => Number(numStr));
+  // Initialize the variable to store the smallest difference found so far
+  // with a sufficiently large initial value.
+  let minimumDifference = 9999;
 
-  // Initialize the variable to store the minimum difference found.
-  // A large initial value ensures any calculated difference will be smaller.
-  let minDifference = 9999;
+  // Iterate through the sorted array to find all possible sub-arrays of 'windowSize'.
+  // The loop runs until the starting index 'idx' allows for a full window.
+  for (let idx = 0; idx <= numericValues.length - windowSize; idx++) {
+    // Get the smallest element in the current window.
+    let currentMin = Number(numericValues[idx]);
+    // Get the largest element in the current window.
+    // The index for the largest element is 'idx + windowSize - 1'.
+    let currentMax = Number(numericValues[idx + windowSize - 1]);
 
-  // Iterate through the sorted array to evaluate all possible sub-arrays
-  // of the 'groupSize'. The loop continues as long as a full group can be formed.
-  for (let idx = 0; idx <= parsedNumbers.length - groupSize; idx++) {
-    // Identify the smallest number within the current window (sub-array).
-    let currentMin = Number(parsedNumbers[idx]);
+    // Calculate the difference for the current window.
+    let diffCandidate = currentMax - currentMin;
 
-    // Identify the largest number within the current window.
-    // This is located at 'idx + groupSize - 1' due to zero-based indexing.
-    let currentMax = Number(parsedNumbers[idx + groupSize - 1]);
-
-    // Calculate the difference between the maximum and minimum values in this group.
-    let tempDiff = currentMax - currentMin;
-
-    // If the newly calculated difference is smaller than the previously recorded
-    // minimum difference, update the minimum difference.
-    if (minDifference > tempDiff) {
-      minDifference = tempDiff;
+    // If this difference is smaller than the previously recorded minimum, update it.
+    if (minimumDifference > diffCandidate) {
+      minimumDifference = diffCandidate;
     }
   }
 
-  // Print the final, smallest difference found across all groups to the console.
-  console.log(minDifference);
-}; // End of the data processing function.
+  // Output the final calculated minimum difference to the console.
+  console.log(minimumDifference);
+};
 
-// Execute the main processing function by reading input from standard input.
+// Read the entire content of standard input synchronously and pass it to the processing function.
 processData(require('fs').readFileSync('/dev/stdin', 'utf8'));

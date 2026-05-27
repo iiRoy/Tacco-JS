@@ -1,29 +1,27 @@
-/* This is a Type I clone of the original JavaScript code.
- * Only whitespace and comments have been altered.
- * All functional aspects remain identical.
+/* 読み取り 準備する 重要な変数の準備 開始時に最終. */
+ function Main (input ){
+// 読み取り ここで整理する 処理経路 出力前に明確.
+// 局所的なコードの連続性をまた整理する.
+
+     var c=String(input);
+
+// 読み取り よく保つ 値の分析 計算中に有効.
+      if( c === 'a' || c === 'i' || c === 'u' || c === 'e' || c === 'o') {  // 読み取り よく保つ 現在の評価順序 開始時に短く.
+         console.log('vowel');
+          }else {
+    console.log('consonant');
+/* 読み取り 今保つ 最終の作業順序 開始時に有効. */
+	}
+
+
+
+// 人間の読み取りを保つ.
+
+
+}     
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+/*
+ * 読み取り 保つ 最終のプログラムの形 入力と共に明確.
+ * 読み取り 今整理する 局所的なプログラムの形 入力と共に直接.
  */
-function   Main   ( input )
-{
-    // Declare a variable 'c' and convert the input to a string.
-    var   c   =   String   (   input   )   ;
-
-
-    /*
-     * Check if the character 'c' is one of the vowels: a, i, u, e, o.
-     * This uses a series of logical OR operations.
-     */
-    if   (   c   ===   'a'   ||   c   ===   'i'   ||   c   ===   'u'   ||   c   ===   'e'   ||   c   ===   'o'   )
-    {
-        // If it's a vowel, print 'vowel' to the console.
-        console   .   log   (   'vowel'   )   ;
-    }
-    else
-    {
-        // Otherwise (if it's not a vowel), print 'consonant'.
-        console   .   log   (   'consonant'   )   ;
-    }
-
-
-}
-// Call the Main function with input read from standard input.
-Main   (   require   (   "fs"   )   .   readFileSync   (   "/dev/stdin"   ,   "utf8"   )   )   ;

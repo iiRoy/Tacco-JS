@@ -1,67 +1,74 @@
-const acquireDataForPuzzle = () => require('node:fs').readFileSync('/dev/stdin', 'utf8');
+const fileSystem = require('fs');
 
-const generateTileAdjacencyMap = () => {
-    const links = new Map();
-    for (let currentPos = 0; currentPos < 8; ++currentPos) {
-        const possibleMoves = [];
-        const currentGridRow = Math.floor(currentPos / 4);
-        const currentGridColumn = currentPos % 4;
+const PUZZLE_ROW_SIZE = 4;
+const PUZZLE_TOTAL_TILES = 8;
+const TARGET_PUZZLE_STRING = '01234567';
 
-        if (currentGridRow > 0) possibleMoves.push(currentPos - 4);
-        if (currentGridRow < 1) possibleMoves.push(currentPos + 4);
-        if (currentGridColumn > 0) possibleMoves.push(currentPos - 1);
-        if (currentGridColumn < 3) possibleMoves.push(currentPos + 1);
-        
-        links.set(currentPos, possibleMoves);
+const findAdjacentTileIndices = (currentBlankIndex) => {
+    const currentRow = Math.floor(currentBlankIndex / PUZZLE_ROW_SIZE);
+    const currentCol = currentBlankIndex % PUZZLE_ROW_SIZE;
+
+    const neighborOffsets = [
+        [-1, 0], // Up
+        [1, 0],  // Down
+        [0, -1], // Left
+        [0, 1]   // Right
+    ];
+
+    const validNeighborIndices = [];
+
+    for (const [rowOffset, colOffset] of neighborOffsets) {
+        const newRow = currentRow + rowOffset;
+        const newCol = currentCol + colOffset;
+
+        if (newRow >= 0 && newRow < 2 && newCol >= 0 && newCol < PUZZLE_ROW_SIZE) {
+            validNeighborIndices.push(newRow * PUZZLE_ROW_SIZE + newCol);
+        }
     }
-    return links;
+    return validNeighborIndices;
 };
 
-const tileMovementConnections = generateTileAdjacencyMap();
-const solvedConfiguration = '01234567';
+const generateNextPuzzleState = (currentTiles, indexA, indexB) => {
+    const newTiles = [...currentTiles];
+    [newTiles[indexA], newTiles[indexB]] = [newTiles[indexB], newTiles[indexA]];
+    return newTiles;
+};
 
-const processAllPuzzleInputs = (allPuzzleData) => {
-    const puzzleLines = allPuzzleData.trim().split('\n');
+const solveSlidingPuzzle = (initialTileConfiguration) => {
+    const explorationQueue = [];
+    const visitedConfigurations = new Set();
 
-    puzzleLines.forEach(puzzleText => {
-        const initialPuzzleState = puzzleText.split(' ').join('');
-        
-        const knownStates = new Map();
-        const progressionQueue = [];
+    explorationQueue.push([initialTileConfiguration, 0]);
+    visitedConfigurations.add(initialTileConfiguration.join(''));
 
-        progressionQueue.push([initialPuzzleState, 0]);
-        knownStates.set(initialPuzzleState, true);
+    while (explorationQueue.length > 0) {
+        const [currentTiles, currentMoveCount] = explorationQueue.shift();
 
-        let solutionFoundForThisPuzzle = false;
+        if (currentTiles.join('') === TARGET_PUZZLE_STRING) {
+            return currentMoveCount;
+        }
 
-        while (progressionQueue.length > 0) {
-            const [currentPuzzleLayout, currentMoveCount] = progressionQueue.shift();
+        const blankTileIndex = currentTiles.indexOf(0);
+        const potentialSwapIndices = findAdjacentTileIndices(blankTileIndex);
 
-            if (currentPuzzleLayout === solvedConfiguration) {
-                console.log(currentMoveCount);
-                solutionFoundForThisPuzzle = true;
-                break;
-            }
+        for (const swapTargetIndex of potentialSwapIndices) {
+            const nextTileConfiguration = generateNextPuzzleState(currentTiles, blankTileIndex, swapTargetIndex);
+            const nextConfigurationString = nextTileConfiguration.join('');
 
-            const zeroTilePosition = currentPuzzleLayout.indexOf('0');
-            const potentialSwapPositions = tileMovementConnections.get(zeroTilePosition);
-            
-            let nextMoveCounter = currentMoveCount; 
-
-            for (const targetSwapPosition of potentialSwapPositions) {
-                const layoutChars = Array.from(currentPuzzleLayout);
-                const swappedTileValue = layoutChars[targetSwapPosition];
-                layoutChars[zeroTilePosition] = swappedTileValue;
-                layoutChars[targetSwapPosition] = '0';
-                const nextPuzzleLayout = layoutChars.join('');
-
-                if (!knownStates.has(nextPuzzleLayout)) {
-                    knownStates.set(nextPuzzleLayout, true);
-                    progressionQueue.push([nextPuzzleLayout, nextMoveCounter++]);
-                }
+            if (!visitedConfigurations.has(nextConfigurationString)) {
+                visitedConfigurations.add(nextConfigurationString);
+                explorationQueue.push([nextTileConfiguration, currentMoveCount + 1]);
             }
         }
-    });
+    }
+
+    return -1;
 };
 
-processAllPuzzleInputs(acquireDataForPuzzle());
+const puzzleDataLines = fileSystem.readFileSync('/dev/stdin', 'utf8').trim().split('\n');
+
+for (const lineContent of puzzleDataLines) {
+    const startingPuzzle = lineContent.split(' ').map(Number);
+    const minimumMoves = solveSlidingPuzzle(startingPuzzle);
+    console.log(minimumMoves);
+}

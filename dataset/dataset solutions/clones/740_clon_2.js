@@ -1,64 +1,79 @@
 #!/usr/bin/node
-// This script originated from a CoffeeScript source (version 1.3.3) and was subsequently minified by hand.
-( function() {
+// This script processes numerical input lines from standard input.
+(function() {
+	// Initialize an array to store processed lines and a variable for the input stream.
+	var collectedLines = [], inputSource;
 
-    var collectedInputLines = new Array();
+	// Open the standard input stream.
+	inputSource = process.openStdin();
+	// Set the character encoding for the input stream.
+	inputSource.setEncoding('utf8');
 
-    const streamProcessor = process.stdin;
+	// A buffer to hold incomplete lines received from the input stream.
+	var partialBuffer = '';
 
-    streamProcessor.setEncoding( 'utf8' );
+	// Attach an event listener for incoming data chunks.
+	inputSource.on('data', function(incomingData) {
+		// Concatenate the current buffer with new data and split by newline.
+		// The last element might be an incomplete line, so it's stored back in the buffer.
+		var processedChunks = (partialBuffer + incomingData).split("\n");
+		partialBuffer = processedChunks.pop();
 
+		// Iterate over the complete lines.
+		for (var lineIndex = 0; lineIndex < processedChunks.length; lineIndex++) {
+			// Skip any empty lines.
+			if (processedChunks[lineIndex] === '') {
+				continue;
+			}
+			// Add non-empty lines to our collection.
+			collectedLines.push(processedChunks[lineIndex]);
+		}
+	});
 
+	// Attach an event listener for the end of the input stream.
+	inputSource.on('end', function(finalEvent) {
+		// If there's any remaining data in the buffer after all 'data' events,
+		// process it as a final line.
+		if (partialBuffer) {
+			// Add a newline to ensure the fragment is treated as a complete line for splitting.
+			var processedChunks = (partialBuffer + "\n").split("\n");
+			partialBuffer = processedChunks.pop(); // This will likely be empty now.
 
-    var pendingSegment = "";
+			for (var lineIndex = 0; lineIndex < processedChunks.length; lineIndex++) {
+				if (processedChunks[lineIndex] === '') {
+					continue;
+				}
+				collectedLines.push(processedChunks[lineIndex]);
+			}
+		}
 
-    streamProcessor.on( 'data', function( dataBlock ) {
-            var parsedSegments = ( pendingSegment + dataBlock ) . split( "\n" );
-            pendingSegment = parsedSegments.pop();
+		// Remove the last element from the collected lines.
+		// This often corresponds to an empty line or EOF marker from the input.
+		collectedLines.pop();
 
-            for ( var lineIndex = 0; lineIndex < parsedSegments.length; lineIndex++ ) {
-                if ( parsedSegments[ lineIndex ] === '' ) {
-                    continue;
-                }
-                collectedInputLines.push( parsedSegments[ lineIndex ] );
-            }
-    } );
+		// Process each collected line.
+		for (var currentLineIdx = 0; currentLineIdx < collectedLines.length; currentLineIdx++) {
+			// Split the line by spaces to get individual number strings.
+			var parsedNumbers = collectedLines[currentLineIdx].split(" ");
+			// Convert each string part to an integer.
+			for (var numIndex = 0; numIndex < parsedNumbers.length; numIndex++) {
+				parsedNumbers[numIndex] = parseInt(parsedNumbers[numIndex], 10);
+			}
 
+			// Assign the parsed integer values to descriptive variables.
+			var totalItems = parsedNumbers[0];
+			var stepSize = parsedNumbers[1];
+			var offsetValue = parsedNumbers[2];
 
-
-    streamProcessor.on( 'end', function( eventTrigger ) {
-        if ( pendingSegment ) {
-
-            var finalSegments = ( pendingSegment + "\n" ) . split( "\n" );
-            pendingSegment = finalSegments.pop();
-
-            for ( var finalScanIdx = 0; finalScanIdx < finalSegments.length; finalScanIdx++ ) {
-                if ( finalSegments[ finalScanIdx ] === '' ) {
-                    continue;
-                }
-                collectedInputLines.push( finalSegments[ finalScanIdx ] );
-            }
-        }
-        collectedInputLines.pop();
-
-        for ( var outerLoopIndex = 0; outerLoopIndex < collectedInputLines.length; outerLoopIndex++ ) {
-            var parsedValues = collectedInputLines[ outerLoopIndex ].split( " " );
-
-            for ( var valueIterator = 0; valueIterator < parsedValues.length; valueIterator++ ) {
-                parsedValues[ valueIterator ] = parseInt( parsedValues[ valueIterator ], 10 );
-            }
-
-            var upperBound = parsedValues[ 0 ];
-            var incrementValue = parsedValues[ 1 ];
-            var initialOffset = parsedValues[ 2 ];
-
-            var currentSum = 0, loopIterator = 0;
-
-            for ( ; ++loopIterator < upperBound; currentSum %= loopIterator ) {
-                currentSum += incrementValue;
-            }
-            console.log( ( currentSum + initialOffset ) % upperBound + 1 );
-        }
-    } );
-
-} ) ();
+			// Initialize variables for the Josephus problem calculation.
+			var currentPosition = 0, counter = 0;
+			// Perform the Josephus calculation.
+			// The loop runs from 1 up to (but not including) totalItems.
+			for (; ++counter < totalItems; currentPosition %= counter) {
+				currentPosition += stepSize;
+			}
+			// Output the final calculated position, adjusted by the offset and 1-based indexing.
+			console.log((currentPosition + offsetValue) % totalItems + 1);
+		}
+	});
+})();

@@ -1,133 +1,146 @@
-// This module offers a specialized utility for parsing structured input content.
-var InputProcessor = (function() {
+var INPUT_PARSER = (function() {
+  /**
+   * Creates a new input reader instance.
+   * @param {string} inputStringContent - The raw string content to parse.
+   * @returns {InputReader} A new InputReader object.
+   */
+  function createInputReader(inputStringContent) {
+    return new InputReader(inputStringContent);
+  }
 
-    // A factory function that initializes and returns a new data stream handler.
-    function createProcessor(textContent) {
-        return new DataStream(textContent);
+  /**
+   * Represents an input reader that processes lines and tokens.
+   * @param {string} inputStringContent - The raw string content.
+   */
+  function InputReader(inputStringContent) {
+    // Store all input lines, trimmed and split by newline.
+    this._sourceLines = inputStringContent.trim().split('\n');
+    // Current line index being processed.
+    this._currentLineIndex = 0;
+  }
+
+  /**
+   * Reads a single token from the current line.
+   * If the current line hasn't been split into tokens yet, it splits it and reverses the order.
+   * @param {boolean} asStringFlag - If true, returns the token as a string; otherwise, as a number.
+   * @returns {string|number} The extracted token.
+   */
+  InputReader.prototype.readSingleValue = function(asStringFlag) {
+    var lineData = this._sourceLines;
+    var currentIdx = this._currentLineIndex;
+    var extractedValue;
+
+    // If the current line is still a single string, split it into tokens and reverse.
+    // This allows reading tokens from right to left using pop().
+    if (typeof lineData[currentIdx] === 'string') {
+      lineData[currentIdx] = lineData[currentIdx].split(' ').reverse();
     }
 
-    // The core class responsible for managing and extracting data from a provided text stream.
-    function DataStream(sourceContent) {
-        // Internal storage: an array where each element is a line from the input,
-        // trimmed of whitespace and initially stored as a string.
-        this.lineSegments = sourceContent.trim().split("\n");
-        // A pointer indicating the index of the current line being processed.
-        this.currentLineIndex = 0;
+    // Extract the last token from the current line's array.
+    extractedValue = lineData[currentIdx].pop();
+
+    // If the current line is now empty, advance to the next line.
+    if (!lineData[currentIdx].length) {
+      this._currentLineIndex++;
     }
 
-    // Prototype method: Extracts a single element from the current line.
-    // Elements are processed from right-to-left by reversing the line's order once.
-    DataStream.prototype.getOneItem = function(keepOriginalType) {
-        var currentLines = this.lineSegments,
-            linePointer = this.currentLineIndex,
-            resultValue; // Variable to hold the extracted data.
+    // Return the token as a string or convert it to a number.
+    return asStringFlag ? extractedValue : +extractedValue;
+  };
 
-        // Lazily split and reverse the current line if it hasn't been processed yet.
-        if (typeof currentLines[linePointer] === "string") {
-            currentLines[linePointer] = currentLines[linePointer].split(" ").reverse();
-        }
+  /**
+   * Reads an entire line of tokens.
+   * @param {boolean} asStringFlag - If true, returns tokens as strings; otherwise, as numbers.
+   * @returns {Array<string|number>} An array of tokens from the line.
+   */
+  InputReader.prototype.readLineOfValues = function(asStringFlag) {
+    // Get the current line, split by space, and then advance the line index.
+    var lineTokens = this._sourceLines[this._currentLineIndex++].split(' ');
+    // Return tokens as strings or convert them all to numbers.
+    return asStringFlag ? lineTokens : lineTokens.map(item => +item);
+  };
 
-        // Retrieve the last element (which was originally the first due to reversal).
-        resultValue = currentLines[linePointer].pop();
+  /**
+   * Reads a specified number of lines as a 2D array (matrix) of tokens.
+   * @param {number} numberOfLines - The count of lines to read.
+   * @param {boolean} asStringFlag - If true, returns tokens as strings; otherwise, as numbers.
+   * @returns {Array<Array<string|number>>} A 2D array of tokens.
+   */
+  InputReader.prototype.readMatrixOfValues = function(numberOfLines, asStringFlag) {
+    // Slice the required number of lines and advance the line index.
+    var resultCollection = this._sourceLines.slice(this._currentLineIndex, this._currentLineIndex += numberOfLines);
+    // Split each line into tokens.
+    resultCollection = resultCollection.map(item => item.split(' '));
+    // Return as strings or convert all tokens to numbers.
+    return asStringFlag ? resultCollection : resultCollection.map(row => row.map(element => +element));
+  };
 
-        // If the current line is now exhausted, advance the line pointer to the next line.
-        if (!currentLines[linePointer].length) {
-            this.currentLineIndex++;
-        }
+  /**
+   * Reads a specified number of lines as a 1D array of values.
+   * @param {number} numberOfLines - The count of lines to read.
+   * @param {boolean} asStringFlag - If true, returns values as strings; otherwise, as numbers.
+   * @returns {Array<string|number>} A 1D array of values.
+   */
+  InputReader.prototype.readArrayOfValues = function(numberOfLines, asStringFlag) {
+    // Slice the required number of lines and advance the line index.
+    var resultCollection = this._sourceLines.slice(this._currentLineIndex, this._currentLineIndex += numberOfLines);
+    // Return as strings or convert all values to numbers.
+    return asStringFlag ? resultCollection : resultCollection.map(item => +item);
+  };
 
-        // Return the extracted element. If 'keepOriginalType' is true, it's a string;
-        // otherwise, it's converted to a number using the unary plus operator.
-        return keepOriginalType ? resultValue : +resultValue;
-    };
-
-    // Prototype method: Reads all elements from the current line.
-    DataStream.prototype.getLineItems = function(asString) {
-        // Splits the current line by spaces and then increments the line pointer.
-        var extractedElements = this.lineSegments[this.currentLineIndex++].split(" ");
-
-        // Returns the elements. If 'asString' is true, they are strings;
-        // otherwise, each element is mapped to its numeric representation.
-        return asString ? extractedElements : extractedElements.map(element => +element);
-    };
-
-    // Prototype method: Reads a specified number of lines and parses them into a 2D array (matrix).
-    DataStream.prototype.getMatrix = function(numLines, returnStrings) {
-        // Extracts a segment of lines from the input, starting from the current pointer,
-        // and then advances the pointer by 'numLines'. Each line is then split into elements.
-        var matrixData = this.lineSegments
-            .slice(this.currentLineIndex, this.currentLineIndex += numLines)
-            .map(lineContent => lineContent.split(" "));
-
-        // Returns the matrix. If 'returnStrings' is true, it's a matrix of strings;
-        // otherwise, all nested elements are converted to numbers.
-        return returnStrings ? matrixData : matrixData.map(row => row.map(cell => +cell));
-    };
-
-    // Prototype method: Reads a specified number of raw lines without further splitting.
-    DataStream.prototype.getLines = function(numLines, stringOnly) {
-        // Extracts a segment of lines from the input, starting from the current pointer,
-        // and then advances the pointer by 'numLines'.
-        var rawLineData = this.lineSegments.slice(this.currentLineIndex, this.currentLineIndex += numLines);
-
-        // Returns the raw lines. If 'stringOnly' is true, they are strings;
-        // otherwise, each line is attempted to be converted to a number.
-        return stringOnly ? rawLineData : rawLineData.map(value => +value);
-    };
-
-    return createProcessor; // The factory function is exposed as the module's public interface.
-
+  // The IIFE returns the outer constructor function.
+  return createInputReader;
 })();
 
-// Establish a reference to the Node.js file system module.
-const fileSystemModule = require("fs");
-// Initialize the input handler by reading all content from standard input (stdin) as UTF-8 text.
-const inputHandler = InputProcessor(fileSystemModule.readFileSync("/dev/stdin", "utf8"));
+// Initialize the input handler by reading from standard input.
+var inputHandler = INPUT_PARSER(require('fs').readFileSync('/dev/stdin', 'utf8'));
 
-// Execute the primary problem-solving routine and output its return value to the console.
-console.log(calculateSubarrayPairs());
+// Output the result of the main calculation function.
+console.log(calculateSubarraySums());
 
-// Main function: Determines the count of subarrays within a given sequence whose elements sum to zero.
-function calculateSubarrayPairs() {
-    // Read the total count of elements expected in the upcoming numeric sequence.
-    const arraySize = inputHandler.getOneItem();
-    // Read the actual sequence of numbers from the input.
-    const numericSequence = inputHandler.getLineItems();
+/**
+ * Main function to calculate the number of subarrays with a sum of zero.
+ * This uses the prefix sum technique.
+ * @returns {number} The total count of zero-sum subarrays.
+ */
+function calculateSubarraySums() {
+  // Read the length of the array from the first line.
+  var arrayLength = inputHandler.readSingleValue();
+  // Read the array elements from the second line.
+  var numberArray = inputHandler.readLineOfValues();
 
-    // A hash map to efficiently store and retrieve the frequencies of various prefix sums.
-    // Keys represent prefix sums, and values represent how many times each sum has been encountered.
-    const sumFrequencies = new Map();
-    // Initialize the map: a prefix sum of 0 is considered to have occurred once,
-    // which accounts for subarrays starting from the very beginning that sum to zero.
-    sumFrequencies.set(0, 1);
+  // A Map to store the frequency of each prefix sum encountered.
+  // Key: prefix sum, Value: count of times this sum has appeared.
+  var prefixSumCounts = new Map();
+  // Initialize with a prefix sum of 0 occurring once (for empty prefix).
+  prefixSumCounts.set(0x0, 0x1);
 
-    // Variable to accumulate the final count of qualifying subarrays.
-    let totalPairs = 0;
-    // Variable to track the running sum of elements as we traverse the sequence.
-    let runningSum = 0;
+  // Variable to store the final count of zero-sum subarrays.
+  var finalResult = 0x0;
+  // Variable to keep track of the current running prefix sum.
+  var currentPrefixSum = 0x0;
 
-    // Iterate through each element of the numeric sequence.
-    for (let idx = 0; idx < arraySize; idx++) {
-        runningSum += numericSequence[idx]; // Update the running sum with the current element.
+  // Iterate through the input array to calculate prefix sums.
+  for (var loopIndex = 0x0; loopIndex < arrayLength; loopIndex++) {
+    // Add the current array element to the running prefix sum.
+    currentPrefixSum += numberArray[loopIndex];
 
-        // Check if the current running sum has been observed before.
-        if (sumFrequencies.has(runningSum)) {
-            // If yes, increment its frequency count.
-            sumFrequencies.set(runningSum, sumFrequencies.get(runningSum) + 1);
-        } else {
-            // If no, record this new sum with a frequency of 1.
-            sumFrequencies.set(runningSum, 1);
-        }
+    // Check if the current prefix sum has been seen before.
+    if (prefixSumCounts.get(currentPrefixSum)) {
+      // If seen, increment its count.
+      prefixSumCounts.set(currentPrefixSum, prefixSumCounts.get(currentPrefixSum) + 0x1);
+    } else {
+      // If not seen, add it to the map with a count of 1.
+      prefixSumCounts.set(currentPrefixSum, 0x1);
     }
+  }
 
-    // After processing all elements, iterate through the recorded sum frequencies.
-    // For each sum 'S' that appeared 'k' times, there are k * (k-1) / 2 ways
-    // to choose two indices 'i' and 'j' (with i < j) such that the subarray
-    // from 'i' to 'j-1' sums to zero. This is equivalent to finding two prefix sums
-    // that are equal.
-    sumFrequencies.forEach(countValue => {
-        totalPairs += countValue * (countValue - 1) / 2;
-    });
+  // Iterate through the counts of each prefix sum in the map.
+  // For each prefix sum that appeared 'k' times, it means there are 'k C 2' pairs
+  // of indices (i, j) such that prefixSum[i] == prefixSum[j].
+  // Each such pair corresponds to a subarray with a sum of zero.
+  prefixSumCounts.forEach(countValue => finalResult += countValue * (countValue - 0x1) / 0x2);
 
-    // Return the final computed number of subarrays with a sum of zero.
-    return totalPairs;
+  // Return the total count of zero-sum subarrays.
+  return finalResult;
 }

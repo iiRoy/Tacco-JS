@@ -1,29 +1,11 @@
-const acquireSourceMaterial = () => {
-    return require("node:fs").readFileSync(0, "utf8");
-};
+function processInput(sourceData) {
+  const inputString = sourceData;
+  const outputCharacter = 'x';
+  const requiredLength = inputString.length;
 
-const formulateOutputSequence = (inputDatum) => {
-    let characterAggregation = 0;
-    for (const unit of inputDatum) {
-        characterAggregation++;
-    }
+  const generatedSequence = Array(requiredLength + 1).join(outputCharacter);
 
-    let fabricatedText = '';
-    let counter = 0;
-    while (counter < characterAggregation) {
-        fabricatedText += 'x';
-        counter++;
-    }
-    
-    return fabricatedText;
-};
+  console.log(generatedSequence);
+}
 
-const broadcastResult = (finalRender) => {
-    process.stdout.write(finalRender + '\n');
-};
-
-(() => {
-    const rawContent = acquireSourceMaterial();
-    const transformedContent = formulateOutputSequence(rawContent);
-    broadcastResult(transformedContent);
-})();
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

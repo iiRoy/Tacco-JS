@@ -1,38 +1,31 @@
-// This module defines a function for processing numerical sequences.
-const processData = function (rawData) {
-    // Split the entire input string into individual lines.
-    const linesOfText = rawData.split('\n');
+var processInput = function (rawData) {
+  // Split the raw input string into an array of lines
+  let lines = rawData.split('\n');
 
-    // The first line contains the total count of numbers.
-    const elementCount = Number.parseInt(linesOfText[0], 10); // Explicit radix for robustness
+  // The first line contains the number of elements (N)
+  const numElements = lines[0];
 
-    // The second line contains space-separated numbers, parsed into an array.
-    let numericSequence = linesOfText[1]
-        .split(' ')
-        .map(currentVal => Number.parseInt(currentVal, 10));
+  // The second line contains space-separated numbers, parse them into an array
+  let dataCollection = lines[1].split(' ').map(item => parseInt(item));
 
-    // Initialize a counter for division operations.
-    let divisionOperations = 0;
+  // Initialize a counter for division operations
+  let operationCounter = 0;
 
-    // Iterate through each number in the sequence.
-    for (let idx = 0; idx < elementCount; idx++) {
-        // While the current number is even, keep dividing it by 2.
-        while (numericSequence[idx] % 2 === 0) {
-            numericSequence[idx] = numericSequence[idx] / 2; // Equivalent to multiplying by 0.5
-            divisionOperations++; // Increment the operation counter.
-        }
+  // Iterate through each number in the collection
+  for (let idx = 0; idx < numElements; idx++) {
+    // While the current number is even, divide it by 2 and increment the counter
+    while (dataCollection[idx] % 2 === 0) {
+      dataCollection[idx] = dataCollection[idx] * 0.5; // Equivalent to division by 2
+      operationCounter++;
     }
+  }
 
-    // Output the final tally of division operations.
-    console.log(divisionOperations);
+  // Output the total count of division operations
+  console.log(operationCounter);
 
-    // Indicate successful execution.
-    return 0;
+  // Indicate successful execution
+  return 0;
 };
 
-// Execute the main processing function with input from standard input.
-processData(
-    require("fs")
-        .readFileSync("/dev/stdin", "utf8")
-        .trim()
-);
+// Read input from standard input and pass it to the processing function
+processInput(require("fs").readFileSync("/dev/stdin", "utf8").trim());

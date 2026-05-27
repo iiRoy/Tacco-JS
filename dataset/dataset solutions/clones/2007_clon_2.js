@@ -1,57 +1,21 @@
-const globalScope = global;
+const rawData = require("fs")
+  .readFileSync("/dev/stdin", "utf8"); // Obtain raw input data from standard input
 
-const moduleLoader = globalScope.require;
+const dataRows = rawData.split('\n'); // Divide the raw data into an array of individual lines
 
-const customLogger = {
-  printMessage: function(...messages) {
-    globalScope.console.log(...messages);
-  }
-};
+// Extract the first two numerical values from the initial line
+const [firstNum, secondNum] = dataRows[0]
+  .split(' ')
+  .map(Number); // Convert string representations to actual numbers
 
-const findSmallest = globalScope.Math.min;
-const computeAbsolute = globalScope.Math.abs;
+// Display the parsed numbers to the console
+console.log(firstNum, secondNum);
 
-const systemIO = {
-  readDataSynchronously: function(filePath, encodingFormat) {
-    return moduleLoader("fs").readFileSync(filePath, encodingFormat);
-  }
-};
+// Compute the remainder when the first number is divided by the second number
+let resultVal = firstNum % secondNum;
 
-const numericTransformer = globalScope.Number;
+// Adjust the result to be the minimum of the current remainder and its absolute difference from the second number
+resultVal = Math.min(resultVal, Math.abs(resultVal - secondNum));
 
-Object.defineProperty(String.prototype, 'segmentByDelimiter', {
-  value: ''.constructor.prototype.split,
-  writable: true,
-  configurable: true
-});
-
-Object.defineProperty(Array.prototype, 'transformElements', {
-  value: [].constructor.prototype.map,
-  writable: true,
-  configurable: true
-});
-
-// Retrieve the raw textual content from the designated input stream.
-const   initialContent   =   systemIO.readDataSynchronously (   "/dev/stdin"   ,   "utf8"   )   ;
-
-// Break down the raw content into an array of individual textual rows.
-const   textRows   =   initialContent.segmentByDelimiter (   '\n'   )   ;
-
-// Extract and convert two numerical parameters from the first processed row.
-// These parameters are separated by a space character.
-const   [   firstValue   ,   secondValue   ]   =   textRows[0]
-  .segmentByDelimiter (   ' '   )
-  .transformElements (   numericTransformer   )   ;
-
-// Display the parsed numerical values to the output stream for verification.
-customLogger.printMessage (   firstValue   ,   secondValue   )   ;
-
-// Calculate the primary remainder of the division operation.
-let   computedRemainder   =   firstValue   %   secondValue   ;
-
-// Adjust the remainder: determine the minimum between the current remainder
-// and the absolute difference of the remainder and the second value.
-computedRemainder   =   findSmallest (   computedRemainder   ,   computeAbsolute (   computedRemainder   -   secondValue   )   )   ;
-
-// Output the final, adjusted remainder value.
-customLogger.printMessage (   computedRemainder   )   ;
+// Output the final calculated value
+console.log(resultVal);

@@ -1,59 +1,110 @@
 var read = require('readline').createInterface({
   input: process.stdin, output: process.stdout
 });
-var obj; var inLine = [];
-read.on('line', function(input){inLine.push(input);});
-read.on('close', function(){
-  obj = init(inLine);
-  console.error('\n↑入力 ↓出力');
-  processInputAndCompute();
-});
-function makeClone(obj){return (obj instanceof Set) ? new Set(Array.from(obj)) : JSON.parse(JSON.stringify(obj));}
-function nextInt(){return myconv(next(),1);} function nextStrArray(){return myconv(next(),2);}
-function nextIntArray(){return myconv(next(),4);} function nextCharArray(){return myconv(next(),6);}
-function next(){return obj.next();} function hasNext(){return obj.hasNext();}
-function init(input){  
-  return {
-    list : input, index : 0, max : input.length,
-    hasNext : function(){return (this.index < this.max);},
-    next : function(){if(this.hasNext()){return this.list[this.index++];}else{throw 'ArrayIndexOutOfBoundsException ‚There is no more input';}}
-  };
-}
-function myout(s){console.log(s);}
-function myerr(s){console.error('debug:' + require('util').inspect(s,false,null));}
-function myconv(i,no){try{switch(no){case 1:return parseInt(i);case 2:return i.split(' ');case 4:return i.split(' ').map(Number);case 6:return i.split('');case 7:return i.split('').map(Number);case 8:return i.join(' ');case 9:return i.join('\n');case 0:return i.join('');default:return i;}}catch(e){return i;}}
+var inputLines = [];
+read.on('line', function(input){inputLines.push(input);});
 
-function calculateTriplets(alpha_collection, beta_collection, gamma_collection) {
-  alpha_collection.sort((first, second) => first - second);
-  beta_collection.sort((first, second) => first - second);
-  gamma_collection.sort((first, second) => first - second);
-
-  let accumulated_result = 0;
-  let alpha_indicator = 0;
-  let gamma_indicator = gamma_collection.length - 1;
-
-  for (let current_beta_element of beta_collection) {
-    while (alpha_indicator < alpha_collection.length && alpha_collection[alpha_indicator] < current_beta_element) {
-      alpha_indicator++;
-    }
-    const count_from_alpha = alpha_indicator;
-
-    while (gamma_indicator >= 0 && gamma_collection[gamma_indicator] > current_beta_element) {
-      gamma_indicator--;
-    }
-    const count_from_gamma = gamma_collection.length - (gamma_indicator + 1);
-
-    accumulated_result += count_from_alpha * count_from_gamma;
+class InputSource {
+  constructor(lines) {
+    this.dataLines = lines;
+    this.currentIdx = 0;
   }
-  return accumulated_result;
+
+  hasMore() {
+    return this.currentIdx < this.dataLines.length;
+  }
+
+  retrieveNext() {
+    if (this.hasMore()) {
+      return this.dataLines[this.currentIdx++];
+    } else {
+      throw 'ArrayIndexOutOfBoundsException ‚There is no more input';
+    }
+  }
 }
 
-function processInputAndCompute() {
-  const quantity_of_elements = nextInt();
-  const set_A = nextIntArray();
-  const set_B = nextIntArray();
-  const set_C = nextIntArray();
+const dataTransformers = new Map([
+  [1, (s) => parseInt(s)],
+  [2, (s) => s.split(' ')],
+  [4, (s) => s.split(' ').map(Number)],
+  [6, (s) => s.split('')],
+  [7, (s) => s.split('').map(Number)],
+  [8, (arr) => arr.join(' ')],
+  [9, (arr) => arr.join('\n')],
+  [0, (arr) => arr.join('')]
+]);
 
-  const final_tally = calculateTriplets(set_A, set_B, set_C);
-  myout(final_tally);
+function applyTransform(item, typeIdentifier) {
+  try {
+    const converter = dataTransformers.get(typeIdentifier);
+    return converter ? converter(item) : item;
+  } catch (e) {
+    return item;
+  }
+}
+
+let dataStream;
+
+function getNextItem() { return dataStream.retrieveNext(); }
+function hasMoreItems() { return dataStream.hasMore(); }
+function getInteger() { return applyTransform(getNextItem(), 1); }
+function getIntegerArray() { return applyTransform(getNextItem(), 4); }
+function displayResult(val) { console.log(val); }
+function logDebug(val) { console.error('debug:' + require('util').inspect(val,false,null)); }
+
+function compareNumbersAsc(a, b) {
+  return a - b;
+}
+
+function countElementsStrictlyLess(sortedArray, value) {
+  let lowerBound = 0;
+  let upperBound = sortedArray.length;
+  while (lowerBound < upperBound) {
+    let midPoint = Math.floor((lowerBound + upperBound) / 2);
+    if (sortedArray[midPoint] < value) {
+      lowerBound = midPoint + 1;
+    } else {
+      upperBound = midPoint;
+    }
+  }
+  return lowerBound;
+}
+
+function countElementsStrictlyGreater(sortedArray, value) {
+  let lowIdx = 0;
+  let highIdx = sortedArray.length;
+  while (lowIdx < highIdx) {
+    let mid = Math.floor((lowIdx + highIdx) / 2);
+    if (sortedArray[mid] <= value) {
+      lowIdx = mid + 1;
+    } else {
+      highIdx = mid;
+    }
+  }
+  return sortedArray.length - lowIdx;
+}
+
+read.on('close', function(){
+  dataStream = new InputSource(inputLines);
+  console.error('\n↑入力 ↓出力');
+  processData();
+});
+
+function processData(){
+  const elementCount = getInteger();
+  const firstSet = getIntegerArray();
+  const middleSet = getIntegerArray();
+  const lastSet = getIntegerArray();
+
+  firstSet.sort(compareNumbersAsc);
+  middleSet.sort(compareNumbersAsc);
+  lastSet.sort(compareNumbersAsc);
+
+  const totalTriplets = middleSet.reduce((accumulator, currentMiddleValue) => {
+    const countA = countElementsStrictlyLess(firstSet, currentMiddleValue);
+    const countC = countElementsStrictlyGreater(lastSet, currentMiddleValue);
+    return accumulator + (countA * countC);
+  }, 0);
+
+  displayResult(totalTriplets);
 }

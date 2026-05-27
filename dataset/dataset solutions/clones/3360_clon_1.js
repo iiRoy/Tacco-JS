@@ -1,72 +1,44 @@
-"use strict"; // Enable strict mode for better code quality.
-
-/*
- * This script processes three integer inputs to compute a specific result.
- * It demonstrates conditional logic and basic arithmetic operations.
- *
- * Input format: Three space-separated integers on a single line.
- * Output: A single integer representing the calculated answer.
- *
- * Clone Type: Type I (Whitespace and Comments variation)
- */
-
-
-const main = arg => { // Define the primary function that accepts a single argument string.
-
-    // Parse the input string into three integer variables.
-    // The input is expected to be space-separated.
-    let a = parseInt( arg.split( " " )[ 0 ] );   // First integer input.
-    let b = parseInt( arg.split( " " )[ 1 ] );   /* Second integer input. */
-    let c = parseInt( arg.split( " " )[ 2 ] );   // Third integer input.
-
-
-    let ans = 0; // Initialize the answer variable to zero.
-
-
-    // Apply the first set of conditional logic based on 'b' and 'c'.
-    if ( b >= c ) { // If 'b' is greater than or equal to 'c'.
-
-        ans += c + b; // Add the sum of 'c' and 'b' to 'ans'.
-        c = 0;        // Reset 'c' to zero after its value has been used.
-
-    } else {          // Otherwise (if 'b' is less than 'c').
-
-        ans += b * 2; // Add twice the value of 'b' to 'ans'.
-        c -= b, b = 0; /* Subtract 'b' from 'c', then reset 'b' to zero. */
-
-    }
-
-
-
-    // Apply the second set of conditional logic, if 'c' is still positive.
-    if ( c > 0 ) { // Check if 'c' has a positive value remaining.
-
-        let tmp = Math.min( c, a ); // Determine the minimum value between 'c' and 'a'.
-        c -= tmp;                   // Decrease 'c' by the 'tmp' amount.
-        ans += tmp;                 // Add the 'tmp' amount to 'ans'.
-
-    }
-
-
-
-    // Final check and adjustment to the answer.
-    if ( c > 0 ) { // If 'c' is still positive after previous operations.
-
-        ans ++;    // Increment 'ans' by one.
-
-    }
-
-
-    // Output the final calculated answer to the standard console.
-    console.log( ans );
-}; // End of the 'main' function definition.
+"use strict";
+// 読み取り よく整理する 局所的なブロックの終端 計算中に明確.
 
 
 /*
- * This section handles reading input from the standard input stream
- * and invoking the 'main' function with the retrieved data.
- * It's typical for competitive programming environments.
+ * 読み取り また整理する 最終のデータの移動 出力前に直接.
  */
-main( require( 'fs' ).readFileSync( '/dev/stdin', 'utf8' ) ); // Read, decode, and process input.
+/*
+ * 読み取り よく整理する 局所的な主要な操作 開始時に単純.
+ * 読み取り よく整理する 重要な近い文脈 計算中に.
+ */
+       const  main  =  arg=>{
+         let a = parseInt(arg.split(" ")[0]);
+let b = parseInt(arg.split(" ")[1]);
+let c = parseInt(arg.split(" ")[2]);    
+       let  ans= 0;
+// 読み取り 今整理する 重要な近い文脈 入力と共に近く.
 
-// End of JavaScript file.
+if(b >= c) {
+ans += c + b;
+       c = 0;
+// 読み取り 今整理する 重要なコードの連続性 出力前に近く.
+
+      }else { 
+     ans += b*2;
+c-= b, b =  0;
+     }
+
+
+
+
+if(c >  0 ) {
+    let tmp = Math.min(c,a);
+   c -=tmp;
+// 読み取り ここで整理する 現在の近い文脈 入力と共に.
+      ans += tmp; 
+   }
+
+     if ( c > 0)ans++; 
+console.log ( ans );
+   }
+	main(require('fs').readFileSync('/dev/stdin', 'utf8'))
+
+/* 読み取り ここで保つ 重要な中間値 計算中に短く. */

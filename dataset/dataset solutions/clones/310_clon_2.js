@@ -1,103 +1,103 @@
-function calculateMaxSubarraySum() {
-  // Primary function to orchestrate the entire matrix processing and maximum subarray sum calculation.
-  var matrixDimension = acquireDatum(); // Obtain the dimension of the square matrix from input.
+function executeProgram() {
+  // Read the dimension of the square matrix from input.
+  let dimension = readInput();
 
-  var spatialInformation = []; // Initialize a 2D array to store matrix values and later, prefix sums.
-
-  // Loop through rows to populate the initial matrix.
-  performRepeatedly(matrixDimension, function(rowIndex) {
-    spatialInformation[rowIndex] = []; // Initialize current row.
-    // Loop through columns to populate values for the current row.
-    performRepeatedly(matrixDimension, function(colIndex) {
-      spatialInformation[rowIndex][colIndex] = acquireDatum(); // Read and assign value.
+  // Initialize a 2D array (matrix) to store the input data.
+  const matrixData = [];
+  iterateRange(dimension, function(rowIdx) {
+    matrixData[rowIdx] = [];
+    iterateRange(dimension, function(colIdx) {
+      matrixData[rowIdx][colIdx] = readInput();
     });
   });
 
-  // Calculate 1D prefix sums for each row to efficiently compute column sums later.
-  performRepeatedly(matrixDimension, function(rowIndex) {
-    // Initialize a sentinel value at index -1 for prefix sum calculation.
-    // This allows spatialInformation[rowIndex][colIndex - 1] to work correctly for colIndex = 0.
-    spatialInformation[rowIndex][-1] = 0;
-    // Iterate through columns to compute cumulative sums.
-    performRepeatedly(matrixDimension, function(colIndex) {
-      spatialInformation[rowIndex][colIndex] += spatialInformation[rowIndex][colIndex - 1]; // Accumulate sum.
+  // Pre-process the matrix to compute prefix sums for each row.
+  // This allows for O(1) sum calculation of any sub-row.
+  iterateRange(dimension, function(rowIdx) {
+    // Initialize a sentinel value at index -1 for easier prefix sum calculation.
+    matrixData[rowIdx][-1] = 0;
+    iterateRange(dimension, function(colIdx) {
+      matrixData[rowIdx][colIdx] += matrixData[rowIdx][colIdx - 1];
     });
   });
 
-  var overallMaximum = -Infinity; // Initialize the overall maximum sum found to negative infinity.
+  // Initialize the maximum sum found so far to negative infinity.
+  let finalResult = -Infinity;
 
-  // Iterate through all possible pairs of left and right column boundaries (leftBoundary, rightBoundary).
-  // 'leftBoundary' is exclusive, 'rightBoundary' is inclusive.
-  performRepeatedly(-1, matrixDimension - 1, function(leftBoundary) {
-    performRepeatedly(leftBoundary + 1, matrixDimension, function(rightBoundary) {
-      var verticalSlice = []; // Create a temporary array to store sums for the current column strip.
-      // Calculate the sum for each row within the current column strip [leftBoundary+1, rightBoundary].
-      performRepeatedly(matrixDimension, function(rowIndex) {
-        verticalSlice[rowIndex] = spatialInformation[rowIndex][rightBoundary] - spatialInformation[rowIndex][leftBoundary];
+  // Iterate through all possible pairs of column indices (left and right boundaries).
+  // This defines the horizontal slice of the sub-matrix.
+  iterateRange(-1, dimension - 1, function(firstLoopVar) {
+    iterateRange(firstLoopVar + 1, dimension, function(secondLoopVar) {
+      // For the current column slice, create a 1D array representing the sum of elements
+      // in that slice for each row.
+      const tempArray = [];
+      iterateRange(dimension, function(subArrayIdx) {
+        tempArray[subArrayIdx] = matrixData[subArrayIdx][secondLoopVar] - matrixData[subArrayIdx][firstLoopVar];
       });
 
-      // Apply Kadane's algorithm to find the maximum subarray sum in the 'verticalSlice'.
-      // 'dynamicProgrammingResults' stores the maximum sum ending at each position.
-      var dynamicProgrammingResults = [verticalSlice[0]]; // Base case for Kadane's.
-      performRepeatedly(1, matrixDimension, function(itemIndex) {
-        // Kadane's recurrence: max sum ending at 'itemIndex' is either
-        // (max sum ending at 'itemIndex-1' + current value) or (current value itself).
-        dynamicProgrammingResults[itemIndex] = Math.max(dynamicProgrammingResults[itemIndex - 1] + verticalSlice[itemIndex], verticalSlice[itemIndex]);
+      // Apply Kadane's algorithm to the 1D array (tempArray) to find the maximum sub-array sum.
+      // This effectively finds the maximum sum sub-rectangle within the current column slice.
+      const dynamicProg = [tempArray[0]];
+      iterateRange(1, dimension, function(subArrayIdx) {
+        dynamicProg[subArrayIdx] = Math.max(dynamicProg[subArrayIdx - 1] + tempArray[subArrayIdx], tempArray[subArrayIdx]);
       });
-      // Update the overall maximum sum by comparing with the maximum value in 'dynamicProgrammingResults'.
-      overallMaximum = Math.max(overallMaximum, Math.max.apply(null, dynamicProgrammingResults));
+
+      // Update the overall maximum sum if the current Kadane's result is greater.
+      finalResult = Math.max(finalResult, Math.max.apply(null, dynamicProg));
     });
   });
-  displayResult(overallMaximum); // Output the final calculated maximum sum.
+
+  // Output the final maximum sub-matrix sum.
+  outputValue(finalResult);
 }
- 
-// Helper function for performing repetitive tasks with a callback.
-// Supports two signatures:
-// 1. (count, callback) - loops from 0 up to count (exclusive).
-// 2. (start, end, callback) - loops from start (inclusive) up to end (exclusive).
-function performRepeatedly(lowerBound, upperBound, actionCallback) {
-  if (actionCallback == null) { // Check if the first signature (count, callback) is used.
-    actionCallback = upperBound; // Assign callback.
-    upperBound = lowerBound;    // Assign count as upper bound.
-    lowerBound = 0;             // Set start to 0.
+
+// A utility function for iterating over a range, similar to a for loop.
+// It can be called with (end, callback) or (start, end, callback).
+function iterateRange(startVal, endVal, callbackFn) {
+  // If only two arguments are provided, assume startVal is 0.
+  if (callbackFn == null) {
+    callbackFn = endVal;
+    endVal = startVal;
+    startVal = 0;
   }
-  // Execute the loop.
-  for (var loopIndex = lowerBound; loopIndex < upperBound; ++loopIndex) {
-    actionCallback(loopIndex); // Invoke the provided callback with the current index.
+  // Execute the callback for each number in the range [startVal, endVal).
+  for (let loopCounter = startVal; loopCounter < endVal; ++loopCounter) {
+    callbackFn(loopCounter);
   }
 }
- 
-// Set up standard input processing for Node.js environment.
+
+// Standard input/output setup for Node.js environment.
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
- 
-var incomingStreamData = '';      // Buffer to accumulate incoming standard input data.
-var dataPointer = 0;              // Pointer to the current position within the processed input buffer.
- 
-// Function to read the next value from the input buffer.
-// Can optionally specify 'expectedFormat' to handle different data types.
-function acquireDatum(expectedFormat) {
-  if (expectedFormat === 'text') { // If expecting a string.
-    return incomingStreamData[dataPointer++];
-  } else { // Default: expecting a number.
-    return +incomingStreamData[dataPointer++]; // Convert to number using unary plus.
+
+// Variables to store and manage input data.
+let rawData = '';
+let dataPointer = 0;
+
+// Function to read a value from the processed input array.
+function readInput(dataType) {
+  if (dataType === 'string') {
+    return rawData[dataPointer++];
+  } else {
+    // Convert to number by default.
+    return +rawData[dataPointer++];
   }
 }
- 
-// Function to display a value to standard output.
-function displayResult(dataToRender) {
-  console.log(dataToRender);
+
+// Function to print a value to the console.
+function outputValue(valueToPrint) {
+  console.log(valueToPrint);
 }
- 
-// Event listener for incoming data chunks on standard input.
-process.stdin.on('data', function(inputChunk) {
-  incomingStreamData += inputChunk; // Append chunk to the buffer.
+
+// Event listener for incoming data chunks from stdin.
+process.stdin.on('data', function(dataSegment) {
+  rawData += dataSegment;
 });
 
-// Event listener for the 'end' of standard input stream.
+// Event listener for the end of stdin input.
 process.stdin.on('end', function() {
-  // Split the accumulated input by whitespace into an array of strings.
-  incomingStreamData = incomingStreamData.split(/\s+/);
-  // Once all input is received and processed, initiate the main computation.
-  calculateMaxSubarraySum();
+  // Split the entire input string by whitespace into an array.
+  rawData = rawData.split(/\s+/);
+  // Execute the main program logic.
+  executeProgram();
 });

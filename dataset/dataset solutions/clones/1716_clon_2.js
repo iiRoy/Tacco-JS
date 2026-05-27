@@ -1,104 +1,136 @@
-const inputProcessor = require('readline').createInterface({
-    input: process.stdin,
-    output: process.stdout
+var inputReader = require('readline').createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
+var dataProcessor;
+var inputLines = [];
+
+// Event listener for each line of input
+inputReader.on('line', function(currentInputLine){
+  inputLines.push(currentInputLine);
 });
 
-let parsedContent;
-let incomingLines = [];
-
-inputProcessor.on('line', function(singleLine){
-    incomingLines.push(singleLine);
+// Event listener for when input stream closes
+inputReader.on('close', function(){
+  dataProcessor = initializeInputHandler(inputLines);
+  console.error("\n"); // Print a newline to stderr for formatting
+  var startTime = new Date();
+  executeChallenge(); // Execute the main program logic
+  var elapsedTime = new Date() - startTime;
+  
+  logDebugInfo("time : " + (elapsedTime) + "ms");
+  logDebugInfo("memory : " + Math.round(process.memoryUsage().heapTotal / 1024) + "KB");
 });
 
-inputProcessor.on('close', function(){
-    parsedContent = setupInput(incomingLines);
-    console.error("\n");
+// Helper functions for parsing input
+function getNextInteger(){return transformInput(retrieveNextLine(),1);}
+function getNextStringArray(){return transformInput(retrieveNextLine(),2);}
+function getNextIntegerArray(){return transformInput(retrieveNextLine(),4);}
+function getNextCharacterArray(){return transformInput(retrieveNextLine(),6);}
+function retrieveNextLine(){return dataProcessor.retrieveNextLine();}
+function hasMoreData(){return dataProcessor.hasMoreData();}
 
-    const timerBegin = new Date();
-    executePrimaryLogic();
-    const elapsedTime = new Date() - timerBegin;
-    
-    reportDebug("Execution Duration: " + (elapsedTime) + "ms");
-    reportDebug("Memory Usage: " + Math.round(process.memoryUsage().heapTotal / 1024) + "KB");
-});
-
-function obtainNumber(){ return transformData(fetchNext(), 1); }
-function obtainTextSegments(){ return transformData(fetchNext(), 2); }
-function obtainNumbersList(){ return transformData(fetchNext(), 4); }
-function obtainCharElements(){ return transformData(fetchNext(), 6); }
-function fetchNext(){ return parsedContent.fetchNext(); }
-function hasMoreData(){ return parsedContent.hasMoreData(); }
-
-function setupInput(rawInput){  
-    const dataAccessor = {
-        sourceLines : rawInput,
-        lineIndex : 0,
-        totalLines : rawInput.length,
-        hasMoreData : function(){ return (this.lineIndex < this.totalLines); },
-        fetchNext : function(){
-            if(!this.hasMoreData()){
-                throw "EndOfInputException: No more lines to process";
-            } else {
-                const extractedText = this.sourceLines[this.lineIndex];
-                this.lineIndex++;
-                return extractedText;
-            }
-        }
-    };
-    return dataAccessor;
+// Initializes an object to manage input lines
+function initializeInputHandler(sourceInput){  
+  var handlerObject = {
+    sourceLines : sourceInput,
+    currentPosition : 0,
+    totalLines : sourceInput.length,
+    // Checks if there are more lines to process
+    hasMoreData : function(){
+      return (this.currentPosition < this.totalLines);
+    },
+    // Retrieves the next line from the input
+    retrieveNextLine : function(){
+      if(!this.hasMoreData()){
+        throw "ArrayIndexOutOfBoundsException これ以上ないよ"; // Error if no more input
+      } else {
+        var currentLineContent = this.sourceLines[this.currentPosition];
+        this.currentPosition++;
+        return currentLineContent;
+      }
+    }
+  };
+  return handlerObject;
 }
 
-function displayOutput(message){ console.log(message); }
-function reportDebug(debugInfo){ console.error("debug trace: " + require("util").inspect(debugInfo, false, null)); }
-
-function transformData(inputVal, processType){
-    try {
-        switch(processType){
-            case 1: return parseInt(inputVal);
-            case 2: return inputVal.split(" ");
-            case 4: return inputVal.split(" ").map(Number);
-            case 6: return inputVal.split("");
-            case 7: return inputVal.split("").map(Number);
-            case 8: return inputVal.join(" ");
-            case 9: return inputVal.join("\n");
-            case 0: return inputVal.join("");
-            default: return inputVal;
-        }
-    } catch(e){
-        return inputVal;
-    }
+// Outputs a result to standard output
+function printResult(content){
+  console.log(content);
 }
 
-function executePrimaryLogic(){
-    const totalPeriods = obtainNumber();
-    const costCoefficients = obtainNumbersList();
-    const cumulativeValues = new Array(totalPeriods);
-    const lastActivityDay = new Array(26).fill(0);
+// Outputs debug information to standard error
+function logDebugInfo(debugMessage){
+  console.error("debug:" + require("util").inspect(debugMessage,false,null));
+}
 
-    for(let dayNum = 1; dayNum <= totalPeriods; dayNum++){
-        const currentDayScores = obtainNumbersList();
-        let highestScore = -1;
-        let bestActivityId = -1;
-
-        for(let activityIdx = 0; activityIdx < currentDayScores.length; activityIdx++){
-            if(highestScore < currentDayScores[activityIdx]){
-                highestScore = currentDayScores[activityIdx];
-                bestActivityId = activityIdx;
-            }
-        }
-
-        lastActivityDay[bestActivityId] = dayNum;
-
-        for(let activityIdx = 0; activityIdx < 26; activityIdx++){
-            highestScore -= costCoefficients[activityIdx] * (dayNum - lastActivityDay[activityIdx]);
-        }
-
-        if(dayNum === 1){
-            cumulativeValues[dayNum - 1] = highestScore;
-        } else {
-            cumulativeValues[dayNum - 1] = highestScore + cumulativeValues[dayNum - 2];
-        }
-        reportDebug(highestScore);
+// Utility function for converting input values based on a specified type
+// conversionType:
+// 1: Convert to integer
+// 2: Split by space into string array
+// 4: Split by space into number array
+// 6: Split by character into string array
+// 7: Split by character into number array
+// 8: Join array with space
+// 9: Join array with newline
+// 0: Join array without separator
+// Default: Return input as is
+function transformInput(inputValue, conversionType){
+  try{
+    switch(conversionType){
+      case 1: return parseInt(inputValue);
+      case 2: return inputValue.split(" ");
+      case 4: return inputValue.split(" ").map(Number);
+      case 6: return inputValue.split("");
+      case 7: return inputValue.split("").map(Number);
+      case 8: return inputValue.join(" ");
+      case 9: return inputValue.join("\n");
+      case 0: return inputValue.join("");
+      default: return inputValue;
     }
-    displayOutput(transformData(cumulativeValues, 9));
+  } catch(error){
+    return inputValue; // Return original value on error
+  }
+}
+
+// Main program logic
+function executeChallenge(){
+	var numDays = getNextInteger(); // Read the number of days
+	var costFactors = getNextIntegerArray(); // Read the cost factors for each contest type
+	var dailyScores = new Array(numDays); // Array to store cumulative scores
+	var lastOccurrence = new Array(26).fill(0); // Tracks the last day each contest type was held
+
+	// Iterate through each day
+	for(var currentDay = 1; currentDay <= numDays; currentDay++){
+		var dayScores = getNextIntegerArray(); // Read scores for contests on the current day
+		var highestScore = -1; // Initialize highest score for the day
+		var bestContestIndex = -1; // Initialize index of the best contest type
+
+		// Find the contest type with the highest score for the current day
+		for(var contestType = 0; contestType < dayScores.length; contestType++){
+			if(highestScore < dayScores[contestType]){
+				highestScore = dayScores[contestType];
+				bestContestIndex = contestType;
+			}
+		}
+		
+		// Update the last occurrence day for the chosen contest type
+		lastOccurrence[bestContestIndex] = currentDay;
+
+		// Adjust the highest score based on cost factors and last occurrence
+		for(var contestType = 0; contestType < 26; contestType++){
+			highestScore -= costFactors[contestType] * (currentDay - lastOccurrence[contestType]);
+		}
+
+		// Calculate cumulative score for the current day
+		if(currentDay === 1){
+			dailyScores[currentDay - 1] = highestScore;
+		} else {
+			dailyScores[currentDay - 1] = highestScore + dailyScores[currentDay - 2];
+		}
+		
+		logDebugInfo(highestScore); // Log the adjusted highest score for the day
+	}
+	// Output the final cumulative scores, each on a new line
+	printResult(transformInput(dailyScores,9));
 }

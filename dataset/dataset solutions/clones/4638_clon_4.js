@@ -1,111 +1,97 @@
-const inputAcquirer = require('readline').createInterface({
+var inputReader = require('readline').createInterface({
   input: process.stdin,
   output: process.stdout
 });
-
-let processedDataSource;
-const receivedTextLines = [];
-
-inputAcquirer.on('line', (lineContent) => { receivedTextLines.push(lineContent); });
-inputAcquirer.on('close', () => {
-  processedDataSource = createDataProcessor(receivedTextLines);
-  performCalculation();
+var inputSource;
+var inputLines = [];
+inputReader.on('line', function(line){inputLines.push(line);});
+inputReader.on('close', function(){
+  inputSource = initializeInput(inputLines);
+  console.error("\n");
+  var startTime = new Date();
+  processData();
+  var endTime = new Date() - startTime;
+  
+  logDebug("time : " + (endTime) + "ms");
+  logDebug("memory : " + Math.round(process.memoryUsage().heapTotal / 1024) + "KB");
 });
-
-function createDataProcessor(rawLines) {
-  const processorEntity = {
-    contentList: rawLines,
-    currentIndex: 0,
-    listBoundary: rawLines.length,
-    isNextAvailable: function() { return (this.currentIndex < this.listBoundary); },
-    fetchNextEntry: function() {
-      if (!this.isNextAvailable()) {
-        throw new Error("Input stream exhausted.");
-      }
-      const entry = this.contentList[this.currentIndex];
-      this.currentIndex++;
-      return entry;
-    }
+function deepCopyObject(obj){return JSON.parse(JSON.stringify(obj));}
+function retrieveInteger(){return convertInput(getNextLine(),1);}
+function retrieveStringArray(){return convertInput(getNextLine(),2);}
+function retrieveIntegerArray(){return convertInput(getNextLine(),4);}
+function retrieveCharacterArray(){return convertInput(getNextLine(),6);}
+function getNextLine(){return inputSource.getNextLine();}
+function hasMoreLines(){return inputSource.hasMoreLines();}
+function initializeInput(lines){  
+  var sourceObject = {
+    lineList : lines, currentIdx : 0, maxLines : lines.length,
+    hasMoreLines : function(){return (this.currentIdx < this.maxLines);},
+    getNextLine : function(){if(!this.hasMoreLines()){throw "InputExhaustedException: No more lines to read";}else{var currentLine = this.lineList[this.currentIdx];this.currentIdx++;return currentLine;}}
   };
-  return processorEntity;
+  return sourceObject;
+}
+function printResult(data){console.log(data);}
+function logDebug(data){console.error("debug:" + require("util").inspect(data,false,null));}
+function convertInput(value, typeCode){
+  try{
+    switch(typeCode){
+      case 1:return parseInt(value);
+      case 2:return value.split(" ");
+      case 4:return value.split(" ").map(Number);
+      case 6:return value.split("");
+      case 7:return value.split("").map(Number);
+      case 8:return value.join(" ");
+      case 9:return value.join("\n");
+      case 0:return value.join("");
+      default:return value;
+    }
+  }catch(e){return value;}
 }
 
-function retrieveParsedNumbers() {
-  return fetchNextSegment().split(' ').map(Number);
-}
+let minimumCostValue;
+let heightsArray;
+let elementCount;
+let targetCount;
 
-function fetchNextSegment() { return processedDataSource.fetchNextEntry(); }
-
-function emitResult(value) { console.log(value); }
-
-const performCalculation = () => {
-    const [numStructures, minRequiredSelection] = retrieveParsedNumbers();
-    const structureHeights = retrieveParsedNumbers();
-
-    if (minRequiredSelection === 1) {
-        emitResult(0);
+function findMinCostRecursive(currentIdx, selectedCount, currentMaxHeight, accumulatedCost) {
+    if (currentIdx === elementCount) {
+        if (selectedCount >= targetCount) {
+            minimumCostValue = Math.min(minimumCostValue, accumulatedCost);
+        }
         return;
     }
 
-    // Recursive function to explore all subsets of structures and determine the minimum cost.
-    // 'currentStructureIdx': The index of the structure currently being considered.
-    // 'accumulatedExpense': The total cost incurred for selected structures in the current path.
-    // 'runningMaxElevation': Represents the `maxH` variable from the original code. This keeps track
-    //                        of the highest elevation encountered so far (either original height or raised height)
-    //                        which dictates the minimum height for subsequent selected structures.
-    // 'chosenCount': The number of structures selected in the current path.
-    const evaluateElevationCost = (currentStructureIdx, accumulatedExpense, runningMaxElevation, chosenCount) => {
-        // Base case: All structures have been processed.
-        if (currentStructureIdx === numStructures) {
-            // If we have chosen at least the minimum required number of structures,
-            // this path is valid, return its accumulated expense. Otherwise, it's invalid.
-            return (chosenCount >= minRequiredSelection) ? accumulatedExpense : Number.MAX_SAFE_INTEGER;
-        }
+    // Option 1: Do NOT select the current element (heightsArray[currentIdx])
+    const nextMaxHeightNoSelect = Math.max(heightsArray[currentIdx], currentMaxHeight);
+    findMinCostRecursive(currentIdx + 1, selectedCount, nextMaxHeightNoSelect, accumulatedCost);
 
-        // Step 1: Calculate potential `runningMaxElevation` if the current structure's original height
-        //         updates it, regardless of whether the current structure is selected.
-        // This mirrors `maxH = Math.max(list[j], maxH);` from the original.
-        const potentialNextMaxElevation = Math.max(structureHeights[currentStructureIdx], runningMaxElevation);
+    // Option 2: DO select the current element (heightsArray[currentIdx])
+    let costIncrease = 0;
+    let adjustedMaxHeightForNext = currentMaxHeight;
 
-        // Option A: Do not select the current structure.
-        // The accumulated expense and chosen count remain unchanged.
-        // The `runningMaxElevation` for the next step is `potentialNextMaxElevation`.
-        const costWithoutCurrent = evaluateElevationCost(
-            currentStructureIdx + 1,
-            accumulatedExpense,
-            potentialNextMaxElevation,
-            chosenCount
-        );
+    if (currentMaxHeight >= heightsArray[currentIdx]) {
+        costIncrease = currentMaxHeight - heightsArray[currentIdx] + 1;
+        adjustedMaxHeightForNext = currentMaxHeight + 1;
+    }
+    
+    const nextMaxHeightWithSelect = Math.max(heightsArray[currentIdx], adjustedMaxHeightForNext);
+    findMinCostRecursive(currentIdx + 1, selectedCount + 1, nextMaxHeightWithSelect, accumulatedCost + costIncrease);
+}
 
-        // Option B: Select the current structure.
-        let additionalCostForCurrent = 0;
-        let newRunningMaxElevationIfSelected = potentialNextMaxElevation;
+function processData(){
+	const initialParams = retrieveIntegerArray();
+	elementCount = initialParams[0];
+	targetCount = initialParams[1];
+	heightsArray = retrieveIntegerArray();
+	
+	minimumCostValue = Math.pow(10,16);
 
-        // Step 2: If selected, determine if the current structure needs to be raised
-        //         and update `runningMaxElevation` accordingly.
-        // This mirrors `if(maxH >= list[j]) { sum += ...; maxH++; }` from the original.
-        if (potentialNextMaxElevation >= structureHeights[currentStructureIdx]) {
-            additionalCostForCurrent = (potentialNextMaxElevation + 1) - structureHeights[currentStructureIdx];
-            newRunningMaxElevationIfSelected++; // Increment `runningMaxElevation` as the structure was raised.
-        }
-        // If `potentialNextMaxElevation < structureHeights[currentStructureIdx]`, it means
-        // `structureHeights[currentStructureIdx]` was already greater, so it becomes the
-        // new `runningMaxElevation` without needing an additional increment.
+	if(targetCount === 1){
+		printResult(0);
+		return;
+	}
+    
+    findMinCostRecursive(0, 0, 0, 0);
 
-        const costWithCurrent = evaluateElevationCost(
-            currentStructureIdx + 1,
-            accumulatedExpense + additionalCostForCurrent,
-            newRunningMaxElevationIfSelected, // Pass the potentially incremented `runningMaxElevation`.
-            chosenCount + 1
-        );
-
-        // Return the minimum expense from these two options.
-        return Math.min(costWithoutCurrent, costWithCurrent);
-    };
-
-    // Initiate the recursive calculation starting from the first structure (index 0),
-    // with no initial expense, an initial `runningMaxElevation` of 0, and 0 structures chosen.
-    const finalMinimumCost = evaluateElevationCost(0, 0, 0, 0);
-
-    emitResult(finalMinimumCost);
-};
+	printResult(minimumCostValue);
+}

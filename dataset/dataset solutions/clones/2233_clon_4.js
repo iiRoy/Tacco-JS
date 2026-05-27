@@ -1,30 +1,34 @@
-const deviceDataStream = require('node:fs').readFileSync('/dev/stdin', 'utf8');
+const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-const processedLines = deviceDataStream
+const transformLineToInterval = (lineContent) => {
+  const numericParts = lineContent.split(' ').map(Number);
+  return [numericParts[0] - numericParts[1], numericParts[0] + numericParts[1]];
+};
+
+const activityIntervals = rawData
   .trim()
-  .split('\n');
+  .split('\n')
+  .slice(1)
+  .map(transformLineToInterval);
 
-processedLines.shift();
+if (activityIntervals.length === 0) {
+  // Replicate original behavior: if the input results in an empty array
+  // after parsing and slicing, the original code would create `[undefined]`
+  // and report its length as 1.
+  console.log(1);
+} else {
+  activityIntervals.sort((first, second) => first[1] - second[1]);
 
-const activitySegments = processedLines.reduce((accumulatedSegments, currentLineText) => {
-  const numericParts = currentLineText.split(' ').map(token => Number.parseInt(token, 10));
-  const centralPoint = numericParts[0];
-  const deviation = numericParts[1];
-  accumulatedSegments.push({
-    commencement: centralPoint - deviation,
-    termination: centralPoint + deviation
-  });
-  return accumulatedSegments;
-}, []);
+  const selectionResult = activityIntervals.reduce((accumulator, currentInterval) => {
+    const [currentStart, currentEnd] = currentInterval;
+    if (currentStart >= accumulator.lastEnd) {
+      return {
+        count: accumulator.count + 1,
+        lastEnd: currentEnd
+      };
+    }
+    return accumulator;
+  }, { count: 0, lastEnd: -Infinity }); // Initialize with 0 selected and a very early end time
 
-activitySegments.sort((segmentA, segmentB) => segmentA.termination - segmentB.termination);
-
-const evaluationOutcome = activitySegments.reduce((currentStatus, currentSegment) => {
-  if (currentSegment.commencement >= currentStatus.lastBoundary) {
-    currentStatus.tally++;
-    currentStatus.lastBoundary = currentSegment.termination;
-  }
-  return currentStatus;
-}, { tally: 0, lastBoundary: -Infinity });
-
-console.log(evaluationOutcome.tally);
+  console.log(selectionResult.count);
+}

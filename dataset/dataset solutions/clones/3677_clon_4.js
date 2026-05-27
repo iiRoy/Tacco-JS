@@ -1,31 +1,21 @@
 'use strict'
 
-const processDataPayload = (incomingText) => {
-    const dataSegments = incomingText.trim().split('\n')[0].match(/\d+/g);
-    const primaryValue = +dataSegments[0];
-    const secondaryValue = +dataSegments[1];
+const processInput = rawData => {
+    const [_, firstNumStr, secondNumStr] = rawData.match(/(\d+)\s+(\d+)/);
 
-    const resolutionMatrix = [
-        {
-            testCondition: (valA, valB) => valA + valB === 15,
-            resultToken: '+'
-        },
-        {
-            testCondition: (valA, valB) => valA * valB === 15,
-            resultToken: '*'
-        },
-        {
-            testCondition: (valA, valB) => true,
-            resultToken: 'x'
-        }
+    const firstNum = Number(firstNumStr);
+    const secondNum = Number(secondNumStr);
+
+    const conditionEvaluators = [
+        { check: (val1, val2) => val1 + val2 === 15, symbol: '+' },
+        { check: (val1, val2) => val1 * val2 === 15, symbol: '*' }
     ];
 
-    const finalDetermination = resolutionMatrix.find(
-        (entry) => entry.testCondition(primaryValue, secondaryValue)
+    const matchedOutcome = conditionEvaluators.find(evaluator =>
+        evaluator.check(firstNum, secondNum)
     );
 
-    return finalDetermination.resultToken;
+    console.log(matchedOutcome ? matchedOutcome.symbol : 'x');
 };
 
-const acquiredResource = require('node:fs').readFileSync('/dev/stdin', { encoding: 'utf8' });
-console.log(processDataPayload(acquiredResource));
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

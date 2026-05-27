@@ -1,190 +1,191 @@
-// This module provides utilities for parsing input data.
-const DATA_PARSER = (function () {
-  /**
-   * Initializes a new input reader instance.
-   * @param {string} sourceText The raw input string.
-   * @returns {InputReader} A new InputReader object.
-   */
-  function createParser(sourceText) {
-    return new InputReader(sourceText);
-  }
-
-  /**
-   * Manages reading lines and tokens from an input string.
-   * @param {string} sourceText The complete text to be parsed.
-   */
-  function InputReader(sourceText) {
-    // Store lines after trimming whitespace and splitting by newline.
-    this._sourceLines = sourceText.trim().split("\n");
-    // Keep track of the current line index being processed.
-    this._currentLineIndex = 0;
-  }
-
-  /**
-   * Extracts a single value (token) from the current line.
-   * If the line is not yet processed, it's split into tokens and reversed.
-   * @param {boolean} returnAsString If true, returns the value as a string; otherwise, converts to a number.
-   * @returns {string|number} The extracted value.
-   */
-  InputReader.prototype.extractValue = function (returnAsString) {
-    let lineContent = this._sourceLines;
-    let currentLinePos = this._currentLineIndex;
-    let extractedToken;
-
-    // If the current line is a string, process it into a reversable array of tokens.
-    if (typeof lineContent[currentLinePos] === "string") {
-      lineContent[currentLinePos] = lineContent[currentLinePos].split(" ").reverse();
+var DATA_PARSER = (function() {
+    // This factory function creates an instance of the InputHandler.
+    function createParser(inputString) {
+        return new InputHandler(inputString);
     }
 
-    // Pop the last token from the current line's token array.
-    extractedToken = lineContent[currentLinePos].pop();
-
-    // If the current line is now empty, advance to the next line.
-    if (!lineContent[currentLinePos].length) {
-      this._currentLineIndex++;
+    // The InputHandler class is responsible for parsing various types of input data.
+    function InputHandler(inputString) {
+        // Stores the input string, trimmed of leading/trailing whitespace, and split into individual lines.
+        this._sourceLines = inputString.trim().split("\n");
+        // Keeps track of the current line index being processed from the input.
+        this._currentLineIndex = 0;
     }
 
-    // Return the token as a string or convert it to a number.
-    return returnAsString ? extractedToken : Number(extractedToken);
-  };
+    // Prototype method to read a single value from the current line.
+    // It handles space-separated values on a line, processing them from right to left (due to reverse()).
+    // The 'asString' parameter determines if the returned value should be a string or a number.
+    InputHandler.prototype.readNextValue = function(asString) {
+        var currentSourceLines = this._sourceLines;
+        var lineIdx = this._currentLineIndex;
+        var parsedResult;
 
-  /**
-   * Reads an entire line, splits it into tokens, and advances the line pointer.
-   * @param {boolean} returnAsString If true, returns tokens as strings; otherwise, converts to numbers.
-   * @returns {Array<string|number>} An array of tokens from the line.
-   */
-  InputReader.prototype.readListOfTokens = function (returnAsString) {
-    // Get the current line, split it by space, and then advance the line index.
-    const tokensOnLine = this._sourceLines[this._currentLineIndex++].split(" ");
-    // Return tokens as strings or convert them to numbers.
-    return returnAsString ? tokensOnLine : tokensOnLine.map(item => Number(item));
-  };
+        // If the current line hasn't been tokenized into an array of values yet, do so.
+        // It splits the line by spaces and reverses the array to allow efficient popping from the end.
+        if (typeof currentSourceLines[lineIdx] === "string") {
+            currentSourceLines[lineIdx] = currentSourceLines[lineIdx].split(" ").reverse();
+        }
 
-  /**
-   * Reads multiple lines, treating each as a row of space-separated tokens, forming a matrix.
-   * @param {number} numRows The number of rows to read.
-   * @param {boolean} returnAsString If true, returns all tokens as strings; otherwise, converts to numbers.
-   * @returns {Array<Array<string|number>>} A 2D array (matrix) of tokens.
-   */
-  InputReader.prototype.readMatrixOfTokens = function (numRows, returnAsString) {
-    // Slice 'numRows' from the source lines, advance the index, and split each line into tokens.
-    const rowData = this._sourceLines.slice(this._currentLineIndex, this._currentLineIndex += numRows)
-                                     .map(rowLine => rowLine.split(" "));
-    // Return as strings or convert all elements in the matrix to numbers.
-    return returnAsString ? rowData : rowData.map(row => row.map(item => Number(item)));
-  };
+        // Extracts the next value from the current line.
+        parsedResult = currentSourceLines[lineIdx].pop();
 
-  /**
-   * Reads multiple raw lines without splitting them into tokens.
-   * Useful for lines that are single values or need custom parsing.
-   * @param {number} numRows The number of raw lines to read.
-   * @param {boolean} returnAsString If true, returns lines as strings; otherwise, attempts to convert each line to a number.
-   * @returns {Array<string|number>} An array of raw lines.
-   */
-  InputReader.prototype.readRawRows = function (numRows, returnAsString) {
-    // Slice 'numRows' from the source lines and advance the index.
-    const rawRows = this._sourceLines.slice(this._currentLineIndex, this._currentLineIndex += numRows);
-    // Return as strings or convert all elements in the rows to numbers (assuming single number per line).
-    return returnAsString ? rawRows : rawRows.map(item => Number(item));
-  };
+        // If the current line is now empty after popping, advance to the next line.
+        if (!currentSourceLines[lineIdx].length) {
+            this._currentLineIndex++;
+        }
 
-  return createParser;
+        // Returns the result, either as a string or converted to a number using the unary plus operator.
+        return asString ? parsedResult : +parsedResult;
+    };
+
+    // Prototype method to read all values from the current line.
+    // It advances the line index after reading.
+    // The 'asString' parameter determines if the returned values should be strings or numbers.
+    InputHandler.prototype.readLineValues = function(asString) {
+        var currentLineContent = this._sourceLines[this._currentLineIndex++];
+        var splitValues = currentLineContent.split(" ");
+        // Maps all values to numbers if 'asString' is false.
+        return asString ? splitValues : splitValues.map(item => +item);
+    };
+
+    // Prototype method to read a block of 'numLines' lines, treating each as a row in a matrix.
+    // Each row is split into values.
+    // The 'asString' parameter determines if the returned values should be strings or numbers.
+    InputHandler.prototype.readMatrix = function(numLines, asString) {
+        // Slices the source lines to get the relevant rows and then maps them.
+        var matrixRows = this._sourceLines.slice(this._currentLineIndex, this._currentLineIndex += numLines)
+                                          .map(item => item.split(" "));
+        // If not 'asString', maps each row's elements to numbers.
+        return asString ? matrixRows : matrixRows.map(row => row.map(item => +item));
+    };
+
+    // Prototype method to read a block of 'numLines' lines, where each line contains a single value.
+    // The 'asString' parameter determines if the returned values should be strings or numbers.
+    InputHandler.prototype.readRows = function(numLines, asString) {
+        // Slices the source lines to get the relevant rows.
+        var rowData = this._sourceLines.slice(this._currentLineIndex, this._currentLineIndex += numLines);
+        // If not 'asString', maps each item to a number.
+        return asString ? rowData : rowData.map(item => +item);
+    };
+
+    return createParser;
 })();
 
-// Initialize the input processing system by reading from standard input.
-const inputProcessor = DATA_PARSER(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Initializes the input reader by reading the entire content of standard input.
+var inputReader = DATA_PARSER(require("fs").readFileSync("/dev/stdin", "utf8"));
 
 /**
- * Dynamically constructs a multi-dimensional array with a specified initial value.
- * The dimensions are passed as subsequent arguments.
- * @param {*} initialValue The value to fill the innermost array with.
- * @param {...number} dimensions The dimensions of the array (e.g., 2, 3 for a 2x3 array).
+ * Dynamically creates a multi-dimensional array initialized with a given value.
+ * The dimensions for the array are provided as subsequent arguments.
+ * For example, createMultiDimArray(0, 2, 3) would create a 2x3 array filled with zeros.
+ *
+ * @param {*} initialValue The value to be used for initializing all elements of the array.
+ * @param {...number} dimensions The sizes of each dimension of the array, from outermost to innermost.
  * @returns {Array} The newly created multi-dimensional array.
  */
-function buildMultiDimArray(initialValue) {
-  const dimensionArguments = arguments;
-  let dimensionCount = dimensionArguments.length;
-  // Start building the array creation code from the innermost dimension.
-  let arrayCreationCode = `Array(dimensionArguments[${--dimensionCount}]).fill(0).map( _ => { return ${initialValue}; })`;
+function createMultiDimArray(initialValue) {
+    var dimensions = arguments; // Access all arguments passed to the function.
+    var dimCount = dimensions.length; // Get the total number of dimensions.
+    // Start building the string representation for the innermost array.
+    // It creates an array of the last dimension's size, fills it, and maps to the initial value.
+    var arrayCreationString = "Array(dimensions[" + --dimCount + "]).fill(0).map(x => { return " + initialValue + "; })";
 
-  // Wrap the array creation code for each remaining dimension, working outwards.
-  while (--dimensionCount) {
-    arrayCreationCode = `Array(dimensionArguments[${dimensionCount}]).fill(0).map( _ => ${arrayCreationCode} )`;
-  }
-  // Evaluate the generated code string to create the array dynamically.
-  return eval(arrayCreationCode);
+    // Loop to construct the string for the outer dimensions.
+    // Each iteration wraps the previously constructed string in a new Array.map call.
+    while (--dimCount) {
+        arrayCreationString = "Array(dimensions[" + dimCount + "]).fill(0).map(x => " + arrayCreationString + ")";
+    }
+
+    // Evaluate the dynamically constructed string to create the actual multi-dimensional array.
+    return eval(arrayCreationString);
 }
 
-// Output the result of the main solution execution to the console.
-console.log(executeSolution());
+// Executes the main problem-solving function and prints its result to the console.
+console.log(solveProblem());
 
 /**
- * Implements the primary logic to generate a sequence based on input parameters.
- * This function reads two integer parameters, 'm' and 'k', and constructs a specific sequence.
- * @returns {string} A space-separated string representing the generated sequence, or -1 if conditions are not met.
+ * This is the primary function that encapsulates the problem's logic.
+ * It reads two integer inputs, 'numBits' and 'targetValue', and generates a specific sequence.
+ * The sequence is designed to represent a path in a hypercube graph, with special handling for 'targetValue'.
+ *
+ * @returns {string} A space-separated string representing the generated sequence, or -1 for invalid inputs.
  */
-function executeSolution() {
-  // Read the first integer parameter (m), representing a dimension.
-  const dimensionParam = inputProcessor.extractValue();
-  // Read the second integer parameter (k), representing a target value.
-  const targetValueParam = inputProcessor.extractValue();
+function solveProblem() {
+    // Reads the first integer input, representing the number of bits (m).
+    var numBits = inputReader.readNextValue();
+    // Reads the second integer input, representing the target value (k).
+    var targetValue = inputReader.readNextValue();
 
-  // Handle specific edge cases for input values based on problem constraints.
-  if (targetValueParam >= (1 << dimensionParam)) {
-    return -1; // Target value is too large for the given dimension (2^m).
-  }
-  if (targetValueParam && dimensionParam === 1) {
-    return -1; // Special case: if k is non-zero and m is 1, return -1.
-  }
-  if (targetValueParam === 0) {
-    return handleZeroTarget(dimensionParam); // Delegate to a helper function for the k = 0 case.
-  }
-
-  // Initialize an array to store the generated sequence of numbers.
-  const solutionSequence = [];
-  // Calculate the total number of elements expected in the sequence (2^m).
-  const totalElementsCount = 1 << dimensionParam;
-
-  // First loop: generate numbers counting up from 0 to (2^m - 1),
-  // skipping the target value `k` when encountered.
-  for (let loopIndex = 0, currentNumber = 0; loopIndex < totalElementsCount - 1; loopIndex++, currentNumber++) {
-    if (currentNumber === targetValueParam) {
-      currentNumber++; // Increment `currentNumber` to effectively skip `targetValueParam`.
+    // Condition 1: If the target value is too large to be represented by 'numBits'.
+    // (1 << numBits) calculates 2^numBits.
+    if (targetValue >= (1 << numBits)) {
+        return -1;
     }
-    solutionSequence.push(currentNumber);
-  }
-  solutionSequence.push(targetValueParam); // Add the `targetValueParam` at the end of the first half.
 
-  // Second loop: generate numbers counting down from the last `currentNumber` (which is 2^m - 1 or 2^m),
-  // again skipping the target value `k`.
-  for (let loopIndex = 0; loopIndex < totalElementsCount - 1; loopIndex++) {
-    currentNumber--; // Decrement `currentNumber`.
-    if (currentNumber === targetValueParam) {
-      currentNumber--; // Decrement again to skip `targetValueParam` if it's the next value.
+    // Condition 2: Special case for m=1. If k is non-zero and m is 1, it's an invalid scenario.
+    // For m=1, possible values are 0 and 1. If k=1, the problem's specific constraints lead to -1.
+    if (targetValue && numBits === 1) {
+        return -1;
     }
-    solutionSequence.push(currentNumber);
-  }
-  solutionSequence.push(targetValueParam); // Add the `targetValueParam` at the end of the second half.
 
-  // Join all elements of the `solutionSequence` with a space and return the resulting string.
-  return solutionSequence.join(" ");
+    // Condition 3: If the target value is 0, delegate to a specific handler function.
+    if (targetValue === 0) {
+        return handleZeroTarget(numBits);
+    }
+
+    var resultSequence = []; // Array to store the generated sequence.
+    // Calculate the total number of unique elements in the sequence (2^numBits).
+    var totalElements = 1 << numBits;
+
+    // First loop: Generates numbers from 0 up to (totalElements - 1), skipping 'targetValue'.
+    // 'loopCounter' tracks iterations, 'currentNumber' tracks the value to be added.
+    for (var loopCounter = 0, currentNumber = 0; loopCounter < totalElements - 1; loopCounter++, currentNumber++) {
+        // If 'currentNumber' matches 'targetValue', increment 'currentNumber' to skip it.
+        if (currentNumber === targetValue) {
+            currentNumber++;
+        }
+        resultSequence.push(currentNumber); // Add the current number to the sequence.
+    }
+    resultSequence.push(targetValue); // Add the 'targetValue' at the end of the first half.
+
+    // Second loop: Generates numbers in decreasing order, again skipping 'targetValue'.
+    // 'currentNumber' retains its value from the end of the previous loop.
+    for (var loopCounter = 0; loopCounter < totalElements - 1; loopCounter++) {
+        currentNumber--; // Decrement 'currentNumber'.
+        // If 'currentNumber' matches 'targetValue', decrement it again to skip.
+        if (currentNumber === targetValue) {
+            currentNumber--;
+        }
+        resultSequence.push(currentNumber); // Add the current number to the sequence.
+    }
+    resultSequence.push(targetValue); // Add 'targetValue' again to complete the sequence.
+
+    // Joins all elements of the 'resultSequence' array into a single string, separated by spaces.
+    return resultSequence.join(" ");
 }
 
 /**
- * Generates a specific sequence when the target value (k) is zero.
- * This sequence is formed by numbers from 0 up to (2^(m+1) - 1),
- * where each number is bit-shifted right by 1 (equivalent to integer division by 2).
- * @param {number} dimensionParam The dimension parameter (m) for this specific case.
- * @returns {string} A space-separated string representing the sequence.
+ * This function handles the specific case where the target value (k) is 0.
+ * It generates a sequence where each number from 0 to (2^bitCount - 1) appears exactly twice.
+ * The sequence effectively looks like: 0 0 1 1 2 2 ... (2^bitCount - 1) (2^bitCount - 1).
+ *
+ * @param {number} bitCount The number of bits (m) for the problem.
+ * @returns {string} A space-separated string representing the generated sequence.
  */
-function handleZeroTarget(dimensionParam) {
-  // Calculate the total number of elements for this specific case, which is 2^(m+1).
-  const totalElementsForZero = 1 << (dimensionParam + 1);
-  const resultNumbers = [];
+function handleZeroTarget(bitCount) {
+    // The total length of the sequence will be 2 * (2^bitCount), which is 2^(bitCount + 1).
+    var sequenceLength = 1 << (bitCount + 1);
+    var outputArray = []; // Array to store the generated sequence.
 
-  // Populate the array with numbers where each number is `idx` shifted right by 1 bit (i.e., `idx / 2`).
-  for (let idx = 0; idx < totalElementsForZero; idx++) {
-    resultNumbers[idx] = idx >> 1;
-  }
-  return resultNumbers.join(" "); // Join and return the sequence.
+    // Populates the 'outputArray'. The expression 'index >> 1' performs an integer division by 2.
+    // This means:
+    // index 0, 1 both map to 0.
+    // index 2, 3 both map to 1.
+    // ...and so on, effectively placing each number twice.
+    for (var index = 0; index < sequenceLength; index++) {
+        outputArray[index] = index >> 1;
+    }
+
+    // Joins all elements of the 'outputArray' into a single string, separated by spaces.
+    return outputArray.join(" ");
 }

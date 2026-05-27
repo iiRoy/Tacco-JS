@@ -1,50 +1,76 @@
-function* tokenGenerator(rawInput) {
-    const linesOfText = rawInput.split('\n');
-    for (const currentLine of linesOfText) {
-        const lineSegments = currentLine.trim().split(' ');
-        for (const segment of lineSegments) {
-            if (segment !== '') {
-                yield Number(segment);
-            }
-        }
-    }
+function I(sourceText, valueParser) {
+    this.lineBuffer = sourceText.split("\n");
+    this.charCursor = 0;
+    this.lineCursor = 0;
+    this.parser = valueParser || Number;
 }
 
-function processNetwork(sourceData) {
-    const dataStream = tokenGenerator(sourceData);
+I.prototype.a = function() {
+    const currentLine = this.lineBuffer[this.lineCursor];
+    if (!currentLine) return;
 
-    const totalVertices = dataStream.next().value;
-    const totalConnections = dataStream.next().value;
+    const tokens = currentLine.trim().split(" ");
+    const tokenValue = tokens[this.charCursor];
+    this.charCursor++;
 
-    const vertexAdjacency = new Map();
-    for (let vertexIdentifier = 1; vertexIdentifier <= totalVertices; vertexIdentifier++) {
-        vertexAdjacency.set(vertexIdentifier, []);
+    if (tokens.length === this.charCursor) {
+        this.charCursor = 0;
+        this.lineCursor++;
+    }
+    return this.parser(tokenValue);
+};
+
+I.prototype.l = function() {
+    const currentLine = this.lineBuffer[this.lineCursor];
+    if (!currentLine) return;
+    this.charCursor = 0;
+    this.lineCursor++;
+    return currentLine.split(" ").map(this.parser);
+};
+
+module.exports = I;
+
+function main(inputContent) {
+    const dataReader = new I(inputContent);
+
+    const nodeQuantity = dataReader.a();
+    const edgeQuantity = dataReader.a();
+
+    const degreeRegistry = new Map();
+    for (let nodeIdentifier = 1; nodeIdentifier <= nodeQuantity; nodeIdentifier++) {
+        degreeRegistry.set(nodeIdentifier, 0);
     }
 
-    for (let connectionIndex = 0; connectionIndex < totalConnections; connectionIndex++) {
-        const firstPoint = dataStream.next().value;
-        const secondPoint = dataStream.next().value;
-        vertexAdjacency.get(firstPoint).push(secondPoint);
-        vertexAdjacency.get(secondPoint).push(firstPoint);
+    for (let edgeIndex = 0; edgeIndex < edgeQuantity; edgeIndex++) {
+        const firstVertex = dataReader.a();
+        const secondVertex = dataReader.a();
+
+        degreeRegistry.set(firstVertex, degreeRegistry.get(firstVertex) + 1);
+        degreeRegistry.set(secondVertex, degreeRegistry.get(secondVertex) + 1);
     }
 
-    const degreeAnalysis = Array.from({ length: totalVertices }, (_, zeroBasedIndex) => zeroBasedIndex + 1).reduce((summary, currentVertexId) => {
-        const currentVertexDegree = vertexAdjacency.get(currentVertexId).length;
+    let hasDegreeOfSix = false;
+    let countOfDegreeFour = 0;
+    let allDegreesAreEven = true;
+
+    for (let nodeIdentifier = 1; nodeIdentifier <= nodeQuantity; nodeIdentifier++) {
+        const currentVertexDegree = degreeRegistry.get(nodeIdentifier);
 
         if (currentVertexDegree === 6) {
-            summary.hasDegreeSix = true;
+            hasDegreeOfSix = true;
         }
-        if (currentVertexDegree === 4) {
-            summary.degreeFourCount++;
-        }
-        if (currentVertexDegree % 2 !== 0) {
-            summary.allDegreesEven = false;
-        }
-        return summary;
-    }, { hasDegreeSix: false, degreeFourCount: 0, allDegreesEven: true });
 
-    const finalVerdict = (degreeAnalysis.hasDegreeSix || degreeAnalysis.degreeFourCount >= 2) && degreeAnalysis.allDegreesEven;
-    console.log(finalVerdict ? "Yes" : "No");
+        if (currentVertexDegree === 4) {
+            countOfDegreeFour++;
+        }
+
+        if (currentVertexDegree % 2 !== 0) {
+            allDegreesAreEven = false;
+        }
+    }
+
+    const finalConditionMet = (hasDegreeOfSix || countOfDegreeFour >= 2) && allDegreesAreEven;
+    console.log(finalConditionMet ? "Yes" : "No");
 }
 
-processNetwork(require("fs").readFileSync("/dev/stdin", "utf8"));
+main(require("fs").readFileSync("/dev/stdin", "utf8"));

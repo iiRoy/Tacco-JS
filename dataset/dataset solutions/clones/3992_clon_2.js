@@ -1,40 +1,41 @@
-// This function processes all incoming raw text data
-function PerformComputation (  sourceData  )
-{
-  // Split the entire input string by newline characters into an array of lines.
-  var   dataLines   =   sourceData.split( '\n' );
+/*
+ * This script processes numerical input to calculate a specific value.
+ * It handles large numbers by splitting them into parts for calculation.
+ */
+function ProcessInput(rawData) {
+    // Split the entire raw input data by newline characters.
+    const inputLines = rawData.split("\n");
 
-  // The first line of input typically contains space-separated values.
-  var   segmentParts = dataLines[0].split( ' ' ) ;
+    // Take the first line and split it by spaces to get individual parts.
+    let firstLineParts = inputLines[0].split(" ");
 
-  // Parse the first segment as an integer for the first operand.
-  var   firstOperand  = parseInt( segmentParts[0], 10 );
+    // Convert the first part to a number, representing 'N'.
+    let firstNum = Number(firstLineParts[0]);
 
-  // Parse the second segment as an integer for the second operand.
-  var   secondOperand = parseInt( segmentParts[1], 10 );
+    // Convert the second part to a number, representing 'M'.
+    let secondNum = Number(firstLineParts[1]);
 
+    // Calculate the initial result using absolute difference.
+    let resultValue = Math.abs((secondNum - 2) * (firstNum - 2));
 
-  // Calculate the initial outcome using absolute difference product.
-  var calculatedOutcome = Math.abs( ( secondOperand - 2 ) * ( firstOperand - 2 ) );
+    // Check if the calculated result exceeds a very large threshold.
+    if (resultValue > 1000000000000000) {
+        // If it's too large, perform calculations in parts to avoid overflow or precision issues.
+        let firstNumUpper = Math.floor(firstNum / 1000); // Upper part of N
+        let firstNumLower = firstNum % 1000; // Lower part of N
 
-  // Check if the calculated outcome exceeds a very large threshold.
-  if ( calculatedOutcome > 1e15 )
-  {
-    // For very large numbers, perform calculations in parts to prevent overflow or precision issues.
-    var   highSegment = Math.floor( firstOperand / 1000 ) ;
-    var   lowSegment = firstOperand % 1000 ;
+        // Calculate the lower part of the answer.
+        let lowerPartResult = (firstNumLower - 2) * Math.abs(secondNum - 2);
 
-    // Calculate the lower part of the outcome.
-    var lowOutcomePart = ( lowSegment - 2 ) * Math.abs( secondOperand - 2 ) ;
+        // Re-calculate the result by combining upper and lower parts.
+        // The `+ ""` converts the number to a string for concatenation.
+        resultValue = (firstNumUpper * Math.abs(secondNum - 2) + Math.floor(lowerPartResult / 1000)) + "";
+        resultValue += lowerPartResult % 1000 + ""; // Append the remainder.
+    }
 
-    // Combine parts for the final string representation of the large number.
-    var calculatedOutcome = ( highSegment * Math.abs( secondOperand - 2 ) + Math.floor( lowOutcomePart / 1000 ) ) + '' ;
-    calculatedOutcome += lowOutcomePart % 1000 + '' ;
-  }
-
-  // Output the final result to the console.
-  console.info( calculatedOutcome ) ;
+    // Output the final calculated result to the console.
+    console.log(resultValue);
 }
 
-// *The following line should not be modified (it reads input from stdin and invokes the primary function)
-PerformComputation(require("fs").readFileSync("/dev/stdin", "utf8"));
+// The following line is for standard input/output handling and should not be modified.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

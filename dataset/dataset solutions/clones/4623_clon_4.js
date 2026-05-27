@@ -1,52 +1,40 @@
 'use strict'
 
-function evaluateMagnitude(subjectA, subjectB) {
-  if (subjectA === subjectB) {
-    return 0;
+function main(programInput) {
+  const [firstOperand, secondOperand] = programInput.split('\n')
+
+  const resultLabels = {
+    greaterThan: 'GREATER',
+    lessThan: 'LESS',
+    equalValue: 'EQUAL'
   }
 
-  const lengthA = subjectA.length;
-  const lengthB = subjectB.length;
+  let finalOutcome
 
-  if (lengthA > lengthB) {
-    return 1;
-  }
-  if (lengthA < lengthB) {
-    return -1;
-  }
+  if (firstOperand === secondOperand) {
+    finalOutcome = resultLabels.equalValue
+  } else {
+    const lengthOfFirst = firstOperand.length
+    const lengthOfSecond = secondOperand.length
 
-  function digitCompare(index) {
-    if (index === lengthA) {
-      return 0;
+    if (lengthOfFirst !== lengthOfSecond) {
+      finalOutcome = (lengthOfFirst > lengthOfSecond) ? resultLabels.greaterThan : resultLabels.lessThan
+    } else {
+      // Lengths are identical, and values are not equal, so a difference must exist.
+      const firstChars = Array.from(firstOperand)
+      const secondChars = Array.from(secondOperand)
+
+      const differingCharIndex = firstChars.findIndex((charA, currentIdx) => charA !== secondChars[currentIdx])
+
+      // Since lengths are equal and strings are not identical, differingCharIndex will always be found.
+      const numericValA = Number(firstChars[differingCharIndex])
+      const numericValB = Number(secondChars[differingCharIndex])
+
+      finalOutcome = (numericValA > numericValB) ? resultLabels.greaterThan : resultLabels.lessThan
     }
-
-    const digitA = parseInt(subjectA[index], 10);
-    const digitB = parseInt(subjectB[index], 10);
-
-    if (digitA > digitB) {
-      return 1;
-    }
-    if (digitA < digitB) {
-      return -1;
-    }
-
-    return digitCompare(index + 1);
   }
 
-  return digitCompare(0);
+  console.log(finalOutcome)
 }
 
-function processInputData(sourceData) {
-  const [valueOne, valueTwo] = sourceData.split('\n');
-
-  const outcomeMap = new Map([
-    [-1, 'LESS'],
-    [0, 'EQUAL'],
-    [1, 'GREATER']
-  ]);
-
-  const finalOutcome = evaluateMagnitude(valueOne, valueTwo);
-  console.log(outcomeMap.get(finalOutcome));
-}
-
-processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+main(require("fs").readFileSync("/dev/stdin", "utf8"))

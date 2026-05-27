@@ -1,80 +1,107 @@
-const obtainInput = (sourcePath) => {
-    const content = require("fs").readFileSync(sourcePath, "utf8");
-    const segments = content.trim().split('\n');
-    let position = 0;
+class DataStreamProcessor {
+  #mutableLines;
+  #currentLinePointer;
 
-    const acquireNumeric = () => {
-        const segment = segments[position];
-        const pieces = segment.split(' ');
-        position++;
-        return Number(pieces[0]);
-    };
+  constructor(inputString) {
+    this.#mutableLines = inputString.split("\n");
+    this.#currentLinePointer = 0;
+  }
 
-    const acquireCollection = (quantity) => {
-        const outcome = [];
-        for (let k = 0; k < quantity; k++) {
-            const segment = segments[position];
-            const pieces = segment.split(' ').map(Number);
-            outcome.push(pieces);
-            position++;
-        }
-        return outcome;
-    };
-
-    return {
-        getNumeric: acquireNumeric,
-        getCollection: acquireCollection,
-    };
-};
-
-const resolveChallenge = () => {
-    const dataFeeder = obtainInput("/dev/stdin");
-
-    const entityCount = dataFeeder.getNumeric();
-    const entityCoordinates = dataFeeder.getCollection(entityCount);
-
-    const initialParityState = (entityCoordinates[0][0] + entityCoordinates[0][1]) % 2;
-
-    for (let pointIdx = 1; pointIdx < entityCount; pointIdx++) {
-        const currentParityState = (entityCoordinates[pointIdx][0] + entityCoordinates[pointIdx][1]) % 2;
-        if (currentParityState !== initialParityState) {
-            return -1;
-        }
+  extractValue(asString = false) {
+    if (this.#currentLinePointer >= this.#mutableLines.length) {
+      return undefined;
     }
 
-    const totalMoveSteps = 20 - initialParityState;
-    const individualStepDistances = Array(totalMoveSteps).fill(1);
+    let currentLineEntry = this.#mutableLines[this.#currentLinePointer];
 
-    const generateMovementTrace = (currentX, currentY, stepsRemaining) => {
-        if (stepsRemaining === 0) {
-            return "";
-        }
+    if (typeof currentLineEntry === "string") {
+      this.#mutableLines[this.#currentLinePointer] = currentLineEntry.split(" ").reverse();
+      currentLineEntry = this.#mutableLines[this.#currentLinePointer];
+    }
 
-        let nextX = currentX;
-        let nextY = currentY;
-        let moveDirection;
+    const extracted = currentLineEntry.pop();
 
-        if (currentX > 0) {
-            nextX--;
-            moveDirection = 'R';
-        } else if (currentX < 0) {
-            nextX++;
-            moveDirection = 'L';
-        } else if (currentY > 0) {
-            nextY--;
-            moveDirection = 'U';
-        } else { // currentY <= 0
-            nextY++;
-            moveDirection = 'D';
-        }
-        return moveDirection + generateMovementTrace(nextX, nextY, stepsRemaining - 1);
-    };
+    if (currentLineEntry.length === 0) {
+      this.#currentLinePointer++;
+    }
 
-    const allMovementTraces = entityCoordinates.map(pair =>
-        generateMovementTrace(pair[0], pair[1], totalMoveSteps)
-    );
+    return asString ? extracted : Number(extracted);
+  }
 
-    return totalMoveSteps + "\n" + individualStepDistances.join(" ") + "\n" + allMovementTraces.join("\n");
+  retrieveLine(asStrings = false) {
+    if (this.#currentLinePointer >= this.#mutableLines.length) {
+      return [];
+    }
+
+    const lineContent = this.#mutableLines[this.#currentLinePointer];
+    this.#currentLinePointer++;
+
+    const parts = lineContent.split(" ");
+    return asStrings ? parts : parts.map(Number);
+  }
+
+  fetchMatrix(rowCount, asStrings = false) {
+    const resultMatrix = Array.from({ length: rowCount }, () => {
+      if (this.#currentLinePointer >= this.#mutableLines.length) {
+        return [];
+      }
+      const lineContent = this.#mutableLines[this.#currentLinePointer];
+      this.#currentLinePointer++;
+
+      const parts = lineContent.split(" ");
+      return asStrings ? parts : parts.map(Number);
+    });
+    return resultMatrix;
+  }
+}
+
+const coordinateProcessor = () => {
+  const inputSource = new DataStreamProcessor(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+  const pointCount = inputSource.extractValue();
+  const coordinatePairs = inputSource.fetchMatrix(pointCount);
+
+  const getParity = (val) => ((val % 2) + 2) % 2;
+
+  const initialSumParity = getParity(coordinatePairs[0][0] + coordinatePairs[0][1]);
+
+  const allParitiesMatch = coordinatePairs.every((pair) => {
+    return getParity(pair[0] + pair[1]) === initialSumParity;
+  });
+
+  if (!allParitiesMatch) {
+    return -1;
+  }
+
+  const stepCount = 20 - initialSumParity;
+  const stepMagnitudes = Array(stepCount).fill(1);
+
+  const pathTraces = coordinatePairs.map((initialPair) => {
+    const finalState = Array.from({ length: stepCount }).reduce((state, _currentValue, _index) => {
+      let nextX = state.x;
+      let nextY = state.y;
+      let moveChar = "";
+
+      if (nextX > 0) {
+        nextX--;
+        moveChar = "R";
+      } else if (nextX < 0) {
+        nextX++;
+        moveChar = "L";
+      } else if (nextY > 0) {
+        nextY--;
+        moveChar = "U";
+      } else {
+        nextY++;
+        moveChar = "D";
+      }
+      return { x: nextX, y: nextY, path: state.path + moveChar };
+    }, { x: initialPair[0], y: initialPair[1], path: "" });
+
+    return finalState.path;
+  });
+
+  return `${stepCount}\n${stepMagnitudes.join(" ")}\n${pathTraces.join("\n")}`;
 };
 
-console.log(resolveChallenge());
+console.log(coordinateProcessor());

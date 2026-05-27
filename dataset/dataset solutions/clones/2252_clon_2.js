@@ -1,52 +1,45 @@
 "use strict";
 
-function ExecuteProcessor ( rawTextContent ) {
-  let parsedLines = rawTextContent . split ( "\n" ) ;
+function ProcessInput(rawData) {
+  let inputLines = rawData.split("\n");
+  let queryCount = inputLines.shift().split(" ")[1];
 
-  // Extract the count of data entries from the header line
-  let totalEntriesCount = parsedLines . shift ( ) . split ( " " ) [ 1 ] ;
+  // A structure to hold results for each question
+  let resultMap = {};
 
-  // Object to store submission outcomes keyed by challenge ID
-  let submissionRecords = { } ;
-  for ( let entryIndex = 0 ; entryIndex < totalEntriesCount ; entryIndex ++ ) {
-    let currentLine = parsedLines [ entryIndex ] ;
-    let challengeIdentifier = currentLine . split ( " " ) [ 0 ] ;
-    let resultCategory = currentLine . split ( " " ) [ 1 ] ;
+  for (let idx = 0; idx < queryCount; idx++) {
+    let questionIdentifier = inputLines[idx].split(" ")[0];
+    let answerType = inputLines[idx].split(" ")[1];
 
-    // Append the result category to the challenge's record
-    if ( submissionRecords [ challengeIdentifier ] === undefined ) {
-      submissionRecords [ challengeIdentifier ] = `${resultCategory}`;
+    if (resultMap[questionIdentifier] === undefined) {
+      resultMap[questionIdentifier] = `${answerType}`;
     } else {
-      submissionRecords [ challengeIdentifier ] += `,${resultCategory}`;
+      resultMap[questionIdentifier] += `,${answerType}`;
     }
   }
 
-  // Initialize counters for correct and incorrect attempts
-  let incorrectAttempts = 0 ;
-  let successfulSubmissions = 0 ;
+  let wrongAnswerCount = 0;
+  let correctAnswerCount = 0;
 
-  // Retrieve all unique challenge identifiers
-  let recordKeys = Object . keys ( submissionRecords ) ;
+  // Iterate through the collected question results
+  let mapKeys = Object.keys(resultMap);
 
-  // Iterate through each distinct challenge to tally results
-  for ( let keyIterator = 0 ; keyIterator < recordKeys . length ; keyIterator ++ ) {
-    let currentChallengeKey = recordKeys [ keyIterator ] ;
+  for (let keyIndex = 0; keyIndex < mapKeys.length; keyIndex++) {
+    let currentKey = mapKeys[keyIndex];
+    // Split the combined answer types into an array of individual attempts
+    let answerAttempts = resultMap[currentKey].split(",");
 
-    // Split the comma-separated result string into an array of categories
-    let categoryList = submissionRecords [ currentChallengeKey ] . split ( "," ) ;
-
-    // Check individual submission results for the current challenge
-    for ( let categoryIndex = 0 ; categoryIndex < categoryList . length ; categoryIndex ++ ) {
-      if ( categoryList [ categoryIndex ] == 'AC' ) {
-        successfulSubmissions ++ ;
-        break ; // Once an 'AC' is found for a challenge, count it and move to the next challenge
+    for (let attemptIndex = 0; attemptIndex < answerAttempts.length; attemptIndex++) {
+      if (answerAttempts[attemptIndex] === 'AC') {
+        correctAnswerCount++;
+        break; // Stop checking attempts for this question once 'AC' is found
       } else {
-        incorrectAttempts ++ ;
+        wrongAnswerCount++;
       }
     }
   }
-  // Output the final counts of successful and incorrect attempts
-  console . log ( successfulSubmissions + " " + incorrectAttempts ) ;
+
+  console.log(correctAnswerCount + " " + wrongAnswerCount);
 }
 
-ExecuteProcessor ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

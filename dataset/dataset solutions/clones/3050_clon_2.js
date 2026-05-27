@@ -1,32 +1,35 @@
-function ProcessData(rawDataInput) {
-    // This function processes an array of numerical values to determine
-    // how many elements are visible from the left.
-    // An element is considered visible if its value is greater than or
-    // equal to the maximum value encountered so far.
+// This function serves as the primary entry point for processing the given data.
+function ProcessInput(rawData) {
+  // The raw input string is first divided into an array of strings,
+  // with each element representing a line from the original input.
+  let lineSegments = rawData.split('\n');
 
-    let linesArray = rawDataInput.split('\n') ;
+  // The second line of the input (at index 1) is expected to contain
+  // space-separated numerical values. These are parsed into an array of integers.
+  const heightsArray = lineSegments[1].split(' ').map(currentNumStr => parseInt(currentNumStr, 10));
 
-    // Parse the second line of the input as an array of integers.
-    // Each integer represents a height measurement.
-    const heightsArray = linesArray[1] . split(' ') . map( currentHeightVal => parseInt(currentHeightVal, 10) ) ;
+  // A counter is initialized to keep track of the number of visible elements.
+  let visibleCount = 0;
 
-    let visibleCount = 0 ; // Counter for the number of visible elements.
-    let currentMaxHeight = 0 ; // Stores the maximum height observed up to the current point.
+  // A variable to store the maximum height encountered so far during iteration.
+  let currentMaxHeight = 0;
 
-    // Iterate over each height measurement in the array.
-    heightsArray . forEach( currentHeightVal => {
-        // If the current height is greater than or equal to the maximum height
-        // seen so far, it means this element is visible from the left.
-        if ( currentHeightVal >= currentMaxHeight ) {
-            visibleCount ++ ; // Increment the count of visible elements.
-            currentMaxHeight = currentHeightVal ; // Update the maximum height.
-        }
-    } ) ;
+  // We iterate through each height value in the parsed array.
+  heightsArray.forEach(currentHeight => {
+    // If the current height is greater than or equal to the highest point
+    // observed up to this point, it means this element is visible.
+    if (currentHeight >= currentMaxHeight) {
+      // Increment the count of visible elements.
+      visibleCount++;
+      // Update the record of the maximum height seen.
+      currentMaxHeight = currentHeight;
+    }
+  });
 
-    // Output the final tally of visible elements.
-    console . log(visibleCount) ;
+  // The final calculated count of visible elements is printed to the console.
+  console.log(visibleCount);
 }
 
-// The program starts by reading data from standard input,
-// then passes it to the main processing function.
-ProcessData( require("node:fs") . readFileSync("/dev/stdin", "utf8") ) ;
+// The program starts by reading the entire content of standard input,
+// decoding it as UTF-8, and then passing it to the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf-8"));

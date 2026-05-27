@@ -1,49 +1,41 @@
-const LOWER_BOUND_DIGIT = 0; // Smallest possible digit for combinations
-const UPPER_BOUND_DIGIT = 9; // Largest possible digit for combinations
+const LOWER_LIMIT = 0;
+const UPPER_LIMIT = 9;
 
-process.stdin.resume(); // Start the input stream
-process.stdin.setEncoding('utf8'); // Set character encoding for incoming data
+// Activate standard input stream
+process.stdin.resume();
+// Set the character encoding for incoming data
+process.stdin.setEncoding('utf8');
 
-process.stdin.on("data", (received_data_block) => { // Event handler for data chunks
-    // Convert the input buffer to a string, split by newlines, and parse each line into a number
-    let target_sum_values = received_data_block.toString()
-                               .split("\n")
-                               .map(Number); // Convert string to number, handles empty strings as 0
+// Attach an event listener for incoming data chunks
+process.stdin.on("data", function(inputData) {
+    // Convert the input chunk to a string, split by newlines, and parse each part as an integer.
+    // This creates an array of target numbers.
+    const targetValues = String(inputData).split("\n").map(parseInt);
 
-    // Iterate through each target sum provided in the input
-    for (let current_sum_index = 0;
-         current_sum_index < target_sum_values.length;
-         current_sum_index++) {
+    // Iterate through each target number provided in the input.
+    for (let targetIdx = 0; targetIdx < targetValues.length; targetIdx++) {
+        // Initialize a counter for valid combinations for the current target number.
+        let validCombinations = 0;
 
-        let matching_combinations_count = 0; // Initialize counter for the current target
-
-        // Four nested loops to generate all possible combinations of four digits (0-9)
-        for (let first_digit = LOWER_BOUND_DIGIT;
-             first_digit <= UPPER_BOUND_DIGIT;
-             first_digit++) {
-
-            for (let second_digit = LOWER_BOUND_DIGIT;
-                 second_digit <= UPPER_BOUND_DIGIT;
-                 second_digit++) {
-
-                for (let third_digit = LOWER_BOUND_DIGIT;
-                     third_digit <= UPPER_BOUND_DIGIT;
-                     third_digit++) {
-
-                    for (let fourth_digit = LOWER_BOUND_DIGIT;
-                         fourth_digit <= UPPER_BOUND_DIGIT;
-                         fourth_digit++) {
-
-                        // Check if the sum of the four digits equals the current target value
-                        if (first_digit + second_digit + third_digit + fourth_digit === target_sum_values[current_sum_index]) {
-                            matching_combinations_count++; // Increment if the sum matches
+        // Four nested loops to iterate through all possible combinations of four digits (0-9).
+        // This represents the first digit.
+        for (let firstDigit = LOWER_LIMIT; firstDigit <= UPPER_LIMIT; firstDigit++) {
+            // This represents the second digit.
+            for (let secondDigit = LOWER_LIMIT; secondDigit <= UPPER_LIMIT; secondDigit++) {
+                // This represents the third digit.
+                for (let thirdDigit = LOWER_LIMIT; thirdDigit <= UPPER_LIMIT; thirdDigit++) {
+                    // This represents the fourth digit.
+                    for (let fourthDigit = LOWER_LIMIT; fourthDigit <= UPPER_LIMIT; fourthDigit++) {
+                        // Check if the sum of the four digits equals the current target value.
+                        if (firstDigit + secondDigit + thirdDigit + fourthDigit === targetValues[targetIdx]) {
+                            // If the sum matches, increment the combination counter.
+                            validCombinations++;
                         }
-                    } // End of fourth digit loop
-                } // End of third digit loop
-            } // End of second digit loop
-        } // End of first digit loop
-
-        // Output the total number of combinations found for the current target sum
-        console.log(matching_combinations_count);
-    } // End of target sum iteration
-}); // End of data event handler
+                    }
+                }
+            }
+        }
+        // After checking all combinations for the current target, print the total count.
+        console.log(validCombinations);
+    }
+});

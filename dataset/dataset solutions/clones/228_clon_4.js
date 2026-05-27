@@ -1,66 +1,50 @@
-const queryReader = require('readline').createInterface({
-    input: process.stdin,
-    output: process.stdout,
-    terminal: false
-});
-
-let collectedQueries = [];
-
-queryReader.on('line', (lineContent) => {
-    collectedQueries.push(Number(lineContent));
-});
-
-queryReader.on('close', () => {
-    initiateProcessing();
-});
+var fs = require('fs');
+initiateProcessing();
 
 function initiateProcessing() {
-    const maximumQueryValue = 50000;
-    const fundamentalNumbers = generatePrimesUpTo(maximumQueryValue);
-    const sumOccurrenceRegistry = new Array(maximumQueryValue + 1).fill(0);
+    var inputData = fs.readFileSync(process.stdin.fd, 'utf8').split('\n');
+    const primeSequence = generatePrimeNumbers(49999);
+    const sumFrequencies = new Map();
 
-    const firstValidFundamentalIndex = 1;
-    const lastValidFundamentalIndexForOuterLoop = fundamentalNumbers.length - 1; // Corresponds to the last prime (49999) if max is 49999.
-                                                                                // The original code uses i < 5133, which means up to index 5132.
-                                                                                // The 5133rd prime (49999) is at index 5133. So we need to go up to index 5132.
+    primeSequence.forEach((firstPrime, idx1) => {
+        for (let idx2 = 0; idx2 <= idx1; idx2++) {
+            const secondPrime = primeSequence[idx2];
+            const currentSum = firstPrime + secondPrime;
 
-    fundamentalNumbers.slice(firstValidFundamentalIndex, lastValidFundamentalIndexForOuterLoop).forEach((firstOperand, outerLoopRelativeIndex) => {
-        const actualFirstOperandIndex = outerLoopRelativeIndex + firstValidFundamentalIndex;
-
-        fundamentalNumbers.slice(firstValidFundamentalIndex, actualFirstOperandIndex + 1).forEach(secondOperand => {
-            const currentPairSum = firstOperand + secondOperand;
-            if (currentPairSum <= maximumQueryValue) {
-                sumOccurrenceRegistry[currentPairSum]++;
+            if (currentSum > 50000) {
+                break;
             }
-        });
+            sumFrequencies.set(currentSum, (sumFrequencies.get(currentSum) || 0) + 1);
+        }
     });
 
-    for (const queryValue of collectedQueries) {
-        if (queryValue === 0) {
-            break;
-        }
-        console.log(sumOccurrenceRegistry[queryValue]);
-    }
+    inputData
+        .map(s => parseInt(s, 10))
+        .filter(n => !isNaN(n) && n !== 0)
+        .forEach(queryValue => {
+            console.log(sumFrequencies.get(queryValue) || 0);
+        });
 }
 
-function generatePrimesUpTo(ceilingValue) {
-    const compositeMarkers = new Array(ceilingValue + 1).fill(false);
-    compositeMarkers[0] = compositeMarkers[1] = true;
+function generatePrimeNumbers(limitValue) {
+    const isComposite = new Array(limitValue + 1).fill(false);
+    isComposite[0] = true;
+    isComposite[1] = true;
 
-    for (let currentNumberCheck = 2; currentNumberCheck * currentNumberCheck <= ceilingValue; currentNumberCheck++) {
-        if (compositeMarkers[currentNumberCheck]) {
-            continue;
-        }
-        for (let multipleMark = currentNumberCheck * currentNumberCheck; multipleMark <= ceilingValue; multipleMark += currentNumberCheck) {
-            compositeMarkers[multipleMark] = true;
+    for (let currentNum = 2; currentNum * currentNum <= limitValue; currentNum++) {
+        if (!isComposite[currentNum]) {
+            for (let multiple = currentNum * currentNum; multiple <= limitValue; multiple += currentNum) {
+                isComposite[multiple] = true;
+            }
         }
     }
 
-    const discoveredPrimes = [0]; // Placeholder at index 0 to align with original's 1-based prime indexing
-    for (let numberIter = 1; numberIter <= ceilingValue; numberIter++) {
-        if (!compositeMarkers[numberIter]) {
-            discoveredPrimes.push(numberIter);
+    const collectedPrimes = [];
+    for (let num = 2; num <= limitValue; num++) {
+        if (!isComposite[num]) {
+            collectedPrimes.push(num);
         }
     }
-    return discoveredPrimes;
+
+    return collectedPrimes;
 }

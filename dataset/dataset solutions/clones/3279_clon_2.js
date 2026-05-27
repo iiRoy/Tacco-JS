@@ -1,22 +1,34 @@
-// This function determines a specific grid calculation based on provided numerical data.
-function ComputeGridSolution( rawInputText ) {
-  // First, normalize the input string: remove leading/trailing whitespace,
-  // split into individual lines, and convert each line to a numerical value.
-  rawInputText = rawInputText.trim().split( '\n' ).map( ( lineContent ) => Number( lineContent ) );
+function ProcessInputData(rawData) {
+  // This function processes raw input data to calculate a specific value.
 
-  // Extract the main dimension from the first element of the processed array.
-  const overallLength = rawInputText[0];
-  // Retrieve the vertical restriction from the second element.
-  const restrictedHeight = rawInputText[1];
-  // Obtain the horizontal restriction from the third element.
-  const restrictedWidth = rawInputText[2];
+  // First, clean up the raw string input:
+  // - Remove any leading or trailing whitespace.
+  // - Split the string into an array of lines based on newline characters.
+  // - Convert each line (which is a string) into a numerical value.
+  let numericValues = rawData
+    .trim()
+    .split("\n")
+    .map((itemString) => Number(itemString));
 
-  // Calculate the effective number of rows and columns after applying restrictions,
-  // then compute their product to get the final area-like result.
-  console.log( ( overallLength - restrictedHeight + 1 ) * ( overallLength - restrictedWidth + 1 ) );
+  // Extract the required numerical parameters from the processed array.
+  // The first element represents the overall grid size.
+  let gridSize = numericValues[0];
+  // The second element represents a height-related constraint.
+  let heightConstraint = numericValues[1];
+  // The third element represents a width-related constraint.
+  let widthConstraint = numericValues[2];
+
+  // Perform the core calculation based on the extracted parameters.
+  // The formula is (gridSize - heightConstraint + 1) * (gridSize - widthConstraint + 1).
+  let finalResult =
+    (gridSize - heightConstraint + 1) * (gridSize - widthConstraint + 1);
+
+  // Output the computed result to the standard console.
+  console.log(finalResult);
 }
 
-// Read the input data from standard input using Node.js filesystem module.
-// The file is read synchronously and decoded as UTF-8.
-// Then, invoke the main processing function with the obtained data.
-ComputeGridSolution( require( "fs" ).readFileSync( "/dev/stdin", "utf8" ) );
+// The program starts by reading input from standard input.
+// It uses Node.js's 'fs' module to synchronously read the file content
+// from '/dev/stdin' and decodes it as a UTF-8 string.
+// This string is then passed to the main processing function.
+ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,54 +1,127 @@
-const fileHandler = require('node:fs');
+module.exports = function(moduleDefinitions) {
+    const moduleCache = new Map();
 
-function determineOverflowAccumulation(
-    currentPositionIndex,
-    itemVolumeArray,
-    accumulatedOverflowTotal,
-    maximumAllowedCapacity
-) {
-    if (currentPositionIndex >= itemVolumeArray.length) {
-        return accumulatedOverflowTotal;
-    }
-
-    let currentItemQuantity = itemVolumeArray[currentPositionIndex];
-    let nextIterationState = [...itemVolumeArray]; // Create a new array for the next recursive call
-
-    let currentStepExcess = 0;
-
-    // Condition 1: If an individual item's quantity exceeds the maximum allowed capacity
-    if (currentItemQuantity > maximumAllowedCapacity) {
-        currentStepExcess += currentItemQuantity - maximumAllowedCapacity;
-        nextIterationState[currentPositionIndex] = maximumAllowedCapacity; // Cap the current item for subsequent checks within this step
-        currentItemQuantity = maximumAllowedCapacity; // Use the capped value for the next condition
-    }
-
-    // Condition 2: If the current item and the subsequent item combined exceed the maximum allowed capacity
-    if (currentPositionIndex < itemVolumeArray.length - 1) {
-        let subsequentItemQuantity = nextIterationState[currentPositionIndex + 1]; // Use the quantity from the potentially modified state
-        if (currentItemQuantity + subsequentItemQuantity > maximumAllowedCapacity) {
-            let combinedExceedance = currentItemQuantity + subsequentItemQuantity - maximumAllowedCapacity;
-            currentStepExcess += combinedExceedance;
-            nextIterationState[currentPositionIndex + 1] -= combinedExceedance; // Reduce the subsequent item's quantity in the new state
+    function retrieveModule(moduleId) {
+        if (moduleCache.has(moduleId)) {
+            return moduleCache.get(moduleId).output;
         }
+
+        const currentModule = {
+            identifier: moduleId,
+            isLoaded: false,
+            output: {}
+        };
+        moduleCache.set(moduleId, currentModule);
+
+        Reflect.apply(moduleDefinitions[moduleId], currentModule.output, [currentModule, currentModule.output, retrieveModule]);
+
+        currentModule.isLoaded = true;
+        return currentModule.output;
     }
 
-    return determineOverflowAccumulation(
-        currentPositionIndex + 1,
-        nextIterationState,
-        accumulatedOverflowTotal + currentStepExcess,
-        maximumAllowedCapacity
-    );
-}
+    retrieveModule.defineExport = function(targetObject, propertyName, getterFunction) {
+        if (!Object.prototype.hasOwnProperty.call(targetObject, propertyName)) {
+            Object.defineProperty(targetObject, propertyName, {
+                enumerable: true,
+                get: getterFunction
+            });
+        }
+    };
 
-const inputDataBuffer = fileHandler.readFileSync('/dev/stdin', 'UTF-8');
-const dataLinesParsed = inputDataBuffer.split('\n');
+    retrieveModule.markESModule = function(targetObject) {
+        if (typeof Symbol !== "undefined" && Symbol.toStringTag) {
+            Object.defineProperty(targetObject, Symbol.toStringTag, {
+                value: "Module"
+            });
+        }
+        Object.defineProperty(targetObject, "__esModule", {
+            value: true
+        });
+    };
 
-const configurationData = dataLinesParsed[0].split(' ').map(Number);
-const numberOfItems = configurationData[0];
-const allowedContainerCapacity = configurationData[1];
+    retrieveModule.interop = function(moduleReference, flags) {
+        let processedModule = (flags & 1) ? retrieveModule(moduleReference) : moduleReference;
+        if (flags & 8) return processedModule;
+        if ((flags & 4) && typeof processedModule === "object" && processedModule && processedModule.__esModule) return processedModule;
 
-const initialItemQuantities = dataLinesParsed[1].split(' ').map(Number);
+        let namespaceObject = Object.create(null);
+        retrieveModule.markESModule(namespaceObject);
+        Object.defineProperty(namespaceObject, "default", {
+            enumerable: true,
+            value: processedModule
+        });
 
-const finalAccumulatedLoss = determineOverflowAccumulation(0, initialItemQuantities, 0, allowedContainerCapacity);
+        if ((flags & 2) && typeof processedModule !== "string") {
+            for (let keyName in processedModule) {
+                retrieveModule.defineExport(namespaceObject, keyName, ((k) => processedModule[k]).bind(null, keyName));
+            }
+        }
+        return namespaceObject;
+    };
 
-process.stdout.write(String(finalAccumulatedLoss) + '\n');
+    retrieveModule.getDefault = function(moduleReference) {
+        const getter = moduleReference && moduleReference.__esModule ? () => moduleReference.default : () => moduleReference;
+        retrieveModule.defineExport(getter, "a", getter);
+        return getter;
+    };
+
+    retrieveModule.hasOwn = function(targetObject, propertyName) {
+        return Object.prototype.hasOwnProperty.call(targetObject, propertyName);
+    };
+
+    retrieveModule.publicPath = "";
+
+    return retrieveModule(0);
+}([
+    function(moduleInstance, moduleExports, moduleLoader) {
+        const processInput = moduleLoader(1);
+        const fileSystemAccess = moduleLoader(2);
+        processInput(fileSystemAccess.readFileSync("/dev/stdin", "UTF-8").split("\n"));
+    },
+    function(moduleInstance, moduleExports, moduleLoader) {
+        moduleExports = function(inputLines) {
+            const [elementCountString, limitValueString] = inputLines[0].split(" ");
+            const elementCount = Number(elementCountString);
+            const limitValue = Number(limitValueString);
+
+            const valueSequence = inputLines[1].split(" ").map(Number);
+
+            let totalDamageReduction = 0;
+
+            const processElementsRecursively = (currentIndex) => {
+                if (currentIndex >= elementCount) {
+                    return;
+                }
+
+                let currentElement = valueSequence[currentIndex];
+
+                if (currentElement > limitValue) {
+                    const excessAmount = currentElement - limitValue;
+                    totalDamageReduction += excessAmount;
+                    valueSequence[currentIndex] = limitValue;
+                    currentElement = limitValue;
+                }
+
+                if (currentIndex < elementCount - 1) {
+                    const nextElement = valueSequence[currentIndex + 1];
+                    if (currentElement + nextElement > limitValue) {
+                        const combinedExcessAmount = currentElement + nextElement - limitValue;
+                        totalDamageReduction += combinedExcessAmount;
+                        valueSequence[currentIndex + 1] -= combinedExcessAmount;
+                    }
+                }
+
+                processElementsRecursively(currentIndex + 1);
+            };
+
+            processElementsRecursively(0);
+
+            console.log(totalDamageReduction);
+        };
+        moduleInstance.output = moduleExports;
+    },
+    function(moduleInstance, moduleExports, moduleLoader) {
+        moduleExports = require("fs");
+        moduleInstance.output = moduleExports;
+    }
+]);

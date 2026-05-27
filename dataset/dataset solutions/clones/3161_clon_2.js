@@ -1,238 +1,162 @@
-/* This module handles reading and parsing input data */
-var INPUT_PROCESSOR = (function() {
-  /**
-   * Factory function to create a new input reader.
-   * @param {string} rawSource The raw input string.
-   * @returns {StreamParser} An instance of StreamParser.
-   */
-  function createReader(rawSource) {
-    return new StreamParser(rawSource);
+var INPUT_PARSER = (function() {
+  // This function serves as the entry point for creating an input parser instance.
+  function createParser(sourceText) {
+    return new InputSource(sourceText);
   }
 
-  /**
-   * Represents a parser for line-based input data.
-   * @class
-   */
-  function StreamParser(rawText) {
-    // Store input lines after trimming and splitting
-    this._sourceLines = rawText.trim().split("\n");
-    // Initialize line pointer
-    this._currentLineIndex = 0;
+  // The InputSource class manages the parsing of input lines.
+  function InputSource(rawInputString) {
+    this._sourceLines = rawInputString.trim().split("\n"); // Store input lines, trimmed and split.
+    this._currentLineIndex = 0; // Keep track of the current line being processed.
   }
 
-  /**
-   * Reads a single scalar value from the current line.
-   * If the line is exhausted, it moves to the next.
-   * @param {boolean} returnAsString If true, returns the value as a string; otherwise, as a number.
-   * @returns {string|number} The parsed value.
-   */
-  StreamParser.prototype.fetchScalar = function(returnAsString) {
-    var linesArr = this._sourceLines;
-    var linePtr = this._currentLineIndex;
-    var parsedValue;
+  // Prototype methods for InputSource.
+  InputSource.prototype = {
+    // Reads a single item from the current line.
+    readNextItem: function(returnAsString) {
+      var lineData = this._sourceLines;
+      var lineIdx = this._currentLineIndex;
+      var extractedData;
 
-    // If the current line hasn't been split yet, split and reverse it
-    // This allows popping elements from the end efficiently
-    if (typeof linesArr[linePtr] === "string") {
-      linesArr[linePtr] = linesArr[linePtr].split(" ").reverse();
+      // If the current line hasn't been processed into individual items yet,
+      // reverse it and split by space. This allows popping from the end.
+      if (typeof lineData[lineIdx] === "string") {
+        lineData[lineIdx] = lineData[lineIdx].split(" ").reverse();
+      }
+
+      extractedData = lineData[lineIdx].pop(); // Get the last item.
+
+      // If the current line is now empty, advance to the next line.
+      if (!lineData[lineIdx].length) {
+        this._currentLineIndex++;
+      }
+
+      // Return as string or convert to number.
+      return returnAsString ? extractedData : +extractedData;
+    },
+
+    // Reads an entire line and splits it into items.
+    readLineItems: function(returnAsString) {
+      var lineContent = this._sourceLines[this._currentLineIndex++]; // Get line and advance index.
+      var items = lineContent.split(" ");
+
+      // Return as strings or convert all items to numbers.
+      return returnAsString ? items : items.map(valStr => +valStr);
+    },
+
+    // Reads 'count' lines, splitting each into items, forming a matrix.
+    readMatrix: function(count, returnAsString) {
+      var matrixRows = this._sourceLines.slice(this._currentLineIndex, this._currentLineIndex += count);
+      var processedMatrix = matrixRows.map(rowStr => rowStr.split(" "));
+
+      // Return as strings or convert all inner items to numbers.
+      return returnAsString ? processedMatrix : processedMatrix.map(row => row.map(itemStr => +itemStr));
+    },
+
+    // Reads 'count' lines, returning each line as a single item.
+    readLinesAsNumbers: function(count, returnAsString) {
+      var rawLines = this._sourceLines.slice(this._currentLineIndex, this._currentLineIndex += count);
+
+      // Return as strings or convert each line to a number.
+      return returnAsString ? rawLines : rawLines.map(lineStr => +lineStr);
     }
-
-    parsedValue = linesArr[linePtr].pop(); // Get the last element
-
-    // If the current line is now empty, advance to the next line
-    if (!linesArr[linePtr].length) {
-      this._currentLineIndex++;
-    }
-
-    // Return as string or convert to number
-    return returnAsString ? parsedValue : +parsedValue;
   };
 
-  /**
-   * Reads an entire line of space-separated values.
-   * Advances the line pointer.
-   * @param {boolean} asStrings If true, returns values as strings; otherwise, as numbers.
-   * @returns {Array<string|number>} An array of parsed values.
-   */
-  StreamParser.prototype.readLineValues = function(asStrings) {
-    var lineData = this._sourceLines[this._currentLineIndex++].split(" ");
-    return asStrings ? lineData : lineData.map(valStr => +valStr);
-  };
-
-  /**
-   * Reads a block of 'numRows' lines, parsing each into an array of values.
-   * Advances the line pointer by 'numRows'.
-   * @param {number} numRows The number of lines to read.
-   * @param {boolean} asStrings If true, returns values as strings; otherwise, as numbers.
-   * @returns {Array<Array<string|number>>} A 2D array representing the matrix.
-   */
-  StreamParser.prototype.fetchGrid = function(numRows, asStrings) {
-    var gridData = this._sourceLines
-      .slice(this._currentLineIndex, (this._currentLineIndex += numRows))
-      .map(lineStr => lineStr.split(" "));
-
-    return asStrings ?
-      gridData :
-      gridData.map(row => row.map(cellStr => +cellStr));
-  };
-
-  /**
-   * Reads a block of 'numLines' raw lines without further splitting.
-   * Advances the line pointer by 'numLines'.
-   * @param {number} numLines The number of lines to read.
-   * @param {boolean} asStrings If true, returns lines as strings; otherwise, attempts conversion to number.
-   * @returns {Array<string|number>} An array of raw line content.
-   */
-  StreamParser.prototype.readRawLines = function(numLines, asStrings) {
-    var lineContent = this._sourceLines.slice(
-      this._currentLineIndex,
-      (this._currentLineIndex += numLines)
-    );
-    return asStrings ? lineContent : lineContent.map(content => +content);
-  };
-
-  return createReader;
+  return createParser; // Expose the factory function.
 })();
 
-/* Initialize the input parser with data from standard input */
-var dataHandler = INPUT_PROCESSOR(
-  require("fs").readFileSync("/dev/stdin", "UTF-8")
-);
+// Initialize the input reader with content from standard input.
+var inputReader = INPUT_PARSER(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-/**
- * Implements a Disjoint Set Union (DSU) data structure with path compression and union by size.
- * @class
- */
+// Disjoint Set Union (Union-Find) data structure.
 function DisjointSet(elementCount) {
-  // _parentArray[i] stores the parent of i, or -(size) if i is a root.
-  this._parentArray = Array(elementCount + 1).fill(-1);
+  // Initialize parent array: -1 indicates a root, and its absolute value is the size of the set.
+  this.parentOrSize = Array(elementCount + 0x1).fill(-0x1);
 }
 
 DisjointSet.prototype = {
-  /**
-   * Finds the representative (root) of the set containing the given element.
-   * Applies path compression during traversal.
-   * @param {number} itemIndex The index of the element.
-   * @returns {number} The representative of the set.
-   */
-  findRepresentative: function(itemIndex) {
-    if (this._parentArray[itemIndex] < 0) {
-      return itemIndex;
+  // Finds the root of the set containing 'elementIdx' with path compression.
+  findRoot: function(elementIdx) {
+    if (this.parentOrSize[elementIdx] < 0) {
+      return elementIdx; // 'elementIdx' is a root.
     }
-    // Path compression: set parent directly to the root
-    return (this._parentArray[itemIndex] = this.findRepresentative(
-      this._parentArray[itemIndex]
-    ));
+    // Path compression: set parent directly to the root.
+    return this.parentOrSize[elementIdx] = this.findRoot(this.parentOrSize[elementIdx]);
   },
 
-  /**
-   * Checks if two elements belong to the same set.
-   * @param {number} firstItem The index of the first element.
-   * @param {number} secondItem The index of the second element.
-   * @returns {boolean} True if they are in the same set, false otherwise.
-   */
-  areConnected: function(firstItem, secondItem) {
-    return (
-      this.findRepresentative(firstItem) === this.findRepresentative(secondItem)
-    );
+  // Checks if two elements 'nodeA' and 'nodeB' are in the same set.
+  areConnected: function(nodeA, nodeB) {
+    return this.findRoot(nodeA) === this.findRoot(nodeB);
   },
 
-  /**
-   * Merges the sets containing two given elements.
-   * Uses union by size heuristic.
-   * @param {number} nodeA The index of the first element.
-   * @param {number} nodeB The index of the second element.
-   */
+  // Unites the sets containing 'nodeA' and 'nodeB'.
   unionSets: function(nodeA, nodeB) {
-    // Find representatives of both elements
-    nodeA = this.findRepresentative(nodeA);
-    nodeB = this.findRepresentative(nodeB);
+    nodeA = this.findRoot(nodeA); // Get root of nodeA's set.
+    nodeB = this.findRoot(nodeB); // Get root of nodeB's set.
 
-    // If they are already in the same set, do nothing
     if (nodeA === nodeB) {
-      return;
+      return; // Already in the same set, nothing to do.
     }
 
-    // Union by size: attach smaller tree to root of larger tree
-    if (this._parentArray[nodeA] >= this._parentArray[nodeB]) {
-      // nodeA's set is smaller or equal in size (more negative value means larger size)
-      this._parentArray[nodeB] += this._parentArray[nodeA]; // Add size of A to B
-      this._parentArray[nodeA] = nodeB; // Make B the parent of A
+    // Union by size/rank heuristic. Attach smaller tree under larger tree.
+    if (this.parentOrSize[nodeA] >= this.parentOrSize[nodeB]) {
+      // nodeB's tree is larger or equal (more negative value means larger size).
+      this.parentOrSize[nodeB] += this.parentOrSize[nodeA]; // Update size of new root.
+      this.parentOrSize[nodeA] = nodeB; // Make nodeB the parent of nodeA.
     } else {
-      // nodeB's set is smaller
-      this._parentArray[nodeA] += this._parentArray[nodeB]; // Add size of B to A
-      this._parentArray[nodeB] = nodeA; // Make A the parent of B
+      // nodeA's tree is larger.
+      this.parentOrSize[nodeA] += this.parentOrSize[nodeB]; // Update size of new root.
+      this.parentOrSize[nodeB] = nodeA; // Make nodeA the parent of nodeB.
     }
   },
 
-  /**
-   * Gets the size of the set containing the given element.
-   * @param {number} memberIndex The index of an element in the set.
-   * @returns {number} The number of elements in the set.
-   */
-  getSetSize: function(memberIndex) {
-    return -this._parentArray[this.findRepresentative(memberIndex)];
-  },
+  // Returns the size of the set containing 'elementIdx'.
+  getSetSize: function(elementIdx) {
+    return -this.parentOrSize[this.findRoot(elementIdx)]; // Size is the negative of the root's value.
+  }
 };
 
-/* Output the result of the main computation */
-console.log(calculateConnectivity());
+// Output the result of the main problem-solving function.
+console.log(solveProblem());
 
-/**
- * Main function to solve the connectivity problem.
- * Calculates the number of connected pairs in a graph as edges are removed in reverse.
- * @returns {string} The final results joined by newlines.
- */
-function calculateConnectivity() {
-  // Read number of nodes (vertices) and edges from input
-  var numVertices = dataHandler.fetchScalar();
-  var numConnections = dataHandler.fetchScalar();
+// Main function to solve the connectivity problem.
+function solveProblem() {
+  var numElements = inputReader.readNextItem(); // Read N, the number of elements.
+  var numOperations = inputReader.readNextItem(); // Read M, the number of operations (edges).
+  var operationPairs = inputReader.readMatrix(numOperations); // Read M pairs of elements.
 
-  // Read all edge pairs (u, v)
-  var connectionPairs = dataHandler.fetchGrid(numConnections);
+  var resultArray = Array(numOperations); // Array to store the number of unconnected pairs at each step.
+  var disjointSetInstance = new DisjointSet(numElements); // Initialize Disjoint Set Union structure.
 
-  // Array to store the count of connected pairs at each step
-  var connectivityResults = Array(numConnections);
+  // The initial number of unconnected pairs before any operations are considered.
+  // This is for the state *before* the last operation is removed.
+  resultArray[numOperations - 0b1] = numElements * (numElements - 0x1) / 0x2;
 
-  // Initialize a Disjoint Set Union structure for the nodes
-  var componentTracker = new DisjointSet(numVertices);
+  // Iterate backwards through the operations (edges).
+  // This simulates adding edges one by one, starting from an empty graph.
+  for (var opIndex = numOperations - 0x1; opIndex > 0x0; opIndex--) {
+    var currentPair = operationPairs[opIndex];
+    var firstNode = currentPair[0x0];
+    var secondNode = currentPair[0x1];
 
-  // Initially, before any edges are "removed" (i.e., all edges are present),
-  // the graph is fully connected if it were a complete graph.
-  // The problem implies we're calculating connected pairs *after* removing edges in reverse.
-  // So, starting from all edges present, the number of connected pairs is numVertices * (numVertices - 1) / 2.
-  // The algorithm processes edges from last to first, effectively adding them back.
-  // So, connectivityResults[i-1] represents the state *before* edge 'i' was added.
-  // The last element (index numConnections-1) corresponds to the state *after* the last edge is added,
-  // which means all edges are present.
-  connectivityResults[numConnections - 1] =
-    (numVertices * (numVertices - 1)) / 2;
-
-  // Iterate through the edges in reverse order (from last to first)
-  // This simulates adding edges one by one and calculating connectivity.
-  for (var edgeIdx = numConnections - 1; edgeIdx > 0; edgeIdx--) {
-    var u = connectionPairs[edgeIdx][0];
-    var v = connectionPairs[edgeIdx][1];
-
-    // If the two nodes of the current edge are already in the same component
-    if (componentTracker.areConnected(u, v)) {
-      // No change in connectivity, so the count remains the same as the previous step
-      connectivityResults[edgeIdx - 1] = connectivityResults[edgeIdx];
+    // Check if the two nodes are already connected in the current DSU state.
+    if (disjointSetInstance.areConnected(firstNode, secondNode)) {
+      // If they are already connected, adding this edge doesn't change the number of unconnected pairs.
+      resultArray[opIndex - 0x1] = resultArray[opIndex];
     } else {
-      // If the nodes are in different components, adding this edge will merge them.
-      // The number of connected pairs removed by merging is (size of u's component * size of v's component).
-      var productOfComponentSizes =
-        componentTracker.getSetSize(u) * componentTracker.getSetSize(v);
+      // If they are not connected, uniting them will reduce the number of unconnected pairs.
+      var sizeOfSetA = disjointSetInstance.getSetSize(firstNode);
+      var sizeOfSetB = disjointSetInstance.getSetSize(secondNode);
+      var productOfSizes = sizeOfSetA * sizeOfSetB;
 
-      // Subtract the newly formed pairs from the total connected pairs
-      connectivityResults[edgeIdx - 1] =
-        connectivityResults[edgeIdx] - productOfComponentSizes;
+      // The number of unconnected pairs decreases by (sizeA * sizeB) when these two sets merge.
+      resultArray[opIndex - 0x1] = resultArray[opIndex] - productOfSizes;
 
-      // Perform the union operation to merge the components
-      componentTracker.unionSets(u, v);
+      // Perform the union operation.
+      disjointSetInstance.unionSets(firstNode, secondNode);
     }
   }
 
-  // Join the results with newline characters and return
-  return connectivityResults.join("\n");
+  // Join the results with newline characters for output.
+  return resultArray.join("\n");
 }

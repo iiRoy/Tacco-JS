@@ -1,16 +1,19 @@
 const fileSystemModule = require('fs');
-const rawDataAcquisition = fileSystemModule.readFileSync('/dev/stdin', 'utf8');
-const processedLines = rawDataAcquisition.trim().split('\n');
+const rawInputData = fileSystemModule.readFileSync('/dev/stdin', 'utf8');
 
-const generatedSegments = processedLines
-  .filter(dataLine => dataLine !== '0 0' && dataLine.trim() !== '')
-  .map(dimensionString => dimensionString.split(' ').map(Number))
-  .map(([numRows, numCols]) => {
-    const singleRowPattern = '#'.repeat(numCols);
-    const multiRowBlock = (singleRowPattern + '\n').repeat(numRows);
-    return multiRowBlock + '\n';
-  });
+const inputSegments = rawInputData.trim().split('\n');
 
-const compositeResult = generatedSegments.join('');
+const processedContentUnits = inputSegments
+    .filter(currentLineSegment => currentLineSegment !== '0 0')
+    .map(dimensionSpecification => {
+        const [heightValue, widthValue] = dimensionSpecification.split(' ').map(Number);
 
-console.log(compositeResult);
+        const rowPattern = '#'.repeat(widthValue);
+        const blockSection = (rowPattern + '\n').repeat(heightValue);
+        
+        return blockSection;
+    });
+
+const finalRenderedOutput = processedContentUnits.map(unit => unit + '\n').join('');
+
+console.log(finalRenderedOutput);

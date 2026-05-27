@@ -1,107 +1,79 @@
-function FindNthSteppingNumber(rawInputData) {
-    // Parse the input string to get the desired rank (K) of the stepping number.
-    const desiredRank = parseInt(rawInputData, 10);
+const getDigitAt = (numString, index) => Number(numString[index]);
+const getPowerOfTen = (exponent) => 10 ** exponent;
 
-    // Helper function to extract a digit from a number string at a given index.
-    // Index 0 is the leftmost digit.
-    const getNumericDigit = (numString, index) => parseInt(numString[index], 10);
+function ProcessInput(rawInputData) {
+    const targetCount = parseInt(rawInputData);
+    let currentNumberCandidate = 9;
+    let foundRunNumberCount = 9;
 
-    // Helper function to calculate powers of 10.
-    const powerOfTen = (exponent) => Math.pow(10, exponent);
+    while (foundRunNumberCount < targetCount) {
+        currentNumberCandidate++;
 
-    // Early exit for single-digit numbers.
-    // All single-digit numbers (0-9) are stepping numbers.
-    // If the desired rank is 1-9, the number itself is the answer.
-    if (desiredRank < 10) {
-        console.log(desiredRank);
-        return;
-    }
+        // Capture the state of the number and its first two digits at the start of this iteration
+        // These initial digits are used for the conditional checks, even if currentNumberCandidate is modified later.
+        const initialNumberString = String(currentNumberCandidate);
+        const initialFirstDigit = getDigitAt(initialNumberString, 0);
+        const initialSecondDigit = getDigitAt(initialNumberString, 1); // Safe as currentNumberCandidate >= 10 here
 
-    // Helper function to determine if a given number is a "stepping number".
-    // A stepping number has adjacent digits that differ by at most 1.
-    const isNumberStepping = (numberToCheck) => {
-        const numStr = String(numberToCheck);
-        // Single-digit numbers are inherently stepping numbers.
-        if (numStr.length === 1) {
-            return true;
+        // First modification block: if the second digit is significantly larger than the first
+        // Original condition: a - b < -1  (equivalent to b > a + 1)
+        if (initialFirstDigit - initialSecondDigit < -1) {
+            // The calculation itself uses the *current* state of currentNumberCandidate
+            // (which is the value after the increment at the top of the loop).
+            const numStrForFirstCalc = String(currentNumberCandidate);
+            const numLenForFirstCalc = numStrForFirstCalc.length;
+            const firstDigitForFirstCalc = getDigitAt(numStrForFirstCalc, 0);
+
+            currentNumberCandidate = (firstDigitForFirstCalc + 1) * getPowerOfTen(numLenForFirstCalc - 1);
         }
 
-        // Iterate through adjacent pairs of digits.
-        for (let digitPosition = 0; digitPosition < numStr.length - 1; digitPosition++) {
-            const currentDigit = getNumericDigit(numStr, digitPosition);
-            const nextDigit = getNumericDigit(numStr, digitPosition + 1);
+        // Second modification block: if the first digit is significantly larger than the second
+        // Original condition: a - b > 1 (equivalent to a > b + 1)
+        if (initialFirstDigit - initialSecondDigit > 1) {
+            // This calculation also uses the *current* state of currentNumberCandidate,
+            // which might have been modified by the previous 'if' block.
+            const numStrForSecondCalc = String(currentNumberCandidate);
+            const numLenForSecondCalc = numStrForSecondCalc.length;
+            const firstDigitForSecondCalc = getDigitAt(numStrForSecondCalc, 0);
 
-            // If the absolute difference between adjacent digits is greater than 1,
-            // it's not a stepping number.
-            if (Math.abs(currentDigit - nextDigit) > 1) {
-                return false;
-            }
+            const baseValue = firstDigitForSecondCalc * getPowerOfTen(numLenForSecondCalc - 1);
+            const adjustmentValue = (firstDigitForSecondCalc - 1) * getPowerOfTen(numLenForSecondCalc - 2);
+
+            // This part extracts the "second digit" for the original 'tmp3' logic
+            // by taking the first digit of the number without its leading digit.
+            const remainingDigitsPart = currentNumberCandidate - baseValue;
+            const remainingDigitsFirstChar = String(remainingDigitsPart)[0];
+            const remainingDigitsFirstValue = Number(remainingDigitsFirstChar);
+
+            const remainderTerm = remainingDigitsFirstValue * getPowerOfTen(numLenForSecondCalc - 2);
+
+            currentNumberCandidate = baseValue + adjustmentValue + (currentNumberCandidate - baseValue - remainderTerm);
         }
-        // If all adjacent pairs satisfy the condition, it is a stepping number.
-        return true;
-    };
 
-    // Initialize the count of stepping numbers found so far.
-    // All numbers from 0 to 9 (10 numbers) are stepping numbers.
-    let foundSteppingNumbersCount = 9; // We start counting from 9 because 0-9 are already handled/counted.
-    // Initialize the current number being evaluated.
-    // We start checking from 9, as the loop will increment it to 10 for the first check.
-    let currentCandidateValue = 9;
+        // After potential modifications, check if the currentNumberCandidate is a valid run number
+        let isCurrentNumberARunNumber = true;
+        const finalNumberString = String(currentNumberCandidate);
+        const finalNumberLength = finalNumberString.length;
 
-    // Continue searching until we have found the desired rank of stepping numbers.
-    while (foundSteppingNumbersCount < desiredRank) {
-        // Increment to the next integer to evaluate.
-        currentCandidateValue++;
-
-        // Convert the current number to a string for digit-based operations.
-        const candidateAsString = String(currentCandidateValue);
-        const candidateLength = candidateAsString.length;
-
-        // Apply optimizations to skip large blocks of non-stepping numbers,
-        // similar to the original code's heuristic jumps.
-        if (candidateLength > 1) { // Optimizations apply only to multi-digit numbers.
-            const firstDigitVal = getNumericDigit(candidateAsString, 0);
-            const secondDigitVal = getNumericDigit(candidateAsString, 1);
-
-            // Optimization 1: If the second digit is too large relative to the first (e.g., 13, 24).
-            // This means 'firstDigitVal' followed by 'secondDigitVal' is an invalid prefix.
-            // We can jump to the next block of numbers starting with (firstDigitVal + 1)
-            // followed by zeros. E.g., from 13x -> 200...
-            if (secondDigitVal >= firstDigitVal + 2) {
-                currentCandidateValue = (firstDigitVal + 1) * powerOfTen(candidateLength - 1);
-                continue; // Skip the full stepping number check for this 'jumped' number.
-            }
-
-            // Optimization 2: If the first digit is too large relative to the second (e.g., 31, 40).
-            // This means 'firstDigitVal' followed by 'secondDigitVal' is an invalid prefix.
-            // We can jump to a number that starts with 'firstDigitVal' and has
-            // (firstDigitVal - 1) as its second digit, preserving the remaining digits.
-            // E.g., from 312 -> 322.
-            if (firstDigitVal >= secondDigitVal + 2) {
-                // Construct the new number:
-                // 1. The block representing the first digit (e.g., 300 for 312).
-                const firstDigitBlock = firstDigitVal * powerOfTen(candidateLength - 1);
-                // 2. The block representing the adjusted second digit (e.g., 20 for 312, where 2 is 3-1).
-                const adjustedSecondDigitBlock = (firstDigitVal - 1) * powerOfTen(candidateLength - 2);
-                // 3. The remainder of the number (digits from the third position onwards, e.g., 2 for 312).
-                const remainingDigits = currentCandidateValue % powerOfTen(candidateLength - 2);
-
-                currentCandidateValue = firstDigitBlock + adjustedSecondDigitBlock + remainingDigits;
-                continue; // Skip the full stepping number check for this 'jumped' number.
+        for (let digitIndex = 0; digitIndex < finalNumberLength - 1; digitIndex++) {
+            const digitOne = getDigitAt(finalNumberString, digitIndex);
+            const digitTwo = getDigitAt(finalNumberString, digitIndex + 1);
+            if (Math.abs(digitOne - digitTwo) > 1) {
+                isCurrentNumberARunNumber = false;
+                break;
             }
         }
 
-        // If no optimization jump occurred, or if the number is single-digit,
-        // perform the full check.
-        if (isNumberStepping(currentCandidateValue)) {
-            foundSteppingNumbersCount++; // Increment the count if it's a stepping number.
+        if (isCurrentNumberARunNumber) {
+            foundRunNumberCount++;
         }
     }
 
-    // Once the loop terminates, currentCandidateValue holds the desired N-th stepping number.
-    console.log(currentCandidateValue);
+    if (targetCount >= 10) {
+        console.log(currentNumberCandidate);
+    } else {
+        console.log(targetCount);
+    }
 }
 
-// Standard competitive programming input reading.
-// Reads the entire content of '/dev/stdin' as a UTF-8 string and passes it to the main function.
-FindNthSteppingNumber(require("fs").readFileSync("/dev/stdin", "utf8"));
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,27 +1,18 @@
-/*
- * This routine handles the entire incoming data stream.
- * The 'incomingStream' parameter holds the complete raw text.
- */
-const ProcessData = function (incomingStream) {
-    // The initial line array is formed by splitting the stream at newline characters.
-    // We then proceed by only considering the very first segment.
-    let parsedSegments = incomingStream.split('\n');
-    let targetString = parsedSegments[0];
+function ProcessData(incomingText) {
+  // The entire input data is initially in 'incomingText'.
+  incomingText = incomingText.split("\n"); // Divide the input by newline characters into an array.
+  incomingText = incomingText[0]; // Retain only the first line of the input.
 
-    let finalConcatenation = ""; // A buffer to accumulate characters.
-    // Displaying the primary processing string.
-    console.log(targetString);
+  var finalOutput = ""; // Initialize an empty string to accumulate characters.
+  console.log(incomingText); // Print the first line of the input to the console.
 
-    // Iterate through the target string, selecting characters with an odd index (0-based)
-    // or rather, characters at positions 1, 3, 5... (1-based loop counter).
-    for (let charIndex = 0; charIndex < targetString.length; charIndex += 2) {
-        finalConcatenation += targetString[charIndex];
-    }
+  // Iterate through the characters of the first line, selecting every other character.
+  for (var counter = 1; counter <= incomingText.length; counter = counter + 2) {
+    finalOutput += incomingText[counter - 1]; // Append the character at the current 0-indexed position to the result.
+  }
 
-    // Output the final accumulated string.
-    console.log(finalConcatenation);
-};
+  console.log(finalOutput); // Display the final constructed string.
+}
 
-// This section handles reading from standard input and invoking the primary processing function.
-// It should not be modified to ensure proper execution environment.
-ProcessData(require("node:fs").readFileSync("/dev/stdin", { encoding: "utf8" }));
+// The following line should not be altered (it handles reading from standard input and invoking the main processing function).
+ProcessData(require("fs").readFileSync("/dev/stdin", "utf8"));

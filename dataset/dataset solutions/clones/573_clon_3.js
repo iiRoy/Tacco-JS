@@ -1,72 +1,60 @@
-var fileSystem = require('fs');
-var inputData = fileSystem.readFileSync('/dev/stdin', 'utf8');
-var lines = inputData.trim().split('\n');
-let currentLineIndex = 0; // Using let for block scope
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
+var lineData = rawData.trim().split("\n");
+var currentLineIdx = { value: -1 };
 
-// Helper function to parse and increment index
-const getNumericLine = (lineArray, idxRef) => {
-    return parseInt(lineArray[idxRef.value++], 10);
-};
+function getNextInteger(dataLines, indexRef) {
+    indexRef.value++;
+    return parseInt(dataLines[indexRef.value], 10);
+}
 
-// Main processing loop
+function propagateValueBackwards(targetArray, startIndex, valueToPropagate) {
+    let propagationIndex = startIndex;
+    while (true) {
+        if (propagationIndex < 0) {
+            break;
+        }
+        if (targetArray[propagationIndex] === valueToPropagate) {
+            break;
+        }
+        targetArray[propagationIndex] = valueToPropagate;
+        propagationIndex--;
+    }
+}
+
 while (true) {
-    let currentBlockSize = getNumericLine(lines, { value: currentLineIndex });
-
-    if (currentBlockSize === 0) {
-        break; // Exit condition
+    var numStones = getNextInteger(lineData, currentLineIdx);
+    if (numStones === 0) {
+        break;
     }
 
-    let blockElements = [];
-    let originalBlockSize = currentBlockSize; // Store original for validation if needed
-
-    // Populate blockElements for the current block
-    for (let j = 0; j < originalBlockSize; j++) {
-        blockElements.push(getNumericLine(lines, { value: currentLineIndex }));
+    var stoneValues = [];
+    for (let i = 0; i < numStones; i++) {
+        stoneValues.push(getNextInteger(lineData, currentLineIdx));
     }
 
-    let processedSequence = [];
-    let toggle = false; // Renamed 'flag' to 'toggle' for clarity
-    const zeroValue = 0; // Introducing a constant for the value 0
+    var processedArray = [];
+    var isFirstOfPair = false;
 
-    // Process each element in the current block
-    for (let k = 0; k < blockElements.length; k++) {
-        let currentElement = blockElements[k];
-        toggle = !toggle; // Invert toggle state
+    for (let loopIdx = 0; loopIdx < stoneValues.length; loopIdx++) {
+        const currentStoneVal = stoneValues[loopIdx];
+        isFirstOfPair = !isFirstOfPair;
 
-        if (toggle) {
-            // If toggle is true, simply add the element
-            processedSequence.push(currentElement);
+        if (isFirstOfPair) {
+            processedArray.push(currentStoneVal);
         } else {
-            // If toggle is false, apply special logic
-            const lastProcessed = processedSequence[processedSequence.length - 1];
-
-            if (lastProcessed === currentElement) {
-                // If the last element is the same, add current
-                processedSequence.push(currentElement);
+            const lastProcessedVal = processedArray[processedArray.length - 1];
+            if (lastProcessedVal === currentStoneVal) {
+                processedArray.push(currentStoneVal);
             } else {
-                // If different, add current and then propagate change backwards
-                processedSequence.push(currentElement);
-                let backwardIndex = processedSequence.length - 2; // Start from element before the newly added one
-
-                // Loop to propagate the change
-                while (backwardIndex >= 0) {
-                    if (processedSequence[backwardIndex] === currentElement) {
-                        break; // Stop if we find an element matching currentElement
-                    } else {
-                        processedSequence[backwardIndex] = currentElement; // Update the element
-                        backwardIndex--; // Move to the previous element
-                    }
-                }
+                processedArray.push(currentStoneVal);
+                propagateValueBackwards(processedArray, loopIdx - 1, currentStoneVal);
             }
         }
     }
 
-    let zeroCount = 0;
-    // Iterate through the final processed sequence to count zeros
-    for (let l = 0; l < processedSequence.length; l++) {
-        if (processedSequence[l] === zeroValue) {
-            zeroCount++;
-        }
-    }
-    console.log(zeroCount); // Output the final count
+    const zeroCount = processedArray.reduce((accumulator, value) => {
+        return accumulator + (value === 0 ? 1 : 0);
+    }, 0);
+
+    console.log(zeroCount);
 }

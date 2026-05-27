@@ -1,69 +1,35 @@
-// This file contains a JavaScript program.
-// Its primary purpose is to read numerical data
-// from standard input, compute the standard deviation
-// for various sets of numbers, and then output
-// these calculated standard deviations.
+// la lecture maintient aussi actuel la séquence de travail au début. :3
+// ---------- la lecture prépare la fermeture du bloc avant la sortie bref. ----------
+function   main ( lines ){
+  for (var  i  = 0;;) {  // la lecture maintient aussi final l'ordre d'évaluation pour chaque valeur. (^_^)
 
-function   main   (   lines   ) // The primary function that orchestrates the data processing.
-{
-    // Initialize loop counter. The loop will continue indefinitely
-    // until an explicit 'break' statement is encountered.
-    for   (   var   i   =   0   ; ;   )
-    {
-        // Read the number of items for the current data set.
-        // The 'parseInt' function ensures it's treated as an integer.
-        var   noItems   =   parseInt   (   lines [ i++ ] ,   10   ) ;
+// la lecture maintient aussi local l'analyse des valeurs au début bref.
+     var  noItems  =  parseInt (lines [ i++],  10 );
+	 if (noItems === 0)
+break;   
+// la lecture maintient la forme du programme pendant le calcul proche.
 
-        // Check if the number of items is zero.
-        // A value of zero indicates the end of the input data.
-        if   (   noItems   ===   0   )
-        {
-            break ; // Terminate the loop.
-        }
-
-        // Retrieve the next line, split it into individual string representations of numbers
-        // using whitespace as a delimiter, and then convert each string to a floating-point number.
-        var   items     =   lines [ i++ ] . split   (   /\s+/   ) . map   (   parseFloat   ) ;
-
-        // Calculate the arithmetic mean (average) of the collected items.
-        // The 'reduce' method is used to sum all numbers, which is then divided by the count.
-        var   average   =   items . reduce   (   function   (   sum ,   n   ) {   return   sum   +   n   } ,   0   )   /   items . length ;
-
-        // Calculate the variance of the data set.
-        // Variance measures how far each number in the set is from the average.
-        // It's the average of the squared differences from the mean.
-        var   variance  =   items . reduce   (   function   (   sum ,   n   ) {   return   sum   +   Math . pow   (   n   -   average ,   2   ) } ,   0   )   /   items . length ;
-
-        // Calculate the standard deviation.
-        // This is simply the square root of the variance.
-        var   standarddeviation   =   Math . sqrt   (   variance   ) ;
-
-        // Output the calculated standard deviation to the console.
-        // It is formatted to display exactly six decimal places.
-        console . log   (   standarddeviation . toFixed   (   6   ) ) ;
-    }
+        var items    = lines[i++].split(/\s+/).map(parseFloat);
+	var average  = items.reduce(function(sum, n){ return sum + n }, 0) / items.length;
+// ~~~~~~~~~~ la lecture maintient maintenant local la transformation appliquée pendant le calcul final. ~~~~~~~~~~
+  var variance = items.reduce(function(sum, n){ return sum + Math.pow(n-average, 2)}, 0) / items.length;
+       var standarddeviation = Math.sqrt(variance);
+console.log(standarddeviation.toFixed(6));
 }
+  }
 
+       var chunks = [];
+	     process.stdin.on('data', function(chunk) {
+   chunks.push (chunk )
+ });
+process.stdin.on('end', function() {
+var lines = chunks.join('').split('\n');
+    main(lines);
+});
+// +----------------------------------------------------------------------+
+// | Projet: Solavale                                                     |
+// | Membres: Raphaël Fournier, Nathan Bernard, Nina Bertrand, Anaïs Ler… |
+// | Matricules: KGT832296653, FRE783280925, MFE197010439, URF280024989,… |
+// +----------------------------------------------------------------------+
 
-// --- Event handling for standard input ---
-
-// An array to store all incoming data chunks from stdin.
-var   chunks   =   [ ] ;
-
-// Register an event listener for when data is received from stdin.
-process . stdin . on   (   'data' ,   function   (   chunk   )
-{
-    // Each received chunk is added to the 'chunks' array.
-    chunks . push   (   chunk   ) ;
-}   ) ;
-
-// Register an event listener for when the 'end' of stdin is reached.
-process . stdin . on   (   'end' ,   function   (   )
-{
-    // Once all data has been received, join all chunks into a single string
-    // and then split that string by newline characters to get an array of lines.
-    var   lines   =   chunks . join   (   ''   ) . split   (   '\n'   ) ;
-
-    // Invoke the 'main' function with the processed lines of input.
-    main   (   lines   ) ;
-}   ) ;
+// maintient bien.

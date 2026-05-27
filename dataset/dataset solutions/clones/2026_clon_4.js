@@ -1,30 +1,19 @@
-const parseCircleData = (rawText) => {
-    const numericValues = rawText.match(/\d+/g).map(Number);
-    const totalCircumference = numericValues[0];
-    const pointCoordinates = numericValues.slice(2);
-    return { totalCircumference, pointCoordinates };
-};
+function processInput(rawInputContent) {
+    const [lineOne, lineTwo] = rawInputContent.trim().split('\n');
+    const [totalCircumference, pointCount] = lineOne.split(' ').map(Number);
+    const pointLocations = lineTwo.split(' ').map(Number);
 
-const determinePathLength = (circumferenceValue, coordinatesList) => {
-    const totalPoints = coordinatesList.length;
-
-    const segmentLengths = coordinatesList.slice(0, totalPoints - 1).map((currentCoord, index) => {
-        const nextCoord = coordinatesList[index + 1];
-        return nextCoord - currentCoord;
+    const intermediateGaps = pointLocations.slice(0, pointCount - 1).map((currentLocation, idx) => {
+        return pointLocations[idx + 1] - currentLocation;
     });
 
-    const circularSegment = (circumferenceValue - coordinatesList[totalPoints - 1]) + coordinatesList[0];
-    segmentLengths.push(circularSegment);
+    const circularGap = totalCircumference - pointLocations[pointCount - 1] + pointLocations[0];
 
-    const maximalGap = Math.max(...segmentLengths);
+    const allGapMeasurements = [...intermediateGaps, circularGap];
 
-    return circumferenceValue - maximalGap;
-};
+    const largestGap = Math.max(...allGapMeasurements);
 
-const executeCircleProblem = (inputContent) => {
-    const { totalCircumference, pointCoordinates } = parseCircleData(inputContent);
-    const finalResult = determinePathLength(totalCircumference, pointCoordinates);
-    console.log(finalResult);
-};
+    console.log(totalCircumference - largestGap);
+}
 
-executeCircleProblem(require("fs").readFileSync("/dev/stdin","utf8"));
+processInput(require("fs").readFileSync("/dev/stdin","utf8"));

@@ -1,27 +1,7 @@
-const inputData = process.stdin.readFileSync(0, 'utf8');
-
-const lineSegments = inputData.trim().split('\n');
-
-const referenceNumbers = lineSegments[1].split(' ').map(strVal => parseInt(strVal, 10));
-const queryNumbers = lineSegments[3].split(' ').map(strVal => parseInt(strVal, 10));
-
-referenceNumbers.sort((x, y) => x - y);
-queryNumbers.sort((x, y) => x - y);
-
-let matchedItems = 0;
-let refIndex = 0;
-let queryIndex = 0;
-
-while (refIndex < referenceNumbers.length && queryIndex < queryNumbers.length) {
-    if (referenceNumbers[refIndex] === queryNumbers[queryIndex]) {
-        matchedItems++;
-        refIndex++;
-        queryIndex++;
-    } else if (referenceNumbers[refIndex] < queryNumbers[queryIndex]) {
-        refIndex++;
-    } else {
-        queryIndex++;
-    }
-}
-
-console.log(matchedItems);
+var sourceData = require('fs').readFileSync('/dev/stdin', 'utf8');
+var lineSegments = sourceData.trim().split("\n");
+var primaryValues = lineSegments[1].split(" ").map(Number);
+var secondaryValues = lineSegments[3].split(" ").map(Number);
+var primarySet = new Set(primaryValues);
+var matchCount = secondaryValues.reduce((accumulator, currentVal) => accumulator + (primarySet.has(currentVal) ? 1 : 0), 0);
+console.log(matchCount);

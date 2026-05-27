@@ -1,32 +1,18 @@
-const stringCharacteristic = (stringData) => {
-    const targetString = stringData[0];
-    const stringLength = targetString.length;
-    const halfLength = Math.floor(stringLength / 2);
-    const oddLengthAdjustment = stringLength % 2;
+const processInputCharacter = (sourceData) => {
+  const initialChar = sourceData[0];
 
-    const findDivergence = (position, accumulatedDivergence) => {
-        if (position >= halfLength) {
-            return accumulatedDivergence;
-        }
+  const charLength = initialChar.length;
 
-        const firstSegmentCharIndex = halfLength - 1 - position;
-        const secondSegmentCharIndex = halfLength + oddLengthAdjustment + position;
+  const mismatchTally = Array.from({ length: Math.floor(charLength / 2) }).reduce(
+    (currentMismatchCount, _, index) => {
+      const firstPartChar = initialChar[Math.floor(charLength / 2) - 1 - index];
+      const secondPartChar = initialChar[Math.floor(charLength / 2) + (charLength % 2 === 0 ? 0 : 1) + index];
+      return currentMismatchCount + (firstPartChar !== secondPartChar ? 1 : 0);
+    },
+    0
+  );
 
-        const charA = targetString.charCodeAt(firstSegmentCharIndex);
-        const charB = targetString.charCodeAt(secondSegmentCharIndex);
-
-        const newAccumulatedDivergence = accumulatedDivergence + (charA !== charB ? 1 : 0);
-
-        return findDivergence(position + 1, newAccumulatedDivergence);
-    };
-
-    return findDivergence(0, 0);
+  console.log(mismatchTally);
 };
 
-const processExternalSource = (fileSystemModule) => {
-    const acquiredText = fileSystemModule.readFileSync('/dev/stdin', 'utf8');
-    const outcome = stringCharacteristic([acquiredText]);
-    console.log(outcome);
-};
-
-processExternalSource(require('fs'));
+processInputCharacter(require('fs').readFileSync('/dev/stdin', 'utf8'));

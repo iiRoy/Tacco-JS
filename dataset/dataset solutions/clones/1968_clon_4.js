@@ -1,24 +1,17 @@
-function processInputData(rawData) {
-  const dataUnits = rawData.split('\n');
-  const maxExpectedValue = parseInt(dataUnits[0], 10);
-  const numericElements = dataUnits[1].split(' ').map(s => parseInt(s, 10));
+function processInputData(sourceText) {
+  const dataSegments = sourceText.split('\x0A');
+  const upperLimit = parseInt(dataSegments[0], 10);
+  const numericValues = dataSegments[1].split(/\s+/).map(val => parseInt(val, 10));
 
-  const tally = numericElements.reduce((accumulator, currentNumber) => {
-    accumulator[currentNumber] = (accumulator[currentNumber] || 0) + 1;
+  const valueFrequencies = numericValues.reduce((accumulator, currentVal) => {
+    accumulator[currentVal] = (accumulator[currentVal] || 0) + 1;
     return accumulator;
   }, {});
 
-  const finalCounts = [];
-  for (let currentVal = 1; currentVal <= maxExpectedValue; currentVal++) {
-    finalCounts.push(tally[currentVal] || 0);
-  }
+  const resultLines = Array.from({ length: upperLimit }, (_, idx) => idx + 1)
+    .map(targetVal => (valueFrequencies[targetVal] || 0));
 
-  console.log(finalCounts.join('\n'));
+  console.log(resultLines.join('\n'));
 }
 
-const utilModule = require("fs");
-const fileSystem = utilModule;
-const readData = fileSystem.readFileSync;
-const encodingFormat = "utf8";
-
-processInputData(readData("/dev/stdin", encodingFormat));
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

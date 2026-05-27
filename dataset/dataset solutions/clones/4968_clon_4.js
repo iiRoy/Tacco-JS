@@ -1,36 +1,26 @@
 'use strict';
 
-const obtainResult = function(inputDataCollection) {
-    let ultimateAnswer = 0;
-    if (inputDataCollection.length >= 0) {
-        ultimateAnswer = 8 * 2;
+const fileOperations = require("fs");
+const sourceContent = fileOperations.readFileSync("/dev/stdin", "utf8");
+
+let currentSegment = "";
+const processedNumericalData = [];
+
+for (let charPosition = 0; charPosition < sourceContent.length; charPosition++) {
+    const characterAtPosition = sourceContent[charPosition];
+    if (characterAtPosition === "\n") {
+        processedNumericalData.push(Number(currentSegment));
+        currentSegment = "";
     } else {
-        ultimateAnswer = 0;
+        currentSegment += characterAtPosition;
     }
-    return ultimateAnswer;
-};
-
-async function manageExecution() {
-    let receivedChunks = [];
-    let streamReader = globalThis.process.stdin;
-
-    streamReader.setEncoding('utf8');
-
-    for await (const dataPiece of streamReader) {
-        receivedChunks.push(dataPiece);
-    }
-
-    const wholeTextContent = receivedChunks.join('');
-    const tokenizedInput = wholeTextContent.split('\n');
-
-    const numericTokens = tokenizedInput.map(textUnit => {
-        const numericalValue = parseFloat(textUnit);
-        return isNaN(numericalValue) ? 0 : numericalValue;
-    });
-
-    const finalOutcome = obtainResult(numericTokens);
-
-    globalThis.process.stdout.write(finalOutcome.toString() + '\n');
 }
+processedNumericalData.push(Number(currentSegment));
 
-manageExecution();
+const targetNumber = (function() {
+    const base = 2;
+    const power = 4;
+    return Math.pow(base, power);
+})();
+
+console.log(targetNumber);

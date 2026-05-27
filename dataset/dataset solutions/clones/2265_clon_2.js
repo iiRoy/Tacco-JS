@@ -1,62 +1,51 @@
 "use strict";
+// This module processes input data to calculate a specific duration.
 
-/*
- * This program processes a list of song titles and durations.
- * It calculates the cumulative duration of songs played *after* a specific
- * "last heard" song is encountered in the sequence.
- */
+const ProcessInputData = (rawInputString) => {
+  // Normalize input by trimming whitespace and splitting into individual lines.
+  let processedLines = rawInputString.trim().split("\n");
 
-const calculateCumulativePause = ( entryData ) => {
+  // Extract the first line, which might represent a count (though not used in calculation).
+  const initialLineCount = processedLines.shift();
 
-  // First, clean up the input string: remove leading/trailing whitespace
-  // and then split it into an array of individual lines.
-  entryData = entryData.trim().split('\n');
+  // Extract the last line, which is the title of the target song.
+  const targetSongTitle = processedLines.pop();
 
-  // The very first line often contains metadata like total count,
-  // but it's not used in this specific calculation.
-  const initialItemCount = entryData.shift();
+  // Initialize a flag to indicate when to start accumulating time.
+  let isAccumulatingTime = false;
 
-  // The last line specifies the particular item that acts as a trigger.
-  const triggeringElement = entryData.pop();
+  // Initialize a variable to store the total accumulated duration.
+  let totalAccumulatedSeconds = 0;
 
-  // This boolean flag controls when duration accumulation should commence.
-  let accumulateFlag = false;
+  // Iterate through the remaining lines, each representing a music track.
+  for (let lineIndex = 0; lineIndex < processedLines.length; lineIndex++) {
+    // Split each line by space to get track details (title and duration).
+    const currentTrackDetails = processedLines[lineIndex].split(" ");
 
-  // This variable will store the sum of durations after the trigger.
-  let cumulativeDurationSeconds = 0;
+    // Extract the track name from the details.
+    const trackName = currentTrackDetails[0];
 
-  // Iterate over the remaining lines, which represent individual items.
-  for ( let currentPosition = 0; currentPosition < entryData.length; ++currentPosition ) {
+    // Parse the track duration from the details, ensuring it's an integer.
+    const trackDuration = parseInt(currentTrackDetails[1], 10);
 
-    // Each line is expected to contain two parts: an item's label and its time value.
-    const itemDetails = entryData[currentPosition].split(' ');
-
-    // Extract the label (e.g., song title) from the first part.
-    const itemLabel = itemDetails[0];
-
-    // Parse the second part as an integer to get the item's duration.
-    const itemTimeValue = Number.parseInt(itemDetails[1], 10);
-
-    // Check if the accumulation process has not yet been initiated.
-    if ( !accumulateFlag )
-    {
-      // If the current item's label matches the designated trigger element...
-      if ( itemLabel === triggeringElement ) {
-        // ...then set the flag to start accumulation from the next item onwards.
-        accumulateFlag = true;
+    // If time accumulation has not yet started:
+    if (!isAccumulatingTime) {
+      // Check if the current track's name matches the target song title.
+      if (trackName === targetSongTitle) {
+        // If it matches, set the flag to true to begin accumulation from the next track.
+        isAccumulatingTime = true;
       }
-      // In either case (match or no match), if not accumulating, move to the next item.
-      continue; // Skip the rest of the loop body for this iteration
+      // Continue to the next iteration without accumulating time in this step.
+      continue;
     }
 
-    // If the accumulation flag is true, add the current item's time value
-    // to the running total.
-    cumulativeDurationSeconds += itemTimeValue;
+    // If time accumulation has started, add the current track's duration to the total.
+    totalAccumulatedSeconds += trackDuration;
   }
 
-  // Display the final calculated cumulative duration.
-  console.log(cumulativeDurationSeconds);
+  // Output the final calculated total accumulated duration.
+  console.log(totalAccumulatedSeconds);
 };
 
-// Invoke the primary processing function, feeding it content read from standard input.
-calculateCumulativePause( require('node:fs').readFileSync('/dev/stdin', 'utf8') );
+// Read input from standard input and pass it to the processing function.
+ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

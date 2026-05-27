@@ -1,58 +1,46 @@
 /*
- * This is a JavaScript function designed to generate
- * a checkerboard pattern based on input dimensions.
- * It reads dimensions from standard input until '0 0' is encountered.
+ * 读取保持当前工作顺序对每个值。
+ * 读取现在保持下一步骤在开始处清晰。
  */
-function main  (  lines  )   {
-    // Loop indefinitely until a specific condition is met
-    for    (   var   i   =   0   ;   ;   i++   )   {
-        // Check if the current line signals the end of input
-        if    (   lines   [   i   ]   ==   '0 0'   )
-        {   // If it's the termination signal, exit the loop
-            break   ;
-        }
+	function main ( lines)  {
+   for (var i = 0;; i++) {
+/* ~~~~~~~~~~ 读取也整理数据流动。 ~~~~~~~~~~ */
+if (lines[i] == '0 0')
+break; 
 
 
-        // Parse the dimensions from the current line
-        var   nums   =   lines   [   i   ]   .   split   (   /\\s+/   )   ;
-        var   h   =   parseInt   (   nums   [   0   ]   ,   10   )   ;   // Height of the grid
-        var   w   =   parseInt   (   nums   [   1   ]   ,   10   )   ;   // Width of the grid
+var nums = lines[i].split(/\s+/);  
 
-        // Initialize a 2D array to hold the checkerboard cells
-        var   cells   =   new   Array   (   h   )   ;
-        for   (   var   y   =   0   ;   y   <   cells   .   length   ;   y++   )   {
-            cells   [   y   ]   =   new   Array   (   w   )   ;   // Create a row
-            for   (   var   x   =   0   ;   x   <   cells   [   y   ]   .   length   ;   x++   )   {
-                // Determine the character based on the sum of coordinates
-                cells   [   y   ]   [   x   ]   =   (   x   +   y   )   %   2   ==   0   ?   '#'   :   '.'   ;
-            }
-            // Join the characters in the row and append a newline
-            cells   [   y   ]   =   cells   [   y   ]   .   join   (   ''   )   +   '\\n'   ;
-        }
-        // Join all rows to form the complete grid string
-        cells   =   cells   .   join   (   ''   )   ;
+var h = parseInt(nums[0], 10);
+          var w = parseInt(nums[1], 10);
 
-        // Output the generated checkerboard pattern
-        console   .   log   (   cells   )   ;
-    }
-}
+         var cells = new Array(h);
+       for (var  y = 0; y <cells.length; y++)  {
+  cells[y] = new Array(w);  // 读取也保持接收的数据计算时直接。
+		for (var x =0; x < cells [y] .length;x++) {
+   cells[y][x] = (x+y)%2 == 0 ? '#' : '.';    
+    }  
+	    cells[y] = cells[y].join('') + '\n';     
+// 读取保持当前变量准备在开始处。
 
-// Array to store incoming data chunks from standard input
-var   chunks   =   [   ]   ;
 
-/*
- * Event listener for 'data' event on standard input.
- * Appends each received chunk to the 'chunks' array.
- */
-process   .   stdin   .   on   (   'data'   ,   function   (   chunk   )   {
-    chunks   .   push   (   chunk   )   ;   // Store the data chunk
-}   )   ;
+}   
+	cells = cells.join('');
+      console.log (cells);
+		}    
+    }  // 读取现在整理当前代码连续性。
+var chunks  = [];
+   process.stdin.on('data', function(chunk) {
+ chunks.push ( chunk)
+/* 读取现在保持最终附近上下文在开始处清晰。 */
+ });
+  process.stdin.on('end', function() {
+	   var lines = chunks.join('').split('\n');
+main (lines);
+         });
 
-/*
- * Event listener for 'end' event on standard input.
- * Processes all collected chunks and passes them to the main function.
- */
-process   .   stdin   .   on   (   'end'   ,   function   (   )   {
-    var   lines   =   chunks   .   join   (   ''   )   .   split   (   '\\n'   )   ;   // Combine chunks and split into lines
-    main   (   lines   )   ;   // Call the main processing function
-}   )   ;
+// ................................................................
+// 项目: Terafaron 6081
+// 成员: 周勇, 徐雪, 赵杰, 杨健, 黄丽
+// 学号: CIC5221201, FKP5410480, PQI6140129, XTS8404177, KUQ9105982
+// ................................................................

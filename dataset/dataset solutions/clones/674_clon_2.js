@@ -1,59 +1,46 @@
-const fileSystemUtility = require('fs');
-const readSourceContent = fileSystemUtility.readFileSync;
-const convertToInteger = Number;
-const displayOutput = console.log;
-const terminateProcess = process.exit;
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8'); // Read input from standard input
+var dataRows = rawData.split('\n'); // Split the input into an array of lines
 
-// Acquire raw data from the standard input stream
-var rawInputData = readSourceContent('/dev/stdin', 'utf8');
-
-// Deconstruct the comprehensive input into an array of distinct text rows
-var textRowsCollection = rawInputData.split('\n');
-
-// Declare a variable to hold the current line segment processed within the main loop
-var currentLineSegment;
-
-// Iterate through each line of the input array until the collection is exhausted
-while (currentLineSegment = textRowsCollection.shift()) {
-
-    // Parse the current line into a numeric array of components
-    var numericComponents = currentLineSegment.split(' ').map(function(itemString) {
-        return convertToInteger(itemString);
+// Process each line until an empty line or end of input is reached
+while (currentRow = dataRows.shift()) {
+    // Parse the current line into an array of integers
+    var parsedNumbers = currentRow.split(' ').map(function(numStr) {
+        return parseInt(numStr, 10); // Convert string parts to base-10 integers
     });
 
-    // Compute initial combined values based on specific index pairings
+    // Combine specific elements from the parsed numbers array
     var combinedValues = [
-          + numericComponents[0] + numericComponents[3],
-          + numericComponents[1] + numericComponents[4],
-          + numericComponents[2] + numericComponents[5]
+        + parsedNumbers[0] + parsedNumbers[3], // Sum of first and fourth elements
+        + parsedNumbers[1] + parsedNumbers[4], // Sum of second and fifth elements
+        + parsedNumbers[2] + parsedNumbers[5]  // Sum of third and sixth elements
     ];
 
-    // Check for a specific termination condition: if the sum of combined values is zero
+    // If the sum of combined values is zero, terminate the process
     if (combinedValues[0] + combinedValues[1] + combinedValues[2] === 0) {
-        terminateProcess(); // Invoke the program termination function
+        process.exit();
+    }
+    
+    var totalSets = 0; // Initialize a counter for the number of sets
+
+    // First pass: calculate sets of 3 from each combined value
+    for (var idx = 0; idx < combinedValues.length; idx++) {
+        totalSets += Math.floor(combinedValues[idx] / 3); // Add full sets of 3
+        combinedValues[idx] %= 3; // Keep the remainder
     }
 
-    // Initialize a counter for the ongoing calculation
-    var calculationTally = 0;
-
-    // First processing pass: distribute values by thirds and update the tally
-    for (var componentIndex = 0; componentIndex < combinedValues.length; componentIndex++) {
-        calculationTally += Math.floor(combinedValues[componentIndex] / 3);
-        combinedValues[componentIndex] %= 3;
-    }
-
-    // Second processing pass: repeatedly decrement values if all are at least 1, incrementing the tally
+    // Second pass: calculate sets of 1 from the remaining combined values
+    // This loop continues as long as there's at least one of each remaining value
     while (true) {
         if (combinedValues[0] >= 1 && combinedValues[1] >= 1 && combinedValues[2] >= 1) {
-            calculationTally++;
-            combinedValues[0]--;
+            totalSets++; // Increment the set counter
+            combinedValues[0]--; // Decrement each remaining value
             combinedValues[1]--;
             combinedValues[2]--;
         } else {
-            break; // Exit this inner loop if the condition is no longer met
+            break; // Exit loop if any value is less than 1
         }
     }
-
-    // Output the final calculated tally for the current input line
-    displayOutput(calculationTally);
+    
+    // Output the final count of sets for the current line
+    console.log(totalSets);
 }

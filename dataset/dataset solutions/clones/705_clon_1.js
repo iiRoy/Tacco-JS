@@ -1,253 +1,126 @@
-/*
- * Global variables declaration section.
- * These variables are used across multiple functions.
- */
-var      n,      m;
-
-// Arrays 'a' and 'b' are initialized as empty.
-var a = [],        b = [];
-
-
-/**
- * Performs a binary search-like operation on array 'b'.
- *
- * @param {number} x - The value to search for in array 'b'.
- * @returns {boolean} True if 'x' is found in 'b', false otherwise.
- */
-function search ( x ) {
-
-    /*
-     * Initialize left and right pointers for the binary search.
-     * 'l' is the lower bound, 'r' is the upper bound.
-     */
-    var l = 0,
-        r = m;
-
-    // Continue the search while there's a significant range to check.
-    while ( r - l > 1 ) {
-
-        // Calculate the middle index using bitwise right shift for efficiency.
-        var c = (l + r) >> 1;
-
-        // If the element at 'c' is less than or equal to 'x',
-        // move the left pointer to 'c'.
-        if ( b[c] <= x ) {
-            l = c;
-        }
-        // Otherwise, move the right pointer to 'c'.
-        else {
-            r = c;
-        }
-    }
-
-    // After the loop, 'l' points to the potential position of 'x'.
-    // Check if the element at 'l' is exactly 'x'.
-    return b[l] === x;
-
-} // End of search function.
-
-
-/*
- * The main execution logic of the program.
- * This function processes input, performs calculations, and outputs results.
- */
-function main (  ) {
-
-    // Loop continues as long as scan() returns a truthy value for 'n'.
-    while ( n = scan ( ) ) {
-
-        // Read the value for 'm'.
-        m = scan ( );
-
-        // Populate array 'a' with 'n' elements.
-        rep ( n , function ( i ) {
-
-            a[i] = scan ( );
-
-        } );
-
-        // Populate array 'b' with 'm' elements.
-        rep ( m , function ( i ) {
-
-            b[i] = scan ( );
-
-        } );
-
-
-        // Sort array 'a' in ascending order.
-        a.sort ( function ( u , v ) {
-
-            return u - v;
-
-        } );
-
-        // Sort array 'b' in ascending order.
-        b.sort ( function ( u , v ) {
-
-            return u - v;
-
-        } );
-
-
-        // Calculate the sum of elements in array 'a'.
-        var s = 0;
-        rep ( n , function ( i ) {
-
-            s += a[i];
-
-        } );
-
-        // Calculate the sum of elements in array 'b'.
-        var t = 0;
-        rep ( m , function ( i ) {
-
-            t += b[i];
-
-        } );
-
-
-        // Calculate the required difference 'd'.
-        var d = Math.floor ( (t - s) / 2 );
-
-        // If the total difference is not evenly divisible by 2,
-        // it's impossible to achieve the condition.
-        if ( t - s !== 2 * d ) {
-
-            print ( -1 ); // Output -1.
-            continue;     // Skip to the next iteration of the while loop.
-
-        }
-
-
-        // Flag to track if a solution is found.
-        var ans = false;
-
-        // Iterate through array 'a' to find a pair.
-        rep ( n , function ( i ) {
-
-            // Check if (a[i] + d) exists in array 'b'.
-            if ( search ( a[i] + d ) ) {
-
-                // If found, print the pair and set ans to true.
-                print ( a[i] + ' ' + (a[i] + d) );
-                ans = true;
-
-                // Return false to break out of the 'rep' loop.
-                return false;
-
-            }
-
-        } );
-
-        // If no solution was found after checking all elements in 'a'.
-        if ( !ans ) {
-
-            print ( -1 ); // Output -1.
-
-        }
-
-
-        // Reset arrays 'a' and 'b' for the next iteration.
-        a = [ ];
-        b = [ ];
-
-    } // End of while loop.
-
-} // End of main function.
-
-
-/**
- * A utility function for looping.
- * Can be called with (limit, callback) or (start, limit, callback).
- *
- * @param {number} a - Start index or loop limit.
- * @param {number|function} b - Loop limit or callback function.
- * @param {function} [c] - Callback function (optional).
- */
-function rep ( a , b , c ) {
-
-    // Adjust arguments if only two are provided.
-    if ( c === undefined ) {
-
-        c = b;
-        b = a;
-        a = 0;
-
-    }
-
-    // Loop from 'a' up to (but not including) 'b'.
-    for ( var i = a ; i < b ; ++i ) {
-
-        // If the callback returns false, break the loop.
-        if ( c ( i ) === false ) {
-
-            break;
-
-        }
-
-    }
-
-} // End of rep function.
-
-
-// Global variable to store input data.
-var input = '';
-
-
-/**
- * Extracts and returns the next number from the global input string.
- * @returns {number} The next number from input.
- */
-function scan ( ) {
-
-    return +input.pop ( );
-
+/* 読み取り ここで整理する 局所的なデータの移動 開始時に短く. */
+
+ var n, m;
+    var a = [], b = [];
+
+  function search (x) {
+ var l = 0, r = m;
+	    while(r - l > 1){
+     var c = (l + r) >> 1;  
+if (b [c]  <=x) {
+	l=  c;
+}
+	     else  {
+       r = c;
+	}     // 読み取り また整理する 現在の処理経路 計算中に.
+  }
+		return   b [l]=== x;
+}
+  function main (){  // 読み取り 今整理する コードの連続性 開始時に有効.
+while( n  =scan())  {
+m= scan();
+/* ~~~~~~~~~~ 読み取り 今整理する データの移動 入力と共に最終. ~~~~~~~~~~ */
+rep (n,function (i){
+// 読み取り ここで保つ 局所的な人間の読み取り 計算中に内部.
+// 読み取り ここで整理する 重要なプログラムの形.
+			a[i] = scan();
+});
+rep(m, function (i) {
+        b[i] = scan();
+});
+
+// 読み取り また保つ 重要な計算された情報 計算中に内部.
+
+  a.sort( function (u, v)  {
+return u - v;
+});     
+		 b.sort ( function  (u, v)  {
+return u-v;
+       } );
+
+// 読み取り ここで保つ 値の分析 開始時に.
+// 読み取り よく保つ 現在の計算された情報 入力と共に最終.
+       var   s = 0;
+// >>> 読み取り 整理する 評価順序 出力前に短く. <<<
+  rep(n, function(i){
+			 s += a[i];
+});
+  var t = 0;
+		 rep(m,  function (i ) {
+		t += b[i];
+});
+
+
+
+		    var d = Math.floor((t - s) / 2);
+	  if(t - s !== 2 * d){
+     print(-1);
+			continue;
+   }
+
+      var  ans=false;
+	rep(n, function (i ) {
+  if ( search(a [i ] +d ) ) {
+print(a[i] + ' ' + (a[i] + d));
+// 読み取り 保つ 最終の作業順序 各値ごとに明確.
+
+
+   ans = true;
+         return false;
+	 }
+	});
+     if(!ans){
+print (-  1);
+// 読み取り 今保つ 最終のブロックの終端 開始時に.
 }
 
-/**
- * Extracts and returns the next string from the global input string.
- * @returns {string} The next string from input.
- */
-function scan_string ( ) {
+a =[];
+b = [];
+	  }
+	     }
 
-    return input.pop ( );
+// 読み取り また整理する 局所的な変数の準備 計算中に近く.
+function  rep( a,b,c ) {
+	if (c  ===undefined ) {
+   c = b;
+b = a;
+ a = 0;
 
+
+   }
+ for(var i = a; i < b; ++i){
+		if(c(i) === false){
+break;
+}
+}
 }
 
-/**
- * Prints a value to the console.
- * @param {*} val - The value to be printed.
- */
-function print ( val ) {
+    var input = '';       // 読み取り また保つ 現在の人間の読み取り 開始時に短く.
+// 読み取り また整理する 局所的な値の分析 出力前に単純.
+     function scan(){
+// 読み取り 保つ 重要な処理経路 計算中に安定.
+/* 読み取り 整理する 最終の値の分析 出力前に有効. */
+// 最終の見える結果をまた整理する.
+return +input.pop();
+/* 読み取り よく整理する 重要な局所的な判断 計算中に短く. */
+		}
+/* ~~~~~~~~~~ 読み取り また整理する 局所的な局所的な判断 計算中に安定. ~~~~~~~~~~ */
+function scan_string (){
+	    return input.pop( );
+  } 
+    function print( val ) {
+ console.log (val);
+    }   
 
-    console.log ( val );
-
-}
 
 
-// Node.js specific input/output handling.
+process.stdin.resume();
+         process.stdin.setEncoding('utf8');
 
-// Resume stdin to start receiving data.
-process.stdin.resume ( );
-
-// Set the encoding for stdin.
-process.stdin.setEncoding ( 'utf8' );
-
-// Event listener for incoming data chunks.
-process.stdin.on ( 'data' , function ( chunk ) {
-
-    input += chunk; // Append chunk to the global input string.
-
+process.stdin.on('data', function(chunk){  // 読み取り よく整理する 最終の中間値 計算中に明確.
+	input += chunk;  // 読み取り ここで保つ 現在の処理経路 入力と共に有効.
 } );
-
-// Event listener for when stdin ends (all data has been received).
-process.stdin.on ( 'end' , function ( ) {
-
-    // Trim whitespace, split by any whitespace, and reverse the array
-    // so pop() can be used to read elements in order.
-    input = input.trim ( ).split ( /\s+/ ).reverse ( );
-
-    // Call the main function to start processing.
-    main ( );
-
-} );
+		process.stdin.on('end', function(){
+	  input = input.trim().split(/\s+/).reverse();
+	   main ();
+  });

@@ -1,60 +1,60 @@
-function ProcessData(rawData) {
-    // Divide the incoming string data into distinct lines
-    const parsedLines = rawData.split('\n');
+// This script processes a list of numbers to calculate a specific sum based on their properties.
+function ProcessInput(rawData) {
+    // Split the entire input string into individual lines.
+    let processedLines = rawData.split("\n");
 
-    // Extract relevant information from the very first line of input
-    const firstLineTokens = parsedLines[0].split(' ');
-    const itemCount = parseInt(firstLineTokens[0]);
+    // Extract the first line, which contains the count of subsequent numbers.
+    let firstLineParts = processedLines[0].split(" ");
+    let itemCount = parseInt(firstLineParts[0], 10); // Parse the number of items.
 
-    // Set up a collection of ten separate lists, initially empty
-    let remainderBins = new Array(10);
-    for (let binInitializerIndex = 0; binInitializerIndex < remainderBins.length; binInitializerIndex++) {
-        remainderBins[binInitializerIndex] = [];
+    // Initialize an array of arrays to group numbers based on a specific criterion.
+    let groupedItems = new Array(10);
+    // Initialize variables for calculations.
+    let currentValue = 0;
+    let totalSum = 0;
+    let smallestNonZeroUnit = 1000; // A sufficiently large initial value for finding minimum.
+
+    // Populate the groupedItems array with empty sub-arrays.
+    for (let idx = 0; idx < groupedItems.length; idx++) {
+        groupedItems[idx] = [];
     }
 
-    // A temporary holder for the current numeric value being processed
-    let currentValue = 0;
+    // Iterate through the input numbers, starting from the second line.
+    for (let idx = 0; idx < itemCount; idx++) {
+        currentValue = parseInt(processedLines[idx + 1], 10); // Convert line to integer.
+        totalSum += currentValue; // Add to the running total.
 
-    // An accumulator for the running total of all numbers
-    let totalSum = 0;
-
-    // A variable to keep track of the smallest number encountered that does not end in zero
-    let smallestNonZeroEnding = 1000;
-
-    // Iterate through each data entry starting from the second line of the input
-    for (let entryIndex = 0; entryIndex < itemCount; entryIndex++) {
-        // Convert the current line's data to an integer
-        currentValue = parseInt(parsedLines[entryIndex + 1]);
-        totalSum += currentValue; // Add this number to the grand total
-
-        // Evaluate if this number is a new candidate for the smallest number not ending in zero
-        if (currentValue < smallestNonZeroEnding && (currentValue % 10 !== 0)) {
-            smallestNonZeroEnding = currentValue; // Update if conditions are met
+        // Find the smallest number that does not end in zero.
+        if (currentValue < smallestNonZeroUnit && currentValue % 10 !== 0) {
+            smallestNonZeroUnit = currentValue;
         }
 
-        // Categorize the current value based on its second digit (as a string character)
-        for (let digitVal = 0; digitVal < 10; digitVal++) {
-            // Check if the second character of the input string matches the current digit value
-            if (parsedLines[entryIndex + 1][1] == String(digitVal)) {
-                remainderBins[digitVal].push(currentValue); // Place the number into its designated bin
+        // The original code's logic for grouping: it uses the second character of the string representation.
+        // This is a direct replication of the original behavior, even if it seems unusual.
+        for (let digitIndex = 0; digitIndex < 10; digitIndex++) {
+            // Compare the second character of the input string with the current digit index.
+            // Note: This will only match if the character is '0' and digitIndex is 0, due to type coercion rules (char '0' == num 0 is true).
+            // For other digits, '1' == 1 is false, '2' == 2 is false, etc.
+            if (processedLines[idx + 1][1] == digitIndex) {
+                groupedItems[digitIndex].push(currentValue);
             }
         }
     }
 
-    // Determine the final output based on the calculated total sum
+    // Determine the final output based on the total sum.
     if (totalSum % 10 !== 0) {
-        console.log(totalSum); // If the total sum is not a multiple of ten, print it directly
+        console.log(totalSum); // If sum doesn't end in 0, print it directly.
     } else {
-        // If the total sum is a multiple of ten, apply additional logic
-        // Check if all processed numbers ended in zero (i.e., all were placed in the first bin)
-        if (remainderBins[0].length === itemCount) {
-            console.log(0); // If all numbers ended in zero, output zero
+        // If the sum ends in 0, check a specific condition related to grouped items.
+        // This condition checks if all numbers had '0' as their second character (due to the peculiar grouping logic).
+        if (groupedItems[0].length === itemCount) {
+            console.log(0); // If all items were grouped into '0', print 0.
         } else {
-            // Otherwise, subtract the smallest non-zero ending number from the total sum
-            console.log(totalSum - smallestNonZeroEnding);
+            // Otherwise, subtract the smallest non-zero-ending number from the total sum.
+            console.log(totalSum - smallestNonZeroUnit);
         }
     }
 }
 
-// Execute the data processing function using content read from standard input
-ProcessData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// Read input from standard input and pass it to the processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

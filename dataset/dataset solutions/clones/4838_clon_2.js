@@ -1,35 +1,50 @@
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
 
-// The incoming content is held within the 'inputData' variable.
-function ComputeDivisibleInstances(inputData) {
-  // Input rows are separated into 'inputSections', with the first in 'primarySection'.
-  const inputSections  = inputData.split('\n');
-  const primarySection = inputSections[0].split(' ');
-  // const secondarySection = inputSections[1].split(' ');
-  // const tertiarySection  = inputSections[2].split(' ');
-  // const quaternarySection = inputSections[3].split(' ');
+// This function serves as the primary entry point for processing the input data.
+// It receives the entire standard input as a single string.
+function ProcessInputData(rawData) {
+  // Divide the raw input string into an array of individual lines.
+  // Each element in 'linesArray' corresponds to one line from the input.
+  const linesArray = rawData.split('\n');
 
-  const initialBoundary = parseInt(primarySection[0], 10);
-  const finalBoundary   = parseInt(primarySection[1], 10);
-  const divisorElement  = parseInt(primarySection[2], 10);
-  // const auxiliaryValue = parseInt(secondarySection[1], 10);
+  // Extract the first line from the array and split it by spaces.
+  // This assumes the first line contains space-separated numerical values.
+  const firstLineParts = linesArray[0].split(' ');
 
-  let finalResult = "placeholder_string";
-  // console.log("Incoming parameters: " + param1 + " " + param2 + " " + param3 + " " + param4);
+  // Convert the string parts of the first line into numerical values.
+  // These represent the starting number, ending number, and the divisor.
+  const startNum = Number(firstLineParts[0]);
+  const endNum = Number(firstLineParts[1]);
+  const divisorVal = Number(firstLineParts[2]);
 
-  // MAIN ALGORITHM //
-  finalResult = 0;
+  // Initialize a variable to hold the final calculated result.
+  // Its initial string value is a placeholder and will be immediately overwritten.
+  let countDivisible = 'placeholder_result';
 
-  for (let currentNumber = initialBoundary; currentNumber <= finalBoundary; currentNumber++) {
-    // console.log("Current iteration value: " + currentNumber);
-    if (currentNumber % divisorElement === 0) {
-      finalResult++;
+  // --- Start of the core calculation logic ---
+
+  // Reset the counter to zero before beginning the iteration.
+  countDivisible = 0;
+
+  // Loop through each integer from 'startNum' up to 'endNum', inclusive.
+  for (let currentNum = startNum; currentNum <= endNum; currentNum++) {
+    // Check if the 'currentNum' is perfectly divisible by 'divisorVal'.
+    // A number is perfectly divisible if the remainder of the division is zero.
+    if (currentNum % divisorVal === 0) {
+      // If divisible, increment the counter.
+      countDivisible++;
     }
   }
 
-  console.log(finalResult);
+  // --- End of the core calculation logic ---
+
+  // Print the final count of divisible numbers to the console.
+  console.log(countDivisible);
 }
 
-// This section must not be modified; it handles reading from standard input and executing the primary function.
-ComputeDivisibleInstances(require("fs").readFileSync("/dev/stdin", "utf8"));
+// The following line is crucial for standard input/output operations.
+// It reads the entire content of /dev/stdin, converts it to UTF-8,
+// and then passes it to the 'ProcessInputData' function.
+// This part should not be altered.
+ProcessInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

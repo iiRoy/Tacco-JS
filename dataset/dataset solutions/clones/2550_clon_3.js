@@ -1,69 +1,39 @@
-// This module provides functionality to forecast the next atmospheric state
-// based on a given initial weather condition.
-function determineSubsequentClimate(climateDataArray) {
-    // Check if the provided data is in an expected format.
-    // A robust system should always validate its inputs.
-    if (!Array.isArray(climateDataArray) || climateDataArray.length === 0) {
-        console.error("ERROR: Input climate data is either missing or malformed. Expected an array.");
-        // In a real application, we might throw an exception or return a specific error code.
-        return "Uncertainty"; // Returning a default 'error' state
-    }
+const weatherTransitionMap = {
+  'Sunny': 'Cloudy',
+  'Cloudy': 'Rainy',
+  'Rainy': 'Sunny'
+};
 
-    // Extract the primary weather observation from the input array.
-    // We assume the first element holds the relevant string.
-    const currentObservation = String(climateDataArray[0]).trim(); // Ensure it's a string and remove whitespace.
-
-    // Define the cyclic progression of weather conditions.
-    // This lookup table replaces the original switch statement,
-    // offering a more data-driven approach (Type III transformation).
-    const climateProgressionMap = {
-        'Sunny': 'Cloudy',
-        'Cloudy': 'Rainy',
-        'Rainy': 'Sunny'
-    };
-
-    let predictedOutcome; // Declare a variable to store the computed next state.
-
-    // Check if the current observation is a recognized state in our progression.
-    if (Object.prototype.hasOwnProperty.call(climateProgressionMap, currentObservation)) {
-        // If recognized, determine the next state from the map.
-        predictedOutcome = climateProgressionMap[currentObservation];
-    } else {
-        // If the input observation is not recognized, log a warning and
-        // default to a standard 'Cloudy' state. This is a form of
-        // graceful degradation or error handling (Type III addition).
-        console.warn(`WARNING: Unrecognized climate observation "${currentObservation}". Defaulting forecast to 'Cloudy'.`);
-        predictedOutcome = 'Cloudy'; // A reasonable default in a cycle.
-    }
-
-    // Output the final predicted climate to the standard output.
-    // Using console.log is a common standard practice in Node.js (Type II/III update).
-    console.log(predictedOutcome);
+function retrieveNextWeather(currentCondition) {
+  // This helper function encapsulates the lookup logic.
+  // If currentCondition is not a key in weatherTransitionMap, it returns undefined.
+  return weatherTransitionMap[currentCondition];
 }
 
-// --- Application Entry Point & Input Handling ---
-// This section handles reading from standard input and invoking the main logic.
-// It is isolated to ensure the core logic is testable independently.
+function processInputForWeatherPrediction(rawInputContent) {
+  // The original code's switch statement uses input[0] as the condition.
+  // When rawInputContent is a string (e.g., "Sunny\n"), rawInputContent[0] is a single character (e.g., 'S').
+  // The 'case' values ('Sunny', 'Cloudy', 'Rainy') are multi-character strings.
+  // Therefore, the original switch statement's cases would never match, and no output would be produced.
+  // To preserve exact observable behavior, this clone must also produce no output.
 
-// Define constants for file operations to improve readability and maintainability.
-const STANDARD_INPUT_SOURCE = "/dev/stdin";
-const FILE_READ_ENCODING = "utf8";
+  const initialInputCharacter = rawInputContent[0];
 
-try {
-    // Read the entire content from the standard input synchronously.
-    // This mimics how competitive programming environments often provide input.
-    const rawInputContent = require("fs").readFileSync(STANDARD_INPUT_SOURCE, FILE_READ_ENCODING);
-
-    // Prepare the input for our function. The original problem implies
-    // the input is a single string, which is then accessed as input[0].
-    // We create an array containing the trimmed string.
-    const preparedInputForPrediction = [rawInputContent.trim()];
-
-    // Execute the core climate prediction logic with the prepared input.
-    determineSubsequentClimate(preparedInputForPrediction);
-} catch (executionError) {
-    // Implement robust error handling for file system operations or other runtime issues.
-    console.error("FATAL ERROR: Could not process input or execute climate prediction.", executionError.message);
-    // In a production system, more sophisticated error reporting would be used.
-    process.exit(1); // Indicate an abnormal termination.
+  // We refactor the switch statement into an if-else if structure.
+  // The conditions are designed to match the original's behavior:
+  // they will only be true if initialInputCharacter is exactly 'Sunny', 'Cloudy', or 'Rainy'.
+  // Since initialInputCharacter is always a single character, these conditions will always be false,
+  // thus ensuring no output, just like the original code.
+  if (initialInputCharacter === 'Sunny') {
+    process.stdout.write(retrieveNextWeather('Sunny'));
+  } else if (initialInputCharacter === 'Cloudy') {
+    process.stdout.write(retrieveNextWeather('Cloudy'));
+  } else if (initialInputCharacter === 'Rainy') {
+    process.stdout.write(retrieveNextWeather('Rainy'));
+  }
+  // No 'else' or default case is needed, as the original had no default behavior
+  // and produced no output if no case matched.
 }
+
+// The input reading mechanism is preserved exactly as in the original.
+processInputForWeatherPrediction(require("fs").readFileSync("/dev/stdin", "utf8"));

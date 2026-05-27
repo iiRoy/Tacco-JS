@@ -1,114 +1,63 @@
-let receivedInputLines = [];
+var inputBuffer = [];
+var ioModule = require('readline');
 
-const inputOutputSystem = require('readline');
-
-// Establish an interface for reading input line by line from standard input.
-const lineStreamHandler = inputOutputSystem.createInterface({
+var inputHandler = ioModule.createInterface({
     input: process.stdin,
-    output: process.stdout, // This output stream is typically for prompts, not directly for this problem.
+    output: process.stdout,
 });
 
-// Register a callback function for every line received from the input stream.
-lineStreamHandler.on('line', (individualLineContent) => {
-    receivedInputLines.push(individualLineContent);
+inputHandler.on('line', function (currentInputLine) {
+    inputBuffer.push(currentInputLine);
 });
 
-// Register a callback function to execute once the input stream has ended.
-lineStreamHandler.on('close', () => {
-    // Define numerical constants that represent loop boundaries and matrix dimensions.
-    const MIN_SEARCH_VALUE = 0;
-    const MAX_SEARCH_VALUE = 100;
-    const REQUIRED_MATRIX_DIM = 3;
-
-    let processedNumericMatrix = [];
-    let hasSolutionBeenFound = false; // A flag to signal if a valid decomposition is identified.
-
-    // Implement a basic guard clause for ensuring the correct number of input lines.
-    if (receivedInputLines.length !== REQUIRED_MATRIX_DIM) {
-        console.error("Input Error: Expected exactly " + REQUIRED_MATRIX_DIM + " lines of data.");
-        process.exit(1); // Terminate the process with an error code.
-    }
-
-    // Iterate through each raw input string to parse it into an array of numbers.
-    for (const textLine of receivedInputLines) {
-        const rowData = textLine.split(" ").map(stringValue => {
-            const numericValue = Number(stringValue);
-            // Validate that each parsed element is indeed a number.
-            if (isNaN(numericValue)) {
-                console.error("Input Error: Non-numeric value detected '" + stringValue + "'.");
-                process.exit(1);
-            }
-            return numericValue;
+inputHandler.on('close', function () {
+    const parseMatrixData = (rawLines) => {
+        return rawLines.map(rowString => {
+            return rowString.split(" ").map(numStr => Number(numStr));
         });
+    };
 
-        // Validate that each row contains the correct number of elements.
-        if (rowData.length !== REQUIRED_MATRIX_DIM) {
-            console.error("Input Error: Each row must contain exactly " + REQUIRED_MATRIX_DIM + " numbers.");
-            process.exit(1);
-        }
-        processedNumericMatrix.push(rowData);
-    }
+    const inputMatrix = parseMatrixData(inputBuffer);
 
-    // The core algorithm attempts to find if the matrix can be represented as M[row][col] = A[col] + B[row].
-    // We iterate through potential values for A[0] (column offset for the first column).
-    for (let currentColumnOffset_A0 = MIN_SEARCH_VALUE; currentColumnOffset_A0 <= MAX_SEARCH_VALUE; currentColumnOffset_A0++) {
-        if (hasSolutionBeenFound) {
-            break; // Exit outer loop early if a solution was already located.
-        }
+    const MAX_ITERATION_VALUE = 100;
+    let hasSolutionBeenFound = false;
 
-        // Calculate potential row offsets B[row] based on the first column of the input matrix M[row][0] and A[0].
-        // B[row] = M[row][0] - A[0]
-        const currentRowOffset_B0 = processedNumericMatrix[0][0] - currentColumnOffset_A0;
-        const currentRowOffset_B1 = processedNumericMatrix[1][0] - currentColumnOffset_A0;
-        const currentRowOffset_B2 = processedNumericMatrix[2][0] - currentColumnOffset_A0;
+    const checkSumEquality = (valA, valB, expectedC) => {
+        return (valA + valB) === expectedC;
+    };
 
-        // Iterate through possible values for A[1] (column offset for the second column).
-        for (let currentColumnOffset_A1 = MIN_SEARCH_VALUE; currentColumnOffset_A1 <= MAX_SEARCH_VALUE; currentColumnOffset_A1++) {
-            if (hasSolutionBeenFound) {
-                break; // Exit middle loop early.
-            }
+    // Iterate for the first component of vector A (A[0])
+    for (let aVal0 = 0; aVal0 <= MAX_ITERATION_VALUE; aVal0++) {
+        // Derive the components of vector B (B[0], B[1], B[2]) using A[0] and the first row of C
+        const bVal0 = inputMatrix[0][0] - aVal0;
+        const bVal1 = inputMatrix[0][1] - aVal0;
+        const bVal2 = inputMatrix[0][2] - aVal0;
 
-            // Perform checks for the second column (index 1) of the matrix.
-            // M[row][1] must equal A[1] + B[row] for all rows.
-            if (currentColumnOffset_A1 + currentRowOffset_B0 !== processedNumericMatrix[0][1]) {
-                continue; // M[0][1] check failed, try next A[1].
-            }
-            if (currentColumnOffset_A1 + currentRowOffset_B1 !== processedNumericMatrix[1][1]) {
-                continue; // M[1][1] check failed, try next A[1].
-            }
-            if (currentColumnOffset_A1 + currentRowOffset_B2 !== processedNumericMatrix[2][1]) {
-                continue; // M[2][1] check failed, try next A[1].
-            }
+        // Iterate for the second component of vector A (A[1])
+        for (let aVal1 = 0; aVal1 <= MAX_ITERATION_VALUE; aVal1++) {
+            // Validate A[1] against the second row of C and derived B values
+            if (!checkSumEquality(aVal1, bVal0, inputMatrix[1][0])) { continue; }
+            if (!checkSumEquality(aVal1, bVal1, inputMatrix[1][1])) { continue; }
+            if (!checkSumEquality(aVal1, bVal2, inputMatrix[1][2])) { continue; }
 
-            // Iterate through possible values for A[2] (column offset for the third column).
-            for (let currentColumnOffset_A2 = MIN_SEARCH_VALUE; currentColumnOffset_A2 <= MAX_SEARCH_VALUE; currentColumnOffset_A2++) {
-                if (hasSolutionBeenFound) {
-                    break; // Exit innermost loop early.
-                }
+            // Iterate for the third component of vector A (A[2])
+            for (let aVal2 = 0; aVal2 <= MAX_ITERATION_VALUE; aVal2++) {
+                // Validate A[2] against the third row of C and derived B values
+                if (!checkSumEquality(aVal2, bVal0, inputMatrix[2][0])) { continue; }
+                if (!checkSumEquality(aVal2, bVal1, inputMatrix[2][1])) { continue; }
+                if (!checkSumEquality(aVal2, bVal2, inputMatrix[2][2])) { continue; }
 
-                // Perform checks for the third column (index 2) of the matrix.
-                // M[row][2] must equal A[2] + B[row] for all rows.
-                if (currentColumnOffset_A2 + currentRowOffset_B0 !== processedNumericMatrix[0][2]) {
-                    continue; // M[0][2] check failed, try next A[2].
-                }
-                if (currentColumnOffset_A2 + currentRowOffset_B1 !== processedNumericMatrix[1][2]) {
-                    continue; // M[1][2] check failed, try next A[2].
-                }
-                if (currentColumnOffset_A2 + currentRowOffset_B2 !== processedNumericMatrix[2][2]) {
-                    continue; // M[2][2] check failed, try next A[2].
-                }
-
-                // If all checks for A[0], A[1], A[2] and derived B[row] values pass, a valid decomposition is found.
+                // If all checks pass, a valid combination is found
+                console.log("Yes");
                 hasSolutionBeenFound = true;
-                break; // Exit the innermost loop immediately.
+                // Exit the event handler immediately
+                return;
             }
         }
     }
 
-    // Output the final determination based on whether a solution was found.
-    if (hasSolutionBeenFound) {
-        console.log("Yes");
-    } else {
+    // If the loops complete without finding a solution
+    if (!hasSolutionBeenFound) {
         console.log("No");
     }
 });

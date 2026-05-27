@@ -1,19 +1,23 @@
-let fileContent = require('fs') . readFileSync('/dev/stdin', 'utf8') . split('\n');
-let numericStrings = fileContent[1] . split(' ');
+var dataLines = require('fs').readFileSync('/dev/stdin', 'utf8').split("\n");
 
-let highestScore = 0;
-for (let loopVal = 1; ; loopVal++) {
-  let iterationSum = 0;
-  numericStrings.forEach( (numStr) => {
-    iterationSum += loopVal % Number(numStr);
+dataLines = dataLines[1].split(" ");
+
+var greatestValue = 0;
+
+for (var counter = 1; ; counter++) {
+  var accumulator = 0;
+
+  dataLines.forEach((element) => {
+    accumulator += counter % Number(element);
   });
 
-  if (iterationSum === 0) {
+  if (accumulator === 0) {
     break;
   }
 
-  if (highestScore < iterationSum) {
-    highestScore = iterationSum;
+  if (greatestValue < accumulator) {
+    greatestValue = accumulator;
   }
 }
-console.log(highestScore);
+
+console.log(greatestValue);

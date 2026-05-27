@@ -1,137 +1,124 @@
-function parseInteger(inputString) {
-  return Number.parseInt(inputString);
+function parseInteger(strVal) {
+  return parseInt(strVal);
 }
 
-
-function parseDecimal(inputStr) {
-  return Number.parseFloat(inputStr);
+function parseFloatNum(strVal) {
+  return parseFloat(strVal);
 }
 
-
-function isEvenNumber(numericVal) {
-  return (numericVal % 2) === 0;
+function isEven(numVal) {
+  return (numVal % 2) === 0;
 }
 
-
-function isOddNumber(numVal) {
+function isOdd(numVal) {
   return (numVal % 2) === 1;
 }
 
-
-Array.prototype.orderNumbersAscending = function() {
-  return this.sort((elemA, elemB) => (elemA - elemB));
+// Extend Array prototype with custom sorting and filtering methods
+Array.prototype.sortAscendingNumbers = function () {
+  return this.sort((valA, valB) => (valA - valB));
 };
 
-
-Array.prototype.orderNumbersDescending = function() {
-  return this.sort((itemA, itemB) => (itemB - itemA));
+Array.prototype.sortDescendingNumbers = function () {
+  return this.sort((valA, valB) => (valB - valA));
 };
 
-
-Array.prototype.orderStringsAscending = function() {
+Array.prototype.sortAscendingStrings = function () {
   return this.sort();
 };
 
-
-Array.prototype.orderStringsDescending = function() {
+Array.prototype.sortDescendingStrings = function () {
   return this.sort().reverse();
 };
 
-
-Array.prototype.removeElement = function(targetValue) {
-  return this.filter(currentElement => currentElement !== targetValue);
+Array.prototype.filterOutElement = function (elementToRemove) {
+  return this.filter(currentElement => currentElement !== elementToRemove);
 };
 
+function processInputData(inputLines) {
+  // Parse the first line for grid dimensions and max steps
+  var parsedDimensions = inputLines[0].split(' ').map(parseInteger);
+  var gridHeight = parsedDimensions[0];
+  var gridWidth = parsedDimensions[1];
+  var maxSteps = parsedDimensions[2];
 
-function executeProgram(inputLines) {
+  var startPosition = []; // Stores [start_row, start_col]
 
-  var dimensionsArray = inputLines[0].split(' ').map(parseInteger);
+  // Create the game grid from input lines, splitting each line into characters
+  var gameGrid = inputLines.slice(1).map(lineStr => lineStr.split(''));
 
-  var gridHeight = dimensionsArray[0];
-  var gridWidth = dimensionsArray[1];
-  var maxSteps = dimensionsArray[2];
-
-  var startCoordinates = [];
-
-  var gameGrid = inputLines.slice(1).map(lineContent => lineContent.split(''));
-
-  gridScanLoop:
-  for (var rowIdx = 0; rowIdx < gridHeight; rowIdx++) {
+  // Find the starting position 'S' within the grid
+  gridSearchLoop: for (var rowIdx = 0; rowIdx < gridHeight; rowIdx++) {
     for (var colIdx = 0; colIdx < gridWidth; colIdx++) {
-      if (gameGrid[rowIdx][colIdx] === 'S_SPOT') {
-        startCoordinates = [rowIdx, colIdx];
-        break gridScanLoop;
+      if (gameGrid[rowIdx][colIdx] === 'S') {
+        startPosition = [rowIdx, colIdx];
+        break gridSearchLoop; // Exit both loops once 'S' is found
       }
     }
   }
 
-
-  function explorePath(currentRow, currentCol, stepCount) {
-    if (stepCount > maxSteps) {
-      return;
+  // Recursive function to explore paths from a given cell
+  function explorePath(currRow, currCol, currentDepth) {
+    // Base cases for stopping recursion
+    if (currentDepth > maxSteps) {
+      return; // Path too long
+    }
+    if (currRow < 0 || gridHeight <= currRow || currCol < 0 || gridWidth <= currCol) {
+      return; // Out of bounds
     }
 
+    var cellValue = gameGrid[currRow][currCol];
+
+    // Check if the current cell can be visited or updated
     if (
-      currentRow < 0 || gridHeight <= currentRow ||
-      currentCol < 0 || gridWidth <= currentCol
+      cellValue === '.' || cellValue === 'S' ||
+      ((typeof cellValue === 'number') && cellValue > currentDepth)
     ) {
-      return;
-    }
+      gameGrid[currRow][currCol] = currentDepth; // Mark cell with current depth
 
-    var cellValue = gameGrid[currentRow][currentCol];
-
-    if (
-      cellValue === 'EMPTY_SPACE' || cellValue === 'S_SPOT' ||
-      ((typeof cellValue === 'number') && cellValue > stepCount)
-    ) {
-      gameGrid[currentRow][currentCol] = stepCount;
-
+      // Schedule exploration of adjacent cells for the next step
       setTimeout(function() {
-        explorePath(currentRow - 1, currentCol, stepCount + 1);
-        explorePath(currentRow + 1, currentCol, stepCount + 1);
-        explorePath(currentRow, currentCol - 1, stepCount + 1);
-        explorePath(currentRow, currentCol + 1, stepCount + 1);
-      }, 0);
+        explorePath(currRow - 1, currCol, currentDepth + 1); // Up
+        explorePath(currRow + 1, currCol, currentDepth + 1); // Down
+        explorePath(currRow, currCol - 1, currentDepth + 1); // Left
+        explorePath(currRow, currCol + 1, currentDepth + 1); // Right
+      }, 0); // Use setTimeout to prevent stack overflow for deep recursion
     }
   }
 
-  explorePath(startCoordinates[0], startCoordinates[1], 0);
+  // Initiate the path exploration from the starting point
+  explorePath(startPosition[0], startPosition[1], 0);
 
-
+  // Function to calculate minimum steps to reach any edge from a cell
   function calculateMinExitSteps(currentH, currentW) {
     var distToBottom = (gridHeight - 1) - currentH;
     var distToTop = currentH;
     var distToRight = (gridWidth - 1) - currentW;
     var distToLeft = currentW;
-
     return Math.min(distToBottom, distToTop, distToRight, distToLeft);
   }
 
+  var minExitPath = Number.POSITIVE_INFINITY; // Initialize with a very large value
 
-  var shortestPath = Infinity;
-
-  gridProcessLoop:
-  for (var rowIterator = 0; rowIterator < gridHeight; rowIterator++) {
-    for (var colIterator = 0; colIterator < gridWidth; colIterator++) {
-      var gridCellData = gameGrid[rowIterator][colIterator];
-
-      if (typeof gridCellData === 'number') {
-        var exitDistance = calculateMinExitSteps(rowIterator, colIterator);
-
-        if (exitDistance === 0) {
-          shortestPath = 1;
-          break gridProcessLoop;
+  // Iterate through the grid to find the minimum steps to exit
+  exitCalculationLoop: for (var rowIdx = 0; rowIdx < gridHeight; rowIdx++) {
+    for (var colIdx = 0; colIdx < gridWidth; colIdx++) {
+      var cellContent = gameGrid[rowIdx][colIdx];
+      // Only consider cells that were reached during exploration (marked with a number)
+      if (typeof cellContent === 'number') {
+        var currentStepCount = calculateMinExitSteps(rowIdx, colIdx);
+        if (currentStepCount === 0) {
+          minExitPath = 1; // If already at an edge, 1 step to exit
+          break exitCalculationLoop; // Found the quickest exit, no need to check further
         }
-
-        shortestPath = Math.min(shortestPath, Math.ceil(exitDistance / maxSteps) + 1);
+        // Calculate steps to exit: (steps to edge / K) + 1 (for the exit move itself)
+        minExitPath = Math.min(minExitPath, Math.ceil(currentStepCount / maxSteps) + 1);
       }
     }
   }
 
-  console.log(shortestPath);
+  console.log(minExitPath); // Output the final minimum steps
 }
 
-
-executeProgram(
-  require("fs").readFileSync("/dev/stdin", "utf8").split('\n').map(eachLine => eachLine.trim())
-);
+// Read input from stdin, split by newlines, trim each line, and pass to main function
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8").split('\n').map(line => line.trim()));

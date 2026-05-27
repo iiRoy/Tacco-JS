@@ -1,13 +1,10 @@
-const processInformation = (rawText) => {
-  const dataTokens = rawText.split(' ');
+function processInputData(sourceText) {
+  const tokenSequence = sourceText.split(' ');
 
-  dataTokens
-    .map((valueUnit, zeroBasedIndex) => ({
-      unitValue: valueUnit,
-      displayPosition: zeroBasedIndex + 1
-    }))
-    .filter(itemRecord => itemRecord.unitValue === '0')
-    .forEach(resultEntry => console.log(resultEntry.displayPosition));
-};
+  tokenSequence
+    .map((segmentValue, segmentIndex) => ({ segmentValue, segmentIndex }))
+    .filter(item => item.segmentValue === '0')
+    .forEach(item => console.log(item.segmentIndex + 1));
+}
 
-processInformation(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,71 +1,67 @@
-"use strict"
-class InputAcquirer {
+"use strict";
+
+class InputSource {
     constructor() {
-        const rawContent = process.stdin.readFileSync(0, "utf8").trim();
-        this.lineBuffer = rawContent.split("\n");
+        this.dataLines = require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");
         this.currentPosition = 0;
-        this.maximumLines = this.lineBuffer.length;
+        this.totalLines = this.dataLines.length;
     }
 
-    moreAvailable() {
-        return this.currentPosition < this.maximumLines;
+    hasMoreEntries() {
+        return this.currentPosition < this.totalLines;
     }
 
-    retrieveNextLine() {
-        if (!this.moreAvailable()) {
-            throw new Error("No more input lines left.");
+    pullEntry() {
+        if (!this.hasMoreEntries()) {
+            throw "ArrayIndexOutOfBoundsException";
         }
-        return this.lineBuffer[this.currentPosition++];
+        return this.dataLines[this.currentPosition++];
     }
 
-    getInteger() {
-        return Number(this.retrieveNextLine());
+    fetchInteger() {
+        return parseInt(this.pullEntry());
     }
 
-    getStringElements() {
-        return this.retrieveNextLine().split(" ");
+    fetchStringArray() {
+        return this.pullEntry().split(" ");
     }
 
-    getIntegerElements() {
-        return this.retrieveNextLine().split(" ").map(val => Number(val));
+    fetchIntegerArray() {
+        return this.pullEntry().split(" ").map(val => parseInt(val));
     }
 
-    getCharacterElements() {
-        return this.retrieveNextLine().split("");
+    fetchCharacterArray() {
+        return this.pullEntry().split("");
     }
 }
 
-const operation = () => {
-    const dataStream = new InputAcquirer();
-    const queryValue = dataStream.getInteger();
-    const upperBoundary = 1000000;
+const inputProcessor = new InputSource();
+const outputResult = (...items) => console.log(...items);
 
-    const compositeRegistry = new Set();
+const executePrimeFinder = () => {
+    const startValue = inputProcessor.fetchInteger();
+    const upperLimit = 1000000;
 
-    compositeRegistry.add(0);
-    compositeRegistry.add(1);
+    const compositeNumbers = new Set([0, 1]);
 
-    for (let num = 4; num < upperBoundary; num += 2) {
-        compositeRegistry.add(num);
+    for (let num = 4; num < upperLimit; num += 2) {
+        compositeNumbers.add(num);
     }
 
-    for (let num = 3; num * num < upperBoundary; num += 2) {
-        if (!compositeRegistry.has(num)) {
-            for (let multiple = num * num; multiple < upperBoundary; multiple += num * 2) {
-                compositeRegistry.add(multiple);
+    for (let currentCandidate = 3; currentCandidate * currentCandidate < upperLimit; currentCandidate += 2) {
+        if (!compositeNumbers.has(currentCandidate)) {
+            for (let multiple = currentCandidate * currentCandidate; multiple < upperLimit; multiple += currentCandidate * 2) {
+                compositeNumbers.add(multiple);
             }
         }
     }
 
-    let resultFound = false;
-    let currentCandidate = queryValue;
-    while (!resultFound && currentCandidate < upperBoundary) {
-        if (!compositeRegistry.has(currentCandidate)) {
-            process.stdout.write(currentCandidate.toString() + "\n");
-            resultFound = true;
+    for (let searchNum = startValue; searchNum < upperLimit; searchNum++) {
+        if (!compositeNumbers.has(searchNum)) {
+            outputResult(searchNum);
+            return;
         }
-        currentCandidate++;
     }
 };
 
-operation();
+executePrimeFinder();

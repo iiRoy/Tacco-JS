@@ -1,145 +1,136 @@
-// Store for the min-priority queue elements
-let elementStore = [],
-    // Current size of the min-heap
-    heapCurrentSize = 0;
+var priorityQueue = [],
+    queueSize = 0; // Initialize heap array and its current size.
+priorityQueue[0] = new Array(2); // Placeholder for 0th index, not used in 1-based indexing.
+priorityQueue[0][0] = -1;
+priorityQueue[0][1] = -1;
 
-// Initialize the first element as a sentinel with dummy values
-elementStore[0] = [null, null];
-elementStore[0][0] = -1;
-elementStore[0][1] = -1;
+/**
+ * Inserts a new element into the min-priority queue (min-heap).
+ * The heap maintains the property that the parent's second element is less than or equal to its children's second elements.
+ * @param {Array<number>} elementToAdd - The element to insert, typically [node_id, distance].
+ */
+function addNodeToQueue(elementToAdd) {
+    priorityQueue[++queueSize] = elementToAdd; // Add new element to the end of the heap.
 
-// Function to add a new item to the priority queue
-function placeElement(itemToInsert) {
-    // Increment heap size and place the new item at the end
-    elementStore[++heapCurrentSize] = itemToInsert;
+    let currentIndex = queueSize; // Start from the newly added element's position.
 
-    // Start with the newly added item's index
-    let currentIndex = heapCurrentSize;
-
-    // Perform up-heap (swim) operation to maintain heap property
-    while (elementStore[currentIndex][1] < elementStore[Math.floor(currentIndex / 2)][1]) {
-        // Swap the current element with its parent
-        let temporaryHolder = elementStore[currentIndex];
-        elementStore[currentIndex] = elementStore[Math.floor(currentIndex / 2)];
-        elementStore[Math.floor(currentIndex / 2)] = temporaryHolder;
-        // Move up to the parent's index
-        currentIndex = Math.floor(currentIndex / 2);
+    // Bubble up the element if its 'distance' is smaller than its parent's 'distance'.
+    while (priorityQueue[currentIndex][1] < priorityQueue[Math.floor(currentIndex / 2)][1]) {
+        // Swap current element with its parent.
+        let tempSwap = priorityQueue[currentIndex];
+        priorityQueue[currentIndex] = priorityQueue[Math.floor(currentIndex / 2)];
+        priorityQueue[Math.floor(currentIndex / 2)] = tempSwap;
+        currentIndex = Math.floor(currentIndex / 2); // Move up to the parent's position.
     }
 }
 
-// Function to remove and return the minimum element from the priority queue
-function removeMinElement() {
-    // If the heap is empty, there's nothing to extract
-    if (heapCurrentSize <= 0)
-        return;
-
-    // The minimum element is always at index 1
-    const extractedValue = elementStore[1];
-
-    // Move the last element to the root and decrement heap size
-    elementStore[1] = elementStore[heapCurrentSize--];
-
-    // Start down-heap (sink) operation from the root
-    let parentIndex = 1;
-    while ((parentIndex * 2 <= heapCurrentSize && elementStore[parentIndex][1] > elementStore[parentIndex * 2][1]) ||
-           (parentIndex * 2 + 1 <= heapCurrentSize && elementStore[parentIndex][1] > elementStore[parentIndex * 2 + 1][1])) {
-
-        // Calculate indices of left and right children
-        let leftChildIndex = parentIndex * 2;
-        let rightChildIndex = parentIndex * 2;
-        // Adjust right child index if it exists
-        if (parentIndex * 2 + 1 <= heapCurrentSize)
-            rightChildIndex++;
-
-        // Determine which child has the smaller value
-        let minChildIdx = elementStore[leftChildIndex][1] <= elementStore[rightChildIndex][1] ? leftChildIndex : rightChildIndex;
-
-        // Swap the parent with the smaller child
-        let swapItem = elementStore[parentIndex];
-        elementStore[parentIndex] = elementStore[minChildIdx];
-        elementStore[minChildIdx] = swapItem;
-
-        // Move down to the child's index
-        parentIndex = minChildIdx;
+/**
+ * Extracts the minimum element (root) from the min-priority queue.
+ * The minimum element is always at index 1.
+ * @returns {Array<number>|undefined} The minimum element, or undefined if the queue is empty.
+ */
+function retrieveMinNode() {
+    if (queueSize <= 0) {
+        return undefined; // Queue is empty.
     }
-    // Return the element that was originally at the root
-    return extractedValue;
+
+    let minElement = priorityQueue[1]; // The minimum element is at the root.
+
+    priorityQueue[1] = priorityQueue[queueSize--]; // Move the last element to the root and decrease heap size.
+
+    let heapIndex = 1; // Start from the root to heapify down.
+    // While the current node has children and violates the heap property.
+    while ((heapIndex * 2 <= queueSize && priorityQueue[heapIndex][1] > priorityQueue[heapIndex * 2][1]) ||
+        (heapIndex * 2 + 1 <= queueSize && priorityQueue[heapIndex][1] > priorityQueue[heapIndex * 2 + 1][1])) {
+
+        let leftChildIdx = heapIndex * 2;
+        let rightChildIdx = heapIndex * 2; // Initialize right child index.
+
+        if (heapIndex * 2 + 1 <= queueSize) {
+            rightChildIdx++; // If right child exists, update its index.
+        }
+
+        // Determine which child has the smaller 'distance'.
+        let minChildIdx = (priorityQueue[leftChildIdx][1] <= priorityQueue[rightChildIdx][1]) ? leftChildIdx : rightChildIdx;
+
+        // Swap current element with the smaller child.
+        let swapVal = priorityQueue[heapIndex];
+        priorityQueue[heapIndex] = priorityQueue[minChildIdx];
+        priorityQueue[minChildIdx] = swapVal;
+        heapIndex = minChildIdx; // Move down to the child's position.
+    }
+    return minElement; // Return the extracted minimum element.
 }
 
+/**
+ * Main function to process graph data and compute shortest paths using a Dijkstra-like algorithm.
+ * @param {string} rawData - The input string containing graph definition.
+ */
+function ProcessGraphData(rawData) {
+    rawData = rawData.split("\n"); // Split input into lines.
+    let nodeCount = parseInt(rawData[0], 10); // First line is the number of nodes.
 
-// Main function to execute the graph algorithm (Dijkstra's)
-function processGraphData(rawDataInput) {
-    // Split the raw input string into lines
-    rawDataInput = rawDataInput.split("\n");
-    // Parse the number of vertices from the first line
-    const numberOfVertices = parseInt(rawDataInput[0], 10);
+    let adjacencyList = new Array(nodeCount); // Adjacency list to store graph.
 
-    // Initialize an adjacency list to represent the graph
-    let connectionMap = new Array(numberOfVertices);
+    // Parse graph input.
+    for (let idx = 0; idx < nodeCount; idx++) {
+        rawData[idx + 1] = rawData[idx + 1].split(" "); // Split each node's line by spaces.
+        let currentNodeIdx = parseInt(rawData[idx + 1][0], 10); // Node index.
+        let neighborCount = parseInt(rawData[idx + 1][1], 10); // Number of neighbors.
+        adjacencyList[currentNodeIdx] = new Array(neighborCount); // Initialize array for neighbors.
 
-    // Loop through each line of input to build the graph
-    for (let currentLineIdx = 0; currentLineIdx < numberOfVertices; currentLineIdx++) {
-        // Split the current line into components (vertex, degree, and edge details)
-        rawDataInput[currentLineIdx + 1] = rawDataInput[currentLineIdx + 1].split(" ");
-        // Parse the source vertex
-        const currentVertexIdentifier = parseInt(rawDataInput[currentLineIdx + 1][0], 10);
-        // Parse the number of outgoing edges from this vertex
-        const edgesFromVertexCount = parseInt(rawDataInput[currentLineIdx + 1][1], 10);
-        // Initialize an array for this vertex's neighbors
-        connectionMap[currentVertexIdentifier] = new Array(edgesFromVertexCount);
-        // Initialize each neighbor entry as an array of two elements (target, weight)
-        for (let edgeIterator = 0; edgeIterator < edgesFromVertexCount; edgeIterator++)
-            connectionMap[currentVertexIdentifier][edgeIterator] = new Array(2);
-        // Populate neighbor details (target vertex and edge weight)
-        for (let edgeIterator = 0; edgeIterator < edgesFromVertexCount; edgeIterator++) {
-            connectionMap[currentVertexIdentifier][edgeIterator][0] = parseInt(rawDataInput[currentLineIdx + 1][edgeIterator * 2 + 2], 10);
-            connectionMap[currentVertexIdentifier][edgeIterator][1] = parseInt(rawDataInput[currentLineIdx + 1][edgeIterator * 2 + 3], 10);
+        // Initialize neighbor entries.
+        for (let subIdx = 0; subIdx < neighborCount; subIdx++) {
+            adjacencyList[currentNodeIdx][subIdx] = new Array(2);
+        }
+
+        // Populate neighbor data (neighbor_node_id, weight).
+        for (let subIdx = 0; subIdx < neighborCount; subIdx++) {
+            adjacencyList[currentNodeIdx][subIdx][0] = parseInt(rawData[idx + 1][subIdx * 2 + 2], 10);
+            adjacencyList[currentNodeIdx][subIdx][1] = parseInt(rawData[idx + 1][subIdx * 2 + 3], 10);
         }
     }
 
-    // Initialize a counter for visited nodes, starting at 1 (for the source node)
-    let visitedNodesCount = 1;
-    // Array to store the shortest distances from the source to all other nodes
-    let shortestPathDistances = new Array(numberOfVertices);
-    // Initialize all distances to a large value (representing infinity)
-    for (let vertexIndex = 0; vertexIndex < numberOfVertices; vertexIndex++)
-        shortestPathDistances[vertexIndex] = 1000000000;
-    // The distance to the source node itself is 0
-    shortestPathDistances[0] = 0;
+    let visitedNodes = 1; // Counter for nodes for which shortest path is finalized.
+    let minDistances = Array(nodeCount); // Array to store shortest distances from source (node 0).
 
-    // Add all edges from the source node (vertex 0) to the priority queue
-    for (let edgeIndex = 0; edgeIndex < connectionMap[0].length; edgeIndex++) {
-        placeElement(connectionMap[0][edgeIndex]);
+    // Initialize all distances to a very large number (infinity).
+    for (let idx = 0; idx < nodeCount; idx++) {
+        minDistances[idx] = 1000000000; // Represents infinity.
+    }
+    minDistances[0] = 0; // Distance to source node (0) is 0.
+
+    // Add neighbors of the source node to the priority queue.
+    for (let idx = 0; idx < adjacencyList[0].length; idx++) {
+        addNodeToQueue(adjacencyList[0][idx]);
     }
 
-    // Main loop for Dijkstra's algorithm
-    while (visitedNodesCount < numberOfVertices) {
-        // Extract the edge with the smallest weight from the priority queue
-        const currentMinEdge = removeMinElement();
+    // Main loop of Dijkstra's algorithm.
+    while (visitedNodes < nodeCount) {
+        let extractedPath = retrieveMinNode(); // Get the node with the smallest distance from the queue.
 
-        // If this node has already been finalized with a shorter path, skip
-        if (shortestPathDistances[currentMinEdge[0]] < 1000000000)
+        // If the extracted node has already been finalized with a shorter path, skip.
+        if (minDistances[extractedPath[0]] < 1000000000) {
             continue;
+        }
 
-        // Finalize the shortest path to this node
-        shortestPathDistances[currentMinEdge[0]] = currentMinEdge[1];
-        // Increment the count of visited nodes
-        visitedNodesCount++;
+        minDistances[extractedPath[0]] = extractedPath[1]; // Finalize the shortest distance for this node.
+        visitedNodes++; // Increment count of finalized nodes.
 
-        // Explore neighbors of the newly finalized node
-        for (let neighborEdgeIdx = 0; neighborEdgeIdx < connectionMap[currentMinEdge[0]].length; neighborEdgeIdx++) {
-            // Update the neighbor's distance by adding the current node's finalized distance
-            connectionMap[currentMinEdge[0]][neighborEdgeIdx][1] += shortestPathDistances[currentMinEdge[0]];
-            // Add the updated neighbor edge to the priority queue
-            placeElement(connectionMap[currentMinEdge[0]][neighborEdgeIdx]);
+        // Explore neighbors of the current node.
+        for (let idx = 0; idx < adjacencyList[extractedPath[0]].length; idx++) {
+            // Calculate potential new distance to neighbor.
+            adjacencyList[extractedPath[0]][idx][1] += minDistances[extractedPath[0]];
+            // Add neighbor to the priority queue with its updated distance.
+            addNodeToQueue(adjacencyList[extractedPath[0]][idx]);
         }
     }
 
-    // Output the shortest distances for each node
-    for (let nodeOutputIndex = 0; nodeOutputIndex < numberOfVertices; nodeOutputIndex++) {
-        console.log(nodeOutputIndex + " " + shortestPathDistances[nodeOutputIndex]);
+    // Output the shortest distances for each node.
+    for (let idx = 0; idx < nodeCount; idx++) {
+        console.log(idx + " " + minDistances[idx]);
     }
 }
 
-// Call the main processing function with input read from standard input
-processGraphData(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Read input from stdin and pass it to the main processing function.
+ProcessGraphData(require("fs").readFileSync("/dev/stdin", "utf8"));

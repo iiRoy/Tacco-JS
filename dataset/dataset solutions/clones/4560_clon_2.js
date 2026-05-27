@@ -1,49 +1,42 @@
-function processInput(rawData) {
-  // Define constants for month groups to make the logic clearer
-  const   GROUP_31_DAYS  =  100; // Identifier for months with 31 days
-  const   GROUP_30_DAYS  =  200; // Identifier for months with 30 days
-  const   GROUP_FEBRUARY =  300; // Identifier for February
+function processInputData(rawInputString) {
+  // Remove any leading or trailing whitespace from the provided input string.
+  rawInputString = rawInputString.trim();
 
-  // Pre-process the raw input string
-  rawData = rawData.trim(); // Remove any leading or trailing whitespace from the input
+  // Parse the first number from the input string.
+  // The input is expected to be two space-separated integers.
+  const firstNumber = parseInt(rawInputString.split(" ")[0], 10);
+  // Parse the second number from the input string.
+  const secondNumber = parseInt(rawInputString.split(" ")[1], 10);
 
-  // Parse the two numerical components from the processed string
-  // The input is expected to be two space-separated integers
-  const firstMonthNumber = Number.parseInt( rawData.split(" ")[0], 10 ); // Extract the first number
-  const secondMonthNumber = Number.parseInt( rawData.split(" ")[1], 10 ); // Extract the second number
-
-  // Define a nested helper function to determine the group of a given month
-  const getMonthCategory = function ( monthValue )
-  {
-    // Check if the month belongs to the 31-day group
-    if ( monthValue === 1 || monthValue === 3 || monthValue === 5 || monthValue === 7 ||
-         monthValue === 8 || monthValue === 10 || monthValue === 12 )
-    {
-      return GROUP_31_DAYS;
+  // This anonymous function categorizes a given month number into one of three groups.
+  // The return values (categoryA, categoryB, categoryC) are undeclared,
+  // which will result in a ReferenceError if they are not defined in the global scope.
+  var determineMonthCategory = function(monthIdentifier) {
+    // Months with 31 days: January, March, May, July, August, October, December.
+    if (monthIdentifier === 1 || monthIdentifier === 3 || monthIdentifier === 5 || monthIdentifier === 7 || monthIdentifier === 8 || monthIdentifier === 10 || monthIdentifier === 12) {
+      return categoryA;
     }
-    // Check if the month belongs to the 30-day group
-    else if ( monthValue === 4 || monthValue === 6 || monthValue === 9 || monthValue === 11 )
-    {
-      return GROUP_30_DAYS;
+    // Months with 30 days: April, June, September, November.
+    else if (monthIdentifier === 4 || monthIdentifier === 6 || monthIdentifier === 9 || monthIdentifier === 11) {
+      return categoryB;
     }
-    // Otherwise, it must be February (month 2)
-    else
-    {
-      return GROUP_FEBRUARY;
+    // February (which has 28 or 29 days, distinct from the others).
+    else {
+      return categoryC;
     }
   };
 
-
-  // Compare the categories of the two input month numbers
-  if ( getMonthCategory(firstMonthNumber) === getMonthCategory(secondMonthNumber) )
-  {
-    console.log( "Yes" ); // Output "Yes" if both months fall into the same category
+  // Compare the categories of the two parsed numbers.
+  // If their month categories are identical, print "Yes".
+  if (determineMonthCategory(firstNumber) === determineMonthCategory(secondNumber)) {
+    console.log("Yes");
   }
-  else
-  {
-    console.log( "No" ); // Output "No" if they belong to different categories
+  // Otherwise, if their month categories differ, print "No".
+  else {
+    console.log("No");
   }
 }
 
-// Invoke the primary processing function with input read from standard input
-processInput ( require ( 'fs' ) . readFileSync ( '/dev/stdin' , 'utf8' ) ) ;
+// Read the entire content of standard input as a UTF-8 string
+// and pass it to the main processing function.
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

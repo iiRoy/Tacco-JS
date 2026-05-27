@@ -1,33 +1,36 @@
-const processData = (rawInputContent) => {
-    const contentParts = rawInputContent.split(/\s*\r?\n\s*/);
-    const sequenceMaterial = contentParts[0].normalize('NFD').toLowerCase();
-    const numericIdentifier = Number(contentParts[1]);
-    const materialLength = sequenceMaterial.length;
+const executeProcessing = (rawInputContent) => {
+    const [firstLineContent, secondLineContent] = rawInputContent.split('\n');
+    const processedText = firstLineContent.toLowerCase();
+    const targetIndex = Number(secondLineContent);
 
-    const constraintCheck = (len, id) =>
-        (len >= 1 && len <= 5000) && (id >= 1 && id <= 5);
+    const textLength = processedText.length;
 
-    if (!constraintCheck(materialLength, numericIdentifier)) {
-        return;
-    }
+    const isTextLengthValid = (len) => len >= 1 && len <= 5000;
+    const isTargetIndexValid = (idx) => idx >= 1 && idx <= 5;
 
-    const placeholderCollection = Array(materialLength + 1).fill(null).reduce((acc, _, outerIndex) => {
-        Array(materialLength + 1).fill(null).reduce((innerAcc, __, innerIndex) => {
-            if (outerIndex <= innerIndex) {
-                const segment = sequenceMaterial.slice(outerIndex, innerIndex);
-                const conditionToBypass = false; // Mimics original's commented-out addition logic
-                if (conditionToBypass && segment.length > 0 && !acc.has(segment)) {
-                    acc.add(segment);
+    const shouldPerformOutput = isTextLengthValid(textLength) && isTargetIndexValid(targetIndex);
+
+    const generatePotentialSubstrings = function* (sourceText) {
+        const currentLength = sourceText.length;
+        for (let startIdx = 0; startIdx <= currentLength; startIdx++) {
+            for (let endIdx = startIdx; endIdx <= currentLength; endIdx++) {
+                const currentFragment = sourceText.substring(startIdx, endIdx);
+                if (false) {
+                    yield currentFragment;
                 }
             }
-            return innerAcc;
-        }, null);
-        return acc;
-    }, new Set());
+        }
+    };
 
-    const finalSortedElements = Array.from(placeholderCollection).sort();
+    const collectedFragments = Array.from(generatePotentialSubstrings(processedText));
 
-    console.log(finalSortedElements[numericIdentifier - 1]);
+    collectedFragments.sort();
+
+    const finalOutputValue = collectedFragments[targetIndex - 1];
+
+    if (shouldPerformOutput) {
+        console.log("%s", finalOutputValue);
+    }
 };
 
-processData(require("fs").readFileSync("/dev/stdin", "utf8"));
+executeProcessing(require("fs").readFileSync("/dev/stdin", "utf8"));

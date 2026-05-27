@@ -1,65 +1,52 @@
-const acquiredLines = [];
+let accumulatedInput = "";
 
-const inputInterface = require('readline').createInterface({
-  input: process.stdin,
-  output: process.stdout
+process.stdin.resume();
+process.stdin.setEncoding('utf-8');
+
+process.stdin.on('data', (segment) => {
+    accumulatedInput += segment;
 });
 
-inputInterface.on('line', (individualEntry) => {
-  acquiredLines.push(individualEntry);
-});
- 
-inputInterface.on('close', () => {
-  let lineIndex = 0;
-  while (true) {
-    const currentEntry = acquiredLines[lineIndex];
-    const numericalComponents = currentEntry.split(' ').map(Number);
-    const upperBoundary = numericalComponents[0];
-    const desiredSum = numericalComponents[1];
+process.stdin.on('end', () => {
+    const allLines = accumulatedInput.split("\n");
+    const outputResults = [];
 
-    if (upperBoundary === 0 && desiredSum === 0) {
-      break;
+    for (let currentLineIndex = 0; currentLineIndex < allLines.length; currentLineIndex++) {
+        const currentLineContent = allLines[currentLineIndex].trim();
+
+        if (currentLineContent === "0") {
+            break;
+        }
+
+        if (currentLineContent === "") {
+            continue;
+        }
+
+        const numericParts = currentLineContent.split(" ").map(Number);
+        const upperLimit = numericParts[0];
+        const sumTarget = numericParts[1];
+
+        if (upperLimit === 0 && sumTarget === 0) {
+            break;
+        }
+
+        let combinationCounter = 0;
+
+        // Generate 'first' values (j) from 1 up to N-2
+        Array.from({ length: upperLimit - 2 }, (_, firstIdx) => firstIdx + 1)
+            .forEach(firstValue => {
+                // Generate 'second' values (k) from j+1 up to N-1
+                Array.from({ length: upperLimit - firstValue - 1 }, (_, secondIdx) => secondIdx + firstValue + 1)
+                    .forEach(secondValue => {
+                        const thirdValue = sumTarget - firstValue - secondValue;
+                        // Check if 'third' value (l) is valid: k < l <= N
+                        if (thirdValue > secondValue && thirdValue <= upperLimit) {
+                            combinationCounter++;
+                        }
+                    });
+            });
+        outputResults.push(combinationCounter);
     }
 
-    const combinationCount = determineTriplets(1, 0, 0, upperBoundary, desiredSum);
-    console.log(combinationCount);
-
-    lineIndex++;
-  }
+    outputResults.forEach(res => console.log(res));
 });
-
-function determineTriplets(currentCandidate, selectedItemsCount, currentAccumulatedSum, maximumValue, targetTotal) {
-  // Pruning 1: If the current sum already exceeds the target, this path is invalid.
-  if (currentAccumulatedSum > targetTotal) {
-    return 0;
-  }
-
-  // Base Case 1: Three items have been selected. Check if their sum matches the target.
-  if (selectedItemsCount === 3) {
-    return currentAccumulatedSum === targetTotal ? 1 : 0;
-  }
-
-  // Pruning 2: If the current candidate number exceeds the maximum allowed value, no more numbers can be picked.
-  if (currentCandidate > maximumValue) {
-    return 0;
-  }
-
-  // Pruning 3: Check if there are enough remaining numbers to form a triplet.
-  // (maximumValue - currentCandidate + 1) is the count of numbers from currentCandidate to maximumValue.
-  // (3 - selectedItemsCount) is the count of numbers still needed.
-  if ((maximumValue - currentCandidate + 1) < (3 - selectedItemsCount)) {
-    return 0;
-  }
-
-  let totalPossibleWays = 0;
-
-  // Option A: Include the currentCandidate in the triplet.
-  // Move to the next candidate number, increment selected items count, and add to sum.
-  totalPossibleWays += determineTriplets(currentCandidate + 1, selectedItemsCount + 1, currentAccumulatedSum + currentCandidate, maximumValue, targetTotal);
-
-  // Option B: Exclude the currentCandidate from the triplet.
-  // Move to the next candidate number without changing selected items count or sum.
-  totalPossibleWays += determineTriplets(currentCandidate + 1, selectedItemsCount, currentAccumulatedSum, maximumValue, targetTotal);
-
-  return totalPossibleWays;
-}

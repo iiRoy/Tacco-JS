@@ -1,222 +1,167 @@
-/*
- * This module provides utilities for tokenizing input data
- * and processing a specific graph traversal problem.
- */
-function Tokenizer(textInput)
-{
-	// Reference to the current object instance
-	const instance = this;
-	
-	// Current index for token retrieval
-	instance.tokenIndex = 0;
-	
-	// The original raw text provided
-	instance.originalText = textInput;
-	
-	// Process the input string into an array of tokens
-	instance.parsedTokens = (function(sourceString) {
-		// Array to store the resulting tokens
-		let tokenArray = [ ];
-		
-		// Normalize whitespace: replace multiple newlines/spaces/tabs with a single space
-		let normalizedString = sourceString.replace(/[\s\t\n]+/g, " ");
-		
-		// Split the normalized string by spaces to get individual parts
-		let parts = normalizedString.split(" ");
-		
-		// Iterate through the parts and add them to the token array
-		for (let idx = 0, totalParts = parts.length; idx < totalParts; idx++) {
-			tokenArray.push(parts[idx]);
+function InputParser(sourceText) {
+	// Reference to the current instance of the parser.
+	var instanceRef = this;
+	// Tracks the current position in the tokenized string array.
+	instanceRef.currentIndex = 0;
+	// Stores the original input string for potential future use.
+	instanceRef.originalString = sourceText;
+	// Processes the input string into an array of tokens.
+	instanceRef.tokenizedStrings = (function(inputData) {
+		var parsedTokens = []; // Array to hold the processed tokens.
+		// Replace multiple whitespace characters (newline, space, tab) with a single space.
+		var cleanedInput = inputData.replace(/[\n \t]+/g, " ");
+		// Split the cleaned string by spaces to get individual tokens.
+		var splitParts = cleanedInput.split(" ");
+		// Iterate through the split parts and add them to the result array.
+		for (var idx = 0, lengthVal = splitParts.length; idx < lengthVal; idx++) {
+			parsedTokens.push(splitParts[idx]);
 		}
-		
-		// Return the array of tokens
-		return tokenArray;
-	} (textInput)); // Immediately invoke with the original input
+		return parsedTokens; // Return the array of tokens.
+	}(sourceText)); // Immediately invoke the anonymous function with the source text.
+
+	// Method to retrieve the next string token.
+	instanceRef.getNextToken = function() {
+		var currentResult = instanceRef.tokenizedStrings[instanceRef.currentIndex];
+		instanceRef.currentIndex++; // Advance the token pointer.
+		return (currentResult != null) ? currentResult : null; // Return token or null if none.
+	}
+
+	// Method to retrieve the next integer token.
+	instanceRef.getNextInteger = function() {
+		var currentResult = instanceRef.tokenizedStrings[instanceRef.currentIndex];
+		instanceRef.currentIndex++; // Advance the token pointer.
+		return (currentResult != null) ? parseInt(currentResult) : null; // Parse and return integer.
+	}
+
+	// Method to retrieve the next floating-point number token.
+	instanceRef.getNextDecimal = function() {
+		var currentResult = instanceRef.tokenizedStrings[instanceRef.currentIndex];
+		instanceRef.currentIndex++; // Advance the token pointer.
+		return (currentResult != null) ? parseFloat(currentResult) : null; // Parse and return float.
+	}
 	
-	/**
-	 * Retrieves the next available token as a string.
-	 * @returns {string|null} The next token or null if no more tokens.
-	 */
-	instance.getNextToken = function()
-	{
-		let currentElement = instance.parsedTokens[instance.tokenIndex];
-		instance.tokenIndex++; // Advance the token index
-		return (currentElement !== undefined) ? currentElement : null;
-	};
-	
-	/**
-	 * Retrieves the next available token and converts it to an integer.
-	 * @returns {number|null} The next token as an integer or null if no more tokens.
-	 */
-	instance.getNextInteger = function() {
-		let currentElement = instance.parsedTokens[instance.tokenIndex];
-		instance.tokenIndex++;
-		return (currentElement !== undefined) ? Number.parseInt(currentElement, 10) : null;
-	};
-	
-	/**
-	 * Retrieves the next available token and converts it to a floating-point number.
-	 * @returns {number|null} The next token as a float or null if no more tokens.
-	 */
-	instance.getNextDecimal = function() {
-		let currentElement = instance.parsedTokens[instance.tokenIndex];
-		instance.tokenIndex++;
-		return (currentElement !== undefined) ? Number.parseFloat(currentElement) : null;
-	};
-	
-	/**
-	 * Retrieves the next available token and attempts to create an Int8Array from it.
-	 * Note: This might not behave as expected for single byte values.
-	 * @returns {Int8Array|null} An Int8Array or null if no more tokens.
-	 */
-	instance.getNextByteValue = function() {
-		let currentElement = instance.parsedTokens[instance.tokenIndex];
-		instance.tokenIndex++;
-		return (currentElement !== undefined) ? new Int8Array(currentElement) : null;
-	};
+	// Method to retrieve the next byte token (conceptual, as JS doesn't have direct bytes like Java).
+	instanceRef.getNextByte = function() {
+		var currentResult = instanceRef.tokenizedStrings[instanceRef.currentIndex];
+		instanceRef.currentIndex++; // Advance the token pointer.
+		// In JavaScript, this might represent an array of 8-bit signed integers.
+		return (currentResult != null) ? new Int8Array(currentResult) : null;
+	}
 
 }
 
+function ProcessGraph(dataReader) {
 
-// Main processing function for the problem
-function ProcessInput(dataExtractor) {
-
-	// Read the total number of nodes
-	const countNodes = dataExtractor.getNextInteger();
+	var nodeCount = dataReader.getNextInteger(); // Read the total number of nodes.
+	var finalResults = []; // Array to store the final computed results.
 	
-	// Array to store the final computed results
-	const finalResults = [];
-	
-	// Map to store values associated with each node ID
-	let nodeValues = {};
-	for (let idx = 0; idx < countNodes; idx++) {
-		nodeValues[idx + 1] = dataExtractor.getNextInteger();
+	var nodeValuesMap = {}; // Map to store values associated with each node ID.
+	// Populate the nodeValuesMap with values read from input.
+	for (var loopIndex = 0; loopIndex < nodeCount; loopIndex++) {
+		nodeValuesMap[loopIndex + 1] = dataReader.getNextInteger();
 	}
 	
-	// Adjacency list representation of the graph (tree)
-	let adjacencyList = {};
-	// Process N-1 edges to build the graph
-	for (let edgeIdx = 0; edgeIdx < countNodes - 1; edgeIdx++) {
-		let nodeA = dataExtractor.getNextInteger();
-		let nodeB = dataExtractor.getNextInteger();
-		
-		// Add connections for nodeA
+	var adjacencyList = {}; // Represents the graph's adjacency list.
+	// Build the adjacency list from the input pairs representing edges.
+	for (var loopIndex = 0; loopIndex < nodeCount - 1; loopIndex++) {
+		var nodeA = dataReader.getNextInteger();
+		var nodeB = dataReader.getNextInteger();
+		// Add bidirectional connections.
 		if (!adjacencyList[nodeA]) adjacencyList[nodeA] = [nodeB];
 		else adjacencyList[nodeA].push(nodeB);
-		
-		// Add connections for nodeB (undirected graph)
 		if (!adjacencyList[nodeB]) adjacencyList[nodeB] = [nodeA];
 		else adjacencyList[nodeB].push(nodeA);
 	}
 	
-	// Map to store accumulated path values for each node
-	let pathAccumulations = {};
-	// Queue for breadth-first traversal
-	let traverseQueue = [];
+	// Data structures for graph traversal.
+	var pathValuesMap = {}; // Stores the list of values encountered on the path to each node.
+	var traversalQueue = []; // Queue for breadth-first-like traversal.
 	
-	// Global variable to hold the last computed path values (due to original code's implicit global usage)
-	let currentPathValuesGlobal;
-
-	/**
-	 * Recursively explores a path in the tree, accumulating node values.
-	 * @param {number} currentNodeId The ID of the node currently being visited.
-	 * @param {number} previousNodeId The ID of the node from which the current node was reached.
-	 */
-	let explorePath = function (currentNodeId, previousNodeId) {
-		// Initialize path with values from the previous node, or an empty array
-		currentPathValuesGlobal = (pathAccumulations[previousNodeId]) ? pathAccumulations[previousNodeId].slice() : [];
+	// Function to explore a node and its path.
+	var exploreNodePath = function (targetNodeId, parentNodeId) {
+		// Copy the path values from the parent node, or start fresh if no parent.
+		var currentPathValues = (pathValuesMap[parentNodeId]) ? pathValuesMap[parentNodeId].concat() : [];
+		// Add the current node's value to the path.
+		currentPathValues.push(nodeValuesMap[targetNodeId]);
+		// Store the updated path for the current node.
+		pathValuesMap[targetNodeId] = currentPathValues;
 		
-		// Add the current node's value to the path
-		currentPathValuesGlobal.push(nodeValues[currentNodeId]);
-		
-		// Store the accumulated path for the current node
-		pathAccumulations[currentNodeId] = currentPathValuesGlobal;
-		
-		// Get connected nodes from the adjacency list
-		let connectedNodes = adjacencyList[currentNodeId];
+		var connectedNodes = adjacencyList[targetNodeId]; // Get neighbors of the current node.
 		if (connectedNodes) {
-			// Iterate through neighbors
-			for (let neighborIdx = 0; neighborIdx < connectedNodes.length; neighborIdx++) {
-				let neighborNode = connectedNodes[neighborIdx];
-				// If the neighbor is not the node we just came from, add it to the queue for traversal
-				if (previousNodeId !== neighborNode) {
-					traverseQueue.push([neighborNode, currentNodeId]);
+			// Iterate through neighbors to add them to the traversal queue.
+			for (var loopIndex = 0; loopIndex < connectedNodes.length; loopIndex++) {
+				var neighborNodeId = connectedNodes[loopIndex];
+				// Avoid going back to the immediate parent node.
+				if (parentNodeId != neighborNodeId) {
+					traversalQueue.push([neighborNodeId, targetNodeId]); // Add neighbor and current node as its parent.
 				}
 			}
 		}
-	};
-	
-	// Start traversal from node 1, with -1 indicating no previous node
-	traverseQueue.push([1, -1]);
-	
-	// Loop to process the traversal queue (simulating iterative BFS/DFS)
-	for (let loopCounter = 0; loopCounter < 10000000; loopCounter++) { // Safety break for very large graphs
-		let currentTraversal = traverseQueue.shift(); // Get the next node to visit
-		explorePath(currentTraversal[0], currentTraversal[1]); // Process the current node
-		if (traverseQueue.length === 0) break; // Exit if the queue is empty
 	}
 	
-	// Output the last processed path (likely for debugging, replicating original behavior)
-	console.log(currentPathValuesGlobal);
+	// Start traversal from node 1, with a dummy parent -1.
+	traversalQueue.push([1, -1]);
+	// Loop to process the traversal queue. A large upper bound to prevent infinite loops.
+	for (var debugCounter = 0; debugCounter < 10000000; debugCounter++) {
+		var queueItem = traversalQueue.shift(); // Get the next item from the queue.
+		exploreNodePath(queueItem[0], queueItem[1]); // Process the node.
+		if (traversalQueue.length == 0) break; // Stop if the queue is empty.
+	}
 	
-	// The following code block is unreachable due to the 'return;' statement above.
-	// It is included to maintain the exact structure of the original code.
-	return;
+	// The original code has a `console.log` here and then `return;`
+	// This means the subsequent loop for LIS calculation is unreachable.
+	// This behavior must be preserved for Type II cloning.
+	console.log(currentPathValues); // This `currentPathValues` refers to the last `wrtnNos` from the last `exploreNodePath` call.
+	return; // Exit the function here, as per original behavior.
 	
-	// This part of the code calculates the length of the longest increasing subsequence
-	// for each accumulated path, but it is currently unreachable.
-	for (let nodeIdentifier = 1; nodeIdentifier <= countNodes; nodeIdentifier++) {
+	// The following code block is unreachable due to the `return;` above.
+	// It is kept for structural equivalence, but will never execute.
+	for (var loopIndex = 1; loopIndex <= nodeCount; loopIndex++) {
 		
-		let currentPathSequence = pathAccumulations[nodeIdentifier];
-		let longestIncreasingSubsequence = [];
+		var currentPathList = pathValuesMap[loopIndex];
+		var longestIncreasingSubsequence = [];
 
-		for (let elementIdx = 0; elementIdx < currentPathSequence.length; elementIdx++) {
-			let currentElement = currentPathSequence[elementIdx];
-			
-			// If the LIS is empty, just add the current element
-			if (longestIncreasingSubsequence.length === 0) {
-				longestIncreasingSubsequence.push(currentElement);
+		for (var innerLoopIndex = 0; innerLoopIndex < currentPathList.length; innerLoopIndex++) {
+			var currentValue = currentPathList[innerLoopIndex];
+			if (longestIncreasingSubsequence.length == 0) {
+				longestIncreasingSubsequence.push(currentValue);
 			}
-			// If the current element is greater than the last element of LIS, append it
-			else if (currentElement > longestIncreasingSubsequence[longestIncreasingSubsequence.length - 1]) {
-				longestIncreasingSubsequence.push(currentElement);
+			// If current value is greater than the last element of LIS, append it.
+			else if (currentValue > longestIncreasingSubsequence[longestIncreasingSubsequence.length - 1]) {
+				longestIncreasingSubsequence.push(currentValue);
 			}
-			// If the current element is less than or equal to the first element of LIS, replace the first element
-			else if (currentElement <= longestIncreasingSubsequence[0]) {
-				longestIncreasingSubsequence[0] = currentElement;
+			// If current value is less than or equal to the first element of LIS, replace the first element.
+			else if (currentValue <= longestIncreasingSubsequence[0]) {
+				longestIncreasingSubsequence[0] = currentValue;
 			}
-			// If the current element falls somewhere in the middle, find the smallest element in LIS
-			// that is greater than or equal to currentElement and replace it.
+			// Otherwise, find the smallest element in LIS that is greater than or equal to currentValue
+			// and replace it. This maintains the increasing property and potentially shortens the sequence.
 			else {
-				for (let searchIdx = 1; searchIdx < longestIncreasingSubsequence.length; searchIdx++) {
-					if (longestIncreasingSubsequence[searchIdx - 1] < currentElement && currentElement <= longestIncreasingSubsequence[searchIdx]) {
-						longestIncreasingSubsequence[searchIdx] = currentElement;
+				for (var subsequenceIndex = 1; subsequenceIndex < longestIncreasingSubsequence.length; subsequenceIndex++) {
+					if (longestIncreasingSubsequence[subsequenceIndex-1] < currentValue && currentValue <= longestIncreasingSubsequence[subsequenceIndex]) {
+						longestIncreasingSubsequence[subsequenceIndex] = currentValue;
 						break;
 					}
 				}
 			}
 		}
-		// Store the length of the computed LIS for this path
 		finalResults.push(longestIncreasingSubsequence.length);
 	}
 	
-	// Output the final results, joined by newlines
-	console.log(finalResults.join("\n"));
+	console.log(finalResults.join("\n")); // This line is also unreachable.
 }
 
-// Entry point: Initialize the process with input from standard input
-ProcessInput(new Tokenizer(require('fs').readFileSync('/dev/stdin', 'utf8')));
+// Execute the main processing function with an instance of the InputParser.
+// Reads input from standard input using Node.js 'fs' module.
+ProcessGraph(new InputParser(require("fs").readFileSync("/dev/stdin", "utf8")));
 
-// Example usage with a hardcoded string input (commented out)
-// ProcessInput(new Tokenizer("33"));
+// Example usage of the InputParser (commented out in original, preserved here).
+// ProcessGraph(new InputParser("33"));
 
-
-// --- Additional commented-out notes (for reference, replicating original comments) ---
-
-// let stringValue = dataExtractor.getNextToken(); // Retrieve as a string
-// let integerValue = dataExtractor.getNextInteger(); // Retrieve as an integer
-// let decimalValue = dataExtractor.getNextDecimal(); // Retrieve as a floating-point number
-// let byteArrayValue = dataExtractor.getNextByteValue(); // Retrieve as an 8-bit integer array
-// for (let delayCount = 0; delayCount < 1000000000; delayCount++) { let tempVar = "dummy"; } // Introduce an artificial delay of approximately 1000ms
-// console.log(currentPathValuesGlobal); // Replicating original debug output (global variable)
-// return; // Replicating original early exit
+// Further commented-out examples from the original, demonstrating parser methods.
+// var stringValue = dataReader.getNextToken(); // Get a string.
+// var integerValue = dataReader.getNextInteger(); // Get an integer.
+// var decimalValue = dataReader.getNextDecimal(); // Get a floating-point number.
+// var byteValue = dataReader.getNextByte(); // Get a byte array (conceptual).
+// for (var delayLoop = 0; delayLoop < 1000000000; delayLoop++) var dummyVar = "some_text"; // A loop for artificial delay.
+// console.log(currentPathValues); return; // Another example of logging and returning.

@@ -1,52 +1,44 @@
-const pathFinder = (inputData) => {
-    const dataSegments = inputData.trim().split('\n');
-    const [vertexCountString, edgeCountString] = dataSegments[0].split(' ');
-    const totalVertices = Number(vertexCountString);
-    const totalEdges = Number(edgeCountString);
+"use strict";
 
-    const connectionList = dataSegments.slice(1, totalEdges + 1)
-                                       .map(line => line.split(' ').map(Number));
+const processGraphData = (inputContent) => {
+    const dataLines = inputContent.trim().split("\n");
+    const [graphNodeCountText, graphEdgeCountText] = dataLines[0].split(" ");
+    const graphNodeCount = parseInt(graphNodeCountText);
+    const graphEdgeCount = parseInt(graphEdgeCountText);
 
-    const processingState = {
-        originConnected: new Set(), // Stores nodes 'j' for which an edge (1, j) exists
-        destinationConnected: new Set(), // Stores nodes 'j' for which an edge (j, totalVertices) exists
-        solutionFound: false
-    };
+    const graphConnections = dataLines.slice(1, graphEdgeCount + 1).map(connectionLine => {
+        const [originIdentifier, destinationIdentifier] = connectionLine.split(" ").map(Number);
+        return { originIdentifier, destinationIdentifier };
+    });
 
-    const finalResult = connectionList.reduce((currentProgress, currentLink) => {
-        if (currentProgress.solutionFound) {
-            return currentProgress; // Optimization: stop processing if path already found
+    const processingResult = graphConnections.reduce((accumulator, currentConnection) => {
+        if (accumulator.pathEstablished) {
+            return accumulator;
         }
 
-        const [startNode, endNode] = currentLink;
+        const { originIdentifier, destinationIdentifier } = currentConnection;
 
-        // Check for paths originating from the first vertex
-        if (startNode === 1) {
-            // If 'endNode' was previously marked as able to reach 'totalVertices',
-            // then a path 1 -> endNode -> totalVertices is complete.
-            if (currentProgress.destinationConnected.has(endNode)) {
-                return { ...currentProgress, solutionFound: true };
+        if (originIdentifier === 1) {
+            accumulator.nodesFromInitial.add(destinationIdentifier);
+            if (accumulator.nodesToTerminal.has(destinationIdentifier)) {
+                accumulator.pathEstablished = true;
             }
-            // Otherwise, mark 'endNode' as reachable from the first vertex.
-            currentProgress.originConnected.add(endNode);
         }
 
-        // Check for paths terminating at the last vertex
-        if (endNode === totalVertices) {
-            // If 'startNode' was previously marked as reachable from 1,
-            // then a path 1 -> startNode -> totalVertices is complete.
-            if (currentProgress.originConnected.has(startNode)) {
-                return { ...currentProgress, solutionFound: true };
+        if (destinationIdentifier === graphNodeCount) {
+            accumulator.nodesToTerminal.add(originIdentifier);
+            if (accumulator.nodesFromInitial.has(originIdentifier)) {
+                accumulator.pathEstablished = true;
             }
-            // Otherwise, mark 'startNode' as able to reach the last vertex.
-            currentProgress.destinationConnected.add(startNode);
         }
+        return accumulator;
+    }, {
+        nodesFromInitial: new Set(),
+        nodesToTerminal: new Set(),
+        pathEstablished: false
+    });
 
-        return currentProgress;
-    }, processingState);
-
-    return finalResult.solutionFound ? "POSSIBLE" : "IMPOSSIBLE";
+    console.log(processingResult.pathEstablished ? "POSSIBLE" : "IMPOSSIBLE");
 };
 
-const inputFeed = require('fs').readFileSync('/dev/stdin', 'utf8');
-console.log(pathFinder(inputFeed));
+processGraphData(require('fs').readFileSync('/dev/stdin', 'utf8'));

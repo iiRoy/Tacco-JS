@@ -1,61 +1,82 @@
-const fileSystem = require("fs");
+const sourceLines = require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");
 
-// Utility function to parse a space-separated string of numbers into an array of numbers.
-// This replaces the functionality of `myconv(line, 4)` from the original.
-const extractNumericSequence = (rawText) => rawText.split(" ").map(Number);
+const lineProvider = (() => {
+    let currentLineIndex = 0;
+    const totalLines = sourceLines.length;
 
-// The main function encapsulating the program's logic.
-// This replaces the `Main()` function from the original.
-function evaluateSolution() {
-  // Read all input from standard in at once and split it into individual lines.
-  // This replaces the custom iterator `obj` and its `next()` method.
-  const dataLines = fileSystem.readFileSync("/dev/stdin", "utf8").trim().split("\n");
+    const retrieveNextLine = () => {
+        if (currentLineIndex >= totalLines) {
+            throw new Error("NoSuchElementException:次に要素は無いよ");
+        }
+        return sourceLines[currentLineIndex++];
+    };
 
-  // Parse the first line to get the total node count (N) and edge count (M).
-  // This replaces `var one = nextIntArray(); var N = one[0]; var M = one[1];`
-  const [nodeCount, edgeCount] = extractNumericSequence(dataLines[0]);
+    const checkMoreLines = () => currentLineIndex < totalLines;
 
-  // Use plain JavaScript objects as hash maps to store connections.
-  // This provides similar O(1) average-case lookup performance as `Set`,
-  // but uses a different syntax and underlying data structure.
-  // This replaces `var fromOne = new Set();`
-  const initialConnections = {}; // Stores nodes 'X' reachable directly from node 1 (i.e., (1, X)).
-  // This replaces `var toN = new Set();`
-  const terminalConnections = {}; // Stores nodes 'X' that can reach the target node N (i.e., (X, N)).
+    return { retrieveNextLine, checkMoreLines };
+})();
 
-  // Iterate through the lines describing the edges.
-  // This replaces the `for(var i = 0; i < M; i++)` loop in the original.
-  for (let edgeIndex = 1; edgeIndex <= edgeCount; edgeIndex++) {
-    // Parse each edge line into its start and end nodes.
-    // This replaces `var tmp = nextIntArray();`
-    const [startNode, endNode] = extractNumericSequence(dataLines[edgeIndex]);
+function getNextLine() { return lineProvider.retrieveNextLine(); }
+function getNextInteger() { return dataTransformer(getNextLine(), 1); }
+function getNextStringArray() { return dataTransformer(getNextLine(), 2); }
+function getNextIntegerArray() { return dataTransformer(getNextLine(), 4); }
+function getNextCharacterArray() { return dataTransformer(getNextLine(), 6); }
+function hasMoreLines() { return lineProvider.checkMoreLines(); }
 
-    // Populate the connection hash maps based on the edge's properties.
-    if (startNode === 1) {
-      initialConnections[endNode] = true; // Mark 'endNode' as reachable from 1.
+function myout(content) { console.log(content); }
+function myerr(content) { console.error(content); }
+
+const conversionHandlers = {
+    1: (val) => Number.parseInt(val),
+    2: (val) => val.split(" "),
+    4: (val) => val.split(" ").map(Number),
+    6: (val) => val.split(""),
+    7: (val) => val.split("").map(Number),
+    8: (val) => val.join(" "),
+    9: (val) => val.join("\n"),
+    0: (val) => val.join(""),
+};
+
+function dataTransformer(sourceValue, transformKey) {
+    try {
+        const handler = conversionHandlers[transformKey];
+        return handler ? handler(sourceValue) : sourceValue;
+    } catch (err) {
+        return sourceValue;
     }
-    if (endNode === nodeCount) {
-      terminalConnections[startNode] = true; // Mark 'startNode' as able to reach N.
-    }
-  }
-
-  let directPathExists = false; // Flag to indicate if a 1 -> X -> N path is found.
-
-  // Iterate over the nodes that can reach the target node N (from 'terminalConnections').
-  // For each such node, check if it can also be reached directly from node 1 (in 'initialConnections').
-  // This replaces iterating `toNlist` and checking `fromOne.has()`.
-  for (const intermediateNode in terminalConnections) {
-    if (initialConnections[intermediateNode]) {
-      // If an 'intermediateNode' exists in both collections, a 1 -> X -> N path is found.
-      directPathExists = true;
-      break; // No need to check further.
-    }
-  }
-
-  // Output the final result to standard output.
-  // This replaces `myout("POSSIBLE")` or `myout("IMPOSSIBLE")`.
-  console.log(directPathExists ? "POSSIBLE" : "IMPOSSIBLE");
 }
 
-// Invoke the main solution function to start execution.
-evaluateSolution();
+function analyzeConnections() {
+    const initialParameters = getNextIntegerArray();
+    const targetNode = initialParameters[0];
+    const edgeCount = initialParameters[1];
+
+    const nodesReachableFromStart = new Set();
+    const nodesReachingTarget = new Set();
+    let pathFoundFlag = false;
+
+    sourceLines.slice(1, edgeCount + 1).forEach(edgeLine => {
+        const [source, destination] = dataTransformer(edgeLine, 4);
+        if (source === 1) {
+            nodesReachableFromStart.add(destination);
+        }
+        if (destination === targetNode) {
+            nodesReachingTarget.add(source);
+        }
+    });
+
+    myerr(nodesReachableFromStart);
+    myerr(nodesReachingTarget);
+
+    pathFoundFlag = Array.from(nodesReachingTarget.values()).some(intermediateNode =>
+        nodesReachableFromStart.has(intermediateNode)
+    );
+
+    if (pathFoundFlag) {
+        myout("POSSIBLE");
+    } else {
+        myout("IMPOSSIBLE");
+    }
+}
+
+analyzeConnections();

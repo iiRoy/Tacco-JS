@@ -1,25 +1,22 @@
-function analyzeSequence(rawInput) {
-  const lineSeries = rawInput.match(/[^\n]+/g);
-  if (!lineSeries || lineSeries.length < 2) {
-    console.log(0);
-    return;
-  }
-  const numericValues = lineSeries[1].split(' ').map(Number);
+function processSequence(sourceData) {
+  const sequenceElements = sourceData.split("\n")[1].split(" ");
 
-  const resultTally = numericValues.reduce((tally, currentVal, idx, fullArr) => {
-    if (idx > 0 && idx < fullArr.length - 1) {
-      const priorVal = fullArr[idx - 1];
-      const nextVal = fullArr[idx + 1];
+  const monotonicCount = sequenceElements.reduce((accumulatorValue, currentItem, itemIndex, fullSequence) => {
+    if (itemIndex > 0 && itemIndex < fullSequence.length - 1) {
+      const priorItem = fullSequence[itemIndex - 1];
+      const subsequentItem = fullSequence[itemIndex + 1];
 
-      const isIntermediate = (priorVal < currentVal && currentVal < nextVal) ||
-                             (priorVal > currentVal && currentVal > nextVal);
+      const isStrictlyIncreasing = (priorItem < currentItem) && (currentItem < subsequentItem);
+      const isStrictlyDecreasing = (priorItem > currentItem) && (currentItem > subsequentItem);
 
-      return tally + (isIntermediate ? 1 : 0);
+      if (isStrictlyIncreasing || isStrictlyDecreasing) {
+        return accumulatorValue + 1;
+      }
     }
-    return tally;
+    return accumulatorValue;
   }, 0);
 
-  console.log(resultTally);
+  console.log(monotonicCount);
 }
 
-analyzeSequence(require('fs').readFileSync('/dev/stdin','utf8'));
+processSequence(require('fs').readFileSync('/dev/stdin', 'utf8'));

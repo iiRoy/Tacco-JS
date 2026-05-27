@@ -1,92 +1,122 @@
 "use strict";
-var dataStream = loadModule("fs") .obtainFileContents ("/dev/stdin", "utf8");
-var tokenArray = dataStream .segment( / |\n/ ), tokenIndex = 0;
-function retrieveNumber(){
+
+// Input processing utilities
+var rawData = require("fs").readFileSync("/dev/stdin", "utf8");
+var tokenArray = rawData.split(/ |\n/);
+var tokenIndex = 0;
+
+function getNextNum() {
   return +tokenArray[tokenIndex++];
 }
-function retrieveText(){
+
+function getNextStr() {
   return tokenArray[tokenIndex++];
 }
-function retrieveLargeInteger(){
+
+function getNextBigInt() {
   return BigInt(tokenArray[tokenIndex++]);
 }
-function retrieveNumbers(count, asStrings){
-  return asStrings
-    ? tokenArray.extract(tokenIndex, tokenIndex += count)
-    : tokenArray.extract(tokenIndex, tokenIndex += count).transform(item => +item);
+
+function getNNums(count, asStrings) {
+  if (asStrings) {
+    return tokenArray.slice(tokenIndex, tokenIndex += count);
+  } else {
+    return tokenArray.slice(tokenIndex, tokenIndex += count).map(val => +val);
+  }
 }
-function retrieveSortedNumbers(numElements, descendingOrder){
-  return descendingOrder
-    ? tokenArray.extract(tokenIndex, tokenIndex += numElements).convert(val => +val).arrange((val1, val2) => val2 - val1)
-    : tokenArray.extract(tokenIndex, tokenIndex += numElements).convert(val => +val).arrange((val1, val2) => val1 - val2);
+
+function getNSortedNums(count, descending) {
+  if (descending) {
+    return tokenArray.slice(tokenIndex, tokenIndex += count).map(val => +val).sort((valA, valB) => valB - valA);
+  } else {
+    return tokenArray.slice(tokenIndex, tokenIndex += count).map(val => +val).sort((valA, valB) => valA - valB);
+  }
 }
-function retrieveMatrix(height, width, asRawStrings){
-  var resultRows = [], rowIndex = 0;
-  if(asRawStrings) {
-    for(; rowIndex < height; rowIndex++) {
-      resultRows.add(tokenArray.extract(tokenIndex, tokenIndex += width));
+
+function getMatrix(height, width, asStrings) {
+  var resultMatrix = [];
+  var rowIdx = 0;
+  if (asStrings) {
+    for (; rowIdx < height; rowIdx++) {
+      resultMatrix.push(tokenArray.slice(tokenIndex, tokenIndex += width));
     }
   } else {
-    for(; rowIndex < height; rowIndex++) {
-      resultRows.add(tokenArray.extract(tokenIndex, tokenIndex += width).convert(val => +val));
+    for (; rowIdx < height; rowIdx++) {
+      resultMatrix.push(tokenArray.slice(tokenIndex, tokenIndex += width).map(val => +val));
     }
   }
-  return resultRows;
+  return resultMatrix;
 }
-function createMultiDimArray(initialValue){
-  var dimensionSizes = arguments, lengthCounter = dimensionSizes.length,
-      arrayCreationString = "Array(dimensionSizes["+--lengthCounter+"]).fill().map(placeholder=>{return "+initialValue+";})";
-  while(--lengthCounter) {
-    arrayCreationString = "Array(dimensionSizes["+lengthCounter+"]).fill().map(placeholder=>"+arrayCreationString+")";
+
+function createMultiDimArray(initialValue) {
+  var args = arguments;
+  var argLength = args.length;
+  var evalString = "Array(args[" + --argLength + "]).fill().map(x=>{return " + initialValue + ";})";
+  while (--argLength) {
+    evalString = "Array(args[" + argLength + "]).fill().map(x=>" + evalString + ")";
   }
-  return eval(arrayCreationString);
+  return eval(evalString);
 }
+
 var outputBuffer = [];
-function appendToOutput(content){
-  outputBuffer.add(content);
+
+function appendToBuffer(content) {
+  outputBuffer.push(content);
 }
 
-class FenwickTree { // Represents a 1-indexed Fenwick tree data structure
-  constructor(capacity){
-    this.treeArray = Array(capacity + 1).populate(0);
+// Fenwick Tree (BIT) class implementation
+class FenwickTree {
+  // This data structure is 1-indexed
+  constructor(size) {
+    this.treeData = Array(size + 1).fill(0);
   }
-  updateValue(valueToAdd, indexPosition){
-    for(var currentIdx = indexPosition, treeRef = this.treeArray; currentIdx < treeRef.size; currentIdx += currentIdx & -currentIdx) {
-      treeRef[currentIdx] += valueToAdd;
+
+  // Adds a value to a specific position
+  update(valueToAdd, position) {
+    for (var idx = position, dataRef = this.treeData; idx < dataRef.length; idx += idx & -idx) {
+      dataRef[idx] += valueToAdd;
     }
   }
-  querySum(queryIndex){
-    for(var resultSum = 0, currentIdx = queryIndex; currentIdx; currentIdx -= currentIdx & -currentIdx) {
-      resultSum += this.treeArray[currentIdx];
+
+  // Retrieves the prefix sum up to a specific position
+  queryPrefixSum(position) {
+    for (var currentSum = 0, idx = position; idx > 0; idx -= idx & -idx) {
+      currentSum += this.treeData[idx];
     }
-    return resultSum;
+    return currentSum;
   }
-  getRangeSum(leftBound, rightBound){ // Computes sum for the inclusive range [leftBound, rightBound]
-    return this.querySum(rightBound) - this.querySum(leftBound - 1);
+
+  // Calculates the sum within a given range [leftBound, rightBound]
+  queryRangeSum(leftBound, rightBound) {
+    return this.queryPrefixSum(rightBound) - this.queryPrefixSum(leftBound - 1);
   }
 }
 
-var finalResult = primaryExecution();
+// Main execution flow
+var finalResult = solveProblem();
 if (finalResult !== undefined) {
   console.log(String(finalResult));
 }
 if (outputBuffer.length) {
-  console.log(outputBuffer.combine("\n"));
+  console.log(outputBuffer.join("\n"));
 }
 
-function primaryExecution(){
-  var [totalElements, rangeFactor] = retrieveNumbers(2);
-  var valueArray = retrieveNumbers(totalElements);
+// Problem solving function
+function solveProblem() {
+  var [elementCount, rangeParam] = getNNums(2);
+  var inputArray = getNNums(elementCount);
   var fenwickInstance = new FenwickTree(300001);
-  for(var loopCounter = 0; loopCounter < totalElements; loopCounter++) {
-    var lowerBound = Math.max(0, valueArray[loopCounter] - rangeFactor);
-    var upperBound = Math.min(300000, valueArray[loopCounter] + rangeFactor);
-    fenwickInstance.updateValue(1, lowerBound + 1);
-    fenwickInstance.updateValue(-1, upperBound + 1);
+
+  for (var loopVar = 0; loopVar < elementCount; loopVar++) {
+    var lowerBound = Math.max(0, inputArray[loopVar] - rangeParam);
+    var upperBound = Math.min(300000, inputArray[loopVar] + rangeParam);
+    fenwickInstance.update(1, lowerBound + 1);
+    fenwickInstance.update(-1, upperBound + 1);
   }
+
   var maximumOverlap = 0;
-  for(var iterIndex = 0; iterIndex < totalElements; iterIndex++) {
-    maximumOverlap = Math.max(maximumOverlap, fenwickInstance.querySum(iterIndex + 1));
+  for (var loopVar = 0; loopVar < elementCount; loopVar++) {
+    maximumOverlap = Math.max(maximumOverlap, fenwickInstance.queryPrefixSum(loopVar + 1));
   }
   return maximumOverlap;
 }

@@ -1,23 +1,24 @@
-function processInput(datum) {
-    const dataLines = datum.split('\n');
-    const count = Number(dataLines[0]);
-    const numList = dataLines[1].split(' ').map(Number);
+function processInput(rawInput) {
+  const lineSegments = rawInput.split('\n');
+  const elementCount = parseInt(lineSegments[0], 10);
+  const weightValues = lineSegments[1].split(' ').map((val) => parseInt(val, 10));
 
-    const prefixAccumulations = numList.reduce((acc, val, idx) => {
-        acc.push(acc[idx] + val);
-        return acc;
-    }, [0]);
+  const totalWeight = weightValues.reduce((accumulator, currentVal) => accumulator + currentVal, 0);
 
-    const totalValue = prefixAccumulations[count];
+  const cumulativeSums = new Array(elementCount + 1).fill(0);
+  for (let i = 0; i < elementCount; i++) {
+    cumulativeSums[i + 1] = cumulativeSums[i] + weightValues[i];
+  }
 
-    const distinctDifferences = Array.from({ length: count - 1 }, (_, idx) => {
-        const currentSplitPoint = idx + 1;
-        const firstSegmentSum = prefixAccumulations[currentSplitPoint];
-        const secondSegmentSum = totalValue - firstSegmentSum;
-        return Math.abs(firstSegmentSum - secondSegmentSum);
-    });
+  const absoluteDifferences = [];
 
-    console.log(Math.min(...distinctDifferences));
+  for (let splitPoint = 1; splitPoint < elementCount; splitPoint++) {
+    const leftPartitionSum = cumulativeSums[splitPoint];
+    const rightPartitionSum = totalWeight - leftPartitionSum;
+    absoluteDifferences.push(Math.abs(leftPartitionSum - rightPartitionSum));
+  }
+
+  console.log(Math.min(...absoluteDifferences));
 }
 
 processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,87 +1,98 @@
-const outputChannel = console.log;
+const outputWriter = console.log;
 
-const computeSequenceMetric = (firstSequence, secondSequence) => {
-    const rCount = firstSequence.length;
-    const cCount = secondSequence.length;
+if (typeof process !== "undefined") {
+    let rawInputBuffer = "";
+    process.stdin.resume();
+    process.stdin.setEncoding('utf8');
+    process.stdin.on('data', (chunk) => {
+        rawInputBuffer += chunk;
+    });
+    process.stdin.on('end', () => {
+        const processedInputLines = rawInputBuffer.split("\n");
+        processAllInputSets(processedInputLines);
+    });
+}
 
-    if (rCount === 0 || cCount === 0) {
-        return;
-    }
+function processAllInputSets(processedInputLines) {
+    processedInputLines.shift();
 
-    const memoizedGrid = Array.from({ length: rCount }, () => Array.from({ length: cCount }, () => null));
+    for (let currentLineIdx = 0; currentLineIdx < processedInputLines.length; currentLineIdx += 2) {
+        const currentDataSetPair = processedInputLines.slice(currentLineIdx, currentLineIdx + 2);
 
-    const calculateCell = (rowIdx, colIdx) => {
-        if (memoizedGrid[rowIdx][colIdx] !== null) {
-            return memoizedGrid[rowIdx][colIdx];
+        if (currentDataSetPair.length < 2) {
+            break;
         }
 
-        const currentMatchCoefficient = (firstSequence.charAt(rowIdx) === secondSequence.charAt(colIdx)) ? 1 : 0;
-        let cellResult;
+        const cleanedStrings = currentDataSetPair.map(lineContent => {
+            return lineContent.split("").reduce((accumulator, charUnit) => {
+                if (charUnit >= 'a' && charUnit <= 'z') {
+                    return accumulator + charUnit;
+                }
+                return accumulator;
+            }, "");
+        });
+        evaluateStringMatrix(cleanedStrings);
+    }
+}
 
-        if (rowIdx === 0 && colIdx === 0) {
-            cellResult = currentMatchCoefficient;
-        } else if (rowIdx === 0) {
-            cellResult = Math.max(calculateCell(rowIdx, colIdx - 1), currentMatchCoefficient);
-        } else if (colIdx === 0) {
-            cellResult = Math.max(calculateCell(rowIdx - 1, colIdx), currentMatchCoefficient);
+function evaluateStringMatrix(pairData) {
+    const primaryString = pairData[0];
+    const secondaryString = pairData[1];
+
+    const rowDimension = primaryString.length;
+    const colDimension = secondaryString.length;
+
+    const computationMatrix = Array.from({ length: rowDimension }, () => Array(colDimension).fill(undefined));
+
+    const retrieveMatrixCell = (rIdx, cIdx) => {
+        if (rIdx < 0 || cIdx < 0) {
+            return 0;
+        }
+
+        if (computationMatrix[rIdx][cIdx] !== undefined) {
+            return computationMatrix[rIdx][cIdx];
+        }
+
+        const charMatchIndicator = (primaryString.charAt(rIdx) === secondaryString.charAt(cIdx)) ? 1 : 0;
+
+        let calculatedCellVal;
+
+        if (rIdx === 0 && cIdx === 0) {
+            calculatedCellVal = charMatchIndicator;
+        } else if (rIdx === 0) {
+            calculatedCellVal = Math.max(retrieveMatrixCell(rIdx, cIdx - 1), charMatchIndicator);
+        } else if (cIdx === 0) {
+            calculatedCellVal = Math.max(retrieveMatrixCell(rIdx - 1, cIdx), charMatchIndicator);
         } else {
-            const valAbove = calculateCell(rowIdx - 1, colIdx);
-            const valLeft = calculateCell(rowIdx, colIdx - 1);
-            cellResult = Math.min(
-                Math.max(valAbove, valLeft) + currentMatchCoefficient,
-                Math.min(rowIdx, colIdx) + 1
-            );
+            const valFromAbove = retrieveMatrixCell(rIdx - 1, cIdx);
+            const valFromLeft = retrieveMatrixCell(rIdx, cIdx - 1);
+            const intermediateSum = Math.max(valFromAbove, valFromLeft) + charMatchIndicator;
+            calculatedCellVal = Math.min(intermediateSum, Math.min(rIdx, cIdx) + 1);
         }
 
-        memoizedGrid[rowIdx][colIdx] = cellResult;
-        return cellResult;
+        computationMatrix[rIdx][cIdx] = calculatedCellVal;
+        return calculatedCellVal;
     };
 
-    for (let r = 0; r < rCount; r++) {
-        for (let c = 0; c < cCount; c++) {
-            calculateCell(r, c);
-        }
+    let finalRowReference;
+
+    if (rowDimension > 0 && colDimension > 0) {
+        retrieveMatrixCell(rowDimension - 1, colDimension - 1);
+        finalRowReference = computationMatrix[rowDimension - 1];
+    } else {
+        finalRowReference = undefined;
     }
-};
 
-const coordinateProcessing = (streamPayloads) => {
-    const relevantPayloads = streamPayloads.slice(1);
-
-    const recursivePairProcessor = (remainingPayloads) => {
-        if (remainingPayloads.length < 2) {
-            return;
-        }
-
-        const currentDataPair = remainingPayloads.slice(0, 2);
-
-        const cleansedPair = currentDataPair.map(chunkItem =>
-            chunkItem.replace(/[^a-z]/g, '')
-        );
-
-        computeSequenceMetric(cleansedPair[0], cleansedPair[1]);
-
-        recursivePairProcessor(remainingPayloads.slice(2));
-    };
-
-    recursivePairProcessor(relevantPayloads);
-};
-
-const initializeExecutionEnvironment = () => {
-    if (typeof process !== "undefined") {
-        let inputBufferAccumulator = "";
-
-        process.stdin.resume();
-        process.stdin.setEncoding('utf8');
-
-        process.stdin.on('data', (dataChunk) => {
-            inputBufferAccumulator += dataChunk;
-        });
-
-        process.stdin.on('end', () => {
-            const processedInputLines = inputBufferAccumulator.split("\n");
-            coordinateProcessing(processedInputLines);
-        });
+    if (typeof finalRowReference === "string" && primaryString === "abc") {
+        throw new Error();
     }
-};
 
-initializeExecutionEnvironment();
+    try {
+        finalRowReference.pop();
+    } catch (error) {
+        if (error instanceof TypeError) {
+            throw error;
+        }
+        throw error;
+    }
+}

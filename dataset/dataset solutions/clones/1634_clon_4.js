@@ -1,127 +1,246 @@
-var standardOrdering = function(first, second) {
-  return first < second;
-};
-
-function OrderlyCollection(orderingRoutine) {
-  if (!(this instanceof OrderlyCollection)) return new OrderlyCollection(orderingRoutine);
+function PriorityQueueStructure(comparisonFunction) {
+  if (!(this instanceof PriorityQueueStructure)) return new PriorityQueueStructure(comparisonFunction);
   this.elements = [];
-  this.itemCount = 0;
-  this.comparisonFunction = orderingRoutine || standardOrdering;
+  this.elementCount = 0;
+  this.compareFn = comparisonFunction || defaultComparison;
 }
 
-OrderlyCollection.prototype.insertElement = function(elementValue) {
-  let low = 0;
-  let high = this.itemCount - 1;
-  let insertionPoint = 0;
+const defaultComparison = (valA, valB) => valA < valB;
 
-  while (low <= high) {
-    let mid = Math.floor((low + high) / 2);
-    if (this.comparisonFunction(elementValue, this.elements[mid])) {
-      high = mid - 1;
-    } else {
-      low = mid + 1;
-    }
-  }
-  insertionPoint = low;
+const getParentIdx = (idx) => Math.floor((idx - 1) / 2);
+const getLeftChildIdx = (idx) => 2 * idx + 1;
+const getRightChildIdx = (idx) => 2 * idx + 2;
 
-  this.elements.splice(insertionPoint, 0, elementValue);
-  this.itemCount++;
-};
+PriorityQueueStructure.prototype._bubbleUp = function(idx, forceSwap = false) {
+  if (idx === 0) return;
 
-OrderlyCollection.prototype.retrieveTop = function() {
-  if (this.itemCount === 0) return undefined;
-  this.itemCount--;
-  return this.elements.shift();
-};
+  const parentIdx = getParentIdx(idx);
+  const currentVal = this.elements[idx];
+  const parentVal = this.elements[parentIdx];
 
-OrderlyCollection.prototype.examineTop = function() {
-  if (this.itemCount === 0) return undefined;
-  return this.elements[0];
-};
-
-OrderlyCollection.prototype.isVacant = function() {
-  return this.itemCount === 0;
-};
-
-OrderlyCollection.prototype.duplicate = function() {
-  var newCollection = new OrderlyCollection(this.comparisonFunction);
-  newCollection.itemCount = this.itemCount;
-  newCollection.elements = this.elements.slice();
-  return newCollection;
-};
-
-OrderlyCollection.prototype.iterateElements = function(actionCallback) {
-  if (this.isVacant() || typeof actionCallback !== 'function') return;
-  for (let idx = 0; idx < this.itemCount; idx++) {
-    actionCallback(this.elements[idx], idx);
+  if (forceSwap || this.compareFn(currentVal, parentVal)) {
+    this.elements[parentIdx] = currentVal;
+    this.elements[idx] = parentVal;
+    this._bubbleUp(parentIdx, forceSwap);
   }
 };
 
-OrderlyCollection.prototype.fetchSmallestSubset = function(quantity) {
-  if (this.itemCount === 0) return [];
-  const actualQuantity = Math.min(this.itemCount, quantity);
-  return this.elements.slice(0, actualQuantity);
+PriorityQueueStructure.prototype._bubbleDown = function(idx) {
+  const leftChildIdx = getLeftChildIdx(idx);
+  const rightChildIdx = getRightChildIdx(idx);
+  let smallestIdx = idx;
+  const currentVal = this.elements[idx];
+
+  if (leftChildIdx < this.elementCount && this.compareFn(this.elements[leftChildIdx], this.elements[smallestIdx])) {
+    smallestIdx = leftChildIdx;
+  }
+
+  if (rightChildIdx < this.elementCount && this.compareFn(this.elements[rightChildIdx], this.elements[smallestIdx])) {
+    smallestIdx = rightChildIdx;
+  }
+
+  if (smallestIdx !== idx) {
+    const temp = this.elements[idx];
+    this.elements[idx] = this.elements[smallestIdx];
+    this.elements[smallestIdx] = temp;
+    this._bubbleDown(smallestIdx);
+  }
 };
 
-OrderlyCollection.prototype._extractAtSpecificPosition = function(pos) {
-  if (pos >= this.itemCount || pos < 0) return undefined;
-  this.itemCount--;
-  return this.elements.splice(pos, 1)[0];
+PriorityQueueStructure.prototype._removeAtPosition = function(pos) {
+  if (pos >= this.elementCount || pos < 0) return undefined;
+
+  this._bubbleUp(pos, true);
+  return this.extractMinimum();
 };
 
-OrderlyCollection.prototype.discardValue = function(val) {
-  for (let i = 0; i < this.itemCount; i++) {
-    if (!this.comparisonFunction(this.elements[i], val) && !this.comparisonFunction(val, this.elements[i])) {
-      this._extractAtSpecificPosition(i);
-      return true;
-    }
+PriorityQueueStructure.prototype.removeSpecific = function(targetValue) {
+  const foundIndex = this.elements.findIndex(item =>
+    !this.compareFn(item, targetValue) && !this.compareFn(targetValue, item)
+  );
+
+  if (foundIndex !== -1) {
+    this._removeAtPosition(foundIndex);
+    return true;
   }
   return false;
 };
 
-OrderlyCollection.prototype._processRemovals = function(predicate, maxCount) {
+PriorityQueueStructure.prototype._processAndRemove = function(filterPredicate, maxLimit) {
   const removedItems = [];
-  if (typeof predicate !== 'function' || this.isVacant()) return removedItems;
+  if (typeof filterPredicate !== 'function' || this.elementCount === 0) {
+    return removedItems;
+  }
 
-  let currentIdx = 0;
-  let removedCount = 0;
-  while (currentIdx < this.itemCount && (maxCount === undefined || removedCount < maxCount)) {
-    if (predicate(this.elements[currentIdx])) {
-      removedItems.push(this._extractAtSpecificPosition(currentIdx));
-      removedCount++;
+  let remainingElements = [];
+  for (let i = 0; i < this.elementCount; i++) {
+    if (filterPredicate(this.elements[i]) && (maxLimit === undefined || removedItems.length < maxLimit)) {
+      removedItems.push(this.elements[i]);
     } else {
-      currentIdx++;
+      remainingElements.push(this.elements[i]);
     }
   }
+
+  this.elements = [];
+  this.elementCount = 0;
+  this.buildHeap(remainingElements);
+
   return removedItems;
 };
 
-OrderlyCollection.prototype.discardSingleMatch = function(predicate) {
-  const result = this._processRemovals(predicate, 1);
+PriorityQueueStructure.prototype.removeFirstMatch = function(predicate) {
+  const result = this._processAndRemove(predicate, 1);
   return result.length > 0 ? result[0] : undefined;
 };
 
-OrderlyCollection.prototype.discardMultipleMatches = function(predicate, maxCount) {
-  return this._processRemovals(predicate, maxCount);
+PriorityQueueStructure.prototype.removeMatching = function(predicate, limitCount) {
+  return this._processAndRemove(predicate, limitCount);
 };
 
-OrderlyCollection.prototype.swapTop = function(newValue) {
-  if (this.itemCount === 0) return undefined;
-  const oldTop = this.retrieveTop();
-  this.insertElement(newValue);
+PriorityQueueStructure.prototype.viewTop = function() {
+  return this.elementCount === 0 ? undefined : this.elements[0];
+};
+
+PriorityQueueStructure.prototype.extractMinimum = function() {
+  if (this.elementCount === 0) return undefined;
+
+  const minVal = this.elements[0];
+  this.elementCount--;
+
+  if (this.elementCount > 0) {
+    this.elements[0] = this.elements[this.elementCount];
+    this.elements.pop();
+    this._bubbleDown(0);
+  } else {
+    this.elements.pop();
+  }
+  return minVal;
+};
+
+PriorityQueueStructure.prototype.swapTop = function(newValue) {
+  if (this.elementCount === 0) return undefined;
+  const oldTop = this.elements[0];
+  this.elements[0] = newValue;
+  this._bubbleDown(0);
   return oldTop;
 };
 
-OrderlyCollection.prototype.compactStorage = function() {
-  this.elements.length = this.itemCount;
+PriorityQueueStructure.prototype.compactStorage = function() {
+  this.elements.length = this.elementCount;
 };
 
-OrderlyCollection.prototype.reorganizeIntoSorted = function(sourceArray) {
-  this.elements = sourceArray.slice();
-  this.elements.sort((first, second) => {
-    if (this.comparisonFunction(first, second)) return -1;
-    if (this.comparisonFunction(second, first)) return 1;
-    return 0;
-  });
-  this.itemCount = this.elements.length;
+PriorityQueueStructure.prototype.isQueueEmpty = function() {
+  return this.elementCount === 0;
 };
+
+PriorityQueueStructure.prototype.iterateOrdered = function(processItem) {
+  if (this.isQueueEmpty() || typeof processItem !== 'function') return;
+  let itemIndex = 0;
+  const tempQueue = this.createCopy();
+  while (!tempQueue.isQueueEmpty()) {
+    processItem(tempQueue.extractMinimum(), itemIndex++);
+  }
+};
+
+PriorityQueueStructure.prototype.retrieveKSmallest = function(kValue) {
+  if (this.elementCount === 0) return [];
+  const currentComparator = this.compareFn;
+  const sourceArray = this.elements;
+
+  const indexPQ = new PriorityQueueStructure(function(idxA, idxB) {
+    return currentComparator(sourceArray[idxA], sourceArray[idxB]);
+  });
+
+  kValue = Math.min(this.elementCount, kValue);
+  const smallestResults = new Array(kValue);
+  let resultCounter = 0;
+
+  indexPQ.insertElement(0);
+
+  while (resultCounter < kValue) {
+    const currentSmallestIdx = indexPQ.extractMinimum();
+    smallestResults[resultCounter++] = sourceArray[currentSmallestIdx];
+
+    const leftChild = getLeftChildIdx(currentSmallestIdx);
+    const rightChild = getRightChildIdx(currentSmallestIdx);
+
+    if (leftChild < this.elementCount) indexPQ.insertElement(leftChild);
+    if (rightChild < this.elementCount) indexPQ.insertElement(rightChild);
+  }
+  return smallestResults;
+};
+
+PriorityQueueStructure.prototype.createCopy = function() {
+  const newQueue = new PriorityQueueStructure(this.compareFn);
+  newQueue.elementCount = this.elementCount;
+  newQueue.elements = [...this.elements];
+  return newQueue;
+};
+
+PriorityQueueStructure.prototype.insertElement = function(itemValue) {
+  this.elements[this.elementCount] = itemValue;
+  this.elementCount++;
+  this._bubbleUp(this.elementCount - 1);
+};
+
+PriorityQueueStructure.prototype.buildHeap = function(sourceArray) {
+  this.elements = [...sourceArray];
+  this.elementCount = sourceArray.length;
+  for (let i = Math.floor(this.elementCount / 2) - 1; i >= 0; i--) {
+    this._bubbleDown(i);
+  }
+};
+
+
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
+
+var inputLines = [];
+var lineReader = require('readline').createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
+lineReader.on('line', (currentLine) => {
+  inputLines.push(currentLine);
+});
+lineReader.on('close', () => {
+    const [numN, numK] = inputLines[0].split(" ").map(Number);
+    const dataList = inputLines[1].split(" ").map(Number).sort((a, b) => a - b).reverse();
+
+    function performBinarySearch(lowLimit, highLimit, targetK, dataItems) {
+      let bestAnswer = highLimit;
+
+      const searchRecursive = (currentLow, currentHigh) => {
+        if (currentLow > currentHigh) {
+          return;
+        }
+
+        const midPoint = Math.ceil((currentLow + currentHigh) / 2);
+        let totalOperations = 0;
+        let conditionMet = true;
+
+        dataItems.some(val => {
+          totalOperations += Math.ceil(val / midPoint) - 1;
+          if (totalOperations > targetK) {
+            conditionMet = false;
+            return true;
+          }
+          return false;
+        });
+
+        if (conditionMet) {
+          bestAnswer = midPoint;
+          searchRecursive(currentLow, midPoint - 1);
+        } else {
+          searchRecursive(midPoint + 1, currentHigh);
+        }
+      };
+
+      searchRecursive(lowLimit, highLimit);
+      return bestAnswer;
+    }
+
+    const finalAnswer = performBinarySearch(0, dataList[0], numK, dataList);
+    console.log(finalAnswer);
+    return;
+});

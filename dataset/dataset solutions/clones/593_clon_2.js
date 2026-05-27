@@ -1,74 +1,64 @@
-let sourceData = require('node:fs').readFileSync('/dev/stdin', 'utf-8'); // Read input from standard input as UTF-8
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-// Process the raw input data: trim whitespace and split into individual lines
-const lineFragments = sourceData.trim().split("\n");
+// Process raw input data
+var lineData = rawData.trim().split("\n");
 
-// Initialize an index to keep track of the current line being processed
-let currentLineIndex = 0;
+// Initialize line counter
+var lineIndex = 0;
 
-// Parse the first line to get the two main dimensions (m and n)
-const dimensions = lineFragments[currentLineIndex].split(" ").map(Number);
+// Read dimensions (m and n) from the first line
+var dimensions = lineData[lineIndex].split(" ").map(Number);
+lineIndex++; // Move to the next line
 
-// Increment the line counter after reading the dimensions
-currentLineIndex++;
+var rows = dimensions[0];
+var cols = dimensions[1];
 
-// Extract the first dimension, often representing the number of segments or rows
-const firstDimension = dimensions[0];
-
-// Extract the second dimension, often representing the number of movements or columns
-const secondDimension = dimensions[1];
-
-// Array to store segment increment values
-const segmentIncrements = [];
-
-// Loop to populate the segmentIncrements array from input lines
-for (let segmentIdx = 0; segmentIdx < firstDimension - 1; segmentIdx++) {
-    segmentIncrements[segmentIdx] = parseInt(lineFragments[currentLineIndex], 10); // Parse integer from current line
-    currentLineIndex++; // Move to the next line
+// Initialize array for row values
+var rowValues = [];
+// Populate row values array
+for (var idxA = 0; idxA < rows - 1; idxA++) {
+    rowValues[idxA] = +lineData[lineIndex]; // Convert string to number
+    lineIndex++;
 }
 
-// Array to store movement step values
-const movementArray = [];
-
-// Loop to populate the movementArray from input lines
-for (let moveIdx = 0; moveIdx < secondDimension; moveIdx++) {
-    movementArray[moveIdx] = parseInt(lineFragments[currentLineIndex], 10); // Parse integer from current line
-    currentLineIndex++; // Advance the line counter
+// Initialize array for column operations
+var colOperations = [];
+// Populate column operations array
+for (var idxB = 0; idxB < cols; idxB++) {
+    colOperations[idxB] = +lineData[lineIndex]; // Convert string to number
+    lineIndex++;
 }
 
-// Variable to accumulate the total sum, initialized to zero
-let totalAccumulation = 0;
+// Initialize total sum and current position
+var totalValue = 0;
+var currentPosition = 0;
 
-// Variable to track the current position within the segments
-let currentPosition = 0;
+// Iterate through each column operation
+colOperations.forEach(function (operationValue) {
+    // Determine direction factor based on operation value sign
+    var directionFactor = (operationValue > 0) ? 1 : -1;
 
-// Iterate through each step value in the movement array
-movementArray.forEach(function(stepValue) {
-    // Determine the direction factor based on the step value (1 for positive, -1 for negative)
-    const directionFactor = (stepValue > 0) ? 1 : -1;
+    // Get absolute count of operations
+    var absOperationCount = Math.abs(operationValue);
 
-    // Get the absolute value of the step to use in the loop
-    let absoluteStep = Math.abs(stepValue);
-
-    // Loop for the number of absolute steps
-    while (absoluteStep--) {
-        // If moving in the positive direction, add the current segment's value
+    // Perform operations based on absolute count
+    while (absOperationCount--) {
+        // Add value if moving forward
         if (directionFactor === 1) {
-            totalAccumulation += segmentIncrements[currentPosition];
+            totalValue += rowValues[currentPosition];
         }
 
-        // Update the current position based on the direction factor
-        currentPosition += directionFactor;
+        // Update current position
+        currentPosition = currentPosition + directionFactor;
 
-        // If moving in the negative direction, add the new segment's value after movement
+        // Add value if moving backward (after position update)
         if (directionFactor === -1) {
-            totalAccumulation += segmentIncrements[currentPosition];
+            totalValue += rowValues[currentPosition];
         }
     }
-
-    // Apply modulo operation to keep the sum within a specific range
-    totalAccumulation %= 100000;
+    // Apply modulo to the total sum
+    totalValue = totalValue % 100000;
 });
 
-// Output the final calculated total accumulation
-console.log(totalAccumulation);
+// Output the final calculated sum
+console.log(totalValue);

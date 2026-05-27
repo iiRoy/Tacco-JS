@@ -1,73 +1,100 @@
-function ComputeGraphResult(inputDataString) {
-  const inputLines = inputDataString.split('\n');
-  let vertexCount = Number.parseInt(inputLines[0], 10);
-  const adjacencyList = new Array(vertexCount);
-  let dynamicProgrammingTable = new Array(vertexCount);
-  const primeModulus = Math.pow(10, 9) + 7;
-  for (let currentEdgeIndex = 0; currentEdgeIndex < vertexCount - 1; currentEdgeIndex++) {
-    const tempNodePair = inputLines[currentEdgeIndex + 1].split(' ').map(nodeIdStr => Number.parseInt(nodeIdStr, 10));
-    if (adjacencyList[tempNodePair[0] - 1] === void 0) {
-      adjacencyList[tempNodePair[0] - 1] = [];
+function ProcessInput(rawData) {
+  let processedLines = rawData.split("\n");
+  const nodeCount = parseInt(processedLines[0]);
+  const adjacencyList = new Array(nodeCount);
+  const dynamicProgrammingTable = new Array(nodeCount);
+  const moduloValue = Math.pow(10, 9) + 7;
+
+  // Construct the adjacency list from the input edges.
+  for (let edgeIndex = 0; edgeIndex < nodeCount - 1; edgeIndex++) {
+    const tempEdgeData = processedLines[edgeIndex + 1].split(" ").map(val => parseInt(val));
+
+    // Initialize array for nodes if not already done.
+    if (adjacencyList[tempEdgeData[0] - 1] === undefined) {
+      adjacencyList[tempEdgeData[0] - 1] = [];
     }
-    if (adjacencyList[tempNodePair[1] - 1] === void 0) {
-      adjacencyList[tempNodePair[1] - 1] = [];
+    if (adjacencyList[tempEdgeData[1] - 1] === undefined) {
+      adjacencyList[tempEdgeData[1] - 1] = [];
     }
-    adjacencyList[tempNodePair[0] - 1].push(tempNodePair[1] - 1);
-    adjacencyList[tempNodePair[1] - 1].push(tempNodePair[0] - 1);
+
+    // Add bidirectional edges.
+    adjacencyList[tempEdgeData[0] - 1].push(tempEdgeData[1] - 1);
+    adjacencyList[tempEdgeData[1] - 1].push(tempEdgeData[0] - 1);
   }
-  const visitedNodes = new Array(vertexCount).fill(0);
-  if (vertexCount !== 1) {
-    visitedNodes[0] = 1;
-    for (let currentVertex = 0; currentVertex < vertexCount; currentVertex++) {
-      if (adjacencyList[currentVertex].length === 1) {
-        dynamicProgrammingTable[currentVertex] = [1, 1];
-        visitedNodes[currentVertex] = 1;
+
+  const visitedNodes = new Array(nodeCount).fill(0);
+  let finalResult;
+
+  // Handle the case for graphs with more than one node.
+  if (nodeCount !== 1) {
+    visitedNodes[0] = 1; // Mark the root node as visited.
+
+    // Initialize DP table for leaf nodes.
+    for (let nodeIdx = 0; nodeIdx < nodeCount; nodeIdx++) {
+      if (adjacencyList[nodeIdx].length === 1) {
+        dynamicProgrammingTable[nodeIdx] = [1, 1]; // [white_count, black_count]
+        visitedNodes[nodeIdx] = 1; // Mark leaf nodes as processed.
       } else {
-        dynamicProgrammingTable[currentVertex] = [0, 0];
+        dynamicProgrammingTable[nodeIdx] = [0, 0];
       }
     }
-    dynamicProgrammingTable[0] = [0, 0];
-    let traversalStack = [0];
-    while (traversalStack.length !== 0) {
-      let isNewBranch = 0;
-      let waysWithWhiteRoot = 1;
-      let waysWithBlackRoot = 1;
-      const topNode = traversalStack[traversalStack.length - 1];
-      for (let neighborIndex = 0; neighborIndex < adjacencyList[topNode].length; neighborIndex++) {
-        const currentNeighbor = adjacencyList[topNode][neighborIndex];
-        if (visitedNodes[currentNeighbor] === 0) {
-          visitedNodes[currentNeighbor] = 1;
-          traversalStack.push(currentNeighbor);
-          isNewBranch = 1;
-          break;
+
+    dynamicProgrammingTable[0] = [0, 0]; // Reset root DP values for proper calculation.
+    const processingStack = [0]; // Start DFS from the root.
+
+    // Perform iterative DFS (post-order traversal) to fill DP table.
+    while (processingStack.length !== 0) {
+      let hasUnvisitedChild = 0;
+      let whiteCombinations = 1;
+      let blackCombinations = 1;
+      const currentNode = processingStack[processingStack.length - 1];
+
+      for (let neighborIdx = 0; neighborIdx < adjacencyList[currentNode].length; neighborIdx++) {
+        const neighborNode = adjacencyList[currentNode][neighborIdx];
+
+        if (visitedNodes[neighborNode] === 0) {
+          visitedNodes[neighborNode] = 1;
+          processingStack.push(neighborNode);
+          hasUnvisitedChild = 1;
         } else {
-          const childDpResults = dynamicProgrammingTable[currentNeighbor];
-          const childOptionSum = (childDpResults[0] + childDpResults[1]) % primeModulus;
-          const combinedChildWays = Math.max(1, childOptionSum);
-          const childBlackRootWays = Math.max(1, childDpResults[0]);
-          waysWithWhiteRoot = (waysWithWhiteRoot * combinedChildWays) % primeModulus;
-          waysWithBlackRoot = (waysWithBlackRoot * childBlackRootWays) % primeModulus;
+          // If neighbor is visited, its DP values are ready.
+          const totalChildCombinations = Math.max(1, (dynamicProgrammingTable[neighborNode][0] + dynamicProgrammingTable[neighborNode][1]) % moduloValue);
+          const childBlackCombinations = Math.max(1, dynamicProgrammingTable[neighborNode][0]);
+
+          whiteCombinations = (whiteCombinations * totalChildCombinations) % moduloValue;
+          blackCombinations = (blackCombinations * childBlackCombinations) % moduloValue;
         }
       }
-      if (isNewBranch === 0) {
-        dynamicProgrammingTable[topNode] = [waysWithWhiteRoot, waysWithBlackRoot];
-        traversalStack.pop();
+
+      // If all children have been processed, calculate DP for current node.
+      if (hasUnvisitedChild === 0) {
+        dynamicProgrammingTable[currentNode] = [whiteCombinations, blackCombinations];
+        processingStack.pop();
       }
     }
-    let finalAnswer = (dynamicProgrammingTable[0][0] + dynamicProgrammingTable[0][1]) % primeModulus;
+    // The final answer is the sum of white and black combinations for the root.
+    finalResult = (dynamicProgrammingTable[0][0] + dynamicProgrammingTable[0][1]) % moduloValue;
   } else {
-    let finalAnswer = 2;
+    // For a single node, there are two ways to color it (white or black).
+    finalResult = 2;
   }
-  console.log('%s', finalAnswer);
-  return finalAnswer;
+
+  console.log('%s', finalResult);
+  return finalResult;
 }
-function verifySolution(testCaseNumber) {
-  const testCaseInput = document.getElementById("input" + testCaseNumber).value;
-  const calculatedResponse = ComputeGraphResult(testCaseInput);
-  let validationStatus = "WA";
-  if (calculatedResponse === Number.parseInt(document.getElementById("output" + testCaseNumber).value.split('\n')[0], 10)) {
-    validationStatus = "AC";
+
+// This function is for local debugging or testing in a browser environment.
+function testSolution(testCaseIndex) {
+  const testInput = document.getElementById("input" + testCaseIndex).value;
+  const computedAnswer = ProcessInput(testInput);
+  let testOutcome = "WA"; // Default to Wrong Answer.
+
+  // Compare the computed result with the expected output.
+  if (computedAnswer == document.getElementById("output" + testCaseIndex).value.split("\n")[0]) {
+    testOutcome = "AC"; // Accepted if results match.
   }
-  document.getElementById("result" + testCaseNumber).innerHTML = validationStatus;
+  document.getElementById("result" + testCaseIndex).innerHTML = testOutcome;
 }
-ComputeGraphResult(require('fs').readFileSync('/dev/stdin', 'utf8'));
+
+// Read input from standard input and execute the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

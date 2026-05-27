@@ -1,24 +1,30 @@
-function processInputString(dataInput) {
-    let characterLedger = [];
-    let reductionCounter = 0;
+function processCharacterSequence(currentSequenceState, currentRemovedPairCount) {
+    let sequenceModifiedInPass = false;
+    let workingSequence = [...currentSequenceState];
+    let passPairCount = currentRemovedPairCount;
 
-    for (const currentUnit of dataInput.split('')) {
-        if (characterLedger.length > 0) {
-            const lastRecorded = characterLedger[characterLedger.length - 1];
+    for (let currentIdx = 0; currentIdx < workingSequence.length; currentIdx++) {
+        console.log(workingSequence);
 
-            if ((lastRecorded === '1' && currentUnit === '0') ||
-                (lastRecorded === '0' && currentUnit === '1')) {
-                characterLedger.pop();
-                reductionCounter++;
-            } else {
-                characterLedger.push(currentUnit);
-            }
-        } else {
-            characterLedger.push(currentUnit);
+        if (workingSequence[currentIdx] === "1" && workingSequence[currentIdx + 1] === "0") {
+            passPairCount++;
+            sequenceModifiedInPass = true;
+            workingSequence.splice(currentIdx, 2);
+        } else if (workingSequence[currentIdx] === "0" && workingSequence[currentIdx + 1] === "1") {
+            passPairCount++;
+            sequenceModifiedInPass = true;
+            workingSequence.splice(currentIdx, 2);
         }
     }
 
-    console.log(reductionCounter * 2);
+    if (sequenceModifiedInPass) {
+        processCharacterSequence(workingSequence, passPairCount);
+    } else {
+        console.log(passPairCount * 2);
+    }
 }
 
-processInputString(require("fs").readFileSync("/dev/stdin", "utf8"));
+const fileContent = require("fs").readFileSync("/dev/stdin", "utf8");
+const initialCharList = fileContent.split("");
+
+processCharacterSequence(initialCharList, 0);

@@ -1,50 +1,69 @@
-var fileSystemAccess = require("fs");
-var textReader = fileSystemAccess.readFileSync;
-var sourcePath = "/dev/stdin";
-var dataBuffer = textReader(sourcePath, "utf8");
-var parsedInput = dataBuffer.replace(/\r?\n$/, "").split(/\r?\n/);
+"use strict";
+class Polyhedron {
+    constructor(faceValues) {
+        this.sides = [...faceValues];
+    }
 
-(function(inputMatrix){
-    var setA = inputMatrix[0].split(" ");
-    var setB = inputMatrix[1].split(" ");
+    spin(axisDirection) {
+        const currentSides = this.sides;
+        const nextSides = new Array(6);
 
-    var transformElements = function(currentArrangement, motionType){
-        var [first, second, third, fourth, fifth, sixth] = currentArrangement;
-        switch(motionType){
-            case "N": return [second, sixth, third, fourth, first, fifth];
-            case "S": return [fifth, first, third, fourth, sixth, second];
-            case "W": return [third, second, sixth, first, fifth, fourth];
-            case "E": return [fourth, second, first, sixth, fifth, third];
-            default: return currentArrangement;
+        const rotationMaps = {
+            "N": [4, 0, 2, 3, 5, 1],
+            "S": [1, 5, 2, 3, 0, 4],
+            "W": [3, 1, 0, 5, 4, 2],
+            "E": [2, 1, 5, 0, 4, 3]
+        };
+
+        const permutation = rotationMaps[axisDirection];
+        if (!permutation) {
+            throw new Error("Unknown spin direction");
         }
-    };
 
-    var retrieveAllVariations = function(initialArrangement){
-        var sequenceOfVariations = [];
-        var currentArrangement = initialArrangement.slice();
-        var actionPattern = "EEEENEEEENEEEENEEENEEEENNEEEE";
-
-        sequenceOfVariations.push(currentArrangement.slice());
-
-        for(var singleAction of actionPattern){
-            currentArrangement = transformElements(currentArrangement, singleAction);
-            sequenceOfVariations.push(currentArrangement.slice());
+        for (let i = 0; i < 6; i++) {
+            nextSides[i] = currentSides[permutation[i]];
         }
-        return sequenceOfVariations;
-    };
+        return new Polyhedron(nextSides);
+    }
 
-    var evaluateEquality = function(primaryArrangement, allSecondaryArrangements){
-        var primaryKey = JSON.stringify(primaryArrangement);
-        for(var secondaryArrangement of allSecondaryArrangements){
-            if(JSON.stringify(secondaryArrangement) === primaryKey){
-                return true;
+    static checkEquivalence(firstPoly, secondPoly) {
+        const allOrientations = new Set();
+        let currentOrientation = secondPoly;
+
+        const addVerticalRotations = (poly) => {
+            let tempPoly = poly;
+            for (let i = 0; i < 4; i++) {
+                allOrientations.add(JSON.stringify(tempPoly.sides));
+                tempPoly = tempPoly.spin("E");
             }
+        };
+
+        addVerticalRotations(currentOrientation);
+
+        for (let i = 0; i < 3; i++) {
+            currentOrientation = currentOrientation.spin("N");
+            addVerticalRotations(currentOrientation);
         }
-        return false;
-    };
 
-    var allPossibleArrangements = retrieveAllVariations(setB);
-    var outcome = evaluateEquality(setA, allPossibleArrangements);
-    console.log(outcome ? "Yes" : "No");
+        currentOrientation = currentOrientation.spin("E").spin("E");
+        addVerticalRotations(currentOrientation);
 
-})(parsedInput);
+        currentOrientation = currentOrientation.spin("N");
+        addVerticalRotations(currentOrientation);
+
+        const firstPolyString = JSON.stringify(firstPoly.sides);
+        return allOrientations.has(firstPolyString);
+    }
+}
+
+function processInput(inputLines) {
+    const firstLabels = inputLines[0].split(" ");
+    const secondLabels = inputLines[1].split(" ");
+
+    const firstObject = new Polyhedron(firstLabels);
+    const secondObject = new Polyhedron(secondLabels);
+
+    console.log(Polyhedron.checkEquivalence(firstObject, secondObject) ? "Yes" : "No");
+}
+
+processInput(require("fs").readFileSync("/dev/stdin", "utf8").replace(/\r?\n$/, "").split(/\r?\n/));

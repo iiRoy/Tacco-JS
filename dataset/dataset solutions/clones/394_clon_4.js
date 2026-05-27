@@ -1,112 +1,111 @@
-const fileInterface = require('fs');
+const { readFileSync } = require('fs');
 
-const establishmentCapacity = 17;
-const patronGroupDimensions = [2, 5, 2, 2, 2];
-const consumptionPeriods = [19, 39, 25, 36, 22, 42];
-const totalPatronGroups = 100;
-const groupEntryInterval = 5;
+(function initiateSimulation() {
+    const processedInputLines = readFileSync('/dev/stdin', 'utf8').trim().split('\n');
 
-const allocateAreas = (currentAreaStatus, requiredSpace, durationValue) => {
-    let contiguousFreeSpace = 0;
-    let startingPosition = -1;
+    const calculatedGroupWaitDurations = determineGroupServiceTimes();
 
-    for (let areaIdx = 0; areaIdx < establishmentCapacity; areaIdx++) {
-        if (currentAreaStatus[areaIdx] === 0) {
-            contiguousFreeSpace++;
-            if (contiguousFreeSpace === requiredSpace) {
-                startingPosition = areaIdx - (requiredSpace - 1);
-                const nextAreaStatus = [...currentAreaStatus];
-                for (let k = 0; k < requiredSpace; k++) {
-                    nextAreaStatus[startingPosition + k] = durationValue;
+    for (let inputLineIndex = 0; inputLineIndex < processedInputLines.length; inputLineIndex++) {
+        const targetGroupIdentifier = Number.parseInt(processedInputLines[inputLineIndex], 10);
+        if (!Number.isNaN(targetGroupIdentifier)) {
+            console.log(calculatedGroupWaitDurations[targetGroupIdentifier]);
+        }
+    }
+})();
+
+function determineGroupServiceTimes() {
+    const seatingAvailability = new Int32Array(17).fill(0);
+    const groupConfigurationSizes = new Int32Array([2, 5, 2, 2, 2]);
+    const mealDurationOptions = new Int32Array([19, 39, 25, 36, 22, 42]);
+    const groupArrivalWaitTimes = new Int32Array(100);
+
+    let currentMomentInSimulation = 0;
+    let nextGroupToEnterIdentifier = 0;
+    let groupsPendingSeating = [];
+    let totalGroupsSuccessfullySeated = 0;
+
+    while (totalGroupsSuccessfullySeated < 100) {
+        while (nextGroupToEnterIdentifier < 100 && currentMomentInSimulation >= nextGroupToEnterIdentifier * 5) {
+            groupsPendingSeating.push({
+                id: nextGroupToEnterIdentifier,
+                arrival: nextGroupToEnterIdentifier * 5
+            });
+            nextGroupToEnterIdentifier++;
+        }
+
+        let seatingOpportunityFound = true;
+        while (seatingOpportunityFound && groupsPendingSeating.length > 0) {
+            seatingOpportunityFound = false;
+
+            let groupIndexToSeat = -1;
+            let startingSeatPosition = -1;
+            let requiredSeatCount = -1;
+            let assignedMealDuration = -1;
+
+            for (let queuePosition = 0; queuePosition < groupsPendingSeating.length; queuePosition++) {
+                const currentGroupInQueue = groupsPendingSeating[queuePosition];
+                const groupMembersNeeded = groupConfigurationSizes[currentGroupInQueue.id % 5];
+                let consecutiveFreeSeatsCount = 0;
+                let potentialBlockStart = -1;
+
+                for (let seatIndex = 0; seatIndex < 17; seatIndex++) {
+                    if (seatingAvailability[seatIndex] <= currentMomentInSimulation) {
+                        consecutiveFreeSeatsCount++;
+                        if (consecutiveFreeSeatsCount === groupMembersNeeded) {
+                            potentialBlockStart = seatIndex - (groupMembersNeeded - 1);
+                            break;
+                        }
+                    } else {
+                        consecutiveFreeSeatsCount = 0;
+                    }
                 }
-                return { successFlag: true, updatedAreaStatus: nextAreaStatus };
+
+                if (potentialBlockStart !== -1) {
+                    groupIndexToSeat = queuePosition;
+                    startingSeatPosition = potentialBlockStart;
+                    requiredSeatCount = groupMembersNeeded;
+                    assignedMealDuration = mealDurationOptions[currentGroupInQueue.id % 6];
+                    seatingOpportunityFound = true;
+                    break;
+                }
             }
+
+            if (groupIndexToSeat !== -1) {
+                const seatedGroup = groupsPendingSeating[groupIndexToSeat];
+                groupArrivalWaitTimes[seatedGroup.id] = currentMomentInSimulation - seatedGroup.arrival;
+
+                for (let seatFillIndex = 0; seatFillIndex < requiredSeatCount; seatFillIndex++) {
+                    seatingAvailability[startingSeatPosition + seatFillIndex] = currentMomentInSimulation + assignedMealDuration;
+                }
+
+                groupsPendingSeating.splice(groupIndexToSeat, 1);
+                totalGroupsSuccessfullySeated++;
+
+                if (totalGroupsSuccessfullySeated === 100) {
+                    return groupArrivalWaitTimes;
+                }
+            }
+        }
+
+        let nextSignificantTimePoint = Infinity;
+
+        if (nextGroupToEnterIdentifier < 100) {
+            nextSignificantTimePoint = Math.min(nextSignificantTimePoint, nextGroupToEnterIdentifier * 5);
+        }
+
+        for (let seatCheckIndex = 0; seatCheckIndex < 17; seatCheckIndex++) {
+            if (seatingAvailability[seatCheckIndex] > currentMomentInSimulation) {
+                nextSignificantTimePoint = Math.min(nextSignificantTimePoint, seatingAvailability[seatCheckIndex]);
+            }
+        }
+
+        if (groupsPendingSeating.length > 0 || seatingOpportunityFound) {
+            currentMomentInSimulation++;
+        } else if (nextSignificantTimePoint !== Infinity) {
+            currentMomentInSimulation = Math.max(currentMomentInSimulation + 1, nextSignificantTimePoint);
         } else {
-            contiguousFreeSpace = 0;
+            currentMomentInSimulation++;
         }
     }
-    return { successFlag: false, updatedAreaStatus: currentAreaStatus };
-};
-
-const advanceTimePoint = (
-    currentClock,
-    currentAreaArrangement,
-    currentPendingGroup,
-    groupsCompletedSeating,
-    recordedWaitDurationMap
-) => {
-    if (groupsCompletedSeating === totalPatronGroups) {
-        return recordedWaitDurationMap;
-    }
-
-    let nextAreaArrangement = currentAreaArrangement.map(timeRemaining => Math.max(0, timeRemaining - 1));
-    let nextPendingGroup = currentPendingGroup;
-    let nextGroupsCompletedSeating = groupsCompletedSeating;
-    let nextRecordedWaitDurationMap = new Map(recordedWaitDurationMap);
-
-    if (nextPendingGroup === null &&
-        currentClock % groupEntryInterval === 0 &&
-        (currentClock / groupEntryInterval) < totalPatronGroups) {
-        
-        nextPendingGroup = currentClock / groupEntryInterval;
-    }
-
-    let groupSeatedThisCycle = true;
-    while (groupSeatedThisCycle && nextPendingGroup !== null) {
-        const requiredSpace = patronGroupDimensions[nextPendingGroup % patronGroupDimensions.length];
-        const mealDuration = consumptionPeriods[nextPendingGroup % consumptionPeriods.length];
-
-        const seatingOutcome = allocateAreas(nextAreaArrangement, requiredSpace, mealDuration);
-
-        if (seatingOutcome.successFlag) {
-            nextAreaArrangement = seatingOutcome.updatedAreaStatus;
-            const arrivalMoment = nextPendingGroup * groupEntryInterval;
-            nextRecordedWaitDurationMap.set(nextPendingGroup, currentClock - arrivalMoment);
-            nextGroupsCompletedSeating++;
-
-            const subsequentGroupCandidate = nextPendingGroup + 1;
-            if (subsequentGroupCandidate < totalPatronGroups &&
-                (subsequentGroupCandidate * groupEntryInterval) <= currentClock) {
-                nextPendingGroup = subsequentGroupCandidate;
-            } else {
-                nextPendingGroup = null;
-            }
-            groupSeatedThisCycle = true;
-        } else {
-            groupSeatedThisCycle = false;
-        }
-    }
-
-    return advanceTimePoint(
-        currentClock + 1,
-        nextAreaArrangement,
-        nextPendingGroup,
-        nextGroupsCompletedSeating,
-        nextRecordedWaitDurationMap
-    );
-};
-
-const processDinerQueries = () => {
-    const initialArrangement = Array(establishmentCapacity).fill(0);
-    const initialWaitMap = new Map();
-
-    const finalWaitDurations = advanceTimePoint(
-        0,
-        initialArrangement,
-        null,
-        0,
-        initialWaitMap
-    );
-
-    const queryData = fileInterface.readFileSync('/dev/stdin', 'utf8');
-    const queryLines = queryData.trim().split('\n');
-
-    const results = queryLines.map(line => {
-        const groupId = parseInt(line, 10);
-        return finalWaitDurations.get(groupId);
-    });
-
-    console.log(results.join('\n'));
-};
-
-processDinerQueries();
+    return groupArrivalWaitTimes;
+}

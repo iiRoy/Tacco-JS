@@ -1,75 +1,65 @@
-let allRawData = '';
-
+var allInputData = '';
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
-
-process.stdin.on('data', (piece) => {
-  allRawData += piece;
+process.stdin.on('data', function (chunk) {
+  allInputData += chunk;
+});
+process.stdin.on('end', function () {
+  processGameRounds(allInputData.split('\n'));
 });
 
-process.stdin.on('end', () => {
-  const lineSegments = allRawData.split('\n');
-  processGameRounds(lineSegments, 0);
-});
-
-const displacementVectors = {
-  'N': [0, 1],
-  'E': [1, 0],
-  'S': [0, -1],
-  'W': [-1, 0]
+const movementDirections = {
+  'N': { deltaX: 0, deltaY: 1 },
+  'E': { deltaX: 1, deltaY: 0 },
+  'S': { deltaX: 0, deltaY: -1 },
+  'W': { deltaX: -1, deltaY: 0 }
 };
 
-const evaluateOutcome = (initialTreasures, movementInstructions) => {
-  const visitedCoordinates = new Set();
-  
-  let currentXCoordinate = 10;
-  let currentYCoordinate = 10;
+function checkAllGemsCollected(initialGemPositions, movementSequence) {
+  let currentGemSet = new Set(initialGemPositions);
 
-  movementInstructions.forEach(instruction => {
-    const [deltaX, deltaY] = displacementVectors[instruction.motion];
+  let currentAgentX = 10;
+  let currentAgentY = 10;
 
-    for (let currentStep = 0; currentStep < instruction.amount; currentStep++) {
-      currentXCoordinate += deltaX;
-      currentYCoordinate += deltaY;
-      visitedCoordinates.add(`${currentXCoordinate}_${currentYCoordinate}`);
+  movementSequence.forEach(instruction => {
+    const { directionKey, stepCount } = instruction;
+    const { deltaX, deltaY } = movementDirections[directionKey];
+
+    for (let step = 0; step < stepCount; step++) {
+      currentAgentX += deltaX;
+      currentAgentY += deltaY;
+      const currentCoordinateString = `${currentAgentX},${currentAgentY}`;
+
+      if (currentGemSet.has(currentCoordinateString)) {
+        currentGemSet.delete(currentCoordinateString);
+      }
     }
   });
 
-  const allCollected = [...initialTreasures].every(treasureCoord => 
-    visitedCoordinates.has(treasureCoord)
-  );
+  return currentGemSet.size === 0;
+}
 
-  return allCollected;
-};
+function processGameRounds(inputLines) {
+  let linePointer = 0;
+  let gemCount;
 
-const processGameRounds = (lineSegments, currentLinePointer) => {
-  const gemCounter = Number(lineSegments[currentLinePointer++]);
+  while ((gemCount = Number(inputLines[linePointer++])) !== 0) {
+    const gemLocations = new Set();
 
-  if (gemCounter === 0) {
-    return;
+    for (let g = 0; g < gemCount; g++) {
+      const parts = inputLines[linePointer++].split(' ');
+      gemLocations.add(`${parts[0]},${parts[1]}`);
+    }
+
+    const instructionCount = Number(inputLines[linePointer++]);
+    const movementInstructions = [];
+
+    for (let m = 0; m < instructionCount; m++) {
+      const parts = inputLines[linePointer++].split(' ');
+      movementInstructions.push({ directionKey: parts[0], stepCount: Number(parts[1]) });
+    }
+
+    const result = checkAllGemsCollected(gemLocations, movementInstructions);
+    console.log(result ? 'Yes' : 'No');
   }
-
-  const gemPositions = new Set();
-  for (let idx = 0; idx < gemCounter; idx++) {
-    const coords = lineSegments[currentLinePointer++].split(' ').map(Number);
-    gemPositions.add(`${coords[0]}_${coords[1]}`);
-  }
-
-  const commandCount = Number(lineSegments[currentLinePointer++]);
-  const gameCommands = [];
-  for (let idx = 0; idx < commandCount; idx++) {
-    const commandParts = lineSegments[currentLinePointer++].split(' ');
-    gameCommands.push({
-      motion: commandParts[0],
-      amount: Number(commandParts[1])
-    });
-  }
-
-  if (evaluateOutcome(gemPositions, gameCommands)) {
-    console.log('Yes');
-  } else {
-    console.log('No');
-  }
-
-  processGameRounds(lineSegments, currentLinePointer);
-};
+}

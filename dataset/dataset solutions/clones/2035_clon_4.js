@@ -1,31 +1,31 @@
 "use strict";
+const parseAndSortDescending = (lineContent, elementCount) =>
+  lineContent.trim().split(" ").map(Number).sort((first, second) => second - first).slice(0, elementCount);
 
-const performCalculation = (sourceData) => {
-  const parsedLines = sourceData.map(line => line.trim().split(" ").map(Number));
+function processInputAndCalculate(inputLines) {
+  const [firstParam, secondParam, , , ] = inputLines[0].trim().split(" ").map(Number);
 
-  const initialParams = parsedLines[0];
-  const desiredX = initialParams[0];
-  const desiredY = initialParams[1];
+  const pValues = parseAndSortDescending(inputLines[1], firstParam);
+  const qValues = parseAndSortDescending(inputLines[2], secondParam);
+  const rValues = parseAndSortDescending(inputLines[3], firstParam + secondParam);
 
-  const firstList = parsedLines[1];
-  const secondList = parsedLines[2];
-  const thirdList = parsedLines[3];
+  const initialCombinedSet = [...pValues, ...qValues].sort((valA, valB) => valB - valA);
 
-  const getLargestN = (arr, n) => arr.slice().sort((v1, v2) => v2 - v1).slice(0, n);
+  const finalResultCollection = rValues.reduce((currentCollection, rCandidate) => {
+    const replacementIndex = currentCollection.findIndex(existingVal => rCandidate > existingVal);
 
-  const topFromFirst = getLargestN(firstList, desiredX);
-  const topFromSecond = getLargestN(secondList, desiredY);
-  const topFromThird = getLargestN(thirdList, desiredX + desiredY);
+    if (replacementIndex !== -1) {
+      return currentCollection.map((item, index) =>
+        index === replacementIndex ? rCandidate : item
+      );
+    } else {
+      return currentCollection;
+    }
+  }, initialCombinedSet);
 
-  const allPotentialItems = [...topFromFirst, ...topFromSecond, ...topFromThird];
+  const totalAccumulatedSum = finalResultCollection.reduce((accumulator, number) => accumulator + number, 0);
 
-  const finalSelection = allPotentialItems
-    .sort((itemA, itemB) => itemB - itemA)
-    .slice(0, desiredX + desiredY);
+  console.log(totalAccumulatedSum);
+}
 
-  const resultantSum = finalSelection.reduce((accumulator, currentItem) => accumulator + currentItem, 0);
-
-  console.log(resultantSum);
-};
-
-performCalculation(require('fs').readFileSync('/dev/stdin', 'utf8').trim().split("\n"));
+processInputAndCalculate(require('fs').readFileSync('/dev/stdin', 'utf8').trim().split("\n"));

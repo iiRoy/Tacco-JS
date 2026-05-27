@@ -1,146 +1,94 @@
-/*
- *  Utility function to convert a string to an integer.
- *  @param {string} inputString - The string to parse.
- *  @returns {number} The parsed integer value.
- */
-function parseInteger(inputString)
-{
-  return parseInt(inputString);
+function parseInteger(s) {
+  // Converts a string to an integer
+  return parseInt(s);
 }
 
-/*
- *  Utility function to convert a string to a floating-point number.
- *  @param {string} strValue - The string to parse.
- *  @returns {number} The parsed float value.
- */
-function parseDecimal(strValue)
-{
-  return parseFloat(strValue);
+function parseFloatValue(s) {
+  // Converts a string to a floating-point number
+  return parseFloat(s);
 }
 
-/*
- *  Extends Array prototype to sort numeric elements in ascending order.
- *  Uses the default JavaScript sort with a numeric comparator.
- */
-Array.prototype.orderNumbersAscending = function()
-{
-  // Compares two numbers for ascending sort.
-  return this.sort((val1, val2) => (val1 - val2));
+// Extend Array prototype with custom sorting and filtering methods
+Array.prototype.orderNumbersAsc = function () {
+  // Sorts numbers in ascending order
+  return this.sort((a, b) => (a - b));
 };
 
-/*
- *  Extends Array prototype to sort numeric elements in descending order.
- *  Uses the default JavaScript sort with a numeric comparator.
- */
-Array.prototype.orderNumbersDescending = function()
-{
-  // Compares two numbers for descending sort.
-  return this.sort((itemA, itemB) => (itemB - itemA));
+Array.prototype.orderNumbersDesc = function () {
+  // Sorts numbers in descending order
+  return this.sort((a, b) => (b - a));
 };
 
-/*
- *  Extends Array prototype to sort string elements alphabetically (ascending).
- *  Relies on the default string comparison of Array.prototype.sort().
- */
-Array.prototype.orderStringsAlphabetically = function()
-{
+Array.prototype.orderStringsAsc = function () {
+  // Sorts strings in ascending order (lexicographical)
   return this.sort();
 };
 
-/*
- *  Extends Array prototype to sort string elements in reverse alphabetical order (descending).
- *  First sorts alphabetically, then reverses the order.
- */
-Array.prototype.orderStringsReverse = function()
-{
+Array.prototype.orderStringsDesc = function () {
+  // Sorts strings in descending order (lexicographical)
   return this.sort().reverse();
 };
 
-/*
- *  Extends Array prototype to create a new array without a specific element.
- *  Filters out all occurrences of the specified element.
- *  @param {*} elementToRemove - The element to exclude from the new array.
- *  @returns {Array} A new array containing all elements except 'elementToRemove'.
- */
-Array.prototype.filterOutElement = function(elementToRemove)
-{
-  // Creates a new array with elements not equal to elementToRemove.
-  return this.filter(currentElement => currentElement !== elementToRemove);
+Array.prototype.excludeElement = function (x) {
+  // Returns a new array without occurrences of element x
+  return this.filter(e => e !== x);
 };
 
-/*
- *  Main program function to process input data for a knapsack-like problem.
- *  Calculates the maximum value that can be obtained within a given weight capacity.
- *  @param {string[]} inputLines - An array of strings, where each string is a line of input.
- */
-function processInputData(inputLines)
-{
-  // Parse the first line to get the number of items and the maximum capacity.
-  var numericValues = inputLines[0].split(' ').map(parseInteger);
-  var itemCount = numericValues[0]; // N: number of items
-  var maxWeightCapacity = numericValues[1]; // W: maximum allowed weight
+function processInputData(inputRows) {
+  // Parse the first line for N and W
+  var initialParams = inputRows[0].split(' ').map(parseInteger);
+  var itemCount = initialParams[0]; // Number of items
+  var maxWeight = initialParams[1]; // Maximum allowed weight
 
-  // Process remaining lines to get item weights and values.
-  // Each line represents an item: [weight, value]
-  inputLines = inputLines.slice(1).map(lineEntry => lineEntry.split(' ').map(parseInteger));
+  // Process the remaining lines for item data (weight and value)
+  var itemData = inputRows.slice(1).map(l => l.split(' ').map(parseInteger));
 
-  // Initialize a map to store the maximum value for each possible total weight.
-  // Represents (weight: value) pairs. Start with 0 weight, 0 value.
-  var currentWeightValueMap = { 0: 0 };
+  // Initialize a map to store the maximum value for each achievable weight
+  // Key: weight, Value: maximum value for that weight
+  var currentWeightValueMap = { 0: 0 }; // Start with 0 weight, 0 value
 
-  // Iterate through each item to update the possible weight-value combinations.
-  for (var idx = 0; idx < itemCount; idx++)
-  {
-    var currentItemWeight = inputLines[idx][0]; // Weight of the current item
-    var currentItemValue = inputLines[idx][1];  // Value of the current item
+  // Iterate through each item
+  for (var itemIndex = 0; itemIndex < itemCount; itemIndex++) {
+    var currentItemWeight = itemData[itemIndex][0]; // Weight of the current item
+    var currentItemValue = itemData[itemIndex][1];   // Value of the current item
 
-    // Create a temporary map to store combinations for the next iteration.
+    // Create a new map for the next iteration
     var nextWeightValueMap = {};
 
-    // Iterate through all existing weight-value combinations from the previous step.
-    for (var currentWeightKey in currentWeightValueMap)
-    {
-      var totalWeightSoFar = parseInteger(currentWeightKey); // Convert key string to number
-      var totalValueSoFar = currentWeightValueMap[currentWeightKey];
+    // Iterate through all existing weight-value pairs in the current map
+    for (var existingWeightStr in currentWeightValueMap) {
+      var parsedExistingWeight = parseInteger(existingWeightStr); // Convert string key to number
+      var existingValue = currentWeightValueMap[existingWeightStr]; // Value for this weight
 
-      // Option 1: Do not include the current item.
-      // If this weight-value pair is not yet in next map, or if its value is better.
-      if (!(nextWeightValueMap[currentWeightKey] && totalValueSoFar < nextWeightValueMap[currentWeightKey]))
-      {
-        nextWeightValueMap[currentWeightKey] = totalValueSoFar;
+      // If the current weight-value pair is not yet in the next map, or
+      // if the current value is better, add/update it.
+      if (!(nextWeightValueMap[existingWeightStr] && existingValue < nextWeightValueMap[existingWeightStr])) {
+        nextWeightValueMap[existingWeightStr] = existingValue;
       }
 
-      // Option 2: Include the current item if it fits within the capacity.
-      var newCombinedWeight = totalWeightSoFar + currentItemWeight;
-      var newCombinedValue = totalValueSoFar + currentItemValue;
+      // Consider adding the current item to the existing weight
+      var potentialNewWeight = parsedExistingWeight + currentItemWeight;
+      var potentialNewValue = existingValue + currentItemValue;
 
-      // Check if adding the current item exceeds capacity.
-      // Also, check if this new combination offers a better value for the new weight.
-      if ((newCombinedWeight <= maxWeightCapacity) &&
-          (!(nextWeightValueMap[newCombinedWeight] && newCombinedValue < nextWeightValueMap[newCombinedWeight])))
-      {
-        nextWeightValueMap[newCombinedWeight] = newCombinedValue;
+      // Check if the new weight is within the maximum allowed weight
+      // And if this new combination offers a better value for the new weight
+      if ((potentialNewWeight <= maxWeight) && (!(nextWeightValueMap[potentialNewWeight] && potentialNewValue < nextWeightValueMap[potentialNewWeight]))) {
+        nextWeightValueMap[potentialNewWeight] = potentialNewValue;
       }
     }
-    // Update the main map for the next iteration with the newly calculated combinations.
+    // Update the current map for the next item iteration
     currentWeightValueMap = nextWeightValueMap;
   }
 
-  // After processing all items, find the maximum value among all possible weights.
-  var finalMaximumValue = 0;
-  for (var weightKey in currentWeightValueMap)
-  {
-    finalMaximumValue = Math.max(finalMaximumValue, currentWeightValueMap[weightKey]);
+  // Find the maximum value among all achievable weights
+  var finalResult = 0;
+  for (var finalWeightStr in currentWeightValueMap) {
+    finalResult = Math.max(finalResult, currentWeightValueMap[finalWeightStr]);
   }
 
-  // Output the highest value found.
-  console.log(finalMaximumValue);
+  // Output the final maximum value
+  console.log(finalResult);
 }
 
-// Read input from standard input, process it, and call the main function.
-processInputData(
-  require("fs")
-    .readFileSync("/dev/stdin", "utf8")
-    .split('\n')
-    .map(rawLine => rawLine.trim()) // Remove leading/trailing whitespace from each line
-);
+// Read input from stdin, split by newlines, trim each line, and pass to the main processing function
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8").split('\n').map(l => l.trim()));

@@ -1,26 +1,17 @@
-let collectedContent = "";
+const fileSystem = require('fs');
 
-process.stdin.setEncoding('utf8');
+const rawInputContent = fileSystem.readFileSync('/dev/stdin', 'utf8');
+const parsedSegments = rawInputContent.trim().split(' ');
 
-process.stdin.on('data', function(chunk) {
-    collectedContent += chunk;
-});
+const firstOperand = Number(parsedSegments[0]);
+const secondOperand = Number(parsedSegments[1]);
 
-process.stdin.on('end', function() {
-    const primaryLine = collectedContent.trim().split('\n')[0];
+const differenceValue = secondOperand - firstOperand;
 
-    const separatorPos = primaryLine.indexOf(' ');
-    const initialPart = primaryLine.substring(0, separatorPos);
-    const finalPart = primaryLine.substring(separatorPos + 1);
+const computeSummation = (limit) => (limit * (limit + 1)) / 2;
 
-    const startValue = Number(initialPart);
-    const endValue = Number(finalPart);
+const cumulativeSum = computeSummation(differenceValue);
 
-    const valueDifference = endValue - startValue;
+const ultimateOutcome = cumulativeSum - secondOperand;
 
-    if (valueDifference >= 1 && valueDifference <= 999) {
-        const sumOfNaturals = (valueDifference * (valueDifference + 1)) / 2;
-        const computedResult = sumOfNaturals - endValue;
-        process.stdout.write(String(computedResult) + '\n');
-    }
-});
+console.log(ultimateOutcome);

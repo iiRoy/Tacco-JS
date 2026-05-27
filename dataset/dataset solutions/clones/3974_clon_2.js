@@ -1,186 +1,161 @@
-"use strict"; // Enforce strict mode for cleaner code and error prevention
+"use strict";
 
-/**
- * Executes a binary search on a sorted numerical collection to determine
- * the appropriate insertion point for a given target value. This effectively
- * finds the "lower bound" – the index of the first element that is not
- * less than the specified target.
- *
- * @param {Array<number>} sortedCollection A numerically sorted array in ascending order.
- * @param {number} targetValue The value for which to find the lower bound.
- * @returns {number} The calculated index representing the lower bound.
- */
-function findInsertionPoint (
-    sortedCollection,
-    targetValue
-) {
-    let leftPtr = 0; // Initialize the left boundary pointer
-    let rightPtr = sortedCollection.length - 1; // Initialize the right boundary pointer
+// This function performs a binary search to find the lower bound of a target value
+// within a given sorted array. It returns the index of the first element
+// that is greater than or equal to the target. If all elements are smaller,
+// it returns the length of the array.
+function findLowerBound(sortedArr, targetVal) {
+    let leftIdx = 0;
+    let rightIdx = sortedArr.length - 1;
 
-    // Continue searching as long as the potential range is valid
-    while (rightPtr - leftPtr >= 0) {
-        // Calculate the middle index of the current search range
-        const midIdx = Math.floor((leftPtr + rightPtr) / 2);
+    // Continue binary search as long as the search range is valid.
+    while (rightIdx - leftIdx >= 0) {
+        // Calculate the middle index of the current search range.
+        let midIdx = Math.floor((leftIdx + rightIdx) / 2);
 
-        // Compare the target value with the element at the middle index
-        if (targetValue <= sortedCollection[midIdx]) {
-            rightPtr = midIdx - 1; // Target is in the left half or at midIdx, so shrink right boundary
-        } else {
-            leftPtr = midIdx + 1; // Target is in the right half, so shrink left boundary
+        // If the target value is less than or equal to the element at midIdx,
+        // it means the lower bound could be midIdx or to its left.
+        if (targetVal <= sortedArr[midIdx]) {
+            rightIdx = midIdx - 1;
+        }
+        // Otherwise, the target value is greater, so the lower bound must be
+        // to the right of midIdx.
+        else {
+            leftIdx = midIdx + 1;
         }
     }
-    // The left pointer now holds the index of the lower bound
-    return leftPtr;
+    // Upon loop termination, leftIdx will point to the correct lower bound index.
+    return leftIdx;
 }
 
-/**
- * The primary function that orchestrates the program's logic. It reads input,
- * performs calculations based on bitwise operations and binary searches,
- * and outputs a final result.
- *
- * @param {string} rawInputData The entire input content as a single string.
- */
-function ExecuteProgram ( rawInputData ) {
-    // Instantiate a utility for parsing various data types from the input string
-    const inputReader = new DataStreamProcessor(rawInputData);
+// The primary function that processes the input and solves the problem.
+function ProcessInput(rawData) {
+    // Initialize a custom input parser.
+    let inputReader = new DataParser(rawData);
 
-    // Read the number of elements (N) and two arrays (A and B) from the input
-    const quantityElements = inputReader.retrieveInteger();
-    const primaryValues = inputReader.retrieveIntegerArray(quantityElements);
-    const secondaryValues = inputReader.retrieveIntegerArray(quantityElements);
+    // Read the number of elements (N) and the two integer arrays (A and B).
+    let numElements = inputReader.retrieveInt();
+    let arrayA = inputReader.retrieveIntArray(numElements);
+    let arrayB = inputReader.retrieveIntArray(numElements);
 
-    // Declare auxiliary arrays to store masked values during processing
-    const maskedPrimary = new Array(quantityElements);
-    const maskedSecondary = new Array(quantityElements);
+    // Create temporary arrays to store masked values for each bit position.
+    let tempArrA = new Array(numElements);
+    let tempArrB = new Array(numElements);
 
-    let cumulativeXORSum = 0; // Accumulator for the final XOR sum result
+    // Initialize the variable to store the final computed result.
+    let finalResult = 0;
 
-    // Iterate through each bit position (from 0 up to 29, representing 30 bits)
+    // Iterate through each bit position from 0 up to 29 (for 30 bits).
     for (let bitPosition = 0; bitPosition < 30; bitPosition++) {
-        let parityCount = 0; // Counter for determining parity for the current bit
-        // Create a bitmask for the current bit window: (1 << (k+1)) - 1
-        // This mask isolates bits from 0 up to bitPosition
-        const bitWindowMask = (1 << (bitPosition + 1)) - 1;
+        let parityCount = 0; // This counter tracks the parity (odd/even) of certain sums.
+        // Construct a bitmask that includes all bits up to (bitPosition + 1).
+        // This mask is used to consider only the relevant lower bits of numbers.
+        let currentMask = (1 << (bitPosition + 1)) - 1;
 
-        // Apply the generated bitmask to all elements of both primary and secondary arrays
-        for (let dataPointer = 0; dataPointer < quantityElements; dataPointer++) {
-            maskedPrimary[dataPointer] = primaryValues[dataPointer] & bitWindowMask;
-            maskedSecondary[dataPointer] = secondaryValues[dataPointer] & bitWindowMask;
+        // Apply the current mask to all elements of arrayA and arrayB,
+        // storing the results in the temporary arrays.
+        for (let elementIndex = 0; elementIndex < numElements; elementIndex++) {
+            tempArrA[elementIndex] = arrayA[elementIndex] & currentMask;
+            tempArrB[elementIndex] = arrayB[elementIndex] & currentMask;
         }
 
-        // Sort the masked secondary array to enable efficient binary search operations
-        maskedSecondary.sort((valA, valB) => valA - valB);
+        // Sort the temporary array B. This is crucial for the findLowerBound function.
+        tempArrB.sort((val1, val2) => val1 - val2);
 
-        // Determine the weight of the current bit (2^k)
-        const bitWeight = 1 << bitPosition;
+        // Calculate the threshold value, which is 2 raised to the power of the current bit position.
+        let thresholdVal = 1 << bitPosition;
 
-        // Iterate through each element of the masked primary array
-        for (let arrayIndex = 0; arrayIndex < quantityElements; arrayIndex++) {
-            // Calculate the lower and upper bounds for the first range: [T - a_i, 2T - a_i)
-            const rangeStart1 = findInsertionPoint(maskedSecondary, (1 * bitWeight) - maskedPrimary[arrayIndex]);
-            const rangeEnd1 = findInsertionPoint(maskedSecondary, (2 * bitWeight) - maskedPrimary[arrayIndex]);
+        // Iterate through each element of the masked temporary array A.
+        for (let elementIndex = 0; elementIndex < numElements; elementIndex++) {
+            // Find the lower bounds for two specific ranges in tempArrB.
+            // These ranges are derived from the problem's logic to determine if
+            // (tempArrA[elementIndex] + tempArrB[j]) has the 'bitPosition'-th bit set.
 
-            // Calculate the lower and upper bounds for the second range: [3T - a_i, 4T - a_i)
-            const rangeStart2 = findInsertionPoint(maskedSecondary, (3 * bitWeight) - maskedPrimary[arrayIndex]);
-            const rangeEnd2 = findInsertionPoint(maskedSecondary, (4 * bitWeight) - maskedPrimary[arrayIndex]);
+            // First range: [thresholdVal - tempArrA[elementIndex], 2*thresholdVal - tempArrA[elementIndex])
+            let floor1 = findLowerBound(tempArrB, thresholdVal - tempArrA[elementIndex]);
+            let ceil1 = findLowerBound(tempArrB, (2 * thresholdVal) - tempArrA[elementIndex]);
 
-            // Update the parity count based on the number of elements found in the first range
-            parityCount += rangeEnd1 - rangeStart1;
-            parityCount %= 2; // Ensure parityCount remains 0 or 1
+            // Second range: [3*thresholdVal - tempArrA[elementIndex], 4*thresholdVal - tempArrA[elementIndex])
+            let floor2 = findLowerBound(tempArrB, (3 * thresholdVal) - tempArrA[elementIndex]);
+            let ceil2 = findLowerBound(tempArrB, (4 * thresholdVal) - tempArrA[elementIndex]);
 
-            // Update the parity count based on the number of elements found in the second range
-            parityCount += rangeEnd2 - rangeStart2;
-            parityCount %= 2; // Ensure parityCount remains 0 or 1
+            // Add the counts of elements found in these ranges to the parity counter.
+            // We only care about the odd or even nature of the total count.
+            parityCount += ceil1 - floor1;
+            parityCount %= 2; // Ensure parityCount remains 0 or 1.
+
+            parityCount += ceil2 - floor2;
+            parityCount %= 2; // Ensure parityCount remains 0 or 1.
         }
 
-        // If the final parity count for this bit position is odd, set the corresponding bit in the result
+        // If the final parity count for this bit position is 1 (odd),
+        // it means the 'bitPosition'-th bit of the overall answer should be set.
         if (parityCount === 1) {
-            cumulativeXORSum |= (1 << bitPosition);
+            finalResult |= (1 << bitPosition);
         }
     }
-    // Output the final accumulated XOR sum to the console
-    console.log(cumulativeXORSum);
+
+    // Output the final calculated result to the console.
+    console.log(finalResult);
 }
 
-/**
- * A specialized utility class designed for sequential parsing of various
- * data types (integers, strings) from a single input text stream.
- */
-class DataStreamProcessor {
-    /**
-     * Initializes a new instance of the DataStreamProcessor.
-     * @param {string} streamContent The raw string data to be processed.
-     * @throws {Error} If the initial stream content is not provided.
-     */
-    constructor (streamContent) {
-        if (typeof streamContent === 'undefined') {
-            throw new Error('Input content parameter cannot be omitted!');
+// A helper class designed to parse input data from a string,
+// typically read from standard input.
+class DataParser {
+    // The constructor takes the raw input string.
+    constructor(sourceText) {
+        // Validate that a source text is provided.
+        if (typeof sourceText === 'undefined') {
+            throw new Error('Argument (stdin) cannot be omitted!');
         }
-        this.readPosition = 0; // Tracks the current index of the token being read
-        // Splits the input string into an array of tokens using newlines or spaces as delimiters
-        this.parsedTokens = streamContent.split(/\n|\s/);
+        // Initialize the current index for parsing and split the input
+        // string into an array of individual items (numbers or strings).
+        this.currentIndex = 0;
+        this.parsedItems = sourceText.split(/\n|\s/);
     }
 
-    /**
-     * Retrieves the next token from the stream and converts it into an integer.
-     * @returns {number} The parsed integer value.
-     */
-    retrieveInteger () {
-        // Reads the token at the current position, converts it to a number, and then advances the position
-        return Number(this.parsedTokens[this.readPosition++]);
+    // Retrieves the next item from the parsed list and converts it to an integer.
+    retrieveInt() {
+        return this.parsedItems[this.currentIndex++] - 0; // Unary minus converts string to number.
     }
 
-    /**
-     * Reads a specified number of integer tokens from the stream and returns them as an array.
-     * @param {number} listSize The desired number of integers to retrieve.
-     * @returns {Array<number>} An array populated with the parsed integer values.
-     * @throws {Error} If the size parameter is invalid (undefined or less than 1).
-     */
-    retrieveIntegerArray (listSize) {
-        if (typeof listSize === 'undefined' || listSize < 1) {
-            throw new Error('Size parameter (must be 1 or greater) cannot be omitted!');
+    // Retrieves an array of integers of a specified size.
+    retrieveIntArray(size) {
+        // Validate that a size is provided.
+        if (typeof size === 'undefined') {
+            throw new Error('Argument (size >= 1) cannot be omitted!');
         }
-        const numericList = new Array(listSize); // Pre-allocate an array of the specified size
-        // Loop to fill the array by repeatedly calling retrieveInteger
-        for (let elementIndex = 0; elementIndex < listSize; elementIndex++) {
-            numericList[elementIndex] = this.retrieveInteger();
+        let resultArray = new Array(size);
+        // Populate the array by repeatedly calling retrieveInt.
+        for (let loopCounter = 0; loopCounter < size; loopCounter++) {
+            resultArray[loopCounter] = this.retrieveInt();
         }
-        return numericList;
+        return resultArray;
     }
 
-    /**
-     * Retrieves the next token from the stream as a string.
-     * @returns {string} The raw string token.
-     */
-    extractString () {
-        // Returns the token at the current position as a string and then advances the position
-        return this.parsedTokens[this.readPosition++];
+    // Retrieves the next item from the parsed list as a string.
+    retrieveString() {
+        return this.parsedItems[this.currentIndex++];
     }
 
-    /**
-     * Reads a specified number of string tokens from the stream and returns them as an array.
-     * @param {number} listSize The desired number of strings to retrieve.
-     * @returns {Array<string>} An array populated with the parsed string tokens.
-     * @throws {Error} If the size parameter is invalid (undefined or less than 1).
-     */
-    extractStringArray (listSize) {
-        if (typeof listSize === 'undefined' || listSize < 1) {
-            throw new Error('Size parameter (must be 1 or greater) cannot be omitted!');
+    // Retrieves an array of strings of a specified size.
+    retrieveStrArray(strSize) {
+        // Validate that a size is provided.
+        if (typeof strSize === 'undefined') {
+            throw new Error('Argument (size >= 1) cannot be omitted!');
         }
-        const textTokenList = new Array(listSize); // Pre-allocate an array of the specified size
-        // Loop to fill the array by repeatedly calling extractString
-        for (let elementIndex = 0; elementIndex < listSize; elementIndex++) {
-            textTokenList[elementIndex] = this.extractString();
+        let stringArray = new Array(strSize);
+        // Populate the array by repeatedly calling retrieveString.
+        for (let strLoopCounter = 0; strLoopCounter < strSize; strLoopCounter++) {
+            stringArray[strLoopCounter] = this.retrieveString();
         }
-        return textTokenList;
+        return stringArray;
     }
 }
 
-// Check if the code is running in a Node.js-like environment (i.e., not in a browser)
-if (typeof globalThis.window === "undefined") {
-    // If in Node.js, read input from standard input (/dev/stdin)
-    // and pass it to the main program execution function.
-    ExecuteProgram(
-        require("node:fs").readFileSync("/dev/stdin", { encoding: "utf-8" })
-    );
+// This block handles the execution environment. If the code is not running
+// in a browser (i.e., 'window' is undefined), it assumes a Node.js environment
+// and reads input from standard input, then calls the main processing function.
+if (typeof window === "undefined") {
+    ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));
 }

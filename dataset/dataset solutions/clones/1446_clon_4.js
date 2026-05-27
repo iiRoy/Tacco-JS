@@ -1,53 +1,30 @@
-function parseAndGroupedNumericalData(sourceContent) {
-    let numericalValues = sourceContent.trim().split(/\s|\n/).map(Number);
-    let collectionOfSets = [];
-    let currentCursorPosition = 0;
+function EntryPoint(rawInput) {
+    const numericSequence = rawInput.trim().split(/\s|\n/).map(Number);
 
-    while (currentCursorPosition < numericalValues.length) {
-        let setElementCount = numericalValues[currentCursorPosition];
-        currentCursorPosition++;
+    function processDataChunks(sourceNumbers, currentOffset) {
+        const groupSize = sourceNumbers[currentOffset];
 
-        if (setElementCount === 0) {
-            break;
+        if (groupSize === 0) {
+            return;
         }
 
-        if (currentCursorPosition + setElementCount > numericalValues.length) {
-            break; // Malformed input: not enough numbers for the declared count
-        }
+        const dataSlice = sourceNumbers.slice(currentOffset + 1, currentOffset + 1 + groupSize);
 
-        let currentNumericalSet = numericalValues.slice(currentCursorPosition, currentCursorPosition + setElementCount);
-        collectionOfSets.push(currentNumericalSet);
-        currentCursorPosition += setElementCount;
+        const totalSum = dataSlice.reduce((accumulator, value) => accumulator + value, 0);
+        const averageValue = totalSum / groupSize;
+
+        const squaredDifferencesSum = dataSlice.reduce((accumulator, value) => {
+            const difference = value - averageValue;
+            return accumulator + (difference * difference);
+        }, 0);
+
+        const varianceResult = squaredDifferencesSum / groupSize;
+        console.log(Math.sqrt(varianceResult));
+
+        processDataChunks(sourceNumbers, currentOffset + 1 + groupSize);
     }
-    return collectionOfSets;
+
+    processDataChunks(numericSequence, 0);
 }
 
-function calculateDispersionMetric(inputDataPoints) {
-    if (inputDataPoints.length === 0) {
-        return NaN;
-    }
-
-    const totalElements = inputDataPoints.length;
-
-    const sumOfElements = inputDataPoints.reduce((accumulator, currentVal) => accumulator + currentVal, 0);
-    const meanValue = sumOfElements / totalElements;
-
-    const sumOfSquaredDeviations = inputDataPoints.reduce((accumulator, currentVal) => {
-        const differenceFromMean = currentVal - meanValue;
-        return accumulator + (differenceFromMean * differenceFromMean);
-    }, 0);
-
-    const variance = sumOfSquaredDeviations / totalElements;
-    return Math.sqrt(variance);
-}
-
-function processAndReport(externalSource) {
-    const structuredCollections = parseAndGroupedNumericalData(externalSource);
-
-    structuredCollections.forEach(itemCollection => {
-        const finalMetric = calculateDispersionMetric(itemCollection);
-        console.log(finalMetric);
-    });
-}
-
-processAndReport(require("fs").readFileSync("/dev/stdin", "utf8"));
+EntryPoint(require("fs").readFileSync("/dev/stdin", "utf8"));

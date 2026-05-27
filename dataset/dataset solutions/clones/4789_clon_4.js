@@ -1,24 +1,35 @@
-const fileAccess = require('fs').promises;
+const inputLines = require('fs').readFileSync('/dev/stdin', 'utf8').split('\n');
+const parsedLine = inputLines.shift().split(' ');
+const firstNum = parsedLine[0] * 1;
+const secondNum = parsedLine[1] * 1;
 
-async function computeResult() {
-    const rawData = await fileAccess.readFile('/dev/stdin', 'utf8');
-    const firstLine = rawData.split('\n')[0];
-    const numericalParts = firstLine.split(' ');
+let resultCount;
 
-    const numAlpha = Number(numericalParts[0]);
-    const numBeta = Number(numericalParts[1]);
+if (firstNum === secondNum) {
+    resultCount = 0;
+} else {
+    const isFirstNonNegative = firstNum >= 0;
+    const isSecondNonNegative = secondNum >= 0;
+    const isFirstGreater = firstNum > secondNum;
 
-    let interimCount = 0;
+    let conditionKey = 0;
+    if (isFirstNonNegative) conditionKey |= 1;
+    if (isSecondNonNegative) conditionKey |= 2;
+    if (isFirstGreater) conditionKey |= 4;
 
-    interimCount = (numAlpha === numBeta)
-        ? 0
-        : ((numAlpha >= 0) !== (numBeta >= 0)
-            ? 1
-            : (numAlpha > numBeta ? 2 : 0));
+    const additionalValueLookup = [
+        0,
+        2,
+        1,
+        null,
+        null,
+        1,
+        0,
+        2
+    ];
 
-    const finalTally = interimCount + Math.abs(Math.abs(numAlpha) - Math.abs(numBeta));
-
-    console.log(finalTally);
+    const additionalCost = additionalValueLookup[conditionKey];
+    resultCount = additionalCost + Math.abs(Math.abs(firstNum) - Math.abs(secondNum));
 }
 
-computeResult();
+console.log(resultCount);

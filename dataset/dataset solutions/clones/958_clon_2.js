@@ -1,236 +1,210 @@
-// System configuration for input/output handling
-settings = {
-    dataSourcePath: '/dev/stdin',
-    lineDelimiter: '\n'
-};
+let cfg = { srcPath: '/dev/stdin', lineSep: '\n' }; // Configuration for input file path and line separator
 
-// Retrieve file system module and read input data
-const fileSystem = require('fs');
-const inputBuffer = fileSystem.readFileSync(settings.dataSourcePath, 'ascii');
-const inputLines = inputBuffer
-    .trim()
-    .split(settings.lineDelimiter);
+let inputLines = require('fs').readFileSync(cfg.srcPath, 'ascii')
+  .trim()
+  .split(cfg.lineSep);
 
-// Parse the total number of nodes from the first line of input
-const nodeCount = Number(inputLines.shift());
+let nodeCount = Number(inputLines.shift()); // Extract the total number of nodes from the first line
 
-// Initialize graph representations:
-// forwardGraph stores outgoing edges (u -> v) with weights
-// backwardGraph stores incoming edges (v -> u) with weights
-const forwardGraph = {};
-const backwardGraph = {};
+let forwardEdges = {}; // Adjacency list for outgoing edges: forwardEdges[u][v] = cost
+let backwardEdges = {}; // Adjacency list for incoming edges: backwardEdges[v][u] = cost (from u to v)
 
 /**
- * Inserts a directed edge with a specified weight into a given graph map.
- * If the source vertex does not exist in the map, it is initialized.
- * @param {object} graphMap The graph map (e.g., forwardGraph or backwardGraph).
- * @param {number} sourceVertex The node from which the edge originates.
- * @param {number} targetVertex The node to which the edge points.
- * @param {number} edgeWeight The numerical cost associated with traversing this edge.
+ * Inserts an edge into a given graph object.
+ * @param {object} graphObj - The graph representation (an object of objects).
+ * @param {number} startNode - The identifier of the starting node.
+ * @param {number} endNode - The identifier of the ending node.
+ * @param {number} edgeCost - The cost associated with traversing this edge.
  */
-function establishEdge(graphMap, sourceVertex, targetVertex, edgeWeight) {
-    if (!graphMap.hasOwnProperty(sourceVertex)) {
-        graphMap[sourceVertex] = {};
-    }
-    graphMap[sourceVertex][targetVertex] = edgeWeight;
+function insertEdge(graphObj, startNode, endNode, edgeCost) {
+  if (!graphObj.hasOwnProperty(startNode)) {
+    graphObj[startNode] = {};
+  }
+  graphObj[startNode][endNode] = edgeCost;
 }
 
-// Iterate through the remaining input lines to construct the graph
-for (let lineIndex in inputLines) {
-    const parsedSegment = inputLines[lineIndex]
-        .split(' ')
-        .map(Number);
+// Parse the remaining input lines to build the graph's adjacency lists.
+// Each line describes a node and its connections: [node_id, num_connections, connected_node_1, cost_1, ...]
+for (let idx in inputLines) {
+  let currentLineData = inputLines[idx].split(' ').map(Number);
+  let currentNode = currentLineData[0]; // The node whose outgoing edges are described
 
-    const currentSource = parsedSegment[0]; // The first number is the source node ID
-
-    // Process pairs of (destination_node, edge_cost) starting from the third element
-    for (let componentIndex = 2; componentIndex < parsedSegment.length; componentIndex += 2) {
-        // Add edge to forward graph: currentSource -> parsedSegment[componentIndex]
-        establishEdge(forwardGraph, currentSource, parsedSegment[componentIndex], parsedSegment[componentIndex + 1]);
-        // Add edge to backward graph: parsedSegment[componentIndex] -> currentSource
-        establishEdge(backwardGraph, parsedSegment[componentIndex], currentSource, parsedSegment[componentIndex + 1]);
-    }
+  // Iterate through the connections listed in the current line.
+  for (let dataIdx = 2; dataIdx < currentLineData.length; dataIdx += 2) {
+    // Add the forward edge from currentNode to the connected node.
+    insertEdge(forwardEdges, currentNode, currentLineData[dataIdx], currentLineData[dataIdx + 1]);
+    // Add the backward edge from the connected node to currentNode (for reverse traversal).
+    insertEdge(backwardEdges, currentLineData[dataIdx], currentNode, currentLineData[dataIdx + 1]);
+  }
 }
 
-// --- Initial Breadth-First Search (BFS) Phase ---
+// --- Initial Breadth-First Search (BFS) to find shortest paths from node 0 ---
 
-let levelCounter = 0; // Tracks the current BFS depth level
-const levelDepths = new Array(nodeCount); // Stores the BFS level for each node (null if unvisited)
-const minDistances = new Array(nodeCount); // Stores the tentative minimum distance from source node 0
+let levelCounter = 0; // Tracks the current BFS level being processed.
+let levelMap = new Array(nodeCount); // Stores the BFS level for each node.
+let minDistances = new Array(nodeCount); // Stores the minimum distance from the source node (node 0).
 
-// Initialize all nodes: unvisited and with effectively infinite distance
+// Initialize all nodes: set their level to null (unvisited) and distance to infinity.
 for (let nodeIdx = 0; nodeIdx < nodeCount; nodeIdx++) {
-    levelDepths[nodeIdx] = null;
-    minDistances[nodeIdx] = Number.MAX_VALUE;
+  levelMap[nodeIdx] = null;
+  minDistances[nodeIdx] = Number.MAX_VALUE;
 }
 
-// Set the starting node (node 0) for the BFS
-levelDepths[0] = 0;
+// The source node (node 0) starts at level 0 with a distance of 0.
+levelMap[0] = 0;
 minDistances[0] = 0;
 
-// Execute BFS until no new nodes are reachable at the current level
-let moreToProcess;
+let nodesProcessedInLevel; // Flag to indicate if any new nodes were reached in the current BFS level.
 do {
-    moreToProcess = 0; // Flag: set to 1 if new nodes are visited in this iteration
+  nodesProcessedInLevel = 0; // Reset the flag for the new level.
 
-    // Iterate through all nodes present in the forward graph
-    for (let currentNodeId in forwardGraph) {
-        // Only process nodes that belong to the current BFS level
-        if (levelDepths[currentNodeId] !== levelCounter) {
-            continue;
-        }
+  // Iterate through all nodes to find those belonging to the current level.
+  for (let nodeIdx in forwardEdges) {
+    if (levelMap[nodeIdx] !== levelCounter) continue; // Skip if the node is not at the current level.
 
-        const currentAdjacencies = forwardGraph[currentNodeId];
-        // Explore all neighbors of the current node
-        for (let connectedNodeId in currentAdjacencies) {
-            // If the neighbor has not been visited yet, assign its BFS level
-            if (levelDepths[connectedNodeId] === null) {
-                levelDepths[connectedNodeId] = levelCounter + 1;
-                moreToProcess = 1; // Indicate a new node was found
-            }
-            // Update the minimum distance to the connected node if a shorter path is found
-            minDistances[connectedNodeId] = Math.min(
-                minDistances[connectedNodeId],
-                minDistances[currentNodeId] + currentAdjacencies[connectedNodeId]
-            );
-        }
+    let currentAdjList = forwardEdges[nodeIdx]; // Get the outgoing edges for the current node.
+
+    // Explore each neighbor of the current node.
+    for (let neighborNode in currentAdjList) {
+      // If the neighbor has not been visited yet, assign it to the next BFS level.
+      if (levelMap[neighborNode] === null) {
+        levelMap[neighborNode] = levelCounter + 1;
+        nodesProcessedInLevel = 1; // Mark that a new node was discovered.
+      }
+      // Relax the edge: update the minimum distance to the neighbor if a shorter path is found.
+      minDistances[neighborNode] = Math.min(minDistances[neighborNode], minDistances[nodeIdx] + currentAdjList[neighborNode]);
     }
-    levelCounter++; // Advance to the next BFS level
-} while (moreToProcess); // Continue as long as the BFS discovers new nodes
+  }
+  levelCounter++; // Advance to the next BFS level.
+} while (nodesProcessedInLevel); // Continue as long as new nodes are being reached.
 
-// --- Node Ordering for Dynamic Programming ---
+// --- Prepare nodes for dynamic programming by sorting based on initial BFS distances ---
 
-const orderedVertices = new Array(nodeCount); // Array to hold node IDs, sorted by their initial minDistances
-for (let vertexIndex = 0; vertexIndex < nodeCount; vertexIndex++) {
-    orderedVertices[vertexIndex] = vertexIndex;
+let sortedNodesByDist = new Array(nodeCount); // Array to hold node identifiers.
+for (let nodeIdx = 0; nodeIdx < nodeCount; nodeIdx++) {
+  sortedNodesByDist[nodeIdx] = nodeIdx;
 }
 
-// Sort vertices in ascending order based on their initial minimum distances
-orderedVertices.sort(function (vertexA, vertexB) {
-    return minDistances[vertexA] - minDistances[vertexB];
+// Sort the nodes based on their calculated minimum distances from node 0.
+sortedNodesByDist.sort(function (nodeA, nodeB) {
+  return minDistances[nodeA] - minDistances[nodeB];
 });
 
-const vertexOrderMap = {}; // A map from node ID to its index in the 'orderedVertices' array
-for (let sortedIndex = 0; sortedIndex < nodeCount; sortedIndex++) {
-    vertexOrderMap[orderedVertices[sortedIndex]] = sortedIndex;
+// Create a map to quickly find a node's rank (its index in the sorted array).
+let nodeRankMap = {};
+for (let sortIdx = 0; sortIdx < nodeCount; sortIdx++) {
+  nodeRankMap[sortedNodesByDist[sortIdx]] = sortIdx;
 }
 
-// --- Dynamic Programming Phase with Iterative DFS ---
+// --- Dynamic Programming with Depth-First Search (DFS) for path refinement ---
 
-// Global array to track nodes that have been "explored" or included in a path during DFS calls.
-// This array's state persists across multiple calls to `traversePath`.
-const exploredNodes = new Array(nodeCount);
-for (let nodeIterator = 0; nodeIterator < nodeCount; nodeIterator++) {
-    exploredNodes[nodeIterator] = false; // Initialize all nodes as not explored
+let isVisited = new Array(nodeCount); // Tracks visited nodes during a single DFS run.
+for (let nodeIdx = 0; nodeIdx < nodeCount; nodeIdx++) {
+  isVisited[nodeIdx] = false;
 }
 
-// Stacks for simulating iterative DFS traversal
-const pathStack = new Array(nodeCount); // Stores the sequence of nodes in the current DFS path
-const pendingNeighbors = new Array(nodeCount); // Stores lists of unvisited neighbors for nodes in pathStack
+let dfsStackNodes = new Array(nodeCount); // Stores the nodes currently in the DFS path.
+let dfsStackNeighbors = new Array(nodeCount); // Stores iterators for neighbors at each stack level.
 
 /**
- * Executes an iterative depth-first traversal to refine path costs.
- * This function explores paths backwards from `pathStartVertex` towards `targetVertex`
- * using the `backwardGraph` to potentially find a shorter path component.
- * @param {number} pathStartVertex The starting node for this specific DFS exploration.
- * @param {number} targetVertex The node whose minimum distance is currently being refined.
- * @param {number} initialEstimate A preliminary cost value used for pruning search branches.
- * @returns {number} The minimum path cost found from a suitable source to `pathStartVertex`.
+ * Performs a DFS-like exploration to find the shortest path from the source (node 0) to 'prevNode',
+ * considering paths that might involve nodes with higher BFS ranks than 'targetNode'.
+ * This function is used to refine 'minDistances[prevNode]'.
+ *
+ * @param {number} prevNode - The node for which we are trying to find P(0, prevNode).
+ * @param {number} targetNode - The node 'u' in the main loop, used for rank comparison.
+ * @param {number} initialMinCost - An upper bound for P(0, prevNode), derived from P(0, targetNode) - P(prevNode, targetNode).
+ * @returns {number} The refined minimum cost from node 0 to 'prevNode'.
  */
-function traversePath(pathStartVertex, targetVertex, initialEstimate) {
-    let stackPointer = 0; // Current depth within the simulated DFS stack
-    let currentPathCost = 0; // Accumulated cost along the current path segment
-    let minimumCandidate = initialEstimate; // Best path component found so far for this segment
+function explorePath(prevNode, targetNode, initialMinCost) {
+  let stackPointer = 0; // Current depth of the DFS stack.
+  let currentPathCost = 0; // Accumulated cost of the path from 'prevNode' to the current stack node (using backward edges).
+  let minResult = initialMinCost; // The best path cost found so far for P(0, prevNode).
 
-    // Mark the initial nodes of this DFS call as globally explored.
-    // This affects subsequent path explorations based on the 'exploredNodes' array.
-    exploredNodes[targetVertex] = true;
-    exploredNodes[pathStartVertex] = true;
+  // Mark the starting nodes as visited for this specific DFS run to prevent immediate cycles.
+  isVisited[targetNode] = true;
+  isVisited[prevNode] = true;
 
-    pathStack[0] = pathStartVertex;
-    // Initialize the list of neighbors to visit for the starting node (predecessors in backwardGraph)
-    pendingNeighbors[0] = Object.keys(backwardGraph[pathStartVertex]);
+  dfsStackNodes[0] = prevNode; // Push the starting node 'prevNode' onto the stack.
+  // Initialize the list of neighbors to explore from 'prevNode' (using backward edges).
+  dfsStackNeighbors[0] = Object.keys(backwardEdges[prevNode]);
 
-    // Main loop for iterative DFS traversal
-    while (true) {
-        // If the current node in the stack has no more unvisited neighbors
-        if (pendingNeighbors[stackPointer].length === 0) {
-            if (stackPointer === 0) {
-                return minimumCandidate; // All paths from pathStartVertex have been explored
-            }
-            // Backtrack: remove the cost of the edge from the parent node to the current node
-            currentPathCost -= backwardGraph[pathStack[stackPointer - 1]][pathStack[stackPointer]];
-            stackPointer--; // Move up to the parent node in the stack
-            continue;
-        }
-
-        const nextNode = pendingNeighbors[stackPointer].pop(); // Get the next neighbor to explore
-
-        // Skip this neighbor if it has already been globally marked as explored
-        if (exploredNodes[nextNode]) {
-            continue;
-        }
-
-        // Pruning step: if extending the current path to 'nextNode' already exceeds the initial estimate
-        if (currentPathCost + backwardGraph[pathStack[stackPointer]][nextNode] >= initialEstimate) {
-            continue;
-        }
-
-        // If 'nextNode' appears earlier in the sorted vertex order than 'targetVertex'
-        if (vertexOrderMap[nextNode] < vertexOrderMap[targetVertex]) {
-            // Update the minimum candidate using the known minimum distance to 'nextNode'
-            minimumCandidate = Math.min(
-                minimumCandidate,
-                currentPathCost + backwardGraph[pathStack[stackPointer]][nextNode] + minDistances[nextNode]
-            );
-            continue; // This path segment is complete; no need to explore further from 'nextNode'
-        }
-
-        // If all conditions are met, extend the current path to 'nextNode'
-        currentPathCost += backwardGraph[pathStack[stackPointer]][nextNode];
-        stackPointer++; // Move deeper into the stack
-        pathStack[stackPointer] = nextNode;
-        // Initialize neighbors for the newly added node (predecessors in backwardGraph)
-        pendingNeighbors[stackPointer] = Object.keys(backwardGraph[nextNode]);
+  while (true) {
+    // If there are no more neighbors to explore from the current node on the stack.
+    if (dfsStackNeighbors[stackPointer].length === 0) {
+      // If we are at the root of the DFS stack, the exploration from 'prevNode' is complete.
+      if (stackPointer === 0) {
+        // Reset visited status for the nodes involved in this DFS run.
+        isVisited[targetNode] = false;
+        isVisited[prevNode] = false;
+        return minResult;
+      }
+      // Backtrack: remove the cost of the edge just traversed (going up the stack).
+      currentPathCost -= backwardEdges[dfsStackNodes[stackPointer - 1]][dfsStackNodes[stackPointer]];
+      isVisited[dfsStackNodes[stackPointer]] = false; // Mark as unvisited for future DFS runs.
+      stackPointer--; // Move up one level in the stack.
+      continue;
     }
+
+    // Get the next neighbor to explore from the current node on the stack.
+    let nextNode = dfsStackNeighbors[stackPointer].pop();
+
+    // Skip if this neighbor has already been visited in the current DFS path.
+    if (isVisited[nextNode]) continue;
+
+    // Calculate the cost of the edge from 'nextNode' to the current stack node.
+    let costToNext = backwardEdges[dfsStackNodes[stackPointer]][nextNode];
+
+    // Pruning: If the path from 'prevNode' to 'nextNode' (currentPathCost + costToNext)
+    // is already too long to potentially beat 'initialMinCost', skip this path.
+    if (currentPathCost + costToNext >= initialMinCost) continue;
+
+    // If 'nextNode' has a lower BFS rank than 'targetNode', its shortest distance from 0 is already finalized.
+    // We can form a complete path from 0 to 'prevNode' via 'nextNode'.
+    if (nodeRankMap[nextNode] < nodeRankMap[targetNode]) {
+      minResult = Math.min(minResult, currentPathCost + costToNext + minDistances[nextNode]);
+      continue; // No need to explore further down this path, as we found a complete path.
+    }
+
+    // If not pruned and not a complete path, extend the current path.
+    currentPathCost += costToNext; // Add the cost of the edge to the current path.
+    stackPointer++; // Move deeper into the stack.
+    dfsStackNodes[stackPointer] = nextNode; // Add 'nextNode' to the DFS path.
+    isVisited[nextNode] = true; // Mark 'nextNode' as visited for this DFS run.
+    // Initialize neighbors for the new stack level (from 'nextNode' using backward edges).
+    dfsStackNeighbors[stackPointer] = Object.keys(backwardEdges[nextNode]);
+  }
 }
 
-// Main loop for dynamic programming: iterate through nodes in their sorted order
-for (let sortedIndex in orderedVertices) {
-    const currentVertex = orderedVertices[sortedIndex]; // The node being processed (analogous to 'u')
+// Main dynamic programming loop: iterate through nodes in increasing order of their initial BFS distances.
+for (let mainLoopIdx in sortedNodesByDist) {
+  let currentDPNode = sortedNodesByDist[mainLoopIdx];
 
-    // First pass: Update the minimum distance to 'currentVertex' using predecessors
-    // that have already been processed (i.e., appear earlier in the sorted list).
-    for (let predecessorVertex in backwardGraph[currentVertex]) { // Analogous to 'v'
-        if (vertexOrderMap[predecessorVertex] < vertexOrderMap[currentVertex]) {
-            minDistances[currentVertex] = Math.min(
-                minDistances[currentVertex],
-                minDistances[predecessorVertex] + forwardGraph[predecessorVertex][currentVertex]
-            );
-        }
+  // First pass: Consider direct backward edges from nodes with lower BFS ranks.
+  // This is a standard relaxation step, ensuring paths through already finalized nodes are considered.
+  for (let neighborDPNode in backwardEdges[currentDPNode]) {
+    if (nodeRankMap[neighborDPNode] < nodeRankMap[currentDPNode]) {
+      minDistances[currentDPNode] = Math.min(minDistances[currentDPNode], minDistances[neighborDPNode] + forwardEdges[neighborDPNode][currentDPNode]);
     }
+  }
 
-    // Second pass: Update the minimum distance to 'currentVertex' using predecessors
-    // that appear *later* in the sorted list. This involves the DFS (`traversePath`)
-    // to find paths through these 'later' predecessors.
-    for (let predecessorVertex in backwardGraph[currentVertex]) {
-        if (vertexOrderMap[predecessorVertex] > vertexOrderMap[currentVertex]) {
-            // Call `traversePath` to find a potential shorter path component
-            // from some node `x` to `predecessorVertex`, then add the edge cost
-            // from `predecessorVertex` to `currentVertex`.
-            minDistances[currentVertex] = Math.min(
-                minDistances[currentVertex],
-                traversePath(
-                    predecessorVertex, // The starting node for this DFS segment (v)
-                    currentVertex,     // The target node for which distance is being calculated (u)
-                    minDistances[currentVertex] - forwardGraph[predecessorVertex][currentVertex] // Initial estimate for the path component
-                ) + forwardGraph[predecessorVertex][currentVertex] // Add the final edge cost
-            );
-        }
+  // Second pass: Use DFS to explore paths involving nodes with higher BFS ranks.
+  // This step refines distances by considering paths that might "go against" the BFS order.
+  for (let neighborDPNode in backwardEdges[currentDPNode]) {
+    if (nodeRankMap[neighborDPNode] > nodeRankMap[currentDPNode]) {
+      // The 'explorePath' function finds the shortest path from node 0 to 'neighborDPNode'.
+      // The 'initialMinCost' passed to 'explorePath' is an upper bound for P(0, neighborDPNode),
+      // derived from the current best path to 'currentDPNode' minus the direct edge cost from 'neighborDPNode' to 'currentDPNode'.
+      let pathFromZeroToNeighbor = explorePath(neighborDPNode, currentDPNode, minDistances[currentDPNode] - forwardEdges[neighborDPNode][currentDPNode]);
+      
+      // Update the minimum distance to 'currentDPNode' if a shorter path is found
+      // by going from 0 to 'neighborDPNode' (via 'explorePath') and then directly to 'currentDPNode'.
+      minDistances[currentDPNode] = Math.min(minDistances[currentDPNode], pathFromZeroToNeighbor + forwardEdges[neighborDPNode][currentDPNode]);
     }
+  }
 }
 
-// Output the final calculated minimum distances for all nodes
-for (let resultNodeIndex = 0; resultNodeIndex < nodeCount; resultNodeIndex++) {
-    console.log(resultNodeIndex + ' ' + minDistances[resultNodeIndex]);
+// Output the final shortest distances from node 0 to all other nodes.
+for (let outputIdx = 0; outputIdx < nodeCount; outputIdx++) {
+  console.log(outputIdx + ' ' + minDistances[outputIdx]);
 }

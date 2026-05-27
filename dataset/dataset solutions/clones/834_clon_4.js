@@ -1,146 +1,117 @@
-const BOARD_ROW_COUNT = 12;
-const BOARD_COL_COUNT = 6;
-const EMPTY_SPACE = '.';
-const ADJACENCY_OFFSETS = [
-    [-1, 0], // Up
-    [1, 0],  // Down
-    [0, -1], // Left
-    [0, 1]   // Right
-];
+const GRID_ROWS = 12;
+const GRID_COLS = 6;
+const NEIGHBOR_DELTAS = [[-1, 0], [0, -1], [0, 1], [1, 0]];
 
-function checkBoundary(rCoord, cCoord) {
-    return rCoord >= 0 && rCoord < BOARD_ROW_COUNT && cCoord >= 0 && cCoord < BOARD_COL_COUNT;
-}
+function findClustersAndBombs(gridState) {
+    const cellsToExplode = new Set();
+    const visitedInRound = new Set();
 
-function locateConnectedElements(startR, startC, currentPlayArea) {
-    const targetElement = currentPlayArea[startR][startC];
-    if (targetElement === EMPTY_SPACE) {
-        return { members: new Set(), element: EMPTY_SPACE };
-    }
+    for (let r = 0; r < GRID_ROWS; r++) {
+        for (let c = 0; c < GRID_COLS; c++) {
+            const currentCellKey = `${r},${c}`;
+            const currentCellColor = gridState[r][c];
 
-    const explorationQueue = [[startR, startC]];
-    const visitedPositions = new Set([`${startR},${startC}`]);
-    const connectedMembers = new Set([`${startR},${startC}`]);
+            if (currentCellColor !== "." && currentCellColor !== "O" && !visitedInRound.has(currentCellKey)) {
+                const currentCluster = new Set();
+                const searchQueue = [[r, c]];
+                currentCluster.add(currentCellKey);
+                visitedInRound.add(currentCellKey);
 
-    let head = 0;
-    while (head < explorationQueue.length) {
-        const [currR, currC] = explorationQueue[head++];
+                let queuePointer = 0;
+                while (queuePointer < searchQueue.length) {
+                    const [currR, currC] = searchQueue[queuePointer++];
 
-        for (const [dr, dc] of ADJACENCY_OFFSETS) {
-            const nextR = currR + dr;
-            const nextC = currC + dc;
-            const nextCoordKey = `${nextR},${nextC}`;
+                    for (const [dr, dc] of NEIGHBOR_DELTAS) {
+                        const nextR = currR + dr;
+                        const nextC = currC + dc;
+                        const nextCellKey = `${nextR},${nextC}`;
 
-            if (checkBoundary(nextR, nextC) && !visitedPositions.has(nextCoordKey)) {
-                visitedPositions.add(nextCoordKey);
-                if (currentPlayArea[nextR][nextC] === targetElement) {
-                    connectedMembers.add(nextCoordKey);
-                    explorationQueue.push([nextR, nextC]);
+                        if (nextR >= 0 && nextR < GRID_ROWS &&
+                            nextC >= 0 && nextC < GRID_COLS &&
+                            gridState[nextR][nextC] === currentCellColor &&
+                            !visitedInRound.has(nextCellKey)) {
+                            
+                            visitedInRound.add(nextCellKey);
+                            currentCluster.add(nextCellKey);
+                            searchQueue.push([nextR, nextC]);
+                        }
+                    }
+                }
+
+                if (currentCluster.size >= 4) {
+                    currentCluster.forEach(coord => cellsToExplode.add(coord));
                 }
             }
         }
     }
-    return { members: connectedMembers, element: targetElement };
+    return cellsToExplode;
 }
 
-function removeAffectedElements(initialPlayArea, elementsToObliterate) {
-    let nextPlayArea = initialPlayArea.map(row => [...row]); // Deep copy
-    const totalObliteratedElements = new Set(elementsToObliterate);
+function applyExplosionsAndClearOs(initialGrid, cellsToExplode) {
+    const nextGridState = initialGrid.map(row => [...row]);
 
-    // Identify 'O' bombs adjacent to initially obliterated elements
-    for (const elementKey of elementsToObliterate) {
-        const [r, c] = elementKey.split(',').map(Number);
-        for (const [dr, dc] of ADJACENCY_OFFSETS) {
+    if (cellsToExplode.size === 0) {
+        return nextGridState;
+    }
+
+    cellsToExplode.forEach(coordKey => {
+        const [r, c] = coordKey.split(',').map(Number);
+        nextGridState[r][c] = ".";
+    });
+
+    cellsToExplode.forEach(coordKey => {
+        const [r, c] = coordKey.split(',').map(Number);
+        for (const [dr, dc] of NEIGHBOR_DELTAS) {
             const nextR = r + dr;
             const nextC = c + dc;
-            if (checkBoundary(nextR, nextC) && nextPlayArea[nextR][nextC] === 'O') {
-                totalObliteratedElements.add(`${nextR},${nextC}`);
+
+            if (nextR >= 0 && nextR < GRID_ROWS &&
+                nextC >= 0 && nextC < GRID_COLS &&
+                nextGridState[nextR][nextC] === "O") {
+                nextGridState[nextR][nextC] = ".";
             }
         }
-    }
+    });
 
-    // Apply obliteration
-    for (const elementKey of totalObliteratedElements) {
-        const [r, c] = elementKey.split(',').map(Number);
-        nextPlayArea[r][c] = EMPTY_SPACE;
-    }
-    return nextPlayArea;
+    return nextGridState;
 }
 
-function applyGravitationalPull(currentPlayArea) {
-    let shiftedPlayArea = currentPlayArea.map(row => [...row]); // Deep copy
+function applyGravityToGrid(gridBeforeGravity) {
+    const gridAfterGravity = Array.from({ length: GRID_ROWS }, () => Array(GRID_COLS).fill("."));
 
-    for (let c = 0; c < BOARD_COL_COUNT; c++) {
-        const columnContents = [];
-        for (let r = BOARD_ROW_COUNT - 1; r >= 0; r--) {
-            if (shiftedPlayArea[r][c] !== EMPTY_SPACE) {
-                columnContents.unshift(shiftedPlayArea[r][c]); // Add to the front to maintain top-to-bottom order
-            }
-        }
-
-        // Fill column from bottom up
-        for (let r = BOARD_ROW_COUNT - 1; r >= 0; r--) {
-            if (columnContents.length > 0) {
-                shiftedPlayArea[r][c] = columnContents.pop(); // Take from the end (which was the top block)
-            } else {
-                shiftedPlayArea[r][c] = EMPTY_SPACE;
+    for (let c = 0; c < GRID_COLS; c++) {
+        let currentFillRow = GRID_ROWS - 1;
+        for (let r = GRID_ROWS - 1; r >= 0; r--) {
+            if (gridBeforeGravity[r][c] !== ".") {
+                gridAfterGravity[currentFillRow--][c] = gridBeforeGravity[r][c];
             }
         }
     }
-    return shiftedPlayArea;
+    return gridAfterGravity;
 }
 
-function simulateGameTurn(currentBoardState, accumulatedChainScore) {
-    let clustersToExplode = [];
-    const processedCells = new Set();
+const inputData = require('fs').readFileSync('/dev/stdin', 'utf8');
+const inputLines = inputData.trim().split("\n");
+const numberOfTestCases = parseInt(inputLines.shift(), 10);
 
-    for (let r = 0; r < BOARD_ROW_COUNT; r++) {
-        for (let c = 0; c < BOARD_COL_COUNT; c++) {
-            const cellKey = `${r},${c}`;
-            if (currentBoardState[r][c] !== EMPTY_SPACE && !processedCells.has(cellKey)) {
-                const groupDetails = locateConnectedElements(r, c, currentBoardState);
-                
-                // Mark all members of this group as processed to avoid re-evaluating
-                for (const memberKey of groupDetails.members) {
-                    processedCells.add(memberKey);
-                }
+for (let caseIdx = 0; caseIdx < numberOfTestCases; caseIdx++) {
+    let currentPuzzleGrid = [];
+    for (let r = 0; r < GRID_ROWS; r++) {
+        currentPuzzleGrid.push(inputLines.shift().split(""));
+    }
 
-                if (groupDetails.members.size >= 4) {
-                    clustersToExplode.push(groupDetails.members);
-                }
-            }
+    let explosionCount = 0;
+    while (true) {
+        const cellsToClearThisIteration = findClustersAndBombs(currentPuzzleGrid);
+
+        if (cellsToClearThisIteration.size === 0) {
+            break;
         }
+
+        explosionCount++;
+        
+        const gridAfterClearing = applyExplosionsAndClearOs(currentPuzzleGrid, cellsToClearThisIteration);
+        currentPuzzleGrid = applyGravityToGrid(gridAfterClearing);
     }
-
-    if (clustersToExplode.length === 0) {
-        return accumulatedChainScore; // No more chains, game ends for this scenario
-    }
-
-    let elementsForThisChainClearance = new Set();
-    for (const cluster of clustersToExplode) {
-        for (const memberCoord of cluster) {
-            elementsForThisChainClearance.add(memberCoord);
-        }
-    }
-
-    const boardAfterClearing = removeAffectedElements(currentBoardState, elementsForThisChainClearance);
-    const boardAfterGravity = applyGravitationalPull(boardAfterClearing);
-
-    return simulateGameTurn(boardAfterGravity, accumulatedChainScore + 1); // Recursive call for next turn
-}
-
-
-const rawInputData = require('fs').readFileSync('/dev/stdin', 'utf8');
-const inputLines = rawInputData.trim().split('\n');
-
-let numGameScenarios = parseInt(inputLines.shift(), 10);
-
-for (let scenarioIdx = 0; scenarioIdx < numGameScenarios; scenarioIdx++) {
-    let initialGameGrid = [];
-    for (let rowIdx = 0; rowIdx < BOARD_ROW_COUNT; rowIdx++) {
-        initialGameGrid.push(inputLines.shift().split(''));
-    }
-
-    const finalChainScore = simulateGameTurn(initialGameGrid, 0);
-    console.log(finalChainScore);
+    console.log(explosionCount);
 }

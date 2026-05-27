@@ -1,78 +1,61 @@
-const primeDivisor = 1000000007;
+'use strict';
 
-function computeDistribution(participantCount, totalUnits, unitLimits) {
-  const waysCache = Array.from({ length: participantCount }, () =>
-    Array.from({ length: totalUnits + 1 }, () => -1)
-  );
+const MOD_CONSTANT = 1000000007;
 
-  const cumulativeCache = Array.from({ length: participantCount }, () =>
-    Array.from({ length: totalUnits + 1 }, () => -1)
-  );
-
-  function retrieveWays(personIndex, currentUnits) {
-    if (currentUnits < 0) {
-      return 0;
-    }
-    if (personIndex < 0) {
-      return currentUnits === 0 ? 1 : 0;
-    }
-
-    if (waysCache[personIndex][currentUnits] !== -1) {
-      return waysCache[personIndex][currentUnits];
-    }
-
-    let calculatedResult;
-    const individualLimit = unitLimits[personIndex];
-
-    if (personIndex === 0) {
-      calculatedResult = (currentUnits <= individualLimit) ? 1 : 0;
-    } else {
-      const upperSumComponent = retrieveCumulative(personIndex - 1, currentUnits);
-      const lowerSumBound = currentUnits - individualLimit - 1;
-      const lowerSumComponent = (lowerSumBound >= 0) ? retrieveCumulative(personIndex - 1, lowerSumBound) : 0;
-
-      calculatedResult = (upperSumComponent - lowerSumComponent + primeDivisor) % primeDivisor;
-    }
-
-    waysCache[personIndex][currentUnits] = calculatedResult;
-    return calculatedResult;
+function calculateWaysToDistribute(personCount, totalAmount, individualLimits) {
+  if (totalAmount === 0) {
+    return 1;
   }
 
-  function retrieveCumulative(personIndex, currentUnits) {
-    if (currentUnits < 0) {
+  const memoizationCache = Array.from({ length: personCount }, () =>
+    new Array(totalAmount + 1).fill(-1)
+  );
+
+  function findDistributionCount(pIdx, amt) {
+    if (amt < 0) {
       return 0;
     }
-    if (personIndex < 0) {
+    if (amt === 0) {
       return 1;
     }
-
-    if (cumulativeCache[personIndex][currentUnits] !== -1) {
-      return cumulativeCache[personIndex][currentUnits];
+    if (pIdx < 0) {
+      return 0;
     }
 
-    let calculatedCumulative;
-    if (currentUnits === 0) {
-      calculatedCumulative = retrieveWays(personIndex, 0);
+    if (memoizationCache[pIdx][amt] !== -1) {
+      return memoizationCache[pIdx][amt];
+    }
+
+    let currentResult;
+
+    if (pIdx === 0) {
+      currentResult = (amt <= individualLimits[0]) ? 1 : 0;
     } else {
-      calculatedCumulative = (retrieveWays(personIndex, currentUnits) + retrieveCumulative(personIndex, currentUnits - 1)) % primeDivisor;
+      const termA = findDistributionCount(pIdx, amt - 1);
+      const termB = findDistributionCount(pIdx - 1, amt);
+
+      const limitExceededAmount = amt - individualLimits[pIdx] - 1;
+      const termC = (limitExceededAmount >= 0) ? findDistributionCount(pIdx - 1, limitExceededAmount) : 0;
+
+      currentResult = (termA + termB - termC + MOD_CONSTANT) % MOD_CONSTANT;
     }
 
-    cumulativeCache[personIndex][currentUnits] = calculatedCumulative;
-    return calculatedCumulative;
+    memoizationCache[pIdx][amt] = currentResult;
+    return currentResult;
   }
 
-  return retrieveWays(participantCount - 1, totalUnits);
+  return findDistributionCount(personCount - 1, totalAmount);
 }
 
-function executeProgram(dataInput) {
-  const inputLines = dataInput.split("\n");
-  const parsedParameters = inputLines[0].split(' ').map(value => parseInt(value, 10));
-  const participantCount = parsedParameters[0];
-  const totalUnits = parsedParameters[1];
-  const unitLimits = inputLines[1].split(' ').map(value => parseInt(value, 10));
+function processInput(inputData) {
+  const dataLines = inputData.split("\n");
+  const dimensions = dataLines[0].split(' ').map(Number);
+  const numPeople = dimensions[0];
+  const totalItems = dimensions[1];
+  const limitsArray = dataLines[1].split(' ').map(Number);
 
-  const finalResult = computeDistribution(participantCount, totalUnits, unitLimits);
-  console.log(finalResult);
+  const finalAnswer = calculateWaysToDistribute(numPeople, totalItems, limitsArray);
+  console.log(finalAnswer);
 }
 
-executeProgram(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

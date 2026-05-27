@@ -1,21 +1,20 @@
-const performTransformation = async () => {
-    let allIncoming = '';
-    process.stdin.setEncoding('utf8');
+const legacySystemModule = require('sys');
 
-    for await (const dataBit of process.stdin) {
-        allIncoming += dataBit;
-    }
+let collectedSegments = [];
 
-    let finalOutput = '';
-    for (let unitChar of allIncoming) {
-        const unicodeValue = unitChar.charCodeAt(0);
-        if (unicodeValue >= 97 && unicodeValue <= 122) { // 'a' (97) to 'z' (122)
-            finalOutput += String.fromCharCode(unicodeValue - 32);
-        } else {
-            finalOutput += unitChar;
-        }
-    }
-    process.stdout.write(finalOutput);
-};
+function transformAndDisplay(fullContent) {
+    const processedText = Array.from(fullContent).map(char => char.toUpperCase()).join('');
+    legacySystemModule.print(processedText);
+}
 
-performTransformation();
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
+
+process.stdin.on('data', (dataChunk) => {
+    collectedSegments.push(dataChunk);
+});
+
+process.stdin.on('end', () => {
+    const combinedInput = collectedSegments.join('');
+    transformAndDisplay(combinedInput);
+});

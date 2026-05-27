@@ -1,93 +1,96 @@
-'use strict'; // Enforce strict mode for robust code execution
+'use strict';
 
-// Anonymous self-executing function to encapsulate the entire program logic
-(function ( sourceData ) {
-  // Prepare the raw input: remove leading/trailing whitespace and split into individual lines
-  sourceData = sourceData.trim().split( /\n/ );
+// Main execution block, immediately invoked function expression (IIFE)
+(function(rawDataInput) {
+  // Process the raw input string: trim whitespace, then split into lines.
+  rawDataInput = rawDataInput.trim().split(/\n/);
 
-  // Extract the total number of graph vertices from the first line of input
-  // The 'shift()' method removes the first element from the array and returns it
-  let vertexCount = parseInt( sourceData.shift(), 10 ); // Use parseInt for explicit integer conversion
+  // The first line contains the total number of vertices (N).
+  // Convert it to a number.
+  const totalVertices = rawDataInput.shift() - 0;
 
-  // Process the remaining lines of input:
-  // Each line is split by whitespace, and its parts are converted to numbers
-  sourceData = sourceData.map(function( lineText ) {
-    return lineText.split( /\s+/ ).map(function( numVal ) {
-      return parseInt( numVal, 10 ); // Convert each string part into an integer
-    });
-  });
+  // Map the remaining lines (edge definitions) into arrays of numbers.
+  // Each line is split by whitespace, and each part is converted to a number.
+  rawDataInput = rawDataInput.map(lineContent => lineContent.split(/\s+/).map(parsedNumber => parsedNumber - 0));
 
   /**
-   * Constructor function for a GraphVertex object.
-   * Represents a single node within the graph structure.
-   * @param {number} idValue - A unique numerical identifier for this vertex.
+   * Represents a single vertex in the graph.
+   * @param {number} vertexIdentifier - The unique ID of this vertex (not used internally by this constructor).
    */
-  function GraphVertex( idValue ) {
-    const selfRef = this; // Maintain a consistent reference to the current object instance
-    selfRef.adjacencyList = []; // Array to store all connections (edges) from this vertex
-    selfRef.partitionLabel = -1; // Initial partition label; -1 indicates unvisited/unassigned
+  function GraphElement(vertexIdentifier) {
+    // Use 'thisElement' as a self-reference within the constructor.
+    let thisElement = this;
+    // Array to store information about adjacent edges: [neighbor_id, edge_weight_parity]
+    thisElement.adjacentEdges = [];
+    // The parity group (0 or 1) this vertex belongs to. -1 indicates unassigned.
+    thisElement.parityGroup = -1;
   }
 
-  // Create an array to store all GraphVertex objects, indexed from 1 up to vertexCount
-  let cellCollection = new Array( vertexCount + 1 );
+  // Create an array to hold all graph vertex objects.
+  // Array is 1-indexed, so size is totalVertices + 1.
+  const vertexCollection = new Array(totalVertices + 1);
 
-  // Initialize each entry in the collection with a new GraphVertex instance
-  for ( let currentIdx = 1; currentIdx <= vertexCount; currentIdx++ ) {
-    cellCollection[ currentIdx ] = new GraphVertex( currentIdx );
+  // Initialize each vertex object in the collection.
+  for (let vertexIdentifier = 1; vertexIdentifier <= totalVertices; vertexIdentifier++) {
+    vertexCollection[vertexIdentifier] = new GraphElement(vertexIdentifier);
   }
 
-  // Iterate over the processed input data to build the graph's adjacency lists
-  sourceData.forEach(function( edgeData ) {
-    // Each 'edgeData' array contains [source_id, destination_id, connection_type]
-    // Add the destination ID and the parity (0 or 1) of the connection type to the source vertex's list
-    cellCollection[ edgeData[ 0 ] ].adjacencyList.push( [ edgeData[ 1 ], edgeData[ 2 ] % 2 ] );
+  // Populate the adjacency lists for each vertex based on the input edge data.
+  rawDataInput.forEach(function(edgeDescription) {
+    // edgeDescription[0] is source, edgeDescription[1] is destination, edgeDescription[2] is weight.
+    // We only care about the parity of the weight (0 or 1).
+    vertexCollection[edgeDescription[0]].adjacentEdges.push([edgeDescription[1], edgeDescription[2] % 2]);
   });
 
-  // Initialize a stack for depth-first traversal of the graph
-  let processingStack = [ 1 ]; // Begin the traversal from vertex with ID 1
+  // Initialize a stack for Depth-First Search (DFS) traversal.
+  // Start traversal from vertex 1.
+  const traversalStack = [1];
 
-  // Assign the initial partition label to the starting vertex
-  cellCollection[ 1 ].partitionLabel = 0;
+  // Assign the initial parity group to the starting vertex (vertex 1).
+  // This can be arbitrarily 0 or 1; 0 is chosen here.
+  vertexCollection[1].parityGroup = 0;
 
-  // Main loop for graph traversal and partition labeling
-  while ( processingStack.length > 0 ) {
-    // Get the index of the vertex currently at the top of the stack (without removing it)
-    let topElementIndex = processingStack[ processingStack.length - 1 ];
-    // Retrieve the actual GraphVertex object from the collection
-    let currentVertex = cellCollection[ topElementIndex ];
+  // Perform DFS to assign parity groups to all connected vertices.
+  // This algorithm effectively performs a 2-coloring based on edge weights.
+  while (traversalStack.length > 0) {
+    // Get the ID of the current vertex from the top of the stack.
+    let currentVertexId = traversalStack[traversalStack.length - 1];
+    // Get the actual vertex object.
+    let currentVertexObject = vertexCollection[currentVertexId];
 
-    // Check if the current vertex has any unvisited connections remaining
-    if ( currentVertex.adjacencyList.length === 0 ) {
-      processingStack.pop(); // If no connections, this vertex is fully processed; remove from stack
+    // If the current vertex has no more unvisited adjacent edges, pop it.
+    if (currentVertexObject.adjacentEdges.length === 0) {
+      traversalStack.pop();
     } else {
-      // Get the details of the most recently added connection
-      let connectionDetail = currentVertex.adjacencyList[ currentVertex.adjacencyList.length - 1 ];
-      // Get the neighboring vertex object referenced by this connection
-      let neighborVertex = cellCollection[ connectionDetail[ 0 ] ];
+      // Get the last edge details from the current vertex's adjacency list.
+      // We process edges from the end to allow easy removal (pop).
+      let lastEdgeDetails = currentVertexObject.adjacentEdges[currentVertexObject.adjacentEdges.length - 1];
+      // Get the neighbor vertex object.
+      let neighborVertexObject = vertexCollection[lastEdgeDetails[0]];
 
-      // If the neighbor vertex has not yet been assigned a partition label (-1 indicates unassigned)
-      if ( neighborVertex.partitionLabel === -1 ) {
-        // Assign a partition label to the neighbor using an XOR operation
-        // This ensures proper alternating labels based on connection type
-        neighborVertex.partitionLabel = ( currentVertex.partitionLabel ^ connectionDetail[ 1 ] );
-        // Push the neighbor's index onto the stack to visit it next
-        processingStack.push( connectionDetail[ 0 ] );
+      // If the neighbor has not yet been assigned a parity group (-1 indicates unassigned).
+      if (neighborVertexObject.parityGroup === -1) {
+        // Assign the neighbor's parity group.
+        // The neighbor's group is the XOR sum of the current vertex's group and the edge weight parity.
+        neighborVertexObject.parityGroup = (currentVertexObject.parityGroup ^ lastEdgeDetails[1]);
+        // Push the neighbor onto the stack to visit it next.
+        traversalStack.push(lastEdgeDetails[0]);
       } else {
-        // If the neighbor has already been visited, this connection is redundant for labeling
-        // Remove this connection from the current vertex's adjacency list
-        currentVertex.adjacencyList.pop();
+        // If the neighbor has already been visited, this edge has been processed
+        // (either from this vertex or the neighbor's side).
+        // Remove this edge from the current vertex's adjacency list.
+        currentVertexObject.adjacentEdges.pop();
       }
     }
   }
 
-  // Collect the final assigned partition labels for all vertices into an output array
-  let outputCollection = [];
-  for ( let resultIterator = 1; resultIterator <= vertexCount; resultIterator++ ) {
-    outputCollection.push( cellCollection[ resultIterator ].partitionLabel );
+  // Collect the final parity group assignments for all vertices.
+  const finalParityResults = [];
+  for (let vertexIdentifier = 1; vertexIdentifier <= totalVertices; vertexIdentifier++) {
+    finalParityResults.push(vertexCollection[vertexIdentifier].parityGroup);
   }
 
-  // Output the collected partition labels, each on a new line
-  console.log( outputCollection.join( '\n' ) );
+  // Output the results, with each vertex's parity group on a new line.
+  console.log(finalParityResults.join('\n'));
 
-// Invoke the anonymous function, passing the content of '/dev/stdin' as input
-}( require('fs').readFileSync('/dev/stdin', 'utf8') ) );
+})(require('fs').readFileSync('/dev/stdin', 'utf8'));

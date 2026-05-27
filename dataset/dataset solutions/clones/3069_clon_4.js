@@ -1,23 +1,10 @@
-const determineFinalMetric = (sourceTextPayload) => {
-    const parsedNumericElements = sourceTextPayload
-        .split('\n')
-        .map(segment => Number.parseInt(segment, 10));
+(function() {
+  const sourceData = require("fs").readFileSync("/dev/stdin", "utf8");
+  const parsedNumbers = sourceData.split("\n").map(strVal => parseInt(strVal, 10));
 
-    const primaryDatum = parsedNumericElements[0];
-    const evaluationSegment = parsedNumericElements.slice(1, 6);
+  const minimumCandidate = Math.min(...parsedNumbers.slice(1, 6));
 
-    const lowestBoundCriterion = Math.min(...evaluationSegment);
+  const calculatedOutcome = Math.floor((parsedNumbers[0] - 1) / minimumCandidate) + 5;
 
-    const interimQuotient = (primaryDatum - 1) / lowestBoundCriterion;
-    const ultimateCalculatedResult = Math.floor(interimQuotient) + 5;
-
-    return ultimateCalculatedResult;
-};
-
-const initiateProcessingSequence = (ioModuleInterface) => {
-    const inputContentStream = ioModuleInterface.readFileSync("/dev/stdin", "utf8");
-    const programOutputValue = determineFinalMetric(inputContentStream);
-    console.log(programOutputValue);
-};
-
-initiateProcessingSequence(require("fs"));
+  console.log(calculatedOutcome);
+})();

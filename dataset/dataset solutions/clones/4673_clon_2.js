@@ -1,30 +1,27 @@
-'use strict'; // Activate strict mode for improved code quality and fewer errors
+'use strict';
 
-// This primary routine handles the incoming stream of information.
-function ProcessEntry(rawData) {
-    // Deconstruct the initial line from the input stream.
-    // First, split by newline character, taking only the first segment.
-    // Then, further split this segment by space characters to obtain tokens.
-    const parsedLines = rawData .split('\n')[0] .split(' ');
+/*
+ * This function processes raw text input to determine a specific outcome.
+ * It's designed to compare two parsed values from the input string.
+ */
+function ProcessInput(rawData) {
+    // Split the input by newline, take the first line, then split by space.
+    const parsedValues = rawData.split("\n")[0].split(" ");
 
-    // Isolate the very first data element for subsequent operations.
-    const firstToken = parsedLines[0];
+    // Extract the first component from the parsed array.
+    const firstValue = parsedValues[0];
+    // Extract the second component from the parsed array.
+    const secondValue = parsedValues[1];
 
-    // Isolate the second data element for subsequent operations.
-    const secondToken = parsedLines[1];
-
-    // Evaluate if the extracted data elements hold identical values.
-    if (firstToken == secondToken) {
-        // Emit a confirmation message indicating equality.
-        console.log('MATCH');
-    }
-    else {
-        // Emit a distinguishing message indicating inequality.
-        console.log('DIFFER');
+    // Compare the two extracted values.
+    if (firstValue == secondValue) {
+        // If they are identical, log 'H'.
+        console.log("H");
+    } else {
+        // Otherwise, if they differ, log 'D'.
+        console.log("D");
     }
 }
 
-// Initiate the data processing by reading content from the standard input path.
-// The Node.js 'fs' module is employed to synchronously read the file,
-// with 'utf8' encoding specified for correct character interpretation.
-ProcessEntry( require('fs') .readFileSync('/dev/stdin', 'utf8') );
+// Read the content of standard input synchronously and pass it to the processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

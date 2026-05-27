@@ -1,80 +1,38 @@
-const processInputAndCalculate = (rawData) => {
-    const modulusIdentifier = rawData[0][1];
-    const numericStrings = rawData[1];
+function solveProblem(dataInput) {
+  const modulusVal = Number(dataInput[0][1]);
 
-    const effectiveModulus = Number(modulusIdentifier);
+  const numSequence = dataInput[1].map(Number).map(element => element % modulusVal);
+
+  let totalMatches = 0;
+  let currentPrefixMod = 0; 
+  
+  const valueCounts = new Map();
+  
+  const historyOfValues = [0]; 
+  valueCounts.set(0, 1);
+
+  for (let idx = 0; idx < numSequence.length; idx++) {
+    currentPrefixMod = (currentPrefixMod + numSequence[idx]) % modulusVal;
+
+    let currentTransformedVal = (currentPrefixMod - (idx + 1)) % modulusVal;
     
-    const adjustedValues = numericStrings.reduce((accumulator, currentString) => {
-        accumulator.push(Number(currentString) % effectiveModulus);
-        return accumulator;
-    }, []);
+    currentTransformedVal = (currentTransformedVal + modulusVal) % modulusVal;
+    
+    historyOfValues.push(currentTransformedVal);
 
-    const accumulateFragmentCounts = (
-        currentOuterIndex,
-        accumulatedResult,
-        sourceSequence,
-        modulusBound
-    ) => {
-        if (currentOuterIndex >= sourceSequence.length) {
-            return accumulatedResult;
-        }
+    const removalIndex = idx + 1 - modulusVal;
 
-        const traverseSubFragments = (
-            currentInnerIndex,
-            currentFragmentSumModulo,
-            currentFragmentLength,
-            localFragmentMatches,
-            sequenceForScan,
-            modulusConstraint
-        ) => {
-            if (currentInnerIndex >= sequenceForScan.length || currentFragmentLength >= modulusConstraint) {
-                return localFragmentMatches;
-            }
+    if (removalIndex >= 0) {
+      const valToRemove = historyOfValues[removalIndex];
+      valueCounts.set(valToRemove, valueCounts.get(valToRemove) - 1);
+    }
 
-            const valueToAdd = sequenceForScan[currentInnerIndex];
-            const nextFragmentSumModulo = (currentFragmentSumModulo + valueToAdd) % modulusConstraint;
+    totalMatches += valueCounts.get(currentTransformedVal) || 0;
 
-            let incrementForMatch = 0;
-            if (nextFragmentSumModulo === currentFragmentLength) {
-                incrementForMatch = 1;
-            }
+    valueCounts.set(currentTransformedVal, (valueCounts.get(currentTransformedVal) || 0) + 1);
+  }
 
-            return traverseSubFragments(
-                currentInnerIndex + 1,
-                nextFragmentSumModulo,
-                currentFragmentLength + 1,
-                localFragmentMatches + incrementForMatch,
-                sequenceForScan,
-                modulusConstraint
-            );
-        };
+  console.log(totalMatches);
+}
 
-        const matchesFromThisStartingPoint = traverseSubFragments(
-            currentOuterIndex,
-            0,
-            1,
-            0,
-            adjustedValues,
-            effectiveModulus
-        );
-
-        return accumulateFragmentCounts(
-            currentOuterIndex + 1,
-            accumulatedResult + matchesFromThisStartingPoint,
-            sourceSequence,
-            modulusBound
-        );
-    };
-
-    return accumulateFragmentCounts(0, 0, adjustedValues, effectiveModulus);
-};
-
-const resourceAcquirer = require("fs");
-const inputPath = "/dev/stdin";
-const encodingType = "utf8";
-
-const rawInputContent = resourceAcquirer.readFileSync(inputPath, encodingType);
-const processedInputLines = rawInputContent.trim().split("\n").map(line => line.split(' '));
-
-const finalResult = processInputAndCalculate(processedInputLines);
-console.log(finalResult);
+solveProblem(require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n").map(line => line.split(' ')));

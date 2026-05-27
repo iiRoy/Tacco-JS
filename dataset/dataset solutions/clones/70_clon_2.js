@@ -1,48 +1,49 @@
 process.stdin.resume();
-process.stdin.setEncoding('utf8');
 
-// Set up an event listener to handle incoming data chunks
-process.stdin.on('data', receiveInput);
+process.stdin.setEncoding('utf8'); // Set the character encoding for incoming data
+
+process.stdin.on('data', handleIncomingData); // Register a callback for data events
 
 /**
- * Handles incoming data chunks from standard input.
- * Splits the chunk into individual lines and processes each.
- * @param {string} inputChunk - The raw data chunk received.
+ * Processes chunks of data received from standard input.
+ * Each line is treated as a separate ciphered message to be processed.
+ * @param {string} inputChunk - The raw data string received from stdin.
  */
-function receiveInput(inputChunk) {
-    inputChunk
-        .split('\n') // Divide the input into separate lines
-        .forEach(processLine); // Apply the transformation to each line
+function handleIncomingData(inputChunk) {
+  // Split the input chunk by newline characters and iterate over each line.
+  inputChunk.split('\n').forEach(attemptDecryption);
 }
 
 /**
- * Applies a Caesar cipher shift to a text segment and checks for keywords.
- * Recursively calls itself to iterate through all possible 26 shifts.
- * @param {string} textSegment - The line of text to be processed.
- * @param {number} [shiftCount=0] - The current shift amount for the cipher.
+ * Recursively attempts to decrypt a given string by applying a Caesar cipher shift.
+ * It checks for specific keywords ("the", "this", "that") after each shift.
+ * If a keyword is found, the deciphered string is printed to standard output.
+ * The function iterates through all 26 possible shifts.
+ *
+ * @param {string} encryptedMessage - The string that needs to be deciphered.
+ * @param {number} [currentShift=0] - The current shift amount to apply, starting from 0.
  */
-function processLine(textSegment, shiftCount) {
-    // Ensure shiftCount is a number, defaulting to 0 if not provided or invalid.
-    shiftCount = Number(shiftCount) | 0;
+function attemptDecryption(encryptedMessage, currentShift) {
+  // Apply a Caesar cipher shift to all lowercase English letters in the message.
+  let shiftedMessage = String(encryptedMessage).replace(/[a-z]/g, function(originalChar) {
+    // Calculate the new character code after applying a single shift.
+    const asciiBase = 0x61; // ASCII value for 'a'
+    const charCodeVal = originalChar.charCodeAt(0);
+    const newCharCode = asciiBase + (charCodeVal - asciiBase + 1) % 26;
+    return String.fromCharCode(newCharCode);
+  });
 
-    // Apply a cyclic shift to all lowercase English letters in the segment.
-    let transformedText = String(textSegment).replace(/[a-z]/g, function (charToShift) {
-        const baseAscii = 0x61; // ASCII value for 'a'
-        const currentAscii = charToShift.charCodeAt(0);
-        // Calculate new character code: (current - base + 1) % 26 + base
-        const newAscii = baseAscii + (currentAscii - baseAscii + 1) % 26;
-        return String.fromCharCode(newAscii);
-    });
+  // Check if the currently shifted message contains any of the target keywords.
+  if (/the|this|that/.test(shiftedMessage)) {
+    // If a keyword is detected, output the deciphered message followed by a newline.
+    process.stdout.write(shiftedMessage + '\n');
+  }
 
-    // Check if the transformed text contains any of the target keywords.
-    const keywordPattern = /the|this|that/;
-    if (keywordPattern.test(transformedText)) {
-        // If a keyword is found, output the transformed text to standard output.
-        process.stdout.write(transformedText + '\n');
-    }
+  // Ensure the shift counter is an integer, defaulting to 0 if not provided.
+  currentShift |= 0;
 
-    // Recursively call the function for the next shift, up to 26 times.
-    if (shiftCount < 25) { // Loop 26 times (0 to 25)
-        processLine(transformedText, ++shiftCount);
-    }
+  // If not all 26 possible shifts have been tried, recurse with the new shifted message.
+  if (currentShift < 26) {
+    attemptDecryption(shiftedMessage, ++currentShift);
+  }
 }

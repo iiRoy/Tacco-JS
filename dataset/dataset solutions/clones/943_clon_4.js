@@ -1,75 +1,53 @@
-(function(inputRecords) {
-    const recordLines = inputRecords.trim().split(/\r?\n/);
-    const totalVertices = Number(recordLines.shift());
+(function(inputData) {
+  const rawLines = inputData.trim().split('\n');
+  const vertexCount = parseInt(rawLines[0], 10);
 
-    const networkData = new Map(); // Stores { connections: [], status: 0, entryInstant: 0, exitInstant: 0 }
-                                   // status: 0=unvisited, 1=visiting, 2=visited
-    let globalTimer = 0;
+  const graphAdjacency = Array.from({ length: vertexCount }, () => []);
+  const vertexStatus = Array(vertexCount).fill('UNVISITED');
+  const entryTimes = Array(vertexCount).fill(0);
+  const exitTimes = Array(vertexCount).fill(0);
 
-    // Initialize networkData for all nodes
-    for (let currentEntity = 1; currentEntity <= totalVertices; currentEntity++) {
-        networkData.set(currentEntity, {
-            connections: [],
-            status: 0,
-            entryInstant: 0,
-            exitInstant: 0
-        });
-    }
+  let elapsedTime = 0;
 
-    // Parse adjacency lists from input
-    recordLines.forEach(function(connectionRecord) {
-        const componentParts = connectionRecord.split(' ').map(Number);
-        const originEntity = componentParts[0];
-        const connectedEntities = componentParts.slice(2);
-        networkData.get(originEntity).connections = connectedEntities;
-    });
+  for (let lineIndex = 1; lineIndex <= vertexCount; lineIndex++) {
+    const parts = rawLines[lineIndex].split(' ').map(Number);
+    const currentVertex = parts[0] - 1;
+    const neighbors = parts.slice(2);
+    graphAdjacency[currentVertex] = neighbors;
+  }
 
-    // Iterative Depth-First Search function
-    const traverseGraph = function(initialEntityIdentifier) {
-        const explorationStack = [];
-        explorationStack.push({ entityId: initialEntityIdentifier, activityPhase: 'discover' });
+  const traversalStack = [];
+  traversalStack.push({ vertexId: 0, isFinishing: false });
 
-        while (explorationStack.length > 0) {
-            const { entityId: currentEntity, activityPhase: currentPhase } = explorationStack.pop();
-            const entityDetails = networkData.get(currentEntity);
+  while (traversalStack.length > 0) {
+    const currentTask = traversalStack.pop();
+    const currentVertex = currentTask.vertexId;
 
-            if (currentPhase === 'discover') {
-                if (entityDetails.status === 0) { // If unvisited
-                    entityDetails.status = 1; // Mark as visiting
-                    globalTimer++;
-                    entityDetails.entryInstant = globalTimer;
+    if (currentTask.isFinishing) {
+      vertexStatus[currentVertex] = 'COMPLETED';
+      exitTimes[currentVertex] = ++elapsedTime;
+    } else {
+      if (vertexStatus[currentVertex] !== 'UNVISITED') {
+        continue;
+      }
 
-                    // Push current node back to mark its finish time later
-                    explorationStack.push({ entityId: currentEntity, activityPhase: 'complete' });
+      vertexStatus[currentVertex] = 'VISITING';
+      entryTimes[currentVertex] = ++elapsedTime;
 
-                    // Push unvisited neighbors in reverse order to simulate recursive DFS
-                    const adjacentLinks = entityDetails.connections;
-                    for (let j = adjacentLinks.length - 1; j >= 0; j--) {
-                        const neighborLink = adjacentLinks[j];
-                        if (networkData.get(neighborLink).status === 0) { // If neighbor is unvisited
-                            explorationStack.push({ entityId: neighborLink, activityPhase: 'discover' });
-                        }
-                    }
-                }
-            } else if (currentPhase === 'complete') {
-                globalTimer++;
-                entityDetails.exitInstant = globalTimer;
-                entityDetails.status = 2; // Mark as visited
-            }
+      traversalStack.push({ vertexId: currentVertex, isFinishing: true });
+
+      const neighbors = graphAdjacency[currentVertex];
+      for (let k = neighbors.length - 1; k >= 0; k--) {
+        const neighbor = neighbors[k] - 1;
+        if (vertexStatus[neighbor] === 'UNVISITED') {
+          traversalStack.push({ vertexId: neighbor, isFinishing: false });
         }
-    };
-
-    // Start graph traversal from entity 1
-    traverseGraph(1);
-
-    // Collect results for output
-    const resultCollector = [];
-    for (let currentEntity = 1; currentEntity <= totalVertices; currentEntity++) {
-        const entityDetails = networkData.get(currentEntity);
-        resultCollector.push(`${currentEntity} ${entityDetails.entryInstant} ${entityDetails.exitInstant}`);
+      }
     }
+  }
 
-    // Display final output
-    console.log(resultCollector.join('\n'));
+  for (let i = 0; i < vertexCount; i++) {
+    console.log([i + 1, entryTimes[i], exitTimes[i]].join(' '));
+  }
 
 })(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,127 +1,102 @@
-function obtainInputStream() {
-  // This utility function is responsible for fetching raw text data from the standard input.
-  // It leverages the Node.js 'fs' module to perform a synchronous file read operation.
-  // The retrieved content is then trimmed to remove any leading or trailing whitespace characters.
+function getInputData() {
   return require("fs").readFileSync("/dev/stdin", "utf8").trim();
 }
 
-function emitOutput(content) {
-  // This function serves to display the provided string or object to the standard output stream.
-  // Essentially, it prints the given content to the console.
-  console.log(content);
+function displayOutput(contentToPrint) {
+  console.log(contentToPrint);
 }
 
-// A versatile helper function designed for various input data transformations.
-// The 'type' parameter dictates the specific processing mode to apply.
-//
-// [transformationType] descriptions:
-// 0: Identity operation; the input 'item' is returned without any modification.
-// 1: Parses the input 'item' string and converts it into an integer number.
-// 2: Splits the input 'item' string into an array of substrings using a single space as the delimiter.
-// 3: Splits the input 'item' string into an array of substrings using a newline character as the delimiter.
-// 4: First, splits the input 'item' string by spaces, then maps each resulting substring to its numerical equivalent.
-// 5: First, splits the input 'item' string by newlines, then maps each resulting substring to its numerical equivalent.
-// 6: Breaks down the input 'item' string into an array where each element is a single character.
-// 7: First, breaks down the input 'item' string into individual characters, then maps each character to its numerical equivalent.
-function processData(item, type) {
-  switch (type) {
+// This utility function handles various input transformations.
+// The 'transformationType' parameter dictates the processing method:
+// 0: Returns the input string as is.
+// 1: Converts the input string to an integer.
+// 2: Splits the input string by spaces into an array of strings.
+// 3: Splits the input string by newlines into an array of strings.
+// 4: Splits by spaces, then converts each part to a number, returning a number array.
+// 5: Splits by newlines, then converts each part to a number, returning a number array.
+// 6: Splits the input string into an array of individual characters.
+// 7: Splits into individual characters, then converts each character to a number, returning a number array.
+function processInput(inputValue, transformationType) {
+  switch (transformationType) {
     case 0:
-      return item;
-
+      return inputValue;
     case 1:
-      return parseInt(item, 10); // Explicitly specifying radix for best practice.
-
+      return Number.parseInt(inputValue, 10);
     case 2:
-      return item.split(" ");
-
+      return inputValue.split(" ");
     case 3:
-      return item.split("\n");
-
+      return inputValue.split("\n");
     case 4:
-      return item.split(" ").map((element) => Number(element));
-
+      return inputValue.split(" ").map((itemVal) => Number(itemVal));
     case 5:
-      return item.split("\n").map((element) => Number(element));
-
+      return inputValue.split("\n").map((itemVal) => Number(itemVal));
     case 6:
-      return item.split("");
-
+      return inputValue.split("");
     case 7:
-      return item.split("").map((element) => Number(element));
-
+      return inputValue.split("").map((itemVal) => Number(itemVal));
     default:
-      // In case of an unrecognized type, fall back to returning the original item.
-      return item;
+      return inputValue;
   }
 }
 
-function primaryExecution(initialData) {
-  // The first step involves processing the raw input string by dividing it into separate lines.
-  initialData = processData(initialData, 3);
+function executeProgram(initialInput) {
+  // First, split the entire input by newlines to get an array of lines.
+  let processedLines = processInput(initialInput, 3);
 
-  // Extract the grid's spatial dimensions (rows and columns) from the first line of input.
-  // The first value represents the row count, and the second value signifies the column count.
-  const dimensions = processData(initialData[0], 4);
-  let rowCount = dimensions[0];
-  let colCount = dimensions[1];
+  // Extract grid dimensions (height and width) from the first line.
+  const gridHeight = processInput(processedLines[0], 4)[0];
+  const gridWidth = processInput(processedLines[0], 4)[1];
 
-  // Retrieve the total number of distinct item types from the second line of input.
-  let totalItems = processData(initialData[1], 1);
+  // Extract the total number of colors (though not directly used in the loop logic, it's part of input).
+  const colorCount = processInput(processedLines[1], 1);
 
-  // Obtain the array containing the initial counts for each distinct tile type from the third line.
-  let tileCounts = processData(initialData[2], 4);
+  // Extract the quantities for each color from the third line.
+  const colorQuantities = processInput(processedLines[2], 4);
 
-  // Initialize a two-dimensional array (grid) that will ultimately hold the final arrangement of tiles.
-  let resultGrid = new Array(rowCount);
-  for (let rowIndex = 0; rowIndex < rowCount; rowIndex++) {
-    resultGrid[rowIndex] = new Array(colCount);
+  // Initialize a 2D array (grid) to store the output.
+  let resultGrid = Array(gridHeight);
+  for (let rowInitializer = 0; rowInitializer < gridHeight; rowInitializer++) {
+    resultGrid[rowInitializer] = Array(gridWidth);
   }
 
-  // Initialize the identifier for the current tile being placed, starting from 1.
-  let currentTileIdentifier = 1;
+  // This variable keeps track of the current color ID being placed in the grid.
+  let currentColorId = 1;
 
-  // Iterate sequentially through each row of the grid to fill it with tiles.
-  for (let rowIndex = 0; rowIndex < rowCount; rowIndex++) {
-    // Implement an alternating traversal pattern for rows:
-    // For even-numbered rows (e.g., 0, 2, 4...), traverse from the leftmost column to the rightmost.
-    if (rowIndex % 2 === 0) {
-      for (let colIndex = 0; colIndex < colCount; colIndex++) {
-        // Check if the supply of the current tile type has been fully used.
-        // If so, increment to the next tile type identifier.
-        if (tileCounts[currentTileIdentifier - 1] === 0) {
-          currentTileIdentifier++;
+  // Iterate through each row of the grid.
+  for (let rowIdx = 0; rowIdx < gridHeight; rowIdx++) {
+    if (rowIdx % 2 === 0) {
+      // For even-indexed rows, fill cells from left to right.
+      for (let colIdx = 0; colIdx < gridWidth; colIdx++) {
+        // If the current color's quantity is depleted, move to the next color ID.
+        if (colorQuantities[currentColorId - 1] === 0) {
+          currentColorId++;
         }
-        // Decrement the remaining count for the current tile type.
-        tileCounts[currentTileIdentifier - 1]--;
-        // Assign the current tile's identifier to the corresponding cell in the result grid.
-        resultGrid[rowIndex][colIndex] = currentTileIdentifier;
+        // Decrement the quantity of the current color and assign it to the grid cell.
+        colorQuantities[currentColorId - 1]--;
+        resultGrid[rowIdx][colIdx] = currentColorId;
       }
     } else {
-      // For odd-numbered rows (e.g., 1, 3, 5...), traverse from the rightmost column to the leftmost.
-      for (let colIndex = colCount - 1; colIndex >= 0; colIndex--) {
-        // Check if the supply of the current tile type has been fully used.
-        // If so, increment to the next tile type identifier.
-        if (tileCounts[currentTileIdentifier - 1] === 0) {
-          currentTileIdentifier++;
+      // For odd-indexed rows, fill cells from right to left.
+      for (let colIdx = gridWidth - 1; colIdx >= 0; colIdx--) {
+        // If the current color's quantity is depleted, move to the next color ID.
+        if (colorQuantities[currentColorId - 1] === 0) {
+          currentColorId++;
         }
-        // Decrement the remaining count for the current tile type.
-        tileCounts[currentTileIdentifier - 1]--;
-        // Assign the current tile's identifier to the corresponding cell in the result grid.
-        resultGrid[rowIndex][colIndex] = currentTileIdentifier;
+        // Decrement the quantity of the current color and assign it to the grid cell.
+        colorQuantities[currentColorId - 1]--;
+        resultGrid[rowIdx][colIdx] = currentColorId;
       }
     }
   }
 
-  // After the grid is filled, transform each row array into a space-separated string.
-  for (let rowIndex = 0; rowIndex < rowCount; rowIndex++) {
-    resultGrid[rowIndex] = resultGrid[rowIndex].join(" ");
+  // After filling the grid, format each row into a space-separated string.
+  for (let rowFormatter = 0; rowFormatter < gridHeight; rowFormatter++) {
+    resultGrid[rowFormatter] = resultGrid[rowFormatter].join(" ");
   }
 
-  // Finally, join all the row strings with newline characters to form the complete output,
-  // and then display this final formatted string.
-  emitOutput(resultGrid.join("\n"));
+  // Join all formatted rows with newline characters and display the final result.
+  displayOutput(resultGrid.join("\n"));
 }
 
-// Initiate the primary execution flow of the program by first obtaining the standard input,
-// and then passing that input to the main processing function.
-primaryExecution(obtainInputStream());
+// Initiate the program by reading input and then executing the main logic.
+executeProgram(getInputData());

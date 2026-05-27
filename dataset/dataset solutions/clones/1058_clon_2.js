@@ -1,90 +1,74 @@
-// Configuration for input and line endings.
-const settings = {
-  sourcePath: '/dev/stdin', // Path for standard input on Linux-like systems
-  lineDelimiter: '\n' // Newline character for Unix-like environments
-};
+let cfg = { input: '/dev/stdin', newline: '\n' }; // Configuration for input source and newline character
 
-// Original config for Windows (commented out now, as per instruction to change comments)
-// let oldSettings = { sourcePath: 'tmp', lineDelimiter: '\r\n' }; // Settings for a temporary file on Windows
+// Read the number of iterations from the specified input file.
+// The input content is read as ASCII, trimmed of leading/trailing whitespace,
+// and then converted into a numerical value.
+let iterations = Number(require('fs').readFileSync(cfg.input, 'ascii').trim());
 
-// Read the number of iterations from the specified input source.
-let iterations = Number(
-  require('fs')
-    .readFileSync(settings.sourcePath, 'ascii')
-    .trim()
-);
-
-// Define a constant for the geometric scaling factor (sqrt(3)/6).
-const FACTOR_SQRT3_DIV6 = Math.sqrt(3) / 6;
+// Define a constant for a specific scaling factor used in the Koch curve generation.
+// This value is equivalent to Math.sqrt(3) / 6.
+const FACTOR_SQRT3_DIV6 = Math.sqrt(3.0) / 6.0;
 
 /**
- * Computes the intermediate points for a Koch curve segment.
- * Given two points, it returns the start, two intermediate points, and the end point
- * that form one segment of a Koch snowflake generation.
- * @param {Array<number>} startPoint - The starting point [x, y] of the segment.
- * @param {Array<number>} endPoint - The ending point [x, y] of the segment.
- * @returns {Array<Array<number>>} An array containing the start point,
- *                                  the first third point, the peak point,
- *                                  and the second third point.
+ * Calculates the four points that replace a single segment in the Koch curve construction.
+ * Given two endpoints of a segment, it computes the two points that divide the segment
+ * into three equal parts, and the apex point of the equilateral triangle formed on the middle third.
+ *
+ * @param {Array<number>} point1 - The starting point of the segment, represented as [x, y].
+ * @param {Array<number>} point2 - The ending point of the segment, represented as [x, y].
+ * @returns {Array<Array<number>>} An array containing four points:
+ *                                  [point1, first_third_point, apex_point, second_third_point].
  */
-function generateSegmentPoints(startPoint, endPoint) {
-  // Calculate the point one-third of the way from startPoint to endPoint.
-  let firstThird = [
-    (2 * startPoint[0] + endPoint[0]) / 3,
-    (2 * startPoint[1] + endPoint[1]) / 3
+function computeKochSegment(point1, point2) {
+  // Calculate the coordinates of the first point (s) that is one-third of the way from point1 to point2.
+  let segmentStart = [
+    (2.0 * point1[0] + point2[0]) / 3.0,
+    (2.0 * point1[1] + point2[1]) / 3.0
   ];
 
-  // Calculate the point two-thirds of the way from startPoint to endPoint.
-  let secondThird = [
-    (startPoint[0] + 2 * endPoint[0]) / 3,
-    (startPoint[1] + 2 * endPoint[1]) / 3
+  // Calculate the coordinates of the second point (t) that is two-thirds of the way from point1 to point2.
+  let segmentEnd = [
+    (point1[0] + 2.0 * point2[0]) / 3.0,
+    (point1[1] + 2.0 * point2[1]) / 3.0
   ];
 
-  // Calculate the X coordinate of the peak point of the triangle.
-  let peakX = (startPoint[0] + endPoint[0]) / 2 + FACTOR_SQRT3_DIV6 * (startPoint[1] - endPoint[1]);
+  // Calculate the coordinates of the apex point (u) of the equilateral triangle.
+  // This involves a rotation and scaling based on the segment's orientation.
+  let midX = (point1[0] + point2[0]) / 2.0 + FACTOR_SQRT3_DIV6 * (point1[1] - point2[1]);
+  let midY = (point1[1] + point2[1]) / 2.0 + FACTOR_SQRT3_DIV6 * (point2[0] - point1[0]);
 
-  // Calculate the Y coordinate of the peak point of the triangle.
-  let peakY = (startPoint[1] + endPoint[1]) / 2 + FACTOR_SQRT3_DIV6 * (endPoint[0] - startPoint[0]);
-
-  // Return the sequence of points that define the new segment.
-  return [startPoint, firstThird, [peakX, peakY], secondThird];
+  // Return the sequence of points that form the new, subdivided segment.
+  return [point1, segmentStart, [midX, midY], segmentEnd];
 }
 
+// Initialize the Koch curve with a single horizontal line segment.
+// This segment spans from (0,0) to (100,0).
+let kochCurveSegments = [[0.0, 0.0], [100.0, 0.0]];
 
-// Initialize the initial polyline as a straight line from (0,0) to (100,0).
-let currentPolyline = [
-  [0, 0],
-  [100, 0]
-];
-
-
-// Iterate 'iterations' times to apply the Koch curve generation rule.
+// Perform the Koch curve generation process for the specified number of iterations.
 for (let iterCount = 0; iterCount < iterations; iterCount++) {
-  // Prepare a new array to store the segments for the next iteration.
-  let nextPolyline = [];
+  // Create a new array to store the segments generated in the current iteration.
+  let nextSegments = [];
 
-  // Process each segment of the current polyline.
-  for (let segmentIndex = 0; segmentIndex < currentPolyline.length - 1; segmentIndex++) {
-    // Generate the four new points for the current segment and append them.
-    nextPolyline = nextPolyline.concat(
-      generateSegmentPoints(
-        currentPolyline[segmentIndex],
-        currentPolyline[segmentIndex + 1]
-      )
-    );
+  // Iterate through the existing segments (pairs of points) in the current Koch curve.
+  // The loop runs up to `length - 1` because we process `kochCurveSegments[segmentIndex]` and `kochCurveSegments[segmentIndex + 1]`.
+  for (let segmentIndex = 0; segmentIndex < kochCurveSegments.length - 1; segmentIndex++) {
+    // For each segment, compute its four replacement points and append them to the new segments array.
+    nextSegments = nextSegments.concat(computeKochSegment(kochCurveSegments[segmentIndex], kochCurveSegments[segmentIndex + 1]));
   }
 
-  // Add the very last point of the original line to complete the next polyline.
-  // This point is not generated by `generateSegmentPoints` for the last segment's end.
-  nextPolyline.push(currentPolyline[currentPolyline.length - 1]);
+  // After processing all segments, the very last point of the original curve needs to be added.
+  // This is because `computeKochSegment` returns the starting point of each new sub-segment,
+  // but the final endpoint of the entire curve is only included as the starting point of the *last* segment.
+  // Explicitly adding it ensures the complete curve is represented.
+  nextSegments.push(kochCurveSegments[kochCurveSegments.length - 1]);
 
-  // Update the current polyline for the next iteration.
-  currentPolyline = nextPolyline;
+  // Update the main curve segments array to reflect the results of the current iteration.
+  kochCurveSegments = nextSegments;
 }
 
-
-// Output all the computed points to the console, each point on a new line.
-for (let pointIndex in currentPolyline) {
-  // Join the x and y coordinates with a space.
-  console.log(currentPolyline[pointIndex].join(' '));
+// Output the coordinates of all points in the final generated Koch curve.
+// Each point's x and y coordinates are joined by a space and printed on a new line.
+for (let iterPoint in kochCurveSegments) {
+  console.log(kochCurveSegments[iterPoint].join(' '));
 }

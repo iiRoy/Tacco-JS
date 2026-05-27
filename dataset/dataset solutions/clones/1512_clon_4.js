@@ -1,18 +1,13 @@
-const calculateResult = (sourceData) => {
-  const boundaryValue = Number.parseInt(sourceData.split('\n')[0], 10);
+function processInputAndCompute(sourceText) {
+    const numericLimit = Number.parseInt(sourceText.split('\n')[0], 10);
+    let accumulatedSum = 0;
 
-  const finalTally = Array.from({ length: boundaryValue }, (_, index) => index + 1)
-    .reduce((accumulatedTotal, currentDivisor) => {
-      const limitForMultiplier = Math.floor((boundaryValue - 1) / currentDivisor);
-      return accumulatedTotal + limitForMultiplier;
-    }, 0);
+    for (let firstFactor = 1; firstFactor <= numericLimit; firstFactor++) {
+        const validSecondFactorCount = Math.floor((numericLimit - 1) / firstFactor);
+        accumulatedSum += validSecondFactorCount;
+    }
 
-  process.stdout.write(String(finalTally) + '\n');
-};
+    console.log(accumulatedSum);
+}
 
-const acquireAndProcess = () => {
-  const contentPayload = require("node:fs").readFileSync("/dev/stdin", "utf8");
-  calculateResult(contentPayload);
-};
-
-acquireAndProcess();
+processInputAndCompute(require("fs").readFileSync("/dev/stdin", "utf8"));

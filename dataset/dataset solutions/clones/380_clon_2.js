@@ -1,43 +1,44 @@
-var rawData  =  require('fs') .readFileSync('/dev/stdin',  'utf8') ; // Reads the complete input stream from standard input as a UTF-8 string
+let rawData = require('fs').readFileSync('/dev/stdin', 'utf8'); // Read input from standard input stream
 
-var timeLines = (rawData.replace( /\n$/ , "" )) .split("\n") ; // Cleans up the input data by removing potential trailing newlines, then splits it into an array of individual lines
+// Process the raw input: remove trailing newline and split into an array of time strings
+const timeEntries = (rawData.replace(/\n$/, "")).split("\n");
 
-var totalCases = timeLines.shift() * 1 ; // Extracts the first line, which represents the number of test cases, and converts it to a numeric type
+// The first element of the array indicates the number of time entries to process
+let numEntries = timeEntries.shift() - 0; // Convert the string to a number
 
-// Begin processing each time entry supplied in the input data
-for   ( var   caseIndex  =  0 ;   caseIndex  <  totalCases ;   caseIndex++ )
-{
-    // Splits the current time string (e.g., "10:30") into its hour and minute components
-    var   timeParts   =  timeLines[caseIndex].split(":") ;
+// Iterate through each provided time entry
+for (let idx = 0; idx < numEntries; idx++) {
+  // Split the current time string (e.g., "10:30") into hour and minute components
+  const timeParts = timeEntries[idx].split(":");
 
-    // Parses the hour component into an integer (base 10)
-    var   hourValue   =  parseInt(timeParts[0] , 10) ;
+  // Parse the hour and minute values as integers
+  let hourVal = parseInt(timeParts[0], 10);
+  let minuteVal = parseInt(timeParts[1], 10);
 
-    // Parses the minute component into an integer (base 10)
-    var   minuteValue  =  parseInt(timeParts[1] , 10) ;
+  // Calculate the angle of the hour hand in degrees
+  // Hour hand moves 360 degrees in 12 hours, so 30 degrees per hour.
+  // It also moves 0.5 degrees per minute (30 degrees / 60 minutes).
+  const hourAngle = hourVal * (360 / 12) + minuteVal * ((360 / 12) / 60);
 
-    // Calculates the angular position of the hour hand on a 360-degree clock face
-    var   hourHandAngle   =  hourValue  *  ( 360  /  12 )  +  minuteValue  *  ( ( 360  /  12 )  /  60 ) ;
+  // Calculate the angle of the minute hand in degrees
+  // Minute hand moves 360 degrees in 60 minutes, so 6 degrees per minute.
+  const minuteAngle = minuteVal * (360 / 60);
 
-    // Calculates the angular position of the minute hand on a 360-degree clock face
-    var   minuteHandAngle   =  minuteValue  *  ( 360  /  60 ) ;
+  // Determine the absolute difference between the hour and minute hand angles
+  // This ensures the angle is always positive.
+  let angleDiff = (hourAngle >= minuteAngle) ? hourAngle - minuteAngle : minuteAngle - hourAngle;
 
-    // Determines the absolute difference between the hour and minute hand angles
-    var   angleDifference   =  (hourHandAngle  >=  minuteHandAngle)  ?  (hourHandAngle  -  minuteHandAngle)  :  (minuteHandAngle  -  hourHandAngle) ;
+  let resultStatus; // Variable to store the classification result
 
-    var   outcomeMessage ; // Declares a variable to store the classified message
+  // Classify the time based on the angle difference
+  if (angleDiff >= 0 && angleDiff < 30) {
+    resultStatus = "alert"; // Small angle difference
+  } else if (angleDiff >= 90 && angleDiff <= 180) {
+    resultStatus = "safe"; // Large angle difference
+  } else {
+    resultStatus = "warning"; // Intermediate angle difference
+  }
 
-    // Evaluates the angular difference to categorize the state
-    if  ( angleDifference  >=  0  &&  angleDifference  <  30 )  {
-        outcomeMessage = "alert" ; // Hands are very close, indicating an 'alert' state
-    }
-    else  if  ( angleDifference  >=  90  &&  angleDifference  <=  180 )  {
-        outcomeMessage = "safe" ; // Hands are significantly separated, indicating a 'safe' state
-    }
-    else  {
-        outcomeMessage = "warning" ; // All other angular differences fall into a 'warning' state
-    }
-
-    // Prints the determined outcome message to the console
-    console.log(outcomeMessage) ;
+  // Output the determined status for the current time entry
+  console.log(resultStatus);
 }

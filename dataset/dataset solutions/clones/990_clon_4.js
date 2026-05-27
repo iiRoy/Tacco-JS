@@ -1,31 +1,17 @@
-const fileSystem = require('node:fs');
+const fileSystemModule = require('fs');
 
-const sourceDataBuffer = fileSystem.readFileSync('/dev/stdin');
-const rawTextContent = String(sourceDataBuffer).trim();
-
-const regexForNumbers = /-?\d+/g;
-let matchResult;
-const collectedNumbers = [];
-
-while ((matchResult = regexForNumbers.exec(rawTextContent)) !== null) {
-    collectedNumbers.push(Number(matchResult[0]));
-}
-
-const entityOne = collectedNumbers[0];
-const entityTwo = collectedNumbers[1];
-
-function determineMaximumDivisor(valueOne, valueTwo) {
-    let currentA = valueOne;
-    let currentB = valueTwo;
-
-    while (currentB !== 0) {
-        let temporaryStorage = currentB;
-        currentB = currentA % currentB;
-        currentA = temporaryStorage;
+function calculateGreatestCommonDivisorIterative(firstOperand, secondOperand) {
+    while (secondOperand !== 0) {
+        let temporaryValue = secondOperand;
+        secondOperand = firstOperand % secondOperand;
+        firstOperand = temporaryValue;
     }
-    return currentA;
+    return firstOperand;
 }
 
-const finalOutcome = determineMaximumDivisor(entityOne, entityTwo);
+const rawInputContent = fileSystemModule.readFileSync('/dev/stdin', 'utf-8');
+const firstRelevantLine = rawInputContent.split('\n')[0];
+const numericStringsExtracted = firstRelevantLine.match(/\d+/g);
+const convertedNumericValues = numericStringsExtracted.map(Number);
 
-process.stdout.write(String(finalOutcome) + '\n');
+console.log(calculateGreatestCommonDivisorIterative(convertedNumericValues[0], convertedNumericValues[1]));

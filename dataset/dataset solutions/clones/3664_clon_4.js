@@ -1,26 +1,26 @@
-const sourceData = require("fs").readFileSync(0, "utf8").split("\n");
+const dataStream = require("fs").readFileSync(0, "utf8");
+const contentLines = dataStream.split("\n");
+const headerParts = contentLines[0].split(" ");
+const initialValue = +headerParts[0];
+const activityCount = +headerParts[1];
 
-const headerInfo = sourceData[0].split(" ");
-const periodCount = +headerInfo[1];
+const activityCollection = contentLines.slice(1, 1 + activityCount).reduce((accumulatorList, currentEntry) => {
+    const [startPoint, endPoint] = currentEntry.split(" ").map(Number);
+    accumulatorList.push({ startPointValue: startPoint, endPointValue: endPoint });
+    return accumulatorList;
+}, []);
 
-const rawPeriods = sourceData.slice(1, 1 + periodCount);
+activityCollection.sort((firstItem, secondItem) => firstItem.endPointValue - secondItem.endPointValue);
 
-const processedPeriods = rawPeriods.map(segment => {
-    const limitPoints = segment.split(" ").map(Number);
-    return { inception: limitPoints[0], cessation: limitPoints[1] };
-});
-
-const arrangedPeriods = processedPeriods.sort((alpha, beta) => alpha.cessation - beta.cessation);
-
-const selectionResult = arrangedPeriods.reduce((accumulator, currentSpan) => {
-    if (accumulator.lastPoint <= currentSpan.inception) {
+const selectionProcessResult = activityCollection.reduce((stateAccumulator, currentActivityRecord) => {
+    const { lastSelectedFinish, totalSelections } = stateAccumulator;
+    if (lastSelectedFinish <= currentActivityRecord.startPointValue) {
         return {
-            totalSelected: accumulator.totalSelected + 1,
-            lastPoint: currentSpan.cessation
+            lastSelectedFinish: currentActivityRecord.endPointValue,
+            totalSelections: totalSelections + 1
         };
-    } else {
-        return accumulator;
     }
-}, { totalSelected: 0, lastPoint: -1 });
+    return stateAccumulator;
+}, { lastSelectedFinish: -1, totalSelections: 0 });
 
-console.log(selectionResult.totalSelected);
+console.log(selectionProcessResult.totalSelections);

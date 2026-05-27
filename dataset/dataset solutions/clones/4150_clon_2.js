@@ -1,33 +1,11 @@
 function ProcessInput(rawData) {
-  // This function processes the raw text input to calculate an average.
-  let numericStrings = rawData
-    .split(
-      / \s + /
-    );
+  const parsedValues = rawData.split(/\s/);
+  let totalSum = 0;
+  parsedValues.forEach((currentVal) => {
+    totalSum += parseInt(currentVal, 10);
+  });
 
-  let aggregateSum = 0;
-
-  numericStrings
-    .forEach(
-      (currentString) => {
-        aggregateSum += Number
-          .parseInt(currentString);
-      }
-    );
-
-  console.log(
-    Math
-      .ceil(
-        aggregateSum / numericStrings
-          .length
-      )
-  );
+  console.log(Math.ceil(totalSum / parsedValues.length));
 }
 
-// Obtain system input from standard stream
-let systemInputData = require("fs")
-  .readFileSync("/dev/stdin", "utf8");
-
-ProcessInput(
-  systemInputData
-);
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

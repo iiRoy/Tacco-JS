@@ -1,33 +1,33 @@
-function calculateDivisor(valA, valB) {
-    while (valB !== 0) {
-        let tempHolder = valB;
-        valB = valA % valB;
-        valA = tempHolder;
+function calculateCommonDivisor(valA, valB) {
+    let currentA = valA;
+    let currentB = valB;
+    while (currentB !== 0) {
+        let remainder = currentA % currentB;
+        currentA = currentB;
+        currentB = remainder;
     }
-    return valA;
+    return currentA;
 }
 
-function findCommonFactorForSet(numericSet) {
-    if (numericSet.length === 0) {
+function determineArrayGcd(numberList) {
+    if (numberList.length === 0) {
         return 0;
     }
-    return numericSet.reduce((accumulator, currentElement) => calculateDivisor(accumulator, currentElement));
+    return numberList.reduce((accumulator, currentElement) => {
+        return calculateCommonDivisor(accumulator, currentElement);
+    });
 }
 
-function ProcessInput(entryData) {
-    const allNumericValues = entryData.split(/\s+/).filter(Boolean).map(Number);
+function processInputData(rawInput) {
+    const lines = rawInput.split('\n');
+    const firstLineNumbers = lines[0].split(' ').map(Number);
+    const referencePoint = firstLineNumbers[1];
 
-    const pivotValue = allNumericValues[1];
-    const coordinatePoints = allNumericValues.slice(2);
+    const secondLineNumbers = lines[1].split(' ').map(Number);
 
-    let deltaMagnitudes;
-    if (coordinatePoints.length === 0) {
-        deltaMagnitudes = [Math.abs(pivotValue - 0)];
-    } else {
-        deltaMagnitudes = coordinatePoints.map(itemVal => Math.abs(pivotValue - itemVal));
-    }
+    const absoluteDifferences = secondLineNumbers.map(value => Math.abs(referencePoint - value));
 
-    console.log(findCommonFactorForSet(deltaMagnitudes));
+    console.log(determineArrayGcd(absoluteDifferences));
 }
 
-ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

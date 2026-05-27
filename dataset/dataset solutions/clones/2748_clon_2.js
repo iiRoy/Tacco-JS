@@ -1,99 +1,104 @@
-'use strict'
-// This script processes input data to determine if a specific pattern exists.
-function processData(rawData) {
-  // Split the entire input string into an array of individual lines.
-  const linesArray = rawData.split('\n');
+'use strict';
 
-  // Parse the first line to get the total number of items, converting it to an integer.
-  const totalItems = parseInt(linesArray[0], 10);
+/**
+ * Processes the raw input data to determine a specific condition.
+ * This function analyzes numerical patterns based on bitwise XOR sums and frequencies.
+ * @param {string} rawData - The complete input string, typically from stdin.
+ */
+function processInput(rawData) {
+    // Split the input string into individual lines.
+    const intermediateLines = rawData.split('\n');
 
-  // Parse the second line: split by space, then convert each part to an integer.
-  const decimalValues = linesArray[1].split(' ').map((decVal) => parseInt(decVal, 10));
+    // Parse the first line to get the total number of elements.
+    const totalElements = parseInt(intermediateLines[0], 10);
 
-  // Transform the decimal values into their binary string representations, then parse those as base-10 integers.
-  // This effectively converts '5' (decimal) to '101' (binary string) then to 101 (decimal integer).
-  const binaryRepresentations = decimalValues.map((val) => parseInt(val.toString(2)));
+    // Parse the second line, splitting by space and converting each part to an integer.
+    const initialValues = intermediateLines[1].split(' ').map((val) => parseInt(val, 10));
 
-  // Initialize a new Map object to store the frequency of each binary representation.
-  const frequencyStore = new Map();
+    // Convert each initial value to its binary string representation, then parse it as an integer.
+    // This effectively treats the binary string as a base-10 number for comparison/storage.
+    const binaryRepresentations = initialValues.map((val) => parseInt(val.toString(2)));
 
-  // Iterate over each binary value to populate the frequency map.
-  for (let binVal of binaryRepresentations) {
-    if (!frequencyStore.has(binVal)) {
-      // If the value is not yet in the map, add it with a count of 1.
-      frequencyStore.set(binVal, 1);
+    // Create a frequency map to count occurrences of each binary representation.
+    const frequencyCounter = new Map();
+    for (let currentBinary of binaryRepresentations) {
+        if (!frequencyCounter.has(currentBinary)) {
+            frequencyCounter.set(currentBinary, 1); // First occurrence
+        } else {
+            // Increment count for existing binary representation.
+            frequencyCounter.set(currentBinary, frequencyCounter.get(currentBinary) + 1);
+        }
+    }
+
+    // Extract all unique binary keys from the frequency map into an array.
+    let uniqueBinaryKeys = [];
+    for (let currentKey of frequencyCounter.keys()) {
+        uniqueBinaryKeys.push(currentKey);
+    }
+
+    // Get the number of distinct binary keys found.
+    let distinctKeyCount = uniqueBinaryKeys.length;
+
+    // Initialize a boolean flag to track if the specific condition is met.
+    let isConditionMet = false;
+
+    // Check conditions based on the total number of elements.
+    if (totalElements % 3 === 0) {
+        // Case 1: totalElements is divisible by 3.
+        if (distinctKeyCount === 3) {
+            // If there are exactly three distinct binary keys.
+            const exclusiveOrSum = uniqueBinaryKeys[0] ^ uniqueBinaryKeys[1] ^ uniqueBinaryKeys[2];
+            if (exclusiveOrSum === 0) {
+                // If their XOR sum is zero, check if each appears N/3 times.
+                if ((frequencyCounter.get(uniqueBinaryKeys[0]) === totalElements / 3) &&
+                    (frequencyCounter.get(uniqueBinaryKeys[1]) === totalElements / 3) &&
+                    (frequencyCounter.get(uniqueBinaryKeys[2]) === totalElements / 3)) {
+                    isConditionMet = true;
+                }
+            }
+        } else if (distinctKeyCount === 2) {
+            // If there are exactly two distinct binary keys.
+            // Assume condition met initially, then refine.
+            isConditionMet = true;
+            // Check if one of the keys is 0.
+            if (uniqueBinaryKeys.indexOf(0) !== -1) {
+                // Remove 0 from the keys array to isolate the other key.
+                uniqueBinaryKeys.splice(uniqueBinaryKeys.indexOf(0), 1);
+                // Check if 0 appears N/3 times and the other key appears 2N/3 times.
+                if ((frequencyCounter.get(0) === totalElements / 3) &&
+                    (frequencyCounter.get(uniqueBinaryKeys[0]) === ((2 * totalElements) / 3))) {
+                    isConditionMet = true;
+                } else {
+                    isConditionMet = false; // Condition not met if counts don't match
+                }
+            } else {
+                isConditionMet = false; // Condition not met if 0 is not one of the keys
+            }
+        } else if (distinctKeyCount === 1) {
+            // If there is only one distinct binary key.
+            if (uniqueBinaryKeys[0] === 0) {
+                // If that single key is 0.
+                isConditionMet = true;
+            }
+        }
     } else {
-      // If the value exists, increment its count.
-      frequencyStore.set(binVal, frequencyStore.get(binVal) + 1);
-    }
-  }
-
-  // Extract all unique keys (binary representations) from the frequency map.
-  let uniqueValues = [];
-  for (let uniqueKey of frequencyStore.keys()) {
-    uniqueValues.push(uniqueKey);
-  }
-
-  // Get the count of distinct binary representations.
-  let distinctCount = uniqueValues.length;
-
-  // Initialize a boolean variable to track if the main condition is met.
-  let isConditionMet = false;
-
-  // Check the total number of items for divisibility by 3.
-  if (totalItems % 3 === 0) {
-    // Case 1: Three distinct binary representations.
-    if (distinctCount === 3) {
-      // Calculate the bitwise XOR sum of the three unique values.
-      const bitwiseXorResult = uniqueValues[0] ^ uniqueValues[1] ^ uniqueValues[2];
-      // If the XOR sum is 0, proceed to check frequencies.
-      if (bitwiseXorResult === 0) {
-        // All three unique values must appear exactly N/3 times.
-        if ((frequencyStore.get(uniqueValues[0]) === totalItems / 3) && (frequencyStore.get(uniqueValues[1]) === totalItems / 3) && (frequencyStore.get(uniqueValues[2]) === totalItems / 3)) {
-          isConditionMet = true; // Condition met.
+        // Case 2: totalElements is NOT divisible by 3.
+        if (distinctKeyCount === 1) {
+            // If there is only one distinct binary key.
+            if (uniqueBinaryKeys[0] === 0) {
+                // If that single key is 0.
+                isConditionMet = true;
+            }
         }
-      }
     }
-    // Case 2: Two distinct binary representations.
-    else if (distinctCount === 2) {
-      // Initially assume condition is met, then refine.
-      isConditionMet = false; // Reset to false, will be set to true if specific conditions are met.
-      // Check if one of the unique values is 0.
-      if (uniqueValues.indexOf(0) !== -1) {
-        // Remove 0 from the array to isolate the other unique value.
-        uniqueValues.splice(uniqueValues.indexOf(0), 1);
-        // Check if 0 appears N/3 times and the other unique value appears 2*N/3 times.
-        if ((frequencyStore.get(0) === totalItems / 3) && (frequencyStore.get(uniqueValues[0]) === ((2 * totalItems) / 3))) {
-          isConditionMet = true; // Condition met.
-        }
-      }
-    }
-    // Case 3: One distinct binary representation.
-    else if (distinctCount === 1) {
-      // The single unique value must be 0.
-      if (uniqueValues[0] === 0) {
-        isConditionMet = true; // Condition met.
-      }
-    }
-  }
-  // If totalItems is not divisible by 3.
-  else {
-    // Only one distinct binary representation is allowed in this case.
-    if (distinctCount === 1) {
-      // And that single unique value must be 0.
-      if (uniqueValues[0] === 0) {
-        isConditionMet = true; // Condition met.
-      }
-    }
-  }
 
-  // Output the result based on whether the condition was met.
-  if (isConditionMet) {
-    console.log('Yes');
-  } else {
-    console.log('No');
-  }
+    // Output the result based on the final flag value.
+    if (isConditionMet) {
+        console.log('Yes');
+    } else {
+        console.log('No');
+    }
 }
 
 // Read input from standard input and pass it to the processing function.
-processData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

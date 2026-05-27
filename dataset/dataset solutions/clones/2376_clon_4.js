@@ -1,36 +1,33 @@
-function processData(rawData) {
-    var sourceLines = rawData.split('\n');
-    var digitSequenceString = sourceLines[1];
+function executeProgram(initialInput) {
+  const inputLines = initialInput.split('\n');
+  const digitSource = Array.from(inputLines[1], Number);
 
-    var seenSingleDigits = new Array(10).fill(false);
-    var seenDoubleDigits = new Set();
-    var seenTripleDigits = new Set();
+  const potentialSequences = Array.from({ length: 1000 }, (_, sequenceIndex) => [
+    Math.floor(sequenceIndex / 100),
+    Math.floor((sequenceIndex % 100) / 10),
+    sequenceIndex % 10
+  ]);
 
-    for (var currentPosition = 0; currentPosition < digitSequenceString.length; ++currentPosition) {
-        var currentInputDigit = parseInt(digitSequenceString[currentPosition], 10);
-
-        // Phase 1: Use existing two-digit subsequences to form three-digit subsequences
-        // It's important to iterate over a copy or snapshot of seenDoubleDigits
-        // because seenDoubleDigits itself might be modified in Phase 2 of the same iteration.
-        var preExistingDoubleDigits = Array.from(seenDoubleDigits);
-        for (let twoDigitValue of preExistingDoubleDigits) {
-            var newTripleDigitValue = twoDigitValue * 10 + currentInputDigit;
-            seenTripleDigits.add(newTripleDigitValue);
-        }
-
-        // Phase 2: Use existing single digits to form two-digit subsequences
-        for (var firstDigitCandidate = 0; firstDigitCandidate < 10; ++firstDigitCandidate) {
-            if (seenSingleDigits[firstDigitCandidate]) {
-                var newDoubleDigitValue = firstDigitCandidate * 10 + currentInputDigit;
-                seenDoubleDigits.add(newDoubleDigitValue);
-            }
-        }
-
-        // Phase 3: Mark the current input digit as a seen single digit
-        seenSingleDigits[currentInputDigit] = true;
+  const checkSequencePresence = (sourceArray, targetArray, currentSourcePosition = 0, currentTargetPosition = 0) => {
+    if (currentTargetPosition === targetArray.length) {
+      return true;
+    }
+    if (currentSourcePosition === sourceArray.length) {
+      return false;
     }
 
-    console.log(seenTripleDigits.size);
+    if (sourceArray[currentSourcePosition] === targetArray[currentTargetPosition]) {
+      return checkSequencePresence(sourceArray, targetArray, currentSourcePosition + 1, currentTargetPosition + 1);
+    } else {
+      return checkSequencePresence(sourceArray, targetArray, currentSourcePosition + 1, currentTargetPosition);
+    }
+  };
+
+  const foundCount = potentialSequences.filter(currentSequence =>
+    checkSequencePresence(digitSource, currentSequence)
+  ).length;
+
+  console.log(foundCount);
 }
 
-processData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+executeProgram(require('fs').readFileSync('/dev/stdin', 'utf8'));

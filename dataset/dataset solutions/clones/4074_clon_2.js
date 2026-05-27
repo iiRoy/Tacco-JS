@@ -1,62 +1,65 @@
-// Travel Plan Analysis Module
+// This script determines if a series of movements between points is feasible within given time constraints.
+function ProcessInput(rawData) {
+  // Split the entire input string by newline characters to get an array of individual lines.
+  const lines = rawData.split("\n");
 
-// This function processes the entire raw input string provided.
-function ProcessInputData( rawData )
-{
-  let lineSegments = rawData.split( '\n' );
+  let currentXCoordinate = 0; // Initialize the current X position to the origin.
+  let currentYCoordinate = 0; // Initialize the current Y position to the origin.
+  let feasibilityOutcome = "Yes"; // Assume the journey is possible until a condition proves otherwise.
+  let previousSegmentSubtractionValue = 0; // This variable stores a value used in a specific calculation for the next segment's duration.
 
-  let currentXCoord = 0;
-  let currentYCoord = 0;
+  // Iterate through the movement instructions, skipping the first line which typically contains metadata.
+  for (let instructionIndex = 1; instructionIndex < lines.length; instructionIndex++) {
+    const segmentData = lines[instructionIndex].split(" "); // Split the current instruction line into its components.
 
-  let outcomeMessage = 'Yes';
-  let previousTimestamp = 0;
+    let absoluteTargetTime = parseInt(segmentData[0], 10); // The absolute time (from start) to reach this point.
 
-  // Iterate over each movement instruction, starting from the second line.
-  for ( let idx = 1; idx < lineSegments.length; ++idx )
-  {
-    const currentLineParts = lineSegments[idx].split( ' ' );
+    // Calculate the absolute distance needed to travel in X and Y directions.
+    // Note: currentXCoordinate and currentYCoordinate might be strings due to previous assignments,
+    // but the 'calculateManhattanDistance' function handles numeric coercion.
+    const xDistanceRequired = calculateManhattanDistance(currentXCoordinate, segmentData[1]);
+    const yDistanceRequired = calculateManhattanDistance(currentYCoordinate, segmentData[2]);
 
-    let targetTime = parseInt( currentLineParts[0], 10 ); // Total time elapsed until this point.
-    const deltaX = calculateAbsoluteDifference( currentXCoord, parseInt( currentLineParts[1], 10 ) ); // Absolute horizontal distance needed.
-    const deltaY = calculateAbsoluteDifference( currentYCoord, parseInt( currentLineParts[2], 10 ) ); // Absolute vertical distance needed.
+    // Calculate the effective duration for this specific movement segment.
+    // This calculation method is a direct replication of the original's logic.
+    let segmentTravelDuration = absoluteTargetTime - previousSegmentSubtractionValue;
 
-    targetTime -= previousTimestamp; // Calculate duration for the current segment.
-
-    // Check if there's enough time to reach the destination and whether remaining time is even.
-    if ( ( deltaX + deltaY ) < targetTime )
-    {
-      // If the remaining time cannot be fully utilized (i.e., odd number of steps left after reaching destination).
-      if ( parseInt( targetTime - ( deltaX + deltaY ), 10 ) % 2 != 0 )
-        outcomeMessage = 'No';
+    // Check if the total distance is less than the available time for this segment.
+    if (xDistanceRequired + yDistanceRequired < segmentTravelDuration) {
+      // If there's excess time, check if the remaining time is odd.
+      // An odd remainder means it's impossible to reach the target and return to it within the time.
+      if (parseInt(segmentTravelDuration - (xDistanceRequired + yDistanceRequired), 10) % 2 !== 0) {
+        feasibilityOutcome = "No"; // Mark as impossible.
+      }
     }
-    // If the required distance is greater than the available time, it's an impossible move.
-    // However, the original logic explicitly sets outcome to 'Yes' in this specific branch.
-    else if ( ( deltaX + deltaY ) > targetTime )
-    {
-      outcomeMessage = 'Yes';
+    // Check if the total distance is greater than the available time for this segment.
+    // This condition in the original code sets the outcome to "Yes" if distance > time.
+    else if (xDistanceRequired + yDistanceRequired > segmentTravelDuration) {
+      feasibilityOutcome = "Yes"; // Replicating the original's potentially counter-intuitive logic.
     }
 
-    currentXCoord = currentLineParts[1];
-    currentYCoord = currentLineParts[2];
-    previousTimestamp = targetTime;
+    // Update the current coordinates to the target coordinates for the next iteration.
+    // These are stored as strings, mirroring the original's behavior.
+    currentXCoordinate = segmentData[1];
+    currentYCoordinate = segmentData[2];
+    // Update the subtraction value for the next segment's duration calculation.
+    previousSegmentSubtractionValue = segmentTravelDuration;
   }
 
-  console.log( outcomeMessage );
+  // Output the final feasibility determination.
+  console.log(feasibilityOutcome);
 }
 
-// Computes the absolute difference between two numerical values.
-function calculateAbsoluteDifference( startValue, endValue )
-{
-  // If the end value is greater, move in the positive direction.
-  if ( startValue < endValue )
-  {
-    return endValue - startValue;
-  }
-  else // Otherwise, move in the negative direction or stay put.
-  {
-    return startValue - endValue;
+// A utility function to compute the absolute difference between two coordinate values.
+// It implicitly handles string-to-number coercion for its arguments.
+function calculateManhattanDistance(startCoordinate, endCoordinate) {
+  // Determine the absolute difference, regardless of direction.
+  if (startCoordinate < endCoordinate) {
+    return endCoordinate - startCoordinate;
+  } else {
+    return startCoordinate - endCoordinate;
   }
 }
 
-// Execute the main processing function with input read from standard input.
-ProcessInputData( require( 'fs' ).readFileSync( '/dev/stdin', 'utf8' ) );
+// Read the entire content of standard input synchronously and pass it to the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

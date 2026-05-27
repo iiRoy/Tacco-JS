@@ -1,33 +1,38 @@
-const emitResult = console.log;
-
-let runtimeContext = undefined;
-if (typeof process !== "undefined") {
-    runtimeContext = process;
-}
-
-if (typeof runtimeContext !== "undefined") {
-    let collectedSource = "";
-    runtimeContext.stdin.resume();
-    runtimeContext.stdin.setEncoding('utf8');
-    runtimeContext.stdin.on('data', (dataChunk) => {
-        collectedSource += dataChunk;
+var outputWriter = console.log;
+if (typeof process != "undefined") {
+    var rawInputBuffer = "";
+    process.stdin.resume();
+    process.stdin.setEncoding('utf8');
+    process.stdin.on('data', function (chunkData) {
+        rawInputBuffer += chunkData;
     });
-    runtimeContext.stdin.on('end', () => {
-        invokeProcessing(collectedSource);
+    process.stdin.on('end', function () {
+        initializeProcessing(rawInputBuffer);
     });
 }
 
-const invokeProcessing = (sourceMaterial) => {
-    const relevantLine = sourceMaterial
-        .split('\n')
-        .filter(segment => segment.trim() !== '')
-        .slice(-2, -1)
-        .at(0);
+function initializeProcessing(fullInputString) {
+    const segmentCollection = fullInputString.split("\n");
+    const intermediateSegments = segmentCollection.slice(1, segmentCollection.length - 1);
+    const targetSegment = intermediateSegments.pop();
+    processLineAndSort(targetSegment);
+}
 
-    const parsedAndSorted = relevantLine
-        .split(' ')
-        .map(item => Number(item))
-        .sort((valA, valB) => valA - valB);
+function processLineAndSort(inputSegment) {
+    const finalNumericSequence = inputSegment.split(" ").reduce((accumulator, currentElementStr) => {
+        accumulator.push(Number(currentElementStr));
+        return accumulator;
+    }, []);
 
-    emitResult(parsedAndSorted.join(' '));
-};
+    for (let currentIdx = 1; currentIdx < finalNumericSequence.length; currentIdx++) {
+        let valueToInsert = finalNumericSequence[currentIdx];
+        let comparisonIdx = currentIdx - 1;
+        while (comparisonIdx >= 0 && finalNumericSequence[comparisonIdx] > valueToInsert) {
+            finalNumericSequence[comparisonIdx + 1] = finalNumericSequence[comparisonIdx];
+            comparisonIdx--;
+        }
+        finalNumericSequence[comparisonIdx + 1] = valueToInsert;
+    }
+
+    outputWriter(finalNumericSequence.join(" "));
+}

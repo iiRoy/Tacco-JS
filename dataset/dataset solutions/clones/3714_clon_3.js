@@ -1,75 +1,75 @@
-function SolvePartitionProblem(rawInputString) {
-    const inputLines = rawInputString.split("\n");
+function processInput(inputStr) {
+    const inputLines = inputStr.split("\n");
+    const arrayLength = +inputLines[0];
+    const initialArray = inputLines[1].split(" ").map(val => +val);
 
-    const totalElementCount = Number(inputLines[0]);
-    if (totalElementCount < 4) {
-        console.log(0);
-        return;
+    const prefixSums = new Array(arrayLength);
+    if (arrayLength > 0) {
+        prefixSums[0] = initialArray[0];
+        for (let k = 1; k < arrayLength; k++) {
+            prefixSums[k] = prefixSums[k - 1] + initialArray[k];
+        }
     }
 
-    const dataElements = inputLines[1].split(" ").map(elementStr => Number(elementStr));
+    const MAX_POSSIBLE_DIFF = Number.MAX_SAFE_INTEGER;
+    let minDifference = MAX_POSSIBLE_DIFF;
 
-    const cumulativeSums = new Array(totalElementCount + 1).fill(0);
-    for (let k = 0; k < totalElementCount; k++) {
-        cumulativeSums[k + 1] = cumulativeSums[k] + dataElements[k];
-    }
+    const calculateRangeDifference = (values) => {
+        const maxValue = Math.max(...values);
+        const minValue = Math.min(...values);
+        return maxValue - minValue;
+    };
 
-    let minDifferenceFound = Number.MAX_SAFE_INTEGER;
+    for (let splitIndex = 2; splitIndex < arrayLength - 1; splitIndex++) {
+        const targetLeftSum = prefixSums[splitIndex - 1] / 2;
+        const targetRightSum = (prefixSums[arrayLength - 1] + prefixSums[splitIndex - 1]) / 2;
 
-    const overallSum = cumulativeSums[totalElementCount];
+        const leftSplitPoint = findLowerBoundIndex(prefixSums, 1, splitIndex - 1, targetLeftSum);
+        const rightSplitPoint = findLowerBoundIndex(prefixSums, splitIndex + 1, arrayLength - 1, targetRightSum);
 
-    for (let middleCutIdx = 2; middleCutIdx < totalElementCount - 1; middleCutIdx++) {
-        const targetSumForFirstTwoParts = cumulativeSums[middleCutIdx] / 2;
-        const targetSumForFirstThreeParts = (overallSum + cumulativeSums[middleCutIdx]) / 2;
-
-        let leftCutIdx = findSplitPoint(cumulativeSums, 1, middleCutIdx - 1, targetSumForFirstTwoParts);
-        let rightCutIdx = findSplitPoint(cumulativeSums, middleCutIdx + 1, totalElementCount - 1, targetSumForFirstThreeParts);
-
-        const evaluateAndMinimize = (lIdx, rIdx) => {
-            const part1Sum = cumulativeSums[lIdx];
-            const part2Sum = cumulativeSums[middleCutIdx] - cumulativeSums[lIdx];
-            const part3Sum = cumulativeSums[rIdx] - cumulativeSums[middleCutIdx];
-            const part4Sum = overallSum - cumulativeSums[rIdx];
-
-            const currentPartitionSums = [part1Sum, part2Sum, part3Sum, part4Sum];
-
-            const maxPartSum = Math.max(...currentPartitionSums);
-            const minPartSum = Math.min(...currentPartitionSums);
-
-            minDifferenceFound = Math.min(minDifferenceFound, maxPartSum - minPartSum);
+        const getSegmentSums = (currentLeftSplitIdx, currentRightSplitIdx) => {
+            const segment1 = prefixSums[currentLeftSplitIdx - 1];
+            const segment2 = prefixSums[splitIndex - 1] - prefixSums[currentLeftSplitIdx - 1];
+            const segment3 = prefixSums[currentRightSplitIdx - 1] - prefixSums[splitIndex - 1];
+            const segment4 = prefixSums[arrayLength - 1] - prefixSums[currentRightSplitIdx - 1];
+            return [segment1, segment2, segment3, segment4];
         };
 
-        evaluateAndMinimize(leftCutIdx, rightCutIdx);
+        let currentParts = getSegmentSums(leftSplitPoint, rightSplitPoint);
+        minDifference = Math.min(minDifference, calculateRangeDifference(currentParts));
 
-        if (leftCutIdx + 1 < middleCutIdx) {
-            evaluateAndMinimize(leftCutIdx + 1, rightCutIdx);
-            if (rightCutIdx + 1 < totalElementCount) {
-                evaluateAndMinimize(leftCutIdx + 1, rightCutIdx + 1);
+        if (splitIndex - leftSplitPoint > 1) {
+            currentParts = getSegmentSums(leftSplitPoint + 1, rightSplitPoint);
+            minDifference = Math.min(minDifference, calculateRangeDifference(currentParts));
+
+            if (arrayLength - rightSplitPoint > 1) {
+                currentParts = getSegmentSums(leftSplitPoint + 1, rightSplitPoint + 1);
+                minDifference = Math.min(minDifference, calculateRangeDifference(currentParts));
             }
         }
 
-        if (rightCutIdx + 1 < totalElementCount) {
-            evaluateAndMinimize(leftCutIdx, rightCutIdx + 1);
+        if (arrayLength - rightSplitPoint > 1) {
+            currentParts = getSegmentSums(leftSplitPoint, rightSplitPoint + 1);
+            minDifference = Math.min(minDifference, calculateRangeDifference(currentParts));
         }
     }
 
-    console.log(minDifferenceFound);
+    console.log(minDifference);
 }
 
-const findSplitPoint = (searchArray, startIndex, endIndex, targetValue) => {
-    let low = startIndex;
-    let high = endIndex;
-
-    while (low < high) {
-        const mid = Math.floor((low + high) / 2);
-        if (searchArray[mid] < targetValue) {
-            low = mid + 1;
+function findLowerBoundIndex(dataArray, startIndex, endIndex, targetValue) {
+    let currentLow = startIndex;
+    let currentHigh = endIndex;
+    let currentMid;
+    while (1 < currentHigh - currentLow) {
+        currentMid = Math.floor((currentLow + currentHigh) / 2);
+        if (dataArray[currentMid] < targetValue) {
+            currentLow = currentMid;
         } else {
-            high = mid;
+            currentHigh = currentMid;
         }
     }
-    return low;
-};
+    return dataArray[currentLow] < targetValue ? currentHigh : currentLow;
+}
 
-const inputData = require("fs").readFileSync("/dev/stdin", "utf8");
-SolvePartitionProblem(inputData);
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

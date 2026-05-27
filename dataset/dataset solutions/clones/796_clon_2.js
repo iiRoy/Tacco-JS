@@ -1,97 +1,66 @@
-// This module handles file system operations for reading input.
-var sourceText = require('fs') . readFileSync (
-    '/dev/stdin',    // Standard input path for competitive programming platforms.
-    'utf8'           // Encoding type for the input data.
-);
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8'); // Read raw input from standard input
+var dataLines = rawData.split('\n'); // Split the input string into an array of lines
 
-// Split the entire input content into an array of individual lines.
-var textRows = sourceText.split('\n');
+var currentLine = null; // Initialize a variable to hold the current line being processed
+while ( (currentLine = dataLines.shift()) ) { // Loop through each line of input data
+    var countOfItems = parseInt(currentLine); // Parse the current line as an integer, representing the number of subsequent items
 
-// Declare a variable to hold the currently processed line, initialized to an empty state.
-var currentRecord = null;
-
-// Begin processing each line from the input until no more lines are available.
-while ( (currentRecord = textRows.shift()) ) {
-
-    // Convert the current line into an integer, representing the count of items for this scenario.
-    var scenarioItemCount = parseInt(currentRecord, 10); // Base 10 for safety.
-
-    // If the parsed number is zero, it signifies the end of input or a termination condition.
-    if (scenarioItemCount === 0) {
-        break; // Exit the main processing loop.
+    if (countOfItems === 0) { // If the parsed number is zero, it signifies the end of input
+        break; // Exit the processing loop
     }
 
-    // Initialize an array to store pairs of time intervals for the current scenario.
-    var intervalPairs = [ ];
+    var timeSlots = []; // Initialize an array to store time slot pairs for the current test case
 
-    // Loop a specific number of times, determined by 'scenarioItemCount'.
-    for (var loopCounter = 0; loopCounter < scenarioItemCount; loopCounter += 1) {
-        // Retrieve the next line, which contains time strings.
-        currentRecord = textRows.shift();
-
-        // Split the time string by space and convert each part into a Date timestamp.
-        var timestampPair = currentRecord
-                                .split(' ')
-                                .map( function (timePart) {
-                                    // Create a Date object using a fixed base date and the time string,
-                                    // then convert it to milliseconds timestamp.
-                                    return +(new Date('1999-01-01 ' + timePart));
-                                }
-                            );
-
-        // Add the processed timestamp pair to the collection for this scenario.
-        intervalPairs.push(timestampPair);
+    for (var idxA = 0; idxA < countOfItems; idxA++) { // Loop to read 'countOfItems' number of time slots
+        currentLine = dataLines.shift(); // Get the next line, which contains two time strings
+        var timeValues = currentLine.split(' ').map(function(timeStr) { // Split the line by space and convert time strings to numeric timestamps
+            // Convert time string (e.g., "HH:MM") into a numeric timestamp by creating a Date object
+            // using a fixed date and then getting its numeric value.
+            return +(new Date('2000-01-01 ' + timeStr));
+        });
+        timeSlots.push(timeValues); // Add the processed time pair (start and end timestamps) to the array
     }
 
-    // Initialize a variable to keep track of the longest "train" (sequence of overlapping intervals) found.
-    var maximumTrainLength = 1;
+    var maxTrainsNeeded = 1; // Initialize the maximum number of trains required for this set of slots to at least 1
 
-    // Iterate through each interval in the 'intervalPairs' array as the primary comparison element.
-    for (var primaryIndex = 0; primaryIndex < intervalPairs.length; primaryIndex++) {
+    // This nested loop structure aims to find the maximum number of overlapping intervals.
+    // It simulates assigning trains by iteratively removing intervals that can be covered by the current train.
+    for (var idxA = 0; idxA < timeSlots.length; idxA++) { // Iterate through each time slot
+        var currentSlot = timeSlots[idxA]; // Get the current time slot being evaluated
 
-        // Get the current base interval for comparison.
-        var baseInterval = intervalPairs[primaryIndex];
+        var currentTrainCount = 1; // Initialize train count for the current slot's "train path"
+        var indicesToRemove = []; // Array to store indices of slots that overlap with 'currentSlot' and need to be "removed"
 
-        // Initialize the length of the "train" starting with the 'baseInterval'.
-        var currentTrainLength = 1;
+        for (var idxB = idxA + 1; idxB < timeSlots.length; idxB++) { // Compare current slot with subsequent slots
+            var subsequentSlot = timeSlots[idxB]; // Get a subsequent time slot
 
-        // An array to store the indices of intervals that are found to "overlap" with the base interval
-        // in a specific manner, and thus need to be removed or ignored in subsequent checks.
-        var removalIndices = [];
-
-        // Iterate through the subsequent intervals to compare with the 'baseInterval'.
-        for (var secondaryIndex = primaryIndex + 1; secondaryIndex < intervalPairs.length; secondaryIndex += 1) {
-
-            // Retrieve the interval to be compared against the 'baseInterval'.
-            var comparisonInterval = intervalPairs[secondaryIndex];
-
-            // Evaluate the overlap condition:
-            // If the base interval's end is before or at the comparison interval's start, OR
-            // if the comparison interval's start is before or at the base interval's start,
-            // then they do not meet the specific "overlap" criteria for incrementing the train.
-            if (baseInterval[1] <= comparisonInterval[0] || comparisonInterval[0] <= baseInterval[0]) {
-                // No action needed; these intervals are considered non-overlapping in this context.
+            // Check for non-overlapping conditions:
+            // If currentSlot ends before or at subsequentSlot starts (currentSlot[1] <= subsequentSlot[0]), OR
+            // If subsequentSlot starts before or at currentSlot starts (subsequentSlot[0] <= currentSlot[0]),
+            // then these slots do not overlap in a way that requires a new train for the 'currentSlot' logic.
+            if (currentSlot[1] <= subsequentSlot[0] || subsequentSlot[0] <= currentSlot[0]) {
+                // No overlap or subsequent slot is entirely before current slot, so do nothing.
             } else {
-                // If the above condition is false, it means 'comparisonInterval' starts *within* 'baseInterval'
-                // (i.e., baseInterval[0] < comparisonInterval[0] < baseInterval[1]).
-                // Mark this interval for removal and increment the current train count.
-                removalIndices.push(secondaryIndex);
-                currentTrainLength++;
+                // If they overlap, increment the train count and mark the subsequent slot for removal.
+                indicesToRemove.push(idxB); // Mark this slot's index for removal
+                currentTrainCount++; // Increment the count of trains needed for this specific 'currentSlot'
             }
         }
 
-        // Mark the identified overlapping intervals as null to prepare for filtering.
-        removalIndices.forEach( function (indexToNullify) {
-            intervalPairs[indexToNullify] = null;
+        // After checking all subsequent slots, "remove" the overlapping ones by setting them to null.
+        indicesToRemove.forEach(function(removedIdx) {
+            timeSlots[removedIdx] = null; // Set overlapping slots to null
         });
 
-        // Filter out all null entries from the 'intervalPairs' array, effectively "removing" them.
-        intervalPairs = intervalPairs.filter( function (potentialEntry) { return potentialEntry !== null } );
+        // Filter out all null entries from the timeSlots array.
+        // This effectively removes the slots that were covered by the current "train path".
+        timeSlots = timeSlots.filter(function(potentialSlot) {
+            return potentialSlot !== null; // Keep only non-null slots
+        });
 
-        // Update the maximum train length found if the current train is longer.
-        maximumTrainLength = Math.max(maximumTrainLength, currentTrainLength);
+        // Update the overall maximum trains needed if the current train count is higher.
+        maxTrainsNeeded = Math.max(maxTrainsNeeded, currentTrainCount);
     }
 
-    // Output the calculated maximum train length for the current scenario.
-    console.log(maximumTrainLength);
+    console.log(maxTrainsNeeded); // Output the result for the current set of time slots
 }

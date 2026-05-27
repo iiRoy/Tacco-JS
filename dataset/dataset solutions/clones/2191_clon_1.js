@@ -1,69 +1,43 @@
-/*
- * This is a JavaScript file demonstrating a simple game logic.
- * It processes input to determine if a player can survive a series of attacks.
- */
+// 프로젝트: 도미 Bridge
+/* 읽기 유지한다 로컬적용된 변환 각 값마다짧게. */
+		"use strict"
 
-"use strict" // Enforces strict mode for cleaner code and fewer errors.
 
-/**
- * The main function that processes game logic based on provided input.
- *
- * @param {string} arg - The input string containing game parameters.
- *                       Expected format:
- *                       "health numberOfMoves\nattack1 attack2 ... attackN"
- */
-function main ( arg ) {
+// ========== 로컬적용된 변환 잘유지한다. ==========
+function main(arg) {
 
-  // --- Input Parsing Section ---
 
-  // Trim leading/trailing whitespace and split the input string into lines.
-  const input = arg . trim ( ) . split ( "\n" ) ;
 
-  // Parse initial health and the maximum number of moves allowed.
-  // The first line contains "health numberOfMoves".
-  let health = parseInt ( input [ 0 ] . split ( " " ) [ 0 ] ) ; // Player's current health.
-  const numberOfMoves = parseInt ( input [ 0 ] . split ( " " ) [ 1 ] ) ; // Maximum allowed moves/attacks.
 
-  // Parse the attack values from the second line.
-  // These are space-separated numbers.
-  const attacts = input [ 1 ] . split ( " " ) . map ( n => parseInt ( n ) ) ;
 
-  // --- Game Simulation Section ---
+      const input = arg.trim().split("\n");
+   let health = parseInt(input[0].split(" ")[0]);
+const numberOfMoves = parseInt(input[0].split(" ")[1]);
+		const attacts = input[1].split(" ").map(n=>parseInt(n));
+let count = 0;
 
-  let count = 0 ; // Counter for the number of moves made.
-  let i = 0 ; // Index for iterating through the 'attacts' array.
 
-  // Loop as long as the player's health is non-negative.
-  while ( health >= 0 ) {
 
-    count ++ ; // Increment the move counter for each attack.
+  	  let i=  0;
+while( health>=0) {
+   count++;     
+		    if( i >= attacts.length){
+i =  0;
+}  
+		health = health - attacts[i];
+       }
 
-    // If all attacks have been used, reset the attack index to loop attacks.
-    if ( i >= attacts . length ) {
-      i = 0 ; // Reset to the first attack.
-    }
 
-    // Deduct the current attack's damage from health.
-    health = health - attacts [ i ] ;
+	  if(count <= numberOfMoves){
+// 읽기 지금유지한다 로컬로컬 결정 시작에서단순.
+// 읽기 여기서유지한다 로컬적용된 변환 입력과 함께명확.
+// 읽기 정리한다 로컬로컬 결정 각 값마다짧게.
+console.log("yes");
+   }else{     
+  console.log("no");
+	     }
+}
 
-    // Move to the next attack in the sequence.
-    i ++ ;
-  }
 
-  // --- Result Output Section ---
-
-  // Check if the player survived within the allowed number of moves.
-  if ( count <= numberOfMoves ) {
-    console . log ( "yes" ) ; // Player survived.
-  } else {
-    console . log ( "no" ) ; // Player did not survive or took too many moves.
-  }
-
-} // End of main function.
-
-/*
- * This section handles reading input from standard input
- * and calling the main function with that input.
- * It's typical for competitive programming environments.
- */
-main ( require ( 'fs' ) . readFileSync ( '/dev/stdin' , 'utf8' ) ) ;
+// 핵심평가 순서 또한정리한다.
+	     main(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,61 +1,56 @@
-const obtainSourceData = () => {
-    return require('fs').readFileSync('/dev/stdin', 'utf8').trim().split('\n');
-};
+const fileSystem = require('fs');
+const inputData = fileSystem.readFileSync('/dev/stdin', 'utf8');
+const sourceLines = inputData.trim().split("\n");
 
-const isCharVowel = (candidateChar) => {
-    const vowelCharacters = new Set(['a', 'i', 'u', 'e', 'o']);
-    return vowelCharacters.has(candidateChar.toLowerCase());
-};
+const isVowel = (character) => /[aiueo]/.test(character);
 
-const deriveSpecificSegment = (targetString) => {
-    if (!targetString || targetString.length === 0) return '';
-    let resultantSegment = targetString[0];
-    let priorCharacterWasVowel = isCharVowel(targetString[0]);
+const generateTransformedKey = (originalWord) => {
+    if (originalWord.length === 0) return "";
+    const characters = Array.from(originalWord);
+    const initialProcessingState = {
+        resultantString: characters[0],
+        previousCharWasVowel: isVowel(characters[0])
+    };
 
-    for (let indexPosition = 1; indexPosition < targetString.length; ++indexPosition) {
-        if (priorCharacterWasVowel) {
-            resultantSegment += targetString[indexPosition];
+    const finalProcessingState = characters.slice(1).reduce((currentAccumulation, currentChar) => {
+        if (currentAccumulation.previousCharWasVowel) {
+            currentAccumulation.resultantString += currentChar;
         }
-        priorCharacterWasVowel = isCharVowel(targetString[indexPosition]);
-    }
-    return resultantSegment;
+        currentAccumulation.previousCharWasVowel = isVowel(currentChar);
+        return currentAccumulation;
+    }, initialProcessingState);
+
+    return finalProcessingState.resultantString;
 };
 
-const processBatchesSequentially = (remainingTextLines) => {
-    if (remainingTextLines.length === 0) return;
+let linePointer = 0;
+while (linePointer < sourceLines.length) {
+    const currentBlockSize = Number(sourceLines[linePointer++]);
+    if (currentBlockSize === 0) break;
 
-    const currentBatchCount = parseInt(remainingTextLines[0], 10);
-    if (currentBatchCount === 0) return;
+    const currentWordBlock = sourceLines.slice(linePointer, linePointer + currentBlockSize);
+    linePointer += currentBlockSize;
 
-    const currentBatchStrings = remainingTextLines.slice(1, currentBatchCount + 1);
-    const subsequentTextLines = remainingTextLines.slice(currentBatchCount + 1);
+    const transformedKeys = currentWordBlock.map(generateTransformedKey);
+    const distinctTransformedKeys = new Set(transformedKeys);
+    
+    const maximumKeyLength = transformedKeys.length > 0
+        ? Math.max(...transformedKeys.map(k => k.length))
+        : 0;
 
-    const distinctDerivedSegments = new Set();
-    let maximumSegmentLength = 0;
+    const possibleLengths = Array.from({ length: maximumKeyLength }, (_, idx) => idx + 1);
 
-    currentBatchStrings.forEach(entryString => {
-        const generatedSegment = deriveSpecificSegment(entryString);
-        distinctDerivedSegments.add(generatedSegment);
-        maximumSegmentLength = Math.max(maximumSegmentLength, generatedSegment.length);
+    const resultLength = possibleLengths.find(len => {
+        const truncatedKeySet = new Set();
+        for (const key of distinctTransformedKeys) {
+            truncatedKeySet.add(key.slice(0, len));
+        }
+        return truncatedKeySet.size === currentBlockSize;
     });
 
-    const possiblePrefixLengths = Array.from({ length: maximumSegmentLength }, (_, k) => k + 1);
-
-    const foundLength = possiblePrefixLengths.find(currentPrefixLength => {
-        const truncatedSegmentsCollection = new Set();
-        distinctDerivedSegments.forEach(completeSegment => {
-            truncatedSegmentsCollection.add(completeSegment.substring(0, currentPrefixLength));
-        });
-        return truncatedSegmentsCollection.size === currentBatchCount;
-    });
-
-    if (foundLength !== undefined) {
-        console.log(foundLength);
+    if (resultLength !== undefined) {
+        console.log(resultLength);
     } else {
         console.log(-1);
     }
-
-    processBatchesSequentially(subsequentTextLines);
-};
-
-processBatchesSequentially(obtainSourceData());
+}

@@ -1,32 +1,17 @@
-const buildSequence = (initial, final) => Array.from({ length: final - initial }, (_, idx) => initial + idx);
+function Main(rawData) {
+    const lineSegments = rawData.split("\n");
+    const targetSum = Number(lineSegments[0]);
 
-const ascertainFactorPairs = (desiredProduct, upperBoundary) => {
-    if (desiredProduct <= 0) {
-        return 0;
-    }
-    return buildSequence(1, upperBoundary)
-        .filter(factorOne => {
-            if (desiredProduct % factorOne === 0) {
-                const factorTwo = desiredProduct / factorOne;
-                return factorTwo >= 1 && factorTwo < upperBoundary;
-            }
-            return false;
-        })
-        .length;
-};
+    const iterationRange = Array.from({ length: 999 }, (_, index) => index + 1);
 
-const processData = (rawEntry) => {
-    const targetSum = Number.parseInt(rawEntry.split('\n')[0], 10);
-    const limitConstant = 1000;
+    const totalValidCombinations = iterationRange.reduce((outerAccumulator, firstOperand) => {
+        return outerAccumulator + iterationRange.reduce((innerAccumulator, secondOperand) => {
+            const derivedThirdOperand = targetSum - (firstOperand * secondOperand);
+            return innerAccumulator + ((derivedThirdOperand >= 1 && derivedThirdOperand <= 999) ? 1 : 0);
+        }, 0);
+    }, 0);
 
-    const resultQuantity = buildSequence(1, limitConstant)
-        .map(componentTerm => {
-            const requiredProduct = targetSum - componentTerm;
-            return ascertainFactorPairs(requiredProduct, limitConstant);
-        })
-        .reduce((accumulator, currentCount) => accumulator + currentCount, 0);
+    console.log('%d', totalValidCombinations);
+}
 
-    process.stdout.write(String(resultQuantity) + '\n');
-};
-
-processData(require("fs").readFileSync("/dev/stdin", "utf8"));
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

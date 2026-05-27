@@ -1,66 +1,75 @@
-var fullInputContent = require("fs").readFileSync("/dev/stdin", "utf8");
+function Main(inputData) {
+    const lines = inputData.split("\r\n");
+    const movementPattern = lines[0];
+    const targetCoordsStr = lines[1].split(" ");
 
-var contentLines = fullInputContent.split("\n");
-var movementPattern = contentLines[0];
-var finalCoordinatesRaw = contentLines[1].split(" ");
+    const targetXCoord = Number(targetCoordsStr[0]);
+    const targetYCoord = Number(targetCoordsStr[1]);
 
-var targetPositionX = parseInt(finalCoordinatesRaw[0], 10);
-var targetPositionY = parseInt(finalCoordinatesRaw[1], 10);
+    const pathParts = movementPattern.split("T");
+    const initialForwardDistance = pathParts[0].length;
 
-var pathSections = movementPattern.split("T");
+    const { xSegments, ySegments, totalXDistance, totalYDistance } = pathParts.slice(1).reduce((accumulator, segmentPart, index) => {
+        const segmentLength = segmentPart.length;
+        if (segmentLength === 0) return accumulator;
 
-var initialForwardStride = pathSections[0].length;
-var adjustedTargetX = Math.abs(targetPositionX - initialForwardStride);
-var adjustedTargetY = Math.abs(targetPositionY);
+        if ((index + 1) % 2 !== 0) {
+            accumulator.ySegments.push(segmentLength);
+            accumulator.totalYDistance += segmentLength;
+        } else {
+            accumulator.xSegments.push(segmentLength);
+            accumulator.totalXDistance += segmentLength;
+        }
+        return accumulator;
+    }, { xSegments: [], ySegments: [], totalXDistance: 0, totalYDistance: 0 });
 
-var horizontalStrides = [];
-var verticalStrides = [];
-var totalHorizontalPotential = 0;
-var totalVerticalPotential = 0;
+    const effectiveXTarget = targetXCoord - initialForwardDistance;
+    const effectiveYTarget = targetYCoord;
 
-for (var sectionIndex = 1; sectionIndex < pathSections.length; ++sectionIndex) {
-    var segmentLengthValue = pathSections[sectionIndex].length;
-    if (segmentLengthValue === 0) continue;
+    const checkAttainability = (availableSegments, desiredDisplacement, totalSegmentSum) => {
+        if (Math.abs(desiredDisplacement) > totalSegmentSum) {
+            return false;
+        }
 
-    if (sectionIndex % 2 === 0) { // Even index sections contribute to X-axis movement
-        horizontalStrides.push(segmentLengthValue);
-        totalHorizontalPotential += segmentLengthValue;
-    } else { // Odd index sections contribute to Y-axis movement
-        verticalStrides.push(segmentLengthValue);
-        totalVerticalPotential += segmentLengthValue;
-    }
-}
+        if ((totalSegmentSum - Math.abs(desiredDisplacement)) % 2 !== 0) {
+            return false;
+        }
 
-var checkFeasibility = function(stepLengths, desiredDisplacement, maximumPossibleTravel) {
-    if (desiredDisplacement > maximumPossibleTravel) {
-        return false;
-    }
+        if (Math.abs(desiredDisplacement) === totalSegmentSum) {
+            return true;
+        }
 
-    if ((maximumPossibleTravel - desiredDisplacement) % 2 !== 0) {
-        return false;
-    }
+        const requiredFlipSum = (totalSegmentSum - Math.abs(desiredDisplacement)) / 2;
 
-    var requiredNegativeSum = (maximumPossibleTravel - desiredDisplacement) / 2;
+        const reachableSums = new Set([0]);
 
-    var grandTotalSteps = maximumPossibleTravel;
-    var achievableSums = new Array(grandTotalSteps + 1).fill(false);
-    achievableSums[0] = true;
-
-    for (var currentStrideValue of stepLengths) {
-        for (var currentAccumulation = grandTotalSteps; currentAccumulation >= currentStrideValue; --currentAccumulation) {
-            if (achievableSums[currentAccumulation - currentStrideValue]) {
-                achievableSums[currentAccumulation] = true;
+        for (const segmentValue of availableSegments) {
+            const newlyFormedSums = new Set();
+            for (const existingSum of reachableSums) {
+                const potentialNewSum = existingSum + segmentValue;
+                if (potentialNewSum <= requiredFlipSum) {
+                    newlyFormedSums.add(potentialNewSum);
+                }
+            }
+            for (const sumToAdd of newlyFormedSums) {
+                reachableSums.add(sumToAdd);
+            }
+            if (reachableSums.has(requiredFlipSum)) {
+                return true;
             }
         }
+
+        return reachableSums.has(requiredFlipSum);
+    };
+
+    const canReachX = checkAttainability(xSegments, effectiveXTarget, totalXDistance);
+    const canReachY = checkAttainability(ySegments, effectiveYTarget, totalYDistance);
+
+    if (canReachX && canReachY) {
+        console.log("Yes");
+    } else {
+        console.log("No");
     }
-    return achievableSums[requiredNegativeSum];
-};
-
-var xFeasible = checkFeasibility(horizontalStrides, adjustedTargetX, totalHorizontalPotential);
-var yFeasible = checkFeasibility(verticalStrides, adjustedTargetY, totalVerticalPotential);
-
-if (xFeasible && yFeasible) {
-    console.log("Yes");
-} else {
-    console.log("No");
 }
+
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

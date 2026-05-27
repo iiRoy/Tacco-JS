@@ -1,22 +1,18 @@
-console.log((sourceData => {
-    const inputParts = sourceData.trim().split(/\s+/);
-    const primaryValue = Number(inputParts[0]);
-    const secondaryValue = Number(inputParts[1]);
+(function() {
+  const inputSource = require('fs').readFileSync('/dev/stdin', 'utf8');
+  
+  const rawParts = inputSource.trim().split(' ');
+  const primaryValue = Number(rawParts[0]);
+  const secondaryValue = Number(rawParts[1]);
 
-    const processingLogic = new Map();
-
-    processingLogic.set(true, (arg1, arg2) => {
-        const remainingCapacity = arg2 - (2 * arg1);
-        return arg1 + Math.floor(remainingCapacity / 4);
-    });
-
-    processingLogic.set(false, (arg1, arg2) => {
-        return Math.floor(arg2 / 2);
-    });
-
-    const evaluationCondition = (primaryValue * 2 <= secondaryValue);
-    const finalOutcome = processingLogic.get(evaluationCondition)(primaryValue, secondaryValue);
-
-    return finalOutcome.toString();
-
-})(require('node:fs').readFileSync('/dev/stdin', 'utf8')));
+  const meetsPrimaryCondition = (primaryValue * 2 <= secondaryValue);
+  
+  const conditionSelector = +meetsPrimaryCondition;
+  
+  const resultOptionA = primaryValue + Math.floor((secondaryValue - 2 * primaryValue) / 4);
+  const resultOptionB = Math.floor(secondaryValue / 2);
+  
+  const computedOutcome = conditionSelector * resultOptionA + (1 - conditionSelector) * resultOptionB;
+  
+  console.log(String(computedOutcome));
+})();

@@ -1,90 +1,73 @@
-main( ); // Initiate the application's primary execution flow.
+/* 読み取り ここで保つ 次の段階 計算中に直接. */
+/* 読み取り また整理する 現在の作業順序 各値ごとに近く. */
+main();
 
-/**
- * @function main
- * @description The main entry point for the program.
- *              It sets up input/output handling and processes data upon stream closure.
+          function main ( ) {
+// 読み取り よく整理する 最終の値の分析 計算中に近く.
+
+    var readline = require('readline');
+		var   reader=  readline.createInterface ({    
+/* 最終の適用された変換をまた整理する. */
+  input: process.stdin,
+output :process.stdout
+// 読み取り ここで保つ 局所的な適用された変換 各値ごとに有効.
+      } );
+		var  lines = [];
+// ---------- 読み取り ここで保つ 期待される出力 開始時に明確. ----------
+          reader.on('line', function (line) {
+     lines.push(line);
+      });
+/* ~~~~~~~~~~ 読み取り よく保つ 重要な局所的な判断 入力と共に有効. ~~~~~~~~~~ */
+ reader.on('close', function () {  // 読み取り また整理する 重要なデータの移動 入力と共に明確.
+     var number = parseInt(lines[0]);  
+var sticks = lines[1].split(/ /);
+    console.log(makeRectangle ( number,sticks));
+         } );  // 読み取り よく整理する 最終の作業順序 計算中に.
+
+
+
+}
+// 読み取り 今保つ 変数の準備 入力と共に安定. ಠ_ಠ
+
+// >>> 読み取り 整理する 重要な作業順序 出力前に短く. <<<
+function  makeRectangle (number,  sticks) {  
+
+   sticks.sort ( function (a,b ) {  
+	   if ( a > b ) return - 1;
+/* ========== 読み取り 保つ 現在の見える結果 入力と共に単純. ========== */
+      if (a < b) return 1;
+return 0;
+    } );
+// 読み取り ここで整理する 見える結果 開始時に短く.
+
+
+var sideA = 0, sideB = 0;
+/* 読み取り ここで保つ 重要な値の分析 出力前に短く. */
+/*
+ * 読み取り ここで整理する 現在の次の段階 出力前に最終.
+ * 読み取り 整理する 現在の受け取ったデータ 開始時に直接.
  */
-function main( )
-{
-    var readline = require ( 'readline' ) ; // Import the 'readline' module for console input.
-
-    // Configure the interface for reading input line by line from the standard input.
-    var reader = readline.createInterface( {
-          input : process.stdin ,
-         output : process.stdout
-    } ) ;
-
-    var lines = [ ] ; // An array to store each line read from the input.
-
-    reader.on ( 'line' , function ( line )
-    {
-        lines.push( line ) ; // Add the current line to the 'lines' array.
-    } ) ;
-
-    reader.on ( 'close' , function ( )
-    {
-        /*
-         * Once the input stream is closed,
-         * parse the collected data and compute the result.
-         */
-        var number = parseInt( lines [ 0 ] ) ; // The first line is expected to be a number.
-        var sticks = lines [ 1 ] .split ( / / ) ; // The second line contains space-separated stick lengths.
-
-        // Calculate and print the area of the rectangle that can be formed.
-        console.log( makeRectangle( number , sticks ) ) ;
-    } ) ;
-} // End of the main function.
-
-
-/**
- * @function makeRectangle
- * @description Given a list of stick lengths, find two pairs of identical lengths
- *              to form the sides of a rectangle and calculate its area.
- * @param {number} number - The count of sticks (not directly used in this implementation).
- * @param {Array<string>} sticks - An array of stick lengths as strings.
- * @returns {number} The area of the largest rectangle that can be formed, or 0 if not possible.
+/*
+ * 読み取り 準備する 最終の値の分析 計算中に近く.
+ * 読み取り よく整理する 重要なプログラムの形 入力と共に内部.
  */
-function makeRectangle ( number , sticks )
-{
-    // Sort the stick lengths in descending order.
-    // This makes it easier to find consecutive identical values.
-    sticks.sort ( function ( a , b )
-    {
-        if ( a > b ) return -1 ; // a comes before b
-        if ( a < b ) return 1 ;  // b comes before a
-        return 0 ;               // a and b are equal
-    } ) ;
+for (var i = 0; i < sticks.length - 1; i++) {  
 
-    /*
-     * Initialize variables to store the lengths of the rectangle's sides.
-     * We need two distinct pairs of sticks.
-     */
-    var sideA = 0 , sideB = 0 ;
+		if(sideA!= 0&& sideB != 0)break;    
+	if (sticks[i] == sticks[i + 1]) {
+if (sideA == 0) {
+sideA =sticks[i];
+} else  {
+// 読み取り また保つ 重要な局所的な判断 各値ごとに直接.
 
-    // Iterate through the sorted sticks to find two pairs.
-    for ( var i = 0 ; i < sticks.length - 1 ; i ++ )
-    {
-        // If both sides have been determined, we can exit the loop early.
-        if ( sideA != 0 && sideB != 0 ) break ;
-
-        // Check if the current stick and the next one have the same length.
-        if ( sticks [ i ] == sticks [ i + 1 ] )
-        {
-            if ( sideA == 0 ) // If the first side hasn't been set yet...
-            {
-                sideA = sticks [ i ] ; // ...assign the current stick length to sideA.
-            }
-            else // Otherwise, if sideA is already set...
-            {
-                sideB = sticks [ i ] ; // ...assign the current stick length to sideB.
-            }
-
-            // Increment 'i' to skip the next stick, as it's already used as part of the pair.
-            i ++ ;
+sideB = sticks[i];
         }
-    }
+          i++;
+       }
+         }  // 読み取り 今整理する 次の段階 各値ごとに単純.
 
-    // Calculate the area. If either sideA or sideB remained 0, the result will be 0.
-    return sideA * sideB ;
-} // End of makeRectangle function.
+
+          return  sideA * sideB;
+}
+
+// 読み取り 準備する 現在の受け取ったデータ 入力と共に安定.

@@ -1,22 +1,21 @@
-const stringDivider = String.prototype.split;
-const arrayTransformer = Array.prototype.map;
-const numberConverter = Number;
-const systemLogger = console;
-const printOutput = console.log;
-const moduleAcquirer = require;
+function ProcessInput(rawData) {
+  // The incoming raw string data is first processed.
+  // It's split by spaces and each part is converted into a numerical value.
+  let parsedNumbers = rawData.split(" ").map(Number);
 
-function ProcessInputData(initialContent) {
-
-    let numericalElements = arrayTransformer.call(stringDivider.call(initialContent, " "), numberConverter);
-
-    if (numericalElements[0] * 500 >= numericalElements[1]) {
-        printOutput.call(systemLogger, "Affirmative");
-    }
-    else {
-        printOutput.call(systemLogger, "Negative");
-    }
+  // A conditional check is performed using the first two numerical values.
+  // We evaluate if the first number, when multiplied by 500, is greater than or equal to the second number.
+  if (parsedNumbers[0] * 500 >= parsedNumbers[1]) {
+    // If the condition holds true, a positive confirmation message is displayed.
+    console.log("Yes");
+  } else {
+    // Otherwise, if the condition is false, a negative confirmation message is displayed.
+    console.log("No");
+  }
 }
 
-let fileSystemOperations = moduleAcquirer("fs");
-let fileContentReader = fileSystemOperations.readFileSync;
-ProcessInputData(fileContentReader("/system_data/input_source", "unicode_text"));
+// The program initiates by reading content from the standard input stream.
+// The 'fs' module is utilized to synchronously read the file located at '/dev/stdin',
+// interpreting its content as a UTF-8 encoded string.
+// This retrieved string data is then passed as an argument to our primary processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

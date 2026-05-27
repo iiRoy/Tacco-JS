@@ -1,32 +1,32 @@
-function ApplicationEntry(externalDataSource) {
-    const segments = externalDataSource.split(' ');
-    const startValue = Number(segments[0]);
-    const endValue = Number(segments[1]);
+function Main(inputData) {
+    const dataSegments = inputData.split(" ");
+    const startValue = Number.parseInt(dataSegments[0], 10);
+    const endValue = Number.parseInt(dataSegments[1], 10);
 
-    const determineIfNumberIsSymmetric = (numberToExamine) => {
-        if (numberToExamine < 0) return false;
-        if (numberToExamine < 10) return true;
-
-        let originalForm = numberToExamine;
-        let invertedForm = 0;
-        while (originalForm > 0) {
-            const currentDigit = originalForm % 10;
-            invertedForm = invertedForm * 10 + currentDigit;
-            originalForm = Math.floor(originalForm / 10);
+    const checkNumericalSymmetry = (valueToCheck) => {
+        if (valueToCheck < 0) {
+            return false;
         }
-        return numberToExamine === invertedForm;
+        if (valueToCheck < 10) {
+            return true;
+        }
+
+        let originalValue = valueToCheck;
+        let reversedValue = 0;
+        let temporaryValue = valueToCheck;
+
+        while (temporaryValue > 0) {
+            reversedValue = (reversedValue * 10) + (temporaryValue % 10);
+            temporaryValue = Math.floor(temporaryValue / 10);
+        }
+        return originalValue === reversedValue;
     };
 
-    const calculateSymmetricInterval = (currentValue, finalValue, accumulativeCount) => {
-        if (currentValue > finalValue) {
-            return accumulativeCount;
-        }
-        const newCount = determineIfNumberIsSymmetric(currentValue) ? accumulativeCount + 1 : accumulativeCount;
-        return calculateSymmetricInterval(currentValue + 1, finalValue, newCount);
-    };
+    const palindromeCount = Array.from({ length: endValue - startValue + 1 }, (_, index) => startValue + index)
+                               .filter(checkNumericalSymmetry)
+                               .length;
 
-    const finalResult = calculateSymmetricInterval(startValue, endValue, 0);
-    console.log(finalResult);
+    console.log(palindromeCount);
 }
 
-ApplicationEntry(require("fs").readFileSync("/dev/stdin", "utf8"));
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

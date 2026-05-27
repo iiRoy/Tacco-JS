@@ -1,26 +1,21 @@
-((rawArgumentVector) => {
-    const primaryMagnitude = parseInt(rawArgumentVector[2], 10);
+const processInput = (rawText) => {
+    const lines = rawText.split("\n");
+    const targetValue = Number.parseInt(lines[0], 10);
 
-    let currentCycle = 1;
+    let currentK = 1;
+    let resultFound = false;
 
-    for (;;) {
-        const testExpressionValue = (8 * primaryMagnitude * currentCycle) + 1;
-        
-        let potentialSquareRoot = 1;
-        let exactRootValue = null;
+    while (!resultFound) {
+        const productTerm = currentK * (currentK + 1);
+        const divisorValue = 2 * targetValue;
 
-        while (potentialSquareRoot * potentialSquareRoot <= testExpressionValue) {
-            if (potentialSquareRoot * potentialSquareRoot === testExpressionValue) {
-                exactRootValue = potentialSquareRoot;
-                break;
-            }
-            potentialSquareRoot++;
+        if (productTerm % divisorValue === 0) {
+            console.log(currentK);
+            resultFound = true;
+        } else {
+            currentK++;
         }
-
-        if (exactRootValue !== null && (exactRootValue % 2 === 1)) {
-            console.log((exactRootValue - 1) / 2);
-            break;
-        }
-        currentCycle++;
     }
-})(process.argv);
+};
+
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

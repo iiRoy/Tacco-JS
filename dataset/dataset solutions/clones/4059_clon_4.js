@@ -1,60 +1,57 @@
-function processInputRelations(fullInputString) {
-    const ancestorRegistry = new Map();
-    const relativeOffsets = new Map();
+function EntryPoint(rawInput) {
+    const relationshipLines = rawInput.split(/\n/).slice(1);
+    const nodeParents = new Map();
+    const nodeOffsets = new Map(); // nodeOffsets.get(id) = value[id] - value[nodeParents.get(id)]
 
-    function resolveComponent(nodeIdentifier) {
-        if (!ancestorRegistry.has(nodeIdentifier)) {
-            ancestorRegistry.set(nodeIdentifier, nodeIdentifier);
-            relativeOffsets.set(nodeIdentifier, 0);
-            return [nodeIdentifier, 0];
+    let overallConsistency = true;
+
+    function findNodeRepresentative(nodeIdentifier) {
+        if (!nodeParents.has(nodeIdentifier)) {
+            nodeParents.set(nodeIdentifier, nodeIdentifier);
+            nodeOffsets.set(nodeIdentifier, 0);
+            return [nodeIdentifier, 0]; // [root_node_id, value_relative_to_root]
         }
 
-        let currentParent = ancestorRegistry.get(nodeIdentifier);
+        let currentParent = nodeParents.get(nodeIdentifier);
         if (currentParent === nodeIdentifier) {
             return [nodeIdentifier, 0];
         }
 
-        const [rootOfParent, offsetParentToRoot] = resolveComponent(currentParent);
-        
-        ancestorRegistry.set(nodeIdentifier, rootOfParent);
-        relativeOffsets.set(nodeIdentifier, relativeOffsets.get(nodeIdentifier) + offsetParentToRoot);
-        
-        return [rootOfParent, relativeOffsets.get(nodeIdentifier)];
+        let [root, offsetFromParent] = findNodeRepresentative(currentParent);
+        nodeParents.set(nodeIdentifier, root);
+        nodeOffsets.set(nodeIdentifier, nodeOffsets.get(nodeIdentifier) + offsetFromParent);
+        return [root, nodeOffsets.get(nodeIdentifier)];
     }
 
-    function integrateConstraint(primaryIdentifier, secondaryIdentifier, requiredDifference) {
-        const [rootPrimary, offsetPrimary] = resolveComponent(primaryIdentifier);
-        const [rootSecondary, offsetSecondary] = resolveComponent(secondaryIdentifier);
+    function reconcileRelationship(firstNode, secondNode, relativeDifference) { // secondNode = firstNode + relativeDifference
+        let [rootOfFirst, offsetOfFirst] = findNodeRepresentative(firstNode);
+        let [rootOfSecond, offsetOfSecond] = findNodeRepresentative(secondNode);
 
-        if (rootPrimary !== rootSecondary) {
-            ancestorRegistry.set(rootSecondary, rootPrimary);
-            relativeOffsets.set(rootSecondary, requiredDifference - offsetSecondary + offsetPrimary);
+        if (rootOfFirst !== rootOfSecond) {
+            nodeParents.set(rootOfSecond, rootOfFirst);
+            // We want value[rootOfSecond] = value[rootOfFirst] + X
+            // We know: value[secondNode] = value[firstNode] + relativeDifference
+            // (value[rootOfSecond] + offsetOfSecond) = (value[rootOfFirst] + offsetOfFirst) + relativeDifference
+            // value[rootOfSecond] = value[rootOfFirst] + offsetOfFirst + relativeDifference - offsetOfSecond
+            nodeOffsets.set(rootOfSecond, offsetOfFirst + relativeDifference - offsetOfSecond);
             return true;
         } else {
-            return (offsetSecondary - offsetPrimary) === requiredDifference;
+            // Check consistency: value[secondNode] = value[firstNode] + relativeDifference
+            // (value[rootOfFirst] + offsetOfSecond) === (value[rootOfFirst] + offsetOfFirst) + relativeDifference
+            // offsetOfSecond === offsetOfFirst + relativeDifference
+            return offsetOfSecond === offsetOfFirst + relativeDifference;
         }
     }
 
-    const statementLines = fullInputString.split(/\n/).slice(1);
-    let allConsistent = true;
-
-    for (const statement of statementLines) {
-        if (statement.trim() === '') continue;
-        const parts = statement.split(/\s/).map(Number);
-        if (parts.length !== 3) continue;
-
-        const p1 = parts[0];
-        const p2 = parts[1];
-        const p_diff = parts[2];
-        
-        if (!integrateConstraint(p1, p2, p_diff)) {
-            allConsistent = false;
-            break;
+    for (const currentLine of relationshipLines) {
+        if (!overallConsistency) break;
+        const [nodeA, nodeB, diffVal] = currentLine.split(/\s/).map(Number);
+        if (!reconcileRelationship(nodeA, nodeB, diffVal)) {
+            overallConsistency = false;
         }
     }
 
-    return allConsistent ? 'Yes' : 'No';
+    console.log(overallConsistency ? 'Yes' : 'No');
 }
 
-const inputData = require('fs').readFileSync('/dev/stdin', 'utf8');
-console.log(processInputRelations(inputData));
+EntryPoint(require('fs').readFileSync('/dev/stdin', 'utf8'));

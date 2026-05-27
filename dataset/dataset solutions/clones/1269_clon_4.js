@@ -1,37 +1,20 @@
-const fileSystemUtility = require('fs');
+const acquireNumericInput = () => parseInt(require('fs').readFileSync('/dev/stdin', 'ascii'));
 
-const maximumValueAsString = fileSystemUtility.readFileSync('/dev/stdin', 'ascii').trim();
-const limitInteger = Number(maximumValueAsString);
-
-const discernDigitThree = (numericEntity) => {
-    let absoluteValue = Math.abs(numericEntity);
-    if (absoluteValue === 0) return false;
-    while (absoluteValue > 0) {
-        if (absoluteValue % 10 === 3) {
-            return true;
-        }
-        absoluteValue = Math.floor(absoluteValue / 10);
-    }
-    return false;
+const evaluateNumberCriteria = (currentValue) => {
+    const isDivisibleByThree = currentValue % 3 === 0;
+    const containsDigitThree = String(currentValue).includes('3');
+    return isDivisibleByThree || containsDigitThree;
 };
 
-const isDivisibleByThree = (numericEntity) => {
-    return (numericEntity % 3 === 0);
+const generateFilteredSequence = (upperBound) => {
+    return Array.from({ length: upperBound }, (_, index) => index + 1)
+                .filter(evaluateNumberCriteria);
 };
 
-const processRange = (ceiling) => {
-    return Array.from({ length: ceiling }, (_, index) => index + 1)
-                .filter(value => isDivisibleByThree(value) || discernDigitThree(value));
+const executeProgram = () => {
+    const limitValue = acquireNumericInput();
+    const qualifyingNumbers = generateFilteredSequence(limitValue);
+    console.log(qualifyingNumbers.join(" "));
 };
 
-const processedResults = processRange(limitInteger);
-
-const finalOutputString = processedResults.reduce((accumulator, currentElement, currentIndex) => {
-    if (currentIndex === 0) {
-        return String(currentElement);
-    } else {
-        return accumulator + ' ' + String(currentElement);
-    }
-}, '');
-
-process.stdout.write(finalOutputString + '\n');
+executeProgram();

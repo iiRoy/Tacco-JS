@@ -1,72 +1,64 @@
-const inputContentCollection = require('fs').readFileSync('/dev/stdin', 'utf8');
-const initialLineArray = inputContentCollection.split('\n');
+'use strict';
+(function(inputContent) {
+    const allInputLines = inputContent.toString().split('\n');
+    const initialContent = allInputLines.shift();
+    const operationCount = Number(allInputLines.shift());
+    const parsedOperations = allInputLines.slice(0, operationCount).map(line => line.split(' '));
 
-const initialStringComponent = initialLineArray.shift();
-const operationCountText = initialLineArray.shift();
-const numericOperationCount = Number(operationCountText);
-
-const processedInstructions = initialLineArray.slice(0, numericOperationCount).map(entryString => {
-    const segmentParts = entryString.split(' ');
-    const activityName = segmentParts[0];
-    const firstCoordinate = Number(segmentParts[1]);
-    const secondCoordinate = Number(segmentParts[2]);
-    const supplementaryValue = segmentParts[3];
-
-    const activityIdentifierMap = {
-        'print': 'outputSegment',
-        'reverse': 'flipInterval',
-        'replace': 'substituteBlock'
+    const initialProcessorState = {
+        currentText: initialContent,
+        collectedOutputs: []
     };
 
-    return {
-        action: activityIdentifierMap[activityName],
-        startBound: firstCoordinate,
-        endBound: secondCoordinate,
-        extraData: supplementaryValue
+    const processPrint = (state, startIndex, endIndex) => {
+        const segment = state.currentText.substring(startIndex, endIndex + 1);
+        return {
+            ...state,
+            collectedOutputs: [...state.collectedOutputs, segment]
+        };
     };
-});
 
-const initialSystemState = {
-    characterSequence: initialStringComponent.split(''),
-    accumulatedOutputs: []
-};
-
-const systemActivityHandlers = {
-    outputSegment: (currentSystemState, start, end) => {
-        const extractedFragment = currentSystemState.characterSequence.slice(start, end + 1).join('');
+    const processReverse = (state, startIndex, endIndex) => {
+        const prefix = state.currentText.substring(0, startIndex);
+        const segmentToReverse = state.currentText.substring(startIndex, endIndex + 1);
+        const reversedSegment = segmentToReverse.split('').reverse().join('');
+        const suffix = state.currentText.substring(endIndex + 1);
+        const newText = prefix + reversedSegment + suffix;
         return {
-            characterSequence: currentSystemState.characterSequence,
-            accumulatedOutputs: [...currentSystemState.accumulatedOutputs, extractedFragment]
+            ...state,
+            currentText: newText
         };
-    },
-    flipInterval: (currentSystemState, start, end) => {
-        const precedingPart = currentSystemState.characterSequence.slice(0, start);
-        const invertedPart = currentSystemState.characterSequence.slice(start, end + 1).reverse();
-        const succeedingPart = currentSystemState.characterSequence.slice(end + 1);
+    };
+
+    const processSubstitute = (state, startIndex, endIndex, replacementValue) => {
+        const prefix = state.currentText.substring(0, startIndex);
+        const suffix = state.currentText.substring(endIndex + 1);
+        const newText = prefix + replacementValue + suffix;
         return {
-            characterSequence: [...precedingPart, ...invertedPart, ...succeedingPart],
-            accumulatedOutputs: currentSystemState.accumulatedOutputs
+            ...state,
+            currentText: newText
         };
-    },
-    substituteBlock: (currentSystemState, start, end, replacementContent) => {
-        const replacementCharacters = replacementContent.split('');
-        const precedingPart = currentSystemState.characterSequence.slice(0, start);
-        const succeedingPart = currentSystemState.characterSequence.slice(end + 1);
-        return {
-            characterSequence: [...precedingPart, ...replacementCharacters, ...succeedingPart],
-            accumulatedOutputs: currentSystemState.accumulatedOutputs
-        };
-    }
-};
+    };
 
-const stateTransformer = (currentAccumulatedState, currentInstruction) => {
-    const handlerFunction = systemActivityHandlers[currentInstruction.action];
-    if (!handlerFunction) {
-        throw new Error(`Unrecognized operation: ${currentInstruction.action}`);
-    }
-    return handlerFunction(currentAccumulatedState, currentInstruction.startBound, currentInstruction.endBound, currentInstruction.extraData);
-};
+    const applyTextOperation = (currentState, operationDetails) => {
+        const [operationName, startIdxStr, endIdxStr, valueParam] = operationDetails;
+        const start = Number(startIdxStr);
+        const end = Number(endIdxStr);
 
-const finalSystemState = processedInstructions.reduce(stateTransformer, initialSystemState);
+        switch (operationName) {
+            case 'print':
+                return processPrint(currentState, start, end);
+            case 'reverse':
+                return processReverse(currentState, start, end);
+            case 'replace':
+                return processSubstitute(currentState, start, end, valueParam);
+            default:
+                return currentState;
+        }
+    };
 
-console.log(finalSystemState.accumulatedOutputs.join('\n'));
+    const finalProcessorState = parsedOperations.reduce(applyTextOperation, initialProcessorState);
+
+    console.log(finalProcessorState.collectedOutputs.join('\n'));
+
+}(require('fs').readFileSync('/dev/stdin', 'utf8')));

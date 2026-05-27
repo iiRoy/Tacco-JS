@@ -1,29 +1,43 @@
-const solveProblem = (targetValue) => {
-    const divisor = BigInt(targetValue);
-    let currentAccumulation = 0n;
-    let iterationCount = 0;
-    let finalAnswer = null;
+function processDivisibility(inputString) {
+  const targetDivisorValue = Number(inputString);
+  let currentRemainder = 0;
+  let digitCounter = 0;
+  let currentNumberMagnitude = 0;
 
-    while (iterationCount <= Number(divisor)) {
-        iterationCount++;
-        currentAccumulation = currentAccumulation * 10n + 7n;
+  if (targetDivisorValue % 2 === 0 || targetDivisorValue % 5 === 0) {
+    console.log('-1');
+    return;
+  }
 
-        if (currentAccumulation <= divisor) {
-            continue;
-        }
+  while (true) {
+    digitCounter++;
 
-        if (currentAccumulation % divisor === 0n) {
-            finalAnswer = iterationCount;
-            break;
-        }
+    currentNumberMagnitude = currentNumberMagnitude * 10 + 7;
+
+    if (currentNumberMagnitude <= targetDivisorValue) {
+      // This replicates the original code's 'if (n <= input) { continue; }' behavior.
+      // If currentNumberMagnitude overflows, it will become inaccurate, but at that point,
+      // it will certainly be greater than targetDivisorValue (assuming targetDivisorValue
+      // is within Number.MAX_SAFE_INTEGER), so the condition will correctly evaluate to false.
+      continue;
     }
 
-    return finalAnswer !== null ? String(finalAnswer) : "-1";
-};
+    currentRemainder = (currentRemainder * 10 + 7) % targetDivisorValue;
 
-const orchestrateExecution = (inputContent) => {
-    const rawData = inputContent.toString().trim();
-    return solveProblem(rawData);
-};
+    if (currentRemainder === 0) {
+      console.log(digitCounter);
+      return;
+    }
 
-process.stdout.write(orchestrateExecution(process.stdin.readFileSync(0, 'utf8')));
+    // The original loop iterates 'i' from 0 up to 'input' (K).
+    // 'digitCounter' corresponds to 'i + 1'. So, 'digitCounter' goes from 1 up to 'K + 1'.
+    // This condition ensures the loop terminates after 'K + 1' iterations if no solution is found.
+    if (digitCounter > targetDivisorValue + 1) {
+      break;
+    }
+  }
+
+  console.log('-1');
+}
+
+processDivisibility(require("fs").readFileSync("/dev/stdin", "utf8"));

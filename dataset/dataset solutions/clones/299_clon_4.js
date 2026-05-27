@@ -1,51 +1,55 @@
-function* dataStream(rawSource) {
-    const lines = rawSource.trim().split('\n');
-    let currentLineIndex = 0;
-    while (true) {
-        const dimension = Number(lines[currentLineIndex++]);
-        if (dimension === 0) {
-            break;
-        }
-        const gridContent = lines.slice(currentLineIndex, currentLineIndex + dimension).map(line => line.split(''));
-        currentLineIndex += dimension;
-        yield { size: dimension, content: gridContent };
+const fileSystem = require('fs');
+
+let rawData = fileSystem.readFileSync('/dev/stdin', 'utf8');
+let inputLines = rawData.trim().split("\n");
+
+function calculateSquareExtent(rowCoord, colCoord, currentGrid, gridDimension) {
+    if (rowCoord < 0 || colCoord < 0 || rowCoord >= gridDimension || colCoord >= gridDimension) {
+        return 0;
     }
+
+    if (typeof currentGrid[rowCoord][colCoord] === 'number') {
+        return currentGrid[rowCoord][colCoord];
+    }
+
+    if (currentGrid[rowCoord][colCoord] === '*') {
+        currentGrid[rowCoord][colCoord] = 0;
+        return 0;
+    }
+
+    if (rowCoord === 0 || colCoord === 0) {
+        currentGrid[rowCoord][colCoord] = 1;
+        return 1;
+    }
+
+    const extentTopLeft = calculateSquareExtent(rowCoord - 1, colCoord - 1, currentGrid, gridDimension);
+    const extentTop = calculateSquareExtent(rowCoord - 1, colCoord, currentGrid, gridDimension);
+    const extentLeft = calculateSquareExtent(rowCoord, colCoord - 1, currentGrid, gridDimension);
+
+    const result = 1 + Math.min(extentTopLeft, extentTop, extentLeft);
+    currentGrid[rowCoord][colCoord] = result;
+    return result;
 }
 
-const processMatrix = (matrixInfo) => {
-    const matSize = matrixInfo.size;
-    const initialLayout = matrixInfo.content;
+while (true) {
+    let dimension = parseInt(inputLines.shift(), 10);
+    if (dimension === 0) {
+        break;
+    }
 
-    let computedMeasures = new Array(matSize).fill(null).map(() => new Array(matSize).fill(null));
+    let largestSquareSide = 0;
+    let gridData = [];
 
-    let maximumExtent = 0;
+    for (let i = 0; i < dimension; i++) {
+        let lineContent = inputLines.shift();
+        gridData.push(lineContent.split(""));
+    }
 
-    Array.from({ length: matSize }, (_, rIdx) => {
-        Array.from({ length: matSize }, (_, cIdx) => {
-            let currentCellIdentifier = initialLayout[rIdx][cIdx];
-            let calculatedValue;
-
-            calculatedValue = (currentCellIdentifier === '*') ? 0 :
-                              ((rIdx === 0 || cIdx === 0) ? 1 :
-                               (1 + Math.min(
-                                   computedMeasures[rIdx - 1][cIdx - 1],
-                                   computedMeasures[rIdx - 1][cIdx],
-                                   computedMeasures[rIdx][cIdx - 1]
-                               )));
-
-            computedMeasures[rIdx][cIdx] = calculatedValue;
-            maximumExtent = Math.max(maximumExtent, calculatedValue);
-        });
-    });
-
-    return maximumExtent;
-};
-
-const sourceData = require('fs').readFileSync('/dev/stdin', 'utf8');
-const allResults = [];
-
-for (const matrixProblem of dataStream(sourceData)) {
-    allResults.push(processMatrix(matrixProblem));
+    for (let rowCoord = 0; rowCoord < dimension; rowCoord++) {
+        for (let colCoord = 0; colCoord < dimension; colCoord++) {
+            const currentCellExtent = calculateSquareExtent(rowCoord, colCoord, gridData, dimension);
+            largestSquareSide = Math.max(largestSquareSide, currentCellExtent);
+        }
+    }
+    console.log(largestSquareSide);
 }
-
-allResults.forEach(finalValue => console.log(finalValue));

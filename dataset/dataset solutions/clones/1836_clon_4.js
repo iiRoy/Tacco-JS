@@ -1,65 +1,81 @@
-const entityCharacteristic = (lvl, childCount, isFinalSegment) => ({
-    l: lvl, 
-    k: childCount, 
-    f: isFinalSegment 
+const createBranchPoint = (levelValue, firstChildRef = null, nextSiblingRef = null, canBeExtended = true) => ({
+    lvl: levelValue,
+    fch: firstChildRef,
+    nsb: nextSiblingRef,
+    ext: canBeExtended
 });
 
-const locateBranchOrigin = (segmentCollection) => {
-    return segmentCollection.find(segment => !segment.f && segment.k < 2);
-};
+const allBranchPoints = new Set();
 
-const constructPathSegments = (originLevel, destinationLevel) => {
-    const path = [];
-    for (let j = originLevel + 1; j <= destinationLevel; j++) {
-        path.push(entityCharacteristic(j, 0, (j === destinationLevel)));
-    }
-    return path;
-};
+const extendPath = (originBranchPoint, targetLevel) => {
+    let currentLinkTarget = originBranchPoint;
+    let lastCreatedBranchPoint = null;
 
-const integrateBranch = (currentSegments, targetLevel) => {
-    const originSegment = locateBranchOrigin(currentSegments);
+    const linkAsSiblingFromOrigin = (originBranchPoint.fch !== null);
 
-    if (!originSegment) {
-        return null;
-    }
+    for (let currentPathLevel = originBranchPoint.lvl + 1; currentPathLevel <= targetLevel; currentPathLevel++) {
+        const newBranchPoint = createBranchPoint(currentPathLevel, null, null, true);
+        allBranchPoints.add(newBranchPoint);
 
-    const updatedOrigin = { ...originSegment, k: originSegment.k + 1 };
-
-    const newPathSegments = constructPathSegments(originSegment.l, targetLevel);
-
-    const nextSegmentState = currentSegments
-        .map(seg => (seg === originSegment ? updatedOrigin : seg))
-        .concat(newPathSegments);
-
-    nextSegmentState.sort((segA, segB) => segA.l - segB.l);
-
-    return nextSegmentState;
-};
-
-const initiateAssembly = (inputData) => {
-    const dataLines = inputData.split("\n");
-    const countN = parseInt(dataLines[0], 10);
-    const levelRequirements = dataLines[1].split(" ").map(Number);
-
-    if (levelRequirements[0] !== 0) {
-        return -1;
-    }
-
-    let currentSystemSegments = [entityCharacteristic(0, 0, false)];
-
-    for (let i = 1; i <= countN; i++) {
-        const branchesNeeded = levelRequirements[i];
-
-        for (let j = 0; j < branchesNeeded; j++) {
-            const nextSystemSegments = integrateBranch(currentSystemSegments, i);
-            if (nextSystemSegments === null) {
-                return -1;
+        if (currentPathLevel === originBranchPoint.lvl + 1) {
+            if (linkAsSiblingFromOrigin) {
+                originBranchPoint.nsb = newBranchPoint;
+            } else {
+                originBranchPoint.fch = newBranchPoint;
             }
-            currentSystemSegments = nextSystemSegments;
+        } else {
+            currentLinkTarget.nsb = newBranchPoint;
+        }
+        currentLinkTarget = newBranchPoint;
+        lastCreatedBranchPoint = newBranchPoint;
+    }
+
+    if (lastCreatedBranchPoint) {
+        lastCreatedBranchPoint.ext = false;
+    }
+};
+
+const tryExtendBranch = (targetLevel) => {
+    const sortedBranchPoints = Array.from(allBranchPoints).sort((bpA, bpB) => bpA.lvl - bpB.lvl);
+
+    for (const candidateBranchPoint of sortedBranchPoints) {
+        if (!candidateBranchPoint.ext) {
+            continue;
+        }
+        if (candidateBranchPoint.fch && candidateBranchPoint.nsb) {
+            continue;
+        }
+
+        extendPath(candidateBranchPoint, targetLevel);
+        return true;
+    }
+    return false;
+};
+
+function ProcessInput(rawInput) {
+    const inputLines = rawInput.split("\n");
+    const totalLevels = parseInt(inputLines[0], 10);
+    const levelCounts = inputLines[1].split(" ").map(val => parseInt(val, 10));
+
+    if (levelCounts[0] !== 0) {
+        console.log(-1);
+        return;
+    }
+
+    const initialBranchPoint = createBranchPoint(0, null, null, true);
+    allBranchPoints.add(initialBranchPoint);
+
+    for (let currentLevel = 1; currentLevel <= totalLevels; currentLevel++) {
+        for (let count = 0; count < levelCounts[currentLevel]; count++) {
+            const extensionSuccessful = tryExtendBranch(currentLevel);
+            if (!extensionSuccessful) {
+                console.log(-1);
+                return;
+            }
         }
     }
 
-    return currentSystemSegments.length;
-};
+    console.log(allBranchPoints.size);
+}
 
-console.log(initiateAssembly(require("fs").readFileSync("/dev/stdin", "utf8")));
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

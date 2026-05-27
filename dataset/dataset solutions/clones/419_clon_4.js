@@ -1,81 +1,87 @@
-const checkFeasibility = (upperLimit, valueSequence, requiredSplits) => {
-    if (valueSequence.length === 0) {
-        return requiredSplits > 0;
-    }
+function determineSegmentCount(limitValue, elementsArray) {
+    const initialState = { currentSum: 0, segments: 1, possible: true };
 
-    const anyValueExceedsLimit = valueSequence.reduce((isOver, currentVal) => isOver || (currentVal > upperLimit), false);
-    if (anyValueExceedsLimit) {
-        return false;
-    }
+    const finalState = elementsArray.reduce((accumulator, currentElement) => {
+        if (!accumulator.possible) {
+            return accumulator;
+        }
 
-    const processResult = valueSequence.reduce((state, currentEntry) => {
-        if (!state.possible) return state;
+        if (currentElement > limitValue) {
+            return { ...accumulator, possible: false };
+        }
 
-        if (state.currentAccumulation + currentEntry === upperLimit) {
-            const nextSplitCount = state.splitCounter + 1;
+        if (accumulator.currentSum + currentElement > limitValue) {
             return {
-                splitCounter: nextSplitCount,
-                currentAccumulation: 0,
-                possible: (nextSplitCount < requiredSplits)
-            };
-        } else if (state.currentAccumulation + currentEntry > upperLimit) {
-            const nextSplitCount = state.splitCounter + 1;
-            return {
-                splitCounter: nextSplitCount,
-                currentAccumulation: currentEntry,
-                possible: (nextSplitCount < requiredSplits)
+                currentSum: currentElement,
+                segments: accumulator.segments + 1,
+                possible: true
             };
         } else {
             return {
-                splitCounter: state.splitCounter,
-                currentAccumulation: state.currentAccumulation + currentEntry,
+                currentSum: accumulator.currentSum + currentElement,
+                segments: accumulator.segments,
                 possible: true
             };
         }
-    }, { splitCounter: 0, currentAccumulation: 0, possible: true });
+    }, initialState);
 
-    return processResult.possible;
-};
-
-const findOptimalBound = (lowExtreme, highExtreme, feasibilityFunction, sequence, targetSplits) => {
-    if (lowExtreme > highExtreme) {
-        return lowExtreme;
+    if (!finalState.possible) {
+        return Infinity;
     }
+    return finalState.segments;
+}
 
-    const midpoint = Math.floor((lowExtreme + highExtreme) / 2);
+function checkFeasibility(candidateMaxSum, dataElements, maxAllowedSegments) {
+    const segmentsRequired = determineSegmentCount(candidateMaxSum, dataElements);
+    return segmentsRequired <= maxAllowedSegments;
+}
 
-    if (feasibilityFunction(midpoint, sequence, targetSplits)) {
-        return findOptimalBound(lowExtreme, midpoint - 1, feasibilityFunction, sequence, targetSplits);
-    } else {
-        return findOptimalBound(midpoint + 1, highExtreme, feasibilityFunction, sequence, targetSplits);
-    }
-};
+function findMinimumMaxSum(lowBound, highBound, dataArray, maxSegments, predicateFunction) {
+    let currentLow = lowBound;
+    let currentHigh = highBound;
+    let result = highBound;
 
-const processNumericalChallenges = () => {
-    const rawInput = require('fs').readFileSync('/dev/stdin', 'utf8');
-    const dataLines = rawInput.trim().split(/\s*\n\s*/);
-
-    let currentLinePointer = 0;
-    const allResults = [];
-
-    while (true) {
-        const configLine = dataLines[currentLinePointer++];
-        if (configLine === "0 0") break;
-
-        const [requiredSplitsVal, elementCountVal] = configLine.split(/\s+/).map(Number);
-
-        const sequenceData = [];
-        for (let k = 0; k < elementCountVal; k++) {
-            sequenceData.push(Number(dataLines[currentLinePointer++]));
+    while (currentLow <= currentHigh) {
+        const midPoint = Math.floor((currentLow + currentHigh) / 2);
+        if (predicateFunction(midPoint, dataArray, maxSegments)) {
+            result = midPoint;
+            currentHigh = midPoint - 1;
+        } else {
+            currentLow = midPoint + 1;
         }
-
-        const initialLowerLimit = 0;
-        const initialUpperLimit = 1500000;
-
-        const finalAnswer = findOptimalBound(initialLowerLimit, initialUpperLimit, checkFeasibility, sequenceData, requiredSplitsVal);
-        allResults.push(finalAnswer);
     }
-    allResults.forEach(res => console.log(res));
-};
+    return result;
+}
 
-processNumericalChallenges();
+function* generateInputLines(inputString) {
+    const lines = inputString.trim().split("\n");
+    let lineIndex = 0;
+    while (lineIndex < lines.length) {
+        yield lines[lineIndex++];
+    }
+}
+
+const rawInputData = require('fs').readFileSync('/dev/stdin', 'utf8');
+const inputLineIterator = generateInputLines(rawInputData);
+
+while (true) {
+    const segmentConfigurationLine = inputLineIterator.next().value;
+
+    if (segmentConfigurationLine === "0 0") {
+        break;
+    }
+
+    const [maxSegmentsAllowed, elementCount] = segmentConfigurationLine.split(" ").map(Number);
+
+    const numericElements = [];
+    for (let i = 0; i < elementCount; i++) {
+        numericElements.push(Number(inputLineIterator.next().value));
+    }
+
+    const lowerBound = 0;
+    const upperBound = 1500000;
+
+    const finalAnswer = findMinimumMaxSum(lowerBound, upperBound, numericElements, maxSegmentsAllowed, checkFeasibility);
+
+    console.log(finalAnswer);
+}

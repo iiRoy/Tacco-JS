@@ -1,29 +1,38 @@
-const determineIfLeap = (yearly) => ((yearly % 4 === 0) && ((yearly % 100 !== 0) || (yearly % 400 === 0)));
+const evaluateYearForLeap = (yearCandidate) =>
+  (yearCandidate % 4 === 0 && yearCandidate % 100 !== 0) || yearCandidate % 400 === 0;
 
-const sourceDataStream = require('node:fs').readFileSync(0, 'utf8');
-const processedLines = sourceDataStream.trim().split('\n');
+const processInputLine = (lineSegment) => {
+  const [startYearString, endYearString] = lineSegment.split(' ');
+  const startYear = Number(startYearString);
+  const endYear = Number(endYearString);
 
-let initialOutput = true;
+  const foundLeapYears = Array.from({ length: endYear - startYear + 1 }, (_, index) => startYear + index)
+    .filter(evaluateYearForLeap);
 
-for (const entryUnit of processedLines) {
-    if (entryUnit === '0 0') {
-        break;
-    }
+  return foundLeapYears.length === 0
+    ? "NA"
+    : foundLeapYears.join('\n');
+};
 
-    if (!initialOutput) {
-        console.log('');
-    }
+const rawInputData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-    const [lowerBound, upperBound] = entryUnit.split(' ').map(Number);
+const lineSegments = rawInputData.trim().split('\n');
 
-    const qualifyingYears = Array.from({ length: upperBound - lowerBound + 1 }, (_, offset) => lowerBound + offset)
-                                .filter(determineIfLeap);
+const accumulatedOutputs = lineSegments.reduce((outputCollection, currentInputLine) => {
+  if (currentInputLine === "0 0") {
+    return outputCollection;
+  }
+  if (currentInputLine.trim() === "") {
+    return outputCollection;
+  }
 
-    if (qualifyingYears.length === 0) {
-        console.log('NA');
-    } else {
-        qualifyingYears.forEach(yearValue => console.log(yearValue));
-    }
+  const currentLineResult = processInputLine(currentInputLine);
 
-    initialOutput = false;
-}
+  if (outputCollection.length === 0) {
+    return [currentLineResult];
+  } else {
+    return [...outputCollection, currentLineResult];
+  }
+}, []);
+
+console.log(accumulatedOutputs.join('\n\n'));

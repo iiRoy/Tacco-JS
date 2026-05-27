@@ -1,744 +1,728 @@
-const ROTATION_CCW = 1;
-const ROTATION_CW = -1;
-const ALIGN_BACK = 2;
-const ALIGN_FRONT = -2;
-const ALIGN_ON_SEGMENT = 0;
+// Constants for orientation
+const ORIENTATION_CCW = 1;
+const ORIENTATION_CW = -1;
+const ONLINE_BEHIND = 2;
+const ONLINE_AHEAD = -2;
+const ON_LINE_SEG = 0;
 
-// Smallest number for float comparisons
-const FLOAT_TOLERANCE = 1e-9; // Changed from 1/8192
+// Floating point comparison threshold
+const EPSILON_THRESHOLD = 1 / 8192;
+const PI_VALUE = Math.PI;
 
-/**
- * Represents a 2D vector or point.
- */
-class Vec2 {
-    constructor(h_comp = 0, v_comp = 0) {
-        this.h_comp = h_comp;
-        this.v_comp = v_comp;
+// Vec2D class
+class Vec2D {
+    constructor(x_coord, y_coord) {
+        this.x = x_coord;
+        this.y = y_coord;
     }
 
-    // Static factory method for convenience
-    static fromComponents(xVal, yVal) {
-        return new Vec2(xVal, yVal);
+    // Static factory method for a zero vector
+    static zero() {
+        return new Vec2D(0, 0);
     }
-}
 
-/**
- * Calculates the perpendicular vector (rotated 90 degrees counter-clockwise).
- * @param {Vec2} inputVec The original vector.
- * @returns {Vec2} A new vector rotated 90 degrees CCW.
- */
-function getPerpendicularVector(inputVec) {
-    // Original: r.x = -v.y; r.y = v.x;
-    return new Vec2(-inputVec.v_comp, inputVec.h_comp);
-}
-
-/**
- * Converts an angle from degrees to radians.
- * @param {number} angleInDegrees The angle in degrees.
- * @returns {number} The angle in radians.
- */
-function convertDegreesToRadians(angleInDegrees) {
-    // Using Math.PI for precision
-    return angleInDegrees * (Math.PI / 180.0);
-}
-
-/**
- * Internal helper for vector rotation by radians.
- * @param {Vec2} originalVector The vector to rotate.
- * @param {number} angleInRadians The angle in radians.
- * @returns {Vec2} The rotated vector.
- */
-function performVectorRotation(originalVector, angleInRadians) {
-    const sineVal = Math.sin(angleInRadians);
-    const cosineVal = Math.cos(angleInRadians);
-
-    // Calculate new components
-    const newX = (originalVector.h_comp * cosineVal) - (originalVector.v_comp * sineVal);
-    const newY = (originalVector.h_comp * sineVal) + (originalVector.v_comp * cosineVal);
-
-    return new Vec2(newX, newY);
-}
-
-/**
- * Rotates a vector by a specified angle in degrees.
- * @param {Vec2} targetVector The vector to be rotated.
- * @param {number} angleDegrees The rotation angle in degrees.
- * @returns {Vec2} A new rotated vector.
- */
-function rotateVectorByDegrees(targetVector, angleDegrees) {
-    const angleRadians = convertDegreesToRadians(angleDegrees);
-    return performVectorRotation(targetVector, angleRadians);
-}
-
-/**
- * Rotates a vector by a specified angle in radians.
- * @param {Vec2} targetVector The vector to be rotated.
- * @param {number} angleRadians The rotation angle in radians.
- * @returns {Vec2} A new rotated vector.
- */
-function rotateVectorByRadians(targetVector, angleRadians) {
-    return performVectorRotation(targetVector, angleRadians);
-}
-
-/**
- * Checks if two vectors are approximately equal.
- * @param {Vec2} vecA First vector.
- * @param {Vec2} vecB Second vector.
- * @returns {boolean} True if vectors are approximately equal, false otherwise.
- */
-function areVectorsIdentical(vecA, vecB) {
-    return areApproxEqual(vecA.h_comp, vecB.h_comp) && areApproxEqual(vecA.v_comp, vecB.v_comp);
-}
-
-/**
- * Normalizes a vector to unit length.
- * @param {Vec2} inputVector The vector to normalize.
- * @returns {Vec2} The unit vector, or the original if length is zero.
- */
-function getNormalizedVector(inputVector) {
-    const magnitude = getVectorMagnitude(inputVector);
-    if (magnitude > FLOAT_TOLERANCE) { // Check against tolerance instead of strict 0
-        return scaleVector(inputVector, 1 / magnitude);
+    // Method to get the squared length (norm) of the vector
+    lengthSq() {
+        return this.x * this.x + this.y * this.y;
     }
-    // If magnitude is zero, return a zero vector or original vector.
-    // Original returns 'vec', so let's stick to that.
-    return new Vec2(0,0); // Returning a new zero vector for safety.
-}
 
-/**
- * Calculates the magnitude (length) of a 2D vector.
- * @param {Vec2} inputVector The vector.
- * @returns {number} The magnitude of the vector.
- */
-function getVectorMagnitude(inputVector) {
-    // Using Math.hypot for potentially better precision and readability
-    return Math.hypot(inputVector.h_comp, inputVector.v_comp);
-}
-
-/**
- * Calculates the squared magnitude (norm) of a 2D vector.
- * @param {Vec2} inputVector The vector.
- * @returns {number} The squared magnitude.
- */
-function getSquaredMagnitude(inputVector) {
-    return (inputVector.h_comp * inputVector.h_comp) + (inputVector.v_comp * inputVector.v_comp);
-}
-
-/**
- * Divides (scales) a vector by a scalar value.
- * @param {Vec2} inputVector The vector to scale.
- * @param {number} scalarValue The scalar to divide by.
- * @returns {Vec2} The scaled vector.
- */
-function scaleVector(inputVector, scalarValue) {
-    // Guard against division by zero
-    if (scalarValue === 0) {
-        console.warn("Attempted to scale vector by zero. Returning zero vector.");
-        return new Vec2(0, 0);
-    }
-    return new Vec2(inputVector.h_comp / scalarValue, inputVector.v_comp / scalarValue);
-}
-
-/**
- * Checks if two floating-point numbers are approximately equal.
- * @param {number} val1 First number.
- * @param {number} val2 Second number.
- * @returns {boolean} True if numbers are approximately equal.
- */
-function areApproxEqual(val1, val2) {
-    return Math.abs(val1 - val2) < FLOAT_TOLERANCE;
-}
-
-/**
- * Checks if two vectors are parallel.
- * @param {Vec2} vectorAlpha First vector.
- * @param {Vec2} vectorBeta Second vector.
- * @returns {boolean} True if vectors are parallel.
- */
-function areVectorsParallel(vectorAlpha, vectorBeta) {
-    // If two vectors are parallel, the dot product of one and the perpendicular of the other is zero.
-    const normalVecAlpha = getPerpendicularVector(vectorAlpha);
-    return areApproxEqual(0, calculateDotProduct(normalVecAlpha, vectorBeta));
-}
-
-/**
- * Checks if two vectors are perpendicular (orthogonal).
- * @param {Vec2} vectorAlpha First vector.
- * @param {Vec2} vectorBeta Second vector.
- * @returns {boolean} True if vectors are perpendicular.
- */
-function areVectorsPerpendicular(vectorAlpha, vectorBeta) {
-    return areApproxEqual(0, calculateDotProduct(vectorAlpha, vectorBeta));
-}
-
-/**
- * Subtracts one vector from another.
- * @param {Vec2} minuendVec The vector to subtract from.
- * @param {Vec2} subtrahendVec The vector to subtract.
- * @returns {Vec2} The resulting vector.
- */
-function subtractVec(minuendVec, subtrahendVec) {
-    return new Vec2(minuendVec.h_comp - subtrahendVec.h_comp, minuendVec.v_comp - subtrahendVec.v_comp);
-}
-
-/**
- * Calculates the dot product of two vectors.
- * @param {Vec2} vecA First vector.
- * @param {Vec2} vecB Second vector.
- * @returns {number} The dot product.
- */
-function calculateDotProduct(vecA, vecB) {
-    return (vecA.h_comp * vecB.h_comp) + (vecA.v_comp * vecB.v_comp);
-}
-
-/**
- * Calculates the 2D cross product (Z-component of 3D cross product).
- * @param {Vec2} vecA First vector.
- * @param {Vec2} vecB Second vector.
- * @returns {number} The scalar cross product.
- */
-function calculateCrossProduct2D(vecA, vecB) {
-    return (vecA.h_comp * vecB.v_comp) - (vecA.v_comp * vecB.h_comp);
-}
-
-/**
- * Represents a 2D line segment.
- */
-class Segment2D {
-    constructor(startPt, endPt) {
-        this.startPt = startPt;
-        this.endPt = endPt;
+    // Method to get the length of the vector
+    length() {
+        return Math.sqrt(this.lengthSq());
     }
 }
 
-/**
- * Represents a 2D ray (line with an origin and direction).
+/*
+ * v: Vec2D
  */
-class Ray2D {
-    constructor(origin, directionVec) {
-        this.origin = origin;
-        this.directionVec = directionVec;
+function rotateVec90(v_input) {
+    return new Vec2D(-v_input.y, v_input.x);
+}
+
+/*
+ * get degree to radian return radian
+ */
+function degToRad(degree_val) {
+    return degree_val * PI_VALUE / 180;
+}
+
+/*
+ * vec:Vec2D return Vec2D
+ */
+function rotateVecByDeg(target_vec, degree_angle) {
+    const radian_angle = degToRad(degree_angle);
+    return rotateVecByRad(target_vec, radian_angle);
+}
+
+/*
+ * vec:Vec2D return Vec2D
+ */
+function rotateVecByRad(target_vec, radian_angle) {
+    const sin_val = Math.sin(radian_angle);
+    const cos_val = Math.cos(radian_angle);
+
+    return new Vec2D(
+        target_vec.x * cos_val - target_vec.y * sin_val,
+        target_vec.x * sin_val + target_vec.y * cos_val
+    );
+}
+
+function areVecsEqual(vec_a, vec_b) {
+    return isFloatEqual(vec_a.x - vec_b.x, 0) && isFloatEqual(vec_a.y - vec_b.y, 0);
+}
+
+/**
+ * vec:Vec2D
+ *
+ * return unitVector
+ */
+function normalizeVec(input_vec) {
+    const vec_len = input_vec.length();
+    if (vec_len > 0) {
+        return scaleVecByScalar(input_vec, 1 / vec_len);
+    }
+    return input_vec; // Return original if length is zero
+}
+
+function scaleVecByScalar(input_vec, scalar_val) {
+    return new Vec2D(input_vec.x * scalar_val, input_vec.y * scalar_val);
+}
+
+function isFloatEqual(val_a, val_b) {
+    return Math.abs(val_a - val_b) < EPSILON_THRESHOLD;
+}
+
+function areVecsParallel(vec_a, vec_b) {
+    const normal_a = rotateVec90(vec_a);
+    return isFloatEqual(0, dotProd(normal_a, vec_b));
+}
+
+function areVecsOrthogonal(vec_a, vec_b) {
+    return isFloatEqual(0, dotProd(vec_a, vec_b));
+}
+
+function subVec(vec_a, vec_b) {
+    return new Vec2D(vec_a.x - vec_b.x, vec_a.y - vec_b.y);
+}
+
+function dotProd(vec_a, vec_b) {
+    return vec_a.x * vec_b.x + vec_a.y * vec_b.y;
+}
+
+/**
+ * Cross product (2D magnitude)
+ *
+ * @param vec_a
+ * @param vec_b
+ * @returns
+ */
+function crossProd(vec_a, vec_b) {
+    return vec_a.x * vec_b.y - vec_a.y * vec_b.x;
+}
+
+/**
+ * line segment
+ *
+ * point1:Pt2D point2:Pt2D
+ */
+class Seg2D {
+    constructor(pt_start, pt_end) {
+        this.point1 = pt_start;
+        this.point2 = pt_end;
     }
 }
 
-/**
- * Determines if a line segment lies entirely on one side of a given axis.
- * @param {Ray2D} axis The axis (represented as a ray).
- * @param {Segment2D} segment The segment to check.
- * @returns {boolean} True if the segment is on one side, false otherwise (crosses or is collinear).
- */
-function isSegmentOneSided(axis, segment) {
-    // Vector from axis origin to segment start point
-    const displacement1 = subtractVec(segment.startPt, axis.origin);
-    // Vector from axis origin to segment end point
-    const displacement2 = subtractVec(segment.endPt, axis.origin);
+function isOnOneSide(axis_line, segment_to_check) {
+    const diff1 = subVec(segment_to_check.point1, axis_line.base);
+    const diff2 = subVec(segment_to_check.point2, axis_line.base);
 
-    // Normal vector to the axis direction
-    const axisNormal = getPerpendicularVector(axis.directionVec);
+    const normal_vec = rotateVec90(axis_line.direction);
 
-    // Dot products indicate which side of the axis the points lie on
-    const dotProd1 = calculateDotProduct(axisNormal, displacement1);
-    const dotProd2 = calculateDotProduct(axisNormal, displacement2);
-
-    // If both dot products have the same sign (both positive or both negative),
-    // they are on the same side. If one is zero, it's on the line, but still "one-sided" in terms of crossing.
-    // For strict 'one side', check if both are > 0 OR both are < 0.
-    // The original code checks if product > 0. This implies strictly one side, not crossing or on the line.
-    return (dotProd1 * dotProd2) > FLOAT_TOLERANCE;
+    // Check if both points are on the same side of the axis line
+    return dotProd(normal_vec, diff1) * dotProd(normal_vec, diff2) > 0;
 }
 
-/**
- * Checks if two 1D intervals overlap.
- * @param {number} minA Minimum of interval A.
- * @param {number} maxA Maximum of interval A.
- * @param {number} minB Minimum of interval B.
- * @param {number} maxB Maximum of interval B.
- * @returns {boolean} True if the intervals overlap.
- */
-function doIntervalsOverlap(minA, maxA, minB, maxB) {
-    // Intervals overlap if the start of one is before the end of the other, AND vice-versa.
-    // Using FLOAT_TOLERANCE for robust comparison.
-    return (minB - FLOAT_TOLERANCE <= maxA) && (minA - FLOAT_TOLERANCE <= maxB);
+function isRangeOverlap(min_a, max_a, min_b, max_b) {
+    return min_b <= max_a && min_a <= max_b;
 }
 
-/**
- * Determines if two line segments intersect.
- * Uses the Separating Axis Theorem for initial checks, then handles parallel case.
- * @param {Segment2D} seg1 First line segment.
- * @param {Segment2D} seg2 Second line segment.
- * @returns {boolean} True if the segments intersect.
- */
-function checkSegmentIntersection(seg1, seg2) {
-    // Guard against degenerate segments (points)
-    if (areVectorsIdentical(seg1.startPt, seg1.endPt) && areVectorsIdentical(seg2.startPt, seg2.endPt)) {
-        return areVectorsIdentical(seg1.startPt, seg2.startPt);
-    }
+function doSegsIntersect(segment_a, segment_b) {
+    // Create lines from segments for axis checks
+    const line_a = new LineObj(segment_a.point1, subVec(segment_a.point2, segment_a.point1));
+    const line_b = new LineObj(segment_b.point1, subVec(segment_b.point2, segment_b.point1));
 
-    // Create rays representing the directions of the segments
-    const axis1 = new Ray2D(seg1.startPt, subtractVec(seg1.endPt, seg1.startPt));
-    const axis2 = new Ray2D(seg2.startPt, subtractVec(seg2.endPt, seg2.startPt));
-
-    // Check if seg2 is entirely on one side of seg1's axis
-    if (isSegmentOneSided(axis1, seg2)) {
+    // Check if segment_b is entirely on one side of line_a
+    if (isOnOneSide(line_a, segment_b)) {
         return false;
     }
 
-    // Check if seg1 is entirely on one side of seg2's axis
-    if (isSegmentOneSided(axis2, seg1)) {
+    // Check if segment_a is entirely on one side of line_b
+    if (isOnOneSide(line_b, segment_a)) {
         return false;
     }
 
-    // Handle the case where segments are parallel or collinear
-    if (areVectorsParallel(axis1.directionVec, axis2.directionVec)) {
-        // Project both segments onto a common axis (e.g., axis1's direction)
-        const rangeA = projectSegmentOntoAxis(seg1, axis1.directionVec);
-        const rangeB = projectSegmentOntoAxis(seg2, axis1.directionVec);
+    // If segments are parallel, check for overlap on the line
+    if (areVecsParallel(line_a.direction, line_b.direction)) {
+        const range_a = projectSegOntoVec(segment_a, line_a.direction);
+        const range_b = projectSegOntoVec(segment_b, line_a.direction);
 
-        // Check for overlap of the projected ranges
-        return testIntervalOverlap(rangeA, rangeB);
+        // Check if projected ranges overlap
+        return areRangesOverlapping(range_a, range_b);
     }
-
-    // If not one-sided and not parallel, they must intersect
+    // If not parallel and not on one side, they must intersect
     return true;
 }
 
-/**
- * Represents a 1D interval (range).
+/*
+ * Line Object class
  */
-class Interval {
-    constructor(lowerBound, upperBound) {
-        this.lowerBound = lowerBound;
-        this.upperBound = upperBound;
+class LineObj {
+    constructor(base_pt, direction_vec) {
+        this.base = base_pt; // Vec2D
+        this.direction = direction_vec; // Vec2D
     }
 }
 
 /**
- * Combines two intervals into a new interval that encompasses both.
- * Note: The original function was `getMaxMinRange` and had a bug in max calculation.
- * This function returns a new interval with the true min and max of the two inputs.
- * @param {Interval} intA First interval.
- * @param {Interval} intB Second interval.
- * @returns {Interval} The combined interval.
+ * Range class
  */
-function combineIntervals(intA, intB) {
-    const newMin = Math.min(intA.lowerBound, intB.lowerBound);
-    const newMax = Math.max(intA.upperBound, intB.upperBound); // Corrected logic
-    return new Interval(newMin, newMax);
-}
-
-/**
- * Ensures an interval has its lower bound <= upper bound.
- * @param {Interval} originalInterval The interval to sort.
- * @returns {Interval} A new sorted interval.
- */
-function normalizeInterval(originalInterval) {
-    if (originalInterval.lowerBound > originalInterval.upperBound) {
-        return new Interval(originalInterval.upperBound, originalInterval.lowerBound);
-    }
-    return new Interval(originalInterval.lowerBound, originalInterval.upperBound);
-}
-
-/**
- * Creates a new vector with negated components.
- * @param {Vec2} inputVector The vector to negate.
- * @returns {Vec2} A new negated vector.
- */
-function getNegatedVector(inputVector) {
-    return new Vec2(-inputVector.h_comp, -inputVector.v_comp);
-}
-
-/**
- * Adds two vectors.
- * @param {Vec2} vecA First vector.
- * @param {Vec2} vecB Second vector.
- * @returns {Vec2} The sum vector.
- */
-function addVec(vecA, vecB) {
-    return new Vec2(vecA.h_comp + vecB.h_comp, vecA.v_comp + vecB.v_comp);
-}
-
-/**
- * Projects a line segment onto a given axis vector.
- * @param {Segment2D} targetSegment The segment to project.
- * @param {Vec2} axisVector The vector representing the axis of projection.
- * @returns {Interval} The projected interval on the axis.
- */
-function projectSegmentOntoAxis(targetSegment, axisVector) {
-    const unitAxisVec = getNormalizedVector(axisVector);
-
-    // Project segment endpoints onto the unit axis
-    const proj1 = calculateDotProduct(unitAxisVec, targetSegment.startPt);
-    const proj2 = calculateDotProduct(unitAxisVec, targetSegment.endPt);
-
-    // Create an interval from the projected values and ensure it's sorted
-    return normalizeInterval(new Interval(proj1, proj2));
-}
-
-/**
- * Checks for overlap between two 1D intervals.
- * @param {Interval} interval1 First interval.
- * @param {Interval} interval2 Second interval.
- * @returns {boolean} True if intervals overlap.
- */
-function testIntervalOverlap(interval1, interval2) {
-    return doIntervalsOverlap(interval1.lowerBound, interval1.upperBound, interval2.lowerBound, interval2.upperBound);
-}
-
-/**
- * Projects one vector onto another.
- * @param {Vec2} toProject The vector to be projected.
- * @param {Vec2} onto The vector to project onto.
- * @returns {Vec2} The projected vector.
- */
-function projectVecOntoVec(toProject, onto) {
-    const squaredMagnitudeOnto = getSquaredMagnitude(onto);
-    if (squaredMagnitudeOnto < FLOAT_TOLERANCE) { // Check for zero vector
-        return new Vec2(0, 0); // Projection onto a zero vector is a zero vector.
-    }
-    const dotProduct = calculateDotProduct(toProject, onto);
-    const scalarProjection = dotProduct / squaredMagnitudeOnto;
-    return new Vec2(onto.h_comp * scalarProjection, onto.v_comp * scalarProjection);
-}
-
-/**
- * Represents a 2D coordinate point. (Identical structure to Vec2, but semantically different in some contexts).
- */
-class Coord2D {
-    constructor(horiz = 0, vert = 0) {
-        this.horiz = horiz;
-        this.vert = vert;
+class Range {
+    constructor(min_val, max_val) {
+        this.min = min_val;
+        this.max = max_val;
     }
 }
 
-/**
- * Adds two 2D coordinate points.
- * @param {Coord2D} pt1 First point.
- * @param {Coord2D} pt2 Second point.
- * @returns {Coord2D} The resulting point.
- */
-function addCoords(pt1, pt2) {
-    return new Coord2D(pt1.horiz + pt2.horiz, pt1.vert + pt2.vert);
+function getCombinedRange(range_one, range_two) {
+    return new Range(
+        Math.min(range_one.min, range_two.min),
+        Math.max(range_one.max, range_two.max)
+    );
+}
+
+function getSortedRange(input_range) {
+    if (input_range.min > input_range.max) {
+        return new Range(input_range.max, input_range.min);
+    }
+    return new Range(input_range.min, input_range.max);
+}
+
+function negateVec(input_vec) {
+    return new Vec2D(-input_vec.x, -input_vec.y);
+}
+
+function addVec(vec_a, vec_b) {
+    return new Vec2D(vec_a.x + vec_b.x, vec_a.y + vec_b.y);
 }
 
 /**
- * Subtracts one 2D coordinate point from another.
- * @param {Coord2D} pt1 Point to subtract from.
- * @param {Coord2D} pt2 Point to subtract.
- * @returns {Coord2D} The resulting point.
+ * segment:Seg2D onto:Vec2D
+ *
+ * return Range
  */
-function subtractCoords(pt1, pt2) {
-    return new Coord2D(pt1.horiz - pt2.horiz, pt1.vert - pt2.vert);
+function projectSegOntoVec(target_segment, onto_vec) {
+    const onto_unit_vec = normalizeVec(onto_vec);
+
+    const min_proj = dotProd(onto_unit_vec, target_segment.point1);
+    const max_proj = dotProd(onto_unit_vec, target_segment.point2);
+
+    return getSortedRange(new Range(min_proj, max_proj));
+}
+
+function areRangesOverlapping(range_one, range_two) {
+    return isRangeOverlap(range_one.min, range_one.max, range_two.min, range_two.max);
+}
+
+function projectVec(project_vec, onto_vec) {
+    const onto_norm_sq = onto_vec.lengthSq();
+    if (onto_norm_sq > 0) {
+        const dot_product = dotProd(project_vec, onto_vec);
+        return scaleVecByScalar(onto_vec, dot_product / onto_norm_sq);
+    }
+    return Vec2D.zero(); // If onto_vec is zero, projection is zero vector
 }
 
 /**
- * Scales a 2D coordinate point by a scalar.
- * @param {Coord2D} pt The point to scale.
- * @param {number} factor The scalar factor.
- * @returns {Coord2D} The scaled point.
+ * point class
  */
-function scaleCoords(pt, factor) {
-    return new Coord2D(pt.horiz * factor, pt.vert * factor);
+class Pt2D {
+    constructor(x_coord, y_coord) {
+        this.x = x_coord;
+        this.y = y_coord;
+    }
+}
+
+function addPts(pt_a, pt_b) {
+    return new Pt2D(pt_a.x + pt_b.x, pt_a.y + pt_b.y);
+}
+
+function subPts(pt_a, pt_b) {
+    return new Pt2D(pt_a.x - pt_b.x, pt_a.y - pt_b.y);
+}
+
+function scalePt(input_pt, scalar_val) {
+    return new Pt2D(input_pt.x * scalar_val, input_pt.y * scalar_val);
 }
 
 /**
- * Projects a point onto a line segment.
- * @param {Segment2D} lineSegment The segment to project onto.
- * @param {Coord2D} targetPoint The point to project.
- * @returns {Coord2D} The projected point on the line defined by the segment.
+ * segment : Seg2D
+ * point : Pt2D
  */
-function getProjectedPointOnSegment(lineSegment, targetPoint) {
-    const segmentVector = subtractVec(lineSegment.endPt, lineSegment.startPt);
-    const pointToStartVector = subtractVec(targetPoint, lineSegment.startPt);
+function projectPtOntoSeg(target_segment, target_point) {
+    const seg_vec = subPts(target_segment.point2, target_segment.point1);
+    const pt_to_seg_start_vec = subPts(target_point, target_segment.point1);
 
-    const segmentSquaredMagnitude = getSquaredMagnitude(segmentVector);
-    // Handle degenerate segment (a point)
-    if (segmentSquaredMagnitude < FLOAT_TOLERANCE) {
-        return new Coord2D(lineSegment.startPt.h_comp, lineSegment.startPt.v_comp);
+    const rate = dotProd(pt_to_seg_start_vec, seg_vec) / seg_vec.lengthSq();
+    const projected_vec = scaleVecByScalar(seg_vec, rate);
+    return addPts(target_segment.point1, projected_vec);
+}
+
+function reflectPtAcrossSeg(target_segment, target_point) {
+    const projection_pt = projectPtOntoSeg(target_segment, target_point);
+    // Vector from point to its projection
+    const vec_to_proj = subPts(projection_pt, target_point);
+    // Double this vector and add to original point to get reflection
+    const reflection_vec = scalePt(vec_to_proj, 2);
+    return addPts(reflection_vec, target_point);
+}
+
+/**
+ * Helper to get intersection point of two lines defined by four points.
+ * This is a Type III addition to support getConvexCut more directly.
+ * @param {Pt2D} p1_line1 - First point of line 1
+ * @param {Pt2D} p2_line1 - Second point of line 1
+ * @param {Pt2D} p1_line2 - First point of line 2
+ * @param {Pt2D} p2_line2 - Second point of line 2
+ * @returns {Pt2D} The intersection point
+ */
+function getLineLineIntersection(p1_line1, p2_line1, p1_line2, p2_line2) {
+    const vec_line1 = subPts(p2_line1, p1_line1);
+    const vec_line2 = subPts(p2_line2, p1_line2);
+
+    const cross_val = crossProd(vec_line1, vec_line2);
+
+    // If cross_val is zero, lines are parallel or collinear, no unique intersection
+    if (isFloatEqual(cross_val, 0)) {
+        return null; // Or handle as needed, for convex cut, it implies no intersection or overlap
     }
 
-    const projectionRatio = calculateDotProduct(pointToStartVector, segmentVector) / segmentSquaredMagnitude;
-    const scaledSegmentVector = new Vec2(segmentVector.h_comp * projectionRatio, segmentVector.v_comp * projectionRatio);
-    
-    return new Coord2D(lineSegment.startPt.h_comp + scaledSegmentVector.h_comp, lineSegment.startPt.v_comp + scaledSegmentVector.v_comp);
+    const vec_p1_to_p1 = subPts(p1_line2, p1_line1);
+    const t = crossProd(vec_p1_to_p1, vec_line2) / cross_val;
+
+    return addPts(p1_line1, scalePt(vec_line1, t));
 }
 
+
 /**
- * Calculates the reflection of a point across a line segment.
- * @param {Segment2D} mirrorSegment The segment acting as the mirror.
- * @param {Coord22D} originalPoint The point to reflect.
- * @returns {Coord2D} The reflected point.
+ *
+ * @param seg_a
+ * @param seg_b
+ * @returns point
  */
-function reflectPointAcrossSegment(mirrorSegment, originalPoint) {
-    const projection = getProjectedPointOnSegment(mirrorSegment, originalPoint);
-    // Vector from original point to its projection
-    const displacementVec = subtractCoords(projection, originalPoint);
-    // Double this vector to get from original point to reflected point
-    const reflectedDisplacement = scaleCoords(displacementVec, 2);
-    // Add to original point
-    return addCoords(originalPoint, reflectedDisplacement);
+function getSegIntersectionPt(seg_a, seg_b) {
+    // This function calculates the intersection point of two line segments.
+    // It uses the cross product method to find the parameter 't' along segment_a.
+    const base_vec = subPts(seg_b.point2, seg_b.point1);
+    const d1_vec = subPts(seg_a.point1, seg_b.point1);
+    const d2_vec = subPts(seg_a.point2, seg_b.point1);
+
+    const cross_d1 = Math.abs(crossProd(base_vec, d1_vec));
+    const cross_d2 = Math.abs(crossProd(base_vec, d2_vec));
+
+    const t_param = cross_d1 / (cross_d1 + cross_d2);
+
+    const intersect_x = seg_a.point1.x + (seg_a.point2.x - seg_a.point1.x) * t_param;
+    const intersect_y = seg_a.point1.y + (seg_a.point2.y - seg_a.point1.y) * t_param;
+
+    return new Pt2D(intersect_x, intersect_y);
 }
 
-/**
- * Finds the intersection point of two line segments. Assumes segments intersect.
- * @param {Segment2D} segA First segment.
- * @param {Segment2D} segB Second segment.
- * @returns {Coord2D} The intersection point.
- */
-function findIntersectionPoint(segA, segB) {
-    // Vector representing segB's direction
-    const segB_dir = subtractVec(segB.endPt, segB.startPt);
-
-    // Vectors from segB.startPt to segA's endpoints
-    const segA_p1_from_segB_p1 = subtractVec(segA.startPt, segB.startPt);
-    const segA_p2_from_segB_p1 = subtractVec(segA.endPt, segB.startPt);
-
-    // Cross products to determine relative orientation/distance
-    const cross1 = Math.abs(calculateCrossProduct2D(segB_dir, segA_p1_from_segB_p1));
-    const cross2 = Math.abs(calculateCrossProduct2D(segB_dir, segA_p2_from_segB_p1));
-
-    // Calculate 't' parameter for interpolation along segA
-    // This 't' represents the ratio along segA where the intersection occurs.
-    const t_param = cross1 / (cross1 + cross2);
-
-    // Interpolate along segA to find the intersection point
-    const intersectionX = segA.startPt.h_comp + (segA.endPt.h_comp - segA.startPt.h_comp) * t_param;
-    const intersectionY = segA.startPt.v_comp + (segA.endPt.v_comp - segA.startPt.v_comp) * t_param;
-
-    return new Coord2D(intersectionX, intersectionY);
-}
-
-/**
- * Multiplies a vector by a scalar.
- * @param {Vec2} inputVec The vector to multiply.
- * @param {number} scalar The scalar value.
- * @returns {Vec2} A new scaled vector.
- */
-function multiplyVecByScalar(inputVec, scalar) {
-    return new Vec2(inputVec.h_comp * scalar, inputVec.v_comp * scalar);
-}
-
-/**
- * Clamps a value within a specified range.
- * @param {number} value The value to clamp.
- * @param {number} minimum The lower bound of the range.
- * @param {number} maximum The upper bound of the range.
- * @returns {number} The clamped value.
- */
-function clampValue(value, minimum, maximum) {
-    // Rewriting the if-else structure with Math.min/Math.max
-    return Math.max(minimum, Math.min(value, maximum));
-}
-
-/**
- * Calculates the shortest distance from a point to an infinite line (defined by a segment).
- * @param {Segment2D} lineDefinitionSegment A segment defining the line.
- * @param {Coord2D} targetPoint The point to measure distance from.
- * @returns {number} The distance.
- */
-function calcDistanceLineToPoint(lineDefinitionSegment, targetPoint) {
-    const lineVec = subtractVec(lineDefinitionSegment.endPt, lineDefinitionSegment.startPt);
-    const pointVec = subtractVec(targetPoint, lineDefinitionSegment.startPt);
-
-    // Distance = |cross_product(lineVec, pointVec)| / |lineVec|
-    // This is the formula for the area of a parallelogram (base * height) divided by the base length.
-    const crossProd = calculateCrossProduct2D(lineVec, pointVec);
-    const lineMagnitude = getVectorMagnitude(lineVec);
-
-    if (lineMagnitude < FLOAT_TOLERANCE) { // Degenerate line (just a point)
-        return getVectorMagnitude(pointVec); // Distance from point to that single point
+function clampVal(x_val, min_val, max_val) {
+    if (x_val < min_val) {
+        return min_val;
+    } else if (x_val > max_val) {
+        return max_val;
+    } else {
+        return x_val;
     }
-    return Math.abs(crossProd) / lineMagnitude;
 }
 
 /**
- * Calculates the shortest distance from a point to a line segment.
- * @param {Segment2D} segment The line segment.
- * @param {Coord2D} point The point.
- * @returns {number} The distance.
+ * Distance between a line (defined by two points) and a point
  */
-function calcDistanceSegmentToPoint(segment, point) {
-    const vecSegment = subtractVec(segment.endPt, segment.startPt);
-    const vecPointToStart = subtractVec(point, segment.startPt);
-    const vecPointToEnd = subtractVec(point, segment.endPt);
+function distLineToPt(line_segment_as_line, target_point) {
+    const vec_line = subPts(line_segment_as_line.point2, line_segment_as_line.point1);
+    const vec_pt_to_line_start = subPts(target_point, line_segment_as_line.point1);
+    return Math.abs(crossProd(vec_line, vec_pt_to_line_start) / vec_line.length());
+}
 
-    // Case 1: Point projects outside segment, closer to startPt.
-    // Dot product < 0 means angle > 90 degrees.
-    if (calculateDotProduct(vecSegment, vecPointToStart) < FLOAT_TOLERANCE) {
-        return getVectorMagnitude(vecPointToStart);
-    }
-    
-    // Case 2: Point projects outside segment, closer to endPt.
-    // Dot product of (start - end) and (point - end) < 0
-    if (calculateDotProduct(getNegatedVector(vecSegment), vecPointToEnd) < FLOAT_TOLERANCE) {
-        return getVectorMagnitude(vecPointToEnd);
+/**
+ * Distance between a line segment and a point
+ */
+function distSegToPt(target_segment, target_point) {
+    const vec_seg_p2_p1 = subPts(target_segment.point2, target_segment.point1);
+    const vec_pt_p1 = subPts(target_point, target_segment.point1);
+
+    // If dot product is negative, point is "behind" p1
+    if (dotProd(vec_seg_p2_p1, vec_pt_p1) < 0) {
+        return subPts(target_point, target_segment.point1).length();
     }
 
-    // Case 3: Point projects onto the segment.
-    return calcDistanceLineToPoint(segment, point);
+    const vec_seg_p1_p2 = subPts(target_segment.point1, target_segment.point2);
+    const vec_pt_p2 = subPts(target_point, target_segment.point2);
+
+    // If dot product is negative, point is "behind" p2
+    if (dotProd(vec_seg_p1_p2, vec_pt_p2) < 0) {
+        return subPts(target_point, target_segment.point2).length();
+    }
+
+    // Otherwise, the closest point is on the line segment
+    return distLineToPt(target_segment, target_point);
 }
 
 /**
- * Calculates the shortest distance between two line segments.
- * @param {Segment2D} seg1 First segment.
- * @param {Segment2D} seg2 Second segment.
- * @returns {number} The distance. Returns 0 if they intersect.
+ * Distance between two line segments
  */
-function calcMinSegmentDistance(seg1, seg2) {
-    // If segments intersect, the distance is 0.
-    if (checkSegmentIntersection(seg1, seg2)) {
+function distSegToSeg(seg_a, seg_b) {
+    // If segments intersect, distance is 0
+    if (doSegsIntersect(seg_a, seg_b)) {
         return 0;
     }
 
-    // Otherwise, find the minimum of all point-to-segment distances.
-    // Distance from seg1's endpoints to seg2, and from seg2's endpoints to seg1.
-    const dist1_p1_to_seg2 = calcDistanceSegmentToPoint(seg2, seg1.startPt);
-    const dist1_p2_to_seg2 = calcDistanceSegmentToPoint(seg2, seg1.endPt);
-    const dist2_p1_to_seg1 = calcDistanceSegmentToPoint(seg1, seg2.startPt);
-    const dist2_p2_to_seg1 = calcDistanceSegmentToPoint(seg1, seg2.endPt);
+    // Otherwise, find the minimum distance between endpoints of one segment to the other segment
+    const dist1 = distSegToPt(seg_a, seg_b.point1);
+    const dist2 = distSegToPt(seg_a, seg_b.point2);
+    const dist3 = distSegToPt(seg_b, seg_a.point1);
+    const dist4 = distSegToPt(seg_b, seg_a.point2);
 
-    return Math.min(dist1_p1_to_seg2, dist1_p2_to_seg2, dist2_p1_to_seg1, dist2_p2_to_seg1);
+    return Math.min(dist1, dist2, dist3, dist4);
+}
+
+function getOrientation(pt_a, pt_b, pt_c) {
+    const vec_ab = subPts(pt_b, pt_a);
+    const vec_ac = subPts(pt_c, pt_a);
+    const signed_area = crossProd(vec_ab, vec_ac);
+
+    if (signed_area > EPSILON_THRESHOLD) {
+        return ORIENTATION_CCW;
+    }
+    if (signed_area < -EPSILON_THRESHOLD) {
+        return ORIENTATION_CW;
+    }
+    // Collinear case
+    if (dotProd(vec_ab, vec_ac) < -EPSILON_THRESHOLD) {
+        return ONLINE_BEHIND; // C is behind A-B
+    }
+    if (vec_ab.lengthSq() < vec_ac.lengthSq()) {
+        return ONLINE_AHEAD; // C is ahead of B on line A-B
+    }
+    return ON_LINE_SEG; // C is on segment A-B
 }
 
 /**
- * Determines the orientation of three ordered points (p1, p2, p3).
- * Uses the 2D cross product.
- * @param {Coord2D} p1 First point.
- * @param {Coord2D} p2 Second point.
- * @param {Coord2D} p3 Third point.
- * @returns {number} One of ROTATION_CCW, ROTATION_CW, ALIGN_BACK, ALIGN_FRONT, ALIGN_ON_SEGMENT.
+ * Andrew's Monotone Chain algorithm for convex hull
  */
-function orient2D(p1, p2, p3) {
-    const vec_p1_p2 = subtractVec(p2, p1);
-    const vec_p1_p3 = subtractVec(p3, p1);
-    const crossProduct = calculateCrossProduct2D(vec_p1_p2, vec_p1_p3);
-
-    if (crossProduct > FLOAT_TOLERANCE) {
-        return ROTATION_CCW;
-    }
-    if (crossProduct < -FLOAT_TOLERANCE) {
-        return ROTATION_CW;
+function computeConvexHull(input_points) {
+    if (input_points.length < 3) {
+        return input_points;
     }
 
-    // Points are collinear. Check if p3 lies on the line segment p1-p2.
-    const dotProduct = calculateDotProduct(vec_p1_p2, vec_p1_p3);
-    if (dotProduct < -FLOAT_TOLERANCE) {
-        return ALIGN_BACK; // p3 is behind p1 relative to p2
-    }
-    const squaredMagnitude_p1_p2 = getSquaredMagnitude(vec_p1_p2);
-    const squaredMagnitude_p1_p3 = getSquaredMagnitude(vec_p1_p3);
-    if (squaredMagnitude_p1_p2 < squaredMagnitude_p1_p3) {
-        return ALIGN_FRONT; // p3 is beyond p2 relative to p1
-    }
-    return ALIGN_ON_SEGMENT; // p3 is on the segment p1-p2
-}
+    // Sort points lexicographically (x then y)
+    const point_sorter = (a, b) => {
+        if (a.x !== b.x) return a.x - b.x;
+        return a.y - b.y;
+    };
+    input_points.sort(point_sorter);
 
-/**
- * Computes the convex hull of a set of 2D points using the Monotone Chain (Andrew's algorithm).
- * @param {Array<Coord2D>} inputPoints An array of 2D points.
- * @returns {Array<Coord2D>} An array of points forming the convex hull in counter-clockwise order.
- */
-function computeConvexHull(inputPoints) {
-    const numPoints = inputPoints.length;
-    if (numPoints < 3) {
-        // A convex hull of 0, 1, or 2 points is just the points themselves.
-        // Return a copy to avoid mutation issues.
-        return [...inputPoints];
-    }
-
-    // Sort points lexicographically (by x, then by y)
-    inputPoints.sort((ptA, ptB) => {
-        if (ptA.horiz !== ptB.horiz) {
-            return ptA.horiz - ptB.horiz;
-        }
-        return ptA.vert - ptB.vert;
-    });
-
-    let upperHull = [];
-    let lowerHull = [];
+    const upper_hull = [];
+    const lower_hull = [];
 
     // Build upper hull
-    for (let i = 0; i < numPoints; i++) {
-        while (upperHull.length >= 2 && orient2D(upperHull[upperHull.length - 2], upperHull[upperHull.length - 1], inputPoints[i]) !== ROTATION_CCW) {
-            upperHull.pop();
+    for (let i = 0; i < input_points.length; ++i) {
+        while (upper_hull.length >= 2 && getOrientation(upper_hull[upper_hull.length - 2], upper_hull[upper_hull.length - 1], input_points[i]) !== ORIENTATION_CCW) {
+            upper_hull.pop();
         }
-        upperHull.push(inputPoints[i]);
+        upper_hull.push(input_points[i]);
     }
 
     // Build lower hull
-    for (let i = numPoints - 1; i >= 0; i--) {
-        while (lowerHull.length >= 2 && orient2D(lowerHull[lowerHull.length - 2], lowerHull[lowerHull.length - 1], inputPoints[i]) !== ROTATION_CCW) {
-            lowerHull.pop();
+    for (let i = input_points.length - 1; i >= 0; --i) {
+        while (lower_hull.length >= 2 && getOrientation(lower_hull[lower_hull.length - 2], lower_hull[lower_hull.length - 1], input_points[i]) !== ORIENTATION_CCW) {
+            lower_hull.pop();
         }
-        lowerHull.push(inputPoints[i]);
+        lower_hull.push(input_points[i]);
     }
 
-    // Combine hulls. The first and last points of both hulls are the same.
-    // Remove the duplicates and concatenate.
-    // The lower hull is already in clockwise order relative to the origin, or reverse of CCW.
-    // We reverse lowerHull and append upperHull (excluding duplicates).
-    lowerHull.pop(); // Remove last point (duplicate of upperHull's first)
-    upperHull.pop(); // Remove last point (duplicate of lowerHull's first if lowerHull was reversed first)
+    // Combine hulls, removing duplicates (first and last points)
+    lower_hull.pop(); // Remove last point (duplicate of upper_hull's first)
+    upper_hull.pop(); // Remove last point (duplicate of lower_hull's first)
 
-    return lowerHull.concat(upperHull);
+    return upper_hull.concat(lower_hull.reverse());
+}
+
+function calcConvexDiameter(convex_points) {
+    const num_points = convex_points.length;
+    if (num_points < 2) return 0;
+    if (num_points === 2) return distPts(convex_points[0], convex_points[1]);
+
+    // Find initial antipodal pair (min/max y)
+    let idx_i = 0; // Index for point with min y
+    let idx_j = 0; // Index for point with max y
+    for (let k = 1; k < num_points; k++) {
+        if (convex_points[k].y > convex_points[idx_i].y) idx_i = k;
+        if (convex_points[k].y < convex_points[idx_j].y) idx_j = k;
+    }
+
+    let max_dist_sq = subPts(convex_points[idx_i], convex_points[idx_j]).lengthSq();
+    let current_i = idx_i;
+    let current_j = idx_j;
+
+    // Rotating calipers algorithm
+    do {
+        const next_i = (current_i + 1) % num_points;
+        const next_j = (current_j + 1) % num_points;
+
+        const vec_i_to_next_i = subPts(convex_points[next_i], convex_points[current_i]);
+        const vec_j_to_next_j = subPts(convex_points[next_j], convex_points[current_j]);
+
+        // Determine which caliper to advance
+        if (crossProd(vec_i_to_next_i, vec_j_to_next_j) >= 0) {
+            current_j = next_j;
+        } else {
+            current_i = next_i;
+        }
+
+        const current_dist_sq = subPts(convex_points[current_i], convex_points[current_j]).lengthSq();
+        if (current_dist_sq > max_dist_sq) {
+            max_dist_sq = current_dist_sq;
+        }
+    } while (current_i !== idx_i || current_j !== idx_j);
+
+    return Math.sqrt(max_dist_sq);
 }
 
 /**
- * Finds the diameter of a convex polygon (the maximum distance between any two points).
- * Uses Rotating Calipers algorithm. Assumes input points form a convex hull in CCW order.
- * @param {Array<Coord2D>} convexHullPoints An array of points representing a convex hull in CCW order.
- * @returns {number} The squared diameter (max squared distance). Take sqrt for actual distance.
+ * Returns the 2D area of a polygon defined by points
+ * (Shoelace formula)
  */
-function findConvexDiameterSquared(convexHullPoints) {
-    const numVertices = convexHullPoints.length;
-    if (numVertices < 2) {
-        return 0;
+function calcPolygonArea(polygon_points) {
+    let total_area = 0;
+    const num_points = polygon_points.length;
+    for (let i = 0; i < num_points; ++i) {
+        total_area += crossProd(polygon_points[i], polygon_points[(i + 1) % num_points]);
     }
-    if (numVertices === 2) {
-        return getSquaredMagnitude(subtractVec(convexHullPoints[0], convexHullPoints[1]));
-    }
+    return total_area / 2;
+}
 
-    // Find initial antipodal pair: points with min/max Y coordinates
-    let minIdxY = 0;
-    let maxIdxY = 0;
-    for (let i = 1; i < numVertices; i++) {
-        if (convexHullPoints[i].vert > convexHullPoints[maxIdxY].vert) maxIdxY = i;
-        if (convexHullPoints[i].vert < convexHullPoints[minIdxY].vert) minIdxY = i;
-    }
+function clipConvexPolygon(polygon_points, cut_line_p1, cut_line_p2) {
+    const clipped_polygon = [];
+    const num_points = polygon_points.length;
 
-    let maxSquaredDistance = getSquaredMagnitude(subtractVec(convexHullPoints[maxIdxY], convexHullPoints[minIdxY]));
+    for (let i = 0; i < num_points; ++i) {
+        const current_pt = polygon_points[i];
+        const next_pt = polygon_points[(i + 1) % num_points];
 
-    // Initialize calipers
-    let caliperP = minIdxY; // Pointer for one vertex
-    let caliperQ = maxIdxY; // Pointer for the other vertex
+        const current_pt_orientation = getOrientation(cut_line_p1, cut_line_p2, current_pt);
 
-    let initialP = minIdxY; // Store initial positions to know when we've completed a full rotation
-    let initialQ = maxIdxY;
-
-    // Rotate calipers until a full sweep is done
-    do {
-        const nextP = (caliperP + 1) % numVertices;
-        const nextQ = (caliperQ + 1) % numVertices;
-
-        const edgeP = subtractVec(convexHullPoints[nextP], convexHullPoints[caliperP]);
-        const edgeQ = subtractVec(convexHullPoints[nextQ], convexHullPoints[caliperQ]);
-
-        // Compare angles of edges with the current caliper line
-        // The cross product determines which caliper should advance
-        // If cross(edgeP, edgeQ) > 0, edgeP's angle is smaller, so advance Q.
-        // If cross(edgeP, edgeQ) < 0, edgeQ's angle is smaller, so advance P.
-        // If cross(edgeP, edgeQ) == 0, they are parallel. Advance both.
-        if (calculateCrossProduct2D(edgeP, edgeQ) >= 0) {
-            caliperQ = nextQ; // Advance caliper Q
-        } else {
-            caliperP = nextP; // Advance caliper P
+        // If current point is on the "inside" (not clockwise relative to cut line)
+        if (current_pt_orientation !== ORIENTATION_CW) {
+            clipped_polygon.push(current_pt);
         }
 
-        const currentSquaredDistance = getSquaredMagnitude(subtractVec(convexHullPoints[caliperP], convexHullPoints[caliperQ]));
-        if (currentSquaredDistance > maxSquaredDistance) {
-            maxSquaredDistance = currentSquaredDistance;
+        const next_pt_orientation = getOrientation(cut_line_p1, cut_line_p2, next_pt);
+
+        // If points cross the cutting line (one is CW, other is not)
+        if (current_pt_orientation !== next_pt_orientation && current_pt_orientation !== ON_LINE_SEG && next_pt_orientation !== ON_LINE_SEG) {
+            const intersection_pt = getLineLineIntersection(cut_line_p1, cut_line_p2, current_pt, next_pt);
+            if (intersection_pt) { // Ensure an intersection was found
+                clipped_polygon.push(intersection_pt);
+            }
         }
+    }
+    return clipped_polygon;
+}
 
-    } while (caliperP !== initialP || caliperQ !== initialQ); // Loop until both calipers return to their starting positions
+function distPts(pt_a, pt_b) {
+    const dx = pt_a.x - pt_b.x;
+    const dy = pt_a.y - pt_b.y;
+    return Math.sqrt(dx * dx + dy * dy);
+}
 
-    return maxSquaredDistance;
+function findClosestPair(points_arr, count) {
+    if (count <= 1) return Number.MAX_SAFE_INTEGER;
+    if (count === 2) return distPts(points_arr[0], points_arr[1]);
+
+    const mid_idx = Math.floor(count / 2);
+    const mid_x = points_arr[mid_idx].x;
+
+    // Recursively find closest pair in left and right halves
+    let min_dist = Math.min(
+        findClosestPair(points_arr.slice(0, mid_idx), mid_idx),
+        findClosestPair(points_arr.slice(mid_idx), count - mid_idx)
+    );
+
+    // Create a strip of points within min_dist of the dividing line
+    const strip_points = [];
+    for (let i = 0; i < count; ++i) {
+        if (Math.abs(points_arr[i].x - mid_x) < min_dist) {
+            strip_points.push(points_arr[i]);
+        }
+    }
+
+    // Sort strip points by y-coordinate
+    strip_points.sort((a, b) => a.y - b.y);
+
+    // Check distances within the strip
+    for (let i = 0; i < strip_points.length; ++i) {
+        for (let j = i + 1; j < strip_points.length && (strip_points[j].y - strip_points[i].y) < min_dist; ++j) {
+            const current_dist = distPts(strip_points[i], strip_points[j]);
+            if (current_dist < min_dist) {
+                min_dist = current_dist;
+            }
+        }
+    }
+    return min_dist;
+}
+
+/**
+ * 2D Circle class
+ */
+class Circ2D {
+    constructor(x_center, y_center, radius_val) {
+        this.center = new Pt2D(x_center, y_center);
+        this.r = radius_val;
+    }
+}
+
+/**
+ * Returns intersection points of a circle and a line (segment)
+ */
+function getCircLineIntersections(line_seg, circle_obj) {
+    const dist_to_center = distLineToPt(line_seg, circle_obj.center);
+
+    // No intersection
+    if (dist_to_center > circle_obj.r + EPSILON_THRESHOLD) { // Add epsilon for robustness
+        return [];
+    }
+
+    // Projection point of circle center onto the line
+    const proj_pt = projectPtOntoSeg(line_seg, circle_obj.center);
+
+    // One intersection (tangent)
+    if (isFloatEqual(dist_to_center, circle_obj.r)) {
+        return [proj_pt];
+    }
+    // Two intersections
+    else {
+        // Line direction vector (from p1 to p2)
+        const line_dir_vec = normalizeVec(subPts(line_seg.point2, line_seg.point1));
+        // Distance from projection point to intersection points
+        const dist_proj_to_intersect = Math.sqrt(circle_obj.r * circle_obj.r - subPts(proj_pt, circle_obj.center).lengthSq());
+
+        const intersection_pts = [];
+        intersection_pts.push(addPts(proj_pt, scaleVecByScalar(line_dir_vec, dist_proj_to_intersect)));
+        intersection_pts.push(subPts(proj_pt, scaleVecByScalar(line_dir_vec, dist_proj_to_intersect)));
+        return intersection_pts;
+    }
+}
+
+/**
+ * Returns polar coordinates (x,y) from magnitude 'a' and angle 'r' (radians)
+ */
+function getPolarCoords(magnitude_a, angle_rad) {
+    return new Pt2D(Math.cos(angle_rad) * magnitude_a, Math.sin(angle_rad) * magnitude_a);
+}
+
+/*
+ * Returns intersection points of two circles
+ */
+function getCircCircIntersections(circle_one, circle_two) {
+    const intersection_pts = [];
+    // Distance between centers
+    const center_dist = distPts(circle_one.center, circle_two.center);
+    const radius_sum = circle_one.r + circle_two.r;
+    const radius_diff = Math.abs(circle_one.r - circle_two.r);
+
+    // No intersection (circles too far apart or one completely inside other without touching)
+    if (center_dist > radius_sum + EPSILON_THRESHOLD || center_dist < radius_diff - EPSILON_THRESHOLD) {
+        return [];
+    }
+    // One intersection (tangent)
+    else if (isFloatEqual(center_dist, radius_sum) || isFloatEqual(center_dist, radius_diff)) {
+        const vec_c1_to_c2 = subPts(circle_two.center, circle_one.center);
+        const unit_vec = normalizeVec(vec_c1_to_c2);
+        const tangent_pt = addPts(circle_one.center, scaleVecByScalar(unit_vec, circle_one.r));
+        intersection_pts.push(tangent_pt);
+        return intersection_pts;
+    }
+    // Two intersections
+    else {
+        // Angle 'a' from center1-center2 line to center1-intersection line
+        const angle_a = Math.acos((circle_one.r * circle_one.r + center_dist * center_dist - circle_two.r * circle_two.r) / (2 * circle_one.r * center_dist));
+        // Angle 't' of the center1-center2 vector relative to x-axis
+        const vec_c1_to_c2 = subPts(circle_two.center, circle_one.center);
+        const angle_t = Math.atan2(vec_c1_to_c2.y, vec_c1_to_c2.x);
+
+        intersection_pts.push(addPts(circle_one.center, getPolarCoords(circle_one.r, angle_t + angle_a)));
+        intersection_pts.push(addPts(circle_one.center, getPolarCoords(circle_one.r, angle_t - angle_a)));
+        return intersection_pts;
+    }
+}
+
+/**
+ * Returns the tangent points from an external point to a circle
+ */
+function getTangentPtsFromExternalPt(circle_obj, external_pt) {
+    const vec_center_to_ext = subPts(external_pt, circle_obj.center);
+    const dist_center_to_ext = vec_center_to_ext.length();
+
+    // If point is inside the circle, no real tangents
+    if (dist_center_to_ext < circle_obj.r - EPSILON_THRESHOLD) {
+        return [];
+    }
+    // If point is on the circle, it's a single tangent point (itself)
+    if (isFloatEqual(dist_center_to_ext, circle_obj.r)) {
+        return [external_pt];
+    }
+
+    // Angle from center-external_pt vector to center-tangent_pt vector
+    const tangent_angle = Math.acos(circle_obj.r / dist_center_to_ext);
+    // Angle of center-external_pt vector relative to x-axis
+    const angle_vec_center_to_ext = Math.atan2(vec_center_to_ext.y, vec_center_to_ext.x);
+
+    const tangent_points = [];
+    tangent_points.push(addPts(circle_obj.center, getPolarCoords(circle_obj.r, angle_vec_center_to_ext + tangent_angle)));
+    tangent_points.push(addPts(circle_obj.center, getPolarCoords(circle_obj.r, angle_vec_center_to_ext - tangent_angle)));
+    return tangent_points;
+}
+
+function getSignedArea(pt_a, pt_b, pt_c) {
+    const vec_ab = subPts(pt_b, pt_a);
+    const vec_ac = subPts(pt_c, pt_a);
+    return crossProd(vec_ab, vec_ac);
+}
+
+const input_data = require('fs').readFileSync('/dev/stdin', 'utf8');
+const lines = input_data.trim().split("\n");
+
+for (let i = 0; i < lines.length; ++i) {
+    const coords = lines[i].split(" ").map(Number);
+    const p1_tri = new Pt2D(coords[0], coords[1]);
+    const p2_tri = new Pt2D(coords[2], coords[3]);
+    const p3_tri = new Pt2D(coords[4], coords[5]);
+    const p_test = new Pt2D(coords[6], coords[7]);
+
+    // Calculate signed areas (cross products) for point P relative to each triangle edge
+    const area1 = getSignedArea(p1_tri, p2_tri, p_test);
+    const area2 = getSignedArea(p2_tri, p3_tri, p_test);
+    const area3 = getSignedArea(p3_tri, p1_tri, p_test);
+
+    let result_str = "NO";
+    // If all signed areas have the same sign (all positive or all negative),
+    // the point is inside the triangle.
+    // This handles both clockwise and counter-clockwise triangle definitions.
+    if ((area1 > 0 && area2 > 0 && area3 > 0) || (area1 < 0 && area2 < 0 && area3 < 0)) {
+        result_str = "YES";
+    }
+    console.log(result_str);
 }
